@@ -27,6 +27,10 @@
 
 #include <wx/panel.h>
 
+#ifdef CLIENT_GUI
+#include <ec/cpp/RemoteConnect.h> // Needed for CECPacketHandlerBase
+#endif
+
 class CClientsListCtrl;
 class CClientHistoryListCtrl;
 
@@ -59,17 +63,43 @@ public:
 	void UpdateAll();
 
 	/**
-	 * Fill the history from the credit store, once.
+	 * Rebuild the history from the credit store.
 	 *
-	 * Deferred until the page is first shown rather than done at startup: it
-	 * is a snapshot of tens of thousands of records that only changes when a
-	 * peer arrives or leaves, and a user who never opens this page should
-	 * never pay for it.
+	 * Called whenever the Known tab is shown, not once at startup. Two
+	 * reasons it cannot be a one-off: a peer already in the history that
+	 * reconnects has new totals, a new last-seen and one more session, and a
+	 * peer met for the first time since the page was opened is missing
+	 * entirely. A stale snapshot would show "last seen" months ago for
+	 * someone visibly transferring in the Active tab next door.
+	 *
+	 * Rebuilding rather than patching individual rows: the credit store is
+	 * the truth, a rebuild is a vector fill and one sort, and it happens only
+	 * when a person actually looks at the tab.
 	 */
-	void LoadHistoryOnce();
+	void LoadHistory();
 
-private:
-	bool m_historyRequested;
+#ifdef CLIENT_GUI
+	/**
+	 * Receives the EC_OP_CLIENT_HISTORY reply.
+	 *
+	 * Nested so the panel keeps ownership of the rows the reply becomes, and
+	 * so a reply that arrives after the page is gone has nowhere to land
+	 * rather than somewhere stale.
+	 */
+	class CHistoryHandler : public CECPacketHandlerBase
+	{
+	public:
+		explicit CHistoryHandler(CClientsWnd *owner)
+		: m_owner(owner)
+		{
+		}
+		void HandlePacket(const CECPacket *packet) override;
+
+	private:
+		CClientsWnd *m_owner;
+	};
+	CHistoryHandler m_historyHandler;
+#endif
 };
 
 #endif // CLIENTSWND_H

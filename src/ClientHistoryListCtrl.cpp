@@ -121,8 +121,16 @@ wxString CClientHistoryListCtrl::GetItemColumnText(wxUIntPtr item, unsigned colu
 					   : wxDateTime(static_cast<time_t>(row->firstSeen)).FormatDate();
 
 	case COLUMN_HISTORY_LAST_SEEN:
-		return row->lastSeen == 0 ? wxString()
-					  : wxDateTime(static_cast<time_t>(row->lastSeen)).FormatDate();
+		// A date is the wrong answer for a peer that is here now -- and the
+		// stored last-seen for a connected peer is whenever it previously
+		// disconnected, which reads as though it were long gone.
+		if (row->online) {
+			return _("Online now");
+		}
+		if (row->lastSeen == 0) {
+			return wxEmptyString;
+		}
+		return wxDateTime(static_cast<time_t>(row->lastSeen)).FormatDate();
 
 	case COLUMN_HISTORY_SESSIONS:
 		if (row->sessions == 0) {
@@ -163,6 +171,12 @@ int CClientHistoryListCtrl::CompareItemData(
 	case COLUMN_HISTORY_FIRST_SEEN:
 		return modifier * CmpAny(r1->firstSeen, r2->firstSeen);
 	case COLUMN_HISTORY_LAST_SEEN:
+		// Peers that are here now sort as the most recent thing there is, so
+		// the column reads as "when was this peer last around" throughout
+		// instead of stranding the live ones at their stale timestamps.
+		if (r1->online != r2->online) {
+			return modifier * (r1->online ? 1 : -1);
+		}
 		return modifier * CmpAny(r1->lastSeen, r2->lastSeen);
 	case COLUMN_HISTORY_SESSIONS:
 		return modifier * CmpAny(r1->sessions, r2->sessions);

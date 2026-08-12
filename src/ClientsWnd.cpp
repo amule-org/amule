@@ -32,16 +32,24 @@
 #include "ClientHistoryListCtrl.h" // Needed for CClientHistoryListCtrl
 #include "muuli_wdr.h"             // Needed for ID_CLIENTSLIST
 
+#include <set>
+
+#include <common/Format.h> // Needed for CFormat
+
+#include "amule.h"        // Needed for theApp
+#include "updownclient.h" // Needed for CUpDownClient::GetUserHash
+
 #ifndef CLIENT_GUI
-#include <common/Format.h>     // Needed for CFormat
-#include "amule.h"             // Needed for theApp
 #include "ClientCredits.h"     // Needed for CClientCredits, ClientMetaStruct
 #include "ClientCreditsList.h" // Needed for CClientCreditsList
+#include "ClientList.h"        // Needed for CClientList::GetClientsByHash
 #endif
 
 CClientsWnd::CClientsWnd(wxWindow *parent)
 : wxPanel(parent, -1)
-, m_historyRequested(false)
+#ifdef CLIENT_GUI
+, m_historyHandler(this)
+#endif
 {
 	// Two tabs rather than a split: the lists answer different questions --
 	// "who am I talking to now" and "who have I ever talked to" -- and share
@@ -58,6 +66,16 @@ CClientsWnd::CClientsWnd(wxWindow *parent)
 		book, ID_CLIENTHISTORYLIST, wxDefaultPosition, wxDefaultSize, listStyle);
 	book->AddPage(historylistctrl, _("Known"), false);
 
+	// Rebuilt on every switch to the Known tab rather than once, so a peer
+	// that has reconnected since you last looked shows its new totals and
+	// last-seen instead of the values it had months ago.
+	book->Bind(wxEVT_NOTEBOOK_PAGE_CHANGED, [this](wxBookCtrlEvent &event) {
+		if (event.GetSelection() == 1) {
+			LoadHistory();
+		}
+		event.Skip();
+	});
+
 	wxBoxSizer *sizer = new wxBoxSizer(wxVERTICAL);
 	sizer->Add(book, 1, wxEXPAND | wxALL, 0);
 	SetSizer(sizer);
@@ -65,13 +83,8 @@ CClientsWnd::CClientsWnd(wxWindow *parent)
 	sizer->Fit(this);
 }
 
-void CClientsWnd::LoadHistoryOnce()
+void CClientsWnd::LoadHistory()
 {
-	if (m_historyRequested) {
-		return;
-	}
-	m_historyRequested = true;
-
 #ifndef CLIENT_GUI
 	// Monolithic: the credit store is right here, so there is nothing to
 	// request and nothing to wait for.
@@ -103,11 +116,99 @@ void CClientsWnd::LoadHistoryOnce()
 			row.version = CFormat(wxT("v%u.%u.%u")) % (meta.version / 100000) %
 				      ((meta.version % 100000) / 1000) % ((meta.version % 1000) / 100);
 		}
+		// Correlate with the live list by hash. Not by ECID: those mean
+		// nothing outside one daemon process, whereas this is the same
+		// identity the credit store itself is keyed on.
+		row.online = !theApp->clientlist->GetClientsByHash(row.hash).empty();
 		rows.push_back(row);
 	}
 	historylistctrl->SetRows(std::move(rows));
+#else
+	// amulegui: the credit store lives on the other side of the link, so ask
+	// for it. Against a daemon too old to know the request this comes back
+	// EC_OP_FAILED and the tab simply stays empty -- there is nothing to
+	// negotiate in advance, the failure says it.
+	if (theApp->m_connect != NULL) {
+		CECPacket request(EC_OP_GET_CLIENT_HISTORY);
+		theApp->m_connect->SendRequest(&m_historyHandler, &request);
+	}
 #endif
 }
+
+#ifdef CLIENT_GUI
+void CClientsWnd::CHistoryHandler::HandlePacket(const CECPacket *packet)
+{
+	if (packet->GetOpCode() != EC_OP_CLIENT_HISTORY) {
+		// EC_OP_FAILED from a core that predates the request. Leave the tab
+		// as it is rather than blanking it -- an older core is not a reason
+		// to throw away what is already on screen.
+		return;
+	}
+
+	// The live peers, by hash. Same reasoning as the monolithic path: an
+	// ECID says nothing across daemon processes, the user hash is the
+	// identity the credit store itself is keyed on.
+	std::set<CMD4Hash> onlineHashes;
+	if (theApp->clientlist != NULL) {
+		for (CUpDownClientListRem::iterator it = theApp->clientlist->begin();
+			it != theApp->clientlist->end();
+			++it) {
+			onlineHashes.insert((*it)->GetClient()->GetUserHash());
+		}
+	}
+
+	std::vector<ClientHistoryRow> rows;
+	rows.reserve(packet->GetTagCount());
+	for (CECPacket::const_iterator it = packet->begin(); it != packet->end(); ++it) {
+		const CECTag *tag = &*it;
+		if (tag->GetTagName() != EC_TAG_CLIENT) {
+			continue;
+		}
+		ClientHistoryRow row;
+		row.hash = tag->GetMD4Data();
+		if (const CECTag *t = tag->GetTagByName(EC_TAG_CLIENT_UPLOAD_TOTAL)) {
+			row.uploaded = t->GetInt();
+		}
+		if (const CECTag *t = tag->GetTagByName(EC_TAG_CLIENT_DOWNLOAD_TOTAL)) {
+			row.downloaded = t->GetInt();
+		}
+		if (const CECTag *t = tag->GetTagByName(EC_TAG_CLIENT_LAST_SEEN)) {
+			row.lastSeen = t->GetInt();
+		}
+		// Everything below is absent for a peer the core has no metadata
+		// for -- an older record, or a core that never kept any. The row
+		// still carries a hash, totals and a date; the rest renders blank.
+		if (const CECTag *t = tag->GetTagByName(EC_TAG_CLIENT_FIRST_SEEN)) {
+			row.firstSeen = t->GetInt();
+			row.hasMeta = true;
+		}
+		if (const CECTag *t = tag->GetTagByName(EC_TAG_CLIENT_SESSIONS)) {
+			row.sessions = t->GetInt();
+		}
+		if (const CECTag *t = tag->GetTagByName(EC_TAG_CLIENT_NAME)) {
+			row.name = t->GetStringData();
+		}
+		if (const CECTag *t = tag->GetTagByName(EC_TAG_CLIENT_USER_IP)) {
+			row.ip = t->GetInt();
+		}
+		if (const CECTag *t = tag->GetTagByName(EC_TAG_CLIENT_USER_PORT)) {
+			row.port = t->GetInt();
+		}
+		if (const CECTag *t = tag->GetTagByName(EC_TAG_CLIENT_SOFTWARE)) {
+			row.clientSoft = t->GetInt();
+		}
+		if (const CECTag *t = tag->GetTagByName(EC_TAG_CLIENT_SOFT_VER_STR)) {
+			row.version = t->GetStringData();
+		}
+		if (const CECTag *t = tag->GetTagByName(EC_TAG_CLIENT_FROM)) {
+			row.sourceFrom = t->GetInt();
+		}
+		row.online = onlineHashes.count(row.hash) != 0;
+		rows.push_back(row);
+	}
+	m_owner->historylistctrl->SetRows(std::move(rows));
+}
+#endif
 
 CClientsWnd::~CClientsWnd() {}
 

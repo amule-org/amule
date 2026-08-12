@@ -73,6 +73,16 @@ struct ClientHistoryRow
 	uint8 clientSoft = 0;
 	uint8 sourceFrom = 0;
 	bool hasMeta = false;
+	/**
+	 * This peer is connected right now.
+	 *
+	 * Established by user hash, never by ECID: an ECID identifies a peer only
+	 * within one daemon process, while the hash is what the credit store is
+	 * keyed on and is the same peer's identity across restarts. It is the
+	 * only thing that can connect a history row to the live client that is
+	 * the same peer.
+	 */
+	bool online = false;
 };
 
 /**

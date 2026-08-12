@@ -798,10 +798,6 @@ void CamuleDlg::OnToolBarButton(wxCommandEvent &ev)
 
 			case ID_BUTTONCLIENTS:
 				SetActiveDialog(DT_CLIENTS_WND, m_clientswnd);
-				// First time only. The history is a snapshot of the credit
-				// store, so a user who never opens this page never pays for
-				// reading tens of thousands of records.
-				m_clientswnd->LoadHistoryOnce();
 				break;
 
 			case ID_BUTTONSTATISTICS:
