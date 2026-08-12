@@ -36,6 +36,31 @@ export APPDIR="${HERE}"
 export PATH="${HERE}/usr/bin:${PATH}"
 export LD_LIBRARY_PATH="${HERE}/usr/lib:${LD_LIBRARY_PATH:-}"
 
+# Keep the host's GLib/GTK plugins out of the bundle. Both of these are set
+# after the plugin hooks above deliberately: linuxdeploy-plugin-gtk sets
+# neither, so nothing here is being overridden.
+#
+# GIO_MODULE_DIR: unset, GLib scans the path it was compiled with, which is
+# the host's /usr/lib/<triplet>/gio/modules. Those modules are built against
+# the host's GLib and get resolved against the older one bundled here, so
+# loading them fails --
+#
+#   /usr/lib/x86_64-linux-gnu/gvfs/libgvfscommon.so: undefined symbol:
+#     g_task_set_static_name
+#   Failed to load module: /usr/lib/x86_64-linux-gnu/gio/modules/libgvfsdbus.so
+#
+# (g_task_set_static_name arrived in GLib 2.76.) We bundle no GIO modules, so
+# this points at a directory that does not exist, which is the intent: it
+# stops the scan rather than redirecting it. aMule uses no GIO module -- the
+# failure was only ever noise on stderr (issue #898).
+export GIO_MODULE_DIR="${HERE}/usr/lib/gio/modules"
+
+# GTK_MODULES comes from the host session, and the bundled GTK cannot load a
+# host module any more than GIO can. Linux Mint exports xapp-gtk3-module,
+# which produces `Gtk-Message: Failed to load module "xapp-gtk3-module"` on
+# every start. These modules are desktop integration aMule does not use.
+unset GTK_MODULES
+
 # argv[0] dispatch. ARGV0 is set by the AppImage runtime; fall back to
 # $0 for direct invocation (e.g. when extracted via --appimage-extract).
 INVOCATION="${ARGV0:-$0}"
