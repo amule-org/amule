@@ -64,7 +64,7 @@ CClientsListCtrl::CClientsListCtrl(wxWindow *parent, int id, const wxPoint &pos,
 	InitColumnState();
 }
 
-CClientsListCtrl::~CClientsListCtrl() {}
+CClientsListCtrl::~CClientsListCtrl() = default;
 
 unsigned CClientsListCtrl::CountRelatedFiles(const CUpDownClient *client)
 {
@@ -74,11 +74,11 @@ unsigned CClientsListCtrl::CountRelatedFiles(const CUpDownClient *client)
 	// ones it is exchanging, and counting them would make the column mean
 	// something else.
 	unsigned files = 0;
-	if (client->GetRequestFile() != NULL) {
+	if (client->GetRequestFile() != nullptr) {
 		files++;
 	}
 	const CKnownFile *upload = client->GetUploadFile();
-	if (upload != NULL &&
+	if (upload != nullptr &&
 		static_cast<const void *>(upload) != static_cast<const void *>(client->GetRequestFile())) {
 		files++;
 	}
@@ -106,7 +106,7 @@ void CClientsListCtrl::RemoveClient(CUpDownClient *client)
 wxString CClientsListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) const
 {
 	const CUpDownClient *client = reinterpret_cast<const CUpDownClient *>(item);
-	if (client == NULL) {
+	if (client == nullptr) {
 		return wxEmptyString;
 	}
 
@@ -114,7 +114,10 @@ wxString CClientsListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) co
 	case COLUMN_CLIENTS_NAME:
 		// A peer that has not finished its handshake has no name yet;
 		// its address is the only thing that identifies it so far.
-		return client->GetUserName().IsEmpty() ? client->GetFullIP() : client->GetUserName();
+		if (!client->GetUserName().IsEmpty()) {
+			return client->GetUserName();
+		}
+		return Uint32toStringIP(client->GetIP());
 
 	case COLUMN_CLIENTS_SOFTWARE:
 		return client->GetSoftStr();
@@ -123,7 +126,12 @@ wxString CClientsListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) co
 		return client->GetSoftVerStr();
 
 	case COLUMN_CLIENTS_ADDRESS:
-		return CFormat(wxT("%s:%u")) % client->GetFullIP() % client->GetUserPort();
+		// GetIP(), not GetFullIP(): the latter reads m_FullUserIP, which
+		// only the core fills in. Over EC the address arrives as
+		// EC_TAG_CLIENT_USER_IP and lands in m_dwUserIP, so amulegui showed
+		// 0.0.0.0 for every peer until this used the field that is actually
+		// populated in both builds.
+		return CFormat(wxT("%s:%u")) % Uint32toStringIP(client->GetIP()) % client->GetUserPort();
 
 	case COLUMN_CLIENTS_ORIGIN:
 		return OriginToText(client->GetSourceFrom());
@@ -140,7 +148,11 @@ wxString CClientsListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) co
 			       : wxString();
 
 	case COLUMN_CLIENTS_SESSION_UP:
-		return CastItoXBytes(client->GetSessionUp());
+		// GetTransferredUp(), not GetSessionUp(). The latter subtracts
+		// m_nCurSessionUp, which nothing populates in the CLIENT_GUI build,
+		// so the unsigned subtraction underflowed and every row read
+		// 16777216 TB.
+		return CastItoXBytes(client->GetTransferredUp());
 
 	case COLUMN_CLIENTS_SESSION_DOWN:
 		return CastItoXBytes(client->GetTransferredDown());
@@ -174,7 +186,7 @@ int CClientsListCtrl::CompareItemData(
 {
 	const CUpDownClient *c1 = reinterpret_cast<const CUpDownClient *>(data1);
 	const CUpDownClient *c2 = reinterpret_cast<const CUpDownClient *>(data2);
-	if (c1 == NULL || c2 == NULL) {
+	if (c1 == nullptr || c2 == nullptr) {
 		return 0;
 	}
 
@@ -188,7 +200,7 @@ int CClientsListCtrl::CompareItemData(
 	case COLUMN_CLIENTS_DOWN_SPEED:
 		return modifier * CmpAny(c1->GetKBpsDown(), c2->GetKBpsDown());
 	case COLUMN_CLIENTS_SESSION_UP:
-		return modifier * CmpAny(c1->GetSessionUp(), c2->GetSessionUp());
+		return modifier * CmpAny(c1->GetTransferredUp(), c2->GetTransferredUp());
 	case COLUMN_CLIENTS_SESSION_DOWN:
 		return modifier * CmpAny(c1->GetTransferredDown(), c2->GetTransferredDown());
 	case COLUMN_CLIENTS_TOTAL_UP:

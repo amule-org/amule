@@ -62,14 +62,14 @@ CClientHistoryListCtrl::CClientHistoryListCtrl(
 	InitColumnState();
 }
 
-CClientHistoryListCtrl::~CClientHistoryListCtrl() {}
+CClientHistoryListCtrl::~CClientHistoryListCtrl() = default;
 
 const ClientHistoryRow *CClientHistoryListCtrl::RowFor(wxUIntPtr item) const
 {
 	// Stored as index+1 so that 0 stays available as "no item", which is what
 	// the base returns for an unknown row.
 	if (item == 0 || item > m_rows.size()) {
-		return NULL;
+		return nullptr;
 	}
 	return &m_rows[item - 1];
 }
@@ -91,7 +91,7 @@ void CClientHistoryListCtrl::SetRows(std::vector<ClientHistoryRow> &&rows)
 wxString CClientHistoryListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) const
 {
 	const ClientHistoryRow *row = RowFor(item);
-	if (row == NULL) {
+	if (row == nullptr) {
 		return wxEmptyString;
 	}
 
@@ -163,7 +163,7 @@ int CClientHistoryListCtrl::CompareItemData(
 {
 	const ClientHistoryRow *r1 = RowFor(data1);
 	const ClientHistoryRow *r2 = RowFor(data2);
-	if (r1 == NULL || r2 == NULL) {
+	if (r1 == nullptr || r2 == nullptr) {
 		return 0;
 	}
 

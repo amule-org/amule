@@ -88,7 +88,7 @@ void CClientsWnd::LoadHistory()
 #ifndef CLIENT_GUI
 	// Monolithic: the credit store is right here, so there is nothing to
 	// request and nothing to wait for.
-	if (theApp->clientcredits == NULL) {
+	if (theApp->clientcredits == nullptr) {
 		return;
 	}
 	std::vector<CClientCredits *> credits;
@@ -128,7 +128,7 @@ void CClientsWnd::LoadHistory()
 	// for it. Against a daemon too old to know the request this comes back
 	// EC_OP_FAILED and the tab simply stays empty -- there is nothing to
 	// negotiate in advance, the failure says it.
-	if (theApp->m_connect != NULL) {
+	if (theApp->m_connect != nullptr) {
 		CECPacket request(EC_OP_GET_CLIENT_HISTORY);
 		theApp->m_connect->SendRequest(&m_historyHandler, &request);
 	}
@@ -149,18 +149,16 @@ void CClientsWnd::CHistoryHandler::HandlePacket(const CECPacket *packet)
 	// ECID says nothing across daemon processes, the user hash is the
 	// identity the credit store itself is keyed on.
 	std::set<CMD4Hash> onlineHashes;
-	if (theApp->clientlist != NULL) {
-		for (CUpDownClientListRem::iterator it = theApp->clientlist->begin();
-			it != theApp->clientlist->end();
-			++it) {
-			onlineHashes.insert((*it)->GetClient()->GetUserHash());
+	if (theApp->clientlist != nullptr) {
+		for (const auto &entry : *theApp->clientlist) {
+			onlineHashes.insert(entry->GetClient()->GetUserHash());
 		}
 	}
 
 	std::vector<ClientHistoryRow> rows;
 	rows.reserve(packet->GetTagCount());
-	for (CECPacket::const_iterator it = packet->begin(); it != packet->end(); ++it) {
-		const CECTag *tag = &*it;
+	for (const CECTag &entry : *packet) {
+		const CECTag *tag = &entry;
 		if (tag->GetTagName() != EC_TAG_CLIENT) {
 			continue;
 		}
@@ -210,7 +208,7 @@ void CClientsWnd::CHistoryHandler::HandlePacket(const CECPacket *packet)
 }
 #endif
 
-CClientsWnd::~CClientsWnd() {}
+CClientsWnd::~CClientsWnd() = default;
 
 void CClientsWnd::UpdateAll()
 {
