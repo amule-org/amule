@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-11 12:27+0200\n"
+"POT-Creation-Date: 2026-08-12 21:14+0200\n"
 "PO-Revision-Date: 2026-08-11 20:59+0000\n"
 "Last-Translator: Oleksandr Kovalenko <alx.kovalenko@gmail.com>\n"
 "Language-Team: Ukrainian <translation@linux.org.ua>\n"
@@ -680,6 +680,10 @@ msgstr "Звантаження"
 msgid "Shared files"
 msgstr "Спільні файли"
 
+#: src/amuleDlg.cpp src/ClientContextActions.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "Клієнти"
+
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Messages"
 msgstr "Повідомлення"
@@ -820,6 +824,11 @@ msgstr "Звантажується"
 #: src/amuleDlg.cpp
 msgid "Shared Files Window"
 msgstr "Вікно спільних файлів"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "Clients Window"
+msgstr "Вікно мереж"
 
 #: src/amuleDlg.cpp
 msgid "Messages Window"
@@ -1175,9 +1184,54 @@ msgstr "Закрити всі вкладки"
 msgid "Close other tabs"
 msgstr "Закрити інші вкладки"
 
-#: src/ChatWnd.cpp src/GenericClientListCtrl.cpp
+#: src/ChatWnd.cpp src/ClientContextActions.cpp
 msgid "Add to Friends"
 msgstr "Додати до друзів"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Show &Details"
+msgstr "Показати подробиці"
+
+#: src/ClientContextActions.cpp
+msgid "Remove from friends"
+msgstr "Видалити з друзів"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Establish Friend Slot"
+msgstr "Встановити шматок для друга"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "View Files"
+msgstr "Переглянути файли"
+
+#: src/ClientContextActions.cpp
+msgid "Send message"
+msgstr "Надіслати повідомлення"
+
+#: src/ClientContextActions.cpp
+msgid "Swap to this file"
+msgstr "Перемкнути на цей файл"
+
+#: src/ClientContextActions.cpp
+#, fuzzy
+msgid ""
+"You are not allowed to set more than one friend slot.\n"
+" Only one slot was assigned."
+msgstr ""
+"Встановлення більш ніж одного шматка для друга не дозволено.\n"
+"Був виділений тільки один слот."
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Multiple selection"
+msgstr "Численний вибір"
+
+#: src/ClientContextActions.cpp
+msgid "Send message to user"
+msgstr "Надіслати повідомлення користувачу"
+
+#: src/ClientContextActions.cpp
+msgid "Message to send:"
+msgstr "Повідомлення:"
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1244,6 +1298,64 @@ msgstr "Від'єднана"
 msgid "%.1f kB/s"
 msgstr "%.1f кбайт/с"
 
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Name"
+msgstr "Назва:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+msgid "Software"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Version"
+msgstr "Версія"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "IP Address"
+msgstr "IP-адреса:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Origin"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+msgid "First seen"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Last seen"
+msgstr "Останнє отримання"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Sessions"
+msgstr "Версія"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Uploaded"
+msgstr "Вивантажено"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Downloaded"
+msgstr "Всього звантажень: "
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Ratio"
+msgstr "Рейтинг"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Online now"
+msgstr "Онлайн-підпис"
+
 #: src/ClientRef.cpp
 msgid "Not complete"
 msgstr "Незавершено"
@@ -1263,6 +1375,49 @@ msgstr "недоступні"
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr "Недоступно"
+
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+msgid "Files"
+msgstr "Файли"
+
+#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#, fuzzy
+msgid "Upload Speed"
+msgstr "Швидкість вивантаження"
+
+#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#, fuzzy
+msgid "Download Speed"
+msgstr "Швидкість звантаження"
+
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp
+msgid "Uploaded"
+msgstr "Вивантажено"
+
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Downloaded"
+msgstr "Звантажені"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Downloading from"
+msgstr "Звантажується"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Uploading to"
+msgstr "Вивантаження"
+
+#: src/ClientsWnd.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
+msgid "Active"
+msgstr "Чинні"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Known"
+msgstr "Невідомо"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -2570,10 +2725,6 @@ msgstr "КРИТИЧНО - немає клієнта на StartChatSession"
 msgid "Friends"
 msgstr "Друзі"
 
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Show &Details"
-msgstr "Показати подробиці"
-
 #: src/FriendListCtrl.cpp
 msgid "Add a friend"
 msgstr "Додати друга"
@@ -2585,14 +2736,6 @@ msgstr "Видалити друга"
 #: src/FriendListCtrl.cpp
 msgid "Send &Message"
 msgstr "Надіслати повідомлення"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "View Files"
-msgstr "Переглянути файли"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Establish Friend Slot"
-msgstr "Встановити шматок для друга"
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"
@@ -2609,43 +2752,6 @@ msgid ""
 msgstr ""
 "Встановлення більш ніж одного шматка для друга не дозволено.\n"
 "Був виділений тільки один слот."
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Multiple selection"
-msgstr "Численний вибір"
-
-#: src/GenericClientListCtrl.cpp
-#, fuzzy
-msgid ""
-"You are not allowed to set more than one friend slot.\n"
-" Only one slot was assigned."
-msgstr ""
-"Встановлення більш ніж одного шматка для друга не дозволено.\n"
-"Був виділений тільки один слот."
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message to user"
-msgstr "Надіслати повідомлення користувачу"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Message to send:"
-msgstr "Повідомлення:"
-
-#: src/GenericClientListCtrl.cpp src/Statistics.cpp
-msgid "Clients"
-msgstr "Клієнти"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Remove from friends"
-msgstr "Видалити з друзів"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message"
-msgstr "Надіслати повідомлення"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Swap to this file"
-msgstr "Перемкнути на цей файл"
 
 #: src/GenericClientListCtrl.cpp
 #, fuzzy, c-format
@@ -2958,10 +3064,6 @@ msgstr "Розмір файлу"
 #: src/KnownFile.cpp
 msgid "Share ratio"
 msgstr "Відношення передачі"
-
-#: src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Uploaded"
-msgstr "Вивантажено"
 
 #: src/KnownFile.cpp src/muuli_wdr.cpp
 msgid "Requested"
@@ -5357,10 +5459,6 @@ msgstr "Архів"
 msgid "Text"
 msgstr "Текст"
 
-#: src/OtherFunctions.cpp src/TransferWnd.cpp
-msgid "Active"
-msgstr "Чинні"
-
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "Using config dir: %s"
@@ -5616,11 +5714,6 @@ msgstr "Виділяється"
 msgid "Insufficient disk space"
 msgstr "Не вистачає місця на диску"
 
-#: src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp
-msgid "Downloaded"
-msgstr "Звантажені"
-
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
@@ -5832,10 +5925,6 @@ msgstr "Теки"
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "Сервери"
-
-#: src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
-msgid "Files"
-msgstr "Файли"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Security"
@@ -6725,11 +6814,6 @@ msgstr "Користувачі"
 msgid "Static"
 msgstr "Постійні"
 
-#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp src/Statistics.cpp
-msgid "Version"
-msgstr "Версія"
-
 #: src/ServerListCtrl.cpp
 #, fuzzy
 msgid "Soft Files"
@@ -7095,16 +7179,6 @@ msgstr "Не знайдені спільні файли в теці: %s"
 msgid "User Name"
 msgstr "Ім'я користувача"
 
-#: src/SharedFilePeersListCtrl.cpp
-#, fuzzy
-msgid "Download Speed"
-msgstr "Швидкість звантаження"
-
-#: src/SharedFilePeersListCtrl.cpp
-#, fuzzy
-msgid "Upload Speed"
-msgstr "Швидкість вивантаження"
-
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 #, fuzzy
 msgid "Available Parts"
@@ -7118,10 +7192,6 @@ msgstr "Стан вивантаження"
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Download Status"
 msgstr "Стан звантаження"
-
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Origin"
-msgstr ""
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 #, fuzzy

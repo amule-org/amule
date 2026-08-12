@@ -410,7 +410,7 @@ uint64 CRemoteConnect::MillisecondsSinceLastReply() const
 {
 	return static_cast<uint64>(std::chrono::duration_cast<std::chrono::milliseconds>(
 		std::chrono::steady_clock::now() - m_lastReplyAt)
-			.count());
+					   .count());
 }
 
 void CRemoteConnect::OnLost()

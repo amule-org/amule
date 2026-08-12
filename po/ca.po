@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-11 12:27+0200\n"
+"POT-Creation-Date: 2026-08-12 21:14+0200\n"
 "PO-Revision-Date: 2026-08-11 20:45+0000\n"
 "Last-Translator: minterior <minterior@gmail.com>\n"
 "Language-Team: Català\n"
@@ -680,6 +680,10 @@ msgstr "Baixades"
 msgid "Shared files"
 msgstr "Compartits"
 
+#: src/amuleDlg.cpp src/ClientContextActions.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "Clients"
+
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Messages"
 msgstr "Missatges"
@@ -818,6 +822,11 @@ msgstr "Finestra de baixades"
 #: src/amuleDlg.cpp
 msgid "Shared Files Window"
 msgstr "Finestra de fitxers compartits"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "Clients Window"
+msgstr "Finestra de les Xarxes"
 
 #: src/amuleDlg.cpp
 msgid "Messages Window"
@@ -1170,9 +1179,54 @@ msgstr "Tanca totes les pestanyes"
 msgid "Close other tabs"
 msgstr "Tanca les altres pestanyes"
 
-#: src/ChatWnd.cpp src/GenericClientListCtrl.cpp
+#: src/ChatWnd.cpp src/ClientContextActions.cpp
 msgid "Add to Friends"
 msgstr "Afegeix a la llista d'amics"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Show &Details"
+msgstr "Mostra els &detalls"
+
+#: src/ClientContextActions.cpp
+msgid "Remove from friends"
+msgstr "Elimina'l dels amics"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Establish Friend Slot"
+msgstr "Estableix posició (slot) d'amic"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "View Files"
+msgstr "Veure els compartits"
+
+#: src/ClientContextActions.cpp
+msgid "Send message"
+msgstr "Envia un missatge"
+
+#: src/ClientContextActions.cpp
+msgid "Swap to this file"
+msgstr "Intercanvia cap a aquest fitxer"
+
+#: src/ClientContextActions.cpp
+#, fuzzy
+msgid ""
+"You are not allowed to set more than one friend slot.\n"
+" Only one slot was assigned."
+msgstr ""
+"No podeu establir més d'una posició d'amic.\n"
+" Només s'ha assignat una posició."
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Multiple selection"
+msgstr "Selecció múltiple"
+
+#: src/ClientContextActions.cpp
+msgid "Send message to user"
+msgstr "Envia un missatge a l'usuari"
+
+#: src/ClientContextActions.cpp
+msgid "Message to send:"
+msgstr "Missatge a enviar:"
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1237,6 +1291,64 @@ msgstr "Desconnectat"
 msgid "%.1f kB/s"
 msgstr "%.1f kB/s"
 
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Name"
+msgstr "Nom:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+msgid "Software"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Version"
+msgstr "Versió"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "IP Address"
+msgstr "Adreça IP:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Origin"
+msgstr "Origen"
+
+#: src/ClientHistoryListCtrl.cpp
+msgid "First seen"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Last seen"
+msgstr "Última recepció"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Sessions"
+msgstr "Versió"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Uploaded"
+msgstr "Transferit"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Downloaded"
+msgstr "Total baixat: "
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Ratio"
+msgstr "Valoració"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Online now"
+msgstr "Signatura en línia"
+
 #: src/ClientRef.cpp
 msgid "Not complete"
 msgstr "Sense completar"
@@ -1256,6 +1368,47 @@ msgstr "N/D"
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr "No disponible"
+
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+msgid "Files"
+msgstr "Fitxers"
+
+#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+msgid "Upload Speed"
+msgstr "Velocitat de pujada"
+
+#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+msgid "Download Speed"
+msgstr "Velocitat de baixada"
+
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp
+msgid "Uploaded"
+msgstr "Transferit"
+
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Downloaded"
+msgstr "Baixat"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Downloading from"
+msgstr "S'està baixant"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Uploading to"
+msgstr "Pujant"
+
+#: src/ClientsWnd.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
+msgid "Active"
+msgstr "Actiu"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Known"
+msgstr "Desconegut"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -2552,10 +2705,6 @@ msgstr "CRITIC - no hi ha client a l'Inici de Sessió del Xat"
 msgid "Friends"
 msgstr "Amics"
 
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Show &Details"
-msgstr "Mostra els &detalls"
-
 #: src/FriendListCtrl.cpp
 msgid "Add a friend"
 msgstr "Afegeix un amic"
@@ -2567,14 +2716,6 @@ msgstr "Elimina l'amic"
 #: src/FriendListCtrl.cpp
 msgid "Send &Message"
 msgstr "Envia un &missatge"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "View Files"
-msgstr "Veure els compartits"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Establish Friend Slot"
-msgstr "Estableix posició (slot) d'amic"
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"
@@ -2591,43 +2732,6 @@ msgid ""
 msgstr ""
 "No podeu establir més d'una posició d'amic.\n"
 " Només s'ha assignat una posició."
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Multiple selection"
-msgstr "Selecció múltiple"
-
-#: src/GenericClientListCtrl.cpp
-#, fuzzy
-msgid ""
-"You are not allowed to set more than one friend slot.\n"
-" Only one slot was assigned."
-msgstr ""
-"No podeu establir més d'una posició d'amic.\n"
-" Només s'ha assignat una posició."
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message to user"
-msgstr "Envia un missatge a l'usuari"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Message to send:"
-msgstr "Missatge a enviar:"
-
-#: src/GenericClientListCtrl.cpp src/Statistics.cpp
-msgid "Clients"
-msgstr "Clients"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Remove from friends"
-msgstr "Elimina'l dels amics"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message"
-msgstr "Envia un missatge"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Swap to this file"
-msgstr "Intercanvia cap a aquest fitxer"
 
 #: src/GenericClientListCtrl.cpp
 #, c-format
@@ -2931,10 +3035,6 @@ msgstr "Mida"
 #: src/KnownFile.cpp
 msgid "Share ratio"
 msgstr "Ràtio"
-
-#: src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Uploaded"
-msgstr "Transferit"
 
 #: src/KnownFile.cpp src/muuli_wdr.cpp
 msgid "Requested"
@@ -5312,10 +5412,6 @@ msgstr "Arxius"
 msgid "Text"
 msgstr "Documents"
 
-#: src/OtherFunctions.cpp src/TransferWnd.cpp
-msgid "Active"
-msgstr "Actiu"
-
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "Using config dir: %s"
@@ -5570,11 +5666,6 @@ msgstr "Assignant"
 msgid "Insufficient disk space"
 msgstr "Espai en disc insuficient"
 
-#: src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp
-msgid "Downloaded"
-msgstr "Baixat"
-
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
@@ -5782,10 +5873,6 @@ msgstr "Directoris"
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "Servidors"
-
-#: src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
-msgid "Files"
-msgstr "Fitxers"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Security"
@@ -6661,11 +6748,6 @@ msgstr "Usuaris"
 msgid "Static"
 msgstr "Estàtic"
 
-#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp src/Statistics.cpp
-msgid "Version"
-msgstr "Versió"
-
 #: src/ServerListCtrl.cpp
 #, fuzzy
 msgid "Soft Files"
@@ -7024,14 +7106,6 @@ msgstr "No s'ha trobat cap fitxer en el directori: %s"
 msgid "User Name"
 msgstr "Nom d'usuari"
 
-#: src/SharedFilePeersListCtrl.cpp
-msgid "Download Speed"
-msgstr "Velocitat de baixada"
-
-#: src/SharedFilePeersListCtrl.cpp
-msgid "Upload Speed"
-msgstr "Velocitat de pujada"
-
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Available Parts"
 msgstr "Parts disponibles"
@@ -7043,10 +7117,6 @@ msgstr "Estat de pujada"
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Download Status"
 msgstr "Estat remot"
-
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Origin"
-msgstr "Origen"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Local File Name"

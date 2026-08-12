@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-11 12:27+0200\n"
+"POT-Creation-Date: 2026-08-12 21:14+0200\n"
 "PO-Revision-Date: 2026-08-11 20:58+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -679,6 +679,10 @@ msgstr "İndirmeler"
 msgid "Shared files"
 msgstr "Paylaşılan dosyalar"
 
+#: src/amuleDlg.cpp src/ClientContextActions.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "Kullanıcılar"
+
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Messages"
 msgstr "Sohbet"
@@ -821,6 +825,11 @@ msgstr "İndirme Penceresi"
 #: src/amuleDlg.cpp
 msgid "Shared Files Window"
 msgstr "Paylaşılan Dosya Penceresi"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "Clients Window"
+msgstr "Ağ Penceresi"
 
 #: src/amuleDlg.cpp
 msgid "Messages Window"
@@ -1174,9 +1183,53 @@ msgstr "Tüm sekmeleri kapat"
 msgid "Close other tabs"
 msgstr "Diğer sekmeleri kapat"
 
-#: src/ChatWnd.cpp src/GenericClientListCtrl.cpp
+#: src/ChatWnd.cpp src/ClientContextActions.cpp
 msgid "Add to Friends"
 msgstr "Arkadaşlara Ekle"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Show &Details"
+msgstr "&Ayrıntıları Göster"
+
+#: src/ClientContextActions.cpp
+msgid "Remove from friends"
+msgstr "Arkadaşlardan Çıkar"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Establish Friend Slot"
+msgstr "Arkadaş Slotu Kur"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "View Files"
+msgstr "Paylaşılmış Dosyalara bak"
+
+#: src/ClientContextActions.cpp
+msgid "Send message"
+msgstr "İleti Gönder"
+
+#: src/ClientContextActions.cpp
+msgid "Swap to this file"
+msgstr "Bu dosyaya geçir"
+
+#: src/ClientContextActions.cpp
+msgid ""
+"You are not allowed to set more than one friend slot.\n"
+" Only one slot was assigned."
+msgstr ""
+"Birden fazla arkadaş oluğu kurmanıza izin verilmez.\n"
+"Sadece bir oluk atandı."
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Multiple selection"
+msgstr "Çoklu seçim"
+
+#: src/ClientContextActions.cpp
+msgid "Send message to user"
+msgstr "Kullanıcıya ileti gönder"
+
+#: src/ClientContextActions.cpp
+msgid "Message to send:"
+msgstr "Gönderilecek ileti:"
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1241,6 +1294,64 @@ msgstr "Bağlantı kesildi"
 msgid "%.1f kB/s"
 msgstr "%.1f kB/s"
 
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Name"
+msgstr "Ad:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+msgid "Software"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Version"
+msgstr "Sürüm"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "IP Address"
+msgstr "IP Adresi:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Origin"
+msgstr "Köken"
+
+#: src/ClientHistoryListCtrl.cpp
+msgid "First seen"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Last seen"
+msgstr "Son Alım"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Sessions"
+msgstr "Sürüm"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Uploaded"
+msgstr "Gönderilen"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Downloaded"
+msgstr "Toplam Aktarım: "
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Ratio"
+msgstr "Puanlama"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Online now"
+msgstr "Çevrimiçi İmza"
+
 #: src/ClientRef.cpp
 msgid "Not complete"
 msgstr "Eksik"
@@ -1260,6 +1371,47 @@ msgstr "N/A"
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr "Uygun değil"
+
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+msgid "Files"
+msgstr "Dosyalar"
+
+#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+msgid "Upload Speed"
+msgstr "Gönderme Hızı"
+
+#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+msgid "Download Speed"
+msgstr "İndirme Hızı"
+
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp
+msgid "Uploaded"
+msgstr "Gönderilen"
+
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Downloaded"
+msgstr "İndirildi"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Downloading from"
+msgstr "Aktarılıyor"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Uploading to"
+msgstr "Gönderiliyor"
+
+#: src/ClientsWnd.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
+msgid "Active"
+msgstr "Etkin"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Known"
+msgstr "Bilinmiyor"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -2552,10 +2704,6 @@ msgstr "KRİTİK - SohbetOturumunuBaşlat' ta istemci yok"
 msgid "Friends"
 msgstr "Arkadaşlar"
 
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Show &Details"
-msgstr "&Ayrıntıları Göster"
-
 #: src/FriendListCtrl.cpp
 msgid "Add a friend"
 msgstr "Arkadaş ekle"
@@ -2567,14 +2715,6 @@ msgstr "Arkadaş sil"
 #: src/FriendListCtrl.cpp
 msgid "Send &Message"
 msgstr "&İleti Gönder"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "View Files"
-msgstr "Paylaşılmış Dosyalara bak"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Establish Friend Slot"
-msgstr "Arkadaş Slotu Kur"
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"
@@ -2591,42 +2731,6 @@ msgid ""
 msgstr ""
 "Birden fazla arkadaş slotu kuramazsınız.\n"
 "Sadece bir slot kuruldu."
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Multiple selection"
-msgstr "Çoklu seçim"
-
-#: src/GenericClientListCtrl.cpp
-msgid ""
-"You are not allowed to set more than one friend slot.\n"
-" Only one slot was assigned."
-msgstr ""
-"Birden fazla arkadaş oluğu kurmanıza izin verilmez.\n"
-"Sadece bir oluk atandı."
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message to user"
-msgstr "Kullanıcıya ileti gönder"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Message to send:"
-msgstr "Gönderilecek ileti:"
-
-#: src/GenericClientListCtrl.cpp src/Statistics.cpp
-msgid "Clients"
-msgstr "Kullanıcılar"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Remove from friends"
-msgstr "Arkadaşlardan Çıkar"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message"
-msgstr "İleti Gönder"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Swap to this file"
-msgstr "Bu dosyaya geçir"
 
 #: src/GenericClientListCtrl.cpp
 #, c-format
@@ -2929,10 +3033,6 @@ msgstr "Dosya"
 #: src/KnownFile.cpp
 msgid "Share ratio"
 msgstr "Paylaşım oranı"
-
-#: src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Uploaded"
-msgstr "Gönderilen"
 
 #: src/KnownFile.cpp src/muuli_wdr.cpp
 msgid "Requested"
@@ -5291,10 +5391,6 @@ msgstr "Sıkıştırılmış"
 msgid "Text"
 msgstr "Belge"
 
-#: src/OtherFunctions.cpp src/TransferWnd.cpp
-msgid "Active"
-msgstr "Etkin"
-
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "Using config dir: %s"
@@ -5548,11 +5644,6 @@ msgstr "Ayrılıyor"
 msgid "Insufficient disk space"
 msgstr "Yetersiz disk alanı"
 
-#: src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp
-msgid "Downloaded"
-msgstr "İndirildi"
-
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
@@ -5759,10 +5850,6 @@ msgstr "Dizinler"
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "Sunucular"
-
-#: src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
-msgid "Files"
-msgstr "Dosyalar"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Security"
@@ -6626,11 +6713,6 @@ msgstr "Kullanıcılar"
 msgid "Static"
 msgstr "Statik Sunucu"
 
-#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp src/Statistics.cpp
-msgid "Version"
-msgstr "Sürüm"
-
 #: src/ServerListCtrl.cpp
 #, fuzzy
 msgid "Soft Files"
@@ -6987,14 +7069,6 @@ msgstr "Dizinde paylaşılabilir dosya bulunamadı: %s"
 msgid "User Name"
 msgstr "Kullanıcı Adı"
 
-#: src/SharedFilePeersListCtrl.cpp
-msgid "Download Speed"
-msgstr "İndirme Hızı"
-
-#: src/SharedFilePeersListCtrl.cpp
-msgid "Upload Speed"
-msgstr "Gönderme Hızı"
-
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Available Parts"
 msgstr "Erişilebilir Parçalar"
@@ -7006,10 +7080,6 @@ msgstr "Gönderme Durumu"
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Download Status"
 msgstr "İndirme Durumu"
-
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Origin"
-msgstr "Köken"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Local File Name"

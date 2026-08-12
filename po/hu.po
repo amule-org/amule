@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-11 12:27+0200\n"
+"POT-Creation-Date: 2026-08-12 21:14+0200\n"
 "PO-Revision-Date: 2026-08-11 20:51+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: Hungarian <hu@li.org>\n"
@@ -681,6 +681,10 @@ msgstr "Letöltések"
 msgid "Shared files"
 msgstr "Megosztott fájlok"
 
+#: src/amuleDlg.cpp src/ClientContextActions.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "Kliensek"
+
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Messages"
 msgstr "Üzenetek"
@@ -819,6 +823,11 @@ msgstr "Letöltések ablaka"
 #: src/amuleDlg.cpp
 msgid "Shared Files Window"
 msgstr "Megosztott fájlok ablaka"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "Clients Window"
+msgstr "Hálózatok ablaka"
 
 #: src/amuleDlg.cpp
 msgid "Messages Window"
@@ -1171,9 +1180,53 @@ msgstr "Az összes fül bezárása"
 msgid "Close other tabs"
 msgstr "A többi fül bezárása"
 
-#: src/ChatWnd.cpp src/GenericClientListCtrl.cpp
+#: src/ChatWnd.cpp src/ClientContextActions.cpp
 msgid "Add to Friends"
 msgstr "Hozzáadás a barátokhoz"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Show &Details"
+msgstr "&Részletek megjelenítése"
+
+#: src/ClientContextActions.cpp
+msgid "Remove from friends"
+msgstr "Eltávolítás a barátok közül"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Establish Friend Slot"
+msgstr "Társ Slot létesítése"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "View Files"
+msgstr "Fájlok megtekintése"
+
+#: src/ClientContextActions.cpp
+msgid "Send message"
+msgstr "Üzenet küldése"
+
+#: src/ClientContextActions.cpp
+msgid "Swap to this file"
+msgstr "Csere ehhez a fájlhoz"
+
+#: src/ClientContextActions.cpp
+msgid ""
+"You are not allowed to set more than one friend slot.\n"
+" Only one slot was assigned."
+msgstr ""
+"Nem szabad egynél több baráti csatlakozást létesíteni.\n"
+" Csak egy csatlakozás lett hozzárendelve."
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Multiple selection"
+msgstr "Többszörös kiválasztás"
+
+#: src/ClientContextActions.cpp
+msgid "Send message to user"
+msgstr "Üzenet küldése ennek a személynek"
+
+#: src/ClientContextActions.cpp
+msgid "Message to send:"
+msgstr "Küldendő üzenet:"
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1236,6 +1289,64 @@ msgstr "Szétkapcsolva"
 msgid "%.1f kB/s"
 msgstr "%.1f kB/s"
 
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Name"
+msgstr "Név:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+msgid "Software"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Version"
+msgstr "Verzió"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "IP Address"
+msgstr "IP-cím :"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Origin"
+msgstr "Eredet"
+
+#: src/ClientHistoryListCtrl.cpp
+msgid "First seen"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Last seen"
+msgstr "Utoljára fogadott"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Sessions"
+msgstr "Verzió"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Uploaded"
+msgstr "Feltöltve"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Downloaded"
+msgstr "Összes letöltés: "
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Ratio"
+msgstr "Értékelés"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Online now"
+msgstr "Online aláírás"
+
 #: src/ClientRef.cpp
 msgid "Not complete"
 msgstr "Befejezetlen"
@@ -1255,6 +1366,47 @@ msgstr "N/A"
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr "Nem elérhető"
+
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+msgid "Files"
+msgstr "Fájlok"
+
+#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+msgid "Upload Speed"
+msgstr "Feltöltési sebesség"
+
+#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+msgid "Download Speed"
+msgstr "Letöltési sebesség"
+
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp
+msgid "Uploaded"
+msgstr "Feltöltve"
+
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Downloaded"
+msgstr "Letöltve"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Downloading from"
+msgstr "Letöltés alatt"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Uploading to"
+msgstr "Feltöltés alatt"
+
+#: src/ClientsWnd.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
+msgid "Active"
+msgstr "Aktív"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Known"
+msgstr "Ismeretlen"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -2545,10 +2697,6 @@ msgstr "KRITIKUS - nincsen kliens a StartChatSession-en"
 msgid "Friends"
 msgstr "Barátok"
 
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Show &Details"
-msgstr "&Részletek megjelenítése"
-
 #: src/FriendListCtrl.cpp
 msgid "Add a friend"
 msgstr "Barát hozzáadása"
@@ -2560,14 +2708,6 @@ msgstr "Barát törlése"
 #: src/FriendListCtrl.cpp
 msgid "Send &Message"
 msgstr "&Üzenet küldése"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "View Files"
-msgstr "Fájlok megtekintése"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Establish Friend Slot"
-msgstr "Társ Slot létesítése"
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"
@@ -2584,42 +2724,6 @@ msgid ""
 msgstr ""
 "Nem lehet egynél több barát slot-ot létrehozni.\n"
 "Csak egy slot lett hozzárendelve."
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Multiple selection"
-msgstr "Többszörös kiválasztás"
-
-#: src/GenericClientListCtrl.cpp
-msgid ""
-"You are not allowed to set more than one friend slot.\n"
-" Only one slot was assigned."
-msgstr ""
-"Nem szabad egynél több baráti csatlakozást létesíteni.\n"
-" Csak egy csatlakozás lett hozzárendelve."
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message to user"
-msgstr "Üzenet küldése ennek a személynek"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Message to send:"
-msgstr "Küldendő üzenet:"
-
-#: src/GenericClientListCtrl.cpp src/Statistics.cpp
-msgid "Clients"
-msgstr "Kliensek"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Remove from friends"
-msgstr "Eltávolítás a barátok közül"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message"
-msgstr "Üzenet küldése"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Swap to this file"
-msgstr "Csere ehhez a fájlhoz"
 
 #: src/GenericClientListCtrl.cpp
 #, c-format
@@ -2918,10 +3022,6 @@ msgstr "Fájl méret"
 #: src/KnownFile.cpp
 msgid "Share ratio"
 msgstr "Megosztási arány"
-
-#: src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Uploaded"
-msgstr "Feltöltve"
 
 #: src/KnownFile.cpp src/muuli_wdr.cpp
 msgid "Requested"
@@ -5297,10 +5397,6 @@ msgstr "Archívált"
 msgid "Text"
 msgstr "Szöveg"
 
-#: src/OtherFunctions.cpp src/TransferWnd.cpp
-msgid "Active"
-msgstr "Aktív"
-
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "Using config dir: %s"
@@ -5552,11 +5648,6 @@ msgstr "Helyfoglalás"
 msgid "Insufficient disk space"
 msgstr "Elégtelen lemezterület"
 
-#: src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp
-msgid "Downloaded"
-msgstr "Letöltve"
-
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
@@ -5764,10 +5855,6 @@ msgstr "Mappák"
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "Kiszolgálók"
-
-#: src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
-msgid "Files"
-msgstr "Fájlok"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Security"
@@ -6634,11 +6721,6 @@ msgstr "Felhasználók"
 msgid "Static"
 msgstr "Állandó"
 
-#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp src/Statistics.cpp
-msgid "Version"
-msgstr "Verzió"
-
 #: src/ServerListCtrl.cpp
 #, fuzzy
 msgid "Soft Files"
@@ -6993,14 +7075,6 @@ msgstr "Nincsen megosztott fájl ebben a könyvtárban: %s"
 msgid "User Name"
 msgstr "Felhasználói név"
 
-#: src/SharedFilePeersListCtrl.cpp
-msgid "Download Speed"
-msgstr "Letöltési sebesség"
-
-#: src/SharedFilePeersListCtrl.cpp
-msgid "Upload Speed"
-msgstr "Feltöltési sebesség"
-
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Available Parts"
 msgstr "Elérhető részek"
@@ -7012,10 +7086,6 @@ msgstr "Feltöltési állapot"
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Download Status"
 msgstr "Letöltési állapot"
-
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Origin"
-msgstr "Eredet"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Local File Name"

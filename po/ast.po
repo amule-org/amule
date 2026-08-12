@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-11 12:27+0200\n"
+"POT-Creation-Date: 2026-08-12 21:14+0200\n"
 "PO-Revision-Date: 2026-08-11 20:44+0000\n"
 "Last-Translator: astur <malditoastur@gmail.com>\n"
 "Language-Team: Language ast <malditoastur@gmail.com>\n"
@@ -680,6 +680,10 @@ msgstr "Descargues"
 msgid "Shared files"
 msgstr "Ficheros compartíos"
 
+#: src/amuleDlg.cpp src/ClientContextActions.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "Veceros"
+
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Messages"
 msgstr "Mensaxes"
@@ -820,6 +824,11 @@ msgstr "Descargando"
 #: src/amuleDlg.cpp
 msgid "Shared Files Window"
 msgstr "Ventana de ficheros compartíos"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "Clients Window"
+msgstr "Ventana de redes"
 
 #: src/amuleDlg.cpp
 msgid "Messages Window"
@@ -1173,9 +1182,54 @@ msgstr "Zarrar toles llingüetes"
 msgid "Close other tabs"
 msgstr "Zarrar les otres llingüetes"
 
-#: src/ChatWnd.cpp src/GenericClientListCtrl.cpp
+#: src/ChatWnd.cpp src/ClientContextActions.cpp
 msgid "Add to Friends"
 msgstr "Amestar a collacios"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Show &Details"
+msgstr "Amosar &Detalles"
+
+#: src/ClientContextActions.cpp
+msgid "Remove from friends"
+msgstr "Desaniciar de collacios"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Establish Friend Slot"
+msgstr "Afitar puestu reserváu a un collaciu"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "View Files"
+msgstr "Ver ficheros"
+
+#: src/ClientContextActions.cpp
+msgid "Send message"
+msgstr "Unviar mensax"
+
+#: src/ClientContextActions.cpp
+msgid "Swap to this file"
+msgstr "Intercambia esti ficheru"
+
+#: src/ClientContextActions.cpp
+#, fuzzy
+msgid ""
+"You are not allowed to set more than one friend slot.\n"
+" Only one slot was assigned."
+msgstr ""
+"Nun se-y permite asignar más d'ún puestu reserváu.\n"
+" Namái s'asignó un puestu reserváu."
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Multiple selection"
+msgstr "Seleición múltiple"
+
+#: src/ClientContextActions.cpp
+msgid "Send message to user"
+msgstr "Unviar mensax al usuariu"
+
+#: src/ClientContextActions.cpp
+msgid "Message to send:"
+msgstr "Mensax a unviar:"
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1240,6 +1294,64 @@ msgstr "Desconeutáu"
 msgid "%.1f kB/s"
 msgstr "%.1f kB/s"
 
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Name"
+msgstr "Nome:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+msgid "Software"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Version"
+msgstr "Versión"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "IP Address"
+msgstr "Señes IP :"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Origin"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+msgid "First seen"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Last seen"
+msgstr "Cabera receición"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Sessions"
+msgstr "Versión"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Uploaded"
+msgstr "Xubío"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Downloaded"
+msgstr "Total Descargáu: "
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Ratio"
+msgstr "Valoración"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Online now"
+msgstr "Robla online"
+
 #: src/ClientRef.cpp
 msgid "Not complete"
 msgstr "Non completáu"
@@ -1259,6 +1371,49 @@ msgstr "N/A"
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr "Non disponible"
+
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+msgid "Files"
+msgstr "Ficheros"
+
+#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#, fuzzy
+msgid "Upload Speed"
+msgstr "Velocidá de xuba"
+
+#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#, fuzzy
+msgid "Download Speed"
+msgstr "Velocidá de descarga"
+
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp
+msgid "Uploaded"
+msgstr "Xubío"
+
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Downloaded"
+msgstr "Descargáu"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Downloading from"
+msgstr "Descargando"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Uploading to"
+msgstr "Xuba"
+
+#: src/ClientsWnd.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
+msgid "Active"
+msgstr "Activu"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Known"
+msgstr "Desconocíu"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -2558,10 +2713,6 @@ msgstr "CRITICU - ensin veceru en sesión charra d'aniciu"
 msgid "Friends"
 msgstr "Collacios"
 
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Show &Details"
-msgstr "Amosar &Detalles"
-
 #: src/FriendListCtrl.cpp
 msgid "Add a friend"
 msgstr "Amestar un collaciu"
@@ -2573,14 +2724,6 @@ msgstr "Desaniciar collaciu"
 #: src/FriendListCtrl.cpp
 msgid "Send &Message"
 msgstr "Unviar &Mensax"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "View Files"
-msgstr "Ver ficheros"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Establish Friend Slot"
-msgstr "Afitar puestu reserváu a un collaciu"
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"
@@ -2597,43 +2740,6 @@ msgid ""
 msgstr ""
 "Nun se-y permite asignar más d'ún puestu reserváu.\n"
 " Namái s'asignó un puestu reserváu."
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Multiple selection"
-msgstr "Seleición múltiple"
-
-#: src/GenericClientListCtrl.cpp
-#, fuzzy
-msgid ""
-"You are not allowed to set more than one friend slot.\n"
-" Only one slot was assigned."
-msgstr ""
-"Nun se-y permite asignar más d'ún puestu reserváu.\n"
-" Namái s'asignó un puestu reserváu."
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message to user"
-msgstr "Unviar mensax al usuariu"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Message to send:"
-msgstr "Mensax a unviar:"
-
-#: src/GenericClientListCtrl.cpp src/Statistics.cpp
-msgid "Clients"
-msgstr "Veceros"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Remove from friends"
-msgstr "Desaniciar de collacios"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message"
-msgstr "Unviar mensax"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Swap to this file"
-msgstr "Intercambia esti ficheru"
 
 #: src/GenericClientListCtrl.cpp
 #, fuzzy, c-format
@@ -2941,10 +3047,6 @@ msgstr "Tamañu ficheru"
 #: src/KnownFile.cpp
 msgid "Share ratio"
 msgstr "Media compartío"
-
-#: src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Uploaded"
-msgstr "Xubío"
 
 #: src/KnownFile.cpp src/muuli_wdr.cpp
 msgid "Requested"
@@ -5335,10 +5437,6 @@ msgstr "Ficheru"
 msgid "Text"
 msgstr "Testu"
 
-#: src/OtherFunctions.cpp src/TransferWnd.cpp
-msgid "Active"
-msgstr "Activu"
-
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "Using config dir: %s"
@@ -5592,11 +5690,6 @@ msgstr "Asignando"
 msgid "Insufficient disk space"
 msgstr "Espaciu en discu insuficiente"
 
-#: src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp
-msgid "Downloaded"
-msgstr "Descargáu"
-
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
@@ -5807,10 +5900,6 @@ msgstr "Direutorios"
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "Sirvidores"
-
-#: src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
-msgid "Files"
-msgstr "Ficheros"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Security"
@@ -6690,11 +6779,6 @@ msgstr "Usuarios"
 msgid "Static"
 msgstr "Sirvidor fixu"
 
-#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp src/Statistics.cpp
-msgid "Version"
-msgstr "Versión"
-
 #: src/ServerListCtrl.cpp
 #, fuzzy
 msgid "Soft Files"
@@ -7056,16 +7140,6 @@ msgstr "Ensin ficheros que compartir en direutoriu: %s"
 msgid "User Name"
 msgstr "Nome usuariu:"
 
-#: src/SharedFilePeersListCtrl.cpp
-#, fuzzy
-msgid "Download Speed"
-msgstr "Velocidá de descarga"
-
-#: src/SharedFilePeersListCtrl.cpp
-#, fuzzy
-msgid "Upload Speed"
-msgstr "Velocidá de xuba"
-
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 #, fuzzy
 msgid "Available Parts"
@@ -7079,10 +7153,6 @@ msgstr "Estáu de la xuba"
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Download Status"
 msgstr "Estáu de la descarga"
-
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Origin"
-msgstr ""
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 #, fuzzy

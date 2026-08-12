@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-11 12:27+0200\n"
+"POT-Creation-Date: 2026-08-12 21:14+0200\n"
 "PO-Revision-Date: 2026-08-11 20:58+0000\n"
 "Last-Translator: raffe <raffe@localhost.se>\n"
 "Language-Team: Swedish <tp-sv@listor.tp-sv.se>\n"
@@ -679,6 +679,10 @@ msgstr "Hämtningar"
 msgid "Shared files"
 msgstr "Delade filer"
 
+#: src/amuleDlg.cpp src/ClientContextActions.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "Klienter"
+
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Messages"
 msgstr "Meddelanden"
@@ -818,6 +822,11 @@ msgstr "Hämtningsfönster"
 #: src/amuleDlg.cpp
 msgid "Shared Files Window"
 msgstr "Delade filer-fönster"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "Clients Window"
+msgstr "Nätverksfönster"
 
 #: src/amuleDlg.cpp
 msgid "Messages Window"
@@ -1170,9 +1179,54 @@ msgstr "Stäng alla flikar"
 msgid "Close other tabs"
 msgstr "Stäng andra flikar"
 
-#: src/ChatWnd.cpp src/GenericClientListCtrl.cpp
+#: src/ChatWnd.cpp src/ClientContextActions.cpp
 msgid "Add to Friends"
 msgstr "Lägg till i vänner"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Show &Details"
+msgstr "Visa &Details"
+
+#: src/ClientContextActions.cpp
+msgid "Remove from friends"
+msgstr "Ta bort från vänner"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Establish Friend Slot"
+msgstr "Skapa vän-spår"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "View Files"
+msgstr "Visa filer"
+
+#: src/ClientContextActions.cpp
+msgid "Send message"
+msgstr "Skicka meddelande"
+
+#: src/ClientContextActions.cpp
+msgid "Swap to this file"
+msgstr "Växla till den här filen"
+
+#: src/ClientContextActions.cpp
+#, fuzzy
+msgid ""
+"You are not allowed to set more than one friend slot.\n"
+" Only one slot was assigned."
+msgstr ""
+"Du kan endast ha ett vän-spår.\n"
+" Endast ett spår tilldelades. "
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Multiple selection"
+msgstr "Flerval"
+
+#: src/ClientContextActions.cpp
+msgid "Send message to user"
+msgstr "Skicka meddelande till användare"
+
+#: src/ClientContextActions.cpp
+msgid "Message to send:"
+msgstr "Meddelande att skicka:"
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1237,6 +1291,64 @@ msgstr "Frånkopplad"
 msgid "%.1f kB/s"
 msgstr "%.1f kB/s"
 
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Name"
+msgstr "Namn:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+msgid "Software"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Version"
+msgstr "Version"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "IP Address"
+msgstr "IP-adress :"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Origin"
+msgstr "Ursprung"
+
+#: src/ClientHistoryListCtrl.cpp
+msgid "First seen"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Last seen"
+msgstr "Senast mottagen"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Sessions"
+msgstr "Version"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Uploaded"
+msgstr "Uppladdad"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Downloaded"
+msgstr "Totalt Laddat ner: "
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Ratio"
+msgstr "Rankning"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Online now"
+msgstr "Onlinesignatur"
+
 #: src/ClientRef.cpp
 msgid "Not complete"
 msgstr "Inte färdig"
@@ -1256,6 +1368,47 @@ msgstr "N/A"
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr "Inte tillgänglig"
+
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+msgid "Files"
+msgstr "Filer"
+
+#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+msgid "Upload Speed"
+msgstr "Uppladdningshastighet"
+
+#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+msgid "Download Speed"
+msgstr "Hämtningshastighet"
+
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp
+msgid "Uploaded"
+msgstr "Uppladdad"
+
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Downloaded"
+msgstr "Nedladdad"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Downloading from"
+msgstr "Hämtar"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Uploading to"
+msgstr "Skickar"
+
+#: src/ClientsWnd.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
+msgid "Active"
+msgstr "Aktiv"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Known"
+msgstr "Okänd"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -2552,10 +2705,6 @@ msgstr "KRITISKT - ingen klient för StartChatSession"
 msgid "Friends"
 msgstr "Vänner"
 
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Show &Details"
-msgstr "Visa &Details"
-
 #: src/FriendListCtrl.cpp
 msgid "Add a friend"
 msgstr "Lägg till en vän"
@@ -2567,14 +2716,6 @@ msgstr "Ta bort vän"
 #: src/FriendListCtrl.cpp
 msgid "Send &Message"
 msgstr "Skicka &Message"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "View Files"
-msgstr "Visa filer"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Establish Friend Slot"
-msgstr "Skapa vän-spår"
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"
@@ -2591,43 +2732,6 @@ msgid ""
 msgstr ""
 "Du kan endast ha ett vän-spår.\n"
 " Endast ett spår tilldelades. "
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Multiple selection"
-msgstr "Flerval"
-
-#: src/GenericClientListCtrl.cpp
-#, fuzzy
-msgid ""
-"You are not allowed to set more than one friend slot.\n"
-" Only one slot was assigned."
-msgstr ""
-"Du kan endast ha ett vän-spår.\n"
-" Endast ett spår tilldelades. "
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message to user"
-msgstr "Skicka meddelande till användare"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Message to send:"
-msgstr "Meddelande att skicka:"
-
-#: src/GenericClientListCtrl.cpp src/Statistics.cpp
-msgid "Clients"
-msgstr "Klienter"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Remove from friends"
-msgstr "Ta bort från vänner"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message"
-msgstr "Skicka meddelande"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Swap to this file"
-msgstr "Växla till den här filen"
 
 #: src/GenericClientListCtrl.cpp
 #, c-format
@@ -2931,10 +3035,6 @@ msgstr "Filstorlek"
 #: src/KnownFile.cpp
 msgid "Share ratio"
 msgstr "Dela-förhållande"
-
-#: src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Uploaded"
-msgstr "Uppladdad"
 
 #: src/KnownFile.cpp src/muuli_wdr.cpp
 msgid "Requested"
@@ -5312,10 +5412,6 @@ msgstr "Arkiv"
 msgid "Text"
 msgstr "Text"
 
-#: src/OtherFunctions.cpp src/TransferWnd.cpp
-msgid "Active"
-msgstr "Aktiv"
-
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "Using config dir: %s"
@@ -5568,11 +5664,6 @@ msgstr "Allokera"
 msgid "Insufficient disk space"
 msgstr "Otillräckligt diskutrymme"
 
-#: src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp
-msgid "Downloaded"
-msgstr "Nedladdad"
-
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
@@ -5780,10 +5871,6 @@ msgstr "Kataloger"
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "Servrar"
-
-#: src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
-msgid "Files"
-msgstr "Filer"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Security"
@@ -6661,11 +6748,6 @@ msgstr "Användare"
 msgid "Static"
 msgstr "Statisk"
 
-#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp src/Statistics.cpp
-msgid "Version"
-msgstr "Version"
-
 #: src/ServerListCtrl.cpp
 #, fuzzy
 msgid "Soft Files"
@@ -7024,14 +7106,6 @@ msgstr "Inga delbara filer hittade i mappen: %s"
 msgid "User Name"
 msgstr "Användarnamn"
 
-#: src/SharedFilePeersListCtrl.cpp
-msgid "Download Speed"
-msgstr "Hämtningshastighet"
-
-#: src/SharedFilePeersListCtrl.cpp
-msgid "Upload Speed"
-msgstr "Uppladdningshastighet"
-
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Available Parts"
 msgstr "Tillgängliga delar"
@@ -7043,10 +7117,6 @@ msgstr "Uppladdningsstatus"
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Download Status"
 msgstr "Hämtningsstatus"
-
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Origin"
-msgstr "Ursprung"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Local File Name"

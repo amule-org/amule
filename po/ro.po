@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-11 12:27+0200\n"
+"POT-Creation-Date: 2026-08-12 21:14+0200\n"
 "PO-Revision-Date: 2026-08-11 20:56+0000\n"
 "Last-Translator: Angelescu Constantin <titus0818@yahoo.com>\n"
 "Language-Team: English <kde-i18n-doc@kde.org>\n"
@@ -680,6 +680,10 @@ msgstr "Descărcări"
 msgid "Shared files"
 msgstr "Fișiere partajate"
 
+#: src/amuleDlg.cpp src/ClientContextActions.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "Clienți"
+
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Messages"
 msgstr "Mesaje"
@@ -819,6 +823,11 @@ msgstr "Fereastra descărcărilor"
 #: src/amuleDlg.cpp
 msgid "Shared Files Window"
 msgstr "Fereastra fișierelor partajate"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "Clients Window"
+msgstr "Fereastra rețelelor"
 
 #: src/amuleDlg.cpp
 msgid "Messages Window"
@@ -1173,9 +1182,54 @@ msgstr "Închide toate ferestrele"
 msgid "Close other tabs"
 msgstr "Închide alte ferestre"
 
-#: src/ChatWnd.cpp src/GenericClientListCtrl.cpp
+#: src/ChatWnd.cpp src/ClientContextActions.cpp
 msgid "Add to Friends"
 msgstr "Adaugă la prieteni"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Show &Details"
+msgstr "Arată &Detaliile"
+
+#: src/ClientContextActions.cpp
+msgid "Remove from friends"
+msgstr "Elimină dintre prieteni"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Establish Friend Slot"
+msgstr "Stabilește slot prieten"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "View Files"
+msgstr "Vizualizare fișiere"
+
+#: src/ClientContextActions.cpp
+msgid "Send message"
+msgstr "Trimite mesaj"
+
+#: src/ClientContextActions.cpp
+msgid "Swap to this file"
+msgstr "Schimbă la acest fișier"
+
+#: src/ClientContextActions.cpp
+#, fuzzy
+msgid ""
+"You are not allowed to set more than one friend slot.\n"
+" Only one slot was assigned."
+msgstr ""
+"Nu vă este permis să configurați mai mult de un slot prieten.\n"
+"A fost alocat numai un singur slot."
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Multiple selection"
+msgstr "Selecții multiple"
+
+#: src/ClientContextActions.cpp
+msgid "Send message to user"
+msgstr "Trimite mesaj utilizatorului"
+
+#: src/ClientContextActions.cpp
+msgid "Message to send:"
+msgstr "Mesaj de trimis:"
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1242,6 +1296,64 @@ msgstr "Deconectat"
 msgid "%.1f kB/s"
 msgstr "%.1f kB/s"
 
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Name"
+msgstr "Name:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+msgid "Software"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Version"
+msgstr "Versiune"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "IP Address"
+msgstr "Adresă IP :"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Origin"
+msgstr "Origine"
+
+#: src/ClientHistoryListCtrl.cpp
+msgid "First seen"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Last seen"
+msgstr "Ultima recepție"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Sessions"
+msgstr "Versiune"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Uploaded"
+msgstr "Încărcat"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Downloaded"
+msgstr "Descărcat în total:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Ratio"
+msgstr "Evaluare"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Online now"
+msgstr "Semnătură online"
+
 #: src/ClientRef.cpp
 msgid "Not complete"
 msgstr "Nu este finalizat"
@@ -1261,6 +1373,47 @@ msgstr "NU SE APLICĂ"
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr "Indisponibilă"
+
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+msgid "Files"
+msgstr "Fișiere"
+
+#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+msgid "Upload Speed"
+msgstr "Viteză încărcare"
+
+#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+msgid "Download Speed"
+msgstr "Viteză descărcare"
+
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp
+msgid "Uploaded"
+msgstr "Încărcat"
+
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Downloaded"
+msgstr "Descărcat"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Downloading from"
+msgstr "Se descarcă"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Uploading to"
+msgstr "Se încarcă"
+
+#: src/ClientsWnd.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
+msgid "Active"
+msgstr "Activă"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Known"
+msgstr "Necunoscut"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -2558,10 +2711,6 @@ msgstr "CRITIC - niciun client în StartChatSession"
 msgid "Friends"
 msgstr "Prieteni"
 
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Show &Details"
-msgstr "Arată &Detaliile"
-
 #: src/FriendListCtrl.cpp
 msgid "Add a friend"
 msgstr "Adaugă un prieten"
@@ -2573,14 +2722,6 @@ msgstr "Elimină prieten"
 #: src/FriendListCtrl.cpp
 msgid "Send &Message"
 msgstr "Trimite &Mesaj"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "View Files"
-msgstr "Vizualizare fișiere"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Establish Friend Slot"
-msgstr "Stabilește slot prieten"
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"
@@ -2597,43 +2738,6 @@ msgid ""
 msgstr ""
 "Nu vă este permis să configurați mai mult de un slot prieten.\n"
 "A fost alocat numai un singur slot."
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Multiple selection"
-msgstr "Selecții multiple"
-
-#: src/GenericClientListCtrl.cpp
-#, fuzzy
-msgid ""
-"You are not allowed to set more than one friend slot.\n"
-" Only one slot was assigned."
-msgstr ""
-"Nu vă este permis să configurați mai mult de un slot prieten.\n"
-"A fost alocat numai un singur slot."
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message to user"
-msgstr "Trimite mesaj utilizatorului"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Message to send:"
-msgstr "Mesaj de trimis:"
-
-#: src/GenericClientListCtrl.cpp src/Statistics.cpp
-msgid "Clients"
-msgstr "Clienți"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Remove from friends"
-msgstr "Elimină dintre prieteni"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message"
-msgstr "Trimite mesaj"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Swap to this file"
-msgstr "Schimbă la acest fișier"
 
 #: src/GenericClientListCtrl.cpp
 #, c-format
@@ -2942,10 +3046,6 @@ msgstr "Dimensiune fișier"
 #: src/KnownFile.cpp
 msgid "Share ratio"
 msgstr "Rată de partajare"
-
-#: src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Uploaded"
-msgstr "Încărcat"
 
 #: src/KnownFile.cpp src/muuli_wdr.cpp
 msgid "Requested"
@@ -5325,10 +5425,6 @@ msgstr "Arhivă"
 msgid "Text"
 msgstr "Text"
 
-#: src/OtherFunctions.cpp src/TransferWnd.cpp
-msgid "Active"
-msgstr "Activă"
-
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "Using config dir: %s"
@@ -5583,11 +5679,6 @@ msgstr "Se alocă"
 msgid "Insufficient disk space"
 msgstr "Spațiu pe disc insuficient"
 
-#: src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp
-msgid "Downloaded"
-msgstr "Descărcat"
-
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
@@ -5795,10 +5886,6 @@ msgstr "Directoare"
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "Servere"
-
-#: src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
-msgid "Files"
-msgstr "Fișiere"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Security"
@@ -6684,11 +6771,6 @@ msgstr "Utilizatori"
 msgid "Static"
 msgstr "Static"
 
-#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp src/Statistics.cpp
-msgid "Version"
-msgstr "Versiune"
-
 #: src/ServerListCtrl.cpp
 #, fuzzy
 msgid "Soft Files"
@@ -7052,14 +7134,6 @@ msgstr "Nu au fost găsite fișiere partajabile în directorul: %s"
 msgid "User Name"
 msgstr "Nume utilizator"
 
-#: src/SharedFilePeersListCtrl.cpp
-msgid "Download Speed"
-msgstr "Viteză descărcare"
-
-#: src/SharedFilePeersListCtrl.cpp
-msgid "Upload Speed"
-msgstr "Viteză încărcare"
-
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Available Parts"
 msgstr "Părți disponibile"
@@ -7071,10 +7145,6 @@ msgstr "Stare încărcare"
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Download Status"
 msgstr "Stare descărcare"
-
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Origin"
-msgstr "Origine"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Local File Name"

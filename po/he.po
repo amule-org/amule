@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-11 12:27+0200\n"
+"POT-Creation-Date: 2026-08-12 21:14+0200\n"
 "PO-Revision-Date: 2026-08-11 20:50+0000\n"
 "Last-Translator: Peace Kramer <kpeace1@gmail.com>\n"
 "Language-Team: Hebrew\n"
@@ -667,6 +667,10 @@ msgstr "הורדות"
 msgid "Shared files"
 msgstr ""
 
+#: src/amuleDlg.cpp src/ClientContextActions.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "לקוחות"
+
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Messages"
 msgstr "הודעות"
@@ -807,6 +811,11 @@ msgstr "מוריד מהרשת"
 #: src/amuleDlg.cpp
 msgid "Shared Files Window"
 msgstr "חלון הקבצים המשותפים"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "Clients Window"
+msgstr "חלון הרשתות"
 
 #: src/amuleDlg.cpp
 msgid "Messages Window"
@@ -1163,9 +1172,54 @@ msgstr ""
 msgid "Close other tabs"
 msgstr ""
 
-#: src/ChatWnd.cpp src/GenericClientListCtrl.cpp
+#: src/ChatWnd.cpp src/ClientContextActions.cpp
 msgid "Add to Friends"
 msgstr "הוסף לחברים"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Show &Details"
+msgstr "הצג &פרטים"
+
+#: src/ClientContextActions.cpp
+msgid "Remove from friends"
+msgstr "הסר מחברים"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Establish Friend Slot"
+msgstr "הוקמה משבצת \"חבר\""
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "View Files"
+msgstr "הצג קבצים"
+
+#: src/ClientContextActions.cpp
+msgid "Send message"
+msgstr "שלך הודעה"
+
+#: src/ClientContextActions.cpp
+msgid "Swap to this file"
+msgstr "החלף לקובץ זה"
+
+#: src/ClientContextActions.cpp
+#, fuzzy
+msgid ""
+"You are not allowed to set more than one friend slot.\n"
+" Only one slot was assigned."
+msgstr ""
+"אתה לא רשאי להגידר יותר ממשצת \"חבר\" אחת.\n"
+"רק משבצת אחת הוגדרה."
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Multiple selection"
+msgstr "בחירה מרובה."
+
+#: src/ClientContextActions.cpp
+msgid "Send message to user"
+msgstr "שלח הודעה למשתמש"
+
+#: src/ClientContextActions.cpp
+msgid "Message to send:"
+msgstr "הודה שתשלח:"
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1230,6 +1284,64 @@ msgstr "מנותק"
 msgid "%.1f kB/s"
 msgstr ""
 
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Name"
+msgstr "שם:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+msgid "Software"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Version"
+msgstr "גירסא"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "IP Address"
+msgstr "כתובת IP :"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Origin"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+msgid "First seen"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Last seen"
+msgstr "פעם אחרונה שנתקבל"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Sessions"
+msgstr "גירסא"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Uploaded"
+msgstr "סכום כולל של הורדות: "
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Downloaded"
+msgstr "סכום כולל של הורדות: "
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Ratio"
+msgstr "דרוג"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Online now"
+msgstr "חתימה מקוונת"
+
 #: src/ClientRef.cpp
 msgid "Not complete"
 msgstr ""
@@ -1249,6 +1361,49 @@ msgstr "ל\"ת"
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr ""
+
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+msgid "Files"
+msgstr "קבצים"
+
+#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#, fuzzy
+msgid "Upload Speed"
+msgstr "מהירות-העלאה"
+
+#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#, fuzzy
+msgid "Download Speed"
+msgstr "מהירות הורדה"
+
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp
+msgid "Uploaded"
+msgstr ""
+
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Downloaded"
+msgstr ""
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Downloading from"
+msgstr "מוריד מהרשת"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Uploading to"
+msgstr "ההעלאות"
+
+#: src/ClientsWnd.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
+msgid "Active"
+msgstr "פןעל"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Known"
+msgstr "לא ידוע"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -2522,10 +2677,6 @@ msgstr ""
 msgid "Friends"
 msgstr "חברים"
 
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Show &Details"
-msgstr "הצג &פרטים"
-
 #: src/FriendListCtrl.cpp
 msgid "Add a friend"
 msgstr "הוסף חבר"
@@ -2537,14 +2688,6 @@ msgstr "הסר חבר"
 #: src/FriendListCtrl.cpp
 msgid "Send &Message"
 msgstr "שלך &הודעה"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "View Files"
-msgstr "הצג קבצים"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Establish Friend Slot"
-msgstr "הוקמה משבצת \"חבר\""
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"
@@ -2561,43 +2704,6 @@ msgid ""
 msgstr ""
 "אתה לא רשאי להגידר יותר ממשצת \"חבר\" אחת.\n"
 "רק משבצת אחת הוגדרה."
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Multiple selection"
-msgstr "בחירה מרובה."
-
-#: src/GenericClientListCtrl.cpp
-#, fuzzy
-msgid ""
-"You are not allowed to set more than one friend slot.\n"
-" Only one slot was assigned."
-msgstr ""
-"אתה לא רשאי להגידר יותר ממשצת \"חבר\" אחת.\n"
-"רק משבצת אחת הוגדרה."
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message to user"
-msgstr "שלח הודעה למשתמש"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Message to send:"
-msgstr "הודה שתשלח:"
-
-#: src/GenericClientListCtrl.cpp src/Statistics.cpp
-msgid "Clients"
-msgstr "לקוחות"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Remove from friends"
-msgstr "הסר מחברים"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message"
-msgstr "שלך הודעה"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Swap to this file"
-msgstr "החלף לקובץ זה"
 
 #: src/GenericClientListCtrl.cpp
 #, fuzzy, c-format
@@ -2904,10 +3010,6 @@ msgstr ""
 
 #: src/KnownFile.cpp
 msgid "Share ratio"
-msgstr ""
-
-#: src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Uploaded"
 msgstr ""
 
 #: src/KnownFile.cpp src/muuli_wdr.cpp
@@ -5284,10 +5386,6 @@ msgstr "ארכיב"
 msgid "Text"
 msgstr "טקסט"
 
-#: src/OtherFunctions.cpp src/TransferWnd.cpp
-msgid "Active"
-msgstr "פןעל"
-
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "Using config dir: %s"
@@ -5542,11 +5640,6 @@ msgstr ""
 msgid "Insufficient disk space"
 msgstr ""
 
-#: src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp
-msgid "Downloaded"
-msgstr ""
-
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
@@ -5756,10 +5849,6 @@ msgstr "מלונים"
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "שרתים"
-
-#: src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
-msgid "Files"
-msgstr "קבצים"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Security"
@@ -6628,11 +6717,6 @@ msgstr "משתמשים"
 msgid "Static"
 msgstr "קבוע"
 
-#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp src/Statistics.cpp
-msgid "Version"
-msgstr "גירסא"
-
 #: src/ServerListCtrl.cpp
 #, fuzzy
 msgid "Soft Files"
@@ -6998,16 +7082,6 @@ msgstr ""
 msgid "User Name"
 msgstr "שם משתמש"
 
-#: src/SharedFilePeersListCtrl.cpp
-#, fuzzy
-msgid "Download Speed"
-msgstr "מהירות הורדה"
-
-#: src/SharedFilePeersListCtrl.cpp
-#, fuzzy
-msgid "Upload Speed"
-msgstr "מהירות-העלאה"
-
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 #, fuzzy
 msgid "Available Parts"
@@ -7022,10 +7096,6 @@ msgstr "ההעלאות"
 #, fuzzy
 msgid "Download Status"
 msgstr "הורדות"
-
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Origin"
-msgstr ""
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 #, fuzzy

@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-11 12:27+0200\n"
+"POT-Creation-Date: 2026-08-12 21:14+0200\n"
 "PO-Revision-Date: 2026-08-11 20:49+0000\n"
 "Last-Translator: Tapio Rantala <tapio.rantala@iki.fi>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -681,6 +681,10 @@ msgstr "Lataukset"
 msgid "Shared files"
 msgstr "Jaetut tiedostot"
 
+#: src/amuleDlg.cpp src/ClientContextActions.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "Asiakkaat"
+
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Messages"
 msgstr "Viestit"
@@ -820,6 +824,11 @@ msgstr "Latausten ikkuna"
 #: src/amuleDlg.cpp
 msgid "Shared Files Window"
 msgstr "Jaettujen tiedostojen ikkuna"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "Clients Window"
+msgstr "Verkkoikkuna"
 
 #: src/amuleDlg.cpp
 msgid "Messages Window"
@@ -1172,9 +1181,54 @@ msgstr "Sulje kaikki välilehdet"
 msgid "Close other tabs"
 msgstr "Sulje muut välilehdet"
 
-#: src/ChatWnd.cpp src/GenericClientListCtrl.cpp
+#: src/ChatWnd.cpp src/ClientContextActions.cpp
 msgid "Add to Friends"
 msgstr "Lisää kavereihin"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Show &Details"
+msgstr "Näytä tie&dot"
+
+#: src/ClientContextActions.cpp
+msgid "Remove from friends"
+msgstr "Poista ystävistä"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Establish Friend Slot"
+msgstr "Vapauta kaveripaikka"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "View Files"
+msgstr "Näytä tiedostot"
+
+#: src/ClientContextActions.cpp
+msgid "Send message"
+msgstr "Lähetä viesti"
+
+#: src/ClientContextActions.cpp
+msgid "Swap to this file"
+msgstr "Vaihda tähän tiedostoon"
+
+#: src/ClientContextActions.cpp
+#, fuzzy
+msgid ""
+"You are not allowed to set more than one friend slot.\n"
+" Only one slot was assigned."
+msgstr ""
+"Et voi asettaa enempää kuin yhden kaveripaikan.\n"
+" Asetettiin yksi paikka."
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Multiple selection"
+msgstr "Monivalinta"
+
+#: src/ClientContextActions.cpp
+msgid "Send message to user"
+msgstr "Lähetä viesti käyttäjälle"
+
+#: src/ClientContextActions.cpp
+msgid "Message to send:"
+msgstr "Lähetettävä viesti:"
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1239,6 +1293,64 @@ msgstr "Yhteys katkaistu"
 msgid "%.1f kB/s"
 msgstr "%.1f KB/s"
 
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Name"
+msgstr "Nimi:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+msgid "Software"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Version"
+msgstr "Versio"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "IP Address"
+msgstr "IP-osoite :"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Origin"
+msgstr "Alkuperä"
+
+#: src/ClientHistoryListCtrl.cpp
+msgid "First seen"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Last seen"
+msgstr "Viimeisin vastaanotto"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Sessions"
+msgstr "Versio"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Uploaded"
+msgstr "Lähetetty"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Downloaded"
+msgstr "Yhteensä Ladattu: "
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Ratio"
+msgstr "Luokitus"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Online now"
+msgstr "Online-Signeeraus"
+
 #: src/ClientRef.cpp
 msgid "Not complete"
 msgstr "Ei vielä valmis"
@@ -1258,6 +1370,47 @@ msgstr "Ei saatavilla"
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr "Ei saatavilla"
+
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+msgid "Files"
+msgstr "Tiedostot"
+
+#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+msgid "Upload Speed"
+msgstr "Lähetysnopeus"
+
+#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+msgid "Download Speed"
+msgstr "Latausnopeus"
+
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp
+msgid "Uploaded"
+msgstr "Lähetetty"
+
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Downloaded"
+msgstr "Ladattu"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Downloading from"
+msgstr "Lataa"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Uploading to"
+msgstr "Lähettää"
+
+#: src/ClientsWnd.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
+msgid "Active"
+msgstr "Aktiivinen"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Known"
+msgstr "Tuntematon"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -2554,10 +2707,6 @@ msgstr "KRIITTINEN - ei asiakasta keskustelun aloituksessa"
 msgid "Friends"
 msgstr "Kaverit"
 
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Show &Details"
-msgstr "Näytä tie&dot"
-
 #: src/FriendListCtrl.cpp
 msgid "Add a friend"
 msgstr "Lisää kaveri"
@@ -2569,14 +2718,6 @@ msgstr "Poista kaveri"
 #: src/FriendListCtrl.cpp
 msgid "Send &Message"
 msgstr "Lähetä Viesti"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "View Files"
-msgstr "Näytä tiedostot"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Establish Friend Slot"
-msgstr "Vapauta kaveripaikka"
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"
@@ -2593,43 +2734,6 @@ msgid ""
 msgstr ""
 "Et voi asettaa enempää kuin yhden kaveripaikan.\n"
 " Asetettiin yksi paikka."
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Multiple selection"
-msgstr "Monivalinta"
-
-#: src/GenericClientListCtrl.cpp
-#, fuzzy
-msgid ""
-"You are not allowed to set more than one friend slot.\n"
-" Only one slot was assigned."
-msgstr ""
-"Et voi asettaa enempää kuin yhden kaveripaikan.\n"
-" Asetettiin yksi paikka."
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message to user"
-msgstr "Lähetä viesti käyttäjälle"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Message to send:"
-msgstr "Lähetettävä viesti:"
-
-#: src/GenericClientListCtrl.cpp src/Statistics.cpp
-msgid "Clients"
-msgstr "Asiakkaat"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Remove from friends"
-msgstr "Poista ystävistä"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message"
-msgstr "Lähetä viesti"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Swap to this file"
-msgstr "Vaihda tähän tiedostoon"
 
 #: src/GenericClientListCtrl.cpp
 #, c-format
@@ -2933,10 +3037,6 @@ msgstr "Tiedostokoko"
 #: src/KnownFile.cpp
 msgid "Share ratio"
 msgstr "Jakosuhde"
-
-#: src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Uploaded"
-msgstr "Lähetetty"
 
 #: src/KnownFile.cpp src/muuli_wdr.cpp
 msgid "Requested"
@@ -5315,10 +5415,6 @@ msgstr "Pakattu"
 msgid "Text"
 msgstr "Teksti"
 
-#: src/OtherFunctions.cpp src/TransferWnd.cpp
-msgid "Active"
-msgstr "Aktiivinen"
-
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "Using config dir: %s"
@@ -5571,11 +5667,6 @@ msgstr "Allokoidaan"
 msgid "Insufficient disk space"
 msgstr "Riittämätön levytila"
 
-#: src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp
-msgid "Downloaded"
-msgstr "Ladattu"
-
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
@@ -5783,10 +5874,6 @@ msgstr "Kansiot"
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "Palvelimet"
-
-#: src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
-msgid "Files"
-msgstr "Tiedostot"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Security"
@@ -6665,11 +6752,6 @@ msgstr "Käyttäjiä"
 msgid "Static"
 msgstr "Kiinteä"
 
-#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp src/Statistics.cpp
-msgid "Version"
-msgstr "Versio"
-
 #: src/ServerListCtrl.cpp
 #, fuzzy
 msgid "Soft Files"
@@ -7029,14 +7111,6 @@ msgstr "Jaettavia tiedostoja ei löytynyt kansiosta: %s"
 msgid "User Name"
 msgstr "Käyttäjänimi"
 
-#: src/SharedFilePeersListCtrl.cpp
-msgid "Download Speed"
-msgstr "Latausnopeus"
-
-#: src/SharedFilePeersListCtrl.cpp
-msgid "Upload Speed"
-msgstr "Lähetysnopeus"
-
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Available Parts"
 msgstr "Saatavilla olevat osat"
@@ -7048,10 +7122,6 @@ msgstr "Lähetyksen tilanne"
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Download Status"
 msgstr "Latauksen tilanne"
-
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Origin"
-msgstr "Alkuperä"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Local File Name"

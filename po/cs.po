@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-11 12:27+0200\n"
+"POT-Creation-Date: 2026-08-12 21:14+0200\n"
 "PO-Revision-Date: 2026-08-11 21:18+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
@@ -678,6 +678,10 @@ msgstr "Stahování"
 msgid "Shared files"
 msgstr "Sdílené soubory"
 
+#: src/amuleDlg.cpp src/ClientContextActions.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "Klienti"
+
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Messages"
 msgstr "Zprávy"
@@ -820,6 +824,11 @@ msgstr "Stahování"
 #: src/amuleDlg.cpp
 msgid "Shared Files Window"
 msgstr "Okno se sdílenými soubory"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "Clients Window"
+msgstr "Okno sítí"
 
 #: src/amuleDlg.cpp
 msgid "Messages Window"
@@ -1175,9 +1184,54 @@ msgstr "Zavřít všechny taby"
 msgid "Close other tabs"
 msgstr "Zavřít ostatní taby"
 
-#: src/ChatWnd.cpp src/GenericClientListCtrl.cpp
+#: src/ChatWnd.cpp src/ClientContextActions.cpp
 msgid "Add to Friends"
 msgstr "Přidat do přátel"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Show &Details"
+msgstr "Zobrazit &podrobnosti"
+
+#: src/ClientContextActions.cpp
+msgid "Remove from friends"
+msgstr "Odstranit z přátel"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Establish Friend Slot"
+msgstr "Založit kamarádský slot"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "View Files"
+msgstr "Zobrazit soubory"
+
+#: src/ClientContextActions.cpp
+msgid "Send message"
+msgstr "Poslat zprávu"
+
+#: src/ClientContextActions.cpp
+msgid "Swap to this file"
+msgstr ""
+
+#: src/ClientContextActions.cpp
+#, fuzzy
+msgid ""
+"You are not allowed to set more than one friend slot.\n"
+" Only one slot was assigned."
+msgstr ""
+"Nemůžete založit více než jeden kamarádský slot.\n"
+" Byl přidělen pouze jeden slot."
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Multiple selection"
+msgstr "Vícenásobný výběr"
+
+#: src/ClientContextActions.cpp
+msgid "Send message to user"
+msgstr "Poslat zprávu uživateli"
+
+#: src/ClientContextActions.cpp
+msgid "Message to send:"
+msgstr "Zpráva k odeslání:"
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1244,6 +1298,64 @@ msgstr "Odpojeno"
 msgid "%.1f kB/s"
 msgstr "%.1f kB/s"
 
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Name"
+msgstr "Název:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+msgid "Software"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Version"
+msgstr "Verze"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "IP Address"
+msgstr "IP adresa :"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Origin"
+msgstr "Původ"
+
+#: src/ClientHistoryListCtrl.cpp
+msgid "First seen"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Last seen"
+msgstr "Poslední příjem"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Sessions"
+msgstr "Verze"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Uploaded"
+msgstr "Odesláno"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Downloaded"
+msgstr "Celkem staženo:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Ratio"
+msgstr "Hodnocení"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Online now"
+msgstr "Online podpis"
+
 #: src/ClientRef.cpp
 msgid "Not complete"
 msgstr "Nekompletní"
@@ -1263,6 +1375,47 @@ msgstr "N/A"
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr "Nedostupný"
+
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+msgid "Files"
+msgstr "Soubory"
+
+#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+msgid "Upload Speed"
+msgstr "Rychlost odesílání"
+
+#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+msgid "Download Speed"
+msgstr "Rychlost stahování"
+
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp
+msgid "Uploaded"
+msgstr "Odesláno"
+
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Downloaded"
+msgstr "Staženo"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Downloading from"
+msgstr "Stahuji"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Uploading to"
+msgstr "Odesílám"
+
+#: src/ClientsWnd.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
+msgid "Active"
+msgstr "Aktivní"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Known"
+msgstr "Neznámý"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -2547,10 +2700,6 @@ msgstr ""
 msgid "Friends"
 msgstr "Kamarádi"
 
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Show &Details"
-msgstr "Zobrazit &podrobnosti"
-
 #: src/FriendListCtrl.cpp
 msgid "Add a friend"
 msgstr "Přidat kamaráda"
@@ -2562,14 +2711,6 @@ msgstr "Odstranit kamaráda"
 #: src/FriendListCtrl.cpp
 msgid "Send &Message"
 msgstr "Poslat &zprávu"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "View Files"
-msgstr "Zobrazit soubory"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Establish Friend Slot"
-msgstr "Založit kamarádský slot"
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"
@@ -2586,43 +2727,6 @@ msgid ""
 msgstr ""
 "Nemůžete založit více než jeden kamarádský slot.\n"
 " Byl přidělen pouze jeden slot."
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Multiple selection"
-msgstr "Vícenásobný výběr"
-
-#: src/GenericClientListCtrl.cpp
-#, fuzzy
-msgid ""
-"You are not allowed to set more than one friend slot.\n"
-" Only one slot was assigned."
-msgstr ""
-"Nemůžete založit více než jeden kamarádský slot.\n"
-" Byl přidělen pouze jeden slot."
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message to user"
-msgstr "Poslat zprávu uživateli"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Message to send:"
-msgstr "Zpráva k odeslání:"
-
-#: src/GenericClientListCtrl.cpp src/Statistics.cpp
-msgid "Clients"
-msgstr "Klienti"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Remove from friends"
-msgstr "Odstranit z přátel"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message"
-msgstr "Poslat zprávu"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Swap to this file"
-msgstr ""
 
 #: src/GenericClientListCtrl.cpp
 #, fuzzy, c-format
@@ -2932,10 +3036,6 @@ msgstr "Velikost souboru"
 #: src/KnownFile.cpp
 msgid "Share ratio"
 msgstr "Poměr sdílení"
-
-#: src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Uploaded"
-msgstr "Odesláno"
 
 #: src/KnownFile.cpp src/muuli_wdr.cpp
 msgid "Requested"
@@ -5321,10 +5421,6 @@ msgstr "Archív"
 msgid "Text"
 msgstr "Text"
 
-#: src/OtherFunctions.cpp src/TransferWnd.cpp
-msgid "Active"
-msgstr "Aktivní"
-
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "Using config dir: %s"
@@ -5580,11 +5676,6 @@ msgstr "Alokuji"
 msgid "Insufficient disk space"
 msgstr "Nedostatek místa na disku"
 
-#: src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp
-msgid "Downloaded"
-msgstr "Staženo"
-
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
@@ -5793,10 +5884,6 @@ msgstr "Adresáře"
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "Servery"
-
-#: src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
-msgid "Files"
-msgstr "Soubory"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Security"
@@ -6673,11 +6760,6 @@ msgstr "Uživatelé"
 msgid "Static"
 msgstr "Stálý"
 
-#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp src/Statistics.cpp
-msgid "Version"
-msgstr "Verze"
-
 #: src/ServerListCtrl.cpp
 #, fuzzy
 msgid "Soft Files"
@@ -7044,14 +7126,6 @@ msgstr ""
 msgid "User Name"
 msgstr "Uživatelské jméno"
 
-#: src/SharedFilePeersListCtrl.cpp
-msgid "Download Speed"
-msgstr "Rychlost stahování"
-
-#: src/SharedFilePeersListCtrl.cpp
-msgid "Upload Speed"
-msgstr "Rychlost odesílání"
-
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Available Parts"
 msgstr "Dostupné části"
@@ -7064,10 +7138,6 @@ msgstr "Stav odesílání"
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Download Status"
 msgstr "Průběh stahování"
-
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Origin"
-msgstr "Původ"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 #, fuzzy

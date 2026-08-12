@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-11 12:27+0200\n"
+"POT-Creation-Date: 2026-08-12 21:14+0200\n"
 "PO-Revision-Date: 2026-08-11 20:52+0000\n"
 "Last-Translator: Dovydas Sankauskas <laisve@gmail.com>\n"
 "Language-Team: Lithuanian <komp_lt@konf.lt>\n"
@@ -685,6 +685,10 @@ msgstr "Siuntimai"
 msgid "Shared files"
 msgstr "Dalinami failai"
 
+#: src/amuleDlg.cpp src/ClientContextActions.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "Naudotojai"
+
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Messages"
 msgstr "Žinutės"
@@ -825,6 +829,11 @@ msgstr "Atsiunčiama"
 #: src/amuleDlg.cpp
 msgid "Shared Files Window"
 msgstr "Dalinamų failų langas"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "Clients Window"
+msgstr "Tinklo langas"
 
 #: src/amuleDlg.cpp
 msgid "Messages Window"
@@ -1184,9 +1193,54 @@ msgstr "Užverti visas korteles"
 msgid "Close other tabs"
 msgstr "Užverti kitas korteles"
 
-#: src/ChatWnd.cpp src/GenericClientListCtrl.cpp
+#: src/ChatWnd.cpp src/ClientContextActions.cpp
 msgid "Add to Friends"
 msgstr "Įdėti į draugus"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Show &Details"
+msgstr "Rodyti &išsamiau"
+
+#: src/ClientContextActions.cpp
+msgid "Remove from friends"
+msgstr "Pašalinti iš draugų"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Establish Friend Slot"
+msgstr "Sukurti siuntimo kanalą draugui"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "View Files"
+msgstr "Peržiūrėti failus"
+
+#: src/ClientContextActions.cpp
+msgid "Send message"
+msgstr "Siųsti žinutę"
+
+#: src/ClientContextActions.cpp
+msgid "Swap to this file"
+msgstr "Keisti į šį failą"
+
+#: src/ClientContextActions.cpp
+#, fuzzy
+msgid ""
+"You are not allowed to set more than one friend slot.\n"
+" Only one slot was assigned."
+msgstr ""
+"Neleidžiama sukurti daugiau nei vieną siuntimo kanalą draugui.\n"
+"Buvo sukurtas tik vienas kanalas."
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Multiple selection"
+msgstr "Pažymėta keletas"
+
+#: src/ClientContextActions.cpp
+msgid "Send message to user"
+msgstr "Siųsti žinutę naudotojui"
+
+#: src/ClientContextActions.cpp
+msgid "Message to send:"
+msgstr "Siųsti žinutę:"
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1253,6 +1307,64 @@ msgstr "Neprisijungta"
 msgid "%.1f kB/s"
 msgstr "%.1f kB/s"
 
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Name"
+msgstr "Pavadinimas:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+msgid "Software"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Version"
+msgstr "Versija"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "IP Address"
+msgstr "IP adresas:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Origin"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+msgid "First seen"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Last seen"
+msgstr "Paskutinį kartą siųsta"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Sessions"
+msgstr "Versija"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Uploaded"
+msgstr "Išsiųsta"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Downloaded"
+msgstr "Išviso atsiųsta: "
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Ratio"
+msgstr "Reitingas"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Online now"
+msgstr "Keičiamas parašas"
+
 #: src/ClientRef.cpp
 msgid "Not complete"
 msgstr "Neužbaigta"
@@ -1272,6 +1384,49 @@ msgstr "Nežinoma"
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr "Nepasiekiama"
+
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+msgid "Files"
+msgstr "Failai"
+
+#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#, fuzzy
+msgid "Upload Speed"
+msgstr "Išsiuntimo sparta"
+
+#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#, fuzzy
+msgid "Download Speed"
+msgstr "Atsiuntimo sparta"
+
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp
+msgid "Uploaded"
+msgstr "Išsiųsta"
+
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Downloaded"
+msgstr "Atsiųsta"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Downloading from"
+msgstr "Atsiunčiama"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Uploading to"
+msgstr "Išsiuntimas"
+
+#: src/ClientsWnd.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
+msgid "Active"
+msgstr "Aktyvios"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Known"
+msgstr "Nežinoma"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -2575,10 +2730,6 @@ msgstr ""
 msgid "Friends"
 msgstr "Draugai"
 
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Show &Details"
-msgstr "Rodyti &išsamiau"
-
 #: src/FriendListCtrl.cpp
 msgid "Add a friend"
 msgstr "Įdėti draugą"
@@ -2590,14 +2741,6 @@ msgstr "Pašalinti draugą"
 #: src/FriendListCtrl.cpp
 msgid "Send &Message"
 msgstr "Siųsti &žinutę"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "View Files"
-msgstr "Peržiūrėti failus"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Establish Friend Slot"
-msgstr "Sukurti siuntimo kanalą draugui"
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"
@@ -2614,43 +2757,6 @@ msgid ""
 msgstr ""
 "Neleidžiama sukurti daugiau nei vieną siuntimo kanalą draugui.\n"
 "Buvo sukurtas tik vienas kanalas."
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Multiple selection"
-msgstr "Pažymėta keletas"
-
-#: src/GenericClientListCtrl.cpp
-#, fuzzy
-msgid ""
-"You are not allowed to set more than one friend slot.\n"
-" Only one slot was assigned."
-msgstr ""
-"Neleidžiama sukurti daugiau nei vieną siuntimo kanalą draugui.\n"
-"Buvo sukurtas tik vienas kanalas."
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message to user"
-msgstr "Siųsti žinutę naudotojui"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Message to send:"
-msgstr "Siųsti žinutę:"
-
-#: src/GenericClientListCtrl.cpp src/Statistics.cpp
-msgid "Clients"
-msgstr "Naudotojai"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Remove from friends"
-msgstr "Pašalinti iš draugų"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message"
-msgstr "Siųsti žinutę"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Swap to this file"
-msgstr "Keisti į šį failą"
 
 #: src/GenericClientListCtrl.cpp
 #, fuzzy, c-format
@@ -2963,10 +3069,6 @@ msgstr "Failo dydis"
 #: src/KnownFile.cpp
 msgid "Share ratio"
 msgstr "Platinimo santykis"
-
-#: src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Uploaded"
-msgstr "Išsiųsta"
 
 #: src/KnownFile.cpp src/muuli_wdr.cpp
 msgid "Requested"
@@ -5356,10 +5458,6 @@ msgstr "Supakuoti failai"
 msgid "Text"
 msgstr "Teksto failai"
 
-#: src/OtherFunctions.cpp src/TransferWnd.cpp
-msgid "Active"
-msgstr "Aktyvios"
-
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "Using config dir: %s"
@@ -5616,11 +5714,6 @@ msgstr "Paskiriama vieta"
 msgid "Insufficient disk space"
 msgstr "Nepakanka laisvos vietos"
 
-#: src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp
-msgid "Downloaded"
-msgstr "Atsiųsta"
-
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
@@ -5831,10 +5924,6 @@ msgstr "Aplankai"
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "Serveriai"
-
-#: src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
-msgid "Files"
-msgstr "Failai"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Security"
@@ -6721,11 +6810,6 @@ msgstr "Naudotojų skaičius"
 msgid "Static"
 msgstr "Statiškas"
 
-#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp src/Statistics.cpp
-msgid "Version"
-msgstr "Versija"
-
 #: src/ServerListCtrl.cpp
 #, fuzzy
 msgid "Soft Files"
@@ -7095,16 +7179,6 @@ msgstr ""
 msgid "User Name"
 msgstr "Naudotojo vardas"
 
-#: src/SharedFilePeersListCtrl.cpp
-#, fuzzy
-msgid "Download Speed"
-msgstr "Atsiuntimo sparta"
-
-#: src/SharedFilePeersListCtrl.cpp
-#, fuzzy
-msgid "Upload Speed"
-msgstr "Išsiuntimo sparta"
-
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 #, fuzzy
 msgid "Available Parts"
@@ -7118,10 +7192,6 @@ msgstr "Išsiuntimo būsena"
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Download Status"
 msgstr "Atsiuntimo būsena"
-
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Origin"
-msgstr ""
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 #, fuzzy
