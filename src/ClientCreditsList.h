@@ -31,6 +31,7 @@
 #include <map>
 
 class CClientCredits;
+class CFile;
 
 class CClientCreditsList
 {
@@ -60,6 +61,10 @@ public:
 
 protected:
 	void LoadList();
+	//! Optional metadata block after the credit records -- see the comment on
+	//! kMetaMagic for why it lives there rather than in the records.
+	void LoadMetaTrailer(CFile &file);
+	void SaveMetaTrailer(CFile &file);
 	void InitalizeCrypting();
 	bool CreateKeyPair();
 #ifdef _DEBUG

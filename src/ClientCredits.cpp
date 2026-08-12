@@ -152,6 +152,44 @@ float CClientCredits::GetScoreRatio(uint32 dwForIP, bool cryptoavail)
 	return result;
 }
 
+void CClientCredits::UpdateMeta(const wxString &name,
+	uint32 ip,
+	uint16 port,
+	uint16 kadPort,
+	uint32 version,
+	uint8 clientSoft,
+	uint8 sourceFrom,
+	uint8 obfuscation,
+	bool countSession)
+{
+	const uint32 now = time(nullptr);
+	if (m_meta.firstSeen == 0) {
+		// First sighting since this peer got a credit record. For a peer we
+		// already had credits for before the metadata existed, "first" means
+		// the first time we could record it, not the start of the
+		// relationship -- nLastSeen is the only older evidence and it says
+		// nothing about when things began.
+		m_meta.firstSeen = now;
+	}
+	if (countSession) {
+		m_meta.sessions++;
+	}
+
+	// Last known wins: a peer that renamed itself or moved address is better
+	// described by what it looks like now than by what it looked like once.
+	// An empty name is not an update -- it means the handshake carried none.
+	if (!name.IsEmpty()) {
+		m_meta.name = name;
+	}
+	m_meta.lastIP = ip;
+	m_meta.lastPort = port;
+	m_meta.kadPort = kadPort;
+	m_meta.version = version;
+	m_meta.clientSoft = clientSoft;
+	m_meta.sourceFrom = sourceFrom;
+	m_meta.obfuscation = obfuscation;
+}
+
 void CClientCredits::SetLastSeen()
 {
 	m_pCredits->nLastSeen = time(NULL);

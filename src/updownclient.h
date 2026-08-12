@@ -760,6 +760,9 @@ private:
 	uint16_t m_nUserPort;
 	int16 m_nServerPort;
 	uint32 m_nClientVersion;
+	//! Whether this connection has already been counted towards the peer's
+	//! session tally in its credit metadata. See ProcessHelloTypePacket.
+	bool m_metaSessionCounted = false;
 	uint32 m_cSendblock;
 	uint8 m_byEmuleVersion;
 	uint8 m_byDataCompVer;

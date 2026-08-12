@@ -710,6 +710,29 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 
 	ReGetClientSoft();
 
+	// Everything worth remembering about this peer is populated by now: the
+	// name came out of the hello tags above, the address from the connection,
+	// and ReGetClientSoft() has just resolved the software and version. The
+	// credit record is the only thing that outlives the connection, so this is
+	// where a peer stops being anonymous in the history.
+	//
+	// The session count is taken once per client object rather than once per
+	// call: an outgoing connection processes a hello answer as well as a
+	// hello, and a count that rose per packet would measure traffic instead of
+	// visits.
+	if (credits != nullptr) {
+		credits->UpdateMeta(m_Username,
+			m_dwUserIP,
+			m_nUserPort,
+			m_nKadPort,
+			m_nClientVersion,
+			m_clientSoft,
+			static_cast<uint8>(m_nSourceFrom),
+			GetObfuscationStatus(),
+			!m_metaSessionCounted);
+		m_metaSessionCounted = true;
+	}
+
 	m_byInfopacketsReceived |= IP_EDONKEYPROTPACK;
 
 	// check if at least CT_EMULEVERSION was received, all other tags are optional
