@@ -26,16 +26,18 @@
 
 #include <map>
 
-#include <common/Format.h> // Needed for CFormat
+#include <common/Format.h>  // Needed for CFormat
+#include <common/MenuIDs.h> // Needed for MP_DETAIL etc.
 
-#include "amule.h"              // Needed for theApp
-#include "ClientDetailDialog.h" // Needed for CClientDetailDialog
-#include "ClientList.h"         // Needed for CClientList::FindClientByECID
-#include "ClientRef.h"          // Needed for CClientRef
-#include "DataToText.h"         // Needed for GetSoftName, OriginToText
-#include "MuleBarRenderer.h"    // Needed for CBarFillSpec, CMuleBarRenderer
-#include "OtherFunctions.h"     // Needed for CastItoXBytes, CastItoSpeed
-#include "muuli_wdr.h"          // Needed for ID_CLIENTSLIST
+#include "amule.h"                // Needed for theApp
+#include "ClientContextActions.h" // Needed for BuildClientContextMenu, ClientAction*
+#include "ClientDetailDialog.h"   // Needed for CClientDetailDialog
+#include "ClientList.h"           // Needed for CClientList::FindClientByECID
+#include "ClientRef.h"            // Needed for CClientRef
+#include "DataToText.h"           // Needed for GetSoftName, OriginToText
+#include "MuleBarRenderer.h"      // Needed for CBarFillSpec, CMuleBarRenderer
+#include "OtherFunctions.h"       // Needed for CastItoXBytes, CastItoSpeed
+#include "muuli_wdr.h"            // Needed for ID_CLIENTSLIST
 
 namespace
 {
@@ -65,6 +67,13 @@ public:
 
 wxBEGIN_EVENT_TABLE(CClientsListCtrl, CMuleVirtualDataViewCtrl)
 	EVT_DATAVIEW_ITEM_ACTIVATED(wxID_ANY, CClientsListCtrl::OnItemActivated)
+	EVT_DATAVIEW_ITEM_CONTEXT_MENU(wxID_ANY, CClientsListCtrl::OnItemRightClicked)
+
+	EVT_MENU(MP_SHOWLIST, CClientsListCtrl::OnViewFiles)
+	EVT_MENU(MP_ADDFRIEND, CClientsListCtrl::OnAddFriend)
+	EVT_MENU(MP_FRIENDSLOT, CClientsListCtrl::OnSetFriendslot)
+	EVT_MENU(MP_SENDMESSAGE, CClientsListCtrl::OnSendMessage)
+	EVT_MENU(MP_DETAIL, CClientsListCtrl::OnViewClientInfo)
 wxEND_EVENT_TABLE()
 
 CClientsListCtrl::CClientsListCtrl(
@@ -234,6 +243,75 @@ void CClientsListCtrl::GetItemBarFill(wxUIntPtr data, unsigned column, CBarFillS
 	out = CBarFillSpec(reinterpret_cast<wxUIntPtr>(&row->nameCell), 0, {});
 }
 
+std::vector<CClientRef> CClientsListCtrl::SelectedClients() const
+{
+	std::vector<CClientRef> clients;
+	for (wxUIntPtr data : GetSelectedItemData()) {
+		const Row *row = RowFor(data);
+		if (row == nullptr || row->ecid == 0) {
+			continue;
+		}
+#ifdef CLIENT_GUI
+		CClientRef *ref = theApp->clientlist->GetByID(row->ecid);
+		CUpDownClient *client = ref != nullptr ? ref->GetClient() : nullptr;
+#else
+		CUpDownClient *client = theApp->clientlist->FindClientByECID(row->ecid);
+#endif
+		if (client != nullptr) {
+			clients.push_back(CCLIENTREF(client, wxT("CClientsListCtrl::SelectedClients")));
+		}
+	}
+	return clients;
+}
+
+void CClientsListCtrl::OnItemRightClicked(wxDataViewEvent &event)
+{
+	if (event.GetItem().IsOk()) {
+		wxDataViewItemArray selection;
+		GetSelections(selection);
+		if (selection.Index(event.GetItem()) == wxNOT_FOUND) {
+			UnselectAll();
+			Select(event.GetItem());
+		}
+	}
+
+	const std::vector<CClientRef> clients = SelectedClients();
+	if (clients.empty()) {
+		return;
+	}
+
+	// No swap-to-file: that acts on an A4AF source of one particular download,
+	// which is a per-file notion this list does not have.
+	wxMenu *menu = BuildClientContextMenu(clients.front(), false);
+	PopupMenu(menu, event.GetPosition());
+	delete menu;
+}
+
+void CClientsListCtrl::OnViewFiles(wxCommandEvent &WXUNUSED(event))
+{
+	ClientActionViewFiles(SelectedClients());
+}
+
+void CClientsListCtrl::OnAddFriend(wxCommandEvent &WXUNUSED(event))
+{
+	ClientActionToggleFriend(SelectedClients());
+}
+
+void CClientsListCtrl::OnSetFriendslot(wxCommandEvent &evt)
+{
+	ClientActionSetFriendSlot(this, SelectedClients(), evt.IsChecked());
+}
+
+void CClientsListCtrl::OnSendMessage(wxCommandEvent &WXUNUSED(event))
+{
+	ClientActionSendMessage(SelectedClients());
+}
+
+void CClientsListCtrl::OnViewClientInfo(wxCommandEvent &WXUNUSED(event))
+{
+	ClientActionShowDetails(this, SelectedClients());
+}
+
 void CClientsListCtrl::OnItemActivated(wxDataViewEvent &event)
 {
 	if (!event.GetItem().IsOk()) {
@@ -259,6 +337,25 @@ void CClientsListCtrl::OnItemActivated(wxDataViewEvent &event)
 	// The CClientRef is what keeps the peer alive for as long as the modal
 	// dialog is up.
 	CClientDetailDialog(this, CCLIENTREF(client, wxT("CClientsListCtrl::OnItemActivated"))).ShowModal();
+}
+
+bool CClientsListCtrl::IsLiveSortColumn() const
+{
+	if (m_sort_orders.empty()) {
+		return false;
+	}
+	switch (m_sort_orders.front().first) {
+	case COLUMN_CLIENTS_UP_SPEED:
+	case COLUMN_CLIENTS_DOWN_SPEED:
+	case COLUMN_CLIENTS_SESSION_UP:
+	case COLUMN_CLIENTS_SESSION_DOWN:
+	case COLUMN_CLIENTS_TOTAL_UP:
+	case COLUMN_CLIENTS_TOTAL_DOWN:
+	case COLUMN_CLIENTS_RATIO:
+		return true;
+	default:
+		return false;
+	}
 }
 
 int CClientsListCtrl::CompareItemData(

@@ -103,15 +103,28 @@ CClientsWnd::CClientsWnd(wxWindow *parent)
 	split->SetSashGravity(0.5);
 	book->AddPage(split, _("Active"), true);
 
-	historylistctrl = new CClientHistoryListCtrl(
-		book, ID_CLIENTHISTORYLIST, wxDefaultPosition, wxDefaultSize, listStyle);
-	book->AddPage(historylistctrl, _("Known"), false);
+	// Only offered when there is a history to show. A daemon that does not
+	// advertise EC_TAG_CAN_CLIENT_HISTORY cannot answer the request, so the tab
+	// would sit there permanently empty with nothing to say why -- better not
+	// to promise it. Decided once here because amulegui rebuilds this dialog on
+	// every (re)connect, so a later connection to a newer daemon gets the tab.
+#ifdef CLIENT_GUI
+	const bool historyAvailable =
+		theApp->m_connect != nullptr && theApp->m_connect->ServerSupportsClientHistory();
+#else
+	const bool historyAvailable = true;
+#endif
+	if (historyAvailable) {
+		historylistctrl = new CClientHistoryListCtrl(
+			book, ID_CLIENTHISTORYLIST, wxDefaultPosition, wxDefaultSize, listStyle);
+		book->AddPage(historylistctrl, _("Known"), false);
+	}
 
 	// Rebuilt on every switch to the Known tab rather than once, so a peer
 	// that has reconnected since you last looked shows its new totals and
 	// last-seen instead of the values it had months ago.
 	book->Bind(wxEVT_NOTEBOOK_PAGE_CHANGED, [this](wxBookCtrlEvent &event) {
-		if (event.GetSelection() == 1) {
+		if (event.GetSelection() == 1 && historylistctrl != nullptr) {
 			LoadHistory();
 		}
 		event.Skip();
@@ -245,7 +258,9 @@ void CClientsWnd::CHistoryHandler::HandlePacket(const CECPacket *packet)
 		row.online = onlineHashes.count(row.hash) != 0;
 		rows.push_back(row);
 	}
-	m_owner->historylistctrl->SetRows(std::move(rows));
+	if (m_owner->historylistctrl != nullptr) {
+		m_owner->historylistctrl->SetRows(std::move(rows));
+	}
 }
 #endif
 

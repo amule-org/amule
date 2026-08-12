@@ -32,13 +32,14 @@
 #include "SearchDlg.h"     // Needed for CSearchDlg (View Files browse tab)
 #include "BarShader.h"     // Needed for CBarShader
 #include "BitVector.h"
-#include "ClientDetailDialog.h" // Needed for CClientDetailDialog
-#include "ClientNameCell.h"     // Needed for MakeClientNameCell, DrawClientNameCell
-#include "ChatWnd.h"            // Needed for CChatWnd
-#include "CommentDialogLst.h"   // Needed for CCommentDialogLst
-#include "DataToText.h"         // Needed for PriorityToStr
-#include "FileDetailDialog.h"   // Needed for CFileDetailDialog
-#include "GuiEvents.h"          // Needed for CoreNotify_*
+#include "ClientDetailDialog.h"   // Needed for CClientDetailDialog
+#include "ClientContextActions.h" // Needed for BuildClientContextMenu, ClientAction*
+#include "ClientNameCell.h"       // Needed for MakeClientNameCell, DrawClientNameCell
+#include "ChatWnd.h"              // Needed for CChatWnd
+#include "CommentDialogLst.h"     // Needed for CCommentDialogLst
+#include "DataToText.h"           // Needed for PriorityToStr
+#include "FileDetailDialog.h"     // Needed for CFileDetailDialog
+#include "GuiEvents.h"            // Needed for CoreNotify_*
 #ifdef GEOIP_GUI
 #include "CountryFlags.h"   // Needed for CCountryFlags (flag bitmaps)
 #include "CountryDisplay.h" // Needed for GetDisplayCountryCode
@@ -555,78 +556,43 @@ void CGenericClientListCtrl::OnSwapSource(wxCommandEvent &WXUNUSED(event))
 	}
 }
 
+namespace
+{
+//! The peers behind the current selection, as the shared actions want them.
+std::vector<CClientRef> SelectedClients(const std::vector<wxUIntPtr> &selected)
+{
+	std::vector<CClientRef> clients;
+	clients.reserve(selected.size());
+	for (wxUIntPtr data : selected) {
+		clients.push_back(reinterpret_cast<ClientCtrlItem_Struct *>(data)->GetSource());
+	}
+	return clients;
+}
+} // namespace
+
 void CGenericClientListCtrl::OnViewFiles(wxCommandEvent &WXUNUSED(event))
 {
-	// Browse each selected peer, opening one result tab per peer. If a peer's
-	// listing is already open in the Search panel, switch to that tab instead
-	// of re-requesting -- a second request would duplicate the results in the
-	// existing tab. Only once the tab is closed does a fresh request go out.
-	for (wxUIntPtr data : GetSelectedItemData()) {
-		CClientRef &client = reinterpret_cast<ClientCtrlItem_Struct *>(data)->GetSource();
-		if (!(theApp->amuledlg && theApp->amuledlg->m_searchwnd &&
-			    theApp->amuledlg->m_searchwnd->ActivateBrowseTabIfOpen(client.ECID()))) {
-			client.RequestSharedFileList();
-		}
-	}
+	ClientActionViewFiles(SelectedClients(GetSelectedItemData()));
 }
 
 void CGenericClientListCtrl::OnAddFriend(wxCommandEvent &WXUNUSED(event))
 {
-	for (wxUIntPtr data : GetSelectedItemData()) {
-		CClientRef &client = reinterpret_cast<ClientCtrlItem_Struct *>(data)->GetSource();
-		if (client.IsFriend()) {
-			theApp->friendlist->RemoveFriend(client.GetFriend());
-		} else {
-			theApp->friendlist->AddFriend(client);
-		}
-	}
+	ClientActionToggleFriend(SelectedClients(GetSelectedItemData()));
 }
 
 void CGenericClientListCtrl::OnSetFriendslot(wxCommandEvent &evt)
 {
-	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
-
-	if (!selected.empty()) {
-		CClientRef &client = reinterpret_cast<ClientCtrlItem_Struct *>(selected.front())->GetSource();
-		theApp->friendlist->SetFriendSlot(client.GetFriend(), evt.IsChecked());
-	}
-	if (selected.size() > 1) {
-		wxMessageBox(_("You are not allowed to set more than one friend slot.\n Only one slot was "
-			       "assigned."),
-			_("Multiple selection"),
-			wxOK | wxICON_ERROR,
-			this);
-	}
+	ClientActionSetFriendSlot(this, SelectedClients(GetSelectedItemData()), evt.IsChecked());
 }
 
 void CGenericClientListCtrl::OnSendMessage(wxCommandEvent &WXUNUSED(event))
 {
-	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
-
-	if (selected.size() == 1) {
-		CClientRef &source = reinterpret_cast<ClientCtrlItem_Struct *>(selected.front())->GetSource();
-
-		// These values are cached, since calling wxGetTextFromUser will
-		// start an event-loop, in which the client may be deleted.
-		wxString userName = source.GetUserName();
-		uint64 userID = GUI_ID(source.GetIP(), source.GetUserPort());
-
-		wxString message = ::wxGetTextFromUser(_("Send message to user"), _("Message to send:"));
-		if (!message.IsEmpty()) {
-			theApp->amuledlg->m_chatwnd->SendMessage(message, userName, userID);
-		}
-	}
+	ClientActionSendMessage(SelectedClients(GetSelectedItemData()));
 }
 
 void CGenericClientListCtrl::OnViewClientInfo(wxCommandEvent &WXUNUSED(event))
 {
-	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
-
-	if (selected.size() == 1) {
-		CClientDetailDialog(
-			this, reinterpret_cast<ClientCtrlItem_Struct *>(selected.front())->GetSource())
-			.ShowModal();
-	}
+	ClientActionShowDetails(this, SelectedClients(GetSelectedItemData()));
 }
 
 void CGenericClientListCtrl::OnItemActivated(wxDataViewEvent &event)
@@ -685,29 +651,9 @@ void CGenericClientListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 	CClientRef &client = item->GetSource();
 
 	delete m_menu;
-	m_menu = new wxMenu(_("Clients"));
-	m_menu->Append(MP_DETAIL, _("Show &Details"));
-	m_menu->Append(MP_ADDFRIEND, client.IsFriend() ? _("Remove from friends") : _("Add to Friends"));
-
-	m_menu->AppendCheckItem(MP_FRIENDSLOT, _("Establish Friend Slot"));
-	if (client.IsFriend()) {
-		m_menu->Enable(MP_FRIENDSLOT, true);
-		m_menu->Check(MP_FRIENDSLOT, client.GetFriendSlot());
-	} else {
-		m_menu->Enable(MP_FRIENDSLOT, false);
-	}
-
-	m_menu->Append(MP_SHOWLIST, _("View Files"));
-	m_menu->Append(MP_SENDMESSAGE, _("Send message"));
-
-	m_menu->Append(MP_CHANGE2FILE, _("Swap to this file"));
-
-	// Only enable the Swap option for A4AF sources
-	m_menu->Enable(MP_CHANGE2FILE, (item->GetType() == A4AF_SOURCE));
-	// We need a valid IP if we are to message the client
-	m_menu->Enable(MP_SENDMESSAGE, (client.GetIP() != 0));
-
-	m_menu->Enable(MP_SHOWLIST, !client.HasDisabledSharedFiles());
+	// Same menu the global clients list offers; "Swap to this file" is the one
+	// entry only a per-file list can act on.
+	m_menu = BuildClientContextMenu(client, item->GetType() == A4AF_SOURCE);
 
 	PopupMenu(m_menu, event.GetPosition());
 

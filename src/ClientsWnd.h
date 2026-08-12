@@ -51,7 +51,9 @@ public:
 	CClientsListCtrl *downclientsctrl;
 	//! Peers we are sending a file to.
 	CClientsListCtrl *upclientsctrl;
-	CClientHistoryListCtrl *historylistctrl;
+	//! Null when the core cannot answer for the history, in which case the
+	//! Known tab is not offered at all.
+	CClientHistoryListCtrl *historylistctrl = nullptr;
 
 	/**
 	 * Re-read every listed peer's values.

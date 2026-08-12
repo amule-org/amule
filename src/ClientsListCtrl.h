@@ -28,6 +28,7 @@
 #include <vector>
 
 #include "ClientNameCell.h" // Needed for ClientNameCell
+#include "ClientRef.h"      // Needed for CClientRef
 #include "MuleVirtualDataViewCtrl.h"
 
 #define COLUMN_CLIENTS_NAME 0
@@ -135,14 +136,33 @@ protected:
 	/**
 	 * Speeds and transfer totals move on every poll, so a row sorted by one
 	 * of them has to be able to move with it.
+	 *
+	 * Only those columns: answering yes unconditionally re-sorts on every
+	 * refresh, which with no sort column at all -- or a static one like the
+	 * name -- reshuffles equal rows once a second and reads as flicker.
 	 */
-	bool IsLiveSortColumn() const override { return true; }
+	bool IsLiveSortColumn() const override;
 
 	wxDECLARE_EVENT_TABLE();
 
 private:
 	//! Double-click or Enter: the client details, same as the per-file lists.
 	void OnItemActivated(wxDataViewEvent &event);
+	void OnItemRightClicked(wxDataViewEvent &event);
+	void OnViewFiles(wxCommandEvent &event);
+	void OnAddFriend(wxCommandEvent &event);
+	void OnSetFriendslot(wxCommandEvent &event);
+	void OnSendMessage(wxCommandEvent &event);
+	void OnViewClientInfo(wxCommandEvent &event);
+
+	/**
+	 * The peers behind the current selection.
+	 *
+	 * Resolved by ECID at the moment the action runs, not held: a row is a
+	 * snapshot, and a peer it names may have gone since the last sweep. Rows
+	 * with nothing to resolve to are simply dropped from the result.
+	 */
+	std::vector<CClientRef> SelectedClients() const;
 
 	const Row *RowFor(wxUIntPtr item) const;
 
