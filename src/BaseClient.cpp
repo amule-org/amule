@@ -405,6 +405,13 @@ void CUpDownClient::Safe_Delete()
 		SetSocket(NULL);
 	}
 
+	// Tell anything holding a bare pointer to this peer to let go, before the
+	// containers below start emptying. The per-file signals say "left this
+	// file", which a list showing each peer once cannot act on -- a peer
+	// leaving one file may still be busy with another -- so this is the only
+	// point at which "the object is going" can be stated.
+	Notify_ClientBeingDestroyed(this);
+
 	// Remove the client from the clientlist if we still have it
 	if (theApp->clientlist) {
 		theApp->clientlist->RemoveClient(this);

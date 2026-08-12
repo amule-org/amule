@@ -35,6 +35,7 @@
 #include "PartFileConvert.h"
 
 class CKnownFile;
+class CUpDownClient;
 class CSearchFile;
 class CPartFile;
 class CServer;
@@ -119,6 +120,33 @@ void SharedCtrlRemoveClient(uint32 client, const CKnownFile *owner);
 // stale entries during rebuild), and CKnownFilesRem::DeleteItem
 // in the amulegui build.
 void KnownFileBeingDestroyed(CKnownFile *file);
+
+// The same idea for peers: a CUpDownClient is about to be freed.
+//
+// The per-file signals (SourceCtrlRemoveSource, SharedCtrlRemoveClient) say
+// "this peer left this file", which is what the per-file lists want and is
+// exactly wrong for a list that shows each peer once across every file -- a
+// peer leaving one file may still be busy with another. Nothing said anything
+// when the object itself went away, because until there was a global client
+// list nothing outside the canonical containers held one.
+//
+// Same contract as KnownFileBeingDestroyed: compare pointer values, never
+// dereference. The broadcast is fired from ~CUpDownClient, so by the time a
+// subscriber runs the object is already being torn down; the pointer is a key,
+// not something to read.
+//
+// Deliberately not solved by holding a CClientRef instead. Those are owning --
+// CUpDownClient::Unlink() deletes at the last release -- so a list holding refs
+// would keep every peer it ever saw alive, and would never be told to let go,
+// since the removal signal comes from the destructor the ref is preventing.
+void ClientBeingDestroyed(CUpDownClient *client);
+
+// The other end of the same peer's life: CClientList has accepted it, so the
+// global clients list can show it. Add and remove are deliberately hung off
+// CClientList::AddClient and ~CUpDownClient rather than off the per-file
+// signals, which describe a peer's relationship to one file rather than its
+// existence.
+void ClientsListAddClient(CUpDownClient *client);
 
 // Analogue of KnownFileBeingDestroyed for search results: fired from
 // ~CSearchFile before the object is freed, so an open comments dialog holding
@@ -557,6 +585,8 @@ typedef void (wxEvtHandler::*MuleNotifyEventFunction)(CMuleGUIEvent &);
 // CKnownFile/CPartFile destruction broadcast — see MuleNotify::
 // KnownFileBeingDestroyed doc-comment in this header.
 #define Notify_KnownFileBeingDestroyed(file) MuleNotify::DoNotify(&MuleNotify::KnownFileBeingDestroyed, file)
+#define Notify_ClientBeingDestroyed(client) MuleNotify::DoNotify(&MuleNotify::ClientBeingDestroyed, client)
+#define Notify_ClientsListAddClient(client) MuleNotify::DoNotify(&MuleNotify::ClientsListAddClient, client)
 
 // CSearchFile destruction broadcast — see MuleNotify::SearchFileBeingDestroyed
 // doc-comment in this header.

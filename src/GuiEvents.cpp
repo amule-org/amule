@@ -52,6 +52,8 @@
 #ifndef AMULE_DAEMON
 #include "ChatWnd.h"
 #include "amuleDlg.h"
+#include "ClientsWnd.h"      // Needed for CClientsWnd
+#include "ClientsListCtrl.h" // Needed for CClientsListCtrl
 #include "ServerWnd.h"
 #include "SearchDlg.h"
 #include "SearchListModel.h" // Needed for CSearchListModel::DropReferencesTo
@@ -993,6 +995,33 @@ void ConvertReaddAllJobs()
 //   - CKnownFileList::~CKnownFileList       (shutdown / via Clear())
 //   - CSharedFileList::Reload()             (rebuild)
 //   - CKnownFilesRem::DeleteItem            (amulegui EC_TAG_FILE_REMOVED)
+void ClientsListAddClient(CUpDownClient *client)
+{
+#ifndef AMULE_DAEMON
+	if (theApp->amuledlg && theApp->amuledlg->m_clientswnd &&
+		theApp->amuledlg->m_clientswnd->clientslistctrl) {
+		theApp->amuledlg->m_clientswnd->clientslistctrl->AddClient(client);
+	}
+#else
+	(void)client;
+#endif
+}
+
+void ClientBeingDestroyed(CUpDownClient *client)
+{
+#ifndef AMULE_DAEMON
+	// The global clients list is the only holder of a bare CUpDownClient*
+	// outside CClientList itself. Pointer-value comparison only: this runs
+	// from ~CUpDownClient, so the object is already being torn down.
+	if (theApp->amuledlg && theApp->amuledlg->m_clientswnd &&
+		theApp->amuledlg->m_clientswnd->clientslistctrl) {
+		theApp->amuledlg->m_clientswnd->clientslistctrl->RemoveClient(client);
+	}
+#else
+	(void)client;
+#endif
+}
+
 void KnownFileBeingDestroyed(CKnownFile *file)
 {
 #ifndef AMULE_DAEMON

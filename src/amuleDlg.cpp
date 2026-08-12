@@ -52,6 +52,7 @@
 #include "amule.h"            // Needed for theApp
 #include "AppImageEnv.h"      // Needed for GetSanitizedExecEnv
 #include "ChatWnd.h"          // Needed for CChatWnd
+#include "ClientsWnd.h"       // Needed for CClientsWnd
 #include "SourceListCtrl.h"   // Needed for CSourceListCtrl
 #include "DownloadListCtrl.h" // Needed for CDownloadListCtrl
 #include "DownloadQueue.h"    // Needed for CDownloadQueue
@@ -101,6 +102,7 @@ wxBEGIN_EVENT_TABLE(CamuleDlg, wxFrame)
 	EVT_TOOL(ID_BUTTONDOWNLOADS, CamuleDlg::OnToolBarButton)
 	EVT_TOOL(ID_BUTTONSHARED, CamuleDlg::OnToolBarButton)
 	EVT_TOOL(ID_BUTTONMESSAGES, CamuleDlg::OnToolBarButton)
+	EVT_TOOL(ID_BUTTONCLIENTS, CamuleDlg::OnToolBarButton)
 	EVT_TOOL(ID_BUTTONSTATISTICS, CamuleDlg::OnToolBarButton)
 	EVT_TOOL(ID_ABOUT, CamuleDlg::OnAboutButton)
 
@@ -118,6 +120,7 @@ wxBEGIN_EVENT_TABLE(CamuleDlg, wxFrame)
 	EVT_MENU(ID_BUTTONDOWNLOADS, CamuleDlg::OnToolBarButton)
 	EVT_MENU(ID_BUTTONSHARED, CamuleDlg::OnToolBarButton)
 	EVT_MENU(ID_BUTTONMESSAGES, CamuleDlg::OnToolBarButton)
+	EVT_MENU(ID_BUTTONCLIENTS, CamuleDlg::OnToolBarButton)
 	EVT_MENU(ID_BUTTONSTATISTICS, CamuleDlg::OnToolBarButton)
 	EVT_MENU(ID_BUTTONNEWPREFERENCES, CamuleDlg::OnPrefButton)
 
@@ -321,6 +324,7 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 	m_sharedfileswnd = new CSharedFilesWnd(p_cnt);
 	m_statisticswnd = new CStatisticsDlg(p_cnt, theApp->m_statistics);
 	m_chatwnd = new CChatWnd(p_cnt);
+	m_clientswnd = new CClientsWnd(p_cnt);
 	m_kademliawnd = CastChild("kadWnd", CKadDlg);
 
 	m_serverwnd->Show(false);
@@ -329,6 +333,7 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 	m_sharedfileswnd->Show(false);
 	m_statisticswnd->Show(false);
 	m_chatwnd->Show(false);
+	m_clientswnd->Show(false);
 
 	// Create the GUI timer
 	gui_timer = new wxTimer(this, ID_GUI_TIMER_EVENT);
@@ -414,6 +419,7 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 	navigateMenu->Append(ID_BUTTONDOWNLOADS, _("Downloads") + "\tAlt+T");
 	navigateMenu->Append(ID_BUTTONSHARED, _("Shared files") + "\tAlt+F");
 	navigateMenu->Append(ID_BUTTONMESSAGES, _("Messages") + "\tAlt+M");
+	navigateMenu->Append(ID_BUTTONCLIENTS, _("Clients") + "\tAlt+C");
 	navigateMenu->Append(ID_BUTTONSTATISTICS, _("Statistics") + "\tAlt+G");
 	navigateMenu->AppendSeparator();
 	navigateMenu->Append(ID_BUTTONNEWPREFERENCES, _("Preferences") + "\tAlt+P");
@@ -433,6 +439,7 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 		wxAcceleratorEntry(wxACCEL_ALT, 'T', ID_BUTTONDOWNLOADS),
 		wxAcceleratorEntry(wxACCEL_ALT, 'F', ID_BUTTONSHARED),
 		wxAcceleratorEntry(wxACCEL_ALT, 'M', ID_BUTTONMESSAGES),
+		wxAcceleratorEntry(wxACCEL_ALT, 'C', ID_BUTTONCLIENTS),
 		wxAcceleratorEntry(wxACCEL_ALT, 'G', ID_BUTTONSTATISTICS),
 		wxAcceleratorEntry(wxACCEL_ALT, 'P', ID_BUTTONNEWPREFERENCES),
 	};
@@ -787,6 +794,10 @@ void CamuleDlg::OnToolBarButton(wxCommandEvent &ev)
 			case ID_BUTTONMESSAGES:
 				m_BlinkMessages = false;
 				SetActiveDialog(DT_CHAT_WND, m_chatwnd);
+				break;
+
+			case ID_BUTTONCLIENTS:
+				SetActiveDialog(DT_CLIENTS_WND, m_clientswnd);
 				break;
 
 			case ID_BUTTONSTATISTICS:
@@ -1691,6 +1702,13 @@ void CamuleDlg::OnGUITimer(wxTimerEvent &WXUNUSED(evt))
 	}
 #endif
 
+	// The clients page shows live speeds and transfer totals, so it needs the
+	// one-second cadence rather than the five-second block below. Only while
+	// it is the page on screen: off-screen the repaint would draw nothing.
+	if (m_clientswnd && m_activewnd == static_cast<wxWindow *>(m_clientswnd)) {
+		m_clientswnd->UpdateAll();
+	}
+
 	if (msCur - msPrev5 > 5000) { // every 5 seconds
 		msPrev5 = msCur;
 		ShowTransferRate();
@@ -1966,6 +1984,7 @@ void CamuleDlg::Apply_Toolbar_Skin(wxToolBar *wndToolbar)
 	Add_Skin_Icon("Toolbar_Search", wxNullBitmap, useSkins);
 	Add_Skin_Icon("Toolbar_Shared", wxNullBitmap, useSkins);
 	Add_Skin_Icon("Toolbar_Messages", wxNullBitmap, useSkins);
+	Add_Skin_Icon("Toolbar_Clients", wxNullBitmap, useSkins);
 	Add_Skin_Icon("Toolbar_Stats", wxNullBitmap, useSkins);
 	Add_Skin_Icon("Toolbar_Prefs", wxNullBitmap, useSkins);
 	Add_Skin_Icon("Toolbar_Import", wxNullBitmap, useSkins);
@@ -2005,6 +2024,12 @@ void CamuleDlg::Apply_Toolbar_Skin(wxToolBar *wndToolbar)
 		wxNullBitmap,
 		wxITEM_CHECK,
 		_("Messages Window") + TabAccelSuffix("M"));
+	wndToolbar->AddTool(ID_BUTTONCLIENTS,
+		_("Clients"),
+		m_tblist[Toolbar_Clients],
+		wxNullBitmap,
+		wxITEM_CHECK,
+		_("Clients Window") + TabAccelSuffix("C"));
 	wndToolbar->AddTool(ID_BUTTONSTATISTICS,
 		_("Statistics"),
 		m_tblist[Toolbar_Stats],

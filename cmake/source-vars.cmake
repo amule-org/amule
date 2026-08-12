@@ -72,6 +72,8 @@ if (BUILD_MONOLITHIC OR BUILD_REMOTEGUI)
 		ChatSelector.cpp
 		ChatWnd.cpp
 		ClientDetailDialog.cpp
+		ClientsListCtrl.cpp
+		ClientsWnd.cpp
 		CommentDialog.cpp
 		CommentDialogLst.cpp
 		DirectoryTreeCtrl.cpp

@@ -115,6 +115,7 @@ enum ToolbarSkinEnum
 	Toolbar_Search,
 	Toolbar_Shared,
 	Toolbar_Messages,
+	Toolbar_Clients,
 	Toolbar_Stats,
 	Toolbar_Prefs,
 	Toolbar_Import,
@@ -162,6 +163,7 @@ public:
 		DT_SHARED_WND,
 		DT_CHAT_WND,
 		DT_STATS_WND,
+		DT_CLIENTS_WND,
 		DT_KAD_WND // this one is still unused
 	};
 	DialogType GetActiveDialog() { return m_nActiveDialog; }
@@ -291,6 +293,7 @@ public:
 	CSharedFilesWnd *m_sharedfileswnd;
 	CSearchDlg *m_searchwnd;
 	CChatWnd *m_chatwnd;
+	class CClientsWnd *m_clientswnd;
 	CStatisticsDlg *m_statisticswnd;
 	CKadDlg *m_kademliawnd;
 	//! Pointer to the current preference dialog, if any.
