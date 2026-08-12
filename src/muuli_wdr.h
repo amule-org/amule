@@ -655,6 +655,8 @@ wxSizer *messagePageMessages(wxWindow *parent, bool call_fit = TRUE, bool set_si
 #define ID_BUTTONCLIENTS 10503
 #define ID_CLIENTSLIST 10504
 #define ID_CLIENTHISTORYLIST 10505
+#define ID_CLIENTSUPLIST 10506
+#define ID_CLIENTSSPLITTER 10507
 
 // Declare bitmap functions
 

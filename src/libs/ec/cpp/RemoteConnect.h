@@ -213,6 +213,14 @@ private:
 	// path (server emits alive-marker tags so it still works).
 	bool m_serverPartialUpdate;
 
+	// Set when the server echoed `EC_TAG_CAN_CLIENT_HISTORY` in AUTH_OK,
+	// confirming it answers `EC_OP_GET_CLIENT_HISTORY`. Unlike most of these
+	// flags this one is not an optimisation: a daemon that predates the
+	// request reaches the unknown-opcode branch of ProcessRequest2(), which
+	// asserts before it gets to the EC_OP_FAILED it would otherwise return --
+	// so on a debug daemon simply trying the request takes the core down.
+	bool m_serverClientHistory;
+
 	// Set when the server echoed `EC_TAG_CAN_PARTIAL_SEARCH` in AUTH_OK,
 	// confirming it may skip unchanged *search results* on the multi-search
 	// union poll and signal their removal with `EC_TAG_FILE_REMOVED`.
@@ -313,6 +321,8 @@ public:
 	void SetCanChat(bool can) noexcept { m_canChat = can; }
 
 	bool ServerSupportsPartialUpdate() const { return m_serverPartialUpdate; }
+	//! See m_serverClientHistory. False means: do not send the request at all.
+	bool ServerSupportsClientHistory() const { return m_serverClientHistory; }
 	//! See m_serverSessionId. 0 means the daemon didn't tell us.
 	uint64 GetServerSessionId() const { return m_serverSessionId; }
 	bool ServerSupportsPartialSearch() const { return m_serverPartialSearch; }

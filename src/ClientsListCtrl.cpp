@@ -24,27 +24,62 @@
 
 #include "ClientsListCtrl.h" // Interface declarations
 
+#include <map>
+
 #include <common/Format.h> // Needed for CFormat
 
-#include "DataToText.h"     // Needed for GetSoftName, OriginToText
-#include "OtherFunctions.h" // Needed for CastItoXBytes, CastItoSpeed
-#include "PartFile.h"       // Needed for CPartFile
-#include "updownclient.h"   // Needed for CUpDownClient
-#include "muuli_wdr.h"      // Needed for ID_CLIENTSLIST
+#include "amule.h"              // Needed for theApp
+#include "ClientDetailDialog.h" // Needed for CClientDetailDialog
+#include "ClientList.h"         // Needed for CClientList::FindClientByECID
+#include "ClientRef.h"          // Needed for CClientRef
+#include "DataToText.h"         // Needed for GetSoftName, OriginToText
+#include "MuleBarRenderer.h"    // Needed for CBarFillSpec, CMuleBarRenderer
+#include "OtherFunctions.h"     // Needed for CastItoXBytes, CastItoSpeed
+#include "muuli_wdr.h"          // Needed for ID_CLIENTSLIST
+
+namespace
+{
+/**
+ * Renders the Name column.
+ *
+ * Same extension point the per-file client lists use (see
+ * CGenericClientListCtrl's renderer of the same name): CMuleBarRenderer is
+ * borrowed for its identity-carrying CBarFillSpec, not to draw a bar. The
+ * identity here is the row's own snapshot rather than a client, since that is
+ * what this list holds, and the drawing is DrawClientNameCell() either way.
+ */
+class CClientsNameRenderer : public CMuleBarRenderer
+{
+public:
+	bool Render(wxRect cell, wxDC *dc, int WXUNUSED(state)) override
+	{
+		const ClientNameCell *data =
+			reinterpret_cast<const ClientNameCell *>(GetSpec().GetIdentity());
+		if (data != nullptr) {
+			DrawClientNameCell(*data, cell, dc);
+		}
+		return true;
+	}
+};
+} // namespace
 
 wxBEGIN_EVENT_TABLE(CClientsListCtrl, CMuleVirtualDataViewCtrl)
+	EVT_DATAVIEW_ITEM_ACTIVATED(wxID_ANY, CClientsListCtrl::OnItemActivated)
 wxEND_EVENT_TABLE()
 
-CClientsListCtrl::CClientsListCtrl(wxWindow *parent, int id, const wxPoint &pos, wxSize size, int flags)
+CClientsListCtrl::CClientsListCtrl(
+	wxWindow *parent, int id, const wxPoint &pos, wxSize size, int flags, const wxString &tableName)
 : CMuleVirtualDataViewCtrl(parent, id, pos, size, flags)
 {
 	const int colFlags = wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE;
-	AddTextColumn(_("Name"), COLUMN_CLIENTS_NAME, "N", 200, wxALIGN_LEFT, colFlags);
+	// Owns its drawing so the badge icons match the per-file client lists;
+	// still sorts and compares on the plain name text.
+	AddBarColumn(_("Name"), COLUMN_CLIENTS_NAME, "N", 200, colFlags, new CClientsNameRenderer());
 	AddTextColumn(_("Software"), COLUMN_CLIENTS_SOFTWARE, "S", 110, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Version"), COLUMN_CLIENTS_VERSION, "V", 90, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("IP Address"), COLUMN_CLIENTS_ADDRESS, "I", 140, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Origin"), COLUMN_CLIENTS_ORIGIN, "O", 110, wxALIGN_LEFT, colFlags);
-	AddTextColumn(_("Files"), COLUMN_CLIENTS_FILES, "F", 60, wxALIGN_LEFT, colFlags);
+	AddTextColumn(_("Files"), COLUMN_CLIENTS_FILES, "F", 220, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Upload Speed"), COLUMN_CLIENTS_UP_SPEED, "U", 100, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Download Speed"), COLUMN_CLIENTS_DOWN_SPEED, "D", 100, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Uploaded"), COLUMN_CLIENTS_SESSION_UP, "u", 100, wxALIGN_LEFT, colFlags);
@@ -59,157 +94,196 @@ CClientsListCtrl::CClientsListCtrl(wxWindow *parent, int id, const wxPoint &pos,
 
 	ApplySorting(COLUMN_CLIENTS_NAME, 0);
 
-	m_columnStore.SetTableName("Clients");
+	m_columnStore.SetTableName(tableName);
 	LoadColumnSettings();
 	InitColumnState();
 }
 
 CClientsListCtrl::~CClientsListCtrl() = default;
 
-unsigned CClientsListCtrl::CountRelatedFiles(const CUpDownClient *client)
+const CClientsListCtrl::Row *CClientsListCtrl::RowFor(wxUIntPtr item) const
 {
-	// The two files a peer can be working on with us at once: the one it is
-	// uploading to us and the one it is downloading from us. A4AF entries are
-	// deliberately not counted -- those are files the peer *could* serve, not
-	// ones it is exchanging, and counting them would make the column mean
-	// something else.
-	unsigned files = 0;
-	if (client->GetRequestFile() != nullptr) {
-		files++;
+	// index+1, so 0 stays "no item".
+	if (item == 0 || item > m_rows.size()) {
+		return nullptr;
 	}
-	const CKnownFile *upload = client->GetUploadFile();
-	if (upload != nullptr &&
-		static_cast<const void *>(upload) != static_cast<const void *>(client->GetRequestFile())) {
-		files++;
-	}
-	return files;
+	return &m_rows[item - 1];
 }
 
-void CClientsListCtrl::AddClient(CUpDownClient *client)
+void CClientsListCtrl::SetClients(std::vector<Row> &&rows)
 {
-	const wxUIntPtr data = reinterpret_cast<wxUIntPtr>(client);
-	if (HasItemData(data)) {
-		return;
+	// The common case by far: the same peers as last second, with new numbers.
+	// Overwrite the rows where they sit and refresh them. Rebuilding the model
+	// instead -- which is all this used to do -- discards the scroll position
+	// and the selection every time the poll lands, so a list a person is
+	// reading jumps back to the top once a second.
+	//
+	// Matched on ECID rather than position: the sweep walks a container whose
+	// order is not stable, so equal contents can arrive in a different order.
+	if (rows.size() == m_rows.size()) {
+		std::map<uint32, const Row *> incoming;
+		for (const Row &row : rows) {
+			incoming[row.ecid] = &row;
+		}
+		bool sameSet = incoming.size() == m_rows.size();
+		for (const Row &row : m_rows) {
+			if (!sameSet) {
+				break;
+			}
+			sameSet = incoming.count(row.ecid) != 0;
+		}
+		if (sameSet) {
+			for (Row &row : m_rows) {
+				row = *incoming[row.ecid];
+			}
+			// Per row rather than a blanket Refresh() so the control's own
+			// viewport gate applies -- off-screen rows cost nothing -- and so a
+			// live sort column still gets the chance to reorder.
+			for (size_t i = 0; i < m_rows.size(); ++i) {
+				RefreshItemData(static_cast<wxUIntPtr>(i + 1));
+			}
+			return;
+		}
 	}
-	AddItemData(data);
-}
 
-void CClientsListCtrl::RemoveClient(CUpDownClient *client)
-{
-	// Pointer value only -- see the header. The client is mid-destruction.
-	const wxUIntPtr data = reinterpret_cast<wxUIntPtr>(client);
-	if (HasItemData(data)) {
-		RemoveItemData(data);
+	// A peer arrived or left: the row set itself changed, so rebuild. Selection
+	// is carried across; the scroll position is the price of a structural
+	// change, and one only happens when the set of peers actually moves.
+	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
+	ClearItemData();
+	m_rows = std::move(rows);
+	for (size_t i = 0; i < m_rows.size(); ++i) {
+		AppendItemData(static_cast<wxUIntPtr>(i + 1));
 	}
+	FinishBulkLoad();
+	SetSelectedItemData(selected);
 }
 
 wxString CClientsListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) const
 {
-	const CUpDownClient *client = reinterpret_cast<const CUpDownClient *>(item);
-	if (client == nullptr) {
+	const Row *row = RowFor(item);
+	if (row == nullptr) {
 		return wxEmptyString;
 	}
 
 	switch (column) {
 	case COLUMN_CLIENTS_NAME:
-		// A peer that has not finished its handshake has no name yet;
-		// its address is the only thing that identifies it so far.
-		if (!client->GetUserName().IsEmpty()) {
-			return client->GetUserName();
+		if (!row->name.IsEmpty()) {
+			return row->name;
 		}
-		return Uint32toStringIP(client->GetIP());
+		return Uint32toStringIP(row->ip);
 
 	case COLUMN_CLIENTS_SOFTWARE:
-		return client->GetSoftStr();
+		return row->software;
 
 	case COLUMN_CLIENTS_VERSION:
-		return client->GetSoftVerStr();
+		return row->version;
 
 	case COLUMN_CLIENTS_ADDRESS:
-		// GetIP(), not GetFullIP(): the latter reads m_FullUserIP, which
-		// only the core fills in. Over EC the address arrives as
-		// EC_TAG_CLIENT_USER_IP and lands in m_dwUserIP, so amulegui showed
-		// 0.0.0.0 for every peer until this used the field that is actually
-		// populated in both builds.
-		return CFormat(wxT("%s:%u")) % Uint32toStringIP(client->GetIP()) % client->GetUserPort();
+		return CFormat(wxT("%s:%u")) % Uint32toStringIP(row->ip) % row->port;
 
 	case COLUMN_CLIENTS_ORIGIN:
-		return OriginToText(client->GetSourceFrom());
+		return OriginToText(row->sourceFrom);
 
 	case COLUMN_CLIENTS_FILES:
-		return CFormat(wxT("%u")) % CountRelatedFiles(client);
+		return row->files;
 
 	case COLUMN_CLIENTS_UP_SPEED:
-		return client->GetUploadDatarate() ? CastItoSpeed(client->GetUploadDatarate()) : wxString();
+		return row->upSpeed ? CastItoSpeed(row->upSpeed) : wxString();
 
 	case COLUMN_CLIENTS_DOWN_SPEED:
-		return client->GetKBpsDown() > 0.001
-			       ? CastItoSpeed(static_cast<uint32>(client->GetKBpsDown() * 1024))
-			       : wxString();
+		return row->downSpeed > 0.001 ? CastItoSpeed(static_cast<uint32>(row->downSpeed * 1024))
+					      : wxString();
 
 	case COLUMN_CLIENTS_SESSION_UP:
-		// GetTransferredUp(), not GetSessionUp(). The latter subtracts
-		// m_nCurSessionUp, which nothing populates in the CLIENT_GUI build,
-		// so the unsigned subtraction underflowed and every row read
-		// 16777216 TB.
-		return CastItoXBytes(client->GetTransferredUp());
+		return CastItoXBytes(row->sessionUp);
 
 	case COLUMN_CLIENTS_SESSION_DOWN:
-		return CastItoXBytes(client->GetTransferredDown());
+		return CastItoXBytes(row->sessionDown);
 
 	case COLUMN_CLIENTS_TOTAL_UP:
-		return CastItoXBytes(client->GetUploadedTotal());
+		return CastItoXBytes(row->totalUp);
 
 	case COLUMN_CLIENTS_TOTAL_DOWN:
-		return CastItoXBytes(client->GetDownloadedTotal());
+		return CastItoXBytes(row->totalDown);
 
-	case COLUMN_CLIENTS_RATIO: {
-		// Only meaningful when both directions have moved. Blank rather
-		// than a zero or an infinity: on a seeding node almost every peer
-		// is upload-only, and a column full of "inf" says less than a
-		// column full of nothing.
-		const uint64 up = client->GetUploadedTotal();
-		const uint64 down = client->GetDownloadedTotal();
-		if (up == 0 || down == 0) {
+	case COLUMN_CLIENTS_RATIO:
+		if (row->totalUp == 0 || row->totalDown == 0) {
 			return wxEmptyString;
 		}
-		return CFormat(wxT("%.2f")) % (static_cast<double>(down) / static_cast<double>(up));
-	}
+		return CFormat(wxT("%.2f")) %
+		       (static_cast<double>(row->totalDown) / static_cast<double>(row->totalUp));
 
 	default:
 		return wxEmptyString;
 	}
 }
 
+void CClientsListCtrl::GetItemBarFill(wxUIntPtr data, unsigned column, CBarFillSpec &out) const
+{
+	if (column != COLUMN_CLIENTS_NAME) {
+		return;
+	}
+	const Row *row = RowFor(data);
+	if (row == nullptr) {
+		return;
+	}
+	// The renderer needs the snapshot, not spans. Safe to hand out an address
+	// into m_rows: the vector is only ever replaced wholesale by SetClients(),
+	// which runs on the main thread between paints.
+	out = CBarFillSpec(reinterpret_cast<wxUIntPtr>(&row->nameCell), 0, {});
+}
+
+void CClientsListCtrl::OnItemActivated(wxDataViewEvent &event)
+{
+	if (!event.GetItem().IsOk()) {
+		return;
+	}
+	const Row *row = RowFor(ItemAt(GetModelRow(event.GetItem())));
+	if (row == nullptr || row->ecid == 0) {
+		return;
+	}
+
+	// Resolve now rather than holding the peer: a row is a snapshot, and the
+	// peer it describes may have gone since the last sweep. A miss simply
+	// means there is nothing to show.
+#ifdef CLIENT_GUI
+	CClientRef *ref = theApp->clientlist->GetByID(row->ecid);
+	CUpDownClient *client = ref != nullptr ? ref->GetClient() : nullptr;
+#else
+	CUpDownClient *client = theApp->clientlist->FindClientByECID(row->ecid);
+#endif
+	if (client == nullptr) {
+		return;
+	}
+	// The CClientRef is what keeps the peer alive for as long as the modal
+	// dialog is up.
+	CClientDetailDialog(this, CCLIENTREF(client, wxT("CClientsListCtrl::OnItemActivated"))).ShowModal();
+}
+
 int CClientsListCtrl::CompareItemData(
 	wxUIntPtr data1, wxUIntPtr data2, unsigned column, bool WXUNUSED(alt), int modifier) const
 {
-	const CUpDownClient *c1 = reinterpret_cast<const CUpDownClient *>(data1);
-	const CUpDownClient *c2 = reinterpret_cast<const CUpDownClient *>(data2);
-	if (c1 == nullptr || c2 == nullptr) {
+	const Row *r1 = RowFor(data1);
+	const Row *r2 = RowFor(data2);
+	if (r1 == nullptr || r2 == nullptr) {
 		return 0;
 	}
 
-	// Numeric columns compare on their values, not on the rendered strings --
-	// otherwise "10 MB" sorts before "9 MB" and the sizes lie.
 	switch (column) {
-	case COLUMN_CLIENTS_FILES:
-		return modifier * CmpAny(CountRelatedFiles(c1), CountRelatedFiles(c2));
 	case COLUMN_CLIENTS_UP_SPEED:
-		return modifier * CmpAny(c1->GetUploadDatarate(), c2->GetUploadDatarate());
+		return modifier * CmpAny(r1->upSpeed, r2->upSpeed);
 	case COLUMN_CLIENTS_DOWN_SPEED:
-		return modifier * CmpAny(c1->GetKBpsDown(), c2->GetKBpsDown());
+		return modifier * CmpAny(r1->downSpeed, r2->downSpeed);
 	case COLUMN_CLIENTS_SESSION_UP:
-		return modifier * CmpAny(c1->GetTransferredUp(), c2->GetTransferredUp());
+		return modifier * CmpAny(r1->sessionUp, r2->sessionUp);
 	case COLUMN_CLIENTS_SESSION_DOWN:
-		return modifier * CmpAny(c1->GetTransferredDown(), c2->GetTransferredDown());
+		return modifier * CmpAny(r1->sessionDown, r2->sessionDown);
 	case COLUMN_CLIENTS_TOTAL_UP:
-		return modifier * CmpAny(c1->GetUploadedTotal(), c2->GetUploadedTotal());
+		return modifier * CmpAny(r1->totalUp, r2->totalUp);
 	case COLUMN_CLIENTS_TOTAL_DOWN:
-		return modifier * CmpAny(c1->GetDownloadedTotal(), c2->GetDownloadedTotal());
+		return modifier * CmpAny(r1->totalDown, r2->totalDown);
 	default:
-		// Everything else is genuinely textual, so the rendered form is
-		// the right thing to compare and stays in step with the column.
 		return modifier *
 		       GetItemColumnText(data1, column).CmpNoCase(GetItemColumnText(data2, column));
 	}

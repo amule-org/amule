@@ -1443,6 +1443,12 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 					// never skips, absence still means the result is gone.
 					response->AddTag(CECEmptyTag(EC_TAG_CAN_PARTIAL_SEARCH));
 				}
+				// Unconditional: this daemon answers
+				// EC_OP_GET_CLIENT_HISTORY, and a client that does
+				// not see the echo must not send the request --
+				// against a daemon that predates it the unknown
+				// opcode asserts before the EC_OP_FAILED path.
+				response->AddTag(CECEmptyTag(EC_TAG_CAN_CLIENT_HISTORY));
 				if (m_chatActive) {
 					// Confirm chat relay so the client starts polling
 					// EC_OP_GET_CHAT_MESSAGES for incoming peer messages.

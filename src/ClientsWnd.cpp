@@ -27,17 +27,30 @@
 #include <wx/sizer.h>
 
 #include <wx/notebook.h>
+#include <wx/splitter.h>
+#include <wx/stattext.h>
 
 #include "ClientsListCtrl.h"       // Needed for CClientsListCtrl
 #include "ClientHistoryListCtrl.h" // Needed for CClientHistoryListCtrl
 #include "muuli_wdr.h"             // Needed for ID_CLIENTSLIST
 
+#include <map>
 #include <set>
 
 #include <common/Format.h> // Needed for CFormat
 
-#include "amule.h"        // Needed for theApp
-#include "updownclient.h" // Needed for CUpDownClient::GetUserHash
+#include "amule.h"    // Needed for theApp
+#include "PartFile.h" // Needed for CPartFile (CKnownFile::GetFileName)
+// CUpDownClient. MUST match the build's client class: the reduced EC client for
+// amulegui, the full one for monolithic. The two have different layouts, so the
+// wrong header here reads every member of a live peer at the wrong offset --
+// blank names, a zero IP and nonsense totals, then a crash once a wrong offset
+// lands on something that is not a string. Same trap as GenericClientListCtrl.
+#ifdef CLIENT_GUI
+#include "UpDownClientEC.h"
+#else
+#include "updownclient.h"
+#endif
 
 #ifndef CLIENT_GUI
 #include "ClientCredits.h"     // Needed for CClientCredits, ClientMetaStruct
@@ -58,9 +71,37 @@ CClientsWnd::CClientsWnd(wxWindow *parent)
 	wxNotebook *book = new wxNotebook(this, -1);
 	const long listStyle = wxDV_MULTIPLE | wxDV_ROW_LINES | wxDV_VERT_RULES;
 
-	clientslistctrl =
-		new CClientsListCtrl(book, ID_CLIENTSLIST, wxDefaultPosition, wxDefaultSize, listStyle);
-	book->AddPage(clientslistctrl, _("Active"), true);
+	// Split rather than one list: a peer is either giving us a file or taking
+	// one, and often both at once, so a single list has to render each row's
+	// direction into a column and leaves the reader to sort it out. Two panes
+	// state it structurally -- and a peer swapping with us simply appears in
+	// both, once as a source and once as a destination, which is exactly what
+	// is happening.
+	wxSplitterWindow *split = new wxSplitterWindow(
+		book, ID_CLIENTSSPLITTER, wxDefaultPosition, wxDefaultSize, wxSP_LIVE_UPDATE | wxSP_3DSASH);
+	split->SetMinimumPaneSize(60);
+
+	wxPanel *downPanel = new wxPanel(split, -1);
+	downclientsctrl = new CClientsListCtrl(
+		downPanel, ID_CLIENTSLIST, wxDefaultPosition, wxDefaultSize, listStyle, "ClientsDown");
+	wxBoxSizer *downSizer = new wxBoxSizer(wxVERTICAL);
+	downSizer->Add(new wxStaticText(downPanel, -1, _("Downloading from")), 0, wxALL, 3);
+	downSizer->Add(downclientsctrl, 1, wxEXPAND);
+	downPanel->SetSizer(downSizer);
+
+	wxPanel *upPanel = new wxPanel(split, -1);
+	upclientsctrl = new CClientsListCtrl(
+		upPanel, ID_CLIENTSUPLIST, wxDefaultPosition, wxDefaultSize, listStyle, "ClientsUp");
+	wxBoxSizer *upSizer = new wxBoxSizer(wxVERTICAL);
+	upSizer->Add(new wxStaticText(upPanel, -1, _("Uploading to")), 0, wxALL, 3);
+	upSizer->Add(upclientsctrl, 1, wxEXPAND);
+	upPanel->SetSizer(upSizer);
+
+	split->SplitHorizontally(downPanel, upPanel);
+	// Even halves. The two sides carry comparable numbers of peers and neither
+	// is the subordinate detail pane the Transfers splitter's ratio assumes.
+	split->SetSashGravity(0.5);
+	book->AddPage(split, _("Active"), true);
 
 	historylistctrl = new CClientHistoryListCtrl(
 		book, ID_CLIENTHISTORYLIST, wxDefaultPosition, wxDefaultSize, listStyle);
@@ -128,7 +169,7 @@ void CClientsWnd::LoadHistory()
 	// for it. Against a daemon too old to know the request this comes back
 	// EC_OP_FAILED and the tab simply stays empty -- there is nothing to
 	// negotiate in advance, the failure says it.
-	if (theApp->m_connect != nullptr) {
+	if (theApp->m_connect != nullptr && theApp->m_connect->ServerSupportsClientHistory()) {
 		CECPacket request(EC_OP_GET_CLIENT_HISTORY);
 		theApp->m_connect->SendRequest(&m_historyHandler, &request);
 	}
@@ -212,8 +253,82 @@ CClientsWnd::~CClientsWnd() = default;
 
 void CClientsWnd::UpdateAll()
 {
-	// A repaint, not a per-row notification: a virtual list pulls each cell's
-	// value as it draws, so this re-reads exactly the rows on screen and
-	// nothing else -- the same reasoning as CSharedFilesCtrl::EndBulkUpdate().
-	clientslistctrl->Refresh();
+	// Rebuild the row set from the live container rather than maintaining it
+	// from add/remove notifications.
+	//
+	// Those notifications are queued whenever they are raised off the main
+	// thread, which is exactly what CUpDownClientListRem does -- so an add
+	// could arrive after its client's allocation had been reused (rows full
+	// of blank peers whose values never moved), and a removal could arrive
+	// after the object was freed, leaving the list to repaint a dangling
+	// pointer once a second until it crashed inside drawing.
+	//
+	// Holding CClientRefs instead would fix the lifetime and create a worse
+	// problem: those are owning, so the list would keep every peer it ever
+	// saw alive. Enumerating what is live, when we draw, has neither failure
+	// mode, and the set is bounded by MaxConnections.
+	// Copy each peer's values here, while we know they are alive. The list
+	// is painted later, and a peer freed in between would otherwise be read
+	// through a dangling pointer at draw time.
+	std::vector<CClientsListCtrl::Row> downRows;
+	std::vector<CClientsListCtrl::Row> upRows;
+	auto snapshot = [&downRows, &upRows](const CUpDownClient *c) {
+		if (c == nullptr) {
+			return;
+		}
+		// Which pane(s) this peer belongs in. A peer holds at most one file in
+		// each direction, and a peer swapping with us holds one of each -- so
+		// it is listed twice, once as a source and once as a destination,
+		// rather than being forced into a single row that has to explain
+		// itself. Membership is the relationship, not whether bytes are moving
+		// this second: a queued source is still someone we are downloading
+		// from, and the speed columns already say whether it is live.
+		const CKnownFile *requested = c->GetRequestFile();
+		const CKnownFile *uploading = c->GetUploadFile();
+		if (requested == nullptr && uploading == nullptr) {
+			return;
+		}
+		CClientsListCtrl::Row row;
+		row.ecid = c->ECID();
+		row.nameCell = MakeClientNameCell(c);
+		row.name = c->GetUserName();
+		row.software = c->GetSoftStr();
+		row.version = c->GetSoftVerStr();
+		row.ip = c->GetIP();
+		row.port = c->GetUserPort();
+		row.sourceFrom = static_cast<uint8>(c->GetSourceFrom());
+		row.upSpeed = c->GetUploadDatarate();
+		row.downSpeed = c->GetKBpsDown();
+		row.sessionUp = c->GetTransferredUp();
+		row.sessionDown = c->GetTransferredDown();
+		row.totalUp = c->GetUploadedTotal();
+		row.totalDown = c->GetDownloadedTotal();
+
+		// The Files column names one file, not a list, because which file it is
+		// follows from which pane the row is in.
+		if (requested != nullptr) {
+			row.files = requested->GetFileName().GetPrintable();
+			downRows.push_back(row);
+		}
+		if (uploading != nullptr) {
+			row.files = uploading->GetFileName().GetPrintable();
+			upRows.push_back(row);
+		}
+	};
+
+#ifdef CLIENT_GUI
+	if (theApp->clientlist != nullptr) {
+		for (const auto &entry : *theApp->clientlist) {
+			snapshot(entry->GetClient());
+		}
+	}
+#else
+	if (theApp->clientlist != nullptr) {
+		for (const auto &entry : theApp->clientlist->GetClientList()) {
+			snapshot(entry.second.GetClient());
+		}
+	}
+#endif
+	downclientsctrl->SetClients(std::move(downRows));
+	upclientsctrl->SetClients(std::move(upRows));
 }

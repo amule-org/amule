@@ -73,6 +73,7 @@ if (BUILD_MONOLITHIC OR BUILD_REMOTEGUI)
 		ChatWnd.cpp
 		ClientDetailDialog.cpp
 		ClientHistoryListCtrl.cpp
+		ClientNameCell.cpp
 		ClientsListCtrl.cpp
 		ClientsWnd.cpp
 		CommentDialog.cpp

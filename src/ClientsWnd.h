@@ -37,9 +37,9 @@ class CClientHistoryListCtrl;
 /**
  * The Clients page: every peer we are currently talking to, once each.
  *
- * Built in code rather than through a muuli_wdr layout function -- it is one
- * full-bleed list with no surrounding controls, so a generated layout would be
- * a sizer and nothing else.
+ * Built in code rather than through a muuli_wdr layout function -- it is lists
+ * and a splitter with no surrounding controls, so a generated layout would be
+ * sizers and nothing else.
  */
 class CClientsWnd : public wxPanel
 {
@@ -47,7 +47,10 @@ public:
 	CClientsWnd(wxWindow *parent);
 	~CClientsWnd();
 
-	CClientsListCtrl *clientslistctrl;
+	//! Peers holding a file we are downloading.
+	CClientsListCtrl *downclientsctrl;
+	//! Peers we are sending a file to.
+	CClientsListCtrl *upclientsctrl;
 	CClientHistoryListCtrl *historylistctrl;
 
 	/**

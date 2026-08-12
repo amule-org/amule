@@ -418,8 +418,8 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 	navigateMenu->Append(ID_BUTTONSEARCH, _("Searches") + "\tAlt+S");
 	navigateMenu->Append(ID_BUTTONDOWNLOADS, _("Downloads") + "\tAlt+T");
 	navigateMenu->Append(ID_BUTTONSHARED, _("Shared files") + "\tAlt+F");
-	navigateMenu->Append(ID_BUTTONMESSAGES, _("Messages") + "\tAlt+M");
 	navigateMenu->Append(ID_BUTTONCLIENTS, _("Clients") + "\tAlt+C");
+	navigateMenu->Append(ID_BUTTONMESSAGES, _("Messages") + "\tAlt+M");
 	navigateMenu->Append(ID_BUTTONSTATISTICS, _("Statistics") + "\tAlt+G");
 	navigateMenu->AppendSeparator();
 	navigateMenu->Append(ID_BUTTONNEWPREFERENCES, _("Preferences") + "\tAlt+P");
@@ -2018,18 +2018,18 @@ void CamuleDlg::Apply_Toolbar_Skin(wxToolBar *wndToolbar)
 		wxNullBitmap,
 		wxITEM_CHECK,
 		_("Shared Files Window") + TabAccelSuffix("F"));
-	wndToolbar->AddTool(ID_BUTTONMESSAGES,
-		_("Messages"),
-		m_tblist[Toolbar_Messages],
-		wxNullBitmap,
-		wxITEM_CHECK,
-		_("Messages Window") + TabAccelSuffix("M"));
 	wndToolbar->AddTool(ID_BUTTONCLIENTS,
 		_("Clients"),
 		m_tblist[Toolbar_Clients],
 		wxNullBitmap,
 		wxITEM_CHECK,
 		_("Clients Window") + TabAccelSuffix("C"));
+	wndToolbar->AddTool(ID_BUTTONMESSAGES,
+		_("Messages"),
+		m_tblist[Toolbar_Messages],
+		wxNullBitmap,
+		wxITEM_CHECK,
+		_("Messages Window") + TabAccelSuffix("M"));
 	wndToolbar->AddTool(ID_BUTTONSTATISTICS,
 		_("Statistics"),
 		m_tblist[Toolbar_Stats],

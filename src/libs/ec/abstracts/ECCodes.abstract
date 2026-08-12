@@ -220,6 +220,7 @@ EC_TAG_AEAD_SERVER_PUBKEY                 0x0022
 EC_TAG_AEAD_CLIENT_CONFIRM                0x0023
 EC_TAG_AEAD_SERVER_CONFIRM                0x0024
 EC_TAG_SESSION_ID                         0x0025
+EC_TAG_CAN_CLIENT_HISTORY                 0x0026
 
 
 EC_TAG_CLIENT_NAME                        0x0100

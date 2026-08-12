@@ -52,6 +52,7 @@
 #include "ClientCredits.h"
 #include "SourceListCtrl.h"
 #include "ChatWnd.h"
+#include "ClientsWnd.h"       // Needed for CClientsWnd
 #include "DataToText.h"       // Needed for GetSoftName()
 #include "DownloadListCtrl.h" // Needed for CDownloadListCtrl
 #include "Friend.h"
@@ -396,6 +397,14 @@ void CamuleRemoteGuiApp::OnPollTimer(wxTimerEvent &)
 			}
 		} else if (amuledlg->m_transferwnd->IsShown()) {
 			// update both downloads and shared files
+			knownfiles->DoRequery(EC_OP_GET_UPDATE, EC_TAG_KNOWNFILE);
+		} else if (amuledlg->m_clientswnd->IsShown()) {
+			// Same request, for the peers rather than the files: the
+			// EC_TAG_CLIENT tags the clients list lives on ride along
+			// in this reply (CKnownFilesRem::ProcessUpdate) and are
+			// sent by nothing else. Without this the page shows
+			// whatever the peers looked like when the user left the
+			// last tab that did ask, and never moves again.
 			knownfiles->DoRequery(EC_OP_GET_UPDATE, EC_TAG_KNOWNFILE);
 		} else if (amuledlg->m_searchwnd->IsShown()) {
 			// Reachability fix (#641): ask what searches the daemon
@@ -2646,26 +2655,12 @@ CClientRef *CUpDownClientListRem::CreateItem(const CEC_UpDownClient_Tag *tag)
 	CClientRef *client = new CClientRef(tag);
 	ProcessItemUpdate(tag, client);
 
-	// amulegui's end of CClientList::AddClient: a peer the core has told us
-	// about for the first time. Paired with the ClientBeingDestroyed
-	// broadcast in DeleteItem, so the clients list learns about both ends of
-	// a peer's life here exactly as it does in the monolithic build.
-	Notify_ClientsListAddClient(client->GetClient());
-
 	return client;
 }
 
 void CUpDownClientListRem::DeleteItem(CClientRef *clientref)
 {
 	CUpDownClient *client = clientref->GetClient();
-
-	// amulegui's end of the same broadcast the core fires from
-	// ~CUpDownClient. This is where a peer stops existing here: either it
-	// went away, or the whole container was reset because the daemon we were
-	// talking to turned out to be a different process (see FinishReconnect).
-	// The per-file notifications below say "left this file", which a list
-	// showing each peer once cannot act on.
-	Notify_ClientBeingDestroyed(client);
 
 	if (client->m_reqfile) {
 		client->m_reqfile->DelSource(client);

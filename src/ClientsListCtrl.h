@@ -25,9 +25,10 @@
 #ifndef CLIENTSLISTCTRL_H
 #define CLIENTSLISTCTRL_H
 
-#include "MuleVirtualDataViewCtrl.h"
+#include <vector>
 
-class CUpDownClient;
+#include "ClientNameCell.h" // Needed for ClientNameCell
+#include "MuleVirtualDataViewCtrl.h"
 
 #define COLUMN_CLIENTS_NAME 0
 #define COLUMN_CLIENTS_SOFTWARE 1
@@ -55,35 +56,81 @@ class CUpDownClient;
  * another, and only a per-client view can say so. Hence the file *count*
  * column, which the per-file lists have no way to express.
  *
- * Rows are keyed on the CUpDownClient pointer, and the pointer is treated as a
- * key rather than something to hold: the client is added when CClientList
- * accepts it, refreshed as it transfers, and dropped on the
- * ClientBeingDestroyed broadcast. A CClientRef would be the obvious
+ * Rows hold values rather than clients. A CClientRef would be the obvious
  * alternative and is the wrong tool -- those are owning (Unlink() deletes at
  * the last release), so the list would keep every peer it ever saw alive and
  * would never be told to let go, because the signal it is waiting for comes
- * from the destructor its own reference is preventing.
+ * from the destructor its own reference is preventing. The one thing a row
+ * keeps of the peer itself is its ECID, which is a name to look it up by on
+ * demand rather than a claim that it still exists.
  */
 class CClientsListCtrl : public CMuleVirtualDataViewCtrl
 {
 public:
-	CClientsListCtrl(wxWindow *parent, int id, const wxPoint &pos, wxSize size, int flags);
+	/**
+	 * @param tableName Names this list's saved column widths. The Active page
+	 *                  shows two of these side by side and they are sized for
+	 *                  different content, so they must not share one entry.
+	 */
+	CClientsListCtrl(wxWindow *parent,
+		int id,
+		const wxPoint &pos,
+		wxSize size,
+		int flags,
+		const wxString &tableName);
 	~CClientsListCtrl();
 
-	//! A peer we are now talking to, if it isn't already listed.
-	void AddClient(CUpDownClient *client);
 	/**
-	 * Drop a peer that is going away.
+	 * One row's worth of a peer, copied at sweep time.
 	 *
-	 * Pointer-value comparison only: this runs from ~CUpDownClient, so the
-	 * object is already being torn down and nothing about it may be read.
+	 * Values, not a pointer. The list is painted asynchronously, after the
+	 * sweep that produced it has returned, and a peer can be freed in
+	 * between -- which read back as a valid ECID beside a garbage name, a
+	 * zero address and a 2^48 byte count, and as values that never changed
+	 * because dead objects do not update. Copying is affordable: the set is
+	 * bounded by MaxConnections and this runs once a second only while the
+	 * page is on screen.
 	 */
-	void RemoveClient(CUpDownClient *client);
+	struct Row
+	{
+		//! Looks the peer up again when a row is acted on. Meaningless
+		//! across daemon restarts, which is fine: so is the row.
+		uint32 ecid = 0;
+		//! Everything the Name cell draws, snapshotted with the rest.
+		ClientNameCell nameCell;
+		wxString name;
+		wxString software;
+		wxString version;
+		uint32 ip = 0;
+		uint16 port = 0;
+		uint8 sourceFrom = 0;
+		//! The file(s) this peer is on, by name. A peer holds at most one
+		//! download and one upload, so this is one name or two -- which is
+		//! what the column used to render as the digits 0, 1 and 2.
+		wxString files;
+		uint32 upSpeed = 0;
+		double downSpeed = 0.0;
+		uint64 sessionUp = 0;
+		uint64 sessionDown = 0;
+		uint64 totalUp = 0;
+		uint64 totalDown = 0;
+	};
+
+	/**
+	 * Replace the rows with exactly the peers that are live right now.
+	 *
+	 * Takes the whole set rather than individual adds and removes: the
+	 * notifications that would drive those are queued when raised off the
+	 * main thread, so by delivery an added client may be a reused allocation
+	 * and a removed one already freed. Nothing is held between calls.
+	 */
+	void SetClients(std::vector<Row> &&rows);
 
 protected:
 	wxString GetItemColumnText(wxUIntPtr item, unsigned column) const override;
 	int CompareItemData(
 		wxUIntPtr data1, wxUIntPtr data2, unsigned column, bool alt, int modifier) const override;
+	void GetItemBarFill(wxUIntPtr data, unsigned column, CBarFillSpec &out) const override;
 
 	/**
 	 * Speeds and transfer totals move on every poll, so a row sorted by one
@@ -94,8 +141,12 @@ protected:
 	wxDECLARE_EVENT_TABLE();
 
 private:
-	//! How many of our files this peer is exchanging, for COLUMN_CLIENTS_FILES.
-	static unsigned CountRelatedFiles(const CUpDownClient *client);
+	//! Double-click or Enter: the client details, same as the per-file lists.
+	void OnItemActivated(wxDataViewEvent &event);
+
+	const Row *RowFor(wxUIntPtr item) const;
+
+	std::vector<Row> m_rows;
 };
 
 #endif // CLIENTSLISTCTRL_H

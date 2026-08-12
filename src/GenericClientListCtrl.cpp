@@ -33,6 +33,7 @@
 #include "BarShader.h"     // Needed for CBarShader
 #include "BitVector.h"
 #include "ClientDetailDialog.h" // Needed for CClientDetailDialog
+#include "ClientNameCell.h"     // Needed for MakeClientNameCell, DrawClientNameCell
 #include "ChatWnd.h"            // Needed for CChatWnd
 #include "CommentDialogLst.h"   // Needed for CCommentDialogLst
 #include "DataToText.h"         // Needed for PriorityToStr
@@ -63,16 +64,16 @@
 namespace
 {
 /**
- * Renders the User Name column: a cluster of status/software/credential
- * badge icons followed by an optional country flag and the username text.
+ * Renders the User Name column.
  *
  * Not a literal bar -- this reuses CMuleBarRenderer's identity-carrying
  * CBarFillSpec/GetItemBarFill() extension point (see CBarFillSpec::GetIdentity())
  * to reach the row's ClientCtrlItem_Struct, the same way CDownloadBarRenderer
  * reaches its CPartFile*. Registered via AddBarColumn() rather than growing a
  * new column-registration entry point for a single, list-local column.
- * Replaces DrawClientItem's ColumnUserName case exactly, including the
- * two-icons-then-text x-advance (several badges stack at the *same* x).
+ *
+ * The drawing itself lives in DrawClientNameCell(), shared with the global
+ * clients list so the two cannot drift apart.
  */
 class CClientNameRenderer : public CMuleBarRenderer
 {
@@ -81,145 +82,16 @@ public:
 	{
 		ClientCtrlItem_Struct *item =
 			reinterpret_cast<ClientCtrlItem_Struct *>(GetSpec().GetIdentity());
-		if (!item || cell.GetWidth() <= 0 || cell.GetHeight() <= 0) {
+		if (item == nullptr) {
 			return true;
 		}
-		CClientRef &client = item->GetSource();
-
-		wxDCClipper clipper(*dc, cell);
-
-		wxImageList &imageList = theApp->amuledlg->m_imagelist;
-		int imageXSize = 0;
-		int imageYSize = 0;
-		if (!imageList.GetSize(0, imageXSize, imageYSize)) {
-			return true;
-		}
-		imageXSize += 2; // Padding, matches DrawClientItem's iBitmapXSize.
-		const int imageYOffset = ((cell.GetHeight() - imageYSize) / 2) + 1 /* Fixes rounding */;
-
-		wxPoint point(cell.GetX(), cell.GetY());
-
-		uint8 image = Client_Grey_Smiley;
-		if (item->GetType() != A4AF_SOURCE) {
-			switch (client.GetDownloadState()) {
-			case DS_CONNECTING:
-			case DS_CONNECTED:
-			case DS_WAITCALLBACK:
-			case DS_TOOMANYCONNS:
-				image = Client_Red_Smiley;
-				break;
-			case DS_ONQUEUE:
-				image = client.IsRemoteQueueFull() ? Client_Grey_Smiley
-								   : Client_Yellow_Smiley;
-				break;
-			case DS_DOWNLOADING:
-			case DS_REQHASHSET:
-				image = Client_Green_Smiley;
-				break;
-			case DS_NONEEDEDPARTS:
-			case DS_LOWTOLOWIP:
-				image = Client_Grey_Smiley; // Redundant
-				break;
-			default: // DS_NONE i.e.
-				image = Client_White_Smiley;
-			}
-		} // else: default (Client_Grey_Smiley)
-
-		imageList.Draw(image, *dc, point.x, point.y + imageYOffset, wxIMAGELIST_DRAW_TRANSPARENT);
-		point.x += imageXSize;
-
-		uint8 clientImage = Client_Unknown;
-		if (client.IsFriend()) {
-			clientImage = Client_Friend_Smiley;
-		} else {
-			switch (client.GetClientSoft()) {
-			case SO_AMULE:
-				clientImage = Client_aMule_Smiley;
-				break;
-			case SO_MLDONKEY:
-			case SO_NEW_MLDONKEY:
-			case SO_NEW2_MLDONKEY:
-				clientImage = Client_mlDonkey_Smiley;
-				break;
-			case SO_EDONKEY:
-			case SO_EDONKEYHYBRID:
-				clientImage = Client_eDonkeyHybrid_Smiley;
-				break;
-			case SO_EMULE:
-				clientImage = Client_eMule_Smiley;
-				break;
-			case SO_LPHANT:
-				clientImage = Client_lphant_Smiley;
-				break;
-			case SO_SHAREAZA:
-			case SO_NEW_SHAREAZA:
-			case SO_NEW2_SHAREAZA:
-				clientImage = Client_Shareaza_Smiley;
-				break;
-			case SO_LXMULE:
-				clientImage = Client_xMule_Smiley;
-				break;
-			default:
-				// cDonkey, Compatible, Unknown: no icon for those yet;
-				// falls back to Client_Unknown.
-				break;
-			}
-		}
-
-		const int realY = point.y + imageYOffset;
-		imageList.Draw(clientImage, *dc, point.x, realY, wxIMAGELIST_DRAW_TRANSPARENT);
-
-		if (client.GetScoreRatio() > 1) {
-			imageList.Draw(Client_CreditsYellow_Smiley,
-				*dc,
-				point.x,
-				realY,
-				wxIMAGELIST_DRAW_TRANSPARENT);
-		} else if (!client.ExtProtocolAvailable()) {
-			imageList.Draw(Client_ExtendedProtocol_Smiley,
-				*dc,
-				point.x,
-				realY,
-				wxIMAGELIST_DRAW_TRANSPARENT);
-		}
-
-		if (client.IsIdentified()) {
-			imageList.Draw(
-				Client_SecIdent_Smiley, *dc, point.x, realY, wxIMAGELIST_DRAW_TRANSPARENT);
-		} else if (client.IsBadGuy()) {
-			imageList.Draw(
-				Client_BadGuy_Smiley, *dc, point.x, realY, wxIMAGELIST_DRAW_TRANSPARENT);
-		}
-
-		if (client.GetObfuscationStatus() == OBST_ENABLED) {
-			imageList.Draw(
-				Client_Encryption_Smiley, *dc, point.x, realY, wxIMAGELIST_DRAW_TRANSPARENT);
-		}
-
-		point.x += imageXSize;
-
-#ifdef GEOIP_GUI
-		// Country flag; GetDisplayCountryCode() holds the shared gate (see
-		// CountryDisplay.h) so this list and the server list stay in step.
-		wxString code;
-		const bool haveCountry = GetDisplayCountryCode(client.GetClient()->IsCountryFromCore(),
-			client.GetClient()->GetCountryCode(),
-			client.GetClient()->GetFullIPNumeric(),
-			code);
-		if (haveCountry && !code.IsEmpty()) {
-			const wxImage &flag = theApp->GetCountryFlags()->GetFlag(code);
-			const int flagY =
-				point.y + (cell.GetHeight() - flag.GetHeight()) / 2 + 1 /* floor() */;
-			dc->DrawBitmap(flag, point.x, flagY, true);
-			point.x += flag.GetWidth() + 2 /* Padding */;
-		}
-#endif // GEOIP_GUI
-
-		const wxString userName =
-			client.GetUserName().IsEmpty() ? wxString("?") : client.GetUserName();
-		const int textOffset =
-			((cell.GetHeight() - dc->GetCharHeight()) / 2) + 1 /* Fixes rounding */;
-		dc->DrawText(userName, point.x, cell.GetY() + textOffset);
+		// Read straight off the live CClientRef: this list holds an owning
+		// reference to every peer it shows, so the client is alive for as
+		// long as the row is.
+		DrawClientNameCell(
+			MakeClientNameCell(item->GetSource().GetClient(), item->GetType() == A4AF_SOURCE),
+			cell,
+			dc);
 		return true;
 	}
 };

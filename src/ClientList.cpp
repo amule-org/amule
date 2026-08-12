@@ -98,11 +98,6 @@ CClientList::~CClientList()
 
 void CClientList::AddClient(CUpDownClient *toadd)
 {
-	// A peer we are now talking to. Paired with the ClientBeingDestroyed
-	// broadcast fired from ~CUpDownClient, so the global list is told about
-	// both ends of a peer's life at the two points that actually bound it.
-	Notify_ClientsListAddClient(toadd);
-
 	// Ensure that only new clients can be added to the list
 	if (toadd->GetClientState() == CS_NEW) {
 		// Update the client-state
