@@ -1144,8 +1144,12 @@ public:
 	// Fetched once, then maintained: the refresher folds every tick's live
 	// peers in, so the store stays current without ever being re-read. What
 	// only a refetch could give is the expiry prune the core applies at its
-	// own startup, so the trigger is a daemon session change rather than a
-	// timer -- see InvalidateKnownClients().
+	// own startup. amuleapi never attaches to a second core -- ConnectAndRun
+	// runs once, and a sustained EC failure exits the process for a
+	// supervisor to restart the pair -- so the store cannot outlive the core
+	// it was read from. It is still dropped by ResetLists(), the refresher's
+	// start-over path after a failed tick, so a transient EC failure that
+	// recovers refetches rather than carrying on with what it had.
 	//
 	// Held rather than copied out: this is the whole store, tens of thousands
 	// of records, so a by-value accessor would cost more per request than the
@@ -1153,9 +1157,6 @@ public:
 	bool KnownClientsLoaded() const;
 	//! Install the first fetch and reconcile it against the current peers.
 	void SetKnownClients(std::vector<KnownClientSnapshot> &&rows);
-	//! Drop what we hold, so the next request fetches again. For a daemon that
-	//! turns out to be a different process than the one we loaded from.
-	void InvalidateKnownClients();
 	/**
 	 * Fold this tick's peers into the store.
 	 *
@@ -1164,6 +1165,12 @@ public:
 	 * only the connected ones, of which there are at most MaxConnections. No-op
 	 * until the store has been loaded, so a daemon nobody asks about never
 	 * pays for it.
+	 *
+	 * The store only grows between fetches: a peer met here is added and never
+	 * removed, because a record leaving the daemon's own store means expiry,
+	 * which it applies at its startup and we pick up on the next fetch. Growth
+	 * is one row per distinct peer met, bounded by real traffic and reset with
+	 * everything else by ResetLists().
 	 */
 	void ReconcileKnownClients();
 	//! Read the store under the shared lock. The callback must not call back

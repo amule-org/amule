@@ -427,16 +427,6 @@ void CState::SetKnownClients(std::vector<KnownClientSnapshot> &&rows)
 	ReconcileKnownClientsLocked();
 }
 
-void CState::InvalidateKnownClients()
-{
-	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
-	m_known_clients.clear();
-	m_known_clients.shrink_to_fit();
-	m_known_of_hash.clear();
-	m_known_online.clear();
-	m_known_loaded = false;
-}
-
 void CState::ReconcileKnownClients()
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
@@ -461,17 +451,31 @@ void CState::ReconcileKnownClientsLocked()
 			// credit record when the peer said hello, stamping first-seen
 			// and counting the session, so this reconstructs what it wrote
 			// rather than inventing anything.
+			//
+			// sessions is left at zero deliberately: the offline-to-online
+			// transition below is what counts it, and this record is about
+			// to make that transition. Setting it here too would count the
+			// same arrival twice.
 			KnownClientSnapshot k;
 			k.user_hash = c.user_hash;
 			k.first_seen = now;
 			k.last_seen = now;
-			k.sessions = 1;
 			m_known_clients.push_back(std::move(k));
 			it = m_known_of_hash.emplace(c.user_hash, m_known_clients.size() - 1).first;
 		}
 
 		KnownClientSnapshot &k = m_known_clients[it->second];
 		still_online.insert(it->second);
+		// Offline to online is a new session, which is what the daemon counts:
+		// UpdateMeta() bumps it once per client object, at the hello. Counted
+		// on the transition rather than per tick for the same reason.
+		//
+		// It can over-count by one if a peer drops out of the update for a
+		// tick and returns -- an EC hiccup rather than a real reconnect. The
+		// daemon's own figure replaces this at the next fetch, so any drift
+		// lives no longer than the connection to that core.
+		if (!k.online)
+			k.sessions++;
 		k.online = true;
 		// A peer in front of us was last seen now, not whenever it previously
 		// disconnected. Leaving the stored value would report a peer that is
@@ -598,6 +602,16 @@ void CState::ResetLists()
 	// tracking disappears, so no generation carry-over is needed here.)
 	m_searches.clear();
 	m_current_search_id = 0;
+	// The credit store goes with them. This runs when a tick has failed and
+	// the refresher is starting over; a transient EC failure that recovers
+	// then refetches rather than carrying on with what it had. A core that
+	// stays down takes the process with it after ~5 minutes, so the store
+	// never spans two cores.
+	m_known_clients.clear();
+	m_known_clients.shrink_to_fit();
+	m_known_of_hash.clear();
+	m_known_online.clear();
+	m_known_loaded = false;
 	// Logs + stats_tree + graphs survive EC reconnects on purpose —
 	// operator can see "EC disconnected at HH:MM" alongside earlier
 	// graph traffic; stats_tree's counters are amuled-uptime not

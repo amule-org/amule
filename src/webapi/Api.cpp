@@ -2744,21 +2744,6 @@ CHttpServer::Response ListResponseFromPtrsUnlocked(const char *plural_key,
 }
 
 template <class T, class WriterFn>
-CHttpServer::Response ListResponseFromPtrs(const webapi::CState &state,
-	const char *plural_key,
-	std::vector<const T *> &ptrs,
-	WriterFn write_item,
-	const ListParams &params,
-	const ListComparators<T> &comparators)
-{
-	if (!state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
-	return ListResponseFromPtrsUnlocked(plural_key, ptrs, write_item, params, comparators);
-}
-
-template <class T, class WriterFn>
 CHttpServer::Response ListResponse(const webapi::CState &state,
 	const char *plural_key,
 	const std::vector<T> &items,
