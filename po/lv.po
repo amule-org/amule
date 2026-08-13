@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-11 12:27+0200\n"
-"PO-Revision-Date: 2026-08-11 21:01+0000\n"
+"PO-Revision-Date: 2026-08-13 00:17+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: lv\n"
@@ -98,7 +98,7 @@ msgstr ""
 
 #: src/AddFriend.cpp
 msgid "Add a Friend"
-msgstr ""
+msgstr "Pievienot draugu sarakstam"
 
 #: src/AddFriend.cpp
 msgid "You have to enter a valid IP and port!"
@@ -110,7 +110,7 @@ msgstr "Informācija"
 
 #: src/AddFriend.cpp
 msgid "The specified userhash is not valid!"
-msgstr ""
+msgstr "Norādītā dalībnieka atpazīšanas kods (jaucējvērtība) nav derīga!"
 
 #: src/AppImageIntegration.cpp
 msgid ""
@@ -1146,7 +1146,7 @@ msgstr "Aizvērt pārējās cilnes"
 
 #: src/ChatWnd.cpp src/GenericClientListCtrl.cpp
 msgid "Add to Friends"
-msgstr ""
+msgstr "Pievienot draugu sarakstam"
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1164,7 +1164,7 @@ msgstr[1] ""
 
 #: src/ClientCreditsList.cpp
 msgid "No 'cryptkey.dat' file found, creating."
-msgstr ""
+msgstr "Neatrada 'cryptkey.dat' datni, izveido."
 
 #: src/ClientDetailDialog.cpp
 msgid "Client Details"
@@ -1182,7 +1182,7 @@ msgstr "Augsts ID"
 
 #: src/ClientDetailDialog.cpp
 msgid "Enabled"
-msgstr ""
+msgstr "Iespējots"
 
 #: src/ClientDetailDialog.cpp
 msgid "Supported"
@@ -1209,7 +1209,7 @@ msgstr "Atslēgts"
 #: src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f kB/s"
-msgstr ""
+msgstr "%.1f kB/s"
 
 #: src/ClientRef.cpp
 msgid "Not complete"
@@ -1322,7 +1322,7 @@ msgstr ""
 
 #: src/CommentDialogLst.cpp
 msgid "Searching Kad for comments..."
-msgstr ""
+msgstr "Meklē komentārus Kad tīklā…"
 
 #: src/CommentDialogLst.cpp src/muuli_wdr.cpp
 msgid "No comments"
@@ -2553,7 +2553,7 @@ msgstr "Klienti"
 
 #: src/GenericClientListCtrl.cpp
 msgid "Remove from friends"
-msgstr ""
+msgstr "Noņemt no draugu saraksta"
 
 #: src/GenericClientListCtrl.cpp
 msgid "Send message"
@@ -2937,7 +2937,7 @@ msgstr ""
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "Invalid password, not a MD5 hash!"
-msgstr ""
+msgstr "Nederīga parole, tā nav MD5 jaucējvērtība!"
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 #, c-format
@@ -3047,7 +3047,7 @@ msgstr "kB/s"
 
 #: src/MuleTrayIcon.cpp
 msgid "Unlimited"
-msgstr ""
+msgstr "Bez ierobežojuma"
 
 #: src/MuleTrayIcon.cpp
 msgid "Show aMule"
@@ -3424,7 +3424,7 @@ msgstr "Apturēt"
 
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp
 msgid "Download"
-msgstr ""
+msgstr "Lejupielādēt"
 
 #: src/muuli_wdr.cpp
 msgid "Reset Fields"
@@ -3460,7 +3460,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Hash :"
-msgstr ""
+msgstr "Kontrolsumma :"
 
 #: src/muuli_wdr.cpp
 msgid "Filesize :"
@@ -3593,7 +3593,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Takeover"
-msgstr ""
+msgstr "Aizstāt datnes nosaukumu"
 
 #: src/muuli_wdr.cpp
 msgid "Cleanup"
@@ -3687,7 +3687,7 @@ msgstr "Dalībniekvārds :"
 
 #: src/muuli_wdr.cpp
 msgid "Userhash :"
-msgstr ""
+msgstr "Dalībnieka atpazīšanas kods (jaucējvērtība) :"
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Add"
@@ -3727,7 +3727,7 @@ msgstr "Dalībniekvārds:"
 
 #: src/muuli_wdr.cpp
 msgid "Userhash:"
-msgstr ""
+msgstr "Dalībnieka atpazīšanas kods (jaucējvērtība):"
 
 #: src/muuli_wdr.cpp
 msgid "Client software:"
@@ -7923,7 +7923,7 @@ msgstr ""
 
 #: src/UserEvents.h
 msgid "The eD2k hash of the file."
-msgstr ""
+msgstr "Datnes eD2k kontrolsumma."
 
 #: src/UserEvents.h
 msgid "The size of the file in bytes."
@@ -8097,11 +8097,11 @@ msgstr ""
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Computing MD4 Hash..."
-msgstr ""
+msgstr "Skaitļo MD4 kontrolsummu…"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Computing eD2k Hashes..."
-msgstr ""
+msgstr "Skaitļo eD2k kontrolsummas…"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp src/utils/aLinkCreator/src/md4.cpp
 msgid "Cancelled !"
@@ -8127,7 +8127,7 @@ msgstr ""
 
 #: src/utils/aLinkCreator/src/ed2khash.cpp
 msgid "Out of memory while calculating ed2k hash!"
-msgstr ""
+msgstr "Pietrūka atmiņas, skaitļojot eD2k kontrolsummu!"
 
 #: src/utils/wxCas/src/linuxmon.cpp
 #, c-format
@@ -8547,7 +8547,7 @@ msgstr "Pārbauda paroli\n"
 
 #: src/webserver/src/WebServer.cpp
 msgid "Password hash invalid\n"
-msgstr ""
+msgstr "Paroles jaucējvērtība nav derīga\n"
 
 #: src/webserver/src/WebServer.cpp
 msgid "Password ok\n"

@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-11 12:27+0200\n"
-"PO-Revision-Date: 2026-08-11 20:56+0000\n"
+"PO-Revision-Date: 2026-08-13 00:16+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
 "Language: ru\n"
@@ -6945,15 +6945,15 @@ msgstr "Соединяем с другом на %s"
 
 #: src/ServerWnd.cpp
 msgid "Indexed sources:"
-msgstr "Проиндексировано источников:"
+msgstr "Индексировано источников:"
 
 #: src/ServerWnd.cpp
 msgid "Indexed keywords:"
-msgstr "Индексированные ключевые слова:"
+msgstr "Ключевые слова в индексе:"
 
 #: src/ServerWnd.cpp
 msgid "Indexed notes:"
-msgstr "Проиндексировано записей:"
+msgstr "Индексировано записей:"
 
 #: src/ServerWnd.cpp
 msgid "Indexed load:"
