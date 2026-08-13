@@ -141,8 +141,14 @@ size_t CClientHistoryListCtrl::AppendLiveRow(const CMD4Hash &hash, const LiveCli
 	row.clientSoft = live.clientSoft;
 	row.sourceFrom = live.sourceFrom;
 	row.nameCell = live.nameCell;
-	// Met since the tab was opened, so there is no stored first-seen or
-	// session count yet -- the core writes those when the peer disconnects.
+	// The core wrote this peer's metadata when it said hello -- CClientCredits
+	// ::UpdateMeta() from ProcessHelloTypePacket(), which stamps first-seen the
+	// first time a peer gets a record. The history snapshot predates that, so
+	// the value is not in our rows; it is simply "now", which is what the core
+	// recorded a moment ago. hasMeta stays false because the *store* did not
+	// hold this peer when we loaded, and the columns key on the values.
+	row.firstSeen = static_cast<uint32>(wxDateTime::GetTimeNow());
+	row.sessions = 1;
 	row.hasMeta = false;
 	row.identityKnown = !live.name.IsEmpty();
 	row.online = true;
@@ -220,6 +226,20 @@ void CClientHistoryListCtrl::ReconcileLive(const std::unordered_map<CMD4Hash, Li
 			row.sourceFrom = entry.second.sourceFrom;
 			row.nameCell = entry.second.nameCell;
 			row.identityKnown = true;
+			changed = true;
+		}
+
+		// A record we loaded before this peer had any metadata -- everything
+		// written before #902 existed, which on a real store is nearly all of
+		// it. The core stamped first-seen at this peer's hello, the same as for
+		// a peer we had never met; only a record that already carries one is
+		// left alone, since for that the stored value is the truth and ours
+		// would just be the current session.
+		if (row.firstSeen == 0) {
+			row.firstSeen = static_cast<uint32>(wxDateTime::GetTimeNow());
+			if (row.sessions == 0) {
+				row.sessions = 1;
+			}
 			changed = true;
 		}
 
