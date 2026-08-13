@@ -209,13 +209,16 @@ fi
 # Not compared against /clients: the lifetime totals live on the refresher's
 # snapshot but are not part of the /clients JSON, so there is nothing there to
 # compare with. Movement over time is the observable that matters anyway.
-_curl "$HOST/api/v0/known_clients?limit=500"
+# Sorted, for the same reason as the row check below: an unsorted page of a
+# large store contains no online records at all, and the check would skip
+# itself forever while looking like it had run.
+_curl "$HOST/api/v0/known_clients?sort=last_seen&order=desc&limit=500"
 ACTIVE_HASH=$(_jq '[.known_clients[] | select(.online)][0].user_hash')
 if [ -n "$ACTIVE_HASH" ] && [ "$ACTIVE_HASH" != "null" ]; then
 	BEFORE=$(_jq "[.known_clients[] | select(.user_hash == \"$ACTIVE_HASH\")][0]
 		| .total_downloaded + .total_uploaded")
 	sleep 4
-	_curl "$HOST/api/v0/known_clients?limit=500"
+	_curl "$HOST/api/v0/known_clients?sort=last_seen&order=desc&limit=500"
 	AFTER=$(_jq "[.known_clients[] | select(.user_hash == \"$ACTIVE_HASH\")][0]
 		| .total_downloaded + .total_uploaded")
 	if [ "${AFTER:-0}" -gt "${BEFORE:-0}" ]; then
@@ -234,19 +237,37 @@ fi
 # the refresher added it. Any live peer carrying a user hash must therefore
 # appear here -- if it does not, the maintenance has stopped and the endpoint
 # is quietly serving a frozen snapshot.
+#
+# Sorted by last_seen descending and read one page: a connected peer is last
+# seen *now*, so the online records are the newest in the store and cannot be
+# pushed off the first page by anything else. `limit` is clamped to 500 by the
+# shared parser, which is well above MaxConnections -- asking for the whole
+# store instead would silently return only the first 500 records and look like
+# a maintenance failure.
 LIVE_HASHES=$(curl -s --max-time 10 "${AUTH[@]}" "$HOST/api/v0/clients?limit=500" \
 	| jq -r '.clients[].user_hash // empty' | sort -u)
 if [ -n "$LIVE_HASHES" ]; then
-	_curl "$HOST/api/v0/known_clients?limit=50000"
+	_curl "$HOST/api/v0/known_clients?sort=last_seen&order=desc&limit=500"
 	MISSING=0
+	CHECKED=0
 	for h in $LIVE_HASHES; do
+		CHECKED=$((CHECKED+1))
 		FOUND=$(_jq "[.known_clients[] | select(.user_hash == \"$h\")] | length")
 		[ "${FOUND:-0}" -eq 0 ] && MISSING=$((MISSING+1))
 	done
 	if [ "$MISSING" -eq 0 ]; then
-		_pass "every connected peer has a known-clients row ($(echo "$LIVE_HASHES" | wc -w | tr -d ' ') checked)"
+		_pass "every connected peer has a known-clients row ($CHECKED checked)"
 	else
-		_fail "maintenance" "$MISSING connected peer(s) have no row — the store is not being updated"
+		_fail "maintenance" "$MISSING of $CHECKED connected peer(s) have no row" \
+			"the refresher is not folding live peers into the store"
+	fi
+
+	# And they are flagged as connected, not merely present.
+	ONLINE_N=$(_jq '[.known_clients[] | select(.online)] | length')
+	if [ "${ONLINE_N:-0}" -gt 0 ]; then
+		_pass "connected peers are flagged online ($ONLINE_N)"
+	else
+		_fail "online flag" "no record is flagged online while peers are connected"
 	fi
 else
 	echo "  SKIP  per-peer row check (no peer is connected)"

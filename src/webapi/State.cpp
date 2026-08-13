@@ -464,6 +464,7 @@ void CState::ReconcileKnownClientsLocked()
 			KnownClientSnapshot k;
 			k.user_hash = c.user_hash;
 			k.first_seen = now;
+			k.last_seen = now;
 			k.sessions = 1;
 			m_known_clients.push_back(std::move(k));
 			it = m_known_of_hash.emplace(c.user_hash, m_known_clients.size() - 1).first;
@@ -472,6 +473,11 @@ void CState::ReconcileKnownClientsLocked()
 		KnownClientSnapshot &k = m_known_clients[it->second];
 		still_online.insert(it->second);
 		k.online = true;
+		// A peer in front of us was last seen now, not whenever it previously
+		// disconnected. Leaving the stored value would report a peer that is
+		// connected as last seen months ago, and now is what the core writes
+		// to the record at its own disconnect handling anyway.
+		k.last_seen = now;
 		k.total_uploaded = c.xfer_up_total;
 		k.total_downloaded = c.xfer_down_total;
 		// Identity, when the peer in front of us knows more than the record.
