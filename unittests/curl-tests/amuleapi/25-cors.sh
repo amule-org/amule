@@ -32,7 +32,7 @@ set -o pipefail
 HOST=${HOST:-localhost:4713}
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 CONFIG_DIR=${AMULEAPI_CONFIG_DIR:-/tmp/amuleapi-regtest}
-BIN=${AMULEAPI_BIN:-/Users/bitandyou/Sync/Utility/PlexBox/amule/amule-fiber/amule-src-amuleapi/build-macos/src/webapi/amuleapi}
+BIN=${AMULEAPI_BIN:-$(cd "$(dirname "$0")/../../.." && pwd)/build-macos/src/webapi/amuleapi}
 LOG=${AMULEAPI_LOG:-/tmp/amuleapi.log}
 
 FAIL_COUNT=0
