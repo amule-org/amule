@@ -4441,7 +4441,8 @@ CHttpServer::Response CApiDispatcher::HandleKnownClients(const CHttpServer::Requ
 		if (!resp) {
 			return ErrorResponse(503, "ec_unavailable", "the EC connection is unavailable");
 		}
-		if (resp->GetOpCode() == EC_OP_CLIENT_HISTORY) {
+		const bool got_history = resp->GetOpCode() == EC_OP_CLIENT_HISTORY;
+		if (got_history) {
 			rows.reserve(resp->GetTagCount());
 			for (const CECTag &entry : *resp) {
 				if (entry.GetTagName() != EC_TAG_CLIENT)
@@ -4450,6 +4451,17 @@ CHttpServer::Response CApiDispatcher::HandleKnownClients(const CHttpServer::Requ
 			}
 		}
 		delete resp;
+		if (!got_history) {
+			// An answer we cannot read latches nothing: the store is loaded
+			// once and never re-read, so installing an empty one here would
+			// serve an empty history for the life of the process. There is no
+			// reachable path today -- the daemon always answers this opcode
+			// and older ones are refused above -- but the cost of being wrong
+			// is permanent, and retrying next request is free.
+			return ErrorResponse(502,
+				"bad_gateway",
+				"the core answered the history request with an unknown reply");
+		}
 		m_state.SetKnownClients(std::move(rows));
 	}
 

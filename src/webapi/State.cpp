@@ -442,7 +442,13 @@ void CState::ReconcileKnownClientsLocked()
 
 	for (const auto &kv : m_clients) {
 		const ClientSnapshot &c = kv.second;
-		if (c.user_hash.empty())
+		// An all-zero hash is not an identity: it is what a peer that has not
+		// sent its hash yet reports, and every such peer would otherwise
+		// collapse into one fabricated record -- sharing a session count and
+		// a first-seen between unrelated clients. The daemon never writes one
+		// either; it creates a credit record from the hash in the hello. They
+		// get a row of their own once they identify.
+		if (c.user_hash.empty() || c.user_hash.find_first_not_of('0') == std::string::npos)
 			continue;
 
 		auto it = m_known_of_hash.find(c.user_hash);
@@ -602,16 +608,12 @@ void CState::ResetLists()
 	// tracking disappears, so no generation carry-over is needed here.)
 	m_searches.clear();
 	m_current_search_id = 0;
-	// The credit store goes with them. This runs when a tick has failed and
-	// the refresher is starting over; a transient EC failure that recovers
-	// then refetches rather than carrying on with what it had. A core that
-	// stays down takes the process with it after ~5 minutes, so the store
-	// never spans two cores.
-	m_known_clients.clear();
-	m_known_clients.shrink_to_fit();
-	m_known_of_hash.clear();
-	m_known_online.clear();
-	m_known_loaded = false;
+	// The credit store deliberately does NOT go with them. This runs when a
+	// tick failed against a socket that is still up, and dropping the store
+	// there would refetch the whole thing after one null tick -- the cost this
+	// endpoint exists to avoid. It cannot go stale across a daemon restart
+	// either: HandleEcConnectionLost() shuts amuleapi down the moment the
+	// socket drops, so the process never attaches to a second core.
 	// Logs + stats_tree + graphs survive EC reconnects on purpose —
 	// operator can see "EC disconnected at HH:MM" alongside earlier
 	// graph traffic; stats_tree's counters are amuled-uptime not

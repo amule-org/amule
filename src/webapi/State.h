@@ -1144,12 +1144,12 @@ public:
 	// Fetched once, then maintained: the refresher folds every tick's live
 	// peers in, so the store stays current without ever being re-read. What
 	// only a refetch could give is the expiry prune the core applies at its
-	// own startup. amuleapi never attaches to a second core -- ConnectAndRun
-	// runs once, and a sustained EC failure exits the process for a
-	// supervisor to restart the pair -- so the store cannot outlive the core
-	// it was read from. It is still dropped by ResetLists(), the refresher's
-	// start-over path after a failed tick, so a transient EC failure that
-	// recovers refetches rather than carrying on with what it had.
+	// own startup, and that cannot happen underneath us: HandleEcConnectionLost
+	// shuts amuleapi down the moment the EC socket drops, so the process never
+	// attaches to a second core. The store therefore lives for the life of the
+	// process, with no invalidation path -- deliberately, since the obvious
+	// place to add one (ResetLists, which fires on a failed tick against a live
+	// socket) would refetch the whole store for a single null tick.
 	//
 	// Held rather than copied out: this is the whole store, tens of thousands
 	// of records, so a by-value accessor would cost more per request than the
@@ -1322,6 +1322,14 @@ private:
 	// See the Known clients block above. m_known_loaded distinguishes "loaded
 	// and genuinely empty" from "never fetched".
 	std::vector<KnownClientSnapshot> m_known_clients;
+	// Indices, deliberately, not pointers: the reconcile appends while it
+	// iterates, and a reallocation would dangle anything holding addresses.
+	// Rows are only ever appended for the same reason -- an erase would
+	// invalidate every index past it.
+	//
+	// Keyed on the same lowercase hex the live snapshot uses (both go through
+	// CMD4Hash::Encode().Lower()); a case mismatch would silently give every
+	// peer a second row.
 	std::map<std::string, std::size_t> m_known_of_hash;
 	bool m_known_loaded = false;
 	//! Rows currently flagged online, so a peer that left is found without

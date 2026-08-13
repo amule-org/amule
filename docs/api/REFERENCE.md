@@ -1187,7 +1187,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 | `source_origin` | How the peer was first found — `server`, `kad`, `source_exchange`, `passive`, … |
 | `obfuscation` | Protocol-obfuscation state as of the last session. |
 | `total_uploaded`, `total_downloaded` | Lifetime bytes, from the credit record. Always present. |
-| `last_seen` | Unix seconds. Always present. For a peer that is connected this is *now* — it is being seen — so the online records are the newest in the store and sort to the top of `sort=last_seen&order=desc`. |
+| `last_seen` | Unix seconds. Always present. For a peer that is connected this is *now* — it is being seen — so the connected records are the most recent in the store under `sort=last_seen&order=desc`. A peer that left during the current tick carries the same timestamp and ties with them; ties keep a stable order across requests. |
 | `first_seen`, `sessions` | Present together, and only for a record the daemon holds metadata for. |
 | `online` | Whether this peer is connected right now, correlated by `user_hash`. |
 
