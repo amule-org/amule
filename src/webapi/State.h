@@ -257,6 +257,41 @@ struct FileSnapshot
 //  * /clients → no filter, full set surfaced
 // (/downloads/{hash}/sources can filter by
 // upload_file_hash matching the partfile.)
+/**
+ * One peer from the daemon's credit store — GET /known_clients.
+ *
+ * Distinct from ClientSnapshot, which describes a peer we are connected to
+ * *now*: this is keyed by user hash rather than ECID, survives the daemon
+ * process that issued any ECID, and carries stored history rather than live
+ * transfer state. A peer can appear in both, correlated by user_hash.
+ *
+ * Every field except the hash and the totals is optional. A record written
+ * before the daemon kept per-peer metadata has no name, address or software,
+ * and the daemon simply omits those tags rather than inventing values.
+ */
+struct KnownClientSnapshot
+{
+	std::string user_hash; // 32-char lowercase hex MD4; the identity
+	std::string client_name;
+	std::string ip; // dotted-quad; "" when the record predates metadata
+	std::uint16_t port = 0;
+	std::uint16_t kad_port = 0;
+	std::string country_code; // ISO 3166-1 alpha-2, resolved daemon-side
+	std::string software;     // resolved name, e.g. "eMule"
+	std::string version;      // "v0.50.0"
+	std::string source_origin;
+	std::string obfuscation;
+	std::uint64_t total_uploaded = 0;
+	std::uint64_t total_downloaded = 0;
+	std::time_t first_seen = 0; // 0 when the record carries no metadata
+	std::time_t last_seen = 0;
+	std::uint32_t sessions = 0;
+	//! This peer is connected right now, correlated by user hash against the
+	//! live client list. Never by ECID: those mean nothing across daemon
+	//! restarts, while the hash is what the credit store is keyed on.
+	bool online = false;
+};
+
 struct ClientSnapshot
 {
 	std::uint32_t ecid = 0;

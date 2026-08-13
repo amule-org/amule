@@ -215,6 +215,7 @@ Omitting all four parameters preserves the previous response exactly, plus the a
 |-----------------------|---------------|
 | `GET /downloads`      | `name`, `size`, `progress`, `speed`, `status` |
 | `GET /clients`        | `name`, `software` |
+| `GET /known_clients`  | `name`, `software`, `first_seen`, `last_seen`, `sessions`, `total_uploaded`, `total_downloaded` |
 | `GET /shared`         | `name`, `size` |
 | `GET /servers`        | `name`, `users`, `ping`, `files` |
 | `GET /search/results` | `name`, `size`, `sources`, `rating` |
@@ -1130,6 +1131,73 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 ```
 
 **Errors:** `400 bad_request` (`{ecid}` is not a non-negative integer), `403 forbidden` (guest token — browsing is `ADMIN`-only), `404 not_found` (no peer with that ecid), `405 method_not_allowed` (non-POST), `502 bad_gateway` (core accepted the request but returned no `search_id`), `503 ec_unavailable`.
+
+---
+
+### Known clients
+
+#### `GET /api/v0/known_clients`
+
+**Auth:** `GUEST`
+
+Lists every peer the daemon has ever exchanged data with, from its credit store.
+
+Distinct from [`GET /clients`](#get-apiv0clients), which lists the peers connected **right now**. The two differ in identity as well as content: a live client is keyed by `client_ecid`, which is meaningful only within one daemon process, while a known client is keyed by `user_hash` and survives daemon restarts. Correlate the two on `user_hash`; the `online` field says whether a given record has a live counterpart at this moment.
+
+Standard [list envelope](#list-envelopes-and-pagination) under the `known_clients` key, with `limit` / `offset` / `sort` / `order`.
+
+```sh
+curl -s -H "Authorization: Bearer $TOKEN" \
+  "http://$HOST/api/v0/known_clients?sort=last_seen&order=desc&limit=2"
+```
+
+```json
+{
+  "known_clients": [
+    {
+      "user_hash": "a1b2c3d4e5060e708090a0b0c0d06f00",
+      "client_name": "example-peer",
+      "ip": "192.0.2.10",
+      "port": 4665,
+      "kad_port": 4675,
+      "country_code": "de",
+      "software": "amule",
+      "version": "v2.3.1",
+      "source_origin": "kad",
+      "obfuscation": "supported",
+      "total_uploaded": 0,
+      "total_downloaded": 0,
+      "last_seen": 1786652714,
+      "first_seen": 1786652714,
+      "sessions": 1,
+      "online": false
+    }
+  ],
+  "total": 392, "offset": 0, "limit": 2
+}
+```
+
+| Field | Notes |
+|---|---|
+| `user_hash` | 32-char lowercase MD4. The identity; join with `/clients`. |
+| `client_name` | Peer-chosen name. Absent when never recorded. |
+| `ip`, `port`, `kad_port` | Last address the peer was seen at. Absent together. |
+| `country_code` | ISO 3166-1 alpha-2, lowercase, resolved by the daemon's GeoIP. Absent when GeoIP is off or the address does not resolve. Artwork: [`GET /flags/{code}.png`](#get-flagscodepng). |
+| `software`, `version` | Same tokens `GET /clients` uses. Absent together. |
+| `source_origin` | How the peer was first found — `server`, `kad`, `source_exchange`, `passive`, … |
+| `obfuscation` | Protocol-obfuscation state as of the last session. |
+| `total_uploaded`, `total_downloaded` | Lifetime bytes, from the credit record. Always present. |
+| `last_seen` | Unix seconds. Always present. |
+| `first_seen`, `sessions` | Present together, and only for a record the daemon holds metadata for. |
+| `online` | Whether this peer is connected right now, correlated by `user_hash`. |
+
+**Optional fields are omitted, never emitted empty.** A record written before the daemon kept per-peer metadata carries only the hash, the totals and `last_seen`; the rest are absent so a consumer can tell "never recorded" from "recorded as empty". On a long-lived node most records are of that kind.
+
+The reply is served from a **10-second cache**: it is a full walk of the credit store, which on a large node is tens of thousands of records. Paging therefore costs one EC roundtrip rather than one per page.
+
+The cache window is not visible in the data. A record for a peer that is **not** connected cannot change — credit totals only move during a transfer and `last_seen` only at disconnect — so the cached copy is exact. For a peer that **is** connected, `online`, `total_uploaded` and `total_downloaded` are taken from the live client state on every request, so a caller polling this endpoint sees a transferring peer's totals move each tick rather than in ten-second steps.
+
+**Errors:** `405 method_not_allowed` (non-GET/HEAD), `503 ec_unavailable`, `503 ec_unsupported` (the connected amuled predates the client-history request — it is never sent to a daemon that does not advertise support).
 
 ---
 

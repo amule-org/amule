@@ -629,6 +629,13 @@ bool CamuleapiApp::IsServerPartialUpdateActive()
 	return CaMuleExternalConnector::IsServerPartialUpdateActive();
 }
 
+bool CamuleapiApp::IsServerClientHistoryActive()
+{
+	// Same shape as IsServerPartialUpdateActive(): a const bool snapshot
+	// taken at login, so no mutex.
+	return CaMuleExternalConnector::IsServerClientHistoryActive();
+}
+
 wxString CamuleapiApp::GetDaemonVersion()
 {
 	// Serialize with the rest of the EC access: m_ECClient is torn down

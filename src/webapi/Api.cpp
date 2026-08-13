@@ -24,6 +24,8 @@
 
 #include "Api.h"
 
+#include "ClientTagNames.h" // Needed for the shared client-tag token decoders
+
 #include "config.h" // AMULEAPI_STATIC_DIR (compile-time install path)
 #include "AmuleApiConfig.h"
 #include "App.h"
@@ -771,6 +773,19 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 			return ErrorResponse(405, "method_not_allowed", "only GET on /clients");
 		}
 		return HandleClients(req);
+	}
+
+	// /known_clients — the daemon's credit store, every peer it has ever
+	// exchanged data with. A separate resource rather than a sub-path of
+	// /clients: these are keyed by user hash, outlive the daemon process that
+	// would have issued an ECID, and carry stored history instead of live
+	// transfer state. Matched before /clients/{ecid} regardless, since that
+	// pattern accepts any single segment.
+	if (path == "/api/v0/known_clients") {
+		if (req.method != "GET" && req.method != "HEAD") {
+			return ErrorResponse(405, "method_not_allowed", "only GET on /known_clients");
+		}
+		return HandleKnownClients(req);
 	}
 
 	// /clients/{ecid} — single-peer detail (issue #422). GET/HEAD only;
@@ -2279,6 +2294,112 @@ void WriteClientObject(CJsonWriter &w, const webapi::ClientSnapshot &c)
 {
 	w.BeginObject();
 	WriteClientBaseFields(w, c);
+	w.EndObject();
+}
+
+// One EC_TAG_CLIENT entry of an EC_OP_CLIENT_HISTORY reply.
+//
+// Tag-absent means "the daemon has no such record for this peer", not "empty":
+// a record written before per-peer metadata existed carries only the hash, the
+// totals and a last-seen, and the fields below simply stay unset so the writer
+// can omit them. The numeric codes go through the same decoders the refresher
+// uses for live peers (ClientTagNames.h), so a consumer switching on "kad" or
+// "emule" gets the same token whichever endpoint produced it.
+webapi::KnownClientSnapshot DecodeKnownClient(const CECTag &entry)
+{
+	webapi::KnownClientSnapshot c;
+	c.user_hash = std::string(entry.GetMD4Data().Encode().Lower().utf8_str());
+
+	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_UPLOAD_TOTAL))
+		c.total_uploaded = t->GetInt();
+	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_DOWNLOAD_TOTAL))
+		c.total_downloaded = t->GetInt();
+	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_LAST_SEEN))
+		c.last_seen = static_cast<std::time_t>(t->GetInt());
+	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_FIRST_SEEN))
+		c.first_seen = static_cast<std::time_t>(t->GetInt());
+	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_SESSIONS))
+		c.sessions = static_cast<std::uint32_t>(t->GetInt());
+	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_NAME))
+		c.client_name = std::string(t->GetStringData().utf8_str());
+	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_USER_IP)) {
+		const std::uint32_t ip = static_cast<std::uint32_t>(t->GetInt());
+		if (ip != 0)
+			c.ip = std::string(Uint32toStringIP(ip).utf8_str());
+	}
+	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_USER_PORT))
+		c.port = static_cast<std::uint16_t>(t->GetInt());
+	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_KAD_PORT))
+		c.kad_port = static_cast<std::uint16_t>(t->GetInt());
+	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_COUNTRY))
+		c.country_code = std::string(t->GetStringData().Lower().utf8_str());
+	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_SOFTWARE))
+		c.software = webapi::ClientSoftwareName(static_cast<std::uint32_t>(t->GetInt()));
+	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_SOFT_VER_STR))
+		c.version = std::string(t->GetStringData().utf8_str());
+	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_FROM))
+		c.source_origin = webapi::SourceOriginName(static_cast<std::uint32_t>(t->GetInt()));
+	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_OBFUSCATION_STATUS))
+		c.obfuscation = webapi::ClientObfuscationName(static_cast<std::uint8_t>(t->GetInt()));
+	return c;
+}
+
+// One credit-store record (GET /known_clients).
+//
+// Optional fields are omitted rather than emitted empty: a record written
+// before the daemon kept per-peer metadata genuinely has no name, address or
+// software, and a consumer should be able to tell "not recorded" from "recorded
+// as empty". The hash, the totals and last_seen are always present.
+void WriteKnownClientObject(CJsonWriter &w, const webapi::KnownClientSnapshot &c)
+{
+	w.BeginObject();
+	w.Key("user_hash");
+	w.ValueString(wxString::FromUTF8(c.user_hash.c_str()));
+	if (!c.client_name.empty()) {
+		w.Key("client_name");
+		w.ValueString(wxString::FromUTF8(c.client_name.c_str()));
+	}
+	if (!c.ip.empty()) {
+		w.Key("ip");
+		w.ValueString(wxString::FromUTF8(c.ip.c_str()));
+		w.Key("port");
+		w.ValueInt(static_cast<int64_t>(c.port));
+		w.Key("kad_port");
+		w.ValueInt(static_cast<int64_t>(c.kad_port));
+	}
+	if (!c.country_code.empty()) {
+		w.Key("country_code");
+		w.ValueString(wxString::FromUTF8(c.country_code.c_str()));
+	}
+	if (!c.software.empty()) {
+		w.Key("software");
+		w.ValueString(wxString::FromUTF8(c.software.c_str()));
+		w.Key("version");
+		w.ValueString(wxString::FromUTF8(c.version.c_str()));
+	}
+	if (!c.source_origin.empty()) {
+		w.Key("source_origin");
+		w.ValueString(wxString::FromUTF8(c.source_origin.c_str()));
+	}
+	if (!c.obfuscation.empty()) {
+		w.Key("obfuscation");
+		w.ValueString(wxString::FromUTF8(c.obfuscation.c_str()));
+	}
+	w.Key("total_uploaded");
+	w.ValueUInt(static_cast<uint64_t>(c.total_uploaded));
+	w.Key("total_downloaded");
+	w.ValueUInt(static_cast<uint64_t>(c.total_downloaded));
+	w.Key("last_seen");
+	w.ValueUInt(static_cast<uint64_t>(c.last_seen));
+	if (c.first_seen != 0) {
+		w.Key("first_seen");
+		w.ValueUInt(static_cast<uint64_t>(c.first_seen));
+		w.Key("sessions");
+		w.ValueUInt(static_cast<uint64_t>(c.sessions));
+	}
+	// Correlate with /clients by user_hash to reach the live peer.
+	w.Key("online");
+	w.ValueBool(c.online);
 	w.EndObject();
 }
 
@@ -4229,6 +4350,113 @@ bool FindClientByEcid(const webapi::CState &state, std::uint32_t ecid, webapi::C
 // one peer: every list field plus the detail-only B fields. Bare
 // object (no list envelope), mirroring HandleDownloadDetail. 404 when
 // the ecid isn't in the current snapshot.
+CHttpServer::Response CApiDispatcher::HandleKnownClients(const CHttpServer::Request &req)
+{
+	auto a = Authenticate(req);
+	if (!a.ok)
+		return a.rejection;
+
+	// Never sent blind: a daemon predating EC_OP_GET_CLIENT_HISTORY reaches
+	// the unknown-opcode branch of ProcessRequest2(), which asserts before it
+	// reaches the EC_OP_FAILED it would otherwise answer with -- so simply
+	// trying the request takes the core down.
+	if (!m_app.IsServerClientHistoryActive()) {
+		return ErrorResponse(
+			503, "ec_unsupported", "the connected amuled does not serve the client history");
+	}
+
+	ListParams params;
+	if (auto err = ParseListParams(QueryOf(req), params))
+		return *err;
+
+	// The live peers, by hash. Read per request rather than inside the fetcher:
+	// the store is cached for 10 s while this changes every refresher tick.
+	//
+	// A record for a peer that is NOT connected cannot change -- the credit
+	// totals only move while a transfer is running, and last-seen only at
+	// disconnect -- so the cache is exact for those. The connected ones are
+	// the whole of what the cache could serve stale, and the refresher already
+	// holds their current totals, so they are patched over the cached record
+	// below. That makes the 10 s window invisible: a caller polling this
+	// endpoint sees a transferring peer's totals move every tick.
+	std::map<std::string, const webapi::ClientSnapshot *> live_by_hash;
+	const std::vector<webapi::ClientSnapshot> live = m_state.Clients();
+	for (const auto &c : live) {
+		if (!c.user_hash.empty())
+			live_by_hash[c.user_hash] = &c;
+	}
+
+	auto pair = m_known_clients_cache.GetOrFetch(
+		std::chrono::milliseconds(10000), [this]() -> TtlPair_KnownClients {
+			std::vector<webapi::KnownClientSnapshot> out;
+			std::unique_ptr<CECPacket> req_ec(new CECPacket(EC_OP_GET_CLIENT_HISTORY));
+			const CECPacket *resp = m_app.SendRecvSerialized(req_ec.get());
+			std::time_t ts = 0;
+			if (resp) {
+				if (resp->GetOpCode() == EC_OP_CLIENT_HISTORY) {
+					out.reserve(resp->GetTagCount());
+					for (const CECTag &entry : *resp) {
+						if (entry.GetTagName() != EC_TAG_CLIENT)
+							continue;
+						out.push_back(DecodeKnownClient(entry));
+					}
+				}
+				ts = std::time(nullptr);
+				delete resp;
+			}
+			return TtlPair_KnownClients(std::move(out), ts);
+		});
+
+	if (pair.second == 0) {
+		return ErrorResponse(503, "ec_unavailable", "the EC connection is unavailable");
+	}
+
+	std::vector<webapi::KnownClientSnapshot> items = pair.first;
+	for (auto &c : items) {
+		const auto it = live_by_hash.find(c.user_hash);
+		c.online = it != live_by_hash.end();
+		if (!c.online)
+			continue;
+		// Only the fields a connected peer can move. Everything else on the
+		// record is what the store holds, which nothing touches while the peer
+		// is up.
+		c.total_uploaded = it->second->xfer_up_total;
+		c.total_downloaded = it->second->xfer_down_total;
+	}
+
+	static const ListComparators<webapi::KnownClientSnapshot> kComps = {
+		{ "name",
+			[](const webapi::KnownClientSnapshot &a, const webapi::KnownClientSnapshot &b) {
+				return a.client_name < b.client_name;
+			} },
+		{ "software",
+			[](const webapi::KnownClientSnapshot &a, const webapi::KnownClientSnapshot &b) {
+				return a.software < b.software;
+			} },
+		{ "first_seen",
+			[](const webapi::KnownClientSnapshot &a, const webapi::KnownClientSnapshot &b) {
+				return a.first_seen < b.first_seen;
+			} },
+		{ "last_seen",
+			[](const webapi::KnownClientSnapshot &a, const webapi::KnownClientSnapshot &b) {
+				return a.last_seen < b.last_seen;
+			} },
+		{ "sessions",
+			[](const webapi::KnownClientSnapshot &a, const webapi::KnownClientSnapshot &b) {
+				return a.sessions < b.sessions;
+			} },
+		{ "total_uploaded",
+			[](const webapi::KnownClientSnapshot &a, const webapi::KnownClientSnapshot &b) {
+				return a.total_uploaded < b.total_uploaded;
+			} },
+		{ "total_downloaded",
+			[](const webapi::KnownClientSnapshot &a, const webapi::KnownClientSnapshot &b) {
+				return a.total_downloaded < b.total_downloaded;
+			} },
+	};
+	return ListResponse(m_state, "known_clients", items, WriteKnownClientObject, params, kComps);
+}
+
 CHttpServer::Response CApiDispatcher::HandleClientDetail(
 	const CHttpServer::Request &req, const std::string &ecid_str)
 {
