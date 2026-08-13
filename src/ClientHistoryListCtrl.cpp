@@ -202,9 +202,16 @@ void CClientHistoryListCtrl::ReconcileLive(const std::unordered_map<CMD4Hash, Li
 		//
 		// Guarded on the live name being known: a peer whose handshake has not
 		// completed yet has none, and an empty one must not overwrite a stored
-		// name we already have.
+		// name we already have. Beyond that the test covers every field the
+		// body copies -- the badges in particular move while the name and
+		// address stay put, so a narrower test would freeze them for the life
+		// of the session.
 		if (!entry.second.name.IsEmpty() &&
-			(row.name != entry.second.name || row.ip != entry.second.ip)) {
+			(row.name != entry.second.name || row.version != entry.second.version ||
+				row.ip != entry.second.ip || row.port != entry.second.port ||
+				row.clientSoft != entry.second.clientSoft ||
+				row.sourceFrom != entry.second.sourceFrom ||
+				row.nameCell != entry.second.nameCell)) {
 			row.name = entry.second.name;
 			row.version = entry.second.version;
 			row.ip = entry.second.ip;

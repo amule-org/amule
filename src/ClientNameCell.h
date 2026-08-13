@@ -72,6 +72,27 @@ struct ClientNameCell
 	bool extProtocol = true;
 	//! Score ratio above 1, i.e. we owe this peer.
 	bool highCredits = false;
+
+	/**
+	 * Whole-struct comparison, so a caller deciding "has this cell changed"
+	 * cannot test a subset by accident.
+	 *
+	 * The badges move independently of the name: secure identification
+	 * completes after the hello, the credit ratio crosses 1 mid-session,
+	 * obfuscation and bad-guy state can change. A test written against name
+	 * and address alone freezes all of them.
+	 */
+	bool operator==(const ClientNameCell &other) const
+	{
+		return name == other.name && countryCode == other.countryCode &&
+		       downloadState == other.downloadState && clientSoft == other.clientSoft &&
+		       obfuscation == other.obfuscation && a4af == other.a4af &&
+		       showState == other.showState && knownSoftware == other.knownSoftware &&
+		       remoteQueueFull == other.remoteQueueFull && isFriend == other.isFriend &&
+		       identified == other.identified && badGuy == other.badGuy &&
+		       extProtocol == other.extProtocol && highCredits == other.highCredits;
+	}
+	bool operator!=(const ClientNameCell &other) const { return !(*this == other); }
 };
 
 //! Snapshot a live peer. Safe to call only while `client` is known alive.
