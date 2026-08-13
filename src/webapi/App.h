@@ -96,6 +96,11 @@ public:
 	// entries we didn't see this tick" path.
 	bool IsServerPartialUpdateActive();
 
+	// True when amuled advertised EC_TAG_CAN_CLIENT_HISTORY during login,
+	// i.e. it answers EC_OP_GET_CLIENT_HISTORY. /known_clients returns 503
+	// rather than sending a request an older core would assert on.
+	bool IsServerClientHistoryActive();
+
 	// Version string of the connected amuled, captured from the
 	// EC_TAG_SERVER_VERSION tag of the AUTH_OK handshake. Empty string
 	// when EC is not (yet) connected, or when talking to a daemon old

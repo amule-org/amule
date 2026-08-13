@@ -221,6 +221,15 @@ public:
 	{
 		return m_ECClient && m_ECClient->ServerSupportsSearchProgressUnion();
 	}
+	// True when amuled answers EC_OP_GET_CLIENT_HISTORY. Null-checked for the
+	// same reason as the union accessor above -- and the check is not optional
+	// even beyond that: a daemon predating the request reaches the
+	// unknown-opcode branch of ProcessRequest2(), which asserts rather than
+	// answering EC_OP_FAILED, so asking an old core takes it down.
+	bool IsServerClientHistoryActive() const
+	{
+		return m_ECClient && m_ECClient->ServerSupportsClientHistory();
+	}
 	// Version string of the connected core, from the EC AUTH_OK handshake.
 	// Empty when not connected (m_ECClient null) or when the daemon is old
 	// enough to omit the EC_TAG_SERVER_VERSION tag.

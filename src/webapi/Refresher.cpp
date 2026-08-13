@@ -28,6 +28,8 @@
 
 #include "Refresher.h"
 
+#include "ClientTagNames.h" // Needed for the shared client-tag token decoders
+
 #include "PrefsSchema.h"
 
 #include "State.h"
@@ -54,6 +56,93 @@
 
 namespace webapi
 {
+
+const char *ClientSoftwareName(std::uint32_t code)
+{
+	// Subset that covers the bulk of the live ed2k population —
+	// every client we'd ever realistically meet on the wire. SO_UNKNOWN
+	// and SO_COMPAT_UNK collapse to "unknown" / "compat" so consumers
+	// see a stable label even when amuled couldn't fingerprint the
+	// peer's software.
+	switch (code) {
+	case SO_EMULE:
+		return "emule";
+	case SO_CDONKEY:
+		return "cdonkey";
+	case SO_LXMULE:
+		return "lxmule";
+	case SO_AMULE:
+		return "amule";
+	case SO_SHAREAZA:
+	case SO_NEW2_SHAREAZA:
+	case SO_NEW_SHAREAZA:
+		return "shareaza";
+	case SO_EMULEPLUS:
+		return "emule_plus";
+	case SO_HYDRANODE:
+		return "hydranode";
+	case SO_NEW2_MLDONKEY:
+	case SO_MLDONKEY:
+	case SO_NEW_MLDONKEY:
+		return "mldonkey";
+	case SO_LPHANT:
+		return "lphant";
+	case SO_EDONKEYHYBRID:
+		return "edonkey_hybrid";
+	case SO_EDONKEY:
+		return "edonkey";
+	case SO_OLDEMULE:
+		return "old_emule";
+	case SO_UNKNOWN:
+		return "unknown";
+	case SO_COMPAT_UNK:
+		return "compat";
+	default:
+		return "unknown";
+	}
+}
+const char *ClientObfuscationName(std::uint8_t code)
+{
+	switch (code) {
+	case OBST_UNDEFINED:
+		return "undefined";
+	case OBST_ENABLED:
+		return "enabled";
+	case OBST_SUPPORTED:
+		return "supported";
+	case OBST_NOT_SUPPORTED:
+		return "not_supported";
+	case OBST_DISABLED:
+		return "disabled";
+	default:
+		return "unknown";
+	}
+}
+// Map EC_TAG_CLIENT_FROM (ESourceFrom, Constants.h) to a stable
+// lowercase token, mirroring the GUI's Origin column without leaking
+// the daemon locale. Local/remote server both collapse to "server".
+std::string SourceOriginName(std::uint32_t from)
+{
+	switch (from) {
+	case SF_LOCAL_SERVER:
+	case SF_REMOTE_SERVER:
+		return "server";
+	case SF_KADEMLIA:
+		return "kad";
+	case SF_SOURCE_EXCHANGE:
+		return "source_exchange";
+	case SF_PASSIVE:
+		return "passive";
+	case SF_LINK:
+		return "link";
+	case SF_SOURCE_SEEDS:
+		return "source_seeds";
+	case SF_SEARCH_RESULT:
+		return "search_result";
+	default:
+		return "unknown";
+	}
+}
 
 namespace
 {
@@ -614,69 +703,6 @@ const char *ClientIdentStateName(std::uint8_t code)
 	}
 }
 
-const char *ClientSoftwareName(std::uint32_t code)
-{
-	// Subset that covers the bulk of the live ed2k population —
-	// every client we'd ever realistically meet on the wire. SO_UNKNOWN
-	// and SO_COMPAT_UNK collapse to "unknown" / "compat" so consumers
-	// see a stable label even when amuled couldn't fingerprint the
-	// peer's software.
-	switch (code) {
-	case SO_EMULE:
-		return "emule";
-	case SO_CDONKEY:
-		return "cdonkey";
-	case SO_LXMULE:
-		return "lxmule";
-	case SO_AMULE:
-		return "amule";
-	case SO_SHAREAZA:
-	case SO_NEW2_SHAREAZA:
-	case SO_NEW_SHAREAZA:
-		return "shareaza";
-	case SO_EMULEPLUS:
-		return "emule_plus";
-	case SO_HYDRANODE:
-		return "hydranode";
-	case SO_NEW2_MLDONKEY:
-	case SO_MLDONKEY:
-	case SO_NEW_MLDONKEY:
-		return "mldonkey";
-	case SO_LPHANT:
-		return "lphant";
-	case SO_EDONKEYHYBRID:
-		return "edonkey_hybrid";
-	case SO_EDONKEY:
-		return "edonkey";
-	case SO_OLDEMULE:
-		return "old_emule";
-	case SO_UNKNOWN:
-		return "unknown";
-	case SO_COMPAT_UNK:
-		return "compat";
-	default:
-		return "unknown";
-	}
-}
-
-const char *ClientObfuscationName(std::uint8_t code)
-{
-	switch (code) {
-	case OBST_UNDEFINED:
-		return "undefined";
-	case OBST_ENABLED:
-		return "enabled";
-	case OBST_SUPPORTED:
-		return "supported";
-	case OBST_NOT_SUPPORTED:
-		return "not_supported";
-	case OBST_DISABLED:
-		return "disabled";
-	default:
-		return "unknown";
-	}
-}
-
 // Format an IP from EC_TAG_CLIENT_USER_IP. The EC tag holds a
 // 32-bit host-order IPv4; we render it dotted-quad. Returns "" for
 // zero IPs (commonly the case for clients we've never confirmed).
@@ -693,32 +719,6 @@ std::string FormatClientIpv4(std::uint32_t ip_he)
 		static_cast<unsigned>((ip_he >> 16) & 0xFFu),
 		static_cast<unsigned>((ip_he >> 24) & 0xFFu));
 	return std::string(buf);
-}
-
-// Map EC_TAG_CLIENT_FROM (ESourceFrom, Constants.h) to a stable
-// lowercase token, mirroring the GUI's Origin column without leaking
-// the daemon locale. Local/remote server both collapse to "server".
-std::string SourceOriginName(std::uint32_t from)
-{
-	switch (from) {
-	case SF_LOCAL_SERVER:
-	case SF_REMOTE_SERVER:
-		return "server";
-	case SF_KADEMLIA:
-		return "kad";
-	case SF_SOURCE_EXCHANGE:
-		return "source_exchange";
-	case SF_PASSIVE:
-		return "passive";
-	case SF_LINK:
-		return "link";
-	case SF_SOURCE_SEEDS:
-		return "source_seeds";
-	case SF_SEARCH_RESULT:
-		return "search_result";
-	default:
-		return "unknown";
-	}
 }
 
 // Merge a `CEC_UpDownClient_Tag` into an existing ClientSnapshot.

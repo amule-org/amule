@@ -212,6 +212,7 @@ PHASES=(
 	30-shared-verify.sh
 	31-shared-directories.sh
 	32-country-flags.sh
+	33-known-clients.sh
 )
 
 # Override list from the command line if given.
