@@ -155,6 +155,13 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 			ApplyGetUpdateToClients(resp, cache, file_hash_by_ecid);
 		});
 		delete resp;
+
+		// Fold this tick's peers into the known-clients store, so it stays
+		// current from the update we already have rather than being re-read.
+		// A no-op until something has asked for /known_clients, so a daemon
+		// nobody queries never pays for it; after that it costs one hash
+		// lookup per connected peer, bounded by MaxConnections.
+		state.ReconcileKnownClients();
 	}
 
 	// /logs/serverinfo, /stats/tree, /stats/graphs/{graph} are NOT

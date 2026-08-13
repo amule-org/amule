@@ -1187,15 +1187,20 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 | `source_origin` | How the peer was first found — `server`, `kad`, `source_exchange`, `passive`, … |
 | `obfuscation` | Protocol-obfuscation state as of the last session. |
 | `total_uploaded`, `total_downloaded` | Lifetime bytes, from the credit record. Always present. |
-| `last_seen` | Unix seconds. Always present. |
+| `last_seen` | Unix seconds. Always present. For a peer that is connected this is *now* — it is being seen — so the connected records are the most recent in the store under `sort=last_seen&order=desc`. A peer that left during the current tick carries the same timestamp and ties with them; ties keep a stable order across requests. |
 | `first_seen`, `sessions` | Present together, and only for a record the daemon holds metadata for. |
 | `online` | Whether this peer is connected right now, correlated by `user_hash`. |
 
 **Optional fields are omitted, never emitted empty.** A record written before the daemon kept per-peer metadata carries only the hash, the totals and `last_seen`; the rest are absent so a consumer can tell "never recorded" from "recorded as empty". On a long-lived node most records are of that kind.
 
-The reply is served from a **10-second cache**: it is a full walk of the credit store, which on a large node is tens of thousands of records. Paging therefore costs one EC roundtrip rather than one per page.
+The store is read from the daemon **once**, on the first request, and maintained from there: every refresher tick folds the connected peers back in, so later requests never touch EC at all. That is sound rather than a shortcut — a record whose peer is not connected cannot change, since credit totals only move during a transfer and `last_seen` is written at disconnect. What the maintenance covers:
 
-The cache window is not visible in the data. A record for a peer that is **not** connected cannot change — credit totals only move during a transfer and `last_seen` only at disconnect — so the cached copy is exact. For a peer that **is** connected, `online`, `total_uploaded` and `total_downloaded` are taken from the live client state on every request, so a caller polling this endpoint sees a transferring peer's totals move each tick rather than in ten-second steps.
+- a peer that connects is added, with `first_seen` and `sessions` set to what the daemon recorded when it said hello;
+- a connected peer's `online`, `total_uploaded` and `total_downloaded` track the live client state;
+- a bare record gains its name, address, software and origin once its peer identifies;
+- a connected peer's `last_seen` is now, and a peer that leaves has `online` cleared with `last_seen` stamped at the moment it went.
+
+The cost is one EC roundtrip per amuleapi process, and the store stays resident from first use.
 
 **Errors:** `405 method_not_allowed` (non-GET/HEAD), `503 ec_unavailable`, `503 ec_unsupported` (the connected amuled predates the client-history request — it is never sent to a daemon that does not advertise support).
 

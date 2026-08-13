@@ -29,6 +29,7 @@
 #include <ctime>
 #include <functional>
 #include <map>
+#include <set>
 #include <shared_mutex>
 #include <string>
 #include <unordered_map>
@@ -1138,6 +1139,48 @@ public:
 	// /clients and filter by role on their side.
 	std::vector<ClientSnapshot> Clients() const;
 
+	// --- Known clients (the daemon's credit store) -------------------------
+	//
+	// Fetched once, then maintained: the refresher folds every tick's live
+	// peers in, so the store stays current without ever being re-read. What
+	// only a refetch could give is the expiry prune the core applies at its
+	// own startup, and that cannot happen underneath us: HandleEcConnectionLost
+	// shuts amuleapi down the moment the EC socket drops, so the process never
+	// attaches to a second core. The store therefore lives for the life of the
+	// process, with no invalidation path -- deliberately, since the obvious
+	// place to add one (ResetLists, which fires on a failed tick against a live
+	// socket) would refetch the whole store for a single null tick.
+	//
+	// Held rather than copied out: this is the whole store, tens of thousands
+	// of records, so a by-value accessor would cost more per request than the
+	// EC roundtrip it saves. Readers run under the shared lock instead.
+	bool KnownClientsLoaded() const;
+	//! Install the first fetch and reconcile it against the current peers.
+	void SetKnownClients(std::vector<KnownClientSnapshot> &&rows);
+	/**
+	 * Fold this tick's peers into the store.
+	 *
+	 * A record whose peer is not connected cannot change -- credit totals only
+	 * move during a transfer, last-seen only at disconnect -- so this touches
+	 * only the connected ones, of which there are at most MaxConnections. No-op
+	 * until the store has been loaded, so a daemon nobody asks about never
+	 * pays for it.
+	 *
+	 * The store only grows between fetches: a peer met here is added and never
+	 * removed, because a record leaving the daemon's own store means expiry,
+	 * which it applies at its startup and we pick up on the next fetch. Growth
+	 * is one row per distinct peer met, bounded by real traffic and reset with
+	 * everything else by ResetLists().
+	 */
+	void ReconcileKnownClients();
+	//! Read the store under the shared lock. The callback must not call back
+	//! into CState, and must not retain the reference.
+	template <class F> void WithKnownClients(F &&fn) const
+	{
+		std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+		fn(static_cast<const std::vector<KnownClientSnapshot> &>(m_known_clients));
+	}
+
 	std::vector<ServerSnapshot> Servers() const;
 	// Results / progress for one search. search_id == 0 resolves to the
 	// current (most-recently-started) search; an unknown id yields an empty
@@ -1276,6 +1319,24 @@ private:
 	FileMap m_files;
 
 	std::map<std::uint32_t, ClientSnapshot> m_clients;
+	// See the Known clients block above. m_known_loaded distinguishes "loaded
+	// and genuinely empty" from "never fetched".
+	std::vector<KnownClientSnapshot> m_known_clients;
+	// Indices, deliberately, not pointers: the reconcile appends while it
+	// iterates, and a reallocation would dangle anything holding addresses.
+	// Rows are only ever appended for the same reason -- an erase would
+	// invalidate every index past it.
+	//
+	// Keyed on the same lowercase hex the live snapshot uses (both go through
+	// CMD4Hash::Encode().Lower()); a case mismatch would silently give every
+	// peer a second row.
+	std::map<std::string, std::size_t> m_known_of_hash;
+	bool m_known_loaded = false;
+	//! Rows currently flagged online, so a peer that left is found without
+	//! walking the store.
+	std::set<std::size_t> m_known_online;
+	//! MUST be called with m_mu held for writing.
+	void ReconcileKnownClientsLocked();
 	std::map<std::uint32_t, ServerSnapshot> m_servers;
 	std::vector<std::string> m_amule_log_lines;
 	ServerInfoLog m_server_info;

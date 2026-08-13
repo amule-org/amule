@@ -24,6 +24,8 @@
 
 #include "State.h"
 
+#include <ctime>
+
 #include <mutex>
 #include <shared_mutex>
 #include <utility>
@@ -405,6 +407,123 @@ std::vector<ClientSnapshot> CState::Clients() const
 	return out;
 }
 
+bool CState::KnownClientsLoaded() const
+{
+	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+	return m_known_loaded;
+}
+
+void CState::SetKnownClients(std::vector<KnownClientSnapshot> &&rows)
+{
+	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
+	m_known_clients = std::move(rows);
+	m_known_of_hash.clear();
+	m_known_online.clear();
+	for (std::size_t i = 0; i < m_known_clients.size(); ++i)
+		m_known_of_hash[m_known_clients[i].user_hash] = i;
+	m_known_loaded = true;
+	// The fetch describes the store as of a moment ago; the peers connected
+	// right now are already more current than parts of it.
+	ReconcileKnownClientsLocked();
+}
+
+void CState::ReconcileKnownClients()
+{
+	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
+	if (!m_known_loaded)
+		return;
+	ReconcileKnownClientsLocked();
+}
+
+void CState::ReconcileKnownClientsLocked()
+{
+	const std::time_t now = std::time(nullptr);
+	std::set<std::size_t> still_online;
+
+	for (const auto &kv : m_clients) {
+		const ClientSnapshot &c = kv.second;
+		// An all-zero hash is not an identity: it is what a peer that has not
+		// sent its hash yet reports, and every such peer would otherwise
+		// collapse into one fabricated record -- sharing a session count and
+		// a first-seen between unrelated clients. The daemon never writes one
+		// either; it creates a credit record from the hash in the hello. They
+		// get a row of their own once they identify.
+		if (c.user_hash.empty() || c.user_hash.find_first_not_of('0') == std::string::npos)
+			continue;
+
+		auto it = m_known_of_hash.find(c.user_hash);
+		if (it == m_known_of_hash.end()) {
+			// A peer met since the store was read. The daemon wrote its
+			// credit record when the peer said hello, stamping first-seen
+			// and counting the session, so this reconstructs what it wrote
+			// rather than inventing anything.
+			//
+			// sessions is left at zero deliberately: the offline-to-online
+			// transition below is what counts it, and this record is about
+			// to make that transition. Setting it here too would count the
+			// same arrival twice.
+			KnownClientSnapshot k;
+			k.user_hash = c.user_hash;
+			k.first_seen = now;
+			k.last_seen = now;
+			m_known_clients.push_back(std::move(k));
+			it = m_known_of_hash.emplace(c.user_hash, m_known_clients.size() - 1).first;
+		}
+
+		KnownClientSnapshot &k = m_known_clients[it->second];
+		still_online.insert(it->second);
+		// Offline to online is a new session, which is what the daemon counts:
+		// UpdateMeta() bumps it once per client object, at the hello. Counted
+		// on the transition rather than per tick for the same reason.
+		//
+		// It can over-count by one if a peer drops out of the update for a
+		// tick and returns -- an EC hiccup rather than a real reconnect. The
+		// daemon's own figure replaces this at the next fetch, so any drift
+		// lives no longer than the connection to that core.
+		if (!k.online)
+			k.sessions++;
+		k.online = true;
+		// A peer in front of us was last seen now, not whenever it previously
+		// disconnected. Leaving the stored value would report a peer that is
+		// connected as last seen months ago, and now is what the core writes
+		// to the record at its own disconnect handling anyway.
+		k.last_seen = now;
+		k.total_uploaded = c.xfer_up_total;
+		k.total_downloaded = c.xfer_down_total;
+		// Identity, when the peer in front of us knows more than the record.
+		// A record only gains a name once the core writes its metadata, so a
+		// peer we have never finished a session with is otherwise nameless.
+		// Guarded on the live name being known: a peer mid-handshake has none
+		// and must not blank a stored one.
+		if (!c.client_name.empty()) {
+			k.client_name = c.client_name;
+			k.ip = c.ip;
+			k.port = c.port;
+			k.kad_port = c.kad_port;
+			k.country_code = c.country_code;
+			k.software = c.software;
+			k.version = c.software_version;
+			k.source_origin = c.source_origin;
+			k.obfuscation = c.obfuscation_status;
+		}
+	}
+
+	// Whoever was online last tick and is not in this one has gone. Found
+	// through the online set, so this costs the number of departures rather
+	// than a walk of the store.
+	for (const std::size_t idx : m_known_online) {
+		if (still_online.count(idx) != 0)
+			continue;
+		m_known_clients[idx].online = false;
+		// Seen until this moment, which is what the core writes to the record
+		// at its own disconnect handling. The stored value is the *previous*
+		// disconnect, so leaving it would show a peer that was here a second
+		// ago as last seen months back.
+		m_known_clients[idx].last_seen = now;
+	}
+	m_known_online.swap(still_online);
+}
+
 bool CState::FindDownload(const std::string &hash_hex, FileSnapshot &out) const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
@@ -489,6 +608,12 @@ void CState::ResetLists()
 	// tracking disappears, so no generation carry-over is needed here.)
 	m_searches.clear();
 	m_current_search_id = 0;
+	// The credit store deliberately does NOT go with them. This runs when a
+	// tick failed against a socket that is still up, and dropping the store
+	// there would refetch the whole thing after one null tick -- the cost this
+	// endpoint exists to avoid. It cannot go stale across a daemon restart
+	// either: HandleEcConnectionLost() shuts amuleapi down the moment the
+	// socket drops, so the process never attaches to a second core.
 	// Logs + stats_tree + graphs survive EC reconnects on purpose —
 	// operator can see "EC disconnected at HH:MM" alongside earlier
 	// graph traffic; stats_tree's counters are amuled-uptime not
