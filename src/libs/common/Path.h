@@ -126,6 +126,22 @@ public:
 	 */
 	bool IsSameDir(const CPath &other) const;
 
+	/**
+	 * The canonical string IsSameDir() reduces this path to.
+	 *
+	 * For paths that contain a separator -- which every shared directory
+	 * does -- equal keys mean IsSameDir() would return true, so a caller with
+	 * many of them can group them in one pass instead of comparing every
+	 * pair. Two bare filenames are not covered: IsSameDir() compares those
+	 * with PATHCMP while this normalises them, and on Windows
+	 * wxPATH_NORM_LONG would give PROGRA~1 and "Program Files" the same key
+	 * where PATHCMP calls them different.
+	 * Added for CSharedFileList, where answering a browse one directory at a
+	 * time was O(directories x files) calls to IsSameDir(), each normalising
+	 * both sides (issue #898).
+	 */
+	wxString GetDirKey() const;
+
 	/** Returns a CPath created from joining the two objects. */
 	CPath JoinPaths(const CPath &other) const;
 	/** Returns a CPath with invalid chars removed, and spaces escaped if specified. */

@@ -36,6 +36,7 @@
 #include "Server.h"           // Needed for CServer
 #include "ServerConnect.h"    // Needed for CServerConnect
 #include "SearchList.h"       // Needed for CSearchFile
+#include "updownclient.h"     // Needed for BROWSE_IN_PROGRESS
 #include "SearchListModel.h"  // Needed for CSearchListModel
 #include "GetTickCount.h"     // Needed for GetTickCount64()
 #include "CommentDialogLst.h" // Needed for CCommentDialogLst (Kad comments/ratings)
@@ -543,6 +544,20 @@ wxString CSearchListCtrl::GetOldColumnOrder() const
 	return "N,Z,u,Y,I,S";
 }
 
+void CSearchListCtrl::SetBrowseStatus(uint32 status)
+{
+	// A re-browse reuses this tab (see CSearchDlg::EnsureBrowseTab), so the
+	// rebuild threshold has to start over with it. Left standing, the previous
+	// browse's final row count becomes the bar the new one has to clear, which
+	// it never does: every burst would be skipped and the list would stay
+	// empty until the browse finished, which is the wait the throttle exists
+	// to avoid (issue #898).
+	if (status == BROWSE_IN_PROGRESS) {
+		m_lastRebuildRows = 0;
+	}
+	m_browseStatus = status;
+}
+
 void CSearchListCtrl::OnIdleHook()
 {
 	// One coalesced rebuild per idle for everything that arrived since the
@@ -568,6 +583,35 @@ void CSearchListCtrl::OnIdleHook()
 		// every burst.
 		m_model->FlushPending();
 	} else if (m_model->HasPending()) {
+		// A browse still streaming in is rebuilt on a growth schedule rather
+		// than on every burst.
+		//
+		// The rebuild below is O(rows), and a browse arrives one directory at
+		// a time, so rebuilding per burst is O(bursts x rows): browsing a
+		// 39,450-file share took 384 rebuilds totalling 232 seconds of
+		// blocked main loop, the last of them 5.2 s on its own (issue #898).
+		//
+		// Waiting for the row count to grow by half means the rebuilds form a
+		// geometric series, so their total is a small multiple of the final
+		// one -- about 25 rebuilds instead of 384 here -- while results still
+		// appear as the browse runs rather than only at the end. A finished
+		// or failed browse always falls through, so the last state is exact.
+		if (m_browseStatus == BROWSE_IN_PROGRESS) {
+			// Counted from the indexed result list, not the model: the
+			// model would have to walk its rows to answer, which is the
+			// O(rows) cost being avoided here.
+			const unsigned rows =
+				m_nResultsID
+					? (unsigned)theApp->searchlist->GetSearchResults(m_nResultsID).size()
+					: 0;
+			if (m_lastRebuildRows > 0 && rows < m_lastRebuildRows + m_lastRebuildRows / 2) {
+				return;
+			}
+			m_lastRebuildRows = rows;
+		} else {
+			m_lastRebuildRows = 0;
+		}
+
 		// The row the user is looking at, so the rebuild below can be put
 		// back where they left it. Cleared() drops the view to the top, and
 		// on a running search that is every idle -- measured on GTK with wx

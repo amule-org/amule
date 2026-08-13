@@ -179,6 +179,48 @@ static wxString DoCleanPath(const wxString &path)
 #endif
 }
 
+/**
+ * The canonical form IsSameAs() reduces a path to before comparing it.
+ *
+ * Extracted so it can be computed once per path and reused, instead of twice
+ * per comparison. Grouping paths by this string is then exactly equivalent to
+ * comparing them pairwise, which is what lets CSharedFileList answer a browse
+ * without re-deriving the same grouping for every directory (issue #898).
+ *
+ * Only for paths that contain a separator -- IsSameAs() compares two bare
+ * filenames with PATHCMP instead, and that branch is left where it is.
+ */
+static wxString NormalizedKey(const wxString &path)
+{
+	// Cache the current directory only when the path is relative --
+	// wxFileName::Normalize ignores the cwd argument for absolute paths.
+	// Skipping wxGetCwd() in the absolute case (which is essentially every
+	// aMule call site: shared dirs, Temp, Incoming, partfile paths) avoids
+	// the wxLogSysError "Failed to get the working directory" that wxGetCwd()
+	// emits on macOS bundles whose recorded CWD has been removed (App
+	// translocation, deleted launching shell, etc.).
+	wxString cwd;
+	if (!wxIsAbsolutePath(path)) {
+		cwd = wxGetCwd();
+	}
+
+	// We normalize everything, except env. variables, which
+	// can cause problems when the string is not encodable
+	// using wxConvLibc which wxWidgets uses for the purpose.
+	// wxPATH_NORM_ALL is deprecated in wx3 -- use explicit flags instead (excluding wxPATH_NORM_ENV_VARS)
+	const int flags = wxPATH_NORM_DOTS | wxPATH_NORM_TILDE | wxPATH_NORM_CASE | wxPATH_NORM_ABSOLUTE |
+			  wxPATH_NORM_LONG | wxPATH_NORM_SHORTCUT;
+
+	// Let wxFileName handle the tricky stuff involved in actually
+	// comparing two paths ... Currently, a path ending with a path-
+	// separator will be unequal to the same path without a path-
+	// separator, which is probably for the best, but can could
+	// lead to some unexpected behavior.
+	wxFileName fn(path);
+	fn.Normalize(flags, cwd);
+	return fn.GetFullPath();
+}
+
 /** Returns true if the two paths are equal. */
 static bool IsSameAs(const wxString &a, const wxString &b)
 {
@@ -188,46 +230,13 @@ static bool IsSameAs(const wxString &a, const wxString &b)
 	// (other->GetFileName() == file->GetFileName()) lands here on every
 	// duplicate result; without this fast path the call falls through to
 	// wxFileName::Normalize, which insists on a cwd argument and triggers
-	// wxGetCwd() — and wxGetCwd() emits a wxLogSysError on macOS bundles
-	// whose recorded CWD has been removed (App translocation, deleted
-	// launching shell, etc.) for every comparison.
+	// wxGetCwd() -- see NormalizedKey().
 	if (a.find_first_of(wxFileName::GetPathSeparators()) == wxString::npos &&
 		b.find_first_of(wxFileName::GetPathSeparators()) == wxString::npos) {
 		return PATHCMP(a.c_str(), b.c_str()) == 0;
 	}
 
-	// Cache the current directory only when at least one of the paths
-	// is relative — wxFileName::Normalize ignores the cwd argument
-	// for absolute paths.  Skipping wxGetCwd() in the absolute-only
-	// case (which is essentially every aMule call site: shared dirs,
-	// Temp, Incoming, partfile paths) avoids the wxLogSysError
-	// "Failed to get the working directory" that wxGetCwd() emits on
-	// macOS bundles whose recorded CWD has been removed (App
-	// translocation, deleted launching shell, etc.).
-	wxString cwd;
-	if (!wxIsAbsolutePath(a) || !wxIsAbsolutePath(b)) {
-		cwd = wxGetCwd();
-	}
-
-	// We normalize everything, except env. variables, which
-	// can cause problems when the string is not encodable
-	// using wxConvLibc which wxWidgets uses for the purpose.
-	// wxPATH_NORM_ALL is deprecated in wx3 — use explicit flags instead (excluding wxPATH_NORM_ENV_VARS)
-	const int flags = wxPATH_NORM_DOTS | wxPATH_NORM_TILDE | wxPATH_NORM_CASE | wxPATH_NORM_ABSOLUTE |
-			  wxPATH_NORM_LONG | wxPATH_NORM_SHORTCUT;
-
-	// Let wxFileName handle the tricky stuff involved in actually
-	// comparing two paths ... Currently, a path ending with a path-
-	// separator will be unequal to the same path without a path-
-	// separator, which is probably for the best, but can could
-	// lead to some unexpected behavior.
-	wxFileName fn1(a);
-	wxFileName fn2(b);
-
-	fn1.Normalize(flags, cwd);
-	fn2.Normalize(flags, cwd);
-
-	return (fn1.GetFullPath() == fn2.GetFullPath());
+	return NormalizedKey(a) == NormalizedKey(b);
 }
 
 ////////////////////////////////////////////////////////////
@@ -408,6 +417,25 @@ sint64 CPath::GetFileSize() const
 	}
 
 	return wxInvalidOffset;
+}
+
+wxString CPath::GetDirKey() const
+{
+	// The same reduction IsSameDir() performs before comparing: strip the
+	// trailing separator, then canonicalise. Two paths have equal keys
+	// exactly when IsSameDir() calls them the same directory, so a caller
+	// holding many paths can group by this instead of comparing every pair
+	// (issue #898).
+	wxString stripped = m_filesystem;
+	if (stripped.Length()) {
+		stripped = StripSeparators(stripped, wxString::trailing);
+	}
+
+	// Deliberately NormalizedKey() and not IsSameAs()'s bare-filename fast
+	// path: a bare name is made absolute against the cwd here, which is what
+	// IsSameAs() does for it too as soon as the other side has a separator.
+	// Keying every path the same way keeps the grouping self-consistent.
+	return NormalizedKey(stripped);
 }
 
 bool CPath::IsSameDir(const CPath &other) const

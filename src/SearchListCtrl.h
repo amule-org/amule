@@ -133,7 +133,12 @@ public:
 	const wxString &GetBrowseName() const { return m_browseName; }
 	void SetBrowseName(const wxString &name) { m_browseName = name; }
 	uint32 GetBrowseStatus() const { return m_browseStatus; }
-	void SetBrowseStatus(uint32 status) { m_browseStatus = status; }
+	/**
+	 * Records the browse state, and starts the rebuild throttle over when a
+	 * browse begins; defined in the .cpp so this header need not pull in
+	 * updownclient.h for the status values. See OnIdleHook().
+	 */
+	void SetBrowseStatus(uint32 status);
 
 	/**
 	 * Sets the filter which decides which results should be shown.
@@ -278,6 +283,8 @@ protected:
 	//! Peer display name and lifecycle (EBrowseStatus) for a browse tab.
 	wxString m_browseName;
 	uint32 m_browseStatus;
+	//! Rows at the last rebuild while a browse was streaming; see OnIdleHook().
+	unsigned m_lastRebuildRows = 0;
 
 	//! The current filter reg-exp.
 	wxRegEx m_filter;

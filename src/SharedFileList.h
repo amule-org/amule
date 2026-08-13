@@ -30,6 +30,7 @@
 #include <functional>
 #include <list>
 #include <map>
+#include <set> // Needed for std::set (m_sharedDirKeys)
 #include <unordered_map>
 #include <wx/arrstr.h> // Needed for wxArrayString
 #include <wx/thread.h> // Needed for wxMutex
@@ -253,6 +254,29 @@ private:
 	CKnownFileList *filelist;
 
 	CKnownFileMap m_Files_map;
+
+	/**
+	 * Shared files grouped by directory, for GetSharedFilesByDirectory().
+	 *
+	 * A peer browsing a share asks for one directory at a time, and answering
+	 * each request used to walk the whole of m_Files_map calling
+	 * CPath::IsSameDir(), which normalises both sides every time. That is
+	 * O(directories x files): a 39,450-file share across 1,691 directories
+	 * cost 66.7 million comparisons, blocking the main loop for the best part
+	 * of a minute (issue #898).
+	 *
+	 * Keyed by CPath::GetDirKey(), which is the same canonical form
+	 * IsSameDir() reduces to, so grouping by it is equivalent to the walk it
+	 * replaces. m_dirGroupsAt records the list generation it was built from;
+	 * the generation is already bumped under list_mut at every mutation of
+	 * m_Files_map, which is the lock this is read and written under, so no
+	 * further invalidation is needed.
+	 */
+	std::map<wxString, CKnownFilePtrList> m_dirGroups;
+	//! Generation m_dirGroups was built from; see there.
+	uint64 m_dirGroupsAt = 0;
+	//! Whether m_dirGroups has been built at all; generation 0 is legal.
+	bool m_dirGroupsBuilt = false;
 	// See GetListGeneration(). Bumped under list_mut wherever m_Files_map
 	// gains or loses an entry; atomic so it can be read without the lock.
 	std::atomic<uint64> m_listGeneration{ 0 };
@@ -266,6 +290,34 @@ private:
 	mutable wxMutex list_mut;
 
 	StringPathMap m_PublicSharedDirNames; //! used for mapping strings to shared directories
+
+	/**
+	 * The reverse of m_PublicSharedDirNames, keyed by CPath::GetDirKey().
+	 *
+	 * GetPublicSharedDirName() used to find a directory's public name by
+	 * walking m_PublicSharedDirNames and comparing each entry with
+	 * IsSameDir(), which normalises both paths. SendSharedDirectories()
+	 * calls it once per shared directory, so that walk was O(directories^2):
+	 * with 1,691 shared directories it was one of the two halves of a 53 s
+	 * freeze while answering a browse (issue #898).
+	 *
+	 * Cleared wherever m_PublicSharedDirNames is, since the two are written
+	 * together and expire together.
+	 */
+	std::map<wxString, wxString> m_publicNameByDirKey;
+
+	/**
+	 * Keys of every shared directory, for IsShared().
+	 *
+	 * The other half of the same freeze: IsShared() compared the path against
+	 * every entry of shareddir_list and every category path with IsSameDir(),
+	 * and GetPublicSharedDirName() calls it per directory as its safety
+	 * check. Built on demand and dropped in Reload(), which is where the
+	 * shared-directory set can change and where the public names are already
+	 * discarded for the same reason.
+	 */
+	mutable std::set<wxString> m_sharedDirKeys;
+	mutable bool m_sharedDirKeysBuilt = false;
 
 	/* Kad Stuff */
 	CPublishKeywordList *m_keywords;
