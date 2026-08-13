@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-11 12:27+0200\n"
+"POT-Creation-Date: 2026-08-13 12:45+0200\n"
 "PO-Revision-Date: 2026-08-13 10:12+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -680,6 +680,10 @@ msgstr "下载"
 msgid "Shared files"
 msgstr "共享文件"
 
+#: src/amuleDlg.cpp src/ClientContextActions.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "用户"
+
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Messages"
 msgstr "消息"
@@ -822,6 +826,11 @@ msgstr "下载窗口"
 #: src/amuleDlg.cpp
 msgid "Shared Files Window"
 msgstr "共享文件窗口"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "Clients Window"
+msgstr "网络窗口"
 
 #: src/amuleDlg.cpp
 msgid "Messages Window"
@@ -1175,9 +1184,53 @@ msgstr "关闭所有分页"
 msgid "Close other tabs"
 msgstr "关闭其它分页"
 
-#: src/ChatWnd.cpp src/GenericClientListCtrl.cpp
+#: src/ChatWnd.cpp src/ClientContextActions.cpp
 msgid "Add to Friends"
 msgstr "加为好友"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Show &Details"
+msgstr "查看详细信息 (&D)"
+
+#: src/ClientContextActions.cpp
+msgid "Remove from friends"
+msgstr "从好友中删除"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Establish Friend Slot"
+msgstr "建立好友通道"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "View Files"
+msgstr "查看共享文件"
+
+#: src/ClientContextActions.cpp
+msgid "Send message"
+msgstr "发送消息"
+
+#: src/ClientContextActions.cpp
+msgid "Swap to this file"
+msgstr "转移到这个文件"
+
+#: src/ClientContextActions.cpp
+msgid ""
+"You are not allowed to set more than one friend slot.\n"
+" Only one slot was assigned."
+msgstr ""
+"不允许设置超过一个好友通道。\n"
+" 只分配了一个通道。"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Multiple selection"
+msgstr "多选"
+
+#: src/ClientContextActions.cpp
+msgid "Send message to user"
+msgstr "发送消息给用户"
+
+#: src/ClientContextActions.cpp
+msgid "Message to send:"
+msgstr "发送消息："
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1242,6 +1295,64 @@ msgstr "断开连接"
 msgid "%.1f kB/s"
 msgstr "%.1f kB/s"
 
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Name"
+msgstr "名称:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+msgid "Software"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Version"
+msgstr "版本"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "IP Address"
+msgstr "IP 地址 :"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Origin"
+msgstr "来源"
+
+#: src/ClientHistoryListCtrl.cpp
+msgid "First seen"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Last seen"
+msgstr "最后一次下载"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Sessions"
+msgstr "版本"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Uploaded"
+msgstr "已上传"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Downloaded"
+msgstr "总下载: "
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Ratio"
+msgstr "评价"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Online now"
+msgstr "在线签名"
+
 #: src/ClientRef.cpp
 msgid "Not complete"
 msgstr "未完成"
@@ -1261,6 +1372,47 @@ msgstr "N/A"
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr "不可用"
+
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+msgid "Files"
+msgstr "文件"
+
+#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+msgid "Upload Speed"
+msgstr "上传速度"
+
+#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+msgid "Download Speed"
+msgstr "下载速度"
+
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp
+msgid "Uploaded"
+msgstr "已上传"
+
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Downloaded"
+msgstr "已下载"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Downloading from"
+msgstr "正在下载"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Uploading to"
+msgstr "正在上传"
+
+#: src/ClientsWnd.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
+msgid "Active"
+msgstr "活动"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Known"
+msgstr "未知"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -2562,10 +2714,6 @@ msgstr "严重错误 - 开始聊天进程没有客户端"
 msgid "Friends"
 msgstr "好友"
 
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Show &Details"
-msgstr "查看详细信息 (&D)"
-
 #: src/FriendListCtrl.cpp
 msgid "Add a friend"
 msgstr "添加好友"
@@ -2577,14 +2725,6 @@ msgstr "删除好友"
 #: src/FriendListCtrl.cpp
 msgid "Send &Message"
 msgstr "发送消息 (&M)"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "View Files"
-msgstr "查看共享文件"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Establish Friend Slot"
-msgstr "建立好友通道"
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"
@@ -2601,42 +2741,6 @@ msgid ""
 msgstr ""
 "不允许设置超过一个好友通道。\n"
 " 只能指定一个通道。"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Multiple selection"
-msgstr "多选"
-
-#: src/GenericClientListCtrl.cpp
-msgid ""
-"You are not allowed to set more than one friend slot.\n"
-" Only one slot was assigned."
-msgstr ""
-"不允许设置超过一个好友通道。\n"
-" 只分配了一个通道。"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message to user"
-msgstr "发送消息给用户"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Message to send:"
-msgstr "发送消息："
-
-#: src/GenericClientListCtrl.cpp src/Statistics.cpp
-msgid "Clients"
-msgstr "用户"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Remove from friends"
-msgstr "从好友中删除"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message"
-msgstr "发送消息"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Swap to this file"
-msgstr "转移到这个文件"
 
 #: src/GenericClientListCtrl.cpp
 #, c-format
@@ -2939,10 +3043,6 @@ msgstr "文件大小"
 #: src/KnownFile.cpp
 msgid "Share ratio"
 msgstr "共享率"
-
-#: src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Uploaded"
-msgstr "已上传"
 
 #: src/KnownFile.cpp src/muuli_wdr.cpp
 msgid "Requested"
@@ -5288,10 +5388,6 @@ msgstr "归档"
 msgid "Text"
 msgstr "文本"
 
-#: src/OtherFunctions.cpp src/TransferWnd.cpp
-msgid "Active"
-msgstr "活动"
-
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "Using config dir: %s"
@@ -5545,11 +5641,6 @@ msgstr "正在分配"
 msgid "Insufficient disk space"
 msgstr "磁盘空间不足"
 
-#: src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp
-msgid "Downloaded"
-msgstr "已下载"
-
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
@@ -5755,10 +5846,6 @@ msgstr "目录"
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "服务器"
-
-#: src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
-msgid "Files"
-msgstr "文件"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Security"
@@ -6612,11 +6699,6 @@ msgstr "最大用户数"
 msgid "Static"
 msgstr "静态"
 
-#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp src/Statistics.cpp
-msgid "Version"
-msgstr "版本"
-
 #: src/ServerListCtrl.cpp
 msgid "Soft Files"
 msgstr "文件排序"
@@ -6969,14 +7051,6 @@ msgstr "在目录中没有找到可以共享的文件：%s"
 msgid "User Name"
 msgstr "用户名"
 
-#: src/SharedFilePeersListCtrl.cpp
-msgid "Download Speed"
-msgstr "下载速度"
-
-#: src/SharedFilePeersListCtrl.cpp
-msgid "Upload Speed"
-msgstr "上传速度"
-
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Available Parts"
 msgstr "可用分块"
@@ -6988,10 +7062,6 @@ msgstr "上传状态"
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Download Status"
 msgstr "下载状态"
-
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Origin"
-msgstr "来源"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Local File Name"

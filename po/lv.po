@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-11 12:27+0200\n"
+"POT-Creation-Date: 2026-08-13 12:45+0200\n"
 "PO-Revision-Date: 2026-08-13 00:17+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -654,6 +654,10 @@ msgstr "Lejupielādes"
 msgid "Shared files"
 msgstr "Kopīgotās datnes"
 
+#: src/amuleDlg.cpp src/ClientContextActions.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "Klienti"
+
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Messages"
 msgstr "Ziņojumi"
@@ -796,6 +800,11 @@ msgstr "Lejupielādes logs"
 #: src/amuleDlg.cpp
 msgid "Shared Files Window"
 msgstr ""
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "Clients Window"
+msgstr "Klienti"
 
 #: src/amuleDlg.cpp
 msgid "Messages Window"
@@ -1144,9 +1153,51 @@ msgstr "Aizvērt visas cilnes"
 msgid "Close other tabs"
 msgstr "Aizvērt pārējās cilnes"
 
-#: src/ChatWnd.cpp src/GenericClientListCtrl.cpp
+#: src/ChatWnd.cpp src/ClientContextActions.cpp
 msgid "Add to Friends"
 msgstr "Pievienot draugu sarakstam"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Show &Details"
+msgstr ""
+
+#: src/ClientContextActions.cpp
+msgid "Remove from friends"
+msgstr "Noņemt no draugu saraksta"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Establish Friend Slot"
+msgstr "Izveidot drauga izdalīto spraugu"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "View Files"
+msgstr "Skatīt datnes"
+
+#: src/ClientContextActions.cpp
+msgid "Send message"
+msgstr "Sūtīt ziņojumu"
+
+#: src/ClientContextActions.cpp
+msgid "Swap to this file"
+msgstr ""
+
+#: src/ClientContextActions.cpp
+msgid ""
+"You are not allowed to set more than one friend slot.\n"
+" Only one slot was assigned."
+msgstr ""
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Multiple selection"
+msgstr ""
+
+#: src/ClientContextActions.cpp
+msgid "Send message to user"
+msgstr ""
+
+#: src/ClientContextActions.cpp
+msgid "Message to send:"
+msgstr ""
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1211,6 +1262,63 @@ msgstr "Atslēgts"
 msgid "%.1f kB/s"
 msgstr "%.1f kB/s"
 
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Name"
+msgstr "Nosaukums:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+msgid "Software"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Version"
+msgstr "Versija"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "IP Address"
+msgstr "IP adrese :"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Origin"
+msgstr "Izcelsme"
+
+#: src/ClientHistoryListCtrl.cpp
+msgid "First seen"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+msgid "Last seen"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Sessions"
+msgstr "Versija"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Uploaded"
+msgstr "Augšupielādēts"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Downloaded"
+msgstr "Lejupielādēta"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Ratio"
+msgstr "Vērtējums"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Online now"
+msgstr "Tiešsaistes paraksts"
+
 #: src/ClientRef.cpp
 msgid "Not complete"
 msgstr ""
@@ -1230,6 +1338,47 @@ msgstr ""
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr ""
+
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+msgid "Files"
+msgstr "Datnes"
+
+#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+msgid "Upload Speed"
+msgstr "Augšupielādes ātrums"
+
+#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+msgid "Download Speed"
+msgstr "Lejupielādes ātrums"
+
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp
+msgid "Uploaded"
+msgstr "Augšupielādēts"
+
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Downloaded"
+msgstr "Lejupielādēta"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Downloading from"
+msgstr "Lejupielādē"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Uploading to"
+msgstr "Augšupielādē"
+
+#: src/ClientsWnd.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
+msgid "Active"
+msgstr ""
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Known"
+msgstr "Nezināms"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -2491,10 +2640,6 @@ msgstr ""
 msgid "Friends"
 msgstr "Draugi"
 
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Show &Details"
-msgstr ""
-
 #: src/FriendListCtrl.cpp
 msgid "Add a friend"
 msgstr "Pievienot draugu sarakstam"
@@ -2506,14 +2651,6 @@ msgstr "Noņemt no draugu saraksta"
 #: src/FriendListCtrl.cpp
 msgid "Send &Message"
 msgstr "Sūtīt ziņoju&mu"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "View Files"
-msgstr "Skatīt datnes"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Establish Friend Slot"
-msgstr "Izveidot drauga izdalīto spraugu"
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"
@@ -2527,40 +2664,6 @@ msgstr "Vai tiešām vēlaties dzēst atlasītos draugus?"
 msgid ""
 "You are not allowed to set more than one friendslot.\n"
 " Only one slot was assigned."
-msgstr ""
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Multiple selection"
-msgstr ""
-
-#: src/GenericClientListCtrl.cpp
-msgid ""
-"You are not allowed to set more than one friend slot.\n"
-" Only one slot was assigned."
-msgstr ""
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message to user"
-msgstr ""
-
-#: src/GenericClientListCtrl.cpp
-msgid "Message to send:"
-msgstr ""
-
-#: src/GenericClientListCtrl.cpp src/Statistics.cpp
-msgid "Clients"
-msgstr "Klienti"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Remove from friends"
-msgstr "Noņemt no draugu saraksta"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message"
-msgstr "Sūtīt ziņojumu"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Swap to this file"
 msgstr ""
 
 #: src/GenericClientListCtrl.cpp
@@ -2865,10 +2968,6 @@ msgstr "Datnes izmērs"
 #: src/KnownFile.cpp
 msgid "Share ratio"
 msgstr ""
-
-#: src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Uploaded"
-msgstr "Augšupielādēts"
 
 #: src/KnownFile.cpp src/muuli_wdr.cpp
 msgid "Requested"
@@ -5206,10 +5305,6 @@ msgstr ""
 msgid "Text"
 msgstr ""
 
-#: src/OtherFunctions.cpp src/TransferWnd.cpp
-msgid "Active"
-msgstr ""
-
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "Using config dir: %s"
@@ -5461,11 +5556,6 @@ msgstr ""
 msgid "Insufficient disk space"
 msgstr ""
 
-#: src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp
-msgid "Downloaded"
-msgstr "Lejupielādēta"
-
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
@@ -5671,10 +5761,6 @@ msgstr "Mapes"
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "Serveri"
-
-#: src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
-msgid "Files"
-msgstr "Datnes"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Security"
@@ -6508,11 +6594,6 @@ msgstr "Maks. dalībnieku skaits"
 msgid "Static"
 msgstr ""
 
-#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp src/Statistics.cpp
-msgid "Version"
-msgstr "Versija"
-
 #: src/ServerListCtrl.cpp
 #, fuzzy
 msgid "Soft Files"
@@ -6869,14 +6950,6 @@ msgstr ""
 msgid "User Name"
 msgstr "Dalībniekvārds"
 
-#: src/SharedFilePeersListCtrl.cpp
-msgid "Download Speed"
-msgstr "Lejupielādes ātrums"
-
-#: src/SharedFilePeersListCtrl.cpp
-msgid "Upload Speed"
-msgstr "Augšupielādes ātrums"
-
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Available Parts"
 msgstr ""
@@ -6888,10 +6961,6 @@ msgstr ""
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Download Status"
 msgstr ""
-
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Origin"
-msgstr "Izcelsme"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Local File Name"
