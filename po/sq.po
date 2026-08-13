@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-11 12:27+0200\n"
+"POT-Creation-Date: 2026-08-13 13:03+0200\n"
 "PO-Revision-Date: 2026-08-11 20:57+0000\n"
 "Last-Translator: Fation <dj_barthezz@linuxmail.org lushnja_corps@hotmail.Language-Team:\n"
 "Language: sq\n"
@@ -680,6 +680,10 @@ msgstr "Shkarkime"
 msgid "Shared files"
 msgstr ""
 
+#: src/amuleDlg.cpp src/ClientContextActions.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "Kliente"
+
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Messages"
 msgstr "Mesazhe"
@@ -820,6 +824,11 @@ msgstr "Duke shkarkuar"
 #: src/amuleDlg.cpp
 msgid "Shared Files Window"
 msgstr "Dritarja e faileve te ndara"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "Clients Window"
+msgstr "Dritaret e rrjeteve"
 
 #: src/amuleDlg.cpp
 msgid "Messages Window"
@@ -1177,9 +1186,54 @@ msgstr "Mbylli te gjitha tabelat"
 msgid "Close other tabs"
 msgstr "Mbyll tabelat e tjera"
 
-#: src/ChatWnd.cpp src/GenericClientListCtrl.cpp
+#: src/ChatWnd.cpp src/ClientContextActions.cpp
 msgid "Add to Friends"
 msgstr "Shto tek shoket"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Show &Details"
+msgstr "Trego &Detaje"
+
+#: src/ClientContextActions.cpp
+msgid "Remove from friends"
+msgstr "Hiqe nga shoket"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Establish Friend Slot"
+msgstr "Vendos slotin per shoket"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "View Files"
+msgstr "Shiko failet"
+
+#: src/ClientContextActions.cpp
+msgid "Send message"
+msgstr "Dergo mesazh"
+
+#: src/ClientContextActions.cpp
+msgid "Swap to this file"
+msgstr "Sposto tek ky fail"
+
+#: src/ClientContextActions.cpp
+#, fuzzy
+msgid ""
+"You are not allowed to set more than one friend slot.\n"
+" Only one slot was assigned."
+msgstr ""
+"Ju nuk lejoheni qe te vendosni me shume se nje slot per shoket.\n"
+" Vetem nje slot i vetem u vendos."
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Multiple selection"
+msgstr "Perzgjedhje e shumte"
+
+#: src/ClientContextActions.cpp
+msgid "Send message to user"
+msgstr "Dergo nje mesash perdoruesit"
+
+#: src/ClientContextActions.cpp
+msgid "Message to send:"
+msgstr "Mesazhi qe do te dergohet:"
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1244,6 +1298,76 @@ msgstr "I shkeputur"
 msgid "%.1f kB/s"
 msgstr "%.1f kB/s"
 
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Name"
+msgstr "Emri:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+msgid "Software"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Version"
+msgstr "Versioni"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "IP Address"
+msgstr "Adresa IP :"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Origin"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+msgid "First seen"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Last seen"
+msgstr "Marrja e fundit"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Sessions"
+msgstr "Versioni"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
+#, fuzzy
+msgid "Upload Speed"
+msgstr "Shpejtesia-Ngarkimit"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
+#, fuzzy
+msgid "Download Speed"
+msgstr "Shpejtesia-Shkarkimit"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Uploaded"
+msgstr "Shkarkimi Total: "
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Downloaded"
+msgstr "Shkarkimi Total: "
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Ratio"
+msgstr "Vleresimi"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Online now"
+msgstr "Firma online"
+
 #: src/ClientRef.cpp
 msgid "Not complete"
 msgstr "Nuk eshte e kompletuar"
@@ -1263,6 +1387,39 @@ msgstr "N/A"
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr "Nuk eshte aktive"
+
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+msgid "Files"
+msgstr "Failet"
+
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp
+msgid "Uploaded"
+msgstr ""
+
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Downloaded"
+msgstr ""
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Downloading from"
+msgstr "Duke shkarkuar"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Uploading to"
+msgstr "Ngarkim"
+
+#: src/ClientsWnd.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
+msgid "Active"
+msgstr "Aktive"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Known"
+msgstr "E panjohur"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -2560,10 +2717,6 @@ msgstr ""
 msgid "Friends"
 msgstr "Shkoket"
 
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Show &Details"
-msgstr "Trego &Detaje"
-
 #: src/FriendListCtrl.cpp
 msgid "Add a friend"
 msgstr "Shto nje shoke"
@@ -2575,14 +2728,6 @@ msgstr "Fshi nje shoke"
 #: src/FriendListCtrl.cpp
 msgid "Send &Message"
 msgstr "Dergo &Mesazh"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "View Files"
-msgstr "Shiko failet"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Establish Friend Slot"
-msgstr "Vendos slotin per shoket"
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"
@@ -2599,43 +2744,6 @@ msgid ""
 msgstr ""
 "Ju nuk lejoheni qe te vendosni me shume se nje slot per shoket.\n"
 " Vetem nje slot i vetem u vendos."
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Multiple selection"
-msgstr "Perzgjedhje e shumte"
-
-#: src/GenericClientListCtrl.cpp
-#, fuzzy
-msgid ""
-"You are not allowed to set more than one friend slot.\n"
-" Only one slot was assigned."
-msgstr ""
-"Ju nuk lejoheni qe te vendosni me shume se nje slot per shoket.\n"
-" Vetem nje slot i vetem u vendos."
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message to user"
-msgstr "Dergo nje mesash perdoruesit"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Message to send:"
-msgstr "Mesazhi qe do te dergohet:"
-
-#: src/GenericClientListCtrl.cpp src/Statistics.cpp
-msgid "Clients"
-msgstr "Kliente"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Remove from friends"
-msgstr "Hiqe nga shoket"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message"
-msgstr "Dergo mesazh"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Swap to this file"
-msgstr "Sposto tek ky fail"
 
 #: src/GenericClientListCtrl.cpp
 #, fuzzy, c-format
@@ -2942,10 +3050,6 @@ msgstr ""
 
 #: src/KnownFile.cpp
 msgid "Share ratio"
-msgstr ""
-
-#: src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Uploaded"
 msgstr ""
 
 #: src/KnownFile.cpp src/muuli_wdr.cpp
@@ -5332,10 +5436,6 @@ msgstr "Arkivi"
 msgid "Text"
 msgstr "Tekst"
 
-#: src/OtherFunctions.cpp src/TransferWnd.cpp
-msgid "Active"
-msgstr "Aktive"
-
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "Using config dir: %s"
@@ -5590,11 +5690,6 @@ msgstr ""
 msgid "Insufficient disk space"
 msgstr ""
 
-#: src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp
-msgid "Downloaded"
-msgstr ""
-
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
@@ -5805,10 +5900,6 @@ msgstr "Direktorite"
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "Servera"
-
-#: src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
-msgid "Files"
-msgstr "Failet"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Security"
@@ -6685,11 +6776,6 @@ msgstr "Perdoruesit"
 msgid "Static"
 msgstr "E qendrueshme"
 
-#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp src/Statistics.cpp
-msgid "Version"
-msgstr "Versioni"
-
 #: src/ServerListCtrl.cpp
 #, fuzzy
 msgid "Soft Files"
@@ -7055,16 +7141,6 @@ msgstr ""
 msgid "User Name"
 msgstr "Emri i Perdoruesit"
 
-#: src/SharedFilePeersListCtrl.cpp
-#, fuzzy
-msgid "Download Speed"
-msgstr "Shpejtesia-Shkarkimit"
-
-#: src/SharedFilePeersListCtrl.cpp
-#, fuzzy
-msgid "Upload Speed"
-msgstr "Shpejtesia-Ngarkimit"
-
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 #, fuzzy
 msgid "Available Parts"
@@ -7078,10 +7154,6 @@ msgstr "Gjendja e ngarkimit"
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Download Status"
 msgstr "Gjendja e shkarkimit"
-
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Origin"
-msgstr ""
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 #, fuzzy

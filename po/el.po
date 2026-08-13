@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-11 12:27+0200\n"
+"POT-Creation-Date: 2026-08-13 13:03+0200\n"
 "PO-Revision-Date: 2026-08-11 20:46+0000\n"
 "Last-Translator: Dimitris <dgalanak@yahoo.com>\n"
 "Language-Team: Greek\n"
@@ -685,6 +685,10 @@ msgstr "Κατεβασμένα"
 msgid "Shared files"
 msgstr "Κοινόχρηστα αρχεία"
 
+#: src/amuleDlg.cpp src/ClientContextActions.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "Πελάτες"
+
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Messages"
 msgstr "Μηνύματα"
@@ -825,6 +829,11 @@ msgstr "Κατεβαίνει"
 #: src/amuleDlg.cpp
 msgid "Shared Files Window"
 msgstr "Παράθυρο κοινόχρηστων αρχείων"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "Clients Window"
+msgstr "Παράθυρο δικτύων"
 
 #: src/amuleDlg.cpp
 msgid "Messages Window"
@@ -1182,9 +1191,54 @@ msgstr "Κλείσιμο όλων των καρτελών"
 msgid "Close other tabs"
 msgstr "Κλείσιμο των άλλων καρτελών"
 
-#: src/ChatWnd.cpp src/GenericClientListCtrl.cpp
+#: src/ChatWnd.cpp src/ClientContextActions.cpp
 msgid "Add to Friends"
 msgstr "Προσθήκη στους φίλους"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Show &Details"
+msgstr "Εμφάνιση &Λεπτομερειών"
+
+#: src/ClientContextActions.cpp
+msgid "Remove from friends"
+msgstr "Αφαίρεση από του φίλους"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Establish Friend Slot"
+msgstr "Εγκαθίδρυσε φιλική θυρίδα"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "View Files"
+msgstr "Παρουσίαση αρχείων"
+
+#: src/ClientContextActions.cpp
+msgid "Send message"
+msgstr "Αποστολή μηνύματος"
+
+#: src/ClientContextActions.cpp
+msgid "Swap to this file"
+msgstr "Εναλλαγή σε αυτό το αρχείο"
+
+#: src/ClientContextActions.cpp
+#, fuzzy
+msgid ""
+"You are not allowed to set more than one friend slot.\n"
+" Only one slot was assigned."
+msgstr ""
+"Δεν επιτρέπεται να θέσεις μόνο πανω από μία φιλική θυρίδα. \n"
+" Γι αυτό μόνο μία ανατέθηκε."
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Multiple selection"
+msgstr "Πολλαπλή επιλογή"
+
+#: src/ClientContextActions.cpp
+msgid "Send message to user"
+msgstr "Αποστολή μηνύματος στον χρήστη"
+
+#: src/ClientContextActions.cpp
+msgid "Message to send:"
+msgstr "Μήνυμα προς αποστολή:"
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1249,6 +1303,76 @@ msgstr "Αποσυνδεδεμένο"
 msgid "%.1f kB/s"
 msgstr "%.1f kB/s"
 
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Name"
+msgstr "Όνομα:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+msgid "Software"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Version"
+msgstr "Έκδοση"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "IP Address"
+msgstr "Διεύθυνση IP :"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Origin"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+msgid "First seen"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Last seen"
+msgstr "Τελευταία λήψη"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Sessions"
+msgstr "Έκδοση"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
+#, fuzzy
+msgid "Upload Speed"
+msgstr "Ταχύτητα ανεβάσματος"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
+#, fuzzy
+msgid "Download Speed"
+msgstr "Ταχύτητα κατεβάσματος"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Uploaded"
+msgstr "Ανέβηκε"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Downloaded"
+msgstr "Συνολική μεταφόρτωση:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Ratio"
+msgstr "Αξιολόγηση"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Online now"
+msgstr "Διασυνδεδεμένη υπογραφή"
+
 #: src/ClientRef.cpp
 msgid "Not complete"
 msgstr "Δεν ολοκληρώθηκε"
@@ -1268,6 +1392,39 @@ msgstr "Δεν υπάρχει"
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr "Δεν υπάρχει"
+
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+msgid "Files"
+msgstr "Αρχεία"
+
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp
+msgid "Uploaded"
+msgstr "Ανέβηκε"
+
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Downloaded"
+msgstr "Έχει κατεβεί"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Downloading from"
+msgstr "Κατεβαίνει"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Uploading to"
+msgstr "Ανέβασμα"
+
+#: src/ClientsWnd.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
+msgid "Active"
+msgstr "Ενεργό"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Known"
+msgstr "Άγνωστο"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -2567,10 +2724,6 @@ msgstr ""
 msgid "Friends"
 msgstr "Φίλοι"
 
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Show &Details"
-msgstr "Εμφάνιση &Λεπτομερειών"
-
 #: src/FriendListCtrl.cpp
 msgid "Add a friend"
 msgstr "Πρόσθεσε έναν φίλο"
@@ -2582,14 +2735,6 @@ msgstr "Αφαίρεσε έναν φίλο"
 #: src/FriendListCtrl.cpp
 msgid "Send &Message"
 msgstr "Στείλε &Μήνυμα"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "View Files"
-msgstr "Παρουσίαση αρχείων"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Establish Friend Slot"
-msgstr "Εγκαθίδρυσε φιλική θυρίδα"
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"
@@ -2606,43 +2751,6 @@ msgid ""
 msgstr ""
 "Δεν επιτρέπεται να θέσεις μόνο πανω από μία φιλική θυρίδα. \n"
 " Γι αυτό μόνο μία ανατέθηκε."
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Multiple selection"
-msgstr "Πολλαπλή επιλογή"
-
-#: src/GenericClientListCtrl.cpp
-#, fuzzy
-msgid ""
-"You are not allowed to set more than one friend slot.\n"
-" Only one slot was assigned."
-msgstr ""
-"Δεν επιτρέπεται να θέσεις μόνο πανω από μία φιλική θυρίδα. \n"
-" Γι αυτό μόνο μία ανατέθηκε."
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message to user"
-msgstr "Αποστολή μηνύματος στον χρήστη"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Message to send:"
-msgstr "Μήνυμα προς αποστολή:"
-
-#: src/GenericClientListCtrl.cpp src/Statistics.cpp
-msgid "Clients"
-msgstr "Πελάτες"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Remove from friends"
-msgstr "Αφαίρεση από του φίλους"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message"
-msgstr "Αποστολή μηνύματος"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Swap to this file"
-msgstr "Εναλλαγή σε αυτό το αρχείο"
 
 #: src/GenericClientListCtrl.cpp
 #, fuzzy, c-format
@@ -2950,10 +3058,6 @@ msgstr "Μέγεθος αρχείου"
 #: src/KnownFile.cpp
 msgid "Share ratio"
 msgstr "Λόγος μοιράσματος"
-
-#: src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Uploaded"
-msgstr "Ανέβηκε"
 
 #: src/KnownFile.cpp src/muuli_wdr.cpp
 msgid "Requested"
@@ -5346,10 +5450,6 @@ msgstr "Αρχείο"
 msgid "Text"
 msgstr "Κείμενο "
 
-#: src/OtherFunctions.cpp src/TransferWnd.cpp
-msgid "Active"
-msgstr "Ενεργό"
-
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "Using config dir: %s"
@@ -5604,11 +5704,6 @@ msgstr "Κατανέμει"
 msgid "Insufficient disk space"
 msgstr "Ανεπαρκής χώρος στο δίσκο"
 
-#: src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp
-msgid "Downloaded"
-msgstr "Έχει κατεβεί"
-
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
@@ -5819,10 +5914,6 @@ msgstr "Κατάλογοι Αρχείων"
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "Διακομιστές"
-
-#: src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
-msgid "Files"
-msgstr "Αρχεία"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Security"
@@ -6702,11 +6793,6 @@ msgstr "Χρήστες"
 msgid "Static"
 msgstr "Στατικό"
 
-#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp src/Statistics.cpp
-msgid "Version"
-msgstr "Έκδοση"
-
 #: src/ServerListCtrl.cpp
 #, fuzzy
 msgid "Soft Files"
@@ -7072,16 +7158,6 @@ msgstr ""
 msgid "User Name"
 msgstr "Όνομα χρήστη"
 
-#: src/SharedFilePeersListCtrl.cpp
-#, fuzzy
-msgid "Download Speed"
-msgstr "Ταχύτητα κατεβάσματος"
-
-#: src/SharedFilePeersListCtrl.cpp
-#, fuzzy
-msgid "Upload Speed"
-msgstr "Ταχύτητα ανεβάσματος"
-
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 #, fuzzy
 msgid "Available Parts"
@@ -7095,10 +7171,6 @@ msgstr "Κατάσταση ανεβάσματος"
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Download Status"
 msgstr "Κατάσταση κατεβάσματος"
-
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Origin"
-msgstr ""
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 #, fuzzy

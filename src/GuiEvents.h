@@ -35,6 +35,7 @@
 #include "PartFileConvert.h"
 
 class CKnownFile;
+class CUpDownClient;
 class CSearchFile;
 class CPartFile;
 class CServer;
@@ -119,6 +120,12 @@ void SharedCtrlRemoveClient(uint32 client, const CKnownFile *owner);
 // stale entries during rebuild), and CKnownFilesRem::DeleteItem
 // in the amulegui build.
 void KnownFileBeingDestroyed(CKnownFile *file);
+
+// The other end of the same peer's life: CClientList has accepted it, so the
+// global clients list can show it. Add and remove are deliberately hung off
+// CClientList::AddClient and ~CUpDownClient rather than off the per-file
+// signals, which describe a peer's relationship to one file rather than its
+// existence.
 
 // Analogue of KnownFileBeingDestroyed for search results: fired from
 // ~CSearchFile before the object is freed, so an open comments dialog holding

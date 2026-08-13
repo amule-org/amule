@@ -52,6 +52,7 @@
 #ifndef AMULE_DAEMON
 #include "ChatWnd.h"
 #include "amuleDlg.h"
+#include "ClientRef.h" // Needed for CClientRef
 #include "ServerWnd.h"
 #include "SearchDlg.h"
 #include "SearchListModel.h" // Needed for CSearchListModel::DropReferencesTo

@@ -648,6 +648,15 @@ wxSizer *messagePageMessages(wxWindow *parent, bool call_fit = TRUE, bool set_si
 #define ID_BUTTONNEWPREFERENCES 10352
 #define ID_BUTTONIMPORT 10353
 #define ID_ABOUT 10354
+// Appended rather than slotted between the panel buttons above: those values
+// are referenced by saved toolbar state, so renumbering them would silently
+// move a user's buttons. 10503 upwards is the first free pair -- the IDC_*
+// block runs to 10502 and the next value used anywhere is 16384.
+#define ID_BUTTONCLIENTS 10503
+#define ID_CLIENTSLIST 10504
+#define ID_CLIENTHISTORYLIST 10505
+#define ID_CLIENTSUPLIST 10506
+#define ID_CLIENTSSPLITTER 10507
 
 // Declare bitmap functions
 

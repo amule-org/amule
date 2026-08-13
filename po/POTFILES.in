@@ -13,9 +13,13 @@ src/CaptchaDialog.cpp
 src/CatDialog.cpp
 src/ChatSelector.cpp
 src/ChatWnd.cpp
+src/ClientContextActions.cpp
 src/ClientCreditsList.cpp
 src/ClientDetailDialog.cpp
+src/ClientHistoryListCtrl.cpp
 src/ClientRef.cpp
+src/ClientsListCtrl.cpp
+src/ClientsWnd.cpp
 src/ClientTCPSocket.cpp
 src/CommentDialog.cpp
 src/CommentDialogLst.cpp

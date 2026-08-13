@@ -206,6 +206,7 @@ m_req_fifo_thr(20)
 , m_forceZlib(false)
 , m_serverSessionId(0)
 , m_serverPartialUpdate(false)
+, m_serverClientHistory(false)
 , m_serverPartialSearch(false)
 , m_canMultiSearch(false)
 , m_serverMultiSearch(false)
@@ -760,6 +761,13 @@ bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply)
 			// reads as "can't tell" and handles the safe way.
 			if (const CECTag *sessionTag = reply->GetTagByName(EC_TAG_SESSION_ID)) {
 				m_serverSessionId = sessionTag->GetInt();
+			}
+			// Server confirms it knows EC_OP_GET_CLIENT_HISTORY. No echo
+			// means the Known-clients tab stays empty rather than the
+			// request being tried and failing: on a debug daemon the
+			// unknown opcode asserts rather than answering EC_OP_FAILED.
+			if (reply->GetTagByName(EC_TAG_CAN_CLIENT_HISTORY)) {
+				m_serverClientHistory = true;
 			}
 			if (reply->GetTagByName(EC_TAG_CAN_PARTIAL_SEARCH)) {
 				m_serverPartialSearch = true;

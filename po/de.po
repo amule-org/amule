@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-11 12:27+0200\n"
+"POT-Creation-Date: 2026-08-13 13:03+0200\n"
 "PO-Revision-Date: 2026-08-11 20:46+0000\n"
 "Last-Translator: Werner Mahr <werner@vollstreckernet.de>\n"
 "Language-Team: German <>\n"
@@ -687,6 +687,10 @@ msgstr "Downloads"
 msgid "Shared files"
 msgstr "Freigegebene Dateien"
 
+#: src/amuleDlg.cpp src/ClientContextActions.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "Clients"
+
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Messages"
 msgstr "Nachrichten"
@@ -825,6 +829,11 @@ msgstr "Download-Fenster"
 #: src/amuleDlg.cpp
 msgid "Shared Files Window"
 msgstr "Übersicht der freigegebenen Dateien"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "Clients Window"
+msgstr "Übersicht der verwendeten Netzwerke"
 
 #: src/amuleDlg.cpp
 msgid "Messages Window"
@@ -1179,9 +1188,53 @@ msgstr "Alle Reiter schließen"
 msgid "Close other tabs"
 msgstr "Andere Reiter schließen"
 
-#: src/ChatWnd.cpp src/GenericClientListCtrl.cpp
+#: src/ChatWnd.cpp src/ClientContextActions.cpp
 msgid "Add to Friends"
 msgstr "Zu Freunden hinzufügen"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Show &Details"
+msgstr "Zeige &Details"
+
+#: src/ClientContextActions.cpp
+msgid "Remove from friends"
+msgstr "Entferne von Freundesliste"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Establish Friend Slot"
+msgstr "Friendslot erstellen"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "View Files"
+msgstr "Dateien ansehen"
+
+#: src/ClientContextActions.cpp
+msgid "Send message"
+msgstr "Sende Nachricht"
+
+#: src/ClientContextActions.cpp
+msgid "Swap to this file"
+msgstr "Zu dieser Datei verschieben"
+
+#: src/ClientContextActions.cpp
+msgid ""
+"You are not allowed to set more than one friend slot.\n"
+" Only one slot was assigned."
+msgstr ""
+"Du darfst nicht mehr als einen Friendslot vergeben.\n"
+" Nur ein Slot wurde vergeben."
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Multiple selection"
+msgstr "Mehrfachauswahl"
+
+#: src/ClientContextActions.cpp
+msgid "Send message to user"
+msgstr "Sende Nachricht an Benutzer"
+
+#: src/ClientContextActions.cpp
+msgid "Message to send:"
+msgstr "Zu sendende Nachricht:"
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1246,6 +1299,74 @@ msgstr "Verbindung getrennt"
 msgid "%.1f kB/s"
 msgstr "%.1f kB/s"
 
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Name"
+msgstr "Name:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+msgid "Software"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Version"
+msgstr "Version"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "IP Address"
+msgstr "IP-Adresse:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Origin"
+msgstr "Ursprung"
+
+#: src/ClientHistoryListCtrl.cpp
+msgid "First seen"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Last seen"
+msgstr "Letzter Empfang"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Sessions"
+msgstr "Version"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Upload Speed"
+msgstr "Upload-Geschwindigkeit"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Download Speed"
+msgstr "Download-Geschwindigkeit"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Uploaded"
+msgstr "Hochgeladen"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Downloaded"
+msgstr "Gesamtdownload: "
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Ratio"
+msgstr "Bewertung"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Online now"
+msgstr "Onlinesignatur"
+
 #: src/ClientRef.cpp
 msgid "Not complete"
 msgstr "Nicht vollständig"
@@ -1265,6 +1386,39 @@ msgstr "Nicht verfügbar"
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr "Nicht verfügbar"
+
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+msgid "Files"
+msgstr "Dateien"
+
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp
+msgid "Uploaded"
+msgstr "Hochgeladen"
+
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Downloaded"
+msgstr "Heruntergeladen"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Downloading from"
+msgstr "Herunterladen"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Uploading to"
+msgstr "Hochladen"
+
+#: src/ClientsWnd.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
+msgid "Active"
+msgstr "Aktiv"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Known"
+msgstr "Unbekannt"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -2558,10 +2712,6 @@ msgstr "KRITISCH - kein Client bei StartChatSession"
 msgid "Friends"
 msgstr "Freunde"
 
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Show &Details"
-msgstr "Zeige &Details"
-
 #: src/FriendListCtrl.cpp
 msgid "Add a friend"
 msgstr "Freund hinzufügen"
@@ -2573,14 +2723,6 @@ msgstr "Freund entfernen"
 #: src/FriendListCtrl.cpp
 msgid "Send &Message"
 msgstr "&Message senden"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "View Files"
-msgstr "Dateien ansehen"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Establish Friend Slot"
-msgstr "Friendslot erstellen"
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"
@@ -2597,42 +2739,6 @@ msgid ""
 msgstr ""
 "Du darfst nicht mehr als einen Friendslot vergeben.\n"
 " Nur ein Slot wurde vergeben."
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Multiple selection"
-msgstr "Mehrfachauswahl"
-
-#: src/GenericClientListCtrl.cpp
-msgid ""
-"You are not allowed to set more than one friend slot.\n"
-" Only one slot was assigned."
-msgstr ""
-"Du darfst nicht mehr als einen Friendslot vergeben.\n"
-" Nur ein Slot wurde vergeben."
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message to user"
-msgstr "Sende Nachricht an Benutzer"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Message to send:"
-msgstr "Zu sendende Nachricht:"
-
-#: src/GenericClientListCtrl.cpp src/Statistics.cpp
-msgid "Clients"
-msgstr "Clients"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Remove from friends"
-msgstr "Entferne von Freundesliste"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message"
-msgstr "Sende Nachricht"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Swap to this file"
-msgstr "Zu dieser Datei verschieben"
 
 #: src/GenericClientListCtrl.cpp
 #, c-format
@@ -2936,10 +3042,6 @@ msgstr "Dateigröße"
 #: src/KnownFile.cpp
 msgid "Share ratio"
 msgstr "Tauschverhältnis"
-
-#: src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Uploaded"
-msgstr "Hochgeladen"
 
 #: src/KnownFile.cpp src/muuli_wdr.cpp
 msgid "Requested"
@@ -5308,10 +5410,6 @@ msgstr "Archiv"
 msgid "Text"
 msgstr "Text"
 
-#: src/OtherFunctions.cpp src/TransferWnd.cpp
-msgid "Active"
-msgstr "Aktiv"
-
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "Using config dir: %s"
@@ -5565,11 +5663,6 @@ msgstr "Reserviere"
 msgid "Insufficient disk space"
 msgstr "Zu wenig Festplattenplatz"
 
-#: src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp
-msgid "Downloaded"
-msgstr "Heruntergeladen"
-
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
@@ -5777,10 +5870,6 @@ msgstr "Verzeichnisse"
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "Server"
-
-#: src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
-msgid "Files"
-msgstr "Dateien"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Security"
@@ -6657,11 +6746,6 @@ msgstr "Benutzer"
 msgid "Static"
 msgstr "Statisch"
 
-#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp src/Statistics.cpp
-msgid "Version"
-msgstr "Version"
-
 #: src/ServerListCtrl.cpp
 #, fuzzy
 msgid "Soft Files"
@@ -7019,14 +7103,6 @@ msgstr "Keine freigebbaren Dateien im Ordner gefunden: %s"
 msgid "User Name"
 msgstr "Benutzername"
 
-#: src/SharedFilePeersListCtrl.cpp
-msgid "Download Speed"
-msgstr "Download-Geschwindigkeit"
-
-#: src/SharedFilePeersListCtrl.cpp
-msgid "Upload Speed"
-msgstr "Upload-Geschwindigkeit"
-
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Available Parts"
 msgstr "Verfügbare Teile"
@@ -7038,10 +7114,6 @@ msgstr "Upload-Status"
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Download Status"
 msgstr "Download-Status"
-
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Origin"
-msgstr "Ursprung"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Local File Name"

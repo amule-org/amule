@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-11 12:27+0200\n"
+"POT-Creation-Date: 2026-08-13 13:03+0200\n"
 "PO-Revision-Date: 2026-08-11 20:57+0000\n"
 "Last-Translator: Jure Repinc <jlp@holodeck1.com>\n"
 "Language-Team: Slovenian\n"
@@ -686,6 +686,10 @@ msgstr "Prejemanja"
 msgid "Shared files"
 msgstr "Deljene datoteke"
 
+#: src/amuleDlg.cpp src/ClientContextActions.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "Odjemalci"
+
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Messages"
 msgstr "Sporočila"
@@ -824,6 +828,11 @@ msgstr "Okno s prejemanji"
 #: src/amuleDlg.cpp
 msgid "Shared Files Window"
 msgstr "Okno z deljenimi datotekami"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "Clients Window"
+msgstr "Okno z omrežji"
 
 #: src/amuleDlg.cpp
 msgid "Messages Window"
@@ -1180,9 +1189,54 @@ msgstr "Zapri vse zavihke"
 msgid "Close other tabs"
 msgstr "Zapri druge zavihke"
 
-#: src/ChatWnd.cpp src/GenericClientListCtrl.cpp
+#: src/ChatWnd.cpp src/ClientContextActions.cpp
 msgid "Add to Friends"
 msgstr "Dodaj med prijatelje"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Show &Details"
+msgstr "Prikaži po&drobnosti"
+
+#: src/ClientContextActions.cpp
+msgid "Remove from friends"
+msgstr "Odstrani s seznama prijateljev"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Establish Friend Slot"
+msgstr "Ustvari mesto za prijatelja"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "View Files"
+msgstr "Prikaži datoteke"
+
+#: src/ClientContextActions.cpp
+msgid "Send message"
+msgstr "Pošlji sporočilo"
+
+#: src/ClientContextActions.cpp
+msgid "Swap to this file"
+msgstr "Prenesi k tej datoteki"
+
+#: src/ClientContextActions.cpp
+#, fuzzy
+msgid ""
+"You are not allowed to set more than one friend slot.\n"
+" Only one slot was assigned."
+msgstr ""
+"Ne morete dodeliti več kot enega mesta za prijatelja.\n"
+"Samo eno mesto je bilo dodeljeno."
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Multiple selection"
+msgstr "Izbira večih"
+
+#: src/ClientContextActions.cpp
+msgid "Send message to user"
+msgstr "Pošlji uporabniku sporočilo"
+
+#: src/ClientContextActions.cpp
+msgid "Message to send:"
+msgstr "Sporočilo:"
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1251,6 +1305,74 @@ msgstr "Ni povezave"
 msgid "%.1f kB/s"
 msgstr "%.1f kB/s"
 
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Name"
+msgstr "Ime:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+msgid "Software"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Version"
+msgstr "Različica"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "IP Address"
+msgstr "Naslov IP:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Origin"
+msgstr "Izvor"
+
+#: src/ClientHistoryListCtrl.cpp
+msgid "First seen"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Last seen"
+msgstr "Zadnji sprejem"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Sessions"
+msgstr "Različica"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Upload Speed"
+msgstr "Hitrost pošiljanja"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Download Speed"
+msgstr "Hitrost prejemanja"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Uploaded"
+msgstr "Poslano"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Downloaded"
+msgstr "Skupno prejetega: "
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Ratio"
+msgstr "Ocena"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Online now"
+msgstr "Spletni podpis"
+
 #: src/ClientRef.cpp
 msgid "Not complete"
 msgstr "Nezaključeno"
@@ -1270,6 +1392,39 @@ msgstr "Ni na voljo"
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr "Ni na voljo"
+
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+msgid "Files"
+msgstr "Datoteke"
+
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp
+msgid "Uploaded"
+msgstr "Poslano"
+
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Downloaded"
+msgstr "Prejeto"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Downloading from"
+msgstr "Prejemanje"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Uploading to"
+msgstr "Pošiljanje"
+
+#: src/ClientsWnd.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
+msgid "Active"
+msgstr "Dejavno"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Known"
+msgstr "Neznano"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -2573,10 +2728,6 @@ msgstr "KRITIČNO – ni odjemalca za StartChatSession"
 msgid "Friends"
 msgstr "Prijatelji"
 
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Show &Details"
-msgstr "Prikaži po&drobnosti"
-
 #: src/FriendListCtrl.cpp
 msgid "Add a friend"
 msgstr "Dodaj prijatelja"
@@ -2588,14 +2739,6 @@ msgstr "Odstrani prijatelja"
 #: src/FriendListCtrl.cpp
 msgid "Send &Message"
 msgstr "Pošlji &sporočilo"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "View Files"
-msgstr "Prikaži datoteke"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Establish Friend Slot"
-msgstr "Ustvari mesto za prijatelja"
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"
@@ -2612,43 +2755,6 @@ msgid ""
 msgstr ""
 "Ne morete dodeliti več kot enega mesta za prijatelja.\n"
 "Samo eno mesto je bilo dodeljeno."
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Multiple selection"
-msgstr "Izbira večih"
-
-#: src/GenericClientListCtrl.cpp
-#, fuzzy
-msgid ""
-"You are not allowed to set more than one friend slot.\n"
-" Only one slot was assigned."
-msgstr ""
-"Ne morete dodeliti več kot enega mesta za prijatelja.\n"
-"Samo eno mesto je bilo dodeljeno."
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message to user"
-msgstr "Pošlji uporabniku sporočilo"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Message to send:"
-msgstr "Sporočilo:"
-
-#: src/GenericClientListCtrl.cpp src/Statistics.cpp
-msgid "Clients"
-msgstr "Odjemalci"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Remove from friends"
-msgstr "Odstrani s seznama prijateljev"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message"
-msgstr "Pošlji sporočilo"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Swap to this file"
-msgstr "Prenesi k tej datoteki"
 
 #: src/GenericClientListCtrl.cpp
 #, c-format
@@ -2962,10 +3068,6 @@ msgstr "Velikost datoteke"
 #: src/KnownFile.cpp
 msgid "Share ratio"
 msgstr "Delilno razmerje"
-
-#: src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Uploaded"
-msgstr "Poslano"
 
 #: src/KnownFile.cpp src/muuli_wdr.cpp
 msgid "Requested"
@@ -5350,10 +5452,6 @@ msgstr "Arhiv"
 msgid "Text"
 msgstr "Besedilo"
 
-#: src/OtherFunctions.cpp src/TransferWnd.cpp
-msgid "Active"
-msgstr "Dejavno"
-
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "Using config dir: %s"
@@ -5612,11 +5710,6 @@ msgstr "Dodeljevanje"
 msgid "Insufficient disk space"
 msgstr "Premalo prostora na disku"
 
-#: src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp
-msgid "Downloaded"
-msgstr "Prejeto"
-
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
@@ -5824,10 +5917,6 @@ msgstr "Mape"
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "Strežniki"
-
-#: src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
-msgid "Files"
-msgstr "Datoteke"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Security"
@@ -6721,11 +6810,6 @@ msgstr "Uporabniki"
 msgid "Static"
 msgstr "Statičen"
 
-#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp src/Statistics.cpp
-msgid "Version"
-msgstr "Različica"
-
 #: src/ServerListCtrl.cpp
 #, fuzzy
 msgid "Soft Files"
@@ -7093,14 +7177,6 @@ msgstr "V mapi ni bilo moč najti datotek za deliti: %s"
 msgid "User Name"
 msgstr "Uporabniško ime"
 
-#: src/SharedFilePeersListCtrl.cpp
-msgid "Download Speed"
-msgstr "Hitrost prejemanja"
-
-#: src/SharedFilePeersListCtrl.cpp
-msgid "Upload Speed"
-msgstr "Hitrost pošiljanja"
-
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Available Parts"
 msgstr "Razpoložljivi deli"
@@ -7112,10 +7188,6 @@ msgstr "Stanje pošiljanja"
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Download Status"
 msgstr "Stanje prejemanja"
-
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Origin"
-msgstr "Izvor"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Local File Name"

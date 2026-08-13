@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-11 12:27+0200\n"
+"POT-Creation-Date: 2026-08-13 13:03+0200\n"
 "PO-Revision-Date: 2026-08-11 20:53+0000\n"
 "Last-Translator: Hallvor Brunstad <Hallvor_1976@yahoo.com>\n"
 "Language-Team: <i18n-nn@lister.ping.uio.no>\n"
@@ -683,6 +683,10 @@ msgstr "Nedlastingar"
 msgid "Shared files"
 msgstr "Delte filer"
 
+#: src/amuleDlg.cpp src/ClientContextActions.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "Klientar"
+
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Messages"
 msgstr "Meldingar"
@@ -823,6 +827,11 @@ msgstr "Lastar ned"
 #: src/amuleDlg.cpp
 msgid "Shared Files Window"
 msgstr "Vindauge for delte filer"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "Clients Window"
+msgstr "Nettverksavindauge"
 
 #: src/amuleDlg.cpp
 msgid "Messages Window"
@@ -1180,9 +1189,54 @@ msgstr "Stengje alle faneblad"
 msgid "Close other tabs"
 msgstr "Stengje andre faneblad"
 
-#: src/ChatWnd.cpp src/GenericClientListCtrl.cpp
+#: src/ChatWnd.cpp src/ClientContextActions.cpp
 msgid "Add to Friends"
 msgstr "Legg til kameratar"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Show &Details"
+msgstr "Syn &detaljar"
+
+#: src/ClientContextActions.cpp
+msgid "Remove from friends"
+msgstr "Fjerne frå kameratar"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Establish Friend Slot"
+msgstr "Opprett venekopling"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "View Files"
+msgstr "Sjå filer"
+
+#: src/ClientContextActions.cpp
+msgid "Send message"
+msgstr "Send melding"
+
+#: src/ClientContextActions.cpp
+msgid "Swap to this file"
+msgstr "Byt til denne fila"
+
+#: src/ClientContextActions.cpp
+#, fuzzy
+msgid ""
+"You are not allowed to set more than one friend slot.\n"
+" Only one slot was assigned."
+msgstr ""
+"Det er ikkje tillate å opprette meir enn ei venekopling.\n"
+" Berre ei venekopling vart oppretta."
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Multiple selection"
+msgstr "Fleirval"
+
+#: src/ClientContextActions.cpp
+msgid "Send message to user"
+msgstr "Send melding til brukar"
+
+#: src/ClientContextActions.cpp
+msgid "Message to send:"
+msgstr "Melding å sende:"
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1247,6 +1301,76 @@ msgstr "Fråkopla"
 msgid "%.1f kB/s"
 msgstr "%.1f·kB/s"
 
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Name"
+msgstr "Namn:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+msgid "Software"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Version"
+msgstr "Utgåve"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "IP Address"
+msgstr "IP-adresse :"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Origin"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+msgid "First seen"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Last seen"
+msgstr "Sist motteke"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Sessions"
+msgstr "Utgåve"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
+#, fuzzy
+msgid "Upload Speed"
+msgstr "Opplastingsfart"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
+#, fuzzy
+msgid "Download Speed"
+msgstr "Nedlastingsfart"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Uploaded"
+msgstr "Lasta opp"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Downloaded"
+msgstr "Total nedlasting: "
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Ratio"
+msgstr "Verdi"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Online now"
+msgstr "Nettsignatur"
+
 #: src/ClientRef.cpp
 msgid "Not complete"
 msgstr "Ikkje ferdig"
@@ -1266,6 +1390,39 @@ msgstr "I/T"
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr "Ikkje tilgjengeleg"
+
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+msgid "Files"
+msgstr "Filer"
+
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp
+msgid "Uploaded"
+msgstr "Lasta opp"
+
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Downloaded"
+msgstr "Lasta ned"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Downloading from"
+msgstr "Lastar ned"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Uploading to"
+msgstr "Opplasting"
+
+#: src/ClientsWnd.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
+msgid "Active"
+msgstr "Aktiv"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Known"
+msgstr "Ukjend"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -2566,10 +2723,6 @@ msgstr ""
 msgid "Friends"
 msgstr "Vener"
 
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Show &Details"
-msgstr "Syn &detaljar"
-
 #: src/FriendListCtrl.cpp
 msgid "Add a friend"
 msgstr "Legg til ein ven"
@@ -2581,14 +2734,6 @@ msgstr "Ta bort ven"
 #: src/FriendListCtrl.cpp
 msgid "Send &Message"
 msgstr "Send &melding"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "View Files"
-msgstr "Sjå filer"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Establish Friend Slot"
-msgstr "Opprett venekopling"
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"
@@ -2605,43 +2750,6 @@ msgid ""
 msgstr ""
 "Det er ikkje tillate å opprette meir enn ei venekopling.\n"
 " Berre ei venekopling vart oppretta."
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Multiple selection"
-msgstr "Fleirval"
-
-#: src/GenericClientListCtrl.cpp
-#, fuzzy
-msgid ""
-"You are not allowed to set more than one friend slot.\n"
-" Only one slot was assigned."
-msgstr ""
-"Det er ikkje tillate å opprette meir enn ei venekopling.\n"
-" Berre ei venekopling vart oppretta."
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message to user"
-msgstr "Send melding til brukar"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Message to send:"
-msgstr "Melding å sende:"
-
-#: src/GenericClientListCtrl.cpp src/Statistics.cpp
-msgid "Clients"
-msgstr "Klientar"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Remove from friends"
-msgstr "Fjerne frå kameratar"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message"
-msgstr "Send melding"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Swap to this file"
-msgstr "Byt til denne fila"
 
 #: src/GenericClientListCtrl.cpp
 #, fuzzy, c-format
@@ -2949,10 +3057,6 @@ msgstr "Filstorleik"
 #: src/KnownFile.cpp
 msgid "Share ratio"
 msgstr "Delingsrate"
-
-#: src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Uploaded"
-msgstr "Lasta opp"
 
 #: src/KnownFile.cpp src/muuli_wdr.cpp
 msgid "Requested"
@@ -5340,10 +5444,6 @@ msgstr "Arkiv"
 msgid "Text"
 msgstr "Tekst"
 
-#: src/OtherFunctions.cpp src/TransferWnd.cpp
-msgid "Active"
-msgstr "Aktiv"
-
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "Using config dir: %s"
@@ -5598,11 +5698,6 @@ msgstr "Hentar plass"
 msgid "Insufficient disk space"
 msgstr "Ikkje nok diskplass"
 
-#: src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp
-msgid "Downloaded"
-msgstr "Lasta ned"
-
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
@@ -5813,10 +5908,6 @@ msgstr "Katalogar"
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "Tenarar"
-
-#: src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
-msgid "Files"
-msgstr "Filer"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Security"
@@ -6695,11 +6786,6 @@ msgstr "Brukarar"
 msgid "Static"
 msgstr "Statisk"
 
-#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp src/Statistics.cpp
-msgid "Version"
-msgstr "Utgåve"
-
 #: src/ServerListCtrl.cpp
 #, fuzzy
 msgid "Soft Files"
@@ -7065,16 +7151,6 @@ msgstr ""
 msgid "User Name"
 msgstr "Brukarnamn"
 
-#: src/SharedFilePeersListCtrl.cpp
-#, fuzzy
-msgid "Download Speed"
-msgstr "Nedlastingsfart"
-
-#: src/SharedFilePeersListCtrl.cpp
-#, fuzzy
-msgid "Upload Speed"
-msgstr "Opplastingsfart"
-
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 #, fuzzy
 msgid "Available Parts"
@@ -7088,10 +7164,6 @@ msgstr "Opplastingsstatus"
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Download Status"
 msgstr "Nedlastingsstatus"
-
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Origin"
-msgstr ""
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 #, fuzzy

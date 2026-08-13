@@ -51,6 +51,11 @@
 #include "amule.h"      // Needed for theApp
 #include "SearchList.h" // Needed for GetSearchResults
 #include "ClientList.h"
+#include "ClientCreditsList.h" // Needed for CClientCreditsList
+#include "ClientCredits.h"     // Needed for CClientCredits, ClientMetaStruct
+#ifdef ENABLE_IP2COUNTRY
+#include "IP2Country.h" // Needed for CIP2Country (history country codes)
+#endif
 #include "Preferences.h" // Needed for CPreferences
 #include "Logger.h"
 #include "GuiEvents.h"     // Needed for Notify_* macros
@@ -1441,6 +1446,12 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 					// never skips, absence still means the result is gone.
 					response->AddTag(CECEmptyTag(EC_TAG_CAN_PARTIAL_SEARCH));
 				}
+				// Unconditional: this daemon answers
+				// EC_OP_GET_CLIENT_HISTORY, and a client that does
+				// not see the echo must not send the request --
+				// against a daemon that predates it the unknown
+				// opcode asserts before the EC_OP_FAILED path.
+				response->AddTag(CECEmptyTag(EC_TAG_CAN_CLIENT_HISTORY));
 				if (m_chatActive) {
 					// Confirm chat relay so the client starts polling
 					// EC_OP_GET_CHAT_MESSAGES for incoming peer messages.
@@ -1826,6 +1837,73 @@ static CECPacket *Get_EC_Response_GetSharedFiles(const CECPacket *request,
 		}
 		io_lastSentFileIds.swap(current_file_ids);
 		io_lastEcGenSeen = ec_snapshot;
+	}
+	return response;
+}
+
+/**
+ * The credit store, one tag per peer we have ever exchanged data with.
+ *
+ * Sent whole rather than incrementally: it changes only when a peer connects
+ * or disconnects, the client asks for it once when the page is opened, and
+ * every other EC bulk request works the same way. Metadata fields are emitted
+ * only when the store actually has them -- a record written before aMule kept
+ * that information carries a hash, totals and a last-seen date and nothing
+ * else, and the client renders the gaps as blanks.
+ */
+static CECPacket *Get_EC_Response_ClientHistory()
+{
+	CECPacket *response = new CECPacket(EC_OP_CLIENT_HISTORY);
+	if (!theApp->clientcredits) {
+		return response;
+	}
+
+	std::vector<CClientCredits *> credits;
+	theApp->clientcredits->GetAllCredits(credits);
+	for (const CClientCredits *cur : credits) {
+		const CreditStruct *data = cur->GetDataStruct();
+		CECTag entry(EC_TAG_CLIENT, data->key);
+		entry.AddTag(CECTag(EC_TAG_CLIENT_UPLOAD_TOTAL, cur->GetUploadedTotal()));
+		entry.AddTag(CECTag(EC_TAG_CLIENT_DOWNLOAD_TOTAL, cur->GetDownloadedTotal()));
+		entry.AddTag(CECTag(EC_TAG_CLIENT_LAST_SEEN, data->nLastSeen));
+
+		if (cur->HasMeta()) {
+			const ClientMetaStruct &meta = cur->GetMeta();
+			entry.AddTag(CECTag(EC_TAG_CLIENT_FIRST_SEEN, meta.firstSeen));
+			entry.AddTag(CECTag(EC_TAG_CLIENT_SESSIONS, meta.sessions));
+			if (!meta.name.IsEmpty()) {
+				entry.AddTag(CECTag(EC_TAG_CLIENT_NAME, meta.name));
+			}
+			entry.AddTag(CECTag(EC_TAG_CLIENT_USER_IP, meta.lastIP));
+			entry.AddTag(CECTag(EC_TAG_CLIENT_USER_PORT, meta.lastPort));
+			entry.AddTag(CECTag(EC_TAG_CLIENT_KAD_PORT, meta.kadPort));
+			entry.AddTag(CECTag(EC_TAG_CLIENT_SOFTWARE, meta.clientSoft));
+			// The generic major.minor.update form, not the per-software
+			// rendering ReGetClientSoft() produces. That one branches on
+			// the client type and is built from locals inside the
+			// handshake, so reproducing it here would mean either
+			// duplicating it or refactoring the handshake -- and the
+			// difference only shows on the few clients with a bespoke
+			// format (lPhant, eMule+), in a history row.
+			entry.AddTag(CECTag(EC_TAG_CLIENT_SOFT_VER_STR,
+				CFormat(wxT("v%u.%u.%u")) % (meta.version / 100000) %
+					((meta.version % 100000) / 1000) % ((meta.version % 1000) / 100)));
+			entry.AddTag(CECTag(EC_TAG_CLIENT_FROM, meta.sourceFrom));
+			entry.AddTag(CECTag(EC_TAG_CLIENT_OBFUSCATION_STATUS, meta.obfuscation));
+#ifdef ENABLE_IP2COUNTRY
+			// Resolved here for the same reason live peers are (see
+			// CEC_UpDownClient_Tag): amulegui has no GeoIP database of its
+			// own, so a country it is not told is a country it cannot show.
+			// Emitted even when empty, so tag-present means "the daemon
+			// looked" and tag-absent means "the daemon has no GeoIP" --
+			// only for records that carry an address to look up.
+			if (theApp->GetIP2Country() && theApp->GetIP2Country()->IsEnabled()) {
+				entry.AddTag(CECTag(EC_TAG_CLIENT_COUNTRY,
+					theApp->GetIP2Country()->GetCountryCode(meta.lastIP)));
+			}
+#endif
+		}
+		response->AddTag(entry);
 	}
 	return response;
 }
@@ -3514,6 +3592,10 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 				m_sentWithDetailIdsPart);
 		}
 		break;
+	case EC_OP_GET_CLIENT_HISTORY:
+		response = Get_EC_Response_ClientHistory();
+		break;
+
 	//
 	// This will evolve into an update-all for inc tags
 	//

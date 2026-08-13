@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-11 12:27+0200\n"
+"POT-Creation-Date: 2026-08-13 13:03+0200\n"
 "PO-Revision-Date: 2026-08-11 20:44+0000\n"
 "Last-Translator: saleh alhathal <hathalsal@hotmail.com>\n"
 "Language-Team: \n"
@@ -660,6 +660,10 @@ msgstr "تحميل"
 msgid "Shared files"
 msgstr ""
 
+#: src/amuleDlg.cpp src/ClientContextActions.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "عميل"
+
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Messages"
 msgstr "رسائل"
@@ -801,6 +805,11 @@ msgstr "تحميل"
 #: src/amuleDlg.cpp
 msgid "Shared Files Window"
 msgstr "نافذة ملفات المشاركة"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "Clients Window"
+msgstr "عميل"
 
 #: src/amuleDlg.cpp
 msgid "Messages Window"
@@ -1156,9 +1165,51 @@ msgstr ""
 msgid "Close other tabs"
 msgstr ""
 
-#: src/ChatWnd.cpp src/GenericClientListCtrl.cpp
+#: src/ChatWnd.cpp src/ClientContextActions.cpp
 msgid "Add to Friends"
 msgstr "اضف لي صديق"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Show &Details"
+msgstr "عرض &تفاصيل"
+
+#: src/ClientContextActions.cpp
+msgid "Remove from friends"
+msgstr ""
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Establish Friend Slot"
+msgstr ""
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "View Files"
+msgstr "اعرض الملفات"
+
+#: src/ClientContextActions.cpp
+msgid "Send message"
+msgstr ""
+
+#: src/ClientContextActions.cpp
+msgid "Swap to this file"
+msgstr ""
+
+#: src/ClientContextActions.cpp
+msgid ""
+"You are not allowed to set more than one friend slot.\n"
+" Only one slot was assigned."
+msgstr ""
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Multiple selection"
+msgstr ""
+
+#: src/ClientContextActions.cpp
+msgid "Send message to user"
+msgstr ""
+
+#: src/ClientContextActions.cpp
+msgid "Message to send:"
+msgstr ""
 
 #: src/ClientCreditsList.cpp
 #, fuzzy, c-format
@@ -1223,6 +1274,75 @@ msgstr "فصل الإتصال"
 msgid "%.1f kB/s"
 msgstr ""
 
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Name"
+msgstr "اسم الملف"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+msgid "Software"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Version"
+msgstr "نسخة"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "IP Address"
+msgstr "عنوان IP :"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Origin"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+msgid "First seen"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Last seen"
+msgstr "اخر إستقبال"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Sessions"
+msgstr "نسخة"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
+#, fuzzy
+msgid "Upload Speed"
+msgstr "سرعة-الرفع"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
+#, fuzzy
+msgid "Download Speed"
+msgstr "سرعة-التحميل"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Uploaded"
+msgstr "سرعة-الرفع"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Downloaded"
+msgstr "التحميل"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Ratio"
+msgstr "تقيم"
+
+#: src/ClientHistoryListCtrl.cpp
+msgid "Online now"
+msgstr ""
+
 #: src/ClientRef.cpp
 msgid "Not complete"
 msgstr "غير مكتمل"
@@ -1242,6 +1362,39 @@ msgstr "غير متوفر"
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr "غير متوفر"
+
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+msgid "Files"
+msgstr "ملفات"
+
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp
+msgid "Uploaded"
+msgstr ""
+
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Downloaded"
+msgstr ""
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Downloading from"
+msgstr "تحميل"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Uploading to"
+msgstr "الرفع"
+
+#: src/ClientsWnd.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
+msgid "Active"
+msgstr ""
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Known"
+msgstr "غير معرف"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -2507,10 +2660,6 @@ msgstr ""
 msgid "Friends"
 msgstr "اصدقاء"
 
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Show &Details"
-msgstr "عرض &تفاصيل"
-
 #: src/FriendListCtrl.cpp
 msgid "Add a friend"
 msgstr "اضف صديق"
@@ -2522,14 +2671,6 @@ msgstr "احذف صديق"
 #: src/FriendListCtrl.cpp
 msgid "Send &Message"
 msgstr "ارسل &رسالة"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "View Files"
-msgstr "اعرض الملفات"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Establish Friend Slot"
-msgstr ""
 
 #: src/FriendListCtrl.cpp
 #, fuzzy
@@ -2545,40 +2686,6 @@ msgstr "هل انت متاكد من الغاء زحذف هذه الملفات ؟
 msgid ""
 "You are not allowed to set more than one friendslot.\n"
 " Only one slot was assigned."
-msgstr ""
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Multiple selection"
-msgstr ""
-
-#: src/GenericClientListCtrl.cpp
-msgid ""
-"You are not allowed to set more than one friend slot.\n"
-" Only one slot was assigned."
-msgstr ""
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message to user"
-msgstr ""
-
-#: src/GenericClientListCtrl.cpp
-msgid "Message to send:"
-msgstr ""
-
-#: src/GenericClientListCtrl.cpp src/Statistics.cpp
-msgid "Clients"
-msgstr "عميل"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Remove from friends"
-msgstr ""
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message"
-msgstr ""
-
-#: src/GenericClientListCtrl.cpp
-msgid "Swap to this file"
 msgstr ""
 
 #: src/GenericClientListCtrl.cpp
@@ -2885,10 +2992,6 @@ msgstr ""
 
 #: src/KnownFile.cpp
 msgid "Share ratio"
-msgstr ""
-
-#: src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Uploaded"
 msgstr ""
 
 #: src/KnownFile.cpp src/muuli_wdr.cpp
@@ -5251,10 +5354,6 @@ msgstr "أرشيف"
 msgid "Text"
 msgstr "نص"
 
-#: src/OtherFunctions.cpp src/TransferWnd.cpp
-msgid "Active"
-msgstr ""
-
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "Using config dir: %s"
@@ -5508,11 +5607,6 @@ msgstr ""
 msgid "Insufficient disk space"
 msgstr ""
 
-#: src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp
-msgid "Downloaded"
-msgstr ""
-
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
@@ -5722,10 +5816,6 @@ msgstr "مجلدات"
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "الخادمات"
-
-#: src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
-msgid "Files"
-msgstr "ملفات"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Security"
@@ -6573,11 +6663,6 @@ msgstr "مستخدمين"
 msgid "Static"
 msgstr "ثابت"
 
-#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp src/Statistics.cpp
-msgid "Version"
-msgstr "نسخة"
-
 #: src/ServerListCtrl.cpp
 #, fuzzy
 msgid "Soft Files"
@@ -6943,16 +7028,6 @@ msgstr ""
 msgid "User Name"
 msgstr "اسم مستخدم"
 
-#: src/SharedFilePeersListCtrl.cpp
-#, fuzzy
-msgid "Download Speed"
-msgstr "سرعة-التحميل"
-
-#: src/SharedFilePeersListCtrl.cpp
-#, fuzzy
-msgid "Upload Speed"
-msgstr "سرعة-الرفع"
-
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 #, fuzzy
 msgid "Available Parts"
@@ -6967,10 +7042,6 @@ msgstr "ارفع"
 #, fuzzy
 msgid "Download Status"
 msgstr "تحميل"
-
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Origin"
-msgstr ""
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 #, fuzzy

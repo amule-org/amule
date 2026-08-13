@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <radialGradient id="head" cx="0.4" cy="0.3" r="0.95">
+      <stop offset="0" stop-color="#f7fcff"/>
+      <stop offset="0.3" stop-color="#dceefb"/>
+      <stop offset="0.6" stop-color="#aed8f7"/>
+      <stop offset="1" stop-color="#7db8ec"/>
+    </radialGradient>
+    <linearGradient id="body" gradientUnits="userSpaceOnUse" x1="15.6" y1="14.6" x2="15.6" y2="31">
+      <stop offset="0" stop-color="#c4e7fc"/>
+      <stop offset="0.3" stop-color="#a2d3f6"/>
+      <stop offset="0.65" stop-color="#8fc6f1"/>
+      <stop offset="1" stop-color="#a6d8f9"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#e2f6ff" stop-opacity="0.95"/>
+      <stop offset="0.6" stop-color="#d5f1ff" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#d5f1ff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <path d="M15.6 30.9 C12.4 30.9 9.6 30.4 7.8 29.5 C6.1 28.7 5.2 27.6 5.2 26.2 C5.2 24.1 6.3 20.5 7.8 18.2 C9.1 16.1 11.1 14.6 13.3 14.6 L17.9 14.6 C20.1 14.6 22.1 16.1 23.4 18.2 C24.9 20.5 26 24.1 26 26.2 C26 27.6 25.1 28.7 23.4 29.5 C21.6 30.4 18.8 30.9 15.6 30.9 Z" fill="url(#body)" stroke="#79b6ea" stroke-width="0.9"/>
+  <ellipse cx="15.6" cy="28.2" rx="6.8" ry="2.6" fill="url(#glow)"/>
+  <path d="M7.9 19.8 C9.4 16.6 11.8 15.4 15.6 15.4 C19.4 15.4 21.8 16.6 23.3 19.8" fill="none" stroke="#d9f1ff" stroke-width="1.1" stroke-linecap="round" opacity="0.75"/>
+  <ellipse cx="15.6" cy="15.5" rx="4.8" ry="1.6" fill="#5f9ed8" opacity="0.3"/>
+  <circle cx="15.6" cy="7.5" r="7.4" fill="url(#head)" stroke="#74b2e8" stroke-width="0.9"/>
+  <path d="M11 13.1 C12.6 14.6 14.1 14.9 15.6 14.9 C17.1 14.9 18.6 14.6 20.2 13.1" fill="none" stroke="#e6f6ff" stroke-width="1" stroke-linecap="round" opacity="0.8"/>
+</svg>

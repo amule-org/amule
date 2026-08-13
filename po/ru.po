@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-11 12:27+0200\n"
+"POT-Creation-Date: 2026-08-13 13:03+0200\n"
 "PO-Revision-Date: 2026-08-13 00:16+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
@@ -688,6 +688,10 @@ msgstr "Скачивания"
 msgid "Shared files"
 msgstr "Общие файлы"
 
+#: src/amuleDlg.cpp src/ClientContextActions.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "Клиенты"
+
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Messages"
 msgstr "Сообщения"
@@ -830,6 +834,11 @@ msgstr "Окно скачиваний"
 #: src/amuleDlg.cpp
 msgid "Shared Files Window"
 msgstr "Окно публикуемых файлов"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "Clients Window"
+msgstr "Окно сетей"
 
 #: src/amuleDlg.cpp
 msgid "Messages Window"
@@ -1185,9 +1194,53 @@ msgstr "Закрыть все вкладки"
 msgid "Close other tabs"
 msgstr "Закрыть остальные вкладки"
 
-#: src/ChatWnd.cpp src/GenericClientListCtrl.cpp
+#: src/ChatWnd.cpp src/ClientContextActions.cpp
 msgid "Add to Friends"
 msgstr "Добавить в список друзей"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Show &Details"
+msgstr "Показать с&ведения"
+
+#: src/ClientContextActions.cpp
+msgid "Remove from friends"
+msgstr "Удалить из списка друзей"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Establish Friend Slot"
+msgstr "Создать слот для друга"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "View Files"
+msgstr "Просмотр файлов"
+
+#: src/ClientContextActions.cpp
+msgid "Send message"
+msgstr "Отправить сообщение"
+
+#: src/ClientContextActions.cpp
+msgid "Swap to this file"
+msgstr "Переключить на этот файл"
+
+#: src/ClientContextActions.cpp
+msgid ""
+"You are not allowed to set more than one friend slot.\n"
+" Only one slot was assigned."
+msgstr ""
+"Нельзя задать более одного слота для друзей.\n"
+" Назначен только один слот."
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Multiple selection"
+msgstr "Множественный выбор"
+
+#: src/ClientContextActions.cpp
+msgid "Send message to user"
+msgstr "Послать сообщение пользователю"
+
+#: src/ClientContextActions.cpp
+msgid "Message to send:"
+msgstr "Сообщение:"
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1254,6 +1307,76 @@ msgstr "Отключён"
 msgid "%.1f kB/s"
 msgstr "%.1f КБ/с"
 
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Name"
+msgstr "Имя:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+msgid "Software"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Version"
+msgstr "Версия"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "IP Address"
+msgstr "Адрес IP:"
+
+# Source of a source. I mean, it's where a client came from.
+# (GonoszTopi)
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Origin"
+msgstr "Откуда"
+
+#: src/ClientHistoryListCtrl.cpp
+msgid "First seen"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Last seen"
+msgstr "Последний приём"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Sessions"
+msgstr "Версия"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Upload Speed"
+msgstr "Скорость отдачи"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Download Speed"
+msgstr "Скорость скачивания"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Uploaded"
+msgstr "Отдано"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Downloaded"
+msgstr "Всего скачано: "
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Ratio"
+msgstr "Оценка"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Online now"
+msgstr "Онлайн-подпись"
+
 #: src/ClientRef.cpp
 msgid "Not complete"
 msgstr "Не завершён"
@@ -1273,6 +1396,39 @@ msgstr "Н/Д"
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr "Не доступно"
+
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+msgid "Files"
+msgstr "Файлы"
+
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp
+msgid "Uploaded"
+msgstr "Отдано"
+
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Downloaded"
+msgstr "Скачано"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Downloading from"
+msgstr "Скачивается"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Uploading to"
+msgstr "Отдаётся"
+
+#: src/ClientsWnd.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
+msgid "Active"
+msgstr "Активные"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Known"
+msgstr "Неизвестно"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -2580,10 +2736,6 @@ msgstr "КРИТИЧНО - нет клиентов на StartChatSession"
 msgid "Friends"
 msgstr "Друзья"
 
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Show &Details"
-msgstr "Показать с&ведения"
-
 #: src/FriendListCtrl.cpp
 msgid "Add a friend"
 msgstr "Добавить в друзья"
@@ -2595,14 +2747,6 @@ msgstr "Удалить из друзей"
 #: src/FriendListCtrl.cpp
 msgid "Send &Message"
 msgstr "Послать &сообщение"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "View Files"
-msgstr "Просмотр файлов"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Establish Friend Slot"
-msgstr "Создать слот для друга"
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"
@@ -2619,42 +2763,6 @@ msgid ""
 msgstr ""
 "Устанавка более одного слота для друзей запрещена.\n"
 " Был выделен только один слот."
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Multiple selection"
-msgstr "Множественный выбор"
-
-#: src/GenericClientListCtrl.cpp
-msgid ""
-"You are not allowed to set more than one friend slot.\n"
-" Only one slot was assigned."
-msgstr ""
-"Нельзя задать более одного слота для друзей.\n"
-" Назначен только один слот."
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message to user"
-msgstr "Послать сообщение пользователю"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Message to send:"
-msgstr "Сообщение:"
-
-#: src/GenericClientListCtrl.cpp src/Statistics.cpp
-msgid "Clients"
-msgstr "Клиенты"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Remove from friends"
-msgstr "Удалить из списка друзей"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message"
-msgstr "Отправить сообщение"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Swap to this file"
-msgstr "Переключить на этот файл"
 
 #: src/GenericClientListCtrl.cpp
 #, c-format
@@ -2963,10 +3071,6 @@ msgstr "Размер файла"
 #: src/KnownFile.cpp
 msgid "Share ratio"
 msgstr "Рейтинг раздачи"
-
-#: src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Uploaded"
-msgstr "Отдано"
 
 #: src/KnownFile.cpp src/muuli_wdr.cpp
 msgid "Requested"
@@ -5326,10 +5430,6 @@ msgstr "Архив"
 msgid "Text"
 msgstr "Текст"
 
-#: src/OtherFunctions.cpp src/TransferWnd.cpp
-msgid "Active"
-msgstr "Активные"
-
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "Using config dir: %s"
@@ -5588,11 +5688,6 @@ msgstr "Выделяется место"
 msgid "Insufficient disk space"
 msgstr "Недостаточно места на диске"
 
-#: src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp
-msgid "Downloaded"
-msgstr "Скачано"
-
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
@@ -5798,10 +5893,6 @@ msgstr "Каталоги"
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "Серверы"
-
-#: src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
-msgid "Files"
-msgstr "Файлы"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Security"
@@ -6666,11 +6757,6 @@ msgstr "Макс. участников"
 msgid "Static"
 msgstr "Постоянный"
 
-#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp src/Statistics.cpp
-msgid "Version"
-msgstr "Версия"
-
 #: src/ServerListCtrl.cpp
 msgid "Soft Files"
 msgstr "Мягк. порог файлов"
@@ -7029,14 +7115,6 @@ msgstr "Нет публикуемых файлов в директории: %s"
 msgid "User Name"
 msgstr "Имя пользователя"
 
-#: src/SharedFilePeersListCtrl.cpp
-msgid "Download Speed"
-msgstr "Скорость скачивания"
-
-#: src/SharedFilePeersListCtrl.cpp
-msgid "Upload Speed"
-msgstr "Скорость отдачи"
-
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Available Parts"
 msgstr "Доступные части"
@@ -7048,12 +7126,6 @@ msgstr "Статус отдачи"
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Download Status"
 msgstr "Статус скачивания"
-
-# Source of a source. I mean, it's where a client came from.
-# (GonoszTopi)
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Origin"
-msgstr "Откуда"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Local File Name"

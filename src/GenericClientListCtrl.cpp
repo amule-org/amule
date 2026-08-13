@@ -32,12 +32,14 @@
 #include "SearchDlg.h"     // Needed for CSearchDlg (View Files browse tab)
 #include "BarShader.h"     // Needed for CBarShader
 #include "BitVector.h"
-#include "ClientDetailDialog.h" // Needed for CClientDetailDialog
-#include "ChatWnd.h"            // Needed for CChatWnd
-#include "CommentDialogLst.h"   // Needed for CCommentDialogLst
-#include "DataToText.h"         // Needed for PriorityToStr
-#include "FileDetailDialog.h"   // Needed for CFileDetailDialog
-#include "GuiEvents.h"          // Needed for CoreNotify_*
+#include "ClientDetailDialog.h"   // Needed for CClientDetailDialog
+#include "ClientContextActions.h" // Needed for BuildClientContextMenu, ClientAction*
+#include "ClientNameCell.h"       // Needed for MakeClientNameCell, DrawClientNameCell
+#include "ChatWnd.h"              // Needed for CChatWnd
+#include "CommentDialogLst.h"     // Needed for CCommentDialogLst
+#include "DataToText.h"           // Needed for PriorityToStr
+#include "FileDetailDialog.h"     // Needed for CFileDetailDialog
+#include "GuiEvents.h"            // Needed for CoreNotify_*
 #ifdef GEOIP_GUI
 #include "CountryFlags.h"   // Needed for CCountryFlags (flag bitmaps)
 #include "CountryDisplay.h" // Needed for GetDisplayCountryCode
@@ -63,16 +65,16 @@
 namespace
 {
 /**
- * Renders the User Name column: a cluster of status/software/credential
- * badge icons followed by an optional country flag and the username text.
+ * Renders the User Name column.
  *
  * Not a literal bar -- this reuses CMuleBarRenderer's identity-carrying
  * CBarFillSpec/GetItemBarFill() extension point (see CBarFillSpec::GetIdentity())
  * to reach the row's ClientCtrlItem_Struct, the same way CDownloadBarRenderer
  * reaches its CPartFile*. Registered via AddBarColumn() rather than growing a
  * new column-registration entry point for a single, list-local column.
- * Replaces DrawClientItem's ColumnUserName case exactly, including the
- * two-icons-then-text x-advance (several badges stack at the *same* x).
+ *
+ * The drawing itself lives in DrawClientNameCell(), shared with the global
+ * clients list so the two cannot drift apart.
  */
 class CClientNameRenderer : public CMuleBarRenderer
 {
@@ -81,145 +83,16 @@ public:
 	{
 		ClientCtrlItem_Struct *item =
 			reinterpret_cast<ClientCtrlItem_Struct *>(GetSpec().GetIdentity());
-		if (!item || cell.GetWidth() <= 0 || cell.GetHeight() <= 0) {
+		if (item == nullptr) {
 			return true;
 		}
-		CClientRef &client = item->GetSource();
-
-		wxDCClipper clipper(*dc, cell);
-
-		wxImageList &imageList = theApp->amuledlg->m_imagelist;
-		int imageXSize = 0;
-		int imageYSize = 0;
-		if (!imageList.GetSize(0, imageXSize, imageYSize)) {
-			return true;
-		}
-		imageXSize += 2; // Padding, matches DrawClientItem's iBitmapXSize.
-		const int imageYOffset = ((cell.GetHeight() - imageYSize) / 2) + 1 /* Fixes rounding */;
-
-		wxPoint point(cell.GetX(), cell.GetY());
-
-		uint8 image = Client_Grey_Smiley;
-		if (item->GetType() != A4AF_SOURCE) {
-			switch (client.GetDownloadState()) {
-			case DS_CONNECTING:
-			case DS_CONNECTED:
-			case DS_WAITCALLBACK:
-			case DS_TOOMANYCONNS:
-				image = Client_Red_Smiley;
-				break;
-			case DS_ONQUEUE:
-				image = client.IsRemoteQueueFull() ? Client_Grey_Smiley
-								   : Client_Yellow_Smiley;
-				break;
-			case DS_DOWNLOADING:
-			case DS_REQHASHSET:
-				image = Client_Green_Smiley;
-				break;
-			case DS_NONEEDEDPARTS:
-			case DS_LOWTOLOWIP:
-				image = Client_Grey_Smiley; // Redundant
-				break;
-			default: // DS_NONE i.e.
-				image = Client_White_Smiley;
-			}
-		} // else: default (Client_Grey_Smiley)
-
-		imageList.Draw(image, *dc, point.x, point.y + imageYOffset, wxIMAGELIST_DRAW_TRANSPARENT);
-		point.x += imageXSize;
-
-		uint8 clientImage = Client_Unknown;
-		if (client.IsFriend()) {
-			clientImage = Client_Friend_Smiley;
-		} else {
-			switch (client.GetClientSoft()) {
-			case SO_AMULE:
-				clientImage = Client_aMule_Smiley;
-				break;
-			case SO_MLDONKEY:
-			case SO_NEW_MLDONKEY:
-			case SO_NEW2_MLDONKEY:
-				clientImage = Client_mlDonkey_Smiley;
-				break;
-			case SO_EDONKEY:
-			case SO_EDONKEYHYBRID:
-				clientImage = Client_eDonkeyHybrid_Smiley;
-				break;
-			case SO_EMULE:
-				clientImage = Client_eMule_Smiley;
-				break;
-			case SO_LPHANT:
-				clientImage = Client_lphant_Smiley;
-				break;
-			case SO_SHAREAZA:
-			case SO_NEW_SHAREAZA:
-			case SO_NEW2_SHAREAZA:
-				clientImage = Client_Shareaza_Smiley;
-				break;
-			case SO_LXMULE:
-				clientImage = Client_xMule_Smiley;
-				break;
-			default:
-				// cDonkey, Compatible, Unknown: no icon for those yet;
-				// falls back to Client_Unknown.
-				break;
-			}
-		}
-
-		const int realY = point.y + imageYOffset;
-		imageList.Draw(clientImage, *dc, point.x, realY, wxIMAGELIST_DRAW_TRANSPARENT);
-
-		if (client.GetScoreRatio() > 1) {
-			imageList.Draw(Client_CreditsYellow_Smiley,
-				*dc,
-				point.x,
-				realY,
-				wxIMAGELIST_DRAW_TRANSPARENT);
-		} else if (!client.ExtProtocolAvailable()) {
-			imageList.Draw(Client_ExtendedProtocol_Smiley,
-				*dc,
-				point.x,
-				realY,
-				wxIMAGELIST_DRAW_TRANSPARENT);
-		}
-
-		if (client.IsIdentified()) {
-			imageList.Draw(
-				Client_SecIdent_Smiley, *dc, point.x, realY, wxIMAGELIST_DRAW_TRANSPARENT);
-		} else if (client.IsBadGuy()) {
-			imageList.Draw(
-				Client_BadGuy_Smiley, *dc, point.x, realY, wxIMAGELIST_DRAW_TRANSPARENT);
-		}
-
-		if (client.GetObfuscationStatus() == OBST_ENABLED) {
-			imageList.Draw(
-				Client_Encryption_Smiley, *dc, point.x, realY, wxIMAGELIST_DRAW_TRANSPARENT);
-		}
-
-		point.x += imageXSize;
-
-#ifdef GEOIP_GUI
-		// Country flag; GetDisplayCountryCode() holds the shared gate (see
-		// CountryDisplay.h) so this list and the server list stay in step.
-		wxString code;
-		const bool haveCountry = GetDisplayCountryCode(client.GetClient()->IsCountryFromCore(),
-			client.GetClient()->GetCountryCode(),
-			client.GetClient()->GetFullIPNumeric(),
-			code);
-		if (haveCountry && !code.IsEmpty()) {
-			const wxImage &flag = theApp->GetCountryFlags()->GetFlag(code);
-			const int flagY =
-				point.y + (cell.GetHeight() - flag.GetHeight()) / 2 + 1 /* floor() */;
-			dc->DrawBitmap(flag, point.x, flagY, true);
-			point.x += flag.GetWidth() + 2 /* Padding */;
-		}
-#endif // GEOIP_GUI
-
-		const wxString userName =
-			client.GetUserName().IsEmpty() ? wxString("?") : client.GetUserName();
-		const int textOffset =
-			((cell.GetHeight() - dc->GetCharHeight()) / 2) + 1 /* Fixes rounding */;
-		dc->DrawText(userName, point.x, cell.GetY() + textOffset);
+		// Read straight off the live CClientRef: this list holds an owning
+		// reference to every peer it shows, so the client is alive for as
+		// long as the row is.
+		DrawClientNameCell(
+			MakeClientNameCell(item->GetSource().GetClient(), item->GetType() == A4AF_SOURCE),
+			cell,
+			dc);
 		return true;
 	}
 };
@@ -683,78 +556,43 @@ void CGenericClientListCtrl::OnSwapSource(wxCommandEvent &WXUNUSED(event))
 	}
 }
 
+namespace
+{
+//! The peers behind the current selection, as the shared actions want them.
+std::vector<CClientRef> SelectedClients(const std::vector<wxUIntPtr> &selected)
+{
+	std::vector<CClientRef> clients;
+	clients.reserve(selected.size());
+	for (wxUIntPtr data : selected) {
+		clients.push_back(reinterpret_cast<ClientCtrlItem_Struct *>(data)->GetSource());
+	}
+	return clients;
+}
+} // namespace
+
 void CGenericClientListCtrl::OnViewFiles(wxCommandEvent &WXUNUSED(event))
 {
-	// Browse each selected peer, opening one result tab per peer. If a peer's
-	// listing is already open in the Search panel, switch to that tab instead
-	// of re-requesting -- a second request would duplicate the results in the
-	// existing tab. Only once the tab is closed does a fresh request go out.
-	for (wxUIntPtr data : GetSelectedItemData()) {
-		CClientRef &client = reinterpret_cast<ClientCtrlItem_Struct *>(data)->GetSource();
-		if (!(theApp->amuledlg && theApp->amuledlg->m_searchwnd &&
-			    theApp->amuledlg->m_searchwnd->ActivateBrowseTabIfOpen(client.ECID()))) {
-			client.RequestSharedFileList();
-		}
-	}
+	ClientActionViewFiles(SelectedClients(GetSelectedItemData()));
 }
 
 void CGenericClientListCtrl::OnAddFriend(wxCommandEvent &WXUNUSED(event))
 {
-	for (wxUIntPtr data : GetSelectedItemData()) {
-		CClientRef &client = reinterpret_cast<ClientCtrlItem_Struct *>(data)->GetSource();
-		if (client.IsFriend()) {
-			theApp->friendlist->RemoveFriend(client.GetFriend());
-		} else {
-			theApp->friendlist->AddFriend(client);
-		}
-	}
+	ClientActionToggleFriend(SelectedClients(GetSelectedItemData()));
 }
 
 void CGenericClientListCtrl::OnSetFriendslot(wxCommandEvent &evt)
 {
-	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
-
-	if (!selected.empty()) {
-		CClientRef &client = reinterpret_cast<ClientCtrlItem_Struct *>(selected.front())->GetSource();
-		theApp->friendlist->SetFriendSlot(client.GetFriend(), evt.IsChecked());
-	}
-	if (selected.size() > 1) {
-		wxMessageBox(_("You are not allowed to set more than one friend slot.\n Only one slot was "
-			       "assigned."),
-			_("Multiple selection"),
-			wxOK | wxICON_ERROR,
-			this);
-	}
+	ClientActionSetFriendSlot(this, SelectedClients(GetSelectedItemData()), evt.IsChecked());
 }
 
 void CGenericClientListCtrl::OnSendMessage(wxCommandEvent &WXUNUSED(event))
 {
-	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
-
-	if (selected.size() == 1) {
-		CClientRef &source = reinterpret_cast<ClientCtrlItem_Struct *>(selected.front())->GetSource();
-
-		// These values are cached, since calling wxGetTextFromUser will
-		// start an event-loop, in which the client may be deleted.
-		wxString userName = source.GetUserName();
-		uint64 userID = GUI_ID(source.GetIP(), source.GetUserPort());
-
-		wxString message = ::wxGetTextFromUser(_("Send message to user"), _("Message to send:"));
-		if (!message.IsEmpty()) {
-			theApp->amuledlg->m_chatwnd->SendMessage(message, userName, userID);
-		}
-	}
+	ClientActionSendMessage(SelectedClients(GetSelectedItemData()));
 }
 
 void CGenericClientListCtrl::OnViewClientInfo(wxCommandEvent &WXUNUSED(event))
 {
-	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
-
-	if (selected.size() == 1) {
-		CClientDetailDialog(
-			this, reinterpret_cast<ClientCtrlItem_Struct *>(selected.front())->GetSource())
-			.ShowModal();
-	}
+	ClientActionShowDetails(this, SelectedClients(GetSelectedItemData()));
 }
 
 void CGenericClientListCtrl::OnItemActivated(wxDataViewEvent &event)
@@ -813,29 +651,9 @@ void CGenericClientListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 	CClientRef &client = item->GetSource();
 
 	delete m_menu;
-	m_menu = new wxMenu(_("Clients"));
-	m_menu->Append(MP_DETAIL, _("Show &Details"));
-	m_menu->Append(MP_ADDFRIEND, client.IsFriend() ? _("Remove from friends") : _("Add to Friends"));
-
-	m_menu->AppendCheckItem(MP_FRIENDSLOT, _("Establish Friend Slot"));
-	if (client.IsFriend()) {
-		m_menu->Enable(MP_FRIENDSLOT, true);
-		m_menu->Check(MP_FRIENDSLOT, client.GetFriendSlot());
-	} else {
-		m_menu->Enable(MP_FRIENDSLOT, false);
-	}
-
-	m_menu->Append(MP_SHOWLIST, _("View Files"));
-	m_menu->Append(MP_SENDMESSAGE, _("Send message"));
-
-	m_menu->Append(MP_CHANGE2FILE, _("Swap to this file"));
-
-	// Only enable the Swap option for A4AF sources
-	m_menu->Enable(MP_CHANGE2FILE, (item->GetType() == A4AF_SOURCE));
-	// We need a valid IP if we are to message the client
-	m_menu->Enable(MP_SENDMESSAGE, (client.GetIP() != 0));
-
-	m_menu->Enable(MP_SHOWLIST, !client.HasDisabledSharedFiles());
+	// Same menu the global clients list offers; "Swap to this file" is the one
+	// entry only a per-file list can act on.
+	m_menu = BuildClientContextMenu(client, item->GetType() == A4AF_SOURCE);
 
 	PopupMenu(m_menu, event.GetPosition());
 

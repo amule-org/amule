@@ -52,6 +52,7 @@
 #include "ClientCredits.h"
 #include "SourceListCtrl.h"
 #include "ChatWnd.h"
+#include "ClientsWnd.h"       // Needed for CClientsWnd
 #include "DataToText.h"       // Needed for GetSoftName()
 #include "DownloadListCtrl.h" // Needed for CDownloadListCtrl
 #include "Friend.h"
@@ -396,6 +397,14 @@ void CamuleRemoteGuiApp::OnPollTimer(wxTimerEvent &)
 			}
 		} else if (amuledlg->m_transferwnd->IsShown()) {
 			// update both downloads and shared files
+			knownfiles->DoRequery(EC_OP_GET_UPDATE, EC_TAG_KNOWNFILE);
+		} else if (amuledlg->m_clientswnd->IsShown()) {
+			// Same request, for the peers rather than the files: the
+			// EC_TAG_CLIENT tags the clients list lives on ride along
+			// in this reply (CKnownFilesRem::ProcessUpdate) and are
+			// sent by nothing else. Without this the page shows
+			// whatever the peers looked like when the user left the
+			// last tab that did ask, and never moves again.
 			knownfiles->DoRequery(EC_OP_GET_UPDATE, EC_TAG_KNOWNFILE);
 		} else if (amuledlg->m_searchwnd->IsShown()) {
 			// Reachability fix (#641): ask what searches the daemon
@@ -2652,6 +2661,7 @@ CClientRef *CUpDownClientListRem::CreateItem(const CEC_UpDownClient_Tag *tag)
 void CUpDownClientListRem::DeleteItem(CClientRef *clientref)
 {
 	CUpDownClient *client = clientref->GetClient();
+
 	if (client->m_reqfile) {
 		client->m_reqfile->DelSource(client);
 		client->m_reqfile = NULL;

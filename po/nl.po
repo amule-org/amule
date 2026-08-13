@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-11 12:27+0200\n"
+"POT-Creation-Date: 2026-08-13 13:03+0200\n"
 "PO-Revision-Date: 2026-08-11 20:53+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
@@ -682,6 +682,10 @@ msgstr "Downloads"
 msgid "Shared files"
 msgstr "Gedeelde bestanden"
 
+#: src/amuleDlg.cpp src/ClientContextActions.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "Clients"
+
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Messages"
 msgstr "Berichten"
@@ -820,6 +824,11 @@ msgstr "Downloadsvenster"
 #: src/amuleDlg.cpp
 msgid "Shared Files Window"
 msgstr "Gedeelde bestanden-venster"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "Clients Window"
+msgstr "Netwerkvenster"
 
 #: src/amuleDlg.cpp
 msgid "Messages Window"
@@ -1172,9 +1181,54 @@ msgstr "Sluit alle tabbladen"
 msgid "Close other tabs"
 msgstr "Sluit andere tabbladen"
 
-#: src/ChatWnd.cpp src/GenericClientListCtrl.cpp
+#: src/ChatWnd.cpp src/ClientContextActions.cpp
 msgid "Add to Friends"
 msgstr "Voeg toe aan vrienden"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Show &Details"
+msgstr "Laat &Details zien"
+
+#: src/ClientContextActions.cpp
+msgid "Remove from friends"
+msgstr "Verwijder uit vriendenlijst"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Establish Friend Slot"
+msgstr "Maak vriendenslot"
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "View Files"
+msgstr "Bekijk bestanden"
+
+#: src/ClientContextActions.cpp
+msgid "Send message"
+msgstr "Verstuur bericht"
+
+#: src/ClientContextActions.cpp
+msgid "Swap to this file"
+msgstr "Wissel uit naar dit bestand"
+
+#: src/ClientContextActions.cpp
+#, fuzzy
+msgid ""
+"You are not allowed to set more than one friend slot.\n"
+" Only one slot was assigned."
+msgstr ""
+"U kunt maximaal één vriendenslot instellen.\n"
+" Slechts één slot is toegekend."
+
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+msgid "Multiple selection"
+msgstr "Meerdere selectie"
+
+#: src/ClientContextActions.cpp
+msgid "Send message to user"
+msgstr "Verstuur bericht naar gebruiker"
+
+#: src/ClientContextActions.cpp
+msgid "Message to send:"
+msgstr "Bericht om te versturen:"
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1239,6 +1293,74 @@ msgstr "Niet verbonden"
 msgid "%.1f kB/s"
 msgstr "%.1f KB/s"
 
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Name"
+msgstr "Naam:"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+msgid "Software"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Version"
+msgstr "Versie"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "IP Address"
+msgstr "IP-adres :"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Origin"
+msgstr "Oorsprong"
+
+#: src/ClientHistoryListCtrl.cpp
+msgid "First seen"
+msgstr ""
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Last seen"
+msgstr "Laatste overdracht"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Sessions"
+msgstr "Versie"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Upload Speed"
+msgstr "Uploadsnelheid"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Download Speed"
+msgstr "Downloadsnelheid"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Uploaded"
+msgstr "Geüpload"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Total Downloaded"
+msgstr "Totale download: "
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#, fuzzy
+msgid "Ratio"
+msgstr "Waardering"
+
+#: src/ClientHistoryListCtrl.cpp
+#, fuzzy
+msgid "Online now"
+msgstr "Online handtekening"
+
 #: src/ClientRef.cpp
 msgid "Not complete"
 msgstr "Niet compleet"
@@ -1258,6 +1380,39 @@ msgstr "N/B"
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr "Niet beschikbaar"
+
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+msgid "Files"
+msgstr "Bestanden"
+
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp
+msgid "Uploaded"
+msgstr "Geüpload"
+
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+msgid "Downloaded"
+msgstr "Gedownload"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Downloading from"
+msgstr "Downloaden"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Uploading to"
+msgstr "Aan het uploaden"
+
+#: src/ClientsWnd.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
+msgid "Active"
+msgstr "Actief"
+
+#: src/ClientsWnd.cpp
+#, fuzzy
+msgid "Known"
+msgstr "Onbekend"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -2556,10 +2711,6 @@ msgstr "KRITIEK - geen client bij StartChatSession"
 msgid "Friends"
 msgstr "Vrienden"
 
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Show &Details"
-msgstr "Laat &Details zien"
-
 #: src/FriendListCtrl.cpp
 msgid "Add a friend"
 msgstr "Voeg een vriend toe"
@@ -2571,14 +2722,6 @@ msgstr "Verwijder vriend"
 #: src/FriendListCtrl.cpp
 msgid "Send &Message"
 msgstr "Verstuur &Message"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "View Files"
-msgstr "Bekijk bestanden"
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Establish Friend Slot"
-msgstr "Maak vriendenslot"
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"
@@ -2595,43 +2738,6 @@ msgid ""
 msgstr ""
 "U kunt maximaal één vriendenslot instellen.\n"
 " Slechts één slot is toegekend."
-
-#: src/FriendListCtrl.cpp src/GenericClientListCtrl.cpp
-msgid "Multiple selection"
-msgstr "Meerdere selectie"
-
-#: src/GenericClientListCtrl.cpp
-#, fuzzy
-msgid ""
-"You are not allowed to set more than one friend slot.\n"
-" Only one slot was assigned."
-msgstr ""
-"U kunt maximaal één vriendenslot instellen.\n"
-" Slechts één slot is toegekend."
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message to user"
-msgstr "Verstuur bericht naar gebruiker"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Message to send:"
-msgstr "Bericht om te versturen:"
-
-#: src/GenericClientListCtrl.cpp src/Statistics.cpp
-msgid "Clients"
-msgstr "Clients"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Remove from friends"
-msgstr "Verwijder uit vriendenlijst"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Send message"
-msgstr "Verstuur bericht"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Swap to this file"
-msgstr "Wissel uit naar dit bestand"
 
 #: src/GenericClientListCtrl.cpp
 #, c-format
@@ -2935,10 +3041,6 @@ msgstr "Bestandsgrootte"
 #: src/KnownFile.cpp
 msgid "Share ratio"
 msgstr "Deelverhouding"
-
-#: src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Uploaded"
-msgstr "Geüpload"
 
 #: src/KnownFile.cpp src/muuli_wdr.cpp
 msgid "Requested"
@@ -5317,10 +5419,6 @@ msgstr "Archief"
 msgid "Text"
 msgstr "Tekst"
 
-#: src/OtherFunctions.cpp src/TransferWnd.cpp
-msgid "Active"
-msgstr "Actief"
-
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "Using config dir: %s"
@@ -5575,11 +5673,6 @@ msgstr "Toewijzen"
 msgid "Insufficient disk space"
 msgstr "Onvoldoende schijfruimte"
 
-#: src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp
-msgid "Downloaded"
-msgstr "Gedownload"
-
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
@@ -5787,10 +5880,6 @@ msgstr "Mappen"
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "Servers"
-
-#: src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
-msgid "Files"
-msgstr "Bestanden"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Security"
@@ -6666,11 +6755,6 @@ msgstr "Gebruikers"
 msgid "Static"
 msgstr "Statisch"
 
-#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp src/Statistics.cpp
-msgid "Version"
-msgstr "Versie"
-
 #: src/ServerListCtrl.cpp
 #, fuzzy
 msgid "Soft Files"
@@ -7029,14 +7113,6 @@ msgstr "Geen deelbare bestanden gevonden in map: %s"
 msgid "User Name"
 msgstr "Gebruikersnaam"
 
-#: src/SharedFilePeersListCtrl.cpp
-msgid "Download Speed"
-msgstr "Downloadsnelheid"
-
-#: src/SharedFilePeersListCtrl.cpp
-msgid "Upload Speed"
-msgstr "Uploadsnelheid"
-
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Available Parts"
 msgstr "Beschikbare delen"
@@ -7048,10 +7124,6 @@ msgstr "Uploadstatus"
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Download Status"
 msgstr "Download status"
-
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Origin"
-msgstr "Oorsprong"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Local File Name"
