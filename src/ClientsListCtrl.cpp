@@ -24,7 +24,8 @@
 
 #include "ClientsListCtrl.h" // Interface declarations
 
-#include <map>
+#include <algorithm>
+#include <unordered_map>
 
 #include <common/Format.h> // Needed for CFormat
 
@@ -99,34 +100,45 @@ CClientsListCtrl::~CClientsListCtrl() = default;
 
 const CClientsListCtrl::Row *CClientsListCtrl::RowFor(wxUIntPtr item) const
 {
-	// index+1, so 0 stays "no item".
-	if (item == 0 || item > m_rows.size()) {
-		return nullptr;
+	// The item data is the peer's ECID. CECID hands out ++counter starting at
+	// 1, so it never collides with 0, which the base returns for "no item".
+	const auto it = m_rowOfEcid.find(static_cast<uint32>(item));
+	return it != m_rowOfEcid.end() ? &m_rows[it->second] : nullptr;
+}
+
+void CClientsListCtrl::ReindexRows()
+{
+	m_rowOfEcid.clear();
+	m_rowOfEcid.reserve(m_rows.size());
+	for (size_t i = 0; i < m_rows.size(); ++i) {
+		m_rowOfEcid[m_rows[i].ecid] = i;
 	}
-	return &m_rows[item - 1];
 }
 
 void CClientsListCtrl::SetClients(std::vector<Row> &&rows)
 {
+	// A peer with no ECID cannot be addressed as an item, and every live peer
+	// has one, so this only ever drops a row the sweep could not identify.
+	rows.erase(std::remove_if(rows.begin(), rows.end(), [](const Row &row) { return row.ecid == 0; }),
+		rows.end());
+
 	// The common case by far: the same peers as last second, with new numbers.
 	// Overwrite the rows where they sit and refresh them. Rebuilding the model
 	// instead -- which is all this used to do -- discards the scroll position
-	// and the selection every time the poll lands, so a list a person is
-	// reading jumps back to the top once a second.
-	//
-	// Matched on ECID rather than position: the sweep walks a container whose
-	// order is not stable, so equal contents can arrive in a different order.
+	// every time the poll lands, so a list a person is reading jumps back to
+	// the top once a second.
 	if (rows.size() == m_rows.size()) {
-		std::map<uint32, const Row *> incoming;
+		std::unordered_map<uint32, const Row *> incoming;
+		incoming.reserve(rows.size());
 		for (const Row &row : rows) {
 			incoming[row.ecid] = &row;
 		}
 		bool sameSet = incoming.size() == m_rows.size();
 		for (const Row &row : m_rows) {
-			if (!sameSet) {
+			if (incoming.count(row.ecid) == 0) {
+				sameSet = false;
 				break;
 			}
-			sameSet = incoming.count(row.ecid) != 0;
 		}
 		if (sameSet) {
 			for (Row &row : m_rows) {
@@ -135,24 +147,59 @@ void CClientsListCtrl::SetClients(std::vector<Row> &&rows)
 			// Per row rather than a blanket Refresh() so the control's own
 			// viewport gate applies -- off-screen rows cost nothing -- and so a
 			// live sort column still gets the chance to reorder.
-			for (size_t i = 0; i < m_rows.size(); ++i) {
-				RefreshItemData(static_cast<wxUIntPtr>(i + 1));
+			for (const Row &row : m_rows) {
+				RefreshItemData(static_cast<wxUIntPtr>(row.ecid));
 			}
 			return;
 		}
 	}
 
-	// A peer arrived or left: the row set itself changed, so rebuild. Selection
-	// is carried across; the scroll position is the price of a structural
-	// change, and one only happens when the set of peers actually moves.
+	// A peer arrived or left, so the row set itself changed and the model has
+	// to be rebuilt. The selection is carried across by ECID and therefore
+	// still names the same peers afterwards, whatever order the sweep produced.
 	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
 	ClearItemData();
 	m_rows = std::move(rows);
-	for (size_t i = 0; i < m_rows.size(); ++i) {
-		AppendItemData(static_cast<wxUIntPtr>(i + 1));
+	ReindexRows();
+	for (const Row &row : m_rows) {
+		AppendItemData(static_cast<wxUIntPtr>(row.ecid));
 	}
 	FinishBulkLoad();
 	SetSelectedItemData(selected);
+}
+
+const ClientNameCell *CClientsListCtrl::NameCellFor(wxUIntPtr item) const
+{
+	const Row *row = RowFor(item);
+	return row != nullptr ? &row->nameCell : nullptr;
+}
+
+std::vector<CClientRef> CClientsListCtrl::SelectedClients() const
+{
+	// By ECID: within one daemon process that names exactly this peer. A row is
+	// only ever as current as the last sweep, so a miss means the peer has gone
+	// and there is nothing left to act on.
+	std::vector<CClientRef> clients;
+	for (wxUIntPtr data : GetSelectedItemData()) {
+		const Row *row = RowFor(data);
+		if (row == nullptr || row->ecid == 0) {
+			continue;
+		}
+#ifdef CLIENT_GUI
+		// The container already holds a reference; copying it links another.
+		CClientRef *ref = theApp->clientlist->GetByID(row->ecid);
+		if (ref != nullptr && ref->GetClient() != nullptr) {
+			clients.push_back(*ref);
+		}
+#else
+		CUpDownClient *client = theApp->clientlist->FindClientByECID(row->ecid);
+		if (client != nullptr) {
+			CClientRef ref = CCLIENTREF(client, wxT("CClientsListCtrl::SelectedClients"));
+			clients.push_back(std::move(ref));
+		}
+#endif
+	}
+	return clients;
 }
 
 wxString CClientsListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) const
@@ -213,40 +260,6 @@ wxString CClientsListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) co
 	default:
 		return wxEmptyString;
 	}
-}
-
-const ClientNameCell *CClientsListCtrl::NameCellFor(wxUIntPtr item) const
-{
-	const Row *row = RowFor(item);
-	return row != nullptr ? &row->nameCell : nullptr;
-}
-
-std::vector<CClientRef> CClientsListCtrl::SelectedClients() const
-{
-	// By ECID: within one daemon process that names exactly this peer. A row is
-	// only ever as current as the last sweep, so a miss means the peer has gone
-	// and there is nothing left to act on.
-	std::vector<CClientRef> clients;
-	for (wxUIntPtr data : GetSelectedItemData()) {
-		const Row *row = RowFor(data);
-		if (row == nullptr || row->ecid == 0) {
-			continue;
-		}
-#ifdef CLIENT_GUI
-		// The container already holds a reference; copying it links another.
-		CClientRef *ref = theApp->clientlist->GetByID(row->ecid);
-		if (ref != nullptr && ref->GetClient() != nullptr) {
-			clients.push_back(*ref);
-		}
-#else
-		CUpDownClient *client = theApp->clientlist->FindClientByECID(row->ecid);
-		if (client != nullptr) {
-			CClientRef ref = CCLIENTREF(client, wxT("CClientsListCtrl::SelectedClients"));
-			clients.push_back(std::move(ref));
-		}
-#endif
-	}
-	return clients;
 }
 
 bool CClientsListCtrl::IsLiveSortColumn() const

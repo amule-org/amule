@@ -25,6 +25,7 @@
 #ifndef CLIENTSLISTCTRL_H
 #define CLIENTSLISTCTRL_H
 
+#include <unordered_map>
 #include <vector>
 
 #include "ClientRowListCtrl.h" // Needed for CClientRowListCtrl
@@ -145,8 +146,21 @@ protected:
 
 private:
 	const Row *RowFor(wxUIntPtr item) const;
+	//! Rebuild m_rowOfEcid from m_rows. Call after any change to the vector.
+	void ReindexRows();
 
 	std::vector<Row> m_rows;
+	/**
+	 * ECID to position in m_rows.
+	 *
+	 * Item data is the ECID, not the row position, so a selection survives a
+	 * rebuild: the sweep's order is not stable, so restoring a saved *index*
+	 * would hand the selection to whichever peer now sits there -- and the
+	 * context menu acts on the selection, so "Add to friends" could land on
+	 * someone the user never picked. This map is what keeps the identity
+	 * lookup O(1) on the paint path, which asks per cell.
+	 */
+	std::unordered_map<uint32, size_t> m_rowOfEcid;
 };
 
 #endif // CLIENTSLISTCTRL_H
