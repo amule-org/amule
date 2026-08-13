@@ -53,7 +53,10 @@
 #include "ClientList.h"
 #include "ClientCreditsList.h" // Needed for CClientCreditsList
 #include "ClientCredits.h"     // Needed for CClientCredits, ClientMetaStruct
-#include "Preferences.h"       // Needed for CPreferences
+#ifdef ENABLE_IP2COUNTRY
+#include "IP2Country.h" // Needed for CIP2Country (history country codes)
+#endif
+#include "Preferences.h" // Needed for CPreferences
 #include "Logger.h"
 #include "GuiEvents.h"     // Needed for Notify_* macros
 #include "Statistics.h"    // Needed for theStats
@@ -1887,6 +1890,18 @@ static CECPacket *Get_EC_Response_ClientHistory()
 					((meta.version % 100000) / 1000) % ((meta.version % 1000) / 100)));
 			entry.AddTag(CECTag(EC_TAG_CLIENT_FROM, meta.sourceFrom));
 			entry.AddTag(CECTag(EC_TAG_CLIENT_OBFUSCATION_STATUS, meta.obfuscation));
+#ifdef ENABLE_IP2COUNTRY
+			// Resolved here for the same reason live peers are (see
+			// CEC_UpDownClient_Tag): amulegui has no GeoIP database of its
+			// own, so a country it is not told is a country it cannot show.
+			// Emitted even when empty, so tag-present means "the daemon
+			// looked" and tag-absent means "the daemon has no GeoIP" --
+			// only for records that carry an address to look up.
+			if (theApp->GetIP2Country() && theApp->GetIP2Country()->IsEnabled()) {
+				entry.AddTag(CECTag(EC_TAG_CLIENT_COUNTRY,
+					theApp->GetIP2Country()->GetCountryCode(meta.lastIP)));
+			}
+#endif
 		}
 		response->AddTag(entry);
 	}

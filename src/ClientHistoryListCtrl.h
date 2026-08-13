@@ -74,6 +74,11 @@ struct ClientHistoryRow
 	uint8 sourceFrom = 0;
 	uint8 obfuscation = 0;
 	bool hasMeta = false;
+	//! Country as the core resolved it, and whether it said anything at all.
+	//! Same contract as the live lists: told-by-core is authoritative even
+	//! when empty, and only a build with its own resolver falls back locally.
+	wxString country;
+	bool countryFromCore = false;
 	/**
 	 * This peer is connected right now.
 	 *

@@ -154,12 +154,11 @@ void FillHistoryNameCell(ClientHistoryRow &row)
 	row.nameCell.clientSoft = row.clientSoft;
 	row.nameCell.obfuscation = row.obfuscation;
 #ifdef GEOIP_GUI
-	// From the last address we saw the peer at. Only resolves where a local
-	// GeoIP database is available, which is the monolithic build -- amulegui
-	// gets its flags from the core per live client and has nothing to look an
-	// offline peer up in, so the column simply has no flag there.
+	// Same call the live lists make: amulegui takes the code the core resolved
+	// from the last address we saw the peer at, monolithic resolves it itself.
+	// Records with no metadata carry no address, and get no flag.
 	wxString code;
-	if (GetDisplayCountryCode(false, wxEmptyString, row.ip, code)) {
+	if (GetDisplayCountryCode(row.countryFromCore, row.country, row.ip, code)) {
 		row.nameCell.countryCode = code;
 	}
 #endif
@@ -288,6 +287,10 @@ void CClientsWnd::CHistoryHandler::HandlePacket(const CECPacket *packet)
 		}
 		if (const CECTag *t = tag->GetTagByName(EC_TAG_CLIENT_OBFUSCATION_STATUS)) {
 			row.obfuscation = t->GetInt();
+		}
+		if (const CECTag *t = tag->GetTagByName(EC_TAG_CLIENT_COUNTRY)) {
+			row.country = t->GetStringData();
+			row.countryFromCore = true;
 		}
 		row.online = onlineHashes.count(row.hash) != 0;
 		FillHistoryNameCell(row);
