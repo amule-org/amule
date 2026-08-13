@@ -150,6 +150,7 @@ void FillHistoryNameCell(ClientHistoryRow &row)
 	// No live peer behind this row, so no state badge and no friend/credit
 	// marks -- those describe a conversation in progress.
 	row.nameCell.showState = false;
+	row.identityKnown = row.hasMeta;
 	row.nameCell.knownSoftware = row.hasMeta;
 	row.nameCell.clientSoft = row.clientSoft;
 	row.nameCell.obfuscation = row.obfuscation;
@@ -360,6 +361,8 @@ void CClientsWnd::UpdateAll()
 			CClientHistoryListCtrl::LiveClient entry;
 			entry.uploaded = c->GetUploadedTotal();
 			entry.downloaded = c->GetDownloadedTotal();
+			entry.upSpeed = c->GetUploadDatarate();
+			entry.downSpeed = c->GetKBpsDown();
 			entry.name = c->GetUserName();
 			entry.version = c->GetSoftVerStr();
 			entry.ip = c->GetIP();

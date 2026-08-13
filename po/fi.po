@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-13 12:45+0200\n"
+"POT-Creation-Date: 2026-08-13 13:03+0200\n"
 "PO-Revision-Date: 2026-08-11 20:49+0000\n"
 "Last-Translator: Tapio Rantala <tapio.rantala@iki.fi>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -1332,6 +1332,16 @@ msgid "Sessions"
 msgstr "Versio"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Upload Speed"
+msgstr "Lähetysnopeus"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Download Speed"
+msgstr "Latausnopeus"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 #, fuzzy
 msgid "Total Uploaded"
 msgstr "Lähetetty"
@@ -1374,14 +1384,6 @@ msgstr "Ei saatavilla"
 #: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Files"
 msgstr "Tiedostot"
-
-#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-msgid "Upload Speed"
-msgstr "Lähetysnopeus"
-
-#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-msgid "Download Speed"
-msgstr "Latausnopeus"
 
 #: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
 #: src/SourceListCtrl.cpp

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-13 12:45+0200\n"
+"POT-Creation-Date: 2026-08-13 13:03+0200\n"
 "PO-Revision-Date: 2026-08-11 20:58+0000\n"
 "Last-Translator: raffe <raffe@localhost.se>\n"
 "Language-Team: Swedish <tp-sv@listor.tp-sv.se>\n"
@@ -1330,6 +1330,16 @@ msgid "Sessions"
 msgstr "Version"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Upload Speed"
+msgstr "Uppladdningshastighet"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Download Speed"
+msgstr "Hämtningshastighet"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 #, fuzzy
 msgid "Total Uploaded"
 msgstr "Uppladdad"
@@ -1372,14 +1382,6 @@ msgstr "Inte tillgänglig"
 #: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Files"
 msgstr "Filer"
-
-#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-msgid "Upload Speed"
-msgstr "Uppladdningshastighet"
-
-#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-msgid "Download Speed"
-msgstr "Hämtningshastighet"
 
 #: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
 #: src/SourceListCtrl.cpp

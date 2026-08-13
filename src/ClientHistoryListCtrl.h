@@ -40,11 +40,13 @@
 #define COLUMN_HISTORY_FIRST_SEEN 5
 #define COLUMN_HISTORY_LAST_SEEN 6
 #define COLUMN_HISTORY_SESSIONS 7
-#define COLUMN_HISTORY_TOTAL_UP 8
-#define COLUMN_HISTORY_TOTAL_DOWN 9
-#define COLUMN_HISTORY_RATIO 10
+#define COLUMN_HISTORY_UP_SPEED 8
+#define COLUMN_HISTORY_DOWN_SPEED 9
+#define COLUMN_HISTORY_TOTAL_UP 10
+#define COLUMN_HISTORY_TOTAL_DOWN 11
+#define COLUMN_HISTORY_RATIO 12
 //! Always empty. Absorbs the macOS trailing-column sizing.
-#define COLUMN_HISTORY_SPACER 11
+#define COLUMN_HISTORY_SPACER 13
 
 /**
  * One row of the clients history.
@@ -70,12 +72,25 @@ struct ClientHistoryRow
 	uint32 lastSeen = 0;
 	uint32 firstSeen = 0;
 	uint32 sessions = 0;
+	//! Live transfer rates, blank for a peer that is not connected.
+	uint32 upSpeed = 0;
+	double downSpeed = 0.0;
 	uint32 ip = 0;
 	uint16 port = 0;
 	uint8 clientSoft = 0;
 	uint8 sourceFrom = 0;
 	uint8 obfuscation = 0;
 	bool hasMeta = false;
+	/**
+	 * Name, software and origin are known from somewhere real.
+	 *
+	 * Not the same as hasMeta, which says the *store* holds metadata: a peer
+	 * connected right now tells us who it is whether or not the core has ever
+	 * written a record for it. Columns describing identity key on this;
+	 * first-seen and session count still key on hasMeta, since only the store
+	 * has those.
+	 */
+	bool identityKnown = false;
 	//! Country as the core resolved it, and whether it said anything at all.
 	//! Same contract as the live lists: told-by-core is authoritative even
 	//! when empty, and only a build with its own resolver falls back locally.
@@ -121,6 +136,8 @@ public:
 	{
 		uint64 uploaded = 0;
 		uint64 downloaded = 0;
+		uint32 upSpeed = 0;
+		double downSpeed = 0.0;
 		ClientNameCell nameCell;
 		wxString name;
 		wxString version;
@@ -152,6 +169,13 @@ public:
 
 protected:
 	wxString GetItemColumnText(wxUIntPtr item, unsigned column) const override;
+	/**
+	 * Last-seen, the transfer rates and the totals all move while the tab is
+	 * open, so a row sorted by one of them has to be able to move with it --
+	 * "Online now" sorts as the most recent thing there is, so a peer that
+	 * connects or leaves changes its own place in the default order.
+	 */
+	bool IsLiveSortColumn() const override;
 	int CompareItemData(
 		wxUIntPtr data1, wxUIntPtr data2, unsigned column, bool alt, int modifier) const override;
 	const ClientNameCell *NameCellFor(wxUIntPtr item) const override;

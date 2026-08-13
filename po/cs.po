@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-13 12:45+0200\n"
+"POT-Creation-Date: 2026-08-13 13:03+0200\n"
 "PO-Revision-Date: 2026-08-11 21:18+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
@@ -1337,6 +1337,16 @@ msgid "Sessions"
 msgstr "Verze"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Upload Speed"
+msgstr "Rychlost odesílání"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Download Speed"
+msgstr "Rychlost stahování"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 #, fuzzy
 msgid "Total Uploaded"
 msgstr "Odesláno"
@@ -1379,14 +1389,6 @@ msgstr "Nedostupný"
 #: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Files"
 msgstr "Soubory"
-
-#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-msgid "Upload Speed"
-msgstr "Rychlost odesílání"
-
-#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-msgid "Download Speed"
-msgstr "Rychlost stahování"
 
 #: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
 #: src/SourceListCtrl.cpp

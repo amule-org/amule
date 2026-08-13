@@ -71,6 +71,8 @@ CClientHistoryListCtrl::CClientHistoryListCtrl(
 	AddTextColumn(_("First seen"), COLUMN_HISTORY_FIRST_SEEN, "F", 130, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Last seen"), COLUMN_HISTORY_LAST_SEEN, "L", 130, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Sessions"), COLUMN_HISTORY_SESSIONS, "n", 80, wxALIGN_LEFT, colFlags);
+	AddTextColumn(_("Upload Speed"), COLUMN_HISTORY_UP_SPEED, "U", 100, wxALIGN_LEFT, colFlags);
+	AddTextColumn(_("Download Speed"), COLUMN_HISTORY_DOWN_SPEED, "D", 100, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Total Uploaded"), COLUMN_HISTORY_TOTAL_UP, "T", 110, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Total Downloaded"), COLUMN_HISTORY_TOTAL_DOWN, "t", 110, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Ratio"), COLUMN_HISTORY_RATIO, "R", 70, wxALIGN_LEFT, colFlags);
@@ -130,6 +132,8 @@ size_t CClientHistoryListCtrl::AppendLiveRow(const CMD4Hash &hash, const LiveCli
 	row.hash = hash;
 	row.uploaded = live.uploaded;
 	row.downloaded = live.downloaded;
+	row.upSpeed = live.upSpeed;
+	row.downSpeed = live.downSpeed;
 	row.name = live.name;
 	row.version = live.version;
 	row.ip = live.ip;
@@ -140,7 +144,13 @@ size_t CClientHistoryListCtrl::AppendLiveRow(const CMD4Hash &hash, const LiveCli
 	// Met since the tab was opened, so there is no stored first-seen or
 	// session count yet -- the core writes those when the peer disconnects.
 	row.hasMeta = false;
+	row.identityKnown = !live.name.IsEmpty();
 	row.online = true;
+	if (row.nameCell.name.IsEmpty()) {
+		// Same fallback the stored rows use: the hash is all we know it by
+		// until the peer says otherwise.
+		row.nameCell.name = hash.Encode();
+	}
 
 	m_rows.push_back(row);
 	const size_t index = m_rows.size() - 1;
@@ -174,13 +184,38 @@ void CClientHistoryListCtrl::ReconcileLive(const std::unordered_map<CMD4Hash, Li
 		ClientHistoryRow &row = m_rows[index];
 		stillOnline.insert(index);
 
-		// Only the fields a live peer can move. Everything else on the row is
-		// the stored record, which nothing touches while the peer is up.
-		const bool changed = !row.online || row.uploaded != entry.second.uploaded ||
-				     row.downloaded != entry.second.downloaded;
+		bool changed = !row.online || row.uploaded != entry.second.uploaded ||
+			       row.downloaded != entry.second.downloaded ||
+			       row.upSpeed != entry.second.upSpeed || row.downSpeed != entry.second.downSpeed;
 		row.online = true;
 		row.uploaded = entry.second.uploaded;
 		row.downloaded = entry.second.downloaded;
+		row.upSpeed = entry.second.upSpeed;
+		row.downSpeed = entry.second.downSpeed;
+
+		// Identity, when the peer in front of us knows more than the record
+		// does. A record only gains a name when the core writes its metadata
+		// at disconnect, so a peer we have never finished a session with shows
+		// as its hash -- which used to resolve on the next load and now would
+		// never resolve at all, since the tab loads once. A connected peer can
+		// simply say who it is.
+		//
+		// Guarded on the live name being known: a peer whose handshake has not
+		// completed yet has none, and an empty one must not overwrite a stored
+		// name we already have.
+		if (!entry.second.name.IsEmpty() &&
+			(row.name != entry.second.name || row.ip != entry.second.ip)) {
+			row.name = entry.second.name;
+			row.version = entry.second.version;
+			row.ip = entry.second.ip;
+			row.port = entry.second.port;
+			row.clientSoft = entry.second.clientSoft;
+			row.sourceFrom = entry.second.sourceFrom;
+			row.nameCell = entry.second.nameCell;
+			row.identityKnown = true;
+			changed = true;
+		}
+
 		if (changed) {
 			RefreshItemData(static_cast<wxUIntPtr>(index + 1));
 		}
@@ -197,6 +232,9 @@ void CClientHistoryListCtrl::ReconcileLive(const std::unordered_map<CMD4Hash, Li
 			// value would show the previous disconnect as the last contact,
 			// months ago for a peer that was here a second before.
 			m_rows[index].lastSeen = static_cast<uint32>(wxDateTime::GetTimeNow());
+			// Nothing is moving for a peer that is gone.
+			m_rows[index].upSpeed = 0;
+			m_rows[index].downSpeed = 0.0;
 			RefreshItemData(static_cast<wxUIntPtr>(index + 1));
 		}
 	}
@@ -205,6 +243,24 @@ void CClientHistoryListCtrl::ReconcileLive(const std::unordered_map<CMD4Hash, Li
 	if (appended) {
 		// New rows have to enter the sort order; the patches above do not.
 		FinishBulkLoad();
+	}
+}
+
+bool CClientHistoryListCtrl::IsLiveSortColumn() const
+{
+	if (m_sort_orders.empty()) {
+		return false;
+	}
+	switch (m_sort_orders.front().first) {
+	case COLUMN_HISTORY_LAST_SEEN:
+	case COLUMN_HISTORY_UP_SPEED:
+	case COLUMN_HISTORY_DOWN_SPEED:
+	case COLUMN_HISTORY_TOTAL_UP:
+	case COLUMN_HISTORY_TOTAL_DOWN:
+	case COLUMN_HISTORY_RATIO:
+		return true;
+	default:
+		return false;
 	}
 }
 
@@ -259,7 +315,7 @@ wxString CClientHistoryListCtrl::GetItemColumnText(wxUIntPtr item, unsigned colu
 		return row->name.IsEmpty() ? row->hash.Encode() : row->name;
 
 	case COLUMN_HISTORY_SOFTWARE:
-		return row->hasMeta ? GetSoftName(row->clientSoft) : wxString();
+		return row->identityKnown ? GetSoftName(row->clientSoft) : wxString();
 
 	case COLUMN_HISTORY_VERSION:
 		return row->version;
@@ -271,7 +327,7 @@ wxString CClientHistoryListCtrl::GetItemColumnText(wxUIntPtr item, unsigned colu
 		return CFormat(wxT("%s:%u")) % Uint32toStringIP(row->ip) % row->port;
 
 	case COLUMN_HISTORY_ORIGIN:
-		return row->hasMeta ? OriginToText(row->sourceFrom) : wxString();
+		return row->identityKnown ? OriginToText(row->sourceFrom) : wxString();
 
 	case COLUMN_HISTORY_FIRST_SEEN:
 		return row->firstSeen == 0 ? wxString()
@@ -294,6 +350,13 @@ wxString CClientHistoryListCtrl::GetItemColumnText(wxUIntPtr item, unsigned colu
 			return wxEmptyString;
 		}
 		return CFormat(wxT("%u")) % row->sessions;
+
+	case COLUMN_HISTORY_UP_SPEED:
+		return row->upSpeed ? CastItoSpeed(row->upSpeed) : wxString();
+
+	case COLUMN_HISTORY_DOWN_SPEED:
+		return row->downSpeed > 0.001 ? CastItoSpeed(static_cast<uint32>(row->downSpeed * 1024))
+					      : wxString();
 
 	case COLUMN_HISTORY_TOTAL_UP:
 		return CastItoXBytes(row->uploaded);
@@ -337,6 +400,10 @@ int CClientHistoryListCtrl::CompareItemData(
 		return modifier * CmpAny(r1->lastSeen, r2->lastSeen);
 	case COLUMN_HISTORY_SESSIONS:
 		return modifier * CmpAny(r1->sessions, r2->sessions);
+	case COLUMN_HISTORY_UP_SPEED:
+		return modifier * CmpAny(r1->upSpeed, r2->upSpeed);
+	case COLUMN_HISTORY_DOWN_SPEED:
+		return modifier * CmpAny(r1->downSpeed, r2->downSpeed);
 	case COLUMN_HISTORY_TOTAL_UP:
 		return modifier * CmpAny(r1->uploaded, r2->uploaded);
 	case COLUMN_HISTORY_TOTAL_DOWN:

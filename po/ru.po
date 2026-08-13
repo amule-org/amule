@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-13 12:45+0200\n"
+"POT-Creation-Date: 2026-08-13 13:03+0200\n"
 "PO-Revision-Date: 2026-08-13 00:16+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
@@ -1348,6 +1348,16 @@ msgid "Sessions"
 msgstr "Версия"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Upload Speed"
+msgstr "Скорость отдачи"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Download Speed"
+msgstr "Скорость скачивания"
+
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 #, fuzzy
 msgid "Total Uploaded"
 msgstr "Отдано"
@@ -1390,14 +1400,6 @@ msgstr "Не доступно"
 #: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Files"
 msgstr "Файлы"
-
-#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-msgid "Upload Speed"
-msgstr "Скорость отдачи"
-
-#: src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-msgid "Download Speed"
-msgstr "Скорость скачивания"
 
 #: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
 #: src/SourceListCtrl.cpp
