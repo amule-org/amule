@@ -83,6 +83,23 @@ public:
 	 */
 	void LoadHistory();
 
+	/**
+	 * Load the history if what we hold is not already current.
+	 *
+	 * The reply is the most expensive thing this page asks for -- a full walk
+	 * of the credit store, which on a real node is tens of thousands of
+	 * records -- and the sweep keeps the rows current once they are here, so
+	 * re-entering the tab does not need to ask again.
+	 *
+	 * "Current" is decided by daemon session, not by a plain once-flag: this
+	 * dialog survives a reconnect (CamuleRemoteGuiApp::FinishReconnect resets
+	 * the containers, not the frame), so a core that restarted underneath us
+	 * leaves rows whose live state belongs to a process that no longer exists.
+	 * A session we cannot identify is treated as a new one, which costs a
+	 * reload rather than showing something stale.
+	 */
+	void EnsureHistoryLoaded();
+
 #ifdef CLIENT_GUI
 	/**
 	 * Receives the EC_OP_CLIENT_HISTORY reply.
@@ -104,7 +121,11 @@ public:
 		CClientsWnd *m_owner;
 	};
 	CHistoryHandler m_historyHandler;
+	//! Daemon session the history was loaded for; 0 until it has been.
+	uint64 m_historySessionId = 0;
 #endif
+	//! Whether the history has been loaded at all in this dialog's lifetime.
+	bool m_historyLoaded = false;
 };
 
 #endif // CLIENTSWND_H

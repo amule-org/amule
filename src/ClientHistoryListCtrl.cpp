@@ -192,6 +192,11 @@ void CClientHistoryListCtrl::ReconcileLive(const std::unordered_map<CMD4Hash, Li
 	for (const size_t index : m_onlineRows) {
 		if (stillOnline.count(index) == 0) {
 			m_rows[index].online = false;
+			// Seen until this moment, which is what the core will write to
+			// the record at its own disconnect handling. Leaving the stored
+			// value would show the previous disconnect as the last contact,
+			// months ago for a peer that was here a second before.
+			m_rows[index].lastSeen = static_cast<uint32>(wxDateTime::GetTimeNow());
 			RefreshItemData(static_cast<wxUIntPtr>(index + 1));
 		}
 	}

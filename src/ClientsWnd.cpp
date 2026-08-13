@@ -128,7 +128,7 @@ CClientsWnd::CClientsWnd(wxWindow *parent)
 	// last-seen instead of the values it had months ago.
 	book->Bind(wxEVT_NOTEBOOK_PAGE_CHANGED, [this](wxBookCtrlEvent &event) {
 		if (event.GetSelection() == 1 && historylistctrl != nullptr) {
-			LoadHistory();
+			EnsureHistoryLoaded();
 		}
 		event.Skip();
 	});
@@ -164,6 +164,27 @@ void FillHistoryNameCell(ClientHistoryRow &row)
 #endif
 }
 } // namespace
+
+void CClientsWnd::EnsureHistoryLoaded()
+{
+#ifdef CLIENT_GUI
+	// Session 0 means the daemon never told us which process it is, so we
+	// cannot claim what we hold is still its store.
+	const uint64 session = theApp->m_connect != nullptr ? theApp->m_connect->GetServerSessionId() : 0;
+	if (m_historyLoaded && session != 0 && session == m_historySessionId) {
+		return;
+	}
+	m_historySessionId = session;
+#else
+	// Monolithic reads the store directly, and it is the same store for as
+	// long as the program runs.
+	if (m_historyLoaded) {
+		return;
+	}
+#endif
+	m_historyLoaded = true;
+	LoadHistory();
+}
 
 void CClientsWnd::LoadHistory()
 {
@@ -413,5 +434,14 @@ void CClientsWnd::UpdateAll()
 	// everyone else cannot change while their peer is away.
 	if (wantLive) {
 		historylistctrl->ReconcileLive(live);
+	}
+
+	// Only ever a re-check: EnsureHistoryLoaded() returns immediately unless
+	// the daemon session changed, and the m_historyLoaded guard means sitting
+	// on the Active tab never triggers the first, expensive load. Without it a
+	// core that restarted while the Known tab was open would keep showing rows
+	// belonging to a process that no longer exists.
+	if (m_historyLoaded) {
+		EnsureHistoryLoaded();
 	}
 }
