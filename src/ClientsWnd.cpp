@@ -34,8 +34,8 @@
 #include "ClientHistoryListCtrl.h" // Needed for CClientHistoryListCtrl
 #include "muuli_wdr.h"             // Needed for ID_CLIENTSLIST
 
-#include <map>
 #include <set>
+#include <unordered_map>
 
 #include <common/Format.h> // Needed for CFormat
 
@@ -325,9 +325,31 @@ void CClientsWnd::UpdateAll()
 	// through a dangling pointer at draw time.
 	std::vector<CClientsListCtrl::Row> downRows;
 	std::vector<CClientsListCtrl::Row> upRows;
-	auto snapshot = [&downRows, &upRows](const CUpDownClient *c) {
+	// Every connected peer, for the history reconcile below -- not just the
+	// ones that pass the pane filter. A peer holding no file is still online,
+	// and the Known tab says so.
+	std::unordered_map<CMD4Hash, CClientHistoryListCtrl::LiveClient> live;
+	const bool wantLive = historylistctrl != nullptr && historylistctrl->IsLoaded();
+
+	auto snapshot = [&downRows, &upRows, &live, wantLive](const CUpDownClient *c) {
 		if (c == nullptr) {
 			return;
+		}
+		if (wantLive && !c->GetUserHash().IsEmpty()) {
+			CClientHistoryListCtrl::LiveClient entry;
+			entry.uploaded = c->GetUploadedTotal();
+			entry.downloaded = c->GetDownloadedTotal();
+			entry.name = c->GetUserName();
+			entry.version = c->GetSoftVerStr();
+			entry.ip = c->GetIP();
+			entry.port = c->GetUserPort();
+			entry.clientSoft = static_cast<uint8>(c->GetClientSoft());
+			entry.sourceFrom = static_cast<uint8>(c->GetSourceFrom());
+			entry.nameCell = MakeClientNameCell(c);
+			// A history row describes a peer we may not be talking to, so it
+			// carries no live download-state badge even when we are.
+			entry.nameCell.showState = false;
+			live[c->GetUserHash()] = entry;
 		}
 		// Which pane(s) this peer belongs in. A peer holds at most one file in
 		// each direction, and a peer swapping with us holds one of each -- so
@@ -384,4 +406,12 @@ void CClientsWnd::UpdateAll()
 #endif
 	downclientsctrl->SetClients(std::move(downRows));
 	upclientsctrl->SetClients(std::move(upRows));
+
+	// Fold this tick's peers into the history, so the rows for peers that are
+	// connected keep up instead of standing at whatever they were when the tab
+	// was opened. Costs one lookup per connected peer; the stored records for
+	// everyone else cannot change while their peer is away.
+	if (wantLive) {
+		historylistctrl->ReconcileLive(live);
+	}
 }

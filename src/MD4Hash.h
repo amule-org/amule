@@ -254,5 +254,21 @@ private:
 	unsigned char m_hash[MD4HASH_LENGTH] = {};
 };
 
+namespace std
+{
+//! Lets a hash key an unordered container, for the O(1) lookups a per-tick
+//! reconcile needs. MD4 output is already uniformly distributed, so two of its
+//! words mixed make a better bucket index than anything computed over them.
+template <> struct hash<CMD4Hash>
+{
+	size_t operator()(const CMD4Hash &value) const noexcept
+	{
+		const size_t low = static_cast<size_t>(RawPeekUInt64(value.GetHash()));
+		const size_t high = static_cast<size_t>(RawPeekUInt64(value.GetHash() + 8));
+		return low ^ (high << 1);
+	}
+};
+} // namespace std
+
 #endif
 // File_checked_for_headers

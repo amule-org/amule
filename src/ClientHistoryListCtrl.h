@@ -25,6 +25,8 @@
 #ifndef CLIENTHISTORYLISTCTRL_H
 #define CLIENTHISTORYLISTCTRL_H
 
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "ClientRowListCtrl.h" // Needed for CClientRowListCtrl
@@ -107,8 +109,43 @@ public:
 	CClientHistoryListCtrl(wxWindow *parent, int id, const wxPoint &pos, wxSize size, int flags);
 	~CClientHistoryListCtrl();
 
+	/**
+	 * What a currently-connected peer contributes to its history row.
+	 *
+	 * A record for a peer that is *not* connected cannot change -- the credit
+	 * totals only move while a transfer is running, and last-seen only at
+	 * disconnect -- so the connected peers are the whole of what can go stale
+	 * between loads, and the sweep already walks exactly those.
+	 */
+	struct LiveClient
+	{
+		uint64 uploaded = 0;
+		uint64 downloaded = 0;
+		ClientNameCell nameCell;
+		wxString name;
+		wxString version;
+		uint32 ip = 0;
+		uint16 port = 0;
+		uint8 clientSoft = 0;
+		uint8 sourceFrom = 0;
+	};
+
 	//! Replace everything on show with a fresh snapshot.
 	void SetRows(std::vector<ClientHistoryRow> &&rows);
+
+	/**
+	 * Fold this tick's live peers into the rows.
+	 *
+	 * Costs one hash lookup per connected peer -- bounded by MaxConnections --
+	 * never a walk of the store, which on a real node is tens of thousands of
+	 * records. Peers that went away are found through the set of rows
+	 * currently marked online rather than by scanning for them.
+	 *
+	 * Does three things a load-on-switch list cannot: keeps the totals of a
+	 * transferring peer moving, clears "Online now" for one that left, and
+	 * adds a row for a peer met since the tab was opened.
+	 */
+	void ReconcileLive(const std::unordered_map<CMD4Hash, LiveClient> &live);
 	//! True once a snapshot has been supplied, so the page can tell "empty
 	//! history" from "not asked yet".
 	bool IsLoaded() const { return m_loaded; }
@@ -123,8 +160,16 @@ protected:
 
 private:
 	const ClientHistoryRow *RowFor(wxUIntPtr item) const;
+	//! Append a row for a peer we have no record of yet, index it, and return
+	//! its position. Does not touch m_onlineRows -- ReconcileLive() owns that.
+	size_t AppendLiveRow(const CMD4Hash &hash, const LiveClient &live);
 
 	std::vector<ClientHistoryRow> m_rows;
+	//! Hash to position, so ReconcileLive() stays O(1) per peer.
+	std::unordered_map<CMD4Hash, size_t> m_rowOfHash;
+	//! Rows currently showing "Online now", so a peer that leaves is found
+	//! without scanning every row for one that is no longer connected.
+	std::unordered_set<size_t> m_onlineRows;
 	bool m_loaded;
 };
 

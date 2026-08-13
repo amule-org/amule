@@ -106,12 +106,101 @@ void CClientHistoryListCtrl::SetRows(std::vector<ClientHistoryRow> &&rows)
 	m_rows = std::move(rows);
 	m_loaded = true;
 
+	m_rowOfHash.clear();
+	m_rowOfHash.reserve(m_rows.size());
+	m_onlineRows.clear();
+	for (size_t i = 0; i < m_rows.size(); ++i) {
+		m_rowOfHash[m_rows[i].hash] = i;
+		if (m_rows[i].online) {
+			m_onlineRows.insert(i);
+		}
+	}
+
 	// One bulk load rather than an insert per row: the store can hold tens of
 	// thousands of records and AddItemData() sorts on every insert.
 	for (size_t i = 0; i < m_rows.size(); ++i) {
 		AppendItemData(static_cast<wxUIntPtr>(i + 1));
 	}
 	FinishBulkLoad();
+}
+
+size_t CClientHistoryListCtrl::AppendLiveRow(const CMD4Hash &hash, const LiveClient &live)
+{
+	ClientHistoryRow row;
+	row.hash = hash;
+	row.uploaded = live.uploaded;
+	row.downloaded = live.downloaded;
+	row.name = live.name;
+	row.version = live.version;
+	row.ip = live.ip;
+	row.port = live.port;
+	row.clientSoft = live.clientSoft;
+	row.sourceFrom = live.sourceFrom;
+	row.nameCell = live.nameCell;
+	// Met since the tab was opened, so there is no stored first-seen or
+	// session count yet -- the core writes those when the peer disconnects.
+	row.hasMeta = false;
+	row.online = true;
+
+	m_rows.push_back(row);
+	const size_t index = m_rows.size() - 1;
+	m_rowOfHash[hash] = index;
+	AppendItemData(static_cast<wxUIntPtr>(index + 1));
+	// Deliberately not added to m_onlineRows here: the caller owns that set for
+	// the duration of a reconcile and swaps it in at the end.
+	return index;
+}
+
+void CClientHistoryListCtrl::ReconcileLive(const std::unordered_map<CMD4Hash, LiveClient> &live)
+{
+	if (!m_loaded) {
+		return;
+	}
+
+	std::unordered_set<size_t> stillOnline;
+	stillOnline.reserve(live.size());
+	bool appended = false;
+
+	for (const auto &entry : live) {
+		const auto found = m_rowOfHash.find(entry.first);
+		if (found == m_rowOfHash.end()) {
+			// A peer we had never met when the tab was loaded.
+			stillOnline.insert(AppendLiveRow(entry.first, entry.second));
+			appended = true;
+			continue;
+		}
+
+		const size_t index = found->second;
+		ClientHistoryRow &row = m_rows[index];
+		stillOnline.insert(index);
+
+		// Only the fields a live peer can move. Everything else on the row is
+		// the stored record, which nothing touches while the peer is up.
+		const bool changed = !row.online || row.uploaded != entry.second.uploaded ||
+				     row.downloaded != entry.second.downloaded;
+		row.online = true;
+		row.uploaded = entry.second.uploaded;
+		row.downloaded = entry.second.downloaded;
+		if (changed) {
+			RefreshItemData(static_cast<wxUIntPtr>(index + 1));
+		}
+	}
+
+	// Whoever was online last tick and is not in this one has gone. Found
+	// through the online set, so this costs the number of departures rather
+	// than a walk of the store.
+	for (const size_t index : m_onlineRows) {
+		if (stillOnline.count(index) == 0) {
+			m_rows[index].online = false;
+			RefreshItemData(static_cast<wxUIntPtr>(index + 1));
+		}
+	}
+	m_onlineRows.swap(stillOnline);
+
+	if (appended) {
+		// New rows have to enter the sort order; the patches above do not.
+		FinishBulkLoad();
+	}
 }
 
 const ClientNameCell *CClientHistoryListCtrl::NameCellFor(wxUIntPtr item) const
