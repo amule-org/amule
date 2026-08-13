@@ -1187,7 +1187,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 | `source_origin` | How the peer was first found — `server`, `kad`, `source_exchange`, `passive`, … |
 | `obfuscation` | Protocol-obfuscation state as of the last session. |
 | `total_uploaded`, `total_downloaded` | Lifetime bytes, from the credit record. Always present. |
-| `last_seen` | Unix seconds. Always present. |
+| `last_seen` | Unix seconds. Always present. For a peer that is connected this is *now* — it is being seen — so the online records are the newest in the store and sort to the top of `sort=last_seen&order=desc`. |
 | `first_seen`, `sessions` | Present together, and only for a record the daemon holds metadata for. |
 | `online` | Whether this peer is connected right now, correlated by `user_hash`. |
 
@@ -1198,7 +1198,7 @@ The store is read from the daemon **once**, on the first request, and maintained
 - a peer that connects is added, with `first_seen` and `sessions` set to what the daemon recorded when it said hello;
 - a connected peer's `online`, `total_uploaded` and `total_downloaded` track the live client state;
 - a bare record gains its name, address, software and origin once its peer identifies;
-- a peer that leaves has `online` cleared and `last_seen` stamped at the moment it went.
+- a connected peer's `last_seen` is now, and a peer that leaves has `online` cleared with `last_seen` stamped at the moment it went.
 
 The cost is one EC roundtrip per amuleapi process, and the store stays resident from first use.
 
