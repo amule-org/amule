@@ -2639,17 +2639,13 @@ std::unique_ptr<CHttpServer::Response> ParseListParams(const std::string &query,
 // (no element copies) and `out_total` with the pre-slice count. Returns
 // a 400 when `params.sort` is set but absent from `comparators`.
 template <class T>
-std::unique_ptr<CHttpServer::Response> BuildListWindow(const std::vector<T> &items,
+std::unique_ptr<CHttpServer::Response> BuildListWindowFromPtrs(std::vector<const T *> &ptrs,
 	const ListParams &params,
 	const ListComparators<T> &comparators,
 	std::vector<const T *> &out_window,
 	std::size_t &out_total)
 {
-	out_total = items.size();
-	std::vector<const T *> ptrs;
-	ptrs.reserve(items.size());
-	for (const auto &it : items)
-		ptrs.push_back(&it);
+	out_total = ptrs.size();
 
 	if (!params.sort.empty()) {
 		auto c = std::find_if(comparators.begin(), comparators.end(), [&](const auto &p) {
@@ -2667,6 +2663,25 @@ std::unique_ptr<CHttpServer::Response> BuildListWindow(const std::vector<T> &ite
 	const std::size_t end = params.has_limit ? std::min(begin + params.limit, out_total) : out_total;
 	out_window.assign(ptrs.begin() + begin, ptrs.begin() + end);
 	return nullptr;
+}
+
+// Sort + window a list the caller owns as values. Thin wrapper over the
+// pointer form above: an endpoint whose records are not all in one contiguous
+// vector -- /known_clients, which serves most rows straight out of a shared
+// cache and only materialises the few it has to patch -- addresses that one
+// directly instead of copying the whole set to get a vector.
+template <class T>
+std::unique_ptr<CHttpServer::Response> BuildListWindow(const std::vector<T> &items,
+	const ListParams &params,
+	const ListComparators<T> &comparators,
+	std::vector<const T *> &out_window,
+	std::size_t &out_total)
+{
+	std::vector<const T *> ptrs;
+	ptrs.reserve(items.size());
+	for (const auto &it : items)
+		ptrs.push_back(&it);
+	return BuildListWindowFromPtrs(ptrs, params, comparators, out_window, out_total);
 }
 
 // Emit the `total` / `offset` / `limit` pagination metadata. `limit`
@@ -2693,6 +2708,56 @@ std::string QueryOf(const CHttpServer::Request &req)
 // Helper for every list endpoint's envelope: the list under its named
 // key plus #357 pagination metadata. ec_unavailable + 503 is emitted here
 // so each handler doesn't repeat the check.
+// Envelope over records the caller addresses as pointers, so an endpoint whose
+// rows are not all in one vector does not have to build one. See
+// BuildListWindowFromPtrs.
+// State-free: takes no lock of its own, so a caller already holding CState's
+// read lock can build a response inside it. m_mu is not recursive -- a second
+// shared_lock taken while a writer is queued deadlocks -- so anything reached
+// from under WithKnownClients() must not touch the state again.
+template <class T, class WriterFn>
+CHttpServer::Response ListResponseFromPtrsUnlocked(const char *plural_key,
+	std::vector<const T *> &ptrs,
+	WriterFn write_item,
+	const ListParams &params,
+	const ListComparators<T> &comparators)
+{
+	std::vector<const T *> window;
+	std::size_t total = 0;
+	if (auto err = BuildListWindowFromPtrs(ptrs, params, comparators, window, total))
+		return *err;
+
+	CHttpServer::Response r;
+	r.status = 200;
+	r.content_type = "application/json";
+	CJsonWriter w;
+	w.BeginObject();
+	w.Key(plural_key);
+	w.BeginArray();
+	for (const T *item : window)
+		write_item(w, *item);
+	w.EndArray();
+	WritePageMeta(w, total, params, window.size());
+	w.EndObject();
+	FinalizeJsonBody(w, r);
+	return r;
+}
+
+template <class T, class WriterFn>
+CHttpServer::Response ListResponseFromPtrs(const webapi::CState &state,
+	const char *plural_key,
+	std::vector<const T *> &ptrs,
+	WriterFn write_item,
+	const ListParams &params,
+	const ListComparators<T> &comparators)
+{
+	if (!state.HasFirstSnapshot()) {
+		return ErrorResponse(
+			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
+	}
+	return ListResponseFromPtrsUnlocked(plural_key, ptrs, write_item, params, comparators);
+}
+
 template <class T, class WriterFn>
 CHttpServer::Response ListResponse(const webapi::CState &state,
 	const char *plural_key,
@@ -4365,63 +4430,42 @@ CHttpServer::Response CApiDispatcher::HandleKnownClients(const CHttpServer::Requ
 			503, "ec_unsupported", "the connected amuled does not serve the client history");
 	}
 
+	if (!m_state.HasFirstSnapshot()) {
+		return ErrorResponse(
+			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
+	}
+
 	ListParams params;
 	if (auto err = ParseListParams(QueryOf(req), params))
 		return *err;
 
-	// The live peers, by hash. Read per request rather than inside the fetcher:
-	// the store is cached for 10 s while this changes every refresher tick.
+	// One fetch per process. From here the refresher maintains it: every tick
+	// folds the connected peers back in, which is the whole of what can
+	// change -- a record whose peer is away cannot move, since credit totals
+	// only grow during a transfer and last-seen is written at disconnect. The
+	// remaining difference a re-read would show is the expiry prune the core
+	// applies when *it* starts, and amuleapi does not outlive a core restart.
 	//
-	// A record for a peer that is NOT connected cannot change -- the credit
-	// totals only move while a transfer is running, and last-seen only at
-	// disconnect -- so the cache is exact for those. The connected ones are
-	// the whole of what the cache could serve stale, and the refresher already
-	// holds their current totals, so they are patched over the cached record
-	// below. That makes the 10 s window invisible: a caller polling this
-	// endpoint sees a transferring peer's totals move every tick.
-	std::map<std::string, const webapi::ClientSnapshot *> live_by_hash;
-	const std::vector<webapi::ClientSnapshot> live = m_state.Clients();
-	for (const auto &c : live) {
-		if (!c.user_hash.empty())
-			live_by_hash[c.user_hash] = &c;
-	}
-
-	auto pair = m_known_clients_cache.GetOrFetch(
-		std::chrono::milliseconds(10000), [this]() -> TtlPair_KnownClients {
-			std::vector<webapi::KnownClientSnapshot> out;
-			std::unique_ptr<CECPacket> req_ec(new CECPacket(EC_OP_GET_CLIENT_HISTORY));
-			const CECPacket *resp = m_app.SendRecvSerialized(req_ec.get());
-			std::time_t ts = 0;
-			if (resp) {
-				if (resp->GetOpCode() == EC_OP_CLIENT_HISTORY) {
-					out.reserve(resp->GetTagCount());
-					for (const CECTag &entry : *resp) {
-						if (entry.GetTagName() != EC_TAG_CLIENT)
-							continue;
-						out.push_back(DecodeKnownClient(entry));
-					}
-				}
-				ts = std::time(nullptr);
-				delete resp;
+	// Two concurrent first requests can both fetch; the second simply replaces
+	// the first with an equivalent store. Not worth a lock held across an EC
+	// roundtrip to avoid.
+	if (!m_state.KnownClientsLoaded()) {
+		std::vector<webapi::KnownClientSnapshot> rows;
+		std::unique_ptr<CECPacket> req_ec(new CECPacket(EC_OP_GET_CLIENT_HISTORY));
+		const CECPacket *resp = m_app.SendRecvSerialized(req_ec.get());
+		if (!resp) {
+			return ErrorResponse(503, "ec_unavailable", "the EC connection is unavailable");
+		}
+		if (resp->GetOpCode() == EC_OP_CLIENT_HISTORY) {
+			rows.reserve(resp->GetTagCount());
+			for (const CECTag &entry : *resp) {
+				if (entry.GetTagName() != EC_TAG_CLIENT)
+					continue;
+				rows.push_back(DecodeKnownClient(entry));
 			}
-			return TtlPair_KnownClients(std::move(out), ts);
-		});
-
-	if (pair.second == 0) {
-		return ErrorResponse(503, "ec_unavailable", "the EC connection is unavailable");
-	}
-
-	std::vector<webapi::KnownClientSnapshot> items = pair.first;
-	for (auto &c : items) {
-		const auto it = live_by_hash.find(c.user_hash);
-		c.online = it != live_by_hash.end();
-		if (!c.online)
-			continue;
-		// Only the fields a connected peer can move. Everything else on the
-		// record is what the store holds, which nothing touches while the peer
-		// is up.
-		c.total_uploaded = it->second->xfer_up_total;
-		c.total_downloaded = it->second->xfer_down_total;
+		}
+		delete resp;
+		m_state.SetKnownClients(std::move(rows));
 	}
 
 	static const ListComparators<webapi::KnownClientSnapshot> kComps = {
@@ -4454,7 +4498,19 @@ CHttpServer::Response CApiDispatcher::HandleKnownClients(const CHttpServer::Requ
 				return a.total_downloaded < b.total_downloaded;
 			} },
 	};
-	return ListResponse(m_state, "known_clients", items, WriteKnownClientObject, params, kComps);
+
+	// Built under the state's read lock: the store is never copied out, so the
+	// response is written straight from it.
+	CHttpServer::Response r;
+	m_state.WithKnownClients([&](const std::vector<webapi::KnownClientSnapshot> &rows) {
+		std::vector<const webapi::KnownClientSnapshot *> ptrs;
+		ptrs.reserve(rows.size());
+		for (const auto &rec : rows)
+			ptrs.push_back(&rec);
+		r = ListResponseFromPtrsUnlocked(
+			"known_clients", ptrs, WriteKnownClientObject, params, kComps);
+	});
+	return r;
 }
 
 CHttpServer::Response CApiDispatcher::HandleClientDetail(

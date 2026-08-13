@@ -24,6 +24,8 @@
 
 #include "State.h"
 
+#include <ctime>
+
 #include <mutex>
 #include <shared_mutex>
 #include <utility>
@@ -403,6 +405,107 @@ std::vector<ClientSnapshot> CState::Clients() const
 	for (const auto &kv : m_clients)
 		out.push_back(kv.second);
 	return out;
+}
+
+bool CState::KnownClientsLoaded() const
+{
+	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+	return m_known_loaded;
+}
+
+void CState::SetKnownClients(std::vector<KnownClientSnapshot> &&rows)
+{
+	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
+	m_known_clients = std::move(rows);
+	m_known_of_hash.clear();
+	m_known_online.clear();
+	for (std::size_t i = 0; i < m_known_clients.size(); ++i)
+		m_known_of_hash[m_known_clients[i].user_hash] = i;
+	m_known_loaded = true;
+	// The fetch describes the store as of a moment ago; the peers connected
+	// right now are already more current than parts of it.
+	ReconcileKnownClientsLocked();
+}
+
+void CState::InvalidateKnownClients()
+{
+	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
+	m_known_clients.clear();
+	m_known_clients.shrink_to_fit();
+	m_known_of_hash.clear();
+	m_known_online.clear();
+	m_known_loaded = false;
+}
+
+void CState::ReconcileKnownClients()
+{
+	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
+	if (!m_known_loaded)
+		return;
+	ReconcileKnownClientsLocked();
+}
+
+void CState::ReconcileKnownClientsLocked()
+{
+	const std::time_t now = std::time(nullptr);
+	std::set<std::size_t> still_online;
+
+	for (const auto &kv : m_clients) {
+		const ClientSnapshot &c = kv.second;
+		if (c.user_hash.empty())
+			continue;
+
+		auto it = m_known_of_hash.find(c.user_hash);
+		if (it == m_known_of_hash.end()) {
+			// A peer met since the store was read. The daemon wrote its
+			// credit record when the peer said hello, stamping first-seen
+			// and counting the session, so this reconstructs what it wrote
+			// rather than inventing anything.
+			KnownClientSnapshot k;
+			k.user_hash = c.user_hash;
+			k.first_seen = now;
+			k.sessions = 1;
+			m_known_clients.push_back(std::move(k));
+			it = m_known_of_hash.emplace(c.user_hash, m_known_clients.size() - 1).first;
+		}
+
+		KnownClientSnapshot &k = m_known_clients[it->second];
+		still_online.insert(it->second);
+		k.online = true;
+		k.total_uploaded = c.xfer_up_total;
+		k.total_downloaded = c.xfer_down_total;
+		// Identity, when the peer in front of us knows more than the record.
+		// A record only gains a name once the core writes its metadata, so a
+		// peer we have never finished a session with is otherwise nameless.
+		// Guarded on the live name being known: a peer mid-handshake has none
+		// and must not blank a stored one.
+		if (!c.client_name.empty()) {
+			k.client_name = c.client_name;
+			k.ip = c.ip;
+			k.port = c.port;
+			k.kad_port = c.kad_port;
+			k.country_code = c.country_code;
+			k.software = c.software;
+			k.version = c.software_version;
+			k.source_origin = c.source_origin;
+			k.obfuscation = c.obfuscation_status;
+		}
+	}
+
+	// Whoever was online last tick and is not in this one has gone. Found
+	// through the online set, so this costs the number of departures rather
+	// than a walk of the store.
+	for (const std::size_t idx : m_known_online) {
+		if (still_online.count(idx) != 0)
+			continue;
+		m_known_clients[idx].online = false;
+		// Seen until this moment, which is what the core writes to the record
+		// at its own disconnect handling. The stored value is the *previous*
+		// disconnect, so leaving it would show a peer that was here a second
+		// ago as last seen months back.
+		m_known_clients[idx].last_seen = now;
+	}
+	m_known_online.swap(still_online);
 }
 
 bool CState::FindDownload(const std::string &hash_hex, FileSnapshot &out) const

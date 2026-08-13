@@ -324,17 +324,12 @@ private:
 	using TtlPair_StatsTree = std::pair<webapi::StatsTreeNode, std::time_t>;
 	using TtlPair_StatsGraphs = std::pair<webapi::StatsGraphs, std::time_t>;
 	using TtlPair_ServerInfo = std::pair<webapi::ServerInfoLog, std::time_t>;
-	// The credit store, for /known_clients. A 10 s TTL rather than the 1 s
-	// used above: the reply is the whole store -- megabytes, and ~10 ms of
-	// daemon main loop on a 40k-record node -- while the data behind it only
-	// moves when a peer connects or disconnects. It also means paging through
-	// the store costs one EC roundtrip rather than one per page, since each
-	// request slices the cached vector.
-	using TtlPair_KnownClients = std::pair<std::vector<webapi::KnownClientSnapshot>, std::time_t>;
 	webapi::CTtlCache<TtlPair_StatsTree> m_stats_tree_cache;
 	webapi::CTtlCache<TtlPair_StatsGraphs> m_stats_graphs_cache;
 	webapi::CTtlCache<TtlPair_ServerInfo> m_server_info_cache;
-	webapi::CTtlCache<TtlPair_KnownClients> m_known_clients_cache;
+	// /known_clients is NOT cached here. Its store is fetched once on first
+	// request and then maintained by the refresher (CState::ReconcileKnown
+	// Clients), so there is nothing to expire and nothing to re-read.
 	// /search/results is no longer cached here — the refresher owns
 	// the polling while a search is active (see CState::SearchProgress
 	// + RefresherTick). POST /search calls m_state.MarkSearchStarted.
