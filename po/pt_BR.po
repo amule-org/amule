@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-11 12:27+0200\n"
-"PO-Revision-Date: 2026-08-11 20:54+0000\n"
+"PO-Revision-Date: 2026-08-13 00:16+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
 "Language: pt_BR\n"
@@ -217,26 +217,26 @@ msgid "Restricted permissions on %s to owner-only."
 msgstr "Permissões restringidas em %s para o dono apenas."
 
 #: src/amuleAppCommon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Collection file not found: %s"
-msgstr "Arquivo index não encontrado: "
+msgstr "Arquivo de coleção não encontrado: %s"
 
 #: src/amuleAppCommon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Invalid or empty collection file: %s"
-msgstr "Falha ao gravar o arquivo de coleção '%s'."
+msgstr "Arquivo de coleção vazio ou inválido: %s"
 
 #: src/amuleAppCommon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "No usable links in collection: %s"
-msgstr "Arquivos compartilháveis não encontrado no diretório: %s"
+msgstr "Nenhum link utilizável na coleção: %s"
 
 #: src/amuleAppCommon.cpp
 #, c-format
 msgid "Skipped %u unusable link in collection: %s"
 msgid_plural "Skipped %u unusable links in collection: %s"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Pulado %u link inutilizável na coleção: %s"
+msgstr[1] "Pulados %u links inutilizáveis na coleção: %s"
 
 #: src/amuleAppCommon.cpp src/DownloadQueue.cpp
 #, c-format
@@ -244,9 +244,9 @@ msgid "Cannot convert magnet link to eD2k: %s"
 msgstr "Não pode converter ligação magnética para eD2k: %s"
 
 #: src/amuleAppCommon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Invalid eD2k link \"%s\" - ERROR: %s"
-msgstr "Ligação eD2k inválida! ERRO: %s"
+msgstr "Link eD2k inválido \"%s\" - ERRO: %s"
 
 #: src/amule.cpp
 msgid "Now, exiting main app..."
@@ -665,7 +665,7 @@ msgstr "ERRO FATAL: Falha ao criar Timer"
 
 #: src/amuleDlg.cpp
 msgid "Error! Unable to load Preferences"
-msgstr ""
+msgstr "Erro! Não foi possível carregar as Preferências"
 
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Networks"
@@ -701,9 +701,9 @@ msgid "Navigate"
 msgstr "Navegar"
 
 #: src/amuleDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Free space: %s"
-msgstr "MensagemDoServidor: %s"
+msgstr "Espaço livre: %s"
 
 #: src/amuleDlg.cpp
 msgid "New version available"
@@ -966,7 +966,7 @@ msgstr "Reconectado ao núcleo remoto."
 
 #: src/amule-remote-gui.cpp
 msgid "The remote core was restarted; reloading."
-msgstr ""
+msgstr "O núcleo remoto foi reiniciado; recarregando."
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -1010,7 +1010,7 @@ msgstr "Incapaz criar o diretório '%s' para a categoria '%s', mantendo diretór
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "The remote core sent inconsistent data for \"%s\" (part status %d, expected %d). The file list may be showing the wrong information; reconnect to clear it."
-msgstr ""
+msgstr "O núcleo remoto mandou dados inconsistentes para \"%s\" (estado da parte %d, esperado %d). A lista de arquivos pode estar mostrando a informação errada; reconecte para limpar."
 
 #: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp
@@ -3069,7 +3069,7 @@ msgstr "Conexão Externa: Handshake falhou."
 #: src/LibSocketAsio.cpp
 #, c-format
 msgid "Error creating UDP socket %s %d : %s"
-msgstr ""
+msgstr "Erro criando soquete UDP %s %d: %s"
 
 #: src/LibSocketAsio.cpp
 #, c-format
@@ -3311,12 +3311,12 @@ msgstr "UL Total: %s"
 #: src/MuleUDPSocket.cpp
 #, c-format
 msgid "Created %s at port %u"
-msgstr ""
+msgstr "Criado %s na porta %u"
 
 #: src/MuleUDPSocket.cpp
 #, c-format
 msgid "WARNING! %s: Packet to %s discarded due to error (%s) while sending."
-msgstr ""
+msgstr "AVISO! %s: Pacote para %s descartado devido a erro (%s) durante o envio."
 
 #: src/muuli_wdr.cpp
 msgid "Paste eD2k or magnet links here"
@@ -4316,29 +4316,27 @@ msgstr "Mostra quantos arquivos compartilhados o padrão atual excluiria."
 
 #: src/muuli_wdr.cpp
 msgid "When the connected core's files live on a different machine, map a path prefix it reports to where that filesystem is reachable from here (a network share, say) so \"Open\" and \"Show in folder\" work."
-msgstr ""
+msgstr "Quando os arquivos do núcleo conectado estiverem em uma máquina diferente, mapeie um prefixo de caminho que reporte onde este sistema de arquivos pode ser alcançado daqui (um compartilhamento de rede, digamos) de modo que \"Abrir\" e \"Mostrar na pasta\" funcionem."
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "Path Mappings"
-msgstr ""
+msgstr "Mapeamentos de caminho"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Remote prefix"
-msgstr "Servidor Remoto"
+msgstr "Prefixo Remoto"
 
 #: src/muuli_wdr.cpp
 msgid "A path prefix as the core reports it, e.g. /home/user/downloads/incoming"
-msgstr ""
+msgstr "Um prefixo de caminho como o núcleo o reporta, e.g. /home/user/downloads/incoming"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Local prefix"
-msgstr "Servidor Local"
+msgstr "Prefixo Local"
 
 #: src/muuli_wdr.cpp
 msgid "Where that same folder is reachable from this computer, e.g. a mounted network share"
-msgstr ""
+msgstr "Onde esta mesma pasta é alcançável a partir deste computador, e.g. um compartilhamento de rede"
 
 #: src/muuli_wdr.cpp
 msgid "Graphs"
@@ -5734,9 +5732,8 @@ msgid "no options available"
 msgstr "nenhuma opção disponível"
 
 #: src/Preferences.cpp
-#, fuzzy
 msgid "Invalid path mapping found, skipping"
-msgstr "Categoria inválida encontrada, pulando"
+msgstr "Mapeamento de caminho inválido encontrado, pulando"
 
 #: src/Preferences.cpp
 msgid "Invalid category found, skipping"
@@ -5914,7 +5911,7 @@ msgstr "- Suporte de protocolo de ofuscamento mudou.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Proxy settings changed (needed for HTTP transfers).\n"
-msgstr ""
+msgstr "- Configuração de proxy mudou (necessário para transferências HTTP).\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- amuleapi settings changed.\n"
@@ -6264,16 +6261,15 @@ msgstr "Pasta compartilhada"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Both the remote and local prefix must be filled in."
-msgstr ""
+msgstr "Ambos os prefixos, remoto e local, precisam ser preenchidos."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "This remote prefix is already mapped."
-msgstr ""
+msgstr "Este prefixo remoto já foi mapeado."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Choose the local folder"
-msgstr "Escolha uma pasta para %s"
+msgstr "Escolha a pasta local"
 
 #: src/SearchDlg.cpp
 msgid "Clear Search History"
@@ -6306,22 +6302,20 @@ msgstr "Principal"
 #: src/SearchList.cpp
 #, c-format
 msgid "Only saving the %u most recent of %u open searches to %s."
-msgstr ""
+msgstr "Salvando apenas a %u mais recente de %u buscas abertas para %s."
 
 #: src/SearchList.cpp
 #, c-format
 msgid "Only saving the first %u of %u results for search \"%s\"."
-msgstr ""
+msgstr "Salvando apenas os primeiros %u de %u resultados para a busca \"%s\"."
 
 #: src/SearchList.cpp
-#, fuzzy
 msgid "WARNING: Stored search list corrupted, contains invalid header."
-msgstr "ATENÇÃO: Arquivo de lista known corrompido, contém cabeçalho inválido."
+msgstr "AVISO: Lista de busca guardada corrompida, contém cabeçalho inválido."
 
 #: src/SearchList.cpp
-#, fuzzy
 msgid "Invalid entry in stored search list, file may be corrupt"
-msgstr "Entrada inválida na lista de arquivo known, arquivo pode estar corrompido: "
+msgstr "Entrada inválida na lista de busca guardada, o arquivo pode estar corrompido"
 
 #: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"
@@ -6344,9 +6338,9 @@ msgid "Kad search: no peer left to reask for more results (cap reached or no res
 msgstr "Busca Kad: nenhum par sobrou para pedir mais resultados novamente (capacidade atingida ou ainda sem respostas)."
 
 #: src/SearchList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Error %u: %s\n"
-msgstr "Erro ao atualizar %s"
+msgstr "Erro %u: %s\n"
 
 #: src/SearchListCtrl.cpp
 msgid "FileID"
@@ -6402,14 +6396,12 @@ msgid "Failed to connect to all obfuscated servers listed. Making another pass w
 msgstr "Falha ao conectar em todos servidores obscurecidos listados. Tentando de novo sem ofuscação."
 
 #: src/ServerConnect.cpp
-#, fuzzy
 msgid "Failed to connect to all static servers listed."
-msgstr "Falha ao conectar em todos os servidores estáticos listados. Tentando novamente."
+msgstr "Falha ao conectar a todos os servidores estáticos listados."
 
 #: src/ServerConnect.cpp
-#, fuzzy
 msgid "Failed to connect to all servers listed."
-msgstr "Falha ao conectar em todos os servidores listados. Tentando novamente."
+msgstr "Falha ao conectar em todos os servidores listados."
 
 #: src/ServerConnect.cpp
 #, c-format
@@ -6552,9 +6544,9 @@ msgid "Failed to save server.met!"
 msgstr "Falha ao salvar server.met!"
 
 #: src/ServerList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "IO failure while writing 'server.met': %s"
-msgstr "Erro de I/O ao ler arquivo 'server.met': "
+msgstr "Erro de I/O escrevendo o arquivo 'server.met': %s"
 
 #: src/ServerList.cpp
 msgid "Invalid URL"
@@ -6617,9 +6609,8 @@ msgid "Users"
 msgstr "Usuários"
 
 #: src/ServerListCtrl.cpp
-#, fuzzy
 msgid "Max Users"
-msgstr "Usuários"
+msgstr "Máximo de usuários"
 
 #: src/ServerListCtrl.cpp
 msgid "Static"
@@ -6631,14 +6622,12 @@ msgid "Version"
 msgstr "Versão"
 
 #: src/ServerListCtrl.cpp
-#, fuzzy
 msgid "Soft Files"
-msgstr "Arquivos"
+msgstr "Arquivos \"macios\""
 
 #: src/ServerListCtrl.cpp
-#, fuzzy
 msgid "Hard Files"
-msgstr "Arquivos Compartilhados"
+msgstr "Arquivos \"duros\""
 
 #: src/ServerListCtrl.cpp
 msgid "TCP Flags"
@@ -7119,11 +7108,11 @@ msgstr[0] "Exportado %u arquivo compartilhado para '%s'."
 msgstr[1] "Exportados %u arquivos compartilhados para '%s'."
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Shared Files (%i, hashing %u more)"
 msgid_plural "Shared Files (%i, hashing %u more)"
-msgstr[0] "Arquivos Compartilhados (%i)"
-msgstr[1] "Arquivos Compartilhados (%i)"
+msgstr[0] "Arquivos Compartilhados (%i, fazendo hash de %u ou mais)"
+msgstr[1] "Arquivos Compartilhados (%i, fazendo hash de %u ou mais)"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format

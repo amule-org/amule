@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-11 12:27+0200\n"
-"PO-Revision-Date: 2026-08-11 21:18+0000\n"
+"PO-Revision-Date: 2026-08-13 10:12+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -214,26 +214,26 @@ msgid "Restricted permissions on %s to owner-only."
 msgstr "已将 %s 的权限限制为仅所有者。"
 
 #: src/amuleAppCommon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Collection file not found: %s"
-msgstr "索引文件未找到: "
+msgstr "集合文件未找到：%s"
 
 #: src/amuleAppCommon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Invalid or empty collection file: %s"
-msgstr "写入链接集文件 '%s' 失败。"
+msgstr "无效或空白的链接集文件： %s"
 
 #: src/amuleAppCommon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "No usable links in collection: %s"
-msgstr "在目录中没有找到可以共享的文件：%s"
+msgstr "集合中无可用链接：%s"
 
 #: src/amuleAppCommon.cpp
 #, c-format
 msgid "Skipped %u unusable link in collection: %s"
 msgid_plural "Skipped %u unusable links in collection: %s"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "跳过了集合中 %u 个不可用链接：%s"
+msgstr[1] "跳过了集合中 %u 个不可用链接：%s"
 
 #: src/amuleAppCommon.cpp src/DownloadQueue.cpp
 #, c-format
@@ -241,9 +241,9 @@ msgid "Cannot convert magnet link to eD2k: %s"
 msgstr "无法转换 magnet 链接为 eD2k：%s"
 
 #: src/amuleAppCommon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Invalid eD2k link \"%s\" - ERROR: %s"
-msgstr "非法 eD2k 链接！错误: %s"
+msgstr "无效 eD2k 链接 \"%s\" - 错误： %s"
 
 #: src/amule.cpp
 msgid "Now, exiting main app..."
@@ -661,7 +661,7 @@ msgstr "致命错误：创建计时器失败"
 
 #: src/amuleDlg.cpp
 msgid "Error! Unable to load Preferences"
-msgstr ""
+msgstr "错误！无法加载首选项"
 
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Networks"
@@ -962,7 +962,7 @@ msgstr "已重新连接到远程核心。"
 
 #: src/amule-remote-gui.cpp
 msgid "The remote core was restarted; reloading."
-msgstr ""
+msgstr "远程核心被重启；重新加载中。"
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -1006,7 +1006,7 @@ msgstr "无法创建 “%s” 目录用于 “%s” 分类，保留 “%s” 目
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "The remote core sent inconsistent data for \"%s\" (part status %d, expected %d). The file list may be showing the wrong information; reconnect to clear it."
-msgstr ""
+msgstr "远程核心发送了不一致的 \"%s\" 数据（part 状态 %d，预期 %d）。 文件列表可能显示错误信息；重连清除它。"
 
 #: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp
@@ -3065,7 +3065,7 @@ msgstr "远程连接：握手失败。"
 #: src/LibSocketAsio.cpp
 #, c-format
 msgid "Error creating UDP socket %s %d : %s"
-msgstr ""
+msgstr "创建 UDP 套接字 %s %d 出错：%s"
 
 #: src/LibSocketAsio.cpp
 #, c-format
@@ -3307,12 +3307,12 @@ msgstr "总上传: %s"
 #: src/MuleUDPSocket.cpp
 #, c-format
 msgid "Created %s at port %u"
-msgstr ""
+msgstr "在端口 %2$u 创建了 %1$s"
 
 #: src/MuleUDPSocket.cpp
 #, c-format
 msgid "WARNING! %s: Packet to %s discarded due to error (%s) while sending."
-msgstr ""
+msgstr "警告！ %s: 数据包将 %s 被丢弃，因发送时的错误 (%s) 。"
 
 #: src/muuli_wdr.cpp
 msgid "Paste eD2k or magnet links here"
@@ -5907,7 +5907,7 @@ msgstr "- 模糊协议支持已更改。\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Proxy settings changed (needed for HTTP transfers).\n"
-msgstr ""
+msgstr "- 更改了代理设置 (HTTP 传输需要)。\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- amuleapi settings changed.\n"
@@ -6257,16 +6257,15 @@ msgstr "共享的文件夹"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Both the remote and local prefix must be filled in."
-msgstr ""
+msgstr "远程和本地前缀都必填。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "This remote prefix is already mapped."
 msgstr "已映射这个远程前缀。"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Choose the local folder"
-msgstr "为%s选择文件夹"
+msgstr "选择本地文件夹"
 
 #: src/SearchDlg.cpp
 msgid "Clear Search History"
@@ -6335,9 +6334,9 @@ msgid "Kad search: no peer left to reask for more results (cap reached or no res
 msgstr "Kad 搜索：没有剩余对等方可重新请求更多结果（已达上限或尚无响应）。"
 
 #: src/SearchList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Error %u: %s\n"
-msgstr "更新 %s 出错"
+msgstr "错误 %u：%s\n"
 
 #: src/SearchListCtrl.cpp
 msgid "FileID"
@@ -6393,14 +6392,12 @@ msgid "Failed to connect to all obfuscated servers listed. Making another pass w
 msgstr "无法连接至列出的全部模糊协议服务器，尝试不使用模糊协议。"
 
 #: src/ServerConnect.cpp
-#, fuzzy
 msgid "Failed to connect to all static servers listed."
-msgstr "无法连接列出的所有静态服务器。开始新的一轮尝试。"
+msgstr "无法连接到列出的所有静态服务器。"
 
 #: src/ServerConnect.cpp
-#, fuzzy
 msgid "Failed to connect to all servers listed."
-msgstr "无法连接列表中的所有服务器. 开始新的一轮尝试."
+msgstr "未能连接到列出的所有服务器。"
 
 #: src/ServerConnect.cpp
 #, c-format
@@ -6543,9 +6540,9 @@ msgid "Failed to save server.met!"
 msgstr "无法保存 server.met！"
 
 #: src/ServerList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "IO failure while writing 'server.met': %s"
-msgstr "读取“server.met”时发生 IO 错误: "
+msgstr "写入“server.met”时发生 IO 错误： %s"
 
 #: src/ServerList.cpp
 msgid "Invalid URL"
