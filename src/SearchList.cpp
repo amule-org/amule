@@ -957,7 +957,7 @@ void CSearchList::ProcessSharedFileList(const uint8_t *in_packet,
 	// revealing it would pull this user's panel and selection away for
 	// something they never asked for -- the same rule the discovered-search
 	// path follows.
-	const bool ecInitiated = sender->GetBrowseSearchId() != 0;
+	const bool ecInitiated = sender->IsBrowseEcInitiated();
 
 	if (!sender->GetBrowseSearchId()) {
 		const uint32 localBrowseId = AllocateEd2kId();

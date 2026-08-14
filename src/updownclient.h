@@ -470,6 +470,17 @@ public:
 	// terminal paths can stamp m_browseStatus. 0 = not an EC-initiated browse
 	// (monolithic local browse keeps the pointer-keyed path).
 	uint32 GetBrowseSearchId() const { return m_browseSearchId; }
+	/**
+	 * Whether this browse was asked for by a remote client rather than here.
+	 *
+	 * The id is pinned by the EC handler before the request goes out, and a
+	 * browse started locally has none until its results arrive, so its presence
+	 * at request time is what tells the two apart. Named because both the
+	 * result path and the browse-started notification have to make the same
+	 * call: a browse someone else asked for must not pull this user's panel or
+	 * tab selection.
+	 */
+	bool IsBrowseEcInitiated() const { return m_browseSearchId != 0; }
 	void SetBrowseSearchId(uint32 id) { m_browseSearchId = id; }
 	EBrowseStatus GetBrowseStatus() const { return m_browseStatus; }
 	void SetBrowseStatus(EBrowseStatus s) { m_browseStatus = s; }
