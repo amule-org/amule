@@ -39,10 +39,56 @@ bool CBrowseListModel::IsFolder(const wxDataViewItem &item) const
 	return item.IsOk() && m_folderAddresses.count(item.GetID()) != 0;
 }
 
+CBrowseFolderNode *CBrowseListModel::EnsureFolder(const wxString &path) const
+{
+	const auto existing = m_folders.find(path);
+	if (existing != m_folders.end()) {
+		return existing->second.get();
+	}
+
+	// Split off the last segment: whichever separator appears last is the
+	// one this peer uses, so a name containing the other one stays intact.
+	const int slash = static_cast<int>(path.find_last_of("/\\"));
+	CBrowseFolderNode *parent = NULL;
+	wxString name = path;
+	if (slash != static_cast<int>(wxString::npos)) {
+		name = path.Mid(slash + 1);
+		const wxString parentPath = path.Left(slash);
+		// A leading or doubled separator leaves an empty parent path,
+		// which is no directory at all -- this node is a root.
+		if (!parentPath.IsEmpty()) {
+			parent = EnsureFolder(parentPath);
+		}
+	}
+
+	CBrowseFolderNode *node = m_folders.emplace(path, std::make_unique<CBrowseFolderNode>(name, parent))
+					  .first->second.get();
+	m_folderAddresses.insert(node);
+	if (!parent) {
+		m_rootFolders.push_back(node);
+	}
+	return node;
+}
+
 void CBrowseListModel::RebuildFolders() const
 {
+	// Once per change, not once per query. The control asks for the root's
+	// children several times per rebuild -- twice from OnIdleHook alone, to
+	// save and restore expansion around a Cleared() -- and this walks every
+	// result, which on a large share is the cost the browse throttle exists
+	// to keep down (issue #898).
+	const unsigned generation = GetContentGeneration();
+	const wxUIntPtr searchId = m_owner->GetSearchId();
+	if (m_foldersValid && m_foldersGeneration == generation && m_foldersSearchId == searchId) {
+		return;
+	}
+	m_foldersValid = true;
+	m_foldersGeneration = generation;
+	m_foldersSearchId = searchId;
+
 	for (auto &entry : m_folders) {
 		entry.second->m_files.clear();
+		entry.second->m_subfolders.clear();
 	}
 	m_looseFiles.clear();
 
@@ -62,14 +108,37 @@ void CBrowseListModel::RebuildFolders() const
 			continue;
 		}
 
-		auto it = m_folders.find(directory);
-		if (it == m_folders.end()) {
-			it = m_folders.emplace(directory, std::make_unique<CBrowseFolderNode>(directory))
-				     .first;
-			m_folderAddresses.insert(it->second.get());
-		}
-		it->second->m_files.push_back(file);
+		EnsureFolder(directory)->m_files.push_back(file);
 	}
+
+	// Relink the hierarchy. Done as a second pass rather than while
+	// creating the nodes, because the links are cleared on every rebuild
+	// while the nodes outlive it: a folder created for an earlier refresh
+	// still has to be reattached to its parent on this one.
+	//
+	// Unconditionally, empty or not. Whether a folder is worth drawing
+	// depends on what is under it at any depth, which is not knowable until
+	// every link exists -- so that question is asked at GetChildren() time
+	// instead, once the tree is whole.
+	for (const auto &entry : m_folders) {
+		CBrowseFolderNode *node = entry.second.get();
+		if (node->GetParent()) {
+			node->GetParent()->m_subfolders.push_back(node);
+		}
+	}
+}
+
+bool CBrowseListModel::HasContent(const CBrowseFolderNode *folder)
+{
+	if (!folder->m_files.empty()) {
+		return true;
+	}
+	for (const CBrowseFolderNode *sub : folder->m_subfolders) {
+		if (HasContent(sub)) {
+			return true;
+		}
+	}
+	return false;
 }
 
 unsigned int CBrowseListModel::GetChildren(const wxDataViewItem &item, wxDataViewItemArray &children) const
@@ -78,12 +147,12 @@ unsigned int CBrowseListModel::GetChildren(const wxDataViewItem &item, wxDataVie
 		RebuildFolders();
 
 		unsigned int count = 0;
-		for (const auto &entry : m_folders) {
+		for (CBrowseFolderNode *folder : m_rootFolders) {
 			// A folder whose results have all gone away, or are all
 			// filtered out, is not drawn -- its node stays allocated so
 			// that any item the control still holds remains readable.
-			if (!entry.second->m_files.empty()) {
-				children.Add(ToItem(entry.second.get()));
+			if (HasContent(folder)) {
+				children.Add(ToItem(folder));
 				++count;
 			}
 		}
@@ -96,10 +165,18 @@ unsigned int CBrowseListModel::GetChildren(const wxDataViewItem &item, wxDataVie
 
 	if (IsFolder(item)) {
 		const CBrowseFolderNode *folder = ToFolder(item);
+		unsigned int count = 0;
+		for (CBrowseFolderNode *sub : folder->m_subfolders) {
+			if (HasContent(sub)) {
+				children.Add(ToItem(sub));
+				++count;
+			}
+		}
 		for (CSearchFile *file : folder->m_files) {
 			children.Add(CSearchListModel::ToItem(file));
+			++count;
 		}
-		return folder->m_files.size();
+		return count;
 	}
 
 	// A result under a folder still groups its own alternative sources.
@@ -108,8 +185,13 @@ unsigned int CBrowseListModel::GetChildren(const wxDataViewItem &item, wxDataVie
 
 wxDataViewItem CBrowseListModel::GetParent(const wxDataViewItem &item) const
 {
-	if (!item.IsOk() || IsFolder(item)) {
-		return wxDataViewItem(); // folders sit at the top level
+	if (!item.IsOk()) {
+		return wxDataViewItem();
+	}
+
+	if (IsFolder(item)) {
+		CBrowseFolderNode *parent = ToFolder(item)->GetParent();
+		return parent ? ToItem(parent) : wxDataViewItem();
 	}
 
 	CSearchFile *file = ToFile(item);

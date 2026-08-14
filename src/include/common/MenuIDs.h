@@ -51,6 +51,9 @@ enum
 	MP_EXPORTCOLLECTION,
 	MP_GETCOMMENTS,
 	MP_SEARCHRELATED,
+	// Folder rows in a browse tab (CBrowseListModel)
+	MP_EXPANDALL,
+	MP_COLLAPSEALL,
 	// For comments
 	MP_CMT,
 

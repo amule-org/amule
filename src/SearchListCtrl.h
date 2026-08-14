@@ -184,14 +184,10 @@ public:
 	 *
 	 * Every item in this control is a wxDataViewItem holding a bare pointer,
 	 * and ToFile() turns one back into a CSearchFile with an unchecked cast.
-	 * That is safe while results are the only thing in the tree; a browse
-	 * grouped by folder will put nodes in it that are not results, and a
-	 * handler that casts one anyway reads whatever is at that address.
-	 *
-	 * These two accessors exist so that there is one place to answer the
-	 * question instead of a dozen. The check itself lands with the folder
-	 * nodes -- until something can actually be a folder, there is nothing
-	 * to reject, and every item here is a result.
+	 * In a browse tab the tree also holds folder nodes, which are not
+	 * results, and a handler that casts one anyway reads whatever is at that
+	 * address. These two accessors ask the model (IsFolder) first, so the
+	 * question is answered in one place rather than at every call site.
 	 */
 	CSearchFile *GetFocusedFile() const;
 
@@ -313,6 +309,11 @@ protected:
 
 	//! ECID of the browsed peer for a "View Files" tab, or 0 for a search tab.
 	uint32 m_browseEcid;
+
+	//! The folder the context menu was opened on, if it was opened on one.
+	//! A right-click does not select the row on every platform, so the
+	//! handlers cannot ask for the selection when they run.
+	wxDataViewItem m_contextFolder;
 	//! Peer display name and lifecycle (EBrowseStatus) for a browse tab.
 	wxString m_browseName;
 	uint32 m_browseStatus;
@@ -366,6 +367,17 @@ protected:
 	void OnRazorStatsCheck(wxCommandEvent &event);
 	void OnRelatedSearch(wxCommandEvent &event);
 	void OnGetComments(wxCommandEvent &event);
+	void OnExpandAll(wxCommandEvent &event);
+	void OnCollapseAll(wxCommandEvent &event);
+
+	/**
+	 * Expands or collapses @a item and everything under it.
+	 *
+	 * Only folders are containers worth walking here; a grouped result's
+	 * children are alternative sources, and opening those wholesale is not
+	 * what "expand all" on a folder means.
+	 */
+	void SetSubtreeExpanded(const wxDataViewItem &item, bool expand);
 	void OnPopupDownload(wxCommandEvent &event);
 
 	/**

@@ -61,6 +61,8 @@ wxBEGIN_EVENT_TABLE(CSearchListCtrl, CMuleDataViewCtrl)
 	EVT_MENU(MP_RAZORSTATS, CSearchListCtrl::OnRazorStatsCheck)
 	EVT_MENU(MP_SEARCHRELATED, CSearchListCtrl::OnRelatedSearch)
 	EVT_MENU(MP_GETCOMMENTS, CSearchListCtrl::OnGetComments)
+	EVT_MENU(MP_EXPANDALL, CSearchListCtrl::OnExpandAll)
+	EVT_MENU(MP_COLLAPSEALL, CSearchListCtrl::OnCollapseAll)
 	EVT_MENU(MP_RESUME, CSearchListCtrl::OnPopupDownload)
 	EVT_MENU_RANGE(MP_ASSIGNCAT, MP_ASSIGNCAT + 99, CSearchListCtrl::OnPopupDownload)
 wxEND_EVENT_TABLE()
@@ -735,6 +737,19 @@ void CSearchListCtrl::OnSortingChanged()
 
 void CSearchListCtrl::OnRightClick(wxDataViewEvent &event)
 {
+	// A folder row is not a result: none of the actions below apply to it,
+	// and GetSelectedItemCount() counts results, so it would otherwise get
+	// no menu at all. Remembered rather than re-derived when the handler
+	// runs, because a right-click does not select the row on every platform.
+	m_contextFolder = m_model->IsFolder(event.GetItem()) ? event.GetItem() : wxDataViewItem();
+	if (m_contextFolder.IsOk()) {
+		wxMenu menu;
+		menu.Append(MP_EXPANDALL, _("Expand all"));
+		menu.Append(MP_COLLAPSEALL, _("Collapse all"));
+		PopupMenu(&menu, event.GetPosition());
+		return;
+	}
+
 	if (GetSelectedItemCount()) {
 		// No title -- see the identical rationale in the pre-port version
 		// (wxMenu's title parameter renders inconsistently or not at all
@@ -812,6 +827,41 @@ void CSearchListCtrl::OnPopupGetUrl(wxCommandEvent &WXUNUSED(event))
 	if (!URIs.IsEmpty()) {
 		theApp->CopyTextToClipboard(URIs.RemoveLast());
 	}
+}
+
+void CSearchListCtrl::SetSubtreeExpanded(const wxDataViewItem &item, bool expand)
+{
+	if (!item.IsOk()) {
+		return;
+	}
+
+	// Parent first when opening, last when closing: a row cannot be
+	// expanded while an ancestor of it is still collapsed.
+	if (expand) {
+		Expand(item);
+	}
+
+	wxDataViewItemArray children;
+	m_model->GetChildren(item, children);
+	for (const wxDataViewItem &child : children) {
+		if (m_model->IsContainer(child)) {
+			SetSubtreeExpanded(child, expand);
+		}
+	}
+
+	if (!expand) {
+		Collapse(item);
+	}
+}
+
+void CSearchListCtrl::OnExpandAll(wxCommandEvent &WXUNUSED(event))
+{
+	SetSubtreeExpanded(m_contextFolder, true);
+}
+
+void CSearchListCtrl::OnCollapseAll(wxCommandEvent &WXUNUSED(event))
+{
+	SetSubtreeExpanded(m_contextFolder, false);
 }
 
 void CSearchListCtrl::OnGetComments(wxCommandEvent &WXUNUSED(event))

@@ -120,6 +120,7 @@ void CSearchListModel::NotifyFileAdded(CSearchFile *file)
 		return;
 	}
 	m_pendingAdded.push_back(file);
+	++m_contentGeneration;
 }
 
 void CSearchListModel::NotifyFileUpdated(CSearchFile *file)
@@ -128,13 +129,17 @@ void CSearchListModel::NotifyFileUpdated(CSearchFile *file)
 		MarkDirty();
 		return;
 	}
+	// Values, not membership -- but "hide known files" turns on a result's
+	// own status, so a change can move it in or out of the shown set.
 	m_pendingChanged.push_back(file);
+	++m_contentGeneration;
 }
 
 void CSearchListModel::NotifyFilterChanged()
 {
 	// User action: reset now rather than waiting for idle.
 	DropPending();
+	++m_contentGeneration;
 	m_pendingReset = false;
 	Cleared();
 }

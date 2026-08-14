@@ -40,18 +40,24 @@
 class CBrowseFolderNode
 {
 public:
-	explicit CBrowseFolderNode(const wxString &name)
+	CBrowseFolderNode(const wxString &name, CBrowseFolderNode *parent)
 	: m_name(name)
+	, m_parent(parent)
 	{
 	}
 
+	//! This folder's own name, not its path: the tree shows the rest.
 	const wxString &GetName() const noexcept { return m_name; }
+	CBrowseFolderNode *GetParent() const noexcept { return m_parent; }
 
-	//! The results filed under this folder, refreshed on every rebuild.
+	//! Sub-folders and the results filed directly here. Both are rebuilt
+	//! from scratch on every refresh; the nodes themselves outlive it.
+	std::vector<CBrowseFolderNode *> m_subfolders;
 	std::vector<CSearchFile *> m_files;
 
 private:
 	wxString m_name;
+	CBrowseFolderNode *m_parent;
 };
 
 /**
@@ -63,11 +69,19 @@ private:
  * group by, and nothing about its model should have to know that folders are
  * a possibility.
  *
- * The grouping is one level deep, one node per distinct directory string.
- * The protocol hands us a set of directory names (OP_ASKSHAREDFILESDIRANS,
- * one response per directory), not a hierarchy, and the names are the remote
- * host's own -- splitting them into a deeper tree would mean guessing at a
- * path separator that may be '\', '/', or neither.
+ * The directory strings nest. A peer names each shared directory by walking
+ * up from it for as long as the parent is also shared and joining that run
+ * (CSharedFileList::GetPublicSharedDirName), so what arrives is a relative
+ * path -- "Shared/Movies/Action" -- rather than a flat label or an absolute
+ * path. Splitting it back into segments reproduces the peer's own layout.
+ *
+ * Both separators are split on. The sender uses its own platform's
+ * wxFileName::GetPathSeparator(), so a Windows peer sends backslashes and a
+ * POSIX peer forward slashes, and there is nothing in the packet saying
+ * which. A directory whose name genuinely contains the other platform's
+ * separator would split into segments that were never real folders; that is
+ * the trade eMule makes here too, and it costs a cosmetic mis-grouping
+ * rather than a wrong file.
  *
  * Peers that answer the older whole-list request send no directory at all
  * (ClientTCPSocket, OP_ASKSHAREDFILESANSWER passes an empty string). Those
@@ -114,17 +128,32 @@ private:
 	 * keeps no copy of the result set (see CSearchListModel) and the folders
 	 * are derived from whatever it holds right now.
 	 *
-	 * Nodes are keyed by directory name and never erased while the model
+	 * Nodes are keyed by their full path and never erased while the model
 	 * lives: the control may still be holding an item for a folder whose
 	 * last result just went away, and that pointer has to stay readable. A
-	 * node with no files is simply not reported as a child.
+	 * node with nothing under it is simply not reported as a child.
 	 */
 	void RebuildFolders() const;
 
-	//! Directory name -> node. unique_ptr so that a rebuild that inserts a
-	//! new directory cannot move the existing nodes: the control holds their
-	//! addresses as item IDs.
+	//! Returns the node for @a path, creating it and every missing ancestor.
+	CBrowseFolderNode *EnsureFolder(const wxString &path) const;
+
+	//! Whether anything at all is under @a folder, at any depth. A folder
+	//! that only holds other empty folders is not worth a row.
+	static bool HasContent(const CBrowseFolderNode *folder);
+
+	//! Full path -> node. unique_ptr so that a rebuild that inserts a new
+	//! directory cannot move the existing nodes: the control holds their
+	//! addresses as item IDs, and so do the parent links.
 	mutable std::map<wxString, std::unique_ptr<CBrowseFolderNode>> m_folders;
+
+	//! The nodes with no parent, in insertion order of first appearance.
+	mutable std::vector<CBrowseFolderNode *> m_rootFolders;
+
+	//! What the cached grouping above was built from; see RebuildFolders().
+	mutable bool m_foldersValid = false;
+	mutable unsigned m_foldersGeneration = 0;
+	mutable wxUIntPtr m_foldersSearchId = 0;
 
 	//! Every address in m_folders, for IsFolder(). The item is a bare void*
 	//! with nothing to distinguish it, so membership here is what makes the
