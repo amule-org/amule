@@ -123,7 +123,18 @@ public:
 	 * ordinary search tab.
 	 */
 	uint32 GetBrowseEcid() const { return m_browseEcid; }
-	void SetBrowseEcid(uint32 ecid) { m_browseEcid = ecid; }
+	/**
+	 * Marks this tab as browsing @a ecid, and swaps in the model that groups
+	 * results by the folders the peer reported.
+	 *
+	 * The model is chosen here rather than in the constructor because that is
+	 * where the answer first exists: CSearchDlg::EnsureBrowseTab creates an
+	 * ordinary tab and only then tells it who it is browsing. The tab has no
+	 * results yet at that point, so there is nothing to migrate.
+	 *
+	 * Defined in the .cpp: the swap needs CBrowseListModel to be complete.
+	 */
+	void SetBrowseEcid(uint32 ecid);
 	bool IsBrowse() const { return m_browseEcid != 0; }
 
 	// Peer display name and lifecycle (EBrowseStatus) for a browse tab. Held on

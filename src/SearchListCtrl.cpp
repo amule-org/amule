@@ -37,6 +37,7 @@
 #include "ServerConnect.h"    // Needed for CServerConnect
 #include "SearchList.h"       // Needed for CSearchFile
 #include "updownclient.h"     // Needed for BROWSE_IN_PROGRESS
+#include "BrowseListModel.h"  // Needed for CBrowseListModel
 #include "SearchListModel.h"  // Needed for CSearchListModel
 #include "GetTickCount.h"     // Needed for GetTickCount64()
 #include "CommentDialogLst.h" // Needed for CCommentDialogLst (Kad comments/ratings)
@@ -359,7 +360,7 @@ CSearchFile *CSearchListCtrl::GetFocusedFile() const
 {
 	wxDataViewItemArray selections;
 	GetSelections(selections);
-	if (selections.empty()) {
+	if (selections.empty() || m_model->IsFolder(selections[0])) {
 		return NULL;
 	}
 	return CSearchListModel::ToFile(selections[0]);
@@ -373,6 +374,9 @@ std::vector<CSearchFile *> CSearchListCtrl::GetSelectedFiles() const
 	std::vector<CSearchFile *> files;
 	files.reserve(selections.GetCount());
 	for (const wxDataViewItem &item : selections) {
+		if (m_model->IsFolder(item)) {
+			continue;
+		}
 		if (CSearchFile *file = CSearchListModel::ToFile(item)) {
 			files.push_back(file);
 		}
@@ -380,10 +384,30 @@ std::vector<CSearchFile *> CSearchListCtrl::GetSelectedFiles() const
 	return files;
 }
 
+void CSearchListCtrl::SetBrowseEcid(uint32 ecid)
+{
+	const bool wasBrowse = IsBrowse();
+	m_browseEcid = ecid;
+
+	// Only on the transition into browsing. A re-browse of the same peer
+	// comes back through here with the same ECID, and swapping the model
+	// again would throw away the folders the user has open.
+	if (!ecid || wasBrowse) {
+		return;
+	}
+
+	m_model = new CBrowseListModel(this);
+	AssociateModel(m_model);
+	m_model->DecRef(); // the control now holds the only reference
+}
+
 int CSearchListCtrl::GetSelectedItemCount() const
 {
-	wxDataViewItemArray selections;
-	return static_cast<int>(const_cast<CSearchListCtrl *>(this)->GetSelections(selections));
+	// Results, not rows. A browse tab has folders in the tree, and every
+	// caller of this is asking how many things it can act on -- a menu it is
+	// about to enable, a download it is about to queue. Counting a selected
+	// folder would enable an action with nothing behind it.
+	return static_cast<int>(GetSelectedFiles().size());
 }
 
 int CSearchListCtrl::CompareFilesByColumn(

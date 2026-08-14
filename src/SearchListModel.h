@@ -111,6 +111,19 @@ public:
 	 */
 	static void DropReferencesTo(CSearchFile *file);
 
+	/**
+	 * Whether @a item is a grouping node rather than a result.
+	 *
+	 * Always false here: in a search, every item is a CSearchFile. A browse
+	 * grouped by folder (CBrowseListModel) puts nodes in the tree that are
+	 * not results, and this is how a caller holding a wxDataViewItem -- a
+	 * bare void* with nothing to distinguish it -- can find out before
+	 * handing it to ToFile().
+	 */
+	virtual bool IsFolder(const wxDataViewItem &WXUNUSED(item)) const { return false; }
+
+	//! Unchecked: the caller is responsible for having ruled out a folder
+	//! first, via IsFolder() or by knowing the model has none.
 	static CSearchFile *ToFile(const wxDataViewItem &item)
 	{
 		return static_cast<CSearchFile *>(item.GetID());
@@ -165,9 +178,12 @@ public:
 		unsigned int column,
 		bool ascending) const wxOVERRIDE;
 
-private:
+protected:
+	//! Protected rather than private: CBrowseListModel derives the folder
+	//! grouping from the same live result set, reached through the owner.
 	CSearchListCtrl *m_owner;
 
+private:
 	//! Set when only a full rebuild will do; see MarkDirty().
 	bool m_pendingReset = false;
 
