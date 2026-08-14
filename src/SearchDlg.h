@@ -270,6 +270,8 @@ public:
 	// Called at construction and live from PrefsUnifiedDlg::OnOk when the
 	// checkbox changes, so no restart is needed (issue #697).
 	void ApplySearchHistoryPref();
+	//! Show or hide the rule above the filter row, tracking the row itself.
+	void ApplyFilterSeparator(bool shown);
 
 private:
 	// Replaces the Name field in its sizer slot with the control type the

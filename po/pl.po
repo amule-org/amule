@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-13 13:03+0200\n"
+"POT-Creation-Date: 2026-08-14 10:50+0200\n"
 "PO-Revision-Date: 2026-08-13 11:48+0000\n"
 "Last-Translator: Michał Trzebiatowski <hippie_1968@hotmail.com>\n"
 "Language-Team: translationproject.org/team/pl.html <translation-team-pl@lists.sourceforge.net>\n"
@@ -3622,13 +3622,13 @@ msgid "Download"
 msgstr "Pobieranie"
 
 #: src/muuli_wdr.cpp
-msgid "Reset Fields"
-msgstr "Zresetuj pola"
-
-#: src/muuli_wdr.cpp
 #, fuzzy
 msgid "Clear Search Results"
 msgstr "Wynik wyszukiwania"
+
+#: src/muuli_wdr.cpp
+msgid "Reset Fields"
+msgstr "Zresetuj pola"
 
 #: src/muuli_wdr.cpp
 msgid "Results"

@@ -159,6 +159,7 @@ CSearchDlg::CSearchDlg(wxWindow *pParent)
 	// Not there initially.
 	s_search_sizer->Show(s_extended_sizer, false);
 	s_search_sizer->Show(s_filter_sizer, false);
+	ApplyFilterSeparator(false);
 
 	// Clear-history button, sitting in the action row directly after "Reset
 	// Fields" -- next to the other one-shot commands rather than among the
@@ -178,22 +179,28 @@ CSearchDlg::CSearchDlg(wxWindow *pParent)
 	// The separator is inserted with it and tracked so the pref-driven hide
 	// takes both away; leaving a stray divider behind would open a gap in the
 	// row wherever history is switched off.
-	if (wxWindow *resetBtn = FindWindow(IDC_SEARCH_RESET)) {
-		if (wxSizer *row = resetBtn->GetContainingSizer()) {
+	// Anchored ahead of Clear Search Results, so the three read most to least
+	// destructive rightwards (issue #911). Inserting after Reset Fields, as
+	// this did, put the one that discards saved terms between the two used
+	// most.
+	if (wxWindow *clearResultsBtn = FindWindow(IDC_CLEAR_RESULTS)) {
+		if (wxSizer *row = clearResultsBtn->GetContainingSizer()) {
 			size_t at = row->GetItemCount();
 			size_t index = 0;
 			for (const wxSizerItem *item : row->GetChildren()) {
-				if (item->GetWindow() == resetBtn) {
-					at = index + 1;
+				if (item->GetWindow() == clearResultsBtn) {
+					at = index;
 					break;
 				}
 				++index;
 			}
+			// Button first, then its divider, so both land before the anchor
+			// and the row stays button|divider|button all the way across.
+			m_clearHistoryBtn = new wxButton(this, wxID_ANY, _("Clear Search History"));
+			row->Insert(at, m_clearHistoryBtn, wxSizerFlags().Center().Border(wxALL, 5));
 			m_clearHistorySep = new wxStaticLine(
 				this, wxID_ANY, wxDefaultPosition, wxSize(-1, 20), wxLI_VERTICAL);
-			row->Insert(at, m_clearHistorySep, wxSizerFlags().Center().Border(wxALL, 5));
-			m_clearHistoryBtn = new wxButton(this, wxID_ANY, _("Clear Search History"));
-			row->Insert(at + 1, m_clearHistoryBtn, wxSizerFlags().Center().Border(wxALL, 5));
+			row->Insert(at + 1, m_clearHistorySep, wxSizerFlags().Center().Border(wxALL, 5));
 			m_clearHistoryBtn->Bind(wxEVT_BUTTON, &CSearchDlg::OnBnClickedClearHistory, this);
 		}
 	}
@@ -201,6 +208,18 @@ CSearchDlg::CSearchDlg(wxWindow *pParent)
 	ApplySearchHistoryPref();
 
 	Layout();
+}
+
+void CSearchDlg::ApplyFilterSeparator(bool shown)
+{
+	// The rule introduces the filter row, so it goes away with it: left behind
+	// it would sit under the action buttons with nothing beneath, reading as a
+	// border on the search box rather than a divider. Found by id rather than
+	// held as a member because muuli_wdr owns it -- the row it divides is
+	// static, unlike the clear-history pair built here.
+	if (wxWindow *sep = FindWindow(ID_FILTER_SEPARATOR)) {
+		sep->Show(shown);
+	}
 }
 
 void CSearchDlg::ApplySearchHistoryPref()
@@ -735,6 +754,7 @@ void CSearchDlg::OnExtendedSearchChange(wxCommandEvent &event)
 void CSearchDlg::OnFilterCheckChange(wxCommandEvent &event)
 {
 	s_search_sizer->Show(s_filter_sizer, event.IsChecked());
+	ApplyFilterSeparator(event.IsChecked());
 	Layout();
 
 	int nPages = m_notebook->GetPageCount();

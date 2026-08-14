@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-13 13:03+0200\n"
+"POT-Creation-Date: 2026-08-14 10:50+0200\n"
 "PO-Revision-Date: 2026-08-13 11:53+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -3601,12 +3601,12 @@ msgid "Download"
 msgstr "下载"
 
 #: src/muuli_wdr.cpp
-msgid "Reset Fields"
-msgstr "重置表单"
-
-#: src/muuli_wdr.cpp
 msgid "Clear Search Results"
 msgstr "清除搜索结果"
+
+#: src/muuli_wdr.cpp
+msgid "Reset Fields"
+msgstr "重置表单"
 
 #: src/muuli_wdr.cpp
 msgid "Results"

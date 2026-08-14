@@ -19,7 +19,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-13 13:03+0200\n"
+"POT-Creation-Date: 2026-08-14 10:50+0200\n"
 "PO-Revision-Date: 2026-08-13 11:45+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
@@ -3609,12 +3609,12 @@ msgid "Download"
 msgstr "Download"
 
 #: src/muuli_wdr.cpp
-msgid "Reset Fields"
-msgstr "Azzera campi"
-
-#: src/muuli_wdr.cpp
 msgid "Clear Search Results"
 msgstr "Cancella Risultati Ricerca"
+
+#: src/muuli_wdr.cpp
+msgid "Reset Fields"
+msgstr "Azzera campi"
 
 #: src/muuli_wdr.cpp
 msgid "Results"

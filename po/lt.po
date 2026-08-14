@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-13 13:03+0200\n"
+"POT-Creation-Date: 2026-08-14 10:50+0200\n"
 "PO-Revision-Date: 2026-08-13 11:46+0000\n"
 "Last-Translator: Dovydas Sankauskas <laisve@gmail.com>\n"
 "Language-Team: Lithuanian <komp_lt@konf.lt>\n"
@@ -3642,13 +3642,13 @@ msgid "Download"
 msgstr "Atsiųsti"
 
 #: src/muuli_wdr.cpp
-msgid "Reset Fields"
-msgstr "Atstatyti laukelius"
-
-#: src/muuli_wdr.cpp
 #, fuzzy
 msgid "Clear Search Results"
 msgstr "Filtruoti rezultatus"
+
+#: src/muuli_wdr.cpp
+msgid "Reset Fields"
+msgstr "Atstatyti laukelius"
 
 #: src/muuli_wdr.cpp
 msgid "Results"

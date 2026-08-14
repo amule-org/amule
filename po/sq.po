@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-13 13:03+0200\n"
+"POT-Creation-Date: 2026-08-14 10:50+0200\n"
 "PO-Revision-Date: 2026-08-13 11:51+0000\n"
 "Last-Translator: Fation <dj_barthezz@linuxmail.org lushnja_corps@hotmail.Language-Team:\n"
 "Language: sq\n"
@@ -3621,13 +3621,13 @@ msgid "Download"
 msgstr "Shkarkime"
 
 #: src/muuli_wdr.cpp
-msgid "Reset Fields"
-msgstr "Reseto fushat"
-
-#: src/muuli_wdr.cpp
 #, fuzzy
 msgid "Clear Search Results"
 msgstr "Rezultatet e filterit"
+
+#: src/muuli_wdr.cpp
+msgid "Reset Fields"
+msgstr "Reseto fushat"
 
 #: src/muuli_wdr.cpp
 msgid "Results"

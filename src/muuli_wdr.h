@@ -85,6 +85,11 @@ extern wxSizer *s_filter_sizer;
 // new id here would mean renumbering every later one. 10493 is the next free
 // value file-wide.
 #define ID_FILTER_RESET 10493
+// Divides the action buttons from the filter row. Carries an id so the dialog
+// can show and hide it with the row it introduces -- a rule left behind on its
+// own would sit under the buttons with nothing beneath it. Numbered out of
+// block for the same reason as ID_FILTER_RESET.
+#define ID_FILTER_SEPARATOR 10508
 #define IDC_STARTS 10018
 #define IDC_SEARCHMORE 10019
 #define IDC_CANCELS 10020
