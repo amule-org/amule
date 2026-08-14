@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-14 12:55+0200\n"
+"POT-Creation-Date: 2026-08-14 13:50+0200\n"
 "PO-Revision-Date: 2026-08-13 11:47+0000\n"
 "Last-Translator: Hallvor Brunstad <Hallvor_1976@yahoo.com>\n"
 "Language-Team: <i18n-nn@lister.ping.uio.no>\n"
@@ -6524,6 +6524,15 @@ msgstr "Ikkje gitt verdi"
 #: src/SearchListCtrl.cpp
 msgid "Codec"
 msgstr ""
+
+#: src/SearchListCtrl.cpp
+msgid "Expand all"
+msgstr ""
+
+#: src/SearchListCtrl.cpp
+#, fuzzy
+msgid "Collapse all"
+msgstr "Stengje alle faneblad"
 
 #: src/SearchListCtrl.cpp
 msgid "Download in category"
