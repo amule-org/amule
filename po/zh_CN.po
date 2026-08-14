@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-14 11:53+0200\n"
+"POT-Creation-Date: 2026-08-14 12:55+0200\n"
 "PO-Revision-Date: 2026-08-13 11:53+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -6464,6 +6464,10 @@ msgstr "搜索相关文件（eD2k，本地服务器）"
 msgid "Copy eD2k link to clipboard"
 msgstr "复制eD2k链接至剪贴板"
 
+#: src/SearchListCtrl.cpp src/ServerListCtrl.cpp
+msgid "Copy eD2k links to clipboard"
+msgstr "复制eD2k链接至剪贴板"
+
 #: src/SearchListCtrl.cpp
 msgid "You are not currently connected to a server supporting the Related Files search function"
 msgstr "当前未连接到支持“相关文件”搜索功能的服务器"
@@ -6778,10 +6782,6 @@ msgstr "删除服务器"
 #: src/ServerListCtrl.cpp
 msgid "Remove all servers"
 msgstr "删除所有服务器"
-
-#: src/ServerListCtrl.cpp
-msgid "Copy eD2k links to clipboard"
-msgstr "复制eD2k链接至剪贴板"
 
 #: src/ServerListCtrl.cpp
 msgid "Reconnect to server"
