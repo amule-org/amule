@@ -44,6 +44,11 @@ namespace
 //!
 //! Which separator survives a mixed run is whichever came first; the peer's
 //! own choice is not knowable from the packet either way.
+//!
+//! Collapsing runs also rewrites the one string where a doubled separator
+//! means something: a UNC name arrives as "\\server\share" and is keyed as
+//! "\server\share". It is a label here and nothing resolves it, so this
+//! costs a backslash in a folder row rather than a wrong lookup.
 wxString NormalizeDirectory(const wxString &path)
 {
 	wxString normalized;

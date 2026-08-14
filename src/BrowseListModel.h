@@ -182,6 +182,13 @@ private:
 	 * a handful of segments deep and nothing legitimate comes near this.
 	 * Where either bound bites, the remainder is left as one folder name
 	 * rather than split further.
+	 *
+	 * What this bounds is the recursion and the depth of the tree, which is
+	 * the crash. It is not a bound on memory: a capped string still leaves
+	 * about MAX_FOLDER_DEPTH nodes, each keyed by its own prefix of it, so a
+	 * 64 KB directory name costs a few MB of live keys rather than the GBs
+	 * it would unbounded -- and that still scales with how many such strings
+	 * the peer sends.
 	 */
 	static const size_t MAX_FOLDER_DEPTH = 64;
 
