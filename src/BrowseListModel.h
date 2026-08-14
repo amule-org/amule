@@ -145,8 +145,26 @@ private:
 	 */
 	void RebuildFolders() const;
 
+	/**
+	 * Deepest nesting built out of one directory string.
+	 *
+	 * The string is whatever the peer put in the packet, up to 64 KB
+	 * (CFileDataIO::ReadString defaults to a uint16 length) and checked by
+	 * nothing between the socket and here. Each segment costs a recursion
+	 * level and a node keyed by its own prefix of the string, so a listing
+	 * naming a directory with 65,535 separators would cost that many frames
+	 * and the sum of all those prefixes in live wxStrings.
+	 *
+	 * A peer names a directory by joining the run of shared directories it
+	 * belongs to (CSharedFileList::GetPublicSharedDirName), so a real one is
+	 * a handful of segments deep. Past this, the remainder is left as one
+	 * folder name rather than split further.
+	 */
+	static const size_t MAX_FOLDER_DEPTH = 64;
+
 	//! Returns the node for @a path, creating it and every missing ancestor.
-	CBrowseFolderNode *EnsureFolder(const wxString &path) const;
+	//! @a depth is the recursion level, bounded by MAX_FOLDER_DEPTH.
+	CBrowseFolderNode *EnsureFolder(const wxString &path, size_t depth = 0) const;
 
 	//! Whether anything at all is under @a folder, at any depth. A folder
 	//! that only holds other empty folders is not worth a row.

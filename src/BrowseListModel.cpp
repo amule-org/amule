@@ -39,7 +39,7 @@ bool CBrowseListModel::IsFolder(const wxDataViewItem &item) const
 	return item.IsOk() && m_folderAddresses.count(item.GetID()) != 0;
 }
 
-CBrowseFolderNode *CBrowseListModel::EnsureFolder(const wxString &path) const
+CBrowseFolderNode *CBrowseListModel::EnsureFolder(const wxString &path, size_t depth) const
 {
 	const auto existing = m_folders.find(path);
 	if (existing != m_folders.end()) {
@@ -48,16 +48,20 @@ CBrowseFolderNode *CBrowseListModel::EnsureFolder(const wxString &path) const
 
 	// Split off the last segment: whichever separator appears last is the
 	// one this peer uses, so a name containing the other one stays intact.
+	//
+	// Stops at MAX_FOLDER_DEPTH: the peer chose this string and nothing
+	// validates it, so the remainder is left as one folder name rather than
+	// split into as many levels as it has separators.
 	const size_t slash = path.find_last_of("/\\");
 	CBrowseFolderNode *parent = nullptr;
 	wxString name = path;
-	if (slash != wxString::npos) {
+	if (slash != wxString::npos && depth < MAX_FOLDER_DEPTH) {
 		name = path.Mid(slash + 1);
 		const wxString parentPath = path.Left(slash);
 		// A leading or doubled separator leaves an empty parent path,
 		// which is no directory at all -- this node is a root.
 		if (!parentPath.IsEmpty()) {
-			parent = EnsureFolder(parentPath);
+			parent = EnsureFolder(parentPath, depth + 1);
 		}
 	}
 
