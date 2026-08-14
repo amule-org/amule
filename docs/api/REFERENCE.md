@@ -2068,7 +2068,7 @@ Lists every search amuled currently holds — including ones started by a **diff
 }
 ```
 
-`search_id` is the value to pass to [`GET /search/results`](#get-apiv0searchresults) (`?search_id=`) to read that search's hits, or to [`POST /search/stop`](#post-apiv0searchstop) to stop it. `kind` is `"local"` | `"global"` | `"kad"`, same vocabulary as `POST /search`'s `type`. `state` is `"running"` | `"finished"` | `"idle"`, same vocabulary and meaning as `GET /search/results`'s `progress.state`.
+`search_id` is the value to pass to [`GET /search/results`](#get-apiv0searchresults) (`?search_id=`) to read that search's hits, or to [`POST /search/stop`](#post-apiv0searchstop) to stop it. `kind` is `"local"` | `"global"` | `"kad"` | `"browse"`. The first three are the vocabulary `POST /search`'s `type` accepts; `"browse"` is reported only, for a "View Files" listing of one peer's share, which is started through the client endpoints rather than by a query. `state` is `"running"` | `"finished"` | `"idle"`, same vocabulary and meaning as `GET /search/results`'s `progress.state`.
 
 amuled only tracks multiple concurrent searches for clients that advertise multi-search support; `amuleapi` does, so this always reflects the full live set. `searches` is an empty array when amuled holds no searches, never an error.
 
@@ -2151,7 +2151,7 @@ Each result carries `sources` as a nested `{total, complete}` object — `total`
 The `progress` object carries the same `state` / `kind` / `percent` fields as the [`search_progress`](EVENTS.md#search_progress) SSE event, so REST pollers and stream consumers interpret progress identically. (The event additionally carries a `results` count, since — unlike this response — it has no `results` array beside it.)
 
 - `state` — `"running"` while the search is in flight, `"finished"` once amuled reports completion, `"idle"` when no search has run this session. This single field is canonical and replaces the older `complete` / `active` booleans (derive them as `complete = state == "finished"`, `active = state == "running"`).
-- `kind` — the originally-requested search type (`"local"` | `"global"` | `"kad"`).
+- `kind` — the originally-requested search type (`"local"` | `"global"` | `"kad"` | `"browse"`).
 - `percent` — `[0, 100]`, computed by amuled for every search kind from its `EC_TAG_SEARCH_LIFECYCLE_PERCENT` tag. For **global** it is the real server-queue progress. For **Kad** — which has no measurable mid-flight progress — it is a cosmetic time-ramp off the fixed 45 s keyword-search lifetime, capped at 99 until amuled authoritatively reports completion (`EC_TAG_SEARCH_LIFECYCLE_STATE` = finished), at which point it snaps to 100. Treat the Kad value as a liveliness indicator, not an accurate estimate.
 
 A client that wants to wait for completion polls while `state == "running"`. Because amuled now reports the lifecycle state directly (no sentinel decode), `state == "running"` unambiguously means in-flight even for Kad — there is no longer any "is `percent: 0` a stalled Kad search or no search at all?" ambiguity; check `state` instead. A Kad search that hits its result cap (`SEARCHKEYWORD_TOTAL`, 300) before the 45 s deadline finishes early — `state` flips to `finished` and `percent` jumps to 100 ahead of the ramp.

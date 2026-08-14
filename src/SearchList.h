@@ -46,11 +46,32 @@ namespace Kademlia
 class CUInt128;
 }
 
+/**
+ * What kind of search an id names.
+ *
+ * The values are pinned, not incidental. They are cast straight to uint8 and
+ * shipped as EC_TAG_SEARCH_LIFECYCLE_KIND, where they have to line up with
+ * EC_SEARCH_TYPE in ECCodes.abstract, and CSearchList::Save() writes the same
+ * byte into the saved-searches file. So a member's number is part of both the
+ * wire protocol and an on-disk format, and renumbering one silently
+ * reinterprets the other.
+ *
+ * Note the gap: 3 belongs to EC_SEARCH_WEB, which has no counterpart here.
+ * Appending BrowseSearch without saying so would have handed it that value and
+ * made every browse report itself as a web search.
+ */
 enum SearchType
 {
-	LocalSearch,
-	GlobalSearch,
-	KadSearch
+	LocalSearch = 0,
+	GlobalSearch = 1,
+	KadSearch = 2,
+	// 3 is EC_SEARCH_WEB -- deliberately skipped, see above.
+	//! A "View Files" browse of one peer's share. Shares the id space and
+	//! the lifecycle machinery with real searches, but is started by
+	//! EnsureBrowseTab rather than a query, and is the kind a remote GUI
+	//! needs in order to rebuild the right sort of tab for a browse it did
+	//! not start itself.
+	BrowseSearch = 4
 };
 
 typedef std::vector<CSearchFile *> CSearchResultList;
@@ -261,6 +282,25 @@ public:
 	// button). Kad is authoritative via IsOrWasKadSearch even if the recorded
 	// entry was pruned; unknown ids fall back to the scalar.
 	SearchType GetSearchLifecycleKindById(wxUIntPtr searchID) const;
+	/**
+	 * Records a browse under @a searchID so it appears in the search list
+	 * like any other entry.
+	 *
+	 * A browse gets a real id from the same space as searches, but nothing
+	 * described it: with no entry here its kind fell back to the scalar and
+	 * it had no name at all, so a remote GUI listing the daemon's searches
+	 * saw a nameless one it could only rebuild as an ordinary search tab.
+	 *
+	 * Writes all three of the per-id maps, which are maintained as a triple
+	 * -- Save() walks m_searchStrings and reaches for the other two with
+	 * .at(), so a partial entry turns saving into an exception rather than a
+	 * missing field.
+	 */
+	void RegisterBrowseSearch(uint32 searchID, const wxString &peerName, uint32 peerEcid);
+	//! ECID of the peer a browse id is listing, 0 if not a browse. Reported
+	//! so a remote GUI can build a browse tab that is actually tied to its
+	//! peer -- a tab with no ecid is not a browse at all (IsBrowse()).
+	uint32 GetBrowsePeerEcid(uint32 searchID) const;
 	// Result count for the current search; 0 if idle.
 	std::size_t GetCurrentSearchResultCount() const;
 	// Unified 0..100 completion for the current search, surfaced via
@@ -502,6 +542,8 @@ private:
 	//! m_searchType (which only tracks the most-recently-started search).
 	//! Pruned in RemoveResults.
 	std::map<uint32_t, SearchType> m_searchKinds;
+	//! Peer ecid per browse id; see RegisterBrowseSearch().
+	std::map<uint32_t, uint32> m_browsePeers;
 
 	//! This search's original query string, keyed by id (same lifetime as
 	//! m_searchKinds -- recorded in StartNewSearch, pruned in RemoveResults).

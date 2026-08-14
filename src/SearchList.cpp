@@ -362,6 +362,16 @@ void CSearchList::StoreSearches() const
 	std::vector<uint32_t> ids;
 	ids.reserve(m_searchStrings.size());
 	for (const auto &kv : m_searchStrings) {
+		// Browses are deliberately not persisted. They are a snapshot of one
+		// peer's share taken while that peer was connected, so restoring one
+		// resurrects a listing for someone who is very likely gone -- and a
+		// large share would spend the MAX_STORED_SEARCHES budget that exists
+		// for the user's own searches. They are in m_searchStrings only so
+		// the search list can report them by peer name while they are live.
+		std::map<uint32_t, SearchType>::const_iterator kind = m_searchKinds.find(kv.first);
+		if (kind != m_searchKinds.end() && kind->second == BrowseSearch) {
+			continue;
+		}
 		ids.push_back(kv.first);
 	}
 	std::sort(ids.begin(), ids.end(), [this](uint32_t a, uint32_t b) {
@@ -1177,6 +1187,23 @@ wxString CSearchList::GetSearchStringById(uint32_t searchID) const
 bool CSearchList::IsKnownSearchId(uint32_t searchID) const
 {
 	return m_searchStrings.count(searchID) != 0 || m_browseBar.count(searchID) != 0;
+}
+
+uint32 CSearchList::GetBrowsePeerEcid(uint32 searchID) const
+{
+	std::map<uint32_t, uint32>::const_iterator it = m_browsePeers.find(searchID);
+	return it != m_browsePeers.end() ? it->second : 0;
+}
+
+void CSearchList::RegisterBrowseSearch(uint32 searchID, const wxString &peerName, uint32 peerEcid)
+{
+	// All three, not just the kind: Save() iterates m_searchStrings and then
+	// reads the other two with .at(), so an id present in one and missing
+	// from another throws when the searches are persisted.
+	m_searchStrings[searchID] = peerName;
+	m_searchKinds[searchID] = BrowseSearch;
+	m_searchStartTimes[searchID] = time(nullptr);
+	m_browsePeers[searchID] = peerEcid;
 }
 
 SearchType CSearchList::GetSearchLifecycleKindById(wxUIntPtr searchID) const
