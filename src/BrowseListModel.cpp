@@ -31,15 +31,38 @@
 
 namespace
 {
-//! A peer's directory string can end in a separator, and can double them up
-//! inside, either of which leaves a segment with no name. Stripping them
-//! keeps "Shared/Movies/" and "Shared/Movies" one folder instead of two, the
-//! second of them a blank row. All separators strips to nothing, which is no
+//! Canonical form of a peer's directory string: runs of separators collapsed
+//! to one, and a trailing separator dropped.
+//!
+//! The nodes are keyed by this string, so anything left un-normalised is a
+//! spelling that gets its own folder: "Shared/Movies", "Shared//Movies" and
+//! "Shared/Movies/" all name one directory, and keying them apart would draw
+//! a sibling row per spelling, all three showing "Movies". A trailing
+//! separator additionally leaves the last segment empty, which is the blank
+//! row. A string of nothing but separators normalises to empty, which is no
 //! directory at all.
-wxString StripTrailingSeparators(const wxString &path)
+//!
+//! Which separator survives a mixed run is whichever came first; the peer's
+//! own choice is not knowable from the packet either way.
+wxString NormalizeDirectory(const wxString &path)
 {
-	const size_t end = path.find_last_not_of("/\\");
-	return end == wxString::npos ? wxString() : path.Left(end + 1);
+	wxString normalized;
+	normalized.reserve(path.length());
+
+	bool lastWasSeparator = false;
+	for (const wxUniChar ch : path) {
+		const bool separator = (ch == '/' || ch == '\\');
+		if (separator && lastWasSeparator) {
+			continue;
+		}
+		normalized += ch;
+		lastWasSeparator = separator;
+	}
+
+	if (lastWasSeparator && !normalized.IsEmpty()) {
+		normalized.RemoveLast();
+	}
+	return normalized;
 }
 } // namespace
 
@@ -74,7 +97,10 @@ CBrowseFolderNode *CBrowseListModel::EnsureFolder(const wxString &path, size_t d
 	CBrowseFolderNode *parent = nullptr;
 	wxString name = path;
 	if (slash != wxString::npos && depth < MAX_FOLDER_DEPTH) {
-		const wxString parentPath = StripTrailingSeparators(path.Left(slash));
+		// Already canonical, and so is every prefix of it: the callers
+		// normalise, so there is no run to collapse here and the last
+		// separator cannot be trailing.
+		const wxString parentPath = path.Left(slash);
 		if (parentPath.IsEmpty()) {
 			// A leading separator leaves no parent path, which is no
 			// directory at all -- this node is a root under its own
@@ -131,9 +157,9 @@ void CBrowseListModel::RebuildFolders() const
 		}
 
 		// Normalised here, and identically in GetParent(): the node keys
-		// are the stripped form, so the two have to agree or a result
+		// are the canonical form, so the two have to agree or a result
 		// would be filed under a folder its own parent lookup misses.
-		const wxString directory = StripTrailingSeparators(file->GetDirectory());
+		const wxString directory = NormalizeDirectory(file->GetDirectory());
 		if (directory.IsEmpty()) {
 			m_looseFiles.push_back(file);
 			continue;
@@ -237,7 +263,7 @@ wxDataViewItem CBrowseListModel::GetParent(const wxDataViewItem &item) const
 	}
 
 	// Same normalisation RebuildFolders() filed it under.
-	const wxString directory = StripTrailingSeparators(file->GetDirectory());
+	const wxString directory = NormalizeDirectory(file->GetDirectory());
 	if (directory.IsEmpty()) {
 		return wxDataViewItem();
 	}

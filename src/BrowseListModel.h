@@ -185,7 +185,8 @@ private:
 	static const size_t MAX_FOLDER_DEPTH = 64;
 
 	//! Returns the node for @a path, creating it and every missing ancestor.
-	//! @a path must have no trailing separator (see StripTrailingSeparators).
+	//! @a path must be canonical (see NormalizeDirectory), which every prefix
+	//! this recurses onto then is too.
 	//! @a depth is this function's own recursion level; see MAX_FOLDER_DEPTH
 	//! for why the node's depth is checked as well.
 	CBrowseFolderNode *EnsureFolder(const wxString &path, size_t depth = 0) const;
