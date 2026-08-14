@@ -355,6 +355,31 @@ size_t CSearchListCtrl::GetItemCount() const
 	return shown;
 }
 
+CSearchFile *CSearchListCtrl::GetFocusedFile() const
+{
+	wxDataViewItemArray selections;
+	GetSelections(selections);
+	if (selections.empty()) {
+		return NULL;
+	}
+	return CSearchListModel::ToFile(selections[0]);
+}
+
+std::vector<CSearchFile *> CSearchListCtrl::GetSelectedFiles() const
+{
+	wxDataViewItemArray selections;
+	GetSelections(selections);
+
+	std::vector<CSearchFile *> files;
+	files.reserve(selections.GetCount());
+	for (const wxDataViewItem &item : selections) {
+		if (CSearchFile *file = CSearchListModel::ToFile(item)) {
+			files.push_back(file);
+		}
+	}
+	return files;
+}
+
 int CSearchListCtrl::GetSelectedItemCount() const
 {
 	wxDataViewItemArray selections;
@@ -757,10 +782,7 @@ void CSearchListCtrl::OnSelectionChanged(wxDataViewEvent &WXUNUSED(event))
 void CSearchListCtrl::OnPopupGetUrl(wxCommandEvent &WXUNUSED(event))
 {
 	wxString URIs;
-	wxDataViewItemArray selections;
-	GetSelections(selections);
-	for (const wxDataViewItem &item : selections) {
-		CSearchFile *file = CSearchListModel::ToFile(item);
+	for (CSearchFile *file : GetSelectedFiles()) {
 		URIs += theApp->CreateED2kLink(file) + "\n";
 	}
 	if (!URIs.IsEmpty()) {
@@ -770,12 +792,7 @@ void CSearchListCtrl::OnPopupGetUrl(wxCommandEvent &WXUNUSED(event))
 
 void CSearchListCtrl::OnGetComments(wxCommandEvent &WXUNUSED(event))
 {
-	wxDataViewItemArray selections;
-	GetSelections(selections);
-	if (selections.empty()) {
-		return;
-	}
-	CSearchFile *file = CSearchListModel::ToFile(selections[0]);
+	CSearchFile *file = GetFocusedFile();
 	if (file) {
 		// Same dialog the download list uses; its "Get from Kad" button drives
 		// the on-demand community ratings/comments lookup for this result.
@@ -786,20 +803,19 @@ void CSearchListCtrl::OnGetComments(wxCommandEvent &WXUNUSED(event))
 
 void CSearchListCtrl::OnRazorStatsCheck(wxCommandEvent &WXUNUSED(event))
 {
-	wxDataViewItemArray selections;
-	GetSelections(selections);
-	if (selections.empty()) {
+	CSearchFile *file = GetFocusedFile();
+	if (!file) {
 		return;
 	}
-	CSearchFile *file = CSearchListModel::ToFile(selections[0]);
 	theApp->amuledlg->LaunchUrl(thePrefs::GetStatsServerURL() + file->GetFileHash().Encode());
 }
 
 void CSearchListCtrl::OnRelatedSearch(wxCommandEvent &WXUNUSED(event))
 {
-	wxDataViewItemArray selections;
-	GetSelections(selections);
-	if (selections.empty()) {
+	// Every selected result, not just the focused one: the keyword this
+	// builds is a "related" query over all of their hashes.
+	const std::vector<CSearchFile *> files = GetSelectedFiles();
+	if (files.empty()) {
 		return;
 	}
 
@@ -809,8 +825,7 @@ void CSearchListCtrl::OnRelatedSearch(wxCommandEvent &WXUNUSED(event))
 		theApp->searchlist->StopSearch(true);
 		theApp->amuledlg->m_searchwnd->ResetControls();
 		wxString keyword("related");
-		for (const wxDataViewItem &item : selections) {
-			CSearchFile *file = CSearchListModel::ToFile(item);
+		for (const CSearchFile *file : files) {
 			keyword << "::" << file->GetFileHash().Encode();
 		}
 		CastByID(IDC_SEARCHNAME, theApp->amuledlg->m_searchwnd, wxTextEntry)->SetValue(keyword);
@@ -903,10 +918,7 @@ void CSearchListCtrl::DownloadSelected(int category)
 	downloadlist->BeginBatchUpdate();
 #endif
 
-	wxDataViewItemArray selections;
-	GetSelections(selections);
-	for (const wxDataViewItem &item : selections) {
-		CSearchFile *file = CSearchListModel::ToFile(item);
+	for (CSearchFile *file : GetSelectedFiles()) {
 		// Exempt from "Hide Known Files" before queueing, so the row
 		// survives the status change this is about to cause. Results are
 		// only grouped when their hashes match (CSearchList::AddResult), so

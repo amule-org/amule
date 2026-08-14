@@ -162,11 +162,33 @@ public:
 	size_t GetHiddenItemCount() const;
 
 	/**
-	 * Returns the number of results currently shown (root results plus
-	 * children of expanded parents) -- equivalent to the old
-	 * wxListCtrl::GetItemCount() this tab used to report in its title.
+	 * Returns the number of results currently shown: one per top-level hit
+	 * that passes the filter, whatever is expanded.
 	 */
 	size_t GetItemCount() const;
+
+	/**
+	 * The selected result, or NULL if nothing is selected -- or if what is
+	 * selected is not a result at all.
+	 *
+	 * Every item in this control is a wxDataViewItem holding a bare pointer,
+	 * and ToFile() turns one back into a CSearchFile with an unchecked cast.
+	 * That is safe while results are the only thing in the tree; a browse
+	 * grouped by folder will put nodes in it that are not results, and a
+	 * handler that casts one anyway reads whatever is at that address.
+	 *
+	 * These two accessors exist so that there is one place to answer the
+	 * question instead of a dozen. The check itself lands with the folder
+	 * nodes -- until something can actually be a folder, there is nothing
+	 * to reject, and every item here is a result.
+	 */
+	CSearchFile *GetFocusedFile() const;
+
+	/**
+	 * Every selected item that is a result, skipping any that are not.
+	 * @see GetFocusedFile
+	 */
+	std::vector<CSearchFile *> GetSelectedFiles() const;
 
 	/**
 	 * Returns the number of currently selected rows.
