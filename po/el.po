@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-14 10:50+0200\n"
+"POT-Creation-Date: 2026-08-14 11:53+0200\n"
 "PO-Revision-Date: 2026-08-13 11:40+0000\n"
 "Last-Translator: Dimitris <dgalanak@yahoo.com>\n"
 "Language-Team: Greek\n"
@@ -2148,6 +2148,10 @@ msgstr ""
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
 msgstr "Η αναζήτηση από τον ιστό από απομακρυσμένο περιβάλλον δεν έχει κανένα νόημα."
+
+#: src/ExternalConn.cpp
+msgid "A browse is not a search that can be started."
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Search in progress. Refetch results in a moment!"

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-14 10:50+0200\n"
+"POT-Creation-Date: 2026-08-14 11:53+0200\n"
 "PO-Revision-Date: 2026-08-13 11:55+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -2094,6 +2094,10 @@ msgstr "EC_TAG_FRIEND_SHARED nepieciešams EC_TAG_FRIEND vai EC_TAG_CLIENT."
 
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
+msgstr ""
+
+#: src/ExternalConn.cpp
+msgid "A browse is not a search that can be started."
 msgstr ""
 
 #: src/ExternalConn.cpp
