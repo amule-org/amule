@@ -333,17 +333,23 @@ size_t CSearchListCtrl::GetItemCount() const
 	}
 	size_t shown = 0;
 	const CSearchResultList &results = theApp->searchlist->GetSearchResults(m_nResultsID);
+	// Results, not rows: one per top-level hit, whatever is expanded.
+	//
+	// This used to add the children of expanded groups, which was right when
+	// the tab was a wxListCtrl and an expanded child really was another row --
+	// the count and the row count were the same number. Under the data view
+	// they are not: children are model nodes, nothing recomputes the label on
+	// expand or collapse (there is no handler), and the tab therefore reported
+	// whichever expansion state happened to be current when some unrelated
+	// event last refreshed it. Two clients showing identical lists disagreed
+	// by exactly the children someone had opened.
+	//
+	// It also makes the label's own arithmetic add up: GetHiddenItemCount()
+	// has always counted top-level results only, so "shown/(shown + hidden)"
+	// was mixing rows with results.
 	for (CSearchFile *file : results) {
 		if (!file->GetParent() && ShouldShow(file)) {
 			++shown;
-			if (file->HasChildren() && IsExpanded(CSearchListModel::ToItem(file))) {
-				const CSearchResultList &children = file->GetChildren();
-				for (const CSearchFile *child : children) {
-					if (IsFiltered(child)) {
-						++shown;
-					}
-				}
-			}
 		}
 	}
 	return shown;
