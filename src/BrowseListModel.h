@@ -44,12 +44,18 @@ public:
 	CBrowseFolderNode(const wxString &name, CBrowseFolderNode *parent)
 	: m_name(name)
 	, m_parent(parent)
+	, m_depth(parent ? parent->m_depth + 1 : 0)
 	{
 	}
 
 	//! This folder's own name, not its path: the tree shows the rest.
 	const wxString &GetName() const noexcept { return m_name; }
 	CBrowseFolderNode *GetParent() const noexcept { return m_parent; }
+
+	//! Distance from a root. Held on the node rather than counted on
+	//! demand because it is what bounds the tree across directory strings,
+	//! and the readers that walk it recurse: see MAX_FOLDER_DEPTH.
+	size_t GetDepth() const noexcept { return m_depth; }
 
 	//! Sub-folders and the results filed directly here. Both are rebuilt
 	//! from scratch on every refresh; the nodes themselves outlive it.
@@ -59,6 +65,7 @@ public:
 private:
 	wxString m_name;
 	CBrowseFolderNode *m_parent;
+	size_t m_depth;
 };
 
 /**
@@ -146,24 +153,41 @@ private:
 	void RebuildFolders() const;
 
 	/**
-	 * Deepest nesting built out of one directory string.
+	 * Most nodes the tree is ever deep, counted end to end and not per
+	 * directory string.
 	 *
-	 * The string is whatever the peer put in the packet, up to 64 KB
+	 * The strings are whatever the peer put in the packets, each up to 64 KB
 	 * (CFileDataIO::ReadString defaults to a uint16 length) and checked by
-	 * nothing between the socket and here. Each segment costs a recursion
-	 * level and a node keyed by its own prefix of the string, so a listing
-	 * naming a directory with 65,535 separators would cost that many frames
-	 * and the sum of all those prefixes in live wxStrings.
+	 * nothing between the socket and here. Two separate costs follow from
+	 * that, and they need two separate bounds:
+	 *
+	 * Per string, every segment is a recursion level in EnsureFolder() and a
+	 * node keyed by its own prefix, so one directory named with 65,535
+	 * separators is that many frames and the sum of all those prefixes in
+	 * live wxStrings. The depth argument to EnsureFolder() stops it.
+	 *
+	 * Across strings, chains compose: EnsureFolder() hands back an existing
+	 * node with the parents it already has, so a path bottoming out on one an
+	 * earlier string created inherits everything above it. Counting calls
+	 * cannot see that -- a peer sending directories shortest-first adds a
+	 * capped run per packet and nests without limit. So a node also carries
+	 * its own depth (CBrowseFolderNode::GetDepth) and refuses to be attached
+	 * past this, which is the bound HasContent() and
+	 * CSearchListCtrl::SetSubtreeExpanded() need: both recurse over the tree
+	 * rather than over any one string.
 	 *
 	 * A peer names a directory by joining the run of shared directories it
 	 * belongs to (CSharedFileList::GetPublicSharedDirName), so a real one is
-	 * a handful of segments deep. Past this, the remainder is left as one
-	 * folder name rather than split further.
+	 * a handful of segments deep and nothing legitimate comes near this.
+	 * Where either bound bites, the remainder is left as one folder name
+	 * rather than split further.
 	 */
 	static const size_t MAX_FOLDER_DEPTH = 64;
 
 	//! Returns the node for @a path, creating it and every missing ancestor.
-	//! @a depth is the recursion level, bounded by MAX_FOLDER_DEPTH.
+	//! @a path must have no trailing separator (see StripTrailingSeparators).
+	//! @a depth is this function's own recursion level; see MAX_FOLDER_DEPTH
+	//! for why the node's depth is checked as well.
 	CBrowseFolderNode *EnsureFolder(const wxString &path, size_t depth = 0) const;
 
 	//! Whether anything at all is under @a folder, at any depth. A folder

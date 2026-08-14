@@ -63,19 +63,29 @@ CBrowseFolderNode *CBrowseListModel::EnsureFolder(const wxString &path, size_t d
 	// Split off the last segment: whichever separator appears last is the
 	// one this peer uses, so a name containing the other one stays intact.
 	//
-	// Stops at MAX_FOLDER_DEPTH: the peer chose this string and nothing
-	// validates it, so the remainder is left as one folder name rather than
-	// split into as many levels as it has separators.
+	// Two bounds apply, and they stop different things. The depth argument
+	// caps this function's own recursion, which one long string drives. The
+	// node's depth caps the tree, which many strings drive between them: the
+	// early return above hands back a node with the parents it already has,
+	// so without that check a peer could add a capped run per packet and
+	// nest for as long as it kept sending. Where either bites, the remainder
+	// stays one folder name instead of being split further.
 	const size_t slash = path.find_last_of("/\\");
 	CBrowseFolderNode *parent = nullptr;
 	wxString name = path;
 	if (slash != wxString::npos && depth < MAX_FOLDER_DEPTH) {
-		name = path.Mid(slash + 1);
 		const wxString parentPath = StripTrailingSeparators(path.Left(slash));
-		// A leading separator leaves an empty parent path, which is no
-		// directory at all -- this node is a root.
-		if (!parentPath.IsEmpty()) {
-			parent = EnsureFolder(parentPath, depth + 1);
+		if (parentPath.IsEmpty()) {
+			// A leading separator leaves no parent path, which is no
+			// directory at all -- this node is a root under its own
+			// last segment.
+			name = path.Mid(slash + 1);
+		} else {
+			CBrowseFolderNode *candidate = EnsureFolder(parentPath, depth + 1);
+			if (candidate->GetDepth() + 1 < MAX_FOLDER_DEPTH) {
+				parent = candidate;
+				name = path.Mid(slash + 1);
+			}
 		}
 	}
 
