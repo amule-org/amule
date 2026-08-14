@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-14 12:55+0200\n"
+"POT-Creation-Date: 2026-08-14 13:50+0200\n"
 "PO-Revision-Date: 2026-08-13 11:49+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
@@ -6450,6 +6450,15 @@ msgstr "Taxa de Bits"
 #: src/SearchListCtrl.cpp
 msgid "Codec"
 msgstr "Codec"
+
+#: src/SearchListCtrl.cpp
+msgid "Expand all"
+msgstr ""
+
+#: src/SearchListCtrl.cpp
+#, fuzzy
+msgid "Collapse all"
+msgstr "Fechar todas as abas"
 
 #: src/SearchListCtrl.cpp
 msgid "Download in category"

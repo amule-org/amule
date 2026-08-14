@@ -123,7 +123,18 @@ public:
 	 * ordinary search tab.
 	 */
 	uint32 GetBrowseEcid() const { return m_browseEcid; }
-	void SetBrowseEcid(uint32 ecid) { m_browseEcid = ecid; }
+	/**
+	 * Marks this tab as browsing @a ecid, and swaps in the model that groups
+	 * results by the folders the peer reported.
+	 *
+	 * The model is chosen here rather than in the constructor because that is
+	 * where the answer first exists: CSearchDlg::EnsureBrowseTab creates an
+	 * ordinary tab and only then tells it who it is browsing. The tab has no
+	 * results yet at that point, so there is nothing to migrate.
+	 *
+	 * Defined in the .cpp: the swap needs CBrowseListModel to be complete.
+	 */
+	void SetBrowseEcid(uint32 ecid);
 	bool IsBrowse() const { return m_browseEcid != 0; }
 
 	// Peer display name and lifecycle (EBrowseStatus) for a browse tab. Held on
@@ -162,11 +173,29 @@ public:
 	size_t GetHiddenItemCount() const;
 
 	/**
-	 * Returns the number of results currently shown (root results plus
-	 * children of expanded parents) -- equivalent to the old
-	 * wxListCtrl::GetItemCount() this tab used to report in its title.
+	 * Returns the number of results currently shown: one per top-level hit
+	 * that passes the filter, whatever is expanded.
 	 */
 	size_t GetItemCount() const;
+
+	/**
+	 * The selected result, or NULL if nothing is selected -- or if what is
+	 * selected is not a result at all.
+	 *
+	 * Every item in this control is a wxDataViewItem holding a bare pointer,
+	 * and ToFile() turns one back into a CSearchFile with an unchecked cast.
+	 * In a browse tab the tree also holds folder nodes, which are not
+	 * results, and a handler that casts one anyway reads whatever is at that
+	 * address. These two accessors ask the model (IsFolder) first, so the
+	 * question is answered in one place rather than at every call site.
+	 */
+	CSearchFile *GetFocusedFile() const;
+
+	/**
+	 * Every selected item that is a result, skipping any that are not.
+	 * @see GetFocusedFile
+	 */
+	std::vector<CSearchFile *> GetSelectedFiles() const;
 
 	/**
 	 * Returns the number of currently selected rows.
@@ -280,6 +309,11 @@ protected:
 
 	//! ECID of the browsed peer for a "View Files" tab, or 0 for a search tab.
 	uint32 m_browseEcid;
+
+	//! The folder the context menu was opened on, if it was opened on one.
+	//! A right-click does not select the row on every platform, so the
+	//! handlers cannot ask for the selection when they run.
+	wxDataViewItem m_contextFolder;
 	//! Peer display name and lifecycle (EBrowseStatus) for a browse tab.
 	wxString m_browseName;
 	uint32 m_browseStatus;
@@ -333,6 +367,17 @@ protected:
 	void OnRazorStatsCheck(wxCommandEvent &event);
 	void OnRelatedSearch(wxCommandEvent &event);
 	void OnGetComments(wxCommandEvent &event);
+	void OnExpandAll(wxCommandEvent &event);
+	void OnCollapseAll(wxCommandEvent &event);
+
+	/**
+	 * Expands or collapses @a item and everything under it.
+	 *
+	 * Only folders are containers worth walking here; a grouped result's
+	 * children are alternative sources, and opening those wholesale is not
+	 * what "expand all" on a folder means.
+	 */
+	void SetSubtreeExpanded(const wxDataViewItem &item, bool expand);
 	void OnPopupDownload(wxCommandEvent &event);
 
 	/**

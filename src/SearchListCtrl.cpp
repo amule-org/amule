@@ -37,6 +37,7 @@
 #include "ServerConnect.h"    // Needed for CServerConnect
 #include "SearchList.h"       // Needed for CSearchFile
 #include "updownclient.h"     // Needed for BROWSE_IN_PROGRESS
+#include "BrowseListModel.h"  // Needed for CBrowseListModel
 #include "SearchListModel.h"  // Needed for CSearchListModel
 #include "GetTickCount.h"     // Needed for GetTickCount64()
 #include "CommentDialogLst.h" // Needed for CCommentDialogLst (Kad comments/ratings)
@@ -60,6 +61,8 @@ wxBEGIN_EVENT_TABLE(CSearchListCtrl, CMuleDataViewCtrl)
 	EVT_MENU(MP_RAZORSTATS, CSearchListCtrl::OnRazorStatsCheck)
 	EVT_MENU(MP_SEARCHRELATED, CSearchListCtrl::OnRelatedSearch)
 	EVT_MENU(MP_GETCOMMENTS, CSearchListCtrl::OnGetComments)
+	EVT_MENU(MP_EXPANDALL, CSearchListCtrl::OnExpandAll)
+	EVT_MENU(MP_COLLAPSEALL, CSearchListCtrl::OnCollapseAll)
 	EVT_MENU(MP_RESUME, CSearchListCtrl::OnPopupDownload)
 	EVT_MENU_RANGE(MP_ASSIGNCAT, MP_ASSIGNCAT + 99, CSearchListCtrl::OnPopupDownload)
 wxEND_EVENT_TABLE()
@@ -355,10 +358,64 @@ size_t CSearchListCtrl::GetItemCount() const
 	return shown;
 }
 
-int CSearchListCtrl::GetSelectedItemCount() const
+CSearchFile *CSearchListCtrl::GetFocusedFile() const
 {
 	wxDataViewItemArray selections;
-	return static_cast<int>(const_cast<CSearchListCtrl *>(this)->GetSelections(selections));
+	GetSelections(selections);
+	// The first selected result, not the first selected item: a folder
+	// picked up alongside one would otherwise make this give up, while
+	// GetSelectedItemCount() -- which counts results -- still enables the
+	// menu entry that calls it.
+	for (const wxDataViewItem &item : selections) {
+		if (!m_model->IsFolder(item)) {
+			return CSearchListModel::ToFile(item);
+		}
+	}
+	return nullptr;
+}
+
+std::vector<CSearchFile *> CSearchListCtrl::GetSelectedFiles() const
+{
+	wxDataViewItemArray selections;
+	GetSelections(selections);
+
+	std::vector<CSearchFile *> files;
+	files.reserve(selections.GetCount());
+	for (const wxDataViewItem &item : selections) {
+		if (m_model->IsFolder(item)) {
+			continue;
+		}
+		if (CSearchFile *file = CSearchListModel::ToFile(item)) {
+			files.push_back(file);
+		}
+	}
+	return files;
+}
+
+void CSearchListCtrl::SetBrowseEcid(uint32 ecid)
+{
+	const bool wasBrowse = IsBrowse();
+	m_browseEcid = ecid;
+
+	// Only on the transition into browsing. A re-browse of the same peer
+	// comes back through here with the same ECID, and swapping the model
+	// again would throw away the folders the user has open.
+	if (!ecid || wasBrowse) {
+		return;
+	}
+
+	m_model = new CBrowseListModel(this);
+	AssociateModel(m_model);
+	m_model->DecRef(); // the control now holds the only reference
+}
+
+int CSearchListCtrl::GetSelectedItemCount() const
+{
+	// Results, not rows. A browse tab has folders in the tree, and every
+	// caller of this is asking how many things it can act on -- a menu it is
+	// about to enable, a download it is about to queue. Counting a selected
+	// folder would enable an action with nothing behind it.
+	return static_cast<int>(GetSelectedFiles().size());
 }
 
 int CSearchListCtrl::CompareFilesByColumn(
@@ -686,6 +743,19 @@ void CSearchListCtrl::OnSortingChanged()
 
 void CSearchListCtrl::OnRightClick(wxDataViewEvent &event)
 {
+	// A folder row is not a result: none of the actions below apply to it,
+	// and GetSelectedItemCount() counts results, so it would otherwise get
+	// no menu at all. Remembered rather than re-derived when the handler
+	// runs, because a right-click does not select the row on every platform.
+	m_contextFolder = m_model->IsFolder(event.GetItem()) ? event.GetItem() : wxDataViewItem();
+	if (m_contextFolder.IsOk()) {
+		wxMenu menu;
+		menu.Append(MP_EXPANDALL, _("Expand all"));
+		menu.Append(MP_COLLAPSEALL, _("Collapse all"));
+		PopupMenu(&menu, event.GetPosition());
+		return;
+	}
+
 	if (GetSelectedItemCount()) {
 		// No title -- see the identical rationale in the pre-port version
 		// (wxMenu's title parameter renders inconsistently or not at all
@@ -757,10 +827,7 @@ void CSearchListCtrl::OnSelectionChanged(wxDataViewEvent &WXUNUSED(event))
 void CSearchListCtrl::OnPopupGetUrl(wxCommandEvent &WXUNUSED(event))
 {
 	wxString URIs;
-	wxDataViewItemArray selections;
-	GetSelections(selections);
-	for (const wxDataViewItem &item : selections) {
-		CSearchFile *file = CSearchListModel::ToFile(item);
+	for (CSearchFile *file : GetSelectedFiles()) {
 		URIs += theApp->CreateED2kLink(file) + "\n";
 	}
 	if (!URIs.IsEmpty()) {
@@ -768,14 +835,44 @@ void CSearchListCtrl::OnPopupGetUrl(wxCommandEvent &WXUNUSED(event))
 	}
 }
 
-void CSearchListCtrl::OnGetComments(wxCommandEvent &WXUNUSED(event))
+void CSearchListCtrl::SetSubtreeExpanded(const wxDataViewItem &item, bool expand)
 {
-	wxDataViewItemArray selections;
-	GetSelections(selections);
-	if (selections.empty()) {
+	if (!item.IsOk()) {
 		return;
 	}
-	CSearchFile *file = CSearchListModel::ToFile(selections[0]);
+
+	// Parent first when opening, last when closing: a row cannot be
+	// expanded while an ancestor of it is still collapsed.
+	if (expand) {
+		Expand(item);
+	}
+
+	wxDataViewItemArray children;
+	m_model->GetChildren(item, children);
+	for (const wxDataViewItem &child : children) {
+		if (m_model->IsFolder(child)) {
+			SetSubtreeExpanded(child, expand);
+		}
+	}
+
+	if (!expand) {
+		Collapse(item);
+	}
+}
+
+void CSearchListCtrl::OnExpandAll(wxCommandEvent &WXUNUSED(event))
+{
+	SetSubtreeExpanded(m_contextFolder, true);
+}
+
+void CSearchListCtrl::OnCollapseAll(wxCommandEvent &WXUNUSED(event))
+{
+	SetSubtreeExpanded(m_contextFolder, false);
+}
+
+void CSearchListCtrl::OnGetComments(wxCommandEvent &WXUNUSED(event))
+{
+	CSearchFile *file = GetFocusedFile();
 	if (file) {
 		// Same dialog the download list uses; its "Get from Kad" button drives
 		// the on-demand community ratings/comments lookup for this result.
@@ -786,20 +883,19 @@ void CSearchListCtrl::OnGetComments(wxCommandEvent &WXUNUSED(event))
 
 void CSearchListCtrl::OnRazorStatsCheck(wxCommandEvent &WXUNUSED(event))
 {
-	wxDataViewItemArray selections;
-	GetSelections(selections);
-	if (selections.empty()) {
+	CSearchFile *file = GetFocusedFile();
+	if (!file) {
 		return;
 	}
-	CSearchFile *file = CSearchListModel::ToFile(selections[0]);
 	theApp->amuledlg->LaunchUrl(thePrefs::GetStatsServerURL() + file->GetFileHash().Encode());
 }
 
 void CSearchListCtrl::OnRelatedSearch(wxCommandEvent &WXUNUSED(event))
 {
-	wxDataViewItemArray selections;
-	GetSelections(selections);
-	if (selections.empty()) {
+	// Every selected result, not just the focused one: the keyword this
+	// builds is a "related" query over all of their hashes.
+	const std::vector<CSearchFile *> files = GetSelectedFiles();
+	if (files.empty()) {
 		return;
 	}
 
@@ -809,8 +905,7 @@ void CSearchListCtrl::OnRelatedSearch(wxCommandEvent &WXUNUSED(event))
 		theApp->searchlist->StopSearch(true);
 		theApp->amuledlg->m_searchwnd->ResetControls();
 		wxString keyword("related");
-		for (const wxDataViewItem &item : selections) {
-			CSearchFile *file = CSearchListModel::ToFile(item);
+		for (const CSearchFile *file : files) {
 			keyword << "::" << file->GetFileHash().Encode();
 		}
 		CastByID(IDC_SEARCHNAME, theApp->amuledlg->m_searchwnd, wxTextEntry)->SetValue(keyword);
@@ -903,10 +998,7 @@ void CSearchListCtrl::DownloadSelected(int category)
 	downloadlist->BeginBatchUpdate();
 #endif
 
-	wxDataViewItemArray selections;
-	GetSelections(selections);
-	for (const wxDataViewItem &item : selections) {
-		CSearchFile *file = CSearchListModel::ToFile(item);
+	for (CSearchFile *file : GetSelectedFiles()) {
 		// Exempt from "Hide Known Files" before queueing, so the row
 		// survives the status change this is about to cause. Results are
 		// only grouped when their hashes match (CSearchList::AddResult), so

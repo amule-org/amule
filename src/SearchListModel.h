@@ -72,12 +72,28 @@ public:
 	//! tree should be re-evaluated (some rows may appear/disappear).
 	void NotifyFilterChanged();
 
+	/**
+	 * Bumped whenever something happens that could change which results are
+	 * shown, or how they are grouped.
+	 *
+	 * For derived models that cache a view of the result set: this model
+	 * itself caches nothing and re-reads on every query, but a browse groups
+	 * its results by folder, and rederiving that grouping on every query is
+	 * O(results) against a control that asks several times per rebuild.
+	 * Comparing this instead makes the cost per change rather than per query.
+	 */
+	unsigned GetContentGeneration() const noexcept { return m_contentGeneration; }
+
 	//! Forces the next flush to be a full Cleared(). Group formation needs
 	//! one: making an existing result a container leaves the control's tree
 	//! inconsistent on GTK/MSW under any incremental notification (got3nks,
 	//! PR #796 review, after ItemChanged() and delete+re-add both failed to
 	//! make those backends re-derive container-ness).
-	void MarkDirty() { m_pendingReset = true; }
+	void MarkDirty()
+	{
+		m_pendingReset = true;
+		++m_contentGeneration;
+	}
 
 	//! Applies whatever the arrivals since the last flush added up to, one
 	//! batch per idle (CSearchListCtrl::OnIdle). Returns true if it was a
@@ -111,6 +127,19 @@ public:
 	 */
 	static void DropReferencesTo(CSearchFile *file);
 
+	/**
+	 * Whether @a item is a grouping node rather than a result.
+	 *
+	 * Always false here: in a search, every item is a CSearchFile. A browse
+	 * grouped by folder (CBrowseListModel) puts nodes in the tree that are
+	 * not results, and this is how a caller holding a wxDataViewItem -- a
+	 * bare void* with nothing to distinguish it -- can find out before
+	 * handing it to ToFile().
+	 */
+	virtual bool IsFolder(const wxDataViewItem &WXUNUSED(item)) const { return false; }
+
+	//! Unchecked: the caller is responsible for having ruled out a folder
+	//! first, via IsFolder() or by knowing the model has none.
 	static CSearchFile *ToFile(const wxDataViewItem &item)
 	{
 		return static_cast<CSearchFile *>(item.GetID());
@@ -165,11 +194,18 @@ public:
 		unsigned int column,
 		bool ascending) const wxOVERRIDE;
 
-private:
+protected:
+	//! Protected rather than private: CBrowseListModel derives the folder
+	//! grouping from the same live result set, reached through the owner.
 	CSearchListCtrl *m_owner;
 
+private:
 	//! Set when only a full rebuild will do; see MarkDirty().
 	bool m_pendingReset = false;
+
+	//! See GetContentGeneration(). Wrapping is harmless: it is only ever
+	//! compared for equality against the value at the last cache fill.
+	unsigned m_contentGeneration = 0;
 
 	//! Arrivals waiting to be reported incrementally: new rows, and rows
 	//! whose values changed. Held as pointers between the notification and
