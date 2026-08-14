@@ -356,15 +356,31 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item43->Add( item50, wxSizerFlags().Center().Border(wxALL, 5) );
     wxStaticLine *item51 = new wxStaticLine( parent, -1, wxDefaultPosition, wxSize(-1,20), wxLI_VERTICAL );
     item43->Add( item51, wxSizerFlags().Center().Border(wxALL, 5) );
-    wxButton *item52 = new wxButton( parent, IDC_SEARCH_RESET, _("Reset Fields"), wxDefaultPosition, wxDefaultSize, 0 );
-    item52->Enable( false );
-    item43->Add( item52, wxSizerFlags().Center().Border(wxALL, 5) );
-    wxStaticLine *item53 = new wxStaticLine( parent, -1, wxDefaultPosition, wxSize(-1,20), wxLI_VERTICAL );
-    item43->Add( item53, wxSizerFlags().Center().Border(wxALL, 5) );
+    // Ordered most to least destructive rightwards, so the mildest sits at the
+    // edge where it is easiest to hit and the one that discards saved terms is
+    // furthest from it (issue #911). CSearchDlg inserts "Clear Search History"
+    // ahead of Clear Search Results at runtime, giving:
+    //   Clear Search History | Clear Search Results | Reset Fields
+    // Reset Fields last also puts it directly above "Reset Filters" in the row
+    // below, which is the control it parallels.
     wxButton *item54 = new wxButton( parent, IDC_CLEAR_RESULTS, _("Clear Search Results"), wxDefaultPosition, wxDefaultSize, 0 );
     item54->Enable( false );
     item43->Add( item54, wxSizerFlags().Center().Border(wxALL, 5) );
+    wxStaticLine *item53 = new wxStaticLine( parent, -1, wxDefaultPosition, wxSize(-1,20), wxLI_VERTICAL );
+    item43->Add( item53, wxSizerFlags().Center().Border(wxALL, 5) );
+    wxButton *item52 = new wxButton( parent, IDC_SEARCH_RESET, _("Reset Fields"), wxDefaultPosition, wxDefaultSize, 0 );
+    item52->Enable( false );
+    item43->Add( item52, wxSizerFlags().Center().Border(wxALL, 5) );
     item1->Add( item43, wxSizerFlags().Center().Border(wxALL, 5) );
+    // Rule between the buttons and the filter row (issue #911): with extended
+    // parameters and filtering both on, five rows of fields run together, and
+    // this marks where the search parameters stop and what filters the results
+    // already on screen begins. Full width rather than the button row's extent
+    // -- that row is centred and sized to its contents, so tracking it would
+    // mean measuring it. Shown and hidden with the row it introduces; see
+    // CSearchDlg::ApplyFilterSeparator().
+    wxStaticLine *item61 = new wxStaticLine( parent, ID_FILTER_SEPARATOR, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL );
+    item1->Add( item61, wxSizerFlags().Expand().Border(wxLEFT|wxRIGHT, 5) );
     // Filter row goes BELOW the action buttons (issue #698): filtering is not a
     // search parameter -- it applies to results already on screen and is not
     // touched by "Reset Fields" -- so grouping it with the search parameters
