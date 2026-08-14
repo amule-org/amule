@@ -27,9 +27,10 @@
 
 #include "SearchListModel.h"
 
-#include <map>    // Needed for std::map (the folder registry)
-#include <memory> // Needed for std::unique_ptr (stable folder node addresses)
-#include <set>    // Needed for std::set (the folder-address lookup)
+#include <map>           // Needed for std::map (the folder registry)
+#include <memory>        // Needed for std::unique_ptr (stable folder node addresses)
+#include <set>           // Needed for std::set (the folder-address lookup)
+#include <unordered_map> // Needed for std::unordered_map (result -> its folder)
 
 /**
  * A folder in a browsed peer's shared-file listing.
@@ -44,12 +45,18 @@ public:
 	CBrowseFolderNode(const wxString &name, CBrowseFolderNode *parent)
 	: m_name(name)
 	, m_parent(parent)
+	, m_depth(parent ? parent->m_depth + 1 : 0)
 	{
 	}
 
 	//! This folder's own name, not its path: the tree shows the rest.
 	const wxString &GetName() const noexcept { return m_name; }
 	CBrowseFolderNode *GetParent() const noexcept { return m_parent; }
+
+	//! Distance from a root. Held on the node rather than counted on
+	//! demand because it is what bounds the tree across directory strings,
+	//! and the readers that walk it recurse: see MAX_FOLDER_DEPTH.
+	size_t GetDepth() const noexcept { return m_depth; }
 
 	//! Sub-folders and the results filed directly here. Both are rebuilt
 	//! from scratch on every refresh; the nodes themselves outlive it.
@@ -59,6 +66,7 @@ public:
 private:
 	wxString m_name;
 	CBrowseFolderNode *m_parent;
+	size_t m_depth;
 };
 
 /**
@@ -145,8 +153,51 @@ private:
 	 */
 	void RebuildFolders() const;
 
+	/**
+	 * Most nodes the tree is ever deep, counted end to end and not per
+	 * directory string.
+	 *
+	 * The strings are whatever the peer put in the packets, each up to 64 KB
+	 * (CFileDataIO::ReadString defaults to a uint16 length) and checked by
+	 * nothing between the socket and here. Two separate costs follow from
+	 * that, and they need two separate bounds:
+	 *
+	 * Per string, every segment is a recursion level in EnsureFolder() and a
+	 * node keyed by its own prefix, so one directory named with 65,535
+	 * separators is that many frames and the sum of all those prefixes in
+	 * live wxStrings. The depth argument to EnsureFolder() stops it.
+	 *
+	 * Across strings, chains compose: EnsureFolder() hands back an existing
+	 * node with the parents it already has, so a path bottoming out on one an
+	 * earlier string created inherits everything above it. Counting calls
+	 * cannot see that -- a peer sending directories shortest-first adds a
+	 * capped run per packet and nests without limit. So a node also carries
+	 * its own depth (CBrowseFolderNode::GetDepth) and refuses to be attached
+	 * past this, which is the bound HasContent() and
+	 * CSearchListCtrl::SetSubtreeExpanded() need: both recurse over the tree
+	 * rather than over any one string.
+	 *
+	 * A peer names a directory by joining the run of shared directories it
+	 * belongs to (CSharedFileList::GetPublicSharedDirName), so a real one is
+	 * a handful of segments deep and nothing legitimate comes near this.
+	 * Where either bound bites, the remainder is left as one folder name
+	 * rather than split further.
+	 *
+	 * What this bounds is the recursion and the depth of the tree, which is
+	 * the crash. It is not a bound on memory: a capped string still leaves
+	 * about MAX_FOLDER_DEPTH nodes, each keyed by its own prefix of it, so a
+	 * 64 KB directory name costs a few MB of live keys rather than the GBs
+	 * it would unbounded -- and that still scales with how many such strings
+	 * the peer sends.
+	 */
+	static const size_t MAX_FOLDER_DEPTH = 64;
+
 	//! Returns the node for @a path, creating it and every missing ancestor.
-	CBrowseFolderNode *EnsureFolder(const wxString &path) const;
+	//! @a path must be canonical (see NormalizeDirectory), which every prefix
+	//! this recurses onto then is too.
+	//! @a depth is this function's own recursion level; see MAX_FOLDER_DEPTH
+	//! for why the node's depth is checked as well.
+	CBrowseFolderNode *EnsureFolder(const wxString &path, size_t depth = 0) const;
 
 	//! Whether anything at all is under @a folder, at any depth. A folder
 	//! that only holds other empty folders is not worth a row.
@@ -173,6 +224,20 @@ private:
 	//! Results the peer reported with no directory. Top level, next to the
 	//! folders.
 	mutable std::vector<CSearchFile *> m_looseFiles;
+
+	//! Which folder RebuildFolders() filed each shown result under, recorded
+	//! as it files them. GetParent() is on the traversal path rather than
+	//! the rebuild path and wx asks it per item, so it resolves through this
+	//! instead of re-deriving the key from the result's directory string.
+	//!
+	//! Written by the grouping walk itself, so it cannot come to describe a
+	//! different grouping than the one drawn. A result the peer gave no
+	//! directory is absent rather than present-and-null: it has no folder,
+	//! which is what a missing entry already means.
+	//!
+	//! Costs an entry per shown result, on top of the same pointer already
+	//! held in its folder's m_files.
+	mutable std::unordered_map<const CSearchFile *, CBrowseFolderNode *> m_fileParents;
 };
 
 #endif // BROWSELISTMODEL_H

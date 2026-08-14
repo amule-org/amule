@@ -29,6 +29,48 @@
 #include "SearchListCtrl.h"
 #include "amule.h"
 
+namespace
+{
+//! Canonical form of a peer's directory string: runs of separators collapsed
+//! to one, and a trailing separator dropped.
+//!
+//! The nodes are keyed by this string, so anything left un-normalised is a
+//! spelling that gets its own folder: "Shared/Movies", "Shared//Movies" and
+//! "Shared/Movies/" all name one directory, and keying them apart would draw
+//! a sibling row per spelling, all three showing "Movies". A trailing
+//! separator additionally leaves the last segment empty, which is the blank
+//! row. A string of nothing but separators normalises to empty, which is no
+//! directory at all.
+//!
+//! Which separator survives a mixed run is whichever came first; the peer's
+//! own choice is not knowable from the packet either way.
+//!
+//! Collapsing runs also rewrites the one string where a doubled separator
+//! means something: a UNC name arrives as "\\server\share" and is keyed as
+//! "\server\share". It is a label here and nothing resolves it, so this
+//! costs a backslash in a folder row rather than a wrong lookup.
+wxString NormalizeDirectory(const wxString &path)
+{
+	wxString normalized;
+	normalized.reserve(path.length());
+
+	bool lastWasSeparator = false;
+	for (const wxUniChar ch : path) {
+		const bool separator = (ch == '/' || ch == '\\');
+		if (separator && lastWasSeparator) {
+			continue;
+		}
+		normalized += ch;
+		lastWasSeparator = separator;
+	}
+
+	if (lastWasSeparator && !normalized.IsEmpty()) {
+		normalized.RemoveLast();
+	}
+	return normalized;
+}
+} // namespace
+
 CBrowseListModel::CBrowseListModel(CSearchListCtrl *owner)
 : CSearchListModel(owner)
 {
@@ -39,7 +81,7 @@ bool CBrowseListModel::IsFolder(const wxDataViewItem &item) const
 	return item.IsOk() && m_folderAddresses.count(item.GetID()) != 0;
 }
 
-CBrowseFolderNode *CBrowseListModel::EnsureFolder(const wxString &path) const
+CBrowseFolderNode *CBrowseListModel::EnsureFolder(const wxString &path, size_t depth) const
 {
 	const auto existing = m_folders.find(path);
 	if (existing != m_folders.end()) {
@@ -48,16 +90,33 @@ CBrowseFolderNode *CBrowseListModel::EnsureFolder(const wxString &path) const
 
 	// Split off the last segment: whichever separator appears last is the
 	// one this peer uses, so a name containing the other one stays intact.
+	//
+	// Two bounds apply, and they stop different things. The depth argument
+	// caps this function's own recursion, which one long string drives. The
+	// node's depth caps the tree, which many strings drive between them: the
+	// early return above hands back a node with the parents it already has,
+	// so without that check a peer could add a capped run per packet and
+	// nest for as long as it kept sending. Where either bites, the remainder
+	// stays one folder name instead of being split further.
 	const size_t slash = path.find_last_of("/\\");
 	CBrowseFolderNode *parent = nullptr;
 	wxString name = path;
-	if (slash != wxString::npos) {
-		name = path.Mid(slash + 1);
+	if (slash != wxString::npos && depth < MAX_FOLDER_DEPTH) {
+		// Already canonical, and so is every prefix of it: the callers
+		// normalise, so there is no run to collapse here and the last
+		// separator cannot be trailing.
 		const wxString parentPath = path.Left(slash);
-		// A leading or doubled separator leaves an empty parent path,
-		// which is no directory at all -- this node is a root.
-		if (!parentPath.IsEmpty()) {
-			parent = EnsureFolder(parentPath);
+		if (parentPath.IsEmpty()) {
+			// A leading separator leaves no parent path, which is no
+			// directory at all -- this node is a root under its own
+			// last segment.
+			name = path.Mid(slash + 1);
+		} else {
+			CBrowseFolderNode *candidate = EnsureFolder(parentPath, depth + 1);
+			if (candidate->GetDepth() + 1 < MAX_FOLDER_DEPTH) {
+				parent = candidate;
+				name = path.Mid(slash + 1);
+			}
 		}
 	}
 
@@ -91,6 +150,7 @@ void CBrowseListModel::RebuildFolders() const
 		entry.second->m_subfolders.clear();
 	}
 	m_looseFiles.clear();
+	m_fileParents.clear();
 
 	if (!m_owner->GetSearchId()) {
 		return;
@@ -102,13 +162,19 @@ void CBrowseListModel::RebuildFolders() const
 			continue;
 		}
 
-		const wxString &directory = file->GetDirectory();
+		// The one place a directory string is normalised, because this is
+		// the one place it becomes a key. GetParent() reads the answer
+		// back from m_fileParents rather than deriving it again, so there
+		// is no second spelling of this to keep in step.
+		const wxString directory = NormalizeDirectory(file->GetDirectory());
 		if (directory.IsEmpty()) {
 			m_looseFiles.push_back(file);
 			continue;
 		}
 
-		EnsureFolder(directory)->m_files.push_back(file);
+		CBrowseFolderNode *folder = EnsureFolder(directory);
+		folder->m_files.push_back(file);
+		m_fileParents.emplace(file, folder);
 	}
 
 	// Relink the hierarchy. Done as a second pass rather than while
@@ -164,6 +230,12 @@ unsigned int CBrowseListModel::GetChildren(const wxDataViewItem &item, wxDataVie
 	}
 
 	if (IsFolder(item)) {
+		// Here too, not only on the root branch: this is the path that
+		// reads the cached CSearchFile pointers, so it is the one that has
+		// to see a generation bump. The call is a comparison once the
+		// grouping is current.
+		RebuildFolders();
+
 		const CBrowseFolderNode *folder = ToFolder(item);
 		unsigned int count = 0;
 		for (CBrowseFolderNode *sub : folder->m_subfolders) {
@@ -199,13 +271,15 @@ wxDataViewItem CBrowseListModel::GetParent(const wxDataViewItem &item) const
 		return CSearchListModel::GetParent(item);
 	}
 
-	const wxString &directory = file->GetDirectory();
-	if (directory.IsEmpty()) {
-		return wxDataViewItem();
-	}
+	// Read back from the grouping walk rather than re-derived from the
+	// directory string. This is the traversal path and wx asks per item, so
+	// it does no string work at all: RebuildFolders() knew the node when it
+	// filed the result, and a result the peer gave no directory is simply
+	// absent, which is the invisible root.
+	RebuildFolders();
 
-	const auto it = m_folders.find(directory);
-	return it != m_folders.end() ? ToItem(it->second.get()) : wxDataViewItem();
+	const auto it = m_fileParents.find(file);
+	return it != m_fileParents.end() ? ToItem(it->second) : wxDataViewItem();
 }
 
 bool CBrowseListModel::IsContainer(const wxDataViewItem &item) const
