@@ -951,6 +951,14 @@ void CSearchList::ProcessSharedFileList(const uint8_t *in_packet,
 	// arrives in several -- and registered so it is listed like any other
 	// search, with its kind and peer, which is what lets a remote GUI rebuild
 	// it as a browse tab rather than a nameless search.
+	// Whether this browse was asked for here. Read before the id is assigned
+	// below, because that assignment is what makes a local browse look like an
+	// EC one afterwards. An EC-initiated browse belongs to another client, so
+	// revealing it would pull this user's panel and selection away for
+	// something they never asked for -- the same rule the discovered-search
+	// path follows.
+	const bool ecInitiated = sender->GetBrowseSearchId() != 0;
+
 	if (!sender->GetBrowseSearchId()) {
 		const uint32 localBrowseId = AllocateEd2kId();
 		sender->SetBrowseSearchId(localBrowseId);
@@ -963,7 +971,8 @@ void CSearchList::ProcessSharedFileList(const uint8_t *in_packet,
 	// sharing a nick don't collapse into one tab, and a re-browse refreshes the
 	// same tab). Marks the tab as browsing; the terminal paths flip it to
 	// finished/failed via Notify_Browse_Status.
-	theApp->amuledlg->m_searchwnd->EnsureBrowseTab(sender->ECID(), sender->GetUserName(), searchID);
+	theApp->amuledlg->m_searchwnd->EnsureBrowseTab(
+		sender->ECID(), sender->GetUserName(), searchID, !ecInitiated);
 #endif
 
 	const CMemFile packet(in_packet, size);

@@ -3744,7 +3744,8 @@ void CSearchListRem::HandlePacket(const CECPacket *packet)
 				if (kindTag && kindTag->GetInt() == BrowseSearch && peerEcid) {
 					theApp->amuledlg->m_searchwnd->EnsureBrowseTab(peerEcid,
 						nameTag ? nameTag->GetStringData() : wxString(),
-						sid);
+						sid,
+						false);
 				} else {
 					theApp->amuledlg->m_searchwnd->CreateNewTab(
 						(nameTag ? nameTag->GetStringData() : wxString()) + " (0)",
