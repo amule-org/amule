@@ -956,8 +956,11 @@ void CSearchList::ProcessSharedFileList(const uint8_t *in_packet,
 	// EC one afterwards. An EC-initiated browse belongs to another client, so
 	// revealing it would pull this user's panel and selection away for
 	// something they never asked for -- the same rule the discovered-search
-	// path follows.
+	// path follows. Gated with its use: there is no tab to reveal in a
+	// daemon build, and an unread value there is a dead store.
+#ifndef AMULE_DAEMON
 	const bool ecInitiated = sender->IsBrowseEcInitiated();
+#endif
 
 	if (!sender->GetBrowseSearchId()) {
 		const uint32 localBrowseId = AllocateEd2kId();
