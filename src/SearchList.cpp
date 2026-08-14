@@ -939,8 +939,24 @@ void CSearchList::ProcessSharedFileList(const uint8_t *in_packet,
 	// client; use it so the union/per-ID poll and the LRU ring can address these
 	// results. A monolithic local browse leaves it 0 and keeps the historical
 	// per-client-pointer key.
-	wxUIntPtr searchID = sender->GetBrowseSearchId() ? static_cast<wxUIntPtr>(sender->GetBrowseSearchId())
-							 : reinterpret_cast<wxUIntPtr>(sender);
+	// A local browse used to key its results on the client pointer, which no
+	// remote client can address -- it is this process's memory, so the browse
+	// was invisible to amulegui, amuleweb and amuleapi while an EC-initiated
+	// one (which is handed a real id) showed up everywhere, including in this
+	// GUI. Give it the same kind of id so the two directions match. It is also
+	// safer: a pointer is reused once the client is freed, so two browses of
+	// different peers could collide on one key.
+	//
+	// Allocated once and pinned on the client, not per packet -- a browse
+	// arrives in several -- and registered so it is listed like any other
+	// search, with its kind and peer, which is what lets a remote GUI rebuild
+	// it as a browse tab rather than a nameless search.
+	if (!sender->GetBrowseSearchId()) {
+		const uint32 localBrowseId = AllocateEd2kId();
+		sender->SetBrowseSearchId(localBrowseId);
+		RegisterBrowseSearch(localBrowseId, sender->GetUserName(), sender->ECID());
+	}
+	wxUIntPtr searchID = static_cast<wxUIntPtr>(sender->GetBrowseSearchId());
 
 #ifndef AMULE_DAEMON
 	// Find-or-create the peer's "View Files" tab, keyed by ECID (so two peers
