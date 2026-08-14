@@ -712,11 +712,16 @@ void CSearchListCtrl::OnRightClick(wxDataViewEvent &event)
 		menu.Append(MP_SEARCHRELATED, _("Search related files (eD2k, local server)"));
 		menu.Append(MP_GETCOMMENTS, _("Show all comments"));
 		menu.AppendSeparator();
-		menu.Append(MP_GETED2KLINK, _("Copy eD2k link to clipboard"));
+		// Singular or plural to match what it will copy, the same way the
+		// server list labels it. OnPopupGetUrl has always walked the whole
+		// selection and joined the links with newlines -- it was only ever
+		// the menu that stopped it being handed more than one.
+		const bool single = (GetSelectedItemCount() == 1);
+		menu.Append(MP_GETED2KLINK,
+			single ? _("Copy eD2k link to clipboard") : _("Copy eD2k links to clipboard"));
 
-		const bool enable = (GetSelectedItemCount() == 1);
-		menu.Enable(MP_GETED2KLINK, enable);
-		menu.Enable(MP_GETCOMMENTS, enable);
+		// Comments stays single-only: it opens a modal dialog for one result.
+		menu.Enable(MP_GETCOMMENTS, single);
 		menu.Enable(MP_MENU_CATS, (theApp->glob_prefs->GetCatCount() > 1));
 
 		PopupMenu(&menu, event.GetPosition());
