@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-14 11:53+0200\n"
+"POT-Creation-Date: 2026-08-14 12:55+0200\n"
 "PO-Revision-Date: 2026-08-13 11:37+0000\n"
 "Last-Translator: astur <malditoastur@gmail.com>\n"
 "Language-Team: Language ast <malditoastur@gmail.com>\n"
@@ -6537,6 +6537,10 @@ msgstr "Guetar ficheros rellacionaos (eD2k, gueta llocal)"
 msgid "Copy eD2k link to clipboard"
 msgstr "Copiar l'enllaz eD2k al cartafueyos"
 
+#: src/SearchListCtrl.cpp src/ServerListCtrl.cpp
+msgid "Copy eD2k links to clipboard"
+msgstr "Copiar los enllaces eD2k al cartafueyos"
+
 #: src/SearchListCtrl.cpp
 #, fuzzy
 msgid "You are not currently connected to a server supporting the Related Files search function"
@@ -6861,10 +6865,6 @@ msgstr "Desaniciar sirvidores"
 #: src/ServerListCtrl.cpp
 msgid "Remove all servers"
 msgstr "Desaniciar tolos sirvidores"
-
-#: src/ServerListCtrl.cpp
-msgid "Copy eD2k links to clipboard"
-msgstr "Copiar los enllaces eD2k al cartafueyos"
 
 #: src/ServerListCtrl.cpp
 msgid "Reconnect to server"

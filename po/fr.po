@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-14 11:53+0200\n"
+"POT-Creation-Date: 2026-08-14 12:55+0200\n"
 "PO-Revision-Date: 2026-08-13 11:43+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
@@ -6482,6 +6482,10 @@ msgstr "Chercher les fichiers liés (eD2k, serveur local)"
 msgid "Copy eD2k link to clipboard"
 msgstr "Copier le lien eD2k dans le presse-papiers"
 
+#: src/SearchListCtrl.cpp src/ServerListCtrl.cpp
+msgid "Copy eD2k links to clipboard"
+msgstr "Copier les liens eD2k dans le presse-papiers"
+
 #: src/SearchListCtrl.cpp
 msgid "You are not currently connected to a server supporting the Related Files search function"
 msgstr "Vous n'êtes actuellement pas connecté à un serveur prenant en charge la fonction de recherche de fichiers associés"
@@ -6802,10 +6806,6 @@ msgstr "Supprimer les serveurs"
 #: src/ServerListCtrl.cpp
 msgid "Remove all servers"
 msgstr "Supprimer tous les serveurs"
-
-#: src/ServerListCtrl.cpp
-msgid "Copy eD2k links to clipboard"
-msgstr "Copier les liens eD2k dans le presse-papiers"
 
 #: src/ServerListCtrl.cpp
 msgid "Reconnect to server"

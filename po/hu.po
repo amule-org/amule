@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-14 11:53+0200\n"
+"POT-Creation-Date: 2026-08-14 12:55+0200\n"
 "PO-Revision-Date: 2026-08-13 11:45+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: Hungarian <hu@li.org>\n"
@@ -6484,6 +6484,10 @@ msgstr "Kapcsolódó fájlok keresése (eD2k, helyi kiszolgáló)"
 msgid "Copy eD2k link to clipboard"
 msgstr "eD2k hivatkozás másolása a vágólapra"
 
+#: src/SearchListCtrl.cpp src/ServerListCtrl.cpp
+msgid "Copy eD2k links to clipboard"
+msgstr "eD2k hivatkozások másolása a vágólapra"
+
 #: src/SearchListCtrl.cpp
 #, fuzzy
 msgid "You are not currently connected to a server supporting the Related Files search function"
@@ -6803,10 +6807,6 @@ msgstr "Kiszolgálók eltávolítása"
 #: src/ServerListCtrl.cpp
 msgid "Remove all servers"
 msgstr "Összes kiszolgáló eltávolítása"
-
-#: src/ServerListCtrl.cpp
-msgid "Copy eD2k links to clipboard"
-msgstr "eD2k hivatkozások másolása a vágólapra"
 
 #: src/ServerListCtrl.cpp
 msgid "Reconnect to server"

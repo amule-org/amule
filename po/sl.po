@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-14 11:53+0200\n"
+"POT-Creation-Date: 2026-08-14 12:55+0200\n"
 "PO-Revision-Date: 2026-08-13 11:51+0000\n"
 "Last-Translator: Jure Repinc <jlp@holodeck1.com>\n"
 "Language-Team: Slovenian\n"
@@ -6562,6 +6562,10 @@ msgstr "Poišči sorodne datoteke (eD2k, krajevni strežnik)"
 msgid "Copy eD2k link to clipboard"
 msgstr "Skopiraj povezavo eD2k na odložišče"
 
+#: src/SearchListCtrl.cpp src/ServerListCtrl.cpp
+msgid "Copy eD2k links to clipboard"
+msgstr "Skopiraj povezave eD2k na odložišče"
+
 #: src/SearchListCtrl.cpp
 #, fuzzy
 msgid "You are not currently connected to a server supporting the Related Files search function"
@@ -6890,10 +6894,6 @@ msgstr "Odstrani strežnike"
 #: src/ServerListCtrl.cpp
 msgid "Remove all servers"
 msgstr "Odstrani vse strežnike"
-
-#: src/ServerListCtrl.cpp
-msgid "Copy eD2k links to clipboard"
-msgstr "Skopiraj povezave eD2k na odložišče"
 
 #: src/ServerListCtrl.cpp
 msgid "Reconnect to server"
