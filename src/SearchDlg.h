@@ -196,7 +196,19 @@ public:
 	// searchID is the result-routing ID (daemon-allocated over EC, or the local
 	// client pointer in the monolithic client); if the tab already exists its
 	// routing ID is rekeyed to searchID. Shared by monolithic and amuleGUI.
-	void EnsureBrowseTab(uint32 peerEcid, const wxString &userName, wxUIntPtr searchID);
+	/**
+	 * Finds or creates the "View Files" tab for a peer.
+	 *
+	 * @param reveal Select the new tab and bring the Search panel forward.
+	 *   True when the local user asked for this browse, which is the point of
+	 *   clicking View Files. False for one this client did not initiate --
+	 *   another GUI's browse, or one already running when we attached -- which
+	 *   must not pull the panel or the selection away from whatever the user
+	 *   is doing, possibly mid-typing (same rule as a discovered search,
+	 *   amule-org/amule#703).
+	 */
+	void EnsureBrowseTab(
+		uint32 peerEcid, const wxString &userName, wxUIntPtr searchID, bool reveal = true);
 
 	// "View Files": if a browse tab for this peer's ECID is already open, bring
 	// the Search panel forward, select that tab, and return true. Lets the

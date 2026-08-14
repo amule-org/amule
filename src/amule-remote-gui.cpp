@@ -3725,10 +3725,33 @@ void CSearchListRem::HandlePacket(const CECPacket *packet)
 				// client, so it must not pull the selection away from whatever
 				// the local user is looking at -- possibly mid-typing in the
 				// search box (got3nks, amule-org/amule#703).
-				theApp->amuledlg->m_searchwnd->CreateNewTab(
-					(nameTag ? nameTag->GetStringData() : wxString()) + " (0)",
-					sid,
-					false);
+				// A browse the daemon is serving for someone else, or one
+				// still running from before this GUI attached, arrives here
+				// like any other search -- it shares the id space. Rebuild it
+				// as a browse tab rather than a search tab, which is what the
+				// kind is reported for. Daemons predating EC_SEARCH_BROWSE
+				// never send it, so the test simply fails there and the tab is
+				// built the way it always was.
+				const CECTag *kindTag = entry.GetTagByName(EC_TAG_SEARCH_LIFECYCLE_KIND);
+				const CECTag *peerTag = entry.GetTagByName(EC_TAG_CLIENT);
+				const uint32 peerEcid = peerTag ? static_cast<uint32>(peerTag->GetInt()) : 0;
+				// Only with a real peer: EnsureBrowseTab keys on the ecid and
+				// an ecid of 0 is not "unknown peer", it is what every
+				// ordinary search tab carries -- GetBrowseList(0) would match
+				// the first of those and repoint it at this browse. A daemon
+				// that reports the kind without the peer therefore falls
+				// through to the plain tab, which is what it built before.
+				if (kindTag && kindTag->GetInt() == BrowseSearch && peerEcid) {
+					theApp->amuledlg->m_searchwnd->EnsureBrowseTab(peerEcid,
+						nameTag ? nameTag->GetStringData() : wxString(),
+						sid,
+						false);
+				} else {
+					theApp->amuledlg->m_searchwnd->CreateNewTab(
+						(nameTag ? nameTag->GetStringData() : wxString()) + " (0)",
+						sid,
+						false);
+				}
 				// Reachability fix (#641): without this, a discovered tab never
 				// gets polled for progress at all (Phase1Done only loops over
 				// m_activeSearches), so its hit count, progress bar and "!"

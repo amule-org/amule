@@ -2390,6 +2390,20 @@ static CECPacket *Get_EC_Response_Server(const CECPacket *request)
 // allocator: a browse is just another addressable result set, so it draws from
 // the same disjoint id space and LRU eviction as a normal search — no separate
 // range needed. Defined after s_ecSearches.
+// The one invariant this file's kind reporting rests on: SearchType is cast
+// straight to uint8 for EC_TAG_SEARCH_LIFECYCLE_KIND, so its members have to
+// carry the EC_SEARCH_TYPE numbers. A comment saying so is what let a browse
+// nearly be given 3, which is EC_SEARCH_WEB -- state it where the compiler
+// checks it instead.
+static_assert(static_cast<int>(LocalSearch) == EC_SEARCH_LOCAL,
+	"SearchType and EC_SEARCH_TYPE must agree: LocalSearch");
+static_assert(static_cast<int>(GlobalSearch) == EC_SEARCH_GLOBAL,
+	"SearchType and EC_SEARCH_TYPE must agree: GlobalSearch");
+static_assert(
+	static_cast<int>(KadSearch) == EC_SEARCH_KAD, "SearchType and EC_SEARCH_TYPE must agree: KadSearch");
+static_assert(static_cast<int>(BrowseSearch) == EC_SEARCH_BROWSE,
+	"SearchType and EC_SEARCH_TYPE must agree: BrowseSearch");
+
 static uint32 AllocateBrowseSearchId();
 
 // Reply to a browse request. Multi-search clients get the allocated search ID
@@ -2491,6 +2505,13 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request, bool multiSea
 		if (subtag) {
 			CFriend *Friend = theApp->friendlist->FindFriend(subtag->GetInt());
 			if (Friend) {
+				// Describe the browse before the results start arriving, so
+				// the search list can report it as one (kind + peer name)
+				// rather than as a nameless search of the scalar kind.
+				if (browseId) {
+					theApp->searchlist->RegisterBrowseSearch(
+						browseId, Friend->GetName(), subtag->GetInt());
+				}
 				theApp->friendlist->RequestSharedFileList(Friend, browseId);
 				response = BuildBrowseReply(browseId, reftag);
 			} else {
@@ -2499,6 +2520,10 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request, bool multiSea
 		} else if ((subtag = tag->GetTagByName(EC_TAG_CLIENT))) {
 			CUpDownClient *client = theApp->clientlist->FindClientByECID(subtag->GetInt());
 			if (client) {
+				if (browseId) {
+					theApp->searchlist->RegisterBrowseSearch(
+						browseId, client->GetUserName(), client->ECID());
+				}
 				client->SetBrowseSearchId(browseId);
 				client->RequestSharedFileList();
 				response = BuildBrowseReply(browseId, reftag);
@@ -2848,6 +2873,13 @@ static CECPacket *Get_EC_Response_Search_List()
 		// known.second is the same string GetSearchStringById(sid) would
 		// look up -- already have it from this map entry, no need to re-find.
 		entry.AddTag(EC_TAG_SEARCH_NAME, known.second);
+		// A browse also carries the peer it is listing: without it a remote
+		// GUI cannot build a browse tab at all, since a tab with no ecid is
+		// by definition not a browse (CSearchListCtrl::IsBrowse).
+		const uint32 browsePeer = theApp->searchlist->GetBrowsePeerEcid(sid);
+		if (browsePeer) {
+			entry.AddTag(CECTag(EC_TAG_CLIENT, browsePeer));
+		}
 		entry.AddTag(EC_TAG_SEARCH_LIFECYCLE_KIND,
 			static_cast<uint64_t>(
 				static_cast<uint8>(theApp->searchlist->GetSearchLifecycleKindById(sid))));
@@ -3109,6 +3141,11 @@ static CECPacket *Get_EC_Response_Search(const CECPacket *request, bool multiSea
 
 	if (search_type == EC_SEARCH_WEB) {
 		response = wxTRANSLATE("WebSearch from remote interface makes no sense.");
+	} else if (search_type == EC_SEARCH_BROWSE) {
+		// Reported by the daemon, never accepted here: a browse is started
+		// by EC_OP_FRIEND, and the mapping below would otherwise fall
+		// through its final ternary and quietly start a local search.
+		response = wxTRANSLATE("A browse is not a search that can be started.");
 	} else {
 		SearchType core_search_type = (search_type == EC_SEARCH_GLOBAL) ? GlobalSearch
 					      : (search_type == EC_SEARCH_KAD)  ? KadSearch

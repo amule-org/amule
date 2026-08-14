@@ -24,6 +24,10 @@
 
 #include "GuiEvents.h"
 #include "amule.h"
+#ifndef CLIENT_GUI
+#include "ClientList.h"   // Needed for FindClientByECID (Browse_Started)
+#include "updownclient.h" // Needed for IsBrowseEcInitiated (Browse_Started)
+#endif
 #include <common/MenuIDs.h> // MP_PAUSE/STOP/RESUME/CANCEL + MP_PRIO* for the
 #ifndef AMULE_DAEMON
 #include "CommentDialog.h"         // CCommentDialog::DropReferencesTo
@@ -729,7 +733,18 @@ void Browse_Started(uint32 NOT_ON_DAEMON(ecid), wxString NOT_ON_DAEMON(name), ui
 {
 #ifndef AMULE_DAEMON
 	if (theApp->amuledlg && theApp->amuledlg->m_searchwnd) {
-		theApp->amuledlg->m_searchwnd->EnsureBrowseTab(ecid, name, (wxUIntPtr)searchID);
+		// Reveal only what this user started. The notification carries no such
+		// flag and CMuleNotifier stops at three arguments, but the client it
+		// names already knows -- so ask it rather than widen the notifier for
+		// one bool. CLIENT_GUI has neither this lookup nor a path that raises
+		// this notification (it is sent from CUpDownClient, which is core
+		// only), so there is nothing to answer there.
+		bool reveal = true;
+#ifndef CLIENT_GUI
+		const CUpDownClient *browsed = theApp->clientlist->FindClientByECID(ecid);
+		reveal = !(browsed && browsed->IsBrowseEcInitiated());
+#endif
+		theApp->amuledlg->m_searchwnd->EnsureBrowseTab(ecid, name, (wxUIntPtr)searchID, reveal);
 	}
 #endif
 }

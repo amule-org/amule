@@ -5418,6 +5418,11 @@ wxString SearchKindToString(std::uint8_t kind)
 		return wxString::FromAscii("local");
 	case EC_SEARCH_KAD:
 		return wxString::FromAscii("kad");
+	case EC_SEARCH_BROWSE:
+		// A "View Files" browse of one peer's share. Reported, never
+		// accepted by SearchTypeFromString: browses are not started
+		// through the search endpoint.
+		return wxString::FromAscii("browse");
 	case EC_SEARCH_GLOBAL:
 	default:
 		return wxString::FromAscii("global");

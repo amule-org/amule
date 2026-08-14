@@ -1194,7 +1194,7 @@ bool CSearchDlg::ActivateBrowseTabIfOpen(uint32 peerEcid)
 	return false;
 }
 
-void CSearchDlg::EnsureBrowseTab(uint32 peerEcid, const wxString &userName, wxUIntPtr searchID)
+void CSearchDlg::EnsureBrowseTab(uint32 peerEcid, const wxString &userName, wxUIntPtr searchID, bool reveal)
 {
 	// A re-browse of the same peer refreshes the existing tab: rekey its
 	// result-routing ID to the new one (the daemon may allocate a fresh ID) and
@@ -1207,7 +1207,7 @@ void CSearchDlg::EnsureBrowseTab(uint32 peerEcid, const wxString &userName, wxUI
 		return;
 	}
 
-	CreateNewTab(userName, searchID);
+	CreateNewTab(userName, searchID, reveal);
 	if (CSearchListCtrl *page = GetSearchList(searchID)) {
 		page->SetBrowseEcid(peerEcid);
 		page->SetBrowseName(userName);
@@ -1219,7 +1219,7 @@ void CSearchDlg::EnsureBrowseTab(uint32 peerEcid, const wxString &userName, wxUI
 	// toolbar button state, not just the panel content. Only on tab creation,
 	// never on a refresh or a streaming result, which would yank the panel out
 	// from under the user.
-	if (theApp->amuledlg) {
+	if (reveal && theApp->amuledlg) {
 		theApp->amuledlg->ShowSearchWindow();
 	}
 }

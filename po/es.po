@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-14 10:50+0200\n"
+"POT-Creation-Date: 2026-08-14 11:53+0200\n"
 "PO-Revision-Date: 2026-08-13 11:41+0000\n"
 "Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
@@ -2138,6 +2138,10 @@ msgstr "EC_TAG_FRIEND_SHARED requiere EC_TAG_FRIEND o EC_TAG_CLIENT."
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
 msgstr "La búsqueda web desde una interfaz remota no tiene sentido."
+
+#: src/ExternalConn.cpp
+msgid "A browse is not a search that can be started."
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Search in progress. Refetch results in a moment!"

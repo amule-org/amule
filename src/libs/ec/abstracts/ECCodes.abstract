@@ -680,10 +680,20 @@ EC_DETAIL_INC_UPDATE    0x04
 Type Enum
 Name EC_SEARCH_TYPE
 DataType uint8
+## These share their numeric values with CSearchList's own SearchType, which
+## is cast straight to uint8 for EC_TAG_SEARCH_LIFECYCLE_KIND. Keep the two in
+## step: a value that means one thing here and another there is not detectable
+## on the wire.
 EC_SEARCH_LOCAL         0x00
 EC_SEARCH_GLOBAL        0x01
 EC_SEARCH_KAD           0x02
 EC_SEARCH_WEB           0x03
+## A "View Files" browse. Reported by the daemon so a remote GUI can rebuild a
+## browse tab for one it did not start itself; never accepted as the type of a
+## search to start. Daemons predating it simply never send it, and the clients
+## that read the kind compare it for equality rather than switching on it, so
+## an unknown value stays inert on either side of a version mismatch.
+EC_SEARCH_BROWSE        0x04
 [/Section]
 
 [Section Content]

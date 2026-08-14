@@ -362,6 +362,16 @@ void CSearchList::StoreSearches() const
 	std::vector<uint32_t> ids;
 	ids.reserve(m_searchStrings.size());
 	for (const auto &kv : m_searchStrings) {
+		// Browses are deliberately not persisted. They are a snapshot of one
+		// peer's share taken while that peer was connected, so restoring one
+		// resurrects a listing for someone who is very likely gone -- and a
+		// large share would spend the MAX_STORED_SEARCHES budget that exists
+		// for the user's own searches. They are in m_searchStrings only so
+		// the search list can report them by peer name while they are live.
+		std::map<uint32_t, SearchType>::const_iterator kind = m_searchKinds.find(kv.first);
+		if (kind != m_searchKinds.end() && kind->second == BrowseSearch) {
+			continue;
+		}
 		ids.push_back(kv.first);
 	}
 	std::sort(ids.begin(), ids.end(), [this](uint32_t a, uint32_t b) {
@@ -929,15 +939,43 @@ void CSearchList::ProcessSharedFileList(const uint8_t *in_packet,
 	// client; use it so the union/per-ID poll and the LRU ring can address these
 	// results. A monolithic local browse leaves it 0 and keeps the historical
 	// per-client-pointer key.
-	wxUIntPtr searchID = sender->GetBrowseSearchId() ? static_cast<wxUIntPtr>(sender->GetBrowseSearchId())
-							 : reinterpret_cast<wxUIntPtr>(sender);
+	// A local browse used to key its results on the client pointer, which no
+	// remote client can address -- it is this process's memory, so the browse
+	// was invisible to amulegui, amuleweb and amuleapi while an EC-initiated
+	// one (which is handed a real id) showed up everywhere, including in this
+	// GUI. Give it the same kind of id so the two directions match. It is also
+	// safer: a pointer is reused once the client is freed, so two browses of
+	// different peers could collide on one key.
+	//
+	// Allocated once and pinned on the client, not per packet -- a browse
+	// arrives in several -- and registered so it is listed like any other
+	// search, with its kind and peer, which is what lets a remote GUI rebuild
+	// it as a browse tab rather than a nameless search.
+	// Whether this browse was asked for here. Read before the id is assigned
+	// below, because that assignment is what makes a local browse look like an
+	// EC one afterwards. An EC-initiated browse belongs to another client, so
+	// revealing it would pull this user's panel and selection away for
+	// something they never asked for -- the same rule the discovered-search
+	// path follows. Gated with its use: there is no tab to reveal in a
+	// daemon build, and an unread value there is a dead store.
+#ifndef AMULE_DAEMON
+	const bool ecInitiated = sender->IsBrowseEcInitiated();
+#endif
+
+	if (!sender->GetBrowseSearchId()) {
+		const uint32 localBrowseId = AllocateEd2kId();
+		sender->SetBrowseSearchId(localBrowseId);
+		RegisterBrowseSearch(localBrowseId, sender->GetUserName(), sender->ECID());
+	}
+	wxUIntPtr searchID = static_cast<wxUIntPtr>(sender->GetBrowseSearchId());
 
 #ifndef AMULE_DAEMON
 	// Find-or-create the peer's "View Files" tab, keyed by ECID (so two peers
 	// sharing a nick don't collapse into one tab, and a re-browse refreshes the
 	// same tab). Marks the tab as browsing; the terminal paths flip it to
 	// finished/failed via Notify_Browse_Status.
-	theApp->amuledlg->m_searchwnd->EnsureBrowseTab(sender->ECID(), sender->GetUserName(), searchID);
+	theApp->amuledlg->m_searchwnd->EnsureBrowseTab(
+		sender->ECID(), sender->GetUserName(), searchID, !ecInitiated);
 #endif
 
 	const CMemFile packet(in_packet, size);
@@ -1177,6 +1215,23 @@ wxString CSearchList::GetSearchStringById(uint32_t searchID) const
 bool CSearchList::IsKnownSearchId(uint32_t searchID) const
 {
 	return m_searchStrings.count(searchID) != 0 || m_browseBar.count(searchID) != 0;
+}
+
+uint32 CSearchList::GetBrowsePeerEcid(uint32 searchID) const
+{
+	std::map<uint32_t, uint32>::const_iterator it = m_browsePeers.find(searchID);
+	return it != m_browsePeers.end() ? it->second : 0;
+}
+
+void CSearchList::RegisterBrowseSearch(uint32 searchID, const wxString &peerName, uint32 peerEcid)
+{
+	// All three, not just the kind: Save() iterates m_searchStrings and then
+	// reads the other two with .at(), so an id present in one and missing
+	// from another throws when the searches are persisted.
+	m_searchStrings[searchID] = peerName;
+	m_searchKinds[searchID] = BrowseSearch;
+	m_searchStartTimes[searchID] = time(nullptr);
+	m_browsePeers[searchID] = peerEcid;
 }
 
 SearchType CSearchList::GetSearchLifecycleKindById(wxUIntPtr searchID) const
