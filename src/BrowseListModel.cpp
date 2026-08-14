@@ -48,10 +48,10 @@ CBrowseFolderNode *CBrowseListModel::EnsureFolder(const wxString &path) const
 
 	// Split off the last segment: whichever separator appears last is the
 	// one this peer uses, so a name containing the other one stays intact.
-	const int slash = static_cast<int>(path.find_last_of("/\\"));
-	CBrowseFolderNode *parent = NULL;
+	const size_t slash = path.find_last_of("/\\");
+	CBrowseFolderNode *parent = nullptr;
 	wxString name = path;
-	if (slash != static_cast<int>(wxString::npos)) {
+	if (slash != wxString::npos) {
 		name = path.Mid(slash + 1);
 		const wxString parentPath = path.Left(slash);
 		// A leading or doubled separator leaves an empty parent path,

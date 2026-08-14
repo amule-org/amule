@@ -29,6 +29,7 @@
 
 #include <map>    // Needed for std::map (the folder registry)
 #include <memory> // Needed for std::unique_ptr (stable folder node addresses)
+#include <set>    // Needed for std::set (the folder-address lookup)
 
 /**
  * A folder in a browsed peer's shared-file listing.
@@ -87,6 +88,15 @@ private:
  * (ClientTCPSocket, OP_ASKSHAREDFILESANSWER passes an empty string). Those
  * results have no folder to sit under and stay at the top level, so browsing
  * such a peer looks exactly like it did before folders existed.
+ *
+ * The incremental add path does not know about folders, and does not need to.
+ * CSearchListModel::FlushPending() announces every parentless result under
+ * the invisible root, which is not where this model puts them -- but
+ * incremental notifications are only enabled on __WXOSX__, and
+ * wxCocoaDataViewControl::Add() discards the items it is given and calls
+ * [NSOutlineView reloadData], which re-reads the tree through GetChildren().
+ * GTK and MSW take the Cleared() branch, which re-reads it too. Either way
+ * the grouping below is what the control ends up drawing.
  */
 class CBrowseListModel : public CSearchListModel
 {

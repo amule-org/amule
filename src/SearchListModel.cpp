@@ -110,6 +110,10 @@ void CSearchListModel::DropReferencesTo(CSearchFile *file)
 		model->m_pendingChanged.erase(
 			std::remove(model->m_pendingChanged.begin(), model->m_pendingChanged.end(), file),
 			model->m_pendingChanged.end());
+		// A derived model may be holding this pointer in a cache of its own
+		// (CBrowseListModel files results under their folder), and this is
+		// the only signal it gets that the result has died.
+		++model->m_contentGeneration;
 	}
 }
 

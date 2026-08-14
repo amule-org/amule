@@ -362,10 +362,16 @@ CSearchFile *CSearchListCtrl::GetFocusedFile() const
 {
 	wxDataViewItemArray selections;
 	GetSelections(selections);
-	if (selections.empty() || m_model->IsFolder(selections[0])) {
-		return NULL;
+	// The first selected result, not the first selected item: a folder
+	// picked up alongside one would otherwise make this give up, while
+	// GetSelectedItemCount() -- which counts results -- still enables the
+	// menu entry that calls it.
+	for (const wxDataViewItem &item : selections) {
+		if (!m_model->IsFolder(item)) {
+			return CSearchListModel::ToFile(item);
+		}
 	}
-	return CSearchListModel::ToFile(selections[0]);
+	return nullptr;
 }
 
 std::vector<CSearchFile *> CSearchListCtrl::GetSelectedFiles() const
@@ -844,7 +850,7 @@ void CSearchListCtrl::SetSubtreeExpanded(const wxDataViewItem &item, bool expand
 	wxDataViewItemArray children;
 	m_model->GetChildren(item, children);
 	for (const wxDataViewItem &child : children) {
-		if (m_model->IsContainer(child)) {
+		if (m_model->IsFolder(child)) {
 			SetSubtreeExpanded(child, expand);
 		}
 	}
