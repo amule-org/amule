@@ -145,6 +145,7 @@ void CBrowseListModel::RebuildFolders() const
 		entry.second->m_subfolders.clear();
 	}
 	m_looseFiles.clear();
+	m_fileParents.clear();
 
 	if (!m_owner->GetSearchId()) {
 		return;
@@ -156,16 +157,19 @@ void CBrowseListModel::RebuildFolders() const
 			continue;
 		}
 
-		// Normalised here, and identically in GetParent(): the node keys
-		// are the canonical form, so the two have to agree or a result
-		// would be filed under a folder its own parent lookup misses.
+		// The one place a directory string is normalised, because this is
+		// the one place it becomes a key. GetParent() reads the answer
+		// back from m_fileParents rather than deriving it again, so there
+		// is no second spelling of this to keep in step.
 		const wxString directory = NormalizeDirectory(file->GetDirectory());
 		if (directory.IsEmpty()) {
 			m_looseFiles.push_back(file);
 			continue;
 		}
 
-		EnsureFolder(directory)->m_files.push_back(file);
+		CBrowseFolderNode *folder = EnsureFolder(directory);
+		folder->m_files.push_back(file);
+		m_fileParents.emplace(file, folder);
 	}
 
 	// Relink the hierarchy. Done as a second pass rather than while
@@ -262,14 +266,15 @@ wxDataViewItem CBrowseListModel::GetParent(const wxDataViewItem &item) const
 		return CSearchListModel::GetParent(item);
 	}
 
-	// Same normalisation RebuildFolders() filed it under.
-	const wxString directory = NormalizeDirectory(file->GetDirectory());
-	if (directory.IsEmpty()) {
-		return wxDataViewItem();
-	}
+	// Read back from the grouping walk rather than re-derived from the
+	// directory string. This is the traversal path and wx asks per item, so
+	// it does no string work at all: RebuildFolders() knew the node when it
+	// filed the result, and a result the peer gave no directory is simply
+	// absent, which is the invisible root.
+	RebuildFolders();
 
-	const auto it = m_folders.find(directory);
-	return it != m_folders.end() ? ToItem(it->second.get()) : wxDataViewItem();
+	const auto it = m_fileParents.find(file);
+	return it != m_fileParents.end() ? ToItem(it->second) : wxDataViewItem();
 }
 
 bool CBrowseListModel::IsContainer(const wxDataViewItem &item) const

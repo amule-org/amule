@@ -27,9 +27,10 @@
 
 #include "SearchListModel.h"
 
-#include <map>    // Needed for std::map (the folder registry)
-#include <memory> // Needed for std::unique_ptr (stable folder node addresses)
-#include <set>    // Needed for std::set (the folder-address lookup)
+#include <map>           // Needed for std::map (the folder registry)
+#include <memory>        // Needed for std::unique_ptr (stable folder node addresses)
+#include <set>           // Needed for std::set (the folder-address lookup)
+#include <unordered_map> // Needed for std::unordered_map (result -> its folder)
 
 /**
  * A folder in a browsed peer's shared-file listing.
@@ -216,6 +217,20 @@ private:
 	//! Results the peer reported with no directory. Top level, next to the
 	//! folders.
 	mutable std::vector<CSearchFile *> m_looseFiles;
+
+	//! Which folder RebuildFolders() filed each shown result under, recorded
+	//! as it files them. GetParent() is on the traversal path rather than
+	//! the rebuild path and wx asks it per item, so it resolves through this
+	//! instead of re-deriving the key from the result's directory string.
+	//!
+	//! Written by the grouping walk itself, so it cannot come to describe a
+	//! different grouping than the one drawn. A result the peer gave no
+	//! directory is absent rather than present-and-null: it has no folder,
+	//! which is what a missing entry already means.
+	//!
+	//! Costs an entry per shown result, on top of the same pointer already
+	//! held in its folder's m_files.
+	mutable std::unordered_map<const CSearchFile *, CBrowseFolderNode *> m_fileParents;
 };
 
 #endif // BROWSELISTMODEL_H
