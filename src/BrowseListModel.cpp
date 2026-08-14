@@ -29,6 +29,20 @@
 #include "SearchListCtrl.h"
 #include "amule.h"
 
+namespace
+{
+//! A peer's directory string can end in a separator, and can double them up
+//! inside, either of which leaves a segment with no name. Stripping them
+//! keeps "Shared/Movies/" and "Shared/Movies" one folder instead of two, the
+//! second of them a blank row. All separators strips to nothing, which is no
+//! directory at all.
+wxString StripTrailingSeparators(const wxString &path)
+{
+	const size_t end = path.find_last_not_of("/\\");
+	return end == wxString::npos ? wxString() : path.Left(end + 1);
+}
+} // namespace
+
 CBrowseListModel::CBrowseListModel(CSearchListCtrl *owner)
 : CSearchListModel(owner)
 {
@@ -57,9 +71,9 @@ CBrowseFolderNode *CBrowseListModel::EnsureFolder(const wxString &path, size_t d
 	wxString name = path;
 	if (slash != wxString::npos && depth < MAX_FOLDER_DEPTH) {
 		name = path.Mid(slash + 1);
-		const wxString parentPath = path.Left(slash);
-		// A leading or doubled separator leaves an empty parent path,
-		// which is no directory at all -- this node is a root.
+		const wxString parentPath = StripTrailingSeparators(path.Left(slash));
+		// A leading separator leaves an empty parent path, which is no
+		// directory at all -- this node is a root.
 		if (!parentPath.IsEmpty()) {
 			parent = EnsureFolder(parentPath, depth + 1);
 		}
@@ -106,7 +120,10 @@ void CBrowseListModel::RebuildFolders() const
 			continue;
 		}
 
-		const wxString &directory = file->GetDirectory();
+		// Normalised here, and identically in GetParent(): the node keys
+		// are the stripped form, so the two have to agree or a result
+		// would be filed under a folder its own parent lookup misses.
+		const wxString directory = StripTrailingSeparators(file->GetDirectory());
 		if (directory.IsEmpty()) {
 			m_looseFiles.push_back(file);
 			continue;
@@ -209,7 +226,8 @@ wxDataViewItem CBrowseListModel::GetParent(const wxDataViewItem &item) const
 		return CSearchListModel::GetParent(item);
 	}
 
-	const wxString &directory = file->GetDirectory();
+	// Same normalisation RebuildFolders() filed it under.
+	const wxString directory = StripTrailingSeparators(file->GetDirectory());
 	if (directory.IsEmpty()) {
 		return wxDataViewItem();
 	}
