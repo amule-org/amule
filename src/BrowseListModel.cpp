@@ -168,6 +168,12 @@ unsigned int CBrowseListModel::GetChildren(const wxDataViewItem &item, wxDataVie
 	}
 
 	if (IsFolder(item)) {
+		// Here too, not only on the root branch: this is the path that
+		// reads the cached CSearchFile pointers, so it is the one that has
+		// to see a generation bump. The call is a comparison once the
+		// grouping is current.
+		RebuildFolders();
+
 		const CBrowseFolderNode *folder = ToFolder(item);
 		unsigned int count = 0;
 		for (CBrowseFolderNode *sub : folder->m_subfolders) {
