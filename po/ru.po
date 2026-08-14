@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-14 13:50+0200\n"
-"PO-Revision-Date: 2026-08-13 11:50+0000\n"
+"PO-Revision-Date: 2026-08-14 21:42+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
 "Language: ru\n"
@@ -836,9 +836,8 @@ msgid "Shared Files Window"
 msgstr "Окно публикуемых файлов"
 
 #: src/amuleDlg.cpp
-#, fuzzy
 msgid "Clients Window"
-msgstr "Окно сетей"
+msgstr "Окно клиентов"
 
 #: src/amuleDlg.cpp
 msgid "Messages Window"
@@ -1308,13 +1307,12 @@ msgid "%.1f kB/s"
 msgstr "%.1f КБ/с"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
 msgid "Name"
-msgstr "Имя:"
+msgstr "Имя"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 msgid "Software"
-msgstr ""
+msgstr "ПО"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
@@ -1322,9 +1320,8 @@ msgid "Version"
 msgstr "Версия"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
 msgid "IP Address"
-msgstr "Адрес IP:"
+msgstr "IP-адрес"
 
 # Source of a source. I mean, it's where a client came from.
 # (GonoszTopi)
@@ -1335,17 +1332,15 @@ msgstr "Откуда"
 
 #: src/ClientHistoryListCtrl.cpp
 msgid "First seen"
-msgstr ""
+msgstr "Впервые замечен"
 
 #: src/ClientHistoryListCtrl.cpp
-#, fuzzy
 msgid "Last seen"
-msgstr "Последний приём"
+msgstr "Последний раз"
 
 #: src/ClientHistoryListCtrl.cpp
-#, fuzzy
 msgid "Sessions"
-msgstr "Версия"
+msgstr "Сеансы"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 #: src/SharedFilePeersListCtrl.cpp
@@ -1358,24 +1353,20 @@ msgid "Download Speed"
 msgstr "Скорость скачивания"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
 msgid "Total Uploaded"
-msgstr "Отдано"
+msgstr "Всего отдано"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
 msgid "Total Downloaded"
-msgstr "Всего скачано: "
+msgstr "Всего скачано"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
 msgid "Ratio"
-msgstr "Оценка"
+msgstr "Коэф."
 
 #: src/ClientHistoryListCtrl.cpp
-#, fuzzy
 msgid "Online now"
-msgstr "Онлайн-подпись"
+msgstr "Сейчас в сети"
 
 #: src/ClientRef.cpp
 msgid "Not complete"
@@ -1412,23 +1403,20 @@ msgid "Downloaded"
 msgstr "Скачано"
 
 #: src/ClientsWnd.cpp
-#, fuzzy
 msgid "Downloading from"
-msgstr "Скачивается"
+msgstr "С кого скачивается"
 
 #: src/ClientsWnd.cpp
-#, fuzzy
 msgid "Uploading to"
-msgstr "Отдаётся"
+msgstr "Кому отдаётся"
 
 #: src/ClientsWnd.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
 msgid "Active"
 msgstr "Активные"
 
 #: src/ClientsWnd.cpp
-#, fuzzy
 msgid "Known"
-msgstr "Неизвестно"
+msgstr "Известные"
 
 #: src/ClientTCPSocket.cpp
 #, c-format

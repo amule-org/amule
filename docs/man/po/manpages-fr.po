@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "POT-Creation-Date: 2026-07-30 17:31+0200\n"
-"PO-Revision-Date: 2026-08-13 11:54+0000\n"
+"PO-Revision-Date: 2026-08-14 21:45+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
 "Language: fr\n"
@@ -82,10 +82,8 @@ msgstr "[B<-w> I<E<lt>cheminE<gt>>]"
 
 #. type: Plain text
 #: amule.1.in amuled.1.in
-#, fuzzy
-#| msgid "[B<-t> I<E<lt>numE<gt>>] [I<eD2k-link>]"
 msgid "[B<-t> I<E<lt>numE<gt>>] [I<eD2k-link>|I<collection-file>]"
-msgstr "[B<-t> I<E<lt>numE<gt>>] [I<lien eD2k>]"
+msgstr "[B<-t> I<E<lt>numE<gt>>] [I<lien-eD2k>|I<fichier-de-collection>]"
 
 #. type: SH
 #: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in amuleweb.1.in ed2k.1.in
@@ -181,17 +179,14 @@ msgstr "Affiche une courte description d'utilisation."
 
 #. type: TP
 #: amule.1.in amuled.1.in
-#, fuzzy, no-wrap
-#| msgid "B<[ eD2k-link ]>"
+#, no-wrap
 msgid "B<[ eD2k-link | collection-file ]>"
-msgstr "B<[ lien eD2k ]>"
+msgstr "B<[ lien-eD2k | fichier-de-collection ]>"
 
 #. type: Plain text
 #: amule.1.in amuled.1.in
-#, fuzzy
-#| msgid "Adds an eD2k-link or a magnet-link to the core."
 msgid "Adds an eD2k-link, or every link in an eMule collection file, to the core."
-msgstr "Ajoute un lien eD2k ou magnet au noyau."
+msgstr "Ajoute au noyau un lien eD2k ou bien chaque lien d'un fichier de collection eMule."
 
 #. type: Plain text
 #: amule.1.in amulecmd.1.in amuled.1.in ed2k.1.in
@@ -221,7 +216,7 @@ msgstr "un lien magnet."
 #. type: Plain text
 #: amule.1.in amuled.1.in
 msgid "Alternatively the argument can be the path to an .emulecollection file, or a file:// URL naming one, in which case every link it contains is added to the download queue.  This is what lets a file manager open a collection with aMule."
-msgstr ""
+msgstr "De manière alternative, l'argument peut être le chemin vers un fichier .emulecollection ou un URL file:// qui en désigne un, auquel cas chaque lien qu'elle contient est ajouté à la file des téléchargements.  C'est ce qui permet à un gestionnaire de fichiers d'ouvrir une collection avec aMule."
 
 #. type: SH
 #: amule.1.in amulecmd.1.in amuleweb.1.in
@@ -453,7 +448,7 @@ msgstr "Créer un fichier de configuration basé sur I<E<lt>cheminE<gt>>, qui do
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in
 msgid "Do not encrypt the External Connection link.  Encryption is negotiated automatically whenever the remote aMule supports it, and is on by default for every destination, local or remote.  Turning it off leaves everything after the login readable, and modifiable, by anyone able to observe the connection."
-msgstr ""
+msgstr "Ne pas chiffrer le lien de Connexion externe.  Le chiffrement est négocié automatiquement chaque fois que le programme aMule distant le prend en charge, et est activé par défaut pour chaque destination, locale ou distante.  Désactiver cette option laisse tout après l'ouverture de session lisible et modifiable pour tout un chacun qui serait capable d'observer la connexion."
 
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in

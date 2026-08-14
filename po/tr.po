@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-14 13:50+0200\n"
-"PO-Revision-Date: 2026-08-13 11:52+0000\n"
+"PO-Revision-Date: 2026-08-14 21:44+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
 "Language: tr\n"
@@ -207,29 +207,29 @@ msgstr "UYARI: DüşükID olduğunuz sürece kendinizi bir kaynak olarak eD2k ba
 #: src/amuleAppCommon.cpp
 #, c-format
 msgid "Restricted permissions on %s to owner-only."
-msgstr ""
+msgstr "%s üzerinde izinler sadece sahibi için olarak kısıtlanmıştır."
 
 #: src/amuleAppCommon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Collection file not found: %s"
-msgstr "Fihristleme dosyası bulunamadı: "
+msgstr "Fihristleme dosyası bulunamadı: %s"
 
 #: src/amuleAppCommon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Invalid or empty collection file: %s"
-msgstr "'%s' kullanıcısının paylaşılmış dosyalarını alma başarısız"
+msgstr "Geçersiz veya boş koleksiyon dosyası: %s"
 
 #: src/amuleAppCommon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "No usable links in collection: %s"
-msgstr "Dizinde paylaşılabilir dosya bulunamadı: %s"
+msgstr "Koleksiyonda kullanılabilir bağlantı bulunamadı: %s"
 
 #: src/amuleAppCommon.cpp
 #, c-format
 msgid "Skipped %u unusable link in collection: %s"
 msgid_plural "Skipped %u unusable links in collection: %s"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Şu koleksiyonda %u kullanılamaz bağlantı atlandı: %s"
+msgstr[1] "Şu koleksiyonda %u kullanılamaz bağlantı atlandı: %s"
 
 #: src/amuleAppCommon.cpp src/DownloadQueue.cpp
 #, c-format
@@ -237,9 +237,9 @@ msgid "Cannot convert magnet link to eD2k: %s"
 msgstr "Magnet bağlantısı eD2k' ya çevrilemez: %s"
 
 #: src/amuleAppCommon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Invalid eD2k link \"%s\" - ERROR: %s"
-msgstr "Geçersiz eD2k bağlantısı! HATA: %s"
+msgstr "Geçersiz eD2k bağlantısı \"%s\" - HATA: %s"
 
 #: src/amule.cpp
 msgid "Now, exiting main app..."
@@ -332,32 +332,29 @@ msgstr "UYARI"
 
 #: src/amule.cpp
 msgid "Initializing network"
-msgstr ""
+msgstr "Ağ başlatılıyor"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Loading temp files"
-msgstr "%s konumundan geçici dosyalar yükleniyor."
+msgstr "Geçici dosyalar yükleniyor"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Loading temp files (%u of %u)"
-msgstr "%s konumundan geçici dosyalar yükleniyor."
+msgstr "Geçici dosyalar yükleniyor (%u, toplam %u üzerinden)"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Loading shared files"
-msgstr "Paylaşılan dosyalar yeniden yükleniyor…"
+msgstr "Paylaşılan dosyalar yükleniyor"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Loading shared files (%u)"
-msgstr "Paylaşılan dosyalar yeniden yükleniyor…"
+msgstr "Paylaşılan dosyalar yükleniyor (%u)"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Starting up"
-msgstr "Başlat"
+msgstr "Başlatılıyor"
 
 #: src/amule.cpp
 msgid "Network bootstrap"
@@ -396,7 +393,7 @@ msgstr "HATA"
 #: src/amule.cpp
 #, c-format
 msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
-msgstr ""
+msgstr "amuleapi Harici Bağlantı jetonu %s konumuna yazılamadı; amuleapi yapılandırılmış parolasına dönüş yapacaktır."
 
 #: src/amule.cpp
 #, c-format
@@ -410,7 +407,7 @@ msgstr "amuleapi'nın başlangıçta çalışmasını istediniz, fakat amuleapi 
 #: src/amule.cpp
 #, c-format
 msgid "External connection: could not bind to '%s', listening on 127.0.0.1 only."
-msgstr ""
+msgstr "Harici Bağlantı: '%s' unsuruna bağlanılamadı, sadece 127.0.0.1 üzerinde dinleniliyor."
 
 #: src/amule.cpp
 #, c-format
@@ -660,7 +657,7 @@ msgstr "ÖNEMLİ HATA: Zamanlayıcı oluşturulamadı"
 
 #: src/amuleDlg.cpp
 msgid "Error! Unable to load Preferences"
-msgstr ""
+msgstr "Hata! Tercihler yüklenemedi"
 
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Networks"
@@ -697,12 +694,12 @@ msgstr "Ayarlar"
 
 #: src/amuleDlg.cpp
 msgid "Navigate"
-msgstr ""
+msgstr "Gezinti"
 
 #: src/amuleDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Free space: %s"
-msgstr "Sunucu İletisi: %s"
+msgstr "Boş alan: %s"
 
 #: src/amuleDlg.cpp
 msgid "New version available"
@@ -827,9 +824,8 @@ msgid "Shared Files Window"
 msgstr "Paylaşılan Dosya Penceresi"
 
 #: src/amuleDlg.cpp
-#, fuzzy
 msgid "Clients Window"
-msgstr "Ağ Penceresi"
+msgstr "İstemciler Penceresi"
 
 #: src/amuleDlg.cpp
 msgid "Messages Window"
@@ -970,7 +966,7 @@ msgstr "Uzaktaki çekirdeğe tekrar bağlanıldı."
 
 #: src/amule-remote-gui.cpp
 msgid "The remote core was restarted; reloading."
-msgstr ""
+msgstr "Uzaktaki çekirdek yeniden başlatıldı, tekrar yükleniyor."
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -1014,7 +1010,7 @@ msgstr "'%s' dizini '%s' sınıfı için oluşturulamadı. '%s' dizini kullanıl
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "The remote core sent inconsistent data for \"%s\" (part status %d, expected %d). The file list may be showing the wrong information; reconnect to clear it."
-msgstr ""
+msgstr "Uzaktaki çekirdek \"%s\" için tutarsız veri gönderdi (kısmi durum %d, beklenilen %d). Dosya listesi yanlış bilgi gösteriyor olabilir, bunu düzeltmek için tekrar bağlanın."
 
 #: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp
@@ -1295,13 +1291,12 @@ msgid "%.1f kB/s"
 msgstr "%.1f kB/s"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
 msgid "Name"
-msgstr "Ad:"
+msgstr "Ad"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 msgid "Software"
-msgstr ""
+msgstr "Yazılım"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
@@ -1309,9 +1304,8 @@ msgid "Version"
 msgstr "Sürüm"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
 msgid "IP Address"
-msgstr "IP Adresi:"
+msgstr "IP Adresi"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
@@ -1320,17 +1314,15 @@ msgstr "Köken"
 
 #: src/ClientHistoryListCtrl.cpp
 msgid "First seen"
-msgstr ""
+msgstr "İlk görülme"
 
 #: src/ClientHistoryListCtrl.cpp
-#, fuzzy
 msgid "Last seen"
-msgstr "Son Alım"
+msgstr "Son Görülme"
 
 #: src/ClientHistoryListCtrl.cpp
-#, fuzzy
 msgid "Sessions"
-msgstr "Sürüm"
+msgstr "Oturumlar"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 #: src/SharedFilePeersListCtrl.cpp
@@ -1343,24 +1335,20 @@ msgid "Download Speed"
 msgstr "İndirme Hızı"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
 msgid "Total Uploaded"
-msgstr "Gönderilen"
+msgstr "Toplam Gönderilen"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
 msgid "Total Downloaded"
-msgstr "Toplam Aktarım: "
+msgstr "Toplam İndirilen"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
 msgid "Ratio"
-msgstr "Puanlama"
+msgstr "Oran"
 
 #: src/ClientHistoryListCtrl.cpp
-#, fuzzy
 msgid "Online now"
-msgstr "Çevrimiçi İmza"
+msgstr "Şimdi çevrimiçi"
 
 #: src/ClientRef.cpp
 msgid "Not complete"
@@ -1397,23 +1385,20 @@ msgid "Downloaded"
 msgstr "İndirildi"
 
 #: src/ClientsWnd.cpp
-#, fuzzy
 msgid "Downloading from"
-msgstr "Aktarılıyor"
+msgstr "Şundan indiriliyor:"
 
 #: src/ClientsWnd.cpp
-#, fuzzy
 msgid "Uploading to"
-msgstr "Gönderiliyor"
+msgstr "Şuna gönderiliyor:"
 
 #: src/ClientsWnd.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
 msgid "Active"
 msgstr "Etkin"
 
 #: src/ClientsWnd.cpp
-#, fuzzy
 msgid "Known"
-msgstr "Bilinmiyor"
+msgstr "Bilinen"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -1710,15 +1695,15 @@ msgstr "Bilinmeyen yada bozuk geçici dosya formatı."
 
 #: src/DirectoryTreeCtrl.cpp
 msgid "This directory is part of a recursive share. To remove it, un-share or modify the recursive share root above it."
-msgstr ""
+msgstr "Bu dizin özyinelemeli bir paylaşımın bir parçasıdır. Onu kaldırmak için, üzerindeki özyinelemeli paylaşım kökünün paylaşımını kaldırın veya değiştirin."
 
 #: src/DirectoryTreeCtrl.cpp
 msgid "Cannot unshare inside a recursive share"
-msgstr ""
+msgstr "Özyinelelemeli bir paylaşım dahilinde paylaşım kaldırılamaz"
 
 #: src/DirectoryTreeCtrl.cpp
 msgid "Cannot modify inside a recursive share"
-msgstr ""
+msgstr "Özyinelemeli bir paylaşım dahilinde değişim yapılamaz"
 
 #: src/DownloadListCtrl.cpp
 msgid "Part"
@@ -1816,7 +1801,7 @@ msgstr "Ön İzleme"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Show in file manager"
-msgstr ""
+msgstr "Dosya yöneticisinde göster"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Show file &details"
@@ -1891,9 +1876,9 @@ msgid "Downloads (%i)"
 msgstr "İndirmeler (%i)"
 
 #: src/DownloadListCtrl.cpp src/TransferWnd.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Total queue size: %s"
-msgstr "Toplam İND: %s"
+msgstr "Toplam kuyruk boyutu: %s"
 
 #: src/DownloadQueue.cpp
 #, c-format
@@ -2037,9 +2022,9 @@ msgid "Missing protocol version tag."
 msgstr "Kayıp protokol sürüm eki."
 
 #: src/ExternalConn.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Too many failed connection attempts; try again in %d seconds."
-msgstr "Sunucuya otomatik bağlanma %d saniye içinde tekrar denenecek"
+msgstr "Çok fazla başarısız bağlantı teşebbüsü,  %d saniye içinde tekrar denenecek."
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: invalid hash specified as EC password."
@@ -2047,15 +2032,15 @@ msgstr "Kimlik doğrulama başarısız oldu: EC parolası olarak geçersiz adres
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: the client offered an encrypted External Connection but sent no usable key."
-msgstr ""
+msgstr "Kimlik doğrulaması başarısız oldu: istemci şifrelenmiş bir Harici Bağlantı sundu fakat hiçbir kullanılabilir anahtar göndermedi."
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: this aMule requires an encrypted External Connection, and the client did not negotiate one."
-msgstr ""
+msgstr "Kimlik doğrulaması başarısız oldu: bu aMule şifrelenmiş bir Harici Bağlantı gerektiriyor fakat istemci böyle bir bağlantı kuramadı."
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: the client could not confirm the encrypted session."
-msgstr ""
+msgstr "Kimlik doğrulaması başarısız oldu: istemci şifrelenmiş oturumu teyit edemedi."
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: wrong password."
@@ -2187,7 +2172,7 @@ msgstr "Dosya yeniden adlandırılamıyor."
 #: src/ExternalConn.cpp
 #, c-format
 msgid "Could not save the amuleapi password: %s"
-msgstr ""
+msgstr "amuleapi parolası kaydedilemedi: %s"
 
 #: src/ExternalConn.cpp
 msgid "Kad is disabled in preferences."
@@ -2432,7 +2417,7 @@ msgstr "Yazılım sürümünü yazdır."
 
 #: src/ExternalConnector.cpp
 msgid "Do not encrypt the External Connect session. Encryption is on by default whenever the remote aMule supports it; turning it off leaves everything after the login readable and modifiable by anyone on the path."
-msgstr ""
+msgstr "Harici Bağlantı oturumunu şifreleme. Şifreleme varsayılan olarak uzaktaki aMule bunu desteklediği her zaman etkindir; devre dışı bırakmak oturum açılışından sonraki her şeyin yol üzerindeki herhangi biri tarafından okunabilir ve değiştirilebilir olarak bırakır."
 
 #: src/ExternalConnector.cpp
 msgid "Force ZLIB compression regardless of dialed-IP locality (useful when the server is reachable over a VPN tunnel that resolves to a LAN IP)."
@@ -2472,54 +2457,54 @@ msgstr "Hata: Ortam oynatıcısını çalıştırma başarısız! Komut : `%s'"
 #: src/FileLaunch.cpp
 #, c-format
 msgid "The configured video player was not found: %s"
-msgstr ""
+msgstr "Yapılandırılmış video çalıcı bulunamadı: %s"
 
 #: src/FileLaunch.cpp
 #, c-format
 msgid "Cannot open '%s': the file is not present on this computer."
-msgstr ""
+msgstr "'%s' açılamaz: dosya bu bilgisayarda mevcut değil."
 
 #: src/FileLaunch.cpp
 msgid "Previewing an unfinished download needs a video player: the partly-downloaded file has no type the system can open on its own. One can be set in Preferences -> General."
-msgstr ""
+msgstr "Tamamlanmamış bir indirmenin önizlenmesi bir video çalıcı gerektirir: kısmi olarak indirilmiş dosya, sistemin kendiliğinden açabileceği hiçbir türe sahip değildir. Bu, Tercihler -> Genel bölümünde ayarlanabilir."
 
 #: src/FileLaunch.cpp
 #, c-format
 msgid "ERROR: Failed to open '%s' with the default application."
-msgstr ""
+msgstr "HATA: '%s' unsurunun varsayılan uygulama ile açılması başarısız oldu."
 
 #: src/FileLaunch.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "ERROR: Failed to show '%s' in the file manager."
-msgstr "HATA: Parça dosyası '%s' açılamıyor"
+msgstr "HATA: dosya yöneticisinde '%s' unsurunun gösterilmesi başarısız oldu."
 
 #: src/FirstRunWizard.cpp
 msgid "Mobile / 4G-5G (20 / 5 Mbit)"
-msgstr ""
+msgstr "Mobil / 4G-5G (20 / 5 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "ADSL (24 / 1 Mbit)"
-msgstr ""
+msgstr "ADSL (24 / 1 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "VDSL (50 / 10 Mbit)"
-msgstr ""
+msgstr "VDSL (50 / 10 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "Cable (200 / 20 Mbit)"
-msgstr ""
+msgstr "Kablo (200 / 20 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "Fibre 300 (300 / 100 Mbit)"
-msgstr ""
+msgstr "Fiber 300 (300 / 100 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "Fibre Gigabit (1000 / 1000 Mbit)"
-msgstr ""
+msgstr "Gigabit Fiber (1000 / 1000 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "aMule first-run setup"
-msgstr ""
+msgstr "aMule ilk çalıştırma kurulumu"
 
 #: src/FirstRunWizard.cpp
 #, fuzzy
@@ -2531,10 +2516,12 @@ msgid ""
 "This short setup will get you connected. You can change\n"
 "any of these settings later in Preferences."
 msgstr ""
+"Bu kısa kurulum bağlantı kurmanıza imkân sağlayacaktır. Tüm\n"
+"ayarları daha sonra Ayarlar kısmında değiştirebilirsiniz."
 
 #: src/FirstRunWizard.cpp
 msgid "Choose a nickname other peers will see:"
-msgstr ""
+msgstr "Diğer eşlerin göreceği bir rumuz seçin:"
 
 #: src/FirstRunWizard.cpp
 #, fuzzy
@@ -2546,6 +2533,8 @@ msgid ""
 "Pick the option that best matches your Internet connection,\n"
 "or set the upload and download limits directly below."
 msgstr ""
+"İnternet bağlantınıza en iyi denk gelen seçeneği seçin,\n"
+"veya gönderme ve indirme sınırlarını doğrudan aşağıda ayarlayın."
 
 #: src/FirstRunWizard.cpp
 #, fuzzy
@@ -2554,15 +2543,15 @@ msgstr "Bağlantı Türü:"
 
 #: src/FirstRunWizard.cpp
 msgid "Other / set manually"
-msgstr ""
+msgstr "Diğer / el ile ayarla"
 
 #: src/FirstRunWizard.cpp
 msgid "Upload limit (kB/s, 0 = unlimited):"
-msgstr ""
+msgstr "Gönderme sınırı (kB/s, 0 = sınırsız):"
 
 #: src/FirstRunWizard.cpp
 msgid "Download limit (kB/s, 0 = unlimited):"
-msgstr ""
+msgstr "İndirme sınırı (kB/s, 0 = sınırsız):"
 
 #: src/FirstRunWizard.cpp
 #, fuzzy
@@ -2571,7 +2560,7 @@ msgstr "Ağlar"
 
 #: src/FirstRunWizard.cpp
 msgid "aMule can use two networks. We recommend keeping both enabled."
-msgstr ""
+msgstr "aMule iki ağ kullanabilir. Her ikisini de etkin bırakmanızı tavsiye ederiz."
 
 #: src/FirstRunWizard.cpp src/TextClient.cpp
 msgid "eD2k"
@@ -2599,6 +2588,9 @@ msgid ""
 "peers can reach you (a \"HighID\"). Turn off if your router\n"
 "doesn't support UPnP or you forward ports manually."
 msgstr ""
+"aMule'ün yönlendiricinizden yukarıdaki bağlantı noktalarını yönlendirmesini istemesine \n"
+"imkân verir, böylece diğer eşler size ulaşabilir (\"YüksekID\"). Bağlantı noktalarını el ile \n"
+"yönlendirecekseniz veya yönlendiriciniz UPnP desteklemiyorsa devre dışı bırakın."
 
 #: src/FirstRunWizard.cpp
 #, fuzzy
@@ -2610,6 +2602,8 @@ msgid ""
 "To get started, aMule needs to know about some peers.\n"
 "Select which lists to download now:"
 msgstr ""
+"Başlamak için aMule'ün eşler hakkında bilgiye ihtiyacı vardır.\n"
+"Şimdi hangi listenin indirileceğini seçin:"
 
 #: src/FirstRunWizard.cpp
 #, fuzzy
@@ -2622,13 +2616,15 @@ msgstr "Otomatik başlangıç"
 
 #: src/FirstRunWizard.cpp
 msgid "Integrations (optional)"
-msgstr ""
+msgstr "Birleşimler (seçime dayalı)"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "Choose how aMule integrates with your system. You can\n"
 "change any of these later in Preferences."
 msgstr ""
+"aMule'ün sisteminizle nasıl birleşeceğini seçin. Bu ayarlardan\n"
+"herhangi birini daha sonra Ayarlar'da değiştirebilirsiniz."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Start aMule automatically when I log in"
@@ -2646,21 +2642,23 @@ msgstr "aMule'ü magnet: bağlantıları için kaydet"
 
 #: src/FirstRunWizard.cpp
 msgid "Only eD2k-compatible magnets. Leave off if you use a BitTorrent client."
-msgstr ""
+msgstr "Sadece eD2k-uyumlu magnet bağlantıları. Şayet bir BitTorrent istemcisi kullanıyorsanız devre dışı bırakın."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Open .emulecollection files with aMule"
-msgstr ""
+msgstr ".emulecollection dosyalarını aMule ile aç"
 
 #: src/FirstRunWizard.cpp
 msgid "Folders (optional)"
-msgstr ""
+msgstr "Dizinler (seçime dayalı)"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "The defaults are fine for most people. Change them if you\n"
 "want downloads on a different (e.g. larger) disk."
 msgstr ""
+"Varsayılan ayarlar çoğu kişi için uygundur. Başka (mesela daha\n"
+"büyük) bir diske indirme yapmak istiyorsanız bunları değiştirin."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Destination folder for downloads"
@@ -2685,14 +2683,16 @@ msgid ""
 "Based on this, aMule will allow up to %i sources per file\n"
 "and %i client connections."
 msgstr ""
+"Buna dayalı olarak aMule, dosya başına %i kaynağa kadar ve %i \n"
+"istemci bağlantısına kadar izin verecektir."
 
 #: src/FirstRunWizard.cpp
 msgid "Show this setup wizard again the next time you start aMule?"
-msgstr ""
+msgstr "aMule tekrar başlattığınızda bu kurulum sihirbazı yeniden gösterilsin mi?"
 
 #: src/FirstRunWizard.cpp
 msgid "Setup not finished"
-msgstr ""
+msgstr "Kurulum sona ermedi"
 
 #: src/FriendList.cpp
 msgid "Failed to open friend list file 'emfriends.met' for reading!"
@@ -3112,7 +3112,7 @@ msgstr "Geçersiz şifre, bir MD5 adreslemesi değil!"
 #: src/libs/ec/cpp/RemoteConnect.cpp
 #, c-format
 msgid "Could not resolve %s to an IPv4 address."
-msgstr ""
+msgstr "%s, bir IPv4 adresine çözümlenemedi."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "Connection failure"
@@ -3128,11 +3128,11 @@ msgstr "EC bağlantısı başarısız. Boş cevap."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "Could not set up connection encryption. Connection closed."
-msgstr ""
+msgstr "Bağlantı şifrelemesi ayarlanamadı. Bağlantı kapatıldı."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "The core did not negotiate an encrypted connection. It may be an older aMule without encryption support, or the connection may have been tampered with. To connect without encryption, turn it off in the connection settings."
-msgstr ""
+msgstr "Çekirdek, şifrelenmiş bir bağlantı kurmadı. Şifreleme desteği olmayan eski bir aMule sürümü olabilir veya bağlantıya müdahale edilmiş olabilir. Şifreleme olmadan bağlantı kurmak için bağlantı ayarlarında onu devre dışı bırakın."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "External Connection: Bad reply, handshake failed. Connection closed."
@@ -3162,7 +3162,7 @@ msgstr "Dış Bağlantı: Tanılama engellendi."
 #: src/LibSocketAsio.cpp
 #, c-format
 msgid "Error creating UDP socket %s %d : %s"
-msgstr ""
+msgstr "UDP soketinin oluşturulmasında hata %s%d:%s"
 
 #: src/LibSocketAsio.cpp
 #, c-format
@@ -3404,12 +3404,12 @@ msgstr "Toplam GÖN: %s"
 #: src/MuleUDPSocket.cpp
 #, c-format
 msgid "Created %s at port %u"
-msgstr ""
+msgstr "%s, %u bağlantı noktasında oluşturuldu"
 
 #: src/MuleUDPSocket.cpp
 #, c-format
 msgid "WARNING! %s: Packet to %s discarded due to error (%s) while sending."
-msgstr ""
+msgstr "İKAZ! %s: %s unsuruna gönderilen paket, gönderi esnasındaki hata (%s) sebebiyle atıldı."
 
 #: src/muuli_wdr.cpp
 msgid "Paste eD2k or magnet links here"
@@ -4032,7 +4032,7 @@ msgstr "aMule sadece eD2k uyumlu (xt=urn:ed2k: içeren) magnet'leri işler. BitT
 
 #: src/muuli_wdr.cpp
 msgid "Opening a collection queues every eD2k link it contains. On Windows this adds aMule to the \"Open with\" list and takes the default only when no other program has claimed the file type."
-msgstr ""
+msgstr "Bir koleksiyon açmak, ihtiva ettiği her eD2k bağlantısını kuyruğa alır. Windows üzerinde bu, aMule programını \"Birlikte Aç\" listesine ekler ve sadece başka hiçbir program bu dosya türünü yönetmiyorsa varsayılan olarak ayarlar."
 
 #: src/muuli_wdr.cpp
 msgid "Start minimized"
@@ -4085,7 +4085,7 @@ msgstr "Bu ayarları hatırla"
 
 #: src/muuli_wdr.cpp
 msgid "Keeps a dropdown list of your past search terms in the Search tab's Name field. This remembers the queries you typed, not the results they returned."
-msgstr ""
+msgstr "Arama sekmesinin İsim alanında geçmiş arama terimlerinizin açılır bir listesini muhafaza eder. Bu, girdiğiniz sorguları hatırlar, bunların getirdikleri sonuçları değil."
 
 #: src/muuli_wdr.cpp
 msgid "Tooltip delay time: "
@@ -4269,11 +4269,11 @@ msgstr "Yeni dosyalarda, dosyanın tamamı için sabit diskte yer ayrılarak par
 
 #: src/muuli_wdr.cpp
 msgid "Create new files as sparse files"
-msgstr ""
+msgstr "Yeni dosyaları aralıklı dosyalar olarak oluştur"
 
 #: src/muuli_wdr.cpp
 msgid "Sparse part files only occupy disk space for the parts already downloaded, so free space is used up gradually as the file fills in. Turn this off to use an ordinary file instead - useful where sparse files are unsupported or slow, or where backup/de-duplication tools handle them badly. Applies only when the core runs on Windows; on Linux and macOS part files are sparse anyway and this setting has no effect."
-msgstr ""
+msgstr "Aralıklı dosyalar zaten indirilmiş parçalar için disk alanı işgal eder, yani boş alan dosya doldukça kademeli olarak kullanılır. Olağan dosyalar kullanmak için bunu devre dışı bırakın - bu, aralıklı dosyaların desteklenmedikleri veya yavaş oldukları veya yedekleme/tekrarsızlaştırma araçlarının bunları kötü yönettikleri yerlerde kullanışlıdır. Sadece çekirdek Windows üzerinde çalıştırıldığında uygulanır; GNU/Linux ve macOS kısmi dosyaları daima aralıklıdır ve bu ayarın bir etkisi bulunmaz."
 
 #: src/muuli_wdr.cpp
 msgid "Stop downloads when free disk space reaches "
@@ -4413,11 +4413,11 @@ msgstr "Güncel örüntünün kaç paylaşılan dosyayı dışlayacağını gös
 
 #: src/muuli_wdr.cpp
 msgid "When the connected core's files live on a different machine, map a path prefix it reports to where that filesystem is reachable from here (a network share, say) so \"Open\" and \"Show in folder\" work."
-msgstr ""
+msgstr "Bağlı çekirdeğin dosyaları başka bir makinede bulunduklarında, \"Aç\" ve \"Klasörde göster\" işlevlerinin çalışması için, bildirdiği yol önekini bu dosya sisteminin buradan erişilebilir olduğu yere (mesela bir ağ paylaşımına) eşle."
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "Path Mappings"
-msgstr ""
+msgstr "Yol Eşlemeleri"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -4426,7 +4426,7 @@ msgstr "Uzak Sunucu"
 
 #: src/muuli_wdr.cpp
 msgid "A path prefix as the core reports it, e.g. /home/user/downloads/incoming"
-msgstr ""
+msgstr "Çekirdeğin bildirdiği üzere bir yol öneki, mesela /home/user/downloads/incoming"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -4435,7 +4435,7 @@ msgstr "Sunucu"
 
 #: src/muuli_wdr.cpp
 msgid "Where that same folder is reachable from this computer, e.g. a mounted network share"
-msgstr ""
+msgstr "Bu dizine bu bilgisayardan nereden erişilebileceği, mesela bağlı bir ağ paylaşımı"
 
 #: src/muuli_wdr.cpp
 msgid "Graphs"
@@ -4663,7 +4663,7 @@ msgstr "Şifre"
 
 #: src/muuli_wdr.cpp
 msgid "Require encrypted connections (rejects clients that cannot encrypt)"
-msgstr ""
+msgstr "Şifrelenmiş bağlantı talep et (şifreleyemeyen eşleri reddeder)"
 
 #: src/muuli_wdr.cpp
 msgid "aMule API server parameters"
@@ -4683,7 +4683,7 @@ msgstr "amuleapi HTTP sunucusunun dinlediği arayüz. 127.0.0.1 (varsayılan) sa
 
 #: src/muuli_wdr.cpp
 msgid "Type a password to set or change it. Stored passwords cannot be shown, so leaving this empty keeps the current one."
-msgstr ""
+msgstr "Ayarlamak veya değiştirmek için bir parola girin. Kaydedilmiş parolalar gösterilemez, yani bunu boş bırakmak güncel parolayı muhafaza edecektir."
 
 #: src/muuli_wdr.cpp
 msgid "Admin password"
@@ -4701,7 +4701,7 @@ msgstr "Konuk girişini reddet"
 
 #: src/muuli_wdr.cpp
 msgid "Guest sessions may read status and listings but cannot change anything. Turning this off clears the stored guest password."
-msgstr ""
+msgstr "Misafir oturumları durumu ve listeleri okuyabilir fakat hiçbir şey değiştiremez. Bunu devre dışı bırakmak, kaydedilmiş misafir parolasını siler."
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -5957,7 +5957,7 @@ msgstr "Yönetici parolası"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Guest access needs a password. Type one in the guest password field, or untick Enable guest access."
-msgstr ""
+msgstr "Misafir erişimi parola gerektirir. Parola alanına bir parola girin, veya Misafir erişimini etkinleştir seçeneğini devre dışı bırakın."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6005,7 +6005,7 @@ msgstr "- Protokol gizleme desteği değişti.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Proxy settings changed (needed for HTTP transfers).\n"
-msgstr ""
+msgstr "- Vekil sunucu ayarları değiştirildi (HTTP aktarımları için gerekidir).\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- amuleapi settings changed.\n"
@@ -6022,7 +6022,7 @@ msgstr ""
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "The amuleapi password could not be saved: %s"
-msgstr ""
+msgstr "amuleapi parolası kaydedilemedi: %s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Language changed.\n"
@@ -6084,7 +6084,7 @@ msgstr "Otomatik başlatma"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Register file type"
-msgstr ""
+msgstr "Dosya türünü kaydet"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Register URL handler"
@@ -6357,11 +6357,11 @@ msgstr "Paylaşılan dizin"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Both the remote and local prefix must be filled in."
-msgstr ""
+msgstr "Hem uzak, hem de yerel önek girilmelidir."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "This remote prefix is already mapped."
-msgstr ""
+msgstr "Bu uzak önek zaten eşlenmiş durumda."
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -6375,7 +6375,7 @@ msgstr "Bu ayarları hatırla"
 
 #: src/SearchDlg.cpp
 msgid "Clear the saved search history? This cannot be undone."
-msgstr ""
+msgstr "Kaydedilmiş arama tarihçesi silinsin mi? Bu geri alınamaz."
 
 #: src/SearchDlg.cpp
 msgid "Search warning"
@@ -6400,12 +6400,12 @@ msgstr "Ana"
 #: src/SearchList.cpp
 #, c-format
 msgid "Only saving the %u most recent of %u open searches to %s."
-msgstr ""
+msgstr "Sadece yakın geçmişteki %u arama, ki açık %u arama üzerinden, %s unsuruna kaydediliyor."
 
 #: src/SearchList.cpp
 #, c-format
 msgid "Only saving the first %u of %u results for search \"%s\"."
-msgstr ""
+msgstr "Sadece ilk %u sonuç, toplam %u sonuç üzerinden, \"%s\" araması için kaydediliyor."
 
 #: src/SearchList.cpp
 #, fuzzy
@@ -7033,11 +7033,11 @@ msgstr "Çalışmıyor"
 #: src/SharedDirWatcher.cpp
 #, c-format
 msgid "Shared-dir watcher: backend overflow/error (%s); falling back to full reload"
-msgstr ""
+msgstr "Paylaşılan dizin izleyici: arka uç taşması/hatası (%s); tam yeniden yüklemeye geri dönülüyor"
 
 #: src/SharedDirWatcher.cpp
 msgid "Shared-dir watcher: events dropped by backend, forcing a full shared-files reload to resync"
-msgstr ""
+msgstr "Paylaşılan dizin izleyici: arka uç tarafından atlanan olaylar mevcut ve bu, eşleşmeyi tekrar sağlamak için paylaşılan dosyaların tamamen yeniden yüklenmesini zorluyor"
 
 #: src/SharedFileList.cpp
 #, c-format
@@ -7166,7 +7166,7 @@ msgstr "eD2k bağlantısını panoya kopyala (&AICH bilgisi + Kaynak)"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Export selected files to an emulecollection"
-msgstr ""
+msgstr "Seçili dosyaları bir emulecollection dosyasına aktar"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
@@ -7184,16 +7184,16 @@ msgstr "Tamamlama sırasında hata"
 
 #: src/SharedFilesCtrl.cpp
 msgid "No files are selected to export."
-msgstr ""
+msgstr "Dışa aktarmak için hiçbir dosya seçili değil."
 
 #: src/SharedFilesCtrl.cpp
 msgid "eMule collections (*.emulecollection)"
-msgstr ""
+msgstr "eMule koleksiyonları (*.emulecollection)"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "'%s' already exists. Overwrite it?"
-msgstr ""
+msgstr "'%s' zaten mevcut. Üzerine yazılsın mı?"
 
 #: src/SharedFilesCtrl.cpp
 #, fuzzy, c-format
@@ -8858,7 +8858,7 @@ msgstr "aMule'ü oturum açtığımda başlat"
 
 #: packaging/windows/installer_strings.c
 msgid "Associate .emulecollection files"
-msgstr ""
+msgstr ".emulecollection dosyaları ile ilişkilendir"
 
 #: packaging/windows/installer_strings.c
 msgid "Uninstall"
@@ -8882,7 +8882,7 @@ msgstr "Güncel kullanıcı oturum açtığında aMule'ü otomatik olarak başla
 
 #: packaging/windows/installer_strings.c
 msgid "Adds aMule to the \"Open with\" list for .emulecollection files, and makes it the default if no other program has claimed them. Opening a collection queues every eD2k link it contains."
-msgstr ""
+msgstr "aMule'ü emulecollection dosyaları için \"Birlikte Aç\" listesine ilave der ve bu dosyaları başka bir program yönetmiyorsa onu varsayılan yapar. Bir koleksiyon açmak içerdiği her eD2k bağlantısını kuyruğa ekler."
 
 #: packaging/windows/installer_strings.c
 msgid "Remove aMule application files, Start Menu / desktop shortcuts, autostart Run-key entry, URL scheme registrations, and Add/Remove Programs entry (required)."

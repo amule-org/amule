@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "POT-Creation-Date: 2026-07-30 17:31+0200\n"
-"PO-Revision-Date: 2026-08-13 11:55+0000\n"
+"PO-Revision-Date: 2026-08-14 21:45+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: \n"
 "Language: tr\n"
@@ -216,7 +216,7 @@ msgstr "bir magnet bağlantısı."
 #. type: Plain text
 #: amule.1.in amuled.1.in
 msgid "Alternatively the argument can be the path to an .emulecollection file, or a file:// URL naming one, in which case every link it contains is added to the download queue.  This is what lets a file manager open a collection with aMule."
-msgstr ""
+msgstr "Alternatif olarak, argüman bir .emulecollection dosyasının yolu veya onu isimlendiren bir file:// URL'i olabilir, ki bu durumda içerdiği her bağlantı indirme kuyruğuna eklenir.  Bu, bir dosya yöneticisinin koleksiyonları aMule ile açmasına imkân sağlar."
 
 #. type: SH
 #: amule.1.in amulecmd.1.in amuleweb.1.in
@@ -448,7 +448,7 @@ msgstr "I<E<lt>yolE<gt>>a dayalı yapılandırma dosyası yaratır ve çıkar. Y
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in
 msgid "Do not encrypt the External Connection link.  Encryption is negotiated automatically whenever the remote aMule supports it, and is on by default for every destination, local or remote.  Turning it off leaves everything after the login readable, and modifiable, by anyone able to observe the connection."
-msgstr ""
+msgstr "Harici Bağlantı bağlantısını şifreleme.  Şifreleme uzaktaki aMule bunu desteklediğinde otomatik olarak müzakere edilir ve gerek uzak, gerekse yerel her hedef için varsaylan olarak etkindir.  Bunu devre dışı bırakmak oturum açıldıktan sonraki her şeyi bağlantıyı gözlemleyebilen herkes tarafından okunabilir ve değiştirilebilir olarak bırakır."
 
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in
