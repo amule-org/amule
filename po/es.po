@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-15 22:54+0200\n"
+"POT-Creation-Date: 2026-08-15 23:10+0200\n"
 "PO-Revision-Date: 2026-08-14 21:35+0000\n"
 "Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
@@ -1889,10 +1889,6 @@ msgstr "Renombrar el archivo"
 #, c-format
 msgid "%.1f MB/s"
 msgstr "%.1f MB/s"
-
-#: src/DownloadListCtrl.cpp
-msgid "%y/%m/%d %H:%M:%S"
-msgstr "%y/%m/%d %H:%M:%S"
 
 #: src/DownloadListCtrl.cpp
 #, c-format
@@ -8946,6 +8942,9 @@ msgstr "aMule parece estar en ejecución. Por favor, ciérrelo y vuelva a ejecut
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Eliminando los datos de usuario en $APPDATA\\aMule..."
+
+#~ msgid "%y/%m/%d %H:%M:%S"
+#~ msgstr "%y/%m/%d %H:%M:%S"
 
 #, fuzzy
 #~ msgid "Remote prefix:"

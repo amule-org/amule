@@ -112,6 +112,20 @@ wxString CastSecondsToHM(uint32 count, uint16 msecs)
 	}
 }
 
+wxString FormatLocalDateTime(const wxDateTime &when)
+{
+	// %x %X: both halves come from LC_TIME, so a locale that writes the day
+	// first, or separates with dots, or wants a 12-hour clock, gets what it
+	// writes -- and every timestamp in the interface agrees, because they
+	// all arrive here.
+	return when.Format("%x %X");
+}
+
+wxString FormatLocalDate(const wxDateTime &when)
+{
+	return when.Format("%x");
+}
+
 // Codec FOURCC -> human-readable name. Mapping inspired by eMule AI's
 // MediaInfo.cpp (GPL v2+). Implementation rewritten for wx + a small
 // initial set; extend as needed. Unknown / unrecognised codec IDs

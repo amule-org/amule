@@ -44,7 +44,8 @@
 #include "SourceListCtrl.h"
 #include "Statistics.h" // Needed for theStats (free space), FREE_SPACE_UNKNOWN
 #include "TransferWnd.h"
-#include "muuli_wdr.h" // Needed for ID_DLOADLIST
+#include "muuli_wdr.h"      // Needed for ID_DLOADLIST
+#include "OtherFunctions.h" // Needed for FormatLocalDateTime
 
 namespace
 {
@@ -910,14 +911,14 @@ wxString CDownloadListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) c
 
 	case COLUMN_DL_LASTSEENCOMPLETE:
 		if (file->lastseencomplete) {
-			return wxDateTime(file->lastseencomplete).Format(_("%y/%m/%d %H:%M:%S"));
+			return FormatLocalDateTime(wxDateTime(file->lastseencomplete));
 		}
 		return _("Unknown");
 
 	case COLUMN_DL_LASTRECEPTION: {
 		const time_t lastReceived = file->GetLastChangeDatetime();
 		if (lastReceived) {
-			return wxDateTime(lastReceived).Format(_("%y/%m/%d %H:%M:%S"));
+			return FormatLocalDateTime(wxDateTime(lastReceived));
 		}
 		return _("Unknown");
 	}

@@ -210,7 +210,7 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 			bufferS = wxString(_("Unknown")).MakeLower();
 		} else {
 			wxDateTime last_seen(part->lastseencomplete);
-			bufferS = last_seen.FormatISODate() + " " + last_seen.FormatISOTime();
+			bufferS = FormatLocalDateTime(last_seen);
 		}
 		CastChild(IDC_LASTSEENCOMPL, wxControl)->SetLabel(bufferS);
 	}
@@ -242,14 +242,14 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 		bufferS = wxString(_("Unknown")).MakeLower();
 	} else {
 		wxDateTime ds(m_file->GetDateShared());
-		bufferS = ds.FormatISODate() + " " + ds.FormatISOTime();
+		bufferS = FormatLocalDateTime(ds);
 	}
 	CastChild(IDC_FD_SHARE_SINCE, wxControl)->SetLabel(bufferS);
 	if (m_file->GetLastUpload() == 0) {
 		bufferS = wxString(_("Unknown")).MakeLower();
 	} else {
 		wxDateTime lu(m_file->GetLastUpload());
-		bufferS = lu.FormatISODate() + " " + lu.FormatISOTime();
+		bufferS = FormatLocalDateTime(lu);
 	}
 	CastChild(IDC_FD_SHARE_LASTUP, wxControl)->SetLabel(bufferS);
 

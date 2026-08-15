@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-15 22:54+0200\n"
+"POT-Creation-Date: 2026-08-15 23:10+0200\n"
 "PO-Revision-Date: 2026-08-14 21:44+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -1869,10 +1869,6 @@ msgstr "重命名文件"
 #, c-format
 msgid "%.1f MB/s"
 msgstr "%.1f MB/s"
-
-#: src/DownloadListCtrl.cpp
-msgid "%y/%m/%d %H:%M:%S"
-msgstr "%y/%m/%d %H:%M:%S"
 
 #: src/DownloadListCtrl.cpp
 #, c-format
@@ -8898,6 +8894,9 @@ msgstr "aMule 似乎正在运行。请将其关闭并重新运行卸载程序。
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "正在删除 $APPDATA\\aMule 中的用户数据..."
+
+#~ msgid "%y/%m/%d %H:%M:%S"
+#~ msgstr "%y/%m/%d %H:%M:%S"
 
 #, fuzzy
 #~ msgid "Remote prefix:"
