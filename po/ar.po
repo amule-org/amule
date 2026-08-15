@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-15 22:54+0200\n"
+"POT-Creation-Date: 2026-08-15 23:10+0200\n"
 "PO-Revision-Date: 2026-08-14 21:32+0000\n"
 "Last-Translator: saleh alhathal <hathalsal@hotmail.com>\n"
 "Language-Team: \n"
@@ -1861,10 +1861,6 @@ msgstr ""
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f MB/s"
-msgstr ""
-
-#: src/DownloadListCtrl.cpp
-msgid "%y/%m/%d %H:%M:%S"
 msgstr ""
 
 #: src/DownloadListCtrl.cpp
