@@ -357,6 +357,22 @@ void CClientsWnd::UpdateAll()
 		if (c == nullptr) {
 			return;
 		}
+		// Built at most once per peer, and only if something asks for it. It
+		// is the most expensive thing here -- a country lookup and several
+		// string copies -- and it used to be built twice for every peer, once
+		// for the history entry and again for the pane row. Lazily, because a
+		// peer that neither pane shows and that the history does not want
+		// should not pay for one at all (issue #920).
+		ClientNameCell cell;
+		bool haveCell = false;
+		auto nameCell = [&]() -> const ClientNameCell & {
+			if (!haveCell) {
+				cell = MakeClientNameCell(c);
+				haveCell = true;
+			}
+			return cell;
+		};
+
 		if (wantLive && !c->GetUserHash().IsEmpty()) {
 			CClientHistoryListCtrl::LiveClient entry;
 			entry.uploaded = c->GetUploadedTotal();
@@ -369,7 +385,7 @@ void CClientsWnd::UpdateAll()
 			entry.port = c->GetUserPort();
 			entry.clientSoft = static_cast<uint8>(c->GetClientSoft());
 			entry.sourceFrom = static_cast<uint8>(c->GetSourceFrom());
-			entry.nameCell = MakeClientNameCell(c);
+			entry.nameCell = nameCell();
 			// A history row describes a peer we may not be talking to, so it
 			// carries no live download-state badge even when we are.
 			entry.nameCell.showState = false;
@@ -389,7 +405,7 @@ void CClientsWnd::UpdateAll()
 		}
 		CClientsListCtrl::Row row;
 		row.ecid = c->ECID();
-		row.nameCell = MakeClientNameCell(c);
+		row.nameCell = nameCell();
 		row.name = c->GetUserName();
 		row.software = c->GetSoftStr();
 		row.version = c->GetSoftVerStr();

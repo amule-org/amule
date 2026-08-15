@@ -114,6 +114,25 @@ public:
 		uint64 sessionDown = 0;
 		uint64 totalUp = 0;
 		uint64 totalDown = 0;
+
+		/**
+		 * Whole-row comparison, so a caller asking "did this row change"
+		 * cannot test a subset by accident.
+		 *
+		 * ecid is excluded: rows are matched on it, so two rows being compared
+		 * always share one. Everything else is displayed, and anything that
+		 * moves has to reach the screen.
+		 */
+		bool operator==(const Row &other) const
+		{
+			return nameCell == other.nameCell && name == other.name &&
+			       software == other.software && version == other.version && ip == other.ip &&
+			       port == other.port && sourceFrom == other.sourceFrom && files == other.files &&
+			       upSpeed == other.upSpeed && downSpeed == other.downSpeed &&
+			       sessionUp == other.sessionUp && sessionDown == other.sessionDown &&
+			       totalUp == other.totalUp && totalDown == other.totalDown;
+		}
+		bool operator!=(const Row &other) const { return !(*this == other); }
 	};
 
 	/**

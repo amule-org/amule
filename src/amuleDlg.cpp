@@ -1702,13 +1702,6 @@ void CamuleDlg::OnGUITimer(wxTimerEvent &WXUNUSED(evt))
 	}
 #endif
 
-	// The clients page shows live speeds and transfer totals, so it needs the
-	// one-second cadence rather than the five-second block below. Only while
-	// it is the page on screen: off-screen the repaint would draw nothing.
-	if (m_clientswnd && m_activewnd == static_cast<wxWindow *>(m_clientswnd)) {
-		m_clientswnd->UpdateAll();
-	}
-
 	if (msCur - msPrev5 > 5000) { // every 5 seconds
 		msPrev5 = msCur;
 		ShowTransferRate();
@@ -1735,6 +1728,17 @@ void CamuleDlg::OnGUITimer(wxTimerEvent &WXUNUSED(evt))
 
 	if (msCur - msPrev1 > 1000) { // every second
 		msPrev1 = msCur;
+
+		// The clients page shows live speeds and transfer totals, so it wants
+		// a per-second refresh -- and no more. This timer fires at 10 Hz, so
+		// outside this block the whole sweep ran ten times a second: every
+		// peer the core knows re-read, both panes rebuilt and the known-client
+		// store reconciled, for a display that changes once a second at most
+		// (issue #920). Only while the page is on screen: off-screen the
+		// repaint would draw nothing.
+		if (m_clientswnd && m_activewnd == static_cast<wxWindow *>(m_clientswnd)) {
+			m_clientswnd->UpdateAll();
+		}
 		if (m_CurrentBlinkBitmap == Toolbar_Blink) {
 			m_CurrentBlinkBitmap = Toolbar_Messages;
 			SetMessagesTool();
