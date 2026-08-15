@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-14 13:50+0200\n"
+"POT-Creation-Date: 2026-08-15 22:54+0200\n"
 "PO-Revision-Date: 2026-08-14 21:37+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
@@ -7180,6 +7180,16 @@ msgstr[0] "%u fichier partagé a été exporté vers « %s »."
 msgstr[1] "%u fichiers partagés ont été exportés vers « %s »."
 
 #: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Total size of Shared Files: %s (%s completed)"
+msgstr "Taille totale des Fichiers Partagés : %s"
+
+#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
+msgstr "Taille totale des Fichiers Partagés : %s"
+
+#: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Shared Files (%i, hashing %u more)"
 msgid_plural "Shared Files (%i, hashing %u more)"
@@ -7190,11 +7200,6 @@ msgstr[1] "Fichiers partagés (%i, hachage de %u autres fichiers)"
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Fichiers partagés (%i)"
-
-#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
-msgstr "Taille totale des Fichiers Partagés : %s"
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"

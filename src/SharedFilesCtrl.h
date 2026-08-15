@@ -188,6 +188,17 @@ public:
 	 */
 	void UpdateFreeSpace();
 
+	/**
+	 * Redraws the "Total size of Shared Files:" label.
+	 *
+	 * Also driven by the GUI timer, because unlike the total itself the
+	 * completed figure beside it moves while nothing about the list changes:
+	 * part files gain bytes as they download. Sets the label only when the
+	 * text actually differs, since this runs once a second for as long as
+	 * the panel is up.
+	 */
+	void UpdateTotalSize();
+
 	/** Map a (virtual) row index to its file, or NULL if out of range. */
 	CKnownFile *FileAtRow(long row) const { return reinterpret_cast<CKnownFile *>(ItemAt(row)); }
 
@@ -361,9 +372,26 @@ private:
 	//! Combined size of the displayed files (drives the "Total size:" label)
 	uint64 m_shownSize;
 
+	/**
+	 * Bytes the displayed part files have yet to obtain.
+	 *
+	 * m_shownSize is the sum of the Size column, and that column shows a part
+	 * file's final size, not what is on disk yet. Subtracting this gives the
+	 * figure the total is shown next to (issue #927).
+	 *
+	 * Walks the download queue and asks the row index whether each part file
+	 * is displayed, rather than walking the displayed files and asking each
+	 * whether it is a part file: there are at most as many part files as
+	 * there are downloads, against a share that can hold tens of thousands.
+	 */
+	uint64 ShownIncompleteBytes() const;
+
 	//! The "Free space:" label, resolved by name on first use. Lives in the
 	//! statistics box, so it cannot be reached through GetParent().
 	wxStaticText *m_freeSpaceLabel = nullptr;
+
+	//! The "Total size of Shared Files:" label, resolved the same way.
+	wxStaticText *m_totalSizeLabel = nullptr;
 
 	// The virtual-list model, sorting, live auto-sort and selection
 	// preservation all live in CMuleVirtualDataViewCtrl now.

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-14 13:50+0200\n"
+"POT-Creation-Date: 2026-08-15 22:54+0200\n"
 "PO-Revision-Date: 2026-08-14 21:34+0000\n"
 "Last-Translator: Dimitris <dgalanak@yahoo.com>\n"
 "Language-Team: Greek\n"
@@ -7301,6 +7301,16 @@ msgstr[1] "Επαναφόρτωση των κοινόχρηστων αρχείω
 
 #: src/SharedFilesCtrl.cpp
 #, fuzzy, c-format
+msgid "Total size of Shared Files: %s (%s completed)"
+msgstr "Συνολικό μέγεθος κοινόχρηστων αρχείων: %s"
+
+#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
+msgstr "Συνολικό μέγεθος κοινόχρηστων αρχείων: %s"
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
 msgid "Shared Files (%i, hashing %u more)"
 msgid_plural "Shared Files (%i, hashing %u more)"
 msgstr[0] "Κοινόχρηστα αρχεία (%i)"
@@ -7310,11 +7320,6 @@ msgstr[1] "Κοινόχρηστα αρχεία (%i)"
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Κοινόχρηστα αρχεία (%i)"
-
-#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
-msgstr "Συνολικό μέγεθος κοινόχρηστων αρχείων: %s"
 
 #: src/SourceListCtrl.cpp
 #, fuzzy

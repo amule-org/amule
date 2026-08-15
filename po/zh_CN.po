@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-14 13:50+0200\n"
+"POT-Creation-Date: 2026-08-15 22:54+0200\n"
 "PO-Revision-Date: 2026-08-14 21:44+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -7177,6 +7177,16 @@ msgstr[0] "导出了 %u 个共享文件到 '%s'。"
 msgstr[1] "导出了 %u 个共享文件到 '%s'。"
 
 #: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Total size of Shared Files: %s (%s completed)"
+msgstr "共享文件大小总和：%s"
+
+#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
+msgstr "共享文件大小总和：%s"
+
+#: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Shared Files (%i, hashing %u more)"
 msgid_plural "Shared Files (%i, hashing %u more)"
@@ -7187,11 +7197,6 @@ msgstr[1] "共享的文件 (%i，正在计算另外 %u 个文件的哈希值）"
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "共享文件 (%i)"
-
-#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
-msgstr "共享文件大小总和：%s"
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
