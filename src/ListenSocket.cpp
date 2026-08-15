@@ -128,7 +128,15 @@ void CListenSocket::Process()
 		}
 	}
 
-	if (m_pending) {
+	// SocketAvailable() as well as m_pending: the socket layer arms one
+	// async accept at a time and only re-arms it from AcceptWith(), so a
+	// connection it accepted but we then declined to take -- OnAccept()
+	// bails out when the app is not running yet -- leaves the acceptor
+	// idle with m_pending clear. Nothing would ever call AcceptWith()
+	// again and the listen socket would stay deaf for the rest of the
+	// session, with the kernel still completing handshakes into a backlog
+	// no one reads. Taking it here re-arms the acceptor.
+	if (m_pending || SocketAvailable()) {
 		OnAccept();
 	}
 }

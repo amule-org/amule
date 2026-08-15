@@ -1157,6 +1157,18 @@ bool CamuleApp::OnInit()
 	// The user can start pressing buttons like mad if he feels like it.
 	m_app_state = APP_STATE_RUNNING;
 
+	// The listen socket has been bound since ReinitializeNetwork(), so a peer
+	// -- typically one that had us in its source list moments ago -- can have
+	// connected while the rest of this ran. CListenSocket::OnAccept() declines
+	// those, because until the line above there was no loaded client list to
+	// hand them to, and declining leaves the connection sitting unread. Take
+	// it now that we are running: it re-arms the socket layer's acceptor,
+	// which otherwise would not happen before the first core timer tick, five
+	// seconds from now and well after we have asked a server for a HighID.
+	if (listensocket) {
+		listensocket->Process();
+	}
+
 	{
 #ifndef AMULE_DAEMON
 		if (firstRunWizardShown) {
