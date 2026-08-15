@@ -141,13 +141,20 @@ void CClientsListCtrl::SetClients(std::vector<Row> &&rows)
 			}
 		}
 		if (sameSet) {
-			for (Row &row : m_rows) {
-				row = *incoming[row.ecid];
-			}
+			// Only the rows that actually moved. Refreshing all of them cost a
+			// repaint per visible row on every tick even when nothing had
+			// changed, which on a page that never sits still is most of the
+			// work it was doing (issue #920).
+			//
 			// Per row rather than a blanket Refresh() so the control's own
 			// viewport gate applies -- off-screen rows cost nothing -- and so a
 			// live sort column still gets the chance to reorder.
-			for (const Row &row : m_rows) {
+			for (Row &row : m_rows) {
+				const Row &fresh = *incoming[row.ecid];
+				if (row == fresh) {
+					continue;
+				}
+				row = fresh;
 				RefreshItemData(static_cast<wxUIntPtr>(row.ecid));
 			}
 			return;
