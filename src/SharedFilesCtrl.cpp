@@ -1032,6 +1032,87 @@ void CSharedFilesCtrl::EndBulkUpdate()
 	}
 }
 
+uint64 CSharedFilesCtrl::ShownIncompleteBytes() const
+{
+	if (!theApp->downloadqueue) {
+		return 0;
+	}
+
+	std::vector<CPartFile *> parts;
+#ifdef CLIENT_GUI
+	// CDownQueueRem is a std::map keyed by ECID, with no CopyFileList().
+	// This file is compiled per executable rather than into muleappgui
+	// (cmake/source-vars.cmake), so the two builds really do see their own
+	// download queue here.
+	parts.reserve(theApp->downloadqueue->size());
+	for (const auto &entry : *theApp->downloadqueue) {
+		parts.push_back(entry.second);
+	}
+#else
+	theApp->downloadqueue->CopyFileList(parts);
+#endif
+
+	uint64 missing = 0;
+	for (CPartFile *part : parts) {
+		if (!part) {
+			continue;
+		}
+		// Upcast before the row lookup: the list keys its rows by the
+		// CKnownFile the share holds, which is what was stored.
+		const CKnownFile *known = part;
+		if (RowOfData(reinterpret_cast<wxUIntPtr>(known)) == -1) {
+			continue;
+		}
+		const uint64 size = part->GetFileSize();
+		const uint64 obtained = part->GetCompletedSize();
+		if (obtained < size) {
+			missing += size - obtained;
+		}
+	}
+	return missing;
+}
+
+void CSharedFilesCtrl::UpdateTotalSize()
+{
+	// The label lives in the statistics box (the bottom pane of the shared
+	// splitter), a different window from this list, so reach it through the
+	// shared-files window rather than GetParent(). Resolved once; see the
+	// note on m_freeSpaceLabel.
+	if (!theApp->amuledlg || !theApp->amuledlg->m_sharedfileswnd) {
+		return;
+	}
+	if (!m_totalSizeLabel) {
+		m_totalSizeLabel =
+			CastByName("sharedFilesTotalSize", theApp->amuledlg->m_sharedfileswnd, wxStaticText);
+		if (!m_totalSizeLabel) {
+			return;
+		}
+	}
+
+	// The total is the sum of the Size column, which shows a part file's
+	// final size. That answers "how much am I sharing" but not "how much of
+	// it do I have", and the two differ by however much is still to
+	// download -- 400 GB of it in the report that prompted this (#927). Both
+	// are shown rather than one replaced, so the total still adds up to its
+	// own column.
+	// "completed", the word the Downloads list already uses for this same
+	// quantity (its Completed column), rather than "complete": what is being
+	// counted is bytes obtained, not files that are finished.
+	const uint64 missing = ShownIncompleteBytes();
+	const wxString text =
+		missing ? CFormat(_("Total size of Shared Files: %s (%s completed)")) %
+				  CastItoXBytes(m_shownSize) % CastItoXBytes(m_shownSize - missing)
+			: CFormat(_("Total size of Shared Files: %s")) % CastItoXBytes(m_shownSize);
+
+	// SetLabel() repaints even when the text is unchanged, and the GUI timer
+	// calls this once a second for as long as the panel is up.
+	if (m_totalSizeLabel->GetLabel() == text) {
+		return;
+	}
+	m_totalSizeLabel->SetLabel(text);
+	m_totalSizeLabel->GetParent()->Layout();
+}
+
 void CSharedFilesCtrl::UpdateFreeSpace()
 {
 	if (!theApp->amuledlg || !theApp->amuledlg->m_sharedfileswnd) {
@@ -1061,18 +1142,7 @@ void CSharedFilesCtrl::ShowFilesCount()
 		label->SetLabel(CFormat(_("Shared Files (%i)")) % ItemDataCount());
 	}
 
-	// Combined size of the shown files. The label lives in the statistics box
-	// (the bottom pane of the shared splitter), a different window from this
-	// list, so reach it through the shared-files window rather than GetParent().
-	if (theApp->amuledlg && theApp->amuledlg->m_sharedfileswnd) {
-		wxStaticText *totalLabel =
-			CastByName("sharedFilesTotalSize", theApp->amuledlg->m_sharedfileswnd, wxStaticText);
-		if (totalLabel) {
-			totalLabel->SetLabel(
-				CFormat(_("Total size of Shared Files: %s")) % CastItoXBytes(m_shownSize));
-			totalLabel->GetParent()->Layout();
-		}
-	}
+	UpdateTotalSize();
 
 	label->GetParent()->Layout();
 	// If file list was updated, the "selection" is involved too, if we chose to show clients for all

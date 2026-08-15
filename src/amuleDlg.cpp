@@ -640,6 +640,9 @@ void CamuleDlg::UpdateFreeSpaceLabels()
 	}
 	if (IsDialogVisible(DT_SHARED_WND) && m_sharedfileswnd && m_sharedfileswnd->sharedfilesctrl) {
 		m_sharedfileswnd->sharedfilesctrl->UpdateFreeSpace();
+		// The completed figure beside the total moves without the list
+		// changing, so it cannot wait for the next add or remove.
+		m_sharedfileswnd->sharedfilesctrl->UpdateTotalSize();
 	}
 }
 
