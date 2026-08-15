@@ -28,6 +28,13 @@
 
 #include <wx/string.h>
 
+// See the note in LibSocketAsio.cpp: Boost 1.92's asio trips
+// -Wdeprecated-copy-with-user-provided-dtor, which this build treats as an
+// error. Suppressed across the includes only.
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
+#endif
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/post.hpp>
@@ -38,6 +45,9 @@
 #include <boost/beast/http.hpp>
 #include <boost/beast/version.hpp>
 #include <boost/optional.hpp>
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
 #include <zlib.h>
 
