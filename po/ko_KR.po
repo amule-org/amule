@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-14 13:50+0200\n"
+"POT-Creation-Date: 2026-08-15 22:54+0200\n"
 "PO-Revision-Date: 2026-08-14 21:39+0000\n"
 "Last-Translator: Hyunju Kang <rexington@gmail.com>\n"
 "Language-Team: Korean <hoenny@daum.net>\n"
@@ -7300,6 +7300,16 @@ msgstr[1] "공유된 파일을 다시 읽어들임"
 
 #: src/SharedFilesCtrl.cpp
 #, fuzzy, c-format
+msgid "Total size of Shared Files: %s (%s completed)"
+msgstr "공유파일의 전체 크기: %s"
+
+#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
+msgstr "공유파일의 전체 크기: %s"
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
 msgid "Shared Files (%i, hashing %u more)"
 msgid_plural "Shared Files (%i, hashing %u more)"
 msgstr[0] "공유된 파일(%i)"
@@ -7309,11 +7319,6 @@ msgstr[1] "공유된 파일(%i)"
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "공유된 파일(%i)"
-
-#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
-msgstr "공유파일의 전체 크기: %s"
 
 #: src/SourceListCtrl.cpp
 #, fuzzy

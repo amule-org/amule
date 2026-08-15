@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-14 13:50+0200\n"
+"POT-Creation-Date: 2026-08-15 22:54+0200\n"
 "PO-Revision-Date: 2026-08-14 21:33+0000\n"
 "Last-Translator: minterior <minterior@gmail.com>\n"
 "Language-Team: Català\n"
@@ -7246,6 +7246,16 @@ msgstr[1] "Recarrega els compartits"
 
 #: src/SharedFilesCtrl.cpp
 #, fuzzy, c-format
+msgid "Total size of Shared Files: %s (%s completed)"
+msgstr "Mida total dels fitxers compartits: %s"
+
+#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
+msgstr "Mida total dels fitxers compartits: %s"
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
 msgid "Shared Files (%i, hashing %u more)"
 msgid_plural "Shared Files (%i, hashing %u more)"
 msgstr[0] "Fitxers compartits (%i)"
@@ -7255,11 +7265,6 @@ msgstr[1] "Fitxers compartits (%i)"
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Fitxers compartits (%i)"
-
-#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
-msgstr "Mida total dels fitxers compartits: %s"
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-14 13:50+0200\n"
+"POT-Creation-Date: 2026-08-15 22:54+0200\n"
 "PO-Revision-Date: 2026-08-14 21:39+0000\n"
 "Last-Translator: \n"
 "Language-Team: Japanese\n"
@@ -7251,6 +7251,16 @@ msgstr[0] "共有ファイルを再ロードする"
 
 #: src/SharedFilesCtrl.cpp
 #, fuzzy, c-format
+msgid "Total size of Shared Files: %s (%s completed)"
+msgstr "共有ファイルの合計サイズ： %s"
+
+#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
+msgstr "共有ファイルの合計サイズ： %s"
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
 msgid "Shared Files (%i, hashing %u more)"
 msgid_plural "Shared Files (%i, hashing %u more)"
 msgstr[0] "共有ファイル（%i）"
@@ -7259,11 +7269,6 @@ msgstr[0] "共有ファイル（%i）"
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "共有ファイル（%i）"
-
-#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
-msgstr "共有ファイルの合計サイズ： %s"
 
 #: src/SourceListCtrl.cpp
 #, fuzzy

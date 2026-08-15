@@ -19,7 +19,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-14 13:50+0200\n"
+"POT-Creation-Date: 2026-08-15 22:54+0200\n"
 "PO-Revision-Date: 2026-08-14 21:38+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
@@ -7184,6 +7184,16 @@ msgstr[0] "Esportato %u file condiviso in '%s'"
 msgstr[1] "Esportati %u file condivisi in '%s'."
 
 #: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Total size of Shared Files: %s (%s completed)"
+msgstr "Dimensione totale file condivisi: %s"
+
+#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
+msgstr "Dimensione totale file condivisi: %s"
+
+#: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Shared Files (%i, hashing %u more)"
 msgid_plural "Shared Files (%i, hashing %u more)"
@@ -7194,11 +7204,6 @@ msgstr[1] "File condivisi (%i, hashing di altri %u file in corso)"
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "File condivisi (%i)"
-
-#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
-msgstr "Dimensione totale file condivisi: %s"
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-14 13:50+0200\n"
+"POT-Creation-Date: 2026-08-15 22:54+0200\n"
 "PO-Revision-Date: 2026-08-14 21:38+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: Hungarian <hu@li.org>\n"
@@ -7214,6 +7214,16 @@ msgstr[0] "Megosztott fájlok frissítése"
 
 #: src/SharedFilesCtrl.cpp
 #, fuzzy, c-format
+msgid "Total size of Shared Files: %s (%s completed)"
+msgstr "Megosztott fájlok teljes mérete: %s"
+
+#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
+msgstr "Megosztott fájlok teljes mérete: %s"
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
 msgid "Shared Files (%i, hashing %u more)"
 msgid_plural "Shared Files (%i, hashing %u more)"
 msgstr[0] "Megosztott fájlok (%i)"
@@ -7222,11 +7232,6 @@ msgstr[0] "Megosztott fájlok (%i)"
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Megosztott fájlok (%i)"
-
-#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
-msgstr "Megosztott fájlok teljes mérete: %s"
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"

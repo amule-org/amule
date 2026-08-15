@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-14 13:50+0200\n"
+"POT-Creation-Date: 2026-08-15 22:54+0200\n"
 "PO-Revision-Date: 2026-08-14 21:42+0000\n"
 "Last-Translator: Fation <dj_barthezz@linuxmail.org lushnja_corps@hotmail.Language-Team:\n"
 "Language: sq\n"
@@ -7284,6 +7284,16 @@ msgstr[1] "Ringarko failet e ndara"
 
 #: src/SharedFilesCtrl.cpp
 #, fuzzy, c-format
+msgid "Total size of Shared Files: %s (%s completed)"
+msgstr "Totali i madhesise se faileve te ndara: %s"
+
+#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
+msgstr "Totali i madhesise se faileve te ndara: %s"
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
 msgid "Shared Files (%i, hashing %u more)"
 msgid_plural "Shared Files (%i, hashing %u more)"
 msgstr[0] "Faile te ndara (%i)"
@@ -7293,11 +7303,6 @@ msgstr[1] "Faile te ndara (%i)"
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Faile te ndara (%i)"
-
-#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
-msgstr "Totali i madhesise se faileve te ndara: %s"
 
 #: src/SourceListCtrl.cpp
 #, fuzzy
