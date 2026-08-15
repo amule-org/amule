@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-14 13:50+0200\n"
-"PO-Revision-Date: 2026-08-13 11:38+0000\n"
+"PO-Revision-Date: 2026-08-14 21:34+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
 "Language: cs\n"
@@ -211,37 +211,37 @@ msgid "Restricted permissions on %s to owner-only."
 msgstr "Oprávnění pro %s byla omezena pouze na vlastníka."
 
 #: src/amuleAppCommon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Collection file not found: %s"
-msgstr "Index nenalezen: "
+msgstr "Soubor kolekce nenalezen: %s"
 
 #: src/amuleAppCommon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Invalid or empty collection file: %s"
-msgstr "Nelze získat seznam sdílených souborů od uživatele '%s'"
+msgstr "Neplatný nebo prázdný soubor kolekce: %s"
 
 #: src/amuleAppCommon.cpp
 #, c-format
 msgid "No usable links in collection: %s"
-msgstr ""
+msgstr "V kolekci nejsou žádné použitelné odkazy: %s"
 
 #: src/amuleAppCommon.cpp
 #, c-format
 msgid "Skipped %u unusable link in collection: %s"
 msgid_plural "Skipped %u unusable links in collection: %s"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Vynechán %u nepoužitelný odkaz v kolekci: %s"
+msgstr[1] "Vynechány %u nepoužitelné odkazy v kolekci: %s"
+msgstr[2] "Vynecháno %u nepoužitelných odkazů v kolekci: %s"
 
 #: src/amuleAppCommon.cpp src/DownloadQueue.cpp
 #, c-format
 msgid "Cannot convert magnet link to eD2k: %s"
-msgstr ""
+msgstr "Nelze převést magnet odkaz na eD2k: %s"
 
 #: src/amuleAppCommon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Invalid eD2k link \"%s\" - ERROR: %s"
-msgstr "Neplatný eD2k odkaz! CHYBA: %s"
+msgstr "Neplatný eD2k odkaz \"%s\" - CHYBA: %s"
 
 #: src/amule.cpp
 msgid "Now, exiting main app..."
@@ -504,7 +504,7 @@ msgstr "VAROVÁNÍ: log je prázdný. Něco je špatně."
 
 #: src/amule.cpp
 msgid "Log has been reset"
-msgstr "Log byl vymazán"
+msgstr "Log byl resetován"
 
 #: src/amule.cpp
 #, c-format
@@ -659,7 +659,7 @@ msgstr "KRITICKÁ CHYBA: Vytváření časovače selhalo"
 
 #: src/amuleDlg.cpp
 msgid "Error! Unable to load Preferences"
-msgstr ""
+msgstr "Chyba! Nepodařilo se načíst Nastavení"
 
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Networks"
@@ -724,7 +724,7 @@ msgstr ""
 
 #: src/amuleDlg.cpp
 msgid "aMule dialog destroyed"
-msgstr "Dialog aMule zničen"
+msgstr "Dialog aMule byl zrušen"
 
 #: src/amuleDlg.cpp src/DataToText.cpp src/IPFilter.cpp src/ServerWnd.cpp
 msgid "Connecting"
@@ -826,9 +826,8 @@ msgid "Shared Files Window"
 msgstr "Okno se sdílenými soubory"
 
 #: src/amuleDlg.cpp
-#, fuzzy
 msgid "Clients Window"
-msgstr "Okno sítí"
+msgstr "Okno klientů"
 
 #: src/amuleDlg.cpp
 msgid "Messages Window"
@@ -969,7 +968,7 @@ msgstr "Znovu připojeno ke vzdálenému jádru."
 
 #: src/amule-remote-gui.cpp
 msgid "The remote core was restarted; reloading."
-msgstr ""
+msgstr "Vzdálené jádro bylo restartováno; opětovné načítání."
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -1013,7 +1012,7 @@ msgstr "Nejde vytvořit adresář '%s' pro kategorii '%s', zachovávám adresá�
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "The remote core sent inconsistent data for \"%s\" (part status %d, expected %d). The file list may be showing the wrong information; reconnect to clear it."
-msgstr ""
+msgstr "Vzdálené jádro odeslalo nekonzistentní data pro \"%s\" (částečný stav %d, očekáváno %d). Seznam souborů může zobrazovat nesprávné informace; opět se připojte pro vyčištění."
 
 #: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp
@@ -1210,16 +1209,15 @@ msgstr "Poslat zprávu"
 
 #: src/ClientContextActions.cpp
 msgid "Swap to this file"
-msgstr ""
+msgstr "Swapovat do tohoto souboru"
 
 #: src/ClientContextActions.cpp
-#, fuzzy
 msgid ""
 "You are not allowed to set more than one friend slot.\n"
 " Only one slot was assigned."
 msgstr ""
-"Nemůžete založit více než jeden kamarádský slot.\n"
-" Byl přidělen pouze jeden slot."
+"Není povoleno nastavit více než jeden slot pro přátele.\n"
+" Byl přiřazen pouze jeden slot."
 
 #: src/ClientContextActions.cpp src/FriendListCtrl.cpp
 msgid "Multiple selection"
@@ -1299,13 +1297,12 @@ msgid "%.1f kB/s"
 msgstr "%.1f kB/s"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
 msgid "Name"
-msgstr "Název:"
+msgstr "Název"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 msgid "Software"
-msgstr ""
+msgstr "Software"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
@@ -1313,9 +1310,8 @@ msgid "Version"
 msgstr "Verze"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
 msgid "IP Address"
-msgstr "IP adresa :"
+msgstr "IP adresa"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
@@ -1324,17 +1320,15 @@ msgstr "Původ"
 
 #: src/ClientHistoryListCtrl.cpp
 msgid "First seen"
-msgstr ""
+msgstr "Poprvé viděn"
 
 #: src/ClientHistoryListCtrl.cpp
-#, fuzzy
 msgid "Last seen"
-msgstr "Poslední příjem"
+msgstr "Naposledy viděn"
 
 #: src/ClientHistoryListCtrl.cpp
-#, fuzzy
 msgid "Sessions"
-msgstr "Verze"
+msgstr "Sezení"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 #: src/SharedFilePeersListCtrl.cpp
@@ -1347,24 +1341,20 @@ msgid "Download Speed"
 msgstr "Rychlost stahování"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
 msgid "Total Uploaded"
-msgstr "Odesláno"
+msgstr "Celkem odesláno"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
 msgid "Total Downloaded"
-msgstr "Celkem staženo:"
+msgstr "Celkem staženo"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
 msgid "Ratio"
-msgstr "Hodnocení"
+msgstr "Poměr"
 
 #: src/ClientHistoryListCtrl.cpp
-#, fuzzy
 msgid "Online now"
-msgstr "Online podpis"
+msgstr "Nyní online"
 
 #: src/ClientRef.cpp
 msgid "Not complete"
@@ -1401,23 +1391,20 @@ msgid "Downloaded"
 msgstr "Staženo"
 
 #: src/ClientsWnd.cpp
-#, fuzzy
 msgid "Downloading from"
-msgstr "Stahuji"
+msgstr "Stahování od"
 
 #: src/ClientsWnd.cpp
-#, fuzzy
 msgid "Uploading to"
-msgstr "Odesílám"
+msgstr "Odesílání k"
 
 #: src/ClientsWnd.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
 msgid "Active"
 msgstr "Aktivní"
 
 #: src/ClientsWnd.cpp
-#, fuzzy
 msgid "Known"
-msgstr "Neznámý"
+msgstr "Známý"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -1450,34 +1437,34 @@ msgid "User %s (%u) requested your sharedfiles-list for directory '%s' -> denied
 msgstr "Uživatel %s (%u) požádal o váš seznam sdílených souborů v adresáři '%s' -> odmítnuto"
 
 #: src/ClientTCPSocket.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "User %s (%u) shares directory '%s'"
-msgstr "Uživatel %s (%u) sdílí adresář %s"
+msgstr "Uživatel %s (%u) sdílí adresář '%s'"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
 msgid "User %s (%u) sent unrequested shared dirs."
-msgstr ""
+msgstr "Uživatel %s (%u) odeslal nevyžádané sdílené adresáře."
 
 #: src/ClientTCPSocket.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "User %s (%u) sent sharedfiles-list for directory '%s'"
-msgstr "Uživatel %s (%u) si vyžádal váš seznam sdílených souborů v adresáři %s -> zakázáno"
+msgstr "Uživatel %s (%u) odeslal seznam sdílených souborů pro adresář '%s'"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
 msgid "User %s (%u) finished sending sharedfiles-list"
-msgstr ""
+msgstr "Uživatel %s (%u) dokončil odesílání seznamu sdílených souborů"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
 msgid "User %s (%u) sent unwanted sharedfiles-list"
-msgstr ""
+msgstr "Uživatel %s (%u) odeslal nežádaný seznam sdílených souborů"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
 msgid "User %s (%u) denied access to shared directories/files list"
-msgstr ""
+msgstr "Uživatel %s (%u) odmítl přístup k seznamu sdílených adresářů/souborů"
 
 #: src/CommentDialog.cpp src/CommentDialogLst.cpp
 msgid "File Comments"
@@ -1502,16 +1489,15 @@ msgstr "Komentář"
 
 #: src/CommentDialogLst.cpp
 msgid "Could not start a Kad search"
-msgstr ""
+msgstr "Nepodařilo se zahájit Kad hledání"
 
 #: src/CommentDialogLst.cpp src/SearchList.cpp
 msgid "Kad search can't be done if Kad is not running"
 msgstr "Nemohu vyhledávat přes Kad, když není spuštěn"
 
 #: src/CommentDialogLst.cpp
-#, fuzzy
 msgid "Searching Kad for comments..."
-msgstr "Hledám kamaráda pro LowID připojení"
+msgstr "Vyhledávání komentářů v síti Kad..."
 
 #: src/CommentDialogLst.cpp src/muuli_wdr.cpp
 msgid "No comments"
@@ -1521,19 +1507,19 @@ msgstr "Žádné komentáře"
 #, c-format
 msgid "%u comment"
 msgid_plural "%u comments"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "%u komentář"
+msgstr[1] "%u komentáře"
+msgstr[2] "%u komentářů"
 
 #: src/CorruptionBlackBox.cpp
 #, c-format
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
-msgstr ""
+msgstr "Klient %s zablokován za odeslání %s poškozených dat z celkových %s pro soubor '%s'"
 
 #: src/CountryFlags.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to load country data for '%s'."
-msgstr "Stahování seznamu serverů z %s selhalo"
+msgstr "Nepodařilo se načíst data o zemi pro '%s'."
 
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
@@ -1671,7 +1657,7 @@ msgstr "Odkaz"
 
 #: src/DataToText.cpp
 msgid "Source Seeds"
-msgstr ""
+msgstr "Zdrojové seedy"
 
 #: src/DataToText.cpp
 msgid "Search Result"
@@ -1687,13 +1673,12 @@ msgid "In progress"
 msgstr "Probíhá"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "ERROR: Out of disk space"
-msgstr "CHYBA: Došlo místo na disku"
+msgstr "CHYBA: Nedostatek místa na disku"
 
 #: src/DataToText.cpp
 msgid "ERROR: Partmet not found"
-msgstr ""
+msgstr "CHYBA: Soubor part.met nenalezen"
 
 #: src/DataToText.cpp
 msgid "ERROR: IO error!"
@@ -1717,15 +1702,15 @@ msgstr "Neznámý nebo špatný formát dočasného souboru."
 
 #: src/DirectoryTreeCtrl.cpp
 msgid "This directory is part of a recursive share. To remove it, un-share or modify the recursive share root above it."
-msgstr ""
+msgstr "Tento adresář je součástí rekurzivního/víceúrovňového sdílení. Pro odebrání zrušte jeho sdílení, nebo upravte nadřazený kořenový adresář sdílení."
 
 #: src/DirectoryTreeCtrl.cpp
 msgid "Cannot unshare inside a recursive share"
-msgstr ""
+msgstr "Nelze zrušit sdílení, které je součástí rekurzivního sdílení"
 
 #: src/DirectoryTreeCtrl.cpp
 msgid "Cannot modify inside a recursive share"
-msgstr ""
+msgstr "Nelze provézt úpravu v rekurzivním sdílení"
 
 #: src/DownloadListCtrl.cpp
 msgid "Part"
@@ -1823,7 +1808,7 @@ msgstr "Náhled"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Show in file manager"
-msgstr ""
+msgstr "Zobrazit ve správci souborů"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Show file &details"
@@ -1884,9 +1869,9 @@ msgstr "Přejmenování souboru"
 
 #: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp
 #: src/SharedFilesCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "%.1f MB/s"
-msgstr "%.1f kB/s"
+msgstr "%.1f MB/s"
 
 #: src/DownloadListCtrl.cpp
 msgid "%y/%m/%d %H:%M:%S"
@@ -1898,18 +1883,18 @@ msgid "Downloads (%i)"
 msgstr "Stahování (%i)"
 
 #: src/DownloadListCtrl.cpp src/TransferWnd.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Total queue size: %s"
-msgstr "Celkem DL: %s"
+msgstr "Celková velikost fronty: %s"
 
 #: src/DownloadQueue.cpp
 #, c-format
 msgid "Saving PartFile %u of %u"
-msgstr ""
+msgstr "Ukládání souboru PartFile %u z %u"
 
 #: src/DownloadQueue.cpp
 msgid "All PartFiles Saved."
-msgstr ""
+msgstr "Všechny soubory PartFile uloženy."
 
 #: src/DownloadQueue.cpp
 #, c-format
@@ -1919,15 +1904,15 @@ msgstr "Načítám dočasné soubory z %s"
 #: src/DownloadQueue.cpp
 #, c-format
 msgid "Loading PartFile %u of %u"
-msgstr ""
+msgstr "Načítání souboru PartFile %u z %u"
 
 #: src/DownloadQueue.cpp
 msgid "ERROR: Failed to load backup file. Search https://github.com/amule-org/amule/discussions for .part.met recovery solutions."
-msgstr ""
+msgstr "CHYBA: Nepodařilo se načíst záložní soubor. Řešení obnovy souborů .part.met hledejte na https://github.com/amule-org/amule/discussions."
 
 #: src/DownloadQueue.cpp
 msgid "All PartFiles Loaded."
-msgstr ""
+msgstr "Všechny soubory PartFile načteny."
 
 #: src/DownloadQueue.cpp
 msgid "No part files found"
@@ -1937,17 +1922,17 @@ msgstr "Nenalezeny žádné částečné soubory"
 #, c-format
 msgid "Found %u part file"
 msgid_plural "Found %u part files"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Nalezen %u částečný soubor"
+msgstr[1] "Nalezeny %u částečné soubory"
+msgstr[2] "Nalezeno %u částečných souborů"
 
 #: src/DownloadQueue.cpp
 msgid "Filesystem for Temp directory cannot handle large files."
-msgstr ""
+msgstr "Souborový systém pro dočasný adresář nepodporuje velké soubory."
 
 #: src/DownloadQueue.cpp
 msgid "Filesystem for Incoming directory cannot handle large files."
-msgstr ""
+msgstr "Souborový systém pro adresář příchozích souborů nepodporuje velké soubory."
 
 #: src/DownloadQueue.cpp
 #, c-format
@@ -1960,9 +1945,9 @@ msgid "You are already trying to download the file '%s'"
 msgstr "Soubor '%s' se již pokoušíte stáhnout"
 
 #: src/DownloadQueue.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "You already have the file '%s' (requested as '%s')"
-msgstr "Soubor '%s' již máte"
+msgstr "Soubor '%s' již máte (vyžádán jako '%s')"
 
 #: src/DownloadQueue.cpp
 #, c-format
@@ -1977,15 +1962,15 @@ msgstr "Soubor %s se již pokoušíte stáhnout"
 #: src/DownloadQueue.cpp
 #, c-format
 msgid "Unknown protocol of link: %s"
-msgstr ""
+msgstr "Neznámý protokol odkazu: %s"
 
 #: src/DownloadQueue.cpp
 #, c-format
 msgid "Could not add %u link (see log for details)."
 msgid_plural "Could not add %u links (see log for details)."
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Nešlo přidat %u odkaz (podrobnosti viz log)."
+msgstr[1] "Nešlo přidat %u odkazy (podrobnosti viz log)."
+msgstr[2] "Nešlo přidat %u odkazů (podrobnosti viz log)."
 
 #: src/DownloadQueue.cpp
 #, c-format
@@ -2014,7 +1999,7 @@ msgstr "Nové externí připojení přijato"
 
 #: src/ExternalConn.cpp
 msgid "ERROR: couldn't accept a new external connection"
-msgstr ""
+msgstr "CHYBA: nové externí spojení nemohlo být přijato"
 
 #: src/ExternalConn.cpp
 msgid "External connection refused due to empty password in preferences!"
@@ -2031,11 +2016,11 @@ msgstr "Neznámá verze"
 
 #: src/ExternalConn.cpp
 msgid "Incorrect EC version ID, there might be binary incompatibility. Use core and remote from same snapshot."
-msgstr ""
+msgstr "Nesprávné ID verze EC, může jít o binární nekompatibilitu. Použijte jádro a vzdálené rozhraní ze stejné verze (snapshotu)."
 
 #: src/ExternalConn.cpp
 msgid "You cannot connect to a release version from an arbitrary development snapshot! *sigh* possible crash prevented"
-msgstr ""
+msgstr "Nelze se připojit k vydané verzi z libovolného vývojového snapshotu! *povzdech* možnému pádu bylo zabráněno"
 
 #: src/ExternalConn.cpp
 msgid "Invalid protocol version."
@@ -2043,28 +2028,28 @@ msgstr "Neplatná verze protokolu."
 
 #: src/ExternalConn.cpp
 msgid "Missing protocol version tag."
-msgstr ""
+msgstr "Chybí štítek verze protokolu"
 
 #: src/ExternalConn.cpp
 #, c-format
 msgid "Too many failed connection attempts; try again in %d seconds."
-msgstr ""
+msgstr "Selhalo příliš mnoho pokusů o připojení; zkuste to znovu za %d sekund."
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: invalid hash specified as EC password."
-msgstr ""
+msgstr "Autentizace selhala: jako heslo EC byl zadán neplatný hash."
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: the client offered an encrypted External Connection but sent no usable key."
-msgstr ""
+msgstr "Autentizace selhala: klient nabídl šifrované externí spojení, ale neodeslal použitelný klíč."
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: this aMule requires an encrypted External Connection, and the client did not negotiate one."
-msgstr ""
+msgstr "Autentizace selhala: tento aMule vyžaduje šifrované externí spojení a klient žádné nevyjednal."
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: the client could not confirm the encrypted session."
-msgstr ""
+msgstr "Autentizace selhala: klient nemohl potvrdit šifrované sezení."
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: wrong password."
@@ -2095,7 +2080,7 @@ msgstr "Neautorizovaný pokus o přístup z %s. Připojení uzavřeno."
 #: src/ExternalConn.cpp
 #, c-format
 msgid "Remote PartFile command failed: FileHash not found: %s"
-msgstr ""
+msgstr "Vzdálený příkaz PartFile selhal: FileHash nenalezen: %s"
 
 #: src/ExternalConn.cpp
 #, c-format
@@ -2104,7 +2089,7 @@ msgstr "FileHash nenalezen: %s"
 
 #: src/ExternalConn.cpp
 msgid "OOPS! OpCode processing error!"
-msgstr ""
+msgstr "PROMIŇTE! Chyba při zpracování OpCode!"
 
 #: src/ExternalConn.cpp
 msgid "Server not added"
@@ -2117,29 +2102,27 @@ msgstr "server nenalezen: %s"
 
 #: src/ExternalConn.cpp
 msgid "need to define server to be removed"
-msgstr ""
+msgstr "je nutné určit server, který má být odebrán"
 
 #: src/ExternalConn.cpp
 msgid "eD2k is disabled in preferences."
 msgstr "eD2k je zakázané v nastavení."
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Friend not found."
-msgstr "Soubor nenalezen."
+msgstr "Přítel nenalezen."
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Client not found."
-msgstr "Soubor nenalezen."
+msgstr "Klient nenalezen."
 
 #: src/ExternalConn.cpp
 msgid "EC_TAG_FRIEND_SHARED requires EC_TAG_FRIEND or EC_TAG_CLIENT."
-msgstr ""
+msgstr "EC_TAG_FRIEND_SHARED vyžaduje EC_TAG_FRIEND nebo EC_TAG_CLIENT."
 
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
-msgstr ""
+msgstr "Webové hledání ze vzdáleného rozhraní nedává smysl."
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
@@ -2147,7 +2130,7 @@ msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Search in progress. Refetch results in a moment!"
-msgstr ""
+msgstr "Probíhá vyhledávání. Získání výsledků za okamžik!"
 
 #: src/ExternalConn.cpp
 msgid "No points for graph."
@@ -2159,7 +2142,7 @@ msgstr "Vás klient není nakonfigurován pro tuto úroveň detailů."
 
 #: src/ExternalConn.cpp
 msgid "External Connection: shutdown requested"
-msgstr ""
+msgstr "Externí připojení: vyžádáno ukončení"
 
 #: src/ExternalConn.cpp
 msgid "Already shutting down."
@@ -2168,20 +2151,20 @@ msgstr "Již se ukončuji."
 #: src/ExternalConn.cpp
 #, c-format
 msgid "ExternalConn: adding link '%s'."
-msgstr ""
+msgstr "ExternalConn: přidávání odkazu '%s'."
 
 #: src/ExternalConn.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "%d of %d links failed (invalid or already on list)."
-msgstr "Neplatný odkaz, nebo je již v seznamu."
+msgstr "%d z %d odkazů selhalo (neplatné nebo již na seznamu)."
 
 #: src/ExternalConn.cpp
 msgid "Version check throttled; try again shortly."
-msgstr ""
+msgstr "Kontrola verze je omezena; zkuste to znovu za chvíli."
 
 #: src/ExternalConn.cpp
 msgid "Version check is not available on this daemon."
-msgstr ""
+msgstr "Kontrola verze není u tohoto daemona k dispozici."
 
 #: src/ExternalConn.cpp
 msgid "File not found."
@@ -2198,7 +2181,7 @@ msgstr "Nelze přejmenovat soubor."
 #: src/ExternalConn.cpp
 #, c-format
 msgid "Could not save the amuleapi password: %s"
-msgstr ""
+msgstr "Nepodařilo se uložit heslo amuleapi: %s"
 
 #: src/ExternalConn.cpp
 msgid "Kad is disabled in preferences."
@@ -2235,11 +2218,11 @@ msgstr "Odpojen od Kademlia."
 #: src/ExternalConn.cpp
 #, c-format
 msgid "External Connection: invalid opcode received: %#x"
-msgstr ""
+msgstr "Externí připojení: přijat neplatný opcode: %#x"
 
 #: src/ExternalConn.cpp
 msgid "Invalid opcode (wrong protocol version?)"
-msgstr ""
+msgstr "Neplatný opcode (nesprávná verze protokolu?)"
 
 #: src/ExternalConnector.cpp
 #, c-format
@@ -2272,6 +2255,8 @@ msgid ""
 "\n"
 "This command is incomplete, you must use one of the extensions below.\n"
 msgstr ""
+"\n"
+"Tento příkaz je neúplný, musíte použít jedno z níže uvedených rozšíření.\n"
 
 #: src/ExternalConnector.cpp
 msgid ""
@@ -2292,6 +2277,9 @@ msgid ""
 "All commands are case insensitive.\n"
 "Type '%s <command>' to get detailed info on <command>.\n"
 msgstr ""
+"\n"
+"Ve všech příkazech nezáleží na velikosti písmen.\n"
+"Napište '%s <command>' pro podrobné informace o <command>.\n"
 
 #: src/ExternalConnector.cpp
 msgid "Exits from the application."
@@ -2308,6 +2296,8 @@ msgid ""
 "To get help on a command, type 'help <command>'.\n"
 "To get the full command list type 'help'.\n"
 msgstr ""
+"Nápovědu k příkazu získáte zadáním 'help <command>'.\n"
+"Úplný seznam příkazů zobrazíte zadáním 'help'.\n"
 
 #: src/ExternalConnector.cpp
 #, c-format
@@ -2316,6 +2306,9 @@ msgid ""
 "Use '%s' for command list\n"
 "\n"
 msgstr ""
+"\n"
+"Seznam příkazů zobrazíte pomocí '%s'\n"
+"\n"
 
 #: src/ExternalConnector.cpp
 msgid "Syntax error!"
@@ -2381,6 +2374,11 @@ msgid ""
 "\n"
 "Exiting...\n"
 msgstr ""
+"Nelze se připojit s prázdným heslem.\n"
+"Heslo musíte zadat buď v konfiguračním souboru,\n"
+"nebo na příkazovém řádku, nebo je zadat na vyžádání.\n"
+"\n"
+"Ukončuji...\n"
 
 #: src/ExternalConnector.cpp
 msgid "Show this help text."
@@ -2416,11 +2414,11 @@ msgstr "Nastaví locale programu (jazyk)."
 
 #: src/ExternalConnector.cpp
 msgid "Write command line options to config file."
-msgstr ""
+msgstr "Zapsat možnosti příkazového řádku do konfiguračního souboru."
 
 #: src/ExternalConnector.cpp
 msgid "Creates config file based on aMule's config file."
-msgstr ""
+msgstr "Vytvoří konfigurační soubor na základě konfiguračního souboru aMule."
 
 #: src/ExternalConnector.cpp
 msgid "Print program version."
