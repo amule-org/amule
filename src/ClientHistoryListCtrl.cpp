@@ -357,8 +357,9 @@ wxString CClientHistoryListCtrl::GetItemColumnText(wxUIntPtr item, unsigned colu
 		return row->identityKnown ? OriginToText(row->sourceFrom) : wxString();
 
 	case COLUMN_HISTORY_FIRST_SEEN:
-		return row->firstSeen == 0 ? wxString()
-					   : wxDateTime(static_cast<time_t>(row->firstSeen)).FormatDate();
+		return row->firstSeen == 0
+			       ? wxString()
+			       : FormatLocalDateTime(wxDateTime(static_cast<time_t>(row->firstSeen)));
 
 	case COLUMN_HISTORY_LAST_SEEN:
 		// A date is the wrong answer for a peer that is here now -- and the
@@ -370,7 +371,7 @@ wxString CClientHistoryListCtrl::GetItemColumnText(wxUIntPtr item, unsigned colu
 		if (row->lastSeen == 0) {
 			return wxEmptyString;
 		}
-		return wxDateTime(static_cast<time_t>(row->lastSeen)).FormatDate();
+		return FormatLocalDateTime(wxDateTime(static_cast<time_t>(row->lastSeen)));
 
 	case COLUMN_HISTORY_SESSIONS:
 		if (row->sessions == 0) {

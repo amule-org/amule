@@ -26,7 +26,8 @@
 #ifndef OTHERFUNCTIONS_H
 #define OTHERFUNCTIONS_H
 
-#include <wx/intl.h> // Needed for wxLANGUAGE_ constants
+#include <wx/datetime.h> // Needed for wxDateTime
+#include <wx/intl.h>     // Needed for wxLANGUAGE_ constants
 
 #include "Types.h"       // Needed for uint16, uint32 and uint64
 #include "Preferences.h" // Needed for AllCategoryFilter enumeration
@@ -215,6 +216,23 @@ wxString CastItoIShort(uint64 number);
 wxString CastItoSpeed(uint32 bytes);
 // Converts an amount of seconds to human readable time.
 wxString CastSecondsToHM(uint32 seconds, uint16 msecs = 0);
+/**
+ * A timestamp written the way the user's locale writes one.
+ *
+ * "%x %X", so the day/month order, the separators and the 12- or 24-hour
+ * clock all come from LC_TIME rather than from us. Every timestamp the
+ * interface shows goes through here, so the choice is made once instead of
+ * per call site -- which is how they came to disagree with each other
+ * (amule-org/amule#925).
+ *
+ * Not for the log or for anything on the wire. An ISO 8601 stamp sorts
+ * lexicographically, cannot be read day-first or month-first by mistake and
+ * survives being pasted into a bug report by someone in another locale, all
+ * of which matter more there than looking familiar does.
+ */
+wxString FormatLocalDateTime(const wxDateTime &when);
+// Date-only form of the above, for a column too narrow to carry both.
+wxString FormatLocalDate(const wxDateTime &when);
 // Maps an ed2k FT_MEDIA_CODEC FOURCC / format string to a friendlier
 // display name (e.g. "H264" -> "H.264", "XVID" -> "Xvid"). Unknown
 // values pass through unchanged. Used by SearchListCtrl to render the

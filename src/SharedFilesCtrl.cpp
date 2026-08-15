@@ -50,6 +50,7 @@
 #include "DownloadQueue.h"    // Needed for CDownloadQueue
 #include "TransferWnd.h"      // Needed for CTransferWnd
 #include "Logger.h"           // Needed for AddLogLine
+#include "OtherFunctions.h"   // Needed for FormatLocalDateTime
 
 wxBEGIN_EVENT_TABLE(CSharedFilesCtrl, CMuleVirtualDataViewCtrl)
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(wxID_ANY, CSharedFilesCtrl::OnItemRightClicked)
@@ -403,14 +404,14 @@ wxString CSharedFilesCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) co
 	case COLUMN_SHARED_SINCE:
 		if (file->GetDateShared()) {
 			wxDateTime ds(file->GetDateShared());
-			return ds.FormatISODate() + " " + ds.FormatISOTime();
+			return FormatLocalDateTime(ds);
 		}
 		return wxEmptyString;
 
 	case COLUMN_SHARED_LASTUP:
 		if (file->GetLastUpload()) {
 			wxDateTime lu(file->GetLastUpload());
-			return lu.FormatISODate() + " " + lu.FormatISOTime();
+			return FormatLocalDateTime(lu);
 		}
 		return wxEmptyString;
 

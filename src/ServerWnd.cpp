@@ -45,6 +45,7 @@
 #include "kademlia/utils/UInt128.h"
 
 #include "ClientList.h"
+#include "OtherFunctions.h" // Needed for FormatLocalDateTime
 
 wxBEGIN_EVENT_TABLE(CServerWnd, wxPanel)
 	EVT_BUTTON(ID_ADDTOLIST, CServerWnd::OnBnClickedAddserver)
@@ -278,7 +279,7 @@ void CServerWnd::UpdateED2KInfo()
 		// as it does locally -- no CLIENT_GUI gate needed.
 		if (theApp->GetED2KConnectedSince().IsValid()) {
 			InfoInsertRow(ED2KInfoList, 4, _("Connected since:"));
-			InfoSetValue(ED2KInfoList, 4, theApp->GetED2KConnectedSince().Format("%x %X"));
+			InfoSetValue(ED2KInfoList, 4, FormatLocalDateTime(theApp->GetED2KConnectedSince()));
 		}
 	} else {
 		// No data
@@ -317,7 +318,7 @@ void CServerWnd::UpdateKadInfo()
 				InfoInsertRow(KadInfoList, next_row, _("Connected since:"));
 				InfoSetValue(KadInfoList,
 					next_row++,
-					theApp->GetKadConnectedSince().Format("%x %X"));
+					FormatLocalDateTime(theApp->GetKadConnectedSince()));
 			}
 			InfoInsertRow(KadInfoList, next_row, _("Connection State:"));
 			InfoSetValue(KadInfoList,
