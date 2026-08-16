@@ -83,6 +83,9 @@
 #include "CCtypeAsciiScope.h"  // Needed for locale-safe ASCII lowercasing of art ids
 
 #include <wx/artprov.h>
+#ifdef __WINDOWS__
+#include <wx/msw/private.h> // Needed for wxGetInstance
+#endif
 #include <wx/bmpbndl.h>  // Needed for wxBitmapBundle
 #include <wx/iconbndl.h> // Needed for wxIconBundle // Needed for wxArtProvider::GetIcon
 
@@ -283,7 +286,12 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 	// resource bundle (see amule.rc), which already carries every size
 	// the window manager might ask for.
 #ifdef __WINDOWS__
-	SetIcon(wxICON(aMule));
+	// The whole group from amule.rc, not one icon out of it. SetIcon()
+	// gives the window a single image, and Windows then derives whichever
+	// of ICON_BIG / ICON_SMALL it was not handed by scaling that one --
+	// so one of the two is always resampled rather than read from the
+	// size the .ico already carries.
+	SetIcons(wxIconBundle("aMule", wxGetInstance()));
 #else
 	// Elsewhere the icon comes from CamuleArtProvider. A bundle, and a
 	// set of sizes rather than one: GetIcon() resolves through
