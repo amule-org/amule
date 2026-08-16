@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-16 10:27+0200\n"
-"PO-Revision-Date: 2026-08-14 21:42+0000\n"
+"PO-Revision-Date: 2026-08-16 14:09+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
 "Language: ru\n"
@@ -1336,7 +1336,7 @@ msgstr "Впервые замечен"
 
 #: src/ClientHistoryListCtrl.cpp
 msgid "Last seen"
-msgstr "Последний раз"
+msgstr "Последнее появление"
 
 #: src/ClientHistoryListCtrl.cpp
 msgid "Sessions"
@@ -1362,7 +1362,7 @@ msgstr "Всего скачано"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 msgid "Ratio"
-msgstr "Коэф."
+msgstr "Соотношение"
 
 #: src/ClientHistoryListCtrl.cpp
 msgid "Online now"

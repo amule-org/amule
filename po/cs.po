@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-16 10:27+0200\n"
-"PO-Revision-Date: 2026-08-14 21:34+0000\n"
+"PO-Revision-Date: 2026-08-16 10:26+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
 "Language: cs\n"
@@ -2426,11 +2426,11 @@ msgstr ""
 
 #: src/ExternalConnector.cpp
 msgid "Force ZLIB compression regardless of dialed-IP locality (useful when the server is reachable over a VPN tunnel that resolves to a LAN IP)."
-msgstr ""
+msgstr "Vynutit kompresi ZLIB bez ohledu na lokalitu vytáčené IP adresy (užitečné, pokud je server dostupný přes VPN tunel, který se překládá na IP adresu LAN)."
 
 #: src/ExternalConnector.cpp
 msgid "Append a copy of all console output to this log file (default: <config-dir>/amuleapi.log)."
-msgstr ""
+msgstr "Připojit kopii veškerého výstupu konzole do tohoto log souboru (výchozí: <config-dir>/amuleapi.log)."
 
 #: src/ExternalConnector.cpp
 msgid "Do not write a log file; print to the console only."
@@ -2441,9 +2441,9 @@ msgid "File Details"
 msgstr "Podrobnosti souboru"
 
 #: src/FileDetailDialog.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "%.1f%% done"
-msgstr "%.2f%% dokončeno"
+msgstr "%.1f%% dokončeno"
 
 #: src/FileDetailDialog.cpp src/utils/wxCas/src/wxcasframe.cpp
 #, c-format
@@ -2497,50 +2497,51 @@ msgstr ""
 
 #: src/FirstRunWizard.cpp
 msgid "Cable (200 / 20 Mbit)"
-msgstr ""
+msgstr "Kabel (200 / 20 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "Fibre 300 (300 / 100 Mbit)"
-msgstr ""
+msgstr "Optika 300 (300 / 100 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "Fibre Gigabit (1000 / 1000 Mbit)"
-msgstr ""
+msgstr "Optika Gigabit (1000 / 1000 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "aMule first-run setup"
 msgstr ""
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Welcome to aMule!"
-msgstr "Vítejte!"
+msgstr "Vítejte v aMule!"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "This short setup will get you connected. You can change\n"
 "any of these settings later in Preferences."
 msgstr ""
+"Toto krátké nastavení vás připojí. Kteroukoli\n"
+"z těchto voleb můžete později změnit v Nastavení."
 
 #: src/FirstRunWizard.cpp
 msgid "Choose a nickname other peers will see:"
 msgstr ""
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Connection & bandwidth"
-msgstr "Připojuji se ke kamarádovi"
+msgstr "Připojení a šířka pásma"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "Pick the option that best matches your Internet connection,\n"
 "or set the upload and download limits directly below."
 msgstr ""
+"Vyberte možnost, která nejlépe odpovídá vašemu internetovému připojení,\n"
+"nebo nastavte limity odesílání a stahování přímo níže."
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Connection speed:"
-msgstr "Stav připojení:"
+msgstr "Rychlost připojení:"
 
 #: src/FirstRunWizard.cpp
 msgid "Other / set manually"
@@ -2555,13 +2556,12 @@ msgid "Download limit (KiB/s, 0 = unlimited):"
 msgstr ""
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Networks & ports"
-msgstr "Sítě"
+msgstr "Sítě a porty"
 
 #: src/FirstRunWizard.cpp
 msgid "aMule can use two networks. We recommend keeping both enabled."
-msgstr ""
+msgstr "aMule může používat dvě sítě. Doporučujeme ponechat obě zapnuté."
 
 #: src/FirstRunWizard.cpp src/TextClient.cpp
 msgid "eD2k"
@@ -2589,11 +2589,13 @@ msgid ""
 "peers can reach you (a \"HighID\"). Turn off if your router\n"
 "doesn't support UPnP or you forward ports manually."
 msgstr ""
+"Umožní aMule požádat váš router o přesměrování výše uvedených portů, aby vás mohli\n"
+"ostatní uživatelé kontaktovat (tzv. „HighID“). Vypněte, pokud váš router\n"
+"nepodporuje UPnP nebo porty přesměrováváte ručně."
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Bootstrap files"
-msgstr "Bootstrap"
+msgstr "Soubory pro zavedení sítě"
 
 #: src/FirstRunWizard.cpp
 msgid ""
@@ -2929,11 +2931,11 @@ msgstr "Uzly (%u)"
 
 #: src/KadDlg.cpp
 msgid "Invalid ip to bootstrap"
-msgstr "Neplatná IP pro bootstrap"
+msgstr "Neplatná IP adresa pro zavedení sítě"
 
 #: src/KadDlg.cpp
 msgid "Invalid port to bootstrap"
-msgstr "Neplatný port pro bootstrap"
+msgstr "Neplatný port pro zavedení sítě"
 
 #: src/KadDlg.cpp
 msgid "Please fill all fields required"
@@ -2977,7 +2979,7 @@ msgstr[2] ""
 
 #: src/kademlia/routing/RoutingZone.cpp
 msgid "No contacts found, please bootstrap, or download a nodes.dat file."
-msgstr ""
+msgstr "Nebyly nalezeny žádné kontakty, proveďte prosím zavedení sítě nebo stáhněte soubor nodes.dat."
 
 #: src/kademlia/routing/RoutingZone.cpp
 #, c-format
@@ -4886,9 +4888,8 @@ msgid "Nodes stats"
 msgstr "Statistiky uzlů"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Bootstrap from node: IP"
-msgstr "Bootstrap od známých klientů"
+msgstr "Zavedení prostřednictvím uzlu: IP"
 
 #: src/muuli_wdr.cpp
 #, fuzzy

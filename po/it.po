@@ -20,7 +20,7 @@ msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-16 10:27+0200\n"
-"PO-Revision-Date: 2026-08-14 21:38+0000\n"
+"PO-Revision-Date: 2026-08-16 14:00+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
 "Language: it\n"
@@ -135,7 +135,9 @@ msgid ""
 "\n"
 "Install desktop integration now?"
 msgstr ""
-"aMule può installare un'icona di avvio nel menu delle applicazioni mostrandosi come una qualunque app installata. L'operazione è reversibile - i file saranno collocati in ~/.local/share/applications e ~/.local/share/icons e potranno essere rimossi in qualsiasi momento.\n"
+"aMule può installare un'icona di avvio nel menu delle applicazioni mostrandosi come una qualunque app installata.\n"
+"\n"
+"L'operazione è reversibile - i file saranno collocati in ~/.local/share/applications e ~/.local/share/icons e potranno essere rimossi in qualsiasi momento.\n"
 "\n"
 "Installare ora l'integrazione con il desktop?"
 
@@ -928,7 +930,7 @@ msgstr ""
 
 #: src/amule-remote-gui.cpp
 msgid "Fatal Error: Failed to create Poll Timer"
-msgstr "ERRORE FATALE: Creazione del timer di interrogazione fallita"
+msgstr "Errore Fatale: Creazione del timer di interrogazione fallita"
 
 #: src/amule-remote-gui.cpp
 msgid "Going to event loop..."
@@ -1250,8 +1252,8 @@ msgstr[1] "Il file dei crediti è stato caricato, %u client conosciuti"
 #, c-format
 msgid " - Credits expired for %u client!"
 msgid_plural " - Credits expired for %u clients!"
-msgstr[0] " - Crediti scaduti per %u client!"
-msgstr[1] " - Crediti scaduti per %u client!"
+msgstr[0] " - Crediti scaduti per %u utente!"
+msgstr[1] " - Crediti scaduti per %u utenti!"
 
 #: src/ClientCreditsList.cpp
 msgid "No 'cryptkey.dat' file found, creating."
@@ -2640,7 +2642,7 @@ msgstr "Registra aMule per i link ed2k://"
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 #: packaging/windows/installer_strings.c
 msgid "Register aMule for magnet: links"
-msgstr "Registra aMule per i link magnet:"
+msgstr "Registra aMule per i magnet: link"
 
 #: src/FirstRunWizard.cpp
 msgid "Only eD2k-compatible magnets. Leave off if you use a BitTorrent client."
@@ -3414,7 +3416,7 @@ msgstr "ATTENZIONE! %s: Pacchetto verso %s scartato a causa di un errore (%s) du
 
 #: src/muuli_wdr.cpp
 msgid "Paste eD2k or magnet links here"
-msgstr "Incolla qui un link eD2k o un magnet link."
+msgstr "Incolla qui un link eD2k o un magnet link"
 
 #: src/muuli_wdr.cpp
 msgid "Add links"
@@ -3670,7 +3672,7 @@ msgstr "Velocità:"
 
 #: src/muuli_wdr.cpp
 msgid "Download Active Time: "
-msgstr "Download Active Time: "
+msgstr "Tempo Attivo Download: "
 
 #: src/muuli_wdr.cpp
 msgid "Transferred :"
@@ -3682,7 +3684,7 @@ msgstr "Completati:"
 
 #: src/muuli_wdr.cpp
 msgid "Intelligent Corruption Handling"
-msgstr "Intelligent Corruption Handling"
+msgstr "Gestione intelligente della Corruzione"
 
 #: src/muuli_wdr.cpp
 msgid "Lost to corruption :"
@@ -3694,7 +3696,7 @@ msgstr "Guadagno per compressione:"
 
 #: src/muuli_wdr.cpp
 msgid "Packages saved by I.C.H. :"
-msgstr "Pacchetti recuperati da ICH:"
+msgstr "Pacchetti recuperati da I.C.H. :"
 
 #: src/muuli_wdr.cpp
 msgid "Sharing"
@@ -3785,8 +3787,8 @@ msgid ""
 "For a film you can say its length, its story, language ...\n"
 "and if it's a fake, you can tell that to other users of aMule."
 msgstr ""
-"In un film puoi specificare ad esempio durata, trama, lingua... \n"
-"e se è fake, puoi avvisare gli altri utenti di aMule, in modo che NON LO SCARICHINO."
+"Per un film puoi specificare ad esempio la durata, la trama, la lingua...\n"
+"e se è fake, puoi notificarlo agli altri utenti di aMule."
 
 #: src/muuli_wdr.cpp
 msgid "File Quality"
@@ -3866,7 +3868,7 @@ msgstr "Aggiungi"
 
 #: src/muuli_wdr.cpp
 msgid "Download-Speed"
-msgstr "Velocità download"
+msgstr "Velocità-Download"
 
 #: src/muuli_wdr.cpp
 msgid "Upload-Speed"
@@ -4062,7 +4064,7 @@ msgstr "Nascondi la finestra quando viene premuto il pulsante di chiusura"
 
 #: src/muuli_wdr.cpp
 msgid "Minimize to Tray Icon"
-msgstr "Icona nella barra di sistema"
+msgstr "Minimizza nella barra di sistema"
 
 #: src/muuli_wdr.cpp
 msgid "Enabling this will make aMule minimize to the System Tray, rather than the taskbar."
@@ -4730,7 +4732,7 @@ msgstr "Abilita port forwarding tramite UPnP sulla porta del server web"
 
 #: src/muuli_wdr.cpp
 msgid "Web server UPnP TCP port (Optional)"
-msgstr "Porta TCP del  server web per UPnP (Facoltativa)"
+msgstr "Porta TCP del server web per UPnP (Facoltativa)"
 
 #: src/muuli_wdr.cpp
 msgid "Page Refresh Time (in secs)"
@@ -4894,7 +4896,7 @@ msgstr "Questa opzione fa sì che aMule utilizzi l'offuscamento del protocollo q
 
 #: src/muuli_wdr.cpp
 msgid "Accept only obfuscated connections"
-msgstr "Accetta SOLO connessioni offuscate"
+msgstr "Accetta solo connessioni offuscate"
 
 #: src/muuli_wdr.cpp
 msgid "This option makes aMule only accept obfuscated connections. You will have less sources, but all your traffic will be obfuscated"
@@ -5306,7 +5308,7 @@ msgstr "Disabilitato [%s]"
 msgid "byte"
 msgid_plural "bytes"
 msgstr[0] "byte"
-msgstr[1] "byte"
+msgstr[1] "bytes"
 
 #: src/OtherFunctions.cpp
 msgid "TiB"
@@ -5482,7 +5484,7 @@ msgstr "ERRORE: Versione del file part.met invalida: %s ==> %s"
 #: src/PartFile.cpp
 #, c-format
 msgid "Error: %s (%s) is corrupt (bad tags: %s), unable to load file."
-msgstr "ERRORE: %s (%s) è corrotto (etichette errate: %s), impossibile caricare il file."
+msgstr "Errore: %s (%s) è corrotto (etichette errate: %s), impossibile caricare il file."
 
 #: src/PartFile.cpp
 #, c-format
@@ -5912,7 +5914,8 @@ msgstr ""
 "esattamente cosa stai facendo: potresti ottenere\n"
 "effetti indesiderati.\n"
 "\n"
-"aMule funzionerà anche senza modificare questi parametri."
+"aMule funzionerà bene anche senza modificare\n"
+"questi parametri."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -6250,8 +6253,8 @@ msgstr[1] "Dimensione buffer file: %d bytes"
 #, c-format
 msgid "Upload Queue Size: %d client"
 msgid_plural "Upload Queue Size: %d clients"
-msgstr[0] "Dimensione coda upload: %d client"
-msgstr[1] "Dimensione coda upload: %d client"
+msgstr[0] "Dimensione coda upload: %d utente"
+msgstr[1] "Dimensione coda upload: %d utenti"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -6878,7 +6881,7 @@ msgstr "Connessione a %s (%s - %s:%i) %s"
 #: src/ServerSocket.cpp
 #, c-format
 msgid "Could not solve dns for server %s: Unable to connect!"
-msgstr "Non è possibile risolvere il DNS per il server %s: impossibile connettersi!"
+msgstr "Non è possibile risolvere il DNS per il server %s: Impossibile connettersi!"
 
 #: src/ServerWnd.cpp
 msgid "aMuleGUI Log"
@@ -7172,7 +7175,7 @@ msgstr "Impossibile scrivere il file di collezione '%s'."
 #, c-format
 msgid "Exported %u shared file to '%s'."
 msgid_plural "Exported %u shared files to '%s'."
-msgstr[0] "Esportato %u file condiviso in '%s'"
+msgstr[0] "Esportato %u file condiviso in '%s'."
 msgstr[1] "Esportati %u file condivisi in '%s'."
 
 #: src/SharedFilesCtrl.cpp
@@ -7667,6 +7670,7 @@ msgstr ""
 "Opzionalmente, un numero compreso tra 0 e 255 può essere passato come argomento a questo\n"
 "comando, per indicare quante versioni mostrare nel sottoalbero dei client. 0 oppure\n"
 "nessun numero significa 'infinito'.\n"
+"\n"
 "Esempio: 'statistics 5' mostrerà solo le cinque versioni più diffuse per ogni tipo di client.\n"
 
 #: src/TextClient.cpp
@@ -7851,7 +7855,7 @@ msgstr "Il valore fornito deve essere 1/ON (attiva) o 0/OFF (disattiva).\n"
 
 #: src/TextClient.cpp
 msgid "Get and display a preference value."
-msgstr "Visualizza un'impostazione delle preferenze."
+msgstr "Legge e visualizza un valore delle preferenze."
 
 #: src/TextClient.cpp
 msgid "Get IP filtering preferences."
@@ -7875,7 +7879,7 @@ msgstr "Imposta il livello del filtraggio degli IP."
 
 #: src/TextClient.cpp
 msgid "Get bandwidth limits."
-msgstr "Visualizza limita di banda."
+msgstr "Visualizza limiti di banda."
 
 #: src/TextClient.cpp
 msgid "Get endgame source rotation state."
