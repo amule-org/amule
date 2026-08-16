@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule SVN\n"
 "POT-Creation-Date: 2026-07-30 17:31+0200\n"
-"PO-Revision-Date: 2026-08-14 21:45+0000\n"
+"PO-Revision-Date: 2026-08-16 14:18+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: none\n"
 "Language: it\n"
@@ -562,7 +562,7 @@ msgstr "Cancella il download specificato da I<E<lt>hashE<gt>> o I<E<lt>numeroE<g
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Connect to the network."
-msgstr "Connessione alla rete."
+msgstr "Connettiti alla rete."
 
 # type: Plain text
 #. type: Plain text
@@ -615,7 +615,7 @@ msgstr "I valori disponibili per l'I<E<lt>oggettoE<gt>> sono:"
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Get bandwidth limits."
-msgstr "Legge i limiti di banda."
+msgstr "Visualizza limiti di banda."
 
 # type: Plain text
 #. type: Plain text
@@ -1338,7 +1338,7 @@ msgstr "B<amuleweb> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
 #. type: Plain text
 #: amuleweb.1.in
 msgid "Of course, you may specify any more or less options on the first example line, and you may also totally omit it."
-msgstr "Ovviamente, si possono specificare più o meno opzioni della prima riga di esempio, e si si possono anche omettere completamente."
+msgstr "Ovviamente, si possono specificare più o meno opzioni della prima riga di esempio, e si possono anche omettere completamente."
 
 # type: TH
 #. type: TH

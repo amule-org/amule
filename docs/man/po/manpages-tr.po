@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "POT-Creation-Date: 2026-07-30 17:31+0200\n"
-"PO-Revision-Date: 2026-08-14 21:45+0000\n"
+"PO-Revision-Date: 2026-08-16 14:19+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: \n"
 "Language: tr\n"
@@ -77,10 +77,8 @@ msgstr "[B<-w> I<E<lt>yolE<gt>>]"
 
 #. type: Plain text
 #: amule.1.in amuled.1.in
-#, fuzzy
-#| msgid "[B<-t> I<E<lt>numE<gt>>] [I<eD2k-link>]"
 msgid "[B<-t> I<E<lt>numE<gt>>] [I<eD2k-link>|I<collection-file>]"
-msgstr "[B<-t> I<E<lt>sayıE<gt>>] [I<eD2k-bağlantısı>]"
+msgstr "[B<-t> I<E<lt>sayıE<gt>>] [I<eD2k-bağlantısı>|I<koleksiyon-dosyası>]"
 
 #. type: SH
 #: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in amuleweb.1.in ed2k.1.in
@@ -176,17 +174,14 @@ msgstr "Kısa bir kullanım açıklaması görüntüler."
 
 #. type: TP
 #: amule.1.in amuled.1.in
-#, fuzzy, no-wrap
-#| msgid "B<[ eD2k-link ]>"
+#, no-wrap
 msgid "B<[ eD2k-link | collection-file ]>"
-msgstr "B<[ eD2k-bağlantısı ]>"
+msgstr "B<[ eD2k-bağlantısı | koleksiyon-dosyası ]>"
 
 #. type: Plain text
 #: amule.1.in amuled.1.in
-#, fuzzy
-#| msgid "Adds an eD2k-link or a magnet-link to the core."
 msgid "Adds an eD2k-link, or every link in an eMule collection file, to the core."
-msgstr "Çekirdeğe bir eD2k ya da magnet bağlantısı ekler."
+msgstr "Çekirdeğe bir eD2k bağlantısını ya da bir eMule koleksiyon dosyasındaki her bağlantıyı ekler."
 
 #. type: Plain text
 #: amule.1.in amulecmd.1.in amuled.1.in ed2k.1.in

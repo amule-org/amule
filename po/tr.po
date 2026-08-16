@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-16 10:27+0200\n"
-"PO-Revision-Date: 2026-08-14 21:44+0000\n"
+"PO-Revision-Date: 2026-08-16 14:14+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
 "Language: tr\n"
@@ -2503,9 +2503,8 @@ msgid "aMule first-run setup"
 msgstr "aMule ilk çalıştırma kurulumu"
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Welcome to aMule!"
-msgstr "Hoş geldiniz!"
+msgstr "aMule programına hoş geldiniz!"
 
 #: src/FirstRunWizard.cpp
 msgid ""
@@ -2520,9 +2519,8 @@ msgid "Choose a nickname other peers will see:"
 msgstr "Diğer eşlerin göreceği bir rumuz seçin:"
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Connection & bandwidth"
-msgstr "Eşe Bağlanıyor"
+msgstr "Bağlantı ve bant genişliği"
 
 #: src/FirstRunWizard.cpp
 msgid ""
@@ -2533,9 +2531,8 @@ msgstr ""
 "veya gönderme ve indirme sınırlarını doğrudan aşağıda ayarlayın."
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Connection speed:"
-msgstr "Bağlantı Türü:"
+msgstr "Bağlantı hızı:"
 
 #: src/FirstRunWizard.cpp
 msgid "Other / set manually"
@@ -2550,9 +2547,8 @@ msgid "Download limit (KiB/s, 0 = unlimited):"
 msgstr ""
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Networks & ports"
-msgstr "Ağlar"
+msgstr "Ağlar ve bağlantı noktaları"
 
 #: src/FirstRunWizard.cpp
 msgid "aMule can use two networks. We recommend keeping both enabled."
@@ -2589,9 +2585,8 @@ msgstr ""
 "yönlendirecekseniz veya yönlendiriciniz UPnP desteklemiyorsa devre dışı bırakın."
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Bootstrap files"
-msgstr "Ön Yükleme"
+msgstr "Ön Yükleme dosyaları"
 
 #: src/FirstRunWizard.cpp
 msgid ""
@@ -2602,9 +2597,8 @@ msgstr ""
 "Şimdi hangi listenin indirileceğini seçin:"
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Your peer lists are already in place - nothing to download."
-msgstr "%s dosyasını indirmeyi zaten deniyorsunuz"
+msgstr "Eş listeleriniz zaten mevcut - indirilecek hiçbir şey yok."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Auto-update server list at startup"
@@ -2769,9 +2763,9 @@ msgid "Yes"
 msgstr "Evet"
 
 #: src/geoip/MaxMindDBDatabase.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to open MaxMindDB database '%s': %s"
-msgstr "%s (%s) açma başarısız"
+msgstr "'%s' MaxMindDB veri tabanının açılması başarısız oldu: %s"
 
 #: src/HTTPDownload.cpp
 msgid "Downloading..."
@@ -3135,9 +3129,8 @@ msgid "External Connection: Bad reply, handshake failed. Connection closed."
 msgstr "Dış Bağlantı: Kötü yanıt. Bağlantı kapatıldı."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "External Connection: the daemon failed to prove it knows the password. Connection closed."
-msgstr "Dış Bağlantı: Kötü yanıt. Bağlantı kapatıldı."
+msgstr "Harici Bağlantı: servis, parolayı bildiğini ispatlayamadı. Bağlantı kapatıldı."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "Succeeded! Connection established to aMule "
@@ -3568,18 +3561,16 @@ msgid "Hide Known Files"
 msgstr "Bilinen Dosyaları Gizle"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Reset Filters"
-msgstr "Alanları Sıfırla"
+msgstr "Süzgeçleri Sıfırla"
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Start"
 msgstr "Başlat"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Extend"
-msgstr "Uzantı"
+msgstr "Genişlet"
 
 #: src/muuli_wdr.cpp
 msgid "Ask already-responded Kad peers to widen the search. Each click queries the next-closest peer for more contacts (KADEMLIA_FIND_VALUE_MORE), surfacing additional file matches that the search's initial alpha frontier missed."
@@ -3594,9 +3585,8 @@ msgid "Download"
 msgstr "İndir"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Clear Search Results"
-msgstr "Arama Sonucu"
+msgstr "Arama Sonuçlarını Sil"
 
 #: src/muuli_wdr.cpp
 msgid "Reset Fields"
@@ -4075,9 +4065,8 @@ msgid "Enabling this will make aMule to show notifications when finished downloa
 msgstr "Bu şık etkinleştirilirse, indirmeler sona erdiğinde aMule bildirimleri gösterecektir."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Remember search history"
-msgstr "Bu ayarları hatırla"
+msgstr "Arama tarihçesini hatırla"
 
 #: src/muuli_wdr.cpp
 msgid "Keeps a dropdown list of your past search terms in the Search tab's Name field. This remembers the queries you typed, not the results they returned."
@@ -4416,18 +4405,16 @@ msgid "Path Mappings"
 msgstr "Yol Eşlemeleri"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Remote prefix"
-msgstr "Uzak Sunucu"
+msgstr "Uzak önek"
 
 #: src/muuli_wdr.cpp
 msgid "A path prefix as the core reports it, e.g. /home/user/downloads/incoming"
 msgstr "Çekirdeğin bildirdiği üzere bir yol öneki, mesela /home/user/downloads/incoming"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Local prefix"
-msgstr "Sunucu"
+msgstr "Yerel önek"
 
 #: src/muuli_wdr.cpp
 msgid "Where that same folder is reachable from this computer, e.g. a mounted network share"
@@ -4686,23 +4673,20 @@ msgid "Admin password"
 msgstr "Yönetici parolası"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "A password is set."
-msgstr "Yönetici parolası"
+msgstr "Bir parola belirlendi."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enable guest access"
-msgstr "Konuk girişini reddet"
+msgstr "Konuk erşimini etkinleştir"
 
 #: src/muuli_wdr.cpp
 msgid "Guest sessions may read status and listings but cannot change anything. Turning this off clears the stored guest password."
 msgstr "Misafir oturumları durumu ve listeleri okuyabilir fakat hiçbir şey değiştiremez. Bunu devre dışı bırakmak, kaydedilmiş misafir parolasını siler."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Guest password"
-msgstr "Web sunucusu için konuk parolası"
+msgstr "Misafir parolası"
 
 #: src/muuli_wdr.cpp
 msgid "Web server parameters"
@@ -4857,14 +4841,12 @@ msgid "Nodes stats"
 msgstr "Düğüm istatistikleri"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Bootstrap from node: IP"
-msgstr "Bilinen kullanıcılardan Ön Yükleme"
+msgstr "Düğüm:IP unsurundan ön yükleme yap"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enter the IP of the node here, using the x.x.x.x format."
-msgstr "Yeni sunucun IP numarasını x.x.x.x biçiminde buraya giriniz."
+msgstr "Düğümün IP adresini x.x.x.x biçiminde buraya giriniz."
 
 #: src/muuli_wdr.cpp
 msgid "Port:"
@@ -5205,9 +5187,8 @@ msgid "Remember those settings"
 msgstr "Bu ayarları hatırla"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Encrypt the connection (recommended)"
-msgstr "Dışarıdan bağlantı kesildi."
+msgstr "Bağlantıyı şifrele (tavsiye edilir)"
 
 #: src/muuli_wdr.cpp
 msgid "Force ZLIB compression"
@@ -5290,19 +5271,19 @@ msgid "Close this chat-session."
 msgstr "Bu sohbet oturumunu kapatır."
 
 #: src/muuli_wdr.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Cancel %s"
-msgstr "İptal"
+msgstr "%s unsurunu iptal et"
 
 #: src/muuli_wdr.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Disconnect %s"
-msgstr "Bağlantıyı Kes"
+msgstr "%s ile bağlantıyı Kes"
 
 #: src/muuli_wdr.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connect %s"
-msgstr "Bağlan"
+msgstr "%s unsuruyla bağlantı kur"
 
 #: src/OScopeCtrl.cpp
 #, c-format
@@ -5820,9 +5801,8 @@ msgid "no options available"
 msgstr "mevcut seçenek yok"
 
 #: src/Preferences.cpp
-#, fuzzy
 msgid "Invalid path mapping found, skipping"
-msgstr "Geçersiz sınıf bulundu, atlanıyor"
+msgstr "Geçersiz yol eşleşmesi bulundu, atlanıyor"
 
 #: src/Preferences.cpp
 msgid "Invalid category found, skipping"
@@ -5943,9 +5923,8 @@ msgid "Failed to transfer data from Widget to Cfg with the ID %d and key %s"
 msgstr "Parçacıktan %d Kimliği ve %s anahtarı ile Cfg' ye veri aktarılamadı"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "No password set."
-msgstr "Yönetici parolası"
+msgstr "Hiçbir parola ayarlanmamış."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Guest access needs a password. Type one in the guest password field, or untick Enable guest access."
@@ -6088,9 +6067,9 @@ msgid "aMule only handles eD2k-compatible magnets. If you replace the current ma
 msgstr "aMule, sadece eD2k uyumlu magnet'leri işler. Şayet güncel magnet yöneticisinin (%s) yerine onu koyarsanız, BitTorrent magnet bağlantıları artık çalışmayacaktır - aMule BitTorrent içeriği indiremez. Devam edilsin mi?"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Another application currently opens .emulecollection files (%s). Replace it with aMule?"
-msgstr "Başka bir uygulama güncel olarak bu bağlantıların yöneticisidir (%s). Yerine aMule konsun mu?"
+msgstr "Başka bir uygulama güncel olarak .emulecollection dosyalarını açmaktadır (%s). Yerine aMule konsun mu?"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -6098,14 +6077,12 @@ msgid "Another application is currently the default handler for these links (%s)
 msgstr "Başka bir uygulama güncel olarak bu bağlantıların yöneticisidir (%s). Yerine aMule konsun mu?"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Could not register aMule for .emulecollection files. The registration store may be read-only."
-msgstr "aMule, URL yöneticisi olarak kaydedilemedi. Kayıt deposu salt okunur olabilir."
+msgstr "aMule, .emulecollection dosyaları için kaydedilemedi. Kayıt deposu salt okunur olabilir."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Could not remove the file type registration."
-msgstr "URL yönetim kaydı kaldırılamadı."
+msgstr "Dosya türü kaydı kaldırılamadı."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not register aMule as the URL handler. The registration store may be read-only."
@@ -6356,14 +6333,12 @@ msgid "This remote prefix is already mapped."
 msgstr "Bu uzak önek zaten eşlenmiş durumda."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Choose the local folder"
-msgstr "%s için bir dizin seçiniz."
+msgstr "Yerel dizini seç"
 
 #: src/SearchDlg.cpp
-#, fuzzy
 msgid "Clear Search History"
-msgstr "Bu ayarları hatırla"
+msgstr "Arama Tarihçesini Sil"
 
 #: src/SearchDlg.cpp
 msgid "Clear the saved search history? This cannot be undone."
@@ -6400,14 +6375,12 @@ msgid "Only saving the first %u of %u results for search \"%s\"."
 msgstr "Sadece ilk %u sonuç, toplam %u sonuç üzerinden, \"%s\" araması için kaydediliyor."
 
 #: src/SearchList.cpp
-#, fuzzy
 msgid "WARNING: Stored search list corrupted, contains invalid header."
-msgstr "UYARI: Bilinen dosya listesi bozuk. Geçersiz başlık içeriyor."
+msgstr "UYARI: kaydedilmiş arama listesi bozuk, geçersiz başlık içeriyor."
 
 #: src/SearchList.cpp
-#, fuzzy
 msgid "Invalid entry in stored search list, file may be corrupt"
-msgstr "Bilinen dosyalar listesinde geçersiz girdi bulundu. Dosya bozuk olabilir: "
+msgstr "Kaydedilmiş arama listesinde geçersiz girdi bulundu, dosya bozuk olabilir"
 
 #: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"
@@ -6430,9 +6403,9 @@ msgid "Kad search: no peer left to reask for more results (cap reached or no res
 msgstr "Kad araması: daha fazla sonucu tekrar talep edecek eş kalmadı (sınıra ulaşıldı veya henüz cevap alınamadı)."
 
 #: src/SearchList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Error %u: %s\n"
-msgstr "%s unsurunun güncellemesinde hata oluştu"
+msgstr "Hata %u: %s\n"
 
 #: src/SearchListCtrl.cpp
 msgid "FileID"
@@ -6501,14 +6474,12 @@ msgid "Failed to connect to all obfuscated servers listed. Making another pass w
 msgstr "Listelenen gizlenmiş bağlantılı tüm sunuculara bağlanma başarısız. Gizlenmiş bağlantı olmadan geçiş yapılacak."
 
 #: src/ServerConnect.cpp
-#, fuzzy
 msgid "Failed to connect to all static servers listed."
-msgstr "Listelenen statik sunucuların hiç birine bağlanılamadı. Başka bir geçiş yapılıyor."
+msgstr "Listelenen statik sunucuların hiçbirine bağlanılamadı."
 
 #: src/ServerConnect.cpp
-#, fuzzy
 msgid "Failed to connect to all servers listed."
-msgstr "Listelenen sunucuların hiç birine bağlanılamadı. Başka bir geçiş yapılıyor."
+msgstr "Listelenen sunucuların hiçbirine bağlanılamadı."
 
 #: src/ServerConnect.cpp
 #, c-format
@@ -6651,9 +6622,9 @@ msgid "Failed to save server.met!"
 msgstr "Server.met kaydetme işlemi başarısız!"
 
 #: src/ServerList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "IO failure while writing 'server.met': %s"
-msgstr "'server.met' dosyası okumada IO hatası: "
+msgstr "'server.met' dosyasını yazmada GÇ hatası: %s"
 
 #: src/ServerList.cpp
 msgid "Invalid URL"
@@ -6716,23 +6687,20 @@ msgid "Users"
 msgstr "Kullanıcılar"
 
 #: src/ServerListCtrl.cpp
-#, fuzzy
 msgid "Max Users"
-msgstr "Kullanıcılar"
+msgstr "Azami Kullanıcı"
 
 #: src/ServerListCtrl.cpp
 msgid "Static"
 msgstr "Statik Sunucu"
 
 #: src/ServerListCtrl.cpp
-#, fuzzy
 msgid "Soft Files"
-msgstr "Dosyalar"
+msgstr "Yumuşak Dosyalar"
 
 #: src/ServerListCtrl.cpp
-#, fuzzy
 msgid "Hard Files"
-msgstr "Paylaşılan Dosyalar"
+msgstr "Sert Dosyalar"
 
 #: src/ServerListCtrl.cpp
 msgid "TCP Flags"
@@ -6756,9 +6724,8 @@ msgid "Are you sure you want to delete the static server %s"
 msgstr "Statik sunucu %s'i silmek istediğinizden emin misiniz"
 
 #: src/ServerListCtrl.cpp
-#, fuzzy
 msgid "ms"
-msgstr "dk"
+msgstr "ms"
 
 #: src/ServerListCtrl.cpp
 #, c-format
@@ -6927,9 +6894,8 @@ msgid "Connection Type:"
 msgstr "Bağlantı Türü:"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Connected since:"
-msgstr "Bağlandı"
+msgstr "Bağlantı başlangıç tarihi:"
 
 #: src/ServerWnd.cpp
 msgid "Kademlia Status:"
@@ -7170,9 +7136,8 @@ msgid "You need a HighID to create a valid sourcelink"
 msgstr "Geçerli bir kaynak bağlantısı oluşturmak için YüksekID almanız gerekiyor"
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Export to emulecollection"
-msgstr "Tamamlama sırasında hata"
+msgstr "emulecollection dosyasına aktar"
 
 #: src/SharedFilesCtrl.cpp
 msgid "No files are selected to export."
@@ -7188,16 +7153,16 @@ msgid "'%s' already exists. Overwrite it?"
 msgstr "'%s' zaten mevcut. Üzerine yazılsın mı?"
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to write the collection file '%s'."
-msgstr "'%s' kullanıcısının paylaşılmış dosyalarını alma başarısız"
+msgstr "'%s' koleksiyon dosyasının yazılması başarısız oldu."
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Exported %u shared file to '%s'."
 msgid_plural "Exported %u shared files to '%s'."
-msgstr[0] "Paylaşılan dosyalarınızı yeniden yükleyin"
-msgstr[1] "Paylaşılan dosyalarınızı yeniden yükleyin"
+msgstr[0] "%u paylaşılan dosya '%s' unsuruna aktarıldı."
+msgstr[1] "%u paylaşılan dosya '%s' unsuruna aktarıldı."
 
 #: src/SharedFilesCtrl.cpp
 #, fuzzy, c-format
@@ -7210,11 +7175,11 @@ msgid "Total size of Shared Files: %s"
 msgstr "Paylaşılan Dosyaların Toplam Boyutu: %s"
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Shared Files (%i, hashing %u more)"
 msgid_plural "Shared Files (%i, hashing %u more)"
-msgstr[0] "Paylaşılan Dosyalar (%i)"
-msgstr[1] "Paylaşılan Dosyalar (%i)"
+msgstr[0] "Payşılan Dosyalar (%i, %u dosyanın daha karma değeri hesaplanıyor)"
+msgstr[1] "Payşılan Dosyalar (%i, %u dosyanın daha karma değeri hesaplanıyor)"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
@@ -8145,9 +8110,9 @@ msgid "Hashset requested for unknown file: %s"
 msgstr "Bilinmeyen dosya için adresleme seti istendi: %s"
 
 #: src/UploadDiskIOThread.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to open file (%s), removing from list of shared files."
-msgstr "Paylaşılan dosyalarınızı kime göstereceğinizi seçiniz."
+msgstr "Dosyanın açılması başarısız oldu (%s), paylaşılan dosyalar listesinden kaldırılıyor."
 
 #: src/UploadQueue.cpp
 #, c-format
