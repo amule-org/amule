@@ -90,9 +90,9 @@ void CStatisticsDlg::InitGraphs()
 	}
 
 	pscopeDL->SetRanges(0.0, (float)(thePrefs::GetMaxGraphDownloadRate() + 4));
-	pscopeDL->SetYUnits(_("kB/s"));
+	pscopeDL->SetYUnits(_("KiB/s"));
 	pscopeUL->SetRanges(0.0, (float)(thePrefs::GetMaxGraphUploadRate() + 4));
-	pscopeUL->SetYUnits(_("kB/s"));
+	pscopeUL->SetYUnits(_("KiB/s"));
 	pscopeConn->SetRanges(0.0, (float)(thePrefs::GetStatsMax()));
 	pscopeConn->SetYUnits("");
 

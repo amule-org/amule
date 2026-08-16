@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-15 23:10+0200\n"
+"POT-Creation-Date: 2026-08-16 10:27+0200\n"
 "PO-Revision-Date: 2026-08-14 21:46+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -736,12 +736,12 @@ msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
 msgstr "↑Augšup.: %.1f%s (%.1f) | ↓Lejup.: %.1f%s (%.1f)"
 
 #: src/amuleDlg.cpp src/MuleTrayIcon.cpp
-msgid " MB/s"
-msgstr " MB/s"
+msgid " MiB/s"
+msgstr ""
 
 #: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/utils/wxCas/src/wxcasframe.cpp
-msgid " kB/s"
-msgstr " kB/s"
+msgid " KiB/s"
+msgstr ""
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -1259,8 +1259,8 @@ msgstr "Atslēgts"
 #: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp
 #: src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 #, c-format
-msgid "%.1f kB/s"
-msgstr "%.1f kB/s"
+msgid "%.1f KiB/s"
+msgstr ""
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 #, fuzzy
@@ -1844,8 +1844,8 @@ msgstr ""
 #: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp
 #: src/SharedFilesCtrl.cpp
 #, c-format
-msgid "%.1f MB/s"
-msgstr "%.1f MB/s"
+msgid "%.1f MiB/s"
+msgstr ""
 
 #: src/DownloadListCtrl.cpp
 #, c-format
@@ -2394,7 +2394,7 @@ msgstr ""
 
 #: src/FileDetailDialog.cpp src/utils/wxCas/src/wxcasframe.cpp
 #, c-format
-msgid "%.2f kB/s"
+msgid "%.2f KiB/s"
 msgstr ""
 
 #: src/FileLaunch.cpp
@@ -2492,11 +2492,11 @@ msgid "Other / set manually"
 msgstr ""
 
 #: src/FirstRunWizard.cpp
-msgid "Upload limit (kB/s, 0 = unlimited):"
+msgid "Upload limit (KiB/s, 0 = unlimited):"
 msgstr ""
 
 #: src/FirstRunWizard.cpp
-msgid "Download limit (kB/s, 0 = unlimited):"
+msgid "Download limit (KiB/s, 0 = unlimited):"
 msgstr ""
 
 #: src/FirstRunWizard.cpp
@@ -3143,8 +3143,8 @@ msgstr "Atlasīt visas"
 
 #: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
 #: src/StatisticsDlg.cpp
-msgid "kB/s"
-msgstr "kB/s"
+msgid "KiB/s"
+msgstr ""
 
 #: src/MuleTrayIcon.cpp
 msgid "Unlimited"
@@ -3469,17 +3469,17 @@ msgstr "Minimālais izmērs"
 msgid "Bytes"
 msgstr "Baiti"
 
-#: src/muuli_wdr.cpp
-msgid "KB"
-msgstr "KB"
+#: src/muuli_wdr.cpp src/OtherFunctions.cpp
+msgid "KiB"
+msgstr ""
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
-msgid "MB"
-msgstr "MB"
+msgid "MiB"
+msgstr ""
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
-msgid "GB"
-msgstr "GB"
+msgid "GiB"
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Max Size"
@@ -5229,12 +5229,8 @@ msgstr[1] "baits"
 msgstr[2] "baiti"
 
 #: src/OtherFunctions.cpp
-msgid "kB"
-msgstr "kB"
-
-#: src/OtherFunctions.cpp
-msgid "TB"
-msgstr "TB"
+msgid "TiB"
+msgstr ""
 
 #: src/OtherFunctions.cpp
 msgid "k"
@@ -5260,8 +5256,8 @@ msgstr[1] "baits sekundē"
 msgstr[2] "baiti sekundē"
 
 #: src/OtherFunctions.cpp
-msgid "MB/s"
-msgstr "MB/s"
+msgid "MiB/s"
+msgstr ""
 
 #: src/OtherFunctions.cpp
 msgid "secs"
@@ -7455,8 +7451,8 @@ msgstr ""
 
 #: src/TextClient.cpp
 #, c-format
-msgid "Bandwidth limits: Up: %u kB/s, Down: %u kB/s.\n"
-msgstr "Datu pārraides ierobežojumi: ↑Augšup.: %u kB/s, ↓Lejup.: %u kB/s.\n"
+msgid "Bandwidth limits: Up: %u KiB/s, Down: %u KiB/s.\n"
+msgstr ""
 
 #: src/TextClient.cpp
 #, c-format
@@ -8246,23 +8242,23 @@ msgstr "%.0f B"
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
-msgid "%.2f KB"
-msgstr "%.2f KB"
+msgid "%.2f KiB"
+msgstr ""
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
-msgid "%.2f MB"
-msgstr "%.2f MB"
+msgid "%.2f MiB"
+msgstr ""
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
-msgid "%.2f GB"
-msgstr "%.2f GB"
+msgid "%.2f GiB"
+msgstr ""
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
-msgid "%.2f TB"
-msgstr "%.2f TB"
+msgid "%.2f TiB"
+msgstr ""
 
 #: src/utils/wxCas/src/wxcas.cpp
 msgid "wxCas, aMule Online Statistics"
@@ -8426,7 +8422,7 @@ msgid "Download: "
 msgstr ""
 
 #: src/utils/wxCas/src/wxcasframe.cpp
-msgid " kB/s, Upload: "
+msgid " KiB/s, Upload: "
 msgstr ""
 
 #: src/utils/wxCas/src/wxcasframe.cpp
@@ -8738,6 +8734,21 @@ msgstr "Izskatās, ka aMule darbojas. Lūdzu, aizveriet to un vēlreiz palaidiet
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Dzēš lietotāja datus, kas atrodas $APPDATA\\aMule mapē…"
+
+#~ msgid " MB/s"
+#~ msgstr " MB/s"
+
+#~ msgid " kB/s"
+#~ msgstr " kB/s"
+
+#~ msgid "kB/s"
+#~ msgstr "kB/s"
+
+#~ msgid "kB"
+#~ msgstr "kB"
+
+#~ msgid "MB/s"
+#~ msgstr "MB/s"
 
 #~ msgid "%y/%m/%d %H:%M:%S"
 #~ msgstr "%y.%m.%d %H:%M:%S"

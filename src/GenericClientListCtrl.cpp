@@ -687,9 +687,9 @@ wxString CGenericClientListCtrl::GetItemColumnText(wxUIntPtr data, unsigned colu
 	case ColumnUserSpeedDown:
 		if (notA4AF && client.GetKBpsDown() > 0.001) {
 			if (client.GetKBpsDown() >= 1024) {
-				return CFormat(_("%.1f MB/s")) % (client.GetKBpsDown() / 1024.0);
+				return CFormat(_("%.1f MiB/s")) % (client.GetKBpsDown() / 1024.0);
 			}
-			return CFormat(_("%.1f kB/s")) % client.GetKBpsDown();
+			return CFormat(_("%.1f KiB/s")) % client.GetKBpsDown();
 		}
 		return wxEmptyString;
 
@@ -697,9 +697,9 @@ wxString CGenericClientListCtrl::GetItemColumnText(wxUIntPtr data, unsigned colu
 		// Datarate is in bytes.
 		if (notA4AF && client.GetUploadDatarate() >= 1024) {
 			if (client.GetUploadDatarate() >= 1048576) {
-				return CFormat(_("%.1f MB/s")) % (client.GetUploadDatarate() / 1048576.0);
+				return CFormat(_("%.1f MiB/s")) % (client.GetUploadDatarate() / 1048576.0);
 			}
-			return CFormat(_("%.1f kB/s")) % (client.GetUploadDatarate() / 1024.0);
+			return CFormat(_("%.1f KiB/s")) % (client.GetUploadDatarate() / 1024.0);
 		}
 		return wxEmptyString;
 

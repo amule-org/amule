@@ -872,9 +872,9 @@ wxString CDownloadListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) c
 	case COLUMN_DL_SPEED:
 		if (file->GetTransferingSrcCount()) {
 			if (file->GetKBpsDown() >= 1024) {
-				return CFormat(_("%.1f MB/s")) % (file->GetKBpsDown() / 1024.0);
+				return CFormat(_("%.1f MiB/s")) % (file->GetKBpsDown() / 1024.0);
 			}
-			return CFormat(_("%.1f kB/s")) % file->GetKBpsDown();
+			return CFormat(_("%.1f KiB/s")) % file->GetKBpsDown();
 		}
 		return wxEmptyString;
 

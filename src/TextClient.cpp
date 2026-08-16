@@ -783,7 +783,7 @@ void CamulecmdApp::ShowResults(CResultMap results_map)
 	wxString output, name, sources, mb, kb;
 
 	printf("Nr.    Filename:                                                                        "
-	       "Size(MB):  Sources: \n");
+	       "Size(MiB):  Sources: \n");
 	printf("---------------------------------------------------------------------------------------------"
 	       "--------------\n");
 
@@ -867,7 +867,7 @@ void CamulecmdApp::Process_Answer_v2(const CECPacket *response)
 		const CECTag *connMaxUL = tab->GetTagByName(EC_TAG_CONN_MAX_UL);
 		const CECTag *connMaxDL = tab->GetTagByName(EC_TAG_CONN_MAX_DL);
 		if (connMaxUL && connMaxDL) {
-			s << CFormat(_("Bandwidth limits: Up: %u kB/s, Down: %u kB/s.\n")) %
+			s << CFormat(_("Bandwidth limits: Up: %u KiB/s, Down: %u KiB/s.\n")) %
 					connMaxUL->GetInt() % connMaxDL->GetInt();
 		}
 		tab = response->GetTagByNameSafe(EC_TAG_PREFS_FILES);

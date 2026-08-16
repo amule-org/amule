@@ -53,19 +53,24 @@
 #endif
 
 // Formats a filesize in bytes to make it suitable for displaying
+//
+// IEC units, because the arithmetic below is binary: every step divides by
+// 1024, so a figure labelled "GB" was really gibibytes and read about 7%
+// high against anything measuring in powers of 1000 (issue #930). Only the
+// label changed -- no displayed size moved.
 wxString CastItoXBytes(uint64 count)
 {
 
 	if (count < 1024)
 		return wxString(CFormat("%u ") % count) + wxPLURAL("byte", "bytes", count);
 	else if (count < 1048576)
-		return wxString(CFormat("%u ") % (count >> 10)) + _("kB");
+		return wxString(CFormat("%u ") % (count >> 10)) + _("KiB");
 	else if (count < 1073741824)
-		return wxString(CFormat("%.2f ") % ((float)(uint32)count / 1048576)) + _("MB");
+		return wxString(CFormat("%.2f ") % ((float)(uint32)count / 1048576)) + _("MiB");
 	else if (count < 1099511627776LL)
-		return wxString(CFormat("%.3f ") % ((float)((uint32)(count / 1024)) / 1048576)) + _("GB");
+		return wxString(CFormat("%.3f ") % ((float)((uint32)(count / 1024)) / 1048576)) + _("GiB");
 	else
-		return wxString(CFormat("%.3f ") % ((float)count / 1099511627776LL)) + _("TB");
+		return wxString(CFormat("%.3f ") % ((float)count / 1099511627776.0f)) + _("TiB");
 }
 
 wxString CastItoIShort(uint64 count)
@@ -88,9 +93,9 @@ wxString CastItoSpeed(uint32 bytes)
 	if (bytes < 1024)
 		return wxString(CFormat("%u ") % bytes) + wxPLURAL("byte/sec", "bytes/sec", bytes);
 	else if (bytes < 1048576)
-		return wxString(CFormat("%.2f ") % (bytes / 1024.0)) + _("kB/s");
+		return wxString(CFormat("%.2f ") % (bytes / 1024.0)) + _("KiB/s");
 	else
-		return wxString(CFormat("%.2f ") % (bytes / 1048576.0)) + _("MB/s");
+		return wxString(CFormat("%.2f ") % (bytes / 1048576.0)) + _("MiB/s");
 }
 
 // Make a time value in seconds suitable for displaying

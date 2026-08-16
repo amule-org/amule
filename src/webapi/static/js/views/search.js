@@ -17,7 +17,7 @@ import { formatBytes, formatDuration, formatInt } from "../format.js";
 import { Icon } from "../icons.js";
 import { t, tn, terr } from "../i18n.js";
 
-const SIZE_UNITS = { B: 1, KB: 1024, MB: 1048576, GB: 1073741824 };
+const SIZE_UNITS = { B: 1, KiB: 1024, MiB: 1048576, GiB: 1073741824 };
 // [API value, label key] — the value goes to the backend verbatim.
 const FILE_TYPES = [
   ["", "search_ftype_any"], ["Audio", "search_ftype_audio"], ["Video", "search_ftype_video"],
@@ -37,9 +37,9 @@ export default function Search({ isGuest }) {
   const [ext, setExt] = useState("");
   const [minAvail, setMinAvail] = useState("");
   const [minSize, setMinSize] = useState("");
-  const [minUnit, setMinUnit] = useState("MB");
+  const [minUnit, setMinUnit] = useState("MiB");
   const [maxSize, setMaxSize] = useState("");
-  const [maxUnit, setMaxUnit] = useState("MB");
+  const [maxUnit, setMaxUnit] = useState("MiB");
 
   const [results, setResults] = useState([]);
   const [filter, setFilter] = useState("");

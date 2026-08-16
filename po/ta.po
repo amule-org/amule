@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-15 23:10+0200\n"
+"POT-Creation-Date: 2026-08-16 10:27+0200\n"
 "PO-Revision-Date: 2026-08-14 21:46+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -725,11 +725,11 @@ msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
 msgstr ""
 
 #: src/amuleDlg.cpp src/MuleTrayIcon.cpp
-msgid " MB/s"
+msgid " MiB/s"
 msgstr ""
 
 #: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/utils/wxCas/src/wxcasframe.cpp
-msgid " kB/s"
+msgid " KiB/s"
 msgstr ""
 
 #: src/amuleDlg.cpp
@@ -1246,7 +1246,7 @@ msgstr ""
 #: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp
 #: src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 #, c-format
-msgid "%.1f kB/s"
+msgid "%.1f KiB/s"
 msgstr ""
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
@@ -1820,7 +1820,7 @@ msgstr ""
 #: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp
 #: src/SharedFilesCtrl.cpp
 #, c-format
-msgid "%.1f MB/s"
+msgid "%.1f MiB/s"
 msgstr ""
 
 #: src/DownloadListCtrl.cpp
@@ -2370,7 +2370,7 @@ msgstr ""
 
 #: src/FileDetailDialog.cpp src/utils/wxCas/src/wxcasframe.cpp
 #, c-format
-msgid "%.2f kB/s"
+msgid "%.2f KiB/s"
 msgstr ""
 
 #: src/FileLaunch.cpp
@@ -2467,11 +2467,11 @@ msgid "Other / set manually"
 msgstr ""
 
 #: src/FirstRunWizard.cpp
-msgid "Upload limit (kB/s, 0 = unlimited):"
+msgid "Upload limit (KiB/s, 0 = unlimited):"
 msgstr ""
 
 #: src/FirstRunWizard.cpp
-msgid "Download limit (kB/s, 0 = unlimited):"
+msgid "Download limit (KiB/s, 0 = unlimited):"
 msgstr ""
 
 #: src/FirstRunWizard.cpp
@@ -3117,7 +3117,7 @@ msgstr ""
 
 #: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
 #: src/StatisticsDlg.cpp
-msgid "kB/s"
+msgid "KiB/s"
 msgstr ""
 
 #: src/MuleTrayIcon.cpp
@@ -3443,16 +3443,16 @@ msgstr ""
 msgid "Bytes"
 msgstr ""
 
-#: src/muuli_wdr.cpp
-msgid "KB"
+#: src/muuli_wdr.cpp src/OtherFunctions.cpp
+msgid "KiB"
 msgstr ""
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
-msgid "MB"
+msgid "MiB"
 msgstr ""
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
-msgid "GB"
+msgid "GiB"
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -5195,11 +5195,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: src/OtherFunctions.cpp
-msgid "kB"
-msgstr ""
-
-#: src/OtherFunctions.cpp
-msgid "TB"
+msgid "TiB"
 msgstr ""
 
 #: src/OtherFunctions.cpp
@@ -5225,7 +5221,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: src/OtherFunctions.cpp
-msgid "MB/s"
+msgid "MiB/s"
 msgstr ""
 
 #: src/OtherFunctions.cpp
@@ -7404,7 +7400,7 @@ msgstr ""
 
 #: src/TextClient.cpp
 #, c-format
-msgid "Bandwidth limits: Up: %u kB/s, Down: %u kB/s.\n"
+msgid "Bandwidth limits: Up: %u KiB/s, Down: %u KiB/s.\n"
 msgstr ""
 
 #: src/TextClient.cpp
@@ -8193,22 +8189,22 @@ msgstr ""
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
-msgid "%.2f KB"
+msgid "%.2f KiB"
 msgstr ""
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
-msgid "%.2f MB"
-msgstr "%.2f மெபை"
-
-#: src/utils/wxCas/src/onlinesig.cpp
-#, c-format
-msgid "%.2f GB"
+msgid "%.2f MiB"
 msgstr ""
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
-msgid "%.2f TB"
+msgid "%.2f GiB"
+msgstr ""
+
+#: src/utils/wxCas/src/onlinesig.cpp
+#, c-format
+msgid "%.2f TiB"
 msgstr ""
 
 #: src/utils/wxCas/src/wxcas.cpp
@@ -8373,7 +8369,7 @@ msgid "Download: "
 msgstr ""
 
 #: src/utils/wxCas/src/wxcasframe.cpp
-msgid " kB/s, Upload: "
+msgid " KiB/s, Upload: "
 msgstr ""
 
 #: src/utils/wxCas/src/wxcasframe.cpp

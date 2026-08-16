@@ -129,7 +129,7 @@ void CMuleTrayIcon::DoSetUploadLimit(long kBytesPerSec)
 {
 	// uint32, not uint16: the preference, its setter and its getter are all
 	// uint32, and a 16-bit cast here silently wrapped anything above 65535
-	// kB/s. A preset of 125000 applied as 59464 -- under half the figure on
+	// KiB/s. A preset of 125000 applied as 59464 -- under half the figure on
 	// the menu item the user clicked, with nothing logged either side.
 	thePrefs::SetMaxUpload(kBytesPerSec < 0 ? UNLIMITED : (uint32)kBytesPerSec);
 #ifdef CLIENT_GUI
@@ -151,12 +151,12 @@ void CMuleTrayIcon::DoSetDownloadLimit(long kBytesPerSec)
 // One ladder, one set of strings. The appindicator backend builds GtkWidgets
 // and the wx backend builds a wxMenu, but what goes in them is identical, and
 // it used to be written out twice -- which is how the GTK side ended up
-// showing "Unlimited" and "kB/s" untranslated while the wx side translated
+// showing "Unlimited" and "KiB/s" untranslated while the wx side translated
 // both.
 //
 // The presets are fractions of the configured line capacity rather than of the
 // current limit. Scaling from the limit would mean the menu could only ever
-// lower it: with a 50 kB/s cap in force, every entry would be at or below 50
+// lower it: with a 50 KiB/s cap in force, every entry would be at or below 50
 // and there would be no way back up. Capacity is what the line can do, so
 // fifths of it span throttled to full speed in both directions.
 namespace
@@ -180,7 +180,7 @@ void GetTraySpeedPresets(uint32 capacity, unsigned int (&speeds)[TRAY_SPEED_PRES
 	if (capacity == UNLIMITED) {
 		capacity = TRAY_FALLBACK_CAPACITY;
 	}
-	// Keep the smallest entry at 1 kB/s or more: a preset of 0 would read as
+	// Keep the smallest entry at 1 KiB/s or more: a preset of 0 would read as
 	// a limit and act as "unlimited", which is the opposite of what picking
 	// the bottom of the list means.
 	const uint32 smallest = TRAY_SPEED_DIVISORS[TRAY_SPEED_PRESETS - 1];
@@ -192,10 +192,10 @@ void GetTraySpeedPresets(uint32 capacity, unsigned int (&speeds)[TRAY_SPEED_PRES
 	}
 }
 
-/// The menu label for one preset, e.g. "2500 kB/s".
+/// The menu label for one preset, e.g. "2500 KiB/s".
 wxString TraySpeedLabel(unsigned int kBytesPerSec)
 {
-	return CFormat("%u %s") % kBytesPerSec % _("kB/s");
+	return CFormat("%u %s") % kBytesPerSec % _("KiB/s");
 }
 } // namespace
 
@@ -594,7 +594,7 @@ wxEND_EVENT_TABLE()
 static long GetSpeedFromString(wxString label)
 {
 	long temp;
-	label.Replace(_("kB/s"), "", TRUE);
+	label.Replace(_("KiB/s"), "", TRUE);
 	label.Trim(FALSE);
 	label.Trim(TRUE);
 	label.ToLong(&temp);
@@ -822,10 +822,10 @@ wxMenu *CMuleTrayIcon::CreatePopupMenu()
 
 	traymenu->Append(TRAY_MENU_INFO, label);
 	label = CFormat(_("Download speed: %.1f%s")) % (showMBpsDown ? MBpsDown : kBpsDown) %
-		(showMBpsDown ? _(" MB/s") : ((kBpsDown > 0) ? _(" kB/s") : ""));
+		(showMBpsDown ? _(" MiB/s") : ((kBpsDown > 0) ? _(" KiB/s") : ""));
 	traymenu->Append(TRAY_MENU_INFO, label);
 	label = CFormat(_("Upload speed: %.1f%s")) % (showMBpsUp ? MBpsUp : kBpsUp) %
-		(showMBpsUp ? _(" MB/s") : ((kBpsUp > 0) ? _(" kB/s") : ""));
+		(showMBpsUp ? _(" MiB/s") : ((kBpsUp > 0) ? _(" KiB/s") : ""));
 	traymenu->Append(TRAY_MENU_INFO, label);
 	traymenu->AppendSeparator();
 

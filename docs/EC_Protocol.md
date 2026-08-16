@@ -505,17 +505,17 @@ isn't immediately obvious or has changed across protocol versions.
 
 | Tag                                | Code     | Type     | Description |
 | ---------------------------------- | -------- | -------- | ----------- |
-| `EC_TAG_CONN_DL_CAP`               | `0x1301` | `uint32` | Download line capacity (kB/s) |
-| `EC_TAG_CONN_UL_CAP`               | `0x1302` | `uint32` | Upload line capacity (kB/s) |
-| `EC_TAG_CONN_MAX_DL`               | `0x1303` | `uint32` | Max download speed (kB/s) |
-| `EC_TAG_CONN_MAX_UL`               | `0x1304` | `uint32` | Max upload speed (kB/s) |
+| `EC_TAG_CONN_DL_CAP`               | `0x1301` | `uint32` | Download line capacity (KiB/s) |
+| `EC_TAG_CONN_UL_CAP`               | `0x1302` | `uint32` | Upload line capacity (KiB/s) |
+| `EC_TAG_CONN_MAX_DL`               | `0x1303` | `uint32` | Max download speed (KiB/s) |
+| `EC_TAG_CONN_MAX_UL`               | `0x1304` | `uint32` | Max upload speed (KiB/s) |
 | `EC_TAG_CONN_SLOT_ALLOCATION`      | `0x1305` | `uint32` | Upload slot allocation |
 | `EC_TAG_CONN_MAX_FILE_SOURCES`     | `0x1309` | `uint16` | Max sources per file |
 | `EC_TAG_CONN_MAX_CONN`             | `0x130A` | `uint16` | Max connections |
 
 > **Note**: `EC_TAG_CONN_MAX_DL`, `EC_TAG_CONN_MAX_UL`, and
 > `EC_TAG_CONN_SLOT_ALLOCATION` were widened from `uint16` to `uint32`
-> to support speeds above 65534 kB/s (~524 Mbps) required on modern
+> to support speeds above 65534 KiB/s (~537 Mbps) required on modern
 > gigabit connections. EC clients reading these tags should use
 > `GetInt()` (which handles any integer width); clients sending them
 > should encode them as 32-bit values.

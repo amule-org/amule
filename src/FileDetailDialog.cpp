@@ -194,7 +194,7 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 		CastChild(IDC_COMPLSIZE, wxControl)->SetLabel(CastItoXBytes(part->GetCompletedSize()));
 		bufferS = CFormat(_("%.1f%% done")) % part->GetPercentCompleted();
 		CastChild(IDC_PROCCOMPL, wxControl)->SetLabel(bufferS);
-		bufferS = CFormat(_("%.2f kB/s")) % part->GetKBpsDown();
+		bufferS = CFormat(_("%.2f KiB/s")) % part->GetKBpsDown();
 		CastChild(IDC_DATARATE, wxControl)->SetLabel(bufferS);
 		bufferS = CFormat("%i") % part->GetSourceCount();
 		CastChild(IDC_SOURCECOUNT, wxControl)->SetLabel(bufferS);
@@ -234,7 +234,7 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 	CastChild(IDC_FD_SHARE_ONQUEUE, wxControl)->SetLabel(CFormat("%u") % m_file->GetQueuedCount());
 	CastChild(IDC_FD_SHARE_UPPRIO, wxControl)
 		->SetLabel(PriorityToStr(m_file->GetUpPriority(), m_file->IsAutoUpPriority()));
-	bufferS = CFormat(_("%.2f kB/s")) % (m_file->GetUploadDatarate() / 1024.0);
+	bufferS = CFormat(_("%.2f KiB/s")) % (m_file->GetUploadDatarate() / 1024.0);
 	CastChild(IDC_FD_SHARE_UPSPEED, wxControl)->SetLabel(bufferS);
 	CastChild(IDC_FD_SHARE_UPCOUNT, wxControl)
 		->SetLabel(CFormat("%u") % m_file->GetTransferringClientCount());
