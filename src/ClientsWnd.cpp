@@ -134,7 +134,7 @@ CClientsWnd::CClientsWnd(wxWindow *parent)
 	});
 
 	wxBoxSizer *sizer = new wxBoxSizer(wxVERTICAL);
-	sizer->Add(book, 1, wxEXPAND | wxALL, 0);
+	sizer->Add(book, 1, wxEXPAND);
 	SetSizer(sizer);
 	sizer->SetSizeHints(this);
 	sizer->Fit(this);
