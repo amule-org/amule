@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-15 23:10+0200\n"
+"POT-Creation-Date: 2026-08-16 10:27+0200\n"
 "PO-Revision-Date: 2026-08-14 21:42+0000\n"
 "Last-Translator: Fation <dj_barthezz@linuxmail.org lushnja_corps@hotmail.Language-Team:\n"
 "Language: sq\n"
@@ -758,13 +758,12 @@ msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
 msgstr "Larte: %.1f(%.1f) | Poshte: %.1f(%.1f)"
 
 #: src/amuleDlg.cpp src/MuleTrayIcon.cpp
-#, fuzzy
-msgid " MB/s"
-msgstr "MB/s"
+msgid " MiB/s"
+msgstr ""
 
 #: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/utils/wxCas/src/wxcasframe.cpp
-msgid " kB/s"
-msgstr " kB/s"
+msgid " KiB/s"
+msgstr ""
 
 #: src/amuleDlg.cpp
 #, fuzzy, c-format
@@ -1295,8 +1294,8 @@ msgstr "I shkeputur"
 #: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp
 #: src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 #, c-format
-msgid "%.1f kB/s"
-msgstr "%.1f kB/s"
+msgid "%.1f KiB/s"
+msgstr ""
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 #, fuzzy
@@ -1882,9 +1881,9 @@ msgstr "Riemertim i failit"
 
 #: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp
 #: src/SharedFilesCtrl.cpp
-#, fuzzy, c-format
-msgid "%.1f MB/s"
-msgstr "%.1f kB/s"
+#, c-format
+msgid "%.1f MiB/s"
+msgstr ""
 
 #: src/DownloadListCtrl.cpp
 #, c-format
@@ -2464,8 +2463,8 @@ msgstr "%.2f%% te mbaruara"
 
 #: src/FileDetailDialog.cpp src/utils/wxCas/src/wxcasframe.cpp
 #, c-format
-msgid "%.2f kB/s"
-msgstr "%.2f kB/s"
+msgid "%.2f KiB/s"
+msgstr ""
 
 #: src/FileLaunch.cpp
 msgid "File preview"
@@ -2564,11 +2563,11 @@ msgid "Other / set manually"
 msgstr ""
 
 #: src/FirstRunWizard.cpp
-msgid "Upload limit (kB/s, 0 = unlimited):"
+msgid "Upload limit (KiB/s, 0 = unlimited):"
 msgstr ""
 
 #: src/FirstRunWizard.cpp
-msgid "Download limit (kB/s, 0 = unlimited):"
+msgid "Download limit (KiB/s, 0 = unlimited):"
 msgstr ""
 
 #: src/FirstRunWizard.cpp
@@ -3228,8 +3227,8 @@ msgstr "Zgjidhi te gjitha"
 
 #: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
 #: src/StatisticsDlg.cpp
-msgid "kB/s"
-msgstr "kB/s"
+msgid "KiB/s"
+msgstr ""
 
 #: src/MuleTrayIcon.cpp
 msgid "Unlimited"
@@ -3562,17 +3561,17 @@ msgstr "Madhesia Minimale"
 msgid "Bytes"
 msgstr "Bytes"
 
-#: src/muuli_wdr.cpp
-msgid "KB"
-msgstr "KB"
+#: src/muuli_wdr.cpp src/OtherFunctions.cpp
+msgid "KiB"
+msgstr ""
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
-msgid "MB"
-msgstr "MB"
+msgid "MiB"
+msgstr ""
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
-msgid "GB"
-msgstr "GB"
+msgid "GiB"
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Max Size"
@@ -5359,12 +5358,8 @@ msgstr[0] "byte"
 msgstr[1] "bytes"
 
 #: src/OtherFunctions.cpp
-msgid "kB"
-msgstr "kB"
-
-#: src/OtherFunctions.cpp
-msgid "TB"
-msgstr "TB"
+msgid "TiB"
+msgstr ""
 
 #: src/OtherFunctions.cpp
 msgid "k"
@@ -5389,8 +5384,8 @@ msgstr[0] "byte/sec"
 msgstr[1] "bytes/sec"
 
 #: src/OtherFunctions.cpp
-msgid "MB/s"
-msgstr "MB/s"
+msgid "MiB/s"
+msgstr ""
 
 #: src/OtherFunctions.cpp
 msgid "secs"
@@ -7652,7 +7647,7 @@ msgstr "Niveli aktual i filtrimit te IP eshte %d.\n"
 
 #: src/TextClient.cpp
 #, c-format
-msgid "Bandwidth limits: Up: %u kB/s, Down: %u kB/s.\n"
+msgid "Bandwidth limits: Up: %u KiB/s, Down: %u KiB/s.\n"
 msgstr ""
 
 #: src/TextClient.cpp
@@ -8486,23 +8481,23 @@ msgstr "%.0f B"
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
-msgid "%.2f KB"
-msgstr "%.2f KB"
+msgid "%.2f KiB"
+msgstr ""
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
-msgid "%.2f MB"
-msgstr "%.2f MB"
+msgid "%.2f MiB"
+msgstr ""
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
-msgid "%.2f GB"
-msgstr "%2f GB"
+msgid "%.2f GiB"
+msgstr ""
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
-msgid "%.2f TB"
-msgstr "%2f TB"
+msgid "%.2f TiB"
+msgstr ""
 
 #: src/utils/wxCas/src/wxcas.cpp
 msgid "wxCas, aMule Online Statistics"
@@ -8675,8 +8670,8 @@ msgid "Download: "
 msgstr "Shkarkim: "
 
 #: src/utils/wxCas/src/wxcasframe.cpp
-msgid " kB/s, Upload: "
-msgstr " kB/s, Ngarkim: "
+msgid " KiB/s, Upload: "
+msgstr ""
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid "Sharing: "
@@ -8982,6 +8977,22 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy
+#~ msgid " MB/s"
+#~ msgstr "MB/s"
+
+#~ msgid " kB/s"
+#~ msgstr " kB/s"
+
+#~ msgid "kB/s"
+#~ msgstr "kB/s"
+
+#~ msgid "kB"
+#~ msgstr "kB"
+
+#~ msgid "MB/s"
+#~ msgstr "MB/s"
 
 #~ msgid "%y/%m/%d %H:%M:%S"
 #~ msgstr "%y/%m/%d %H:%M:%S"

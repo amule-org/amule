@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-15 23:10+0200\n"
+"POT-Creation-Date: 2026-08-16 10:27+0200\n"
 "PO-Revision-Date: 2026-08-14 21:37+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
@@ -765,12 +765,12 @@ msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
 msgstr "E : %.1f%s (%.1f) | R : %.1f%s (%.1f)"
 
 #: src/amuleDlg.cpp src/MuleTrayIcon.cpp
-msgid " MB/s"
-msgstr " Mo/s"
+msgid " MiB/s"
+msgstr ""
 
 #: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/utils/wxCas/src/wxcasframe.cpp
-msgid " kB/s"
-msgstr " Ko/s"
+msgid " KiB/s"
+msgstr ""
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -1294,8 +1294,8 @@ msgstr "Déconnecté"
 #: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp
 #: src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 #, c-format
-msgid "%.1f kB/s"
-msgstr "%.1f Ko/s"
+msgid "%.1f KiB/s"
+msgstr ""
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 msgid "Name"
@@ -1870,8 +1870,8 @@ msgstr "Renommer"
 #: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp
 #: src/SharedFilesCtrl.cpp
 #, c-format
-msgid "%.1f MB/s"
-msgstr "%.1f Mo/s"
+msgid "%.1f MiB/s"
+msgstr ""
 
 #: src/DownloadListCtrl.cpp
 #, c-format
@@ -2445,8 +2445,8 @@ msgstr "%.1f%% effectué"
 
 #: src/FileDetailDialog.cpp src/utils/wxCas/src/wxcasframe.cpp
 #, c-format
-msgid "%.2f kB/s"
-msgstr "%.2f Ko/s"
+msgid "%.2f KiB/s"
+msgstr ""
 
 #: src/FileLaunch.cpp
 msgid "File preview"
@@ -2546,12 +2546,12 @@ msgid "Other / set manually"
 msgstr "Autre / définir manuellement"
 
 #: src/FirstRunWizard.cpp
-msgid "Upload limit (kB/s, 0 = unlimited):"
-msgstr "Limite d’envoi (ko/s, 0 = illimitée) :"
+msgid "Upload limit (KiB/s, 0 = unlimited):"
+msgstr ""
 
 #: src/FirstRunWizard.cpp
-msgid "Download limit (kB/s, 0 = unlimited):"
-msgstr "Limite de téléchargement (ko/s, 0 = illimitée) :"
+msgid "Download limit (KiB/s, 0 = unlimited):"
+msgstr ""
 
 #: src/FirstRunWizard.cpp
 msgid "Networks & ports"
@@ -3209,8 +3209,8 @@ msgstr "Tout sélectionner"
 
 #: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
 #: src/StatisticsDlg.cpp
-msgid "kB/s"
-msgstr "Ko/s"
+msgid "KiB/s"
+msgstr ""
 
 #: src/MuleTrayIcon.cpp
 msgid "Unlimited"
@@ -3535,17 +3535,17 @@ msgstr "Taille Minimum"
 msgid "Bytes"
 msgstr "Octets"
 
-#: src/muuli_wdr.cpp
-msgid "KB"
-msgstr "Ko"
+#: src/muuli_wdr.cpp src/OtherFunctions.cpp
+msgid "KiB"
+msgstr ""
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
-msgid "MB"
-msgstr "Mo"
+msgid "MiB"
+msgstr ""
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
-msgid "GB"
-msgstr "Go"
+msgid "GiB"
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Max Size"
@@ -5304,12 +5304,8 @@ msgstr[0] "octet"
 msgstr[1] "octets"
 
 #: src/OtherFunctions.cpp
-msgid "kB"
-msgstr "ko"
-
-#: src/OtherFunctions.cpp
-msgid "TB"
-msgstr "To"
+msgid "TiB"
+msgstr ""
 
 #: src/OtherFunctions.cpp
 msgid "k"
@@ -5334,8 +5330,8 @@ msgstr[0] "octet/sec"
 msgstr[1] "octets/sec"
 
 #: src/OtherFunctions.cpp
-msgid "MB/s"
-msgstr "Mo/s"
+msgid "MiB/s"
+msgstr ""
 
 #: src/OtherFunctions.cpp
 msgid "secs"
@@ -7551,8 +7547,8 @@ msgstr "Le niveau actuel d'IPFilter est %d.\n"
 
 #: src/TextClient.cpp
 #, c-format
-msgid "Bandwidth limits: Up: %u kB/s, Down: %u kB/s.\n"
-msgstr "Limites de la bande passante : E : %u ko/s, R : %u kB/s.\n"
+msgid "Bandwidth limits: Up: %u KiB/s, Down: %u KiB/s.\n"
+msgstr ""
 
 #: src/TextClient.cpp
 #, c-format
@@ -8400,23 +8396,23 @@ msgstr "%.0f o"
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
-msgid "%.2f KB"
-msgstr "%.2f Ko"
+msgid "%.2f KiB"
+msgstr ""
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
-msgid "%.2f MB"
-msgstr "%.2f Mo"
+msgid "%.2f MiB"
+msgstr ""
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
-msgid "%.2f GB"
-msgstr "%.2f Go"
+msgid "%.2f GiB"
+msgstr ""
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
-msgid "%.2f TB"
-msgstr "%.2f To"
+msgid "%.2f TiB"
+msgstr ""
 
 #: src/utils/wxCas/src/wxcas.cpp
 msgid "wxCas, aMule Online Statistics"
@@ -8589,8 +8585,8 @@ msgid "Download: "
 msgstr "Réception : "
 
 #: src/utils/wxCas/src/wxcasframe.cpp
-msgid " kB/s, Upload: "
-msgstr " Ko/s, Émission : "
+msgid " KiB/s, Upload: "
+msgstr ""
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid "Sharing: "
@@ -8900,6 +8896,21 @@ msgstr "aMule semble être en cours d'exécution. Veuillez le fermer et relancer
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Suppression des données d'utilisateur sur $APPDATA\\aMule…"
+
+#~ msgid " MB/s"
+#~ msgstr " Mo/s"
+
+#~ msgid " kB/s"
+#~ msgstr " Ko/s"
+
+#~ msgid "kB/s"
+#~ msgstr "Ko/s"
+
+#~ msgid "kB"
+#~ msgstr "ko"
+
+#~ msgid "MB/s"
+#~ msgstr "Mo/s"
 
 #~ msgid "%y/%m/%d %H:%M:%S"
 #~ msgstr "%y/%m/%d %H : %M : %S"

@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-15 23:10+0200\n"
+"POT-Creation-Date: 2026-08-16 10:27+0200\n"
 "PO-Revision-Date: 2026-08-14 21:42+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
@@ -770,12 +770,12 @@ msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
 msgstr "Отд: %.1f%s (%.1f) | Скач: %.1f%s (%.1f)"
 
 #: src/amuleDlg.cpp src/MuleTrayIcon.cpp
-msgid " MB/s"
-msgstr " МБ/с"
+msgid " MiB/s"
+msgstr ""
 
 #: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/utils/wxCas/src/wxcasframe.cpp
-msgid " kB/s"
-msgstr " КБ/с"
+msgid " KiB/s"
+msgstr ""
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -1303,8 +1303,8 @@ msgstr "Отключён"
 #: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp
 #: src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 #, c-format
-msgid "%.1f kB/s"
-msgstr "%.1f КБ/с"
+msgid "%.1f KiB/s"
+msgstr ""
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 msgid "Name"
@@ -1884,8 +1884,8 @@ msgstr "Переименовать файл"
 #: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp
 #: src/SharedFilesCtrl.cpp
 #, c-format
-msgid "%.1f MB/s"
-msgstr "%.1f МБ/с"
+msgid "%.1f MiB/s"
+msgstr ""
 
 #: src/DownloadListCtrl.cpp
 #, c-format
@@ -2462,8 +2462,8 @@ msgstr "%.1f%% выполнено"
 
 #: src/FileDetailDialog.cpp src/utils/wxCas/src/wxcasframe.cpp
 #, c-format
-msgid "%.2f kB/s"
-msgstr "%.2f КБ/с"
+msgid "%.2f KiB/s"
+msgstr ""
 
 #: src/FileLaunch.cpp
 msgid "File preview"
@@ -2563,12 +2563,12 @@ msgid "Other / set manually"
 msgstr "Другое / указать вручную"
 
 #: src/FirstRunWizard.cpp
-msgid "Upload limit (kB/s, 0 = unlimited):"
-msgstr "Ограничение отдачи (КБ/с, 0 = без ограничений):"
+msgid "Upload limit (KiB/s, 0 = unlimited):"
+msgstr ""
 
 #: src/FirstRunWizard.cpp
-msgid "Download limit (kB/s, 0 = unlimited):"
-msgstr "Ограничение скачивания (КБ/с, 0 = без ограничений):"
+msgid "Download limit (KiB/s, 0 = unlimited):"
+msgstr ""
 
 #: src/FirstRunWizard.cpp
 msgid "Networks & ports"
@@ -3232,8 +3232,8 @@ msgstr "Выделить все"
 
 #: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
 #: src/StatisticsDlg.cpp
-msgid "kB/s"
-msgstr "КБ/с"
+msgid "KiB/s"
+msgstr ""
 
 #: src/MuleTrayIcon.cpp
 msgid "Unlimited"
@@ -3562,17 +3562,17 @@ msgstr "Мин. размер"
 msgid "Bytes"
 msgstr "Байт"
 
-#: src/muuli_wdr.cpp
-msgid "KB"
-msgstr "КБ"
+#: src/muuli_wdr.cpp src/OtherFunctions.cpp
+msgid "KiB"
+msgstr ""
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
-msgid "MB"
-msgstr "МБ"
+msgid "MiB"
+msgstr ""
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
-msgid "GB"
-msgstr "ГБ"
+msgid "GiB"
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Max Size"
@@ -5340,12 +5340,8 @@ msgstr[1] "байта"
 msgstr[2] "байт"
 
 #: src/OtherFunctions.cpp
-msgid "kB"
-msgstr "КБ"
-
-#: src/OtherFunctions.cpp
-msgid "TB"
-msgstr "ТБ"
+msgid "TiB"
+msgstr ""
 
 #: src/OtherFunctions.cpp
 msgid "k"
@@ -5371,8 +5367,8 @@ msgstr[1] "байт/с"
 msgstr[2] "байт/с"
 
 #: src/OtherFunctions.cpp
-msgid "MB/s"
-msgstr "МБ/с"
+msgid "MiB/s"
+msgstr ""
 
 #: src/OtherFunctions.cpp
 msgid "secs"
@@ -7616,8 +7612,8 @@ msgstr "Текущий уровень IP-фильтра: %d.\n"
 # писать тут "вверх" и "вниз" по-моему глупо. да и не поймет никто
 #: src/TextClient.cpp
 #, c-format
-msgid "Bandwidth limits: Up: %u kB/s, Down: %u kB/s.\n"
-msgstr "Ограничения скорости передачи: Отд: %u КБ/с, Скач: %u КБ/с.\n"
+msgid "Bandwidth limits: Up: %u KiB/s, Down: %u KiB/s.\n"
+msgstr ""
 
 #: src/TextClient.cpp
 #, c-format
@@ -8465,23 +8461,23 @@ msgstr "%.0f B"
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
-msgid "%.2f KB"
-msgstr "%.2f KB"
+msgid "%.2f KiB"
+msgstr ""
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
-msgid "%.2f MB"
-msgstr "%.2f МБ"
+msgid "%.2f MiB"
+msgstr ""
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
-msgid "%.2f GB"
-msgstr "%.2f GB"
+msgid "%.2f GiB"
+msgstr ""
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
-msgid "%.2f TB"
-msgstr "%.2f TB"
+msgid "%.2f TiB"
+msgstr ""
 
 #: src/utils/wxCas/src/wxcas.cpp
 msgid "wxCas, aMule Online Statistics"
@@ -8655,8 +8651,8 @@ msgid "Download: "
 msgstr "Скачивание: "
 
 #: src/utils/wxCas/src/wxcasframe.cpp
-msgid " kB/s, Upload: "
-msgstr " КБ/с, отдача: "
+msgid " KiB/s, Upload: "
+msgstr ""
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid "Sharing: "
@@ -8967,6 +8963,21 @@ msgstr "Похоже, что aMule запущен. Закройте его и п
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Удаление пользовательских данных в $APPDATA\\aMule…"
+
+#~ msgid " MB/s"
+#~ msgstr " МБ/с"
+
+#~ msgid " kB/s"
+#~ msgstr " КБ/с"
+
+#~ msgid "kB/s"
+#~ msgstr "КБ/с"
+
+#~ msgid "kB"
+#~ msgstr "КБ"
+
+#~ msgid "MB/s"
+#~ msgstr "МБ/с"
 
 #~ msgid "%y/%m/%d %H:%M:%S"
 #~ msgstr "%y/%m/%d %H:%M:%S"
