@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-16 10:27+0200\n"
-"PO-Revision-Date: 2026-08-16 10:26+0000\n"
+"PO-Revision-Date: 2026-08-16 20:31+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
 "Language: cs\n"
@@ -1128,7 +1128,7 @@ msgstr "Nová kategorie"
 
 #: src/CatDialog.cpp
 msgid "Choose a folder for incoming files"
-msgstr "Zvolte adresář pro stažené soubory"
+msgstr "Zvolte složku pro stažené soubory"
 
 #: src/CatDialog.cpp
 msgid "You must specify a name for the category!"
@@ -2602,11 +2602,12 @@ msgid ""
 "To get started, aMule needs to know about some peers.\n"
 "Select which lists to download now:"
 msgstr ""
+"Aby mohl aMule začít, potřebuje znát nějaké peery.\n"
+"Vyberte, které seznamy chcete nyní stáhnout:"
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Your peer lists are already in place - nothing to download."
-msgstr "Soubor %s se již pokoušíte stáhnout"
+msgstr "Vaše seznamy peerů jsou již na svém místě – není co stahovat."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Auto-update server list at startup"
@@ -2621,42 +2622,46 @@ msgid ""
 "Choose how aMule integrates with your system. You can\n"
 "change any of these later in Preferences."
 msgstr ""
+"Zvolte, jak se aMule integruje s vaším systémem. Kteroukoli\n"
+"z těchto voleb můžete později změnit v Nastavení."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Start aMule automatically when I log in"
-msgstr ""
+msgstr "Spustit aMule automaticky po přihlášení"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 #: packaging/windows/installer_strings.c
 msgid "Register aMule for ed2k:// links"
-msgstr ""
+msgstr "Zaregistrovat aMule pro odkazy ed2k://"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 #: packaging/windows/installer_strings.c
 msgid "Register aMule for magnet: links"
-msgstr ""
+msgstr "Zaregistrovat aMule pro odkazy magnet:"
 
 #: src/FirstRunWizard.cpp
 msgid "Only eD2k-compatible magnets. Leave off if you use a BitTorrent client."
-msgstr ""
+msgstr "Pouze magnet odkazy kompatibilní s eD2k. Ponechte vypnuté, pokud používáte klienta BitTorrent."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Open .emulecollection files with aMule"
-msgstr ""
+msgstr "Otevírat soubory .emulecollection pomocí aMule"
 
 #: src/FirstRunWizard.cpp
 msgid "Folders (optional)"
-msgstr ""
+msgstr "Složky (nepovinné)"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "The defaults are fine for most people. Change them if you\n"
 "want downloads on a different (e.g. larger) disk."
 msgstr ""
+"Výchozí nastavení vyhovuje většině uživatelů. Změňte je, pokud\n"
+"chcete stahovat na jiný (např. větší) disk."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Destination folder for downloads"
-msgstr "Cílový adresář pro stahování"
+msgstr "Cílová složka pro stahování"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 #: src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
@@ -2665,11 +2670,11 @@ msgstr "Procházet"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "(All files in this folder are shared with other peers)"
-msgstr ""
+msgstr "(Všechny soubory v této složce jsou sdíleny s ostatními peery)"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Folder for temporary download files"
-msgstr ""
+msgstr "Složka pro dočasné soubory stahování"
 
 #: src/FirstRunWizard.cpp
 #, c-format
@@ -2677,14 +2682,16 @@ msgid ""
 "Based on this, aMule will allow up to %i sources per file\n"
 "and %i client connections."
 msgstr ""
+"Na základě toho aMule povolí až %i zdrojů na soubor\n"
+"a %i připojení klientů."
 
 #: src/FirstRunWizard.cpp
 msgid "Show this setup wizard again the next time you start aMule?"
-msgstr ""
+msgstr "Zobrazit tohoto průvodce nastavením znovu při příštím spuštění aMule?"
 
 #: src/FirstRunWizard.cpp
 msgid "Setup not finished"
-msgstr ""
+msgstr "Nastavení nedokončeno"
 
 #: src/FriendList.cpp
 msgid "Failed to open friend list file 'emfriends.met' for reading!"
@@ -2696,7 +2703,7 @@ msgstr ""
 
 #: src/FriendList.cpp
 msgid "CRITICAL - no client on StartChatSession"
-msgstr ""
+msgstr "KRITICKÉ - žádný klient v StartChatSession"
 
 #: src/FriendListCtrl.cpp src/muuli_wdr.cpp
 msgid "Friends"
@@ -2731,9 +2738,9 @@ msgstr ""
 " Byl přidělen pouze jeden slot."
 
 #: src/GenericClientListCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "On Queue: %u (%i)"
-msgstr "QR: %u (%i)"
+msgstr "Ve frontě: %u (%i)"
 
 #: src/GenericClientListCtrl.cpp
 msgid "Asked for another file"
@@ -2744,9 +2751,9 @@ msgid "Waiting for upload slot"
 msgstr "Čekání na odesílací slot"
 
 #: src/GenericClientListCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "On Queue: %u"
-msgstr "Ve frontě"
+msgstr "Ve frontě: %u"
 
 #: src/GenericClientListCtrl.cpp src/muuli_wdr.cpp
 msgid "Uploading"
@@ -2827,21 +2834,21 @@ msgstr ""
 
 #: src/IP2Country.cpp
 msgid "IP2Country: Custom URL selected as the GeoIP source but no URL configured. Open Preferences -> IP2Country and supply a URL that points to an .mmdb (or .gz / .tar.gz containing one)."
-msgstr ""
+msgstr "IP2Country: jako zdroj GeoIP byla vybrána vlastní URL, ale není nastavena žádná URL. Otevřete Nastavení -> IP2Country a zadejte URL odkazující na soubor .mmdb (nebo .gz / .tar.gz, který jej obsahuje)."
 
 #: src/IP2Country.cpp
 msgid "IP2Country: failed to resolve a GeoIP download URL."
-msgstr ""
+msgstr "IP2Country: nepodařilo se připojit k adrese pro stažení GeoIP."
 
 #: src/IP2Country.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Download new %s from %s"
-msgstr "Stahování %s z %s selhalo"
+msgstr "Stahování nového souboru %s z %s"
 
 #: src/IP2Country.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Download of %s file failed, aborting update."
-msgstr "Přejmenování souboru %s selhalo, přerušuji aktualizaci."
+msgstr "Stažení souboru %s selhalo, aktualizace se přerušuje."
 
 #: src/IP2Country.cpp src/IPFilter.cpp
 #, c-format
@@ -2859,13 +2866,13 @@ msgid "Successfully updated %s"
 msgstr "Úspěšně aktualizováno: %s"
 
 #: src/IP2Country.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Error updating %s"
-msgstr "Selhala aktualizace GeoIP.dat"
+msgstr "Chyba při aktualizaci %s"
 
 #: src/IP2Country.cpp
 msgid "DB-IP download failed for the current month - retrying with the previous month's URL."
-msgstr ""
+msgstr "Stažení DB-IP pro aktuální měsíc selhalo - zkouším znovu s URL z předchozího měsíce."
 
 #: src/IP2Country.cpp src/IPFilter.cpp src/ServerList.cpp
 #, c-format
@@ -2873,9 +2880,8 @@ msgid "Failed to download %s from %s"
 msgstr "Stahování %s z %s selhalo"
 
 #: src/IPFilter.cpp
-#, fuzzy
 msgid "Loading IP filters 'ipfilter.dat' and 'ipfilter_static.dat'."
-msgstr "Načítám IP filtry 'ipfilter.dat' a 'ipfilter_static.dat'."
+msgstr "Načítání filtrů IP adres 'ipfilter.dat' a 'ipfilter_static.dat'."
 
 #: src/IPFilter.cpp
 #, c-format
@@ -4369,15 +4375,15 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Shared folders"
-msgstr "Sdílené adresáře"
+msgstr "Sdílené složky"
 
 #: src/muuli_wdr.cpp
 msgid "(Folders shared by the core. Enter a path to add one.)"
-msgstr ""
+msgstr "(Složky sdílené jádrem. Přidejte cestu pro přidání nové.)"
 
 #: src/muuli_wdr.cpp
 msgid "Absolute path of a folder on the core's machine, e.g. /home/user/shared"
-msgstr ""
+msgstr "Absolutní cesta ke složce na počítači jádra, např. /home/user/shared"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "Recursive"
@@ -4385,7 +4391,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Share every sub-folder underneath this one, including ones created later."
-msgstr ""
+msgstr "Sdílet každou podsložku pod touto, včetně těch vytvořených později."
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Remove"
@@ -4393,7 +4399,7 @@ msgstr "Odebrat"
 
 #: src/muuli_wdr.cpp
 msgid "(Right click on folder icon for recursive share)"
-msgstr ""
+msgstr "(Klikněte pravým tlačítkem na ikonu složky pro rekurzivní sdílení)"
 
 #: src/muuli_wdr.cpp
 msgid "Share hidden files"
@@ -4401,11 +4407,11 @@ msgstr "Sdílet skryté soubory"
 
 #: src/muuli_wdr.cpp
 msgid "Automatically rescan shared folders for changes"
-msgstr ""
+msgstr "Automaticky prohledávat sdílené složky na změny"
 
 #: src/muuli_wdr.cpp
 msgid "Follow symbolic links in shared folders"
-msgstr ""
+msgstr "Sledovat symbolické odkazy ve sdílených složkách"
 
 #: src/muuli_wdr.cpp
 msgid "Exclude files matching:"
@@ -5434,7 +5440,7 @@ msgstr "Importování %s: %s"
 
 #: src/PartFileConvert.cpp
 msgid "Reading temp folder"
-msgstr "Čtení dočasného adresáře"
+msgstr "Čtení dočasné složky"
 
 #: src/PartFileConvert.cpp
 msgid "Retrieving basic information from download info file"
@@ -5481,7 +5487,7 @@ msgstr "%s (disk: %s)"
 
 #: src/PartFileConvertDlg.cpp
 msgid "Please choose a folder to search for temporary downloads! (subfolders will be included)"
-msgstr "Prosím zvolte adresář pro vyhledávání dočasných souborů! (budou zahrnuty i podadresáře)"
+msgstr "Vyberte prosím složku, ve které se mají hledat dočasná stahování! (zahrnou se i podsložky)"
 
 #: src/PartFileConvertDlg.cpp
 #, fuzzy
@@ -6053,7 +6059,7 @@ msgstr "- Jazyk byl změněn.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Temp folder changed.\n"
-msgstr "- Dočasný adresář byl změněn.\n"
+msgstr "- Dočasná složka změněna.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- ED2K network enabled.\n"
@@ -6176,7 +6182,7 @@ msgstr "Online podpisy"
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Choose a folder for %s"
-msgstr "Zvolte adresář pro %s"
+msgstr "Zvolte složku pro %s"
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy, c-format
@@ -6347,15 +6353,16 @@ msgid ""
 "The following folders look like system or sensitive locations:\n"
 "\n"
 msgstr ""
+"Následující složky vypadají jako systémová nebo citlivá umístění:\n"
+"\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Sharing them recursively will publish every file underneath on the eD2k/Kad networks. Do you really want to do this?"
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Confirm shared folders"
-msgstr "Sdílené adresáře"
+msgstr "Potvrdit sdílené složky"
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -6367,9 +6374,8 @@ msgid "Scanning for subdirectories..."
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Updating shared folders"
-msgstr "Sdílené adresáře"
+msgstr "Aktualizace sdílených složek"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -6395,9 +6401,8 @@ msgid "This remote prefix is already mapped."
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Choose the local folder"
-msgstr "Zvolte adresář pro %s"
+msgstr "Zvolte místní složku"
 
 #: src/SearchDlg.cpp
 #, fuzzy
@@ -8725,11 +8730,11 @@ msgstr "Zkontrolovat"
 
 #: src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Folder containing your signature file"
-msgstr "Adresář obsahující váš soubor s podpisem"
+msgstr "Složka obsahující váš soubor s podpisem"
 
 #: src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Folder where generating the statistic image"
-msgstr "Adresář pro generování obrázků statistik"
+msgstr "Složka pro generování obrázků statistik"
 
 #: src/webserver/src/WebInterface.cpp
 msgid "Loads template <str>"
