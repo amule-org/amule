@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: manpages-ru\n"
 "POT-Creation-Date: 2026-07-30 17:31+0200\n"
-"PO-Revision-Date: 2026-08-16 14:19+0000\n"
+"PO-Revision-Date: 2026-08-16 21:04+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: Russian <LL@li.org>\n"
 "Language: ru\n"
@@ -597,7 +597,7 @@ msgstr "Обновляет указанный объект."
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Reload shared files list."
-msgstr "Обновить список публикуемых файлов."
+msgstr "Переподгрузить список публикуемых файлов."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -702,7 +702,7 @@ msgstr "Выводит очередь отдачи/скачивания, спи�
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Show download queue."
-msgstr "Показывает очередь скачивания."
+msgstr "Показать очередь загрузки."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -722,7 +722,7 @@ msgstr "Показать список публикуемых файлов."
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Show upload queue."
-msgstr "Показать очередь на отдачу."
+msgstr "Показать очередь отдачи."
 
 #. type: Plain text
 #: amulecmd.1.in

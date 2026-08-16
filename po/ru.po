@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-16 10:27+0200\n"
-"PO-Revision-Date: 2026-08-16 14:09+0000\n"
+"PO-Revision-Date: 2026-08-16 20:56+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
 "Language: ru\n"
@@ -344,21 +344,21 @@ msgstr "Инициализация сети"
 
 #: src/amule.cpp
 msgid "Loading temp files"
-msgstr "Загрузка временных файлов"
+msgstr "Подгрузка временных файлов"
 
 #: src/amule.cpp
 #, c-format
 msgid "Loading temp files (%u of %u)"
-msgstr "Загрузка временных файлов (%u из %u)"
+msgstr "Подгрузка временных файлов (%u из %u)"
 
 #: src/amule.cpp
 msgid "Loading shared files"
-msgstr "Загрузка публикуемых файлов"
+msgstr "Подгрузка публикуемых файлов"
 
 #: src/amule.cpp
 #, c-format
 msgid "Loading shared files (%u)"
-msgstr "Загрузка публикуемых файлов (%u)"
+msgstr "Подгрузка публикуемых файлов (%u)"
 
 #: src/amule.cpp
 msgid "Starting up"
@@ -374,7 +374,7 @@ msgid ""
 "Select which ones to download:"
 msgstr ""
 "aMule обнаружил отсутствующие файлы начальной загрузки сети.\n"
-"Выберите, какие из них скачать:"
+"Выберите, какие из них загрузить:"
 
 #: src/amule.cpp src/FirstRunWizard.cpp
 msgid "eD2k server list (server.met)"
@@ -520,7 +520,7 @@ msgstr "Сообщение сервера: %s"
 #: src/amule.cpp src/IP2Country.cpp src/IPFilter.cpp src/ServerList.cpp
 #, c-format
 msgid "Skipped download of %s, because requested file is not newer."
-msgstr "Пропущено скачивание %s, так как запрашиваемый файл не новее."
+msgstr "Пропущена загрузка %s, так как запрашиваемый файл не новее."
 
 #: src/amule.cpp
 msgid "Failed to download the nodes list."
@@ -528,7 +528,7 @@ msgstr "Ошибка при загрузке списка узлов."
 
 #: src/amule.cpp
 msgid "Failed to open the downloaded version check file"
-msgstr "Ошибка при скачивании файла контроля версии"
+msgstr "Ошибка при открытии загруженного файла проверки версии"
 
 #: src/amule.cpp
 msgid "Corrupted version check file"
@@ -558,7 +558,7 @@ msgstr "Ваша копия aMule актуальна."
 
 #: src/amule.cpp
 msgid "Failed to download the version check file"
-msgstr "Ошибка при загрузке файла контроля версии"
+msgstr "Ошибка при загрузке файла проверки версии"
 
 #: src/amule.cpp src/amule-remote-gui.cpp
 #, c-format
@@ -669,7 +669,7 @@ msgstr "ФАТАЛЬНАЯ ОШИБКА: не удалось создать та
 
 #: src/amuleDlg.cpp
 msgid "Error! Unable to load Preferences"
-msgstr "Ошибка! Не удалось загрузить настройки"
+msgstr "Ошибка! Не удалось подгрузить настройки"
 
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Networks"
@@ -682,7 +682,7 @@ msgstr "Поиск"
 #: src/amuleDlg.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
 #: src/Statistics.cpp
 msgid "Downloads"
-msgstr "Скачивания"
+msgstr "Загрузки"
 
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Shared files"
@@ -711,7 +711,7 @@ msgstr "Навигация"
 #: src/amuleDlg.cpp
 #, c-format
 msgid "Free space: %s"
-msgstr "Места свободно: %s"
+msgstr "Свободное место: %s"
 
 #: src/amuleDlg.cpp
 msgid "New version available"
@@ -730,7 +730,7 @@ msgstr ""
 "\n"
 "Вы используете %s.\n"
 "\n"
-"Открыть страницу для скачивания?"
+"Открыть страницу загрузки?"
 
 #: src/amuleDlg.cpp
 msgid "aMule dialog destroyed"
@@ -767,7 +767,7 @@ msgstr "Kad: отключён"
 #: src/amuleDlg.cpp
 #, c-format
 msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
-msgstr "Отд: %.1f%s (%.1f) | Скач: %.1f%s (%.1f)"
+msgstr "Отд: %.1f%s (%.1f) | Заг: %.1f%s (%.1f)"
 
 #: src/amuleDlg.cpp src/MuleTrayIcon.cpp
 msgid " MiB/s"
@@ -780,7 +780,7 @@ msgstr ""
 #: src/amuleDlg.cpp
 #, c-format
 msgid "Up: %.1f%s | Down: %.1f%s"
-msgstr "Отд: %.1f%s | Скач: %.1f%s"
+msgstr "Отд: %.1f%s | Заг: %.1f%s"
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -829,7 +829,7 @@ msgstr "Окно поиска"
 
 #: src/amuleDlg.cpp
 msgid "Downloads Window"
-msgstr "Окно скачиваний"
+msgstr "Окно загрузок"
 
 #: src/amuleDlg.cpp
 msgid "Shared Files Window"
@@ -978,7 +978,7 @@ msgstr "Подключение к удалённому ядру восстано
 
 #: src/amule-remote-gui.cpp
 msgid "The remote core was restarted; reloading."
-msgstr "Удалённое ядро перезапущено; выполняется перезагрузка."
+msgstr "Удалённое ядро перезапущено; выполняется подгрузка."
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -1150,7 +1150,7 @@ msgstr "Вы должны указать путь для категории!"
 
 #: src/CatDialog.cpp
 msgid "Failed to create incoming dir for category. Please specify a valid path!"
-msgstr "Не удалось создать каталог для скачиваемых файлов категории. Укажите верный путь!"
+msgstr "Не удалось создать каталог для загружаемых файлов категории. Укажите верный путь!"
 
 #: src/ChatSelector.cpp
 #, c-format
@@ -1245,9 +1245,9 @@ msgstr "Сообщение:"
 #, c-format
 msgid "Creditfile loaded, %u client is known"
 msgid_plural "Creditfile loaded, %u clients are known"
-msgstr[0] "Файл кредитов загружен, %u клиент известен"
-msgstr[1] "Файл кредитов загружен, %u клиента известно"
-msgstr[2] "Файл кредитов загружен, %u клиентов известно"
+msgstr[0] "Файл кредитов подгружен, %u клиент известен"
+msgstr[1] "Файл кредитов подгружен, %u клиента известно"
+msgstr[2] "Файл кредитов подгружен, %u клиентов известно"
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1350,7 +1350,7 @@ msgstr "Скорость отдачи"
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 #: src/SharedFilePeersListCtrl.cpp
 msgid "Download Speed"
-msgstr "Скорость скачивания"
+msgstr "Скорость загрузки"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 msgid "Total Uploaded"
@@ -1358,7 +1358,7 @@ msgstr "Всего отдано"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 msgid "Total Downloaded"
-msgstr "Всего скачано"
+msgstr "Всего загружено"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 msgid "Ratio"
@@ -1400,15 +1400,15 @@ msgstr "Отдано"
 #: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Downloaded"
-msgstr "Скачано"
+msgstr "Загружено"
 
 #: src/ClientsWnd.cpp
 msgid "Downloading from"
-msgstr "С кого скачивается"
+msgstr "Загружается от"
 
 #: src/ClientsWnd.cpp
 msgid "Uploading to"
-msgstr "Кому отдаётся"
+msgstr "Отдаётся кому"
 
 #: src/ClientsWnd.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
 msgid "Active"
@@ -1532,7 +1532,7 @@ msgstr "Клиент %s забанен за отсыл %s поврежденны
 #: src/CountryFlags.cpp
 #, c-format
 msgid "Failed to load country data for '%s'."
-msgstr "Не удалось загрузить данные страны для «%s»."
+msgstr "Не удалось подгрузить данные страны для «%s»."
 
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
@@ -1593,7 +1593,7 @@ msgstr "В очереди"
 #: src/DataToText.cpp src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp
 #: src/PartFile.cpp src/TransferWnd.cpp
 msgid "Downloading"
-msgstr "Скачивается"
+msgstr "Загружается"
 
 #: src/DataToText.cpp
 msgid "Receiving hashset"
@@ -1708,7 +1708,7 @@ msgstr "В очереди"
 
 #: src/DataToText.cpp
 msgid "Already downloading"
-msgstr "Уже скачивается"
+msgstr "Уже загружается"
 
 #: src/DataToText.cpp
 msgid "Unknown or bad tempfile format."
@@ -1890,7 +1890,7 @@ msgstr ""
 #: src/DownloadListCtrl.cpp
 #, c-format
 msgid "Downloads (%i)"
-msgstr "Скачивания (%i)"
+msgstr "Загрузки (%i)"
 
 #: src/DownloadListCtrl.cpp src/TransferWnd.cpp
 #, c-format
@@ -1909,20 +1909,20 @@ msgstr "Все частичные файлы сохранены."
 #: src/DownloadQueue.cpp
 #, c-format
 msgid "Loading temp files from %s."
-msgstr "Загружаются временные файлы из %s."
+msgstr "Подгрузка временных файлов из %s."
 
 #: src/DownloadQueue.cpp
 #, c-format
 msgid "Loading PartFile %u of %u"
-msgstr "Загружается частичный файл %u из %u"
+msgstr "Подгрузка частичного файла %u из %u"
 
 #: src/DownloadQueue.cpp
 msgid "ERROR: Failed to load backup file. Search https://github.com/amule-org/amule/discussions for .part.met recovery solutions."
-msgstr "ОШИБКА: не удалось загрузить резервный файл. Ищите на https://github.com/amule-org/amule/discussions способы восстановления .part.met."
+msgstr "ОШИБКА: не удалось подгрузить резервный файл. Ищите на https://github.com/amule-org/amule/discussions способы восстановления .part.met."
 
 #: src/DownloadQueue.cpp
 msgid "All PartFiles Loaded."
-msgstr "Все файлы загружены."
+msgstr "Все частичные файлы подгружены."
 
 #: src/DownloadQueue.cpp
 msgid "No part files found"
@@ -1947,12 +1947,12 @@ msgstr "Файловая система каталога принятых фай
 #: src/DownloadQueue.cpp
 #, c-format
 msgid "Downloading %s"
-msgstr "Скачивается %s"
+msgstr "Загружается %s"
 
 #: src/DownloadQueue.cpp
 #, c-format
 msgid "You are already trying to download the file '%s'"
-msgstr "Вы уже загружаете файл '%s'"
+msgstr "Вы уже пытаетесь загрузить файл «%s»"
 
 #: src/DownloadQueue.cpp
 #, c-format
@@ -2486,7 +2486,7 @@ msgstr "Невозможно открыть «%s»: файл отсутству�
 
 #: src/FileLaunch.cpp
 msgid "Previewing an unfinished download needs a video player: the partly-downloaded file has no type the system can open on its own. One can be set in Preferences -> General."
-msgstr "Для предпросмотра незавершённого скачивания нужен проигрыватель видео: частично скачанный файл не имеет типа, который система может открыть сама. Его можно настроить в Настройки → Основные."
+msgstr "Для предпросмотра незавершённой загрузки нужен видеоплеер: частично загруженный файл не имеет типа, который система может открыть сама. Его можно настроить в Настройки → Основные."
 
 #: src/FileLaunch.cpp
 #, c-format
@@ -2552,7 +2552,7 @@ msgid ""
 "or set the upload and download limits directly below."
 msgstr ""
 "Выберите вариант, наиболее подходящий вашему подключению к интернету,\n"
-"или задайте ограничения скачивания и отдачи непосредственно ниже."
+"или задайте ограничения отдачи и загрузки непосредственно ниже."
 
 #: src/FirstRunWizard.cpp
 msgid "Connection speed:"
@@ -2618,11 +2618,11 @@ msgid ""
 "Select which lists to download now:"
 msgstr ""
 "Для начала работы aMule нужно узнать о нескольких пирах.\n"
-"Выберите, какие списки скачать сейчас:"
+"Выберите, какие списки загрузить сейчас:"
 
 #: src/FirstRunWizard.cpp
 msgid "Your peer lists are already in place - nothing to download."
-msgstr "Ваши списки пиров уже на месте — скачивать нечего."
+msgstr "Ваши списки пиров уже на месте — загружать нечего."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Auto-update server list at startup"
@@ -2672,11 +2672,11 @@ msgid ""
 "want downloads on a different (e.g. larger) disk."
 msgstr ""
 "Значения по умолчанию подходят большинству пользователей. Измените их,\n"
-"если хотите сохранять скачивания на другом (напр., более вместительном) диске."
+"если хотите сохранять загрузки на другом (например, более вместительном) диске."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Destination folder for downloads"
-msgstr "Папка для скачиваемых файлов"
+msgstr "Папка для загружаемых файлов"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 #: src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
@@ -2793,15 +2793,15 @@ msgstr "Не удалось открыть базу данных MaxMindDB «%s�
 
 #: src/HTTPDownload.cpp
 msgid "Downloading..."
-msgstr "Скачивается…"
+msgstr "Загружается…"
 
 #: src/HTTPDownload.cpp
 msgid "HTTP download cancelled"
-msgstr "Скачивание по HTTP отменено"
+msgstr "Загрузка по HTTP отменена"
 
 #: src/HTTPDownload.cpp
 msgid "The URL to download can't be empty"
-msgstr "URL загрузки не может быть пустым"
+msgstr "URL для загрузки не может быть пустым"
 
 #: src/HTTPDownload.cpp
 #, c-format
@@ -2811,17 +2811,17 @@ msgstr "Не удалось создать HTTP-запрос для %s"
 #: src/HTTPDownload.cpp
 #, c-format
 msgid "HTTP download: empty response body for %s"
-msgstr "HTTP-скачивание: пустое тело ответа для %s"
+msgstr "HTTP-загрузка: пустое тело ответа для %s"
 
 #: src/HTTPDownload.cpp
 #, c-format
 msgid "Could not move downloaded file to %s"
-msgstr "Не удалось переместить скачанный файл в %s"
+msgstr "Не удалось переместить загруженный файл в %s"
 
 #: src/HTTPDownload.cpp
 #, c-format
 msgid "Downloaded %s (%llu bytes)"
-msgstr "Скачано %s (%llu байт)"
+msgstr "Загружено %s (%llu байт)"
 
 #: src/HTTPDownload.cpp
 #, c-format
@@ -2831,7 +2831,7 @@ msgstr "URL-адрес %s вернул: %i"
 #: src/HTTPDownload.cpp
 #, c-format
 msgid "HTTP download failed for %s: %s"
-msgstr "Ошибка HTTP-скачивания для %s: %s"
+msgstr "Ошибка HTTP-загрузки для %s: %s"
 
 #: src/HTTPDownload.cpp
 #, c-format
@@ -2853,17 +2853,17 @@ msgstr "Страна по IP: в качестве источника GeoIP вы�
 
 #: src/IP2Country.cpp
 msgid "IP2Country: failed to resolve a GeoIP download URL."
-msgstr "Страна по IP: не удалось определить URL-адрес для скачивания GeoIP."
+msgstr "Страна по IP: не удалось определить URL-адрес для загрузки GeoIP."
 
 #: src/IP2Country.cpp
 #, c-format
 msgid "Download new %s from %s"
-msgstr "Скачать новый %s с %s"
+msgstr "Загрузить новый %s с %s"
 
 #: src/IP2Country.cpp
 #, c-format
 msgid "Download of %s file failed, aborting update."
-msgstr "Не удалось скачать файл %s, обновление прервано."
+msgstr "Не удалось загрузить файл %s, обновление прервано."
 
 #: src/IP2Country.cpp src/IPFilter.cpp
 #, c-format
@@ -2887,7 +2887,7 @@ msgstr "Ошибка обновления %s"
 
 #: src/IP2Country.cpp
 msgid "DB-IP download failed for the current month - retrying with the previous month's URL."
-msgstr "Не удалось скачать DB-IP за текущий месяц — повтор с URL-адреса за предыдущий месяц."
+msgstr "Не удалось загрузить DB-IP за текущий месяц — повтор с URL за предыдущий месяц."
 
 #: src/IP2Country.cpp src/IPFilter.cpp src/ServerList.cpp
 #, c-format
@@ -2896,25 +2896,25 @@ msgstr "Не удалось загрузить %s с %s"
 
 #: src/IPFilter.cpp
 msgid "Loading IP filters 'ipfilter.dat' and 'ipfilter_static.dat'."
-msgstr "Загружаются IP-фильтры «ipfilter.dat» и «ipfilter_static.dat»."
+msgstr "Подгрузка IP-фильтров «ipfilter.dat» и «ipfilter_static.dat»."
 
 #: src/IPFilter.cpp
 #, c-format
 msgid "Failed to load ipfilter.dat file '%s', unknown format encountered."
-msgstr "Не удалось загрузить ipfilter.dat файл '%s', формат файла неизвестен."
+msgstr "Не удалось подгрузить файл ipfilter.dat «%s», неизвестный формат."
 
 #: src/IPFilter.cpp
 #, c-format
 msgid "Failed to load ipfilter.dat file '%s', could not open file."
-msgstr "Не удалось загрузить ipfilter.dat файл '%s', не удалось открыть файл."
+msgstr "Не удалось подгрузить файл ipfilter.dat «%s», не удалось открыть файл."
 
 #: src/IPFilter.cpp
 #, c-format
 msgid "Loaded %u IP-range from '%s'."
 msgid_plural "Loaded %u IP-ranges from '%s'."
-msgstr[0] "Загружен %u IP-диапазон из «%s»."
-msgstr[1] "Загружены %u IP-диапазона из «%s»."
-msgstr[2] "Загружено %u IP-диапазонов из «%s»."
+msgstr[0] "Подгружен %u IP-диапазон из «%s»."
+msgstr[1] "Подгружены %u IP-диапазона из «%s»."
+msgstr[2] "Подгружено %u IP-диапазонов из «%s»."
 
 #: src/IPFilter.cpp
 #, c-format
@@ -2968,7 +2968,7 @@ msgstr "Сообщение"
 
 #: src/KadDlg.cpp
 msgid "Are you sure you want to download a new nodes.dat file?\n"
-msgstr "Уверены, что хотите скачать новый файл nodes.dat?\n"
+msgstr "Уверены, что хотите загрузить новый файл nodes.dat?\n"
 
 #: src/KadDlg.cpp
 msgid "Doing so will remove your current nodes and restart Kademlia connection."
@@ -3000,7 +3000,7 @@ msgstr[2] "Считано %u контактов Kad"
 
 #: src/kademlia/routing/RoutingZone.cpp
 msgid "No contacts found, please bootstrap, or download a nodes.dat file."
-msgstr "Контакты не найдены. Выполните начальную загрузку или скачайте файл nodes.dat."
+msgstr "Контакты не найдены. Выполните начальную загрузку или загрузите файл nodes.dat."
 
 #: src/kademlia/routing/RoutingZone.cpp
 #, c-format
@@ -3035,7 +3035,7 @@ msgstr "Поиск заметок Kad для «%s» не начат: поиск 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: file is not in the shared list, download queue or search results"
-msgstr "Поиск заметок Kad для «%s» не начат: файл отсутствует в списке общих файлов, очереди скачивания или результатах поиска"
+msgstr "Поиск заметок Kad для «%s» не начат: файл отсутствует в списке общих файлов, очереди загрузки или результатах поиска"
 
 #: src/KnownFile.cpp
 #, c-format
@@ -3078,7 +3078,7 @@ msgstr "ПРЕДУПРЕЖДЕНИЕ: Список известных файло
 
 #: src/KnownFileList.cpp
 msgid "Failed to load entry in known file list, file may be corrupt"
-msgstr "Ошибка загрузки элемента списка известных файлов, файл возможно поврежден"
+msgstr "Ошибка подгрузки элемента списка известных файлов, файл возможно повреждён"
 
 #: src/KnownFileList.cpp
 msgid "Invalid entry in known file list, file may be corrupt: "
@@ -3312,7 +3312,7 @@ msgstr "Предел отдачи"
 
 #: src/MuleTrayIcon.cpp
 msgid "Download limit"
-msgstr "Предел скачивания"
+msgstr "Предел загрузки"
 
 #: src/MuleTrayIcon.cpp
 msgid "Disconnect"
@@ -3355,7 +3355,7 @@ msgstr "DL: %u"
 #: src/MuleTrayIcon.cpp
 #, c-format
 msgid "Download speed: %.1f%s"
-msgstr "Скорость скачивания: %.1f%s"
+msgstr "Скорость загрузки: %.1f%s"
 
 #: src/MuleTrayIcon.cpp
 #, c-format
@@ -3413,7 +3413,7 @@ msgstr "Клиентов в очереди: %d"
 #: src/MuleTrayIcon.cpp
 #, c-format
 msgid "Total DL: %s"
-msgstr "Всего скачано: %s"
+msgstr "Всего загружено: %s"
 
 #: src/MuleTrayIcon.cpp
 #, c-format
@@ -3440,7 +3440,7 @@ msgstr "Добавить ссылки"
 
 #: src/muuli_wdr.cpp
 msgid "Click here to add the eD2k link in the text control to your download queue."
-msgstr "Нажмите сюда чтобы добавить eD2k ссылку из текстового поля в очередь загрузок."
+msgstr "Нажмите сюда, чтобы добавить ссылку eD2k из текстового поля в очередь загрузок."
 
 #: src/muuli_wdr.cpp
 msgid "Events are displayed here. For a complete list of events, refer to the log in the Servers-tab."
@@ -3448,7 +3448,7 @@ msgstr "События отображаются здесь. Для полног�
 
 #: src/muuli_wdr.cpp
 msgid "Loading ..."
-msgstr "Загружается…"
+msgstr "Подгрузка…"
 
 #: src/muuli_wdr.cpp
 msgid "Number of users on the server you are connected to ..."
@@ -3464,13 +3464,13 @@ msgstr "Пользователи, подключённые к текущему �
 
 #: src/muuli_wdr.cpp
 msgid "Up: 0.0 | Down: 0.0"
-msgstr "Отд: 0,0 | Скач: 0,0"
+msgstr "Отд: 0,0 | Заг: 0,0"
 
 # Тултип. Лучше оставить как можно более коротким (не все системы автоматом
 # делают их многострочными ;-))
 #: src/muuli_wdr.cpp
 msgid "Current average upload and download rates. If enabled the numbers in the braces signify the overhead from client communication."
-msgstr "Текущая средняя скорость отдачи и скачивания. Если включено, числа в скобках обозначают служебный трафик от обмена данными с клиентами."
+msgstr "Текущая средняя скорость отдачи и загрузки. Если включено, числа в скобках обозначают служебный трафик от обмена данными с клиентами."
 
 # Тултип. Лучше оставить как можно более коротким (не все системы автоматом
 # делают их многострочными ;-))
@@ -3616,7 +3616,7 @@ msgstr "Остановить"
 
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp
 msgid "Download"
-msgstr "Скачать"
+msgstr "Загрузить"
 
 #: src/muuli_wdr.cpp
 msgid "Clear Search Results"
@@ -3632,7 +3632,7 @@ msgstr "Результаты"
 
 #: src/muuli_wdr.cpp
 msgid "Clears completed downloads"
-msgstr "Очистить результаты"
+msgstr "Очистить завершённые загрузки"
 
 #: src/muuli_wdr.cpp
 msgid "File sources:"
@@ -3692,7 +3692,7 @@ msgstr "Скорость передачи:"
 
 #: src/muuli_wdr.cpp
 msgid "Download Active Time: "
-msgstr "Время активности скачивания: "
+msgstr "Время активности загрузки: "
 
 #: src/muuli_wdr.cpp
 msgid "Transferred :"
@@ -3704,7 +3704,7 @@ msgstr "Завершено:"
 
 #: src/muuli_wdr.cpp
 msgid "Intelligent Corruption Handling"
-msgstr "Умная обработка повреждений (ICH)"
+msgstr "Умный обработчик повреждений (ICH)"
 
 #: src/muuli_wdr.cpp
 msgid "Lost to corruption :"
@@ -3854,7 +3854,7 @@ msgstr "Обновить"
 
 #: src/muuli_wdr.cpp
 msgid "Downloading, please wait ..."
-msgstr "Скачивается, подождите…"
+msgstr "Загрузка, подождите…"
 
 #: src/muuli_wdr.cpp
 msgid "Unknown size"
@@ -3890,7 +3890,7 @@ msgstr "Добавить"
 
 #: src/muuli_wdr.cpp
 msgid "Download-Speed"
-msgstr "Скорость скачивания"
+msgstr "Скорость загрузки"
 
 #: src/muuli_wdr.cpp
 msgid "Upload-Speed"
@@ -3902,7 +3902,7 @@ msgstr "Соединения"
 
 #: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active downloads"
-msgstr "Активные скачивания"
+msgstr "Активные загрузки"
 
 #: src/muuli_wdr.cpp
 msgid "Active connections (1:1)"
@@ -3970,7 +3970,7 @@ msgstr "Средняя скорость отдачи:"
 
 #: src/muuli_wdr.cpp
 msgid "Average download rate:"
-msgstr "Средняя скорость скачивания:"
+msgstr "Средняя скорость загрузки:"
 
 #: src/muuli_wdr.cpp
 msgid "Uploaded (session):"
@@ -3978,7 +3978,7 @@ msgstr "Отдано (сеанс):"
 
 #: src/muuli_wdr.cpp
 msgid "Downloaded (session):"
-msgstr "Скачано (сеанс):"
+msgstr "Загружено (сеанс):"
 
 #: src/muuli_wdr.cpp
 msgid "Uploaded (total):"
@@ -3986,7 +3986,7 @@ msgstr "Отдано (всего):"
 
 #: src/muuli_wdr.cpp
 msgid "Downloaded (total):"
-msgstr "Скачано (всего):"
+msgstr "Загружено (всего):"
 
 #: src/muuli_wdr.cpp
 msgid "Scores"
@@ -4094,11 +4094,11 @@ msgstr "Сворачивать aMule в область уведомлений, �
 
 #: src/muuli_wdr.cpp
 msgid "Show notifications when finished downloading"
-msgstr "Показывать уведомления о завершении скачивания"
+msgstr "Показывать уведомления о завершении загрузки"
 
 #: src/muuli_wdr.cpp
 msgid "Enabling this will make aMule to show notifications when finished downloading."
-msgstr "При включённом флажке aMule показывает уведомления по завершении скачивания."
+msgstr "При включённом флажке aMule показывает уведомления по завершении загрузки."
 
 #: src/muuli_wdr.cpp
 msgid "Remember search history"
@@ -4190,7 +4190,7 @@ msgstr "Только для опытных пользователей: прив�
 
 #: src/muuli_wdr.cpp
 msgid "Max sources per downloading file:"
-msgstr "Максимум источников на скачиваемый файл:"
+msgstr "Максимум источников на загружаемый файл:"
 
 #: src/muuli_wdr.cpp
 msgid "Max simultaneous connections:"
@@ -4254,11 +4254,11 @@ msgstr "Высокий приоритет серверов, добавленны
 
 #: src/muuli_wdr.cpp
 msgid "Add files to download in pause mode"
-msgstr "Добавлять файлы для скачивания в режиме паузы"
+msgstr "Добавлять файлы для загрузки в режиме паузы"
 
 #: src/muuli_wdr.cpp
 msgid "Add files to download with auto priority"
-msgstr "Добавлять файлы для скачивания с автоматическим приоритетом"
+msgstr "Добавлять файлы для загрузки с автоматическим приоритетом"
 
 #: src/muuli_wdr.cpp
 msgid "Try to download first and last chunks first"
@@ -4294,11 +4294,11 @@ msgstr "Создавать новые файлы как разреженные"
 
 #: src/muuli_wdr.cpp
 msgid "Sparse part files only occupy disk space for the parts already downloaded, so free space is used up gradually as the file fills in. Turn this off to use an ordinary file instead - useful where sparse files are unsupported or slow, or where backup/de-duplication tools handle them badly. Applies only when the core runs on Windows; on Linux and macOS part files are sparse anyway and this setting has no effect."
-msgstr "Разреженные part-файлы занимают место на диске только для уже скачанных частей, так что свободное место расходуется постепенно по мере заполнения файла. Отключите эту опцию, чтобы использовать обычный файл — полезно, если разреженные файлы не поддерживаются или работают медленно, либо если средства резервного копирования / дедупликации плохо с ними работают. Действует только когда ядро запущено в Windows; в Linux и macOS part-файлы и так разреженные, и этот параметр не влияет."
+msgstr "Разреженные part-файлы занимают место на диске только для уже загруженных частей, так что свободное место расходуется постепенно по мере заполнения файла. Отключите эту опцию, чтобы использовать обычный файл — полезно, если разреженные файлы не поддерживаются или работают медленно, либо если средства резервного копирования / дедупликации плохо с ними работают. Действует только когда ядро запущено в Windows; в Linux и macOS part-файлы и так разреженные, и этот параметр не влияет."
 
 #: src/muuli_wdr.cpp
 msgid "Stop downloads when free disk space reaches "
-msgstr "Остановить скачивания, если на диске cвободно менее "
+msgstr "Остановить загрузки, если на диске свободно менее "
 
 #: src/muuli_wdr.cpp
 msgid "Select this if you want aMule to check your disk space"
@@ -4306,7 +4306,7 @@ msgstr "Отметьте это, если хотите, чтобы aMule про�
 
 #: src/muuli_wdr.cpp
 msgid "Enter here the min disk space desired."
-msgstr "Введите здесь минимальное количество свободного места на диске."
+msgstr "Введите здесь минимальный размер свободного места на диске."
 
 #: src/muuli_wdr.cpp
 msgid "Save 10 sources on rare files (< 20 sources)"
@@ -4323,7 +4323,7 @@ msgstr "Добавлять новые файлы для публикации с 
 # слишком уж частая аббривеатура. написать И.О.О. - никто не поймет
 #: src/muuli_wdr.cpp
 msgid "Intelligent Corruption Handling (I.C.H.)"
-msgstr "Умная обработка повреждений (ICH)"
+msgstr "Умный обработчик повреждений (ICH)"
 
 #: src/muuli_wdr.cpp
 msgid "Enable"
@@ -4331,7 +4331,7 @@ msgstr "Разрешить"
 
 #: src/muuli_wdr.cpp
 msgid "Advanced I.C.H. trusts every hash (not recommended)"
-msgstr "Расширенная ICH доверяет каждому хешу (не рекомендуется)"
+msgstr "Расширенный ICH доверяет каждому хешу (не рекомендуется)"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "Media metadata extraction"
@@ -4366,12 +4366,12 @@ msgid ""
 "Completed downloads are stored here. All files in this folder are automatically shared with other peers.\n"
 "If this folder also holds files you don't want to share, point it at an aMule-only sub-folder."
 msgstr ""
-"Здесь хранятся завершённые скачивания. Все файлы в этой папке автоматически становятся доступны другим пирам.\n"
+"Здесь хранятся завершённые загрузки. Все файлы в этой папке автоматически становятся доступны другим пирам.\n"
 "Если в этой папке также есть файлы, которыми вы не хотите делиться, укажите вместо неё отдельную подпапку только для aMule."
 
 #: src/muuli_wdr.cpp
 msgid "Pick the folder where completed downloads will be stored. All files in that folder will be shared with other peers."
-msgstr "Выберите папку, в которой будут храниться завершённые скачивания. Все файлы в этой папке будут доступны другим пирам."
+msgstr "Выберите папку, в которой будут храниться завершённые загрузки. Все файлы в этой папке будут доступны другим пирам."
 
 #: src/muuli_wdr.cpp
 msgid "Shared folders"
@@ -4447,7 +4447,7 @@ msgstr "Удалённый префикс"
 
 #: src/muuli_wdr.cpp
 msgid "A path prefix as the core reports it, e.g. /home/user/downloads/incoming"
-msgstr "Префикс пути, который сообщает ядро, напр. /home/user/downloads/incoming"
+msgstr "Префикс пути, который сообщает ядро, например /home/user/downloads/incoming"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "Local prefix"
@@ -4475,7 +4475,7 @@ msgstr "Масштаб графика соединений: 100 "
 
 #: src/muuli_wdr.cpp
 msgid "Download graph scale:"
-msgstr "Масштаб графика скачивания:"
+msgstr "Масштаб графика загрузки:"
 
 #: src/muuli_wdr.cpp
 msgid "Upload graph scale:"
@@ -4495,15 +4495,15 @@ msgstr "Сетка"
 
 #: src/muuli_wdr.cpp
 msgid "Download current"
-msgstr "Текущее скачивание"
+msgstr "Текущая загрузка"
 
 #: src/muuli_wdr.cpp
 msgid "Download running average"
-msgstr "Среднее общее скачивание"
+msgstr "Средняя общая загрузка"
 
 #: src/muuli_wdr.cpp
 msgid "Download session average"
-msgstr "Среднее скачивание за сеанс"
+msgstr "Средняя загрузка за сеанс"
 
 #: src/muuli_wdr.cpp
 msgid "Upload current"
@@ -4579,7 +4579,7 @@ msgstr "Применять MMAP: доступ к файлам с отображ�
 
 #: src/muuli_wdr.cpp
 msgid "Maps part files into memory instead of buffering them on the heap, lowering the process memory footprint. May reduce download speed on some disks; best for memory-constrained or upload-heavy hosts."
-msgstr "Отображает part-файлы в память вместо буферизации в куче, снижая потребление памяти процессом. На некоторых дисках может снижать скорость скачивания; лучше всего подходит для узлов с ограниченной памятью или высокой нагрузкой на отдачу."
+msgstr "Отображает part-файлы в память вместо буферизации в куче, снижая потребление памяти процессом. На некоторых дисках может снижать скорость загрузки; лучше всего подходит для узлов с ограниченной памятью или высокой нагрузкой на отдачу."
 
 #: src/muuli_wdr.cpp
 msgid "Upload Queue Size: 5000 clients"
@@ -4638,7 +4638,7 @@ msgstr "Динамическая сортировка столбцов (упор
 # transfer list.
 #: src/muuli_wdr.cpp
 msgid "Download Queue Files"
-msgstr "Очередь скачивания файлов"
+msgstr "Файлы в очереди загрузки"
 
 #: src/muuli_wdr.cpp
 msgid "Show progress percentage"
@@ -5100,7 +5100,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Download URL:"
-msgstr "URL-адрес для скачивания:"
+msgstr "URL для загрузки:"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -5114,7 +5114,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Download the GeoIP database from the selected source."
-msgstr "Скачать базу данных GeoIP из выбранного источника."
+msgstr "Загрузить базу данных GeoIP из выбранного источника."
 
 #: src/muuli_wdr.cpp
 msgid "Auto-update on startup"
@@ -5122,7 +5122,7 @@ msgstr "Автообновление при запуске"
 
 #: src/muuli_wdr.cpp
 msgid "Re-download the GeoIP database from the selected source every time aMule starts."
-msgstr "Повторно скачивать базу данных GeoIP из выбранного источника при каждом запуске aMule."
+msgstr "Повторно загружать базу данных GeoIP из выбранного источника при каждом запуске aMule."
 
 #: src/muuli_wdr.cpp
 msgid "Filter incoming messages (except current chat):"
@@ -5290,7 +5290,7 @@ msgstr "Выбранных файлов"
 
 #: src/muuli_wdr.cpp
 msgid "Active uploads only"
-msgstr "Только активных отдач"
+msgstr "Только активные отдачи"
 
 #: src/muuli_wdr.cpp
 msgid "Reload:"
@@ -5434,7 +5434,7 @@ msgstr "Чтение из временного каталога"
 
 #: src/PartFileConvert.cpp
 msgid "Retrieving basic information from download info file"
-msgstr "Извлекаю основную информацию из информационного файла загрузки"
+msgstr "Извлечение основной информации из файла информации о загрузке"
 
 #: src/PartFileConvert.cpp
 msgid "Creating destination file"
@@ -5443,21 +5443,21 @@ msgstr "Создаю целевой файл"
 #: src/PartFileConvert.cpp
 #, c-format
 msgid "Loading data from old download file (%u of %u)"
-msgstr "Загружаются данные из старого файла скачивания (%u из %u)"
+msgstr "Подгрузка данных из старого файла загрузки (%u из %u)"
 
 #: src/PartFileConvert.cpp
 #, c-format
 msgid "Saving data block into new single download file (%u of %u)"
-msgstr "Сохраняю данные в новый монолитный файл загрузки (%u из %u)"
+msgstr "Сохранение блока данных в новый единый файл загрузки (%u из %u)"
 
 # не уверен что верно
 #: src/PartFileConvert.cpp
 msgid "Retrieving source downloadfile information"
-msgstr "Получаем информацию по источникам"
+msgstr "Получение информации об источнике загрузки"
 
 #: src/PartFileConvert.cpp
 msgid "Adding download and saving new partfile"
-msgstr "Добавляется скачивание и сохраняется новый частичный файл"
+msgstr "Добавление загрузки и сохранение нового частичного файла"
 
 #: src/PartFileConvertDlg.cpp
 msgid "Import partfiles"
@@ -5480,11 +5480,11 @@ msgstr "%s (Диск: %s)"
 # Если перевести полностью - будет маленький, но широоооокий диалог :)
 #: src/PartFileConvertDlg.cpp
 msgid "Please choose a folder to search for temporary downloads! (subfolders will be included)"
-msgstr "Выберите папку для поиска незавершённых скачиваний (включая подпапки)!"
+msgstr "Выберите папку для поиска незавершённых загрузок (включая подпапки)!"
 
 #: src/PartFileConvertDlg.cpp
 msgid "Do you want the source files of successfully imported downloads be deleted?"
-msgstr "Удалить исходные файлы успешно импортированных скачиваний?"
+msgstr "Удалить исходные файлы успешно импортированных загрузок?"
 
 #: src/PartFileConvertDlg.cpp
 msgid "Remove sources?"
@@ -5497,7 +5497,7 @@ msgstr "ОШИБКА: невозможно создать part-файл"
 #: src/PartFile.cpp
 #, c-format
 msgid "Trying to load backup of met-file from %s"
-msgstr "Попытка загрузки резервной копии met-файла из %s"
+msgstr "Попытка подгрузки резервной копии met-файла из %s"
 
 #: src/PartFile.cpp
 #, c-format
@@ -5517,12 +5517,12 @@ msgstr "ОШИБКА: неверная версия файла part.met: %s ==> 
 #: src/PartFile.cpp
 #, c-format
 msgid "Error: %s (%s) is corrupt (bad tags: %s), unable to load file."
-msgstr "ОШИБКА: %s (%s) повреждён (неверные теги: %s), невозможно открыть файл."
+msgstr "ОШИБКА: %s (%s) повреждён (неверные теги: %s), невозможно подгрузить файл."
 
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: %s (%s) is corrupt (wrong tagcount), unable to load file."
-msgstr "ОШИБКА: %s (%s) поврежден (неверное число тегов), невозможно открыть файл."
+msgstr "ОШИБКА: %s (%s) повреждён (неверное число тегов), невозможно подгрузить файл."
 
 #: src/PartFile.cpp
 msgid "Trying to recover file info..."
@@ -5613,7 +5613,7 @@ msgstr "Неожиданная ошибка при завершении %s. Фа
 #: src/PartFile.cpp
 #, c-format
 msgid "Finished downloading: %s"
-msgstr "Скачивание завершено: %s"
+msgstr "Загрузка завершена: %s"
 
 #: src/PartFile.cpp
 #, c-format
@@ -5621,7 +5621,7 @@ msgid ""
 "Finished downloading:\n"
 "%s"
 msgstr ""
-"Скачивание завершено:\n"
+"Загрузка завершена:\n"
 "%s"
 
 #: src/PartFile.cpp
@@ -5632,22 +5632,22 @@ msgstr "Удаление файла: %s"
 #: src/PartFile.cpp
 #, c-format
 msgid "WARNING: Unable to hash downloaded part - hashset incomplete for '%s'"
-msgstr "ПРЕДУПРЕЖДЕНИЕ: Не удаётся захешировать скачанную часть — хеш-набор неполон для «%s»"
+msgstr "ПРЕДУПРЕЖДЕНИЕ: Не удаётся захешировать загруженную часть — хеш-набор неполон для «%s»"
 
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Unable to hash downloaded part - hashset incomplete (%s). This should never happen"
-msgstr "ОШИБКА: Не удаётся захешировать скачанную часть — хеш-набор неполон (%s). Это никогда не должно происходить"
+msgstr "ОШИБКА: Не удаётся захешировать загруженную часть — хеш-набор неполон (%s). Это никогда не должно происходить"
 
 #: src/PartFile.cpp
 #, c-format
 msgid "Part %u of '%s' marked complete but partfile is shorter than expected (have %llu bytes, need %llu); reopening gap for re-download."
-msgstr "Часть %u файла «%s» помечена как завершённая, но part-файл короче ожидаемого (имеется %llu байт, требуется %llu); участок открыт заново для повторного скачивания."
+msgstr "Часть %u файла «%s» помечена как завершённая, но part-файл короче ожидаемого (имеется %llu байт, требуется %llu); участок открыт заново для повторной загрузки."
 
 #: src/PartFile.cpp
 #, c-format
 msgid "EOF while hashing downloaded part %u with length %u (max %u) of partfile '%s' with length %u: %s"
-msgstr "EOF при хешировании скачанной части %u с длиной %u (макс %u) файла «%s» с длиной %u: %s"
+msgstr "EOF при хешировании загруженной части %u с длиной %u (макс %u) файла «%s» с длиной %u: %s"
 
 #: src/PartFile.cpp
 #, c-format
@@ -5657,7 +5657,7 @@ msgstr "ПРЕДУПРЕЖДЕНИЕ: не достаточно свободно
 #: src/PartFile.cpp
 #, c-format
 msgid "Downloaded part %i is corrupt in file: %s"
-msgstr "Скачанная часть %i повреждена в файле: %s"
+msgstr "Загруженная часть %i повреждена в файле: %s"
 
 #: src/PartFile.cpp
 #, c-format
@@ -6113,7 +6113,7 @@ msgstr "Регистрация обработчика URL-адресов"
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "aMule only handles eD2k-compatible magnets. If you replace the current magnet handler (%s), BitTorrent magnet links will stop working - aMule cannot download BitTorrent content. Continue?"
-msgstr "aMule обрабатывает только магнит-ссылки, совместимые с eD2k. Если вы замените текущий обработчик магнит-ссылок (%s), ссылки БитТоррент перестанут работать — aMule не может скачивать содержимое БитТоррент. Продолжить?"
+msgstr "aMule обрабатывает только магнит-ссылки, совместимые с eD2k. Если вы замените текущий обработчик магнит-ссылок (%s), ссылки БитТоррент перестанут работать — aMule не может загружать содержимое БитТоррент. Продолжить?"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -6222,7 +6222,7 @@ msgid ""
 "Add here URL's to download server.met files.\n"
 "Only one url on each line."
 msgstr ""
-"Добавьте адреса для скачивания файлов server.met.\n"
+"Добавьте URL для загрузки файлов server.met.\n"
 "По одному на строку."
 
 #: src/PrefsUnifiedDlg.cpp
@@ -6244,20 +6244,20 @@ msgstr "Данные предоставлены DB-IP.com"
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Status: Loaded%s"
-msgstr "Статус: загружено%s"
+msgstr "Статус: подгружено%s"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Status: Loaded%s - %s"
-msgstr "Статус: загружено%s — %s"
+msgstr "Статус: подгружено%s — %s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Status: Failed to load - click 'Update now' to refresh."
-msgstr "Статус: не удалось загрузить — нажмите «Обновить сейчас» для обновления."
+msgstr "Статус: не удалось подгрузить — нажмите «Обновить сейчас» для обновления."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Status: Not found - click 'Update now' to download."
-msgstr "Статус: не найдено — нажмите «Обновить сейчас» для скачивания."
+msgstr "Статус: не найдено — нажмите «Обновить сейчас» для загрузки."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -6356,7 +6356,7 @@ msgstr "Подтверждение общих папок"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Reloading shared files..."
-msgstr "Перезагрузка общих файлов…"
+msgstr "Переподгрузка общих файлов…"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Scanning for subdirectories..."
@@ -6374,7 +6374,7 @@ msgstr "Просканировано каталогов: %u…"
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Reloading shared files: %u files scanned"
-msgstr "Перезагрузка общих файлов: просканировано файлов — %u"
+msgstr "Переподгрузка общих файлов: просканировано файлов — %u"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Shared folder"
@@ -6491,7 +6491,7 @@ msgstr "Закрыть все вкладки"
 
 #: src/SearchListCtrl.cpp
 msgid "Download in category"
-msgstr "Скачать в категорию"
+msgstr "Загрузить в категорию"
 
 #: src/SearchListCtrl.cpp
 #, c-format
@@ -6604,7 +6604,7 @@ msgstr "Получен устаревший результат DNS-запрос�
 #: src/ServerList.cpp
 #, c-format
 msgid "Loading server.met file: %s"
-msgstr "Загружается файл server.met: %s"
+msgstr "Подгрузка файла server.met: %s"
 
 #: src/ServerList.cpp
 msgid "Server.met file not found!"
@@ -6613,7 +6613,7 @@ msgstr "Файл server.met не найден!"
 #: src/ServerList.cpp
 #, c-format
 msgid "Failed to load server.met file '%s', unknown format encountered."
-msgstr "Не удалось загрузить файл server.met «%s», неизвестный формат."
+msgstr "Не удалось подгрузить файл server.met «%s», неизвестный формат."
 
 #: src/ServerList.cpp
 msgid "Failed to open server.met!"
@@ -6693,7 +6693,7 @@ msgstr "Неверный URL"
 #: src/ServerList.cpp
 #, c-format
 msgid "Finished downloading the server list from %s"
-msgstr "Завершено скачивание списка серверов с %s"
+msgstr "Загрузка списка серверов с %s завершена"
 
 #: src/ServerList.cpp
 msgid "No server list address entry in 'addresses.dat' found. Please paste a valid server list address into this file in order to auto-update your server list"
@@ -6702,7 +6702,7 @@ msgstr "В «addresses.dat» не найдено адресов списков �
 #: src/ServerList.cpp
 #, c-format
 msgid "Start downloading server list from %s"
-msgstr "Начато скачивание списка серверов с %s"
+msgstr "Начало загрузки списка серверов с %s"
 
 #: src/ServerList.cpp
 #, c-format
@@ -6711,12 +6711,12 @@ msgstr "ПРЕДУПРЕЖДЕНИЕ: неверный URL для авто-об�
 
 #: src/ServerList.cpp
 msgid "No valid server.met auto-download url on addresses.dat"
-msgstr "В addresses.dat нет верного адреса для автообновления server.met"
+msgstr "В addresses.dat нет верного URL-адреса для автоматической загрузки server.met"
 
 #: src/ServerList.cpp
 #, c-format
 msgid "Failed to download the server list from %s"
-msgstr "Не удалось получить список серверов из %s"
+msgstr "Не удалось загрузить список серверов с %s"
 
 #: src/ServerList.cpp
 msgid "Local server is filtered by the IPFilters, reconnecting to a different server!"
@@ -7053,11 +7053,11 @@ msgstr "Не запущен"
 #: src/SharedDirWatcher.cpp
 #, c-format
 msgid "Shared-dir watcher: backend overflow/error (%s); falling back to full reload"
-msgstr "Наблюдатель общих папок: переполнение или ошибка бэкенда (%s); переход к полной перезагрузке"
+msgstr "Наблюдатель общих папок: переполнение или ошибка бэкенда (%s); переход к полной переподгрузке"
 
 #: src/SharedDirWatcher.cpp
 msgid "Shared-dir watcher: events dropped by backend, forcing a full shared-files reload to resync"
-msgstr "Наблюдатель общих папок: бэкенд потерял события, принудительная полная перезагрузка общих файлов для синхронизации"
+msgstr "Наблюдатель общих папок: бэкенд потерял события, принудительная полная переподгрузка общих файлов для синхронизации"
 
 #: src/SharedFileList.cpp
 #, c-format
@@ -7118,7 +7118,7 @@ msgstr "Статус отдачи"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Download Status"
-msgstr "Статус скачивания"
+msgstr "Статус загрузки"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Local File Name"
@@ -7327,7 +7327,7 @@ msgstr "Среднее время отдачи: %s"
 #: src/Statistics.cpp
 #, c-format
 msgid "Downloaded Data (Session (Total)): %s"
-msgstr "Скачанные данные (сеанс (всего)): %s"
+msgstr "Загружено данных (сеанс (всего)): %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -7343,12 +7343,12 @@ msgstr "Активных загрузок (фрагменты файлов): %s"
 #: src/Statistics.cpp
 #, c-format
 msgid "Session UL:DL Ratio (Total): %s"
-msgstr "Отношение отданного/скачанного за сеанс (всего): %s"
+msgstr "Отношение отданного/загруженного за сеанс (всего): %s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Average download rate (Session): %s"
-msgstr "Средняя скорость скачивания (сеанс): %s"
+msgstr "Средняя скорость загрузки (сеанс): %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -7358,7 +7358,7 @@ msgstr "Средняя скорость отдачи (сеанс): %s"
 #: src/Statistics.cpp
 #, c-format
 msgid "Max download rate (Session): %s"
-msgstr "Максимальная скорость скачивания (сеанс): %s"
+msgstr "Максимальная скорость загрузки (сеанс): %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -7571,7 +7571,7 @@ msgstr ""
 #: src/TextClient.cpp
 #, c-format
 msgid "Download File: %lu %s\n"
-msgstr "Скачать файл: %lu %s\n"
+msgstr "Загрузить файл: %lu %s\n"
 
 #: src/TextClient.cpp src/webserver/src/WebServer.cpp
 msgid "Request failed with an unknown error."
@@ -7649,7 +7649,7 @@ msgid ""
 "Download:\t%s"
 msgstr ""
 "\n"
-"Скачивание:\t%s"
+"Загрузка:\t%s"
 
 #: src/TextClient.cpp
 #, c-format
@@ -7711,7 +7711,7 @@ msgstr "Показать краткую информацию о статусе."
 
 #: src/TextClient.cpp
 msgid "Show connection status, current up/download speeds, etc.\n"
-msgstr "Показать состояние соединения, такущие скорости отдачи/скачивания, и т.д.\n"
+msgstr "Показать состояние соединения, текущие скорости отдачи/загрузки и т.д.\n"
 
 #: src/TextClient.cpp
 msgid "Show full statistics tree."
@@ -7747,19 +7747,19 @@ msgstr ""
 
 #: src/TextClient.cpp
 msgid "Reload the given object."
-msgstr "Обновить данный объект."
+msgstr "Переподгрузить данный объект."
 
 #: src/TextClient.cpp
 msgid "Reload shared files list."
-msgstr "Обновить список публикуемых файлов."
+msgstr "Переподгрузить список публикуемых файлов."
 
 #: src/TextClient.cpp
 msgid "Reload IP filtering table."
-msgstr "Обновить таблицу IP фильтра."
+msgstr "Переподгрузить таблицу IP-фильтра."
 
 #: src/TextClient.cpp
 msgid "Reload current IP filtering table."
-msgstr "Обновить локальную таблицу IP фильтра."
+msgstr "Переподгрузить локальную таблицу IP-фильтра."
 
 #: src/TextClient.cpp
 msgid "Update IP filtering table from URL."
@@ -7823,9 +7823,9 @@ msgid ""
 "\n"
 "The magnet link must contain the eD2k hash and file length.\n"
 msgstr ""
-"Добавляемая eD2k ссылка может являться:\n"
-"*) ссылкой на файл (ed2k://|file|...), тогда данный файл будет добавлен в очередь скачивания\n"
-"*) ссылкой на сервер (ed2k://|server|...), тогда данный сервер будет добавлен в список серверов\n"
+"Добавляемая ссылка eD2k может быть:\n"
+"*) ссылкой на файл (ed2k://|file|...), тогда файл добавится в очередь загрузки\n"
+"*) ссылкой на сервер (ed2k://|server|...), тогда сервер добавится в список серверов\n"
 "*) ссылкой на список серверов, тогда все серверы из него будут\n"
 "   добавлены в список\n"
 "\n"
@@ -7893,7 +7893,7 @@ msgstr "Значения тут указываются в килобайтах �
 
 #: src/TextClient.cpp
 msgid "Set upload bandwidth limit."
-msgstr "Укажите ограничение скорости отдачи."
+msgstr "Установить ограничение скорости отдачи."
 
 #: src/TextClient.cpp
 msgid "The given value must be in kilobytes/sec.\n"
@@ -7901,7 +7901,7 @@ msgstr "Указанное значение должно быть в килоб�
 
 #: src/TextClient.cpp
 msgid "Set download bandwidth limit."
-msgstr "Укажите ограничение скорости скачивания."
+msgstr "Установить ограничение скорости загрузки."
 
 #: src/TextClient.cpp
 msgid "Enable or disable endgame source rotation."
@@ -8019,7 +8019,7 @@ msgstr ""
 
 #: src/TextClient.cpp
 msgid "Start downloading a file"
-msgstr "Начать скачивание файла"
+msgstr "Начать загрузку файла"
 
 #: src/TextClient.cpp
 msgid ""
@@ -8027,27 +8027,27 @@ msgid ""
 "Example: 'download 12' will start to download the file with the number 12 of the previous search.\n"
 msgstr ""
 "Должен быть указан номер файла из последнего поиска.\n"
-"Пример: 'download 12' запустит загрузку файла номер 12 из последнего поиска.\n"
+"Пример: «download 12» начнёт загрузку файла №12 из предыдущего поиска.\n"
 
 #: src/TextClient.cpp
 msgid "Pause download."
-msgstr "Приостановить скачивание."
+msgstr "Приостановить загрузку."
 
 #: src/TextClient.cpp
 msgid "Resume download."
-msgstr "Возобновить скачивание."
+msgstr "Возобновить загрузку."
 
 #: src/TextClient.cpp
 msgid "Cancel download."
-msgstr "Отменить скачивание."
+msgstr "Отменить загрузку."
 
 #: src/TextClient.cpp
 msgid "Set download priority."
-msgstr "Установить приоритет скачивания."
+msgstr "Установить приоритет загрузки."
 
 #: src/TextClient.cpp
 msgid "Set priority of a download to Low, Normal, High or Auto.\n"
-msgstr "Установить для скачивания низкий, обычный, высокий или автоматический приоритет.\n"
+msgstr "Установить для загрузки низкий, обычный, высокий или автоматический приоритет.\n"
 
 #: src/TextClient.cpp
 msgid "Set priority to low."
@@ -8071,15 +8071,15 @@ msgstr "Показать очереди/списки."
 
 #: src/TextClient.cpp
 msgid "Show upload/download queue, server list or shared files list.\n"
-msgstr "Показать очереди на отдачу/скачивание, список серверов или публикуемых файлов.\n"
+msgstr "Показать очереди отдачи/загрузки, список серверов или публикуемых файлов.\n"
 
 #: src/TextClient.cpp
 msgid "Show upload queue."
-msgstr "Показать очередь на отдачу."
+msgstr "Показать очередь отдачи."
 
 #: src/TextClient.cpp
 msgid "Show download queue."
-msgstr "Показывает очередь скачивания."
+msgstr "Показать очередь загрузки."
 
 #: src/TextClient.cpp
 msgid "Show log."
@@ -8189,12 +8189,12 @@ msgstr "Не удалось открыть файл (%s), удаляется и�
 #: src/UploadQueue.cpp
 #, c-format
 msgid "Resuming uploads of file: %s"
-msgstr "Возобновляется отдача файла: %s"
+msgstr "Возобновление отдачи файла: %s"
 
 #: src/UploadQueue.cpp
 #, c-format
 msgid "Suspending upload of file: %s"
-msgstr "Приостанавливается отдача файла: %s"
+msgstr "Приостановка отдачи файла: %s"
 
 #: src/UserEvents.cpp
 #, c-format
@@ -8203,7 +8203,7 @@ msgstr "Не удалось выполнить команду `%s' при соб
 
 #: src/UserEvents.h
 msgid "Download completed"
-msgstr "Скачивание завершено"
+msgstr "Загрузка завершена"
 
 #: src/UserEvents.h
 msgid "The full path to the file."
@@ -8223,7 +8223,7 @@ msgstr "Размер файла в байтах."
 
 #: src/UserEvents.h
 msgid "Cumulative download activity time."
-msgstr "Общее время скачивания."
+msgstr "Общее время загрузки."
 
 #: src/UserEvents.h
 msgid "New chat session started"
@@ -8636,7 +8636,7 @@ msgstr " с "
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid "Total Download: "
-msgstr "Всего скачано: "
+msgstr "Всего загружено: "
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid ", Upload: "
@@ -8644,11 +8644,11 @@ msgstr ", Отдача: "
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid "Session Download: "
-msgstr "Принято за сеанс: "
+msgstr "Загружено за сеанс: "
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid "Download: "
-msgstr "Скачивание: "
+msgstr "Загрузка: "
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid " KiB/s, Upload: "
@@ -8748,7 +8748,7 @@ msgstr "Каталог, в котором будет сохранятся кар
 
 #: src/webserver/src/WebInterface.cpp
 msgid "Loads template <str>"
-msgstr "Загрузить шаблон <str>"
+msgstr "Подгружает шаблон <str>"
 
 #: src/webserver/src/WebInterface.cpp
 msgid "Web server HTTP port"
@@ -8784,7 +8784,7 @@ msgstr "Запрещать ограниченный доступ"
 
 #: src/webserver/src/WebInterface.cpp
 msgid "Load/save web server settings from/to remote aMule"
-msgstr "Загрузить/сохранить настройки веб-сервера из/в удалённый aMule"
+msgstr "Подгрузить/сохранить настройки веб-сервера из/в удалённый aMule"
 
 #: src/webserver/src/WebInterface.cpp
 msgid "aMule config file path. DO NOT USE DIRECTLY!"
