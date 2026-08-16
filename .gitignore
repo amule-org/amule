@@ -49,3 +49,7 @@ packaging/windows/installer_strings_generated.nsh
 .aider*
 .archive/
 .cache/
+
+# Python bytecode, from running the icon embedder by hand
+__pycache__/
+*.pyc

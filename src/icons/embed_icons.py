@@ -34,7 +34,9 @@ purpose can be reused without committing a second copy of it: the
 splash screen's logo is org.amule.aMule.png, the desktop-entry icon at
 the repository root.  Naming it explicitly also keeps the art-id
 independent of that file's name, which follows the reverse-DNS desktop
-convention and would otherwise leak into the runtime lookup.
+convention and would otherwise leak into the runtime lookup.  These get
+their .svg twin as well when one sits beside them, on the same rule as
+the icons below.
 
 Every caller must pass the same extra arguments, since .github/
 workflows/icons.yml regenerates this file and fails on any difference
@@ -215,9 +217,10 @@ def parse_extra_entries(args):
         if path.suffix.lower() != ".png":
             return [], f"error: {path} is not a .png"
 
-        # No SVG twin: these come from outside icons_dir, where the
-        # twin convention does not apply.
-        entries.append((art_id, sanitise(art_id), path, None))
+        # The twin convention is "a .svg beside the .png", which holds
+        # wherever the .png lives: the splash logo is the app icon at the
+        # repository root, and it has one.
+        entries.append((art_id, sanitise(art_id), path, svg_twin(path)))
 
     return entries, None
 

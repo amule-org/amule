@@ -510,6 +510,12 @@ if (BUILD_MONOLITHIC)
 		RENAME org.amule.aMule.png
 		DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/256x256/apps"
 	)
+	# The source the raster sizes above are rendered from. Themes and
+	# launchers that can scale prefer this one, and it is what the app
+	# stores ask for; the raster sizes stay for the ones that cannot.
+	install (FILES org.amule.aMule.svg
+		DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps"
+	)
 endif()
 
 if (BUILD_REMOTEGUI)
@@ -547,6 +553,10 @@ if (BUILD_MONOLITHIC OR BUILD_REMOTEGUI)
 	install (FILES org.amule.aMule-256.png
 		RENAME application-x-emule-collection.png
 		DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/256x256/mimetypes"
+	)
+	install (FILES org.amule.aMule.svg
+		RENAME application-x-emule-collection.svg
+		DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/mimetypes"
 	)
 endif()
 

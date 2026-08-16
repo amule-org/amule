@@ -82,7 +82,9 @@
 #include "CamuleArtProvider.h" // Needed for CamuleArtProvider::MakeId
 #include "CCtypeAsciiScope.h"  // Needed for locale-safe ASCII lowercasing of art ids
 
-#include <wx/artprov.h> // Needed for wxArtProvider::GetIcon
+#include <wx/artprov.h>
+#include <wx/bmpbndl.h>  // Needed for wxBitmapBundle
+#include <wx/iconbndl.h> // Needed for wxIconBundle // Needed for wxArtProvider::GetIcon
 
 #include "kademlia/kademlia/Kademlia.h"
 #include "MuleVersion.h" // Needed for GetMuleVersion()
@@ -278,14 +280,33 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 #if !defined(__WXMAC__)
 	// this crashes on Mac with wx 2.9.
 	// On Windows the wxICON macro resolves the icon from the .rc
-	// resource bundle (see amule.rc); elsewhere it would normally
-	// expand to wxIcon(aMule_xpm), but the XPM tree is gone — we
-	// route through CamuleArtProvider, which decodes the embedded
-	// PNG bytes registered under the "amule:amule" art id.
+	// resource bundle (see amule.rc), which already carries every size
+	// the window manager might ask for.
 #ifdef __WINDOWS__
 	SetIcon(wxICON(aMule));
 #else
-	SetIcon(wxArtProvider::GetIcon("amule:amule"));
+	// Elsewhere the icon comes from CamuleArtProvider. A bundle, and a
+	// set of sizes rather than one: GetIcon() resolves through
+	// CreateBitmap(), which decodes the embedded PNG and nothing else, so
+	// the window manager got a single 32px raster to scale for the
+	// taskbar, the alt-tab switcher and the window frame alike. The
+	// bundle path consults the icon's SVG twin, so each size below is
+	// rendered rather than resampled.
+	wxIconBundle icons;
+	const wxBitmapBundle logo = wxArtProvider::GetBitmapBundle("amule:amule");
+	for (const int side : { 16, 24, 32, 48, 64, 128, 256 }) {
+		const wxBitmap bitmap = logo.GetBitmap(wxSize(side, side));
+		if (bitmap.IsOk()) {
+			wxIcon icon;
+			icon.CopyFromBitmap(bitmap);
+			icons.AddIcon(icon);
+		}
+	}
+	if (icons.IsEmpty()) {
+		SetIcon(wxArtProvider::GetIcon("amule:amule"));
+	} else {
+		SetIcons(icons);
+	}
 #endif
 #endif
 
@@ -912,7 +933,11 @@ void CamuleDlg::ShowVersionAvailable(const wxString &latest)
 	wxCheckBox *dontAsk = new wxCheckBox(&dlg, wxID_ANY, _("Don't ask again"));
 
 	wxBoxSizer *topRow = new wxBoxSizer(wxHORIZONTAL);
-	const wxBitmap logoBmp = wxArtProvider::GetBitmap(wxT("amule:amule"), wxART_MESSAGE_BOX);
+	// A bundle at a stated size, like the About dialog: GetBitmap() would
+	// resolve through CreateBitmap(), which decodes the PNG and never the
+	// icon's SVG twin, leaving the compositor to stretch a 32px raster.
+	const wxBitmapBundle logoBmp =
+		wxArtProvider::GetBitmapBundle(wxT("amule:amule"), wxART_MESSAGE_BOX, wxSize(42, 42));
 	if (logoBmp.IsOk()) {
 		topRow->Add(
 			new wxStaticBitmap(&dlg, wxID_ANY, logoBmp), wxSizerFlags().Top().Border(wxALL, 12));
