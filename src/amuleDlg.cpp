@@ -933,7 +933,11 @@ void CamuleDlg::ShowVersionAvailable(const wxString &latest)
 	wxCheckBox *dontAsk = new wxCheckBox(&dlg, wxID_ANY, _("Don't ask again"));
 
 	wxBoxSizer *topRow = new wxBoxSizer(wxHORIZONTAL);
-	const wxBitmap logoBmp = wxArtProvider::GetBitmap(wxT("amule:amule"), wxART_MESSAGE_BOX);
+	// A bundle at a stated size, like the About dialog: GetBitmap() would
+	// resolve through CreateBitmap(), which decodes the PNG and never the
+	// icon's SVG twin, leaving the compositor to stretch a 32px raster.
+	const wxBitmapBundle logoBmp =
+		wxArtProvider::GetBitmapBundle(wxT("amule:amule"), wxART_MESSAGE_BOX, wxSize(42, 42));
 	if (logoBmp.IsOk()) {
 		topRow->Add(
 			new wxStaticBitmap(&dlg, wxID_ANY, logoBmp), wxSizerFlags().Top().Border(wxALL, 12));
