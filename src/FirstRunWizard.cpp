@@ -295,7 +295,7 @@ wxWizardPageSimple *CFirstRunWizard::BuildConnectionPage()
 	wxFlexGridSizer *grid = new wxFlexGridSizer(2, 2, 6, 8);
 	grid->AddGrowableCol(1);
 
-	grid->Add(new wxStaticText(page, wxID_ANY, _("Upload limit (kB/s, 0 = unlimited):")),
+	grid->Add(new wxStaticText(page, wxID_ANY, _("Upload limit (KiB/s, 0 = unlimited):")),
 		0,
 		wxALIGN_CENTER_VERTICAL);
 	m_uploadCtrl = new wxSpinCtrl(page, ID_FRW_UPLOAD);
@@ -303,7 +303,7 @@ wxWizardPageSimple *CFirstRunWizard::BuildConnectionPage()
 	m_uploadCtrl->SetValue(thePrefs::GetMaxUpload());
 	grid->Add(m_uploadCtrl, 0, wxEXPAND);
 
-	grid->Add(new wxStaticText(page, wxID_ANY, _("Download limit (kB/s, 0 = unlimited):")),
+	grid->Add(new wxStaticText(page, wxID_ANY, _("Download limit (KiB/s, 0 = unlimited):")),
 		0,
 		wxALIGN_CENTER_VERTICAL);
 	m_downloadCtrl = new wxSpinCtrl(page, wxID_ANY);

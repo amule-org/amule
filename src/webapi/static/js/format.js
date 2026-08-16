@@ -3,7 +3,9 @@
 
 import { t } from "./i18n.js";
 
-const UNITS = ["B", "KB", "MB", "GB", "TB", "PB"];
+// IEC, because the scaling below is by 1024 -- same reasoning as
+// CastItoXBytes on the GUI side.
+const UNITS = ["B", "KiB", "MiB", "GiB", "TiB", "PiB"];
 
 export function formatBytes(n) {
   n = Number(n) || 0;

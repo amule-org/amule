@@ -102,9 +102,9 @@ function selectAll(check)
 <input name="minsize" type="text" id="minsize2" size="5"> 
                     <select name="minsizeu" id="select8">
                       <option>Byte</option>
-                      <option>KByte</option>
-                      <option selected>MByte</option>
-                      <option>GByte</option>
+                      <option>KiByte</option>
+                      <option selected>MiByte</option>
+                      <option>GiByte</option>
                     </select></td>
                 </tr>
                 <tr> 
@@ -121,9 +121,9 @@ function selectAll(check)
 <input name="maxsize" type="text" id="maxsize4" size="5"> 
                     <select name="maxsizeu" id="select10">
                       <option>Byte</option>
-                      <option>KByte</option>
-                      <option selected>MByte</option>
-                      <option>GByte</option>
+                      <option>KiByte</option>
+                      <option selected>MiByte</option>
+                      <option>GiByte</option>
                     </select></td>
                 </tr>
               </table>
@@ -184,9 +184,9 @@ function selectAll(check)
 			$result = 1;
 			switch($str) {
 				case "Byte":	$result = 1; break;
-				case "KByte":	$result = 1024; break;		
-				case "MByte":	$result = 1024*1024; break;
-				case "GByte":	$result = 1024*1024*1024; break;
+				case "KiByte":	$result = 1024; break;		
+				case "MiByte":	$result = 1024*1024; break;
+				case "GiByte":	$result = 1024*1024*1024; break;
 			}
 			return $result;
 		}
@@ -306,9 +306,9 @@ function formatBytes(value) {
 	var b = parseFloat(value);
 	if ( isNaN(b) ) return value;
 	if ( b < 1024 ) return b + " Bytes";
-	if ( b < 1048576 ) return (b / 1024).toFixed(2) + " KB";
-	if ( b < 1073741824 ) return (b / 1048576).toFixed(2) + " MB";
-	return (b / 1073741824).toFixed(2) + " GB";
+	if ( b < 1048576 ) return (b / 1024).toFixed(2) + " KiB";
+	if ( b < 1073741824 ) return (b / 1048576).toFixed(2) + " MiB";
+	return (b / 1073741824).toFixed(2) + " GiB";
 }
 (function() {
 	var els = document.getElementsByClassName("js-size");

@@ -390,14 +390,14 @@ wxString CSharedFilesCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) co
 		}
 
 	case COLUMN_SHARED_SPEED:
-		// Live upload speed, adaptive kB/s / MB/s and blank below
-		// 1 kB/s — same formatting as the peers (client) list. Sorting
+		// Live upload speed, adaptive KiB/s / MiB/s and blank below
+		// 1 KiB/s — same formatting as the peers (client) list. Sorting
 		// uses the raw byte/s value (see CompareItemData), not this string.
 		if (file->GetUploadDatarate() >= 1024) {
 			if (file->GetUploadDatarate() >= 1048576) {
-				return CFormat(_("%.1f MB/s")) % (file->GetUploadDatarate() / 1048576.0);
+				return CFormat(_("%.1f MiB/s")) % (file->GetUploadDatarate() / 1048576.0);
 			}
-			return CFormat(_("%.1f kB/s")) % (file->GetUploadDatarate() / 1024.0);
+			return CFormat(_("%.1f KiB/s")) % (file->GetUploadDatarate() / 1024.0);
 		}
 		return wxEmptyString;
 

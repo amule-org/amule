@@ -1037,8 +1037,8 @@ wxString WxCasFrame::MakeStatLine_4() const
 
 wxString WxCasFrame::MakeStatLine_5() const
 {
-	wxString newline = _("Download: ") + m_aMuleSig->GetDLRate() + _(" kB/s, Upload: ") +
-			   m_aMuleSig->GetULRate() + _(" kB/s");
+	wxString newline = _("Download: ") + m_aMuleSig->GetDLRate() + _(" KiB/s, Upload: ") +
+			   m_aMuleSig->GetULRate() + _(" KiB/s");
 
 	return (newline);
 }
@@ -1061,7 +1061,7 @@ wxString WxCasFrame::MakeStatLine_7() const
 
 wxString WxCasFrame::MakeHitsLine_1() const
 {
-	wxString newline = wxString::Format(_("%.2f kB/s"), m_aMuleSig->GetSessionMaxDL()) + _(" on ") +
+	wxString newline = wxString::Format(_("%.2f KiB/s"), m_aMuleSig->GetSessionMaxDL()) + _(" on ") +
 			   m_aMuleSig->GetSessionMaxDlDate().Format("%c");
 
 	return (newline);
@@ -1069,7 +1069,7 @@ wxString WxCasFrame::MakeHitsLine_1() const
 
 wxString WxCasFrame::MakeHitsLine_2() const
 {
-	wxString newline = wxString::Format(_("%.2f kB/s"), m_aMuleSig->GetAbsoluteMaxDL()) + _(" on ") +
+	wxString newline = wxString::Format(_("%.2f KiB/s"), m_aMuleSig->GetAbsoluteMaxDL()) + _(" on ") +
 			   m_aMuleSig->GetAbsoluteMaxDlDate().Format("%c");
 
 	return (newline);

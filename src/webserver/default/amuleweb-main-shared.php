@@ -298,9 +298,9 @@ function formatBytes(value) {
 	var b = parseFloat(value);
 	if ( isNaN(b) ) return value;
 	if ( b < 1024 ) return b + " Bytes";
-	if ( b < 1048576 ) return (b / 1024).toFixed(2) + " KB";
-	if ( b < 1073741824 ) return (b / 1048576).toFixed(2) + " MB";
-	return (b / 1073741824).toFixed(2) + " GB";
+	if ( b < 1048576 ) return (b / 1024).toFixed(2) + " KiB";
+	if ( b < 1073741824 ) return (b / 1048576).toFixed(2) + " MiB";
+	return (b / 1073741824).toFixed(2) + " GiB";
 }
 (function() {
 	var els = document.getElementsByClassName("js-size");

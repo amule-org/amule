@@ -127,13 +127,13 @@ strongly recommended.**
 
 Under `Preferences → Connection`, set the limits to roughly **80 %
 of your actual line speed** to avoid saturating the upstream and
-starving your own traffic. Values are in **kilobytes per second**
-(kB/s); ISP advertised speeds are usually in **megabits per
-second** (Mbps). To convert, multiply Mbps by **125**.
+starving your own traffic. Values are in **kibibytes per second**
+(KiB/s, units of 1024 bytes); ISP advertised speeds are usually in
+**megabits per second** (Mbps). To convert, multiply Mbps by **122**.
 
-> Example: a 100 Mbps / 20 Mbps fibre line → roughly 12 500 kB/s
-> downstream and 2 500 kB/s upstream. Set the limits to about
-> 10 000 down / 2 000 up to stay below the line cap.
+> Example: a 100 Mbps / 20 Mbps fibre line → roughly 12 200 KiB/s
+> downstream and 2 440 KiB/s upstream. Set the limits to about
+> 9 800 down / 1 950 up to stay below the line cap.
 
 ## Reporting Bugs
 

@@ -2471,7 +2471,7 @@ void PrefsUnifiedDlg::UpdateGeoIPStatus()
 			const wxULongLong bytes = fn.GetSize();
 			if (bytes != wxInvalidSize) {
 				sizeLabel =
-					wxString::Format(" (%.1f MB)", bytes.ToDouble() / (1024.0 * 1024.0));
+					wxString::Format(" (%.1f MiB)", bytes.ToDouble() / (1024.0 * 1024.0));
 			}
 		}
 		if (attribution.IsEmpty()) {

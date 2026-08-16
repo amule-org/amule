@@ -47,7 +47,7 @@ Open `Preferences → IP2Country`. The tab looks like this:
 │                                                      │
 │ [Update now]    ☑ Auto-update on startup            │
 │                                                      │
-│ Status: Loaded (9.0 MB) — Data by DB-IP.com         │
+│ Status: Loaded (9.0 MiB) — Data by DB-IP.com        │
 └──────────────────────────────────────────────────────┘
 ```
 
@@ -212,8 +212,8 @@ If the feature is enabled but flags don't appear:
 
 | Status                                                       | Meaning                                                              |
 |--------------------------------------------------------------|----------------------------------------------------------------------|
-| `Status: Loaded (X.X MB) — Data by <provider>`               | Database open, country lookups working.                              |
-| `Status: Loaded (X.X MB)` (no attribution)                   | Hand-installed `.mmdb` — aMule has no record of where it came from.  |
+| `Status: Loaded (X.X MiB) — Data by <provider>`              | Database open, country lookups working.                              |
+| `Status: Loaded (X.X MiB)` (no attribution)                  | Hand-installed `.mmdb` — aMule has no record of where it came from.  |
 | `Status: Failed to load — click 'Update now' to refresh.`    | The file is there but isn't a valid `.mmdb`. Click `Update now`.     |
 | `Status: Not found — click 'Update now' to download.`        | No `geoip.mmdb` at the expected path. Click `Update now`.            |
 

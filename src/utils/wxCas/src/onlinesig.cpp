@@ -312,16 +312,16 @@ wxString OnLineSig::BytesConvertion(const wxString &bytes)
 		c_bytes = wxString::Format(_("%.0f B"), d_bytes);
 		break;
 	case 1:
-		c_bytes = wxString::Format(_("%.2f KB"), d_bytes);
+		c_bytes = wxString::Format(_("%.2f KiB"), d_bytes);
 		break;
 	case 2:
-		c_bytes = wxString::Format(_("%.2f MB"), d_bytes);
+		c_bytes = wxString::Format(_("%.2f MiB"), d_bytes);
 		break;
 	case 3:
-		c_bytes = wxString::Format(_("%.2f GB"), d_bytes);
+		c_bytes = wxString::Format(_("%.2f GiB"), d_bytes);
 		break;
 	default:
-		c_bytes = wxString::Format(_("%.2f TB"), d_bytes);
+		c_bytes = wxString::Format(_("%.2f TiB"), d_bytes);
 		break;
 	}
 	return c_bytes;

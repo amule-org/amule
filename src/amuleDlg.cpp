@@ -1337,15 +1337,15 @@ void CamuleDlg::ShowTransferRate()
 	if (thePrefs::ShowOverhead()) {
 		buffer = CFormat(_("Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)")) %
 			 (showMBpsUp ? MBpsUp : kBpsUp) %
-			 (showMBpsUp ? _(" MB/s") : ((kBpsUp > 0) ? _(" kB/s") : "")) %
+			 (showMBpsUp ? _(" MiB/s") : ((kBpsUp > 0) ? _(" KiB/s") : "")) %
 			 (theStats::GetUpOverheadRate() / 1024.0) % (showMBpsDown ? MBpsDown : kBpsDown) %
-			 (showMBpsDown ? _(" MB/s") : ((kBpsDown > 0) ? _(" kB/s") : "")) %
+			 (showMBpsDown ? _(" MiB/s") : ((kBpsDown > 0) ? _(" KiB/s") : "")) %
 			 (theStats::GetDownOverheadRate() / 1024.0);
 	} else {
 		buffer = CFormat(_("Up: %.1f%s | Down: %.1f%s")) % (showMBpsUp ? MBpsUp : kBpsUp) %
-			 (showMBpsUp ? _(" MB/s") : ((kBpsUp > 0) ? _(" kB/s") : "")) %
+			 (showMBpsUp ? _(" MiB/s") : ((kBpsUp > 0) ? _(" KiB/s") : "")) %
 			 (showMBpsDown ? MBpsDown : kBpsDown) %
-			 (showMBpsDown ? _(" MB/s") : ((kBpsDown > 0) ? _(" kB/s") : ""));
+			 (showMBpsDown ? _(" MiB/s") : ((kBpsDown > 0) ? _(" KiB/s") : ""));
 	}
 	buffer.Truncate(50); // Max size 50
 
@@ -1359,9 +1359,9 @@ void CamuleDlg::ShowTransferRate()
 		// rather than asking translators for the string twice.
 		wxString UpDownSpeed = CFormat(_("Up: %.1f%s | Down: %.1f%s")) %
 				       (showMBpsUp ? MBpsUp : kBpsUp) %
-				       (showMBpsUp ? _(" MB/s") : ((kBpsUp > 0) ? _(" kB/s") : "")) %
+				       (showMBpsUp ? _(" MiB/s") : ((kBpsUp > 0) ? _(" KiB/s") : "")) %
 				       (showMBpsDown ? MBpsDown : kBpsDown) %
-				       (showMBpsDown ? _(" MB/s") : ((kBpsDown > 0) ? _(" kB/s") : ""));
+				       (showMBpsDown ? _(" MiB/s") : ((kBpsDown > 0) ? _(" KiB/s") : ""));
 		if (thePrefs::GetShowRatesOnTitle() == 1) {
 			SetTitle(theApp->m_FrameTitle + " -- " + UpDownSpeed);
 		} else {

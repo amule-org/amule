@@ -27,8 +27,8 @@ in the order below.
 | 3       | 0           | 0         | Server IP (dot-quad)                    | 0          |
 | 4       | 0           | 0         | Server port                             | 0          |
 | 5       | 0           | 0         | `H` or `L` (High-/Low-ID)               | 0          |
-| 6       | 0.0         | As online | Download speed in kB/s                  | As online  |
-| 7       | 0.0         | As online | Upload speed in kB/s                    | As online  |
+| 6       | 0.0         | As online | Download speed in KiB/s                  | As online  |
+| 7       | 0.0         | As online | Upload speed in KiB/s                    | As online  |
 | 8       | 0           | As online | Number of clients waiting for upload    | As online  |
 | 9       | 0           | As online | Number of shared files                  | As online  |
 | 10      | As online   | As online | Nick used on the eD2k network           | As online  |

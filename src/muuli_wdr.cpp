@@ -273,9 +273,9 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     wxString strs25[] = 
     {
         _("Bytes"), 
-        _("KB"), 
-        _("MB"), 
-        _("GB")
+        _("KiB"), 
+        _("MiB"), 
+        _("GiB")
     };
     wxChoice *item25 = new wxChoice( parent, IDC_SEARCHMINSIZE, wxDefaultPosition, wxDefaultSize, 4, strs25, 0 );
     item23->Add( item25, wxSizerFlags().Center().Border(wxALL, 5) );
@@ -292,9 +292,9 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     wxString strs30[] = 
     {
         _("Bytes"), 
-        _("KB"), 
-        _("MB"), 
-        _("GB")
+        _("KiB"), 
+        _("MiB"), 
+        _("GiB")
     };
     wxChoice *item30 = new wxChoice( parent, IDC_SEARCHMAXSIZE, wxDefaultPosition, wxDefaultSize, 4, strs30, 0 );
     item28->Add( item30, wxSizerFlags().Center().Border(wxALL, 5) );
@@ -1463,7 +1463,7 @@ wxSizer *PreferencesConnectionTab( wxWindow *parent, bool call_fit, bool set_siz
     wxSpinCtrl *item5 = new wxSpinCtrl( parent, IDC_MAXDOWN, "0", wxDefaultPosition, wxDefaultSize, 0, 0, 1000000, 0 );
     item3->Add( item5, 0, wxALIGN_CENTER_VERTICAL, 0 );
 
-    wxStaticText *item6 = new wxStaticText( parent, -1, _("kB/s"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item6 = new wxStaticText( parent, -1, _("KiB/s"), wxDefaultPosition, wxDefaultSize, 0 );
     item3->Add( item6, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
     wxStaticText *item7 = new wxStaticText( parent, -1, _("Upload"), wxDefaultPosition, wxDefaultSize, 0 );
     item3->Add( item7, 0, wxALIGN_CENTER_VERTICAL, 0 );
@@ -1471,14 +1471,14 @@ wxSizer *PreferencesConnectionTab( wxWindow *parent, bool call_fit, bool set_siz
     wxSpinCtrl *item8 = new wxSpinCtrl( parent, IDC_MAXUP, "10", wxDefaultPosition, wxDefaultSize, 0, 0, 1000000, 10 );
     item3->Add( item8, wxSizerFlags().CenterVertical() );
 
-    wxStaticText *item9 = new wxStaticText( parent, -1, _("kB/s"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item9 = new wxStaticText( parent, -1, _("KiB/s"), wxDefaultPosition, wxDefaultSize, 0 );
     item3->Add( item9, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
     wxStaticText *item10 = new wxStaticText( parent, -1, _("Slot Allocation"), wxDefaultPosition, wxDefaultSize, 0 );
     item3->Add( item10, wxSizerFlags().CenterVertical().Border(wxLEFT, 20) );
     wxSpinCtrl *item11 = new wxSpinCtrl( parent, IDC_SLOTALLOC, "10", wxDefaultPosition, wxDefaultSize, 0, 1, 100000, 10 );
     item3->Add( item11, wxSizerFlags().CenterVertical() );
 
-    wxStaticText *item12 = new wxStaticText( parent, -1, _("kB/s"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item12 = new wxStaticText( parent, -1, _("KiB/s"), wxDefaultPosition, wxDefaultSize, 0 );
     item3->Add( item12, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
     item1->Add( item3, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 0) );
     item0->Add( item1, wxSizerFlags().Expand().CenterHorizontal() );
@@ -1700,7 +1700,7 @@ wxSizer *PreferencesFilesTab( wxWindow *parent, bool call_fit, bool set_sizer )
     item16->SetToolTip( _("Enter here the min disk space desired.") );
     item14->Add( item16, 0, wxALIGN_CENTER_VERTICAL, 0 );
 
-    wxStaticText *item17 = new wxStaticText( parent, -1, _("MB"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item17 = new wxStaticText( parent, -1, _("MiB"), wxDefaultPosition, wxDefaultSize, 0 );
     item14->Add( item17, wxSizerFlags().Center().Border(wxLEFT, 5) );
     item5->Add( item14, wxSizerFlags().Expand().CenterVertical() );
     wxCheckBox *item18 = new wxCheckBox( parent, IDC_SRCSEEDS, _("Save 10 sources on rare files (< 20 sources)"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -1976,13 +1976,13 @@ wxSizer *PreferencesStatisticsTab( wxWindow *parent, bool call_fit, bool set_siz
     wxSpinCtrl *item11 = new wxSpinCtrl( parent, IDC_DOWNLOAD_CAP, "3", wxDefaultPosition, wxDefaultSize, 0, 3, 1000000, 3 );
     item9->Add( item11, wxSizerFlags().CenterVertical() );
 
-    wxStaticText *item12 = new wxStaticText( parent, -1, _("kB/s"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item12 = new wxStaticText( parent, -1, _("KiB/s"), wxDefaultPosition, wxDefaultSize, 0 );
     item9->Add( item12, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
     wxStaticText *item13 = new wxStaticText( parent, -1, _("Upload graph scale:"), wxDefaultPosition, wxDefaultSize, 0 );
     item9->Add( item13, wxSizerFlags().CenterVertical().Border(wxTOP, 5) );
     wxSpinCtrl *item14 = new wxSpinCtrl( parent, IDC_UPLOAD_CAP, "3", wxDefaultPosition, wxDefaultSize, 0, 3, 1000000, 3 );
     item9->Add( item14, wxSizerFlags().CenterVertical().Border(wxTOP, 5) );
-    wxStaticText *item15 = new wxStaticText( parent, -1, _("kB/s"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item15 = new wxStaticText( parent, -1, _("KiB/s"), wxDefaultPosition, wxDefaultSize, 0 );
     item9->Add( item15, wxSizerFlags().CenterVertical().Border(wxLEFT|wxTOP, 5) );
     item1->Add( item9, wxSizerFlags().Expand().CenterVertical().Border(wxTOP, 5) );
     wxFlexGridSizer *item16 = new wxFlexGridSizer( 3, 0, 0 );
