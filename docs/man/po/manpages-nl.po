@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-07-30 17:31+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: 2026-08-17 18:19+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: nl\n"
@@ -520,7 +520,7 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Get and display a preference value."
-msgstr ""
+msgstr "Verkrijg en toon een voorkeurswaarde."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -530,7 +530,7 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Get bandwidth limits."
-msgstr ""
+msgstr "Verkrijg bandbreedtegrenzen."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -685,7 +685,7 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Set bandwidth limits."
-msgstr ""
+msgstr "Stel bandbreedtegrenzen in."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -700,27 +700,27 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Show download queue."
-msgstr ""
+msgstr "Toon download wachtrij."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Show log."
-msgstr ""
+msgstr "Toon logboek."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Show servers list."
-msgstr ""
+msgstr "Toon server-lijst."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Show shared files list."
-msgstr ""
+msgstr "Toon gedeelde-bestandenlijst."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Show upload queue."
-msgstr ""
+msgstr "Toon upload-wachtrij."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -1077,7 +1077,7 @@ msgstr ""
 #. type: Plain text
 #: amuleweb.1.in
 msgid "Disable PHP interpreter (deprecated)"
-msgstr ""
+msgstr "Schakel PHP-interpreter uit (verouderd)"
 
 #. type: Plain text
 #: amuleweb.1.in

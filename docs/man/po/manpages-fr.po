@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "POT-Creation-Date: 2026-07-30 17:31+0200\n"
-"PO-Revision-Date: 2026-08-17 09:02+0000\n"
+"PO-Revision-Date: 2026-08-17 18:18+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
 "Language: fr\n"
@@ -744,7 +744,7 @@ msgstr "Le I<E<lt>chiffreE<gt>> optionnel dans l'intervalle 0-255 peut être pas
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Example: `statistics 5' will show only the top 5 versions for each client type."
-msgstr "Exemple: `statistics 5' affichera seulement le top 5 des versions pour chaque type de client."
+msgstr "Exemple : « statistics 5 » n'affichera que les 5 versions les plus utilisées pour chaque type de client."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -770,7 +770,7 @@ msgstr "Par exemple, les chaînes de caractères suivantes sont valables :"
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in
 msgid "Though all the above strings are accepted as valid language definitions, I<encoding> and I<modifier> are yet unused."
-msgstr "Bien que toutes les chaînes ci-dessus soient acceptées comme des définitions de langue valide,  I<encoding> et I<modifier> ne sont pas encore utilisés."
+msgstr "Bien que toutes les chaînes ci-dessus soient acceptées comme des définitions de langue valide, I<encoding> et I<modifier> ne sont pas encore utilisés."
 
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in
@@ -780,7 +780,7 @@ msgstr "En plus du format ci-dessus, vous pouvez également spécifier des noms 
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in
 msgid "When no locale is defined, either on command-line or in config file, system default language will be used."
-msgstr "En l'absence de paramètres linguistiques définis, soit sur ​​la ligne de commande ou sur le fichier de configuration, la langue utilisée par défaut sera celle du système d'exploitation."
+msgstr "Si aucun paramètre régional n'est défini, ni sur la ligne de commande ni dans le fichier de configuration, la langue par défaut du système sera utilisée."
 
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in

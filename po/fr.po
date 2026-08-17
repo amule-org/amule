@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-16 10:27+0200\n"
-"PO-Revision-Date: 2026-08-17 08:41+0000\n"
+"PO-Revision-Date: 2026-08-17 18:18+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
 "Language: fr\n"
@@ -105,7 +105,7 @@ msgstr "Une nouvelle version (%s) est disponible :"
 
 #: src/AboutDialog.cpp
 msgid "Could not check for updates. Please try again later."
-msgstr "Impossible de vérifier les mises à jour. Veuillez réessayer plus tard."
+msgstr "Impossible de vérifier les mises à jour. Merci de réessayer ultérieurement."
 
 #: src/AddFriend.cpp
 msgid "Add a Friend"
@@ -766,11 +766,11 @@ msgstr "E : %.1f%s (%.1f) | R : %.1f%s (%.1f)"
 
 #: src/amuleDlg.cpp src/MuleTrayIcon.cpp
 msgid " MiB/s"
-msgstr ""
+msgstr " Mio/s"
 
 #: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/utils/wxCas/src/wxcasframe.cpp
 msgid " KiB/s"
-msgstr ""
+msgstr " Kio/s"
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -1295,7 +1295,7 @@ msgstr "Déconnecté"
 #: src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f KiB/s"
-msgstr ""
+msgstr "%.1f Kio/s"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 msgid "Name"
@@ -1871,7 +1871,7 @@ msgstr "Renommer"
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f MiB/s"
-msgstr ""
+msgstr "%.1f Mio/s"
 
 #: src/DownloadListCtrl.cpp
 #, c-format
@@ -2120,7 +2120,7 @@ msgstr "Une recherche Web par une interface distante n'a aucun sens."
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
-msgstr ""
+msgstr "Une navigation n'est pas une recherche qui peut être lancée."
 
 #: src/ExternalConn.cpp
 msgid "Search in progress. Refetch results in a moment!"
@@ -2446,7 +2446,7 @@ msgstr "%.1f%% effectué"
 #: src/FileDetailDialog.cpp src/utils/wxCas/src/wxcasframe.cpp
 #, c-format
 msgid "%.2f KiB/s"
-msgstr ""
+msgstr "%.2f Kio/s"
 
 #: src/FileLaunch.cpp
 msgid "File preview"
@@ -2547,11 +2547,11 @@ msgstr "Autre / définir manuellement"
 
 #: src/FirstRunWizard.cpp
 msgid "Upload limit (KiB/s, 0 = unlimited):"
-msgstr ""
+msgstr "Limite de téléversement (Kio/s, 0 = illimitée) :"
 
 #: src/FirstRunWizard.cpp
 msgid "Download limit (KiB/s, 0 = unlimited):"
-msgstr ""
+msgstr "Limite de téléchargement (Kio/s, 0 = illimitée) :"
 
 #: src/FirstRunWizard.cpp
 msgid "Networks & ports"
@@ -3210,7 +3210,7 @@ msgstr "Tout sélectionner"
 #: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
 #: src/StatisticsDlg.cpp
 msgid "KiB/s"
-msgstr ""
+msgstr "Kio/s"
 
 #: src/MuleTrayIcon.cpp
 msgid "Unlimited"
@@ -3537,15 +3537,15 @@ msgstr "Octets"
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
 msgid "KiB"
-msgstr ""
+msgstr "Kio"
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
 msgid "MiB"
-msgstr ""
+msgstr "Mio"
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
 msgid "GiB"
-msgstr ""
+msgstr "Gio"
 
 #: src/muuli_wdr.cpp
 msgid "Max Size"
@@ -4305,7 +4305,7 @@ msgstr "I.C.H. avancée se fie aux hachages (non recommandé)"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "Media metadata extraction"
-msgstr "Extraction de métadonnées de média"
+msgstr "Extraction des métadonnées des médias"
 
 #: src/muuli_wdr.cpp
 msgid "Extract length / bitrate / codec from shared audio and video files"
@@ -5305,7 +5305,7 @@ msgstr[1] "octets"
 
 #: src/OtherFunctions.cpp
 msgid "TiB"
-msgstr ""
+msgstr "Tio"
 
 #: src/OtherFunctions.cpp
 msgid "k"
@@ -5331,7 +5331,7 @@ msgstr[1] "octets/sec"
 
 #: src/OtherFunctions.cpp
 msgid "MiB/s"
-msgstr ""
+msgstr "Mio/s"
 
 #: src/OtherFunctions.cpp
 msgid "secs"
@@ -6432,12 +6432,11 @@ msgstr "Codec"
 
 #: src/SearchListCtrl.cpp
 msgid "Expand all"
-msgstr ""
+msgstr "Tout développer"
 
 #: src/SearchListCtrl.cpp
-#, fuzzy
 msgid "Collapse all"
-msgstr "Fermer tous les onglets"
+msgstr "Tout réduire"
 
 #: src/SearchListCtrl.cpp
 msgid "Download in category"
@@ -7172,9 +7171,9 @@ msgstr[0] "%u fichier partagé a été exporté vers « %s »."
 msgstr[1] "%u fichiers partagés ont été exportés vers « %s »."
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Total size of Shared Files: %s (%s completed)"
-msgstr "Taille totale des Fichiers Partagés : %s"
+msgstr "Taille totale des Fichiers Partagés : %s (%s terminés)"
 
 #: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
 #, c-format
@@ -7548,7 +7547,7 @@ msgstr "Le niveau actuel d'IPFilter est %d.\n"
 #: src/TextClient.cpp
 #, c-format
 msgid "Bandwidth limits: Up: %u KiB/s, Down: %u KiB/s.\n"
-msgstr ""
+msgstr "Limites de bande passante : Envoi : %u Kio/s, Réception : %u Kio/s.\n"
 
 #: src/TextClient.cpp
 #, c-format
@@ -8397,22 +8396,22 @@ msgstr "%.0f o"
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
 msgid "%.2f KiB"
-msgstr ""
+msgstr "%.2f Kio"
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
 msgid "%.2f MiB"
-msgstr ""
+msgstr "%.2f Mio"
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
 msgid "%.2f GiB"
-msgstr ""
+msgstr "%.2f Gio"
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
 msgid "%.2f TiB"
-msgstr ""
+msgstr "%.2f Tio"
 
 #: src/utils/wxCas/src/wxcas.cpp
 msgid "wxCas, aMule Online Statistics"
@@ -8586,7 +8585,7 @@ msgstr "Réception : "
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid " KiB/s, Upload: "
-msgstr ""
+msgstr " Kio/s, téléversement : "
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid "Sharing: "
