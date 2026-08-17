@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-16 10:27+0200\n"
-"PO-Revision-Date: 2026-08-16 20:56+0000\n"
+"PO-Revision-Date: 2026-08-17 08:54+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
 "Language: ru\n"
@@ -771,11 +771,11 @@ msgstr "Отд: %.1f%s (%.1f) | Заг: %.1f%s (%.1f)"
 
 #: src/amuleDlg.cpp src/MuleTrayIcon.cpp
 msgid " MiB/s"
-msgstr ""
+msgstr " МиБ/с"
 
 #: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/utils/wxCas/src/wxcasframe.cpp
 msgid " KiB/s"
-msgstr ""
+msgstr " КиБ/с"
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -1304,7 +1304,7 @@ msgstr "Отключён"
 #: src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f KiB/s"
-msgstr ""
+msgstr "%.1f КиБ/с"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 msgid "Name"
@@ -1404,11 +1404,11 @@ msgstr "Загружено"
 
 #: src/ClientsWnd.cpp
 msgid "Downloading from"
-msgstr "Загружается от"
+msgstr "С кого загружается"
 
 #: src/ClientsWnd.cpp
 msgid "Uploading to"
-msgstr "Отдаётся кому"
+msgstr "Кому отдаётся"
 
 #: src/ClientsWnd.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
 msgid "Active"
@@ -1826,7 +1826,7 @@ msgstr "Показать в файловом менеджере"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Show file &details"
-msgstr "Показать с&ведения файла"
+msgstr "Показать с&ведения о файле"
 
 #: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SearchListCtrl.cpp
 msgid "Show all comments"
@@ -1846,7 +1846,7 @@ msgstr "Копировать сведения в буфер обмена"
 
 #: src/DownloadListCtrl.cpp
 msgid "unassign"
-msgstr "отменить категорию"
+msgstr "убрать категорию"
 
 #: src/DownloadListCtrl.cpp
 msgid "Assign to category"
@@ -1885,7 +1885,7 @@ msgstr "Переименовать файл"
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f MiB/s"
-msgstr ""
+msgstr "%.1f МиБ/с"
 
 #: src/DownloadListCtrl.cpp
 #, c-format
@@ -2137,7 +2137,7 @@ msgstr "При удалённом использовании aMule веб-пои
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
-msgstr ""
+msgstr "Просмотр не является поиском, который можно запустить."
 
 #: src/ExternalConn.cpp
 msgid "Search in progress. Refetch results in a moment!"
@@ -2437,7 +2437,7 @@ msgstr "Вывести версию программы."
 
 #: src/ExternalConnector.cpp
 msgid "Do not encrypt the External Connect session. Encryption is on by default whenever the remote aMule supports it; turning it off leaves everything after the login readable and modifiable by anyone on the path."
-msgstr "Не шифровать сеанс внешнего подключения. Шифрование включено по умолчанию, когда удалённый aMule его поддерживает; его отключение делает всё после входа в систему читаемым и изменяемым для любого на пути."
+msgstr "Не шифровать сеанс внешнего подключения. Шифрование включено по умолчанию, когда удалённый aMule его поддерживает; отключение делает трафик после входа открытым для перехвата."
 
 #: src/ExternalConnector.cpp
 msgid "Force ZLIB compression regardless of dialed-IP locality (useful when the server is reachable over a VPN tunnel that resolves to a LAN IP)."
@@ -2463,7 +2463,7 @@ msgstr "%.1f%% выполнено"
 #: src/FileDetailDialog.cpp src/utils/wxCas/src/wxcasframe.cpp
 #, c-format
 msgid "%.2f KiB/s"
-msgstr ""
+msgstr "%.2f КиБ/с"
 
 #: src/FileLaunch.cpp
 msgid "File preview"
@@ -2564,11 +2564,11 @@ msgstr "Другое / указать вручную"
 
 #: src/FirstRunWizard.cpp
 msgid "Upload limit (KiB/s, 0 = unlimited):"
-msgstr ""
+msgstr "Ограничение отдачи (КиБ/с, 0 — без ограничений):"
 
 #: src/FirstRunWizard.cpp
 msgid "Download limit (KiB/s, 0 = unlimited):"
-msgstr ""
+msgstr "Ограничение загрузки (КиБ/с, 0 — без ограничений):"
 
 #: src/FirstRunWizard.cpp
 msgid "Networks & ports"
@@ -3233,7 +3233,7 @@ msgstr "Выделить все"
 #: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
 #: src/StatisticsDlg.cpp
 msgid "KiB/s"
-msgstr ""
+msgstr "КиБ/с"
 
 #: src/MuleTrayIcon.cpp
 msgid "Unlimited"
@@ -3564,15 +3564,15 @@ msgstr "Байт"
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
 msgid "KiB"
-msgstr ""
+msgstr "КиБ"
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
 msgid "MiB"
-msgstr ""
+msgstr "МиБ"
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
 msgid "GiB"
-msgstr ""
+msgstr "ГиБ"
 
 #: src/muuli_wdr.cpp
 msgid "Max Size"
@@ -3974,11 +3974,11 @@ msgstr "Средняя скорость загрузки:"
 
 #: src/muuli_wdr.cpp
 msgid "Uploaded (session):"
-msgstr "Отдано (сеанс):"
+msgstr "Отдано (за сеанс):"
 
 #: src/muuli_wdr.cpp
 msgid "Downloaded (session):"
-msgstr "Загружено (сеанс):"
+msgstr "Загружено (за сеанс):"
 
 #: src/muuli_wdr.cpp
 msgid "Uploaded (total):"
@@ -4535,7 +4535,7 @@ msgstr "Узлы Kad (действующие)"
 
 #: src/muuli_wdr.cpp
 msgid "Kad-nodes session"
-msgstr "Узлы Kad (сеанс)"
+msgstr "Узлы Kad за сеанс"
 
 #: src/muuli_wdr.cpp
 msgid "Select"
@@ -5341,7 +5341,7 @@ msgstr[2] "байт"
 
 #: src/OtherFunctions.cpp
 msgid "TiB"
-msgstr ""
+msgstr "ТиБ"
 
 #: src/OtherFunctions.cpp
 msgid "k"
@@ -5368,7 +5368,7 @@ msgstr[2] "байт/с"
 
 #: src/OtherFunctions.cpp
 msgid "MiB/s"
-msgstr ""
+msgstr "МиБ/с"
 
 #: src/OtherFunctions.cpp
 msgid "secs"
@@ -6190,7 +6190,7 @@ msgstr "Выбрать проигрыватель видео"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Select browser"
-msgstr "Выберите броузер"
+msgstr "Выбор браузера"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Select ffprobe binary"
@@ -6482,12 +6482,11 @@ msgstr "Кодек"
 
 #: src/SearchListCtrl.cpp
 msgid "Expand all"
-msgstr ""
+msgstr "Развернуть всё"
 
 #: src/SearchListCtrl.cpp
-#, fuzzy
 msgid "Collapse all"
-msgstr "Закрыть все вкладки"
+msgstr "Свернуть всё"
 
 #: src/SearchListCtrl.cpp
 msgid "Download in category"
@@ -6628,9 +6627,9 @@ msgstr "Файл server.met повреждён. Неверная метка ве
 #, c-format
 msgid "%i server in server.met found"
 msgid_plural "%i servers in server.met found"
-msgstr[0] "В файле 'server.met' найден %i сервер"
-msgstr[1] "В файле 'server.met' найдено %i сервера"
-msgstr[2] "В файле 'server.met' найдено %i серверов"
+msgstr[0] "В файле server.met найден %i сервер"
+msgstr[1] "В файле server.met найдены %i сервера"
+msgstr[2] "В файле server.met найдено %i серверов"
 
 #: src/ServerList.cpp
 #, c-format
@@ -7234,9 +7233,9 @@ msgstr[1] "Экспортированы %u общих файла в «%s»."
 msgstr[2] "Экспортировано %u общих файлов в «%s»."
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Total size of Shared Files: %s (%s completed)"
-msgstr "Общий размер публикуемых файлов: %s"
+msgstr "Общий размер публикуемых файлов: %s (завершено %s)"
 
 #: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
 #, c-format
@@ -7267,7 +7266,7 @@ msgstr "A4AF"
 #: src/Statistics.cpp
 #, c-format
 msgid "Uploaded Data (Session (Total)): %s"
-msgstr "Отдано данных (сеанс (всего)): %s"
+msgstr "Отдано данных (за сеанс (всего)): %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -7327,7 +7326,7 @@ msgstr "Среднее время отдачи: %s"
 #: src/Statistics.cpp
 #, c-format
 msgid "Downloaded Data (Session (Total)): %s"
-msgstr "Загружено данных (сеанс (всего)): %s"
+msgstr "Загружено данных (за сеанс (всего)): %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -7348,27 +7347,27 @@ msgstr "Отношение отданного/загруженного за се
 #: src/Statistics.cpp
 #, c-format
 msgid "Average download rate (Session): %s"
-msgstr "Средняя скорость загрузки (сеанс): %s"
+msgstr "Средняя скорость загрузки (за сеанс): %s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Average upload rate (Session): %s"
-msgstr "Средняя скорость отдачи (сеанс): %s"
+msgstr "Средняя скорость отдачи (за сеанс): %s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Max download rate (Session): %s"
-msgstr "Максимальная скорость загрузки (сеанс): %s"
+msgstr "Максимальная скорость загрузки (за сеанс): %s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Max upload rate (Session): %s"
-msgstr "Максимальная скорость отдачи (сеанс): %s"
+msgstr "Максимальная скорость отдачи (за сеанс): %s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Reconnects: %i"
-msgstr "Пересоединений: %i"
+msgstr "Переподключений: %i"
 
 #: src/Statistics.cpp
 #, c-format
@@ -7613,7 +7612,7 @@ msgstr "Текущий уровень IP-фильтра: %d.\n"
 #: src/TextClient.cpp
 #, c-format
 msgid "Bandwidth limits: Up: %u KiB/s, Down: %u KiB/s.\n"
-msgstr ""
+msgstr "Ограничения скорости: Отд: %u КиБ/с, Заг: %u КиБ/с.\n"
 
 #: src/TextClient.cpp
 #, c-format
@@ -8462,22 +8461,22 @@ msgstr "%.0f B"
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
 msgid "%.2f KiB"
-msgstr ""
+msgstr "%.2f КиБ"
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
 msgid "%.2f MiB"
-msgstr ""
+msgstr "%.2f МиБ"
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
 msgid "%.2f GiB"
-msgstr ""
+msgstr "%.2f ГиБ"
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
 msgid "%.2f TiB"
-msgstr ""
+msgstr "%.2f ТиБ"
 
 #: src/utils/wxCas/src/wxcas.cpp
 msgid "wxCas, aMule Online Statistics"
@@ -8652,7 +8651,7 @@ msgstr "Загрузка: "
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid " KiB/s, Upload: "
-msgstr ""
+msgstr " КиБ/с, отдача: "
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid "Sharing: "
