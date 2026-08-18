@@ -731,8 +731,21 @@ public:
 	void Destroy()
 	{
 		if (m_destroying.exchange(true, std::memory_order_acq_rel)) {
+			// Not an error: the guard is here so callers can be sloppy, and
+			// several deliberately are. CClientTCPSocket::Safe_Delete() says
+			// "Destroy may be called several times" and calls it regardless,
+			// and StopConnectionTry() destroys sockets whose connect is still
+			// in flight -- when that connect later fails, OnConnect() destroys
+			// the same socket again. The wrapper is notified once, by whichever
+			// call won the exchange, so the second is a no-op by design; the
+			// UDP twin below says the same and stays silent about it.
+			//
+			// Logged at 'F' rather than 'C' for that reason: AddDebugLogLineC
+			// survives a release build (see Logger.h -- only the N and F forms
+			// compile out), so a critical line here reached every user's log on
+			// an ordinary peer disconnect.
 			CLibSocket *w = m_libSocket.load(std::memory_order_acquire);
-			AddDebugLogLineC(logAsio,
+			AddDebugLogLineF(logAsio,
 				CFormat("Destroy() already dying socket %p %p %s") % w % this % m_IP);
 			return;
 		}
