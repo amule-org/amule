@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-16 10:27+0200\n"
-"PO-Revision-Date: 2026-08-17 08:37+0000\n"
+"PO-Revision-Date: 2026-08-18 18:55+0000\n"
 "Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
 "Language: es\n"
@@ -415,7 +415,7 @@ msgstr "Ha solicitado ejecutar amuleapi al inicio pero no se puede ejecutar el b
 #: src/amule.cpp
 #, c-format
 msgid "External connection: could not bind to '%s', listening on 127.0.0.1 only."
-msgstr ""
+msgstr "Conexión externa: imposible conectarse a '%s', escuchando solo en 127.0.0.1."
 
 #: src/amule.cpp
 #, c-format
@@ -767,11 +767,11 @@ msgstr "Su: %.1f%s (%.1f) | De: %.1f%s (%.1f)"
 
 #: src/amuleDlg.cpp src/MuleTrayIcon.cpp
 msgid " MiB/s"
-msgstr ""
+msgstr " MiB/s"
 
 #: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/utils/wxCas/src/wxcasframe.cpp
 msgid " KiB/s"
-msgstr ""
+msgstr " KiB/s"
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -1296,12 +1296,11 @@ msgstr "Desconectado"
 #: src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f KiB/s"
-msgstr ""
+msgstr "%.1f KiB/s"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
 msgid "Name"
-msgstr "Nombre:"
+msgstr "Nombre"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 msgid "Software"
@@ -1313,9 +1312,8 @@ msgid "Version"
 msgstr "Versión"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
 msgid "IP Address"
-msgstr "Dirección IP:"
+msgstr "Dirección IP"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
@@ -1327,14 +1325,12 @@ msgid "First seen"
 msgstr "Visto por primera vez"
 
 #: src/ClientHistoryListCtrl.cpp
-#, fuzzy
 msgid "Last seen"
-msgstr "Última recepción"
+msgstr "Visto por última vez"
 
 #: src/ClientHistoryListCtrl.cpp
-#, fuzzy
 msgid "Sessions"
-msgstr "Versión"
+msgstr "Sesiones"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 #: src/SharedFilePeersListCtrl.cpp
@@ -1347,24 +1343,20 @@ msgid "Download Speed"
 msgstr "Velocidad de descarga"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
 msgid "Total Uploaded"
-msgstr "Subido"
+msgstr "Total Subido"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
 msgid "Total Downloaded"
-msgstr "Total descargado: "
+msgstr "Total descargado"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
 msgid "Ratio"
-msgstr "Valoración"
+msgstr "Ratio"
 
 #: src/ClientHistoryListCtrl.cpp
-#, fuzzy
 msgid "Online now"
-msgstr "Firma digital"
+msgstr "Ahora en linea"
 
 #: src/ClientRef.cpp
 msgid "Not complete"
@@ -1401,23 +1393,20 @@ msgid "Downloaded"
 msgstr "Descargado"
 
 #: src/ClientsWnd.cpp
-#, fuzzy
 msgid "Downloading from"
-msgstr "Descargando"
+msgstr "Descargando desde"
 
 #: src/ClientsWnd.cpp
-#, fuzzy
 msgid "Uploading to"
-msgstr "Subiendo"
+msgstr "Subiendo a"
 
 #: src/ClientsWnd.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
 msgid "Active"
 msgstr "Activo"
 
 #: src/ClientsWnd.cpp
-#, fuzzy
 msgid "Known"
-msgstr "Desconocido"
+msgstr "Conocido"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -1883,7 +1872,7 @@ msgstr "Renombrar el archivo"
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f MiB/s"
-msgstr ""
+msgstr "%.1f MiB/s"
 
 #: src/DownloadListCtrl.cpp
 #, c-format
@@ -1891,9 +1880,9 @@ msgid "Downloads (%i)"
 msgstr "Descargas (%i)"
 
 #: src/DownloadListCtrl.cpp src/TransferWnd.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Total queue size: %s"
-msgstr "Total DES: %s"
+msgstr "Tamaño total de la cola: %s"
 
 #: src/DownloadQueue.cpp
 #, c-format
@@ -2037,9 +2026,9 @@ msgid "Missing protocol version tag."
 msgstr "Falta la etiqueta de versión de protocolo."
 
 #: src/ExternalConn.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Too many failed connection attempts; try again in %d seconds."
-msgstr "Se reintentará la conexión automática al servidor en %d segundo"
+msgstr "Demasiados intentos fallidos de conexión; intente de nuevo en %d segundos."
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: invalid hash specified as EC password."
@@ -2132,7 +2121,7 @@ msgstr "La búsqueda web desde una interfaz remota no tiene sentido."
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
-msgstr ""
+msgstr "Una navegación no es una búsqueda que se pueda iniciar."
 
 #: src/ExternalConn.cpp
 msgid "Search in progress. Refetch results in a moment!"
@@ -2458,7 +2447,7 @@ msgstr "%.1f%% terminado"
 #: src/FileDetailDialog.cpp src/utils/wxCas/src/wxcasframe.cpp
 #, c-format
 msgid "%.2f KiB/s"
-msgstr ""
+msgstr "%.2f KiB/s"
 
 #: src/FileLaunch.cpp
 msgid "File preview"
@@ -2489,9 +2478,9 @@ msgid "ERROR: Failed to open '%s' with the default application."
 msgstr "ERROR: Fallo al abrir '%s' con la aplicación predeterminada."
 
 #: src/FileLaunch.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "ERROR: Failed to show '%s' in the file manager."
-msgstr "ERROR: no se ha podido abrir el archivo de partes '%s'"
+msgstr "ERROR: Fallo al mostrar '%s' en el gestor de archivos."
 
 #: src/FirstRunWizard.cpp
 msgid "Mobile / 4G-5G (20 / 5 Mbit)"
@@ -2522,9 +2511,8 @@ msgid "aMule first-run setup"
 msgstr "Configuración inicial de aMule"
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Welcome to aMule!"
-msgstr "¡Bienvenido!"
+msgstr "¡Bienvenido a aMule!"
 
 #: src/FirstRunWizard.cpp
 msgid ""
@@ -2539,9 +2527,8 @@ msgid "Choose a nickname other peers will see:"
 msgstr "Elija un apodo que otros pares verán:"
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Connection & bandwidth"
-msgstr "Conectando a amigo"
+msgstr "Conexión & ancho de banda"
 
 #: src/FirstRunWizard.cpp
 msgid ""
@@ -2552,9 +2539,8 @@ msgstr ""
 "o establezca los límites de subida y descarga directamente debajo."
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Connection speed:"
-msgstr "Tipo de conexión:"
+msgstr "Velocidad de conexión:"
 
 #: src/FirstRunWizard.cpp
 msgid "Other / set manually"
@@ -2562,16 +2548,15 @@ msgstr "Otros / configuración manual"
 
 #: src/FirstRunWizard.cpp
 msgid "Upload limit (KiB/s, 0 = unlimited):"
-msgstr ""
+msgstr "Límite de subida (KiB/s, 0 = ilimitado):"
 
 #: src/FirstRunWizard.cpp
 msgid "Download limit (KiB/s, 0 = unlimited):"
-msgstr ""
+msgstr "Límite de descarga (KiB/s, 0 = ilimitado):"
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Networks & ports"
-msgstr "Redes"
+msgstr "Redes & puertos"
 
 #: src/FirstRunWizard.cpp
 msgid "aMule can use two networks. We recommend keeping both enabled."
@@ -2608,9 +2593,8 @@ msgstr ""
 "no soporta UPnP o si rediriges los puertos manualmente."
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Bootstrap files"
-msgstr "Inicialización"
+msgstr "Archivos de inicialización"
 
 #: src/FirstRunWizard.cpp
 msgid ""
@@ -2621,9 +2605,8 @@ msgstr ""
 "Seleccione las listas para descargar ahora:"
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Your peer lists are already in place - nothing to download."
-msgstr "Ya está intentando descargar el archivo %s"
+msgstr "Sus listas de pares ya existen - nada que descargar."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Auto-update server list at startup"
@@ -2788,9 +2771,9 @@ msgid "Yes"
 msgstr "Sí"
 
 #: src/geoip/MaxMindDBDatabase.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to open MaxMindDB database '%s': %s"
-msgstr "Error al abrir %s (%s)"
+msgstr "Fallo al abrir la base de datos MaxMindDB '%s': %s"
 
 #: src/HTTPDownload.cpp
 msgid "Downloading..."
