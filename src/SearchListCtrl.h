@@ -367,6 +367,9 @@ protected:
 	void OnRazorStatsCheck(wxCommandEvent &event);
 	void OnRelatedSearch(wxCommandEvent &event);
 	void OnGetComments(wxCommandEvent &event);
+	//! Folders the expand/collapse entries act on: the whole selection when the
+	//! clicked row belongs to it, otherwise just that row.
+	std::vector<wxDataViewItem> ContextFolders();
 	void OnExpandAll(wxCommandEvent &event);
 	void OnCollapseAll(wxCommandEvent &event);
 

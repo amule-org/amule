@@ -860,14 +860,61 @@ void CSearchListCtrl::SetSubtreeExpanded(const wxDataViewItem &item, bool expand
 	}
 }
 
+std::vector<wxDataViewItem> CSearchListCtrl::ContextFolders()
+{
+	std::vector<wxDataViewItem> folders;
+	if (!m_contextFolder.IsOk()) {
+		return folders;
+	}
+
+	wxDataViewItemArray selection;
+	GetSelections(selection);
+
+	// The whole selection, but only when the row clicked is part of it: the
+	// rule a file manager follows, since right-clicking outside a selection
+	// addresses the row under the pointer rather than whatever happens to be
+	// selected elsewhere. A right-click does not select on every platform,
+	// which is why m_contextFolder is remembered separately (see OnRightClick).
+	bool clicked_is_selected = false;
+	for (const wxDataViewItem &item : selection) {
+		if (item == m_contextFolder) {
+			clicked_is_selected = true;
+			break;
+		}
+	}
+	if (!clicked_is_selected) {
+		folders.push_back(m_contextFolder);
+		return folders;
+	}
+
+	for (const wxDataViewItem &item : selection) {
+		if (m_model->IsFolder(item)) {
+			folders.push_back(item);
+		}
+	}
+	// A selection of results with the click on a folder inside it: act on the
+	// folder, so the entry is never a no-op.
+	if (folders.empty()) {
+		folders.push_back(m_contextFolder);
+	}
+	return folders;
+}
+
 void CSearchListCtrl::OnExpandAll(wxCommandEvent &WXUNUSED(event))
 {
-	SetSubtreeExpanded(m_contextFolder, true);
+	// Every selected folder, not just the clicked one (issue #910 follow-up).
+	// Nesting needs no special case: a parent's subtree walk already covers a
+	// descendant that is also selected.
+	for (const wxDataViewItem &folder : ContextFolders()) {
+		SetSubtreeExpanded(folder, true);
+	}
 }
 
 void CSearchListCtrl::OnCollapseAll(wxCommandEvent &WXUNUSED(event))
 {
-	SetSubtreeExpanded(m_contextFolder, false);
+	for (const wxDataViewItem &folder : ContextFolders()) {
+		SetSubtreeExpanded(folder, false);
+	}
 }
 
 void CSearchListCtrl::OnGetComments(wxCommandEvent &WXUNUSED(event))
