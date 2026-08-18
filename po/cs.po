@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-16 10:27+0200\n"
-"PO-Revision-Date: 2026-08-17 08:33+0000\n"
+"PO-Revision-Date: 2026-08-18 18:55+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
 "Language: cs\n"
@@ -2789,48 +2789,48 @@ msgid "The URL to download can't be empty"
 msgstr "URL pro stahování nesmí být prázdné"
 
 #: src/HTTPDownload.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to create HTTP request for %s"
-msgstr "Nelze získat seznam sdílených souborů od uživatele '%s'"
+msgstr "Nepodařilo se vytvořit HTTP požadavek pro %s"
 
 #: src/HTTPDownload.cpp
 #, c-format
 msgid "HTTP download: empty response body for %s"
-msgstr ""
+msgstr "Stahování přes HTTP: prázdné tělo odpovědi pro %s"
 
 #: src/HTTPDownload.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not move downloaded file to %s"
-msgstr "Soubor %s se již pokoušíte stáhnout"
+msgstr "Nepodařilo se přesunout stažený soubor do %s"
 
 #: src/HTTPDownload.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Downloaded %s (%llu bytes)"
-msgstr "Staženo %d bytů"
+msgstr "Staženo %s (%llu bajtů)"
 
 #: src/HTTPDownload.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "The URL %s returned: %i"
-msgstr "URL %s vrátilo: %i - Chyba (%i)!"
+msgstr "URL %s vrátila: %i"
 
 #: src/HTTPDownload.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "HTTP download failed for %s: %s"
-msgstr "HTTP stahování zrušeno"
+msgstr "Stahování přes HTTP selhalo pro %s: %s"
 
 #: src/HTTPDownload.cpp
 #, c-format
 msgid "HTTP 401 Unauthorized for %s"
-msgstr ""
+msgstr "HTTP 401 Neautorizováno pro %s"
 
 #: src/IP2Country.cpp
 #, c-format
 msgid "Migrated existing GeoLite2-Country.mmdb to %s"
-msgstr ""
+msgstr "Existující GeoLite2-Country.mmdb přesunuto do %s"
 
 #: src/IP2Country.cpp
 msgid "IP2Country: MaxMind selected as the GeoIP source but no License Key configured. Open Preferences -> IP2Country, paste your free MaxMind License Key and click 'Update now'."
-msgstr ""
+msgstr "IP2Country: jako zdroj GeoIP byl vybrán MaxMind, ale není nastaven licenční klíč. Otevřete Nastavení -> IP2Country, vložte svůj bezplatný licenční klíč MaxMind a klikněte na 'Aktualizovat nyní'."
 
 #: src/IP2Country.cpp
 msgid "IP2Country: Custom URL selected as the GeoIP source but no URL configured. Open Preferences -> IP2Country and supply a URL that points to an .mmdb (or .gz / .tar.gz containing one)."
@@ -2894,25 +2894,25 @@ msgid "Failed to load ipfilter.dat file '%s', could not open file."
 msgstr "Nemohu načíst ipfilter.dat (%s), soubor nelze otevřít."
 
 #: src/IPFilter.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Loaded %u IP-range from '%s'."
 msgid_plural "Loaded %u IP-ranges from '%s'."
-msgstr[0] "Načteno %u IP rozsahů z '%s'. %u vadných řádků bylo vyřazeno."
-msgstr[1] "Načteno %u IP rozsahů z '%s'. %u vadných řádků bylo vyřazeno."
-msgstr[2] ""
+msgstr[0] "Načten %u rozsah IP adres z '%s'."
+msgstr[1] "Načteny %u rozsahy IP adres z '%s'."
+msgstr[2] "Načteno %u rozsahů IP adres z '%s'."
 
 #: src/IPFilter.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "%u malformed line was discarded."
 msgid_plural "%u malformed lines were discarded."
-msgstr[0] "Načteno %u IP rozsahů z '%s'. %u vadných řádků bylo vyřazeno."
-msgstr[1] "Načteno %u IP rozsahů z '%s'. %u vadných řádků bylo vyřazeno."
-msgstr[2] ""
+msgstr[0] "%u chybný řádek byl zahozen."
+msgstr[1] "%u chybné řádky byly zahozeny."
+msgstr[2] "%u chybných řádků bylo zahozeno."
 
 #: src/IPFilter.cpp
 #, c-format
 msgid "Failed to rename new %s file, aborting update."
-msgstr ""
+msgstr "Nepodařilo se přejmenovat nový soubor %s, aktualizace se přerušuje."
 
 #: src/IPFilter.cpp
 msgid "IP filter is ready"
@@ -2969,19 +2969,19 @@ msgstr "Kademlia: hledaný výraz je příliš krátký"
 
 #: src/kademlia/kademlia/SearchManager.cpp
 msgid "Kademlia: Search keyword is already on search list: "
-msgstr ""
+msgstr "Kademlia: Klíčové slovo hledání je již na seznamu hledání: "
 
 #: src/kademlia/routing/RoutingZone.cpp
 msgid "Failed to read nodes.dat file - too old. This version (0) is not supported anymore."
-msgstr ""
+msgstr "Nepodařilo se přečíst soubor nodes.dat - je příliš starý. Tato verze (0) již není podporována."
 
 #: src/kademlia/routing/RoutingZone.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Read %u Kad contact"
 msgid_plural "Read %u Kad contacts"
-msgstr[0] "Přečteno %u Kad kontaktů"
-msgstr[1] "Přečteno %u Kad kontaktů"
-msgstr[2] ""
+msgstr[0] "Načten %u kontakt Kad"
+msgstr[1] "Načteny %u kontakty Kad"
+msgstr[2] "Načteno %u kontaktů Kad"
 
 #: src/kademlia/routing/RoutingZone.cpp
 msgid "No contacts found, please bootstrap, or download a nodes.dat file."
@@ -2991,47 +2991,46 @@ msgstr "Nebyly nalezeny žádné kontakty, proveďte prosím zavedení sítě ne
 #, c-format
 msgid "Only %d Kad contact available, nodes.dat not written"
 msgid_plural "Only %d Kad contacts available, nodes.dat not written"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "K dispozici je pouze %d kontakt Kad, nodes.dat nebyl zapsán"
+msgstr[1] "K dispozici jsou pouze %d kontakty Kad, nodes.dat nebyl zapsán"
+msgstr[2] "K dispozici je pouze %d kontaktů Kad, nodes.dat nebyl zapsán"
 
 #: src/kademlia/routing/RoutingZone.cpp
 #, c-format
 msgid "Wrote %d Kad contact"
 msgid_plural "Wrote %d Kad contacts"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Zapsán %d kontakt Kad"
+msgstr[1] "Zapsány %d kontakty Kad"
+msgstr[2] "Zapsáno %d kontaktů Kad"
 
 #: src/KnownFile.cpp
-#, fuzzy
 msgid "Kad user"
-msgstr "Síť Kad"
+msgstr "Uživatel Kad"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: Kad is not connected"
-msgstr ""
+msgstr "Hledání poznámek Kad pro '%s' nebylo zahájeno: Kad není připojen"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: a note lookup is already running for this file"
-msgstr ""
+msgstr "Hledání poznámek Kad pro '%s' nebylo zahájeno: pro tento soubor již probíhá vyhledávání poznámek"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: file is not in the shared list, download queue or search results"
-msgstr ""
+msgstr "Hledání poznámek Kad pro '%s' nebylo zahájeno: soubor není v seznamu sdílených souborů, ve frontě stahování ani ve výsledcích hledání"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: another Kad search (e.g. a source search) is already using this file's hash - try again shortly"
-msgstr ""
+msgstr "Hledání poznámek Kad pro '%s' nebylo zahájeno: hash tohoto souboru již používá jiné Kad hledání (např. hledání zdrojů) - zkuste to znovu za chvíli"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: PrepareLookup failed"
-msgstr ""
+msgstr "Hledání poznámek Kad pro '%s' nebylo zahájeno: PrepareLookup selhalo"
 
 #: src/KnownFile.cpp src/PartFileConvertDlg.cpp
 msgid "File name"
@@ -3059,25 +3058,25 @@ msgstr "Kompletní zdroje"
 
 #: src/KnownFileList.cpp
 msgid "WARNING: Known file list corrupted, contains invalid header."
-msgstr ""
+msgstr "VAROVÁNÍ: Seznam známých souborů je poškozen, obsahuje neplatnou hlavičku."
 
 #: src/KnownFileList.cpp
 msgid "Failed to load entry in known file list, file may be corrupt"
-msgstr ""
+msgstr "Nepodařilo se načíst záznam v seznamu známých souborů, soubor může být poškozen"
 
 #: src/KnownFileList.cpp
 msgid "Invalid entry in known file list, file may be corrupt: "
-msgstr ""
+msgstr "Neplatný záznam v seznamu známých souborů, soubor může být poškozen: "
 
 #: src/libs/common/Format.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Unknown error %d"
-msgstr "Neznámá verze"
+msgstr "Neznámá chyba %d"
 
 #: src/libs/common/Format.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Unable to get error description for error %d"
-msgstr "Nemohu otevřít soubor se skinem %s pro čtení"
+msgstr "Nepodařilo se získat popis chyby %d"
 
 #: src/libs/ec/cpp/ECSpecialTags.cpp src/PartFile.cpp
 msgid "Hashing"
@@ -3124,9 +3123,8 @@ msgid "Connection failure"
 msgstr "Chyba při připojování"
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "External Connection lost - exiting."
-msgstr "Externí připojení uzavřeno."
+msgstr "Externí připojení ztraceno - ukončuji."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "EC connection failed. Empty reply."
@@ -3141,9 +3139,8 @@ msgid "The core did not negotiate an encrypted connection. It may be an older aM
 msgstr ""
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "External Connection: Bad reply, handshake failed. Connection closed."
-msgstr "Špatná odpověď od serveru. Spojení uzavřeno."
+msgstr "Externí připojení: Chybná odpověď, handshake selhalo. Spojení uzavřeno."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 #, fuzzy
@@ -3160,12 +3157,11 @@ msgstr "Připojení uspělo."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "External Connection: Access denied because: "
-msgstr ""
+msgstr "Externí připojení: Přístup odepřen, protože: "
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "External Connection: Handshake failed."
-msgstr "Heslo pro externí připojení."
+msgstr "Externí připojení: Handshake selhalo."
 
 #: src/LibSocketAsio.cpp
 #, c-format
@@ -3173,9 +3169,9 @@ msgid "Error creating UDP socket %s %d : %s"
 msgstr ""
 
 #: src/LibSocketAsio.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Asio thread %d started"
-msgstr "Synchronizační vlákno spuštěno."
+msgstr "Vlákno asio %d spuštěno"
 
 #: src/ListenSocket.cpp
 msgid "ListenSocket: Ok."
@@ -3237,39 +3233,32 @@ msgid "Hide aMule"
 msgstr "Skrýt aMule"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "eD2k: "
-msgstr "eD2k"
+msgstr "eD2k: "
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Connected (LowID)"
-msgstr "Připojen"
+msgstr "Připojeno (LowID)"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Connected (HighID)"
-msgstr "Připojen"
+msgstr "Připojeno (HighID)"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Kad: "
-msgstr " Kad: "
+msgstr "Kad: "
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Connected (firewalled)"
-msgstr "Připojen ke kad (za firewallem)"
+msgstr "Připojeno (za firewallem)"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Server: "
-msgstr "IP serveru: "
+msgstr "Server: "
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Server IP: "
-msgstr "IP serveru:"
+msgstr "IP serveru: "
 
 #: src/MuleTrayIcon.cpp src/TextClient.cpp
 msgid "Not connected"
@@ -3349,14 +3338,14 @@ msgid "DL: %u"
 msgstr "DL: %u"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Download speed: %.1f%s"
-msgstr "Rychlost stahování: %.1f"
+msgstr "Rychlost stahování: %.1f%s"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Upload speed: %.1f%s"
-msgstr "Rychlost odesílání: %.1f"
+msgstr "Rychlost odesílání: %.1f%s"
 
 #: src/MuleTrayIcon.cpp
 #, c-format
@@ -3427,22 +3416,20 @@ msgid "WARNING! %s: Packet to %s discarded due to error (%s) while sending."
 msgstr ""
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Paste eD2k or magnet links here"
-msgstr "Přidat eD2k nebo magnet odkaz do jádra."
+msgstr "Vložte sem odkazy eD2k nebo magnet"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Add links"
-msgstr "Přidat do přátel"
+msgstr "Přidat odkazy"
 
 #: src/muuli_wdr.cpp
 msgid "Click here to add the eD2k link in the text control to your download queue."
-msgstr ""
+msgstr "Klikněte sem pro přidání eD2k odkazu z textového pole do fronty stahování."
 
 #: src/muuli_wdr.cpp
 msgid "Events are displayed here. For a complete list of events, refer to the log in the Servers-tab."
-msgstr ""
+msgstr "Zde se zobrazují události. Úplný seznam událostí naleznete v logu na kartě Servery."
 
 #: src/muuli_wdr.cpp
 msgid "Loading ..."
@@ -3450,7 +3437,7 @@ msgstr "Načítání ..."
 
 #: src/muuli_wdr.cpp
 msgid "Number of users on the server you are connected to ..."
-msgstr ""
+msgstr "Počet uživatelů na serveru, ke kterému jste připojeni ..."
 
 #: src/muuli_wdr.cpp
 msgid "Users: 0"
@@ -3466,11 +3453,11 @@ msgstr "Up: 0.0 | Down: 0.0"
 
 #: src/muuli_wdr.cpp
 msgid "Current average upload and download rates. If enabled the numbers in the braces signify the overhead from client communication."
-msgstr ""
+msgstr "Aktuální průměrné rychlosti odesílání a stahování. Pokud je povoleno, čísla v závorkách označují režii z komunikace mezi klienty."
 
 #: src/muuli_wdr.cpp
 msgid "Displays the connected status and active transfers. Red arrows signifies that you are currently not connected, yellow arrows signify that you have low ID (firewalled) and green arrows signify that you have high ID (The optimal connection type)."
-msgstr ""
+msgstr "Zobrazuje stav připojení a aktivní přenosy. Červené šipky znamenají, že momentálně nejste připojeni, žluté šipky znamenají nízké ID (za firewallem) a zelené šipky znamenají vysoké ID (optimální typ připojení)."
 
 #: src/muuli_wdr.cpp
 msgid "Not Connected ..."
@@ -4273,7 +4260,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Start next paused file when a file completes"
-msgstr ""
+msgstr "Po dokončení souboru spustit další pozastavený soubor"
 
 #: src/muuli_wdr.cpp
 msgid "From the same category"
@@ -4289,11 +4276,11 @@ msgstr "Předalokovat místo na disku pro nové soubory"
 
 #: src/muuli_wdr.cpp
 msgid "For new files preallocates disk space for the whole file, thus reduces fragmentation"
-msgstr ""
+msgstr "U nových souborů předem vyhradí místo na disku pro celý soubor, čímž se snižuje fragmentace"
 
 #: src/muuli_wdr.cpp
 msgid "Create new files as sparse files"
-msgstr ""
+msgstr "Vytvářet nové soubory jako sparse soubory"
 
 #: src/muuli_wdr.cpp
 msgid "Sparse part files only occupy disk space for the parts already downloaded, so free space is used up gradually as the file fills in. Turn this off to use an ordinary file instead - useful where sparse files are unsupported or slow, or where backup/de-duplication tools handle them badly. Applies only when the core runs on Windows; on Linux and macOS part files are sparse anyway and this setting has no effect."

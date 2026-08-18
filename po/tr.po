@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-16 10:27+0200\n"
-"PO-Revision-Date: 2026-08-17 18:18+0000\n"
+"PO-Revision-Date: 2026-08-18 18:56+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
 "Language: tr\n"
@@ -127,7 +127,7 @@ msgid ""
 msgstr ""
 "aMule, normal olarak kurulmuş bir uygulama gibi görünmesi için ev dizininize bir masaüstü başlatıcısı, ikonlar ve kabuk komut kısayolları kurabilir.\n"
 "\n"
-"Bu, geri alınabilir — dosyalar ~/.local/share/applications,  ~/.local/share/icons ile ~/.local/bin konumlarında bulunurlar ve ne zaman isterseniz onları kaldırabilirsiniz.\n"
+"Bu, geri alınabilir — dosyalar ~/.local/share/applications, ~/.local/share/icons ile ~/.local/bin konumlarında bulunurlar ve ne zaman isterseniz onları kaldırabilirsiniz.\n"
 "\n"
 "Masaüstü birleşimi şimdi kurulsun mu?"
 
@@ -1864,7 +1864,7 @@ msgstr "Dosya yeniden adlandır"
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f MiB/s"
-msgstr ""
+msgstr "%.1f MiB/s"
 
 #: src/DownloadListCtrl.cpp
 #, c-format
@@ -2020,7 +2020,7 @@ msgstr "Kayıp protokol sürüm eki."
 #: src/ExternalConn.cpp
 #, c-format
 msgid "Too many failed connection attempts; try again in %d seconds."
-msgstr "Çok fazla başarısız bağlantı teşebbüsü,  %d saniye içinde tekrar denenecek."
+msgstr "Çok fazla başarısız bağlantı teşebbüsü; %d saniye içinde tekrar deneyin."
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: invalid hash specified as EC password."
@@ -2113,7 +2113,7 @@ msgstr "Uzak arayüzden Web araması yapmak anlamsız."
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
-msgstr ""
+msgstr "Göz atma, başlatılabilecek bir arama değildir."
 
 #: src/ExternalConn.cpp
 msgid "Search in progress. Refetch results in a moment!"
@@ -2439,7 +2439,7 @@ msgstr "%.1f%% tamamlandı"
 #: src/FileDetailDialog.cpp src/utils/wxCas/src/wxcasframe.cpp
 #, c-format
 msgid "%.2f KiB/s"
-msgstr ""
+msgstr "%.2f KiB/s"
 
 #: src/FileLaunch.cpp
 msgid "File preview"
@@ -2540,11 +2540,11 @@ msgstr "Diğer / el ile ayarla"
 
 #: src/FirstRunWizard.cpp
 msgid "Upload limit (KiB/s, 0 = unlimited):"
-msgstr ""
+msgstr "Gönderme sınırı (KiB/s, 0 = sınırsız):"
 
 #: src/FirstRunWizard.cpp
 msgid "Download limit (KiB/s, 0 = unlimited):"
-msgstr ""
+msgstr "İndirme sınırı (KiB/s, 0 = sınırsız):"
 
 #: src/FirstRunWizard.cpp
 msgid "Networks & ports"
@@ -3203,7 +3203,7 @@ msgstr "Tümünü Seç"
 #: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
 #: src/StatisticsDlg.cpp
 msgid "KiB/s"
-msgstr ""
+msgstr "KiB/s"
 
 #: src/MuleTrayIcon.cpp
 msgid "Unlimited"
@@ -3530,15 +3530,15 @@ msgstr "Bayt"
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
 msgid "KiB"
-msgstr ""
+msgstr "KiB"
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
 msgid "MiB"
-msgstr ""
+msgstr "MiB"
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
 msgid "GiB"
-msgstr ""
+msgstr "GiB"
 
 #: src/muuli_wdr.cpp
 msgid "Max Size"
@@ -5298,7 +5298,7 @@ msgstr[1] "bayt"
 
 #: src/OtherFunctions.cpp
 msgid "TiB"
-msgstr ""
+msgstr "TiB"
 
 #: src/OtherFunctions.cpp
 msgid "k"
@@ -5324,7 +5324,7 @@ msgstr[1] "bayt/sn"
 
 #: src/OtherFunctions.cpp
 msgid "MiB/s"
-msgstr ""
+msgstr "MiB/s"
 
 #: src/OtherFunctions.cpp
 msgid "secs"
@@ -6425,12 +6425,11 @@ msgstr "Kodlama"
 
 #: src/SearchListCtrl.cpp
 msgid "Expand all"
-msgstr ""
+msgstr "Tümünü genişlet"
 
 #: src/SearchListCtrl.cpp
-#, fuzzy
 msgid "Collapse all"
-msgstr "Tüm sekmeleri kapat"
+msgstr "Tümünü daralt"
 
 #: src/SearchListCtrl.cpp
 msgid "Download in category"
@@ -7165,9 +7164,9 @@ msgstr[0] "%u paylaşılan dosya '%s' unsuruna aktarıldı."
 msgstr[1] "%u paylaşılan dosya '%s' unsuruna aktarıldı."
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Total size of Shared Files: %s (%s completed)"
-msgstr "Paylaşılan Dosyaların Toplam Boyutu: %s"
+msgstr "Paylaşılan Dosyaların Toplam Boyutu: %s (%s tamamlandı)"
 
 #: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
 #, c-format
@@ -7541,7 +7540,7 @@ msgstr "Şu anki IP Süzgeç seviyesi %d.\n"
 #: src/TextClient.cpp
 #, c-format
 msgid "Bandwidth limits: Up: %u KiB/s, Down: %u KiB/s.\n"
-msgstr ""
+msgstr "Bant genişliği sınırları: Gönderi: %u KiB/s, İndirme: %u KiB/s.\n"
 
 #: src/TextClient.cpp
 #, c-format
@@ -8390,22 +8389,22 @@ msgstr "%.0f B"
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
 msgid "%.2f KiB"
-msgstr ""
+msgstr "%.2f KiB"
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
 msgid "%.2f MiB"
-msgstr ""
+msgstr "%.2f MiB"
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
 msgid "%.2f GiB"
-msgstr ""
+msgstr "%.2f GiB"
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
 msgid "%.2f TiB"
-msgstr ""
+msgstr "%.2f TiB"
 
 #: src/utils/wxCas/src/wxcas.cpp
 msgid "wxCas, aMule Online Statistics"
@@ -8579,7 +8578,7 @@ msgstr "Aktarım: "
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid " KiB/s, Upload: "
-msgstr ""
+msgstr " KiB/s, Gönderi: "
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid "Sharing: "

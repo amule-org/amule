@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule man pages\n"
 "POT-Creation-Date: 2026-07-30 17:31+0200\n"
-"PO-Revision-Date: 2026-08-17 09:03+0000\n"
+"PO-Revision-Date: 2026-08-18 18:56+0000\n"
 "Last-Translator: \n"
 "Language-Team: Marcelo Roberto Jimenez <mroberto@users.sourceforge.net>\n"
 "Language: pt_BR\n"
@@ -79,10 +79,8 @@ msgstr "[B<-w> I<E<lt>caminhoE<gt>>]"
 
 #. type: Plain text
 #: amule.1.in amuled.1.in
-#, fuzzy
-#| msgid "[B<-t> I<E<lt>numE<gt>>] [I<eD2k-link>]"
 msgid "[B<-t> I<E<lt>numE<gt>>] [I<eD2k-link>|I<collection-file>]"
-msgstr "[B<-t> I<E<lt>numE<gt>>] [I<link eD2k>]"
+msgstr "[B<-t> I<E<lt>numE<gt>>] [I<link eD2k>|I<arquivo-de-coleção>]"
 
 #. type: SH
 #: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in amuleweb.1.in ed2k.1.in
@@ -178,17 +176,14 @@ msgstr "Imprime uma descrição de uso curta."
 
 #. type: TP
 #: amule.1.in amuled.1.in
-#, fuzzy, no-wrap
-#| msgid "B<[ eD2k-link ]>"
+#, no-wrap
 msgid "B<[ eD2k-link | collection-file ]>"
-msgstr "B<[ link eD2k ]>"
+msgstr "B<[ link eD2k | arquivo-de-coleção ]>"
 
 #. type: Plain text
 #: amule.1.in amuled.1.in
-#, fuzzy
-#| msgid "Adds an eD2k-link or a magnet-link to the core."
 msgid "Adds an eD2k-link, or every link in an eMule collection file, to the core."
-msgstr "Adiciona um link eD2k ou link magnético ao núcleo."
+msgstr "Adiciona um link eD2k ou todos os links em um arquivo de coleção eMule ao núcleo."
 
 #. type: Plain text
 #: amule.1.in amulecmd.1.in amuled.1.in ed2k.1.in
@@ -218,7 +213,7 @@ msgstr "um link magnético."
 #. type: Plain text
 #: amule.1.in amuled.1.in
 msgid "Alternatively the argument can be the path to an .emulecollection file, or a file:// URL naming one, in which case every link it contains is added to the download queue.  This is what lets a file manager open a collection with aMule."
-msgstr ""
+msgstr "Alternativamente, o argumento pode ser o caminho para um arquivo de coleção .emulecollection, ou uma URL file:// que lhe dá o nome, neste caso todos os links que ele contém são adicionados à fila de download.  Isto é o que faz um gerenciador de arquivos abrir uma coleção com o aMule."
 
 #. type: SH
 #: amule.1.in amulecmd.1.in amuleweb.1.in
@@ -450,7 +445,7 @@ msgstr "Criar arquivo de configuração baseado em I<E<lt>pathE<gt>>, que precis
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in
 msgid "Do not encrypt the External Connection link.  Encryption is negotiated automatically whenever the remote aMule supports it, and is on by default for every destination, local or remote.  Turning it off leaves everything after the login readable, and modifiable, by anyone able to observe the connection."
-msgstr ""
+msgstr "Não criptografe o link de Conexões Externas.  A criptografia é negociada automaticamente sempre que o aMule remoto suportá-la, e está ligada por padrão para todos os destinos, locais ou remotos.  Desligá-la deixa tudo legível após o login, e modificável por qualquer um capaz de observar a conexão."
 
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in
@@ -586,7 +581,7 @@ msgstr "Prioridade normal."
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Shows the progress of an on-going search. Optionally takes a search I<E<lt>idE<gt>> (as printed by B<search>); with no id, shows the most recently started search."
-msgstr ""
+msgstr "Mostra o progresso de uma busca em andamento. Opcionalmente pega uma busca I<E<lt>idE<gt>> (tal como impressa por B<search>); sem id, mostra a busca iniciada mais recentemente."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -616,7 +611,7 @@ msgstr "Apaga o log."
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Shows you the results of a search. Optionally takes a search I<E<lt>idE<gt>> (as printed by B<search>); with no id, shows the most recently started search.  Several searches can be kept on the daemon at once and addressed by id."
-msgstr ""
+msgstr "Mostra os resultados de uma pesquisa. Opcionalmente, aceita um I<E<lt>idE<gt>> de pesquisa (conforme exibido por B<search>); sem um id, mostra a pesquisa iniciada mais recentemente. Várias pesquisas podem ser mantidas no daemon ao mesmo tempo e acessadas por id."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -625,10 +620,8 @@ msgstr "Retoma o download especificado por I<E<lt>hashE<gt>> ou I<E<lt>numeroE<g
 
 #. type: Plain text
 #: amulecmd.1.in
-#, fuzzy
-#| msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: `search kad amule' performs a kad search for `amule'."
 msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: `search kad amule' performs a kad search for `amule'.  Prints a search id; pass it to B<results> or B<progress> to address this search. Several searches can run at once, each with its own id."
-msgstr "Faz uma busca pela I<E<lt>palavra chaveE<gt>> dada. Um tipo de busca e uma palavra chave são mandatórias para fazer isso. Exemplo: `search kad amule' executa uma busca kad por `amule'."
+msgstr "Realiza uma pesquisa pela I<E<lt>palavra-chaveE<gt>> fornecida. Um tipo de pesquisa e uma palavra-chave são obrigatórios para realizar esta operação. Exemplo: `search kad amule' realiza uma pesquisa na rede kad por `amule'. Exibe um id de pesquisa; passe-o para B<results> ou B<progress> para acessar essa pesquisa. Várias pesquisas podem ser executadas ao mesmo tempo, cada uma com seu próprio id."
 
 #. type: Plain text
 #: amulecmd.1.in
