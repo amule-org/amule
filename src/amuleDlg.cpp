@@ -753,6 +753,23 @@ void CamuleDlg::RestoreMainWindow()
 	// whatever the user is looking at.
 	mac_set_accessory_mode(false);
 #endif
+	// Restoring is a decision, not something to infer from events: this is
+	// the one place that knows the user asked for the window back, so the
+	// logical flag is cleared here rather than left to OnShow/OnMinimize.
+	//
+	// Those events do not arrive on the path that matters. On Windows, a
+	// window that is hidden *and* iconized -- which is what minimize-to-tray
+	// leaves behind -- gets neither wxEVT_SHOW nor wxEVT_ICONIZE from the
+	// sequence below: Iconize(false) restores and shows it, so the Show(true)
+	// after it sees an already-shown window and never reaches ShowWindow(),
+	// so no WM_SHOWWINDOW and no wxShowEvent. The flag then stays set for the
+	// rest of the session and IsVisibleToUser() never becomes true again,
+	// which stops the free-space refresh, keeps the tray toggle stuck on
+	// "restore", and leaves amulegui reconnecting quietly (#941, #817).
+	// Restoring a window that was only hidden does fire wxEVT_SHOW, which is
+	// why this looked intermittent.
+	m_iconized_logical = false;
+
 	// Clear the iconized bit on every platform — the window might be
 	// hidden (Show(false) via HideOnClose / minimize-to-tray) or just
 	// iconized to the OS Dock/taskbar; in either case the user wants a
