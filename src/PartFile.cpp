@@ -2460,7 +2460,15 @@ void CPartFile::PerformFileComplete()
 	FlushBuffer();
 
 	// close permanent handle
+	//
+	// Under m_hpartfileMutex: CUploadDiskIOThread reads this handle from a
+	// worker thread via ReadData, which holds the same mutex around its
+	// Seek+Read. Closing without it can land between that Seek and Read.
+	// Holding it also makes ReadData's IsOpened check decisive -- it runs
+	// under this same lock, so the handle cannot close between that check
+	// and the read it guards.
 	if (m_hpartfile.IsOpened()) {
+		std::lock_guard<std::mutex> lock(m_hpartfileMutex);
 		m_hpartfile.Close();
 	}
 
@@ -2562,7 +2570,10 @@ void CPartFile::Delete()
 		}
 	}
 
+	// Same reasoning as PerformFileComplete: the upload reader holds
+	// m_hpartfileMutex around its Seek+Read, so the close takes it too.
 	if (m_hpartfile.IsOpened()) {
+		std::lock_guard<std::mutex> lock(m_hpartfileMutex);
 		m_hpartfile.Close();
 	}
 
@@ -3815,8 +3826,12 @@ void CPartFile::OnAsyncHashComplete(uint16 partNumber, bool ok, bool fromAICHRec
 }
 
 // read data for upload, return false on error
-bool CPartFile::ReadData(CFileArea &area, uint64 offset, uint32 toread)
+bool CPartFile::ReadData(CFileArea &area, uint64 offset, uint32 toread, bool *handleClosed)
 {
+	if (handleClosed != nullptr) {
+		*handleClosed = false;
+	}
+
 	// Sanity check
 	if (offset + toread > GetFileSize()) {
 		AddDebugLogLineN(logPartFile,
@@ -3837,6 +3852,22 @@ bool CPartFile::ReadData(CFileArea &area, uint64 offset, uint32 toread)
 	// The write thread's Write then lands at the wrong offset, and
 	// the read returns bytes from the post-write position. See #586.
 	std::lock_guard<std::mutex> lock(m_hpartfileMutex);
+
+	// PerformFileComplete closes this handle under the same mutex once the
+	// file is finished, while the upload reader may still have block
+	// requests queued for it. Report that rather than seeking a closed
+	// handle: the throw would be indistinguishable from a real IO error,
+	// and the caller drops the client on those. Flagged separately from the
+	// bare false above, which is an asserted bug the caller must not treat
+	// as routine. Checked under the lock so the answer cannot change before
+	// the read.
+	if (!m_hpartfile.IsOpened()) {
+		if (handleClosed != nullptr) {
+			*handleClosed = true;
+		}
+		return false;
+	}
+
 	area.ReadAt(m_hpartfile, offset, toread);
 	// if it fails it throws (which the caller should catch)
 	return true;
