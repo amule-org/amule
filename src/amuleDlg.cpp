@@ -770,6 +770,20 @@ void CamuleDlg::RestoreMainWindow()
 	// why this looked intermittent.
 	m_iconized_logical = false;
 
+#ifdef CLIENT_GUI
+	// Same reasoning one step further: a reconnect that has been retrying
+	// quietly behind a tray-hidden window now has a window to explain itself
+	// in. OnMainWindowRestored() is otherwise reached only from OnShow() and
+	// OnMinimize(), i.e. from the two events the paragraph above explains do
+	// not arrive on this path -- so on Windows the dialog never appeared for
+	// a user who came back mid-outage, which is what issue #942 reports.
+	// Cheap to call unconditionally: it returns immediately unless a
+	// reconnect is running without a dialog, and defers the dialog itself to
+	// CallAfter, so the platforms that do deliver wxEVT_SHOW just no-op the
+	// second call.
+	theApp->OnMainWindowRestored();
+#endif
+
 	// Clear the iconized bit on every platform — the window might be
 	// hidden (Show(false) via HideOnClose / minimize-to-tray) or just
 	// iconized to the OS Dock/taskbar; in either case the user wants a
