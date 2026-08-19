@@ -293,9 +293,31 @@ void CUploadDiskIOThread::StartCreateNextBlockPackage(CUpDownClient *client)
 						       currentblock->StartOffset %
 						       (currentblock->EndOffset - 1));
 				}
-				if (!srcPartFile->ReadData(
-					    req->area, currentblock->StartOffset, (uint32)togo)) {
+				bool handleClosed = false;
+				if (!srcPartFile->ReadData(req->area,
+					    currentblock->StartOffset,
+					    (uint32)togo,
+					    &handleClosed)) {
 					delete req;
+					// A closed handle means PerformFileComplete got there
+					// first: the download finished and the file is on its
+					// way to Incoming. That is not this client's fault, and
+					// throwing would set m_bIOError and have
+					// CUploadQueue::Process drop it -- undoing the graceful
+					// SuspendUpload(terminate == false) that parked it on
+					// the waiting list so it would survive the completion.
+					// Defer to the main thread, the same way the file-id
+					// switch at the top of this loop does; the client is
+					// resumed once the move is done.
+					//
+					// Only for that specific failure: any other false is a
+					// real error and must still be reported as one.
+					if (handleClosed && srcPartFile->GetStatus() == PS_COMPLETING) {
+						AddDebugLogLineN(logClient,
+							"CUploadDiskIOThread::StartCreateNextBlockPackage:"
+							" file completing, waiting for mainthread");
+						return;
+					}
 					throw wxString("Failed to read from requested partfile");
 				}
 			} else {

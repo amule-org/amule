@@ -599,7 +599,20 @@ public:
 	CUpDownClient *GetSlowerDownloadingClient(uint32 speed, CUpDownClient *caller);
 
 	// Read data for sharing
-	bool ReadData(class CFileArea &area, uint64 offset, uint32 toread);
+	/**
+	 * Reads part-file data into the given area.
+	 *
+	 * @param area Destination for the data.
+	 * @param offset Absolute offset to read from.
+	 * @param toread Number of bytes to read.
+	 * @param handleClosed Set when the read failed only because the
+	 *	completion path had already closed the file. That is the one
+	 *	recoverable failure; every other one is a real error and must
+	 *	not be silently swallowed by the caller.
+	 *
+	 * @return true on success, false on any failure.
+	 */
+	bool ReadData(class CFileArea &area, uint64 offset, uint32 toread, bool *handleClosed = nullptr);
 
 private:
 	/* downloading sources list */
