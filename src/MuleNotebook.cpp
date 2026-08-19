@@ -257,16 +257,22 @@ void CMuleNotebook::OnMouseMotion(wxMouseEvent &event)
 
 	long flags = 0;
 	int tab = HitTest(wxPoint(event.m_x, event.m_y), &flags);
+	const bool onIcon = (tab != -1) && (flags == wxNB_HITTEST_ONICON);
 
-	// Clear the highlight for all tabs.
+	// Write only the images that actually change. SetPageImage() is a
+	// TCM_SETITEM on MSW, which invalidates the tab it names, so setting
+	// every page on every motion event kept the whole tab bar repainting
+	// for as long as the pointer moved over it -- with enough tabs open
+	// that reads as flicker (issue #951). The highlight itself changes at
+	// most twice per crossing of a close icon.
 	for (int i = 0; i < (int)GetPageCount(); ++i) {
-		SetPageImage(i, 0);
+		const int image = (onIcon && i == tab) ? 1 : 0;
+		if (GetPageImage(i) != image) {
+			SetPageImage(i, image);
+		}
 	}
 
-	if ((tab != -1) && (flags == wxNB_HITTEST_ONICON)) {
-		// Mouse is over a 'x'
-		SetPageImage(tab, 1);
-	} else {
+	if (!onIcon) {
 		// Is not a 'x'. Send this event up.
 		event.Skip();
 	}
