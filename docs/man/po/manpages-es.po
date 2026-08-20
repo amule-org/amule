@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: es\n"
 "POT-Creation-Date: 2026-07-30 17:31+0200\n"
-"PO-Revision-Date: 2026-08-17 09:02+0000\n"
+"PO-Revision-Date: 2026-08-20 14:37+0000\n"
 "Last-Translator: Mad-Soft <mad.soft@gmail.com>\n"
 "Language-Team: Spanish <es_ES@li.org>\n"
 "Language: es\n"
@@ -81,10 +81,8 @@ msgstr "[B<-w> I<E<lt>pathE<gt>>]"
 
 #. type: Plain text
 #: amule.1.in amuled.1.in
-#, fuzzy
-#| msgid "[B<-t> I<E<lt>numE<gt>>] [I<eD2k-link>]"
 msgid "[B<-t> I<E<lt>numE<gt>>] [I<eD2k-link>|I<collection-file>]"
-msgstr "[B<-t> I<E<lt>numE<gt>>] [I<eD2k-Link>]"
+msgstr "[B<-t> I<E<lt>numE<gt>>] [I<eD2k-link>|I<collection-file>]"
 
 #. type: SH
 #: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in amuleweb.1.in ed2k.1.in
@@ -180,10 +178,9 @@ msgstr "Imprime una breve descripción de uso."
 
 #. type: TP
 #: amule.1.in amuled.1.in
-#, fuzzy, no-wrap
-#| msgid "B<[ eD2k-link ]>"
+#, no-wrap
 msgid "B<[ eD2k-link | collection-file ]>"
-msgstr "B<[ eD2k-Link ]>"
+msgstr "B<[ eD2k-link | collection-file ]>"
 
 #. type: Plain text
 #: amule.1.in amuled.1.in
