@@ -71,7 +71,7 @@ typedef struct _GtkWidget GtkWidget;
 #else
 #include <wx/taskbar.h>
 #include <wx/icon.h>
-#include <wx/dcmemory.h>
+#include <wx/image.h>
 class wxMenu;
 #endif
 
@@ -143,12 +143,12 @@ private:
 	int Old_Icon;
 	int Old_SpeedSize;
 
-	int Disconnected_Icon_size;
-	int LowId_Icon_size;
-	int HighId_Icon_size;
+	// The unmodified artwork for each state, indexed by TRAY_ICON_*, loaded
+	// once. SetTrayIcon() composes the speed bar onto a copy of one of these
+	// rather than onto the icon it drew last time -- see the comment there.
+	wxImage BaseImage[3];
 
 	wxIcon CurrentIcon;
-	wxMemoryDC IconWithSpeed;
 	wxString CurrentTip;
 
 	wxDECLARE_EVENT_TABLE();
