@@ -549,7 +549,9 @@ void CMuleTrayIcon::RebuildMenu()
 //  goes nowhere — build with libayatana-appindicator3 to fix that.
 // ---------------------------------------------------------------------
 
-#include <wx/artprov.h> // Needed for wxArtProvider::GetIcon
+#include <algorithm> // Needed for std::max / std::min
+
+#include <wx/artprov.h> // Needed for wxArtProvider::GetBitmap
 
 #include <wx/menu.h>
 
@@ -658,11 +660,6 @@ CMuleTrayIcon::CMuleTrayIcon()
 {
 	Old_Icon = -1;
 	Old_SpeedSize = 0xFFFF; // must be > any possible one.
-
-	// Create the background icons (speed improvement)
-	HighId_Icon_size = wxArtProvider::GetIcon("amule:tray_high").GetHeight();
-	LowId_Icon_size = wxArtProvider::GetIcon("amule:tray_low").GetHeight();
-	Disconnected_Icon_size = wxArtProvider::GetIcon("amule:tray_disconnected").GetHeight();
 }
 
 CMuleTrayIcon::~CMuleTrayIcon() {}
@@ -673,83 +670,71 @@ CMuleTrayIcon::~CMuleTrayIcon() {}
 
 void CMuleTrayIcon::SetTrayIcon(int Icon, uint32 percent)
 {
-	int Bar_ySize = 0;
+	wxASSERT(Icon >= 0 && Icon < (int)WXSIZEOF(BaseImage));
 
-	switch (Icon) {
-	case TRAY_ICON_HIGHID:
-		// Most likely case, test first
-		Bar_ySize = HighId_Icon_size;
-		break;
-	case TRAY_ICON_LOWID:
-		Bar_ySize = LowId_Icon_size;
-		break;
-	case TRAY_ICON_DISCONNECTED:
-		Bar_ySize = Disconnected_Icon_size;
-		break;
-	default:
-		wxFAIL;
+	if (!BaseImage[Icon].IsOk()) {
+		const char *artId = "amule:tray_disconnected";
+		switch (Icon) {
+		case TRAY_ICON_HIGHID:
+			artId = "amule:tray_high";
+			break;
+		case TRAY_ICON_LOWID:
+			artId = "amule:tray_low";
+			break;
+		default:
+			break;
+		}
+		wxImage image = wxArtProvider::GetBitmap(artId, wxART_OTHER).ConvertToImage();
+		if (!image.IsOk()) {
+			return;
+		}
+		// Artwork that predates alpha marks its transparency with pure red.
+		// Turn that into a real alpha channel once, here, so everything below
+		// this point works on one representation.
+		if (!image.HasAlpha()) {
+			image.SetMaskColour(255, 0, 0);
+			image.InitAlpha();
+		}
+		BaseImage[Icon] = image;
 	}
 
-	// Lookup this values for speed improvement: don't draw if not needed
-	int NewSize = (Bar_ySize * percent) / 100;
+	const wxImage &base = BaseImage[Icon];
+	const int width = base.GetWidth();
+	const int height = base.GetHeight();
+	const int barHeight = (height * (int)percent) / 100;
 
-	if ((Old_Icon != Icon) || (Old_SpeedSize != NewSize)) {
+	if ((Old_Icon == Icon) && (Old_SpeedSize == barHeight)) {
+		return;
+	}
+	Old_Icon = Icon;
+	Old_SpeedSize = barHeight;
 
-		if ((Old_SpeedSize > NewSize) || (Old_Icon != Icon)) {
-			// We have to rebuild the icon, because bar is lower now.
-			switch (Icon) {
-			case TRAY_ICON_HIGHID:
-				// Most likely case, test first
-				CurrentIcon = wxArtProvider::GetIcon("amule:tray_high");
-				break;
-			case TRAY_ICON_LOWID:
-				CurrentIcon = wxArtProvider::GetIcon("amule:tray_low");
-				break;
-			case TRAY_ICON_DISCONNECTED:
-				CurrentIcon = wxArtProvider::GetIcon("amule:tray_disconnected");
-				break;
-			default:
-				wxFAIL;
+	// Always compose onto a copy of the untouched artwork. Composing onto the
+	// icon we produced last time loses the transparency a little more each
+	// round: converting an icon back to a bitmap returns its transparent
+	// pixels as black, so a rising transfer rate -- which never takes the
+	// rebuild-from-scratch path -- ends up with a solid black background.
+	//
+	// The bar is written into the image rather than drawn with a wxDC because
+	// wxMSW's DC writes the colour channels and leaves alpha alone: a bar
+	// drawn over transparent pixels keeps alpha 0 and never appears, which is
+	// what happens to any artwork that carries its own alpha channel.
+	wxImage composed = base.Copy();
+	if (barHeight > 0) {
+		const wxColour barColour = CStatisticsDlg::getColors(11);
+		// Two pixels wide, in from the right edge, growing from the bottom.
+		const int barLeft = std::max(0, width - 4);
+		const int barRight = std::min(width, barLeft + 2);
+		for (int y = height - barHeight; y < height; ++y) {
+			for (int x = barLeft; x < barRight; ++x) {
+				composed.SetRGB(x, y, barColour.Red(), barColour.Green(), barColour.Blue());
+				composed.SetAlpha(x, y, wxALPHA_OPAQUE);
 			}
 		}
-
-		Old_Icon = Icon;
-		Old_SpeedSize = NewSize;
-
-		// Do whatever to the icon before drawing it (percent)
-
-		wxBitmap TempBMP;
-		TempBMP.CopyFromIcon(CurrentIcon);
-
-		TempBMP.SetMask(NULL);
-
-		IconWithSpeed.SelectObject(TempBMP);
-
-		// Speed bar is: centered, taking 80% of the icon height, and
-		// right-justified taking a 10% of the icon width.
-
-		// X
-		int Bar_xSize = 4;
-		int Bar_xPos = CurrentIcon.GetWidth() - 5;
-
-		IconWithSpeed.SetBrush(*(wxTheBrushList->FindOrCreateBrush(CStatisticsDlg::getColors(11))));
-		IconWithSpeed.SetPen(*wxTRANSPARENT_PEN);
-
-		IconWithSpeed.DrawRectangle(Bar_xPos + 1, Bar_ySize - NewSize, Bar_xSize - 2, NewSize);
-
-		// Unselect the icon.
-		IconWithSpeed.SelectObject(wxNullBitmap);
-
-		// Do transparency
-
-		// Set a new mask with transparency set to red.
-		wxMask *new_mask = new wxMask(TempBMP, wxColour(0xFF, 0x00, 0x00));
-
-		TempBMP.SetMask(new_mask);
-		CurrentIcon.CopyFromBitmap(TempBMP);
-
-		UpdateTray();
 	}
+
+	CurrentIcon.CopyFromBitmap(wxBitmap(composed));
+	UpdateTray();
 }
 
 void CMuleTrayIcon::SetTrayToolTip(const wxString &Tip)
