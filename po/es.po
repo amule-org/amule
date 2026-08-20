@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-20 11:35+0200\n"
-"PO-Revision-Date: 2026-08-20 09:19+0000\n"
+"PO-Revision-Date: 2026-08-20 14:14+0000\n"
 "Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
 "Language: es\n"
@@ -401,7 +401,7 @@ msgstr "ERROR"
 #: src/amule.cpp
 #, c-format
 msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
-msgstr ""
+msgstr "No se ha podido establecer el amuleapi EC token a %s; amuleapi volverá a su contraseña configurada."
 
 #: src/amule.cpp
 #, c-format
@@ -3004,7 +3004,7 @@ msgstr "Usuario Kad"
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: Kad is not connected"
-msgstr "La búsqueda de notas Kad para '%s' no se inició: Kad no está conectado."
+msgstr "La búsqueda de notas Kad para '%s' no se inició: Kad no está conectado"
 
 #: src/KnownFile.cpp
 #, c-format
@@ -4186,7 +4186,7 @@ msgstr "Eliminar los servidores caídos tras"
 
 #: src/muuli_wdr.cpp
 msgid "Static servers are never removed, even when unreachable."
-msgstr "Los servidores estáticos nunca son eliminados, incluso cuando no son accesibles."
+msgstr "Los servidores estáticos nunca se eliminan, incluso cuando son inalcanzables."
 
 #: src/muuli_wdr.cpp
 msgid "retries"
