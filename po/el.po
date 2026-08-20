@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-16 10:27+0200\n"
+"POT-Creation-Date: 2026-08-20 11:35+0200\n"
 "PO-Revision-Date: 2026-08-17 08:36+0000\n"
 "Last-Translator: Dimitris <dgalanak@yahoo.com>\n"
 "Language-Team: Greek\n"
@@ -3573,7 +3573,7 @@ msgstr "Bytes"
 msgid "KiB"
 msgstr ""
 
-#: src/muuli_wdr.cpp src/OtherFunctions.cpp
+#: src/muuli_wdr.cpp src/OtherFunctions.cpp src/PrefsUnifiedDlg.cpp
 msgid "MiB"
 msgstr ""
 
