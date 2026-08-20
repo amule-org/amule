@@ -233,7 +233,10 @@ wxString CClientsListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) co
 		return CFormat(wxT("%s:%u")) % Uint32toStringIP(row->ip) % row->port;
 
 	case COLUMN_CLIENTS_ORIGIN:
-		return OriginToText(row->sourceFrom);
+		// OriginToText() hands back the wxTRANSLATE() marker, which is only an
+		// extraction hint -- the lookup has to happen here, the way the download
+		// list's source column already does it.
+		return wxGetTranslation(OriginToText(row->sourceFrom));
 
 	case COLUMN_CLIENTS_FILES:
 		return row->files;

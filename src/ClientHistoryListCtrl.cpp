@@ -354,7 +354,9 @@ wxString CClientHistoryListCtrl::GetItemColumnText(wxUIntPtr item, unsigned colu
 		return CFormat(wxT("%s:%u")) % Uint32toStringIP(row->ip) % row->port;
 
 	case COLUMN_HISTORY_ORIGIN:
-		return row->identityKnown ? OriginToText(row->sourceFrom) : wxString();
+		// Translated here, not by OriginToText(): see CClientsListCtrl, which
+		// shares this column and had the same gap.
+		return row->identityKnown ? wxGetTranslation(OriginToText(row->sourceFrom)) : wxString();
 
 	case COLUMN_HISTORY_FIRST_SEEN:
 		return row->firstSeen == 0

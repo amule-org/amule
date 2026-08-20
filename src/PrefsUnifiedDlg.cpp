@@ -2470,8 +2470,10 @@ void PrefsUnifiedDlg::UpdateGeoIPStatus()
 		if (fn.FileExists()) {
 			const wxULongLong bytes = fn.GetSize();
 			if (bytes != wxInvalidSize) {
-				sizeLabel =
-					wxString::Format(" (%.1f MiB)", bytes.ToDouble() / (1024.0 * 1024.0));
+				// The unit is a separate argument so it picks up the "MiB"
+				// translation the rest of the dialog already uses.
+				sizeLabel = wxString::Format(
+					" (%.1f %s)", bytes.ToDouble() / (1024.0 * 1024.0), _("MiB"));
 			}
 		}
 		if (attribution.IsEmpty()) {
