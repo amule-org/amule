@@ -466,11 +466,26 @@ CTag *CFileDataIO::ReadTag(bool bOptACP) const
 				       EscapeForLog(name));
 		}
 	} catch (const CMuleException &e) {
-		AddLogLineN(e.what());
+		// Debug, not standard: this says only what went wrong, never which
+		// file or packet it went wrong in, and it is rethrown for a caller
+		// that does know. A truncated tag off the network therefore put a
+		// bare "SafeIO::EOF: Attempt to read past end of file." in the
+		// daemon log with nothing around it, while the line naming the peer
+		// and opcode sat at debug level and was compiled out (issue #961).
+		//
+		// Every caller reports the failure itself: CIndexed::ReadFile and
+		// ~CIndexed through AddDebugLogLineC, which survives a release
+		// build, and fileview on cerr. The Kad UDP handlers report through
+		// CClientUDPSocket's AddDebugLogLineN, so a malformed packet is now
+		// silent in release -- which is the right answer for a packet that
+		// was dropped and cost nothing.
+		AddDebugLogLineN(logGeneral, e.what());
 		delete retVal;
 		throw;
 	} catch (const wxString &e) {
-		AddLogLineN(e);
+		// Same reasoning: the throw just above carries the type and name,
+		// and the caller names the source.
+		AddDebugLogLineN(logGeneral, e);
 		throw;
 	}
 
