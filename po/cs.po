@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-16 10:27+0200\n"
-"PO-Revision-Date: 2026-08-18 18:55+0000\n"
+"PO-Revision-Date: 2026-08-20 09:19+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
 "Language: cs\n"
@@ -3209,7 +3209,7 @@ msgstr "Vložit"
 #: src/MuleTextCtrl.cpp src/muuli_wdr.cpp
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Clear"
-msgstr "Vyprázdnit"
+msgstr "Vyčistit"
 
 #: src/MuleTextCtrl.cpp
 msgid "Select All"
@@ -3576,22 +3576,20 @@ msgid "Hide Known Files"
 msgstr "Skrýt známé soubory"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Reset Filters"
-msgstr "Vyprázdnit pole"
+msgstr "Resetovat filtry"
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Start"
 msgstr "Spustit"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Extend"
-msgstr "Přípona"
+msgstr "Rozšířit"
 
 #: src/muuli_wdr.cpp
 msgid "Ask already-responded Kad peers to widen the search. Each click queries the next-closest peer for more contacts (KADEMLIA_FIND_VALUE_MORE), surfacing additional file matches that the search's initial alpha frontier missed."
-msgstr ""
+msgstr "Požádat o rozšíření hledání uzly Kad, které již odpověděly. Každé kliknutí se dotáže dalšího nejbližšího uzlu na další kontakty (KADEMLIA_FIND_VALUE_MORE), čímž se najdou další shody souborů, které počáteční alfa fronta hledání nezachytila."
 
 #: src/muuli_wdr.cpp
 msgid "Stop"
@@ -3602,13 +3600,12 @@ msgid "Download"
 msgstr "Stahování"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Clear Search Results"
-msgstr "Výsledek hledání"
+msgstr "Vyčistit výsledky vyhledávání"
 
 #: src/muuli_wdr.cpp
 msgid "Reset Fields"
-msgstr "Vyprázdnit pole"
+msgstr "Resetovat pole"
 
 #: src/muuli_wdr.cpp
 msgid "Results"
@@ -3648,7 +3645,7 @@ msgstr "Přenos"
 
 #: src/muuli_wdr.cpp
 msgid "Partfilestatus :"
-msgstr ""
+msgstr "Stav souboru part :"
 
 #: src/muuli_wdr.cpp
 msgid "Last seen complete :"
@@ -3660,7 +3657,7 @@ msgstr "Nalezené zdroje:"
 
 #: src/muuli_wdr.cpp
 msgid "Transferring Sources :"
-msgstr ""
+msgstr "Přenášející zdroje :"
 
 #: src/muuli_wdr.cpp
 msgid "Filepart-Count :"
@@ -3703,9 +3700,8 @@ msgid "Packages saved by I.C.H. :"
 msgstr "Balíčků zachráněných pomocí I.C.H.:"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Sharing"
-msgstr "Sdílení:"
+msgstr "Sdílení"
 
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
 msgid "Requests"
@@ -3728,28 +3724,24 @@ msgid "Complete Sources"
 msgstr "Kompletní zdroje"
 
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Shared since"
-msgstr "Sdílené soubory"
+msgstr "Sdíleno od"
 
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Last upload"
-msgstr ", Odesláno:"
+msgstr "Poslední odeslání"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Media Info"
-msgstr "Kad Info"
+msgstr "Media Info"
 
 #: src/muuli_wdr.cpp
 msgid "Length :"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Bitrate :"
-msgstr "Nehodnocené"
+msgstr "Datový tok :"
 
 #: src/muuli_wdr.cpp
 msgid "Codec :"
@@ -3757,7 +3749,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Artist :"
-msgstr ""
+msgstr "Umělec :"
 
 #: src/muuli_wdr.cpp
 msgid "Album :"
@@ -3789,13 +3781,15 @@ msgstr "Budiž"
 
 #: src/muuli_wdr.cpp
 msgid "Comment/Rate file (Text will be visible to all users)"
-msgstr ""
+msgstr "Komentář/hodnocení souboru (text bude viditelný všem uživatelům)"
 
 #: src/muuli_wdr.cpp
 msgid ""
 "For a film you can say its length, its story, language ...\n"
 "and if it's a fake, you can tell that to other users of aMule."
 msgstr ""
+"U filmu můžete uvést jeho délku, děj, jazyk ...\n"
+"a pokud jde o podvrh, můžete to sdělit ostatním uživatelům aMule."
 
 #: src/muuli_wdr.cpp
 msgid "File Quality"
@@ -3827,12 +3821,11 @@ msgstr "Výborný"
 
 #: src/muuli_wdr.cpp
 msgid "Choose the file rating or advice users if the file is invalid ..."
-msgstr ""
+msgstr "Vyberte hodnocení souboru nebo upozorněte uživatele, že soubor je neplatný ..."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Get from Kad"
-msgstr "Odpojen od Kad"
+msgstr "Získat z Kad"
 
 #: src/muuli_wdr.cpp
 msgid "Refresh"
@@ -3868,7 +3861,7 @@ msgstr "Uživatelské jméno:"
 
 #: src/muuli_wdr.cpp
 msgid "Userhash :"
-msgstr ""
+msgstr "Hash uživatele :"
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Add"
@@ -3908,7 +3901,7 @@ msgstr "Jméno:"
 
 #: src/muuli_wdr.cpp
 msgid "Userhash:"
-msgstr ""
+msgstr "Hash uživatele:"
 
 #: src/muuli_wdr.cpp
 msgid "Client software:"
@@ -3987,13 +3980,12 @@ msgid "Secure ident:"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Queue rank:"
-msgstr "Pořadí ve frontě"
+msgstr "Pořadí ve frontě:"
 
 #: src/muuli_wdr.cpp
 msgid "Queue score:"
-msgstr ""
+msgstr "Skóre fronty:"
 
 #: src/muuli_wdr.cpp
 msgid "Nick"
@@ -4020,30 +4012,28 @@ msgid "This specifies the language used on controls."
 msgstr "Jazyk ovládání programu"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Periodically check for a new version"
-msgstr "Kontrola nové verze po spuštění"
+msgstr "Pravidelně kontrolovat novou verzi"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enabling this will make aMule check for a new version at startup and once a day while running"
-msgstr "aMule po spuštění zkontroluje, zda nevyšla nová verze"
+msgstr "Povolením této volby bude aMule kontrolovat novou verzi při spuštění a jednou denně během běhu"
 
 #: src/muuli_wdr.cpp
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
-msgstr ""
+msgstr "Zaregistruje v operačním systému záznam automatického spouštění aMule po přihlášení uživatele. Pokud přesunete binární soubor aMule, spusťte poté aMule jednou ručně, aby se záznam obnovil."
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
-msgstr ""
+msgstr "Nastaví aMule jako výchozí obslužný program pro odkazy ed2k://, takže se otevře kliknutím na takový odkaz v prohlížeči nebo ve správci souborů."
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "aMule only handles eD2k-compatible magnets (containing xt=urn:ed2k:). BitTorrent magnets are NOT supported and clicking them will silently fail. If you use a BitTorrent client (Transmission, qBittorrent, etc.), leave this off."
-msgstr ""
+msgstr "aMule zpracovává pouze magnety kompatibilní s eD2k (obsahující xt=urn:ed2k:). Magnety BitTorrent NEJSOU podporovány a kliknutí na ně tiše selže. Pokud používáte klienta BitTorrent (Transmission, qBittorrent atd.), ponechte tuto volbu vypnutou."
 
 #: src/muuli_wdr.cpp
 msgid "Opening a collection queues every eD2k link it contains. On Windows this adds aMule to the \"Open with\" list and takes the default only when no other program has claimed the file type."
-msgstr ""
+msgstr "Otevřením kolekce se do fronty zařadí každý eD2k odkaz, který obsahuje. Na Windows to přidá aMule do seznamu „Otevřít pomocí“ a stane se výchozím pouze v případě, že žádný jiný program tento typ souboru nepřevzal."
 
 #: src/muuli_wdr.cpp
 msgid "Start minimized"
@@ -4059,7 +4049,7 @@ msgstr "Ptát se na ukončení programu"
 
 #: src/muuli_wdr.cpp
 msgid "Makes aMule prompt before exiting."
-msgstr ""
+msgstr "Způsobí, že se aMule před ukončením zeptá."
 
 #: src/muuli_wdr.cpp
 msgid "Enable Tray Icon"
@@ -4071,7 +4061,7 @@ msgstr "Povolí/zakáže ikonu v systray."
 
 #: src/muuli_wdr.cpp
 msgid "Hide application window when close button is pressed"
-msgstr ""
+msgstr "Skrýt okno aplikace po stisknutí tlačítka pro uzavření"
 
 #: src/muuli_wdr.cpp
 msgid "Minimize to Tray Icon"
@@ -4083,28 +4073,27 @@ msgstr "Povolením tohoto se aMule minimalizuje do traye (místo pruhu úloh)."
 
 #: src/muuli_wdr.cpp
 msgid "Show notifications when finished downloading"
-msgstr ""
+msgstr "Zobrazit oznámení po dokončení stahování"
 
 #: src/muuli_wdr.cpp
 msgid "Enabling this will make aMule to show notifications when finished downloading."
-msgstr ""
+msgstr "Povolením této volby bude aMule zobrazovat oznámení po dokončení stahování."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Remember search history"
-msgstr "Zapamatovat si toto nastavení"
+msgstr "Pamatovat historii hledání"
 
 #: src/muuli_wdr.cpp
 msgid "Keeps a dropdown list of your past search terms in the Search tab's Name field. This remembers the queries you typed, not the results they returned."
-msgstr ""
+msgstr "Uchovává rozevírací seznam vašich předchozích vyhledávaných výrazů v poli Název na kartě Hledání. Pamatuje si dotazy, které jste zadali, nikoli výsledky, které vrátily."
 
 #: src/muuli_wdr.cpp
 msgid "Tooltip delay time: "
-msgstr ""
+msgstr "Doba prodlevy vyskakovacího popisku: "
 
 #: src/muuli_wdr.cpp
 msgid "seconds"
-msgstr ""
+msgstr "sekund"
 
 #: src/muuli_wdr.cpp
 msgid "Browser Selection"
@@ -4112,7 +4101,7 @@ msgstr "Výběr prohlížeče"
 
 #: src/muuli_wdr.cpp
 msgid "Enter your browser name here. Leave this field empty to use the system default browser."
-msgstr ""
+msgstr "Zde zadejte název svého prohlížeče. Ponechte pole prázdné, chcete-li použít výchozí prohlížeč systému."
 
 #: src/muuli_wdr.cpp
 msgid "Open in new tab if possible"
@@ -4168,7 +4157,7 @@ msgstr "Přidružit místní adresu k IP (prázdné pro jakoukoli):"
 
 #: src/muuli_wdr.cpp
 msgid "Advanced users only: If you have multiple network interfaces, enter the address of the interface to which aMule should be bound."
-msgstr ""
+msgstr "Pouze pro pokročilé uživatele: Pokud máte více síťových rozhraní, zadejte adresu rozhraní, ke kterému by měl být aMule svázán."
 
 #: src/muuli_wdr.cpp
 msgid "Bind to network interface (empty for any):"
@@ -4204,7 +4193,7 @@ msgstr "Odstranit mrtvý server po"
 
 #: src/muuli_wdr.cpp
 msgid "Static servers are never removed, even when unreachable."
-msgstr ""
+msgstr "Stálé servery nejsou nikdy odebrány, ani když jsou nedostupné."
 
 #: src/muuli_wdr.cpp
 msgid "retries"
@@ -4256,7 +4245,7 @@ msgstr "Pokusit se nejprve stáhnout první a poslední části"
 
 #: src/muuli_wdr.cpp
 msgid "Endgame mode: rotate to faster sources for the final blocks"
-msgstr ""
+msgstr "Režim koncovka: u posledních bloků dat souborů přepínat na rychlejší zdroje"
 
 #: src/muuli_wdr.cpp
 msgid "Start next paused file when a file completes"
@@ -4718,7 +4707,7 @@ msgstr "Zakázat přístup hostům"
 
 #: src/muuli_wdr.cpp
 msgid "Guest sessions may read status and listings but cannot change anything. Turning this off clears the stored guest password."
-msgstr ""
+msgstr "Relace hostů mohou číst stav a seznamy, ale nemohou nic měnit. Vypnutím této volby se vymaže uložené heslo hosta."
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -4767,13 +4756,12 @@ msgid "Enable Gzip compression"
 msgstr "Povoliz Gzip kompresi"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Reset page to defaults"
-msgstr "Výchozí pro systém"
+msgstr "Resetovat stránku do výchozího stavu"
 
 #: src/muuli_wdr.cpp
 msgid "Reset the settings on the current page to their default values."
-msgstr ""
+msgstr "Resetovat nastavení na aktuální stránce na výchozí hodnoty."
 
 #: src/muuli_wdr.cpp src/ServerWnd.cpp
 msgid "OK"
@@ -4785,7 +4773,7 @@ msgstr "Klikněte zde pro aplikování změn nastavení."
 
 #: src/muuli_wdr.cpp
 msgid "Reset any changes made to the preferences."
-msgstr "Zahodí všechny změny v nastavení."
+msgstr "Resetovat jakékoli změny v nastavení."
 
 #: src/muuli_wdr.cpp
 msgid "Comment :"
@@ -4810,7 +4798,7 @@ msgstr "Barva pro tuto kategorii:"
 
 #: src/muuli_wdr.cpp
 msgid "Click this button to reset the log."
-msgstr "Klikněte na toto tlačítko pro vynulování logu."
+msgstr "Klikněte na toto tlačítko pro resetování logu."
 
 #: src/muuli_wdr.cpp
 msgid "Click on this button to update the servers list from URL ..."
@@ -6203,12 +6191,11 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Reset the settings on this page to their default values?"
-msgstr ""
+msgstr "Resetovat nastavení na této stránce na výchozí hodnoty?"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Reset to defaults"
-msgstr "Výchozí pro systém"
+msgstr "Resetovat do výchozího stavu"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Edit server list"
@@ -6392,13 +6379,12 @@ msgid "Choose the local folder"
 msgstr "Zvolte místní složku"
 
 #: src/SearchDlg.cpp
-#, fuzzy
 msgid "Clear Search History"
-msgstr "Zapamatovat si toto nastavení"
+msgstr "Vyčistit historii vyhledávání"
 
 #: src/SearchDlg.cpp
 msgid "Clear the saved search history? This cannot be undone."
-msgstr ""
+msgstr "Vyčistit uloženou historii hledání? Toto nelze vrátit zpět."
 
 #: src/SearchDlg.cpp
 msgid "Search warning"
@@ -6526,18 +6512,16 @@ msgid "New"
 msgstr "Nový"
 
 #: src/ServerConnect.cpp
-#, fuzzy
 msgid "Failed to connect to all obfuscated static servers listed. Making another pass without obfuscation."
-msgstr "Selhalo připojení ke všem serverům s obfuskací. Zkouším to znovu bez obfuskace."
+msgstr "Selhalo připojení ke všem stálým serverům s obfuskací. Zkouším to znovu bez obfuskace."
 
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all obfuscated servers listed. Making another pass without obfuscation."
 msgstr "Selhalo připojení ke všem serverům s obfuskací. Zkouším to znovu bez obfuskace."
 
 #: src/ServerConnect.cpp
-#, fuzzy
 msgid "Failed to connect to all static servers listed."
-msgstr "Selhalo připojení ke všem serverům na seznamu. Zkouším znovu."
+msgstr "Selhalo připojení ke všem stálým serverům na seznamu."
 
 #: src/ServerConnect.cpp
 #, fuzzy
@@ -8072,7 +8056,7 @@ msgstr "Znovu načte seznam sdílených souborů."
 
 #: src/TextClient.cpp
 msgid "Reset log."
-msgstr "Vyčistit log."
+msgstr "Resetovat log."
 
 #: src/TextClient.cpp
 #, c-format
@@ -8471,7 +8455,7 @@ msgstr "Maximální rychlost stahování během všech běhů wxCas"
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid "Reset"
-msgstr "Reset"
+msgstr "Resetovat"
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid "System"

@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-16 10:27+0200\n"
-"PO-Revision-Date: 2026-08-18 18:56+0000\n"
+"PO-Revision-Date: 2026-08-20 09:19+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
 "Language: ru\n"
@@ -461,19 +461,19 @@ msgstr "Это ваш первый запуск aMule %s"
 
 #: src/amule.cpp
 msgid "This version is a testing version, updated daily, and\n"
-msgstr "Эта версия является тестовой и обновляется ежедневно.\n"
+msgstr "Эта тестовая версия, которая ежедневно обновляется, и\n"
 
 #: src/amule.cpp
 msgid "we give no warranty it won't break anything, burn your house,\n"
-msgstr "мы не предоставляем никаких гарантий на случай каких либо повреждений, пожара \n"
+msgstr "мы не гарантируем, что она ничего не сломает, не спалит ваш дом,\n"
 
 #: src/amule.cpp
 msgid "or kill your dog. But it *should* be safe to use anyway.\n"
-msgstr "или же смерти вашей любимой собачки. И все же использование её *должно* быть безопасным.\n"
+msgstr "или не навредит вашей собаке. Но использовать её *вроде бы* безопасно.\n"
 
 #: src/amule.cpp
 msgid "More information, support and new releases can found at our homepage,\n"
-msgstr "Дополнительную информацию, поддержку и новые версии вы найдете на нашем сайте:\n"
+msgstr "Подробности, поддержку и новые версии можно найти на нашем сайте:\n"
 
 #: src/amule.cpp
 msgid "at https://amule-org.github.io, or in our IRC channel #aMule at irc.libera.chat.\n"
@@ -481,7 +481,7 @@ msgstr "https://amule-org.github.io, или в нашем IRC-канале #aMul
 
 #: src/amule.cpp
 msgid "Feel free to report any bugs to https://github.com/amule-org/amule/issues"
-msgstr "Сообщайте нам о найденных ошибках на https://github.com/amule-org/amule/issues"
+msgstr "Сообщайте нам об ошибках на https://github.com/amule-org/amule/issues"
 
 #: src/amule.cpp
 msgid ""
@@ -498,7 +498,7 @@ msgstr "Имя сервера подтверждено"
 #: src/amule.cpp
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
-msgstr "Выделение место под файл '%s' не удалось: %s"
+msgstr "Не удалось выделить место на диске для файла «%s»: %s"
 
 #: src/amule.cpp
 msgid "ERROR: can't open logfile"
@@ -1211,7 +1211,7 @@ msgstr "Создать слот для друга"
 
 #: src/ClientContextActions.cpp src/FriendListCtrl.cpp
 msgid "View Files"
-msgstr "Просмотр файлов"
+msgstr "Просмотреть файлы"
 
 #: src/ClientContextActions.cpp
 msgid "Send message"
@@ -1328,7 +1328,7 @@ msgstr "IP-адрес"
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Origin"
-msgstr "Откуда"
+msgstr "Источник"
 
 #: src/ClientHistoryListCtrl.cpp
 msgid "First seen"
@@ -5290,7 +5290,7 @@ msgstr "Выбранных файлов"
 
 #: src/muuli_wdr.cpp
 msgid "Active uploads only"
-msgstr "Только активные отдачи"
+msgstr "Только активных отдач"
 
 #: src/muuli_wdr.cpp
 msgid "Reload:"

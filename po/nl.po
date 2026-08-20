@@ -13,7 +13,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-16 10:27+0200\n"
-"PO-Revision-Date: 2026-08-18 18:56+0000\n"
+"PO-Revision-Date: 2026-08-20 09:19+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
 "Language: nl\n"
@@ -24,9 +24,8 @@ msgstr ""
 "X-Generator: Poedit 2.4.2\n"
 
 #: src/AboutDialog.cpp
-#, fuzzy
 msgid "About aMule"
-msgstr "Toon aMule"
+msgstr "Over aMule"
 
 #: src/AboutDialog.cpp
 msgid "aMule remote control "
@@ -45,7 +44,6 @@ msgstr ""
 "\n"
 
 #: src/AboutDialog.cpp
-#, fuzzy
 msgid ""
 "Copyright (c) 2003-2026 aMule Team \n"
 "\n"
@@ -75,39 +73,36 @@ msgstr "Forum:"
 
 #: src/AboutDialog.cpp
 msgid "Documentation:"
-msgstr ""
+msgstr "Documentatie:"
 
 #: src/AboutDialog.cpp
 msgid "Issues:"
-msgstr ""
+msgstr "Problemen:"
 
 #: src/AboutDialog.cpp
-#, fuzzy
 msgid "Click to check for a newer version."
-msgstr "Controleer op nieuwe versie bij het starten"
+msgstr "Klik om te controleren op een nieuwe versie."
 
 #: src/AboutDialog.cpp
 msgid "Check for updates"
-msgstr ""
+msgstr "Controleer op updates"
 
 #: src/AboutDialog.cpp
-#, fuzzy
 msgid "Checking for updates..."
-msgstr "Verbinding met Kad wordt gemaakt..."
+msgstr "Controleren op updates..."
 
 #: src/AboutDialog.cpp
-#, fuzzy
 msgid "You are running the latest version."
-msgstr "U gebruikt een verouderde versie van aMule!"
+msgstr "U gebruikt de laatste versie."
 
 #: src/AboutDialog.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "A new version (%s) is available:"
-msgstr "Niet beschikbaar"
+msgstr "Een nieuwe versie (%s) is beschikbaar:"
 
 #: src/AboutDialog.cpp
 msgid "Could not check for updates. Please try again later."
-msgstr ""
+msgstr "Kon niet controleren op updates. Probeer het later opnieuw."
 
 #: src/AddFriend.cpp
 msgid "Add a Friend"
@@ -133,47 +128,50 @@ msgid ""
 "\n"
 "Install desktop integration now?"
 msgstr ""
+"aMule kan bureaubladstarters, pictogrammen en shell-opdrachtsnelkoppelingen in uw thuismap installeren, zodat het verschijnt in uw toepassingenmenu zoals een normaal geïnstalleerde app.\n"
+"\n"
+"Dit is omkeerbaar - de bestanden bevinden zich onder ~/.local/share/applications, ~/.local/share/icons en ~/.local/bin, en kunnen op elk moment worden verwijderd.\n"
+"\n"
+"Bureaubladintegratie nu installeren?"
 
 #: src/AppImageIntegration.cpp
-#, fuzzy
 msgid "Add aMule to your application menu?"
-msgstr "Na applicatienaam"
+msgstr "aMule toevoegen aan uw appmenu?"
 
 #: src/AppImageIntegration.cpp
 msgid "Install"
-msgstr ""
+msgstr "Installeren"
 
 #: src/AppImageIntegration.cpp
 msgid "Not now"
-msgstr ""
+msgstr "Niet nu"
 
 #: src/AppImageIntegration.cpp src/amuleDlg.cpp
 msgid "Don't ask again"
-msgstr ""
+msgstr "Niet meer vragen"
 
 #: src/AppImageIntegration.cpp
 msgid "Cannot install desktop integration: the APPDIR environment variable is not set. This usually means the AppImage was launched in a non-standard way."
-msgstr ""
+msgstr "Kan bureaubladintegratie niet installeren: de omgevingsvariabele APPDIR is niet ingesteld. Dit betekent meestal dat de AppImage op een ongebruikelijke manier is gestart."
 
 #: src/AppImageIntegration.cpp
-#, fuzzy
 msgid "aMule integration failed"
-msgstr "Verbinding mislukt "
+msgstr "aMule-integratie mislukt"
 
 #: src/AppImageIntegration.cpp
 #, c-format
 msgid "Cannot install desktop integration: failed to create %s. Check that your home directory is writable."
-msgstr ""
+msgstr "Kan bureaubladintegratie niet installeren: het aanmaken van %s is mislukt. Controleer of uw thuismap beschrijfbaar is."
 
 #: src/AppImageIntegration.cpp
 #, c-format
 msgid "Cannot install desktop integration: failed to write %s. Check that your home directory is writable."
-msgstr ""
+msgstr "Kan bureaubladintegratie niet installeren: het schrijven van %s is mislukt. Controleer of uw thuismap beschrijfbaar is."
 
 #: src/AppImageIntegration.cpp
 #, c-format
 msgid "AppImage integration: aMule added to your application menu (%d shell shortcuts under ~/.local/bin)."
-msgstr ""
+msgstr "AppImage-integratie: aMule toegevoegd aan uw toepassingenmenu (%d shell-snelkoppelingen onder ~/.local/bin)."
 
 #: src/AppImageIntegration.cpp
 msgid ""
@@ -2166,7 +2164,7 @@ msgstr "Ongeldige link of al op de lijst."
 
 #: src/ExternalConn.cpp
 msgid "Version check throttled; try again shortly."
-msgstr ""
+msgstr "Versiecontrole beperkt; probeer het binnenkort opnieuw."
 
 #: src/ExternalConn.cpp
 msgid "Version check is not available on this daemon."
@@ -3023,7 +3021,7 @@ msgstr ""
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: another Kad search (e.g. a source search) is already using this file's hash - try again shortly"
-msgstr ""
+msgstr "Kad-notitiezoekopdracht voor '%s' niet gestart: een andere Kad-zoekopdracht (bijv. een bronzoekopdracht) gebruikt de hash van dit bestand al - probeer het binnenkort opnieuw"
 
 #: src/KnownFile.cpp
 #, c-format
@@ -8928,12 +8926,16 @@ msgid ""
 "aMule appears to be running from $INSTDIR.\r\n"
 "Please close aMule (and aMuleD / aMuleGUI) and try again."
 msgstr ""
+"aMule lijkt te worden uitgevoerd vanuit $INSTDIR.\n"
+"Sluit aMule (en aMuleD / aMuleGUI) en probeer het opnieuw."
 
 #: packaging/windows/installer_strings.c
 msgid ""
 "aMule daemon (amuled.exe) appears to be running from $INSTDIR.\r\n"
 "Please stop it and try again."
 msgstr ""
+"De aMule-daemon (amuled.exe) lijkt te worden uitgevoerd vanuit $INSTDIR.\n"
+"Stop deze en probeer het opnieuw."
 
 #: packaging/windows/installer_strings.c
 msgid "Removing previous aMule installation at $0..."
@@ -8944,6 +8946,8 @@ msgid ""
 "Could not remove the previous aMule installation at $0.\r\n"
 "Please close any running aMule processes and try again, or uninstall the previous version manually first."
 msgstr ""
+"Kon de vorige aMule-installatie op $0 niet verwijderen.\n"
+"Sluit alle actieve aMule-processen en probeer het opnieuw, of verwijder eerst handmatig de vorige versie."
 
 #: packaging/windows/installer_strings.c
 msgid "aMule appears to be running. Please close it and re-run the uninstaller."
