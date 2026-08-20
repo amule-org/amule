@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-16 10:27+0200\n"
-"PO-Revision-Date: 2026-08-18 18:55+0000\n"
+"PO-Revision-Date: 2026-08-20 09:19+0000\n"
 "Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
 "Language: es\n"
@@ -3130,16 +3130,15 @@ msgstr "No se puede configurar el cifrado de conexión. Conexión cerrada."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "The core did not negotiate an encrypted connection. It may be an older aMule without encryption support, or the connection may have been tampered with. To connect without encryption, turn it off in the connection settings."
-msgstr ""
+msgstr "El núcleo no negoció una conexión encriptada. Puede ser un aMule antiguo sin soporte de encriptación, o la conexión puede haber sido manipulada. Para conectarse sin encriptación, desactívalo en la configuración de conexión."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "External Connection: Bad reply, handshake failed. Connection closed."
 msgstr "Conexión externa: respuesta errónea, error al establecer la comunicación. Conexión cerrada."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "External Connection: the daemon failed to prove it knows the password. Connection closed."
-msgstr "Conexión externa: respuesta errónea, error al establecer la comunicación. Conexión cerrada."
+msgstr "Conexión externa: el demonio no ha podido demostrar conocer la contraseña. Conexión cerrada."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "Succeeded! Connection established to aMule "
@@ -3160,7 +3159,7 @@ msgstr "Conexión externa: error al establecer la comunicación."
 #: src/LibSocketAsio.cpp
 #, c-format
 msgid "Error creating UDP socket %s %d : %s"
-msgstr ""
+msgstr "Error creando socket UDP %s %d : %s"
 
 #: src/LibSocketAsio.cpp
 #, c-format
@@ -3212,7 +3211,7 @@ msgstr "Seleccionar todo"
 #: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
 #: src/StatisticsDlg.cpp
 msgid "KiB/s"
-msgstr ""
+msgstr "KiB/s"
 
 #: src/MuleTrayIcon.cpp
 msgid "Unlimited"
@@ -3402,12 +3401,12 @@ msgstr "Total SU: %s"
 #: src/MuleUDPSocket.cpp
 #, c-format
 msgid "Created %s at port %u"
-msgstr ""
+msgstr "Creado %s en el puerto %u"
 
 #: src/MuleUDPSocket.cpp
 #, c-format
 msgid "WARNING! %s: Packet to %s discarded due to error (%s) while sending."
-msgstr ""
+msgstr "¡AVISO! %s: Paquete a %s descartado debido a error (%s) mientras se enviaba."
 
 #: src/muuli_wdr.cpp
 msgid "Paste eD2k or magnet links here"
@@ -3539,15 +3538,15 @@ msgstr "Bytes"
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
 msgid "KiB"
-msgstr ""
+msgstr "KiB"
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
 msgid "MiB"
-msgstr ""
+msgstr "MiB"
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
 msgid "GiB"
-msgstr ""
+msgstr "GiB"
 
 #: src/muuli_wdr.cpp
 msgid "Max Size"
@@ -3570,18 +3569,16 @@ msgid "Hide Known Files"
 msgstr "Ocultar los archivos conocidos"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Reset Filters"
-msgstr "Reiniciar los campos"
+msgstr "Reiniciar filtros"
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Start"
 msgstr "Comenzar"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Extend"
-msgstr "Extensión"
+msgstr "Extender"
 
 #: src/muuli_wdr.cpp
 msgid "Ask already-responded Kad peers to widen the search. Each click queries the next-closest peer for more contacts (KADEMLIA_FIND_VALUE_MORE), surfacing additional file matches that the search's initial alpha frontier missed."
@@ -3596,9 +3593,8 @@ msgid "Download"
 msgstr "Descarga"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Clear Search Results"
-msgstr "Resultado de la búsqueda"
+msgstr "Borrar resultados de búsqueda"
 
 #: src/muuli_wdr.cpp
 msgid "Reset Fields"
@@ -4030,7 +4026,7 @@ msgstr "aMule solo maneja enlaces magnet compatibles con eD2k (que contengan xt=
 
 #: src/muuli_wdr.cpp
 msgid "Opening a collection queues every eD2k link it contains. On Windows this adds aMule to the \"Open with\" list and takes the default only when no other program has claimed the file type."
-msgstr ""
+msgstr "Abriendo una cola de colección por cada eD2k enlace que contiene. En Windows esto añade aMule al menú \"Abrir con\" y se configura por defecto sólo cuándo ningún otro programa ha sido configurado."
 
 #: src/muuli_wdr.cpp
 msgid "Start minimized"
@@ -4077,13 +4073,12 @@ msgid "Enabling this will make aMule to show notifications when finished downloa
 msgstr "Si se activa, aMule mostrará notificaciones cuando acabe de descargar."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Remember search history"
-msgstr "Recordar estas opciones"
+msgstr "Recordar historia de búsqueda"
 
 #: src/muuli_wdr.cpp
 msgid "Keeps a dropdown list of your past search terms in the Search tab's Name field. This remembers the queries you typed, not the results they returned."
-msgstr ""
+msgstr "Mantiene una lista desplegable de búsquedas anteriores en el campo Nombre de la pestaña Buscar. Esto recuerda las búsquedas que usted escribió, no los resultados de la búsqueda."
 
 #: src/muuli_wdr.cpp
 msgid "Tooltip delay time: "
@@ -4191,7 +4186,7 @@ msgstr "Eliminar los servidores caídos tras"
 
 #: src/muuli_wdr.cpp
 msgid "Static servers are never removed, even when unreachable."
-msgstr ""
+msgstr "Los servidores estáticos nunca son eliminados, incluso cuando no son accesibles."
 
 #: src/muuli_wdr.cpp
 msgid "retries"
@@ -4267,7 +4262,7 @@ msgstr "Reserva en disco el espacio para los archivos nuevos enteros, reduciendo
 
 #: src/muuli_wdr.cpp
 msgid "Create new files as sparse files"
-msgstr ""
+msgstr "Crear nuevos archivos como archivos escasos"
 
 #: src/muuli_wdr.cpp
 msgid "Sparse part files only occupy disk space for the parts already downloaded, so free space is used up gradually as the file fills in. Turn this off to use an ordinary file instead - useful where sparse files are unsupported or slow, or where backup/de-duplication tools handle them badly. Applies only when the core runs on Windows; on Linux and macOS part files are sparse anyway and this setting has no effect."

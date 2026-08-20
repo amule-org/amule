@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-06-10 16:45+0200\n"
-"PO-Revision-Date: 2026-08-17 09:04+0000\n"
+"PO-Revision-Date: 2026-08-20 09:20+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: lv\n"
@@ -117,7 +117,7 @@ msgstr ""
 #. type: Plain text
 #: amule.1.in:35 amuled.1.in:43 amulegui.1.in:36
 msgid "Prints log messages to stdout."
-msgstr "Izvada žurnālierakstus standarta izvadē."
+msgstr "Izvada žurnālierakstus konsoles/termināļa ekrānā."
 
 #. type: Plain text
 #: amule.1.in:38 amuled.1.in:46 amulegui.1.in:39
@@ -226,7 +226,7 @@ msgstr "Ceļi"
 #. type: Plain text
 #: amule.1.in:82 amulecmd.1.in:238 amuleweb.1.in:141
 msgid "For all options which take a I<E<lt>pathE<gt>> value, if the I<path> contains no directory part (i.e. just a plain filename), then it is considered to be under the aMule configuration directory, I<~/.aMule>."
-msgstr "Visi komandrindas parametri, kas pieņem I<E<lt>ceļaE<gt>> argumentu, ja tas nesatur mapi (t.i., tikai datnes nosaukumu), tiek uzskatīts, ka šī datne atrodas I<~/.aMule> konfigurācijas mapē."
+msgstr "Visi iestatījumi, kas pieņem I<E<lt>ceļaE<gt>> argumentu un nesatur mapi (t.i., norādīts tikai datnes nosaukums), uzskata, ka šī datne atrodas I<~/.aMule> konfigurācijas mapē."
 
 #. type: SH
 #: amule.1.in:82 amulecmd.1.in:266 amuled.1.in:85 amuleweb.1.in:175
@@ -351,7 +351,7 @@ msgstr "[B<--create-config-from>=I<E<lt>ceļšE<gt>>]"
 #. type: Plain text
 #: amulecmd.1.in:29
 msgid "B<amulecmd> is a console-based client to control aMule."
-msgstr "B<amulecmd> ir komandrindas programma aMule vadīšanai."
+msgstr "B<amulecmd> — komandrindas programma aMule vadīšanai."
 
 #. type: TP
 #: amulecmd.1.in:29 amuleweb.1.in:46
@@ -400,7 +400,7 @@ msgstr "Lietot norādīto konfigurācijas datni. Pēc noklusējuma tiek lietota 
 #. type: Plain text
 #: amulecmd.1.in:46 amuleweb.1.in:63
 msgid "Do not print any output to stdout."
-msgstr ""
+msgstr "Neizvadīt nekādus datus konsoles/termināļa ekrānā."
 
 #. type: Plain text
 #: amulecmd.1.in:50 amuleweb.1.in:67
@@ -524,7 +524,7 @@ msgstr "Iegūt un parādīt iestatījuma vērtību."
 #. type: Plain text
 #: amulecmd.1.in:114 amulecmd.1.in:148 amulecmd.1.in:197 amulecmd.1.in:207
 msgid "Available values for I<E<lt>whatE<gt>>:"
-msgstr ""
+msgstr "Iespējamās vērtības I<E<lt>parametramE<gt>>:"
 
 #. type: Plain text
 #: amulecmd.1.in:117
@@ -594,7 +594,7 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in:151
 msgid "Reload shared files list."
-msgstr ""
+msgstr "Pārlādēt kopīgoto datņu sarakstu."
 
 #. type: Plain text
 #: amulecmd.1.in:153
@@ -654,7 +654,7 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in:182
 msgid "Restrict results to a specific file extension (e.g.\\ I<iso>, I<mp3>)."
-msgstr ""
+msgstr "Atlasīt rezultātus tikai ar noteiktu datnes paplašinājumu (piem.,\\ I<iso>, I<mp3>)."
 
 #. type: Plain text
 #: amulecmd.1.in:184
@@ -714,7 +714,7 @@ msgstr "Rādīt serveru sarakstu."
 #. type: Plain text
 #: amulecmd.1.in:216
 msgid "Show shared files list."
-msgstr ""
+msgstr "Parādīt kopīgoto datņu sarakstu."
 
 #. type: Plain text
 #: amulecmd.1.in:218
@@ -744,7 +744,7 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in:233
 msgid "Show connection status, current up/download speeds, etc."
-msgstr ""
+msgstr "Rādīt savienojuma statusu, pašreizējo augšupielādes/lejupielādes ātrumu utt."
 
 #. type: SS
 #: amulecmd.1.in:238 amuleweb.1.in:141
@@ -760,7 +760,7 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in:246 amuleweb.1.in:149
 msgid "For example, the following strings are valid:"
-msgstr ""
+msgstr "Piemēram, derīgas ir šādas virknes:"
 
 #. type: Plain text
 #: amulecmd.1.in:260 amuleweb.1.in:163
@@ -1056,12 +1056,12 @@ msgstr "Vietnes viesa piekļuves parole."
 #. type: Plain text
 #: amuleweb.1.in:102
 msgid "Allows guest access."
-msgstr "Ļauj viesu piekļuvi."
+msgstr "Ļauj viesa piekļuvi."
 
 #. type: Plain text
 #: amuleweb.1.in:105
 msgid "Denies guest access (default)."
-msgstr ""
+msgstr "Liedz viesa piekļuvi (noklusējuma iestatījums)."
 
 #. type: Plain text
 #: amuleweb.1.in:111
@@ -1076,7 +1076,7 @@ msgstr ""
 #. type: Plain text
 #: amuleweb.1.in:117
 msgid "Recompiles PHP pages on each request."
-msgstr ""
+msgstr "Veic PHP lapu atkārtotu kompilēšanu katrā pieprasījumā."
 
 #. type: TP
 #: amuleweb.1.in:130
@@ -1171,7 +1171,7 @@ msgstr ""
 #: ed2k.1.in:24
 #, no-wrap
 msgid "B<[ -t> I<E<lt>numE<gt>>, B<--category> I<E<lt>numE<gt>> B<]>"
-msgstr ""
+msgstr "B<[ -t> I<E<lt>numursE<gt>>, B<--category> I<E<lt>numursE<gt>> B<]>"
 
 #. type: Plain text
 #: ed2k.1.in:28
@@ -1234,7 +1234,7 @@ msgstr ""
 #: ../../src/utils/aLinkCreator/docs/alc.1.in:11
 #: ../../src/utils/wxCas/docs/wxcas.1.in:16
 msgid "This app doesn't take any arguments."
-msgstr ""
+msgstr "Šī programma neatbalsta komandrindas argumentus."
 
 #. type: TH
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:1
@@ -1308,7 +1308,7 @@ msgstr ""
 #. type: Plain text
 #: ../../src/utils/cas/docs/cas.1.in:35
 msgid "Without any options, it prints online signature data to stdout."
-msgstr ""
+msgstr "Nenorādot argumentus, izvada tiešsaistes paraksta datus konsoles/termināļa ekrānā."
 
 #. type: Plain text
 #: ../../src/utils/cas/docs/cas.1.in:37
@@ -1323,12 +1323,12 @@ msgstr "~/.aMule/casrc"
 #. type: Plain text
 #: ../../src/utils/cas/docs/cas.1.in:41
 msgid "aMule-online-sign.png (or .jpg, when B<-o> / B<--picture> is used and GD is available)"
-msgstr ""
+msgstr "aMule-online-sign.png (vai .jpg, ja tiek izmantots B<-o> / B<--picture> arguments un GD ir pieejams)"
 
 #. type: Plain text
 #: ../../src/utils/cas/docs/cas.1.in:43
 msgid "aMule-online-sign.html (when B<-p> / B<--html> is used)"
-msgstr ""
+msgstr "aMule-online-sign.html (ja tiek izmantots B<-p> / B<--html> arguments)"
 
 #. type: TH
 #: ../../src/utils/wxCas/docs/wxcas.1.in:1
@@ -1345,7 +1345,7 @@ msgstr "wxCas"
 #. type: Plain text
 #: ../../src/utils/wxCas/docs/wxcas.1.in:5
 msgid "wxcas - wx c aMule statistics"
-msgstr ""
+msgstr "wxcas - C programmēšanas valodā veidota aMule statistikas programma, izmantojot wxWidgets"
 
 #. type: Plain text
 #: ../../src/utils/wxCas/docs/wxcas.1.in:11
