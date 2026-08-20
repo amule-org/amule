@@ -722,8 +722,12 @@ void CMuleTrayIcon::SetTrayIcon(int Icon, uint32 percent)
 	wxImage composed = base.Copy();
 	if (barHeight > 0) {
 		const wxColour barColour = CStatisticsDlg::getColors(11);
-		// Two pixels wide, in from the right edge, growing from the bottom.
-		const int barLeft = std::max(0, width - 4);
+		// Two pixels wide, in the last two columns, growing from the bottom.
+		// It used to sit two columns further in, which the artwork of the day
+		// left clear. Newer artwork fills more of its canvas, so the bar landed
+		// on the drawing instead of beside it; the outermost columns are the
+		// ones an icon is least likely to use.
+		const int barLeft = std::max(0, width - 2);
 		const int barRight = std::min(width, barLeft + 2);
 		for (int y = height - barHeight; y < height; ++y) {
 			for (int x = barLeft; x < barRight; ++x) {
