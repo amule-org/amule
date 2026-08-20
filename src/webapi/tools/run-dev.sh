@@ -164,22 +164,22 @@ echo "==> Setting amuleapi passwords (admin/guest)"
 "$AMULEAPI" --config-dir="$CONFIG_DIR" --set-admin-pass="$ADMIN_PASS" >/dev/null 2>&1 || true
 "$AMULEAPI" --config-dir="$CONFIG_DIR" --set-guest-pass="$GUEST_PASS" >/dev/null 2>&1 || true
 
-if [[ ! -f "$CONFIG_DIR/amuleapi.conf" ]]; then
-	timeout 3 "$AMULEAPI" --config-dir="$CONFIG_DIR" --password="$EC_PASS" --http-port="$HTTP_PORT" >/dev/null 2>&1 || true
-	pkill -f "amuleapi --config-dir=$CONFIG_DIR" 2>/dev/null || true
-fi
-echo "==> Pointing StaticRoot at the repo frontend"
-python3 - "$CONFIG_DIR/amuleapi.conf" "$STATIC_DIR" "$HTTP_PORT" <<'PY' 2>/dev/null || true
-import sys, re, os
-conf, front, port = sys.argv[1], sys.argv[2], sys.argv[3]
-s = open(conf).read() if os.path.exists(conf) else \
-    "[Server]\nBindAddress=127.0.0.1\nPort=%s\nAllowCORS=0\nStaticRoot=\n" % port
-if 'StaticRoot=' in s:
-    s = re.sub(r'StaticRoot=.*', 'StaticRoot=' + front, s)
-else:
-    s = s.replace('[Server]\n', '[Server]\nStaticRoot=' + front + '\n', 1)
-s = re.sub(r'^Port=.*', 'Port=' + port, s, count=1, flags=re.M)
-open(conf, 'w').write(s)
+echo "==> Configuring amuleapi.conf (StaticRoot, HTTP port, EC connection)"
+python3 - "$CONFIG_DIR/amuleapi.conf" "$STATIC_DIR" "$HTTP_PORT" "$EC_PASS" "$EC_PORT" <<'PY'
+import sys, os, configparser
+conf, front, port, ecpass, ecport = sys.argv[1:6]
+cfg = configparser.ConfigParser()
+cfg.optionxform = str
+if os.path.exists(conf):
+    cfg.read(conf)
+for sec in ('Server', 'EC'):
+    if not cfg.has_section(sec):
+        cfg.add_section(sec)
+cfg['Server'].update({'BindAddress': '127.0.0.1', 'Port': port, 'StaticRoot': front})
+cfg['EC'].update({'Host': '127.0.0.1', 'Port': ecport, 'Password': ecpass})
+with open(conf, 'w') as f:
+    cfg.write(f, space_around_delimiters=False)
+os.chmod(conf, 0o600)
 PY
 
 # --- launch ---
@@ -214,4 +214,4 @@ cat <<EOF
 EOF
 
 echo "==> Starting amuleapi in the foreground…"
-"$AMULEAPI" --config-dir="$CONFIG_DIR" --password="$EC_PASS" --http-port="$HTTP_PORT"
+"$AMULEAPI" --config-dir="$CONFIG_DIR" --http-port="$HTTP_PORT"
