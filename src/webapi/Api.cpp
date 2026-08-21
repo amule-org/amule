@@ -1064,6 +1064,23 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		}
 	}
 
+	// peers of one shared file. Same rows as /clients, selected by hash and
+	// carrying their relation to the file; matched before `/shared/{hash}`.
+	{
+		static const auto shared_clients =
+			web_api_path::ParsePattern("/api/v0/shared/{hash}/clients");
+		const auto path_segs = web_api_path::SplitPath(path);
+		std::map<std::string, std::string> caps;
+		if (web_api_path::Match(shared_clients, path_segs, caps)) {
+			if (req.method != "GET" && req.method != "HEAD") {
+				return ErrorResponse(405,
+					"method_not_allowed",
+					"only GET / HEAD on /shared/{hash}/clients");
+			}
+			return HandleFileClients(req, caps["hash"], /*require_downloading=*/false);
+		}
+	}
+
 	// shared file priority PATCH. `{hash}` is the lowercase 32-char hex
 	// MD4 hash.
 	{
@@ -1274,15 +1291,32 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(dl_a4af, path_segs, caps)) {
-			if (req.method == "GET" || req.method == "HEAD") {
-				return HandleDownloadA4af(req, caps["hash"]);
-			}
 			if (req.method == "POST") {
 				return HandleDownloadA4afAction(req, caps["hash"]);
 			}
-			return ErrorResponse(405,
-				"method_not_allowed",
-				"only GET / HEAD / POST on /downloads/{hash}/a4af");
+			// The read half is retired (issue #984): A4AF sources are rows of
+			// /downloads/{hash}/clients now, carrying the whole peer object
+			// rather than a bare ECID, and `a4af_auto` is already on the
+			// download detail object. The POST stays -- the swap actions have
+			// no equivalent there, and its reply is still the A4AF view.
+			return ErrorResponse(
+				405, "method_not_allowed", "only POST on /downloads/{hash}/a4af");
+		}
+	}
+
+	// sources and A4AF rows of one partfile. Matched before the bare
+	// `/downloads/{hash}` pattern, which accepts any single segment.
+	{
+		static const auto dl_clients = web_api_path::ParsePattern("/api/v0/downloads/{hash}/clients");
+		const auto path_segs = web_api_path::SplitPath(path);
+		std::map<std::string, std::string> caps;
+		if (web_api_path::Match(dl_clients, path_segs, caps)) {
+			if (req.method != "GET" && req.method != "HEAD") {
+				return ErrorResponse(405,
+					"method_not_allowed",
+					"only GET / HEAD on /downloads/{hash}/clients");
+			}
+			return HandleFileClients(req, caps["hash"], /*require_downloading=*/true);
 		}
 	}
 
@@ -2404,6 +2438,25 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	w.ValueString(wxString::FromUTF8(c.obfuscation_status.c_str()));
 	w.Key("friend_slot");
 	w.ValueBool(c.friend_slot);
+	// Promoted out of the detail object (issue #984): the desktop's per-file
+	// peer panels render Origin and "Shares File List" as list columns, so a
+	// caller should not have to fetch each peer individually to draw a table.
+	// Anything added here also reaches the SSE payload -- see ToJson AND Equal
+	// in EventDiff.cpp; a field in one but not the other never updates.
+	w.Key("source_origin");
+	w.ValueString(wxString::FromUTF8(c.source_origin.c_str()));
+	w.Key("available_parts");
+	w.ValueInt(static_cast<int64_t>(c.available_parts));
+	w.Key("mod_version");
+	w.ValueString(wxString::FromUTF8(c.mod_version.c_str()));
+	w.Key("view_shared_disabled");
+	w.ValueBool(c.view_shared_disabled);
+	// Omitted rather than sent negative when not computable (no linked
+	// download / unknown part count).
+	if (c.part_progress_percent >= 0.0) {
+		w.Key("part_progress_percent");
+		w.ValueDouble(c.part_progress_percent);
+	}
 }
 
 // List-level client object (GET /clients).
@@ -2539,14 +2592,6 @@ void WriteClientDetailObject(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	w.ValueString(wxString::FromUTF8(c.server_name.c_str()));
 	w.Key("kad_port");
 	w.ValueInt(static_cast<int64_t>(c.kad_port));
-	w.Key("source_origin");
-	w.ValueString(wxString::FromUTF8(c.source_origin.c_str()));
-	w.Key("available_parts");
-	w.ValueInt(static_cast<int64_t>(c.available_parts));
-	w.Key("mod_version");
-	w.ValueString(wxString::FromUTF8(c.mod_version.c_str()));
-	w.Key("view_shared_disabled");
-	w.ValueBool(c.view_shared_disabled);
 	// Friend status + DL/UP modifier (issue #423). is_friend is
 	// friends-list membership, distinct from the friend_slot reserved
 	// upload slot above.
@@ -2554,12 +2599,6 @@ void WriteClientDetailObject(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	w.ValueBool(c.is_friend);
 	w.Key("dl_up_modifier");
 	w.ValueDouble(c.dl_up_modifier);
-	// Completeness of the linked download for this peer; omitted when
-	// not computable (no linked file / unknown part count).
-	if (c.part_progress_percent >= 0.0) {
-		w.Key("part_progress_percent");
-		w.ValueDouble(c.part_progress_percent);
-	}
 	w.EndObject();
 }
 
@@ -2696,6 +2735,25 @@ struct ListParams
 // and an unknown `sort` value is simply a lookup miss -> 400.
 template <class T>
 using ListComparators = std::vector<std::pair<std::string, std::function<bool(const T &, const T &)>>>;
+
+// Sort keys for peer rows, shared by /clients and by the per-file client
+// routes -- the latter derive theirs from this set, so a key added here shows
+// up on every peer list rather than only the one it was added to.
+const ListComparators<webapi::ClientSnapshot> &ClientComparators()
+{
+	static const ListComparators<webapi::ClientSnapshot> kComps = {
+		{ "name",
+			[](const webapi::ClientSnapshot &a, const webapi::ClientSnapshot &b) {
+				return a.client_name < b.client_name;
+			} },
+		{ "software",
+			[](const webapi::ClientSnapshot &a, const webapi::ClientSnapshot &b) {
+				return a.software < b.software;
+			} },
+	};
+	;
+	return kComps;
+}
 
 std::unique_ptr<CHttpServer::Response> BadRequestPtr(const char *message)
 {
@@ -3221,6 +3279,203 @@ CHttpServer::Response CApiDispatcher::HandleDownloads(const CHttpServer::Request
 		kComps);
 }
 
+namespace
+{
+// Completeness of the file we download FROM this peer: parts the peer has over
+// that file's part count. Only the download link carries a meaningful
+// denominator -- a peer that merely downloads from us has no percent. Left at
+// its < 0 sentinel when not computable, which is how the writers know to omit
+// the field. Used by the detail endpoint and by the per-file client rows.
+void ComputePartProgressPercent(const webapi::CState &state, webapi::ClientSnapshot &cli)
+{
+	if (!cli.has_available_parts || cli.download_file_hash.empty()) {
+		return;
+	}
+	webapi::FileSnapshot f;
+	if (!state.FindDownload(cli.download_file_hash, f) || f.size == 0) {
+		return;
+	}
+	const std::uint64_t part_count = (f.size + kPartSize - 1) / kPartSize;
+	if (part_count == 0) {
+		return;
+	}
+	double pct = 100.0 * static_cast<double>(cli.available_parts) / static_cast<double>(part_count);
+	if (pct > 100.0)
+		pct = 100.0;
+	cli.part_progress_percent = pct;
+}
+
+// One peer row of a per-file client list: the ordinary /clients object plus the
+// three things that only make sense relative to a file.
+struct FileClientRow
+{
+	webapi::ClientSnapshot client;
+	std::string role; // "source" | "peer" | "both" | "none"
+	bool a4af = false;
+	std::vector<bool> parts;
+	bool has_parts = false;
+};
+
+// Sort keys, derived from the /clients set rather than restated, so the two
+// surfaces cannot drift apart.
+const ListComparators<FileClientRow> &FileClientComparators()
+{
+	static const ListComparators<FileClientRow> kComps = [] {
+		ListComparators<FileClientRow> out;
+		for (const auto &kv : ClientComparators()) {
+			auto fn = kv.second;
+			out.emplace_back(kv.first, [fn](const FileClientRow &a, const FileClientRow &b) {
+				return fn(a.client, b.client);
+			});
+		}
+		return out;
+	}();
+	return kComps;
+}
+
+void WriteFileClientRow(CJsonWriter &w, const FileClientRow &row)
+{
+	w.BeginObject();
+	WriteClientBaseFields(w, row.client);
+	// The peer's relation to THIS file, which the global /clients row cannot
+	// express: "source" serves it to us, "peer" pulls it from us, "both" does
+	// each way, "none" is a row that exists only because it is parked here as
+	// an A4AF source.
+	w.Key("role");
+	w.ValueString(wxString::FromUTF8(row.role.c_str()));
+	// Orthogonal to role on purpose: a peer can be parked on another file and
+	// still be pulling this one from us, which a fourth role value could not
+	// represent.
+	w.Key("a4af");
+	w.ValueBool(row.a4af);
+	if (row.has_parts) {
+		w.Key("parts");
+		w.BeginArray();
+		for (const bool b : row.parts) {
+			w.ValueBool(b);
+		}
+		w.EndArray();
+	}
+	w.EndObject();
+}
+
+// Resolve one peer's bitmap for `part_count` chunks of the file this row is
+// about, following the two wire conventions: an "all" flag means the core sent
+// an empty tag for a full source, and a decoded bitmap that cannot cover the
+// file is dropped rather than padded (its tail beyond part_count is the
+// buffer's byte padding, which is fine to trim).
+bool ResolvePartBitmap(const std::vector<bool> &bits,
+	bool all,
+	bool present,
+	std::uint64_t part_count,
+	std::vector<bool> &out)
+{
+	if (!present || part_count == 0) {
+		return false;
+	}
+	if (all) {
+		out.assign(static_cast<std::size_t>(part_count), true);
+		return true;
+	}
+	if (bits.size() < part_count) {
+		return false;
+	}
+	out.assign(bits.begin(), bits.begin() + static_cast<std::ptrdiff_t>(part_count));
+	return true;
+}
+} // namespace
+
+// Serves both /downloads/{hash}/clients and /shared/{hash}/clients. The rows
+// are the same object out of the same cache either way -- the relation to the
+// file is a field, not a path -- so the two routes differ only in which role
+// the hash must already have, which is what makes each a sub-resource of its
+// own collection. A partfile with at least one completed chunk is in both
+// collections at once and answers identically on both.
+CHttpServer::Response CApiDispatcher::HandleFileClients(
+	const CHttpServer::Request &req, const std::string &key, bool require_downloading)
+{
+	auto a = Authenticate(req);
+	if (!a.ok)
+		return a.rejection;
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
+
+	std::string needle = key;
+	std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
+		return std::tolower(c);
+	});
+
+	webapi::FileSnapshot file;
+	const bool found =
+		require_downloading ? m_state.FindDownload(needle, file) : m_state.FindShared(needle, file);
+	if (!found) {
+		return ErrorResponse(404,
+			"not_found",
+			require_downloading ? "no download with that hash" : "no shared file with that hash");
+	}
+
+	ListParams params;
+	if (auto err = ParseListParams(QueryOf(req), params))
+		return *err;
+
+	bool include_parts = false;
+	{
+		const auto qmap = web_api_path::ParseQuery(QueryOf(req));
+		const auto it = qmap.find("include_parts");
+		if (it != qmap.end()) {
+			if (it->second != "true" && it->second != "false") {
+				return ErrorResponse(
+					400, "bad_request", "`include_parts` must be \"true\" or \"false\"");
+			}
+			include_parts = (it->second == "true");
+		}
+	}
+
+	const std::uint64_t part_count = file.size > 0 ? (file.size + kPartSize - 1) / kPartSize : 0;
+	const auto &a4af_sources = file.download.a4af_sources;
+
+	std::vector<FileClientRow> rows;
+	for (auto client : m_state.Clients()) {
+		const bool is_source = (client.download_file_hash == needle);
+		const bool is_peer = (client.upload_file_hash == needle);
+		const bool is_a4af = std::find(a4af_sources.begin(), a4af_sources.end(), client.ecid) !=
+				     a4af_sources.end();
+		if (!is_source && !is_peer && !is_a4af) {
+			continue;
+		}
+
+		FileClientRow row;
+		row.role =
+			is_source && is_peer ? "both" : (is_source ? "source" : (is_peer ? "peer" : "none"));
+		row.a4af = is_a4af;
+		ComputePartProgressPercent(m_state, client);
+		if (include_parts) {
+			// Which bitmap belongs to this row follows its direction: the
+			// download map describes the file we pull from the peer, the
+			// upload map the file it pulls from us, and for a "both" row
+			// those are this same file seen from each side. A pure A4AF row
+			// has no bitmap for this file at all.
+			if (is_source) {
+				row.has_parts = ResolvePartBitmap(client.part_status,
+					client.part_status_all,
+					client.has_part_status,
+					part_count,
+					row.parts);
+			} else if (is_peer) {
+				row.has_parts = ResolvePartBitmap(client.upload_part_status,
+					client.upload_part_status_all,
+					client.has_upload_part_status,
+					part_count,
+					row.parts);
+			}
+		}
+		row.client = std::move(client);
+		rows.push_back(std::move(row));
+	}
+
+	return ListResponse(m_state, "clients", rows, WriteFileClientRow, params, FileClientComparators());
+}
+
 CHttpServer::Response CApiDispatcher::HandleClients(const CHttpServer::Request &req)
 {
 	auto a = Authenticate(req);
@@ -3273,17 +3528,7 @@ CHttpServer::Response CApiDispatcher::HandleClients(const CHttpServer::Request &
 	ListParams params;
 	if (auto err = ParseListParams(QueryOf(req), params))
 		return *err;
-	static const ListComparators<webapi::ClientSnapshot> kComps = {
-		{ "name",
-			[](const webapi::ClientSnapshot &a, const webapi::ClientSnapshot &b) {
-				return a.client_name < b.client_name;
-			} },
-		{ "software",
-			[](const webapi::ClientSnapshot &a, const webapi::ClientSnapshot &b) {
-				return a.software < b.software;
-			} },
-	};
-	return ListResponse(m_state, "clients", clients, WriteClientObject, params, kComps);
+	return ListResponse(m_state, "clients", clients, WriteClientObject, params, ClientComparators());
 }
 
 CHttpServer::Response CApiDispatcher::HandleSharedList(const CHttpServer::Request &req)
@@ -3533,8 +3778,9 @@ CHttpServer::Response CApiDispatcher::HandleDownloadFilenames(
 // resolved download snapshot.
 namespace
 {
+
 // Defined further down beside its FindServerByEcid / FindFriendByEcid
-// siblings; declared here so the per-source A4AF swap can validate its
+// siblings; declared here so the A4AF handlers below can validate a
 // `client_ecid` without moving the helper away from its family or copying it.
 bool FindClientByEcid(const webapi::CState &state, std::uint32_t ecid, webapi::ClientSnapshot &out);
 
@@ -3552,34 +3798,6 @@ void WriteA4afObject(CJsonWriter &w, const webapi::FileSnapshot &d)
 	w.EndObject();
 }
 } // namespace
-
-CHttpServer::Response CApiDispatcher::HandleDownloadA4af(
-	const CHttpServer::Request &req, const std::string &key)
-{
-	auto a = Authenticate(req);
-	if (!a.ok)
-		return a.rejection;
-
-	if (auto r = RequireSnapshot(m_state))
-		return *r;
-
-	webapi::FileSnapshot d;
-	std::string needle = key;
-	std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
-		return std::tolower(c);
-	});
-	if (!m_state.FindDownload(needle, d)) {
-		return ErrorResponse(404, "not_found", "no download with that hash");
-	}
-
-	CHttpServer::Response r;
-	r.status = 200;
-	r.content_type = "application/json";
-	CJsonWriter w;
-	WriteA4afObject(w, d);
-	FinalizeJsonBody(w, r);
-	return r;
-}
 
 CHttpServer::Response CApiDispatcher::HandleDownloadA4afAction(
 	const CHttpServer::Request &req, const std::string &key)
@@ -4875,23 +5093,7 @@ CHttpServer::Response CApiDispatcher::HandleClientDetail(
 		return ErrorResponse(404, "not_found", "no client with that ECID in the current snapshot");
 	}
 
-	// Completeness of the file we download FROM this peer = parts the
-	// peer has (available_parts) over that file's part count. Only the
-	// download link carries a meaningful denominator; a peer that is
-	// only downloading from us has no percent (available_parts stays).
-	if (cli.has_available_parts && !cli.download_file_hash.empty()) {
-		webapi::FileSnapshot f;
-		if (m_state.FindDownload(cli.download_file_hash, f) && f.size > 0) {
-			const std::uint64_t part_count = (f.size + kPartSize - 1) / kPartSize;
-			if (part_count > 0) {
-				double pct = 100.0 * static_cast<double>(cli.available_parts) /
-					     static_cast<double>(part_count);
-				if (pct > 100.0)
-					pct = 100.0;
-				cli.part_progress_percent = pct;
-			}
-		}
-	}
+	ComputePartProgressPercent(m_state, cli);
 
 	CHttpServer::Response r;
 	r.status = 200;

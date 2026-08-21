@@ -256,8 +256,10 @@ struct FileSnapshot
 // by role:
 //  * /uploads → filter by upload_state == US_UPLOADING
 //  * /clients → no filter, full set surfaced
-// (/downloads/{hash}/sources can filter by
-// upload_file_hash matching the partfile.)
+//  * /downloads/{hash}/clients and /shared/{hash}/clients → the peers
+//    related to one file, selected by download_file_hash /
+//    upload_file_hash (plus that download's A4AF sources), each row
+//    carrying the direction as a `role` field.
 /**
  * One peer from the daemon's credit store — GET /known_clients.
  *
@@ -385,6 +387,30 @@ struct ClientSnapshot
 	// (available_parts / file part count). < 0 => not computable (no
 	// linked file / no part count); populated by the detail handler.
 	double part_progress_percent = -1.0;
+
+	// Per-part bitmaps, one bit per chunk of the file the relation names:
+	// `part_status` is what the peer holds of the file WE PULL FROM IT,
+	// `upload_part_status` what it holds of the file IT PULLS FROM US. A peer
+	// doing both at once has two different files' bitmaps here, so a consumer
+	// must pick by direction rather than assume they describe the same file.
+	//
+	// The core sends an EMPTY tag to mean "has every part" rather than
+	// spending bytes on an all-ones buffer, and omits the tag entirely when
+	// its length would disagree with the file's part count. `*_all` carries
+	// the first case; the vector is then left empty and sized by whoever
+	// renders it, which is the only place the part count is known.
+	std::vector<bool> part_status;
+	std::vector<bool> upload_part_status;
+	bool part_status_all = false;
+	bool upload_part_status_all = false;
+	bool has_part_status = false;
+	bool has_upload_part_status = false;
+	// Indices into the download bitmap; absent from the wire means unchanged,
+	// so the has_ flags distinguish "never reported" from "reported as 0".
+	std::uint16_t next_requested_part = 0;
+	std::uint16_t last_downloading_part = 0;
+	bool has_next_requested_part = false;
+	bool has_last_downloading_part = false;
 
 	// --- Detail-only fields (issue #423, new EC tags) ----------------
 	bool is_friend = false;      // CUpDownClient::IsFriend(); distinct from friend_slot
