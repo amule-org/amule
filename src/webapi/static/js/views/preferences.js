@@ -26,8 +26,11 @@ import { t, terr } from "../i18n.js";
 // password (write-only, only sent when non-empty), trigger (write-only action,
 // only sent when checked), scale (int shown/edited in value/scale units, e.g.
 // ms stored but minutes shown), cat (override the tab's API category),
-// action (text field: an icon button that POSTs the typed value to an endpoint,
-// see runAction — the endpoint persists the URL itself, so no Apply needed).
+// action (an endpoint the field POSTs to, see runAction — the endpoint
+// persists whatever it is given itself, so no Apply needed). On a text field
+// `action.body` names the JSON field the typed value is sent as, and the row
+// grows a trailing icon button; a `button` field is the same action with no
+// value to send, rendered as a standalone button and never part of the PATCH.
 const PROXY_TYPES = [
   { value: "socks5", labelKey: "prefs_opt_proxy_socks5" },
   { value: "socks4", labelKey: "prefs_opt_proxy_socks4" },
@@ -169,7 +172,14 @@ const TABS = [
     { legendKey: "prefs_group_ipfilter", fields: [
       { key: "ipfilter_clients", type: "bool" },
       { key: "ipfilter_servers", type: "bool" },
-      { key: "ipfilter_update_url", type: "text" },
+      { key: "ipfilter_reload", type: "button",
+        action: { path: "ipfilter/reload",
+                  titleKey: "prefs_action_ipfilter_reload",
+                  toastKey: "prefs_action_ipfilter_reload_toast" } },
+      { key: "ipfilter_update_url", type: "text",
+        action: { path: "ipfilter/update", body: "ipfilter_url",
+                  titleKey: "prefs_action_ipfilter_update",
+                  toastKey: "prefs_action_ipfilter_update_toast" } },
       { key: "ipfilter_auto_update", type: "bool" },
       { key: "ipfilter_block_below_access_level", type: "int", min: 0, max: 255 },
       { key: "ipfilter_include_lan_ips", type: "bool" },
@@ -397,6 +407,7 @@ export default function Preferences({ isGuest }) {
       for (const tab of TABS)
         for (const grp of tab.groups)
           for (const f of grp.fields) {
+            if (f.type === "button") continue;
             const cat = catOf(tab, f);
             let val = (catGet(p, cat) || {})[f.key];
             if (f.type === "textarea" && Array.isArray(val)) val = val.join("\n");
@@ -429,6 +440,20 @@ export default function Preferences({ isGuest }) {
     const disabled = isGuest || f.readonly || isGated(cat, f);
     const subCls = f.sub === 2 ? " field-sub2" : f.sub ? " field-sub" : "";
 
+    // A pure action: no value, no state, never collected. The label is the
+    // button's own text, so the row needs no separate <label>.
+    if (f.type === "button") {
+      // .admin-only on the row, not the button: a guest sees no empty grid
+      // cell where the action would have been, which is how the text fields'
+      // action buttons already behave (they are simply not rendered).
+      return html`
+        <div class=${"field field-inline admin-only" + subCls}>
+          <button class="btn" type="button" disabled=${disabled}
+                  title=${t(f.action.titleKey)} onClick=${() => runAction(f.action)}>
+            ${label}
+          </button>
+        </div>`;
+    }
     if (f.type === "bool" || f.type === "trigger") {
       // invert: the API stores the opposite sense but we show an "Enable ..."
       // checkbox. State keeps the API value; only the checkbox's checked state
@@ -482,10 +507,15 @@ export default function Preferences({ isGuest }) {
 
   // The endpoint takes the URL directly and persists it itself, so this fires
   // the download with whatever is typed -- no Apply first, no PATCH here.
+  // An action with no `body` carries no value at all (Reload): POST and done.
   const runAction = async (a, val) => {
-    const url = String(val == null ? "" : val).trim();
-    if (!url) { toast(t("prefs_action_enter_url"), "warn"); return; }
-    try { await api.post(a.path, { [a.body]: url }); toast(t(a.toastKey), "success"); }
+    let body;
+    if (a.body) {
+      const url = String(val == null ? "" : val).trim();
+      if (!url) { toast(t("prefs_action_enter_url"), "warn"); return; }
+      body = { [a.body]: url };
+    }
+    try { await api.post(a.path, body); toast(t(a.toastKey), "success"); }
     catch (err) { toast(terr(err) || t("prefs_error"), "error"); }
   };
 
@@ -495,7 +525,7 @@ export default function Preferences({ isGuest }) {
       for (const grp of tab.groups) {
         for (const f of grp.fields) {
           const cat = catOf(tab, f);
-          if (f.hidden || f.readonly || isGated(cat, f)) continue;
+          if (f.type === "button" || f.hidden || f.readonly || isGated(cat, f)) continue;
           const val = values[cat + "." + f.key];
           let out;
           if (f.type === "password") {
