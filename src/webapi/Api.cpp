@@ -2303,12 +2303,12 @@ void FinalizeJsonBody(CJsonWriter &w, CHttpServer::Response &r)
 // per Q3). The `include_envelope_keys` flag controls whether we
 // emit the snapshot_at envelope around it — list mode wraps in its
 // own envelope, detail mode is the bare object.
-// PARTSIZE — the byte width of a single partfile chunk in amule
-// (9.28 MB). Authoritative copy is in `protocol/ed2k/Constants.h`;
-// duplicated here to avoid pulling that header into Api.cpp (which
-// would cascade into the protocol-level types). amule has never
-// changed PARTSIZE since the ed2k spec was frozen.
-constexpr std::uint64_t kPartSize = 9728000ull;
+// The chunk size and the part-count arithmetic both live in State.h now
+// (webapi::kPartSizeBytes / webapi::PartCountForSize). They used to be a
+// literal here plus six separately open-coded ceiling divisions, which is
+// the duplication that mattered; the constant still cannot come from
+// `protocol/ed2k/Constants.h` directly, because that header is written
+// against amule's legacy typedefs (see the note beside the definition).
 
 // Render the per-part state array from the decoded gap list +
 // per-part source counts. Algorithm cribbed from the reference REST
@@ -2328,15 +2328,15 @@ void WriteProgressParts(CJsonWriter &w, const webapi::FileSnapshot &f)
 		w.EndArray();
 		return;
 	}
-	const std::uint64_t part_count = (f.size + kPartSize - 1) / kPartSize;
+	const std::uint64_t part_count = webapi::PartCountForSize(f.size);
 	std::vector<bool> has_gap(part_count, false);
 	const auto &gaps = f.download.decoded_gaps;
 	const std::size_t gap_pair_count = gaps.size() / 2;
 	for (std::size_t g = 0; g < gap_pair_count; ++g) {
 		const std::uint64_t gap_start = gaps[2 * g];
 		const std::uint64_t gap_end = gaps[2 * g + 1];
-		const std::uint64_t start_idx = gap_start / kPartSize;
-		const std::uint64_t end_idx = gap_end / kPartSize;
+		const std::uint64_t start_idx = gap_start / webapi::kPartSizeBytes;
+		const std::uint64_t end_idx = gap_end / webapi::kPartSizeBytes;
 		for (std::uint64_t i = start_idx; i <= end_idx && i < part_count; ++i) {
 			has_gap[static_cast<std::size_t>(i)] = true;
 		}
@@ -2437,8 +2437,7 @@ void WriteDownloadObject(
 		// Detail-only fields (GET /downloads/{hash}); omitted from the
 		// list. `part_count` and `remaining_time` are computed here from
 		// the snapshot — no EC tag exists for them.
-		const std::int64_t part_count =
-			(f.size == 0) ? 0 : static_cast<std::int64_t>((f.size + kPartSize - 1) / kPartSize);
+		const std::int64_t part_count = static_cast<std::int64_t>(webapi::PartCountForSize(f.size));
 		// ETA seconds; -1 when stalled/paused (speed ~0), mirroring the
 		// desktop getTimeRemaining().
 		std::int64_t remaining_time = -1;
@@ -2825,7 +2824,7 @@ void WriteSharedDetailObject(CJsonWriter &w, const webapi::FileSnapshot &f)
 	w.Key("aich_hash");
 	w.ValueString(wxString::FromUTF8(f.aich_hash.c_str()));
 	w.Key("part_count");
-	w.ValueInt(f.size == 0 ? 0 : static_cast<int64_t>((f.size + kPartSize - 1) / kPartSize));
+	w.ValueInt(static_cast<int64_t>(webapi::PartCountForSize(f.size)));
 	w.Key("queued_count");
 	w.ValueInt(static_cast<int64_t>(f.queued_count));
 	w.Key("comment");
@@ -3402,30 +3401,6 @@ CHttpServer::Response CApiDispatcher::HandleDownloads(const CHttpServer::Request
 
 namespace
 {
-// Completeness of the file we download FROM this peer: parts the peer has over
-// that file's part count. Only the download link carries a meaningful
-// denominator -- a peer that merely downloads from us has no percent. Left at
-// its < 0 sentinel when not computable, which is how the writers know to omit
-// the field. Used by the detail endpoint and by the per-file client rows.
-void ComputePartProgressPercent(const webapi::CState &state, webapi::ClientSnapshot &cli)
-{
-	if (!cli.has_available_parts || cli.download_file_hash.empty()) {
-		return;
-	}
-	webapi::FileSnapshot f;
-	if (!state.FindDownload(cli.download_file_hash, f) || f.size == 0) {
-		return;
-	}
-	const std::uint64_t part_count = (f.size + kPartSize - 1) / kPartSize;
-	if (part_count == 0) {
-		return;
-	}
-	double pct = 100.0 * static_cast<double>(cli.available_parts) / static_cast<double>(part_count);
-	if (pct > 100.0)
-		pct = 100.0;
-	cli.part_progress_percent = pct;
-}
-
 // One peer row of a per-file client list: the ordinary /clients object plus the
 // three things that only make sense relative to a file.
 struct FileClientRow
@@ -3549,7 +3524,7 @@ CHttpServer::Response CApiDispatcher::HandleFileClients(
 		}
 	}
 
-	const std::uint64_t part_count = file.size > 0 ? (file.size + kPartSize - 1) / kPartSize : 0;
+	const std::uint64_t part_count = webapi::PartCountForSize(file.size);
 	const auto &a4af_sources = file.download.a4af_sources;
 
 	std::vector<FileClientRow> rows;

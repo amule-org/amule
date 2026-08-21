@@ -596,3 +596,76 @@ TEST(EventDiff, SearchClosedFiresOnceWhenTheSlotIsFreed)
 	ASSERT_EQUALS(static_cast<size_t>(1), CountClosed().first);
 	ASSERT_TRUE(state.HasSearch(43));
 }
+
+// --- the client payload carries part_progress_percent ------------------
+//
+// EVENTS.md promises an `_updated` subscriber gets the full new state and
+// never has to re-GET. This field was the one exception on the client
+// resource: it is derived rather than refreshed (it needs the part count of
+// the linked download, which lives in a different snapshot), so the diff pass
+// never computed it and the payload silently lacked a key the REST row had.
+TEST(EventDiff, ClientEventCarriesPartProgressPercent)
+{
+	CState state;
+	// A 4-part file (3 * PARTSIZE + a byte) the peer is a source for, holding
+	// 3 of its 4 chunks.
+	state.MutateDownloads([](FileMap &files) {
+		FileSnapshot f;
+		f.ecid = 1;
+		f.hash = "8b54a3c28b54a3c28b54a3c28b54a3c2";
+		f.name = "four-parts.iso";
+		f.size = kPartSizeBytes * 3 + 1;
+		f.is_downloading = true;
+		files.emplace(f.ecid, f);
+	});
+	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &clients) {
+		ClientSnapshot c;
+		c.ecid = 7;
+		c.client_name = "peer";
+		c.download_file_hash = "8b54a3c28b54a3c28b54a3c28b54a3c2";
+		c.available_parts = 3;
+		c.has_available_parts = true;
+		clients.emplace(c.ecid, c);
+	});
+
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string payload;
+	for (const auto &e : DrainAll(bus)) {
+		if (e.name == "client_added")
+			payload = e.data;
+	}
+	ASSERT_TRUE(!payload.empty());
+	// 3 of 4 parts. Asserting the prefix rather than the full double keeps
+	// this independent of ostream's default precision.
+	ASSERT_TRUE(payload.find("\"part_progress_percent\":75") != std::string::npos);
+}
+
+TEST(EventDiff, ClientEventOmitsPartProgressPercentWithNoLinkedFile)
+{
+	// A peer that only downloads FROM us has no meaningful denominator, so
+	// the field stays at its sentinel and the key is omitted -- the same rule
+	// the REST row follows. A negative percent must never reach the wire.
+	CState state;
+	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &clients) {
+		ClientSnapshot c;
+		c.ecid = 8;
+		c.client_name = "leech";
+		clients.emplace(c.ecid, c);
+	});
+
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string payload;
+	for (const auto &e : DrainAll(bus)) {
+		if (e.name == "client_added")
+			payload = e.data;
+	}
+	ASSERT_TRUE(!payload.empty());
+	ASSERT_TRUE(payload.find("part_progress_percent") == std::string::npos);
+	ASSERT_TRUE(payload.find("-1") == std::string::npos);
+}
