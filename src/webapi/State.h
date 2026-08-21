@@ -797,6 +797,15 @@ struct SearchSlot
 	// exceeds its cap (a client that starts many searches without closing them
 	// would otherwise accumulate slots for the whole process lifetime).
 	std::uint64_t seq = 0;
+	// Wall-clock second this session started the search, for ranking the
+	// entries GET /search returns: that listing comes straight off
+	// EC_OP_SEARCH_LIST, which walks a std::map keyed by search_id and
+	// carries no timestamp, so it arrives id-ascending -- and id order is
+	// not recency, since Kad ids carry SEARCH_ID_KAD_MASK (0x80000000) and
+	// therefore always sort above ed2k ones. 0 for a search this session did
+	// not start (another client's, or one the daemon restored from disk),
+	// which is unknowable here rather than zero-valued.
+	std::time_t started_at = 0;
 	// When this slot's results were last pulled from the daemon. The tick
 	// refreshes active searches every second; a FINISHED search is never
 	// polled again, so reads of it refresh on demand instead, coalesced by
@@ -1375,6 +1384,10 @@ public:
 	// What this search was started with; empty for an unknown id, or for a
 	// discovered slot whose name the daemon had not reported yet.
 	std::string SearchQuery(std::uint32_t search_id) const;
+	// When this session started the search, or 0 when it did not start it
+	// (see SearchSlot::started_at). An unknown id reports 0 too; a caller
+	// that must tell those apart checks HasSearch first.
+	std::time_t SearchStartedAt(std::uint32_t search_id) const;
 	// Slots the refresher must still poll (progress.active).
 	std::vector<std::uint32_t> ActiveSearchIds() const;
 	// Every live slot id, for the SSE per-search diff.
@@ -1480,7 +1493,18 @@ public:
 	// MarkSearchStarted it is idempotent -- a search already known
 	// (self-started or previously discovered) is left untouched rather than
 	// having its accumulated results/progress reset.
-	void MarkSearchDiscovered(std::uint32_t search_id, const std::string &kind, const std::string &query);
+	// `active` / `complete` come from the lifecycle state the same
+	// EC_OP_SEARCH_LIST entry carries. Seeding them rather than assuming
+	// "active" matters because callers gate on them: POST /search/{id}/more
+	// rejects a finished search, and would otherwise accept one for the tick
+	// or so it took to be corrected. A slot seeded inactive is not polled by
+	// the tick, which is fine -- the read paths refresh an inactive slot on
+	// demand (ClaimSearchRefresh).
+	void MarkSearchDiscovered(std::uint32_t search_id,
+		const std::string &kind,
+		const std::string &query,
+		bool active,
+		bool complete);
 	// Refresher-side write path for one search's progress snapshot.
 	void WriteSearchProgress(std::uint32_t search_id, SearchProgressSnapshot s);
 	// Drop a search's slot entirely: DELETE /search/{id}, or the refresher

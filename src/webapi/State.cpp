@@ -159,6 +159,13 @@ std::string CState::SearchQuery(std::uint32_t search_id) const
 	return it == m_searches.end() ? std::string() : it->second.query;
 }
 
+std::time_t CState::SearchStartedAt(std::uint32_t search_id) const
+{
+	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+	auto it = m_searches.find(search_id);
+	return it == m_searches.end() ? 0 : it->second.started_at;
+}
+
 bool CState::ClaimSearchRefresh(std::uint32_t search_id, std::chrono::milliseconds ttl)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
@@ -250,11 +257,16 @@ void CState::MarkSearchStarted(std::uint32_t search_id, const std::string &kind,
 	slot.progress.generation = next_generation;
 	slot.query = query;
 	slot.seq = ++m_search_seq;
+	slot.started_at = std::time(nullptr);
 	slot.last_fetch = {};
 	EvictSurplusSearchSlotsLocked();
 }
 
-void CState::MarkSearchDiscovered(std::uint32_t search_id, const std::string &kind, const std::string &query)
+void CState::MarkSearchDiscovered(std::uint32_t search_id,
+	const std::string &kind,
+	const std::string &query,
+	bool active,
+	bool complete)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	auto known = m_searches.find(search_id);
@@ -271,7 +283,13 @@ void CState::MarkSearchDiscovered(std::uint32_t search_id, const std::string &ki
 		return;
 	}
 	SearchSlot &slot = m_searches[search_id];
-	slot.progress.active = true;
+	// The daemon's own lifecycle state for this search, not an assumption.
+	// A finished search seeded as active reads as running until the next
+	// tick corrects it, and POST /search/{id}/more gates on exactly that.
+	// `started_at` stays 0: this session did not start it, and the daemon
+	// ships no timestamp to borrow.
+	slot.progress.active = active;
+	slot.progress.complete = complete;
 	slot.progress.kind = kind;
 	slot.query = query;
 	slot.seq = ++m_search_seq;

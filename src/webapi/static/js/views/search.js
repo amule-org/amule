@@ -121,16 +121,25 @@ export default function Search({ isGuest }) {
     api.get("categories").then((r) => setCategories(r.categories || [])).catch(() => {});
 
     // Adopt a search on mount so a reload (or a search started from another
-    // client) still shows something. GET /search lists every search the
-    // daemon holds, newest last in allocation order; prefer a running one,
-    // else take the last entry.
+    // client) still shows something.
+    //
+    // GET /search arrives id-ascending and id order is NOT recency: Kad
+    // search ids carry a high-bit mask, so a Kad search always sorts above
+    // an ed2k one no matter which ran first. Rank by `started_at` instead,
+    // which amuleapi stamps for the searches it started. Entries without it
+    // (another client's, or restored from the daemon's on-disk ring) rank
+    // last -- unknown, not oldest -- and only win if nothing else is on
+    // offer. Running beats finished either way, since that is the one a user
+    // is most likely still watching.
+    const newest = (list) =>
+      list.slice().sort((a, b) => (b.started_at || 0) - (a.started_at || 0))[0];
     const adopt = async () => {
       try {
         const r = await api.get("search");
         const list = r.searches || [];
         if (!list.length) return;
-        const running = list.filter((x) => x.state === "running").pop();
-        const chosen = running || list[list.length - 1];
+        const chosen = newest(list.filter((x) => x.state === "running")) || newest(list);
+        if (!chosen) return;
         searchId.current = chosen.search_id;
         fetchResults();
       } catch (_) { /* nothing to adopt */ }

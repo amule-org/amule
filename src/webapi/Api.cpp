@@ -6714,11 +6714,21 @@ bool CApiDispatcher::DiscoverSearchIfHeldByCore(std::uint32_t search_id)
 		// here is what lets an adopted search report its own `query` instead
 		// of an empty one.
 		const CECTag *nameTag = entry.GetTagByName(EC_TAG_SEARCH_NAME);
+		// ...and its lifecycle state, which was being dropped and replaced
+		// with an assumed "active". A finished search seeded as running is
+		// not just cosmetic: POST /search/{id}/more rejects a finished
+		// search, so it would have accepted one until the next tick
+		// corrected the flag, and answered 202 for a request amuled turns
+		// into a no-op. 1 = running, 2 = finished (SearchLifecycleStateToString).
+		const CECTag *stateTag = entry.GetTagByName(EC_TAG_SEARCH_LIFECYCLE_STATE);
+		const std::uint8_t state_val = stateTag ? static_cast<std::uint8_t>(stateTag->GetInt()) : 0;
 		m_state.MarkSearchDiscovered(search_id,
 			SearchKindToString(
 				kindTag ? static_cast<std::uint8_t>(kindTag->GetInt()) : EC_SEARCH_GLOBAL)
 				.ToStdString(),
-			nameTag ? std::string(nameTag->GetStringData().utf8_str()) : std::string());
+			nameTag ? std::string(nameTag->GetStringData().utf8_str()) : std::string(),
+			state_val == 1,
+			state_val == 2);
 		found = true;
 		break;
 	}
@@ -6755,8 +6765,9 @@ CHttpServer::Response CApiDispatcher::HandleSearchList(const CHttpServer::Reques
 	w.BeginArray();
 	for (const CECTag &entry : *ec_resp) {
 		w.BeginObject();
+		const std::uint32_t sid = static_cast<std::uint32_t>(entry.GetInt());
 		w.Key("search_id");
-		w.ValueInt(static_cast<int64_t>(entry.GetInt()));
+		w.ValueInt(static_cast<int64_t>(sid));
 		const CECTag *nameTag = entry.GetTagByName(EC_TAG_SEARCH_NAME);
 		w.Key("query");
 		w.ValueString(nameTag ? nameTag->GetStringData() : wxString());
@@ -6778,6 +6789,18 @@ CHttpServer::Response CApiDispatcher::HandleSearchList(const CHttpServer::Reques
 		if (const CECTag *clientTag = entry.GetTagByName(EC_TAG_CLIENT)) {
 			w.Key("client_ecid");
 			w.ValueInt(static_cast<int64_t>(clientTag->GetInt()));
+		}
+		// When THIS amuleapi started the search. The daemon ships no
+		// timestamp and hands its searches back id-ascending (the listing
+		// walks a std::map), and id order is not recency -- Kad ids carry
+		// SEARCH_ID_KAD_MASK and always sort above ed2k ones -- so without
+		// this a client has nothing to rank the list by. Omitted, not zeroed,
+		// for a search this process did not start: another client's, or one
+		// the daemon restored from disk. Those are unknowable here, and a 0
+		// would read as 1970 rather than "no idea".
+		if (const std::time_t started = m_state.SearchStartedAt(sid); started != 0) {
+			w.Key("started_at");
+			w.ValueInt(static_cast<int64_t>(started));
 		}
 		w.EndObject();
 	}
