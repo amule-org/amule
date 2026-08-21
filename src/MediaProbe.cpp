@@ -462,6 +462,19 @@ bool Probe(const wxString &ffprobePath,
 		return false;
 	}
 
+	// A job is queued only once hashing has finished, so the file existed
+	// moments ago -- but nothing re-checks between the queue and this worker
+	// picking the job up, and that gap widens whenever the probe queue backs
+	// up. Without this a file deleted in the meantime would be announced as
+	// being probed (issue #968) and then have a process spawned on it purely
+	// to fail. One stat is nothing against a fork+exec.
+	if (!file.FileExists()) {
+		AddDebugLogLineN(logMediaProbe,
+			CFormat(wxT("MediaProbe: %s vanished before probing, skipping")) %
+				file.GetPrintable());
+		return false;
+	}
+
 	// -show_entries constrains the output to what we care about: each stream's
 	// codec_name plus its codec_type (so we can prefer the video track's codec,
 	// then the audio track's, over subtitle / data streams), and the format-
@@ -480,9 +493,14 @@ bool Probe(const wxString &ffprobePath,
 	argv.Add(wxT("default=nk=0:nw=1"));
 	argv.Add(file.GetRaw());
 
-	// Traced under the dedicated logMediaProbe category so a subsystem that
-	// silently shells out to ffprobe is diagnosable when the category is on.
-	AddDebugLogLineN(logMediaProbe, CFormat(wxT("MediaProbe: probing %s")) % file.GetPrintable());
+	// Info level, not debug: media metadata is a feature the user explicitly
+	// enables and points at a binary, and until now got no feedback that it
+	// was being used, that the binary worked, or which file was being probed
+	// -- the debug trace this replaces is compiled out of release builds
+	// (issue #968). Emitted here, immediately before the spawn, so it fires
+	// once per actual ffprobe execution rather than once per queued job; the
+	// queue-time trace in SharedFileList stays at debug level.
+	AddLogLineN(CFormat(_("Extracting media metadata with ffprobe: %s")) % file.GetPrintable());
 
 	// Bounded + killable: this runs on the dedicated CMediaProbeThread, so a
 	// slow/hung ffprobe can only ever delay other probes — never completions.

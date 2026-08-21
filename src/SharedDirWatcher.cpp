@@ -96,7 +96,6 @@ CSharedDirWatcher::CSharedDirWatcher(CSharedFileList *parent)
 : m_parent(parent)
 , m_watcher(NULL)
 , m_debounceTimer(this, ID_FSWATCHER_DEBOUNCE)
-, m_fallbackPending(false)
 #ifdef __APPLE__
 , m_macPumpTimer(this, ID_FSWATCHER_MAC_PUMP)
 #endif
@@ -306,7 +305,7 @@ void CSharedDirWatcher::OnFileSystemEvent(wxFileSystemWatcherEvent &event)
 				      "falling back to full reload")) %
 			    (event.GetErrorDescription().IsEmpty() ? wxString("unspecified")
 								   : event.GetErrorDescription()));
-		m_fallbackPending = true;
+		m_resyncReason = ResyncDroppedEvents;
 		ScheduleProcessing();
 		return;
 	}
@@ -605,9 +604,10 @@ void CSharedDirWatcher::ColdDiscoverSubdirs()
 	// list doesn't yet reflect the newly-discovered subdirs. We
 	// can't enumerate them via per-file events (they happened while
 	// the watcher was offline), so route through the fallback path:
-	// FlushPendingEvents will see m_fallbackPending and call the
+	// FlushPendingEvents will see m_resyncReason and call the
 	// bulk Reload() once the debounce fires.
-	m_fallbackPending = true;
+	m_resyncReason = ResyncColdDiscovery;
+	m_coldDiscoveredDirs = static_cast<unsigned>(discovered.size());
 	ScheduleProcessing();
 }
 
@@ -652,11 +652,25 @@ void CSharedDirWatcher::FlushPendingEvents()
 	// delivered. Drop the queue and fall back to a full Reload, which
 	// re-syncs everything from scratch at the cost of one expensive
 	// re-walk. Log at error level so the user sees it.
-	if (m_fallbackPending) {
-		AddLogLineC(_("Shared-dir watcher: events dropped by backend, "
-			      "forcing a full shared-files reload to resync"));
+	if (m_resyncReason != ResyncNone) {
+		if (m_resyncReason == ResyncColdDiscovery) {
+			// Routine, not a fault: directories appeared while aMule was off.
+			// Reported at info level and saying what actually happened, so the
+			// extra share rescan right after startup has a stated reason
+			// instead of looking like an unexplained second scan.
+			AddLogLineN(CFormat(wxPLURAL("Shared-dir watcher: %u new subdirectory found "
+						     "since last run, rescanning shares",
+					    "Shared-dir watcher: %u new subdirectories found "
+					    "since last run, rescanning shares",
+					    m_coldDiscoveredDirs)) %
+				    m_coldDiscoveredDirs);
+		} else {
+			AddLogLineC(_("Shared-dir watcher: events dropped by backend, "
+				      "forcing a full shared-files reload to resync"));
+		}
 		m_pendingEvents.clear();
-		m_fallbackPending = false;
+		m_resyncReason = ResyncNone;
+		m_coldDiscoveredDirs = 0;
 		// Scheduled: this flush runs on the core event loop, so an inline walk
 		// would block it (and any EC request behind it) for the walk's length.
 		m_parent->RequestReload();

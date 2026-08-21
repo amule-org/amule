@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 20:10+0200\n"
+"POT-Creation-Date: 2026-08-21 21:31+0200\n"
 "PO-Revision-Date: 2026-08-21 19:09+0000\n"
 "Last-Translator: Sebastiano Pistore <sebastiano.pistore.info@aol.com>\n"
 "Language-Team: https://github.com/amule-org/amule <forum@aMule.org>\n"
@@ -3163,6 +3163,11 @@ msgstr "UPOZORENJE: "
 
 #: src/MediaProbe.cpp
 msgid "Media metadata: no ffprobe binary found. Install ffmpeg, or set the ffprobe path in preferences; length, bitrate and codec will not be extracted."
+msgstr ""
+
+#: src/MediaProbe.cpp
+#, c-format
+msgid "Extracting media metadata with ffprobe: %s"
 msgstr ""
 
 #: src/MuleNotebook.cpp src/muuli_wdr.cpp
@@ -7033,6 +7038,14 @@ msgid "Shared-dir watcher: backend overflow/error (%s); falling back to full rel
 msgstr ""
 
 #: src/SharedDirWatcher.cpp
+#, c-format
+msgid "Shared-dir watcher: %u new subdirectory found since last run, rescanning shares"
+msgid_plural "Shared-dir watcher: %u new subdirectories found since last run, rescanning shares"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#: src/SharedDirWatcher.cpp
 msgid "Shared-dir watcher: events dropped by backend, forcing a full shared-files reload to resync"
 msgstr ""
 
@@ -7047,14 +7060,6 @@ msgid "Found %i known shared file"
 msgid_plural "Found %i known shared files"
 msgstr[0] "Pronadjeno %i poznatih dijeljenih fajlova"
 msgstr[1] "Pronadjeno %i poznatih dijeljenih fajlova"
-msgstr[2] ""
-
-#: src/SharedFileList.cpp
-#, fuzzy, c-format
-msgid "Found %i known shared file, %i unknown"
-msgid_plural "Found %i known shared files, %i unknown"
-msgstr[0] "Pronadjeno %i poznatih dijeljenih fajlova, %i nepoznatih"
-msgstr[1] "Pronadjeno %i poznatih dijeljenih fajlova, %i nepoznatih"
 msgstr[2] ""
 
 #: src/SharedFileList.cpp
@@ -7079,6 +7084,29 @@ msgstr ""
 #, c-format
 msgid "No shareable files found in directory: %s"
 msgstr ""
+
+#: src/SharedFileList.cpp
+#, fuzzy, c-format
+msgid "Now sharing file: %s"
+msgstr "Greska prilikom spajanja sa %s (%s:%i): %d"
+
+#: src/SharedFileList.cpp
+#, c-format
+msgid "Stopped sharing removed file: %s"
+msgstr ""
+
+#: src/SharedFileList.cpp
+#, c-format
+msgid "Stopped sharing %u files under removed directory: %s"
+msgstr ""
+
+#: src/SharedFileList.cpp
+#, fuzzy, c-format
+msgid "Discovered %u new shared file"
+msgid_plural "Discovered %u new shared files"
+msgstr[0] "Pronadjeno %i poznatih dijeljenih fajlova"
+msgstr[1] "Pronadjeno %i poznatih dijeljenih fajlova"
+msgstr[2] ""
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 #, fuzzy
@@ -8047,6 +8075,16 @@ msgid "aMule text client"
 msgstr ""
 
 #: src/ThreadTasks.cpp
+#, fuzzy, c-format
+msgid "Hashing file: %s"
+msgstr "Hashing"
+
+#: src/ThreadTasks.cpp
+#, c-format
+msgid "Rebuilding AICH hashset for file: %s"
+msgstr ""
+
+#: src/ThreadTasks.cpp
 #, c-format
 msgid "Converting old AICH hashsets in '%s' to 64b in '%s'."
 msgstr ""
@@ -8872,6 +8910,13 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy, c-format
+#~ msgid "Found %i known shared file, %i unknown"
+#~ msgid_plural "Found %i known shared files, %i unknown"
+#~ msgstr[0] "Pronadjeno %i poznatih dijeljenih fajlova, %i nepoznatih"
+#~ msgstr[1] "Pronadjeno %i poznatih dijeljenih fajlova, %i nepoznatih"
+#~ msgstr[2] ""
 
 #, fuzzy
 #~ msgid " MB/s"
