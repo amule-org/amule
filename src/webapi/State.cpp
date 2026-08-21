@@ -50,11 +50,12 @@ void ComputePartProgressPercent(const CState &state, ClientSnapshot &cli)
 	if (!cli.has_available_parts || cli.download_file_hash.empty()) {
 		return;
 	}
-	FileSnapshot f;
-	if (!state.FindDownload(cli.download_file_hash, f) || f.size == 0) {
-		return;
-	}
-	const std::uint64_t part_count = PartCountForSize(f.size);
+	// DownloadPartCount, not FindDownload: this runs once per source per
+	// tick on the SSE path and once per row on two REST paths, and the part
+	// count is the only thing wanted. FindDownload would deep-copy the whole
+	// FileSnapshot each time, repeating the identical copy for every source
+	// of the same file.
+	const std::uint64_t part_count = state.DownloadPartCount(cli.download_file_hash);
 	if (part_count == 0) {
 		return;
 	}
@@ -602,6 +603,18 @@ bool CState::FindDownload(const std::string &hash_hex, FileSnapshot &out) const
 		return false;
 	out = it->second;
 	return true;
+}
+
+std::uint64_t CState::DownloadPartCount(const std::string &hash_hex) const
+{
+	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+	std::uint32_t ecid = 0;
+	if (!m_files.FindEcidByHash(hash_hex, ecid))
+		return 0;
+	const auto it = m_files.find(ecid);
+	if (it == m_files.end() || !it->second.is_downloading)
+		return 0;
+	return PartCountForSize(it->second.size);
 }
 
 bool CState::FindDownloadByEcid(std::uint32_t ecid, FileSnapshot &out) const

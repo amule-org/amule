@@ -36,6 +36,7 @@
 #include <iostream>
 #include <sstream>
 #include <thread>
+#include <type_traits>
 
 namespace webapi
 {
@@ -121,7 +122,7 @@ std::string ToJsonDownloadEvent(const FileSnapshot &f)
 	  << "\"total\":" << f.download.sources_total << ",\"not_current\":" << f.download.sources_not_current
 	  << ",\"transferring\":" << f.download.sources_transferring
 	  << ",\"a4af\":" << f.download.sources_a4af << "}"
-	  << ",\"progress\":{\"percent\":" << f.download.percent << "}"
+	  << ",\"progress\":{\"percent\":" << JsonDoubleToString(f.download.percent) << "}"
 	  << ",\"kad_comment_search_running\":" << (f.download.kad_comment_searching ? "true" : "false")
 	  << "}";
 	return o.str();
@@ -238,8 +239,12 @@ std::string ToJson(const ClientSnapshot &c)
 	  << ",\"view_shared_disabled\":" << (c.view_shared_disabled ? "true" : "false");
 	// Omitted, not sent as the negative sentinel, exactly as the REST row
 	// does it: the field only exists for a peer we are downloading from.
+	// Formatted through the shared writer, not `<<`: the stream default is 6
+	// significant digits (so SSE read 33.3333 where REST read
+	// 33.333333333333336) and it honours LC_NUMERIC, which on an it/de/fr
+	// locale would emit a comma and break the frame's JSON outright.
 	if (c.part_progress_percent >= 0.0) {
-		o << ",\"part_progress_percent\":" << c.part_progress_percent;
+		o << ",\"part_progress_percent\":" << JsonDoubleToString(c.part_progress_percent);
 	}
 	o << "}";
 	return o.str();
@@ -475,6 +480,14 @@ std::string RemovedHashPayload(const FileSnapshot &f)
 // spelled.
 template <class Snapshot> std::string RemovedEcidPayload(const Snapshot &item)
 {
+	// The per-type overloads this replaced could only be called with an
+	// ECID-keyed snapshot; an unconstrained template accepts anything with
+	// an `.ecid` member, and FileSnapshot has one (State.h) while its
+	// collections are hash-keyed and their consumers expect {"hash":...}.
+	// Wiring one through DiffMap would otherwise compile and emit the wrong
+	// shape at runtime.
+	static_assert(!std::is_same<Snapshot, FileSnapshot>::value,
+		"file collections are hash-keyed -- use RemovedHashPayload");
 	std::ostringstream o;
 	o << "{\"ecid\":" << item.ecid << "}";
 	return o.str();

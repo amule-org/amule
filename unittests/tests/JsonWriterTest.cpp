@@ -22,6 +22,7 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 //
 
+#include <clocale>
 #include <muleunit/test.h>
 #include "JsonWriter.h"
 
@@ -255,4 +256,43 @@ TEST(JsonWriter, LargeString)
 	expected += big;
 	expected += wxT("\"");
 	ASSERT_EQUALS(expected, w.GetBuffer());
+}
+
+// JsonDoubleToString is the one formatting both the REST writer and the SSE
+// payload builders go through. It exists because `ostream << double` differs
+// from it in two ways that matter on the wire.
+TEST(JsonWriter, DoubleToStringIsRoundTrippableNotSixDigits)
+{
+	// The stream default is 6 significant digits, which turns 1-of-3 parts
+	// into "33.3333" -- a different number from the one REST reports for the
+	// same value.
+	const double third = 100.0 / 3.0;
+	ASSERT_EQUALS(std::string("33.333333333333336"), JsonDoubleToString(third));
+	// Whole values stay short; %.17g does not pad.
+	ASSERT_EQUALS(std::string("87.5"), JsonDoubleToString(87.5));
+	ASSERT_EQUALS(std::string("100"), JsonDoubleToString(100.0));
+	ASSERT_EQUALS(std::string("0"), JsonDoubleToString(0.0));
+}
+
+TEST(JsonWriter, DoubleToStringUsesACLocaleDecimalPoint)
+{
+	// snprintf and ostream both honour LC_NUMERIC, which amuleapi inherits
+	// from --locale. A comma separator would make the frame invalid JSON, so
+	// the formatter normalises it. Skipped where the locale is unavailable,
+	// which is normal in a minimal container.
+	const char *prev = std::setlocale(LC_NUMERIC, nullptr);
+	const std::string saved = prev ? prev : "C";
+	if (std::setlocale(LC_NUMERIC, "de_DE.UTF-8") == nullptr &&
+		std::setlocale(LC_NUMERIC, "it_IT.UTF-8") == nullptr) {
+		return;
+	}
+	const std::string got = JsonDoubleToString(87.5);
+	std::setlocale(LC_NUMERIC, saved.c_str());
+	ASSERT_EQUALS(std::string("87.5"), got);
+}
+
+TEST(JsonWriter, DoubleToStringSpellsNonFiniteAsNull)
+{
+	ASSERT_EQUALS(std::string("null"), JsonDoubleToString(std::nan("")));
+	ASSERT_EQUALS(std::string("null"), JsonDoubleToString(std::numeric_limits<double>::infinity()));
 }

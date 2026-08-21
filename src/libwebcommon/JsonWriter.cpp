@@ -118,32 +118,35 @@ void CJsonWriter::ValueUInt(uint64_t v)
 	m_needs_comma = true;
 }
 
+std::string JsonDoubleToString(double v)
+{
+	if (std::isnan(v) || std::isinf(v)) {
+		// JSON has no spelling for these.
+		return "null";
+	}
+	// %.17g is the shortest round-trippable form for IEEE 754 doubles.
+	char buf[64];
+	std::snprintf(buf, sizeof(buf), "%.17g", v);
+	// JSON numbers are always C-locale (a '.' decimal point), but snprintf
+	// honours LC_NUMERIC, which amuleapi/amuleweb inherit from --locale.
+	// %g never emits digit grouping, so the only possible locale artifact is
+	// the decimal separator; normalise it to '.' so the output is valid JSON
+	// regardless of the process locale.
+	const char decimal_point = *std::localeconv()->decimal_point;
+	if (decimal_point != '.') {
+		for (char *p = buf; *p; ++p) {
+			if (*p == decimal_point) {
+				*p = '.';
+			}
+		}
+	}
+	return buf;
+}
+
 void CJsonWriter::ValueDouble(double v)
 {
 	MaybeComma();
-	if (std::isnan(v) || std::isinf(v)) {
-		*m_buf += wxT("null");
-	} else {
-		// %.17g is the shortest round-trippable form for IEEE 754
-		// doubles. JSON doesn't allow `+Inf`, `-Inf` or `NaN` so we
-		// already handled those above.
-		char buf[64];
-		std::snprintf(buf, sizeof(buf), "%.17g", v);
-		// JSON numbers are always C-locale (a '.' decimal point), but snprintf
-		// honours LC_NUMERIC, which amuleapi/amuleweb inherit from --locale.
-		// %g never emits digit grouping, so the only possible locale artifact is
-		// the decimal separator; normalise it to '.' so the output is valid JSON
-		// regardless of the process locale.
-		const char decimal_point = *std::localeconv()->decimal_point;
-		if (decimal_point != '.') {
-			for (char *p = buf; *p; ++p) {
-				if (*p == decimal_point) {
-					*p = '.';
-				}
-			}
-		}
-		*m_buf += wxString::FromAscii(buf);
-	}
+	*m_buf += wxString::FromAscii(JsonDoubleToString(v).c_str());
 	m_needs_comma = true;
 }
 

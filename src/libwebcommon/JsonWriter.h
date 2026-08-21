@@ -27,6 +27,7 @@
 
 #include <wx/string.h>
 #include <cstdint>
+#include <string>
 
 // Streaming JSON output. Appends to an internal or caller-owned wxString
 // buffer; the buffer holds JSON text suitable for UTF-8 emission via
@@ -43,6 +44,20 @@
 // Commas between siblings are inserted automatically. Calling Key()
 // outside an object, or omitting it inside one, is a programmer error
 // (no runtime check; tests cover the legal patterns).
+// One JSON number formatting for doubles, shared by CJsonWriter::ValueDouble
+// and by the hand-rolled ostringstream payload builders in the SSE layer.
+//
+// Two things it gets right that `ostream << double` does not: %.17g, the
+// shortest round-trippable form for an IEEE 754 double (the stream default is
+// 6 significant digits, so the same value reads differently on SSE and REST),
+// and a C-locale decimal point. JSON numbers are always '.'-separated, but
+// ostream and snprintf both honour LC_NUMERIC -- which amuleapi inherits from
+// --locale -- so on an it/de/fr locale an unnormalised double emits "33,3333"
+// and the whole frame stops being valid JSON.
+//
+// NaN and the infinities become `null`; JSON has no spelling for them.
+std::string JsonDoubleToString(double v);
+
 class CJsonWriter
 {
 public:

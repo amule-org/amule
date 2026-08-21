@@ -908,18 +908,51 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c,
 	// file_hash_by_ecid snapshot the caller built from m_files this
 	// tick. Empty hash if the ECID isn't in the map — file may have
 	// been removed between the file walkers and this client walker.
+	//
+	// A zero ECID is the core saying "no file", not "unchanged":
+	// ECSpecialCoreTags.cpp:438-443 emits `file->ECID()` or a literal 0 for
+	// both tags. Reading 0 as absent left the last hash cached forever, so a
+	// peer that finished downloading kept its `role: "source"` row in
+	// /downloads/{hash}/clients for as long as it stayed in clientlist.
+	//
+	// Whenever the hash moves, the matching per-part bitmap has to go with
+	// it. CUpDownClient::SetReqFile clears m_downPartStatus without
+	// repopulating it (DownloadClient.cpp:1683) and the core then sends no
+	// PART_STATUS until the peer answers for the new file, so a bitmap kept
+	// across the change describes the OLD file -- reported either as "holds
+	// every part" or as the old bitmap truncated to the new part count.
+	// amulegui re-zeroes its bitvector on the same transition; this decoder
+	// now does too.
 	{
 		std::uint32_t v = 0;
-		if (c->AssignIfExist(EC_TAG_CLIENT_UPLOAD_FILE, v) && v != 0) {
-			const auto it = file_hash_by_ecid.find(v);
-			cs.upload_file_hash = (it != file_hash_by_ecid.end()) ? it->second : std::string();
+		if (c->AssignIfExist(EC_TAG_CLIENT_UPLOAD_FILE, v)) {
+			std::string next;
+			if (v != 0) {
+				const auto it = file_hash_by_ecid.find(v);
+				next = (it != file_hash_by_ecid.end()) ? it->second : std::string();
+			}
+			if (next != cs.upload_file_hash) {
+				cs.upload_file_hash = std::move(next);
+				cs.upload_part_status.clear();
+				cs.upload_part_status_all = false;
+				cs.has_upload_part_status = false;
+			}
 		}
 	}
 	{
 		std::uint32_t v = 0;
-		if (c->AssignIfExist(EC_TAG_CLIENT_REQUEST_FILE, v) && v != 0) {
-			const auto it = file_hash_by_ecid.find(v);
-			cs.download_file_hash = (it != file_hash_by_ecid.end()) ? it->second : std::string();
+		if (c->AssignIfExist(EC_TAG_CLIENT_REQUEST_FILE, v)) {
+			std::string next;
+			if (v != 0) {
+				const auto it = file_hash_by_ecid.find(v);
+				next = (it != file_hash_by_ecid.end()) ? it->second : std::string();
+			}
+			if (next != cs.download_file_hash) {
+				cs.download_file_hash = std::move(next);
+				cs.part_status.clear();
+				cs.part_status_all = false;
+				cs.has_part_status = false;
+			}
 		}
 	}
 	{
