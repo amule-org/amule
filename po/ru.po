@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 11:21+0200\n"
+"POT-Creation-Date: 2026-08-21 14:34+0200\n"
 "PO-Revision-Date: 2026-08-20 14:32+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
@@ -1127,8 +1127,8 @@ msgstr "Ошибка при сохранении файла %s: %s"
 msgid "Enter Captcha"
 msgstr "Введите код"
 
-#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/SearchListCtrl.cpp src/TransferWnd.cpp
+#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
+#: src/TransferWnd.cpp
 msgid "Category"
 msgstr "Категория"
 
@@ -3621,6 +3621,10 @@ msgstr "Остановить"
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp
 msgid "Download"
 msgstr "Загрузить"
+
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Download in category"
+msgstr "Загрузить в категорию"
 
 #: src/muuli_wdr.cpp
 msgid "Clear Search Results"
@@ -6491,10 +6495,6 @@ msgstr "Развернуть всё"
 #: src/SearchListCtrl.cpp
 msgid "Collapse all"
 msgstr "Свернуть всё"
-
-#: src/SearchListCtrl.cpp
-msgid "Download in category"
-msgstr "Загрузить в категорию"
 
 #: src/SearchListCtrl.cpp
 #, c-format

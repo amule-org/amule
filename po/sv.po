@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 11:21+0200\n"
+"POT-Creation-Date: 2026-08-21 14:34+0200\n"
 "PO-Revision-Date: 2026-08-20 14:34+0000\n"
 "Last-Translator: raffe <raffe@localhost.se>\n"
 "Language-Team: Swedish <tp-sv@listor.tp-sv.se>\n"
@@ -1112,8 +1112,8 @@ msgstr "Fel vid sparandet av %s fil: %s"
 msgid "Enter Captcha"
 msgstr "Ange Captcha"
 
-#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/SearchListCtrl.cpp src/TransferWnd.cpp
+#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
+#: src/TransferWnd.cpp
 msgid "Category"
 msgstr "Kategori"
 
@@ -3607,6 +3607,10 @@ msgstr "Stoppa"
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp
 msgid "Download"
 msgstr "Hämta"
+
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Download in category"
+msgstr "Nedladdning i kategori"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -6494,10 +6498,6 @@ msgstr ""
 #, fuzzy
 msgid "Collapse all"
 msgstr "Stäng alla flikar"
-
-#: src/SearchListCtrl.cpp
-msgid "Download in category"
-msgstr "Nedladdning i kategori"
 
 #: src/SearchListCtrl.cpp
 #, c-format

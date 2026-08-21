@@ -251,19 +251,18 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     };
     wxChoice *item15 = new wxChoice( parent, IDC_TypeSearch, wxDefaultPosition, wxDefaultSize, 8, strs15, 0 );
     item13->Add( item15, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
+    // The category selector used to sit here, between File Type and Extension.
+    // It is not a search filter -- nothing about it travels with the query --
+    // so it moved to the button row next to Download, whose destination it is
+    // (issue #979). Five filters remain: three on this row, two on the next.
     wxStaticLine *item16 = new wxStaticLine( parent, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL );
     item13->Add( item16, wxSizerFlags(1).CenterHorizontal().Border(wxALL, 5) );
-    wxStaticText *item17 = new wxStaticText( parent, -1, _("Category"), wxDefaultPosition, wxDefaultSize, 0 );
-    item13->Add( item17, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
-    wxString *strs18 = (wxString*) NULL;
-    wxChoice *item18 = new wxChoice( parent, ID_AUTOCATASSIGN, wxDefaultPosition, wxDefaultSize, 0, strs18, 0 );
-    item13->Add( item18, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
-    wxStaticLine *item19 = new wxStaticLine( parent, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL );
-    item13->Add( item19, wxSizerFlags().CenterHorizontal().Border(wxALL, 5) );
     wxStaticText *item20 = new wxStaticText( parent, -1, _("Extension"), wxDefaultPosition, wxDefaultSize, 0 );
     item13->Add( item20, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
     CMuleTextCtrl *item21 = new CMuleTextCtrl( parent, IDC_EDITSEARCHEXTENSION, "", wxDefaultPosition, wxSize(60,-1), wxTE_PROCESS_ENTER );
     item13->Add( item21, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
+    wxStaticLine *item19 = new wxStaticLine( parent, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL );
+    item13->Add( item19, wxSizerFlags().CenterHorizontal().Border(wxALL, 5) );
     wxStaticText *item22 = new wxStaticText( parent, -1, _("Min Size"), wxDefaultPosition, wxDefaultSize, 0 );
     item13->Add( item22, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
     wxBoxSizer *item23 = new wxBoxSizer( wxHORIZONTAL );
@@ -281,8 +280,8 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item23->Add( item25, wxSizerFlags().Center().Border(wxALL, 5) );
     item13->Add( item23, wxSizerFlags().Center().Border(wxALL, 5) );
 
-    wxStaticLine *item26 = new wxStaticLine( parent, -1, wxDefaultPosition, wxSize(-1,20), wxLI_VERTICAL );
-    item13->Add( item26, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
+    // Min Size closes the first row and Max Size opens the second, so the
+    // separator that used to divide them would now sit on the row break.
     wxStaticText *item27 = new wxStaticText( parent, -1, _("Max Size"), wxDefaultPosition, wxDefaultSize, 0 );
     item13->Add( item27, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
     wxBoxSizer *item28 = new wxBoxSizer( wxHORIZONTAL );
@@ -306,6 +305,13 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item13->Add( item32, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
     wxSpinCtrl *item33 = new wxSpinCtrl( parent, IDC_SPINSEARCHAVAILABILITY, "0", wxDefaultPosition, wxDefaultSize, 0, 0, 1000, 0 );
     item13->Add( item33, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
+    // Five filters no longer divide evenly into the 8-column grid: the first row
+    // takes three (File Type, Extension, Min Size) and the second two, so the
+    // second is padded out to a full row. Without this the sizer pulls cells up
+    // from the next row and the two rows stop lining up.
+    for (int pad = 0; pad < 3; ++pad) {
+        item13->Add( 0, 0, wxSizerFlags().Border(wxALL, 5) );
+    }
     item1->Add( item13, wxSizerFlags().Center() );
 
     wxFlexGridSizer *item34 = new wxFlexGridSizer( 1, 0, 0, 0 );
@@ -354,6 +360,20 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     wxButton *item50 = new wxButton( parent, IDC_SDOWNLOAD, _("Download"), wxDefaultPosition, wxDefaultSize, 0 );
     item50->Enable( false );
     item43->Add( item50, wxSizerFlags().Center().Border(wxALL, 5) );
+    // Where the button beside it sends the file. It sat in the extended-
+    // parameters row until issue #979, which made it read as a search filter --
+    // something neither ed2k nor Kad can do -- and let a chosen category be
+    // hidden and then silently ignored. Here it is always visible and its
+    // meaning is positional. Same wording as the right-click action that does
+    // the same thing (SearchListCtrl.cpp), so the two cannot drift.
+    wxStaticText *item17 = new wxStaticText( parent, -1, _("Download in category"), wxDefaultPosition, wxDefaultSize, 0 );
+    item43->Add( item17, wxSizerFlags().Center().Border(wxALL, 5) );
+    // Empty item list: UpdateCatChoice() fills it and keeps it in step with the
+    // configured categories. nullptr, not the file's usual (wxString*) NULL --
+    // this line is new, so the Tier-2 modernize-use-nullptr check applies to it.
+    wxString *strs18 = nullptr;
+    wxChoice *item18 = new wxChoice( parent, ID_AUTOCATASSIGN, wxDefaultPosition, wxDefaultSize, 0, strs18, 0 );
+    item43->Add( item18, wxSizerFlags().Center().Border(wxALL, 5) );
     wxStaticLine *item51 = new wxStaticLine( parent, -1, wxDefaultPosition, wxSize(-1,20), wxLI_VERTICAL );
     item43->Add( item51, wxSizerFlags().Center().Border(wxALL, 5) );
     // Ordered most to least destructive rightwards, so the mildest sits at the

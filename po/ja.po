@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 11:21+0200\n"
+"POT-Creation-Date: 2026-08-21 14:34+0200\n"
 "PO-Revision-Date: 2026-08-20 14:21+0000\n"
 "Last-Translator: \n"
 "Language-Team: Japanese\n"
@@ -1117,8 +1117,8 @@ msgstr "known.metファイル%sを保存する時にIOエラーが発生しま�
 msgid "Enter Captcha"
 msgstr ""
 
-#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/SearchListCtrl.cpp src/TransferWnd.cpp
+#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
+#: src/TransferWnd.cpp
 msgid "Category"
 msgstr "カテゴリ"
 
@@ -3609,6 +3609,10 @@ msgstr "中止"
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp
 msgid "Download"
 msgstr "ダウンロード"
+
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Download in category"
+msgstr "カテゴリにダウンロードする"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -6493,10 +6497,6 @@ msgstr ""
 #, fuzzy
 msgid "Collapse all"
 msgstr "全てのタブを閉める"
-
-#: src/SearchListCtrl.cpp
-msgid "Download in category"
-msgstr "カテゴリにダウンロードする"
 
 #: src/SearchListCtrl.cpp
 #, fuzzy, c-format

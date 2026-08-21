@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 11:21+0200\n"
+"POT-Creation-Date: 2026-08-21 14:34+0200\n"
 "PO-Revision-Date: 2026-08-20 14:34+0000\n"
 "Last-Translator: Fation <dj_barthezz@linuxmail.org lushnja_corps@hotmail.Language-Team:\n"
 "Language: sq\n"
@@ -1119,8 +1119,8 @@ msgstr "Gabim duke shpetuar failin known.met: %s"
 msgid "Enter Captcha"
 msgstr ""
 
-#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/SearchListCtrl.cpp src/TransferWnd.cpp
+#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
+#: src/TransferWnd.cpp
 msgid "Category"
 msgstr "Kategori"
 
@@ -3622,6 +3622,10 @@ msgstr "Ndalo"
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp
 msgid "Download"
 msgstr "Shkarkime"
+
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Download in category"
+msgstr "Shkarko ne kategori"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -6518,10 +6522,6 @@ msgstr ""
 #, fuzzy
 msgid "Collapse all"
 msgstr "Mbylli te gjitha tabelat"
-
-#: src/SearchListCtrl.cpp
-msgid "Download in category"
-msgstr "Shkarko ne kategori"
 
 #: src/SearchListCtrl.cpp
 #, fuzzy, c-format

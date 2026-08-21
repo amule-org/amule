@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 11:21+0200\n"
+"POT-Creation-Date: 2026-08-21 14:34+0200\n"
 "PO-Revision-Date: 2026-08-20 14:09+0000\n"
 "Last-Translator: minterior <minterior@gmail.com>\n"
 "Language-Team: Català\n"
@@ -1113,8 +1113,8 @@ msgstr "Error mentre es desava el fitxer %s: %s"
 msgid "Enter Captcha"
 msgstr "Introdueix el Captcha"
 
-#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/SearchListCtrl.cpp src/TransferWnd.cpp
+#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
+#: src/TransferWnd.cpp
 msgid "Category"
 msgstr "Categoria"
 
@@ -3608,6 +3608,10 @@ msgstr "Atura"
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp
 msgid "Download"
 msgstr "Baixada"
+
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Download in category"
+msgstr "Baixa a la categoria"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -6495,10 +6499,6 @@ msgstr ""
 #, fuzzy
 msgid "Collapse all"
 msgstr "Tanca totes les pestanyes"
-
-#: src/SearchListCtrl.cpp
-msgid "Download in category"
-msgstr "Baixa a la categoria"
 
 #: src/SearchListCtrl.cpp
 #, c-format

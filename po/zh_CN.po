@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 11:21+0200\n"
+"POT-Creation-Date: 2026-08-21 14:34+0200\n"
 "PO-Revision-Date: 2026-08-20 14:36+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -1117,8 +1117,8 @@ msgstr "保存 %s 文件时发生错误：%s"
 msgid "Enter Captcha"
 msgstr "输入验证码"
 
-#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/SearchListCtrl.cpp src/TransferWnd.cpp
+#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
+#: src/TransferWnd.cpp
 msgid "Category"
 msgstr "分类"
 
@@ -3591,6 +3591,10 @@ msgstr "停止"
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp
 msgid "Download"
 msgstr "下载"
+
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Download in category"
+msgstr "下载分类"
 
 #: src/muuli_wdr.cpp
 msgid "Clear Search Results"
@@ -6438,10 +6442,6 @@ msgstr "全部展开"
 #: src/SearchListCtrl.cpp
 msgid "Collapse all"
 msgstr "折叠所有"
-
-#: src/SearchListCtrl.cpp
-msgid "Download in category"
-msgstr "下载分类"
 
 #: src/SearchListCtrl.cpp
 #, c-format

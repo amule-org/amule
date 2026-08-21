@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 11:21+0200\n"
+"POT-Creation-Date: 2026-08-21 14:34+0200\n"
 "PO-Revision-Date: 2026-08-20 14:31+0000\n"
 "Last-Translator: Angelescu Constantin <titus0818@yahoo.com>\n"
 "Language-Team: English <kde-i18n-doc@kde.org>\n"
@@ -1115,8 +1115,8 @@ msgstr "Eroare în timpul salvării fișierului %s : %s"
 msgid "Enter Captcha"
 msgstr "Introduceți Captcha"
 
-#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/SearchListCtrl.cpp src/TransferWnd.cpp
+#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
+#: src/TransferWnd.cpp
 msgid "Category"
 msgstr "Categorie"
 
@@ -3618,6 +3618,10 @@ msgstr "Oprește"
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp
 msgid "Download"
 msgstr "Descarcă"
+
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Download in category"
+msgstr "Descarcă în categoria"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -6514,10 +6518,6 @@ msgstr ""
 #, fuzzy
 msgid "Collapse all"
 msgstr "Închide toate ferestrele"
-
-#: src/SearchListCtrl.cpp
-msgid "Download in category"
-msgstr "Descarcă în categoria"
 
 #: src/SearchListCtrl.cpp
 #, c-format
