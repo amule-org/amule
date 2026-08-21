@@ -2501,9 +2501,9 @@ void WriteDownloadObject(
 // share one definition of the A-field set.
 void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 {
-	w.Key("client_ecid");
+	w.Key("ecid");
 	w.ValueInt(static_cast<int64_t>(c.ecid));
-	w.Key("client_name");
+	w.Key("name");
 	w.ValueString(wxString::FromUTF8(c.client_name.c_str()));
 	w.Key("user_hash");
 	w.ValueString(wxString::FromUTF8(c.user_hash.c_str()));
@@ -2647,7 +2647,7 @@ void WriteKnownClientObject(CJsonWriter &w, const webapi::KnownClientSnapshot &c
 	w.Key("user_hash");
 	w.ValueString(wxString::FromUTF8(c.user_hash.c_str()));
 	if (!c.client_name.empty()) {
-		w.Key("client_name");
+		w.Key("name");
 		w.ValueString(wxString::FromUTF8(c.client_name.c_str()));
 	}
 	if (!c.ip.empty()) {
@@ -3887,7 +3887,7 @@ void WriteA4afObject(CJsonWriter &w, const webapi::FileSnapshot &d)
 	w.BeginObject();
 	w.Key("a4af_auto");
 	w.ValueBool(d.download.a4af_auto);
-	w.Key("sources");
+	w.Key("source_ecids");
 	w.BeginArray();
 	for (const std::uint32_t ecid : d.download.a4af_sources) {
 		w.ValueInt(static_cast<int64_t>(ecid));
@@ -4921,10 +4921,11 @@ void WriteCategoryObject(CJsonWriter &w, const webapi::CategorySnapshot &c)
 void WriteFriendObject(CJsonWriter &w, const webapi::FriendSnapshot &f)
 {
 	w.BeginObject();
-	// The URL key for /friends/{ecid} and its sub-routes. Like every ECID it
-	// does not survive an amuled restart -- `user_hash` is the durable
-	// reference, when the friend has one.
-	w.Key("friend_ecid");
+	// The friend's own EC handle, so it is spelled `ecid` like every other
+	// self-handle; `client_ecid` below points OUT of this object, which is
+	// what the prefix is for. Like every ECID it does not survive an amuled
+	// restart -- `user_hash` is the durable reference, when the friend has one.
+	w.Key("ecid");
 	w.ValueInt(static_cast<int64_t>(f.ecid));
 	w.Key("name");
 	w.ValueString(wxString::FromUTF8(f.name.c_str()));
@@ -5412,7 +5413,7 @@ CHttpServer::Response CApiDispatcher::HandleFriendRemove(
 	w.BeginObject();
 	w.Key("ok");
 	w.ValueBool(true);
-	w.Key("friend_ecid");
+	w.Key("ecid");
 	w.ValueInt(static_cast<int64_t>(ecid));
 	w.EndObject();
 	FinalizeJsonBody(w, r);

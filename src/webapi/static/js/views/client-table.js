@@ -47,8 +47,8 @@ export const COLS = [
   { key: "address", th: "downloads_peer_col_address", num: true, width: "180px", sortable: true,
     sortVal: (c) => ipNum(c.ip), cell: (c) => c.ip ? c.ip + ":" + c.port : "—" },
   { key: "name", th: "downloads_peer_col_name", width: "170px", sortable: true,
-    sortVal: (c) => (c.client_name || "").toLowerCase(),
-    cell: (c) => html`<span title=${c.client_name}>${c.client_name || "—"}</span>` },
+    sortVal: (c) => (c.name || "").toLowerCase(),
+    cell: (c) => html`<span title=${c.name}>${c.name || "—"}</span>` },
   { key: "user_hash", th: "downloads_peer_col_user_hash", width: "150px", sortable: true,
     sortVal: (c) => c.user_hash || "",
     cell: (c) => html`<span title=${c.user_hash}>${c.user_hash || "—"}</span>` },
@@ -102,7 +102,7 @@ export const IDENT_FILTERS = ["all", ...IDENT_STATES].map((v) => [v, t("download
 // this; the resource starts on the first mount and stays live from then on.
 export function useClients() {
   useEffect(() => {
-    data.register({ key: "clients", eventPrefix: "client", id: "client_ecid",
+    data.register({ key: "clients", eventPrefix: "client", id: "ecid",
       list: () => api.get("clients").then((r) => r.clients || []) });
     data.ensure("clients");
   }, []);
@@ -162,7 +162,7 @@ export function ClientTable({ rows, prefsKey, defaultHidden, defaultSort, toolba
       <div class="spacer"></div>
       <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} onReset=${resetPrefs} />
     </div>
-    <${VirtualTable} columns=${shown} rows=${list} rowKey=${(c) => c.client_ecid}
+    <${VirtualTable} columns=${shown} rows=${list} rowKey=${(c) => c.ecid}
                      sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort}
                      widths=${widths} onResize=${setWidth}
                      maxHeight="none"
@@ -182,7 +182,7 @@ export function FileClients({ hash, prefsKey, defaultHidden, defaultSort }) {
 
   let rows = clients.filter((c) => c.download_file_hash === hash || c.upload_file_hash === hash);
   if (ident !== "all") rows = rows.filter((c) => c.ident_state === ident);
-  if (q) { const match = textMatcher(q); rows = rows.filter((c) => match((c.client_name || "") + " " + fileNameOf(c))); }
+  if (q) { const match = textMatcher(q); rows = rows.filter((c) => match((c.name || "") + " " + fileNameOf(c))); }
 
   return html`
     <div class="detail-clients">

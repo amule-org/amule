@@ -182,11 +182,11 @@ if [ "${TOTAL:-0}" -gt 0 ]; then
 	# Optional fields are omitted, never emitted empty: a record written
 	# before the daemon kept per-peer metadata has no name at all, and a
 	# consumer must be able to tell that from "recorded as empty".
-	EMPTY_NAMES=$(_jq '[.known_clients[] | select(has("client_name") and .client_name == "")] | length')
+	EMPTY_NAMES=$(_jq '[.known_clients[] | select(has("name") and .name == "")] | length')
 	if [ "${EMPTY_NAMES:-0}" -eq 0 ]; then
-		_pass "no record carries an empty client_name (absent means unrecorded)"
+		_pass "no record carries an empty name (absent means unrecorded)"
 	else
-		_fail "optional fields" "$EMPTY_NAMES record(s) have client_name == \"\""
+		_fail "optional fields" "$EMPTY_NAMES record(s) have name == \"\""
 	fi
 
 	# first_seen and sessions travel together — both come from the same

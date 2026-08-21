@@ -196,7 +196,7 @@ std::string ToJson(const FriendSnapshot &f)
 {
 	std::ostringstream o;
 	o << "{"
-	  << "\"friend_ecid\":" << f.ecid << ",\"name\":\"" << EscJson(f.name) << "\""
+	  << "\"ecid\":" << f.ecid << ",\"name\":\"" << EscJson(f.name) << "\""
 	  << ",\"user_hash\":\"" << EscJson(f.user_hash) << "\""
 	  << ",\"ip\":\"" << EscJson(f.ip) << "\""
 	  << ",\"port\":" << f.port << ",\"client_ecid\":" << f.client_ecid
@@ -209,7 +209,7 @@ std::string ToJson(const ClientSnapshot &c)
 {
 	std::ostringstream o;
 	o << "{"
-	  << "\"client_ecid\":" << c.ecid << ",\"client_name\":\"" << EscJson(c.client_name) << "\""
+	  << "\"ecid\":" << c.ecid << ",\"name\":\"" << EscJson(c.client_name) << "\""
 	  << ",\"user_hash\":\"" << EscJson(c.user_hash) << "\""
 	  << ",\"ip\":\"" << EscJson(c.ip) << "\""
 	  << ",\"country_code\":\"" << EscJson(c.country_code) << "\""
@@ -449,23 +449,15 @@ std::string RemovedHashPayload(const FileSnapshot &f)
 {
 	return "{\"hash\":\"" + EscJson(f.hash) + "\"}";
 }
-// ECID-keyed types (servers / clients): same shape, ECID payload.
-std::string RemovedEcidPayload(const ServerSnapshot &s)
+
+// Every ECID-keyed collection identifies a removed entry the same way, now
+// that each object names its own handle `ecid` (issue #976): one shape, one
+// function, rather than a per-type overload that only differed in the key it
+// spelled.
+template <class Snapshot> std::string RemovedEcidPayload(const Snapshot &item)
 {
 	std::ostringstream o;
-	o << "{\"ecid\":" << s.ecid << "}";
-	return o.str();
-}
-std::string RemovedEcidPayload(const FriendSnapshot &f)
-{
-	std::ostringstream o;
-	o << "{\"friend_ecid\":" << f.ecid << "}";
-	return o.str();
-}
-std::string RemovedEcidPayload(const ClientSnapshot &c)
-{
-	std::ostringstream o;
-	o << "{\"client_ecid\":" << c.ecid << "}";
+	o << "{\"ecid\":" << item.ecid << "}";
 	return o.str();
 }
 

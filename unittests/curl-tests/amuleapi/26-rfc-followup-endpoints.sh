@@ -354,7 +354,7 @@ else
 fi
 # Verify every entry in /clients?filter=uploads truly has upload_state=uploading
 BAD=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients?filter=uploads" \
-	| jq -r '.clients[] | select(.upload_state != "uploading") | .client_ecid' \
+	| jq -r '.clients[] | select(.upload_state != "uploading") | .ecid' \
 	| head -1)
 if [ -z "$BAD" ]; then
 	_pass "/clients?filter=uploads only returns upload_state=uploading peers"
@@ -399,11 +399,11 @@ fi
 # A superset of the list object: every list field plus the detail-only
 # B fields. Guarded on a live peer; the negative cases run regardless.
 FIRST_ECID=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients" \
-	| jq -r '.clients[0].client_ecid // empty')
+	| jq -r '.clients[0].ecid // empty')
 if [ -n "$FIRST_ECID" ]; then
 	DETAIL=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients/$FIRST_ECID")
 	OK=$(echo "$DETAIL" | jq -r --argjson e "$FIRST_ECID" '
-		(.client_ecid == $e)
+		(.ecid == $e)
 		and has("user_hash")
 		and has("upload_file_name") and has("download_file_name")
 		and has("user_id_hybrid") and has("high_id")
