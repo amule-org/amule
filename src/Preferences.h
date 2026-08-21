@@ -842,9 +842,9 @@ public:
 
 	// Media metadata (issue #140) — probe local shared files with
 	// ffprobe so we advertise Length / Bitrate / Codec to peers.
-	// The path defaults to whatever MediaProbe::AutoDetectPath()
-	// returns at first-run; the user can override or blank it out
-	// from Preferences -> Files.
+	// The path is empty unless the user pins one, and empty means
+	// auto-detect, not off: MediaProbe::DetectedPath() resolves it
+	// per process when the first file is probed.
 	static bool GetMediaMetadataEnabled() { return s_MediaMetadataEnabled; }
 	static void SetMediaMetadataEnabled(bool val) { s_MediaMetadataEnabled = val; }
 	static const wxString &GetMediaMetadataFFProbePath() { return s_MediaMetadataFFProbePath; }

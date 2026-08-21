@@ -22,6 +22,7 @@
 
 #include <cmath>
 #include <cstdlib>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -31,7 +32,7 @@
 #include <wx/stdpaths.h>
 #include <wx/stopwatch.h>
 #include <wx/tokenzr.h>
-#include <wx/utils.h> // Needed for wxExecute (AutoDetectPath) / wxMilliSleep
+#include <wx/utils.h> // Needed for wxMilliSleep / wxGetenv
 
 #include <common/Format.h>
 
@@ -61,139 +62,6 @@ extern char **environ;
 
 namespace MediaProbe
 {
-
-namespace
-{
-
-// One-shot silent invocation. Returns true if `binary` runs cleanly
-// enough to print its own -version output. Used both as the "is on
-// PATH" probe (binary = "ffprobe") and as the "does this path work"
-// probe (binary = a resolved absolute path).
-bool CanRun(const wxString &binary)
-{
-	wxArrayString out, err;
-	// wxEXEC_NODISABLE / wxEXEC_NOEVENTS mirror the pattern in
-	// AppImageIntegration.cpp — we never want the wait to spin the
-	// event loop or grey out top-level windows.
-	const long rc = wxExecute(
-		binary + wxT(" -version"), out, err, wxEXEC_SYNC | wxEXEC_NODISABLE | wxEXEC_NOEVENTS);
-	// wxExecute returns the child's exit code on success or -1 if it
-	// couldn't spawn (typical: file not found on Windows CreateProcess,
-	// or ENOENT after fork+exec on POSIX).
-	return rc == 0;
-}
-
-// Platform-specific well-known install locations, tried in order.
-// Only one entry per install-manager: we're looking for the first
-// existing binary, not enumerating every possible location. Order
-// matters — ARM64 Homebrew (`/opt/homebrew`) comes before Intel
-// (`/usr/local`) because a bare `ffprobe` PATH lookup on Apple
-// Silicon usually finds the ARM64 one first anyway.
-wxArrayString WellKnownPaths()
-{
-	wxArrayString paths;
-#if defined(__WXMAC__)
-	paths.Add(wxT("/opt/homebrew/bin/ffprobe"));
-	paths.Add(wxT("/usr/local/bin/ffprobe"));
-	paths.Add(wxT("/opt/local/bin/ffprobe")); // MacPorts
-#elif defined(__WXMSW__)
-	// Common Windows package-manager install roots. WinGet's per-app
-	// dir includes the package version so we can't hardcode a leaf;
-	// probing via `where.exe` (which CanRun("ffprobe") uses under the
-	// hood) is the reliable path for WinGet users. Chocolatey +
-	// scoop have stable predictable roots.
-	paths.Add(wxT("C:\\ffmpeg\\bin\\ffprobe.exe"));
-	paths.Add(wxT("C:\\ProgramData\\chocolatey\\bin\\ffprobe.exe"));
-	if (const wxChar *home = wxGetenv(wxT("USERPROFILE"))) {
-		paths.Add(wxString(home) + wxT("\\scoop\\apps\\ffmpeg\\current\\bin\\ffprobe.exe"));
-	}
-#else
-	// Linux + OpenBSD share the same handful of standard prefixes.
-	// Snap and Flatpak users typically launch ffprobe out of their
-	// sandbox root (`/snap/bin/ffprobe`, or a flatpak-run wrapper);
-	// we cover the snap case explicitly and let flatpak users point
-	// the preference at their wrapper manually if they hit it.
-	paths.Add(wxT("/usr/bin/ffprobe"));
-	paths.Add(wxT("/usr/local/bin/ffprobe"));
-	paths.Add(wxT("/snap/bin/ffprobe"));
-#endif
-	return paths;
-}
-
-} // anonymous namespace
-
-wxString AutoDetectPath()
-{
-	// Fast path: unadorned `ffprobe` on the shell PATH. This is what
-	// most Linux + BSD installs give us for free (package-installed
-	// binaries land in a PATH dir). On macOS + Windows this often
-	// fails even when ffprobe IS installed, because GUI-launched
-	// processes get a minimal PATH (launchd default on macOS lacks
-	// /opt/homebrew; Windows GUI apps sometimes miss chocolatey /
-	// scoop until reboot).
-	if (CanRun(wxT("ffprobe"))) {
-		return wxT("ffprobe");
-	}
-
-	// Fallback: probe the per-platform well-known list.
-	for (const wxString &candidate : WellKnownPaths()) {
-		if (wxFileName::FileExists(candidate) && CanRun(candidate)) {
-			return candidate;
-		}
-	}
-
-	return wxEmptyString;
-}
-
-namespace
-{
-
-// ffprobe emits float durations with locale-independent `.` decimal
-// separators, so a plain strtod suffices — no wxString::ToDouble()
-// with its locale sensitivity here.
-bool ParseSeconds(const wxString &value, uint32 &out)
-{
-	if (value.IsEmpty()) {
-		return false;
-	}
-	char *end = nullptr;
-	const double d = std::strtod(value.utf8_str().data(), &end);
-	if (end == value.utf8_str().data() || d < 0.0) {
-		return false;
-	}
-	// Cap at uint32 range (~136 years — plenty).
-	if (d > static_cast<double>(0xFFFFFFFFu)) {
-		out = 0xFFFFFFFFu;
-	} else {
-		// Round to nearest whole second; sub-second precision has no
-		// consumer in the FT_MEDIA_LENGTH tag.
-		out = static_cast<uint32>(std::llround(d));
-	}
-	return true;
-}
-
-// ffprobe emits format.bit_rate as bits/second; the tag wire format
-// is kbps.
-bool ParseBitrateKbps(const wxString &value, uint32 &out)
-{
-	if (value.IsEmpty() || value == wxT("N/A")) {
-		return false;
-	}
-	char *end = nullptr;
-	const unsigned long long bps = std::strtoull(value.utf8_str().data(), &end, 10);
-	if (end == value.utf8_str().data()) {
-		return false;
-	}
-	const unsigned long long kbps = bps / 1000ULL;
-	if (kbps > 0xFFFFFFFFULL) {
-		out = 0xFFFFFFFFu;
-	} else {
-		out = static_cast<uint32>(kbps);
-	}
-	return true;
-}
-
-} // anonymous namespace
 
 namespace
 {
@@ -399,6 +267,187 @@ int RunBoundedFFProbe(const wxString &exe,
 	}
 	wxRemoveFile(tmpPath);
 	return exitCode;
+}
+
+} // anonymous namespace
+
+namespace
+{
+
+// Wall-clock bound for one `-version` invocation. A working ffprobe
+// answers in milliseconds; a binary that has not by now is wedged (a
+// stale network mount, a wrapper blocked on a lock) and must not hold
+// up whoever asked. Detection walks a handful of candidates at worst,
+// and only ever the ones that exist on disk.
+constexpr unsigned kDetectTimeoutMs = 3000;
+
+// One-shot silent invocation. Returns true if `binary` runs cleanly
+// enough to print its own -version output. Used both as the "is on
+// PATH" probe (binary = "ffprobe") and as the "does this path work"
+// probe (binary = a resolved absolute path).
+//
+// Goes through RunBoundedFFProbe for two reasons: it puts a deadline on
+// a binary that never returns, and it is callable off the main thread.
+// wxExecute is neither — see the include-block note above. Both matter
+// now that detection runs on the probe worker and not just behind the
+// Preferences "Detect" button. Bare `ffprobe` still resolves through
+// PATH: posix_spawnp and CreateProcess (with a null application name)
+// both search it.
+bool CanRun(const wxString &binary)
+{
+	// Detection is never cancelled part-way; only the timeout bounds it.
+	const std::atomic<bool> keepRunning{ true };
+	wxArrayString argv, out;
+	argv.Add(wxT("-version"));
+	return RunBoundedFFProbe(binary, argv, kDetectTimeoutMs, keepRunning, out) == 0;
+}
+
+// Platform-specific well-known install locations, tried in order.
+// Only one entry per install-manager: we're looking for the first
+// existing binary, not enumerating every possible location. Order
+// matters — ARM64 Homebrew (`/opt/homebrew`) comes before Intel
+// (`/usr/local`) because a bare `ffprobe` PATH lookup on Apple
+// Silicon usually finds the ARM64 one first anyway.
+wxArrayString WellKnownPaths()
+{
+	wxArrayString paths;
+#if defined(__WXMAC__)
+	paths.Add(wxT("/opt/homebrew/bin/ffprobe"));
+	paths.Add(wxT("/usr/local/bin/ffprobe"));
+	paths.Add(wxT("/opt/local/bin/ffprobe")); // MacPorts
+#elif defined(__WXMSW__)
+	// Common Windows package-manager install roots. WinGet's per-app
+	// dir includes the package version so we can't hardcode a leaf;
+	// probing via `where.exe` (which CanRun("ffprobe") uses under the
+	// hood) is the reliable path for WinGet users. Chocolatey +
+	// scoop have stable predictable roots.
+	paths.Add(wxT("C:\\ffmpeg\\bin\\ffprobe.exe"));
+	paths.Add(wxT("C:\\ProgramData\\chocolatey\\bin\\ffprobe.exe"));
+	if (const wxChar *home = wxGetenv(wxT("USERPROFILE"))) {
+		paths.Add(wxString(home) + wxT("\\scoop\\apps\\ffmpeg\\current\\bin\\ffprobe.exe"));
+	}
+#else
+	// Linux + OpenBSD share the same handful of standard prefixes.
+	// Snap and Flatpak users typically launch ffprobe out of their
+	// sandbox root (`/snap/bin/ffprobe`, or a flatpak-run wrapper);
+	// we cover the snap case explicitly and let flatpak users point
+	// the preference at their wrapper manually if they hit it.
+	paths.Add(wxT("/usr/bin/ffprobe"));
+	paths.Add(wxT("/usr/local/bin/ffprobe"));
+	paths.Add(wxT("/snap/bin/ffprobe"));
+#endif
+	return paths;
+}
+
+} // anonymous namespace
+
+wxString AutoDetectPath()
+{
+	// Fast path: unadorned `ffprobe` on the shell PATH. This is what
+	// most Linux + BSD installs give us for free (package-installed
+	// binaries land in a PATH dir). On macOS + Windows this often
+	// fails even when ffprobe IS installed, because GUI-launched
+	// processes get a minimal PATH (launchd default on macOS lacks
+	// /opt/homebrew; Windows GUI apps sometimes miss chocolatey /
+	// scoop until reboot).
+	if (CanRun(wxT("ffprobe"))) {
+		return wxT("ffprobe");
+	}
+
+	// Fallback: probe the per-platform well-known list.
+	for (const wxString &candidate : WellKnownPaths()) {
+		if (wxFileName::FileExists(candidate) && CanRun(candidate)) {
+			return candidate;
+		}
+	}
+
+	return wxEmptyString;
+}
+
+wxString DetectedPath(bool redetect)
+{
+	// Detection describes the machine, not a user choice, so it is derived at
+	// runtime and never written to the config file. Memoised because it costs
+	// at least one subprocess and the answer cannot change under a running
+	// daemon without someone installing ffmpeg -- which is what `redetect`
+	// (the Preferences "Detect" button) is for.
+	//
+	// The lock is held across the detection itself so two callers cannot race
+	// two scans. That is a subprocess spawn's worth of blocking in the worst
+	// case; the common ones are cheap -- a missing binary fails to spawn
+	// immediately, and every well-known path is stat()ed before it is run.
+	static std::mutex mutex;
+	static bool done = false;
+	static wxString cached;
+
+	std::lock_guard<std::mutex> lock(mutex);
+	if (done && !redetect) {
+		return cached;
+	}
+	cached = AutoDetectPath();
+	done = true;
+
+	if (cached.IsEmpty()) {
+		// The one line that says the feature is inert. Not a debug line: the
+		// operator asked for metadata extraction and is getting none, and on
+		// a headless daemon this is the only place that can say why. Fires
+		// once per process -- the memo above guarantees it.
+		AddLogLineN(_("Media metadata: no ffprobe binary found. Install ffmpeg, or set the "
+			      "ffprobe path in preferences; length, bitrate and codec will not be "
+			      "extracted."));
+	} else {
+		AddDebugLogLineN(
+			logMediaProbe, CFormat(wxT("MediaProbe: auto-detected ffprobe at %s")) % cached);
+	}
+	return cached;
+}
+
+namespace
+{
+
+// ffprobe emits float durations with locale-independent `.` decimal
+// separators, so a plain strtod suffices — no wxString::ToDouble()
+// with its locale sensitivity here.
+bool ParseSeconds(const wxString &value, uint32 &out)
+{
+	if (value.IsEmpty()) {
+		return false;
+	}
+	char *end = nullptr;
+	const double d = std::strtod(value.utf8_str().data(), &end);
+	if (end == value.utf8_str().data() || d < 0.0) {
+		return false;
+	}
+	// Cap at uint32 range (~136 years — plenty).
+	if (d > static_cast<double>(0xFFFFFFFFu)) {
+		out = 0xFFFFFFFFu;
+	} else {
+		// Round to nearest whole second; sub-second precision has no
+		// consumer in the FT_MEDIA_LENGTH tag.
+		out = static_cast<uint32>(std::llround(d));
+	}
+	return true;
+}
+
+// ffprobe emits format.bit_rate as bits/second; the tag wire format
+// is kbps.
+bool ParseBitrateKbps(const wxString &value, uint32 &out)
+{
+	if (value.IsEmpty() || value == wxT("N/A")) {
+		return false;
+	}
+	char *end = nullptr;
+	const unsigned long long bps = std::strtoull(value.utf8_str().data(), &end, 10);
+	if (end == value.utf8_str().data()) {
+		return false;
+	}
+	const unsigned long long kbps = bps / 1000ULL;
+	if (kbps > 0xFFFFFFFFULL) {
+		out = 0xFFFFFFFFu;
+	} else {
+		out = static_cast<uint32>(kbps);
+	}
+	return true;
 }
 
 } // anonymous namespace

@@ -1667,9 +1667,11 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	/**
 	 * Media metadata extraction (issue #140). Off by default so an
 	 * upgrade doesn't kick off a background probe of every shared
-	 * file until the user opts in. Path default is empty — populated
-	 * on demand by MediaProbe::AutoDetectPath() the first time the
-	 * user enables the feature or presses "Detect" in the UI.
+	 * file until the user opts in. The path stays empty unless the user
+	 * pins one: an empty value means "whatever this machine has", which
+	 * the probe worker resolves through MediaProbe::DetectedPath() at
+	 * probe time. Detection describes the machine rather than a user
+	 * choice, so it is never written back here.
 	 */
 	NewCfgItem(IDC_MEDIAMETA_ENABLED,
 		(new Cfg_Bool("/MediaMetadata/Enabled", s_MediaMetadataEnabled, false)));
