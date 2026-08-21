@@ -494,7 +494,7 @@ struct StatsTreeValue
 {
 	enum Kind
 	{
-		Num, // integer/istring/bytes/ishort/time/speed -> num (raw seconds/bytes/…)
+		Num, // integer/bytes/time/speed -> num (raw seconds/bytes/…)
 		Dbl, // double -> dbl
 		Str  // string -> str (raw, untranslated English)
 	};
@@ -506,7 +506,7 @@ struct StatsTreeValue
 	std::string str;
 	// Locale-independent token for a well-known sentinel value
 	// (EC_TAG_STAT_VALUE_ENUM, e.g. "never"/"not_available"). Empty when the
-	// value is not a sentinel; surfaced as an additive "enum" field so
+	// value is not a sentinel; surfaced as an additive "token" field so
 	// clients need not match the English `value`/`str`.
 	std::string enum_token;
 	std::vector<StatsTreeValue> extra;

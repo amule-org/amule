@@ -3,11 +3,12 @@
 // formatted labels, time x-axis, hover readout) — all the charts here are
 // this simple, so a hand-rolled canvas draw is enough; no charting library
 // is bundled.
-// data is [xs, ys] or [xs, ys, avgYs]; the optional third series is drawn
-// as a thinner line (g.avgColor) with a GUI-style legend below the canvas.
+// data is [xs, ...series]: the first series is filled, the rest are drawn as
+// thinner lines on the same y scale. g.series[i] names and colours series i;
+// a GUI-style legend appears below the canvas whenever there is more than one.
 
 import { html, useEffect, useRef } from "./dom.js";
-import { t, getLang } from "./i18n.js";
+import { getLang } from "./i18n.js";
 
 // Time-axis clock, localized to the UI language, 24h (no AM/PM). The axis uses
 // hour:minute; the hover readout adds seconds. Formatters are built once —
@@ -73,7 +74,7 @@ export function Chart({ g, data, bare }) {
   };
   const onLeave = () => { state.current.hover = -1; redraw(); };
 
-  const avg = data && data[2];
+  const series = data ? data.slice(1) : [];
   const last = (a) => (a && a.length ? a[a.length - 1] : 0);
   return html`
     <div class=${bare ? "chart-card chart-bare" : "card chart-card"}>
@@ -82,10 +83,10 @@ export function Chart({ g, data, bare }) {
         <canvas ref=${canvas} style="width:100%;height:100%;display:block"
           onMouseMove=${onMove} onMouseLeave=${onLeave}></canvas>
       </div>
-      ${avg ? html`
+      ${series.length > 1 ? html`
         <div class="chart-legend">
-          <span class="legend-item"><span class="legend-chip" style="background:${g.color}"></span>${t("common_legend_current")}: ${g.fmt(last(data[1]))}</span>
-          <span class="legend-item"><span class="legend-chip" style="background:${g.avgColor}"></span>${t("common_legend_running_avg")}: ${g.fmt(last(avg))}</span>
+          ${series.map((ys, i) => html`
+            <span class="legend-item"><span class="legend-chip" style="background:${g.series[i].color}"></span>${g.series[i].label}: ${g.fmt(last(ys))}</span>`)}
         </div>` : null}
     </div>`;
 }
@@ -97,7 +98,7 @@ function niceStep(raw) {
   return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * mag;
 }
 
-function draw(cv, g, [xs, ys, avg], hover) {
+function draw(cv, g, [xs, ...series], hover) {
   const cssW = cv.parentNode.clientWidth || 400;
   // Height follows the host: fixed 180px for the bare (Kad) chart, but on the
   // Stats grid the canvas is height:100% so the host fills its card cell.
@@ -117,8 +118,9 @@ function draw(cv, g, [xs, ys, avg], hover) {
   const n = xs.length;
   if (!n) return;
 
-  // y scale: 0 .. max*1.05, ticks on a nice step (shared by both series)
-  const yMax = Math.max(1, Math.max(...ys, ...(avg || [0])) * 1.05);
+  const ys = series[0];
+  // y scale: 0 .. max*1.05, ticks on a nice step (shared by every series)
+  const yMax = Math.max(1, Math.max(...series.map((s) => Math.max(...s))) * 1.05);
   const step = Math.max(1, niceStep(yMax / 4)); // values are integer counts/B·s⁻¹
 
   // Axis unit: charts with `g.axis` (speeds) pick ONE unit for the whole axis so
@@ -177,25 +179,24 @@ function draw(cv, g, [xs, ys, avg], hover) {
     ctx.fillText(label, x, y1 + 5);
   }
 
-  // series: fill then stroke
-  ctx.beginPath();
-  ctx.moveTo(sx(0), sy(ys[0]));
-  for (let i = 1; i < n; i++) ctx.lineTo(sx(i), sy(ys[i]));
-  ctx.strokeStyle = g.color;
-  ctx.lineWidth = 2;
+  // first series: fill then stroke. The rest: thinner line, no fill.
+  const line = (vs) => {
+    ctx.beginPath();
+    ctx.moveTo(sx(0), sy(vs[0]));
+    for (let i = 1; i < n; i++) ctx.lineTo(sx(i), sy(vs[i]));
+  };
   ctx.lineJoin = "round";
+  line(ys);
+  ctx.strokeStyle = g.series[0].color;
+  ctx.lineWidth = 2;
   ctx.stroke();
   ctx.lineTo(sx(n - 1), y1); ctx.lineTo(sx(0), y1); ctx.closePath();
-  ctx.fillStyle = g.color + "22";
+  ctx.fillStyle = g.series[0].color + "22";
   ctx.fill();
-
-  // running average: thinner line, no fill
-  if (avg) {
-    ctx.beginPath();
-    ctx.moveTo(sx(0), sy(avg[0]));
-    for (let i = 1; i < n; i++) ctx.lineTo(sx(i), sy(avg[i]));
-    ctx.strokeStyle = g.avgColor;
-    ctx.lineWidth = 1.5;
+  ctx.lineWidth = 1.5;
+  for (let k = 1; k < series.length; k++) {
+    line(series[k]);
+    ctx.strokeStyle = g.series[k].color;
     ctx.stroke();
   }
 
@@ -204,7 +205,7 @@ function draw(cv, g, [xs, ys, avg], hover) {
     const hx = sx(hover), hy = sy(ys[hover]);
     ctx.strokeStyle = grid;
     ctx.beginPath(); ctx.moveTo(hx + 0.5, y0); ctx.lineTo(hx + 0.5, y1); ctx.stroke();
-    ctx.fillStyle = g.color;
+    ctx.fillStyle = g.series[0].color;
     ctx.beginPath(); ctx.arc(hx, hy, 3, 0, 2 * Math.PI); ctx.fill();
     ctx.fillStyle = fg;
     ctx.textBaseline = "top";

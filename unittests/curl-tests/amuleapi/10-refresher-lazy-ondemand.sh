@@ -161,11 +161,11 @@ _curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/tree"
 _assert_status 200 "GET /stats/tree → 200 (lazy fetch)"
 _assert_json_eq '.nodes | type'        array '/stats/tree .nodes is array'
 
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/download"
-_assert_status 200 "GET /stats/graphs/download → 200 (lazy fetch)"
-_assert_json_eq '.graph' download         '/stats/graphs/download reports graph=download'
-_assert_json_eq '.unit' bps               '/stats/graphs/download reports unit=bps'
-_assert_json_eq '.points | type' array    '/stats/graphs/download .points is array'
+_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/download_speed"
+_assert_status 200 "GET /stats/graphs/download_speed → 200 (lazy fetch)"
+_assert_json_eq '.graph' download_speed '/stats/graphs/download_speed reports graph=download_speed'
+_assert_json_eq '.unit' bytes_per_second '/stats/graphs/download_speed reports unit=bytes_per_second'
+_assert_json_eq '.points | type' array    '/stats/graphs/download_speed .points is array'
 
 # TTL coalescing — two same-endpoint GETs within the 1 s window must
 # share the cached backing fetch. Observable via ETag (Phase 7): same
@@ -174,13 +174,13 @@ _assert_json_eq '.points | type' array    '/stats/graphs/download .points is arr
 # stay constant within a cache window; only between fetches do they
 # advance.
 GRAPH_ETAG_1=$(curl -s -I -H "Authorization: Bearer $TOKEN" \
-	"$HOST/api/v0/stats/graphs/download" \
+	"$HOST/api/v0/stats/graphs/download_speed" \
 	| sed -n 's/^[Ee][Tt][Aa][Gg]:[[:space:]]*\([^[:cntrl:]]*\).*/\1/p' | head -1)
 GRAPH_ETAG_2=$(curl -s -I -H "Authorization: Bearer $TOKEN" \
-	"$HOST/api/v0/stats/graphs/download" \
+	"$HOST/api/v0/stats/graphs/download_speed" \
 	| sed -n 's/^[Ee][Tt][Aa][Gg]:[[:space:]]*\([^[:cntrl:]]*\).*/\1/p' | head -1)
 if [ "$GRAPH_ETAG_1" = "$GRAPH_ETAG_2" ] && [ -n "$GRAPH_ETAG_1" ]; then
-	_pass "/stats/graphs/download back-to-back share the same fetch (1 s TTL coalescing; ETag stable: $GRAPH_ETAG_1)"
+	_pass "/stats/graphs/download_speed back-to-back share the same fetch (1 s TTL coalescing; ETag stable: $GRAPH_ETAG_1)"
 else
 	_fail "/stats/graphs TTL coalescing" \
 		"first ETag=$GRAPH_ETAG_1, second=$GRAPH_ETAG_2 — expected identical within the 1 s window"
