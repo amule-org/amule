@@ -448,7 +448,7 @@ export default function Preferences({ isGuest }) {
       // action buttons already behave (they are simply not rendered).
       return html`
         <div class=${"field field-inline admin-only" + subCls}>
-          <button class="btn" type="button" disabled=${disabled}
+          <button class="btn btn-primary" type="button" disabled=${disabled}
                   title=${t(f.action.titleKey)} onClick=${() => runAction(f.action)}>
             ${label}
           </button>
