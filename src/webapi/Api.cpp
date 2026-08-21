@@ -5740,9 +5740,13 @@ boost::optional<IpPortSelector> ParseIpPortSelector(const std::string &ip_port)
 	// ParseIpv4Dotted rather than a second sscanf of our own: it landed on
 	// master while this was in review and does exactly this job, with three
 	// other callers already relying on it.
+	//
+	// Only genuine syntax failures are reported here. 0.0.0.0 parses fine
+	// and is rejected by the caller instead, so the two get error messages
+	// that describe what actually happened.
 	IpPortSelector sel;
 	sel.ip_he = 0;
-	if (!ParseIpv4Dotted(ip_str, sel.ip_he) || sel.ip_he == 0)
+	if (!ParseIpv4Dotted(ip_str, sel.ip_he))
 		return boost::none;
 
 	sel.port = static_cast<std::uint16_t>(port);
@@ -5763,6 +5767,19 @@ std::unique_ptr<CHttpServer::Response> ResolveServerEcid(
 		return std::make_unique<CHttpServer::Response>(ErrorResponse(400,
 			"bad_request",
 			"malformed ip:port selector: expected a dotted quad and a port in 1..65535"));
+	}
+	// 0.0.0.0 is well-formed but is not a server address, and it must not be
+	// allowed to reach the lookup below: a ServerSnapshot whose
+	// EC_TAG_SERVER_IP the daemon did not ship keeps `ip == 0`
+	// (Refresher.cpp, which notes that `address` then reads "0.0.0.0:0"), so
+	// a 0.0.0.0 selector would otherwise resolve to whichever such row
+	// happened to share the port -- acting on a server the caller never
+	// named. Rejected with its own message rather than folded into the
+	// syntax error above, which would claim a malformed quad that the caller
+	// can see is not malformed.
+	if (sel->ip_he == 0) {
+		return std::make_unique<CHttpServer::Response>(
+			ErrorResponse(400, "bad_request", "0.0.0.0 is not a server address"));
 	}
 
 	for (const auto &s : state.Servers()) {
