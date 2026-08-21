@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 11:21+0200\n"
+"POT-Creation-Date: 2026-08-21 14:34+0200\n"
 "PO-Revision-Date: 2026-08-20 14:07+0000\n"
 "Last-Translator: astur <malditoastur@gmail.com>\n"
 "Language-Team: Language ast <malditoastur@gmail.com>\n"
@@ -1115,8 +1115,8 @@ msgstr "Fallu guardando ficheru known.met: %s"
 msgid "Enter Captcha"
 msgstr "Inxertar Captcha"
 
-#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/SearchListCtrl.cpp src/TransferWnd.cpp
+#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
+#: src/TransferWnd.cpp
 msgid "Category"
 msgstr "Categoría"
 
@@ -3619,6 +3619,10 @@ msgstr "Encaboxar"
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp
 msgid "Download"
 msgstr "Descarga"
+
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Download in category"
+msgstr "Descargar na categoría"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -6523,10 +6527,6 @@ msgstr ""
 #, fuzzy
 msgid "Collapse all"
 msgstr "Zarrar toles llingüetes"
-
-#: src/SearchListCtrl.cpp
-msgid "Download in category"
-msgstr "Descargar na categoría"
 
 #: src/SearchListCtrl.cpp
 #, fuzzy, c-format

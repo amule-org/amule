@@ -1028,11 +1028,15 @@ void CSearchListCtrl::DownloadSelected(int category)
 {
 	FindWindowById(IDC_SDOWNLOAD)->Enable(false);
 
+	// -1 means "no explicit category", i.e. anything but the right-click
+	// "Download in category" action, which passes one and must keep winning.
+	// The panel's selector used to be read only while the Extended Parameters
+	// checkbox was ticked, because it lived inside that row -- so unticking the
+	// row to reclaim the screen space silently sent the download to Main
+	// instead (issue #979). The selector now sits beside the Download button
+	// and is always visible, so what the user can see is what gets used.
 	if (category == -1) {
-		category = 0;
-		if (CastByID(IDC_EXTENDEDSEARCHCHECK, NULL, wxCheckBox)->GetValue()) {
-			category = CastByID(ID_AUTOCATASSIGN, NULL, wxChoice)->GetSelection();
-		}
+		category = CastByID(ID_AUTOCATASSIGN, NULL, wxChoice)->GetSelection();
 	}
 
 #ifndef CLIENT_GUI

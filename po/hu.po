@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 11:21+0200\n"
+"POT-Creation-Date: 2026-08-21 14:34+0200\n"
 "PO-Revision-Date: 2026-08-20 14:20+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: Hungarian <hu@li.org>\n"
@@ -1114,8 +1114,8 @@ msgstr "Hiba a %s fájl mentése közben: %s"
 msgid "Enter Captcha"
 msgstr "Captcha megadása"
 
-#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/SearchListCtrl.cpp src/TransferWnd.cpp
+#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
+#: src/TransferWnd.cpp
 msgid "Category"
 msgstr "Kategória"
 
@@ -3588,6 +3588,10 @@ msgstr "Leállít"
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp
 msgid "Download"
 msgstr "Letöltés"
+
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Download in category"
+msgstr "Letöltés kategóriába"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -6471,10 +6475,6 @@ msgstr ""
 #, fuzzy
 msgid "Collapse all"
 msgstr "Az összes fül bezárása"
-
-#: src/SearchListCtrl.cpp
-msgid "Download in category"
-msgstr "Letöltés kategóriába"
 
 #: src/SearchListCtrl.cpp
 #, c-format

@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 11:21+0200\n"
+"POT-Creation-Date: 2026-08-21 14:34+0200\n"
 "PO-Revision-Date: 2026-08-20 14:37+0000\n"
 "Last-Translator: Wayne Su <mstarmstar@gmail.com>\n"
 "Language-Team: \n"
@@ -1115,8 +1115,8 @@ msgstr "儲存 %s 時發生錯誤：%s"
 msgid "Enter Captcha"
 msgstr "輸入圖形驗證碼"
 
-#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/SearchListCtrl.cpp src/TransferWnd.cpp
+#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
+#: src/TransferWnd.cpp
 msgid "Category"
 msgstr "分類"
 
@@ -3600,6 +3600,10 @@ msgstr "停止"
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp
 msgid "Download"
 msgstr "下載"
+
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Download in category"
+msgstr "分類下載"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -6480,10 +6484,6 @@ msgstr ""
 #, fuzzy
 msgid "Collapse all"
 msgstr "關閉所有分頁"
-
-#: src/SearchListCtrl.cpp
-msgid "Download in category"
-msgstr "分類下載"
 
 #: src/SearchListCtrl.cpp
 #, c-format

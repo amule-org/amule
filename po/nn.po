@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 11:21+0200\n"
+"POT-Creation-Date: 2026-08-21 14:34+0200\n"
 "PO-Revision-Date: 2026-08-20 14:28+0000\n"
 "Last-Translator: Hallvor Brunstad <Hallvor_1976@yahoo.com>\n"
 "Language-Team: <i18n-nn@lister.ping.uio.no>\n"
@@ -1122,8 +1122,8 @@ msgstr "Feil under lagring av known.met fila: %s"
 msgid "Enter Captcha"
 msgstr ""
 
-#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/SearchListCtrl.cpp src/TransferWnd.cpp
+#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
+#: src/TransferWnd.cpp
 msgid "Category"
 msgstr "Kategori"
 
@@ -3629,6 +3629,10 @@ msgstr "Stopp"
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp
 msgid "Download"
 msgstr "Nedlasting"
+
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Download in category"
+msgstr "Nedlasting i kategori"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -6528,10 +6532,6 @@ msgstr ""
 #, fuzzy
 msgid "Collapse all"
 msgstr "Stengje alle faneblad"
-
-#: src/SearchListCtrl.cpp
-msgid "Download in category"
-msgstr "Nedlasting i kategori"
 
 #: src/SearchListCtrl.cpp
 #, fuzzy, c-format

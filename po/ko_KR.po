@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 11:21+0200\n"
+"POT-Creation-Date: 2026-08-21 14:34+0200\n"
 "PO-Revision-Date: 2026-08-20 14:23+0000\n"
 "Last-Translator: Hyunju Kang <rexington@gmail.com>\n"
 "Language-Team: Korean <hoenny@daum.net>\n"
@@ -1122,8 +1122,8 @@ msgstr "known.met 파일을 저장하는 동안 오류: %s"
 msgid "Enter Captcha"
 msgstr ""
 
-#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/SearchListCtrl.cpp src/TransferWnd.cpp
+#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
+#: src/TransferWnd.cpp
 msgid "Category"
 msgstr "분류"
 
@@ -3629,6 +3629,10 @@ msgstr "멈춤"
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp
 msgid "Download"
 msgstr "내려받기"
+
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Download in category"
+msgstr "분류내 내려받기"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -6526,10 +6530,6 @@ msgstr ""
 #, fuzzy
 msgid "Collapse all"
 msgstr "모든 탭 닫기"
-
-#: src/SearchListCtrl.cpp
-msgid "Download in category"
-msgstr "분류내 내려받기"
 
 #: src/SearchListCtrl.cpp
 #, fuzzy, c-format

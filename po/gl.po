@@ -24,7 +24,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 11:21+0200\n"
+"POT-Creation-Date: 2026-08-21 14:34+0200\n"
 "PO-Revision-Date: 2026-08-20 14:17+0000\n"
 "Last-Translator: Pablo <parodper@gmail.com>\n"
 "Language-Team: http://forum.amule.org/index.php?topic=13883\n"
@@ -1135,8 +1135,8 @@ msgstr "Non se puido gardar o ficheiro %s: %s"
 msgid "Enter Captcha"
 msgstr "Introduza o Captcha"
 
-#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/SearchListCtrl.cpp src/TransferWnd.cpp
+#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
+#: src/TransferWnd.cpp
 msgid "Category"
 msgstr "Categoría"
 
@@ -3619,6 +3619,10 @@ msgstr "Deter"
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp
 msgid "Download"
 msgstr "Descargar"
+
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Download in category"
+msgstr "Descargar na categoría"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -6505,10 +6509,6 @@ msgstr ""
 #, fuzzy
 msgid "Collapse all"
 msgstr "Pechar todas as lapelas"
-
-#: src/SearchListCtrl.cpp
-msgid "Download in category"
-msgstr "Descargar na categoría"
 
 #: src/SearchListCtrl.cpp
 #, c-format

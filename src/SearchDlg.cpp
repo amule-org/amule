@@ -1026,7 +1026,9 @@ void CSearchDlg::OnFieldChanged(wxEvent &WXUNUSED(evt))
 	enable |= (CastChild(IDC_SEARCHMINSIZE, wxChoice)->GetSelection() != 2);
 	enable |= (CastChild(IDC_SEARCHMAXSIZE, wxChoice)->GetSelection() != 2);
 	enable |= (CastChild(IDC_TypeSearch, wxChoice)->GetSelection() > 0);
-	enable |= (CastChild(ID_AUTOCATASSIGN, wxChoice)->GetSelection() > 0);
+	// ID_AUTOCATASSIGN is deliberately absent: it picks where a download goes,
+	// not what is searched for, so choosing one is no reason to offer to reset
+	// the search fields (issue #979).
 
 	// These are the IDs of the search-fields
 	int spinfields[] = { IDC_SPINSEARCHMIN, IDC_SPINSEARCHMAX, IDC_SPINSEARCHAVAILABILITY };
@@ -1546,7 +1548,9 @@ void CSearchDlg::OnBnClickedReset(wxCommandEvent &WXUNUSED(evt))
 	CastChild(IDC_SEARCHMAXSIZE, wxChoice)->SetSelection(2);
 	CastChild(IDC_SPINSEARCHAVAILABILITY, wxSpinCtrl)->SetValue(0);
 	CastChild(IDC_TypeSearch, wxChoice)->SetSelection(0);
-	CastChild(ID_AUTOCATASSIGN, wxChoice)->SetSelection(0);
+	// The download category is not reset here. "Reset Fields" is the counterpart
+	// of "Reset Filters" and clears search parameters; quietly redirecting the
+	// next download somewhere else is not part of that (issue #979).
 
 	FindWindow(IDC_SEARCH_RESET)->Enable(false);
 }
@@ -1554,6 +1558,16 @@ void CSearchDlg::OnBnClickedReset(wxCommandEvent &WXUNUSED(evt))
 void CSearchDlg::UpdateCatChoice()
 {
 	wxChoice *c_cat = CastChild(ID_AUTOCATASSIGN, wxChoice);
+
+	// Remember the chosen destination by name, not by index: this runs on every
+	// category add, rename and delete, and a delete shifts every index after it.
+	// The old code unconditionally selected Main afterwards, so touching any
+	// category silently redirected the next download -- invisible while the
+	// control lived in the hidden extended-parameters row, but not now that it
+	// sits beside the Download button (issue #979).
+	const wxString previous =
+		c_cat->GetSelection() == wxNOT_FOUND ? wxString() : c_cat->GetStringSelection();
+
 	c_cat->Clear();
 
 	c_cat->Append(_("Main"));
@@ -1562,7 +1576,17 @@ void CSearchDlg::UpdateCatChoice()
 		c_cat->Append(theApp->glob_prefs->GetCategory(i)->title);
 	}
 
-	c_cat->SetSelection(0);
+	// Falls back to Main when the chosen category was the one just removed or
+	// renamed, which is the only case where the selection cannot be honoured.
+	if (previous.IsEmpty() || !c_cat->SetStringSelection(previous)) {
+		c_cat->SetSelection(0);
+	}
+
+	// With only Main configured there is nothing to choose, so the selector is
+	// noise. Same gate the context menu applies to its own category submenu
+	// (SearchListCtrl.cpp), and it lifts as soon as a second category exists --
+	// this runs on every category change, so no restart is needed.
+	c_cat->Enable(theApp->glob_prefs->GetCatCount() > 1);
 }
 
 void CSearchDlg::UpdateProgress(uint32 new_value)

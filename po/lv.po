@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 11:21+0200\n"
+"POT-Creation-Date: 2026-08-21 14:34+0200\n"
 "PO-Revision-Date: 2026-08-20 14:39+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -1087,8 +1087,8 @@ msgstr ""
 msgid "Enter Captcha"
 msgstr "Ievadiet Captcha"
 
-#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/SearchListCtrl.cpp src/TransferWnd.cpp
+#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
+#: src/TransferWnd.cpp
 msgid "Category"
 msgstr "Kategorija"
 
@@ -3530,6 +3530,10 @@ msgstr "Apturēt"
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp
 msgid "Download"
 msgstr "Lejupielādēt"
+
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Download in category"
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Clear Search Results"
@@ -6343,10 +6347,6 @@ msgstr ""
 #, fuzzy
 msgid "Collapse all"
 msgstr "Aizvērt visas cilnes"
-
-#: src/SearchListCtrl.cpp
-msgid "Download in category"
-msgstr ""
 
 #: src/SearchListCtrl.cpp
 #, c-format
