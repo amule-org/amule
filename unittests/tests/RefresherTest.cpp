@@ -761,6 +761,87 @@ TEST(Refresher, ServersFromContainerMergesByEcid)
 	ASSERT_EQUALS(std::string("de"), cache[42].country_code);
 }
 
+// The four fields issue #974 added: publishing limits + capability
+// bitmasks. They ride the same GET_UPDATE response the rest of the
+// server snapshot comes from, so the only thing to prove is that
+// MergeServerTag reads them and that a tag CValueMap suppressed on an
+// unchanged tick does not clobber the cached value.
+TEST(Refresher, ServerLimitsAndFlagsReachTheSnapshot)
+{
+	std::map<std::uint32_t, ServerSnapshot> cache;
+
+	CECPacket resp(EC_OP_SHARED_FILES);
+	{
+		CECTag container(EC_TAG_SERVER, static_cast<std::uint32_t>(0));
+		CECTag srv(EC_TAG_SERVER, static_cast<std::uint32_t>(7));
+		srv.AddTag(CECTag(EC_TAG_SERVER_FILES_SOFT, static_cast<std::uint32_t>(1000)));
+		srv.AddTag(CECTag(EC_TAG_SERVER_FILES_HARD, static_cast<std::uint32_t>(5000)));
+		srv.AddTag(CECTag(EC_TAG_SERVER_TCP_FLAGS,
+			static_cast<std::uint32_t>(SRV_TCPFLG_COMPRESSION | SRV_TCPFLG_RELATEDSEARCH)));
+		srv.AddTag(CECTag(EC_TAG_SERVER_UDP_FLAGS,
+			static_cast<std::uint32_t>(SRV_UDPFLG_EXT_GETSOURCES | SRV_UDPFLG_LARGEFILES)));
+		container.AddTag(srv);
+		resp.AddTag(container);
+	}
+
+	ApplyGetUpdateToServers(&resp, cache);
+
+	ASSERT_TRUE(cache.find(7) != cache.end());
+	ASSERT_EQUALS(static_cast<std::uint32_t>(1000), cache[7].soft_file_limit);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(5000), cache[7].hard_file_limit);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(SRV_TCPFLG_COMPRESSION | SRV_TCPFLG_RELATEDSEARCH),
+		cache[7].tcp_flags);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(SRV_UDPFLG_EXT_GETSOURCES | SRV_UDPFLG_LARGEFILES),
+		cache[7].udp_flags);
+
+	// Next tick: the server is still in the list but nothing it
+	// announced changed, so CValueMap suppresses all four tags. The
+	// cached values have to survive -- dropping to 0 here would read
+	// as "the server stopped supporting everything".
+	CECPacket quiet(EC_OP_SHARED_FILES);
+	{
+		CECTag container(EC_TAG_SERVER, static_cast<std::uint32_t>(0));
+		CECTag srv(EC_TAG_SERVER, static_cast<std::uint32_t>(7));
+		srv.AddTag(CECTag(EC_TAG_SERVER_USERS, static_cast<std::uint32_t>(42)));
+		container.AddTag(srv);
+		quiet.AddTag(container);
+	}
+
+	ApplyGetUpdateToServers(&quiet, cache);
+
+	ASSERT_EQUALS(static_cast<std::uint32_t>(42), cache[7].users);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(1000), cache[7].soft_file_limit);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(5000), cache[7].hard_file_limit);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(SRV_TCPFLG_COMPRESSION | SRV_TCPFLG_RELATEDSEARCH),
+		cache[7].tcp_flags);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(SRV_UDPFLG_EXT_GETSOURCES | SRV_UDPFLG_LARGEFILES),
+		cache[7].udp_flags);
+}
+
+// A server old enough not to send the tags at all leaves the defaults
+// in place: 0 / 0 / no bits, which the API documents as "not reported".
+TEST(Refresher, ServerWithoutLimitOrFlagTagsKeepsZeroDefaults)
+{
+	std::map<std::uint32_t, ServerSnapshot> cache;
+
+	CECPacket resp(EC_OP_SHARED_FILES);
+	{
+		CECTag container(EC_TAG_SERVER, static_cast<std::uint32_t>(0));
+		CECTag srv(EC_TAG_SERVER, static_cast<std::uint32_t>(3));
+		srv.AddTag(CECTag(EC_TAG_SERVER_USERS, static_cast<std::uint32_t>(9)));
+		container.AddTag(srv);
+		resp.AddTag(container);
+	}
+
+	ApplyGetUpdateToServers(&resp, cache);
+
+	ASSERT_TRUE(cache.find(3) != cache.end());
+	ASSERT_EQUALS(static_cast<std::uint32_t>(0), cache[3].soft_file_limit);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(0), cache[3].hard_file_limit);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(0), cache[3].tcp_flags);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(0), cache[3].udp_flags);
+}
+
 TEST(Refresher, ServersEmptyContainerEmptiesCache)
 {
 	std::map<std::uint32_t, ServerSnapshot> cache;

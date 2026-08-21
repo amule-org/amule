@@ -409,10 +409,23 @@ struct ServerSnapshot
 	// resolved by the daemon's GeoIP (#440). "" when GeoIP is off/unresolved.
 	std::string country_code;
 	std::uint32_t ping_ms = 0;
-	std::uint32_t failed = 0;
+	std::uint32_t failed_count = 0;
 	std::uint32_t users = 0;
 	std::uint32_t max_users = 0;
 	std::uint32_t files = 0;
+	// Per-user publishing limits the server advertises: below the soft limit a
+	// client may publish every file, between soft and hard only its rarest,
+	// above the hard limit nothing. Both arrive only once a UDP status reply
+	// has come back, so 0 means "the server has not told us", not "the limit
+	// is zero" -- the desktop renders that as a blank cell, as it does for
+	// Users and Files.
+	std::uint32_t soft_file_limit = 0;
+	std::uint32_t hard_file_limit = 0;
+	// Bitmasks of the eD2k wire capabilities the server announced, decoded to
+	// booleans on the way out (ServerFlagNames.h). 0 likewise means "nothing
+	// announced yet" rather than "supports nothing".
+	std::uint32_t tcp_flags = 0;
+	std::uint32_t udp_flags = 0;
 	std::string priority; // "low" | "normal" | "high"
 	bool is_static = false;
 };

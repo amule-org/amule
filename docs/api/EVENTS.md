@@ -319,12 +319,22 @@ Identical to the REST [`/api/v0/servers`](REFERENCE.md#get-apiv0servers) list-it
   "users":       312000,
   "max_users":   500000,
   "files":       75000000,
+  "soft_file_limit": 1000,
+  "hard_file_limit": 5000,
   "priority":    "normal",
   "ping_ms":     42,
-  "failed":      0,
-  "static":      false
+  "failed_count": 0,
+  "static":      false,
+  "tcp_flags":   { "bitmask": 1497, "compression": true, "new_tags": true, "unicode": true,
+                   "related_search": true, "type_tag_integer": true, "large_files": true,
+                   "tcp_obfuscation": true },
+  "udp_flags":   { "bitmask": 1851, "get_sources": true, "get_files": true, "new_tags": true,
+                   "unicode": true, "get_sources_v2": true, "large_files": true,
+                   "udp_obfuscation": true, "tcp_obfuscation": true }
 }
 ```
+
+A server announces its capabilities and publishing limits only after it answers a UDP status request, which is usually a tick or two after it is added. Until then it reports `0` / all-`false`, and the reply produces one `server_updated`. Every bit is documented in [`GET /api/v0/servers`](REFERENCE.md#get-apiv0servers).
 
 #### `server_removed`
 

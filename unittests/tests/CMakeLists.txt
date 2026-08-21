@@ -551,6 +551,9 @@ add_executable (EventDiffTest
 )
 target_include_directories (EventDiffTest
 	PRIVATE ${CMAKE_SOURCE_DIR}/src/webapi
+	# ServerFlagNames.h reads the SRV_*FLG_* masks straight from the eD2k
+	# protocol headers rather than restating them.
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
 )
 add_test (NAME EventDiffTest COMMAND EventDiffTest)
 target_link_libraries (EventDiffTest

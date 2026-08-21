@@ -103,6 +103,30 @@ if [ "$COUNT" -gt 0 ]; then
 	# #440 server country: always-present ISO 3166-1 alpha-2 string,
 	# empty when GeoIP is off/unresolved (never absent/null).
 	_assert_json_eq '.servers[0].country_code | type' string '/servers[0].country_code is string (#440)'
+	# Consecutive failed connection attempts -- a counter, not a boolean,
+	# which is why the key is not just "failed".
+	_assert_json_eq '.servers[0].failed_count | type' number '/servers[0].failed_count is numeric'
+	# Per-user publishing limits. Always present; 0 until the server has
+	# answered a UDP status request, so a value is not guaranteed here.
+	_assert_json_eq '.servers[0].soft_file_limit | type' number '/servers[0].soft_file_limit is numeric'
+	_assert_json_eq '.servers[0].hard_file_limit | type' number '/servers[0].hard_file_limit is numeric'
+	# Decoded capability bits: an object carrying the raw bitmask plus one
+	# always-present boolean per named bit, so a consumer never has to test
+	# for a key or carry the eD2k protocol tables.
+	_assert_json_eq '.servers[0].tcp_flags | type'                 object  '/servers[0].tcp_flags is an object'
+	_assert_json_eq '.servers[0].tcp_flags.bitmask | type'         number  '/servers[0].tcp_flags.bitmask is numeric'
+	_assert_json_eq '.servers[0].tcp_flags.related_search | type'  boolean '/servers[0].tcp_flags.related_search is boolean'
+	_assert_json_eq '.servers[0].tcp_flags.tcp_obfuscation | type' boolean '/servers[0].tcp_flags.tcp_obfuscation is boolean'
+	_assert_json_eq '.servers[0].udp_flags | type'                 object  '/servers[0].udp_flags is an object'
+	_assert_json_eq '.servers[0].udp_flags.bitmask | type'         number  '/servers[0].udp_flags.bitmask is numeric'
+	_assert_json_eq '.servers[0].udp_flags.get_sources_v2 | type'  boolean '/servers[0].udp_flags.get_sources_v2 is boolean'
+	# The two obfuscation bits are distinct keys in the UDP object; the
+	# TCP object spells its own out for the same reason.
+	_assert_json_eq '.servers[0].udp_flags.udp_obfuscation | type' boolean '/servers[0].udp_flags.udp_obfuscation is boolean'
+	_assert_json_eq '.servers[0].udp_flags.tcp_obfuscation | type' boolean '/servers[0].udp_flags.tcp_obfuscation is boolean'
+	# Each decoded boolean must agree with the bitmask it came from.
+	_assert_json_eq '.servers[0].tcp_flags | (.bitmask / 64 | floor | . % 2 == 1) == .related_search' \
+		true '/servers[0].tcp_flags.related_search matches bit 0x0040 of the bitmask'
 fi
 
 # --- 2. /kad -------------------------------------------------------

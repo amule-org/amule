@@ -25,6 +25,8 @@
 #include "Api.h"
 
 #include "ClientTagNames.h" // Needed for the shared client-tag token decoders
+// Shared server capability-bit tables, decoded to JSON
+#include "ServerFlagNames.h"
 
 #include "config.h" // AMULEAPI_STATIC_DIR (compile-time install path)
 #include "AmuleApiConfig.h"
@@ -4329,14 +4331,28 @@ void WriteServerObject(CJsonWriter &w, const webapi::ServerSnapshot &s)
 	w.ValueInt(static_cast<int64_t>(s.max_users));
 	w.Key("files");
 	w.ValueInt(static_cast<int64_t>(s.files));
+	// 0 means the server has not reported a limit yet, not a limit of zero;
+	// the sentinel is documented so a UI can render it blank the way the
+	// desktop's Soft/Hard Files columns do.
+	w.Key("soft_file_limit");
+	w.ValueInt(static_cast<int64_t>(s.soft_file_limit));
+	w.Key("hard_file_limit");
+	w.ValueInt(static_cast<int64_t>(s.hard_file_limit));
 	w.Key("priority");
 	w.ValueString(wxString::FromUTF8(s.priority.c_str()));
 	w.Key("ping_ms");
 	w.ValueInt(static_cast<int64_t>(s.ping_ms));
-	w.Key("failed");
-	w.ValueInt(static_cast<int64_t>(s.failed));
+	w.Key("failed_count");
+	w.ValueInt(static_cast<int64_t>(s.failed_count));
 	w.Key("static");
 	w.ValueBool(s.is_static);
+	// Decoded capability bits. Written as a pre-built fragment from the shared
+	// tables so this object and the SSE payload in EventDiff.cpp -- two
+	// different writers, one documented shape -- cannot drift apart.
+	w.Key("tcp_flags");
+	w.ValueRaw(wxString::FromAscii(webapi::ServerTcpFlagsJson(s.tcp_flags).c_str()));
+	w.Key("udp_flags");
+	w.ValueRaw(wxString::FromAscii(webapi::ServerUdpFlagsJson(s.udp_flags).c_str()));
 	w.EndObject();
 }
 
