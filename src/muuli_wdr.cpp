@@ -366,7 +366,7 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     // hidden and then silently ignored. Here it is always visible and its
     // meaning is positional. Same wording as the right-click action that does
     // the same thing (SearchListCtrl.cpp), so the two cannot drift.
-    wxStaticText *item17 = new wxStaticText( parent, -1, _("Download in category"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item17 = new wxStaticText( parent, ID_AUTOCATASSIGN_LABEL, _("Download in category"), wxDefaultPosition, wxDefaultSize, 0 );
     item43->Add( item17, wxSizerFlags().Center().Border(wxALL, 5) );
     // Empty item list: UpdateCatChoice() fills it and keeps it in step with the
     // configured categories. nullptr, not the file's usual (wxString*) NULL --

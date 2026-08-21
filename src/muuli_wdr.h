@@ -71,6 +71,9 @@ extern wxSizer *s_search_sizer;
 extern wxSizer *s_extended_sizer;
 #define IDC_TypeSearch 10006
 #define ID_AUTOCATASSIGN 10007
+// Label of the category selector: has an id so UpdateCatChoice() can grey it
+// out with the choice. Numbered out of block like ID_FILTER_RESET.
+#define ID_AUTOCATASSIGN_LABEL 10509
 #define IDC_EDITSEARCHEXTENSION 10008
 #define IDC_SPINSEARCHMIN 10009
 #define IDC_SEARCHMINSIZE 10010
