@@ -26,7 +26,8 @@
 #ifndef SHAREDFILELIST_H
 #define SHAREDFILELIST_H
 
-#include <atomic> // Needed for std::atomic (m_listGeneration)
+#include "SharedFilesReloadLatch.h" // Needed for CSharedFilesReloadLatch
+#include <atomic>                   // Needed for std::atomic (m_listGeneration)
 #include <functional>
 #include <list>
 #include <map>
@@ -89,12 +90,12 @@ public:
 	// A plain bool is deliberate: every setter and the reader run on the
 	// core event loop. If a caller off that thread ever needs this, that
 	// caller is the thing to fix -- do not make this atomic.
-	void RequestReload() { m_reloadPending = true; }
+	void RequestReload() { m_reloadLatch.Request(); }
 
 	// True when a RequestReload() is outstanding. GUI callers use this to run
 	// the owed walk themselves behind a progress dialog rather than letting it
 	// land silently on a Process() tick -- see ReloadSharedFilesWithProgress().
-	bool IsReloadPending() const { return m_reloadPending; }
+	bool IsReloadPending() const { return m_reloadLatch.IsPending(); }
 	void SafeAddKFile(CKnownFile *toadd, bool bOnlyAdd = false);
 	void RemoveFile(CKnownFile *toremove);
 	CKnownFile *GetFileByID(const CMD4Hash &filehash);
@@ -269,8 +270,11 @@ private:
 		bool &aborted);
 	void FindSharedFiles(const ReloadYieldCb &yieldCb, bool &aborted);
 	bool reloading;
-	// Set by RequestReload(), drained by Process(). See RequestReload().
-	bool m_reloadPending = false;
+	// Set by RequestReload(), drained by Process(). The rules it enforces --
+	// coalescing, a mid-walk request belonging to the next walk, and an
+	// aborted walk giving its request back -- live in the latch so they can be
+	// tested without a CSharedFileList. See RequestReload().
+	CSharedFilesReloadLatch m_reloadLatch;
 
 	// New files discovered since the last Process() tick, counted at the one
 	// place discovery is actually decided (AddPathToShares' queued branch) so

@@ -1098,19 +1098,26 @@ bool CSharedFileList::Reload(ReloadYieldCb yieldCb)
 	// deltaHF - removed the old ugly button and changed the code to use the new small one
 	// Kry - bah, let's use a var.
 	if (reloading) {
-		// Already running. Surface that to the caller as a non-abort,
-		// non-complete state — they shouldn't react as if they
-		// cancelled, but also haven't completed a fresh scan.
+		// Already running. The walk in flight started before this caller's
+		// roots or filters were in place, so it cannot be the fresh scan they
+		// asked for -- leave a request standing so the next tick runs one.
+		// Without this a caller that commits new shared roots and reads the
+		// return as success persists them and never walks them.
+		//
+		// Surfaced to the caller as a non-abort, non-complete state: they
+		// shouldn't react as if they cancelled, but haven't completed a
+		// fresh scan either.
+		m_reloadLatch.Request();
 		return true;
 	}
 
-	// Any completed walk satisfies an outstanding RequestReload(), so drop the
-	// flag here rather than only in Process(). That lets a GUI caller run the
-	// walk itself (with progress) right after something that requested one,
-	// without Process() then running a second, redundant walk a tick later.
-	// A request that arrives while a walk is running took the `reloading`
-	// early-return above and is still pending, so it is not lost.
-	m_reloadPending = false;
+	// Take any outstanding RequestReload() with us: this walk is the one that
+	// satisfies it, so a GUI caller can run it (with progress) right after
+	// something requested one without Process() running a second, redundant
+	// walk a tick later. Anything requested from here on belongs to the next
+	// walk -- this one is already past the files it would be about -- and an
+	// abort below hands this request back rather than swallowing it.
+	const bool servingRequest = m_reloadLatch.BeginWalk();
 
 	// Info, not debug: now that EC callers get an immediate reply instead of
 	// blocking until the walk ends, the log is how they observe it starting.
@@ -1176,6 +1183,10 @@ bool CSharedFileList::Reload(ReloadYieldCb yieldCb)
 	// never fires while the pin set is unpopulated (which would
 	// drop records the scan was about to pin). Only on non-aborted
 	// scans: a cancelled mid-scan leaves the pin set partial.
+	// A cancelled walk satisfies nothing, so give the request back and let a
+	// later tick run it properly.
+	m_reloadLatch.EndWalk(servingRequest, aborted);
+
 	if (!aborted && filelist) {
 		filelist->MarkInitialShareScanComplete();
 	}
@@ -1438,8 +1449,7 @@ void CSharedFileList::Process()
 	// inline in the caller. The `reloading` check means a request that
 	// arrives mid-walk stays pending and runs on a later tick instead of
 	// re-entering; Reload() would return early anyway, silently dropping it.
-	if (m_reloadPending && !reloading) {
-		m_reloadPending = false;
+	if (m_reloadLatch.ShouldStartFromTick(reloading)) {
 		Reload();
 	}
 
