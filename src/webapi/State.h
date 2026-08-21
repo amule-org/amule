@@ -464,8 +464,13 @@ struct CategorySnapshot
 // flattening through GetDisplayString() (which translates and locale-formats
 // in the amuleapi process). `type` is the EC value type as a stable lowercase
 // string; the raw value lands in exactly one of num/dbl/str per `kind`.
-// `extra` holds the optional nested sub-value (the parenthetical "(total …)"
-// some nodes carry) — at most one level deep, matching the EC encoding.
+// `extra` holds the optional nested sub-value — at most one level deep,
+// matching the EC encoding. It is whatever the desktop prints in
+// parentheses, which is three different quantities depending on the node:
+// a percentage of the parent (CStatTreeItemCounterTmpl with stShowPercent),
+// a packet count beside a byte total (CStatTreeItemPackets), or the all-time
+// total beside a session figure (CStatTreeItemUlDlCounter). It is `type`-
+// tagged, so a client formats it from `type` rather than from its position.
 struct StatsTreeValue
 {
 	enum Kind
@@ -496,6 +501,11 @@ struct StatsTreeValue
 // text + C-locale numbers, independent of the amuleapi/amuled --locale.
 struct StatsTreeNode
 {
+	// The EC_TAG_STATTREE_CAPPING value this tree was fetched at. Only
+	// meaningful on the root; carried so the unkeyed TTL cache can reject
+	// an entry fetched at a different cap.
+	std::uint8_t max_client_versions = 0;
+
 	// Stable, untranslated machine key (EC_TAG_STAT_NODE_KEY). Empty when
 	// the node carries no key; omitted from JSON in that case.
 	std::string key;
@@ -529,8 +539,11 @@ struct StatsTreeNode
 // in the `{graph}` path segment.
 struct StatsGraphs
 {
-	// Sample cadence in seconds. amuled's CStatsCollection uses 1s.
-	// Used as the `interval` field in the response.
+	// Seconds between samples, as actually requested of amuled via
+	// EC_TAG_STATSGRAPH_SCALE. Reported as `interval_seconds` and used to
+	// space the reconstructed timestamps, so it has to be the value that
+	// was asked for rather than an assumption. Also the cache key: an
+	// entry fetched at one interval must not answer a request for another.
 	std::uint32_t interval_seconds = 1;
 
 	std::vector<std::uint32_t> download_bps;
@@ -538,12 +551,38 @@ struct StatsGraphs
 	std::vector<std::uint32_t> connections;
 	std::vector<std::uint32_t> kad_nodes;
 
-	// Session running totals — single uint64 per series, reported
-	// alongside the time-series so the panel can show "this session
-	// total" without needing a separate roundtrip.
+	// Second data blob (EC_TAG_STATSGRAPH_DATA_CONN), point-aligned with
+	// the four above and only meaningful on the connections graph. Empty
+	// when the daemon predates the tag -- which is why these are reported
+	// as absent rather than as zeros: "not reported" and "nothing was
+	// transferring" are different answers.
+	std::vector<std::uint32_t> active_uploads;
+	std::vector<std::uint32_t> active_downloads;
+
+	// Records amuled holds per resolution range (EC_TAG_STATSGRAPH_DEPTH).
+	// Asking for more points than this makes the daemon repeat records
+	// rather than fail, and no timestamps travel on the wire, so the
+	// caller cannot spot it -- every series is truncated to this.
+	std::uint32_t max_points = 1800;
+
+	// Session running totals — reported alongside the time-series so the
+	// panel can show "this session total" without a separate roundtrip.
+	//
+	// The daemon divides the two byte counters by 1024 before sending
+	// (Statistics.cpp, RecordHistory), so these are scaled back on parse
+	// and really are bytes, to 1 KiB granularity.
 	std::uint64_t session_download_bytes = 0;
 	std::uint64_t session_upload_bytes = 0;
-	std::uint64_t session_kad_bytes = 0;
+
+	// NOT a transfer figure: the running per-second sum of the Kad node
+	// count, i.e. node·seconds. Divided by session_duration_seconds it
+	// gives the session-average node count, which is its only use.
+	std::uint64_t session_kad_node_seconds = 0;
+
+	// Daemon uptime in seconds at the newest point
+	// (EC_TAG_STATSGRAPH_SESSION_TIMESPAN). Without it the three totals
+	// above cannot be turned into averages. 0 when not reported.
+	double session_duration_seconds = 0.0;
 };
 
 // One result from a /search/results poll. Identity is the file's

@@ -244,7 +244,7 @@ function KadPanel() {
     let alive = true;
     const tick = async () => {
       try {
-        const r = await api.get("stats/graphs/kad?width=" + GRAPH_WIDTH);
+        const r = await api.get("stats/graphs/kad_nodes?width=" + GRAPH_WIDTH);
         const pts = r.points || [];
         if (alive) setGraphData([pts.map((p) => p.t_unix), pts.map((p) => p.value)]);
       } catch (_) { /* leave previous data */ }

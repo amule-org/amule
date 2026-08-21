@@ -18,8 +18,8 @@ const SMA_WINDOW = 50; // ponytail: SMA over ~5 min of samples; amulegui makes t
 
 const speedAxis = (max) => bytesAxis(max, true);
 const GRAPHS = [
-  { name: "download", title: t("stats_download_speed"), color: "#3aaf5d", avgColor: "#1fb5ad", fmt: formatSpeed, axis: speedAxis },
-  { name: "upload", title: t("stats_upload_speed"), color: "#3b86e0", avgColor: "#8a5cd6", fmt: formatSpeed, axis: speedAxis },
+  { name: "download_speed", title: t("stats_download_speed"), color: "#3aaf5d", avgColor: "#1fb5ad", fmt: formatSpeed, axis: speedAxis },
+  { name: "upload_speed", title: t("stats_upload_speed"), color: "#3b86e0", avgColor: "#8a5cd6", fmt: formatSpeed, axis: speedAxis },
   { name: "connections", title: t("stats_connections"), color: "#d68a0c", avgColor: "#c94f7c", fmt: formatInt },
 ];
 
@@ -130,7 +130,7 @@ function tNodeLabel(node) {
   // tail so nodeText still fills the count/percent. ponytail: heads have no ":".
   if (node.key === "client_version" || node.key === "client_os") {
     const tail = node.label.slice(node.label.indexOf(":"));
-    if (node.raw) return node.raw + tail;
+    if (node.label_value) return node.label_value + tail;
     return tOr("stats_tree_" + node.key + "_unknown", node.label) + tail;
   }
   return tOr("stats_tree_" + node.key, tLabel(node.label));
@@ -145,7 +145,7 @@ function fmtValue(v, spec) {
     case "speed": s = formatBytes(v.value) + "/s"; break;
     case "time": s = formatDuration(v.value); break;
     case "double": s = /f/.test(spec || "") ? Number(v.value).toFixed(2) : String(v.value); break;
-    case "string": s = v.enum ? tEnum(v.enum) : tLabel(String(v.value)); break;
+    case "string": s = v.token ? tEnum(v.token) : tLabel(String(v.value)); break;
     default: s = formatInt(v.value); break; // integer/istring/ishort
   }
   if (v.extra) {

@@ -90,7 +90,7 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 
 **Statistics**
 - [`GET /api/v0/stats/tree`](#get-apiv0statstree) — full statistics tree
-- [`GET /api/v0/stats/graphs/{graph}`](#get-apiv0statsgraphsgraph) — time-series points (`download`, `upload`, `connections`, `kad`)
+- [`GET /api/v0/stats/graphs/{graph}`](#get-apiv0statsgraphsgraph) — time-series points (`download_speed`, `upload_speed`, `connections`, `kad_nodes`)
 
 **Search**
 - [`GET /api/v0/search`](#get-apiv0search) — enumerate every search amuled currently holds, including ones this session never started
@@ -1937,30 +1937,32 @@ The ed2k server-info log buffer. Unlike `/logs/amule`, amuled ships this one as 
 
 **Auth:** `GUEST`
 
+**Query parameters:** `max_client_versions=N` (`0`–`255`, default `0` = unlimited) — caps how many per-software **version** rows the daemon serializes. Only the version lists are affected; the OS breakdown and the fixed skeleton nodes are always complete. A long-lived node accumulates hundreds of version rows, so a dashboard showing a top-10 should pass this rather than discard the rest client-side.
+
 A tree mirroring amuled's "Statistics" tree (transfers, connections, clients, servers, downloads). Cached with a 1 s TTL.
 
-The envelope is `{ "nodes": [...] }`. Each node is `{ "key": "<id>", "raw": "<value>", "label": "<template>", "values": [...], "children": [...] }`. A leaf is a node whose `children` array is empty. `key` and `raw` are optional (see below).
+The envelope is `{ "nodes": [...] }`. Each node is `{ "key": "<id>", "label_value": "<value>", "label": "<template>", "values": [...], "children": [...] }`. A leaf is a node whose `children` array is empty. `key` and `label_value` are optional (see below).
 
 `label` is the **untranslated English template** (e.g. `"Total uploaded: %s"`), and `values` are the **typed, raw** values that fill its `%s` placeholders in order — the client formats and localizes them. This keeps the response identical regardless of the amuleapi/amuled `--locale` (see [Response model](#response-model)). A container node (one that only groups children) has an empty `values` array.
 
 `key` is a **stable, machine-readable identifier** for the node (e.g. `"upload_data"`, `"ul_dl_ratio"`, `"servers_working"`). Unlike `label`, it does not change when the label is reworded, and it is never translated — use it to locate a specific field instead of matching on the label string. The `key` is optional: it is present only for nodes the daemon assigns one to, and it is omitted entirely when absent (older daemons that predate this field emit no `key` at all). Keys are unique among the fixed skeleton nodes; the dynamic per-client-software rows share a key by kind (see below).
 
-`raw` is the **raw, untranslated machine value** for nodes whose `label` is itself data — the per-client-software breakdown rows, where the label is a version or OS string (`"v0.70b: %s"`, `"Linux: %s"`). It carries just that value (`"v0.70b"`, `"Linux"`) so a client reads it directly instead of parsing it out of the `label`. Present only on those rows; omitted otherwise and on daemons that predate the field. These rows are grouped under the `client_versions` / `client_operating_system` container nodes and each row carries `key: "client_version"` / `key: "client_os"` — so the `key` tells you the kind and `raw` gives the value.
+`label_value` is the **raw, untranslated machine value** for nodes whose `label` is itself data — the per-client-software breakdown rows, where the label is a version or OS string (`"v0.70b: %s"`, `"Linux: %s"`). It carries just that value (`"v0.70b"`, `"Linux"`) so a client reads it directly instead of parsing it out of the `label`. Present only on those rows; omitted otherwise and on daemons that predate the field. These rows are grouped under the `client_versions` / `client_operating_system` container nodes and each row carries `key: "client_version"` / `key: "client_os"` — so the `key` tells you the kind and `label_value` gives the value.
 
 Each value is `{ "type": "<type>", "value": <raw> }`:
 
 | `type` | `value` JSON | meaning |
 | --- | --- | --- |
-| `integer`, `istring`, `ishort` | number | plain count |
+| `integer` | number | plain count |
 | `bytes` | number | raw bytes |
 | `speed` | number | raw bytes/second |
 | `time` | number | raw seconds |
 | `double` | number | raw double |
 | `string` | string | opaque English string (e.g. a ratio, or `"Not available"`) |
 
-A `string` value that is a **well-known sentinel** additionally carries an `enum` field with a stable, locale-independent token — currently `"never"` (a "Never" timestamp, e.g. max-connection-limit-reached) and `"not_available"` (a ratio with no data yet). The English `value` is left in place unchanged, so this is purely additive: prefer `enum` when present and fall back to `value` otherwise. It is absent on non-sentinel values and on daemons that predate the field.
+A `string` value that is a **well-known sentinel** additionally carries a `token` field with a stable, locale-independent token — currently `"never"` (a "Never" timestamp, e.g. max-connection-limit-reached) and `"not_available"` (a ratio with no data yet). The English `value` is left in place unchanged, so this is purely additive: prefer `token` when present and fall back to `value` otherwise. It is absent on non-sentinel values and on daemons that predate the field.
 
-A value may carry a nested `extra` value of the same shape — the parenthetical "(total …)" some nodes append (e.g. session vs. total transfer).
+A value may carry a nested `extra` value of the same shape — whatever the desktop prints in parentheses. It is **three different quantities** depending on the node, so format it from its own `type` rather than assuming: a **percentage of the parent** on counter nodes that show one, a **packet count** beside a byte total on the packet nodes, and the **all-time total** beside a session figure on the transfer counters.
 
 The UL:DL ratio node (`key: "ul_dl_ratio"`) additionally carries a `ratio` object with numeric `session` and `total` fields, so clients don't have to parse its composite string value. Both are **download-per-upload** doubles (received ÷ sent bytes): `session` for the current session, `total` for all time. Each field appears only when the daemon can compute it (both sides greater than zero); the whole `ratio` object is omitted when neither is available and on daemons that predate this field. No other node type carries `ratio`.
 
@@ -1998,14 +2000,14 @@ The UL:DL ratio node (`key: "ul_dl_ratio"`) additionally carries a `ratio` objec
 }
 ```
 
-A per-client-software version row (note `raw`), and a sentinel value (note the additive `enum`):
+A per-client-software version row (note `label_value`, and an `extra` that is a percentage of the parent here), and a sentinel value (note the additive `token`):
 
 ```json
 {
   "key": "client_version",
-  "raw": "v0.70b",
+  "label_value": "v0.70b",
   "label": "v0.70b: %s",
-  "values": [ { "type": "istring", "value": 42, "extra": { "type": "double", "value": 12.5 } } ],
+  "values": [ { "type": "integer", "value": 42, "extra": { "type": "double", "value": 12.5 } } ],
   "children": []
 }
 ```
@@ -2013,7 +2015,7 @@ A per-client-software version row (note `raw`), and a sentinel value (note the a
 ```json
 {
   "label": "Max Connection Limit Reached: %s",
-  "values": [ { "type": "string", "value": "Never", "enum": "never" } ],
+  "values": [ { "type": "string", "value": "Never", "token": "never" } ],
   "children": []
 }
 ```
@@ -2026,26 +2028,49 @@ A per-client-software version row (note `raw`), and a sentinel value (note the a
 
 Time-series points behind the desktop Statistics graphs.
 
-`{graph}` is one of `download`, `upload`, `connections`, `kad`.
+`{graph}` is one of `download_speed`, `upload_speed`, `connections`, `kad_nodes`.
 
-**Query parameters:** `width=N` — clamp the response to the last `N` samples (default/`0` returns the full ~1800-sample window).
+**Query parameters:**
+
+| Parameter | Type | Default | Meaning |
+|---|---|---|---|
+| `interval` | int, `1`–`3600` | `1` | Seconds between samples. Changes what amuled is asked for, so it changes the reach of the window: `interval=10` covers ten times as long at a tenth the resolution. |
+| `width` | int, `1`–`1800` | full window | Tails the response to the last `N` samples. Applied after the fetch — it does not change what is requested, so it never changes the time span each sample covers. |
 
 ```json
 {
-  "graph": "download",
-  "unit": "bps",
+  "graph": "connections",
+  "unit": "count",
   "interval_seconds": 1,
+  "max_points": 1800,
   "points": [
-    { "t": "2026-06-19T11:00:00Z", "t_unix": 1781430000, "value": 4500000 },
-    { "t": "2026-06-19T11:00:10Z", "t_unix": 1781430010, "value": 4800000 }
+    { "t": "2026-06-19T11:00:00Z", "t_unix": 1781430000, "value": 42, "active_downloads": 7, "active_uploads": 4 },
+    { "t": "2026-06-19T11:00:01Z", "t_unix": 1781430001, "value": 44, "active_downloads": 8, "active_uploads": 4 }
   ],
-  "session": { "download_bytes": 12400000000, "upload_bytes": 980000000, "kad_bytes": 5400000 }
+  "session": {
+    "download_bytes": 12400000000,
+    "upload_bytes": 980000000,
+    "kad_node_seconds": 5400000,
+    "duration_seconds": 86400
+  }
 }
 ```
 
-Each point is an object with `t` (ISO-8601 UTC), `t_unix` (unix seconds), and `value`. `unit` is `"bps"` for download/upload and `"count"` for connections/kad. `session` carries this-session byte totals so a client doesn't need a separate roundtrip.
+Each point has `t` (ISO-8601 UTC), `t_unix` (unix seconds) and `value`, spaced by `interval_seconds`. `unit` is `"bytes_per_second"` for the two speed graphs and `"count"` for the other two.
 
-**Errors:** `404 not_found` (unknown graph name), `503 ec_unavailable`.
+`max_points` is how many points this daemon can answer with before it starts repeating records; `points` is never longer than it. It is not a constant across daemons, so a client that wants the deepest window available should read it rather than assume 1800.
+
+**`connections` only:** each point also carries `active_downloads` (peers being pulled from) and `active_uploads` (peers being pushed to), alongside `value`, which stays the total connection count. Against an amuled that does not report them the two keys are **omitted entirely** rather than sent as `0`, so "not reported" is distinguishable from "nothing was transferring". They are all-or-nothing: either every point in a response has them or none does.
+
+**`session`** carries this-session figures so a client doesn't need a separate roundtrip:
+
+| Field | Meaning |
+|---|---|
+| `download_bytes` / `upload_bytes` | Bytes transferred this session. Granularity is 1 KiB — amuled tracks these in kibibytes and truncates before sending. |
+| `kad_node_seconds` | **Not a transfer figure.** The running per-second sum of the Kad node count, i.e. node·seconds. Divide by `duration_seconds` for the session-average node count, which is its only use. |
+| `duration_seconds` | Daemon uptime at the newest point. `0` if the daemon does not report it. Divide any of the three figures above by it to get the session average the desktop plots. |
+
+**Errors:** `400 bad_request` (`interval` outside `1`–`3600` or non-numeric), `404 not_found` (unknown graph name), `503 ec_unavailable`.
 
 ---
 

@@ -97,7 +97,7 @@ _assert_json_eq '.nodes[0].children | type' array '/stats/tree first node has a 
 _assert_json_eq '[.. | .values? // empty | .[]?] | length > 0' true \
 	'/stats/tree carries at least one typed value'
 _assert_json_eq '([.. | .values? // empty | .[]? | .type] | unique)
-	- ["integer","istring","bytes","ishort","time","speed","string","double"]
+	- ["integer","bytes","time","speed","string","double"]
 	| length == 0' true '/stats/tree value types are all from the known set'
 # Stable machine keys: locale-independent identifiers on the fixed skeleton
 # nodes, safe to pin (unlike labels). Uptime is always the first node.
@@ -127,41 +127,85 @@ _assert_json_eq '[.. | objects | select(has("raw")) | .raw | type] | all(. == "s
 # enum: additive locale-independent token on well-known sentinel string values
 # ("never"/"not_available"). Assert the tokens are from the known set and always
 # accompany a string value (the English value is kept alongside).
-_assert_json_eq '([.. | objects | .values? // empty | .[]? | select(has("enum")) | .enum]
+_assert_json_eq '([.. | objects | .values? // empty | .[]? | select(has("token")) | .token]
 	| unique) - ["never","not_available"] | length == 0' \
-	true '/stats/tree enum tokens are from the known set'
-_assert_json_eq '[.. | objects | .values? // empty | .[]? | select(has("enum"))
+	true '/stats/tree value tokens are from the known set'
+_assert_json_eq '[.. | objects | .values? // empty | .[]? | select(has("token"))
 	| (.type == "string" and (.value | type) == "string")] | all(.)' \
-	true '/stats/tree enum tokens ride on a string value (kept for legacy clients)'
+	true '/stats/tree value tokens ride on a string value (kept for legacy clients)'
 
 # --- 3. /stats/graphs/{graph} — all four named graphs. -------------
-for g in download upload connections kad; do
+for g in download_speed upload_speed connections kad_nodes; do
 	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/$g"
 	_assert_status 200 "GET /stats/graphs/$g → 200"
 	_assert_json_eq '.graph'                    "$g"  "/stats/graphs/$g reports graph=$g"
 	_assert_json_eq '.interval_seconds | type'  number "/stats/graphs/$g interval_seconds is numeric"
 	_assert_json_eq '.points | type'            array  "/stats/graphs/$g .points is array"
 	_assert_json_eq '.session | type'           object "/stats/graphs/$g .session is object"
+	_assert_json_eq '.max_points | type'        number "/stats/graphs/$g max_points is numeric"
+	_assert_json_eq '.points | length <= .max_points' true \
+		"/stats/graphs/$g never returns more points than max_points"
 done
 # Per-graph unit mapping.
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/download"
-_assert_json_eq '.unit' bps   '/stats/graphs/download reports unit=bps'
+_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/download_speed"
+_assert_json_eq '.unit' bytes_per_second '/stats/graphs/download_speed reports unit=bytes_per_second'
 _curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/connections"
 _assert_json_eq '.unit' count '/stats/graphs/connections reports unit=count'
 
+# Session object: the two byte counters are scaled back from the KiB the
+# daemon sends, kad is node-seconds rather than bytes, and duration is what
+# turns any of them into an average.
+_assert_json_eq '.session | has("download_bytes") and has("upload_bytes")
+	and has("kad_node_seconds") and has("duration_seconds")' true \
+	'/stats/graphs session carries the four corrected fields'
+_assert_json_eq '.session | has("kad_bytes")' false \
+	'/stats/graphs session no longer reports the misnamed kad_bytes'
+
+# The connections graph carries the second data blob's two series when the
+# daemon reports it; the other graphs never do.
+if [ "$(printf '%s' "$CURL_BODY" | jq '.points | length')" -gt 0 ]; then
+	_assert_json_eq '[.points[] | has("active_uploads")] | (all(.) or (any(.) | not))' true \
+		'/stats/graphs/connections active_uploads is present on all points or none'
+fi
+_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/download_speed"
+_assert_json_eq '[.points[]? | has("active_uploads")] | any(.) | not' true \
+	'/stats/graphs/download_speed never carries the connections-only series'
+
+# --- 3b. ?interval=N and its validation. ---------------------------
+_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/download_speed?interval=10"
+_assert_status 200 "GET /stats/graphs/download_speed?interval=10 → 200"
+_assert_json_eq '.interval_seconds' 10 \
+	'/stats/graphs?interval=10 reports the interval it applied'
+for bad in 0 3601 abc; do
+	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/download_speed?interval=$bad"
+	_assert_status 400 "GET /stats/graphs/download_speed?interval=$bad → 400"
+	_assert_json_eq '.error.code' bad_request \
+		"/stats/graphs?interval=$bad carries error.code=bad_request"
+done
+
+# --- 3c. /stats/tree ?max_client_versions=N and its validation. ----
+_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/tree?max_client_versions=3"
+_assert_status 200 "GET /stats/tree?max_client_versions=3 → 200"
+for bad in -1 256 abc; do
+	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/tree?max_client_versions=$bad"
+	_assert_status 400 "GET /stats/tree?max_client_versions=$bad → 400"
+	_assert_json_eq '.error.code' bad_request \
+		"/stats/tree?max_client_versions=$bad carries error.code=bad_request"
+done
+
 # --- 4. /stats/graphs/{graph} ?width=N tailing. --------------------
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/download?width=5"
-_assert_status 200 "GET /stats/graphs/download?width=5 → 200"
+_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/download_speed?width=5"
+_assert_status 200 "GET /stats/graphs/download_speed?width=5 → 200"
 _assert_json_eq '.points | length <= 5' true \
-	'/stats/graphs/download?width=5 returns ≤5 points'
+	'/stats/graphs/download_speed?width=5 returns ≤5 points'
 # When a point exists, it must carry both t (ISO-8601) and t_unix.
 if [ "$(printf '%s' "$CURL_BODY" | jq '.points | length')" -gt 0 ]; then
 	_assert_json_eq '.points[0].t | length' 20 \
-		'/stats/graphs/download point.t is 20-char ISO-8601'
+		'/stats/graphs/download_speed point.t is 20-char ISO-8601'
 	_assert_json_eq '.points[0].t_unix | type' number \
-		'/stats/graphs/download point.t_unix is numeric'
+		'/stats/graphs/download_speed point.t_unix is numeric'
 	_assert_json_eq '.points[0].value | type' number \
-		'/stats/graphs/download point.value is numeric'
+		'/stats/graphs/download_speed point.value is numeric'
 fi
 
 # --- 5. Unknown graph name → 404. ----------------------------------
