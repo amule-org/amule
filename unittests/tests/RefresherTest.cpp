@@ -39,6 +39,8 @@
 
 #include "include/protocol/ed2k/ClientSoftware.h" // SO_* client-software enum
 
+#include "kademlia/utils/UInt128.h" // CUInt128 (EC_TAG_KAD_ID payload)
+
 #include <cstdint>
 #include <map>
 
@@ -1923,4 +1925,78 @@ TEST(Refresher, SearchProgressUnionRejectsFailureReply)
 	ASSERT_TRUE(out.empty());
 
 	ASSERT_TRUE(!ParseSearchProgressUnion(NULL, out));
+}
+
+// ----------------------------------------------------------------------
+// ParseKadFromPacket — /kad's node_id rides EC_TAG_KAD_ID, a UINT128
+// sub-tag of EC_TAG_CONNSTATE that amuled sends only while Kad is
+// running. The API contract is 32 LOWERCASE hex chars (the desktop
+// panel renders the same value uppercase), and an empty string rather
+// than an all-zero id when the sub-tag is absent.
+// ----------------------------------------------------------------------
+
+namespace
+{
+
+// CEC_ConnState_Tag is core-side (it builds itself from theApp), so
+// tests synthesise the wire shape instead: a plain EC_TAG_CONNSTATE
+// carrying the flag word, which is exactly what ParseKadFromPacket
+// downcasts. Bit 0x04 = connected to Kad, 0x10 = Kad running.
+CECTag MakeConnState(std::uint32_t flags)
+{
+	return CECTag(EC_TAG_CONNSTATE, flags);
+}
+
+} // namespace
+
+TEST(Refresher, KadNodeIdDecodesAsLowercaseHex)
+{
+	static const uint8_t id[16] = {
+		0x8f, 0x3a, 0x1c, 0x07, 0xd9, 0x4b, 0x2e, 0x5a, 0x60, 0x18, 0xbb, 0x4c, 0x7f, 0x20, 0x9d, 0x3e
+	};
+
+	CECPacket resp(EC_OP_STATS);
+	CECTag conn = MakeConnState(0x04 | 0x10);
+	conn.AddTag(CECTag(EC_TAG_KAD_ID, CUInt128(id)));
+	resp.AddTag(conn);
+
+	KadSnapshot out;
+	ParseKadFromPacket(&resp, out);
+
+	ASSERT_EQUALS(std::string("connected"), out.state);
+	ASSERT_EQUALS(std::string("8f3a1c07d94b2e5a6018bb4c7f209d3e"), out.node_id);
+}
+
+TEST(Refresher, KadNodeIdEmptyWhenTagAbsent)
+{
+	// Kad not running: amuled omits EC_TAG_KAD_ID entirely. An all-zero
+	// id would read as a real identity, so the field must stay empty --
+	// and that is exactly the case `state == "disabled"` describes.
+	CECPacket resp(EC_OP_STATS);
+	resp.AddTag(MakeConnState(0));
+
+	KadSnapshot out;
+	ParseKadFromPacket(&resp, out);
+
+	ASSERT_EQUALS(std::string("disabled"), out.state);
+	ASSERT_TRUE(out.node_id.empty());
+}
+
+TEST(Refresher, KadPublicIpIsOursAndBuddyIpIsSeparate)
+{
+	// The two addresses in this payload belong to different parties, and
+	// they land in differently-named fields -- which is the whole reason
+	// ours is `public_ip` and not a bare `ip`. Encoded the way
+	// IPv4ToDotted reads them, least-significant byte first: 0x057100CB
+	// is 203.0.113.5 and 0x097100CB is 203.0.113.9.
+	CECPacket resp(EC_OP_STATS);
+	resp.AddTag(MakeConnState(0x04 | 0x10));
+	resp.AddTag(CECTag(EC_TAG_STATS_KAD_IP_ADDRESS, static_cast<std::uint32_t>(0x057100CBu)));
+	resp.AddTag(CECTag(EC_TAG_STATS_BUDDY_IP, static_cast<std::uint32_t>(0x097100CBu)));
+
+	KadSnapshot out;
+	ParseKadFromPacket(&resp, out);
+
+	ASSERT_EQUALS(std::string("203.0.113.5"), out.public_ip);
+	ASSERT_EQUALS(std::string("203.0.113.9"), out.buddy_ip);
 }

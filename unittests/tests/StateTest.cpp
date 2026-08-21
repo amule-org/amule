@@ -257,7 +257,8 @@ TEST(State, WriteKadAndPreferencesRoundtrip)
 	k.state = "connected";
 	k.users = 12345;
 	k.firewalled = true;
-	k.ip = "1.2.3.4";
+	k.public_ip = "1.2.3.4";
+	k.node_id = "8f3a1c07d94b2e5a6018bb4c7f209d3e";
 	s.WriteKad(k);
 
 	PreferencesSnapshot p;
@@ -290,6 +291,10 @@ TEST(State, WriteKadAndPreferencesRoundtrip)
 	ASSERT_EQUALS(std::string("connected"), k_out.state);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(12345), k_out.users);
 	ASSERT_TRUE(k_out.firewalled);
+	// The two string fields were written but never read back, so a
+	// rename could pass this test while dropping the value.
+	ASSERT_EQUALS(std::string("1.2.3.4"), k_out.public_ip);
+	ASSERT_EQUALS(std::string("8f3a1c07d94b2e5a6018bb4c7f209d3e"), k_out.node_id);
 
 	const auto p_out = s.Preferences();
 	ASSERT_EQUALS(std::string("tester"), p_out.nickname);

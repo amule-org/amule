@@ -2052,20 +2052,28 @@ Two side effects are worth planning for. The URL is **persisted** into the `kade
 
 **Auth:** `GUEST`
 
-Standalone view of the Kad subtree from `/status`, plus the detail fields the status rollup omits (`firewalled_udp`, `in_lan_mode`, your external `ip`, the `indexed` Kad-store counters, and `buddy` contact info for low-ID peers).
+Standalone view of the Kad subtree from `/status`, plus the detail fields the status rollup omits (`node_id`, `firewalled_udp`, `in_lan_mode`, your `public_ip`, the `indexed` Kad-store counters, and `buddy` contact info for low-ID peers). Together with `GET /api/v0/preferences` (for the TCP/UDP port numbers the firewalled messages quote) this covers every row of the desktop client's **Networks → Kad Info** panel.
 
 ```json
 {
   "state": "connected",
+  "node_id": "8f3a1c07d94b2e5a6018bb4c7f209d3e",
   "firewalled": false,
   "firewalled_udp": false,
   "in_lan_mode": false,
-  "ip": "203.0.113.5",
+  "connected_since": 1751000000,
+  "public_ip": "203.0.113.5",
   "network": { "users": 5400000, "files": 1400000000, "nodes": 2400 },
   "indexed": { "sources": 12000, "keywords": 8500, "notes": 0, "load": 14 },
   "buddy": { "status": "connected", "ip": "203.0.113.9", "port": 4672 }
 }
 ```
+
+| Field | Type | Meaning |
+|---|---|---|
+| `node_id` | string | This node's own 128-bit Kademlia id, 32 lowercase hex characters (the desktop panel shows the same value uppercase). `""` while Kad is not running, which is exactly when `state` is `disabled`. Persisted by the daemon, so unlike the session-scoped ECIDs and the server-assigned eD2k id it is stable across restarts — the one identifier for the local node a consumer can key on. It is a DHT routing key, not a credential: every Kad contact the daemon talks to learns it. |
+| `connected_since` | int | Unix seconds of the most recent Kad connect, the same value `GET /api/v0/status` reports as `kad.connected_since`. `0` when not connected, so gate on `state` rather than trusting a `0`. |
+| `public_ip` | string | This node's externally-visible IPv4, as a remote Kad contact reported it back. Two "not known" cases, both matching what the desktop panel's *IP address* row shows: `""` while Kad is not connected (the daemon sends the field only then), and `0.0.0.0` while connected but not yet told its own address by any contact. Distinct from `preferences.connection.bind_address`, which is the local interface the daemon binds to. Named `public_ip` rather than `ip` because `buddy.ip` in the same payload belongs to somebody else. |
 
 ---
 

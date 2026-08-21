@@ -4,6 +4,12 @@
 
 add_executable (amuleapi
 	${CMAKE_SOURCE_DIR}/src/ExternalConnector.cpp
+	# CUInt128 backs the EC_TAG_KAD_ID tag Refresher.cpp reads for
+	# /kad's `node_id`. libec's ECUInt128.cpp only gets pulled out of
+	# the archive once something references a UINT128 tag, and it then
+	# needs the class itself -- which lives here, not in libec. Same
+	# reason amulegui compiles this TU (src/CMakeLists.txt).
+	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
 	${CMAKE_SOURCE_DIR}/src/OtherFunctions.cpp
 	${CMAKE_SOURCE_DIR}/src/RLE.cpp
 	${CMAKE_SOURCE_DIR}/src/NetworkFunctions.cpp

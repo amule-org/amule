@@ -634,6 +634,10 @@ target_link_libraries (StateTest
 # no-op defence (#713-class race), and partial-update-active.
 add_executable (RefresherTest
 	RefresherTest.cpp
+	# Refresher.cpp decodes EC_TAG_KAD_ID into a CUInt128; the class
+	# lives outside libec, so the archive's ECUInt128.cpp cannot
+	# resolve on its own. Mirrors amuleapi's own webapi/CMakeLists.txt.
+	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
 	${CMAKE_SOURCE_DIR}/src/webapi/PrefsSchema.cpp
 	${CMAKE_SOURCE_DIR}/src/webapi/Refresher.cpp
 	${CMAKE_SOURCE_DIR}/src/webapi/State.cpp
