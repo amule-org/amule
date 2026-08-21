@@ -240,6 +240,30 @@ std::unique_ptr<CHttpServer::Response> RequireSnapshot(const webapi::CState &sta
 	return nullptr;
 }
 
+// The URL carries a file hash in whatever case the caller typed; the snapshot
+// keys everything lowercase. Canonicalising was open-coded at seventeen call
+// sites as the same four lines, so it lives here now -- and the two lookups
+// that always follow it come with it, since "lower-case then find" is the
+// whole operation every one of those sites wanted.
+std::string LowerHexKey(const std::string &key)
+{
+	std::string out = key;
+	std::transform(out.begin(), out.end(), out.begin(), [](unsigned char c) {
+		return static_cast<char>(std::tolower(c));
+	});
+	return out;
+}
+
+bool FindDownloadByKey(const webapi::CState &state, const std::string &key, webapi::FileSnapshot &out)
+{
+	return state.FindDownload(LowerHexKey(key), out);
+}
+
+bool FindSharedByKey(const webapi::CState &state, const std::string &key, webapi::FileSnapshot &out)
+{
+	return state.FindShared(LowerHexKey(key), out);
+}
+
 // Wrapper that pipes AuthenticateRequest through a per-IP failure
 // counter. Every 401 (missing token / bad sig / expired / revoked)
 // counts against the calling IP; once the bucket fills the IP gets
@@ -3497,10 +3521,7 @@ CHttpServer::Response CApiDispatcher::HandleFileClients(
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
 
-	std::string needle = key;
-	std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
-		return std::tolower(c);
-	});
+	const std::string needle = LowerHexKey(key);
 
 	webapi::FileSnapshot file;
 	const bool found =
@@ -3664,11 +3685,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadDetail(
 	// State writes lowercase, so we down-case the capture before the
 	// O(1) m_hash_to_ecid lookup.
 	webapi::FileSnapshot d;
-	std::string needle = key;
-	std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
-		return std::tolower(c);
-	});
-	if (!m_state.FindDownload(needle, d)) {
+	if (!FindDownloadByKey(m_state, key, d)) {
 		return ErrorResponse(404, "not_found", "no download with that hash");
 	}
 
@@ -3703,11 +3720,7 @@ CHttpServer::Response CApiDispatcher::HandleSharedDetail(
 	// lowercase — down-case before the O(1) lookup (mirrors the download
 	// detail handler).
 	webapi::FileSnapshot s;
-	std::string needle = key;
-	std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
-		return std::tolower(c);
-	});
-	if (!m_state.FindShared(needle, s)) {
+	if (!FindSharedByKey(m_state, key, s)) {
 		return ErrorResponse(404, "not_found", "no shared file with that hash");
 	}
 
@@ -3734,11 +3747,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadComments(
 		return *r;
 
 	webapi::FileSnapshot d;
-	std::string needle = key;
-	std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
-		return std::tolower(c);
-	});
-	if (!m_state.FindDownload(needle, d)) {
+	if (!FindDownloadByKey(m_state, key, d)) {
 		return ErrorResponse(404, "not_found", "no download with that hash");
 	}
 
@@ -3793,11 +3802,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadCommentsKadSearch(
 		return *r;
 
 	webapi::FileSnapshot d;
-	std::string needle = key;
-	std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
-		return std::tolower(c);
-	});
-	if (!m_state.FindDownload(needle, d)) {
+	if (!FindDownloadByKey(m_state, key, d)) {
 		return ErrorResponse(404, "not_found", "no download with that hash");
 	}
 
@@ -3842,11 +3847,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadFilenames(
 		return *r;
 
 	webapi::FileSnapshot d;
-	std::string needle = key;
-	std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
-		return std::tolower(c);
-	});
-	if (!m_state.FindDownload(needle, d)) {
+	if (!FindDownloadByKey(m_state, key, d)) {
 		return ErrorResponse(404, "not_found", "no download with that hash");
 	}
 
@@ -3909,11 +3910,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadA4afAction(
 		return *r;
 
 	webapi::FileSnapshot d;
-	std::string needle = key;
-	std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
-		return std::tolower(c);
-	});
-	if (!m_state.FindDownload(needle, d)) {
+	if (!FindDownloadByKey(m_state, key, d)) {
 		return ErrorResponse(404, "not_found", "no download with that hash");
 	}
 
@@ -4449,11 +4446,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 		return *r;
 
 	webapi::FileSnapshot d;
-	std::string needle = key;
-	std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
-		return std::tolower(c);
-	});
-	if (!m_state.FindDownload(needle, d)) {
+	if (!FindDownloadByKey(m_state, key, d)) {
 		return ErrorResponse(404, "not_found", "no download with that hash");
 	}
 
@@ -4637,11 +4630,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadDelete(
 		return *r;
 
 	webapi::FileSnapshot d;
-	std::string needle = key;
-	std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
-		return std::tolower(c);
-	});
-	if (!m_state.FindDownload(needle, d)) {
+	if (!FindDownloadByKey(m_state, key, d)) {
 		return ErrorResponse(404, "not_found", "no download with that hash");
 	}
 
@@ -7868,11 +7857,7 @@ CHttpServer::Response CApiDispatcher::HandleSharedPatch(
 		return *r;
 
 	webapi::FileSnapshot s;
-	std::string needle = key;
-	std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
-		return std::tolower(c);
-	});
-	if (!m_state.FindShared(needle, s)) {
+	if (!FindSharedByKey(m_state, key, s)) {
 		return ErrorResponse(404, "not_found", "no shared file with that hash");
 	}
 
@@ -8065,10 +8050,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsBulkPatch(const CHttpServer
 	std::vector<BulkItem> results;
 	results.reserve(hashes.size());
 	for (const std::string &raw : hashes) {
-		std::string needle = raw;
-		std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
-			return static_cast<char>(std::tolower(c));
-		});
+		const std::string needle = LowerHexKey(raw);
 		webapi::FileSnapshot d;
 		if (!m_state.FindDownload(needle, d)) {
 			results.push_back(BulkErr(raw, 404, "not_found", "no download with that hash"));
@@ -8133,10 +8115,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsBulkDelete(const CHttpServe
 	std::vector<BulkItem> results;
 	results.reserve(hashes.size());
 	for (const std::string &raw : hashes) {
-		std::string needle = raw;
-		std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
-			return static_cast<char>(std::tolower(c));
-		});
+		const std::string needle = LowerHexKey(raw);
 		webapi::FileSnapshot d;
 		if (!m_state.FindDownload(needle, d)) {
 			results.push_back(BulkErr(raw, 404, "not_found", "no download with that hash"));
@@ -8215,10 +8194,7 @@ CHttpServer::Response CApiDispatcher::HandleSharedBulkPatch(const CHttpServer::R
 	std::vector<BulkItem> results;
 	results.reserve(hashes.size());
 	for (const std::string &raw : hashes) {
-		std::string needle = raw;
-		std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
-			return static_cast<char>(std::tolower(c));
-		});
+		const std::string needle = LowerHexKey(raw);
 		webapi::FileSnapshot s;
 		if (!m_state.FindShared(needle, s)) {
 			results.push_back(BulkErr(raw, 404, "not_found", "no shared file with that hash"));
@@ -8265,11 +8241,7 @@ CHttpServer::Response CApiDispatcher::HandleSharedVerify(
 		return *r;
 
 	webapi::FileSnapshot s;
-	std::string needle = key;
-	std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
-		return std::tolower(c);
-	});
-	if (!m_state.FindShared(needle, s)) {
+	if (!FindSharedByKey(m_state, key, s)) {
 		return ErrorResponse(404, "not_found", "no shared file with that hash");
 	}
 
@@ -9451,10 +9423,7 @@ CHttpServer::Response CApiDispatcher::HandleSearchDownload(
 		return *rej;
 
 	// Canonicalise the URL hash to lowercase.
-	std::string needle = hash;
-	std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
-		return std::tolower(c);
-	});
+	const std::string needle = LowerHexKey(hash);
 
 	CMD4Hash file_hash;
 	if (!HashFromHex(needle, file_hash)) {
@@ -9564,10 +9533,7 @@ CHttpServer::Response CApiDispatcher::HandleSearchComments(
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
 
-	std::string needle = hash;
-	std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
-		return std::tolower(c);
-	});
+	const std::string needle = LowerHexKey(hash);
 
 	// Locate the result carrying this hash across ALL open searches — the
 	// comments endpoints are search-agnostic (the same file may appear in
@@ -9636,10 +9602,7 @@ CHttpServer::Response CApiDispatcher::HandleSearchCommentsKadSearch(
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
 
-	std::string needle = hash;
-	std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
-		return std::tolower(c);
-	});
+	const std::string needle = LowerHexKey(hash);
 
 	CMD4Hash file_hash;
 	if (!HashFromHex(needle, file_hash)) {
