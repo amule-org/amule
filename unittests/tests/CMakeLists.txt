@@ -468,6 +468,20 @@ target_link_libraries (ECCryptTest
 	CRYPTOPP::CRYPTOPP
 )
 
+add_executable (SharedFilesReloadLatchTest
+	SharedFilesReloadLatchTest.cpp
+)
+add_test (NAME SharedFilesReloadLatchTest COMMAND SharedFilesReloadLatchTest)
+target_include_directories (SharedFilesReloadLatchTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+target_link_libraries (SharedFilesReloadLatchTest
+	muleunit
+	mulecommon
+)
+
 add_executable (JsonWriterTest
 	JsonWriterTest.cpp
 )
