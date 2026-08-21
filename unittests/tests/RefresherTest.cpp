@@ -2133,3 +2133,20 @@ TEST(Refresher, KadPublicIpIsOursAndBuddyIpIsSeparate)
 	ASSERT_EQUALS(std::string("203.0.113.5"), out.public_ip);
 	ASSERT_EQUALS(std::string("203.0.113.9"), out.buddy_ip);
 }
+
+TEST(Refresher, KadBuddyStatusIsNoBuddyWhenTagAbsent)
+{
+	// amuled ships EC_TAG_STATS_BUDDY_STATUS only while Kad is
+	// connected. Absent, the field must still hold one of the values
+	// /kad documents -- an empty string is a fourth value outside the
+	// enum. The core and amulegui both read the absence as
+	// `Disconnected`, so "no_buddy" is the amule-faithful answer.
+	CECPacket resp(EC_OP_STATS);
+	resp.AddTag(MakeConnState(0));
+
+	KadSnapshot out;
+	ParseKadFromPacket(&resp, out);
+
+	ASSERT_EQUALS(std::string("disabled"), out.state);
+	ASSERT_EQUALS(std::string("no_buddy"), out.buddy_status);
+}

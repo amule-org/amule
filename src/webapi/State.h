@@ -511,7 +511,18 @@ struct KadSnapshot
 	std::string public_ip;
 	// Buddy is the LowID-buddy state (for NAT-T peers). Most users see
 	// "no_buddy"; networks behind aggressive NAT see "connected".
-	std::string buddy_status; // "no_buddy" | "connecting" | "connected"
+	// Defaulted rather than left empty: amuled ships
+	// EC_TAG_STATS_BUDDY_STATUS only while Kad is connected, and both
+	// the core (CClientList's `m_nBuddyStatus = Disconnected`) and
+	// amulegui (GetTagByNameSafe()->GetInt() == 0 on an absent tag)
+	// read that absence as `Disconnected`. An empty string would be a
+	// fourth value outside the endpoint's own enum.
+	std::string buddy_status = "no_buddy"; // "no_buddy" | "connecting" | "connected"
+	// The buddy's address, dotted-quad. "0.0.0.0"/0 while Kad is
+	// connected with no buddy (amuled ships the tags as 0), empty
+	// while Kad is not connected at all -- same "not known" split as
+	// public_ip above. Only meaningful when buddy_status is
+	// "connected".
 	std::string buddy_ip;
 	std::uint16_t buddy_port = 0;
 };
