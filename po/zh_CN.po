@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 21:31+0200\n"
+"POT-Creation-Date: 2026-08-21 22:27+0200\n"
 "PO-Revision-Date: 2026-08-21 19:18+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -3189,6 +3189,16 @@ msgstr ""
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Extracting media metadata with ffprobe: %s"
+msgstr ""
+
+#: src/MediaProbe.cpp
+#, c-format
+msgid "Media metadata: ffprobe timed out or was cancelled for %s"
+msgstr ""
+
+#: src/MediaProbe.cpp
+#, c-format
+msgid "Media metadata: ffprobe failed (code %d) for %s"
 msgstr ""
 
 #: src/MuleNotebook.cpp src/muuli_wdr.cpp
@@ -7062,8 +7072,17 @@ msgstr "正在载入 server.met 文件：%s"
 
 #: src/SharedFileList.cpp
 #, fuzzy, c-format
-msgid "Stopped sharing %u files under removed directory: %s"
-msgstr "在目录中没有找到可以共享的文件：%s"
+msgid "Stopped sharing %u file under removed directory: %s"
+msgid_plural "Stopped sharing %u files under removed directory: %s"
+msgstr[0] "在目录中没有找到可以共享的文件：%s"
+msgstr[1] "在目录中没有找到可以共享的文件：%s"
+
+#: src/SharedFileList.cpp
+#, fuzzy, c-format
+msgid "Now sharing %u file found in a new shared directory"
+msgid_plural "Now sharing %u files found in new shared directories"
+msgstr[0] "在目录中没有找到可以共享的文件：%s"
+msgstr[1] "在目录中没有找到可以共享的文件：%s"
 
 #: src/SharedFileList.cpp
 #, fuzzy, c-format
@@ -8078,6 +8097,11 @@ msgstr "这是一个已废弃的命令，将来可能被删除，请使用 '%s' 
 #: src/TextClient.h
 msgid "aMule text client"
 msgstr "aMule 文本客户端"
+
+#: src/ThreadTasks.cpp
+#, fuzzy, c-format
+msgid "Hashing downloaded file: %s"
+msgstr "正在删除文件: %s"
 
 #: src/ThreadTasks.cpp
 #, fuzzy, c-format

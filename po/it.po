@@ -19,7 +19,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 21:31+0200\n"
+"POT-Creation-Date: 2026-08-21 22:27+0200\n"
 "PO-Revision-Date: 2026-08-21 19:10+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
@@ -3199,6 +3199,16 @@ msgstr ""
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Extracting media metadata with ffprobe: %s"
+msgstr ""
+
+#: src/MediaProbe.cpp
+#, c-format
+msgid "Media metadata: ffprobe timed out or was cancelled for %s"
+msgstr ""
+
+#: src/MediaProbe.cpp
+#, c-format
+msgid "Media metadata: ffprobe failed (code %d) for %s"
 msgstr ""
 
 #: src/MuleNotebook.cpp src/muuli_wdr.cpp
@@ -7072,8 +7082,17 @@ msgstr "Caricamento file server.met: %s"
 
 #: src/SharedFileList.cpp
 #, fuzzy, c-format
-msgid "Stopped sharing %u files under removed directory: %s"
-msgstr "Nessun file condivisibile trovato nella cartella: %s"
+msgid "Stopped sharing %u file under removed directory: %s"
+msgid_plural "Stopped sharing %u files under removed directory: %s"
+msgstr[0] "Nessun file condivisibile trovato nella cartella: %s"
+msgstr[1] "Nessun file condivisibile trovato nella cartella: %s"
+
+#: src/SharedFileList.cpp
+#, fuzzy, c-format
+msgid "Now sharing %u file found in a new shared directory"
+msgid_plural "Now sharing %u files found in new shared directories"
+msgstr[0] "Nessun file condivisibile trovato nella cartella: %s"
+msgstr[1] "Nessun file condivisibile trovato nella cartella: %s"
 
 #: src/SharedFileList.cpp
 #, fuzzy, c-format
@@ -8091,6 +8110,11 @@ msgstr ""
 #: src/TextClient.h
 msgid "aMule text client"
 msgstr "Client testuale aMule"
+
+#: src/ThreadTasks.cpp
+#, fuzzy, c-format
+msgid "Hashing downloaded file: %s"
+msgstr "Cancellazione file in corso: %s"
 
 #: src/ThreadTasks.cpp
 #, fuzzy, c-format

@@ -508,15 +508,20 @@ bool Probe(const wxString &ffprobePath,
 	// the worker itself or the shutdown join.
 	wxArrayString stdout_lines;
 	const int rc = RunBoundedFFProbe(ffprobePath, argv, timeoutMs, keepRunning, stdout_lines);
+	// Failures are info level too. Announcing the extraction and then reporting
+	// nothing when it fails is worse than the silence this feature replaced: a
+	// misconfigured or broken ffprobe would produce one confident "extracting"
+	// line per file and, in a release build where AddDebugLogLineN compiles to
+	// nothing, no error whatsoever. Whether the binary actually works is one of
+	// the questions these lines exist to answer.
 	if (rc == kKilled) {
-		AddDebugLogLineN(logMediaProbe,
-			CFormat(wxT("MediaProbe: ffprobe timed out / cancelled for %s")) %
-				file.GetPrintable());
+		AddLogLineN(CFormat(_("Media metadata: ffprobe timed out or was cancelled for %s")) %
+			    file.GetPrintable());
 		return false;
 	}
 	if (rc != 0) {
-		AddDebugLogLineN(logMediaProbe,
-			CFormat(wxT("MediaProbe: ffprobe failed (rc=%d) for %s")) % rc % file.GetPrintable());
+		AddLogLineN(CFormat(_("Media metadata: ffprobe failed (code %d) for %s")) % rc %
+			    file.GetPrintable());
 		return false;
 	}
 

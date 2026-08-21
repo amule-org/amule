@@ -135,13 +135,28 @@ void CHashingTask::Entry()
 	// The full path, not m_filename: the same basename can exist in several
 	// shared directories, and "which file is it chewing on" is the question
 	// this line exists to answer.
+	// m_owner is set only when the task belongs to a partfile -- completion
+	// hashing of a finished download, or a corrupt-part re-hash. Those are
+	// real disk work and worth a line, but the path being read is an internal
+	// temp name like Temp/003.part, which means nothing to a user and does not
+	// match anything they can see in the UI. Report the download's own name
+	// instead, and say which kind of work it is.
+	const bool ownedByPartfile = (m_owner != nullptr);
 	if ((m_toHash & EH_MD4) && (m_toHash & EH_AICH)) {
 		knownfile->GetAICHHashset()->FreeHashSet();
-		AddLogLineN(CFormat(_("Hashing file: %s")) % fullPath);
+		if (ownedByPartfile) {
+			AddLogLineN(CFormat(_("Hashing downloaded file: %s")) % m_owner->GetFileName());
+		} else {
+			AddLogLineN(CFormat(_("Hashing file: %s")) % fullPath);
+		}
 		AddDebugLogLineN(
 			logHasher, CFormat("Starting to create MD4 and AICH hash for file: %s") % m_filename);
 	} else if ((m_toHash & EH_MD4)) {
-		AddLogLineN(CFormat(_("Hashing file: %s")) % fullPath);
+		if (ownedByPartfile) {
+			AddLogLineN(CFormat(_("Hashing downloaded file: %s")) % m_owner->GetFileName());
+		} else {
+			AddLogLineN(CFormat(_("Hashing file: %s")) % fullPath);
+		}
 		AddDebugLogLineN(logHasher, CFormat("Starting to create MD4 hash for file: %s") % m_filename);
 	} else if ((m_toHash & EH_AICH)) {
 		knownfile->GetAICHHashset()->FreeHashSet();
