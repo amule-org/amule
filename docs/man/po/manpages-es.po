@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: es\n"
 "POT-Creation-Date: 2026-07-30 17:31+0200\n"
-"PO-Revision-Date: 2026-08-20 14:37+0000\n"
+"PO-Revision-Date: 2026-08-21 19:19+0000\n"
 "Last-Translator: Mad-Soft <mad.soft@gmail.com>\n"
 "Language-Team: Spanish <es_ES@li.org>\n"
 "Language: es\n"
@@ -82,7 +82,7 @@ msgstr "[B<-w> I<E<lt>pathE<gt>>]"
 #. type: Plain text
 #: amule.1.in amuled.1.in
 msgid "[B<-t> I<E<lt>numE<gt>>] [I<eD2k-link>|I<collection-file>]"
-msgstr "[B<-t> I<E<lt>numE<gt>>] [I<eD2k-link>|I<collection-file>]"
+msgstr "[B<-t> I<E<lt>numE<gt>>] [I<enlace-eD2k>|I<fichero-de-colección>]"
 
 #. type: SH
 #: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in amuleweb.1.in ed2k.1.in
@@ -180,14 +180,12 @@ msgstr "Imprime una breve descripción de uso."
 #: amule.1.in amuled.1.in
 #, no-wrap
 msgid "B<[ eD2k-link | collection-file ]>"
-msgstr "B<[ eD2k-link | collection-file ]>"
+msgstr "B<[ enlace-eD2k | fichero-de-colección ]>"
 
 #. type: Plain text
 #: amule.1.in amuled.1.in
-#, fuzzy
-#| msgid "Adds an eD2k-link or a magnet-link to the core."
 msgid "Adds an eD2k-link, or every link in an eMule collection file, to the core."
-msgstr "Añadir un enlace eD2k o un enlace magnet al núcleo."
+msgstr "Añade un enlace eD2k, o todos los enlaces en un archivo de colección de eMule, al núcleo."
 
 #. type: Plain text
 #: amule.1.in amulecmd.1.in amuled.1.in ed2k.1.in
@@ -217,7 +215,7 @@ msgstr "un enlace magnet."
 #. type: Plain text
 #: amule.1.in amuled.1.in
 msgid "Alternatively the argument can be the path to an .emulecollection file, or a file:// URL naming one, in which case every link it contains is added to the download queue.  This is what lets a file manager open a collection with aMule."
-msgstr ""
+msgstr "Alternativamente el argumento puede ser la ruta hacia un archivo .emulecollection, o hacia una URL del tipo file://URL, en cuyo caso cada enlace que contiene se añade a la cola de descargas.  Esto es lo que permite que un gestor de archivos abra una colección con aMule."
 
 #. type: SH
 #: amule.1.in amulecmd.1.in amuleweb.1.in
@@ -449,7 +447,7 @@ msgstr "Crear archivo de configuración basado en I<E<lt>pathE<gt>>, el cual deb
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in
 msgid "Do not encrypt the External Connection link.  Encryption is negotiated automatically whenever the remote aMule supports it, and is on by default for every destination, local or remote.  Turning it off leaves everything after the login readable, and modifiable, by anyone able to observe the connection."
-msgstr ""
+msgstr "No cifran el enlace de conexión externa.  El cifrado se negocia automáticamente siempre que el aMule remoto sea compatible con él, y está activado por defecto para todos los destinos, ya sean locales o remotos.  Desactivarlo deja todo lo posterior al inicio de sesión legible y modificable por cualquiera capaz de observar la conexión."
 
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in
@@ -715,7 +713,7 @@ msgstr "Mostrar el registro."
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Show servers list."
-msgstr "Mostrar lista de servidores."
+msgstr "Mostrar la lista de servidores."
 
 #. type: Plain text
 #: amulecmd.1.in
