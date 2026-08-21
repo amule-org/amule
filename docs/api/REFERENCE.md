@@ -1353,10 +1353,10 @@ Returns `202 Accepted`. amuled schedules the re-walk and answers immediately, so
 
 Repeated calls coalesce: requesting a reload while one is already pending, or while a walk is in progress, results in a single further walk rather than one per call.
 
-**Reading the result.** The walk brackets itself with two amule log lines, so read them back from [`GET /api/v0/logs/amule`](#get-apiv0logsamule) or the `log` SSE channel:
+**Reading the result.** The walk brackets itself with two amule log lines, so read them back from [`GET /api/v0/logs/amule`](#get-apiv0logsamule) or the `log` SSE channel. Both are localised and the second is pluralised, so a client matching on them should pin the daemon's locale:
 
 - `Reloading shared files...` when the walk starts
-- `Found 1234 known shared files, 7 unknown` when it ends
+- `Found 1234 known shared files` when it ends
 
 The resulting changes also arrive as `shared_added` / `shared_removed` events on the `shared` SSE channel, which is the better signal if you only care about the delta.
 

@@ -40,6 +40,8 @@
 #include <set>           // set-compare of shared roots (session refresh)
 #include <wx/progdlg.h>
 #include "SharedFilesReloadProgress.h" // ReloadSharedFilesWithProgress
+
+#include <memory> // std::unique_ptr (progress dialog lifetime)
 #include <wx/stdpaths.h>
 #include <wx/tooltip.h>
 #include <wx/utils.h> // wxGetUserHome
@@ -3043,7 +3045,12 @@ PrefsUnifiedDlg::SharedDirsCommitResult PrefsUnifiedDlg::CommitSharedDirsWithPro
 	// not we go straight into the file-list Reload.
 	const wxString initialBody = recursiveIntents.empty() ? _("Reloading shared files...")
 							      : _("Scanning for subdirectories...");
-	wxProgressDialog progress(_("Updating shared folders"),
+	// Held by pointer so it can be destroyed before the rollback below rather
+	// than at end of scope. wxPD_APP_MODAL keeps its disabler until
+	// destruction, so raising the rollback's dialog while this one is merely
+	// hidden would stack two app-modal dialogs -- the misbehaviour
+	// CatDialog.cpp:197-202 documents avoiding.
+	auto progress = std::make_unique<wxProgressDialog>(_("Updating shared folders"),
 		initialBody,
 		/*maximum=*/100,
 		this,
@@ -3072,7 +3079,7 @@ PrefsUnifiedDlg::SharedDirsCommitResult PrefsUnifiedDlg::CommitSharedDirsWithPro
 			auto onProgress = [&](wxThreadEvent &ev) {
 				const wxString status = CFormat(_("Scanned %u directories...")) %
 							static_cast<unsigned>(ev.GetInt());
-				if (!progress.Pulse(status)) {
+				if (!progress->Pulse(status)) {
 					task.Cancel(); // wxThread::Delete joins the worker
 					userCancelled = true;
 					done = true;
@@ -3096,7 +3103,7 @@ PrefsUnifiedDlg::SharedDirsCommitResult PrefsUnifiedDlg::CommitSharedDirsWithPro
 			if (userCancelled || task.WasCancelled()) {
 				// shareddir_list was never touched yet — nothing to
 				// roll back.
-				progress.Update(100);
+				progress->Update(100);
 				return SharedDirsCommitResult::CancelledByUser;
 			}
 			finalShares = task.GetExpandedShares();
@@ -3124,7 +3131,7 @@ PrefsUnifiedDlg::SharedDirsCommitResult PrefsUnifiedDlg::CommitSharedDirsWithPro
 	// directory list to re-walk against on abort. The wording is shared so the
 	// two cannot drift.
 	auto reloadYield = [&progress, &reloadAborted](size_t filesScanned) -> bool {
-		if (!progress.Pulse(SharedFilesScannedMessage(filesScanned))) {
+		if (!progress->Pulse(SharedFilesScannedMessage(filesScanned))) {
 			reloadAborted = true;
 			return false;
 		}
@@ -3132,22 +3139,37 @@ PrefsUnifiedDlg::SharedDirsCommitResult PrefsUnifiedDlg::CommitSharedDirsWithPro
 	};
 
 	const bool reloadOk = theApp->sharedfiles->Reload(reloadYield);
-	progress.Update(100);
+	progress->Update(100);
+	// Gone before the rollback runs, for the modality reason above and
+	// because wxProgressDialog latches its cancelled state: on the path that
+	// matters here the user has just cancelled, so anything reusing this
+	// dialog would get false from its first Pulse(), abort the rollback walk
+	// and leave m_Files_map half-populated.
+	progress.reset();
 
 	if (!reloadOk || reloadAborted) {
 		// Roll back: both the in-memory state and the on-disk
 		// files (shareddir.dat + shareddir-explicit.dat +
 		// shareddir-recursive.dat) have to be reverted. The
 		// in-memory shared-file map is partially populated against
-		// the new list, so rebuild it from the restored list
-		// (without a yield callback — the restored list is by
-		// construction the one the user was already running with
-		// before this OK click).
+		// the new list, so rebuild it from the restored list.
+		//
+		// Through the shared helper rather than a bare Reload(): this walk is
+		// the same size as the one just cancelled, and the user got here
+		// *because* that one was taking too long. A no-yield Reload freezes
+		// the window with the dialog already hidden -- no repaint, no
+		// progress, no explanation, on the one path where the user has
+		// already said they were tired of waiting.
+		//
+		// The helper is also the right shape, not merely the convenient one:
+		// it offers no cancel, which is what a rollback needs, since
+		// FindSharedFiles clears m_Files_map before walking and there is no
+		// earlier list left to fall back to.
 		theApp->glob_prefs->shareddir_list = originalShares;
 		theApp->glob_prefs->shareddir_explicit_list = originalExplicit;
 		theApp->glob_prefs->shareddir_recursive_list = originalRecursive;
 		theApp->glob_prefs->SaveSharedFolders();
-		theApp->sharedfiles->Reload(nullptr);
+		ReloadSharedFilesWithProgress(this);
 		return SharedDirsCommitResult::CancelledByUser;
 	}
 
