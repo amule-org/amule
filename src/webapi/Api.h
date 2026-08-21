@@ -132,7 +132,6 @@ private:
 	// source-reported filenames + counts. `key` = 32-char MD4 hash.
 	CHttpServer::Response HandleDownloadFilenames(const CHttpServer::Request &, const std::string &key);
 	// A4AF source list (GET) + swap actions (POST). `key` = 32-char MD4 hash.
-	CHttpServer::Response HandleDownloadA4af(const CHttpServer::Request &, const std::string &key);
 	CHttpServer::Response HandleDownloadA4afAction(const CHttpServer::Request &, const std::string &key);
 	// download lifecycle mutations.
 	CHttpServer::Response HandleDownloadAdd(const CHttpServer::Request &);
@@ -247,6 +246,10 @@ private:
 	CHttpServer::Response HandleSearchCommentsKadSearch(
 		const CHttpServer::Request &, const std::string &hash);
 	CHttpServer::Response HandleClients(const CHttpServer::Request &);
+	// Both per-file peer routes; `require_downloading` picks which collection
+	// the hash must belong to (downloads vs shared).
+	CHttpServer::Response HandleFileClients(
+		const CHttpServer::Request &, const std::string &key, bool require_downloading);
 	CHttpServer::Response HandleClientDetail(const CHttpServer::Request &, const std::string &ecid_str);
 	CHttpServer::Response HandleKnownClients(const CHttpServer::Request &);
 	// POST /clients/{ecid}/shared_files — browse a peer's shared file list

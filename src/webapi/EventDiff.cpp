@@ -225,7 +225,11 @@ std::string ToJson(const ClientSnapshot &c)
 	  << ",\"queue_waiting_position\":" << c.queue_waiting_position
 	  << ",\"remote_queue_rank\":" << c.remote_queue_rank << ",\"score\":" << c.score
 	  << ",\"obfuscation_status\":\"" << EscJson(c.obfuscation_status) << "\""
-	  << ",\"friend_slot\":" << (c.friend_slot ? "true" : "false") << "}";
+	  << ",\"friend_slot\":" << (c.friend_slot ? "true" : "false") << ",\"source_origin\":\""
+	  << EscJson(c.source_origin) << "\""
+	  << ",\"available_parts\":" << c.available_parts << ",\"mod_version\":\"" << EscJson(c.mod_version)
+	  << "\""
+	  << ",\"view_shared_disabled\":" << (c.view_shared_disabled ? "true" : "false") << "}";
 	return o.str();
 }
 
@@ -354,7 +358,9 @@ bool Equal(const ClientSnapshot &a, const ClientSnapshot &b)
 	       a.download_speed_bps == b.download_speed_bps &&
 	       a.queue_waiting_position == b.queue_waiting_position &&
 	       a.remote_queue_rank == b.remote_queue_rank && a.score == b.score &&
-	       a.obfuscation_status == b.obfuscation_status && a.friend_slot == b.friend_slot;
+	       a.obfuscation_status == b.obfuscation_status && a.friend_slot == b.friend_slot &&
+	       a.source_origin == b.source_origin && a.available_parts == b.available_parts &&
+	       a.mod_version == b.mod_version && a.view_shared_disabled == b.view_shared_disabled;
 }
 bool Equal(const StatusSnapshot &a, const StatusSnapshot &b)
 {

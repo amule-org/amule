@@ -703,6 +703,43 @@ const char *ClientIdentStateName(std::uint8_t code)
 	}
 }
 
+// Decode one per-part BitVector tag into a bool vector.
+//
+// Two shapes on the wire, and the empty one is the trap: the core sends a tag
+// with no payload when the peer holds EVERY part (ECSpecialCoreTags.cpp), so an
+// empty tag means "full", not "unknown". The caller learns that through
+// `out_all` because the true length is the file's part count, which is known
+// only where the row is rendered.
+//
+// The buffer holds ceil(bits/8) bytes, so decoding yields a multiple of 8 and
+// the tail beyond the file's part count is padding to be trimmed by the
+// renderer -- which also rejects a bitmap too short for the file rather than
+// padding it out.
+void DecodePartStatusTag(const CECTag *client_tag,
+	ec_tagname_t tag_name,
+	std::vector<bool> &out_bits,
+	bool &out_all,
+	bool &out_present)
+{
+	const CECTag *t = client_tag->GetTagByName(tag_name);
+	if (!t) {
+		return; // absent => unchanged
+	}
+	out_present = true;
+	if (!t->IsCustom() || t->GetTagDataLen() == 0) {
+		out_all = true;
+		out_bits.clear();
+		return;
+	}
+	out_all = false;
+	const auto *buf = static_cast<const std::uint8_t *>(t->GetTagData());
+	const std::size_t len = t->GetTagDataLen();
+	out_bits.assign(len * 8, false);
+	for (std::size_t i = 0; i < len * 8; ++i) {
+		out_bits[i] = (buf[i / 8] & (1u << (i & 7))) != 0;
+	}
+}
+
 // Format an IP from EC_TAG_CLIENT_USER_IP. The EC tag holds a
 // 32-bit host-order IPv4; we render it dotted-quad. Returns "" for
 // zero IPs (commonly the case for clients we've never confirmed).
@@ -933,6 +970,32 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c,
 	// value when absent.
 	if (const CECTag *t = c->GetTagByName(EC_TAG_PARTFILE_NAME)) {
 		cs.upload_file_name = std::string(t->GetStringData().utf8_str());
+	}
+	// Per-part bitmaps. Both tags carry a raw BitVector buffer, bit i at
+	// buffer[i / 8] & (1 << (i & 7)) -- LSB-first within each byte -- and an
+	// EMPTY tag is the core's shorthand for "has every part", not for "no
+	// data". Absent means unchanged, per the tagmap convention the rest of
+	// this decoder follows, so the has_ flags only ever go from false to true.
+	DecodePartStatusTag(
+		c, EC_TAG_CLIENT_PART_STATUS, cs.part_status, cs.part_status_all, cs.has_part_status);
+	DecodePartStatusTag(c,
+		EC_TAG_CLIENT_UPLOAD_PART_STATUS,
+		cs.upload_part_status,
+		cs.upload_part_status_all,
+		cs.has_upload_part_status);
+	{
+		std::uint32_t v = 0;
+		if (c->AssignIfExist(EC_TAG_CLIENT_NEXT_REQUESTED_PART, v)) {
+			cs.next_requested_part = static_cast<std::uint16_t>(v);
+			cs.has_next_requested_part = true;
+		}
+	}
+	{
+		std::uint32_t v = 0;
+		if (c->AssignIfExist(EC_TAG_CLIENT_LAST_DOWNLOADING_PART, v)) {
+			cs.last_downloading_part = static_cast<std::uint16_t>(v);
+			cs.has_last_downloading_part = true;
+		}
 	}
 	{
 		std::uint32_t v = 0;

@@ -1422,6 +1422,87 @@ static void PutOneClient(CECPacket &resp,
 	resp.AddTag(container);
 }
 
+// Per-part bitmaps (issue #984). Three wire conventions have to survive the
+// decoder: an EMPTY tag means "holds every part", the buffer is LSB-first
+// within each byte, and an absent tag means unchanged rather than zero.
+static void PutClientWithPartStatus(CECPacket &resp,
+	std::uint32_t ecid,
+	const std::uint8_t *buf /* nullptr = empty tag */,
+	std::size_t len)
+{
+	CECTag container(EC_TAG_CLIENT, static_cast<std::uint32_t>(0));
+	CECTag cli(EC_TAG_CLIENT, ecid);
+	if (buf) {
+		cli.AddTag(CECTag(EC_TAG_CLIENT_PART_STATUS, len, buf));
+	} else {
+		cli.AddTag(CECEmptyTag(EC_TAG_CLIENT_PART_STATUS));
+	}
+	container.AddTag(cli);
+	resp.AddTag(container);
+}
+
+TEST(Refresher, ClientEmptyPartStatusMeansFullSource)
+{
+	std::map<std::uint32_t, ClientSnapshot> cache;
+	std::map<std::uint32_t, std::string> no_files;
+	CECPacket resp(EC_OP_SHARED_FILES);
+	PutClientWithPartStatus(resp, 11, nullptr, 0);
+
+	ApplyGetUpdateToClients(&resp, cache, no_files);
+
+	ASSERT_TRUE(cache.find(11) != cache.end());
+	ASSERT_TRUE(cache[11].has_part_status);
+	// "all" rather than an empty bitmap: the true length is the file's part
+	// count, which only the renderer knows.
+	ASSERT_TRUE(cache[11].part_status_all);
+	ASSERT_TRUE(cache[11].part_status.empty());
+}
+
+TEST(Refresher, ClientPartStatusIsDecodedLsbFirst)
+{
+	std::map<std::uint32_t, ClientSnapshot> cache;
+	std::map<std::uint32_t, std::string> no_files;
+	CECPacket resp(EC_OP_SHARED_FILES);
+	// 0x05 = bits 0 and 2 set, LSB-first (BitVector::s_posMask).
+	const std::uint8_t buf[] = { 0x05 };
+	PutClientWithPartStatus(resp, 12, buf, sizeof(buf));
+
+	ApplyGetUpdateToClients(&resp, cache, no_files);
+
+	ASSERT_TRUE(cache.find(12) != cache.end());
+	ASSERT_TRUE(cache[12].has_part_status);
+	ASSERT_TRUE(!cache[12].part_status_all);
+	ASSERT_EQUALS(static_cast<size_t>(8), cache[12].part_status.size());
+	ASSERT_TRUE(cache[12].part_status[0]);
+	ASSERT_TRUE(!cache[12].part_status[1]);
+	ASSERT_TRUE(cache[12].part_status[2]);
+	ASSERT_TRUE(!cache[12].part_status[7]);
+}
+
+TEST(Refresher, ClientAbsentPartStatusLeavesCachedBitmap)
+{
+	// Tagmap convention: a tick that does not carry the tag says nothing
+	// about it, so a previously decoded bitmap must survive.
+	std::map<std::uint32_t, ClientSnapshot> cache;
+	{
+		ClientSnapshot c;
+		c.ecid = 13;
+		c.part_status = { true, false, true };
+		c.has_part_status = true;
+		cache.emplace(13, c);
+	}
+	std::map<std::uint32_t, std::string> no_files;
+	CECPacket resp(EC_OP_SHARED_FILES);
+	PutOneClient(resp, 13, static_cast<std::uint32_t>(SO_AMULE), nullptr);
+
+	ApplyGetUpdateToClients(&resp, cache, no_files);
+
+	ASSERT_TRUE(cache[13].has_part_status);
+	ASSERT_EQUALS(static_cast<size_t>(3), cache[13].part_status.size());
+	ASSERT_TRUE(cache[13].part_status[0]);
+	ASSERT_TRUE(cache[13].part_status[2]);
+}
+
 TEST(Refresher, ClientVersionUnknownYieldsLocaleIndependentSentinel)
 {
 	std::map<std::uint32_t, ClientSnapshot> cache;

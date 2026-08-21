@@ -197,19 +197,65 @@ if [ "$COUNT" -gt 0 ]; then
 	_assert_json_eq '.media | type' null \
 		'/downloads/{hash} omits media when unprobed'
 
-	# A4AF source list sub-resource (issue #421).
-	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH/a4af"
-	_assert_status 200 "GET /downloads/{hash}/a4af → 200"
-	_assert_json_eq '.a4af_auto | type' boolean \
-		'/downloads/{hash}/a4af carries a4af_auto'
-	_assert_json_eq '.sources | type' array \
-		'/downloads/{hash}/a4af.sources is an array'
+	# The A4AF read sub-resource (issue #421) was retired in favour of the
+	# per-file client rows below (issue #984), which carry the whole peer
+	# object per A4AF source rather than a bare ECID. `a4af_auto` lives on the
+	# download detail object, asserted above. The POST half is unaffected.
 
 	# Unknown action → 400 (mutation validation; admin token).
 	_curl -X POST -H "Authorization: Bearer $TOKEN" \
 		-H "Content-Type: application/json" \
 		-d '{"action":"bogus"}' "$HOST/api/v0/downloads/$HASH/a4af"
 	_assert_status 400 "POST /downloads/{hash}/a4af unknown action → 400"
+
+	# Per-file client rows (issue #984): the peers of one file, with their
+	# relation to it, replacing a client-side join against the global list.
+	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH/clients"
+	_assert_status 200 "GET /downloads/{hash}/clients → 200"
+	_assert_json_eq '.clients | type' array '/downloads/{hash}/clients returns a clients array'
+	for k in total offset limit; do
+		_assert_json_eq "has(\"$k\")" true "/downloads/{hash}/clients envelope has $k"
+	done
+
+	# Every row carries its relation to this file, and no row carries a parts
+	# bitmap unless it was asked for.
+	_assert_json_eq '[.clients[] | select(.role as $r | ($r == null) or ((["source","peer","both","none"] | index($r)) == null))] | length' \
+		0 "every row has a valid role"
+	_assert_json_eq '[.clients[] | select(.a4af == null)] | length' 0 "every row has an a4af flag"
+	_assert_json_eq '[.clients[] | select(has("parts"))] | length' 0 "no parts bitmap without include_parts"
+
+	# Opt-in bitmaps are exactly part_count long for a row that has one.
+	PARTCOUNT=$(curl -s -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH" | jq -r '.progress.parts | length')
+	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH/clients?include_parts=true"
+	_assert_status 200 "GET /downloads/{hash}/clients?include_parts=true → 200"
+	_assert_json_eq "[.clients[] | select(has(\"parts\")) | select((.parts | length) != $PARTCOUNT)] | length" \
+		0 "every parts bitmap is exactly part_count entries"
+
+	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH/clients?include_parts=maybe"
+	_assert_status 400 "include_parts must be true/false"
+	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH/clients?sort=nonsuch"
+	_assert_status 400 "unknown sort key on the per-file route → 400"
+	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH/clients?sort=name&order=desc"
+	_assert_status 200 "the /clients sort keys work on the per-file route"
+	_curl -X POST -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH/clients"
+	_assert_status 405 "POST /downloads/{hash}/clients → 405"
+	_curl -H "Authorization: Bearer $TOKEN" \
+		"$HOST/api/v0/downloads/ffffffffffffffffffffffffffffffff/clients"
+	_assert_status 404 "unknown hash on the per-file route → 404"
+
+	# The promoted client fields (issue #984) must be on the LIST row, not
+	# just the detail object — the desktop renders them as table columns.
+	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/clients?limit=1"
+	if [ "$(echo "$CURL_BODY" | jq -r '.clients | length')" != "0" ]; then
+		for k in source_origin available_parts mod_version view_shared_disabled; do
+			_assert_json_eq ".clients[0] | has(\"$k\")" true "/clients row carries $k"
+		done
+	fi
+
+	# The A4AF read route is retired in favour of the rows above; its POST
+	# stays, so the path must answer 405 rather than 404.
+	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH/a4af"
+	_assert_status 405 "GET /downloads/{hash}/a4af is retired → 405"
 
 	# Per-source swap (issue #983): `client_ecid` narrows swap_this to one
 	# source. Validation is asserted here rather than the swap itself — a

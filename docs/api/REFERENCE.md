@@ -31,7 +31,7 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 - [`GET /api/v0/downloads/{hash}/comments`](#get-apiv0downloadshashcomments) — per-source comments/ratings list (incl. retrieved Kad notes)
 - [`POST /api/v0/downloads/{hash}/comments`](#post-apiv0downloadshashcomments) — trigger an on-demand Kad notes lookup
 - [`GET /api/v0/downloads/{hash}/filenames`](#get-apiv0downloadshashfilenames) — source-reported filenames + counts
-- [`GET /api/v0/downloads/{hash}/a4af`](#get-apiv0downloadshasha4af) — A4AF source list + auto flag
+- [`GET /api/v0/downloads/{hash}/clients`](#get-apiv0downloadshashclients) — sources and A4AF rows of one partfile
 - [`POST /api/v0/downloads/{hash}/a4af`](#post-apiv0downloadshasha4af) — force A4AF source-swapping
 - [`POST /api/v0/downloads`](#post-apiv0downloads) — add ed2k link(s)
 - [`PATCH /api/v0/downloads`](#patch-apiv0downloads) — bulk pause / resume / priority / category
@@ -48,6 +48,7 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 **Shared files**
 - [`GET /api/v0/shared`](#get-apiv0shared) — list shared files
 - [`GET /api/v0/shared/{hash}`](#get-apiv0sharedhash) — detail view; every list field plus shared-detail fields
+- [`GET /api/v0/shared/{hash}/clients`](#get-apiv0sharedhashclients) — peers of one shared file
 - [`POST /api/v0/shared/reload`](#post-apiv0sharedreload) — re-walk shared directories
 - [`GET /api/v0/shared/directories`](#get-apiv0shareddirectories) — the configured share roots
 - [`PUT /api/v0/shared/directories`](#put-apiv0shareddirectories) — replace the configured share roots
@@ -197,7 +198,7 @@ Each endpoint documents its own response shape under the endpoint section. List 
 
 ### List pagination and sorting
 
-The list endpoints — `GET /downloads`, `/clients`, `/shared`, `/servers`, `/friends`, and `/search/results` — accept optional query parameters for server-side windowing and ordering, and always return pagination metadata beside the array:
+The list endpoints — `GET /downloads`, `/clients`, `/shared`, `/servers`, `/friends`, the two per-file client routes, and `/search/results` — accept optional query parameters for server-side windowing and ordering, and always return pagination metadata beside the array:
 
 | Param    | Default          | Notes |
 |----------|------------------|-------|
@@ -224,6 +225,7 @@ Omitting all four parameters preserves the previous response exactly, plus the a
 |-----------------------|---------------|
 | `GET /downloads`      | `name`, `size`, `progress`, `speed`, `status` |
 | `GET /clients`        | `name`, `software` |
+| `GET /downloads/{hash}/clients`<br>`GET /shared/{hash}/clients` | same keys as `/clients` |
 | `GET /known_clients`  | `name`, `software`, `first_seen`, `last_seen`, `sessions`, `total_uploaded`, `total_downloaded` |
 | `GET /shared`         | `name`, `size` |
 | `GET /servers`        | `name`, `users`, `ping`, `files` |
@@ -789,28 +791,40 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 
 **Errors:** `404 not_found` (no download with that hash), `503 ec_unavailable`.
 
-#### `GET /api/v0/downloads/{hash}/a4af`
+#### `GET /api/v0/downloads/{hash}/clients` / `GET /api/v0/shared/{hash}/clients`
 
 **Auth:** `GUEST`
 
-The download's **A4AF** (asked-for-another-file) sources — peers that hold this file but are currently serving another. Downloads-only.
+The peers of one file: sources serving it to us, peers pulling it from us, and — on the downloads side — A4AF sources parked on another file. Replaces the client-side join of the global `/clients` list against `download_file_hash` / `upload_file_hash`, which could never produce the A4AF rows.
+
+Each entry is the [`/clients`](#get-apiv0clients) list object plus three keys:
+
+| Key | Meaning |
+|---|---|
+| `role` | this peer's live relation to **this** file: `"source"` (serves it to us, including queued), `"peer"` (pulls it from us), `"both"`, `"none"` |
+| `a4af` | `true` for a source parked on another file — the desktop's A4AF row |
+| `parts` | the peer's per-part bitmap, **only** when `?include_parts=true` |
+
+`role` and `a4af` are orthogonal: a pure A4AF row is `role: "none"`, `a4af: true`, but a peer can be parked on another file *and* be pulling this one from us (`role: "peer"`, `a4af: true`).
+
+`parts` is opt-in because it is one boolean per chunk per peer — a multi-TiB file is 100k+ entries each. It is exactly `part_count` entries, and it describes the file this row is about: the download bitmap for a `source`, the upload bitmap for a `peer`. A peer the core reports as holding every part comes back all-`true`. A pure A4AF row has no bitmap for this file and omits the key. **`parts` never appears in SSE payloads.**
+
+The file's own five-state part view is on [`GET /downloads/{hash}`](#get-apiv0downloadshash); combine it with this bitmap to render the desktop's per-source bar.
+
+Both routes accept `limit` / `offset` / `sort` / `order` exactly as `/clients` does. A partfile with at least one completed chunk is both a download and a shared file, and then **both routes return the same body** — they differ only in which collection the hash must belong to, which is what the `404` checks.
 
 ```sh
-curl -s -H "Authorization: Bearer $TOKEN" \
-  "http://$HOST/api/v0/downloads/8b54a3c2…/a4af"
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://$HOST/api/v0/downloads/8b54a3c2…/clients?include_parts=true"
 ```
 
-```json
-{ "a4af_auto": false, "sources": [ 1234, 5678 ] }
-```
-
-`sources` are client ECIDs, joinable against [`GET /clients`](#get-apiv0clients)'s `client_ecid`. The scalar `sources.a4af` count on the download object is unchanged.
-
-**Errors:** `404 not_found` (no download with that hash), `503 ec_unavailable`.
+**Errors:** `404 not_found` (no download / no shared file with that hash), `400 bad_request` (bad list params, or `include_parts` other than `true` / `false`), `503 ec_unavailable`.
 
 #### `POST /api/v0/downloads/{hash}/a4af`
 
 **Auth:** `ADMIN`
+
+> The `GET` on this path was retired: A4AF sources are rows of [`GET /downloads/{hash}/clients`](#get-apiv0downloadshashclients) now, carrying the whole peer object rather than a bare ECID, and `a4af_auto` is already on the download detail object. `GET` answers `405`.
 
 Force A4AF source-swapping for this download. Downloads-only.
 
