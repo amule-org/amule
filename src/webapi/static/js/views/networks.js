@@ -409,6 +409,24 @@ function stat(label, value) {
 }
 function yesno(b) { return html`<span class=${"status-chip " + (b ? "warn" : "ok")}>${b ? t("networks_kad_yes") : t("networks_kad_no")}</span>`; }
 
+// Mirrors amuleGUI's "Firewalled state:" row (CServerWnd::UpdateKadInfo): with a
+// buddy, its address; without one, why none is needed. The daemon only reports
+// buddy state while Kad is connected -- /kad then falls back to `no_buddy`, the
+// same reading the desktop takes, but the firewalled flags it would be composed
+// with are stale, so the row goes blank instead (the desktop hides it outright).
+function buddyText(kad_state, buddy, firewalled_tcp, firewalled_udp) {
+  if (kad_state !== "connected") return "—";
+  switch (buddy.status) {
+    case "connected": return t("networks_kad_buddy_at", { addr: buddy.ip + ":" + buddy.port });
+    case "connecting": return t("networks_kad_buddy_connecting");
+    case "no_buddy":
+      if (!firewalled_tcp) return t("networks_kad_buddy_not_needed_tcp");
+      if (!firewalled_udp) return t("networks_kad_buddy_not_needed_udp");
+      return t("networks_kad_buddy_none");
+    default: return "—";
+  }
+}
+
 // Mirrors amuleGUI's ServerWnd UpdateED2KInfo, minus your own IP:Port and ED2K
 // ID — the amuleapi backend does not expose those.
 function Ed2kInfoPanel() {
@@ -466,7 +484,7 @@ function KadInfoPanel() {
           ${stat(t("networks_kad_users"), formatInt(net.users))}
           ${stat(t("networks_kad_files"), formatInt(net.files))}
           ${stat(t("networks_kad_contacts_nodes"), formatInt(net.nodes))}
-          ${stat(t("networks_kad_buddy"), buddy.status || "—")}
+          ${stat(t("networks_kad_buddy"), buddyText(kad.state, buddy, kad.firewalled, d.firewalled_udp))}
           ${stat(t("networks_kad_indexed_sources"), formatInt(idx.sources))}
           ${stat(t("networks_kad_indexed_keywords"), formatInt(idx.keywords))}
           ${stat(t("networks_kad_indexed_notes"), formatInt(idx.notes))}
