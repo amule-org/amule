@@ -338,6 +338,43 @@ _curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/servers/not-a-number"
 _assert_status 400 "DELETE /servers/not-a-number → 400"
 
+# --- 8. ip:port selector: malformed is 400, unknown is 404. --------
+# The routes also accept "<ip>:<port>" in place of an ECID. Parsing and
+# lookup are separate outcomes: a selector that cannot be parsed is the
+# caller's mistake (400), one that parses but names no server we hold is
+# simply absent (404). They used to collapse onto the same 404 because the
+# resolver signalled every failure by returning ECID 0.
+# Every case carries a colon on purpose: the dispatcher only routes to the
+# by-address handler when the capture contains one, so a colon-less value
+# would be read as an ECID and 400 for an unrelated reason.
+for bad in "not-an-ip:4242" "1.2.3.4:" ":4242" "1.2.3.4:0" "1.2.3.4:70000" \
+	"1.2.3.4:abc" "999.1.1.1:4242"; do
+	_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
+		"$HOST/api/v0/servers/$bad"
+	_assert_status 400 "DELETE /servers/$bad (malformed selector) → 400"
+done
+
+# Well-formed but absent: TEST-NET-1 (RFC 5737), never a real server.
+_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
+	"$HOST/api/v0/servers/192.0.2.1:4242"
+_assert_status 404 "DELETE /servers/192.0.2.1:4242 (unknown server) → 404"
+_assert_json_eq '.error.code' not_found \
+	'unknown ip:port carries error.code=not_found'
+
+# Same split on the other two routes that take the selector.
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	"$HOST/api/v0/servers/not-an-ip:4242/connect"
+_assert_status 400 "POST /servers/{malformed}/connect → 400"
+
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	"$HOST/api/v0/servers/192.0.2.1:4242/connect"
+_assert_status 404 "POST /servers/{unknown ip:port}/connect → 404"
+
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" -d '{"static":true}' \
+	"$HOST/api/v0/servers/not-an-ip:4242"
+_assert_status 400 "PATCH /servers/{malformed} → 400"
+
 # --- Summary. -----------------------------------------------------
 echo
 if [ "$FAIL_COUNT" -eq 0 ]; then

@@ -748,7 +748,7 @@ A per-source `rating` of `-1` means the source left a comment but no rating. Rat
 
 #### `POST /api/v0/downloads/{hash}/comments`
 
-**Auth:** `USER`
+**Auth:** `ADMIN`
 
 Trigger an on-demand **Kad notes** lookup for this download (the desktop "Get from Kad" button). aMule asks the Kad network for community ratings/comments keyed on the file hash. The lookup is **asynchronous** on the daemon (it can take up to ~45 s); this call returns immediately with `202 Accepted`, and the retrieved notes then show up in the `GET` list above. Poll the `GET` endpoint to observe them arrive.
 
@@ -761,7 +761,7 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
 { "status": "kad_search_started" }
 ```
 
-**Errors:** `404 not_found` (no download with that hash), `503 ec_unavailable`, `400 amuled_rejected` (daemon refused, e.g. Kad not connected).
+**Errors:** `403 forbidden` (guest token — the lookup makes the daemon do network work, so it is `ADMIN`-only), `404 not_found` (no download with that hash), `503 ec_unavailable`, `400 amuled_rejected` (daemon refused, e.g. Kad not connected).
 
 #### `GET /api/v0/downloads/{hash}/filenames`
 
@@ -1590,7 +1590,7 @@ Removes the server from amuled's list.
 
 **Response:** `200 OK` → `{ "ok": true, "ecid": 1 }`.
 
-**Errors:** `400 amuled_rejected`, `404 not_found`, `503 ec_unavailable`.
+**Errors:** `400 bad_request` (`{ecid}` is not a non-negative integer, or an `ip:port` selector that is not a dotted quad with a port in 1–65535), `400 amuled_rejected`, `404 not_found` (well-formed but no such server), `503 ec_unavailable`.
 
 #### `PATCH /api/v0/servers/{ecid}` / `PATCH /api/v0/servers/{ip}:{port}`
 
@@ -2389,13 +2389,13 @@ Community ratings/comments for a single search result — the Kad notes retrieve
 
 #### `POST /api/v0/search/results/{hash}/comments`
 
-**Auth:** `GUEST`
+**Auth:** `ADMIN`
 
 Trigger an on-demand Kad notes lookup for a search result you have not downloaded. This is the search-side equivalent of [`POST /downloads/{hash}/comments`](#post-apiv0downloadshashcomments): the lookup is asynchronous on amuled (up to ~45 s), and retrieved ratings/comments then appear via the `GET` above and on the result's `comments` in the search list.
 
 **Response:** `202 Accepted` → `{ "status": "kad_search_started" }`.
 
-**Errors:** `400 bad_request` (malformed hash), `404 not_found` (no current search result with that hash), `400 amuled_rejected` (Kad down, or a search is already using this hash — retry shortly), `503 ec_unavailable`.
+**Errors:** `400 bad_request` (malformed hash), `403 forbidden` (guest token — the lookup makes the daemon do network work, so it is `ADMIN`-only), `404 not_found` (no current search result with that hash), `400 amuled_rejected` (Kad down, or a search is already using this hash — retry shortly), `503 ec_unavailable`.
 
 ---
 

@@ -135,6 +135,16 @@ if [ "$HAVE_GUEST" = "1" ]; then
 		-H "Content-Type: application/json" \
 		-d '{"status":"paused"}' "$HOST/api/v0/downloads/$TEST_HASH"
 	_assert_status 403 "PATCH /downloads/{hash} (guest token) → 403"
+
+	# The comments POST drives an unbounded Kad NOTES lookup on the daemon
+	# (EC_OP_SHARED_FILE_SEARCH_KAD_NOTES), so it is a mutation for gating
+	# purposes even though it writes nothing locally. The matching GET is a
+	# plain read and stays open to guests.
+	_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" \
+		"$HOST/api/v0/downloads/$TEST_HASH/comments"
+	_assert_status 403 "POST /downloads/{hash}/comments (guest token) → 403"
+	_assert_json_eq '.error.code' forbidden \
+		'POST downloads comments guest carries error.code=forbidden'
 else
 	echo "    info: no guest password set on daemon; admin-gate test skipped"
 fi

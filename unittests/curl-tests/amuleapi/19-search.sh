@@ -472,6 +472,19 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/search/results/not-32-hex-chars/comments"
 _assert_status 400 "POST search comments (bad hash format) → 400"
 
+# Admin gate. The POST drives an unbounded Kad NOTES lookup on the daemon
+# (EC_OP_SHARED_FILE_SEARCH_KAD_NOTES), so a guest session must not reach
+# it; the GET is a plain read and stays open to guests.
+if [ "$HAVE_GUEST" = "1" ]; then
+	_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" \
+		"$HOST/api/v0/search/results/$BOGUS/comments"
+	_assert_status 403 "POST /search/results/{hash}/comments (guest token) → 403"
+	_assert_json_eq '.error.code' forbidden \
+		'POST search comments guest carries error.code=forbidden'
+else
+	echo "    info: no guest password set on daemon; admin-gate test skipped"
+fi
+
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/search/results/$BOGUS/comments"
 _assert_status 404 "POST search comments (well-formed unknown hash) → 404"
