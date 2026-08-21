@@ -121,20 +121,49 @@ else
 fi
 
 # --- 4. /servers/<ip>:<port>/connect + DELETE alias. -------------
-# 404 path is always testable.
+# 404 path is always testable. 192.0.2.x is TEST-NET-1 (RFC 5737),
+# reserved for documentation and guaranteed never to be a real server,
+# so this reaches the "well-formed but no such server" branch rather
+# than being turned away earlier as bad input.
+UNKNOWN_SRV=192.0.2.1:1
 RC=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${H_AUTH[@]}" \
-	"$HOST/api/v0/servers/0.0.0.0:1/connect")
+	"$HOST/api/v0/servers/$UNKNOWN_SRV/connect")
 if [ "$RC" = "404" ]; then
-	_pass "POST /servers/<bogus-ip:port>/connect → 404"
+	_pass "POST /servers/<unknown-ip:port>/connect → 404"
 else
 	_fail "address alias 404" "expected 404, got $RC"
 fi
 RC=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "${H_AUTH[@]}" \
-	"$HOST/api/v0/servers/0.0.0.0:1")
+	"$HOST/api/v0/servers/$UNKNOWN_SRV")
 if [ "$RC" = "404" ]; then
-	_pass "DELETE /servers/<bogus-ip:port> → 404"
+	_pass "DELETE /servers/<unknown-ip:port> → 404"
 else
 	_fail "address alias DELETE 404" "expected 404, got $RC"
+fi
+# 0.0.0.0 is well-formed but is not a server address, and it must never
+# reach the lookup: a server row whose IP the daemon did not ship keeps
+# ip == 0, so a 0.0.0.0 selector could otherwise resolve to whichever
+# such row shared the port. Rejected as bad input, and the message says
+# so rather than claiming a malformed quad.
+BODY=$(curl -s -X POST "${H_AUTH[@]}" "$HOST/api/v0/servers/0.0.0.0:4242/connect")
+RC=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${H_AUTH[@]}" \
+	"$HOST/api/v0/servers/0.0.0.0:4242/connect")
+if [ "$RC" = "400" ] && printf '%s' "$BODY" | jq -e '.error.code == "bad_request"' >/dev/null 2>&1; then
+	_pass "POST /servers/0.0.0.0:<port>/connect → 400 (not a server address)"
+else
+	_fail "0.0.0.0 selector rejected" "expected 400 bad_request, got $RC: $BODY"
+fi
+if printf '%s' "$BODY" | jq -e '.error.message | test("malformed") | not' >/dev/null 2>&1; then
+	_pass "0.0.0.0 rejection does not claim a malformed quad"
+else
+	_fail "0.0.0.0 rejection message" "still reports a syntax error: $BODY"
+fi
+# A genuinely malformed selector still reports malformed.
+BODY=$(curl -s -X POST "${H_AUTH[@]}" "$HOST/api/v0/servers/not-an-ip:4242/connect")
+if printf '%s' "$BODY" | jq -e '.error.message | test("malformed")' >/dev/null 2>&1; then
+	_pass "a malformed selector still reports malformed"
+else
+	_fail "malformed selector message" "expected a malformed-selector error, got: $BODY"
 fi
 # Positive path: only test if there's actually a server in the cache.
 # The address field is the canonical "<ip-or-hostname>:<port>" string
