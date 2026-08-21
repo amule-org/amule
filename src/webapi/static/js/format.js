@@ -45,6 +45,23 @@ export function twin(o, a, b, fmt) {
   return fmt((o && o[a]) || 0) + " / " + fmt((o && o[b]) || 0);
 }
 
+// Free disk space for the two directories /status reports, as one string. Temp
+// and Incoming are the same filesystem in the default layout, so a single bare
+// figure is the common case; when they differ each is labelled. null (the daemon
+// has no figure) is left out rather than shown as 0, which would read as a full
+// disk -- with both null the caller gets "" and drops the entry.
+export function formatFreeSpace(temp, incoming) {
+  if (temp == null && incoming == null) return "";
+  const T = t("common_free_space_temp"), I = t("common_free_space_incoming");
+  if (temp == null) return I + " " + formatBytes(incoming);
+  if (incoming == null) return T + " " + formatBytes(temp);
+  // Compared as rendered, not as bytes: amuled samples the two directories
+  // separately, so one filesystem still drifts a block between publishes and an
+  // exact == would flip between one and two figures every few seconds.
+  const a = formatBytes(temp), b = formatBytes(incoming);
+  return a === b ? a : T + " " + a + " / " + I + " " + b;
+}
+
 // Unix seconds -> locale date+time; 0 means unknown.
 export const formatTimestamp = (s) => s ? new Date(s * 1000).toLocaleString() : "—";
 

@@ -427,12 +427,34 @@ function buddyText(kad_state, buddy, firewalled_tcp, firewalled_udp) {
   }
 }
 
-// Mirrors amuleGUI's ServerWnd UpdateED2KInfo, minus your own IP:Port and ED2K
-// ID — the amuleapi backend does not expose those.
+// Mirrors amuleGUI's ServerWnd UpdateED2KInfo (src/ServerWnd.cpp:249-289). The
+// desktop drops every row but the status one while disconnected; this grid keeps
+// them and shows "—", like KadInfoPanel below. Every value but the port lives in
+// status.ed2k, so the panel stays live off the status event with no fetch of its
+// own; the local TCP port is a preference, hence the one-off read below.
 function Ed2kInfoPanel() {
   const status = useStore("status");
   const ed2k = (status && status.ed2k) || {};
   const connected = ed2k.state === "connected";
+  const [port, setPort] = useState(0);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const p = await api.get("preferences");
+        setPort((p && p.connection && p.connection.tcp_port) || 0);
+      } catch (_) {
+        setPort(0); // The port only decorates one row; never costs the panel.
+      }
+    })();
+  }, []);
+
+  // A LowID encodes no address (public_ip is empty there); the desktop prints
+  // the literal "Server" instead.
+  const ipPort = !connected ? "—"
+    : !ed2k.high_id ? t("networks_ed2k_ip_port_server")
+    : !ed2k.public_ip ? "—"
+    : ed2k.public_ip + (port ? ":" + port : "");
 
   return html`
     <div class="card">
@@ -441,8 +463,12 @@ function Ed2kInfoPanel() {
           <span class=${"status-chip " + (connected ? "ok" : "off")}>
             ${connected ? t("networks_ed2k_connected") : t("networks_ed2k_not_connected")}
           </span>`)}
+        ${stat(t("networks_ed2k_ip_port"), ipPort)}
+        ${/* An identifier, not a quantity -- no thousands separators. */
+          stat(t("networks_ed2k_id"), connected ? String(ed2k.id || 0) : "—")}
         ${stat(t("networks_ed2k_connection_type"),
           connected ? (ed2k.high_id ? t("networks_ed2k_high_id") : t("networks_ed2k_low_id")) : "—")}
+        ${stat(t("networks_ed2k_connected_since"), formatTimestamp(ed2k.connected_since))}
       </div>
     </div>`;
 }
