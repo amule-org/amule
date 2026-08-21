@@ -599,6 +599,11 @@ CEC_Friend_Tag::CEC_Friend_Tag(const CFriend *Friend, CValueMap *valuemap)
 	AddTag(EC_TAG_FRIEND_PORT, Friend->GetPort(), valuemap);
 	const CClientRef &linkedClient = Friend->GetLinkedClient();
 	AddTag(EC_TAG_FRIEND_CLIENT, linkedClient.IsLinked() ? linkedClient.ECID() : 0, valuemap);
+	// The slot is settable over EC (EC_TAG_FRIEND_FRIENDSLOT on the request
+	// side) but was never reported back, so every EC client read it as false
+	// -- amulegui's "Establish Friend Slot" check mark could not follow the
+	// state it had just set. Same tag id in both directions.
+	AddTag(EC_TAG_FRIEND_FRIENDSLOT, Friend->HasFriendSlot(), valuemap);
 }
 
 // File_checked_for_headers

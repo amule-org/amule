@@ -747,6 +747,7 @@ public:
 	bool IP(uint32 &target) const { return AssignIfExist(EC_TAG_FRIEND_IP, target); }
 	bool Port(uint16 &target) const { return AssignIfExist(EC_TAG_FRIEND_PORT, target); }
 	bool Client(uint32 &target) const { return AssignIfExist(EC_TAG_FRIEND_CLIENT, target); }
+	bool FriendSlot(bool &target) const { return AssignIfExist(EC_TAG_FRIEND_FRIENDSLOT, target); }
 };
 
 #endif /* ECSPECIALTAGS_H */

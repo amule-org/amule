@@ -90,10 +90,10 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 	// (identity short-circuit at EC_DETAIL_UPDATE only) are documented
 	// next to ApplyGetUpdateToDownloads in Refresher.h.
 	//
-	// The response also carries EC_TAG_CLIENT (filtered server-side
-	// by `TransmitOnlyUploadingClients`) and EC_TAG_FRIEND containers,
-	// both of which we ignore — /uploads stays bound to the upload-
-	// queue semantic via EC_OP_GET_ULOAD_QUEUE below.
+	// The response also carries EC_TAG_CLIENT (filtered server-side by
+	// `TransmitOnlyUploadingClients`) and EC_TAG_FRIEND containers. Both are
+	// consumed below, into /clients and /friends respectively — /uploads
+	// stays bound to the upload-queue semantic via EC_OP_GET_ULOAD_QUEUE.
 	//
 	// Three Mutate calls under three separate lock acquisitions —
 	// snapshot_at is set after the whole tick succeeds; per-substruct
@@ -138,6 +138,10 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 
 		state.MutateServers([&](std::map<std::uint32_t, ServerSnapshot> &cache) {
 			ApplyGetUpdateToServers(resp, cache);
+		});
+
+		state.MutateFriends([&](std::map<std::uint32_t, FriendSnapshot> &cache) {
+			ApplyGetUpdateToFriends(resp, cache);
 		});
 
 		// /clients — every alive peer in theApp->clientlist (download

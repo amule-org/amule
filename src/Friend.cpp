@@ -172,7 +172,7 @@ void CFriend::WriteToFile(CFileDataIO *file)
 	}
 }
 
-bool CFriend::HasFriendSlot()
+bool CFriend::HasFriendSlot() const
 {
 	return m_HasFriendSlot;
 }

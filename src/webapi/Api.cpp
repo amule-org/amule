@@ -869,6 +869,45 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		return ErrorResponse(405, "method_not_allowed", "only GET / HEAD / POST on /servers");
 	}
 
+	if (path == "/api/v0/friends") {
+		if (req.method == "GET" || req.method == "HEAD") {
+			return HandleFriends(req);
+		}
+		if (req.method == "POST") {
+			return HandleFriendAdd(req);
+		}
+		return ErrorResponse(405, "method_not_allowed", "only GET / HEAD / POST on /friends");
+	}
+
+	// One friend by ECID: remove, set the friend slot, or browse their shared
+	// files. The browse form is checked first, same ordering rationale as the
+	// server routes above.
+	{
+		static const auto friend_browse =
+			web_api_path::ParsePattern("/api/v0/friends/{ecid}/shared_files");
+		static const auto friend_one = web_api_path::ParsePattern("/api/v0/friends/{ecid}");
+		const auto path_segs = web_api_path::SplitPath(path);
+		std::map<std::string, std::string> caps;
+		if (web_api_path::Match(friend_browse, path_segs, caps)) {
+			if (req.method != "POST") {
+				return ErrorResponse(405,
+					"method_not_allowed",
+					"only POST on /friends/{ecid}/shared_files");
+			}
+			return HandleFriendBrowse(req, caps["ecid"]);
+		}
+		if (web_api_path::Match(friend_one, path_segs, caps)) {
+			if (req.method == "DELETE") {
+				return HandleFriendRemove(req, caps["ecid"]);
+			}
+			if (req.method == "PATCH") {
+				return HandleFriendPatch(req, caps["ecid"]);
+			}
+			return ErrorResponse(
+				405, "method_not_allowed", "only DELETE / PATCH on /friends/{ecid}");
+		}
+	}
+
 	if (path == "/api/v0/servers/update") {
 		if (req.method != "POST") {
 			return ErrorResponse(405, "method_not_allowed", "only POST on /servers/update");
@@ -4249,6 +4288,20 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsClearCompleted(const CHttpS
 namespace
 {
 
+// Dotted-quad IPv4 -> host-order uint32, the encoding EC_TAG_*_IP uses.
+// Three call sites parsed this inline with the same sscanf; the friends add
+// path made it four.
+bool ParseIpv4Dotted(const std::string &text, std::uint32_t &out_he)
+{
+	unsigned a = 0, b = 0, c = 0, d = 0;
+	if (std::sscanf(text.c_str(), "%u.%u.%u.%u", &a, &b, &c, &d) != 4)
+		return false;
+	if (a > 255 || b > 255 || c > 255 || d > 255)
+		return false;
+	out_he = (a) | (b << 8) | (c << 16) | (d << 24);
+	return true;
+}
+
 void WriteServerObject(CJsonWriter &w, const webapi::ServerSnapshot &s)
 {
 	w.BeginObject();
@@ -4306,6 +4359,33 @@ void WriteCategoryObject(CJsonWriter &w, const webapi::CategorySnapshot &c)
 }
 
 } // namespace
+
+void WriteFriendObject(CJsonWriter &w, const webapi::FriendSnapshot &f)
+{
+	w.BeginObject();
+	// The URL key for /friends/{ecid} and its sub-routes. Like every ECID it
+	// does not survive an amuled restart -- `user_hash` is the durable
+	// reference, when the friend has one.
+	w.Key("friend_ecid");
+	w.ValueInt(static_cast<int64_t>(f.ecid));
+	w.Key("name");
+	w.ValueString(wxString::FromUTF8(f.name.c_str()));
+	w.Key("user_hash");
+	w.ValueString(wxString::FromUTF8(f.user_hash.c_str()));
+	w.Key("ip");
+	w.ValueString(wxString::FromUTF8(f.ip.c_str()));
+	w.Key("port");
+	w.ValueInt(static_cast<int64_t>(f.port));
+	// The live peer this friend is linked to, joinable against /clients. 0
+	// when the friend is not connected, which is what `online` reports.
+	w.Key("client_ecid");
+	w.ValueInt(static_cast<int64_t>(f.client_ecid));
+	w.Key("online");
+	w.ValueBool(f.client_ecid != 0);
+	w.Key("friend_slot");
+	w.ValueBool(f.friend_slot);
+	w.EndObject();
+}
 
 CHttpServer::Response CApiDispatcher::HandleServers(const CHttpServer::Request &req)
 {
@@ -4388,6 +4468,21 @@ bool FindClientByEcid(const webapi::CState &state, std::uint32_t ecid, webapi::C
 	for (const auto &c : all) {
 		if (c.ecid == ecid) {
 			out = c;
+			return true;
+		}
+	}
+	return false;
+}
+
+// Same shape again for friends. The EC remove/slot ops are idempotent about
+// unknown ids, but a REST caller who mistypes one should get a 404 rather than
+// a cheerful 200, so every /friends/{ecid} handler looks the id up first.
+bool FindFriendByEcid(const webapi::CState &state, std::uint32_t ecid, webapi::FriendSnapshot &out)
+{
+	const auto all = state.Friends();
+	for (const auto &f : all) {
+		if (f.ecid == ecid) {
+			out = f;
 			return true;
 		}
 	}
@@ -4553,6 +4648,300 @@ CHttpServer::Response CApiDispatcher::HandleClientDetail(
 	r.content_type = "application/json";
 	CJsonWriter w;
 	WriteClientDetailObject(w, cli);
+	FinalizeJsonBody(w, r);
+	return r;
+}
+
+CHttpServer::Response CApiDispatcher::HandleFriends(const CHttpServer::Request &req)
+{
+	auto a = Authenticate(req);
+	if (!a.ok)
+		return a.rejection;
+
+	ListParams params;
+	if (auto err = ParseListParams(QueryOf(req), params))
+		return *err;
+	static const ListComparators<webapi::FriendSnapshot> kComps = {
+		{ "name",
+			[](const webapi::FriendSnapshot &a, const webapi::FriendSnapshot &b) {
+				return a.name < b.name;
+			} },
+		{ "online",
+			[](const webapi::FriendSnapshot &a, const webapi::FriendSnapshot &b) {
+				return (a.client_ecid != 0) < (b.client_ecid != 0);
+			} },
+	};
+	// Served from the refresher snapshot: the friends list rides along with
+	// every GET_UPDATE, so this costs no EC roundtrip of its own.
+	return ListResponse(m_state, "friends", m_state.Friends(), WriteFriendObject, params, kComps);
+}
+
+CHttpServer::Response CApiDispatcher::HandleFriendAdd(const CHttpServer::Request &req)
+{
+	auto a = Authenticate(req);
+	if (!a.ok)
+		return a.rejection;
+	if (auto rej = RequireAdmin(a))
+		return *rej;
+
+	picojson::value root;
+	std::string parse_err;
+	if (!ParseJsonObjectBody(req.body, root, parse_err)) {
+		return ErrorResponse(400, "bad_request", parse_err.c_str());
+	}
+	const auto &obj = root.get<picojson::object>();
+
+	const bool has_client = obj.find("client_ecid") != obj.end();
+	const bool has_manual = obj.find("ip") != obj.end() || obj.find("port") != obj.end() ||
+				obj.find("user_hash") != obj.end();
+	if (has_client && has_manual) {
+		return ErrorResponse(400,
+			"bad_request",
+			"`client_ecid` and the ip/port/user_hash form are mutually exclusive");
+	}
+
+	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_FRIEND));
+	CECEmptyTag addtag(EC_TAG_FRIEND_ADD);
+
+	if (has_client) {
+		// Promote a connected peer, the desktop's "Add to Friends" item.
+		const auto &v = obj.at("client_ecid");
+		if (!v.is<double>() || v.get<double>() < 0) {
+			return ErrorResponse(
+				400, "bad_request", "`client_ecid` must be a non-negative integer");
+		}
+		const std::uint32_t client_ecid = static_cast<std::uint32_t>(v.get<double>());
+		webapi::ClientSnapshot peer;
+		if (!FindClientByEcid(m_state, client_ecid, peer)) {
+			return ErrorResponse(404, "not_found", "no connected client with that `client_ecid`");
+		}
+		addtag.AddTag(CECTag(EC_TAG_CLIENT, client_ecid));
+	} else {
+		// Manual add, the desktop's "Add a Friend" dialog. The EC handler
+		// wants all four tags present, so an omitted hash is sent empty and
+		// an omitted name defaults to the address -- same as the dialog.
+		std::string ip_str;
+		{
+			const auto it = obj.find("ip");
+			if (it == obj.end() || !it->second.is<std::string>()) {
+				return ErrorResponse(
+					400, "bad_request", "required string field `ip` is missing");
+			}
+			ip_str = it->second.get<std::string>();
+		}
+		std::uint32_t ip_he = 0;
+		if (!ParseIpv4Dotted(ip_str, ip_he) || ip_he == 0) {
+			return ErrorResponse(
+				400, "bad_request", "`ip` must be a non-zero dotted IPv4 address");
+		}
+		std::uint16_t port = 0;
+		{
+			const auto it = obj.find("port");
+			if (it == obj.end() || !it->second.is<double>()) {
+				return ErrorResponse(
+					400, "bad_request", "required integer field `port` is missing");
+			}
+			const double d = it->second.get<double>();
+			if (d <= 0 || d > 65535) {
+				return ErrorResponse(400, "bad_request", "`port` must be in 1..65535");
+			}
+			port = static_cast<std::uint16_t>(d);
+		}
+		CMD4Hash hash;
+		{
+			const auto it = obj.find("user_hash");
+			if (it != obj.end()) {
+				if (!it->second.is<std::string>()) {
+					return ErrorResponse(
+						400, "bad_request", "`user_hash` must be a string");
+				}
+				const std::string h = it->second.get<std::string>();
+				if (!h.empty() && !hash.Decode(wxString::FromUTF8(h.c_str()))) {
+					return ErrorResponse(400,
+						"bad_request",
+						"`user_hash` must be 32 hexadecimal characters");
+				}
+			}
+		}
+		std::string name;
+		{
+			const auto it = obj.find("name");
+			if (it != obj.end()) {
+				if (!it->second.is<std::string>()) {
+					return ErrorResponse(400, "bad_request", "`name` must be a string");
+				}
+				name = it->second.get<std::string>();
+			}
+		}
+		if (name.empty()) {
+			name = ip_str;
+		}
+		addtag.AddTag(CECTag(EC_TAG_FRIEND_HASH, hash));
+		addtag.AddTag(CECTag(EC_TAG_FRIEND_IP, ip_he));
+		addtag.AddTag(CECTag(EC_TAG_FRIEND_PORT, port));
+		addtag.AddTag(CECTag(EC_TAG_FRIEND_NAME, wxString::FromUTF8(name.c_str())));
+	}
+	ec_req->AddTag(addtag);
+
+	std::set<std::uint32_t> before;
+	for (const auto &f : m_state.Friends())
+		before.insert(f.ecid);
+
+	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
+	if (!ec_resp) {
+		return ErrorResponse(503, "ec_unavailable", "EC roundtrip failed for FRIEND add");
+	}
+	std::string ec_err_msg;
+	if (IsEcFailedResponse(ec_resp, ec_err_msg)) {
+		delete ec_resp;
+		return ErrorResponse(400, "amuled_rejected", ec_err_msg.c_str());
+	}
+	delete ec_resp;
+
+	// The daemon applies the add synchronously but the record only reaches us
+	// on a GET_UPDATE, so tick before answering and return the real object.
+	(void)RefresherTick(m_app, m_state);
+
+	CHttpServer::Response r;
+	r.status = 201;
+	r.content_type = "application/json";
+	CJsonWriter w;
+	// The daemon does not echo the new friend's ECID, so identify it as the
+	// one the pre-add snapshot did not have. Diffing beats picking the
+	// highest id: nothing promises ECIDs are handed out in ascending order,
+	// and a concurrent removal could free a lower one for reuse.
+	webapi::FriendSnapshot added;
+	bool found = false;
+	for (const auto &f : m_state.Friends()) {
+		if (before.find(f.ecid) == before.end()) {
+			added = f;
+			found = true;
+			break;
+		}
+	}
+	if (found) {
+		WriteFriendObject(w, added);
+	} else {
+		w.BeginObject();
+		w.Key("ok");
+		w.ValueBool(true);
+		w.EndObject();
+	}
+	FinalizeJsonBody(w, r);
+	return r;
+}
+
+CHttpServer::Response CApiDispatcher::HandleFriendRemove(
+	const CHttpServer::Request &req, const std::string &ecid_str)
+{
+	auto a = Authenticate(req);
+	if (!a.ok)
+		return a.rejection;
+	if (auto rej = RequireAdmin(a))
+		return *rej;
+
+	std::uint32_t ecid = 0;
+	if (!ParseEcidPath(ecid_str, ecid)) {
+		return ErrorResponse(400, "bad_request", "path `{ecid}` must be a non-negative integer");
+	}
+	webapi::FriendSnapshot existing;
+	if (!FindFriendByEcid(m_state, ecid, existing)) {
+		return ErrorResponse(404, "not_found", "no friend with that ecid");
+	}
+
+	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_FRIEND));
+	CECEmptyTag removetag(EC_TAG_FRIEND_REMOVE);
+	removetag.AddTag(CECTag(EC_TAG_FRIEND, ecid));
+	ec_req->AddTag(removetag);
+
+	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
+	if (!ec_resp) {
+		return ErrorResponse(503, "ec_unavailable", "EC roundtrip failed for FRIEND remove");
+	}
+	std::string ec_err_msg;
+	if (IsEcFailedResponse(ec_resp, ec_err_msg)) {
+		delete ec_resp;
+		return ErrorResponse(400, "amuled_rejected", ec_err_msg.c_str());
+	}
+	delete ec_resp;
+
+	(void)RefresherTick(m_app, m_state);
+
+	CHttpServer::Response r;
+	r.status = 200;
+	r.content_type = "application/json";
+	CJsonWriter w;
+	w.BeginObject();
+	w.Key("ok");
+	w.ValueBool(true);
+	w.Key("friend_ecid");
+	w.ValueInt(static_cast<int64_t>(ecid));
+	w.EndObject();
+	FinalizeJsonBody(w, r);
+	return r;
+}
+
+CHttpServer::Response CApiDispatcher::HandleFriendPatch(
+	const CHttpServer::Request &req, const std::string &ecid_str)
+{
+	auto a = Authenticate(req);
+	if (!a.ok)
+		return a.rejection;
+	if (auto rej = RequireAdmin(a))
+		return *rej;
+
+	std::uint32_t ecid = 0;
+	if (!ParseEcidPath(ecid_str, ecid)) {
+		return ErrorResponse(400, "bad_request", "path `{ecid}` must be a non-negative integer");
+	}
+	webapi::FriendSnapshot existing;
+	if (!FindFriendByEcid(m_state, ecid, existing)) {
+		return ErrorResponse(404, "not_found", "no friend with that ecid");
+	}
+
+	picojson::value root;
+	std::string parse_err;
+	if (!ParseJsonObjectBody(req.body, root, parse_err)) {
+		return ErrorResponse(400, "bad_request", parse_err.c_str());
+	}
+	const auto &obj = root.get<picojson::object>();
+	const auto it = obj.find("friend_slot");
+	if (it == obj.end() || !it->second.is<bool>()) {
+		return ErrorResponse(400, "bad_request", "required boolean field `friend_slot` is missing");
+	}
+	const bool slot = it->second.get<bool>();
+
+	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_FRIEND));
+	CECTag slottag(EC_TAG_FRIEND_FRIENDSLOT, slot);
+	slottag.AddTag(CECTag(EC_TAG_FRIEND, ecid));
+	ec_req->AddTag(slottag);
+
+	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
+	if (!ec_resp) {
+		return ErrorResponse(503, "ec_unavailable", "EC roundtrip failed for FRIEND slot");
+	}
+	std::string ec_err_msg;
+	if (IsEcFailedResponse(ec_resp, ec_err_msg)) {
+		delete ec_resp;
+		return ErrorResponse(400, "amuled_rejected", ec_err_msg.c_str());
+	}
+	delete ec_resp;
+
+	// Only one friend can hold the slot, so granting it here clears whoever
+	// held it before -- the tick picks up both changes and both emit an SSE
+	// event, not just the friend named in the URL.
+	(void)RefresherTick(m_app, m_state);
+
+	webapi::FriendSnapshot updated;
+	if (!FindFriendByEcid(m_state, ecid, updated)) {
+		return ErrorResponse(404, "not_found", "friend disappeared while setting the slot");
+	}
+
+	CHttpServer::Response r;
+	r.status = 200;
+	r.content_type = "application/json";
+	CJsonWriter w;
+	WriteFriendObject(w, updated);
 	FinalizeJsonBody(w, r);
 	return r;
 }
@@ -4826,13 +5215,7 @@ static std::uint32_t ResolveServerEcidByAddress(const webapi::CState &state, con
 	// number that matches ServerSnapshot::ip. We compute both so we
 	// can match either against what the cache holds.
 	std::uint32_t ip_he = 0;
-	{
-		unsigned a_, b_, c_, d_;
-		if (std::sscanf(ip_str.c_str(), "%u.%u.%u.%u", &a_, &b_, &c_, &d_) == 4 && a_ <= 255 &&
-			b_ <= 255 && c_ <= 255 && d_ <= 255) {
-			ip_he = (a_) | (b_ << 8) | (c_ << 16) | (d_ << 24);
-		}
-	}
+	(void)ParseIpv4Dotted(ip_str, ip_he);
 	// Require an IPv4-shaped address: drop the s.address string
 	// fallback. The fallback was a convenience for hostname-form
 	// URLs (e.g. `/api/v0/servers/donkey.example.com:4242/connect`),
@@ -6752,15 +7135,12 @@ CHttpServer::Response CApiDispatcher::HandleKadBootstrap(const CHttpServer::Requ
 		if (it->second.is<std::string>()) {
 			// Dotted-quad string. Parse with strtoul on each octet.
 			const std::string &s = it->second.get<std::string>();
-			unsigned a_, b_, c_, d_;
-			if (std::sscanf(s.c_str(), "%u.%u.%u.%u", &a_, &b_, &c_, &d_) != 4 || a_ > 255 ||
-				b_ > 255 || c_ > 255 || d_ > 255) {
+			if (!ParseIpv4Dotted(s, ip_he)) {
 				return ErrorResponse(400,
 					"bad_request",
 					"`ip` must be a dotted-quad IPv4 address or a "
 					"host-order uint32");
 			}
-			ip_he = (a_) | (b_ << 8) | (c_ << 16) | (d_ << 24);
 		} else if (it->second.is<double>()) {
 			const double v = it->second.get<double>();
 			if (v < 0 || v > 4294967295.0) {
@@ -8076,6 +8456,24 @@ bool SearchTypeFromString(const std::string &s, std::uint8_t &out)
 CHttpServer::Response CApiDispatcher::HandleClientBrowse(
 	const CHttpServer::Request &req, const std::string &ecid_str)
 {
+	return HandleBrowse(req, ecid_str, /*by_friend=*/false);
+}
+
+CHttpServer::Response CApiDispatcher::HandleFriendBrowse(
+	const CHttpServer::Request &req, const std::string &ecid_str)
+{
+	return HandleBrowse(req, ecid_str, /*by_friend=*/true);
+}
+
+// Shared by /clients/{ecid}/shared_files and /friends/{ecid}/shared_files.
+// Same opcode and reply shape either way; only the sub-tag differs, which is
+// what tells the daemon whether the id names a live peer or a friend record.
+// The friend form is the more capable of the two: a friend carries a stored
+// ip:port, so the daemon can build a client for it and browse a friend that is
+// not currently connected.
+CHttpServer::Response CApiDispatcher::HandleBrowse(
+	const CHttpServer::Request &req, const std::string &ecid_str, bool by_friend)
+{
 	auto a = Authenticate(req);
 	if (!a.ok)
 		return a.rejection;
@@ -8094,7 +8492,7 @@ CHttpServer::Response CApiDispatcher::HandleClientBrowse(
 	// then drives the refresher's per-id polling.
 	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_FRIEND));
 	CECEmptyTag sharedtag(EC_TAG_FRIEND_SHARED);
-	sharedtag.AddTag(CECTag(EC_TAG_CLIENT, ecid));
+	sharedtag.AddTag(CECTag(by_friend ? EC_TAG_FRIEND : EC_TAG_CLIENT, ecid));
 	ec_req->AddTag(sharedtag);
 
 	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
@@ -8773,6 +9171,8 @@ void CApiDispatcher::DispatchEvents(const CHttpServer::Request &req,
 			return "servers";
 		if (prefix == "client")
 			return "clients";
+		if (prefix == "friend")
+			return "friends";
 		if (prefix == "status")
 			return "status";
 		if (prefix == "log")

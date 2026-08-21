@@ -1612,6 +1612,89 @@ void MergeServerTag(const CEC_Server_Tag *st, ServerSnapshot &s, bool is_new)
 
 } // namespace
 
+// Same container shape as the servers walker above: GET_UPDATE wraps every
+// friend in one EC_TAG_FRIEND container, per-field values are CValueMap-
+// suppressed when unchanged, and the container is always the complete list --
+// so "not seen this tick" means the friend was removed on the daemon side.
+static void MergeFriendTag(const CEC_Friend_Tag *ft, FriendSnapshot &f, bool is_new)
+{
+	f.ecid = ft->ID();
+	{
+		wxString tmp;
+		if (ft->Name(tmp) || is_new)
+			f.name = std::string(tmp.utf8_str());
+	}
+	{
+		CMD4Hash hash;
+		if (ft->UserHash(hash)) {
+			// A friend added by ip:port carries an empty hash; keep it empty
+			// rather than writing out 32 zeroes, which would read as a real
+			// hash to a client.
+			f.user_hash = hash.IsEmpty() ? std::string()
+						     : std::string(hash.Encode().Lower().utf8_str());
+		}
+	}
+	{
+		std::uint32_t ip = 0;
+		if (ft->IP(ip))
+			f.ip = FormatClientIpv4(ip);
+	}
+	{
+		std::uint16_t port = 0;
+		if (ft->Port(port))
+			f.port = port;
+	}
+	{
+		// 0 means the friend is not linked to a live client right now. The
+		// daemon does send the transition, so an absent tag means unchanged.
+		std::uint32_t client = 0;
+		if (ft->Client(client))
+			f.client_ecid = client;
+	}
+	{
+		// Absent on daemons that predate the tag being serialized; the
+		// snapshot then keeps its default false.
+		bool slot = false;
+		if (ft->FriendSlot(slot))
+			f.friend_slot = slot;
+	}
+}
+
+void ApplyGetUpdateToFriends(const CECPacket *resp, std::map<std::uint32_t, FriendSnapshot> &cache)
+{
+	if (!resp)
+		return;
+	const CECTag *container = resp->GetTagByName(EC_TAG_FRIEND);
+	if (!container)
+		return;
+
+	std::set<std::uint32_t> seen;
+	for (const CECTag &child : *container) {
+		if (child.GetTagName() != EC_TAG_FRIEND)
+			continue;
+		const CEC_Friend_Tag *ft = static_cast<const CEC_Friend_Tag *>(&child);
+		const std::uint32_t ecid = ft->ID();
+		seen.insert(ecid);
+
+		auto map_it = cache.find(ecid);
+		if (map_it == cache.end()) {
+			FriendSnapshot fresh;
+			MergeFriendTag(ft, fresh, /*is_new=*/true);
+			cache.emplace(ecid, std::move(fresh));
+		} else {
+			MergeFriendTag(ft, map_it->second, /*is_new=*/false);
+		}
+	}
+
+	for (auto it = cache.begin(); it != cache.end();) {
+		if (seen.find(it->first) == seen.end()) {
+			it = cache.erase(it);
+		} else {
+			++it;
+		}
+	}
+}
+
 void ApplyGetUpdateToServers(const CECPacket *resp, std::map<std::uint32_t, ServerSnapshot> &cache)
 {
 	if (!resp)

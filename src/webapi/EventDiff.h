@@ -49,6 +49,7 @@ struct LastSeenState
 	std::map<std::uint32_t, FileSnapshot> files;
 	std::map<std::uint32_t, ServerSnapshot> servers;
 	std::map<std::uint32_t, ClientSnapshot> clients;
+	std::map<std::uint32_t, FriendSnapshot> friends;
 	// Status event payload mirrors the REST /status envelope, which
 	// pulls from THREE sources (StatusSnapshot + KadSnapshot +
 	// ec_connected flag). All three must be diffed against the prior
