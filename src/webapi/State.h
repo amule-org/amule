@@ -443,6 +443,14 @@ struct FriendSnapshot
 struct KadSnapshot
 {
 	std::string state; // "disabled" | "connecting" | "connected"
+	// Our own 128-bit Kademlia node id, 32 lowercase hex chars.
+	// Empty while Kad is not running -- amuled gates the
+	// EC_TAG_KAD_ID sub-tag on Kademlia::CKademlia::IsRunning(),
+	// which is exactly the condition `state == "disabled"` covers.
+	// Unlike the session-scoped ECIDs and the server-assigned eD2k
+	// id, this one is persisted (preferencesKad.dat) and survives
+	// daemon restarts.
+	std::string node_id;
 	bool firewalled = false;
 	bool firewalled_udp = false;
 	bool in_lan_mode = false;
@@ -453,7 +461,14 @@ struct KadSnapshot
 	std::uint32_t indexed_keywords = 0;
 	std::uint32_t indexed_notes = 0;
 	std::uint32_t indexed_load = 0;
-	std::string ip; // dotted-quad
+	// Our externally-visible address as a remote Kad contact reported
+	// it back, dotted-quad. Named to match the JSON and to keep it
+	// apart from `buddy_ip` below, which is somebody else's. Empty
+	// while Kad is not connected (amuled only ships the tag then),
+	// and "0.0.0.0" while connected but not yet told our address by
+	// any contact -- amuled sends GetPrefs()->GetIPAddress() as-is,
+	// which is what the desktop panel renders too.
+	std::string public_ip;
 	// Buddy is the LowID-buddy state (for NAT-T peers). Most users see
 	// "no_buddy"; networks behind aggressive NAT see "connected".
 	std::string buddy_status; // "no_buddy" | "connecting" | "connected"

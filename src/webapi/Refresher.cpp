@@ -43,6 +43,7 @@
 #include "RLE.h"                                  // PartFileEncoderData (stateful gap/part decoder)
 #include "Types.h"                                // ArrayOfUInts16 / ArrayOfUInts64
 #include "include/protocol/ed2k/ClientSoftware.h" // SO_* client-software enum
+#include "kademlia/utils/UInt128.h"               // CUInt128 (EC_TAG_KAD_ID payload)
 
 #include <ec/cpp/ECSpecialTags.h>
 #include <ec/cpp/ECPacket.h>
@@ -1386,6 +1387,18 @@ void ParseKadFromPacket(const CECPacket *resp, KadSnapshot &out)
 	out.state = KadStateString(conn);
 	if (conn) {
 		out.firewalled = conn->IsKadFirewalled();
+		// Our own node id. amuled ships EC_TAG_KAD_ID only while Kad
+		// is running, which is the same condition KadStateString()
+		// reports as anything other than "disabled" -- so an absent
+		// sub-tag leaves the field empty rather than emitting a zero
+		// id that would read as a real (all-zero) identity.
+		// Lowercased to match every other hex identifier this API
+		// emits (user_hash, the MD4 file hashes); the desktop panel
+		// renders the same value uppercase.
+		CUInt128 kadID;
+		if (conn->GetKadID(kadID)) {
+			out.node_id = std::string(kadID.ToHexString().Lower().utf8_str());
+		}
 	}
 
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_KAD_USERS)) {
@@ -1416,7 +1429,7 @@ void ParseKadFromPacket(const CECPacket *resp, KadSnapshot &out)
 		out.indexed_load = static_cast<std::uint32_t>(t->GetInt());
 	}
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_KAD_IP_ADDRESS)) {
-		out.ip = IPv4ToDotted(static_cast<std::uint32_t>(t->GetInt()));
+		out.public_ip = IPv4ToDotted(static_cast<std::uint32_t>(t->GetInt()));
 	}
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_KAD_IN_LAN_MODE)) {
 		out.in_lan_mode = (t->GetInt() != 0);

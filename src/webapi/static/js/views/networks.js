@@ -13,7 +13,7 @@ import { html, useState, useEffect, useRef, useStore } from "../dom.js";
 import { Tabs, Placeholder, toast, confirmDialog, CountryCell } from "../components.js";
 import { VirtualTable, sortRows, useTablePrefs, ColumnPicker, ipNum } from "../table.js";
 import { Chart } from "../charts.js";
-import { formatInt } from "../format.js";
+import { formatInt, formatTimestamp } from "../format.js";
 import { Icon } from "../icons.js";
 import { t, terr } from "../i18n.js";
 import { useSplitHeight } from "./split-detail.js";
@@ -385,9 +385,10 @@ function Ed2kInfoPanel() {
     </div>`;
 }
 
-// Live counters ride the SSE status event; the detail-only fields (your IP,
-// firewalled UDP, buddy) are fetched from /kad on mount and whenever the Kad
-// state changes — a connect/disconnect from the top tab arrives that way.
+// Live counters ride the SSE status event; the detail-only fields (node id,
+// connected-since, your public IP, firewalled UDP, buddy) are fetched from /kad
+// on mount and whenever the Kad state changes — a connect/disconnect from the
+// top tab arrives that way.
 function KadInfoPanel() {
   const status = useStore("status");
   const kadState = status && status.kad && status.kad.state;
@@ -412,10 +413,12 @@ function KadInfoPanel() {
       ${error ? html`<p>${error}</p>` : html`
         <div class="kad-grid">
           ${stat(t("networks_kad_state"), html`<span class=${"status-chip " + (kad.state === "connected" ? "ok" : "off")}>${kad.state ? t("networks_kad_conn_" + kad.state) : "—"}</span>`)}
+          ${stat(t("networks_kad_node_id"), d.node_id || "—")}
+          ${stat(t("networks_kad_connected_since"), formatTimestamp(d.connected_since))}
           ${stat(t("networks_kad_firewalled_tcp"), yesno(kad.firewalled))}
           ${stat(t("networks_kad_firewalled_udp"), yesno(d.firewalled_udp))}
           ${stat(t("networks_kad_in_lan_mode"), yesno(d.in_lan_mode))}
-          ${stat(t("networks_kad_your_ip"), d.ip || "—")}
+          ${stat(t("networks_kad_your_ip"), d.public_ip || "—")}
           ${stat(t("networks_kad_users"), formatInt(net.users))}
           ${stat(t("networks_kad_files"), formatInt(net.files))}
           ${stat(t("networks_kad_contacts_nodes"), formatInt(net.nodes))}

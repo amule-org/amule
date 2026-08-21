@@ -569,6 +569,23 @@ void ApplyCorsHeaders(
 	headers["Access-Control-Expose-Headers"] = "ETag";
 }
 
+// The Kad `network` rollup, byte-identical on GET /status (nested
+// under `kad`) and on GET /kad. Both read the same KadSnapshot from
+// the same Dashboard() acquisition, so there is one set of counters
+// and one place that names them.
+void WriteKadNetworkObject(CJsonWriter &w, const webapi::KadSnapshot &k)
+{
+	w.Key("network");
+	w.BeginObject();
+	w.Key("users");
+	w.ValueInt(static_cast<int64_t>(k.users));
+	w.Key("files");
+	w.ValueInt(static_cast<int64_t>(k.files));
+	w.Key("nodes");
+	w.ValueInt(static_cast<int64_t>(k.nodes));
+	w.EndObject();
+}
+
 // Forward declaration so HandleLogin (which sits above the helper's
 // definition) can share the depth-cap defence. The definition lives
 // near the other mutation-body parsers further down the file.
@@ -2008,23 +2025,15 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 	w.Key("connected_since");
 	w.ValueInt(static_cast<int64_t>(s.kad_connected_since));
 	// Network rollup — same numbers GET /kad serves under
-	// `network.{users,files,nodes}`. Surfaced here so /status
-	// is a one-call dashboard view (matches the RFC contract
-	// §4.1 `kad.network: {users, files}`; we ship `nodes` too
-	// because it costs nothing extra and the desktop GUI shows
-	// it in the same place). `k` was snapshotted at the top of
-	// the handler in the same shared_lock batch as `s`, so
-	// these counters describe the same refresher tick as
-	// ed2k.* / speeds.* above.
-	w.Key("network");
-	w.BeginObject();
-	w.Key("users");
-	w.ValueInt(static_cast<int64_t>(k.users));
-	w.Key("files");
-	w.ValueInt(static_cast<int64_t>(k.files));
-	w.Key("nodes");
-	w.ValueInt(static_cast<int64_t>(k.nodes));
-	w.EndObject();
+	// `network.{users,files,nodes}`, written by the same helper so
+	// the two endpoints cannot drift. Surfaced here so /status is a
+	// one-call dashboard view (matches the RFC contract §4.1
+	// `kad.network: {users, files}`; we ship `nodes` too because it
+	// costs nothing extra and the desktop GUI shows it in the same
+	// place). `k` was snapshotted at the top of the handler in the
+	// same shared_lock batch as `s`, so these counters describe the
+	// same refresher tick as ed2k.* / speeds.* above.
+	WriteKadNetworkObject(w, k);
 	w.EndObject();
 
 	w.Key("speeds");
@@ -5450,7 +5459,14 @@ CHttpServer::Response CApiDispatcher::HandleKad(const CHttpServer::Request &req)
 			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
 	}
 
-	const webapi::KadSnapshot k = m_state.Kad();
+	// Dashboard() rather than Kad(): `connected_since` below lives on
+	// the status snapshot (the refresher already parses it there for
+	// GET /status), and taking both halves in one shared_lock keeps
+	// the timestamp describing the same tick as the rest of the
+	// payload. Parsing the tag a second time into KadSnapshot would
+	// duplicate state for no gain.
+	const webapi::CState::DashboardSnapshot d = m_state.Dashboard();
+	const webapi::KadSnapshot &k = d.kad;
 	CHttpServer::Response r;
 	r.status = 200;
 	r.content_type = "application/json";
@@ -5459,23 +5475,27 @@ CHttpServer::Response CApiDispatcher::HandleKad(const CHttpServer::Request &req)
 	// Bare object (Q3 — Kad is a single resource, not a list).
 	w.Key("state");
 	w.ValueString(wxString::FromUTF8(k.state.c_str()));
+	// Our own Kademlia node id, "" while Kad is not running (i.e.
+	// exactly when `state` is "disabled"). Persisted by the daemon,
+	// so unlike every other identifier for the local node it is
+	// stable across restarts.
+	w.Key("node_id");
+	w.ValueString(wxString::FromUTF8(k.node_id.c_str()));
 	w.Key("firewalled");
 	w.ValueBool(k.firewalled);
 	w.Key("firewalled_udp");
 	w.ValueBool(k.firewalled_udp);
 	w.Key("in_lan_mode");
 	w.ValueBool(k.in_lan_mode);
-	w.Key("ip");
-	w.ValueString(wxString::FromUTF8(k.ip.c_str()));
-	w.Key("network");
-	w.BeginObject();
-	w.Key("users");
-	w.ValueInt(static_cast<int64_t>(k.users));
-	w.Key("files");
-	w.ValueInt(static_cast<int64_t>(k.files));
-	w.Key("nodes");
-	w.ValueInt(static_cast<int64_t>(k.nodes));
-	w.EndObject();
+	// Same value GET /status reports as kad.connected_since; 0 when
+	// not connected, so gate on `state` rather than on a nonzero.
+	w.Key("connected_since");
+	w.ValueInt(static_cast<int64_t>(d.status.kad_connected_since));
+	// Ours, as opposed to `buddy.ip` below — which is why this one
+	// is not called plain `ip`.
+	w.Key("public_ip");
+	w.ValueString(wxString::FromUTF8(k.public_ip.c_str()));
+	WriteKadNetworkObject(w, k);
 	w.Key("indexed");
 	w.BeginObject();
 	w.Key("sources");

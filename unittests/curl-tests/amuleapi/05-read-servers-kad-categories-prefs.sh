@@ -116,13 +116,23 @@ _assert_json_eq '.state | test("^(disabled|connecting|connected)$")' \
 _assert_json_eq '.firewalled       | type' boolean '/kad.firewalled is boolean'
 _assert_json_eq '.firewalled_udp   | type' boolean '/kad.firewalled_udp is boolean'
 _assert_json_eq '.in_lan_mode      | type' boolean '/kad.in_lan_mode is boolean'
-_assert_json_eq '.ip               | type' string  '/kad.ip is string'
+_assert_json_eq '.connected_since  | type' number  '/kad.connected_since is numeric'
+# Ours. Named apart from the buddy's address, which the rename must not touch.
+_assert_json_eq '.public_ip        | type' string  '/kad.public_ip is string'
+_assert_json_eq '.ip               | type' null    '/kad has no bare top-level ip'
+# 32 lowercase hex while Kad runs, "" while it does not -- gated on .state,
+# which is "disabled" exactly when amuled withholds EC_TAG_KAD_ID.
+_assert_json_eq '(.state == "disabled") or (.node_id | test("^[0-9a-f]{32}$"))' \
+	true '/kad.node_id is 32 lowercase hex chars while Kad runs'
+_assert_json_eq '(.state != "disabled") or (.node_id == "")' \
+	true '/kad.node_id is empty while Kad is not running'
 _assert_json_eq '.network.users    | type' number  '/kad.network.users is numeric'
 _assert_json_eq '.network.files    | type' number  '/kad.network.files is numeric'
 _assert_json_eq '.network.nodes    | type' number  '/kad.network.nodes is numeric'
 _assert_json_eq '.indexed.sources  | type' number  '/kad.indexed.sources is numeric'
 _assert_json_eq '.buddy.status     | test("^(no_buddy|connecting|connected|unknown)$")' \
 	true '/kad.buddy.status is a known enum value'
+_assert_json_eq '.buddy.ip         | type' string  '/kad.buddy.ip survives the ip rename'
 
 # --- 3. /categories -----------------------------------------------
 _curl "$HOST/api/v0/categories"
