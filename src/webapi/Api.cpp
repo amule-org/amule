@@ -2007,8 +2007,18 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 	w.BeginObject();
 	w.Key("state");
 	w.ValueString(wxString::FromUTF8(s.ed2k_state.c_str()));
-	w.Key("low_id");
-	w.ValueBool(s.ed2k_lowid);
+	// Positive sense, matching the peer-side high_id on /clients/{ecid}.
+	// False for a LowID and while disconnected alike, so read it together
+	// with `state` before treating it as a firewall verdict.
+	w.Key("high_id");
+	w.ValueBool(s.ed2k_high_id);
+	// Our server-assigned id; a HighID (>= 16777216) is our public address
+	// packed LSB-first, which is where public_ip comes from. Both are 0 /
+	// empty while disconnected.
+	w.Key("id");
+	w.ValueInt(static_cast<int64_t>(s.ed2k_id));
+	w.Key("public_ip");
+	w.ValueString(wxString::FromUTF8(s.ed2k_public_ip.c_str()));
 	// 0 when not connected -- gate on ed2k.state, not on this being nonzero.
 	w.Key("connected_since");
 	w.ValueInt(static_cast<int64_t>(s.ed2k_connected_since));
@@ -2066,13 +2076,39 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 	w.ValueInt(static_cast<int64_t>(s.download_bps));
 	w.Key("upload_bps");
 	w.ValueInt(static_cast<int64_t>(s.upload_bps));
+	// Additive to the two above, not a subset: amuled counts protocol
+	// overhead separately from payload.
+	w.Key("download_overhead_bps");
+	w.ValueInt(static_cast<int64_t>(s.download_overhead_bps));
+	w.Key("upload_overhead_bps");
+	w.ValueInt(static_cast<int64_t>(s.upload_overhead_bps));
+	w.EndObject();
+
+	// null rather than a number when the daemon has no figure. Emitting the
+	// -1 sentinel as an unsigned value would read as 17 exabytes free, and
+	// 0 would read as a full disk -- the desktop hides the label for the
+	// same reason.
+	w.Key("disk");
+	w.BeginObject();
+	w.Key("temp_free_bytes");
+	if (s.temp_free_bytes < 0) {
+		w.ValueNull();
+	} else {
+		w.ValueInt(static_cast<int64_t>(s.temp_free_bytes));
+	}
+	w.Key("incoming_free_bytes");
+	if (s.incoming_free_bytes < 0) {
+		w.ValueNull();
+	} else {
+		w.ValueInt(static_cast<int64_t>(s.incoming_free_bytes));
+	}
 	w.EndObject();
 
 	w.Key("queue");
 	w.BeginObject();
-	w.Key("upload_queue_length");
+	w.Key("upload_clients_waiting");
 	w.ValueInt(static_cast<int64_t>(s.ul_queue_len));
-	w.Key("total_source_count");
+	w.Key("download_sources_total");
 	w.ValueInt(static_cast<int64_t>(s.total_src_count));
 	w.EndObject();
 	// Nickname is a /preferences field, not a /status one.

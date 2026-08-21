@@ -381,7 +381,7 @@ function Ed2kInfoPanel() {
             ${connected ? t("networks_ed2k_connected") : t("networks_ed2k_not_connected")}
           </span>`)}
         ${stat(t("networks_ed2k_connection_type"),
-          connected ? (ed2k.low_id ? t("networks_ed2k_low_id") : t("networks_ed2k_high_id")) : "—")}
+          connected ? (ed2k.high_id ? t("networks_ed2k_high_id") : t("networks_ed2k_low_id")) : "—")}
       </div>
     </div>`;
 }

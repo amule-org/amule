@@ -170,6 +170,32 @@ const char *KadStateString(const CEC_ConnState_Tag *conn)
 	return "connecting";
 }
 
+// Renders an IPv4 address that arrives LSB-first — the layout
+// EC_TAG_CLIENT_USER_IP, the Kad address tags and the eD2k id all share,
+// and what Uint32toStringIP() renders on the desktop side.
+std::string IPv4ToDotted(std::uint32_t ip_lsb_first)
+{
+	char buf[16];
+	std::snprintf(buf,
+		sizeof(buf),
+		"%u.%u.%u.%u",
+		static_cast<unsigned>((ip_lsb_first) & 0xFFu),
+		static_cast<unsigned>((ip_lsb_first >> 8) & 0xFFu),
+		static_cast<unsigned>((ip_lsb_first >> 16) & 0xFFu),
+		static_cast<unsigned>((ip_lsb_first >> 24) & 0xFFu));
+	return std::string(buf);
+}
+
+// As above, but an unset address formats as empty rather than "0.0.0.0".
+// The peer and server fields use 0 for "not known" and omit the key on it,
+// whereas the Kad fields report the quad verbatim — which is the only
+// difference there has ever been between these two, and the reason the
+// distinction is a wrapper rather than a second formatter.
+std::string FormatClientIpv4(std::uint32_t ip_lsb_first)
+{
+	return ip_lsb_first == 0 ? std::string() : IPv4ToDotted(ip_lsb_first);
+}
+
 } // namespace
 
 void ParseStatusFromPacket(const CECPacket *resp, StatusSnapshot &out)
@@ -184,9 +210,24 @@ void ParseStatusFromPacket(const CECPacket *resp, StatusSnapshot &out)
 	out.kad_state = KadStateString(conn);
 
 	if (conn) {
-		out.ed2k_lowid = conn->HasLowID();
+		// Only meaningful while connected: with no EC_TAG_ED2K_ID the id
+		// reads 0, and HasLowID() is "id < HIGHEST_LOWID_ED2K_KAD", so a
+		// disconnected daemon would otherwise be reported as a LowID.
+		out.ed2k_high_id = conn->IsConnectedED2K() && !conn->HasLowID();
 		out.kad_firewalled = conn->IsKadFirewalled();
 		if (conn->IsConnectedED2K()) {
+			// 0xffffffff is the "connect in flight, no id yet" sentinel
+			// (ECSpecialCoreTags.cpp) and must not reach a consumer.
+			const std::uint32_t id = static_cast<std::uint32_t>(conn->GetEd2kId());
+			if (id != 0xffffffffu) {
+				out.ed2k_id = id;
+				// A HighID *is* our public address, LSB-first, the same
+				// layout EC_TAG_CLIENT_USER_IP uses. A LowID is a small
+				// number the server picked and carries no address.
+				if (out.ed2k_high_id) {
+					out.ed2k_public_ip = IPv4ToDotted(id);
+				}
+			}
 			const CECTag *server = conn->GetTagByName(EC_TAG_SERVER);
 			if (server) {
 				const CECTag *name = server->GetTagByName(EC_TAG_SERVER_NAME);
@@ -214,6 +255,22 @@ void ParseStatusFromPacket(const CECPacket *resp, StatusSnapshot &out)
 	}
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_UL_SPEED)) {
 		out.upload_bps = static_cast<std::uint64_t>(t->GetInt());
+	}
+	// Overhead rates and free space ride the same EC_DETAIL_FULL response.
+	// The two disk figures are cast through int64 on purpose: amuled's
+	// FREE_SPACE_UNKNOWN is -1 and the serializer casts it to uint64, so an
+	// unsigned read would turn "unknown" into 18446744073709551615.
+	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_UP_OVERHEAD)) {
+		out.upload_overhead_bps = static_cast<std::uint64_t>(t->GetInt());
+	}
+	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_DOWN_OVERHEAD)) {
+		out.download_overhead_bps = static_cast<std::uint64_t>(t->GetInt());
+	}
+	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_TEMP_FREE_SPACE)) {
+		out.temp_free_bytes = static_cast<std::int64_t>(t->GetInt());
+	}
+	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_INCOMING_FREE_SPACE)) {
+		out.incoming_free_bytes = static_cast<std::int64_t>(t->GetInt());
 	}
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_UL_QUEUE_LEN)) {
 		out.ul_queue_len = static_cast<std::uint32_t>(t->GetInt());
@@ -706,21 +763,6 @@ const char *ClientIdentStateName(std::uint8_t code)
 // Format an IP from EC_TAG_CLIENT_USER_IP. The EC tag holds a
 // 32-bit host-order IPv4; we render it dotted-quad. Returns "" for
 // zero IPs (commonly the case for clients we've never confirmed).
-std::string FormatClientIpv4(std::uint32_t ip_he)
-{
-	if (ip_he == 0)
-		return std::string();
-	char buf[16];
-	std::snprintf(buf,
-		sizeof(buf),
-		"%u.%u.%u.%u",
-		static_cast<unsigned>((ip_he) & 0xFFu),
-		static_cast<unsigned>((ip_he >> 8) & 0xFFu),
-		static_cast<unsigned>((ip_he >> 16) & 0xFFu),
-		static_cast<unsigned>((ip_he >> 24) & 0xFFu));
-	return std::string(buf);
-}
-
 // Merge a `CEC_UpDownClient_Tag` into an existing ClientSnapshot.
 // On a cache-miss the caller pre-populates ecid + hashes; on a hit
 // the AssignIfExist pattern leaves cached values intact when the
@@ -1334,18 +1376,6 @@ const char *KadBuddyStatusName(std::uint32_t status_code)
 // Render a host-byte-order uint32 IP as dotted-quad. amuled emits the
 // Kad address with network bytes already swapped (see
 // `ExternalConn.cpp:761` — `wxUINT32_SWAP_ALWAYS`).
-std::string IPv4ToDotted(std::uint32_t ip_host_order)
-{
-	char buf[24];
-	std::snprintf(buf,
-		sizeof(buf),
-		"%u.%u.%u.%u",
-		(ip_host_order) & 0xFF,
-		(ip_host_order >> 8) & 0xFF,
-		(ip_host_order >> 16) & 0xFF,
-		(ip_host_order >> 24) & 0xFF);
-	return std::string(buf);
-}
 
 } // namespace
 

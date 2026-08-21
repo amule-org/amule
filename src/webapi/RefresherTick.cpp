@@ -58,11 +58,13 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 	//
 	// Detail level CMD → FULL because amuled only piggybacks
 	// `EC_TAG_STATS_LOGGER_MESSAGE` (the incremental-log channel) at
-	// FULL or INC_UPDATE (ExternalConn.cpp:722-730). FULL also adds
-	// a few stat-overhead extras (STATS_UP_OVERHEAD,
-	// STATS_DOWN_OVERHEAD, STATS_BANNED_COUNT, STATS_TOTAL_*_BYTES,
-	// STATS_SHARED_FILE_COUNT) that StatusSnapshot doesn't yet
-	// surface — harmless overhead.
+	// FULL or INC_UPDATE (ExternalConn.cpp:722-730). FULL is also what
+	// carries STATS_UP_OVERHEAD / STATS_DOWN_OVERHEAD and the two
+	// free-space tags, which /status reports — so this is load-bearing
+	// now, not a harmless over-request: dropping it to CMD would silently
+	// empty those fields along with the log channel. STATS_BANNED_COUNT,
+	// STATS_TOTAL_*_BYTES and STATS_SHARED_FILE_COUNT still arrive
+	// unconsumed.
 	{
 		std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_STAT_REQ, EC_DETAIL_FULL));
 		const CECPacket *resp = app.SendRecvSerialized(req.get());
