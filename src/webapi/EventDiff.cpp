@@ -253,6 +253,10 @@ std::string JsonFreeSpace(std::int64_t v)
 	return v < 0 ? std::string("null") : std::to_string(v);
 }
 
+// Mirrors HandleStatus key for key -- EVENTS.md promises this payload is
+// identical to the REST /status envelope, and 22-sse-diff-emission.sh asserts
+// it. Both connected_since values are 0 while not connected, same rule as
+// there: gate on state rather than trusting a 0 timestamp.
 std::string ToJsonStatusEvent(const StatusSnapshot &s, const KadSnapshot &k, bool ec_connected)
 {
 	std::ostringstream o;
@@ -261,13 +265,15 @@ std::string ToJsonStatusEvent(const StatusSnapshot &s, const KadSnapshot &k, boo
 	  << "\"state\":\"" << EscJson(s.ed2k_state) << "\""
 	  << ",\"high_id\":" << (s.ed2k_high_id ? "true" : "false") << ",\"id\":" << s.ed2k_id
 	  << ",\"public_ip\":\"" << EscJson(s.ed2k_public_ip) << "\""
-	  << ",\"server_name\":\"" << EscJson(s.server_name) << "\""
+	  << ",\"connected_since\":" << s.ed2k_connected_since << ",\"server_name\":\""
+	  << EscJson(s.server_name) << "\""
 	  << ",\"server_ip\":\"" << EscJson(s.server_ip) << "\""
 	  << ",\"server_port\":" << s.server_port << ",\"network\":{"
 	  << "\"users\":" << s.ed2k_users << ",\"files\":" << s.ed2k_files << "}}"
 	  << ",\"kad\":{"
 	  << "\"state\":\"" << EscJson(s.kad_state) << "\""
-	  << ",\"firewalled\":" << (s.kad_firewalled ? "true" : "false") << ",\"network\":{"
+	  << ",\"firewalled\":" << (s.kad_firewalled ? "true" : "false")
+	  << ",\"connected_since\":" << s.kad_connected_since << ",\"network\":{"
 	  << "\"users\":" << k.users << ",\"files\":" << k.files << ",\"nodes\":" << k.nodes << "}"
 	  << "}"
 	  << ",\"speeds\":{"
@@ -388,10 +394,11 @@ bool Equal(const StatusSnapshot &a, const StatusSnapshot &b)
 	// public_ip is derived from ed2k_id, so comparing the id covers it.
 	return a.ed2k_state == b.ed2k_state && a.kad_state == b.kad_state &&
 	       a.ed2k_high_id == b.ed2k_high_id && a.ed2k_id == b.ed2k_id &&
-	       a.kad_firewalled == b.kad_firewalled && a.server_name == b.server_name &&
-	       a.server_ip == b.server_ip && a.server_port == b.server_port &&
-	       a.download_bps == b.download_bps && a.upload_bps == b.upload_bps &&
-	       a.download_overhead_bps == b.download_overhead_bps &&
+	       a.ed2k_connected_since == b.ed2k_connected_since &&
+	       a.kad_connected_since == b.kad_connected_since && a.kad_firewalled == b.kad_firewalled &&
+	       a.server_name == b.server_name && a.server_ip == b.server_ip &&
+	       a.server_port == b.server_port && a.download_bps == b.download_bps &&
+	       a.upload_bps == b.upload_bps && a.download_overhead_bps == b.download_overhead_bps &&
 	       a.upload_overhead_bps == b.upload_overhead_bps && a.temp_free_bytes == b.temp_free_bytes &&
 	       a.incoming_free_bytes == b.incoming_free_bytes && a.ul_queue_len == b.ul_queue_len &&
 	       a.total_src_count == b.total_src_count && a.ed2k_users == b.ed2k_users &&

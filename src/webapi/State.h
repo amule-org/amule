@@ -1102,10 +1102,6 @@ struct StatusSnapshot
 	std::string server_ip;
 	std::uint32_t server_port = 0;
 
-	// True when the daemon is connected to ed2k but in LowID mode
-	// (NAT'd, can't accept incoming). adds NAT-T affordances
-	// that change this calculus; until then the field maps 1:1 to the
-	// EC CONNSTATE bit.
 	// True when our eD2k id is a HighID (>= HIGHEST_LOWID_ED2K_KAD). False
 	// for a LowID *and* whenever we are not connected at all -- there is no
 	// id then, so gate on ed2k_state == "connected" before reading this as
