@@ -33,6 +33,37 @@
 namespace webapi
 {
 
+std::uint64_t PartCountForSize(std::uint64_t size)
+{
+	// Ceiling division. An empty file falls out as 0 without a special case,
+	// since kPartSizeBytes - 1 < kPartSizeBytes.
+	return (size + kPartSizeBytes - 1) / kPartSizeBytes;
+}
+
+// Completeness of the file we download FROM this peer: parts the peer has over
+// that file's part count. Only the download link carries a meaningful
+// denominator -- a peer that merely downloads from us has no percent. Left at
+// its < 0 sentinel when not computable, which is how the writers know to omit
+// the field.
+void ComputePartProgressPercent(const CState &state, ClientSnapshot &cli)
+{
+	if (!cli.has_available_parts || cli.download_file_hash.empty()) {
+		return;
+	}
+	FileSnapshot f;
+	if (!state.FindDownload(cli.download_file_hash, f) || f.size == 0) {
+		return;
+	}
+	const std::uint64_t part_count = PartCountForSize(f.size);
+	if (part_count == 0) {
+		return;
+	}
+	double pct = 100.0 * static_cast<double>(cli.available_parts) / static_cast<double>(part_count);
+	if (pct > 100.0)
+		pct = 100.0;
+	cli.part_progress_percent = pct;
+}
+
 bool CState::HasFirstSnapshot() const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);

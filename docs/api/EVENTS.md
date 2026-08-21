@@ -409,10 +409,15 @@ Identical to the REST [`/api/v0/clients`](REFERENCE.md#get-apiv0clients) list-it
   "remote_queue_rank":      0,
   "score":                  150,
   "obfuscation_status":     "enabled",
-  "friend_slot":            false
+  "friend_slot":            false,
+  "part_progress_percent":  75.0
 }
 ```
-Carries the same field set as the [`/clients`](REFERENCE.md#get-apiv0clients) list row, including `source_origin`, `available_parts`, `mod_version` and `view_shared_disabled`. It never carries a `parts` bitmap — those are opt-in on the per-file client routes only, being one boolean per chunk per peer.
+Carries the same field set as the [`/clients`](REFERENCE.md#get-apiv0clients) list row, including `source_origin`, `available_parts`, `mod_version` and `view_shared_disabled`.
+
+`part_progress_percent` follows the same rule as on the REST row: it is how much of the file we are downloading **from** this peer the peer already holds, and the key is **omitted entirely** when there is no such file, rather than sent as a negative sentinel. It is derived from `available_parts` and the linked download's part count, so it moves when `available_parts` does, and drops out if that download goes away.
+
+It never carries a `parts` bitmap — those are opt-in on the per-file client routes only, being one boolean per chunk per peer.
 
 
 `upload_file_hash` (file we're uploading TO this peer) and `download_file_hash` (file we're downloading FROM this peer) are 32-char MD4 hex hashes — directly resolvable against [`/api/v0/downloads/{hash}`](REFERENCE.md#get-apiv0downloadshash) (in-progress) or the corresponding entry in [`/api/v0/shared`](REFERENCE.md#get-apiv0shared) by `.hash`. Either field can be empty when the peer is queued / idle in that direction. `download_file_name` is the filename the peer advertised while we download from them; `upload_file_name` is the partfile they're downloading from us, resolved locally — see [`GET /clients`](REFERENCE.md#get-apiv0clients) for details.

@@ -235,7 +235,13 @@ std::string ToJson(const ClientSnapshot &c)
 	  << EscJson(c.source_origin) << "\""
 	  << ",\"available_parts\":" << c.available_parts << ",\"mod_version\":\"" << EscJson(c.mod_version)
 	  << "\""
-	  << ",\"view_shared_disabled\":" << (c.view_shared_disabled ? "true" : "false") << "}";
+	  << ",\"view_shared_disabled\":" << (c.view_shared_disabled ? "true" : "false");
+	// Omitted, not sent as the negative sentinel, exactly as the REST row
+	// does it: the field only exists for a peer we are downloading from.
+	if (c.part_progress_percent >= 0.0) {
+		o << ",\"part_progress_percent\":" << c.part_progress_percent;
+	}
+	o << "}";
 	return o.str();
 }
 
@@ -387,7 +393,13 @@ bool Equal(const ClientSnapshot &a, const ClientSnapshot &b)
 	       a.remote_queue_rank == b.remote_queue_rank && a.score == b.score &&
 	       a.obfuscation_status == b.obfuscation_status && a.friend_slot == b.friend_slot &&
 	       a.source_origin == b.source_origin && a.available_parts == b.available_parts &&
-	       a.mod_version == b.mod_version && a.view_shared_disabled == b.view_shared_disabled;
+	       a.mod_version == b.mod_version && a.view_shared_disabled == b.view_shared_disabled &&
+	       // Derived from available_parts and the linked file's part count,
+	       // so it normally moves only when a compared field does. The case
+	       // that needs it in its own right is the file going away: the
+	       // percent drops back to its sentinel while every other field
+	       // holds, and without this the payload would change with no event.
+	       a.part_progress_percent == b.part_progress_percent;
 }
 bool Equal(const StatusSnapshot &a, const StatusSnapshot &b)
 {
@@ -527,6 +539,17 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 	auto new_servers = ByEcid(state.Servers());
 	auto new_friends = ByEcid(state.Friends());
 	auto new_clients = ByEcid(state.Clients());
+	// part_progress_percent is derived, not refreshed: it needs the part count
+	// of the file the peer is a source for, which lives in a different
+	// snapshot, so the refresher leaves it at its sentinel and the REST
+	// handlers fill it in per request. Do the same here, or the event would
+	// be the one payload a subscriber has to re-GET to complete -- the exact
+	// thing EVENTS.md promises it never has to. Computed on the copies before
+	// both the Equal() comparison and the serialiser see them, so the
+	// baseline and the payload always agree.
+	for (auto &kv : new_clients) {
+		ComputePartProgressPercent(state, kv.second);
+	}
 	// Read the full dashboard for status_changed — the event payload
 	// mirrors the REST /status nested envelope which pulls from
 	// StatusSnapshot + KadSnapshot + ec_connected. Dashboard() takes

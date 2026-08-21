@@ -782,6 +782,38 @@ struct SearchProgressSnapshot
 
 // One concurrent search's cached state: its results (keyed by result ECID)
 // and its lifecycle progress. CState holds a map of these keyed by the
+// The byte width of one partfile chunk. Authoritative copy is PARTSIZE in
+// `protocol/ed2k/Constants.h`, which is deliberately NOT included here: that
+// header is written against amule's legacy `uint64`/`uint32` typedefs from
+// src/Types.h, and dragging those into the webapi layer (and into its unit
+// tests) costs more than one restated number. amule has never changed
+// PARTSIZE since the ed2k spec was frozen.
+//
+// One copy, in one place, is the point: the literal used to sit in Api.cpp
+// beside six separately open-coded ceiling divisions.
+constexpr std::uint64_t kPartSizeBytes = 9728000ull;
+
+// Number of eD2k chunks a file of `size` bytes is split into: ceil(size /
+// kPartSizeBytes), and 0 for an empty file.
+//
+// Matches CKnownFile::SetFileSize's m_iPartCount, which reaches the same
+// answer the long way round (floor + 1, then decremented back on an exact
+// multiple) -- worth knowing, because a mismatch here would silently trim
+// or pad every per-part bitmap.
+std::uint64_t PartCountForSize(std::uint64_t size);
+
+// Fill in ClientSnapshot::part_progress_percent, which is derived rather
+// than refreshed: it needs the part count of the file this peer is a source
+// for, which lives in a different snapshot. Left at its < 0 sentinel when
+// not computable, which is how the writers know to omit the field.
+//
+// Shared rather than owned by the REST layer because the SSE client payload
+// has to carry the same value: EVENTS.md promises an `_updated` subscriber
+// gets the full new state and never has to re-GET, and this field was the
+// one exception to that.
+class CState;
+void ComputePartProgressPercent(const CState &state, ClientSnapshot &cli);
+
 // daemon-allocated search_id (see m_searches).
 struct SearchSlot
 {

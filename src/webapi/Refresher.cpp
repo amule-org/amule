@@ -763,11 +763,24 @@ const char *ClientIdentStateName(std::uint8_t code)
 
 // Decode one per-part BitVector tag into a bool vector.
 //
-// Two shapes on the wire, and the empty one is the trap: the core sends a tag
-// with no payload when the peer holds EVERY part (ECSpecialCoreTags.cpp), so an
-// empty tag means "full", not "unknown". The caller learns that through
-// `out_all` because the true length is the file's part count, which is known
-// only where the row is rendered.
+// Two shapes on the wire, and the empty one is the trap: for
+// EC_TAG_CLIENT_PART_STATUS the core sends a tag with no payload when the peer
+// holds EVERY part (ECSpecialCoreTags.cpp), so an empty tag means "full", not
+// "unknown". The caller learns that through `out_all` because the true length
+// is the file's part count, which is known only where the row is rendered.
+//
+// The shorthand is download-side ONLY. EC_TAG_CLIENT_UPLOAD_PART_STATUS is
+// always sent as a buffer, with no AllTrue() branch, so a full uploader
+// arrives as an all-ones bitmap instead. Both are normalised to the same
+// fixed-length array by the renderer, so nothing downstream sees the
+// difference -- but do not read the two tags as symmetrical.
+//
+// An empty UPLOAD tag is not impossible, just narrow: the core emits it when
+// `upPartStatus.size() == file->GetPartCount()` and SizeBuffer() is 0, which
+// needs both to be zero, i.e. a zero-byte file (CKnownFile sets part count 0
+// for one). It decodes to `out_all` here and is then dropped by the
+// renderer's `part_count == 0` guard rather than becoming a bogus all-true
+// bitmap -- so that guard is load-bearing, not dead code.
 //
 // The buffer holds ceil(bits/8) bytes, so decoding yields a multiple of 8 and
 // the tail beyond the file's part count is padding to be trimmed by the
@@ -1015,10 +1028,11 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c,
 		cs.upload_file_name = std::string(t->GetStringData().utf8_str());
 	}
 	// Per-part bitmaps. Both tags carry a raw BitVector buffer, bit i at
-	// buffer[i / 8] & (1 << (i & 7)) -- LSB-first within each byte -- and an
-	// EMPTY tag is the core's shorthand for "has every part", not for "no
-	// data". Absent means unchanged, per the tagmap convention the rest of
-	// this decoder follows, so the has_ flags only ever go from false to true.
+	// buffer[i / 8] & (1 << (i & 7)) -- LSB-first within each byte, matching
+	// BitVector::s_posMask. An EMPTY tag is the core's shorthand for "has
+	// every part" on the DOWNLOAD tag only; see DecodePartStatusTag. Absent
+	// means unchanged, per the tagmap convention the rest of this decoder
+	// follows, so the has_ flags only ever go from false to true.
 	DecodePartStatusTag(
 		c, EC_TAG_CLIENT_PART_STATUS, cs.part_status, cs.part_status_all, cs.has_part_status);
 	DecodePartStatusTag(c,
