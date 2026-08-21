@@ -75,7 +75,7 @@ TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 sleep 4
 
 # --- 1. Auth gate. -------------------------------------------------
-for ep in stats/tree stats/graphs/download search/results; do
+for ep in stats/tree stats/graphs/download_speed search/results; do
 	_curl "$HOST/api/v0/$ep"
 	_assert_status 401 "GET /$ep (no creds) → 401"
 done
@@ -143,7 +143,7 @@ for g in download_speed upload_speed connections kad_nodes; do
 	_assert_json_eq '.points | type'            array  "/stats/graphs/$g .points is array"
 	_assert_json_eq '.session | type'           object "/stats/graphs/$g .session is object"
 	_assert_json_eq '.max_points | type'        number "/stats/graphs/$g max_points is numeric"
-	_assert_json_eq '.points | length <= .max_points' true \
+	_assert_json_eq '(.points | length) <= .max_points' true \
 		"/stats/graphs/$g never returns more points than max_points"
 done
 # Per-graph unit mapping.
@@ -231,7 +231,7 @@ if [ "$COUNT" -gt 0 ]; then
 fi
 
 # --- 7. Method gate. -----------------------------------------------
-for ep in stats/tree stats/graphs/download search/results; do
+for ep in stats/tree stats/graphs/download_speed search/results; do
 	_curl -X DELETE -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/$ep"
 	_assert_status 405 "DELETE /api/v0/$ep → 405"
 done

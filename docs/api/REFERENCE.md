@@ -2271,8 +2271,8 @@ Time-series points behind the desktop Statistics graphs.
   "interval_seconds": 1,
   "max_points": 1800,
   "points": [
-    { "t": "2026-06-19T11:00:00Z", "t_unix": 1781430000, "value": 42, "active_downloads": 7, "active_uploads": 4 },
-    { "t": "2026-06-19T11:00:01Z", "t_unix": 1781430001, "value": 44, "active_downloads": 8, "active_uploads": 4 }
+    { "t": "2026-06-14T09:40:00Z", "t_unix": 1781430000, "value": 42, "active_downloads": 7, "active_uploads": 4 },
+    { "t": "2026-06-14T09:40:01Z", "t_unix": 1781430001, "value": 44, "active_downloads": 8, "active_uploads": 4 }
   ],
   "session": {
     "download_bytes": 12400000000,

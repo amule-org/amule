@@ -1,8 +1,9 @@
 // Statistics view, mirroring the desktop statsDlg 2×2 grid: Download |
 // Upload speed on top, Connections | Statistics Tree below. Each speed
 // chart shows current + running average (computed client-side, like
-// amulegui's CStatGraphRem) with a colour-chip legend. Graphs and tree are
-// polled. (The Kad nodes graph lives in the Networks/Kad tab.)
+// amulegui's CStatGraphRem); the connections chart draws the three lines
+// the daemon itself reports. Graphs and tree are polled. (The Kad nodes
+// graph lives in the Networks/Kad tab.)
 
 import { api } from "../api.js";
 import { html, useState, useEffect } from "../dom.js";
@@ -17,10 +18,17 @@ const GRAPH_WIDTH = 300; // samples per fetch (~chart pixel width; full window i
 const SMA_WINDOW = 50; // ponytail: SMA over ~5 min of samples; amulegui makes this a pref
 
 const speedAxis = (max) => bytesAxis(max, true);
+// `series` is parallel to the arrays each graph loads below: entry 0 is the
+// endpoint's own `value`, the rest are whatever that graph adds beside it.
 const GRAPHS = [
-  { name: "download_speed", title: t("stats_download_speed"), color: "#3aaf5d", avgColor: "#1fb5ad", fmt: formatSpeed, axis: speedAxis },
-  { name: "upload_speed", title: t("stats_upload_speed"), color: "#3b86e0", avgColor: "#8a5cd6", fmt: formatSpeed, axis: speedAxis },
-  { name: "connections", title: t("stats_connections"), color: "#d68a0c", avgColor: "#c94f7c", fmt: formatInt },
+  { name: "download_speed", title: t("stats_download_speed"), fmt: formatSpeed, axis: speedAxis,
+    series: [{ color: "#3aaf5d", label: t("common_legend_current") }, { color: "#1fb5ad", label: t("common_legend_running_avg") }] },
+  { name: "upload_speed", title: t("stats_upload_speed"), fmt: formatSpeed, axis: speedAxis,
+    series: [{ color: "#3b86e0", label: t("common_legend_current") }, { color: "#8a5cd6", label: t("common_legend_running_avg") }] },
+  { name: "connections", title: t("stats_connections"), fmt: formatInt,
+    series: [{ color: "#d68a0c", label: t("stats_legend_active_connections") },
+             { color: "#c94f7c", label: t("stats_legend_active_downloads") },
+             { color: "#1fb5ad", label: t("stats_legend_active_uploads") }] },
 ];
 
 // Simple moving average over the fetched window.
@@ -36,7 +44,7 @@ function sma(ys, w) {
 }
 
 export default function Stats() {
-  const [graphData, setGraphData] = useState({}); // name -> [xs, ys, avgYs]
+  const [graphData, setGraphData] = useState({}); // name -> [xs, ...series]
   const [tree, setTree] = useState(null);          // null=loading, []=empty
   const [treeErr, setTreeErr] = useState("");
   // Expanded tree nodes by key path ("transfer", "transfer.uploads", …).
@@ -54,7 +62,15 @@ export default function Stats() {
         const r = await api.get("stats/graphs/" + g.name + "?width=" + GRAPH_WIDTH);
         const pts = r.points || [];
         const ys = pts.map((p) => p.value);
-        if (alive) setGraphData((d) => ({ ...d, [g.name]: [pts.map((p) => p.t_unix), ys, sma(ys, SMA_WINDOW)] }));
+        // The connections graph gets its two extra lines from the daemon, so
+        // no client-side stand-in is needed there. They are omitted whole (not
+        // zeroed) by an amuled that does not report them — then it draws as the
+        // single line it used to be.
+        const rest = g.name !== "connections" ? [sma(ys, SMA_WINDOW)]
+          : pts.length && pts[0].active_downloads !== undefined
+            ? [pts.map((p) => p.active_downloads), pts.map((p) => p.active_uploads)]
+            : [];
+        if (alive) setGraphData((d) => ({ ...d, [g.name]: [pts.map((p) => p.t_unix), ys, ...rest] }));
       } catch (_) { /* leave previous data */ }
     };
     const loadTree = async () => {
@@ -124,10 +140,11 @@ function tEnum(token) { return tOr("stats_tree_enum_" + token, token); }
 // (stats_tree_<key>) so translations survive label rewording and don't depend
 // on matching English text; fall back to the label for legacy daemons.
 function tNodeLabel(node) {
-  // Dynamic per-client version/OS rows: the label head is data. Render `raw`
-  // verbatim when present (version/OS string, never translated); when raw is
-  // absent it's a known placeholder we translate by kind. Keep the ": %s"
-  // tail so nodeText still fills the count/percent. ponytail: heads have no ":".
+  // Dynamic per-client version/OS rows: the label head is data. Render
+  // `label_value` verbatim when present (version/OS string, never translated);
+  // when it's absent it's a known placeholder we translate by kind. Keep the
+  // ": %s" tail so nodeText still fills the count/percent.
+  // ponytail: heads have no ":".
   if (node.key === "client_version" || node.key === "client_os") {
     const tail = node.label.slice(node.label.indexOf(":"));
     if (node.label_value) return node.label_value + tail;
@@ -146,7 +163,7 @@ function fmtValue(v, spec) {
     case "time": s = formatDuration(v.value); break;
     case "double": s = /f/.test(spec || "") ? Number(v.value).toFixed(2) : String(v.value); break;
     case "string": s = v.token ? tEnum(v.token) : tLabel(String(v.value)); break;
-    default: s = formatInt(v.value); break; // integer/istring/ishort
+    default: s = formatInt(v.value); break; // integer
   }
   if (v.extra) {
     // A double sub-value is a percentage (GUI hardcodes "%.2f%%").

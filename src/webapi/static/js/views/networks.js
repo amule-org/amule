@@ -22,7 +22,8 @@ const SRV_POLL_MS = 5000;
 const AMULE_TAIL = 500; // initial history; live lines then arrive via log_appended
 const GRAPH_POLL_MS = 2000;
 const GRAPH_WIDTH = 300; // samples per fetch (~chart pixel width; full window is ~1800)
-const KAD_GRAPH = { name: "kad", title: t("networks_kad_nodes"), color: "#8a5cd6", fmt: formatInt };
+const KAD_GRAPH = { name: "kad_nodes", title: t("networks_kad_nodes"), fmt: formatInt,
+  series: [{ color: "#8a5cd6", label: t("networks_kad_nodes") }] };
 // The three values ServerPriorityCode() accepts, in rank order (also the sort order).
 const SERVER_PRIORITIES = ["low", "normal", "high"].map((v) => [v, t("networks_server_prio_" + v)]);
 
@@ -244,7 +245,7 @@ function KadPanel() {
     let alive = true;
     const tick = async () => {
       try {
-        const r = await api.get("stats/graphs/kad_nodes?width=" + GRAPH_WIDTH);
+        const r = await api.get("stats/graphs/" + KAD_GRAPH.name + "?width=" + GRAPH_WIDTH);
         const pts = r.points || [];
         if (alive) setGraphData([pts.map((p) => p.t_unix), pts.map((p) => p.value)]);
       } catch (_) { /* leave previous data */ }
