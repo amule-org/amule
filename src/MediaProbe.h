@@ -57,15 +57,34 @@ namespace MediaProbe
 //   2. A per-platform list of well-known install locations. Homebrew
 //      / MacPorts on macOS, scoop / chocolatey / winget on Windows,
 //      distro-standard bin paths on Linux + OpenBSD.
-// Returns an empty wxString if nothing was found — the caller should
-// then treat the "media metadata extraction" feature as disabled by
-// default and only enable it once the user points at a binary via
-// the Preferences panel.
+// Returns an empty wxString if nothing was found.
 //
-// Runs synchronously. Cheap (a few dozen ms max for the PATH probe,
-// plus a handful of stat()s for the well-known-path scan). Suitable
-// for calling once during CamuleApp::OnInit's slow-path.
+// Runs synchronously and spawns at least one child process, each bounded
+// by its own timeout. Cheap in the ordinary cases — the PATH probe is a
+// few dozen ms, a missing binary fails to spawn at once, and every
+// well-known path is stat()ed before it is run — but it is still a
+// subprocess walk, so prefer DetectedPath() below, which pays for it once.
+//
+// Safe to call from any thread.
 wxString AutoDetectPath();
+
+// AutoDetectPath() memoised for the life of the process, and the entry
+// point everything but the detection itself should use.
+//
+// The result describes the machine rather than a user choice, so it is
+// derived at runtime and never persisted: an empty `ffprobe_path`
+// preference means "ask this", not "feature off". `redetect` forces a
+// fresh scan and replaces the cache — for the Preferences "Detect"
+// button, whose whole purpose is to notice an ffmpeg installed since the
+// process started.
+//
+// Logs the outcome exactly once: a visible line when nothing was found
+// (the only notice a headless operator gets that extraction is inert), a
+// logMediaProbe debug line naming the binary when something was.
+//
+// Safe to call from any thread; concurrent callers serialise on the
+// first scan.
+wxString DetectedPath(bool redetect = false);
 
 // Probe a single file. Returns true on success and populates `out`;
 // returns false on any failure — binary missing / unreadable file /

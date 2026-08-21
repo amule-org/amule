@@ -1751,9 +1751,10 @@ wxSizer *PreferencesFilesTab( wxWindow *parent, bool call_fit, bool set_sizer )
     // runs ffprobe against each shared file at share-add / known.met
     // load time to populate FT_MEDIA_LENGTH / _BITRATE / _CODEC on
     // the CKnownFile; the ed2k + Kad publishers then advertise those
-    // tags automatically. Whole box hides in amulegui (see
-    // PrefsUnifiedDlg's amuledOnlyPrefs[]) since the probing itself
-    // runs daemon-side.
+    // tags automatically. The enable toggle and the path field are
+    // EC-wired and stay visible in amulegui; only "Browse" and "Detect"
+    // hide there (see PrefsUnifiedDlg's amuledOnlyPrefs[]), since both
+    // would search the GUI's filesystem rather than the daemon's.
     wxStaticBox *item22 = new wxStaticBox( parent, -1, _("Media metadata extraction") );
     wxStaticBoxSizer *item22sz = new wxStaticBoxSizer( item22, wxVERTICAL );
 

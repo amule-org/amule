@@ -694,10 +694,13 @@ void CSharedFileList::MaybeScheduleMediaProbe(CKnownFile *pFile, bool bForceRepr
 	if (!thePrefs::GetMediaMetadataEnabled()) {
 		return;
 	}
+	// An empty preference is not "off" -- it means "whatever this machine
+	// has", which is what every place that documents the setting promises.
+	// The worker resolves it through MediaProbe::DetectedPath() and drops
+	// the job if that finds nothing; doing it there keeps the detection
+	// subprocess off this thread and pays for it once per process rather
+	// than once per file.
 	const wxString &ffprobePath = thePrefs::GetMediaMetadataFFProbePath();
-	if (ffprobePath.IsEmpty()) {
-		return;
-	}
 	const EED2KFileType type = GetED2KFileTypeID(pFile->GetFileName());
 	if (type != ED2KFT_AUDIO && type != ED2KFT_VIDEO) {
 		return;

@@ -2178,7 +2178,15 @@ void PrefsUnifiedDlg::OnButtonMediaMetaDetect(wxCommandEvent &WXUNUSED(evt))
 	// whatever it finds. Empty result -> tell the user politely; a
 	// path in-hand is the more useful common case so we don't try
 	// to also validate the binary here (Browse... covers that).
-	const wxString path = MediaProbe::AutoDetectPath();
+	//
+	// redetect=true: the point of pressing this is to notice an ffmpeg
+	// installed since aMule started, so the cached answer will not do.
+	// Going through DetectedPath() rather than AutoDetectPath() also
+	// refreshes the cache the probe worker reads, so the button and the
+	// extraction agree about what this machine has. Monolithic only --
+	// amulegui hides the button (see amuledOnlyPrefs[] above), because
+	// detection here would search the GUI's filesystem, not the daemon's.
+	const wxString path = MediaProbe::DetectedPath(/*redetect=*/true);
 	if (path.IsEmpty()) {
 		wxMessageBox(_("ffprobe not found on PATH or in the standard install locations. Install "
 			       "ffmpeg (which ships ffprobe) or use Browse to pick a binary manually."),

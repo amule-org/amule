@@ -53,6 +53,7 @@ src/libs/ec/cpp/RemoteConnect.cpp
 src/LibSocketAsio.cpp
 src/ListenSocket.cpp
 src/Logger.cpp
+src/MediaProbe.cpp
 src/MuleNotebook.cpp
 src/MuleTextCtrl.cpp
 src/MuleTrayIcon.cpp

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 14:34+0200\n"
+"POT-Creation-Date: 2026-08-21 15:54+0200\n"
 "PO-Revision-Date: 2026-08-20 14:12+0000\n"
 "Last-Translator: Alex Thomsen Leth <alexl@stofanet.dk>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -3151,6 +3151,10 @@ msgstr ""
 
 #: src/Logger.cpp
 msgid "WARNING: "
+msgstr ""
+
+#: src/MediaProbe.cpp
+msgid "Media metadata: no ffprobe binary found. Install ffmpeg, or set the ffprobe path in preferences; length, bitrate and codec will not be extracted."
 msgstr ""
 
 #: src/MuleNotebook.cpp src/muuli_wdr.cpp
