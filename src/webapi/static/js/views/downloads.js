@@ -8,7 +8,7 @@ import { data } from "../events.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
 import { ProgressBar, Badge, Placeholder, Tabs, toast, confirmDialog, PRIORITIES, prioValue, prioLabel } from "../components.js";
 import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker } from "../table.js";
-import { formatBytes, formatSpeed } from "../format.js";
+import { formatBytes, formatFreeSpace, formatSpeed } from "../format.js";
 import { Icon } from "../icons.js";
 import { t, tn, terr } from "../i18n.js";
 import { CategoriesPanel } from "./categories.js";
@@ -20,6 +20,8 @@ const STATUS_FILTERS = ["all", "downloading", "waiting", "paused", "stopped", "c
 
 export default function Downloads({ isGuest }) {
   const downloads = useStore("downloads") || [];
+  // Not bound as `status`: bulk() below already uses that name for a partfile state.
+  const disk = (useStore("status") || {}).disk || {};
   const [categories, setCategories] = useState([]);
   const [selection, setSelection] = useState(() => new Set());
   const { sortKey, sortDir, hidden, widths, toggleSort, toggleCol, setWidth, resetPrefs } =
@@ -204,6 +206,8 @@ export default function Downloads({ isGuest }) {
   let size = 0, done = 0, speed = 0;
   for (const d of list) { size += d.size || 0; done += d.size_done || 0; speed += d.speed_bps || 0; }
 
+  const freeSpace = formatFreeSpace(disk.temp_free_bytes, disk.incoming_free_bytes);
+
   const categoryTabs = [
     { key: "all", label: t("downloads_all"), badge: downloads.length },
     ...categories.filter((c) => c.index !== 0).map((c) => ({
@@ -272,7 +276,7 @@ export default function Downloads({ isGuest }) {
                          maxHeight="none"
                          empty=${html`<${Placeholder} kind="info">${t("downloads_empty")}<//>`} />
         <div class="totals-line">
-          <span>${tn("downloads_files_count", list.length)}</span>${" · "}<span>${t("downloads_size")} ${formatBytes(size)}</span>${" · "}<span>${t("downloads_col_done")} ${formatBytes(done)}</span>${" · "}<span>${t("downloads_speed")} ${formatSpeed(speed)}</span>
+          <span>${tn("downloads_files_count", list.length)}</span>${" · "}<span>${t("downloads_size")} ${formatBytes(size)}</span>${" · "}<span>${t("downloads_col_done")} ${formatBytes(done)}</span>${" · "}<span>${t("downloads_speed")} ${formatSpeed(speed)}</span>${freeSpace ? html`${" · "}<span>${t("common_free_space")} ${freeSpace}</span>` : ""}
         </div>
       </div>
     </section>`}>

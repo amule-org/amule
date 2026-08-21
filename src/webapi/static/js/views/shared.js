@@ -8,7 +8,7 @@ import { data } from "../events.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
 import { Placeholder, toast } from "../components.js";
 import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker } from "../table.js";
-import { formatBytes, formatInt, formatSpeed, formatTimestamp, twin } from "../format.js";
+import { formatBytes, formatFreeSpace, formatInt, formatSpeed, formatTimestamp, twin } from "../format.js";
 import { t, tn, terr } from "../i18n.js";
 import { SharedDetail } from "./shared-detail.js";
 import { SplitDetail } from "./split-detail.js";
@@ -18,6 +18,7 @@ const PRIORITIES = ["auto", "very_low", "low", "normal", "high", "release"]
 
 export default function Shared({ isGuest }) {
   const shared = useStore("shared") || [];
+  const disk = (useStore("status") || {}).disk || {};
   const [selection, setSelection] = useState(() => new Set());
   const { sortKey, sortDir, hidden, widths, toggleSort, toggleCol, setWidth, resetPrefs } =
     useTablePrefs("shared", { sortKey: "name", sortDir: 1, hidden: ["last_upload", "shared_since"] });
@@ -138,6 +139,8 @@ export default function Shared({ isGuest }) {
     up += s.upload_speed_bps || 0;
   }
 
+  const freeSpace = formatFreeSpace(disk.temp_free_bytes, disk.incoming_free_bytes);
+
   return html`
     <div class="split-view">
     <${SplitDetail} storageKey="shared_detail_height" open=${!!detailHash}
@@ -167,7 +170,7 @@ export default function Shared({ isGuest }) {
                          maxHeight="none"
                          empty=${html`<${Placeholder} kind="info">${t("shared_empty")}<//>`} />
         <div class="totals-line">
-          <span>${tn("shared_files_count", list.length)}</span>${" · "}<span>${t("shared_size")} ${formatBytes(size)}</span>${" · "}<span>${t("shared_transferred")} ${formatBytes(xs) + " / " + formatBytes(xt)}</span>${" · "}<span>${t("shared_upload_speed")} ${formatSpeed(up)}</span>
+          <span>${tn("shared_files_count", list.length)}</span>${" · "}<span>${t("shared_size")} ${formatBytes(size)}</span>${" · "}<span>${t("shared_transferred")} ${formatBytes(xs) + " / " + formatBytes(xt)}</span>${" · "}<span>${t("shared_upload_speed")} ${formatSpeed(up)}</span>${freeSpace ? html`${" · "}<span>${t("common_free_space")} ${freeSpace}</span>` : ""}
         </div>
     </section>`}>
         <${SharedDetail} hash=${detailHash} />
