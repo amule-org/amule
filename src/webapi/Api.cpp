@@ -5223,6 +5223,9 @@ CHttpServer::Response CApiDispatcher::HandleFriendAdd(const CHttpServer::Request
 	if (auto rej = RequireAdmin(a))
 		return *rej;
 
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
+
 	picojson::value root;
 	std::string parse_err;
 	if (!ParseJsonObjectBody(req.body, root, parse_err)) {
@@ -5379,6 +5382,9 @@ CHttpServer::Response CApiDispatcher::HandleFriendRemove(
 	if (auto rej = RequireAdmin(a))
 		return *rej;
 
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
+
 	std::uint32_t ecid = 0;
 	if (!ParseEcidPath(ecid_str, ecid)) {
 		return ErrorResponse(400, "bad_request", "path `{ecid}` must be a non-negative integer");
@@ -5428,6 +5434,9 @@ CHttpServer::Response CApiDispatcher::HandleFriendPatch(
 		return a.rejection;
 	if (auto rej = RequireAdmin(a))
 		return *rej;
+
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 
 	std::uint32_t ecid = 0;
 	if (!ParseEcidPath(ecid_str, ecid)) {
