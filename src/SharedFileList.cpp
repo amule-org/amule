@@ -446,6 +446,8 @@ void CSharedFileList::FindSharedFiles(const ReloadYieldCb &yieldCb, bool &aborte
 			addedFiles++;
 		}
 	}
+	// Accepted tasks only, matching what the old "%i unknown" suffix counted.
+	m_discoveredNewFiles += addedFiles;
 
 	// One unconditional summary. The new-file count used to ride along as a
 	// suffix here, in one of two mutually exclusive variants, and only for this
@@ -550,6 +552,8 @@ unsigned CSharedFileList::AddFilesFromDirectory(const CPath &directory,
 			addedFiles++;
 			break;
 		case kAddPathKnown:
+		case kAddPathAlreadyShared:
+			// Both are "known" for the summary count; only the attach differs.
 			knownFiles++;
 			break;
 		case kAddPathExcluded:
@@ -636,6 +640,7 @@ CSharedFileList::AddPathResult CSharedFileList::AddPathToShares(
 			}
 		} else {
 			AddDebugLogLineN(logKnownFiles, CFormat("File already shared, skipping: %s") % fname);
+			return kAddPathAlreadyShared;
 		}
 		return kAddPathKnown;
 	}
@@ -644,9 +649,11 @@ CSharedFileList::AddPathResult CSharedFileList::AddPathToShares(
 	AddDebugLogLineN(logKnownFiles, CFormat("Hashing new unknown shared file '%s'") % fname);
 
 	hashTasks.push_back(new CHashingTask(directory, fname));
-	// This branch *is* the definition of "a new file was discovered", and it is
-	// the one point both discovery routes pass through (issue #968).
-	++m_discoveredNewFiles;
+	// Not counted here. CThreadScheduler::DoAddTask dedups on (type, desc) and
+	// silently drops a task already queued, so a re-walk while hashing is still
+	// pending constructs the same tasks again -- counting at construction would
+	// report those files as discovered twice. Both routes count where the
+	// scheduler actually accepts the task instead.
 	return kAddPathQueued;
 }
 
@@ -887,7 +894,7 @@ void CSharedFileList::RemoveFile(CKnownFile *toremove)
 // without firing the bulk Reload() path, which on a 100 k+ file
 // shareset blocks the GUI for minutes per event. See issue #745.
 
-void CSharedFileList::NotifyPathAdded(const wxString &fullPath)
+void CSharedFileList::NotifyPathAdded(const wxString &fullPath, bool bulkScan)
 {
 	if (fullPath.IsEmpty()) {
 		return;
@@ -923,7 +930,9 @@ void CSharedFileList::NotifyPathAdded(const wxString &fullPath)
 		// will call SafeAddKFile() when it finishes, which is
 		// what publishes the file to peers + the GUI.
 		for (TaskList::iterator it = hashTasks.begin(); it != hashTasks.end(); ++it) {
-			CThreadScheduler::AddTask(*it);
+			if (CThreadScheduler::AddTask(*it)) {
+				++m_discoveredNewFiles;
+			}
 		}
 		break;
 	case kAddPathKnown:
@@ -939,12 +948,20 @@ void CSharedFileList::NotifyPathAdded(const wxString &fullPath)
 		// path is different in kind -- it is an event, it fires at
 		// unpredictable times, its volume is bounded by real filesystem
 		// activity rather than by tree size, and no summary line covers it.
-		AddLogLineN(CFormat(_("Now sharing file: %s")) % fullPath);
+		if (bulkScan) {
+			// One line per file would be thousands during a tree walk; the
+			// tick prints a single summary instead.
+			++m_attachedKnownFiles;
+		} else {
+			AddLogLineN(CFormat(_("Now sharing file: %s")) % fullPath);
+		}
 		break;
+	case kAddPathAlreadyShared:
 	case kAddPathExcluded:
 	case kAddPathSkipped:
 		// AddPathToShares already wrote a debug log line; no
-		// further action needed.
+		// further action needed. Already-shared in particular must not
+		// announce a share that did not happen.
 		break;
 	}
 }
@@ -1023,7 +1040,9 @@ void CSharedFileList::NotifyDirRemoved(const wxString &dirPath)
 	// size instead would be a lie about what this call did, and suppressing the
 	// per-file lines would mean losing them whenever the directory event never
 	// arrives at all.
-	AddLogLineN(CFormat(_("Stopped sharing %u files under removed directory: %s")) %
+	AddLogLineN(CFormat(wxPLURAL("Stopped sharing %u file under removed directory: %s",
+			    "Stopped sharing %u files under removed directory: %s",
+			    static_cast<unsigned>(victims.size()))) %
 		    static_cast<unsigned>(victims.size()) % dirPath);
 	AddDebugLogLineN(logKnownFiles,
 		CFormat("Watcher: detaching %zu shared file(s) under removed dir '%s'") % victims.size() %
@@ -1457,6 +1476,16 @@ void CSharedFileList::Process()
 	// its count is printed immediately after its own "Found N known shared
 	// files" summary rather than arriving a second later, detached from it.
 	// Only when non-zero: a pass that discovered nothing says nothing.
+	// Already-known files attached by a bulk subdirectory scan: one line for
+	// the batch, mirroring the summary the removal side emits.
+	if (m_attachedKnownFiles) {
+		AddLogLineN(CFormat(wxPLURAL("Now sharing %u file found in a new shared directory",
+				    "Now sharing %u files found in new shared directories",
+				    m_attachedKnownFiles)) %
+			    m_attachedKnownFiles);
+		m_attachedKnownFiles = 0;
+	}
+
 	if (m_discoveredNewFiles) {
 		AddLogLineN(CFormat(wxPLURAL("Discovered %u new shared file",
 				    "Discovered %u new shared files",

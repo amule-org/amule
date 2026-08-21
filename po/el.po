@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 21:31+0200\n"
+"POT-Creation-Date: 2026-08-21 22:27+0200\n"
 "PO-Revision-Date: 2026-08-21 19:05+0000\n"
 "Last-Translator: Dimitris <dgalanak@yahoo.com>\n"
 "Language-Team: Greek\n"
@@ -3217,6 +3217,16 @@ msgstr ""
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Extracting media metadata with ffprobe: %s"
+msgstr ""
+
+#: src/MediaProbe.cpp
+#, c-format
+msgid "Media metadata: ffprobe timed out or was cancelled for %s"
+msgstr ""
+
+#: src/MediaProbe.cpp
+#, c-format
+msgid "Media metadata: ffprobe failed (code %d) for %s"
 msgstr ""
 
 #: src/MuleNotebook.cpp src/muuli_wdr.cpp
@@ -7177,9 +7187,18 @@ msgid "Stopped sharing removed file: %s"
 msgstr "Φόρτωση του αρχείου διακομιστών: %s"
 
 #: src/SharedFileList.cpp
+#, fuzzy, c-format
+msgid "Stopped sharing %u file under removed directory: %s"
+msgid_plural "Stopped sharing %u files under removed directory: %s"
+msgstr[0] "Φόρτωση του αρχείου διακομιστών: %s"
+msgstr[1] "Φόρτωση του αρχείου διακομιστών: %s"
+
+#: src/SharedFileList.cpp
 #, c-format
-msgid "Stopped sharing %u files under removed directory: %s"
-msgstr ""
+msgid "Now sharing %u file found in a new shared directory"
+msgid_plural "Now sharing %u files found in new shared directories"
+msgstr[0] ""
+msgstr[1] ""
 
 #: src/SharedFileList.cpp
 #, fuzzy, c-format
@@ -8208,6 +8227,11 @@ msgstr ""
 #: src/TextClient.h
 msgid "aMule text client"
 msgstr "Διακομιστής κειμένου του aMule"
+
+#: src/ThreadTasks.cpp
+#, fuzzy, c-format
+msgid "Hashing downloaded file: %s"
+msgstr "Σβήσιμο αρχείου: %s"
 
 #: src/ThreadTasks.cpp
 #, fuzzy, c-format

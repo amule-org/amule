@@ -502,7 +502,9 @@ void CSharedDirWatcher::ScanNewSubdirRace(const CPath &parent)
 		for (CPath f = files.GetFirstFile(CDirIterator::File, wxEmptyString, dirFlags); f.IsOk();
 			f = files.GetNextFile()) {
 			CPath fullFile = parent.JoinPaths(f);
-			m_parent->NotifyPathAdded(fullFile.GetRaw());
+			// bulkScan: this is a whole-tree walk, so an already-known file is
+			// counted into one summary rather than announced per file.
+			m_parent->NotifyPathAdded(fullFile.GetRaw(), /*bulkScan=*/true);
 		}
 	}
 
@@ -606,7 +608,13 @@ void CSharedDirWatcher::ColdDiscoverSubdirs()
 	// the watcher was offline), so route through the fallback path:
 	// FlushPendingEvents will see m_resyncReason and call the
 	// bulk Reload() once the debounce fires.
-	m_resyncReason = ResyncColdDiscovery;
+	// Never downgrade a pending fault: if the backend already reported dropped
+	// events, that is the more serious reason and must keep its critical
+	// message. Enable() can run again while a resync is still owed (toggling
+	// the auto-rescan preference, for one), which is how the two could meet.
+	if (m_resyncReason == ResyncNone) {
+		m_resyncReason = ResyncColdDiscovery;
+	}
 	m_coldDiscoveredDirs = static_cast<unsigned>(discovered.size());
 	ScheduleProcessing();
 }

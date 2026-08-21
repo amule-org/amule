@@ -198,7 +198,14 @@ public:
 	// All three are safe to call from the wxFileSystemWatcher event
 	// thread (i.e. wx's main thread on every supported backend), and
 	// take list_mut internally via AddFile/RemoveFile.
-	void NotifyPathAdded(const wxString &fullPath);
+	// bulkScan: the caller is walking a whole directory tree (the watcher's
+	// new-subdirectory race scan), not reacting to a single filesystem event.
+	// In that mode an already-known file is counted rather than announced
+	// individually -- moving a large known tree into a recursive share would
+	// otherwise emit one info line per file, thousands of them, in a single
+	// debounce flush on the core event loop. Removal already summarises, so
+	// this also keeps the two directions symmetric.
+	void NotifyPathAdded(const wxString &fullPath, bool bulkScan = false);
 	void NotifyPathRemoved(const wxString &fullPath);
 	void NotifyPathModified(const wxString &fullPath);
 
@@ -250,10 +257,20 @@ private:
 	// reaches the GUI view).
 	enum AddPathResult
 	{
-		kAddPathSkipped,  // broken link, zero size, stat failed
-		kAddPathExcluded, // name matched the user's exclusion filter
-		kAddPathKnown,    // matched a CKnownFile, attached (or already attached)
-		kAddPathQueued    // unknown file, CHashingTask pushed
+		//! Broken link, zero size, stat failed.
+		kAddPathSkipped,
+		//! Name matched the user's exclusion filter.
+		kAddPathExcluded,
+		//! Matched a CKnownFile and was newly attached.
+		kAddPathKnown,
+		// Matched a CKnownFile that was *already* in the share set, so AddFile
+		// declined -- the same content reachable from a second shared
+		// directory, or a repeated watcher event. Split out from
+		// kAddPathKnown because callers that announce a file becoming shared
+		// must not claim a share that did not happen.
+		kAddPathAlreadyShared,
+		//! Unknown file; a CHashingTask was pushed.
+		kAddPathQueued
 	};
 	AddPathResult AddPathToShares(const CPath &directory,
 		const CPath &fname,
@@ -287,6 +304,10 @@ private:
 	// main thread (the bulk walk, the filesystem-watcher event handler and
 	// the core timer are all the main thread).
 	unsigned m_discoveredNewFiles = 0;
+
+	//! Already-known files attached during a bulk subdirectory scan, summarised
+	//! by Process() rather than announced one line each. See NotifyPathAdded.
+	unsigned m_attachedKnownFiles = 0;
 
 	void SendListToServer();
 	uint64 m_lastPublishED2K;
