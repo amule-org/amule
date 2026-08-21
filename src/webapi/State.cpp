@@ -362,6 +362,20 @@ void CState::MutateServers(const std::function<void(std::map<std::uint32_t, Serv
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	fn(m_servers);
 }
+std::vector<FriendSnapshot> CState::Friends() const
+{
+	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+	std::vector<FriendSnapshot> out;
+	out.reserve(m_friends.size());
+	for (const auto &kv : m_friends)
+		out.push_back(kv.second);
+	return out;
+}
+void CState::MutateFriends(const std::function<void(std::map<std::uint32_t, FriendSnapshot> &)> &fn)
+{
+	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
+	fn(m_friends);
+}
 
 std::vector<FileSnapshot> CState::Downloads() const
 {

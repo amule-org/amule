@@ -64,6 +64,11 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 - [`DELETE /api/v0/servers/{ecid}`](#delete-apiv0serversecid--delete-apiv0serversipport) — remove server (ECID or `ip:port`)
 - [`PATCH /api/v0/servers/{ecid}`](#patch-apiv0serversecid--patch-apiv0serversipport) — set server priority / static flag (ECID or `ip:port`)
 - [`POST /api/v0/servers/update`](#post-apiv0serversupdate) — refresh from `server.met` URL
+- [`GET /api/v0/friends`](#get-apiv0friends) — list the friends list
+- [`POST /api/v0/friends`](#post-apiv0friends) — add a friend, by connected peer or by address
+- [`DELETE /api/v0/friends/{ecid}`](#delete-apiv0friendsecid) — remove a friend
+- [`PATCH /api/v0/friends/{ecid}`](#patch-apiv0friendsecid) — grant or clear the friend slot
+- [`POST /api/v0/friends/{ecid}/shared_files`](#post-apiv0friendsecidshared_files) — browse a friend's shared files
 
 **Categories**
 - [`GET /api/v0/categories`](#get-apiv0categories) — list categories
@@ -188,7 +193,7 @@ Each endpoint documents its own response shape under the endpoint section. List 
 
 ### List pagination and sorting
 
-The list endpoints — `GET /downloads`, `/clients`, `/shared`, `/servers`, and `/search/results` — accept optional query parameters for server-side windowing and ordering, and always return pagination metadata beside the array:
+The list endpoints — `GET /downloads`, `/clients`, `/shared`, `/servers`, `/friends`, and `/search/results` — accept optional query parameters for server-side windowing and ordering, and always return pagination metadata beside the array:
 
 | Param    | Default          | Notes |
 |----------|------------------|-------|
@@ -218,6 +223,7 @@ Omitting all four parameters preserves the previous response exactly, plus the a
 | `GET /known_clients`  | `name`, `software`, `first_seen`, `last_seen`, `sessions`, `total_uploaded`, `total_downloaded` |
 | `GET /shared`         | `name`, `size` |
 | `GET /servers`        | `name`, `users`, `ping`, `files` |
+| `GET /friends`        | `name`, `online` |
 | `GET /search/results` | `name`, `size`, `sources`, `rating` |
 
 ### Bulk mutations and the `results` envelope
@@ -1574,6 +1580,98 @@ The URL must start with `http://` or `https://`; anything else is rejected `400 
 **Errors:** `400 bad_request`, `400 amuled_rejected`, `503 ec_unavailable`.
 
 ---
+
+### Friends
+
+The friends list amuled persists to `emfriends.met`. The daemon ships the whole list inside the update every client already receives, so `GET /friends` costs no roundtrip of its own.
+
+`{ecid}` is the friend's own id, distinct from the peer ECIDs on `/clients`. Like every ECID it does **not** survive an `amuled` restart — use `user_hash` as the durable reference where a friend has one. A friend added by address alone has no hash.
+
+#### `GET /api/v0/friends`
+
+**Auth:** `GUEST`
+
+```json
+{
+  "friends": [
+    {
+      "friend_ecid": 12,
+      "name": "alice",
+      "user_hash": "a1b2c3d4e5060e708090a0b0c0d06f00",
+      "ip": "203.0.113.42",
+      "port": 4662,
+      "client_ecid": 4382,
+      "online": true,
+      "friend_slot": false
+    }
+  ],
+  "total": 7,
+  "offset": 0,
+  "limit": 7
+}
+```
+
+`client_ecid` is the live peer this friend is currently linked to, joinable against [`GET /api/v0/clients`](#get-apiv0clients), and `0` when the friend is offline — `online` is the convenience form of that test. `user_hash` is `""` for a friend added by address only, and `ip` is `""` for a zero address.
+
+`friend_slot` reads `false` against a daemon predating the tag that carries it, the same way `is_friend` and `dl_up_modifier` degrade on `/clients`.
+
+**Errors:** `503 ec_unavailable`.
+
+#### `POST /api/v0/friends`
+
+**Auth:** `ADMIN`
+
+Two mutually exclusive body forms.
+
+Promote a connected peer:
+
+```json
+{ "client_ecid": 4382 }
+```
+
+Or add by address, where `ip` and `port` are required and non-zero, `user_hash` must be 32 hexadecimal characters when given, and `name` defaults to the address:
+
+```json
+{ "ip": "203.0.113.42", "port": 4662, "name": "alice", "user_hash": "a1b2c3d4e5060e708090a0b0c0d06f00" }
+```
+
+Sending `client_ecid` together with any address field is a `400`.
+
+**Response:** `201 Created` → the new friend object.
+
+**Errors:** `400 bad_request`, `404 not_found` (no connected client with that `client_ecid`), `400 amuled_rejected`, `503 ec_unavailable`.
+
+#### `DELETE /api/v0/friends/{ecid}`
+
+**Auth:** `ADMIN`
+
+**Response:** `200 OK` → `{ "ok": true, "friend_ecid": 12 }`.
+
+Removing the friend that currently holds the friend slot clears it.
+
+**Errors:** `404 not_found`, `400 amuled_rejected`, `503 ec_unavailable`.
+
+#### `PATCH /api/v0/friends/{ecid}`
+
+**Auth:** `ADMIN`
+
+**Body:** `{ "friend_slot": true }` — the only mutable field.
+
+**Response:** `200 OK` → the updated friend object.
+
+Only one friend can hold the slot at a time, so granting it clears it on whoever held it before. A single call therefore changes two records and emits two `friend_updated` events; the response body describes only the friend named in the URL.
+
+**Errors:** `400 bad_request`, `404 not_found`, `400 amuled_rejected`, `503 ec_unavailable`.
+
+#### `POST /api/v0/friends/{ecid}/shared_files`
+
+**Auth:** `ADMIN`
+
+Browse a friend's shared files. The friend-addressed twin of [`POST /api/v0/clients/{ecid}/shared_files`](#post-apiv0clientsecidshared_files), and more capable: a friend record carries a stored address, so the daemon can browse a friend who is **not currently connected**, which the clients route cannot do.
+
+**Response:** `202 Accepted` → `{ "ok": true, "search_id": 17 }`. Poll [`GET /api/v0/search/results`](#get-apiv0searchresults) with that `search_id`.
+
+**Errors:** `403 forbidden`, `404 not_found`, `502 amuled_rejected`, `503 ec_unavailable`.
 
 ### Categories
 

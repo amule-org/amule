@@ -180,6 +180,19 @@ std::string ToJson(const ServerSnapshot &s)
 	return o.str();
 }
 
+std::string ToJson(const FriendSnapshot &f)
+{
+	std::ostringstream o;
+	o << "{"
+	  << "\"friend_ecid\":" << f.ecid << ",\"name\":\"" << EscJson(f.name) << "\""
+	  << ",\"user_hash\":\"" << EscJson(f.user_hash) << "\""
+	  << ",\"ip\":\"" << EscJson(f.ip) << "\""
+	  << ",\"port\":" << f.port << ",\"client_ecid\":" << f.client_ecid
+	  << ",\"online\":" << (f.client_ecid != 0 ? "true" : "false")
+	  << ",\"friend_slot\":" << (f.friend_slot ? "true" : "false") << "}";
+	return o.str();
+}
+
 std::string ToJson(const ClientSnapshot &c)
 {
 	std::ostringstream o;
@@ -312,6 +325,14 @@ bool Equal(const ServerSnapshot &a, const ServerSnapshot &b)
 	       a.priority == b.priority && a.ping_ms == b.ping_ms && a.failed == b.failed &&
 	       a.is_static == b.is_static;
 }
+bool Equal(const FriendSnapshot &a, const FriendSnapshot &b)
+{
+	// client_ecid is part of the identity here on purpose: it going to 0 is
+	// the friend going offline, which is exactly what a subscriber watching
+	// the connected indicator needs to hear about.
+	return a.name == b.name && a.user_hash == b.user_hash && a.ip == b.ip && a.port == b.port &&
+	       a.client_ecid == b.client_ecid && a.friend_slot == b.friend_slot;
+}
 bool Equal(const ClientSnapshot &a, const ClientSnapshot &b)
 {
 	return a.client_name == b.client_name && a.user_hash == b.user_hash && a.ip == b.ip &&
@@ -396,6 +417,12 @@ std::string RemovedEcidPayload(const ServerSnapshot &s)
 	o << "{\"ecid\":" << s.ecid << "}";
 	return o.str();
 }
+std::string RemovedEcidPayload(const FriendSnapshot &f)
+{
+	std::ostringstream o;
+	o << "{\"friend_ecid\":" << f.ecid << "}";
+	return o.str();
+}
 std::string RemovedEcidPayload(const ClientSnapshot &c)
 {
 	std::ostringstream o;
@@ -460,6 +487,7 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 	// map all along.
 	auto new_files = ByEcid(state.Files());
 	auto new_servers = ByEcid(state.Servers());
+	auto new_friends = ByEcid(state.Friends());
 	auto new_clients = ByEcid(state.Clients());
 	// Read the full dashboard for status_changed — the event payload
 	// mirrors the REST /status nested envelope which pulls from
@@ -541,6 +569,12 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 	DiffMap(bus, "client", prev.clients, new_clients, [](const ClientSnapshot &c) {
 		return RemovedEcidPayload(c);
 	});
+	// Note for consumers: a single PATCH of the friend slot can produce two
+	// friend_updated events, because granting it to one friend clears it on
+	// whoever held it before.
+	DiffMap(bus, "friend", prev.friends, new_friends, [](const FriendSnapshot &f) {
+		return RemovedEcidPayload(f);
+	});
 
 	// /status: one event when anything in the dashboard envelope
 	// changes (StatusSnapshot fields OR Kad network rollup OR
@@ -560,6 +594,7 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 	prev.files = std::move(new_files);
 	prev.servers = std::move(new_servers);
 	prev.clients = std::move(new_clients);
+	prev.friends = std::move(new_friends);
 	prev.status = new_status;
 	prev.kad = new_kad;
 	prev.ec_connected = new_ec;

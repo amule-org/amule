@@ -145,6 +145,11 @@ private:
 	CHttpServer::Response HandleDownloadsBulkDelete(const CHttpServer::Request &);
 	// server lifecycle.
 	CHttpServer::Response HandleServerAdd(const CHttpServer::Request &);
+	CHttpServer::Response HandleFriends(const CHttpServer::Request &);
+	CHttpServer::Response HandleFriendAdd(const CHttpServer::Request &);
+	CHttpServer::Response HandleFriendRemove(const CHttpServer::Request &, const std::string &ecid_str);
+	CHttpServer::Response HandleFriendPatch(const CHttpServer::Request &, const std::string &ecid_str);
+	CHttpServer::Response HandleFriendBrowse(const CHttpServer::Request &, const std::string &ecid_str);
 	CHttpServer::Response HandleServerConnect(const CHttpServer::Request &, const std::string &ecid_str);
 	CHttpServer::Response HandleServerDelete(const CHttpServer::Request &, const std::string &ecid_str);
 	CHttpServer::Response HandleServerPatch(const CHttpServer::Request &, const std::string &ecid_str);
@@ -243,6 +248,10 @@ private:
 	// results via GET /search/results?search_id=, progress + SSE via the
 	// standard search machinery.
 	CHttpServer::Response HandleClientBrowse(const CHttpServer::Request &, const std::string &ecid_str);
+	// Shared by the /clients and /friends browse routes; `by_friend` selects
+	// which sub-tag addresses the target.
+	CHttpServer::Response HandleBrowse(
+		const CHttpServer::Request &, const std::string &ecid_str, bool by_friend);
 	CHttpServer::Response HandleSharedList(const CHttpServer::Request &);
 	CHttpServer::Response HandleServers(const CHttpServer::Request &);
 	CHttpServer::Response HandleKad(const CHttpServer::Request &);

@@ -72,6 +72,7 @@ void EmitDiffsForEventBus(CamuleapiApp &app, const CState &state);
 struct StatusSnapshot;
 struct FileSnapshot;
 struct ClientSnapshot;
+struct FriendSnapshot;
 struct ServerSnapshot;
 struct KadSnapshot;
 struct CategorySnapshot;
@@ -168,6 +169,11 @@ void ApplyGetUpdateToDownloads(
 void ApplyGetUpdateToShared(const CECPacket *resp, FileMap &cache);
 
 void ApplyGetUpdateToServers(const CECPacket *resp, std::map<std::uint32_t, ServerSnapshot> &cache);
+
+// Consumes the EC_TAG_FRIEND container the daemon appends to every
+// EC_OP_GET_UPDATE reply (ExternalConn.cpp, "Add friends"), so /friends is
+// served from the tick we already run rather than a roundtrip of its own.
+void ApplyGetUpdateToFriends(const CECPacket *resp, std::map<std::uint32_t, FriendSnapshot> &cache);
 
 // ed2k server priority, both directions. The SRV_PR_* wire values are not
 // monotone (NORMAL=0, HIGH=1, LOW=2), so callers must never assume a name's

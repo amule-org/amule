@@ -797,6 +797,118 @@ TEST(Refresher, ServersNoContainerLeavesCacheAlone)
 }
 
 // ----------------------------------------------------------------------
+// Friends — same container shape as servers: full list every tick, per-field
+// CValueMap suppression, eviction by "not seen".
+// ----------------------------------------------------------------------
+
+TEST(Refresher, FriendsFromContainerMergesByEcid)
+{
+	std::map<std::uint32_t, FriendSnapshot> cache;
+	{
+		// A friend removed on the daemon side between ticks.
+		FriendSnapshot f;
+		f.ecid = 9999;
+		f.name = "removed";
+		cache.emplace(9999, f);
+	}
+
+	CECPacket resp(EC_OP_SHARED_FILES);
+	{
+		CECTag container(EC_TAG_FRIEND, static_cast<std::uint32_t>(0));
+		CECTag fr(EC_TAG_FRIEND, static_cast<std::uint32_t>(12));
+		fr.AddTag(CECTag(EC_TAG_FRIEND_NAME, wxString::FromUTF8("alice")));
+		fr.AddTag(CECTag(EC_TAG_FRIEND_IP, static_cast<std::uint32_t>(0x2A7100CB)));
+		fr.AddTag(CECTag(EC_TAG_FRIEND_PORT, static_cast<std::uint16_t>(4662)));
+		fr.AddTag(CECTag(EC_TAG_FRIEND_CLIENT, static_cast<std::uint32_t>(4382)));
+		fr.AddTag(CECTag(EC_TAG_FRIEND_FRIENDSLOT, true));
+		container.AddTag(fr);
+		resp.AddTag(container);
+	}
+
+	ApplyGetUpdateToFriends(&resp, cache);
+
+	ASSERT_EQUALS(static_cast<size_t>(1), cache.size());
+	ASSERT_TRUE(cache.find(12) != cache.end());
+	ASSERT_TRUE(cache.find(9999) == cache.end()); // evicted
+	ASSERT_EQUALS(std::string("alice"), cache[12].name);
+	ASSERT_EQUALS(std::string("203.0.113.42"), cache[12].ip);
+	ASSERT_EQUALS(static_cast<std::uint16_t>(4662), cache[12].port);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(4382), cache[12].client_ecid);
+	ASSERT_TRUE(cache[12].friend_slot);
+}
+
+TEST(Refresher, FriendsSuppressedFieldsKeepCachedValues)
+{
+	// CValueMap omits unchanged fields, so a tick carrying only the changed
+	// one must not blank the rest. The friend goes offline (CLIENT -> 0) and
+	// nothing else is sent.
+	std::map<std::uint32_t, FriendSnapshot> cache;
+	{
+		FriendSnapshot f;
+		f.ecid = 12;
+		f.name = "alice";
+		f.ip = "203.0.113.42";
+		f.port = 4662;
+		f.client_ecid = 4382;
+		f.friend_slot = true;
+		cache.emplace(12, f);
+	}
+
+	CECPacket resp(EC_OP_SHARED_FILES);
+	{
+		CECTag container(EC_TAG_FRIEND, static_cast<std::uint32_t>(0));
+		CECTag fr(EC_TAG_FRIEND, static_cast<std::uint32_t>(12));
+		fr.AddTag(CECTag(EC_TAG_FRIEND_CLIENT, static_cast<std::uint32_t>(0)));
+		container.AddTag(fr);
+		resp.AddTag(container);
+	}
+
+	ApplyGetUpdateToFriends(&resp, cache);
+
+	ASSERT_EQUALS(static_cast<size_t>(1), cache.size());
+	ASSERT_EQUALS(static_cast<std::uint32_t>(0), cache[12].client_ecid); // went offline
+	ASSERT_EQUALS(std::string("alice"), cache[12].name);                 // preserved
+	ASSERT_EQUALS(std::string("203.0.113.42"), cache[12].ip);            // preserved
+	ASSERT_TRUE(cache[12].friend_slot);                                  // preserved
+}
+
+TEST(Refresher, FriendsWithoutSlotTagReadFalse)
+{
+	// An older daemon does not serialize EC_TAG_FRIEND_FRIENDSLOT at all.
+	// The snapshot must degrade to false rather than carrying junk.
+	std::map<std::uint32_t, FriendSnapshot> cache;
+
+	CECPacket resp(EC_OP_SHARED_FILES);
+	{
+		CECTag container(EC_TAG_FRIEND, static_cast<std::uint32_t>(0));
+		CECTag fr(EC_TAG_FRIEND, static_cast<std::uint32_t>(5));
+		fr.AddTag(CECTag(EC_TAG_FRIEND_NAME, wxString::FromUTF8("bob")));
+		container.AddTag(fr);
+		resp.AddTag(container);
+	}
+
+	ApplyGetUpdateToFriends(&resp, cache);
+
+	ASSERT_TRUE(cache.find(5) != cache.end());
+	ASSERT_TRUE(!cache[5].friend_slot);
+	ASSERT_EQUALS(std::string(""), cache[5].ip); // zero IP renders empty
+}
+
+TEST(Refresher, FriendsNoContainerLeavesCacheAlone)
+{
+	std::map<std::uint32_t, FriendSnapshot> cache;
+	cache.emplace(7, FriendSnapshot{});
+
+	CECPacket resp(EC_OP_SHARED_FILES);
+	// No EC_TAG_FRIEND container at all.
+
+	ApplyGetUpdateToFriends(&resp, cache);
+
+	ASSERT_EQUALS(static_cast<size_t>(1), cache.size());
+	ASSERT_TRUE(cache.find(7) != cache.end());
+}
+
+// ----------------------------------------------------------------------
 // RLE state map — cleaned up alongside the cache when a partfile
 // gets evicted via FILE_REMOVED. Without the cleanup, the decoder's
 // internal buffer (~200 KB per partfile on TB-class files) would

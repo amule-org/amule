@@ -67,7 +67,7 @@ public:
 	const CClientRef &GetLinkedClient() const { return m_LinkedClient; }
 	void UnLinkClient(bool notify = true);
 
-	bool HasFriendSlot();
+	bool HasFriendSlot() const;
 	void SetPersistentFriendSlot(bool v) { m_HasFriendSlot = v; }
 
 	const wxString &GetName() const { return m_strName; }

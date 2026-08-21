@@ -417,6 +417,25 @@ struct ServerSnapshot
 	bool is_static = false;
 };
 
+// /friends endpoint. The daemon ships the whole friends list inside every
+// EC_OP_GET_UPDATE reply, so this is filled from the tick we already run and
+// no endpoint here costs an extra roundtrip.
+struct FriendSnapshot
+{
+	std::uint32_t ecid = 0;
+	std::string name;
+	std::string user_hash; // 32-char lowercase MD4, "" when added by ip:port
+	// Dotted quad, "" for a zero IP -- rendered in the walker like
+	// ClientSnapshot::ip, so nothing downstream has to know the wire encoding.
+	std::string ip;
+	std::uint16_t port = 0;
+	std::uint32_t client_ecid = 0; // live peer this friend is linked to, 0 = offline
+	// Reported by cores that serialize EC_TAG_FRIEND_FRIENDSLOT. An older
+	// daemon omits the tag and this stays false, the same way is_friend and
+	// dl_up_modifier degrade on /clients.
+	bool friend_slot = false;
+};
+
 // /kad endpoint. Single composite snapshot pulled from the STAT_REQ
 // response we're already fetching for /status — saves a roundtrip
 // since amuled's `EC_OP_STAT_REQ` at `EC_DETAIL_CMD` ships every
@@ -1221,6 +1240,7 @@ public:
 	}
 
 	std::vector<ServerSnapshot> Servers() const;
+	std::vector<FriendSnapshot> Friends() const;
 	// Results / progress for one search. search_id == 0 resolves to the
 	// current (most-recently-started) search; an unknown id yields an empty
 	// list / idle progress. HasSearch distinguishes "unknown id" (404) from
@@ -1279,6 +1299,7 @@ public:
 	void MutateShared(const std::function<void(FileMap &)> &fn);
 	void MutateClients(const std::function<void(std::map<std::uint32_t, ClientSnapshot> &)> &fn);
 	void MutateServers(const std::function<void(std::map<std::uint32_t, ServerSnapshot> &)> &fn);
+	void MutateFriends(const std::function<void(std::map<std::uint32_t, FriendSnapshot> &)> &fn);
 	// Mutate one search's result map (the refresher's per-tick full-fetch
 	// overwrite). No-op if the id names no live slot.
 	void MutateSearch(std::uint32_t search_id,
@@ -1377,6 +1398,7 @@ private:
 	//! MUST be called with m_mu held for writing.
 	void ReconcileKnownClientsLocked();
 	std::map<std::uint32_t, ServerSnapshot> m_servers;
+	std::map<std::uint32_t, FriendSnapshot> m_friends;
 	std::vector<std::string> m_amule_log_lines;
 	ServerInfoLog m_server_info;
 	StatsTreeNode m_stats_tree;

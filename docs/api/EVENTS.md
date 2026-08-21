@@ -37,6 +37,7 @@ const EVENT_TYPES = [
   "shared_added",   "shared_updated",   "shared_removed",
   "client_added",   "client_updated",   "client_removed",
   "server_added",   "server_updated",   "server_removed",
+  "friend_added",   "friend_updated",   "friend_removed",
   "status_changed", "log_appended",
   "search_result_added", "search_progress",
   "comments_updated",
@@ -156,6 +157,7 @@ Every event belongs to a single channel. The full set, prefix-mapped from the ev
 | `shared` | `shared_*` | Shared file list |
 | `servers` | `server_*` | Known ed2k servers |
 | `clients` | `client_*` | Peers we're exchanging with |
+| `friends` | `friend_*` | The friends list, and whether each one is online |
 | `status` | `status_*` | Connection state + headline counters |
 | `logs` | `log_*` | amuled log buffer (live tail; serverinfo is poll-only) |
 | `search` | `search_*` | Result deltas + completion of an active `POST /search` |
@@ -218,7 +220,7 @@ Both `since_id` and `newest_id` are uint64. The client never has to compute them
 
 ## Event catalog
 
-Every event the bus publishes. The `_added` and `_updated` payloads are BYTE-FOR-BYTE identical to the matching REST resource's list-item shape — clients receiving a `*_updated` event get the full new state and never need to re-GET. `_removed` carries only the identity field — `hash` for files (`download_removed`, `shared_removed`), `client_ecid` for `client_removed`, `ecid` for `server_removed` — so the client can drop the cache entry without needing the old object. Two events don't fit the collection-delta model: `status_changed` ships a full status envelope (replace, not merge) and `log_appended` is an append operation (`{lines}` — push the lines onto the amule log buffer, don't replace). Branch on the event type in your dispatcher accordingly.
+Every event the bus publishes. The `_added` and `_updated` payloads are BYTE-FOR-BYTE identical to the matching REST resource's list-item shape — clients receiving a `*_updated` event get the full new state and never need to re-GET. `_removed` carries only the identity field — `hash` for files (`download_removed`, `shared_removed`), `client_ecid` for `client_removed`, `friend_ecid` for `friend_removed`, `ecid` for `server_removed` — so the client can drop the cache entry without needing the old object. Two events don't fit the collection-delta model: `status_changed` ships a full status envelope (replace, not merge) and `log_appended` is an append operation (`{lines}` — push the lines onto the amule log buffer, don't replace). Branch on the event type in your dispatcher accordingly.
 
 ### `downloads` channel
 
@@ -331,6 +333,35 @@ Identical to the REST [`/api/v0/servers`](REFERENCE.md#get-apiv0servers) list-it
 ```
 
 Servers are ECID-keyed (not hash-keyed) so the removed payload carries the integer ECID.
+
+### `friends` channel
+
+#### `friend_added` / `friend_updated`
+
+Identical to the REST [`/api/v0/friends`](REFERENCE.md#get-apiv0friends) list-item shape.
+
+```json
+{
+  "friend_ecid":  12,
+  "name":         "alice",
+  "user_hash":    "a1b2c3d4e5060e708090a0b0c0d06f00",
+  "ip":           "203.0.113.42",
+  "port":         4662,
+  "client_ecid":  4382,
+  "online":       true,
+  "friend_slot":  false
+}
+```
+
+`friend_updated` fires on any observable change, including a friend coming online or going offline — that transition is `client_ecid` moving between a live peer's ECID and `0`, which is what drives the connected indicator in the desktop client.
+
+One `PATCH /api/v0/friends/{ecid}` can produce **two** `friend_updated` events. Only one friend may hold the friend slot, so granting it to one clears it on whoever held it before, and both records change.
+
+#### `friend_removed`
+
+```json
+{ "friend_ecid": 12 }
+```
 
 ### `clients` channel
 

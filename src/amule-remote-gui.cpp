@@ -3220,6 +3220,14 @@ void CFriendListRem::ProcessItemUpdate(const CEC_Friend_Tag *tag, CFriend *Frien
 	tag->UserHash(Friend->m_UserHash);
 	tag->IP(Friend->m_dwLastUsedIP);
 	tag->Port(Friend->m_nLastUsedPort);
+	// Read the slot back rather than leaving it at its constructor false: the
+	// context menu's check mark is drawn from it, so without this it never
+	// showed which friend actually holds the slot -- not even right after
+	// this GUI set it.
+	bool friendSlot = false;
+	if (tag->FriendSlot(friendSlot)) {
+		Friend->SetPersistentFriendSlot(friendSlot);
+	}
 	uint32 clientID;
 	bool notified = false;
 	if (tag->Client(clientID)) {
