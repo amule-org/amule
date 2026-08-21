@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 20:10+0200\n"
+"POT-Creation-Date: 2026-08-21 21:31+0200\n"
 "PO-Revision-Date: 2026-08-21 19:14+0000\n"
 "Last-Translator: Angelescu Constantin <titus0818@yahoo.com>\n"
 "Language-Team: English <kde-i18n-doc@kde.org>\n"
@@ -3200,6 +3200,11 @@ msgstr "ATENȚIE:"
 
 #: src/MediaProbe.cpp
 msgid "Media metadata: no ffprobe binary found. Install ffmpeg, or set the ffprobe path in preferences; length, bitrate and codec will not be extracted."
+msgstr ""
+
+#: src/MediaProbe.cpp
+#, c-format
+msgid "Extracting media metadata with ffprobe: %s"
 msgstr ""
 
 #: src/MuleNotebook.cpp src/muuli_wdr.cpp
@@ -7093,6 +7098,14 @@ msgid "Shared-dir watcher: backend overflow/error (%s); falling back to full rel
 msgstr ""
 
 #: src/SharedDirWatcher.cpp
+#, c-format
+msgid "Shared-dir watcher: %u new subdirectory found since last run, rescanning shares"
+msgid_plural "Shared-dir watcher: %u new subdirectories found since last run, rescanning shares"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#: src/SharedDirWatcher.cpp
 msgid "Shared-dir watcher: events dropped by backend, forcing a full shared-files reload to resync"
 msgstr ""
 
@@ -7108,14 +7121,6 @@ msgid_plural "Found %i known shared files"
 msgstr[0] "S-a găsit %i fișier partajat cunoscut"
 msgstr[1] "S-au găsit %i fișiere partajate cunoscute"
 msgstr[2] "S-au găsit %i de fișiere partajate cunoscute"
-
-#: src/SharedFileList.cpp
-#, c-format
-msgid "Found %i known shared file, %i unknown"
-msgid_plural "Found %i known shared files, %i unknown"
-msgstr[0] "S-a găsit %i fișier partajat cunoscut, %i necunoscut"
-msgstr[1] "S-au găsit %i fișiere partajate cunoscute, %i necunoscute"
-msgstr[2] "S-au găsit %i de fișiere partajate cunoscute, %i necunoscute"
 
 #: src/SharedFileList.cpp
 #, c-format
@@ -7139,6 +7144,29 @@ msgstr "Directorul partajat nu a fost găsit, se omite: %s"
 #, c-format
 msgid "No shareable files found in directory: %s"
 msgstr "Nu au fost găsite fișiere partajabile în directorul: %s"
+
+#: src/SharedFileList.cpp
+#, fuzzy, c-format
+msgid "Now sharing file: %s"
+msgstr "Eroare în timpul salvării fișierului %s : %s"
+
+#: src/SharedFileList.cpp
+#, fuzzy, c-format
+msgid "Stopped sharing removed file: %s"
+msgstr "Se încarcă fișierul server.met: %s"
+
+#: src/SharedFileList.cpp
+#, fuzzy, c-format
+msgid "Stopped sharing %u files under removed directory: %s"
+msgstr "Nu au fost găsite fișiere partajabile în directorul: %s"
+
+#: src/SharedFileList.cpp
+#, fuzzy, c-format
+msgid "Discovered %u new shared file"
+msgid_plural "Discovered %u new shared files"
+msgstr[0] "S-a găsit %i fișier partajat cunoscut"
+msgstr[1] "S-au găsit %i fișiere partajate cunoscute"
+msgstr[2] "S-au găsit %i de fișiere partajate cunoscute"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "User Name"
@@ -8140,6 +8168,16 @@ msgid "aMule text client"
 msgstr "client text aMule"
 
 #: src/ThreadTasks.cpp
+#, fuzzy, c-format
+msgid "Hashing file: %s"
+msgstr "Se șterge fișierul: %s"
+
+#: src/ThreadTasks.cpp
+#, fuzzy, c-format
+msgid "Rebuilding AICH hashset for file: %s"
+msgstr "Se reia încărcarea fișierului: %s"
+
+#: src/ThreadTasks.cpp
 #, c-format
 msgid "Converting old AICH hashsets in '%s' to 64b in '%s'."
 msgstr "Se convertește vechile indexări AICH în '%s' la 64b în '%s'."
@@ -8981,6 +9019,13 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, c-format
+#~ msgid "Found %i known shared file, %i unknown"
+#~ msgid_plural "Found %i known shared files, %i unknown"
+#~ msgstr[0] "S-a găsit %i fișier partajat cunoscut, %i necunoscut"
+#~ msgstr[1] "S-au găsit %i fișiere partajate cunoscute, %i necunoscute"
+#~ msgstr[2] "S-au găsit %i de fișiere partajate cunoscute, %i necunoscute"
 
 #, fuzzy
 #~ msgid " MB/s"

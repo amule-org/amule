@@ -272,6 +272,18 @@ private:
 	// Set by RequestReload(), drained by Process(). See RequestReload().
 	bool m_reloadPending = false;
 
+	// New files discovered since the last Process() tick, counted at the one
+	// place discovery is actually decided (AddPathToShares' queued branch) so
+	// every route is covered without plumbing: the bulk walk, the watcher's
+	// create and rename handling, a newly appeared shared subdirectory, and
+	// the modify-treated-as-add path. Flushed once per tick, which coalesces
+	// a batch of files into a single line instead of one per file.
+	//
+	// A plain unsigned is enough: every increment and the flush run on the
+	// main thread (the bulk walk, the filesystem-watcher event handler and
+	// the core timer are all the main thread).
+	unsigned m_discoveredNewFiles = 0;
+
 	void SendListToServer();
 	uint64 m_lastPublishED2K;
 	bool m_lastPublishED2KFlag;

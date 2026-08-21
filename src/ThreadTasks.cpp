@@ -123,14 +123,34 @@ void CHashingTask::Entry()
 	knownfile->m_AvailPartFrequency.insert(
 		knownfile->m_AvailPartFrequency.begin(), knownfile->GetPartCount(), 0);
 
+	// Info level, not debug: AddDebugLogLineN compiles to nothing outside a
+	// debug build, so in the binaries users actually run there was no record
+	// at all that the client was reading every byte of a file (issue #968).
+	// Emitted here rather than where the task was queued, because tasks run
+	// serially on CThreadScheduler long after the directory walk that queued
+	// them -- a queue-time line would not say what is happening now. It sits
+	// after the open/length/size guards above, so a file that is skipped never
+	// claims to have been hashed.
+	//
+	// The full path, not m_filename: the same basename can exist in several
+	// shared directories, and "which file is it chewing on" is the question
+	// this line exists to answer.
 	if ((m_toHash & EH_MD4) && (m_toHash & EH_AICH)) {
 		knownfile->GetAICHHashset()->FreeHashSet();
+		AddLogLineN(CFormat(_("Hashing file: %s")) % fullPath);
 		AddDebugLogLineN(
 			logHasher, CFormat("Starting to create MD4 and AICH hash for file: %s") % m_filename);
 	} else if ((m_toHash & EH_MD4)) {
+		AddLogLineN(CFormat(_("Hashing file: %s")) % fullPath);
 		AddDebugLogLineN(logHasher, CFormat("Starting to create MD4 hash for file: %s") % m_filename);
 	} else if ((m_toHash & EH_AICH)) {
 		knownfile->GetAICHHashset()->FreeHashSet();
+		// Distinct wording: this fires for files discovered long ago whose AICH
+		// master hash is missing from known2_64.met, so calling it "hashing"
+		// would wrongly suggest the file was just found. After a known2_64.met
+		// loss this re-reads the entire library, which is exactly the silent
+		// multi-hour case worth a line.
+		AddLogLineN(CFormat(_("Rebuilding AICH hashset for file: %s")) % fullPath);
 		AddDebugLogLineN(
 			logHasher, CFormat("Starting to create AICH hash for file: %s") % m_filename);
 	} else {

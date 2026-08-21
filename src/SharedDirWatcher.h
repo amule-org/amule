@@ -101,7 +101,7 @@ private:
 	void ScheduleProcessing();
 
 	// Walk m_pendingEvents and apply each one to CSharedFileList via
-	// NotifyPathAdded/Removed/Modified. Skipped if m_fallbackPending
+	// NotifyPathAdded/Removed/Modified. Skipped if a resync is owed
 	// was set by a wxFSW_EVENT_WARNING / _ERROR event since the last
 	// flush -- in that case we fall back to the bulk Reload() because
 	// the watcher backend has signalled it dropped events and we
@@ -161,12 +161,40 @@ private:
 	// debounce flush. RENAME stores the destination in `renamedTo`.
 	std::unordered_map<wxString, PendingPathEvents> m_pendingEvents;
 
-	// Set when the watcher backend reports overflow / drop (inotify
-	// queue overflow, kqueue race, Windows ReadDirectoryChangesW
-	// buffer exhaust). FlushPendingEvents() responds by calling the
-	// bulk Reload() because incremental state can no longer be
-	// trusted. Cleared after the fallback fires.
-	bool m_fallbackPending;
+	// Why a full-reload resync is owed; cleared once the fallback fires.
+	//
+	// ResyncDroppedEvents means the watcher backend reported overflow or drop
+	// (inotify queue overflow, kqueue race, Windows ReadDirectoryChangesW
+	// buffer exhaust). FlushPendingEvents() responds with the bulk Reload()
+	// because the per-path deltas can no longer be trusted -- a real fault,
+	// and logged as one.
+	//
+	// ResyncColdDiscovery means subdirectories simply appeared while aMule was
+	// not running. Nothing failed. Both reasons used to share one bool and so
+	// one message, which would have reported this routine case as a watcher
+	// failure, in red.
+	//
+	// That is hard to provoke in practice: CPreferences::ReloadSharedFolders
+	// expands recursive roots into the shared-dir union and the startup Reload
+	// runs before the watcher is enabled, so ColdDiscoverSubdirs normally
+	// finds nothing left to discover -- adding subdirectories while aMule is
+	// stopped and restarting does *not* produce the wrong message (verified
+	// against the pre-change build). What remains is the narrow window where a
+	// directory appears between that Reload and Enable(), plus whatever the
+	// expansion skips. Separating the reasons is cheap and means that if the
+	// path is ever reached it says what happened rather than blaming the
+	// backend (issue #968).
+	enum ResyncReason
+	{
+		ResyncNone,
+		//! Backend overflow/error: per-path deltas untrustworthy.
+		ResyncDroppedEvents,
+		//! New subdirs found at startup; nothing failed.
+		ResyncColdDiscovery,
+	};
+	ResyncReason m_resyncReason = ResyncNone;
+	//! Subdirectory count for the ResyncColdDiscovery message.
+	unsigned m_coldDiscoveredDirs = 0;
 #ifdef __APPLE__
 	wxTimer m_macPumpTimer;
 #endif

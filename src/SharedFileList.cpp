@@ -447,24 +447,27 @@ void CSharedFileList::FindSharedFiles(const ReloadYieldCb &yieldCb, bool &aborte
 		}
 	}
 
-	if (addedFiles == 0) {
-		AddLogLineN(
-			CFormat(wxPLURAL(
-				"Found %i known shared file", "Found %i known shared files", GetCount())) %
-			GetCount());
+	// One unconditional summary. The new-file count used to ride along as a
+	// suffix here, in one of two mutually exclusive variants, and only for this
+	// route -- the watcher reported nothing at all. It now has its own line,
+	// emitted from Process() for both routes (issue #968), so this says one
+	// thing and the two-argument variant is retired. That also drops a msgid
+	// whose plural form was selected on GetCount() rather than on the count it
+	// was actually pluralising.
+	AddLogLineN(
+		CFormat(wxPLURAL("Found %i known shared file", "Found %i known shared files", GetCount())) %
+		GetCount());
 
+	if (addedFiles == 0) {
 		// Make sure the AICH-hashes are up to date. This is the startup sync
 		// run once the shared/known list is authoritative, so it opts into the
 		// orphan-prune (drop known2_64.met entries no longer owned by any known
 		// file). Post-hashing syncs deliberately do not prune -- see
 		// CAICHSyncTask's ctor doc.
+		//
+		// Unchanged condition: this scheduling has nothing to do with logging
+		// and must keep firing exactly when it did before.
 		CThreadScheduler::AddTask(new CAICHSyncTask(true));
-	} else {
-		// New files, AICH thread will be run at the end of the hashing thread.
-		AddLogLineN(CFormat(wxPLURAL("Found %i known shared file, %i unknown",
-				    "Found %i known shared files, %i unknown",
-				    GetCount())) %
-			    GetCount() % addedFiles);
 	}
 
 	if (excluded > 0) {
@@ -641,6 +644,9 @@ CSharedFileList::AddPathResult CSharedFileList::AddPathToShares(
 	AddDebugLogLineN(logKnownFiles, CFormat("Hashing new unknown shared file '%s'") % fname);
 
 	hashTasks.push_back(new CHashingTask(directory, fname));
+	// This branch *is* the definition of "a new file was discovered", and it is
+	// the one point both discovery routes pass through (issue #968).
+	++m_discoveredNewFiles;
 	return kAddPathQueued;
 }
 
@@ -921,6 +927,20 @@ void CSharedFileList::NotifyPathAdded(const wxString &fullPath)
 		}
 		break;
 	case kAddPathKnown:
+		// A file already in known.met, moved or renamed into a shared
+		// directory: nothing is hashed and nothing is probed, so without this
+		// the file would silently become shared and be published to peers with
+		// no info-level record at all (issue #968).
+		//
+		// Deliberately here and not inside AddPathToShares, which the bulk walk
+		// also calls: there the already-known case is the overwhelming majority
+		// of entries, and one line per file would bury everything else under
+		// thousands of "nothing happened" lines on every rescan. The watcher
+		// path is different in kind -- it is an event, it fires at
+		// unpredictable times, its volume is bounded by real filesystem
+		// activity rather than by tree size, and no summary line covers it.
+		AddLogLineN(CFormat(_("Now sharing file: %s")) % fullPath);
+		break;
 	case kAddPathExcluded:
 	case kAddPathSkipped:
 		// AddPathToShares already wrote a debug log line; no
@@ -948,6 +968,9 @@ void CSharedFileList::NotifyPathRemoved(const wxString &fullPath)
 		file = it->second;
 	}
 
+	// Symmetric with "Now sharing file" above: a shared file disappearing
+	// behind the user's back is at least as interesting as one appearing.
+	AddLogLineN(CFormat(_("Stopped sharing removed file: %s")) % fullPath);
 	AddDebugLogLineN(
 		logKnownFiles, CFormat("Watcher: detaching deleted file '%s' from shares") % fullPath);
 	RemoveFile(file);
@@ -985,6 +1008,23 @@ void CSharedFileList::NotifyDirRemoved(const wxString &dirPath)
 		return;
 	}
 
+	// One summary line, not one per file: a removed subtree can hold thousands
+	// of files and the count is already in hand.
+	//
+	// The count is what this call actually detached, which on some backends is
+	// only part of the subtree. macOS FSEvents delivers per-file DELETEs racing
+	// the directory DELETE, so NotifyPathRemoved above already detached some
+	// files individually (each with its own line) and only the remainder is
+	// left for this sweep -- removing a 6-file directory was observed as four
+	// per-file lines plus a summary saying two. Every file is still logged
+	// exactly once and none is double-counted, so the accounting is right even
+	// though the shape is not the single tidy line it is on a backend that
+	// coalesces the subtree into one event. Reporting the directory's original
+	// size instead would be a lie about what this call did, and suppressing the
+	// per-file lines would mean losing them whenever the directory event never
+	// arrives at all.
+	AddLogLineN(CFormat(_("Stopped sharing %u files under removed directory: %s")) %
+		    static_cast<unsigned>(victims.size()) % dirPath);
 	AddDebugLogLineN(logKnownFiles,
 		CFormat("Watcher: detaching %zu shared file(s) under removed dir '%s'") % victims.size() %
 			dirPath);
@@ -1402,6 +1442,19 @@ void CSharedFileList::Process()
 		m_reloadPending = false;
 		Reload();
 	}
+
+	// Flushed after the drain above, so that when a reload runs on this tick
+	// its count is printed immediately after its own "Found N known shared
+	// files" summary rather than arriving a second later, detached from it.
+	// Only when non-zero: a pass that discovered nothing says nothing.
+	if (m_discoveredNewFiles) {
+		AddLogLineN(CFormat(wxPLURAL("Discovered %u new shared file",
+				    "Discovered %u new shared files",
+				    m_discoveredNewFiles)) %
+			    m_discoveredNewFiles);
+		m_discoveredNewFiles = 0;
+	}
+
 	Publish();
 	if (!m_lastPublishED2KFlag || (::GetTickCount64() - m_lastPublishED2K < ED2KREPUBLISHTIME)) {
 		return;

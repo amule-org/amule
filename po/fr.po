@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 20:10+0200\n"
+"POT-Creation-Date: 2026-08-21 21:31+0200\n"
 "PO-Revision-Date: 2026-08-21 19:08+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
@@ -3187,6 +3187,11 @@ msgstr "AVERTISSEMENT : "
 
 #: src/MediaProbe.cpp
 msgid "Media metadata: no ffprobe binary found. Install ffmpeg, or set the ffprobe path in preferences; length, bitrate and codec will not be extracted."
+msgstr ""
+
+#: src/MediaProbe.cpp
+#, c-format
+msgid "Extracting media metadata with ffprobe: %s"
 msgstr ""
 
 #: src/MuleNotebook.cpp src/muuli_wdr.cpp
@@ -7004,6 +7009,13 @@ msgid "Shared-dir watcher: backend overflow/error (%s); falling back to full rel
 msgstr "Observateur de répertoire partagé : dépassement de capacité/erreur du backend (%s) ; rechargement complet en cours"
 
 #: src/SharedDirWatcher.cpp
+#, c-format
+msgid "Shared-dir watcher: %u new subdirectory found since last run, rescanning shares"
+msgid_plural "Shared-dir watcher: %u new subdirectories found since last run, rescanning shares"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/SharedDirWatcher.cpp
 msgid "Shared-dir watcher: events dropped by backend, forcing a full shared-files reload to resync"
 msgstr "Observateur de répertoire partagé : des événements ont été perdus par le backend, ce qui force un rechargement complet des fichiers partagés pour resynchroniser"
 
@@ -7018,13 +7030,6 @@ msgid "Found %i known shared file"
 msgid_plural "Found %i known shared files"
 msgstr[0] "%i fichier partagé connu trouvé"
 msgstr[1] "%i fichiers partagés connus trouvés"
-
-#: src/SharedFileList.cpp
-#, c-format
-msgid "Found %i known shared file, %i unknown"
-msgid_plural "Found %i known shared files, %i unknown"
-msgstr[0] "%i fichier partagé connu trouvé, %i inconnu"
-msgstr[1] "%i fichiers partagés connus trouvés, %i inconnus"
 
 #: src/SharedFileList.cpp
 #, c-format
@@ -7047,6 +7052,28 @@ msgstr "Répertoire partagé non trouvé, on passe : %s"
 #, c-format
 msgid "No shareable files found in directory: %s"
 msgstr "Aucun fichier partageable trouvé dans le répertoire : %s"
+
+#: src/SharedFileList.cpp
+#, fuzzy, c-format
+msgid "Now sharing file: %s"
+msgstr "Erreur lors de la sauvegarde du fichier %s : %s"
+
+#: src/SharedFileList.cpp
+#, fuzzy, c-format
+msgid "Stopped sharing removed file: %s"
+msgstr "Chargement du fichier server.met : %s"
+
+#: src/SharedFileList.cpp
+#, fuzzy, c-format
+msgid "Stopped sharing %u files under removed directory: %s"
+msgstr "Aucun fichier partageable trouvé dans le répertoire : %s"
+
+#: src/SharedFileList.cpp
+#, fuzzy, c-format
+msgid "Discovered %u new shared file"
+msgid_plural "Discovered %u new shared files"
+msgstr[0] "%i fichier partagé connu trouvé"
+msgstr[1] "%i fichiers partagés connus trouvés"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "User Name"
@@ -8059,6 +8086,16 @@ msgid "aMule text client"
 msgstr "client texte aMule"
 
 #: src/ThreadTasks.cpp
+#, fuzzy, c-format
+msgid "Hashing file: %s"
+msgstr "Fichier supprimé : %s"
+
+#: src/ThreadTasks.cpp
+#, fuzzy, c-format
+msgid "Rebuilding AICH hashset for file: %s"
+msgstr "Reprise des envois du fichier : %s"
+
+#: src/ThreadTasks.cpp
 #, c-format
 msgid "Converting old AICH hashsets in '%s' to 64b in '%s'."
 msgstr "Conversion des anciens hashsets AICH en '%s' vers 64b en '%s'."
@@ -8904,6 +8941,12 @@ msgstr "aMule semble être en cours d'exécution. Veuillez le fermer et relancer
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Suppression des données d'utilisateur sur $APPDATA\\aMule…"
+
+#, c-format
+#~ msgid "Found %i known shared file, %i unknown"
+#~ msgid_plural "Found %i known shared files, %i unknown"
+#~ msgstr[0] "%i fichier partagé connu trouvé, %i inconnu"
+#~ msgstr[1] "%i fichiers partagés connus trouvés, %i inconnus"
 
 #~ msgid " MB/s"
 #~ msgstr " Mo/s"

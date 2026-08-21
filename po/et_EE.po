@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 20:10+0200\n"
+"POT-Creation-Date: 2026-08-21 21:31+0200\n"
 "PO-Revision-Date: 2026-08-21 19:06+0000\n"
 "Last-Translator: \n"
 "Language-Team: Estonian <kde-i18n-doc@kde.org>\n"
@@ -3190,6 +3190,11 @@ msgstr "HOIATUS: "
 
 #: src/MediaProbe.cpp
 msgid "Media metadata: no ffprobe binary found. Install ffmpeg, or set the ffprobe path in preferences; length, bitrate and codec will not be extracted."
+msgstr ""
+
+#: src/MediaProbe.cpp
+#, c-format
+msgid "Extracting media metadata with ffprobe: %s"
 msgstr ""
 
 #: src/MuleNotebook.cpp src/muuli_wdr.cpp
@@ -7075,6 +7080,13 @@ msgid "Shared-dir watcher: backend overflow/error (%s); falling back to full rel
 msgstr ""
 
 #: src/SharedDirWatcher.cpp
+#, c-format
+msgid "Shared-dir watcher: %u new subdirectory found since last run, rescanning shares"
+msgid_plural "Shared-dir watcher: %u new subdirectories found since last run, rescanning shares"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/SharedDirWatcher.cpp
 msgid "Shared-dir watcher: events dropped by backend, forcing a full shared-files reload to resync"
 msgstr ""
 
@@ -7089,13 +7101,6 @@ msgid "Found %i known shared file"
 msgid_plural "Found %i known shared files"
 msgstr[0] "Leitud %i tuntud ja jagatud faili"
 msgstr[1] "Leitud %i tuntud ja jagatud faili."
-
-#: src/SharedFileList.cpp
-#, c-format
-msgid "Found %i known shared file, %i unknown"
-msgid_plural "Found %i known shared files, %i unknown"
-msgstr[0] "Leitud %i tuntud ja jagatud faili, %i tundmatut"
-msgstr[1] "Leitud %i tuntud ja jagatud faili, %i tundmatut."
 
 #: src/SharedFileList.cpp
 #, c-format
@@ -7118,6 +7123,28 @@ msgstr "Jagatud kataloogi ei leitud, jätan vahele: %s"
 #, c-format
 msgid "No shareable files found in directory: %s"
 msgstr "Kataloogis '%s' pole jagatavaid faile"
+
+#: src/SharedFileList.cpp
+#, fuzzy, c-format
+msgid "Now sharing file: %s"
+msgstr "VIGA: tekkis %s faili salvestamisel: %s"
+
+#: src/SharedFileList.cpp
+#, fuzzy, c-format
+msgid "Stopped sharing removed file: %s"
+msgstr "Laen server.met faili: %s"
+
+#: src/SharedFileList.cpp
+#, fuzzy, c-format
+msgid "Stopped sharing %u files under removed directory: %s"
+msgstr "Kataloogis '%s' pole jagatavaid faile"
+
+#: src/SharedFileList.cpp
+#, fuzzy, c-format
+msgid "Discovered %u new shared file"
+msgid_plural "Discovered %u new shared files"
+msgstr[0] "Leitud %i tuntud ja jagatud faili"
+msgstr[1] "Leitud %i tuntud ja jagatud faili."
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "User Name"
@@ -8112,6 +8139,16 @@ msgid "aMule text client"
 msgstr "aMule tekstiline klient"
 
 #: src/ThreadTasks.cpp
+#, fuzzy, c-format
+msgid "Hashing file: %s"
+msgstr "Kustutan faili: %s"
+
+#: src/ThreadTasks.cpp
+#, fuzzy, c-format
+msgid "Rebuilding AICH hashset for file: %s"
+msgstr "Taastan faili '%s' saatmise"
+
+#: src/ThreadTasks.cpp
 #, c-format
 msgid "Converting old AICH hashsets in '%s' to 64b in '%s'."
 msgstr "Konverteerin vanad '%s' AICH kontrollsummad 64b '%s'."
@@ -8954,6 +8991,12 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, c-format
+#~ msgid "Found %i known shared file, %i unknown"
+#~ msgid_plural "Found %i known shared files, %i unknown"
+#~ msgstr[0] "Leitud %i tuntud ja jagatud faili, %i tundmatut"
+#~ msgstr[1] "Leitud %i tuntud ja jagatud faili, %i tundmatut."
 
 #, fuzzy
 #~ msgid " MB/s"

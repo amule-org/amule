@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 20:10+0200\n"
+"POT-Creation-Date: 2026-08-21 21:31+0200\n"
 "PO-Revision-Date: 2026-08-21 19:13+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
@@ -3188,6 +3188,11 @@ msgstr "CUIDADO: "
 
 #: src/MediaProbe.cpp
 msgid "Media metadata: no ffprobe binary found. Install ffmpeg, or set the ffprobe path in preferences; length, bitrate and codec will not be extracted."
+msgstr ""
+
+#: src/MediaProbe.cpp
+#, c-format
+msgid "Extracting media metadata with ffprobe: %s"
 msgstr ""
 
 #: src/MuleNotebook.cpp src/muuli_wdr.cpp
@@ -7005,6 +7010,13 @@ msgid "Shared-dir watcher: backend overflow/error (%s); falling back to full rel
 msgstr "Monitor de diretórios compartilhados: estouro/erro do backend (%s); recorrendo ao recarregamento completo"
 
 #: src/SharedDirWatcher.cpp
+#, c-format
+msgid "Shared-dir watcher: %u new subdirectory found since last run, rescanning shares"
+msgid_plural "Shared-dir watcher: %u new subdirectories found since last run, rescanning shares"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/SharedDirWatcher.cpp
 msgid "Shared-dir watcher: events dropped by backend, forcing a full shared-files reload to resync"
 msgstr "Monitor de diretórios compartilhados: eventos descartados pelo backend; forçando um recarregamento completo dos arquivos compartilhados para ressincronizar"
 
@@ -7019,13 +7031,6 @@ msgid "Found %i known shared file"
 msgid_plural "Found %i known shared files"
 msgstr[0] "Encontrado %i arquivo conhecido compartilhado"
 msgstr[1] "Encontrados %i arquivos conhecidos compartilhados"
-
-#: src/SharedFileList.cpp
-#, c-format
-msgid "Found %i known shared file, %i unknown"
-msgid_plural "Found %i known shared files, %i unknown"
-msgstr[0] "Encontrado %i arquivo conhecido, %i desconhecido"
-msgstr[1] "Encontrados %i arquivos conhecidos, %i desconhecidos"
 
 #: src/SharedFileList.cpp
 #, c-format
@@ -7048,6 +7053,28 @@ msgstr "Diretório compartilhado não encontrado, pulando: %s"
 #, c-format
 msgid "No shareable files found in directory: %s"
 msgstr "Arquivos compartilháveis não encontrado no diretório: %s"
+
+#: src/SharedFileList.cpp
+#, fuzzy, c-format
+msgid "Now sharing file: %s"
+msgstr "Erro ao salvar arquivo %s: %s"
+
+#: src/SharedFileList.cpp
+#, fuzzy, c-format
+msgid "Stopped sharing removed file: %s"
+msgstr "Carregando arquivo server.met: %s"
+
+#: src/SharedFileList.cpp
+#, fuzzy, c-format
+msgid "Stopped sharing %u files under removed directory: %s"
+msgstr "Arquivos compartilháveis não encontrado no diretório: %s"
+
+#: src/SharedFileList.cpp
+#, fuzzy, c-format
+msgid "Discovered %u new shared file"
+msgid_plural "Discovered %u new shared files"
+msgstr[0] "Encontrado %i arquivo conhecido compartilhado"
+msgstr[1] "Encontrados %i arquivos conhecidos compartilhados"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "User Name"
@@ -8060,6 +8087,16 @@ msgid "aMule text client"
 msgstr "Cliente em modo texto do aMule"
 
 #: src/ThreadTasks.cpp
+#, fuzzy, c-format
+msgid "Hashing file: %s"
+msgstr "Apagando arquivo: %s"
+
+#: src/ThreadTasks.cpp
+#, fuzzy, c-format
+msgid "Rebuilding AICH hashset for file: %s"
+msgstr "Continuando uploads para o arquivo: %s"
+
+#: src/ThreadTasks.cpp
 #, c-format
 msgid "Converting old AICH hashsets in '%s' to 64b in '%s'."
 msgstr "Convertendo hashsets AICH antigos de '%s' para 64b em '%s'."
@@ -8905,6 +8942,12 @@ msgstr "O aMule parece estar rodando. Por favor, feche-o e rode o desinstalador 
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Removendo os dados do usuário em $APPDATA\\aMule..."
+
+#, c-format
+#~ msgid "Found %i known shared file, %i unknown"
+#~ msgid_plural "Found %i known shared files, %i unknown"
+#~ msgstr[0] "Encontrado %i arquivo conhecido, %i desconhecido"
+#~ msgstr[1] "Encontrados %i arquivos conhecidos, %i desconhecidos"
 
 #~ msgid " MB/s"
 #~ msgstr " MB/s"
