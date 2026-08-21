@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-20 11:35+0200\n"
+"POT-Creation-Date: 2026-08-21 11:21+0200\n"
 "PO-Revision-Date: 2026-08-20 14:28+0000\n"
 "Last-Translator: Hallvor Brunstad <Hallvor_1976@yahoo.com>\n"
 "Language-Team: <i18n-nn@lister.ping.uio.no>\n"
@@ -2195,6 +2195,10 @@ msgstr "Ikkje gangbart filnamn."
 #: src/ExternalConn.cpp
 msgid "Unable to rename file."
 msgstr "Ikkje i stand til å døype om fila."
+
+#: src/ExternalConn.cpp
+msgid "Client could not be swapped to that file."
+msgstr ""
 
 #: src/ExternalConn.cpp
 #, c-format

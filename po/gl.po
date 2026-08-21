@@ -24,7 +24,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-20 11:35+0200\n"
+"POT-Creation-Date: 2026-08-21 11:21+0200\n"
 "PO-Revision-Date: 2026-08-20 14:17+0000\n"
 "Last-Translator: Pablo <parodper@gmail.com>\n"
 "Language-Team: http://forum.amule.org/index.php?topic=13883\n"
@@ -2198,6 +2198,10 @@ msgstr "Nome de ficheiro inválido."
 #: src/ExternalConn.cpp
 msgid "Unable to rename file."
 msgstr "Imposible cambiarlle o nome ao ficheiro."
+
+#: src/ExternalConn.cpp
+msgid "Client could not be swapped to that file."
+msgstr ""
 
 #: src/ExternalConn.cpp
 #, c-format

@@ -211,6 +211,48 @@ if [ "$COUNT" -gt 0 ]; then
 		-d '{"action":"bogus"}' "$HOST/api/v0/downloads/$HASH/a4af"
 	_assert_status 400 "POST /downloads/{hash}/a4af unknown action → 400"
 
+	# Per-source swap (issue #983): `client_ecid` narrows swap_this to one
+	# source. Validation is asserted here rather than the swap itself — a
+	# regtest daemon has no A4AF source to move, and the conflict/not-found
+	# paths are the ones that must never silently succeed.
+	_curl -X POST -H "Authorization: Bearer $TOKEN" \
+		-H "Content-Type: application/json" \
+		-d '{"action":"swap_this","client_ecid":"nope"}' "$HOST/api/v0/downloads/$HASH/a4af"
+	_assert_status 400 "POST a4af with a non-integer client_ecid → 400"
+
+	_curl -X POST -H "Authorization: Bearer $TOKEN" \
+		-H "Content-Type: application/json" \
+		-d '{"action":"swap_others","client_ecid":1}' "$HOST/api/v0/downloads/$HASH/a4af"
+	_assert_status 400 "POST a4af with client_ecid on swap_others → 400"
+
+	_curl -X POST -H "Authorization: Bearer $TOKEN" \
+		-H "Content-Type: application/json" \
+		-d '{"action":"swap_this_auto","client_ecid":1}' "$HOST/api/v0/downloads/$HASH/a4af"
+	_assert_status 400 "POST a4af with client_ecid on swap_this_auto → 400"
+
+	_curl -X POST -H "Authorization: Bearer $TOKEN" \
+		-H "Content-Type: application/json" \
+		-d '{"action":"swap_this","client_ecid":4294967290}' "$HOST/api/v0/downloads/$HASH/a4af"
+	_assert_status 404 "POST a4af naming an unknown client_ecid → 404"
+
+	# A live peer that is not an A4AF source of this file is a conflict, not a
+	# no-op: pick any client from /clients and ensure it is absent from the
+	# A4AF list before asserting.
+	OTHER_ECID=$(curl -s -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/clients?limit=1" \
+		| jq -r '.clients[0].client_ecid // empty')
+	if [ -n "$OTHER_ECID" ]; then
+		IN_A4AF=$(curl -s -H "Authorization: Bearer $TOKEN" \
+			"$HOST/api/v0/downloads/$HASH/a4af" \
+			| jq -r --argjson e "$OTHER_ECID" '[.sources[] | select(. == $e)] | length')
+		if [ "$IN_A4AF" = "0" ]; then
+			_curl -X POST -H "Authorization: Bearer $TOKEN" \
+				-H "Content-Type: application/json" \
+				-d "{\"action\":\"swap_this\",\"client_ecid\":$OTHER_ECID}" \
+				"$HOST/api/v0/downloads/$HASH/a4af"
+			_assert_status 409 "POST a4af for a non-A4AF client → 409"
+		fi
+	fi
+
 	# Valid action → 200 (no-op on a download with no A4AF sources, but
 	# exercises the EC op path). Response echoes the A4AF view.
 	_curl -X POST -H "Authorization: Bearer $TOKEN" \

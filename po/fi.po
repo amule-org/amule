@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-20 11:35+0200\n"
+"POT-Creation-Date: 2026-08-21 11:21+0200\n"
 "PO-Revision-Date: 2026-08-20 14:16+0000\n"
 "Last-Translator: Tapio Rantala <tapio.rantala@iki.fi>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -2181,6 +2181,10 @@ msgstr "Epäkelpo tiedostonimi."
 #: src/ExternalConn.cpp
 msgid "Unable to rename file."
 msgstr "Tiedostoa ei voitu uudelleennimetä."
+
+#: src/ExternalConn.cpp
+msgid "Client could not be swapped to that file."
+msgstr ""
 
 #: src/ExternalConn.cpp
 #, c-format

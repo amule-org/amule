@@ -814,7 +814,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 
 Force A4AF source-swapping for this download. Downloads-only.
 
-**Body:** `{ "action": "<action>" }`
+**Body:** `{ "action": "<action>", "client_ecid": 1234 }`
 
 | action | Effect |
 |---|---|
@@ -822,9 +822,15 @@ Force A4AF source-swapping for this download. Downloads-only.
 | `swap_this_auto` | Toggle automatic A4AF swapping for this file. |
 | `swap_others` | Release this file's sources to the other files that want them. |
 
+`client_ecid` is optional and valid **only with `swap_this`**, where it narrows the action from every A4AF source of this file to the single named one — the per-peer "Swap to this file" of the desktop client. It must name a client in the current snapshot that is an A4AF source of *this* download; pairing it with `swap_this_auto` or `swap_others` is a `400`, because the core has no per-source form of those.
+
+A successful single-source swap shows up as that `client_ecid` having left `sources` in the response.
+
+The swap moves the peer between two files' source lists, so an SSE subscriber sees `download_updated` for **both** the peer's former download and this one, plus `client_updated` for the peer itself.
+
 **Response:** `200 OK` — the post-action A4AF view (same shape as the `GET`).
 
-**Errors:** `400 bad_request` (missing or unknown `action`), `400 amuled_rejected`, `404 not_found`, `503 ec_unavailable`.
+**Errors:** `400 bad_request` (missing or unknown `action`; a non-integer `client_ecid`; `client_ecid` with the wrong action), `400 amuled_rejected` (the daemon refused the swap — most commonly because the peer is actively sending data, which it will not be swapped away from), `404 not_found` (no download with that hash, or no client with that ECID), `409 conflict` (that client is not an A4AF source of this download), `503 ec_unavailable`.
 
 #### `POST /api/v0/downloads`
 

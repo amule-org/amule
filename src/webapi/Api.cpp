@@ -3488,6 +3488,11 @@ CHttpServer::Response CApiDispatcher::HandleDownloadFilenames(
 // resolved download snapshot.
 namespace
 {
+// Defined further down beside its FindServerByEcid / FindFriendByEcid
+// siblings; declared here so the per-source A4AF swap can validate its
+// `client_ecid` without moving the helper away from its family or copying it.
+bool FindClientByEcid(const webapi::CState &state, std::uint32_t ecid, webapi::ClientSnapshot &out);
+
 void WriteA4afObject(CJsonWriter &w, const webapi::FileSnapshot &d)
 {
 	w.BeginObject();
@@ -3575,11 +3580,45 @@ CHttpServer::Response CApiDispatcher::HandleDownloadA4afAction(
 			400, "bad_request", "`action` must be one of swap_this, swap_this_auto, swap_others");
 	}
 
+	// `client_ecid` narrows swap_this from "every A4AF source of this file" to
+	// one named source, which is what the desktop's per-peer "Swap to this
+	// file" does. The core has no per-source form of the other two actions, so
+	// pairing it with them is a request that cannot be honoured rather than one
+	// that quietly does something else.
+	bool per_source = false;
+	std::uint32_t client_ecid = 0;
+	if (const auto cit = obj.find("client_ecid"); cit != obj.end()) {
+		if (!cit->second.is<double>() || cit->second.get<double>() < 0) {
+			return ErrorResponse(
+				400, "bad_request", "`client_ecid` must be a non-negative integer");
+		}
+		if (op != EC_OP_PARTFILE_SWAP_A4AF_THIS) {
+			return ErrorResponse(
+				400, "bad_request", "`client_ecid` is only valid with action `swap_this`");
+		}
+		per_source = true;
+		client_ecid = static_cast<std::uint32_t>(cit->second.get<double>());
+
+		webapi::ClientSnapshot peer;
+		if (!FindClientByEcid(m_state, client_ecid, peer)) {
+			return ErrorResponse(
+				404, "not_found", "no client with that ECID in the current snapshot");
+		}
+		const auto &srcs = d.download.a4af_sources;
+		if (std::find(srcs.begin(), srcs.end(), client_ecid) == srcs.end()) {
+			return ErrorResponse(
+				409, "conflict", "that client is not an A4AF source of this download");
+		}
+	}
+
 	CMD4Hash file_hash;
 	if (!HashFromHex(d.hash, file_hash)) {
 		return ErrorResponse(500, "internal_error", "failed to decode partfile hash");
 	}
-	std::unique_ptr<CECPacket> ec_req(new CECPacket(op));
+	std::unique_ptr<CECPacket> ec_req(new CECPacket(per_source ? EC_OP_CLIENT_SWAP_TO_ANOTHER_FILE : op));
+	if (per_source) {
+		ec_req->AddTag(CECTag(EC_TAG_CLIENT, client_ecid));
+	}
 	ec_req->AddTag(CECTag(EC_TAG_PARTFILE, file_hash));
 	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
 	if (!ec_resp) {
