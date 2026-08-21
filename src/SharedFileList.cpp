@@ -627,6 +627,11 @@ CSharedFileList::AddPathResult CSharedFileList::AddPathToShares(
 		// maintains keys off the file's current GetFilePath() rather
 		// than whatever stale path was stamped on the CKnownFile by
 		// a previous shared-list membership.
+		//
+		// Kept so the decline below can undo it: that reasoning only holds
+		// when AddFile actually inserts, because AddFile writes m_pathIndex
+		// only on a fresh insert.
+		const CPath previousPath = toadd->GetFilePath();
 		toadd->SetFilePath(directory);
 		if (AddFile(toadd)) {
 			AddDebugLogLineN(logKnownFiles, CFormat("Added known file '%s' to shares") % fname);
@@ -639,6 +644,25 @@ CSharedFileList::AddPathResult CSharedFileList::AddPathToShares(
 				Notify_SharedFilesShowFile(toadd);
 			}
 		} else {
+			// The share set already holds this content, indexed under the
+			// path it was first found at. Put the file back on that path:
+			// the stamp above would otherwise leave GetFilePath() disagreeing
+			// with the index key, and nothing reconciles them. That skew is
+			// not cosmetic -- RemoveFile erases by a key it recomputes from
+			// GetFilePath(), so the erase silently misses and leaks the real
+			// entry, after which NotifyPathAdded short-circuits on the leaked
+			// key and the file can never be shared again without a restart.
+			// The upload worker also opens GetFilePath(), so it would read
+			// the copy the index does not know about and, on failure, invoke
+			// its own "removing from list of shared files" recovery against a
+			// file that is still present and serveable (issue #1017).
+			//
+			// First copy found wins and stays authoritative, which is stable
+			// across reloads. Re-keying the index to follow the new path would
+			// work too, but would make "last directory walked wins" the
+			// semantics, so which physical copy serves uploads would depend on
+			// the sort order of the shared roots.
+			toadd->SetFilePath(previousPath);
 			AddDebugLogLineN(logKnownFiles, CFormat("File already shared, skipping: %s") % fname);
 			return kAddPathAlreadyShared;
 		}
@@ -881,9 +905,25 @@ void CSharedFileList::RemoveFile(CKnownFile *toremove)
 	// Same path key we wrote into the index in AddFile(). erase() is a
 	// no-op if the entry isn't present (e.g. the file was inserted
 	// before m_pathIndex existed in an older save snapshot).
+	//
+	// The premise -- that the key we recompute here is the key AddFile wrote
+	// -- holds only while GetFilePath() still matches what was indexed. When
+	// it does not, this erase silently misses and leaves the real entry
+	// behind, which then makes the file permanently unshareable because
+	// NotifyPathAdded short-circuits on it. That is invisible without the
+	// diagnostic below, which is how issue #1017 survived unnoticed.
 	const wxString key =
 		NormalizePathKey(toremove->GetFilePath().JoinPaths(toremove->GetFileName()).GetRaw());
-	m_pathIndex.erase(key);
+	const size_t erasedFromIndex = m_pathIndex.erase(key);
+	if (erasedFromIndex == 0 && !m_pathIndex.empty()) {
+		// Not fatal on its own -- the older-snapshot case above is legitimate
+		// -- but it is the signature of a desynchronised index, so say so
+		// rather than leaking an entry in silence.
+		AddDebugLogLineC(logKnownFiles,
+			CFormat("Path index: no entry under '%s' to erase for a file being removed from "
+				"shares; the index may be out of step with the file's path") %
+				key);
+	}
 	/* This file keywords must not be published to kad anymore */
 	m_keywords->RemoveKeywords(toremove);
 }

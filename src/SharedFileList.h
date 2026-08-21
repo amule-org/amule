@@ -268,6 +268,12 @@ private:
 		// directory, or a repeated watcher event. Split out from
 		// kAddPathKnown because callers that announce a file becoming shared
 		// must not claim a share that did not happen.
+		//
+		// The file's path is left exactly as it was, which is load-bearing
+		// rather than incidental: AddFile writes m_pathIndex only on a fresh
+		// insert, so stamping the second directory onto the file would leave
+		// GetFilePath() disagreeing with the key it is indexed under, and
+		// nothing reconciles the two (issue #1017).
 		kAddPathAlreadyShared,
 		//! Unknown file; a CHashingTask was pushed.
 		kAddPathQueued
