@@ -8619,12 +8619,27 @@ CHttpServer::Response CApiDispatcher::HandleSharedReload(const CHttpServer::Requ
 		return a.rejection;
 	if (auto rej = RequireAdmin(a))
 		return *rej;
-	// EC_OP_SHAREDFILES_RELOAD: amuled re-walks every configured share
-	// root and re-publishes the contents. Synchronous on amuled's side
-	// but bounded by I/O over the share tree — typical small libraries
-	// complete in well under a second. Inline RefresherTick re-pulls
-	// the shared-files cache so SSE subscribers see `shared_added` /
-	// `_removed` events for the delta before the response lands.
+	// EC_OP_SHAREDFILES_RELOAD: amuled schedules a re-walk of every
+	// configured share root and answers immediately, so 202 is literal --
+	// accepted and scheduled, not completed. The walk starts on amuled's
+	// next Process() tick (within about a second) and repeated calls while
+	// one is pending or running coalesce into a single walk.
+	//
+	// This used to be synchronous on amuled's side, on the assumption that
+	// the walk "completes in well under a second". That is exactly the
+	// assumption that fails on the trees where it matters -- a large or
+	// network-mounted share -- and because our EC lane is one serialised
+	// worker, the blocked roundtrip held the in-flight slot, filled the
+	// queue and turned unrelated endpoints into 503s.
+	//
+	// Completion is observable through the amule log (GET /logs/amule, or
+	// the log_appended SSE event) and the shared_added / shared_removed
+	// events, not through this response.
+	//
+	// SimpleConnControlOp still runs an inline RefresherTick. For this
+	// endpoint it now snapshots state from before the walk, so it buys
+	// nothing -- but it is harmless (a few EC roundtrips) and shared with
+	// the connect/disconnect endpoints, so it stays as-is.
 	return SimpleConnControlOp(m_app, m_state, EC_OP_SHAREDFILES_RELOAD, 202);
 }
 

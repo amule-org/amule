@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 15:54+0200\n"
+"POT-Creation-Date: 2026-08-21 20:10+0200\n"
 "PO-Revision-Date: 2026-08-20 14:36+0000\n"
 "Last-Translator: Oleksandr Kovalenko <alx.kovalenko@gmail.com>\n"
 "Language-Team: Ukrainian <translation@linux.org.ua>\n"
@@ -6421,7 +6421,8 @@ msgstr ""
 msgid "Confirm shared folders"
 msgstr "Спільні теки"
 
-#: src/PrefsUnifiedDlg.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+#: src/SharedFilesReloadProgress.cpp
 #, fuzzy
 msgid "Reloading shared files..."
 msgstr "Перезавантажити ваші спільні файли"
@@ -6439,11 +6440,6 @@ msgstr "Спільні теки"
 #, c-format
 msgid "Scanned %u directories..."
 msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
-msgid "Reloading shared files: %u files scanned"
-msgstr "Перезавантажується перелік спільних файлів."
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -7344,6 +7340,11 @@ msgstr[2] "Спільні файли (%i)"
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Спільні файли (%i)"
+
+#: src/SharedFilesReloadProgress.cpp
+#, fuzzy, c-format
+msgid "Reloading shared files: %u files scanned"
+msgstr "Перезавантажується перелік спільних файлів."
 
 #: src/SourceListCtrl.cpp
 #, fuzzy

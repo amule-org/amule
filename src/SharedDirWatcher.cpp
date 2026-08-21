@@ -657,7 +657,9 @@ void CSharedDirWatcher::FlushPendingEvents()
 			      "forcing a full shared-files reload to resync"));
 		m_pendingEvents.clear();
 		m_fallbackPending = false;
-		m_parent->Reload();
+		// Scheduled: this flush runs on the core event loop, so an inline walk
+		// would block it (and any EC request behind it) for the walk's length.
+		m_parent->RequestReload();
 		return;
 	}
 

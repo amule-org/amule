@@ -24,7 +24,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 15:54+0200\n"
+"POT-Creation-Date: 2026-08-21 20:10+0200\n"
 "PO-Revision-Date: 2026-08-20 14:17+0000\n"
 "Last-Translator: Pablo <parodper@gmail.com>\n"
 "Language-Team: http://forum.amule.org/index.php?topic=13883\n"
@@ -6374,7 +6374,8 @@ msgstr "Compartir de xeito recursivo publicará calquera ficheiro que teñan deb
 msgid "Confirm shared folders"
 msgstr "Confirmar e compartir cartafoles"
 
-#: src/PrefsUnifiedDlg.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+#: src/SharedFilesReloadProgress.cpp
 msgid "Reloading shared files..."
 msgstr "Recargando os ficheiros compartidos..."
 
@@ -6390,11 +6391,6 @@ msgstr "Actualizando os cartafoles compartidos"
 #, c-format
 msgid "Scanned %u directories..."
 msgstr "Buscáronse %u directorios..."
-
-#: src/PrefsUnifiedDlg.cpp
-#, c-format
-msgid "Reloading shared files: %u files scanned"
-msgstr "Recargouse a lista de ficheiros compartidos: atopáronse %u ficheiros"
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -7275,6 +7271,11 @@ msgstr[1] "Ficheiros compartidos (%i)"
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Ficheiros compartidos (%i)"
+
+#: src/SharedFilesReloadProgress.cpp
+#, c-format
+msgid "Reloading shared files: %u files scanned"
+msgstr "Recargouse a lista de ficheiros compartidos: atopáronse %u ficheiros"
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"

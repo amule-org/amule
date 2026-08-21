@@ -79,6 +79,7 @@ src/SharedDirWatcher.cpp
 src/SharedFileList.cpp
 src/SharedFilePeersListCtrl.cpp
 src/SharedFilesCtrl.cpp
+src/SharedFilesReloadProgress.cpp
 src/SharedFilesWnd.cpp
 src/SourceListCtrl.cpp
 src/SplashScreen.cpp

@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 15:54+0200\n"
+"POT-Creation-Date: 2026-08-21 20:10+0200\n"
 "PO-Revision-Date: 2026-08-20 14:32+0000\n"
 "Last-Translator: Jure Repinc <jlp@holodeck1.com>\n"
 "Language-Team: Slovenian\n"
@@ -6416,7 +6416,8 @@ msgstr ""
 msgid "Confirm shared folders"
 msgstr "Deljene mape"
 
-#: src/PrefsUnifiedDlg.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+#: src/SharedFilesReloadProgress.cpp
 #, fuzzy
 msgid "Reloading shared files..."
 msgstr "Ponovno naloži deljene datoteke"
@@ -6434,11 +6435,6 @@ msgstr "Deljene mape"
 #, c-format
 msgid "Scanned %u directories..."
 msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
-msgid "Reloading shared files: %u files scanned"
-msgstr "Ponovno naloži seznam deljenih datotek."
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -7338,6 +7334,11 @@ msgstr[3] "Deljene datoteke (%i)"
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Deljene datoteke (%i)"
+
+#: src/SharedFilesReloadProgress.cpp
+#, fuzzy, c-format
+msgid "Reloading shared files: %u files scanned"
+msgstr "Ponovno naloži seznam deljenih datotek."
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"

@@ -1738,7 +1738,10 @@ static CECPacket *Get_EC_Response_SetSharedDirs(const CECPacket *request)
 	// Persist before reloading: FindSharedFiles starts by re-reading the
 	// intent files from disk, so the in-memory lists alone wouldn't stick.
 	theApp->glob_prefs->SaveSharedFolders();
-	theApp->sharedfiles->Reload();
+	// The lists above are written and persisted synchronously, so the reply
+	// still means "directories accepted and saved"; only the rescan is
+	// deferred to the next Process() tick.
+	theApp->sharedfiles->RequestReload();
 
 	return response;
 }
@@ -3660,7 +3663,9 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		response = Get_EC_Response_PartFile_Cmd(request);
 		break;
 	case EC_OP_SHAREDFILES_RELOAD:
-		theApp->sharedfiles->Reload();
+		// Scheduled, not performed: the walk would otherwise run inline in
+		// this handler and every EC client would wait out the whole thing.
+		theApp->sharedfiles->RequestReload();
 		response = new CECPacket(EC_OP_NOOP);
 		break;
 	case EC_OP_GET_SHARED_DIRS:

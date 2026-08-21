@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 15:54+0200\n"
+"POT-Creation-Date: 2026-08-21 20:10+0200\n"
 "PO-Revision-Date: 2026-08-20 14:32+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
@@ -6366,7 +6366,8 @@ msgstr "Рекурсивный общий доступ к ним опублик�
 msgid "Confirm shared folders"
 msgstr "Подтверждение общих папок"
 
-#: src/PrefsUnifiedDlg.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+#: src/SharedFilesReloadProgress.cpp
 msgid "Reloading shared files..."
 msgstr "Переподгрузка общих файлов…"
 
@@ -6382,11 +6383,6 @@ msgstr "Обновление общих папок"
 #, c-format
 msgid "Scanned %u directories..."
 msgstr "Просканировано каталогов: %u…"
-
-#: src/PrefsUnifiedDlg.cpp
-#, c-format
-msgid "Reloading shared files: %u files scanned"
-msgstr "Переподгрузка общих файлов: просканировано файлов — %u"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Shared folder"
@@ -7262,6 +7258,11 @@ msgstr[2] "Общие файлы (%i, вычисляется хеш для %u)"
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Общие файлы (%i)"
+
+#: src/SharedFilesReloadProgress.cpp
+#, c-format
+msgid "Reloading shared files: %u files scanned"
+msgstr "Переподгрузка общих файлов: просканировано файлов — %u"
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"

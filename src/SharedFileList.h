@@ -72,6 +72,29 @@ public:
 	// Cancellable + progress-reporting variant. Returns true if the
 	// walk completed normally, false if `yieldCb` requested abort.
 	bool Reload(ReloadYieldCb yieldCb);
+
+	// Ask for a full shared-files reload to run from the next Process()
+	// tick instead of inline in the caller. Callers that sit on the core
+	// event loop -- every EC request handler, and the directory watcher's
+	// dropped-events fallback -- use this so they can answer immediately
+	// rather than blocking for the whole walk. On a large or network-
+	// mounted share tree that walk is seconds to minutes, and because
+	// amuleapi's EC lane is a single serialised worker, a blocking reload
+	// there stalls the refresher and turns unrelated endpoints into 503s.
+	//
+	// Repeat requests before the tick coalesce into one walk, and a request
+	// arriving mid-walk keeps the flag set so it runs afterwards instead of
+	// nesting.
+	//
+	// A plain bool is deliberate: every setter and the reader run on the
+	// core event loop. If a caller off that thread ever needs this, that
+	// caller is the thing to fix -- do not make this atomic.
+	void RequestReload() { m_reloadPending = true; }
+
+	// True when a RequestReload() is outstanding. GUI callers use this to run
+	// the owed walk themselves behind a progress dialog rather than letting it
+	// land silently on a Process() tick -- see ReloadSharedFilesWithProgress().
+	bool IsReloadPending() const { return m_reloadPending; }
 	void SafeAddKFile(CKnownFile *toadd, bool bOnlyAdd = false);
 	void RemoveFile(CKnownFile *toremove);
 	CKnownFile *GetFileByID(const CMD4Hash &filehash);
@@ -246,6 +269,8 @@ private:
 		bool &aborted);
 	void FindSharedFiles(const ReloadYieldCb &yieldCb, bool &aborted);
 	bool reloading;
+	// Set by RequestReload(), drained by Process(). See RequestReload().
+	bool m_reloadPending = false;
 
 	void SendListToServer();
 	uint64 m_lastPublishED2K;

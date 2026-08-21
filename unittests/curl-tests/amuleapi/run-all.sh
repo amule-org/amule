@@ -215,6 +215,7 @@ PHASES=(
 	33-known-clients.sh
 	34-friends.sh
 	35-ipfilter-actions.sh
+	36-shared-reload.sh
 )
 
 # Override list from the command line if given.

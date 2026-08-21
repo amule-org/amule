@@ -194,6 +194,12 @@ void CCatDialog::OnBnClickedOk(wxCommandEvent &WXUNUSED(evt))
 			CastChild(IDC_PRIOCOMBO, wxChoice)->GetSelection());
 
 		theApp->amuledlg->m_transferwnd->UpdateCategory(index);
+		// UpdateCategory() may have asked for a shared-files re-walk (when the
+		// category's path changed). It is deliberately not run here: this
+		// dialog is modal and about to EndModal, and opening an app-modal
+		// progress dialog on top of one that is closing is asking for
+		// platform-specific misbehaviour. CTransferWnd runs it after
+		// ShowModal() returns instead, parented to the main window.
 		theApp->amuledlg->m_transferwnd->downloadlistctrl->Refresh();
 		theApp->amuledlg->m_searchwnd->UpdateCatChoice();
 	}

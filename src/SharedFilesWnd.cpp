@@ -30,6 +30,7 @@
 
 #include "SharedFilesWnd.h" // Interface declarations
 #include "SharedFilesCtrl.h"
+#include "SharedFilesReloadProgress.h" // ReloadSharedFilesWithProgress
 #include "SharedFilePeersListCtrl.h"
 #include "muuli_wdr.h"     // Needed for ID_SHFILELIST
 #include "KnownFileList.h" // Needed for CKnownFileList
@@ -262,7 +263,7 @@ void CSharedFilesWnd::SelectionUpdated()
 
 void CSharedFilesWnd::OnBtnReloadShared(wxCommandEvent &WXUNUSED(evt))
 {
-	theApp->sharedfiles->Reload();
+	ReloadSharedFilesWithProgress(this);
 #ifndef CLIENT_GUI
 	// remote gui will update display when data is back
 	SelectionUpdated();

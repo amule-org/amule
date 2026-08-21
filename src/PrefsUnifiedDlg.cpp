@@ -39,6 +39,7 @@
 #include <wx/listctrl.h> // shared-folders editor (remote GUI)
 #include <set>           // set-compare of shared roots (session refresh)
 #include <wx/progdlg.h>
+#include "SharedFilesReloadProgress.h" // ReloadSharedFilesWithProgress
 #include <wx/stdpaths.h>
 #include <wx/tooltip.h>
 #include <wx/utils.h> // wxGetUserHome
@@ -1477,8 +1478,13 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 	// + cancel) when shareddir_list itself changed. We only need to
 	// trigger a fresh Reload here for the other paths IDC_INCFILES /
 	// IDC_TEMPFILES affect.
+	// The three settings below each need a re-walk, and a single OK can change
+	// all three -- which used to mean up to three full walks back to back, each
+	// freezing the dialog. Collect the need and do one walk at the end instead.
+	bool needsSharedReload = false;
+
 	if (!sharedDirsCommitted && (CfgChanged(IDC_INCFILES) || CfgChanged(IDC_TEMPFILES))) {
-		theApp->sharedfiles->Reload();
+		needsSharedReload = true;
 	}
 
 	if (CfgChanged(IDC_AUTO_RESCAN_SHARED)) {
@@ -1492,7 +1498,7 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 		// shared tree: turning the toggle off should drop symlinked
 		// entries already in the shareset, turning it on should pick
 		// them up.
-		theApp->sharedfiles->Reload();
+		needsSharedReload = true;
 	}
 
 	if (CfgChanged(IDC_EXCLUDE_SHARE_PATTERNS) || CfgChanged(IDC_EXCLUDE_SHARE_REGEX)) {
@@ -1514,8 +1520,29 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 		// Re-scan so newly excluded files leave the shareset and files no
 		// longer matching return.
 		if (!sharedDirsCommitted) {
-			theApp->sharedfiles->Reload();
+			needsSharedReload = true;
 		}
+	}
+
+	// One walk for whichever of the three settings changed. Progress-and-yield
+	// rather than a bare Reload(): the walk costs roughly a stat per shared
+	// file, so on a large or network-mounted tree it runs for seconds to
+	// minutes, and without a yield callback CSharedFileList pumps nothing at
+	// all -- the window greys out as "not responding" with no indication why.
+	//
+	// Pumping here is safe: wxProgressDialog's yield is restricted to UI
+	// events, so it cannot dispatch the queued socket events that carry EC
+	// requests, and no client can be answered from the transiently-empty
+	// share map the walk builds through. Same reason CommitSharedDirsWithProgress
+	// above can do this.
+	//
+	// No cancel button, for the same reason as the shared-files Reload button:
+	// FindSharedFiles clears the map before walking, so an abort would leave a
+	// partial share list with nothing to restore. CommitSharedDirsWithProgress
+	// can offer one only because it keeps the previous directory list to
+	// re-walk against.
+	if (needsSharedReload) {
+		ReloadSharedFilesWithProgress(this);
 	}
 
 	if (CfgChanged(IDC_OSDIR) || CfgChanged(IDC_ONLINESIG)) {
@@ -3092,10 +3119,12 @@ PrefsUnifiedDlg::SharedDirsCommitResult PrefsUnifiedDlg::CommitSharedDirsWithPro
 	theApp->glob_prefs->SaveSharedFolders();
 
 	bool reloadAborted = false;
+	// Its own lambda rather than ReloadSharedFilesWithProgress(): this path is
+	// the one caller that *can* offer cancel, because it keeps the previous
+	// directory list to re-walk against on abort. The wording is shared so the
+	// two cannot drift.
 	auto reloadYield = [&progress, &reloadAborted](size_t filesScanned) -> bool {
-		const wxString msg = CFormat(_("Reloading shared files: %u files scanned")) %
-				     static_cast<unsigned>(filesScanned);
-		if (!progress.Pulse(msg)) {
+		if (!progress.Pulse(SharedFilesScannedMessage(filesScanned))) {
 			reloadAborted = true;
 			return false;
 		}

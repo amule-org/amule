@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 15:54+0200\n"
+"POT-Creation-Date: 2026-08-21 20:10+0200\n"
 "PO-Revision-Date: 2026-08-20 14:13+0000\n"
 "Last-Translator: Werner Mahr <werner@vollstreckernet.de>\n"
 "Language-Team: German <>\n"
@@ -6360,7 +6360,8 @@ msgstr "Rekursives Teilen würde jede Datei im eD2k/Kad Netzwerk verfügbar mach
 msgid "Confirm shared folders"
 msgstr "Freigegebene Ordner bestätigen"
 
-#: src/PrefsUnifiedDlg.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+#: src/SharedFilesReloadProgress.cpp
 msgid "Reloading shared files..."
 msgstr "Freigegebene Dateien neu laden..."
 
@@ -6376,11 +6377,6 @@ msgstr "Freigegebene Ordner werden aktualisiert"
 #, c-format
 msgid "Scanned %u directories..."
 msgstr "%u Verzeichnisse durchsucht..."
-
-#: src/PrefsUnifiedDlg.cpp
-#, c-format
-msgid "Reloading shared files: %u files scanned"
-msgstr "Liste freigegebener Dateien neu laden: %u Dateien gelesen"
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -7260,6 +7256,11 @@ msgstr[1] "Freigegebene Dateien (%i)"
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Freigegebene Dateien (%i)"
+
+#: src/SharedFilesReloadProgress.cpp
+#, c-format
+msgid "Reloading shared files: %u files scanned"
+msgstr "Liste freigegebener Dateien neu laden: %u Dateien gelesen"
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"

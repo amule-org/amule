@@ -50,6 +50,8 @@
 #include "Statistics.h"     // Needed for theStats
 #include "SharedFileList.h" // Needed for CSharedFileList
 #include "GuiEvents.h"      // Needed for CoreNotify_*
+// ReloadSharedFilesIfPending
+#include "SharedFilesReloadProgress.h"
 
 wxBEGIN_EVENT_TABLE(CTransferWnd, wxPanel)
 	EVT_RIGHT_DOWN(CTransferWnd::OnNMRclickDLtab)
@@ -266,6 +268,10 @@ void CTransferWnd::OnAddCategory(wxCommandEvent &WXUNUSED(event))
 #endif
 	);
 	dialog.ShowModal();
+	// A new category's incoming dir joins the shareset, so the dialog may have
+	// left a re-walk owed. Run it now the modal is gone, behind its own
+	// progress dialog, rather than letting it freeze the app on a core tick.
+	ReloadSharedFilesIfPending(this);
 }
 
 void CTransferWnd::OnDelCategory(wxCommandEvent &WXUNUSED(event))
@@ -284,6 +290,11 @@ void CTransferWnd::RemoveCategory(int index)
 		}
 		theApp->glob_prefs->SaveCats();
 		theApp->amuledlg->m_searchwnd->UpdateCatChoice();
+		// RemoveCat() asks for a re-walk (the category's directory leaves the
+		// shareset). Run it here behind a progress dialog rather than letting
+		// it land silently on a core tick -- CPreferences is shared with the
+		// daemon, so it cannot raise one itself.
+		ReloadSharedFilesIfPending(this);
 	}
 }
 
@@ -307,6 +318,9 @@ void CTransferWnd::OnEditCategory(wxCommandEvent &WXUNUSED(event))
 		m_dlTab->GetSelection());
 
 	dialog.ShowModal();
+	// Same as OnAddCategory: an edited path moves files in and out of the
+	// shareset, and the re-walk is owed once the modal closes.
+	ReloadSharedFilesIfPending(this);
 }
 
 void CTransferWnd::OnSetDefaultCat(wxCommandEvent &event)

@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 15:54+0200\n"
+"POT-Creation-Date: 2026-08-21 20:10+0200\n"
 "PO-Revision-Date: 2026-08-20 14:36+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -6314,7 +6314,8 @@ msgstr "递归共享会将每个子文件发布到 eD2k/Kad 网络上。您确�
 msgid "Confirm shared folders"
 msgstr "确认共享的文件夹"
 
-#: src/PrefsUnifiedDlg.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+#: src/SharedFilesReloadProgress.cpp
 msgid "Reloading shared files..."
 msgstr "正重新加载共享文件..."
 
@@ -6330,11 +6331,6 @@ msgstr "正在上传共享的文件夹"
 #, c-format
 msgid "Scanned %u directories..."
 msgstr "已扫描 %u 个目录......"
-
-#: src/PrefsUnifiedDlg.cpp
-#, c-format
-msgid "Reloading shared files: %u files scanned"
-msgstr "正重新加载共享文件：扫描了 %u 个文件"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Shared folder"
@@ -7196,6 +7192,11 @@ msgstr[1] "共享的文件 (%i，正在计算另外 %u 个文件的哈希值）"
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "共享文件 (%i)"
+
+#: src/SharedFilesReloadProgress.cpp
+#, c-format
+msgid "Reloading shared files: %u files scanned"
+msgstr "正重新加载共享文件：扫描了 %u 个文件"
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
