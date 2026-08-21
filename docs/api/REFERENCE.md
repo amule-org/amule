@@ -1480,16 +1480,72 @@ Send a bare priority level to pin it (the file's `priority_auto` becomes `false`
       "users": 312000,
       "max_users": 500000,
       "files": 75000000,
+      "soft_file_limit": 1000,
+      "hard_file_limit": 5000,
       "priority": "normal",
       "ping_ms": 42,
-      "failed": 0,
-      "static": false
+      "failed_count": 0,
+      "static": false,
+      "tcp_flags": {
+        "bitmask": 1497,
+        "compression": true,
+        "new_tags": true,
+        "unicode": true,
+        "related_search": true,
+        "type_tag_integer": true,
+        "large_files": true,
+        "tcp_obfuscation": true
+      },
+      "udp_flags": {
+        "bitmask": 1851,
+        "get_sources": true,
+        "get_files": true,
+        "new_tags": true,
+        "unicode": true,
+        "get_sources_v2": true,
+        "large_files": true,
+        "udp_obfuscation": true,
+        "tcp_obfuscation": true
+      }
     }
   ]
 }
 ```
 
 `country_code` is the ISO 3166-1 alpha-2 code (lowercase, e.g. `"de"`) of the server host, resolved server-side from the server IP by the daemon's GeoIP database — same semantics and empty-string fallback as the peer `country_code` on `/clients`, and the same artwork route, [`GET /flags/{code}.png`](#get-flagscodepng).
+
+`files` is how many files the server indexes. `soft_file_limit` and `hard_file_limit` are something else entirely: the per-user publishing limits the server advertises. Below the soft limit a client may publish every file it shares, between soft and hard only its rarest, above the hard limit nothing. Both arrive only once the server has answered a UDP status request, so **`0` means "not reported yet", not "the limit is zero"** — render it blank rather than as a number, the way the desktop's Soft Files / Hard Files columns do. `users`, `max_users` and `files` share that sentinel.
+
+`failed_count` is the number of consecutive failed connection attempts, not a boolean.
+
+`tcp_flags` and `udp_flags` are the eD2k wire capabilities the server announced, decoded server-side so a consumer never needs the protocol tables. Every key below is always present — `false` when the bit is clear — so there is no need to branch on key existence. `bitmask` carries the raw value alongside, both for diagnostics and so a bit a newer server announces that this build does not name yet is still visible. A server that has announced nothing yet reports `bitmask: 0` with every boolean `false`.
+
+`tcp_flags`:
+
+| Key | Bit | Meaning |
+|---|---|---|
+| `compression` | `0x0001` | zlib-compressed packets |
+| `new_tags` | `0x0008` | compact tag encoding |
+| `unicode` | `0x0010` | Unicode strings |
+| `related_search` | `0x0040` | related-files search — whether a `related::<hash>` local search will work against this server |
+| `type_tag_integer` | `0x0080` | integer file-type tags |
+| `large_files` | `0x0100` | files larger than 4 GiB |
+| `tcp_obfuscation` | `0x0400` | TCP protocol obfuscation |
+
+`udp_flags`:
+
+| Key | Bit | Meaning |
+|---|---|---|
+| `get_sources` | `0x0001` | extended GetSources request |
+| `get_files` | `0x0002` | extended GetFiles request |
+| `new_tags` | `0x0008` | compact tag encoding |
+| `unicode` | `0x0010` | Unicode strings |
+| `get_sources_v2` | `0x0020` | GetSources v2 |
+| `large_files` | `0x0100` | files larger than 4 GiB |
+| `udp_obfuscation` | `0x0200` | UDP obfuscation |
+| `tcp_obfuscation` | `0x0400` | TCP obfuscation, announced over UDP |
+
+Both objects spell out the transport on their obfuscation keys because `udp_flags` legitimately carries both bits; a key means exactly one wire capability in either object.
 
 **Errors:** `503 ec_unavailable`.
 

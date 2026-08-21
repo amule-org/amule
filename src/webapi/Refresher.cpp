@@ -1578,7 +1578,7 @@ void MergeServerTag(const CEC_Server_Tag *st, ServerSnapshot &s, bool is_new)
 	{
 		std::uint32_t v = 0;
 		if (st->AssignIfExist(EC_TAG_SERVER_FAILED, v))
-			s.failed = v;
+			s.failed_count = v;
 	}
 	{
 		std::uint32_t v = 0;
@@ -1594,6 +1594,30 @@ void MergeServerTag(const CEC_Server_Tag *st, ServerSnapshot &s, bool is_new)
 		std::uint32_t v = 0;
 		if (st->AssignIfExist(EC_TAG_SERVER_FILES, v))
 			s.files = v;
+	}
+	// Publishing limits and wire capability flags. Both server-tag builders
+	// emit all four (ECSpecialCoreTags.cpp), so the initial list and the
+	// incremental updates carry them alike; a tick where CValueMap suppresses
+	// an unchanged tag leaves the cached value intact, as above.
+	{
+		std::uint32_t v = 0;
+		if (st->AssignIfExist(EC_TAG_SERVER_FILES_SOFT, v))
+			s.soft_file_limit = v;
+	}
+	{
+		std::uint32_t v = 0;
+		if (st->AssignIfExist(EC_TAG_SERVER_FILES_HARD, v))
+			s.hard_file_limit = v;
+	}
+	{
+		std::uint32_t v = 0;
+		if (st->AssignIfExist(EC_TAG_SERVER_TCP_FLAGS, v))
+			s.tcp_flags = v;
+	}
+	{
+		std::uint32_t v = 0;
+		if (st->AssignIfExist(EC_TAG_SERVER_UDP_FLAGS, v))
+			s.udp_flags = v;
 	}
 	{
 		std::uint32_t v = 0;

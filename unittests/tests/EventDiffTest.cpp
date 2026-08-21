@@ -26,6 +26,7 @@
 
 #include "EventBus.h"
 #include "EventDiff.h"
+#include "ServerFlagNames.h"
 #include "State.h"
 
 #include <chrono>
@@ -284,4 +285,103 @@ TEST(EventDiff, ClientUpdatedFiresOnUploadFileNameChange)
 	}
 	ASSERT_EQUALS(1, updated);
 	ASSERT_TRUE(payload.find("b.iso") != std::string::npos);
+}
+
+// Same contract as the client test above, for the capability bitmasks issue
+// #974 added: a server announcing its flags after the first UDP status reply
+// has to fire exactly one server_updated, and the payload has to carry the
+// decoded object -- not just the raw bitmask.
+TEST(EventDiff, ServerUpdatedFiresOnTcpFlagsChange)
+{
+	CState state;
+	CEventBus bus;
+	LastSeenState prev;
+
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	// A freshly added server, before any UDP status reply came back:
+	// nothing announced, so every bit is clear.
+	state.MutateServers([](std::map<std::uint32_t, ServerSnapshot> &cache) {
+		ServerSnapshot s;
+		s.ecid = 5;
+		s.name = "srv";
+		cache.emplace(s.ecid, s);
+	});
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	// The reply lands and the server announces what it supports.
+	state.MutateServers([](std::map<std::uint32_t, ServerSnapshot> &cache) {
+		cache.at(5).tcp_flags = SRV_TCPFLG_COMPRESSION | SRV_TCPFLG_RELATEDSEARCH;
+	});
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	const auto drained = DrainAll(bus);
+	int updated = 0;
+	std::string payload;
+	for (const auto &ev : drained) {
+		if (ev.name == "server_updated") {
+			++updated;
+			payload = ev.data;
+		}
+	}
+	ASSERT_EQUALS(1, updated);
+	ASSERT_TRUE(payload.find("\"related_search\":true") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"compression\":true") != std::string::npos);
+	// A bit that was not announced is present and false, never absent:
+	// consumers are documented as never having to test for the key.
+	ASSERT_TRUE(payload.find("\"unicode\":false") != std::string::npos);
+}
+
+// The publishing limits move independently of the flags and are likewise
+// carried in the payload rather than requiring a re-GET.
+TEST(EventDiff, ServerUpdatedFiresOnFileLimitChange)
+{
+	CState state;
+	CEventBus bus;
+	LastSeenState prev;
+
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	state.MutateServers([](std::map<std::uint32_t, ServerSnapshot> &cache) {
+		ServerSnapshot s;
+		s.ecid = 6;
+		s.name = "srv";
+		cache.emplace(s.ecid, s);
+	});
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	state.MutateServers([](std::map<std::uint32_t, ServerSnapshot> &cache) {
+		cache.at(6).soft_file_limit = 1000;
+		cache.at(6).hard_file_limit = 5000;
+	});
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	const auto drained = DrainAll(bus);
+	int updated = 0;
+	std::string payload;
+	for (const auto &ev : drained) {
+		if (ev.name == "server_updated") {
+			++updated;
+			payload = ev.data;
+		}
+	}
+	ASSERT_EQUALS(1, updated);
+	ASSERT_TRUE(payload.find("\"soft_file_limit\":1000") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"hard_file_limit\":5000") != std::string::npos);
+}
+
+// The flags object is built by one shared helper so the REST writer
+// (Api.cpp, CJsonWriter) and this SSE writer emit the same bytes. Pin the
+// exact shape: key order follows the wire-bit order, bitmask leads.
+TEST(EventDiff, ServerFlagsJsonShape)
+{
+	ASSERT_EQUALS(std::string("{\"bitmask\":0,\"compression\":false,\"new_tags\":false,"
+				  "\"unicode\":false,\"related_search\":false,"
+				  "\"type_tag_integer\":false,\"large_files\":false,"
+				  "\"tcp_obfuscation\":false}"),
+		webapi::ServerTcpFlagsJson(0));
+
+	// An unnamed bit survives in `bitmask` even though no boolean
+	// describes it -- that is what the field is there for.
+	ASSERT_TRUE(webapi::ServerUdpFlagsJson(0x8000u).find("\"bitmask\":32768") != std::string::npos);
 }

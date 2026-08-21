@@ -25,6 +25,7 @@
 #include "EventDiff.h"
 
 #include "EventBus.h"
+#include "ServerFlagNames.h" // Shared server capability-bit tables, decoded to JSON
 
 #include <algorithm>
 #include <atomic>
@@ -174,9 +175,14 @@ std::string ToJson(const ServerSnapshot &s)
 	  << ",\"address\":\"" << EscJson(s.address) << "\""
 	  << ",\"country_code\":\"" << EscJson(s.country_code) << "\""
 	  << ",\"port\":" << s.port << ",\"users\":" << s.users << ",\"max_users\":" << s.max_users
-	  << ",\"files\":" << s.files << ",\"priority\":\"" << EscJson(s.priority) << "\""
-	  << ",\"ping_ms\":" << s.ping_ms << ",\"failed\":" << s.failed
-	  << ",\"static\":" << (s.is_static ? "true" : "false") << "}";
+	  << ",\"files\":" << s.files << ",\"soft_file_limit\":" << s.soft_file_limit
+	  << ",\"hard_file_limit\":" << s.hard_file_limit << ",\"priority\":\"" << EscJson(s.priority) << "\""
+	  << ",\"ping_ms\":" << s.ping_ms << ",\"failed_count\":" << s.failed_count << ",\"static\":"
+	  << (s.is_static ? "true" : "false")
+	  // Same fragment builder WriteServerObject uses, so the event payload and
+	  // the REST object stay byte-identical here by construction.
+	  << ",\"tcp_flags\":" << ServerTcpFlagsJson(s.tcp_flags)
+	  << ",\"udp_flags\":" << ServerUdpFlagsJson(s.udp_flags) << "}";
 	return o.str();
 }
 
@@ -322,8 +328,9 @@ bool Equal(const ServerSnapshot &a, const ServerSnapshot &b)
 	return a.name == b.name && a.description == b.description && a.version == b.version &&
 	       a.address == b.address && a.country_code == b.country_code && a.port == b.port &&
 	       a.users == b.users && a.max_users == b.max_users && a.files == b.files &&
-	       a.priority == b.priority && a.ping_ms == b.ping_ms && a.failed == b.failed &&
-	       a.is_static == b.is_static;
+	       a.soft_file_limit == b.soft_file_limit && a.hard_file_limit == b.hard_file_limit &&
+	       a.tcp_flags == b.tcp_flags && a.udp_flags == b.udp_flags && a.priority == b.priority &&
+	       a.ping_ms == b.ping_ms && a.failed_count == b.failed_count && a.is_static == b.is_static;
 }
 bool Equal(const FriendSnapshot &a, const FriendSnapshot &b)
 {
