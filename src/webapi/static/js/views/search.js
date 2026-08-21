@@ -1,11 +1,17 @@
 // Search view: start an ed2k/Kad search, then track it SSE-first: the
 // `search` channel delivers per-result upserts (search_result_added, same
-// shape as a /search/results[] entry, keyed by hash) and live progress
-// (search_progress {state, percent, results, kind}). GET /search/results is
-// only used to seed on mount (a search may already be running), as a single
+// shape as a /search/{id}/results[] entry, keyed by hash) and live progress
+// (search_progress {state, percent, results, kind}). GET /search/{id}/results
+// is only used to seed on mount (a search may already be running), as a single
 // reconcile once the terminal "finished" frame arrives, and as a polling
 // fallback while the stream isn't live. Download selected results into a
 // category.
+//
+// This view shows ONE search at a time -- the one it started, or the newest
+// the daemon holds when it mounts. The API addresses every search by id, so
+// several can run at once and every frame on the channel carries the id it
+// belongs to; frames for the others are ignored here. A per-search tab strip
+// is a separate piece of work.
 
 import { api } from "../api.js";
 import { data } from "../events.js";
@@ -63,6 +69,8 @@ export default function Search({ isGuest }) {
   // poll (full authoritative replace) write here, then we push the values
   // into render state.
   const resultsMap = useRef(new Map());
+  // The search this view is bound to (see fetchResults).
+  const searchId = useRef(0);
   // Trailing throttle: the first pending change schedules a flush ~SYNC_MS out;
   // everything arriving in that window folds into it. Progress text piggybacks
   // on the same flush so it never renders on its own hot path.
@@ -81,9 +89,16 @@ export default function Search({ isGuest }) {
   const progressText = (pr) =>
     pr.state === "running" ? t("search_searching_fmt", { percent: pr.percent || 0 }) : "";
 
+  // Every search-scoped call names its id in the path. `searchId.current` is
+  // the one this view is showing: set by POST /search, or adopted on mount
+  // from the newest entry the daemon holds. With nothing adopted there is
+  // nothing to read, which is the honest answer -- the API no longer has an
+  // implicit "whatever ran last" to fall back on.
   const fetchResults = async () => {
+    const sid = searchId.current;
+    if (!sid) return;
     try {
-      const r = await api.get("search/results");
+      const r = await api.get("search/" + sid + "/results");
       const res = r.results || [];
       resultsMap.current = new Map(res.map((x) => [x.hash, x]));
       scheduleSync();
@@ -105,13 +120,32 @@ export default function Search({ isGuest }) {
   useEffect(() => {
     api.get("categories").then((r) => setCategories(r.categories || [])).catch(() => {});
 
+    // Adopt a search on mount so a reload (or a search started from another
+    // client) still shows something. GET /search lists every search the
+    // daemon holds, newest last in allocation order; prefer a running one,
+    // else take the last entry.
+    const adopt = async () => {
+      try {
+        const r = await api.get("search");
+        const list = r.searches || [];
+        if (!list.length) return;
+        const running = list.filter((x) => x.state === "running").pop();
+        const chosen = running || list[list.length - 1];
+        searchId.current = chosen.search_id;
+        fetchResults();
+      } catch (_) { /* nothing to adopt */ }
+    };
+
     // Live updates from the SSE search channel (opened app-wide by the
-    // shell). search_result_added payloads are /search/results[] entries
+    // shell). search_result_added payloads are /search/{id}/results[] entries
     // verbatim, so upsert them by hash as-is.
     let lastResult = store.get("search:result");
     const offResult = store.subscribe("search:result", (p) => {
       if (!p || p === lastResult) return;
       lastResult = p;
+      // Several searches can be running at once and they all publish on this
+      // channel, so a frame for a different one is not ours to render.
+      if (p.search_id !== searchId.current) return;
       resultsMap.current.set(p.hash, p);
       scheduleSync();
     });
@@ -123,6 +157,7 @@ export default function Search({ isGuest }) {
     const offProgress = store.subscribe("search:progress", (p) => {
       if (!p || p === lastProgress) return;
       lastProgress = p;
+      if (p.search_id !== searchId.current) return;
       pendingProgress.current = progressText(p);
       scheduleSync();
       if (p.state === "finished") {
@@ -132,8 +167,26 @@ export default function Search({ isGuest }) {
       }
     });
 
-    fetchResults(); // a search may already be running
-    return () => { stopPolling(); clearTimeout(syncTimer.current); offResult(); offProgress(); };
+    // The search we are showing can be freed by another client, by the slot
+    // cap, or by an EC reset. Without this the view would keep displaying a
+    // result set whose id now 404s.
+    let lastClosed = store.get("search:closed");
+    const offClosed = store.subscribe("search:closed", (p) => {
+      if (!p || p === lastClosed) return;
+      lastClosed = p;
+      if (p.search_id !== searchId.current) return;
+      stopPolling();
+      searchId.current = 0;
+      resultsMap.current.clear();
+      setResults([]); setSelection(new Set()); setSearching(false);
+      setProgress("");
+    });
+
+    adopt(); // a search may already be running, here or in another client
+    return () => {
+      stopPolling(); clearTimeout(syncTimer.current);
+      offResult(); offProgress(); offClosed();
+    };
   }, []);
   const sizeBytes = (v, unit) => { const n = Number(v); return (!n || n < 0) ? 0 : Math.round(n * SIZE_UNITS[unit]); };
 
@@ -149,7 +202,8 @@ export default function Search({ isGuest }) {
     if (mn) body.min_size = mn;
     if (mx) body.max_size = mx;
     try {
-      await api.post("search", body);
+      const started = await api.post("search", body);
+      searchId.current = started.search_id;
       resultsMap.current.clear();
       setResults([]); setSelection(new Set()); setSearching(true);
       setProgress(progressText({ state: "running", kind: type }));
@@ -160,7 +214,9 @@ export default function Search({ isGuest }) {
 
   const stop = async () => {
     stopPolling(); setSearching(false);
-    try { await api.post("search/stop"); } catch (_) {}
+    const sid = searchId.current;
+    if (!sid) return;
+    try { await api.post("search/" + sid + "/stop"); } catch (_) {}
     fetchResults();
   };
 

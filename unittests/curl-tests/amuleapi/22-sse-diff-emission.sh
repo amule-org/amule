@@ -261,10 +261,11 @@ rm -f "$SSE_A" "$SSE_B"
 SSE_PID=$(_sse_start 15)
 sleep 1
 SEARCH_QUERY=ubuntu
-curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+SSE_SEARCH=$(curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"query\":\"$SEARCH_QUERY\",\"type\":\"local\"}" \
-	"$HOST/api/v0/search" > /dev/null
+	"$HOST/api/v0/search")
+SSE_SID=$(printf '%s' "$SSE_SEARCH" | jq -r '.search_id // empty')
 SEARCH_FINISHED=""
 for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 \
          21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40; do
@@ -319,9 +320,46 @@ if [ -n "$SEARCH_FINISHED" ]; then
 	else
 		_pass "search_result_added correctly absent (local search returned 0 results)"
 	fi
+	# Every frame on this channel names the search it belongs to, which is
+	# what lets a client demux several concurrent searches.
+	if [ -n "$SSE_SID" ] && echo "$JSON" | jq -e --argjson sid "$SSE_SID" '.search_id == $sid' >/dev/null 2>&1; then
+		_pass "search_progress .data.search_id names the search that produced it"
+	else
+		_fail "search_progress .data.search_id" "expected $SSE_SID in $JSON"
+	fi
 else
 	_fail "search_progress finished frame missing" \
 		"no finished search_progress within 8 s of POST /search; stream sample: $(head -40 "$SSE_OUT")"
+fi
+
+# --- 6.1 search_closed fires when a search is freed. ---------------
+# A subscriber holding one view per search learns the slot is gone from
+# this event; without it, it would only find out by 404ing on a later
+# read, and with SSE live it may never read again.
+if [ -n "$SSE_SID" ]; then
+	SSE_PID=$(_sse_start 8)
+	sleep 1
+	curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
+		"$HOST/api/v0/search/$SSE_SID" > /dev/null
+	CLOSED_JSON=""
+	for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+		if grep -q "^event: search_closed$" "$SSE_OUT"; then
+			CLOSED_JSON=$(grep -A2 "^event: search_closed$" "$SSE_OUT" \
+				| grep "^data: " | sed 's/^data: //' | head -1)
+			[ -n "$CLOSED_JSON" ] && break
+		fi
+		sleep 0.25
+	done
+	wait $SSE_PID 2>/dev/null
+	if [ -n "$CLOSED_JSON" ] && \
+	   echo "$CLOSED_JSON" | jq -e --argjson sid "$SSE_SID" '.search_id == $sid' >/dev/null 2>&1; then
+		_pass "search_closed fired for the freed search ($CLOSED_JSON)"
+	else
+		_fail "search_closed missing" \
+			"DELETE /search/$SSE_SID produced no matching search_closed; got: $CLOSED_JSON"
+	fi
+else
+	echo "    info: no search_id from POST /search — skipping search_closed"
 fi
 
 # --- comments_updated shape (issue #434). Conditional: the event only

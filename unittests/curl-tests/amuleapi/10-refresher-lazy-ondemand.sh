@@ -13,7 +13,7 @@
 #   * /logs/serverinfo  (EC_OP_GET_SERVERINFO)
 #   * /stats/tree       (EC_OP_GET_STATSTREE)
 #   * /stats/graphs/{X} (EC_OP_GET_STATSGRAPHS — one fetch serves all 4)
-#   * /search/results   (EC_OP_SEARCH_RESULTS)
+#   * /search/{id}/results (EC_OP_SEARCH_RESULTS, on a finished search)
 #
 # Wire changes:
 #   * /uploads RETIRED → /clients is the unified peer surface
@@ -152,7 +152,7 @@ fi
 
 # --- 3. Lazy-fetch endpoints — fresh per-endpoint snapshot_at. -----
 #
-# Per Phase 4g, /stats/tree, /stats/graphs/{X}, /search/results, and
+# Per Phase 4g, /stats/tree, /stats/graphs/{X}, /search/{id}/results, and
 # /logs/serverinfo no longer ride the refresher tick. Each handler
 # drives its own EC roundtrip on first call, coalesced via 1 s TTL.
 # The `snapshot_at` field on each reflects the per-endpoint fetch
@@ -189,9 +189,21 @@ fi
 _curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/bogus"
 _assert_status 404 "GET /stats/graphs/bogus → 404 (still validated)"
 
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/search/results"
-_assert_status 200 "GET /search/results → 200 (lazy fetch)"
-_assert_json_eq '.results | type' array '/search/results .results is array'
+# Results are addressed per search, so start one to have an id. A read of
+# a FINISHED search also refreshes it on demand (coalesced by a ~1 s TTL),
+# which is the lazy-fetch behaviour this phase is about.
+_curl -X POST -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+	-d '{"query":"amuleapi-phase10","type":"local"}' "$HOST/api/v0/search"
+SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id // empty')
+[ -n "$SID" ] || _die "POST /search returned no search_id"
+
+_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/search/$SID/results"
+_assert_status 200 "GET /search/{id}/results → 200 (lazy fetch)"
+_assert_json_eq '.results | type' array '/search/{id}/results .results is array'
+
+# An id that names no search never falls back to another one.
+_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/search/4294967290/results"
+_assert_status 404 "GET /search/{unknown}/results → 404 (no implicit fallback)"
 
 _curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/logs/serverinfo"
 _assert_status 200 "GET /logs/serverinfo → 200 (lazy fetch)"

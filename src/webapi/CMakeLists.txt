@@ -35,6 +35,7 @@ add_executable (amuleapi
 	PrefsSchema.cpp
 	Refresher.cpp
 	RefresherTick.cpp
+	SearchJson.cpp
 	StaticFs.cpp
 	State.cpp
 )

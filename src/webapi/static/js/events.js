@@ -164,8 +164,8 @@ function openSse() {
   // Search has its own channel but doesn't fit the added/updated/removed
   // resource model (no _removed; each search is a fresh result space), so
   // it's surfaced via store keys the search view consumes directly.
-  // search_result_added is byte-for-byte a /search/results[] entry (keyed by
-  // hash, nested sources {total, complete}); search_progress carries
+  // search_result_added is byte-for-byte a /search/{id}/results[] entry (keyed
+  // by hash, nested sources {total, complete}); search_progress carries
   // {state, percent, results, kind} and its terminal frame (state:
   // "finished") is the completion signal. Inert unless a search is active.
   es.addEventListener("search_result_added", (ev) => {
@@ -173,6 +173,13 @@ function openSse() {
   });
   es.addEventListener("search_progress", (ev) => {
     try { store.set("search:progress", JSON.parse(ev.data)); } catch (_) {}
+  });
+
+  // search_closed: the slot is gone (freed by a DELETE from any client, an
+  // EC reset, or the slot cap). A view bound to that id has nothing left to
+  // read, so surface it and let the view decide.
+  es.addEventListener("search_closed", (ev) => {
+    try { store.set("search:closed", JSON.parse(ev.data)); } catch (_) {}
   });
 
   // Comments ride their own event (EVENTS.md §comments_updated) instead of

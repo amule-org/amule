@@ -462,3 +462,105 @@ TEST(EventDiff, ServerFlagsJsonShape)
 	// describes it -- that is what the field is there for.
 	ASSERT_TRUE(webapi::ServerUdpFlagsJson(0x8000u).find("\"bitmask\":32768") != std::string::npos);
 }
+
+// --- search_result_added is the results-list entry, verbatim ---------
+//
+// EVENTS.md promises the payload is byte-for-byte a
+// GET /search/{id}/results entry with `search_id` prepended. That used to
+// be two hand-written serialisers kept in step by review, and they had
+// already drifted apart. Both now go through WriteSearchResultFields, so
+// this pins the fields the event MUST carry -- including the two the
+// hand-rolled copy had been missing.
+TEST(EventDiff, SearchResultAddedCarriesTheFullResultsEntry)
+{
+	CState state;
+	state.MarkSearchStarted(42, "browse", "SomePeerNick");
+
+	CEventBus bus;
+	LastSeenState prev;
+	// First tick baselines the (empty) slot: cold start never replays
+	// history as events.
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	state.MutateSearch(42, [](std::map<std::uint32_t, SearchResult> &cache) {
+		SearchResult r;
+		r.ecid = 7;
+		r.hash = "8b54a3c28b54a3c28b54a3c28b54a3c2";
+		r.name = "peer-shared.iso";
+		r.size = 4096;
+		r.source_count = 3;
+		r.complete_source_count = 1;
+		r.status = "new";
+		r.type = "iso";
+		r.directory = "Incoming/ISOs";
+		SearchResult::Child c;
+		c.ecid = 8;
+		c.name = "peer-shared-copy.iso";
+		c.hash = r.hash;
+		c.directory = "Backup/ISOs";
+		r.children.push_back(c);
+		cache.emplace(r.ecid, r);
+	});
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string payload;
+	for (const auto &e : DrainAll(bus)) {
+		if (e.name == "search_result_added")
+			payload = e.data;
+	}
+	ASSERT_TRUE(!payload.empty());
+	// search_id leads, so a consumer can demux before parsing the rest.
+	ASSERT_TRUE(payload.compare(0, 15, "{\"search_id\":42") == 0);
+	// The browse-only folder, on the result and on its child.
+	ASSERT_TRUE(payload.find("\"directory\":\"Incoming/ISOs\"") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"directory\":\"Backup/ISOs\"") != std::string::npos);
+	// The two fields the previously hand-rolled event payload omitted
+	// while the REST writer emitted them.
+	ASSERT_TRUE(payload.find("\"kad_comment_search_running\":false") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"comments\":[]") != std::string::npos);
+}
+
+// --- search_closed fires when a slot disappears ----------------------
+//
+// A subscriber holding one view per search otherwise only learns the
+// search is gone by 404ing on a later read -- and with SSE live it may
+// never read again.
+TEST(EventDiff, SearchClosedFiresOnceWhenTheSlotIsFreed)
+{
+	CState state;
+	state.MarkSearchStarted(42, "global", "ubuntu");
+	state.MarkSearchStarted(43, "kad", "debian");
+
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state); // baseline: both known
+
+	// The bus replays from the start on every drain, so count over the
+	// whole history rather than treating a drain as "what is new".
+	auto CountClosed = [&bus]() {
+		std::size_t n = 0;
+		std::string last;
+		for (const auto &e : DrainAll(bus)) {
+			if (e.name == "search_closed") {
+				++n;
+				last = e.data;
+			}
+		}
+		return std::make_pair(n, last);
+	};
+	ASSERT_EQUALS(static_cast<size_t>(0), CountClosed().first);
+
+	state.CloseSearch(42);
+	EmitDiffsAndUpdate(bus, prev, state);
+	const auto after_close = CountClosed();
+	ASSERT_EQUALS(static_cast<size_t>(1), after_close.first);
+	ASSERT_EQUALS(std::string("{\"search_id\":42}"), after_close.second);
+
+	// Further ticks stay silent: the baseline was pruned with the event,
+	// so a freed search is announced exactly once and its surviving
+	// sibling is never swept up with it.
+	EmitDiffsAndUpdate(bus, prev, state);
+	EmitDiffsAndUpdate(bus, prev, state);
+	ASSERT_EQUALS(static_cast<size_t>(1), CountClosed().first);
+	ASSERT_TRUE(state.HasSearch(43));
+}

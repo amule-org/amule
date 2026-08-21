@@ -541,12 +541,17 @@ target_link_libraries (LogTeeTest
 )
 
 # Tests for EmitDiffsAndUpdate's log_appended path and cold-start
-# gating. Pulls EventBus + State along with EventDiff itself — none
-# touch wxWidgets or EC, so the exe is pure stdlib + muleunit.
+# gating. Pulls EventBus + State along with EventDiff itself — no EC,
+# and the only wx dependency is the shared search-result writer below.
 add_executable (EventDiffTest
 	EventDiffTest.cpp
 	${CMAKE_SOURCE_DIR}/src/webapi/EventBus.cpp
 	${CMAKE_SOURCE_DIR}/src/webapi/EventDiff.cpp
+	# search_result_added is documented as carrying exactly a results-list
+	# entry, so EventDiff emits it through the same writer the REST handler
+	# uses instead of a second hand-rolled copy. That writer speaks
+	# CJsonWriter, which is what brings webcommon (and wx base) in here.
+	${CMAKE_SOURCE_DIR}/src/webapi/SearchJson.cpp
 	${CMAKE_SOURCE_DIR}/src/webapi/State.cpp
 )
 target_include_directories (EventDiffTest
@@ -559,6 +564,8 @@ add_test (NAME EventDiffTest COMMAND EventDiffTest)
 target_link_libraries (EventDiffTest
 	muleunit
 	mulecommon
+	webcommon
+	wxWidgets::BASE
 )
 
 # amuleapi-specific: tests CAmuleApiConfig's file-IO + mode-bit

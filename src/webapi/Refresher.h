@@ -56,6 +56,22 @@ class CState;
 // tick body is unit-testable against a mock EC reply.
 bool RefresherTick(CamuleapiApp &app, CState &state);
 
+// Outcome of one EC_OP_SEARCH_RESULTS fetch for a single search.
+enum class SearchFetchOutcome
+{
+	Updated,  //!< results merged into the slot
+	Expired,  //!< the daemon no longer holds this search (EC_TAG_SEARCH_EXPIRED)
+	EcFailed, //!< the roundtrip failed; the slot is untouched
+};
+
+// Pull one search's full result set from the daemon and merge it into that
+// search's slot. Shared by the per-tick poll of ACTIVE searches and by the
+// on-demand refresh the read paths use for a FINISHED one, so both issue the
+// identical request (EC_DETAIL_FULL plus the EC_TAG_SEARCH_PARENT grouping
+// flag) and feed the identical applier — a results list read through either
+// route has the same shape.
+SearchFetchOutcome FetchSearchResults(CamuleapiApp &app, CState &state, std::uint32_t search_id);
+
 // Single-threaded SSE diff emission. Called ONLY from the wxApp
 // refresher loop after a successful RefresherTick so that the
 // LastSeenState walk (which mutates app.LastSeenForEvents()) is

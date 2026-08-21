@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# amuleapi 07-read-stats-and-search-results — /stats/tree, /stats/graphs/{graph}, /search/results.
+# amuleapi 07-read-stats-and-search-results — /stats/tree, /stats/graphs/{graph}, /search/{id}/results.
 # /stats/tree is a recursive structure; /stats/graphs is a time-series with
-# per-graph path-param + ?width=N tailing; /search/results is read-only
+# per-graph path-param + ?width=N tailing; /search/{id}/results is read-only
 # until Phase 5 adds POST /search.
 
 set -u
@@ -74,8 +74,15 @@ TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 # plus the existing tick, so the first full snapshot lands by tick 2).
 sleep 4
 
+# A search to address. Every search-scoped path names its id, so this
+# script starts one rather than relying on a removed implicit default.
+_curl -X POST -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+	-d '{"query":"amuleapi-phase07","type":"local"}' "$HOST/api/v0/search"
+SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id // empty')
+[ -n "$SID" ] || _die "POST /search returned no search_id"
+
 # --- 1. Auth gate. -------------------------------------------------
-for ep in stats/tree stats/graphs/download_speed search/results; do
+for ep in stats/tree stats/graphs/download_speed "search/$SID/results"; do
 	_curl "$HOST/api/v0/$ep"
 	_assert_status 401 "GET /$ep (no creds) → 401"
 done
@@ -214,24 +221,28 @@ _assert_status 404 "GET /stats/graphs/bogus → 404"
 _assert_json_eq '.error.code' not_found \
 	'/stats/graphs/{unknown} carries error.code=not_found'
 
-# --- 6. /search/results — empty until Phase 5's POST /search. ------
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/search/results"
-_assert_status 200 "GET /search/results → 200"
-_assert_json_eq '.results | type'       array '/search/results .results is array'
-# Tolerant of empty results; if a phase 5 search was triggered earlier
-# and left state, the per-item shape still checks.
+# --- 6. /search/{id}/results. --------------------------------------
+_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/search/$SID/results"
+_assert_status 200 "GET /search/{id}/results → 200"
+_assert_json_eq '.results | type'  array  '/search/{id}/results .results is array'
+_assert_json_eq '.search_id'       "$SID" '/search/{id}/results echoes its search_id'
+_assert_json_eq '.query'  amuleapi-phase07 '/search/{id}/results reports its query'
+# Tolerant of empty results; a local search on a fresh daemon may find
+# nothing. The per-item shape still checks when there is an item.
 COUNT=$(printf '%s' "$CURL_BODY" | jq '.results | length')
 if [ "$COUNT" -gt 0 ]; then
 	_assert_json_eq '.results[0].hash | length' 32 \
-		'/search/results[0].hash is 32-char hex'
+		'/search/{id}/results[0].hash is 32-char hex'
 	_assert_json_eq '.results[0].name | type'   string \
-		'/search/results[0].name is string'
+		'/search/{id}/results[0].name is string'
 	_assert_json_eq '.results[0].sources | type' object \
-		'/search/results[0].sources is object'
+		'/search/{id}/results[0].sources is object'
+	_assert_json_eq '.results[0].directory | type' string \
+		'/search/{id}/results[0].directory is string'
 fi
 
 # --- 7. Method gate. -----------------------------------------------
-for ep in stats/tree stats/graphs/download_speed search/results; do
+for ep in stats/tree stats/graphs/download_speed "search/$SID/results"; do
 	_curl -X DELETE -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/$ep"
 	_assert_status 405 "DELETE /api/v0/$ep → 405"
 done
