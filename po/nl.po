@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 15:54+0200\n"
+"POT-Creation-Date: 2026-08-21 20:10+0200\n"
 "PO-Revision-Date: 2026-08-20 14:27+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
@@ -6315,7 +6315,8 @@ msgstr "Als u ze recursief deelt, wordt elk bestand daaronder gepubliceerd op de
 msgid "Confirm shared folders"
 msgstr "Gedeelde mappen bevestigen"
 
-#: src/PrefsUnifiedDlg.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+#: src/SharedFilesReloadProgress.cpp
 msgid "Reloading shared files..."
 msgstr "Gedeelde bestanden opnieuw laden..."
 
@@ -6331,11 +6332,6 @@ msgstr "Gedeelde mappen bijwerken"
 #, c-format
 msgid "Scanned %u directories..."
 msgstr "%u mappen gescand..."
-
-#: src/PrefsUnifiedDlg.cpp
-#, c-format
-msgid "Reloading shared files: %u files scanned"
-msgstr "Gedeelde bestanden opnieuw laden: %u bestanden gescand"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Shared folder"
@@ -7197,6 +7193,11 @@ msgstr[1] "Gedeelde Bestanden (%i, er worden er nog %u gehashed)"
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Gedeelde bestanden (%i)"
+
+#: src/SharedFilesReloadProgress.cpp
+#, c-format
+msgid "Reloading shared files: %u files scanned"
+msgstr "Gedeelde bestanden opnieuw laden: %u bestanden gescand"
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"

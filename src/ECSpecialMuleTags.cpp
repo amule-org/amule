@@ -883,9 +883,10 @@ void CEC_Prefs_Packet::Apply() const
 		if (theApp->sharedfiles) {
 			theApp->sharedfiles->EnableDirectoryWatcher(thePrefs::AutoRescanSharedDirs());
 			// Same for a changed exclusion filter: re-walk so newly excluded
-			// files leave the shareset and un-excluded ones return.
+			// files leave the shareset and un-excluded ones return. Scheduled
+			// rather than inline -- this runs inside the EC request handler.
 			if (excludeChanged) {
-				theApp->sharedfiles->Reload();
+				theApp->sharedfiles->RequestReload();
 			}
 		}
 	}

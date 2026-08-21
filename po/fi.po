@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 15:54+0200\n"
+"POT-Creation-Date: 2026-08-21 20:10+0200\n"
 "PO-Revision-Date: 2026-08-20 14:16+0000\n"
 "Last-Translator: Tapio Rantala <tapio.rantala@iki.fi>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -6363,7 +6363,8 @@ msgstr ""
 msgid "Confirm shared folders"
 msgstr "Jaetut kansiot"
 
-#: src/PrefsUnifiedDlg.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+#: src/SharedFilesReloadProgress.cpp
 #, fuzzy
 msgid "Reloading shared files..."
 msgstr "Uudelleenlataa jaetut tiedostot"
@@ -6381,11 +6382,6 @@ msgstr "Jaetut kansiot"
 #, c-format
 msgid "Scanned %u directories..."
 msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
-msgid "Reloading shared files: %u files scanned"
-msgstr "Lataa uudelleen lista jaetuista tiedostoista."
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -7270,6 +7266,11 @@ msgstr[1] "Jaetut tiedostot (%i)"
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Jaetut tiedostot (%i)"
+
+#: src/SharedFilesReloadProgress.cpp
+#, fuzzy, c-format
+msgid "Reloading shared files: %u files scanned"
+msgstr "Lataa uudelleen lista jaetuista tiedostoista."
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"

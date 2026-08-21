@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 15:54+0200\n"
+"POT-Creation-Date: 2026-08-21 20:10+0200\n"
 "PO-Revision-Date: 2026-08-20 14:20+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: Hungarian <hu@li.org>\n"
@@ -6338,7 +6338,8 @@ msgstr ""
 msgid "Confirm shared folders"
 msgstr "Megosztott mappák"
 
-#: src/PrefsUnifiedDlg.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+#: src/SharedFilesReloadProgress.cpp
 #, fuzzy
 msgid "Reloading shared files..."
 msgstr "Megosztott fájlok frissítése"
@@ -6356,11 +6357,6 @@ msgstr "Megosztott mappák"
 #, c-format
 msgid "Scanned %u directories..."
 msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
-msgid "Reloading shared files: %u files scanned"
-msgstr "A megosztott fájlok listájának újratöltése."
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -7232,6 +7228,11 @@ msgstr[0] "Megosztott fájlok (%i)"
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Megosztott fájlok (%i)"
+
+#: src/SharedFilesReloadProgress.cpp
+#, fuzzy, c-format
+msgid "Reloading shared files: %u files scanned"
+msgstr "A megosztott fájlok listájának újratöltése."
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"

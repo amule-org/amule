@@ -104,6 +104,7 @@ if (BUILD_MONOLITHIC OR BUILD_REMOTEGUI)
 		SharedDirsApplyTask.cpp
 		SharedFilePeersListCtrl.cpp
 		SharedFilesCtrl.cpp
+		SharedFilesReloadProgress.cpp
 		SharedFilesWnd.cpp
 		SourceListCtrl.cpp
 		StatisticsDlg.cpp

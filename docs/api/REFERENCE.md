@@ -1345,7 +1345,16 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
 { "ok": true }
 ```
 
-Returns `202 Accepted`.
+Returns `202 Accepted`. amuled schedules the re-walk and answers immediately, so the response confirms only that the reload was **scheduled** — it never carries the outcome. The walk begins on amuled's next processing tick, within about a second, and a large or network-mounted share tree can take minutes to finish.
+
+Repeated calls coalesce: requesting a reload while one is already pending, or while a walk is in progress, results in a single further walk rather than one per call.
+
+**Reading the result.** The walk brackets itself with two amule log lines, so read them back from [`GET /api/v0/logs/amule`](#get-apiv0logsamule) or the `log` SSE channel:
+
+- `Reloading shared files...` when the walk starts
+- `Found 1234 known shared files, 7 unknown` when it ends
+
+The resulting changes also arrive as `shared_added` / `shared_removed` events on the `shared` SSE channel, which is the better signal if you only care about the delta.
 
 **Errors:** `503 ec_unavailable`.
 
@@ -1391,13 +1400,15 @@ curl -s -X PUT -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/j
 
 `recursive` is optional and defaults to `false`.
 
-amuled validates every path — a REST client cannot stat the core's filesystem, so a typo would otherwise become a silently dead share. Paths that pass are applied, persisted and rescanned; the rest come back in `rejected`, so **one bad entry does not discard the edit**:
+amuled validates every path — a REST client cannot stat the core's filesystem, so a typo would otherwise become a silently dead share. Paths that pass are applied and persisted before the response returns; the rest come back in `rejected`, so **one bad entry does not discard the edit**:
 
 ```json
 { "ok": true, "rejected": [ { "path": "/typo", "reason": "not_found" } ] }
 ```
 
 `reason` is `not_found` (missing, or not a directory) or `not_readable`. amuled reports these as codes and the API renders them, so its locale never leaks into your response.
+
+The **rescan is scheduled, not completed**, before the response returns: a successful reply means the new roots are validated and persisted, and that the re-walk will start on amuled's next processing tick. Until it finishes, [`GET /api/v0/shared`](#get-apiv0shared) still serves the previous file list. Observe completion the same way as [`POST /api/v0/shared/reload`](#post-apiv0sharedreload), whose notes on log lines and coalescing apply here too.
 
 **Errors:** `400 bad_request` (`directories` not an array, an entry without a non-empty `path`, non-boolean `recursive`), `502 amuled_rejected`, `503 ec_unavailable`.
 

@@ -1064,7 +1064,19 @@ bool CSharedFileList::Reload(ReloadYieldCb yieldCb)
 		return true;
 	}
 
-	AddDebugLogLineN(logKnownFiles, "Reload shared files");
+	// Any completed walk satisfies an outstanding RequestReload(), so drop the
+	// flag here rather than only in Process(). That lets a GUI caller run the
+	// walk itself (with progress) right after something that requested one,
+	// without Process() then running a second, redundant walk a tick later.
+	// A request that arrives while a walk is running took the `reloading`
+	// early-return above and is still pending, so it is not lost.
+	m_reloadPending = false;
+
+	// Info, not debug: now that EC callers get an immediate reply instead of
+	// blocking until the walk ends, the log is how they observe it starting.
+	// The end-of-walk "Found %i known shared files" summary is already an
+	// info line, so the two form a matched pair in release builds.
+	AddLogLineN(_("Reloading shared files..."));
 	reloading = true;
 	Notify_SharedFilesRemoveAllItems();
 
@@ -1381,6 +1393,15 @@ void CSharedFileList::SendListToServer()
 
 void CSharedFileList::Process()
 {
+	// Deferred reloads requested by callers on the core event loop (EC
+	// handlers, the watcher's dropped-events fallback) run here rather than
+	// inline in the caller. The `reloading` check means a request that
+	// arrives mid-walk stays pending and runs on a later tick instead of
+	// re-entering; Reload() would return early anyway, silently dropping it.
+	if (m_reloadPending && !reloading) {
+		m_reloadPending = false;
+		Reload();
+	}
 	Publish();
 	if (!m_lastPublishED2KFlag || (::GetTickCount64() - m_lastPublishED2K < ED2KREPUBLISHTIME)) {
 		return;

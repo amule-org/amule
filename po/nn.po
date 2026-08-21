@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 15:54+0200\n"
+"POT-Creation-Date: 2026-08-21 20:10+0200\n"
 "PO-Revision-Date: 2026-08-20 14:28+0000\n"
 "Last-Translator: Hallvor Brunstad <Hallvor_1976@yahoo.com>\n"
 "Language-Team: <i18n-nn@lister.ping.uio.no>\n"
@@ -6395,7 +6395,8 @@ msgstr ""
 msgid "Confirm shared folders"
 msgstr "Lastar inn att delte filer"
 
-#: src/PrefsUnifiedDlg.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+#: src/SharedFilesReloadProgress.cpp
 #, fuzzy
 msgid "Reloading shared files..."
 msgstr "Lastar inn att delte filer"
@@ -6413,11 +6414,6 @@ msgstr "Les mellombels mappe"
 #, c-format
 msgid "Scanned %u directories..."
 msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
-msgid "Reloading shared files: %u files scanned"
-msgstr "Lastar inn att lista over delte filer."
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -7312,6 +7308,11 @@ msgstr[1] "Delte filer (%i)"
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Delte filer (%i)"
+
+#: src/SharedFilesReloadProgress.cpp
+#, fuzzy, c-format
+msgid "Reloading shared files: %u files scanned"
+msgstr "Lastar inn att lista over delte filer."
 
 #: src/SourceListCtrl.cpp
 #, fuzzy

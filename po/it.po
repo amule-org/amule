@@ -19,7 +19,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 15:54+0200\n"
+"POT-Creation-Date: 2026-08-21 20:10+0200\n"
 "PO-Revision-Date: 2026-08-20 14:20+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
@@ -6324,7 +6324,8 @@ msgstr "Condividerle ricorsivamente pubblicherà ogni file al loro interno sulle
 msgid "Confirm shared folders"
 msgstr "Conferma cartelle condivise"
 
-#: src/PrefsUnifiedDlg.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+#: src/SharedFilesReloadProgress.cpp
 msgid "Reloading shared files..."
 msgstr "Ricarica file condivisi in corso..."
 
@@ -6340,11 +6341,6 @@ msgstr "Aggiornamento cartelle condivise"
 #, c-format
 msgid "Scanned %u directories..."
 msgstr "%u cartelle analizzate..."
-
-#: src/PrefsUnifiedDlg.cpp
-#, c-format
-msgid "Reloading shared files: %u files scanned"
-msgstr "Ricarica file condivisi: %u file analizzati"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Shared folder"
@@ -7206,6 +7202,11 @@ msgstr[1] "File condivisi (%i, hashing di altri %u file in corso)"
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "File condivisi (%i)"
+
+#: src/SharedFilesReloadProgress.cpp
+#, c-format
+msgid "Reloading shared files: %u files scanned"
+msgstr "Ricarica file condivisi: %u file analizzati"
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"

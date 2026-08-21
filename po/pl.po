@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 15:54+0200\n"
+"POT-Creation-Date: 2026-08-21 20:10+0200\n"
 "PO-Revision-Date: 2026-08-20 14:29+0000\n"
 "Last-Translator: Michał Trzebiatowski <hippie_1968@hotmail.com>\n"
 "Language-Team: translationproject.org/team/pl.html <translation-team-pl@lists.sourceforge.net>\n"
@@ -6396,7 +6396,8 @@ msgstr ""
 msgid "Confirm shared folders"
 msgstr "Udostępnione foldery"
 
-#: src/PrefsUnifiedDlg.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+#: src/SharedFilesReloadProgress.cpp
 #, fuzzy
 msgid "Reloading shared files..."
 msgstr "Przeładuj twoje udostępnione pliki"
@@ -6414,11 +6415,6 @@ msgstr "Udostępnione foldery"
 #, c-format
 msgid "Scanned %u directories..."
 msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
-msgid "Reloading shared files: %u files scanned"
-msgstr "Przeładowuje listę udostępnionych plików."
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -7316,6 +7312,11 @@ msgstr[2] "Udostępnione pliki (%i)"
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Udostępnione pliki (%i)"
+
+#: src/SharedFilesReloadProgress.cpp
+#, fuzzy, c-format
+msgid "Reloading shared files: %u files scanned"
+msgstr "Przeładowuje listę udostępnionych plików."
 
 #: src/SourceListCtrl.cpp
 #, fuzzy

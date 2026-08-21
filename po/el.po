@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 15:54+0200\n"
+"POT-Creation-Date: 2026-08-21 20:10+0200\n"
 "PO-Revision-Date: 2026-08-20 14:14+0000\n"
 "Last-Translator: Dimitris <dgalanak@yahoo.com>\n"
 "Language-Team: Greek\n"
@@ -6402,7 +6402,8 @@ msgstr ""
 msgid "Confirm shared folders"
 msgstr "Κοινόχρηστα αρχεία"
 
-#: src/PrefsUnifiedDlg.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+#: src/SharedFilesReloadProgress.cpp
 #, fuzzy
 msgid "Reloading shared files..."
 msgstr "Επαναφόρτωση των κοινόχρηστων αρχείων"
@@ -6420,11 +6421,6 @@ msgstr "Κοινόχρηστα αρχεία"
 #, c-format
 msgid "Scanned %u directories..."
 msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
-msgid "Reloading shared files: %u files scanned"
-msgstr "Επαναφορτώνει τη λίστα κοινοχρήστων αρχείων."
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -7319,6 +7315,11 @@ msgstr[1] "Κοινόχρηστα αρχεία (%i)"
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Κοινόχρηστα αρχεία (%i)"
+
+#: src/SharedFilesReloadProgress.cpp
+#, fuzzy, c-format
+msgid "Reloading shared files: %u files scanned"
+msgstr "Επαναφορτώνει τη λίστα κοινοχρήστων αρχείων."
 
 #: src/SourceListCtrl.cpp
 #, fuzzy

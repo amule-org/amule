@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 15:54+0200\n"
+"POT-Creation-Date: 2026-08-21 20:10+0200\n"
 "PO-Revision-Date: 2026-08-20 14:19+0000\n"
 "Last-Translator: Sebastiano Pistore <sebastiano.pistore.info@aol.com>\n"
 "Language-Team: https://github.com/amule-org/amule <forum@aMule.org>\n"
@@ -6318,7 +6318,8 @@ msgstr ""
 msgid "Confirm shared folders"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+#: src/SharedFilesReloadProgress.cpp
 #, fuzzy
 msgid "Reloading shared files..."
 msgstr "Pronadjeno %i poznatih dijeljenih fajlova"
@@ -6334,11 +6335,6 @@ msgstr ""
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Scanned %u directories..."
-msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp
-#, c-format
-msgid "Reloading shared files: %u files scanned"
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
@@ -7240,6 +7236,11 @@ msgstr[2] "Dijeljeni fajlovi (%i)"
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Dijeljeni fajlovi (%i)"
+
+#: src/SharedFilesReloadProgress.cpp
+#, fuzzy, c-format
+msgid "Reloading shared files: %u files scanned"
+msgstr "Pronadjeno %i poznatih dijeljenih fajlova"
 
 #: src/SourceListCtrl.cpp
 #, fuzzy

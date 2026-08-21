@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 15:54+0200\n"
+"POT-Creation-Date: 2026-08-21 20:10+0200\n"
 "PO-Revision-Date: 2026-08-20 14:34+0000\n"
 "Last-Translator: Fation <dj_barthezz@linuxmail.org lushnja_corps@hotmail.Language-Team:\n"
 "Language: sq\n"
@@ -6385,7 +6385,8 @@ msgstr ""
 msgid "Confirm shared folders"
 msgstr "Ringarko failet e ndara"
 
-#: src/PrefsUnifiedDlg.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+#: src/SharedFilesReloadProgress.cpp
 #, fuzzy
 msgid "Reloading shared files..."
 msgstr "Ringarko failet e ndara"
@@ -6403,11 +6404,6 @@ msgstr "Duke lexuar kartelen temp"
 #, c-format
 msgid "Scanned %u directories..."
 msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
-msgid "Reloading shared files: %u files scanned"
-msgstr "Ringarko listen e faileve te ndara."
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -7302,6 +7298,11 @@ msgstr[1] "Faile te ndara (%i)"
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Faile te ndara (%i)"
+
+#: src/SharedFilesReloadProgress.cpp
+#, fuzzy, c-format
+msgid "Reloading shared files: %u files scanned"
+msgstr "Ringarko listen e faileve te ndara."
 
 #: src/SourceListCtrl.cpp
 #, fuzzy

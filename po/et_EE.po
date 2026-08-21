@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 15:54+0200\n"
+"POT-Creation-Date: 2026-08-21 20:10+0200\n"
 "PO-Revision-Date: 2026-08-20 14:15+0000\n"
 "Last-Translator: \n"
 "Language-Team: Estonian <kde-i18n-doc@kde.org>\n"
@@ -6364,7 +6364,8 @@ msgstr ""
 msgid "Confirm shared folders"
 msgstr "Jagatud kataloogid"
 
-#: src/PrefsUnifiedDlg.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+#: src/SharedFilesReloadProgress.cpp
 #, fuzzy
 msgid "Reloading shared files..."
 msgstr "Lae oma jagatud failid uuesti"
@@ -6382,11 +6383,6 @@ msgstr "Jagatud kataloogid"
 #, c-format
 msgid "Scanned %u directories..."
 msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
-msgid "Reloading shared files: %u files scanned"
-msgstr "Jagatud failide loetelu taaslaadimine."
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -7274,6 +7270,11 @@ msgstr[1] "Jagatud failid (%i)"
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Jagatud failid (%i)"
+
+#: src/SharedFilesReloadProgress.cpp
+#, fuzzy, c-format
+msgid "Reloading shared files: %u files scanned"
+msgstr "Jagatud failide loetelu taaslaadimine."
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"

@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 15:54+0200\n"
+"POT-Creation-Date: 2026-08-21 20:10+0200\n"
 "PO-Revision-Date: 2026-08-20 14:37+0000\n"
 "Last-Translator: Wayne Su <mstarmstar@gmail.com>\n"
 "Language-Team: \n"
@@ -6345,7 +6345,8 @@ msgstr ""
 msgid "Confirm shared folders"
 msgstr "分享資料夾"
 
-#: src/PrefsUnifiedDlg.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+#: src/SharedFilesReloadProgress.cpp
 #, fuzzy
 msgid "Reloading shared files..."
 msgstr "重新載入分享的檔案"
@@ -6363,11 +6364,6 @@ msgstr "分享資料夾"
 #, c-format
 msgid "Scanned %u directories..."
 msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
-msgid "Reloading shared files: %u files scanned"
-msgstr "重新載入分享檔案清單。"
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -7243,6 +7239,11 @@ msgstr[0] "分享檔案 (%i)"
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "分享檔案 (%i)"
+
+#: src/SharedFilesReloadProgress.cpp
+#, fuzzy, c-format
+msgid "Reloading shared files: %u files scanned"
+msgstr "重新載入分享檔案清單。"
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"

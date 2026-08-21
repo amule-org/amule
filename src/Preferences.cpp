@@ -2428,8 +2428,10 @@ void CPreferences::RemoveCat(size_t index)
 
 		m_CatList.erase(it);
 
-		// remove cat directory from shares
-		theApp->sharedfiles->Reload();
+		// remove cat directory from shares. Scheduled, not inline: this is
+		// reached from the EC_OP_DELETE_CATEGORY handler as well as the GUI,
+		// and an inline walk there blocks the whole EC lane.
+		theApp->sharedfiles->RequestReload();
 	}
 }
 
@@ -2484,9 +2486,10 @@ bool CPreferences::UpdateCategory(
 		// keep path as it was
 	} else if (category->path != path) {
 		// path changed: reload shared files, adding files in the new path and removing those from the
-		// old path
+		// old path. Scheduled for the same reason as the removal above --
+		// EC_OP_UPDATE_CATEGORY reaches here through CEC_Category_Tag::Apply.
 		category->path = path;
-		theApp->sharedfiles->Reload();
+		theApp->sharedfiles->RequestReload();
 	}
 	category->title = name;
 	category->comment = comment;

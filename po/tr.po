@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 15:54+0200\n"
+"POT-Creation-Date: 2026-08-21 20:10+0200\n"
 "PO-Revision-Date: 2026-08-20 14:35+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -6310,7 +6310,8 @@ msgstr "Bunları yinelemeli olarak paylaşmanız, kapsadıkları her dosyayı eD
 msgid "Confirm shared folders"
 msgstr "Paylaşılan dizinleri teyit et"
 
-#: src/PrefsUnifiedDlg.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+#: src/SharedFilesReloadProgress.cpp
 msgid "Reloading shared files..."
 msgstr "Paylaşılan dosyalar yeniden yükleniyor…"
 
@@ -6326,11 +6327,6 @@ msgstr "Paylaşılan dizinler güncelleniyor"
 #, c-format
 msgid "Scanned %u directories..."
 msgstr "%u dizin tarandı…"
-
-#: src/PrefsUnifiedDlg.cpp
-#, c-format
-msgid "Reloading shared files: %u files scanned"
-msgstr "Paylaşılmış dosyalar yeniden yükleniyor: %u dosya tarandı"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Shared folder"
@@ -7192,6 +7188,11 @@ msgstr[1] "Payşılan Dosyalar (%i, %u dosyanın daha karma değeri hesaplanıyo
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Paylaşılan Dosyalar (%i)"
+
+#: src/SharedFilesReloadProgress.cpp
+#, c-format
+msgid "Reloading shared files: %u files scanned"
+msgstr "Paylaşılmış dosyalar yeniden yükleniyor: %u dosya tarandı"
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"

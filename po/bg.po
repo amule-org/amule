@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 15:54+0200\n"
+"POT-Creation-Date: 2026-08-21 20:10+0200\n"
 "PO-Revision-Date: 2026-08-20 14:09+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: Bulgarian <dict@linux.zonebg.com>\n"
@@ -6252,7 +6252,8 @@ msgstr ""
 msgid "Confirm shared folders"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+#: src/SharedFilesReloadProgress.cpp
 #, fuzzy
 msgid "Reloading shared files..."
 msgstr "Известни са %i споделени файлове"
@@ -6268,11 +6269,6 @@ msgstr ""
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Scanned %u directories..."
-msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp
-#, c-format
-msgid "Reloading shared files: %u files scanned"
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
@@ -7162,6 +7158,11 @@ msgstr[1] "Споделени файлове (%i)"
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Споделени файлове (%i)"
+
+#: src/SharedFilesReloadProgress.cpp
+#, fuzzy, c-format
+msgid "Reloading shared files: %u files scanned"
+msgstr "Известни са %i споделени файлове"
 
 #: src/SourceListCtrl.cpp
 #, fuzzy

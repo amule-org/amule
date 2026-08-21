@@ -603,6 +603,19 @@ public:
 		return true;
 	}
 
+	// Remote-side shim for the daemon's deferred-reload request. On the
+	// daemon this defers the walk to the next Process() tick so an EC
+	// handler need not block on it; here Reload() only posts
+	// EC_OP_SHAREDFILES_RELOAD and returns, so it is already the
+	// non-blocking thing RequestReload() exists to provide. amuled then
+	// defers on its own side when it receives the packet.
+	void RequestReload() { Reload(); }
+
+	// Always false on the remote side: there is no local walk to owe. When a
+	// category change reaches CPreferencesRem it goes out over EC, and amuled
+	// schedules its own reload; the GUI must not also run or announce one.
+	bool IsReloadPending() const { return false; }
+
 	// Remote-side no-op. The actual watcher lives on amuled and is
 	// driven there by the EC-synced AutoRescanSharedDirs pref; on the
 	// GUI side there is nothing to enable/disable locally.
