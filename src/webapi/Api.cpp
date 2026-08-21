@@ -1014,6 +1014,23 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		return HandleKadBootstrap(req);
 	}
 
+	// IP filter actions. The IP-filter *settings* are ordinary
+	// preferences; these two are the standalone operations behind the
+	// desktop Security page's "Reload List" and "Update now" buttons.
+	if (path == "/api/v0/ipfilter/reload") {
+		if (req.method != "POST") {
+			return ErrorResponse(405, "method_not_allowed", "only POST on /ipfilter/reload");
+		}
+		return HandleIpfilterReload(req);
+	}
+
+	if (path == "/api/v0/ipfilter/update") {
+		if (req.method != "POST") {
+			return ErrorResponse(405, "method_not_allowed", "only POST on /ipfilter/update");
+		}
+		return HandleIpfilterUpdate(req);
+	}
+
 	// re-hash one shared file against its on-disk data. Matched before the
 	// single-segment `/shared/{hash}` pattern below purely for locality —
 	// the two can't collide, this one carries an extra path segment.
@@ -2930,6 +2947,143 @@ bool DownloadPriorityToCode(const std::string &name, std::uint8_t &out)
 		return true;
 	}
 	return false;
+}
+
+// The three "fetch a list from a URL" endpoints — /servers/update,
+// /kad/update and /ipfilter/update — are the same operation over three
+// different lists: take one http(s) URL, hand it to amuled in a single
+// string tag, echo the effective URL back with a 202. amuled persists the
+// URL into the matching preference itself in all three cases, so none of
+// them also PATCHes it here.
+struct UrlFetchSpec
+{
+	// JSON body field carrying the URL, and the key echoed in the reply.
+	const char *field;
+	ec_opcode_t op;
+	// Tag the URL travels in. EC_OP_IPFILTER_UPDATE reads the packet's
+	// first tag whatever it is named, so that one uses EC_TAG_STRING to
+	// match what amulegui has always sent.
+	ec_tagname_t tag;
+	// false: an absent field falls back to the configured URL the caller
+	// passes in, instead of being a 400.
+	bool url_required;
+	// Run an inline RefresherTick so the caches (and the SSE diff built
+	// from them) pick up whatever already landed. Only worth it where the
+	// result shows up in a cache this process holds.
+	bool refresh_after;
+};
+
+// Pull the URL out of the request body per `spec`, falling back to
+// `configured` when the body omits it and the spec allows that. Returns
+// false with `rejection` filled on any rejection.
+//
+// `configured` is null when there is no fallback to offer — always for a
+// url_required spec, and for the others while amuleapi has no preferences
+// snapshot yet. A request that carries its own URL is unaffected either
+// way; one that needs the fallback then gets a 503 rather than a 400
+// blaming a URL that simply has not been read yet.
+bool ResolveFetchUrl(const CHttpServer::Request &req,
+	const UrlFetchSpec &spec,
+	const std::string *configured,
+	std::string &out_url,
+	CHttpServer::Response &rejection)
+{
+	const std::string field = std::string("`") + spec.field + "`";
+	bool present = false;
+	// An optional-URL endpoint accepts no body at all; a required-URL one
+	// needs the object, so let ParseJsonObjectBody produce the error.
+	if (spec.url_required || !req.body.empty()) {
+		picojson::value root;
+		std::string parse_err;
+		if (!ParseJsonObjectBody(req.body, root, parse_err)) {
+			rejection = ErrorResponse(400, "bad_request", parse_err.c_str());
+			return false;
+		}
+		const auto &obj = root.get<picojson::object>();
+		const auto it = obj.find(spec.field);
+		if (it != obj.end()) {
+			if (!it->second.is<std::string>()) {
+				rejection = ErrorResponse(
+					400, "bad_request", (field + " must be a string").c_str());
+				return false;
+			}
+			out_url = it->second.get<std::string>();
+			present = true;
+		}
+	}
+	if (!present) {
+		if (spec.url_required) {
+			rejection = ErrorResponse(400,
+				"bad_request",
+				("required string field " + field + " is missing").c_str());
+			return false;
+		}
+		if (configured == nullptr) {
+			rejection = ErrorResponse(
+				503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
+			return false;
+		}
+		out_url = *configured;
+		if (out_url.empty()) {
+			rejection = ErrorResponse(400,
+				"bad_request",
+				(field + " was omitted and no URL is configured").c_str());
+			return false;
+		}
+		// A configured URL predates this request — it came in over
+		// PATCH /preferences or amuled's own config file — so it is not
+		// re-validated here. Sending it is what the desktop button does.
+		return true;
+	}
+	if (out_url.empty()) {
+		rejection = ErrorResponse(400, "bad_request", (field + " must not be empty").c_str());
+		return false;
+	}
+	// Light hygiene check — amuled hands the string straight to the HTTP
+	// downloader, so a bad scheme would otherwise fail asynchronously with
+	// nowhere to report it. Rejecting here also gives a clearer error than
+	// the EC "amuled rejected" wrapper.
+	if (out_url.compare(0, 7, "http://") != 0 && out_url.compare(0, 8, "https://") != 0) {
+		rejection = ErrorResponse(
+			400, "bad_request", (field + " must be an http:// or https:// URL").c_str());
+		return false;
+	}
+	return true;
+}
+
+// Send the EC op for one resolved URL and build the 202 echo.
+CHttpServer::Response UrlFetchOp(
+	CamuleapiApp &app, webapi::CState &state, const UrlFetchSpec &spec, const std::string &url)
+{
+	auto ec_req = std::make_unique<CECPacket>(spec.op);
+	ec_req->AddTag(CECTag(spec.tag, wxString::FromUTF8(url.c_str())));
+	const CECPacket *ec_resp = app.SendRecvSerialized(ec_req.get());
+	if (!ec_resp) {
+		return ErrorResponse(503, "ec_unavailable", "EC roundtrip failed");
+	}
+	std::string ec_err;
+	if (IsEcFailedResponse(ec_resp, ec_err)) {
+		delete ec_resp;
+		return ErrorResponse(400, "amuled_rejected", ec_err.c_str());
+	}
+	delete ec_resp;
+
+	if (spec.refresh_after) {
+		(void)RefresherTick(app, state);
+	}
+
+	CHttpServer::Response r;
+	r.status = 202;
+	r.content_type = "application/json";
+	CJsonWriter w;
+	w.BeginObject();
+	w.Key("ok");
+	w.ValueBool(true);
+	w.Key(spec.field);
+	w.ValueString(wxString::FromUTF8(url.c_str()));
+	w.EndObject();
+	FinalizeJsonBody(w, r);
+	return r;
 }
 
 // MD4 hex string → CMD4Hash. Returns false if the string isn't 32
@@ -5147,60 +5301,20 @@ CHttpServer::Response CApiDispatcher::HandleServerUpdateFromUrl(const CHttpServe
 	if (auto rej = RequireAdmin(a))
 		return *rej;
 
-	picojson::value root;
-	std::string parse_err;
-	if (!ParseJsonObjectBody(req.body, root, parse_err)) {
-		return ErrorResponse(400, "bad_request", parse_err.c_str());
-	}
-	const auto &obj = root.get<picojson::object>();
-	const auto it = obj.find("servers_url");
-	if (it == obj.end() || !it->second.is<std::string>()) {
-		return ErrorResponse(400, "bad_request", "required string field `servers_url` is missing");
-	}
-	const std::string &url = it->second.get<std::string>();
-	if (url.empty()) {
-		return ErrorResponse(400, "bad_request", "`servers_url` must not be empty");
-	}
-	// Light hygiene check — amuled will fetch this and bail if it's
-	// nonsense, but rejecting obviously bad inputs at the API layer
-	// gives a clearer error than the EC "amuled rejected" wrapper.
-	if (url.compare(0, 7, "http://") != 0 && url.compare(0, 8, "https://") != 0) {
-		return ErrorResponse(400, "bad_request", "`servers_url` must be an http://or https://URL");
-	}
-
-	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_SERVER_UPDATE_FROM_URL));
-	ec_req->AddTag(CECTag(EC_TAG_SERVERS_UPDATE_URL, wxString::FromUTF8(url.c_str())));
-	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
-	if (!ec_resp) {
-		return ErrorResponse(503, "ec_unavailable", "EC roundtrip failed");
-	}
-	std::string ec_err;
-	if (IsEcFailedResponse(ec_resp, ec_err)) {
-		delete ec_resp;
-		return ErrorResponse(400, "amuled_rejected", ec_err.c_str());
-	}
-	delete ec_resp;
-
 	// amuled streams the new server list into its CServerList
 	// asynchronously over the next few ticks (download + parse + merge
-	// in CServerList::UpdateServerMetFromURL). Run the inline
-	// RefresherTick to grab whatever's already there, but the
-	// `server_added` SSE events will continue to fire on subsequent
-	// natural ticks as more entries land.
-	(void)RefresherTick(m_app, m_state);
-
-	CHttpServer::Response r;
-	r.status = 202;
-	r.content_type = "application/json";
-	CJsonWriter w;
-	w.BeginObject();
-	w.Key("ok");
-	w.ValueBool(true);
-	w.Key("servers_url");
-	w.ValueString(wxString::FromUTF8(url.c_str()));
-	w.EndObject();
-	FinalizeJsonBody(w, r);
-	return r;
+	// in CServerList::UpdateServerMetFromURL). The inline RefresherTick
+	// grabs whatever's already there; the `server_added` SSE events keep
+	// firing on subsequent natural ticks as more entries land.
+	static const UrlFetchSpec kSpec = {
+		"servers_url", EC_OP_SERVER_UPDATE_FROM_URL, EC_TAG_SERVERS_UPDATE_URL, true, true
+	};
+	std::string url;
+	CHttpServer::Response rejection;
+	if (!ResolveFetchUrl(req, kSpec, nullptr, url, rejection)) {
+		return rejection;
+	}
+	return UrlFetchOp(m_app, m_state, kSpec, url);
 }
 
 // One "<ip>:<port>" selector, parsed. Split out from the lookup so a
@@ -7182,9 +7296,10 @@ CHttpServer::Response CApiDispatcher::HandleNetworksDisconnect(const CHttpServer
 
 // POST /kad/update — refresh the Kad node list from a nodes.dat URL (#693).
 //
-// Strict mirror of HandleServerUpdateFromUrl: same validation, same 202. The
-// EC handler (EC_OP_KAD_UPDATE_FROM_URL) persists the URL into preferences
-// itself via SetKadNodesUrl(), so this deliberately does NOT also patch
+// Shares ResolveFetchUrl / UrlFetchOp with /servers/update and
+// /ipfilter/update: same validation, same 202. The EC handler
+// (EC_OP_KAD_UPDATE_FROM_URL) persists the URL into preferences itself via
+// SetKadNodesUrl(), so this deliberately does NOT also patch
 // kademlia.update_url — doing both would diverge from the ed2k path and could
 // race it.
 //
@@ -7199,52 +7314,76 @@ CHttpServer::Response CApiDispatcher::HandleKadUpdateFromUrl(const CHttpServer::
 	if (auto rej = RequireAdmin(a))
 		return *rej;
 
-	picojson::value root;
-	std::string parse_err;
-	if (!ParseJsonObjectBody(req.body, root, parse_err)) {
-		return ErrorResponse(400, "bad_request", parse_err.c_str());
+	// No inline RefresherTick: nothing observable has changed yet. Once
+	// the download completes amuled stops Kad, swaps nodes.dat in and
+	// starts Kad again, and the natural tick reports that.
+	static const UrlFetchSpec kSpec = {
+		"nodes_url", EC_OP_KAD_UPDATE_FROM_URL, EC_TAG_KADEMLIA_UPDATE_URL, true, false
+	};
+	std::string url;
+	CHttpServer::Response rejection;
+	if (!ResolveFetchUrl(req, kSpec, nullptr, url, rejection)) {
+		return rejection;
 	}
-	const auto &obj = root.get<picojson::object>();
-	const auto it = obj.find("nodes_url");
-	if (it == obj.end() || !it->second.is<std::string>()) {
-		return ErrorResponse(400, "bad_request", "required string field `nodes_url` is missing");
-	}
-	const std::string &url = it->second.get<std::string>();
-	if (url.empty()) {
-		return ErrorResponse(400, "bad_request", "`nodes_url` must not be empty");
-	}
-	// Same scheme gate as the ed2k path: amuled hands the string to
-	// libcurl, so anything that is not http(s) is rejected here rather
-	// than failing asynchronously with no way to report it back.
-	if (url.compare(0, 7, "http://") != 0 && url.compare(0, 8, "https://") != 0) {
-		return ErrorResponse(400, "bad_request", "`nodes_url` must be an http:// or https:// URL");
-	}
+	return UrlFetchOp(m_app, m_state, kSpec, url);
+}
 
-	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_KAD_UPDATE_FROM_URL));
-	ec_req->AddTag(CECTag(EC_TAG_KADEMLIA_UPDATE_URL, wxString::FromUTF8(url.c_str())));
-	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
-	if (!ec_resp) {
-		return ErrorResponse(503, "ec_unavailable", "EC roundtrip failed for KAD_UPDATE_FROM_URL");
-	}
-	std::string ec_err;
-	if (IsEcFailedResponse(ec_resp, ec_err)) {
-		delete ec_resp;
-		return ErrorResponse(400, "amuled_rejected", ec_err.c_str());
-	}
-	delete ec_resp;
+// POST /ipfilter/reload — re-read ipfilter.dat + ipfilter_static.dat from
+// amuled's config directory into the live filter. The desktop client's
+// "Reload List" button, and the same EC op amulegui sends for it.
+//
+// amuled queues a CIPFilterTask and keeps the current filter live until the
+// new one has finished loading, so this is accepted, never completed; the
+// outcome is only ever an amule log line ("Loading IP filters ...",
+// "IP filter is ready"), read back through /logs/amule or the SSE log
+// channel.
+CHttpServer::Response CApiDispatcher::HandleIpfilterReload(const CHttpServer::Request &req)
+{
+	auto a = Authenticate(req);
+	if (!a.ok)
+		return a.rejection;
+	if (auto rej = RequireAdmin(a))
+		return *rej;
+	return SimpleConnControlOp(m_app, m_state, EC_OP_IPFILTER_RELOAD, 202);
+}
 
-	CHttpServer::Response r;
-	r.status = 202;
-	r.content_type = "application/json";
-	CJsonWriter w;
-	w.BeginObject();
-	w.Key("ok");
-	w.ValueBool(true);
-	w.Key("nodes_url");
-	w.ValueString(wxString::FromUTF8(url.c_str()));
-	w.EndObject();
-	FinalizeJsonBody(w, r);
-	return r;
+// POST /ipfilter/update — download ipfilter.dat from a URL, swap it in and
+// reload. The desktop client's "Update now" button.
+//
+// Unlike its two siblings the URL is optional: with no body amuleapi
+// resolves security.ipfilter_update_url from its own preferences snapshot
+// and sends that, so the behaviour does not depend on which amuled build
+// answers. With neither, this is a 400 rather than a request the core turns
+// into a silent no-op (CIPFilter::Update() returns immediately on an empty
+// URL). The snapshot trails amuled by up to one refresher tick, so a
+// PATCH /preferences immediately followed by a bodyless update can still
+// send the previous URL — pass it explicitly to be sure which one runs.
+CHttpServer::Response CApiDispatcher::HandleIpfilterUpdate(const CHttpServer::Request &req)
+{
+	auto a = Authenticate(req);
+	if (!a.ok)
+		return a.rejection;
+	if (auto rej = RequireAdmin(a))
+		return *rej;
+	// EC_OP_IPFILTER_UPDATE reads the packet's first tag by position, not
+	// by name, so the tag is EC_TAG_STRING — what amulegui has always sent.
+	// No inline RefresherTick: the download is asynchronous and lands in
+	// amuled's filter, not in a cache this process holds.
+	static const UrlFetchSpec kSpec = {
+		"ipfilter_url", EC_OP_IPFILTER_UPDATE, EC_TAG_STRING, false, false
+	};
+	// Named local: Preferences() hands back a snapshot by value. Offer it as
+	// the fallback only once there is a snapshot to read — before the first
+	// one the defaults would look like "no URL configured".
+	const bool have_prefs = m_state.HasFirstSnapshot();
+	const std::string configured =
+		have_prefs ? m_state.Preferences().security.ipfilter_update_url : std::string();
+	std::string url;
+	CHttpServer::Response rejection;
+	if (!ResolveFetchUrl(req, kSpec, have_prefs ? &configured : nullptr, url, rejection)) {
+		return rejection;
+	}
+	return UrlFetchOp(m_app, m_state, kSpec, url);
 }
 
 CHttpServer::Response CApiDispatcher::HandleKadBootstrap(const CHttpServer::Request &req)

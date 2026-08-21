@@ -214,6 +214,7 @@ PHASES=(
 	32-country-flags.sh
 	33-known-clients.sh
 	34-friends.sh
+	35-ipfilter-actions.sh
 )
 
 # Override list from the command line if given.

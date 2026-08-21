@@ -59,6 +59,11 @@ for (const tab of TABS) {
       for (const o of f.options || []) {
         if (!(o.labelKey in en)) missingLabels.push(o.labelKey);
       }
+      // Action buttons carry their own tooltip + toast keys, equally derived
+      // from the table and equally invisible when absent.
+      for (const k of ["titleKey", "toastKey"]) {
+        if (f.action && !(f.action[k] in en)) missingLabels.push(f.action[k]);
+      }
     }
   }
 }

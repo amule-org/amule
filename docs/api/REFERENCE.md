@@ -87,6 +87,10 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 - [`POST /api/v0/kad/update`](#post-apiv0kadupdate) — refresh the Kad node list from a `nodes.dat` URL
 - [`GET /api/v0/kad`](#get-apiv0kad) — Kad-only status subtree
 
+**IP filter**
+- [`POST /api/v0/ipfilter/reload`](#post-apiv0ipfilterreload) — re-read the on-disk IP filter files
+- [`POST /api/v0/ipfilter/update`](#post-apiv0ipfilterupdate) — download a fresh `ipfilter.dat` from a URL
+
 **Logs**
 - [`GET /api/v0/logs/amule`](#get-apiv0logsamule) — amule log buffer
 - [`DELETE /api/v0/logs/amule`](#delete-apiv0logsamule) — clear amule buffer
@@ -1631,6 +1635,8 @@ Tells amuled to fetch the `server.met` from the supplied URL and refresh its lis
 
 The URL must start with `http://` or `https://`; anything else is rejected `400 bad_request`.
 
+The URL is **persisted** into the `servers.update_url` preference, so a subsequent `GET /preferences` reflects it — there is no need to PATCH it separately.
+
 **Response:** `202 Accepted` → `{ "ok": true, "servers_url": "..." }`.
 
 **Errors:** `400 bad_request`, `400 amuled_rejected`, `503 ec_unavailable`.
@@ -2034,6 +2040,67 @@ Standalone view of the Kad subtree from `/status`, plus the detail fields the st
   "buddy": { "status": "connected", "ip": "203.0.113.9", "port": 4672 }
 }
 ```
+
+---
+
+### IP filter
+
+The IP-filter *settings* are ordinary preferences (`security.ipfilter_*` on [`GET`/`PATCH /api/v0/preferences`](#get-apiv0preferences)). The two endpoints here are the standalone operations behind the desktop client's Security page buttons: reloading the filter files amuled already has on disk, and downloading a new one.
+
+Neither reports its outcome in the response — amuled answers both immediately and does the work asynchronously. What actually happened shows up only in the amule log, readable through [`GET /api/v0/logs/amule`](#get-apiv0logsamule) or the `log` SSE channel. The lines to watch for:
+
+| Line | Meaning |
+|---|---|
+| `Loading IP filters 'ipfilter.dat' and 'ipfilter_static.dat'.` | a reload started |
+| `IP filter is ready` | the new filter is live |
+| `Successfully updated ipfilter.dat` | the download landed and a reload follows |
+| `Failed to download ipfilter.dat from <url>` | the download failed; the old filter stays live |
+
+Those lines are gettext-translated at the daemon's locale and carry no correlation id, so treat them as human-readable output, not a machine-parseable contract.
+
+#### `POST /api/v0/ipfilter/reload`
+
+**Auth:** `ADMIN`
+
+Re-reads `ipfilter.dat` and `ipfilter_static.dat` from amuled's configuration directory into the live filter — the desktop client's "Reload List" button. Use it after dropping a filter file into that directory by hand. No body.
+
+amuled keeps the current filter live until the new one has finished loading, so this is accepted, never completed.
+
+```sh
+curl -s -X POST -H "Authorization: Bearer $TOKEN" \
+  "http://$HOST/api/v0/ipfilter/reload"
+```
+
+**Response:** `202 Accepted` → `{ "ok": true }`.
+
+**Errors:** `400 amuled_rejected`, `503 ec_unavailable`.
+
+#### `POST /api/v0/ipfilter/update`
+
+**Auth:** `ADMIN`
+
+Downloads an `ipfilter.dat` from a URL, swaps it in and reloads — the desktop client's "Update now" button.
+
+**Body (optional):**
+
+```json
+{ "ipfilter_url": "http://upd.emule-security.org/ipfilter.zip" }
+```
+
+`ipfilter_url` must start with `http://` or `https://` when given. Omit it and the configured `security.ipfilter_update_url` is used instead; if that is empty too the request is rejected `400 bad_request` rather than accepted and silently dropped. The configured value is read from amuleapi's preferences snapshot, which trails amuled by up to one refresh tick — a `PATCH /preferences` immediately followed by a bodyless update can still send the previous URL, so pass `ipfilter_url` explicitly when it matters which one runs.
+
+```sh
+curl -s -X POST -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"ipfilter_url":"http://upd.emule-security.org/ipfilter.zip"}' \
+  "http://$HOST/api/v0/ipfilter/update"
+```
+
+An explicit URL is **persisted** into the `security.ipfilter_update_url` preference, so a subsequent `GET /preferences` reflects it and the next startup auto-update (`security.ipfilter_auto_update`) uses it — the same side effect [`POST /api/v0/servers/update`](#post-apiv0serversupdate) and [`POST /api/v0/kad/update`](#post-apiv0kadupdate) have.
+
+**Response:** `202 Accepted` → `{ "ok": true, "ipfilter_url": "..." }`. The effective URL is echoed back, so a caller that omitted it learns which one ran.
+
+**Errors:** `400 bad_request` (non-string / empty / non-`http(s)` `ipfilter_url`, or no URL available at all), `400 amuled_rejected`, `503 ec_unavailable`.
 
 ---
 

@@ -480,6 +480,18 @@ void CIPFilter::Update(const wxString &strURL)
 {
 	if (!strURL.IsEmpty()) {
 		m_URL = strURL;
+		// "Update from this URL" and "remember this URL" are one action for
+		// the other two list downloads: the EC handlers for the ed2k server
+		// list and for the Kad node list both store their URL before starting
+		// the download. This one belongs here rather than in the EC handler
+		// because this function is the single funnel for every caller -- the
+		// EC op, the Preferences "Update now" button and the startup
+		// auto-update. Without it a URL used for a manual update is forgotten
+		// and the next auto-update silently falls back to the old one.
+		//
+		// Assign from m_URL, not strURL: the auto-update path hands us
+		// thePrefs::IPFilterURL() itself, so this would be a self-assignment.
+		thePrefs::SetIPFilterURL(m_URL);
 
 		wxString filename = thePrefs::GetConfigDir() + "ipfilter.download";
 		wxString oldfilename = thePrefs::GetConfigDir() + "ipfilter.dat";

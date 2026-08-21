@@ -174,6 +174,12 @@ private:
 	CHttpServer::Response HandleNetworksDisconnect(const CHttpServer::Request &);
 	CHttpServer::Response HandleKadBootstrap(const CHttpServer::Request &);
 	CHttpServer::Response HandleKadUpdateFromUrl(const CHttpServer::Request &);
+	// IP-filter actions: re-read the on-disk filter files
+	// (EC_OP_IPFILTER_RELOAD), and download a fresh ipfilter.dat from a
+	// URL (EC_OP_IPFILTER_UPDATE). The update's URL is optional — it
+	// falls back to the configured security.ipfilter_update_url.
+	CHttpServer::Response HandleIpfilterReload(const CHttpServer::Request &);
+	CHttpServer::Response HandleIpfilterUpdate(const CHttpServer::Request &);
 	// single shared-file detail (GET / HEAD). `key` = 32-char MD4 hash.
 	CHttpServer::Response HandleSharedDetail(const CHttpServer::Request &, const std::string &key);
 	// shared file priority PATCH. `key` = hash OR ECID.
