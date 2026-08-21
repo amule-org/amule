@@ -102,11 +102,18 @@ wxString DetectedPath(bool redetect = false);
 //
 // Callers MUST run this off the main thread — it blocks for the duration
 // of the child (typically 30-100 ms, at most `timeoutMs`).
+//! \param bulk true when the caller is draining a batch of queued probes (a
+//! share scan), in which case this stays silent and the caller reports one
+//! summary for the batch -- otherwise a large media library produces one
+//! "extracting" line per file, and one more per failure, which is exactly the
+//! scale-with-the-share-size property the discovery lines were summarised to
+//! avoid. A batch of one is a genuine single-file event and still speaks.
 bool Probe(const wxString &ffprobePath,
 	const CPath &file,
 	MediaInfo &out,
 	unsigned timeoutMs,
-	const std::atomic<bool> &keepRunning);
+	const std::atomic<bool> &keepRunning,
+	bool bulk = false);
 
 } // namespace MediaProbe
 

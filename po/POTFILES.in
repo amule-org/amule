@@ -54,6 +54,7 @@ src/LibSocketAsio.cpp
 src/ListenSocket.cpp
 src/Logger.cpp
 src/MediaProbe.cpp
+src/MediaProbeThread.cpp
 src/MuleNotebook.cpp
 src/MuleTextCtrl.cpp
 src/MuleTrayIcon.cpp
