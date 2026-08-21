@@ -221,6 +221,22 @@ std::unique_ptr<CHttpServer::Response> RequireAdmin(const AuthOutcome &a)
 	return nullptr;
 }
 
+// First-snapshot gate, the counterpart to RequireAdmin above and used the
+// same way: ` if (auto r = RequireSnapshot(m_state)) return *r;`.
+//
+// Until the first EC snapshot lands there is nothing to answer from, and
+// every handler that touches cached state has to say so identically -- the
+// status, the code and the sentence are part of the API contract, not local
+// wording. Thirty handlers had spelled the same four lines out by hand.
+std::unique_ptr<CHttpServer::Response> RequireSnapshot(const webapi::CState &state)
+{
+	if (!state.HasFirstSnapshot()) {
+		return std::make_unique<CHttpServer::Response>(ErrorResponse(
+			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet"));
+	}
+	return nullptr;
+}
+
 // Wrapper that pipes AuthenticateRequest through a per-IP failure
 // counter. Every 401 (missing token / bad sig / expired / revoked)
 // counts against the calling IP; once the bucket fills the IP gets
@@ -1936,10 +1952,8 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 	// is empty. Return 503 with a structured code so clients can
 	// retry rather than guessing — saves a round of confused log-
 	// reading when the daemon just came up.
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 
 	// Single shared_lock for the whole composite read. Dashboard()
 	// returns a (status, kad, snapshot_at, ec_connected) tuple in
@@ -2790,10 +2804,8 @@ CHttpServer::Response ListResponse(const webapi::CState &state,
 	const ListParams &params = ListParams(),
 	const ListComparators<T> &comparators = ListComparators<T>())
 {
-	if (!state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
+	if (auto r = RequireSnapshot(state))
+		return *r;
 	std::vector<const T *> window;
 	std::size_t total = 0;
 	if (auto err = BuildListWindow(items, params, comparators, window, total))
@@ -3102,10 +3114,8 @@ CHttpServer::Response CApiDispatcher::HandleDownloadDetail(
 	if (!a.ok)
 		return a.rejection;
 
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 
 	// {hash} is the 32-char lowercase-hex MD4. URL is case-tolerant;
 	// State writes lowercase, so we down-case the capture before the
@@ -3143,10 +3153,8 @@ CHttpServer::Response CApiDispatcher::HandleSharedDetail(
 	if (!a.ok)
 		return a.rejection;
 
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 
 	// {hash} is the 32-char MD4; URL is case-tolerant, State keys are
 	// lowercase — down-case before the O(1) lookup (mirrors the download
@@ -3179,10 +3187,8 @@ CHttpServer::Response CApiDispatcher::HandleDownloadComments(
 	if (!a.ok)
 		return a.rejection;
 
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 
 	webapi::FileSnapshot d;
 	std::string needle = key;
@@ -3235,10 +3241,13 @@ CHttpServer::Response CApiDispatcher::HandleDownloadCommentsKadSearch(
 	if (!a.ok)
 		return a.rejection;
 
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
+	// Admin-only, like every other mutation. This drives an unbounded Kad
+	// NOTES lookup on the daemon, so a guest session must not reach it.
+	if (auto r = RequireAdmin(a))
+		return *r;
+
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 
 	webapi::FileSnapshot d;
 	std::string needle = key;
@@ -3286,10 +3295,8 @@ CHttpServer::Response CApiDispatcher::HandleDownloadFilenames(
 	if (!a.ok)
 		return a.rejection;
 
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 
 	webapi::FileSnapshot d;
 	std::string needle = key;
@@ -3347,10 +3354,8 @@ CHttpServer::Response CApiDispatcher::HandleDownloadA4af(
 	if (!a.ok)
 		return a.rejection;
 
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 
 	webapi::FileSnapshot d;
 	std::string needle = key;
@@ -3379,10 +3384,8 @@ CHttpServer::Response CApiDispatcher::HandleDownloadA4afAction(
 	if (auto rej = RequireAdmin(a))
 		return *rej;
 
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 
 	webapi::FileSnapshot d;
 	std::string needle = key;
@@ -3619,6 +3622,9 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(const CHttpServer::Reque
 		return a.rejection;
 	if (auto rej = RequireAdmin(a))
 		return *rej;
+
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 
 	// Body shape (two forms — both accepted, exactly one required):
 	//  {"ed2k_link": "ed2k://|file|...|/", "category": 0}    — singular
@@ -3884,10 +3890,8 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 	if (auto rej = RequireAdmin(a))
 		return *rej;
 
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 
 	webapi::FileSnapshot d;
 	std::string needle = key;
@@ -4074,10 +4078,8 @@ CHttpServer::Response CApiDispatcher::HandleDownloadDelete(
 	if (auto rej = RequireAdmin(a))
 		return *rej;
 
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 
 	webapi::FileSnapshot d;
 	std::string needle = key;
@@ -4153,10 +4155,8 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsClearCompleted(const CHttpS
 	if (auto rej = RequireAdmin(a))
 		return *rej;
 
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 
 	// Two shapes share this endpoint:
 	//  * no body (or all-whitespace body) → bulk clear every
@@ -4510,10 +4510,8 @@ CHttpServer::Response CApiDispatcher::HandleKnownClients(const CHttpServer::Requ
 			503, "ec_unsupported", "the connected amuled does not serve the client history");
 	}
 
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 
 	ListParams params;
 	if (auto err = ParseListParams(QueryOf(req), params))
@@ -4616,10 +4614,8 @@ CHttpServer::Response CApiDispatcher::HandleClientDetail(
 	if (!ParseEcidPath(ecid_str, ecid)) {
 		return ErrorResponse(400, "bad_request", "path `{ecid}` must be a non-negative integer");
 	}
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 	webapi::ClientSnapshot cli;
 	if (!FindClientByEcid(m_state, ecid, cli)) {
 		return ErrorResponse(404, "not_found", "no client with that ECID in the current snapshot");
@@ -5034,10 +5030,8 @@ CHttpServer::Response CApiDispatcher::HandleServerConnect(
 	if (!ParseEcidPath(ecid_str, ecid)) {
 		return ErrorResponse(400, "bad_request", "path `{ecid}` must be a non-negative integer");
 	}
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 	webapi::ServerSnapshot srv;
 	if (!FindServerByEcid(m_state, ecid, srv)) {
 		return ErrorResponse(404, "not_found", "no server with that ECID in the current snapshot");
@@ -5092,10 +5086,8 @@ CHttpServer::Response CApiDispatcher::HandleServerDelete(
 	if (!ParseEcidPath(ecid_str, ecid)) {
 		return ErrorResponse(400, "bad_request", "path `{ecid}` must be a non-negative integer");
 	}
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 	webapi::ServerSnapshot srv;
 	if (!FindServerByEcid(m_state, ecid, srv)) {
 		return ErrorResponse(404, "not_found", "no server with that ECID in the current snapshot");
@@ -5195,43 +5187,79 @@ CHttpServer::Response CApiDispatcher::HandleServerUpdateFromUrl(const CHttpServe
 	return r;
 }
 
-// Resolve "<ip>:<port>" from the URL into an ECID by walking the
-// servers cache. Returns 0 on miss; the caller 404s.
-static std::uint32_t ResolveServerEcidByAddress(const webapi::CState &state, const std::string &ip_port)
+// One "<ip>:<port>" selector, parsed. Split out from the lookup so a
+// selector that cannot be parsed is distinguishable from one that parses
+// but names no server we know -- those are a 400 and a 404, and the old
+// single-uint32 return collapsed them, and every other failure, onto 0.
+// Separate also so the parsing is testable without a populated cache.
+struct IpPortSelector
+{
+	std::uint32_t ip_he; // host order, as ServerSnapshot::ip holds it
+	std::uint16_t port;
+};
+
+// Accepts a dotted quad and a port in 1..65535, nothing else.
+//
+// Hostname forms are deliberately rejected: an earlier version fell back to
+// matching ServerSnapshot::address, which amuled fills from the wire "name"
+// tag -- that can be a hostname OR a synthetic display string ("Eserver
+// No.1"), so a DELETE by address could match a colliding label and remove
+// the wrong row. An exact IP + port has no such ambiguity.
+// boost::optional, not std::optional: the tree builds as C++14 and this file
+// already uses the boost form (PreflightEvents), so it is the house spelling
+// as well as the available one.
+boost::optional<IpPortSelector> ParseIpPortSelector(const std::string &ip_port)
 {
 	const auto colon = ip_port.rfind(':');
 	if (colon == std::string::npos)
-		return 0;
+		return boost::none;
+
 	const std::string ip_str = ip_port.substr(0, colon);
 	const std::string port_str = ip_port.substr(colon + 1);
 	if (ip_str.empty() || port_str.empty())
-		return 0;
+		return boost::none;
+
 	char *end = nullptr;
 	const unsigned long port = std::strtoul(port_str.c_str(), &end, 10);
-	if (end == port_str.c_str() || *end != '\0' || port == 0 || port > 0xFFFF) {
-		return 0;
+	if (end == port_str.c_str() || *end != '\0' || port == 0 || port > 0xFFFF)
+		return boost::none;
+
+	// ParseIpv4Dotted rather than a second sscanf of our own: it landed on
+	// master while this was in review and does exactly this job, with three
+	// other callers already relying on it.
+	IpPortSelector sel;
+	sel.ip_he = 0;
+	if (!ParseIpv4Dotted(ip_str, sel.ip_he) || sel.ip_he == 0)
+		return boost::none;
+
+	sel.port = static_cast<std::uint16_t>(port);
+	return sel;
+}
+
+// Resolve a selector to a server ECID, in the same shape as RequireAdmin
+// and RequireSnapshot: nullptr means @a ecid is set and the caller may
+// proceed, otherwise it is the response to return. Mapping the outcomes
+// here rather than at each call site is what keeps the three
+// /servers/{ip:port} routes from drifting apart, and no caller compares an
+// ECID against a magic value any more.
+std::unique_ptr<CHttpServer::Response> ResolveServerEcid(
+	const webapi::CState &state, const std::string &ip_port, std::uint32_t &ecid)
+{
+	const auto sel = ParseIpPortSelector(ip_port);
+	if (!sel) {
+		return std::make_unique<CHttpServer::Response>(ErrorResponse(400,
+			"bad_request",
+			"malformed ip:port selector: expected a dotted quad and a port in 1..65535"));
 	}
-	// Parse the IP — accept dotted-quad form OR a uint32 host-order
-	// number that matches ServerSnapshot::ip. We compute both so we
-	// can match either against what the cache holds.
-	std::uint32_t ip_he = 0;
-	(void)ParseIpv4Dotted(ip_str, ip_he);
-	// Require an IPv4-shaped address: drop the s.address string
-	// fallback. The fallback was a convenience for hostname-form
-	// URLs (e.g. `/api/v0/servers/donkey.example.com:4242/connect`),
-	// but it admits an UNINTENDED match too — `s.address` is
-	// populated from amuled's wire-form "name" tag, which can be
-	// a hostname OR a synthetic display string ("Eserver No.1");
-	// a DELETE-by-address with a colliding label could remove the
-	// wrong row. IP+port exact match has no such ambiguity.
-	if (ip_he == 0)
-		return 0;
+
 	for (const auto &s : state.Servers()) {
-		if (s.port == static_cast<std::uint16_t>(port) && s.ip == ip_he) {
-			return s.ecid;
+		if (s.port == sel->port && s.ip == sel->ip_he) {
+			ecid = s.ecid;
+			return nullptr;
 		}
 	}
-	return 0;
+	return std::make_unique<CHttpServer::Response>(
+		ErrorResponse(404, "not_found", "no server matches that ip:port"));
 }
 
 CHttpServer::Response CApiDispatcher::HandleServerConnectByAddress(
@@ -5242,14 +5270,11 @@ CHttpServer::Response CApiDispatcher::HandleServerConnectByAddress(
 		return a.rejection;
 	if (auto rej = RequireAdmin(a))
 		return *rej;
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
-	const std::uint32_t ecid = ResolveServerEcidByAddress(m_state, ip_port);
-	if (ecid == 0) {
-		return ErrorResponse(404, "not_found", "no server matches that ip:port");
-	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
+	std::uint32_t ecid = 0;
+	if (auto r = ResolveServerEcid(m_state, ip_port, ecid))
+		return *r;
 	// Delegate to the ECID-keyed handler; passing the resolved ECID as
 	// a decimal string keeps the contract uniform.
 	std::ostringstream os;
@@ -5317,10 +5342,8 @@ CHttpServer::Response CApiDispatcher::HandleServerPatch(
 			400, "bad_request", "body must include at least one of `priority`, `static`");
 	}
 
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 	webapi::ServerSnapshot srv;
 	if (!FindServerByEcid(m_state, ecid, srv)) {
 		return ErrorResponse(404, "not_found", "no server with that ECID in the current snapshot");
@@ -5373,14 +5396,11 @@ CHttpServer::Response CApiDispatcher::HandleServerPatchByAddress(
 		return a.rejection;
 	if (auto rej = RequireAdmin(a))
 		return *rej;
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
-	const std::uint32_t ecid = ResolveServerEcidByAddress(m_state, ip_port);
-	if (ecid == 0) {
-		return ErrorResponse(404, "not_found", "no server matches that ip:port");
-	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
+	std::uint32_t ecid = 0;
+	if (auto r = ResolveServerEcid(m_state, ip_port, ecid))
+		return *r;
 	std::ostringstream os;
 	os << ecid;
 	return HandleServerPatch(req, os.str());
@@ -5394,14 +5414,11 @@ CHttpServer::Response CApiDispatcher::HandleServerDeleteByAddress(
 		return a.rejection;
 	if (auto rej = RequireAdmin(a))
 		return *rej;
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
-	const std::uint32_t ecid = ResolveServerEcidByAddress(m_state, ip_port);
-	if (ecid == 0) {
-		return ErrorResponse(404, "not_found", "no server matches that ip:port");
-	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
+	std::uint32_t ecid = 0;
+	if (auto r = ResolveServerEcid(m_state, ip_port, ecid))
+		return *r;
 	std::ostringstream os;
 	os << ecid;
 	return HandleServerDelete(req, os.str());
@@ -5445,10 +5462,8 @@ CHttpServer::Response CApiDispatcher::HandleKad(const CHttpServer::Request &req)
 	auto a = Authenticate(req);
 	if (!a.ok)
 		return a.rejection;
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 
 	const webapi::KadSnapshot k = m_state.Kad();
 	CHttpServer::Response r;
@@ -6545,10 +6560,8 @@ CHttpServer::Response CApiDispatcher::HandlePreferences(const CHttpServer::Reque
 	auto a = Authenticate(req);
 	if (!a.ok)
 		return a.rejection;
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 
 	const webapi::PreferencesSnapshot p = m_state.Preferences();
 	CHttpServer::Response r;
@@ -7353,10 +7366,8 @@ CHttpServer::Response CApiDispatcher::HandleSharedPatch(
 	if (auto rej = RequireAdmin(a))
 		return *rej;
 
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 
 	webapi::FileSnapshot s;
 	std::string needle = key;
@@ -7470,10 +7481,8 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsBulkPatch(const CHttpServer
 		return a.rejection;
 	if (auto rej = RequireAdmin(a))
 		return *rej;
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 
 	picojson::value root;
 	std::string parse_err;
@@ -7609,10 +7618,8 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsBulkDelete(const CHttpServe
 		return a.rejection;
 	if (auto rej = RequireAdmin(a))
 		return *rej;
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 
 	picojson::value root;
 	std::string parse_err;
@@ -7681,10 +7688,8 @@ CHttpServer::Response CApiDispatcher::HandleSharedBulkPatch(const CHttpServer::R
 		return a.rejection;
 	if (auto rej = RequireAdmin(a))
 		return *rej;
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 
 	picojson::value root;
 	std::string parse_err;
@@ -7758,10 +7763,8 @@ CHttpServer::Response CApiDispatcher::HandleSharedVerify(
 	if (auto rej = RequireAdmin(a))
 		return *rej;
 
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 
 	webapi::FileSnapshot s;
 	std::string needle = key;
@@ -8378,10 +8381,8 @@ CHttpServer::Response CApiDispatcher::HandleCategoryUpdate(
 	if (!ParseCategoryIndex(index_str, idx)) {
 		return ErrorResponse(400, "bad_request", "path `{index}` must be a uint8 in [0, 255]");
 	}
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 
 	// Find the existing category — we need its current values for any
 	// field the PATCH body doesn't override (CEC_Category_Tag is
@@ -8464,10 +8465,8 @@ CHttpServer::Response CApiDispatcher::HandleCategoryDelete(
 	if (!ParseCategoryIndex(index_str, idx)) {
 		return ErrorResponse(400, "bad_request", "path `{index}` must be a uint8 in [0, 255]");
 	}
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 	// Index 0 is the implicit "All" category — amuled treats deleting
 	// it as illegal. Reject before the EC roundtrip.
 	if (idx == 0) {
@@ -9029,10 +9028,8 @@ CHttpServer::Response CApiDispatcher::HandleSearchComments(
 	if (!a.ok)
 		return a.rejection;
 
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 
 	std::string needle = hash;
 	std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
@@ -9088,10 +9085,13 @@ CHttpServer::Response CApiDispatcher::HandleSearchCommentsKadSearch(
 	if (!a.ok)
 		return a.rejection;
 
-	if (!m_state.HasFirstSnapshot()) {
-		return ErrorResponse(
-			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
-	}
+	// Admin-only, like every other mutation. This drives an unbounded Kad
+	// NOTES lookup on the daemon, so a guest session must not reach it.
+	if (auto r = RequireAdmin(a))
+		return *r;
+
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
 
 	std::string needle = hash;
 	std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
