@@ -4776,11 +4776,11 @@ void WriteServerObject(CJsonWriter &w, const webapi::ServerSnapshot &s)
 	w.ValueString(wxString::FromUTF8(s.version.c_str()));
 	w.Key("address");
 	w.ValueString(wxString::FromUTF8(s.address.c_str()));
-	w.Key("port");
-	w.ValueInt(static_cast<int64_t>(s.port));
 	// ISO 3166-1 alpha-2 (lowercase); "" when GeoIP is off/unresolved (#440).
 	w.Key("country_code");
 	w.ValueString(wxString::FromUTF8(s.country_code.c_str()));
+	w.Key("port");
+	w.ValueInt(static_cast<int64_t>(s.port));
 	w.Key("users");
 	w.ValueInt(static_cast<int64_t>(s.users));
 	w.Key("max_users");
