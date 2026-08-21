@@ -1585,8 +1585,11 @@ void CSearchDlg::UpdateCatChoice()
 	// With only Main configured there is nothing to choose, so the selector is
 	// noise. Same gate the context menu applies to its own category submenu
 	// (SearchListCtrl.cpp), and it lifts as soon as a second category exists --
-	// this runs on every category change, so no restart is needed.
-	c_cat->Enable(theApp->glob_prefs->GetCatCount() > 1);
+	// this runs on every category change, so no restart is needed. The label
+	// greys out with it, or it reads as live beside a dead dropdown.
+	const bool haveChoice = theApp->glob_prefs->GetCatCount() > 1;
+	c_cat->Enable(haveChoice);
+	FindWindow(ID_AUTOCATASSIGN_LABEL)->Enable(haveChoice);
 }
 
 void CSearchDlg::UpdateProgress(uint32 new_value)
