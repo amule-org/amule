@@ -405,9 +405,13 @@ TEST(State, WriteGraphsRoundtripAllSeries)
 	g.upload_bps = { 10, 20, 30 };
 	g.connections = { 1, 2, 3 };
 	g.kad_nodes = { 500, 600, 700 };
+	g.active_uploads = { 4, 5, 6 };
+	g.active_downloads = { 7, 8, 9 };
+	g.max_points = 1800;
 	g.session_download_bytes = 1024;
 	g.session_upload_bytes = 256;
-	g.session_kad_bytes = 4096;
+	g.session_kad_node_seconds = 4096;
+	g.session_duration_seconds = 3600.0;
 	s.WriteGraphs(g);
 
 	const StatsGraphs out = s.Graphs();
@@ -415,8 +419,32 @@ TEST(State, WriteGraphsRoundtripAllSeries)
 	ASSERT_EQUALS(static_cast<size_t>(3), out.download_bps.size());
 	ASSERT_EQUALS(static_cast<std::uint32_t>(300), out.download_bps[2]);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(700), out.kad_nodes[2]);
+	// The second data blob rides along point-aligned with the first.
+	ASSERT_EQUALS(static_cast<size_t>(3), out.active_uploads.size());
+	ASSERT_EQUALS(static_cast<std::uint32_t>(6), out.active_uploads[2]);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(9), out.active_downloads[2]);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(1800), out.max_points);
 	ASSERT_EQUALS(static_cast<std::uint64_t>(1024), out.session_download_bytes);
-	ASSERT_EQUALS(static_cast<std::uint64_t>(4096), out.session_kad_bytes);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(4096), out.session_kad_node_seconds);
+	ASSERT_EQUALS(3600.0, out.session_duration_seconds);
+}
+
+// An amuled predating EC_TAG_STATSGRAPH_DATA_CONN sends the first blob and
+// not the second. The two extra series must come back empty rather than
+// zero-filled: the handler keys "omit the JSON fields" off exactly that, so
+// a consumer can tell "not reported" from "nothing was transferring".
+TEST(State, WriteGraphsWithoutConnBlobLeavesExtraSeriesEmpty)
+{
+	CState s;
+	StatsGraphs g;
+	g.download_bps = { 100, 200, 300 };
+	g.connections = { 1, 2, 3 };
+	s.WriteGraphs(g);
+
+	const StatsGraphs out = s.Graphs();
+	ASSERT_EQUALS(static_cast<size_t>(3), out.connections.size());
+	ASSERT_TRUE(out.active_uploads.empty());
+	ASSERT_TRUE(out.active_downloads.empty());
 }
 
 TEST(State, SearchResultsRoundtripAndOrderByEcid)

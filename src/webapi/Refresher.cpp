@@ -1679,11 +1679,15 @@ const char *ECStatValueTypeName(int type)
 	case EC_VALUE_INTEGER:
 		return "integer";
 	case EC_VALUE_ISTRING:
-		return "istring";
+		// Both ISTRING and ISHORT are plain integers that the desktop
+		// happens to render abbreviated ("12.5k"). The distinction is a
+		// wx formatter choice with nothing a REST client can act on, so
+		// they collapse onto the token an untyped value already resolves to.
+		return "integer";
 	case EC_VALUE_BYTES:
 		return "bytes";
 	case EC_VALUE_ISHORT:
-		return "ishort";
+		return "integer";
 	case EC_VALUE_TIME:
 		return "time";
 	case EC_VALUE_SPEED:
@@ -1845,6 +1849,15 @@ void UnpackInterleavedUint32(const std::uint8_t *bytes,
 	}
 }
 
+// Keep only the newest `keep` samples. The series arrive oldest-first, so
+// the tail is what survives.
+void TruncateToLast(std::vector<std::uint32_t> &v, std::uint32_t keep)
+{
+	if (keep > 0 && v.size() > static_cast<std::size_t>(keep)) {
+		v.erase(v.begin(), v.end() - keep);
+	}
+}
+
 } // namespace
 
 void ParseGraphsFromPacket(const CECPacket *resp, StatsGraphs &out)
@@ -1872,20 +1885,60 @@ void ParseGraphsFromPacket(const CECPacket *resp, StatsGraphs &out)
 			out.kad_nodes = std::move(channels[3]);
 		}
 	}
-	// EC_TAG_STATSGRAPH_DATA_CONN carries the upload-slot / download-
-	// slot counts (2 interleaved channels) — useful for the dashboard
-	// graph but not in StatsGraphs surface yet. Skipping until a
-	// concrete client asks; the EC bytes still travel for free since
-	// they're in the same response.
-	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATSGRAPH_SESSION_DL)) {
-		out.session_download_bytes = static_cast<std::uint64_t>(t->GetInt());
+	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATSGRAPH_DATA_CONN)) {
+		// 2 interleaved channels, filled by the same amuled loop and from
+		// the same records as EC_TAG_STATSGRAPH_DATA, so index i lines up
+		// across both blobs (Statistics.cpp, GetHistoryForGui):
+		//  ch0 = cntUploads   (peers we are pushing to)
+		//  ch1 = cntDownloads (peers we are pulling from)
+		std::vector<std::vector<std::uint32_t>> channels;
+		UnpackInterleavedUint32(static_cast<const std::uint8_t *>(t->GetTagData()),
+			t->GetTagDataLen(),
+			/*num_channels=*/2,
+			channels);
+		if (channels.size() >= 2) {
+			out.active_uploads = std::move(channels[0]);
+			out.active_downloads = std::move(channels[1]);
+		}
 	}
-	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATSGRAPH_SESSION_UL)) {
-		out.session_upload_bytes = static_cast<std::uint64_t>(t->GetInt());
+
+	// How many records a resolution range holds. Ask for more and the
+	// daemon repeats records instead of failing, which the caller cannot
+	// detect since no timestamps are on the wire -- so this bounds every
+	// series below. Absent on daemons predating the tag; the default in
+	// StatsGraphs matches what current builds report.
+	{
+		std::uint16_t depth = 0;
+		if (resp->AssignIfExist(EC_TAG_STATSGRAPH_DEPTH, depth) && depth > 0) {
+			out.max_points = depth;
+		}
 	}
-	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATSGRAPH_SESSION_KAD)) {
-		out.session_kad_bytes = static_cast<std::uint64_t>(t->GetInt());
+
+	// The daemon divides both byte counters by 1024 before sending
+	// (Statistics.cpp, RecordHistory: kBytesSent / kBytesReceived), so
+	// scale back to make the reported unit true.
+	if (resp->AssignIfExist(EC_TAG_STATSGRAPH_SESSION_DL, out.session_download_bytes)) {
+		out.session_download_bytes *= 1024;
 	}
+	if (resp->AssignIfExist(EC_TAG_STATSGRAPH_SESSION_UL, out.session_upload_bytes)) {
+		out.session_upload_bytes *= 1024;
+	}
+	// Not bytes: the time-integral of the Kad node count. Passed through
+	// unscaled -- it is only meaningful divided by the session duration.
+	resp->AssignIfExist(EC_TAG_STATSGRAPH_SESSION_KAD, out.session_kad_node_seconds);
+	resp->AssignIfExist(EC_TAG_STATSGRAPH_SESSION_TIMESPAN, out.session_duration_seconds);
+
+	// Drop anything past the daemon's per-range depth. Beyond it the walk
+	// hands back repeated records, and reconstructing a time axis over
+	// those draws them as distinct samples -- silently compressing time
+	// across the older part of the plot. A no-op where the request width
+	// and the reported depth agree, which is the current-build case.
+	TruncateToLast(out.download_bps, out.max_points);
+	TruncateToLast(out.upload_bps, out.max_points);
+	TruncateToLast(out.connections, out.max_points);
+	TruncateToLast(out.kad_nodes, out.max_points);
+	TruncateToLast(out.active_uploads, out.max_points);
+	TruncateToLast(out.active_downloads, out.max_points);
 }
 
 // --- /search/results (full fetch per tick) -----------------------------

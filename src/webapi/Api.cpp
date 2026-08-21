@@ -5219,10 +5219,15 @@ void WriteStatsValue(CJsonWriter &w, const webapi::StatsTreeValue &v)
 	// ("never"/"not_available"); the English "value" above is kept so old
 	// clients keep working. Omitted when the value is not a sentinel.
 	if (!v.enum_token.empty()) {
-		w.Key("enum");
+		// `token`, not `enum`: `enum` is a reserved word in C++, C#, Java,
+		// Rust, PHP and Swift, so a generated client cannot name a field
+		// after the key. Matches the internal enum_token.
+		w.Key("token");
 		w.ValueString(wxString::FromUTF8(v.enum_token.c_str()));
 	}
-	// Optional nested sub-value (the parenthetical "(total …)" some nodes carry).
+	// Optional nested sub-value. Three different quantities depending on
+	// the node -- percentage of parent, packet count, or all-time total --
+	// so a client formats it from its `type`, not from its position.
 	if (!v.extra.empty()) {
 		w.Key("extra");
 		WriteStatsValue(w, v.extra.front());
@@ -5242,7 +5247,11 @@ void WriteStatsNode(CJsonWriter &w, const webapi::StatsTreeNode &n)
 	// Raw machine value (client version / OS string) for data-labelled
 	// nodes; omitted when absent so clients read it without parsing `label`.
 	if (!n.raw.empty()) {
-		w.Key("raw");
+		// `label_value`, not `raw`: for a row whose label is itself data
+		// ("v0.70b: %s") this carries the datum. "raw" says unprocessed
+		// without saying of what, and sits next to values[] where a reader
+		// would look for a raw value.
+		w.Key("label_value");
 		w.ValueString(wxString::FromUTF8(n.raw.c_str()));
 	}
 	w.Key("label");
@@ -5280,17 +5289,28 @@ void WriteStatsNode(CJsonWriter &w, const webapi::StatsTreeNode &n)
 // snapshot_at. Earliest sample sits at points[start] and corresponds
 // to `snapshot_at - (samples.size()-1)*interval`; most recent sits
 // at `snapshot_at`.
+// `extra_a` / `extra_b` are optional series point-aligned with `samples`,
+// emitted under `key_a` / `key_b` beside each `value`. Used by the
+// connections graph for its active-uploads / active-downloads lines; null or
+// short (an amuled predating the tag reports neither) leaves the keys off
+// entirely, so a consumer can tell "not reported" from "zero".
 void WritePointArray(CJsonWriter &w,
 	const std::vector<std::uint32_t> &samples,
 	std::time_t snapshot_at,
 	std::uint32_t interval,
-	std::size_t max_width)
+	std::size_t max_width,
+	const std::vector<std::uint32_t> *extra_a = nullptr,
+	const char *key_a = nullptr,
+	const std::vector<std::uint32_t> *extra_b = nullptr,
+	const char *key_b = nullptr)
 {
 	w.BeginArray();
 	if (samples.empty()) {
 		w.EndArray();
 		return;
 	}
+	const bool has_a = (extra_a != nullptr && extra_a->size() == samples.size() && key_a != nullptr);
+	const bool has_b = (extra_b != nullptr && extra_b->size() == samples.size() && key_b != nullptr);
 	const std::size_t start =
 		(max_width > 0 && samples.size() > max_width) ? samples.size() - max_width : 0;
 	for (std::size_t i = start; i < samples.size(); ++i) {
@@ -5303,6 +5323,14 @@ void WritePointArray(CJsonWriter &w,
 		w.ValueInt(static_cast<int64_t>(t));
 		w.Key("value");
 		w.ValueInt(static_cast<int64_t>(samples[i]));
+		if (has_a) {
+			w.Key(key_a);
+			w.ValueInt(static_cast<int64_t>((*extra_a)[i]));
+		}
+		if (has_b) {
+			w.Key(key_b);
+			w.ValueInt(static_cast<int64_t>((*extra_b)[i]));
+		}
 		w.EndObject();
 	}
 	w.EndArray();
@@ -5454,23 +5482,55 @@ CHttpServer::Response CApiDispatcher::HandleStatsTree(const CHttpServer::Request
 	if (!a.ok)
 		return a.rejection;
 
+	// ?max_client_versions=N — caps how many per-software version rows the
+	// daemon serializes (EC_TAG_STATTREE_CAPPING). 0 is unlimited, which
+	// stays the default so a caller that never passes it sees today's tree.
+	// Only the version lists are affected; the OS breakdown and the fixed
+	// skeleton nodes are not.
+	std::uint8_t max_client_versions = 0;
+	{
+		std::string query;
+		const std::size_t q = req.target.find('?');
+		if (q != std::string::npos)
+			query = req.target.substr(q + 1);
+		const auto qmap = web_api_path::ParseQuery(query);
+		const auto it = qmap.find("max_client_versions");
+		if (it != qmap.end()) {
+			char *end = nullptr;
+			const long n = std::strtol(it->second.c_str(), &end, 10);
+			if (end == it->second.c_str() || *end != '\0' || n < 0 || n > 255) {
+				return ErrorResponse(400,
+					"bad_request",
+					"max_client_versions must be an integer between 0 and 255");
+			}
+			max_client_versions = static_cast<std::uint8_t>(n);
+		}
+	}
+
 	// lazy-fetch with 1 s TTL coalescing. The fetcher runs
 	// the EC roundtrip under m_app's m_ec_mtx (SendRecvSerialized);
 	// concurrent burst reads serialize on m_stats_tree_cache's mutex
-	// and the second waiter reads the just-stored value.
-	auto pair =
-		m_stats_tree_cache.GetOrFetch(std::chrono::milliseconds(1000), [this]() -> TtlPair_StatsTree {
+	// and the second waiter reads the just-stored value. As with the graph
+	// bundle, the cache is unkeyed, so an entry fetched at a different cap
+	// counts as a miss.
+	auto pair = m_stats_tree_cache.GetOrFetch(
+		std::chrono::milliseconds(1000),
+		[this, max_client_versions]() -> TtlPair_StatsTree {
 			std::unique_ptr<CECPacket> req_ec(new CECPacket(EC_OP_GET_STATSTREE, EC_DETAIL_WEB));
-			req_ec->AddTag(CECTag(EC_TAG_STATTREE_CAPPING, static_cast<std::uint8_t>(0)));
+			req_ec->AddTag(CECTag(EC_TAG_STATTREE_CAPPING, max_client_versions));
 			const CECPacket *resp = m_app.SendRecvSerialized(req_ec.get());
 			webapi::StatsTreeNode tree;
 			std::time_t ts = 0;
 			if (resp) {
 				webapi::ParseStatsTreeFromPacket(resp, tree);
+				tree.max_client_versions = max_client_versions;
 				ts = std::time(nullptr);
 				delete resp;
 			}
 			return TtlPair_StatsTree(std::move(tree), ts);
+		},
+		[max_client_versions](const TtlPair_StatsTree &c) {
+			return c.first.max_client_versions == max_client_versions;
 		});
 
 	if (pair.second == 0) {
@@ -5511,38 +5571,69 @@ CHttpServer::Response CApiDispatcher::HandleStatsGraph(
 	// Validate the graph name BEFORE fetching — saves an EC roundtrip
 	// on tab-complete typos hitting /stats/graphs/<bogus>.
 	const char *unit = nullptr;
-	if (graph == "download") {
-		unit = "bps";
-	} else if (graph == "upload") {
-		unit = "bps";
+	if (graph == "download_speed") {
+		unit = "bytes_per_second";
+	} else if (graph == "upload_speed") {
+		unit = "bytes_per_second";
 	} else if (graph == "connections") {
 		unit = "count";
-	} else if (graph == "kad") {
+	} else if (graph == "kad_nodes") {
 		unit = "count";
 	} else {
 		return ErrorResponse(404,
 			"not_found",
-			"unknown graph; expected one of: download, upload, connections, kad");
+			"unknown graph; expected one of: download_speed, upload_speed, "
+			"connections, kad_nodes");
 	}
 
-	// Lazy-fetch the full 4-series graph bundle (one EC call serves
-	// all 4 named graphs, so the cache shares across concurrent
-	// requests for different graph names).
+	std::string query;
+	const std::size_t q = req.target.find('?');
+	if (q != std::string::npos)
+		query = req.target.substr(q + 1);
+	const auto qmap = web_api_path::ParseQuery(query);
+
+	// ?interval=N — seconds between samples, passed through as
+	// EC_TAG_STATSGRAPH_SCALE. Rejected rather than clamped: 0 makes the
+	// daemon answer EC_OP_FAILED, which would reach the caller as an
+	// unexplained empty graph, and past an hour almost every point falls
+	// off the start of the session (the daemon's ranges hold ~63 h in
+	// total) — besides, SCALE is a uint16 on the wire.
+	std::uint32_t interval = 1;
+	{
+		const auto it = qmap.find("interval");
+		if (it != qmap.end()) {
+			char *end = nullptr;
+			const long n = std::strtol(it->second.c_str(), &end, 10);
+			if (end == it->second.c_str() || *end != '\0' || n < 1 || n > 3600) {
+				return ErrorResponse(
+					400, "bad_request", "interval must be an integer between 1 and 3600");
+			}
+			interval = static_cast<std::uint32_t>(n);
+		}
+	}
+
+	// Lazy-fetch the full graph bundle (one EC call serves all four named
+	// graphs, so the cache shares across concurrent requests for different
+	// graph names). The cache is unkeyed, so an entry fetched at another
+	// interval has to count as a miss — see CTtlCache's validated overload.
 	auto pair = m_stats_graphs_cache.GetOrFetch(
-		std::chrono::milliseconds(1000), [this]() -> TtlPair_StatsGraphs {
+		std::chrono::milliseconds(1000),
+		[this, interval]() -> TtlPair_StatsGraphs {
 			std::unique_ptr<CECPacket> req_ec(new CECPacket(EC_OP_GET_STATSGRAPHS));
-			req_ec->AddTag(CECTag(EC_TAG_STATSGRAPH_SCALE, static_cast<std::uint16_t>(1)));
+			req_ec->AddTag(CECTag(EC_TAG_STATSGRAPH_SCALE, static_cast<std::uint16_t>(interval)));
 			req_ec->AddTag(CECTag(EC_TAG_STATSGRAPH_WIDTH, static_cast<std::uint16_t>(1800)));
 			const CECPacket *resp = m_app.SendRecvSerialized(req_ec.get());
 			webapi::StatsGraphs g;
 			std::time_t ts = 0;
 			if (resp) {
 				webapi::ParseGraphsFromPacket(resp, g);
+				g.interval_seconds = interval;
 				ts = std::time(nullptr);
 				delete resp;
 			}
 			return TtlPair_StatsGraphs(std::move(g), ts);
-		});
+		},
+		[interval](const TtlPair_StatsGraphs &c) { return c.first.interval_seconds == interval; });
 
 	if (pair.second == 0) {
 		return ErrorResponse(503,
@@ -5552,25 +5643,22 @@ CHttpServer::Response CApiDispatcher::HandleStatsGraph(
 
 	const webapi::StatsGraphs &g = pair.first;
 	const std::vector<std::uint32_t> *series = nullptr;
-	if (graph == "download") {
+	if (graph == "download_speed") {
 		series = &g.download_bps;
-	} else if (graph == "upload") {
+	} else if (graph == "upload_speed") {
 		series = &g.upload_bps;
 	} else if (graph == "connections") {
 		series = &g.connections;
-	} else /* kad */ {
+	} else /* kad_nodes */ {
 		series = &g.kad_nodes;
 	}
 
-	// ?width=N — clamp the sample count returned. 0 / absent means
-	// "everything we have" (up to the 1800-sample window we ask for).
-	std::string query;
-	const std::size_t q = req.target.find('?');
-	if (q != std::string::npos)
-		query = req.target.substr(q + 1);
+	// ?width=N — tail the sample count returned. 0 / absent means
+	// "everything we have". Applied after the fetch, deliberately: the EC
+	// request always asks for the full window, so one cached bundle still
+	// answers every (graph, width) combination.
 	std::size_t width = 0;
 	{
-		const auto qmap = web_api_path::ParseQuery(query);
 		const auto it = qmap.find("width");
 		if (it != qmap.end()) {
 			const long n = std::atol(it->second.c_str());
@@ -5591,21 +5679,43 @@ CHttpServer::Response CApiDispatcher::HandleStatsGraph(
 	w.ValueString(wxString::FromUTF8(unit));
 	w.Key("interval_seconds");
 	w.ValueInt(static_cast<int64_t>(g.interval_seconds));
+	// How many points this daemon can answer with before it starts
+	// repeating records. `points` is never longer than this.
+	w.Key("max_points");
+	w.ValueInt(static_cast<int64_t>(g.max_points));
 	// snapshot_at retired from the response. WritePointArray
 	// still consumes `ts` to compute per-point timestamps (anchoring
 	// the time-series backwards from the fetch wall-clock).
+	//
+	// The two extra series exist only on the connections graph, and only
+	// when the daemon sent the second data blob.
 	w.Key("points");
-	WritePointArray(w, *series, ts, g.interval_seconds, width);
+	if (graph == "connections") {
+		WritePointArray(w,
+			*series,
+			ts,
+			g.interval_seconds,
+			width,
+			&g.active_downloads,
+			"active_downloads",
+			&g.active_uploads,
+			"active_uploads");
+	} else {
+		WritePointArray(w, *series, ts, g.interval_seconds, width);
+	}
 	// Session totals tag along — clients showing "this session: X GB
-	// down" don't need a separate roundtrip.
+	// down" don't need a separate roundtrip. Divide any of the three by
+	// duration_seconds for the session average the desktop plots.
 	w.Key("session");
 	w.BeginObject();
 	w.Key("download_bytes");
 	w.ValueInt(static_cast<int64_t>(g.session_download_bytes));
 	w.Key("upload_bytes");
 	w.ValueInt(static_cast<int64_t>(g.session_upload_bytes));
-	w.Key("kad_bytes");
-	w.ValueInt(static_cast<int64_t>(g.session_kad_bytes));
+	w.Key("kad_node_seconds");
+	w.ValueInt(static_cast<int64_t>(g.session_kad_node_seconds));
+	w.Key("duration_seconds");
+	w.ValueInt(static_cast<int64_t>(g.session_duration_seconds));
 	w.EndObject();
 	w.EndObject();
 	FinalizeJsonBody(w, r);

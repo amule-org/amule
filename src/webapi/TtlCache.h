@@ -70,11 +70,28 @@ public:
 	// and then read the stored value.
 	template <class Fetcher> T GetOrFetch(std::chrono::milliseconds ttl, Fetcher fetch)
 	{
+		return GetOrFetch(ttl, fetch, [](const T &) { return true; });
+	}
+
+	// As above, plus a validity predicate on the cached value. A fresh
+	// entry that fails it counts as a miss and is refetched.
+	//
+	// This is for endpoints whose EC request is parameterised by the
+	// caller: the cache is unkeyed, so an entry fetched at one parameter
+	// must not be served to a request asking for another. Storing the
+	// parameter inside the cached value and rejecting a mismatch keeps
+	// the single-entry cache -- a caller with a fixed parameter (every
+	// real one) still pays one round trip per TTL, while callers
+	// alternating parameters each pay their own. The alternative, a map
+	// keyed by a caller-supplied value, is unbounded by construction.
+	template <class Fetcher, class Validator>
+	T GetOrFetch(std::chrono::milliseconds ttl, Fetcher fetch, Validator is_valid)
+	{
 		std::unique_lock<std::mutex> lk(m_mu);
 		while (true) {
 			const auto now = clock_t::now();
 			const bool unset = (m_fetched_at == clock_t::time_point{});
-			if (!unset && (now - m_fetched_at) <= ttl) {
+			if (!unset && (now - m_fetched_at) <= ttl && is_valid(m_value)) {
 				return m_value;
 			}
 			if (m_inflight) {
