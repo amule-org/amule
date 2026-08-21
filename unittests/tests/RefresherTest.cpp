@@ -2150,3 +2150,144 @@ TEST(Refresher, KadBuddyStatusIsNoBuddyWhenTagAbsent)
 	ASSERT_EQUALS(std::string("disabled"), out.state);
 	ASSERT_EQUALS(std::string("no_buddy"), out.buddy_status);
 }
+
+// ----------------------------------------------------------------------
+// ParseStatusFromPacket — our own eD2k identity and the four stats
+// counters /status reports. Everything below decodes from tags amuled
+// already sends in the EC_DETAIL_FULL STAT_REQ response; these tests
+// exercise the decode itself, which is where the two sentinels live
+// (0xffffffff for "connect in flight" and the free-space -1 that
+// arrives on the wire as 0xFFFFFFFFFFFFFFFF).
+//
+// MakeConnState above supplies the EC_TAG_CONNSTATE flag word; bit
+// 0x01 = connected to ed2k, 0x02 = connecting.
+// ----------------------------------------------------------------------
+
+TEST(Refresher, StatusHighIdLandsIdAndDottedQuad)
+{
+	// A HighID *is* our public IPv4 packed LSB-first, so public_ip has to
+	// fall out of the id rather than being a second field to trust: 210.2.150.73
+	// is 210 | 2<<8 | 150<<16 | 73<<24 == 1234567890, and that identity is
+	// exactly what the /status docs promise.
+	CECPacket resp(EC_OP_STATS);
+	CECTag conn = MakeConnState(0x01);
+	conn.AddTag(CECTag(EC_TAG_ED2K_ID, static_cast<std::uint32_t>(1234567890u)));
+	resp.AddTag(conn);
+
+	StatusSnapshot out;
+	ParseStatusFromPacket(&resp, out);
+
+	ASSERT_EQUALS(std::string("connected"), out.ed2k_state);
+	ASSERT_TRUE(out.ed2k_high_id);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(1234567890u), out.ed2k_id);
+	ASSERT_EQUALS(std::string("210.2.150.73"), out.ed2k_public_ip);
+}
+
+TEST(Refresher, StatusLowIdKeepsIdButHasNoPublicAddress)
+{
+	// A LowID is a small number the server picked for a firewalled client
+	// and encodes no address at all -- rendering it as a dotted quad would
+	// invent one (here it would read "42.0.0.0").
+	CECPacket resp(EC_OP_STATS);
+	CECTag conn = MakeConnState(0x01);
+	conn.AddTag(CECTag(EC_TAG_ED2K_ID, static_cast<std::uint32_t>(42u)));
+	resp.AddTag(conn);
+
+	StatusSnapshot out;
+	ParseStatusFromPacket(&resp, out);
+
+	ASSERT_EQUALS(std::string("connected"), out.ed2k_state);
+	ASSERT_TRUE(!out.ed2k_high_id);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(42u), out.ed2k_id);
+	ASSERT_TRUE(out.ed2k_public_ip.empty());
+}
+
+TEST(Refresher, StatusConnectingSentinelNeverReachesTheSnapshot)
+{
+	// amuled sends 0xffffffff while a connect is in flight
+	// (ECSpecialCoreTags.cpp). Surfaced verbatim it would read as a
+	// HighID of 255.255.255.255; normalised, the id stays 0.
+	CECPacket resp(EC_OP_STATS);
+	CECTag conn = MakeConnState(0x01);
+	conn.AddTag(CECTag(EC_TAG_ED2K_ID, static_cast<std::uint32_t>(0xffffffffu)));
+	resp.AddTag(conn);
+
+	StatusSnapshot out;
+	ParseStatusFromPacket(&resp, out);
+
+	ASSERT_EQUALS(static_cast<std::uint32_t>(0u), out.ed2k_id);
+	ASSERT_TRUE(out.ed2k_public_ip.empty());
+}
+
+TEST(Refresher, StatusDisconnectedIsNotReportedAsLowId)
+{
+	// The bug the high_id rename fixed: with no EC_TAG_ED2K_ID the id reads
+	// 0, and HasLowID() is "id < 16777216", so the old negative spelling
+	// reported low_id: true for a daemon that simply has no id yet -- a
+	// firewall diagnosis out of thin air. Positive sense reads correctly.
+	CECPacket resp(EC_OP_STATS);
+	resp.AddTag(MakeConnState(0));
+
+	StatusSnapshot out;
+	ParseStatusFromPacket(&resp, out);
+
+	ASSERT_EQUALS(std::string("disconnected"), out.ed2k_state);
+	ASSERT_TRUE(!out.ed2k_high_id);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(0u), out.ed2k_id);
+	ASSERT_TRUE(out.ed2k_public_ip.empty());
+}
+
+TEST(Refresher, StatusOverheadAndFreeSpaceTagsDecode)
+{
+	CECPacket resp(EC_OP_STATS);
+	resp.AddTag(MakeConnState(0x01));
+	resp.AddTag(CECTag(EC_TAG_STATS_DOWN_OVERHEAD, static_cast<std::uint32_t>(8700u)));
+	resp.AddTag(CECTag(EC_TAG_STATS_UP_OVERHEAD, static_cast<std::uint32_t>(1100u)));
+	resp.AddTag(CECTag(EC_TAG_STATS_TEMP_FREE_SPACE, static_cast<std::uint64_t>(48318382080ull)));
+	resp.AddTag(CECTag(EC_TAG_STATS_INCOMING_FREE_SPACE, static_cast<std::uint64_t>(24159191040ull)));
+
+	StatusSnapshot out;
+	ParseStatusFromPacket(&resp, out);
+
+	ASSERT_EQUALS(static_cast<std::uint64_t>(8700), out.download_overhead_bps);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(1100), out.upload_overhead_bps);
+	ASSERT_EQUALS(static_cast<std::int64_t>(48318382080LL), out.temp_free_bytes);
+	ASSERT_EQUALS(static_cast<std::int64_t>(24159191040LL), out.incoming_free_bytes);
+}
+
+TEST(Refresher, StatusFreeSpaceUnknownSentinelReadsBackAsMinusOne)
+{
+	// amuled's FREE_SPACE_UNKNOWN is a signed -1 and its EC serializer
+	// casts it straight to uint64, so the wire carries
+	// 0xFFFFFFFFFFFFFFFF. Read unsigned that becomes 18446744073709551615
+	// -- "17 exabytes free", the exact opposite of the truth. The decode
+	// has to land -1 so the handlers can emit null.
+	CECPacket resp(EC_OP_STATS);
+	resp.AddTag(MakeConnState(0x01));
+	resp.AddTag(CECTag(EC_TAG_STATS_TEMP_FREE_SPACE, static_cast<std::uint64_t>(0xFFFFFFFFFFFFFFFFull)));
+	resp.AddTag(
+		CECTag(EC_TAG_STATS_INCOMING_FREE_SPACE, static_cast<std::uint64_t>(0xFFFFFFFFFFFFFFFFull)));
+
+	StatusSnapshot out;
+	ParseStatusFromPacket(&resp, out);
+
+	ASSERT_EQUALS(static_cast<std::int64_t>(-1), out.temp_free_bytes);
+	ASSERT_EQUALS(static_cast<std::int64_t>(-1), out.incoming_free_bytes);
+}
+
+TEST(Refresher, StatusWithoutStatsTagsKeepsZeroOverheadAndUnknownDisk)
+{
+	// An amuled old enough not to send these tags must still produce a
+	// serviceable snapshot: overhead 0 (the documented "daemon reports
+	// nothing"), disk -1 so /status answers null rather than 0.
+	CECPacket resp(EC_OP_STATS);
+	resp.AddTag(MakeConnState(0x01));
+
+	StatusSnapshot out;
+	ParseStatusFromPacket(&resp, out);
+
+	ASSERT_EQUALS(static_cast<std::uint64_t>(0), out.download_overhead_bps);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(0), out.upload_overhead_bps);
+	ASSERT_EQUALS(static_cast<std::int64_t>(-1), out.temp_free_bytes);
+	ASSERT_EQUALS(static_cast<std::int64_t>(-1), out.incoming_free_bytes);
+}

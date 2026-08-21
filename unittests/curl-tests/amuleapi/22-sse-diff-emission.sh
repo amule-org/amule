@@ -378,6 +378,49 @@ else
 	_pass "comments_updated not emitted this run (no comment change; shape verified live)"
 fi
 
+# --- status_changed carries the same keys as GET /status. ----------
+# EVENTS.md promises the payload is "identical to the REST /status
+# envelope", and the API contract turns on that: a subscriber must never
+# have to fall back to a poll for a field a poller can see. This drifted
+# once already -- both connected_since timestamps were REST-only.
+#
+# `paths` rather than `paths(scalars)`: jq's `scalars` drops nulls, and
+# disk.{temp,incoming}_free_bytes are null whenever the daemon has no
+# figure, which would silently exempt exactly the fields with the
+# trickiest contract. Plain `paths` also lists the container keys, so a
+# whole object going missing is caught too.
+#
+# Conditional, like comments_updated above: status_changed fires only when
+# something in the envelope actually moved, and an idle daemon legitimately
+# emits nothing. So a missing frame is a skip, not a failure -- what this
+# guards is the SHAPE when a frame does arrive. That the event fires at all
+# is asserted in EventDiffTest, which can force a change directly.
+SSE_PID=$(_sse_start 15)
+STATUS_JSON=""
+for _ in $(seq 1 40); do
+	if grep -q "^event: status_changed$" "$SSE_OUT"; then
+		STATUS_JSON=$(grep -A2 "^event: status_changed$" "$SSE_OUT" \
+			| grep "^data: " | sed 's/^data: //' | head -1)
+		[ -n "$STATUS_JSON" ] && break
+	fi
+	sleep 0.25
+done
+kill $SSE_PID 2>/dev/null
+wait $SSE_PID 2>/dev/null
+if [ -n "$STATUS_JSON" ]; then
+	REST_JSON=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/status")
+	DIFF=$(jq -n --argjson a "$REST_JSON" --argjson b "$STATUS_JSON" \
+		'def keys_: [paths | join(".")] | sort;
+		 {rest_only: ($a|keys_) - ($b|keys_), sse_only: ($b|keys_) - ($a|keys_)}')
+	if [ "$(echo "$DIFF" | jq -c '.')" = '{"rest_only":[],"sse_only":[]}' ]; then
+		_pass "status_changed payload keys match GET /status exactly"
+	else
+		_fail "status_changed / GET /status key parity" "$DIFF"
+	fi
+else
+	_pass "status_changed not emitted this run (nothing in the envelope moved; shape asserted when it fires)"
+fi
+
 # --- Summary. -----------------------------------------------------
 echo
 if [ "$FAIL_COUNT" -eq 0 ]; then

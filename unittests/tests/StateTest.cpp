@@ -83,7 +83,7 @@ TEST(State, WriteStatusRoundtrip)
 	in.ed2k_state = "connected";
 	in.kad_state = "connecting";
 	in.ed2k_high_id = true;
-	in.ed2k_id = 3523226697u; // 210.2.150.73 packed LSB-first
+	in.ed2k_id = 1234567890u; // 210.2.150.73 packed LSB-first
 	in.ed2k_public_ip = "210.2.150.73";
 	in.download_overhead_bps = 8700;
 	in.upload_overhead_bps = 1100;
@@ -103,7 +103,7 @@ TEST(State, WriteStatusRoundtrip)
 	ASSERT_EQUALS(std::string("connected"), out.ed2k_state);
 	ASSERT_EQUALS(std::string("connecting"), out.kad_state);
 	ASSERT_TRUE(out.ed2k_high_id);
-	ASSERT_EQUALS(static_cast<std::uint32_t>(3523226697u), out.ed2k_id);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(1234567890u), out.ed2k_id);
 	ASSERT_EQUALS(std::string("210.2.150.73"), out.ed2k_public_ip);
 	ASSERT_EQUALS(static_cast<std::uint64_t>(8700), out.download_overhead_bps);
 	ASSERT_EQUALS(static_cast<std::uint64_t>(1100), out.upload_overhead_bps);

@@ -258,14 +258,14 @@ TEST(EventDiff, StatusEventCarriesIdentityFields)
 	StatusSnapshot s;
 	s.ed2k_state = "connected";
 	s.ed2k_high_id = true;
-	s.ed2k_id = 3523226697u;
+	s.ed2k_id = 1234567890u;
 	s.ed2k_public_ip = "210.2.150.73";
 	s.download_overhead_bps = 8700;
 
 	const std::string payload = EmitStatusAndGetPayload(s);
 
 	ASSERT_TRUE(payload.find("\"high_id\":true") != std::string::npos);
-	ASSERT_TRUE(payload.find("\"id\":3523226697") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"id\":1234567890") != std::string::npos);
 	ASSERT_TRUE(payload.find("\"public_ip\":\"210.2.150.73\"") != std::string::npos);
 	ASSERT_TRUE(payload.find("\"download_overhead_bps\":8700") != std::string::npos);
 	// The retired spelling must not linger anywhere in the payload.
@@ -284,6 +284,38 @@ TEST(EventDiff, StatusEventFiresWhenOnlyOverheadMoved)
 
 	ASSERT_TRUE(!payload.empty());
 	ASSERT_TRUE(payload.find("\"download_overhead_bps\":8700") != std::string::npos);
+}
+
+// EVENTS.md promises this payload is "identical to the REST /status envelope",
+// and both connected_since timestamps are part of that envelope. They were
+// missing from the event, so a subscriber could never learn when the daemon
+// connected without falling back to a poll.
+TEST(EventDiff, StatusEventCarriesBothConnectedSince)
+{
+	StatusSnapshot s;
+	s.ed2k_state = "connected";
+	s.kad_state = "connected";
+	s.ed2k_connected_since = 1751000000ull;
+	s.kad_connected_since = 1751000042ull;
+
+	const std::string payload = EmitStatusAndGetPayload(s);
+
+	ASSERT_TRUE(payload.find("\"connected_since\":1751000000") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"connected_since\":1751000042") != std::string::npos);
+}
+
+// A reconnect can leave every other field identical -- same server, same id,
+// idle transfer rates -- and move only the timestamp. Without it in Equal()
+// that tick emits nothing and subscribers keep showing the old uptime.
+TEST(EventDiff, StatusEventFiresWhenOnlyConnectedSinceMoved)
+{
+	StatusSnapshot s;
+	s.ed2k_connected_since = 1751000000ull;
+
+	const std::string payload = EmitStatusAndGetPayload(s);
+
+	ASSERT_TRUE(!payload.empty());
+	ASSERT_TRUE(payload.find("\"connected_since\":1751000000") != std::string::npos);
 }
 
 TEST(EventDiff, ClientAddedCarriesUploadFileName)

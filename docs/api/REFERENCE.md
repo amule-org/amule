@@ -415,12 +415,13 @@ curl -s -H "Authorization: Bearer $TOKEN" http://$HOST/api/v0/status
   "ed2k": {
     "state": "connected",
     "high_id": true,
-    "id": 3523226697,
+    "id": 1234567890,
     "public_ip": "210.2.150.73",
     "connected_since": 1751000000,
     "server_name": "eMule Server",
     "server_ip": "203.0.113.5",
-    "server_port": 4242
+    "server_port": 4242,
+    "network": { "users": 312000, "files": 75000000 }
   },
   "kad": {
     "state": "connected",
