@@ -26,6 +26,27 @@ const KAD_GRAPH = { name: "kad_nodes", title: t("networks_kad_nodes"), fmt: form
   series: [{ color: "#8a5cd6", label: t("networks_kad_nodes") }] };
 // The three values ServerPriorityCode() accepts, in rank order (also the sort order).
 const SERVER_PRIORITIES = ["low", "normal", "high"].map((v) => [v, t("networks_server_prio_" + v)]);
+// The letters the desktop's TCP/UDP Flags columns render (ServerListCtrl.cpp),
+// keyed by the booleans /servers decodes the bitmasks into. Same order as there,
+// which is wire-bit order. Not translated: they are protocol tokens, and the
+// tooltip spells the key names out for anyone who does not know the letters.
+const TCP_FLAG_LETTERS = [["compression", "c"], ["new_tags", "n"], ["unicode", "u"],
+                          ["related_search", "r"], ["type_tag_integer", "t"],
+                          ["large_files", "l"], ["tcp_obfuscation", "o"]];
+const UDP_FLAG_LETTERS = [["get_sources", "g"], ["get_files", "f"], ["new_tags", "n"],
+                          ["unicode", "u"], ["get_sources_v2", "G"], ["large_files", "l"],
+                          ["udp_obfuscation", "o"], ["tcp_obfuscation", "O"]];
+// One flags cell: the letters for the bits that are set, tooltipped with the key
+// names behind them plus the raw bitmask — which is also how a bit this build
+// has no letter for stays visible instead of vanishing.
+const flagCell = (flags, letters) => {
+  if (!flags) return "—";
+  const on = letters.filter(([k]) => flags[k]);
+  const text = on.map(([, l]) => l).join("");
+  const title = (on.length ? on.map(([k]) => k).join(", ") + " " : "")
+    + "(0x" + (flags.bitmask || 0).toString(16) + ")";
+  return html`<span title=${title}>${text || "—"}</span>`;
+};
 
 export default function Networks({ isGuest }) {
   const [top, setTop] = useState("ed2k");
@@ -108,7 +129,8 @@ function ServersPanel({ isGuest }) {
   const ed2k = status && status.ed2k;
   const { sortKey, sortDir, hidden, widths, toggleSort, toggleCol, setWidth, resetPrefs } =
     useTablePrefs("servers", { sortKey: "users", sortDir: -1,
-                               hidden: ["address", "version", "ping"] });
+                               hidden: ["address", "version", "ping", "failed",
+                                        "soft_files", "hard_files", "tcp_flags", "udp_flags"] });
   const [addr, setAddr] = useState("");
   const [name, setName] = useState("");
   const [connectingEcid, setConnectingEcid] = useState(null);
@@ -177,8 +199,29 @@ function ServersPanel({ isGuest }) {
       cell: (s) => formatInt(s.users) + (s.max_users ? " / " + formatInt(s.max_users) : "") },
     { key: "files", label: t("networks_server_files"), num: true, width: "110px", sortable: true,
       sortVal: (s) => s.files || 0, cell: (s) => formatInt(s.files) },
+    // Per-user publishing limits the server advertises, not subsets of `files`.
+    // 0 means "the server has not told us yet" — blank, not "0", exactly as the
+    // desktop's Soft/Hard Files columns and the API docs say.
+    { key: "soft_files", label: t("networks_server_soft_limit"), num: true, width: "110px", sortable: true,
+      sortVal: (s) => s.soft_file_limit || 0,
+      cell: (s) => s.soft_file_limit ? formatInt(s.soft_file_limit) : "—" },
+    { key: "hard_files", label: t("networks_server_hard_limit"), num: true, width: "110px", sortable: true,
+      sortVal: (s) => s.hard_file_limit || 0,
+      cell: (s) => s.hard_file_limit ? formatInt(s.hard_file_limit) : "—" },
     { key: "version", label: t("networks_server_version"), width: "90px", sortable: true,
       sortVal: (s) => s.version || "", cell: (s) => s.version || "" },
+    // Consecutive failed connection attempts — a counter, not a flag.
+    { key: "failed", label: t("networks_server_failed"), num: true, width: "80px", sortable: true,
+      sortVal: (s) => s.failed_count || 0, cell: (s) => formatInt(s.failed_count || 0) },
+    // The announced eD2k wire capabilities, as the desktop's letters. Sorting on
+    // the bitmask groups servers by capability set, which is the only ordering
+    // that means anything here.
+    { key: "tcp_flags", label: t("networks_server_tcp_flags"), width: "100px", sortable: true,
+      sortVal: (s) => (s.tcp_flags && s.tcp_flags.bitmask) || 0,
+      cell: (s) => flagCell(s.tcp_flags, TCP_FLAG_LETTERS) },
+    { key: "udp_flags", label: t("networks_server_udp_flags"), width: "100px", sortable: true,
+      sortVal: (s) => (s.udp_flags && s.udp_flags.bitmask) || 0,
+      cell: (s) => flagCell(s.udp_flags, UDP_FLAG_LETTERS) },
     { key: "ping", label: t("networks_server_ping"), num: true, width: "90px", sortable: true,
       sortVal: (s) => s.ping_ms || 0, cell: (s) => s.ping_ms ? s.ping_ms + " ms" : "—" },
     // Static and priority are both PATCH /servers/{ecid} fields, so both cells are
