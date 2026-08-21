@@ -211,6 +211,14 @@ _assert_json_eq "[.searches[] | select(.search_id == $FIRST_SID)][0].kind" globa
 	'GET /search entry reports kind==global'
 _assert_json_eq "[[.searches[] | select(.search_id == $FIRST_SID)][0].state] | inside([\"running\",\"finished\"])" \
 	true 'GET /search entry state is running or finished (never idle for an active search)'
+# started_at is the list's only recency signal: entries arrive id-ascending
+# and id order is not start order (Kad ids carry a high-bit mask and sort
+# above ed2k ones), so a client that wants "the newest search" sorts on this.
+# Present because THIS amuleapi started the search.
+_assert_json_eq "[.searches[] | select(.search_id == $FIRST_SID)][0].started_at | type" number \
+	'GET /search stamps started_at on a search this session started'
+_assert_json_eq "[.searches[] | select(.search_id == $FIRST_SID)][0].started_at > 1700000000" \
+	true 'started_at is a plausible recent unix second, not 0'
 
 if [ "$HAVE_GUEST" = "1" ]; then
 	_curl -H "Authorization: Bearer $GUEST_TOKEN" "$HOST/api/v0/search"
@@ -254,6 +262,10 @@ if [ -n "$SECOND_TOKEN" ] && [ "$SECOND_TOKEN" != "null" ]; then
 	_assert_status 200 "second amuleapi instance: GET /search → 200"
 	_assert_json_eq "[.searches[] | select(.search_id == $FIRST_SID)] | length" 1 \
 		'second amuleapi instance (never POSTed) still lists the first instance'"'"'s search'
+	# ...but cannot stamp it: that instance did not start the search and the
+	# daemon ships no timestamp, so the key is omitted rather than zeroed.
+	_assert_json_eq "[.searches[] | select(.search_id == $FIRST_SID)][0] | has(\"started_at\")" \
+		false 'a foreign search carries no started_at (unknown, not 1970)'
 
 	_curl -H "Authorization: Bearer $SECOND_TOKEN" \
 		"http://$SECOND_HOST/api/v0/search/$FIRST_SID/results"

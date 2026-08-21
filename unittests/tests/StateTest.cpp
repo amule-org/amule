@@ -554,6 +554,56 @@ TEST(State, MultiSearchSlotsAreIndependentAndAddressable)
 	ASSERT_EQUALS(std::string("in-ten.iso"), s.Search(10).at(0).name);
 }
 
+TEST(State, SearchStartedAtStampsOnlyOurOwnSearches)
+{
+	// GET /search has no recency signal of its own: the daemon returns its
+	// searches id-ascending and ships no timestamp, and id order is not
+	// recency because Kad ids carry a high-bit mask and always sort above
+	// ed2k ones. `started_at` is what a client ranks by instead -- and it
+	// exists only for searches THIS session started.
+	CState s;
+	s.MarkSearchStarted(5, "global", "ubuntu");
+	const std::time_t ours = s.SearchStartedAt(5);
+	ASSERT_TRUE(ours != 0);
+
+	// A search another client started, adopted through discovery, has no
+	// start time we could know. 0 means "unknown", which is why the REST
+	// layer omits the key rather than emitting a 1970 timestamp.
+	s.MarkSearchDiscovered(2147483651u, "kad", "debian", /*active=*/true, /*complete=*/false);
+	ASSERT_TRUE(s.HasSearch(2147483651u));
+	ASSERT_EQUALS(static_cast<std::time_t>(0), s.SearchStartedAt(2147483651u));
+
+	// An id nobody holds reports 0 too; HasSearch is what separates them.
+	ASSERT_EQUALS(static_cast<std::time_t>(0), s.SearchStartedAt(999));
+	ASSERT_FALSE(s.HasSearch(999));
+}
+
+TEST(State, DiscoveredSearchKeepsTheDaemonsLifecycleState)
+{
+	// Discovery used to seed every adopted search as active regardless of
+	// what the daemon said. POST /search/{id}/more gates on exactly that,
+	// so a FINISHED search adopted this way was accepted and answered 202
+	// for a request amuled turns into a no-op.
+	CState s;
+	s.MarkSearchDiscovered(42, "kad", "debian", /*active=*/false, /*complete=*/true);
+	const auto finished = s.SearchProgress(42);
+	ASSERT_TRUE(!finished.active);
+	ASSERT_TRUE(finished.complete);
+	ASSERT_EQUALS(std::string("kad"), finished.kind);
+
+	// A still-running one is seeded running, so the tick keeps polling it.
+	s.MarkSearchDiscovered(43, "global", "ubuntu", /*active=*/true, /*complete=*/false);
+	const auto running = s.SearchProgress(43);
+	ASSERT_TRUE(running.active);
+	ASSERT_TRUE(!running.complete);
+
+	// A slot seeded inactive is not polled by the tick, so the read paths
+	// have to be able to refresh it on demand -- otherwise adopting a
+	// finished search would show an empty result list forever.
+	ASSERT_TRUE(s.ClaimSearchRefresh(42, std::chrono::milliseconds(1000)));
+	ASSERT_FALSE(s.ClaimSearchRefresh(43, std::chrono::milliseconds(1000)));
+}
+
 TEST(State, SearchRefreshIsClaimedOncePerTtlAndOnlyWhenIdle)
 {
 	// The read paths refresh a FINISHED search on demand, because the tick
