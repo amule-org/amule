@@ -504,7 +504,17 @@ void CMuleDataViewCtrl::OnIdle(wxIdleEvent &event)
 			changed = true;
 		}
 	}
+
+	// Act when the drag ends, not on every step of it. Idle fires as long as
+	// the mouse moves, so a change on this tick means the pointer is still
+	// dragging and a further change is coming; the width that matters is the
+	// one it stops at. Firing per observed change instead ran a wxConfig write
+	// and, for a search list, a full column-sync across every other open tab
+	// for each pixel of travel -- the flicker and CPU spike of issue #1022.
 	if (changed) {
+		m_widthsSettling = true;
+	} else if (m_widthsSettling) {
+		m_widthsSettling = false;
 		OnColumnWidthsChanged();
 	}
 
