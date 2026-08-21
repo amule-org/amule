@@ -39,7 +39,7 @@ const EVENT_TYPES = [
   "server_added",   "server_updated",   "server_removed",
   "friend_added",   "friend_updated",   "friend_removed",
   "status_changed", "log_appended",
-  "search_result_added", "search_progress",
+  "search_result_added", "search_progress", "search_closed",
   "comments_updated",
 ];
 const es = new EventSource("/api/v0/events", { withCredentials: true });
@@ -160,7 +160,7 @@ Every event belongs to a single channel. The full set, prefix-mapped from the ev
 | `friends` | `friend_*` | The friends list, and whether each one is online |
 | `status` | `status_*` | Connection state + headline counters |
 | `logs` | `log_*` | amuled log buffer (live tail; serverinfo is poll-only) |
-| `search` | `search_*` | Result deltas + completion of an active `POST /search` |
+| `search` | `search_*` | Result deltas, completion, and the freeing of a search |
 
 By default every channel is delivered. To subscribe to a subset, pass `?channels=` with a comma-separated list:
 
@@ -220,7 +220,7 @@ Both `since_id` and `newest_id` are uint64. The client never has to compute them
 
 ## Event catalog
 
-Every event the bus publishes. The `_added` and `_updated` payloads are BYTE-FOR-BYTE identical to the matching REST resource's list-item shape — clients receiving a `*_updated` event get the full new state and never need to re-GET. `_removed` carries only the identity field — `hash` for files (`download_removed`, `shared_removed`), `client_ecid` for `client_removed`, `friend_ecid` for `friend_removed`, `ecid` for `server_removed` — so the client can drop the cache entry without needing the old object. Two events don't fit the collection-delta model: `status_changed` ships a full status envelope (replace, not merge) and `log_appended` is an append operation (`{lines}` — push the lines onto the amule log buffer, don't replace). Branch on the event type in your dispatcher accordingly.
+Every event the bus publishes. The `_added` and `_updated` payloads are BYTE-FOR-BYTE identical to the matching REST resource's list-item shape — clients receiving a `*_updated` event get the full new state and never need to re-GET. `_removed` carries only the identity field — `hash` for files (`download_removed`, `shared_removed`), `client_ecid` for `client_removed`, `friend_ecid` for `friend_removed`, `ecid` for `server_removed` — so the client can drop the cache entry without needing the old object. Three events don't fit the collection-delta model: `status_changed` ships a full status envelope (replace, not merge), `log_appended` is an append operation (`{lines}` — push the lines onto the amule log buffer, don't replace), and `search_closed` retires a whole result space rather than one item (`{search_id}` — drop the view, not a row). Branch on the event type in your dispatcher accordingly.
 
 ### `downloads` channel
 
@@ -473,7 +473,7 @@ Only the amuled log has a live channel; the serverinfo buffer has no SSE feed an
 
 ### `search` channel
 
-Driven by the refresher state machine that owns the `POST /search` → completion lifecycle (see [REFERENCE.md](REFERENCE.md#search-results)). Events only fire while a search is active; the channel is silent at idle. The [Bootstrap example](#bootstrap-snapshot--stream) omits `/search/results` because searches are normally client-initiated post-boot; if your UI persists a "search-in-progress" state across reloads, fetch `/search/results` and `/search/progress` in step 2 too.
+Driven by the refresher state machine that owns the `POST /search` → completion lifecycle (see [REFERENCE.md](REFERENCE.md#search)). Result and progress events only fire while a search is active; the channel is otherwise silent apart from `search_closed`. The [Bootstrap example](#bootstrap-snapshot--stream) omits the search endpoints because searches are normally client-initiated post-boot; if your UI persists a "search-in-progress" state across reloads, list them with `GET /search` and fetch `GET /search/{id}/results` in step 2 too.
 
 #### `search_result_added`
 
@@ -495,11 +495,11 @@ Emitted per new result that appears in the results map between refresher ticks.
 }
 ```
 
-`search_id` routes the result to the search that produced it — amuleapi runs several searches at once (see [REFERENCE.md](REFERENCE.md#post-apiv0search)), so demux on it. Key results by `(search_id, hash)`. Aside from the leading `search_id`, the payload is byte-for-byte identical to a `/search/results` array entry (including `status`, `type`, and the `children[]` grouping array — see [REFERENCE.md](REFERENCE.md#get-apiv0searchresults)); `sources` is the nested `{total, complete}` object, `media` — the audio/video metadata object — is present only for locally-known/probed hits and omitted otherwise, and `children` holds the same-hash/different-name alternatives (empty for a single-name hit), same as the REST endpoint. Only parent results fire this event — children are folded into their parent's `children[]`, never emitted as their own `search_result_added`. Each `search_id` is an independent result space — a new `POST /search` starts a fresh one without disturbing the others.
+`search_id` routes the result to the search that produced it — amuleapi runs several searches at once (see [REFERENCE.md](REFERENCE.md#post-apiv0search)), so demux on it. Key results by `(search_id, hash)`. Aside from the leading `search_id`, the payload is byte-for-byte identical to a `/search/{id}/results` array entry — the two are emitted by the same writer, so the promise holds by construction. That includes `status`, `type`, `directory` (the folder inside a browsed peer's share, `""` on ordinary hits), `kad_comment_search_running`, `comments[]` and the `children[]` grouping array — see [REFERENCE.md](REFERENCE.md#get-apiv0searchidresults); `sources` is the nested `{total, complete}` object, `media` — the audio/video metadata object — is present only for locally-known/probed hits and omitted otherwise, and `children` holds the same-hash/different-name alternatives (empty for a single-name hit), same as the REST endpoint. Only parent results fire this event — children are folded into their parent's `children[]`, never emitted as their own `search_result_added`. Each `search_id` is an independent result space — a new `POST /search` starts a fresh one without disturbing the others.
 
 #### `search_progress`
 
-Emitted whenever a search's completion advances and once more on its completion; every frame carries the `search_id` it refers to. Two triggers, both off the daemon's unambiguous `EC_TAG_SEARCH_LIFECYCLE_*` tags (see [REFERENCE.md](REFERENCE.md#search-results)): the `percent` changing between refresher ticks while the search runs, and the lifecycle flipping to finished (the `state` `running` → `finished` edge). A newly-started search also emits its initial `running` frame. The completion frame is just the terminal `search_progress` with `"state": "finished"` — there is **no** separate `search_finished` event.
+Emitted whenever a search's completion advances and once more on its completion; every frame carries the `search_id` it refers to. Two triggers, both off the daemon's unambiguous `EC_TAG_SEARCH_LIFECYCLE_*` tags (see [REFERENCE.md](REFERENCE.md#get-apiv0searchidresults)): the `percent` changing between refresher ticks while the search runs, and the lifecycle flipping to finished (the `state` `running` → `finished` edge). A newly-started search also emits its initial `running` frame. The completion frame is just the terminal `search_progress` with `"state": "finished"` — there is **no** separate `search_finished` event.
 
 ```json
 { "search_id": 42, "state": "running", "percent": 47, "results": 88, "kind": "kad" }
@@ -511,13 +511,25 @@ Emitted whenever a search's completion advances and once more on its completion;
 
 - `search_id` — which search this frame is about.
 - `state` — `"running"` while the search is in flight, `"finished"` on the terminal frame.
-- `percent` — `0..100`, daemon-computed for every search kind. For **global** it is the real server-queue progress. For **Kad**, which has no measurable progress, it is a cosmetic time-ramp derived from the fixed 45 s keyword-search lifetime (capped at 99 until the daemon authoritatively reports completion, then 100); see [REFERENCE.md](REFERENCE.md#search-results). Treat the Kad value as a liveliness indicator, not an accurate completion estimate.
+- `percent` — `0..100`, daemon-computed for every search kind. For **global** it is the real server-queue progress. For **Kad**, which has no measurable progress, it is a cosmetic time-ramp derived from the fixed 45 s keyword-search lifetime (capped at 99 until the daemon authoritatively reports completion, then 100); see [REFERENCE.md](REFERENCE.md#get-apiv0searchidresults). Treat the Kad value as a liveliness indicator, not an accurate completion estimate.
 - `kind` — the originally-requested search type (`"local"` | `"global"` | `"kad"` | `"browse"`).
-- `results` — the current results-map size; subscribers can reconcile against any `search_result_added` they may have missed via `GET /search/results`.
+- `results` — the current results-map size; subscribers can reconcile against any `search_result_added` they may have missed via `GET /search/{id}/results`.
 
 A Kad search hitting its result cap (`SEARCHKEYWORD_TOTAL`, 300) before the 45 s deadline finishes early — the lifecycle flips to `finished` and `percent` jumps straight to 100 ahead of the ramp.
 
 A **browse** started via [`POST /clients/{ecid}/shared_files`](REFERENCE.md#post-apiv0clientsecidshared_files) rides this same channel: its `search_id` fires `search_result_added` per file the peer returns and `search_progress` frames with `"kind": "browse"`, where `percent` tracks the directories received so far. A denied / unreachable / lost browse flips to `finished` with the results it managed to collect (often zero) — same terminal frame as a completed one, no distinct failure event.
+
+#### `search_closed`
+
+The search is **gone**: its slot has been freed and its results are no longer readable. A subscriber holding one view per search should drop that view — the next `GET /api/v0/search/{id}/results` for this id is a `404`.
+
+```json
+{ "search_id": 42 }
+```
+
+Three things produce it: [`DELETE /api/v0/search/{id}`](REFERENCE.md#delete-apiv0searchid) from any client, amuleapi evicting an old finished search to stay under its slot cap, and an EC reconnect (which invalidates every cached `search_id` at once).
+
+**What it is not:** a search that amuled evicted from its own 20-entry ring is *retired*, not freed — amuleapi keeps its last-known results for late reads, so that case arrives as a terminal `search_progress` with `"state": "finished"`. Only a vanished slot produces `search_closed`.
 
 ### Filter-bypass: `resync`
 

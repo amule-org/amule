@@ -2248,6 +2248,13 @@ void ApplySearchFull(const CECPacket *resp, std::map<std::uint32_t, SearchResult
 		}
 		// File type, computed from the filename (no EC data needed).
 		r.type = SearchTypeToken(r.name);
+		// Browse-only: the folder this file sits in inside the peer's
+		// share. The core attaches it to results filed from a shared-file
+		// listing and to nothing else, so an ordinary server/Kad hit
+		// simply leaves it empty.
+		if (const CECTag *x = sf->GetTagByName(EC_TAG_SEARCHFILE_DIRECTORY)) {
+			r.directory = std::string(x->GetStringData().utf8_str());
+		}
 		// Media metadata (issue #430): present only when the hit carried
 		// FT_MEDIA_* tags (known/probed locally). Any present tag marks
 		// has_media so the API emits the `media` object.
@@ -2324,6 +2331,7 @@ void ApplySearchFull(const CECPacket *resp, std::map<std::uint32_t, SearchResult
 		c.hash = child.hash;
 		c.source_count = child.source_count;
 		c.complete_source_count = child.complete_source_count;
+		c.directory = child.directory;
 		pit->second.children.push_back(std::move(c));
 		folded.push_back(kv.first);
 	}

@@ -105,8 +105,10 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 **Search**
 - [`GET /api/v0/search`](#get-apiv0search) — enumerate every search amuled currently holds, including ones this session never started
 - [`POST /api/v0/search`](#post-apiv0search) — start a search (global / local / kad), returns its `search_id`
-- [`GET /api/v0/search/results`](#get-apiv0searchresults) — one search's results + progress envelope (`?search_id=`)
-- [`POST /api/v0/search/stop`](#post-apiv0searchstop) — stop (and optionally free) a search by id
+- [`GET /api/v0/search/{id}/results`](#get-apiv0searchidresults) — one search's results + progress envelope
+- [`POST /api/v0/search/{id}/stop`](#post-apiv0searchidstop) — stop a search, keeping its results
+- [`POST /api/v0/search/{id}/more`](#post-apiv0searchidmore) — widen a running Kad search
+- [`DELETE /api/v0/search/{id}`](#delete-apiv0searchid) — stop a search and free it
 - [`POST /api/v0/search/results/{hash}/download`](#post-apiv0searchresultshashdownload) — promote a result into the download queue
 - [`GET /api/v0/search/results/{hash}/comments`](#get-apiv0searchresultshashcomments) — Kad ratings/comments for a result
 - [`POST /api/v0/search/results/{hash}/comments`](#post-apiv0searchresultshashcomments) — trigger a Kad notes lookup for a result
@@ -198,7 +200,7 @@ Each endpoint documents its own response shape under the endpoint section. List 
 
 ### List pagination and sorting
 
-The list endpoints — `GET /downloads`, `/clients`, `/shared`, `/servers`, `/friends`, the two per-file client routes, and `/search/results` — accept optional query parameters for server-side windowing and ordering, and always return pagination metadata beside the array:
+The list endpoints — `GET /downloads`, `/clients`, `/shared`, `/servers`, `/friends`, the two per-file client routes, and `/search/{id}/results` — accept optional query parameters for server-side windowing and ordering, and always return pagination metadata beside the array:
 
 | Param    | Default          | Notes |
 |----------|------------------|-------|
@@ -230,7 +232,7 @@ Omitting all four parameters preserves the previous response exactly, plus the a
 | `GET /shared`         | `name`, `size` |
 | `GET /servers`        | `name`, `users`, `ping`, `files` |
 | `GET /friends`        | `name`, `online` |
-| `GET /search/results` | `name`, `size`, `sources`, `rating` |
+| `GET /search/{id}/results` | `name`, `size`, `sources`, `rating`, `directory` |
 
 ### Bulk mutations and the `results` envelope
 
@@ -1159,7 +1161,7 @@ Browse a peer's shared file list — the API equivalent of "View Files" in the G
 
 The browse runs **asynchronously**: the peer answers over the network, one directory at a time, and a HighID/reachable peer may take seconds while a LowID peer needs a server callback or Kad first. So this endpoint does **not** return the files — it returns a `search_id` and the results flow through the **search machinery**, exactly like a query search:
 
-- `GET /api/v0/search/results?search_id={id}` reads the accumulated files as they arrive (standard search-result fields).
+- `GET /api/v0/search/{id}/results` reads the accumulated files as they arrive (standard search-result fields, plus `directory` — the folder each file sits in inside the peer's share). The browse also appears in [`GET /api/v0/search`](#get-apiv0search) with `kind: "browse"` and the browsed peer's `client_ecid`.
 - The refresher advances `search_progress` for this `search_id` while the browse is live, and emits a `search_finished` SSE event when the peer's list is complete or the browse fails (denied / peer unreachable / connection lost). A denied or failed browse finishes with zero results — there is no distinct error event.
 
 Reusing the search id-space means one poll loop and one SSE stream cover both queries and browses; a client tells them apart by remembering which `search_id` it started with which verb.
@@ -1177,7 +1179,7 @@ Status `202 Accepted` — the browse was started, not completed. Then poll:
 
 ```sh
 curl -s -H "Authorization: Bearer $TOKEN" \
-  "http://$HOST/api/v0/search/results?search_id=17"
+  "http://$HOST/api/v0/search/17/results"
 ```
 
 **Errors:** `400 bad_request` (`{ecid}` is not a non-negative integer), `403 forbidden` (guest token — browsing is `ADMIN`-only), `404 not_found` (no peer with that ecid), `405 method_not_allowed` (non-POST), `502 bad_gateway` (core accepted the request but returned no `search_id`), `503 ec_unavailable`.
@@ -1771,7 +1773,7 @@ Only one friend can hold the slot at a time, so granting it clears it on whoever
 
 Browse a friend's shared files. The friend-addressed twin of [`POST /api/v0/clients/{ecid}/shared_files`](#post-apiv0clientsecidshared_files), and more capable: a friend record carries a stored address, so the daemon can browse a friend who is **not currently connected**, which the clients route cannot do.
 
-**Response:** `202 Accepted` → `{ "ok": true, "search_id": 17 }`. Poll [`GET /api/v0/search/results`](#get-apiv0searchresults) with that `search_id`.
+**Response:** `202 Accepted` → `{ "ok": true, "search_id": 17 }`. Poll [`GET /api/v0/search/{id}/results`](#get-apiv0searchidresults) with that id.
 
 **Errors:** `403 forbidden`, `404 not_found`, `502 amuled_rejected`, `503 ec_unavailable`.
 
@@ -2351,18 +2353,21 @@ The search surface is admin-only because firing a global ed2k search has real ne
 
 **Auth:** `GUEST`
 
-Lists every search amuled currently holds — including ones started by a **different** client (another amuleapi request, the monolithic GUI, an amulegui session). Each call is a direct round trip to amuled (`EC_OP_SEARCH_LIST`), independent of the Refresher-maintained `m_state` cache, so a search this process never saw a `POST /search` for still shows up here as soon as amuled is holding it. [`GET /search/results`](#get-apiv0searchresults) can then fetch that same `search_id` — on a cache miss it does its own one-off `EC_OP_SEARCH_LIST` check before returning `404`, so a search this endpoint just listed is never a dead end there.
+Lists every search amuled currently holds — including ones started by a **different** client (another amuleapi request, the monolithic GUI, an amulegui session). Each call is a direct round trip to amuled (`EC_OP_SEARCH_LIST`), independent of the Refresher-maintained `m_state` cache, so a search this process never saw a `POST /search` for still shows up here as soon as amuled is holding it. [`GET /search/{id}/results`](#get-apiv0searchidresults) can then fetch that same `search_id` — on a cache miss it does its own one-off `EC_OP_SEARCH_LIST` check before returning `404`, so a search this endpoint just listed is never a dead end there.
 
 ```json
 {
   "searches": [
     { "search_id": 42, "query": "ubuntu desktop iso", "kind": "global", "state": "finished" },
-    { "search_id": 43, "query": "debian",              "kind": "kad",    "state": "running"  }
+    { "search_id": 43, "query": "debian",             "kind": "kad",    "state": "running"  },
+    { "search_id": 44, "query": "SomePeerNick",       "kind": "browse", "state": "running", "client_ecid": 621 }
   ]
 }
 ```
 
-`search_id` is the value to pass to [`GET /search/results`](#get-apiv0searchresults) (`?search_id=`) to read that search's hits, or to [`POST /search/stop`](#post-apiv0searchstop) to stop it. `kind` is `"local"` | `"global"` | `"kad"` | `"browse"`. The first three are the vocabulary `POST /search`'s `type` accepts; `"browse"` is reported only, for a "View Files" listing of one peer's share, which is started through the client endpoints rather than by a query. `state` is `"running"` | `"finished"` | `"idle"`, same vocabulary and meaning as `GET /search/results`'s `progress.state`.
+`search_id` is the value that fills `{id}` on every search-scoped path: [`GET /search/{id}/results`](#get-apiv0searchidresults) to read its hits, [`POST /search/{id}/stop`](#post-apiv0searchidstop) to stop it, [`DELETE /search/{id}`](#delete-apiv0searchid) to free it. `kind` is `"local"` | `"global"` | `"kad"` | `"browse"`. The first three are the vocabulary `POST /search`'s `type` accepts; `"browse"` is reported only, for a "View Files" listing of one peer's share, which is started through the client endpoints rather than by a query. `state` is `"running"` | `"finished"` | `"idle"`, same vocabulary and meaning as `GET /search/{id}/results`'s `progress.state`.
+
+`query` is the daemon's name for the search. For a `"browse"` that is **the peer's nickname**, not a query string — a browse has no query. `client_ecid` is the browsed peer's ecid and is present **only** on browse entries, so a consumer can tell whose share is being listed and cross-reference [`GET /clients`](#get-apiv0clients); it is omitted entirely on an ordinary search.
 
 amuled only tracks multiple concurrent searches for clients that advertise multi-search support; `amuleapi` does, so this always reflects the full live set. `searches` is an empty array when amuled holds no searches, never an error.
 
@@ -2372,7 +2377,7 @@ amuled only tracks multiple concurrent searches for clients that advertise multi
 
 **Auth:** `ADMIN`
 
-Kicks off a new search. amuleapi supports **several concurrent searches** — a new search does NOT stop or wipe the others. amuled allocates a globally-unique `search_id` for each start and returns it; every subsequent results/progress/stop call addresses one search by that id. The search you just started becomes the *current* search (the default target when a call omits `search_id`).
+Kicks off a new search. amuleapi supports **several concurrent searches** — a new search does NOT stop or wipe the others. amuled allocates a globally-unique `search_id` for each start and returns it; every subsequent results/stop/more call names that id in the path. There is no implicit "current search": keep the id you are given, or re-discover it through [`GET /search`](#get-apiv0search).
 
 **Body:**
 
@@ -2394,15 +2399,19 @@ Only `query` is required. `type` defaults to `"global"`; valid values are `"loca
 
 **Errors:** `502 amuled_rejected` (daemon returned no search_id), `503 ec_unavailable`.
 
-#### `GET /api/v0/search/results`
+#### `GET /api/v0/search/{id}/results`
 
 **Auth:** `GUEST`
 
-**Query:** `?search_id=N` (optional) — which search to read. Omit it to read the **current** (most-recently-started, by *this session* -- see below) search. An explicit `search_id` that names no live search (never started anywhere, or evicted from amuled's ring — see below) returns `404 not_found`, distinct from a known-but-empty search which returns an idle/empty envelope.
+**Path:** `{id}` — the `search_id` to read, from [`POST /search`](#post-apiv0search) or [`GET /search`](#get-apiv0search). Required. A non-numeric segment or `0` is `400 bad_request`, never a fallback to some other search. An id that names no live search (never started anywhere, freed, or evicted from amuled's ring — see below) returns `404 not_found`, distinct from a known-but-empty search which returns an idle/empty envelope.
 
-Returns one search's results buffer at the moment of the call PLUS a progress envelope so an empty `results` array isn't ambiguous between "no search running", "search in flight with no hits yet", and "search finished with zero hits". The envelope's top-level `search_id` echoes the resolved search (the one requested, or the current one) so a client polling without an id learns which search it is watching and can pin it on later calls.
+Returns one search's results buffer at the moment of the call PLUS a progress envelope so an empty `results` array isn't ambiguous between "search not started", "search in flight with no hits yet", and "search finished with zero hits".
 
-This endpoint does NOT busy-wait — it returns whatever amuled has in its result buffer right now. A client that wants to wait for completion should poll while `progress.state == "running"`. There is no per-GET TTL cache: the refresher polls amuled (`EC_OP_SEARCH_RESULTS` + `EC_OP_SEARCH_PROGRESS`, addressed by `search_id`) every tick for each active search, so this GET reads straight from that refresher-maintained snapshot — successive polls see the growing result set with no extra EC roundtrip. `POST /search` is one way a search becomes active; an unknown `search_id` (one this session never started) triggers a one-off `EC_OP_SEARCH_LIST` check before the `404`, and once confirmed the search is active from that request on, with the refresher polling it every tick from there — so a search another client (or the monolithic GUI) started is fetchable by `search_id` too, not just listable via [`GET /search`](#get-apiv0search). Discovery alone never changes what "the current search" (the no-`search_id` default) means, though: that stays whichever search *this* session's own `POST /search` most recently started.
+This endpoint does NOT busy-wait — it returns whatever amuled has in its result buffer right now. A client that wants to wait for completion should poll while `progress.state == "running"`. While a search is **running** the refresher polls amuled (`EC_OP_SEARCH_RESULTS` + `EC_OP_SEARCH_PROGRESS`, addressed by `search_id`) every tick, so this GET reads straight from that snapshot and successive polls see the growing result set with no extra EC roundtrip.
+
+Once a search is **finished** the refresher stops polling it, so this endpoint refreshes it **on read** instead, coalesced by a ~1 s TTL. That is what keeps a finished search's results live rather than frozen at the moment it completed: a Kad notes lookup started on one of its hits reports back, and a hit you download from it starts reading `status: "downloaded"` / `already_have: true`. Repeated polling of a finished search costs at most one EC roundtrip per second, not one per request.
+
+`POST /search` is one way a search becomes readable; an unknown `search_id` (one this session never started) triggers a one-off `EC_OP_SEARCH_LIST` check before the `404`, and once confirmed it is polled every tick from there — so a search another client (or the monolithic GUI) started is readable here too, not just listable via [`GET /search`](#get-apiv0search).
 
 amuled keeps a bounded ring of recent searches (20). A search evicted from that ring (because 20 newer searches were started) is reported to amuleapi as expired: its slot is retired as `finished` and reads with its `search_id` then return `404`.
 
@@ -2418,16 +2427,18 @@ amuled keeps a bounded ring of recent searches (20). A search evicted from that 
       "rating":       0,
       "status":       "new",
       "type":         "videos",
+      "directory":    "",
       "media":        { "length_s": 5400, "bitrate": 1500, "codec": "h264", "artist": "", "album": "", "title": "" },
       "children": [
-        { "ecid": 621, "name": "example-distribution-26.04.iso", "hash": "8b54a3c2...", "sources": { "total": 40, "complete": 22 } },
-        { "ecid": 622, "name": "example_distro_2604_amd64.iso",  "hash": "8b54a3c2...", "sources": { "total": 10, "complete":  3 } }
+        { "ecid": 621, "name": "example-distribution-26.04.iso", "hash": "8b54a3c2...", "sources": { "total": 40, "complete": 22 }, "directory": "" },
+        { "ecid": 622, "name": "example_distro_2604_amd64.iso",  "hash": "8b54a3c2...", "sources": { "total": 10, "complete":  3 }, "directory": "" }
       ],
       "kad_comment_search_running": false,
       "comments": []
     }
   ],
   "search_id": 42,
+  "query": "ubuntu desktop iso",
   "progress": {
     "state":    "running",
     "kind":     "kad",
@@ -2437,6 +2448,10 @@ amuled keeps a bounded ring of recent searches (20). A search evicted from that 
 ```
 
 Each result carries `sources` as a nested `{total, complete}` object — `total` is the swarm size amuled reports and `complete` is how many of those hold the file complete. `already_have` is `true` when you are currently downloading the file or already have it completed/shared; it is `false` for a fresh result and for one you have canceled/removed (a canceled result is re-downloadable, so it does not read as held). `rating` is amuled's aggregated quality rating (`0` when unrated). `status` is this result's download status on your node — `"new"` / `"downloaded"` / `"queued"` / `"canceled"` / `"queued_canceled"`. `type` is the file-type token derived from the filename extension (same tokens as the shared-detail [`file_type`](#get-apiv0sharedhash), e.g. `"videos"` / `"audio"`; `""` when the name has no extension). `media` is the audio/video [media metadata](#media-metadata) object (same shape as the file-detail endpoints) — **present only** for a hit that is already known/probed locally, and **omitted entirely** for remote hits with no metadata (most global/Kad results), matching the blank Length/Bitrate/Codec columns in the desktop search list.
+
+`directory` is the folder this file sits in **inside a browsed peer's share** — the desktop search list's *Directories* column. It is populated only for results filed from a peer's shared-file listing (see [peer browse](#post-apiv0clientsecidshared_files)) and is `""` on every ordinary server/Kad hit, which never carries it. It is per-result rather than per-search: two copies of one file in different folders of the same share group under a single parent and each keeps its own folder, exactly as the desktop shows them, which is why `children[]` entries carry it too.
+
+`search_id` and `query` identify the search these results belong to. `search_id` echoes the path so clients can key a view on the response alone; `query` is what the search was started with, so a client that adopted an id from [`GET /search`](#get-apiv0search) can label it without a second call. For a **browse**, `query` is the peer's nickname rather than a query string. `query` is `""` only for a search discovered before amuled reported a name for it.
 
 `children` is the result-grouping tree: amuled collapses hits that are the **same file** (same ed2k hash **and** size) but advertised under **different filenames** into one parent row, and `children[]` holds the alternative names. Each child carries the parent's `hash` (that's why they group), its own `sources`, and a distinct `ecid` — pass that `ecid` to [`POST /search/results/{hash}/download`](#post-apiv0searchresultshashdownload) to download the file **under that chosen filename**. `children` is always present and is an empty array for a hit seen under a single name. The top-level `results[]` contains parents only — a child never appears as its own top-level entry.
 
@@ -2450,26 +2465,55 @@ The `progress` object carries the same `state` / `kind` / `percent` fields as th
 
 A client that wants to wait for completion polls while `state == "running"`. Because amuled now reports the lifecycle state directly (no sentinel decode), `state == "running"` unambiguously means in-flight even for Kad — there is no longer any "is `percent: 0` a stalled Kad search or no search at all?" ambiguity; check `state` instead. A Kad search that hits its result cap (`SEARCHKEYWORD_TOTAL`, 300) before the 45 s deadline finishes early — `state` flips to `finished` and `percent` jumps to 100 ahead of the ramp.
 
-**Errors:** `503 ec_unavailable`.
+**Errors:** `400 bad_request` (bad `{id}`), `404 not_found` (no such search), `503 ec_unavailable`.
 
-#### `POST /api/v0/search/stop`
+#### `POST /api/v0/search/{id}/stop`
 
 **Auth:** `ADMIN`
 
-Stops a search. With no body it stops the **current** (most-recently-started) search; its cached results stay readable until it is closed or evicted.
-
-**Body (optional):**
-
-```json
-{ "search_id": 42, "close": false }
-```
-
-- `search_id` — which search to stop. Omit to target the current search. An explicit id that names no live search returns `404 not_found`.
-- `close` — when `true`, also **frees** the search: amuled drops it from its result ring and amuleapi drops its slot, so `GET /search/results?search_id=` for it then returns `404`. Sibling searches are untouched. Use `close` when a consumer is done with a search rather than just pausing it; omit it (or `false`) to stop the in-flight query but keep the results.
+Stops one search. No body. Its cached results stay readable until it is freed or evicted, so a consumer viewing the search keeps seeing the set it was just looking at. Sibling searches are untouched.
 
 **Response:** `200 OK` → `{ "ok": true }`.
 
-**Errors:** `404 not_found` (explicit unknown `search_id`), `400 bad_request` (malformed body), `503 ec_unavailable`.
+**Errors:** `400 bad_request` (bad `{id}`), `404 not_found` (no such search), `405`, `503 ec_unavailable`.
+
+#### `DELETE /api/v0/search/{id}`
+
+**Auth:** `ADMIN`
+
+Stops the search **and frees it**: amuled drops it from its result ring and amuleapi drops its slot, so [`GET /search/{id}/results`](#get-apiv0searchidresults) for it then returns `404`. Sibling searches are untouched. Use this when a consumer is done with a search rather than just pausing it; use `POST /search/{id}/stop` to halt the in-flight query but keep the results.
+
+Freeing a search delivers a [`search_closed`](EVENTS.md#search_closed) event to every SSE subscriber, so other clients holding a view on it find out immediately.
+
+**Response:** `204 No Content`.
+
+**Errors:** `400 bad_request` (bad `{id}`), `404 not_found` (no such search), `405`, `503 ec_unavailable`.
+
+#### `POST /api/v0/search/{id}/more`
+
+**Auth:** `ADMIN`
+
+Widens a running **Kad** search — the desktop's **"More"** button. It re-asks the Kad peers already queried for a wider result frontier; amuled caps this at 4 reasks per search and logs the outcome itself, so this is fire-and-forget. No body.
+
+Kad-only and running-only, matching what the desktop button allows rather than what the core tolerates: amuled turns a `more` on a non-Kad or finished search into a silent no-op, so both are rejected here instead of being answered with a misleading `202`.
+
+**Response:** `202 Accepted` → `{ "ok": true }`.
+
+**Errors:** `400 bad_request` (bad `{id}`, a non-Kad search, or one that has already finished), `400 amuled_rejected`, `403 forbidden` (guest), `404 not_found` (no such search), `405`, `503 ec_unavailable`.
+
+#### Related-files search
+
+There is no endpoint for the desktop's **"Search related files (eD2k, local server)"** action, and none is needed: the GUI simply composes a magic keyword and starts an ordinary local search. Do the same.
+
+```sh
+curl -s -X POST -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"query":"related::8b54a3c2...::0a1b2c3d...","type":"local"}' \
+  "http://$HOST/api/v0/search"
+```
+
+The query is the literal prefix `related` followed by one or more `::`-separated 32-char hex MD4 hashes — one per file you want related hits for (the desktop passes every selected result). `type` must be `"local"`: the request is answered by the ed2k server you are connected to, and there is no Kad or global equivalent.
+
+Not every server implements related search. Check the connected server's capability first rather than reading an empty result set as "nothing related": [`GET /api/v0/servers`](#get-apiv0servers) reports `related_search` among each server's flags, and the desktop refuses the action outright when it is absent.
 
 #### `POST /api/v0/search/results/{hash}/download`
 
@@ -2485,7 +2529,9 @@ Promote a search result into the transfer queue. Equivalent to clicking "Downloa
 
 **Auth:** `GUEST`
 
-Community ratings/comments for a single search result — the Kad notes retrieved so far plus the running flag. The same data rides each result on [`GET /search/results`](#get-apiv0searchresults); this per-hash endpoint mirrors [`GET /downloads/{hash}/comments`](#get-apiv0downloadshashcomments) for polling one result after starting a lookup.
+Community ratings/comments for a single search result — the Kad notes retrieved so far plus the running flag. The same data rides each result on [`GET /search/{id}/results`](#get-apiv0searchidresults); this per-hash endpoint mirrors [`GET /downloads/{hash}/comments`](#get-apiv0downloadshashcomments) for polling one result after starting a lookup.
+
+The route is deliberately **not** nested under a search id: amuled runs one Kad notes lookup per hash and fans the notes out to every result carrying it, so the lookup is not scoped to one search. This endpoint refreshes whichever search owns the hit before answering, which is what makes the flag below observable on a search that has already finished.
 
 ```json
 {
@@ -2500,7 +2546,9 @@ Community ratings/comments for a single search result — the Kad notes retrieve
 
 `kad_comment_search_running` is `true` while an on-demand Kad notes lookup (triggered by the `POST` below) is in flight; poll until it returns to `false` to know the lookup finished. `username` is the responding Kad node's IP, or `Kad user` when the note carries no IP.
 
-**Errors:** `404 not_found` (no current search result with that hash), `503 ec_unavailable`.
+**Polling is the only mechanism here — there is no event to wait for.** [`comments_updated`](EVENTS.md#comments_updated) is emitted for downloads only and never fires for a search hit, so a client that starts a lookup polls this endpoint (or the results list) while `kad_comment_search_running` is `true`.
+
+**Errors:** `404 not_found` (no live search result with that hash), `503 ec_unavailable`.
 
 #### `POST /api/v0/search/results/{hash}/comments`
 
@@ -2510,7 +2558,7 @@ Trigger an on-demand Kad notes lookup for a search result you have not downloade
 
 **Response:** `202 Accepted` → `{ "status": "kad_search_started" }`.
 
-**Errors:** `400 bad_request` (malformed hash), `403 forbidden` (guest token — the lookup makes the daemon do network work, so it is `ADMIN`-only), `404 not_found` (no current search result with that hash), `400 amuled_rejected` (Kad down, or a search is already using this hash — retry shortly), `503 ec_unavailable`.
+**Errors:** `400 bad_request` (malformed hash), `403 forbidden` (guest token — the lookup makes the daemon do network work, so it is `ADMIN`-only), `404 not_found` (no live search result with that hash), `400 amuled_rejected` (Kad down, or a search is already using this hash — retry shortly), `503 ec_unavailable`.
 
 ---
 

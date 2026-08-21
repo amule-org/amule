@@ -469,10 +469,9 @@ TEST(State, WriteGraphsWithoutConnBlobLeavesExtraSeriesEmpty)
 TEST(State, SearchResultsRoundtripAndOrderByEcid)
 {
 	CState s;
-	// Multi-search: a slot must exist before it can be mutated/read. Seed one
-	// (its id becomes the current search) and populate it.
+	// Multi-search: a slot must exist before it can be mutated/read.
 	const std::uint32_t sid = 1;
-	s.MarkSearchStarted(sid, "global");
+	s.MarkSearchStarted(sid, "global", "ubuntu");
 	s.MutateSearch(sid, [](std::map<std::uint32_t, SearchResult> &cache) {
 		SearchResult a;
 		a.ecid = 50;
@@ -492,36 +491,37 @@ TEST(State, SearchResultsRoundtripAndOrderByEcid)
 		cache.emplace(b.ecid, b);
 	});
 
-	// std::map iterates ECID-ascending → Search() vector is sorted. Read by
-	// explicit id and via the no-id default (0 == current search) — both hit
-	// the same slot.
-	for (std::uint32_t query : { sid, std::uint32_t{ 0 } }) {
-		const auto out = s.Search(query);
-		ASSERT_EQUALS(static_cast<size_t>(2), out.size());
-		ASSERT_EQUALS(std::string("first-by-ecid.iso"), out[0].name);
-		ASSERT_EQUALS(std::string("ascii-name.iso"), out[1].name);
-		ASSERT_TRUE(out[0].already_have);
-		ASSERT_FALSE(out[1].already_have);
-	}
+	// std::map iterates ECID-ascending → Search() vector is sorted.
+	const auto out = s.Search(sid);
+	ASSERT_EQUALS(static_cast<size_t>(2), out.size());
+	ASSERT_EQUALS(std::string("first-by-ecid.iso"), out[0].name);
+	ASSERT_EQUALS(std::string("ascii-name.iso"), out[1].name);
+	ASSERT_TRUE(out[0].already_have);
+	ASSERT_FALSE(out[1].already_have);
+	// The query rides on the slot, so a results read can report what was
+	// searched for without a second lookup.
+	ASSERT_EQUALS(std::string("ubuntu"), s.SearchQuery(sid));
+	// Id 0 is not a search and never resolves to one.
+	ASSERT_TRUE(s.Search(0).empty());
+	ASSERT_FALSE(s.HasSearch(0));
 }
 
 TEST(State, MultiSearchSlotsAreIndependentAndAddressable)
 {
 	CState s;
-	// No search yet: current is 0, nothing is known, reads are empty.
-	ASSERT_EQUALS(static_cast<std::uint32_t>(0), s.CurrentSearchId());
+	// No search yet: nothing is known and reads are empty.
 	ASSERT_FALSE(s.HasSearch(42));
-	ASSERT_TRUE(s.Search(0).empty());
+	ASSERT_TRUE(s.Search(42).empty());
 
 	// Two concurrent searches, each with its own result.
-	s.MarkSearchStarted(10, "global");
+	s.MarkSearchStarted(10, "global", "ten");
 	s.MutateSearch(10, [](std::map<std::uint32_t, SearchResult> &cache) {
 		SearchResult r;
 		r.ecid = 1;
 		r.name = "in-ten.iso";
 		cache.emplace(r.ecid, r);
 	});
-	s.MarkSearchStarted(20, "kad");
+	s.MarkSearchStarted(20, "kad", "twenty");
 	s.MutateSearch(20, [](std::map<std::uint32_t, SearchResult> &cache) {
 		SearchResult r;
 		r.ecid = 2;
@@ -529,11 +529,8 @@ TEST(State, MultiSearchSlotsAreIndependentAndAddressable)
 		cache.emplace(r.ecid, r);
 	});
 
-	// Most-recently-started search is current; no-id resolves to it.
-	ASSERT_EQUALS(static_cast<std::uint32_t>(20), s.CurrentSearchId());
-	ASSERT_EQUALS(std::string("in-twenty.iso"), s.Search(0).at(0).name);
-
-	// Each id addresses only its own results — no cross-contamination.
+	// Each id addresses only its own results — no cross-contamination, and
+	// no implicit target that could make an unaddressed read mean either.
 	ASSERT_EQUALS(static_cast<size_t>(1), s.Search(10).size());
 	ASSERT_EQUALS(std::string("in-ten.iso"), s.Search(10).at(0).name);
 	ASSERT_EQUALS(std::string("in-twenty.iso"), s.Search(20).at(0).name);
@@ -541,18 +538,52 @@ TEST(State, MultiSearchSlotsAreIndependentAndAddressable)
 	ASSERT_TRUE(s.HasSearch(20));
 	ASSERT_FALSE(s.HasSearch(30));
 
-	// Progress kind is per-slot.
+	// Progress kind and query are per-slot.
 	ASSERT_EQUALS(std::string("global"), s.SearchProgress(10).kind);
 	ASSERT_EQUALS(std::string("kad"), s.SearchProgress(20).kind);
+	ASSERT_EQUALS(std::string("ten"), s.SearchQuery(10));
+	ASSERT_EQUALS(std::string("twenty"), s.SearchQuery(20));
 
-	// Closing the current search drops its slot and clears current (no reliable
-	// "next newest" once it is gone).
+	// Freeing one search leaves the other completely alone — the property
+	// that makes DELETE /search/{id} safe to issue from one tab.
 	s.CloseSearch(20);
 	ASSERT_FALSE(s.HasSearch(20));
 	ASSERT_TRUE(s.HasSearch(10));
-	ASSERT_EQUALS(static_cast<std::uint32_t>(0), s.CurrentSearchId());
 	ASSERT_TRUE(s.Search(20).empty());
 	ASSERT_EQUALS(static_cast<size_t>(1), s.Search(10).size());
+	ASSERT_EQUALS(std::string("in-ten.iso"), s.Search(10).at(0).name);
+}
+
+TEST(State, SearchRefreshIsClaimedOncePerTtlAndOnlyWhenIdle)
+{
+	// The read paths refresh a FINISHED search on demand, because the tick
+	// only polls active ones. ClaimSearchRefresh is what stops that from
+	// turning every GET into an EC roundtrip, and what keeps two concurrent
+	// readers of the same search to one roundtrip between them.
+	CState s;
+	const auto kTtl = std::chrono::milliseconds(1000);
+
+	// Unknown id: nothing to refresh.
+	ASSERT_FALSE(s.ClaimSearchRefresh(99, kTtl));
+
+	// A running search is refreshed by the tick every second already, so the
+	// read path must not add traffic on top of it.
+	s.MarkSearchStarted(7, "global", "still running");
+	ASSERT_FALSE(s.ClaimSearchRefresh(7, kTtl));
+
+	// Once finished it has never been fetched by this path, so the first
+	// caller gets the claim...
+	SearchProgressSnapshot done = s.SearchProgress(7);
+	done.active = false;
+	done.complete = true;
+	s.WriteSearchProgress(7, done);
+	ASSERT_TRUE(s.ClaimSearchRefresh(7, kTtl));
+	// ...and the next one inside the TTL does not, because the claim stamped
+	// the slot rather than waiting for the fetch to finish.
+	ASSERT_FALSE(s.ClaimSearchRefresh(7, kTtl));
+	// A zero TTL means "always stale", which is how the test distinguishes
+	// "coalesced" from "never refreshes again".
+	ASSERT_TRUE(s.ClaimSearchRefresh(7, std::chrono::milliseconds(0)));
 }
 
 TEST(State, BrowseRidesSearchMachinery)
@@ -563,7 +594,7 @@ TEST(State, BrowseRidesSearchMachinery)
 	// and the SSE search channel all treat it identically. Lock that in: the
 	// browse kind is preserved per-slot and its results address only its own id.
 	CState s;
-	s.MarkSearchStarted(17, "browse");
+	s.MarkSearchStarted(17, "browse", "SomePeerNick");
 	s.MutateSearch(17, [](std::map<std::uint32_t, SearchResult> &cache) {
 		SearchResult r;
 		r.ecid = 1;
@@ -574,6 +605,9 @@ TEST(State, BrowseRidesSearchMachinery)
 	ASSERT_EQUALS(std::string("browse"), s.SearchProgress(17).kind);
 	ASSERT_EQUALS(static_cast<size_t>(1), s.Search(17).size());
 	ASSERT_EQUALS(std::string("peer-shared.iso"), s.Search(17).at(0).name);
+	// A browse's "query" is the peer whose share is listed, which is what the
+	// daemon names the search and what GET /search reports for it.
+	ASSERT_EQUALS(std::string("SomePeerNick"), s.SearchQuery(17));
 }
 
 TEST(State, ResetListsLeavesLogsAlone)

@@ -119,7 +119,7 @@ std::vector<SearchResult> CState::Search(std::uint32_t search_id) const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
 	std::vector<SearchResult> out;
-	auto it = m_searches.find(ResolveSearchId(search_id));
+	auto it = m_searches.find(search_id);
 	if (it == m_searches.end())
 		return out;
 	out.reserve(it->second.results.size());
@@ -132,7 +132,7 @@ void CState::MutateSearch(
 	std::uint32_t search_id, const std::function<void(std::map<std::uint32_t, SearchResult> &)> &fn)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
-	auto it = m_searches.find(ResolveSearchId(search_id));
+	auto it = m_searches.find(search_id);
 	if (it != m_searches.end())
 		fn(it->second.results);
 }
@@ -140,7 +140,7 @@ void CState::MutateSearch(
 SearchProgressSnapshot CState::SearchProgress(std::uint32_t search_id) const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
-	auto it = m_searches.find(ResolveSearchId(search_id));
+	auto it = m_searches.find(search_id);
 	if (it == m_searches.end())
 		return SearchProgressSnapshot{};
 	return it->second.progress;
@@ -149,13 +149,31 @@ SearchProgressSnapshot CState::SearchProgress(std::uint32_t search_id) const
 bool CState::HasSearch(std::uint32_t search_id) const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
-	return m_searches.count(ResolveSearchId(search_id)) != 0;
+	return m_searches.count(search_id) != 0;
 }
 
-std::uint32_t CState::CurrentSearchId() const
+std::string CState::SearchQuery(std::uint32_t search_id) const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
-	return m_current_search_id;
+	auto it = m_searches.find(search_id);
+	return it == m_searches.end() ? std::string() : it->second.query;
+}
+
+bool CState::ClaimSearchRefresh(std::uint32_t search_id, std::chrono::milliseconds ttl)
+{
+	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
+	auto it = m_searches.find(search_id);
+	if (it == m_searches.end())
+		return false;
+	// An active search is already refreshed by the tick every second;
+	// claiming it here would just double the EC traffic on a running search.
+	if (it->second.progress.active)
+		return false;
+	const auto now = std::chrono::steady_clock::now();
+	if (now - it->second.last_fetch < ttl)
+		return false;
+	it->second.last_fetch = now;
+	return true;
 }
 
 std::vector<std::uint32_t> CState::ActiveSearchIds() const
@@ -178,13 +196,16 @@ std::vector<std::uint32_t> CState::AllSearchIds() const
 	return out;
 }
 
-bool CState::FindSearchResultByHash(const std::string &hash_hex, SearchResult &out) const
+bool CState::FindSearchResultByHash(
+	const std::string &hash_hex, SearchResult &out, std::uint32_t *owner_search_id) const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
 	for (const auto &skv : m_searches) {
 		for (const auto &rkv : skv.second.results) {
 			if (rkv.second.hash == hash_hex) {
 				out = rkv.second;
+				if (owner_search_id)
+					*owner_search_id = skv.first;
 				return true;
 			}
 		}
@@ -192,7 +213,30 @@ bool CState::FindSearchResultByHash(const std::string &hash_hex, SearchResult &o
 	return false;
 }
 
-void CState::MarkSearchStarted(std::uint32_t search_id, const std::string &kind)
+void CState::EvictSurplusSearchSlotsLocked()
+{
+	// Bound the retained slots: a client that never frees its searches would
+	// otherwise accumulate one slot (with its result map) per search for the
+	// whole process lifetime. Evict oldest-first, never an active
+	// (still-polling) one — the surplus is always finished slots.
+	while (m_searches.size() > kMaxSearchSlots) {
+		auto victim = m_searches.end();
+		for (auto it = m_searches.begin(); it != m_searches.end(); ++it) {
+			if (it->second.progress.active) {
+				continue;
+			}
+			if (victim == m_searches.end() || it->second.seq < victim->second.seq) {
+				victim = it;
+			}
+		}
+		if (victim == m_searches.end()) {
+			break; // every remaining slot is still active — nothing to evict
+		}
+		m_searches.erase(victim);
+	}
+}
+
+void CState::MarkSearchStarted(std::uint32_t search_id, const std::string &kind, const std::string &query)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	SearchSlot &slot = m_searches[search_id];
@@ -204,73 +248,40 @@ void CState::MarkSearchStarted(std::uint32_t search_id, const std::string &kind)
 	slot.progress.active = true;
 	slot.progress.kind = kind;
 	slot.progress.generation = next_generation;
+	slot.query = query;
 	slot.seq = ++m_search_seq;
-	m_current_search_id = search_id;
-
-	// Bound the retained slots: a client that never closes its searches would
-	// otherwise accumulate one slot (with its result vector) per search for the
-	// whole process lifetime. Evict oldest-first, but never the current search
-	// or an active (still-polling) one — the surplus is always finished slots.
-	while (m_searches.size() > kMaxSearchSlots) {
-		auto victim = m_searches.end();
-		for (auto it = m_searches.begin(); it != m_searches.end(); ++it) {
-			if (it->first == m_current_search_id || it->second.progress.active) {
-				continue;
-			}
-			if (victim == m_searches.end() || it->second.seq < victim->second.seq) {
-				victim = it;
-			}
-		}
-		if (victim == m_searches.end()) {
-			break; // all remaining slots are active/current — nothing to evict
-		}
-		m_searches.erase(victim);
-	}
+	slot.last_fetch = {};
+	EvictSurplusSearchSlotsLocked();
 }
 
-void CState::MarkSearchDiscovered(std::uint32_t search_id, const std::string &kind)
+void CState::MarkSearchDiscovered(std::uint32_t search_id, const std::string &kind, const std::string &query)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
-	if (m_searches.count(search_id)) {
+	auto known = m_searches.find(search_id);
+	if (known != m_searches.end()) {
 		// Already known (self-started, or discovered on an earlier
 		// cache-miss check): leave its accumulated results/progress
 		// alone. Re-seeding here would stomp whatever
 		// WriteSearchProgress/ApplySearchFull already recorded for it
-		// this session.
+		// this session. The query is the one exception — a slot seeded
+		// before the daemon reported a name has an empty one, and
+		// filling it in loses nothing.
+		if (known->second.query.empty())
+			known->second.query = query;
 		return;
 	}
 	SearchSlot &slot = m_searches[search_id];
 	slot.progress.active = true;
 	slot.progress.kind = kind;
+	slot.query = query;
 	slot.seq = ++m_search_seq;
-	// Deliberately NOT touching m_current_search_id: a no-id GET
-	// /search/results should keep meaning "the search THIS session
-	// started", not silently jump to whatever was last discovered.
-
-	// Same bound as MarkSearchStarted, for the same reason -- a busy core
-	// with many concurrent searches shouldn't let discovery alone grow
-	// this session's slot map without limit.
-	while (m_searches.size() > kMaxSearchSlots) {
-		auto victim = m_searches.end();
-		for (auto it = m_searches.begin(); it != m_searches.end(); ++it) {
-			if (it->first == m_current_search_id || it->second.progress.active) {
-				continue;
-			}
-			if (victim == m_searches.end() || it->second.seq < victim->second.seq) {
-				victim = it;
-			}
-		}
-		if (victim == m_searches.end()) {
-			break;
-		}
-		m_searches.erase(victim);
-	}
+	EvictSurplusSearchSlotsLocked();
 }
 
 void CState::WriteSearchProgress(std::uint32_t search_id, SearchProgressSnapshot s)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
-	auto it = m_searches.find(ResolveSearchId(search_id));
+	auto it = m_searches.find(search_id);
 	if (it != m_searches.end())
 		it->second.progress = std::move(s);
 }
@@ -278,14 +289,7 @@ void CState::WriteSearchProgress(std::uint32_t search_id, SearchProgressSnapshot
 void CState::CloseSearch(std::uint32_t search_id)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
-	const auto id = ResolveSearchId(search_id);
-	m_searches.erase(id);
-	if (m_current_search_id == id) {
-		// No reliable "next most-recent" once the current search is gone (Kad
-		// ids sort above ed2k ids, so highest-key is not newest); fall back to
-		// no current until the next POST /search.
-		m_current_search_id = 0;
-	}
+	m_searches.erase(search_id);
 }
 
 void CState::WriteStatsTree(StatsTreeNode t)
@@ -617,11 +621,10 @@ void CState::ResetLists()
 	m_categories.clear();
 	// Drop all search slots on an EC reconnect: the daemon's per-connection
 	// search registry is gone with the old connection, so every cached
-	// search_id is stale. current falls back to none; the next POST /search
-	// re-seeds. (EventDiff re-baselines its per-search state when a slot it was
-	// tracking disappears, so no generation carry-over is needed here.)
+	// search_id is stale; the next POST /search re-seeds. (EventDiff
+	// re-baselines its per-search state when a slot it was tracking
+	// disappears, so no generation carry-over is needed here.)
 	m_searches.clear();
-	m_current_search_id = 0;
 	// The credit store deliberately does NOT go with them. This runs when a
 	// tick failed against a socket that is still up, and dropping the store
 	// there would refetch the whole thing after one null tick -- the cost this

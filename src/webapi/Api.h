@@ -34,6 +34,8 @@
 #include "State.h" // ServerInfoLog / StatsTreeNode / StatsGraphs / SearchResult
 #include "TtlCache.h"
 
+#include <ec/cpp/ECCodes.h> // ec_opcode_t, for the shared search-op sender
+
 #include <ctime>
 #include <map>
 #include <utility>
@@ -238,9 +240,30 @@ private:
 	// miss, not a per-tick refresher poll -- discovery is rare, so paying
 	// only when actually asked keeps the steady-state EC cost at zero.
 	bool DiscoverSearchIfHeldByCore(std::uint32_t search_id);
+	// Resolve a path-supplied search_id to a live slot, seeding it from the
+	// core on a cache miss. Returns an error response when nothing holds it.
+	// Every search-scoped handler starts with this, so they cannot disagree
+	// on what a 404 means.
+	std::unique_ptr<CHttpServer::Response> RequireSearch(std::uint32_t search_id);
+	// Refresh one search's cached results if it is finished and its last
+	// fetch has aged out. The tick only polls ACTIVE searches, so without
+	// this a finished search's results are a frozen snapshot: a Kad notes
+	// lookup started on one of its hits would never report back, and a hit
+	// downloaded from it would keep claiming `status: "new"`. No-op (and no
+	// EC traffic) for an active search, or for a repeat read inside the TTL.
+	void RefreshSearchIfStale(std::uint32_t search_id);
 	CHttpServer::Response HandleSearchList(const CHttpServer::Request &);
 	CHttpServer::Response HandleSearchStart(const CHttpServer::Request &);
-	CHttpServer::Response HandleSearchStop(const CHttpServer::Request &);
+	CHttpServer::Response HandleSearchStop(const CHttpServer::Request &, std::uint32_t search_id);
+	// DELETE /search/{id}: stop it AND free it, daemon-side and locally.
+	CHttpServer::Response HandleSearchClose(const CHttpServer::Request &, std::uint32_t search_id);
+	// POST /search/{id}/more: the desktop "More" button, Kad-only.
+	CHttpServer::Response HandleSearchMore(const CHttpServer::Request &, std::uint32_t search_id);
+	// One addressed EC exchange for stop / close / more: they differ only in
+	// opcode, the close flag and the success status, so the packet build,
+	// the EC_OP_FAILED mapping and the `{ok:true}` body live in one place.
+	CHttpServer::Response SendSearchOp(
+		ec_opcode_t opcode, std::uint32_t search_id, bool close, int success_status);
 	CHttpServer::Response HandleSearchDownload(const CHttpServer::Request &, const std::string &hash);
 	CHttpServer::Response HandleSearchComments(const CHttpServer::Request &, const std::string &hash);
 	CHttpServer::Response HandleSearchCommentsKadSearch(
@@ -279,7 +302,7 @@ private:
 	CHttpServer::Response HandleLogServerinfoReset(const CHttpServer::Request &);
 	CHttpServer::Response HandleStatsTree(const CHttpServer::Request &);
 	CHttpServer::Response HandleStatsGraph(const CHttpServer::Request &, const std::string &graph);
-	CHttpServer::Response HandleSearchResults(const CHttpServer::Request &);
+	CHttpServer::Response HandleSearchResults(const CHttpServer::Request &, std::uint32_t search_id);
 
 	// Not const: the credential endpoints write through the config, and
 	// verifying re-reads amuleapi-passwords (so a change made elsewhere

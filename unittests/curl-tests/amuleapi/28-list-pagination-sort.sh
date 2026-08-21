@@ -2,7 +2,7 @@
 #
 # amuleapi list pagination + sorting (issue #357). Exercises the shared
 # ?limit/&offset/&sort/&order machinery across every list endpoint:
-# /downloads, /shared, /servers, /clients and /search/results.
+# /downloads, /shared, /servers, /clients and /search/{id}/results.
 #
 # Data-tolerant like the other read smokes — it asserts the pagination
 # metadata (`total`/`offset`/`limit`), that `limit` bounds the array
@@ -102,13 +102,20 @@ sleep 3 # let the refresher build its caches
 
 AUTH=(-H "Authorization: Bearer $TOKEN")
 
-# endpoint:array-key pairs. search/results wraps under "results".
+# The search list is addressed per search, so start one to have an id
+# rather than relying on a removed implicit default.
+SEARCH_SID=$(curl -s -X POST "${AUTH[@]}" -H "Content-Type: application/json" \
+	-d '{"query":"amuleapi-phase28","type":"local"}' "$HOST/api/v0/search" \
+	| jq -r '.search_id // empty')
+[ -n "$SEARCH_SID" ] || _die "POST /search returned no search_id"
+
+# endpoint:array-key pairs. The search results list wraps under "results".
 ENDPOINTS=(
 	"downloads:downloads"
 	"shared:shared"
 	"servers:servers"
 	"clients:clients"
-	"search/results:results"
+	"search/$SEARCH_SID/results:results"
 )
 
 for pair in "${ENDPOINTS[@]}"; do
@@ -162,6 +169,8 @@ for pair in "${ENDPOINTS[@]}"; do
 	_assert_status 200 "GET /$ep?limit=99999 → 200 (clamped)"
 	_assert_json_le ".limit" 500 "/$ep?limit=99999 echoes limit <= 500"
 done
+
+curl -s -X DELETE "${AUTH[@]}" "$HOST/api/v0/search/$SEARCH_SID" > /dev/null 2>&1
 
 echo
 echo "28-list-pagination-sort: $((TEST_COUNT-FAIL_COUNT))/$TEST_COUNT passed"

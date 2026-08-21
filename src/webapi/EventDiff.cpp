@@ -25,7 +25,10 @@
 #include "EventDiff.h"
 
 #include "EventBus.h"
+#include "SearchJson.h"      // WriteSearchResultFields, shared with GET /search/{id}/results
 #include "ServerFlagNames.h" // Shared server capability-bit tables, decoded to JSON
+
+#include <JsonWriter.h>
 
 #include <algorithm>
 #include <atomic>
@@ -44,7 +47,10 @@ namespace
 // canonical formatter for response bodies, but the event-data
 // payloads we emit here are small and predictable — a few KB at
 // most — and keeping the diff path independent of CJsonWriter
-// avoids dragging wxString into the bus path. Quote-escape only the
+// avoids dragging wxString into the bus path. (The one exception is
+// `search_result_added`, which is documented as carrying exactly a
+// results-list entry and so is built by the shared writer in
+// SearchJson.h rather than restated here.) Quote-escape only the
 // characters JSON disallows: backslash, double-quote, and the C0
 // controls. Tab/CR/LF appear in amule log lines so we encode them
 // explicitly.
@@ -668,55 +674,21 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 			// New result entries for this search.
 			for (const auto &kv : search_now) {
 				if (pstate.results.find(kv.first) == pstate.results.end()) {
-					std::ostringstream payload;
-					// The search_id routes the event to a tab/view; the
-					// remaining fields are byte-for-byte identical to
-					// WriteSearchObject (Api.cpp) — sources is a nested
-					// {total, complete} object, matching /search/results[].
-					payload << "{\"search_id\":" << sid << ",\"hash\":\""
-						<< EscJson(kv.second.hash) << "\""
-						<< ",\"name\":\"" << EscJson(kv.second.name) << "\""
-						<< ",\"size\":" << kv.second.size
-						<< ",\"sources\":{\"total\":" << kv.second.source_count
-						<< ",\"complete\":" << kv.second.complete_source_count << "}"
-						<< ",\"already_have\":"
-						<< (kv.second.already_have ? "true" : "false")
-						<< ",\"rating\":" << static_cast<int>(kv.second.rating)
-						<< ",\"status\":\"" << EscJson(kv.second.status) << "\""
-						<< ",\"type\":\"" << EscJson(kv.second.type) << "\"";
-					// Media metadata (issue #430) — same shape as
-					// WriteSearchObject; omitted when the hit has none.
-					if (kv.second.has_media) {
-						const auto &m = kv.second.media;
-						payload << ",\"media\":{\"length_s\":" << m.length_s
-							<< ",\"bitrate\":" << m.bitrate << ",\"codec\":\""
-							<< EscJson(m.codec) << "\",\"artist\":\""
-							<< EscJson(m.artist) << "\",\"album\":\""
-							<< EscJson(m.album) << "\",\"title\":\""
-							<< EscJson(m.title) << "\"}";
-					}
-					// Result grouping (issue #431) — same shape as
-					// WriteSearchObject's children[]; always present
-					// (empty array when the hit had a single name).
-					payload << ",\"children\":[";
-					{
-						bool first = true;
-						for (const auto &c : kv.second.children) {
-							if (!first)
-								payload << ",";
-							first = false;
-							payload << "{\"ecid\":" << c.ecid << ",\"name\":\""
-								<< EscJson(c.name) << "\",\"hash\":\""
-								<< EscJson(c.hash)
-								<< "\",\"sources\":{\"total\":"
-								<< c.source_count
-								<< ",\"complete\":" << c.complete_source_count
-								<< "}}";
-						}
-					}
-					payload << "]";
-					payload << "}";
-					bus.Publish("search_result_added", payload.str());
+					// `search_id` routes the event to a tab/view; every
+					// field after it comes from the same writer
+					// GET /search/{id}/results uses, which is what makes
+					// the documented "byte-for-byte identical to a
+					// results-list entry" promise hold by construction
+					// rather than by review.
+					CJsonWriter w;
+					w.BeginObject();
+					w.Key("search_id");
+					w.ValueInt(static_cast<int64_t>(sid));
+					WriteSearchResultFields(w, kv.second);
+					w.EndObject();
+					const wxScopedCharBuffer utf8 = w.GetBuffer().utf8_str();
+					bus.Publish("search_result_added",
+						std::string(utf8.data(), utf8.length()));
 				}
 			}
 			// search_progress: a percent change while running, the
@@ -746,9 +718,20 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 		}
 		prev.search_initialised = true;
 		// Prune baselines for searches that vanished (closed / EC reset) so
-		// prev.searches can't grow without bound.
+		// prev.searches can't grow without bound, and tell subscribers.
+		// Without the event a consumer holding one tab per search only finds
+		// out on its next read, and with SSE live it may never read again.
+		//
+		// This fires only when the SLOT is gone -- DELETE /search/{id}, the
+		// slot cap evicting an old finished search, or an EC reset. A search
+		// the daemon evicted from its own ring is retired as finished and
+		// kept locally for late reads, so that case is a terminal
+		// search_progress above, never a search_closed.
 		for (auto it = prev.searches.begin(); it != prev.searches.end();) {
 			if (std::find(ids.begin(), ids.end(), it->first) == ids.end()) {
+				std::ostringstream payload;
+				payload << "{\"search_id\":" << it->first << "}";
+				bus.Publish("search_closed", payload.str());
 				it = prev.searches.erase(it);
 			} else {
 				++it;

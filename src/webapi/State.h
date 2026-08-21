@@ -25,6 +25,7 @@
 #ifndef WEBAPI_STATE_H
 #define WEBAPI_STATE_H
 
+#include <chrono>
 #include <cstdint>
 #include <ctime>
 #include <functional>
@@ -679,6 +680,14 @@ struct SearchResult
 	// File-type token derived from the filename (like the shared-detail
 	// `file_type`), e.g. "video"/"audio"; "" if the name has no extension.
 	std::string type;
+	// The folder this file sits in inside the browsed peer's share
+	// (EC_TAG_SEARCHFILE_DIRECTORY). The core emits it for results filed
+	// from a peer's shared-file list and for nothing else, so it is empty
+	// on every ordinary server/Kad hit. Per-result rather than per-search:
+	// two copies of one file in different folders of the same share group
+	// under a single parent, each keeping its own folder, exactly as the
+	// desktop's Directories column shows them.
+	std::string directory;
 	// Audio/video media metadata (issue #430), same shape as the file
 	// detail endpoints' `media` object. `has_media` gates it — omitted
 	// when the hit carries no FT_MEDIA_* tags (most remote results).
@@ -708,6 +717,9 @@ struct SearchResult
 		std::string hash; // same as the parent's (that's why they group)
 		std::uint32_t source_count = 0;
 		std::uint32_t complete_source_count = 0;
+		// Same meaning as the parent's `directory`, carried per child
+		// because two copies in different folders group together.
+		std::string directory;
 	};
 	std::vector<Child> children;
 
@@ -764,10 +776,22 @@ struct SearchSlot
 {
 	std::map<std::uint32_t, SearchResult> results;
 	SearchProgressSnapshot progress;
+	// What was searched for, so a consumer reading one search's results
+	// does not have to cross-reference GET /search for the string. For a
+	// browse ("View Files") the daemon's name for the search is the peer's
+	// nickname, not a query. Empty only for a slot seeded by discovery
+	// before its name was observed.
+	std::string query;
 	// Monotonic insertion order, used to evict the oldest slots when the map
 	// exceeds its cap (a client that starts many searches without closing them
 	// would otherwise accumulate slots for the whole process lifetime).
 	std::uint64_t seq = 0;
+	// When this slot's results were last pulled from the daemon. The tick
+	// refreshes active searches every second; a FINISHED search is never
+	// polled again, so reads of it refresh on demand instead, coalesced by
+	// this stamp. Default-constructed (epoch) means "never fetched", which
+	// is always stale.
+	std::chrono::steady_clock::time_point last_fetch{};
 };
 
 // `m_amule_log_lines` in CState caches /logs/amule. amule's EC
@@ -1332,17 +1356,18 @@ public:
 
 	std::vector<ServerSnapshot> Servers() const;
 	std::vector<FriendSnapshot> Friends() const;
-	// Results / progress for one search. search_id == 0 resolves to the
-	// current (most-recently-started) search; an unknown id yields an empty
-	// list / idle progress. HasSearch distinguishes "unknown id" (404) from
-	// "known but empty".
+	// Results / progress for one search. Every caller names a concrete
+	// daemon-allocated id — there is no implicit "current search" — and an
+	// unknown id yields an empty list / idle progress. HasSearch
+	// distinguishes "unknown id" (404) from "known but empty".
 	std::vector<SearchResult> Search(std::uint32_t search_id) const;
 	SearchProgressSnapshot SearchProgress(std::uint32_t search_id) const;
-	// True if the resolved search_id names a live slot. Used for the 404 on an
-	// explicit but expired/never-known id.
+	// True if search_id names a live slot. Used for the 404 on an id that
+	// was never started, was freed, or expired.
 	bool HasSearch(std::uint32_t search_id) const;
-	// The no-id default target (0 when no search this session).
-	std::uint32_t CurrentSearchId() const;
+	// What this search was started with; empty for an unknown id, or for a
+	// discovered slot whose name the daemon had not reported yet.
+	std::string SearchQuery(std::uint32_t search_id) const;
 	// Slots the refresher must still poll (progress.active).
 	std::vector<std::uint32_t> ActiveSearchIds() const;
 	// Every live slot id, for the SSE per-search diff.
@@ -1350,7 +1375,20 @@ public:
 	// Find a result carrying this (already-lowercased) hash across ALL open
 	// searches — the hash-keyed comments endpoints are search-agnostic. The
 	// parent owns any fetched Kad notes, so it matches ahead of its children.
-	bool FindSearchResultByHash(const std::string &hash_hex, SearchResult &out) const;
+	// `owner_search_id` reports which slot the hit came from, so the caller
+	// can refresh that slot before reading (see ClaimSearchRefresh).
+	bool FindSearchResultByHash(
+		const std::string &hash_hex, SearchResult &out, std::uint32_t *owner_search_id) const;
+	// Take the right to refresh one search's results from the daemon, for
+	// the read paths that must not serve a frozen snapshot.
+	//
+	// Returns true (and stamps the slot as fetched NOW) only when the slot
+	// exists, is NOT active, and its last fetch is older than `ttl`. Active
+	// slots are excluded because the tick already refreshes them every
+	// second. Stamping before the fetch rather than after is deliberate: it
+	// is what makes this a claim, so two concurrent readers of the same
+	// finished search issue one EC roundtrip between them, not two.
+	bool ClaimSearchRefresh(std::uint32_t search_id, std::chrono::milliseconds ttl);
 
 	// Categories aren't ECID-keyed (they come in via the
 	// preferences packet as an indexed array); keep them as a plain
@@ -1421,29 +1459,25 @@ public:
 	void ClearAmuleLog();
 	void WriteServerInfo(ServerInfoLog s);
 	// Called by POST /search with the daemon-allocated search_id. Creates (or
-	// resets) that search's slot: clears its results, marks it active=true with
-	// the requested `kind`, and makes it the current search. The refresher then
-	// polls EC_OP_SEARCH_RESULTS / _PROGRESS for it each tick, mapping
+	// resets) that search's slot: clears its results and marks it active=true
+	// with the requested `kind` and `query`. The refresher then polls
+	// EC_OP_SEARCH_RESULTS / _PROGRESS for it each tick, mapping
 	// EC_TAG_SEARCH_LIFECYCLE_STATE into `complete` / `active`.
-	void MarkSearchStarted(std::uint32_t search_id, const std::string &kind);
+	void MarkSearchStarted(std::uint32_t search_id, const std::string &kind, const std::string &query);
 	// Seeds a slot for a search this session did NOT start itself -- a
 	// search another client, or the monolithic GUI, started. Called
-	// on-demand from HandleSearchResults on a cache miss, after a one-off
+	// on-demand from the read paths on a cache miss, after a one-off
 	// EC_OP_SEARCH_LIST confirms the core actually holds it (deliberately
 	// NOT a per-tick refresher poll: that would pay an EC roundtrip every
 	// tick, forever, to serve something that happens rarely). Unlike
-	// MarkSearchStarted: does not touch m_current_search_id (a no-id GET
-	// /search/results should keep meaning "the search THIS session
-	// started", not silently jump to whatever was last discovered), and
-	// is idempotent -- a search already known (self-started or previously
-	// discovered) is left untouched rather than having its accumulated
-	// results/progress reset.
-	void MarkSearchDiscovered(std::uint32_t search_id, const std::string &kind);
+	// MarkSearchStarted it is idempotent -- a search already known
+	// (self-started or previously discovered) is left untouched rather than
+	// having its accumulated results/progress reset.
+	void MarkSearchDiscovered(std::uint32_t search_id, const std::string &kind, const std::string &query);
 	// Refresher-side write path for one search's progress snapshot.
 	void WriteSearchProgress(std::uint32_t search_id, SearchProgressSnapshot s);
-	// Drop a search's slot entirely: POST /search/stop with close=true, or the
-	// refresher observing the daemon evicted it (EC_TAG_SEARCH_EXPIRED). If it
-	// was the current search, current falls back to none (0).
+	// Drop a search's slot entirely: DELETE /search/{id}, or the refresher
+	// observing the daemon evicted it (EC_TAG_SEARCH_EXPIRED).
 	void CloseSearch(std::uint32_t search_id);
 	void WriteStatsTree(StatsTreeNode t);
 	void WriteGraphs(StatsGraphs g);
@@ -1498,21 +1532,18 @@ private:
 	// the REST surface by its daemon-allocated search_id. One slot per search
 	// holds that search's results (by result ECID) and its lifecycle progress.
 	std::map<std::uint32_t, SearchSlot> m_searches;
-	// The no-id default target for reads/stop: the most-recently-started
-	// search. 0 when no search has run this session (or the current one was
-	// closed) — reads then resolve to no slot and report an idle envelope.
-	std::uint32_t m_current_search_id = 0;
 	// Ever-increasing sequence stamped on each new slot for oldest-first
 	// eviction. Never wraps in practice (one bump per POST /search).
 	std::uint64_t m_search_seq = 0;
 	// Hard cap on retained slots. Comfortably above the daemon's 20-search
 	// ring so every live search always fits; excess is finished slots a
-	// client never closed, evicted oldest-first in MarkSearchStarted.
+	// client never closed, evicted oldest-first.
 	static constexpr std::size_t kMaxSearchSlots = 64;
 
-	// Resolve a caller-supplied id to a concrete slot key: 0 means "the
-	// current search". MUST be called with m_mu held.
-	std::uint32_t ResolveSearchId(std::uint32_t id) const { return id != 0 ? id : m_current_search_id; }
+	// Trim m_searches back to kMaxSearchSlots, dropping the oldest slot that
+	// is not still being polled. Shared by both slot-creating paths, which
+	// need the identical rule. MUST be called with m_mu held exclusively.
+	void EvictSurplusSearchSlotsLocked();
 };
 
 } // namespace webapi

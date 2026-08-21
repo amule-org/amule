@@ -1399,6 +1399,58 @@ TEST(Refresher, SearchResultGroupingFoldsChildren)
 	ASSERT_EQUALS(std::string("third.mkv"), it->second.children[1].name);
 }
 
+// --- Browse results carry the folder they live in ---------------------
+//
+// EC_TAG_SEARCHFILE_DIRECTORY is attached by the core only to results
+// filed from a peer's shared-file listing, which is what makes it the
+// browse-only "Directories" column. It is per-RESULT, not per-search: two
+// copies of one file in different folders of the same share group under a
+// single parent and each must keep its own folder.
+TEST(Refresher, SearchResultDirectoryDecodesAndRidesEachChild)
+{
+	std::map<std::uint32_t, SearchResult> cache;
+	CECPacket resp(EC_OP_SEARCH_RESULTS);
+
+	CECTag parent(EC_TAG_SEARCHFILE, static_cast<std::uint32_t>(200));
+	parent.AddTag(CECTag(EC_TAG_PARTFILE_NAME, std::string("shared.iso")));
+	parent.AddTag(CECTag(EC_TAG_PARTFILE_SIZE_FULL, static_cast<std::uint64_t>(4096)));
+	parent.AddTag(CECTag(EC_TAG_SEARCHFILE_DIRECTORY, std::string("Incoming/ISOs")));
+	resp.AddTag(parent);
+
+	CECTag child(EC_TAG_SEARCHFILE, static_cast<std::uint32_t>(201));
+	child.AddTag(CECTag(EC_TAG_PARTFILE_NAME, std::string("shared-copy.iso")));
+	child.AddTag(CECTag(EC_TAG_PARTFILE_SIZE_FULL, static_cast<std::uint64_t>(4096)));
+	child.AddTag(CECTag(EC_TAG_SEARCH_PARENT, static_cast<std::uint32_t>(200)));
+	child.AddTag(CECTag(EC_TAG_SEARCHFILE_DIRECTORY, std::string("Backup/ISOs")));
+	resp.AddTag(child);
+
+	ApplySearchFull(&resp, cache);
+
+	const auto it = cache.find(200);
+	ASSERT_TRUE(it != cache.end());
+	ASSERT_EQUALS(std::string("Incoming/ISOs"), it->second.directory);
+	ASSERT_EQUALS(static_cast<size_t>(1), it->second.children.size());
+	// The child keeps ITS folder rather than inheriting the parent's.
+	ASSERT_EQUALS(std::string("Backup/ISOs"), it->second.children[0].directory);
+}
+
+TEST(Refresher, SearchResultDirectoryEmptyOnOrdinaryHit)
+{
+	// A server/Kad hit never carries the tag, and must report an empty
+	// string rather than anything that could read as a real folder.
+	std::map<std::uint32_t, SearchResult> cache;
+	CECPacket resp(EC_OP_SEARCH_RESULTS);
+	CECTag hit(EC_TAG_SEARCHFILE, static_cast<std::uint32_t>(300));
+	hit.AddTag(CECTag(EC_TAG_PARTFILE_NAME, std::string("remote.iso")));
+	resp.AddTag(hit);
+
+	ApplySearchFull(&resp, cache);
+
+	const auto it = cache.find(300);
+	ASSERT_TRUE(it != cache.end());
+	ASSERT_TRUE(it->second.directory.empty());
+}
+
 // --- #359: peer software_version must be locale-independent ----------
 //
 // The daemon formats the version string with gettext, so an unidentified

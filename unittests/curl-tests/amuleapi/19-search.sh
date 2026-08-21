@@ -7,22 +7,24 @@
 #   POST /api/v0/search                                   — EC_OP_SEARCH_START
 #       body: {query, type?, file_type?, extension?,
 #              min_size?, max_size?, min_avail?}
-#   POST /api/v0/search/stop                              — EC_OP_SEARCH_STOP
-#   GET  /api/v0/search/results                            — read accumulated
+#   POST /api/v0/search/{id}/stop                          — EC_OP_SEARCH_STOP
+#   POST /api/v0/search/{id}/more                          — EC_OP_SEARCH_REQUEST_MORE
+#   DELETE /api/v0/search/{id}                             — stop + free
+#   GET  /api/v0/search/{id}/results                       — read accumulated
 #   POST /api/v0/search/results/{hash}/download           — EC_OP_DOWNLOAD_SEARCH_RESULT
 #       body: {category?: uint8} (optional)
 #   GET  /api/v0/search/results/{hash}/comments           — Kad ratings/comments for a result
 #   POST /api/v0/search/results/{hash}/comments           — EC_OP_SHARED_FILE_SEARCH_KAD_NOTES
 #   POST /api/v0/clients/{ecid}/shared_files              — browse a peer ("View Files"), returns a search_id
 #
-# /search/results is no longer a per-GET fetch — POST /search marks
+# /search/{id}/results is no longer a per-GET fetch — POST /search marks
 # the search active in state and the refresher polls amuled every
-# tick while it stays active. GET /search/results reads straight
+# tick while it stays active. GET /search/{id}/results reads straight
 # from that state, so subsequent polls already see the fresh query's
 # growing results without any cache coordination.
 #
 # amuled's SEARCH_START is async: results trickle in from servers /
-# Kad over the next several seconds. Smoke polls /search/results with
+# Kad over the next several seconds. Smoke polls /search/{id}/results with
 # bounded retries (up to ~10 s for a global search to harvest results).
 #
 # Important: this smoke depends on the operator's amuled being
@@ -120,8 +122,8 @@ _curl -X POST -H "Content-Type: application/json" \
 	-d "{\"query\":\"$TEST_QUERY\"}" "$HOST/api/v0/search"
 _assert_status 401 "POST /search (no token) → 401"
 
-_curl -X POST "$HOST/api/v0/search/stop"
-_assert_status 401 "POST /search/stop (no token) → 401"
+_curl -X POST "$HOST/api/v0/search/1/stop"
+_assert_status 401 "POST /search/{id}/stop (no token) → 401"
 
 _curl -X POST "$HOST/api/v0/search/results/baadbaadbaadbaadbaadbaadbaadbaad/download"
 _assert_status 401 "POST /search/results/{hash}/download (no token) → 401"
@@ -162,11 +164,13 @@ _assert_status 400 "POST /search (malformed JSON) → 400"
 # --- 3. POST /search happy + per-search_id addressing. ---------
 #
 # Multi-search: each POST /search gets its own daemon-allocated search_id
-# and its own result slot; a new search does NOT wipe the others. The
-# no-id GET /search/results resolves to the CURRENT (most-recently-started)
-# search, so the polling loop below sees the new query's results fill up.
+# and its own result slot; a new search does NOT wipe the others. Every
+# read/stop/free names its id in the path -- there is no implicit target,
+# which is what the retired-route and bad-id assertions below pin down.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results"
-_assert_status 200 "GET /search/results (baseline before POST) → 200"
+_assert_status 404 "GET /search/results → 404 (retired: id goes in the path)"
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/stop"
+_assert_status 404 "POST /search/stop → 404 (retired: id goes in the path)"
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
@@ -176,8 +180,20 @@ _assert_json_eq '.ok'    true         'POST /search response.ok==true'
 _assert_json_eq '.query' "$TEST_QUERY" 'POST /search echoes query'
 _assert_json_eq '.search_id | type' number 'POST /search returns a numeric search_id'
 FIRST_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id')
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results"
-_assert_json_eq '.search_id' "$FIRST_SID" 'GET /search/results (no id) echoes the current search_id'
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$FIRST_SID/results"
+_assert_json_eq '.search_id' "$FIRST_SID" 'GET /search/{id}/results echoes its search_id'
+_assert_json_eq '.query' "$TEST_QUERY" 'GET /search/{id}/results reports the query it was started with'
+
+# A malformed or zero {id} is rejected outright. Zero used to be the
+# "whichever search ran last" sentinel, so letting it through would
+# quietly resurrect the implicit target these routes removed.
+for bad in 0 abc -1 99999999999; do
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$bad/results"
+	_assert_status 400 "GET /search/$bad/results → 400 (not a usable search id)"
+done
+# A well-formed id nobody holds is a 404, never a fallback.
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/4294967290/results"
+_assert_status 404 "GET /search/{unknown}/results → 404"
 
 # --- 3.1 GET /api/v0/search enumerates the search just started. ---
 # Reachability fix (issue #641): GET /api/v0/search reads live daemon
@@ -240,9 +256,12 @@ if [ -n "$SECOND_TOKEN" ] && [ "$SECOND_TOKEN" != "null" ]; then
 		'second amuleapi instance (never POSTed) still lists the first instance'"'"'s search'
 
 	_curl -H "Authorization: Bearer $SECOND_TOKEN" \
-		"http://$SECOND_HOST/api/v0/search/results?search_id=$FIRST_SID"
-	_assert_status 200 'second amuleapi instance: GET /search/results?search_id=<foreign id> → 200 (not 404)'
-	_assert_json_eq '.search_id' "$FIRST_SID" 'second amuleapi instance /search/results echoes the discovered search_id'
+		"http://$SECOND_HOST/api/v0/search/$FIRST_SID/results"
+	_assert_status 200 'second amuleapi instance: GET /search/{foreign id}/results → 200 (not 404)'
+	_assert_json_eq '.search_id' "$FIRST_SID" 'second amuleapi instance echoes the discovered search_id'
+	# The adopted slot also learns the query from the SEARCH_LIST entry,
+	# so a client that discovered an id can label it without guessing.
+	_assert_json_eq '.query' "$TEST_QUERY" 'second amuleapi instance reports the discovered query'
 else
 	_fail "second amuleapi instance: admin login" "could not obtain a token; log: $(tail -c 300 "$SECOND_LOG")"
 fi
@@ -254,19 +273,19 @@ rm -rf "$SECOND_CONFIG_DIR" "$SECOND_LOG"
 # --- 3.5 Regression: progress shouldn't claim finished right after POST. -
 # amuled briefly reports raw=100 in the "queue-empty-at-start" window
 # before the global-search timer populates m_serverQueue; if amuleapi
-# trusted that raw value naively, GET /search/results right after POST
+# trusted that raw value naively, GET /search/{id}/results right after POST
 # would (incorrectly) say {progress:{percent:100, state:"finished"}}
 # with results=[]. The refresher's state machine masks that window —
 # this asserts the mask is in force.
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results"
-_assert_status 200 "GET /search/results immediately after POST → 200"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$FIRST_SID/results"
+_assert_status 200 "GET /search/{id}/results immediately after POST → 200"
 _assert_json_eq '.progress.state' running 'progress.state is "running" after POST /search'
 _assert_json_eq '.progress.kind | type' string 'progress.kind is a string'
 
-# --- 4. Poll /search/results until we get hits (max ~10 s). -------
+# --- 4. Poll /search/{id}/results until we get hits (max ~10 s). --
 RESULT_HASH=""
 for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50; do
-	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results"
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$FIRST_SID/results"
 	N=$(printf '%s' "$CURL_BODY" | jq '.results | length')
 	if [ "$N" -gt 0 ]; then
 		RESULT_HASH=$(printf '%s' "$CURL_BODY" | jq -r '.results[0].hash')
@@ -279,29 +298,43 @@ if [ -n "$RESULT_HASH" ]; then
 	_pass "Search returned >0 results within 10 s ($N entries; sample hash $RESULT_HASH)"
 
 	# Per-result shape sanity.
-	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results"
-	_assert_json_eq '.results[0].hash | length' 32     '/search/results[0].hash is 32-char hex'
-	_assert_json_eq '.results[0].name | type'   string '/search/results[0].name is string'
-	_assert_json_eq '.results[0].size | type'   number '/search/results[0].size is numeric'
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$FIRST_SID/results"
+	_assert_json_eq '.results[0].hash | length' 32     '/search/{id}/results[0].hash is 32-char hex'
+	_assert_json_eq '.results[0].name | type'   string '/search/{id}/results[0].name is string'
+	_assert_json_eq '.results[0].size | type'   number '/search/{id}/results[0].size is numeric'
+	# Browse-only folder. Always present, empty on a server/Kad hit.
+	_assert_json_eq '.results[0].directory | type' string \
+		'/search/{id}/results[0].directory is a string'
+	_assert_json_eq '.results[0].directory' "" \
+		'directory is empty on an ordinary (non-browse) hit'
 	# Download status + file type (issue #429).
 	_assert_json_eq '[.results[0].status] | inside(["new","downloaded","queued","canceled","queued_canceled"])' \
 		true '/search/results[0].status is a known enum value'
-	_assert_json_eq '.results[0].type | type'   string '/search/results[0].type is string'
+	_assert_json_eq '.results[0].type | type'   string '/search/{id}/results[0].type is string'
 	# Media metadata (issue #430): an object when the hit is locally
 	# known/probed, absent otherwise — both are valid.
 	_assert_json_eq '.results[0].media | type | test("^(object|null)$")' \
-		true '/search/results[0].media is an object or absent'
+		true '/search/{id}/results[0].media is an object or absent'
 	# Result grouping (issue #431): every result carries a children[]
 	# array (empty when the hit was seen under a single name). No result
 	# is itself a child (children are folded into their parent), and each
 	# child object has ecid + name + hash + sources.
-	_assert_json_eq '.results[0].children | type' array '/search/results[0].children is an array'
+	_assert_json_eq '.results[0].children | type' array '/search/{id}/results[0].children is an array'
 	_assert_json_eq '[.results[].children[]?] | all(has("ecid") and has("name") and has("hash") and has("sources"))' \
 		true 'every child has ecid/name/hash/sources'
 	_assert_json_eq '[.results[].children[]?.hash | length] | all(. == 32)' \
 		true 'every child hash is 32-char hex (shared with its parent)'
+	_assert_json_eq '[.results[].children[]?] | all(has("directory"))' \
+		true 'every child carries its own directory (per-result, not per-search)'
 
-	# progress envelope. `progress` exists on every GET /search/results
+	# sort=directory is accepted (browse listings are read folder by
+	# folder); on a non-browse search every value is "" so the order is
+	# simply unchanged, which is the point -- it must not 400.
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+		"$HOST/api/v0/search/$FIRST_SID/results?sort=directory&order=asc"
+	_assert_status 200 "GET /search/{id}/results?sort=directory → 200"
+
+	# progress envelope. `progress` exists on every GET /search/{id}/results
 	# response (even before any POST /search). `state` is canonical
 	# (running | finished | idle) and replaces the old complete/active
 	# booleans. Once we have results, state is "running" (still polling)
@@ -317,11 +350,54 @@ else
 	echo "    info: skipping /search/results/{hash}/download path (no hash to target)"
 fi
 
-# --- 5. POST /search/stop. ----------------------------------------
+# --- 4.5 POST /search/{id}/more — Kad-only, running-only. ---------
+#
+# The global search above is the wrong kind, which is exactly the case the
+# desktop greys the button out for; forwarding it would make amuled turn a
+# user's request into a silent no-op under a 202.
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$FIRST_SID/more"
+_assert_status 400 "POST /search/{id}/more on a global search → 400 (Kad-only)"
+_assert_json_eq '.error.code' bad_request 'more on a non-Kad search reports bad_request'
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/4294967290/more"
+_assert_status 404 "POST /search/{unknown}/more → 404"
+
+# A running Kad search is the supported target. Kad may be down on the test
+# daemon, in which case the start itself fails -- skip rather than fail, like
+# the other Kad-dependent assertions in this suite.
+#
+# Distinct keyword on purpose: amuled refuses a second Kad search for a
+# keyword already on its search list ("Search keyword is already on search
+# list"), and the ramp section below runs its own Kad search on $TEST_QUERY.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/search/stop"
-_assert_status 200 "POST /search/stop → 200"
-_assert_json_eq '.ok' true 'search/stop response.ok==true'
+	-H "Content-Type: application/json" \
+	-d "{\"query\":\"${TEST_QUERY}more\",\"type\":\"kad\"}" "$HOST/api/v0/search"
+if [ "$CURL_STATUS" = "202" ]; then
+	KAD_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id')
+	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$KAD_SID/more"
+	_assert_status 202 "POST /search/{id}/more on a running Kad search → 202"
+	_assert_json_eq '.ok' true 'more response.ok==true'
+	if [ "$HAVE_GUEST" = "1" ]; then
+		_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" \
+			"$HOST/api/v0/search/$KAD_SID/more"
+		_assert_status 403 "POST /search/{id}/more (guest) → 403"
+	fi
+	curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
+		"$HOST/api/v0/search/$KAD_SID" > /dev/null
+else
+	echo "    info: Kad search would not start (Kad down?) — skipping /more happy path"
+fi
+
+# --- 5. POST /search/{id}/stop. -----------------------------------
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	"$HOST/api/v0/search/$FIRST_SID/stop"
+_assert_status 200 "POST /search/{id}/stop → 200"
+_assert_json_eq '.ok' true 'search stop response.ok==true'
+# Stop keeps the results readable — that is what distinguishes it from
+# DELETE, and a consumer viewing the search must not lose its rows.
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$FIRST_SID/results"
+_assert_status 200 "GET /search/{id}/results after stop → 200 (results survive a stop)"
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/4294967290/stop"
+_assert_status 404 "POST /search/{unknown}/stop → 404"
 
 # --- 6. POST /search/results/{hash}/download — happy + cleanup. --
 if [ -n "$RESULT_HASH" ]; then
@@ -385,8 +461,12 @@ fi
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
 _assert_status 405 "PATCH /search → 405"
 
-_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/stop"
-_assert_status 405 "PATCH /search/stop → 405"
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$FIRST_SID/stop"
+_assert_status 405 "PATCH /search/{id}/stop → 405"
+_curl -X GET -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$FIRST_SID"
+_assert_status 405 "GET /search/{id} → 405 (DELETE only)"
+_curl -X GET -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$FIRST_SID/bogus"
+_assert_status 404 "GET /search/{id}/{unknown-action} → 404"
 
 # --- 9. Kad search progress ramp. ---------------------------------
 # Kad has no measurable progress, so amuled synthesises a cosmetic
@@ -401,10 +481,11 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"query\":\"$TEST_QUERY\",\"type\":\"kad\"}" "$HOST/api/v0/search"
 _assert_status 202 "POST /search type=kad → 202"
+RAMP_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id')
 
 KAD_STATES=""; KAD_PCTS=""; SAW_RUNNING_KAD=0
 for _ in 1 2 3 4 5 6; do
-	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results"
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$RAMP_SID/results"
 	ST=$(printf '%s' "$CURL_BODY" | jq -r '.progress.state')
 	KD=$(printf '%s' "$CURL_BODY" | jq -r '.progress.kind')
 	PC=$(printf '%s' "$CURL_BODY" | jq -r '.progress.percent')
@@ -454,7 +535,7 @@ else
 	fi
 fi
 
-curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/stop" > /dev/null 2>&1
+curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$RAMP_SID" > /dev/null 2>&1
 
 # --- 10. Search-result Kad comments/ratings (issue #434). ---------
 # GET/POST /search/results/{hash}/comments mirror the download-comments
@@ -501,9 +582,10 @@ _assert_status 405 "PATCH search comments → 405"
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"query\":\"$TEST_QUERY\",\"type\":\"global\"}" "$HOST/api/v0/search"
+CMT_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id // empty')
 CMT_HASH=""
 for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
-	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results"
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$CMT_SID/results"
 	N=$(printf '%s' "$CURL_BODY" | jq '.results | length')
 	if [ "$N" -gt 0 ]; then
 		CMT_HASH=$(printf '%s' "$CURL_BODY" | jq -r '.results[0].hash')
@@ -515,9 +597,9 @@ done
 if [ -n "$CMT_HASH" ]; then
 	# Every result carries the comment fields on the list itself.
 	_assert_json_eq '.results[0].kad_comment_search_running | type' boolean \
-		'/search/results[0].kad_comment_search_running is boolean (issue #434)'
+		'/search/{id}/results[0].kad_comment_search_running is boolean (issue #434)'
 	_assert_json_eq '.results[0].comments | type' array \
-		'/search/results[0].comments is an array'
+		'/search/{id}/results[0].comments is an array'
 
 	# Trigger an on-demand Kad notes lookup for the result.
 	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -534,7 +616,46 @@ if [ -n "$CMT_HASH" ]; then
 		'search comments carries kad_comment_search_running flag'
 	_assert_json_eq '.comments | type' array 'search comments.comments is an array'
 
-	curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/stop" > /dev/null 2>&1
+	# The lookup's outcome only reaches amuleapi through the owning
+	# search's result fetch. Stop the search first, then keep polling:
+	# on a FINISHED search this exercises the refresh-on-read path, which
+	# is the only thing that can flip the flag back off. Skipped as
+	# inconclusive when Kad is down -- the flag then never turns on.
+	curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+		"$HOST/api/v0/search/$CMT_SID/stop" > /dev/null 2>&1
+	sleep 1
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$CMT_SID/results"
+	_assert_status 200 "GET /search/{id}/results on a finished search → 200 (refreshed on read)"
+	# A Kad NOTES lookup runs for ~45 s (SEARCHKEYWORD_LIFETIME), so poll
+	# past that. Either outcome proves the point: the flag clearing, or a
+	# note arriving. Both can only reach us through the owning search's
+	# result fetch, and this search is FINISHED -- the tick never polls it,
+	# so a frozen slot would show neither, forever.
+	SAW_FLAG=0
+	REPORTED=0
+	for _ in $(seq 1 30); do
+		_curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+			"$HOST/api/v0/search/results/$CMT_HASH/comments"
+		RUNNING=$(printf '%s' "$CURL_BODY" | jq -r '.kad_comment_search_running')
+		NOTES=$(printf '%s' "$CURL_BODY" | jq -r '.count')
+		[ "$RUNNING" = "true" ] && SAW_FLAG=1
+		if [ "$SAW_FLAG" = "1" ] && { [ "$RUNNING" = "false" ] || [ "$NOTES" -gt 0 ] 2>/dev/null; }; then
+			REPORTED=1
+			break
+		fi
+		sleep 2
+	done
+	if [ "$SAW_FLAG" = "0" ]; then
+		echo "    info: kad_comment_search_running never turned on — Kad likely down;"
+		echo "    info: skipping the finished-search comments reporting assertion."
+	elif [ "$REPORTED" = "1" ]; then
+		_pass "kad notes lookup on a FINISHED search reports back (running=$RUNNING notes=$NOTES)"
+	else
+		_fail "kad notes on a finished search" \
+			"flag turned on but nothing ever reported back (running=$RUNNING notes=$NOTES)"
+	fi
+	curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
+		"$HOST/api/v0/search/$CMT_SID" > /dev/null 2>&1
 else
 	echo "    info: 0 results — skipping search-comments happy path (daemon not connected)"
 fi
@@ -543,8 +664,8 @@ fi
 # amuleapi runs several searches at once, each with its own daemon-
 # allocated search_id and its own result slot. Start an ed2k (global)
 # AND a Kad search back-to-back and verify they coexist: distinct ids,
-# per-id results, no-id => current, unknown id => 404, and stop+close
-# frees one while the sibling survives.
+# per-id results, unknown id => 404, and DELETE frees one while the
+# sibling survives.
 #
 # Regression guard (daemon fix): a Kad search started while an ed2k
 # search is still in-flight must NOT stop/steal the ed2k search — its
@@ -555,9 +676,13 @@ G=$(curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"query\":\"$TEST_QUERY\",\"type\":\"global\"}" "$HOST/api/v0/search")
 SID_G=$(printf '%s' "$G" | jq -r '.search_id')
+# Distinct Kad keyword again: amuled keeps a keyword on its Kademlia
+# search list for the search's lifetime and refuses a second search for
+# the same one, so reusing $TEST_QUERY here would couple this section to
+# how far the earlier Kad sections have wound down.
 K=$(curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d "{\"query\":\"$TEST_QUERY\",\"type\":\"kad\"}" "$HOST/api/v0/search")
+	-d "{\"query\":\"${TEST_QUERY}multi\",\"type\":\"kad\"}" "$HOST/api/v0/search")
 SID_K=$(printf '%s' "$K" | jq -r '.search_id')
 
 if [ -n "$SID_G" ] && [ -n "$SID_K" ] && [ "$SID_G" != "null" ] && [ "$SID_K" != "null" ]; then
@@ -568,29 +693,25 @@ if [ -n "$SID_G" ] && [ -n "$SID_K" ] && [ "$SID_G" != "null" ] && [ "$SID_K" !=
 	fi
 
 	# Per-id progress kind reflects each search's own type.
-	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results?search_id=$SID_G"
-	_assert_status 200 "GET /search/results?search_id=<global> → 200"
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$SID_G/results"
+	_assert_status 200 "GET /search/{global}/results → 200"
 	_assert_json_eq '.search_id'      "$SID_G" 'global search echoes its search_id'
 	_assert_json_eq '.progress.kind'  global   'global search progress.kind==global'
-	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results?search_id=$SID_K"
-	_assert_status 200 "GET /search/results?search_id=<kad> → 200"
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$SID_K/results"
+	_assert_status 200 "GET /search/{kad}/results → 200"
 	_assert_json_eq '.search_id'      "$SID_K" 'kad search echoes its search_id'
 	_assert_json_eq '.progress.kind'  kad      'kad search progress.kind==kad'
 
-	# no-id resolves to the current (most-recently-started == the Kad) search.
-	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results"
-	_assert_json_eq '.search_id' "$SID_K" 'no-id GET resolves to the current (latest) search'
-
 	# Unknown / never-started id → 404 (distinct from known-but-empty).
-	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results?search_id=4293000111"
-	_assert_status 404 "GET /search/results?search_id=<unknown> → 404"
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/4293000111/results"
+	_assert_status 404 "GET /search/{unknown}/results → 404"
 
 	# Regression: the in-flight global search still harvests despite the
 	# concurrent Kad search. Poll briefly; skip the assertion (don't fail)
 	# if the daemon simply has no ed2k hits for the query.
 	GN=0
 	for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
-		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results?search_id=$SID_G"
+		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$SID_G/results"
 		GN=$(printf '%s' "$CURL_BODY" | jq '.results | length')
 		[ "$GN" -gt 0 ] && break
 		sleep 0.25
@@ -601,26 +722,22 @@ if [ -n "$SID_G" ] && [ -n "$SID_K" ] && [ "$SID_G" != "null" ] && [ "$SID_K" !=
 		echo "    info: global search returned 0 alongside Kad — daemon may lack ed2k hits for '$TEST_QUERY'"
 	fi
 
-	# stop + close the global search: its slot is freed (404), the Kad
-	# search is untouched (still 200).
-	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-		-H "Content-Type: application/json" \
-		-d "{\"search_id\":$SID_G,\"close\":true}" "$HOST/api/v0/search/stop"
-	_assert_status 200 "POST /search/stop {search_id:<global>, close:true} → 200"
-	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results?search_id=$SID_G"
-	_assert_status 404 "GET closed global search → 404"
-	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results?search_id=$SID_K"
-	_assert_status 200 "sibling Kad search survives the close → 200"
+	# DELETE the global search: its slot is freed (404), the Kad search
+	# is untouched (still 200). Freeing one from one tab must never take
+	# a sibling with it.
+	_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$SID_G"
+	_assert_status 204 "DELETE /search/{global} → 204"
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$SID_G/results"
+	_assert_status 404 "GET freed global search → 404"
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$SID_K/results"
+	_assert_status 200 "sibling Kad search survives the DELETE → 200"
 
-	# stop with an explicit unknown id → 404.
-	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-		-H "Content-Type: application/json" \
-		-d '{"search_id":4293000111}' "$HOST/api/v0/search/stop"
-	_assert_status 404 "POST /search/stop {search_id:<unknown>} → 404"
+	# DELETE with an id nobody holds → 404.
+	_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/4293000111"
+	_assert_status 404 "DELETE /search/{unknown} → 404"
 
-	curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-		-H "Content-Type: application/json" \
-		-d "{\"search_id\":$SID_K,\"close\":true}" "$HOST/api/v0/search/stop" >/dev/null 2>&1
+	curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
+		"$HOST/api/v0/search/$SID_K" >/dev/null 2>&1
 else
 	_fail "Multi-search setup" "POST /search did not return search_ids (G=$SID_G K=$SID_K)"
 fi
@@ -638,9 +755,9 @@ fi
 # cache -- so a search still listed here is still held by the core,
 # whatever any one client's local view says.
 #
-# POST /search/stop {close:true} sends exactly the EC request amulegui's
-# tab close sends (EC_OP_SEARCH_STOP + EC_TAG_SEARCH_CLOSE), so this
-# exercises the same daemon-side path from a scriptable client.
+# DELETE /search/{id} sends exactly the EC request amulegui's tab close
+# sends (EC_OP_SEARCH_STOP + EC_TAG_SEARCH_CLOSE), so this exercises the
+# same daemon-side path from a scriptable client.
 CLOSE_RES=$(curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"query\":\"$TEST_QUERY\",\"type\":\"global\"}" "$HOST/api/v0/search")
@@ -657,16 +774,14 @@ if [ -n "$SID_CLOSE" ] && [ "$SID_CLOSE" != "null" ]; then
 	# the contrapositive that proves the removal below is close's doing
 	# and not a side effect of stopping.
 	curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-		-H "Content-Type: application/json" \
-		-d "{\"search_id\":$SID_CLOSE}" "$HOST/api/v0/search/stop" >/dev/null 2>&1
+		"$HOST/api/v0/search/$SID_CLOSE/stop" >/dev/null 2>&1
 	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
 	_assert_json_eq "[.searches[] | select(.search_id == $SID_CLOSE)] | length" 1 \
-		'close: a plain stop (no close) leaves the search on the daemon'
+		'close: a plain stop leaves the search on the daemon'
 
-	# Now close it, and assert it is GONE from the daemon's own list.
-	curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-		-H "Content-Type: application/json" \
-		-d "{\"search_id\":$SID_CLOSE,\"close\":true}" "$HOST/api/v0/search/stop" >/dev/null 2>&1
+	# Now free it, and assert it is GONE from the daemon's own list.
+	curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
+		"$HOST/api/v0/search/$SID_CLOSE" >/dev/null 2>&1
 	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
 	_assert_status 200 'close: GET /search after close → 200'
 	_assert_json_eq "[.searches[] | select(.search_id == $SID_CLOSE)] | length" 0 \
@@ -709,8 +824,8 @@ if [ -n "$SID_CLOSE" ] && [ "$SID_CLOSE" != "null" ]; then
 	# Its results are unaddressable afterwards, too -- the bucket is freed,
 	# not merely hidden from the listing.
 	_curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-		"$HOST/api/v0/search/results?search_id=$SID_CLOSE"
-	_assert_status 404 'close: GET /search/results for the closed id → 404'
+		"$HOST/api/v0/search/$SID_CLOSE/results"
+	_assert_status 404 'close: GET /search/{id}/results for the freed id → 404'
 else
 	_fail "close setup" "POST /search did not return a search_id ($CLOSE_RES)"
 fi
@@ -718,11 +833,12 @@ fi
 # --- 12.1 A foreign search must be stoppable, not just visible. ----
 # Found by driving two clients against one daemon and using the other as
 # an oracle: GET /api/v0/search enumerates live core state, so it lists
-# searches this session never started -- but POST /search/stop gated on
-# the local m_state cache alone and answered 404 for exactly those. You
-# could see a search you could not close. Same contradiction previously
-# fixed for /search/results; the shared DiscoverSearchIfHeldByCore helper
-# is what stops it recurring a third time (got3nks, PR #680 review).
+# searches this session never started -- but the stop path gated on the
+# local m_state cache alone and answered 404 for exactly those. You could
+# see a search you could not close. Same contradiction previously fixed
+# for the results read; every search-scoped handler now resolves its id
+# through one RequireSearch helper, which is what stops it recurring a
+# third time (got3nks, PR #680 review).
 #
 # Stage a genuinely foreign search: a second amuleapi instance starts it,
 # so the primary at $HOST has never seen the id in its own cache.
@@ -761,11 +877,10 @@ if [ -n "$FOREIGN_TOKEN" ] && [ "$FOREIGN_TOKEN" != "null" ]; then
 		_assert_json_eq "[.searches[] | select(.search_id == $SID_FOREIGN)] | length" 1 \
 			'foreign stop: primary session lists the foreign search'
 
-		# ...and can also CLOSE it. This is the assertion that was 404ing.
-		_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-			-H "Content-Type: application/json" \
-			-d "{\"search_id\":$SID_FOREIGN,\"close\":true}" "$HOST/api/v0/search/stop"
-		_assert_status 200 'foreign stop: closing a foreign search → 200 (not 404)'
+		# ...and can also FREE it. This is the assertion that was 404ing.
+		_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
+			"$HOST/api/v0/search/$SID_FOREIGN"
+		_assert_status 204 'foreign stop: freeing a foreign search → 204 (not 404)'
 
 		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
 		_assert_json_eq "[.searches[] | select(.search_id == $SID_FOREIGN)] | length" 0 \
@@ -813,9 +928,8 @@ if [ -n "$SID_AFTER" ] && [ "$SID_AFTER" != "null" ] && [ "$SID_AFTER" != "0" ];
 	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
 	_assert_json_eq "[.searches[] | select(.search_id == $SID_AFTER)] | length" 1 \
 		'failed start: the subsequent search is discoverable'
-	curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-		-H "Content-Type: application/json" \
-		-d "{\"search_id\":$SID_AFTER,\"close\":true}" "$HOST/api/v0/search/stop" >/dev/null 2>&1
+	curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
+		"$HOST/api/v0/search/$SID_AFTER" >/dev/null 2>&1
 else
 	_fail "failed start: subsequent search" "POST /search returned no id ($AFTER_BAD)"
 fi
@@ -848,6 +962,72 @@ _assert_status 404 "POST /clients/{ecid}/shared_files (unknown ecid) → 404"
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/clients/$BROWSE_UNKNOWN_ECID/shared_files"
 _assert_status 405 "GET /clients/{ecid}/shared_files (wrong method) → 405"
+
+# Happy path when a peer happens to be connected: a browse is addressed
+# like any other search, reports kind "browse" with the peer's
+# client_ecid, and its files carry the folder they live in inside the
+# peer's share. Skipped (not failed) with no peer connected, like the
+# other peer-dependent assertions in this suite.
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/clients"
+PEER_ECID=$(printf '%s' "$CURL_BODY" | jq -r '.clients[0].ecid // empty')
+if [ -n "$PEER_ECID" ]; then
+	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+		"$HOST/api/v0/clients/$PEER_ECID/shared_files"
+	if [ "$CURL_STATUS" = "202" ]; then
+		BROWSE_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id')
+		_pass "POST /clients/{ecid}/shared_files (live peer) → 202 (search_id $BROWSE_SID)"
+
+		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
+		_assert_json_eq "[.searches[] | select(.search_id == $BROWSE_SID)][0].kind" browse \
+			'GET /search reports the browse with kind=browse'
+		_assert_json_eq "[.searches[] | select(.search_id == $BROWSE_SID)][0].client_ecid" \
+			"$PEER_ECID" 'GET /search reports the browsed peer as client_ecid'
+
+		# Give the peer a moment to answer, then check the browse-only
+		# folder field. An unreachable/denying peer returns nothing, which
+		# is not a failure of this contract.
+		sleep 3
+		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$BROWSE_SID/results"
+		_assert_status 200 "GET /search/{browse id}/results → 200"
+		BN=$(printf '%s' "$CURL_BODY" | jq '.results | length')
+		if [ "$BN" -gt 0 ]; then
+			_assert_json_eq '[.results[] | has("directory")] | all' true \
+				'every browse result carries a directory'
+			_assert_json_eq '.results[0].directory | type' string \
+				'browse directory is a string'
+		else
+			echo "    info: peer returned no files — skipping the directory assertions"
+		fi
+		_curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+			"$HOST/api/v0/search/$BROWSE_SID/results?sort=directory"
+		_assert_status 200 "GET /search/{browse id}/results?sort=directory → 200"
+		curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
+			"$HOST/api/v0/search/$BROWSE_SID" >/dev/null 2>&1
+	else
+		echo "    info: browse of peer $PEER_ECID returned $CURL_STATUS — skipping browse happy path"
+	fi
+else
+	echo "    info: no connected peer — skipping the browse happy path"
+fi
+
+# --- Related-files search (docs contract). -------------------------
+# There is no endpoint: the desktop composes a magic keyword and starts an
+# ordinary LOCAL search, so a REST client does the same. Assert the shape
+# is accepted, which is the part that is deterministic; whether the
+# connected server answers depends on its related_search capability flag.
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"query":"related::baadbaadbaadbaadbaadbaadbaadbaad","type":"local"}' \
+	"$HOST/api/v0/search"
+_assert_status 202 'POST /search with a related:: query → 202 (no dedicated endpoint needed)'
+REL_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id // empty')
+[ -n "$REL_SID" ] && curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
+	"$HOST/api/v0/search/$REL_SID" >/dev/null 2>&1
+# The capability a client should check before reading "no hits" as
+# "nothing related": the connected server advertises it in its flags.
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/servers"
+_assert_json_eq '[.servers[]? | .tcp_flags | has("related_search")] | all' true \
+	'every server advertises its related_search capability in tcp_flags'
 
 # --- Summary. -----------------------------------------------------
 echo

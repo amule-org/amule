@@ -252,9 +252,13 @@ else
 		"expected 202, got $CURL_STATUS"
 fi
 
-# Stop the search to leave the daemon clean.
-curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/search/stop" > /dev/null
+# Free the search to leave the daemon clean. The id comes from the start
+# reply -- there is no unaddressed stop to fall back on.
+SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id // empty')
+if [ -n "$SID" ]; then
+	curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
+		"$HOST/api/v0/search/$SID" > /dev/null
+fi
 
 # --- 11. Error responses (4xx/5xx) don't get ETag stamped. -------
 #
