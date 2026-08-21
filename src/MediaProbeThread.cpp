@@ -98,6 +98,16 @@ void *CMediaProbeThread::Entry()
 			workList.swap(m_jobList);
 		}
 
+		// A batch of one is a genuine single-file event -- a file just dropped
+		// into a shared directory -- and keeps its per-file lines. Anything
+		// larger is a share scan draining, where one line per file (and a
+		// second per failure) would make the log scale with the size of the
+		// media library. Those report one summary below instead, matching how
+		// the bulk share walk summarises its discoveries.
+		const bool bulk = (workList.size() > 1);
+		unsigned probed = 0;
+		unsigned failed = 0;
+
 		for (const MediaProbeJob &job : workList) {
 			// Shut down promptly rather than draining a long backlog.
 			if (!m_bRun) {
@@ -114,7 +124,8 @@ void *CMediaProbeThread::Entry()
 				continue;
 			}
 			MediaInfo info;
-			if (MediaProbe::Probe(exe, job.path, info, kProbeTimeoutMs, m_bRun)) {
+			++probed;
+			if (MediaProbe::Probe(exe, job.path, info, kProbeTimeoutMs, m_bRun, bulk)) {
 				// Marshal the result to the main thread, which
 				// resolves the hash to the CKnownFile and attaches
 				// the FT_MEDIA_* tags (doing that here would race the
@@ -122,6 +133,28 @@ void *CMediaProbeThread::Entry()
 				CMediaProbeEvent evt(
 					job.hash, info.length_seconds, info.bitrate_kbps, info.codec);
 				wxQueueEvent(wxTheApp, evt.Clone());
+			} else {
+				++failed;
+			}
+		}
+
+		// One line for the whole drain. Only in bulk mode -- a single-file
+		// batch already said its piece per file, and saying it twice would be
+		// noise. Failures are named in the summary rather than hidden: the
+		// point of reporting them at all is that a misconfigured ffprobe must
+		// not look like success.
+		if (bulk && probed > 0) {
+			if (failed > 0) {
+				AddLogLineN(
+					CFormat(wxPLURAL("Extracted media metadata from %u file (%u failed)",
+						"Extracted media metadata from %u files (%u failed)",
+						probed)) %
+					probed % failed);
+			} else {
+				AddLogLineN(CFormat(wxPLURAL("Extracted media metadata from %u file",
+						    "Extracted media metadata from %u files",
+						    probed)) %
+					    probed);
 			}
 		}
 	}

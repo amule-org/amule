@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-21 22:27+0200\n"
+"POT-Creation-Date: 2026-08-22 00:01+0200\n"
 "PO-Revision-Date: 2026-08-21 19:04+0000\n"
 "Last-Translator: minterior <minterior@gmail.com>\n"
 "Language-Team: Català\n"
@@ -3206,6 +3206,20 @@ msgstr ""
 #, c-format
 msgid "Media metadata: ffprobe failed (code %d) for %s"
 msgstr ""
+
+#: src/MediaProbeThread.cpp
+#, c-format
+msgid "Extracted media metadata from %u file (%u failed)"
+msgid_plural "Extracted media metadata from %u files (%u failed)"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/MediaProbeThread.cpp
+#, c-format
+msgid "Extracted media metadata from %u file"
+msgid_plural "Extracted media metadata from %u files"
+msgstr[0] ""
+msgstr[1] ""
 
 #: src/MuleNotebook.cpp src/muuli_wdr.cpp
 msgid "Close"

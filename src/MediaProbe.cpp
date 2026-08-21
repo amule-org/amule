@@ -456,7 +456,8 @@ bool Probe(const wxString &ffprobePath,
 	const CPath &file,
 	MediaInfo &out,
 	unsigned timeoutMs,
-	const std::atomic<bool> &keepRunning)
+	const std::atomic<bool> &keepRunning,
+	bool bulk)
 {
 	if (ffprobePath.IsEmpty()) {
 		return false;
@@ -500,7 +501,9 @@ bool Probe(const wxString &ffprobePath,
 	// (issue #968). Emitted here, immediately before the spawn, so it fires
 	// once per actual ffprobe execution rather than once per queued job; the
 	// queue-time trace in SharedFileList stays at debug level.
-	AddLogLineN(CFormat(_("Extracting media metadata with ffprobe: %s")) % file.GetPrintable());
+	if (!bulk) {
+		AddLogLineN(CFormat(_("Extracting media metadata with ffprobe: %s")) % file.GetPrintable());
+	}
 
 	// Bounded + killable: this runs on the dedicated CMediaProbeThread, so a
 	// slow/hung ffprobe can only ever delay other probes — never completions.
@@ -515,13 +518,17 @@ bool Probe(const wxString &ffprobePath,
 	// nothing, no error whatsoever. Whether the binary actually works is one of
 	// the questions these lines exist to answer.
 	if (rc == kKilled) {
-		AddLogLineN(CFormat(_("Media metadata: ffprobe timed out or was cancelled for %s")) %
-			    file.GetPrintable());
+		if (!bulk) {
+			AddLogLineN(CFormat(_("Media metadata: ffprobe timed out or was cancelled for %s")) %
+				    file.GetPrintable());
+		}
 		return false;
 	}
 	if (rc != 0) {
-		AddLogLineN(CFormat(_("Media metadata: ffprobe failed (code %d) for %s")) % rc %
-			    file.GetPrintable());
+		if (!bulk) {
+			AddLogLineN(CFormat(_("Media metadata: ffprobe failed (code %d) for %s")) % rc %
+				    file.GetPrintable());
+		}
 		return false;
 	}
 
