@@ -1017,7 +1017,24 @@ struct StatusSnapshot
 	// (NAT'd, can't accept incoming). adds NAT-T affordances
 	// that change this calculus; until then the field maps 1:1 to the
 	// EC CONNSTATE bit.
-	bool ed2k_lowid = false;
+	// True when our eD2k id is a HighID (>= HIGHEST_LOWID_ED2K_KAD). False
+	// for a LowID *and* whenever we are not connected at all -- there is no
+	// id then, so gate on ed2k_state == "connected" before reading this as
+	// a firewall verdict. Positive sense so it matches the peer-side
+	// high_id on /clients/{ecid}, and so the disconnected case does not
+	// read as an alarming "low id".
+	bool ed2k_high_id = false;
+
+	// Our eD2k id as assigned by the connected server. 0 when not
+	// connected; the 0xffffffff "connect in flight" sentinel is normalized
+	// to 0 rather than surfaced.
+	std::uint32_t ed2k_id = 0;
+
+	// Our public IPv4 in dotted-quad form, derived from ed2k_id when that
+	// is a HighID -- a HighID *is* the address. Empty for a LowID or while
+	// disconnected, where no address exists. Formatted here rather than in
+	// the handler, matching every other address in these snapshots.
+	std::string ed2k_public_ip;
 	// True when Kad is running but firewalled.
 	bool kad_firewalled = false;
 
@@ -1033,9 +1050,29 @@ struct StatusSnapshot
 	std::uint64_t download_bps = 0;
 	std::uint64_t upload_bps = 0;
 
+	// Protocol/control-traffic overhead, bytes/second. ADDITIVE to the two
+	// rates above rather than a subset of them -- amuled keeps them as
+	// separate counters and the desktop renders them as a second figure in
+	// parentheses. 0 when the daemon reports nothing.
+	std::uint64_t download_overhead_bps = 0;
+	std::uint64_t upload_overhead_bps = 0;
+
 	// Aggregate counts pulled by the same EC_OP_STATS round-trip.
 	std::uint32_t ul_queue_len = 0;
 	std::uint32_t total_src_count = 0;
+
+	// Free bytes on the filesystems holding the part files and the finished
+	// downloads. SIGNED, with -1 meaning "the daemon has no figure" -- the
+	// state before CFreeSpaceThread publishes its first sample, and the
+	// permanent state of a directory it cannot stat.
+	//
+	// amuled's FREE_SPACE_UNKNOWN is -1 and the EC serializer casts it
+	// straight to uint64, so the wire carries 0xFFFFFFFFFFFFFFFF. Storing
+	// that unsigned and emitting it would report 17 exabytes free -- the
+	// exact opposite of the truth -- so it is read back as a signed -1 and
+	// serialised as JSON null.
+	std::int64_t temp_free_bytes = -1;
+	std::int64_t incoming_free_bytes = -1;
 
 	// ed2k network-wide totals (all connected servers). Surfaced in
 	// /status as ed2k.network.{users,files} — symmetric with

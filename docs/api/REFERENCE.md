@@ -406,7 +406,9 @@ curl -s -H "Authorization: Bearer $TOKEN" http://$HOST/api/v0/status
   "ec_connected": true,
   "ed2k": {
     "state": "connected",
-    "low_id": false,
+    "high_id": true,
+    "id": 3523226697,
+    "public_ip": "210.2.150.73",
     "connected_since": 1751000000,
     "server_name": "eMule Server",
     "server_ip": "203.0.113.5",
@@ -418,14 +420,32 @@ curl -s -H "Authorization: Bearer $TOKEN" http://$HOST/api/v0/status
     "connected_since": 1751000000,
     "network": { "users": 5400000, "files": 1400000000, "nodes": 2400 }
   },
-  "speeds": { "download_bps": 4500000, "upload_bps": 50000 },
-  "queue": { "upload_queue_length": 12, "total_source_count": 1843 }
+  "speeds": {
+    "download_bps": 4500000,
+    "upload_bps": 50000,
+    "download_overhead_bps": 8700,
+    "upload_overhead_bps": 1100
+  },
+  "disk": { "temp_free_bytes": 48318382080, "incoming_free_bytes": 48318382080 },
+  "queue": { "upload_clients_waiting": 12, "download_sources_total": 1843 }
 }
 ```
 
 `ec_connected` is `false` while amuleapi can't reach the underlying amuled. Most other endpoints return `503 ec_unavailable` in that state.
 
 `ed2k.connected_since` / `kad.connected_since` are unix timestamps of the most recent connect, `0` while not connected — gate on `ed2k.state` / `kad.state` rather than trust a `0` timestamp alone.
+
+**Our eD2k identity.** `ed2k.id` is the id the connected server assigned us, and `ed2k.high_id` is `true` when it is a HighID — an id `>= 16777216`, the same threshold the peer-side `high_id` on [`GET /clients/{ecid}`](#get-apiv0clientsecid) uses. A HighID **is** our public IPv4 packed into that integer, which is where `ed2k.public_ip` comes from; a LowID is a small number the server picked for a firewalled client and carries no address, so `public_ip` is `""` there.
+
+While disconnected `id` is `0`, `public_ip` is `""` and `high_id` is `false` — so read `high_id` **together with `state`**: `false` means "LowID" only once `state` is `"connected"`, and means "no id yet" otherwise. The transient `0xffffffff` the daemon sends mid-connect is normalized to `0` and never appears.
+
+**Overhead is additive.** `speeds.download_overhead_bps` / `upload_overhead_bps` are protocol and control traffic, counted **separately** from `download_bps` / `upload_bps` rather than being part of them — the desktop shows them as a second figure in parentheses. Both are `0` when the daemon reports nothing.
+
+**Disk figures may be `null`.** `disk.temp_free_bytes` is free space on the filesystem holding the part files, `disk.incoming_free_bytes` where finished downloads land. Either is `null` when the daemon has no figure — the first seconds after startup, or a directory it cannot stat, such as an unreachable network mount. `null` rather than `0`, because `0` would read as a full disk.
+
+The two are **equal whenever Temp and Incoming share a filesystem**, which is the default layout — that is correct, not a bug. `incoming_free_bytes` describes the **default category's** incoming directory; a category pointed at another filesystem is not covered, because the daemon publishes no per-category figure.
+
+To reproduce the desktop's low-space warning, compare `temp_free_bytes` against the bytes still to write across the queue (`size - size_done` summed over [`GET /downloads`](#get-apiv0downloads)), or against the `files.min_free_space_mb` preference when `files.stop_on_low_disk_space` is on. Note that preference is in **MiB** while these fields are bytes.
 
 **Errors:** `503 ec_unavailable` if amuleapi hasn't received its first EC snapshot yet.
 
@@ -1099,7 +1119,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 }
 ```
 
-The detail fields mirror the desktop "Client Details" modal. `user_id_hybrid` is the peer's hybrid eD2k id; `high_id` is `true` for a HighID peer (id ≥ `0x1000000`) and `false` for LowID. `server_ip` / `server_port` / `server_name` describe the eD2k server the peer connects through (`server_ip` is `""` when unknown). `kad_port` is non-zero when the peer is reachable on Kad. `source_origin` is how the peer was discovered (values in the enumerated-fields table under [`GET /clients`](#get-apiv0clients)). (`upload_file_name` is part of the base field set — see [`GET /clients`](#get-apiv0clients) above.) `available_parts` is the count of parts the peer holds of the linked file; `mod_version` is the peer's client-mod string (often `""`); `view_shared_disabled` is `true` when the peer forbids browsing its shared files. `is_friend` is `true` when the peer is in your friends list (`CUpDownClient::IsFriend()`) — **distinct** from `friend_slot`, which is a *reserved upload slot* granted to a peer and can be set for non-friends. `dl_up_modifier` is the upload score modifier the GUI labels "DL/UP modifier" (`GetScoreRatio()`). `part_progress_percent` is the peer's completeness of the file we are downloading **from** them (`available_parts` over that file's part count) and is **omitted** when there is no linked download or the part count is unknown.
+The detail fields mirror the desktop "Client Details" modal. `user_id_hybrid` is the peer's hybrid eD2k id; `high_id` is `true` for a HighID peer (id ≥ `16777216`, i.e. `0x1000000`) and `false` for LowID — the same threshold and the same spelling as `ed2k.high_id` on [`GET /status`](#get-apiv0status), so the value means the same thing on both ends of the API. `server_ip` / `server_port` / `server_name` describe the eD2k server the peer connects through (`server_ip` is `""` when unknown). `kad_port` is non-zero when the peer is reachable on Kad. `source_origin` is how the peer was discovered (values in the enumerated-fields table under [`GET /clients`](#get-apiv0clients)). (`upload_file_name` is part of the base field set — see [`GET /clients`](#get-apiv0clients) above.) `available_parts` is the count of parts the peer holds of the linked file; `mod_version` is the peer's client-mod string (often `""`); `view_shared_disabled` is `true` when the peer forbids browsing its shared files. `is_friend` is `true` when the peer is in your friends list (`CUpDownClient::IsFriend()`) — **distinct** from `friend_slot`, which is a *reserved upload slot* granted to a peer and can be set for non-friends. `dl_up_modifier` is the upload score modifier the GUI labels "DL/UP modifier" (`GetScoreRatio()`). `part_progress_percent` is the peer's completeness of the file we are downloading **from** them (`available_parts` over that file's part count) and is **omitted** when there is no linked download or the part count is unknown.
 
 > `is_friend` and `dl_up_modifier` ride two EC tags added for this endpoint. A webapi built against a newer core talking to an **older** amuled that doesn't send them degrades gracefully — `is_friend` reads `false` and `dl_up_modifier` reads `0`.
 

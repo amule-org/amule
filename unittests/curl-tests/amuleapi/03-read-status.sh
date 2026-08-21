@@ -124,8 +124,19 @@ _assert_json_eq '.ec_connected | type' boolean \
 # ed2k subtree.
 _assert_json_eq '.ed2k.state | test("^(connected|connecting|disconnected)$")' \
 	true 'ed2k.state is a known enum value'
-_assert_json_eq '.ed2k.low_id | type' boolean \
-	'ed2k.low_id is boolean'
+_assert_json_eq '.ed2k.high_id | type' boolean \
+	'ed2k.high_id is boolean'
+_assert_json_eq '.ed2k.id | type' number \
+	'ed2k.id is numeric'
+_assert_json_eq '.ed2k.public_ip | type' string \
+	'ed2k.public_ip is string'
+# A public address exists exactly when we hold a HighID on a live connection;
+# a LowID carries none, and neither does a disconnected daemon.
+_assert_json_eq '(.ed2k.public_ip != "") == (.ed2k.high_id and .ed2k.state == "connected")' \
+	true 'ed2k.public_ip is non-empty exactly when high_id and connected'
+# The 0xffffffff "connect in flight" sentinel must never surface.
+_assert_json_eq '.ed2k.id != 4294967295' true \
+	'ed2k.id never reports the connecting sentinel'
 _assert_json_eq '.ed2k.server_name | type' string \
 	'ed2k.server_name is string'
 
@@ -140,10 +151,28 @@ _assert_json_eq '.speeds.download_bps | type' number \
 	'speeds.download_bps is numeric'
 _assert_json_eq '.speeds.upload_bps | type' number \
 	'speeds.upload_bps is numeric'
-_assert_json_eq '.queue.upload_queue_length | type' number \
-	'queue.upload_queue_length is numeric'
-_assert_json_eq '.queue.total_source_count | type' number \
-	'queue.total_source_count is numeric'
+_assert_json_eq '.speeds.download_overhead_bps | type' number \
+	'speeds.download_overhead_bps is numeric'
+_assert_json_eq '.speeds.upload_overhead_bps | type' number \
+	'speeds.upload_overhead_bps is numeric'
+_assert_json_eq '.queue.upload_clients_waiting | type' number \
+	'queue.upload_clients_waiting is numeric'
+_assert_json_eq '.queue.download_sources_total | type' number \
+	'queue.download_sources_total is numeric'
+
+# disk subtree: a number, or null when the daemon has no figure. Never the
+# unsigned reading of the -1 sentinel, and never 0 (which would read as a
+# full disk).
+_assert_json_eq '.disk.temp_free_bytes | type | . == "number" or . == "null"' true \
+	'disk.temp_free_bytes is a number or null'
+_assert_json_eq '.disk.incoming_free_bytes | type | . == "number" or . == "null"' true \
+	'disk.incoming_free_bytes is a number or null'
+_assert_json_eq '[.disk[]] | map(select(. == 18446744073709551615)) | length == 0' true \
+	'disk figures never report the unsigned free-space sentinel'
+
+# Retired spellings must be gone from the whole body, not merely unused.
+_assert_json_eq '[paths | join(".")] | map(select(test("low_id|upload_queue_length|total_source_count"))) | length == 0' \
+	true '/status no longer carries the retired field names'
 
 # --- 4. /status with guest bearer also works (any-role read gate). --
 GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \

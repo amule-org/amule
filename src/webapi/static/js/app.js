@@ -306,9 +306,9 @@ function ConnectionStatus({ status }) {
   let e2Text = t("app_not_connected"), e2Cls = "off";
   if (ed2k) {
     if (ed2k.state === "connected") {
-      e2Cls = ed2k.low_id ? "low" : "ok";
+      e2Cls = ed2k.high_id ? "ok" : "low";
       e2Text = (ed2k.server_name || ed2k.server_ip || t("app_connected")) +
-        " · " + (ed2k.low_id ? t("app_low_id") : t("app_high_id"));
+        " · " + (ed2k.high_id ? t("app_high_id") : t("app_low_id"));
     } else if (ed2k.state === "connecting") {
       e2Cls = "warn"; e2Text = t("app_connecting");
     }

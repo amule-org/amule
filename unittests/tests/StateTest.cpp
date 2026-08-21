@@ -82,7 +82,13 @@ TEST(State, WriteStatusRoundtrip)
 	StatusSnapshot in;
 	in.ed2k_state = "connected";
 	in.kad_state = "connecting";
-	in.ed2k_lowid = true;
+	in.ed2k_high_id = true;
+	in.ed2k_id = 3523226697u; // 210.2.150.73 packed LSB-first
+	in.ed2k_public_ip = "210.2.150.73";
+	in.download_overhead_bps = 8700;
+	in.upload_overhead_bps = 1100;
+	in.temp_free_bytes = 48318382080LL;
+	in.incoming_free_bytes = -1; // unknown
 	in.kad_firewalled = false;
 	in.server_name = "Some Server";
 	in.server_ip = "192.0.2.42";
@@ -96,7 +102,15 @@ TEST(State, WriteStatusRoundtrip)
 	const StatusSnapshot out = s.Status();
 	ASSERT_EQUALS(std::string("connected"), out.ed2k_state);
 	ASSERT_EQUALS(std::string("connecting"), out.kad_state);
-	ASSERT_TRUE(out.ed2k_lowid);
+	ASSERT_TRUE(out.ed2k_high_id);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(3523226697u), out.ed2k_id);
+	ASSERT_EQUALS(std::string("210.2.150.73"), out.ed2k_public_ip);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(8700), out.download_overhead_bps);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(1100), out.upload_overhead_bps);
+	ASSERT_EQUALS(static_cast<std::int64_t>(48318382080LL), out.temp_free_bytes);
+	// -1 must survive the round trip as -1: it is what the handler turns
+	// into JSON null, and an unsigned slot would make it 1.8e19.
+	ASSERT_EQUALS(static_cast<std::int64_t>(-1), out.incoming_free_bytes);
 	ASSERT_FALSE(out.kad_firewalled);
 	ASSERT_EQUALS(std::string("Some Server"), out.server_name);
 	ASSERT_EQUALS(std::string("192.0.2.42"), out.server_ip);

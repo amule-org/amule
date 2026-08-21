@@ -229,14 +229,23 @@ std::string ToJson(const ClientSnapshot &c)
 // REST nesting groups data from StatusSnapshot AND KadSnapshot AND
 // the dashboard's ec_connected bit — all three are read in one
 // shared_lock by state.Dashboard() at the call site.
+// A free-space figure renders as a JSON number, or as null when the daemon
+// has none (-1). Kept beside the REST handler's identical rule so the SSE
+// payload and the REST body cannot drift apart.
+std::string JsonFreeSpace(std::int64_t v)
+{
+	return v < 0 ? std::string("null") : std::to_string(v);
+}
+
 std::string ToJsonStatusEvent(const StatusSnapshot &s, const KadSnapshot &k, bool ec_connected)
 {
 	std::ostringstream o;
 	o << "{"
 	  << "\"ec_connected\":" << (ec_connected ? "true" : "false") << ",\"ed2k\":{"
 	  << "\"state\":\"" << EscJson(s.ed2k_state) << "\""
-	  << ",\"low_id\":" << (s.ed2k_lowid ? "true" : "false") << ",\"server_name\":\""
-	  << EscJson(s.server_name) << "\""
+	  << ",\"high_id\":" << (s.ed2k_high_id ? "true" : "false") << ",\"id\":" << s.ed2k_id
+	  << ",\"public_ip\":\"" << EscJson(s.ed2k_public_ip) << "\""
+	  << ",\"server_name\":\"" << EscJson(s.server_name) << "\""
 	  << ",\"server_ip\":\"" << EscJson(s.server_ip) << "\""
 	  << ",\"server_port\":" << s.server_port << ",\"network\":{"
 	  << "\"users\":" << s.ed2k_users << ",\"files\":" << s.ed2k_files << "}}"
@@ -246,10 +255,16 @@ std::string ToJsonStatusEvent(const StatusSnapshot &s, const KadSnapshot &k, boo
 	  << "\"users\":" << k.users << ",\"files\":" << k.files << ",\"nodes\":" << k.nodes << "}"
 	  << "}"
 	  << ",\"speeds\":{"
-	  << "\"download_bps\":" << s.download_bps << ",\"upload_bps\":" << s.upload_bps << "}"
+	  << "\"download_bps\":" << s.download_bps << ",\"upload_bps\":" << s.upload_bps
+	  << ",\"download_overhead_bps\":" << s.download_overhead_bps
+	  << ",\"upload_overhead_bps\":" << s.upload_overhead_bps << "}"
+	  << ",\"disk\":{"
+	  // null, not the -1 sentinel and not 0 -- same reasoning as the REST body.
+	  << "\"temp_free_bytes\":" << JsonFreeSpace(s.temp_free_bytes)
+	  << ",\"incoming_free_bytes\":" << JsonFreeSpace(s.incoming_free_bytes) << "}"
 	  << ",\"queue\":{"
-	  << "\"upload_queue_length\":" << s.ul_queue_len << ",\"total_source_count\":" << s.total_src_count
-	  << "}"
+	  << "\"upload_clients_waiting\":" << s.ul_queue_len
+	  << ",\"download_sources_total\":" << s.total_src_count << "}"
 	  << "}";
 	return o.str();
 }
@@ -351,12 +366,17 @@ bool Equal(const ClientSnapshot &a, const ClientSnapshot &b)
 }
 bool Equal(const StatusSnapshot &a, const StatusSnapshot &b)
 {
-	return a.ed2k_state == b.ed2k_state && a.kad_state == b.kad_state && a.ed2k_lowid == b.ed2k_lowid &&
+	// public_ip is derived from ed2k_id, so comparing the id covers it.
+	return a.ed2k_state == b.ed2k_state && a.kad_state == b.kad_state &&
+	       a.ed2k_high_id == b.ed2k_high_id && a.ed2k_id == b.ed2k_id &&
 	       a.kad_firewalled == b.kad_firewalled && a.server_name == b.server_name &&
 	       a.server_ip == b.server_ip && a.server_port == b.server_port &&
 	       a.download_bps == b.download_bps && a.upload_bps == b.upload_bps &&
-	       a.ul_queue_len == b.ul_queue_len && a.total_src_count == b.total_src_count &&
-	       a.ed2k_users == b.ed2k_users && a.ed2k_files == b.ed2k_files;
+	       a.download_overhead_bps == b.download_overhead_bps &&
+	       a.upload_overhead_bps == b.upload_overhead_bps && a.temp_free_bytes == b.temp_free_bytes &&
+	       a.incoming_free_bytes == b.incoming_free_bytes && a.ul_queue_len == b.ul_queue_len &&
+	       a.total_src_count == b.total_src_count && a.ed2k_users == b.ed2k_users &&
+	       a.ed2k_files == b.ed2k_files;
 }
 bool Equal(const KadSnapshot &a, const KadSnapshot &b)
 {

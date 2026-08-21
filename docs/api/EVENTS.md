@@ -415,14 +415,18 @@ Identical to the REST [`/api/v0/clients`](REFERENCE.md#get-apiv0clients) list-it
 
 #### `status_changed`
 
-Identical to the REST [`/api/v0/status`](REFERENCE.md#get-apiv0status) envelope. The payload is the post-change snapshot, not a diff. Fires when any field anywhere in the envelope changes — ed2k state, Kad state, Kad network counters, headline speeds, queue length, or `ec_connected`.
+Identical to the REST [`/api/v0/status`](REFERENCE.md#get-apiv0status) envelope, including the `null` rule on the two disk figures. The payload is the post-change snapshot, not a diff. Fires when any field anywhere in the envelope changes — ed2k state and identity, Kad state, Kad network counters, headline speeds, the overhead rates, the free-space figures, the queue counters, or `ec_connected`.
+
+Rate impact is small: the overhead rates move about as often as the speeds already in that comparison, so they add no wakeups, and the disk figures are resampled only every 10 s by the daemon, so at worst they add one event per 10 s and only when the number actually moved. An idle daemon still emits nothing.
 
 ```json
 {
   "ec_connected": true,
   "ed2k": {
     "state":       "connected",
-    "low_id":      false,
+    "high_id":     true,
+    "id":          3523226697,
+    "public_ip":   "210.2.150.73",
     "server_name": "eMule Server",
     "server_ip":   "203.0.113.5",
     "server_port": 4242
@@ -432,8 +436,12 @@ Identical to the REST [`/api/v0/status`](REFERENCE.md#get-apiv0status) envelope.
     "firewalled": false,
     "network":    { "users": 5400000, "files": 1400000000, "nodes": 2400 }
   },
-  "speeds": { "download_bps": 4500000, "upload_bps": 50000 },
-  "queue":  { "upload_queue_length": 12, "total_source_count": 1843 }
+  "speeds": {
+    "download_bps": 4500000, "upload_bps": 50000,
+    "download_overhead_bps": 8700, "upload_overhead_bps": 1100
+  },
+  "disk":   { "temp_free_bytes": 48318382080, "incoming_free_bytes": 48318382080 },
+  "queue":  { "upload_clients_waiting": 12, "download_sources_total": 1843 }
 }
 ```
 

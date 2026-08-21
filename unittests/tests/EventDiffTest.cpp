@@ -208,6 +208,83 @@ TEST(EventDiff, LogAppendedSilentOnTruncation)
 // FROM us) is part of the base client field set, so it must ride the
 // client_added SSE payload — otherwise the WebUI clients table has no way to
 // fill the File column for an upload-only peer (it shows a blank "—").
+// Drives one status change through the real emit path and returns the
+// status_changed payload, so these assert what a subscriber actually sees
+// rather than reaching into EventDiff's internals.
+namespace
+{
+std::string EmitStatusAndGetPayload(const StatusSnapshot &next)
+{
+	CState state;
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state); // baseline tick
+	state.WriteStatus(next);
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string payload;
+	for (const auto &ev : DrainAll(bus)) {
+		if (ev.name == "status_changed")
+			payload = ev.data;
+	}
+	return payload;
+}
+} // namespace
+
+// The free-space sentinel must reach the SSE payload as JSON null, never as
+// a number. amuled's FREE_SPACE_UNKNOWN is -1 and its EC serializer casts it
+// to uint64, so the wire carries 0xFFFFFFFFFFFFFFFF; emitting that unsigned
+// would tell a consumer 17 exabytes are free, and 0 would read as a full
+// disk. Same rule as the REST body, asserted so the two cannot drift apart.
+TEST(EventDiff, StatusEventSerialisesUnknownFreeSpaceAsNull)
+{
+	StatusSnapshot s;
+	s.temp_free_bytes = -1;
+	s.incoming_free_bytes = 48318382080LL;
+
+	const std::string payload = EmitStatusAndGetPayload(s);
+
+	ASSERT_TRUE(payload.find("\"temp_free_bytes\":null") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"incoming_free_bytes\":48318382080") != std::string::npos);
+	// The unsigned reading of the sentinel must appear nowhere.
+	ASSERT_TRUE(payload.find("18446744073709551615") == std::string::npos);
+}
+
+// high_id is positive-sense precisely so the disconnected case does not read
+// as a firewall verdict, and the id/public_ip pair rides the same payload.
+TEST(EventDiff, StatusEventCarriesIdentityFields)
+{
+	StatusSnapshot s;
+	s.ed2k_state = "connected";
+	s.ed2k_high_id = true;
+	s.ed2k_id = 3523226697u;
+	s.ed2k_public_ip = "210.2.150.73";
+	s.download_overhead_bps = 8700;
+
+	const std::string payload = EmitStatusAndGetPayload(s);
+
+	ASSERT_TRUE(payload.find("\"high_id\":true") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"id\":3523226697") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"public_ip\":\"210.2.150.73\"") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"download_overhead_bps\":8700") != std::string::npos);
+	// The retired spelling must not linger anywhere in the payload.
+	ASSERT_TRUE(payload.find("low_id") == std::string::npos);
+}
+
+// A tick where only the overhead moved still has to fire: the field is in the
+// REST body, so if the SSE twin stays silent the two diverge until something
+// else happens to move.
+TEST(EventDiff, StatusEventFiresWhenOnlyOverheadMoved)
+{
+	StatusSnapshot s;
+	s.download_overhead_bps = 8700;
+
+	const std::string payload = EmitStatusAndGetPayload(s);
+
+	ASSERT_TRUE(!payload.empty());
+	ASSERT_TRUE(payload.find("\"download_overhead_bps\":8700") != std::string::npos);
+}
+
 TEST(EventDiff, ClientAddedCarriesUploadFileName)
 {
 	CState state;
