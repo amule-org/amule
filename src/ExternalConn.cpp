@@ -3712,14 +3712,30 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		break;
 	}
 	case EC_OP_CLIENT_SWAP_TO_ANOTHER_FILE: {
+		// Report what happened rather than answering NOOP either way. The swap
+		// is best-effort in the core -- it refuses a peer that is actively
+		// sending, and a peer that is not an A4AF source of the target has
+		// nowhere to go -- and a caller that cannot tell those apart from
+		// success can only guess. amulegui registers a null handler for this
+		// op and discards the reply whatever its opcode, so nothing on that
+		// side needs to change.
 		uint32 idClient = request->GetTagByNameSafe(EC_TAG_CLIENT)->GetInt();
 		CUpDownClient *client = theApp->clientlist->FindClientByECID(idClient);
 		CMD4Hash idFile = request->GetTagByNameSafe(EC_TAG_PARTFILE)->GetMD4Data();
 		CPartFile *file = theApp->downloadqueue->GetFileByID(idFile);
-		if (client && file) {
-			client->SwapToAnotherFile(true, false, false, file);
+		if (!client) {
+			response = new CECPacket(EC_OP_FAILED);
+			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Client not found.")));
+		} else if (!file) {
+			response = new CECPacket(EC_OP_FAILED);
+			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("File not found.")));
+		} else if (!client->SwapToAnotherFile(true, false, false, file)) {
+			response = new CECPacket(EC_OP_FAILED);
+			response->AddTag(CECTag(
+				EC_TAG_STRING, wxTRANSLATE("Client could not be swapped to that file.")));
+		} else {
+			response = new CECPacket(EC_OP_NOOP);
 		}
-		response = new CECPacket(EC_OP_NOOP);
 		break;
 	}
 	case EC_OP_SHARED_FILE_SET_COMMENT: {
