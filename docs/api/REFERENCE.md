@@ -861,7 +861,7 @@ Force A4AF source-swapping for this download. Downloads-only.
 
 `client_ecid` is optional and valid **only with `swap_this`**, where it narrows the action from every A4AF source of this file to the single named one — the per-peer "Swap to this file" of the desktop client. It must name a client in the current snapshot that is an A4AF source of *this* download; pairing it with `swap_this_auto` or `swap_others` is a `400`, because the core has no per-source form of those.
 
-A successful single-source swap shows up as that `client_ecid` having left `sources` in the response.
+A successful single-source swap shows up as that `client_ecid` having left `source_ecids` in the response.
 
 The swap moves the peer between two files' source lists, so an SSE subscriber sees `download_updated` for **both** the peer's former download and this one, plus `client_updated` for the peer itself.
 
@@ -1035,8 +1035,8 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 {
   "clients": [
     {
-      "client_ecid": 4382,
-      "client_name": "AnonymousPeer",
+      "ecid": 4382,
+      "name": "AnonymousPeer",
       "user_hash": "1f2e3a...",
       "ip": "203.0.113.42",
       "country_code": "de",
@@ -1064,7 +1064,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 }
 ```
 
-`client_ecid` identifies the remote *peer*, not a file — it's the URL key for [`GET /api/v0/clients/{ecid}`](#get-apiv0clientsecid) and the identity carried in `client_removed` SSE payloads. `user_hash` is the peer's stable identity *when published* (peers without SecIdent or in their first session don't have one), so `client_ecid` is the always-populated handle.
+`ecid` identifies the remote *peer*, not a file — it's the URL key for [`GET /api/v0/clients/{ecid}`](#get-apiv0clientsecid) and the identity carried in `client_removed` SSE payloads. `user_hash` is the peer's stable identity *when published* (peers without SecIdent or in their first session don't have one), so `ecid` is the always-populated handle.
 
 `upload_file_hash` / `download_file_hash` are the 32-char MD4 hex hashes of the partfile or shared file the peer is currently transferring with — directly resolvable against [`/api/v0/downloads/{hash}`](#get-apiv0downloadshash) (in-progress) or the corresponding entry in [`/api/v0/shared`](#get-apiv0shared) by `.hash`. Either field can be empty when the peer is queued / idle in that direction. `download_file_name` is the filename the peer advertised in `OP_REQFILENAMEANSWER` and is populated only while we're actively downloading from them. `upload_file_name` is the partfile the peer is downloading **from us**, resolved locally against our own partfile list — present only while we're uploading to them.
 
@@ -1095,7 +1095,7 @@ Every one of them falls back to `"unknown"` for a code the daemon does not map, 
 
 **Auth:** `GUEST`
 
-Returns the full detail object for a single peer — every field [`GET /clients`](#get-apiv0clients) returns for that peer, **plus** the detail-only fields below. `{ecid}` is the peer's `client_ecid` (the EC connection id). Bare object, no list envelope.
+Returns the full detail object for a single peer — every field [`GET /clients`](#get-apiv0clients) returns for that peer, **plus** the detail-only fields below. `{ecid}` is the peer's `ecid` (the EC connection id). Bare object, no list envelope.
 
 `ecid`, not `user_hash`, is the resource key: not every peer has a hash (unidentified / some LowID / eDonkey peers expose an empty one), a hash is not unique among a peer's simultaneous connections, and it is unauthenticated unless the peer uses Secure Identification. `ecid` is always present and unique per live connection. Trade-off: `ecid` is reassigned when amuled restarts, so a detail URL is **not** stable across restarts — use the `user_hash` field for a durable reference.
 
@@ -1106,8 +1106,8 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 
 ```json
 {
-  "client_ecid": 4382,
-  "client_name": "AnonymousPeer",
+  "ecid": 4382,
+  "name": "AnonymousPeer",
   "user_hash": "1f2e3a...",
   "ip": "203.0.113.42",
   "country_code": "de",
@@ -1158,7 +1158,7 @@ The detail fields mirror the desktop "Client Details" modal. `user_id_hybrid` is
 
 **Auth:** `ADMIN`
 
-Browse a peer's shared file list — the API equivalent of "View Files" in the GUI. `{ecid}` is the peer's `client_ecid`. amuled opens (or reuses) a direct client-to-client connection to that peer and asks it to enumerate its shared directories and files.
+Browse a peer's shared file list — the API equivalent of "View Files" in the GUI. `{ecid}` is the peer's `ecid`. amuled opens (or reuses) a direct client-to-client connection to that peer and asks it to enumerate its shared directories and files.
 
 The browse runs **asynchronously**: the peer answers over the network, one directory at a time, and a HighID/reachable peer may take seconds while a LowID peer needs a server callback or Kad first. So this endpoint does **not** return the files — it returns a `search_id` and the results flow through the **search machinery**, exactly like a query search:
 
@@ -1195,7 +1195,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 
 Lists every peer the daemon has ever exchanged data with, from its credit store.
 
-Distinct from [`GET /clients`](#get-apiv0clients), which lists the peers connected **right now**. The two differ in identity as well as content: a live client is keyed by `client_ecid`, which is meaningful only within one daemon process, while a known client is keyed by `user_hash` and survives daemon restarts. Correlate the two on `user_hash`; the `online` field says whether a given record has a live counterpart at this moment.
+Distinct from [`GET /clients`](#get-apiv0clients), which lists the peers connected **right now**. The two differ in identity as well as content: a live client is keyed by `ecid`, which is meaningful only within one daemon process, while a known client is keyed by `user_hash` and survives daemon restarts. Correlate the two on `user_hash`; the `online` field says whether a given record has a live counterpart at this moment.
 
 Standard [list envelope](#list-envelopes-and-pagination) under the `known_clients` key, with `limit` / `offset` / `sort` / `order`.
 
@@ -1209,7 +1209,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
   "known_clients": [
     {
       "user_hash": "a1b2c3d4e5060e708090a0b0c0d06f00",
-      "client_name": "example-peer",
+      "name": "example-peer",
       "ip": "192.0.2.10",
       "port": 4665,
       "kad_port": 4675,
@@ -1233,7 +1233,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 | Field | Notes |
 |---|---|
 | `user_hash` | 32-char lowercase MD4. The identity; join with `/clients`. |
-| `client_name` | Peer-chosen name. Absent when never recorded. |
+| `name` | Peer-chosen name. Absent when never recorded. |
 | `ip`, `port`, `kad_port` | Last address the peer was seen at. Absent together. |
 | `country_code` | ISO 3166-1 alpha-2, lowercase, resolved by the daemon's GeoIP. Absent when GeoIP is off or the address does not resolve. Artwork: [`GET /flags/{code}.png`](#get-flagscodepng). |
 | `software`, `version` | Same tokens `GET /clients` uses. Absent together. |
@@ -1700,7 +1700,7 @@ The friends list amuled persists to `emfriends.met`. The daemon ships the whole 
 {
   "friends": [
     {
-      "friend_ecid": 12,
+      "ecid": 12,
       "name": "alice",
       "user_hash": "a1b2c3d4e5060e708090a0b0c0d06f00",
       "ip": "203.0.113.42",
@@ -1750,7 +1750,7 @@ Sending `client_ecid` together with any address field is a `400`.
 
 **Auth:** `ADMIN`
 
-**Response:** `200 OK` → `{ "ok": true, "friend_ecid": 12 }`.
+**Response:** `200 OK` → `{ "ok": true, "ecid": 12 }`.
 
 Removing the friend that currently holds the friend slot clears it.
 

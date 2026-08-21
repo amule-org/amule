@@ -147,11 +147,11 @@ _curl -X POST -H "Content-Type: application/json" \
 	"$HOST/api/v0/friends"
 _assert_status 201 "POST /friends (address form)"
 
-NEW_ECID=$(_jq '.friend_ecid')
+NEW_ECID=$(_jq '.ecid')
 if [ -n "$NEW_ECID" ] && [ "$NEW_ECID" != "null" ]; then
-	_pass "response carries friend_ecid ($NEW_ECID)"
+	_pass "response carries ecid ($NEW_ECID)"
 else
-	_fail "POST response" "no friend_ecid in: ${CURL_BODY:0:200}"
+	_fail "POST response" "no ecid in: ${CURL_BODY:0:200}"
 fi
 [ "$(_jq '.ip')" = "$TEST_IP" ] && _pass "ip round-trips" || _fail "ip" "got $(_jq '.ip')"
 [ "$(_jq '.port')" = "$TEST_PORT" ] && _pass "port round-trips" || _fail "port" "got $(_jq '.port')"
@@ -179,7 +179,7 @@ _assert_status 200 "PATCH friend_slot=true"
 	|| _fail "friend_slot" "expected true, got $(_jq '.friend_slot') — is the daemon serializing the tag?"
 
 _curl "$HOST/api/v0/friends?limit=500"
-STILL=$(echo "$CURL_BODY" | jq -r --arg e "$NEW_ECID" '[.friends[] | select(.friend_ecid == ($e|tonumber)) | .friend_slot] | first')
+STILL=$(echo "$CURL_BODY" | jq -r --arg e "$NEW_ECID" '[.friends[] | select(.ecid == ($e|tonumber)) | .friend_slot] | first')
 [ "$STILL" = "true" ] && _pass "the slot survives into the list view" \
 	|| _fail "friend_slot in list" "expected true, got $STILL"
 
@@ -247,8 +247,8 @@ fi
 # --- 8. Remove, and prove a stale id does not answer 200. ----------
 _curl -X DELETE "$HOST/api/v0/friends/$NEW_ECID"
 _assert_status 200 "DELETE /friends/$NEW_ECID"
-[ "$(_jq '.friend_ecid')" = "$NEW_ECID" ] && _pass "DELETE echoes the id" \
-	|| _fail "DELETE echo" "got $(_jq '.friend_ecid')"
+[ "$(_jq '.ecid')" = "$NEW_ECID" ] && _pass "DELETE echoes the id" \
+	|| _fail "DELETE echo" "got $(_jq '.ecid')"
 
 _curl -X DELETE "$HOST/api/v0/friends/$NEW_ECID"
 _assert_status 404 "a second DELETE of the same id is a 404"

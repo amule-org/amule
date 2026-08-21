@@ -220,7 +220,7 @@ Both `since_id` and `newest_id` are uint64. The client never has to compute them
 
 ## Event catalog
 
-Every event the bus publishes. The `_added` and `_updated` payloads are BYTE-FOR-BYTE identical to the matching REST resource's list-item shape — clients receiving a `*_updated` event get the full new state and never need to re-GET. `_removed` carries only the identity field — `hash` for files (`download_removed`, `shared_removed`), `client_ecid` for `client_removed`, `friend_ecid` for `friend_removed`, `ecid` for `server_removed` — so the client can drop the cache entry without needing the old object. Three events don't fit the collection-delta model: `status_changed` ships a full status envelope (replace, not merge), `log_appended` is an append operation (`{lines}` — push the lines onto the amule log buffer, don't replace), and `search_closed` retires a whole result space rather than one item (`{search_id}` — drop the view, not a row). Branch on the event type in your dispatcher accordingly.
+Every event the bus publishes. The `_added` and `_updated` payloads are BYTE-FOR-BYTE identical to the matching REST resource's list-item shape — clients receiving a `*_updated` event get the full new state and never need to re-GET. `_removed` carries only the identity field — `hash` for files (`download_removed`, `shared_removed`) and `ecid` for every ECID-keyed collection (`client_removed`, `friend_removed`, `server_removed`) — so the client can drop the cache entry without needing the old object. Three events don't fit the collection-delta model: `status_changed` ships a full status envelope (replace, not merge), `log_appended` is an append operation (`{lines}` — push the lines onto the amule log buffer, don't replace), and `search_closed` retires a whole result space rather than one item (`{search_id}` — drop the view, not a row). Branch on the event type in your dispatcher accordingly.
 
 ### `downloads` channel
 
@@ -352,7 +352,7 @@ Identical to the REST [`/api/v0/friends`](REFERENCE.md#get-apiv0friends) list-it
 
 ```json
 {
-  "friend_ecid":  12,
+  "ecid":         12,
   "name":         "alice",
   "user_hash":    "a1b2c3d4e5060e708090a0b0c0d06f00",
   "ip":           "203.0.113.42",
@@ -370,7 +370,7 @@ One `PATCH /api/v0/friends/{ecid}` can produce **two** `friend_updated` events. 
 #### `friend_removed`
 
 ```json
-{ "friend_ecid": 12 }
+{ "ecid": 12 }
 ```
 
 ### `clients` channel
@@ -381,8 +381,8 @@ Identical to the REST [`/api/v0/clients`](REFERENCE.md#get-apiv0clients) list-it
 
 ```json
 {
-  "client_ecid":            4382,
-  "client_name":            "AnonymousPeer",
+  "ecid":                   4382,
+  "name":                   "AnonymousPeer",
   "user_hash":              "1f2e3a...",
   "ip":                     "203.0.113.42",
   "country_code":           "de",
@@ -420,7 +420,7 @@ Carries the same field set as the [`/clients`](REFERENCE.md#get-apiv0clients) li
 #### `client_removed`
 
 ```json
-{ "client_ecid": 4382 }
+{ "ecid": 4382 }
 ```
 
 ### `status` channel

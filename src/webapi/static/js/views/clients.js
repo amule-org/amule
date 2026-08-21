@@ -34,7 +34,7 @@ export default function ClientsPanel() {
   if (filter === "downloads") list = list.filter(isDown);
   else if (filter === "uploads") list = list.filter(isUp);
   if (ident !== "all") list = list.filter((c) => c.ident_state === ident);
-  if (q) { const match = textMatcher(q); list = list.filter((c) => match((c.client_name || "") + " " + fileNameOf(c))); }
+  if (q) { const match = textMatcher(q); list = list.filter((c) => match((c.name || "") + " " + fileNameOf(c))); }
 
   const tabs = [
     { key: "all", label: t("downloads_peer_all"), badge: clients.length },

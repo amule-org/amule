@@ -285,11 +285,11 @@ if [ "$COUNT" -gt 0 ]; then
 	# no-op: pick any client from /clients and ensure it is absent from the
 	# A4AF list before asserting.
 	OTHER_ECID=$(curl -s -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/clients?limit=1" \
-		| jq -r '.clients[0].client_ecid // empty')
+		| jq -r '.clients[0].ecid // empty')
 	if [ -n "$OTHER_ECID" ]; then
 		IN_A4AF=$(curl -s -H "Authorization: Bearer $TOKEN" \
-			"$HOST/api/v0/downloads/$HASH/a4af" \
-			| jq -r --argjson e "$OTHER_ECID" '[.sources[] | select(. == $e)] | length')
+			"$HOST/api/v0/downloads/$HASH/clients" \
+			| jq -r --argjson e "$OTHER_ECID" '[.clients[] | select(.ecid == $e and .a4af)] | length')
 		if [ "$IN_A4AF" = "0" ]; then
 			_curl -X POST -H "Authorization: Bearer $TOKEN" \
 				-H "Content-Type: application/json" \
@@ -305,8 +305,8 @@ if [ "$COUNT" -gt 0 ]; then
 		-H "Content-Type: application/json" \
 		-d '{"action":"swap_others"}' "$HOST/api/v0/downloads/$HASH/a4af"
 	_assert_status 200 "POST /downloads/{hash}/a4af swap_others → 200"
-	_assert_json_eq '.sources | type' array \
-		'POST /a4af response carries sources array'
+	_assert_json_eq '.source_ecids | type' array \
+		'POST /a4af response carries source_ecids array'
 
 	# Uppercase hash → same hit (case-insensitive route).
 	HASH_UPPER=$(echo "$HASH" | tr '[:lower:]' '[:upper:]')
