@@ -1649,6 +1649,21 @@ void CKnownFile::UpdatePartsInfo()
 	uint16 partcount = GetPartCount();
 	bool flag = (time(NULL) - m_nCompleteSourcesTime > 0);
 
+	// One transition must not wait out the throttle: the upload list going
+	// empty. Every caller here is driven by a peer event, and there is no
+	// periodic sweep -- so if the last requesting peer leaves inside the 60 s
+	// window, the throttled call is the final one this file will ever get and
+	// the count would keep its last value for the life of the process. That is
+	// the staleness this whole path is about, so the answer that is both
+	// certain and free -- no peers, no complete sources -- is not worth
+	// deferring.
+	//
+	// Guarded on the value actually being non-zero, so a file that has already
+	// settled at 0 does not re-enter the recompute on every later call.
+	if (!flag && m_ClientUploadList.empty() && m_nCompleteSourcesCount != 0) {
+		flag = true;
+	}
+
 	// Ensure the frequency-list is ready
 	if (m_AvailPartFrequency.size() != GetPartCount()) {
 		m_AvailPartFrequency.clear();
