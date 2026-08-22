@@ -26,6 +26,7 @@
 
 #include "State.h"
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <cstdint>
@@ -602,6 +603,57 @@ TEST(State, DiscoveredSearchKeepsTheDaemonsLifecycleState)
 	// finished search would show an empty result list forever.
 	ASSERT_TRUE(s.ClaimSearchRefresh(42, std::chrono::milliseconds(1000)));
 	ASSERT_FALSE(s.ClaimSearchRefresh(43, std::chrono::milliseconds(1000)));
+}
+
+TEST(State, DiscoveredFinishedSearchReportsFullPercent)
+{
+	// A slot discovered as finished is never polled -- it is not in
+	// ActiveSearchIds() -- so the percent has to be seeded at discovery or it
+	// stays 0 for the life of the slot, contradicting the "finished" state
+	// carried in the same envelope. A finished search is 100 by definition.
+	CState s;
+	s.MarkSearchDiscovered(2147483660u, "kad", "harry", /*active=*/false, /*complete=*/true);
+	const auto finished = s.SearchProgress(2147483660u);
+	ASSERT_TRUE(finished.complete);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(100), finished.percent);
+}
+
+TEST(State, DiscoveredRunningSearchKeepsZeroPercentAndIsPolled)
+{
+	// The running case must not be faked to 100: it is in ActiveSearchIds(),
+	// so the very next tick overwrites the percent with the daemon's real
+	// one. Seeding anything but 0 here would flash a wrong number for a tick.
+	CState s;
+	s.MarkSearchDiscovered(44, "kad", "ubuntu", /*active=*/true, /*complete=*/false);
+	const auto running = s.SearchProgress(44);
+	ASSERT_TRUE(!running.complete);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(0), running.percent);
+
+	const auto active = s.ActiveSearchIds();
+	ASSERT_TRUE(std::find(active.begin(), active.end(), 44u) != active.end());
+}
+
+TEST(State, DiscoveryDoesNotStompAnAlreadyKnownSearchsPercent)
+{
+	// Re-discovery of a slot this session already tracks must leave its
+	// accumulated progress alone; only the query is filled in. Seeding the
+	// percent must not have opened a path that overwrites a real one.
+	// The slot has to exist first: WriteSearchProgress only updates a slot
+	// that is already there, so seeding it needs MarkSearchStarted (this
+	// session started the search) before the progress write.
+	CState s;
+	s.MarkSearchStarted(45, "kad", "ubuntu");
+	SearchProgressSnapshot p;
+	p.active = true;
+	p.complete = false;
+	p.percent = 37;
+	p.kind = "kad";
+	s.WriteSearchProgress(45, p);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(37), s.SearchProgress(45).percent);
+
+	// Re-discovery of that same id must leave the real percent alone.
+	s.MarkSearchDiscovered(45, "kad", "named-later", /*active=*/false, /*complete=*/true);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(37), s.SearchProgress(45).percent);
 }
 
 TEST(State, SearchRefreshIsClaimedOncePerTtlAndOnlyWhenIdle)
