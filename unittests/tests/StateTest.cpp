@@ -218,6 +218,92 @@ TEST(State, MutateDownloadsDecodedRleFieldsRoundtrip)
 	ASSERT_EQUALS(static_cast<std::uint16_t>(7), via_find.download.decoded_part_sources[2]);
 }
 
+// FileSnapshot::IsIncompletePartfile() decides two things: whether
+// /shared/{hash} reports `incomplete`, and whether "verify local data" is
+// rejected as unsupported. Both want "genuinely still a partfile", which is
+// not the same question as "is in the download queue".
+TEST(State, IncompletePartfileIsFalseForAPureShare)
+{
+	FileSnapshot f;
+	f.is_shared = true;
+	f.is_downloading = false;
+	// A file that was never downloaded here has no download side at all, so
+	// the status string is empty rather than "completed".
+	ASSERT_TRUE(f.download.status.empty());
+	ASSERT_FALSE(f.IsIncompletePartfile());
+}
+
+TEST(State, IncompletePartfileIsTrueWhileDownloading)
+{
+	FileSnapshot f;
+	f.is_downloading = true;
+	f.download.status = "downloading";
+	ASSERT_TRUE(f.IsIncompletePartfile());
+}
+
+// The case the flag exists for: a finished download stays in the queue, with
+// is_downloading still set, until the user clears it -- but by then it is a
+// knownfile whose data is in the destination directory. Reporting it as an
+// incomplete partfile would be wrong, and would also reject a legitimate
+// verify target.
+TEST(State, IncompletePartfileIsFalseForCompletedButNotCleared)
+{
+	FileSnapshot f;
+	f.is_downloading = true;
+	f.download.status = "completed";
+	ASSERT_FALSE(f.IsIncompletePartfile());
+}
+
+// A paused or stopped partfile is still an incomplete partfile: pausing
+// changes whether it transfers, not whether its data is whole. Same for every
+// other non-completed state the wire exposes, including "completing" -- the
+// data lives in the temp directory until that move finishes.
+TEST(State, IncompletePartfileIsTrueForEveryNonCompletedStatus)
+{
+	static const char *const kIncompleteStates[] = { "downloading",
+		"paused",
+		"stopped",
+		"completing",
+		"hashing",
+		"waiting",
+		"allocating",
+		"erroneous",
+		"insufficient_disk",
+		"unknown" };
+	for (const char *status : kIncompleteStates) {
+		FileSnapshot f;
+		f.is_downloading = true;
+		f.download.status = status;
+		ASSERT_TRUE(f.IsIncompletePartfile());
+	}
+}
+
+// Only the exact wire string counts. The check is against "completed", not a
+// prefix or a substring, so the neighbouring "completing" state must not be
+// swept in with it.
+TEST(State, IncompletePartfileDistinguishesCompletingFromCompleted)
+{
+	FileSnapshot completing;
+	completing.is_downloading = true;
+	completing.download.status = "completing";
+	FileSnapshot completed;
+	completed.is_downloading = true;
+	completed.download.status = "completed";
+	ASSERT_TRUE(completing.IsIncompletePartfile());
+	ASSERT_FALSE(completed.IsIncompletePartfile());
+}
+
+// is_downloading is the gate: a shared knownfile never in the queue is
+// complete whatever the download side happens to hold.
+TEST(State, IncompletePartfileRequiresBeingInTheDownloadQueue)
+{
+	FileSnapshot f;
+	f.is_shared = true;
+	f.is_downloading = false;
+	f.download.status = "downloading";
+	ASSERT_FALSE(f.IsIncompletePartfile());
+}
+
 TEST(State, MutateClientsAndSharedRoundtrip)
 {
 	CState s;

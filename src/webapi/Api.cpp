@@ -2914,12 +2914,18 @@ void WriteSharedDetailObject(CJsonWriter &w, const webapi::FileSnapshot &f)
 	w.ValueDouble(
 		f.size > 0 ? static_cast<double>(f.shared.xfer_total) / static_cast<double>(f.size) : 0.0);
 	w.Key("path");
-	// "[PartFile]" only while genuinely an incomplete partfile; once the
-	// download completes (even if still listed under downloads, not yet
-	// cleared) the real destination directory is available (#417).
-	const bool incomplete_partfile = f.is_downloading && f.download.status != "completed";
-	w.ValueString(incomplete_partfile ? wxString::FromAscii("[PartFile]")
-					  : wxString::FromUTF8(f.on_disk_dir.c_str()));
+	// The on-disk directory (Temp while downloading, destination once
+	// completed) -- the same value /downloads/{hash} reports for this file.
+	// This was once masked with a placeholder while the file was incomplete,
+	// which hid nothing -- the sibling endpoint served the real value for the
+	// same file on the same tick -- and cost clients a usable field.
+	// `incomplete` below carries that state explicitly instead.
+	w.ValueString(wxString::FromUTF8(f.on_disk_dir.c_str()));
+	w.Key("incomplete");
+	// Always present, so clients can test it rather than probe for absence.
+	// Detail-only, like `path`: the list object and the shared_updated diff
+	// deliberately carry neither, so the SSE event rate is unaffected.
+	w.ValueBool(f.IsIncompletePartfile());
 	w.Key("complete_sources_range");
 	w.BeginObject();
 	w.Key("low");
@@ -8797,11 +8803,10 @@ CHttpServer::Response CApiDispatcher::HandleSharedVerify(
 	// Partfiles have no verify implementation: the hashing task bails out on
 	// IsPartFile(), and amuled's EC handler answers NOOP either way, so a
 	// caller would be told the re-hash was accepted and then never see a
-	// report. Reject up front instead. Same "genuinely incomplete" test the
-	// `path` field uses (#417): a download that has completed but is still
-	// listed keeps is_downloading set, yet is a knownfile by then and so is
-	// a legitimate verify target.
-	if (s.is_downloading && s.download.status != "completed") {
+	// report. Reject up front instead -- a download that has completed but is
+	// still listed is a knownfile by then, and so a legitimate verify target,
+	// which is exactly what IsIncompletePartfile() excludes.
+	if (s.IsIncompletePartfile()) {
 		return ErrorResponse(
 			409, "partfile_unsupported", "verify local data is not supported on a partfile");
 	}

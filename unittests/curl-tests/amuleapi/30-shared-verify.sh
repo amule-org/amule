@@ -117,15 +117,14 @@ fi
 
 # Pick a completed entry — a shared partfile is rejected by design, so it
 # can't stand in for the happy path. The list object carries no partfile
-# flag; the detail object's `path` reads "[PartFile]" exactly while a file
-# is genuinely incomplete (#417), so classify through that. The same sweep
+# flag, so classify on the detail object's `incomplete`. The same sweep
 # picks up a partfile for the 409 guard below, when the library has one.
 TEST_HASH=""
 PART_HASH=""
 for h in $(printf '%s' "$CURL_BODY" | jq -r '.shared[].hash' | head -20); do
-	P=$(curl -s --max-time 10 -H "Authorization: Bearer $ADMIN_TOKEN" \
-		"$HOST/api/v0/shared/$h" | jq -r '.path')
-	if [ "$P" = "[PartFile]" ]; then
+	INCOMPLETE=$(curl -s --max-time 10 -H "Authorization: Bearer $ADMIN_TOKEN" \
+		"$HOST/api/v0/shared/$h" | jq -r '.incomplete')
+	if [ "$INCOMPLETE" = "true" ]; then
 		[ -z "$PART_HASH" ] && PART_HASH=$h
 	else
 		[ -z "$TEST_HASH" ] && TEST_HASH=$h

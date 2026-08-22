@@ -273,6 +273,17 @@ struct FileSnapshot
 		std::uint32_t last_upload = 0;
 		std::uint32_t shared_since = 0;
 	} shared;
+
+	// True while the file is genuinely an incomplete partfile: still in the
+	// download queue, and not the "finished but not yet cleared" state.
+	//
+	// The distinction matters because a completed download keeps
+	// `is_downloading` set until the user clears it, while already being a
+	// knownfile whose data sits in its destination directory -- so
+	// `is_downloading` alone would misreport it. "completing" is incomplete
+	// on purpose: the data is still in the temp directory until the move
+	// finishes.
+	bool IsIncompletePartfile() const { return is_downloading && download.status != "completed"; }
 };
 
 // One per peer (CUpDownClient) in the daemon's active client list.

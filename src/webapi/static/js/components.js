@@ -105,8 +105,8 @@ function fullPath(file) {
   return dir + (dir.includes("\\") ? "\\" : "/") + (file.name || "");
 }
 
-// Rejects "" and the "[PartFile]" sentinel /shared returns for an incomplete
-// share (REFERENCE.md); accepts a POSIX path or a Windows drive letter.
+// Rejects "" (a path the daemon has not reported yet); accepts a POSIX path
+// or a Windows drive letter.
 const hasRealPath = (file) => /^([/\\]|[A-Za-z]:)/.test(file.path || "");
 
 // The identity group shared by both detail panels: the hash plus extra fields
