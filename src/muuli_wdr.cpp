@@ -232,8 +232,11 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item3->Add( item6, 0, wxALIGN_CENTER, 0 );
 
     item1->Add( item3, wxSizerFlags().Expand().CenterVertical() );
-    wxFlexGridSizer *item13 = new wxFlexGridSizer( 8, 0, 0 );
-    item13->AddGrowableRow( 1 );
+    // One row: the five filters sit side by side, each preceded by a separator
+    // from the second onwards -- 14 cells. They were split across two rows of
+    // eight while Category lived here; #979 took Category out and left Min Size
+    // stranded at the end of the first row, away from Max Size (issue #1035).
+    wxFlexGridSizer *item13 = new wxFlexGridSizer( 14, 0, 0 );
     s_extended_sizer = item13;
 
     wxStaticText *item14 = new wxStaticText( parent, -1, _("File Type"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -280,8 +283,8 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item23->Add( item25, wxSizerFlags().Center().Border(wxALL, 5) );
     item13->Add( item23, wxSizerFlags().Center().Border(wxALL, 5) );
 
-    // Min Size closes the first row and Max Size opens the second, so the
-    // separator that used to divide them would now sit on the row break.
+    wxStaticLine *item26 = new wxStaticLine( parent, -1, wxDefaultPosition, wxSize(-1,20), wxLI_VERTICAL );
+    item13->Add( item26, wxSizerFlags().Center().Border(wxALL, 5) );
     wxStaticText *item27 = new wxStaticText( parent, -1, _("Max Size"), wxDefaultPosition, wxDefaultSize, 0 );
     item13->Add( item27, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
     wxBoxSizer *item28 = new wxBoxSizer( wxHORIZONTAL );
@@ -305,13 +308,6 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item13->Add( item32, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
     wxSpinCtrl *item33 = new wxSpinCtrl( parent, IDC_SPINSEARCHAVAILABILITY, "0", wxDefaultPosition, wxDefaultSize, 0, 0, 1000, 0 );
     item13->Add( item33, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
-    // Five filters no longer divide evenly into the 8-column grid: the first row
-    // takes three (File Type, Extension, Min Size) and the second two, so the
-    // second is padded out to a full row. Without this the sizer pulls cells up
-    // from the next row and the two rows stop lining up.
-    for (int pad = 0; pad < 3; ++pad) {
-        item13->Add( 0, 0, wxSizerFlags().Border(wxALL, 5) );
-    }
     item1->Add( item13, wxSizerFlags().Center() );
 
     wxFlexGridSizer *item34 = new wxFlexGridSizer( 1, 0, 0, 0 );
