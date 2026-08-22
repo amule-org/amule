@@ -691,6 +691,50 @@ void CSearchDlg::UpdateSearchProgress(uint32 searchID, uint32 status)
 	}
 }
 
+bool CSearchDlg::HasRunningEd2kSearch() const
+{
+	for (size_t i = 0; i < m_notebook->GetPageCount(); ++i) {
+		const CSearchListCtrl *ctrl = dynamic_cast<const CSearchListCtrl *>(m_notebook->GetPage(i));
+		// A browse tab is not an ed2k search, and the placeholder tab that
+		// exists before the first search has no id yet.
+		if (!ctrl || ctrl->IsBrowse()) {
+			continue;
+		}
+		const wxUIntPtr sid = ctrl->GetSearchId();
+		if (!sid) {
+			continue;
+		}
+		// Kad searches carry their own IDs and run in parallel, so a running
+		// one is not in the way of a new ed2k search.
+		if (theApp->searchlist->IsKadSearch((uint32_t)sid)) {
+			continue;
+		}
+
+		// 0xffff / 0xfffe are the finished sentinels; anything else is a
+		// running percent. Same vocabulary in both builds, different source.
+		uint32 status;
+#ifdef CLIENT_GUI
+		// Remote GUI: the daemon pushes the sentinel through
+		// UpdateSearchProgress, which caches it per tab. A tab with no entry
+		// is one nothing has reported on this session -- a search restored
+		// from disk at startup -- so it is finished, not running. Treating
+		// the absence as "running" would prompt on every first search of a
+		// session that had stored results.
+		const std::map<wxUIntPtr, uint32>::const_iterator it = m_searchProgress.find(sid);
+		if (it == m_searchProgress.end()) {
+			continue;
+		}
+		status = it->second;
+#else
+		status = theApp->searchlist->GetSearchBarStatusById(sid);
+#endif
+		if (status != 0xffff && status != 0xfffe) {
+			return true;
+		}
+	}
+	return false;
+}
+
 void CSearchDlg::AddResult(CSearchFile *toadd)
 {
 	CSearchListCtrl *outputwnd = GetSearchList(toadd->GetSearchID());
@@ -1014,6 +1058,29 @@ void CSearchDlg::OnBnClickedStart(wxCommandEvent &WXUNUSED(evt))
 			_("Search error"),
 			wxOK | wxCENTRE | wxICON_ERROR);
 		return;
+	}
+
+	// Starting a second ed2k search finalises the one in flight (see
+	// HasRunningEd2kSearch for why the protocol forces that), and until now it
+	// happened silently: the first tab's progress bar simply cleared, which
+	// reads exactly like a search that finished normally. Ask first, so
+	// stopping it is the user's decision rather than a surprise.
+	//
+	// Only ed2k-over-ed2k. Starting a Kad search alongside a running ed2k one
+	// is fine, and so is the reverse -- Kad results carry their own search ID.
+	const int newType = GetSelectedSearchTypeCanonical();
+	if ((newType == LocalSearch || newType == GlobalSearch) && HasRunningEd2kSearch()) {
+		const int answer =
+			wxMessageBox(_("An eD2k search is still running. Starting a new one will stop it, "
+				       "because the eD2k protocol allows only one search at a time.\n\n"
+				       "Results already found are kept; only new ones stop arriving.\n\n"
+				       "Start the new search anyway?"),
+				_("Search in progress"),
+				wxYES_NO | wxCENTRE | wxICON_QUESTION,
+				this);
+		if (answer != wxYES) {
+			return;
+		}
 	}
 
 	// Debounce accidental double-clicks, but keep it short so multi-search

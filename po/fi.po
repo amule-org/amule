@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-22 00:01+0200\n"
+"POT-Creation-Date: 2026-08-22 12:11+0200\n"
 "PO-Revision-Date: 2026-08-21 19:07+0000\n"
 "Last-Translator: Tapio Rantala <tapio.rantala@iki.fi>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -6451,6 +6451,20 @@ msgstr ""
 #, fuzzy
 msgid "Search error"
 msgstr "Haut"
+
+#: src/SearchDlg.cpp
+msgid ""
+"An eD2k search is still running. Starting a new one will stop it, because the eD2k protocol allows only one search at a time.\n"
+"\n"
+"Results already found are kept; only new ones stop arriving.\n"
+"\n"
+"Start the new search anyway?"
+msgstr ""
+
+#: src/SearchDlg.cpp
+#, fuzzy
+msgid "Search in progress"
+msgstr "Haun edistyminen: %u %% \n"
 
 #: src/SearchDlg.cpp
 msgid "Min size must be smaller than max size. Max size ignored."
