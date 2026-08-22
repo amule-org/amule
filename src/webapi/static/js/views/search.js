@@ -318,10 +318,13 @@ function ResultsPane({ tab, categories }) {
   // rule, search actions right of it. The rule is admin-only so it goes away
   // with the group it separates instead of leading a guest's toolbar.
   // Extend greys out rather than hiding, like Stop, and its title names which
-  // of the two conditions is in the way.
-  const canExtend = tab.kind === "kad" && running;
-  const extendTitle = canExtend ? t("search_extend_title")
-    : tab.kind !== "kad" ? t("search_extend_kad_only") : t("search_extend_finished");
+  // of the three conditions is in the way -- the last being the daemon having
+  // told us this search can no longer be widened (409 kad_more_exhausted).
+  const canExtend = tab.kind === "kad" && running && !tab.moreExhausted;
+  const extendTitle = tab.kind !== "kad" ? t("search_extend_kad_only")
+    : !running ? t("search_extend_finished")
+    : tab.moreExhausted ? t("search_extend_exhausted")
+    : t("search_extend_title");
   return html`
     <div class="toolbar pane-toolbar">
       <select class="input input-sm admin-only" value=${Number(ui.cat) || 0}
