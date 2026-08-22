@@ -397,16 +397,25 @@ function availShade(sources, lo, hi) {
 // Chunk map: one proportional slice per ~9.28 MB part.
 // `mode="download"` colours by local state (the Downloads panel);
 // `mode="availability"` colours purely by source count (the Shared
-// panel's "Obtained Parts" bar, mirroring the desktop column).
+// panel's "Obtained Parts" bar, mirroring the desktop column);
+// `mode="hashing"` splits the bar green/amber at the hashed/pending boundary
+// while a re-hash runs over the file (Verify Local Data, or an AICH hashset
+// rebuild), mirroring the desktop's two-span bar. That pass reports only a
+// *count* of parts done, never a per-part map, so it is driven by
+// `total` (= part_count) + `hashed` instead of `parts`.
 // Canvas rather than N <div>s so files with hundreds/thousands of parts redraw
 // cheaply on every live tick. Colours are read from the theme each draw.
-export function PiecesBar({ parts, mode = "download" }) {
+export function PiecesBar({ parts, mode = "download", total = 0, hashed = 0 }) {
   const ref = useRef(null);
   const drawRef = useRef(null);
   const partsRef = useRef(parts);
   partsRef.current = parts;
   const modeRef = useRef(mode);
   modeRef.current = mode;
+  const totalRef = useRef(total);
+  totalRef.current = total;
+  const hashedRef = useRef(hashed);
+  hashedRef.current = hashed;
 
   useEffect(() => {
     const canvas = ref.current;
@@ -415,6 +424,8 @@ export function PiecesBar({ parts, mode = "download" }) {
       const cs = getComputedStyle(document.documentElement);
       const complete = cs.getPropertyValue("--ok").trim();
       const missing = cs.getPropertyValue("--bad").trim();
+      // not-yet-hashed remainder of a hashing pass (desktop: amber)
+      const pending = cs.getPropertyValue("--warn").trim();
       // available parts fade from few-sources -> many-sources blue
       const availLo = toRGB(cs.getPropertyValue("--piece-avail-lo"));
       const availHi = toRGB(cs.getPropertyValue("--piece-avail"));
@@ -426,8 +437,9 @@ export function PiecesBar({ parts, mode = "download" }) {
       const ctx = canvas.getContext("2d");
       ctx.clearRect(0, 0, w, h);
       const list = partsRef.current || [];
-      const n = list.length || 1;
-      const pw = w / n;
+      const hashing = modeRef.current === "hashing";
+      const count = hashing ? totalRef.current : list.length;
+      const pw = w / (count || 1);
       // When pieces are wide enough, leave a 1px gap so each piece is
       // individually countable; when many/thin, overdraw to avoid seams and
       // let them blend into a continuous availability bar (the cleared track
@@ -437,10 +449,13 @@ export function PiecesBar({ parts, mode = "download" }) {
       // file is 100% local by definition, so every part is either held by
       // some peer (blue, faded by how many) or by nobody (red).
       const avail = modeRef.current === "availability";
-      for (let i = 0; i < list.length; i++) {
+      for (let i = 0; i < count; i++) {
         const p = list[i];
         let fill;
-        if (avail) {
+        // Overshoot needs no clamp: `i < hashed` just saturates to all-green,
+        // which is what the desktop's byte-offset clamp achieves.
+        if (hashing) fill = i < hashedRef.current ? complete : pending;
+        else if (avail) {
           fill = p.sources > 0 ? availShade(p.sources, availLo, availHi) : missing;
         } else if (p.state === "complete") fill = complete;
         else if (p.state === "incomplete") {
@@ -451,35 +466,53 @@ export function PiecesBar({ parts, mode = "download" }) {
         const width = gap ? Math.max(1, x1 - x0 - gap) : (x1 - x0) + 1;
         ctx.fillRect(x0, 0, width, h);
       }
+      writeTitle();
     };
-    drawRef.current = draw;
-    draw();
     // Per-part readout via the native `title` tooltip: no positioning code,
     // no CSS, no new strings -- composed from the legend's own labels. The
     // canvas itself is aria-hidden (the legend beside it is the text
     // alternative), so this is a pointer-only progressive enhancement.
-    const onMove = (e) => {
+    //
+    // The hovered piece is remembered so a redraw can refresh its label: the
+    // pointer can sit still while what is under it changes -- a part completing
+    // in download mode, or the boundary sweeping past it in hashing mode --
+    // which would otherwise leave the reading stale until the mouse moved.
+    let hover = -1;
+    const writeTitle = () => {
       const list = partsRef.current || [];
-      // A zero clientWidth would make offsetX/width NaN and index past the end.
-      const w = canvas.clientWidth;
-      if (!list.length || !w) { canvas.title = ""; return; }
-      const i = Math.min(list.length - 1, Math.max(0, Math.floor((e.offsetX / w) * list.length)));
-      const p = list[i];
       const avail = modeRef.current === "availability";
+      const hashing = modeRef.current === "hashing";
+      // Same piece count the draw uses, so the hovered index matches the fill.
+      const count = hashing ? totalRef.current : list.length;
+      if (hover < 0 || hover >= count) { canvas.title = ""; return; }
+      const p = list[hover];
       // Show the source count only where the colour actually encodes it,
       // i.e. wherever the fill came from availShade(). An `incomplete` part
       // with no sources still paints blue but has nothing to count.
-      const graded = (avail || p.state === "incomplete") && p.sources > 0;
-      const label = avail
+      const graded = !hashing && (avail || p.state === "incomplete") && p.sources > 0;
+      const label = hashing
+        ? t(hover < hashedRef.current ? "pieces_hashed" : "pieces_pending")
+        : avail
         ? t(p.sources > 0 ? "pieces_available" : "pieces_no_sources")
         : t(p.state === "complete" ? "pieces_complete"
           : p.state === "incomplete" ? "pieces_available" : "pieces_missing");
       // Only write on a real change: mousemove fires far more often than the
       // hovered piece changes, and each write is a DOM attribute mutation.
-      const next = "#" + (i + 1) + " \u00b7 " + label + (graded ? " \u00b7 " + p.sources : "");
+      const next = "#" + (hover + 1) + " \u00b7 " + label + (graded ? " \u00b7 " + p.sources : "");
       if (canvas.title !== next) canvas.title = next;
     };
+    const onMove = (e) => {
+      const list = partsRef.current || [];
+      const count = modeRef.current === "hashing" ? totalRef.current : list.length;
+      // A zero clientWidth would make offsetX/width NaN and index past the end.
+      const w = canvas.clientWidth;
+      hover = (!count || !w) ? -1
+        : Math.min(count - 1, Math.max(0, Math.floor((e.offsetX / w) * count)));
+      writeTitle();
+    };
     canvas.addEventListener("mousemove", onMove);
+    drawRef.current = draw;
+    draw();
     // Colours are read from CSS vars on every draw, so a theme switch only
     // needs a redraw (mirrors charts.js).
     const ro = new ResizeObserver(draw);
@@ -495,13 +528,27 @@ export function PiecesBar({ parts, mode = "download" }) {
     };
   }, []);
 
-  useEffect(() => { drawRef.current && drawRef.current(); }, [parts, mode]);
+  useEffect(() => { drawRef.current && drawRef.current(); }, [parts, mode, total, hashed]);
 
   return html`<div class="pieces-bar"><canvas ref=${ref} aria-hidden="true"></canvas></div>`;
 }
 
-export function PiecesLegend({ parts, mode = "download" }) {
+export function PiecesLegend({ parts, mode = "download", total = 0, hashed = 0 }) {
   const chip = (v) => html`<span class="legend-chip" style=${{ background: "var(" + v + ")" }}></span>`;
+  // Hashing mode: hashed / pending counts and the percentage. Clamped because
+  // amuled reports part + 1, which can overshoot `total` on the short tail
+  // part -- pending must never go negative.
+  if (mode === "hashing") {
+    const n = Math.min(Number(hashed) || 0, total);
+    return html`
+      <div class="chart-legend pieces-legend" title=${t("pieces_hint_hashing")}>
+        <span class="legend-item">${chip("--ok")} ${t("pieces_hashed")} <b>${n}</b></span>
+        <span class="legend-item">${chip("--warn")} ${t("pieces_pending")} <b>${total - n}</b></span>
+        <span class="pieces-total">
+          ${formatPercent(total ? (n / total) * 100 : 0)} · ${tn("pieces_count", total)}
+        </span>
+      </div>`;
+  }
   // Availability mode: two buckets only (some source / no source), plus the
   // gradient scale that explains what the blue shade encodes.
   if (mode === "availability") {
