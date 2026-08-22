@@ -190,9 +190,7 @@ bool CChatSelector::ProcessMessage(uint64 sender_id, const wxString &message)
 			// Core did not send us the name.
 			// This must NOT happen.
 			// Build a client name based on the ID
-			uint32 ip = IP_FROM_GUI_ID(sender_id);
-			client_name = CFormat("IP: %s Port: %u") % Uint32toStringIP(ip) %
-				      PORT_FROM_GUI_ID(sender_id);
+			client_name = ChatPeerFallbackName(sender_id);
 		}
 
 		session = StartSession(sender_id, client_name, true);

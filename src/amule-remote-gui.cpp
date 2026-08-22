@@ -1334,9 +1334,7 @@ void CChatMsgHandlerRem::HandlePacket(const CECPacket *packet)
 			name = nameTag->GetStringData();
 		}
 		if (name.IsEmpty()) {
-			// Same fallback the desktop uses when the core has no name.
-			name = CFormat(_("IP: %s Port: %u")) % Uint32toStringIP(IP_FROM_GUI_ID(gui_id)) %
-			       PORT_FROM_GUI_ID(gui_id);
+			name = ChatPeerFallbackName(gui_id);
 		}
 
 		// Open the tab even when the session has no new messages: that is

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-22 12:11+0200\n"
+"POT-Creation-Date: 2026-08-22 15:15+0200\n"
 "PO-Revision-Date: 2026-08-21 19:17+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -2173,6 +2173,25 @@ msgstr ""
 #, c-format
 msgid "Could not save the amuleapi password: %s"
 msgstr "amuleapi parolası kaydedilemedi: %s"
+
+#: src/ExternalConn.cpp
+#, fuzzy
+msgid "Missing chat session id"
+msgstr "Yeni sohbet oturumu başladı"
+
+#: src/ExternalConn.cpp
+#, fuzzy
+msgid "No such chat session"
+msgstr "Bu sohbet oturumunu kapatır."
+
+#: src/ExternalConn.cpp
+msgid "Empty chat message"
+msgstr ""
+
+#: src/ExternalConn.cpp
+#, fuzzy
+msgid "Unknown chat target"
+msgstr "(Bilinmeyen ad)"
 
 #: src/ExternalConn.cpp
 msgid "Kad is disabled in preferences."
