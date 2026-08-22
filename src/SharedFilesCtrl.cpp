@@ -46,7 +46,6 @@
 #include "DataToText.h"       // Needed for PriorityToStr
 #include "Statistics.h"       // Needed for theStats (incoming free space)
 #include "GuiEvents.h"        // Needed for CoreNotify_*
-#include "MuleCollection.h"   // Needed for CMuleCollection
 #include "DownloadQueue.h"    // Needed for CDownloadQueue
 #include "TransferWnd.h"      // Needed for CTransferWnd
 #include "Logger.h"           // Needed for AddLogLine
@@ -194,7 +193,8 @@ void CSharedFilesCtrl::OnItemRightClicked(wxDataViewEvent &event)
 		m_menu->Append(MP_VERIFY, _("Verify Local Data"));
 		m_menu->AppendSeparator();
 
-		if (file->GetFileName().GetExt() == "emulecollection") {
+		const bool isCollection = file->GetFileName().GetExt() == "emulecollection";
+		if (isCollection) {
 			m_menu->Append(MP_ADDCOLLECTION, _("Add files in collection to transfer list"));
 			m_menu->AppendSeparator();
 		}
@@ -231,6 +231,13 @@ void CSharedFilesCtrl::OnItemRightClicked(wxDataViewEvent &event)
 		FileLaunch::GetAvailability(file, canOpen, canReveal);
 		m_menu->Enable(MP_VIEW, previewable && canOpen);
 		m_menu->Enable(MP_SHOWINFOLDER, canReveal);
+		if (isCollection) {
+			// Reading a collection means reading its bytes on this host, so it
+			// needs the same reachability as opening the file. A part file is
+			// excluded on top of that: it is a truncated collection, not a
+			// usable one.
+			m_menu->Enable(MP_ADDCOLLECTION, canOpen && !file->IsPartFile());
+		}
 		m_menu->Enable(MP_GETAICHED2KLINK, file->HasProperAICHHashSet());
 		m_menu->Enable(MP_GETAICHED2KLINKSRC, file->HasProperAICHHashSet());
 		m_menu->Enable(MP_GETHOSTNAMESOURCEED2KLINK, !thePrefs::GetYourHostname().IsEmpty());
@@ -1198,22 +1205,33 @@ void CSharedFilesCtrl::OnAddCollection(wxCommandEvent &WXUNUSED(evt))
 		return;
 	}
 	CKnownFile *file = reinterpret_cast<CKnownFile *>(selected.front());
-	wxString CollectionFile = file->GetFilePath().JoinPaths(file->GetFileName()).GetRaw();
-	CMuleCollection my_collection;
-	if (my_collection.Open(CollectionFile)) {
-		wxArrayString links;
-		for (size_t e = 0; e < my_collection.size(); ++e) {
-			// eMule stores collection strings as UTF-8. Fall back to
-			// raw bytes rather than dropping the entry, since
-			// FromUTF8 yields an empty string on invalid input.
-			wxString link = wxString::FromUTF8(my_collection[e].c_str());
-			if (link.IsEmpty()) {
-				link = wxString::From8BitData(my_collection[e].c_str());
-			}
-			links.Add(link);
-		}
-		theApp->downloadqueue->AddLinks(links);
+
+	// The collection is parsed on this side, so its bytes have to be readable
+	// from this host. amulegui is shown the daemon's directory, which
+	// ResolvePath() rewrites through the user's configured mapping; in the
+	// monolithic build the path is already local and resolves unchanged.
+	//
+	// A part file is turned away rather than resolved: it resolves to the
+	// ".part" in the temp directory, which does exist, so a half-downloaded
+	// collection would parse and quietly queue whichever links happened to be
+	// on disk already. The menu entry is disabled for those, so this repeats
+	// that test only to keep the handler correct on its own.
+	CPath collection;
+	if (file->IsPartFile() || !FileLaunch::ResolvePath(file, collection)) {
+		return;
 	}
+
+	// The same expansion the command line and the macOS open-document path
+	// use: it reports a missing, malformed or empty collection itself, and
+	// runs every entry through CheckPassedLink() instead of forwarding the raw
+	// strings -- so magnet entries convert and invalid ones are named.
+	wxArrayString links;
+	if (theApp->ExpandPassedCollection(collection.GetRaw(), links, 0) !=
+		CamuleAppCommon::kCollectionExpanded) {
+		// Already logged by ExpandPassedCollection().
+		return;
+	}
+	theApp->downloadqueue->AddLinks(links);
 }
 
 // Both act on one file: the menu is opened over a row, and opening several

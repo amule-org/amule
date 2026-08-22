@@ -147,31 +147,36 @@ private:
 
 	bool CheckPassedLink(const wxString &in, wxString &out, int cat);
 
-	// Outcome of trying to read a command-line argument as a collection.
+public:
+	// Outcome of trying to read a path as a collection.
 	enum CollectionExpansion
 	{
-		// The argument isn't a collection path; treat it as a link.
+		// The path isn't a collection; a command-line caller treats it
+		// as a link instead.
 		kNotACollection,
-		// The argument named a collection and its links were emitted.
+		// The path named a collection and its links were emitted.
 		kCollectionExpanded,
-		// The argument named a collection we could not read. Already
+		// The path named a collection we could not read. Already
 		// logged, and deliberately not retried as a link - doing so
 		// would emit a second, misleading "invalid eD2k link" error.
 		kCollectionFailed
 	};
 
 	/**
-	 * Expands a .emulecollection argument into its eD2k links.
+	 * Expands a .emulecollection into its eD2k links.
+	 *
+	 * Reads the file from this host's filesystem, so a caller holding a
+	 * remote core's path must resolve it first (FileLaunch::ResolvePath).
 	 *
 	 * Accepts a plain path or a file:// URL; file managers pass either
 	 * depending on the platform and the .desktop Exec field used.
 	 * Each link is validated through CheckPassedLink(), so the caller
 	 * gets the same canonicalisation and category suffix as a link typed
-	 * on the command line.
+	 * on the command line. Missing, malformed and empty collections are
+	 * reported by this function; the caller only has to stop.
 	 */
 	CollectionExpansion ExpandPassedCollection(const wxString &in, wxArrayString &out, int cat);
 
-public:
 	/**
 	 * Queues every collection among @a fileNames into the ED2KLinks file.
 	 *
