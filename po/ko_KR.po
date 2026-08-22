@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-22 15:15+0200\n"
+"POT-Creation-Date: 2026-08-22 19:49+0200\n"
 "PO-Revision-Date: 2026-08-22 15:36+0000\n"
 "Last-Translator: Hyunju Kang <rexington@gmail.com>\n"
 "Language-Team: Korean <hoenny@daum.net>\n"
@@ -1029,11 +1029,6 @@ msgid "Unknown"
 msgstr "알수없는"
 
 #: src/BaseClient.cpp
-#, c-format
-msgid "Failed to retrieve shared files from user '%s'"
-msgstr "사용자 %s로부터 공유파일을 찾지 못했습니다."
-
-#: src/BaseClient.cpp
 msgid "Searching buddy for lowid connection"
 msgstr ""
 
@@ -1054,6 +1049,11 @@ msgstr "엑스뮬(가짜 이뮬)"
 #, c-format
 msgid "1.x (based on eMule v0.%u)"
 msgstr "1.x (이뮬 v0.%u 기반)"
+
+#: src/BaseClient.cpp
+#, c-format
+msgid "Failed to retrieve shared files from user '%s'"
+msgstr "사용자 %s로부터 공유파일을 찾지 못했습니다."
 
 #: src/BaseClient.cpp
 #, c-format

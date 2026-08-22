@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-22 15:15+0200\n"
+"POT-Creation-Date: 2026-08-22 19:49+0200\n"
 "PO-Revision-Date: 2026-08-22 15:39+0000\n"
 "Last-Translator: Hallvor Brunstad <Hallvor_1976@yahoo.com>\n"
 "Language-Team: <i18n-nn@lister.ping.uio.no>\n"
@@ -1029,11 +1029,6 @@ msgid "Unknown"
 msgstr "Ukjend"
 
 #: src/BaseClient.cpp
-#, c-format
-msgid "Failed to retrieve shared files from user '%s'"
-msgstr "Greidde ikkje å hente delte filer frå brukar '%s'"
-
-#: src/BaseClient.cpp
 msgid "Searching buddy for lowid connection"
 msgstr ""
 
@@ -1054,6 +1049,11 @@ msgstr "xMule (Falsk eMule)"
 #, c-format
 msgid "1.x (based on eMule v0.%u)"
 msgstr "1.x·(basert på eMule·v0.%u)"
+
+#: src/BaseClient.cpp
+#, c-format
+msgid "Failed to retrieve shared files from user '%s'"
+msgstr "Greidde ikkje å hente delte filer frå brukar '%s'"
 
 #: src/BaseClient.cpp
 #, c-format

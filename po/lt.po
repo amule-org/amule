@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-22 15:15+0200\n"
+"POT-Creation-Date: 2026-08-22 19:49+0200\n"
 "PO-Revision-Date: 2026-08-22 15:37+0000\n"
 "Last-Translator: Dovydas Sankauskas <laisve@gmail.com>\n"
 "Language-Team: Lithuanian <komp_lt@konf.lt>\n"
@@ -1031,11 +1031,6 @@ msgid "Unknown"
 msgstr "Nežinoma"
 
 #: src/BaseClient.cpp
-#, c-format
-msgid "Failed to retrieve shared files from user '%s'"
-msgstr "Nepavyko gauti dalinamų failų iš vartotojo „%s“"
-
-#: src/BaseClient.cpp
 msgid "Searching buddy for lowid connection"
 msgstr ""
 
@@ -1056,6 +1051,11 @@ msgstr "xMule (neteisinga eMule)"
 #, c-format
 msgid "1.x (based on eMule v0.%u)"
 msgstr "1.x (paremta eMule v0.%u)"
+
+#: src/BaseClient.cpp
+#, c-format
+msgid "Failed to retrieve shared files from user '%s'"
+msgstr "Nepavyko gauti dalinamų failų iš vartotojo „%s“"
 
 #: src/BaseClient.cpp
 #, c-format
