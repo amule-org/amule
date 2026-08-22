@@ -7,8 +7,8 @@
 
 import { api } from "../api.js";
 import { store } from "../store.js";
-import { html, useState, useEffect, useRef, useStore } from "../dom.js";
-import { ProgressBar, Placeholder, toast, confirmDialog, Section, statRow, IdentityLine, copyText, Tabs, CommentEditor, CommentsList, RenameForm, PRIORITIES, prioValue, prioLabel } from "../components.js";
+import { html, useState, useEffect, useStore } from "../dom.js";
+import { ProgressBar, Placeholder, PiecesBar, PiecesLegend, toast, confirmDialog, Section, statRow, IdentityLine, copyText, Tabs, CommentEditor, CommentsList, RenameForm, PRIORITIES, prioValue, prioLabel } from "../components.js";
 import { formatBytes, formatSpeed, formatDuration, formatInt, formatPercent, formatTimestamp } from "../format.js";
 import { Icon } from "../icons.js";
 import { FileClients, HIDDEN_EVERYWHERE } from "./client-table.js";
@@ -17,32 +17,6 @@ import { t, tn, terr } from "../i18n.js";
 // Peers of a download: show the download-side columns, keep the upload ones
 // (and the redundant per-row file name) one click away in the column picker.
 const DL_HIDDEN = [...HIDDEN_EVERYWHERE, "file", "ul_state", "ul_speed", "uploaded", "ul_session", "queue_pos", "score"];
-
-// The pieces bar mirrors the aMule GUI download bar, theme-tuned via CSS vars:
-// green (--ok) = have it, blue (--piece-avail-lo -> --piece-avail, faded by
-// source count) = available, red (--bad) = missing (nobody has it).
-// Sources at which an available part reaches full-intensity blue (aMule's
-// gradient saturates around 10 sources: blue = 210 - 22*(sources-1)).
-const AVAIL_FULL = 10;
-
-// Parse a CSS colour ("#rgb", "#rrggbb", or "rgb(...)") to [r,g,b].
-function toRGB(s) {
-  s = (s || "").trim();
-  if (s[0] === "#") {
-    let h = s.slice(1);
-    if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
-    const n = parseInt(h, 16);
-    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-  }
-  const m = s.match(/[\d.]+/g);
-  return m ? [+m[0], +m[1], +m[2]] : [0, 0, 0];
-}
-// Linear blend a->b by f in [0,1], as a canvas fillStyle string.
-function mix(a, b, f) {
-  return "rgb(" + Math.round(a[0] + (b[0] - a[0]) * f) + "," +
-    Math.round(a[1] + (b[1] - a[1]) * f) + "," +
-    Math.round(a[2] + (b[2] - a[2]) * f) + ")";
-}
 
 export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDelete, onClear }) {
   const downloads = useStore("downloads") || []; // live tick source (SSE ~500ms)
@@ -327,92 +301,3 @@ function DownloadFilenames({ hash, name, onRenamed }) {
     </div>`;
 }
 
-// Chunk map: one proportional slice per ~9.28 MB part, coloured by state.
-// Canvas rather than N <div>s so files with hundreds/thousands of parts redraw
-// cheaply on every live tick. Colours are read from the theme each draw.
-function PiecesBar({ parts }) {
-  const ref = useRef(null);
-  const drawRef = useRef(null);
-  const partsRef = useRef(parts);
-  partsRef.current = parts;
-
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas) return;
-    const draw = () => {
-      const cs = getComputedStyle(document.documentElement);
-      const complete = cs.getPropertyValue("--ok").trim();
-      const missing = cs.getPropertyValue("--bad").trim();
-      // available parts fade from few-sources -> many-sources blue
-      const availLo = toRGB(cs.getPropertyValue("--piece-avail-lo"));
-      const availHi = toRGB(cs.getPropertyValue("--piece-avail"));
-      const dpr = window.devicePixelRatio || 1;
-      const w = Math.max(1, Math.round(canvas.clientWidth * dpr));
-      const h = Math.max(1, Math.round(canvas.clientHeight * dpr));
-      if (canvas.width !== w) canvas.width = w;
-      if (canvas.height !== h) canvas.height = h;
-      const ctx = canvas.getContext("2d");
-      ctx.clearRect(0, 0, w, h);
-      const list = partsRef.current || [];
-      const n = list.length || 1;
-      const pw = w / n;
-      // When pieces are wide enough, leave a 1px gap so each piece is
-      // individually countable; when many/thin, overdraw to avoid seams and
-      // let them blend into a continuous availability bar (the cleared track
-      // background shows through the gaps).
-      const gap = pw >= 6 * dpr ? Math.max(1, Math.round(dpr)) : 0;
-      for (let i = 0; i < list.length; i++) {
-        const p = list[i];
-        let fill;
-        if (p.state === "complete") fill = complete;
-        else if (p.state === "incomplete") {
-          const frac = Math.min(1, Math.max(0, ((p.sources || 1) - 1) / (AVAIL_FULL - 1)));
-          fill = mix(availLo, availHi, frac);
-        } else fill = missing;
-        ctx.fillStyle = fill;
-        const x0 = Math.round(i * pw), x1 = Math.round((i + 1) * pw);
-        const width = gap ? Math.max(1, x1 - x0 - gap) : (x1 - x0) + 1;
-        ctx.fillRect(x0, 0, width, h);
-      }
-    };
-    drawRef.current = draw;
-    draw();
-    // Colours are read from CSS vars on every draw, so a theme switch only
-    // needs a redraw (mirrors charts.js).
-    const ro = new ResizeObserver(draw);
-    ro.observe(canvas);
-    const mo = new MutationObserver(draw);
-    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    mq.addEventListener("change", draw);
-    return () => { ro.disconnect(); mo.disconnect(); mq.removeEventListener("change", draw); };
-  }, []);
-
-  useEffect(() => { drawRef.current && drawRef.current(); }, [parts]);
-
-  return html`<div class="pieces-bar"><canvas ref=${ref}></canvas></div>`;
-}
-
-function PiecesLegend({ parts }) {
-  const counts = { complete: 0, incomplete: 0, missing: 0 };
-  for (const p of parts) counts[p.state] = (counts[p.state] || 0) + 1;
-  const chip = (v) => html`<span class="legend-chip" style=${{ background: "var(" + v + ")" }}></span>`;
-  // One line: three flat state chips (green/red/blue), then the availability
-  // gradient scale grouped right after "Available" (it explains that blue's
-  // shade encodes source count) — keeps the row compact and the chips uniform.
-  return html`
-    <div class="chart-legend pieces-legend">
-      <span class="legend-item">${chip("--ok")} ${t("downloads_detail_part_complete")} <b>${counts.complete}</b></span>
-      <span class="legend-item">${chip("--bad")} ${t("downloads_detail_part_missing")} <b>${counts.missing}</b></span>
-      <span class="legend-item" title=${t("downloads_detail_avail_hint")}>
-        ${chip("--piece-avail")} ${t("downloads_detail_part_incomplete")} <b>${counts.incomplete}</b>
-        ${counts.incomplete > 0 ? html`
-          <span class="pieces-scale">
-            <small>(${t("downloads_detail_avail_fewer")}</small>
-            <span class="pieces-scale-bar"></span>
-            <small>${t("downloads_detail_avail_more")})</small>
-          </span>` : null}
-      </span>
-      <span class="pieces-total">${tn("downloads_detail_pieces_count", parts.length)}</span>
-    </div>`;
-}

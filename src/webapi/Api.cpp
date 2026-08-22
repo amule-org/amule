@@ -2359,6 +2359,44 @@ void WriteProgressParts(CJsonWriter &w, const webapi::FileSnapshot &f)
 	w.EndArray();
 }
 
+// Per-part source availability backing the shared "Obtained Parts" bar.
+// A complete known file carries its own vector, decoded from the
+// EC_TAG_KNOWNFILE tag; a shared partfile is emitted by amuled as
+// EC_TAG_PARTFILE only, so its vector lands on the download side. Same
+// server-side encoder either way, so the fallback is the same numbers,
+// not an approximation.
+const std::vector<std::uint16_t> &SharedPartSources(const webapi::FileSnapshot &f)
+{
+	return f.shared.decoded_part_sources.empty() ? f.download.decoded_part_sources
+						     : f.shared.decoded_part_sources;
+}
+
+// `parts` for the shared detail endpoint: one `{sources}` per part, in
+// file order, always exactly `part_count` long. Deliberately NOT the
+// downloads shape -- `state` there encodes local completeness, which is
+// meaningless for a share and would invite a progress-bar renderer. The
+// caller omits the key entirely when nothing has been decoded yet, so
+// "no data" and "no sources anywhere" stay distinguishable.
+void WriteSharedAvailabilityParts(CJsonWriter &w, const webapi::FileSnapshot &f)
+{
+	const std::vector<std::uint16_t> &part_sources = SharedPartSources(f);
+	if (part_sources.empty())
+		return;
+	w.Key("parts");
+	w.BeginArray();
+	const std::uint64_t part_count = webapi::PartCountForSize(f.size);
+	for (std::uint64_t i = 0; i < part_count; ++i) {
+		const std::uint16_t sources = (static_cast<std::size_t>(i) < part_sources.size())
+						      ? part_sources[static_cast<std::size_t>(i)]
+						      : static_cast<std::uint16_t>(0);
+		w.BeginObject();
+		w.Key("sources");
+		w.ValueInt(static_cast<int64_t>(sources));
+		w.EndObject();
+	}
+	w.EndArray();
+}
+
 // Emit the `media` object (issue #418) when the file carries probed
 // audio/video metadata; nothing at all otherwise. Shared by the download
 // and shared detail writers.
@@ -2825,6 +2863,7 @@ void WriteSharedDetailObject(CJsonWriter &w, const webapi::FileSnapshot &f)
 	w.ValueString(wxString::FromUTF8(f.aich_hash.c_str()));
 	w.Key("part_count");
 	w.ValueInt(static_cast<int64_t>(webapi::PartCountForSize(f.size)));
+	WriteSharedAvailabilityParts(w, f);
 	w.Key("queued_count");
 	w.ValueInt(static_cast<int64_t>(f.queued_count));
 	w.Key("comment");

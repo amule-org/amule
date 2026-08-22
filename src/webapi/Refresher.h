@@ -182,7 +182,17 @@ void ApplyGetUpdateToDownloads(
 // + name from the downloads walker on the same tick (same unified
 // map), so the shared walker just flips its flag and merges its own
 // fields. No fallback hop needed.
-void ApplyGetUpdateToShared(const CECPacket *resp, FileMap &cache);
+// `rle_state` is the same per-ECID decoder map the downloads walker
+// uses, and deliberately so: amuled keeps exactly one encoder per ECID
+// (CFileEncoderMap::UpdateEncoders) and emits it as EC_TAG_PARTFILE or
+// EC_TAG_KNOWNFILE, never both, so a single decoder map mirrors the
+// daemon's encoder set 1:1. This walker feeds only the KNOWNFILE half;
+// the downloads walker feeds the PARTFILE half and already evicts on
+// EC_TAG_FILE_REMOVED, which is the only way an ECID's encoder is torn
+// down and rebuilt (a completing download keeps its CPartFile_Encoder
+// until CDownloadQueue::ClearCompleted renews its ECID outright).
+void ApplyGetUpdateToShared(
+	const CECPacket *resp, FileMap &cache, std::map<std::uint32_t, PartFileEncoderData> &rle_state);
 
 void ApplyGetUpdateToServers(const CECPacket *resp, std::map<std::uint32_t, ServerSnapshot> &cache);
 

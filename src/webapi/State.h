@@ -234,6 +234,23 @@ struct FileSnapshot
 		std::uint16_t complete_sources_low = 0;
 		std::uint16_t complete_sources_high = 0;
 
+		// Per-part source availability backing the shared "Obtained
+		// Parts" bar, decoded by the refresher from
+		// EC_TAG_PARTFILE_PART_STATUS on the EC_TAG_KNOWNFILE tag.
+		// Sized to ceil(size / PARTSIZE) once a decode has landed and
+		// empty until then, which the detail endpoint reports by
+		// omitting `parts` entirely -- "no data yet" and "no sources
+		// for any part" stay distinguishable.
+		//
+		// A shared *partfile* never populates this: amuled emits it as
+		// EC_TAG_PARTFILE only (one encoder per ECID), so its vector
+		// lands in `download.decoded_part_sources` instead. The detail
+		// writer falls back to that one.
+		//
+		// Values are the daemon's raw per-part source counts, clamped
+		// to 255 by the RLE encoder's uint8 buffer.
+		std::vector<std::uint16_t> decoded_part_sources;
+
 		// Live upload activity (issue #466), the upload-side analogue of
 		// the download stats. `upload_speed_bps` + `uploading_count` are
 		// live (refresh every tick); `last_upload` / `shared_since` are

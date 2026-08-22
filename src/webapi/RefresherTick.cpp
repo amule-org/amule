@@ -158,7 +158,12 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		// entry in `cache` already carries hash + name from the
 		// downloads walker above. See FileSnapshot in State.h for the
 		// shared-storage rationale.
-		state.MutateShared([&](FileMap &cache) { ApplyGetUpdateToShared(resp, cache); });
+		// Same `rle` map: the shared walker decodes the availability blob on
+		// EC_TAG_KNOWNFILE tags, the downloads walker the EC_TAG_PARTFILE
+		// ones, and amuled emits exactly one of the two per ECID. The
+		// eviction sweep above only ever touches ECIDs that were downloading,
+		// so it cannot drop a knownfile's decoder state.
+		state.MutateShared([&](FileMap &cache) { ApplyGetUpdateToShared(resp, cache, rle); });
 
 		state.MutateServers([&](std::map<std::uint32_t, ServerSnapshot> &cache) {
 			ApplyGetUpdateToServers(resp, cache);
