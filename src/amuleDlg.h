@@ -426,7 +426,6 @@ private:
 	void Apply_Toolbar_Skin(wxToolBar *wndToolbar);
 	bool Check_and_Init_Skin();
 	void Add_Skin_Icon(const wxString &iconName, const wxBitmap &stdIcon, bool useSkins);
-	void ToogleED2KLinksHandler();
 	void SetMessagesTool();
 	void OnKeyPressed(wxKeyEvent &evt);
 
