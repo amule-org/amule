@@ -55,7 +55,6 @@
 wxBEGIN_EVENT_TABLE(CSearchListCtrl, CMuleDataViewCtrl)
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(wxID_ANY, CSearchListCtrl::OnRightClick)
 	EVT_DATAVIEW_ITEM_ACTIVATED(wxID_ANY, CSearchListCtrl::OnItemActivated)
-	EVT_DATAVIEW_SELECTION_CHANGED(wxID_ANY, CSearchListCtrl::OnSelectionChanged)
 
 	EVT_MENU(MP_GETED2KLINK, CSearchListCtrl::OnPopupGetUrl)
 	EVT_MENU(MP_RAZORSTATS, CSearchListCtrl::OnRazorStatsCheck)
@@ -815,13 +814,6 @@ void CSearchListCtrl::OnItemActivated(wxDataViewEvent &event)
 	} else {
 		DownloadSelected();
 	}
-}
-
-void CSearchListCtrl::OnSelectionChanged(wxDataViewEvent &WXUNUSED(event))
-{
-	// Bubbles up like the old EVT_LIST_ITEM_SELECTED so
-	// CSearchDlg::OnListItemSelected can enable the Download button; bound
-	// separately on CSearchDlg for wxEVT_DATAVIEW_SELECTION_CHANGED.
 }
 
 void CSearchListCtrl::OnPopupGetUrl(wxCommandEvent &WXUNUSED(event))

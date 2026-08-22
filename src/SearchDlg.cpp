@@ -737,9 +737,32 @@ void CSearchDlg::OnIdle(wxIdleEvent &evt)
 	m_pendingHitCount.clear();
 }
 
+// The Download button acts on the selection, so one place answers whether it
+// is available and both routes here ask it: the selection changing, and a tab
+// switch bringing a different list to the front. They disagreed before -- the
+// selection route only ever enabled, so deselecting the last row left an armed
+// button that did nothing until a tab switch corrected it.
+void CSearchDlg::UpdateDownloadButtonState()
+{
+	bool enable = false;
+	const int selection = m_notebook->GetSelection();
+	if (selection != wxNOT_FOUND) {
+		// A page that is not a result list (or a half-built tab) leaves the
+		// button off rather than dereferencing a failed cast.
+		if (const CSearchListCtrl *ctrl =
+				dynamic_cast<CSearchListCtrl *>(m_notebook->GetPage(selection))) {
+			enable = ctrl->GetSelectedItemCount() > 0;
+		}
+	}
+	FindWindow(IDC_SDOWNLOAD)->Enable(enable);
+}
+
 void CSearchDlg::OnListItemSelected(wxDataViewEvent &event)
 {
-	FindWindow(IDC_SDOWNLOAD)->Enable(true);
+	// Recompute rather than Enable(true): wxDataViewCtrl sends this same event
+	// when the last selected row is deselected, and the button has to go back
+	// off with it.
+	UpdateDownloadButtonState();
 
 	event.Skip();
 }
@@ -946,12 +969,10 @@ void CSearchDlg::OnSearchPageChanged(wxBookCtrlEvent &WXUNUSED(evt))
 		selection = m_notebook->GetPageCount() - 1;
 	}
 
-	// Only enable the Download button for pages where files have been selected
+	// Whether Download is available follows the newly-visible list's selection.
+	UpdateDownloadButtonState();
 	if (selection != -1) {
 		CSearchListCtrl *ctrl = dynamic_cast<CSearchListCtrl *>(m_notebook->GetPage(selection));
-
-		bool enable = (ctrl->GetSelectedItemCount() > 0);
-		FindWindow(IDC_SDOWNLOAD)->Enable(enable);
 
 		// Refresh the bottom bar instantly for the newly-visible tab so it
 		// tracks the selected search rather than the last one that updated it.
