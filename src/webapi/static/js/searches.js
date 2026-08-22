@@ -36,10 +36,11 @@ let lastAdopt = 0;
 let offs = [];
 let lastResult = null, lastProgress = null, lastClosed = null;
 
-function newTab({ id, query = "", label = "", kind = "global", state = "running", startedAt = 0 }) {
+function newTab({ id, query = "", label = "", kind = "global", state = "running", startedAt = 0,
+                 percent = 0, count = 0 }) {
   return {
-    id, query, label: label || query, kind, state, percent: 0, startedAt,
-    results: new Map(), count: 0, fetching: false,
+    id, query, label: label || query, kind, state, percent, startedAt,
+    results: new Map(), count, fetching: false,
     // Per-tab UI state: switching tabs and coming back must restore it, so it
     // cannot live in the view's component state.
     ui: { selection: new Set(), filter: "", filterHave: "all", cat: 0, rowCat: {}, rowEcid: {} },
@@ -56,9 +57,14 @@ const nowSec = () => Math.floor(Date.now() / 1000);
 function tabList() {
   return Array.from(tabs.values()).map((x) => ({
     id: x.id, query: x.query, label: x.label, kind: x.kind, state: x.state,
-    // Only meaningful while running: an adopted search that already finished
-    // reports 0 forever (amuleapi seeds a discovered slot's state, not its
-    // percent), which is why the view keys its progress text off `state`.
+    // An adopted search now arrives with a real percent -- amuleapi seeds a
+    // discovered slot from the daemon's own number, and falls back to 100 for
+    // a finished one. The view still keys its progress text off `state`,
+    // which is the authoritative signal.
+    //
+    // count is the larger of the daemon's reported total and what this tab
+    // has actually pulled: a tab whose results are loaded knows better than
+    // the listing snapshot, and an unopened one has only the listing.
     percent: x.percent, count: Math.max(x.count || 0, x.results.size),
   }));
 }
@@ -130,11 +136,23 @@ async function adopt() {
     const known = tabs.get(s.search_id);
     if (known) {
       if (!known.query && s.query) { known.query = s.query; known.label = known.label || s.query; }
+      // Keep an unopened tab's badge current. Only while it holds no results
+      // of its own -- once fetched, its own map is the better number and the
+      // listing snapshot must not walk it back.
+      if (typeof s.result_count === "number" && !known.results.size &&
+          s.result_count !== known.count) {
+        known.count = s.result_count;
+        added = true;
+      }
       continue;
     }
+    // result_count is what makes an unopened tab show a real badge instead of
+    // 0 after a reload; it is omitted by a daemon that does not report counts,
+    // in which case the badge stays 0 until the tab is opened and fetched.
     tabs.set(s.search_id, newTab({
       id: s.search_id, query: s.query || "", kind: s.kind || "global",
       state: s.state || "finished", startedAt: s.started_at || 0,
+      count: typeof s.result_count === "number" ? s.result_count : 0,
     }));
     added = true;
   }

@@ -1548,11 +1548,19 @@ public:
 	// or so it took to be corrected. A slot seeded inactive is not polled by
 	// the tick, which is fine -- the read paths refresh an inactive slot on
 	// demand (ClaimSearchRefresh).
+	//
+	// `reported_percent` is the daemon's own percent for this search when the
+	// EC_OP_SEARCH_LIST entry carried one, and -1 when it did not. A daemon
+	// older than that tag reports nothing, and the fallback then has to be
+	// derived: 100 for a finished search (true by definition), 0 for a
+	// running one (the tick corrects it within a second, and inventing a
+	// number would flash a wrong one meanwhile).
 	void MarkSearchDiscovered(std::uint32_t search_id,
 		const std::string &kind,
 		const std::string &query,
 		bool active,
-		bool complete);
+		bool complete,
+		int reported_percent = -1);
 	// Refresher-side write path for one search's progress snapshot.
 	void WriteSearchProgress(std::uint32_t search_id, SearchProgressSnapshot s);
 	// Drop a search's slot entirely: DELETE /search/{id}, or the refresher

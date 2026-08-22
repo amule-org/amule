@@ -2889,6 +2889,21 @@ static CECPacket *Get_EC_Response_Search_List()
 		entry.AddTag(EC_TAG_SEARCH_LIFECYCLE_STATE,
 			static_cast<uint64_t>(
 				static_cast<uint8>(theApp->searchlist->GetSearchLifecycleStateById(sid))));
+		// How many hits this search is holding. A client that adopts the whole
+		// listing and fetches results per tab on activation has no other way to
+		// label a tab it has not opened yet -- and eagerly fetching every
+		// search's results to learn one integer each is the thing the lazy
+		// fetch exists to avoid. Same tag, same number, as the progress and
+		// results replies already carry (an O(1) map lookup on the index).
+		entry.AddTag(CECTag(EC_TAG_SEARCH_RESULT_COUNT,
+			static_cast<uint32>(theApp->searchlist->GetSearchResults(sid).size())));
+		// And the percent, so a client discovering a *running* search reports
+		// the daemon's real ramp from first sight rather than 0 until the next
+		// poll. Both tags are already allocated and already emitted on the
+		// per-id progress reply; this listing was simply the one reply that
+		// left them out.
+		entry.AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_PERCENT,
+			theApp->searchlist->GetSearchLifecyclePercentById(sid)));
 		response->AddTag(entry);
 	}
 

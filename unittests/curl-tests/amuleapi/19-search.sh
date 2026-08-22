@@ -219,6 +219,25 @@ _assert_json_eq "[.searches[] | select(.search_id == $FIRST_SID)][0].started_at 
 	'GET /search stamps started_at on a search this session started'
 _assert_json_eq "[.searches[] | select(.search_id == $FIRST_SID)][0].started_at > 1700000000" \
 	true 'started_at is a plausible recent unix second, not 0'
+# result_count lets a client label a tab it has not opened yet, instead of
+# fetching every search's results just to learn one integer each.
+_assert_json_eq "[.searches[] | select(.search_id == $FIRST_SID)][0].result_count | type" number \
+	'GET /search entry carries a numeric result_count'
+# ...and it agrees with what the results endpoint reports as `total` -- but only
+# once the search has settled. While it runs, result_count is the daemon's live
+# index and `total` is whatever amuleapi last pulled into its cache, so the two
+# legitimately differ by a fetch.
+LIST_COUNT=$(printf '%s' "$CURL_BODY" \
+	| jq -r "[.searches[] | select(.search_id == $FIRST_SID)][0].result_count")
+LIST_STATE=$(printf '%s' "$CURL_BODY" \
+	| jq -r "[.searches[] | select(.search_id == $FIRST_SID)][0].state")
+if [ "$LIST_STATE" = "finished" ]; then
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$FIRST_SID/results"
+	_assert_json_eq '.total' "$LIST_COUNT" \
+		'result_count equals the results endpoint total for a finished search'
+else
+	echo "    info: search still $LIST_STATE; skipping the result_count/total comparison"
+fi
 
 if [ "$HAVE_GUEST" = "1" ]; then
 	_curl -H "Authorization: Bearer $GUEST_TOKEN" "$HOST/api/v0/search"

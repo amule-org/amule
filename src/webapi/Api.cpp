@@ -6700,13 +6700,19 @@ bool CApiDispatcher::DiscoverSearchIfHeldByCore(std::uint32_t search_id)
 		// into a no-op. 1 = running, 2 = finished (SearchLifecycleStateToString).
 		const CECTag *stateTag = entry.GetTagByName(EC_TAG_SEARCH_LIFECYCLE_STATE);
 		const std::uint8_t state_val = stateTag ? static_cast<std::uint8_t>(stateTag->GetInt()) : 0;
+		// ...and the percent, when the daemon reports one. -1 means it did
+		// not, which is what an older daemon looks like; the seed then falls
+		// back to deriving it from the lifecycle state.
+		const CECTag *pctTag = entry.GetTagByName(EC_TAG_SEARCH_LIFECYCLE_PERCENT);
+		const int reported_pct = pctTag ? static_cast<int>(pctTag->GetInt()) : -1;
 		m_state.MarkSearchDiscovered(search_id,
 			SearchKindToString(
 				kindTag ? static_cast<std::uint8_t>(kindTag->GetInt()) : EC_SEARCH_GLOBAL)
 				.ToStdString(),
 			nameTag ? std::string(nameTag->GetStringData().utf8_str()) : std::string(),
 			state_val == 1,
-			state_val == 2);
+			state_val == 2,
+			reported_pct);
 		found = true;
 		break;
 	}
@@ -6779,6 +6785,19 @@ CHttpServer::Response CApiDispatcher::HandleSearchList(const CHttpServer::Reques
 		if (const std::time_t started = m_state.SearchStartedAt(sid); started != 0) {
 			w.Key("started_at");
 			w.ValueInt(static_cast<int64_t>(started));
+		}
+		// How many hits the daemon holds for this search -- the same number
+		// GET /search/{id}/results reports as `total`. A client that adopts
+		// the listing and fetches results lazily per tab has nothing else to
+		// label an unopened tab with.
+		//
+		// Omitted, not zeroed, when the tag is absent: a daemon older than
+		// this change reports no counts, and "does not report" has to stay
+		// distinguishable from "found nothing". Same rule client_ecid and
+		// started_at already follow above.
+		if (const CECTag *countTag = entry.GetTagByName(EC_TAG_SEARCH_RESULT_COUNT)) {
+			w.Key("result_count");
+			w.ValueInt(static_cast<int64_t>(countTag->GetInt()));
 		}
 		w.EndObject();
 	}

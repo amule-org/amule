@@ -633,6 +633,34 @@ TEST(State, DiscoveredRunningSearchKeepsZeroPercentAndIsPolled)
 	ASSERT_TRUE(std::find(active.begin(), active.end(), 44u) != active.end());
 }
 
+TEST(State, DiscoveredSearchPrefersTheDaemonsReportedPercent)
+{
+	// Once the daemon reports a percent on its listing, that number wins over
+	// the one derived from the lifecycle state -- which is the whole point of
+	// carrying it: a running search adopted mid-ramp shows its real progress
+	// from first sight instead of 0 until the next tick.
+	CState s;
+	s.MarkSearchDiscovered(50, "kad", "ubuntu", /*active=*/true, /*complete=*/false, 62);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(62), s.SearchProgress(50).percent);
+
+	// A finished one likewise takes what the daemon says rather than assuming.
+	s.MarkSearchDiscovered(51, "kad", "debian", /*active=*/false, /*complete=*/true, 100);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(100), s.SearchProgress(51).percent);
+}
+
+TEST(State, DiscoveredSearchFallsBackWhenTheDaemonReportsNoPercent)
+{
+	// -1 is "the listing carried no percent", i.e. a daemon older than the
+	// tag. The derived fallback has to survive: finished is 100, running is 0
+	// and gets corrected by the tick.
+	CState s;
+	s.MarkSearchDiscovered(52, "kad", "harry", /*active=*/false, /*complete=*/true, -1);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(100), s.SearchProgress(52).percent);
+
+	s.MarkSearchDiscovered(53, "kad", "potter", /*active=*/true, /*complete=*/false, -1);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(0), s.SearchProgress(53).percent);
+}
+
 TEST(State, DiscoveryDoesNotStompAnAlreadyKnownSearchsPercent)
 {
 	// Re-discovery of a slot this session already tracks must leave its
