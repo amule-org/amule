@@ -368,11 +368,12 @@ struct ClientSnapshot
 					// "disabled" | "unknown"
 	bool friend_slot = false;
 
-	// --- Detail-only fields (issue #422) -----------------------------
-	// Captured from EC tags already on the INC_UPDATE wire but not
-	// surfaced by the /clients list. Serialized only by the
-	// GET /clients/{ecid} detail endpoint; the list object and the SSE
-	// client_* payloads are unchanged.
+	// --- Extra fields decoded off the INC_UPDATE wire (issue #422) ----
+	// Originally detail-only. Five of them -- source_origin,
+	// available_parts, mod_version, view_shared_disabled and the derived
+	// part_progress_percent -- were since promoted to the /clients list row
+	// and the SSE client_* payloads (#995, #1015); the rest are still
+	// serialized only by GET /clients/{ecid}.
 	std::uint32_t user_id_hybrid = 0; // EC_TAG_CLIENT_USER_ID (hybrid eD2k id)
 	bool high_id = false;             // derived: !IsLowID(user_id_hybrid)
 	std::string server_ip;            // dotted-quad; "" when unknown/0
@@ -386,7 +387,10 @@ struct ClientSnapshot
 	bool view_shared_disabled = false; // peer forbids viewing its shared files
 	// Completeness of the linked download for this peer, as a percent
 	// (available_parts / file part count). < 0 => not computable (no
-	// linked file / no part count); populated by the detail handler.
+	// linked file / no part count). Derived rather than decoded: filled in
+	// by ComputePartProgressPercent at every site that serializes a client
+	// -- the list, the per-file rows, the detail object and the SSE
+	// payload -- since it needs a second snapshot to resolve.
 	double part_progress_percent = -1.0;
 
 	// Per-part bitmaps, one bit per chunk of the file the relation names:
@@ -408,6 +412,13 @@ struct ClientSnapshot
 	bool has_upload_part_status = false;
 	// Indices into the download bitmap; absent from the wire means unchanged,
 	// so the has_ flags distinguish "never reported" from "reported as 0".
+	//
+	// Decoded but not yet surfaced: no endpoint serializes these and no
+	// comparator sorts on them. Kept because the decode is already paid for
+	// on every INC_UPDATE tick and they are the natural companions of the
+	// bitmaps above -- a client wanting to show which chunk a peer is
+	// feeding needs them. Delete them rather than leave them rotting if
+	// that never materialises.
 	std::uint16_t next_requested_part = 0;
 	std::uint16_t last_downloading_part = 0;
 	bool has_next_requested_part = false;
@@ -780,8 +791,6 @@ struct SearchProgressSnapshot
 	std::uint64_t generation = 0;
 };
 
-// One concurrent search's cached state: its results (keyed by result ECID)
-// and its lifecycle progress. CState holds a map of these keyed by the
 // The byte width of one partfile chunk. Authoritative copy is PARTSIZE in
 // `protocol/ed2k/Constants.h`, which is deliberately NOT included here: that
 // header is written against amule's legacy `uint64`/`uint32` typedefs from
@@ -814,6 +823,8 @@ std::uint64_t PartCountForSize(std::uint64_t size);
 class CState;
 void ComputePartProgressPercent(const CState &state, ClientSnapshot &cli);
 
+// One concurrent search's cached state: its results (keyed by result ECID)
+// and its lifecycle progress. CState holds a map of these keyed by the
 // daemon-allocated search_id (see m_searches).
 struct SearchSlot
 {
@@ -1457,6 +1468,11 @@ public:
 	// is left untouched. Used by /downloads/{hash} (download role) and
 	// /shared/{hash} (shared role) — both inspect the same m_files map.
 	bool FindDownload(const std::string &hash_hex, FileSnapshot &out) const;
+	// Part count of the download with this hash, or 0 when there is none (or
+	// it has no size yet). Exists so a per-client loop can ask the cheap
+	// question without FindDownload's full FileSnapshot copy -- strings plus
+	// the gap / source / comment vectors, per source, per tick.
+	std::uint64_t DownloadPartCount(const std::string &hash_hex) const;
 	bool FindShared(const std::string &hash_hex, FileSnapshot &out) const;
 
 	// ECID-keyed counterparts. Used internally — there is no

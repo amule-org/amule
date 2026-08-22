@@ -133,7 +133,9 @@ private:
 		const CHttpServer::Request &, const std::string &key);
 	// source-reported filenames + counts. `key` = 32-char MD4 hash.
 	CHttpServer::Response HandleDownloadFilenames(const CHttpServer::Request &, const std::string &key);
-	// A4AF source list (GET) + swap actions (POST). `key` = 32-char MD4 hash.
+	// A4AF swap action (POST). `key` = 32-char MD4 hash. The GET that once
+	// listed the sources is retired -- the rows now come from
+	// GET /downloads/{hash}/clients, which flags each one with `a4af`.
 	CHttpServer::Response HandleDownloadA4afAction(const CHttpServer::Request &, const std::string &key);
 	// download lifecycle mutations.
 	CHttpServer::Response HandleDownloadAdd(const CHttpServer::Request &);
@@ -277,8 +279,8 @@ private:
 	CHttpServer::Response HandleKnownClients(const CHttpServer::Request &);
 	// POST /clients/{ecid}/shared_files — browse a peer's shared file list
 	// ("View Files", #399). Returns a search_id addressed like any search:
-	// results via GET /search/results?search_id=, progress + SSE via the
-	// standard search machinery.
+	// results via GET /search/{id}/results, progress + SSE via the standard
+	// search machinery. (The old ?search_id= query form is a 404 since #996.)
 	CHttpServer::Response HandleClientBrowse(const CHttpServer::Request &, const std::string &ecid_str);
 	// Shared by the /clients and /friends browse routes; `by_friend` selects
 	// which sub-tag addresses the target.

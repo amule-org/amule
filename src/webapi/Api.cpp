@@ -2871,7 +2871,6 @@ const ListComparators<webapi::ClientSnapshot> &ClientComparators()
 				return a.software < b.software;
 			} },
 	};
-	;
 	return kComps;
 }
 
@@ -3616,6 +3615,14 @@ CHttpServer::Response CApiDispatcher::HandleClients(const CHttpServer::Request &
 				      clients.end(),
 				      [&](const webapi::ClientSnapshot &c) { return !matches(c); }),
 			clients.end());
+	}
+
+	// Same derived field the per-file rows and the detail object carry. It
+	// was omitted here, which left the SSE payload (which always carries it)
+	// contradicting both EVENTS.md's "same field set as the /clients list
+	// row" and REFERENCE.md's claim that it is detail-only.
+	for (auto &client : clients) {
+		ComputePartProgressPercent(m_state, client);
 	}
 
 	ListParams params;
@@ -6052,10 +6059,6 @@ std::size_t ParseTailParam(const std::string &query)
 	return static_cast<std::size_t>(capped);
 }
 
-// Parse an optional `?search_id=N` query param. `provided` is false when the
-// param is absent; `value` is the parsed id (0 on a malformed value). Callers
-// treat value 0 as "the current search". Multi-search only — every search on
-// the amuleapi surface is addressed by its daemon-allocated id.
 // Return a copy of `all` containing at most `tail` trailing lines.
 // `tail == 0` means "all lines" (no tailing).
 std::vector<std::string> SliceTail(const std::vector<std::string> &all, std::size_t tail)
@@ -9135,15 +9138,30 @@ CHttpServer::Response CApiDispatcher::HandleBrowse(
 
 	// A browse's "query" is the peer whose share is being listed -- that is
 	// what the daemon names the search, and what GET /search reports for it.
-	// Take the nickname from the client snapshot when we have one so the
+	// Take the nickname from the snapshot that actually owns this ECID so the
 	// results envelope can label the tab; a peer we have no snapshot for
 	// simply leaves it empty, same as any slot seeded before its name was
 	// observed.
+	//
+	// Which collection depends on how the browse was addressed. CECID hands
+	// out one global counter, so a CFriend's ECID never collides with a
+	// client's -- but it never *matches* one either, and searching the client
+	// list for it silently found nothing: every friend browse stored an empty
+	// name while GET /search reported the real nick for the same id.
 	std::string peer_name;
-	for (const auto &c : m_state.Clients()) {
-		if (c.ecid == ecid) {
-			peer_name = c.client_name;
-			break;
+	if (by_friend) {
+		for (const auto &f : m_state.Friends()) {
+			if (f.ecid == ecid) {
+				peer_name = f.name;
+				break;
+			}
+		}
+	} else {
+		for (const auto &c : m_state.Clients()) {
+			if (c.ecid == ecid) {
+				peer_name = c.client_name;
+				break;
+			}
 		}
 	}
 	m_state.MarkSearchStarted(search_id, "browse", peer_name);
@@ -9592,7 +9610,13 @@ CHttpServer::Response CApiDispatcher::HandleSearchComments(
 	// and `comments` empty forever. Re-read the hit afterwards so the
 	// response reflects the refresh rather than the snapshot before it.
 	RefreshSearchIfStale(owner_search_id);
-	m_state.FindSearchResultByHash(needle, hit, nullptr);
+	// A refresh can drop the hit -- the daemon frees a search's results when
+	// it is closed, and the set is rebuilt wholesale rather than merged. The
+	// bool was discarded here, so that case answered 200 from the pre-refresh
+	// copy: a result the daemon no longer has, reported as if it did.
+	if (!m_state.FindSearchResultByHash(needle, hit, nullptr)) {
+		return ErrorResponse(404, "not_found", "no search result with that hash");
+	}
 
 	CHttpServer::Response r;
 	r.status = 200;
@@ -9658,11 +9682,6 @@ CHttpServer::Response CApiDispatcher::HandleSearchCommentsKadSearch(
 	if (!m_state.FindSearchResultByHash(needle, known_hit, &owner_search_id)) {
 		return ErrorResponse(404, "not_found", "no search result with that hash");
 	}
-	// Refresh the owning search before starting the lookup, for the same
-	// reason the GET does: a finished search is otherwise frozen, and the
-	// flag this POST turns on would never be observed turning off again.
-	RefreshSearchIfStale(owner_search_id);
-
 	auto ec_req = std::make_unique<CECPacket>(EC_OP_SHARED_FILE_SEARCH_KAD_NOTES);
 	ec_req->AddTag(CECTag(EC_TAG_KNOWNFILE, file_hash));
 	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
@@ -9675,6 +9694,17 @@ CHttpServer::Response CApiDispatcher::HandleSearchCommentsKadSearch(
 		return ErrorResponse(400, "amuled_rejected", ec_err.c_str());
 	}
 	delete ec_resp;
+
+	// Refresh AFTER the lookup has been started, for the same reason the GET
+	// refreshes at all: a finished search is otherwise frozen, and the flag
+	// this POST turns on would never be observed turning off again.
+	//
+	// Order matters. Refreshing first cached a pre-lookup snapshot and spent
+	// the one-second ClaimSearchRefresh token on it, so a GET issued straight
+	// afterwards fell inside the TTL and reported
+	// `kad_comment_search_running: false` for a lookup that had just begun --
+	// breaking the poll-until-false loop the docs prescribe.
+	RefreshSearchIfStale(owner_search_id);
 
 	CHttpServer::Response r;
 	r.status = 202;

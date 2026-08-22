@@ -1533,6 +1533,106 @@ TEST(Refresher, ClientPartStatusIsDecodedLsbFirst)
 	ASSERT_TRUE(!cache[12].part_status[7]);
 }
 
+// Same helper plus a REQUEST_FILE ECID, for the swap tests below. The core
+// always sends that tag when the request file changes (AddDiffTag), and sends
+// it as a literal 0 when the peer stops requesting anything
+// (ECSpecialCoreTags.cpp:443).
+static void PutClientWithReqFileAndPartStatus(CECPacket &resp,
+	std::uint32_t ecid,
+	std::uint32_t req_file_ecid,
+	const std::uint8_t *buf /* nullptr = no part-status tag at all */,
+	std::size_t len)
+{
+	CECTag container(EC_TAG_CLIENT, static_cast<std::uint32_t>(0));
+	CECTag cli(EC_TAG_CLIENT, ecid);
+	cli.AddTag(CECTag(EC_TAG_CLIENT_REQUEST_FILE, req_file_ecid));
+	if (buf) {
+		cli.AddTag(CECTag(EC_TAG_CLIENT_PART_STATUS, len, buf));
+	}
+	container.AddTag(cli);
+	resp.AddTag(container);
+}
+
+TEST(Refresher, ClientPartStatusIsDroppedWhenTheRequestFileChanges)
+{
+	// An A4AF swap. CUpDownClient::SetReqFile clears m_downPartStatus without
+	// repopulating it, and the core then sends no PART_STATUS until the peer
+	// answers for the new file -- so a bitmap kept across the change would
+	// describe the OLD file and report the peer as holding parts of a file it
+	// has never sent a status for.
+	std::map<std::uint32_t, ClientSnapshot> cache;
+	std::map<std::uint32_t, std::string> files;
+	files[70] = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+	files[71] = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+
+	const std::uint8_t buf[] = { 0x05 };
+	CECPacket first(EC_OP_SHARED_FILES);
+	PutClientWithReqFileAndPartStatus(first, 20, 70, buf, sizeof(buf));
+	ApplyGetUpdateToClients(&first, cache, files);
+	ASSERT_TRUE(cache[20].has_part_status);
+	ASSERT_EQUALS(std::string("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), cache[20].download_file_hash);
+
+	// Second tick: same peer, different file, and no PART_STATUS with it.
+	CECPacket second(EC_OP_SHARED_FILES);
+	PutClientWithReqFileAndPartStatus(second, 20, 71, nullptr, 0);
+	ApplyGetUpdateToClients(&second, cache, files);
+
+	ASSERT_EQUALS(std::string("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"), cache[20].download_file_hash);
+	ASSERT_TRUE(!cache[20].has_part_status);
+	ASSERT_TRUE(!cache[20].part_status_all);
+	ASSERT_TRUE(cache[20].part_status.empty());
+}
+
+TEST(Refresher, ClientPartStatusInTheSameTickSurvivesTheFileChange)
+{
+	// The invalidation must not eat a bitmap the same packet carries: the
+	// hash is merged before the PART_STATUS decode, so a peer that swaps and
+	// reports its new status in one tick keeps the new status.
+	std::map<std::uint32_t, ClientSnapshot> cache;
+	std::map<std::uint32_t, std::string> files;
+	files[70] = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+	files[71] = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+
+	const std::uint8_t old_buf[] = { 0x05 };
+	CECPacket first(EC_OP_SHARED_FILES);
+	PutClientWithReqFileAndPartStatus(first, 21, 70, old_buf, sizeof(old_buf));
+	ApplyGetUpdateToClients(&first, cache, files);
+
+	const std::uint8_t new_buf[] = { 0x02 };
+	CECPacket second(EC_OP_SHARED_FILES);
+	PutClientWithReqFileAndPartStatus(second, 21, 71, new_buf, sizeof(new_buf));
+	ApplyGetUpdateToClients(&second, cache, files);
+
+	ASSERT_EQUALS(std::string("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"), cache[21].download_file_hash);
+	ASSERT_TRUE(cache[21].has_part_status);
+	ASSERT_TRUE(!cache[21].part_status[0]);
+	ASSERT_TRUE(cache[21].part_status[1]);
+}
+
+TEST(Refresher, ClientRequestFileZeroClearsTheDownloadHash)
+{
+	// The core spells "no request file" as the tag carrying 0, not as an
+	// absent tag. Reading that as "unchanged" left a finished peer listed as
+	// a source of the file it had just completed, bitmap and all.
+	std::map<std::uint32_t, ClientSnapshot> cache;
+	std::map<std::uint32_t, std::string> files;
+	files[70] = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+	const std::uint8_t buf[] = { 0x05 };
+	CECPacket first(EC_OP_SHARED_FILES);
+	PutClientWithReqFileAndPartStatus(first, 22, 70, buf, sizeof(buf));
+	ApplyGetUpdateToClients(&first, cache, files);
+	ASSERT_EQUALS(std::string("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), cache[22].download_file_hash);
+
+	CECPacket second(EC_OP_SHARED_FILES);
+	PutClientWithReqFileAndPartStatus(second, 22, 0, nullptr, 0);
+	ApplyGetUpdateToClients(&second, cache, files);
+
+	ASSERT_TRUE(cache[22].download_file_hash.empty());
+	ASSERT_TRUE(!cache[22].has_part_status);
+	ASSERT_TRUE(cache[22].part_status.empty());
+}
+
 TEST(Refresher, ClientAbsentPartStatusLeavesCachedBitmap)
 {
 	// Tagmap convention: a tick that does not carry the tag says nothing
