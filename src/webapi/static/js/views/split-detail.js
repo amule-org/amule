@@ -57,7 +57,7 @@ export function SplitDetail({ storageKey, open, onClose, top, children }) {
       ${open ? html`
         <div class="splitter" ...${splitterProps}></div>
         <div class="split-bottom" style=${{ height: height + "px" }}>
-          <button class="btn btn-icon btn-sm detail-close" title=${t("downloads_detail_close")}
+          <button class="btn btn-icon btn-sm detail-close" title=${t("detail_close")}
                   onClick=${onClose}><${Icon} name="cancel" /></button>
           ${children}
         </div>` : null}
