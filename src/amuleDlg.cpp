@@ -1404,9 +1404,32 @@ void CamuleDlg::ShowTransferRate()
 	}
 	buffer.Truncate(50); // Max size 50
 
+	// Only touch the label when the text it shows actually changes. SetLabel
+	// plus a Layout of the enclosing strip runs on every stats update -- once
+	// per 500 ms EC reply in the remote GUI, every 5 s on the core timer in
+	// monolithic -- and the Layout invalidates the area behind the strip even
+	// when nothing moved. With no search tab open there is no page covering
+	// the results notebook, so on wxMSW each invalidation erases and repaints
+	// that empty area: the flicker in issue #1037, at exactly those two rates.
+	//
+	// An idle node now lays out never, and a busy one only when the rendered
+	// string changes rather than ten times for the same "Up: 0.0 | Down: 0.0".
 	wxStaticText *label = CastChild("speedLabel", wxStaticText);
-	label->SetLabel(buffer);
-	label->GetParent()->Layout();
+	if (label->GetLabel() != buffer) {
+		label->SetLabel(buffer);
+		// Re-flow the strip the label sits in, not its parent. The parent here
+		// is the main content panel, which the search page and its results
+		// notebook also hang off, so laying that out re-flowed the whole
+		// content area to make room for a few characters of speed text -- and
+		// on a busy node the text changes on nearly every update, so the guard
+		// above would rarely spare it. The containing sizer covers the status
+		// strip alone, which is the only thing that has to move.
+		if (wxSizer *strip = label->GetContainingSizer()) {
+			strip->Layout();
+		} else {
+			label->GetParent()->Layout();
+		}
+	}
 
 	// Show upload/download speed in title
 	if (thePrefs::GetShowRatesOnTitle()) {
