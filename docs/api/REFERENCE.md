@@ -2382,9 +2382,9 @@ Lists every search amuled currently holds — including ones started by a **diff
 ```json
 {
   "searches": [
-    { "search_id": 42, "query": "ubuntu desktop iso", "kind": "global", "state": "finished", "started_at": 1751000000 },
-    { "search_id": 43, "query": "debian",             "kind": "kad",    "state": "running",  "started_at": 1751000042 },
-    { "search_id": 44, "query": "SomePeerNick",       "kind": "browse", "state": "running",  "client_ecid": 621 }
+    { "search_id": 42, "query": "ubuntu desktop iso", "kind": "global", "state": "finished", "started_at": 1751000000, "result_count": 182 },
+    { "search_id": 43, "query": "debian",             "kind": "kad",    "state": "running",  "started_at": 1751000042, "result_count": 57  },
+    { "search_id": 44, "query": "SomePeerNick",       "kind": "browse", "state": "running",  "client_ecid": 621,       "result_count": 237 }
   ]
 }
 ```
@@ -2396,6 +2396,10 @@ Lists every search amuled currently holds — including ones started by a **diff
 `started_at` is the Unix second amuleapi started the search, and it is the **only recency signal on this list**: entries arrive ordered by `search_id`, and id order is not start order — Kad search ids carry a high-bit mask and therefore always sort above eD2k ones. Sort on `started_at` when you need "the newest search".
 
 It is **omitted** for any search this `amuleapi` process did not start itself — one begun by another client, by the desktop GUI, or restored from the daemon's on-disk ring after a restart. The daemon ships no timestamp of its own, so there is nothing to report for those; treat a missing `started_at` as *unknown*, not as oldest.
+
+`result_count` is how many results the daemon currently holds for that search. It matches the `total` that [`GET /search/{id}/results`](#get-apiv0searchidresults) reports for the same id once the search has finished; while one is still running the two can differ by a fetch, because this number comes straight off the daemon's live index and `total` counts what amuleapi last pulled into its cache. It counts top-level hits only: grouped alternative filenames ride their parent's `children[]` and are not counted separately. On a `"browse"` entry it is the files received from the peer so far. Like every other field on this listing it is a snapshot at request time, so a running search's count climbs between calls.
+
+It exists so a client that adopts the whole list and fetches each search's results lazily — on first activation of a tab, rather than all at once at load — has a number to label an unopened tab with. It is **omitted**, not zeroed, when the daemon does not report it: a daemon older than this field sends nothing, and "does not report counts" has to stay distinguishable from "this search found nothing". Same rule as `client_ecid` and `started_at` above.
 
 amuled only tracks multiple concurrent searches for clients that advertise multi-search support; `amuleapi` does, so this always reflects the full live set. `searches` is an empty array when amuled holds no searches, never an error.
 

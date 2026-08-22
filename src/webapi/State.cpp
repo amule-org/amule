@@ -298,7 +298,8 @@ void CState::MarkSearchDiscovered(std::uint32_t search_id,
 	const std::string &kind,
 	const std::string &query,
 	bool active,
-	bool complete)
+	bool complete,
+	int reported_percent)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	auto known = m_searches.find(search_id);
@@ -326,11 +327,14 @@ void CState::MarkSearchDiscovered(std::uint32_t search_id,
 	// ActiveSearchIds(), so the tick never polls it and WriteSearchProgress
 	// is never called for it -- the percent would sit at its 0 default for
 	// the life of the slot, contradicting the "finished" state in the very
-	// same envelope. A finished search is 100 by definition, so there is
-	// nothing to ask the daemon for. A discovered *running* slot keeps 0 and
-	// is corrected by the next tick, which is why only the finished case was
-	// stuck.
-	slot.progress.percent = complete ? 100 : 0;
+	// same envelope.
+	//
+	// Prefer the daemon's own number when the listing carried one. Without it
+	// (an older daemon) derive: 100 for a finished search, true by
+	// definition; 0 for a running one, which IS polled and is corrected
+	// within a tick, where inventing a number would flash a wrong one.
+	slot.progress.percent =
+		reported_percent >= 0 ? static_cast<std::uint32_t>(reported_percent) : (complete ? 100u : 0u);
 	slot.progress.kind = kind;
 	slot.query = query;
 	slot.seq = ++m_search_seq;
