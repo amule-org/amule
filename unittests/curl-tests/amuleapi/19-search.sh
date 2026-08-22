@@ -1188,6 +1188,70 @@ else
 	echo "    info: no connected peer — skipping the browse happy path"
 fi
 
+# --- Browse of a peer the daemon declines to contact. --------------
+# A LowID peer amuled cannot call back is never contacted at all: TryToConnect
+# returns having sent nothing. Such a browse used to sit `running` forever --
+# bounded only by the 34-minute client-list cleanup, and not even by that when
+# the peer is also a download source, since the branch that declines the
+# contact sets DS_LOWTOLOWIP and the cleanup skips anything not DS_NONE
+# (amule-org/amule#1071). It must now reach a terminal state at once.
+#
+# Needs a peer in exactly that state, which no CI environment can guarantee,
+# so probe for one and skip -- not fail -- when there is none, like the other
+# peer-dependent assertions in this suite.
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/clients"
+UNREACHABLE_ECID=$(printf '%s' "$CURL_BODY" \
+	| jq -r '[.clients[] | select(.download_state == "lowtolowip")][0].ecid // empty')
+if [ -n "$UNREACHABLE_ECID" ]; then
+	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+		"$HOST/api/v0/clients/$UNREACHABLE_ECID/shared_files"
+	if [ "$CURL_STATUS" = "202" ]; then
+		DEAD_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id')
+		# No peer round trip is involved -- the daemon decides not to contact
+		# it and fails the browse in the same call -- so a short settle is
+		# enough. Poll rather than sleep blindly, to keep it quick when it
+		# behaves and still generous when the machine is loaded.
+		DEAD_STATE=""
+		for _ in 1 2 3 4 5 6 7 8 9 10; do
+			_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
+			DEAD_STATE=$(printf '%s' "$CURL_BODY" | \
+				jq -r "[.searches[] | select(.search_id == $DEAD_SID)][0].state")
+			[ "$DEAD_STATE" = "finished" ] && break
+			sleep 1
+		done
+		if [ "$DEAD_STATE" = "finished" ]; then
+			_pass "browse of an uncontactable peer reaches finished, not stuck running"
+		else
+			_fail "browse of an uncontactable peer" \
+				"expected finished within 10s, got $DEAD_STATE"
+		fi
+		_curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+			"$HOST/api/v0/search/$DEAD_SID/results?limit=1"
+		_assert_json_eq '.progress.state' finished \
+			'the results endpoint agrees the dead browse is finished'
+
+		# The in-flight flag was cleared with the terminal mark, so the peer
+		# is still browsable rather than joined to a dead browse for good.
+		_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+			"$HOST/api/v0/clients/$UNREACHABLE_ECID/shared_files"
+		RETRY_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id')
+		if [ "$RETRY_SID" != "$DEAD_SID" ]; then
+			_pass "a later browse of that peer starts fresh ($RETRY_SID), not the dead id"
+		else
+			_fail "browse of an uncontactable peer is not retryable" \
+				"retry joined the failed browse $DEAD_SID"
+		fi
+		for SID_TO_FREE in $DEAD_SID $RETRY_SID; do
+			curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
+				"$HOST/api/v0/search/$SID_TO_FREE" >/dev/null 2>&1
+		done
+	else
+		echo "    info: browse of $UNREACHABLE_ECID returned $CURL_STATUS — skipping"
+	fi
+else
+	echo "    info: no uncontactable (lowtolowip) peer — skipping the dead-browse check"
+fi
+
 # --- Related-files search (docs contract). -------------------------
 # There is no endpoint: the desktop composes a magic keyword and starts an
 # ordinary LOCAL search, so a REST client does the same. Assert the shape

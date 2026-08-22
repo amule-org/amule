@@ -1395,11 +1395,7 @@ bool CUpDownClient::Disconnected(const wxString &DEBUG_ONLY(strReason), bool bFr
 
 	SetSocket(NULL);
 
-	if (m_iFileListRequested) {
-		AddLogLineC(CFormat(_("Failed to retrieve shared files from user '%s'")) % GetUserName());
-		m_iFileListRequested = 0;
-		MarkBrowse(BROWSE_FAILED);
-	}
+	FailPendingBrowse();
 
 	if (bDelete) {
 		if (m_Friend) {
@@ -2091,6 +2087,46 @@ void CUpDownClient::MarkBrowse(EBrowseStatus s)
 	Notify_Browse_Status((uint64)GetBrowseRoutingId(), s);
 }
 
+void CUpDownClient::FailPendingBrowse()
+{
+	if (m_iFileListRequested) {
+		AddLogLineC(CFormat(_("Failed to retrieve shared files from user '%s'")) % GetUserName());
+		m_iFileListRequested = 0;
+		MarkBrowse(BROWSE_FAILED);
+	}
+}
+
+bool CUpDownClient::IsPeerContactPending() const
+{
+	// A live connection carries the browse directly; ConnectionEstablished
+	// sends the request off the back of it.
+	//
+	// A socket that merely exists counts too: CUpDownClient::Connect starts an
+	// asynchronous connect, so the HighID path returns with the socket created
+	// but not yet connected, and OnConnect/Disconnected settle it either way.
+	// The silent exits this predicate exists to catch all return before the
+	// socket is created, so they cannot be confused with one in progress.
+	if (IsConnected() || GetSocket() != nullptr) {
+		return true;
+	}
+	// A direct UDP callback brings its own 45s deadline, after which
+	// CClientList::ProcessDirectCallbackList disconnects us and the browse
+	// fails through that path.
+	if (m_dwDirectCallbackTimeout != 0) {
+		return true;
+	}
+	// A server or Kad callback we have asked for: the peer may still connect
+	// back, and the browse rides that connection when it does.
+	switch (GetDownloadState()) {
+	case DS_CONNECTING:
+	case DS_WAITCALLBACK:
+	case DS_WAITCALLBACKKAD:
+		return true;
+	default:
+		return false;
+	}
+}
+
 void CUpDownClient::RequestSharedFileList()
 {
 	if (m_iFileListRequested == 0) {
@@ -2104,7 +2140,29 @@ void CUpDownClient::RequestSharedFileList()
 		m_browseStatus = BROWSE_IN_PROGRESS;
 		UpdateBrowseBar();
 		Notify_Browse_Started(ECID(), GetUserName(), (uint64)GetBrowseRoutingId());
-		TryToConnect(true);
+		if (!TryToConnect(true)) {
+			// false means the client was deleted (see TryToConnect), and it
+			// only gets there through Disconnected(), which has already
+			// failed the browse. Nothing left that may be touched.
+			return;
+		}
+		// TryToConnect returns true both when it started contacting the peer
+		// and when it decided not to, and several of its exits do the latter
+		// silently: a LowID peer we cannot call back, a Kad firewalled source
+		// with too many lookups in flight, a queued LowID source it merely
+		// arranges to reask later. None of those send a packet, so no terminal
+		// path downstream ever runs and the browse would sit BROWSE_IN_PROGRESS
+		// with nothing able to end it -- until the client-list cleanup reaps
+		// the peer 34 minutes later, or never, when the peer is also a download
+		// source (that same branch sets DS_LOWTOLOWIP, and the cleanup skips
+		// anything that is not DS_NONE).
+		//
+		// Tested here on the outcome rather than at each of those exits:
+		// there are four of them today, they are not marked as a family, and
+		// the next one added would silently rejoin this bug.
+		if (!IsPeerContactPending()) {
+			FailPendingBrowse();
+		}
 	} else {
 		AddDebugLogLineN(logClient,
 			CFormat("Requesting shared files from user %s (%u) is already in progress") %
