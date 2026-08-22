@@ -1055,6 +1055,10 @@ if [ -n "$PEER_ECID" ]; then
 			'GET /search reports the browse with kind=browse'
 		_assert_json_eq "[.searches[] | select(.search_id == $BROWSE_SID)][0].client_ecid" \
 			"$PEER_ECID" 'GET /search reports the browsed peer as client_ecid'
+		# Files received from the peer so far -- no total comparison, a browse
+		# is still running here.
+		_assert_json_eq "[.searches[] | select(.search_id == $BROWSE_SID)][0].result_count | type" \
+			number 'GET /search carries a numeric result_count on the browse'
 
 		# Give the peer a moment to answer, then check the browse-only
 		# folder field. An unreachable/denying peer returns nothing, which
