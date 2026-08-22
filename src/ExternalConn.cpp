@@ -2532,7 +2532,9 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request, bool multiSea
 		// GUI's optimistic EC_TAG_SEARCH_REF) so amuleGUI rekeys its browse tab.
 		// Legacy clients keep the old fire-and-forget EC_OP_NOOP (they can't
 		// display a browse anyway).
-		const uint32 browseId = multiSearch ? AllocateBrowseSearchId() : 0;
+		//
+		// The ID is allocated per branch, once the target peer is known and
+		// only if it has no browse running -- see browseInFlightId below.
 		const CECTag *reftag = tag->GetTagByName(EC_TAG_SEARCH_REF);
 		// A browse failure needs the correlation token for the same reason a
 		// failed search start does: amuleGUI created its optimistic browse tab
@@ -2550,32 +2552,74 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request, bool multiSea
 			}
 			return fail;
 		};
+		// A browse of a peer that is already being browsed joins that browse
+		// instead of minting a second identity for it. CUpDownClient::
+		// RequestSharedFileList() declines to re-ask a peer that is still
+		// answering, so a freshly allocated ID would never be stamped with a
+		// lifecycle -- while SetBrowseSearchId has already repointed every
+		// later status write away from the first ID, leaving that one
+		// BROWSE_IN_PROGRESS with nothing able to terminalize it. There is
+		// exactly one m_browseStatus / m_iFileListRequested per client, so
+		// there can only be one ID to report on. Returns 0 when the peer has
+		// no browse running, i.e. when the caller should allocate as usual.
+		auto browseInFlightId = [](const CUpDownClient *peer) -> uint32 {
+			return (peer != nullptr && peer->GetFileListRequested() > 0)
+				       ? peer->GetBrowseSearchId()
+				       : 0;
+		};
+		// Same reply as a fresh browse, pointing at the browse that is really
+		// running: no allocation (the second ID would be stranded), no
+		// RegisterBrowseSearch (it would restamp m_searchStartTimes), no
+		// repoint, no re-request. A legacy client still gets its historical
+		// EC_OP_NOOP -- and, unlike before, no longer clears the pinned ID of
+		// a multi-search client's in-flight browse on its way past.
+		auto joinBrowse = [&](uint32 inFlightId) {
+			return BuildBrowseReply(multiSearch ? inFlightId : 0, reftag);
+		};
 		const CECTag *subtag = tag->GetTagByName(EC_TAG_FRIEND);
 		if (subtag) {
 			CFriend *Friend = theApp->friendlist->FindFriend(subtag->GetInt());
 			if (Friend) {
-				// Describe the browse before the results start arriving, so
-				// the search list can report it as one (kind + peer name)
-				// rather than as a nameless search of the scalar kind.
-				if (browseId) {
-					theApp->searchlist->RegisterBrowseSearch(
-						browseId, Friend->GetName(), subtag->GetInt());
+				// The linked client need not exist yet -- CFriendList::
+				// RequestSharedFileList creates it -- and without one there
+				// is by definition no browse to join.
+				const CClientRef &linked = Friend->GetLinkedClient();
+				const uint32 inFlight =
+					browseInFlightId(linked.IsLinked() ? linked.GetClient() : nullptr);
+				if (inFlight) {
+					response = joinBrowse(inFlight);
+				} else {
+					const uint32 browseId = multiSearch ? AllocateBrowseSearchId() : 0;
+					// Describe the browse before the results start arriving,
+					// so the search list can report it as one (kind + peer
+					// name) rather than as a nameless search of the scalar
+					// kind.
+					if (browseId) {
+						theApp->searchlist->RegisterBrowseSearch(
+							browseId, Friend->GetName(), subtag->GetInt());
+					}
+					theApp->friendlist->RequestSharedFileList(Friend, browseId);
+					response = BuildBrowseReply(browseId, reftag);
 				}
-				theApp->friendlist->RequestSharedFileList(Friend, browseId);
-				response = BuildBrowseReply(browseId, reftag);
 			} else {
 				response = browseFailure(wxTRANSLATE("Friend not found."));
 			}
 		} else if ((subtag = tag->GetTagByName(EC_TAG_CLIENT))) {
 			CUpDownClient *client = theApp->clientlist->FindClientByECID(subtag->GetInt());
 			if (client) {
-				if (browseId) {
-					theApp->searchlist->RegisterBrowseSearch(
-						browseId, client->GetUserName(), client->ECID());
+				const uint32 inFlight = browseInFlightId(client);
+				if (inFlight) {
+					response = joinBrowse(inFlight);
+				} else {
+					const uint32 browseId = multiSearch ? AllocateBrowseSearchId() : 0;
+					if (browseId) {
+						theApp->searchlist->RegisterBrowseSearch(
+							browseId, client->GetUserName(), client->ECID());
+					}
+					client->SetBrowseSearchId(browseId);
+					client->RequestSharedFileList();
+					response = BuildBrowseReply(browseId, reftag);
 				}
-				client->SetBrowseSearchId(browseId);
-				client->RequestSharedFileList();
-				response = BuildBrowseReply(browseId, reftag);
 			} else {
 				response = browseFailure(wxTRANSLATE("Client not found."));
 			}
@@ -2875,26 +2919,25 @@ static CECPacket *Get_EC_Response_Search_Results_Union(
 	return response;
 }
 
-// Enumerates every *search* the core currently holds
-// (CSearchList::GetKnownSearchIds() -- deliberately narrow, unlike the union
-// poll above, which also reads GetBrowseSearchIds()) so a client that never
-// started any of them locally -- a freshly (re)connected amulegui, a
-// stateless amuleapi request, or a search typed directly into the monolithic
-// GUI -- can discover what to ask about and build tabs for it. One entry per
-// known search: EC_TAG_SEARCH_ID as the entry's own value, with name/kind/
-// state as children. Only reached for m_multiSearchActive clients (see the
-// EC_OP_SEARCH_LIST case below): a legacy client has no concept of more than
-// the single 0xffffffff sentinel search, so there is nothing meaningful to
-// enumerate for it.
+// Enumerates every search the core currently holds
+// (CSearchList::GetKnownSearchIds()) so a client that never started any of
+// them locally -- a freshly (re)connected amulegui, a stateless amuleapi
+// request, or a search typed directly into the monolithic GUI -- can discover
+// what to ask about and build tabs for it. One entry per known search:
+// EC_TAG_SEARCH_ID as the entry's own value, with name/kind/state as children.
+// Only reached for m_multiSearchActive clients (see the EC_OP_SEARCH_LIST case
+// below): a legacy client has no concept of more than the single 0xffffffff
+// sentinel search, so there is nothing meaningful to enumerate for it.
 //
-// Must NOT also enumerate browse ids: a "View Files" tab already gets its own
-// tab via BuildBrowseReply's STRINGS reply (which rekeys through the same
-// RemapSearch path a search START does) the moment the user opens it, so
-// there is nothing here for a browse to be *discovered* by another client
-// for -- browsing is inherently per-request, not a standing search another
-// client could ever come to know about. Folding it in here anyway would
-// surface every open browse as a bogus search tab, with a made-up name, on
-// every connected client (got3nks, PR #680 review).
+// Browses are enumerated here too. This reverses PR #680, which kept them out
+// on the grounds that a browse is inherently per-request and could only
+// surface as a bogus, nameless search tab: PR #914 gave a browse a name, a
+// recorded kind and its peer's ECID (RegisterBrowseSearch), which is exactly
+// what lets a remote GUI rebuild it as a browse tab instead
+// (CSearchListRem::HandlePacket in amule-remote-gui.cpp branches on
+// BrowseSearch + EC_TAG_CLIENT), and made a local browse discoverable at all.
+// RegisterBrowseSearch writing m_searchStrings is what puts them in reach of
+// GetKnownSearchIds(); it is deliberate, not incidental.
 // amuleapi's SearchKindToString/SearchLifecycleStateToString (Api.cpp) decode
 // the two wire values written below from raw numeric literals, since amuleapi
 // cannot include SearchList.h. This file can see both CSearchList's enums and

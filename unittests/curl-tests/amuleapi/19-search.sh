@@ -1060,6 +1060,93 @@ if [ -n "$PEER_ECID" ]; then
 		_assert_json_eq "[.searches[] | select(.search_id == $BROWSE_SID)][0].result_count | type" \
 			number 'GET /search carries a numeric result_count on the browse'
 
+		# A browse must never report `idle` on the listing
+		# (amule-org/amule#1060). Before the fix the listing derived a
+		# browse's state from retained results, so a peer that denied the
+		# request or never answered -- which leaves none -- read `idle`
+		# forever, while the progress reply said `finished`.
+		#
+		# `running` or `finished` are both legitimate here and which one
+		# lands depends on the peer: BROWSE_IN_PROGRESS is stamped when the
+		# request is sent, but a peer that denies instantly can terminalize
+		# the browse before this round trip completes. `idle` is the failure.
+		LIST_STATE=$(printf '%s' "$CURL_BODY" | \
+			jq -r "[.searches[] | select(.search_id == $BROWSE_SID)][0].state")
+		case "$LIST_STATE" in
+		running | finished)
+			_pass "GET /search reports the browse as $LIST_STATE, never idle"
+			;;
+		*)
+			_fail "browse listing state" \
+				"expected running or finished, got $LIST_STATE"
+			;;
+		esac
+
+		# While the browse is still running the listing and the per-id
+		# progress reply must agree -- the invariant REFERENCE.md promises,
+		# and the two are served by different EC replies so nothing else
+		# enforces it. Only checked in the `running` case: the results
+		# endpoint serves amuleapi's cached slot, which the refresher
+		# refreshes on its own tick, so right after a state change the two
+		# can legitimately differ by one tick.
+		if [ "$LIST_STATE" = "running" ]; then
+			_curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+				"$HOST/api/v0/search/$BROWSE_SID/results?limit=1"
+			PROG_STATE=$(printf '%s' "$CURL_BODY" | jq -r '.progress.state')
+			if [ "$PROG_STATE" = "running" ]; then
+				_pass "listing and progress.state agree on the running browse"
+			else
+				_fail "listing vs progress state disagree" \
+					"GET /search said running, results said $PROG_STATE"
+			fi
+		fi
+
+		# A second browse of the same peer while the first is in flight joins
+		# it rather than minting a second id (amule-org/amule#1059): a second
+		# id would never receive a lifecycle, and the first would be stranded
+		# reporting `running` forever with nothing able to terminalize it.
+		#
+		# Only meaningful while the first browse is actually in flight. Every
+		# terminal path clears the in-flight counter, so once a browse settles
+		# a fresh id is the CORRECT answer -- re-read the state and skip
+		# rather than fail in that case, like the other peer-dependent
+		# assertions here.
+		#
+		# Counted as a delta, not an absolute: browses that have already
+		# settled stay on the listing until they are DELETEd or the daemon's
+		# LRU evicts them, so any daemon that has browsed this peer before
+		# legitimately shows more than one entry for it.
+		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
+		BROWSE_COUNT_BEFORE=$(printf '%s' "$CURL_BODY" | \
+			jq "[.searches[] | select(.kind == \"browse\")] | length")
+		_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+			"$HOST/api/v0/clients/$PEER_ECID/shared_files"
+		_assert_status 202 "POST /clients/{ecid}/shared_files (duplicate) → 202"
+		DUP_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id')
+		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
+		FIRST_STATE=$(printf '%s' "$CURL_BODY" | \
+			jq -r "[.searches[] | select(.search_id == $BROWSE_SID)][0].state")
+		BROWSE_COUNT_AFTER=$(printf '%s' "$CURL_BODY" | \
+			jq "[.searches[] | select(.kind == \"browse\")] | length")
+		if [ "$DUP_SID" = "$BROWSE_SID" ]; then
+			_pass "a duplicate browse returns the id already in flight ($BROWSE_SID)"
+			# ...so it added no entry to the listing.
+			if [ "$BROWSE_COUNT_AFTER" = "$BROWSE_COUNT_BEFORE" ]; then
+				_pass "a duplicate browse adds no listing entry (still $BROWSE_COUNT_AFTER)"
+			else
+				_fail "duplicate browse added a listing entry" \
+					"before=$BROWSE_COUNT_BEFORE after=$BROWSE_COUNT_AFTER"
+			fi
+		elif [ "$FIRST_STATE" = "finished" ]; then
+			echo "    info: first browse already settled before the duplicate was"
+			echo "          sent — a new id is correct; skipping the join check"
+			curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
+				"$HOST/api/v0/search/$DUP_SID" >/dev/null 2>&1
+		else
+			_fail "duplicate browse minted a second id" \
+				"first=$BROWSE_SID (state $FIRST_STATE) second=$DUP_SID"
+		fi
+
 		# Give the peer a moment to answer, then check the browse-only
 		# folder field. An unreachable/denying peer returns nothing, which
 		# is not a failure of this contract.
@@ -1078,6 +1165,20 @@ if [ -n "$PEER_ECID" ]; then
 		_curl -H "Authorization: Bearer $ADMIN_TOKEN" \
 			"$HOST/api/v0/search/$BROWSE_SID/results?sort=directory"
 		_assert_status 200 "GET /search/{browse id}/results?sort=directory → 200"
+
+		# Same check after the browse has had time to settle: a peer that
+		# denied or never answered leaves no results at all, which is exactly
+		# the case the pre-#1060 listing reported as `idle` in perpetuity.
+		# `running` is still legitimate for a peer genuinely still streaming.
+		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
+		LIST_STATE=$(printf '%s' "$CURL_BODY" | \
+			jq -r "[.searches[] | select(.search_id == $BROWSE_SID)][0].state")
+		if [ "$LIST_STATE" = "finished" ] || [ "$LIST_STATE" = "running" ]; then
+			_pass "browse listing state is $LIST_STATE after settling (never idle)"
+		else
+			_fail "browse listing state after settling" \
+				"expected finished (or still running), got $LIST_STATE"
+		fi
 		curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
 			"$HOST/api/v0/search/$BROWSE_SID" >/dev/null 2>&1
 	else

@@ -192,27 +192,34 @@ public:
 	bool IsKnownSearchId(uint32_t searchID) const;
 
 	/**
-	 * Every search ID this core currently knows the query string for --
-	 * populated in StartNewSearch and pruned in RemoveResults, so this
-	 * covers a search regardless of how it was started (monolithic GUI or
-	 * an EC client) and is not bounded by any EC-connection-specific
-	 * registry. Used by EC_OP_SEARCH_LIST, which must stay narrow: a browse
-	 * tab is not a search and must not surface as one (got3nks, PR #680
-	 * review). Returned by reference -- called once per explicit
-	 * EC_OP_SEARCH_LIST request, but a copy is still needless. Neither
-	 * caller needs ownership.
+	 * Every search ID this core currently knows a name for -- populated in
+	 * StartNewSearch and RegisterBrowseSearch, pruned in RemoveResults, so
+	 * this covers a search regardless of how it was started (monolithic GUI
+	 * or an EC client) and is not bounded by any EC-connection-specific
+	 * registry.
+	 *
+	 * Browses are in here: PR #914 registers one under its peer's name so a
+	 * remote GUI listing the core's searches can rebuild it as a browse tab
+	 * rather than a nameless search one. PR #680's narrower rule -- that a
+	 * browse must never surface on EC_OP_SEARCH_LIST -- was superseded by
+	 * that, so this map is no longer searches-only.
+	 *
+	 * Returned by reference -- called once per explicit EC_OP_SEARCH_LIST
+	 * request, but a copy is still needless. Neither caller needs ownership.
 	 */
 	const std::map<uint32_t, wxString> &GetKnownSearchIds() const { return m_searchStrings; }
 
 	/**
-	 * Every ID this core currently routes results for: CSearchList searches
-	 * plus "View Files" browse tabs (see IsKnownSearchId). Used by the
-	 * multi-search results union poll, which -- unlike EC_OP_SEARCH_LIST --
-	 * must go wide, or a browse's results never reach the tab BuildBrowseReply
-	 * (ExternalConn.cpp) already told the client to expect them in (got3nks,
-	 * PR #680 review). Returned by reference; runs every poll tick for every
-	 * connected multi-search client, so a per-call copy here is the one that
-	 * would actually show up in the arithmetic.
+	 * Every ID this core currently holds a browse progress bar for, used as
+	 * the multi-search results union poll's second source. Not redundant with
+	 * GetKnownSearchIds() even though a browse is registered there too: the
+	 * bar is keyed by CUpDownClient::GetBrowseRoutingId(), which is the
+	 * client pointer until a browse has an ID of its own, so a monolithic
+	 * local browse has a pointer-keyed entry here between the request going
+	 * out and its first directory arriving (that is when ProcessSharedFileList
+	 * allocates the ID and registers it). Returned by reference; runs every
+	 * poll tick for every connected multi-search client, so a per-call copy
+	 * here is the one that would actually show up in the arithmetic.
 	 */
 	const std::map<wxUIntPtr, uint16> &GetBrowseSearchIds() const { return m_browseBar; }
 

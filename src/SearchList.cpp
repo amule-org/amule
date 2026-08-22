@@ -1308,6 +1308,19 @@ void CSearchList::SetKadSearchFinished(uint32_t searchID)
 CSearchList::SearchLifecycleState CSearchList::GetSearchLifecycleStateById(wxUIntPtr searchID) const
 {
 	uint32_t sid = static_cast<uint32_t>(searchID);
+	// A browse ("View Files") is not a CSearchList search: its lifecycle lives
+	// in m_browseStatus, keyed by the same id this function is asked about.
+	// Without this the generic tail below decides it from retained results,
+	// which is wrong in both directions -- a browse still streaming reports
+	// finished as soon as its first directory lands, and one the peer denied
+	// reports idle forever, since a failed browse has no results to flip the
+	// ternary. Same mapping the EC progress reply applies (ExternalConn.cpp's
+	// AppendSearchProgress), here instead of only there so the SEARCH_LIST
+	// listing cannot disagree with the per-id progress reply about the same id.
+	if (HasBrowseStatus(searchID)) {
+		return GetBrowseStatusById(searchID) == BROWSE_IN_PROGRESS ? SEARCH_LIFECYCLE_RUNNING
+									   : SEARCH_LIFECYCLE_FINISHED;
+	}
 	// Kad searches are tracked per-ID: still registered in the manager =>
 	// running; recorded as finished (its CSearch was destroyed on the result
 	// cap or the 45s lifetime) => finished. Independent of any other search, so
@@ -1342,6 +1355,21 @@ uint8 CSearchList::GetSearchLifecyclePercentById(wxUIntPtr searchID) const
 	// An in-flight ed2k global uses its real server-queue percent — that state
 	// is single-slot, so it only applies to the current search.
 	const uint32_t sid = static_cast<uint32_t>(searchID);
+	// A browse reports the share of the peer's directory list received so far,
+	// rather than the 0/100 the state switch above would derive.
+	//
+	// Read m_browseBar directly, NOT through GetSearchBarStatusById: that
+	// function falls through to this one for anything it does not consider
+	// finished, so routing this branch through it would recurse between the two
+	// for an id with a browse status but no bar entry. The two maps are written
+	// and pruned together, so that should not arise -- which is exactly why it
+	// must not be load-bearing.
+	if (HasBrowseStatus(searchID)) {
+		std::map<wxUIntPtr, uint16>::const_iterator bar = m_browseBar.find(searchID);
+		const uint16 pct = (bar != m_browseBar.end()) ? bar->second : 0;
+		// 0xffff is the bar's terminal sentinel, not a percent.
+		return (pct == 0xffff) ? 100 : static_cast<uint8>(pct);
+	}
 	if (IsOrWasKadSearch(sid)) {
 		std::map<uint32_t, time_t>::const_iterator it = m_searchStartTimes.find(sid);
 		time_t start = (it != m_searchStartTimes.end()) ? it->second : m_searchStart;
