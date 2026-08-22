@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-06-10 16:45+0200\n"
-"PO-Revision-Date: 2026-08-21 19:20+0000\n"
+"PO-Revision-Date: 2026-08-22 15:53+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: lv\n"
@@ -816,7 +816,7 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in:282
 msgid "Of course, you don't have to follow this example."
-msgstr ""
+msgstr "Protams, jums nav obligāti jāseko šim piemēram."
 
 #. type: TH
 #: amuled.1.in:1

@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-22 15:15+0200\n"
-"PO-Revision-Date: 2026-08-21 19:04+0000\n"
+"PO-Revision-Date: 2026-08-22 15:58+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
 "Language: cs\n"
@@ -4335,7 +4335,7 @@ msgstr "Vytvářet nové soubory jako sparse soubory"
 
 #: src/muuli_wdr.cpp
 msgid "Sparse part files only occupy disk space for the parts already downloaded, so free space is used up gradually as the file fills in. Turn this off to use an ordinary file instead - useful where sparse files are unsupported or slow, or where backup/de-duplication tools handle them badly. Applies only when the core runs on Windows; on Linux and macOS part files are sparse anyway and this setting has no effect."
-msgstr ""
+msgstr "Sparse soubory .part zabírají místo na disku pouze pro již stažené části, takže volné místo se postupně zaplňuje s tím, jak se soubor doplňuje. Vypněte tuto volbu, chcete-li místo toho použít běžný soubor - užitečné tam, kde sparse soubory nejsou podporovány nebo jsou pomalé, nebo kde je nástroje pro zálohování/deduplikaci zpracovávají špatně. Platí pouze tehdy, když jádro běží na Windows; na Linuxu a macOS jsou soubory .part sparse tak jako tak a toto nastavení nemá žádný účinek."
 
 #: src/muuli_wdr.cpp
 msgid "Stop downloads when free disk space reaches "
@@ -4351,7 +4351,7 @@ msgstr "Zadejte minimum místa na disku."
 
 #: src/muuli_wdr.cpp
 msgid "Save 10 sources on rare files (< 20 sources)"
-msgstr ""
+msgstr "Uložit 10 zdrojů u vzácných souborů (< 20 zdrojů)"
 
 #: src/muuli_wdr.cpp src/Statistics.cpp
 msgid "Uploads"
@@ -4375,15 +4375,15 @@ msgstr ""
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "Media metadata extraction"
-msgstr ""
+msgstr "Extrakce metadat médií"
 
 #: src/muuli_wdr.cpp
 msgid "Extract length / bitrate / codec from shared audio and video files"
-msgstr ""
+msgstr "Získat délku / datový tok / kodek ze sdílených zvukových a video souborů"
 
 #: src/muuli_wdr.cpp
 msgid "When enabled, aMule runs ffprobe on each shared media file to fill in the Length / Bitrate / Codec columns other clients see when they find the file in a search. Requires ffmpeg (the ffprobe binary) to be installed."
-msgstr ""
+msgstr "Je-li povoleno, aMule spustí ffprobe na každém sdíleném mediálním souboru, aby vyplnil sloupce Délka / Datový tok / Kodek, které ostatní klienti vidí, když soubor najdou při hledání. Vyžaduje nainstalovaný ffmpeg (binární soubor ffprobe)."
 
 #: src/muuli_wdr.cpp
 msgid "Path to ffprobe:"
@@ -4391,25 +4391,27 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Full path to the ffprobe binary. Leave empty to have aMule auto-detect it on startup."
-msgstr ""
+msgstr "Úplná cesta k binárnímu souboru ffprobe. Ponechte prázdné, aby jej aMule automaticky zjistil při spuštění."
 
 #: src/muuli_wdr.cpp
 msgid "Detect"
-msgstr ""
+msgstr "Zjistit"
 
 #: src/muuli_wdr.cpp
 msgid "Search the standard install locations for an ffprobe binary and fill the path field."
-msgstr ""
+msgstr "Vyhledat binární soubor ffprobe ve standardních instalačních umístěních a vyplnit pole cesty."
 
 #: src/muuli_wdr.cpp
 msgid ""
 "Completed downloads are stored here. All files in this folder are automatically shared with other peers.\n"
 "If this folder also holds files you don't want to share, point it at an aMule-only sub-folder."
 msgstr ""
+"Dokončená stahování jsou ukládají zde. Všechny soubory v této složce jsou automaticky sdíleny s ostatními uživateli.\n"
+"Pokud tato složka obsahuje i soubory, které nechcete sdílet, nastavte podsložku určenou pouze pro aMule."
 
 #: src/muuli_wdr.cpp
 msgid "Pick the folder where completed downloads will be stored. All files in that folder will be shared with other peers."
-msgstr ""
+msgstr "Vyberte složku, kam se budou ukládat dokončená stahování. Všechny soubory v této složce budou sdíleny s ostatními uživateli."
 
 #: src/muuli_wdr.cpp
 msgid "Shared folders"
@@ -4453,11 +4455,11 @@ msgstr "Sledovat symbolické odkazy ve sdílených složkách"
 
 #: src/muuli_wdr.cpp
 msgid "Exclude files matching:"
-msgstr ""
+msgstr "Vyloučit soubory odpovídající:"
 
 #: src/muuli_wdr.cpp
 msgid "Wildcard patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp. Files whose name matches are not shared. Matching is case-insensitive."
-msgstr ""
+msgstr "Zástupné vzory oddělené znakem '|', např. .DS_Store|Thumbs.db|*.tmp. Soubory, jejichž název odpovídá těmto vzorům, nejsou sdíleny. Porovnávání nebere ohled na velikost písmen."
 
 #: src/muuli_wdr.cpp
 msgid "Patterns are regular expressions"
@@ -4465,11 +4467,11 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "When set, the whole field is one regular expression ('|' is alternation). When unset, it is a list of '|'-separated wildcards."
-msgstr ""
+msgstr "Je-li nastaveno, celé pole je jeden regulární výraz ('|' znamená alternaci). Není-li nastaveno, jedná se o seznam zástupných vzorů oddělených znakem '|'."
 
 #: src/muuli_wdr.cpp
 msgid "Show how many shared files the current pattern would exclude."
-msgstr ""
+msgstr "Zobrazit, kolik sdílených souborů by aktuální vzor vyloučil."
 
 #: src/muuli_wdr.cpp
 msgid "When the connected core's files live on a different machine, map a path prefix it reports to where that filesystem is reachable from here (a network share, say) so \"Open\" and \"Show in folder\" work."
@@ -4507,19 +4509,19 @@ msgstr "Prodleva aktualizace: 5 sekund"
 
 #: src/muuli_wdr.cpp
 msgid "Time for average graph: 100 mins"
-msgstr ""
+msgstr "Čas pro průměrný graf: 100 minut"
 
 #: src/muuli_wdr.cpp
 msgid "Connections Graph Scale: 100 "
-msgstr ""
+msgstr "Měřítko grafu připojení: 100 "
 
 #: src/muuli_wdr.cpp
 msgid "Download graph scale:"
-msgstr ""
+msgstr "Měřítko grafu stahování:"
 
 #: src/muuli_wdr.cpp
 msgid "Upload graph scale:"
-msgstr ""
+msgstr "Měřítko grafu odesílání:"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -4536,48 +4538,47 @@ msgstr "Mřížka"
 
 #: src/muuli_wdr.cpp
 msgid "Download current"
-msgstr ""
+msgstr "Aktuální stahování"
 
 #: src/muuli_wdr.cpp
 msgid "Download running average"
-msgstr ""
+msgstr "Klouzavý průměr stahování"
 
 #: src/muuli_wdr.cpp
 msgid "Download session average"
-msgstr ""
+msgstr "Průměr stahování za relaci"
 
 #: src/muuli_wdr.cpp
 msgid "Upload current"
-msgstr ""
+msgstr "Aktuální odesílání"
 
 #: src/muuli_wdr.cpp
 msgid "Upload running average"
-msgstr ""
+msgstr "Klouzavý průměr odesílání"
 
 #: src/muuli_wdr.cpp
 msgid "Upload session average"
-msgstr ""
+msgstr "Průměr odesílání za relaci"
 
 #: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active connections"
 msgstr "Aktivní připojení"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Systray Icon Speed Bar"
-msgstr "Ukazatel rychlosti v tray ikoně"
+msgstr "Ukazatel rychlosti v ikoně oznamovací oblasti"
 
 #: src/muuli_wdr.cpp
 msgid "Kad-nodes current"
-msgstr ""
+msgstr "Uzly Kad – aktuální počet"
 
 #: src/muuli_wdr.cpp
 msgid "Kad-nodes running"
-msgstr ""
+msgstr "Uzly Kad v provozu"
 
 #: src/muuli_wdr.cpp
 msgid "Kad-nodes session"
-msgstr ""
+msgstr "Uzly Kad za relaci"
 
 #: src/muuli_wdr.cpp
 msgid "Select"
@@ -4601,17 +4602,15 @@ msgstr "Max. nových připojení za 5 sek."
 
 #: src/muuli_wdr.cpp
 msgid "Concurrent Kad source lookups"
-msgstr ""
+msgstr "Souběžná vyhledávání zdrojů Kad"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Kad source re-search interval (minutes)"
-msgstr "Interval aktualizace FTP v minutách"
+msgstr "Interval opakovaného vyhledávání zdrojů v síti Kad (minuty)"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Source re-ask interval (minutes)"
-msgstr "Interval aktualizace FTP v minutách"
+msgstr "Interval opakovaného dotazování zdrojů (minuty)"
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"
@@ -4619,7 +4618,7 @@ msgstr "Velikost zásobníku pro soubory: 240000 bytů"
 
 #: src/muuli_wdr.cpp
 msgid "Use MMAP: memory-mapped file access (lower memory use)"
-msgstr ""
+msgstr "Použít MMAP: přístup k souborům mapovaným do paměti (nižší spotřeba paměti)"
 
 #: src/muuli_wdr.cpp
 msgid "Maps part files into memory instead of buffering them on the heap, lowering the process memory footprint. May reduce download speed on some disks; best for memory-constrained or upload-heavy hosts."

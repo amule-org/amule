@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-22 15:15+0200\n"
-"PO-Revision-Date: 2026-08-21 19:08+0000\n"
+"PO-Revision-Date: 2026-08-22 15:30+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
 "Language: fr\n"
@@ -2174,7 +2174,7 @@ msgstr "Impossible de renommer le fichier."
 
 #: src/ExternalConn.cpp
 msgid "Client could not be swapped to that file."
-msgstr ""
+msgstr "Impossible de basculer le client vers ce fichier."
 
 #: src/ExternalConn.cpp
 #, c-format
@@ -3206,7 +3206,7 @@ msgstr "AVERTISSEMENT : "
 
 #: src/MediaProbe.cpp
 msgid "Media metadata: no ffprobe binary found. Install ffmpeg, or set the ffprobe path in preferences; length, bitrate and codec will not be extracted."
-msgstr ""
+msgstr "Métadonnées multimédias : aucun binaire ffprobe n'a été trouvé. Installez ffmpeg ou bien définissez le chemin vers ffprobe dans les préférences ; la durée, le taux binaire et le codec ne seront pas extraits."
 
 #: src/MediaProbe.cpp
 #, c-format

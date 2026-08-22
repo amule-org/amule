@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-22 15:15+0200\n"
-"PO-Revision-Date: 2026-08-21 19:18+0000\n"
+"PO-Revision-Date: 2026-08-22 15:50+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -2171,7 +2171,7 @@ msgstr "无法重命名文件。"
 
 #: src/ExternalConn.cpp
 msgid "Client could not be swapped to that file."
-msgstr ""
+msgstr "无法交换客户端到那个文件。"
 
 #: src/ExternalConn.cpp
 #, c-format
@@ -3203,7 +3203,7 @@ msgstr "警告: "
 
 #: src/MediaProbe.cpp
 msgid "Media metadata: no ffprobe binary found. Install ffmpeg, or set the ffprobe path in preferences; length, bitrate and codec will not be extracted."
-msgstr ""
+msgstr "媒体元数据：未找到 ffprobe 二进制文件。安装 ffmpeg，或在首选项中设置 ffprobe 路径；不会提取长度、比特率和编解码器信息。"
 
 #: src/MediaProbe.cpp
 #, c-format
