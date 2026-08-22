@@ -57,15 +57,17 @@ const nowSec = () => Math.floor(Date.now() / 1000);
 function tabList() {
   return Array.from(tabs.values()).map((x) => ({
     id: x.id, query: x.query, label: x.label, kind: x.kind, state: x.state,
-    // An adopted search now arrives with a real percent -- amuleapi seeds a
-    // discovered slot from the daemon's own number, and falls back to 100 for
-    // a finished one. The view still keys its progress text off `state`,
-    // which is the authoritative signal.
+    // percent is 0 on an adopted tab until it is refreshed: GET /search does
+    // not carry one, only GET /search/{id}/results does. Harmless, because the
+    // view keys its progress text off `state` and only shows a percent while
+    // running -- and the tab that is running and visible has been through
+    // refresh() via setActive().
     //
     // count is the larger of the daemon's reported total and what this tab
     // has actually pulled: a tab whose results are loaded knows better than
     // the listing snapshot, and an unopened one has only the listing.
     percent: x.percent, count: Math.max(x.count || 0, x.results.size),
+    moreExhausted: !!x.moreExhausted,
   }));
 }
 
@@ -352,11 +354,23 @@ export const searches = {
 
   // Kad "More": re-ask already-queried nodes for a wider frontier. amuleapi
   // rejects a non-Kad or finished search with a 400.
+  //
+  // 409 kad_more_exhausted is the terminal one: the daemon's 4-reask budget is
+  // spent, or the search has entered the stopping window Kad opens 20 s before
+  // it ends. Nothing un-spends it, so the tab remembers and the button goes
+  // away for this search only -- the flag dies with the tab, and a re-run gets
+  // a new search_id and a clean one. A plain 202 promises no reask went out
+  // (no peer left to re-ask *yet* also answers 202), which is why only the 409
+  // disables anything.
   async more(id) {
     try {
       await api.post("search/" + id + "/more");
       toast(t("search_toast_more_started"), "success");
-    } catch (e) { toast(terr(e), "error"); }
+    } catch (e) {
+      const tab = tabs.get(id);
+      if (tab && e && e.code === "kad_more_exhausted") { tab.moreExhausted = true; publishTabs(); }
+      toast(terr(e), "error");
+    }
   },
 
   // Stop AND free. A 404 is success: someone else already freed it.
