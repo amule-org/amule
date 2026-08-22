@@ -31,7 +31,7 @@
 
 CChatSessionStore::Session &CChatSessionStore::Touch(uint64 gui_id, const wxString &name)
 {
-	const uint32 now = static_cast<uint32>(time(NULL));
+	const uint32 now = static_cast<uint32>(time(nullptr));
 
 	for (auto it = m_sessions.begin(); it != m_sessions.end(); ++it) {
 		if (it->gui_id != gui_id) {
@@ -71,7 +71,7 @@ uint32 CChatSessionStore::Append(Session &s, uint8 direction, const wxString &te
 	// sentinel every reader uses, so the first real message is 1.
 	m.id = ++m_lastMsgId;
 	m.direction = direction;
-	m.timestamp = static_cast<uint32>(time(NULL));
+	m.timestamp = static_cast<uint32>(time(nullptr));
 	m.text = text;
 	s.messages.push_back(std::move(m));
 	while (s.messages.size() > MAX_MESSAGES_PER_SESSION) {
@@ -108,7 +108,7 @@ const CChatSessionStore::Session *CChatSessionStore::Find(uint64 gui_id) const
 			return &s;
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 std::vector<const CChatSessionStore::Session *> CChatSessionStore::Sessions() const

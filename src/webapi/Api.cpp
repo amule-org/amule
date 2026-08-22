@@ -994,6 +994,66 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		}
 	}
 
+	if (path == "/api/v0/chats") {
+		if (req.method == "GET" || req.method == "HEAD") {
+			return HandleChats(req);
+		}
+		return ErrorResponse(405, "method_not_allowed", "only GET / HEAD on /chats");
+	}
+
+	// One conversation, keyed on "<ip>:<port>". The messages sub-resource is
+	// matched first, same ordering rationale as the server / friend routes:
+	// the longer pattern would otherwise be shadowed.
+	{
+		static const auto chat_messages = web_api_path::ParsePattern("/api/v0/chats/{peer}/messages");
+		static const auto chat_one = web_api_path::ParsePattern("/api/v0/chats/{peer}");
+		const auto path_segs = web_api_path::SplitPath(path);
+		std::map<std::string, std::string> caps;
+		if (web_api_path::Match(chat_messages, path_segs, caps)) {
+			if (req.method == "GET" || req.method == "HEAD") {
+				return HandleChatMessages(req, caps["peer"]);
+			}
+			if (req.method == "POST") {
+				return HandleChatSend(req, caps["peer"]);
+			}
+			return ErrorResponse(405,
+				"method_not_allowed",
+				"only GET / HEAD / POST on /chats/{peer}/messages");
+		}
+		if (web_api_path::Match(chat_one, path_segs, caps)) {
+			if (req.method == "DELETE") {
+				return HandleChatClose(req, caps["peer"]);
+			}
+			return ErrorResponse(405, "method_not_allowed", "only DELETE on /chats/{peer}");
+		}
+	}
+
+	// Address a conversation by ECID instead of ip:port, for a caller holding
+	// a peer or friend row and no wish to compose the key. The friend form is
+	// the one that reaches an OFFLINE friend.
+	{
+		static const auto friend_messages =
+			web_api_path::ParsePattern("/api/v0/friends/{ecid}/messages");
+		static const auto client_messages =
+			web_api_path::ParsePattern("/api/v0/clients/{ecid}/messages");
+		const auto path_segs = web_api_path::SplitPath(path);
+		std::map<std::string, std::string> caps;
+		if (web_api_path::Match(friend_messages, path_segs, caps)) {
+			if (req.method != "POST") {
+				return ErrorResponse(
+					405, "method_not_allowed", "only POST on /friends/{ecid}/messages");
+			}
+			return HandleFriendMessageSend(req, caps["ecid"]);
+		}
+		if (web_api_path::Match(client_messages, path_segs, caps)) {
+			if (req.method != "POST") {
+				return ErrorResponse(
+					405, "method_not_allowed", "only POST on /clients/{ecid}/messages");
+			}
+			return HandleClientMessageSend(req, caps["ecid"]);
+		}
+	}
+
 	if (path == "/api/v0/servers/update") {
 		if (req.method != "POST") {
 			return ErrorResponse(405, "method_not_allowed", "only POST on /servers/update");
@@ -5075,6 +5135,107 @@ bool FindFriendByEcid(const webapi::CState &state, std::uint32_t ecid, webapi::F
 // one peer: every list field plus the detail-only B fields. Bare
 // object (no list envelope), mirroring HandleDownloadDetail. 404 when
 // the ecid isn't in the current snapshot.
+// --- Chat (issue #971) -------------------------------------------------
+//
+// Conversations are keyed on "<ip>:<port>", the readable form of the GUI_ID
+// the wire already uses. Stable across peer reconnects (unlike an ECID),
+// needs no invented identifier, and converts straight back to the GUI_ID the
+// EC ops want.
+
+namespace
+{
+
+// Parse "<ip>:<port>" back into a GUI_ID. Strict on purpose: anything that is
+// not four dotted octets plus a port is a client bug, and accepting it would
+// address some other conversation.
+bool ParseChatPeerKey(const std::string &peer, std::uint64_t &out_gui_id)
+{
+	const std::size_t colon = peer.rfind(':');
+	if (colon == std::string::npos || colon == 0 || colon + 1 >= peer.size())
+		return false;
+
+	unsigned a = 0, b = 0, c = 0, d = 0;
+	char extra = 0;
+	if (std::sscanf(peer.substr(0, colon).c_str(), "%u.%u.%u.%u%c", &a, &b, &c, &d, &extra) != 4)
+		return false;
+	if (a > 255 || b > 255 || c > 255 || d > 255)
+		return false;
+
+	const std::string port_str = peer.substr(colon + 1);
+	if (port_str.find_first_not_of("0123456789") != std::string::npos)
+		return false;
+	const unsigned long port = std::strtoul(port_str.c_str(), nullptr, 10);
+	if (port == 0 || port > 65535)
+		return false;
+
+	// LSB-first, matching IPv4ToDotted and EC_TAG_CLIENT_USER_IP.
+	const std::uint32_t ip = static_cast<std::uint32_t>(a) | (static_cast<std::uint32_t>(b) << 8) |
+				 (static_cast<std::uint32_t>(c) << 16) |
+				 (static_cast<std::uint32_t>(d) << 24);
+	out_gui_id = (static_cast<std::uint64_t>(ip) << 16) | static_cast<std::uint64_t>(port);
+	return true;
+}
+
+void WriteChatMessageObject(CJsonWriter &w, const webapi::ChatMessageSnapshot &m)
+{
+	w.BeginObject();
+	w.Key("id");
+	w.ValueInt(static_cast<int64_t>(m.id));
+	w.Key("direction");
+	// "in" = from the peer, "out" = sent by us from ANY client: this API,
+	// amulegui, or the local GUI.
+	w.ValueString(wxString::FromAscii(m.outgoing ? "out" : "in"));
+	w.Key("text");
+	w.ValueString(wxString::FromUTF8(m.text.c_str()));
+	w.Key("timestamp");
+	w.ValueInt(static_cast<int64_t>(m.timestamp));
+	w.EndObject();
+}
+
+void WriteChatObject(CJsonWriter &w, const webapi::ChatSessionSnapshot &s)
+{
+	w.BeginObject();
+	w.Key("peer");
+	w.ValueString(wxString::FromUTF8(s.PeerKey().c_str()));
+	w.Key("ip");
+	w.ValueString(wxString::FromUTF8(s.ip.c_str()));
+	w.Key("port");
+	w.ValueInt(static_cast<int64_t>(s.port));
+	w.Key("name");
+	w.ValueString(wxString::FromUTF8(s.DisplayName().c_str()));
+	w.Key("client_ecid");
+	w.ValueInt(static_cast<int64_t>(s.client_ecid));
+	w.Key("friend_ecid");
+	w.ValueInt(static_cast<int64_t>(s.friend_ecid));
+	w.Key("online");
+	w.ValueBool(s.client_ecid != 0);
+	w.Key("message_count");
+	w.ValueInt(static_cast<int64_t>(s.messages.size()));
+	w.Key("last_msg_id");
+	w.ValueInt(static_cast<int64_t>(s.LastMsgId()));
+	w.Key("last_message_at");
+	w.ValueInt(static_cast<int64_t>(s.messages.empty() ? 0 : s.messages.back().timestamp));
+	// The transcript itself is deliberately NOT on the list: a 50-session
+	// store at 200 messages each would be 10 000 objects per list read.
+	if (!s.messages.empty()) {
+		w.Key("last_message");
+		WriteChatMessageObject(w, s.messages.back());
+	}
+	w.EndObject();
+}
+
+const webapi::ChatSessionSnapshot *FindChat(
+	const std::vector<webapi::ChatSessionSnapshot> &chats, std::uint64_t gui_id)
+{
+	for (const webapi::ChatSessionSnapshot &s : chats) {
+		if (s.gui_id == gui_id)
+			return &s;
+	}
+	return nullptr;
+}
+
+} // namespace
+
 CHttpServer::Response CApiDispatcher::HandleKnownClients(const CHttpServer::Request &req)
 {
 	auto a = Authenticate(req);
@@ -5208,6 +5369,300 @@ CHttpServer::Response CApiDispatcher::HandleClientDetail(
 	r.content_type = "application/json";
 	CJsonWriter w;
 	WriteClientDetailObject(w, cli);
+	FinalizeJsonBody(w, r);
+	return r;
+}
+
+CHttpServer::Response CApiDispatcher::HandleChats(const CHttpServer::Request &req)
+{
+	auto a = Authenticate(req);
+	if (!a.ok)
+		return a.rejection;
+	if (!m_app.IsServerChatActive()) {
+		return ErrorResponse(
+			503, "ec_unsupported", "the connected amuled does not serve chat sessions");
+	}
+	// RequireSnapshot is ListResponse's job; params first so a malformed
+	// query is a 400 rather than a 503 while EC is still warming up.
+	ListParams params;
+	if (auto err = ParseListParams(QueryOf(req), params))
+		return *err;
+
+	// Served straight from the refresher snapshot -- no EC roundtrip per
+	// request. The daemon's own order is most-recently-active first, which is
+	// the order a client wants by default.
+	const std::vector<webapi::ChatSessionSnapshot> chats = m_state.Chats();
+
+	static const ListComparators<webapi::ChatSessionSnapshot> kComps = {
+		{ "last_message_at",
+			[](const webapi::ChatSessionSnapshot &x, const webapi::ChatSessionSnapshot &y) {
+				const std::uint32_t xa = x.messages.empty() ? 0 : x.messages.back().timestamp;
+				const std::uint32_t ya = y.messages.empty() ? 0 : y.messages.back().timestamp;
+				return xa < ya;
+			} },
+		{ "name",
+			[](const webapi::ChatSessionSnapshot &x, const webapi::ChatSessionSnapshot &y) {
+				return x.DisplayName() < y.DisplayName();
+			} },
+	};
+	return ListResponse(m_state, "chats", chats, WriteChatObject, params, kComps);
+}
+
+CHttpServer::Response CApiDispatcher::HandleChatMessages(
+	const CHttpServer::Request &req, const std::string &peer)
+{
+	auto a = Authenticate(req);
+	if (!a.ok)
+		return a.rejection;
+	if (!m_app.IsServerChatActive()) {
+		return ErrorResponse(
+			503, "ec_unsupported", "the connected amuled does not serve chat sessions");
+	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
+
+	std::uint64_t gui_id = 0;
+	if (!ParseChatPeerKey(peer, gui_id)) {
+		return ErrorResponse(400, "bad_request", "path `{peer}` must be `<ip>:<port>`");
+	}
+
+	const std::vector<webapi::ChatSessionSnapshot> chats = m_state.Chats();
+	const webapi::ChatSessionSnapshot *session = FindChat(chats, gui_id);
+	if (!session) {
+		return ErrorResponse(404, "not_found", "no chat session with that peer");
+	}
+
+	// `since_id` is a safe polling cursor: ids are monotonic per daemon
+	// process, so a client never sees a duplicate and never skips one. They
+	// reset when the daemon restarts, which also empties the store.
+	std::uint32_t since_id = 0;
+	std::size_t limit = 0;
+	const auto qmap = web_api_path::ParseQuery(QueryOf(req));
+	{
+		const auto it = qmap.find("since_id");
+		if (it != qmap.end()) {
+			if (it->second.find_first_not_of("0123456789") != std::string::npos) {
+				return ErrorResponse(
+					400, "bad_request", "`since_id` must be a non-negative integer");
+			}
+			since_id = static_cast<std::uint32_t>(std::strtoul(it->second.c_str(), nullptr, 10));
+		}
+	}
+	{
+		const auto it = qmap.find("limit");
+		if (it != qmap.end()) {
+			if (it->second.find_first_not_of("0123456789") != std::string::npos) {
+				return ErrorResponse(
+					400, "bad_request", "`limit` must be a non-negative integer");
+			}
+			limit = static_cast<std::size_t>(std::strtoul(it->second.c_str(), nullptr, 10));
+		}
+	}
+
+	std::vector<const webapi::ChatMessageSnapshot *> selected;
+	for (const webapi::ChatMessageSnapshot &m : session->messages) {
+		if (m.id > since_id)
+			selected.push_back(&m);
+	}
+	// `limit` means the LAST n, matching "show me the tail of this
+	// conversation"; combined with since_id it trims the same window from the
+	// front, so the newest are always the ones kept.
+	if (limit && selected.size() > limit) {
+		selected.erase(selected.begin(), selected.end() - static_cast<std::ptrdiff_t>(limit));
+	}
+
+	CJsonWriter w;
+	w.BeginObject();
+	w.Key("peer");
+	w.ValueString(wxString::FromUTF8(session->PeerKey().c_str()));
+	w.Key("messages");
+	w.BeginArray();
+	for (const webapi::ChatMessageSnapshot *m : selected)
+		WriteChatMessageObject(w, *m);
+	w.EndArray();
+	w.Key("total");
+	w.ValueInt(static_cast<int64_t>(session->messages.size()));
+	w.Key("last_msg_id");
+	w.ValueInt(static_cast<int64_t>(session->LastMsgId()));
+	w.EndObject();
+	CHttpServer::Response r;
+	r.status = 200;
+	r.content_type = "application/json";
+	FinalizeJsonBody(w, r);
+	return r;
+}
+
+// Shared by all three send forms. `target` is the already-built EC tag naming
+// the recipient -- a GUI_ID, a live peer's ECID, or a friend's ECID. The
+// friend form is the one that reaches an OFFLINE friend, resolved by the
+// daemon through the friend's stored ip:port.
+CHttpServer::Response CApiDispatcher::SendChatMessageTo(const CHttpServer::Request &req, const CECTag &target)
+{
+	picojson::value root;
+	std::string parse_err;
+	if (!ParseJsonObjectBody(req.body, root, parse_err)) {
+		return ErrorResponse(400, "bad_request", parse_err.c_str());
+	}
+	const auto &obj = root.get<picojson::object>();
+	const auto it = obj.find("text");
+	if (it == obj.end() || !it->second.is<std::string>()) {
+		return ErrorResponse(400, "bad_request", "required string field `text` is missing");
+	}
+	const std::string text = it->second.get<std::string>();
+	if (text.empty()) {
+		return ErrorResponse(400, "bad_request", "`text` must be a non-empty string");
+	}
+	const std::size_t kMaxChatText = 1024;
+	if (text.size() > kMaxChatText) {
+		return ErrorResponse(400, "bad_request", "`text` exceeds 1024 bytes");
+	}
+
+	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_CHAT_SEND));
+	ec_req->AddTag(CECTag(EC_TAG_CHAT, wxString::FromUTF8(text.c_str())));
+	ec_req->AddTag(target);
+
+	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
+	if (!ec_resp) {
+		return ErrorResponse(503, "ec_unavailable", "EC roundtrip failed for chat send");
+	}
+	std::string ec_err_msg;
+	if (IsEcFailedResponse(ec_resp, ec_err_msg)) {
+		delete ec_resp;
+		return ErrorResponse(404, "not_found", ec_err_msg.c_str());
+	}
+	std::uint64_t gui_id = 0;
+	std::uint32_t msg_id = 0;
+	if (const CECTag *t = ec_resp->GetTagByName(EC_TAG_CHAT_CLIENT_ID))
+		gui_id = t->GetInt();
+	if (const CECTag *t = ec_resp->GetTagByName(EC_TAG_CHAT_MSG_ID))
+		msg_id = static_cast<std::uint32_t>(t->GetInt());
+	delete ec_resp;
+
+	// 202, not 200: the core acknowledges that it queued the message on the
+	// peer connection, not that the peer received it. An unreachable peer is
+	// not an error -- the desktop behaves the same, optimistically printing
+	// *** Connecting to Client ***.
+	CJsonWriter w;
+	w.BeginObject();
+	w.Key("ok");
+	w.ValueBool(true);
+	w.Key("peer");
+	w.ValueString(wxString::FromUTF8(webapi::ChatPeerKeyFromGuiId(gui_id).c_str()));
+	w.Key("message");
+	w.BeginObject();
+	w.Key("id");
+	w.ValueInt(static_cast<int64_t>(msg_id));
+	w.Key("direction");
+	w.ValueString(wxString::FromAscii("out"));
+	w.Key("text");
+	w.ValueString(wxString::FromUTF8(text.c_str()));
+	w.EndObject();
+	w.EndObject();
+	CHttpServer::Response r;
+	r.status = 202;
+	r.content_type = "application/json";
+	FinalizeJsonBody(w, r);
+	return r;
+}
+
+CHttpServer::Response CApiDispatcher::HandleChatSend(const CHttpServer::Request &req, const std::string &peer)
+{
+	auto a = Authenticate(req);
+	if (!a.ok)
+		return a.rejection;
+	if (auto rej = RequireAdmin(a))
+		return *rej;
+	if (!m_app.IsServerChatActive()) {
+		return ErrorResponse(
+			503, "ec_unsupported", "the connected amuled does not serve chat sessions");
+	}
+	std::uint64_t gui_id = 0;
+	if (!ParseChatPeerKey(peer, gui_id)) {
+		return ErrorResponse(400, "bad_request", "path `{peer}` must be `<ip>:<port>`");
+	}
+	// No 404 for an unknown peer here: the core creates the session if it does
+	// not exist, so this doubles as "start a chat with this address".
+	return SendChatMessageTo(req, CECTag(EC_TAG_CHAT_CLIENT_ID, gui_id));
+}
+
+CHttpServer::Response CApiDispatcher::HandleFriendMessageSend(
+	const CHttpServer::Request &req, const std::string &ecid_str)
+{
+	auto a = Authenticate(req);
+	if (!a.ok)
+		return a.rejection;
+	if (auto rej = RequireAdmin(a))
+		return *rej;
+	if (!m_app.IsServerChatActive()) {
+		return ErrorResponse(
+			503, "ec_unsupported", "the connected amuled does not serve chat sessions");
+	}
+	std::uint32_t ecid = 0;
+	if (!ParseEcidPath(ecid_str, ecid)) {
+		return ErrorResponse(400, "bad_request", "path `{ecid}` must be a non-negative integer");
+	}
+	return SendChatMessageTo(req, CECTag(EC_TAG_FRIEND, ecid));
+}
+
+CHttpServer::Response CApiDispatcher::HandleClientMessageSend(
+	const CHttpServer::Request &req, const std::string &ecid_str)
+{
+	auto a = Authenticate(req);
+	if (!a.ok)
+		return a.rejection;
+	if (auto rej = RequireAdmin(a))
+		return *rej;
+	if (!m_app.IsServerChatActive()) {
+		return ErrorResponse(
+			503, "ec_unsupported", "the connected amuled does not serve chat sessions");
+	}
+	std::uint32_t ecid = 0;
+	if (!ParseEcidPath(ecid_str, ecid)) {
+		return ErrorResponse(400, "bad_request", "path `{ecid}` must be a non-negative integer");
+	}
+	return SendChatMessageTo(req, CECTag(EC_TAG_CLIENT, ecid));
+}
+
+CHttpServer::Response CApiDispatcher::HandleChatClose(
+	const CHttpServer::Request &req, const std::string &peer)
+{
+	auto a = Authenticate(req);
+	if (!a.ok)
+		return a.rejection;
+	if (auto rej = RequireAdmin(a))
+		return *rej;
+	if (!m_app.IsServerChatActive()) {
+		return ErrorResponse(
+			503, "ec_unsupported", "the connected amuled does not serve chat sessions");
+	}
+	std::uint64_t gui_id = 0;
+	if (!ParseChatPeerKey(peer, gui_id)) {
+		return ErrorResponse(400, "bad_request", "path `{peer}` must be `<ip>:<port>`");
+	}
+
+	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_CHAT_CLOSE_SESSION));
+	ec_req->AddTag(CECTag(EC_TAG_CHAT_CLIENT_ID, gui_id));
+	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
+	if (!ec_resp) {
+		return ErrorResponse(503, "ec_unavailable", "EC roundtrip failed for chat close");
+	}
+	std::string ec_err_msg;
+	if (IsEcFailedResponse(ec_resp, ec_err_msg)) {
+		delete ec_resp;
+		return ErrorResponse(404, "not_found", ec_err_msg.c_str());
+	}
+	delete ec_resp;
+
+	CJsonWriter w;
+	w.BeginObject();
+	w.Key("ok");
+	w.ValueBool(true);
+	w.Key("peer");
+	w.ValueString(wxString::FromUTF8(peer.c_str()));
+	w.EndObject();
+	CHttpServer::Response r;
+	r.status = 200;
+	r.content_type = "application/json";
 	FinalizeJsonBody(w, r);
 	return r;
 }
@@ -9954,6 +10409,11 @@ void CApiDispatcher::DispatchEvents(const CHttpServer::Request &req,
 			return "logs";
 		if (prefix == "search")
 			return "search";
+		// Plural, matching the /chats collection: the bootstrap advice is to
+		// GET the collections matching your subscribed channels, which only
+		// works if the two names line up.
+		if (prefix == "chat")
+			return "chats";
 		return prefix;
 	};
 	auto event_passes_filter = [&](const std::string &name) {

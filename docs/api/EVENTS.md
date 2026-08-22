@@ -161,6 +161,7 @@ Every event belongs to a single channel. The full set, prefix-mapped from the ev
 | `status` | `status_*` | Connection state + headline counters |
 | `logs` | `log_*` | amuled log buffer (live tail; serverinfo is poll-only) |
 | `search` | `search_*` | Result deltas, completion, and the freeing of a search |
+| `chats` | `chat_*` | Peer chat messages, and conversations being closed |
 
 By default every channel is delivered. To subscribe to a subset, pass `?channels=` with a comma-separated list:
 
@@ -372,6 +373,38 @@ One `PATCH /api/v0/friends/{ecid}` can produce **two** `friend_updated` events. 
 ```json
 { "ecid": 12 }
 ```
+
+### `chats` channel
+
+Backed by the chat session store in `amuled`, which is shared by every client — so these events carry messages sent from the desktop GUI and amulegui too, not only ones this API sent.
+
+#### `chat_message`
+
+One event per message, **inbound and outbound alike**. An outbound one is how a message sent from amulegui, or from another browser tab, reaches every other viewer.
+
+```json
+{
+  "peer":        "203.0.113.42:4662",
+  "ip":          "203.0.113.42",
+  "port":        4662,
+  "name":        "alice",
+  "client_ecid": 4382,
+  "friend_ecid": 12,
+  "message":     { "id": 91, "direction": "in", "text": "thanks!", "timestamp": 1786652714 }
+}
+```
+
+`message` is identical to a `messages[]` entry on [`GET /api/v0/chats/{peer}/messages`](REFERENCE.md#get-apiv0chatspeermessages), and `name` uses the same `"IP: <ip> Port: <port>"` fallback the REST list does.
+
+There is no separate "conversation started" event: a conversation that did not exist yet is implied by the first message carrying its `peer`.
+
+#### `chat_session_closed`
+
+```json
+{ "peer": "203.0.113.42:4662" }
+```
+
+Closing is global — see [`DELETE /api/v0/chats/{peer}`](REFERENCE.md#delete-apiv0chatspeer). This fires whichever client closed it, including the desktop GUI, so a viewer should drop the conversation rather than assume it still exists.
 
 ### `clients` channel
 

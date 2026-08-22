@@ -24,6 +24,7 @@
 
 #include "State.h"
 
+#include <cstdio>
 #include <ctime>
 
 #include <mutex>
@@ -442,6 +443,44 @@ void CState::MutateFriends(const std::function<void(std::map<std::uint32_t, Frie
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	fn(m_friends);
+}
+
+std::string IPv4ToDotted(std::uint32_t ip_lsb_first)
+{
+	char buf[16];
+	std::snprintf(buf,
+		sizeof(buf),
+		"%u.%u.%u.%u",
+		static_cast<unsigned>((ip_lsb_first) & 0xFFu),
+		static_cast<unsigned>((ip_lsb_first >> 8) & 0xFFu),
+		static_cast<unsigned>((ip_lsb_first >> 16) & 0xFFu),
+		static_cast<unsigned>((ip_lsb_first >> 24) & 0xFFu));
+	return std::string(buf);
+}
+
+std::string ChatPeerKeyFromGuiId(std::uint64_t gui_id)
+{
+	const std::uint32_t ip = static_cast<std::uint32_t>(gui_id >> 16);
+	const std::uint16_t port = static_cast<std::uint16_t>(gui_id & 0xFFFFu);
+	return IPv4ToDotted(ip) + ":" + std::to_string(port);
+}
+
+std::vector<ChatSessionSnapshot> CState::Chats() const
+{
+	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+	return m_chats;
+}
+
+std::uint32_t CState::ChatCursor() const
+{
+	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+	return m_chat_cursor;
+}
+
+void CState::MutateChats(const std::function<void(std::vector<ChatSessionSnapshot> &, std::uint32_t &)> &fn)
+{
+	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
+	fn(m_chats, m_chat_cursor);
 }
 
 std::vector<FileSnapshot> CState::Downloads() const

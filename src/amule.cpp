@@ -224,7 +224,7 @@ CamuleApp::CamuleApp()
 	theApp = &wxGetApp();
 
 	clientlist = NULL;
-	chatsessions = NULL;
+	chatsessions = nullptr;
 	searchlist = NULL;
 	knownfiles = NULL;
 	canceledfiles = NULL;
@@ -404,7 +404,7 @@ int CamuleApp::OnExit()
 	friendlist = NULL;
 
 	delete chatsessions;
-	chatsessions = NULL;
+	chatsessions = nullptr;
 
 	// Destroying CDownloadQueue calls destructor for CPartFile
 	// calling CSharedFileList::SafeAddKFile occasionally.

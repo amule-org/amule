@@ -325,6 +325,13 @@ confirmation — the server does not echo those two tags.
 echoes each of these in its `EC_OP_AUTH_OK` response when it supports it,
 so the client learns what is negotiated for this connection.
 
+For a feature capability the echo is **load-bearing, not informational**.
+A client that does not see one echoed must not send the operations it
+gates: an opcode the server does not know reaches the unknown-opcode
+branch of its request dispatcher, which asserts before it can answer
+`EC_OP_FAILED`. Asking an older server takes it down rather than
+receiving a polite refusal.
+
 `EC_TAG_CAN_SEARCH_PROGRESS_UNION` changes the reply shape of
 `EC_OP_SEARCH_PROGRESS`, so it is advertised only alongside
 `EC_TAG_CAN_MULTI_SEARCH` — a single-search client has one search and no
@@ -500,6 +507,91 @@ Hopefully these examples clarified opcodes, tags, and nested tags.
 
 This section documents the data types of selected tags where the type
 isn't immediately obvious or has changed across protocol versions.
+
+### Chat (`EC_TAG_CHAT = 0x0900`)
+
+Peer chat is served from a session store in the core, shared by the
+built-in GUI and every EC client, so all of them see one transcript.
+Gated by `EC_TAG_CAN_CHAT` (`0x16`).
+
+| Tag                     | Code     | Type     | Description |
+| ----------------------- | -------- | -------- | ----------- |
+| `EC_TAG_CHAT`           | `0x0900` | `string` | Message text |
+| `EC_TAG_CHAT_CLIENT_ID` | `0x0901` | `uint64` | Peer GUI_ID, `(ip << 16) \| port` |
+| `EC_TAG_CHAT_SESSION`   | `0x0902` | `uint64` | Session container; value is the GUI_ID |
+| `EC_TAG_CHAT_MESSAGE`   | `0x0903` | `string` | Message container; value is the text |
+| `EC_TAG_CHAT_MSG_ID`    | `0x0904` | `uint32` | Monotonic message id, also used as a resume cursor |
+| `EC_TAG_CHAT_DIRECTION` | `0x0905` | `uint8`  | `0` = incoming, `1` = outgoing |
+| `EC_TAG_CHAT_TIMESTAMP` | `0x0906` | `uint32` | Unix seconds, stamped by the core |
+| `EC_TAG_CHAT_PEER_NAME` | `0x0907` | `string` | Peer display name; may be empty |
+
+The IP inside a GUI_ID uses the same byte order as
+`EC_TAG_CLIENT_USER_IP`.
+
+#### `EC_OP_GET_CHAT_SESSIONS` (`0x63`) → `EC_OP_CHAT_SESSIONS` (`0x64`)
+
+The polling workhorse: one roundtrip returns the session list *and*
+every message newer than the client's cursor, so an idle connection
+costs one small packet and a busy one needs no follow-up query.
+
+**Request:** optional `EC_TAG_CHAT_MSG_ID` — the highest id the client
+already holds. Absent or `0` means "everything you still have".
+
+**Reply:** a top-level `EC_TAG_CHAT_MSG_ID` carrying the store's current
+last id, then one `EC_TAG_CHAT_SESSION` per session. Each session
+container carries `EC_TAG_CHAT_PEER_NAME`, its own
+`EC_TAG_CHAT_MSG_ID`, an `EC_TAG_CLIENT` when the peer is online, an
+`EC_TAG_FRIEND` when the peer is a friend, and one
+`EC_TAG_CHAT_MESSAGE` per message past the cursor.
+
+The top-level cursor is present even when no messages come back, so a
+client can advance past ids that were evicted rather than requesting
+them forever.
+
+The reply is the server's **complete** session set. A session the client
+is tracking that is absent from it was closed — by another client, or by
+eviction — which is the only signal a close produces. No expiry tag is
+needed, and a client must drop such a session rather than assume it
+still exists.
+
+#### `EC_OP_GET_CHAT_MESSAGES` (`0x5B`) → `EC_OP_CHAT_MESSAGES` (`0x5C`)
+
+Non-destructive backfill of **one** session, for a client opening a
+conversation it has no transcript for. Takes a required
+`EC_TAG_CHAT_CLIENT_ID` and an optional `EC_TAG_CHAT_MSG_ID` cursor, and
+replies with the same shape as above containing a single session
+container.
+
+#### `EC_OP_CHAT_SEND` (`0x65`)
+
+Takes `EC_TAG_CHAT` (the text, non-empty) plus exactly one target:
+
+| Target tag              | Addresses |
+| ----------------------- | --------- |
+| `EC_TAG_CHAT_CLIENT_ID` | A GUI_ID — replying needs no lookup, it is the id messages arrive with |
+| `EC_TAG_CLIENT`         | A live peer by ECID |
+| `EC_TAG_FRIEND`         | A friend by ECID — resolved through the friend's stored address, so an **offline** friend is reachable |
+
+The server creates the session when it does not exist, so this doubles
+as "start a chat with this address".
+
+**Reply:** `EC_OP_NOOP` with `EC_TAG_CHAT_CLIENT_ID` (the resolved
+GUI_ID) and `EC_TAG_CHAT_MSG_ID` (the id assigned), so the sender can
+correlate without waiting for the next poll. `EC_OP_FAILED` with an
+`EC_TAG_STRING` on an unknown target or empty text.
+
+Note that the core's own send returning `false` means *queued while
+connecting*, not *failed*, and does not produce an `EC_OP_FAILED`.
+
+#### `EC_OP_CHAT_CLOSE_SESSION` (`0x66`)
+
+Takes `EC_TAG_CHAT_CLIENT_ID`; drops the session from the store and
+resets the peer's chat state. Replies `EC_OP_NOOP`, or `EC_OP_FAILED`
+when there is no such session.
+
+Closing is **global**, matching the semantics search tabs already have:
+the core state is destroyed for every client, and the others learn of it
+from the session's absence in the next `EC_OP_CHAT_SESSIONS` reply.
 
 ### Connection preferences (`EC_TAG_PREFS_CONNECTIONS = 0x1300`)
 

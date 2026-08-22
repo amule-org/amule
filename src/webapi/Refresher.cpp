@@ -171,22 +171,6 @@ const char *KadStateString(const CEC_ConnState_Tag *conn)
 	return "connecting";
 }
 
-// Renders an IPv4 address that arrives LSB-first — the layout
-// EC_TAG_CLIENT_USER_IP, the Kad address tags and the eD2k id all share,
-// and what Uint32toStringIP() renders on the desktop side.
-std::string IPv4ToDotted(std::uint32_t ip_lsb_first)
-{
-	char buf[16];
-	std::snprintf(buf,
-		sizeof(buf),
-		"%u.%u.%u.%u",
-		static_cast<unsigned>((ip_lsb_first) & 0xFFu),
-		static_cast<unsigned>((ip_lsb_first >> 8) & 0xFFu),
-		static_cast<unsigned>((ip_lsb_first >> 16) & 0xFFu),
-		static_cast<unsigned>((ip_lsb_first >> 24) & 0xFFu));
-	return std::string(buf);
-}
-
 // As above, but an unset address formats as empty rather than "0.0.0.0".
 // The peer and server fields use 0 for "not known" and omit the key on it,
 // whereas the Kad fields report the quad verbatim — which is the only
@@ -1866,6 +1850,106 @@ static void MergeFriendTag(const CEC_Friend_Tag *ft, FriendSnapshot &f, bool is_
 		if (ft->FriendSlot(slot))
 			f.friend_slot = slot;
 	}
+}
+
+void ApplyChatSessions(const CECPacket *resp,
+	std::vector<ChatSessionSnapshot> &cache,
+	std::uint32_t &cursor,
+	std::vector<ChatSessionSnapshot> &out_new_messages,
+	std::vector<std::uint64_t> &out_closed)
+{
+	if (!resp)
+		return;
+
+	// Index what we already hold so the incremental messages can be carried
+	// over: the reply only contains what is newer than the cursor we sent.
+	std::map<std::uint64_t, ChatSessionSnapshot> previous;
+	for (ChatSessionSnapshot &s : cache) {
+		previous.emplace(s.gui_id, std::move(s));
+	}
+
+	std::vector<ChatSessionSnapshot> fresh;
+	std::set<std::uint64_t> present;
+
+	for (const CECTag &tag : *resp) {
+		const CECTag *t = &tag;
+		if (t->GetTagName() != EC_TAG_CHAT_SESSION)
+			continue;
+
+		ChatSessionSnapshot session;
+		session.gui_id = t->GetInt();
+		present.insert(session.gui_id);
+		// GUI_ID is (ip << 16) | port, with the IP in the same byte order
+		// EC_TAG_CLIENT_USER_IP uses, so it renders with the peer formatter
+		// every other address on this surface goes through.
+		session.ip = FormatClientIpv4(static_cast<std::uint32_t>(session.gui_id >> 16));
+		session.port = static_cast<std::uint16_t>(session.gui_id & 0xFFFFu);
+
+		if (const CECTag *nameTag = t->GetTagByName(EC_TAG_CHAT_PEER_NAME))
+			session.name = std::string(nameTag->GetStringData().utf8_str());
+		if (const CECTag *clientTag = t->GetTagByName(EC_TAG_CLIENT))
+			session.client_ecid = static_cast<std::uint32_t>(clientTag->GetInt());
+		if (const CECTag *friendTag = t->GetTagByName(EC_TAG_FRIEND))
+			session.friend_ecid = static_cast<std::uint32_t>(friendTag->GetInt());
+
+		// Carry over the history this tick's reply did not repeat.
+		auto prev = previous.find(session.gui_id);
+		if (prev != previous.end()) {
+			session.messages = std::move(prev->second.messages);
+			// A name the daemon stops sending must not blank one we have.
+			if (session.name.empty())
+				session.name = prev->second.name;
+		}
+
+		ChatSessionSnapshot arrivals;
+		arrivals.gui_id = session.gui_id;
+		arrivals.ip = session.ip;
+		arrivals.port = session.port;
+		arrivals.name = session.name;
+		arrivals.client_ecid = session.client_ecid;
+		arrivals.friend_ecid = session.friend_ecid;
+
+		for (const CECTag &child : *t) {
+			const CECTag *m = &child;
+			if (m->GetTagName() != EC_TAG_CHAT_MESSAGE)
+				continue;
+			ChatMessageSnapshot msg;
+			msg.text = std::string(m->GetStringData().utf8_str());
+			if (const CECTag *idTag = m->GetTagByName(EC_TAG_CHAT_MSG_ID))
+				msg.id = static_cast<std::uint32_t>(idTag->GetInt());
+			if (const CECTag *dirTag = m->GetTagByName(EC_TAG_CHAT_DIRECTION))
+				msg.outgoing = dirTag->GetInt() != 0;
+			if (const CECTag *tsTag = m->GetTagByName(EC_TAG_CHAT_TIMESTAMP))
+				msg.timestamp = static_cast<std::uint32_t>(tsTag->GetInt());
+			session.messages.push_back(msg);
+			arrivals.messages.push_back(msg);
+		}
+
+		// Mirror the daemon's own retention so a long-lived amuleapi does
+		// not accumulate what the core has already dropped.
+		const std::size_t kMaxPerSession = 200;
+		if (session.messages.size() > kMaxPerSession) {
+			session.messages.erase(session.messages.begin(),
+				session.messages.end() - static_cast<std::ptrdiff_t>(kMaxPerSession));
+		}
+
+		if (!arrivals.messages.empty())
+			out_new_messages.push_back(std::move(arrivals));
+		fresh.push_back(std::move(session));
+	}
+
+	// Absent from the reply == closed on the daemon. Reported so the event
+	// layer can emit chat_session_closed; the vector is replaced wholesale
+	// below, which is what actually drops it.
+	for (const auto &kv : previous) {
+		if (!present.count(kv.first))
+			out_closed.push_back(kv.first);
+	}
+
+	cache = std::move(fresh);
+
+	if (const CECTag *cursorTag = resp->GetTagByName(EC_TAG_CHAT_MSG_ID))
+		cursor = static_cast<std::uint32_t>(cursorTag->GetInt());
 }
 
 void ApplyGetUpdateToFriends(const CECPacket *resp, std::map<std::uint32_t, FriendSnapshot> &cache)

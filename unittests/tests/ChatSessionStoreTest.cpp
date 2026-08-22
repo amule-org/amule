@@ -46,7 +46,7 @@ TEST(ChatSessionStore, StartsEmpty)
 	CChatSessionStore store;
 	ASSERT_EQUALS(static_cast<size_t>(0), store.SessionCount());
 	ASSERT_EQUALS(static_cast<uint32>(0), store.LastMsgId());
-	ASSERT_TRUE(store.Find(Peer(1)) == NULL);
+	ASSERT_TRUE(store.Find(Peer(1)) == nullptr);
 }
 
 TEST(ChatSessionStore, FirstMessageCreatesSessionWithIdOne)
@@ -60,7 +60,7 @@ TEST(ChatSessionStore, FirstMessageCreatesSessionWithIdOne)
 	ASSERT_EQUALS(static_cast<size_t>(1), store.SessionCount());
 
 	const CChatSessionStore::Session *s = store.Find(Peer(1));
-	ASSERT_TRUE(s != NULL);
+	ASSERT_TRUE(s != nullptr);
 	ASSERT_EQUALS(wxString("alice"), s->name);
 	ASSERT_EQUALS(static_cast<size_t>(1), s->messages.size());
 	ASSERT_EQUALS(wxString("hi"), s->messages[0].text);
@@ -139,9 +139,9 @@ TEST(ChatSessionStore, SessionCapEvictsLeastRecentlyActive)
 	// Peer(0) is the least recently active, so it is the one to go.
 	store.AddIncoming(Peer(9999), "newcomer", "hi");
 	ASSERT_EQUALS(cap, store.SessionCount());
-	ASSERT_TRUE(store.Find(Peer(0)) == NULL);
-	ASSERT_TRUE(store.Find(Peer(9999)) != NULL);
-	ASSERT_TRUE(store.Find(Peer(1)) != NULL);
+	ASSERT_TRUE(store.Find(Peer(0)) == nullptr);
+	ASSERT_TRUE(store.Find(Peer(9999)) != nullptr);
+	ASSERT_TRUE(store.Find(Peer(1)) != nullptr);
 }
 
 TEST(ChatSessionStore, ActivityRefreshRescuesASessionFromEviction)
@@ -156,8 +156,8 @@ TEST(ChatSessionStore, ActivityRefreshRescuesASessionFromEviction)
 	store.AddOutgoing(Peer(0), "still talking"); // moves Peer(0) to the front
 	store.AddIncoming(Peer(9999), "newcomer", "hi");
 
-	ASSERT_TRUE(store.Find(Peer(0)) != NULL);
-	ASSERT_TRUE(store.Find(Peer(1)) == NULL); // now the least recently active
+	ASSERT_TRUE(store.Find(Peer(0)) != nullptr);
+	ASSERT_TRUE(store.Find(Peer(1)) == nullptr); // now the least recently active
 }
 
 TEST(ChatSessionStore, SessionsAreMostRecentlyActiveFirst)
@@ -182,8 +182,8 @@ TEST(ChatSessionStore, CloseRemovesOnlyThatSession)
 	store.AddIncoming(Peer(2), "bob", "b");
 
 	ASSERT_TRUE(store.CloseSession(Peer(1)));
-	ASSERT_TRUE(store.Find(Peer(1)) == NULL);
-	ASSERT_TRUE(store.Find(Peer(2)) != NULL);
+	ASSERT_TRUE(store.Find(Peer(1)) == nullptr);
+	ASSERT_TRUE(store.Find(Peer(2)) != nullptr);
 	ASSERT_EQUALS(static_cast<size_t>(1), store.SessionCount());
 }
 
@@ -214,7 +214,7 @@ TEST(ChatSessionStore, SessionCarriesTheDecodedIpAndPort)
 	CChatSessionStore store;
 	store.AddIncoming(GUI_ID(0x0A000001u, 4662), "alice", "hi");
 	const CChatSessionStore::Session *s = store.Find(GUI_ID(0x0A000001u, 4662));
-	ASSERT_TRUE(s != NULL);
+	ASSERT_TRUE(s != nullptr);
 	ASSERT_EQUALS(static_cast<uint32>(0x0A000001u), s->ip);
 	ASSERT_EQUALS(static_cast<uint16>(4662), s->port);
 }

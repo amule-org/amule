@@ -197,6 +197,32 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		state.ReconcileKnownClients();
 	}
 
+	// /chats — one roundtrip carrying the cursor from the previous tick, so
+	// the daemon replies with the session list plus only the messages we do
+	// not have. Gated on the capability and skipped entirely otherwise: a
+	// daemon predating the chat ops reaches the unknown-opcode branch of
+	// ProcessRequest2(), which asserts rather than answering EC_OP_FAILED.
+	if (app.IsServerChatActive()) {
+		std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_GET_CHAT_SESSIONS));
+		const std::uint32_t cursor = state.ChatCursor();
+		if (cursor) {
+			req->AddTag(CECTag(EC_TAG_CHAT_MSG_ID, cursor));
+		}
+		const CECPacket *resp = app.SendRecvSerialized(req.get());
+		if (!resp)
+			return false;
+		// Collected under the write lock, published after it: emitting SSE
+		// frames from inside the lambda would hold CState exclusively across
+		// the event bus.
+		std::vector<webapi::ChatSessionSnapshot> new_messages;
+		std::vector<std::uint64_t> closed;
+		state.MutateChats([&](std::vector<webapi::ChatSessionSnapshot> &cache, std::uint32_t &cur) {
+			ApplyChatSessions(resp, cache, cur, new_messages, closed);
+		});
+		delete resp;
+		PublishChatEvents(app.EventBus(), new_messages, closed);
+	}
+
 	// /logs/serverinfo, /stats/tree, /stats/graphs/{graph} are NOT
 	// fetched per-tick — they're lazy-fetched on first GET via
 	// CTtlCache (1 s TTL coalesces burst reads). HTTP handlers in

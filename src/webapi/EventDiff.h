@@ -109,6 +109,19 @@ struct LastSeenState
 // three pieces stay consistent within a tick.
 void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state);
 
+// Chat events, published straight from the refresher's chat roundtrip rather
+// than by diffing a prior snapshot: the walker already knows exactly what is
+// new (only messages past the cursor come back) and which sessions vanished,
+// so a diff would re-derive what the wire just told us.
+//
+// One `chat_message` per message, inbound AND outbound alike -- an outbound
+// one is how a message sent from amulegui, or from another web tab, reaches
+// every other viewer. A session that did not exist is implied by the first
+// message carrying its `peer`; there is no separate "session started" event.
+void PublishChatEvents(CEventBus &bus,
+	const std::vector<ChatSessionSnapshot> &new_messages,
+	const std::vector<std::uint64_t> &closed);
+
 } // namespace webapi
 
 #endif // WEBAPI_EVENT_DIFF_H
