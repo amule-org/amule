@@ -251,6 +251,18 @@ struct FileSnapshot
 		// to 255 by the RLE encoder's uint8 buffer.
 		std::vector<std::uint16_t> decoded_part_sources;
 
+		// Parts hashed so far by a pass running over this complete share --
+		// Verify Local Data, or an AICH hashset rebuild -- decoded from
+		// EC_TAG_KNOWNFILE_HASHED_PART_COUNT on the EC_TAG_KNOWNFILE tag.
+		// A count, not an index: the tasks report part + 1. 0 means idle,
+		// which both tasks restore when they finish or abort.
+		//
+		// A download that is also shared arrives as EC_TAG_PARTFILE, so its
+		// progress lands in download.hashing_progress and this stays 0 --
+		// read both through SharedHashingProgress() rather than this field
+		// directly, the same fallback decoded_part_sources needs.
+		std::uint16_t hashing_progress = 0;
+
 		// Live upload activity (issue #466), the upload-side analogue of
 		// the download stats. `upload_speed_bps` + `uploading_count` are
 		// live (refresh every tick); `last_upload` / `shared_since` are
@@ -880,6 +892,17 @@ constexpr std::uint64_t kPartSizeBytes = 9728000ull;
 // multiple) -- worth knowing, because a mismatch here would silently trim
 // or pad every per-part bitmap.
 std::uint64_t PartCountForSize(std::uint64_t size);
+
+// Parts hashed so far by a pass running over `f` as a complete share -- Verify
+// Local Data, or an AICH hashset rebuild. 0 when no such pass is running.
+//
+// The fallback is why this is a function: amuled emits one tag kind per ECID,
+// so a download that is also shared arrives as EC_TAG_PARTFILE and its
+// progress lands on the download side. SharedPartSources in Api.cpp needs the
+// identical fallback for the identical reason. Every shared-side consumer --
+// the JSON writer, the SSE writer and the equality test -- goes through here,
+// so all three agree about which file is hashing.
+std::uint16_t SharedHashingProgress(const FileSnapshot &f);
 
 // Fill in ClientSnapshot::part_progress_percent, which is derived rather
 // than refreshed: it needs the part count of the file this peer is a source

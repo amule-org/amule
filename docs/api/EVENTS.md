@@ -227,7 +227,7 @@ Every event the bus publishes. The `_added` and `_updated` payloads are BYTE-FOR
 
 #### `download_added` / `download_updated`
 
-Identical to the REST [`/api/v0/downloads`](REFERENCE.md#get-apiv0downloads) list-item shape. `_updated` fires on any field-level change including `size_done`, `size_xfer`, `speed_bps`, the source counters, and `kad_comment_search_running` — clients see live progress (and the Kad-notes lookup start → finish edge) without polling.
+Identical to the REST [`/api/v0/downloads`](REFERENCE.md#get-apiv0downloads) list-item shape. `_updated` fires on any field-level change including `size_done`, `size_xfer`, `speed_bps`, the source counters, `kad_comment_search_running` and `hashing_progress` — clients see live progress (and the Kad-notes lookup start → finish edge, and a running hash) without polling.
 
 ```json
 {
@@ -244,7 +244,8 @@ Identical to the REST [`/api/v0/downloads`](REFERENCE.md#get-apiv0downloads) lis
   "category":      0,
   "sources":  { "total": 217, "not_current": 23, "transferring": 8, "a4af": 4 },
   "progress": { "percent": 29.85 },
-  "kad_comment_search_running": false
+  "kad_comment_search_running": false,
+  "hashing_progress": 0
 }
 ```
 
@@ -279,7 +280,7 @@ Downloads only. It's kept separate from `download_updated` so the per-tick downl
 
 #### `shared_added` / `shared_updated`
 
-Identical to the REST [`/api/v0/shared`](REFERENCE.md#get-apiv0shared) list-item shape. `_updated` fires on any field-level change including `priority`, `priority_auto`, `xfer.session`, `xfer.total`, `requests.*`, and `accepts.*` — clients see live upload counters (and priority changes) without polling.
+Identical to the REST [`/api/v0/shared`](REFERENCE.md#get-apiv0shared) list-item shape. `_updated` fires on any field-level change including `priority`, `priority_auto`, `xfer.session`, `xfer.total`, `requests.*`, `accepts.*` and `hashing_progress` — clients see live upload counters (and priority changes, and a running hash) without polling.
 
 ```json
 {
@@ -292,9 +293,16 @@ Identical to the REST [`/api/v0/shared`](REFERENCE.md#get-apiv0shared) list-item
   "complete_sources": 12,
   "xfer":     { "session": 5242880, "total": 314572800 },
   "requests": { "session": 42,      "total": 1837 },
-  "accepts":  { "session": 18,      "total": 921 }
+  "accepts":  { "session": 18,      "total": 921 },
+  "upload_speed_bps": 51200,
+  "uploading":        2,
+  "last_upload":      1700000500,
+  "shared_since":     1699000000,
+  "hashing_progress": 0
 }
 ```
+
+`hashing_progress` counts the parts hashed so far by a [`POST /shared/{hash}/verify`](REFERENCE.md#post-apiv0sharedhashverify) run or an AICH hashset rebuild, and is `0` when nothing is hashing — each advance pushes a `shared_updated`, so a progress bar can be driven straight off the stream. A file that is both downloading and shared reports the same value on both channels.
 
 #### `shared_removed`
 

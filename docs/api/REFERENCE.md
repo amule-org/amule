@@ -665,7 +665,8 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/downloads"
       "category":      0,
       "sources":  { "total": 217, "not_current": 23, "transferring": 8, "a4af": 4 },
       "progress": { "percent": 29.85 },
-      "kad_comment_search_running": false
+      "kad_comment_search_running": false,
+      "hashing_progress": 0
     }
   ]
 }
@@ -678,6 +679,8 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/downloads"
 The list shape omits `progress.parts` to keep large libraries compact. Use the detail endpoint for per-part state.
 
 `kad_comment_search_running` is `true` while an on-demand Kad notes lookup is in flight for the file (started by [`POST /downloads/{hash}/comments`](#post-apiv0downloadshashcomments)); it flips back to `false` when the lookup finishes. Because it lives on the download object, a client can watch the `download_updated` SSE event for the start → finish transition instead of polling.
+
+`hashing_progress` is the number of parts hashed so far by a pass running over the file — a `hashing` status, an [`AICH`](#post-apiv0sharedhashverify) hashset rebuild — and `0` when nothing is hashing. It is a count of completed parts, not the index of the part in flight, so it runs `0` → `part_count`; divide by `part_count` (from the detail endpoint, or `ceil(size / 9728000)`) for a percentage.
 
 The SSE `download_added` / `download_updated` event payload matches this object byte-for-byte.
 
@@ -705,7 +708,6 @@ Same envelope as the list item, plus the detail-only fields below (all omitted f
 | `available_part_count` | int | Number of parts available across the current sources. |
 | `part_count` | int | Total parts, `ceil(size / 9.28 MiB)`. |
 | `remaining_time` | int | ETA in seconds; `-1` when stalled or paused (speed ≈ 0). |
-| `hashing_progress` | int | Index of the part currently being hashed (0 when idle). |
 | `lost_to_corruption` | int | Bytes discarded to corruption. |
 | `gained_by_compression` | int | Bytes saved by on-the-wire compression. |
 | `saved_by_ich` | int | Packets recovered by Intelligent Corruption Handling. |
@@ -1306,7 +1308,8 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/shared"
       "upload_speed_bps": 51200,
       "uploading":        2,
       "last_upload":      1700000500,
-      "shared_since":     1699000000
+      "shared_since":     1699000000,
+      "hashing_progress": 0
     }
   ]
 }
@@ -1317,6 +1320,10 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/shared"
 `upload_speed_bps` is the file's current combined upload rate in bytes/sec (summed over the peers it is uploading to), and `uploading` is how many peers it is actively uploading to right now — together the "is this file being seeded" signal, the upload-side analogue of the `/downloads` speed + transferring-source counts. Subtract `uploading` from the queued-client count (`queued_count`, on the detail view) to show `uploading / queued`. Both are live and refresh every tick. `last_upload` is the unix timestamp of the last time data was sent for the file, and `shared_since` is when the file was completed or first shared; both are persisted in `known.met` and are `0` when unknown — a file that has never uploaded, or a `known.met` entry written before these fields existed.
 
 `priority` is the upload priority — `"very_low"` / `"low"` / `"normal"` / `"high"` / `"release"` — and `priority_auto` is `true` when amuled is deriving that level automatically from the upload queue. This mirrors the `/downloads` shape (base `priority` + separate `priority_auto` flag); on an auto file `priority` reports the current derived level, not the literal string `"auto"`. For a file that is both downloading and shared this upload priority is independent of the download priority reported by [`GET /api/v0/downloads`](#get-apiv0downloads).
+
+`hashing_progress` is the number of parts hashed so far by a pass running over the file — a [`POST /shared/{hash}/verify`](#post-apiv0sharedhashverify) run, or an AICH hashset rebuild — and `0` when nothing is hashing. It is a count of completed parts, not the index of the part in flight, so it runs `0` → `part_count` (see the detail endpoint, or compute `ceil(size / 9728000)`).
+
+A file that is both downloading and shared reports its progress here as well: amuled describes such a file as a partfile, so the value is read across from the download side and the two agree. That makes `hashing_progress` usable from either list without checking which one owns the file.
 
 The SSE `shared_added` / `shared_updated` event payload matches this object byte-for-byte, so a subscriber that received `shared_updated` does not need to re-GET to see the moved counters.
 
@@ -1346,6 +1353,8 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 | `comment` | string | The user's own comment on this file (`""` if none). |
 | `rating` | int | The user's own rating, `0`–`5` (`0` = unrated). |
 | `media` | object | Audio/video metadata — see [Media metadata](#media-metadata). **Omitted entirely** when the file has no probed metadata. |
+
+`hashing_progress` comes through from the list item; pair it with `part_count` here for a percentage.
 
 `parts[].sources` is how many peers currently requesting this file hold that part — an **availability** measure, not a progress one. A shared file is fully local by definition, so a part with `"sources": 0` means no other peer has it and you are its only source. Counts saturate at `255`.
 
@@ -1493,6 +1502,8 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
 ```
 
 Returns `202 Accepted`. amuled queues the hashing task and answers immediately, so the response confirms only that the re-hash was **scheduled** — it never carries the outcome, and a large file may take minutes to finish.
+
+**Watching it run.** While the task is hashing, `hashing_progress` on the file's [`GET /shared`](#get-apiv0shared) row counts the parts done so far, and each advance pushes a `shared_updated` SSE event — enough to drive a progress bar without polling. It returns to `0` when the task finishes or aborts, which is the signal that the log line below is available.
 
 **Reading the result.** The verdict is emitted as an amule log line when the task completes, so read it back from [`GET /api/v0/logs/amule`](#get-apiv0logsamule) or the `log` SSE channel:
 

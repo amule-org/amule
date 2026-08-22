@@ -886,6 +886,8 @@ TEST(Refresher, SharedDetailTagsDecodeIntoSnapshot)
 	kf.AddTag(CECTag(EC_TAG_KNOWNFILE_UPLOADING_COUNT, static_cast<std::uint16_t>(3)));
 	kf.AddTag(CECTag(EC_TAG_KNOWNFILE_LAST_UPLOAD, static_cast<std::uint32_t>(1700000500)));
 	kf.AddTag(CECTag(EC_TAG_KNOWNFILE_SHARED_SINCE, static_cast<std::uint32_t>(1699000000)));
+	// Verify Local Data / AICH rebuild progress over a complete share.
+	kf.AddTag(CECTag(EC_TAG_KNOWNFILE_HASHED_PART_COUNT, static_cast<std::uint16_t>(4)));
 	resp.AddTag(kf);
 
 	ApplyGetUpdateToShared(&resp, cache, rle_state);
@@ -904,6 +906,7 @@ TEST(Refresher, SharedDetailTagsDecodeIntoSnapshot)
 	ASSERT_EQUALS(static_cast<std::uint32_t>(51200), s.shared.upload_speed_bps);
 	ASSERT_EQUALS(static_cast<std::uint16_t>(3), s.shared.uploading_count);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(1700000500), s.shared.last_upload);
+	ASSERT_EQUALS(static_cast<std::uint16_t>(4), s.shared.hashing_progress);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(1699000000), s.shared.shared_since);
 }
 

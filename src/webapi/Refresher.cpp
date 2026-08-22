@@ -1157,6 +1157,14 @@ void MergeSharedTag(const CEC_SharedFile_Tag *sf, FileSnapshot &f)
 			f.shared.complete_sources_low = v;
 		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_COMPLETE_SOURCES_HIGH, v))
 			f.shared.complete_sources_high = v;
+
+		// Parts hashed so far by a Verify Local Data or an AICH hashset
+		// rebuild over this complete share. Rides every update tick,
+		// CValueMap-suppressed when unchanged, so it moves only while a
+		// hash is actually running. The partfile equivalent is decoded
+		// into download.hashing_progress above.
+		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_HASHED_PART_COUNT, v))
+			f.shared.hashing_progress = v;
 	}
 	{
 		std::uint8_t pr = 0;

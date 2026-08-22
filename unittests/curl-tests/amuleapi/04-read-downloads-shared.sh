@@ -132,6 +132,10 @@ if [ "$COUNT" -gt 0 ]; then
 		'/downloads[0].sources.total is numeric'
 	_assert_json_eq '.downloads[0].kad_comment_search_running | type' boolean \
 		'/downloads[0].kad_comment_search_running is boolean (issue #434)'
+	# Moved onto the list by issue #1054 — it used to be detail-only, which
+	# left a list-driven client with no way to see a hash running.
+	_assert_json_eq '.downloads[0].hashing_progress | type' number \
+		'/downloads[0].hashing_progress is numeric (#1054)'
 
 	# --- 4. /downloads/{hash} bare-object detail. -----------------
 	HASH=$(printf '%s' "$CURL_BODY" | jq -r '.downloads[0].hash')
@@ -349,6 +353,12 @@ if [ "$SHCOUNT" -gt 0 ]; then
 		'/shared[0].last_upload is numeric (#466)'
 	_assert_json_eq '.shared[0].shared_since | type' number \
 		'/shared[0].shared_since is numeric (#466)'
+	# Hashing progress on the shared row (issue #1054). Parts hashed so far
+	# by a Verify Local Data / AICH rebuild, 0 when idle. Only the type is
+	# asserted: a smoke run has no hash in flight, and racing one would make
+	# the check flaky rather than stronger.
+	_assert_json_eq '.shared[0].hashing_progress | type' number \
+		'/shared[0].hashing_progress is numeric (#1054)'
 
 	# --- 6b. GET /shared/{hash} detail endpoint (issue #417 Part B). ---
 	SHASH=$(printf '%s' "$CURL_BODY" | jq -r '.shared[0].hash')
@@ -370,6 +380,8 @@ if [ "$SHCOUNT" -gt 0 ]; then
 		'/shared/{hash} carries aich_hash'
 	_assert_json_eq '.part_count | type' number \
 		'/shared/{hash} carries part_count'
+	_assert_json_eq '.hashing_progress | type' number \
+		'/shared/{hash} carries hashing_progress (#1054)'
 	_assert_json_eq '.comment | type' string \
 		'/shared/{hash} carries comment'
 	_assert_json_eq '.rating | type' number \

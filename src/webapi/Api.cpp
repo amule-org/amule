@@ -2531,6 +2531,11 @@ void WriteDownloadObject(
 	// clients can watch download_updated for the start -> finish transition.
 	w.Key("kad_comment_search_running");
 	w.ValueBool(f.download.kad_comment_searching);
+	// On the list, not detail-only: a client rendering a hashing indicator
+	// needs it wherever the file appears, and it only moves while a hash is
+	// actually running. Parts hashed so far, not an index -- 0 when idle.
+	w.Key("hashing_progress");
+	w.ValueInt(static_cast<int64_t>(f.download.hashing_progress));
 	if (detail) {
 		// Detail-only fields (GET /downloads/{hash}); omitted from the
 		// list. `part_count` and `remaining_time` are computed here from
@@ -2557,8 +2562,6 @@ void WriteDownloadObject(
 		w.ValueInt(part_count);
 		w.Key("remaining_time");
 		w.ValueInt(remaining_time);
-		w.Key("hashing_progress");
-		w.ValueInt(static_cast<int64_t>(f.download.hashing_progress));
 		w.Key("lost_to_corruption");
 		w.ValueInt(static_cast<int64_t>(f.download.lost_to_corruption));
 		w.Key("gained_by_compression");
@@ -2870,6 +2873,11 @@ void WriteSharedBaseFields(CJsonWriter &w, const webapi::FileSnapshot &f)
 	w.ValueInt(static_cast<int64_t>(f.shared.last_upload));
 	w.Key("shared_since");
 	w.ValueInt(static_cast<int64_t>(f.shared.shared_since));
+	// Parts hashed so far by a Verify Local Data or an AICH hashset rebuild
+	// over this share; 0 when idle. Goes through the accessor so a shared
+	// download, which amuled reports as a partfile, still reads correctly.
+	w.Key("hashing_progress");
+	w.ValueInt(static_cast<int64_t>(webapi::SharedHashingProgress(f)));
 }
 
 void WriteSharedObject(CJsonWriter &w, const webapi::FileSnapshot &f)

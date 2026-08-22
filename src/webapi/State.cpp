@@ -41,6 +41,11 @@ std::uint64_t PartCountForSize(std::uint64_t size)
 	return (size + kPartSizeBytes - 1) / kPartSizeBytes;
 }
 
+std::uint16_t SharedHashingProgress(const FileSnapshot &f)
+{
+	return f.shared.hashing_progress ? f.shared.hashing_progress : f.download.hashing_progress;
+}
+
 // Completeness of the file we download FROM this peer: parts the peer has over
 // that file's part count. Only the download link carries a meaningful
 // denominator -- a peer that merely downloads from us has no percent. Left at
