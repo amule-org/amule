@@ -113,19 +113,19 @@ const hasRealPath = (file) => /^([/\\]|[A-Za-z]:)/.test(file.path || "");
 // (path, met_file / parts), with the copy buttons as the group's action row.
 // `extra` is a list of statRow tuples; `titleKey` is forwarded to Section().
 export function IdentityLine({ file, copy, extra, titleKey }) {
-  const hash = statRow("downloads_detail_hash",
+  const hash = statRow("identity_hash",
     html`<span class="mono">${(file.hash || "").toUpperCase()}</span>`,
-    "downloads_detail_tip_hash");
+    "identity_tip_hash");
   const actions = html`
     <button class="btn btn-sm" type="button" onClick=${() => copy(file.ed2k_link)}>
-      <${Icon} name="copy" /> ${t("downloads_detail_copy_ed2k")}
+      <${Icon} name="copy" /> ${t("identity_copy_ed2k")}
     </button>
     <button class="btn btn-sm" type="button" onClick=${() => copy(magnetLink(file))}>
-      <${Icon} name="copy" /> ${t("downloads_detail_copy_magnet")}
+      <${Icon} name="copy" /> ${t("identity_copy_magnet")}
     </button>
     ${hasRealPath(file) ? html`
       <button class="btn btn-sm" type="button" onClick=${() => copy(fullPath(file))}>
-        <${Icon} name="copy" /> ${t("downloads_detail_copy_path")}
+        <${Icon} name="copy" /> ${t("identity_copy_path")}
       </button>` : null}`;
   return Section([hash, ...extra], titleKey, actions);
 }
@@ -454,6 +454,32 @@ export function PiecesBar({ parts, mode = "download" }) {
     };
     drawRef.current = draw;
     draw();
+    // Per-part readout via the native `title` tooltip: no positioning code,
+    // no CSS, no new strings -- composed from the legend's own labels. The
+    // canvas itself is aria-hidden (the legend beside it is the text
+    // alternative), so this is a pointer-only progressive enhancement.
+    const onMove = (e) => {
+      const list = partsRef.current || [];
+      // A zero clientWidth would make offsetX/width NaN and index past the end.
+      const w = canvas.clientWidth;
+      if (!list.length || !w) { canvas.title = ""; return; }
+      const i = Math.min(list.length - 1, Math.max(0, Math.floor((e.offsetX / w) * list.length)));
+      const p = list[i];
+      const avail = modeRef.current === "availability";
+      // Show the source count only where the colour actually encodes it,
+      // i.e. wherever the fill came from availShade(). An `incomplete` part
+      // with no sources still paints blue but has nothing to count.
+      const graded = (avail || p.state === "incomplete") && p.sources > 0;
+      const label = avail
+        ? t(p.sources > 0 ? "pieces_available" : "pieces_no_sources")
+        : t(p.state === "complete" ? "pieces_complete"
+          : p.state === "incomplete" ? "pieces_available" : "pieces_missing");
+      // Only write on a real change: mousemove fires far more often than the
+      // hovered piece changes, and each write is a DOM attribute mutation.
+      const next = "#" + (i + 1) + " \u00b7 " + label + (graded ? " \u00b7 " + p.sources : "");
+      if (canvas.title !== next) canvas.title = next;
+    };
+    canvas.addEventListener("mousemove", onMove);
     // Colours are read from CSS vars on every draw, so a theme switch only
     // needs a redraw (mirrors charts.js).
     const ro = new ResizeObserver(draw);
@@ -462,12 +488,16 @@ export function PiecesBar({ parts, mode = "download" }) {
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     mq.addEventListener("change", draw);
-    return () => { ro.disconnect(); mo.disconnect(); mq.removeEventListener("change", draw); };
+    return () => {
+      ro.disconnect(); mo.disconnect();
+      mq.removeEventListener("change", draw);
+      canvas.removeEventListener("mousemove", onMove);
+    };
   }, []);
 
   useEffect(() => { drawRef.current && drawRef.current(); }, [parts, mode]);
 
-  return html`<div class="pieces-bar"><canvas ref=${ref}></canvas></div>`;
+  return html`<div class="pieces-bar"><canvas ref=${ref} aria-hidden="true"></canvas></div>`;
 }
 
 export function PiecesLegend({ parts, mode = "download" }) {
@@ -479,19 +509,19 @@ export function PiecesLegend({ parts, mode = "download" }) {
     for (const p of parts) if (p.sources > 0) avail++;
     return html`
       <div class="chart-legend pieces-legend">
-        <span class="legend-item" title=${t("shared_detail_avail_hint")}>
-          ${chip("--piece-avail")} ${t("downloads_detail_part_incomplete")} <b>${avail}</b>
+        <span class="legend-item" title=${t("pieces_hint_peers")}>
+          ${chip("--piece-avail")} ${t("pieces_available")} <b>${avail}</b>
           ${avail > 0 ? html`
             <span class="pieces-scale">
-              <small>(${t("downloads_detail_avail_fewer")}</small>
+              <small>(${t("pieces_fewer")}</small>
               <span class="pieces-scale-bar"></span>
-              <small>${t("downloads_detail_avail_more")})</small>
+              <small>${t("pieces_more")})</small>
             </span>` : null}
         </span>
-        <span class="legend-item" title=${t("shared_detail_avail_none_hint")}>
-          ${chip("--bad")} ${t("shared_detail_avail_none")} <b>${parts.length - avail}</b>
+        <span class="legend-item" title=${t("pieces_no_sources_hint")}>
+          ${chip("--bad")} ${t("pieces_no_sources")} <b>${parts.length - avail}</b>
         </span>
-        <span class="pieces-total">${tn("downloads_detail_pieces_count", parts.length)}</span>
+        <span class="pieces-total">${tn("pieces_count", parts.length)}</span>
       </div>`;
   }
   const counts = { complete: 0, incomplete: 0, missing: 0 };
@@ -501,17 +531,17 @@ export function PiecesLegend({ parts, mode = "download" }) {
   // shade encodes source count) — keeps the row compact and the chips uniform.
   return html`
     <div class="chart-legend pieces-legend">
-      <span class="legend-item">${chip("--ok")} ${t("downloads_detail_part_complete")} <b>${counts.complete}</b></span>
-      <span class="legend-item">${chip("--bad")} ${t("downloads_detail_part_missing")} <b>${counts.missing}</b></span>
-      <span class="legend-item" title=${t("downloads_detail_avail_hint")}>
-        ${chip("--piece-avail")} ${t("downloads_detail_part_incomplete")} <b>${counts.incomplete}</b>
+      <span class="legend-item">${chip("--ok")} ${t("pieces_complete")} <b>${counts.complete}</b></span>
+      <span class="legend-item">${chip("--bad")} ${t("pieces_missing")} <b>${counts.missing}</b></span>
+      <span class="legend-item" title=${t("pieces_hint_sources")}>
+        ${chip("--piece-avail")} ${t("pieces_available")} <b>${counts.incomplete}</b>
         ${counts.incomplete > 0 ? html`
           <span class="pieces-scale">
-            <small>(${t("downloads_detail_avail_fewer")}</small>
+            <small>(${t("pieces_fewer")}</small>
             <span class="pieces-scale-bar"></span>
-            <small>${t("downloads_detail_avail_more")})</small>
+            <small>${t("pieces_more")})</small>
           </span>` : null}
       </span>
-      <span class="pieces-total">${tn("downloads_detail_pieces_count", parts.length)}</span>
+      <span class="pieces-total">${tn("pieces_count", parts.length)}</span>
     </div>`;
 }

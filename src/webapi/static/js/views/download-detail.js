@@ -45,6 +45,10 @@ export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDele
   const d = detail;
   const src = d.sources || {};
   const media = d.media;
+  // Empty when the daemon has sent no chunk map: the bar is skipped entirely
+  // rather than drawn as an empty track claiming "0 pieces", matching the
+  // shared panel's handling of a share whose RLE decode has not landed.
+  const parts = (d.progress && d.progress.parts) || [];
   const eta = (d.remaining_time == null || d.remaining_time < 0) ? "—" : formatDuration(d.remaining_time);
 
   const copy = (text) => copyText(text)
@@ -81,7 +85,7 @@ export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDele
       ` : tab === "comments" ? html`
         <${DownloadComments} hash=${d.hash} comment=${d.comment} rating=${d.rating}
                              running=${!!(downloads.find((x) => x.hash === d.hash) || {}).kad_comment_search_running}
-                             parts=${(d.progress && d.progress.parts) || []} />
+                             parts=${parts} />
       ` : tab === "filename" ? html`
         <${DownloadFilenames} hash=${d.hash} name=${d.name}
                               onRenamed=${() => setReload((n) => n + 1)} />
@@ -89,8 +93,9 @@ export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDele
       <div class="detail-sections">
         <div class="detail-progress">
           <${ProgressBar} percent=${d.progress && d.progress.percent} />
-          <${PiecesBar} parts=${(d.progress && d.progress.parts) || []} />
-          <${PiecesLegend} parts=${(d.progress && d.progress.parts) || []} />
+          ${parts.length ? html`
+            <${PiecesBar} parts=${parts} />
+            <${PiecesLegend} parts=${parts} />` : null}
         </div>
         ${Section([
           statRow("downloads_status_label", t("downloads_status_" + d.status), "downloads_detail_tip_status"),

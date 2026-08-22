@@ -96,12 +96,9 @@ export function SharedDetail({ hash }) {
       ` : html`
       <div class="detail-sections">
         ${s.parts && s.parts.length ? html`
-        <div class="detail-group">
-          <h5 class="detail-group-title">${t("shared_detail_avail_title")}</h5>
-          <div class="detail-progress">
-            <${PiecesBar} mode="availability" parts=${s.parts} />
-            <${PiecesLegend} mode="availability" parts=${s.parts} />
-          </div>
+        <div class="detail-progress">
+          <${PiecesBar} mode="availability" parts=${s.parts} />
+          <${PiecesLegend} mode="availability" parts=${s.parts} />
         </div>` : null}
         ${Section([
           statRow("shared_size", formatBytes(s.size), "shared_detail_tip_size"),
