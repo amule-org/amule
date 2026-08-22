@@ -1196,6 +1196,8 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
 { "ok": true, "search_id": 17 }
 ```
 
+**Idempotent while a browse is running.** Asking again for a peer that is already being browsed returns **the same `search_id`** rather than starting a second browse — amuled will not re-ask a peer that is still answering, so a second id would name a browse that never happens. Two clicks therefore leave one browse, one id and one entry on [`GET /api/v0/search`](#get-apiv0search). Once that browse has settled, a fresh request starts a new one with a new id.
+
 Status `202 Accepted` — the browse was started, not completed. Then poll:
 
 ```sh
@@ -1821,7 +1823,7 @@ Only one friend can hold the slot at a time, so granting it clears it on whoever
 
 Browse a friend's shared files. The friend-addressed twin of [`POST /api/v0/clients/{ecid}/shared_files`](#post-apiv0clientsecidshared_files), and more capable: a friend record carries a stored address, so the daemon can browse a friend who is **not currently connected**, which the clients route cannot do.
 
-**Response:** `202 Accepted` → `{ "ok": true, "search_id": 17 }`. Poll [`GET /api/v0/search/{id}/results`](#get-apiv0searchidresults) with that id.
+**Response:** `202 Accepted` → `{ "ok": true, "search_id": 17 }`. Poll [`GET /api/v0/search/{id}/results`](#get-apiv0searchidresults) with that id. Idempotent while a browse of that peer is running, exactly as on the clients route.
 
 **Errors:** `403 forbidden`, `404 not_found`, `502 amuled_rejected`, `503 ec_unavailable`.
 
@@ -2415,6 +2417,10 @@ Lists every search amuled currently holds — including ones started by a **diff
 ```
 
 `search_id` is the value that fills `{id}` on every search-scoped path: [`GET /search/{id}/results`](#get-apiv0searchidresults) to read its hits, [`POST /search/{id}/stop`](#post-apiv0searchidstop) to stop it, [`DELETE /search/{id}`](#delete-apiv0searchid) to free it. `kind` is `"local"` | `"global"` | `"kad"` | `"browse"`. The first three are the vocabulary `POST /search`'s `type` accepts; `"browse"` is reported only, for a "View Files" listing of one peer's share, which is started through the client endpoints rather than by a query. `state` is `"running"` | `"finished"` | `"idle"`, same vocabulary and meaning as `GET /search/{id}/results`'s `progress.state`.
+
+For a `"browse"` entry, `state` and the results endpoint's `progress.percent` come from the browse's own lifecycle rather than from a query's: the request being sent is `"running"`, and the peer having answered, denied the request, or disconnected mid-list is `"finished"` — a browse is never reported as `"idle"`. `percent` is the share of the peer's directory list received so far, so it climbs while the listing streams in rather than jumping straight from `0` to `100`.
+
+Browsing a peer that is **already being browsed** returns the id already in flight rather than starting a second one, so this list holds one entry per browsed peer, not one per request.
 
 `query` is the daemon's name for the search. For a `"browse"` that is **the peer's nickname**, not a query string — a browse has no query. `client_ecid` is the browsed peer's ecid and is present **only** on browse entries, so a consumer can tell whose share is being listed and cross-reference [`GET /clients`](#get-apiv0clients); it is omitted entirely on an ordinary search.
 
