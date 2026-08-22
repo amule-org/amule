@@ -9380,7 +9380,7 @@ CHttpServer::Response CApiDispatcher::HandleSearchStart(const CHttpServer::Reque
 // opcode, the optional close flag and the success shape differ, so the
 // exchange itself lives here rather than three times over.
 CHttpServer::Response CApiDispatcher::SendSearchOp(
-	ec_opcode_t opcode, std::uint32_t search_id, bool close, int success_status)
+	ec_opcode_t opcode, std::uint32_t search_id, bool close, int success_status, int *out_more_reaskable)
 {
 	std::unique_ptr<CECPacket> ec_req(new CECPacket(opcode));
 	// Always addressed. The old no-id form let the daemon decide what "stop"
@@ -9398,6 +9398,13 @@ CHttpServer::Response CApiDispatcher::SendSearchOp(
 	if (IsEcFailedResponse(ec_resp, ec_err_msg)) {
 		delete ec_resp;
 		return ErrorResponse(400, "amuled_rejected", ec_err_msg.c_str());
+	}
+	if (out_more_reaskable) {
+		// Left at its caller-set -1 when the tag is absent: that is a daemon
+		// older than it, whose answer is unknown rather than negative.
+		if (const CECTag *t = ec_resp->GetTagByName(EC_TAG_SEARCH_MORE_REASKABLE)) {
+			*out_more_reaskable = t->GetInt() != 0 ? 1 : 0;
+		}
 	}
 	delete ec_resp;
 
@@ -9485,9 +9492,28 @@ CHttpServer::Response CApiDispatcher::HandleSearchMore(
 			400, "bad_request", "`more` applies to a running search; this one has finished");
 	}
 
-	// Fire-and-forget: the daemon acks with a plain EC_OP_MISC_DATA and logs
-	// the real outcome itself, so there is nothing to report but acceptance.
-	return SendSearchOp(EC_OP_SEARCH_REQUEST_MORE, search_id, /*close=*/false, 202);
+	// The daemon logs what actually happened and answers with the other half:
+	// whether a LATER press could still widen this search. False is terminal --
+	// the reask budget of 4 is spent, or the search is inside the stopping
+	// window Kad enters 20 s before a keyword search ends, which is most of the
+	// second half of its life. Reporting that as 202 is what let a client press
+	// "More" five times while the daemon did nothing.
+	//
+	// A press that simply has no responded peer left to reask *yet* still gets
+	// 202: it clears as soon as another peer answers, and retrying is genuinely
+	// the right next action.
+	int reaskable = -1;
+	CHttpServer::Response r =
+		SendSearchOp(EC_OP_SEARCH_REQUEST_MORE, search_id, /*close=*/false, 202, &reaskable);
+	// Only reinterpret a success. An error from the exchange is its own answer,
+	// and -1 means the daemon never reported -- keep today's 202 for it.
+	if (r.status == 202 && reaskable == 0) {
+		return ErrorResponse(409,
+			"kad_more_exhausted",
+			"this Kad search cannot be widened any further (reask budget spent, or the "
+			"search is in its final seconds)");
+	}
+	return r;
 }
 
 CHttpServer::Response CApiDispatcher::HandleSearchDownload(

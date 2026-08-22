@@ -663,7 +663,7 @@ void CSearchDlg::RefreshVisibleTabProgress()
 	// (IsKadSearch goes false when the Kad search ends). Refreshing it on the
 	// same tick the bar updates is what makes it grey out on completion instead
 	// of lingering until the next tab switch.
-	FindWindow(IDC_SEARCHMORE)->Enable(sid && theApp->searchlist->IsKadSearch((uint32_t)sid));
+	FindWindow(IDC_SEARCHMORE)->Enable(MoreAllowed((uint32_t)sid));
 }
 #endif
 
@@ -686,7 +686,7 @@ void CSearchDlg::UpdateSearchProgress(uint32 searchID, uint32 status)
 		// the daemon just reported: IsKadSearch reads the remote cache that
 		// CSearchListRem::HandlePacket updated immediately before this call.
 		// (Monolithic drives the button from the local Kad layer on tab change.)
-		FindWindow(IDC_SEARCHMORE)->Enable(theApp->searchlist->IsKadSearch((uint32_t)searchID));
+		FindWindow(IDC_SEARCHMORE)->Enable(MoreAllowed((uint32_t)searchID));
 #endif
 	}
 }
@@ -810,6 +810,10 @@ void CSearchDlg::OnSearchClosing(wxBookCtrlEvent &evt)
 	// Zero to avoid results added while destructing.
 	ctrl->ShowResults(0);
 	m_searchProgress.erase(searchID);
+	// The "More"-is-spent memo dies with the tab: a re-run gets a fresh
+	// searchID anyway, and leaving entries behind would grow this set for the
+	// life of the session.
+	m_moreExhausted.erase((uint32_t)searchID);
 #ifdef CLIENT_GUI
 	// Remote multi-search: closing a tab stops *and* frees that specific
 	// search on the daemon (leaving other tabs' searches running). On a
@@ -976,8 +980,7 @@ void CSearchDlg::OnSearchPageChanged(wxBookCtrlEvent &WXUNUSED(evt))
 
 		// "More" is Kad-only — enable when this tab's searchID still
 		// corresponds to an active Kad search.
-		FindWindow(IDC_SEARCHMORE)
-			->Enable(theApp->searchlist->IsKadSearch((uint32_t)ctrl->GetSearchId()));
+		FindWindow(IDC_SEARCHMORE)->Enable(MoreAllowed((uint32_t)ctrl->GetSearchId()));
 	} else {
 		FindWindow(IDC_SEARCHMORE)->Enable(false);
 	}
@@ -1139,7 +1142,7 @@ void CSearchDlg::CreateNewTab(const wxString &searchString, wxUIntPtr nSearchID,
 		// AddPage above made the new tab the selected one; defer to
 		// IsKadSearch on its searchID so a freshly-created ED2K tab leaves
 		// the button disabled.
-		FindWindow(IDC_SEARCHMORE)->Enable(theApp->searchlist->IsKadSearch((uint32_t)nSearchID));
+		FindWindow(IDC_SEARCHMORE)->Enable(MoreAllowed((uint32_t)nSearchID));
 	}
 }
 
@@ -1250,6 +1253,29 @@ void CSearchDlg::OnBnClickedStop(wxCommandEvent &WXUNUSED(evt))
 	ResetControls();
 }
 
+void CSearchDlg::MarkMoreExhausted(uint32_t searchID)
+{
+	m_moreExhausted.insert(searchID);
+	// Only touch the button when the exhausted search is the one on screen --
+	// the verdict arrives asynchronously and the user may have switched tabs
+	// meanwhile. Every other path recomputes through MoreAllowed anyway, so a
+	// tab switch back to it finds the button correctly disabled.
+	const int sel = m_notebook->GetSelection();
+	if (sel == -1) {
+		return;
+	}
+	CSearchListCtrl *page = dynamic_cast<CSearchListCtrl *>(m_notebook->GetPage(sel));
+	if (page && (uint32_t)page->GetSearchId() == searchID) {
+		FindWindow(IDC_SEARCHMORE)->Enable(false);
+	}
+}
+
+bool CSearchDlg::MoreAllowed(uint32_t searchID) const
+{
+	return searchID && theApp->searchlist->IsKadSearch(searchID) &&
+	       m_moreExhausted.find(searchID) == m_moreExhausted.end();
+}
+
 void CSearchDlg::OnBnClickedSearchMore(wxCommandEvent &WXUNUSED(evt))
 {
 	// "More" button: ask the currently-selected Kad search for more
@@ -1273,10 +1299,15 @@ void CSearchDlg::OnBnClickedSearchMore(wxCommandEvent &WXUNUSED(evt))
 		return;
 	}
 	const uint32_t searchID = (uint32_t)page->GetSearchId();
-	// RequestMoreResults logs the outcome itself (single source of truth) — and
-	// on amuleGUI that log is the daemon's, forwarded over EC, so the remote GUI
-	// shows the real result rather than an optimistic guess.
-	theApp->searchlist->RequestMoreResults(searchID);
+	// RequestMoreResults logs what actually happened (single source of truth) —
+	// and on amuleGUI that log is the daemon's, forwarded over EC. What it
+	// RETURNS is the other question: whether a later press could still widen
+	// this search. False is terminal (the search is in its final seconds, or
+	// its reask budget is spent), so the button goes away for this search only.
+	if (!theApp->searchlist->RequestMoreResults(searchID)) {
+		m_moreExhausted.insert(searchID);
+		FindWindow(IDC_SEARCHMORE)->Enable(false);
+	}
 }
 
 void CSearchDlg::ResetControls()
@@ -1312,8 +1343,7 @@ void CSearchDlg::KadSearchEnd(uint32 id)
 	if (sel != -1) {
 		CSearchListCtrl *page = dynamic_cast<CSearchListCtrl *>(m_notebook->GetPage(sel));
 		if (page) {
-			FindWindow(IDC_SEARCHMORE)
-				->Enable(theApp->searchlist->IsKadSearch((uint32_t)page->GetSearchId()));
+			FindWindow(IDC_SEARCHMORE)->Enable(MoreAllowed((uint32_t)page->GetSearchId()));
 		}
 	}
 }

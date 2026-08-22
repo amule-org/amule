@@ -1257,11 +1257,19 @@ bool CSearchList::RequestMoreResults(uint32_t searchID)
 	// (for a remote-GUI request over EC) both reach this one path, and the
 	// daemon forwards the line to amuleGUI — so the remote GUI shows the real
 	// result rather than an optimistic guess.
-	const bool ok = Kademlia::CSearchManager::RequestMoreResults(searchID);
-	AddLogLineN(ok ? _("Kad search: requested wider results from one more peer.")
-		       : _("Kad search: no peer left to reask for more results (cap reached or no "
-			   "responses yet)."));
-	return ok;
+	//
+	// Two different answers come back, and they are not interchangeable. The
+	// log line reports what actually happened on THIS press; the return value
+	// reports whether a LATER press could still do something, which is what a
+	// caller greys its control on. A reask that spends the last of the budget
+	// fires (so it is logged as a success) and leaves the search un-widenable
+	// (so it returns false).
+	bool fired = false;
+	const bool reaskable = Kademlia::CSearchManager::RequestMoreResults(searchID, &fired);
+	AddLogLineN(fired ? _("Kad search: requested wider results from one more peer.")
+			  : _("Kad search: no peer left to reask for more results (cap reached or no "
+			      "responses yet)."));
+	return reaskable;
 }
 
 void CSearchList::StopSearch(bool globalOnly)

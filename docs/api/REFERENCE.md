@@ -2525,13 +2525,21 @@ Freeing a search delivers a [`search_closed`](EVENTS.md#search_closed) event to 
 
 **Auth:** `ADMIN`
 
-Widens a running **Kad** search — the desktop's **"More"** button. It re-asks the Kad peers already queried for a wider result frontier; amuled caps this at 4 reasks per search and logs the outcome itself, so this is fire-and-forget. No body.
+Widens a running **Kad** search — the desktop's **"More"** button. It re-asks the Kad peers already queried for a wider result frontier. No body.
 
 Kad-only and running-only, matching what the desktop button allows rather than what the core tolerates: amuled turns a `more` on a non-Kad or finished search into a silent no-op, so both are rejected here instead of being answered with a misleading `202`.
 
-**Response:** `202 Accepted` → `{ "ok": true }`.
+**Response:** `202 Accepted` → `{ "ok": true }` — the reask was performed, or could not be performed *yet* but may be on a later press.
 
-**Errors:** `400 bad_request` (bad `{id}`, a non-Kad search, or one that has already finished), `400 amuled_rejected`, `403 forbidden` (guest), `404 not_found` (no such search), `405`, `503 ec_unavailable`.
+**When it can no longer be widened:** `409 Conflict`, code `kad_more_exhausted`. Kad allows at most **4** reasks per search, and stops accepting them entirely once the search enters its stopping window — which begins 20 s before a keyword search's 45 s life ends, or as soon as it has collected 300 answers. In practice that means `more` only does something during roughly the first half of a search; past that, this is the answer. Disable the control for that search when you see it: nothing about that search will make it widenable again, and re-running the query is the way to get more (a fresh `POST /search` succeeds immediately and returns a new `search_id`).
+
+A `202` does **not** promise a reask went out. A press made while no already-responded peer is left un-reasked also answers `202`, because that clears the moment another peer answers and retrying is the right next action. The distinction the status carries is *terminal* versus *not terminal*, which is what a UI acts on; the daemon's log line distinguishes all the individual outcomes for anyone debugging.
+
+Note that a successful reask changes neither `progress.percent` nor `progress.state` — the Kad percent is a wall-clock ramp off the search's own start time. The response is the only signal; do not try to infer the outcome from the progress envelope.
+
+**Older daemons.** A daemon predating this reports nothing, and amuleapi keeps answering `202` for every press rather than guessing. Absent is *unknown*, never *exhausted*.
+
+**Errors:** `400 bad_request` (bad `{id}`, a non-Kad search, or one that has already finished), `400 amuled_rejected`, `403 forbidden` (guest), `404 not_found` (no such search), `405`, `409 kad_more_exhausted`, `503 ec_unavailable`.
 
 #### Related-files search
 
@@ -2636,6 +2644,7 @@ Every error code emitted by `/api/v0/*`, sorted by what triggered it. The matchi
 | `forbidden` | 403 | Authenticated as `guest` but the endpoint requires `admin`. |
 | `not_found` | 404 | Resource doesn't exist (unknown hash, ECID, graph name). |
 | `partfile_unsupported` | 409 | Verify Local Data requested on a file that is still an incomplete partfile. |
+| `kad_more_exhausted` | 409 | `POST /search/{id}/more` on a Kad search that can no longer be widened — its 4-reask budget is spent, or it has entered the stopping window Kad begins 20 s before a keyword search ends. Terminal for that search; re-run the query for more. |
 | `rate_limited` | 429 | Per-IP failure bucket full. `Retry-After: <seconds>` accompanies the response. |
 | `login_disabled` | 503 | `/auth/login` reached but no admin AND no guest password configured. |
 | `ec_unavailable` | 503 | EC connection not ready yet (cold start, transient amuled restart). |

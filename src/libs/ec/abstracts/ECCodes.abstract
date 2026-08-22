@@ -420,6 +420,12 @@ EC_TAG_SEARCHFILE                         0x0700
 	EC_TAG_SEARCHFILE_CLIENT_PORT             0x0713
 	EC_TAG_SEARCHFILE_DIRECTORY               0x0714
 	EC_TAG_SEARCH_BROWSE_STATUS               0x0715
+## Whether a Kad search can still be widened by a later "More" press --
+## `fired || CanReaskMore()`, not "did a reask go out". Emitted on every
+## EC_OP_SEARCH_REQUEST_MORE reply, including the unknown-id path. A peer
+## predating it sends nothing, and absent must read as "this daemon does not
+## report it", never as "exhausted".
+	EC_TAG_SEARCH_MORE_REASKABLE              0x0716
 
 EC_TAG_FRIEND                             0x0800
 	EC_TAG_FRIEND_NAME                        0x0801

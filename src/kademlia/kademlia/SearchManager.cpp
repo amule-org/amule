@@ -74,16 +74,29 @@ bool CSearchManager::IsSearching(uint32_t searchID) noexcept
 	return false;
 }
 
-bool CSearchManager::RequestMoreResults(uint32_t searchID)
+bool CSearchManager::RequestMoreResults(uint32_t searchID, bool *out_fired)
 {
+	if (out_fired) {
+		*out_fired = false;
+	}
 	// Linear scan because m_searches is keyed by target hash, not
 	// searchID.  CSearch counts at any one time are tiny (one per active
 	// user search plus internal lookups), so the scan cost is negligible.
 	for (SearchMap::iterator it = m_searches.begin(); it != m_searches.end(); ++it) {
 		if (it->second->GetSearchID() == searchID) {
-			return it->second->RequestMoreResults();
+			const bool fired = it->second->RequestMoreResults();
+			if (out_fired) {
+				*out_fired = fired;
+			}
+			// Evaluated AFTER the attempt, and or-ed with it: the reask that
+			// consumes the last of the budget really happened, but leaves
+			// CanReaskMore() false. Reporting that as a refusal would have
+			// every client disable its control on a success.
+			return fired || it->second->CanReaskMore();
 		}
 	}
+	// No live search carries that id -- it finished and was deleted, taking
+	// m_responded / m_tried / m_requestedMoreNodes with it. Terminal.
 	return false;
 }
 

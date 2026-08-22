@@ -3452,15 +3452,21 @@ bool CSearchListRem::RequestMoreResults(uint32_t searchID)
 	if (searchID == 0) {
 		return false;
 	}
-	// Ask the daemon to widen this Kad search (KADEMLIA_FIND_VALUE_MORE). Fire-
-	// and-forget, like StopSearchById: the daemon performs the re-ask; the rare
-	// "no peer left" outcome is not surfaced over EC, so the caller logs the
-	// request optimistically.
+	// Ask the daemon to widen this Kad search (KADEMLIA_FIND_VALUE_MORE).
+	// SendRequest, not SendPacket: the daemon answers with EC_OP_MISC_DATA
+	// carrying EC_TAG_SEARCH_MORE_REASKABLE, and HandlePacket below greys the
+	// button for that search when it says the reasking is over for good. This
+	// used to be fire-and-forget and returned an optimistic true, so a user
+	// could press "More" repeatedly against a daemon that was doing nothing.
+	//
+	// Still returns true here: the verdict arrives asynchronously, and this
+	// return only says the request went out. The greying happens in the reply
+	// handler.
 	CECPacket req(EC_OP_SEARCH_REQUEST_MORE);
 	if (m_conn->ServerSupportsMultiSearch()) {
 		req.AddTag(CECTag(EC_TAG_SEARCH_ID, (uint32)searchID));
 	}
-	m_conn->SendPacket(&req);
+	m_conn->SendRequest(this, &req);
 	return true;
 }
 
@@ -3610,6 +3616,21 @@ void CSearchListRem::ApplySearchProgress(const CECTag *src)
 
 void CSearchListRem::HandlePacket(const CECPacket *packet)
 {
+	if (packet->GetOpCode() == EC_OP_MISC_DATA) {
+		// Reply to EC_OP_SEARCH_REQUEST_MORE. The tag is absent on a daemon
+		// older than it, which means "unknown", never "exhausted" -- leave the
+		// button alone in that case and keep the previous optimistic
+		// behaviour. Present and false is terminal for this search: its reask
+		// budget is spent, or it is inside the stopping window Kad enters 20 s
+		// before a keyword search ends.
+		const CECTag *reaskable = packet->GetTagByName(EC_TAG_SEARCH_MORE_REASKABLE);
+		const CECTag *idTag = packet->GetTagByName(EC_TAG_SEARCH_ID);
+		if (reaskable && idTag && reaskable->GetInt() == 0 && theApp->amuledlg &&
+			theApp->amuledlg->m_searchwnd) {
+			theApp->amuledlg->m_searchwnd->MarkMoreExhausted((uint32)idTag->GetInt());
+		}
+		return;
+	}
 	if (packet->GetOpCode() == EC_OP_SEARCH_PROGRESS) {
 		if (m_conn->ServerSupportsMultiSearch()) {
 			if (m_conn->ServerSupportsSearchProgressUnion()) {

@@ -1410,6 +1410,16 @@ void CSearch::SendFindValue(CContact *contact, bool reaskMore)
 	}
 }
 
+// The terminal half of RequestMoreResults()'s guards -- everything that will
+// still be true on the next press. Deliberately does NOT walk m_responded: "no
+// un-reasked peer right now" is transient, clears when another peer answers,
+// and must not read as "never again".
+bool CSearch::CanReaskMore() const
+{
+	return !m_stopping && GetRequestContactCount() == KADEMLIA_FIND_VALUE &&
+	       m_requestedMoreNodes.size() < KADEMLIA_FIND_VALUE_MORE_REASKS;
+}
+
 bool CSearch::RequestMoreResults()
 {
 	// Walk m_responded (sorted by distance to target) for the closest

@@ -3119,9 +3119,11 @@ static CECPacket *Get_EC_Response_Search_Stop(const CECPacket *request, bool mul
 static CECPacket *Get_EC_Response_Search_Request_More(const CECPacket *request, bool multiSearch)
 {
 	// "More" button (Kad-only): re-ask already-queried peers for a wider result
-	// frontier for one search. RequestMoreResults logs the outcome itself (the
-	// single source of truth shared with the monolithic GUI); that line is
-	// forwarded back to amuleGUI over EC, so the reply here is a plain ack.
+	// frontier for one search. RequestMoreResults logs what actually happened
+	// (the single source of truth shared with the monolithic GUI) and that line
+	// is forwarded back to amuleGUI over EC; the reply carries the other half,
+	// whether a LATER press could still widen the search, which is what a
+	// client greys its control on.
 	CECPacket *reply = new CECPacket(EC_OP_MISC_DATA);
 	// Per-ID. No ID => the most-recently-started search. Gate on the core's
 	// own knowledge (CSearchList::IsKnownSearchId), not s_ecSearches -- see
@@ -3131,8 +3133,22 @@ static CECPacket *Get_EC_Response_Search_Request_More(const CECPacket *request, 
 	const CECTag *idTag = request->GetTagByName(EC_TAG_SEARCH_ID);
 	uint32 sid =
 		idTag ? static_cast<uint32>(idTag->GetInt()) : (multiSearch ? s_ecSearches.Current() : 0);
+	bool reaskable = false;
 	if (sid != 0 && (!multiSearch || theApp->searchlist->IsKnownSearchId(sid))) {
-		theApp->searchlist->RequestMoreResults(sid);
+		reaskable = theApp->searchlist->RequestMoreResults(sid);
+	}
+	// Emitted on BOTH paths, including the unknown-id early-out above (which
+	// leaves it false -- a search the core does not hold is terminal by
+	// definition). That way an absent tag means exactly one thing to the
+	// client: a daemon older than this reply, whose answer is unknown rather
+	// than "exhausted".
+	reply->AddTag(CECTag(EC_TAG_SEARCH_MORE_REASKABLE, static_cast<uint8>(reaskable ? 1 : 0)));
+	// Echo which search the verdict is about. The request may not have named
+	// one (a client without multi-search leaves it to s_ecSearches.Current()),
+	// and a client with several tabs open cannot attribute a bare reply to any
+	// of them -- the replies are not correlated any other way.
+	if (sid != 0) {
+		reply->AddTag(CECTag(EC_TAG_SEARCH_ID, sid));
 	}
 	return reply;
 }
