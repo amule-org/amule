@@ -45,6 +45,9 @@ export default function Search({ isGuest }) {
     // already holds (this browser's searches, another client's, or ones
     // restored across a restart).
     searches.ensure();
+    // An unopened tab has no amuleapi slot, so no SSE refreshes its badge --
+    // re-list on every mount instead. Debounced, so the first one is free.
+    searches.nudgeAdopt();
     api.get("categories").then((r) => setCategories(r.categories || [])).catch(() => {});
   }, []);
 

@@ -167,6 +167,7 @@ async function adopt() {
   if (added) publishTabs();
 }
 
+// Debounced adopt, so the first mount's own adopt() is not doubled.
 function nudgeAdopt() {
   if (!started || Date.now() - lastAdopt < ADOPT_DEBOUNCE_MS) return;
   adopt();
@@ -285,6 +286,7 @@ export const searches = {
   setActive,
   refresh,
   adopt,
+  nudgeAdopt,
 
   // Per-tab UI state. Read at render time; every write republishes the tab
   // list, which is what re-renders the view.
