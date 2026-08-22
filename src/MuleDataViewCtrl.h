@@ -164,6 +164,15 @@ protected:
 	 * user happened to sort or toggle a column afterwards -- SaveColumnSettings'
 	 * only other callers. An override must call the base, or resizing stops
 	 * being remembered for that list.
+	 *
+	 * Fired once per drag, when the widths stop moving -- not once per pixel.
+	 * The poll runs on idle, which fires continuously while the mouse does, so
+	 * acting on every observed change made a single drag do its work hundreds
+	 * of times: a wxConfig write each time here, and in CSearchListCtrl a
+	 * width-set on every column of every other open search tab, each forcing a
+	 * header relayout and repaint. That is what made resizing flicker and spike
+	 * the CPU, the more so the more tabs were open (issue #1022). Only the
+	 * final width matters, so only the final width is acted on.
 	 */
 	virtual void OnColumnWidthsChanged() { SaveColumnSettings(); }
 
@@ -367,6 +376,11 @@ private:
 
 	//! Last-seen widths, for detecting a drag-resize (no portable event).
 	std::vector<int> m_lastKnownWidths;
+
+	//! Whether the widths moved since the last idle, i.e. a drag is still in
+	//! progress. OnColumnWidthsChanged() fires when this goes back to false,
+	//! not while it is true -- see OnIdle().
+	bool m_widthsSettling = false;
 
 	//! True once AppendSpacerColumn() has run (macOS only).
 	bool m_hasSpacer = false;
