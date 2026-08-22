@@ -3,12 +3,15 @@
 // the detail-only fields). It re-fetches on each live tick of the shared store
 // so the transfer/request counters stay current while the panel is open (GET is
 // ETag-cached, so unchanged frames short-circuit to a 304 + the cached body).
-// Mirrors download-detail.js but shared files have no progress.parts, so there
-// is no pieces graph.
+// Mirrors download-detail.js, but the pieces graph here is an *availability*
+// bar, not a progress bar: a shared file is 100% local by definition, so what
+// `parts[].sources` describes is how well each part is replicated across the
+// network (red = no other peer has it). Absent until the daemon's RLE decode
+// for this file has landed.
 
 import { api } from "../api.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
-import { Placeholder, toast, Section, statRow, IdentityLine, copyText, Tabs, CommentEditor, RenameForm } from "../components.js";
+import { Placeholder, PiecesBar, PiecesLegend, toast, Section, statRow, IdentityLine, copyText, Tabs, CommentEditor, RenameForm } from "../components.js";
 import { formatBytes, formatInt, formatDuration, formatSpeed, formatTimestamp, twin } from "../format.js";
 import { FileClients, HIDDEN_EVERYWHERE } from "./client-table.js";
 import { t } from "../i18n.js";
@@ -92,6 +95,14 @@ export function SharedDetail({ hash }) {
         </div>
       ` : html`
       <div class="detail-sections">
+        ${s.parts && s.parts.length ? html`
+        <div class="detail-group">
+          <h5 class="detail-group-title">${t("shared_detail_avail_title")}</h5>
+          <div class="detail-progress">
+            <${PiecesBar} mode="availability" parts=${s.parts} />
+            <${PiecesLegend} mode="availability" parts=${s.parts} />
+          </div>
+        </div>` : null}
         ${Section([
           statRow("shared_size", formatBytes(s.size), "shared_detail_tip_size"),
           statRow("shared_detail_uploaded", twin(s.xfer, "session", "total", formatBytes), "shared_detail_tip_uploaded"),

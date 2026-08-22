@@ -98,6 +98,7 @@ TEST(Refresher, FileRemovedErasesFromDownloads)
 
 TEST(Refresher, FileRemovedErasesFromShared)
 {
+	std::map<std::uint32_t, PartFileEncoderData> rle_state;
 	// Symmetric to FileRemovedErasesFromDownloads. The server-side
 	// encoder map is unified across partfiles + sharedfiles, so a
 	// FILE_REMOVED marker could target an ECID in either cache.
@@ -116,7 +117,7 @@ TEST(Refresher, FileRemovedErasesFromShared)
 	CECPacket resp(EC_OP_SHARED_FILES);
 	resp.AddTag(CECTag(EC_TAG_FILE_REMOVED, static_cast<std::uint32_t>(33)));
 
-	ApplyGetUpdateToShared(&resp, cache);
+	ApplyGetUpdateToShared(&resp, cache, rle_state);
 
 	ASSERT_TRUE(cache.find(33) == cache.end());
 	ASSERT_TRUE(cache.empty());
@@ -173,7 +174,7 @@ TEST(Refresher, EmptyResponseLeavesCachesIntact)
 	CECPacket resp(EC_OP_SHARED_FILES);
 	std::map<std::uint32_t, PartFileEncoderData> rle_state;
 	ApplyGetUpdateToDownloads(&resp, downloads, rle_state);
-	ApplyGetUpdateToShared(&resp, shared);
+	ApplyGetUpdateToShared(&resp, shared, rle_state);
 
 	// INC protocol: empty response means "no changes since last tick".
 	// Cache stays intact — no bulk-delete fallback needed.
@@ -204,7 +205,7 @@ TEST(Refresher, MixedTopLevelDispatchedByTagName)
 	resp.AddTag(CECTag(EC_TAG_FILE_REMOVED, static_cast<std::uint32_t>(99)));
 
 	ApplyGetUpdateToDownloads(&resp, downloads, rle_state);
-	ApplyGetUpdateToShared(&resp, shared);
+	ApplyGetUpdateToShared(&resp, shared, rle_state);
 
 	// Downloads walker captured ECID 10 only — NOT ECID 20 (that
 	// belongs to shared) and NOT ECID 99 (that's the FILE_REMOVED).
@@ -229,6 +230,7 @@ TEST(Refresher, MixedTopLevelDispatchedByTagName)
 
 TEST(Refresher, SharedPartfileWithFlagTrueLandsInShared)
 {
+	std::map<std::uint32_t, PartFileEncoderData> rle_state;
 	FileMap cache;
 	CECPacket resp(EC_OP_SHARED_FILES);
 	{
@@ -245,7 +247,7 @@ TEST(Refresher, SharedPartfileWithFlagTrueLandsInShared)
 	std::map<std::uint32_t, std::pair<std::string, std::string>> fallback;
 	fallback[50] = std::make_pair(
 		std::string("aaaa3333aaaa3333aaaa3333aaaa3333"), std::string("shared-test.iso"));
-	ApplyGetUpdateToShared(&resp, cache);
+	ApplyGetUpdateToShared(&resp, cache, rle_state);
 
 	ASSERT_EQUALS(static_cast<size_t>(1), cache.size());
 	ASSERT_TRUE(cache.find(50) != cache.end());
@@ -254,6 +256,7 @@ TEST(Refresher, SharedPartfileWithFlagTrueLandsInShared)
 
 TEST(Refresher, UnsharedPartfileSkippedFromShared)
 {
+	std::map<std::uint32_t, PartFileEncoderData> rle_state;
 	// PARTFILE arrives with EC_TAG_PARTFILE_SHARED=false. The
 	// shared walker must NOT insert it — the file is in the download
 	// queue but has zero chunks completed, so no peer can request it.
@@ -265,13 +268,145 @@ TEST(Refresher, UnsharedPartfileSkippedFromShared)
 		resp.AddTag(pf);
 	}
 
-	ApplyGetUpdateToShared(&resp, cache);
+	ApplyGetUpdateToShared(&resp, cache, rle_state);
 
 	ASSERT_TRUE(cache.empty());
 }
 
+// ----------------------------------------------------------------------
+// Shared availability bar — EC_TAG_PARTFILE_PART_STATUS on the
+// EC_TAG_KNOWNFILE tag (issue #982). amuled RLE-encodes the per-part
+// source counts as an XOR delta against the previously encoded state,
+// so the decoder is stateful and every frame must be fed to it in
+// order. These tests drive the real RLE_Data encoder to build the
+// blobs, so they pin the wire format rather than a re-implementation
+// of it.
+// ----------------------------------------------------------------------
+
+namespace
+{
+
+// Encode one availability vector the way CKnownFile_Encoder::Encode
+// does and hang it off `parent` as EC_TAG_PARTFILE_PART_STATUS.
+void AddEncodedPartStatus(CECTag &parent, RLE_Data &enc, const ArrayOfUInts16 &sources)
+{
+	int len = 0;
+	bool changed = false;
+	const uint8 *blob = enc.Encode(sources, len, changed);
+	parent.AddTag(CECTag(EC_TAG_PARTFILE_PART_STATUS, len, blob));
+	delete[] blob;
+}
+
+} // namespace
+
+TEST(Refresher, SharedKnownFileDecodesAvailability)
+{
+	std::map<std::uint32_t, PartFileEncoderData> rle_state;
+	FileMap cache;
+	RLE_Data enc;
+
+	ArrayOfUInts16 sources;
+	sources.push_back(3);
+	sources.push_back(0);
+	sources.push_back(12);
+	sources.push_back(1);
+
+	CECPacket resp(EC_OP_SHARED_FILES);
+	{
+		CECTag kf(EC_TAG_KNOWNFILE, static_cast<std::uint32_t>(80));
+		AddEncodedPartStatus(kf, enc, sources);
+		resp.AddTag(kf);
+	}
+
+	ApplyGetUpdateToShared(&resp, cache, rle_state);
+
+	auto it = cache.find(80);
+	ASSERT_TRUE(it != cache.end());
+	const std::vector<std::uint16_t> &got = it->second.shared.decoded_part_sources;
+	ASSERT_EQUALS(static_cast<size_t>(4), got.size());
+	ASSERT_EQUALS(static_cast<std::uint16_t>(3), got[0]);
+	ASSERT_EQUALS(static_cast<std::uint16_t>(0), got[1]);
+	ASSERT_EQUALS(static_cast<std::uint16_t>(12), got[2]);
+	ASSERT_EQUALS(static_cast<std::uint16_t>(1), got[3]);
+}
+
+TEST(Refresher, SharedKnownFileAvailabilityTracksDifferentialFrames)
+{
+	// Second and later frames are XOR deltas against the previous
+	// decoded buffer, so a decoder that is not carried across ticks
+	// (or is fed a frame twice) paints garbage rather than merely
+	// lagging. Drive two frames through one encoder/decoder pair.
+	std::map<std::uint32_t, PartFileEncoderData> rle_state;
+	FileMap cache;
+	RLE_Data enc;
+
+	ArrayOfUInts16 first;
+	first.push_back(1);
+	first.push_back(1);
+	first.push_back(1);
+	{
+		CECPacket resp(EC_OP_SHARED_FILES);
+		CECTag kf(EC_TAG_KNOWNFILE, static_cast<std::uint32_t>(81));
+		AddEncodedPartStatus(kf, enc, first);
+		resp.AddTag(kf);
+		ApplyGetUpdateToShared(&resp, cache, rle_state);
+	}
+
+	ArrayOfUInts16 second;
+	second.push_back(1);
+	second.push_back(7);
+	second.push_back(0);
+	{
+		CECPacket resp(EC_OP_SHARED_FILES);
+		CECTag kf(EC_TAG_KNOWNFILE, static_cast<std::uint32_t>(81));
+		AddEncodedPartStatus(kf, enc, second);
+		resp.AddTag(kf);
+		ApplyGetUpdateToShared(&resp, cache, rle_state);
+	}
+
+	const std::vector<std::uint16_t> &got = cache.find(81)->second.shared.decoded_part_sources;
+	ASSERT_EQUALS(static_cast<size_t>(3), got.size());
+	ASSERT_EQUALS(static_cast<std::uint16_t>(1), got[0]);
+	ASSERT_EQUALS(static_cast<std::uint16_t>(7), got[1]);
+	ASSERT_EQUALS(static_cast<std::uint16_t>(0), got[2]);
+}
+
+TEST(Refresher, SharedWalkerLeavesPartfileAvailabilityToDownloadsWalker)
+{
+	// A shared partfile reaches this walker as EC_TAG_PARTFILE, and the
+	// downloads walker has already consumed that same tag's PART_STATUS
+	// on this very response. Decoding it a second time here would apply
+	// the XOR delta twice and desync the decoder permanently, so the
+	// shared walker must not touch the decoder state for a PARTFILE tag.
+	std::map<std::uint32_t, PartFileEncoderData> rle_state;
+	FileMap cache;
+	RLE_Data enc;
+
+	ArrayOfUInts16 sources;
+	sources.push_back(5);
+	sources.push_back(5);
+
+	CECPacket resp(EC_OP_SHARED_FILES);
+	{
+		CECTag pf(EC_TAG_PARTFILE, static_cast<std::uint32_t>(82));
+		pf.AddTag(CECTag(EC_TAG_PARTFILE_SHARED, static_cast<std::uint8_t>(1)));
+		AddEncodedPartStatus(pf, enc, sources);
+		resp.AddTag(pf);
+	}
+
+	ApplyGetUpdateToShared(&resp, cache, rle_state);
+
+	auto it = cache.find(82);
+	ASSERT_TRUE(it != cache.end());
+	ASSERT_TRUE(it->second.shared.decoded_part_sources.empty());
+	// No decoder state was created for this ECID: the downloads walker
+	// owns it.
+	ASSERT_TRUE(rle_state.find(82) == rle_state.end());
+}
+
 TEST(Refresher, SharedPartfileTransitionsOutClearsSharedRole)
 {
+	std::map<std::uint32_t, PartFileEncoderData> rle_state;
 	// Pre-seed a shared partfile in cache (was sharing on previous
 	// ticks). Now the operator paused / stopped it: the next tick
 	// emits EC_TAG_PARTFILE_SHARED=false. The walker must clear the
@@ -295,7 +430,7 @@ TEST(Refresher, SharedPartfileTransitionsOutClearsSharedRole)
 		resp.AddTag(pf);
 	}
 
-	ApplyGetUpdateToShared(&resp, cache);
+	ApplyGetUpdateToShared(&resp, cache, rle_state);
 
 	ASSERT_TRUE(cache.find(70) != cache.end());
 	ASSERT_TRUE(!cache.find(70)->second.is_shared);
@@ -306,6 +441,7 @@ TEST(Refresher, SharedPartfileTransitionsOutClearsSharedRole)
 
 TEST(Refresher, SuppressedSharedFlagPreservesCachedPartfile)
 {
+	std::map<std::uint32_t, PartFileEncoderData> rle_state;
 	// CValueMap suppresses the EC_TAG_PARTFILE_SHARED tag when the
 	// value matches the previous frame. For a cached partfile that
 	// was previously shared, the absence of the flag means "still
@@ -322,7 +458,7 @@ TEST(Refresher, SuppressedSharedFlagPreservesCachedPartfile)
 	// PARTFILE with no EC_TAG_PARTFILE_SHARED child — flag suppressed.
 	resp.AddTag(CECTag(EC_TAG_PARTFILE, static_cast<std::uint32_t>(80)));
 
-	ApplyGetUpdateToShared(&resp, cache);
+	ApplyGetUpdateToShared(&resp, cache, rle_state);
 
 	ASSERT_TRUE(cache.find(80) != cache.end());
 	ASSERT_EQUALS(std::string("still-sharing.iso"), cache.find(80)->second.name);
@@ -330,6 +466,7 @@ TEST(Refresher, SuppressedSharedFlagPreservesCachedPartfile)
 
 TEST(Refresher, SuppressedSharedFlagSkipsUnknownPartfile)
 {
+	std::map<std::uint32_t, PartFileEncoderData> rle_state;
 	// Mirror of the previous test: a PARTFILE with the SHARED flag
 	// suppressed AND no prior cache entry means "we have no signal
 	// that this is shared." Don't insert blindly — wait for the next
@@ -338,7 +475,7 @@ TEST(Refresher, SuppressedSharedFlagSkipsUnknownPartfile)
 	CECPacket resp(EC_OP_SHARED_FILES);
 	resp.AddTag(CECTag(EC_TAG_PARTFILE, static_cast<std::uint32_t>(90)));
 
-	ApplyGetUpdateToShared(&resp, cache);
+	ApplyGetUpdateToShared(&resp, cache, rle_state);
 
 	ASSERT_TRUE(cache.empty());
 }
@@ -410,7 +547,7 @@ TEST(Refresher, BothFilePrioritiesAreIndependent)
 		pf.AddTag(CECTag(EC_TAG_PARTFILE_SHARED, static_cast<std::uint8_t>(1)));
 		pf.AddTag(CECTag(EC_TAG_KNOWNFILE_PRIO, static_cast<std::uint8_t>(0)));
 		resp.AddTag(pf);
-		ApplyGetUpdateToShared(&resp, cache);
+		ApplyGetUpdateToShared(&resp, cache, rle_state);
 	}
 
 	const auto it = cache.find(77);
@@ -448,7 +585,7 @@ TEST(Refresher, SharedPriorityLatchedBeforeSharingSurvivesSuppression)
 		pf.AddTag(CECTag(EC_TAG_PARTFILE_SHARED, static_cast<std::uint8_t>(0)));
 		resp.AddTag(pf);
 		ApplyGetUpdateToDownloads(&resp, cache, rle_state);
-		ApplyGetUpdateToShared(&resp, cache);
+		ApplyGetUpdateToShared(&resp, cache, rle_state);
 	}
 	{
 		const auto it = cache.find(78);
@@ -467,7 +604,7 @@ TEST(Refresher, SharedPriorityLatchedBeforeSharingSurvivesSuppression)
 		CECTag pf(EC_TAG_PARTFILE, static_cast<std::uint32_t>(78));
 		pf.AddTag(CECTag(EC_TAG_PARTFILE_SHARED, static_cast<std::uint8_t>(1)));
 		resp.AddTag(pf);
-		ApplyGetUpdateToShared(&resp, cache);
+		ApplyGetUpdateToShared(&resp, cache, rle_state);
 	}
 
 	const auto it = cache.find(78);
@@ -527,6 +664,7 @@ TEST(Refresher, DownloadDetailTagsDecodeIntoSnapshot)
 
 TEST(Refresher, SharedDetailTagsDecodeIntoSnapshot)
 {
+	std::map<std::uint32_t, PartFileEncoderData> rle_state;
 	FileMap cache;
 	CECPacket resp(EC_OP_SHARED_FILES);
 	CECTag kf(EC_TAG_KNOWNFILE, static_cast<std::uint32_t>(202));
@@ -544,7 +682,7 @@ TEST(Refresher, SharedDetailTagsDecodeIntoSnapshot)
 	kf.AddTag(CECTag(EC_TAG_KNOWNFILE_SHARED_SINCE, static_cast<std::uint32_t>(1699000000)));
 	resp.AddTag(kf);
 
-	ApplyGetUpdateToShared(&resp, cache);
+	ApplyGetUpdateToShared(&resp, cache, rle_state);
 
 	const auto it = cache.find(202);
 	ASSERT_TRUE(it != cache.end());

@@ -216,6 +216,7 @@ PHASES=(
 	34-friends.sh
 	35-ipfilter-actions.sh
 	36-shared-reload.sh
+	37-shared-availability-parts.sh
 )
 
 # Override list from the command line if given.

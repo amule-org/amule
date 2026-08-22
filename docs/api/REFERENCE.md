@@ -1334,10 +1334,17 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 | `complete_sources_range` | object | `{ "low": int, "high": int }` — the estimated full-copy source range behind the scalar `complete_sources`. |
 | `aich_hash` | string | AICH master hash (hex); `""` if not yet computed. |
 | `part_count` | int | Total parts, `ceil(size / 9.28 MiB)`. |
+| `parts` | array | Per-part source availability, `[{ "sources": int }, ...]`, exactly `part_count` entries in file order. **Omitted entirely** until the first decode has landed, so "no data yet" and "no sources for any part" stay distinguishable. See below. |
 | `queued_count` | int | Clients waiting on this file's upload queue. |
 | `comment` | string | The user's own comment on this file (`""` if none). |
 | `rating` | int | The user's own rating, `0`–`5` (`0` = unrated). |
 | `media` | object | Audio/video metadata — see [Media metadata](#media-metadata). **Omitted entirely** when the file has no probed metadata. |
+
+`parts[].sources` is how many peers currently requesting this file hold that part — an **availability** measure, not a progress one. A shared file is fully local by definition, so a part with `"sources": 0` means no other peer has it and you are its only source. Counts saturate at `255`.
+
+This is deliberately detail-only. A 100 GB file has ~10 800 parts, so carrying the array on [`GET /shared`](#get-apiv0shared) or in `shared_updated` SSE events would multiply that across the whole share on every tick — the same reason `progress.parts` is absent from the downloads list. `shared_updated` events are unaffected by source-count changes.
+
+For a shared file that is also still downloading, the same values are available as `progress.parts[].sources` on [`GET /downloads/{hash}`](#get-apiv0downloadshash); both come from one encoder in amuled, so they agree.
 
 **Errors:** `404 not_found` (no shared file with that hash), `503 ec_unavailable`.
 

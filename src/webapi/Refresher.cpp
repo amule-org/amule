@@ -1238,6 +1238,28 @@ void DecodeRleBlobsForPartFile(
 	}
 }
 
+// Same stateful decode for the availability blob on one *knownfile*
+// tag -- a complete shared file, which carries EC_TAG_PARTFILE_PART_STATUS
+// but no gap/req blobs (CKnownFile_Encoder::Encode emits only the part
+// status). Output lands in `f.shared.decoded_part_sources`, backing the
+// shared "Obtained Parts" bar.
+//
+// Shares `rle_state` with the partfile decoder above on purpose; see the
+// note on ApplyGetUpdateToShared in Refresher.h for why one map per ECID
+// is the correct mirror of the daemon's encoder set rather than a
+// collision waiting to happen.
+void DecodeRleBlobsForSharedFile(const CEC_SharedFile_Tag *sf,
+	FileSnapshot &f,
+	std::map<std::uint32_t, PartFileEncoderData> &rle_state)
+{
+	const CECTag *part_tag = sf->GetTagByName(EC_TAG_PARTFILE_PART_STATUS);
+	if (!part_tag)
+		return;
+	ArrayOfUInts16 parts;
+	rle_state[sf->ID()].DecodeParts(part_tag, parts);
+	f.shared.decoded_part_sources.assign(parts.begin(), parts.end());
+}
+
 // Clear the shared *session statistics* on a share-role-off transition
 // while preserving the upload priority. The stats (xfer/requests/accepts
 // counters) are per-share-session and must not survive; the upload
@@ -1312,7 +1334,8 @@ void ApplyGetUpdateToDownloads(
 	}
 }
 
-void ApplyGetUpdateToShared(const CECPacket *resp, FileMap &cache)
+void ApplyGetUpdateToShared(
+	const CECPacket *resp, FileMap &cache, std::map<std::uint32_t, PartFileEncoderData> &rle_state)
 {
 	if (!resp)
 		return;
@@ -1393,6 +1416,8 @@ void ApplyGetUpdateToShared(const CECPacket *resp, FileMap &cache)
 			f.hash = TagHashLower(sf);
 			f.is_shared = true;
 			MergeSharedTag(sf, f);
+			if (name == EC_TAG_KNOWNFILE)
+				DecodeRleBlobsForSharedFile(sf, f, rle_state);
 			cache.emplace(ecid, std::move(f));
 		} else {
 			// Existing entry — flip is_shared on, merge fields.
@@ -1406,6 +1431,12 @@ void ApplyGetUpdateToShared(const CECPacket *resp, FileMap &cache)
 			}
 			map_it->second.is_shared = true;
 			MergeSharedTag(sf, map_it->second);
+			// PARTFILE tags are decoded by the downloads walker, which
+			// already ran on this same response; decoding them again
+			// here would apply the XOR delta twice and desync the
+			// decoder for good.
+			if (name == EC_TAG_KNOWNFILE)
+				DecodeRleBlobsForSharedFile(sf, map_it->second, rle_state);
 		}
 	}
 }
