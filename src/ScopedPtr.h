@@ -29,6 +29,31 @@
 #include "OtherFunctions.h" // Needed for DeleteContents()
 
 /**
+ * Sets a bool for the lifetime of the scope.
+ *
+ * Both users are notebook page-closing handlers whose own teardown fires a
+ * MuleNotify that routes straight back into the close path for the same tab:
+ * the flag makes the re-entry a no-op instead of a recursive close. It lived
+ * privately in SearchDlg.cpp while there was one such handler; chat's is the
+ * second, so it moved here rather than being copied.
+ */
+class CScopedFlag
+{
+public:
+	explicit CScopedFlag(bool &flag)
+	: m_flag(flag)
+	{
+		m_flag = true;
+	}
+	~CScopedFlag() { m_flag = false; }
+	CScopedFlag(const CScopedFlag &) = delete;
+	CScopedFlag &operator=(const CScopedFlag &) = delete;
+
+private:
+	bool &m_flag;
+};
+
+/**
  * CScopedPtr is a simple smart pointer.
  *
  * This class is a replacement for std::auto_ptr, with simpler

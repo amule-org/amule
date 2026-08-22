@@ -456,15 +456,19 @@ void CamuleRemoteGuiApp::OnPollTimer(wxTimerEvent &)
 			}
 			statgraphs->DoRequery();
 		}
-		// Incoming friend/chat messages are relayed by the daemon over EC
-		// (amulegui is receive-only). Poll unconditionally — like stats
-		// above, and unlike the per-tab data — so a message that arrives
-		// while the user is on another tab still triggers the new-message
-		// blink in CChatWnd::ProcessMessage. Cheap: an empty reply when
-		// nothing is pending. Gated on the daemon supporting the relay;
-		// old daemons never echo EC_TAG_CAN_CHAT and we never poll.
+		// Chat sessions + every message newer than our cursor, in one
+		// roundtrip. Poll unconditionally — like stats above, and unlike
+		// the per-tab data — so a message that arrives while the user is
+		// on another tab still triggers the new-message blink. Cheap: an
+		// idle daemon answers with the session list and no message
+		// children. Gated on the capability; a daemon that never echoes
+		// EC_TAG_CAN_CHAT does not know these opcodes, and sending one
+		// asserts on the daemon before it can answer EC_OP_FAILED.
 		if (m_connect->ServerSupportsChat()) {
-			CECPacket chat_req(EC_OP_GET_CHAT_MESSAGES);
+			CECPacket chat_req(EC_OP_GET_CHAT_SESSIONS);
+			if (m_chatmsg_handler.Cursor()) {
+				chat_req.AddTag(CECTag(EC_TAG_CHAT_MSG_ID, m_chatmsg_handler.Cursor()));
+			}
 			m_connect->SendRequest(&m_chatmsg_handler, &chat_req);
 		}
 		// Back to the roots
@@ -1303,24 +1307,71 @@ void CServerInfoHandlerRem::HandlePacket(const CECPacket *packet)
 
 void CChatMsgHandlerRem::HandlePacket(const CECPacket *packet)
 {
-	// amuled answers EC_OP_GET_CHAT_MESSAGES with one EC_TAG_CHAT tag per
-	// buffered incoming message (empty reply if none). Feed each through the
-	// same CChatWnd::ProcessMessage the monolithic GUI uses — that both opens
-	// / updates the sender's chat tab and fires the new-message blink when the
-	// chat window isn't the visible one.
+	// EC_OP_CHAT_SESSIONS: a top-level EC_TAG_CHAT_MSG_ID carrying the store's
+	// current last id, then one EC_TAG_CHAT_SESSION per session with only the
+	// messages newer than the cursor we sent.
 	if (!theApp->amuledlg || !theApp->amuledlg->m_chatwnd) {
 		return;
 	}
-	for (const CECTag &tag : *packet) {
-		if (tag.GetTagName() != EC_TAG_CHAT) {
+	CChatWnd *chatwnd = theApp->amuledlg->m_chatwnd;
+
+	// First reply of a connection backfills history rather than announcing
+	// it: replay must not light the Messages toolbar button up for messages
+	// the user already read on another client. Only what arrives after we
+	// have a cursor is genuinely new.
+	const bool backfill = (m_cursor == 0);
+
+	std::set<uint64> present;
+	for (const CECTag &sessionTag : *packet) {
+		if (sessionTag.GetTagName() != EC_TAG_CHAT_SESSION) {
 			continue;
 		}
-		uint64 sender = 0;
-		const CECTag *idTag = tag.GetTagByName(EC_TAG_CHAT_CLIENT_ID);
-		if (idTag) {
-			sender = idTag->GetInt();
+		const uint64 gui_id = sessionTag.GetInt();
+		present.insert(gui_id);
+
+		wxString name;
+		if (const CECTag *nameTag = sessionTag.GetTagByName(EC_TAG_CHAT_PEER_NAME)) {
+			name = nameTag->GetStringData();
 		}
-		theApp->amuledlg->m_chatwnd->ProcessMessage(sender, tag.GetStringData());
+		if (name.IsEmpty()) {
+			// Same fallback the desktop uses when the core has no name.
+			name = CFormat(_("IP: %s Port: %u")) % Uint32toStringIP(IP_FROM_GUI_ID(gui_id)) %
+			       PORT_FROM_GUI_ID(gui_id);
+		}
+
+		// Open the tab even when the session has no new messages: that is
+		// how a session started before we connected becomes visible at all.
+		// Unfocused, so a session appearing on its own cannot steal the
+		// selection from whatever the user is doing.
+		chatwnd->StartSessionByID(gui_id, name);
+
+		for (const CECTag &msgTag : sessionTag) {
+			if (msgTag.GetTagName() != EC_TAG_CHAT_MESSAGE) {
+				continue;
+			}
+			const CECTag *dirTag = msgTag.GetTagByName(EC_TAG_CHAT_DIRECTION);
+			const bool outgoing = dirTag && dirTag->GetInt() != 0;
+			chatwnd->AppendStoredMessage(
+				gui_id, name, msgTag.GetStringData(), outgoing, /*blink=*/!backfill);
+		}
+	}
+
+	// A session we are tracking that is absent from the reply was closed by
+	// another client (or evicted). Drop the tab without sending a close of
+	// our own — the core has already forgotten it. Snapshot first: closing a
+	// tab mutates the set being iterated.
+	const std::set<uint64> tracked = m_sessions;
+	for (uint64 gui_id : tracked) {
+		if (!present.count(gui_id)) {
+			chatwnd->EndSessionFromCore(gui_id);
+		}
+	}
+	m_sessions = present;
+
+	if (const CECTag *cursorTag = packet->GetTagByName(EC_TAG_CHAT_MSG_ID)) {
+		// Advance even when nothing came back, so evicted ids are not asked
+		// for forever.
+		m_cursor = cursorTag->GetInt();
 	}
 }
 

@@ -26,6 +26,7 @@
 #define AMULE_REMOTE_GUI_H
 
 #include <functional>             // std::function for the CSharedFilesRem
+#include <set>                    // std::set for CChatMsgHandlerRem's tracked sessions
 				  // Reload(yieldCb) shim — matches the daemon-side
 				  // signature added in PrefsUnifiedDlg's commit path.
 #include <ec/cpp/RemoteConnect.h> // Needed for CRemoteConnect
@@ -871,16 +872,27 @@ public:
 	virtual void HandlePacket(const CECPacket *);
 };
 
-// Polls the daemon for incoming peer chat/friend messages relayed over EC
-// (EC_OP_GET_CHAT_MESSAGES -> EC_OP_CHAT_MESSAGES). amulegui can't send
-// chat (the compose box and Send button are disabled), but surfaces received
-// messages read-only through the same CChatWnd::ProcessMessage path the
-// monolithic GUI uses. Each EC_TAG_CHAT tag carries the "name|message" text
-// with the sender GUI_ID in an EC_TAG_CHAT_CLIENT_ID child.
+// Polls the daemon's chat session store (EC_OP_GET_CHAT_SESSIONS ->
+// EC_OP_CHAT_SESSIONS): one roundtrip returns every session plus the messages
+// newer than our cursor, so an idle connection costs one small packet.
+//
+// Holds two pieces of client state. `m_cursor` is the resume position -- the
+// highest message id we hold -- which the poll sends so the daemon replies
+// with only what is new; it starts at 0, and that first reply is history
+// replay rather than live arrivals. `m_sessions` is the set we currently show
+// tabs for, so a session missing from a reply can be recognised as closed
+// elsewhere and its tab dropped without echoing a close back.
 class CChatMsgHandlerRem : public CECPacketHandlerBase
 {
 public:
 	virtual void HandlePacket(const CECPacket *);
+
+	//! Resume cursor for the next poll; 0 until the first reply lands.
+	uint32 Cursor() const { return m_cursor; }
+
+private:
+	uint32 m_cursor = 0;
+	std::set<uint64> m_sessions;
 };
 
 class CStatTreeRem : public CECPacketHandlerBase

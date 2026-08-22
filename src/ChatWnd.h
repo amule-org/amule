@@ -55,6 +55,41 @@ public:
 	void ShowCaptchaResult(uint64 id, bool ok);
 	void EndSession(uint64 id);
 
+	// --- Driven by the core's chat session store, over EC -------------------
+	// Open (or reuse) a tab for a session the core reports, without stealing
+	// the selection: a session can appear on its own, started by another
+	// client, while the user is doing something else.
+	void StartSessionByID(uint64 gui_id, const wxString &name);
+
+	// Render one message the core already holds. `blink` is false while
+	// replaying history on connect -- a reconnect must not light the Messages
+	// button up for messages the user has already read -- and true for
+	// anything that arrives afterwards.
+	void AppendStoredMessage(
+		uint64 gui_id, const wxString &name, const wxString &text, bool outgoing, bool blink);
+
+	// The core no longer has this session (closed by another client, or
+	// evicted). Closes the tab WITHOUT sending a close back: distinct from
+	// EndSession, which is the user's own close.
+	void EndSessionFromCore(uint64 gui_id);
+
+protected:
+	/**
+	 * The user closed a chat tab: tell the core to drop the session.
+	 *
+	 * Closing is global, exactly as it is for a search tab -- the core state
+	 * goes away for every client, which is why this is the only place that
+	 * originates a close. `m_inChatClosing` guards the re-entry: dropping the
+	 * session fires MuleNotify::Chat_SessionRemoved, which routes straight
+	 * back into this tab's close path.
+	 */
+	void OnChatClosing(wxBookCtrlEvent &evt);
+
+	//! True while OnChatClosing is tearing a tab down; see EndSessionFromCore.
+	bool m_inChatClosing = false;
+
+public:
+
 protected:
 	/**
 	 * Event-handler for displaying the chat-popup menu.

@@ -212,6 +212,25 @@ bool CChatSelector::ProcessMessage(uint64 sender_id, const wxString &message)
 	return newtab;
 }
 
+void CChatSelector::AppendStoredMessage(
+	uint64 gui_id, const wxString &name, const wxString &text, bool outgoing)
+{
+	CChatSession *session = GetPageByClientID(gui_id);
+	if (!session) {
+		// show=false: a session can appear on its own -- opened by another
+		// client, or by a peer messaging us -- and must not pull the
+		// selection away from whatever the local user is doing.
+		session = StartSession(gui_id, name, false);
+		if (!session) {
+			return;
+		}
+	}
+	session->m_active = true;
+	session->AddText(
+		outgoing ? thePrefs::GetUserNick() : name, outgoing ? COLOR_GREEN : COLOR_BLUE, false);
+	session->AddText(": " + text, COLOR_BLACK);
+}
+
 bool CChatSelector::SendMessage(const wxString &message, const wxString &client_name, uint64 to_id)
 {
 	// Dont let the user send empty messages
@@ -238,9 +257,17 @@ bool CChatSelector::SendMessage(const wxString &message, const wxString &client_
 
 	ci->m_active = true;
 
-	// #warning EC needed here.
-
-#ifndef CLIENT_GUI
+#ifdef CLIENT_GUI
+	// amulegui sends through the daemon and deliberately does NOT echo the
+	// line locally: the core records every outbound message in the chat
+	// session store, so the next EC_OP_GET_CHAT_SESSIONS poll returns it and
+	// renders it here. Echoing as well would print it twice, and printing it
+	// from the poll is also what keeps the ordering the core sees.
+	CECPacket req(EC_OP_CHAT_SEND);
+	req.AddTag(CECTag(EC_TAG_CHAT, message));
+	req.AddTag(CECTag(EC_TAG_CHAT_CLIENT_ID, ci->m_client_id));
+	theApp->m_connect->SendPacket(&req);
+#else
 	if (theApp->clientlist->SendChatMessage(ci->m_client_id, message)) {
 		ci->AddText(thePrefs::GetUserNick(), COLOR_GREEN, false);
 		ci->AddText(": " + message, COLOR_BLACK);

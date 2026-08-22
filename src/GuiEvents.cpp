@@ -712,7 +712,13 @@ void Chat_SessionRemoved(uint64 NOT_ON_DAEMON(gui_id))
 {
 #ifndef AMULE_DAEMON
 	if (theApp->amuledlg && theApp->amuledlg->m_chatwnd) {
-		theApp->amuledlg->m_chatwnd->EndSession(gui_id);
+		// EndSessionFromCore, not EndSession: the core has already dropped
+		// this session, so the tab must close WITHOUT its page-closing
+		// handler originating a close of its own. Without the distinction a
+		// close from one client makes every other client echo a redundant
+		// close back -- which the daemon answers EC_OP_FAILED, the session
+		// being gone already.
+		theApp->amuledlg->m_chatwnd->EndSessionFromCore(gui_id);
 	}
 #endif
 }
