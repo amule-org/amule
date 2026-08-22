@@ -409,9 +409,13 @@ kill $SSE_PID 2>/dev/null
 wait $SSE_PID 2>/dev/null
 if [ -n "$STATUS_JSON" ]; then
 	REST_JSON=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/status")
+	# The two subtractions need their own parentheses: inside object
+	# construction jq parses `k: a - b` as `k: a` and then chokes on the `-`,
+	# so the expression failed to compile and this check reported a failure
+	# on every run that actually captured a frame.
 	DIFF=$(jq -n --argjson a "$REST_JSON" --argjson b "$STATUS_JSON" \
 		'def keys_: [paths | join(".")] | sort;
-		 {rest_only: ($a|keys_) - ($b|keys_), sse_only: ($b|keys_) - ($a|keys_)}')
+		 {rest_only: (($a|keys_) - ($b|keys_)), sse_only: (($b|keys_) - ($a|keys_))}')
 	if [ "$(echo "$DIFF" | jq -c '.')" = '{"rest_only":[],"sse_only":[]}' ]; then
 		_pass "status_changed payload keys match GET /status exactly"
 	else
