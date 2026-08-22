@@ -258,14 +258,14 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     // It is not a search filter -- nothing about it travels with the query --
     // so it moved to the button row next to Download, whose destination it is
     // (issue #979). Five filters remain: three on this row, two on the next.
-    wxStaticLine *item16 = new wxStaticLine( parent, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL );
-    item13->Add( item16, wxSizerFlags(1).CenterHorizontal().Border(wxALL, 5) );
+    wxStaticLine *item16 = new wxStaticLine( parent, -1, wxDefaultPosition, wxSize(-1,20), wxLI_VERTICAL );
+    item13->Add( item16, wxSizerFlags().Center().Border(wxALL, 5) );
     wxStaticText *item20 = new wxStaticText( parent, -1, _("Extension"), wxDefaultPosition, wxDefaultSize, 0 );
     item13->Add( item20, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
     CMuleTextCtrl *item21 = new CMuleTextCtrl( parent, IDC_EDITSEARCHEXTENSION, "", wxDefaultPosition, wxSize(60,-1), wxTE_PROCESS_ENTER );
     item13->Add( item21, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
-    wxStaticLine *item19 = new wxStaticLine( parent, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL );
-    item13->Add( item19, wxSizerFlags().CenterHorizontal().Border(wxALL, 5) );
+    wxStaticLine *item19 = new wxStaticLine( parent, -1, wxDefaultPosition, wxSize(-1,20), wxLI_VERTICAL );
+    item13->Add( item19, wxSizerFlags().Center().Border(wxALL, 5) );
     wxStaticText *item22 = new wxStaticText( parent, -1, _("Min Size"), wxDefaultPosition, wxDefaultSize, 0 );
     item13->Add( item22, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
     wxBoxSizer *item23 = new wxBoxSizer( wxHORIZONTAL );
