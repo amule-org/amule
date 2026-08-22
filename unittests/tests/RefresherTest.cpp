@@ -900,7 +900,7 @@ TEST(Refresher, SharedDetailTagsDecodeIntoSnapshot)
 	ASSERT_EQUALS(static_cast<std::uint32_t>(9), s.queued_count);
 	ASSERT_EQUALS(std::string("FEDCBA9876"), s.aich_hash);
 	// Completed known file → the directory path arrives on its own tag
-	// (the write layer maps an incomplete shared partfile to "[PartFile]").
+	// (the write layer reports it verbatim, with `incomplete` alongside).
 	ASSERT_EQUALS(std::string("/home/me/Incoming"), s.on_disk_dir);
 	// Upload activity (issue #466) decodes into the shared sub-block.
 	ASSERT_EQUALS(static_cast<std::uint32_t>(51200), s.shared.upload_speed_bps);

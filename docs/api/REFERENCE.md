@@ -1344,7 +1344,8 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 |---|---|---|
 | `file_type` | string | Category token derived from the extension, lowercased: `"audio"`, `"videos"`, `"archives"`, `"cd-images"`, `"pictures"`, `"texts"`, `"programs"`, or `"any"` for unknown. |
 | `share_ratio` | number | `xfer.total / size`; `0` when `size == 0`. |
-| `path` | string | Directory path of the on-disk file, or `"[PartFile]"` when the shared file is still an incomplete partfile. |
+| `path` | string | Directory path of the on-disk file — the temp directory while the file is still an incomplete partfile, the destination directory once it has completed. Identical to `path` on `/downloads/{hash}` for the same file. |
+| `incomplete` | bool | `true` while the file is still an incomplete partfile, `false` once complete. Always present. A download that has finished but has not been cleared yet reports `false`, since its data already sits in the destination directory. |
 | `complete_sources_range` | object | `{ "low": int, "high": int }` — the estimated full-copy source range behind the scalar `complete_sources`. |
 | `aich_hash` | string | AICH master hash (hex); `""` if not yet computed. |
 | `part_count` | int | Total parts, `ceil(size / 9.28 MiB)`. |
