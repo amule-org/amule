@@ -1207,12 +1207,13 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 					// amulecmd's `search progress` with no argument expects.
 					m_searchProgressUnionActive = true;
 				}
-				if (request->GetTagByName(EC_TAG_CAN_CHAT)) {
-					// Client speaks the chat session ops. The daemon always
-					// supports them, so echo the capability in AUTH_OK; the
-					// client then polls EC_OP_GET_CHAT_SESSIONS with a
-					// cursor. A client that omits the tag never sees the
-					// echo and must never send those opcodes.
+				if (request->GetTagByName(EC_TAG_CAN_CHAT_SESSIONS)) {
+					// Client speaks the chat session ops. Its own tag, NOT
+					// EC_TAG_CAN_CHAT: that one is echoed by daemons which
+					// predate these opcodes, so a client gating on it would
+					// send EC_OP_GET_CHAT_SESSIONS to a core that asserts on
+					// it. A client that omits this tag never sees the echo
+					// and must never send those opcodes.
 					m_chatActive = true;
 				}
 				m_haveNotificationSupport = request->GetTagByName(EC_TAG_CAN_NOTIFY) != NULL;
@@ -1425,7 +1426,7 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 				if (m_chatActive) {
 					// Confirm the chat session ops so the client starts
 					// polling EC_OP_GET_CHAT_SESSIONS.
-					response->AddTag(CECEmptyTag(EC_TAG_CAN_CHAT));
+					response->AddTag(CECEmptyTag(EC_TAG_CAN_CHAT_SESSIONS));
 				}
 				if (m_multiSearchActive) {
 					// Confirm multi-search mode so the client addresses

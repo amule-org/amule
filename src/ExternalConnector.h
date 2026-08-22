@@ -234,7 +234,7 @@ public:
 	// and friends). Same null-check-is-load-bearing reasoning as above: a
 	// daemon predating them asserts on the unknown opcode instead of
 	// answering EC_OP_FAILED, so every chat request must be gated on this.
-	bool IsServerChatActive() const { return m_ECClient && m_ECClient->ServerSupportsChat(); }
+	bool IsServerChatActive() const { return m_ECClient && m_ECClient->ServerSupportsChatSessions(); }
 	// Version string of the connected core, from the EC AUTH_OK handshake.
 	// Empty when not connected (m_ECClient null) or when the daemon is old
 	// enough to omit the EC_TAG_SERVER_VERSION tag.
@@ -287,9 +287,9 @@ protected:
 	// default; only a connector that reads EC_TAG_SEARCH_ID back and handles
 	// per-ID results (amulecmd) sets it true. amuleweb stays single-search.
 	bool m_canMultiSearch;
-	// Advertise the chat capability (EC_TAG_CAN_CHAT) so the daemon echoes it
-	// and this connector may use the chat session ops. Off by default; a
-	// connector that never reads chat leaves the daemon free of the work.
+	// Advertise EC_TAG_CAN_CHAT_SESSIONS so the daemon echoes it and this
+	// connector may use the chat session ops. Off by default; a connector
+	// that never reads chat leaves the daemon free of the work.
 	bool m_canChat;
 	bool m_KeepQuiet;
 	bool m_Verbose;

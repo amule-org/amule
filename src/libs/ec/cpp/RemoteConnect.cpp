@@ -65,6 +65,7 @@ CECLoginPacket::CECLoginPacket(const wxString &client,
 	bool preferNoZlib,
 	bool canMultiSearch,
 	bool canChat,
+	bool canChatSessions,
 	bool canAEAD,
 	const std::vector<uint8_t> &clientNonce,
 	const std::vector<uint8_t> &clientPubKey)
@@ -148,6 +149,11 @@ CECLoginPacket::CECLoginPacket(const wxString &client,
 	// window; old servers ignore the unknown tag and never relay.
 	if (canChat)
 		AddTag(CECEmptyTag(EC_TAG_CAN_CHAT));
+	// Separate from EC_TAG_CAN_CHAT above: a daemon that echoes that one may
+	// still know none of the session opcodes, so the client needs its own
+	// confirmation before sending any of them.
+	if (canChatSessions)
+		AddTag(CECEmptyTag(EC_TAG_CAN_CHAT_SESSIONS));
 	// Transport encryption: the ciphers we can do, in preference order, our
 	// half of the derivation salt, and our ephemeral public key. A daemon that
 	// does not know these tags ignores them and the session stays in clear.
@@ -212,6 +218,8 @@ m_req_fifo_thr(20)
 , m_serverMultiSearch(false)
 , m_canChat(false)
 , m_serverChat(false)
+, m_canChatSessions(false)
+, m_serverChatSessions(false)
 , m_serverSharedDirsConfig(false)
 , m_serverSearchList(false)
 , m_serverSearchProgressUnion(false)
@@ -333,6 +341,7 @@ bool CRemoteConnect::ConnectToCore(const wxString &host,
 			m_preferNoZlib,
 			m_canMultiSearch,
 			m_canChat,
+			m_canChatSessions,
 			m_canAEAD,
 			m_aeadClientNonce,
 			m_aeadEphPub);
@@ -395,6 +404,7 @@ void CRemoteConnect::OnConnect()
 			m_preferNoZlib,
 			m_canMultiSearch,
 			m_canChat,
+			m_canChatSessions,
 			m_canAEAD,
 			m_aeadClientNonce,
 			m_aeadEphPub);
@@ -790,6 +800,13 @@ bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply)
 			// daemons omit the echo and the client never polls for chat.
 			if (reply->GetTagByName(EC_TAG_CAN_CHAT)) {
 				m_serverChat = true;
+			}
+			// Server confirmed the chat session ops. Its own tag, because
+			// EC_TAG_CAN_CHAT above is echoed by daemons that predate them:
+			// gating on that one would send EC_OP_GET_CHAT_SESSIONS to a core
+			// whose dispatcher asserts on it.
+			if (reply->GetTagByName(EC_TAG_CAN_CHAT_SESSIONS)) {
+				m_serverChatSessions = true;
 			}
 			// Server confirmed it serves EC_OP_SEARCH_LIST. Old daemons omit
 			// the echo and the client must not send that opcode: they have no

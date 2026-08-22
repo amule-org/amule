@@ -308,7 +308,7 @@ void CChatWnd::OnChatClosing(wxBookCtrlEvent &evt)
 	const uint64 gui_id = session->m_client_id;
 	CScopedFlag closingGuard(m_inChatClosing);
 #ifdef CLIENT_GUI
-	if (theApp->m_connect && theApp->m_connect->ServerSupportsChat()) {
+	if (theApp->m_connect && theApp->m_connect->ServerSupportsChatSessions()) {
 		CECPacket req(EC_OP_CHAT_CLOSE_SESSION);
 		req.AddTag(CECTag(EC_TAG_CHAT_CLIENT_ID, gui_id));
 		theApp->m_connect->SendPacket(&req);

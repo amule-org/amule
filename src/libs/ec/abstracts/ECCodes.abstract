@@ -230,6 +230,12 @@ EC_TAG_AEAD_SERVER_CONFIRM                0x0024
 EC_TAG_SESSION_ID                         0x0025
 EC_TAG_CAN_CLIENT_HISTORY                 0x0026
 
+## Client speaks the chat session ops (EC_OP_GET_CHAT_SESSIONS and friends).
+## Deliberately distinct from EC_TAG_CAN_CHAT: that tag shipped earlier, on
+## builds that echo it but know none of these opcodes, so reusing it would
+## make such a daemon look capable and earn it an unknown opcode.
+EC_TAG_CAN_CHAT_SESSIONS                  0x0027
+
 
 EC_TAG_CLIENT_NAME                        0x0100
 	EC_TAG_CLIENT_VERSION                     0x0101

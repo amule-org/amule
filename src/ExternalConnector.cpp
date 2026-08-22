@@ -460,7 +460,7 @@ void CaMuleExternalConnector::ConnectAndRun(const wxString &ProgName, const wxSt
 		m_ECClient->SetForceZlib(m_forceZLIB);
 		m_ECClient->SetCanAEAD(m_ECEncryption);
 		m_ECClient->SetCanMultiSearch(m_canMultiSearch);
-		m_ECClient->SetCanChat(m_canChat);
+		m_ECClient->SetCanChatSessions(m_canChat);
 		// Bound the blocking EC connect so a wrong or unreachable host
 		// fails fast instead of hanging on the OS TCP connect timeout
 		// (which can be minutes). The GUI clients have their own async

@@ -410,7 +410,8 @@ int CamuleapiApp::OnRun()
 	m_canMultiSearch = true;
 
 	// Chat: amuleapi serves /chats from the daemon's session store, so it
-	// advertises EC_TAG_CAN_CHAT at login and the daemon echoes it back. The
+	// advertises EC_TAG_CAN_CHAT_SESSIONS at login and the daemon echoes it
+	// back when it serves those ops. The
 	// echo is what every chat endpoint gates on -- against a daemon that
 	// predates the ops, an unknown opcode asserts rather than failing, so
 	// they must answer 503 ec_unsupported instead of asking.

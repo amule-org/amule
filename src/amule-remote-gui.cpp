@@ -464,7 +464,7 @@ void CamuleRemoteGuiApp::OnPollTimer(wxTimerEvent &)
 		// children. Gated on the capability; a daemon that never echoes
 		// EC_TAG_CAN_CHAT does not know these opcodes, and sending one
 		// asserts on the daemon before it can answer EC_OP_FAILED.
-		if (m_connect->ServerSupportsChat()) {
+		if (m_connect->ServerSupportsChatSessions()) {
 			CECPacket chat_req(EC_OP_GET_CHAT_SESSIONS);
 			if (m_chatmsg_handler.Cursor()) {
 				chat_req.AddTag(CECTag(EC_TAG_CHAT_MSG_ID, m_chatmsg_handler.Cursor()));
@@ -625,8 +625,8 @@ bool CamuleRemoteGuiApp::OnInit()
 	m_connect->SetCanMultiSearch(true);
 	// amulegui shows incoming friend/chat messages read-only; ask the daemon
 	// to relay them (polled via EC_OP_GET_CHAT_MESSAGES). An old daemon won't
-	// echo the capability and amulegui simply never polls (ServerSupportsChat()).
-	m_connect->SetCanChat(true);
+	// echo the capability and amulegui simply never polls (ServerSupportsChatSessions()).
+	m_connect->SetCanChatSessions(true);
 	// The ForceZLIB override is read from the connection dialog
 	// (see ShowConnectionDialog) so the user's checkbox choice in this
 	// session overrides the persisted /EC/ForceZLIB value.
@@ -757,7 +757,7 @@ void CamuleRemoteGuiApp::ResetEcConnect()
 	wxConfig::Get()->Read("/EC/ZLIB", &enableZLIB, 1);
 	m_connect->SetCapabilities(enableZLIB != 0, true, false);
 	m_connect->SetCanMultiSearch(true);
-	m_connect->SetCanChat(true);
+	m_connect->SetCanChatSessions(true);
 }
 
 void CamuleRemoteGuiApp::OnECConnection(wxEvent &event)

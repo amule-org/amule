@@ -301,6 +301,7 @@ EC_OP_AUTH_REQ (0x02)
     +-- EC_TAG_CAN_CHAT               (0x16) (optional, advertises capability)
     +-- EC_TAG_CAN_SHAREDDIRS_CONFIG  (0x17) (optional, advertises capability)
     +-- EC_TAG_CAN_SEARCH_LIST        (0x1a) (optional, advertises capability)
+    +-- EC_TAG_CAN_CHAT_SESSIONS      (0x27) (optional, advertises capability)
 ```
 
 Each `EC_TAG_CAN_*` is an empty tag advertising support for one
@@ -320,8 +321,9 @@ confirmation — the server does not echo those two tags.
 
 **Feature capabilities** gate whole operations rather than the framing:
 `EC_TAG_CAN_PARTIAL_UPDATE`, `EC_TAG_CAN_MULTI_SEARCH`,
-`EC_TAG_CAN_CHAT`, `EC_TAG_CAN_SHAREDDIRS_CONFIG`,
-`EC_TAG_CAN_SEARCH_LIST`, `EC_TAG_CAN_SEARCH_PROGRESS_UNION`. The server
+`EC_TAG_CAN_CHAT`, `EC_TAG_CAN_CHAT_SESSIONS`,
+`EC_TAG_CAN_SHAREDDIRS_CONFIG`, `EC_TAG_CAN_SEARCH_LIST`,
+`EC_TAG_CAN_SEARCH_PROGRESS_UNION`. The server
 echoes each of these in its `EC_OP_AUTH_OK` response when it supports it,
 so the client learns what is negotiated for this connection.
 
@@ -512,7 +514,13 @@ isn't immediately obvious or has changed across protocol versions.
 
 Peer chat is served from a session store in the core, shared by the
 built-in GUI and every EC client, so all of them see one transcript.
-Gated by `EC_TAG_CAN_CHAT` (`0x16`).
+
+Gated by `EC_TAG_CAN_CHAT_SESSIONS` (`0x27`), which is **not** the older
+`EC_TAG_CAN_CHAT` (`0x16`). The two are deliberately distinct: `0x16`
+predates these operations and is echoed by servers that implement none
+of them, so a client gating on it would send `EC_OP_GET_CHAT_SESSIONS`
+to a server whose dispatcher only knows how to assert on it. A client
+must send none of the operations below unless it saw `0x27` echoed.
 
 | Tag                     | Code     | Type     | Description |
 | ----------------------- | -------- | -------- | ----------- |
