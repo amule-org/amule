@@ -370,6 +370,25 @@ protected:
 	//! OnKeyDown).
 	void RaiseItemContextMenu();
 
+	/**
+	 * Re-baselines the widths the idle poll compares against.
+	 *
+	 * Call after changing a column width programmatically, so the poll reads
+	 * the result as the status quo rather than as a user drag. Takes the
+	 * widths the control actually ended up with, which is not always what was
+	 * asked for -- GTK clamps a column to a minimum derived from its header
+	 * and contents, so a narrow request comes back wider.
+	 *
+	 * Without it a programmatic width change is indistinguishable from a
+	 * drag, and any list that rebroadcasts on OnColumnWidthsChanged() feeds
+	 * its own echo: CSearchListCtrl mirrors widths to the other search tabs,
+	 * each of which then saw "its" widths change and mirrored them back. Two
+	 * tabs whose clamped minimums differ never agree on a value, so the pair
+	 * oscillated indefinitely, repainting on every hop, long after the mouse
+	 * was released (issue #1022).
+	 */
+	void ResetKnownWidths();
+
 private:
 	//! Per-column hidden state, indexed like the control's columns.
 	std::vector<bool> m_columnHidden;

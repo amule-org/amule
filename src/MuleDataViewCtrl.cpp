@@ -192,10 +192,19 @@ void CMuleDataViewCtrl::InitColumnState()
 #endif
 
 	m_columnHidden.resize(RealColumnCount(), false);
+	ResetKnownWidths();
+}
+
+void CMuleDataViewCtrl::ResetKnownWidths()
+{
 	m_lastKnownWidths.clear();
 	for (unsigned i = 0; i < RealColumnCount(); ++i) {
 		m_lastKnownWidths.push_back(GetColumn(i)->GetWidth());
 	}
+	// A programmatic change is not a drag in progress, so nothing is pending
+	// either -- otherwise the next quiet idle would report a resize that the
+	// user never made.
+	m_widthsSettling = false;
 }
 
 bool CMuleDataViewCtrl::IsColumnHidden(int col) const

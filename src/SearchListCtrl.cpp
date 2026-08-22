@@ -554,6 +554,20 @@ void CSearchListCtrl::SyncLists(CSearchListCtrl *src, CSearchListCtrl *dst)
 	}
 	dst->UpdateExpanderColumn();
 
+	// Re-baseline what dst's idle poll compares against, so the widths just
+	// written read as the status quo rather than as a drag the user made
+	// there. Without this the mirror echoes: dst notices "its" widths moved,
+	// runs its own OnColumnWidthsChanged(), and mirrors them straight back.
+	//
+	// That echo does not die out on its own. GTK clamps a column to a minimum
+	// taken from its header and contents, so a width that fits one tab comes
+	// back wider in another holding different results -- the two tabs never
+	// converge on a value and hand it back and forth indefinitely, repainting
+	// each time, long after the mouse was released. It showed up on the
+	// columns that were empty in one of the tabs, since those are the ones
+	// whose clamped minimum differs (issue #1022).
+	dst->ResetKnownWidths();
+
 	if (dst->m_sort_orders.empty() || src->m_sort_orders.empty() ||
 		dst->m_sort_orders.front() != src->m_sort_orders.front()) {
 		dst->m_sort_orders = src->m_sort_orders;
