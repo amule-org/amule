@@ -361,7 +361,6 @@ protected:
 
 	void OnRightClick(wxDataViewEvent &event);
 	void OnItemActivated(wxDataViewEvent &event);
-	void OnSelectionChanged(wxDataViewEvent &event);
 
 	void OnPopupGetUrl(wxCommandEvent &event);
 	void OnRazorStatsCheck(wxCommandEvent &event);

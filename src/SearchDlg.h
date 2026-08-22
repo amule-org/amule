@@ -313,6 +313,9 @@ private:
 	// Persists the chosen search type so it survives a restart (amule-org/amule#608).
 	void OnSearchTypeChanged(wxCommandEvent &evt);
 
+	// Recomputes the Download button from the visible list's selection; see
+	// the definition for why both callers go through it.
+	void UpdateDownloadButtonState();
 	void OnListItemSelected(wxDataViewEvent &ev);
 	void OnBnClickedReset(wxCommandEvent &ev);
 	void OnBnClickedClear(wxCommandEvent &ev);
