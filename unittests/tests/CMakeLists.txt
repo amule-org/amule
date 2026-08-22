@@ -713,11 +713,11 @@ target_link_libraries (RefresherTest
 	wxWidgets::NET
 )
 
-# CListColumnStore maps a column id to its persistence key and default width.
-# The key is the on-disk config format, so the id a caller registers has to be
-# the id it looks the column up by -- a registry that renumbered stored ids
-# would hand a saved width back to the wrong column, with nothing to see. Needs
-# no GUI: the registry half of the class is plain wxString bookkeeping.
+# CompleteSourcesNeedRecompute decides whether the complete-sources throttle
+# must be bypassed because the upload list went empty. #1052 added that bypass
+# but guarded it on the scalar alone, leaving Hi stale (#1065), so the
+# predicate now lives in a header of its own: CKnownFile reaches theApp and
+# cannot be linked into a test.
 add_executable (CompleteSourcesThrottleTest
 	CompleteSourcesThrottleTest.cpp
 )
@@ -739,6 +739,11 @@ target_link_libraries (CompleteSourcesThrottleTest
 	mulecommon
 )
 
+# CListColumnStore maps a column id to its persistence key and default width.
+# The key is the on-disk config format, so the id a caller registers has to be
+# the id it looks the column up by -- a registry that renumbered stored ids
+# would hand a saved width back to the wrong column, with nothing to see. Needs
+# no GUI: the registry half of the class is plain wxString bookkeeping.
 add_executable (ListColumnStoreTest
 	ListColumnStoreTest.cpp
 	${CMAKE_SOURCE_DIR}/src/ListColumnStore.cpp
