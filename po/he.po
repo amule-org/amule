@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-22 15:15+0200\n"
+"POT-Creation-Date: 2026-08-22 19:49+0200\n"
 "PO-Revision-Date: 2026-08-22 15:32+0000\n"
 "Last-Translator: Peace Kramer <kpeace1@gmail.com>\n"
 "Language-Team: Hebrew\n"
@@ -1012,11 +1012,6 @@ msgid "Unknown"
 msgstr "לא ידוע"
 
 #: src/BaseClient.cpp
-#, c-format
-msgid "Failed to retrieve shared files from user '%s'"
-msgstr "הניסיון לקבל את רשימת הקבצים המשותפים מהמשתמש '%s' כשלה."
-
-#: src/BaseClient.cpp
 msgid "Searching buddy for lowid connection"
 msgstr ""
 
@@ -1037,6 +1032,11 @@ msgstr "אקס-מיול (חיקוי אימיול)"
 #, c-format
 msgid "1.x (based on eMule v0.%u)"
 msgstr "1.איקס (מבוסס על אימיול בגרסת 0.%u)"
+
+#: src/BaseClient.cpp
+#, c-format
+msgid "Failed to retrieve shared files from user '%s'"
+msgstr "הניסיון לקבל את רשימת הקבצים המשותפים מהמשתמש '%s' כשלה."
 
 #: src/BaseClient.cpp
 #, c-format

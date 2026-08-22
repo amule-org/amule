@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-22 15:15+0200\n"
+"POT-Creation-Date: 2026-08-22 19:49+0200\n"
 "PO-Revision-Date: 2026-08-22 15:16+0000\n"
 "Last-Translator: minterior <minterior@gmail.com>\n"
 "Language-Team: Català\n"
@@ -1021,11 +1021,6 @@ msgid "Unknown"
 msgstr "Desconegut"
 
 #: src/BaseClient.cpp
-#, c-format
-msgid "Failed to retrieve shared files from user '%s'"
-msgstr "No s'han pogut obtenir els compartits de l'usuari '%s'"
-
-#: src/BaseClient.cpp
 msgid "Searching buddy for lowid connection"
 msgstr "Buscant amic per connexió amb ID Baixa"
 
@@ -1046,6 +1041,11 @@ msgstr "xMule (eMule fals)"
 #, c-format
 msgid "1.x (based on eMule v0.%u)"
 msgstr "1.x (basat en l'eMule v0.%u)"
+
+#: src/BaseClient.cpp
+#, c-format
+msgid "Failed to retrieve shared files from user '%s'"
+msgstr "No s'han pogut obtenir els compartits de l'usuari '%s'"
 
 #: src/BaseClient.cpp
 #, c-format

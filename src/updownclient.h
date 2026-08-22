@@ -506,6 +506,22 @@ public:
 	// Push the current bar value into CSearchList's browse-bar cache (keyed by
 	// GetBrowseRoutingId), so both the monolithic bar and the EC reply see it.
 	void UpdateBrowseBar();
+	/**
+	 * End a browse this client can no longer carry; no-op when none is pending.
+	 *
+	 * Clears the in-flight flag BEFORE the terminal mark, the order every
+	 * other terminal path takes, so a later request for this peer starts a
+	 * fresh browse instead of joining a dead one -- the invariant the EC
+	 * browse handler's join relies on (ExternalConn.cpp).
+	 */
+	void FailPendingBrowse();
+	/**
+	 * Whether anything is still on its way to or from this peer: a live
+	 * connection, a direct UDP callback, or a server/Kad callback we asked
+	 * for. False means nothing will arrive on its own, so a browse waiting on
+	 * this client can be failed at once instead of hanging.
+	 */
+	bool IsPeerContactPending() const;
 
 	void ResetFileStatusInfo();
 

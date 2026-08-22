@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-22 15:15+0200\n"
+"POT-Creation-Date: 2026-08-22 19:49+0200\n"
 "PO-Revision-Date: 2026-08-22 15:50+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -1025,11 +1025,6 @@ msgid "Unknown"
 msgstr "未知"
 
 #: src/BaseClient.cpp
-#, c-format
-msgid "Failed to retrieve shared files from user '%s'"
-msgstr "无法获取用户 %s 的共享文件"
-
-#: src/BaseClient.cpp
 msgid "Searching buddy for lowid connection"
 msgstr "正在搜索好友进行 Low ID 连接"
 
@@ -1050,6 +1045,11 @@ msgstr "xMule (假冒 eMule)"
 #, c-format
 msgid "1.x (based on eMule v0.%u)"
 msgstr "1.x (基于 eMule v0.%u)"
+
+#: src/BaseClient.cpp
+#, c-format
+msgid "Failed to retrieve shared files from user '%s'"
+msgstr "无法获取用户 %s 的共享文件"
 
 #: src/BaseClient.cpp
 #, c-format

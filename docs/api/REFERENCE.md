@@ -1196,6 +1196,8 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
 { "ok": true, "search_id": 17 }
 ```
 
+A browse the daemon cannot even start — a LowID peer it has no way to call back, for instance — is reported as `finished` immediately rather than left pending: no connection is attempted, so there is nothing to wait for. It carries no results, the same as a browse the peer denied.
+
 **Idempotent while a browse is running.** Asking again for a peer that is already being browsed returns **the same `search_id`** rather than starting a second browse — amuled will not re-ask a peer that is still answering, so a second id would name a browse that never happens. Two clicks therefore leave one browse, one id and one entry on [`GET /api/v0/search`](#get-apiv0search). Once that browse has settled, a fresh request starts a new one with a new id.
 
 Status `202 Accepted` — the browse was started, not completed. Then poll:

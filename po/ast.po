@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-22 15:15+0200\n"
+"POT-Creation-Date: 2026-08-22 19:49+0200\n"
 "PO-Revision-Date: 2026-08-22 15:11+0000\n"
 "Last-Translator: astur <malditoastur@gmail.com>\n"
 "Language-Team: Language ast <malditoastur@gmail.com>\n"
@@ -1022,11 +1022,6 @@ msgid "Unknown"
 msgstr "Desconocíu"
 
 #: src/BaseClient.cpp
-#, c-format
-msgid "Failed to retrieve shared files from user '%s'"
-msgstr "Fallu al obtener la llista de compartíos del usuariu '%s'"
-
-#: src/BaseClient.cpp
 msgid "Searching buddy for lowid connection"
 msgstr "Guetando a un collaciu con conexón idbaxa"
 
@@ -1047,6 +1042,11 @@ msgstr "xMule (Falsu eMule)"
 #, c-format
 msgid "1.x (based on eMule v0.%u)"
 msgstr "1.x (basáu en eMule v0.%u)"
+
+#: src/BaseClient.cpp
+#, c-format
+msgid "Failed to retrieve shared files from user '%s'"
+msgstr "Fallu al obtener la llista de compartíos del usuariu '%s'"
 
 #: src/BaseClient.cpp
 #, c-format

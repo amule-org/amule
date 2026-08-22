@@ -19,7 +19,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-22 15:15+0200\n"
+"POT-Creation-Date: 2026-08-22 19:49+0200\n"
 "PO-Revision-Date: 2026-08-22 15:34+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
@@ -1035,11 +1035,6 @@ msgid "Unknown"
 msgstr "Sconosciuto"
 
 #: src/BaseClient.cpp
-#, c-format
-msgid "Failed to retrieve shared files from user '%s'"
-msgstr "Impossibile ricevere i file condivisi dall'utente '%s'"
-
-#: src/BaseClient.cpp
 msgid "Searching buddy for lowid connection"
 msgstr "Ricerca amico per connessione con ID basso"
 
@@ -1060,6 +1055,11 @@ msgstr "xMule (falso eMule)"
 #, c-format
 msgid "1.x (based on eMule v0.%u)"
 msgstr "1.x (basato su eMule v0.%u)"
+
+#: src/BaseClient.cpp
+#, c-format
+msgid "Failed to retrieve shared files from user '%s'"
+msgstr "Impossibile ricevere i file condivisi dall'utente '%s'"
 
 #: src/BaseClient.cpp
 #, c-format
