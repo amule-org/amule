@@ -27,6 +27,8 @@
 
 #include "KnownFile.h" // Do_not_auto_remove
 
+#include "CompleteSourcesThrottle.h" // CompleteSourcesNeedRecompute
+
 #include <protocol/kad/Constants.h>
 #include <protocol/ed2k/Client2Client/TCP.h>
 #include <protocol/ed2k/ClientSoftware.h>
@@ -1658,9 +1660,17 @@ void CKnownFile::UpdatePartsInfo()
 	// certain and free -- no peers, no complete sources -- is not worth
 	// deferring.
 	//
-	// Guarded on the value actually being non-zero, so a file that has already
-	// settled at 0 does not re-enter the recompute on every later call.
-	if (!flag && m_ClientUploadList.empty() && m_nCompleteSourcesCount != 0) {
+	// Guarded on the values actually being non-zero, so a file that has already
+	// settled at 0 does not re-enter the recompute on every later call. All
+	// three exported fields are asked, not just the scalar: Hi is a percentile
+	// of the peers' self-reported counts, floored at the scalar but never tied
+	// to it, so it can still be non-zero once the scalar has reached 0 -- and
+	// Hi is what the desktop column and the Web UI detail panel render
+	// (issue #1065). See CompleteSourcesNeedRecompute().
+	if (!flag && CompleteSourcesNeedRecompute(m_ClientUploadList.empty(),
+			     m_nCompleteSourcesCount,
+			     m_nCompleteSourcesCountLo,
+			     m_nCompleteSourcesCountHi)) {
 		flag = true;
 	}
 

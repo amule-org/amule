@@ -718,6 +718,27 @@ target_link_libraries (RefresherTest
 # the id it looks the column up by -- a registry that renumbered stored ids
 # would hand a saved width back to the wrong column, with nothing to see. Needs
 # no GUI: the registry half of the class is plain wxString bookkeeping.
+add_executable (CompleteSourcesThrottleTest
+	CompleteSourcesThrottleTest.cpp
+)
+
+add_test (NAME CompleteSourcesThrottleTest
+	COMMAND CompleteSourcesThrottleTest
+)
+
+target_include_directories (CompleteSourcesThrottleTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+
+# mulecommon even though the header is inline-only: macOS links without it,
+# GNU ld and mingw do not.
+target_link_libraries (CompleteSourcesThrottleTest
+	muleunit
+	mulecommon
+)
+
 add_executable (ListColumnStoreTest
 	ListColumnStoreTest.cpp
 	${CMAKE_SOURCE_DIR}/src/ListColumnStore.cpp
