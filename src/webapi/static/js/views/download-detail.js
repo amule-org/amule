@@ -47,7 +47,10 @@ export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDele
   const media = d.media;
   // Empty when the daemon has sent no chunk map: the bar is skipped entirely
   // rather than drawn as an empty track claiming "0 pieces", matching the
-  // shared panel's handling of a share whose RLE decode has not landed.
+  // shared panel's handling of a share whose RLE decode has not landed. A
+  // running re-hash replaces this bar (the chunk map is stale by definition
+  // then), but not the percent bar above -- that is the download's own
+  // completeness.
   const parts = (d.progress && d.progress.parts) || [];
   const eta = (d.remaining_time == null || d.remaining_time < 0) ? "—" : formatDuration(d.remaining_time);
 
@@ -93,7 +96,10 @@ export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDele
       <div class="detail-sections">
         <div class="detail-progress">
           <${ProgressBar} percent=${d.progress && d.progress.percent} />
-          ${parts.length ? html`
+          ${d.hashing_progress > 0 && d.part_count ? html`
+            <${PiecesBar} mode="hashing" total=${d.part_count} hashed=${d.hashing_progress} />
+            <${PiecesLegend} mode="hashing" total=${d.part_count} hashed=${d.hashing_progress} />`
+          : parts.length ? html`
             <${PiecesBar} parts=${parts} />
             <${PiecesLegend} parts=${parts} />` : null}
         </div>

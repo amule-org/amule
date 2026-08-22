@@ -7,14 +7,15 @@
 // bar, not a progress bar: a shared file is 100% local by definition, so what
 // `parts[].sources` describes is how well each part is replicated across the
 // network (red = no other peer has it). Absent until the daemon's RLE decode
-// for this file has landed.
+// for this file has landed. While a re-hash runs the hashing bar replaces it,
+// the same precedence CSharedFilesCtrl::GetItemBarFill applies.
 
 import { api } from "../api.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
-import { Placeholder, PiecesBar, PiecesLegend, toast, Section, statRow, IdentityLine, copyText, Tabs, CommentEditor, RenameForm } from "../components.js";
+import { Placeholder, PiecesBar, PiecesLegend, toast, confirmDialog, Section, statRow, IdentityLine, copyText, Tabs, CommentEditor, RenameForm } from "../components.js";
 import { formatBytes, formatInt, formatDuration, formatSpeed, formatTimestamp, twin } from "../format.js";
 import { FileClients, HIDDEN_EVERYWHERE } from "./client-table.js";
-import { t } from "../i18n.js";
+import { t, terr } from "../i18n.js";
 
 const PRIORITIES = ["very_low", "low", "normal", "high", "release"];
 
@@ -66,6 +67,18 @@ export function SharedDetail({ hash }) {
     .then(() => toast(t("downloads_detail_copied"), "success"))
     .catch(() => toast(t("downloads_detail_copy_failed"), "error"));
 
+  // POST answers 202 as soon as amuled queues the task, so the toast can only
+  // say the check *started*: the verdict is a log line (ThreadTasks.cpp
+  // PrintReport), never a REST response. The 409 for a file that turned
+  // partfile between the fetch and the click needs no branch -- terr() maps it.
+  const verify = async () => {
+    if (!(await confirmDialog(t("shared_verify_confirm", { name: s.name })))) return;
+    try {
+      await api.post("shared/" + s.hash + "/verify");
+      toast(t("shared_verify_started"), "info");
+    } catch (e) { toast(terr(e), "error"); }
+  };
+
   return html`
     <div class="detail-panel">
       <div class="detail-head">
@@ -95,7 +108,11 @@ export function SharedDetail({ hash }) {
         </div>
       ` : html`
       <div class="detail-sections">
-        ${s.parts && s.parts.length ? html`
+        ${s.hashing_progress > 0 && s.part_count ? html`
+        <div class="detail-progress">
+          <${PiecesBar} mode="hashing" total=${s.part_count} hashed=${s.hashing_progress} />
+          <${PiecesLegend} mode="hashing" total=${s.part_count} hashed=${s.hashing_progress} />
+        </div>` : s.parts && s.parts.length ? html`
         <div class="detail-progress">
           <${PiecesBar} mode="availability" parts=${s.parts} />
           <${PiecesLegend} mode="availability" parts=${s.parts} />
@@ -116,7 +133,12 @@ export function SharedDetail({ hash }) {
           statRow("shared_priority", prioLabel(s), "shared_detail_tip_priority"),
           statRow("downloads_detail_queued", formatInt(s.queued_count), "downloads_detail_tip_queued"),
           statRow("shared_detail_file_type", s.file_type || "—", "shared_detail_tip_file_type"),
-        ], "shared_detail_group_file")}
+        ], "shared_detail_group_file", html`
+          <button class="btn btn-sm admin-only" type="button" disabled=${!!s.incomplete}
+                  title=${t(s.incomplete ? "shared_verify_tip_partfile" : "shared_verify_tip")}
+                  onClick=${verify}>
+            ${t("shared_verify")}
+          </button>`)}
         ${media ? Section([
           media.title ? statRow("downloads_detail_media_title", media.title, "downloads_detail_tip_media_title") : null,
           media.artist ? statRow("downloads_detail_media_artist", media.artist, "downloads_detail_tip_media_artist") : null,

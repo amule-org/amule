@@ -1,12 +1,13 @@
 // Shared files view: list published files with session/total transfer,
 // request and accept counters; change upload priority (per-row or bulk),
-// multi-select with select-all, text filter, live totals, reload shares.
+// multi-select with select-all, text filter, live totals, reload shares,
+// bulk Verify Local Data over the selection.
 // Live via the SSE "shared" channel.
 
 import { api, bulkFailures } from "../api.js";
 import { data } from "../events.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
-import { Placeholder, toast } from "../components.js";
+import { Placeholder, toast, confirmDialog } from "../components.js";
 import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker } from "../table.js";
 import { formatBytes, formatFreeSpace, formatInt, formatSpeed, formatTimestamp, twin } from "../format.js";
 import { t, tn, terr } from "../i18n.js";
@@ -23,6 +24,7 @@ export default function Shared({ isGuest }) {
   const { sortKey, sortDir, hidden, widths, toggleSort, toggleCol, setWidth, resetPrefs } =
     useTablePrefs("shared", { sortKey: "name", sortDir: 1, hidden: ["last_upload", "shared_since"] });
   const [filterText, setFilterText] = useState("");
+  const [verifying, setVerifying] = useState(false);
   const [detailHash, setDetailHash] = useState(null); // row shown in the detail panel
 
   // Open (or toggle closed) the detail panel; ignore clicks on a row's own
@@ -67,6 +69,35 @@ export default function Shared({ isGuest }) {
       else toast(t("shared_toast_done"), "success");
     } catch (e) { toast(terr(e) || t("shared_error"), "error"); }
     data.refresh("shared");
+  };
+  // Re-hash every selected file against its hashset.
+  //
+  // ponytail: N sequential POSTs -- there is no bulk verify endpoint, and each
+  // call is an EC roundtrip, so they are not fired in parallel. Switch to one
+  // call if the API ever grows POST /shared/verify.
+  //
+  // Ineligible rows cannot be filtered out up front: `incomplete` is
+  // detail-only, so a still-downloading file is discovered from its own 409
+  // and counts as a failure -- cheaper than a detail fetch per selected row.
+  // The button is disabled for the whole run: unlike its single-request
+  // siblings this loop stays in flight for seconds, and a second click would
+  // queue every selected file for a re-hash twice.
+  const bulkVerify = async () => {
+    const hashes = Array.from(selection);
+    if (!hashes.length) { toast(t("shared_toast_no_files_selected"), "warn"); return; }
+    if (!(await confirmDialog(tn("shared_verify_confirm_selected", hashes.length)))) return;
+    setVerifying(true);
+    const failed = [];
+    try {
+      for (const h of hashes) {
+        try { await api.post("shared/" + h + "/verify"); }
+        catch (e) { failed.push(e); }
+      }
+    } finally { setVerifying(false); }
+    if (failed.length)
+      toast(t("common_bulk_partial", { failed: failed.length, total: hashes.length,
+              message: terr(failed[0]) }), "warn");
+    else toast(tn("shared_verify_started_selected", hashes.length), "info");
   };
   const reload = async () => {
     try { await api.post("shared/reload"); toast(t("shared_toast_reloading"), "success"); setTimeout(() => data.refresh("shared"), 1500); }
@@ -154,6 +185,8 @@ export default function Shared({ isGuest }) {
             <option value="">${t("shared_priority")}…</option>
             ${PRIORITIES.map(([v, l]) => html`<option value=${v}>${l}</option>`)}
           </select>
+          <button class="btn btn-sm" onClick=${bulkVerify} disabled=${verifying}
+                  title=${t("shared_verify_tip")}>${t("shared_verify")}</button>
           <span class="selected-count">${t("shared_selected")} ${selectedCount}</span>
           <span class="vsep" aria-hidden="true"></span>
           <button class="btn btn-sm" onClick=${reload}>${t("shared_refresh_shares")}</button>

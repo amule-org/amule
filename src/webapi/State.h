@@ -155,7 +155,7 @@ struct FileSnapshot
 		std::uint32_t last_changed = 0;          // unix ts of last change
 		std::uint32_t download_active_time = 0;  // seconds downloading
 		std::uint16_t available_part_count = 0;  // parts across sources
-		std::uint16_t hashing_progress = 0;      // part being hashed
+		std::uint16_t hashing_progress = 0;      // parts hashed so far; 0 = idle
 		std::uint64_t lost_to_corruption = 0;    // bytes
 		std::uint64_t gained_by_compression = 0; // bytes
 		std::uint32_t saved_by_ich = 0;          // packets recovered by ICH
