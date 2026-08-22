@@ -72,6 +72,7 @@
 #include "ExternalConn.h"         // Needed for ExternalConn & MuleConnection
 #include <common/FileFunctions.h> // Needed for CDirIterator
 #include "FriendList.h"           // Needed for CFriendList
+#include "ChatSessionStore.h"     // Needed for CChatSessionStore
 #include "HTTPDownload.h"         // Needed for CHTTPDownloadThread
 #include "InternalEvents.h"       // Needed for CMuleInternalEvent
 #include "IPFilter.h"             // Needed for CIPFilter
@@ -223,6 +224,7 @@ CamuleApp::CamuleApp()
 	theApp = &wxGetApp();
 
 	clientlist = NULL;
+	chatsessions = NULL;
 	searchlist = NULL;
 	knownfiles = NULL;
 	canceledfiles = NULL;
@@ -400,6 +402,9 @@ int CamuleApp::OnExit()
 
 	delete friendlist;
 	friendlist = NULL;
+
+	delete chatsessions;
+	chatsessions = NULL;
 
 	// Destroying CDownloadQueue calls destructor for CPartFile
 	// calling CSharedFileList::SafeAddKFile occasionally.
@@ -863,6 +868,7 @@ bool CamuleApp::OnInit()
 
 	clientlist = new CClientList();
 	friendlist = new CFriendList();
+	chatsessions = new CChatSessionStore();
 	searchlist = new CSearchList();
 	knownfiles = new CKnownFileList();
 	canceledfiles = new CCanceledFileList;
