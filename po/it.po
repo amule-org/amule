@@ -19,7 +19,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-22 00:01+0200\n"
+"POT-Creation-Date: 2026-08-22 12:11+0200\n"
 "PO-Revision-Date: 2026-08-21 19:10+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
@@ -6406,6 +6406,20 @@ msgstr "Impossibile avviare ricerche con eD2k e Kademlia entrambi disabilitati."
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
 msgid "Search error"
 msgstr "Errore di ricerca"
+
+#: src/SearchDlg.cpp
+msgid ""
+"An eD2k search is still running. Starting a new one will stop it, because the eD2k protocol allows only one search at a time.\n"
+"\n"
+"Results already found are kept; only new ones stop arriving.\n"
+"\n"
+"Start the new search anyway?"
+msgstr ""
+
+#: src/SearchDlg.cpp
+#, fuzzy
+msgid "Search in progress"
+msgstr "Avanzamento ricerca: %u %% \n"
 
 #: src/SearchDlg.cpp
 msgid "Min size must be smaller than max size. Max size ignored."

@@ -237,6 +237,26 @@ public:
 	// tab only, so each search's lifecycle is tracked independently.
 	void UpdateSearchProgress(uint32 searchID, uint32 status);
 
+	/**
+	 * Is one of the open tabs an ed2k search that is still running?
+	 *
+	 * eD2k replies carry no search identifier -- neither the server's TCP
+	 * reply nor the global UDP results -- so a client can only attribute
+	 * incoming results to the query it sent most recently. Starting a second
+	 * ed2k search therefore finalises the one in flight, and the user gets no
+	 * say. This answers whether there is such a search to warn about.
+	 *
+	 * Kad tabs and "View Files" browse tabs are excluded: Kad results carry
+	 * their own search ID so those genuinely run in parallel, and a browse is
+	 * not an ed2k search at all.
+	 *
+	 * Where the running/finished answer comes from differs between the two
+	 * builds -- the local search list monolithically, the sentinel the daemon
+	 * pushes in the remote GUI -- so it is resolved here and every caller asks
+	 * the same question.
+	 */
+	bool HasRunningEd2kSearch() const;
+
 	void UpdateProgress(uint32 new_value);
 
 #ifndef CLIENT_GUI

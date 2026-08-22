@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-22 00:01+0200\n"
+"POT-Creation-Date: 2026-08-22 12:11+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -6258,6 +6258,19 @@ msgstr ""
 
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
 msgid "Search error"
+msgstr ""
+
+#: src/SearchDlg.cpp
+msgid ""
+"An eD2k search is still running. Starting a new one will stop it, because the eD2k protocol allows only one search at a time.\n"
+"\n"
+"Results already found are kept; only new ones stop arriving.\n"
+"\n"
+"Start the new search anyway?"
+msgstr ""
+
+#: src/SearchDlg.cpp
+msgid "Search in progress"
 msgstr ""
 
 #: src/SearchDlg.cpp
