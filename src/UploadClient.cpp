@@ -247,16 +247,25 @@ void CUpDownClient::ProcessExtendedInfo(const CMemFile *data, CKnownFile *tempre
 		}
 
 		if (GetExtendedRequestsVersion() > 1) {
-			uint16 nCompleteCountLast = GetUpCompleteSourcesCount();
-			uint16 nCompleteCountNew = data->ReadUInt16();
-			SetUpCompleteSourcesCount(nCompleteCountNew);
-			if (nCompleteCountLast != nCompleteCountNew) {
-				tempreqfile->UpdatePartsInfo();
-			}
+			// Still guarded, because this is where the count is read off the
+			// wire. The recompute it used to gate has moved below: the peer's
+			// self-reported total staying put says nothing about its part
+			// bitmap, which may well have changed in the same message.
+			SetUpCompleteSourcesCount(data->ReadUInt16());
 		}
 	}
 
 	m_uploadingfile->UpdateUpPartsFrequency(this, true); // Increment
+	// Unconditional now, where it used to be gated on the peer's self-reported
+	// complete-source total having changed -- which says nothing about its part
+	// bitmap, so the frequency vector could move without the count following
+	// (issue #1050). UpdatePartsInfo() is throttled to one real recompute a
+	// minute per file, so the extra calls cost a comparison.
+	//
+	// On tempreqfile, as before: the UDP/v3 callers pass a reqfile that is not
+	// necessarily this client's m_uploadingfile, and this change is about when
+	// the recompute happens, not which file it runs on.
+	tempreqfile->UpdatePartsInfo();
 
 	Notify_SharedCtrlRefreshClient(ECID(), AVAILABLE_SOURCE);
 }
@@ -268,6 +277,11 @@ void CUpDownClient::SetUploadFileID(CKnownFile *newreqfile)
 	} else if (m_uploadingfile) {
 		m_uploadingfile->RemoveUploadingClient(this);
 		m_uploadingfile->UpdateUpPartsFrequency(this, false); // Decrement
+		// The decrement side never recomputed, so the count was a high-water
+		// mark that only ever rose (issue #1050). This one call covers both the
+		// peer disconnecting (Safe_Delete -> SetUploadFileID(NULL)) and the peer
+		// switching to a different file.
+		m_uploadingfile->UpdatePartsInfo();
 	}
 
 	if (newreqfile) {
@@ -280,6 +294,7 @@ void CUpDownClient::SetUploadFileID(CKnownFile *newreqfile)
 		} else {
 			// this is the same file we already had assigned. Only update data.
 			newreqfile->UpdateUpPartsFrequency(this, true); // Increment
+			newreqfile->UpdatePartsInfo();
 		}
 
 		m_uploadingfile = newreqfile;
