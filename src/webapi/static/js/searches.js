@@ -313,13 +313,24 @@ export const searches = {
 
   // "View files": a browse is an ordinary search of kind "browse", so it gets
   // an ordinary tab. Generic, so any future entry point reuses it.
+  //
+  // Find-or-create, unlike start(): browsing a peer that is already being
+  // browsed returns the id already in flight (amule-org/amule#1059), so a
+  // second click lands on the tab that is already open. Overwriting it would
+  // throw away its results, its badge and its per-tab ui state (selection,
+  // filter, per-row category) for a browse that never restarted.
   async browse(ecid, name) {
     const r = await api.post("clients/" + ecid + "/shared_files");
     const id = r.search_id;
-    tabs.set(id, newTab({
-      id, query: name || "", label: name || "", kind: "browse",
-      state: "running", startedAt: nowSec(),
-    }));
+    const open = tabs.get(id);
+    if (open) {
+      if (name) { open.query = name; open.label = name; }
+    } else {
+      tabs.set(id, newTab({
+        id, query: name || "", label: name || "", kind: "browse",
+        state: "running", startedAt: nowSec(),
+      }));
+    }
     setActive(id);
     toast(t("search_toast_browse_started"), "info");
     if (location.hash !== "#/search") location.hash = "#/search";
