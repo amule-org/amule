@@ -27,7 +27,7 @@
 #define SHAREDFILELIST_H
 
 #include "SharedFilesReloadLatch.h" // Needed for CSharedFilesReloadLatch
-#include <atomic>                   // Needed for std::atomic (m_listGeneration)
+#include <atomic>                   // Needed for std::atomic (m_listGeneration, reloading)
 #include <functional>
 #include <list>
 #include <map>
@@ -293,7 +293,8 @@ private:
 		size_t &excluded,
 		bool &aborted);
 	void FindSharedFiles(const ReloadYieldCb &yieldCb, bool &aborted);
-	bool reloading;
+	// Atomic: RemoveFile() reads it off the upload worker thread (issue #1028).
+	std::atomic<bool> reloading;
 	// Set by RequestReload(), drained by Process(). The rules it enforces --
 	// coalescing, a mid-walk request belonging to the next walk, and an
 	// aborted walk giving its request back -- live in the latch so they can be

@@ -626,6 +626,12 @@ CKnownFile::~CKnownFile()
 
 void CKnownFile::SetFilePath(const CPath &filePath)
 {
+	// Only on a real change: MarkECChanged() below pushes the file into the next
+	// INC_UPDATE, and the shared-files walk re-stamps every known file on every
+	// reload (issue #1028).
+	if (m_filePath == filePath) {
+		return;
+	}
 	m_filePath = filePath;
 	// EC exports the path printable for non-partfiles (EC_TAG_KNOWNFILE_FILENAME).
 	MarkECChanged();
