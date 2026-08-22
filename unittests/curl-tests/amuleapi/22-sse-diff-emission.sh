@@ -159,6 +159,13 @@ if [ -n "$ADDED" ]; then
 	else
 		_fail "download_added .data.size" "not a number in $JSON"
 	fi
+	# Hashing progress rides the download event too (issue #1054), so a
+	# client watching the stream sees a Verify Local Data pass advance.
+	if echo "$JSON" | jq -e '.hashing_progress | type == "number"' >/dev/null 2>&1; then
+		_pass "download_added .data.hashing_progress is a number"
+	else
+		_fail "download_added .data.hashing_progress" "not a number in $JSON"
+	fi
 else
 	_fail "download_added missing" \
 		"no event with the Ubuntu ISO hash within 12 s; stream sample: $(head -30 "$SSE_OUT")"

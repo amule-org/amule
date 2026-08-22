@@ -669,3 +669,135 @@ TEST(EventDiff, ClientEventOmitsPartProgressPercentWithNoLinkedFile)
 	ASSERT_TRUE(payload.find("part_progress_percent") == std::string::npos);
 	ASSERT_TRUE(payload.find("-1") == std::string::npos);
 }
+
+// Hashing progress on the shared side (issue #1054). amuled emits one tag kind
+// per ECID, so a file that is both downloading and shared arrives only as
+// EC_TAG_PARTFILE and its hashing progress lands in the download sub-block.
+// SharedHashingProgress() is the fallback every shared-side consumer goes
+// through; these pin that the SSE payload and the equality test use it too,
+// since a shared row that never updates is the failure this hides behind.
+TEST(EventDiff, SharedEventCarriesHashingProgressFromTheSharedSide)
+{
+	CState state;
+	state.MutateShared([](FileMap &files) {
+		FileSnapshot f;
+		f.ecid = 11;
+		f.hash = "1111111111111111111111111111aaaa";
+		f.name = "complete.iso";
+		f.size = kPartSizeBytes * 4;
+		f.is_shared = true;
+		f.shared.hashing_progress = 2;
+		files.emplace(f.ecid, f);
+	});
+
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string payload;
+	for (const auto &e : DrainAll(bus)) {
+		if (e.name == "shared_added")
+			payload = e.data;
+	}
+	ASSERT_TRUE(!payload.empty());
+	ASSERT_TRUE(payload.find("\"hashing_progress\":2") != std::string::npos);
+}
+
+TEST(EventDiff, SharedEventFallsBackToTheDownloadSideHashingProgress)
+{
+	// The shared partfile case: shared.hashing_progress stays 0 because the
+	// tag never arrived on the KNOWNFILE variant, and the accessor reads
+	// across to the download sub-block.
+	CState state;
+	state.MutateShared([](FileMap &files) {
+		FileSnapshot f;
+		f.ecid = 12;
+		f.hash = "2222222222222222222222222222bbbb";
+		f.name = "in-progress.iso";
+		f.size = kPartSizeBytes * 4;
+		f.is_shared = true;
+		f.is_downloading = true;
+		f.download.hashing_progress = 3;
+		files.emplace(f.ecid, f);
+	});
+
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string payload;
+	for (const auto &e : DrainAll(bus)) {
+		if (e.name == "shared_added")
+			payload = e.data;
+	}
+	ASSERT_TRUE(!payload.empty());
+	ASSERT_TRUE(payload.find("\"hashing_progress\":3") != std::string::npos);
+}
+
+TEST(EventDiff, SharedUpdatedFiresWhenOnlyHashingProgressMoved)
+{
+	// EqualShared compares through the accessor, so a hash advancing on the
+	// download side of a shared partfile still pushes shared_updated. Comparing
+	// the raw shared field would hold every tick of it back.
+	CState state;
+	state.MutateShared([](FileMap &files) {
+		FileSnapshot f;
+		f.ecid = 13;
+		f.hash = "3333333333333333333333333333cccc";
+		f.name = "verifying.iso";
+		f.size = kPartSizeBytes * 4;
+		f.is_shared = true;
+		f.is_downloading = true;
+		f.download.hashing_progress = 1;
+		files.emplace(f.ecid, f);
+	});
+
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state); // cold start: shared_added
+	DrainAll(bus);
+
+	state.MutateShared([](FileMap &files) { files.find(13)->second.download.hashing_progress = 2; });
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string payload;
+	for (const auto &e : DrainAll(bus)) {
+		if (e.name == "shared_updated")
+			payload = e.data;
+	}
+	ASSERT_TRUE(!payload.empty());
+	ASSERT_TRUE(payload.find("\"hashing_progress\":2") != std::string::npos);
+}
+
+TEST(EventDiff, DownloadUpdatedFiresWhenOnlyHashingProgressMoved)
+{
+	// The download side needs the same treatment: hashing_progress used to be
+	// GET /downloads/{hash}-only and absent from EqualDownload, so a Verify
+	// Local Data pass produced no download_updated at all.
+	CState state;
+	state.MutateDownloads([](FileMap &files) {
+		FileSnapshot f;
+		f.ecid = 14;
+		f.hash = "4444444444444444444444444444dddd";
+		f.name = "checking.iso";
+		f.size = kPartSizeBytes * 4;
+		f.is_downloading = true;
+		files.emplace(f.ecid, f);
+	});
+
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+	DrainAll(bus);
+
+	state.MutateDownloads([](FileMap &files) { files.find(14)->second.download.hashing_progress = 5; });
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string payload;
+	for (const auto &e : DrainAll(bus)) {
+		if (e.name == "download_updated")
+			payload = e.data;
+	}
+	ASSERT_TRUE(!payload.empty());
+	ASSERT_TRUE(payload.find("\"hashing_progress\":5") != std::string::npos);
+}

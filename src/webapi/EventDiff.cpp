@@ -124,7 +124,7 @@ std::string ToJsonDownloadEvent(const FileSnapshot &f)
 	  << ",\"a4af\":" << f.download.sources_a4af << "}"
 	  << ",\"progress\":{\"percent\":" << JsonDoubleToString(f.download.percent) << "}"
 	  << ",\"kad_comment_search_running\":" << (f.download.kad_comment_searching ? "true" : "false")
-	  << "}";
+	  << ",\"hashing_progress\":" << f.download.hashing_progress << "}";
 	return o.str();
 }
 
@@ -168,7 +168,8 @@ std::string ToJsonSharedEvent(const FileSnapshot &f)
 	  << ",\"total\":" << f.shared.accepts_total << "}"
 	  << ",\"upload_speed_bps\":" << f.shared.upload_speed_bps
 	  << ",\"uploading\":" << f.shared.uploading_count << ",\"last_upload\":" << f.shared.last_upload
-	  << ",\"shared_since\":" << f.shared.shared_since << "}";
+	  << ",\"shared_since\":" << f.shared.shared_since
+	  << ",\"hashing_progress\":" << SharedHashingProgress(f) << "}";
 	return o.str();
 }
 
@@ -332,7 +333,8 @@ bool EqualDownload(const FileSnapshot &a, const FileSnapshot &b)
 	       a.download.sources_transferring == b.download.sources_transferring &&
 	       a.download.sources_a4af == b.download.sources_a4af &&
 	       a.download.percent == b.download.percent &&
-	       a.download.kad_comment_searching == b.download.kad_comment_searching;
+	       a.download.kad_comment_searching == b.download.kad_comment_searching &&
+	       a.download.hashing_progress == b.download.hashing_progress;
 }
 
 // Comment list equality (deliberately NOT part of EqualDownload — a comment
@@ -363,7 +365,12 @@ bool EqualShared(const FileSnapshot &a, const FileSnapshot &b)
 	       a.shared.accepts_total == b.shared.accepts_total &&
 	       a.shared.upload_speed_bps == b.shared.upload_speed_bps &&
 	       a.shared.uploading_count == b.shared.uploading_count &&
-	       a.shared.last_upload == b.shared.last_upload && a.shared.shared_since == b.shared.shared_since;
+	       a.shared.last_upload == b.shared.last_upload &&
+	       a.shared.shared_since == b.shared.shared_since &&
+	       // Through the accessor, not the raw field: a shared download's
+	       // progress lives on the download side, and comparing the raw
+	       // field would hold every tick of it back from shared_updated.
+	       SharedHashingProgress(a) == SharedHashingProgress(b);
 }
 bool Equal(const ServerSnapshot &a, const ServerSnapshot &b)
 {
