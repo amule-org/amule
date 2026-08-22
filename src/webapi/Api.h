@@ -264,8 +264,15 @@ private:
 	// One addressed EC exchange for stop / close / more: they differ only in
 	// opcode, the close flag and the success status, so the packet build,
 	// the EC_OP_FAILED mapping and the `{ok:true}` body live in one place.
-	CHttpServer::Response SendSearchOp(
-		ec_opcode_t opcode, std::uint32_t search_id, bool close, int success_status);
+	// `out_more_reaskable`, when given, receives the EC_TAG_SEARCH_MORE_REASKABLE
+	// bit from the reply as 1 or 0, or stays -1 when the daemon sent no such
+	// tag. Only EC_OP_SEARCH_REQUEST_MORE carries it; -1 is what an older
+	// daemon looks like and must never be read as "exhausted".
+	CHttpServer::Response SendSearchOp(ec_opcode_t opcode,
+		std::uint32_t search_id,
+		bool close,
+		int success_status,
+		int *out_more_reaskable = nullptr);
 	CHttpServer::Response HandleSearchDownload(const CHttpServer::Request &, const std::string &hash);
 	CHttpServer::Response HandleSearchComments(const CHttpServer::Request &, const std::string &hash);
 	CHttpServer::Response HandleSearchCommentsKadSearch(

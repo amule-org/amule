@@ -419,6 +419,36 @@ if [ "$CURL_STATUS" = "202" ]; then
 	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$KAD_SID/more"
 	_assert_status 202 "POST /search/{id}/more on a running Kad search → 202"
 	_assert_json_eq '.ok' true 'more response.ok==true'
+
+	# The timing edge, which is deterministic where the reask cap is not.
+	# Kad calls PrepareToStop on a keyword search 20 s before its 45 s life
+	# ends, and RequestMoreResults refuses from that moment on -- so a press
+	# made past roughly 55% of the ramp can never widen the search again and
+	# must answer 409 instead of a misleading 202.
+	#
+	# Deliberately NOT trying to exhaust the 4-reask budget: that needs four
+	# distinct responded peers inside the first 25 s and is not reproducible
+	# on a test daemon.
+	MORE_PCT=0
+	for _ in $(seq 1 40); do
+		sleep 2
+		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$KAD_SID/results"
+		MORE_PCT=$(printf '%s' "$CURL_BODY" | jq -r '.progress.percent // 0')
+		MORE_STATE=$(printf '%s' "$CURL_BODY" | jq -r '.progress.state')
+		[ "$MORE_STATE" = "finished" ] && break
+		# 65 is comfortably past the ~55% PrepareToStop point without waiting
+		# for the search to finish (which a finished search rejects with 400).
+		awk -v p="$MORE_PCT" 'BEGIN { exit !(p > 65) }' && break
+	done
+	if [ "$MORE_STATE" = "running" ] && awk -v p="$MORE_PCT" 'BEGIN { exit !(p > 65) }'; then
+		_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$KAD_SID/more"
+		_assert_status 409 "POST /search/{id}/more past the stopping window → 409"
+		_assert_json_eq '.error.code' kad_more_exhausted \
+			'a search that can no longer be widened reports kad_more_exhausted'
+	else
+		echo "    info: Kad search reached state=$MORE_STATE percent=$MORE_PCT;" \
+			"skipping the stopping-window 409 check"
+	fi
 	if [ "$HAVE_GUEST" = "1" ]; then
 		_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" \
 			"$HOST/api/v0/search/$KAD_SID/more"

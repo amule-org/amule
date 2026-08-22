@@ -113,6 +113,21 @@ public:
 	// dispatched, false if no eligible candidate remains.
 	bool RequestMoreResults();
 
+	// Whether this search could still be widened by a future reask, ignoring
+	// whether one is dispatchable right now.
+	//
+	// The distinction is the point. RequestMoreResults() returns false both
+	// when the search is finished with reasking for good (it is stopping, or
+	// the reask budget is spent) and when it simply has no un-reasked peer to
+	// send to *yet* -- and those want opposite answers from a UI. The first
+	// is terminal, so the "More" control should go away; the second clears as
+	// soon as another peer responds, so the control must stay.
+	//
+	// Callers pair the two as `fired || CanReaskMore()`. The `fired ||` is
+	// not optional: the reask that consumes the last of the budget really
+	// happens, and this predicate is already false by the time it returns.
+	bool CanReaskMore() const;
+
 	enum
 	{
 		NODE,

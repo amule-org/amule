@@ -404,6 +404,27 @@ private:
 	 */
 	std::set<CSearchListCtrl *> m_pendingHitCount;
 
+	// Kad searches whose "More" budget is spent, by searchID. The daemon
+	// reports this once per press and it never un-spends, so it is remembered
+	// here rather than re-asked: the button's enabled state is recomputed on
+	// every tab switch and progress tick, and without this a switch away and
+	// back would silently re-enable a control that can no longer do anything.
+	// Entries die with the tab (see the erase in the close path); re-running a
+	// search yields a new searchID and so starts clean.
+	std::set<uint32_t> m_moreExhausted;
+
+	// Whether the "More" button should be live for this search: Kad-only, and
+	// not already reported as un-widenable. Single home for a predicate that
+	// five separate sites otherwise have to keep in step.
+	bool MoreAllowed(uint32_t searchID) const;
+
+public:
+	// The daemon says this search can no longer be widened. Called from the
+	// remote GUI's reply handler (amuleGUI); the monolithic build reaches the
+	// same state straight from RequestMoreResults' return value.
+	void MarkMoreExhausted(uint32_t searchID);
+
+private:
 	void OnIdle(wxIdleEvent &evt);
 
 	/**

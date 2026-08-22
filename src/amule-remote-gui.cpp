@@ -3452,15 +3452,21 @@ bool CSearchListRem::RequestMoreResults(uint32_t searchID)
 	if (searchID == 0) {
 		return false;
 	}
-	// Ask the daemon to widen this Kad search (KADEMLIA_FIND_VALUE_MORE). Fire-
-	// and-forget, like StopSearchById: the daemon performs the re-ask; the rare
-	// "no peer left" outcome is not surfaced over EC, so the caller logs the
-	// request optimistically.
+	// Ask the daemon to widen this Kad search (KADEMLIA_FIND_VALUE_MORE).
+	// SendRequest, not SendPacket: the daemon answers with EC_OP_MISC_DATA
+	// carrying EC_TAG_SEARCH_MORE_REASKABLE, and HandlePacket below greys the
+	// button for that search when it says the reasking is over for good. This
+	// used to be fire-and-forget and returned an optimistic true, so a user
+	// could press "More" repeatedly against a daemon that was doing nothing.
+	//
+	// Still returns true here: the verdict arrives asynchronously, and this
+	// return only says the request went out. The greying happens in the reply
+	// handler.
 	CECPacket req(EC_OP_SEARCH_REQUEST_MORE);
 	if (m_conn->ServerSupportsMultiSearch()) {
 		req.AddTag(CECTag(EC_TAG_SEARCH_ID, (uint32)searchID));
 	}
-	m_conn->SendPacket(&req);
+	m_conn->SendRequest(this, &req);
 	return true;
 }
 
@@ -3610,6 +3616,32 @@ void CSearchListRem::ApplySearchProgress(const CECTag *src)
 
 void CSearchListRem::HandlePacket(const CECPacket *packet)
 {
+	// Reply to EC_OP_SEARCH_REQUEST_MORE. Claimed by the TAG, not by the
+	// opcode alone: EC_OP_MISC_DATA is a generic envelope (search stop and
+	// GET_CONNSTATE use it too), and consuming every packet carrying that
+	// opcode would silently swallow any future request that both answers
+	// MISC_DATA and routes its handler here. Only a packet that actually
+	// carries the reaskable bit is ours; anything else falls through.
+	//
+	// The tag is absent on a daemon older than it, which means "unknown",
+	// never "exhausted" -- so that case falls through too and keeps the
+	// previous optimistic behaviour. Present and false is terminal for this
+	// search: its reask budget is spent, or it is inside the stopping window
+	// Kad enters 20 s before a keyword search ends.
+	//
+	// The id has to come off the packet rather than from the selected tab.
+	// The EC FIFO pairs replies to requests positionally, with no request id
+	// on the wire, so with two "More" presses in flight on different tabs the
+	// arrival order is the only thing distinguishing them -- and the user may
+	// have switched tabs meanwhile. The daemon echoes EC_TAG_SEARCH_ID for
+	// exactly this.
+	if (const CECTag *reaskable = packet->GetTagByName(EC_TAG_SEARCH_MORE_REASKABLE)) {
+		const CECTag *idTag = packet->GetTagByName(EC_TAG_SEARCH_ID);
+		if (idTag && reaskable->GetInt() == 0 && theApp->amuledlg && theApp->amuledlg->m_searchwnd) {
+			theApp->amuledlg->m_searchwnd->MarkMoreExhausted((uint32)idTag->GetInt());
+		}
+		return;
+	}
 	if (packet->GetOpCode() == EC_OP_SEARCH_PROGRESS) {
 		if (m_conn->ServerSupportsMultiSearch()) {
 			if (m_conn->ServerSupportsSearchProgressUnion()) {
