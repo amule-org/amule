@@ -274,6 +274,18 @@ if [ -n "$SECOND_TOKEN" ] && [ "$SECOND_TOKEN" != "null" ]; then
 	# The adopted slot also learns the query from the SEARCH_LIST entry,
 	# so a client that discovered an id can label it without guessing.
 	_assert_json_eq '.query' "$TEST_QUERY" 'second amuleapi instance reports the discovered query'
+	# A slot discovered as finished is never polled by the tick, so its
+	# percent has to be seeded at discovery or it stays 0 forever and
+	# contradicts the "finished" state carried in this same envelope. Only
+	# meaningful once the search has actually finished; a still-running one
+	# reports the daemon's real ramp and is checked elsewhere.
+	ADOPTED_STATE=$(printf '%s' "$CURL_BODY" | jq -r '.progress.state')
+	if [ "$ADOPTED_STATE" = "finished" ]; then
+		_assert_json_eq '.progress.percent' 100 \
+			'an adopted finished search reports percent 100, not 0'
+	else
+		echo "    info: adopted search still $ADOPTED_STATE; skipping the finished-percent check"
+	fi
 else
 	_fail "second amuleapi instance: admin login" "could not obtain a token; log: $(tail -c 300 "$SECOND_LOG")"
 fi

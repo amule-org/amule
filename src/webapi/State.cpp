@@ -322,6 +322,15 @@ void CState::MarkSearchDiscovered(std::uint32_t search_id,
 	// ships no timestamp to borrow.
 	slot.progress.active = active;
 	slot.progress.complete = complete;
+	// Seeded here or never. A slot discovered as finished is not in
+	// ActiveSearchIds(), so the tick never polls it and WriteSearchProgress
+	// is never called for it -- the percent would sit at its 0 default for
+	// the life of the slot, contradicting the "finished" state in the very
+	// same envelope. A finished search is 100 by definition, so there is
+	// nothing to ask the daemon for. A discovered *running* slot keeps 0 and
+	// is corrected by the next tick, which is why only the finished case was
+	// stuck.
+	slot.progress.percent = complete ? 100 : 0;
 	slot.progress.kind = kind;
 	slot.query = query;
 	slot.seq = ++m_search_seq;
