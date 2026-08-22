@@ -9,6 +9,7 @@
 
 import { api, bulkFailures, setUnauthorizedHandler } from "./api.js";
 import { data } from "./events.js";
+import { searches } from "./searches.js";
 import { html, render, useState, useEffect, useStore } from "./dom.js";
 import { toast, Placeholder } from "./components.js";
 import { formatSpeed, formatInt } from "./format.js";
@@ -57,6 +58,7 @@ function App() {
       // each retry is another failed-auth strike the server counts towards
       // banning this IP.
       data.stop();
+      searches.reset(); // its poll timer and tabs are module-level too
       if (!alive) return;
       setNotice(reason === "rate_limited" ? t("login_err_rate_limited") : t("login_session_expired"));
       setAuth("out");
@@ -182,6 +184,7 @@ function Toolbar({ route, onLogout }) {
   const doLogout = async () => {
     try { await api.logout(); } catch (_) {}
     data.stop(); // the SSE stream and poll timer outlive this component
+    searches.reset(); // ...and so do the search tabs and their poll timer
     location.hash = "";
     onLogout();
   };

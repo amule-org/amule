@@ -273,7 +273,7 @@ b { font-weight: 600; }
 /* Language picker: globe icon + native <select>, blended into the ghost toolbar. */
 .lang-select { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
 .lang-select select {
-  border: none; background: transparent; padding: 2px 4px; cursor: pointer;
+  border: none; background: var(--toolbar); padding: 2px 4px; cursor: pointer;
 }
 
 .input, select, textarea {
@@ -355,6 +355,9 @@ table.data.virtual tbody tr.row-have td:first-child { box-shadow: inset 3px 0 0 
 /* flex name cell: ellipsize the name, keep any trailing element visible. */
 table.data.virtual td .name-cell { display: flex; align-items: center; gap: 6px; }
 table.data.virtual td .name-cell .name-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* Search hit advertised under several filenames: the picker replaces the name
+   text, so it takes the column's whole width. */
+table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
 
 /* --- progress bar (flat, accent-filled) --- */
 .progress {
@@ -465,6 +468,10 @@ table.data.virtual td .name-cell .name-text { min-width: 0; overflow: hidden; te
   background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow);
   padding: 20px; max-width: 420px; width: 100%;
 }
+/* Comments/ratings dialog: a four-column table needs more than a confirm
+   prompt's 420px. */
+.modal-wide { max-width: 720px; }
+.modal-wide .comments-list { margin-top: 12px; }
 .modal-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
 .modal-header h3 { margin: 0; font-size: 15px; }
 /* Inline categories panel header (title + Add category button). */
@@ -488,6 +495,10 @@ table.data.virtual td .name-cell .name-text { min-width: 0; overflow: hidden; te
 .peer-flags .icon { vertical-align: middle; margin-right: 3px; color: var(--text-dim); }
 .row-actions .btn + .btn { margin-left: 4px; }
 .row-actions select + .btn { margin-left: 6px; }
+/* A select sizes itself to its longest option, so a long category name would
+   otherwise push the row's buttons out of the cell (Chrome clips them; Firefox
+   renders the select narrower and hides the problem). */
+.row-actions select { max-width: 130px; }
 .color-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--border); vertical-align: middle; }
 .country-cell { white-space: nowrap; }
 .flag { display: inline-block; width: 16px; height: 11px; vertical-align: middle; margin-right: 5px; }
@@ -620,6 +631,32 @@ table.data.virtual td .name-cell .name-text { min-width: 0; overflow: hidden; te
   background: var(--border); color: var(--text-dim);
 }
 .tab.active .tab-badge { background: var(--accent); color: var(--accent-contrast); }
+
+/* Search: one tab per search, so the strip scrolls instead of wrapping at
+   every width (the .net-pane rule below only does that on phones). Two things
+   that overflow forces: flex-shrink:0, because an overflow other than
+   `visible` drops a flex item's automatic min-height and the strip would
+   collapse to a few pixels inside .net-pane's column flexbox; and the bottom
+   rule as an inset shadow rather than a border, because the clip is the
+   PADDING box -- over a real border the active tab could never paint its
+   -1px overhang, and every tab would look detached from the pane. */
+.tabs.search-tabs {
+  flex: 0 0 auto; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden;
+  border-bottom: none; box-shadow: inset 0 -1px 0 var(--border);
+  scrollbar-width: thin; /* same as .nav: the bar only shows up once tabs overflow */
+}
+.tab-item { display: inline-flex; align-items: stretch; flex: 0 0 auto; }
+.tab-item .tab { border-top-right-radius: 0; }
+.tab-close {
+  border: 1px solid var(--border); border-left: none; border-bottom-color: transparent;
+  background: var(--surface-2); color: var(--text-dim);
+  border-radius: 0 var(--radius) 0 0; margin-bottom: -1px;
+  padding: 0 9px; cursor: pointer; font: inherit; line-height: 1.4;
+}
+.tab-close:hover { background: var(--surface); color: var(--bad); }
+.tab-item .tab.active + .tab-close { background: var(--surface); color: var(--text); border-bottom-color: var(--surface); }
+.tab.running { font-style: italic; }
+.tab.running .tab-badge { background: var(--accent); color: var(--accent-contrast); }
 
 /* --- Networks split (top: ED2K/Kad, bottom: log/server info) --- */
 /* No gap on desktop: the draggable .splitter (+ its own margin) is the visual
