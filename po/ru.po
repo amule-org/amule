@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-22 15:15+0200\n"
-"PO-Revision-Date: 2026-08-21 19:15+0000\n"
+"PO-Revision-Date: 2026-08-22 15:44+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
 "Language: ru\n"
@@ -2191,7 +2191,7 @@ msgstr "Невозможно переименовать файл."
 
 #: src/ExternalConn.cpp
 msgid "Client could not be swapped to that file."
-msgstr ""
+msgstr "Не удалось переключить клиента на этот файл."
 
 #: src/ExternalConn.cpp
 #, c-format
@@ -3229,7 +3229,7 @@ msgstr "ПРЕДУПРЕЖДЕНИЕ: "
 
 #: src/MediaProbe.cpp
 msgid "Media metadata: no ffprobe binary found. Install ffmpeg, or set the ffprobe path in preferences; length, bitrate and codec will not be extracted."
-msgstr ""
+msgstr "Метаданные медиа: двоичный файл ffprobe не найден. Установите ffmpeg или укажите путь к ffprobe в настройках; длительность, битрейт и кодек не будут извлечены."
 
 #: src/MediaProbe.cpp
 #, c-format
@@ -3570,7 +3570,7 @@ msgstr "Расширенные параметры"
 
 #: src/muuli_wdr.cpp
 msgid "Filtering"
-msgstr "Фильтрация"
+msgstr "Фильтр"
 
 #: src/muuli_wdr.cpp
 msgid "File Type"
