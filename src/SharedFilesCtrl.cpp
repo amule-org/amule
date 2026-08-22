@@ -235,6 +235,14 @@ void CSharedFilesCtrl::OnItemRightClicked(wxDataViewEvent &event)
 		m_menu->Enable(MP_GETAICHED2KLINKSRC, file->HasProperAICHHashSet());
 		m_menu->Enable(MP_GETHOSTNAMESOURCEED2KLINK, !thePrefs::GetYourHostname().IsEmpty());
 		m_menu->Enable(MP_GETHOSTNAMECRYPTSOURCEED2KLINK, !thePrefs::GetYourHostname().IsEmpty());
+		// Verifying a partfile is not supported: the hashset covers the
+		// finished file, and CVerifyLocalDataTask bails on one anyway. Greyed
+		// out rather than silently refused, so the state is visible before the
+		// click instead of only in the log afterwards (amule-org/amule#1039).
+		// IsPartFile() is answered correctly in both binaries: amulegui files a
+		// shared partfile into its shared list as the very CPartFile the
+		// download queue holds (amule-remote-gui.cpp), not a plain CKnownFile.
+		m_menu->Enable(MP_VERIFY, !file->IsPartFile());
 
 		int priority = file->IsAutoUpPriority() ? PR_AUTO : file->GetUpPriority();
 
@@ -315,6 +323,11 @@ void CSharedFilesCtrl::OnVerifyLocalData(wxCommandEvent &WXUNUSED(event))
 {
 	for (wxUIntPtr data : GetSelectedItemData()) {
 		CKnownFile *file = reinterpret_cast<CKnownFile *>(data);
+		// Still reachable with the menu item greyed out for partfiles: the
+		// menu is built from the row that was right-clicked, while this acts
+		// on the whole selection. Right-click a completed file with a
+		// partfile also selected and the entry is enabled, but the partfile
+		// still has to be turned away here.
 		if (file->IsPartFile()) {
 			AddLogLineN(
 				CFormat(_("Verify Local Data on PartFile is currently not supported: %s")) %
