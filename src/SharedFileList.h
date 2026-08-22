@@ -263,9 +263,10 @@ private:
 		kAddPathExcluded,
 		//! Matched a CKnownFile and was newly attached.
 		kAddPathKnown,
-		// Matched a CKnownFile that was *already* in the share set, so AddFile
-		// declined -- the same content reachable from a second shared
-		// directory, or a repeated watcher event. Split out from
+		// Matched a CKnownFile that was *already* in the share set, so the add
+		// was declined -- the same content reachable from a second shared
+		// directory. (Not a repeated watcher event: NotifyPathAdded returns on
+		// an index hit before it ever reaches AddPathToShares.) Split out from
 		// kAddPathKnown because callers that announce a file becoming shared
 		// must not claim a share that did not happen.
 		//
@@ -354,6 +355,20 @@ private:
 	// RemoveFile(); both insertion and erase happen under list_mut so
 	// the two stay consistent. Key is the file's current
 	// GetFilePath().JoinPaths(GetFileName()) raw string.
+	//
+	// The invariant is "if and only if": an entry exists for a path exactly
+	// when a file currently in m_Files_map lives there. NotifyPathAdded,
+	// NotifyPathModified and NotifyDirRemoved all read a hit as proof the
+	// file is already shared, so an entry that outlives its file makes the
+	// watcher silently refuse to share that path -- it returns before its
+	// first log statement, so nothing is reported at any level.
+	//
+	// This is why FindSharedFiles clears it in the same locked scope as
+	// m_Files_map rather than leaving it to accumulate: the keys a reload
+	// cannot heal are exactly the ones whose files the walk no longer finds
+	// (issue #1028). Both containers are therefore empty from that clear
+	// until the walk refills them, and neither may be observed in between --
+	// one rule covering the two, not two rules that can drift apart.
 	std::unordered_map<wxString, CKnownFile *> m_pathIndex;
 	mutable wxMutex list_mut;
 
