@@ -173,6 +173,7 @@ void CUpDownClient::Init()
 	bytesReceivedCycle = 0;
 	m_nServerPort = 0;
 	m_iFileListRequested = 0;
+	m_browseDeadline = 0;
 	m_browseSearchId = 0;
 	m_browseTotalDirs = 0;
 	m_browseStatus = BROWSE_NONE;
@@ -1796,6 +1797,9 @@ void CUpDownClient::ConnectionEstablished()
 			m_fSharedDirectories ? OP_ASKSHAREDDIRS : OP_ASKSHAREDFILES, 0, OP_EDONKEYPROT);
 		theStats::AddUpOverheadOther(packet->GetPacketSize());
 		SendPacket(packet, true, true);
+		// The ask is on the wire now; the peer's clock starts here, not at the
+		// click, which may have been a connect ago.
+		RefreshBrowseDeadline();
 #ifdef __DEBUG__
 		if (m_fSharedDirectories) {
 			AddDebugLogLineN(logLocalClient, "Local Client: OP_ASKSHAREDDIRS to " + GetFullIP());
@@ -2077,8 +2081,22 @@ void CUpDownClient::UpdateBrowseBar()
 	theApp->searchlist->SetBrowseStatusById(GetBrowseRoutingId(), static_cast<uint8>(m_browseStatus));
 }
 
+void CUpDownClient::RefreshBrowseDeadline()
+{
+	// Only while a browse is actually pending: called from the packet paths,
+	// which also run for clients that are not being browsed.
+	if (m_iFileListRequested) {
+		m_browseDeadline = ::GetTickCount64() + BROWSE_SILENCE_TIMEOUT;
+		theApp->clientlist->AddPendingBrowse(this);
+	}
+}
+
 void CUpDownClient::MarkBrowse(EBrowseStatus s)
 {
+	// Every terminal transition comes through here, so this is the one place
+	// the deadline has to be dropped.
+	m_browseDeadline = 0;
+	theApp->clientlist->RemovePendingBrowse(this);
 	m_browseStatus = s;
 	UpdateBrowseBar();
 	// Route by the tab's result-routing key (the EC-allocated browse ID on the
@@ -2101,12 +2119,21 @@ bool CUpDownClient::IsPeerContactPending() const
 	// A live connection carries the browse directly; ConnectionEstablished
 	// sends the request off the back of it.
 	//
-	// A socket that merely exists counts too: CUpDownClient::Connect starts an
-	// asynchronous connect, so the HighID path returns with the socket created
-	// but not yet connected, and OnConnect/Disconnected settle it either way.
-	// The silent exits this predicate exists to catch all return before the
-	// socket is created, so they cannot be confused with one in progress.
-	if (IsConnected() || GetSocket() != nullptr) {
+	// A socket that merely exists counts too, but ONLY on the HighID path:
+	// CUpDownClient::Connect starts an asynchronous connect, so that path
+	// returns with the socket created but not yet connected, and
+	// OnConnect/Disconnected settle it either way.
+	//
+	// It must not count on the LowID paths. TryToConnect mints the socket
+	// before its second LowID block and only the HighID branch ever calls
+	// Connect() on it, so a LowID exit past that point leaves a socket that
+	// nothing is connecting and nothing will connect later -- reading it as
+	// "contact pending" is what let those exits keep a browse running
+	// (amule-org/amule#1071). The three ways a LowID peer really does get
+	// contacted are covered by the other clauses below: a direct UDP
+	// callback, a server callback (DS_WAITCALLBACK), a Kad buddy callback
+	// (DS_WAITCALLBACKKAD) -- and an incoming connection by IsConnected().
+	if (IsConnected() || (!HasLowID() && GetSocket() != nullptr)) {
 		return true;
 	}
 	// A direct UDP callback brings its own 45s deadline, after which
@@ -2138,6 +2165,7 @@ void CUpDownClient::RequestSharedFileList()
 		// than nothing. The daemon uses the EC-allocated browse ID as the
 		// routing key; a monolithic local browse uses this client's pointer.
 		m_browseStatus = BROWSE_IN_PROGRESS;
+		RefreshBrowseDeadline();
 		UpdateBrowseBar();
 		Notify_Browse_Started(ECID(), GetUserName(), (uint64)GetBrowseRoutingId());
 		if (!TryToConnect(true)) {
@@ -2175,7 +2203,9 @@ void CUpDownClient::ProcessSharedFileList(const uint8_t *pachPacket, uint32 nSiz
 	if (m_iFileListRequested > 0) {
 		m_iFileListRequested--;
 		theApp->searchlist->ProcessSharedFileList(pachPacket, nSize, this, NULL, pszDirectory);
-		// One directory's worth of files arrived; advance the browse bar.
+		// One directory's worth of files arrived; advance the browse bar, and
+		// give a share that is still streaming the full timeout again.
+		RefreshBrowseDeadline();
 		UpdateBrowseBar();
 	}
 }
