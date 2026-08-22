@@ -299,6 +299,212 @@ void AddEncodedPartStatus(CECTag &parent, RLE_Data &enc, const ArrayOfUInts16 &s
 
 } // namespace
 
+// ----------------------------------------------------------------------
+// Chat sessions -- EC_OP_CHAT_SESSIONS (issue #971). The reply is the
+// daemon's COMPLETE session set plus only the messages newer than the
+// cursor the client sent, so the walker replaces the session vector
+// wholesale while appending messages incrementally. A session missing
+// from a reply is the ONLY signal a close produces.
+// ----------------------------------------------------------------------
+
+namespace
+{
+
+// Build one EC_TAG_CHAT_SESSION container the way the daemon does.
+CECTag MakeChatSession(std::uint64_t gui_id, const char *name)
+{
+	CECTag t(EC_TAG_CHAT_SESSION, gui_id);
+	t.AddTag(CECTag(EC_TAG_CHAT_PEER_NAME, wxString::FromAscii(name)));
+	return t;
+}
+
+void AddChatMessage(CECTag &session, std::uint32_t id, bool outgoing, std::uint32_t ts, const char *text)
+{
+	CECTag m(EC_TAG_CHAT_MESSAGE, wxString::FromUTF8(text));
+	m.AddTag(CECTag(EC_TAG_CHAT_MSG_ID, id));
+	m.AddTag(CECTag(EC_TAG_CHAT_DIRECTION, static_cast<std::uint8_t>(outgoing ? 1 : 0)));
+	m.AddTag(CECTag(EC_TAG_CHAT_TIMESTAMP, ts));
+	session.AddTag(m);
+}
+
+// GUI_ID for 10.0.0.1:4662, LSB-first like the wire.
+const std::uint64_t kPeerA = (static_cast<std::uint64_t>(0x0100000Au) << 16) | 4662u;
+const std::uint64_t kPeerB = (static_cast<std::uint64_t>(0x0200000Au) << 16) | 4662u;
+
+} // namespace
+
+TEST(Refresher, ChatSessionDecodesIdentityAndMessages)
+{
+	std::vector<ChatSessionSnapshot> cache;
+	std::uint32_t cursor = 0;
+	std::vector<ChatSessionSnapshot> fresh;
+	std::vector<std::uint64_t> closed;
+
+	CECPacket resp(EC_OP_CHAT_SESSIONS);
+	resp.AddTag(CECTag(EC_TAG_CHAT_MSG_ID, static_cast<std::uint32_t>(2)));
+	{
+		CECTag s = MakeChatSession(kPeerA, "alice");
+		s.AddTag(CECTag(EC_TAG_CLIENT, static_cast<std::uint32_t>(77)));
+		s.AddTag(CECTag(EC_TAG_FRIEND, static_cast<std::uint32_t>(12)));
+		AddChatMessage(s, 1, false, 1000, "hi");
+		AddChatMessage(s, 2, true, 1001, "hello back");
+		resp.AddTag(s);
+	}
+
+	ApplyChatSessions(&resp, cache, cursor, fresh, closed);
+
+	ASSERT_EQUALS(static_cast<size_t>(1), cache.size());
+	ASSERT_EQUALS(kPeerA, cache[0].gui_id);
+	// GUI_ID splits back into the REST conversation key.
+	ASSERT_EQUALS(std::string("10.0.0.1"), cache[0].ip);
+	ASSERT_EQUALS(static_cast<std::uint16_t>(4662), cache[0].port);
+	ASSERT_EQUALS(std::string("10.0.0.1:4662"), cache[0].PeerKey());
+	ASSERT_EQUALS(std::string("alice"), cache[0].name);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(77), cache[0].client_ecid);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(12), cache[0].friend_ecid);
+	ASSERT_EQUALS(static_cast<size_t>(2), cache[0].messages.size());
+	ASSERT_TRUE(!cache[0].messages[0].outgoing);
+	ASSERT_TRUE(cache[0].messages[1].outgoing);
+	ASSERT_EQUALS(std::string("hello back"), cache[0].messages[1].text);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(2), cursor);
+	ASSERT_EQUALS(static_cast<size_t>(1), fresh.size());
+	ASSERT_TRUE(closed.empty());
+}
+
+TEST(Refresher, ChatMessagesAccumulateAcrossTicks)
+{
+	// Later replies carry only what is past the cursor, so the walker must
+	// carry the earlier messages over rather than replacing them -- otherwise
+	// every tick would shrink the transcript to whatever just arrived.
+	std::vector<ChatSessionSnapshot> cache;
+	std::uint32_t cursor = 0;
+	{
+		std::vector<ChatSessionSnapshot> fresh;
+		std::vector<std::uint64_t> closed;
+		CECPacket resp(EC_OP_CHAT_SESSIONS);
+		resp.AddTag(CECTag(EC_TAG_CHAT_MSG_ID, static_cast<std::uint32_t>(1)));
+		CECTag s = MakeChatSession(kPeerA, "alice");
+		AddChatMessage(s, 1, false, 1000, "first");
+		resp.AddTag(s);
+		ApplyChatSessions(&resp, cache, cursor, fresh, closed);
+	}
+	{
+		std::vector<ChatSessionSnapshot> fresh;
+		std::vector<std::uint64_t> closed;
+		CECPacket resp(EC_OP_CHAT_SESSIONS);
+		resp.AddTag(CECTag(EC_TAG_CHAT_MSG_ID, static_cast<std::uint32_t>(2)));
+		CECTag s = MakeChatSession(kPeerA, "alice");
+		AddChatMessage(s, 2, true, 1001, "second");
+		resp.AddTag(s);
+		ApplyChatSessions(&resp, cache, cursor, fresh, closed);
+		// Only the genuinely new one is reported for SSE.
+		ASSERT_EQUALS(static_cast<size_t>(1), fresh.size());
+		ASSERT_EQUALS(static_cast<size_t>(1), fresh[0].messages.size());
+		ASSERT_EQUALS(std::string("second"), fresh[0].messages[0].text);
+	}
+	ASSERT_EQUALS(static_cast<size_t>(1), cache.size());
+	ASSERT_EQUALS(static_cast<size_t>(2), cache[0].messages.size());
+	ASSERT_EQUALS(std::string("first"), cache[0].messages[0].text);
+	ASSERT_EQUALS(std::string("second"), cache[0].messages[1].text);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(2), cursor);
+}
+
+TEST(Refresher, ChatSessionAbsentFromReplyIsReportedClosed)
+{
+	// Absence IS the close signal -- there is no expiry tag -- so a session
+	// the previous tick held must be dropped AND reported, not merged
+	// forward. Merging would resurrect closed conversations forever.
+	std::vector<ChatSessionSnapshot> cache;
+	std::uint32_t cursor = 0;
+	{
+		std::vector<ChatSessionSnapshot> fresh;
+		std::vector<std::uint64_t> closed;
+		CECPacket resp(EC_OP_CHAT_SESSIONS);
+		CECTag a = MakeChatSession(kPeerA, "alice");
+		AddChatMessage(a, 1, false, 1000, "hi");
+		resp.AddTag(a);
+		resp.AddTag(MakeChatSession(kPeerB, "bob"));
+		ApplyChatSessions(&resp, cache, cursor, fresh, closed);
+		ASSERT_EQUALS(static_cast<size_t>(2), cache.size());
+	}
+	{
+		std::vector<ChatSessionSnapshot> fresh;
+		std::vector<std::uint64_t> closed;
+		CECPacket resp(EC_OP_CHAT_SESSIONS);
+		resp.AddTag(MakeChatSession(kPeerB, "bob"));
+		ApplyChatSessions(&resp, cache, cursor, fresh, closed);
+		ASSERT_EQUALS(static_cast<size_t>(1), cache.size());
+		ASSERT_EQUALS(kPeerB, cache[0].gui_id);
+		ASSERT_EQUALS(static_cast<size_t>(1), closed.size());
+		ASSERT_EQUALS(kPeerA, closed[0]);
+	}
+}
+
+TEST(Refresher, ChatSessionWithNoNewMessagesIsStillListed)
+{
+	// A session with nothing past the cursor still encodes, with no message
+	// children: that is how a client connecting late learns it exists at all.
+	std::vector<ChatSessionSnapshot> cache;
+	std::uint32_t cursor = 0;
+	std::vector<ChatSessionSnapshot> fresh;
+	std::vector<std::uint64_t> closed;
+
+	CECPacket resp(EC_OP_CHAT_SESSIONS);
+	resp.AddTag(CECTag(EC_TAG_CHAT_MSG_ID, static_cast<std::uint32_t>(9)));
+	resp.AddTag(MakeChatSession(kPeerA, "alice"));
+
+	ApplyChatSessions(&resp, cache, cursor, fresh, closed);
+
+	ASSERT_EQUALS(static_cast<size_t>(1), cache.size());
+	ASSERT_TRUE(cache[0].messages.empty());
+	// Nothing to emit an SSE frame for.
+	ASSERT_TRUE(fresh.empty());
+	// The cursor still advances, so ids evicted on the daemon are not
+	// requested forever.
+	ASSERT_EQUALS(static_cast<std::uint32_t>(9), cursor);
+}
+
+TEST(Refresher, ChatSessionKeepsAKnownNameWhenTheReplyOmitsIt)
+{
+	// The daemon suppresses an unchanged name; letting that blank the cached
+	// one would make an established conversation fall back to its ip:port
+	// label mid-stream.
+	std::vector<ChatSessionSnapshot> cache;
+	std::uint32_t cursor = 0;
+	{
+		std::vector<ChatSessionSnapshot> fresh;
+		std::vector<std::uint64_t> closed;
+		CECPacket resp(EC_OP_CHAT_SESSIONS);
+		resp.AddTag(MakeChatSession(kPeerA, "alice"));
+		ApplyChatSessions(&resp, cache, cursor, fresh, closed);
+	}
+	{
+		std::vector<ChatSessionSnapshot> fresh;
+		std::vector<std::uint64_t> closed;
+		CECPacket resp(EC_OP_CHAT_SESSIONS);
+		resp.AddTag(CECTag(EC_TAG_CHAT_SESSION, kPeerA)); // no name child
+		ApplyChatSessions(&resp, cache, cursor, fresh, closed);
+	}
+	ASSERT_EQUALS(std::string("alice"), cache[0].name);
+	ASSERT_EQUALS(std::string("alice"), cache[0].DisplayName());
+}
+
+TEST(Refresher, ChatSessionWithoutANameFallsBackToAddress)
+{
+	std::vector<ChatSessionSnapshot> cache;
+	std::uint32_t cursor = 0;
+	std::vector<ChatSessionSnapshot> fresh;
+	std::vector<std::uint64_t> closed;
+
+	CECPacket resp(EC_OP_CHAT_SESSIONS);
+	resp.AddTag(CECTag(EC_TAG_CHAT_SESSION, kPeerA));
+	ApplyChatSessions(&resp, cache, cursor, fresh, closed);
+
+	// The same string the desktop builds, and the one the SSE payload and
+	// the REST list must agree on.
+	ASSERT_EQUALS(std::string("IP: 10.0.0.1 Port: 4662"), cache[0].DisplayName());
+}
+
 TEST(Refresher, SharedKnownFileDecodesAvailability)
 {
 	std::map<std::uint32_t, PartFileEncoderData> rle_state;
