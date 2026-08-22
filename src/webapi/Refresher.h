@@ -89,6 +89,7 @@ struct StatusSnapshot;
 struct FileSnapshot;
 struct ClientSnapshot;
 struct FriendSnapshot;
+struct ChatSessionSnapshot;
 struct ServerSnapshot;
 struct KadSnapshot;
 struct CategorySnapshot;
@@ -200,6 +201,21 @@ void ApplyGetUpdateToServers(const CECPacket *resp, std::map<std::uint32_t, Serv
 // EC_OP_GET_UPDATE reply (ExternalConn.cpp, "Add friends"), so /friends is
 // served from the tick we already run rather than a roundtrip of its own.
 void ApplyGetUpdateToFriends(const CECPacket *resp, std::map<std::uint32_t, FriendSnapshot> &cache);
+
+// EC_OP_CHAT_SESSIONS -> the /chats snapshot. `cursor` is read as the value
+// sent with the request and written back with the store's current last id.
+//
+// The reply is the daemon's COMPLETE session set, so this replaces the vector
+// rather than merging into it: a session missing from a reply was closed (by
+// another client, or evicted), and that absence is the only signal a close
+// produces. Messages, by contrast, arrive incrementally -- only those newer
+// than the cursor -- so they are appended to the session they belong to,
+// carrying over what the previous tick already held.
+void ApplyChatSessions(const CECPacket *resp,
+	std::vector<ChatSessionSnapshot> &cache,
+	std::uint32_t &cursor,
+	std::vector<ChatSessionSnapshot> &out_new_messages,
+	std::vector<std::uint64_t> &out_closed);
 
 // ed2k server priority, both directions. The SRV_PR_* wire values are not
 // monotone (NORMAL=0, HIGH=1, LOW=2), so callers must never assume a name's

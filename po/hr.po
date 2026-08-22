@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-22 12:11+0200\n"
+"POT-Creation-Date: 2026-08-22 15:15+0200\n"
 "PO-Revision-Date: 2026-08-21 19:09+0000\n"
 "Last-Translator: Sebastiano Pistore <sebastiano.pistore.info@aol.com>\n"
 "Language-Team: https://github.com/amule-org/amule <forum@aMule.org>\n"
@@ -2182,6 +2182,22 @@ msgstr ""
 #: src/ExternalConn.cpp
 #, c-format
 msgid "Could not save the amuleapi password: %s"
+msgstr ""
+
+#: src/ExternalConn.cpp
+msgid "Missing chat session id"
+msgstr ""
+
+#: src/ExternalConn.cpp
+msgid "No such chat session"
+msgstr ""
+
+#: src/ExternalConn.cpp
+msgid "Empty chat message"
+msgstr ""
+
+#: src/ExternalConn.cpp
+msgid "Unknown chat target"
 msgstr ""
 
 #: src/ExternalConn.cpp

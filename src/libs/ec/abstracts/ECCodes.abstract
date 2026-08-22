@@ -174,6 +174,14 @@ EC_OP_SEARCH_LIST                   0x60
 
 EC_OP_GET_CLIENT_HISTORY            0x61
 EC_OP_CLIENT_HISTORY                0x62
+
+## Chat session store (issue #971). The client asks for the session list and
+## everything newer than its cursor in one roundtrip, so an idle connection
+## costs one small packet and a busy one needs no follow-up query.
+EC_OP_GET_CHAT_SESSIONS             0x63
+EC_OP_CHAT_SESSIONS                 0x64
+EC_OP_CHAT_SEND                     0x65
+EC_OP_CHAT_CLOSE_SESSION            0x66
 [/Section]
 
 [Section Content]
@@ -221,6 +229,12 @@ EC_TAG_AEAD_CLIENT_CONFIRM                0x0023
 EC_TAG_AEAD_SERVER_CONFIRM                0x0024
 EC_TAG_SESSION_ID                         0x0025
 EC_TAG_CAN_CLIENT_HISTORY                 0x0026
+
+## Client speaks the chat session ops (EC_OP_GET_CHAT_SESSIONS and friends).
+## Deliberately distinct from EC_TAG_CAN_CHAT: that tag shipped earlier, on
+## builds that echo it but know none of these opcodes, so reusing it would
+## make such a daemon look capable and earn it an unknown opcode.
+EC_TAG_CAN_CHAT_SESSIONS                  0x0027
 
 
 EC_TAG_CLIENT_NAME                        0x0100
@@ -438,8 +452,17 @@ EC_TAG_FRIEND                             0x0800
 	EC_TAG_FRIEND_FRIENDSLOT                  0x0808
 	EC_TAG_FRIEND_SHARED                      0x0809
 
+## EC_TAG_CHAT carries the message text as its value; EC_TAG_CHAT_CLIENT_ID is
+## the peer's GUI_ID, a uint64 packed as (ip << 16) | port, with the IP in the
+## same byte order as EC_TAG_CLIENT_USER_IP.
 EC_TAG_CHAT                               0x0900
 	EC_TAG_CHAT_CLIENT_ID                     0x0901
+	EC_TAG_CHAT_SESSION                       0x0902
+	EC_TAG_CHAT_MESSAGE                       0x0903
+	EC_TAG_CHAT_MSG_ID                        0x0904
+	EC_TAG_CHAT_DIRECTION                     0x0905
+	EC_TAG_CHAT_TIMESTAMP                     0x0906
+	EC_TAG_CHAT_PEER_NAME                     0x0907
 
 EC_TAG_SELECT_PREFS                       0x1000
 

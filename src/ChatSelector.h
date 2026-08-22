@@ -76,6 +76,17 @@ public:
 	CChatSession *GetPageByClientID(uint64 client_id);
 	int GetTabByClientID(uint64 client_id);
 	bool ProcessMessage(uint64 sender_id, const wxString &message);
+
+	/**
+	 * Render one message the core's session store already holds.
+	 *
+	 * Distinct from ProcessMessage, which parses the "name|text" wire form
+	 * and always announces the message. This takes an already-decoded
+	 * message with its direction, and does NOT touch the new-message blink --
+	 * the caller decides that, because replaying history on connect must not
+	 * light the Messages button up for messages already read elsewhere.
+	 */
+	void AppendStoredMessage(uint64 gui_id, const wxString &name, const wxString &text, bool outgoing);
 	bool SendMessage(const wxString &message, const wxString &client_name = "", uint64 to_id = 0);
 	void ConnectionResult(bool success, const wxString &message, uint64 id);
 	void RefreshFriend(uint64 toupdate_id, const wxString &new_name);

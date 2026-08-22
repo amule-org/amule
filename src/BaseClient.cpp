@@ -59,6 +59,7 @@
 #include "Packet.h"            // Needed for CPacket
 #include "Friend.h"            // Needed for CFriend
 #include "ClientList.h"        // Needed for CClientList
+#include "ChatSessionStore.h"  // Needed for CChatSessionStore
 #ifndef AMULE_DAEMON
 #include "amuleDlg.h"      // Needed for CamuleDlg
 #include "CaptchaDialog.h" // Needed for CCaptchaDialog
@@ -3007,6 +3008,15 @@ void CUpDownClient::ProcessChatMessage(wxString message)
 	}
 	AddLogLineC(logMsg);
 	IncMessagesReceived();
+
+	// Record in the core store BEFORE the GUI notify. Both builds reach this
+	// line -- it is the single inbound choke point -- so this is what gives
+	// amulegui and amuleapi a transcript at all, and what lets the local GUI
+	// and every EC client agree on one. Placed after the filter / spammer
+	// branches above so a filtered message is not stored.
+	if (theApp->chatsessions) {
+		theApp->chatsessions->AddIncoming(GUI_ID(GetIP(), GetUserPort()), GetUserName(), message);
+	}
 
 	Notify_ChatProcessMsg(GUI_ID(GetIP(), GetUserPort()), GetUserName() + "|" + message);
 }

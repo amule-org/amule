@@ -126,15 +126,6 @@ public:
 	void KillAllSockets();
 	void ResetAllLogs();
 
-	// Read-only chat bridge for EC clients (amulegui): incoming peer chat
-	// messages are dropped on a headless daemon (no chat window), so relay
-	// them to any connected EC client that asked for the chat feed. Fans the
-	// message out to each chat-capable CECServerSocket's own per-client queue,
-	// which the client drains via EC_OP_GET_CHAT_MESSAGES. The pair carried is
-	// <sender GUI_ID, "name|message"> — the same encoding the built-in GUI's
-	// CChatWnd::ProcessMessage already parses.
-	void QueueChatMessage(uint64 sender_id, const wxString &message);
-
 	// Brute-force protection for the password exchange, shared by every
 	// connection. It lives here rather than on CECServerSocket because a
 	// socket dies with its connection: per-socket buckets would reset on

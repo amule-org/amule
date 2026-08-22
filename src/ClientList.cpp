@@ -31,14 +31,15 @@
 #include <protocol/kad/Constants.h>
 #include <protocol/kad2/Client2Client/TCP.h>
 
-#include "amule.h"           // Needed for theApp
-#include "ClientTCPSocket.h" // Needed for CClientTCPSocket
-#include "DownloadQueue.h"   // Needed for CDownloadQueue
-#include "UploadQueue.h"     // Needed for CUploadQueue
-#include "IPFilter.h"        // Needed for CIPFIlter
-#include "updownclient.h"    // Needed for CUpDownClient
-#include "Preferences.h"     // Needed for thePrefs
-#include "Statistics.h"      // Needed for theStats
+#include "amule.h"            // Needed for theApp
+#include "ChatSessionStore.h" // Needed for CChatSessionStore
+#include "ClientTCPSocket.h"  // Needed for CClientTCPSocket
+#include "DownloadQueue.h"    // Needed for CDownloadQueue
+#include "UploadQueue.h"      // Needed for CUploadQueue
+#include "IPFilter.h"         // Needed for CIPFIlter
+#include "updownclient.h"     // Needed for CUpDownClient
+#include "Preferences.h"      // Needed for thePrefs
+#include "Statistics.h"       // Needed for theStats
 #include "Logger.h"
 #include "GuiEvents.h" // Needed for Notify_*
 #include "Packet.h"
@@ -823,6 +824,15 @@ bool CClientList::SendChatMessage(uint64 client_id, const wxString &message)
 		client = new CUpDownClient(
 			PORT_FROM_GUI_ID(client_id), IP_FROM_GUI_ID(client_id), 0, 0, NULL, true, true);
 		AddClient(client);
+	}
+	// Record before sending, and record regardless of the result: a false
+	// return from CUpDownClient::SendChatMessage means "queued while
+	// connecting", not "failed" (the desktop optimistically prints
+	// *** Connecting to Client *** and keeps the line in the transcript), so
+	// gating the store on it would drop exactly the messages a slow peer
+	// receives a moment later.
+	if (theApp->chatsessions) {
+		theApp->chatsessions->AddOutgoing(client_id, message);
 	}
 	return client->SendChatMessage(message);
 }

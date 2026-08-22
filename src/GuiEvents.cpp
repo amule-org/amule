@@ -708,6 +708,21 @@ void Browse_Status(uint64 NOT_ON_DAEMON(searchID), uint32 NOT_ON_DAEMON(status))
 // so a const-ref parameter would dangle. This mirrors every other wxString
 // notify handler here.
 // NOLINTNEXTLINE(performance-unnecessary-value-param)
+void Chat_SessionRemoved(uint64 NOT_ON_DAEMON(gui_id))
+{
+#ifndef AMULE_DAEMON
+	if (theApp->amuledlg && theApp->amuledlg->m_chatwnd) {
+		// EndSessionFromCore, not EndSession: the core has already dropped
+		// this session, so the tab must close WITHOUT its page-closing
+		// handler originating a close of its own. Without the distinction a
+		// close from one client makes every other client echo a redundant
+		// close back -- which the daemon answers EC_OP_FAILED, the session
+		// being gone already.
+		theApp->amuledlg->m_chatwnd->EndSessionFromCore(gui_id);
+	}
+#endif
+}
+
 void Search_Removed(wxUIntPtr NOT_ON_DAEMON(searchID))
 {
 #ifndef AMULE_DAEMON
@@ -764,14 +779,10 @@ void ChatConnResult(bool NOT_ON_DAEMON(success), uint64 NOT_ON_DAEMON(id), wxStr
 // NOLINTNEXTLINE(performance-unnecessary-value-param)
 void ChatProcessMsg(uint64 sender, wxString message)
 {
-	// Relay the incoming peer message to any polling EC client (amulegui):
-	// the daemon has no chat window of its own, and even a monolithic aMule
-	// with EC enabled should surface friend messages on a connected remote
-	// GUI. Buffered here and drained via EC_OP_GET_CHAT_MESSAGES; the
-	// built-in GUI below still handles its own local display.
-	if (theApp->ECServerHandler) {
-		theApp->ECServerHandler->QueueChatMessage(sender, message);
-	}
+	// No EC relay here any more: CUpDownClient::ProcessChatMessage records
+	// the message in the core store before this notify fires, and every EC
+	// client reads it from there. The built-in GUI below still handles its
+	// own local display.
 #ifndef AMULE_DAEMON
 	if (theApp->amuledlg->m_chatwnd) {
 		theApp->amuledlg->m_chatwnd->ProcessMessage(sender, message);

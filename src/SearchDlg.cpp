@@ -47,6 +47,7 @@
 #include "GetTickCount.h"
 #include "Preferences.h"
 #include "amule.h"        // Needed for theApp
+#include "ScopedPtr.h"    // Needed for CScopedFlag
 #include "SearchList.h"   // Needed for CSearchList
 #include "updownclient.h" // Needed for EBrowseStatus (browse tab lifecycle)
 #include <common/Format.h>
@@ -833,28 +834,6 @@ void CSearchDlg::OnFilterCheckChange(wxCommandEvent &event)
 		UpdateHitCount(page);
 	}
 }
-
-namespace
-{
-// Sets a bool for the lifetime of the scope. Local to this file: the one
-// use is OnSearchClosing's re-entrancy guard, which is not worth a shared
-// utility header.
-class CScopedFlag
-{
-public:
-	explicit CScopedFlag(bool &flag)
-	: m_flag(flag)
-	{
-		m_flag = true;
-	}
-	~CScopedFlag() { m_flag = false; }
-	CScopedFlag(const CScopedFlag &) = delete;
-	CScopedFlag &operator=(const CScopedFlag &) = delete;
-
-private:
-	bool &m_flag;
-};
-} // namespace
 
 void CSearchDlg::OnSearchClosing(wxBookCtrlEvent &evt)
 {

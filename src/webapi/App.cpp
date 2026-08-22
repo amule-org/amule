@@ -409,6 +409,14 @@ int CamuleapiApp::OnRun()
 	// single-search fallback to maintain.
 	m_canMultiSearch = true;
 
+	// Chat: amuleapi serves /chats from the daemon's session store, so it
+	// advertises EC_TAG_CAN_CHAT_SESSIONS at login and the daemon echoes it
+	// back when it serves those ops. The
+	// echo is what every chat endpoint gates on -- against a daemon that
+	// predates the ops, an unknown opcode asserts rather than failing, so
+	// they must answer 503 ec_unsupported instead of asking.
+	m_canChat = true;
+
 	// ConnectAndRun does the EC bring-up (CRemoteConnect, ConnectToCore)
 	// and then calls TextShell — which we've overridden so the daemon's
 	// main loop runs there. On EC failure ConnectAndRun returns without
@@ -634,6 +642,12 @@ bool CamuleapiApp::IsServerClientHistoryActive()
 	// Same shape as IsServerPartialUpdateActive(): a const bool snapshot
 	// taken at login, so no mutex.
 	return CaMuleExternalConnector::IsServerClientHistoryActive();
+}
+
+bool CamuleapiApp::IsServerChatActive()
+{
+	// Same shape again: a const bool snapshot taken at login, so no mutex.
+	return CaMuleExternalConnector::IsServerChatActive();
 }
 
 wxString CamuleapiApp::GetDaemonVersion()

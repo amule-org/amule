@@ -482,6 +482,21 @@ target_link_libraries (SharedFilesReloadLatchTest
 	mulecommon
 )
 
+add_executable (ChatSessionStoreTest
+	ChatSessionStoreTest.cpp
+	${CMAKE_SOURCE_DIR}/src/ChatSessionStore.cpp
+)
+add_test (NAME ChatSessionStoreTest COMMAND ChatSessionStoreTest)
+target_include_directories (ChatSessionStoreTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+target_link_libraries (ChatSessionStoreTest
+	muleunit
+	mulecommon
+)
+
 add_executable (JsonWriterTest
 	JsonWriterTest.cpp
 )

@@ -36,8 +36,14 @@
 #include "FriendList.h"     // Needed for CFriendList
 #include "Friend.h"         // Needed for CFriend
 #include "ChatSelector.h"   // Needed for CChatSelector
-#include "muuli_wdr.h"      // Needed for messagePage
+#ifndef CLIENT_GUI
+#include "ChatSessionStore.h" // Needed for CChatSessionStore
+#include "ClientList.h"       // Needed for CClientList
+#endif
+#include "muuli_wdr.h" // Needed for messagePage
 #include "OtherFunctions.h"
+#include "ScopedPtr.h" // Needed for CScopedFlag
+#include "Constants.h" // Needed for MS_NONE
 
 wxBEGIN_EVENT_TABLE(CChatWnd, wxPanel)
 	EVT_RIGHT_DOWN(CChatWnd::OnNMRclickChatTab)
@@ -50,6 +56,7 @@ wxBEGIN_EVENT_TABLE(CChatWnd, wxPanel)
 	EVT_TEXT_ENTER(IDC_CMESSAGE, CChatWnd::OnBnClickedCsend)
 	EVT_BUTTON(IDC_CSEND, CChatWnd::OnBnClickedCsend)
 	EVT_BUTTON(IDC_CCLOSE, CChatWnd::OnBnClickedCclose)
+	EVT_MULENOTEBOOK_PAGE_CLOSING(IDC_CHATSELECTOR, CChatWnd::OnChatClosing)
 	EVT_MULENOTEBOOK_ALL_PAGES_CLOSED(IDC_CHATSELECTOR, CChatWnd::OnAllPagesClosed)
 wxEND_EVENT_TABLE()
 
@@ -216,16 +223,8 @@ void CChatWnd::SendMessage(const wxString &message, const wxString &client_name,
 
 void CChatWnd::CheckNewButtonsState()
 {
-#ifdef CLIENT_GUI
-	// amulegui is receive-only: sending a chat message isn't wired over EC
-	// (CChatSelector::SendMessage is compiled out under CLIENT_GUI), so the
-	// compose box and Send button stay permanently disabled. Close still
-	// tracks whether there's an open session to close.
-	const bool hasSession = chatselector->GetPageCount() > 0;
-	GetParent()->FindWindow(IDC_CSEND)->Enable(false);
-	GetParent()->FindWindow(IDC_CMESSAGE)->Enable(false);
-	GetParent()->FindWindow(IDC_CCLOSE)->Enable(hasSession);
-#else
+	// Both builds take this path now: amulegui sends over EC_OP_CHAT_SEND,
+	// so the compose box and Send button are no longer disabled for it.
 	switch (chatselector->GetPageCount()) {
 	case 0:
 		GetParent()->FindWindow(IDC_CSEND)->Enable(false);
@@ -244,7 +243,6 @@ void CChatWnd::CheckNewButtonsState()
 		wxASSERT(GetParent()->FindWindow(IDC_CMESSAGE)->IsEnabled());
 		break;
 	}
-#endif
 }
 
 bool CChatWnd::IsIdValid(uint64 id)
@@ -260,6 +258,66 @@ void CChatWnd::ShowCaptchaResult(uint64 id, bool ok)
 void CChatWnd::EndSession(uint64 id)
 {
 	chatselector->EndSession(id);
+}
+
+void CChatWnd::StartSessionByID(uint64 gui_id, const wxString &name)
+{
+	// show=false: a session can appear on its own, opened by another client
+	// or by a peer messaging us, and must not pull the selection away from
+	// whatever the local user is doing.
+	chatselector->StartSession(gui_id, name, false);
+	CheckNewButtonsState();
+}
+
+void CChatWnd::AppendStoredMessage(
+	uint64 gui_id, const wxString &name, const wxString &text, bool outgoing, bool blink)
+{
+	chatselector->AppendStoredMessage(gui_id, name, text, outgoing);
+	// `blink` is false while replaying history on connect: a reconnect must
+	// not light the Messages button up for messages the user already read on
+	// another client. Only arrivals past the connect-time cursor blink.
+	if (blink && !theApp->amuledlg->IsDialogVisible(CamuleDlg::DT_CHAT_WND)) {
+		theApp->amuledlg->SetMessageBlink(true);
+	}
+	CheckNewButtonsState();
+}
+
+void CChatWnd::EndSessionFromCore(uint64 gui_id)
+{
+	// The core has already forgotten this session, so the tab must go without
+	// originating a close of its own. The guard keeps OnChatClosing from
+	// sending one when this DeletePage fires the page-closing event.
+	CScopedFlag closingGuard(m_inChatClosing);
+	chatselector->EndSession(gui_id);
+	CheckNewButtonsState();
+}
+
+void CChatWnd::OnChatClosing(wxBookCtrlEvent &evt)
+{
+	if (m_inChatClosing) {
+		// Re-entry from EndSessionFromCore (or from the notify that a close
+		// we just performed fired): the core already knows.
+		evt.Skip();
+		return;
+	}
+	CChatSession *session = static_cast<CChatSession *>(chatselector->GetPage(evt.GetSelection()));
+	if (!session || !session->m_client_id) {
+		evt.Skip();
+		return;
+	}
+	const uint64 gui_id = session->m_client_id;
+	CScopedFlag closingGuard(m_inChatClosing);
+#ifdef CLIENT_GUI
+	if (theApp->m_connect && theApp->m_connect->ServerSupportsChatSessions()) {
+		CECPacket req(EC_OP_CHAT_CLOSE_SESSION);
+		req.AddTag(CECTag(EC_TAG_CHAT_CLIENT_ID, gui_id));
+		theApp->m_connect->SendPacket(&req);
+	}
+#else
+	theApp->chatsessions->CloseSession(gui_id);
+	theApp->clientlist->SetChatState(gui_id, MS_NONE);
+#endif
+	evt.Skip();
 }
 
 // File_checked_for_headers

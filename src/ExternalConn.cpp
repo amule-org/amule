@@ -51,6 +51,7 @@
 #include "amule.h"      // Needed for theApp
 #include "SearchList.h" // Needed for GetSearchResults
 #include "ClientList.h"
+#include "ChatSessionStore.h"
 #include "ClientCreditsList.h" // Needed for CClientCreditsList
 #include "ClientCredits.h"     // Needed for CClientCredits, ClientMetaStruct
 #ifdef ENABLE_IP2COUNTRY
@@ -443,22 +444,9 @@ public:
 
 	void ResetLog() { m_LoggerAccess.Reset(); }
 
-	// True once this connection advertised EC_TAG_CAN_CHAT — used by
-	// ExternalConn::QueueChatMessage to fan an incoming peer message out only
-	// to clients that asked for the chat relay.
+	// True once this connection advertised EC_TAG_CAN_CHAT — it speaks the
+	// chat session ops and may be sent EC_OP_CHAT_SESSIONS replies.
 	bool ChatActive() const { return m_chatActive; }
-
-	// Append one incoming peer chat message to THIS connection's own queue
-	// (per-client, like the partial-update valuemaps — each EC client drains
-	// its own copy). Bounded so a slow-polling client can't grow it without
-	// limit; oldest dropped first.
-	void QueueChatMessage(uint64 sender_id, const wxString &message)
-	{
-		m_chatQueue.emplace_back(sender_id, message);
-		while (m_chatQueue.size() > MAX_CHAT_MESSAGES) {
-			m_chatQueue.pop_front();
-		}
-	}
 
 private:
 	ECNotifier *m_ec_notifier;
@@ -574,16 +562,11 @@ private:
 	// `m_multiSearchActive` — a single-search client's id-less request keeps
 	// meaning "the current search" (amulecmd's `search progress`).
 	bool m_searchProgressUnionActive;
-	// Set when the client advertised EC_TAG_CAN_CHAT: it wants incoming peer
-	// chat messages relayed over EC and polls EC_OP_GET_CHAT_MESSAGES. The
-	// daemon always supports this, so the flag just mirrors the client tag.
+	// Set when the client advertised EC_TAG_CAN_CHAT: it speaks the chat
+	// session ops (EC_OP_GET_CHAT_SESSIONS and friends). A client that omits
+	// the tag never sees the capability echoed and must never send those
+	// opcodes — an unknown opcode asserts before the EC_OP_FAILED path.
 	bool m_chatActive;
-	// This connection's own queue of incoming peer chat messages, drained on
-	// EC_OP_GET_CHAT_MESSAGES. Per-client (not global) so several GUIs each
-	// get their own independent copy — like the partial-update valuemaps.
-	// <sender GUI_ID, "name|message">.
-	std::list<std::pair<uint64, wxString>> m_chatQueue;
-	static const size_t MAX_CHAT_MESSAGES = 100;
 	// File ECIDs sent in the previous response for each EC request path.
 	// Diffed against the current snapshot to compute the removal list emitted
 	// to partial-update-capable clients. Tracked per-path because amulegui
@@ -1064,19 +1047,6 @@ void ExternalConn::ResetAllLogs()
 	}
 }
 
-void ExternalConn::QueueChatMessage(uint64 sender_id, const wxString &message)
-{
-	// Fan the incoming peer message out to every connected EC client that
-	// asked for the chat relay. Each keeps its own queue (per-client, like
-	// the partial-update valuemaps), so multiple GUIs get independent copies
-	// and one draining its queue doesn't steal messages from another.
-	for (CECServerSocket *s : socket_list) {
-		if (s->ChatActive()) {
-			s->QueueChatMessage(sender_id, message);
-		}
-	}
-}
-
 CExternalConnListener::CExternalConnListener(const amuleIPV4Address &adr, int flags, ExternalConn *conn)
 : CLibSocketServer(adr, flags, thePrefs::GetECNetworkInterface())
 , m_conn(conn)
@@ -1237,12 +1207,13 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 					// amulecmd's `search progress` with no argument expects.
 					m_searchProgressUnionActive = true;
 				}
-				if (request->GetTagByName(EC_TAG_CAN_CHAT)) {
-					// Client (amulegui) wants incoming peer chat messages
-					// relayed over EC. The daemon always supports this, so
-					// echo the capability in AUTH_OK; the client then polls
-					// EC_OP_GET_CHAT_MESSAGES. Old clients omit the tag and
-					// simply never poll — see the client-side login packet.
+				if (request->GetTagByName(EC_TAG_CAN_CHAT_SESSIONS)) {
+					// Client speaks the chat session ops. Its own tag, NOT
+					// EC_TAG_CAN_CHAT: that one is echoed by daemons which
+					// predate these opcodes, so a client gating on it would
+					// send EC_OP_GET_CHAT_SESSIONS to a core that asserts on
+					// it. A client that omits this tag never sees the echo
+					// and must never send those opcodes.
 					m_chatActive = true;
 				}
 				m_haveNotificationSupport = request->GetTagByName(EC_TAG_CAN_NOTIFY) != NULL;
@@ -1453,9 +1424,9 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 				// opcode asserts before the EC_OP_FAILED path.
 				response->AddTag(CECEmptyTag(EC_TAG_CAN_CLIENT_HISTORY));
 				if (m_chatActive) {
-					// Confirm chat relay so the client starts polling
-					// EC_OP_GET_CHAT_MESSAGES for incoming peer messages.
-					response->AddTag(CECEmptyTag(EC_TAG_CAN_CHAT));
+					// Confirm the chat session ops so the client starts
+					// polling EC_OP_GET_CHAT_SESSIONS.
+					response->AddTag(CECEmptyTag(EC_TAG_CAN_CHAT_SESSIONS));
 				}
 				if (m_multiSearchActive) {
 					// Confirm multi-search mode so the client addresses
@@ -1690,6 +1661,81 @@ static CECPacket *Get_EC_Response_GetSharedDirs()
 // (EC_TAG_SHAREDDIR_REJECTED + a numeric reason the client translates, so the
 // daemon's locale never leaks into the user's UI); every path that *did*
 // validate is still applied, so one bad entry doesn't discard the whole edit.
+namespace
+{
+
+// The client's resume cursor: it already holds everything up to this id.
+// Absent or 0 means "everything you still have".
+uint32 ChatCursorFrom(const CECPacket *request)
+{
+	const CECTag *tag = request->GetTagByName(EC_TAG_CHAT_MSG_ID);
+	return tag ? static_cast<uint32>(tag->GetInt()) : 0;
+}
+
+// One EC_TAG_CHAT_SESSION container: identity, plus every message newer than
+// `cursor`. A session with nothing new still encodes (with no message
+// children) — that is how a late-connecting client learns it exists.
+CECTag EncodeChatSession(const CChatSessionStore::Session &session, uint32 cursor)
+{
+	CECTag tag(EC_TAG_CHAT_SESSION, session.gui_id);
+	tag.AddTag(CECTag(EC_TAG_CHAT_PEER_NAME, session.name));
+	tag.AddTag(CECTag(EC_TAG_CHAT_MSG_ID, session.LastMsgId()));
+
+	// Link the live peer and the friend entry when they exist, so a client
+	// can join against its own /clients and /friends views without a lookup
+	// of its own. Both are omitted when absent rather than sent as 0.
+	if (const CUpDownClient *client = theApp->clientlist->FindClientByIP(session.ip, session.port)) {
+		tag.AddTag(CECTag(EC_TAG_CLIENT, client->ECID()));
+	}
+	if (const CFriend *f = theApp->friendlist->FindFriend(CMD4Hash(), session.ip, session.port)) {
+		tag.AddTag(CECTag(EC_TAG_FRIEND, f->ECID()));
+	}
+
+	for (const CChatSessionStore::Message &msg : session.messages) {
+		if (msg.id <= cursor) {
+			continue;
+		}
+		CECTag msgTag(EC_TAG_CHAT_MESSAGE, msg.text);
+		msgTag.AddTag(CECTag(EC_TAG_CHAT_MSG_ID, msg.id));
+		msgTag.AddTag(CECTag(EC_TAG_CHAT_DIRECTION, msg.direction));
+		msgTag.AddTag(CECTag(EC_TAG_CHAT_TIMESTAMP, msg.timestamp));
+		tag.AddTag(msgTag);
+	}
+	return tag;
+}
+
+// Resolve an EC_OP_CHAT_SEND target to a GUI_ID. Three addressing modes so a
+// caller can reply without a lookup (CHAT_CLIENT_ID), address a live peer it
+// already has (CLIENT), or reach a friend who is currently OFFLINE (FRIEND) —
+// the last one resolves through the friend's stored ip:port, which is what
+// makes messaging an offline friend work at all.
+bool ResolveChatTarget(const CECPacket *request, uint64 &out_gui_id)
+{
+	if (const CECTag *tag = request->GetTagByName(EC_TAG_CHAT_CLIENT_ID)) {
+		out_gui_id = tag->GetInt();
+		return out_gui_id != 0;
+	}
+	if (const CECTag *tag = request->GetTagByName(EC_TAG_CLIENT)) {
+		const CUpDownClient *client = theApp->clientlist->FindClientByECID(tag->GetInt());
+		if (!client) {
+			return false;
+		}
+		out_gui_id = GUI_ID(client->GetIP(), client->GetUserPort());
+		return true;
+	}
+	if (const CECTag *tag = request->GetTagByName(EC_TAG_FRIEND)) {
+		CFriend *f = theApp->friendlist->FindFriend(tag->GetInt());
+		if (!f || !f->GetIP() || !f->GetPort()) {
+			return false;
+		}
+		out_gui_id = GUI_ID(f->GetIP(), f->GetPort());
+		return true;
+	}
+	return false;
+}
+
+} // namespace
+
 static CECPacket *Get_EC_Response_SetSharedDirs(const CECPacket *request)
 {
 	CECPacket *response = new CECPacket(EC_OP_SET_SHARED_DIRS);
@@ -4167,17 +4213,89 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		response = new CECPacket(EC_OP_NOOP);
 		break;
 	case EC_OP_GET_CHAT_MESSAGES: {
-		// Drain buffered incoming peer chat messages for a polling EC
-		// client (amulegui). Each EC_TAG_CHAT carries the "name|message"
-		// string, with the sender's GUI_ID as an EC_TAG_CHAT_CLIENT_ID
-		// child — the format CChatWnd::ProcessMessage already expects.
-		response = new CECPacket(EC_OP_CHAT_MESSAGES);
-		for (const auto &msg : m_chatQueue) {
-			CECTag chatTag(EC_TAG_CHAT, msg.second);
-			chatTag.AddTag(CECTag(EC_TAG_CHAT_CLIENT_ID, msg.first));
-			response->AddTag(chatTag);
+		// Non-destructive backfill of ONE session's history, for a client
+		// opening a conversation it has no transcript for. The polling path
+		// is EC_OP_GET_CHAT_SESSIONS; this exists so opening an old tab does
+		// not have to replay the whole store.
+		const CECTag *idTag = request->GetTagByName(EC_TAG_CHAT_CLIENT_ID);
+		if (!idTag) {
+			response = new CECPacket(EC_OP_FAILED);
+			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Missing chat session id")));
+			break;
 		}
-		m_chatQueue.clear();
+		const CChatSessionStore::Session *session = theApp->chatsessions->Find(idTag->GetInt());
+		if (!session) {
+			response = new CECPacket(EC_OP_FAILED);
+			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("No such chat session")));
+			break;
+		}
+		response = new CECPacket(EC_OP_CHAT_MESSAGES);
+		response->AddTag(CECTag(EC_TAG_CHAT_MSG_ID, theApp->chatsessions->LastMsgId()));
+		response->AddTag(EncodeChatSession(*session, ChatCursorFrom(request)));
+		break;
+	}
+	case EC_OP_GET_CHAT_SESSIONS: {
+		// The per-tick workhorse: the session list AND every message newer
+		// than the client's cursor in one roundtrip, so an idle connection
+		// costs one small packet and a busy one needs no follow-up query.
+		const uint32 cursor = ChatCursorFrom(request);
+		response = new CECPacket(EC_OP_CHAT_SESSIONS);
+		// Top-level cursor even when nothing came back, so a client can
+		// advance past messages that were evicted rather than re-asking for
+		// them forever.
+		response->AddTag(CECTag(EC_TAG_CHAT_MSG_ID, theApp->chatsessions->LastMsgId()));
+		for (const CChatSessionStore::Session *session : theApp->chatsessions->Sessions()) {
+			// Sessions with nothing new are still listed, with no message
+			// children: that is how a client that connected late learns the
+			// session exists, and how every client learns a session it is
+			// tracking was closed elsewhere (absence from this reply).
+			response->AddTag(EncodeChatSession(*session, cursor));
+		}
+		break;
+	}
+	case EC_OP_CHAT_SEND: {
+		const CECTag *textTag = request->GetTagByName(EC_TAG_CHAT);
+		const wxString text = textTag ? textTag->GetStringData() : wxString();
+		if (text.IsEmpty()) {
+			response = new CECPacket(EC_OP_FAILED);
+			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Empty chat message")));
+			break;
+		}
+		uint64 gui_id = 0;
+		if (!ResolveChatTarget(request, gui_id)) {
+			response = new CECPacket(EC_OP_FAILED);
+			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Unknown chat target")));
+			break;
+		}
+		// Deliberately ignoring the bool: a false return means "queued while
+		// connecting", not "failed" — the desktop optimistically prints
+		// *** Connecting to Client *** — so turning it into EC_OP_FAILED
+		// would report an error for a message that arrives moments later.
+		theApp->clientlist->SendChatMessage(gui_id, text);
+		response = new CECPacket(EC_OP_NOOP);
+		response->AddTag(CECTag(EC_TAG_CHAT_CLIENT_ID, gui_id));
+		response->AddTag(CECTag(EC_TAG_CHAT_MSG_ID, theApp->chatsessions->LastMsgId()));
+		break;
+	}
+	case EC_OP_CHAT_CLOSE_SESSION: {
+		const CECTag *idTag = request->GetTagByName(EC_TAG_CHAT_CLIENT_ID);
+		if (!idTag) {
+			response = new CECPacket(EC_OP_FAILED);
+			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Missing chat session id")));
+			break;
+		}
+		const uint64 gui_id = idTag->GetInt();
+		if (!theApp->chatsessions->CloseSession(gui_id)) {
+			response = new CECPacket(EC_OP_FAILED);
+			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("No such chat session")));
+			break;
+		}
+		theApp->clientlist->SetChatState(gui_id, MS_NONE);
+		// Closing is global, matching how closing a search tab destroys the
+		// core bucket for every client: the next EC_OP_CHAT_SESSIONS reply
+		// simply omits the session and each client drops its tab.
+		Notify_Chat_SessionRemoved(gui_id);
+		response = new CECPacket(EC_OP_NOOP);
 		break;
 	}
 	//

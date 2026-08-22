@@ -70,6 +70,12 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 - [`DELETE /api/v0/friends/{ecid}`](#delete-apiv0friendsecid) — remove a friend
 - [`PATCH /api/v0/friends/{ecid}`](#patch-apiv0friendsecid) — grant or clear the friend slot
 - [`POST /api/v0/friends/{ecid}/shared_files`](#post-apiv0friendsecidshared_files) — browse a friend's shared files
+- [`POST /api/v0/friends/{ecid}/messages`](#post-apiv0friendsecidmessages) — message a friend, online or offline
+- [`GET /api/v0/chats`](#get-apiv0chats) — list chat conversations
+- [`GET /api/v0/chats/{peer}/messages`](#get-apiv0chatspeermessages) — read a conversation's history
+- [`POST /api/v0/chats/{peer}/messages`](#post-apiv0chatspeermessages) — send a message to a peer address
+- [`DELETE /api/v0/chats/{peer}`](#delete-apiv0chatspeer) — close a conversation
+- [`POST /api/v0/clients/{ecid}/messages`](#post-apiv0clientsecidmessages) — message a connected peer
 
 **Categories**
 - [`GET /api/v0/categories`](#get-apiv0categories) — list categories
@@ -232,6 +238,7 @@ Omitting all four parameters preserves the previous response exactly, plus the a
 | `GET /shared`         | `name`, `size` |
 | `GET /servers`        | `name`, `users`, `ping`, `files` |
 | `GET /friends`        | `name`, `online` |
+| `GET /chats`          | `last_message_at`, `name` |
 | `GET /search/{id}/results` | `name`, `size`, `sources`, `rating`, `directory` |
 
 ### Bulk mutations and the `results` envelope
@@ -2637,6 +2644,131 @@ The response is never `Content-Encoding: gzip` — a PNG is already entropy-code
 Peers whose country could not be resolved — GeoIP disabled, unsupported by the build, or a private/unmatched address — come back with `country_code: ""`. There is no per-country image to request in that case; draw nothing, or `unknown.png` for parity with the desktop list.
 
 ---
+
+### Chat
+
+Conversations with peers, backed by the chat session store in `amuled`. The store is shared: a message sent from the desktop GUI, from amulegui or through this API lands in the same transcript, and every client sees the same conversation.
+
+A conversation is keyed on `{peer}` = `"<ip>:<port>"` (for example `203.0.113.42:4662`). That is the readable form of the internal id the EC wire already uses, it is stable across peer reconnects — unlike an ECID — and it needs no identifier of its own. A `{peer}` that is not four dotted octets plus a port is a `400`.
+
+The store is **in memory**: an `amuled` restart empties every conversation, exactly as the desktop's own transcript dies with its notebook tab. Retention is bounded at 200 messages per conversation and 50 conversations, evicting the least recently active first.
+
+Message `id` is monotonic per `amuled` process and never reused, which makes it a safe polling cursor: `since_id` never returns a duplicate and never skips a message. It resets when the daemon restarts, which also empties the store.
+
+Every endpoint here answers `503 ec_unsupported` when the connected `amuled` does not serve chat.
+
+#### `GET /api/v0/chats`
+
+**Auth:** `GUEST`
+
+```sh
+curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/chats"
+```
+
+```json
+{
+  "chats": [
+    {
+      "peer":            "203.0.113.42:4662",
+      "ip":              "203.0.113.42",
+      "port":            4662,
+      "name":            "alice",
+      "client_ecid":     4382,
+      "friend_ecid":     12,
+      "online":          true,
+      "message_count":   14,
+      "last_msg_id":     91,
+      "last_message_at": 1786652714,
+      "last_message":    { "id": 91, "direction": "in", "text": "thanks!", "timestamp": 1786652714 }
+    }
+  ],
+  "total": 1, "offset": 0, "limit": 1
+}
+```
+
+`name` falls back to `"IP: <ip> Port: <port>"` when the core has no nickname for the peer, matching what the desktop shows; the same string appears in the SSE payload. `client_ecid` is `0` when the peer is offline, `friend_ecid` is `0` when the peer is not a friend — join against [`GET /clients`](#get-apiv0clients) and [`GET /friends`](#get-apiv0friends). `online` is simply `client_ecid != 0`.
+
+`last_message` is omitted for a conversation that holds none. The full transcript is deliberately **not** on the list: 50 conversations at 200 messages each would be 10 000 objects per read. Use the messages endpoint below.
+
+Served from the refresher snapshot — no EC roundtrip per request. Standard [list envelope](#list-pagination-and-sorting); sortable on `last_message_at` and `name`.
+
+**Errors:** `503 ec_unsupported`, `503 ec_unavailable`.
+
+#### `GET /api/v0/chats/{peer}/messages`
+
+**Auth:** `GUEST`
+
+**Query:** `since_id=N` (only messages with `id > N`), `limit=N` (the last N of that window).
+
+```json
+{
+  "peer": "203.0.113.42:4662",
+  "messages": [
+    { "id": 90, "direction": "out", "text": "hi",      "timestamp": 1786652700 },
+    { "id": 91, "direction": "in",  "text": "thanks!", "timestamp": 1786652714 }
+  ],
+  "total": 14,
+  "last_msg_id": 91
+}
+```
+
+`direction` is `"in"` (from the peer) or `"out"` (sent by us — from **any** client: this API, amulegui, or the desktop GUI). `timestamp` is stamped by the core when the message was received or sent. `total` counts everything the store holds for this conversation, not the returned window.
+
+**Errors:** `404 not_found` (no such conversation), `400 bad_request` (malformed `{peer}` or query), `503 ec_unsupported`, `503 ec_unavailable`.
+
+#### `POST /api/v0/chats/{peer}/messages`
+
+**Auth:** `ADMIN`
+
+**Body:** `{ "text": "hello" }` — non-empty, at most 1024 bytes.
+
+```sh
+curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"text":"hello"}' "http://$HOST/api/v0/chats/203.0.113.42:4662/messages"
+```
+
+```json
+{ "ok": true, "peer": "203.0.113.42:4662",
+  "message": { "id": 92, "direction": "out", "text": "hello" } }
+```
+
+The core creates the conversation if it does not exist, so this doubles as "start a chat with this address" — an unknown `{peer}` is not a `404` here.
+
+Returns `202 Accepted`, not `200`: the core acknowledges that it queued the message on the peer connection, not that the peer received it. An unreachable peer is not an error — the desktop behaves the same, optimistically showing `*** Connecting to Client ***`.
+
+**Errors:** `400 bad_request`, `503 ec_unsupported`, `503 ec_unavailable`.
+
+#### `POST /api/v0/friends/{ecid}/messages`
+
+**Auth:** `ADMIN`
+
+Message a friend by friend ECID. This is the form that reaches an **offline** friend: the daemon resolves the ECID to the friend's stored address, so no live connection is needed.
+
+**Body:** `{ "text": "hello" }`
+
+**Response:** `202 Accepted` → `{ "ok": true, "peer": "203.0.113.42:4662", "message": { … } }`, so the caller learns the conversation key to read back.
+
+**Errors:** `404 not_found` (no friend with that ECID), plus the set above.
+
+#### `POST /api/v0/clients/{ecid}/messages`
+
+**Auth:** `ADMIN`
+
+The peer-addressed form, for a caller holding a peer row that should not have to compose an `ip:port` key. Same body and response as above.
+
+**Errors:** `404 not_found` (no live peer with that ECID), plus the set above.
+
+#### `DELETE /api/v0/chats/{peer}`
+
+**Auth:** `ADMIN`
+
+Closes the conversation: drops it from the core store and resets the peer's chat state.
+
+**Response:** `200 OK` → `{ "ok": true, "peer": "203.0.113.42:4662" }`
+
+Closing is **global**, the same way closing a search tab frees the search for every client. A connected amulegui drops its tab on the next poll, and the desktop GUI closes its own; no client is left showing a conversation the core no longer has.
+
+**Errors:** `404 not_found`, `400 bad_request`, `503 ec_unsupported`, `503 ec_unavailable`.
 
 ## Error code catalog
 

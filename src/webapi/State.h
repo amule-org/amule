@@ -504,6 +504,59 @@ struct FriendSnapshot
 	bool friend_slot = false;
 };
 
+// /chats endpoints. One conversation with one peer, mirrored from the
+// daemon's CChatSessionStore over EC_OP_GET_CHAT_SESSIONS.
+//
+// Keyed on the GUI_ID the wire already uses -- (ip << 16) | port -- which the
+// REST layer renders as the readable "<ip>:<port>" conversation key. Stable
+// across peer reconnects, unlike an ECID, and converts straight back to the
+// GUI_ID the EC ops want.
+struct ChatMessageSnapshot
+{
+	std::uint32_t id = 0; //!< monotonic per daemon process; a safe `since_id` cursor
+	bool outgoing = false;
+	std::uint32_t timestamp = 0; //!< unix seconds, stamped by the core
+	std::string text;
+};
+
+struct ChatSessionSnapshot
+{
+	std::uint64_t gui_id = 0;
+	std::string ip; //!< dotted quad, rendered in the walker like ClientSnapshot::ip
+	std::uint16_t port = 0;
+	std::string name;              //!< peer display name; "" when the core has none
+	std::uint32_t client_ecid = 0; //!< live peer, 0 when offline
+	std::uint32_t friend_ecid = 0; //!< friend entry, 0 when not a friend
+	std::vector<ChatMessageSnapshot> messages;
+
+	//! Highest id held here, 0 when empty.
+	std::uint32_t LastMsgId() const { return messages.empty() ? 0 : messages.back().id; }
+
+	//! The REST conversation key, "<ip>:<port>".
+	std::string PeerKey() const { return ip + ":" + std::to_string(port); }
+
+	//! Display name, falling back to the desktop's own rendering when the
+	//! core has no nick for the peer (CChatSelector builds the same string).
+	//! Shared by the list, the detail read and the SSE payload so a client
+	//! never sees a blank name from one and a real one from another.
+	std::string DisplayName() const
+	{
+		return name.empty() ? ("IP: " + ip + " Port: " + std::to_string(port)) : name;
+	}
+};
+
+// Renders an IPv4 address that arrives LSB-first -- the layout
+// EC_TAG_CLIENT_USER_IP, the Kad address tags and the eD2k id all share, and
+// what Uint32toStringIP() renders on the desktop side. Lives here rather than
+// in the refresher because the snapshot layer needs it too (a chat peer key
+// is built from a GUI_ID, with no walker involved).
+std::string IPv4ToDotted(std::uint32_t ip_lsb_first);
+
+// The same key built straight from a GUI_ID, for paths that only have the id
+// (a session that was closed is gone from the snapshot, so there is no
+// ChatSessionSnapshot left to ask). GUI_ID is (ip << 16) | port.
+std::string ChatPeerKeyFromGuiId(std::uint64_t gui_id);
+
 // /kad endpoint. Single composite snapshot pulled from the STAT_REQ
 // response we're already fetching for /status — saves a roundtrip
 // since amuled's `EC_OP_STAT_REQ` at `EC_DETAIL_CMD` ships every
@@ -1432,6 +1485,12 @@ public:
 
 	std::vector<ServerSnapshot> Servers() const;
 	std::vector<FriendSnapshot> Friends() const;
+	// Chat sessions, most-recently-active first (the daemon's own order).
+	std::vector<ChatSessionSnapshot> Chats() const;
+	// The resume cursor for the next EC_OP_GET_CHAT_SESSIONS poll: the
+	// highest message id this snapshot holds. Advanced from the reply even
+	// when nothing came back, so evicted ids are not re-requested forever.
+	std::uint32_t ChatCursor() const;
 	// Results / progress for one search. Every caller names a concrete
 	// daemon-allocated id — there is no implicit "current search" — and an
 	// unknown id yields an empty list / idle progress. HasSearch
@@ -1514,6 +1573,12 @@ public:
 	void MutateClients(const std::function<void(std::map<std::uint32_t, ClientSnapshot> &)> &fn);
 	void MutateServers(const std::function<void(std::map<std::uint32_t, ServerSnapshot> &)> &fn);
 	void MutateFriends(const std::function<void(std::map<std::uint32_t, FriendSnapshot> &)> &fn);
+	// The walker replaces the whole session vector each tick rather than
+	// merging: the daemon's reply IS the complete set, and a session missing
+	// from it was closed (that absence is exactly how every client learns of
+	// a close, so merging would resurrect closed conversations).
+	void MutateChats(
+		const std::function<void(std::vector<ChatSessionSnapshot> &, std::uint32_t &cursor)> &fn);
 	// Mutate one search's result map (the refresher's per-tick full-fetch
 	// overwrite). No-op if the id names no live slot.
 	void MutateSearch(std::uint32_t search_id,
@@ -1628,6 +1693,8 @@ private:
 	void ReconcileKnownClientsLocked();
 	std::map<std::uint32_t, ServerSnapshot> m_servers;
 	std::map<std::uint32_t, FriendSnapshot> m_friends;
+	std::vector<ChatSessionSnapshot> m_chats;
+	std::uint32_t m_chat_cursor = 0;
 	std::vector<std::string> m_amule_log_lines;
 	ServerInfoLog m_server_info;
 	StatsTreeNode m_stats_tree;

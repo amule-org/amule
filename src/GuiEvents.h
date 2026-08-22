@@ -144,6 +144,14 @@ void SearchFileBeingDestroyed(CSearchFile *file);
 // close, rather than two mechanisms for one idea.
 void Search_Removed(wxUIntPtr searchID);
 
+// A chat session was dropped from the core store, by whichever client asked.
+// The mirror of Search_Removed, and closing follows the same rule searches
+// already do: the core state is destroyed for everyone and each client is
+// TOLD, rather than left showing a tab the core no longer has. The monolithic
+// GUI closes its notebook page here; EC clients learn it from the session's
+// absence in the next EC_OP_CHAT_SESSIONS reply.
+void Chat_SessionRemoved(uint64 gui_id);
+
 // Fired from CSearchList::StartNewSearch, once per search the core begins,
 // whoever asked for it. The mirror of Search_Removed: it lets the monolithic
 // GUI show a tab for a search started by an EC client (amulegui, amulecmd,
@@ -605,6 +613,8 @@ typedef void (wxEvtHandler::*MuleNotifyEventFunction)(CMuleGUIEvent &);
 #define Notify_ChatRemoveFriend(ptr) MuleNotify::DoNotify(&MuleNotify::ChatRemoveFriend, ptr)
 #define Notify_ChatConnResult(val0, val1, s) MuleNotify::DoNotify(&MuleNotify::ChatConnResult, val0, val1, s)
 #define Notify_ChatProcessMsg(val0, s) MuleNotify::DoNotify(&MuleNotify::ChatProcessMsg, val0, s)
+// A chat session was closed — see MuleNotify::Chat_SessionRemoved above.
+#define Notify_Chat_SessionRemoved(id) MuleNotify::DoNotify(&MuleNotify::Chat_SessionRemoved, id)
 #define Notify_ChatSendCaptcha(val0, s) MuleNotify::DoNotify(&MuleNotify::ChatSendCaptcha, val0, s)
 
 // misc

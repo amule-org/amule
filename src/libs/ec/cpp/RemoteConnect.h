@@ -68,6 +68,7 @@ public:
 		bool preferNoZlib = false,
 		bool canMultiSearch = false,
 		bool canChat = false,
+		bool canChatSessions = false,
 		bool canAEAD = false,
 		const std::vector<uint8_t> &clientNonce = std::vector<uint8_t>(),
 		const std::vector<uint8_t> &clientPubKey = std::vector<uint8_t>());
@@ -281,6 +282,15 @@ private:
 	// buffers incoming peer messages for polling via EC_OP_GET_CHAT_MESSAGES.
 	// Old daemons don't echo it; the client then never polls for chat.
 	bool m_serverChat;
+	// Client speaks the chat session ops (advertise `EC_TAG_CAN_CHAT_SESSIONS`).
+	bool m_canChatSessions;
+	// Set when the server echoed `EC_TAG_CAN_CHAT_SESSIONS` in AUTH_OK.
+	//
+	// Distinct from m_serverChat on purpose. `EC_TAG_CAN_CHAT` is echoed by
+	// daemons that predate the session ops entirely, so gating on it would
+	// send EC_OP_GET_CHAT_SESSIONS to a core with no case for it -- straight
+	// into the unknown-opcode branch, which asserts before answering.
+	bool m_serverChatSessions;
 
 	void WriteDoneAndQueueEmpty();
 
@@ -320,6 +330,9 @@ public:
 	// chat window (amulegui) should set this; others never poll for messages.
 	void SetCanChat(bool can) noexcept { m_canChat = can; }
 
+	// Opt into the chat session ops. Call BEFORE ConnectToCore().
+	void SetCanChatSessions(bool can) noexcept { m_canChatSessions = can; }
+
 	bool ServerSupportsPartialUpdate() const { return m_serverPartialUpdate; }
 	//! See m_serverClientHistory. False means: do not send the request at all.
 	bool ServerSupportsClientHistory() const { return m_serverClientHistory; }
@@ -330,6 +343,10 @@ public:
 	bool ServerSupportsMultiSearch() const { return m_serverMultiSearch; }
 
 	bool ServerSupportsChat() const { return m_serverChat; }
+
+	//! See m_serverChatSessions. False means: do not send the chat session
+	//! opcodes at all.
+	bool ServerSupportsChatSessions() const { return m_serverChatSessions; }
 
 	bool ServerSupportsSharedDirsConfig() const { return m_serverSharedDirsConfig; }
 

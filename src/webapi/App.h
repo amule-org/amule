@@ -100,6 +100,9 @@ public:
 	// i.e. it answers EC_OP_GET_CLIENT_HISTORY. /known_clients returns 503
 	// rather than sending a request an older core would assert on.
 	bool IsServerClientHistoryActive();
+	// True when the connected amuled serves the chat session ops; every
+	// /chats route answers 503 ec_unsupported when this is false.
+	bool IsServerChatActive();
 
 	// Version string of the connected amuled, captured from the
 	// EC_TAG_SERVER_VERSION tag of the AUTH_OK handshake. Empty string

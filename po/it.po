@@ -19,7 +19,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-22 12:11+0200\n"
+"POT-Creation-Date: 2026-08-22 15:15+0200\n"
 "PO-Revision-Date: 2026-08-21 19:10+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
@@ -2187,6 +2187,25 @@ msgstr ""
 #, c-format
 msgid "Could not save the amuleapi password: %s"
 msgstr "Impossibile salvare la password di amuleapi: %s"
+
+#: src/ExternalConn.cpp
+#, fuzzy
+msgid "Missing chat session id"
+msgstr "Nuova sessione chat iniziata"
+
+#: src/ExternalConn.cpp
+#, fuzzy
+msgid "No such chat session"
+msgstr "Chiude questa sessione di chat."
+
+#: src/ExternalConn.cpp
+msgid "Empty chat message"
+msgstr ""
+
+#: src/ExternalConn.cpp
+#, fuzzy
+msgid "Unknown chat target"
+msgstr "(nome sconosciuto)"
 
 #: src/ExternalConn.cpp
 msgid "Kad is disabled in preferences."

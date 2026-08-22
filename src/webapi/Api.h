@@ -40,6 +40,7 @@
 #include <map>
 #include <utility>
 
+class CECTag;
 class CAmuleApiConfig;
 class CamuleapiApp;
 class CJsonWriter;
@@ -284,6 +285,24 @@ private:
 		const CHttpServer::Request &, const std::string &key, bool require_downloading);
 	CHttpServer::Response HandleClientDetail(const CHttpServer::Request &, const std::string &ecid_str);
 	CHttpServer::Response HandleKnownClients(const CHttpServer::Request &);
+
+	// --- Chat (issue #971) -------------------------------------------------
+	// All six gate on m_app.IsServerChatActive() and answer 503
+	// ec_unsupported otherwise: a daemon predating the chat ops asserts on
+	// the unknown opcode rather than answering EC_OP_FAILED, so the request
+	// must never go out.
+	CHttpServer::Response HandleChats(const CHttpServer::Request &);
+	CHttpServer::Response HandleChatMessages(const CHttpServer::Request &, const std::string &peer);
+	CHttpServer::Response HandleChatSend(const CHttpServer::Request &, const std::string &peer);
+	CHttpServer::Response HandleChatClose(const CHttpServer::Request &, const std::string &peer);
+	// Shared body of all three send forms; `target` is the EC tag naming the
+	// recipient (GUI_ID, client ECID or friend ECID).
+	CHttpServer::Response SendChatMessageTo(const CHttpServer::Request &, const CECTag &target);
+	// Address a conversation by friend / peer ECID instead of ip:port. The
+	// friend form is the one that reaches an OFFLINE friend, through their
+	// stored address.
+	CHttpServer::Response HandleFriendMessageSend(const CHttpServer::Request &, const std::string &ecid);
+	CHttpServer::Response HandleClientMessageSend(const CHttpServer::Request &, const std::string &ecid);
 	// POST /clients/{ecid}/shared_files — browse a peer's shared file list
 	// ("View Files", #399). Returns a search_id addressed like any search:
 	// results via GET /search/{id}/results, progress + SSE via the standard

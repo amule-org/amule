@@ -78,6 +78,7 @@ class CCanceledFileList;
 class CSearchList;
 class CClientCreditsList;
 class CFriendList;
+class CChatSessionStore;
 class CClientUDPSocket;
 class CIPFilter;
 class UploadBandwidthThrottler;
@@ -460,6 +461,10 @@ public:
 	CSearchList *searchlist;
 	CClientCreditsList *clientcredits;
 	CFriendList *friendlist;
+	// The core's chat transcript, shared by the local GUI and every EC
+	// client so all three see one conversation rather than three private
+	// ones. In-memory; emptied by a restart.
+	CChatSessionStore *chatsessions;
 	CClientUDPSocket *clientudp;
 	CStatistics *m_statistics;
 	CIPFilter *ipfilter;
