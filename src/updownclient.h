@@ -522,6 +522,14 @@ public:
 	 * this client can be failed at once instead of hanging.
 	 */
 	bool IsPeerContactPending() const;
+	/**
+	 * Deadline for a browse to show any sign of life, or 0 when none is
+	 * pending. Armed when the browse is asked for and pushed forward on every
+	 * sign of progress, so it bounds silence rather than total duration -- a
+	 * large share may stream for minutes and must not be cut off.
+	 */
+	uint64_t GetBrowseDeadline() const { return m_browseDeadline; }
+	void RefreshBrowseDeadline();
 
 	void ResetFileStatusInfo();
 
@@ -811,6 +819,8 @@ private:
 	uint64 m_dwLastSourceAnswer;
 	uint64 m_dwLastAskedForSources;
 	int m_iFileListRequested;
+	//! See GetBrowseDeadline. 0 = no browse pending.
+	uint64_t m_browseDeadline;
 	uint32 m_browseSearchId;
 	int m_browseTotalDirs;
 	EBrowseStatus m_browseStatus;
