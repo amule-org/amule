@@ -8,7 +8,7 @@
 import { api } from "../api.js";
 import { store } from "../store.js";
 import { html, useState, useEffect, useRef, useStore } from "../dom.js";
-import { ProgressBar, Placeholder, toast, confirmDialog, Section, statRow, IdentityLine, copyText, Tabs, CommentEditor, RenameForm, ratingLabel, PRIORITIES, prioValue, prioLabel } from "../components.js";
+import { ProgressBar, Placeholder, toast, confirmDialog, Section, statRow, IdentityLine, copyText, Tabs, CommentEditor, CommentsList, RenameForm, PRIORITIES, prioValue, prioLabel } from "../components.js";
 import { formatBytes, formatSpeed, formatDuration, formatInt, formatPercent, formatTimestamp } from "../format.js";
 import { Icon } from "../icons.js";
 import { FileClients, HIDDEN_EVERYWHERE } from "./client-table.js";
@@ -272,24 +272,7 @@ function DownloadComments({ hash, comment, rating, running, parts }) {
           ${running ? t("comments_kad_searching") : t("comments_get_kad")}
         </button>
       </div>
-      ${list.length ? html`
-        <table class="comments-list">
-          <thead><tr>
-            <th>${t("comments_col_username")}</th>
-            <th>${t("comments_col_rating")}</th>
-            <th>${t("comments_col_filename")}</th>
-            <th>${t("comments_col_comment")}</th>
-          </tr></thead>
-          <tbody>
-            ${list.map((c, i) => html`
-              <tr key=${i}>
-                <td>${c.username}</td>
-                <td><span class=${"rating-badge rating-" + c.rating}>${ratingLabel(c.rating)}</span></td>
-                <td class="comments-fname" title=${c.filename}>${c.filename}</td>
-                <td>${c.comment}</td>
-              </tr>`)}
-          </tbody>
-        </table>` : html`<${Placeholder} kind="info">${t("comments_none")}<//>`}
+      <${CommentsList} comments=${list} />
     </div>`;
 }
 

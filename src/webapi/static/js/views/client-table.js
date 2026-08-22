@@ -6,11 +6,12 @@
 import { api } from "../api.js";
 import { data } from "../events.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
-import { Badge, Placeholder, CountryCell } from "../components.js";
+import { Badge, Placeholder, CountryCell, toast } from "../components.js";
+import { searches } from "../searches.js";
 import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker, ipNum } from "../table.js";
 import { formatBytes, formatSpeed } from "../format.js";
 import { Icon } from "../icons.js";
-import { t } from "../i18n.js";
+import { t, terr } from "../i18n.js";
 
 const ACTIVE = (s) => s && s !== "idle" && s !== "unknown";
 export const isDown = (c) => (c.download_speed_bps || 0) > 0 || ACTIVE(c.download_state);
@@ -86,6 +87,18 @@ export const COLS = [
     sortVal: (c) => c.queue_waiting_position || 0, cell: (c) => c.queue_waiting_position || "—" },
   { key: "score", th: "downloads_peer_col_score", num: true, width: "80px", sortable: true,
     sortVal: (c) => c.score || 0, cell: (c) => c.score || "—" },
+
+  // "View files": browse this peer's share, the desktop's context-menu action.
+  // A browse is an ordinary search on the API, so it opens as a tab in the
+  // Search section, which is where this jumps to. Rides the shared column set,
+  // so it also appears in the detail panels' Clients tab -- it targets a peer,
+  // not a file, so that is correct.
+  { key: "actions", th: "downloads_peer_col_actions", cls: "row-actions admin-only", width: "70px",
+    cell: (c) => html`
+      <button class="btn btn-icon btn-sm" type="button" title=${t("search_view_files")}
+              onClick=${() => searches.browse(c.ecid, c.name).catch((e) => toast(terr(e), "error"))}>
+        <${Icon} name="shared" />
+      </button>` },
 ];
 
 // Raw-detail columns no consumer leads with; each adds its own defaultHidden set

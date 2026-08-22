@@ -131,19 +131,31 @@ export function IdentityLine({ file, copy, extra, titleKey }) {
 }
 
 // Flat notebook-style tab strip (aMule CMuleNotebook look). `tabs` is a list
-// of { key, label, badge? }; `active` is the selected key; `onSelect(key)` is
-// called on click.
-export function Tabs({ tabs, active, onSelect, extra }) {
+// of { key, label, badge?, cls?, title?, closeLabel? }; `active` is the
+// selected key; `onSelect(key)` is called on click. `cls` goes on the strip
+// itself. Pass `onClose(key)` for a close affordance per tab; callers that
+// omit it render exactly as before.
+//
+// A closable tab becomes a two-button group rather than a button inside a
+// button: nesting interactive elements is invalid markup and screen readers do
+// not reliably expose the inner one.
+export function Tabs({ tabs, active, onSelect, onClose, extra, cls = "" }) {
+  const tabButton = (tab) => html`
+    <button type="button" role="tab"
+            class=${"tab" + (tab.key === active ? " active" : "") + (tab.cls ? " " + tab.cls : "")}
+            aria-selected=${tab.key === active} title=${tab.title}
+            onClick=${() => onSelect(tab.key)}>
+      ${tab.label}
+      ${tab.badge != null ? html`<span class="tab-badge">${tab.badge}</span>` : null}
+    </button>`;
   return html`
-    <div class="tabs" role="tablist">
-      ${tabs.map((tab) => html`
-        <button type="button" role="tab"
-                class=${"tab" + (tab.key === active ? " active" : "")}
-                aria-selected=${tab.key === active}
-                onClick=${() => onSelect(tab.key)}>
-          ${tab.label}
-          ${tab.badge != null ? html`<span class="tab-badge">${tab.badge}</span>` : null}
-        </button>`)}
+    <div class=${"tabs" + (cls ? " " + cls : "")} role="tablist">
+      ${tabs.map((tab) => (onClose ? html`
+        <span class="tab-item" role="presentation">
+          ${tabButton(tab)}
+          <button type="button" class="tab-close" title=${tab.closeLabel}
+                  aria-label=${tab.closeLabel} onClick=${() => onClose(tab.key)}>×</button>
+        </span>` : tabButton(tab)))}
       ${extra ? html`<div class="tabs-extra">${extra}</div>` : null}
     </div>`;
 }
@@ -154,6 +166,33 @@ export function Tabs({ tabs, active, onSelect, extra }) {
 // mirror the desktop GetRateString() (src/OtherFunctions.cpp).
 
 const RATING_OPTIONS = [0, 1, 2, 3, 4, 5];
+
+// The comments/ratings table, shared by the download detail panel (source
+// comments + retrieved Kad notes) and the search view's per-result dialog
+// (Kad notes only). Both render the same rows, so they render them from the
+// same place -- a second hand-written copy is how the two drift apart.
+export function CommentsList({ comments }) {
+  const list = comments || [];
+  if (!list.length) return html`<${Placeholder} kind="info">${t("comments_none")}<//>`;
+  return html`
+    <table class="comments-list">
+      <thead><tr>
+        <th>${t("comments_col_username")}</th>
+        <th>${t("comments_col_rating")}</th>
+        <th>${t("comments_col_filename")}</th>
+        <th>${t("comments_col_comment")}</th>
+      </tr></thead>
+      <tbody>
+        ${list.map((c, i) => html`
+          <tr key=${i}>
+            <td>${c.username}</td>
+            <td><span class=${"rating-badge rating-" + c.rating}>${ratingLabel(c.rating)}</span></td>
+            <td class="comments-fname" title=${c.filename}>${c.filename}</td>
+            <td>${c.comment}</td>
+          </tr>`)}
+      </tbody>
+    </table>`;
+}
 
 // i18n label for a rating value; -1 -> "comment only".
 export function ratingLabel(r) {

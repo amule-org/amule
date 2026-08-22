@@ -1,26 +1,15 @@
-// Search view: start an ed2k/Kad search, then track it SSE-first: the
-// `search` channel delivers per-result upserts (search_result_added, same
-// shape as a /search/{id}/results[] entry, keyed by hash) and live progress
-// (search_progress {state, percent, results, kind}). GET /search/{id}/results
-// is only used to seed on mount (a search may already be running), as a single
-// reconcile once the terminal "finished" frame arrives, and as a polling
-// fallback while the stream isn't live. Download selected results into a
-// category.
-//
-// This view shows ONE search at a time -- the one it started, or the newest
-// the daemon holds when it mounts. The API addresses every search by id, so
-// several can run at once and every frame on the channel carries the id it
-// belongs to; frames for the others are ignored here. A per-search tab strip
-// is a separate piece of work.
+// Search view: one tab per search, like the desktop's notebook. The rendering
+// half only -- which searches are open, their results and their per-tab UI
+// live in ../searches.js, because this view unmounts whenever the user
+// navigates to another section and the tabs have to survive that.
 
 import { api } from "../api.js";
-import { data } from "../events.js";
-import { store } from "../store.js";
-import { html, useState, useEffect, useRef } from "../dom.js";
-import { Badge, Placeholder, Tabs, toast } from "../components.js";
+import { html, useState, useEffect, useStore } from "../dom.js";
+import { Badge, Placeholder, Tabs, CommentsList, ratingLabel, toast } from "../components.js";
 import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker } from "../table.js";
 import { formatBytes, formatDuration, formatInt } from "../format.js";
 import { Icon } from "../icons.js";
+import { searches } from "../searches.js";
 import { t, tn, terr } from "../i18n.js";
 
 const SIZE_UNITS = { B: 1, KiB: 1024, MiB: 1048576, GiB: 1073741824 };
@@ -30,11 +19,9 @@ const FILE_TYPES = [
   ["Image", "search_ftype_image"], ["Document", "search_ftype_document"], ["Program", "search_ftype_program"],
   ["Archive", "search_ftype_archive"], ["CD/DVD", "search_ftype_cddvd"],
 ];
-const POLL_MS = 1500;
-// While a search streams results over SSE, coalesce the re-render so the table
-// refreshes at most once per second no matter how fast frames arrive — a burst
-// of hundreds of per-result upserts would otherwise lock the main thread.
-const SYNC_MS = 1000;
+// A tab is as wide as its label, so a long query gets cut; the full string
+// stays in the tab's title attribute.
+const TAB_LABEL_MAX = 24;
 
 export default function Search({ isGuest }) {
   const [query, setQuery] = useState("");
@@ -46,157 +33,21 @@ export default function Search({ isGuest }) {
   const [minUnit, setMinUnit] = useState("MiB");
   const [maxSize, setMaxSize] = useState("");
   const [maxUnit, setMaxUnit] = useState("MiB");
-
-  const [results, setResults] = useState([]);
-  const [filter, setFilter] = useState("");
-  const [filterHave, setFilterHave] = useState("all");
-  const [selection, setSelection] = useState(() => new Set());
-  // Sort + hidden columns persist per-table via useTablePrefs.
-  const { sortKey, sortDir, hidden, widths, toggleSort, toggleCol, setWidth, resetPrefs } = useTablePrefs("search", {
-    sortKey: "sources", sortDir: -1, hidden: ["length", "bitrate", "codec"],
-  });
-  const [progress, setProgress] = useState("");
-  const [searching, setSearching] = useState(false);
   const [categories, setCategories] = useState([]);
-  const [cat, setCat] = useState(0);
-  const [rowCat, setRowCat] = useState({});
-  const catFor = (h) => (rowCat[h] != null ? rowCat[h] : Number(cat)) || 0;
 
-  const pollRef = useRef(null);
-  const stopPolling = () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
-
-  // Canonical result set keyed by hash. Both the SSE channel (upsert) and the
-  // poll (full authoritative replace) write here, then we push the values
-  // into render state.
-  const resultsMap = useRef(new Map());
-  // The search this view is bound to (see fetchResults).
-  const searchId = useRef(0);
-  // Trailing throttle: the first pending change schedules a flush ~SYNC_MS out;
-  // everything arriving in that window folds into it. Progress text piggybacks
-  // on the same flush so it never renders on its own hot path.
-  const syncTimer = useRef(0);
-  const pendingProgress = useRef(null);
-  const flush = () => {
-    syncTimer.current = 0;
-    setResults(Array.from(resultsMap.current.values()));
-    if (pendingProgress.current !== null) { setProgress(pendingProgress.current); pendingProgress.current = null; }
-  };
-  const scheduleSync = () => { if (!syncTimer.current) syncTimer.current = setTimeout(flush, SYNC_MS); };
-
-  // `progress.state` is canonical: "running" | "finished" | "idle". Only show
-  // the live "Searching… N%" text; once finished (or idle) hide it — the tab
-  // count already reflects the outcome.
-  const progressText = (pr) =>
-    pr.state === "running" ? t("search_searching_fmt", { percent: pr.percent || 0 }) : "";
-
-  // Every search-scoped call names its id in the path. `searchId.current` is
-  // the one this view is showing: set by POST /search, or adopted on mount
-  // from the newest entry the daemon holds. With nothing adopted there is
-  // nothing to read, which is the honest answer -- the API no longer has an
-  // implicit "whatever ran last" to fall back on.
-  const fetchResults = async () => {
-    const sid = searchId.current;
-    if (!sid) return;
-    try {
-      const r = await api.get("search/" + sid + "/results");
-      const res = r.results || [];
-      resultsMap.current = new Map(res.map((x) => [x.hash, x]));
-      scheduleSync();
-      const pr = r.progress || {};
-      setProgress(progressText(pr));
-      setSearching(pr.state === "running");
-      if (pr.state === "running") { if (!pollRef.current) startPolling(); }
-      else stopPolling();
-    } catch (e) { setProgress(terr(e) || t("search_error")); }
-  };
-
-  // Fallback only: while SSE is live the search channel drives everything,
-  // so the tick stays idle and no periodic GETs go out.
-  const startPolling = () => {
-    stopPolling();
-    pollRef.current = setInterval(() => { if (!data.isLive()) fetchResults(); }, POLL_MS);
-  };
+  // The registry publishes the light tab list; the heavy results array rides
+  // its own key, consumed by the pane below.
+  const reg = useStore("searches") || { tabs: [], activeId: 0 };
+  const active = reg.tabs.find((x) => x.id === reg.activeId) || null;
 
   useEffect(() => {
+    // Idempotent: attaches the stream routing and adopts whatever the daemon
+    // already holds (this browser's searches, another client's, or ones
+    // restored across a restart).
+    searches.ensure();
     api.get("categories").then((r) => setCategories(r.categories || [])).catch(() => {});
-
-    // Adopt a search on mount so a reload (or a search started from another
-    // client) still shows something.
-    //
-    // GET /search arrives id-ascending and id order is NOT recency: Kad
-    // search ids carry a high-bit mask, so a Kad search always sorts above
-    // an ed2k one no matter which ran first. Rank by `started_at` instead,
-    // which amuleapi stamps for the searches it started. Entries without it
-    // (another client's, or restored from the daemon's on-disk ring) rank
-    // last -- unknown, not oldest -- and only win if nothing else is on
-    // offer. Running beats finished either way, since that is the one a user
-    // is most likely still watching.
-    const newest = (list) =>
-      list.slice().sort((a, b) => (b.started_at || 0) - (a.started_at || 0))[0];
-    const adopt = async () => {
-      try {
-        const r = await api.get("search");
-        const list = r.searches || [];
-        if (!list.length) return;
-        const chosen = newest(list.filter((x) => x.state === "running")) || newest(list);
-        if (!chosen) return;
-        searchId.current = chosen.search_id;
-        fetchResults();
-      } catch (_) { /* nothing to adopt */ }
-    };
-
-    // Live updates from the SSE search channel (opened app-wide by the
-    // shell). search_result_added payloads are /search/{id}/results[] entries
-    // verbatim, so upsert them by hash as-is.
-    let lastResult = store.get("search:result");
-    const offResult = store.subscribe("search:result", (p) => {
-      if (!p || p === lastResult) return;
-      lastResult = p;
-      // Several searches can be running at once and they all publish on this
-      // channel, so a frame for a different one is not ours to render.
-      if (p.search_id !== searchId.current) return;
-      resultsMap.current.set(p.hash, p);
-      scheduleSync();
-    });
-    // search_progress drives the live percent; its `results` count is the
-    // backend's map size and may run ahead of the upserts we've seen. The
-    // terminal "finished" frame is the completion signal — reconcile once
-    // against REST to pick up anything the stream dropped.
-    let lastProgress = store.get("search:progress");
-    const offProgress = store.subscribe("search:progress", (p) => {
-      if (!p || p === lastProgress) return;
-      lastProgress = p;
-      if (p.search_id !== searchId.current) return;
-      pendingProgress.current = progressText(p);
-      scheduleSync();
-      if (p.state === "finished") {
-        stopPolling();
-        setSearching(false);
-        fetchResults();
-      }
-    });
-
-    // The search we are showing can be freed by another client, by the slot
-    // cap, or by an EC reset. Without this the view would keep displaying a
-    // result set whose id now 404s.
-    let lastClosed = store.get("search:closed");
-    const offClosed = store.subscribe("search:closed", (p) => {
-      if (!p || p === lastClosed) return;
-      lastClosed = p;
-      if (p.search_id !== searchId.current) return;
-      stopPolling();
-      searchId.current = 0;
-      resultsMap.current.clear();
-      setResults([]); setSelection(new Set()); setSearching(false);
-      setProgress("");
-    });
-
-    adopt(); // a search may already be running, here or in another client
-    return () => {
-      stopPolling(); clearTimeout(syncTimer.current);
-      offResult(); offProgress(); offClosed();
-    };
   }, []);
+
   const sizeBytes = (v, unit) => { const n = Number(v); return (!n || n < 0) ? 0 : Math.round(n * SIZE_UNITS[unit]); };
 
   const startSearch = async (e) => {
@@ -211,124 +62,29 @@ export default function Search({ isGuest }) {
     if (mn) body.min_size = mn;
     if (mx) body.max_size = mx;
     try {
-      const started = await api.post("search", body);
-      searchId.current = started.search_id;
-      resultsMap.current.clear();
-      setResults([]); setSelection(new Set()); setSearching(true);
-      setProgress(progressText({ state: "running", kind: type }));
-      startPolling();
+      // Every start opens its own tab; the query stays in the box so refining
+      // and re-running is one edit.
+      await searches.start(body);
       toast(t("search_toast_search_started"), "success");
     } catch (err) { toast(terr(err) || t("search_error"), "error"); }
   };
-
-  const stop = async () => {
-    stopPolling(); setSearching(false);
-    const sid = searchId.current;
-    if (!sid) return;
-    try { await api.post("search/" + sid + "/stop"); } catch (_) {}
-    fetchResults();
-  };
-
-  const downloadSelected = async () => {
-    const hashes = Array.from(selection);
-    if (!hashes.length) { toast(t("search_toast_no_results_selected"), "warn"); return; }
-    const category = Number(cat) || 0;
-    try {
-      await Promise.all(hashes.map((h) => api.post("search/results/" + h + "/download", { category })));
-      toast(tn("search_toast_added_downloads", hashes.length), "success");
-      setSelection(new Set());
-    } catch (e) { toast(terr(e) || t("search_error"), "error"); }
-  };
-
-  const downloadOne = async (h) => {
-    try {
-      await api.post("search/results/" + h + "/download", { category: catFor(h) });
-      toast(tn("search_toast_added_downloads", 1), "success");
-    } catch (e) { toast(terr(e) || t("search_error"), "error"); }
-  };
-
-  const toggleRow = (hash, checked) => {
-    const next = new Set(selection);
-    if (checked) next.add(hash); else next.delete(hash);
-    setSelection(next);
-  };
-  const toggleAll = (checked) =>
-    setSelection(checked ? new Set(list.map((r) => r.hash)) : new Set());
-
-  const match = textMatcher(filter);
-  let filtered = filter ? results.filter((r) => match(r.name)) : results;
-  if (filterHave !== "all")
-    filtered = filtered.filter((r) => (filterHave === "have") === !!r.already_have);
-  const allSelected = filtered.length > 0 && filtered.every((r) => selection.has(r.hash));
-  const selectedCount = filtered.filter((r) => selection.has(r.hash)).length;
-
-  // Keep the selection free of results hidden by the filter: on a filter change,
-  // drop any selected hash no longer visible (the still-visible ones stay).
-  useEffect(() => {
-    setSelection((prev) => {
-      const vis = new Set(filtered.map((r) => r.hash));
-      const next = new Set(); prev.forEach((h) => vis.has(h) && next.add(h));
-      return next.size === prev.size ? prev : next;
-    });
-  }, [filter, filterHave]);
-
-  const catOptions = () => html`
-    <option value=${0}>${t("search_category_none")}</option>
-    ${categories.filter((c) => c.index !== 0).map((c) => html`<option value=${c.index}>${c.name || ("#" + c.index)}</option>`)}`;
 
   const unitSelect = (value, onChange) => html`
     <select class="input input-sm" value=${value} onChange=${onChange}>
       ${Object.keys(SIZE_UNITS).map((u) => html`<option value=${u}>${u}</option>`)}
     </select>`;
 
-  const columns = [
-    { always: true, label: html`<input type="checkbox" title=${t("search_select_all")} checked=${allSelected}
-                         onChange=${(e) => toggleAll(e.target.checked)} />`, width: "40px",
-      cell: (r) => html`<input type="checkbox" checked=${selection.has(r.hash)} onChange=${(e) => toggleRow(r.hash, e.target.checked)} />` },
-    { key: "name", always: true, label: t("search_name"), cls: "name", sortable: true,
-      sortVal: (r) => (r.name || "").toLowerCase(),
-      // already_have is signalled by the row background (.row-have), not a badge.
-      cell: (r) => r.name },
-    { key: "size", label: t("search_size"), num: true, width: "110px", sortable: true,
-      sortVal: (r) => r.size || 0, cell: (r) => formatBytes(r.size) },
-    { key: "sources", label: t("search_sources"), num: true, width: "120px", sortable: true,
-      sortVal: (r) => (r.sources && r.sources.total) || 0,
-      cell: (r) => { const src = r.sources || {}; return html`<span title=${t("search_title_complete_total")}>${(src.complete || 0) + " / " + (src.total || 0)}</span>`; } },
-    { key: "rating", label: t("search_rating"), num: true, width: "90px", sortable: true,
-      sortVal: (r) => r.rating || 0, cell: (r) => r.rating || 0 },
-    { key: "type", label: t("search_type"), width: "100px", sortable: true,
-      sortVal: (r) => r.type || "", cell: (r) => typeLabel(r.type) },
-    { key: "status", label: t("downloads_status_label"), width: "120px", sortable: true,
-      sortVal: (r) => r.status || "", cell: (r) => searchStatusBadge(r.status) },
-    { key: "length", label: t("downloads_detail_media_length"), num: true, width: "100px", sortable: true,
-      sortVal: (r) => (r.media && r.media.length_s) || 0,
-      cell: (r) => (r.media && r.media.length_s) ? formatDuration(r.media.length_s) : "" },
-    { key: "bitrate", label: t("downloads_detail_media_bitrate"), num: true, width: "90px", sortable: true,
-      sortVal: (r) => (r.media && r.media.bitrate) || 0,
-      cell: (r) => (r.media && r.media.bitrate) ? formatInt(r.media.bitrate) : "" },
-    { key: "codec", label: t("downloads_detail_media_codec"), width: "90px", sortable: true,
-      sortVal: (r) => (r.media && r.media.codec) || "", cell: (r) => (r.media && r.media.codec) || "" },
-    { key: "actions", label: t("search_actions"), cls: "row-actions admin-only", width: "180px",
-      cell: (r) => html`
-        <select class="input input-sm" value=${catFor(r.hash)}
-                onChange=${(e) => setRowCat({ ...rowCat, [r.hash]: Number(e.target.value) })}>
-          ${catOptions()}
-        </select>
-        <button class="btn btn-icon btn-sm" type="button" title=${t("search_download")} onClick=${() => downloadOne(r.hash)}>
-          <${Icon} name="downloads" />
-        </button>` },
-  ];
-
-  const list = sortRows(filtered, columns, sortKey, sortDir);
-  // sortRows keeps the full column set (it looks columns up by key); only the
-  // VirtualTable is fed the visible subset.
-  const shown = columns.filter((c) => !c.key || !hidden.has(c.key));
-  const rowClass = (r) => {
-    const c = [];
-    if (selection.has(r.hash)) c.push("row-selected");
-    if (r.already_have) c.push("row-have");
-    return c.join(" ");
-  };
+  const tabItems = reg.tabs.map((x) => {
+    const full = x.label || x.query || ("#" + x.id);
+    return {
+      key: String(x.id),
+      label: full.length > TAB_LABEL_MAX ? full.slice(0, TAB_LABEL_MAX - 1) + "…" : full,
+      title: full + " · " + t("search_type_" + x.kind),
+      badge: x.count,
+      cls: x.state === "running" ? "running" : "",
+      closeLabel: t("search_tab_close"),
+    };
+  });
 
   return html`
     <div class="fill-view">
@@ -353,41 +109,301 @@ export default function Search({ isGuest }) {
         </div>`)}
       </div>
       <div class="toolbar">
-        <button class="btn admin-only" type="submit" disabled=${searching}>${t("search_search")}</button>
-        <button class="btn admin-only" type="button" onClick=${stop} disabled=${!searching}>${t("search_stop")}</button>
-        <button class="btn" type="button" onClick=${fetchResults}>${t("search_update_results")}</button>
+        <button class="btn btn-primary admin-only" type="submit">${t("search_search")}</button>
       </div>
       ${isGuest ? html`<p class="hint">${t("search_guest_readonly")}</p>` : null}
     </form>
 
     <section class="net-pane pane-fill">
-      <${Tabs} tabs=${[{ key: "results", label: t("search_results") + " (" + results.length + ")" }]}
-               active="results" onSelect=${() => {}} />
+      <${Tabs} cls="search-tabs" tabs=${tabItems} active=${String(reg.activeId)}
+               onSelect=${(k) => searches.setActive(Number(k))}
+               onClose=${(k) => searches.close(Number(k))}
+               extra=${reg.tabs.length > 1 ? html`
+                 <button class="btn btn-sm admin-only" type="button"
+                         onClick=${() => searches.closeAll()}>${t("search_close_all")}</button>` : null} />
       <div class="net-pane-body">
-        <div class="toolbar pane-toolbar">
-          <select class="input input-sm admin-only" value=${cat} onChange=${(e) => setCat(e.target.value)}>
-            ${catOptions()}
-          </select>
-          <button class="btn btn-sm admin-only" onClick=${downloadSelected}>${t("search_download")}</button>
-          <span class="selected-count admin-only">${t("search_selected")} ${selectedCount}</span>
-          <span class="search-progress">${progress}</span>
-          <div class="spacer"></div>
-          <select class="input input-sm" value=${filterHave} onChange=${(e) => setFilterHave(e.target.value)}>
-            <option value="all">${t("downloads_status_all")}</option>
-            <option value="not_have">${t("search_have_no")}</option>
-            <option value="have">${t("search_have_yes")}</option>
-          </select>
-          <input class="input input-sm" type="text" placeholder=${t("search_filter")} value=${filter} onInput=${(e) => setFilter(e.target.value)} />
-          <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} onReset=${resetPrefs} />
-        </div>
-
-        <${VirtualTable} columns=${shown} rows=${list} rowKey=${(r) => r.hash} rowClass=${rowClass}
-                         sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort}
-                         widths=${widths} onResize=${setWidth}
-                         maxHeight="none"
-                         empty=${html`<${Placeholder} kind="info">${t("search_empty")}<//>`} />
+        ${active
+          ? html`<${ResultsPane} key=${active.id} tab=${active} categories=${categories} />`
+          : html`<${Placeholder} kind="info">${t("search_no_tabs")}<//>`}
       </div>
     </section>
+    </div>`;
+}
+
+// One search's results. Keyed on the tab, so switching tabs starts clean (no
+// dialog left open on a hit from the search you just left) -- everything worth
+// keeping already lives in the registry. Column prefs are stored per KIND: a
+// browse listing leads with the remote folder, a query listing with sources.
+function ResultsPane({ tab, categories }) {
+  const rows = useStore("search:" + tab.id) || [];
+  const [commentsFor, setCommentsFor] = useState(null);
+  const browse = tab.kind === "browse";
+  const { sortKey, sortDir, hidden, widths, toggleSort, toggleCol, setWidth, resetPrefs } =
+    useTablePrefs(browse ? "search-browse" : "search", browse
+      ? { sortKey: "directory", sortDir: 1, hidden: ["sources", "rating", "status", "length", "bitrate", "codec"] }
+      : { sortKey: "sources", sortDir: -1, hidden: ["directory", "length", "bitrate", "codec"] });
+
+  // Selection, filters and per-row choices belong to the TAB, not to this
+  // component: switching tabs and coming back must restore them.
+  const ui = searches.ui(tab.id) || { selection: new Set(), filter: "", filterHave: "all", cat: 0, rowCat: {}, rowEcid: {} };
+  const setUi = (patch) => searches.setUi(tab.id, patch);
+  // Per-row category, falling back to the tab's toolbar default.
+  const catFor = (h) => (ui.rowCat[h] != null ? ui.rowCat[h] : Number(ui.cat) || 0);
+
+  const visible = (all, filter, filterHave) => {
+    const m = textMatcher(filter);
+    let out = filter ? all.filter((r) => m(r.name)) : all;
+    if (filterHave !== "all") out = out.filter((r) => (filterHave === "have") === !!r.already_have);
+    return out;
+  };
+  const filtered = visible(rows, ui.filter, ui.filterHave);
+
+  // A hidden row must not stay selected: "Download selected" would queue a
+  // file the user cannot see. Prune as the filter changes rather than after.
+  const prune = (sel, all) => {
+    const vis = new Set(all.map((r) => r.hash));
+    const next = new Set();
+    sel.forEach((h) => vis.has(h) && next.add(h));
+    return next;
+  };
+  const setFilter = (v) => setUi({ filter: v, selection: prune(ui.selection, visible(rows, v, ui.filterHave)) });
+  const setFilterHave = (v) => setUi({ filterHave: v, selection: prune(ui.selection, visible(rows, ui.filter, v)) });
+
+  const toggleRow = (hash, checked) => {
+    const next = new Set(ui.selection);
+    if (checked) next.add(hash); else next.delete(hash);
+    setUi({ selection: next });
+  };
+  const toggleAll = (checked) => setUi({ selection: checked ? new Set(filtered.map((r) => r.hash)) : new Set() });
+
+  const allSelected = filtered.length > 0 && filtered.every((r) => ui.selection.has(r.hash));
+  const selectedCount = filtered.filter((r) => ui.selection.has(r.hash)).length;
+
+  const downloadBody = (hash) => {
+    const body = { category: catFor(hash) };
+    // A grouped child is picked by its own ecid, which is what queues the file
+    // under that advertised name instead of the aggregated one.
+    const ecid = ui.rowEcid[hash];
+    if (ecid) body.ecid = Number(ecid);
+    return body;
+  };
+  const afterDownload = () => searches.refresh(tab.id); // status/already_have only move on a read
+
+  const downloadSelected = async () => {
+    const hashes = Array.from(ui.selection);
+    if (!hashes.length) { toast(t("search_toast_no_results_selected"), "warn"); return; }
+    try {
+      await Promise.all(hashes.map((h) => api.post("search/results/" + h + "/download", downloadBody(h))));
+      toast(tn("search_toast_added_downloads", hashes.length), "success");
+      setUi({ selection: new Set() });
+      afterDownload();
+    } catch (e) { toast(terr(e) || t("search_error"), "error"); }
+  };
+
+  const downloadOne = async (h) => {
+    try {
+      await api.post("search/results/" + h + "/download", downloadBody(h));
+      toast(tn("search_toast_added_downloads", 1), "success");
+      afterDownload();
+    } catch (e) { toast(terr(e) || t("search_error"), "error"); }
+  };
+
+  const relatedSearch = async () => {
+    const hashes = Array.from(ui.selection);
+    if (!hashes.length) { toast(t("search_toast_no_results_selected"), "warn"); return; }
+    // One search over every selected hit, as the desktop does. Naming the tab
+    // after one of several files would be a lie, so past one it counts them.
+    const first = rows.find((r) => r.hash === hashes[0]);
+    const label = hashes.length === 1 && first ? first.name
+      : t("search_related_tab_fmt", { count: hashes.length });
+    try { await searches.related(hashes, label); }
+    catch (e) { toast(terr(e) || t("search_error"), "error"); }
+  };
+
+  const catOptions = () => html`
+    <option value=${0}>${t("search_category_none")}</option>
+    ${categories.filter((c) => c.index !== 0).map((c) => html`<option value=${c.index}>${c.name || ("#" + c.index)}</option>`)}`;
+
+  const columns = [
+    { always: true, label: html`<input type="checkbox" title=${t("search_select_all")} checked=${allSelected}
+                         onChange=${(e) => toggleAll(e.target.checked)} />`, width: "40px",
+      cell: (r) => html`<input type="checkbox" checked=${ui.selection.has(r.hash)} onChange=${(e) => toggleRow(r.hash, e.target.checked)} />` },
+    { key: "name", always: true, label: t("search_name"), cls: "name", sortable: true,
+      sortVal: (r) => (r.name || "").toLowerCase(),
+      // already_have is signalled by the row background (.row-have), not a badge.
+      // A hit advertised under several filenames picks one here, and that is
+      // what the download uses -- single row and bulk alike, via the ecid.
+      cell: (r) => {
+        // The core names a group after its most-sourced child
+        // (CSearchFile::UpdateParent), so one child always repeats the parent's
+        // name; the default option below already IS that name.
+        const kids = (r.children || []).filter((c) => c.name !== r.name);
+        if (!kids.length) return r.name;
+        return html`
+          <select class="input input-sm name-select" title=${t("search_alt_names_title")}
+                  value=${ui.rowEcid[r.hash] || ""}
+                  onChange=${(e) => setUi({ rowEcid: { ...ui.rowEcid, [r.hash]: e.target.value } })}>
+            <option value="">${r.name}</option>
+            ${kids.map((c) => html`<option value=${c.ecid}>${c.name}</option>`)}
+          </select>`;
+      } },
+    { key: "size", label: t("search_size"), num: true, width: "110px", sortable: true,
+      sortVal: (r) => r.size || 0, cell: (r) => formatBytes(r.size) },
+    { key: "sources", label: t("search_sources"), num: true, width: "120px", sortable: true,
+      sortVal: (r) => (r.sources && r.sources.total) || 0,
+      // Total, plus the complete count in parentheses only when there IS one,
+      // like the desktop (SearchListModel.cpp:242-246). A Kad hit never carries
+      // one -- only ed2k servers send FT_COMPLETE_SOURCES -- so a fixed "0 / N"
+      // would print a zero meaning "unknown", not "none".
+      cell: (r) => {
+        const src = r.sources || {};
+        const total = src.total || 0, complete = src.complete || 0;
+        const tip = complete ? t("search_title_sources_fmt", { total, complete }) : t("search_title_sources_total");
+        const text = complete ? total + " (" + complete + ")" : String(total);
+        return html`<span title=${tip}>${text}</span>`;
+      } },
+    { key: "rating", label: t("search_rating"), num: true, width: "90px", sortable: true,
+      sortVal: (r) => r.rating || 0,
+      // 0 means "nobody rated this", not "rated zero", so it renders as "—"
+      // (the desktop blanks the cell, SearchListModel.cpp:268-277). A Kad hit is
+      // always 0: TAG_FILERATING rides a Kad *note*, not a keyword result, so a
+      // rating only ever surfaces per-comment in the ratings dialog.
+      cell: (r) => (r.rating ? html`<span title=${ratingLabel(r.rating)}>${r.rating}</span>` : "—") },
+    { key: "type", label: t("search_type"), width: "100px", sortable: true,
+      sortVal: (r) => r.type || "", cell: (r) => typeLabel(r.type) },
+    { key: "status", label: t("downloads_status_label"), width: "120px", sortable: true,
+      sortVal: (r) => r.status || "", cell: (r) => searchStatusBadge(r.status) },
+    // Browse-only: the folder inside the peer's share, empty on every
+    // server/Kad hit. Sorts folder-then-name, like the desktop.
+    { key: "directory", label: t("search_directory"), width: "180px", sortable: true,
+      sortVal: (r) => ((r.directory || "") + "/" + (r.name || "")).toLowerCase(),
+      cell: (r) => html`<span title=${r.directory}>${r.directory || "—"}</span>` },
+    { key: "length", label: t("downloads_detail_media_length"), num: true, width: "100px", sortable: true,
+      sortVal: (r) => (r.media && r.media.length_s) || 0,
+      cell: (r) => (r.media && r.media.length_s) ? formatDuration(r.media.length_s) : "" },
+    { key: "bitrate", label: t("downloads_detail_media_bitrate"), num: true, width: "90px", sortable: true,
+      sortVal: (r) => (r.media && r.media.bitrate) || 0,
+      cell: (r) => (r.media && r.media.bitrate) ? formatInt(r.media.bitrate) : "" },
+    { key: "codec", label: t("downloads_detail_media_codec"), width: "90px", sortable: true,
+      sortVal: (r) => (r.media && r.media.codec) || "", cell: (r) => (r.media && r.media.codec) || "" },
+    { key: "actions", label: t("search_actions"), cls: "row-actions", width: "220px",
+      cell: (r) => html`
+        <span class="admin-only">
+          <select class="input input-sm" value=${catFor(r.hash)}
+                  onChange=${(e) => setUi({ rowCat: { ...ui.rowCat, [r.hash]: Number(e.target.value) } })}>
+            ${catOptions()}
+          </select>
+          <button class="btn btn-icon btn-sm" type="button" title=${t("search_download")} onClick=${() => downloadOne(r.hash)}>
+            <${Icon} name="downloads" />
+          </button>
+        </span>
+        <button class="btn btn-icon btn-sm" type="button" title=${t("search_comments")} onClick=${() => setCommentsFor(r)}>
+          <${Icon} name="star" />
+        </button>` },
+  ];
+
+  const list = sortRows(filtered, columns, sortKey, sortDir);
+  // sortRows keeps the full column set (it looks columns up by key); only the
+  // VirtualTable is fed the visible subset.
+  const shown = columns.filter((c) => !c.key || !hidden.has(c.key));
+  const rowClass = (r) => {
+    const c = [];
+    if (ui.selection.has(r.hash)) c.push("row-selected");
+    if (r.already_have) c.push("row-have");
+    return c.join(" ");
+  };
+
+  const running = tab.state === "running";
+  // Toolbar split like the Shared Files one: selection actions left of the
+  // rule, search actions right of it. The rule is admin-only so it goes away
+  // with the group it separates instead of leading a guest's toolbar.
+  // Extend greys out rather than hiding, like Stop, and its title names which
+  // of the two conditions is in the way.
+  const canExtend = tab.kind === "kad" && running;
+  const extendTitle = canExtend ? t("search_extend_title")
+    : tab.kind !== "kad" ? t("search_extend_kad_only") : t("search_extend_finished");
+  return html`
+    <div class="toolbar pane-toolbar">
+      <select class="input input-sm admin-only" value=${Number(ui.cat) || 0}
+              onChange=${(e) => setUi({ cat: Number(e.target.value) })}>
+        ${catOptions()}
+      </select>
+      <button class="btn btn-sm admin-only" type="button" onClick=${downloadSelected}>${t("search_download")}</button>
+      <button class="btn btn-sm admin-only" type="button" onClick=${relatedSearch}
+              title=${t("search_related_title")}>${t("search_related")}</button>
+      <span class="selected-count admin-only">${t("search_selected")} ${selectedCount}</span>
+      <span class="vsep admin-only" aria-hidden="true"></span>
+      <button class="btn btn-sm admin-only" type="button" disabled=${!running}
+              onClick=${() => searches.stop(tab.id)}>${t("search_stop")}</button>
+      <button class="btn btn-sm admin-only" type="button" disabled=${!canExtend}
+              title=${extendTitle} onClick=${() => searches.more(tab.id)}>${t("search_extend")}</button>
+      <button class="btn btn-sm" type="button" onClick=${() => searches.refresh(tab.id)}>${t("search_update_results")}</button>
+      <span class="search-progress">${running ? t("search_searching_fmt", { percent: tab.percent || 0 }) : ""}</span>
+      <div class="spacer"></div>
+      <select class="input input-sm" value=${ui.filterHave} onChange=${(e) => setFilterHave(e.target.value)}>
+        <option value="all">${t("downloads_status_all")}</option>
+        <option value="not_have">${t("search_have_no")}</option>
+        <option value="have">${t("search_have_yes")}</option>
+      </select>
+      <input class="input input-sm" type="text" placeholder=${t("search_filter")} value=${ui.filter} onInput=${(e) => setFilter(e.target.value)} />
+      <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} onReset=${resetPrefs} />
+    </div>
+
+    <${VirtualTable} columns=${shown} rows=${list} rowKey=${(r) => r.hash} rowClass=${rowClass}
+                     sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort}
+                     widths=${widths} onResize=${setWidth}
+                     maxHeight="none"
+                     empty=${html`<${Placeholder} kind="info">${t("search_empty")}<//>`} />
+    ${commentsFor ? html`<${ResultComments} result=${commentsFor} onClose=${() => setCommentsFor(null)} />` : null}`;
+}
+
+// Kad ratings/comments for one search hit. POLLING is the only way to see the
+// notes land: comments_updated fires for downloads only, never for a search
+// hit. amuleapi refreshes the owning search on read, so this also works on a
+// finished search -- which is when a user actually reads a result list.
+function ResultComments({ result, onClose }) {
+  const [d, setD] = useState(null);
+  const [nonce, setNonce] = useState(0);
+
+  useEffect(() => {
+    let alive = true, timer = 0, tries = 0;
+    const load = () => api.get("search/results/" + result.hash + "/comments")
+      .then((x) => {
+        if (!alive) return;
+        setD(x);
+        // Capped: the Kad lookup lives ~45 s, so a stuck flag must not poll
+        // for ever.
+        if (x.kad_comment_search_running && tries++ < 30) timer = setTimeout(load, 2000);
+      })
+      .catch(() => { if (alive) setD({ count: 0, comments: [] }); });
+    load();
+    return () => { alive = false; clearTimeout(timer); };
+  }, [result.hash, nonce]);
+
+  const running = !!(d && d.kad_comment_search_running);
+  const list = (d && d.comments) || [];
+  const getKad = () => api.post("search/results/" + result.hash + "/comments")
+    .then(() => { toast(t("comments_kad_started"), "info"); setNonce((n) => n + 1); })
+    .catch((e) => toast(e.code === "amuled_rejected" ? t("comments_kad_error") : terr(e), "error"));
+
+  return html`
+    <div class="modal-overlay" onClick=${(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div class="modal modal-wide">
+        <div class="modal-header">
+          <h3 title=${result.name}>${result.name}</h3>
+        </div>
+        <div class="comments-head">
+          <span class="comments-count">${tn("comments_count", list.length)}</span>
+          <button class="btn btn-sm admin-only" type="button" onClick=${getKad} disabled=${running}>
+            <${Icon} name=${running ? "polling" : "kad"} />
+            ${running ? t("comments_kad_searching") : t("comments_get_kad")}
+          </button>
+        </div>
+        <${CommentsList} comments=${list} />
+        <div class="modal-actions">
+          <button class="btn" type="button" onClick=${onClose}>${t("common_close")}</button>
+        </div>
+      </div>
     </div>`;
 }
 
