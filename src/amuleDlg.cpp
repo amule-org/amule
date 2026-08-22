@@ -539,17 +539,6 @@ void CamuleDlg::ShowED2KLinksHandler(bool show)
 	s_dlgcnt->Layout();
 }
 
-// Toogles ed2k link handler.
-void CamuleDlg::ToogleED2KLinksHandler()
-{
-	// Errorchecking in case the pointer becomes invalid ...
-	if (s_fed2klh == NULL) {
-		wxLogWarning("Unable to find Fast ED2K Links handler sizer! Toogling FED2KLH aborted.");
-		return;
-	}
-	ShowED2KLinksHandler(!s_dlgcnt->IsShown(s_fed2klh));
-}
-
 void CamuleDlg::SetActiveDialog(DialogType type, wxWindow *dlg)
 {
 	m_nActiveDialog = type;
@@ -817,14 +806,16 @@ void CamuleDlg::OnToolBarButton(wxCommandEvent &ev)
 	// Kry - just if the GUI is ready for it
 	if (m_is_safe_state) {
 
-		// Rehide the handler if needed
-		if (lastbutton == ID_BUTTONSEARCH && !thePrefs::GetFED2KLH()) {
-			if (ev.GetId() != ID_BUTTONSEARCH) {
-				ShowED2KLinksHandler(false);
-			} else {
-				// Toogle ED2K handler.
-				ToogleED2KLinksHandler();
-			}
+		// Leaving the search page hides the handler again, since without
+		// GetFED2KLH() it belongs to that page only. Re-clicking the search
+		// button while already on the page used to toggle the handler
+		// instead -- a 2005 shortcut that no other toolbar button has, that
+		// nothing advertises, and that did nothing at all once
+		// "show in every window" was enabled. Clicking the page you are
+		// already on now simply stays put (amule-org/amule#1041).
+		if (lastbutton == ID_BUTTONSEARCH && !thePrefs::GetFED2KLH() &&
+			ev.GetId() != ID_BUTTONSEARCH) {
+			ShowED2KLinksHandler(false);
 		}
 
 		if (lastbutton != ev.GetId()) {
