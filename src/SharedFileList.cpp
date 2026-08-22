@@ -396,6 +396,23 @@ void CSharedFileList::FindSharedFiles(const ReloadYieldCb &yieldCb, bool &aborte
 	{
 		wxMutexLocker lock(list_mut);
 		m_Files_map.clear();
+		// The index goes with the map it mirrors. AddFile writes a key only on
+		// a fresh insert and RemoveFile erases only the one key it recomputes,
+		// so any path this walk does not re-add -- a file deleted while its
+		// root was unshared, a DELETE lost to a watcher backend overflow, a
+		// remote deletion on a network share -- would keep an entry that makes
+		// NotifyPathAdded treat the path as already shared and silently refuse
+		// to share it again, with nothing logged at any level. Clearing here
+		// cannot heal that on its own; leaving the key behind is what creates
+		// it (issue #1028).
+		//
+		// Same locked scope on purpose: this puts the index under the invariant
+		// the map already has -- neither may be observed between here and the
+		// end of the walk. That is not a new constraint, it is the one that
+		// already rules out pumping the event loop during a walk (see
+		// SharedFilesReloadProgress.h). Keeping the two containers on one rule
+		// is why they are cleared together rather than separately.
+		m_pathIndex.clear();
 		m_listGeneration.fetch_add(1, std::memory_order_relaxed);
 	}
 
@@ -623,14 +640,38 @@ CSharedFileList::AddPathResult CSharedFileList::AddPathToShares(
 
 	CKnownFile *toadd = filelist->FindKnownFile(fname, fdate, fsize);
 	if (toadd) {
+		// Ask before stamping. SetFilePath is not a plain assignment -- it
+		// calls MarkECChanged(), which hands the file a new EC generation and
+		// so pushes it into the next INC_UPDATE. Stamping and then rolling
+		// back on a decline did that twice for a net-zero path change, sending
+		// every duplicate-content file to every EC client as "changed" on each
+		// reload, which is precisely what the generation counter exists to
+		// avoid (issue #1028).
+		//
+		// Note the obvious guard -- stamp only when the path differs -- would
+		// not have helped: a decline with previousPath == directory is close to
+		// unreachable, because the watcher route returns on an index hit before
+		// reaching here and the bulk walk clears the map up front and visits
+		// each root once. Every decline that happens in practice has a
+		// different path, so that guard skips nothing.
+		{
+			wxMutexLocker lock(list_mut);
+			if (m_Files_map.find(toadd->GetFileHash()) != m_Files_map.end()) {
+				AddDebugLogLineN(
+					logKnownFiles, CFormat("File already shared, skipping: %s") % fname);
+				return kAddPathAlreadyShared;
+			}
+		}
+
 		// Set the path BEFORE AddFile so the path index that AddFile
 		// maintains keys off the file's current GetFilePath() rather
 		// than whatever stale path was stamped on the CKnownFile by
 		// a previous shared-list membership.
 		//
-		// Kept so the decline below can undo it: that reasoning only holds
-		// when AddFile actually inserts, because AddFile writes m_pathIndex
-		// only on a fresh insert.
+		// The rollback below still stands as the fallback for the
+		// check-then-insert race: the membership test above drops the lock
+		// before AddFile retakes it, so a hashing task completing through
+		// SafeAddKFile in between can still make AddFile decline.
 		const CPath previousPath = toadd->GetFilePath();
 		toadd->SetFilePath(directory);
 		if (AddFile(toadd)) {
@@ -915,7 +956,13 @@ void CSharedFileList::RemoveFile(CKnownFile *toremove)
 	const wxString key =
 		NormalizePathKey(toremove->GetFilePath().JoinPaths(toremove->GetFileName()).GetRaw());
 	const size_t erasedFromIndex = m_pathIndex.erase(key);
-	if (erasedFromIndex == 0 && !m_pathIndex.empty()) {
+	// `reloading` suppresses the check for the duration of a walk. The index is
+	// cleared at the start of one and refilled as the walk proceeds, so a
+	// removal that lands mid-walk -- CUploadDiskIOThread calls RemoveFile from
+	// a worker thread -- legitimately finds nothing to erase. Without this the
+	// hardening would cry wolf on every such removal, which is worse than not
+	// having it (issue #1028).
+	if (erasedFromIndex == 0 && !m_pathIndex.empty() && !reloading) {
 		// Not fatal on its own -- the older-snapshot case above is legitimate
 		// -- but it is the signature of a desynchronised index, so say so
 		// rather than leaking an entry in silence.
