@@ -22,9 +22,9 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "ClientTCPSocket.h"
+#include "ClientTCPSocket.h" // Interface declarations.
 
-#include "BrowseManager.h" // Interface declarations
+#include "BrowseManager.h"
 
 #include <protocol/Protocols.h>
 #include <protocol/ed2k/Client2Client/TCP.h>

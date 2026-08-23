@@ -2829,12 +2829,12 @@ static CECPacket *Get_EC_Response_Search_Results(CObjTagMap &tagmap, wxUIntPtr s
 // search's results would otherwise never reach amulegui even once
 // Get_EC_Response_Search_List (below) learned to enumerate it: the two have
 // to agree on the same set, or a discovered tab appears and never fills.
-// Browses need their own second source here (but NOT in
-// Get_EC_Response_Search_List -- see that function) since a browse tab is
-// not a CSearchList search and so is absent from m_searchStrings; without
-// it, a browse's own STRINGS reply (BuildBrowseReply) tells the client to
-// expect results on this id, but this union never sends any (got3nks, PR
-// #680 review). s_ecSearches keeps governing EC-client lifecycle and
+// Browses need no second source here any more: every one of them reaches
+// RegisterBrowseSearch before its request goes out, so m_searchStrings holds
+// them alongside real searches and GetKnownSearchIds() covers both. It used
+// to be absent from that map, and the second source was what stopped a
+// browse's own STRINGS reply (BuildBrowseReply) promising results this union
+// would then never send (got3nks, PR #680 review). s_ecSearches keeps governing EC-client lifecycle and
 // eviction only -- folding monolithic searches into that 20-entry LRU would
 // let unrelated EC traffic evict, and so stop, a local user's own
 // still-running Kad search.

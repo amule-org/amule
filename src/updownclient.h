@@ -510,25 +510,23 @@ public:
 	/**
 	 * Whether this browse was asked for by a remote client rather than here.
 	 *
-	 * The id is pinned by the EC handler before the request goes out, and a
-	 * browse started locally has none until its results arrive, so its presence
-	 * at request time is what tells the two apart. Named because both the
-	 * result path and the browse-started notification have to make the same
-	 * call: a browse someone else asked for must not pull this user's panel or
-	 * tab selection.
+	 * Recorded when the ID is pinned, NOT inferred from the ID being set: a
+	 * local browse allocates one of its own before the request goes out, so
+	 * "has an ID" stopped telling the two apart. Simplifying this back to
+	 * `m_browseSearchId != 0` compiles, passes, and silently stops every local
+	 * browse revealing its tab.
+	 *
+	 * Named because both the result path and the browse-started notification
+	 * have to make the same call: a browse someone else asked for must not
+	 * pull this user's panel or tab selection.
 	 */
 	bool IsBrowseEcInitiated() const { return m_browseEcInitiated; }
 	/**
-	 * Pin the ID a remote client's browse will be filed under.
-	 *
-	 * Only the EC handler calls this: a local browse allocates its own ID
-	 * inside RequestSharedFileList. Setting it here is therefore also what
-	 * marks the browse as somebody else's, which used to be inferred from the
-	 * ID being set at all -- an inference that stopped working once local
-	 * browses got their ID up front as well.
-	 */
-	/**
 	 * Hand the next browse of this peer an ID somebody else allocated.
+	 *
+	 * Only the EC and friend handlers call this; a local browse chooses its
+	 * own inside RequestSharedFileList. Pinning is therefore also what marks
+	 * the browse as somebody else's.
 	 *
 	 * 0 means "nothing to pin", not "forget the ID you have": both callers
 	 * pass the EC-allocated ID or 0, and 0 is what a monolithic browse and a

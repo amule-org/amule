@@ -23,9 +23,9 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "SearchList.h"
+#include "SearchList.h" // Interface declarations.
 
-#include "BrowseManager.h" // Interface declarations.
+#include "BrowseManager.h"
 
 #include <algorithm> // Needed for std::sort (StoreSearches)
 #include <utility>   // Needed for std::move (LoadSearches)

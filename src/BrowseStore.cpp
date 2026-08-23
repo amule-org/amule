@@ -178,15 +178,10 @@ std::map<std::uint32_t, Store::Held>::iterator Store::FindFor(ClientKey client)
 
 std::map<std::uint32_t, Store::Held>::const_iterator Store::FindFor(ClientKey client) const
 {
-	if (client == nullptr) {
-		return m_records.end();
-	}
-	for (auto it = m_records.begin(); it != m_records.end(); ++it) {
-		if (it->second.client == client) {
-			return it;
-		}
-	}
-	return m_records.end();
+	// One implementation, so a change to how a peer is matched cannot land on
+	// only half the callers and leave const and non-const disagreeing about
+	// which record owns a peer.
+	return const_cast<Store *>(this)->FindFor(client);
 }
 
 std::uint32_t Store::SearchIdFor(ClientKey client) const

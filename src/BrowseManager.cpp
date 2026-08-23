@@ -35,14 +35,17 @@
 bool CBrowseManager::Start(CUpDownClient *client, std::uint32_t searchId, std::uint64_t now)
 {
 	const browse::Store::StartResult result = m_store.Start(client, searchId, now);
-	// Release whatever this peer was attached to before linking it afresh, so
-	// the reference map never holds two entries for one peer.
-	Perform(result.displaced);
-	if (!result.started) {
-		return false;
+	if (result.started) {
+		m_clients[searchId].Link(client CLIENT_DEBUGSTRING("CBrowseManager::Start"));
 	}
-	m_clients[searchId].Link(client CLIENT_DEBUGSTRING("CBrowseManager::Start"));
-	return true;
+	// Only now release whatever this peer was attached to before, so the
+	// reference map never holds two entries for one peer. Deliberately after
+	// the link: CClientRef::Unlink deletes at a refcount of zero, so releasing
+	// first would free `client` here if this map ever held the last reference.
+	// It does not today -- clientlist keeps one for any browsable peer -- but
+	// that is another class's invariant, and this order does not need it.
+	Perform(result.displaced);
+	return result.started;
 }
 
 void CBrowseManager::OnRequestSent(CUpDownClient *client, std::uint64_t now)

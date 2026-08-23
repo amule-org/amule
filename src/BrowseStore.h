@@ -144,14 +144,23 @@ public:
 	std::uint32_t SearchIdFor(ClientKey client) const;
 
 	/**
-	 * Whether `client`'s browse is still waiting for its directory list.
+	 * Whether `client`'s browse is still waiting to hear back.
 	 *
-	 * True exactly once per browse, between the request going out and the
-	 * peer's OP_ASKSHAREDDIRSANS. The handler needs that: its old guard was
-	 * single-shot by accident (it compared an outstanding count to 1), and
-	 * widening it to "this peer has a browse" let a peer resend the answer as
-	 * often as it liked, each time re-asking for every directory and pushing
-	 * the silence deadline back.
+	 * True from the request going out until the peer answers -- with its
+	 * directory list, or, on the flat protocol form, with the listing itself.
+	 *
+	 * For a directory browse that makes the answer single-shot, which is what
+	 * the OP_ASKSHAREDDIRSANS handler needs: its old guard was single-shot by
+	 * accident (it compared an outstanding count to 1), and widening it to
+	 * "this peer has a browse" let a peer resend the answer as often as it
+	 * liked, each time re-asking for every directory and pushing the silence
+	 * deadline back.
+	 *
+	 * A FLAT browse has no directory round, so this stays true for its whole
+	 * life and the outbound ask can be repeated on a reconnect. That matches
+	 * what the counter-based guard did before, and is deliberate -- the first
+	 * ask may never have arrived -- but it is not the "once per browse"
+	 * property the directory form gets, and should not be read as one.
 	 */
 	bool AwaitingDirectoryList(ClientKey client) const;
 	bool Has(std::uint32_t searchId) const;

@@ -431,12 +431,15 @@ TEST(BrowseStore, ATerminalOrAbsentBrowseIsNotAwaitingAnything)
 	ASSERT_FALSE(s.AwaitingDirectoryList(ALICE));
 }
 
-TEST(BrowseStore, TheOutboundAskIsOneShotPerBrowse)
+TEST(BrowseStore, ADirectoryBrowseAsksOnlyUntilThePeerAnswers)
 {
 	// ConnectionEstablished gates the OP_ASKSHAREDDIRS it sends on this, and
 	// it runs on every reconnect. A browsed peer that is also a download
 	// source reconnects often, so a predicate true for the whole browse put
 	// an unrequested ask on the wire each time.
+	//
+	// This is the DIRECTORY form; the flat one has no such round and is
+	// covered separately below.
 	Store s;
 	s.Start(ALICE, kSidA, 1000);
 	ASSERT_TRUE(s.AwaitingDirectoryList(ALICE));
@@ -450,12 +453,19 @@ TEST(BrowseStore, TheOutboundAskIsOneShotPerBrowse)
 	ASSERT_FALSE(s.AwaitingDirectoryList(ALICE));
 }
 
-TEST(BrowseStore, AFlatAnswerAlsoClosesTheAskWindow)
+TEST(BrowseStore, AFlatBrowseStaysAskableUntilItsOneAnswerArrives)
 {
-	// The flat form never sends a directory count; its single answer both
-	// completes the browse and stops the ask being repeated.
+	// The flat form has no directory round, so the window stays open for the
+	// whole browse: a reconnect before the peer answers re-asks, which is what
+	// the counter-based guard did too and is wanted -- the first ask may never
+	// have arrived. It closes on the single answer, which also completes it.
 	Store s;
 	s.Start(ALICE, kSidA, 1000);
-	s.OnListingReceived(ALICE, 1000);
+	ASSERT_TRUE(s.AwaitingDirectoryList(ALICE));
+	s.Touch(ALICE, 2000);
+	ASSERT_TRUE(s.AwaitingDirectoryList(ALICE));
+
+	s.OnListingReceived(ALICE, 3000);
 	ASSERT_FALSE(s.AwaitingDirectoryList(ALICE));
+	ASSERT_TRUE(s.StateOf(kSidA) == State::Finished);
 }
