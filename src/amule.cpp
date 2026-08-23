@@ -2316,6 +2316,14 @@ void CamuleApp::OnMediaProbeFinished(CMediaProbeEvent &evt)
 	//
 	// This runs only when Probe() returned true; a failed probe never reaches
 	// here, so an unreadable file keeps its preview rather than being wiped.
+	//
+	// KNOWN LIMITATION: this corrects a file only when a probe actually runs
+	// for it, and the two callers are the initial share-add and the
+	// completion re-probe. A download that COMPLETED BEFORE this change keeps
+	// its inherited preview indefinitely -- the scheduler's gate now skips
+	// anything carrying any media tag, so no later start re-probes it. There
+	// is deliberately no migration for that: correcting it needs an explicit
+	// user-triggered re-extraction, which is what issue #1079 is for.
 	const MediaInfo &info = evt.GetInfo();
 	const auto setOrClearInt = [&](uint8 id, uint32 value) {
 		if (value) {

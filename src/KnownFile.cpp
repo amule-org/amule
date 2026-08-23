@@ -25,6 +25,7 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
+#include <algorithm>   // std::remove_if
 #include "KnownFile.h" // Do_not_auto_remove
 
 #include "CompleteSourcesThrottle.h" // CompleteSourcesNeedRecompute
@@ -157,12 +158,31 @@ uint32 CKnownFile::GetMetaDataVer() const
 	// It also drives the "already probed" gate in CSharedFileList, so those
 	// files used to be re-probed on every single startup, forever, for a
 	// result that was already known and would be discarded again.
-	return (GetIntTagValue(FT_MEDIA_LENGTH) > 0 || GetIntTagValue(FT_MEDIA_BITRATE) > 0 ||
-		       !GetStrTagValue(FT_MEDIA_CODEC).IsEmpty() ||
-		       !GetStrTagValue(FT_MEDIA_ARTIST).IsEmpty() ||
-		       !GetStrTagValue(FT_MEDIA_ALBUM).IsEmpty() || !GetStrTagValue(FT_MEDIA_TITLE).IsEmpty())
-		       ? 1
-		       : 0;
+	// One pass over m_taglist rather than six Get*TagValue calls, each of
+	// which scans it end to end. This runs per file per EC update, and the
+	// worst case is the common one: a non-media file matches nothing, so all
+	// six scans would run to completion every time.
+	for (const CTag &tag : m_taglist) {
+		switch (tag.GetNameID()) {
+		case FT_MEDIA_LENGTH:
+		case FT_MEDIA_BITRATE:
+			if (tag.IsInt() && tag.GetInt() > 0) {
+				return 1;
+			}
+			break;
+		case FT_MEDIA_CODEC:
+		case FT_MEDIA_ARTIST:
+		case FT_MEDIA_ALBUM:
+		case FT_MEDIA_TITLE:
+			if (tag.IsStr() && !tag.GetStr().IsEmpty()) {
+				return 1;
+			}
+			break;
+		default:
+			break;
+		}
+	}
+	return 0;
 }
 
 void CKnownFile::MarkECChanged()
@@ -332,13 +352,19 @@ bool CAbstractFile::RemoveTag(uint8 tagname)
 	// the caller wants the field gone whatever width or encoding it was stored
 	// with, and a media tag inherited from a search result can legitimately
 	// arrive as a narrower integer type than the one a local probe writes.
-	for (ArrayOfCTag::iterator it = m_taglist.begin(); it != m_taglist.end(); ++it) {
-		if (it->GetNameID() == tagname) {
-			m_taglist.erase(it);
-			return true;
-		}
-	}
-	return false;
+	//
+	// Erases EVERY match, not just the first. AddTagUnique replaces only when
+	// the type matches too, so two tags with one id and different types can
+	// legitimately coexist; stopping at the first would leave the other behind
+	// and quietly break the promise this comment makes. No current writer
+	// produces that pair -- they all normalise to CTagInt32 / CTagString --
+	// but "clear this field" should not depend on that staying true.
+	const size_t before = m_taglist.size();
+	m_taglist.erase(std::remove_if(m_taglist.begin(),
+				m_taglist.end(),
+				[tagname](const CTag &tag) { return tag.GetNameID() == tagname; }),
+		m_taglist.end());
+	return m_taglist.size() != before;
 }
 
 #ifndef CLIENT_GUI
@@ -1433,16 +1459,13 @@ void CKnownFile::CreateOfferedFilePacket(CMemFile *files, CServer *pServer, CUpD
 	// publisher still sending three of the six, so a peer searching by artist
 	// could match a Kad-published copy of a file and not the ed2k-published
 	// one.
-	const struct
-	{
-		uint8 id;
-	} kMediaStrTags[] = {
-		{ FT_MEDIA_CODEC }, { FT_MEDIA_ARTIST }, { FT_MEDIA_ALBUM }, { FT_MEDIA_TITLE }
+	static const uint8 kMediaStrTags[] = {
+		FT_MEDIA_CODEC, FT_MEDIA_ARTIST, FT_MEDIA_ALBUM, FT_MEDIA_TITLE
 	};
-	for (const auto &entry : kMediaStrTags) {
-		const wxString &value = GetStrTagValue(entry.id);
+	for (const uint8 id : kMediaStrTags) {
+		const wxString &value = GetStrTagValue(id);
 		if (!value.IsEmpty()) {
-			tags.push_back(new CTagString(entry.id, value));
+			tags.push_back(new CTagString(id, value));
 		}
 	}
 

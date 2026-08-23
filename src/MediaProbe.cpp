@@ -413,9 +413,16 @@ bool ParseSeconds(const wxString &value, uint32 &out)
 	if (value.IsEmpty()) {
 		return false;
 	}
+	// Hold the UTF-8 buffer in a named local. `value.utf8_str().data()` twice
+	// would be two separate temporaries, each dead at the end of its own
+	// full-expression, so the comparison below would read a freed pointer and
+	// compare it against one from a different object -- which happens to work
+	// only because the allocator hands back the same block.
+	const wxScopedCharBuffer buf = value.utf8_str();
+	const char *const str = buf.data();
 	char *end = nullptr;
-	const double d = std::strtod(value.utf8_str().data(), &end);
-	if (end == value.utf8_str().data() || d < 0.0) {
+	const double d = std::strtod(str, &end);
+	if (end == str || d < 0.0) {
 		return false;
 	}
 	// Cap at uint32 range (~136 years — plenty).
@@ -436,9 +443,12 @@ bool ParseBitrateKbps(const wxString &value, uint32 &out)
 	if (value.IsEmpty() || value == wxT("N/A")) {
 		return false;
 	}
+	// Named local, for the reason given in ParseSeconds above.
+	const wxScopedCharBuffer buf = value.utf8_str();
+	const char *const str = buf.data();
 	char *end = nullptr;
-	const unsigned long long bps = std::strtoull(value.utf8_str().data(), &end, 10);
-	if (end == value.utf8_str().data()) {
+	const unsigned long long bps = std::strtoull(str, &end, 10);
+	if (end == str) {
 		return false;
 	}
 	const unsigned long long kbps = bps / 1000ULL;

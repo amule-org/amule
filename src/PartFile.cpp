@@ -119,24 +119,47 @@ namespace
 // what made these tags unreadable in the first place.
 bool ParseEd2kLengthSeconds(const wxString &text, uint32 &out)
 {
-	uint32 total = 0;
-	unsigned long part = 0;
-	int fields = 0;
+	// Split into at most three fields, leading unit first, so "h:mm:ss" and
+	// "m:ss" both fall out of the same loop. A trailing colon leaves an empty
+	// final token and is rejected rather than read as a zero.
+	wxArrayString fields;
 	wxString rest = text;
-	while (!rest.IsEmpty()) {
+	for (;;) {
 		wxString token = rest.BeforeFirst(wxT(':'));
-		rest = rest.AfterFirst(wxT(':'));
+		const bool more = rest.Find(wxT(':')) != wxNOT_FOUND;
 		token.Trim(true).Trim(false);
-		if (token.IsEmpty() || !token.ToULong(&part) || part > 59999) {
-			return false;
+		fields.Add(token);
+		if (!more) {
+			break;
 		}
-		total = total * 60 + static_cast<uint32>(part);
-		if (++fields > 3) {
+		rest = rest.AfterFirst(wxT(':'));
+		if (fields.GetCount() > 3) {
 			return false;
 		}
 	}
-	if (fields == 0) {
+	if (fields.IsEmpty() || fields.GetCount() > 3) {
 		return false;
+	}
+
+	uint32 total = 0;
+	for (size_t i = 0; i < fields.GetCount(); ++i) {
+		unsigned long part = 0;
+		if (fields[i].IsEmpty() || !fields[i].ToULong(&part)) {
+			return false;
+		}
+		// Only the leading field is an open-ended count; everything after it
+		// is a minute or second and cannot exceed 59. Capped so a malformed
+		// "1:75:00" is dropped rather than silently re-interpreted, and so
+		// the accumulation below cannot overflow: the largest accepted value
+		// is 59999:59:59, well inside uint32.
+		const bool leading = (i == 0);
+		if (!leading && part > 59) {
+			return false;
+		}
+		if (leading && part > 59999) {
+			return false;
+		}
+		total = total * 60 + static_cast<uint32>(part);
 	}
 	out = total;
 	return true;
@@ -156,6 +179,14 @@ bool ParseEd2kLengthSeconds(const wxString &text, uint32 &out)
 // three-minute song arrives as a uint8 and an episode as a uint16. An exact
 // `type == TAGTYPE_UINT32` test therefore rejected essentially every real
 // length and bitrate that came from Kad.
+//
+// Every path out of here stores a CTagInt32 or a CTagString -- never the
+// source tag verbatim. That normalisation is what makes the id-only lookups
+// downstream safe, in particular CSearch::PreparePacketForTags, whose Kad
+// republish reads `pTag->GetInt()` with no IsInt() guard of its own. Keep it:
+// storing a caller's tag unchanged here would let a string-typed
+// FT_MEDIA_LENGTH reach that code and go out to every peer as a garbage
+// number.
 //
 // Returns true when a tag was stored.
 bool InheritMediaTag(CAbstractFile &file, uint8 id, const CTag &tag)

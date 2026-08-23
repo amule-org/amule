@@ -333,6 +333,54 @@ TEST(MediaProbeParse, StreamWithNoDispositionLineIsStillConsidered)
 	ASSERT_EQUALS(static_cast<uint32>(10), info.length_seconds);
 }
 
+TEST(MediaProbeParse, OldFfprobeWithoutDispositionLosesCoverAndTagsTogether)
+{
+	// The compound old-ffprobe case, recorded rather than argued about: with
+	// no DISPOSITION line the artwork is indistinguishable from a real video
+	// track, so it wins the codec AND -- because a non-empty videoCodec means
+	// the file is treated as a video -- suppresses the stream-tag fallback.
+	// Such an ffprobe therefore degrades to exactly master's behaviour for
+	// these files. Nothing can be done about it from this side; the test
+	// exists so the degradation is a recorded property rather than a surprise.
+	const wxChar *const noDisp[] = { wxT("[STREAM]"),
+		wxT("codec_name=mp3"),
+		wxT("codec_type=audio"),
+		wxT("TAG:artist=A"),
+		wxT("[/STREAM]"),
+		wxT("[STREAM]"),
+		wxT("codec_name=mjpeg"),
+		wxT("codec_type=video"),
+		wxT("[/STREAM]"),
+		wxT("[FORMAT]"),
+		wxT("duration=5.000000"),
+		wxT("[/FORMAT]") };
+	MediaInfo info;
+	ASSERT_TRUE(PARSE(noDisp, info));
+	ASSERT_EQUALS(wxString(wxT("mjpeg")), info.codec);
+	ASSERT_TRUE(info.artist.IsEmpty());
+
+	// The same file from an ffprobe that DOES report the disposition gets
+	// both right -- which is the whole point of requesting it.
+	const wxChar *const withDisp[] = { wxT("[STREAM]"),
+		wxT("codec_name=mp3"),
+		wxT("codec_type=audio"),
+		wxT("DISPOSITION:attached_pic=0"),
+		wxT("TAG:artist=A"),
+		wxT("[/STREAM]"),
+		wxT("[STREAM]"),
+		wxT("codec_name=mjpeg"),
+		wxT("codec_type=video"),
+		wxT("DISPOSITION:attached_pic=1"),
+		wxT("[/STREAM]"),
+		wxT("[FORMAT]"),
+		wxT("duration=5.000000"),
+		wxT("[/FORMAT]") };
+	MediaInfo info2;
+	ASSERT_TRUE(PARSE(withDisp, info2));
+	ASSERT_EQUALS(wxString(wxT("mp3")), info2.codec);
+	ASSERT_EQUALS(wxString(wxT("A")), info2.artist);
+}
+
 TEST(MediaProbeParse, TagValueContainingAnEqualsSignSurvives)
 {
 	const wxChar *const eq[] = { wxT("[STREAM]"),
