@@ -1070,6 +1070,53 @@ else
 	_fail "failed start: subsequent search" "POST /search returned no id ($AFTER_BAD)"
 fi
 
+# --- 13.1 A search that retained no results still reports a terminal state.
+#
+# The per-id lifecycle used to be inferred from the retained result bucket, so a
+# search that indexed nothing -- no server match, every hit dropped by the file
+# type filter, or a global sweep stopped before its first result -- reported
+# `idle` forever. `idle` is not terminal, so the progress sentinel fell through
+# to the running percent (0) and every consumer read a finished search as still
+# running at 0%: Stop stayed live, the bar never cleared, and amulegui's "an
+# eD2k search is still running" prompt fired on a long-finished tab (issue
+# #1103).
+#
+# Two searches are needed. While a search is the most recent one its state comes
+# from the live scalar, which was always right; only the older of the two takes
+# the inferred path this asserts on.
+ZERO_QUERY="amuleapi19nosuchkeyword"
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d "{\"query\":\"$ZERO_QUERY\",\"type\":\"global\"}" "$HOST/api/v0/search"
+_assert_status 202 "POST /search (zero-result probe) → 202"
+ZERO_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id')
+
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d "{\"query\":\"${ZERO_QUERY}b\",\"type\":\"global\"}" "$HOST/api/v0/search"
+_assert_status 202 "POST /search (demotes the zero-result probe) → 202"
+DEMOTER_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id')
+
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
+_assert_status 200 "GET /search → 200 (after the zero-result probe)"
+ZERO_COUNT=$(printf '%s' "$CURL_BODY" \
+	| jq -r "[.searches[] | select(.search_id == $ZERO_SID)][0].result_count // empty")
+# Guarded on the probe actually having retained nothing: on a daemon where the
+# nonsense keyword somehow matched, this assertion would pass through the
+# results-retained branch and prove nothing.
+if [ "$ZERO_COUNT" = "0" ]; then
+	_assert_json_eq "[.searches[] | select(.search_id == $ZERO_SID)][0].state" finished \
+		'a demoted search that retained no results reports finished, not idle'
+else
+	_skip "zero-result lifecycle: probe retained ${ZERO_COUNT:-no} result(s), not 0"
+fi
+
+# Free both probes so the browse contract below sees the search set it expects.
+for sid in "$ZERO_SID" "$DEMOTER_SID"; do
+	curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
+		"$HOST/api/v0/search/$sid" > /dev/null 2>&1
+done
+
 # --- Browse ("View Files") contract. -------------------------------
 # POST /clients/{ecid}/shared_files starts a browse and returns a
 # search_id; the files themselves arrive over the network from the peer,
