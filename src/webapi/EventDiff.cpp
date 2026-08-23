@@ -543,6 +543,21 @@ void EnforceSinglePublisher()
 	std::abort();
 }
 
+// Every file event resolves its payload through `prev.files` after the locked
+// walk, which holds only because nothing erases from that map in between: the
+// `gone` sweep runs after the batch is built, and `gone` is disjoint from
+// everything the walk recorded. Unreachable today -- but a dropped event is
+// invisible, and a lost `shared_removed` leaves a ghost row on every client
+// until something else happens to touch that file. Hard-abort for the same
+// reason EnforceSinglePublisher does: the check has to survive -DNDEBUG,
+// because that is where the ordering will actually get broken.
+[[noreturn]] void AbortOnMissingBaseline(const char *event_name, std::uint32_t ecid)
+{
+	std::cerr << "amuleapi: file diff lost the baseline entry for ECID " << ecid << " while building "
+		  << event_name << "; the prev.files erase has moved ahead of the batch build.\n";
+	std::abort();
+}
+
 } // namespace
 
 // One chat message as the `message` object both the SSE payload and
@@ -637,6 +652,10 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 		// everything else, resolved against `prev.files` once the lock is
 		// released -- the write-back below leaves that entry equal to the live
 		// one, so it is the same object the payload would have been built from.
+		// Removals name their subject by ECID for the same reason: copying the
+		// hash out would put one string allocation per removed file back under
+		// the lock, and `prev.files` still holds the entry -- the `gone` erase
+		// is deferred until the batch is built.
 		enum class Change
 		{
 			DownloadAdded,
@@ -645,10 +664,11 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 			SharedUpdated,
 			CommentsUpdated,
 		};
-		std::vector<std::pair<const char *, std::string>> removed;
+		std::vector<std::pair<const char *, std::uint32_t>> removed;
 		std::vector<std::pair<Change, std::uint32_t>> changed;
-		// ECIDs to drop from the baseline once the walk is done -- erasing
-		// during it would invalidate the iterator.
+		// ECIDs to drop from the baseline once the batch is built -- erasing
+		// during the walk would invalidate the iterator, and erasing before
+		// the batch would take the removal payloads' hashes with it.
 		std::vector<std::uint32_t> gone;
 		state.WithFiles([&](const FileMap &files) {
 			// _removed first — clients can tear down their cache slot
@@ -657,10 +677,10 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 				const auto it = files.find(kv.first);
 				const bool absent = (it == files.end());
 				if (kv.second.is_downloading && (absent || !it->second.is_downloading)) {
-					removed.emplace_back("download_removed", kv.second.hash);
+					removed.emplace_back("download_removed", kv.first);
 				}
 				if (kv.second.is_shared && (absent || !it->second.is_shared)) {
-					removed.emplace_back("shared_removed", kv.second.hash);
+					removed.emplace_back("shared_removed", kv.first);
 				}
 				if (absent)
 					gone.push_back(kv.first);
@@ -713,20 +733,23 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 					prev.files.emplace(entry.first, now);
 			}
 		});
-		for (const std::uint32_t ecid : gone)
-			prev.files.erase(ecid);
-
 		std::vector<std::pair<std::string, std::string>> batch;
 		batch.reserve(removed.size() + changed.size());
-		for (const auto &r : removed)
-			batch.emplace_back(r.first, RemovedHashPayload(r.second));
+		for (const auto &r : removed) {
+			// Still in the baseline: `gone` is erased below, once every
+			// payload that reads through it has been built.
+			const auto it = prev.files.find(r.second);
+			if (it == prev.files.end())
+				AbortOnMissingBaseline(r.first, r.second);
+			batch.emplace_back(r.first, RemovedHashPayload(it->second.hash));
+		}
 		for (const auto &c : changed) {
 			// Every recorded change set `moved`, so its entry was written
 			// back; `gone` holds only ECIDs absent from the live map, which
 			// these are not.
 			const auto it = prev.files.find(c.second);
 			if (it == prev.files.end())
-				continue;
+				AbortOnMissingBaseline("a file event", c.second);
 			const FileSnapshot &f = it->second;
 			switch (c.first) {
 			case Change::DownloadAdded:
@@ -746,6 +769,8 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 				break;
 			}
 		}
+		for (const std::uint32_t ecid : gone)
+			prev.files.erase(ecid);
 		bus.PublishBatch(batch);
 	}
 	DiffMap(bus, "server", prev.servers, new_servers, [](const ServerSnapshot &s) {

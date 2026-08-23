@@ -40,12 +40,21 @@ using namespace webapi;
 
 DECLARE_SIMPLE(EventDiff)
 
+// Drain `bus` non-blockingly and return every event newer than `since` in id
+// order. Drain is a replay from a cursor, not a consume: draining from 0 twice
+// yields the same events twice, so a test asserting that a later tick emitted
+// *nothing* has to carry the cursor forward.
+static std::vector<Event> DrainSince(CEventBus &bus, std::uint64_t since)
+{
+	std::vector<Event> out;
+	bus.Drain(since, std::chrono::milliseconds(0), out);
+	return out;
+}
+
 // Drain `bus` non-blockingly and return all events in id order.
 static std::vector<Event> DrainAll(CEventBus &bus)
 {
-	std::vector<Event> out;
-	bus.Drain(0, std::chrono::milliseconds(0), out);
-	return out;
+	return DrainSince(bus, 0);
 }
 
 // log_appended cold-start: the first tick must not emit log_appended
@@ -800,4 +809,172 @@ TEST(EventDiff, DownloadUpdatedFiresWhenOnlyHashingProgressMoved)
 	}
 	ASSERT_TRUE(!payload.empty());
 	ASSERT_TRUE(payload.find("\"hashing_progress\":5") != std::string::npos);
+}
+
+// A file leaving the map fires download_removed carrying its hash, and drops
+// out of the baseline — the `gone` erase. Without it the baseline would grow
+// without bound across a session and keep re-firing the removal every tick.
+TEST(EventDiff, DownloadRemovedFiresWhenTheFileLeavesTheMap)
+{
+	CState state;
+	state.MutateDownloads([](FileMap &files) {
+		FileSnapshot f;
+		f.ecid = 21;
+		f.hash = "3333333333333333333333333333cccc";
+		f.name = "gone.iso";
+		f.size = kPartSizeBytes * 2;
+		f.is_downloading = true;
+		files.emplace(f.ecid, f);
+	});
+
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state); // baseline: download_added
+	DrainAll(bus);
+	ASSERT_EQUALS(static_cast<std::size_t>(1), prev.files.size());
+
+	// FileMap::erase is iterator-only — it keeps the hash index in step.
+	state.MutateDownloads([](FileMap &files) { files.erase(files.find(21)); });
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	int removed_events = 0;
+	std::string payload;
+	for (const auto &e : DrainAll(bus)) {
+		if (e.name == "download_removed") {
+			++removed_events;
+			payload = e.data;
+		}
+	}
+	ASSERT_EQUALS(1, removed_events);
+	ASSERT_TRUE(payload.find("3333333333333333333333333333cccc") != std::string::npos);
+	// Baseline entry erased, so a third tick stays silent.
+	ASSERT_TRUE(prev.files.empty());
+	const std::uint64_t cursor = bus.NewestId();
+	EmitDiffsAndUpdate(bus, prev, state);
+	ASSERT_TRUE(DrainSince(bus, cursor).empty());
+}
+
+// The share flag clearing on a file that stays in the map fires shared_removed
+// without erasing the baseline entry: the ECID is still live, only that role
+// ended.
+TEST(EventDiff, SharedRemovedFiresWhenOnlyTheRoleFlagClears)
+{
+	CState state;
+	state.MutateShared([](FileMap &files) {
+		FileSnapshot f;
+		f.ecid = 22;
+		f.hash = "4444444444444444444444444444dddd";
+		f.name = "unshared.iso";
+		f.size = kPartSizeBytes * 2;
+		f.is_shared = true;
+		f.is_downloading = true;
+		files.emplace(f.ecid, f);
+	});
+
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+	DrainAll(bus);
+
+	state.MutateShared([](FileMap &files) { files.find(22)->second.is_shared = false; });
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	int shared_removed = 0, download_removed = 0;
+	for (const auto &e : DrainAll(bus)) {
+		if (e.name == "shared_removed")
+			++shared_removed;
+		if (e.name == "download_removed")
+			++download_removed;
+	}
+	ASSERT_EQUALS(1, shared_removed);
+	// The download role is untouched, so nothing tears down that side.
+	ASSERT_EQUALS(0, download_removed);
+	// Entry stays in the baseline, with the cleared flag written back.
+	ASSERT_EQUALS(static_cast<std::size_t>(1), prev.files.size());
+	ASSERT_TRUE(!prev.files.find(22)->second.is_shared);
+}
+
+// One ECID swapping roles in a single tick emits both families, removed first:
+// a client tearing down its download slot must not see the shared_added for
+// the same file arrive before the download_removed.
+TEST(EventDiff, RoleFlipEmitsRemovedBeforeAdded)
+{
+	CState state;
+	state.MutateDownloads([](FileMap &files) {
+		FileSnapshot f;
+		f.ecid = 23;
+		f.hash = "5555555555555555555555555555eeee";
+		f.name = "completed.iso";
+		f.size = kPartSizeBytes * 2;
+		f.is_downloading = true;
+		files.emplace(f.ecid, f);
+	});
+
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+	DrainAll(bus);
+
+	// The download finished: it stops being a download and starts being shared.
+	state.MutateDownloads([](FileMap &files) {
+		FileSnapshot &f = files.find(23)->second;
+		f.is_downloading = false;
+		f.is_shared = true;
+	});
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	int removed_at = -1, added_at = -1, i = 0;
+	for (const auto &e : DrainAll(bus)) {
+		if (e.name == "download_removed")
+			removed_at = i;
+		if (e.name == "shared_added")
+			added_at = i;
+		++i;
+	}
+	ASSERT_TRUE(removed_at >= 0);
+	ASSERT_TRUE(added_at >= 0);
+	ASSERT_TRUE(removed_at < added_at);
+}
+
+// The write-back trap: a role flag flipping is itself enough to refresh the
+// whole baseline entry, so fields the *other* role's predicate never compared
+// cannot reach the payload stale. Here the download sub-block moves during the
+// same tick that is_downloading goes false→true; the download_added must carry
+// the new value, not the one the entry was parked with while it was shared-only.
+TEST(EventDiff, RoleFlipRefreshesFieldsTheOtherRoleNeverCompared)
+{
+	CState state;
+	state.MutateShared([](FileMap &files) {
+		FileSnapshot f;
+		f.ecid = 24;
+		f.hash = "6666666666666666666666666666ffff";
+		f.name = "reshared.iso";
+		f.size = kPartSizeBytes * 4;
+		f.is_shared = true;
+		f.download.size_done = 111;
+		files.emplace(f.ecid, f);
+	});
+
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state); // shared_added; download side never compared
+	DrainAll(bus);
+
+	state.MutateShared([](FileMap &files) {
+		FileSnapshot &f = files.find(24)->second;
+		f.is_downloading = true;
+		f.download.size_done = 999;
+	});
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string payload;
+	for (const auto &e : DrainAll(bus)) {
+		if (e.name == "download_added")
+			payload = e.data;
+	}
+	ASSERT_TRUE(!payload.empty());
+	ASSERT_TRUE(payload.find("999") != std::string::npos);
+	ASSERT_TRUE(payload.find("111") == std::string::npos);
+	// And the baseline now carries it, so the next tick is silent.
+	ASSERT_EQUALS(static_cast<std::uint64_t>(999), prev.files.find(24)->second.download.size_done);
 }
