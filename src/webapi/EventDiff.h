@@ -41,10 +41,15 @@ class CEventBus;
 // entry (cold start); subsequent ticks fire only the deltas.
 struct LastSeenState
 {
-	// `files` mirrors CState::m_files (unified ECID-keyed map with
-	// `is_downloading` / `is_shared` flags). Role-flag transitions
-	// false→true emit the corresponding `_added` event, true→false
-	// the `_removed`; a file may participate in both views and emit
+	// `files` is a comparison baseline against CState::m_files (unified
+	// ECID-keyed map with `is_downloading` / `is_shared` flags), not a mirror
+	// of it: an entry is rewritten exactly when one of EventDiff's predicates
+	// reports a difference, so the fields those predicates read stay fresh and
+	// others may lag. Adding a predicate means adding its field to the
+	// write-back condition too, not only to the emit condition.
+	//
+	// Role-flag transitions false→true emit the corresponding `_added` event,
+	// true→false the `_removed`; a file may participate in both views and emit
 	// both event families.
 	std::map<std::uint32_t, FileSnapshot> files;
 	std::map<std::uint32_t, ServerSnapshot> servers;
@@ -59,13 +64,12 @@ struct LastSeenState
 	bool ec_connected = false;
 	bool status_initialised = false;
 
-	// log-tail tracking for the `log_appended` event.
-	// `amule_log_count` is the size of `state.AmuleLog()` at the
-	// previous tick. When the vector grows, the new tail is
-	// `log[amule_log_count .. new_size)` and we publish it.
-	// First-tick cold-start is gated by `amule_log_initialised` so
-	// we don't dump every historical line as one event — clients
-	// can GET /api/v0/logs/amule for the history.
+	// log-tail tracking for the `log_appended` event. `amule_log_count` is how
+	// many lines the previous tick had accounted for, and is what the next one
+	// passes to CState::AmuleLogFrom() as its cursor: a non-empty tail is what
+	// gets published. First-tick cold-start is gated by
+	// `amule_log_initialised` so we don't dump every historical line as one
+	// event — clients can GET /api/v0/logs/amule for the history.
 	std::size_t amule_log_count = 0;
 	bool amule_log_initialised = false;
 

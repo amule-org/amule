@@ -138,6 +138,16 @@ std::vector<std::string> CState::AmuleLog() const
 	return m_amule_log_lines;
 }
 
+std::vector<std::string> CState::AmuleLogFrom(std::size_t first, std::size_t &total) const
+{
+	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+	total = m_amule_log_lines.size();
+	if (first >= total)
+		return {};
+	return std::vector<std::string>(
+		m_amule_log_lines.begin() + static_cast<std::ptrdiff_t>(first), m_amule_log_lines.end());
+}
+
 ServerInfoLog CState::ServerInfo() const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
@@ -513,16 +523,6 @@ void CState::MutateChats(const std::function<void(std::vector<ChatSessionSnapsho
 	const ReentryGuard guard(this);
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	fn(m_chats, m_chat_cursor);
-}
-
-std::vector<FileSnapshot> CState::Files() const
-{
-	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
-	std::vector<FileSnapshot> out;
-	out.reserve(m_files.size());
-	for (const auto &kv : m_files)
-		out.push_back(kv.second);
-	return out;
 }
 
 std::vector<ClientSnapshot> CState::Clients() const

@@ -447,6 +447,74 @@ TEST(State, WriteServersRoundtripAndOrder)
 	ASSERT_EQUALS(std::string("second-by-ecid"), out[1].name);
 }
 
+TEST(State, AmuleLogFromReportsTotalAndSlicesTheTail)
+{
+	// The per-tick log diff reads the size and the tail in one lock, so both
+	// halves of that are contract: `total` is always the current line count,
+	// and the returned slice starts at `first`.
+	CState s;
+	std::size_t total = 0;
+
+	// Empty: no lines, and a total of zero rather than an unset out-param.
+	ASSERT_EQUALS(static_cast<size_t>(0), s.AmuleLogFrom(0, total).size());
+	ASSERT_EQUALS(static_cast<size_t>(0), total);
+
+	s.AppendAmuleLog({ "a", "b", "c" });
+
+	// first == 0: the whole buffer.
+	total = 0;
+	const auto all = s.AmuleLogFrom(0, total);
+	ASSERT_EQUALS(static_cast<size_t>(3), all.size());
+	ASSERT_EQUALS(static_cast<size_t>(3), total);
+	ASSERT_EQUALS(std::string("a"), all[0]);
+	ASSERT_EQUALS(std::string("c"), all[2]);
+
+	// Mid-buffer: the tail from there on.
+	total = 0;
+	const auto tail = s.AmuleLogFrom(2, total);
+	ASSERT_EQUALS(static_cast<size_t>(1), tail.size());
+	ASSERT_EQUALS(std::string("c"), tail[0]);
+	ASSERT_EQUALS(static_cast<size_t>(3), total);
+
+	// first == total: caught up, nothing to publish, total still reported.
+	total = 0;
+	ASSERT_EQUALS(static_cast<size_t>(0), s.AmuleLogFrom(3, total).size());
+	ASSERT_EQUALS(static_cast<size_t>(3), total);
+
+	// first > total: past the end truncates to empty rather than reading out
+	// of range. This is the shape the caller sees after a reset shrank the
+	// buffer below the counter it was holding.
+	total = 0;
+	ASSERT_EQUALS(static_cast<size_t>(0), s.AmuleLogFrom(99, total).size());
+	ASSERT_EQUALS(static_cast<size_t>(3), total);
+}
+
+TEST(State, AmuleLogFromAfterAResetReportsTheShrunkTotal)
+{
+	// ClearAmuleLog is the one path that shrinks the buffer. A caller still
+	// holding the pre-reset count must get an empty slice and the new, smaller
+	// total -- that pairing is what tells the log diff a truncation happened
+	// rather than an append.
+	CState s;
+	s.AppendAmuleLog({ "one", "two", "three", "four" });
+	std::size_t total = 0;
+	s.AmuleLogFrom(0, total);
+	ASSERT_EQUALS(static_cast<size_t>(4), total);
+
+	s.ClearAmuleLog();
+	total = 99;
+	ASSERT_EQUALS(static_cast<size_t>(0), s.AmuleLogFrom(4, total).size());
+	ASSERT_EQUALS(static_cast<size_t>(0), total);
+
+	// And it appends from scratch afterwards.
+	s.AppendAmuleLog({ "fresh" });
+	total = 0;
+	const auto after = s.AmuleLogFrom(0, total);
+	ASSERT_EQUALS(static_cast<size_t>(1), after.size());
+	ASSERT_EQUALS(std::string("fresh"), after[0]);
+	ASSERT_EQUALS(static_cast<size_t>(1), total);
+}
+
 TEST(State, AppendAmuleLogUncappedHistory)
 {
 	// Per-operator preference: amule log history is uncapped. Pushing

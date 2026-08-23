@@ -1463,6 +1463,11 @@ public:
 	// handlers slice the tail before serialising via the
 	// `?tail=N` query param.
 	std::vector<std::string> AmuleLog() const;
+	//! The lines from `first` on, plus the current total, under one lock. A
+	//! `first` past the end gives an empty tail, which with `total` is how the
+	//! caller sees a truncation. Copies nothing when nothing was appended,
+	//! which the per-tick log diff needs and AmuleLog() cannot do.
+	std::vector<std::string> AmuleLogFrom(std::size_t first, std::size_t &total) const;
 	ServerInfoLog ServerInfo() const;
 
 	// Flat list views. Reads the ECID-keyed map under shared_lock and
@@ -1518,9 +1523,6 @@ public:
 		std::shared_lock<std::shared_timed_mutex> lock(m_mu);
 		fn(static_cast<const FileMap &>(m_files));
 	}
-	// Unfiltered view used by EventDiff to compute role-flag
-	// transitions. Not surfaced on the REST API.
-	std::vector<FileSnapshot> Files() const;
 
 	// Full peer list (all upload_state values, including queue
 	// waiters, idle peers, and banned). Backs /clients.
