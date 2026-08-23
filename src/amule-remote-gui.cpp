@@ -3139,11 +3139,6 @@ void CKnownFilesRem::ProcessItemUpdatePartfile(const CEC_PartFile_Tag *tag, CPar
 		}
 	}
 
-	// Media metadata (issue #418): store the EC tags on the proxy as the
-	// same FT_MEDIA_* CTags the monolithic file carries, so the identical
-	// GetIntTagValue / GetStrTagValue / GetMetaDataVer calls in the File
-	// Details dialog work unchanged in the remote build.
-
 	// Comments/ratings + the Kad-notes running flag are decoded once for every
 	// known file in CKnownFilesRem::ProcessItemUpdate (they ride the shared-file
 	// base tag now), so there is nothing partfile-specific to do here.

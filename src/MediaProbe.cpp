@@ -256,10 +256,27 @@ int RunBoundedFFProbe(const wxString &exe,
 
 	// Slurp captured stdout. On a kill the file is partial/empty, but the
 	// caller treats kKilled as failure and never reads stdoutLines then.
+	//
+	// Bounded, because the output is not purely ours any more: the entry list
+	// includes container tags, which are arbitrary attacker-chosen text of
+	// arbitrary length. Without a cap a crafted 100 MB title is written out by
+	// ffprobe, slurped whole into a wxString, copied again by the tokenizer
+	// and again on unescaping, and only then cut to kMaxTagChars -- a peak
+	// footprint several times the crafted tag, on the probe worker, for a
+	// feature that is now on by default. A legitimate reply for five fields is
+	// a few hundred bytes; 1 MiB is orders of magnitude clear of that, and
+	// anything past it is treated as a failed probe rather than truncated,
+	// since a half-read reply is not something to draw conclusions from.
+	const wxFileOffset kMaxProbeOutputBytes = 1024 * 1024;
 	if (exitCode >= 0) {
 		wxFFile f(tmpPath, wxT("rb"));
 		wxString content;
-		if (f.IsOpened() && f.ReadAll(&content, wxConvUTF8)) {
+		if (f.IsOpened() && f.Length() > kMaxProbeOutputBytes) {
+			AddDebugLogLineN(logMediaProbe,
+				CFormat(wxT("MediaProbe: ffprobe output too large (%lld bytes), ignoring")) %
+					static_cast<long long>(f.Length()));
+			exitCode = -1;
+		} else if (f.IsOpened() && f.ReadAll(&content, wxConvUTF8)) {
 			wxStringTokenizer tok(content, wxT("\r\n"), wxTOKEN_STRTOK);
 			while (tok.HasMoreTokens()) {
 				stdoutLines.Add(tok.GetNextToken());
@@ -538,11 +555,12 @@ const size_t kMaxTagChars = 256;
 // Clean one tag value before it is allowed any further: bound the length and
 // drop control characters.
 //
-// The length cap is the substantive half. Without it a multi-megabyte ID3 or
-// Vorbis title is read whole into a wxString, stored, and published -- the
-// only bound anywhere being the wire format's 0xFFFF truncation, which is a
-// packet-integrity guard rather than a policy, and still allows 64 KB of
-// chosen text per field per packet.
+// The length cap is what keeps oversized text out of known.met, out of the log
+// line and off the wire; without it the only bound anywhere was the wire
+// format's 0xFFFF truncation, a packet-integrity guard rather than a policy,
+// which still allowed 64 KB of chosen text per field per packet. How much is
+// READ in the first place is bounded separately, at the slurp in
+// RunBoundedFFProbe.
 //
 // Control characters are dropped because the value reaches a log line (and
 // through it GET /api/v0/logs/amule) and several list controls; a raw newline
