@@ -2557,7 +2557,7 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request, bool multiSea
 		// instead of minting a second identity for it. CUpDownClient::
 		// RequestSharedFileList() declines to re-ask a peer that is still
 		// answering, so a freshly allocated ID would never be stamped with a
-		// lifecycle -- while SetBrowseSearchId has already repointed every
+		// lifecycle -- while PinBrowseSearchId has already repointed every
 		// later status write away from the first ID, leaving that one
 		// BROWSE_IN_PROGRESS with nothing able to terminalize it. There is
 		// exactly one browse per client, so there can only be one ID to
@@ -2615,7 +2615,7 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request, bool multiSea
 						theApp->searchlist->RegisterBrowseSearch(
 							browseId, client->GetUserName(), client->ECID());
 					}
-					client->SetBrowseSearchId(browseId);
+					client->PinBrowseSearchId(browseId);
 					client->RequestSharedFileList();
 					response = BuildBrowseReply(browseId, reftag);
 				}

@@ -226,7 +226,7 @@ void CFriendList::RequestSharedFileList(CFriend *cur_friend, uint32 browseSearch
 		// browse's ID overwritten: with 0 for a local "View Files", which is
 		// what the rest of its listing would then be filed under.
 		if (theApp->browsemanager->SearchIdFor(client) == 0) {
-			client->SetBrowseSearchId(browseSearchId);
+			client->PinBrowseSearchId(browseSearchId);
 		}
 		client->RequestSharedFileList();
 	}

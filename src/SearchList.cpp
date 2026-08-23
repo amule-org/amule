@@ -329,6 +329,7 @@ void CSearchList::RemoveResults(wxUIntPtr searchID)
 	m_searchStartTimes.erase(static_cast<uint32_t>(searchID));
 	m_searchKinds.erase(static_cast<uint32_t>(searchID));
 	m_searchStrings.erase(static_cast<uint32_t>(searchID));
+	m_browsePeers.erase(static_cast<uint32_t>(searchID));
 	// The browse record outlives its client but not its search.
 	theApp->browsemanager->Remove(static_cast<uint32_t>(searchID));
 

@@ -527,17 +527,29 @@ public:
 	 * ID being set at all -- an inference that stopped working once local
 	 * browses got their ID up front as well.
 	 */
-	void SetBrowseSearchId(uint32 id)
+	/**
+	 * Hand the next browse of this peer an ID somebody else allocated.
+	 *
+	 * 0 means "nothing to pin", not "forget the ID you have": both callers
+	 * pass the EC-allocated ID or 0, and 0 is what a monolithic browse and a
+	 * legacy EC client both supply. Wiping the remembered ID on those left
+	 * RequestSharedFileList unable to find the peer's previous record, so it
+	 * allocated afresh and orphaned the registration, results and browse
+	 * record behind it.
+	 *
+	 * The pin is consumed by the next RequestSharedFileList, which otherwise
+	 * chooses for itself. Whether one was pinned cannot be inferred later:
+	 * an ID whose record has been disposed of looks exactly like one just
+	 * handed over.
+	 */
+	void PinBrowseSearchId(uint32 id)
 	{
+		if (id == 0) {
+			return;
+		}
 		m_browseSearchId = id;
-		m_browseEcInitiated = id != 0;
-		// Consumed by the next RequestSharedFileList, which otherwise
-		// allocates its own. Inferring this from whether the manager already
-		// knew the ID did not work: an ID whose record had been disposed of
-		// looked identical to one just pinned, so a local re-browse of a peer
-		// previously browsed over EC kept both the stale ID and the stale
-		// notion that somebody else had asked for it.
-		m_browsePinned = id != 0;
+		m_browseEcInitiated = true;
+		m_browsePinned = true;
 	}
 
 	void ResetFileStatusInfo();
@@ -830,7 +842,7 @@ private:
 	uint32 m_browseSearchId;
 	//! See IsBrowseEcInitiated.
 	bool m_browseEcInitiated;
-	//! See SetBrowseSearchId: an ID pinned for the next browse, not yet used.
+	//! See PinBrowseSearchId: an ID pinned for the next browse, not yet used.
 	bool m_browsePinned;
 	bool m_bFriendSlot;
 	bool m_bCommentDirty;
