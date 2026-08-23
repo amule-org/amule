@@ -350,6 +350,11 @@ void CUpDownClient::ClearHelloProperties()
 	m_fOsInfoSupport = 0;
 	SecIdentSupRec = 0;
 	m_byKadVersion = 0;
+	m_modCapabilities.Reset();
+	m_hasModIPv6 = false;
+	m_hasModServerIPv6 = false;
+	memset(m_modIPv6, 0, sizeof(m_modIPv6));
+	memset(m_modServerIPv6, 0, sizeof(m_modServerIPv6));
 	m_fRequestsCryptLayer = 0;
 	m_fSupportsCryptLayer = 0;
 	m_fRequiresCryptLayer = 0;
@@ -643,6 +648,56 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 			m_byEmuleVersion = 0x99;
 			m_fSharedDirectories = 1;
 			dwEmuleTags |= 4;
+			break;
+
+		// eMuleAI vendor capability tags. Recorded, never acted on: what
+		// aMule buys here is that an eMuleAI peer stops looking like a
+		// client sending malformed handshakes. The bit meanings are wire
+		// format and live in src/PeerCapabilities.h.
+		case CT_MOD_MISCOPTIONS:
+			//  1 Extended source exchange
+			//  1 Legacy uTP NAT traversal
+			//  1 IPv6
+			//  1 Serving-buddy pull
+			//  1 QUIC NAT traversal
+			// 27 Reserved -- masked off by SetFromWire, so nothing can be
+			//    inferred from a peer that sets them.
+			if (temptag.IsInt()) {
+				m_modCapabilities.SetFromWire((uint32)temptag.GetInt());
+				AddDebugLogLineN(logClient,
+					CFormat("Peer advertises vendor capabilities 0x%02X (%s)") %
+						m_modCapabilities.ToWire() %
+						m_modCapabilities.GetDisplayText());
+			}
+			break;
+
+		case CT_MOD_IP_V6:
+			// 16 bytes, big-endian. aMule has no IPv6 stack yet, so this
+			// is stored for the dual-stack change and otherwise unused.
+			if (temptag.IsHash()) {
+				md4cpy(m_modIPv6, temptag.GetHash().GetHash());
+				m_hasModIPv6 = true;
+			}
+			break;
+
+		case CT_MOD_SVR_IP_V6:
+			if (temptag.IsHash()) {
+				md4cpy(m_modServerIPv6, temptag.GetHash().GetHash());
+				m_hasModServerIPv6 = true;
+			}
+			break;
+
+		default:
+			// An unrecognised tag is not a broken handshake. The switch
+			// has always fallen through silently for tags aMule does not
+			// know; the only thing added here is visibility for the
+			// vendor range, because a new CT_MOD_* tag arriving in the
+			// wild is worth knowing about and is otherwise invisible.
+			if (temptag.GetNameID() >= 0xA0 && temptag.GetNameID() <= 0xAF) {
+				AddDebugLogLineN(logClient,
+					CFormat("Ignoring unknown vendor tag 0x%02X in hello from %s") %
+						temptag.GetNameID() % GetFullIP());
+			}
 			break;
 		}
 	}
@@ -1194,6 +1249,23 @@ void CUpDownClient::SendHelloTypePacket(CMemFile *data)
 	CTagVarInt tagMisCompatOptions(CT_EMULECOMPAT_OPTIONS, (nOSInfoSupport << 1 * 0), 32);
 
 	tagMisCompatOptions.WriteTagToFile(data);
+
+	// eMuleAI vendor capabilities (CT_MOD_MISCOPTIONS).
+	//
+	// Nothing is written, and that is the whole of the emit side for now:
+	// LocalAdvertisedModMiscOptions() is zero because aMule implements none
+	// of the five features, and eMuleAI treats an absent tag and an all-zero
+	// word identically. Advertising a capability aMule does not have is
+	// strictly worse than advertising none -- the peer opens a handshake that
+	// cannot complete and neither side logs a reason.
+	//
+	// A later change that ships one of these transports turns its bit on in
+	// LocalAdvertisedModMiscOptions(), emits the tag here, and adds one to
+	// `tagcount` above. Both must happen together: the tagcount is written
+	// before the tags and a mismatch desynchronises the reader.
+	static_assert(LocalAdvertisedModMiscOptions() == 0,
+		"a non-zero advertised capability word needs the CT_MOD_MISCOPTIONS tag emitted here "
+		"and tagcount incremented above");
 
 #ifdef __GIT__
 	wxString mod_name(MOD_VERSION_LONG);

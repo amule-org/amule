@@ -26,9 +26,10 @@
 #ifndef UPDOWNCLIENTEC_H
 #define UPDOWNCLIENTEC_H
 
-#include <ec/cpp/ECID.h> // Needed for CECID
-#include "BitVector.h"   // Needed for BitVector
-#include "ClientRef.h"   // Needed for debug defines
+#include <ec/cpp/ECID.h>      // Needed for CECID
+#include "BitVector.h"        // Needed for BitVector
+#include "ClientRef.h"        // Needed for debug defines
+#include "PeerCapabilities.h" // Needed for CPeerCapabilities
 
 class CKnownFile;
 class CPartFile;
@@ -103,6 +104,7 @@ public:
 	uint16 GetLastDownloadingPart() const { return m_lastDownloadingPart; }
 	uint16 GetNextRequestedPart() const { return m_nextRequestedPart; }
 	uint8 GetObfuscationStatus() const { return m_obfuscationStatus; }
+	const CPeerCapabilities &GetModCapabilities() const { return m_modCapabilities; }
 	uint16 GetOldRemoteQueueRank() const { return m_nOldRemoteQueueRank; }
 	const BitVector &GetPartStatus() const { return m_downPartStatus; }
 	uint16 GetRemoteQueueRank() const { return m_nRemoteQueueRank; }
@@ -179,6 +181,7 @@ private:
 	uint16 m_lastDownloadingPart;
 	uint16 m_nextRequestedPart;
 	uint8 m_obfuscationStatus;
+	CPeerCapabilities m_modCapabilities;
 	uint16 m_nOldRemoteQueueRank;
 	BitVector m_downPartStatus;
 	uint16 m_nRemoteQueueRank;

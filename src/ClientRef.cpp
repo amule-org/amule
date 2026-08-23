@@ -197,3 +197,12 @@ wxString CClientRef::GetSecureIdentTextStatus() const
 	}
 	return ret;
 }
+
+// Not a WRAPC: the client exposes the capability word, and the display string
+// is CPeerCapabilities' own business. This forwards through the one accessor
+// that both CUpDownClient and its EC mirror publish, so it compiles for all
+// three apps without a CLIENT_GUI branch.
+wxString CClientRef::GetModCapabilitiesText() const
+{
+	return m_client->GetModCapabilities().GetDisplayText();
+}

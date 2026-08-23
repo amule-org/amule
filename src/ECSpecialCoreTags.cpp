@@ -483,6 +483,9 @@ CEC_UpDownClient_Tag::CEC_UpDownClient_Tag(
 	AddDiffTag(this, EC_TAG_CLIENT_OBFUSCATION_STATUS, client->GetObfuscationStatus(), valuemap);
 	AddDiffTag(this, EC_TAG_CLIENT_KAD_PORT, client->GetKadPort(), valuemap);
 	AddDiffTag(this, EC_TAG_CLIENT_FRIEND_SLOT, client->GetFriendSlot(), valuemap);
+	// Already masked to the five defined bits by CPeerCapabilities, so the
+	// remote GUI never has to know which bits are reserved.
+	AddDiffTag(this, EC_TAG_CLIENT_MOD_CAPABILITIES, client->GetModCapabilities().ToWire(), valuemap);
 
 	if (detail_level == EC_DETAIL_UPDATE) {
 		return;

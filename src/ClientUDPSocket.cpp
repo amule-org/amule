@@ -139,6 +139,21 @@ void CClientUDPSocket::OnPacketReceived(uint32 ip, uint16 port, uint8_t *buffer,
 				}
 				break;
 
+			case OP_UDPRESERVEDPROT2:
+				// eMuleAI NAT traversal. Not an eD2k opcode: the byte
+				// after the protocol byte is a frame type. Dispatched
+				// here rather than through ProcessPacket() above, whose
+				// second argument is an opcode.
+				//
+				// This branch reaches no packet accounting at all, which
+				// is what keeps a dropped frame from feeding a ban:
+				// CPacketTracking is only entered from the Kad listener
+				// (kademlia/net/KademliaUDPListener.cpp:263), and an
+				// eMuleAI peer's NAT-T traffic would otherwise arrive
+				// here as an unknown protocol and read as malformed.
+				ProcessReservedProt2Frame(decryptedBuffer + 1, packetLen - 1, ip, port);
+				break;
+
 			default:
 				AddDebugLogLineN(logClientUDP,
 					CFormat("Unknown opcode on received packet: 0x%x") % protocol);
@@ -151,6 +166,81 @@ void CClientUDPSocket::OnPacketReceived(uint32 ip, uint16 port, uint8_t *buffer,
 			AddDebugLogLineN(logClientUDP,
 				"Malformed packet encountered while parsing UDP packet: " + e.what());
 		}
+	}
+}
+
+void CClientUDPSocket::ProcessReservedProt2Frame(
+	const uint8_t *frame, size_t frameLength, uint32 ip, uint16 port)
+{
+	const SReservedProt2Frame classified = ClassifyReservedProt2Frame(frame, frameLength);
+
+	switch (classified.disposition) {
+	case RP2_TRUNCATED:
+		// Nothing but the protocol byte arrived, so there is no type byte
+		// to read. Dropped without reading the window -- the guard is the
+		// point, this is the shortest datagram that can reach here.
+		AddDebugLogLineN(logClientUDP,
+			CFormat("Dropping truncated NAT-T datagram from %s:%u") % Uint32toStringIP(ip) %
+				port);
+		return;
+
+	case RP2_UNKNOWN_TYPE:
+		// A frame type this protocol does not define. Dropped, and
+		// deliberately not counted anywhere: see the OP_UDPRESERVEDPROT2
+		// comment in OnPacketReceived().
+		if (m_unknownFrameLog.ShouldLog(::GetTickCount64())) {
+			AddDebugLogLineN(logClientUDP,
+				CFormat("Dropping NAT-T frame of unknown type 0x%02X from %s:%u (%u further "
+					"occurrences suppressed)") %
+					classified.type % Uint32toStringIP(ip) % port %
+					m_unknownFrameLog.TakeSuppressedCount());
+		}
+		return;
+
+	case RP2_KNOWN_TYPE:
+		break;
+	}
+
+	// The five registered types. Every one of them belongs to a transport
+	// this build does not have, so each is dropped here rather than in a
+	// shared fallthrough: the change that ships a transport replaces its own
+	// case and nothing else, and until then a peer's NAT-T attempt is a
+	// recognised frame aMule cannot serve rather than malformed traffic.
+	switch (classified.type) {
+	case OP_NATT_FRAME_UTP:
+		AddDebugLogLineN(logClientUDP,
+			CFormat("Ignoring uTP NAT-T frame from %s:%u: no uTP transport in this build") %
+				Uint32toStringIP(ip) % port);
+		break;
+
+	case OP_NATT_FRAME_QUIC:
+		AddDebugLogLineN(logClientUDP,
+			CFormat("Ignoring QUIC NAT-T frame from %s:%u: no QUIC transport in this build") %
+				Uint32toStringIP(ip) % port);
+		break;
+
+	case OP_NATT_FRAME_CAPS:
+	case OP_NATT_FRAME_CAPS_ACK:
+		// Answering the capability negotiation would claim a transport
+		// aMule does not have. Silence is the correct answer here.
+		AddDebugLogLineN(logClientUDP,
+			CFormat("Ignoring NAT-T capability frame 0x%02X from %s:%u: nothing to negotiate") %
+				classified.type % Uint32toStringIP(ip) % port);
+		break;
+
+	case OP_NATT_FRAME_KEY:
+		AddDebugLogLineN(logClientUDP,
+			CFormat("Ignoring NAT-T key frame from %s:%u: no NAT traversal in this build") %
+				Uint32toStringIP(ip) % port);
+		break;
+
+	default:
+		// Unreachable: ClassifyReservedProt2Frame only reports
+		// RP2_KNOWN_TYPE for the five cases above. Kept so that adding a
+		// type there without a case here fails loudly rather than
+		// silently taking the drop path.
+		wxFAIL;
+		break;
 	}
 }
 
