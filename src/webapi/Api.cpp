@@ -7389,11 +7389,11 @@ CHttpServer::Response CApiDispatcher::HandleLogAmuleReset(const CHttpServer::Req
 	delete ec_resp;
 
 	// Drop the in-process mirror. The refresher's append-only path
-	// (AppendAmuleLog) can't shrink the cache, and EmitDiffsAndUpdate
-	// already treats a size decrease as a silent truncation
-	// (EventDiff.cpp's `amule_log.size() < prev.amule_log_count`
-	// branch), so no spurious log_appended event fires on the next
-	// tick.
+	// (AppendAmuleLog) can't shrink the cache, and EmitDiffsAndUpdate treats a
+	// size decrease as a silent truncation (its `log_size <
+	// prev.amule_log_count` branch), so no spurious log_appended event fires on
+	// the next tick -- and, as noted there, no event at all for whatever was
+	// appended before that tick.
 	m_state.ClearAmuleLog();
 
 	CHttpServer::Response r;

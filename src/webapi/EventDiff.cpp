@@ -476,9 +476,9 @@ void DiffMap(CEventBus &bus,
 // For hash-keyed file events emit removed payloads as
 // `{"hash":"..."}` so consumers can drop the cache entry without
 // needing the old object.
-std::string RemovedHashPayload(const FileSnapshot &f)
+std::string RemovedHashPayload(const std::string &hash)
 {
-	return "{\"hash\":\"" + EscJson(f.hash) + "\"}";
+	return "{\"hash\":\"" + EscJson(hash) + "\"}";
 }
 
 // Every ECID-keyed collection identifies a removed entry the same way, now
@@ -587,14 +587,12 @@ void PublishChatEvents(CEventBus &bus,
 void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state)
 {
 	EnforceSinglePublisher();
-	// Snapshot the current state under its read locks. Each accessor
-	// takes the shared_timed_mutex shared, copies, and returns. For
-	// files we use the unfiltered view (Files() — not the role-filtered
-	// Downloads/Shared) so the diff below sees role-flag transitions:
-	// a file that flipped is_shared false→true on an existing ECID
-	// must fire `shared_added` even though it's been in the unified
-	// map all along.
-	auto new_files = ByEcid(state.Files());
+	// Snapshot the current state under its read locks. Each accessor takes the
+	// shared_timed_mutex shared, copies, and returns. Files are the exception,
+	// walked in place further down: the diff needs the unified map, not a
+	// role-filtered view of it, so it can see a file that flipped is_shared
+	// false→true on an existing ECID and fire `shared_added` for it even though
+	// the entry was there all along.
 	auto new_servers = ByEcid(state.Servers());
 	auto new_friends = ByEcid(state.Friends());
 	auto new_clients = ByEcid(state.Clients());
@@ -620,65 +618,132 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 	const KadSnapshot &new_kad = new_dashboard.kad;
 	const bool new_ec = new_dashboard.ec_connected;
 
-	// Files: role-flag-aware diff. download_* fires on is_downloading
-	// transitions; shared_* on is_shared transitions. A single tick
-	// can fire both for the same file (e.g. partfile becoming shared
-	// + receiving a stat update on the download side).
+	// Files: role-flag-aware diff, run against the live map rather than a copy
+	// of it. download_* fires on is_downloading transitions, shared_* on
+	// is_shared transitions, and a single tick can fire both for the same file
+	// (a partfile becoming shared while its download side also moved).
+	//
+	// prev.files is a comparison baseline, not a mirror: an entry is rewritten
+	// exactly when a predicate below reports a difference, so the fields those
+	// predicates read stay fresh and others may lag. A new predicate has to go
+	// into the write-back condition too, not only the emit condition.
 	{
-		std::vector<std::pair<std::string, std::string>> batch;
-		batch.reserve(new_files.size());
-		const auto push = [&](const char *name, const std::string &payload) {
-			batch.emplace_back(name, payload);
+		// Decided under the read lock, serialised after it. The payloads are
+		// the full snapshot shape, so a cold-start tick or a shared-files
+		// reload builds one per file; doing that inside the lock would queue
+		// the refresher's own writer and every reader behind it, which is the
+		// cost this change exists to remove. What the walk records instead is
+		// the event and its subject: a hash for a removal, an ECID for
+		// everything else, resolved against `prev.files` once the lock is
+		// released -- the write-back below leaves that entry equal to the live
+		// one, so it is the same object the payload would have been built from.
+		enum class Change
+		{
+			DownloadAdded,
+			DownloadUpdated,
+			SharedAdded,
+			SharedUpdated,
+			CommentsUpdated,
 		};
-		// _removed first — clients can tear down their cache slot
-		// before the _added/_updated for the same ECID lands.
-		for (const auto &kv : prev.files) {
-			const auto it = new_files.find(kv.first);
-			if (it == new_files.end()) {
-				if (kv.second.is_downloading) {
-					push("download_removed", RemovedHashPayload(kv.second));
+		std::vector<std::pair<const char *, std::string>> removed;
+		std::vector<std::pair<Change, std::uint32_t>> changed;
+		// ECIDs to drop from the baseline once the walk is done -- erasing
+		// during it would invalidate the iterator.
+		std::vector<std::uint32_t> gone;
+		state.WithFiles([&](const FileMap &files) {
+			// _removed first — clients can tear down their cache slot
+			// before the _added/_updated for the same ECID lands.
+			for (const auto &kv : prev.files) {
+				const auto it = files.find(kv.first);
+				const bool absent = (it == files.end());
+				if (kv.second.is_downloading && (absent || !it->second.is_downloading)) {
+					removed.emplace_back("download_removed", kv.second.hash);
 				}
-				if (kv.second.is_shared) {
-					push("shared_removed", RemovedHashPayload(kv.second));
+				if (kv.second.is_shared && (absent || !it->second.is_shared)) {
+					removed.emplace_back("shared_removed", kv.second.hash);
 				}
-			} else {
-				if (kv.second.is_downloading && !it->second.is_downloading) {
-					push("download_removed", RemovedHashPayload(kv.second));
-				}
-				if (kv.second.is_shared && !it->second.is_shared) {
-					push("shared_removed", RemovedHashPayload(kv.second));
-				}
+				if (absent)
+					gone.push_back(kv.first);
 			}
-		}
-		// _added / _updated — gate by role flag transition vs the
-		// previous tick's is_downloading / is_shared value.
-		for (const auto &kv : new_files) {
-			const auto it = prev.files.find(kv.first);
-			const bool was_downloading = (it != prev.files.end() && it->second.is_downloading);
-			const bool was_shared = (it != prev.files.end() && it->second.is_shared);
-			if (kv.second.is_downloading) {
-				if (!was_downloading) {
-					push("download_added", ToJsonDownloadEvent(kv.second));
-					if (!kv.second.download.source_comments.empty()) {
-						push("comments_updated", ToJsonCommentsEvent(kv.second));
-					}
-				} else {
-					if (!EqualDownload(it->second, kv.second)) {
-						push("download_updated", ToJsonDownloadEvent(kv.second));
-					}
-					// Independent of download_updated: fires for Kad notes AND
-					// comments reported by connected sources (issue #434 / #419).
-					if (!EqualComments(it->second, kv.second)) {
-						push("comments_updated", ToJsonCommentsEvent(kv.second));
+			// _added / _updated — gated by the role-flag transition against
+			// the previous tick's is_downloading / is_shared value.
+			for (const auto &entry : files) {
+				const FileSnapshot &now = entry.second;
+				const auto it = prev.files.find(entry.first);
+				const bool known = (it != prev.files.end());
+				const bool was_downloading = known && it->second.is_downloading;
+				const bool was_shared = known && it->second.is_shared;
+				bool moved = !known || was_downloading != now.is_downloading ||
+					     was_shared != now.is_shared;
+				if (now.is_downloading) {
+					if (!was_downloading) {
+						changed.emplace_back(Change::DownloadAdded, entry.first);
+						if (!now.download.source_comments.empty()) {
+							changed.emplace_back(
+								Change::CommentsUpdated, entry.first);
+						}
+					} else {
+						if (!EqualDownload(it->second, now)) {
+							changed.emplace_back(
+								Change::DownloadUpdated, entry.first);
+							moved = true;
+						}
+						// Independent of download_updated: fires for Kad notes AND
+						// comments reported by connected sources (issue #434 / #419).
+						if (!EqualComments(it->second, now)) {
+							changed.emplace_back(
+								Change::CommentsUpdated, entry.first);
+							moved = true;
+						}
 					}
 				}
+				if (now.is_shared) {
+					if (!was_shared) {
+						changed.emplace_back(Change::SharedAdded, entry.first);
+					} else if (!EqualShared(it->second, now)) {
+						changed.emplace_back(Change::SharedUpdated, entry.first);
+						moved = true;
+					}
+				}
+				if (!moved)
+					continue;
+				if (known)
+					it->second = now;
+				else
+					prev.files.emplace(entry.first, now);
 			}
-			if (kv.second.is_shared) {
-				if (!was_shared) {
-					push("shared_added", ToJsonSharedEvent(kv.second));
-				} else if (!EqualShared(it->second, kv.second)) {
-					push("shared_updated", ToJsonSharedEvent(kv.second));
-				}
+		});
+		for (const std::uint32_t ecid : gone)
+			prev.files.erase(ecid);
+
+		std::vector<std::pair<std::string, std::string>> batch;
+		batch.reserve(removed.size() + changed.size());
+		for (const auto &r : removed)
+			batch.emplace_back(r.first, RemovedHashPayload(r.second));
+		for (const auto &c : changed) {
+			// Every recorded change set `moved`, so its entry was written
+			// back; `gone` holds only ECIDs absent from the live map, which
+			// these are not.
+			const auto it = prev.files.find(c.second);
+			if (it == prev.files.end())
+				continue;
+			const FileSnapshot &f = it->second;
+			switch (c.first) {
+			case Change::DownloadAdded:
+				batch.emplace_back("download_added", ToJsonDownloadEvent(f));
+				break;
+			case Change::DownloadUpdated:
+				batch.emplace_back("download_updated", ToJsonDownloadEvent(f));
+				break;
+			case Change::SharedAdded:
+				batch.emplace_back("shared_added", ToJsonSharedEvent(f));
+				break;
+			case Change::SharedUpdated:
+				batch.emplace_back("shared_updated", ToJsonSharedEvent(f));
+				break;
+			case Change::CommentsUpdated:
+				batch.emplace_back("comments_updated", ToJsonCommentsEvent(f));
+				break;
 			}
 		}
 		bus.PublishBatch(batch);
@@ -711,7 +776,6 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 	}
 
 	// Snapshot the new state for next tick's diff baseline.
-	prev.files = std::move(new_files);
 	prev.servers = std::move(new_servers);
 	prev.clients = std::move(new_clients);
 	prev.friends = std::move(new_friends);
@@ -818,34 +882,43 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 		}
 	}
 
-	// log_appended. CState::AmuleLog() is append-only
-	// (CState.cpp:142-151) so a strictly-increasing size means the
-	// refresher just appended the tail. First tick records the
-	// size baseline silently — clients GET /api/v0/logs/amule for
-	// the historical buffer; the event channel is for live tail
-	// only. A truncation (size decreased) silently resyncs the
-	// counter; the only path that truncates today is a future
-	// `DELETE /logs/amule` mutation, and clients refetch on that
-	// regardless.
-	const auto amule_log = state.AmuleLog();
+	// log_appended. The refresher only ever appends, so a size that grew means
+	// the tail is new. First tick records the baseline silently — clients GET
+	// /api/v0/logs/amule for the history; this channel is the live tail only.
+	//
+	// A size that shrank means `DELETE /logs/amule` cleared the buffer, and the
+	// only thing this does about it is re-point the counter. Lines appended
+	// between that DELETE and this tick are NOT published, and if the counter
+	// was below the new size the append branch publishes a mid-buffer slice as
+	// though it were a tail. Only the client that issued the DELETE knows to
+	// refetch; other subscribers are not told. Pre-existing, and fixable by
+	// publishing `resync` on the reset edge -- which needs the bus-published
+	// resync to bypass the `?channels=` filter, so it is not this change.
+	//
+	// Size and tail in one read: the history is uncapped, so asking AmuleLog()
+	// for a `.size()` that is unchanged on almost every tick copies all of it
+	// -- and splitting the two would let that DELETE land in between, pairing
+	// a pre-truncation size with an empty tail.
+	std::size_t log_size = 0;
+	const auto tail = state.AmuleLogFrom(prev.amule_log_count, log_size);
 	if (!prev.amule_log_initialised) {
-		prev.amule_log_count = amule_log.size();
+		prev.amule_log_count = log_size;
 		prev.amule_log_initialised = true;
-	} else if (amule_log.size() < prev.amule_log_count) {
-		prev.amule_log_count = amule_log.size();
-	} else if (amule_log.size() > prev.amule_log_count) {
+	} else if (log_size < prev.amule_log_count) {
+		prev.amule_log_count = log_size;
+	} else if (!tail.empty()) {
 		std::ostringstream payload;
 		payload << "{\"lines\":[";
 		bool first = true;
-		for (std::size_t i = prev.amule_log_count; i < amule_log.size(); ++i) {
+		for (const std::string &line : tail) {
 			if (!first)
 				payload << ",";
 			first = false;
-			payload << "\"" << EscJson(amule_log[i]) << "\"";
+			payload << "\"" << EscJson(line) << "\"";
 		}
 		payload << "]}";
 		bus.Publish("log_appended", payload.str());
-		prev.amule_log_count = amule_log.size();
+		prev.amule_log_count = prev.amule_log_count + tail.size();
 	}
 }
 
