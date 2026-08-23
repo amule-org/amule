@@ -452,6 +452,173 @@ bool ParseBitrateKbps(const wxString &value, uint32 &out)
 
 } // anonymous namespace
 
+const wxChar *ProbeEntries()
+{
+	// Per stream: its codec_name and codec_type (so a video track's codec is
+	// preferred over an audio one, and subtitle / data streams never win), the
+	// attached_pic disposition, and its own artist/title/album tags. Per
+	// format: duration, bit_rate and the same three tags.
+	return wxT("format=duration,bit_rate"
+		   ":format_tags=artist,title,album"
+		   ":stream=codec_name,codec_type"
+		   ":stream_disposition=attached_pic"
+		   ":stream_tags=artist,title,album");
+}
+
+namespace
+{
+
+// One stream, accumulated between [STREAM] and [/STREAM].
+struct ProbeStream
+{
+	wxString codec;
+	wxString type;
+	bool attached_pic = false;
+	wxString artist, album, title;
+};
+
+// ffprobe prints the container's own key case -- Matroska yields TAG:ARTIST
+// and TAG:ALBUM beside a lower-case TAG:title, in one file -- while matching
+// the requested names case-insensitively. So the parser has to as well.
+void AssignTag(const wxString &key, const wxString &value, wxString &artist, wxString &album, wxString &title)
+{
+	const wxString lower = key.Lower();
+	if (lower == wxT("artist")) {
+		artist = value;
+	} else if (lower == wxT("album")) {
+		album = value;
+	} else if (lower == wxT("title")) {
+		title = value;
+	}
+}
+
+} // namespace
+
+bool ParseProbeOutput(const wxArrayString &lines, MediaInfo &out)
+{
+	MediaInfo info;
+	bool got_duration = false;
+
+	// Codec selection: the first video track's codec, else the first audio
+	// track's. Subtitle / data streams (e.g. a leading subrip track in an mkv)
+	// never win, so we don't advertise "subrip" as a file's codec.
+	wxString videoCodec, audioCodec;
+	// Tags of the stream that supplied audioCodec, kept as the fallback source
+	// for Ogg/Opus, where Vorbis comments belong to the logical stream and the
+	// format section carries nothing at all.
+	wxString streamArtist, streamAlbum, streamTitle;
+	bool haveAudioStreamTags = false;
+	wxString formatArtist, formatAlbum, formatTitle;
+
+	bool inStream = false;
+	bool inFormat = false;
+	ProbeStream cur;
+
+	for (const wxString &line : lines) {
+		if (line == wxT("[STREAM]")) {
+			inStream = true;
+			cur = ProbeStream();
+			continue;
+		}
+		if (line == wxT("[/STREAM]")) {
+			inStream = false;
+			// Cover art (ID3 APIC, FLAC PICTURE, MOV covr, Matroska image
+			// attachments, ...) is reported as an ordinary video stream and is
+			// the only non-content stream that claims codec_type=video.
+			// Without this an MP3 with artwork advertises "mjpeg" as the
+			// file's codec -- to every peer, since the tag goes out on the
+			// wire. FFmpeg's own "real video" selector is the same test.
+			if (!cur.attached_pic && !cur.codec.IsEmpty()) {
+				if (cur.type == wxT("video") && videoCodec.IsEmpty()) {
+					videoCodec = cur.codec;
+				} else if (cur.type == wxT("audio") && audioCodec.IsEmpty()) {
+					audioCodec = cur.codec;
+					streamArtist = cur.artist;
+					streamAlbum = cur.album;
+					streamTitle = cur.title;
+					haveAudioStreamTags = true;
+				}
+			}
+			continue;
+		}
+		if (line == wxT("[FORMAT]")) {
+			inFormat = true;
+			continue;
+		}
+		if (line == wxT("[/FORMAT]")) {
+			inFormat = false;
+			continue;
+		}
+
+		// Split on the first '=' only -- a tag value may well contain one.
+		const int eq = line.Find(wxT('='));
+		if (eq == wxNOT_FOUND) {
+			continue;
+		}
+		const wxString key = line.Mid(0, eq);
+		const wxString value = line.Mid(eq + 1);
+
+		if (key.StartsWith(wxT("TAG:"))) {
+			const wxString name = key.Mid(4);
+			if (inStream) {
+				AssignTag(name, value, cur.artist, cur.album, cur.title);
+			} else if (inFormat) {
+				AssignTag(name, value, formatArtist, formatAlbum, formatTitle);
+			}
+			continue;
+		}
+		if (inFormat) {
+			if (key == wxT("duration")) {
+				got_duration = ParseSeconds(value, info.length_seconds);
+			} else if (key == wxT("bit_rate")) {
+				(void)ParseBitrateKbps(value, info.bitrate_kbps);
+			}
+			continue;
+		}
+		if (inStream) {
+			if (key == wxT("codec_name")) {
+				cur.codec = value;
+			} else if (key == wxT("codec_type")) {
+				cur.type = value;
+			} else if (key == wxT("DISPOSITION:attached_pic")) {
+				cur.attached_pic = (value == wxT("1"));
+			}
+		}
+	}
+
+	if (!videoCodec.IsEmpty()) {
+		info.codec = videoCodec;
+	} else if (!audioCodec.IsEmpty()) {
+		info.codec = audioCodec;
+	}
+
+	info.artist = formatArtist;
+	info.album = formatAlbum;
+	info.title = formatTitle;
+	// Stream tags are only consulted for a file whose codec came FROM that
+	// audio stream, i.e. an audio-only file, and only where the format section
+	// gave nothing. On a multi-track video the stream tags are track LABELS --
+	// "Deutsch", "Espanol" -- and publishing one as the file's title would
+	// send it to every peer.
+	if (haveAudioStreamTags && videoCodec.IsEmpty()) {
+		if (info.artist.IsEmpty()) {
+			info.artist = streamArtist;
+		}
+		if (info.album.IsEmpty()) {
+			info.album = streamAlbum;
+		}
+		if (info.title.IsEmpty()) {
+			info.title = streamTitle;
+		}
+	}
+
+	if (!got_duration && info.codec.IsEmpty()) {
+		return false;
+	}
+	out = info;
+	return true;
+}
+
 bool Probe(const wxString &ffprobePath,
 	const CPath &file,
 	MediaInfo &out,
@@ -476,22 +643,21 @@ bool Probe(const wxString &ffprobePath,
 		return false;
 	}
 
-	// -show_entries constrains the output to what we care about: each stream's
-	// codec_name plus its codec_type (so we can prefer the video track's codec,
-	// then the audio track's, over subtitle / data streams), and the format-
-	// level duration + bit_rate. -of default=nk=0:nw=1 emits one bare
-	// "key=value" per line, no INI section headers, no line wrapping; ffprobe
-	// prints the stream fields in the requested order, so each stream is a
-	// codec_name line immediately followed by its codec_type line. -v error
-	// silences informational chatter. Tokens are passed as a real argv (no
-	// shell), so the file path needs no quoting/escaping.
+	// -show_entries constrains the output to what we care about; see
+	// ProbeEntries() for the field list and ParseProbeOutput() for what is done
+	// with it. -of default=nk=0 -- note: WITHOUT nw=1 -- keeps ffprobe's
+	// [STREAM] / [FORMAT] section delimiters, which is what lets a TAG: line be
+	// attributed to the stream or the format that owns it. By position alone it
+	// cannot be, and that argument breaks on a file with no duration line.
+	// -v error silences informational chatter. Tokens are passed as a real argv
+	// (no shell), so the file path needs no quoting/escaping.
 	wxArrayString argv;
 	argv.Add(wxT("-v"));
 	argv.Add(wxT("error"));
 	argv.Add(wxT("-show_entries"));
-	argv.Add(wxT("format=duration,bit_rate:stream=codec_name,codec_type"));
+	argv.Add(ProbeEntries());
 	argv.Add(wxT("-of"));
-	argv.Add(wxT("default=nk=0:nw=1"));
+	argv.Add(wxT("default=nk=0"));
 	argv.Add(file.GetRaw());
 
 	// Info level, not debug: media metadata is a feature the user explicitly
@@ -533,47 +699,9 @@ bool Probe(const wxString &ffprobePath,
 	}
 
 	MediaInfo info;
-	bool got_duration = false;
-	// Codec selection: the first video track's codec, else the first audio
-	// track's. Subtitle / data streams (e.g. a leading subrip track in an
-	// mkv) never win, so we don't advertise "subrip" as a file's codec.
-	wxString videoCodec, audioCodec, pendingCodec;
-	for (const wxString &line : stdout_lines) {
-		// Split on the first '=' only — codec_name values themselves
-		// don't contain '=' but the parser mustn't assume that.
-		const int eq = line.Find(wxT('='));
-		if (eq == wxNOT_FOUND) {
-			continue;
-		}
-		const wxString key = line.Mid(0, eq);
-		const wxString value = line.Mid(eq + 1);
-		if (key == wxT("duration")) {
-			got_duration = ParseSeconds(value, info.length_seconds);
-		} else if (key == wxT("bit_rate")) {
-			(void)ParseBitrateKbps(value, info.bitrate_kbps);
-		} else if (key == wxT("codec_name")) {
-			// Held until this stream's codec_type line arrives next.
-			pendingCodec = value;
-		} else if (key == wxT("codec_type")) {
-			if (value == wxT("video") && videoCodec.IsEmpty()) {
-				videoCodec = pendingCodec;
-			} else if (value == wxT("audio") && audioCodec.IsEmpty()) {
-				audioCodec = pendingCodec;
-			}
-			pendingCodec.clear();
-		}
-	}
-	if (!videoCodec.IsEmpty()) {
-		info.codec = videoCodec;
-	} else if (!audioCodec.IsEmpty()) {
-		info.codec = audioCodec;
-	}
-	const bool got_codec = !info.codec.IsEmpty();
-
-	// A file with zero streams / zero duration produces an all-blank
-	// MediaInfo which is meaningless to advertise — treat it as a
-	// probe failure so the caller doesn't attach empty tags.
-	if (!got_duration && !got_codec) {
+	if (!ParseProbeOutput(stdout_lines, info)) {
+		// Neither a duration nor a codec came back, so there is nothing worth
+		// advertising -- report a failed probe rather than attaching empty tags.
 		AddDebugLogLineN(logMediaProbe,
 			CFormat(wxT("MediaProbe: no metadata parsed for %s")) % file.GetPrintable());
 		return false;

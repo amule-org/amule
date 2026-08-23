@@ -21,6 +21,7 @@
 #ifndef MEDIAPROBE_H
 #define MEDIAPROBE_H
 
+#include <wx/arrstr.h> // Needed for wxArrayString
 #include <atomic>
 
 #include <wx/string.h>
@@ -45,10 +46,31 @@ struct MediaInfo
 	// FormatMediaCodec() in OtherFunctions.h maps a few common
 	// FOURCCs / format strings to friendlier UI labels.
 	wxString codec;
+	// FT_MEDIA_ARTIST / _ALBUM / _TITLE — container tags, empty when the
+	// file carries none. Read from the format section, falling back to the
+	// stream's own tags only for an audio-only file; see ParseProbeOutput.
+	wxString artist;
+	wxString album;
+	wxString title;
 };
 
 namespace MediaProbe
 {
+
+// Parse ffprobe's `-show_entries ... -of default=nk=0` output into a
+// MediaInfo. Split out of Probe() so the parsing rules -- which carry all the
+// container-specific subtleties -- are testable without spawning a process or
+// shipping media fixtures; Probe() is then just "run the binary and call this".
+//
+// Returns false when nothing usable was parsed (neither a duration nor a
+// codec), which the caller reports as a failed probe so no empty tags are
+// attached.
+bool ParseProbeOutput(const wxArrayString &lines, MediaInfo &out);
+
+// The `-show_entries` argument Probe() passes, exposed so a test feeds the
+// parser output produced by this exact request rather than a hand-written
+// approximation of it.
+const wxChar *ProbeEntries();
 
 // Locate an ffprobe binary. Tries in order:
 //   1. `ffprobe` on $PATH (or %PATH% on Windows) via a quick

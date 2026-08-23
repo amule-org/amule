@@ -497,6 +497,21 @@ target_link_libraries (ChatSessionStoreTest
 	mulecommon
 )
 
+add_executable (MediaProbeParseTest
+	MediaProbeParseTest.cpp
+	${CMAKE_SOURCE_DIR}/src/MediaProbe.cpp
+)
+add_test (NAME MediaProbeParseTest COMMAND MediaProbeParseTest)
+target_include_directories (MediaProbeParseTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+target_link_libraries (MediaProbeParseTest
+	muleunit
+	mulecommon
+)
+
 add_executable (JsonWriterTest
 	JsonWriterTest.cpp
 )
