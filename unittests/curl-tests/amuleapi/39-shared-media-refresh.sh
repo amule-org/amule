@@ -72,9 +72,19 @@ TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 
 # --- 1. Whole-share refresh. ---------------------------------------
 _curl -X POST -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/shared/media/refresh"
-if [ "$CURL_STATUS" = "501" ]; then
+# 503 covers two different situations and only one of them is a skip:
+# ec_unsupported is an amuled that predates the op, ec_unavailable is no
+# usable EC link at all -- which is a broken rig, not a reason to report
+# success. Branch on error.code, not on the status alone.
+if [ "$CURL_STATUS" = "503" ]; then
+	EC_CODE=$(printf '%s' "$CURL_BODY" | jq -r '.error.code // empty')
+	if [ "$EC_CODE" = "ec_unavailable" ]; then
+		_die "no usable EC link to amuled (503 ec_unavailable) -- rig is broken, not a skip"
+	fi
+	# A real assertion, not a _pass: any third error.code has to register as a
+	# failure, which is also what keeps the FAIL_COUNT consult below live.
 	_assert_json_eq '.error.code' ec_unsupported \
-		'501 carries error.code=ec_unsupported (daemon predates the op)'
+		'503 carries error.code=ec_unsupported (daemon predates the op)'
 	echo "    info: connected amuled does not implement media refresh; rest skipped"
 	echo
 	# Consult FAIL_COUNT: the assertion above can fail, and printing OK over

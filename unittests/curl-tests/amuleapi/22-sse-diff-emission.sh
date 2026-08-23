@@ -468,6 +468,82 @@ else
 	_pass "no client frame this run (no peer changed; shape asserted when one fires)"
 fi
 
+# --- shared_added / shared_updated carry the same keys as the GET
+# --- /shared list item.
+# REFERENCE.md promises the payload "matches this object byte-for-byte, so a
+# subscriber that received shared_updated does not need to re-GET". Nothing
+# checked it: the mechanical key-diff above covers status only, and the shared
+# payload is built by a SEPARATE writer (ToJsonSharedEvent) from the one the
+# list uses (WriteSharedObject), so the two drift silently by construction.
+# They already did once -- `media` reached the event before the list item.
+#
+# Appended at the end of the file on purpose: every section here shares one
+# live daemon, and a new section in the middle can change the state later
+# sections read.
+#
+# Conditional for the same reason as status_changed: an idle share emits
+# nothing, so a missing frame is a skip. What this guards is the SHAPE.
+# Force a real change rather than waiting for one: a reload of an unchanged
+# share emits nothing, so a passive wait here reports "no frame" every run and
+# checks nothing. Flipping a shared file's priority moves a field EqualShared
+# compares, which is exactly what makes shared_updated fire. The original
+# value is restored below -- this daemon is shared with the other sections.
+PARITY_HASH=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared" \
+	| jq -r '.shared[0].hash // empty')
+PARITY_PRIO=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared" \
+	| jq -r '.shared[0].priority // empty')
+PARITY_AUTO=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared" \
+	| jq -r '.shared[0].priority_auto // empty')
+SHARED_JSON=""
+if [ -z "$PARITY_HASH" ]; then
+	_pass "nothing shared; shared-event parity check skipped"
+else
+SSE_PID=$(_sse_start 15)
+sleep 1
+if [ "$PARITY_PRIO" = "high" ]; then NEW_PRIO=low; else NEW_PRIO=high; fi
+curl -s -o /dev/null -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d "{\"priority\":\"$NEW_PRIO\"}" "$HOST/api/v0/shared/$PARITY_HASH"
+for _ in $(seq 1 40); do
+	if grep -qE "^event: shared_(added|updated)$" "$SSE_OUT"; then
+		SHARED_JSON=$(grep -A2 -E "^event: shared_(added|updated)$" "$SSE_OUT" \
+			| grep "^data: " | sed 's/^data: //' | head -1)
+		[ -n "$SHARED_JSON" ] && break
+	fi
+	sleep 0.25
+done
+kill $SSE_PID 2>/dev/null
+wait $SSE_PID 2>/dev/null
+if [ -n "$SHARED_JSON" ]; then
+	EV_HASH=$(printf '%s' "$SHARED_JSON" | jq -r '.hash')
+	REST_ITEM=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared" \
+		| jq -c --arg h "$EV_HASH" '.shared[] | select(.hash == $h)')
+	if [ -z "$REST_ITEM" ]; then
+		# The file left the share between the frame and the GET; no contract
+		# to check, and failing here would be a flake, not a finding.
+		_pass "shared frame's file no longer listed (shape asserted when both are present)"
+	else
+		DIFF=$(jq -n --argjson a "$REST_ITEM" --argjson b "$SHARED_JSON" \
+			'def keys_: [paths | join(".")] | sort;
+			 {rest_only: (($a|keys_) - ($b|keys_)), sse_only: (($b|keys_) - ($a|keys_))}')
+		if [ "$(echo "$DIFF" | jq -c '.')" = '{"rest_only":[],"sse_only":[]}' ]; then
+			_pass "shared event payload keys match the GET /shared item exactly"
+		else
+			_fail "shared event / GET /shared key parity" "$DIFF"
+		fi
+	fi
+else
+	_fail "shared event parity" "no shared_added/updated frame within 10 s of a priority PATCH"
+fi
+# Restore what the PATCH changed: later sections and other phases read this
+# daemon's state. priority_auto has to go back too -- setting a bare priority
+# clears it.
+curl -s -o /dev/null -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d "{\"priority\":\"$PARITY_PRIO\",\"priority_auto\":$PARITY_AUTO}" \
+	"$HOST/api/v0/shared/$PARITY_HASH"
+fi
+
 # --- Summary. -----------------------------------------------------
 echo
 if [ "$FAIL_COUNT" -eq 0 ]; then

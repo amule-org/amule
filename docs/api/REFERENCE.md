@@ -1315,7 +1315,15 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/shared"
       "uploading":        2,
       "last_upload":      1700000500,
       "shared_since":     1699000000,
-      "hashing_progress": 0
+      "hashing_progress": 0,
+      "media": {
+        "length_s": 212,
+        "bitrate":  320,
+        "codec":    "mp3",
+        "artist":   "Some Artist",
+        "album":    "Some Album",
+        "title":    "Some Title"
+      }
     }
   ]
 }
@@ -1331,7 +1339,9 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/shared"
 
 A file that is both downloading and shared reports its progress here as well: amuled describes such a file as a partfile, so the value is read across from the download side and the two agree. That makes `hashing_progress` usable from either list without checking which one owns the file.
 
-The SSE `shared_added` / `shared_updated` event payload matches this object byte-for-byte, so a subscriber that received `shared_updated` does not need to re-GET to see the moved counters.
+`media` is present only on an audio or video file that has been probed, and absent entirely otherwise — check for the key rather than for empty values. Its six fields are the same ones the detail endpoint reports, and a [media refresh](#post-apiv0sharedmediarefresh) replaces all of them, clearing any the new probe no longer finds.
+
+The SSE `shared_added` / `shared_updated` event payload matches this object byte-for-byte, so a subscriber that received `shared_updated` does not need to re-GET to see the moved counters — including `media`, which is what makes a metadata refresh observable without polling.
 
 **Errors:** `503 ec_unavailable`.
 

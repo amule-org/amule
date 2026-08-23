@@ -2891,6 +2891,14 @@ void WriteSharedObject(CJsonWriter &w, const webapi::FileSnapshot &f)
 {
 	w.BeginObject();
 	WriteSharedBaseFields(w, f);
+	// Media rides the list item, not just the detail endpoint, because the
+	// shared_added / shared_updated payload is documented to match this object
+	// byte-for-byte -- that is what lets a subscriber skip the re-GET. The
+	// event has to carry media (a metadata re-extraction is otherwise
+	// invisible: the refresh endpoints answer 202 with no result), so the list
+	// carries it too or the guarantee stops being true. Six small scalars,
+	// unlike the per-part arrays the list deliberately omits.
+	WriteMediaIfPresent(w, f);
 	w.EndObject();
 }
 
