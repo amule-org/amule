@@ -142,12 +142,27 @@ std::atomic<uint64> CKnownFile::s_globalEcGen{ 0 };
 uint32 CKnownFile::GetMetaDataVer() const
 {
 	// Derived from tag presence, no separate m_uMetaDataVer field.
-	// FT_MEDIA_LENGTH is the only tag MediaProbe populates
-	// unconditionally on a successful probe (bitrate and codec are
-	// best-effort per format), so nonzero length is the reliable
-	// "we've probed this and have data worth publishing" signal.
-	// Kad's publisher (Search.cpp:1422) uses this exact gate.
-	return GetIntTagValue(FT_MEDIA_LENGTH) > 0 ? 1 : 0;
+	//
+	// ANY FT_MEDIA_* tag counts, not FT_MEDIA_LENGTH alone. The premise the
+	// length-only test rested on -- that a successful probe always yields a
+	// duration -- is false: MediaProbe succeeds on a duration OR a codec, so a
+	// file ffprobe can identify but not time (a raw elementary stream, a
+	// truncated capture) gets a codec and no length. That put the four
+	// consumers of this predicate in disagreement: the ed2k publisher, which
+	// checks each tag individually, advertised the codec to every peer, while
+	// Kad, EC and the file-detail dialog all reported the file as having no
+	// metadata at all. The same tag was good enough for strangers and not for
+	// the person who owns the file.
+	//
+	// It also drives the "already probed" gate in CSharedFileList, so those
+	// files used to be re-probed on every single startup, forever, for a
+	// result that was already known and would be discarded again.
+	return (GetIntTagValue(FT_MEDIA_LENGTH) > 0 || GetIntTagValue(FT_MEDIA_BITRATE) > 0 ||
+		       !GetStrTagValue(FT_MEDIA_CODEC).IsEmpty() ||
+		       !GetStrTagValue(FT_MEDIA_ARTIST).IsEmpty() ||
+		       !GetStrTagValue(FT_MEDIA_ALBUM).IsEmpty() || !GetStrTagValue(FT_MEDIA_TITLE).IsEmpty())
+		       ? 1
+		       : 0;
 }
 
 void CKnownFile::MarkECChanged()
@@ -309,6 +324,21 @@ void CAbstractFile::AddTagUnique(const CTag &rTag)
 		}
 	}
 	m_taglist.push_back(rTag);
+}
+
+bool CAbstractFile::RemoveTag(uint8 tagname)
+{
+	// Matches on the numeric id alone, unlike AddTagUnique's (id, type) pair:
+	// the caller wants the field gone whatever width or encoding it was stored
+	// with, and a media tag inherited from a search result can legitimately
+	// arrive as a narrower integer type than the one a local probe writes.
+	for (ArrayOfCTag::iterator it = m_taglist.begin(); it != m_taglist.end(); ++it) {
+		if (it->GetNameID() == tagname) {
+			m_taglist.erase(it);
+			return true;
+		}
+	}
+	return false;
 }
 
 #ifndef CLIENT_GUI
@@ -1399,9 +1429,21 @@ void CKnownFile::CreateOfferedFilePacket(CMemFile *files, CServer *pServer, CUpD
 	if (uint32 br = GetIntTagValue(FT_MEDIA_BITRATE)) {
 		tags.push_back(new CTagVarInt(FT_MEDIA_BITRATE, br, 32));
 	}
-	const wxString &codec = GetStrTagValue(FT_MEDIA_CODEC);
-	if (!codec.IsEmpty()) {
-		tags.push_back(new CTagString(FT_MEDIA_CODEC, codec));
+	// Artist / album / title alongside the other three: this was the only
+	// publisher still sending three of the six, so a peer searching by artist
+	// could match a Kad-published copy of a file and not the ed2k-published
+	// one.
+	const struct
+	{
+		uint8 id;
+	} kMediaStrTags[] = {
+		{ FT_MEDIA_CODEC }, { FT_MEDIA_ARTIST }, { FT_MEDIA_ALBUM }, { FT_MEDIA_TITLE }
+	};
+	for (const auto &entry : kMediaStrTags) {
+		const wxString &value = GetStrTagValue(entry.id);
+		if (!value.IsEmpty()) {
+			tags.push_back(new CTagString(entry.id, value));
+		}
 	}
 
 	EUtf8Str eStrEncode;

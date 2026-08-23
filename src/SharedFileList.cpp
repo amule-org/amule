@@ -794,7 +794,11 @@ void CSharedFileList::MaybeScheduleMediaProbe(CKnownFile *pFile, bool bForceRepr
 			CFormat(wxT("MediaProbe: skip (incomplete download) %s")) % pFile->GetFileName());
 		return;
 	}
-	if (!bForceReprobe && pFile->GetIntTagValue(FT_MEDIA_LENGTH) > 0) {
+	// GetMetaDataVer(), not a second FT_MEDIA_LENGTH test: one definition of
+	// "this file has been probed", shared with the publishers and the UI. The
+	// length-only form here never considered a codec-only file probed, so
+	// every startup re-ran ffprobe on all of them.
+	if (!bForceReprobe && pFile->GetMetaDataVer() > 0) {
 		AddDebugLogLineN(logMediaProbe,
 			CFormat(wxT("MediaProbe: skip (already has metadata) %s")) % pFile->GetFileName());
 		return;

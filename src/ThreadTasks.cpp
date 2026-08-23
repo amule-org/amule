@@ -989,19 +989,24 @@ wxDEFINE_EVENT(MULE_EVT_HASHING, wxEvent);
 wxDEFINE_EVENT(MULE_EVT_AICH_HASHING, wxEvent);
 wxDEFINE_EVENT(MULE_EVT_MEDIA_PROBE, wxEvent);
 
-CMediaProbeEvent::CMediaProbeEvent(
-	const CMD4Hash &hash, uint32 lengthSeconds, uint32 bitrateKbps, const wxString &codec)
+CMediaProbeEvent::CMediaProbeEvent(const CMD4Hash &hash, const MediaInfo &info)
 : wxEvent(-1, MULE_EVT_MEDIA_PROBE)
 , m_hash(hash)
-, m_lengthSeconds(lengthSeconds)
-, m_bitrateKbps(bitrateKbps)
-, m_codec(codec)
 {
+	// Deep-copy every string: this event is built on the probe worker and
+	// consumed on the main thread, and wxString is refcounted, so handing the
+	// buffer over shared would race the worker's own copy going out of scope.
+	m_info.length_seconds = info.length_seconds;
+	m_info.bitrate_kbps = info.bitrate_kbps;
+	m_info.codec = wxString(info.codec.c_str(), info.codec.length());
+	m_info.artist = wxString(info.artist.c_str(), info.artist.length());
+	m_info.album = wxString(info.album.c_str(), info.album.length());
+	m_info.title = wxString(info.title.c_str(), info.title.length());
 }
 
 wxEvent *CMediaProbeEvent::Clone() const
 {
-	return new CMediaProbeEvent(m_hash, m_lengthSeconds, m_bitrateKbps, m_codec);
+	return new CMediaProbeEvent(m_hash, m_info);
 }
 CHashingEvent::CHashingEvent(wxEventType type, CKnownFile *result, const CKnownFile *owner)
 : wxEvent(-1, type)

@@ -1665,16 +1665,33 @@ void CPreferences::BuildItemList(const wxString &appdir)
 #endif // ENABLE_VERSION_CHECK || CLIENT_GUI
 
 	/**
-	 * Media metadata extraction (issue #140). Off by default so an
-	 * upgrade doesn't kick off a background probe of every shared
-	 * file until the user opts in. The path stays empty unless the user
-	 * pins one: an empty value means "whatever this machine has", which
-	 * the probe worker resolves through MediaProbe::DetectedPath() at
-	 * probe time. Detection describes the machine rather than a user
-	 * choice, so it is never written back here.
+	 * Media metadata extraction (issue #140). On by default (issue #1080).
+	 *
+	 * It was off so an upgrade would not kick off a background probe of every
+	 * shared file until the user opted in. The measured cost turned out to be
+	 * disproportionate to that caution -- around 13 ms per file, once, on a
+	 * dedicated worker, since a probe reads the container header rather than the
+	 * file -- and off-by-default had a side effect the reasoning did not account
+	 * for: the extracted tags are what fill the Length / Bitrate / Codec columns
+	 * for whoever is SEARCHING the network, so a share with the feature off is a
+	 * hole in that data for everyone else while costing its owner only a detail
+	 * dialog reading N/A. A default-off feature that mostly benefits other people
+	 * is one almost nobody enables. It is also undiscoverable on a headless
+	 * amuled + amuleapi deployment, where there is no dialog to stumble across.
+	 *
+	 * Enabling it does not require ffprobe to exist: detection is memoised for
+	 * the life of the process, and with nothing found the worker drops every job
+	 * after a single log line.
+	 *
+	 * No migration accompanies this. Cfg_Bool applies a default only when the key
+	 * is ABSENT, and the key does not exist in 3.0.0 or 3.0.1 -- so every config
+	 * written by a released aMule picks the new default up on its own. The only
+	 * configs carrying it already are from master builds, where "never touched
+	 * it" and "deliberately turned it off" are indistinguishable, and silently
+	 * re-enabling the second group is not worth reaching the first.
 	 */
 	NewCfgItem(IDC_MEDIAMETA_ENABLED,
-		(new Cfg_Bool("/MediaMetadata/Enabled", s_MediaMetadataEnabled, false)));
+		(new Cfg_Bool("/MediaMetadata/Enabled", s_MediaMetadataEnabled, true)));
 	NewCfgItem(IDC_MEDIAMETA_FFPROBEPATH,
 		(new Cfg_Str("/MediaMetadata/FFProbePath", s_MediaMetadataFFProbePath, "")));
 

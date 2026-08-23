@@ -2306,23 +2306,44 @@ void CamuleApp::OnMediaProbeFinished(CMediaProbeEvent &evt)
 		return;
 	}
 
-	// AddTagUnique replaces any existing tag with the same ID, so
-	// re-probing a file (e.g. mtime changed) simply overwrites the
-	// previous values rather than accumulating duplicates.
-	if (evt.GetLengthSeconds()) {
-		file->AddTagUnique(CTagInt32(FT_MEDIA_LENGTH, evt.GetLengthSeconds()));
-	}
-	if (evt.GetBitrateKbps()) {
-		file->AddTagUnique(CTagInt32(FT_MEDIA_BITRATE, evt.GetBitrateKbps()));
-	}
-	if (!evt.GetCodec().IsEmpty()) {
-		file->AddTagUnique(CTagString(FT_MEDIA_CODEC, evt.GetCodec()));
-	}
+	// A successful probe is AUTHORITATIVE for every media field: what it found
+	// is attached, and what it did NOT find is removed. The alternative to a
+	// value the probe could not determine is not "no tag" -- it is whatever
+	// was there before, which for a completed download is the unverified
+	// preview inherited from the search result. Leaving that in place made
+	// aMule republish a peer's numbers to ed2k and Kad as its own, which is
+	// exactly what the completion re-probe exists to prevent.
+	//
+	// This runs only when Probe() returned true; a failed probe never reaches
+	// here, so an unreadable file keeps its preview rather than being wiped.
+	const MediaInfo &info = evt.GetInfo();
+	const auto setOrClearInt = [&](uint8 id, uint32 value) {
+		if (value) {
+			file->AddTagUnique(CTagInt32(id, value));
+		} else {
+			file->RemoveTag(id);
+		}
+	};
+	const auto setOrClearStr = [&](uint8 id, const wxString &value) {
+		if (!value.IsEmpty()) {
+			file->AddTagUnique(CTagString(id, value));
+		} else {
+			file->RemoveTag(id);
+		}
+	};
+	setOrClearInt(FT_MEDIA_LENGTH, info.length_seconds);
+	setOrClearInt(FT_MEDIA_BITRATE, info.bitrate_kbps);
+	setOrClearStr(FT_MEDIA_CODEC, info.codec);
+	setOrClearStr(FT_MEDIA_ARTIST, info.artist);
+	setOrClearStr(FT_MEDIA_ALBUM, info.album);
+	setOrClearStr(FT_MEDIA_TITLE, info.title);
 	// Traced under logMediaProbe — the "metadata actually landed"
 	// confirmation, logged once per file when tags are attached.
 	AddDebugLogLineN(logMediaProbe,
-		CFormat(wxT("Media metadata: %s -> length=%us bitrate=%ukbps codec=%s")) %
-			file->GetFileName() % evt.GetLengthSeconds() % evt.GetBitrateKbps() % evt.GetCodec());
+		CFormat(wxT("Media metadata: %s -> length=%us bitrate=%ukbps codec=%s artist=%s album=%s "
+			    "title=%s")) %
+			file->GetFileName() % info.length_seconds % info.bitrate_kbps % info.codec %
+			info.artist % info.album % info.title);
 	// EC exports the tag list; the remote GUI + web UI need to see
 	// the new values on next refresher tick.
 	file->MarkECChanged();
