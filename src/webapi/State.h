@@ -812,8 +812,11 @@ struct SearchResult
 	// desktop's Directories column shows them.
 	std::string directory;
 	// Audio/video media metadata (issue #430), same shape as the file
-	// detail endpoints' `media` object. `has_media` gates it — omitted
-	// when the hit carries no FT_MEDIA_* tags (most remote results).
+	// detail endpoints' `media` object. `has_media` gates it, and like the
+	// file-side flag above it is DERIVED from the field values rather than
+	// from which tags arrived -- a hit carrying an FT_MEDIA_* tag whose value
+	// is empty reads as no media, which is what the daemon means by sending
+	// one. Omitted entirely when false (most remote results).
 	bool has_media = false;
 	struct Media
 	{
