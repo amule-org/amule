@@ -31,6 +31,7 @@
 #include <chrono>
 #include <cstdint>
 #include <map>
+#include <stdexcept>
 #include <thread>
 #include <vector>
 
@@ -904,6 +905,58 @@ TEST(State, ResetListsClearsAll)
 	ASSERT_EQUALS(static_cast<size_t>(0), Downloads(s).size());
 	ASSERT_EQUALS(static_cast<size_t>(0), s.Clients().size());
 	ASSERT_EQUALS(static_cast<size_t>(0), Shared(s).size());
+}
+
+// The callback accessors run caller code while holding m_mu, which is not
+// recursive. These pin the two halves of that contract that can be checked
+// without deadlocking the test: a nested call on a DIFFERENT instance is a
+// different mutex and must stay legal, and the guard must unwind so a second
+// sequential call still works. Re-entering the SAME instance aborts by
+// design, so it is not exercised here -- see CState::ReentryGuard.
+TEST(State, CallbackOnADifferentStateInstanceIsAllowed)
+{
+	CState a;
+	CState b;
+	a.MutateDownloads([](FileMap &files) {
+		FileSnapshot f;
+		f.ecid = 1;
+		f.is_downloading = true;
+		files.emplace(f.ecid, f);
+	});
+
+	// b's callback reads a: a different CState, so a different mutex, and
+	// nothing to deadlock on. The guard must not confuse the two.
+	std::size_t seen = 0;
+	b.MutateClients([&a, &seen](std::map<std::uint32_t, ClientSnapshot> &) {
+		a.WithFiles([&seen](const FileMap &files) { seen = files.size(); });
+	});
+	ASSERT_EQUALS(static_cast<size_t>(1), seen);
+}
+
+TEST(State, CallbackGuardUnwindsSoLaterCallsStillWork)
+{
+	CState s;
+	s.MutateDownloads([](FileMap &files) {
+		FileSnapshot f;
+		f.ecid = 7;
+		f.is_downloading = true;
+		files.emplace(f.ecid, f);
+	});
+	std::size_t first = 0, second = 0;
+	s.WithFiles([&first](const FileMap &files) { first = files.size(); });
+	s.WithFiles([&second](const FileMap &files) { second = files.size(); });
+	ASSERT_EQUALS(static_cast<size_t>(1), first);
+	ASSERT_EQUALS(static_cast<size_t>(1), second);
+
+	// And an exception escaping a callback must not leave the guard set.
+	try {
+		s.WithFiles([](const FileMap &) { throw std::runtime_error("boom"); });
+	} catch (const std::runtime_error &) {
+		// expected
+	}
+	std::size_t after = 0;
+	s.WithFiles([&after](const FileMap &files) { after = files.size(); });
+	ASSERT_EQUALS(static_cast<size_t>(1), after);
 }
 
 TEST(State, ConcurrentReadersDontTearSnapshot)
