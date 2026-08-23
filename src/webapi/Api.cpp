@@ -3474,7 +3474,8 @@ CHttpServer::Response CApiDispatcher::HandleDownloads(const CHttpServer::Request
 		return *r;
 	// Pointers into the live map rather than copies; see HandleSharedList.
 	CHttpServer::Response resp;
-	m_state.WithFiles([&](const webapi::FileMap &files) {
+	// Named captures; see HandleSharedList.
+	m_state.WithFiles([&resp, &params, include_completed](const webapi::FileMap &files) {
 		std::vector<const webapi::FileSnapshot *> ptrs;
 		ptrs.reserve(files.size());
 		for (const auto &entry : files) {
@@ -3760,7 +3761,10 @@ CHttpServer::Response CApiDispatcher::HandleSharedList(const CHttpServer::Reques
 	// handed, so ListResponseFromPtrsUnlocked's "must not re-enter CState"
 	// contract holds.
 	CHttpServer::Response resp;
-	m_state.WithFiles([&](const webapi::FileMap &files) {
+	// Named captures rather than [&]: [&] would pull `this` in, putting
+	// m_state within reach of a callback that must not touch it. kComps is
+	// static, so it is in scope without being captured.
+	m_state.WithFiles([&resp, &params](const webapi::FileMap &files) {
 		std::vector<const webapi::FileSnapshot *> ptrs;
 		ptrs.reserve(files.size());
 		for (const auto &entry : files) {
@@ -4859,7 +4863,8 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsClearCompleted(const CHttpS
 		ecids.push_back(d.ecid);
 		hashes_cleared.push_back(d.hash);
 	} else {
-		m_state.WithFiles([&](const webapi::FileMap &files) {
+		// Named captures; see HandleSharedList.
+		m_state.WithFiles([&ecids, &hashes_cleared](const webapi::FileMap &files) {
 			for (const auto &entry : files) {
 				const webapi::FileSnapshot &d = entry.second;
 				if (d.is_downloading && d.download.status == "completed") {

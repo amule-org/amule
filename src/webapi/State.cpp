@@ -24,6 +24,9 @@
 
 #include "State.h"
 
+#include <cstdlib>  // std::abort
+#include <iostream> // std::cerr
+
 #include <cstdio>
 #include <ctime>
 
@@ -166,9 +169,30 @@ std::vector<SearchResult> CState::Search(std::uint32_t search_id) const
 	return out;
 }
 
+// See CState::ReentryGuard in State.h for why this aborts rather than
+// returning, and why it runs before the lock rather than after it.
+thread_local const CState *CState::t_in_callback = nullptr;
+
+CState::ReentryGuard::ReentryGuard(const CState *self)
+: m_prev(t_in_callback)
+{
+	if (t_in_callback == self) {
+		std::cerr << "amuleapi: FATAL CState callback re-entered the same CState; "
+			     "this would deadlock on a non-recursive lock\n";
+		std::abort();
+	}
+	t_in_callback = self;
+}
+
+CState::ReentryGuard::~ReentryGuard()
+{
+	t_in_callback = m_prev;
+}
+
 void CState::MutateSearch(
 	std::uint32_t search_id, const std::function<void(std::map<std::uint32_t, SearchResult> &)> &fn)
 {
+	const ReentryGuard guard(this);
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	auto it = m_searches.find(search_id);
 	if (it != m_searches.end())
@@ -432,6 +456,7 @@ void CState::WriteCategories(std::vector<CategorySnapshot> c)
 
 void CState::MutateServers(const std::function<void(std::map<std::uint32_t, ServerSnapshot> &)> &fn)
 {
+	const ReentryGuard guard(this);
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	fn(m_servers);
 }
@@ -446,6 +471,7 @@ std::vector<FriendSnapshot> CState::Friends() const
 }
 void CState::MutateFriends(const std::function<void(std::map<std::uint32_t, FriendSnapshot> &)> &fn)
 {
+	const ReentryGuard guard(this);
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	fn(m_friends);
 }
@@ -484,6 +510,7 @@ std::uint32_t CState::ChatCursor() const
 
 void CState::MutateChats(const std::function<void(std::vector<ChatSessionSnapshot> &, std::uint32_t &)> &fn)
 {
+	const ReentryGuard guard(this);
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	fn(m_chats, m_chat_cursor);
 }
@@ -691,18 +718,21 @@ bool CState::FindSharedByEcid(std::uint32_t ecid, FileSnapshot &out) const
 // at the end of the mutate window.
 void CState::MutateDownloads(const std::function<void(FileMap &)> &fn)
 {
+	const ReentryGuard guard(this);
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	fn(m_files);
 }
 
 void CState::MutateShared(const std::function<void(FileMap &)> &fn)
 {
+	const ReentryGuard guard(this);
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	fn(m_files);
 }
 
 void CState::MutateClients(const std::function<void(std::map<std::uint32_t, ClientSnapshot> &)> &fn)
 {
+	const ReentryGuard guard(this);
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	fn(m_clients);
 }

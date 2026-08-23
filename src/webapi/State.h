@@ -1467,8 +1467,43 @@ public:
 	//! retain the reference. For readers wanting a few fields per file, or
 	//! pointers to sort and page -- a FileSnapshot is 848 bytes plus a heap
 	//! allocation per string, so copying the collection out is never cheap.
+	// Re-entrancy detector for the callback accessors below.
+	//
+	// Every WithX() / MutateX() runs a caller-supplied callback while holding
+	// m_mu. Calling back into the same CState from inside one takes that
+	// non-recursive std::shared_timed_mutex a second time: undefined
+	// behaviour, and in practice a hang -- immediately on the exclusive
+	// paths, and on the shared ones as soon as a writer is queued, because
+	// the implementation stops admitting new readers to avoid starving it.
+	//
+	// The rule was documentation only, so a violation surfaced as a wedged
+	// daemon under load rather than as a test failure -- the callbacks are
+	// pure today, but nothing stopped the next edit from reaching for
+	// m_state. Enforced in Release as well as Debug, and aborting rather
+	// than returning, for the reason the Session dtor gives in
+	// HttpServer.cpp: assert() is stripped by NDEBUG, and the alternative
+	// here is not a wrong answer but a process that stops responding with
+	// nothing in the log. The thread would deadlock on the next line
+	// regardless; this way it leaves a message and a core instead.
+	//
+	// Constructed BEFORE the lock, deliberately. A re-entrant call blocks on
+	// the mutex it can never obtain, so a guard placed after the lock would
+	// never run for the one case it exists to catch.
+	class ReentryGuard
+	{
+	public:
+		explicit ReentryGuard(const CState *self);
+		~ReentryGuard();
+		ReentryGuard(const ReentryGuard &) = delete;
+		ReentryGuard &operator=(const ReentryGuard &) = delete;
+
+	private:
+		const CState *m_prev;
+	};
+
 	template <class F> void WithFiles(F &&fn) const
 	{
+		const ReentryGuard guard(this);
 		std::shared_lock<std::shared_timed_mutex> lock(m_mu);
 		fn(static_cast<const FileMap &>(m_files));
 	}
@@ -1520,6 +1555,7 @@ public:
 	//! into CState, and must not retain the reference.
 	template <class F> void WithKnownClients(F &&fn) const
 	{
+		const ReentryGuard guard(this);
 		std::shared_lock<std::shared_timed_mutex> lock(m_mu);
 		fn(static_cast<const std::vector<KnownClientSnapshot> &>(m_known_clients));
 	}
@@ -1696,6 +1732,10 @@ public:
 
 private:
 	mutable std::shared_timed_mutex m_mu;
+	// Which CState this thread is currently inside a callback of, so the
+	// guard can tell "re-entered the same instance" (a deadlock) from
+	// "touched a different one" (harmless -- a different mutex).
+	static thread_local const CState *t_in_callback;
 
 	bool m_has_first_snapshot = false;
 	bool m_ec_connected = false;
