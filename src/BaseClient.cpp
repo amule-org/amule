@@ -2100,18 +2100,31 @@ void CUpDownClient::RequestSharedFileList()
 	// until then the browse was keyed on this client's pointer -- which left
 	// state behind that nothing pruned, and collided when an address was
 	// reused. The EC handler pins the ID it allocated before calling here.
-	// Use the ID the EC handler pinned for this browse, once; otherwise take a
-	// fresh one. Anything left over from a previous browse of this peer is
-	// unusable -- Store::Start refuses an ID it still holds, and an ID whose
-	// record has been disposed of may since have been handed to another
-	// search.
-	if (!m_browsePinned) {
-		m_browseSearchId = theApp->searchlist->AllocateEd2kId();
-		// Locally allocated, so this browse is ours -- otherwise the flag
-		// would still describe whoever asked for the previous one.
+	// Use the ID the EC handler pinned for this browse, once. Otherwise this
+	// peer keeps the ID it was browsed under before: AllocateEd2kId is a
+	// monotonic counter that never reissues, so an ID we were given stays
+	// ours, and reusing it keeps one tab and one result bucket per peer
+	// however many times the user asks. Allocating afresh each time -- which
+	// is what replacing the old reuse condition did -- left the previous
+	// registration, results and browse record behind with nothing to free
+	// them, since only the newest ID ever reaches RemoveResults when the tab
+	// is closed.
+	//
+	// The previous record has to go before the new one can take its place:
+	// Store::Start refuses an ID it still holds, to protect whatever that
+	// record is still answering for.
+	if (m_browsePinned) {
+		m_browsePinned = false;
+	} else {
+		if (m_browseSearchId == 0) {
+			m_browseSearchId = theApp->searchlist->AllocateEd2kId();
+		} else {
+			theApp->browsemanager->Remove(m_browseSearchId);
+		}
+		// Chosen here, so this browse is ours -- otherwise the flag would
+		// still describe whoever asked for the previous one.
 		m_browseEcInitiated = false;
 	}
-	m_browsePinned = false;
 	// Take the browse first: it is the thing that can refuse, and refusing
 	// after announcing a tab would leave one open against a browse nobody is
 	// running.
@@ -2122,8 +2135,15 @@ void CUpDownClient::RequestSharedFileList()
 		return;
 	}
 	// Describe it before any result arrives, so it is listable as a browse of
-	// this peer rather than as a nameless search.
-	theApp->searchlist->RegisterBrowseSearch(m_browseSearchId, GetUserName(), ECID());
+	// this peer rather than as a nameless search -- but only when the ID is
+	// ours to describe. A caller that pinned one has already registered it,
+	// under the identity IT considers authoritative: the friend path keys on
+	// the friend's ECID, and re-registering here would overwrite that with
+	// this client's, which is a different number from the same counter. An
+	// adopting GUI would then open a second tab under a different name.
+	if (!m_browseEcInitiated) {
+		theApp->searchlist->RegisterBrowseSearch(m_browseSearchId, GetUserName(), ECID());
+	}
 
 	// Open the "View Files" tab up front (monolithic) so a peer that denies or
 	// never answers still shows a tab that can flip to "failed".
