@@ -68,8 +68,9 @@ namespace
 {
 
 // Return values for RunBoundedFFProbe: a child exit code (>= 0), or one of:
-constexpr int kSpawnFailed = -1; // couldn't launch the binary at all
-constexpr int kKilled = -2;      // overran timeoutMs, or keepRunning went false
+constexpr int kSpawnFailed = -1;    // couldn't launch the binary at all
+constexpr int kKilled = -2;         // overran timeoutMs, or keepRunning went false
+constexpr int kOutputTooLarge = -3; // reply exceeded the read budget; see the slurp
 
 // Spawn `exe argv...`, capturing stdout to a temp file, and wait for it with
 // a `timeoutMs` wall-clock bound. The wait loop also polls `keepRunning`; when
@@ -275,7 +276,9 @@ int RunBoundedFFProbe(const wxString &exe,
 			AddDebugLogLineN(logMediaProbe,
 				CFormat(wxT("MediaProbe: ffprobe output too large (%lld bytes), ignoring")) %
 					static_cast<long long>(f.Length()));
-			exitCode = -1;
+			// Its own sentinel, not kSpawnFailed: ffprobe ran fine, so
+			// reporting "failed (code -1)" would name the wrong thing.
+			exitCode = kOutputTooLarge;
 		} else if (f.IsOpened() && f.ReadAll(&content, wxConvUTF8)) {
 			wxStringTokenizer tok(content, wxT("\r\n"), wxTOKEN_STRTOK);
 			while (tok.HasMoreTokens()) {
@@ -835,6 +838,18 @@ bool Probe(const wxString &ffprobePath,
 	if (rc == kKilled) {
 		if (!bulk) {
 			AddLogLineN(CFormat(_("Media metadata: ffprobe timed out or was cancelled for %s")) %
+				    file.GetPrintable());
+		}
+		return false;
+	}
+	if (rc == kOutputTooLarge) {
+		// ffprobe itself succeeded; what it produced was implausible for the
+		// five fields asked for, which means the file carries a tag crafted to
+		// be enormous. Named separately so this does not report as a failure
+		// of the binary.
+		if (!bulk) {
+			AddLogLineN(CFormat(_("Media metadata: ignoring implausibly large ffprobe output "
+					      "for %s")) %
 				    file.GetPrintable());
 		}
 		return false;

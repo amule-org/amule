@@ -1064,6 +1064,79 @@ TEST(Refresher, MediaMetadataDecode)
 	ASSERT_TRUE(!it2->second.has_media);
 }
 
+// The clear half of the same contract. amuled sends a zero / empty value for
+// a field it previously sent a real one for -- a tag that is simply not
+// offered reads as UNCHANGED to a CValueMap peer, so an omitted field would
+// leave this snapshot serving the stale value, including one inherited
+// unverified from a search result. That is exactly what the completion
+// re-probe exists to correct, and it regressed once already.
+TEST(Refresher, MediaMetadataClearRemovesFieldsAndRecomputesHasMedia)
+{
+	FileMap cache;
+	std::map<std::uint32_t, PartFileEncoderData> rle_state;
+	{
+		CECPacket resp(EC_OP_SHARED_FILES);
+		CECTag pf(EC_TAG_PARTFILE, static_cast<std::uint32_t>(700));
+		pf.AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_LENGTH, static_cast<std::uint32_t>(180)));
+		pf.AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_BITRATE, static_cast<std::uint32_t>(1500)));
+		pf.AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_CODEC, std::string("h264")));
+		pf.AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_ARTIST, std::string("Peer Supplied")));
+		resp.AddTag(pf);
+		ApplyGetUpdateToDownloads(&resp, cache, rle_state);
+	}
+	ASSERT_TRUE(cache.find(700)->second.has_media);
+	ASSERT_EQUALS(std::string("Peer Supplied"), cache.find(700)->second.media.artist);
+
+	// The local probe found a codec and nothing else, so amuled clears the
+	// three fields it could not determine and keeps the one it could.
+	{
+		CECPacket resp(EC_OP_SHARED_FILES);
+		CECTag pf(EC_TAG_PARTFILE, static_cast<std::uint32_t>(700));
+		pf.AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_LENGTH, static_cast<std::uint32_t>(0)));
+		pf.AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_BITRATE, static_cast<std::uint32_t>(0)));
+		pf.AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_ARTIST, std::string()));
+		resp.AddTag(pf);
+		ApplyGetUpdateToDownloads(&resp, cache, rle_state);
+	}
+	const auto it = cache.find(700);
+	ASSERT_TRUE(it != cache.end());
+	ASSERT_EQUALS(static_cast<std::uint32_t>(0), it->second.media.length_s);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(0), it->second.media.bitrate);
+	ASSERT_TRUE(it->second.media.artist.empty());
+	// The codec was not mentioned this time, which means UNCHANGED -- not
+	// cleared. Distinguishing those two is the whole point of the design.
+	ASSERT_EQUALS(std::string("h264"), it->second.media.codec);
+	// Still has media, because one field survives.
+	ASSERT_TRUE(it->second.has_media);
+}
+
+TEST(Refresher, MediaMetadataClearingEveryFieldDropsHasMedia)
+{
+	// has_media is DERIVED, not latched: a file whose every field has been
+	// cleared must stop reporting media, or the API keeps emitting an empty
+	// `media` object for it.
+	FileMap cache;
+	std::map<std::uint32_t, PartFileEncoderData> rle_state;
+	{
+		CECPacket resp(EC_OP_SHARED_FILES);
+		CECTag pf(EC_TAG_PARTFILE, static_cast<std::uint32_t>(701));
+		pf.AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_LENGTH, static_cast<std::uint32_t>(180)));
+		pf.AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_CODEC, std::string("mp3")));
+		resp.AddTag(pf);
+		ApplyGetUpdateToDownloads(&resp, cache, rle_state);
+	}
+	ASSERT_TRUE(cache.find(701)->second.has_media);
+	{
+		CECPacket resp(EC_OP_SHARED_FILES);
+		CECTag pf(EC_TAG_PARTFILE, static_cast<std::uint32_t>(701));
+		pf.AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_LENGTH, static_cast<std::uint32_t>(0)));
+		pf.AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_CODEC, std::string()));
+		resp.AddTag(pf);
+		ApplyGetUpdateToDownloads(&resp, cache, rle_state);
+	}
+	ASSERT_TRUE(!cache.find(701)->second.has_media);
+}
+
 // ----------------------------------------------------------------------
 // /servers — GET_UPDATE wraps per-server tags in an EC_TAG_SERVER
 // container at top level. Walker iterates INTO the container and

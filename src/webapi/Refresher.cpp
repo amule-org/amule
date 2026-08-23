@@ -2433,29 +2433,30 @@ void ApplySearchFull(const CECPacket *resp, std::map<std::uint32_t, SearchResult
 			std::uint32_t v = 0;
 			if (sf->AssignIfExist(EC_TAG_KNOWNFILE_MEDIA_LENGTH, v)) {
 				r.media.length_s = v;
-				r.has_media = true;
 			}
 			if (sf->AssignIfExist(EC_TAG_KNOWNFILE_MEDIA_BITRATE, v)) {
 				r.media.bitrate = v;
-				r.has_media = true;
 			}
 		}
 		if (const CECTag *x = sf->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_CODEC)) {
 			r.media.codec = std::string(x->GetStringData().utf8_str());
-			r.has_media = true;
 		}
 		if (const CECTag *x = sf->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_ARTIST)) {
 			r.media.artist = std::string(x->GetStringData().utf8_str());
-			r.has_media = true;
 		}
 		if (const CECTag *x = sf->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_ALBUM)) {
 			r.media.album = std::string(x->GetStringData().utf8_str());
-			r.has_media = true;
 		}
 		if (const CECTag *x = sf->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_TITLE)) {
 			r.media.title = std::string(x->GetStringData().utf8_str());
-			r.has_media = true;
 		}
+		// Derived from the fields, exactly as MergeKnownFileDetail does for a
+		// shared file. Both paths share AddMediaTagsPresent on the daemon
+		// side, so either can be sent a zero / empty "this field is gone" tag
+		// -- latching on any tag being present would mark a result as having
+		// media with every field blank.
+		r.has_media = r.media.length_s != 0 || r.media.bitrate != 0 || !r.media.codec.empty() ||
+			      !r.media.artist.empty() || !r.media.album.empty() || !r.media.title.empty();
 		// On-demand Kad community ratings/comments (issue #434). Same
 		// 4-children-per-entry positional container the download side uses
 		// (username, filename, rating, comment); a search hit's comments are
