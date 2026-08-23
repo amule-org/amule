@@ -718,6 +718,28 @@ target_link_libraries (RefresherTest
 # but guarded it on the scalar alone, leaving Hi stale (#1065), so the
 # predicate now lives in a header of its own: CKnownFile reaches theApp and
 # cannot be linked into a test.
+add_executable (JsonDepthScanTest
+	JsonDepthScanTest.cpp
+)
+
+add_test (NAME JsonDepthScanTest
+	COMMAND JsonDepthScanTest
+)
+
+target_include_directories (JsonDepthScanTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/webapi
+)
+
+# mulecommon even though the header is inline-only: macOS links without it,
+# GNU ld and mingw do not.
+target_link_libraries (JsonDepthScanTest
+	muleunit
+	mulecommon
+)
+
 add_executable (CompleteSourcesThrottleTest
 	CompleteSourcesThrottleTest.cpp
 )

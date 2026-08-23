@@ -23,6 +23,7 @@
 //
 
 #include "Api.h"
+#include "JsonDepthScan.h" // webapi::JsonNestingWithinLimit
 
 #include "ClientTagNames.h" // Needed for the shared client-tag token decoders
 // Shared server capability-bit tables, decoded to JSON
@@ -3206,49 +3207,17 @@ namespace
 // JSON body parser. Returns true on success; false + `err` on
 // failure. Non-object roots are rejected.
 //
-// Pre-parse depth cap. picojson's `_parse_array` / `_parse_object`
-// recurse without a depth limit of their own, so a `{"a":{"a":...}}`
-// body nested deep enough exhausts the stack of the handler-pool
-// thread the parse runs on. The deepest legitimate body on this
-// surface is 3 (`{"remote_controls":{"webserver":{...}}}`), so 32
-// leaves ample headroom. CJwt::Verify caps its own parses for the
-// same reason.
-//
-// Nesting depth, not a count of openers: a flat body is legal at any
-// length. An earlier version incremented on every `{` and `[` in the
-// buffer without ever decrementing, which turned the cap into a
-// budget of 32 containers-plus-brackets-in-strings for the whole
-// request — a PATCH /preferences whose `shared` array held directory
-// names like "Some.Release-BRD [2023]" tripped it on the 33rd, three
-// levels deep. String literals are skipped for that same reason, and
-// backslash escapes are honoured so a `\"` inside one does not end it
-// early.
-//
-// Unbalanced closers are ignored rather than rejected: this is a
-// stack guard, not a validator, and picojson below still has the
-// final say on syntax.
+// Pre-parse depth cap, so a deeply nested body cannot exhaust the
+// handler thread's stack inside picojson's recursive descent. The
+// scanner and the reasoning behind it live in JsonDepthScan.h, which
+// keeps it reachable from JsonDepthScanTest. CJwt::Verify caps its
+// own parses for the same reason, by a cruder count that suits the
+// payloads it sees -- see the note there.
 bool ParseJsonObjectBody(const std::string &body, picojson::value &out, std::string &err)
 {
-	constexpr std::size_t kMaxJsonDepth = 32;
-	std::size_t depth = 0;
-	bool in_string = false;
-	for (std::size_t i = 0; i < body.size(); ++i) {
-		const char c = body[i];
-		if (in_string) {
-			if (c == '\\')
-				++i; // escaped char, never closes the string
-			else if (c == '"')
-				in_string = false;
-		} else if (c == '"') {
-			in_string = true;
-		} else if (c == '{' || c == '[') {
-			if (++depth > kMaxJsonDepth) {
-				err = "JSON nesting too deep";
-				return false;
-			}
-		} else if ((c == '}' || c == ']') && depth > 0) {
-			--depth;
-		}
+	if (!webapi::JsonNestingWithinLimit(body)) {
+		err = "JSON nesting too deep";
+		return false;
 	}
 	const std::string parse_err = picojson::parse(out, body);
 	if (!parse_err.empty()) {
