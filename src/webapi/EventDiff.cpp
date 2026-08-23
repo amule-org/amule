@@ -767,9 +767,7 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 					w.ValueInt(static_cast<int64_t>(sid));
 					WriteSearchResultFields(w, kv.second);
 					w.EndObject();
-					const wxScopedCharBuffer utf8 = w.GetBuffer().utf8_str();
-					bus.Publish("search_result_added",
-						std::string(utf8.data(), utf8.length()));
+					bus.Publish("search_result_added", w.TakeBuffer());
 				}
 			}
 			// search_progress: a percent change while running, the
