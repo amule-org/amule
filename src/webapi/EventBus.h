@@ -142,6 +142,44 @@ public:
 	// between Drain calls and exit cleanly.
 	bool IsShutdown() const;
 
+	// --- Subscriber accounting ---------------------------------------
+	//
+	// A tick's diff means snapshotting every collection and comparing it with
+	// the previous tick, which on a large library is most of the refresher's
+	// work. Once nothing has been subscribed for a few ticks there is nobody to
+	// send the result to, so the refresher skips it and records that
+	// (MarkSuspended). Nothing is lost -- subscribers read the same state over
+	// REST -- but no collection change is represented on the bus for that
+	// period, and a client reconnecting with a Last-Event-ID cannot tell: its
+	// cursor can even still be in range, since the chat publisher runs outside
+	// this gate and keeps ids moving. The tick that resumes publishes a
+	// `resync` for that, after re-baselining, so a client re-GETs against a
+	// baseline that is already current -- emitting it at connect instead would
+	// leave a tick's worth of changes in neither the GET nor an event.
+
+	// RAII registration for one SSE session.
+	class Subscription
+	{
+	public:
+		explicit Subscription(CEventBus &bus);
+		~Subscription();
+		Subscription(const Subscription &) = delete;
+		Subscription &operator=(const Subscription &) = delete;
+
+	private:
+		CEventBus &m_bus;
+	};
+
+	std::size_t SubscriberCount() const { return m_subscribers.load(std::memory_order_acquire); }
+
+	// Record that a tick's diff was skipped for want of a subscriber.
+	void MarkSuspended() { m_suspended.store(true, std::memory_order_release); }
+
+	// Read and clear the suspended flag. True obliges the refresher to
+	// re-baseline silently first: diffing against a pre-idle snapshot would
+	// emit one event per record.
+	bool TakeSuspended() { return m_suspended.exchange(false, std::memory_order_acq_rel); }
+
 private:
 	const std::size_t m_capacity;
 	mutable std::mutex m_mu;
@@ -149,6 +187,8 @@ private:
 	std::deque<Event> m_ring;
 	std::atomic<std::uint64_t> m_next_id{ 1 };
 	std::atomic<bool> m_shutdown{ false };
+	std::atomic<std::size_t> m_subscribers{ 0 };
+	std::atomic<bool> m_suspended{ false };
 };
 
 } // namespace webapi

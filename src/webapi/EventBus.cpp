@@ -175,4 +175,15 @@ bool CEventBus::IsShutdown() const
 	return m_shutdown.load(std::memory_order_acquire);
 }
 
+CEventBus::Subscription::Subscription(CEventBus &bus)
+: m_bus(bus)
+{
+	m_bus.m_subscribers.fetch_add(1, std::memory_order_acq_rel);
+}
+
+CEventBus::Subscription::~Subscription()
+{
+	m_bus.m_subscribers.fetch_sub(1, std::memory_order_acq_rel);
+}
+
 } // namespace webapi

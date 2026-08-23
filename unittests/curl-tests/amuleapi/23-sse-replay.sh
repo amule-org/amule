@@ -103,6 +103,12 @@ fi
 
 # Trigger one more mutation while NO subscriber is open. This event
 # must be replayed to SSE2 once it reconnects with Last-Event-ID.
+#
+# The 4 s gap below is deliberately inside the refresher's grace period for
+# an unsubscribed bus: it keeps diffing for a few ticks so a client that
+# drops and returns replays instead of resyncing. A longer gap here would
+# suspend the diff, and the assertion would then be testing the opposite
+# contract -- covered by 24-sse-resync's `idle` case.
 echo "    info: DELETE while disconnected..."
 curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/downloads/$TEST_HASH" > /dev/null

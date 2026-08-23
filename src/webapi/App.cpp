@@ -593,6 +593,14 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 	constexpr unsigned kEcFailExitAfter = 300;
 	unsigned ec_consecutive_failures = 0;
 	bool ec_warn_logged = false;
+	// Diffing stops only after a few consecutive ticks with nothing
+	// subscribed. A client that drops and comes straight back -- a page
+	// reload, a proxy hiccup -- must not suspend anything: resuming costs it
+	// the `resync` below, and re-seeding every collection is the most
+	// expensive thing this daemon can be asked to do. Ticks inside the grace
+	// keep publishing, so the returning client replays them instead.
+	constexpr unsigned kIdleTicksBeforeSuspend = 5;
+	unsigned idle_ticks = 0;
 	while (!g_shutdownRequested.load(std::memory_order_acquire)) {
 		const auto cycle_start = std::chrono::steady_clock::now();
 		if (was_failed) {
@@ -608,7 +616,27 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 			// here, NOT inside RefresherTick — so mutation handlers
 			// calling RefresherTick inline from the HTTP thread
 			// don't race with this loop's diff walk.
-			webapi::EmitDiffsForEventBus(*this, m_state);
+			//
+			// Skipped once nothing has been subscribed for a while --
+			// see CEventBus's subscriber accounting. The first tick
+			// back re-baselines silently and then announces, instead
+			// of emitting one event per record.
+			if (m_event_bus->SubscriberCount() == 0) {
+				if (idle_ticks < kIdleTicksBeforeSuspend) {
+					++idle_ticks;
+					webapi::EmitDiffsForEventBus(*this, m_state);
+				} else {
+					m_event_bus->MarkSuspended();
+				}
+			} else {
+				idle_ticks = 0;
+				if (m_event_bus->TakeSuspended()) {
+					webapi::PrimeDiffBaseline(*this, m_state);
+					m_event_bus->Publish("resync", "{\"reason\":\"idle\"}");
+				} else {
+					webapi::EmitDiffsForEventBus(*this, m_state);
+				}
+			}
 		} else {
 			m_state.MarkTickFailure();
 			was_failed = true;
