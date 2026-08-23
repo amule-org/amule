@@ -1333,8 +1333,34 @@ CSearchList::SearchLifecycleState CSearchList::GetSearchLifecycleStateById(wxUIn
 	if (searchID == m_currentSearch) {
 		return GetSearchLifecycleState();
 	}
-	// Otherwise: results retained => finished; nothing => idle/unknown.
-	return HasSearchResults(searchID) ? SEARCH_LIFECYCLE_FINISHED : SEARCH_LIFECYCLE_IDLE;
+	// Otherwise this id is done, whatever any sweep is still doing: results are
+	// filed under the scalar m_currentSearch (ProcessSearchAnswer /
+	// ProcessUDPSearchAnswer), so once a newer ed2k search takes that scalar
+	// nothing further can land in this id's bucket. Unreachable, not idle.
+	//
+	// Deliberately NOT "no other ed2k search is in flight", which is false on
+	// one of the two paths: only the EC start handler finalizes the previous
+	// sweep (StopInFlightEd2kSearch, whose sole caller it is), while the
+	// monolithic dialog calls StartNewSearch directly and merely abandons it,
+	// so an older search's sweep may well still be running. Reachability of the
+	// bucket is the narrower property, and the one that holds on both paths.
+	//
+	// Deciding this from the retained results instead reported every search
+	// that indexed *nothing* as IDLE forever -- a query no server matched, one
+	// whose every hit AddToList dropped on the file-type filter, or a global
+	// sweep stopped before its first result. IDLE is not terminal, so
+	// GetSearchBarStatusById fell through to the running percent (0) and every
+	// consumer read a finished search as running at 0%: the Stop button stayed
+	// live, the bar never cleared, the EC lifecycle tag said "idle", and the
+	// "an eD2k search is still running" prompt fired on a tab that had long
+	// since finished (issue #1103).
+	//
+	// IsKnownSearchId is the discriminator the result bucket could not be:
+	// m_searchStrings is written when the search starts, independent of what
+	// it kept, so a search started here reads FINISHED whether or not it
+	// retained anything, while an id that is genuinely unknown -- never
+	// started here, or already evicted -- still reads IDLE.
+	return IsKnownSearchId(sid) ? SEARCH_LIFECYCLE_FINISHED : SEARCH_LIFECYCLE_IDLE;
 }
 
 uint8 CSearchList::GetSearchLifecyclePercentById(wxUIntPtr searchID) const
