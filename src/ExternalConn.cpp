@@ -48,6 +48,7 @@
 #include "ServerConnect.h"       // Needed for CServerConnect
 #include "UploadQueue.h"         // Needed for CUploadQueue
 #include "AmuleApiCredentials.h"
+#include "BrowseManager.h"
 #include "amule.h"      // Needed for theApp
 #include "SearchList.h" // Needed for GetSearchResults
 #include "ClientList.h"
@@ -2556,16 +2557,14 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request, bool multiSea
 		// instead of minting a second identity for it. CUpDownClient::
 		// RequestSharedFileList() declines to re-ask a peer that is still
 		// answering, so a freshly allocated ID would never be stamped with a
-		// lifecycle -- while SetBrowseSearchId has already repointed every
+		// lifecycle -- while PinBrowseSearchId has already repointed every
 		// later status write away from the first ID, leaving that one
 		// BROWSE_IN_PROGRESS with nothing able to terminalize it. There is
-		// exactly one m_browseStatus / m_iFileListRequested per client, so
-		// there can only be one ID to report on. Returns 0 when the peer has
-		// no browse running, i.e. when the caller should allocate as usual.
+		// exactly one browse per client, so there can only be one ID to
+		// report on. Returns 0 when the peer has no browse running, i.e. when
+		// the caller should allocate as usual.
 		auto browseInFlightId = [](const CUpDownClient *peer) -> uint32 {
-			return (peer != nullptr && peer->GetFileListRequested() > 0)
-				       ? peer->GetBrowseSearchId()
-				       : 0;
+			return peer != nullptr ? theApp->browsemanager->SearchIdFor(peer) : 0;
 		};
 		// Same reply as a fresh browse, pointing at the browse that is really
 		// running: no allocation (the second ID would be stranded), no
@@ -2616,7 +2615,7 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request, bool multiSea
 						theApp->searchlist->RegisterBrowseSearch(
 							browseId, client->GetUserName(), client->ECID());
 					}
-					client->SetBrowseSearchId(browseId);
+					client->PinBrowseSearchId(browseId);
 					client->RequestSharedFileList();
 					response = BuildBrowseReply(browseId, reftag);
 				}
@@ -2822,20 +2821,20 @@ static CECPacket *Get_EC_Response_Search_Results(CObjTagMap &tagmap, wxUIntPtr s
 // which demuxes by search ID), and its container's bulk-delete-on-poll works
 // correctly across the union. Only reached for m_multiSearchActive clients.
 //
-// Enumerates CSearchList::GetKnownSearchIds() + GetBrowseSearchIds() -- every
-// search AND "View Files" browse tab the core holds, started by the
-// monolithic GUI or by any EC client -- rather than s_ecSearches.ActiveIds(),
+// Enumerates CSearchList::GetKnownSearchIds() -- every search AND "View Files"
+// browse tab the core holds, started by the monolithic GUI or by any EC client
+// -- rather than s_ecSearches.ActiveIds(),
 // which only ever holds EC-initiated searches (Register() is called from
 // exactly one place, the EC_OP_SEARCH_START handler). A monolithic-started
 // search's results would otherwise never reach amulegui even once
 // Get_EC_Response_Search_List (below) learned to enumerate it: the two have
 // to agree on the same set, or a discovered tab appears and never fills.
-// Browses need their own second source here (but NOT in
-// Get_EC_Response_Search_List -- see that function) since a browse tab is
-// not a CSearchList search and so is absent from m_searchStrings; without
-// it, a browse's own STRINGS reply (BuildBrowseReply) tells the client to
-// expect results on this id, but this union never sends any (got3nks, PR
-// #680 review). s_ecSearches keeps governing EC-client lifecycle and
+// Browses need no second source here any more: every one of them reaches
+// RegisterBrowseSearch before its request goes out, so m_searchStrings holds
+// them alongside real searches and GetKnownSearchIds() covers both. It used
+// to be absent from that map, and the second source was what stopped a
+// browse's own STRINGS reply (BuildBrowseReply) promising results this union
+// would then never send (got3nks, PR #680 review). s_ecSearches keeps governing EC-client lifecycle and
 // eviction only -- folding monolithic searches into that 20-entry LRU would
 // let unrelated EC traffic evict, and so stop, a local user's own
 // still-running Kad search.
@@ -2889,11 +2888,12 @@ static CECPacket *Get_EC_Response_Search_Results_Union(
 			}
 		}
 	};
+	// GetKnownSearchIds() covers browses too: RequestSharedFileList registers
+	// every one of them, by either route, before the request goes out, and
+	// RemoveResults drops the registration and the browse together. The second
+	// source this loop used to have emitted each browse a second time.
 	for (const auto &entry : theApp->searchlist->GetKnownSearchIds()) {
 		emitResultsFor(entry.first);
-	}
-	for (const auto &entry : theApp->searchlist->GetBrowseSearchIds()) {
-		emitResultsFor(static_cast<uint32>(entry.first));
 	}
 
 	if (partial_update_active) {
@@ -3020,8 +3020,12 @@ static CECPacket *Get_EC_Response_Search_List()
 // reply's (or the entry's) first tag via GetFirstTagSafe.
 static void AppendSearchProgress(CECTag &out, wxUIntPtr sid)
 {
-	if (theApp->searchlist->HasBrowseStatus(sid)) {
-		const uint8 browseStatus = theApp->searchlist->GetBrowseStatusById(sid);
+	if (theApp->browsemanager->Has(static_cast<uint32>(sid))) {
+		const browse::State bstate = theApp->browsemanager->StateOf(static_cast<uint32>(sid));
+		const uint8 browseStatus =
+			static_cast<uint8>(bstate == browse::State::InProgress ? BROWSE_IN_PROGRESS
+					   : bstate == browse::State::Finished ? BROWSE_FINISHED
+									       : BROWSE_FAILED);
 		// Bar value (0..100 running, 0xffff done/failed) so amuleGUI drives
 		// the browse tab's gauge via the same UpdateSearchProgress path as
 		// a search.
@@ -3131,11 +3135,9 @@ static CECPacket *Get_EC_Response_Search_Progress_Union(const CECPacket *request
 
 	// No ids named: report everything the daemon holds. Used by a stateless
 	// caller that has no tracked set to enumerate.
+	// Browses included; see the union poll above.
 	for (const auto &known : theApp->searchlist->GetKnownSearchIds()) {
 		emitOne(known.first);
-	}
-	for (const auto &browse : theApp->searchlist->GetBrowseSearchIds()) {
-		emitOne(browse.first);
 	}
 
 	return response;

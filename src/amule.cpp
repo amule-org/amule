@@ -25,6 +25,8 @@
 
 #include "amule.h" // Interface declarations.
 
+#include "BrowseManager.h"
+
 #include <csignal>
 #include <cstring>
 #include <wx/process.h>
@@ -226,6 +228,7 @@ CamuleApp::CamuleApp()
 	clientlist = NULL;
 	chatsessions = nullptr;
 	searchlist = NULL;
+	browsemanager = nullptr;
 	knownfiles = NULL;
 	canceledfiles = NULL;
 	serverlist = NULL;
@@ -425,6 +428,15 @@ int CamuleApp::OnExit()
 
 	delete canceledfiles;
 	canceledfiles = NULL;
+
+	// Immediately before clientlist, and after everything that destroys
+	// clients on its way out -- serverconnect, listensocket, clientudp. Each
+	// of those reaps peers through CClientList::RemoveClient, which asks the
+	// manager to let go of any browse of them; deleting it earlier left that
+	// call reaching through a dangling pointer whenever a peer socket was
+	// still open at exit, which is the ordinary case.
+	delete browsemanager;
+	browsemanager = nullptr;
 
 	delete clientlist;
 	clientlist = NULL;
@@ -870,6 +882,7 @@ bool CamuleApp::OnInit()
 	friendlist = new CFriendList();
 	chatsessions = new CChatSessionStore();
 	searchlist = new CSearchList();
+	browsemanager = new CBrowseManager();
 	knownfiles = new CKnownFileList();
 	canceledfiles = new CCanceledFileList;
 	serverlist = new CServerList();

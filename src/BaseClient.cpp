@@ -66,6 +66,7 @@
 #include "CaptchaGenerator.h"
 #include "ChatWnd.h" // Needed for CChatWnd
 #endif
+#include "BrowseManager.h"
 #include "amule.h"           // Needed for theApp
 #include "PartFile.h"        // Needed for CPartFile
 #include "ClientTCPSocket.h" // Needed for CClientTCPSocket
@@ -172,11 +173,9 @@ void CUpDownClient::Init()
 	kBpsDown = 0.0;
 	bytesReceivedCycle = 0;
 	m_nServerPort = 0;
-	m_iFileListRequested = 0;
-	m_browseDeadline = 0;
 	m_browseSearchId = 0;
-	m_browseTotalDirs = 0;
-	m_browseStatus = BROWSE_NONE;
+	m_browseEcInitiated = false;
+	m_browsePinned = false;
 	m_dwLastUpRequest = 0;
 	m_bEmuleProtocol = false;
 	m_bCompleteSource = false;
@@ -1401,7 +1400,7 @@ bool CUpDownClient::Disconnected(const wxString &DEBUG_ONLY(strReason), bool bFr
 
 	SetSocket(NULL);
 
-	FailPendingBrowse();
+	theApp->browsemanager->Fail(this);
 
 	if (bDelete) {
 		if (m_Friend) {
@@ -1430,14 +1429,22 @@ bool CUpDownClient::Disconnected(const wxString &DEBUG_ONLY(strReason), bool bFr
 // true means the client was not deleted!
 bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 {
+	const EContactResult result = TryToContact(bIgnoreMaxCon);
+	// Exactly what this returned before the outcomes were named: false where
+	// the caller must stop touching the client, true otherwise.
+	return result != EContactResult::ClientDeleted && result != EContactResult::ConnectNotStarted;
+}
+
+EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
+{
 	// Kad reviewed
 	if (theApp->listensocket->TooManySockets() && !bIgnoreMaxCon) {
 		if (!(m_socket && m_socket->IsConnected())) {
 			if (Disconnected("Too many connections")) {
 				Safe_Delete();
-				return false;
+				return EContactResult::ClientDeleted;
 			}
-			return true;
+			return EContactResult::Declined;
 		}
 	}
 
@@ -1447,9 +1454,9 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 		(thePrefs::IsClientCryptLayerRequired() && !SupportsCryptLayer())) {
 		if (Disconnected("CryptLayer-Settings (Obfuscation) incompatible")) {
 			Safe_Delete();
-			return false;
+			return EContactResult::ClientDeleted;
 		} else {
-			return true;
+			return EContactResult::Declined;
 		}
 	}
 
@@ -1469,9 +1476,9 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 					Uint32toStringIP(uClientIP));
 			if (Disconnected("IPFilter")) {
 				Safe_Delete();
-				return false;
+				return EContactResult::ClientDeleted;
 			}
-			return true;
+			return EContactResult::Declined;
 		}
 
 		// for safety: check again whether that IP is banned
@@ -1480,9 +1487,9 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 				"Refused to connect to banned client " + Uint32toStringIP(uClientIP));
 			if (Disconnected("Banned IP")) {
 				Safe_Delete();
-				return false;
+				return EContactResult::ClientDeleted;
 			}
-			return true;
+			return EContactResult::Declined;
 		}
 	}
 
@@ -1504,10 +1511,12 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 			if (GetUploadState() == US_CONNECTING) {
 				if (Disconnected("LowID->LowID and US_CONNECTING")) {
 					Safe_Delete();
-					return false;
+					return EContactResult::ClientDeleted;
 				}
 			}
-			return true;
+			// Nothing was sent and nothing will arrive: this peer cannot be
+			// reached while we cannot call back.
+			return EContactResult::Declined;
 		}
 
 		// We already know we are not firewalled here as the above condition already detected
@@ -1527,7 +1536,7 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 					// There are too many source lookups already or we are already
 					// searching this key.
 					SetDownloadState(DS_TOOMANYCONNSKAD);
-					return true;
+					return EContactResult::Declined;
 				}
 			}
 		}
@@ -1540,7 +1549,7 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 		m_socket = new CClientTCPSocket(this, thePrefs::GetProxyData());
 	} else {
 		ConnectionEstablished();
-		return true;
+		return EContactResult::Contacting;
 	}
 
 	if (HasLowID() && SupportsDirectUDPCallback() && thePrefs::GetEffectiveUDPPort() != 0 &&
@@ -1550,7 +1559,8 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 				"ERROR: Trying Direct UDP Callback while already trying to connect to client "
 				"on ip " +
 					Uint32toStringIP(GetConnectIP()));
-			return true; // We're already trying a direct connection to this client
+			// Already on its way, with its own 45s deadline.
+			return EContactResult::Contacting;
 		}
 		// a direct callback is possible - since no other parties are involved and only one additional
 		// packet overhead is used we basically handle it like a normal connection try, no
@@ -1580,15 +1590,21 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 			false,
 			0);
 	} else if (HasLowID()) { // LOWID
+		// Set where a packet actually goes out. Several of the paths below reach
+		// the end having sent nothing -- a source we are merely queued at, a
+		// peer that is not a download source, a Kad lookup that fails to start --
+		// and reporting those as Contacting is what let a browse of them wait out
+		// the whole silence timeout instead of failing at once.
+		bool contacted = false;
 		if (GetDownloadState() == DS_CONNECTING) {
 			SetDownloadState(DS_WAITCALLBACK);
 		}
 		if (GetUploadState() == US_CONNECTING) {
 			if (Disconnected("LowID and US_CONNECTING")) {
 				Safe_Delete();
-				return false;
+				return EContactResult::ClientDeleted;
 			}
-			return true;
+			return EContactResult::Declined;
 		}
 
 		if (theApp->serverconnect->IsLocalServer(m_dwServerIP, m_nServerPort)) {
@@ -1602,6 +1618,7 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 				logLocalClient, "Local Client: OP_CALLBACKREQUEST to " + GetFullIP());
 			theApp->serverconnect->SendPacket(packet);
 			SetDownloadState(DS_WAITCALLBACK);
+			contacted = true;
 		} else {
 			if (GetUploadState() == US_NONE && (!GetRemoteQueueRank() || m_bReaskPending)) {
 
@@ -1609,9 +1626,9 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 					theApp->downloadqueue->RemoveSource(this);
 					if (Disconnected("LowID and US_NONE and QR=0")) {
 						Safe_Delete();
-						return false;
+						return EContactResult::ClientDeleted;
 					}
-					return true;
+					return EContactResult::Declined;
 				}
 
 				if (!Kademlia::CKademlia::IsConnected()) {
@@ -1619,9 +1636,9 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 					theApp->downloadqueue->RemoveSource(this);
 					if (Disconnected("Kad Firewalled source but not connected to Kad.")) {
 						Safe_Delete();
-						return false;
+						return EContactResult::ClientDeleted;
 					}
-					return true;
+					return EContactResult::Declined;
 				}
 
 				if (GetDownloadState() == DS_WAITCALLBACK) {
@@ -1649,6 +1666,7 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 									GetBuddyIP(), GetBuddyPort()));
 						theStats::AddUpOverheadKad(packet->GetRealPacketSize());
 						SetDownloadState(DS_WAITCALLBACKKAD);
+						contacted = true;
 					} else {
 						AddLogLineN(_("Searching buddy for lowid connection"));
 						// Create search to find buddy.
@@ -1660,6 +1678,7 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 						if (Kademlia::CSearchManager::StartSearch(findSource)) {
 							// Started lookup..
 							SetDownloadState(DS_WAITCALLBACKKAD);
+							contacted = true;
 						} else {
 							// This should never happen..
 							wxFAIL;
@@ -1673,12 +1692,17 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 				}
 			}
 		}
+		if (!contacted) {
+			return EContactResult::Declined;
+		}
 	} else { // HIGHID
 		if (!Connect()) {
-			return false;
+			return EContactResult::ConnectNotStarted;
 		}
 	}
-	return true;
+	// A direct UDP callback, a LowID path that reported sending, or a HighID
+	// connect: something is on its way.
+	return EContactResult::Contacting;
 }
 
 bool CUpDownClient::Connect()
@@ -1797,14 +1821,18 @@ void CUpDownClient::ConnectionEstablished()
 				logLocalClient, "Local Client: OP_ACCEPTUPLOADREQ to " + GetFullIP());
 		}
 	}
-	if (m_iFileListRequested == 1) {
+	// Only while the browse is still waiting to hear back. ConnectionEstablished
+	// runs on every reconnect, and a browsed peer that is also a download
+	// source reconnects often -- re-asking each time put unrequested packets
+	// on the wire and an error line in the peer's log.
+	if (theApp->browsemanager->AwaitingDirectoryList(this)) {
 		CPacket *packet = new CPacket(
 			m_fSharedDirectories ? OP_ASKSHAREDDIRS : OP_ASKSHAREDFILES, 0, OP_EDONKEYPROT);
 		theStats::AddUpOverheadOther(packet->GetPacketSize());
 		SendPacket(packet, true, true);
-		// The ask is on the wire now; the peer's clock starts here, not at the
-		// click, which may have been a connect ago.
-		RefreshBrowseDeadline();
+		// The ask is on the wire now; the peer's clock starts here, not at
+		// the click, which may have been a connect ago.
+		theApp->browsemanager->OnRequestSent(this, ::GetTickCount64());
 #ifdef __DEBUG__
 		if (m_fSharedDirectories) {
 			AddDebugLogLineN(logLocalClient, "Local Client: OP_ASKSHAREDDIRS to " + GetFullIP());
@@ -2057,162 +2085,99 @@ void CUpDownClient::ReGetClientSoft()
 	UpdateStats();
 }
 
-uint16 CUpDownClient::GetBrowseBarValue() const
-{
-	if (m_browseStatus == BROWSE_FINISHED || m_browseStatus == BROWSE_FAILED) {
-		// Clear the bar (search "finished" sentinel; browse is not Kad).
-		return 0xffff;
-	}
-	if (m_browseTotalDirs > 0) {
-		int done = m_browseTotalDirs - m_iFileListRequested;
-		if (done < 0) {
-			done = 0;
-		} else if (done > m_browseTotalDirs) {
-			done = m_browseTotalDirs;
-		}
-		return static_cast<uint16>(done * 100 / m_browseTotalDirs);
-	}
-	// Connecting, or a flat share with no directory list: no meaningful percent.
-	return 0;
-}
-
-void CUpDownClient::UpdateBrowseBar()
-{
-	// Mirror both the bar value and the lifecycle status into the search list,
-	// keyed by the routing ID. The status is what lets the EC PROGRESS reply
-	// report a terminal "failed" (vs "finished") after this client — which is
-	// transient, especially a browse that fails on disconnect — has been reaped.
-	theApp->searchlist->SetBrowseBar(GetBrowseRoutingId(), GetBrowseBarValue());
-	theApp->searchlist->SetBrowseStatusById(GetBrowseRoutingId(), static_cast<uint8>(m_browseStatus));
-}
-
-void CUpDownClient::RefreshBrowseDeadline()
-{
-	// Only while a browse is actually pending: called from the packet paths,
-	// which also run for clients that are not being browsed.
-	if (m_iFileListRequested) {
-		m_browseDeadline = ::GetTickCount64() + BROWSE_SILENCE_TIMEOUT;
-		theApp->clientlist->AddPendingBrowse(this);
-	}
-}
-
-void CUpDownClient::MarkBrowse(EBrowseStatus s)
-{
-	// Every terminal transition comes through here, so this is the one place
-	// the deadline has to be dropped.
-	m_browseDeadline = 0;
-	theApp->clientlist->RemovePendingBrowse(this);
-	m_browseStatus = s;
-	UpdateBrowseBar();
-	// Route by the tab's result-routing key (the EC-allocated browse ID on the
-	// daemon, or this client's pointer for a monolithic local browse). The
-	// notify is a no-op on the daemon; amuleGUI learns the status over EC.
-	Notify_Browse_Status((uint64)GetBrowseRoutingId(), s);
-}
-
-void CUpDownClient::FailPendingBrowse()
-{
-	if (m_iFileListRequested) {
-		AddLogLineC(CFormat(_("Failed to retrieve shared files from user '%s'")) % GetUserName());
-		m_iFileListRequested = 0;
-		MarkBrowse(BROWSE_FAILED);
-	}
-}
-
-bool CUpDownClient::IsPeerContactPending() const
-{
-	// A live connection carries the browse directly; ConnectionEstablished
-	// sends the request off the back of it.
-	//
-	// A socket that merely exists counts too, but ONLY on the HighID path:
-	// CUpDownClient::Connect starts an asynchronous connect, so that path
-	// returns with the socket created but not yet connected, and
-	// OnConnect/Disconnected settle it either way.
-	//
-	// It must not count on the LowID paths. TryToConnect mints the socket
-	// before its second LowID block and only the HighID branch ever calls
-	// Connect() on it, so a LowID exit past that point leaves a socket that
-	// nothing is connecting and nothing will connect later -- reading it as
-	// "contact pending" is what let those exits keep a browse running
-	// (amule-org/amule#1071). The three ways a LowID peer really does get
-	// contacted are covered by the other clauses below: a direct UDP
-	// callback, a server callback (DS_WAITCALLBACK), a Kad buddy callback
-	// (DS_WAITCALLBACKKAD) -- and an incoming connection by IsConnected().
-	if (IsConnected() || (!HasLowID() && GetSocket() != nullptr)) {
-		return true;
-	}
-	// A direct UDP callback brings its own 45s deadline, after which
-	// CClientList::ProcessDirectCallbackList disconnects us and the browse
-	// fails through that path.
-	if (m_dwDirectCallbackTimeout != 0) {
-		return true;
-	}
-	// A server or Kad callback we have asked for: the peer may still connect
-	// back, and the browse rides that connection when it does.
-	switch (GetDownloadState()) {
-	case DS_CONNECTING:
-	case DS_WAITCALLBACK:
-	case DS_WAITCALLBACKKAD:
-		return true;
-	default:
-		return false;
-	}
-}
-
 void CUpDownClient::RequestSharedFileList()
 {
-	if (m_iFileListRequested == 0) {
-		AddDebugLogLineN(logClient, wxString("Requesting shared files from ") + GetUserName());
-		m_iFileListRequested = 1;
-		m_browseTotalDirs = 0;
-		// Open the "View Files" tab up front (monolithic) so a peer that denies
-		// or never answers still shows a tab that can flip to "failed", rather
-		// than nothing. The daemon uses the EC-allocated browse ID as the
-		// routing key; a monolithic local browse uses this client's pointer.
-		m_browseStatus = BROWSE_IN_PROGRESS;
-		RefreshBrowseDeadline();
-		UpdateBrowseBar();
-		Notify_Browse_Started(ECID(), GetUserName(), (uint64)GetBrowseRoutingId());
-		if (!TryToConnect(true)) {
-			// false means the client was deleted (see TryToConnect), and it
-			// only gets there through Disconnected(), which has already
-			// failed the browse. Nothing left that may be touched.
-			return;
-		}
-		// TryToConnect returns true both when it started contacting the peer
-		// and when it decided not to, and several of its exits do the latter
-		// silently: a LowID peer we cannot call back, a Kad firewalled source
-		// with too many lookups in flight, a queued LowID source it merely
-		// arranges to reask later. None of those send a packet, so no terminal
-		// path downstream ever runs and the browse would sit BROWSE_IN_PROGRESS
-		// with nothing able to end it -- until the client-list cleanup reaps
-		// the peer 34 minutes later, or never, when the peer is also a download
-		// source (that same branch sets DS_LOWTOLOWIP, and the cleanup skips
-		// anything that is not DS_NONE).
-		//
-		// Tested here on the outcome rather than at each of those exits:
-		// there are four of them today, they are not marked as a family, and
-		// the next one added would silently rejoin this bug.
-		if (!IsPeerContactPending()) {
-			FailPendingBrowse();
-		}
-	} else {
+	if (theApp->browsemanager->SearchIdFor(this) != 0) {
 		AddDebugLogLineN(logClient,
 			CFormat("Requesting shared files from user %s (%u) is already in progress") %
 				GetUserName() % GetUserIDHybrid());
+		return;
+	}
+	AddDebugLogLineN(logClient, wxString("Requesting shared files from ") + GetUserName());
+
+	// Allocate the ID before the request goes out, for a local browse as much
+	// as an EC one. It used to be assigned when the first result arrived, so
+	// until then the browse was keyed on this client's pointer -- which left
+	// state behind that nothing pruned, and collided when an address was
+	// reused. The EC handler pins the ID it allocated before calling here.
+	// Use the ID the EC handler pinned for this browse, once. Otherwise this
+	// peer keeps the ID it was browsed under before: AllocateEd2kId is a
+	// monotonic counter that never reissues, so an ID we were given stays
+	// ours, and reusing it keeps one tab and one result bucket per peer
+	// however many times the user asks. Allocating afresh each time -- which
+	// is what replacing the old reuse condition did -- left the previous
+	// registration, results and browse record behind with nothing to free
+	// them, since only the newest ID ever reaches RemoveResults when the tab
+	// is closed.
+	//
+	// The previous record has to go before the new one can take its place:
+	// Store::Start refuses an ID it still holds, to protect whatever that
+	// record is still answering for.
+	if (m_browsePinned) {
+		m_browsePinned = false;
+	} else {
+		if (m_browseSearchId == 0) {
+			m_browseSearchId = theApp->searchlist->AllocateEd2kId();
+		} else {
+			theApp->browsemanager->Remove(m_browseSearchId);
+		}
+		// Chosen here, so this browse is ours -- otherwise the flag would
+		// still describe whoever asked for the previous one.
+		m_browseEcInitiated = false;
+	}
+	// Take the browse first: it is the thing that can refuse, and refusing
+	// after announcing a tab would leave one open against a browse nobody is
+	// running.
+	if (!theApp->browsemanager->Start(this, m_browseSearchId, ::GetTickCount64())) {
+		AddDebugLogLineN(logClient,
+			CFormat("Browse of user %s (%u) was not started") % GetUserName() %
+				GetUserIDHybrid());
+		return;
+	}
+	// Describe it before any result arrives, so it is listable as a browse of
+	// this peer rather than as a nameless search -- but only when the ID is
+	// ours to describe. A caller that pinned one has already registered it,
+	// under the identity IT considers authoritative: the friend path keys on
+	// the friend's ECID, and re-registering here would overwrite that with
+	// this client's, which is a different number from the same counter. An
+	// adopting GUI would then open a second tab under a different name.
+	if (!m_browseEcInitiated) {
+		theApp->searchlist->RegisterBrowseSearch(m_browseSearchId, GetUserName(), ECID());
+	}
+
+	// Open the "View Files" tab up front (monolithic) so a peer that denies or
+	// never answers still shows a tab that can flip to "failed".
+	Notify_Browse_Started(ECID(), GetUserName(), (uint64)m_browseSearchId);
+
+	switch (TryToContact(true)) {
+	case EContactResult::ClientDeleted:
+		// Destroyed on the way out, through Disconnected(), which has already
+		// ended the browse. Nothing left that may be touched.
+		return;
+	case EContactResult::Declined:
+	case EContactResult::ConnectNotStarted:
+		// Nothing was sent, so no terminal path downstream will ever run.
+		// The deadline would catch it eventually; saying so now is both
+		// correct and cheaper. This used to be inferred from the client's
+		// side effects, because the bool could not distinguish "I tried" from
+		// "I decided not to" -- and the inference was wrong twice.
+		theApp->browsemanager->Fail(this);
+		return;
+	case EContactResult::Contacting:
+		break;
 	}
 }
 
 void CUpDownClient::ProcessSharedFileList(const uint8_t *pachPacket, uint32 nSize, wxString &pszDirectory)
 {
-	if (m_iFileListRequested > 0) {
-		m_iFileListRequested--;
-		theApp->searchlist->ProcessSharedFileList(pachPacket, nSize, this, NULL, pszDirectory);
-		// One directory's worth of files arrived; advance the browse bar, and
-		// give a share that is still streaming the full timeout again.
-		RefreshBrowseDeadline();
-		UpdateBrowseBar();
+	if (theApp->browsemanager->SearchIdFor(this) == 0) {
+		return;
 	}
+	theApp->searchlist->ProcessSharedFileList(pachPacket, nSize, this, nullptr, pszDirectory);
+	// A listing arrived, so the browse is alive and one step further along.
+	// Both protocol forms report here, and completion is decided in one place
+	// from the count -- the flat form used to have nothing mark it at all.
+	theApp->browsemanager->OnListingReceived(this, ::GetTickCount64());
 }
 
 void CUpDownClient::ResetFileStatusInfo()

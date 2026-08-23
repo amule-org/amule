@@ -23,7 +23,9 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "FriendList.h" // Interface
+#include "FriendList.h" // Interface declarations.
+
+#include "BrowseManager.h"
 
 #include <common/DataFileVersion.h>
 
@@ -217,9 +219,15 @@ void CFriendList::RequestSharedFileList(CFriend *cur_friend, uint32 browseSearch
 			theApp->clientlist->AddClient(client);
 			cur_friend->LinkClient(CCLIENTREF(client, "CFriendList::RequestSharedFileList"));
 		}
-		// Pin the EC-allocated browse ID (0 for a monolithic local browse) before
-		// firing the request so ProcessSharedFileList files the listing under it.
-		client->SetBrowseSearchId(browseSearchId);
+		// Pin the EC-allocated browse ID before firing the request, so
+		// ProcessSharedFileList files the listing under it -- but only when
+		// this peer has no browse running. RequestSharedFileList returns
+		// early for one that has, and pinning first would have left the live
+		// browse's ID overwritten: with 0 for a local "View Files", which is
+		// what the rest of its listing would then be filed under.
+		if (theApp->browsemanager->SearchIdFor(client) == 0) {
+			client->PinBrowseSearchId(browseSearchId);
+		}
 		client->RequestSharedFileList();
 	}
 }

@@ -76,6 +76,7 @@ class CClientList;
 class CKnownFileList;
 class CCanceledFileList;
 class CSearchList;
+class CBrowseManager;
 class CClientCreditsList;
 class CFriendList;
 class CChatSessionStore;
@@ -464,6 +465,9 @@ public:
 	CKnownFileList *knownfiles;
 	CCanceledFileList *canceledfiles;
 	CSearchList *searchlist;
+	//! Every "View Files" browse in flight. Owns their whole lifecycle; see
+	//! CBrowseManager.
+	CBrowseManager *browsemanager;
 	CClientCreditsList *clientcredits;
 	CFriendList *friendlist;
 	// The core's chat transcript, shared by the local GUI and every EC
