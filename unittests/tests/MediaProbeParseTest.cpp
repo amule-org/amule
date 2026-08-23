@@ -306,6 +306,104 @@ TEST(MediaProbeParse, RawElementaryStreamYieldsCodecWithoutDuration)
 	ASSERT_EQUALS(static_cast<uint32>(0), info.bitrate_kbps);
 }
 
+TEST(MediaProbeParse, ZeroDurationWithNothingElseIsAFailedProbe)
+{
+	// "duration=0.000000" parses, but a zero duration is not a duration. If
+	// this reported success the caller would treat an all-empty MediaInfo as
+	// authoritative and CLEAR every media tag the file had -- including a
+	// preview inherited from the search result -- then re-probe it to the
+	// same effect on every subsequent start.
+	const wxChar *const zero[] = { wxT("[STREAM]"),
+		wxT("codec_type=data"),
+		wxT("DISPOSITION:attached_pic=0"),
+		wxT("[/STREAM]"),
+		wxT("[FORMAT]"),
+		wxT("duration=0.000000"),
+		wxT("[/FORMAT]") };
+	MediaInfo info;
+	ASSERT_TRUE(!PARSE(zero, info));
+}
+
+TEST(MediaProbeParse, ZeroDurationWithACodecStillSucceeds)
+{
+	// The intended case: zero length is a legitimate value to clear TO when
+	// the probe did identify the file.
+	const wxChar *const zeroCodec[] = { wxT("[STREAM]"),
+		wxT("codec_name=h264"),
+		wxT("codec_type=video"),
+		wxT("DISPOSITION:attached_pic=0"),
+		wxT("[/STREAM]"),
+		wxT("[FORMAT]"),
+		wxT("duration=0.000000"),
+		wxT("[/FORMAT]") };
+	MediaInfo info;
+	ASSERT_TRUE(PARSE(zeroCodec, info));
+	ASSERT_EQUALS(wxString(wxT("h264")), info.codec);
+	ASSERT_EQUALS(static_cast<uint32>(0), info.length_seconds);
+}
+
+TEST(MediaProbeParse, MultiTrackAudioNeverPublishesATrackLabelAsTheTitle)
+{
+	// The audio-only twin of the multi-track video case. A .mka or chained
+	// .ogg with two labelled audio streams and no format-level tags has no
+	// video stream, so a "not a video" test would let the first track's label
+	// through as the file's title. The fallback exists for Ogg/Opus, where
+	// the comments live on the SINGLE logical stream -- so the condition is
+	// exactly one audio stream.
+	const wxChar *const multiAudio[] = { wxT("[STREAM]"),
+		wxT("codec_name=vorbis"),
+		wxT("codec_type=audio"),
+		wxT("DISPOSITION:attached_pic=0"),
+		wxT("TAG:title=Track One"),
+		wxT("[/STREAM]"),
+		wxT("[STREAM]"),
+		wxT("codec_name=vorbis"),
+		wxT("codec_type=audio"),
+		wxT("DISPOSITION:attached_pic=0"),
+		wxT("TAG:title=Track Two"),
+		wxT("[/STREAM]"),
+		wxT("[FORMAT]"),
+		wxT("duration=120.000000"),
+		wxT("[/FORMAT]") };
+	MediaInfo info;
+	ASSERT_TRUE(PARSE(multiAudio, info));
+	ASSERT_EQUALS(wxString(wxT("vorbis")), info.codec);
+	ASSERT_TRUE(info.title.IsEmpty());
+}
+
+TEST(MediaProbeParse, SingleAudioStreamStillGetsItsStreamTags)
+{
+	// The case the fallback exists for must keep working: one logical stream,
+	// tags on it, nothing at format level.
+	MediaInfo info;
+	ASSERT_TRUE(PARSE(k_tags_ogg, info));
+	ASSERT_EQUALS(wxString(wxT("TestTitle")), info.title);
+}
+
+TEST(MediaProbeParse, CoverArtDoesNotCountAsASecondAudioStream)
+{
+	// Artwork is a video stream, so it must not disturb the audio count --
+	// otherwise a tagged single-track MP3 would lose its stream-tag fallback.
+	const wxChar *const oneAudioPlusCover[] = { wxT("[STREAM]"),
+		wxT("codec_name=mp3"),
+		wxT("codec_type=audio"),
+		wxT("DISPOSITION:attached_pic=0"),
+		wxT("TAG:title=Song"),
+		wxT("[/STREAM]"),
+		wxT("[STREAM]"),
+		wxT("codec_name=mjpeg"),
+		wxT("codec_type=video"),
+		wxT("DISPOSITION:attached_pic=1"),
+		wxT("[/STREAM]"),
+		wxT("[FORMAT]"),
+		wxT("duration=200.000000"),
+		wxT("[/FORMAT]") };
+	MediaInfo info;
+	ASSERT_TRUE(PARSE(oneAudioPlusCover, info));
+	ASSERT_EQUALS(wxString(wxT("mp3")), info.codec);
+	ASSERT_EQUALS(wxString(wxT("Song")), info.title);
+}
+
 TEST(MediaProbeParse, NothingUsableIsAFailedProbe)
 {
 	const wxChar *const empty[] = {

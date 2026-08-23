@@ -517,7 +517,9 @@ bool ParseProbeOutput(const wxArrayString &lines, MediaInfo &out)
 	// for Ogg/Opus, where Vorbis comments belong to the logical stream and the
 	// format section carries nothing at all.
 	wxString streamArtist, streamAlbum, streamTitle;
-	bool haveAudioStreamTags = false;
+	// How many real (non-artwork) audio streams the file has. The stream-tag
+	// fallback below requires exactly one.
+	unsigned audioStreamCount = 0;
 	wxString formatArtist, formatAlbum, formatTitle;
 
 	bool inStream = false;
@@ -541,12 +543,14 @@ bool ParseProbeOutput(const wxArrayString &lines, MediaInfo &out)
 			if (!cur.attached_pic && !cur.codec.IsEmpty()) {
 				if (cur.type == wxT("video") && videoCodec.IsEmpty()) {
 					videoCodec = cur.codec;
-				} else if (cur.type == wxT("audio") && audioCodec.IsEmpty()) {
-					audioCodec = cur.codec;
-					streamArtist = cur.artist;
-					streamAlbum = cur.album;
-					streamTitle = cur.title;
-					haveAudioStreamTags = true;
+				} else if (cur.type == wxT("audio")) {
+					++audioStreamCount;
+					if (audioCodec.IsEmpty()) {
+						audioCodec = cur.codec;
+						streamArtist = cur.artist;
+						streamAlbum = cur.album;
+						streamTitle = cur.title;
+					}
 				}
 			}
 			continue;
@@ -579,7 +583,16 @@ bool ParseProbeOutput(const wxArrayString &lines, MediaInfo &out)
 		}
 		if (inFormat) {
 			if (key == wxT("duration")) {
-				got_duration = ParseSeconds(value, info.length_seconds);
+				// A parsed ZERO is not a duration. ParseSeconds only rejects
+				// negatives, so "duration=0.000000" used to count as one --
+				// which let a container ffprobe can open and time as zero but
+				// reports no codec for return a successful probe carrying an
+				// all-empty MediaInfo. Harmless while the handler was add-only;
+				// now that a successful probe is authoritative it would clear
+				// every media tag the file had, including an inherited preview,
+				// and leave it to be re-probed to the same effect on every start.
+				got_duration =
+					ParseSeconds(value, info.length_seconds) && info.length_seconds > 0;
 			} else if (key == wxT("bit_rate")) {
 				(void)ParseBitrateKbps(value, info.bitrate_kbps);
 			}
@@ -605,12 +618,17 @@ bool ParseProbeOutput(const wxArrayString &lines, MediaInfo &out)
 	info.artist = formatArtist;
 	info.album = formatAlbum;
 	info.title = formatTitle;
-	// Stream tags are only consulted for a file whose codec came FROM that
-	// audio stream, i.e. an audio-only file, and only where the format section
-	// gave nothing. On a multi-track video the stream tags are track LABELS --
-	// "Deutsch", "Espanol" -- and publishing one as the file's title would
-	// send it to every peer.
-	if (haveAudioStreamTags && videoCodec.IsEmpty()) {
+	// Stream tags are consulted only for a file with EXACTLY ONE audio stream
+	// and no video, and only where the format section gave nothing.
+	//
+	// The fallback exists for Ogg and Opus, where Vorbis comments belong to
+	// the single logical stream -- so the condition it actually needs is "one
+	// stream", not "not a video". On any multi-track container the stream tags
+	// are track LABELS ("Deutsch", "Espanol"), and publishing one as the
+	// file's title sends it to every peer over both ed2k and Kad. That is
+	// equally true of a multi-track .mka or a chained .ogg, which have no
+	// video stream at all and which a "not a video" test would let through.
+	if (audioStreamCount == 1 && videoCodec.IsEmpty()) {
 		if (info.artist.IsEmpty()) {
 			info.artist = streamArtist;
 		}
