@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-23 23:17+0200\n"
+"POT-Creation-Date: 2026-08-23 23:41+0200\n"
 "PO-Revision-Date: 2026-08-22 15:39+0000\n"
 "Last-Translator: Hallvor Brunstad <Hallvor_1976@yahoo.com>\n"
 "Language-Team: <i18n-nn@lister.ping.uio.no>\n"
@@ -2216,7 +2216,7 @@ msgid "No such chat session"
 msgstr "Stengje denne lynmeldingsøkta."
 
 #: src/ExternalConn.cpp
-msgid "No such shared file, or it cannot be probed"
+msgid "File is not eligible for media metadata extraction (not an audio/video file, or an incomplete download)"
 msgstr ""
 
 #: src/ExternalConn.cpp

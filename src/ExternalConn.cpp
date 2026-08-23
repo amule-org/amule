@@ -4288,9 +4288,16 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		if (const CECTag *hashTag = request->GetTagByName(EC_TAG_KNOWNFILE)) {
 			const CMD4Hash hash = hashTag->GetMD4Data();
 			if (!theApp->sharedfiles->RefreshMediaMetadata(hash)) {
+				// The caller already resolved the hash against its own
+				// snapshot, so "no such file" is not the reason by the time
+				// this runs -- what is left is a file whose extension is not
+				// audio/video, or an in-progress download. Say that, rather
+				// than a message whose first half can no longer be true.
 				response = new CECPacket(EC_OP_FAILED);
 				response->AddTag(CECTag(EC_TAG_STRING,
-					wxTRANSLATE("No such shared file, or it cannot be probed")));
+					wxTRANSLATE("File is not eligible for media metadata "
+						    "extraction (not an audio/video file, or an "
+						    "incomplete download)")));
 				break;
 			}
 			queued = 1;

@@ -77,8 +77,14 @@ if [ "$CURL_STATUS" = "501" ]; then
 		'501 carries error.code=ec_unsupported (daemon predates the op)'
 	echo "    info: connected amuled does not implement media refresh; rest skipped"
 	echo
-	echo "OK: $TEST_COUNT/$TEST_COUNT passed"
-	exit 0
+	# Consult FAIL_COUNT: the assertion above can fail, and printing OK over
+	# a failed assertion is how a broken gate looks green.
+	if [ "$FAIL_COUNT" -eq 0 ]; then
+		echo "OK: $TEST_COUNT/$TEST_COUNT passed"
+		exit 0
+	fi
+	echo "FAIL: $FAIL_COUNT/$TEST_COUNT failed"
+	exit 1
 fi
 _assert_status 202 "POST /shared/media/refresh → 202 Accepted"
 _assert_json_eq '.ok'            true  'whole-share refresh reports ok'
@@ -111,8 +117,24 @@ _assert_json_eq '.error.code' not_found 'unknown hash carries error.code=not_fou
 _curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/shared"
 COUNT=$(printf '%s' "$CURL_BODY" | jq '.shared | length')
 echo "    info: $COUNT files currently shared"
-if [ "$COUNT" -gt 0 ]; then
-	HASH=$(printf '%s' "$CURL_BODY" | jq -r '.shared[0].hash')
+# Pick an audio/video entry rather than shared[0]: a share whose first file is
+# a document or an archive answers 400 (not eligible), which is correct daemon
+# behaviour and would fail the phase for the wrong reason.
+#
+# file_type lives on the detail endpoint, not on the list, so this walks the
+# hashes and asks. Capped at 20 to keep the probe bounded on a large share --
+# if the first 20 are all documents the phase skips rather than misreporting.
+HASH=
+for CANDIDATE in $(printf '%s' "$CURL_BODY" | jq -r '.shared[0:20][].hash'); do
+	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/shared/$CANDIDATE"
+	FTYPE=$(printf '%s' "$CURL_BODY" | jq -r '.file_type // empty')
+	if [ "$FTYPE" = "audio" ] || [ "$FTYPE" = "videos" ]; then
+		HASH=$CANDIDATE
+		echo "    info: probing $FTYPE file $HASH"
+		break
+	fi
+done
+if [ -n "$HASH" ]; then
 	_curl -X POST -H "Authorization: Bearer $TOKEN" \
 		"$HOST/api/v0/shared/$HASH/media/refresh"
 	# 409 is a legitimate answer for an incomplete download; both shapes are
@@ -135,7 +157,7 @@ if [ "$COUNT" -gt 0 ]; then
 		_fail "uppercase hash" "expected 202 or 409, got $CURL_STATUS"
 	fi
 else
-	echo "    info: nothing shared; single-file checks skipped"
+	echo "    info: no audio/video file shared; single-file checks skipped"
 fi
 
 echo

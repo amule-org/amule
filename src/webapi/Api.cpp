@@ -9206,7 +9206,11 @@ CHttpServer::Response SendMediaRefresh(CamuleapiApp &app, const CECTag *hashTag,
 		const bool unknown_op = ec_err_msg.find("Invalid opcode") != std::string::npos;
 		delete ec_resp;
 		if (unknown_op) {
-			return ErrorResponse(501,
+			// 503, matching every other ec_unsupported site in this file and
+			// the rule stated in App.cpp. 501 is arguably the better literal
+			// answer for "server does not implement it", but one endpoint
+			// disagreeing with seven is worse than either choice.
+			return ErrorResponse(503,
 				"ec_unsupported",
 				"the connected amuled does not implement media metadata refresh");
 		}

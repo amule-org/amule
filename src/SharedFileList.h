@@ -164,8 +164,8 @@ public:
 	unsigned RefreshAllMediaMetadata();
 
 	// The single-file form, addressed by hash. Returns false when no shared
-	// file has that hash or it is not eligible (not audio/video, an
-	// incomplete download, missing on disk).
+	// file has that hash, or it is not eligible: not audio/video by
+	// extension, or an incomplete download.
 	bool RefreshMediaMetadata(const CMD4Hash &hash);
 
 	/**
@@ -276,7 +276,12 @@ private:
 		Completion,
 		Refresh,
 	};
-	void MaybeScheduleMediaProbe(CKnownFile *pFile, MediaProbeMode mode = MediaProbeMode::Normal);
+	// Returns true when a probe was actually enqueued, so a caller can report
+	// what it did. Do NOT try to infer that from the worker's pending count:
+	// CMediaProbeThread::Entry swaps the whole job list out as soon as it is
+	// signalled, so against an idle worker the count is back to zero before
+	// the caller can look and every enqueue reads as a no-op.
+	bool MaybeScheduleMediaProbe(CKnownFile *pFile, MediaProbeMode mode = MediaProbeMode::Normal);
 
 	// Per-path attach: stat fname under directory, look it up in
 	// known.met, and either AddFile() the existing CKnownFile or push
