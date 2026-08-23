@@ -29,6 +29,10 @@ TEST_LINK="ed2k://|file|ubuntu-24.04.4-desktop-amd64.iso|6655619072|0031C9CBA65C
 
 FAIL_COUNT=0
 TEST_COUNT=0
+# Skips are counted apart from TEST_COUNT, never folded into it: a skipped
+# check is coverage that did not happen, and adding it to the passed tally
+# would report the absence of a check as a check that succeeded.
+SKIP_COUNT=0
 SSE=$(mktemp -t amuleapi_26_rfc_followup_endpoints_sse.XXXXXX)
 trap '
 	rm -f "$SSE"
@@ -44,7 +48,7 @@ trap '
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
 _pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
-_skip() { TEST_COUNT=$((TEST_COUNT+1)); echo "  SKIP  $1"; }
+_skip() { SKIP_COUNT=$((SKIP_COUNT+1)); echo "  SKIP  $1"; }
 _fail() {
 	TEST_COUNT=$((TEST_COUNT+1)); FAIL_COUNT=$((FAIL_COUNT+1))
 	echo "  FAIL  $1"
@@ -392,7 +396,7 @@ if [ -n "$FIRST_CLIENT" ]; then
 			"a /clients object is missing upload_file_name/download_file_name or it is not a string"
 	fi
 else
-	_pass "/clients base filename-field check skipped (no peers connected)"
+	_skip "/clients base filename-field check (no peers connected)"
 fi
 
 # --- 9b. /clients/{ecid} detail (issue #422). --------------------
@@ -418,7 +422,7 @@ if [ -n "$FIRST_ECID" ]; then
 		_fail "clients detail shape" "missing detail fields: $DETAIL"
 	fi
 else
-	_pass "/clients/{ecid} detail 200 skipped (no peers connected)"
+	_skip "/clients/{ecid} detail 200 (no peers connected)"
 fi
 # Unknown ecid → 404 (0xFFFFFFFF is effectively never a live ECID)
 RC=$(curl -s -o /dev/null -w "%{http_code}" "${H_AUTH[@]}" "$HOST/api/v0/clients/4294967295")
@@ -506,8 +510,10 @@ fi
 
 # --- Summary. -----------------------------------------------------
 echo
+SKIP_NOTE=""
+[ "$SKIP_COUNT" -gt 0 ] && SKIP_NOTE=" ($SKIP_COUNT check(s) skipped)"
 if [ "$FAIL_COUNT" -eq 0 ]; then
-	echo "OK: $TEST_COUNT/$TEST_COUNT passed"
+	echo "OK: $TEST_COUNT/$TEST_COUNT passed$SKIP_NOTE"
 	exit 0
 fi
 echo "FAIL: $FAIL_COUNT/$TEST_COUNT failed"
