@@ -2732,8 +2732,9 @@ void CUpDownClientListRem::DeleteItem(CClientRef *clientref)
 
 #ifdef DEBUG_ZOMBIE_CLIENTS
 	if (client->m_linked > 1) {
-		AddLogLineC(CFormat("Client %d still linked in %d places: %s") % client->ECID() %
-			    (client->m_linked - 1) % client->GetLinkedFrom());
+		// Same level and wording as the core-side twin in BaseClient.cpp.
+		AddLogLineN(CFormat("Client %d: deletion deferred, still referenced in %d place(s): %s") %
+			    client->ECID() % (client->m_linked - 1) % client->GetLinkedFrom());
 		client->m_linkedDebug = true;
 	}
 #endif

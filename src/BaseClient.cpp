@@ -454,8 +454,13 @@ void CUpDownClient::Safe_Delete()
 
 #ifdef DEBUG_ZOMBIE_CLIENTS
 	if (m_linked > 1) {
-		AddLogLineC(CFormat("Client %d still linked in %d places: %s") % ECID() % (m_linked - 1) %
-			    GetLinkedFrom());
+		// Normal level, same as the "last reference ... delete it" line this
+		// pairs with. Deferred deletion is the expected outcome of a source
+		// list being walked from a snapshot, not a fault; logging the first
+		// half as critical and the second as normal made every ordinary
+		// deferral read as an error (amule-org/amule#1086).
+		AddLogLineN(CFormat("Client %d: deletion deferred, still referenced in %d place(s): %s") %
+			    ECID() % (m_linked - 1) % GetLinkedFrom());
 		m_linkedDebug = true;
 	}
 #endif
