@@ -80,13 +80,27 @@ void CIP2Country::Enable()
 
 	m_db->Open(m_DataBasePath);
 
+	// The Update() above is only reached when the file is *missing*, so a
+	// geoip.mmdb that exists but will not open (corrupt, or a legacy libGeoIP
+	// .dat) blocks its own replacement. Discard it and the next start takes the
+	// missing-file path. No Update() from here: DownloadFinished() calls
+	// Enable(), so retrying an unreadable file would loop forever.
+	if (!m_db->IsOpen()) {
+		AddLogLineC(CFormat(_("%s is not a readable MaxMindDB file - discarding it. "
+				      "A fresh copy will be downloaded on the next start, or now via "
+				      "Preferences -> IP2Country -> 'Update now'.")) %
+			    m_DataBaseName);
+		wxRemoveFile(m_DataBasePath);
+		return;
+	}
+
 	// One-shot backfill: files written by builds older than the
 	// source-aware prefs have no LoadedSource recorded, which would
 	// leave the prefs status line attribution-less. Best-effort guess:
 	// attribute the existing file to the currently configured source
 	// so the status line shows *something* meaningful. The user can
 	// always click "Update now" to overwrite with the real source.
-	if (m_db->IsOpen() && thePrefs::GetGeoIPLoadedSource().IsEmpty()) {
+	if (thePrefs::GetGeoIPLoadedSource().IsEmpty()) {
 		thePrefs::SetGeoIPLoadedSource(thePrefs::GetGeoIPSource());
 	}
 }

@@ -2253,6 +2253,18 @@ wxString CPreferences::ApplyPathMapping(const wxString &remotePath) const
 	return remotePath;
 }
 
+// 2.3.x's default GeoLiteCountryUpdateUrl was .../GeoLiteCountry/GeoIP.dat.gz:
+// a legacy libGeoIP database the MaxMindDB reader can never parse.
+static bool IsLegacyGeoIPDatUrl(const wxString &url)
+{
+	wxString path = url.BeforeFirst('?').BeforeFirst('#').Lower();
+	while (path.EndsWith(".gz") || path.EndsWith(".bz2") || path.EndsWith(".zip") ||
+		path.EndsWith(".tar")) {
+		path = path.BeforeLast('.');
+	}
+	return path.EndsWith(".dat");
+}
+
 void CPreferences::LoadPreferences()
 {
 	LoadCats();
@@ -2267,6 +2279,18 @@ void CPreferences::LoadPreferences()
 		s_GeoIPCustomUrl = s_GeoIPUpdateUrl;
 		s_GeoIPSource = "custom";
 		s_GeoIPUpdateUrl.clear();
+	}
+
+	// 3.0.1 shipped that migration without this guard, so 2.3.x configs landed
+	// on an unreadable Custom source with no way back -- GeoIPSource ==
+	// "custom" skips the migration forever. Repair those too, not just the one
+	// migrating right now.
+	if (s_GeoIPSource == "custom" && IsLegacyGeoIPDatUrl(s_GeoIPCustomUrl)) {
+		s_GeoIPCustomUrl.clear();
+		s_GeoIPSource = "dbip";
+		// The recorded provenance points at a file we are about to discard;
+		// empty just means "no attribution", which the status line handles.
+		s_GeoIPLoadedSource.clear();
 	}
 
 	// Push the loaded MMapEnabled value into CFileArea (no-op where mmap is
