@@ -181,7 +181,7 @@ public:
 	 * True if this core currently routes results/progress for searchID --
 	 * either a CSearchList search (m_searchStrings, populated in
 	 * StartNewSearch, pruned in RemoveResults) or a "View Files" browse tab
-	 * (m_browseBar; browses are not CSearchList searches but share the same
+	 * (CBrowseManager; browses are not CSearchList searches but share the same
 	 * per-ID result-routing and EC lifecycle -- got3nks, PR #680 review).
 	 * Use this to gate per-ID EC replies (SEARCH_PROGRESS, single-ID
 	 * SEARCH_RESULTS, Stop, Request_More) instead of the EC-only
@@ -246,7 +246,7 @@ public:
 	// "View Files" browse tabs are not CSearchList searches: CBrowseManager
 	// owns their bar, and GetSearchBarStatusById consults it first, so the
 	// monolithic bar and the EC PROGRESS reply render the same value.
-	// The browse lifecycle (EBrowseStatus: browsing / finished / failed) recorded
+
 	// Echoes m_searchType for the current/last search; meaningful only
 	// when state is RUNNING or FINISHED. Returns LocalSearch by default.
 	SearchType GetSearchLifecycleKind() const { return m_searchType; }
@@ -526,13 +526,6 @@ private:
 	//! client that didn't start it locally and so has no tab-title string
 	//! of its own to fall back on.
 	std::map<uint32_t, wxString> m_searchStrings;
-
-	//! Bar value for "View Files" browse tabs, keyed by routing ID and set by
-	//! the browsing client (0..100 percent, or 0xffff finished/failed). Read by
-	//! GetSearchBarStatusById. Pruned in RemoveResults.
-	//! Browse lifecycle (EBrowseStatus) by search ID, kept in lockstep with
-	//! m_browseBar so a browse's terminal state survives the client's teardown.
-	//! Pruned in RemoveResults.
 
 	//! ED2K-side counterpart of m_KadSearchFinished, covering both local
 	//! and global searches. Cleared to false in StartNewSearch when an

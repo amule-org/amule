@@ -135,6 +135,11 @@ std::uint32_t CBrowseManager::SearchIdFor(const CUpDownClient *client) const
 	return m_store.SearchIdFor(client);
 }
 
+bool CBrowseManager::AwaitingDirectoryList(const CUpDownClient *client) const
+{
+	return m_store.AwaitingDirectoryList(client);
+}
+
 bool CBrowseManager::Has(std::uint32_t searchId) const
 {
 	return m_store.Has(searchId);

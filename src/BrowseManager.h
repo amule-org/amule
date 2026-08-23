@@ -117,6 +117,8 @@ public:
 	//! this peer" test the EC handler joins on.
 	std::uint32_t SearchIdFor(const CUpDownClient *client) const;
 
+	//! See browse::Store::AwaitingDirectoryList.
+	bool AwaitingDirectoryList(const CUpDownClient *client) const;
 	bool Has(std::uint32_t searchId) const;
 	//! browse::State of `searchId`; InProgress for an unknown ID is never
 	//! reported -- callers gate on Has() first.

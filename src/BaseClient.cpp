@@ -1589,6 +1589,12 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 			false,
 			0);
 	} else if (HasLowID()) { // LOWID
+		// Set where a packet actually goes out. Several of the paths below reach
+		// the end having sent nothing -- a source we are merely queued at, a
+		// peer that is not a download source, a Kad lookup that fails to start --
+		// and reporting those as Contacting is what let a browse of them wait out
+		// the whole silence timeout instead of failing at once.
+		bool contacted = false;
 		if (GetDownloadState() == DS_CONNECTING) {
 			SetDownloadState(DS_WAITCALLBACK);
 		}
@@ -1611,6 +1617,7 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 				logLocalClient, "Local Client: OP_CALLBACKREQUEST to " + GetFullIP());
 			theApp->serverconnect->SendPacket(packet);
 			SetDownloadState(DS_WAITCALLBACK);
+			contacted = true;
 		} else {
 			if (GetUploadState() == US_NONE && (!GetRemoteQueueRank() || m_bReaskPending)) {
 
@@ -1658,6 +1665,7 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 									GetBuddyIP(), GetBuddyPort()));
 						theStats::AddUpOverheadKad(packet->GetRealPacketSize());
 						SetDownloadState(DS_WAITCALLBACKKAD);
+						contacted = true;
 					} else {
 						AddLogLineN(_("Searching buddy for lowid connection"));
 						// Create search to find buddy.
@@ -1669,6 +1677,7 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 						if (Kademlia::CSearchManager::StartSearch(findSource)) {
 							// Started lookup..
 							SetDownloadState(DS_WAITCALLBACKKAD);
+							contacted = true;
 						} else {
 							// This should never happen..
 							wxFAIL;
@@ -1682,13 +1691,16 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 				}
 			}
 		}
+		if (!contacted) {
+			return EContactResult::Declined;
+		}
 	} else { // HIGHID
 		if (!Connect()) {
 			return EContactResult::ConnectNotStarted;
 		}
 	}
-	// Everything that reaches here sent something: a server or Kad callback
-	// request, a direct UDP callback, or a connect.
+	// A direct UDP callback, a LowID path that reported sending, or a HighID
+	// connect: something is on its way.
 	return EContactResult::Contacting;
 }
 
@@ -2083,8 +2095,16 @@ void CUpDownClient::RequestSharedFileList()
 	// until then the browse was keyed on this client's pointer -- which left
 	// state behind that nothing pruned, and collided when an address was
 	// reused. The EC handler pins the ID it allocated before calling here.
-	if (m_browseSearchId == 0) {
+	// A pinned ID belongs to this browse only if the manager has not seen it
+	// yet -- the EC handler pins one immediately before calling. An ID left
+	// over from a previous browse of this peer is still tracked, and reusing
+	// it would be refused, silently: Store::Start turns away an ID it already
+	// holds, to protect the record still answering for it.
+	if (m_browseSearchId == 0 || theApp->browsemanager->Has(m_browseSearchId)) {
 		m_browseSearchId = theApp->searchlist->AllocateEd2kId();
+		// Locally allocated, so this browse is ours -- otherwise the flag
+		// would still describe whoever asked for the previous one.
+		m_browseEcInitiated = false;
 	}
 	// Take the browse first: it is the thing that can refuse, and refusing
 	// after announcing a tab would leave one open against a browse nobody is

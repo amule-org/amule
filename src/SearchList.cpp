@@ -936,11 +936,10 @@ void CSearchList::ProcessSharedFileList(const uint8_t *in_packet,
 {
 	wxCHECK_RET(sender, "No sender in search-results from client.");
 
-	// Route the browsed listing to a result bucket. For an EC-initiated browse
-	// (remote GUI) the daemon has pinned a real, wire-safe search ID on the
-	// client; use it so the union/per-ID poll and the LRU ring can address these
-	// results. A monolithic local browse leaves it 0 and keeps the historical
-	// per-client-pointer key.
+	// Route the browsed listing to a result bucket. Every browse has a real,
+	// wire-safe search ID by now -- pinned by the EC handler for a remote one,
+	// allocated by RequestSharedFileList for a local one -- so the union and
+	// per-ID polls and the LRU ring can all address these results.
 	// A local browse used to key its results on the client pointer, which no
 	// remote client can address -- it is this process's memory, so the browse
 	// was invisible to amulegui, amuleweb and amuleapi while an EC-initiated

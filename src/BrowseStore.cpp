@@ -197,6 +197,15 @@ std::uint32_t Store::SearchIdFor(ClientKey client) const
 	return (it != m_records.end() && it->second.rec.state == State::InProgress) ? it->first : 0;
 }
 
+bool Store::AwaitingDirectoryList(ClientKey client) const
+{
+	const auto it = FindFor(client);
+	// kFlatBrowse is the "nothing announced yet" state; the answer replaces it
+	// with a count, so a second answer finds it already gone.
+	return it != m_records.end() && it->second.rec.state == State::InProgress &&
+	       it->second.rec.outstanding == kFlatBrowse;
+}
+
 bool Store::Has(std::uint32_t searchId) const
 {
 	return m_records.find(searchId) != m_records.end();

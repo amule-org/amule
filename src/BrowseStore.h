@@ -143,6 +143,18 @@ public:
 	std::vector<Outcome> Tick(std::uint64_t now);
 
 	std::uint32_t SearchIdFor(ClientKey client) const;
+
+	/**
+	 * Whether `client`'s browse is still waiting for its directory list.
+	 *
+	 * True exactly once per browse, between the request going out and the
+	 * peer's OP_ASKSHAREDDIRSANS. The handler needs that: its old guard was
+	 * single-shot by accident (it compared an outstanding count to 1), and
+	 * widening it to "this peer has a browse" let a peer resend the answer as
+	 * often as it liked, each time re-asking for every directory and pushing
+	 * the silence deadline back.
+	 */
+	bool AwaitingDirectoryList(ClientKey client) const;
 	bool Has(std::uint32_t searchId) const;
 	State StateOf(std::uint32_t searchId) const;
 	std::uint16_t BarValue(std::uint32_t searchId) const;

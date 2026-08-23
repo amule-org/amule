@@ -946,7 +946,9 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 			logRemoteClient, "Remote Client: OP_ASKSHAREDDIRSANS from " + m_client->GetFullIP());
 
 		theStats::AddDownOverheadOther(size);
-		if (theApp->browsemanager->SearchIdFor(m_client) != 0) {
+		// Once per browse: a peer replaying its directory list would otherwise
+		// re-ask for every directory and keep the browse alive indefinitely.
+		if (theApp->browsemanager->AwaitingDirectoryList(m_client)) {
 			CMemFile data(buffer, size);
 			uint32 uDirs = data.ReadUInt32();
 			for (uint32 i = 0; i < uDirs; i++) {

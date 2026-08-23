@@ -405,3 +405,28 @@ TEST(BrowseStore, ReusingAnIdIsRefusedEvenForTheSamePeer)
 	s.Remove(kSidA);
 	ASSERT_TRUE(s.Start(ALICE, kSidA, 7, 3000).started);
 }
+
+TEST(BrowseStore, TheDirectoryListIsAcceptedExactlyOnce)
+{
+	// A peer replaying OP_ASKSHAREDDIRSANS would otherwise have every
+	// directory re-requested and the silence deadline pushed back on each
+	// resend, keeping its browse alive for as long as it kept sending.
+	Store s;
+	s.Start(ALICE, kSidA, 7, 1000);
+	ASSERT_TRUE(s.AwaitingDirectoryList(ALICE));
+
+	s.OnDirectoryList(ALICE, 3, 1000);
+	ASSERT_FALSE(s.AwaitingDirectoryList(ALICE));
+	// ...and it stays shut while the listings arrive.
+	s.OnListingReceived(ALICE, 1000);
+	ASSERT_FALSE(s.AwaitingDirectoryList(ALICE));
+}
+
+TEST(BrowseStore, ATerminalOrAbsentBrowseIsNotAwaitingAnything)
+{
+	Store s;
+	ASSERT_FALSE(s.AwaitingDirectoryList(ALICE));
+	s.Start(ALICE, kSidA, 7, 1000);
+	s.Fail(ALICE);
+	ASSERT_FALSE(s.AwaitingDirectoryList(ALICE));
+}

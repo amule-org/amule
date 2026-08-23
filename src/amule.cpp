@@ -228,6 +228,7 @@ CamuleApp::CamuleApp()
 	clientlist = NULL;
 	chatsessions = nullptr;
 	searchlist = NULL;
+	browsemanager = nullptr;
 	knownfiles = NULL;
 	canceledfiles = NULL;
 	serverlist = NULL;
