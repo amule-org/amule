@@ -166,10 +166,26 @@ _curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared/dir
 _assert_status 400 "DELETE (no path parameter) → 400"
 
 # --- 4. Add a real directory, then read it back. ---------------------
+#
+# `real` means real to amuled: it stats the path itself, so the mktemp directory
+# above exists for the daemon only when the daemon shares this filesystem.
+# Against a containerised or remote one everything below is rejected as
+# not_found, so probe once and say so instead of failing seven assertions.
 SCRATCH_ENC=$(jq -rn --arg p "$SCRATCH_DIR" '$p|@uri')
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
 	-d "{\"path\":\"$SCRATCH_DIR\",\"recursive\":true}" "$HOST/api/v0/shared/directories"
+SCRATCH_REJECTION=$(printf '%s' "$CURL_BODY" |
+	jq -r "[.rejected[] | select(.path==\"$SCRATCH_DIR\")][0].reason" 2>/dev/null)
+SHARE_FS_VISIBLE=1
+if [ "$SCRATCH_REJECTION" = "not_found" ]; then
+	SHARE_FS_VISIBLE=0
+	echo "  SKIP  the assertions that need amuled to see $SCRATCH_DIR"
+	echo "        (it stats paths itself; run this against a daemon on this host,"
+	echo "         or set the scratch path to one the daemon can reach)"
+fi
+
+if [ "$SHARE_FS_VISIBLE" -eq 1 ]; then
 _assert_status 200 "POST (add scratch dir, recursive) → 200"
 _assert_json_eq '.ok' 'true' "POST reports ok"
 _assert_json_eq '.rejected | length' '0' "POST rejected nothing"
@@ -194,8 +210,11 @@ _assert_json_eq \
 _assert_json_eq \
 	"[.directories[] | select(.path==\"$SCRATCH_DIR\")][0].recursive" 'false' \
 	"re-add updated the recursive flag"
+fi # SHARE_FS_VISIBLE -- section 4
 
 # --- 5. Server-side validation of a path the client cannot check. ----
+# The bogus-path half does not need a visible scratch dir: a path that exists
+# nowhere is rejected either way.
 BOGUS="$SCRATCH_DIR/definitely-not-here"
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
 	-d "{\"path\":\"$BOGUS\"}" "$HOST/api/v0/shared/directories"
@@ -204,14 +223,15 @@ _assert_json_eq \
 	"[.rejected[] | select(.path==\"$BOGUS\")][0].reason" 'not_found' \
 	"nonexistent path rejected as not_found"
 
-# The valid entry must survive a sibling's rejection.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared/directories"
-_assert_json_eq \
-	"[.directories[] | select(.path==\"$SCRATCH_DIR\")] | length" '1' \
-	"rejection did not discard the valid entry"
 _assert_json_eq \
 	"[.directories[] | select(.path==\"$BOGUS\")] | length" '0' \
 	"rejected path was not stored"
+if [ "$SHARE_FS_VISIBLE" -eq 1 ]; then
+# The valid entry must survive a sibling's rejection.
+_assert_json_eq \
+	"[.directories[] | select(.path==\"$SCRATCH_DIR\")] | length" '1' \
+	"rejection did not discard the valid entry"
 
 # --- 6. Remove it again. --------------------------------------------
 _curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -222,15 +242,19 @@ _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared/directories"
 _assert_json_eq \
 	"[.directories[] | select(.path==\"$SCRATCH_DIR\")] | length" '0' \
 	"deleted directory is gone"
+fi # SHARE_FS_VISIBLE -- sections 5b and 6
 
+# Never configured, whether or not the scratch dir ever was.
 _curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/shared/directories?path=$SCRATCH_ENC"
 _assert_status 404 "DELETE (path not configured) → 404"
 
 # --- Summary. -------------------------------------------------------
 echo
+SKIP_NOTE=""
+[ "$SHARE_FS_VISIBLE" -eq 0 ] && SKIP_NOTE=" (local-filesystem share assertions skipped)"
 if [ "$FAIL_COUNT" -eq 0 ]; then
-	echo "OK: $TEST_COUNT/$TEST_COUNT passed"
+	echo "OK: $TEST_COUNT/$TEST_COUNT passed$SKIP_NOTE"
 	exit 0
 fi
 echo "FAIL: $FAIL_COUNT/$TEST_COUNT failed"

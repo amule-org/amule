@@ -32,7 +32,22 @@ set -o pipefail
 HOST=${HOST:-localhost:4713}
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 CONFIG_DIR=${AMULEAPI_CONFIG_DIR:-/tmp/amuleapi-regtest}
-BIN=${AMULEAPI_BIN:-$(cd "$(dirname "$0")/../../.." && pwd)/build-macos/src/webapi/amuleapi}
+# Locate the amuleapi binary the sub-instances need. Deliberately NOT falling
+# back to PATH: an installed package would silently be tested in place of the
+# working tree, which is worse than not finding anything. Set AMULEAPI_BIN to
+# point somewhere else on purpose.
+_find_amuleapi_bin() {
+	local root=$1 c
+	for c in . build build-macos build-linux _build cmake-build-debug cmake-build-release; do
+		if [ -x "$root/$c/src/webapi/amuleapi" ]; then
+			echo "$root/$c/src/webapi/amuleapi"
+			return 0
+		fi
+	done
+	return 1
+}
+
+BIN=${AMULEAPI_BIN:-$(_find_amuleapi_bin "$(cd "$(dirname "$0")/../../.." && pwd)")}
 LOG=${AMULEAPI_LOG:-/tmp/amuleapi.log}
 
 FAIL_COUNT=0
@@ -57,7 +72,7 @@ if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 if [ ! -x "$BIN" ]; then
-	_die "amuleapi binary not found at $BIN. Set AMULEAPI_BIN to override."
+	_die "no usable amuleapi binary (BIN=[$BIN]). Set AMULEAPI_BIN to override."
 fi
 
 echo "amuleapi 25-cors smoke @ $HOST (bin=$BIN config=$CONFIG_DIR)"
