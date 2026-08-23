@@ -568,6 +568,13 @@ target_link_libraries (EventBusTest
 	mulecommon
 )
 
+# CEventBus's std::atomic<uint64_t> event counter needs libatomic on
+# 32-bit targets without a hardware 8-byte CAS (PPC32, ARMv5/v6,
+# MIPS32); same reason amuleapi links it. Empty on 64-bit.
+if (LIBATOMIC)
+	target_link_libraries (EventBusTest ${LIBATOMIC})
+endif()
+
 # amuleapi log-file tee: exercises CRotatingLog's append + two-file size cap.
 # LogTee.cpp is plain POSIX/std (no wx), so only muleunit + mulecommon are
 # needed for the harness.
@@ -611,6 +618,11 @@ target_link_libraries (EventDiffTest
 	webcommon
 	wxWidgets::BASE
 )
+
+# Pulls EventBus.cpp, so it needs libatomic on 32-bit targets too.
+if (LIBATOMIC)
+	target_link_libraries (EventDiffTest ${LIBATOMIC})
+endif()
 
 # amuleapi-specific: tests CAmuleApiConfig's file-IO + mode-bit
 # enforcement. AmuleApiConfig.cpp is statically linked into the test

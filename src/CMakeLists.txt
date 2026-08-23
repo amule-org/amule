@@ -599,6 +599,17 @@ if (BUILD_REMOTEGUI)
 		PRIVATE wxWidgets::NET
 	)
 
+	# KnownFile.cpp's std::atomic<uint64> EC generation counter (and
+	# Statistics.cpp's free-space pair) needs libatomic on 32-bit targets
+	# without a hardware 8-byte CAS (PPC32, ARMv5/v6, MIPS32). amulegui
+	# compiles COMMON_SOURCES but links muleappcommon / muleappgui, not
+	# muleappcore, so it does not inherit muleappcore's copy. LIBATOMIC is
+	# set at the top of the root CMakeLists.txt — empty on 64-bit, "atomic"
+	# on 32-bit.
+	if (LIBATOMIC)
+		target_link_libraries (amulegui PRIVATE ${LIBATOMIC})
+	endif()
+
 	if (HAVE_BFD)
 		target_link_libraries (amulegui
 			PRIVATE ${BFD_LIBRARY}
@@ -918,8 +929,8 @@ if (NEED_LIB_MULEAPPCORE)
 	# needs libatomic on 32-bit targets without a hardware 8-byte
 	# CAS (PPC32, ARMv5/v6, MIPS32). LIBATOMIC is set at the top
 	# of the root CMakeLists.txt — empty on 64-bit, "atomic" on
-	# 32-bit. Linked PUBLIC so amule / amuled / amulegui pick it
-	# up transitively.
+	# 32-bit. Linked PUBLIC so amule / amuled pick it up
+	# transitively.
 	if (LIBATOMIC)
 		target_link_libraries (muleappcore PUBLIC ${LIBATOMIC})
 	endif()

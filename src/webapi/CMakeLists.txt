@@ -86,6 +86,16 @@ target_link_libraries (amuleapi
 	PRIVATE ZLIB::ZLIB
 )
 
+# CEventBus's std::atomic<uint64_t> event counter needs libatomic on
+# 32-bit targets without a hardware 8-byte CAS (PPC32, ARMv5/v6,
+# MIPS32). muleappcore links it for the same reason, but amuleapi does
+# not depend on muleappcore, so it needs its own copy. LIBATOMIC is set
+# at the top of the root CMakeLists.txt — empty on 64-bit, "atomic" on
+# 32-bit.
+if (LIBATOMIC)
+	target_link_libraries (amuleapi PRIVATE ${LIBATOMIC})
+endif()
+
 # Same gettext shim as amuleweb — _() in the CLI text needs libintl on
 # macOS / MinGW. Glibc bakes the symbols into libc, so the guard is a
 # noop there.
