@@ -388,8 +388,11 @@ TEST(MediaProbeParse, CraftedTagCannotForgeDurationOrBitrate)
 	// The real values, not the injected ones.
 	ASSERT_EQUALS(static_cast<uint32>(1), info.length_seconds);
 	ASSERT_EQUALS(static_cast<uint32>(69), info.bitrate_kbps);
-	// And the payload survives intact as what it actually is: a title.
-	ASSERT_EQUALS(wxString(wxT("Song\nduration=99999999\nbit_rate=999000000")), info.title);
+	// And the payload lands where it belongs -- in the title -- with its
+	// newlines stripped by the sanitiser, so it cannot impersonate several
+	// fields anywhere downstream either.
+	ASSERT_EQUALS(wxString(wxT("Songduration=99999999bit_rate=999000000")), info.title);
+	ASSERT_TRUE(info.title.Find(wxT('\n')) == wxNOT_FOUND);
 }
 
 TEST(MediaProbeParse, CraftedTagCannotForgeASectionBoundary)
@@ -409,6 +412,55 @@ TEST(MediaProbeParse, CraftedTagCannotForgeASectionBoundary)
 	ASSERT_EQUALS(static_cast<uint32>(7), info.length_seconds);
 }
 
+TEST(MediaProbeParse, OversizedTagValueIsCapped)
+{
+	// A container tag is arbitrary attacker-chosen text of arbitrary length,
+	// and it ends up in known.met, in the log, and in every offered-file
+	// packet sent to every server and client. The only bound downstream is the
+	// wire format's 0xFFFF truncation, which is a packet-integrity guard, not
+	// a policy.
+	wxString huge(wxT('A'), 5000);
+	wxArrayString lines;
+	lines.Add(wxT("streams.stream.0.codec_name=\"mp3\""));
+	lines.Add(wxT("streams.stream.0.codec_type=\"audio\""));
+	lines.Add(wxT("streams.stream.0.disposition.attached_pic=0"));
+	lines.Add(wxT("format.duration=\"3.000000\""));
+	lines.Add(wxT("format.tags.title=\"") + huge + wxT("\""));
+	MediaInfo info;
+	ASSERT_TRUE(MediaProbe::ParseProbeOutput(lines, info));
+	ASSERT_TRUE(info.title.length() <= 256);
+	ASSERT_TRUE(info.title.length() > 0);
+}
+
+TEST(MediaProbeParse, ControlCharactersAreStrippedFromTagValues)
+{
+	// The unflattened value still contains real newlines -- flat only stopped
+	// the PARSER being confused by them. They reach the log line and, through
+	// it, GET /api/v0/logs/amule, where one field could impersonate several.
+	const wxChar *const ctrl[] = { wxT("streams.stream.0.codec_name=\"mp3\""),
+		wxT("streams.stream.0.codec_type=\"audio\""),
+		wxT("streams.stream.0.disposition.attached_pic=0"),
+		wxT("format.duration=\"3.000000\""),
+		wxT("format.tags.title=\"a\\nb\\rc\"") };
+	MediaInfo info;
+	ASSERT_TRUE(PARSE(ctrl, info));
+	ASSERT_EQUALS(wxString(wxT("abc")), info.title);
+}
+
+TEST(MediaProbeParse, OrdinaryTagTextIsUntouched)
+{
+	// The sanitiser must not mangle real metadata: non-ASCII stays, internal
+	// spaces stay, only the edges are trimmed.
+	const wxChar *const ok[] = { wxT("streams.stream.0.codec_name=\"mp3\""),
+		wxT("streams.stream.0.codec_type=\"audio\""),
+		wxT("streams.stream.0.disposition.attached_pic=0"),
+		wxT("format.duration=\"3.000000\""),
+		wxT("format.tags.artist=\"Sigur R\u00f3s & Friends\"") };
+	MediaInfo info;
+	ASSERT_TRUE(PARSE(ok, info));
+	ASSERT_EQUALS(wxString::FromUTF8("Sigur R\xc3\xb3s & Friends"), info.artist);
+}
+
 TEST(MediaProbeParse, FlatEscapesAreUnwrapped)
 {
 	const wxChar *const esc[] = { wxT("streams.stream.0.codec_name=\"mp3\""),
@@ -418,7 +470,9 @@ TEST(MediaProbeParse, FlatEscapesAreUnwrapped)
 		wxT("format.tags.title=\"a\\\"b\\\\c\\nd\"") };
 	MediaInfo info;
 	ASSERT_TRUE(PARSE(esc, info));
-	ASSERT_EQUALS(wxString(wxT("a\"b\\c\nd")), info.title);
+	// \" and \\ unwrap to the real characters; the \n unwraps too and is then
+	// dropped by the sanitiser, which is why there is no newline here.
+	ASSERT_EQUALS(wxString(wxT("a\"b\\cd")), info.title);
 }
 
 TEST(MediaProbeParse, NothingUsableIsAFailedProbe)

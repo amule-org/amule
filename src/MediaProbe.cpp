@@ -527,6 +527,46 @@ wxString UnflattenValue(const wxString &raw)
 	return out;
 }
 
+// Longest tag value we will keep. Generous for a real artist / album / title
+// -- ed2k search indexes nothing near this -- and the point is to bound what
+// a crafted file can make this node store and publish, not to fit any real
+// metadata. A container tag is arbitrary attacker-chosen text of arbitrary
+// length, and these values go into known.met, into the log line, and into
+// every offered-file packet sent to every server and client.
+const size_t kMaxTagChars = 256;
+
+// Clean one tag value before it is allowed any further: bound the length and
+// drop control characters.
+//
+// The length cap is the substantive half. Without it a multi-megabyte ID3 or
+// Vorbis title is read whole into a wxString, stored, and published -- the
+// only bound anywhere being the wire format's 0xFFFF truncation, which is a
+// packet-integrity guard rather than a policy, and still allows 64 KB of
+// chosen text per field per packet.
+//
+// Control characters are dropped because the value reaches a log line (and
+// through it GET /api/v0/logs/amule) and several list controls; a raw newline
+// there lets one field impersonate several. `flat` already stopped the parser
+// being confused by them -- this is about everything downstream of it.
+wxString SanitiseTagValue(const wxString &value)
+{
+	wxString out;
+	out.reserve(value.length() < kMaxTagChars ? value.length() : kMaxTagChars);
+	for (const wxUniChar c : value) {
+		if (out.length() >= kMaxTagChars) {
+			break;
+		}
+		// Keep printable characters and ordinary spaces; drop C0/C1 controls
+		// and DEL. Non-ASCII is kept as-is -- these are UTF-8 tags.
+		const wxUint32 v = c.GetValue();
+		if (v == 0x09 || v == 0x20 || (v > 0x1F && v != 0x7F && !(v >= 0x80 && v <= 0x9F))) {
+			out += c;
+		}
+	}
+	out.Trim(true).Trim(false);
+	return out;
+}
+
 // ffprobe prints the container's own key case -- Matroska yields
 // format.tags.ARTIST and format.tags.ALBUM beside a lower-case
 // format.tags.title, in one file -- while matching the requested names
@@ -534,12 +574,14 @@ wxString UnflattenValue(const wxString &raw)
 void AssignTag(const wxString &key, const wxString &value, wxString &artist, wxString &album, wxString &title)
 {
 	const wxString lower = key.Lower();
+	// Sanitised here rather than at each call site: this is the one door every
+	// container tag comes through.
 	if (lower == wxT("artist")) {
-		artist = value;
+		artist = SanitiseTagValue(value);
 	} else if (lower == wxT("album")) {
-		album = value;
+		album = SanitiseTagValue(value);
 	} else if (lower == wxT("title")) {
-		title = value;
+		title = SanitiseTagValue(value);
 	}
 }
 
@@ -660,15 +702,13 @@ bool ParseProbeOutput(const wxArrayString &lines, MediaInfo &out)
 	// file's title sends it to every peer over both ed2k and Kad. That is
 	// equally true of a multi-track .mka or a chained .ogg, which have no
 	// video stream at all and which a "not a video" test would let through.
-	// ...and only for the codecs that container genuinely uses. On a one-track
-	// file there is nothing to tell a track LABEL from a title -- a single
-	// .mka muxed with --track-name 0:Deutsch satisfies every structural test --
-	// so the fallback is scoped to Vorbis and Opus, the two whose comments
-	// live on the stream because the format section carries none. FLAC and
-	// everything else report at format level and never need it.
-	// The Ogg family, whose comments live on the logical stream. Listing them
-	// costs nothing for the others: the fallback only runs when the format
-	// section gave NOTHING, and every other container reports there.
+	// ...and only for the containers whose comments genuinely live on the
+	// stream. On a one-track file there is nothing structural to tell a track
+	// LABEL from a title -- a single .mka muxed with --track-name 0:Deutsch
+	// passes every other test here -- so the fallback is scoped to the Ogg
+	// family instead. Listing a codec costs the others nothing: the fallback
+	// only runs when the format section gave NOTHING, and everything else
+	// reports there.
 	const bool streamTagCodec = (audioCodec == wxT("vorbis") || audioCodec == wxT("opus") ||
 				     audioCodec == wxT("flac") || audioCodec == wxT("speex"));
 	if (audioStreamCount == 1 && videoCodec.IsEmpty() && streamTagCodec) {

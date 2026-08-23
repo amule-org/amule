@@ -1501,8 +1501,16 @@ void CSearch::PreparePacketForTags(CMemFile *bio, CKnownFile *file)
 				taglist.push_back(new CTagString(TAG_FILETYPE, strED2KFileType));
 			}
 
-			// additional meta data (Artist, Album, Codec, Length, ...)
-			// only send verified meta data to nodes
+			// Additional meta data (Artist, Album, Codec, Length, ...).
+			//
+			// This used to claim it sends only VERIFIED metadata. It does not,
+			// and did not before either: a download inherits its source's tags
+			// as a during-download preview, and GetMetaDataVer() answers "has
+			// any FT_MEDIA_* tag", not "was locally probed". So a partfile
+			// republishes what its search result advertised until its own
+			// completion probe corrects it. Distinguishing the two needs a
+			// locally-probed flag on the file, which is a design change rather
+			// than a comment fix -- left for its own issue.
 			if (file->GetMetaDataVer() > 0) {
 				// Looked up by id ALONE, not by (id, type). The old exact
 				// `GetTag(id, TAGTYPE_UINT32)` was safe only while everything
