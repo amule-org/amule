@@ -58,7 +58,7 @@ export function SharedDetail({ hash }) {
 
   if (!hash) return null;
   if (gone) return html`<div class="detail-panel"><${Placeholder} kind="info">${t("shared_detail_gone")}<//></div>`;
-  if (!detail) return html`<div class="detail-panel"><${Placeholder} kind="info">${t("shared_detail_loading")}<//></div>`;
+  if (!detail) return html`<div class="detail-panel"><${Placeholder} kind="loading">${t("shared_detail_loading")}<//></div>`;
 
   const s = detail;
   const media = s.media;

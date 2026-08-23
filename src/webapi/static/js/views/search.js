@@ -5,7 +5,7 @@
 
 import { api } from "../api.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
-import { Badge, Placeholder, Tabs, CommentsList, ratingLabel, toast } from "../components.js";
+import { Badge, Placeholder, listPlaceholder, Tabs, CommentsList, ratingLabel, toast } from "../components.js";
 import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker } from "../table.js";
 import { formatBytes, formatDuration, formatInt } from "../format.js";
 import { Icon } from "../icons.js";
@@ -359,7 +359,7 @@ function ResultsPane({ tab, categories }) {
                      sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort}
                      widths=${widths} onResize=${setWidth}
                      maxHeight="none"
-                     empty=${html`<${Placeholder} kind="info">${t("search_empty")}<//>`} />
+                     empty=${listPlaceholder(running, t("search_empty"))} />
     ${commentsFor ? html`<${ResultComments} result=${commentsFor} onClose=${() => setCommentsFor(null)} />` : null}`;
 }
 

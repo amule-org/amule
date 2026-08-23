@@ -6,7 +6,7 @@
 import { api, bulkFailures } from "../api.js";
 import { data } from "../events.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
-import { ProgressBar, Badge, Placeholder, Tabs, toast, confirmDialog, PRIORITIES, prioValue, prioLabel } from "../components.js";
+import { ProgressBar, Badge, listPlaceholder, Tabs, toast, confirmDialog, PRIORITIES, prioValue, prioLabel } from "../components.js";
 import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker } from "../table.js";
 import { formatBytes, formatFreeSpace, formatSpeed } from "../format.js";
 import { Icon } from "../icons.js";
@@ -19,7 +19,11 @@ const STATUS_FILTERS = ["all", "downloading", "waiting", "paused", "stopped", "c
   .map((v) => [v, t("downloads_status_" + v)]);
 
 export default function Downloads({ isGuest }) {
-  const downloads = useStore("downloads") || [];
+  // undefined until the first snapshot lands, [] once the queue is known
+  // empty; listPlaceholder tells the two apart.
+  const rawDownloads = useStore("downloads");
+  const downloads = rawDownloads || [];
+  const loading = rawDownloads === undefined;
   // Not bound as `status`: bulk() below already uses that name for a partfile state.
   const disk = (useStore("status") || {}).disk || {};
   const [categories, setCategories] = useState([]);
@@ -274,10 +278,11 @@ export default function Downloads({ isGuest }) {
                          sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort} onRowClick=${onRowClick}
                          widths=${widths} onResize=${setWidth}
                          maxHeight="none"
-                         empty=${html`<${Placeholder} kind="info">${t("downloads_empty")}<//>`} />
+                         empty=${listPlaceholder(loading, t("downloads_empty"))} />
+        ${loading ? null : html`
         <div class="totals-line">
           <span>${tn("downloads_files_count", list.length)}</span>${" · "}<span>${t("downloads_size")} ${formatBytes(size)}</span>${" · "}<span>${t("downloads_col_done")} ${formatBytes(done)}</span>${" · "}<span>${t("downloads_speed")} ${formatSpeed(speed)}</span>${freeSpace ? html`${" · "}<span>${t("common_free_space")} ${freeSpace}</span>` : ""}
-        </div>
+        </div>`}
       </div>
     </section>`}>
         <${DownloadDetail} hash=${detailHash} isGuest=${isGuest} categories=${categories}

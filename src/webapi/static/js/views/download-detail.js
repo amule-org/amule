@@ -40,7 +40,7 @@ export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDele
 
   if (!hash) return null;
   if (gone) return html`<div class="detail-panel"><${Placeholder} kind="info">${t("downloads_detail_gone")}<//></div>`;
-  if (!detail) return html`<div class="detail-panel"><${Placeholder} kind="info">${t("downloads_detail_loading")}<//></div>`;
+  if (!detail) return html`<div class="detail-panel"><${Placeholder} kind="loading">${t("downloads_detail_loading")}<//></div>`;
 
   const d = detail;
   const src = d.sources || {};

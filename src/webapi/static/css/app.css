@@ -393,7 +393,15 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
 .placeholder {
   padding: 40px 16px; text-align: center; color: var(--text-dim);
 }
-.placeholder-loading::after { content: ""; }
+/* kind="loading" grows a spinner; order:-1 puts it above the text. */
+.placeholder-loading { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.placeholder-loading::after {
+  content: ""; order: -1; width: 22px; height: 22px; border-radius: 50%;
+  border: 2px solid var(--border); border-top-color: var(--accent);
+  animation: spin 700ms linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .placeholder-loading::after { animation: none; } }
 .placeholder-error { color: var(--bad); }
 
 /* --- cards / forms --- */
@@ -874,7 +882,11 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
   .split-view .net-pane, .split-view .net-pane-body, .split-top > .card, .split-view > .card,
   .fill-view .pane-fill, .fill-view .pane-fill .net-pane-body { flex: 0 0 auto; }
   .splitter { display: none; }
-  .split-view .table-wrap.virtual, .fill-view .table-wrap.virtual { flex: none; min-height: 0; max-height: 60vh; }
+  /* !important beats the inline max-height VirtualTable writes ("none" for
+     these callers, since the flex rules above own the height on desktop).
+     Uncapped, the wrap grows to fit every row and the row window — computed
+     from clientHeight — renders the whole list. */
+  .split-view .table-wrap.virtual, .fill-view .table-wrap.virtual { flex: none; min-height: 0; max-height: 60vh !important; }
   /* Networks: no splitter on phones — restore the inter-pane gap, let the
      bottom pane flow, and give the log box back its own height cap. */
   .net-split { gap: 16px; }

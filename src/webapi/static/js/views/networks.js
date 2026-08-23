@@ -10,7 +10,7 @@ import { api } from "../api.js";
 import { data } from "../events.js";
 import { store } from "../store.js";
 import { html, useState, useEffect, useRef, useStore } from "../dom.js";
-import { Tabs, Placeholder, toast, confirmDialog, CountryCell } from "../components.js";
+import { Tabs, listPlaceholder, toast, confirmDialog, CountryCell } from "../components.js";
 import { VirtualTable, sortRows, useTablePrefs, ColumnPicker, ipNum } from "../table.js";
 import { Chart } from "../charts.js";
 import { formatInt, formatTimestamp } from "../format.js";
@@ -124,7 +124,11 @@ function NetworkConnectButton({ network }) {
 
 // --- ED2K tab: server list, live via the SSE "servers" channel ------------
 function ServersPanel({ isGuest }) {
-  const servers = useStore("servers") || [];
+  // undefined until the first snapshot lands, [] once the list is known
+  // empty; listPlaceholder tells the two apart.
+  const rawServers = useStore("servers");
+  const servers = rawServers || [];
+  const loading = rawServers === undefined;
   const status = useStore("status");
   const ed2k = status && status.ed2k;
   const { sortKey, sortDir, hidden, widths, toggleSort, toggleCol, setWidth, resetPrefs } =
@@ -276,7 +280,7 @@ function ServersPanel({ isGuest }) {
     <${VirtualTable} columns=${shown} rows=${list} rowKey=${(s) => s.ecid} rowClass=${rowClass}
                      sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort}
                      widths=${widths} onResize=${setWidth}
-                     empty=${html`<${Placeholder} kind="info">${t("networks_server_empty")}<//>`} />`;
+                     empty=${listPlaceholder(loading, t("networks_server_empty"))} />`;
 }
 
 // --- Kad tab: connect toggle, bootstrap, live nodes graph -----------------
