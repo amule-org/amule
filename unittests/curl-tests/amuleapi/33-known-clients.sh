@@ -244,8 +244,13 @@ fi
 # shared parser, which is well above MaxConnections -- asking for the whole
 # store instead would silently return only the first 500 records and look like
 # a maintenance failure.
+#
+# The empty and all-zero hashes are excluded, matching what
+# ReconcileKnownClientsLocked() skips: the all-zero one is the placeholder a peer
+# reports before sending its real hash, and folding those in would collapse
+# every unidentified peer into one fabricated record.
 LIVE_HASHES=$(curl -s --max-time 10 "${AUTH[@]}" "$HOST/api/v0/clients?limit=500" \
-	| jq -r '.clients[].user_hash // empty' | sort -u)
+	| jq -r '.clients[].user_hash // empty | select(. != "" and (test("^0+$") | not))' | sort -u)
 if [ -n "$LIVE_HASHES" ]; then
 	_curl "$HOST/api/v0/known_clients?sort=last_seen&order=desc&limit=500"
 	MISSING=0

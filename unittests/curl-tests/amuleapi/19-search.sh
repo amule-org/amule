@@ -45,7 +45,29 @@ GUEST_PASS=${GUEST_PASS:-guestpass}
 EC_HOST=${EC_HOST:-127.0.0.1}
 EC_PORT=${EC_PORT:-4712}
 EC_PASSWORD=${EC_PASSWORD:-amule}
-AMULEAPI_BIN=${AMULEAPI_BIN:-$(cd "$(dirname "$0")/../../.." && pwd)/build-macos/src/webapi/amuleapi}
+# Locate the amuleapi binary the sub-instances need. Deliberately NOT falling
+# back to PATH: an installed package would silently be tested in place of the
+# working tree, which is worse than not finding anything. Set AMULEAPI_BIN to
+# point somewhere else on purpose.
+_find_amuleapi_bin() {
+	local root=$1 c
+	for c in . build build-macos build-linux _build cmake-build-debug cmake-build-release; do
+		if [ -x "$root/$c/src/webapi/amuleapi" ]; then
+			echo "$root/$c/src/webapi/amuleapi"
+			return 0
+		fi
+	done
+	return 1
+}
+
+AMULEAPI_BIN=${AMULEAPI_BIN:-$(_find_amuleapi_bin "$(cd "$(dirname "$0")/../../.." && pwd)")}
+# Three sections below drive a SECOND amuleapi against the same amuled. Without
+# a binary to start one, skip them rather than fail on the daemon's behalf.
+if [ -x "${AMULEAPI_BIN:-/nonexistent}" ]; then
+	HAVE_SECOND_INSTANCE=1
+else
+	HAVE_SECOND_INSTANCE=0
+fi
 
 # A query likely to return results on any operator's daemon connected
 # to ed2k. "ubuntu" is a safe choice — well-seeded across the network.
@@ -244,6 +266,9 @@ if [ "$HAVE_GUEST" = "1" ]; then
 	_assert_status 200 "GET /search (guest) → 200 (GUEST-readable)"
 fi
 
+if [ "$HAVE_SECOND_INSTANCE" -eq 0 ]; then
+	echo "  SKIP  3.2 cross-session discovery (no amuleapi binary; set AMULEAPI_BIN)"
+else
 # --- 3.2 Cross-session discovery: a second amuleapi instance against the
 # same amuled sees $FIRST_SID even though it never called POST /search
 # itself (got3nks, PR #680 review point 6 — no amulecmd needed, two
@@ -312,6 +337,7 @@ fi
 kill "$SECOND_PID" >/dev/null 2>&1
 wait "$SECOND_PID" 2>/dev/null
 rm -rf "$SECOND_CONFIG_DIR" "$SECOND_LOG"
+fi # HAVE_SECOND_INSTANCE -- section 3.2
 
 # --- 3.5 Regression: progress shouldn't claim finished right after POST. -
 # amuled briefly reports raw=100 in the "queue-empty-at-start" window
@@ -322,7 +348,19 @@ rm -rf "$SECOND_CONFIG_DIR" "$SECOND_LOG"
 # this asserts the mask is in force.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$FIRST_SID/results"
 _assert_status 200 "GET /search/{id}/results immediately after POST → 200"
-_assert_json_eq '.progress.state' running 'progress.state is "running" after POST /search'
+# The window guarded here is `finished` with an EMPTY list, from the unmasked
+# raw=100. A search that genuinely completed first is also `finished`, so a flat
+# `running` comparison failed on a fast local hit or a warm server queue.
+EARLY_STATE=$(printf '%s' "$CURL_BODY" | jq -r '.progress.state' 2>/dev/null)
+EARLY_RESULTS=$(printf '%s' "$CURL_BODY" | jq -r '.results | length' 2>/dev/null)
+if [ "$EARLY_STATE" = "running" ] ||
+	{ [ "$EARLY_STATE" = "finished" ] && [ "${EARLY_RESULTS:-0}" -gt 0 ]; }; then
+	_pass "progress.state right after POST is not an empty \"finished\" ($EARLY_STATE, ${EARLY_RESULTS:-0} results)"
+else
+	_fail "early progress state" \
+		"got state=$EARLY_STATE with ${EARLY_RESULTS:-0} results" \
+		"amuled's queue-empty-at-start raw=100 is leaking through unmasked"
+fi
 _assert_json_eq '.progress.kind | type' string 'progress.kind is a string'
 
 # --- 4. Poll /search/{id}/results until we get hits (max ~10 s). --
@@ -863,6 +901,9 @@ if [ -n "$SID_CLOSE" ] && [ "$SID_CLOSE" != "null" ]; then
 	# And it is gone for everyone, not just the session that closed it --
 	# a second instance re-reads the same core state. This is what a
 	# second amulegui would have shown had it still been open.
+	if [ "$HAVE_SECOND_INSTANCE" -eq 0 ]; then
+		echo "  SKIP  close: second-instance cross-check (no amuleapi binary)"
+	else
 	SECOND2_CONFIG_DIR=$(mktemp -d -t amuleapi_19_close_second.XXXXXX)
 	SECOND2_LOG=$(mktemp -t amuleapi_19_close_second_log.XXXXXX)
 	"$AMULEAPI_BIN" --config-dir="$SECOND2_CONFIG_DIR" \
@@ -893,6 +934,7 @@ if [ -n "$SID_CLOSE" ] && [ "$SID_CLOSE" != "null" ]; then
 	kill "$SECOND2_PID" >/dev/null 2>&1
 	wait "$SECOND2_PID" 2>/dev/null
 	rm -rf "$SECOND2_CONFIG_DIR" "$SECOND2_LOG"
+	fi # HAVE_SECOND_INSTANCE -- close cross-check
 
 	# Its results are unaddressable afterwards, too -- the bucket is freed,
 	# not merely hidden from the listing.
@@ -903,6 +945,9 @@ else
 	_fail "close setup" "POST /search did not return a search_id ($CLOSE_RES)"
 fi
 
+if [ "$HAVE_SECOND_INSTANCE" -eq 0 ]; then
+	echo "  SKIP  12.1 foreign-search stop (no amuleapi binary; set AMULEAPI_BIN)"
+else
 # --- 12.1 A foreign search must be stoppable, not just visible. ----
 # Found by driving two clients against one daemon and using the other as
 # an oracle: GET /api/v0/search enumerates live core state, so it lists
@@ -967,6 +1012,7 @@ fi
 kill "$FOREIGN_PID" >/dev/null 2>&1
 wait "$FOREIGN_PID" 2>/dev/null
 rm -rf "$FOREIGN_CONFIG_DIR" "$FOREIGN_LOG"
+fi # HAVE_SECOND_INSTANCE -- section 12.1
 
 # --- 13. A failed search start must not wedge discovery. -----------
 # amulegui defers EC_OP_SEARCH_LIST-driven tab creation while it has a

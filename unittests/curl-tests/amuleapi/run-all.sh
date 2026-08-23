@@ -36,11 +36,27 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 # follows the script's own location so anyone who checks the repo out
 # elsewhere works without editing this file.
 ROOT="${AMULEAPI_ROOT:-$(cd "$SCRIPT_DIR/../../.." && pwd)}"
-BIN="${AMULEAPI_BIN:-$ROOT/build-macos/src/webapi/amuleapi}"
+# Locate the amuleapi binary the sub-instances need. Deliberately NOT falling
+# back to PATH: an installed package would silently be tested in place of the
+# working tree, which is worse than not finding anything. Set AMULEAPI_BIN to
+# point somewhere else on purpose.
+_find_amuleapi_bin() {
+	local root=$1 c
+	for c in . build build-macos build-linux _build cmake-build-debug cmake-build-release; do
+		if [ -x "$root/$c/src/webapi/amuleapi" ]; then
+			echo "$root/$c/src/webapi/amuleapi"
+			return 0
+		fi
+	done
+	return 1
+}
+
+BIN="${AMULEAPI_BIN:-$(_find_amuleapi_bin "$ROOT")}"
+echo "bin=$BIN"
 
 if [ ! -x "$BIN" ]; then
-	echo "FATAL: amuleapi binary not found at $BIN" >&2
-	echo "       set AMULEAPI_BIN env var to point at it." >&2
+	echo "FATAL: no usable amuleapi binary (BIN=[$BIN]); looked under $ROOT" >&2
+	echo "       set AMULEAPI_BIN to point at one." >&2
 	exit 2
 fi
 
