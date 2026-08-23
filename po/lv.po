@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-23 22:15+0200\n"
+"POT-Creation-Date: 2026-08-23 23:17+0200\n"
 "PO-Revision-Date: 2026-08-22 15:53+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -2157,6 +2157,10 @@ msgstr "Trūkst protokola versijas birka."
 
 #: src/ExternalConn.cpp
 msgid "No such chat session"
+msgstr ""
+
+#: src/ExternalConn.cpp
+msgid "No such shared file, or it cannot be probed"
 msgstr ""
 
 #: src/ExternalConn.cpp
@@ -7023,6 +7027,14 @@ msgstr ""
 #, c-format
 msgid "No shareable files found in directory: %s"
 msgstr ""
+
+#: src/SharedFileList.cpp
+#, c-format
+msgid "Re-extracting media metadata for %u shared file"
+msgid_plural "Re-extracting media metadata for %u shared files"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
 
 #: src/SharedFileList.cpp
 #, fuzzy, c-format

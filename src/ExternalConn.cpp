@@ -4279,6 +4279,28 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		response->AddTag(EncodeChatSession(*session, ChatCursorFrom(request)));
 		break;
 	}
+	case EC_OP_REFRESH_MEDIA_METADATA: {
+		// Re-extract media metadata: for one file when the request names a
+		// hash, otherwise for the whole share. Answers immediately with how
+		// many probes were queued -- the work happens on the media-probe
+		// worker, so a large library does not block this EC lane.
+		unsigned queued = 0;
+		if (const CECTag *hashTag = request->GetTagByName(EC_TAG_KNOWNFILE)) {
+			const CMD4Hash hash = hashTag->GetMD4Data();
+			if (!theApp->sharedfiles->RefreshMediaMetadata(hash)) {
+				response = new CECPacket(EC_OP_FAILED);
+				response->AddTag(CECTag(EC_TAG_STRING,
+					wxTRANSLATE("No such shared file, or it cannot be probed")));
+				break;
+			}
+			queued = 1;
+		} else {
+			queued = theApp->sharedfiles->RefreshAllMediaMetadata();
+		}
+		response = new CECPacket(EC_OP_NOOP);
+		response->AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_QUEUED, static_cast<uint32>(queued)));
+		break;
+	}
 	case EC_OP_GET_CHAT_SESSIONS: {
 		// The per-tick workhorse: the session list AND every message newer
 		// than the client's cursor in one roundtrip, so an idle connection

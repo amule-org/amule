@@ -934,6 +934,16 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		return HandleSharedReload(req);
 	}
 
+	// /shared/media/refresh — re-extract media metadata for the whole share.
+	// Literal path, so it has to be matched before the /shared/{hash} patterns
+	// below or "media" would be captured as a hash.
+	if (path == "/api/v0/shared/media/refresh") {
+		if (req.method != "POST") {
+			return ErrorResponse(405, "method_not_allowed", "only POST on /shared/media/refresh");
+		}
+		return HandleSharedMediaRefresh(req);
+	}
+
 	// /shared/directories — the configured share roots, as opposed to /shared
 	// which lists the files those roots produced. Literal path, so it has to be
 	// matched before the /shared/{hash} patterns below or "directories" would be
@@ -1175,9 +1185,19 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// single-segment `/shared/{hash}` pattern below purely for locality —
 	// the two can't collide, this one carries an extra path segment.
 	{
+		static const auto shared_media_refresh =
+			web_api_path::ParsePattern("/api/v0/shared/{hash}/media/refresh");
 		static const auto shared_verify = web_api_path::ParsePattern("/api/v0/shared/{hash}/verify");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
+		if (web_api_path::Match(shared_media_refresh, path_segs, caps)) {
+			if (req.method != "POST") {
+				return ErrorResponse(405,
+					"method_not_allowed",
+					"only POST on /shared/{hash}/media/refresh");
+			}
+			return HandleSharedMediaRefreshOne(req, caps["hash"]);
+		}
 		if (web_api_path::Match(shared_verify, path_segs, caps)) {
 			if (req.method != "POST") {
 				return ErrorResponse(
@@ -9158,6 +9178,111 @@ CHttpServer::Response CApiDispatcher::HandleSharedDirectoriesDelete(const CHttpS
 		return ErrorResponse(404, "not_found", "no such shared directory");
 	}
 	return ApplySharedDirs(m_app, dirs);
+}
+
+namespace
+{
+
+// Send EC_OP_REFRESH_MEDIA_METADATA and turn the reply into a response.
+// `hashTag` is null for the whole-share form.
+//
+// The op is deliberately not behind a capability tag, so a daemon that
+// predates it answers EC_OP_FAILED rather than being detectable in advance.
+// That is reported as 501, not 400: the request was well-formed and the
+// server simply does not implement it, and a client that gets 501 knows to
+// stop offering the action rather than to fix its input.
+CHttpServer::Response SendMediaRefresh(CamuleapiApp &app, const CECTag *hashTag, const char *what)
+{
+	auto ec_req = std::make_unique<CECPacket>(EC_OP_REFRESH_MEDIA_METADATA);
+	if (hashTag) {
+		ec_req->AddTag(*hashTag);
+	}
+	const CECPacket *ec_resp = app.SendRecvSerialized(ec_req.get());
+	if (!ec_resp) {
+		return ErrorResponse(503, "ec_unavailable", "EC roundtrip failed for media refresh");
+	}
+	std::string ec_err_msg;
+	if (IsEcFailedResponse(ec_resp, ec_err_msg)) {
+		const bool unknown_op = ec_err_msg.find("Invalid opcode") != std::string::npos;
+		delete ec_resp;
+		if (unknown_op) {
+			return ErrorResponse(501,
+				"ec_unsupported",
+				"the connected amuled does not implement media metadata refresh");
+		}
+		return ErrorResponse(400, "amuled_rejected", ec_err_msg.c_str());
+	}
+	std::uint32_t queued = 0;
+	if (const CECTag *t = ec_resp->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_QUEUED)) {
+		queued = static_cast<std::uint32_t>(t->GetInt());
+	}
+	delete ec_resp;
+
+	// 202, not 200: amuled queues the probes on its media-probe worker and
+	// answers immediately, so nothing has been re-extracted yet. `queued` is
+	// how many files were accepted for probing -- files the scheduler dropped
+	// (not audio/video, an incomplete download, missing on disk) are not
+	// counted. Progress is observable through the amule log and, as each
+	// probe lands, the shared_updated SSE events.
+	CHttpServer::Response r;
+	r.status = 202;
+	r.content_type = "application/json";
+	CJsonWriter w;
+	w.BeginObject();
+	w.Key("ok");
+	w.ValueBool(true);
+	w.Key("scope");
+	w.ValueString(wxString::FromAscii(what));
+	w.Key("queued");
+	w.ValueInt(static_cast<int64_t>(queued));
+	w.EndObject();
+	FinalizeJsonBody(w, r);
+	return r;
+}
+
+} // namespace
+
+CHttpServer::Response CApiDispatcher::HandleSharedMediaRefresh(const CHttpServer::Request &req)
+{
+	auto a = Authenticate(req);
+	if (!a.ok)
+		return a.rejection;
+	if (auto rej = RequireAdmin(a))
+		return *rej;
+	return SendMediaRefresh(m_app, nullptr, "all");
+}
+
+CHttpServer::Response CApiDispatcher::HandleSharedMediaRefreshOne(
+	const CHttpServer::Request &req, const std::string &key)
+{
+	auto a = Authenticate(req);
+	if (!a.ok)
+		return a.rejection;
+	if (auto rej = RequireAdmin(a))
+		return *rej;
+
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
+
+	webapi::FileSnapshot s;
+	if (!FindSharedByKey(m_state, key, s)) {
+		return ErrorResponse(404, "not_found", "no shared file with that hash");
+	}
+	// Same exclusion the daemon's Refresh mode applies: an in-progress
+	// download has no complete file to read. Rejected here so the caller is
+	// told why, rather than getting a 202 for a probe that was silently
+	// dropped.
+	if (s.IsIncompletePartfile()) {
+		return ErrorResponse(409,
+			"partfile_unsupported",
+			"media metadata cannot be extracted from an incomplete download");
+	}
+	CMD4Hash file_hash;
+	if (!HashFromHex(s.hash, file_hash)) {
+		return ErrorResponse(500, "internal_error", "failed to decode file hash");
+	}
+	const CECTag hashTag(EC_TAG_KNOWNFILE, file_hash);
+	return SendMediaRefresh(m_app, &hashTag, "file");
 }
 
 CHttpServer::Response CApiDispatcher::HandleSharedReload(const CHttpServer::Request &req)

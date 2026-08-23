@@ -182,6 +182,16 @@ EC_OP_GET_CHAT_SESSIONS             0x63
 EC_OP_CHAT_SESSIONS                 0x64
 EC_OP_CHAT_SEND                     0x65
 EC_OP_CHAT_CLOSE_SESSION            0x66
+
+## Re-extract media metadata for the whole share, or for one file by hash
+## (EC_TAG_KNOWNFILE with the hash). Reply carries
+## EC_TAG_KNOWNFILE_MEDIA_QUEUED = how many probes were queued.
+##
+## Deliberately NOT behind a capability tag. A server that does not know it
+## answers EC_OP_FAILED, which the client reports as "not supported" -- the
+## op is user-triggered once, not polled, so an old core sees a single
+## rejected request rather than a repeating one.
+EC_OP_REFRESH_MEDIA_METADATA        0x67
 [/Section]
 
 [Section Content]
@@ -337,6 +347,7 @@ EC_TAG_KNOWNFILE                          0x0400
 	EC_TAG_KNOWNFILE_LAST_UPLOAD              0x0419
 	EC_TAG_KNOWNFILE_SHARED_SINCE             0x041A
 	EC_TAG_KNOWNFILE_HASHED_PART_COUNT        0x041B
+	EC_TAG_KNOWNFILE_MEDIA_QUEUED             0x041C
 
 EC_TAG_SERVER                             0x0500
 	EC_TAG_SERVER_NAME                        0x0501

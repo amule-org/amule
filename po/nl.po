@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-23 22:15+0200\n"
+"POT-Creation-Date: 2026-08-23 23:17+0200\n"
 "PO-Revision-Date: 2026-08-22 15:38+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
@@ -2187,6 +2187,10 @@ msgstr "Nieuwe chatsessie begonnen"
 #, fuzzy
 msgid "No such chat session"
 msgstr "Sluit deze chat-sessie."
+
+#: src/ExternalConn.cpp
+msgid "No such shared file, or it cannot be probed"
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Empty chat message"
@@ -7117,6 +7121,13 @@ msgstr "Gedeelde map niet gevonden, wordt overgeslagen: %s"
 #, c-format
 msgid "No shareable files found in directory: %s"
 msgstr "Geen deelbare bestanden gevonden in map: %s"
+
+#: src/SharedFileList.cpp
+#, c-format
+msgid "Re-extracting media metadata for %u shared file"
+msgid_plural "Re-extracting media metadata for %u shared files"
+msgstr[0] ""
+msgstr[1] ""
 
 #: src/SharedFileList.cpp
 #, fuzzy, c-format

@@ -751,7 +751,7 @@ bool CSharedFileList::AddFile(CKnownFile *pFile)
 	return false;
 }
 
-void CSharedFileList::MaybeScheduleMediaProbe(CKnownFile *pFile, bool bForceReprobe)
+void CSharedFileList::MaybeScheduleMediaProbe(CKnownFile *pFile, MediaProbeMode mode)
 {
 	// Called from AddFile under list_mut so we already know pFile is
 	// live and stable for the duration of this call.
@@ -789,7 +789,11 @@ void CSharedFileList::MaybeScheduleMediaProbe(CKnownFile *pFile, bool bForceRepr
 	// metadata is derived exactly once -- on completion, which re-enters here
 	// with bForceReprobe set. Skipping unconditionally (not just when metadata
 	// happened to be inherited from the search result) keeps that guarantee.
-	if (!bForceReprobe && pFile->IsPartFile()) {
+	// Only Completion lifts this, and only because a just-completed download
+	// is still a CPartFile object while its bytes are already all on disk. A
+	// Refresh walk MUST NOT inherit that licence: an in-progress download is
+	// in the shared list too, and there is nothing complete to read for it.
+	if (mode != MediaProbeMode::Completion && pFile->IsPartFile()) {
 		AddDebugLogLineN(logMediaProbe,
 			CFormat(wxT("MediaProbe: skip (incomplete download) %s")) % pFile->GetFileName());
 		return;
@@ -798,7 +802,7 @@ void CSharedFileList::MaybeScheduleMediaProbe(CKnownFile *pFile, bool bForceRepr
 	// "this file has been probed", shared with the publishers and the UI. The
 	// length-only form here never considered a codec-only file probed, so
 	// every startup re-ran ffprobe on all of them.
-	if (!bForceReprobe && pFile->GetMetaDataVer() > 0) {
+	if (mode == MediaProbeMode::Normal && pFile->GetMetaDataVer() > 0) {
 		AddDebugLogLineN(logMediaProbe,
 			CFormat(wxT("MediaProbe: skip (already has metadata) %s")) % pFile->GetFileName());
 		return;
@@ -823,6 +827,47 @@ void CSharedFileList::MaybeScheduleMediaProbe(CKnownFile *pFile, bool bForceRepr
 			CFormat(wxT("MediaProbe: dropped %s - probe thread not ready")) %
 				pFile->GetFileName());
 	}
+}
+
+unsigned CSharedFileList::RefreshAllMediaMetadata()
+{
+	// Snapshot under the lock, schedule outside it. MaybeScheduleMediaProbe
+	// only enqueues, but it also stats the file, and holding list_mut across a
+	// whole library's worth of stat() calls would block every reader --
+	// including the EC handlers this is invoked from.
+	std::vector<CKnownFile *> files;
+	{
+		wxMutexLocker lock(list_mut);
+		files.reserve(m_Files_map.size());
+		for (const auto &entry : m_Files_map) {
+			files.push_back(entry.second);
+		}
+	}
+
+	unsigned queued = 0;
+	for (CKnownFile *file : files) {
+		const uint64 before = theApp->mediaProbeThread ? theApp->mediaProbeThread->PendingCount() : 0;
+		MaybeScheduleMediaProbe(file, MediaProbeMode::Refresh);
+		if (theApp->mediaProbeThread && theApp->mediaProbeThread->PendingCount() != before) {
+			++queued;
+		}
+	}
+	AddLogLineN(CFormat(wxPLURAL("Re-extracting media metadata for %u shared file",
+			    "Re-extracting media metadata for %u shared files",
+			    queued)) %
+		    queued);
+	return queued;
+}
+
+bool CSharedFileList::RefreshMediaMetadata(const CMD4Hash &hash)
+{
+	CKnownFile *file = GetFileByID(hash);
+	if (!file) {
+		return false;
+	}
+	const uint64 before = theApp->mediaProbeThread ? theApp->mediaProbeThread->PendingCount() : 0;
+	MaybeScheduleMediaProbe(file, MediaProbeMode::Refresh);
+	return theApp->mediaProbeThread && theApp->mediaProbeThread->PendingCount() != before;
 }
 
 void CSharedFileList::SafeAddKFile(CKnownFile *toadd, bool bOnlyAdd)
@@ -885,10 +930,11 @@ void CSharedFileList::SafeAddKFile(CKnownFile *toadd, bool bOnlyAdd)
 			// tags on the next startup rescan. Now that it is complete on disk
 			// at its Incoming path, schedule the probe here. QueueProbe() only
 			// enqueues (it never runs ffprobe inline), so this cannot stall the
-			// completion. Force it (bypassing the already-has-FT_MEDIA gate) so
+			// completion. Completion mode bypasses BOTH gates -- the file is
+			// still a CPartFile object at this point -- so
 			// the authoritative local probe overwrites any metadata inherited
 			// from the search result, which is only a during-download preview.
-			MaybeScheduleMediaProbe(toadd, /*bForceReprobe=*/true);
+			MaybeScheduleMediaProbe(toadd, MediaProbeMode::Completion);
 		}
 	}
 

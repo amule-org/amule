@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-23 22:15+0200\n"
+"POT-Creation-Date: 2026-08-23 23:17+0200\n"
 "PO-Revision-Date: 2026-08-22 15:48+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -2183,6 +2183,10 @@ msgstr "Yeni sohbet oturumu başladı"
 #, fuzzy
 msgid "No such chat session"
 msgstr "Bu sohbet oturumunu kapatır."
+
+#: src/ExternalConn.cpp
+msgid "No such shared file, or it cannot be probed"
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Empty chat message"
@@ -7112,6 +7116,13 @@ msgstr "Paylaşılan dizin bulunamadı, atlanıyor: %s"
 #, c-format
 msgid "No shareable files found in directory: %s"
 msgstr "Dizinde paylaşılabilir dosya bulunamadı: %s"
+
+#: src/SharedFileList.cpp
+#, c-format
+msgid "Re-extracting media metadata for %u shared file"
+msgid_plural "Re-extracting media metadata for %u shared files"
+msgstr[0] ""
+msgstr[1] ""
 
 #: src/SharedFileList.cpp
 #, fuzzy, c-format

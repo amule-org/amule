@@ -50,6 +50,8 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 - [`GET /api/v0/shared/{hash}`](#get-apiv0sharedhash) — detail view; every list field plus shared-detail fields
 - [`GET /api/v0/shared/{hash}/clients`](#get-apiv0sharedhashclients) — peers of one shared file
 - [`POST /api/v0/shared/reload`](#post-apiv0sharedreload) — re-walk shared directories
+- [`POST /api/v0/shared/media/refresh`](#post-apiv0sharedmediarefresh) — re-extract media metadata for the whole share
+- [`POST /api/v0/shared/{hash}/media/refresh`](#post-apiv0sharedhashmediarefresh) — re-extract it for one file
 - [`GET /api/v0/shared/directories`](#get-apiv0shareddirectories) — the configured share roots
 - [`PUT /api/v0/shared/directories`](#put-apiv0shareddirectories) — replace the configured share roots
 - [`POST /api/v0/shared/directories`](#post-apiv0shareddirectories) — add one share root
@@ -1396,6 +1398,45 @@ Repeated calls coalesce: requesting a reload while one is already pending, or wh
 The resulting changes also arrive as `shared_added` / `shared_removed` events on the `shared` SSE channel, which is the better signal if you only care about the delta.
 
 **Errors:** `503 ec_unavailable`.
+
+#### `POST /api/v0/shared/media/refresh`
+
+**Auth:** `ADMIN`
+
+Re-extract media metadata for every shared file, whether or not it already has some.
+
+```sh
+curl -s -X POST -H "Authorization: Bearer $TOKEN" \
+  "http://$HOST/api/v0/shared/media/refresh"
+```
+
+```json
+{ "ok": true, "scope": "all", "queued": 812 }
+```
+
+Returns `202 Accepted`. `queued` is how many files were **accepted for probing**, not how many produced metadata — files the scheduler drops (not audio/video by extension, an incomplete download, missing on disk) are not counted, and nothing has been extracted yet when the response returns.
+
+This is the only way to correct metadata that is *wrong* rather than missing. The normal scheduler skips any file that already carries a media tag, so a value stored by an older build — a cover-art codec, or a preview inherited from a search result before the local probe could overwrite it — is otherwise permanent short of deleting `known.met`, which would also discard the ed2k part hashes and every per-file statistic.
+
+Each probe **replaces** every media field, including *clearing* one the new probe no longer finds, so a refresh corrects a value in both directions. Nothing else about a file is touched: statistics, comment, rating, upload priority, AICH hash set and share state all survive, the file is not re-hashed, its ed2k hash does not change, and it never leaves the share.
+
+The work runs on amuled's media-probe worker, one file at a time, so downloads and uploads are unaffected and the daemon stays responsive. Shutting down mid-refresh is clean — files not yet reached keep their previous values. Progress is observable through [`GET /api/v0/logs/amule`](#get-apiv0logsamule) and, as each probe lands, `shared_updated` SSE events.
+
+Cost is roughly 13 ms per file — a probe reads the container header, not the file — so a 10 000-file library is on the order of two minutes of background work.
+
+**Errors:** `501 ec_unsupported` (the connected amuled predates this operation), `503 ec_unavailable`.
+
+#### `POST /api/v0/shared/{hash}/media/refresh`
+
+**Auth:** `ADMIN`
+
+The same operation for a single file, which is the quickest way to check a fix on one file rather than a whole library.
+
+```json
+{ "ok": true, "scope": "file", "queued": 1 }
+```
+
+**Errors:** `404 not_found` (no shared file with that hash), `409 partfile_unsupported` (an incomplete download has no complete file to read), `501 ec_unsupported`, `503 ec_unavailable`.
 
 #### `GET /api/v0/shared/directories`
 

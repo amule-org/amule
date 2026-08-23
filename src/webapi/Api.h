@@ -220,6 +220,13 @@ private:
 	// roots and re-publishes whatever's there. Parameterless EC op
 	// (EC_OP_SHAREDFILES_RELOAD).
 	CHttpServer::Response HandleSharedReload(const CHttpServer::Request &);
+
+	// Re-extract media metadata: the whole share, or one file by hash. Both
+	// answer 202 -- the probes are queued on amuled's media-probe worker and
+	// the response says how many, never what they found.
+	CHttpServer::Response HandleSharedMediaRefresh(const CHttpServer::Request &);
+	CHttpServer::Response HandleSharedMediaRefreshOne(
+		const CHttpServer::Request &, const std::string &hash);
 	CHttpServer::Response HandleSharedDirectories(const CHttpServer::Request &);
 	CHttpServer::Response HandleSharedDirectoriesPut(const CHttpServer::Request &);
 	CHttpServer::Response HandleSharedDirectoriesAdd(const CHttpServer::Request &);
