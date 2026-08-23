@@ -258,6 +258,63 @@ CEC_PartFile_Tag::CEC_PartFile_Tag(const CPartFile *file, EC_DETAIL_LEVEL detail
 	AddTag(a4afTag, valuemap);
 }
 
+namespace
+{
+
+// Emit the FT_MEDIA_* tags a file actually carries, one by one.
+//
+// NOT gated on GetMetaDataVer(): that predicate answers "has this file been
+// probed", and using it to mean "all six fields are present" sends
+// MEDIA_LENGTH=0 and MEDIA_BITRATE=0 for a file that probed to a codec and no
+// duration -- a raw elementary stream, a truncated capture. Downstream that
+// renders as Length 0:00 / Bitrate 0 kbps and reports has_media alongside
+// length_s: 0, where the honest answer is N/A. A displayed zero is a claim;
+// absence is not.
+//
+// Shared by the shared-file and search-result tag builders, which had
+// diverged: the search one already emitted per field, the shared one gated
+// all six on the aggregate.
+void AddMediaTagsPresent(CECTag &target, const CAbstractFile *file, CValueMap *valuemap)
+{
+	// Present -> send the value. Absent, but we sent one before -> send an
+	// explicit zero / empty so the remote drops it. Absent and never sent ->
+	// send nothing, so a field that never had a value is reported as absent
+	// rather than as a zero.
+	//
+	// The middle case is not optional. A tag that is simply not offered reads
+	// as UNCHANGED to a CValueMap peer, and both receivers are add-only, so
+	// omitting a CLEARED field would leave amulegui and the web UI serving the
+	// stale value -- including an unverified one inherited from a search
+	// result, which is exactly what the completion re-probe exists to correct.
+	const auto emitInt = [&](ec_tagname_t ecId, uint32 value) {
+		if (value) {
+			target.AddTag(CECTag(ecId, value), valuemap);
+		} else if (valuemap && valuemap->HasTag(ecId)) {
+			target.AddTag(CECTag(ecId, static_cast<uint32>(0)), valuemap);
+		}
+	};
+	emitInt(EC_TAG_KNOWNFILE_MEDIA_LENGTH, file->GetIntTagValue(FT_MEDIA_LENGTH));
+	emitInt(EC_TAG_KNOWNFILE_MEDIA_BITRATE, file->GetIntTagValue(FT_MEDIA_BITRATE));
+	static const struct
+	{
+		uint8 ftId;
+		ec_tagname_t ecId;
+	} kStrTags[] = { { FT_MEDIA_CODEC, EC_TAG_KNOWNFILE_MEDIA_CODEC },
+		{ FT_MEDIA_ARTIST, EC_TAG_KNOWNFILE_MEDIA_ARTIST },
+		{ FT_MEDIA_ALBUM, EC_TAG_KNOWNFILE_MEDIA_ALBUM },
+		{ FT_MEDIA_TITLE, EC_TAG_KNOWNFILE_MEDIA_TITLE } };
+	for (const auto &entry : kStrTags) {
+		const wxString &value = file->GetStrTagValue(entry.ftId);
+		if (!value.IsEmpty()) {
+			target.AddTag(CECTag(entry.ecId, value), valuemap);
+		} else if (valuemap && valuemap->HasTag(entry.ecId)) {
+			target.AddTag(CECTag(entry.ecId, wxString()), valuemap);
+		}
+	}
+}
+
+} // namespace
+
 CEC_SharedFile_Tag::CEC_SharedFile_Tag(
 	const CKnownFile *file, EC_DETAIL_LEVEL detail_level, CValueMap *valuemap, ec_tagname_t name)
 : CECTag(name, file->ECID())
@@ -351,18 +408,11 @@ CEC_SharedFile_Tag::CEC_SharedFile_Tag(
 	AddTag(EC_TAG_KNOWNFILE_COMMENT, file->GetFileComment(), valuemap);
 	AddTag(EC_TAG_KNOWNFILE_RATING, file->GetFileRating(), valuemap);
 
-	// Audio/video media metadata (issue #418). Only emitted once the file
-	// has been probed (GetMetaDataVer() != 0), so non-media files add no
-	// tags. Emitted by this shared base ctor, so both /shared and
-	// /downloads (partfiles) carry it with no per-role code.
-	if (file->GetMetaDataVer() != 0) {
-		AddTag(EC_TAG_KNOWNFILE_MEDIA_LENGTH, file->GetIntTagValue(FT_MEDIA_LENGTH), valuemap);
-		AddTag(EC_TAG_KNOWNFILE_MEDIA_BITRATE, file->GetIntTagValue(FT_MEDIA_BITRATE), valuemap);
-		AddTag(EC_TAG_KNOWNFILE_MEDIA_CODEC, file->GetStrTagValue(FT_MEDIA_CODEC), valuemap);
-		AddTag(EC_TAG_KNOWNFILE_MEDIA_ARTIST, file->GetStrTagValue(FT_MEDIA_ARTIST), valuemap);
-		AddTag(EC_TAG_KNOWNFILE_MEDIA_ALBUM, file->GetStrTagValue(FT_MEDIA_ALBUM), valuemap);
-		AddTag(EC_TAG_KNOWNFILE_MEDIA_TITLE, file->GetStrTagValue(FT_MEDIA_TITLE), valuemap);
-	}
+	// Audio/video media metadata (issue #418). Emitted per FIELD -- see
+	// AddMediaTagsPresent for why the aggregate GetMetaDataVer() gate it used
+	// to sit behind was wrong. Emitted by this shared base ctor, so both
+	// /shared and /downloads (partfiles) carry it with no per-role code.
+	AddMediaTagsPresent(*this, file, valuemap);
 }
 
 CEC_UpDownClient_Tag::CEC_UpDownClient_Tag(
@@ -563,28 +613,7 @@ CEC_SearchFile_Tag::CEC_SearchFile_Tag(
 	// the file is known/probed locally; emit each EC_TAG_KNOWNFILE_MEDIA_*
 	// (defined by issue #418) only when its value is present, so results
 	// without media cost nothing.
-	if (uint32 len = file->GetIntTagValue(FT_MEDIA_LENGTH)) {
-		AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_LENGTH, len), valuemap);
-	}
-	if (uint32 br = file->GetIntTagValue(FT_MEDIA_BITRATE)) {
-		AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_BITRATE, br), valuemap);
-	}
-	const wxString &codec = file->GetStrTagValue(FT_MEDIA_CODEC);
-	if (!codec.IsEmpty()) {
-		AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_CODEC, codec), valuemap);
-	}
-	const wxString &artist = file->GetStrTagValue(FT_MEDIA_ARTIST);
-	if (!artist.IsEmpty()) {
-		AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_ARTIST, artist), valuemap);
-	}
-	const wxString &album = file->GetStrTagValue(FT_MEDIA_ALBUM);
-	if (!album.IsEmpty()) {
-		AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_ALBUM, album), valuemap);
-	}
-	const wxString &title = file->GetStrTagValue(FT_MEDIA_TITLE);
-	if (!title.IsEmpty()) {
-		AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_TITLE, title), valuemap);
-	}
+	AddMediaTagsPresent(*this, file, valuemap);
 }
 
 //

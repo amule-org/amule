@@ -110,6 +110,119 @@ CPartFile::CPartFile()
 	Init();
 }
 
+namespace
+{
+
+// Parse the ed2k string-named "length" tag -- "h:mm:ss" or "m:ss" -- into
+// seconds. FT_MEDIA_LENGTH is a uint32 everywhere else in the tree, so the
+// string form has to be converted rather than stored raw; storing it raw is
+// what made these tags unreadable in the first place.
+bool ParseEd2kLengthSeconds(const wxString &text, uint32 &out)
+{
+	// Split into at most three fields, leading unit first, so "h:mm:ss" and
+	// "m:ss" both fall out of the same loop. A trailing colon leaves an empty
+	// final token and is rejected rather than read as a zero.
+	wxArrayString fields;
+	wxString rest = text;
+	for (;;) {
+		wxString token = rest.BeforeFirst(wxT(':'));
+		const bool more = rest.Find(wxT(':')) != wxNOT_FOUND;
+		token.Trim(true).Trim(false);
+		fields.Add(token);
+		if (!more) {
+			break;
+		}
+		rest = rest.AfterFirst(wxT(':'));
+		if (fields.GetCount() > 3) {
+			return false;
+		}
+	}
+	if (fields.IsEmpty() || fields.GetCount() > 3) {
+		return false;
+	}
+
+	uint32 total = 0;
+	for (size_t i = 0; i < fields.GetCount(); ++i) {
+		unsigned long part = 0;
+		if (fields[i].IsEmpty() || !fields[i].ToULong(&part)) {
+			return false;
+		}
+		// Only the leading field is an open-ended count; everything after it
+		// is a minute or second and cannot exceed 59. Capped so a malformed
+		// "1:75:00" is dropped rather than silently re-interpreted, and so
+		// the accumulation below cannot overflow: the largest accepted value
+		// is 59999:59:59, well inside uint32.
+		const bool leading = (i == 0);
+		if (!leading && part > 59) {
+			return false;
+		}
+		if (leading && part > 59999) {
+			return false;
+		}
+		total = total * 60 + static_cast<uint32>(part);
+	}
+	out = total;
+	return true;
+}
+
+// Store one inherited media tag under its canonical NUMERIC id.
+//
+// Both encodings a hit can carry end up here: the ed2k string-named form
+// ("Artist", "bitrate", "length" as h:mm:ss) and the numeric-id form. That
+// matters because every media consumer in the tree looks tags up by numeric
+// id -- CAbstractFile::GetStrTagValue matches on GetNameID() -- so a tag
+// pushed under its string name was written to the part file, carried for the
+// lifetime of the download, and read by nobody.
+//
+// Integer width is deliberately not checked. The ed2k publisher forces 32
+// bits, but Kad picks the narrowest type that fits the value, so a
+// three-minute song arrives as a uint8 and an episode as a uint16. An exact
+// `type == TAGTYPE_UINT32` test therefore rejected essentially every real
+// length and bitrate that came from Kad.
+//
+// Every path out of here stores a CTagInt32 or a CTagString -- never the
+// source tag verbatim. That normalisation is what makes the id-only lookups
+// downstream safe, in particular CSearch::PreparePacketForTags, whose Kad
+// republish reads `pTag->GetInt()` with no IsInt() guard of its own. Keep it:
+// storing a caller's tag unchanged here would let a string-typed
+// FT_MEDIA_LENGTH reach that code and go out to every peer as a garbage
+// number.
+//
+// Returns true when a tag was stored.
+bool InheritMediaTag(CAbstractFile &file, uint8 id, const CTag &tag)
+{
+	if (id == FT_MEDIA_LENGTH) {
+		uint32 seconds = 0;
+		if (tag.IsInt()) {
+			seconds = tag.GetInt();
+		} else if (!tag.IsStr() || !ParseEd2kLengthSeconds(tag.GetStr(), seconds)) {
+			// Unparseable is dropped rather than stored raw; this also
+			// covers the "0: 0" / "0:0" placeholders some clients send.
+			return false;
+		}
+		if (!seconds) {
+			return false;
+		}
+		file.AddTagUnique(CTagInt32(FT_MEDIA_LENGTH, seconds));
+		return true;
+	}
+	if (id == FT_MEDIA_BITRATE) {
+		if (!tag.IsInt() || !tag.GetInt()) {
+			return false;
+		}
+		file.AddTagUnique(CTagInt32(FT_MEDIA_BITRATE, tag.GetInt()));
+		return true;
+	}
+	// The four string-valued fields: codec, artist, album, title.
+	if (!tag.IsStr() || tag.GetStr().IsEmpty()) {
+		return false;
+	}
+	file.AddTagUnique(CTagString(id, tag.GetStr()));
+	return true;
+}
+
+} // namespace
+
 CPartFile::CPartFile(CSearchFile *searchresult)
 {
 	Init();
@@ -123,38 +236,47 @@ CPartFile::CPartFile(CSearchFile *searchresult)
 
 		bool bTagAdded = false;
 		if (pTag.GetNameID() == 0 && !pTag.GetName().IsEmpty() && (pTag.IsStr() || pTag.IsInt())) {
+			// The ed2k string-named encoding. These used to be pushed under
+			// their string names, which no media consumer ever looks up --
+			// stored, written to disk, carried for the whole download, read
+			// by nobody. Map each to its canonical numeric id instead.
 			static const struct
 			{
 				wxString pszName;
-				uint8 nType;
-			} _aMetaTags[] = { { FT_ED2K_MEDIA_ARTIST, 2 },
-				{ FT_ED2K_MEDIA_ALBUM, 2 },
-				{ FT_ED2K_MEDIA_TITLE, 2 },
-				{ FT_ED2K_MEDIA_LENGTH, 2 },
-				{ FT_ED2K_MEDIA_BITRATE, 3 },
-				{ FT_ED2K_MEDIA_CODEC, 2 } };
+				uint8 nID;
+			} _aMetaTags[] = { { FT_ED2K_MEDIA_ARTIST, FT_MEDIA_ARTIST },
+				{ FT_ED2K_MEDIA_ALBUM, FT_MEDIA_ALBUM },
+				{ FT_ED2K_MEDIA_TITLE, FT_MEDIA_TITLE },
+				{ FT_ED2K_MEDIA_LENGTH, FT_MEDIA_LENGTH },
+				{ FT_ED2K_MEDIA_BITRATE, FT_MEDIA_BITRATE },
+				{ FT_ED2K_MEDIA_CODEC, FT_MEDIA_CODEC } };
 
-			for (unsigned int t = 0; t < itemsof(_aMetaTags); ++t) {
-				if (pTag.GetType() == _aMetaTags[t].nType &&
-					(pTag.GetName() == _aMetaTags[t].pszName)) {
-					// skip string tags with empty string values
+			for (const auto &meta : _aMetaTags) {
+				if (pTag.GetName() != meta.pszName) {
+					continue;
+				}
+				if (InheritMediaTag(*this, meta.nID, pTag)) {
+					AddDebugLogLineN(logPartFile,
+						"CPartFile::CPartFile(CSearchFile*): added tag " +
+							pTag.GetFullInfo());
+					bTagAdded = true;
+				}
+				break;
+			}
+		} else if (pTag.GetNameID() != 0 && pTag.GetName().IsEmpty() &&
+			   (pTag.IsStr() || pTag.IsInt())) {
+			// FT_FILETYPE / FT_FILEFORMAT keep their exact-type match: they
+			// are not media tags and nothing compresses them.
+			static const struct
+			{
+				uint8 nID;
+				uint8 nType;
+			} _aPlainTags[] = { { FT_FILETYPE, 2 }, { FT_FILEFORMAT, 2 } };
+			for (const auto &plain : _aPlainTags) {
+				if (pTag.GetType() == plain.nType && pTag.GetNameID() == plain.nID) {
 					if (pTag.IsStr() && pTag.GetStr().IsEmpty()) {
 						break;
 					}
-
-					// skip "length" tags with "0: 0" values
-					if (pTag.GetName() == FT_ED2K_MEDIA_LENGTH) {
-						if (pTag.GetStr().IsSameAs("0: 0") ||
-							pTag.GetStr().IsSameAs("0:0")) {
-							break;
-						}
-					}
-
-					// skip "bitrate" tags with '0' values
-					if ((pTag.GetName() == FT_ED2K_MEDIA_BITRATE) && !pTag.GetInt()) {
-						break;
-					}
-
 					AddDebugLogLineN(logPartFile,
 						"CPartFile::CPartFile(CSearchFile*): added tag " +
 							pTag.GetFullInfo());
@@ -163,42 +285,28 @@ CPartFile::CPartFile(CSearchFile *searchresult)
 					break;
 				}
 			}
-		} else if (pTag.GetNameID() != 0 && pTag.GetName().IsEmpty() &&
-			   (pTag.IsStr() || pTag.IsInt())) {
-			static const struct
-			{
-				uint8 nID;
-				uint8 nType;
-			} _aMetaTags[] = { { FT_FILETYPE, 2 },
-				{ FT_FILEFORMAT, 2 },
-				// Media metadata (#280) advertised by the source: length /
-				// bitrate (uint32) + codec (string). Inherit it so a download
-				// carries FT_MEDIA_* immediately -- visible while downloading
-				// and persisted on completion -- without needing a local
-				// ffprobe. Source-agnostic: ed2k and Kad use the same tag IDs
-				// (TAG_MEDIA_* == FT_MEDIA_*), and the completion probe still
-				// fills in files whose source advertised nothing (its
-				// FT_MEDIA_LENGTH>0 gate skips the ones handled here).
-				// (type 3 = TAGTYPE_UINT32, type 2 = TAGTYPE_STRING; bare
-				// literals to match the FT_FILETYPE/FT_FILEFORMAT entries above.)
-				{ FT_MEDIA_LENGTH, 3 },
-				{ FT_MEDIA_BITRATE, 3 },
-				{ FT_MEDIA_CODEC, 2 } };
-			for (unsigned int t = 0; t < itemsof(_aMetaTags); ++t) {
-				if (pTag.GetType() == _aMetaTags[t].nType &&
-					pTag.GetNameID() == _aMetaTags[t].nID) {
-					// skip string tags with empty string values
-					if (pTag.IsStr() && pTag.GetStr().IsEmpty()) {
-						break;
-					}
-
+			// Media metadata (#280) advertised by the source, so a download
+			// carries FT_MEDIA_* immediately -- visible while downloading and
+			// persisted on completion -- without needing a local ffprobe. All
+			// six, and through the same helper as the string-named branch
+			// above, so both encodings converge on one set of rules.
+			static const uint8 _aMediaIDs[] = { FT_MEDIA_LENGTH,
+				FT_MEDIA_BITRATE,
+				FT_MEDIA_CODEC,
+				FT_MEDIA_ARTIST,
+				FT_MEDIA_ALBUM,
+				FT_MEDIA_TITLE };
+			for (const uint8 mediaID : _aMediaIDs) {
+				if (pTag.GetNameID() != mediaID) {
+					continue;
+				}
+				if (InheritMediaTag(*this, mediaID, pTag)) {
 					AddDebugLogLineN(logPartFile,
 						"CPartFile::CPartFile(CSearchFile*): added tag " +
 							pTag.GetFullInfo());
-					m_taglist.push_back(pTag);
 					bTagAdded = true;
-					break;
 				}
+				break;
 			}
 		}
 

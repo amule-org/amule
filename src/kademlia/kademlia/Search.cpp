@@ -1278,6 +1278,14 @@ void CSearch::ProcessResultKeyword(const CUInt128 &answer, TagPtrList *info)
 	if (!title.IsEmpty()) {
 		taglist.push_back(new CTagString(TAG_MEDIA_TITLE, title));
 	}
+	// The codec was read off the wire and then never mentioned again -- the
+	// local it filled occurred exactly twice in this file, the declaration and
+	// the assignment -- so every Kad result showed an empty Codec column and
+	// the value never reached a download started from it. Being a wxString,
+	// the dead store was not something -Wunused-but-set-variable could flag.
+	if (!codec.IsEmpty()) {
+		taglist.push_back(new CTagString(TAG_MEDIA_CODEC, codec));
+	}
 	if (length) {
 		taglist.push_back(new CTagVarInt(TAG_MEDIA_LENGTH, length));
 	}
@@ -1493,22 +1501,31 @@ void CSearch::PreparePacketForTags(CMemFile *bio, CKnownFile *file)
 				taglist.push_back(new CTagString(TAG_FILETYPE, strED2KFileType));
 			}
 
-			// additional meta data (Artist, Album, Codec, Length, ...)
-			// only send verified meta data to nodes
+			// Additional meta data (Artist, Album, Codec, Length, ...).
+			//
+			// This used to claim it sends only VERIFIED metadata. It does not,
+			// and did not before either: a download inherits its source's tags
+			// as a during-download preview, and GetMetaDataVer() answers "has
+			// any FT_MEDIA_* tag", not "was locally probed". So a partfile
+			// republishes what its search result advertised until its own
+			// completion probe corrects it. Distinguishing the two needs a
+			// locally-probed flag on the file, which is a design change rather
+			// than a comment fix -- left for its own issue.
 			if (file->GetMetaDataVer() > 0) {
-				static const struct
-				{
-					uint8_t nName;
-					uint8_t nType;
-				} _aMetaTags[] = { { FT_MEDIA_ARTIST, 2 },
-					{ FT_MEDIA_ALBUM, 2 },
-					{ FT_MEDIA_TITLE, 2 },
-					{ FT_MEDIA_LENGTH, 3 },
-					{ FT_MEDIA_BITRATE, 3 },
-					{ FT_MEDIA_CODEC, 2 } };
+				// Looked up by id ALONE, not by (id, type). The old exact
+				// `GetTag(id, TAGTYPE_UINT32)` was safe only while everything
+				// reaching a CKnownFile locally happened to be a CTagInt32;
+				// now that a download can inherit a narrower integer from a
+				// Kad hit, it would silently stop publishing the moment such a
+				// tag was stored.
+				static const uint8_t _aMetaTags[] = { FT_MEDIA_ARTIST,
+					FT_MEDIA_ALBUM,
+					FT_MEDIA_TITLE,
+					FT_MEDIA_LENGTH,
+					FT_MEDIA_BITRATE,
+					FT_MEDIA_CODEC };
 				for (unsigned int i = 0; i < itemsof(_aMetaTags); i++) {
-					const ::CTag *pTag =
-						file->GetTag(_aMetaTags[i].nName, _aMetaTags[i].nType);
+					const ::CTag *pTag = file->GetTag(_aMetaTags[i]);
 					if (pTag) {
 						// skip string tags with empty string values
 						if (pTag->IsStr() && pTag->GetStr().IsEmpty()) {

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-23 07:39+0200\n"
+"POT-Creation-Date: 2026-08-23 20:18+0200\n"
 "PO-Revision-Date: 2026-08-22 15:09+0000\n"
 "Last-Translator: saleh alhathal <hathalsal@hotmail.com>\n"
 "Language-Team: \n"
@@ -3177,6 +3177,11 @@ msgstr ""
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: ffprobe timed out or was cancelled for %s"
+msgstr ""
+
+#: src/MediaProbe.cpp
+#, c-format
+msgid "Media metadata: ignoring implausibly large ffprobe output for %s"
 msgstr ""
 
 #: src/MediaProbe.cpp

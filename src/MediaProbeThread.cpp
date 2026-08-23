@@ -130,8 +130,7 @@ void *CMediaProbeThread::Entry()
 				// resolves the hash to the CKnownFile and attaches
 				// the FT_MEDIA_* tags (doing that here would race the
 				// publish paths that read m_taglist).
-				CMediaProbeEvent evt(
-					job.hash, info.length_seconds, info.bitrate_kbps, info.codec);
+				CMediaProbeEvent evt(job.hash, info);
 				wxQueueEvent(wxTheApp, evt.Clone());
 			} else {
 				++failed;

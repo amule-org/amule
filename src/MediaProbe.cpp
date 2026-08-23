@@ -20,6 +20,7 @@
 
 #include "MediaProbe.h"
 
+#include <map>
 #include <cmath>
 #include <cstdlib>
 #include <mutex>
@@ -67,8 +68,9 @@ namespace
 {
 
 // Return values for RunBoundedFFProbe: a child exit code (>= 0), or one of:
-constexpr int kSpawnFailed = -1; // couldn't launch the binary at all
-constexpr int kKilled = -2;      // overran timeoutMs, or keepRunning went false
+constexpr int kSpawnFailed = -1;    // couldn't launch the binary at all
+constexpr int kKilled = -2;         // overran timeoutMs, or keepRunning went false
+constexpr int kOutputTooLarge = -3; // reply exceeded the read budget; see the slurp
 
 // Spawn `exe argv...`, capturing stdout to a temp file, and wait for it with
 // a `timeoutMs` wall-clock bound. The wait loop also polls `keepRunning`; when
@@ -255,10 +257,29 @@ int RunBoundedFFProbe(const wxString &exe,
 
 	// Slurp captured stdout. On a kill the file is partial/empty, but the
 	// caller treats kKilled as failure and never reads stdoutLines then.
+	//
+	// Bounded, because the output is not purely ours any more: the entry list
+	// includes container tags, which are arbitrary attacker-chosen text of
+	// arbitrary length. Without a cap a crafted 100 MB title is written out by
+	// ffprobe, slurped whole into a wxString, copied again by the tokenizer
+	// and again on unescaping, and only then cut to kMaxTagChars -- a peak
+	// footprint several times the crafted tag, on the probe worker, for a
+	// feature that is now on by default. A legitimate reply for five fields is
+	// a few hundred bytes; 1 MiB is orders of magnitude clear of that, and
+	// anything past it is treated as a failed probe rather than truncated,
+	// since a half-read reply is not something to draw conclusions from.
+	const wxFileOffset kMaxProbeOutputBytes = 1024 * 1024;
 	if (exitCode >= 0) {
 		wxFFile f(tmpPath, wxT("rb"));
 		wxString content;
-		if (f.IsOpened() && f.ReadAll(&content, wxConvUTF8)) {
+		if (f.IsOpened() && f.Length() > kMaxProbeOutputBytes) {
+			AddDebugLogLineN(logMediaProbe,
+				CFormat(wxT("MediaProbe: ffprobe output too large (%lld bytes), ignoring")) %
+					static_cast<long long>(f.Length()));
+			// Its own sentinel, not kSpawnFailed: ffprobe ran fine, so
+			// reporting "failed (code -1)" would name the wrong thing.
+			exitCode = kOutputTooLarge;
+		} else if (f.IsOpened() && f.ReadAll(&content, wxConvUTF8)) {
 			wxStringTokenizer tok(content, wxT("\r\n"), wxTOKEN_STRTOK);
 			while (tok.HasMoreTokens()) {
 				stdoutLines.Add(tok.GetNextToken());
@@ -413,9 +434,16 @@ bool ParseSeconds(const wxString &value, uint32 &out)
 	if (value.IsEmpty()) {
 		return false;
 	}
+	// Hold the UTF-8 buffer in a named local. `value.utf8_str().data()` twice
+	// would be two separate temporaries, each dead at the end of its own
+	// full-expression, so the comparison below would read a freed pointer and
+	// compare it against one from a different object -- which happens to work
+	// only because the allocator hands back the same block.
+	const wxScopedCharBuffer buf = value.utf8_str();
+	const char *const str = buf.data();
 	char *end = nullptr;
-	const double d = std::strtod(value.utf8_str().data(), &end);
-	if (end == value.utf8_str().data() || d < 0.0) {
+	const double d = std::strtod(str, &end);
+	if (end == str || d < 0.0) {
 		return false;
 	}
 	// Cap at uint32 range (~136 years — plenty).
@@ -436,9 +464,12 @@ bool ParseBitrateKbps(const wxString &value, uint32 &out)
 	if (value.IsEmpty() || value == wxT("N/A")) {
 		return false;
 	}
+	// Named local, for the reason given in ParseSeconds above.
+	const wxScopedCharBuffer buf = value.utf8_str();
+	const char *const str = buf.data();
 	char *end = nullptr;
-	const unsigned long long bps = std::strtoull(value.utf8_str().data(), &end, 10);
-	if (end == value.utf8_str().data()) {
+	const unsigned long long bps = std::strtoull(str, &end, 10);
+	if (end == str) {
 		return false;
 	}
 	const unsigned long long kbps = bps / 1000ULL;
@@ -451,6 +482,279 @@ bool ParseBitrateKbps(const wxString &value, uint32 &out)
 }
 
 } // anonymous namespace
+
+const wxChar *ProbeEntries()
+{
+	// Per stream: its codec_name and codec_type (so a video track's codec is
+	// preferred over an audio one, and subtitle / data streams never win), the
+	// attached_pic disposition, and its own artist/title/album tags. Per
+	// format: duration, bit_rate and the same three tags.
+	return wxT("format=duration,bit_rate"
+		   ":format_tags=artist,title,album"
+		   ":stream=codec_name,codec_type"
+		   ":stream_disposition=attached_pic"
+		   ":stream_tags=artist,title,album");
+}
+
+namespace
+{
+
+// One stream, accumulated from the `streams.stream.<n>.*` keys.
+struct ProbeStream
+{
+	wxString codec;
+	wxString type;
+	bool attached_pic = false;
+	wxString artist, album, title;
+};
+
+// Unwrap a `flat` value: quoted, with \n \r \\ and \" escaped. Anything
+// unquoted (ffprobe emits bare integers for dispositions) is returned as-is.
+wxString UnflattenValue(const wxString &raw)
+{
+	if (raw.length() < 2 || raw[0] != wxT('"') || raw.Last() != wxT('"')) {
+		return raw;
+	}
+	const wxString body = raw.Mid(1, raw.length() - 2);
+	wxString out;
+	out.reserve(body.length());
+	for (size_t i = 0; i < body.length(); ++i) {
+		if (body[i] != wxT('\\') || i + 1 >= body.length()) {
+			out += body[i];
+			continue;
+		}
+		switch (body[++i].GetValue()) {
+		case wxT('n'):
+			out += wxT('\n');
+			break;
+		case wxT('r'):
+			out += wxT('\r');
+			break;
+		case wxT('\\'):
+			out += wxT('\\');
+			break;
+		case wxT('"'):
+			out += wxT('"');
+			break;
+		default:
+			// Not an escape ffprobe produces; keep both characters rather
+			// than silently eating the backslash.
+			out += wxT('\\');
+			out += body[i];
+			break;
+		}
+	}
+	return out;
+}
+
+// Longest tag value we will keep. Generous for a real artist / album / title
+// -- ed2k search indexes nothing near this -- and the point is to bound what
+// a crafted file can make this node store and publish, not to fit any real
+// metadata. A container tag is arbitrary attacker-chosen text of arbitrary
+// length, and these values go into known.met, into the log line, and into
+// every offered-file packet sent to every server and client.
+const size_t kMaxTagChars = 256;
+
+// Clean one tag value before it is allowed any further: bound the length and
+// drop control characters.
+//
+// The length cap is what keeps oversized text out of known.met, out of the log
+// line and off the wire; without it the only bound anywhere was the wire
+// format's 0xFFFF truncation, a packet-integrity guard rather than a policy,
+// which still allowed 64 KB of chosen text per field per packet. How much is
+// READ in the first place is bounded separately, at the slurp in
+// RunBoundedFFProbe.
+//
+// Control characters are dropped because the value reaches a log line (and
+// through it GET /api/v0/logs/amule) and several list controls; a raw newline
+// there lets one field impersonate several. `flat` already stopped the parser
+// being confused by them -- this is about everything downstream of it.
+wxString SanitiseTagValue(const wxString &value)
+{
+	wxString out;
+	out.reserve(value.length() < kMaxTagChars ? value.length() : kMaxTagChars);
+	for (const wxUniChar c : value) {
+		if (out.length() >= kMaxTagChars) {
+			break;
+		}
+		// Keep printable characters and ordinary spaces; drop C0/C1 controls
+		// and DEL. Non-ASCII is kept as-is -- these are UTF-8 tags.
+		const wxUint32 v = c.GetValue();
+		if (v == 0x09 || v == 0x20 || (v > 0x1F && v != 0x7F && !(v >= 0x80 && v <= 0x9F))) {
+			out += c;
+		}
+	}
+	out.Trim(true).Trim(false);
+	return out;
+}
+
+// ffprobe prints the container's own key case -- Matroska yields
+// format.tags.ARTIST and format.tags.ALBUM beside a lower-case
+// format.tags.title, in one file -- while matching the requested names
+// case-insensitively. So the parser has to as well.
+void AssignTag(const wxString &key, const wxString &value, wxString &artist, wxString &album, wxString &title)
+{
+	const wxString lower = key.Lower();
+	// Sanitised here rather than at each call site: this is the one door every
+	// container tag comes through.
+	if (lower == wxT("artist")) {
+		artist = SanitiseTagValue(value);
+	} else if (lower == wxT("album")) {
+		album = SanitiseTagValue(value);
+	} else if (lower == wxT("title")) {
+		title = SanitiseTagValue(value);
+	}
+}
+
+} // namespace
+
+bool ParseProbeOutput(const wxArrayString &lines, MediaInfo &out)
+{
+	MediaInfo info;
+	bool got_duration = false;
+
+	// Keyed by the stream index ffprobe puts in the key, so ordering comes
+	// from the data rather than from the order lines happen to arrive in. A
+	// std::map also gives the streams back in index order for the selection
+	// below.
+	std::map<unsigned long, ProbeStream> streams;
+	wxString formatArtist, formatAlbum, formatTitle;
+
+	for (const wxString &line : lines) {
+		// Split on the first '=' only. Values are quoted and escaped by the
+		// `flat` writer, so a '=' inside one cannot end the key.
+		const int eq = line.Find(wxT('='));
+		if (eq == wxNOT_FOUND) {
+			continue;
+		}
+		const wxString key = line.Mid(0, eq);
+		const wxString value = UnflattenValue(line.Mid(eq + 1));
+
+		if (key.StartsWith(wxT("format."))) {
+			const wxString field = key.Mid(7);
+			if (field == wxT("duration")) {
+				// A parsed ZERO is not a duration; see the note below.
+				got_duration =
+					ParseSeconds(value, info.length_seconds) && info.length_seconds > 0;
+			} else if (field == wxT("bit_rate")) {
+				(void)ParseBitrateKbps(value, info.bitrate_kbps);
+			} else if (field.StartsWith(wxT("tags."))) {
+				AssignTag(field.Mid(5), value, formatArtist, formatAlbum, formatTitle);
+			}
+			continue;
+		}
+
+		if (!key.StartsWith(wxT("streams.stream."))) {
+			continue;
+		}
+		wxString rest = key.Mid(15);
+		const wxString indexText = rest.BeforeFirst(wxT('.'));
+		unsigned long index = 0;
+		if (indexText.IsEmpty() || !indexText.ToULong(&index)) {
+			continue;
+		}
+		const wxString field = rest.AfterFirst(wxT('.'));
+		ProbeStream &cur = streams[index];
+		if (field == wxT("codec_name")) {
+			cur.codec = value;
+		} else if (field == wxT("codec_type")) {
+			cur.type = value;
+		} else if (field == wxT("disposition.attached_pic")) {
+			cur.attached_pic = (value == wxT("1"));
+		} else if (field.StartsWith(wxT("tags."))) {
+			AssignTag(field.Mid(5), value, cur.artist, cur.album, cur.title);
+		}
+	}
+
+	// Codec selection: the first video track's codec, else the first audio
+	// track's. Subtitle / data streams (e.g. a leading subrip track in an mkv)
+	// never win, so we don't advertise "subrip" as a file's codec.
+	wxString videoCodec, audioCodec;
+	// Tags of the stream that supplied audioCodec, the fallback source for
+	// Ogg/Opus where Vorbis comments belong to the logical stream and the
+	// format section carries nothing at all.
+	wxString streamArtist, streamAlbum, streamTitle;
+	// How many real (non-artwork) audio streams the file has. The stream-tag
+	// fallback below requires exactly one.
+	unsigned audioStreamCount = 0;
+
+	for (const auto &entry : streams) {
+		const ProbeStream &st = entry.second;
+		// Cover art (ID3 APIC, FLAC PICTURE, MOV covr, Matroska image
+		// attachments, ...) is reported as an ordinary video stream and is the
+		// only non-content stream that claims codec_type=video. Without this
+		// an MP3 with artwork advertises "mjpeg" as the file's codec -- to
+		// every peer, since the tag goes out on the wire. FFmpeg's own "real
+		// video" selector is the same test.
+		if (st.attached_pic || st.codec.IsEmpty()) {
+			continue;
+		}
+		if (st.type == wxT("video")) {
+			if (videoCodec.IsEmpty()) {
+				videoCodec = st.codec;
+			}
+		} else if (st.type == wxT("audio")) {
+			++audioStreamCount;
+			if (audioCodec.IsEmpty()) {
+				audioCodec = st.codec;
+				streamArtist = st.artist;
+				streamAlbum = st.album;
+				streamTitle = st.title;
+			}
+		}
+	}
+
+	if (!videoCodec.IsEmpty()) {
+		info.codec = videoCodec;
+	} else if (!audioCodec.IsEmpty()) {
+		info.codec = audioCodec;
+	}
+
+	info.artist = formatArtist;
+	info.album = formatAlbum;
+	info.title = formatTitle;
+	// Stream tags are consulted only for a file with EXACTLY ONE audio stream
+	// and no video, and only where the format section gave nothing.
+	//
+	// The fallback exists for Ogg and Opus, where Vorbis comments belong to
+	// the single logical stream -- so the condition it actually needs is "one
+	// stream", not "not a video". On any multi-track container the stream tags
+	// are track LABELS ("Deutsch", "Espanol"), and publishing one as the
+	// file's title sends it to every peer over both ed2k and Kad. That is
+	// equally true of a multi-track .mka or a chained .ogg, which have no
+	// video stream at all and which a "not a video" test would let through.
+	// ...and only for the containers whose comments genuinely live on the
+	// stream. On a one-track file there is nothing structural to tell a track
+	// LABEL from a title -- a single .mka muxed with --track-name 0:Deutsch
+	// passes every other test here -- so the fallback is scoped to the Ogg
+	// family instead. Listing a codec costs the others nothing: the fallback
+	// only runs when the format section gave NOTHING, and everything else
+	// reports there.
+	const bool streamTagCodec = (audioCodec == wxT("vorbis") || audioCodec == wxT("opus") ||
+				     audioCodec == wxT("flac") || audioCodec == wxT("speex"));
+	if (audioStreamCount == 1 && videoCodec.IsEmpty() && streamTagCodec) {
+		if (info.artist.IsEmpty()) {
+			info.artist = streamArtist;
+		}
+		if (info.album.IsEmpty()) {
+			info.album = streamAlbum;
+		}
+		if (info.title.IsEmpty()) {
+			info.title = streamTitle;
+		}
+	}
+
+	// A zero duration is not a duration (see the format.duration branch): a
+	// container ffprobe can open and time as zero but reports no codec for
+	// would otherwise return a successful probe carrying an all-empty
+	// MediaInfo, which the authoritative apply step would treat as grounds to
+	// clear every media tag the file had.
+	if (!got_duration && info.codec.IsEmpty()) {
+		return false;
+	}
+	out = info;
+	return true;
+}
 
 bool Probe(const wxString &ffprobePath,
 	const CPath &file,
@@ -476,22 +780,36 @@ bool Probe(const wxString &ffprobePath,
 		return false;
 	}
 
-	// -show_entries constrains the output to what we care about: each stream's
-	// codec_name plus its codec_type (so we can prefer the video track's codec,
-	// then the audio track's, over subtitle / data streams), and the format-
-	// level duration + bit_rate. -of default=nk=0:nw=1 emits one bare
-	// "key=value" per line, no INI section headers, no line wrapping; ffprobe
-	// prints the stream fields in the requested order, so each stream is a
-	// codec_name line immediately followed by its codec_type line. -v error
-	// silences informational chatter. Tokens are passed as a real argv (no
-	// shell), so the file path needs no quoting/escaping.
+	// -show_entries constrains the output to what we care about; see
+	// ProbeEntries() for the field list and ParseProbeOutput() for what is done
+	// with it.
+	//
+	// -of flat, and NOT the more readable `default` writer, because this
+	// request pulls attacker-controlled text into the output: a container tag
+	// is arbitrary UTF-8 and may contain newlines (Vorbis comments and
+	// Matroska tags allow them outright; nothing enforces ID3's advice against
+	// them). `default` does not escape its values, so each embedded newline
+	// becomes another key=value line inside the section the tag belongs to --
+	// a title of "Song\nduration=99999999" injects a duration line after the
+	// real one, and this parser is last-write-wins. That forged value would be
+	// attached as FT_MEDIA_LENGTH and published to every server and Kad node,
+	// defeating the whole premise that only locally verified metadata is
+	// advertised. A crafted line can move the section boundaries too.
+	//
+	// `flat` escapes \n, \r, \\ and " in values, and its dotted keys carry
+	// the section AND the stream index (format.tags.title,
+	// streams.stream.0.codec_name), so attribution comes from the key rather
+	// than from delimiter lines a value could also forge.
+	//
+	// -v error silences informational chatter. Tokens are passed as a real
+	// argv (no shell), so the file path needs no quoting/escaping.
 	wxArrayString argv;
 	argv.Add(wxT("-v"));
 	argv.Add(wxT("error"));
 	argv.Add(wxT("-show_entries"));
-	argv.Add(wxT("format=duration,bit_rate:stream=codec_name,codec_type"));
+	argv.Add(ProbeEntries());
 	argv.Add(wxT("-of"));
-	argv.Add(wxT("default=nk=0:nw=1"));
+	argv.Add(wxT("flat"));
 	argv.Add(file.GetRaw());
 
 	// Info level, not debug: media metadata is a feature the user explicitly
@@ -524,6 +842,18 @@ bool Probe(const wxString &ffprobePath,
 		}
 		return false;
 	}
+	if (rc == kOutputTooLarge) {
+		// ffprobe itself succeeded; what it produced was implausible for the
+		// five fields asked for, which means the file carries a tag crafted to
+		// be enormous. Named separately so this does not report as a failure
+		// of the binary.
+		if (!bulk) {
+			AddLogLineN(CFormat(_("Media metadata: ignoring implausibly large ffprobe output "
+					      "for %s")) %
+				    file.GetPrintable());
+		}
+		return false;
+	}
 	if (rc != 0) {
 		if (!bulk) {
 			AddLogLineN(CFormat(_("Media metadata: ffprobe failed (code %d) for %s")) % rc %
@@ -533,47 +863,9 @@ bool Probe(const wxString &ffprobePath,
 	}
 
 	MediaInfo info;
-	bool got_duration = false;
-	// Codec selection: the first video track's codec, else the first audio
-	// track's. Subtitle / data streams (e.g. a leading subrip track in an
-	// mkv) never win, so we don't advertise "subrip" as a file's codec.
-	wxString videoCodec, audioCodec, pendingCodec;
-	for (const wxString &line : stdout_lines) {
-		// Split on the first '=' only — codec_name values themselves
-		// don't contain '=' but the parser mustn't assume that.
-		const int eq = line.Find(wxT('='));
-		if (eq == wxNOT_FOUND) {
-			continue;
-		}
-		const wxString key = line.Mid(0, eq);
-		const wxString value = line.Mid(eq + 1);
-		if (key == wxT("duration")) {
-			got_duration = ParseSeconds(value, info.length_seconds);
-		} else if (key == wxT("bit_rate")) {
-			(void)ParseBitrateKbps(value, info.bitrate_kbps);
-		} else if (key == wxT("codec_name")) {
-			// Held until this stream's codec_type line arrives next.
-			pendingCodec = value;
-		} else if (key == wxT("codec_type")) {
-			if (value == wxT("video") && videoCodec.IsEmpty()) {
-				videoCodec = pendingCodec;
-			} else if (value == wxT("audio") && audioCodec.IsEmpty()) {
-				audioCodec = pendingCodec;
-			}
-			pendingCodec.clear();
-		}
-	}
-	if (!videoCodec.IsEmpty()) {
-		info.codec = videoCodec;
-	} else if (!audioCodec.IsEmpty()) {
-		info.codec = audioCodec;
-	}
-	const bool got_codec = !info.codec.IsEmpty();
-
-	// A file with zero streams / zero duration produces an all-blank
-	// MediaInfo which is meaningless to advertise — treat it as a
-	// probe failure so the caller doesn't attach empty tags.
-	if (!got_duration && !got_codec) {
+	if (!ParseProbeOutput(stdout_lines, info)) {
+		// Neither a duration nor a codec came back, so there is nothing worth
+		// advertising -- report a failed probe rather than attaching empty tags.
 		AddDebugLogLineN(logMediaProbe,
 			CFormat(wxT("MediaProbe: no metadata parsed for %s")) % file.GetPrintable());
 		return false;

@@ -25,6 +25,7 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
+#include <algorithm>   // std::remove_if
 #include "KnownFile.h" // Do_not_auto_remove
 
 #include "CompleteSourcesThrottle.h" // CompleteSourcesNeedRecompute
@@ -142,12 +143,46 @@ std::atomic<uint64> CKnownFile::s_globalEcGen{ 0 };
 uint32 CKnownFile::GetMetaDataVer() const
 {
 	// Derived from tag presence, no separate m_uMetaDataVer field.
-	// FT_MEDIA_LENGTH is the only tag MediaProbe populates
-	// unconditionally on a successful probe (bitrate and codec are
-	// best-effort per format), so nonzero length is the reliable
-	// "we've probed this and have data worth publishing" signal.
-	// Kad's publisher (Search.cpp:1422) uses this exact gate.
-	return GetIntTagValue(FT_MEDIA_LENGTH) > 0 ? 1 : 0;
+	//
+	// ANY FT_MEDIA_* tag counts, not FT_MEDIA_LENGTH alone. The premise the
+	// length-only test rested on -- that a successful probe always yields a
+	// duration -- is false: MediaProbe succeeds on a duration OR a codec, so a
+	// file ffprobe can identify but not time (a raw elementary stream, a
+	// truncated capture) gets a codec and no length. That put the four
+	// consumers of this predicate in disagreement: the ed2k publisher, which
+	// checks each tag individually, advertised the codec to every peer, while
+	// Kad, EC and the file-detail dialog all reported the file as having no
+	// metadata at all. The same tag was good enough for strangers and not for
+	// the person who owns the file.
+	//
+	// It also drives the "already probed" gate in CSharedFileList, so those
+	// files used to be re-probed on every single startup, forever, for a
+	// result that was already known and would be discarded again.
+	// One pass over m_taglist rather than six Get*TagValue calls, each of
+	// which scans it end to end. This runs per file per EC update, and the
+	// worst case is the common one: a non-media file matches nothing, so all
+	// six scans would run to completion every time.
+	for (const CTag &tag : m_taglist) {
+		switch (tag.GetNameID()) {
+		case FT_MEDIA_LENGTH:
+		case FT_MEDIA_BITRATE:
+			if (tag.IsInt() && tag.GetInt() > 0) {
+				return 1;
+			}
+			break;
+		case FT_MEDIA_CODEC:
+		case FT_MEDIA_ARTIST:
+		case FT_MEDIA_ALBUM:
+		case FT_MEDIA_TITLE:
+			if (tag.IsStr() && !tag.GetStr().IsEmpty()) {
+				return 1;
+			}
+			break;
+		default:
+			break;
+		}
+	}
+	return 0;
 }
 
 void CKnownFile::MarkECChanged()
@@ -309,6 +344,27 @@ void CAbstractFile::AddTagUnique(const CTag &rTag)
 		}
 	}
 	m_taglist.push_back(rTag);
+}
+
+bool CAbstractFile::RemoveTag(uint8 tagname)
+{
+	// Matches on the numeric id alone, unlike AddTagUnique's (id, type) pair:
+	// the caller wants the field gone whatever width or encoding it was stored
+	// with, and a media tag inherited from a search result can legitimately
+	// arrive as a narrower integer type than the one a local probe writes.
+	//
+	// Erases EVERY match, not just the first. AddTagUnique replaces only when
+	// the type matches too, so two tags with one id and different types can
+	// legitimately coexist; stopping at the first would leave the other behind
+	// and quietly break the promise this comment makes. No current writer
+	// produces that pair -- they all normalise to CTagInt32 / CTagString --
+	// but "clear this field" should not depend on that staying true.
+	const size_t before = m_taglist.size();
+	m_taglist.erase(std::remove_if(m_taglist.begin(),
+				m_taglist.end(),
+				[tagname](const CTag &tag) { return tag.GetNameID() == tagname; }),
+		m_taglist.end());
+	return m_taglist.size() != before;
 }
 
 #ifndef CLIENT_GUI
@@ -1399,9 +1455,18 @@ void CKnownFile::CreateOfferedFilePacket(CMemFile *files, CServer *pServer, CUpD
 	if (uint32 br = GetIntTagValue(FT_MEDIA_BITRATE)) {
 		tags.push_back(new CTagVarInt(FT_MEDIA_BITRATE, br, 32));
 	}
-	const wxString &codec = GetStrTagValue(FT_MEDIA_CODEC);
-	if (!codec.IsEmpty()) {
-		tags.push_back(new CTagString(FT_MEDIA_CODEC, codec));
+	// Artist / album / title alongside the other three: this was the only
+	// publisher still sending three of the six, so a peer searching by artist
+	// could match a Kad-published copy of a file and not the ed2k-published
+	// one.
+	static const uint8 kMediaStrTags[] = {
+		FT_MEDIA_CODEC, FT_MEDIA_ARTIST, FT_MEDIA_ALBUM, FT_MEDIA_TITLE
+	};
+	for (const uint8 id : kMediaStrTags) {
+		const wxString &value = GetStrTagValue(id);
+		if (!value.IsEmpty()) {
+			tags.push_back(new CTagString(id, value));
+		}
 	}
 
 	EUtf8Str eStrEncode;

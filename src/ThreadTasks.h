@@ -28,7 +28,8 @@
 #define TASKS_H
 
 #include "ThreadScheduler.h"
-#include "MD4Hash.h" // Needed for CMD4Hash on CMediaProbeTask + CMediaProbeEvent
+#include "MediaProbe.h" // Needed for MediaInfo
+#include "MD4Hash.h"    // Needed for CMD4Hash on CMediaProbeTask + CMediaProbeEvent
 #include <common/Path.h>
 
 class CKnownFile;
@@ -277,21 +278,21 @@ private:
 class CMediaProbeEvent : public wxEvent
 {
 public:
-	CMediaProbeEvent(
-		const CMD4Hash &hash, uint32 lengthSeconds, uint32 bitrateKbps, const wxString &codec);
+	// Carries the MediaInfo whole rather than one accessor per field: the
+	// struct already IS the set of extracted fields, and mirroring them here
+	// meant every new field touched the event, its ctor, its Clone and the
+	// handler. Strings are deep-copied on construction for the thread hop --
+	// see the ctor.
+	CMediaProbeEvent(const CMD4Hash &hash, const MediaInfo &info);
 
 	virtual wxEvent *Clone() const;
 
 	const CMD4Hash &GetHash() const { return m_hash; }
-	uint32 GetLengthSeconds() const { return m_lengthSeconds; }
-	uint32 GetBitrateKbps() const { return m_bitrateKbps; }
-	const wxString &GetCodec() const { return m_codec; }
+	const MediaInfo &GetInfo() const { return m_info; }
 
 private:
 	CMD4Hash m_hash;
-	uint32 m_lengthSeconds;
-	uint32 m_bitrateKbps;
-	wxString m_codec;
+	MediaInfo m_info;
 };
 
 /**

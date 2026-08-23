@@ -100,9 +100,17 @@ struct FileSnapshot
 	std::string comment;            // the user's own file comment
 	std::int32_t rating = 0;        // the user's own rating, 0-5 (0 = unrated)
 
-	// Audio/video media metadata (issue #418). amuled emits it only for
-	// probed files (GetMetaDataVer != 0), so `has_media` gates the
-	// `media` object on the detail endpoints — omitted entirely when false.
+	// Audio/video media metadata (issue #418). amuled emits each field only
+	// when that field has a value -- deliberately NOT gated on the aggregate
+	// GetMetaDataVer(), which would send length 0 / bitrate 0 for a file that
+	// probed to a codec and no duration, and a displayed zero is a claim where
+	// absence is not. A zero / empty value is amuled saying the field is GONE,
+	// which is how a re-probe's clear reaches us at all.
+	//
+	// `has_media` is therefore DERIVED from the fields below rather than being
+	// something amuled sent: latching it on any tag arriving would report
+	// media on a file whose every field has since been cleared. It gates the
+	// `media` object on the detail endpoints -- omitted entirely when false.
 	bool has_media = false;
 	struct Media
 	{
@@ -804,8 +812,11 @@ struct SearchResult
 	// desktop's Directories column shows them.
 	std::string directory;
 	// Audio/video media metadata (issue #430), same shape as the file
-	// detail endpoints' `media` object. `has_media` gates it — omitted
-	// when the hit carries no FT_MEDIA_* tags (most remote results).
+	// detail endpoints' `media` object. `has_media` gates it, and like the
+	// file-side flag above it is DERIVED from the field values rather than
+	// from which tags arrived -- a hit carrying an FT_MEDIA_* tag whose value
+	// is empty reads as no media, which is what the daemon means by sending
+	// one. Omitted entirely when false (most remote results).
 	bool has_media = false;
 	struct Media
 	{

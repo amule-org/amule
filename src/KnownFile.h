@@ -142,6 +142,12 @@ public:
 	const CTag *GetTag(uint8 tagname) const;
 	const CTag *GetTag(uint8 tagname, uint8 tagtype) const;
 	void AddTagUnique(const CTag &pTag);
+	// Drop the tag with this numeric id, if present. The counterpart to
+	// AddTagUnique: without it a re-probe can only add or replace, never
+	// clear, so a field the probe no longer finds keeps whatever value was
+	// there -- including one inherited unverified from a search result.
+	// Returns true if a tag was removed.
+	bool RemoveTag(uint8 tagname);
 	const ArrayOfCTag &GetTags() const { return m_taglist; }
 	void AddNote(Kademlia::CEntry *pEntry);
 	const CKadEntryPtrList &getNotes() const { return m_kadNotes; }

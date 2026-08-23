@@ -257,16 +257,33 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 	// probed metadata; the labels stay at their "N/A" default otherwise.
 	// Works identically in the monolithic and remote (amulegui) builds —
 	// the remote proxy stores the same FT_MEDIA_* tags off EC.
-	if (m_file->GetMetaDataVer() != 0) {
-		CastChild(IDC_FD_MEDIA_LENGTH, wxControl)
-			->SetLabel(CastSecondsToHM(m_file->GetIntTagValue(FT_MEDIA_LENGTH)));
-		CastChild(IDC_FD_MEDIA_BITRATE, wxControl)
-			->SetLabel(CFormat(wxT("%u kbps")) % m_file->GetIntTagValue(FT_MEDIA_BITRATE));
-		CastChild(IDC_FD_MEDIA_CODEC, wxControl)
-			->SetLabel(FormatMediaCodec(m_file->GetStrTagValue(FT_MEDIA_CODEC)));
-		CastChild(IDC_FD_MEDIA_ARTIST, wxControl)->SetLabel(m_file->GetStrTagValue(FT_MEDIA_ARTIST));
-		CastChild(IDC_FD_MEDIA_ALBUM, wxControl)->SetLabel(m_file->GetStrTagValue(FT_MEDIA_ALBUM));
-		CastChild(IDC_FD_MEDIA_TITLE, wxControl)->SetLabel(m_file->GetStrTagValue(FT_MEDIA_TITLE));
+	// Per field, NOT gated on GetMetaDataVer(): that predicate answers "has
+	// this been probed", and a file can be probed and still have no duration
+	// (a raw elementary stream, a truncated capture). Filling every label on
+	// the aggregate would show Length 0:00 and Bitrate 0 kbps for such a file,
+	// where the truthful answer is the N/A default. A displayed zero is a
+	// claim; absence is not.
+	if (uint32 len = m_file->GetIntTagValue(FT_MEDIA_LENGTH)) {
+		CastChild(IDC_FD_MEDIA_LENGTH, wxControl)->SetLabel(CastSecondsToHM(len));
+	}
+	if (uint32 br = m_file->GetIntTagValue(FT_MEDIA_BITRATE)) {
+		CastChild(IDC_FD_MEDIA_BITRATE, wxControl)->SetLabel(CFormat(wxT("%u kbps")) % br);
+	}
+	const struct
+	{
+		uint8 ftId;
+		int ctrlId;
+		bool formatAsCodec;
+	} kMediaLabels[] = { { FT_MEDIA_CODEC, IDC_FD_MEDIA_CODEC, true },
+		{ FT_MEDIA_ARTIST, IDC_FD_MEDIA_ARTIST, false },
+		{ FT_MEDIA_ALBUM, IDC_FD_MEDIA_ALBUM, false },
+		{ FT_MEDIA_TITLE, IDC_FD_MEDIA_TITLE, false } };
+	for (const auto &entry : kMediaLabels) {
+		const wxString &value = m_file->GetStrTagValue(entry.ftId);
+		if (!value.IsEmpty()) {
+			CastChild(entry.ctrlId, wxControl)
+				->SetLabel(entry.formatAsCodec ? FormatMediaCodec(value) : value);
+		}
 	}
 
 	// --- Section visibility, driven by the file's own state (not by which list

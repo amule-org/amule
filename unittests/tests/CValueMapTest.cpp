@@ -221,6 +221,47 @@ TEST(CValueMapTest, AddDiffTagWithoutMapAlwaysEmits)
 	ASSERT_EQUALS((size_t)2, EmittedCount(parent));
 }
 
+// --- HasTag: which cache it reads --------------------------------------
+// HasTag gates the media clear emission: a field that is now absent gets an
+// explicit zero / empty frame only when a value was previously SENT for it,
+// because a tag simply not offered reads as UNCHANGED on the remote side.
+//
+// The property worth pinning is not "true after a write" but WHICH cache it
+// reads. The two write forms keep separate caches, and this header's own
+// comment above AddDiffTag warns that mixing them for one tagname means
+// neither sees the other's last value. HasTag reads m_map_tag, the cache
+// AddTag(const CECTag &, CECTag *) writes -- so if a media field were ever
+// routed through AddDiffTag for efficiency, HasTag would silently report
+// false for it and that field's clear would stop being emitted, with nothing
+// failing anywhere.
+
+TEST(CValueMapTest, HasTagIsFalseBeforeAnythingIsSent)
+{
+	CValueMap vm;
+	ASSERT_TRUE(!vm.HasTag(100));
+}
+
+TEST(CValueMapTest, HasTagIsTrueAfterTheCECTagFormWrites)
+{
+	CValueMap vm;
+	CECEmptyTag parent(1);
+	parent.AddTag(CECTag(static_cast<ec_tagname_t>(100), wxT("value")), &vm);
+	ASSERT_TRUE(vm.HasTag(100));
+}
+
+TEST(CValueMapTest, HasTagDoesNotSeeTheTypedCacheWrites)
+{
+	// AddDiffTag writes the TYPED cache, not m_map_tag. HasTag must report
+	// false for it -- not because that is desirable, but because it is the
+	// truth about which cache holds the value, and a caller mixing the two
+	// forms for one tagname is the documented bug this exposes rather than
+	// hides.
+	CValueMap vm;
+	CECEmptyTag parent(1);
+	AddDiffTag(&parent, static_cast<ec_tagname_t>(101), wxString(wxT("value")), &vm);
+	ASSERT_TRUE(!vm.HasTag(101));
+}
+
 // The hazard that keeps EC_TAG_CLIENT_UPLOAD_FILE on the old path: one tag name
 // written through two different types keeps two independent caches, so neither
 // sees the other's last value and a transition between them is not suppressed.
