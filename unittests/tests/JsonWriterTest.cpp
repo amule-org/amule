@@ -38,7 +38,7 @@ TEST(JsonWriter, EmptyObject)
 	CJsonWriter w;
 	w.BeginObject();
 	w.EndObject();
-	ASSERT_EQUALS(wxString("{}"), w.GetBuffer());
+	ASSERT_EQUALS(std::string("{}"), w.GetBuffer());
 }
 
 TEST(JsonWriter, EmptyArray)
@@ -46,7 +46,7 @@ TEST(JsonWriter, EmptyArray)
 	CJsonWriter w;
 	w.BeginArray();
 	w.EndArray();
-	ASSERT_EQUALS(wxString("[]"), w.GetBuffer());
+	ASSERT_EQUALS(std::string("[]"), w.GetBuffer());
 }
 
 TEST(JsonWriter, ObjectWithStringValue)
@@ -56,7 +56,7 @@ TEST(JsonWriter, ObjectWithStringValue)
 	w.Key("app");
 	w.ValueString("aMule");
 	w.EndObject();
-	ASSERT_EQUALS(wxString("{\"app\":\"aMule\"}"), w.GetBuffer());
+	ASSERT_EQUALS(std::string("{\"app\":\"aMule\"}"), w.GetBuffer());
 }
 
 TEST(JsonWriter, ObjectWithMultipleKeys)
@@ -70,7 +70,8 @@ TEST(JsonWriter, ObjectWithMultipleKeys)
 	w.Key("api");
 	w.ValueString("v0.1");
 	w.EndObject();
-	ASSERT_EQUALS(wxString("{\"app\":\"aMule\",\"version\":\"2.3.3\",\"api\":\"v0.1\"}"), w.GetBuffer());
+	ASSERT_EQUALS(
+		std::string("{\"app\":\"aMule\",\"version\":\"2.3.3\",\"api\":\"v0.1\"}"), w.GetBuffer());
 }
 
 TEST(JsonWriter, Primitives)
@@ -88,7 +89,7 @@ TEST(JsonWriter, Primitives)
 	w.Key("u");
 	w.ValueUInt(uint64_t(42));
 	w.EndObject();
-	ASSERT_EQUALS(wxString("{\"n\":null,\"t\":true,\"f\":false,\"i\":-42,\"u\":42}"), w.GetBuffer());
+	ASSERT_EQUALS(std::string("{\"n\":null,\"t\":true,\"f\":false,\"i\":-42,\"u\":42}"), w.GetBuffer());
 }
 
 TEST(JsonWriter, IntegerBoundaries)
@@ -99,8 +100,8 @@ TEST(JsonWriter, IntegerBoundaries)
 	w.ValueInt(std::numeric_limits<int64_t>::max());
 	w.ValueUInt(std::numeric_limits<uint64_t>::max());
 	w.EndArray();
-	ASSERT_EQUALS(
-		wxString("[-9223372036854775808,9223372036854775807,18446744073709551615]"), w.GetBuffer());
+	ASSERT_EQUALS(std::string("[-9223372036854775808,9223372036854775807,18446744073709551615]"),
+		w.GetBuffer());
 }
 
 TEST(JsonWriter, DoubleSpecials)
@@ -112,7 +113,7 @@ TEST(JsonWriter, DoubleSpecials)
 	w.ValueDouble(std::numeric_limits<double>::infinity());
 	w.ValueDouble(-std::numeric_limits<double>::infinity());
 	w.EndArray();
-	ASSERT_EQUALS(wxString("[null,null,null]"), w.GetBuffer());
+	ASSERT_EQUALS(std::string("[null,null,null]"), w.GetBuffer());
 }
 
 TEST(JsonWriter, NestedObject)
@@ -125,7 +126,7 @@ TEST(JsonWriter, NestedObject)
 	w.ValueString("v");
 	w.EndObject();
 	w.EndObject();
-	ASSERT_EQUALS(wxString("{\"outer\":{\"inner\":\"v\"}}"), w.GetBuffer());
+	ASSERT_EQUALS(std::string("{\"outer\":{\"inner\":\"v\"}}"), w.GetBuffer());
 }
 
 TEST(JsonWriter, ArrayOfObjects)
@@ -144,21 +145,21 @@ TEST(JsonWriter, ArrayOfObjects)
 	w.EndObject();
 	w.EndArray();
 	w.EndObject();
-	ASSERT_EQUALS(wxString("{\"items\":[{\"k\":1},{\"k\":2}]}"), w.GetBuffer());
+	ASSERT_EQUALS(std::string("{\"items\":[{\"k\":1},{\"k\":2}]}"), w.GetBuffer());
 }
 
 TEST(JsonWriter, EscapesQuoteAndBackslash)
 {
 	CJsonWriter w;
 	w.ValueString(wxString::FromUTF8("a\"b\\c"));
-	ASSERT_EQUALS(wxString("\"a\\\"b\\\\c\""), w.GetBuffer());
+	ASSERT_EQUALS(std::string("\"a\\\"b\\\\c\""), w.GetBuffer());
 }
 
 TEST(JsonWriter, EscapesShortControlChars)
 {
 	CJsonWriter w;
 	w.ValueString(wxString::FromUTF8("\b\f\n\r\t"));
-	ASSERT_EQUALS(wxString("\"\\b\\f\\n\\r\\t\""), w.GetBuffer());
+	ASSERT_EQUALS(std::string("\"\\b\\f\\n\\r\\t\""), w.GetBuffer());
 }
 
 TEST(JsonWriter, EscapesGenericControlChars)
@@ -172,7 +173,7 @@ TEST(JsonWriter, EscapesGenericControlChars)
 	w.ValueString(wxString(wxUniChar(uint32_t(0x1F))));
 	w.ValueString(wxString(wxUniChar(uint32_t(0x7F))));
 	w.EndArray();
-	ASSERT_EQUALS(wxString("[\"\\u0000\",\"\\u0001\",\"\\u001f\",\"\\u007f\"]"), w.GetBuffer());
+	ASSERT_EQUALS(std::string("[\"\\u0000\",\"\\u0001\",\"\\u001f\",\"\\u007f\"]"), w.GetBuffer());
 }
 
 TEST(JsonWriter, SupplementaryPlaneAsSurrogatePair)
@@ -181,24 +182,20 @@ TEST(JsonWriter, SupplementaryPlaneAsSurrogatePair)
 	// emitted as the UTF-16 surrogate pair 😀.
 	CJsonWriter w;
 	w.ValueString(wxString(wxUniChar(uint32_t(0x1F600))));
-	ASSERT_EQUALS(wxString("\"\\ud83d\\ude00\""), w.GetBuffer());
+	ASSERT_EQUALS(std::string("\"\\ud83d\\ude00\""), w.GetBuffer());
 }
 
-TEST(JsonWriter, BmpNonAsciiEmittedVerbatim)
+TEST(JsonWriter, BmpNonAsciiEmittedAsUtf8)
 {
-	// Non-control codepoints in the BMP are passed through as wxString
-	// content. The serializer encodes the whole buffer as UTF-8 at
-	// flush time; here we just verify the round trip is invariant.
-	const wxString input =
-		wxString::FromUTF8("\xD0\xBF\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82"); // "привет"
+	// Non-control BMP codepoints need no JSON escape and are emitted as the
+	// UTF-8 the buffer holds -- byte for byte what went in, since the input
+	// was built from the same UTF-8.
+	const char cyrillic[] = "\xD0\xBF\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82"; // "привет"
 	CJsonWriter w;
-	w.ValueString(input);
-	// The wxString contains exactly: " <6 cyrillic chars> "
-	wxString expected;
-	expected += wxT("\"");
-	expected += input;
-	expected += wxT("\"");
-	ASSERT_EQUALS(expected, w.GetBuffer());
+	w.ValueString(wxString::FromUTF8(cyrillic));
+	ASSERT_EQUALS(std::string("\"") + cyrillic + "\"", w.GetBuffer());
+	// Two bytes per character here, not one wide unit: the buffer is UTF-8.
+	ASSERT_EQUALS(static_cast<size_t>(14), w.GetBuffer().size());
 }
 
 TEST(JsonWriter, KeyEscaping)
@@ -210,7 +207,7 @@ TEST(JsonWriter, KeyEscaping)
 	w.Key(wxString::FromUTF8("a\"b"));
 	w.ValueInt(1);
 	w.EndObject();
-	ASSERT_EQUALS(wxString("{\"a\\\"b\":1}"), w.GetBuffer());
+	ASSERT_EQUALS(std::string("{\"a\\\"b\":1}"), w.GetBuffer());
 }
 
 TEST(JsonWriter, ValueRawFragment)
@@ -221,19 +218,19 @@ TEST(JsonWriter, ValueRawFragment)
 	CJsonWriter w;
 	w.BeginObject();
 	w.Key("pre");
-	w.ValueRaw(wxT("[1,2,3]"));
+	w.ValueRaw("[1,2,3]");
 	w.Key("post");
 	w.ValueInt(4);
 	w.EndObject();
-	ASSERT_EQUALS(wxString("{\"pre\":[1,2,3],\"post\":4}"), w.GetBuffer());
+	ASSERT_EQUALS(std::string("{\"pre\":[1,2,3],\"post\":4}"), w.GetBuffer());
 }
 
 TEST(JsonWriter, ExternalBuffer)
 {
 	// The writer can append into a caller-owned buffer instead of its
 	// own. Used when composing a response from multiple writers.
-	wxString shared;
-	shared += wxT("prefix:");
+	std::string shared;
+	shared += "prefix:";
 	{
 		CJsonWriter w(&shared);
 		w.BeginObject();
@@ -241,7 +238,7 @@ TEST(JsonWriter, ExternalBuffer)
 		w.ValueInt(1);
 		w.EndObject();
 	}
-	ASSERT_EQUALS(wxString("prefix:{\"x\":1}"), shared);
+	ASSERT_EQUALS(std::string("prefix:{\"x\":1}"), shared);
 }
 
 TEST(JsonWriter, LargeString)

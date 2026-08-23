@@ -34,7 +34,7 @@ CJsonWriter::CJsonWriter()
 {
 }
 
-CJsonWriter::CJsonWriter(wxString *external_buf)
+CJsonWriter::CJsonWriter(std::string *external_buf)
 : m_buf(external_buf)
 , m_needs_comma(false)
 {
@@ -43,33 +43,33 @@ CJsonWriter::CJsonWriter(wxString *external_buf)
 void CJsonWriter::MaybeComma()
 {
 	if (m_needs_comma) {
-		*m_buf += wxT(",");
+		*m_buf += ",";
 	}
 }
 
 void CJsonWriter::BeginObject()
 {
 	MaybeComma();
-	*m_buf += wxT("{");
+	*m_buf += "{";
 	m_needs_comma = false;
 }
 
 void CJsonWriter::EndObject()
 {
-	*m_buf += wxT("}");
+	*m_buf += "}";
 	m_needs_comma = true;
 }
 
 void CJsonWriter::BeginArray()
 {
 	MaybeComma();
-	*m_buf += wxT("[");
+	*m_buf += "[";
 	m_needs_comma = false;
 }
 
 void CJsonWriter::EndArray()
 {
-	*m_buf += wxT("]");
+	*m_buf += "]";
 	m_needs_comma = true;
 }
 
@@ -82,21 +82,21 @@ void CJsonWriter::Key(const wxString &name)
 {
 	MaybeComma();
 	WriteEscapedString(name);
-	*m_buf += wxT(":");
+	*m_buf += ":";
 	m_needs_comma = false;
 }
 
 void CJsonWriter::ValueNull()
 {
 	MaybeComma();
-	*m_buf += wxT("null");
+	*m_buf += "null";
 	m_needs_comma = true;
 }
 
 void CJsonWriter::ValueBool(bool v)
 {
 	MaybeComma();
-	*m_buf += v ? wxT("true") : wxT("false");
+	*m_buf += v ? "true" : "false";
 	m_needs_comma = true;
 }
 
@@ -105,7 +105,7 @@ void CJsonWriter::ValueInt(int64_t v)
 	MaybeComma();
 	char buf[32];
 	std::snprintf(buf, sizeof(buf), "%lld", static_cast<long long>(v));
-	*m_buf += wxString::FromAscii(buf);
+	*m_buf += buf;
 	m_needs_comma = true;
 }
 
@@ -114,7 +114,7 @@ void CJsonWriter::ValueUInt(uint64_t v)
 	MaybeComma();
 	char buf[32];
 	std::snprintf(buf, sizeof(buf), "%llu", static_cast<unsigned long long>(v));
-	*m_buf += wxString::FromAscii(buf);
+	*m_buf += buf;
 	m_needs_comma = true;
 }
 
@@ -146,7 +146,7 @@ std::string JsonDoubleToString(double v)
 void CJsonWriter::ValueDouble(double v)
 {
 	MaybeComma();
-	*m_buf += wxString::FromAscii(JsonDoubleToString(v).c_str());
+	*m_buf += JsonDoubleToString(v);
 	m_needs_comma = true;
 }
 
@@ -162,16 +162,30 @@ void CJsonWriter::ValueString(const char *s)
 	ValueString(s ? wxString::FromUTF8(s) : wxString());
 }
 
-void CJsonWriter::ValueRaw(const wxString &json_fragment)
+void CJsonWriter::ValueRaw(const std::string &json_fragment)
 {
 	MaybeComma();
 	*m_buf += json_fragment;
 	m_needs_comma = true;
 }
 
+void CJsonWriter::AppendUtf8(std::uint32_t cp)
+{
+	if (cp < 0x80) {
+		*m_buf += static_cast<char>(cp);
+	} else if (cp < 0x800) {
+		*m_buf += static_cast<char>(0xC0 | (cp >> 6));
+		*m_buf += static_cast<char>(0x80 | (cp & 0x3F));
+	} else {
+		*m_buf += static_cast<char>(0xE0 | (cp >> 12));
+		*m_buf += static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+		*m_buf += static_cast<char>(0x80 | (cp & 0x3F));
+	}
+}
+
 void CJsonWriter::WriteEscapedString(const wxString &s)
 {
-	*m_buf += wxT("\"");
+	*m_buf += "\"";
 	for (wxString::const_iterator i = s.begin(); i != s.end(); ++i) {
 		wxUniChar uc = *i;
 		uint32_t cp = uc.GetValue();
@@ -194,8 +208,7 @@ void CJsonWriter::WriteEscapedString(const wxString &s)
 			}
 			if (!paired) {
 				// Unpaired high surrogate. Falling through would
-				// emit invalid UTF-8 (CESU-8) once the buffer is
-				// utf8_str()-flushed. Replace with U+FFFD so the
+				// emit invalid UTF-8 (CESU-8). Replace with U+FFFD so the
 				// JSON output stays valid Unicode. Same treatment
 				// for an unpaired low surrogate below.
 				cp = 0xFFFD;
@@ -205,25 +218,25 @@ void CJsonWriter::WriteEscapedString(const wxString &s)
 		}
 		switch (cp) {
 		case '"':
-			*m_buf += wxT("\\\"");
+			*m_buf += "\\\"";
 			continue;
 		case '\\':
-			*m_buf += wxT("\\\\");
+			*m_buf += "\\\\";
 			continue;
 		case '\b':
-			*m_buf += wxT("\\b");
+			*m_buf += "\\b";
 			continue;
 		case '\f':
-			*m_buf += wxT("\\f");
+			*m_buf += "\\f";
 			continue;
 		case '\n':
-			*m_buf += wxT("\\n");
+			*m_buf += "\\n";
 			continue;
 		case '\r':
-			*m_buf += wxT("\\r");
+			*m_buf += "\\r";
 			continue;
 		case '\t':
-			*m_buf += wxT("\\t");
+			*m_buf += "\\t";
 			continue;
 		default:
 			break;
@@ -232,12 +245,10 @@ void CJsonWriter::WriteEscapedString(const wxString &s)
 			// Control characters: \uXXXX form.
 			char buf[8];
 			std::snprintf(buf, sizeof(buf), "\\u%04x", static_cast<unsigned>(cp));
-			*m_buf += wxString::FromAscii(buf);
+			*m_buf += buf;
 		} else if (cp <= 0xFFFF) {
-			// BMP non-control: emit verbatim. Non-ASCII bytes ride
-			// through as the wxString native encoding and are
-			// converted to UTF-8 by the response serializer.
-			*m_buf += uc;
+			// BMP non-control: no escape needed, emit as UTF-8.
+			AppendUtf8(cp);
 		} else {
 			// Supplementary plane: emit as UTF-16 surrogate pair.
 			// This is the only escape form JSON allows above U+FFFF.
@@ -250,8 +261,8 @@ void CJsonWriter::WriteEscapedString(const wxString &s)
 				"\\u%04x\\u%04x",
 				static_cast<unsigned>(hi),
 				static_cast<unsigned>(lo));
-			*m_buf += wxString::FromAscii(buf);
+			*m_buf += buf;
 		}
 	}
-	*m_buf += wxT("\"");
+	*m_buf += "\"";
 }

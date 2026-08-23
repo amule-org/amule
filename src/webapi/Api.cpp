@@ -112,6 +112,19 @@ void SplitPathAndQuery(const std::string &target, std::string &path, std::string
 	}
 }
 
+// Serialise the writer's buffer into the response body. Every JSON response in
+// this file goes through here -- open-coding it is how nine handlers came to
+// hold a stale copy of the conversion.
+void FinalizeJsonBody(CJsonWriter &w, CHttpServer::Response &r)
+{
+	// The writer already holds UTF-8, so this is a move, not a convert+copy.
+	// Never route it through wxString: amuleapi calls neither setlocale nor
+	// wxLocale, so it runs in the "C" locale whatever LANG says, and
+	// wxString's std::string ctor decodes with the locale -- turning a body
+	// with any non-ASCII byte into an empty one.
+	r.body = w.TakeBuffer();
+}
+
 CHttpServer::Response ErrorResponse(unsigned status, const char *code, const char *message)
 {
 	CHttpServer::Response r;
@@ -127,9 +140,7 @@ CHttpServer::Response ErrorResponse(unsigned status, const char *code, const cha
 	w.ValueString(wxString::FromAscii(message));
 	w.EndObject();
 	w.EndObject();
-	const wxString js = w.GetBuffer();
-	const wxScopedCharBuffer ub = js.utf8_str();
-	r.body.assign(ub.data(), ub.length());
+	FinalizeJsonBody(w, r);
 	return r;
 }
 
@@ -1735,9 +1746,7 @@ CHttpServer::Response CApiDispatcher::HandleVersion(const CHttpServer::Request &
 		w.EndObject();
 	}
 	w.EndObject();
-	const wxString js = w.GetBuffer();
-	const wxScopedCharBuffer ub = js.utf8_str();
-	r.body.assign(ub.data(), ub.length());
+	FinalizeJsonBody(w, r);
 	return r;
 }
 
@@ -1822,9 +1831,7 @@ CHttpServer::Response CApiDispatcher::HandleLogin(const CHttpServer::Request &re
 	w.BeginObject();
 	BeginSession(req, role, r, w);
 	w.EndObject();
-	const wxString js = w.GetBuffer();
-	const wxScopedCharBuffer ub = js.utf8_str();
-	r.body.assign(ub.data(), ub.length());
+	FinalizeJsonBody(w, r);
 	return r;
 }
 
@@ -1971,9 +1978,7 @@ CHttpServer::Response CApiDispatcher::HandleLogout(const CHttpServer::Request &r
 	w.Key("ok");
 	w.ValueBool(true);
 	w.EndObject();
-	const wxString js = w.GetBuffer();
-	const wxScopedCharBuffer ub = js.utf8_str();
-	r.body.assign(ub.data(), ub.length());
+	FinalizeJsonBody(w, r);
 	return r;
 }
 
@@ -2008,9 +2013,7 @@ CHttpServer::Response CApiDispatcher::HandleSession(const CHttpServer::Request &
 	w.Key("exp_unix");
 	w.ValueInt(static_cast<int64_t>(a.verified.exp));
 	w.EndObject();
-	const wxString js = w.GetBuffer();
-	const wxScopedCharBuffer ub = js.utf8_str();
-	r.body.assign(ub.data(), ub.length());
+	FinalizeJsonBody(w, r);
 	return r;
 }
 
@@ -2036,9 +2039,7 @@ CHttpServer::Response CApiDispatcher::HandleAuthPasswords(const CHttpServer::Req
 	w.Key("guest_enabled");
 	w.ValueBool(!m_config.GuestCredential().empty());
 	w.EndObject();
-	const wxString js = w.GetBuffer();
-	const wxScopedCharBuffer ub = js.utf8_str();
-	r.body.assign(ub.data(), ub.length());
+	FinalizeJsonBody(w, r);
 	return r;
 }
 
@@ -2186,9 +2187,7 @@ CHttpServer::Response CApiDispatcher::HandleAuthPasswordsPatch(const CHttpServer
 	w.ValueBool(true);
 	BeginSession(req, Role::ADMIN, r, w);
 	w.EndObject();
-	const wxString js = w.GetBuffer();
-	const wxScopedCharBuffer ub = js.utf8_str();
-	r.body.assign(ub.data(), ub.length());
+	FinalizeJsonBody(w, r);
 	return r;
 }
 
@@ -2339,25 +2338,12 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 	// Nickname is a /preferences field, not a /status one.
 	w.EndObject();
 
-	const wxString js = w.GetBuffer();
-	const wxScopedCharBuffer ub = js.utf8_str();
-	r.body.assign(ub.data(), ub.length());
+	FinalizeJsonBody(w, r);
 	return r;
 }
 
 namespace
 {
-
-// Compact helper — every read endpoint serialises its body the same
-// way (build a wxString via CJsonWriter, then utf8_str into the
-// response body). Hide the boilerplate behind a helper that takes a
-// ready CJsonWriter.
-void FinalizeJsonBody(CJsonWriter &w, CHttpServer::Response &r)
-{
-	const wxString &js = w.GetBuffer();
-	const wxScopedCharBuffer ub = js.utf8_str();
-	r.body.assign(ub.data(), ub.length());
-}
 
 // Write a single download object. Used both inline (in the list
 // endpoint, iterated) and as the body of the detail endpoint (bare,
@@ -4276,9 +4262,7 @@ CHttpServer::Response CApiDispatcher::HandleVersionCheck(const CHttpServer::Requ
 	w.Key("status");
 	w.ValueString("started");
 	w.EndObject();
-	const wxString js = w.GetBuffer();
-	const wxScopedCharBuffer ub = js.utf8_str();
-	r.body.assign(ub.data(), ub.length());
+	FinalizeJsonBody(w, r);
 	return r;
 }
 
@@ -5010,9 +4994,9 @@ void WriteServerObject(CJsonWriter &w, const webapi::ServerSnapshot &s)
 	// tables so this object and the SSE payload in EventDiff.cpp -- two
 	// different writers, one documented shape -- cannot drift apart.
 	w.Key("tcp_flags");
-	w.ValueRaw(wxString::FromAscii(webapi::ServerTcpFlagsJson(s.tcp_flags).c_str()));
+	w.ValueRaw(webapi::ServerTcpFlagsJson(s.tcp_flags));
 	w.Key("udp_flags");
-	w.ValueRaw(wxString::FromAscii(webapi::ServerUdpFlagsJson(s.udp_flags).c_str()));
+	w.ValueRaw(webapi::ServerUdpFlagsJson(s.udp_flags));
 	w.EndObject();
 }
 

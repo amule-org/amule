@@ -29,9 +29,11 @@
 #include <cstdint>
 #include <string>
 
-// Streaming JSON output. Appends to an internal or caller-owned wxString
-// buffer; the buffer holds JSON text suitable for UTF-8 emission via
-// wxString::utf8_str() at flush time.
+// Streaming JSON output. Appends UTF-8 bytes to an internal or caller-owned
+// std::string, ready to be a response body with no conversion. Inputs stay
+// wxString -- that is what callers hold -- and are encoded on append. Do not
+// put the buffer back to wxString: it is UTF-32 here (wxUSE_UNICODE_WCHAR),
+// which held an ASCII body at four bytes a character.
 //
 // Usage:
 //  CJsonWriter w;
@@ -39,7 +41,7 @@
 //    w.Key("name"); w.ValueString("aMule");
 //    w.Key("version"); w.ValueString("2.3.3");
 //  w.EndObject();
-//  const wxString &out = w.GetBuffer();
+//  const std::string &out = w.GetBuffer();
 //
 // Commas between siblings are inserted automatically. Calling Key()
 // outside an object, or omitting it inside one, is a programmer error
@@ -62,7 +64,7 @@ class CJsonWriter
 {
 public:
 	CJsonWriter();
-	explicit CJsonWriter(wxString *external_buf);
+	explicit CJsonWriter(std::string *external_buf);
 
 	void BeginObject();
 	void EndObject();
@@ -81,21 +83,30 @@ public:
 	void ValueString(const wxString &s);
 	void ValueString(const char *s);
 	// Pre-formatted JSON fragment, written verbatim. Caller responsible
-	// for valid syntax. Useful when the writer is composing a response
-	// from a sub-component that already produced JSON text.
-	void ValueRaw(const wxString &json_fragment);
+	// for valid syntax and for it being UTF-8. Useful when the writer is
+	// composing a response from a sub-component that already produced JSON
+	// text.
+	void ValueRaw(const std::string &json_fragment);
 
-	const wxString &GetBuffer() const { return *m_buf; }
+	const std::string &GetBuffer() const { return *m_buf; }
+
+	// Move the accumulated text out, leaving the writer empty. Saves copying a
+	// multi-megabyte body at the end of a response. Copies instead when the
+	// buffer belongs to the caller -- emptying someone else's is not ours to do.
+	std::string TakeBuffer() { return m_buf == &m_internal ? std::move(m_internal) : *m_buf; }
 
 private:
-	wxString m_internal;
-	wxString *m_buf;
+	std::string m_internal;
+	std::string *m_buf;
 	// True when the next value/key/closer must be preceded by a comma.
 	// Reset by BeginObject/BeginArray/Key.
 	bool m_needs_comma;
 
 	void MaybeComma();
 	void WriteEscapedString(const wxString &s);
+	// Append one code point as UTF-8. BMP scalars only -- control characters
+	// and supplementary planes take escape forms, surrogates become U+FFFD.
+	void AppendUtf8(std::uint32_t cp);
 };
 
 #endif // LIBWEBCOMMON_JSONWRITER_H
