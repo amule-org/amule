@@ -116,6 +116,32 @@ enum ClientState
 // This is fixed on ed2k v1, but can be any number on ED2Kv2
 #define STANDARD_BLOCKS_REQUEST 3
 
+/**
+ * What TryToConnect did about the peer it was asked to reach.
+ *
+ * It used to answer with a bool that meant three different things -- and the
+ * one the browse code needed, "did you actually try?", was not among them, so
+ * that code inferred it from side effects instead. The inference was wrong
+ * twice, in both cases because an exit was added or moved without anything
+ * forcing a decision about what it meant (amule-org/amule#1071). Naming the
+ * outcomes is what turns that from a silent default into a choice the compiler
+ * makes somebody make.
+ */
+enum class EContactResult
+{
+	//! A connection attempt or a callback request is under way.
+	Contacting,
+	//! Nothing was sent: this peer cannot be reached the way things stand.
+	//! The client is still valid.
+	Declined,
+	//! Connect() declined to start, because the socket was already live. Kept
+	//! distinct only to preserve the historical bool -- callers have always
+	//! been told "false" here, and changing that is not this change's job.
+	ConnectNotStarted,
+	//! The client was destroyed on the way out. Touching it is undefined.
+	ClientDeleted
+};
+
 class CUpDownClient : public CECID
 {
 	friend class CClientList;
@@ -190,6 +216,19 @@ public:
 	ClientState GetClientState() { return m_clientState; }
 
 	bool Disconnected(const wxString &strReason, bool bFromSocket = false);
+	/**
+	 * Try to reach this peer, and say which of the three things happened.
+	 *
+	 * Prefer this over the bool overload when the answer matters: "I decided
+	 * not to" and "I am on my way" are different facts, and only this
+	 * spelling carries them.
+	 */
+	EContactResult TryToContact(bool bIgnoreMaxCon = false);
+	/**
+	 * As TryToContact, reduced to the historical answer: false means the
+	 * client was deleted (or Connect() declined to start) and must not be
+	 * touched again. Kept for the callers that only need that much.
+	 */
 	bool TryToConnect(bool bIgnoreMaxCon = false);
 	bool Connect();
 	void ConnectionEstablished();
@@ -493,13 +532,6 @@ public:
 		m_browseSearchId = id;
 		m_browseEcInitiated = id != 0;
 	}
-	/**
-	 * Whether anything is still on its way to or from this peer: a live
-	 * connection, a direct UDP callback, or a server/Kad callback we asked
-	 * for. False means nothing will arrive on its own, so a browse waiting on
-	 * this client can be failed at once instead of hanging.
-	 */
-	bool IsPeerContactPending() const;
 
 	void ResetFileStatusInfo();
 

@@ -1428,14 +1428,22 @@ bool CUpDownClient::Disconnected(const wxString &DEBUG_ONLY(strReason), bool bFr
 // true means the client was not deleted!
 bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 {
+	const EContactResult result = TryToContact(bIgnoreMaxCon);
+	// Exactly what this returned before the outcomes were named: false where
+	// the caller must stop touching the client, true otherwise.
+	return result != EContactResult::ClientDeleted && result != EContactResult::ConnectNotStarted;
+}
+
+EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
+{
 	// Kad reviewed
 	if (theApp->listensocket->TooManySockets() && !bIgnoreMaxCon) {
 		if (!(m_socket && m_socket->IsConnected())) {
 			if (Disconnected("Too many connections")) {
 				Safe_Delete();
-				return false;
+				return EContactResult::ClientDeleted;
 			}
-			return true;
+			return EContactResult::Declined;
 		}
 	}
 
@@ -1445,9 +1453,9 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 		(thePrefs::IsClientCryptLayerRequired() && !SupportsCryptLayer())) {
 		if (Disconnected("CryptLayer-Settings (Obfuscation) incompatible")) {
 			Safe_Delete();
-			return false;
+			return EContactResult::ClientDeleted;
 		} else {
-			return true;
+			return EContactResult::Declined;
 		}
 	}
 
@@ -1467,9 +1475,9 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 					Uint32toStringIP(uClientIP));
 			if (Disconnected("IPFilter")) {
 				Safe_Delete();
-				return false;
+				return EContactResult::ClientDeleted;
 			}
-			return true;
+			return EContactResult::Declined;
 		}
 
 		// for safety: check again whether that IP is banned
@@ -1478,9 +1486,9 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 				"Refused to connect to banned client " + Uint32toStringIP(uClientIP));
 			if (Disconnected("Banned IP")) {
 				Safe_Delete();
-				return false;
+				return EContactResult::ClientDeleted;
 			}
-			return true;
+			return EContactResult::Declined;
 		}
 	}
 
@@ -1502,10 +1510,12 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 			if (GetUploadState() == US_CONNECTING) {
 				if (Disconnected("LowID->LowID and US_CONNECTING")) {
 					Safe_Delete();
-					return false;
+					return EContactResult::ClientDeleted;
 				}
 			}
-			return true;
+			// Nothing was sent and nothing will arrive: this peer cannot be
+			// reached while we cannot call back.
+			return EContactResult::Declined;
 		}
 
 		// We already know we are not firewalled here as the above condition already detected
@@ -1525,7 +1535,7 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 					// There are too many source lookups already or we are already
 					// searching this key.
 					SetDownloadState(DS_TOOMANYCONNSKAD);
-					return true;
+					return EContactResult::Declined;
 				}
 			}
 		}
@@ -1538,7 +1548,7 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 		m_socket = new CClientTCPSocket(this, thePrefs::GetProxyData());
 	} else {
 		ConnectionEstablished();
-		return true;
+		return EContactResult::Contacting;
 	}
 
 	if (HasLowID() && SupportsDirectUDPCallback() && thePrefs::GetEffectiveUDPPort() != 0 &&
@@ -1548,7 +1558,8 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 				"ERROR: Trying Direct UDP Callback while already trying to connect to client "
 				"on ip " +
 					Uint32toStringIP(GetConnectIP()));
-			return true; // We're already trying a direct connection to this client
+			// Already on its way, with its own 45s deadline.
+			return EContactResult::Contacting;
 		}
 		// a direct callback is possible - since no other parties are involved and only one additional
 		// packet overhead is used we basically handle it like a normal connection try, no
@@ -1584,9 +1595,9 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 		if (GetUploadState() == US_CONNECTING) {
 			if (Disconnected("LowID and US_CONNECTING")) {
 				Safe_Delete();
-				return false;
+				return EContactResult::ClientDeleted;
 			}
-			return true;
+			return EContactResult::Declined;
 		}
 
 		if (theApp->serverconnect->IsLocalServer(m_dwServerIP, m_nServerPort)) {
@@ -1607,9 +1618,9 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 					theApp->downloadqueue->RemoveSource(this);
 					if (Disconnected("LowID and US_NONE and QR=0")) {
 						Safe_Delete();
-						return false;
+						return EContactResult::ClientDeleted;
 					}
-					return true;
+					return EContactResult::Declined;
 				}
 
 				if (!Kademlia::CKademlia::IsConnected()) {
@@ -1617,9 +1628,9 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 					theApp->downloadqueue->RemoveSource(this);
 					if (Disconnected("Kad Firewalled source but not connected to Kad.")) {
 						Safe_Delete();
-						return false;
+						return EContactResult::ClientDeleted;
 					}
-					return true;
+					return EContactResult::Declined;
 				}
 
 				if (GetDownloadState() == DS_WAITCALLBACK) {
@@ -1673,10 +1684,12 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 		}
 	} else { // HIGHID
 		if (!Connect()) {
-			return false;
+			return EContactResult::ConnectNotStarted;
 		}
 	}
-	return true;
+	// Everything that reaches here sent something: a server or Kad callback
+	// request, a direct UDP callback, or a connect.
+	return EContactResult::Contacting;
 }
 
 bool CUpDownClient::Connect()
@@ -2055,41 +2068,6 @@ void CUpDownClient::ReGetClientSoft()
 	UpdateStats();
 }
 
-bool CUpDownClient::IsPeerContactPending() const
-{
-	// A live connection carries the browse directly; ConnectionEstablished
-	// sends the request off the back of it.
-	//
-	// A socket that merely exists counts too, but ONLY on the HighID path:
-	// CUpDownClient::Connect starts an asynchronous connect, so that path
-	// returns with the socket created but not yet connected. It must not count
-	// on the LowID paths -- TryToConnect mints the socket before its second
-	// LowID block and only the HighID branch ever calls Connect() on it, so a
-	// LowID exit past that point leaves a socket nothing is connecting.
-	// The three ways a LowID peer really does get contacted are the clauses
-	// below: a direct UDP callback, a server callback (DS_WAITCALLBACK), a Kad
-	// buddy callback (DS_WAITCALLBACKKAD) -- and an incoming connection by
-	// IsConnected().
-	if (IsConnected() || (!HasLowID() && GetSocket() != nullptr)) {
-		return true;
-	}
-	// A direct UDP callback brings its own 45s deadline, after which
-	// CClientList::ProcessDirectCallbackList disconnects us.
-	if (m_dwDirectCallbackTimeout != 0) {
-		return true;
-	}
-	// A server or Kad callback we have asked for: the peer may still connect
-	// back, and the browse rides that connection when it does.
-	switch (GetDownloadState()) {
-	case DS_CONNECTING:
-	case DS_WAITCALLBACK:
-	case DS_WAITCALLBACKKAD:
-		return true;
-	default:
-		return false;
-	}
-}
-
 void CUpDownClient::RequestSharedFileList()
 {
 	if (theApp->browsemanager->SearchIdFor(this) != 0) {
@@ -2117,21 +2095,22 @@ void CUpDownClient::RequestSharedFileList()
 	// never answers still shows a tab that can flip to "failed".
 	Notify_Browse_Started(ECID(), GetUserName(), (uint64)m_browseSearchId);
 
-	if (!TryToConnect(true)) {
-		// false means the client was deleted (see TryToConnect), and it only
-		// gets there through Disconnected(), which has already ended the
-		// browse. Nothing left that may be touched.
+	switch (TryToContact(true)) {
+	case EContactResult::ClientDeleted:
+		// Destroyed on the way out, through Disconnected(), which has already
+		// ended the browse. Nothing left that may be touched.
 		return;
-	}
-	// TryToConnect returns true both when it started contacting the peer and
-	// when it decided not to, and several of its exits do the latter silently.
-	// None of those send a packet, so nothing downstream would ever end the
-	// browse; the deadline would, eventually, but saying so now is both
-	// correct and cheaper. Tested on the outcome rather than at each exit,
-	// because the exits are not a closed set -- two attempts at enumerating
-	// them both came up short.
-	if (!IsPeerContactPending()) {
+	case EContactResult::Declined:
+	case EContactResult::ConnectNotStarted:
+		// Nothing was sent, so no terminal path downstream will ever run.
+		// The deadline would catch it eventually; saying so now is both
+		// correct and cheaper. This used to be inferred from the client's
+		// side effects, because the bool could not distinguish "I tried" from
+		// "I decided not to" -- and the inference was wrong twice.
 		theApp->browsemanager->Fail(this);
+		return;
+	case EContactResult::Contacting:
+		break;
 	}
 }
 
