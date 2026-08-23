@@ -37,6 +37,33 @@
 using namespace muleunit;
 using namespace webapi;
 
+namespace
+{
+// Stand-ins for the role-filtered accessors CState no longer exposes; the
+// assertions below just want a countable, indexable list.
+std::vector<FileSnapshot> RoleView(const CState &s, bool FileSnapshot::*role)
+{
+	std::vector<FileSnapshot> out;
+	s.WithFiles([&](const FileMap &files) {
+		for (const auto &entry : files) {
+			if (entry.second.*role)
+				out.push_back(entry.second);
+		}
+	});
+	return out;
+}
+
+std::vector<FileSnapshot> Downloads(const CState &s)
+{
+	return RoleView(s, &FileSnapshot::is_downloading);
+}
+
+std::vector<FileSnapshot> Shared(const CState &s)
+{
+	return RoleView(s, &FileSnapshot::is_shared);
+}
+} // namespace
+
 DECLARE_SIMPLE(State)
 
 TEST(State, FreshHasNoSnapshot)
@@ -149,7 +176,7 @@ TEST(State, MutateDownloadsRoundtripAndFind)
 	// Both entries should be present in the vector view. Order is
 	// unordered_map-bucket-defined (FileMap drops std::map's ECID
 	// ordering), so look entries up by ECID instead of position.
-	const auto out = s.Downloads();
+	const auto out = Downloads(s);
 	ASSERT_EQUALS(static_cast<size_t>(2), out.size());
 	std::string foo_name, bar_name;
 	for (const auto &f : out) {
@@ -197,7 +224,7 @@ TEST(State, MutateDownloadsDecodedRleFieldsRoundtrip)
 		cache.emplace(a.ecid, a);
 	});
 
-	const auto out = s.Downloads();
+	const auto out = Downloads(s);
 	ASSERT_EQUALS(static_cast<size_t>(1), out.size());
 	ASSERT_EQUALS(static_cast<size_t>(4), out[0].download.decoded_gaps.size());
 	ASSERT_EQUALS(static_cast<std::uint64_t>(100), out[0].download.decoded_gaps[0]);
@@ -332,8 +359,8 @@ TEST(State, MutateClientsAndSharedRoundtrip)
 		x.shared.priority = "normal";
 		cache.emplace(x.ecid, x);
 	});
-	ASSERT_EQUALS(static_cast<size_t>(1), s.Shared().size());
-	ASSERT_EQUALS(std::string("shared.iso"), s.Shared()[0].name);
+	ASSERT_EQUALS(static_cast<size_t>(1), Shared(s).size());
+	ASSERT_EQUALS(std::string("shared.iso"), Shared(s)[0].name);
 }
 
 TEST(State, WriteKadAndPreferencesRoundtrip)
@@ -869,14 +896,14 @@ TEST(State, ResetListsClearsAll)
 			it->second.is_shared = true;
 		}
 	});
-	ASSERT_EQUALS(static_cast<size_t>(1), s.Downloads().size());
+	ASSERT_EQUALS(static_cast<size_t>(1), Downloads(s).size());
 	ASSERT_EQUALS(static_cast<size_t>(1), s.Clients().size());
-	ASSERT_EQUALS(static_cast<size_t>(1), s.Shared().size());
+	ASSERT_EQUALS(static_cast<size_t>(1), Shared(s).size());
 
 	s.ResetLists();
-	ASSERT_EQUALS(static_cast<size_t>(0), s.Downloads().size());
+	ASSERT_EQUALS(static_cast<size_t>(0), Downloads(s).size());
 	ASSERT_EQUALS(static_cast<size_t>(0), s.Clients().size());
-	ASSERT_EQUALS(static_cast<size_t>(0), s.Shared().size());
+	ASSERT_EQUALS(static_cast<size_t>(0), Shared(s).size());
 }
 
 TEST(State, ConcurrentReadersDontTearSnapshot)

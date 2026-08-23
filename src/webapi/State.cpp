@@ -488,30 +488,6 @@ void CState::MutateChats(const std::function<void(std::vector<ChatSessionSnapsho
 	fn(m_chats, m_chat_cursor);
 }
 
-std::vector<FileSnapshot> CState::Downloads() const
-{
-	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
-	std::vector<FileSnapshot> out;
-	out.reserve(m_files.size());
-	for (const auto &kv : m_files) {
-		if (kv.second.is_downloading)
-			out.push_back(kv.second);
-	}
-	return out;
-}
-
-std::vector<FileSnapshot> CState::Shared() const
-{
-	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
-	std::vector<FileSnapshot> out;
-	out.reserve(m_files.size());
-	for (const auto &kv : m_files) {
-		if (kv.second.is_shared)
-			out.push_back(kv.second);
-	}
-	return out;
-}
-
 std::vector<FileSnapshot> CState::Files() const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);

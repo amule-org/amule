@@ -180,10 +180,13 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		// REQUEST_FILE into MD4 hashes at walker time (the wire
 		// contract is hash-only — ECIDs never leak out).
 		std::map<std::uint32_t, std::string> file_hash_by_ecid;
-		for (const auto &f : state.Files()) {
-			if (!f.hash.empty())
-				file_hash_by_ecid.emplace(f.ecid, f.hash);
-		}
+		state.WithFiles([&file_hash_by_ecid](const FileMap &files) {
+			for (const auto &entry : files) {
+				const FileSnapshot &f = entry.second;
+				if (!f.hash.empty())
+					file_hash_by_ecid.emplace(f.ecid, f.hash);
+			}
+		});
 		state.MutateClients([&](std::map<std::uint32_t, ClientSnapshot> &cache) {
 			ApplyGetUpdateToClients(resp, cache, file_hash_by_ecid);
 		});

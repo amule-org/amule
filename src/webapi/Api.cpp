@@ -3459,16 +3459,6 @@ CHttpServer::Response CApiDispatcher::HandleDownloads(const CHttpServer::Request
 		}
 	}
 
-	std::vector<webapi::FileSnapshot> downloads = m_state.Downloads();
-	if (!include_completed) {
-		downloads.erase(std::remove_if(downloads.begin(),
-					downloads.end(),
-					[](const webapi::FileSnapshot &d) {
-						return d.download.status == "completed";
-					}),
-			downloads.end());
-	}
-
 	ListParams params;
 	if (auto err = ParseListParams(QueryOf(req), params))
 		return *err;
@@ -3494,18 +3484,34 @@ CHttpServer::Response CApiDispatcher::HandleDownloads(const CHttpServer::Request
 				return a.download.status < b.download.status;
 			} },
 	};
-	return ListResponse(
-		m_state,
-		"downloads",
-		downloads,
-		[](CJsonWriter &w, const webapi::FileSnapshot &d) {
-			// List mode — omit `progress.parts` (Q2 + the per-list
-			// shape: omitting parts keeps the list response compact,
-			// detail endpoint is where parts ship).
-			WriteDownloadObject(w, d, /*include_parts=*/false);
-		},
-		params,
-		kComps);
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
+	// Pointers into the live map rather than copies; see HandleSharedList.
+	CHttpServer::Response resp;
+	m_state.WithFiles([&](const webapi::FileMap &files) {
+		std::vector<const webapi::FileSnapshot *> ptrs;
+		ptrs.reserve(files.size());
+		for (const auto &entry : files) {
+			const webapi::FileSnapshot &d = entry.second;
+			if (!d.is_downloading)
+				continue;
+			if (!include_completed && d.download.status == "completed")
+				continue;
+			ptrs.push_back(&d);
+		}
+		resp = ListResponseFromPtrsUnlocked(
+			"downloads",
+			ptrs,
+			[](CJsonWriter &w, const webapi::FileSnapshot &d) {
+				// List mode — omit `progress.parts` (Q2 + the per-list
+				// shape: omitting parts keeps the list response compact,
+				// detail endpoint is where parts ship).
+				WriteDownloadObject(w, d, /*include_parts=*/false);
+			},
+			params,
+			kComps);
+	});
+	return resp;
 }
 
 namespace
@@ -3760,7 +3766,24 @@ CHttpServer::Response CApiDispatcher::HandleSharedList(const CHttpServer::Reques
 				return a.size < b.size;
 			} },
 	};
-	return ListResponse(m_state, "shared", m_state.Shared(), WriteSharedObject, params, kComps);
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
+	// Pointers into the live map rather than copies -- this was the single
+	// biggest allocation the daemon made per request. Serialising inside the
+	// read lock is safe because WriteSharedObject reads only the snapshot it is
+	// handed, so ListResponseFromPtrsUnlocked's "must not re-enter CState"
+	// contract holds.
+	CHttpServer::Response resp;
+	m_state.WithFiles([&](const webapi::FileMap &files) {
+		std::vector<const webapi::FileSnapshot *> ptrs;
+		ptrs.reserve(files.size());
+		for (const auto &entry : files) {
+			if (entry.second.is_shared)
+				ptrs.push_back(&entry.second);
+		}
+		resp = ListResponseFromPtrsUnlocked("shared", ptrs, WriteSharedObject, params, kComps);
+	});
+	return resp;
 }
 
 CHttpServer::Response CApiDispatcher::HandleDownloadDetail(
@@ -4852,12 +4875,15 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsClearCompleted(const CHttpS
 		ecids.push_back(d.ecid);
 		hashes_cleared.push_back(d.hash);
 	} else {
-		for (const auto &d : m_state.Downloads()) {
-			if (d.download.status == "completed") {
-				ecids.push_back(d.ecid);
-				hashes_cleared.push_back(d.hash);
+		m_state.WithFiles([&](const webapi::FileMap &files) {
+			for (const auto &entry : files) {
+				const webapi::FileSnapshot &d = entry.second;
+				if (d.is_downloading && d.download.status == "completed") {
+					ecids.push_back(d.ecid);
+					hashes_cleared.push_back(d.hash);
+				}
 			}
-		}
+		});
 	}
 
 	if (ecids.empty()) {
