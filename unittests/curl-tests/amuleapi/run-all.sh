@@ -65,6 +65,12 @@ _find_amuleapi_bin() {
 
 BIN="${AMULEAPI_BIN:-$(_find_amuleapi_bin "$ROOT")}"
 
+# The daemon every phase talks to. Overridable so the whole suite can be
+# pointed at a daemon that is not on the stock EC port.
+EC_HOST=${EC_HOST:-127.0.0.1}
+EC_PORT=${EC_PORT:-4712}
+EC_PASSWORD=${EC_PASSWORD:-amule}
+
 if [ ! -x "$BIN" ]; then
 	echo "FATAL: no usable amuleapi binary under $ROOT." >&2
 	echo "       set AMULEAPI_BIN to point at one." >&2
@@ -133,7 +139,7 @@ run_phase() {
 	# amuleapi has no --password: it takes the EC credential from the
 	# ephemeral token the core writes when it spawns amuleapi, or from
 	# amuleapi.conf. Nothing spawns it here, so seed the config file.
-	sed -i'.bak' "s|^Password=.*|Password=amule|" /tmp/amuleapi-regtest/amuleapi.conf
+	sed -i'.bak' "s|^Password=.*|Password=$EC_PASSWORD|" /tmp/amuleapi-regtest/amuleapi.conf
 	rm -f /tmp/amuleapi-regtest/amuleapi.conf.bak
 	# 27-static-frontend exercises the static-frontend serve path. It
 	# plants symlinks + an oversized file into StaticRoot during the
@@ -156,7 +162,7 @@ run_phase() {
 		rm -f /tmp/amuleapi-regtest/amuleapi.conf.bak
 	fi
 	"$BIN" --config-dir=/tmp/amuleapi-regtest \
-		--host=127.0.0.1 --port=4712 \
+		--host="$EC_HOST" --port="$EC_PORT" \
 		> /tmp/amuleapi.log 2>&1 &
 	# Poll /version until the daemon is ready instead of guessing the
 	# cold-start time. The first EC GET_UPDATE roundtrip can take a
@@ -178,6 +184,7 @@ run_phase() {
 	# so the smoke doesn't depend on the operator's library already
 	# holding a shared file. Unset is fine unless a phase needs it.
 	AMULEAPI_BIN="$BIN" \
+	EC_HOST="$EC_HOST" EC_PORT="$EC_PORT" EC_PASSWORD="$EC_PASSWORD" \
 	AMULEAPI_CONFIG_DIR=/tmp/amuleapi-regtest \
 	AMULEAPI_LOG=/tmp/amuleapi.log \
 	AMULE_SHARED_DIR="${AMULE_SHARED_DIR:-}" \

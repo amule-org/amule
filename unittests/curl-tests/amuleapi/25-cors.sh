@@ -62,6 +62,14 @@ _find_amuleapi_bin() {
 ROOT=${AMULEAPI_ROOT:-$(cd "$(dirname "$0")/../../.." && pwd)}
 BIN=${AMULEAPI_BIN:-$(_find_amuleapi_bin "$ROOT")}
 LOG=${AMULEAPI_LOG:-/tmp/amuleapi.log}
+# The daemon this smoke drives. Defaults are the orchestrator's, but every
+# value is overridable so the suite can be pointed at a daemon that is not
+# on the stock EC port; hardcoding them here made that impossible.
+EC_HOST=${EC_HOST:-127.0.0.1}
+EC_PORT=${EC_PORT:-4712}
+EC_PASSWORD=${EC_PASSWORD:-amule}
+# The HTTP port the rewritten config must bind is the one $HOST names.
+HTTP_PORT=${HOST##*:}
 
 FAIL_COUNT=0
 TEST_COUNT=0
@@ -102,14 +110,14 @@ _rewrite_cors_and_restart() {
 	cat > "$CONFIG_DIR/amuleapi.conf" <<EOF
 [Server]
 BindAddress=127.0.0.1
-Port=4713
+Port=$HTTP_PORT
 AllowCORS=$allow
 CorsOriginAllowlist=$allowlist
 
 [EC]
-Host=127.0.0.1
-Port=4712
-Password=amule
+Host=$EC_HOST
+Port=$EC_PORT
+Password=$EC_PASSWORD
 
 [Auth]
 LoginFailureWindowSeconds=60
@@ -117,7 +125,7 @@ LoginFailureThreshold=5
 LoginLockoutSeconds=300
 EOF
 	"$BIN" --config-dir="$CONFIG_DIR" \
-		--host=127.0.0.1 --port=4712 \
+		--host="$EC_HOST" --port="$EC_PORT" \
 		> "$LOG" 2>&1 &
 	# Wait for /version to respond.
 	for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
