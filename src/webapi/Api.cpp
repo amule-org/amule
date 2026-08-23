@@ -10409,11 +10409,12 @@ void CApiDispatcher::DispatchEvents(const CHttpServer::Request &req,
 	auto event_channel = [](const std::string &name) -> std::string {
 		// Event naming convention: every bus event MUST contain at
 		// least one underscore — the prefix before the first `_`
-		// identifies the channel. The only no-underscore name on
-		// the wire is `resync`, which bypasses this filter entirely
-		// (synthetic per-subscriber, never via EventBus::Publish).
-		// Future bare-token events need explicit channel mapping or
-		// must always bypass like `resync`.
+		// identifies the channel. The only no-underscore name is
+		// `resync`, which the caller bypasses by name: it reaches the
+		// wire both synthesised per subscriber and published on the
+		// bus, and a cache invalidation is not opt-out-able either
+		// way. Future bare-token events need explicit channel mapping
+		// or must always bypass like `resync`.
 		const auto us = name.find('_');
 		if (us == std::string::npos)
 			return name;
@@ -10444,6 +10445,11 @@ void CApiDispatcher::DispatchEvents(const CHttpServer::Request &req,
 	auto event_passes_filter = [&](const std::string &name) {
 		if (!channels_set)
 			return true;
+		// A cache invalidation is not opt-out-able, and this one arrives over
+		// the bus rather than synthesised per subscriber, so it has to bypass
+		// here as well as in the reconnect path.
+		if (name == "resync")
+			return true;
 		return channel_filter.count(event_channel(name)) > 0;
 	};
 
@@ -10462,11 +10468,16 @@ void CApiDispatcher::DispatchEvents(const CHttpServer::Request &req,
 	//  - parsed > NewestId → stale id from a prior daemon process
 	//    (ids reset to 1 on restart); emit `resync` (reason=restart)
 	//    and start from NewestId.
+	// Registers this session for the life of the stream, so the refresher knows
+	// to resume diffing.
+	webapi::CEventBus::Subscription subscription(m_app.EventBus());
+
 	std::uint64_t since_id;
 	const std::string lei = FindHeaderCaseInsensitive(req.headers, "Last-Event-ID");
 	const std::uint64_t newest = m_app.EventBus().NewestId();
 	const std::uint64_t oldest = m_app.EventBus().OldestId();
 	if (lei.empty()) {
+		// No cursor to invalidate: the client GETs the collections itself.
 		since_id = newest;
 	} else {
 		char *end = nullptr;

@@ -389,4 +389,12 @@ void EmitDiffsForEventBus(CamuleapiApp &app, const CState &state)
 	EmitDiffsAndUpdate(app.EventBus(), app.LastSeenForEvents(), state);
 }
 
+void PrimeDiffBaseline(CamuleapiApp &app, const CState &state)
+{
+	// Same walk into a bus nobody reads -- diverting the events is what keeps
+	// this short, instead of a `publish` flag through every emitter.
+	CEventBus scratch(CEventBus::kMinCapacity);
+	EmitDiffsAndUpdate(scratch, app.LastSeenForEvents(), state);
+}
+
 } // namespace webapi

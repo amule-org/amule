@@ -80,6 +80,11 @@ SearchFetchOutcome FetchSearchResults(CamuleapiApp &app, CState &state, std::uin
 // diff on the next 1-second tick instead of immediately.
 void EmitDiffsForEventBus(CamuleapiApp &app, const CState &state);
 
+// Bring the diff baseline up to the current state without publishing. Used on
+// the first tick after diffs were skipped, which would otherwise emit one event
+// per record; whoever subscribed during the gap gets `resync` instead.
+void PrimeDiffBaseline(CamuleapiApp &app, const CState &state);
+
 // Sub-tick helpers exposed for testing. The Refresher uses these
 // internally; the unit test calls them against hand-crafted
 // CECPacket fixtures to pin the EC-tag-to-State mapping without

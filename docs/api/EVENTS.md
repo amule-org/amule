@@ -172,7 +172,7 @@ curl -N -H "Authorization: Bearer $TOKEN" \
 
 Unknown channel names in the query are silently ignored — forward-compatibility hedge for future event families. The token cap on the filter set is 32 to bound the memory the parser allocates; passing more is silently truncated.
 
-The synthetic `resync` event (see below) is ALWAYS delivered regardless of the filter. Its purpose is to signal a cache invalidation that the client cannot opt out of.
+The `resync` event (see below) is ALWAYS delivered regardless of the filter. Its purpose is to signal a cache invalidation that the client cannot opt out of.
 
 Mirror your filter in the bootstrap: only `GET` the REST collections matching the channels you subscribed to. Pulling a collection whose channel you filtered out leaves that snapshot silently stale — it never receives updates from the stream.
 
@@ -211,13 +211,21 @@ data: {"reason":"gap","since_id":<old cursor>,"newest_id":<new cursor>}
 
 ```
 
-`reason` is `"gap"` (events evicted from the ring before the subscriber read them) or `"restart"` (subscriber's id was past the bus's newest — only possible after a daemon restart). On either, the client's correct response is:
+`reason` is one of:
+
+- `"gap"` — events were evicted from the ring before the subscriber read them.
+- `"restart"` — the subscriber's id was past the bus's newest, only possible after a daemon restart.
+- `"idle"` — the daemon stopped diffing because nothing had been subscribed for several ticks, so no collection change is represented on the bus for that period. A cursor from before it cannot be trusted however in-range it looks — and it may well still be in range, because the chat publisher keeps ids moving regardless.
+
+On any of them, the client's correct response is:
 
 1. Wipe its in-memory cache of whatever REST collections it tracked.
 2. Re-GET those collections from the REST surface.
 3. Continue accepting events from the new id.
 
-Both `since_id` and `newest_id` are uint64. The client never has to compute them — it should treat them as opaque and use `id:` on subsequent events.
+`gap` and `restart` are synthesised per subscriber, at connect, and carry `since_id` and `newest_id` — both uint64, opaque; the client never has to compute them and should use `id:` on subsequent events.
+
+`idle` is published on the bus instead, by the tick that resumes diffing, and carries only `reason`: it is broadcast rather than addressed at one subscriber, so there is no single cursor to report, and the frame's own `id:` is the new one. The order matters — the tick re-establishes its baseline first and announces afterwards, so a client re-GETs against state that is already current. Announcing at connect instead would leave the changes of the intervening tick in neither the client's GET nor any event.
 
 ## Event catalog
 
@@ -582,7 +590,7 @@ Three things produce it: [`DELETE /api/v0/search/{id}`](REFERENCE.md#delete-apiv
 
 ### Filter-bypass: `resync`
 
-The synthetic `resync` event has no underscore prefix — it doesn't belong to any of the channel buckets above and is always delivered regardless of `?channels=`. Documented under [Reconnect and Last-Event-ID](#reconnect-and-last-event-id).
+`resync` has no underscore prefix — it doesn't belong to any of the channel buckets above and is always delivered regardless of `?channels=`, whether it was synthesised for one subscriber or published on the bus. Documented under [Reconnect and Last-Event-ID](#reconnect-and-last-event-id).
 
 ## Single-publisher invariant
 
