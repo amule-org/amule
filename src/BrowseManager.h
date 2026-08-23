@@ -125,12 +125,9 @@ public:
 	//! list's bar and the EC progress reply already use.
 	std::uint16_t BarValue(std::uint32_t searchId) const;
 
-	//! Every browse ID currently tracked, for the EC results union poll.
-	std::vector<std::uint32_t> Ids() const;
-
 private:
 	//! Perform what the store asked for, on the browse named by `searchId`.
-	void Perform(std::uint32_t searchId, browse::Effect effect);
+	void Perform(const browse::Outcome &outcome);
 	//! Tell the GUI a browse reached its terminal state.
 	void Announce(std::uint32_t searchId);
 

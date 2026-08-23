@@ -2888,11 +2888,12 @@ static CECPacket *Get_EC_Response_Search_Results_Union(
 			}
 		}
 	};
+	// GetKnownSearchIds() covers browses too: RequestSharedFileList registers
+	// every one of them, by either route, before the request goes out. The
+	// second source this loop used to have -- CSearchList's browse-bar map,
+	// and briefly CBrowseManager::Ids() -- emitted each browse a second time.
 	for (const auto &entry : theApp->searchlist->GetKnownSearchIds()) {
 		emitResultsFor(entry.first);
-	}
-	for (const uint32 browseId : theApp->browsemanager->Ids()) {
-		emitResultsFor(browseId);
 	}
 
 	if (partial_update_active) {
@@ -3134,11 +3135,9 @@ static CECPacket *Get_EC_Response_Search_Progress_Union(const CECPacket *request
 
 	// No ids named: report everything the daemon holds. Used by a stateless
 	// caller that has no tracked set to enumerate.
+	// Browses included; see the union poll above.
 	for (const auto &known : theApp->searchlist->GetKnownSearchIds()) {
 		emitOne(known.first);
-	}
-	for (const uint32 browseId : theApp->browsemanager->Ids()) {
-		emitOne(browseId);
 	}
 
 	return response;

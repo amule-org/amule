@@ -27,10 +27,24 @@
 namespace browse
 {
 
-bool Store::Start(ClientKey client, std::uint32_t searchId, std::uint32_t peerEcid, std::uint64_t now)
+Store::StartResult Store::Start(
+	ClientKey client, std::uint32_t searchId, std::uint32_t peerEcid, std::uint64_t now)
 {
-	if (client == nullptr || searchId == 0 || FindFor(client) != m_records.end()) {
-		return false;
+	StartResult result;
+	if (client == nullptr || searchId == 0 || m_records.count(searchId) != 0) {
+		return result;
+	}
+	const auto existing = FindFor(client);
+	if (existing != m_records.end()) {
+		if (existing->second.rec.state == State::InProgress) {
+			// One live browse per peer -- the rule the EC handler's join
+			// depends on.
+			return result;
+		}
+		// Ended, but not yet released. Let go now, so exactly one record ever
+		// names a given peer.
+		existing->second.client = nullptr;
+		result.displaced = { existing->first, Effect::ReleaseClient };
 	}
 	Held held;
 	held.rec.searchId = searchId;
@@ -40,7 +54,8 @@ bool Store::Start(ClientKey client, std::uint32_t searchId, std::uint32_t peerEc
 	held.rec.deadline = now + kSilenceTimeoutMs;
 	held.client = client;
 	m_records[searchId] = held;
-	return true;
+	result.started = true;
+	return result;
 }
 
 void Store::Touch(ClientKey client, std::uint64_t now)
@@ -51,45 +66,46 @@ void Store::Touch(ClientKey client, std::uint64_t now)
 	}
 }
 
-Effect Store::OnDirectoryList(ClientKey client, int dirCount, std::uint64_t now)
+Outcome Store::OnDirectoryList(ClientKey client, int dirCount, std::uint64_t now)
 {
 	const auto it = FindFor(client);
 	if (it == m_records.end()) {
-		return Effect::Nothing;
+		return Outcome();
 	}
 	it->second.rec = browse::OnDirectoryList(it->second.rec, dirCount, now + kSilenceTimeoutMs);
 	// A peer answering "no directories" has said everything it means to, so
 	// this may complete the browse outright.
-	return ApplyTo(it->second, ::browse::Tick(it->second.rec, now));
+	return { it->first, ApplyTo(it->second, ::browse::Tick(it->second.rec, now)) };
 }
 
-Effect Store::OnListingReceived(ClientKey client, std::uint64_t now)
+Outcome Store::OnListingReceived(ClientKey client, std::uint64_t now)
 {
 	const auto it = FindFor(client);
 	if (it == m_records.end()) {
-		return Effect::Nothing;
+		return Outcome();
 	}
 	it->second.rec = browse::OnListingReceived(it->second.rec, now + kSilenceTimeoutMs);
 	// Both protocol forms complete here, from the outstanding count -- the
 	// only thing that knows whether anything is still expected.
-	return ApplyTo(it->second, ::browse::Tick(it->second.rec, now));
+	return { it->first, ApplyTo(it->second, ::browse::Tick(it->second.rec, now)) };
 }
 
-Effect Store::Fail(ClientKey client)
+Outcome Store::Fail(ClientKey client)
 {
 	const auto it = FindFor(client);
-	return it == m_records.end() ? Effect::Nothing : ApplyTo(it->second, Action::Expire);
+	return it == m_records.end() ? Outcome() : Outcome{ it->first, ApplyTo(it->second, Action::Expire) };
 }
 
-Effect Store::Finish(ClientKey client)
+Outcome Store::Finish(ClientKey client)
 {
 	const auto it = FindFor(client);
-	return it == m_records.end() ? Effect::Nothing : ApplyTo(it->second, Action::Complete);
+	return it == m_records.end() ? Outcome()
+				     : Outcome{ it->first, ApplyTo(it->second, Action::Complete) };
 }
 
-std::vector<Effect> Store::Forget(ClientKey client)
+std::vector<Outcome> Store::Forget(ClientKey client)
 {
-	std::vector<Effect> out;
+	std::vector<Outcome> out;
 	const auto it = FindFor(client);
 	if (it == m_records.end()) {
 		return out;
@@ -97,10 +113,13 @@ std::vector<Effect> Store::Forget(ClientKey client)
 	if (it->second.rec.state == State::InProgress) {
 		// Going away mid-browse is a failure, and has to be reported like any
 		// other rather than quietly vanishing.
-		out.push_back(ApplyTo(it->second, Action::Expire));
+		out.push_back({ it->first, ApplyTo(it->second, Action::Expire) });
 	}
 	it->second.client = nullptr;
-	out.push_back(Effect::ReleaseClient);
+	// Carries the ID whatever state the browse is in. Deriving it from the
+	// peer instead lost this for a browse that had already ended, which is
+	// most of them by the time their peer goes away.
+	out.push_back({ it->first, Effect::ReleaseClient });
 	return out;
 }
 
@@ -109,13 +128,13 @@ void Store::Remove(std::uint32_t searchId)
 	m_records.erase(searchId);
 }
 
-std::vector<std::pair<std::uint32_t, Effect>> Store::Tick(std::uint64_t now)
+std::vector<Outcome> Store::Tick(std::uint64_t now)
 {
-	std::vector<std::pair<std::uint32_t, Effect>> out;
+	std::vector<Outcome> out;
 	for (auto &kv : m_records) {
 		const Effect effect = ApplyTo(kv.second, ::browse::Tick(kv.second.rec, now));
 		if (effect != Effect::Nothing) {
-			out.emplace_back(kv.first, effect);
+			out.push_back({ kv.first, effect });
 		}
 	}
 	return out;

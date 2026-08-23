@@ -134,7 +134,11 @@ void CClientList::RemoveClient(CUpDownClient *client)
 	RemoveDirectCallback(client);
 	// Drop any browse of this client: the manager holds a reference, and the
 	// client is going away, so there is nothing left to report a result to.
-	theApp->browsemanager->Forget(client);
+	// Guarded like the clientlist call in CUpDownClient::Safe_Delete: clients
+	// are still being reaped while the app tears itself down.
+	if (theApp->browsemanager) {
+		theApp->browsemanager->Forget(client);
+	}
 
 	if (RemoveIDFromList(client)) {
 		// Also remove the ip and hash entries

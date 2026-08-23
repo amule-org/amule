@@ -2086,10 +2086,18 @@ void CUpDownClient::RequestSharedFileList()
 	if (m_browseSearchId == 0) {
 		m_browseSearchId = theApp->searchlist->AllocateEd2kId();
 	}
+	// Take the browse first: it is the thing that can refuse, and refusing
+	// after announcing a tab would leave one open against a browse nobody is
+	// running.
+	if (!theApp->browsemanager->Start(this, m_browseSearchId, ECID(), ::GetTickCount64())) {
+		AddDebugLogLineN(logClient,
+			CFormat("Browse of user %s (%u) was not started") % GetUserName() %
+				GetUserIDHybrid());
+		return;
+	}
 	// Describe it before any result arrives, so it is listable as a browse of
 	// this peer rather than as a nameless search.
 	theApp->searchlist->RegisterBrowseSearch(m_browseSearchId, GetUserName(), ECID());
-	theApp->browsemanager->Start(this, m_browseSearchId, ECID(), ::GetTickCount64());
 
 	// Open the "View Files" tab up front (monolithic) so a peer that denies or
 	// never answers still shows a tab that can flip to "failed".

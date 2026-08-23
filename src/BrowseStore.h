@@ -58,6 +58,19 @@ enum class Effect
 };
 
 /**
+ * A change, and the browse it happened to.
+ *
+ * The two travel together because deriving the ID separately is how the effect
+ * got lost: the manager asked which browse a peer had, and the answer excluded
+ * the terminal ones -- exactly the records whose peer most needs releasing.
+ */
+struct Outcome
+{
+	std::uint32_t searchId = 0;
+	Effect effect = Effect::Nothing;
+};
+
+/**
  * Every browse the core is tracking, and the rules about them.
  *
  * Clients are identified by an opaque key rather than held: lifetime is the
@@ -73,35 +86,56 @@ public:
 	/**
 	 * Track a browse of `client` under `searchId`.
 	 *
-	 * Refuses when that client already has one: there is a single exchange
-	 * with a peer to report on, so a second record could only ever describe
-	 * the same browse. This is the rule the EC handler's "join the browse
-	 * already in flight" depends on being true.
+	 * Refuses when that client already has one STILL RUNNING: there is a
+	 * single exchange with a peer to report on, so a second record could only
+	 * ever describe the same browse. This is the rule the EC handler's "join
+	 * the browse already in flight" depends on being true.
+	 *
+	 * A browse that has ended is no obstacle, even before its peer has been
+	 * released -- matching SearchIdFor, which also answers only for a running
+	 * one. Disagreeing about that left a peer un-rebrowsable for the second
+	 * or so between its browse ending and the next tick.
 	 */
-	bool Start(ClientKey client, std::uint32_t searchId, std::uint32_t peerEcid, std::uint64_t now);
+	/**
+	 * The answer to Start: whether it took, and any peer it displaced.
+	 *
+	 * A peer whose last browse has ended may be browsed again straight away,
+	 * before the tick that would have released it. Two records would then name
+	 * the same peer, and a lookup by peer could answer with either -- so the
+	 * old one lets go here, and says so, since its owner is holding a
+	 * reference on the strength of it.
+	 */
+	struct StartResult
+	{
+		bool started = false;
+		Outcome displaced;
+	};
+
+	StartResult Start(
+		ClientKey client, std::uint32_t searchId, std::uint32_t peerEcid, std::uint64_t now);
 
 	//! Push the silence deadline back; the peer has shown a sign of life.
 	void Touch(ClientKey client, std::uint64_t now);
 
-	Effect OnDirectoryList(ClientKey client, int dirCount, std::uint64_t now);
-	Effect OnListingReceived(ClientKey client, std::uint64_t now);
+	Outcome OnDirectoryList(ClientKey client, int dirCount, std::uint64_t now);
+	Outcome OnListingReceived(ClientKey client, std::uint64_t now);
 
 	//! Terminalize `client`'s browse. Refused, silently, if it already ended.
-	Effect Fail(ClientKey client);
-	Effect Finish(ClientKey client);
+	Outcome Fail(ClientKey client);
+	Outcome Finish(ClientKey client);
 
 	/**
 	 * The peer is going away: fail a browse still running, then release it.
 	 * Returns both effects in order, so the caller reports the failure before
 	 * dropping the reference it needs to name the peer.
 	 */
-	std::vector<Effect> Forget(ClientKey client);
+	std::vector<Outcome> Forget(ClientKey client);
 
 	//! Dispose of a record for good, with its search.
 	void Remove(std::uint32_t searchId);
 
-	//! Advance every record; returns what to do, per search ID.
-	std::vector<std::pair<std::uint32_t, Effect>> Tick(std::uint64_t now);
+	//! Advance every record; returns what to do about each.
+	std::vector<Outcome> Tick(std::uint64_t now);
 
 	std::uint32_t SearchIdFor(ClientKey client) const;
 	bool Has(std::uint32_t searchId) const;

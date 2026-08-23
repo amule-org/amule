@@ -49,7 +49,7 @@ constexpr std::uint32_t kSidB = 20;
 TEST(BrowseStore, StartTracksTheBrowseAndAnswersForThePeer)
 {
 	Store s;
-	ASSERT_TRUE(s.Start(ALICE, kSidA, 7, 1000));
+	ASSERT_TRUE(s.Start(ALICE, kSidA, 7, 1000).started);
 	ASSERT_EQUALS(kSidA, s.SearchIdFor(ALICE));
 	ASSERT_TRUE(s.Has(kSidA));
 	ASSERT_TRUE(s.StateOf(kSidA) == State::InProgress);
@@ -62,8 +62,8 @@ TEST(BrowseStore, ASecondBrowseOfTheSamePeerIsRefused)
 	// rests on: there is one exchange with a peer, so a second record could
 	// only ever describe the same one.
 	Store s;
-	ASSERT_TRUE(s.Start(ALICE, kSidA, 7, 1000));
-	ASSERT_FALSE(s.Start(ALICE, kSidB, 7, 1000));
+	ASSERT_TRUE(s.Start(ALICE, kSidA, 7, 1000).started);
+	ASSERT_FALSE(s.Start(ALICE, kSidB, 7, 1000).started);
 	ASSERT_EQUALS(static_cast<std::size_t>(1), s.Size());
 	ASSERT_EQUALS(kSidA, s.SearchIdFor(ALICE));
 }
@@ -71,8 +71,8 @@ TEST(BrowseStore, ASecondBrowseOfTheSamePeerIsRefused)
 TEST(BrowseStore, DifferentPeersAreTrackedIndependently)
 {
 	Store s;
-	ASSERT_TRUE(s.Start(ALICE, kSidA, 7, 1000));
-	ASSERT_TRUE(s.Start(BOB, kSidB, 8, 1000));
+	ASSERT_TRUE(s.Start(ALICE, kSidA, 7, 1000).started);
+	ASSERT_TRUE(s.Start(BOB, kSidB, 8, 1000).started);
 	ASSERT_EQUALS(kSidA, s.SearchIdFor(ALICE));
 	ASSERT_EQUALS(kSidB, s.SearchIdFor(BOB));
 
@@ -84,8 +84,8 @@ TEST(BrowseStore, DifferentPeersAreTrackedIndependently)
 TEST(BrowseStore, StartRejectsNonsense)
 {
 	Store s;
-	ASSERT_FALSE(s.Start(nullptr, kSidA, 7, 1000));
-	ASSERT_FALSE(s.Start(ALICE, 0, 7, 1000));
+	ASSERT_FALSE(s.Start(nullptr, kSidA, 7, 1000).started);
+	ASSERT_FALSE(s.Start(ALICE, 0, 7, 1000).started);
 	ASSERT_EQUALS(static_cast<std::size_t>(0), s.Size());
 }
 
@@ -112,13 +112,13 @@ TEST(BrowseStore, ATerminalRecordOutlivesItsClient)
 	// which reports a failed browse as idle, forever.
 	Store s;
 	s.Start(ALICE, kSidA, 7, 1000);
-	ASSERT_TRUE(s.Fail(ALICE) == Effect::AnnounceFailure);
+	ASSERT_TRUE(s.Fail(ALICE).effect == Effect::AnnounceFailure);
 
 	// The tick that follows releases the peer and nothing else.
 	const auto todo = s.Tick(2000);
 	ASSERT_EQUALS(static_cast<std::size_t>(1), todo.size());
-	ASSERT_EQUALS(kSidA, todo[0].first);
-	ASSERT_TRUE(todo[0].second == Effect::ReleaseClient);
+	ASSERT_EQUALS(kSidA, todo[0].searchId);
+	ASSERT_TRUE(todo[0].effect == Effect::ReleaseClient);
 
 	ASSERT_TRUE(s.Has(kSidA));
 	ASSERT_TRUE(s.StateOf(kSidA) == State::Failed);
@@ -136,10 +136,10 @@ TEST(BrowseStore, ADisconnectAfterSuccessIsNotReportedAsAFailure)
 	Store s;
 	s.Start(ALICE, kSidA, 7, 1000);
 	s.OnDirectoryList(ALICE, 1, 1000);
-	ASSERT_TRUE(s.OnListingReceived(ALICE, 1000) == Effect::Announce);
+	ASSERT_TRUE(s.OnListingReceived(ALICE, 1000).effect == Effect::Announce);
 	ASSERT_TRUE(s.StateOf(kSidA) == State::Finished);
 
-	ASSERT_TRUE(s.Fail(ALICE) == Effect::Nothing);
+	ASSERT_TRUE(s.Fail(ALICE).effect == Effect::Nothing);
 	ASSERT_TRUE(s.StateOf(kSidA) == State::Finished);
 }
 
@@ -149,7 +149,7 @@ TEST(BrowseStore, AFlatBrowseCompletesOnItsSingleAnswer)
 {
 	Store s;
 	s.Start(ALICE, kSidA, 7, 1000);
-	ASSERT_TRUE(s.OnListingReceived(ALICE, 1000) == Effect::Announce);
+	ASSERT_TRUE(s.OnListingReceived(ALICE, 1000).effect == Effect::Announce);
 	ASSERT_TRUE(s.StateOf(kSidA) == State::Finished);
 }
 
@@ -157,10 +157,10 @@ TEST(BrowseStore, ADirectoryBrowseCompletesOnItsLastListing)
 {
 	Store s;
 	s.Start(ALICE, kSidA, 7, 1000);
-	ASSERT_TRUE(s.OnDirectoryList(ALICE, 2, 1000) == Effect::Nothing);
-	ASSERT_TRUE(s.OnListingReceived(ALICE, 1000) == Effect::Nothing);
+	ASSERT_TRUE(s.OnDirectoryList(ALICE, 2, 1000).effect == Effect::Nothing);
+	ASSERT_TRUE(s.OnListingReceived(ALICE, 1000).effect == Effect::Nothing);
 	ASSERT_EQUALS(static_cast<std::uint16_t>(50), s.BarValue(kSidA));
-	ASSERT_TRUE(s.OnListingReceived(ALICE, 1000) == Effect::Announce);
+	ASSERT_TRUE(s.OnListingReceived(ALICE, 1000).effect == Effect::Announce);
 	ASSERT_TRUE(s.StateOf(kSidA) == State::Finished);
 	ASSERT_EQUALS(static_cast<std::uint16_t>(0xffff), s.BarValue(kSidA));
 }
@@ -169,7 +169,7 @@ TEST(BrowseStore, APeerWithNoDirectoriesCompletesImmediately)
 {
 	Store s;
 	s.Start(ALICE, kSidA, 7, 1000);
-	ASSERT_TRUE(s.OnDirectoryList(ALICE, 0, 1000) == Effect::Announce);
+	ASSERT_TRUE(s.OnDirectoryList(ALICE, 0, 1000).effect == Effect::Announce);
 	ASSERT_TRUE(s.StateOf(kSidA) == State::Finished);
 }
 
@@ -183,7 +183,7 @@ TEST(BrowseStore, SilenceExpiresTheBrowse)
 
 	const auto todo = s.Tick(1001 + kSilenceTimeoutMs);
 	ASSERT_EQUALS(static_cast<std::size_t>(1), todo.size());
-	ASSERT_TRUE(todo[0].second == Effect::AnnounceFailure);
+	ASSERT_TRUE(todo[0].effect == Effect::AnnounceFailure);
 	ASSERT_TRUE(s.StateOf(kSidA) == State::Failed);
 }
 
@@ -222,8 +222,8 @@ TEST(BrowseStore, ForgetFailsARunningBrowseThenReleasesThePeer)
 	s.Start(ALICE, kSidA, 7, 1000);
 	const auto effects = s.Forget(ALICE);
 	ASSERT_EQUALS(static_cast<std::size_t>(2), effects.size());
-	ASSERT_TRUE(effects[0] == Effect::AnnounceFailure);
-	ASSERT_TRUE(effects[1] == Effect::ReleaseClient);
+	ASSERT_TRUE(effects[0].effect == Effect::AnnounceFailure);
+	ASSERT_TRUE(effects[1].effect == Effect::ReleaseClient);
 	ASSERT_TRUE(s.StateOf(kSidA) == State::Failed);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(0), s.SearchIdFor(ALICE));
 	// The record survives its peer.
@@ -237,7 +237,7 @@ TEST(BrowseStore, ForgettingAFinishedBrowseAnnouncesNothing)
 	s.Finish(ALICE);
 	const auto effects = s.Forget(ALICE);
 	ASSERT_EQUALS(static_cast<std::size_t>(1), effects.size());
-	ASSERT_TRUE(effects[0] == Effect::ReleaseClient);
+	ASSERT_TRUE(effects[0].effect == Effect::ReleaseClient);
 	ASSERT_TRUE(s.StateOf(kSidA) == State::Finished);
 }
 
@@ -254,8 +254,8 @@ TEST(BrowseStore, PacketsFromAForgottenPeerAreIgnored)
 	Store s;
 	s.Start(ALICE, kSidA, 7, 1000);
 	s.Forget(ALICE);
-	ASSERT_TRUE(s.OnListingReceived(ALICE, 2000) == Effect::Nothing);
-	ASSERT_TRUE(s.OnDirectoryList(ALICE, 3, 2000) == Effect::Nothing);
+	ASSERT_TRUE(s.OnListingReceived(ALICE, 2000).effect == Effect::Nothing);
+	ASSERT_TRUE(s.OnDirectoryList(ALICE, 3, 2000).effect == Effect::Nothing);
 	ASSERT_TRUE(s.StateOf(kSidA) == State::Failed);
 }
 
@@ -270,7 +270,7 @@ TEST(BrowseStore, RemoveDisposesOfTheRecordWithItsSearch)
 	ASSERT_FALSE(s.Has(kSidA));
 	ASSERT_EQUALS(static_cast<std::size_t>(0), s.Size());
 	// ...and the peer is browsable again.
-	ASSERT_TRUE(s.Start(ALICE, kSidB, 7, 2000));
+	ASSERT_TRUE(s.Start(ALICE, kSidB, 7, 2000).started);
 }
 
 TEST(BrowseStore, IdsEnumeratesEveryTrackedBrowse)
@@ -293,4 +293,106 @@ TEST(BrowseStore, UnknownSearchIdsAnswerSafely)
 	ASSERT_TRUE(s.StateOf(kSidA) == State::Failed);
 	ASSERT_EQUALS(static_cast<std::uint16_t>(0xffff), s.BarValue(kSidA));
 	ASSERT_EQUALS(static_cast<std::uint32_t>(0), s.SearchIdFor(nullptr));
+}
+
+// --- Composed: the rules above are each right, and were wrong together. -
+
+TEST(BrowseStore, ForgettingAnEndedBrowseStillNamesItForRelease)
+{
+	// Both halves of this were already tested apart -- that Forget releases
+	// the peer, and that a finished browse no longer answers as the peer's
+	// live one. Composed, the release came back with no browse attached to it,
+	// so the owner had nothing to release and kept the peer allocated until
+	// the user closed the tab. Most peers are in this state by the time they
+	// go away: the listing arrives, then the connection closes.
+	Store s;
+	s.Start(ALICE, kSidA, 7, 1000);
+	s.OnListingReceived(ALICE, 1000); // flat browse: finished
+	ASSERT_TRUE(s.StateOf(kSidA) == State::Finished);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(0), s.SearchIdFor(ALICE));
+
+	const auto effects = s.Forget(ALICE);
+	ASSERT_EQUALS(static_cast<std::size_t>(1), effects.size());
+	ASSERT_TRUE(effects[0].effect == Effect::ReleaseClient);
+	ASSERT_EQUALS(kSidA, effects[0].searchId);
+}
+
+TEST(BrowseStore, EveryOutcomeCarriesTheBrowseItHappenedTo)
+{
+	// Nothing may report an effect without saying which browse it belongs to;
+	// an owner acting on the pair cannot then act on the wrong one, or on
+	// none.
+	Store s;
+	s.Start(ALICE, kSidA, 7, 1000);
+	ASSERT_EQUALS(kSidA, s.OnDirectoryList(ALICE, 1, 1000).searchId);
+	ASSERT_EQUALS(kSidA, s.OnListingReceived(ALICE, 1000).searchId);
+	const auto todo = s.Tick(2000);
+	ASSERT_EQUALS(static_cast<std::size_t>(1), todo.size());
+	ASSERT_EQUALS(kSidA, todo[0].searchId);
+
+	Store s2;
+	s2.Start(BOB, kSidB, 8, 1000);
+	ASSERT_EQUALS(kSidB, s2.Fail(BOB).searchId);
+}
+
+TEST(BrowseStore, APeerIsBrowsableAgainAsSoonAsItsBrowseEnds)
+{
+	// Start refused while a terminal record still held the peer, but
+	// SearchIdFor said the peer had no browse -- so the caller's own check
+	// passed and the start it made was silently rejected. The two now agree:
+	// only a RUNNING browse blocks a new one.
+	Store s;
+	s.Start(ALICE, kSidA, 7, 1000);
+	s.Fail(ALICE);
+	// The peer has not been released yet -- that happens on the next tick.
+	ASSERT_TRUE(s.Has(kSidA));
+	ASSERT_EQUALS(static_cast<std::uint32_t>(0), s.SearchIdFor(ALICE));
+
+	ASSERT_TRUE(s.Start(ALICE, kSidB, 7, 2000).started);
+	ASSERT_EQUALS(kSidB, s.SearchIdFor(ALICE));
+	// ...and the old record is untouched, still answering for its own state.
+	ASSERT_TRUE(s.StateOf(kSidA) == State::Failed);
+	ASSERT_TRUE(s.StateOf(kSidB) == State::InProgress);
+}
+
+TEST(BrowseStore, ARebrowseDisplacesThePeerFromItsOldRecord)
+{
+	// Re-browsing before the old record was released left two records naming
+	// one peer, and a lookup by peer answered with whichever the map ordered
+	// first -- the stale one, since ids ascend.
+	Store s;
+	s.Start(ALICE, kSidA, 7, 1000);
+	s.Fail(ALICE);
+
+	const auto result = s.Start(ALICE, kSidB, 7, 2000);
+	ASSERT_TRUE(result.started);
+	// The old record let go, and said so: its owner is holding a reference.
+	ASSERT_TRUE(result.displaced.effect == Effect::ReleaseClient);
+	ASSERT_EQUALS(kSidA, result.displaced.searchId);
+	// The peer now resolves to the new browse, and only that one.
+	ASSERT_EQUALS(kSidB, s.SearchIdFor(ALICE));
+	ASSERT_TRUE(s.Fail(ALICE).searchId == kSidB);
+	// The displaced record is untouched otherwise.
+	ASSERT_TRUE(s.StateOf(kSidA) == State::Failed);
+}
+
+TEST(BrowseStore, AFirstBrowseDisplacesNothing)
+{
+	Store s;
+	const auto result = s.Start(ALICE, kSidA, 7, 1000);
+	ASSERT_TRUE(result.started);
+	ASSERT_TRUE(result.displaced.effect == Effect::Nothing);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(0), result.displaced.searchId);
+}
+
+TEST(BrowseStore, AnIdAlreadyInUseIsRefused)
+{
+	// Ids come from an allocator, but a record keyed by one already tracked
+	// would silently replace it along with whatever state it held.
+	Store s;
+	s.Start(ALICE, kSidA, 7, 1000);
+	ASSERT_FALSE(s.Start(BOB, kSidA, 8, 1000).started);
+	ASSERT_EQUALS(static_cast<std::size_t>(1), s.Size());
+	ASSERT_EQUALS(kSidA, s.SearchIdFor(ALICE));
+	ASSERT_EQUALS(static_cast<std::uint32_t>(0), s.SearchIdFor(BOB));
 }

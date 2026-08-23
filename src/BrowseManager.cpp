@@ -35,7 +35,11 @@
 bool CBrowseManager::Start(
 	CUpDownClient *client, std::uint32_t searchId, std::uint32_t peerEcid, std::uint64_t now)
 {
-	if (!m_store.Start(client, searchId, peerEcid, now)) {
+	const browse::Store::StartResult result = m_store.Start(client, searchId, peerEcid, now);
+	// Release whatever this peer was attached to before linking it afresh, so
+	// the reference map never holds two entries for one peer.
+	Perform(result.displaced);
+	if (!result.started) {
 		return false;
 	}
 	m_clients[searchId].Link(client CLIENT_DEBUGSTRING("CBrowseManager::Start"));
@@ -49,41 +53,30 @@ void CBrowseManager::OnRequestSent(CUpDownClient *client, std::uint64_t now)
 
 void CBrowseManager::OnDirectoryList(CUpDownClient *client, int dirCount, std::uint64_t now)
 {
-	// Read the ID first, in its own statement: the argument order of a call is
-	// unspecified, and a peer answering "no directories" completes the browse
-	// here -- after which SearchIdFor no longer answers and the announcement
-	// would be dropped on whichever compiler evaluated right-to-left.
-	const std::uint32_t searchId = m_store.SearchIdFor(client);
-	Perform(searchId, m_store.OnDirectoryList(client, dirCount, now));
+	Perform(m_store.OnDirectoryList(client, dirCount, now));
 }
 
 void CBrowseManager::OnListingReceived(CUpDownClient *client, std::uint64_t now)
 {
-	// The ID has to be read before the call: completing the browse is exactly
-	// what stops SearchIdFor from answering.
-	const std::uint32_t searchId = m_store.SearchIdFor(client);
-	Perform(searchId, m_store.OnListingReceived(client, now));
+	Perform(m_store.OnListingReceived(client, now));
 }
 
 void CBrowseManager::Fail(CUpDownClient *client)
 {
-	const std::uint32_t searchId = m_store.SearchIdFor(client);
-	Perform(searchId, m_store.Fail(client));
+	Perform(m_store.Fail(client));
 }
 
 void CBrowseManager::Finish(CUpDownClient *client)
 {
-	const std::uint32_t searchId = m_store.SearchIdFor(client);
-	Perform(searchId, m_store.Finish(client));
+	Perform(m_store.Finish(client));
 }
 
 void CBrowseManager::Forget(CUpDownClient *client)
 {
-	const std::uint32_t searchId = m_store.SearchIdFor(client);
 	// Ordered: the failure is reported while the reference that names the peer
 	// is still held, and only then released.
-	for (const browse::Effect effect : m_store.Forget(client)) {
-		Perform(searchId, effect);
+	for (const browse::Outcome &outcome : m_store.Forget(client)) {
+		Perform(outcome);
 	}
 }
 
@@ -95,35 +88,35 @@ void CBrowseManager::Remove(std::uint32_t searchId)
 
 void CBrowseManager::Process(std::uint64_t now)
 {
-	for (const auto &todo : m_store.Tick(now)) {
-		Perform(todo.first, todo.second);
+	for (const browse::Outcome &outcome : m_store.Tick(now)) {
+		Perform(outcome);
 	}
 }
 
-void CBrowseManager::Perform(std::uint32_t searchId, browse::Effect effect)
+void CBrowseManager::Perform(const browse::Outcome &outcome)
 {
-	if (searchId == 0 || effect == browse::Effect::Nothing) {
-		return;
-	}
-	switch (effect) {
+	// The ID travels with the effect, so there is no way for the two to
+	// disagree -- which is how a release went missing when the manager looked
+	// the ID up separately and the lookup excluded terminal browses.
+	switch (outcome.effect) {
 	case browse::Effect::Nothing:
 		break;
 	case browse::Effect::ReleaseClient:
 		// Terminal and announced; the peer is free to be reaped. The record
 		// stays until its search is freed.
-		m_clients.erase(searchId);
+		m_clients.erase(outcome.searchId);
 		break;
 	case browse::Effect::AnnounceFailure: {
-		const auto it = m_clients.find(searchId);
+		const auto it = m_clients.find(outcome.searchId);
 		AddLogLineC(CFormat(_("Failed to retrieve shared files from user '%s'")) %
 			    (it != m_clients.end() && it->second.IsLinked()
 					    ? it->second.GetClient()->GetUserName()
 					    : wxString()));
-		Announce(searchId);
+		Announce(outcome.searchId);
 		break;
 	}
 	case browse::Effect::Announce:
-		Announce(searchId);
+		Announce(outcome.searchId);
 		break;
 	}
 }
@@ -155,9 +148,4 @@ browse::State CBrowseManager::StateOf(std::uint32_t searchId) const
 std::uint16_t CBrowseManager::BarValue(std::uint32_t searchId) const
 {
 	return m_store.BarValue(searchId);
-}
-
-std::vector<std::uint32_t> CBrowseManager::Ids() const
-{
-	return m_store.Ids();
 }
