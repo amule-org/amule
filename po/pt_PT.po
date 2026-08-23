@@ -17,7 +17,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-23 20:18+0200\n"
+"POT-Creation-Date: 2026-08-23 22:15+0200\n"
 "PO-Revision-Date: 2026-08-22 15:42+0000\n"
 "Last-Translator: Luís Picciochi Oliveira <Pitxyoki@Gmail.com>\n"
 "Language-Team: Portuguese <traduz@debianpt.org>\n"
@@ -1051,11 +1051,6 @@ msgstr "1.x (baseado no eMule v0.%u)"
 
 #: src/BaseClient.cpp
 #, c-format
-msgid "Failed to retrieve shared files from user '%s'"
-msgstr "Erro ao receber ficheiros partilhados do utilizador '%s'"
-
-#: src/BaseClient.cpp
-#, c-format
 msgid "NickName: %s ID: %u"
 msgstr "Alcunha: %s ID: %u"
 
@@ -1096,6 +1091,11 @@ msgstr "Nova mensagem de '%s' (IP:%s)"
 #, c-format
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
 msgstr "O utilizador %s (%u) pediu a sua lista de ficheiros partilhados para a pasta '%s' -> Ignorado"
+
+#: src/BrowseManager.cpp
+#, c-format
+msgid "Failed to retrieve shared files from user '%s'"
+msgstr "Erro ao receber ficheiros partilhados do utilizador '%s'"
 
 #: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
 #, c-format

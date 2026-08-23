@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-23 20:18+0200\n"
+"POT-Creation-Date: 2026-08-23 22:15+0200\n"
 "PO-Revision-Date: 2026-08-22 15:51+0000\n"
 "Last-Translator: Wayne Su <mstarmstar@gmail.com>\n"
 "Language-Team: \n"
@@ -1048,11 +1048,6 @@ msgstr "1.x (源自 eMule v0.%u)"
 
 #: src/BaseClient.cpp
 #, c-format
-msgid "Failed to retrieve shared files from user '%s'"
-msgstr "無法從使用者 %s 取得分享檔案清單"
-
-#: src/BaseClient.cpp
-#, c-format
 msgid "NickName: %s ID: %u"
 msgstr "暱稱：%s ID：%u"
 
@@ -1091,6 +1086,11 @@ msgstr "來自 %s (IP:%s) 的新訊息"
 #, c-format
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
 msgstr "使用者 %s (%u) 要求不存在的目錄 %s 的分享檔案清單 -> 已忽略"
+
+#: src/BrowseManager.cpp
+#, c-format
+msgid "Failed to retrieve shared files from user '%s'"
+msgstr "無法從使用者 %s 取得分享檔案清單"
 
 #: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
 #, c-format

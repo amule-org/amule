@@ -262,12 +262,20 @@ void CFriendListCtrl::OnViewFiles(wxCommandEvent &WXUNUSED(event))
 		CFriend *cur_friend = reinterpret_cast<CFriend *>(data);
 		// If this friend's listing is already open in the Search panel, switch
 		// to that tab instead of re-requesting -- a second request would
-		// duplicate the results in the existing tab. The browse tab is keyed by
-		// the linked client's ECID (0 when the friend isn't currently linked).
+		// duplicate the results in the existing tab.
+		//
+		// Which ECID keys that tab depends on who opened it, so both are
+		// tried. The monolithic opens it from Notify_Browse_Started, which
+		// carries the browsed CLIENT's ECID; amulegui opens it from
+		// SendBrowseRequest, which has only the FRIEND's -- a friend need not
+		// be linked to a client at the moment the browse is asked for. They
+		// are different numbers from one counter, so matching on the client
+		// alone never found amulegui's tab, and every click re-asked the peer.
+		CSearchDlg *const searchwnd = theApp->amuledlg ? theApp->amuledlg->m_searchwnd : nullptr;
 		const CClientRef &linked = cur_friend->GetLinkedClient();
-		const uint32 ecid = linked.IsLinked() ? linked.ECID() : 0;
-		if (!(theApp->amuledlg && theApp->amuledlg->m_searchwnd &&
-			    theApp->amuledlg->m_searchwnd->ActivateBrowseTabIfOpen(ecid))) {
+		const uint32 clientEcid = linked.IsLinked() ? linked.ECID() : 0;
+		if (!(searchwnd && (searchwnd->ActivateBrowseTabIfOpen(clientEcid) ||
+					   searchwnd->ActivateBrowseTabIfOpen(cur_friend->ECID())))) {
 			theApp->friendlist->RequestSharedFileList(cur_friend);
 		}
 	}

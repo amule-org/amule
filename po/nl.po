@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-23 20:18+0200\n"
+"POT-Creation-Date: 2026-08-23 22:15+0200\n"
 "PO-Revision-Date: 2026-08-22 15:38+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
@@ -1047,11 +1047,6 @@ msgstr "1.x (gebaseerd op eMule v0.%u)"
 
 #: src/BaseClient.cpp
 #, c-format
-msgid "Failed to retrieve shared files from user '%s'"
-msgstr "Kon gedeelde bestanden niet ontvangen van gebruiker '%s'"
-
-#: src/BaseClient.cpp
-#, c-format
 msgid "NickName: %s ID: %u"
 msgstr "Bijnaam: %s ID: %u"
 
@@ -1092,6 +1087,11 @@ msgstr "Nieuw bericht van '%s' (IP:%s)"
 #, c-format
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
 msgstr "Gebruiker %s (%u) vroeg uw gedeelde-bestandenlijst van niet-bestaande map '%s' op -> Genegeerd"
+
+#: src/BrowseManager.cpp
+#, c-format
+msgid "Failed to retrieve shared files from user '%s'"
+msgstr "Kon gedeelde bestanden niet ontvangen van gebruiker '%s'"
 
 #: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
 #, c-format
