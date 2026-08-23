@@ -776,6 +776,32 @@ target_link_libraries (CompleteSourcesThrottleTest
 	mulecommon
 )
 
+# The browse ("View Files") state machine. Five separate defects have been the
+# same machine going wrong in a place only a peer of the right kind could reach
+# -- a flat browse that completes without ever being marked finished, a peer we
+# decline to contact, a terminal browse still on the pending list (#1071 and
+# its follow-ups). None were reachable from a test while the logic sat on
+# CUpDownClient, so it lives in a pair of its own that touches no theApp.
+add_executable (BrowseLifecycleTest
+	BrowseLifecycleTest.cpp
+	${CMAKE_SOURCE_DIR}/src/BrowseLifecycle.cpp
+)
+
+add_test (NAME BrowseLifecycleTest
+	COMMAND BrowseLifecycleTest
+)
+
+target_include_directories (BrowseLifecycleTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+
+target_link_libraries (BrowseLifecycleTest
+	muleunit
+	mulecommon
+)
+
 # CListColumnStore maps a column id to its persistence key and default width.
 # The key is the on-disk config format, so the id a caller registers has to be
 # the id it looks the column up by -- a registry that renumbered stored ids

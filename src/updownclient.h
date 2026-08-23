@@ -461,14 +461,12 @@ public:
 		uint32 *lenUnzipped,
 		int iRecursion = 0);
 	void UpdateDisplayedInfo(bool force = false);
-	int GetFileListRequested() const { return m_iFileListRequested; }
-	void SetFileListRequested(int iFileListRequested) { m_iFileListRequested = iFileListRequested; }
 
-	// "View Files" (browse) over EC: the daemon allocates a search ID for a
-	// browse initiated by a remote GUI and pins it here so ProcessSharedFileList
-	// files the results under it (instead of the raw client pointer) and the
-	// terminal paths can stamp m_browseStatus. 0 = not an EC-initiated browse
-	// (monolithic local browse keeps the pointer-keyed path).
+	// "View Files" (browse): the search ID this peer's listing is filed under.
+	// Allocated before the request goes out -- by the EC handler for a remote
+	// browse, by RequestSharedFileList itself for a local one -- so it is the
+	// single key for the browse everywhere, and CBrowseManager owns the
+	// lifecycle behind it. 0 = this client has never been browsed.
 	uint32 GetBrowseSearchId() const { return m_browseSearchId; }
 	/**
 	 * Whether this browse was asked for by a remote client rather than here.
@@ -480,41 +478,21 @@ public:
 	 * call: a browse someone else asked for must not pull this user's panel or
 	 * tab selection.
 	 */
-	bool IsBrowseEcInitiated() const { return m_browseSearchId != 0; }
-	void SetBrowseSearchId(uint32 id) { m_browseSearchId = id; }
-	EBrowseStatus GetBrowseStatus() const { return m_browseStatus; }
-	void SetBrowseStatus(EBrowseStatus s) { m_browseStatus = s; }
-	// Total shared directories the peer advertised (captured at
-	// OP_ASKSHAREDDIRSANS); drives the browse progress percent as m_iFileListRequested
-	// counts down. 0 = not yet known / flat share with no directory list.
-	void SetBrowseTotalDirs(int n) { m_browseTotalDirs = n; }
-	// The tab's result-routing key: the EC-allocated browse ID (remote GUI) or
-	// this client's pointer (monolithic local browse). Shared by the bar cache.
-	wxUIntPtr GetBrowseRoutingId() const
-	{
-		return m_browseSearchId ? static_cast<wxUIntPtr>(m_browseSearchId)
-					: reinterpret_cast<wxUIntPtr>(this);
-	}
-	// Progress-bar sentinel for this browse: 0..100 running percent while the
-	// listing streams in, or 0xffff (finished/failed) to clear the bar — the
-	// same value space GetSearchBarStatusById returns for a search.
-	uint16 GetBrowseBarValue() const;
-	// Record a browse lifecycle transition: update the shared bar cache and
-	// notify the GUI (monolithic renders the tab marker; on the daemon the
-	// notify is a no-op and amuleGUI reads the status over EC via SEARCH_PROGRESS).
-	void MarkBrowse(EBrowseStatus s);
-	// Push the current bar value into CSearchList's browse-bar cache (keyed by
-	// GetBrowseRoutingId), so both the monolithic bar and the EC reply see it.
-	void UpdateBrowseBar();
+	bool IsBrowseEcInitiated() const { return m_browseEcInitiated; }
 	/**
-	 * End a browse this client can no longer carry; no-op when none is pending.
+	 * Pin the ID a remote client's browse will be filed under.
 	 *
-	 * Clears the in-flight flag BEFORE the terminal mark, the order every
-	 * other terminal path takes, so a later request for this peer starts a
-	 * fresh browse instead of joining a dead one -- the invariant the EC
-	 * browse handler's join relies on (ExternalConn.cpp).
+	 * Only the EC handler calls this: a local browse allocates its own ID
+	 * inside RequestSharedFileList. Setting it here is therefore also what
+	 * marks the browse as somebody else's, which used to be inferred from the
+	 * ID being set at all -- an inference that stopped working once local
+	 * browses got their ID up front as well.
 	 */
-	void FailPendingBrowse();
+	void SetBrowseSearchId(uint32 id)
+	{
+		m_browseSearchId = id;
+		m_browseEcInitiated = id != 0;
+	}
 	/**
 	 * Whether anything is still on its way to or from this peer: a live
 	 * connection, a direct UDP callback, or a server/Kad callback we asked
@@ -522,14 +500,6 @@ public:
 	 * this client can be failed at once instead of hanging.
 	 */
 	bool IsPeerContactPending() const;
-	/**
-	 * Deadline for a browse to show any sign of life, or 0 when none is
-	 * pending. Armed when the browse is asked for and pushed forward on every
-	 * sign of progress, so it bounds silence rather than total duration -- a
-	 * large share may stream for minutes and must not be cut off.
-	 */
-	uint64_t GetBrowseDeadline() const { return m_browseDeadline; }
-	void RefreshBrowseDeadline();
 
 	void ResetFileStatusInfo();
 
@@ -818,12 +788,9 @@ private:
 	uint64 m_dwLastSourceRequest;
 	uint64 m_dwLastSourceAnswer;
 	uint64 m_dwLastAskedForSources;
-	int m_iFileListRequested;
-	//! See GetBrowseDeadline. 0 = no browse pending.
-	uint64_t m_browseDeadline;
 	uint32 m_browseSearchId;
-	int m_browseTotalDirs;
-	EBrowseStatus m_browseStatus;
+	//! See IsBrowseEcInitiated.
+	bool m_browseEcInitiated;
 	bool m_bFriendSlot;
 	bool m_bCommentDirty;
 	bool m_bIsHybrid;

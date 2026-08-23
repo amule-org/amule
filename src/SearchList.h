@@ -210,20 +210,6 @@ public:
 	const std::map<uint32_t, wxString> &GetKnownSearchIds() const { return m_searchStrings; }
 
 	/**
-	 * Every ID this core currently holds a browse progress bar for, used as
-	 * the multi-search results union poll's second source. Not redundant with
-	 * GetKnownSearchIds() even though a browse is registered there too: the
-	 * bar is keyed by CUpDownClient::GetBrowseRoutingId(), which is the
-	 * client pointer until a browse has an ID of its own, so a monolithic
-	 * local browse has a pointer-keyed entry here between the request going
-	 * out and its first directory arriving (that is when ProcessSharedFileList
-	 * allocates the ID and registers it). Returned by reference; runs every
-	 * poll tick for every connected multi-search client, so a per-call copy
-	 * here is the one that would actually show up in the arithmetic.
-	 */
-	const std::map<wxUIntPtr, uint16> &GetBrowseSearchIds() const { return m_browseBar; }
-
-	/**
 	 * Ask the Kad search identified by searchID to widen its frontier
 	 * via KADEMLIA_FIND_VALUE_MORE.  Wired to the search dialog "More"
 	 * button.  Returns true if a reask was dispatched, false otherwise.
@@ -257,28 +243,10 @@ public:
 	// percent. Single source of truth for the bottom bar, shared by the EC
 	// PROGRESS reply (remote GUI / amuleapi) and the monolithic search dialog.
 	uint32 GetSearchBarStatusById(wxUIntPtr searchID) const;
-	// "View Files" browse tabs are not CSearchList searches, so their bar value
-	// is supplied by the browsing client (CUpDownClient::UpdateBrowseBar): 0..100
-	// running percent while the listing streams in, 0xffff when done/failed.
-	// GetSearchBarStatusById consults this first, so both the monolithic bar and
-	// the EC PROGRESS reply render the browse percent through the same path.
-	void SetBrowseBar(wxUIntPtr searchID, uint16 value) { m_browseBar[searchID] = value; }
+	// "View Files" browse tabs are not CSearchList searches: CBrowseManager
+	// owns their bar, and GetSearchBarStatusById consults it first, so the
+	// monolithic bar and the EC PROGRESS reply render the same value.
 	// The browse lifecycle (EBrowseStatus: browsing / finished / failed) recorded
-	// by search ID alongside the bar, so the EC PROGRESS reply can report a
-	// browse's terminal state even after the browsing client has been reaped
-	// (0xffff in m_browseBar can't tell "finished" from "failed"). Set from
-	// CUpDownClient::UpdateBrowseBar; pruned in RemoveResults, so it's bounded by
-	// the same LRU ring that caps m_browseBar and every ed2k/Kad search bucket.
-	void SetBrowseStatusById(wxUIntPtr searchID, uint8 status) { m_browseStatus[searchID] = status; }
-	bool HasBrowseStatus(wxUIntPtr searchID) const
-	{
-		return m_browseStatus.find(searchID) != m_browseStatus.end();
-	}
-	uint8 GetBrowseStatusById(wxUIntPtr searchID) const
-	{
-		std::map<wxUIntPtr, uint8>::const_iterator it = m_browseStatus.find(searchID);
-		return it != m_browseStatus.end() ? it->second : 0 /* BROWSE_NONE */;
-	}
 	// Echoes m_searchType for the current/last search; meaningful only
 	// when state is RUNNING or FINISHED. Returns LocalSearch by default.
 	SearchType GetSearchLifecycleKind() const { return m_searchType; }
@@ -562,11 +530,9 @@ private:
 	//! Bar value for "View Files" browse tabs, keyed by routing ID and set by
 	//! the browsing client (0..100 percent, or 0xffff finished/failed). Read by
 	//! GetSearchBarStatusById. Pruned in RemoveResults.
-	std::map<wxUIntPtr, uint16> m_browseBar;
 	//! Browse lifecycle (EBrowseStatus) by search ID, kept in lockstep with
 	//! m_browseBar so a browse's terminal state survives the client's teardown.
 	//! Pruned in RemoveResults.
-	std::map<wxUIntPtr, uint8> m_browseStatus;
 
 	//! ED2K-side counterpart of m_KadSearchFinished, covering both local
 	//! and global searches. Cleared to false in StartNewSearch when an

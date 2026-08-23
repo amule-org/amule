@@ -23,7 +23,9 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "amule.h" // Interface declarations.
+#include "amule.h"
+
+#include "BrowseManager.h" // Interface declarations.
 
 #include <csignal>
 #include <cstring>
@@ -396,6 +398,11 @@ int CamuleApp::OnExit()
 	}
 	delete searchlist;
 	searchlist = NULL;
+
+	// After searchlist, before clientlist: a browse holds a client reference,
+	// so it has to let go before the clients themselves are destroyed.
+	delete browsemanager;
+	browsemanager = nullptr;
 
 	delete clientcredits;
 	clientcredits = NULL;
@@ -870,6 +877,7 @@ bool CamuleApp::OnInit()
 	friendlist = new CFriendList();
 	chatsessions = new CChatSessionStore();
 	searchlist = new CSearchList();
+	browsemanager = new CBrowseManager();
 	knownfiles = new CKnownFileList();
 	canceledfiles = new CCanceledFileList;
 	serverlist = new CServerList();

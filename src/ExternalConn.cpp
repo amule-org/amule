@@ -48,6 +48,7 @@
 #include "ServerConnect.h"       // Needed for CServerConnect
 #include "UploadQueue.h"         // Needed for CUploadQueue
 #include "AmuleApiCredentials.h"
+#include "BrowseManager.h"
 #include "amule.h"      // Needed for theApp
 #include "SearchList.h" // Needed for GetSearchResults
 #include "ClientList.h"
@@ -2559,13 +2560,11 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request, bool multiSea
 		// lifecycle -- while SetBrowseSearchId has already repointed every
 		// later status write away from the first ID, leaving that one
 		// BROWSE_IN_PROGRESS with nothing able to terminalize it. There is
-		// exactly one m_browseStatus / m_iFileListRequested per client, so
-		// there can only be one ID to report on. Returns 0 when the peer has
-		// no browse running, i.e. when the caller should allocate as usual.
+		// exactly one browse per client, so there can only be one ID to
+		// report on. Returns 0 when the peer has no browse running, i.e. when
+		// the caller should allocate as usual.
 		auto browseInFlightId = [](const CUpDownClient *peer) -> uint32 {
-			return (peer != nullptr && peer->GetFileListRequested() > 0)
-				       ? peer->GetBrowseSearchId()
-				       : 0;
+			return peer != nullptr ? theApp->browsemanager->SearchIdFor(peer) : 0;
 		};
 		// Same reply as a fresh browse, pointing at the browse that is really
 		// running: no allocation (the second ID would be stranded), no
@@ -2822,7 +2821,7 @@ static CECPacket *Get_EC_Response_Search_Results(CObjTagMap &tagmap, wxUIntPtr s
 // which demuxes by search ID), and its container's bulk-delete-on-poll works
 // correctly across the union. Only reached for m_multiSearchActive clients.
 //
-// Enumerates CSearchList::GetKnownSearchIds() + GetBrowseSearchIds() -- every
+// Enumerates CSearchList::GetKnownSearchIds() + CBrowseManager::Ids() -- every
 // search AND "View Files" browse tab the core holds, started by the
 // monolithic GUI or by any EC client -- rather than s_ecSearches.ActiveIds(),
 // which only ever holds EC-initiated searches (Register() is called from
@@ -2892,8 +2891,8 @@ static CECPacket *Get_EC_Response_Search_Results_Union(
 	for (const auto &entry : theApp->searchlist->GetKnownSearchIds()) {
 		emitResultsFor(entry.first);
 	}
-	for (const auto &entry : theApp->searchlist->GetBrowseSearchIds()) {
-		emitResultsFor(static_cast<uint32>(entry.first));
+	for (const uint32 browseId : theApp->browsemanager->Ids()) {
+		emitResultsFor(browseId);
 	}
 
 	if (partial_update_active) {
@@ -3020,8 +3019,12 @@ static CECPacket *Get_EC_Response_Search_List()
 // reply's (or the entry's) first tag via GetFirstTagSafe.
 static void AppendSearchProgress(CECTag &out, wxUIntPtr sid)
 {
-	if (theApp->searchlist->HasBrowseStatus(sid)) {
-		const uint8 browseStatus = theApp->searchlist->GetBrowseStatusById(sid);
+	if (theApp->browsemanager->Has(static_cast<uint32>(sid))) {
+		const browse::State bstate = theApp->browsemanager->StateOf(static_cast<uint32>(sid));
+		const uint8 browseStatus =
+			static_cast<uint8>(bstate == browse::State::InProgress ? BROWSE_IN_PROGRESS
+					   : bstate == browse::State::Finished ? BROWSE_FINISHED
+									       : BROWSE_FAILED);
 		// Bar value (0..100 running, 0xffff done/failed) so amuleGUI drives
 		// the browse tab's gauge via the same UpdateSearchProgress path as
 		// a search.
@@ -3134,8 +3137,8 @@ static CECPacket *Get_EC_Response_Search_Progress_Union(const CECPacket *request
 	for (const auto &known : theApp->searchlist->GetKnownSearchIds()) {
 		emitOne(known.first);
 	}
-	for (const auto &browse : theApp->searchlist->GetBrowseSearchIds()) {
-		emitOne(browse.first);
+	for (const uint32 browseId : theApp->browsemanager->Ids()) {
+		emitOne(browseId);
 	}
 
 	return response;

@@ -23,7 +23,9 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "ClientList.h" // Interface declarations.
+#include "ClientList.h"
+
+#include "BrowseManager.h" // Interface declarations.
 
 #include <protocol/Protocols.h>
 #include <protocol/ed2k/Constants.h>
@@ -130,7 +132,9 @@ void CClientList::RemoveClient(CUpDownClient *client)
 {
 	RemoveFromKadList(client);
 	RemoveDirectCallback(client);
-	RemovePendingBrowse(client);
+	// Drop any browse of this client: the manager holds a reference, and the
+	// client is going away, so there is nothing left to report a result to.
+	theApp->browsemanager->Forget(client);
 
 	if (RemoveIDFromList(client)) {
 		// Also remove the ip and hash entries
@@ -726,7 +730,7 @@ void CClientList::Process()
 
 	CleanUpClientList();
 	ProcessDirectCallbackList();
-	ProcessPendingBrowseList();
+	theApp->browsemanager->Process(cur_tick);
 }
 
 void CClientList::AddBannedClient(uint32 dwIP)
@@ -1114,49 +1118,6 @@ void CClientList::AddDirectCallbackClient(CUpDownClient *toAdd)
 		}
 	}
 	m_currentDirectCallbacks.push_back(CCLIENTREF(toAdd, "CClientList::AddDirectCallbackClient"));
-}
-
-void CClientList::AddPendingBrowse(CUpDownClient *toAdd)
-{
-	if (toAdd->HasBeenDeleted()) {
-		return;
-	}
-	// Re-armed on every sign of progress, so the same client comes back here
-	// repeatedly during one browse -- keep a single entry, the deadline itself
-	// lives on the client.
-	for (CClientRefList::const_iterator it = m_pendingBrowses.begin(); it != m_pendingBrowses.end();
-		++it) {
-		if (it->GetClient() == toAdd) {
-			return;
-		}
-	}
-	m_pendingBrowses.emplace_back(toAdd CLIENT_DEBUGSTRING("CClientList::AddPendingBrowse"));
-}
-
-void CClientList::ProcessPendingBrowseList()
-{
-	// Give up on a browse that has gone quiet for BROWSE_SILENCE_TIMEOUT.
-	// FailPendingBrowse marks it failed and clears the in-flight flag, which
-	// removes the entry through MarkBrowse -- so this walk does not erase
-	// anything itself except the stale entries it can no longer act on.
-	const uint64_t cur_tick = ::GetTickCount64();
-	for (CClientRefList::iterator it = m_pendingBrowses.begin(); it != m_pendingBrowses.end();) {
-		CClientRefList::iterator it2 = it++;
-		CUpDownClient *curClient = it2->GetClient();
-		const uint64_t deadline = curClient->GetBrowseDeadline();
-		if (deadline == 0) {
-			// The browse ended without coming through MarkBrowse; nothing to
-			// expire, and holding the reference would keep the client alive.
-			m_pendingBrowses.erase(it2);
-			continue;
-		}
-		if (deadline < cur_tick) {
-			AddDebugLogLineN(logClient,
-				CFormat("Browse of %s timed out with nothing received") %
-					curClient->GetUserName());
-			curClient->FailPendingBrowse();
-		}
-	}
 }
 
 void CClientList::ProcessDirectCallbackList()

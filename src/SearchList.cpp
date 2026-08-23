@@ -23,7 +23,9 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "SearchList.h" // Interface declarations.
+#include "SearchList.h"
+
+#include "BrowseManager.h" // Interface declarations.
 
 #include <algorithm> // Needed for std::sort (StoreSearches)
 #include <utility>   // Needed for std::move (LoadSearches)
@@ -327,8 +329,8 @@ void CSearchList::RemoveResults(wxUIntPtr searchID)
 	m_searchStartTimes.erase(static_cast<uint32_t>(searchID));
 	m_searchKinds.erase(static_cast<uint32_t>(searchID));
 	m_searchStrings.erase(static_cast<uint32_t>(searchID));
-	m_browseBar.erase(searchID);
-	m_browseStatus.erase(searchID);
+	// The browse record outlives its client but not its search.
+	theApp->browsemanager->Remove(static_cast<uint32_t>(searchID));
 
 	// This list owns its results, so free them before dropping the index
 	// (which, being shared with the remote search list, never deletes).
@@ -962,11 +964,6 @@ void CSearchList::ProcessSharedFileList(const uint8_t *in_packet,
 	const bool ecInitiated = sender->IsBrowseEcInitiated();
 #endif
 
-	if (!sender->GetBrowseSearchId()) {
-		const uint32 localBrowseId = AllocateEd2kId();
-		sender->SetBrowseSearchId(localBrowseId);
-		RegisterBrowseSearch(localBrowseId, sender->GetUserName(), sender->ECID());
-	}
 	wxUIntPtr searchID = static_cast<wxUIntPtr>(sender->GetBrowseSearchId());
 
 #ifndef AMULE_DAEMON
@@ -1214,7 +1211,7 @@ wxString CSearchList::GetSearchStringById(uint32_t searchID) const
 
 bool CSearchList::IsKnownSearchId(uint32_t searchID) const
 {
-	return m_searchStrings.count(searchID) != 0 || m_browseBar.count(searchID) != 0;
+	return m_searchStrings.count(searchID) != 0 || theApp->browsemanager->Has(searchID);
 }
 
 uint32 CSearchList::GetBrowsePeerEcid(uint32 searchID) const
@@ -1308,8 +1305,8 @@ void CSearchList::SetKadSearchFinished(uint32_t searchID)
 CSearchList::SearchLifecycleState CSearchList::GetSearchLifecycleStateById(wxUIntPtr searchID) const
 {
 	uint32_t sid = static_cast<uint32_t>(searchID);
-	// A browse ("View Files") is not a CSearchList search: its lifecycle lives
-	// in m_browseStatus, keyed by the same id this function is asked about.
+	// A browse ("View Files") is not a CSearchList search: CBrowseManager owns
+	// its lifecycle, keyed by the same id this function is asked about.
 	// Without this the generic tail below decides it from retained results,
 	// which is wrong in both directions -- a browse still streaming reports
 	// finished as soon as its first directory lands, and one the peer denied
@@ -1317,9 +1314,10 @@ CSearchList::SearchLifecycleState CSearchList::GetSearchLifecycleStateById(wxUIn
 	// ternary. Same mapping the EC progress reply applies (ExternalConn.cpp's
 	// AppendSearchProgress), here instead of only there so the SEARCH_LIST
 	// listing cannot disagree with the per-id progress reply about the same id.
-	if (HasBrowseStatus(searchID)) {
-		return GetBrowseStatusById(searchID) == BROWSE_IN_PROGRESS ? SEARCH_LIFECYCLE_RUNNING
-									   : SEARCH_LIFECYCLE_FINISHED;
+	if (theApp->browsemanager->Has(sid)) {
+		return theApp->browsemanager->StateOf(sid) == browse::State::InProgress
+			       ? SEARCH_LIFECYCLE_RUNNING
+			       : SEARCH_LIFECYCLE_FINISHED;
 	}
 	// Kad searches are tracked per-ID: still registered in the manager =>
 	// running; recorded as finished (its CSearch was destroyed on the result
@@ -1358,15 +1356,12 @@ uint8 CSearchList::GetSearchLifecyclePercentById(wxUIntPtr searchID) const
 	// A browse reports the share of the peer's directory list received so far,
 	// rather than the 0/100 the state switch above would derive.
 	//
-	// Read m_browseBar directly, NOT through GetSearchBarStatusById: that
+	// Straight from the manager, NOT through GetSearchBarStatusById: that
 	// function falls through to this one for anything it does not consider
-	// finished, so routing this branch through it would recurse between the two
-	// for an id with a browse status but no bar entry. The two maps are written
-	// and pruned together, so that should not arise -- which is exactly why it
-	// must not be load-bearing.
-	if (HasBrowseStatus(searchID)) {
-		std::map<wxUIntPtr, uint16>::const_iterator bar = m_browseBar.find(searchID);
-		const uint16 pct = (bar != m_browseBar.end()) ? bar->second : 0;
+	// finished, so routing this branch through it would recurse between the
+	// two.
+	if (theApp->browsemanager->Has(sid)) {
+		const uint16 pct = theApp->browsemanager->BarValue(sid);
 		// 0xffff is the bar's terminal sentinel, not a percent.
 		return (pct == 0xffff) ? 100 : static_cast<uint8>(pct);
 	}
@@ -1389,13 +1384,11 @@ uint8 CSearchList::GetSearchLifecyclePercentById(wxUIntPtr searchID) const
 
 uint32 CSearchList::GetSearchBarStatusById(wxUIntPtr searchID) const
 {
-	// A "View Files" browse tab isn't a CSearchList search: its bar value is
-	// pushed by the browsing client. Return it directly when present.
-	if (!m_browseBar.empty()) {
-		std::map<wxUIntPtr, uint16>::const_iterator it = m_browseBar.find(searchID);
-		if (it != m_browseBar.end()) {
-			return it->second;
-		}
+	// A "View Files" browse tab isn't a CSearchList search: CBrowseManager
+	// owns its lifecycle, so ask there rather than keeping a second copy here
+	// that would have to be kept in step by hand.
+	if (theApp->browsemanager->Has(static_cast<uint32_t>(searchID))) {
+		return theApp->browsemanager->BarValue(static_cast<uint32_t>(searchID));
 	}
 	if (GetSearchLifecycleStateById(searchID) == SEARCH_LIFECYCLE_FINISHED) {
 		return IsOrWasKadSearch(static_cast<uint32_t>(searchID)) ? 0xfffe : 0xffff;

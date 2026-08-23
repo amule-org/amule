@@ -10,6 +10,8 @@ if (BUILD_MONOLITHIC OR BUILD_DAEMON)
 		kademlia/routing/RoutingZone.cpp
 		amule.cpp
 		BaseClient.cpp
+		BrowseLifecycle.cpp
+		BrowseManager.cpp
 		ChatSessionStore.cpp
 		ClientCreditsList.cpp
 		ClientList.cpp

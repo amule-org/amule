@@ -22,7 +22,9 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "ClientTCPSocket.h" // Interface declarations
+#include "ClientTCPSocket.h"
+
+#include "BrowseManager.h" // Interface declarations
 
 #include <protocol/Protocols.h>
 #include <protocol/ed2k/Client2Client/TCP.h>
@@ -858,6 +860,9 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 
 		theStats::AddDownOverheadOther(size);
 		wxString EmptyStr;
+		// The whole share in one packet. ProcessSharedFileList completes the
+		// browse from the outstanding count, so this form no longer needs --
+		// and no longer lacks -- a terminal mark of its own.
 		m_client->ProcessSharedFileList(buffer, size, EmptyStr);
 		break;
 	}
@@ -941,7 +946,7 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 			logRemoteClient, "Remote Client: OP_ASKSHAREDDIRSANS from " + m_client->GetFullIP());
 
 		theStats::AddDownOverheadOther(size);
-		if (m_client->GetFileListRequested() == 1) {
+		if (theApp->browsemanager->SearchIdFor(m_client) != 0) {
 			CMemFile data(buffer, size);
 			uint32 uDirs = data.ReadUInt32();
 			for (uint32 i = 0; i < uDirs; i++) {
@@ -968,9 +973,11 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 						(unsigned)(data.GetLength() - data.GetPosition()) %
 						m_client->GetFullIP());
 			}
-			m_client->SetFileListRequested(uDirs);
-			// Total directory count drives the browse progress bar percent.
-			m_client->SetBrowseTotalDirs(static_cast<int>(uDirs));
+			// Drives the progress percent, and completes the browse outright
+			// when the peer says it has none -- which used to set the counter
+			// to 0 with nothing marking it, leaving the browse at 0% forever.
+			theApp->browsemanager->OnDirectoryList(
+				m_client, static_cast<int>(uDirs), ::GetTickCount64());
 		} else {
 			AddLogLineC(CFormat(_("User %s (%u) sent unrequested shared dirs.")) %
 				    m_client->GetUserName() % m_client->GetUserIDHybrid());
@@ -986,16 +993,15 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 		CMemFile data(buffer, size);
 		wxString strDir = data.ReadString((m_client->GetUnicodeSupport() != utf8strNone));
 
-		if (m_client->GetFileListRequested() > 0) {
+		if (theApp->browsemanager->SearchIdFor(m_client) != 0) {
 			AddLogLineC(CFormat(_("User %s (%u) sent sharedfiles-list for directory '%s'")) %
 				    m_client->GetUserName() % m_client->GetUserIDHybrid() % strDir);
 
 			m_client->ProcessSharedFileList(
 				buffer + data.GetPosition(), size - data.GetPosition(), strDir);
-			if (m_client->GetFileListRequested() == 0) {
+			if (theApp->browsemanager->SearchIdFor(m_client) == 0) {
 				AddLogLineC(CFormat(_("User %s (%u) finished sending sharedfiles-list")) %
 					    m_client->GetUserName() % m_client->GetUserIDHybrid());
-				m_client->MarkBrowse(BROWSE_FINISHED);
 			}
 		} else {
 			AddLogLineC(CFormat(_("User %s (%u) sent unwanted sharedfiles-list")) %
@@ -1013,8 +1019,7 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 		AddLogLineC(CFormat(_("User %s (%u) denied access to shared directories/files list")) %
 			    m_client->GetUserName() % m_client->GetUserIDHybrid());
 
-		m_client->SetFileListRequested(0);
-		m_client->MarkBrowse(BROWSE_FAILED);
+		theApp->browsemanager->Fail(m_client);
 		break;
 
 	default:
