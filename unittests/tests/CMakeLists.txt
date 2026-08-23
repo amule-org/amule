@@ -802,6 +802,33 @@ target_link_libraries (BrowseLifecycleTest
 	mulecommon
 )
 
+# The rules about browses -- one per peer, a terminal record outliving its
+# client, a disconnect after success not being a failure. They used to live on
+# CBrowseManager next to the notify and the log line, which put them out of a
+# test's reach; the two defects found after the lifecycle was extracted were
+# both here rather than in the state machine. The store identifies peers by an
+# opaque key and touches no theApp, so all of it is drivable.
+add_executable (BrowseStoreTest
+	BrowseStoreTest.cpp
+	${CMAKE_SOURCE_DIR}/src/BrowseStore.cpp
+	${CMAKE_SOURCE_DIR}/src/BrowseLifecycle.cpp
+)
+
+add_test (NAME BrowseStoreTest
+	COMMAND BrowseStoreTest
+)
+
+target_include_directories (BrowseStoreTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+
+target_link_libraries (BrowseStoreTest
+	muleunit
+	mulecommon
+)
+
 # CListColumnStore maps a column id to its persistence key and default width.
 # The key is the on-disk config format, so the id a caller registers has to be
 # the id it looks the column up by -- a registry that renumbered stored ids

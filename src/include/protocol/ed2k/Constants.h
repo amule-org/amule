@@ -84,18 +84,6 @@
 #define TRACKED_CLEANUP_TIME HR2MS(1)
 #define KEEPTRACK_TIME HR2MS(2) // how long to keep track of clients which were once in the uploadqueue
 #define CLIENTLIST_CLEANUP_TIME MIN2MS(34) // 34 min
-// How long a browse ("View Files") may sit with nothing arriving before it is
-// given up on. Refreshed whenever the browse makes progress -- the request
-// going out, each directory landing -- so this bounds silence, not the total
-// time a large share takes to stream in.
-//
-// A backstop, not the mechanism: a browse normally ends when the peer answers,
-// denies, or the socket dies, and CUpDownClient::IsPeerContactPending catches
-// the case where the daemon never contacts the peer at all. This exists
-// because TryToConnect has several exits that contact nobody, they are not
-// marked as a family, and two attempts at enumerating them both missed some
-// (amule-org/amule#1071).
-#define BROWSE_SILENCE_TIMEOUT SEC2MS(120)
 
 // (4294967295/PARTSIZE)*PARTSIZE = ~4GB
 #define OLD_MAX_FILE_SIZE 4290048000ull

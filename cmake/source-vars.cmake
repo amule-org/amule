@@ -12,6 +12,7 @@ if (BUILD_MONOLITHIC OR BUILD_DAEMON)
 		BaseClient.cpp
 		BrowseLifecycle.cpp
 		BrowseManager.cpp
+		BrowseStore.cpp
 		ChatSessionStore.cpp
 		ClientCreditsList.cpp
 		ClientList.cpp

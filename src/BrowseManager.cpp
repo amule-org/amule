@@ -31,219 +31,133 @@
 #include <common/Format.h>
 
 #include <wx/intl.h> // _()
-#include <protocol/ed2k/Constants.h>
-
-#include <vector>
 
 bool CBrowseManager::Start(
 	CUpDownClient *client, std::uint32_t searchId, std::uint32_t peerEcid, std::uint64_t now)
 {
-	if (client == nullptr || searchId == 0) {
+	if (!m_store.Start(client, searchId, peerEcid, now)) {
 		return false;
 	}
-	if (FindFor(client) != m_browses.end()) {
-		// One browse per peer: there is a single exchange with that client to
-		// report on, so a second record could only ever describe the same one.
-		return false;
-	}
-	Entry entry;
-	entry.rec.searchId = searchId;
-	entry.rec.peerEcid = peerEcid;
-	entry.rec.state = browse::State::InProgress;
-	entry.rec.outstanding = browse::kFlatBrowse;
-	entry.rec.deadline = now + BROWSE_SILENCE_TIMEOUT;
-	entry.client.Link(client CLIENT_DEBUGSTRING("CBrowseManager::Start"));
-	m_browses[searchId] = entry;
+	m_clients[searchId].Link(client CLIENT_DEBUGSTRING("CBrowseManager::Start"));
 	return true;
 }
 
 void CBrowseManager::OnRequestSent(CUpDownClient *client, std::uint64_t now)
 {
-	const auto it = FindFor(client);
-	if (it != m_browses.end() && it->second.rec.state == browse::State::InProgress) {
-		it->second.rec.deadline = now + BROWSE_SILENCE_TIMEOUT;
-	}
+	m_store.Touch(client, now);
 }
 
 void CBrowseManager::OnDirectoryList(CUpDownClient *client, int dirCount, std::uint64_t now)
 {
-	const auto it = FindFor(client);
-	if (it == m_browses.end()) {
-		return;
-	}
-	it->second.rec = browse::OnDirectoryList(it->second.rec, dirCount, now + BROWSE_SILENCE_TIMEOUT);
-	// A peer answering "0 directories" has told us everything it intends to,
-	// so this may already complete the browse.
-	Apply(it, browse::Tick(it->second.rec, now));
+	// Read the ID first, in its own statement: the argument order of a call is
+	// unspecified, and a peer answering "no directories" completes the browse
+	// here -- after which SearchIdFor no longer answers and the announcement
+	// would be dropped on whichever compiler evaluated right-to-left.
+	const std::uint32_t searchId = m_store.SearchIdFor(client);
+	Perform(searchId, m_store.OnDirectoryList(client, dirCount, now));
 }
 
 void CBrowseManager::OnListingReceived(CUpDownClient *client, std::uint64_t now)
 {
-	const auto it = FindFor(client);
-	if (it == m_browses.end()) {
-		return;
-	}
-	it->second.rec = browse::OnListingReceived(it->second.rec, now + BROWSE_SILENCE_TIMEOUT);
-	// Both protocol forms complete here -- the directory form when its count
-	// reaches zero, the flat form on its single answer. Marking completion in
-	// one place is what the packet handlers could not do, since only one of
-	// them knew it was the last.
-	Apply(it, browse::Tick(it->second.rec, now));
+	// The ID has to be read before the call: completing the browse is exactly
+	// what stops SearchIdFor from answering.
+	const std::uint32_t searchId = m_store.SearchIdFor(client);
+	Perform(searchId, m_store.OnListingReceived(client, now));
 }
 
 void CBrowseManager::Fail(CUpDownClient *client)
 {
-	const auto it = FindFor(client);
-	if (it != m_browses.end()) {
-		Apply(it, browse::Action::Expire);
-	}
+	const std::uint32_t searchId = m_store.SearchIdFor(client);
+	Perform(searchId, m_store.Fail(client));
 }
 
 void CBrowseManager::Finish(CUpDownClient *client)
 {
-	const auto it = FindFor(client);
-	if (it != m_browses.end()) {
-		Apply(it, browse::Action::Complete);
+	const std::uint32_t searchId = m_store.SearchIdFor(client);
+	Perform(searchId, m_store.Finish(client));
+}
+
+void CBrowseManager::Forget(CUpDownClient *client)
+{
+	const std::uint32_t searchId = m_store.SearchIdFor(client);
+	// Ordered: the failure is reported while the reference that names the peer
+	// is still held, and only then released.
+	for (const browse::Effect effect : m_store.Forget(client)) {
+		Perform(searchId, effect);
 	}
 }
 
 void CBrowseManager::Remove(std::uint32_t searchId)
 {
-	m_browses.erase(searchId);
-}
-
-void CBrowseManager::Forget(CUpDownClient *client)
-{
-	const auto it = FindFor(client);
-	if (it == m_browses.end()) {
-		return;
-	}
-	if (it->second.rec.state == browse::State::InProgress) {
-		// The peer is going away mid-browse: that is a failure, and it has to
-		// be reported like any other rather than vanishing.
-		Apply(it, browse::Action::Expire);
-	}
-	// Let go of the client; the record outlives it, until the search is freed.
-	if (it->second.client.IsLinked()) {
-		it->second.client.Unlink();
-	}
+	m_store.Remove(searchId);
+	m_clients.erase(searchId);
 }
 
 void CBrowseManager::Process(std::uint64_t now)
 {
-	for (auto it = m_browses.begin(); it != m_browses.end();) {
-		const auto current = it++;
-		// Apply may erase `current`; `it` already points past it.
-		Apply(current, browse::Tick(current->second.rec, now));
+	for (const auto &todo : m_store.Tick(now)) {
+		Perform(todo.first, todo.second);
 	}
 }
 
-bool CBrowseManager::Apply(std::map<std::uint32_t, Entry>::iterator it, browse::Action action)
+void CBrowseManager::Perform(std::uint32_t searchId, browse::Effect effect)
 {
-	if (action == browse::Action::None) {
-		return false;
+	if (searchId == 0 || effect == browse::Effect::Nothing) {
+		return;
 	}
-	if (action != browse::Action::Drop) {
-		const browse::State before = it->second.rec.state;
-		it->second.rec = browse::ApplyAction(it->second.rec, action);
-		if (it->second.rec.state == before) {
-			// Already terminal; the transition was refused. Nothing to
-			// report, and nothing to log -- the disconnect that follows a
-			// completed browse must not be announced as a failure.
-			return false;
-		}
-	}
-	switch (action) {
-	case browse::Action::None:
-	case browse::Action::Complete:
-	case browse::Action::Expire:
+	switch (effect) {
+	case browse::Effect::Nothing:
 		break;
-	case browse::Action::Drop:
-		// Terminal and already reported. The RECORD stays: the search ID is
-		// still listed, and every consumer asks this manager what state it is
-		// in -- drop it here and a failed browse would fall back to "results
-		// retained?" and report idle again, which is the bug this ownership
-		// was meant to end. It is released with the search itself, in
-		// Remove(). What can go now is the client reference, so a peer that
-		// is finished with is free to be reaped.
-		if (it->second.client.IsLinked()) {
-			it->second.client.Unlink();
-		}
-		return false;
-	}
-	NotifyTransition(it->second);
-	if (action == browse::Action::Expire) {
+	case browse::Effect::ReleaseClient:
+		// Terminal and announced; the peer is free to be reaped. The record
+		// stays until its search is freed.
+		m_clients.erase(searchId);
+		break;
+	case browse::Effect::AnnounceFailure: {
+		const auto it = m_clients.find(searchId);
 		AddLogLineC(CFormat(_("Failed to retrieve shared files from user '%s'")) %
-			    (it->second.client.IsLinked() ? it->second.client.GetClient()->GetUserName()
-							  : wxString()));
+			    (it != m_clients.end() && it->second.IsLinked()
+					    ? it->second.GetClient()->GetUserName()
+					    : wxString()));
+		Announce(searchId);
+		break;
 	}
-	// Terminal now: hold it one more tick so readers that poll between the
-	// transition and the next tick still see the final state, then Drop.
-	return false;
+	case browse::Effect::Announce:
+		Announce(searchId);
+		break;
+	}
 }
 
-void CBrowseManager::NotifyTransition(const Entry &entry)
+void CBrowseManager::Announce(std::uint32_t searchId)
 {
 	// The GUI's tab marker, and nothing else: every other consumer -- the EC
 	// progress reply, the EC search listing, the monolithic bar -- reads this
 	// manager rather than holding a copy to be kept in step.
-	Notify_Browse_Status(static_cast<std::uint64_t>(entry.rec.searchId),
-		entry.rec.state == browse::State::Finished ? BROWSE_FINISHED : BROWSE_FAILED);
-}
-
-std::map<std::uint32_t, CBrowseManager::Entry>::iterator CBrowseManager::FindFor(const CUpDownClient *client)
-{
-	if (client == nullptr) {
-		return m_browses.end();
-	}
-	for (auto it = m_browses.begin(); it != m_browses.end(); ++it) {
-		if (it->second.client.GetClient() == client) {
-			return it;
-		}
-	}
-	return m_browses.end();
+	Notify_Browse_Status(static_cast<std::uint64_t>(searchId),
+		m_store.StateOf(searchId) == browse::State::Finished ? BROWSE_FINISHED : BROWSE_FAILED);
 }
 
 std::uint32_t CBrowseManager::SearchIdFor(const CUpDownClient *client) const
 {
-	for (const auto &kv : m_browses) {
-		if (kv.second.client.GetClient() == client &&
-			kv.second.rec.state == browse::State::InProgress) {
-			return kv.first;
-		}
-	}
-	return 0;
+	return m_store.SearchIdFor(client);
 }
 
 bool CBrowseManager::Has(std::uint32_t searchId) const
 {
-	return m_browses.find(searchId) != m_browses.end();
+	return m_store.Has(searchId);
 }
 
 browse::State CBrowseManager::StateOf(std::uint32_t searchId) const
 {
-	const auto it = m_browses.find(searchId);
-	return it != m_browses.end() ? it->second.rec.state : browse::State::Failed;
+	return m_store.StateOf(searchId);
 }
 
 std::uint16_t CBrowseManager::BarValue(std::uint32_t searchId) const
 {
-	const auto it = m_browses.find(searchId);
-	return it != m_browses.end() ? browse::BarValue(it->second.rec) : 0xffff;
-}
-
-int CBrowseManager::Outstanding(std::uint32_t searchId) const
-{
-	const auto it = m_browses.find(searchId);
-	return it != m_browses.end() ? it->second.rec.outstanding : 0;
+	return m_store.BarValue(searchId);
 }
 
 std::vector<std::uint32_t> CBrowseManager::Ids() const
 {
-	std::vector<std::uint32_t> out;
-	out.reserve(m_browses.size());
-	for (const auto &kv : m_browses) {
-		out.push_back(kv.first);
-	}
-	return out;
+	return m_store.Ids();
 }

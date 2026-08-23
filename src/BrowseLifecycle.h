@@ -71,6 +71,21 @@ enum class Action
  */
 constexpr int kFlatBrowse = -1;
 
+/**
+ * How long a browse may sit with nothing arriving before it is given up on.
+ *
+ * Refreshed on every sign of progress -- the request going out, each directory
+ * landing -- so it bounds silence, not the total time a large share takes to
+ * stream in.
+ *
+ * A backstop, not the mechanism: a browse normally ends when the peer answers,
+ * denies, or the socket dies. This exists because TryToContact has several
+ * exits that contact nobody, and two attempts at enumerating them both came up
+ * short (amule-org/amule#1071). At 120s it sits above the 40s ed2k socket
+ * timeout, so it never preempts the ordinary paths.
+ */
+constexpr std::uint64_t kSilenceTimeoutMs = 120000;
+
 //! One browse, start to finish.
 struct Record
 {

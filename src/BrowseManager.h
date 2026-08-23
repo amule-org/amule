@@ -26,6 +26,7 @@
 #define BROWSEMANAGER_H
 
 #include "BrowseLifecycle.h"
+#include "BrowseStore.h"
 #include "ClientRef.h"
 
 #include <cstdint>
@@ -123,30 +124,28 @@ public:
 	//! 0..100 while running, 0xffff once terminal: the value space the search
 	//! list's bar and the EC progress reply already use.
 	std::uint16_t BarValue(std::uint32_t searchId) const;
-	//! Directory listings still expected; kFlatBrowse before the peer answers.
-	int Outstanding(std::uint32_t searchId) const;
 
 	//! Every browse ID currently tracked, for the EC results union poll.
 	std::vector<std::uint32_t> Ids() const;
 
 private:
-	struct Entry
-	{
-		browse::Record rec;
-		CClientRef client;
-	};
+	//! Perform what the store asked for, on the browse named by `searchId`.
+	void Perform(std::uint32_t searchId, browse::Effect effect);
+	//! Tell the GUI a browse reached its terminal state.
+	void Announce(std::uint32_t searchId);
 
-	//! Applies `action` to the entry `it` names. Returns true when the entry
-	//! was erased, so callers iterating know their iterator is spent.
-	bool Apply(std::map<std::uint32_t, Entry>::iterator it, browse::Action action);
+	//! Every rule about browses. Kept separate so it can be driven by a test:
+	//! it identifies peers by an opaque key and never reaches theApp.
+	browse::Store m_store;
 
-	//! Mirrors the record's bar + status into the client's GUI notification.
-	//! The only place a browse transition reaches the rest of the program.
-	void NotifyTransition(const Entry &entry);
-
-	std::map<std::uint32_t, Entry>::iterator FindFor(const CUpDownClient *client);
-
-	std::map<std::uint32_t, Entry> m_browses;
+	/**
+	 * The references that keep browsed peers alive, keyed the same way.
+	 *
+	 * Not a second copy of the browse -- the store owns that. This holds only
+	 * lifetime, and entries leave it as soon as the store says the peer is no
+	 * longer needed, which is well before the record itself is disposed of.
+	 */
+	std::map<std::uint32_t, CClientRef> m_clients;
 };
 
 #endif // BROWSEMANAGER_H
