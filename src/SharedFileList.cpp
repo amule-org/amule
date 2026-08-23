@@ -755,18 +755,18 @@ void CSharedFileList::MaybeScheduleMediaProbe(CKnownFile *pFile, bool bForceRepr
 {
 	// Called from AddFile under list_mut so we already know pFile is
 	// live and stable for the duration of this call.
-	// #140 — probe local shared audio / video files with ffprobe to
-	// populate FT_MEDIA_LENGTH / _BITRATE / _CODEC. Cost-limiting:
-	//  * off by default in Preferences,
-	//  * only fires when the ffprobe path is populated,
+	// #140 — probe local shared audio / video files with ffprobe to populate
+	// the six FT_MEDIA_* fields (length, bitrate, codec, artist, album,
+	// title). Cost-limiting:
+	//  * on by default since #1080, and still switchable off in Preferences,
 	//  * only for files whose ED2K file-type is audio / video (cheap
 	//    extension-based filter — a .zip renamed to .mp4 gets
 	//    scheduled and ffprobe fails fast in the worker, but this
 	//    filter skips the mass of docs / archives / images in a
 	//    typical share tree),
-	//  * only when the file doesn't already carry FT_MEDIA_LENGTH
-	//    (retrofits pre-#140 known.met entries once, then never
-	//    re-probes).
+	//  * only when the file has no media metadata at all yet
+	//    (GetMetaDataVer() == 0), so a probed file is never re-probed.
+	// An empty ffprobe path is NOT "off": it means auto-detect.
 	// CThreadScheduler naturally throttles: it runs one task at a
 	// time at ETP_Low so hashing / completion never starve.
 	if (!thePrefs::GetMediaMetadataEnabled()) {

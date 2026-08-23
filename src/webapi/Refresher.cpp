@@ -450,29 +450,30 @@ void MergeKnownFileDetail(const CECTag *t, FileSnapshot &f)
 		std::uint32_t v = 0;
 		if (t->AssignIfExist(EC_TAG_KNOWNFILE_MEDIA_LENGTH, v)) {
 			f.media.length_s = v;
-			f.has_media = true;
 		}
 		if (t->AssignIfExist(EC_TAG_KNOWNFILE_MEDIA_BITRATE, v)) {
 			f.media.bitrate = v;
-			f.has_media = true;
 		}
 	}
 	if (const CECTag *x = t->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_CODEC)) {
 		f.media.codec = std::string(x->GetStringData().utf8_str());
-		f.has_media = true;
 	}
 	if (const CECTag *x = t->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_ARTIST)) {
 		f.media.artist = std::string(x->GetStringData().utf8_str());
-		f.has_media = true;
 	}
 	if (const CECTag *x = t->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_ALBUM)) {
 		f.media.album = std::string(x->GetStringData().utf8_str());
-		f.has_media = true;
 	}
 	if (const CECTag *x = t->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_TITLE)) {
 		f.media.title = std::string(x->GetStringData().utf8_str());
-		f.has_media = true;
 	}
+	// Derived from what the snapshot now holds rather than latched true by
+	// whichever tag happened to arrive. A zero / empty value is the daemon
+	// clearing that field, so latching would report has_media on a file whose
+	// every field has since been cleared -- and assigning the empty value
+	// above is what makes a clear propagate at all.
+	f.has_media = f.media.length_s != 0 || f.media.bitrate != 0 || !f.media.codec.empty() ||
+		      !f.media.artist.empty() || !f.media.album.empty() || !f.media.title.empty();
 }
 
 void MergePartFileTag(const CEC_PartFile_Tag *pf, FileSnapshot &f, bool is_new)

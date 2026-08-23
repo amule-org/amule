@@ -192,6 +192,15 @@ public:
 	}
 
 	void ForgetTag(ec_tagname_t tagname) { m_map_tag.erase(tagname); }
+
+	// True when a value for this tag has already been transmitted on this
+	// connection. Used to decide whether a field that is now ABSENT needs an
+	// explicit "it is gone" frame: a tag that is simply not offered reads as
+	// UNCHANGED on the remote side, because AddTag above transmits only on a
+	// difference and every receiver is add-only. Without this, clearing a
+	// field leaves the peer serving the stale value for the life of the
+	// connection.
+	bool HasTag(ec_tagname_t tagname) const { return m_map_tag.count(tagname) != 0; }
 };
 
 // Add `value` under `tagname` to `parent`, letting the value map decide whether

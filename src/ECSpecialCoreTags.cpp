@@ -276,12 +276,25 @@ namespace
 // all six on the aggregate.
 void AddMediaTagsPresent(CECTag &target, const CAbstractFile *file, CValueMap *valuemap)
 {
-	if (uint32 len = file->GetIntTagValue(FT_MEDIA_LENGTH)) {
-		target.AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_LENGTH, len), valuemap);
-	}
-	if (uint32 br = file->GetIntTagValue(FT_MEDIA_BITRATE)) {
-		target.AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_BITRATE, br), valuemap);
-	}
+	// Present -> send the value. Absent, but we sent one before -> send an
+	// explicit zero / empty so the remote drops it. Absent and never sent ->
+	// send nothing, so a field that never had a value is reported as absent
+	// rather than as a zero.
+	//
+	// The middle case is not optional. A tag that is simply not offered reads
+	// as UNCHANGED to a CValueMap peer, and both receivers are add-only, so
+	// omitting a CLEARED field would leave amulegui and the web UI serving the
+	// stale value -- including an unverified one inherited from a search
+	// result, which is exactly what the completion re-probe exists to correct.
+	const auto emitInt = [&](ec_tagname_t ecId, uint32 value) {
+		if (value) {
+			target.AddTag(CECTag(ecId, value), valuemap);
+		} else if (valuemap && valuemap->HasTag(ecId)) {
+			target.AddTag(CECTag(ecId, static_cast<uint32>(0)), valuemap);
+		}
+	};
+	emitInt(EC_TAG_KNOWNFILE_MEDIA_LENGTH, file->GetIntTagValue(FT_MEDIA_LENGTH));
+	emitInt(EC_TAG_KNOWNFILE_MEDIA_BITRATE, file->GetIntTagValue(FT_MEDIA_BITRATE));
 	static const struct
 	{
 		uint8 ftId;
@@ -294,6 +307,8 @@ void AddMediaTagsPresent(CECTag &target, const CAbstractFile *file, CValueMap *v
 		const wxString &value = file->GetStrTagValue(entry.ftId);
 		if (!value.IsEmpty()) {
 			target.AddTag(CECTag(entry.ecId, value), valuemap);
+		} else if (valuemap && valuemap->HasTag(entry.ecId)) {
+			target.AddTag(CECTag(entry.ecId, wxString()), valuemap);
 		}
 	}
 }
@@ -393,10 +408,10 @@ CEC_SharedFile_Tag::CEC_SharedFile_Tag(
 	AddTag(EC_TAG_KNOWNFILE_COMMENT, file->GetFileComment(), valuemap);
 	AddTag(EC_TAG_KNOWNFILE_RATING, file->GetFileRating(), valuemap);
 
-	// Audio/video media metadata (issue #418). Only emitted once the file
-	// has been probed (GetMetaDataVer() != 0), so non-media files add no
-	// tags. Emitted by this shared base ctor, so both /shared and
-	// /downloads (partfiles) carry it with no per-role code.
+	// Audio/video media metadata (issue #418). Emitted per FIELD -- see
+	// AddMediaTagsPresent for why the aggregate GetMetaDataVer() gate it used
+	// to sit behind was wrong. Emitted by this shared base ctor, so both
+	// /shared and /downloads (partfiles) carry it with no per-role code.
 	AddMediaTagsPresent(*this, file, valuemap);
 }
 

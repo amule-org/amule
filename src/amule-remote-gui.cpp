@@ -3097,23 +3097,43 @@ void CKnownFilesRem::ProcessItemUpdatePartfile(const CEC_PartFile_Tag *tag, CPar
 	// same FT_MEDIA_* CTags the monolithic file carries, so the identical
 	// GetIntTagValue / GetStrTagValue / GetMetaDataVer calls in the File
 	// Details dialog work unchanged in the remote build.
-	if (const CECTag *m = tag->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_LENGTH)) {
-		file->AddTagUnique(CTagInt32(FT_MEDIA_LENGTH, m->GetInt()));
-	}
-	if (const CECTag *m = tag->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_BITRATE)) {
-		file->AddTagUnique(CTagInt32(FT_MEDIA_BITRATE, m->GetInt()));
-	}
-	if (const CECTag *m = tag->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_CODEC)) {
-		file->AddTagUnique(CTagString(FT_MEDIA_CODEC, m->GetStringData()));
-	}
-	if (const CECTag *m = tag->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_ARTIST)) {
-		file->AddTagUnique(CTagString(FT_MEDIA_ARTIST, m->GetStringData()));
-	}
-	if (const CECTag *m = tag->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_ALBUM)) {
-		file->AddTagUnique(CTagString(FT_MEDIA_ALBUM, m->GetStringData()));
-	}
-	if (const CECTag *m = tag->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_TITLE)) {
-		file->AddTagUnique(CTagString(FT_MEDIA_TITLE, m->GetStringData()));
+	// A zero / empty value is the daemon saying the field is GONE, not a value
+	// worth storing -- it only sends one for a field it previously sent a real
+	// value for. Storing it would leave the detail dialog showing 0:00 or an
+	// empty Artist where N/A is the honest answer.
+	{
+		const struct
+		{
+			ec_tagname_t ecId;
+			uint8 ftId;
+			bool isInt;
+		} kMedia[] = { { EC_TAG_KNOWNFILE_MEDIA_LENGTH, FT_MEDIA_LENGTH, true },
+			{ EC_TAG_KNOWNFILE_MEDIA_BITRATE, FT_MEDIA_BITRATE, true },
+			{ EC_TAG_KNOWNFILE_MEDIA_CODEC, FT_MEDIA_CODEC, false },
+			{ EC_TAG_KNOWNFILE_MEDIA_ARTIST, FT_MEDIA_ARTIST, false },
+			{ EC_TAG_KNOWNFILE_MEDIA_ALBUM, FT_MEDIA_ALBUM, false },
+			{ EC_TAG_KNOWNFILE_MEDIA_TITLE, FT_MEDIA_TITLE, false } };
+		for (const auto &entry : kMedia) {
+			const CECTag *m = tag->GetTagByName(entry.ecId);
+			if (!m) {
+				continue;
+			}
+			if (entry.isInt) {
+				const uint32 v = m->GetInt();
+				if (v) {
+					file->AddTagUnique(CTagInt32(entry.ftId, v));
+				} else {
+					file->RemoveTag(entry.ftId);
+				}
+			} else {
+				const wxString v = m->GetStringData();
+				if (!v.IsEmpty()) {
+					file->AddTagUnique(CTagString(entry.ftId, v));
+				} else {
+					file->RemoveTag(entry.ftId);
+				}
+			}
+		}
 	}
 
 	// Comments/ratings + the Kad-notes running flag are decoded once for every
