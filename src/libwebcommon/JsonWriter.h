@@ -90,10 +90,25 @@ public:
 
 	const std::string &GetBuffer() const { return *m_buf; }
 
-	// Move the accumulated text out, leaving the writer empty. Saves copying a
-	// multi-megabyte body at the end of a response. Copies instead when the
-	// buffer belongs to the caller -- emptying someone else's is not ours to do.
-	std::string TakeBuffer() { return m_buf == &m_internal ? std::move(m_internal) : *m_buf; }
+	// Move the accumulated text out, leaving this writer empty and ready to
+	// build another document. Saves copying a multi-megabyte body at the end of
+	// a response.
+	//
+	// A caller-owned buffer is copied instead, and left exactly as it was:
+	// emptying someone else's is not ours to do, and clearing the comma state
+	// while its text is still there would drop the separator before whatever is
+	// written next.
+	std::string TakeBuffer()
+	{
+		if (m_buf != &m_internal) {
+			return *m_buf;
+		}
+		std::string taken = std::move(m_internal);
+		// A moved-from string is valid but unspecified; make it definitely empty.
+		m_internal.clear();
+		m_needs_comma = false;
+		return taken;
+	}
 
 private:
 	std::string m_internal;

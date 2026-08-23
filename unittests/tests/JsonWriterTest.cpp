@@ -245,14 +245,46 @@ TEST(JsonWriter, LargeString)
 {
 	// 50 KB string of printable ASCII should encode in linear time with
 	// the only overhead being the surrounding quotes.
-	wxString big(wxT('x'), 50000);
+	const wxString big(wxT('x'), 50000);
 	CJsonWriter w;
 	w.ValueString(big);
-	wxString expected;
-	expected += wxT("\"");
-	expected += big;
-	expected += wxT("\"");
-	ASSERT_EQUALS(expected, w.GetBuffer());
+	// Compared as bytes. Building the expectation as a wxString would convert
+	// the buffer back with the locale codec on the way into ASSERT_EQUALS,
+	// which is the conversion the writer exists to avoid -- and it would pass
+	// here regardless, the payload being pure ASCII.
+	ASSERT_EQUALS(std::string("\"") + std::string(50000, 'x') + "\"", w.GetBuffer());
+}
+
+TEST(JsonWriter, TakeBufferLeavesTheWriterReusable)
+{
+	// EndArray() leaves a comma pending for the next sibling, so a writer that
+	// kept that state across a take would open its next document with a stray
+	// separator.
+	CJsonWriter w;
+	w.BeginArray();
+	w.ValueInt(1);
+	w.EndArray();
+	ASSERT_EQUALS(std::string("[1]"), w.TakeBuffer());
+	ASSERT_TRUE(w.GetBuffer().empty());
+
+	w.BeginArray();
+	w.ValueInt(2);
+	w.EndArray();
+	ASSERT_EQUALS(std::string("[2]"), w.TakeBuffer());
+}
+
+TEST(JsonWriter, TakeBufferLeavesACallerOwnedBufferAlone)
+{
+	// The external buffer is the caller's; taking copies out of it rather than
+	// emptying it.
+	std::string shared;
+	CJsonWriter w(&shared);
+	w.BeginObject();
+	w.Key("x");
+	w.ValueInt(1);
+	w.EndObject();
+	ASSERT_EQUALS(std::string("{\"x\":1}"), w.TakeBuffer());
+	ASSERT_EQUALS(std::string("{\"x\":1}"), shared);
 }
 
 // JsonDoubleToString is the one formatting both the REST writer and the SSE
