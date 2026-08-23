@@ -32,10 +32,9 @@
 
 #include <wx/intl.h> // _()
 
-bool CBrowseManager::Start(
-	CUpDownClient *client, std::uint32_t searchId, std::uint32_t peerEcid, std::uint64_t now)
+bool CBrowseManager::Start(CUpDownClient *client, std::uint32_t searchId, std::uint64_t now)
 {
-	const browse::Store::StartResult result = m_store.Start(client, searchId, peerEcid, now);
+	const browse::Store::StartResult result = m_store.Start(client, searchId, now);
 	// Release whatever this peer was attached to before linking it afresh, so
 	// the reference map never holds two entries for one peer.
 	Perform(result.displaced);

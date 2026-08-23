@@ -49,7 +49,7 @@ constexpr std::uint32_t kSidB = 20;
 TEST(BrowseStore, StartTracksTheBrowseAndAnswersForThePeer)
 {
 	Store s;
-	ASSERT_TRUE(s.Start(ALICE, kSidA, 7, 1000).started);
+	ASSERT_TRUE(s.Start(ALICE, kSidA, 1000).started);
 	ASSERT_EQUALS(kSidA, s.SearchIdFor(ALICE));
 	ASSERT_TRUE(s.Has(kSidA));
 	ASSERT_TRUE(s.StateOf(kSidA) == State::InProgress);
@@ -62,8 +62,8 @@ TEST(BrowseStore, ASecondBrowseOfTheSamePeerIsRefused)
 	// rests on: there is one exchange with a peer, so a second record could
 	// only ever describe the same one.
 	Store s;
-	ASSERT_TRUE(s.Start(ALICE, kSidA, 7, 1000).started);
-	ASSERT_FALSE(s.Start(ALICE, kSidB, 7, 1000).started);
+	ASSERT_TRUE(s.Start(ALICE, kSidA, 1000).started);
+	ASSERT_FALSE(s.Start(ALICE, kSidB, 1000).started);
 	ASSERT_EQUALS(static_cast<std::size_t>(1), s.Size());
 	ASSERT_EQUALS(kSidA, s.SearchIdFor(ALICE));
 }
@@ -71,8 +71,8 @@ TEST(BrowseStore, ASecondBrowseOfTheSamePeerIsRefused)
 TEST(BrowseStore, DifferentPeersAreTrackedIndependently)
 {
 	Store s;
-	ASSERT_TRUE(s.Start(ALICE, kSidA, 7, 1000).started);
-	ASSERT_TRUE(s.Start(BOB, kSidB, 8, 1000).started);
+	ASSERT_TRUE(s.Start(ALICE, kSidA, 1000).started);
+	ASSERT_TRUE(s.Start(BOB, kSidB, 1000).started);
 	ASSERT_EQUALS(kSidA, s.SearchIdFor(ALICE));
 	ASSERT_EQUALS(kSidB, s.SearchIdFor(BOB));
 
@@ -84,8 +84,8 @@ TEST(BrowseStore, DifferentPeersAreTrackedIndependently)
 TEST(BrowseStore, StartRejectsNonsense)
 {
 	Store s;
-	ASSERT_FALSE(s.Start(nullptr, kSidA, 7, 1000).started);
-	ASSERT_FALSE(s.Start(ALICE, 0, 7, 1000).started);
+	ASSERT_FALSE(s.Start(nullptr, kSidA, 1000).started);
+	ASSERT_FALSE(s.Start(ALICE, 0, 1000).started);
 	ASSERT_EQUALS(static_cast<std::size_t>(0), s.Size());
 }
 
@@ -94,7 +94,7 @@ TEST(BrowseStore, AFinishedBrowseNoLongerAnswersAsThePeersLiveOne)
 	// SearchIdFor reports only a browse in progress, so a peer whose browse
 	// has ended can be browsed afresh rather than joined to a dead one.
 	Store s;
-	s.Start(ALICE, kSidA, 7, 1000);
+	s.Start(ALICE, kSidA, 1000);
 	s.Finish(ALICE);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(0), s.SearchIdFor(ALICE));
 	// ...but it is still on the books, and still answers for its state.
@@ -111,7 +111,7 @@ TEST(BrowseStore, ATerminalRecordOutlivesItsClient)
 	// sends the listing back to guessing from whether results were retained --
 	// which reports a failed browse as idle, forever.
 	Store s;
-	s.Start(ALICE, kSidA, 7, 1000);
+	s.Start(ALICE, kSidA, 1000);
 	ASSERT_TRUE(s.Fail(ALICE).effect == Effect::AnnounceFailure);
 
 	// The tick that follows releases the peer and nothing else.
@@ -134,7 +134,7 @@ TEST(BrowseStore, ADisconnectAfterSuccessIsNotReportedAsAFailure)
 	// directory and drops the connection, and the disconnect path asks for a
 	// failure without knowing the browse just succeeded.
 	Store s;
-	s.Start(ALICE, kSidA, 7, 1000);
+	s.Start(ALICE, kSidA, 1000);
 	s.OnDirectoryList(ALICE, 1, 1000);
 	ASSERT_TRUE(s.OnListingReceived(ALICE, 1000).effect == Effect::Announce);
 	ASSERT_TRUE(s.StateOf(kSidA) == State::Finished);
@@ -148,7 +148,7 @@ TEST(BrowseStore, ADisconnectAfterSuccessIsNotReportedAsAFailure)
 TEST(BrowseStore, AFlatBrowseCompletesOnItsSingleAnswer)
 {
 	Store s;
-	s.Start(ALICE, kSidA, 7, 1000);
+	s.Start(ALICE, kSidA, 1000);
 	ASSERT_TRUE(s.OnListingReceived(ALICE, 1000).effect == Effect::Announce);
 	ASSERT_TRUE(s.StateOf(kSidA) == State::Finished);
 }
@@ -156,7 +156,7 @@ TEST(BrowseStore, AFlatBrowseCompletesOnItsSingleAnswer)
 TEST(BrowseStore, ADirectoryBrowseCompletesOnItsLastListing)
 {
 	Store s;
-	s.Start(ALICE, kSidA, 7, 1000);
+	s.Start(ALICE, kSidA, 1000);
 	ASSERT_TRUE(s.OnDirectoryList(ALICE, 2, 1000).effect == Effect::Nothing);
 	ASSERT_TRUE(s.OnListingReceived(ALICE, 1000).effect == Effect::Nothing);
 	ASSERT_EQUALS(static_cast<std::uint16_t>(50), s.BarValue(kSidA));
@@ -168,7 +168,7 @@ TEST(BrowseStore, ADirectoryBrowseCompletesOnItsLastListing)
 TEST(BrowseStore, APeerWithNoDirectoriesCompletesImmediately)
 {
 	Store s;
-	s.Start(ALICE, kSidA, 7, 1000);
+	s.Start(ALICE, kSidA, 1000);
 	ASSERT_TRUE(s.OnDirectoryList(ALICE, 0, 1000).effect == Effect::Announce);
 	ASSERT_TRUE(s.StateOf(kSidA) == State::Finished);
 }
@@ -178,7 +178,7 @@ TEST(BrowseStore, APeerWithNoDirectoriesCompletesImmediately)
 TEST(BrowseStore, SilenceExpiresTheBrowse)
 {
 	Store s;
-	s.Start(ALICE, kSidA, 7, 1000);
+	s.Start(ALICE, kSidA, 1000);
 	ASSERT_TRUE(s.Tick(1000 + kSilenceTimeoutMs).empty());
 
 	const auto todo = s.Tick(1001 + kSilenceTimeoutMs);
@@ -190,7 +190,7 @@ TEST(BrowseStore, SilenceExpiresTheBrowse)
 TEST(BrowseStore, EverySignOfLifePushesTheDeadlineBack)
 {
 	Store s;
-	s.Start(ALICE, kSidA, 7, 0);
+	s.Start(ALICE, kSidA, 0);
 	// The request going out...
 	s.Touch(ALICE, 100000);
 	ASSERT_TRUE(s.Tick(100000 + kSilenceTimeoutMs).empty());
@@ -206,7 +206,7 @@ TEST(BrowseStore, EverySignOfLifePushesTheDeadlineBack)
 TEST(BrowseStore, TouchDoesNotReviveATerminalBrowse)
 {
 	Store s;
-	s.Start(ALICE, kSidA, 7, 1000);
+	s.Start(ALICE, kSidA, 1000);
 	s.Fail(ALICE);
 	s.Touch(ALICE, 999999);
 	ASSERT_TRUE(s.StateOf(kSidA) == State::Failed);
@@ -219,7 +219,7 @@ TEST(BrowseStore, ForgetFailsARunningBrowseThenReleasesThePeer)
 	// Order matters: the failure is reported while the caller still holds the
 	// reference it needs to name the peer in the log line.
 	Store s;
-	s.Start(ALICE, kSidA, 7, 1000);
+	s.Start(ALICE, kSidA, 1000);
 	const auto effects = s.Forget(ALICE);
 	ASSERT_EQUALS(static_cast<std::size_t>(2), effects.size());
 	ASSERT_TRUE(effects[0].effect == Effect::AnnounceFailure);
@@ -233,7 +233,7 @@ TEST(BrowseStore, ForgetFailsARunningBrowseThenReleasesThePeer)
 TEST(BrowseStore, ForgettingAFinishedBrowseAnnouncesNothing)
 {
 	Store s;
-	s.Start(ALICE, kSidA, 7, 1000);
+	s.Start(ALICE, kSidA, 1000);
 	s.Finish(ALICE);
 	const auto effects = s.Forget(ALICE);
 	ASSERT_EQUALS(static_cast<std::size_t>(1), effects.size());
@@ -252,7 +252,7 @@ TEST(BrowseStore, PacketsFromAForgottenPeerAreIgnored)
 	// The reference is gone, so the peer no longer resolves to its record --
 	// a late packet must not resurrect it or touch somebody else's.
 	Store s;
-	s.Start(ALICE, kSidA, 7, 1000);
+	s.Start(ALICE, kSidA, 1000);
 	s.Forget(ALICE);
 	ASSERT_TRUE(s.OnListingReceived(ALICE, 2000).effect == Effect::Nothing);
 	ASSERT_TRUE(s.OnDirectoryList(ALICE, 3, 2000).effect == Effect::Nothing);
@@ -264,13 +264,13 @@ TEST(BrowseStore, PacketsFromAForgottenPeerAreIgnored)
 TEST(BrowseStore, RemoveDisposesOfTheRecordWithItsSearch)
 {
 	Store s;
-	s.Start(ALICE, kSidA, 7, 1000);
+	s.Start(ALICE, kSidA, 1000);
 	s.Finish(ALICE);
 	s.Remove(kSidA);
 	ASSERT_FALSE(s.Has(kSidA));
 	ASSERT_EQUALS(static_cast<std::size_t>(0), s.Size());
 	// ...and the peer is browsable again.
-	ASSERT_TRUE(s.Start(ALICE, kSidB, 7, 2000).started);
+	ASSERT_TRUE(s.Start(ALICE, kSidB, 2000).started);
 }
 
 TEST(BrowseStore, UnknownSearchIdsAnswerSafely)
@@ -295,7 +295,7 @@ TEST(BrowseStore, ForgettingAnEndedBrowseStillNamesItForRelease)
 	// the user closed the tab. Most peers are in this state by the time they
 	// go away: the listing arrives, then the connection closes.
 	Store s;
-	s.Start(ALICE, kSidA, 7, 1000);
+	s.Start(ALICE, kSidA, 1000);
 	s.OnListingReceived(ALICE, 1000); // flat browse: finished
 	ASSERT_TRUE(s.StateOf(kSidA) == State::Finished);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(0), s.SearchIdFor(ALICE));
@@ -312,7 +312,7 @@ TEST(BrowseStore, EveryOutcomeCarriesTheBrowseItHappenedTo)
 	// an owner acting on the pair cannot then act on the wrong one, or on
 	// none.
 	Store s;
-	s.Start(ALICE, kSidA, 7, 1000);
+	s.Start(ALICE, kSidA, 1000);
 	ASSERT_EQUALS(kSidA, s.OnDirectoryList(ALICE, 1, 1000).searchId);
 	ASSERT_EQUALS(kSidA, s.OnListingReceived(ALICE, 1000).searchId);
 	const auto todo = s.Tick(2000);
@@ -320,7 +320,7 @@ TEST(BrowseStore, EveryOutcomeCarriesTheBrowseItHappenedTo)
 	ASSERT_EQUALS(kSidA, todo[0].searchId);
 
 	Store s2;
-	s2.Start(BOB, kSidB, 8, 1000);
+	s2.Start(BOB, kSidB, 1000);
 	ASSERT_EQUALS(kSidB, s2.Fail(BOB).searchId);
 }
 
@@ -331,13 +331,13 @@ TEST(BrowseStore, APeerIsBrowsableAgainAsSoonAsItsBrowseEnds)
 	// passed and the start it made was silently rejected. The two now agree:
 	// only a RUNNING browse blocks a new one.
 	Store s;
-	s.Start(ALICE, kSidA, 7, 1000);
+	s.Start(ALICE, kSidA, 1000);
 	s.Fail(ALICE);
 	// The peer has not been released yet -- that happens on the next tick.
 	ASSERT_TRUE(s.Has(kSidA));
 	ASSERT_EQUALS(static_cast<std::uint32_t>(0), s.SearchIdFor(ALICE));
 
-	ASSERT_TRUE(s.Start(ALICE, kSidB, 7, 2000).started);
+	ASSERT_TRUE(s.Start(ALICE, kSidB, 2000).started);
 	ASSERT_EQUALS(kSidB, s.SearchIdFor(ALICE));
 	// ...and the old record is untouched, still answering for its own state.
 	ASSERT_TRUE(s.StateOf(kSidA) == State::Failed);
@@ -350,10 +350,10 @@ TEST(BrowseStore, ARebrowseDisplacesThePeerFromItsOldRecord)
 	// one peer, and a lookup by peer answered with whichever the map ordered
 	// first -- the stale one, since ids ascend.
 	Store s;
-	s.Start(ALICE, kSidA, 7, 1000);
+	s.Start(ALICE, kSidA, 1000);
 	s.Fail(ALICE);
 
-	const auto result = s.Start(ALICE, kSidB, 7, 2000);
+	const auto result = s.Start(ALICE, kSidB, 2000);
 	ASSERT_TRUE(result.started);
 	// The old record let go, and said so: its owner is holding a reference.
 	ASSERT_TRUE(result.displaced.effect == Effect::ReleaseClient);
@@ -368,7 +368,7 @@ TEST(BrowseStore, ARebrowseDisplacesThePeerFromItsOldRecord)
 TEST(BrowseStore, AFirstBrowseDisplacesNothing)
 {
 	Store s;
-	const auto result = s.Start(ALICE, kSidA, 7, 1000);
+	const auto result = s.Start(ALICE, kSidA, 1000);
 	ASSERT_TRUE(result.started);
 	ASSERT_TRUE(result.displaced.effect == Effect::Nothing);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(0), result.displaced.searchId);
@@ -379,8 +379,8 @@ TEST(BrowseStore, AnIdAlreadyInUseIsRefused)
 	// Ids come from an allocator, but a record keyed by one already tracked
 	// would silently replace it along with whatever state it held.
 	Store s;
-	s.Start(ALICE, kSidA, 7, 1000);
-	ASSERT_FALSE(s.Start(BOB, kSidA, 8, 1000).started);
+	s.Start(ALICE, kSidA, 1000);
+	ASSERT_FALSE(s.Start(BOB, kSidA, 1000).started);
 	ASSERT_EQUALS(static_cast<std::size_t>(1), s.Size());
 	ASSERT_EQUALS(kSidA, s.SearchIdFor(ALICE));
 	ASSERT_EQUALS(static_cast<std::uint32_t>(0), s.SearchIdFor(BOB));
@@ -395,15 +395,15 @@ TEST(BrowseStore, ReusingAnIdIsRefusedEvenForTheSamePeer)
 	// the callers, and a store this permissive-looking invites the assumption
 	// that it does not.
 	Store s;
-	s.Start(ALICE, kSidA, 7, 1000);
+	s.Start(ALICE, kSidA, 1000);
 	s.Fail(ALICE);
-	ASSERT_FALSE(s.Start(ALICE, kSidA, 7, 2000).started);
+	ASSERT_FALSE(s.Start(ALICE, kSidA, 2000).started);
 	// A different ID is the supported way, and works.
-	ASSERT_TRUE(s.Start(ALICE, kSidB, 7, 2000).started);
+	ASSERT_TRUE(s.Start(ALICE, kSidB, 2000).started);
 	// ...as does reusing the ID once its record has been disposed of.
 	s.Remove(kSidB);
 	s.Remove(kSidA);
-	ASSERT_TRUE(s.Start(ALICE, kSidA, 7, 3000).started);
+	ASSERT_TRUE(s.Start(ALICE, kSidA, 3000).started);
 }
 
 TEST(BrowseStore, TheDirectoryListIsAcceptedExactlyOnce)
@@ -412,7 +412,7 @@ TEST(BrowseStore, TheDirectoryListIsAcceptedExactlyOnce)
 	// directory re-requested and the silence deadline pushed back on each
 	// resend, keeping its browse alive for as long as it kept sending.
 	Store s;
-	s.Start(ALICE, kSidA, 7, 1000);
+	s.Start(ALICE, kSidA, 1000);
 	ASSERT_TRUE(s.AwaitingDirectoryList(ALICE));
 
 	s.OnDirectoryList(ALICE, 3, 1000);
@@ -426,7 +426,36 @@ TEST(BrowseStore, ATerminalOrAbsentBrowseIsNotAwaitingAnything)
 {
 	Store s;
 	ASSERT_FALSE(s.AwaitingDirectoryList(ALICE));
-	s.Start(ALICE, kSidA, 7, 1000);
+	s.Start(ALICE, kSidA, 1000);
 	s.Fail(ALICE);
+	ASSERT_FALSE(s.AwaitingDirectoryList(ALICE));
+}
+
+TEST(BrowseStore, TheOutboundAskIsOneShotPerBrowse)
+{
+	// ConnectionEstablished gates the OP_ASKSHAREDDIRS it sends on this, and
+	// it runs on every reconnect. A browsed peer that is also a download
+	// source reconnects often, so a predicate true for the whole browse put
+	// an unrequested ask on the wire each time.
+	Store s;
+	s.Start(ALICE, kSidA, 1000);
+	ASSERT_TRUE(s.AwaitingDirectoryList(ALICE));
+	// Still true across a reconnect before the peer has answered -- the first
+	// ask may never have arrived, which is what the old counter-based guard
+	// allowed for too.
+	s.Touch(ALICE, 2000);
+	ASSERT_TRUE(s.AwaitingDirectoryList(ALICE));
+	// ...and false from the moment it has.
+	s.OnDirectoryList(ALICE, 2, 3000);
+	ASSERT_FALSE(s.AwaitingDirectoryList(ALICE));
+}
+
+TEST(BrowseStore, AFlatAnswerAlsoClosesTheAskWindow)
+{
+	// The flat form never sends a directory count; its single answer both
+	// completes the browse and stops the ask being repeated.
+	Store s;
+	s.Start(ALICE, kSidA, 1000);
+	s.OnListingReceived(ALICE, 1000);
 	ASSERT_FALSE(s.AwaitingDirectoryList(ALICE));
 }

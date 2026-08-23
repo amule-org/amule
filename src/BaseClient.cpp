@@ -175,6 +175,7 @@ void CUpDownClient::Init()
 	m_nServerPort = 0;
 	m_browseSearchId = 0;
 	m_browseEcInitiated = false;
+	m_browsePinned = false;
 	m_dwLastUpRequest = 0;
 	m_bEmuleProtocol = false;
 	m_bCompleteSource = false;
@@ -1820,7 +1821,11 @@ void CUpDownClient::ConnectionEstablished()
 				logLocalClient, "Local Client: OP_ACCEPTUPLOADREQ to " + GetFullIP());
 		}
 	}
-	if (theApp->browsemanager->SearchIdFor(this) != 0) {
+	// Only while the browse is still waiting to hear back. ConnectionEstablished
+	// runs on every reconnect, and a browsed peer that is also a download
+	// source reconnects often -- re-asking each time put unrequested packets
+	// on the wire and an error line in the peer's log.
+	if (theApp->browsemanager->AwaitingDirectoryList(this)) {
 		CPacket *packet = new CPacket(
 			m_fSharedDirectories ? OP_ASKSHAREDDIRS : OP_ASKSHAREDFILES, 0, OP_EDONKEYPROT);
 		theStats::AddUpOverheadOther(packet->GetPacketSize());
@@ -2095,21 +2100,22 @@ void CUpDownClient::RequestSharedFileList()
 	// until then the browse was keyed on this client's pointer -- which left
 	// state behind that nothing pruned, and collided when an address was
 	// reused. The EC handler pins the ID it allocated before calling here.
-	// A pinned ID belongs to this browse only if the manager has not seen it
-	// yet -- the EC handler pins one immediately before calling. An ID left
-	// over from a previous browse of this peer is still tracked, and reusing
-	// it would be refused, silently: Store::Start turns away an ID it already
-	// holds, to protect the record still answering for it.
-	if (m_browseSearchId == 0 || theApp->browsemanager->Has(m_browseSearchId)) {
+	// Use the ID the EC handler pinned for this browse, once; otherwise take a
+	// fresh one. Anything left over from a previous browse of this peer is
+	// unusable -- Store::Start refuses an ID it still holds, and an ID whose
+	// record has been disposed of may since have been handed to another
+	// search.
+	if (!m_browsePinned) {
 		m_browseSearchId = theApp->searchlist->AllocateEd2kId();
 		// Locally allocated, so this browse is ours -- otherwise the flag
 		// would still describe whoever asked for the previous one.
 		m_browseEcInitiated = false;
 	}
+	m_browsePinned = false;
 	// Take the browse first: it is the thing that can refuse, and refusing
 	// after announcing a tab would leave one open against a browse nobody is
 	// running.
-	if (!theApp->browsemanager->Start(this, m_browseSearchId, ECID(), ::GetTickCount64())) {
+	if (!theApp->browsemanager->Start(this, m_browseSearchId, ::GetTickCount64())) {
 		AddDebugLogLineN(logClient,
 			CFormat("Browse of user %s (%u) was not started") % GetUserName() %
 				GetUserIDHybrid());

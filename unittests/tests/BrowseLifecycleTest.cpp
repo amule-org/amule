@@ -38,7 +38,6 @@ Record DirBrowse(std::uint64_t deadline = 1000)
 {
 	Record r;
 	r.searchId = 42;
-	r.peerEcid = 7;
 	r.state = State::InProgress;
 	r.outstanding = kFlatBrowse; // until the peer answers with a count
 	r.deadline = deadline;

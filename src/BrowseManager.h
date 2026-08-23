@@ -68,7 +68,7 @@ public:
 	 * Refuses to start a second browse of a client that already has one, so
 	 * the caller's own "already in flight" check and this cannot disagree.
 	 */
-	bool Start(CUpDownClient *client, std::uint32_t searchId, std::uint32_t peerEcid, std::uint64_t now);
+	bool Start(CUpDownClient *client, std::uint32_t searchId, std::uint64_t now);
 
 	/**
 	 * The ask is on the wire. Restarts the silence budget, because the click

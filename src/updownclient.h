@@ -531,6 +531,13 @@ public:
 	{
 		m_browseSearchId = id;
 		m_browseEcInitiated = id != 0;
+		// Consumed by the next RequestSharedFileList, which otherwise
+		// allocates its own. Inferring this from whether the manager already
+		// knew the ID did not work: an ID whose record had been disposed of
+		// looked identical to one just pinned, so a local re-browse of a peer
+		// previously browsed over EC kept both the stale ID and the stale
+		// notion that somebody else had asked for it.
+		m_browsePinned = id != 0;
 	}
 
 	void ResetFileStatusInfo();
@@ -823,6 +830,8 @@ private:
 	uint32 m_browseSearchId;
 	//! See IsBrowseEcInitiated.
 	bool m_browseEcInitiated;
+	//! See SetBrowseSearchId: an ID pinned for the next browse, not yet used.
+	bool m_browsePinned;
 	bool m_bFriendSlot;
 	bool m_bCommentDirty;
 	bool m_bIsHybrid;

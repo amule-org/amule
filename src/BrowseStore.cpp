@@ -27,8 +27,7 @@
 namespace browse
 {
 
-Store::StartResult Store::Start(
-	ClientKey client, std::uint32_t searchId, std::uint32_t peerEcid, std::uint64_t now)
+Store::StartResult Store::Start(ClientKey client, std::uint32_t searchId, std::uint64_t now)
 {
 	StartResult result;
 	if (client == nullptr || searchId == 0 || m_records.count(searchId) != 0) {
@@ -48,7 +47,6 @@ Store::StartResult Store::Start(
 	}
 	Held held;
 	held.rec.searchId = searchId;
-	held.rec.peerEcid = peerEcid;
 	held.rec.state = State::InProgress;
 	held.rec.outstanding = kFlatBrowse;
 	held.rec.deadline = now + kSilenceTimeoutMs;

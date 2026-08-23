@@ -92,8 +92,6 @@ struct Record
 	//! Search ID this browse's results are filed under. Allocated when the
 	//! browse is asked for, so it is never 0 for a live record.
 	std::uint32_t searchId = 0;
-	//! ECID of the peer being browsed, for the listing and the GUI tab.
-	std::uint32_t peerEcid = 0;
 	State state = State::InProgress;
 	//! Directory listings still expected, or kFlatBrowse.
 	int outstanding = kFlatBrowse;

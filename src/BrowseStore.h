@@ -116,8 +116,7 @@ public:
 	 * for. No caller reuses an ID -- both routes pass a freshly allocated one
 	 * -- so this guards an invariant rather than a case.
 	 */
-	StartResult Start(
-		ClientKey client, std::uint32_t searchId, std::uint32_t peerEcid, std::uint64_t now);
+	StartResult Start(ClientKey client, std::uint32_t searchId, std::uint64_t now);
 
 	//! Push the silence deadline back; the peer has shown a sign of life.
 	void Touch(ClientKey client, std::uint64_t now);
