@@ -32,6 +32,15 @@ export function Placeholder({ kind, children }) {
   return html`<div class=${"placeholder placeholder-" + kind}>${children}</div>`;
 }
 
+// Body of a list that has no rows. A `data` collection reads undefined until
+// its snapshot lands and [] once it is known empty; the caller passes that as
+// `loading` so a pending fetch doesn't claim "nothing here yet".
+export function listPlaceholder(loading, emptyMsg) {
+  return loading
+    ? html`<${Placeholder} kind="loading">${t("app_loading")}<//>`
+    : html`<${Placeholder} kind="info">${emptyMsg}<//>`;
+}
+
 // Relative, like BASE in api.js: it has to survive a reverse-proxy subpath.
 const FLAG_BASE = window.location.pathname.replace(/\/?$/, "/") + "flags/";
 const REGIONS = (() => {

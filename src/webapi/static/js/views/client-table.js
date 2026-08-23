@@ -6,7 +6,7 @@
 import { api } from "../api.js";
 import { data } from "../events.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
-import { Badge, Placeholder, CountryCell, toast } from "../components.js";
+import { Badge, listPlaceholder, CountryCell, toast } from "../components.js";
 import { searches } from "../searches.js";
 import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker, ipNum } from "../table.js";
 import { formatBytes, formatSpeed } from "../format.js";
@@ -113,13 +113,15 @@ export const IDENT_FILTERS = ["all", ...IDENT_STATES].map((v) => [v, t("download
 // Live `clients` collection (GET /clients seed + SSE client_added/updated/
 // removed). register/ensure are idempotent, so every consumer can just call
 // this; the resource starts on the first mount and stays live from then on.
+// Returns the raw store value: undefined until the first snapshot lands, []
+// once there are known to be no peers (see ClientTable's `loading`).
 export function useClients() {
   useEffect(() => {
     data.register({ key: "clients", eventPrefix: "client", id: "ecid",
       list: () => api.get("clients").then((r) => r.clients || []) });
     data.ensure("clients");
   }, []);
-  return useStore("clients") || [];
+  return useStore("clients");
 }
 
 // Compact status icons (replacing the ident/obfuscation/friend columns). Each
@@ -157,7 +159,10 @@ export function stateBadge(s) {
 // (biggest transfer first), so only the column key is a prop. `toolbar` is
 // whatever filter controls the caller wants left of the picker. Returns the
 // two siblings so the caller keeps owning the layout box around them.
-export function ClientTable({ rows, prefsKey, defaultHidden, defaultSort, toolbar, toolbarCls = "toolbar" }) {
+// `loading` (useClients() still undefined) makes empty `rows` mean "not seeded
+// yet" rather than "no peers".
+export function ClientTable({ rows, prefsKey, defaultHidden, defaultSort, toolbar, toolbarCls = "toolbar",
+                              loading = false }) {
   const { sortKey, sortDir, hidden, widths, toggleSort, toggleCol, setWidth, resetPrefs } =
     useTablePrefs(prefsKey, { sortKey: defaultSort, sortDir: -1, hidden: defaultHidden });
 
@@ -179,7 +184,7 @@ export function ClientTable({ rows, prefsKey, defaultHidden, defaultSort, toolba
                      sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort}
                      widths=${widths} onResize=${setWidth}
                      maxHeight="none"
-                     empty=${html`<${Placeholder} kind="info">${t("downloads_peer_empty")}<//>`} />`;
+                     empty=${listPlaceholder(loading, t("downloads_peer_empty"))} />`;
 }
 
 // Per-file peer table for the detail panels. Rows are the live clients whose
@@ -193,14 +198,14 @@ export function FileClients({ hash, prefsKey, defaultHidden, defaultSort }) {
   const [ident, setIdent] = useState("all");
   const [q, setQ] = useState("");
 
-  let rows = clients.filter((c) => c.download_file_hash === hash || c.upload_file_hash === hash);
+  let rows = (clients || []).filter((c) => c.download_file_hash === hash || c.upload_file_hash === hash);
   if (ident !== "all") rows = rows.filter((c) => c.ident_state === ident);
   if (q) { const match = textMatcher(q); rows = rows.filter((c) => match((c.name || "") + " " + fileNameOf(c))); }
 
   return html`
     <div class="detail-clients">
       <${ClientTable} rows=${rows} prefsKey=${prefsKey} defaultHidden=${defaultHidden}
-                      defaultSort=${defaultSort}
+                      defaultSort=${defaultSort} loading=${clients === undefined}
                       toolbar=${ClientFilters({ ident, setIdent, q, setQ })} />
     </div>`;
 }

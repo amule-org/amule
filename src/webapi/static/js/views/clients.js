@@ -22,7 +22,8 @@ const TAB_HIDDEN = {
 const TAB_SORT = { all: "downloaded", downloads: "downloaded", uploads: "uploaded" };
 
 export default function ClientsPanel() {
-  const clients = useClients();
+  const raw = useClients(); // undefined until the first snapshot lands
+  const clients = raw || [];
   const [filter, setFilter] = useState("all"); // direction tab: all / downloads / uploads
   const [ident, setIdent] = useState("all");
   const [q, setQ] = useState("");
@@ -52,6 +53,7 @@ export default function ClientsPanel() {
         <div class="net-pane-body">
           <${ClientTable} key=${filter} rows=${list} prefsKey=${"clients_" + filter}
                           defaultHidden=${TAB_HIDDEN[filter]} defaultSort=${TAB_SORT[filter]}
+                          loading=${raw === undefined}
                           toolbarCls="toolbar pane-toolbar"
                           toolbar=${ClientFilters({ ident, setIdent, q, setQ })} />
         </div>

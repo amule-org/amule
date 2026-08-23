@@ -67,6 +67,9 @@ export const data = {
     seedBuffers.clear();
     collections.clear();
     listenersAttached.clear();
+    // Unpublish the rows too, so after the next login a view spins instead of
+    // showing the dead session's list until the new snapshot lands.
+    for (const k of active) store.set(k, undefined);
     active.clear();
     statusActive = false;
     sseFails = 0;
@@ -98,6 +101,11 @@ async function seed(key) {
     publish(key);
   } catch (e) {
     console.error("seed " + key + " failed", e);
+    // An unset key means "still loading", so a first seed that never lands
+    // would spin forever: fall back to empty (the poll loop retries). Guarded
+    // on unset so a failed refresh() keeps its rows, and on active so a 401 —
+    // which runs stop() before rejecting here — stays torn down.
+    if (active.has(key) && store.get(key) === undefined) store.set(key, []);
   } finally {
     seedBuffers.delete(key); // flip to direct-apply
   }

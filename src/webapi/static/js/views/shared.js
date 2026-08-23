@@ -7,7 +7,7 @@
 import { api, bulkFailures } from "../api.js";
 import { data } from "../events.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
-import { Placeholder, toast, confirmDialog } from "../components.js";
+import { listPlaceholder, toast, confirmDialog } from "../components.js";
 import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker } from "../table.js";
 import { formatBytes, formatFreeSpace, formatInt, formatSpeed, formatTimestamp, twin } from "../format.js";
 import { t, tn, terr } from "../i18n.js";
@@ -18,7 +18,11 @@ const PRIORITIES = ["auto", "very_low", "low", "normal", "high", "release"]
   .map((v) => [v, t("shared_prio_" + v)]);
 
 export default function Shared({ isGuest }) {
-  const shared = useStore("shared") || [];
+  // undefined until the first snapshot lands, [] once the share is known
+  // empty; listPlaceholder tells the two apart.
+  const rawShared = useStore("shared");
+  const shared = rawShared || [];
+  const loading = rawShared === undefined;
   const disk = (useStore("status") || {}).disk || {};
   const [selection, setSelection] = useState(() => new Set());
   const { sortKey, sortDir, hidden, widths, toggleSort, toggleCol, setWidth, resetPrefs } =
@@ -201,10 +205,11 @@ export default function Shared({ isGuest }) {
                          sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort} onRowClick=${onRowClick}
                          widths=${widths} onResize=${setWidth}
                          maxHeight="none"
-                         empty=${html`<${Placeholder} kind="info">${t("shared_empty")}<//>`} />
+                         empty=${listPlaceholder(loading, t("shared_empty"))} />
+        ${loading ? null : html`
         <div class="totals-line">
           <span>${tn("shared_files_count", list.length)}</span>${" · "}<span>${t("shared_size")} ${formatBytes(size)}</span>${" · "}<span>${t("shared_transferred")} ${formatBytes(xs) + " / " + formatBytes(xt)}</span>${" · "}<span>${t("shared_upload_speed")} ${formatSpeed(up)}</span>${freeSpace ? html`${" · "}<span>${t("common_free_space")} ${freeSpace}</span>` : ""}
-        </div>
+        </div>`}
     </section>`}>
         <${SharedDetail} hash=${detailHash} />
       <//>
