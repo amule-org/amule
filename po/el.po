@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-23 22:15+0200\n"
+"POT-Creation-Date: 2026-08-23 23:41+0200\n"
 "PO-Revision-Date: 2026-08-22 15:25+0000\n"
 "Last-Translator: Dimitris <dgalanak@yahoo.com>\n"
 "Language-Team: Greek\n"
@@ -2216,6 +2216,10 @@ msgstr "Ξεκίνησε καινούρια περίοδος συνομιλία�
 #, fuzzy
 msgid "No such chat session"
 msgstr "Κλείσιμο της συνομιλίας."
+
+#: src/ExternalConn.cpp
+msgid "File is not eligible for media metadata extraction (not an audio/video file, or an incomplete download)"
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Empty chat message"
@@ -7232,6 +7236,13 @@ msgstr "Ο διακομιστής δεν βρέθηκε: %s"
 #, c-format
 msgid "No shareable files found in directory: %s"
 msgstr ""
+
+#: src/SharedFileList.cpp
+#, c-format
+msgid "Re-extracting media metadata for %u shared file"
+msgid_plural "Re-extracting media metadata for %u shared files"
+msgstr[0] ""
+msgstr[1] ""
 
 #: src/SharedFileList.cpp
 #, fuzzy, c-format

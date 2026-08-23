@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-23 22:15+0200\n"
+"POT-Creation-Date: 2026-08-23 23:41+0200\n"
 "PO-Revision-Date: 2026-08-22 15:51+0000\n"
 "Last-Translator: Wayne Su <mstarmstar@gmail.com>\n"
 "Language-Team: \n"
@@ -2196,6 +2196,10 @@ msgstr "已開始新的交談"
 #, fuzzy
 msgid "No such chat session"
 msgstr "結束本次交談。"
+
+#: src/ExternalConn.cpp
+msgid "File is not eligible for media metadata extraction (not an audio/video file, or an incomplete download)"
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Empty chat message"
@@ -7161,6 +7165,12 @@ msgstr "找不到分享目錄，略過：%s"
 #, c-format
 msgid "No shareable files found in directory: %s"
 msgstr "目錄中找不到可分享的檔案：%s"
+
+#: src/SharedFileList.cpp
+#, c-format
+msgid "Re-extracting media metadata for %u shared file"
+msgid_plural "Re-extracting media metadata for %u shared files"
+msgstr[0] ""
 
 #: src/SharedFileList.cpp
 #, fuzzy, c-format

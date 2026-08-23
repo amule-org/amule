@@ -147,6 +147,27 @@ public:
 	bool RenameFile(CKnownFile *pFile, const CPath &newName);
 	void VerifyLocalData(const CKnownFile *file) const;
 
+	// Re-extract media metadata for every shared file, whether or not it has
+	// any already. Returns how many probes were queued.
+	//
+	// This is the only way to correct a file whose metadata is wrong rather
+	// than missing: the scheduler skips anything that already carries a media
+	// tag, so a value stored by an older build -- a cover-art codec, or a
+	// preview inherited from a search result before the local probe could
+	// overwrite it -- is otherwise permanent short of deleting known.met,
+	// which would also discard the ed2k part hashes and every per-file
+	// statistic.
+	//
+	// Asynchronous: the work is queued on the media-probe worker and this
+	// returns immediately. Nothing else about a file is touched -- it is not
+	// re-hashed, its hash does not change, and it never leaves the share.
+	unsigned RefreshAllMediaMetadata();
+
+	// The single-file form, addressed by hash. Returns false when no shared
+	// file has that hash, or it is not eligible: not audio/video by
+	// extension, or an incomplete download.
+	bool RefreshMediaMetadata(const CMD4Hash &hash);
+
 	/**
 	 * Returns the name of a folder visible to the public.
 	 *
@@ -234,12 +255,33 @@ private:
 	// CMediaProbeTask when the preference is enabled and the file
 	// looks like media (audio / video by ED2K file type) and hasn't
 	// been probed yet. Returns silently if any gate fails.
-	// bForceReprobe bypasses the "already has FT_MEDIA_LENGTH" gate: set on
-	// download completion, where the authoritative local probe must overwrite
-	// any metadata inherited from the search result (which is only a
-	// during-download preview). Left false everywhere else so startup rescans
-	// still probe each file at most once.
-	void MaybeScheduleMediaProbe(CKnownFile *pFile, bool bForceReprobe = false);
+	//
+	// The mode says WHICH gates to bypass, because the two callers that bypass
+	// anything need different ones and a single "force" flag conflated them:
+	//
+	//  * Normal   -- both gates apply. Startup rescans probe each file at most
+	//                once and never touch an in-progress download.
+	//  * Completion -- both bypassed. The authoritative local probe must
+	//                overwrite metadata inherited from the search result, and
+	//                a just-completed download is STILL a CPartFile object, so
+	//                the partfile guard has to be lifted too. Safe only
+	//                because this fires exactly when the file has finished.
+	//  * Refresh  -- the metadata gate is bypassed, the partfile guard is NOT.
+	//                A whole-share walk must not inherit Completion's licence:
+	//                a genuinely incomplete download is in the shared list and
+	//                has no complete file to read.
+	enum class MediaProbeMode
+	{
+		Normal,
+		Completion,
+		Refresh,
+	};
+	// Returns true when a probe was actually enqueued, so a caller can report
+	// what it did. Do NOT try to infer that from the worker's pending count:
+	// CMediaProbeThread::Entry swaps the whole job list out as soon as it is
+	// signalled, so against an idle worker the count is back to zero before
+	// the caller can look and every enqueue reads as a no-op.
+	bool MaybeScheduleMediaProbe(CKnownFile *pFile, MediaProbeMode mode = MediaProbeMode::Normal);
 
 	// Per-path attach: stat fname under directory, look it up in
 	// known.met, and either AddFile() the existing CKnownFile or push

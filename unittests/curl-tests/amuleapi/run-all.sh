@@ -256,6 +256,7 @@ PHASES=(
 	36-shared-reload.sh
 	37-shared-availability-parts.sh
 	38-chat.sh
+	39-shared-media-refresh.sh
 )
 
 # Override list from the command line if given.

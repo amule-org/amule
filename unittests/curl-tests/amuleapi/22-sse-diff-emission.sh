@@ -468,6 +468,124 @@ else
 	_pass "no client frame this run (no peer changed; shape asserted when one fires)"
 fi
 
+# --- shared_added / shared_updated carry the same keys as the GET
+# --- /shared list item.
+# REFERENCE.md promises the payload "matches this object byte-for-byte, so a
+# subscriber that received shared_updated does not need to re-GET". Nothing
+# checked it: the mechanical key-diff above covers status only, and the shared
+# payload is built by a SEPARATE writer (ToJsonSharedEvent) from the one the
+# list uses (WriteSharedObject), so the two drift silently by construction.
+# They already did once -- `media` reached the event before the list item.
+#
+# Appended at the end of the file on purpose: every section here shares one
+# live daemon, and a new section in the middle can change the state later
+# sections read.
+#
+# Conditional for the same reason as status_changed: an idle share emits
+# nothing, so a missing frame is a skip. What this guards is the SHAPE.
+# Force a real change rather than waiting for one: a reload of an unchanged
+# share emits nothing, so a passive wait here reports "no frame" every run and
+# checks nothing. Flipping a shared file's priority moves a field EqualShared
+# compares, which is exactly what makes shared_updated fire. The original
+# value is restored below -- this daemon is shared with the other sections.
+#
+# Prefer a file that HAS media. Both writers emit `media` only when the file
+# carries it, so comparing whatever sorts first comes down to two objects that
+# both omit the key: the sets match and the field this check exists to guard
+# was never compared. That is a green check over a comparison that never
+# happened, and it is exactly the regression that got through last time.
+# One GET, three extractions: re-fetching per field lets a live daemon reorder
+# the list between them, which would restore one file's priority onto another.
+#
+# The subject is chosen from the DETAIL endpoint, never from the list's own
+# `media` key. Selecting on the list would key the check off the exact field
+# whose absence is the bug: drop media from the list writer and the selector
+# stops finding a media file, falls back to a document, and the comparison
+# passes with media never compared -- the guard reporting green precisely when
+# it should be red. Detail builds through a different writer, so it still
+# answers truthfully when the list is the broken one.
+PARITY_BODY=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared")
+PARITY_HASH=
+for CAND in $(printf '%s' "$PARITY_BODY" | jq -r '.shared[0:20][].hash'); do
+	if curl -s -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared/$CAND" \
+		| jq -e '.media != null' >/dev/null 2>&1; then
+		PARITY_HASH=$CAND
+		break
+	fi
+done
+[ -n "$PARITY_HASH" ] || PARITY_HASH=$(printf '%s' "$PARITY_BODY" | jq -r '.shared[0].hash // empty')
+PARITY_PRIO=$(printf '%s' "$PARITY_BODY" \
+	| jq -r --arg h "$PARITY_HASH" '.shared[] | select(.hash == $h) | .priority')
+PARITY_AUTO=$(printf '%s' "$PARITY_BODY" \
+	| jq -r --arg h "$PARITY_HASH" '.shared[] | select(.hash == $h) | .priority_auto')
+PARITY_HAS_MEDIA=0
+if [ -n "$PARITY_HASH" ] && curl -s -H "Authorization: Bearer $ADMIN_TOKEN" \
+	"$HOST/api/v0/shared/$PARITY_HASH" | jq -e '.media != null' >/dev/null 2>&1; then
+	PARITY_HAS_MEDIA=1
+fi
+SHARED_JSON=""
+if [ -z "$PARITY_HASH" ]; then
+	_pass "nothing shared; shared-event parity check skipped"
+else
+if [ "$PARITY_HAS_MEDIA" = "1" ]; then
+	echo "    info: parity subject carries media (the key this check guards)"
+else
+	echo "    info: no shared file carries media; parity checked on the common keys only"
+fi
+SSE_PID=$(_sse_start 25)
+# Wait for the stream to exist rather than sleeping a fixed second: _sse_start
+# backgrounds curl and returns immediately, so on a loaded runner the PATCH can
+# land before the subscription does. Every other section here treats a missing
+# frame as a pass and absorbs that race; this one requires the frame, so it has
+# to actually wait for the connection instead of assuming it.
+for _ in $(seq 1 80); do
+	[ -s "$SSE_OUT" ] && break
+	sleep 0.25
+done
+if [ "$PARITY_PRIO" = "high" ]; then NEW_PRIO=low; else NEW_PRIO=high; fi
+curl -s -o /dev/null -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d "{\"priority\":\"$NEW_PRIO\"}" "$HOST/api/v0/shared/$PARITY_HASH"
+# Take the frame for THIS file: any other file's frame would be a valid
+# parity pair but not necessarily the one carrying media.
+for _ in $(seq 1 40); do
+	SHARED_JSON=$(grep -A2 -E "^event: shared_(added|updated)$" "$SSE_OUT" 2>/dev/null \
+		| grep "^data: " | sed 's/^data: //' \
+		| jq -c --arg h "$PARITY_HASH" 'select(.hash == $h)' 2>/dev/null | head -1)
+	[ -n "$SHARED_JSON" ] && break
+	sleep 0.25
+done
+kill $SSE_PID 2>/dev/null
+wait $SSE_PID 2>/dev/null
+if [ -n "$SHARED_JSON" ]; then
+	REST_ITEM=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared" \
+		| jq -c --arg h "$PARITY_HASH" '.shared[] | select(.hash == $h)')
+	if [ -z "$REST_ITEM" ]; then
+		# The file left the share between the frame and the GET; no contract
+		# to check, and failing here would be a flake, not a finding.
+		_pass "shared frame's file no longer listed (shape asserted when both are present)"
+	else
+		DIFF=$(jq -n --argjson a "$REST_ITEM" --argjson b "$SHARED_JSON" \
+			'def keys_: [paths | join(".")] | sort;
+			 {rest_only: (($a|keys_) - ($b|keys_)), sse_only: (($b|keys_) - ($a|keys_))}')
+		if [ "$(echo "$DIFF" | jq -c '.')" = '{"rest_only":[],"sse_only":[]}' ]; then
+			_pass "shared event payload keys match the GET /shared item exactly"
+		else
+			_fail "shared event / GET /shared key parity" "$DIFF"
+		fi
+	fi
+else
+	_fail "shared event parity" "no shared_added/updated frame for $PARITY_HASH after a priority PATCH"
+fi
+# Restore what the PATCH changed: later sections and other phases read this
+# daemon's state. priority_auto has to go back too -- setting a bare priority
+# clears it.
+curl -s -o /dev/null -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d "{\"priority\":\"$PARITY_PRIO\",\"priority_auto\":$PARITY_AUTO}" \
+	"$HOST/api/v0/shared/$PARITY_HASH"
+fi
+
 # --- Summary. -----------------------------------------------------
 echo
 if [ "$FAIL_COUNT" -eq 0 ]; then

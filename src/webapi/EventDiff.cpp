@@ -169,7 +169,19 @@ std::string ToJsonSharedEvent(const FileSnapshot &f)
 	  << ",\"upload_speed_bps\":" << f.shared.upload_speed_bps
 	  << ",\"uploading\":" << f.shared.uploading_count << ",\"last_upload\":" << f.shared.last_upload
 	  << ",\"shared_since\":" << f.shared.shared_since
-	  << ",\"hashing_progress\":" << SharedHashingProgress(f) << "}";
+	  << ",\"hashing_progress\":" << SharedHashingProgress(f);
+	// Media metadata rides the event because a metadata re-extraction is
+	// otherwise invisible to a subscriber: the refresh endpoints answer 202
+	// with no result, so this is how a client learns a probe landed. Six
+	// small scalars, unlike the per-part arrays the list endpoints omit.
+	if (f.has_media) {
+		o << ",\"media\":{\"length_s\":" << f.media.length_s << ",\"bitrate\":" << f.media.bitrate
+		  << ",\"codec\":\"" << EscJson(f.media.codec) << "\""
+		  << ",\"artist\":\"" << EscJson(f.media.artist) << "\""
+		  << ",\"album\":\"" << EscJson(f.media.album) << "\""
+		  << ",\"title\":\"" << EscJson(f.media.title) << "\"}";
+	}
+	o << "}";
 	return o.str();
 }
 
@@ -367,6 +379,16 @@ bool EqualShared(const FileSnapshot &a, const FileSnapshot &b)
 	       a.shared.uploading_count == b.shared.uploading_count &&
 	       a.shared.last_upload == b.shared.last_upload &&
 	       a.shared.shared_since == b.shared.shared_since &&
+	       // Media metadata, so a re-extraction emits shared_updated at all.
+	       // Without these a file whose metadata just changed compares EQUAL
+	       // and the refresh is invisible to every subscriber -- which is the
+	       // only progress signal the 202-returning refresh endpoints have.
+	       // These change once per probe, not per tick, so they cost nothing
+	       // in event volume.
+	       a.has_media == b.has_media && a.media.length_s == b.media.length_s &&
+	       a.media.bitrate == b.media.bitrate && a.media.codec == b.media.codec &&
+	       a.media.artist == b.media.artist && a.media.album == b.media.album &&
+	       a.media.title == b.media.title &&
 	       // Through the accessor, not the raw field: a shared download's
 	       // progress lives on the download side, and comparing the raw
 	       // field would hold every tick of it back from shared_updated.

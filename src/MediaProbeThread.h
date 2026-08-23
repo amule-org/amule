@@ -74,6 +74,16 @@ public:
 
 	bool IsRunning() const { return m_bRun; }
 
+	// How many probes are still queued. The worker reports only at the end of
+	// a drain, so this is what a caller polls to say "refreshing, N left" --
+	// and what the refresh entry points use to tell a scheduled file from one
+	// the gates dropped, since MaybeScheduleMediaProbe returns nothing.
+	size_t PendingCount() const
+	{
+		wxMutexLocker lock(const_cast<wxMutex &>(m_mutex));
+		return m_jobList.size();
+	}
+
 private:
 	void *Entry() override;
 
