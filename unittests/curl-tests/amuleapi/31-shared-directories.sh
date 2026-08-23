@@ -171,6 +171,12 @@ _assert_status 400 "DELETE (no path parameter) → 400"
 # above exists for the daemon only when the daemon shares this filesystem.
 # Against a containerised or remote one everything below is rejected as
 # not_found, so probe once and say so instead of failing seven assertions.
+#
+# not_readable counts as the same setup problem. The core distinguishes the
+# two (EC_SHAREDDIR_ERR_*: 1 = missing or not a directory, 2 = unreadable),
+# and a same-host daemon running as another user hits the second one on the
+# 0700 directory mktemp -d just created. Either way the daemon cannot take
+# this path, which is the condition the assertions below depend on.
 SCRATCH_ENC=$(jq -rn --arg p "$SCRATCH_DIR" '$p|@uri')
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
@@ -178,12 +184,15 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: applicat
 SCRATCH_REJECTION=$(printf '%s' "$CURL_BODY" |
 	jq -r "[.rejected[] | select(.path==\"$SCRATCH_DIR\")][0].reason" 2>/dev/null)
 SHARE_FS_VISIBLE=1
-if [ "$SCRATCH_REJECTION" = "not_found" ]; then
+case "$SCRATCH_REJECTION" in
+not_found | not_readable)
 	SHARE_FS_VISIBLE=0
-	echo "  SKIP  the assertions that need amuled to see $SCRATCH_DIR"
-	echo "        (it stats paths itself; run this against a daemon on this host,"
-	echo "         or set the scratch path to one the daemon can reach)"
-fi
+	echo "  SKIP  the assertions that need amuled to take $SCRATCH_DIR ($SCRATCH_REJECTION)"
+	echo "        (it stats paths itself; run this against a daemon on this host"
+	echo "         and as a user that can read the path, or set the scratch path"
+	echo "         to one the daemon can reach)"
+	;;
+esac
 
 if [ "$SHARE_FS_VISIBLE" -eq 1 ]; then
 _assert_status 200 "POST (add scratch dir, recursive) → 200"

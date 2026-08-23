@@ -47,10 +47,15 @@ ADMIN_PASS=${ADMIN_PASS:-adminpass}
 
 FAIL_COUNT=0
 TEST_COUNT=0
+# Skips are counted apart from TEST_COUNT, never folded into it: a skipped
+# section is coverage that did not happen, and adding it to the passed tally
+# would report the absence of a check as a check that succeeded.
+SKIP_COUNT=0
 AUTH=()
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
 _pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
+_skip() { SKIP_COUNT=$((SKIP_COUNT+1)); echo "  SKIP  $1"; }
 _fail() {
 	TEST_COUNT=$((TEST_COUNT+1)); FAIL_COUNT=$((FAIL_COUNT+1))
 	echo "  FAIL  $1"
@@ -198,7 +203,7 @@ if [ "${TOTAL:-0}" -gt 0 ]; then
 		_fail "metadata pairing" "$MISMATCH record(s) have one without the other"
 	fi
 else
-	echo "  SKIP  record-shape assertions (the store is empty)"
+	_skip "record-shape assertions (the store is empty)"
 fi
 
 # --- 4b. The store is maintained, not re-read. ---------------------
@@ -226,10 +231,10 @@ if [ -n "$ACTIVE_HASH" ] && [ "$ACTIVE_HASH" != "null" ]; then
 	else
 		# An online but idle peer is legitimately static, and cannot be told
 		# apart from a stale cache here. Only a moving one proves the patch.
-		echo "  SKIP  live-total check (the online peer is not transferring)"
+		_skip "live-total check (the online peer is not transferring)"
 	fi
 else
-	echo "  SKIP  live-total check (no peer is connected)"
+	_skip "live-total check (no peer is connected)"
 fi
 
 # --- 4c. Every connected peer has a row. ---------------------------
@@ -249,7 +254,9 @@ fi
 # ReconcileKnownClientsLocked() skips: the all-zero one is the placeholder a peer
 # reports before sending its real hash, and folding those in would collapse
 # every unidentified peer into one fabricated record.
-LIVE_HASHES=$(curl -s --max-time 10 "${AUTH[@]}" "$HOST/api/v0/clients?limit=500" \
+LIVE_CLIENTS_JSON=$(curl -s --max-time 10 "${AUTH[@]}" "$HOST/api/v0/clients?limit=500")
+LIVE_TOTAL=$(printf '%s' "$LIVE_CLIENTS_JSON" | jq -r '.clients | length' 2>/dev/null)
+LIVE_HASHES=$(printf '%s' "$LIVE_CLIENTS_JSON" \
 	| jq -r '.clients[].user_hash // empty | select(. != "" and (test("^0+$") | not))' | sort -u)
 if [ -n "$LIVE_HASHES" ]; then
 	_curl "$HOST/api/v0/known_clients?sort=last_seen&order=desc&limit=500"
@@ -274,8 +281,14 @@ if [ -n "$LIVE_HASHES" ]; then
 	else
 		_fail "online flag" "no record is flagged online while peers are connected"
 	fi
+elif [ "${LIVE_TOTAL:-0}" -gt 0 ]; then
+	# Connected, but nothing to look up: every peer is still on the
+	# placeholder hash the filter above drops. Saying "no peer is
+	# connected" here would describe the opposite of what happened, and
+	# this is exactly the population the filter exists for.
+	_skip "per-peer row check ($LIVE_TOTAL peer(s) connected, none identified yet)"
 else
-	echo "  SKIP  per-peer row check (no peer is connected)"
+	_skip "per-peer row check (no peer is connected)"
 fi
 
 # --- 5. Caching. ---------------------------------------------------
@@ -299,8 +312,10 @@ for m in POST PUT DELETE PATCH; do
 done
 
 echo
+SKIP_NOTE=""
+[ "$SKIP_COUNT" -gt 0 ] && SKIP_NOTE=" ($SKIP_COUNT check(s) skipped)"
 if [ "$FAIL_COUNT" -eq 0 ]; then
-	echo "33-known-clients: all $TEST_COUNT assertions passed"
+	echo "33-known-clients: all $TEST_COUNT assertions passed$SKIP_NOTE"
 	exit 0
 fi
 echo "33-known-clients: $FAIL_COUNT of $TEST_COUNT assertions FAILED"

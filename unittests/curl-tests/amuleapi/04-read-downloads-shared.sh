@@ -29,12 +29,17 @@ ADMIN_PASS=${ADMIN_PASS:-adminpass}
 
 FAIL_COUNT=0
 TEST_COUNT=0
+# Skips are counted apart from TEST_COUNT, never folded into it: a skipped
+# check is coverage that did not happen, and adding it to the passed tally
+# would report the absence of a check as a check that succeeded.
+SKIP_COUNT=0
 
 CURL_BODY_FILE=$(mktemp -t amuleapi_04_read_downloads_shared_body.XXXXXX)
 trap 'rm -f "$CURL_BODY_FILE"' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
 _pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
+_skip() { SKIP_COUNT=$((SKIP_COUNT+1)); echo "  SKIP  $1"; }
 _fail() {
 	TEST_COUNT=$((TEST_COUNT+1)); FAIL_COUNT=$((FAIL_COUNT+1))
 	echo "  FAIL  $1"
@@ -234,7 +239,7 @@ if [ "$COUNT" -gt 0 ]; then
 		_assert_json_eq '[.clients[] | select(.a4af == null)] | length' 0 "every row has an a4af flag"
 		_assert_json_eq '[.clients[] | select(has("parts"))] | length' 0 "no parts bitmap without include_parts"
 	else
-		echo "  SKIP  row-shape checks: no peer is connected to the download"
+		_skip "row-shape checks: no peer is connected to the download"
 	fi
 
 	# Opt-in bitmaps are exactly part_count long for a row that has one.
@@ -246,7 +251,7 @@ if [ "$COUNT" -gt 0 ]; then
 		_assert_json_eq "[.clients[] | select(has(\"parts\")) | select((.parts | length) != $PARTCOUNT)] | length" \
 			0 "every parts bitmap ($DLBITMAPS of them) is exactly part_count entries"
 	else
-		echo "  SKIP  parts-length check: no row carries a bitmap"
+		_skip "parts-length check: no row carries a bitmap"
 	fi
 
 	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH/clients?include_parts=maybe"
@@ -402,7 +407,7 @@ if [ "$SHCOUNT" -gt 0 ]; then
 		'/shared/{hash} carries rating'
 	SHPARTCOUNT=$(printf '%s' "$CURL_BODY" | jq -r '.part_count')
 
-	# --- 6d. GET /shared/{hash}/clients: the upload-side half of the
+	# --- 6c. GET /shared/{hash}/clients: the upload-side half of the
 	# per-file client rows (issue #984). Same handler and same row shape as
 	# the download side asserted above; what differs is which collection the
 	# hash must belong to, which is what the 404 below pins down.
@@ -424,7 +429,7 @@ if [ "$SHCOUNT" -gt 0 ]; then
 		_assert_json_eq '[.clients[] | select(has("parts"))] | length' 0 \
 			"no parts bitmap on the shared route without include_parts"
 	else
-		echo "  SKIP  shared-side row-shape checks: no peer is downloading the shared file"
+		_skip "shared-side row-shape checks: no peer is downloading the shared file"
 	fi
 
 	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/shared/$SHASH/clients?include_parts=true"
@@ -434,7 +439,7 @@ if [ "$SHCOUNT" -gt 0 ]; then
 		_assert_json_eq "[.clients[] | select(has(\"parts\")) | select((.parts | length) != $SHPARTCOUNT)] | length" \
 			0 "every shared-side parts bitmap ($SHBITMAPS of them) is exactly part_count entries"
 	else
-		echo "  SKIP  shared-side parts-length check: no row carries a bitmap"
+		_skip "shared-side parts-length check: no row carries a bitmap"
 	fi
 
 	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/shared/$SHASH/clients?include_parts=maybe"
@@ -468,7 +473,7 @@ if [ "$SHCOUNT" -gt 0 ]; then
 		_assert_json_eq '[.clients[] | {ecid, role, a4af}] | sort | tojson' "$DL_ROWS" \
 			"both routes return the same rows for a downloading+shared hash"
 	else
-		echo "  SKIP  same-rows check: no hash is both downloading and shared"
+		_skip "same-rows check: no hash is both downloading and shared"
 	fi
 
 	# The 404 pair is the only difference between the two routes: each hash
@@ -478,20 +483,20 @@ if [ "$SHCOUNT" -gt 0 ]; then
 			"$HOST/api/v0/downloads/$SHARED_ONLY_HASH/clients"
 		_assert_status 404 "a shared-only hash is a 404 on /downloads/{hash}/clients"
 	else
-		echo "  SKIP  shared-only 404 check: every shared file is also downloading"
+		_skip "shared-only 404 check: every shared file is also downloading"
 	fi
-
-	# Shared-only sub-resource: an unknown hash is a 404 here just as it is
-	# on the download side.
-	_curl -H "Authorization: Bearer $TOKEN" \
-		"$HOST/api/v0/shared/baadbaadbaadbaadbaadbaadbaadbaad/clients"
-	_assert_status 404 "unknown hash on /shared/{hash}/clients → 404"
 fi
 
-# --- 6c. /shared/{hash} missing-hash 404. -------------------------
+# --- 6d. Missing-hash 404s on the shared routes. -------------------
+# Both use a hash that exists nowhere, so neither needs a shared file and
+# both belong outside the "has entries" gate above: on a daemon sharing
+# nothing these are still the checks that pin the routes down.
 _curl -H "Authorization: Bearer $TOKEN" \
 	"$HOST/api/v0/shared/baadbaadbaadbaadbaadbaadbaadbaad"
 _assert_status 404 "GET /shared/{nonexistent-hash} → 404"
+_curl -H "Authorization: Bearer $TOKEN" \
+	"$HOST/api/v0/shared/baadbaadbaadbaadbaadbaadbaadbaad/clients"
+_assert_status 404 "unknown hash on /shared/{hash}/clients → 404"
 
 # --- 7. Method gate. DELETE is method-gated on the /shared collection
 # (no bulk-unshare endpoint); the /downloads collection now accepts a bulk
@@ -502,8 +507,10 @@ _assert_status 405 "DELETE /api/v0/shared → 405"
 
 # --- Summary. -----------------------------------------------------
 echo
+SKIP_NOTE=""
+[ "$SKIP_COUNT" -gt 0 ] && SKIP_NOTE=" ($SKIP_COUNT check(s) skipped)"
 if [ "$FAIL_COUNT" -eq 0 ]; then
-	echo "OK: $TEST_COUNT/$TEST_COUNT passed"
+	echo "OK: $TEST_COUNT/$TEST_COUNT passed$SKIP_NOTE"
 	exit 0
 fi
 echo "FAIL: $FAIL_COUNT/$TEST_COUNT failed"

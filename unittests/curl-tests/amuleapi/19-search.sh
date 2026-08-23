@@ -49,15 +49,27 @@ EC_PASSWORD=${EC_PASSWORD:-amule}
 # back to PATH: an installed package would silently be tested in place of the
 # working tree, which is worse than not finding anything. Set AMULEAPI_BIN to
 # point somewhere else on purpose.
+#
+# Any build*/ directory counts, not a fixed list of three: per-branch and
+# per-arch trees are normal, and a name this function has never heard of used
+# to mean a silent skip. Where several exist the NEWEST wins -- picking the
+# first match let a stale build/ supply the binary while the tree under test
+# was built somewhere else, which is the one failure mode that produces a
+# confident wrong answer rather than a missing one. Unmatched globs stay
+# literal and fail the -x test, so no nullglob is needed.
 _find_amuleapi_bin() {
-	local root=$1 c
-	for c in . build build-macos build-linux _build cmake-build-debug cmake-build-release; do
-		if [ -x "$root/$c/src/webapi/amuleapi" ]; then
-			echo "$root/$c/src/webapi/amuleapi"
-			return 0
+	local root=$1 c best=
+	for c in "$root"/src/webapi/amuleapi \
+		"$root"/build*/src/webapi/amuleapi \
+		"$root"/_build/src/webapi/amuleapi \
+		"$root"/cmake-build-*/src/webapi/amuleapi; do
+		[ -x "$c" ] || continue
+		if [ -z "$best" ] || [ "$c" -nt "$best" ]; then
+			best=$c
 		fi
 	done
-	return 1
+	[ -n "$best" ] || return 1
+	echo "$best"
 }
 
 AMULEAPI_BIN=${AMULEAPI_BIN:-$(_find_amuleapi_bin "$(cd "$(dirname "$0")/../../.." && pwd)")}
@@ -68,6 +80,11 @@ if [ -x "${AMULEAPI_BIN:-/nonexistent}" ]; then
 else
 	HAVE_SECOND_INSTANCE=0
 fi
+# Counted so the summary cannot report a clean pass over a partial run:
+# every section below that skips increments this, and a non-zero count
+# is spelled out next to the OK line.
+SKIP_COUNT=0
+_skip() { SKIP_COUNT=$((SKIP_COUNT+1)); echo "  SKIP  $1"; }
 
 # A query likely to return results on any operator's daemon connected
 # to ed2k. "ubuntu" is a safe choice — well-seeded across the network.
@@ -267,7 +284,7 @@ if [ "$HAVE_GUEST" = "1" ]; then
 fi
 
 if [ "$HAVE_SECOND_INSTANCE" -eq 0 ]; then
-	echo "  SKIP  3.2 cross-session discovery (no amuleapi binary; set AMULEAPI_BIN)"
+	_skip "3.2 cross-session discovery (no amuleapi binary; set AMULEAPI_BIN)"
 else
 # --- 3.2 Cross-session discovery: a second amuleapi instance against the
 # same amuled sees $FIRST_SID even though it never called POST /search
@@ -902,7 +919,7 @@ if [ -n "$SID_CLOSE" ] && [ "$SID_CLOSE" != "null" ]; then
 	# a second instance re-reads the same core state. This is what a
 	# second amulegui would have shown had it still been open.
 	if [ "$HAVE_SECOND_INSTANCE" -eq 0 ]; then
-		echo "  SKIP  close: second-instance cross-check (no amuleapi binary)"
+		_skip "close: second-instance cross-check (no amuleapi binary)"
 	else
 	SECOND2_CONFIG_DIR=$(mktemp -d -t amuleapi_19_close_second.XXXXXX)
 	SECOND2_LOG=$(mktemp -t amuleapi_19_close_second_log.XXXXXX)
@@ -946,7 +963,7 @@ else
 fi
 
 if [ "$HAVE_SECOND_INSTANCE" -eq 0 ]; then
-	echo "  SKIP  12.1 foreign-search stop (no amuleapi binary; set AMULEAPI_BIN)"
+	_skip "12.1 foreign-search stop (no amuleapi binary; set AMULEAPI_BIN)"
 else
 # --- 12.1 A foreign search must be stoppable, not just visible. ----
 # Found by driving two clients against one daemon and using the other as
@@ -1319,8 +1336,10 @@ _assert_json_eq '[.servers[]? | .tcp_flags | has("related_search")] | all' true 
 
 # --- Summary. -----------------------------------------------------
 echo
+SKIP_NOTE=""
+[ "$SKIP_COUNT" -gt 0 ] && SKIP_NOTE=" ($SKIP_COUNT section(s) skipped: no second amuleapi instance)"
 if [ "$FAIL_COUNT" -eq 0 ]; then
-	echo "OK: $TEST_COUNT/$TEST_COUNT passed"
+	echo "OK: $TEST_COUNT/$TEST_COUNT passed$SKIP_NOTE"
 	exit 0
 fi
 echo "FAIL: $FAIL_COUNT/$TEST_COUNT failed"
