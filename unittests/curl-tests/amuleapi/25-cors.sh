@@ -36,18 +36,31 @@ CONFIG_DIR=${AMULEAPI_CONFIG_DIR:-/tmp/amuleapi-regtest}
 # back to PATH: an installed package would silently be tested in place of the
 # working tree, which is worse than not finding anything. Set AMULEAPI_BIN to
 # point somewhere else on purpose.
+#
+# Any build*/ directory counts, not a fixed list of three: per-branch and
+# per-arch trees are normal, and a name this function has never heard of used
+# to mean a silent skip. Where several exist the NEWEST wins -- picking the
+# first match let a stale build/ supply the binary while the tree under test
+# was built somewhere else, which is the one failure mode that produces a
+# confident wrong answer rather than a missing one. Unmatched globs stay
+# literal and fail the -x test, so no nullglob is needed.
 _find_amuleapi_bin() {
-	local root=$1 c
-	for c in . build build-macos build-linux _build cmake-build-debug cmake-build-release; do
-		if [ -x "$root/$c/src/webapi/amuleapi" ]; then
-			echo "$root/$c/src/webapi/amuleapi"
-			return 0
+	local root=$1 c best=
+	for c in "$root"/src/webapi/amuleapi \
+		"$root"/build*/src/webapi/amuleapi \
+		"$root"/_build/src/webapi/amuleapi \
+		"$root"/cmake-build-*/src/webapi/amuleapi; do
+		[ -x "$c" ] || continue
+		if [ -z "$best" ] || [ "$c" -nt "$best" ]; then
+			best=$c
 		fi
 	done
-	return 1
+	[ -n "$best" ] || return 1
+	echo "$best"
 }
 
-BIN=${AMULEAPI_BIN:-$(_find_amuleapi_bin "$(cd "$(dirname "$0")/../../.." && pwd)")}
+ROOT=${AMULEAPI_ROOT:-$(cd "$(dirname "$0")/../../.." && pwd)}
+BIN=${AMULEAPI_BIN:-$(_find_amuleapi_bin "$ROOT")}
 LOG=${AMULEAPI_LOG:-/tmp/amuleapi.log}
 
 FAIL_COUNT=0
@@ -72,7 +85,7 @@ if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 if [ ! -x "$BIN" ]; then
-	_die "no usable amuleapi binary (BIN=[$BIN]). Set AMULEAPI_BIN to override."
+	_die "no usable amuleapi binary under $ROOT. Set AMULEAPI_BIN to point at one."
 fi
 
 echo "amuleapi 25-cors smoke @ $HOST (bin=$BIN config=$CONFIG_DIR)"
