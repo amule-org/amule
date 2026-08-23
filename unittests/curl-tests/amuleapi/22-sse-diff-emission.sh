@@ -432,6 +432,42 @@ else
 	_pass "status_changed not emitted this run (nothing in the envelope moved; shape asserted when it fires)"
 fi
 
+# --- client_added / client_updated carry the promoted peer fields, and
+# never a parts bitmap (issue #984). The four fields were detail-only until
+# the per-file client routes landed; a subscriber renders them as columns,
+# so they have to be on the diff payload too. The bitmaps deliberately are
+# NOT: one boolean per chunk per peer would dwarf the rest of the stream.
+#
+# Conditional like the two checks above -- an idle daemon with no peers
+# emits no client frame -- so a missing frame is a skip and what is guarded
+# is the shape when one arrives. Reuses the stream captured above.
+CLIENT_JSON=$(grep -A2 -E "^event: client_(added|updated)$" "$SSE_OUT" \
+	| grep "^data: " | sed 's/^data: //' | head -1)
+if [ -n "$CLIENT_JSON" ]; then
+	if echo "$CLIENT_JSON" | jq -e \
+		'(.source_origin|type=="string") and (.available_parts|type=="number")
+		 and (.mod_version|type=="string") and (.view_shared_disabled|type=="boolean")' \
+		>/dev/null 2>&1; then
+		_pass "client_added/updated carries the promoted peer fields (#984)"
+	else
+		_fail "client payload promoted fields" "missing/wrong type in: $CLIENT_JSON"
+	fi
+	if echo "$CLIENT_JSON" | jq -e 'has("parts") | not' >/dev/null 2>&1; then
+		_pass "client_added/updated carries no parts bitmap (#984)"
+	else
+		_fail "client payload parts bitmap" "SSE must never carry parts: $CLIENT_JSON"
+	fi
+	if echo "$CLIENT_JSON" | jq -e \
+		'(has("part_progress_percent") | not) or (.part_progress_percent|type=="number")' \
+		>/dev/null 2>&1; then
+		_pass "client_added/updated part_progress_percent is numeric when present"
+	else
+		_fail "client payload part_progress_percent" "not numeric in: $CLIENT_JSON"
+	fi
+else
+	_pass "no client frame this run (no peer changed; shape asserted when one fires)"
+fi
+
 # --- Summary. -----------------------------------------------------
 echo
 if [ "$FAIL_COUNT" -eq 0 ]; then
