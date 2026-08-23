@@ -27,6 +27,7 @@
 #define CLIENTUDPSOCKET_H
 
 #include "MuleUDPSocket.h"
+#include "ReservedProtocolFrames.h" // Needed for CUnknownFrameLogThrottle
 
 class CClientUDPSocket : public CMuleUDPSocket
 {
@@ -39,6 +40,20 @@ protected:
 private:
 	void OnPacketReceived(uint32 ip, uint16 port, uint8_t *buffer, size_t length);
 	void ProcessPacket(uint8_t *packet, int16 size, int8 opcode, uint32 host, uint16 port);
+
+	/**
+	 * OP_UDPRESERVEDPROT2: no opcode, a frame type byte instead.
+	 *
+	 * @param frame  points at the frame type byte.
+	 * @param frameLength  bytes available from there. Zero is a datagram
+	 *                     that carried nothing but the protocol byte.
+	 */
+	void ProcessReservedProt2Frame(const uint8_t *frame, size_t frameLength, uint32 ip, uint16 port);
+
+	//! One unknown-frame line per minute, with a suppressed count. A peer
+	//! speaking a frame type this build does not know retries, so the useful
+	//! information is that it happened plus how often.
+	CUnknownFrameLogThrottle m_unknownFrameLog{ 60 * 1000 };
 };
 
 #endif // CLIENTUDPSOCKET_H

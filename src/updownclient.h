@@ -33,10 +33,11 @@
 #include <common/Macros.h>
 #include "NetworkFunctions.h"
 #include "OtherStructs.h"
-#include "ClientCredits.h" // Needed for EIdentState
-#include <ec/cpp/ECID.h>   // Needed for CECID
-#include "BitVector.h"     // Needed for BitVector
-#include "ClientRef.h"     // Needed for debug defines
+#include "ClientCredits.h"    // Needed for EIdentState
+#include <ec/cpp/ECID.h>      // Needed for CECID
+#include "BitVector.h"        // Needed for BitVector
+#include "ClientRef.h"        // Needed for debug defines
+#include "PeerCapabilities.h" // Needed for CPeerCapabilities
 
 #include <map>
 #include <wx/thread.h> // Needed for wxMutex
@@ -671,6 +672,19 @@ public:
 	void SetKadState(EKadState nNewS) { m_nKadState = nNewS; }
 	uint8 GetKadVersion() { return m_byKadVersion; }
 	void ProcessFirewallCheckUDPRequest(CMemFile *data);
+
+	/* eMuleAI vendor capabilities */
+	//! What the peer claimed in CT_MOD_MISCOPTIONS. Recorded only: aMule
+	//! implements none of these features yet and advertises none of them
+	//! back. See src/PeerCapabilities.h.
+	const CPeerCapabilities &GetModCapabilities() const { return m_modCapabilities; }
+	//! The peer's own IPv6 address from CT_MOD_IP_V6, big-endian, 16 bytes.
+	//! Only meaningful while HasModIPv6() is true.
+	const uint8_t *GetModIPv6() const { return m_modIPv6; }
+	bool HasModIPv6() const { return m_hasModIPv6; }
+	//! The peer's server IPv6 address from CT_MOD_SVR_IP_V6.
+	const uint8_t *GetModServerIPv6() const { return m_modServerIPv6; }
+	bool HasModServerIPv6() const { return m_hasModServerIPv6; }
 	// Kad added by me
 	bool SendBuddyPing();
 
@@ -988,6 +1002,14 @@ private:
 	EKadState m_nKadState;
 
 	uint8 m_byKadVersion;
+
+	/* eMuleAI vendor capabilities, parsed from the CT_MOD_* hello tags */
+	CPeerCapabilities m_modCapabilities;
+	uint8_t m_modIPv6[16];
+	uint8_t m_modServerIPv6[16];
+	bool m_hasModIPv6;
+	bool m_hasModServerIPv6;
+
 	uint64 m_dwLastBuddyPingPongTime;
 	uint64_t m_dwDirectCallbackTimeout;
 

@@ -177,6 +177,11 @@ bool CClientDetailDialog::OnInitDialog()
 	}
 	CastChild(IDT_OBFUSCATION, wxStaticText)->SetLabel(buffer);
 
+	// eMuleAI vendor capabilities. What the peer claims, not what this build
+	// can do with it: aMule implements none of these yet, so the line reads as
+	// "this peer would support X if we did".
+	CastChild(IDT_MOD_CAPABILITIES, wxStaticText)->SetLabel(m_client.GetModCapabilitiesText());
+
 	// Kad
 	if (!m_info.hasSession) {
 		CastChild(IDT_KAD, wxStaticText)->SetLabel(kNoValue);

@@ -445,6 +445,11 @@ EC_TAG_CLIENT                             0x0600
 	EC_TAG_CLIENT_LAST_SEEN                   0x062F
 	EC_TAG_CLIENT_FIRST_SEEN                  0x0630
 	EC_TAG_CLIENT_SESSIONS                    0x0631
+
+# eMuleAI vendor capability word (CT_MOD_MISCOPTIONS) as the peer sent it,
+# already masked to the five defined bits. Additive: a missing tag means an
+# older daemon, which is a distinct third state from "peer advertised nothing".
+	EC_TAG_CLIENT_MOD_CAPABILITIES            0x0632
 EC_TAG_SEARCHFILE                         0x0700
 	EC_TAG_SEARCH_TYPE                        0x0701
 	EC_TAG_SEARCH_NAME                        0x0702

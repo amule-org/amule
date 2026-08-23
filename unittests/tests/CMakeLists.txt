@@ -1062,6 +1062,61 @@ target_link_libraries (PartBarLegendTest
 	mulecommon
 )
 
+# eMuleAI vendor capability bits (CT_MOD_MISCOPTIONS) and the "ip6"/"bi6" hex
+# address encoding. Both are wire format shared with another implementation and
+# both fail silently when wrong -- a misplaced bit makes aMule advertise a
+# transport it does not have. CUpDownClient reaches theApp, so the model lives
+# in a header of its own and is tested there.
+add_executable (PeerCapabilitiesTest
+	PeerCapabilitiesTest.cpp
+	# The unknown-vendor-tag test reads a tag stream through the same classes
+	# the handshake does, because the property it pins -- an unknown tag
+	# consumes its own bytes -- is a wire property and not a client one. Same
+	# TU set as CTagTest.
+	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
+	${CMAKE_SOURCE_DIR}/src/MemFile.cpp
+	${CMAKE_SOURCE_DIR}/src/Tag.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+)
+
+add_test (NAME PeerCapabilitiesTest
+	COMMAND PeerCapabilitiesTest
+)
+
+target_include_directories (PeerCapabilitiesTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+
+target_link_libraries (PeerCapabilitiesTest
+	muleunit
+)
+
+# OP_UDPRESERVEDPROT2 frame demultiplexing: the type byte, the payload window
+# handed to each handler, the unknown-type drop, and the log throttle that
+# keeps an unknown-frame flood from becoming a log flood. Same reason for the
+# separate header: CClientUDPSocket needs theApp.
+add_executable (ReservedProtocolFramesTest
+	ReservedProtocolFramesTest.cpp
+)
+
+add_test (NAME ReservedProtocolFramesTest
+	COMMAND ReservedProtocolFramesTest
+)
+
+target_include_directories (ReservedProtocolFramesTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+
+target_link_libraries (ReservedProtocolFramesTest
+	muleunit
+	mulecommon
+)
+
 add_executable (PartIndexTest
 	PartIndexTest.cpp
 )
@@ -1078,5 +1133,35 @@ target_include_directories (PartIndexTest
 # GNU ld and mingw do not (see JsonDepthScanTest).
 target_link_libraries (PartIndexTest
 	muleunit
+	mulecommon
+)
+
+# EC_TAG_CLIENT_MOD_CAPABILITIES: the headless view of a peer's negotiated
+# vendor capabilities. The Client Details dialog that renders the same data
+# lives in amule/amulegui and needs an X server, so this tag is what makes that
+# display observable in CI -- and its encoding is pinned here rather than in a
+# GUI nobody can open. Same TU set and the same LoggerConsole.cpp reason as
+# ECIdDiffTest.
+add_executable (ECClientCapabilitiesTest
+	ECClientCapabilitiesTest.cpp
+	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+)
+
+add_test (NAME ECClientCapabilitiesTest
+	COMMAND ECClientCapabilitiesTest
+)
+
+target_include_directories (ECClientCapabilitiesTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/libs
+	PRIVATE ${CMAKE_BINARY_DIR}/src/libs
+	PRIVATE ${CMAKE_BINARY_DIR}/src/libs/ec/cpp
+)
+
+target_link_libraries (ECClientCapabilitiesTest
+	muleunit
+	ec
 	mulecommon
 )

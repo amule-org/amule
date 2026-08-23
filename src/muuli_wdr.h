@@ -226,6 +226,10 @@ wxSizer *statsDlg(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE)
 #define ID_DSNAME 10098
 #define IDT_OBFUSCATION 10099
 #define IDT_KAD 10100
+// Peer's eMuleAI vendor capability word, Client Details. Appended at the end
+// of the id space rather than next to IDT_KAD: the ids are bound implicitly
+// and by value, so inserting one here would renumber every id below it.
+#define IDT_MOD_CAPABILITIES 10510
 #define ID_DDOWNLOADING 10101
 #define ID_DAVDR 10102
 #define ID_DAVUR 10103

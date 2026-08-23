@@ -60,6 +60,7 @@ there client on the eMule forum..
 #include "../../MemFile.h"
 #include "../../ClientList.h"
 #include "../../updownclient.h"
+#include "../../PeerCapabilities.h" // Needed for DecodeIPv6HexTag
 #include "../../Logger.h"
 #include "../../Preferences.h"
 #include "../../GuiEvents.h"
@@ -1083,6 +1084,28 @@ void CSearch::ProcessResultFile(const CUInt128 &answer, TagPtrList *info)
 			buddy.SetValueBE(hash.GetHash());
 		} else if (!tag->GetName().Cmp(TAG_ENCRYPTION)) {
 			byCryptOptions = (uint8)tag->GetInt();
+		} else if (!tag->GetName().Cmp(TAG_IPV6) || !tag->GetName().Cmp(TAG_SERVINGBUDDYIPV6)) {
+			// eMuleAI publishes IPv6 sources alongside the IPv4 ones as
+			// 32 hex characters. aMule has no IPv6 stack yet, so the
+			// address is validated and dropped: a malformed tag is worth
+			// a log line, and a well-formed one must not be mistaken for
+			// a reachable source. Routing to it is the dual-stack change.
+			uint8_t address[16];
+			bool decoded = false;
+			if (tag->IsStr()) {
+				const wxScopedCharBuffer text = tag->GetStr().utf8_str();
+				decoded = DecodeIPv6HexTag(text.data(), text.length(), address);
+			}
+			if (decoded) {
+				AddDebugLogLineN(logKadSearch,
+					CFormat("Ignoring IPv6 source tag '%s' in search result: no "
+						"IPv6 transport in this build") %
+						tag->GetName());
+			} else {
+				AddDebugLogLineN(logKadSearch,
+					CFormat("Invalid IPv6 source tag '%s' in search result") %
+						tag->GetName());
+			}
 		}
 	}
 

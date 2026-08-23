@@ -33,6 +33,15 @@ enum client_tags
 	CT_PORT = 0x0F,
 	CT_VERSION = 0x11,
 	CT_SERVER_FLAGS = 0x20, // currently only used to inform a server about supported features
+
+	// eMuleAI vendor tags. The 0xA? range is unclaimed by the major mods,
+	// which is why the reference implementation took it. Bit meanings for
+	// CT_MOD_MISCOPTIONS live in src/PeerCapabilities.h -- they are wire
+	// format and a wrong bit position has no runtime signal.
+	CT_MOD_MISCOPTIONS = 0xAA, // <uint32> capability bitfield
+	CT_MOD_IP_V6 = 0xAE,       // <hash> client IPv6 address, 16 bytes
+	CT_MOD_SVR_IP_V6 = 0xAF,   // <hash> server IPv6 address, 16 bytes
+
 	CT_EMULECOMPAT_OPTIONS = 0xEF,
 	CT_EMULE_RESERVED1 = 0xF0,
 	CT_EMULE_RESERVED2 = 0xF1,
