@@ -543,6 +543,21 @@ void EnforceSinglePublisher()
 	std::abort();
 }
 
+// Every file event resolves its payload through `prev.files` after the locked
+// walk, which holds only because nothing erases from that map in between: the
+// `gone` sweep runs after the batch is built, and `gone` is disjoint from
+// everything the walk recorded. Unreachable today -- but a dropped event is
+// invisible, and a lost `shared_removed` leaves a ghost row on every client
+// until something else happens to touch that file. Hard-abort for the same
+// reason EnforceSinglePublisher does: the check has to survive -DNDEBUG,
+// because that is where the ordering will actually get broken.
+[[noreturn]] void AbortOnMissingBaseline(const char *event_name, std::uint32_t ecid)
+{
+	std::cerr << "amuleapi: file diff lost the baseline entry for ECID " << ecid << " while building "
+		  << event_name << "; the prev.files erase has moved ahead of the batch build.\n";
+	std::abort();
+}
+
 } // namespace
 
 // One chat message as the `message` object both the SSE payload and
@@ -725,7 +740,7 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 			// payload that reads through it has been built.
 			const auto it = prev.files.find(r.second);
 			if (it == prev.files.end())
-				continue;
+				AbortOnMissingBaseline(r.first, r.second);
 			batch.emplace_back(r.first, RemovedHashPayload(it->second.hash));
 		}
 		for (const auto &c : changed) {
@@ -734,7 +749,7 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 			// these are not.
 			const auto it = prev.files.find(c.second);
 			if (it == prev.files.end())
-				continue;
+				AbortOnMissingBaseline("a file event", c.second);
 			const FileSnapshot &f = it->second;
 			switch (c.first) {
 			case Change::DownloadAdded:
