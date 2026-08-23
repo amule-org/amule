@@ -182,6 +182,45 @@ TEST(CValueMapTest, DifferentTagsAreIndependent)
 // literal took the bool overload through the map and the const char*
 // constructor without it, so one call site emitted different wire types on an
 // incremental update than on a full request.
+TEST(CValueMapTest, AddDiffTagBranchesAgreeOnLiterals)
+{
+	CValueMap vm;
+	CECEmptyTag viaMap(1);
+	CECEmptyTag viaDirect(1);
+	AddDiffTag(&viaMap, 100, "n/a", &vm);
+	AddDiffTag(&viaDirect, 100, "n/a", nullptr);
+
+	ASSERT_EQUALS((size_t)1, EmittedCount(viaMap));
+	ASSERT_EQUALS((size_t)1, EmittedCount(viaDirect));
+	ASSERT_EQUALS(viaDirect.GetFirstTagSafe()->IsString(), viaMap.GetFirstTagSafe()->IsString());
+	ASSERT_TRUE(viaMap.GetFirstTagSafe()->IsString());
+	ASSERT_EQUALS(
+		viaDirect.GetFirstTagSafe()->GetStringData(), viaMap.GetFirstTagSafe()->GetStringData());
+}
+
+TEST(CValueMapTest, AddDiffTagBranchesAgreeOnStrings)
+{
+	CValueMap vm;
+	CECEmptyTag viaMap(1);
+	CECEmptyTag viaDirect(1);
+	AddDiffTag(&viaMap, 100, wxString(wxT("alpha")), &vm);
+	AddDiffTag(&viaDirect, 100, wxString(wxT("alpha")), nullptr);
+
+	ASSERT_EQUALS(viaDirect.GetFirstTagSafe()->IsString(), viaMap.GetFirstTagSafe()->IsString());
+	ASSERT_EQUALS(
+		viaDirect.GetFirstTagSafe()->GetStringData(), viaMap.GetFirstTagSafe()->GetStringData());
+}
+
+// Without a value map every call emits, incremental filtering being the map's
+// whole job -- so a NULL-map caller must never be silently suppressed.
+TEST(CValueMapTest, AddDiffTagWithoutMapAlwaysEmits)
+{
+	CECEmptyTag parent(1);
+	AddDiffTag(&parent, 100, (uint32)42, nullptr);
+	AddDiffTag(&parent, 100, (uint32)42, nullptr);
+	ASSERT_EQUALS((size_t)2, EmittedCount(parent));
+}
+
 // --- HasTag: which cache it reads --------------------------------------
 // HasTag gates the media clear emission: a field that is now absent gets an
 // explicit zero / empty frame only when a value was previously SENT for it,
@@ -221,45 +260,6 @@ TEST(CValueMapTest, HasTagDoesNotSeeTheTypedCacheWrites)
 	CECEmptyTag parent(1);
 	AddDiffTag(&parent, static_cast<ec_tagname_t>(101), wxString(wxT("value")), &vm);
 	ASSERT_TRUE(!vm.HasTag(101));
-}
-
-TEST(CValueMapTest, AddDiffTagBranchesAgreeOnLiterals)
-{
-	CValueMap vm;
-	CECEmptyTag viaMap(1);
-	CECEmptyTag viaDirect(1);
-	AddDiffTag(&viaMap, 100, "n/a", &vm);
-	AddDiffTag(&viaDirect, 100, "n/a", nullptr);
-
-	ASSERT_EQUALS((size_t)1, EmittedCount(viaMap));
-	ASSERT_EQUALS((size_t)1, EmittedCount(viaDirect));
-	ASSERT_EQUALS(viaDirect.GetFirstTagSafe()->IsString(), viaMap.GetFirstTagSafe()->IsString());
-	ASSERT_TRUE(viaMap.GetFirstTagSafe()->IsString());
-	ASSERT_EQUALS(
-		viaDirect.GetFirstTagSafe()->GetStringData(), viaMap.GetFirstTagSafe()->GetStringData());
-}
-
-TEST(CValueMapTest, AddDiffTagBranchesAgreeOnStrings)
-{
-	CValueMap vm;
-	CECEmptyTag viaMap(1);
-	CECEmptyTag viaDirect(1);
-	AddDiffTag(&viaMap, 100, wxString(wxT("alpha")), &vm);
-	AddDiffTag(&viaDirect, 100, wxString(wxT("alpha")), nullptr);
-
-	ASSERT_EQUALS(viaDirect.GetFirstTagSafe()->IsString(), viaMap.GetFirstTagSafe()->IsString());
-	ASSERT_EQUALS(
-		viaDirect.GetFirstTagSafe()->GetStringData(), viaMap.GetFirstTagSafe()->GetStringData());
-}
-
-// Without a value map every call emits, incremental filtering being the map's
-// whole job -- so a NULL-map caller must never be silently suppressed.
-TEST(CValueMapTest, AddDiffTagWithoutMapAlwaysEmits)
-{
-	CECEmptyTag parent(1);
-	AddDiffTag(&parent, 100, (uint32)42, nullptr);
-	AddDiffTag(&parent, 100, (uint32)42, nullptr);
-	ASSERT_EQUALS((size_t)2, EmittedCount(parent));
 }
 
 // The hazard that keeps EC_TAG_CLIENT_UPLOAD_FILE on the old path: one tag name
