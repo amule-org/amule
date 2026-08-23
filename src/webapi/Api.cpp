@@ -144,6 +144,21 @@ CHttpServer::Response ErrorResponse(unsigned status, const char *code, const cha
 	return r;
 }
 
+// 405 with the `Allow` header RFC 9110 §15.5.6 requires ("The origin server
+// MUST generate an Allow header field in a 405 response containing a list of
+// the target resource's currently supported methods"). The accepted methods
+// were already spelled out in the human-readable message at every rejection
+// site; generic tooling and capability discovery read the header instead, so
+// the same list is now emitted both ways. `allow` is the machine-readable
+// form -- comma-separated, in RFC order -- and includes HEAD wherever GET is
+// served, which several of the messages omit.
+CHttpServer::Response MethodNotAllowed(const char *allow, const char *message)
+{
+	CHttpServer::Response r = ErrorResponse(405, "method_not_allowed", message);
+	r.headers["Allow"] = allow;
+	return r;
+}
+
 // Common preamble for every auth-protected endpoint. Pulls the JWT
 // out of either the Authorization header or the cookie, verifies it,
 // rejects revoked tokens, and exposes the resulting VerifyResult.
@@ -693,7 +708,7 @@ CHttpServer::Response CApiDispatcher::Dispatch(const CHttpServer::Request &req)
 		ApplyCorsHeaders(pre.headers, cors_org, cors_enabled);
 		if (!cors_org.empty()) {
 			pre.headers["Access-Control-Allow-Methods"] =
-				"GET, HEAD, POST, PATCH, DELETE, OPTIONS";
+				"GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS";
 			// Headers actual requests may send. Authorization for
 			// bearer; If-None-Match for ETag conditional GET;
 			// Last-Event-ID for SSE replay.
@@ -713,13 +728,31 @@ CHttpServer::Response CApiDispatcher::Dispatch(const CHttpServer::Request &req)
 	CHttpServer::Response resp = DispatchToHandler(req);
 
 	const bool is_safe_method = (req.method == "GET" || req.method == "HEAD");
-	if (is_safe_method && resp.status == 200 && !resp.body.empty()) {
+	// A handler that computed its own validator owns it. Stamping the
+	// body hash over the top would hand out two different ETags for one
+	// resource depending on which branch answered -- which is what the
+	// static path did, since it clears the body for HEAD and so only the
+	// GET reached the hashing branch below.
+	const bool handler_set_etag = (resp.headers.find("ETag") != resp.headers.end());
+	if (is_safe_method && !handler_set_etag && resp.status == 200 && !resp.body.empty()) {
 		// Snapshot-versioned memoization: skip the MD5 over the
 		// (potentially multi-MB) body when the (target,
 		// snapshot_at) tuple matches what we already hashed.
+		//
+		// Only sound for bodies the refresher snapshot actually
+		// governs. `snapshot_at` is stamped once per tick in whole
+		// seconds, and several endpoints are refreshed on their own
+		// schedule -- their own 1 s TTL caches, an append-only log
+		// mirror, a search refreshed on read -- so their body can
+		// change while the key does not. Reusing a memoized ETag
+		// there answers a later conditional GET with 304 for content
+		// that has changed (RFC 9110 §8.8.1 forbids exactly that).
+		// Those targets hash every time; they are small, and the memo
+		// exists for the multi-MB /downloads and /shared bodies.
 		const std::time_t snap = m_state.SnapshotAt();
+		const bool memoizable = webapi::SnapshotGovernsBody(req.target);
 		std::string etag;
-		{
+		if (memoizable) {
 			std::lock_guard<std::mutex> g(m_etagCacheMu);
 			auto it = m_etagCache.find(req.target);
 			if (it != m_etagCache.end() && it->second.snapshot_at == snap && snap != 0) {
@@ -728,17 +761,19 @@ CHttpServer::Response CApiDispatcher::Dispatch(const CHttpServer::Request &req)
 		}
 		if (etag.empty()) {
 			etag = webcommon::Etag(resp.body);
-			std::lock_guard<std::mutex> g(m_etagCacheMu);
-			if (m_etagCache.size() >= kEtagCacheCapacity) {
-				// Crude memory backstop. Real workload is a few
-				// dozen unique targets; the wholesale clear is
-				// cheaper than a real LRU machinery.
-				m_etagCache.clear();
+			if (memoizable) {
+				std::lock_guard<std::mutex> g(m_etagCacheMu);
+				if (m_etagCache.size() >= kEtagCacheCapacity) {
+					// Crude memory backstop. Real workload is a few
+					// dozen unique targets; the wholesale clear is
+					// cheaper than a real LRU machinery.
+					m_etagCache.clear();
+				}
+				EtagCacheEntry e;
+				e.snapshot_at = snap;
+				e.etag = etag;
+				m_etagCache[req.target] = std::move(e);
 			}
-			EtagCacheEntry e;
-			e.snapshot_at = snap;
-			e.etag = etag;
-			m_etagCache[req.target] = std::move(e);
 		}
 		// RFC 7232 §2.3 — the header value MUST be quoted.
 		resp.headers["ETag"] = "\"" + etag + "\"";
@@ -752,13 +787,15 @@ CHttpServer::Response CApiDispatcher::Dispatch(const CHttpServer::Request &req)
 			resp.body.clear();
 			resp.content_type.clear();
 		}
-		// HEAD never carries a body — the inner handler already shaped
-		// the response body for the GET path; strip it now. The ETag
-		// header is preserved so HEAD-based cache validators work.
-		if (req.method == "HEAD") {
-			resp.body.clear();
-		}
 	}
+	// HEAD carries no content, on ANY status. The strip used to live
+	// inside the 200-only block above, so every HEAD that ended in 4xx or
+	// 5xx shipped the JSON error envelope as content -- content RFC 9110
+	// §9.3.2 says must not be there, and bytes a client that correctly
+	// stops reading after the headers leaves in the socket to corrupt the
+	// next response on a keep-alive connection. It is not stripped here
+	// either: the transport writes headers only, so Content-Length still
+	// reports what the equivalent GET would return.
 
 	// stamp CORS on every response (success and error paths)
 	// so browsers can read the body in the 4xx/5xx case too.
@@ -791,28 +828,28 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 
 	if (path == "/api/v0/version/check") {
 		if (req.method != "POST") {
-			return ErrorResponse(405, "method_not_allowed", "only POST on /api/v0/version/check");
+			return MethodNotAllowed("POST", "only POST on /api/v0/version/check");
 		}
 		return HandleVersionCheck(req);
 	}
 
 	if (path == "/api/v0/auth/login") {
 		if (req.method != "POST") {
-			return ErrorResponse(405, "method_not_allowed", "only POST on /auth/login");
+			return MethodNotAllowed("POST", "only POST on /auth/login");
 		}
 		return HandleLogin(req);
 	}
 
 	if (path == "/api/v0/auth/logout") {
 		if (req.method != "POST") {
-			return ErrorResponse(405, "method_not_allowed", "only POST on /auth/logout");
+			return MethodNotAllowed("POST", "only POST on /auth/logout");
 		}
 		return HandleLogout(req);
 	}
 
 	if (path == "/api/v0/auth/session") {
 		if (req.method != "GET" && req.method != "HEAD") {
-			return ErrorResponse(405, "method_not_allowed", "only GET on /auth/session");
+			return MethodNotAllowed("GET, HEAD", "only GET on /auth/session");
 		}
 		return HandleSession(req);
 	}
@@ -824,12 +861,12 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		if (req.method == "PATCH") {
 			return HandleAuthPasswordsPatch(req);
 		}
-		return ErrorResponse(405, "method_not_allowed", "only GET or PATCH on /auth/passwords");
+		return MethodNotAllowed("GET, HEAD, PATCH", "only GET or PATCH on /auth/passwords");
 	}
 
 	if (path == "/api/v0/status") {
 		if (req.method != "GET" && req.method != "HEAD") {
-			return ErrorResponse(405, "method_not_allowed", "only GET on /status");
+			return MethodNotAllowed("GET, HEAD", "only GET on /status");
 		}
 		return HandleStatus(req);
 	}
@@ -868,7 +905,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// download peers); consumers filter client-side by upload_state.
 	if (path == "/api/v0/clients") {
 		if (req.method != "GET" && req.method != "HEAD") {
-			return ErrorResponse(405, "method_not_allowed", "only GET on /clients");
+			return MethodNotAllowed("GET, HEAD", "only GET on /clients");
 		}
 		return HandleClients(req);
 	}
@@ -881,7 +918,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// pattern accepts any single segment.
 	if (path == "/api/v0/known_clients") {
 		if (req.method != "GET" && req.method != "HEAD") {
-			return ErrorResponse(405, "method_not_allowed", "only GET on /known_clients");
+			return MethodNotAllowed("GET, HEAD", "only GET on /known_clients");
 		}
 		return HandleKnownClients(req);
 	}
@@ -896,7 +933,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 			if (req.method == "GET" || req.method == "HEAD") {
 				return HandleClientDetail(req, caps["ecid"]);
 			}
-			return ErrorResponse(405, "method_not_allowed", "only GET / HEAD on /clients/{ecid}");
+			return MethodNotAllowed("GET, HEAD", "only GET / HEAD on /clients/{ecid}");
 		}
 	}
 
@@ -924,12 +961,12 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 			// bulk upload-priority PATCH over {hashes:[...], priority}.
 			return HandleSharedBulkPatch(req);
 		}
-		return ErrorResponse(405, "method_not_allowed", "only GET / HEAD / PATCH on /shared");
+		return MethodNotAllowed("GET, HEAD, PATCH", "only GET / HEAD / PATCH on /shared");
 	}
 
 	if (path == "/api/v0/shared/reload") {
 		if (req.method != "POST") {
-			return ErrorResponse(405, "method_not_allowed", "only POST on /shared/reload");
+			return MethodNotAllowed("POST", "only POST on /shared/reload");
 		}
 		return HandleSharedReload(req);
 	}
@@ -961,8 +998,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		if (req.method == "DELETE") {
 			return HandleSharedDirectoriesDelete(req);
 		}
-		return ErrorResponse(405,
-			"method_not_allowed",
+		return MethodNotAllowed("GET, HEAD, POST, PUT, DELETE",
 			"only GET / HEAD / PUT / POST / DELETE on /shared/directories");
 	}
 
@@ -974,7 +1010,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 			// add a server by host:port.
 			return HandleServerAdd(req);
 		}
-		return ErrorResponse(405, "method_not_allowed", "only GET / HEAD / POST on /servers");
+		return MethodNotAllowed("GET, HEAD, POST", "only GET / HEAD / POST on /servers");
 	}
 
 	if (path == "/api/v0/friends") {
@@ -984,7 +1020,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		if (req.method == "POST") {
 			return HandleFriendAdd(req);
 		}
-		return ErrorResponse(405, "method_not_allowed", "only GET / HEAD / POST on /friends");
+		return MethodNotAllowed("GET, HEAD, POST", "only GET / HEAD / POST on /friends");
 	}
 
 	// One friend by ECID: remove, set the friend slot, or browse their shared
@@ -998,9 +1034,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(friend_browse, path_segs, caps)) {
 			if (req.method != "POST") {
-				return ErrorResponse(405,
-					"method_not_allowed",
-					"only POST on /friends/{ecid}/shared_files");
+				return MethodNotAllowed("POST", "only POST on /friends/{ecid}/shared_files");
 			}
 			return HandleFriendBrowse(req, caps["ecid"]);
 		}
@@ -1020,7 +1054,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		if (req.method == "GET" || req.method == "HEAD") {
 			return HandleChats(req);
 		}
-		return ErrorResponse(405, "method_not_allowed", "only GET / HEAD on /chats");
+		return MethodNotAllowed("GET, HEAD", "only GET / HEAD on /chats");
 	}
 
 	// One conversation, keyed on "<ip>:<port>". The messages sub-resource is
@@ -1038,15 +1072,14 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 			if (req.method == "POST") {
 				return HandleChatSend(req, caps["peer"]);
 			}
-			return ErrorResponse(405,
-				"method_not_allowed",
-				"only GET / HEAD / POST on /chats/{peer}/messages");
+			return MethodNotAllowed(
+				"GET, HEAD, POST", "only GET / HEAD / POST on /chats/{peer}/messages");
 		}
 		if (web_api_path::Match(chat_one, path_segs, caps)) {
 			if (req.method == "DELETE") {
 				return HandleChatClose(req, caps["peer"]);
 			}
-			return ErrorResponse(405, "method_not_allowed", "only DELETE on /chats/{peer}");
+			return MethodNotAllowed("DELETE", "only DELETE on /chats/{peer}");
 		}
 	}
 
@@ -1078,7 +1111,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 
 	if (path == "/api/v0/servers/update") {
 		if (req.method != "POST") {
-			return ErrorResponse(405, "method_not_allowed", "only POST on /servers/update");
+			return MethodNotAllowed("POST", "only POST on /servers/update");
 		}
 		return HandleServerUpdateFromUrl(req);
 	}
@@ -1128,7 +1161,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 
 	if (path == "/api/v0/kad") {
 		if (req.method != "GET" && req.method != "HEAD") {
-			return ErrorResponse(405, "method_not_allowed", "only GET on /kad");
+			return MethodNotAllowed("GET, HEAD", "only GET on /kad");
 		}
 		return HandleKad(req);
 	}
@@ -1136,13 +1169,13 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// connection control.
 	if (path == "/api/v0/networks/connect") {
 		if (req.method != "POST") {
-			return ErrorResponse(405, "method_not_allowed", "only POST on /networks/connect");
+			return MethodNotAllowed("POST", "only POST on /networks/connect");
 		}
 		return HandleNetworksConnect(req);
 	}
 	if (path == "/api/v0/networks/disconnect") {
 		if (req.method != "POST") {
-			return ErrorResponse(405, "method_not_allowed", "only POST on /networks/disconnect");
+			return MethodNotAllowed("POST", "only POST on /networks/disconnect");
 		}
 		return HandleNetworksDisconnect(req);
 	}
@@ -1152,14 +1185,14 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// /networks/* makes the dedicated shortcut redundant.
 	if (path == "/api/v0/kad/update") {
 		if (req.method != "POST") {
-			return ErrorResponse(405, "method_not_allowed", "only POST on /kad/update");
+			return MethodNotAllowed("POST", "only POST on /kad/update");
 		}
 		return HandleKadUpdateFromUrl(req);
 	}
 
 	if (path == "/api/v0/kad/bootstrap") {
 		if (req.method != "POST") {
-			return ErrorResponse(405, "method_not_allowed", "only POST on /kad/bootstrap");
+			return MethodNotAllowed("POST", "only POST on /kad/bootstrap");
 		}
 		return HandleKadBootstrap(req);
 	}
@@ -1169,14 +1202,14 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// desktop Security page's "Reload List" and "Update now" buttons.
 	if (path == "/api/v0/ipfilter/reload") {
 		if (req.method != "POST") {
-			return ErrorResponse(405, "method_not_allowed", "only POST on /ipfilter/reload");
+			return MethodNotAllowed("POST", "only POST on /ipfilter/reload");
 		}
 		return HandleIpfilterReload(req);
 	}
 
 	if (path == "/api/v0/ipfilter/update") {
 		if (req.method != "POST") {
-			return ErrorResponse(405, "method_not_allowed", "only POST on /ipfilter/update");
+			return MethodNotAllowed("POST", "only POST on /ipfilter/update");
 		}
 		return HandleIpfilterUpdate(req);
 	}
@@ -1216,9 +1249,8 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(shared_clients, path_segs, caps)) {
 			if (req.method != "GET" && req.method != "HEAD") {
-				return ErrorResponse(405,
-					"method_not_allowed",
-					"only GET / HEAD on /shared/{hash}/clients");
+				return MethodNotAllowed(
+					"GET, HEAD", "only GET / HEAD on /shared/{hash}/clients");
 			}
 			return HandleFileClients(req, caps["hash"], /*require_downloading=*/false);
 		}
@@ -1235,9 +1267,8 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 				return HandleSharedDetail(req, caps["hash"]);
 			}
 			if (req.method != "PATCH") {
-				return ErrorResponse(405,
-					"method_not_allowed",
-					"only GET / HEAD / PATCH on /shared/{hash}");
+				return MethodNotAllowed(
+					"GET, HEAD, PATCH", "only GET / HEAD / PATCH on /shared/{hash}");
 			}
 			return HandleSharedPatch(req, caps["hash"]);
 		}
@@ -1250,7 +1281,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		if (req.method == "POST") {
 			return HandleCategoryCreate(req);
 		}
-		return ErrorResponse(405, "method_not_allowed", "only GET / HEAD / POST on /categories");
+		return MethodNotAllowed("GET, HEAD, POST", "only GET / HEAD / POST on /categories");
 	}
 
 	// single-category PATCH/DELETE.
@@ -1277,7 +1308,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		if (req.method == "PATCH") {
 			return HandlePreferencesPatch(req);
 		}
-		return ErrorResponse(405, "method_not_allowed", "only GET / HEAD / PATCH on /preferences");
+		return MethodNotAllowed("GET, HEAD, PATCH", "only GET / HEAD / PATCH on /preferences");
 	}
 
 	if (path == "/api/v0/logs/amule") {
@@ -1287,7 +1318,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		if (req.method == "DELETE") {
 			return HandleLogAmuleReset(req);
 		}
-		return ErrorResponse(405, "method_not_allowed", "only GET / HEAD / DELETE on /logs/amule");
+		return MethodNotAllowed("GET, HEAD, DELETE", "only GET / HEAD / DELETE on /logs/amule");
 	}
 
 	if (path == "/api/v0/logs/serverinfo") {
@@ -1303,7 +1334,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 
 	if (path == "/api/v0/stats/tree") {
 		if (req.method != "GET" && req.method != "HEAD") {
-			return ErrorResponse(405, "method_not_allowed", "only GET on /stats/tree");
+			return MethodNotAllowed("GET, HEAD", "only GET on /stats/tree");
 		}
 		return HandleStatsTree(req);
 	}
@@ -1315,8 +1346,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 			return HandleSearchList(req);
 		}
 		if (req.method != "POST") {
-			return ErrorResponse(405,
-				"method_not_allowed",
+			return MethodNotAllowed("GET, HEAD, POST",
 				"only GET or POST on /search (GET lists searches, POST starts one; "
 				"read one search at GET /search/{id}/results)");
 		}
@@ -1337,9 +1367,8 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(search_download, path_segs, caps)) {
 			if (req.method != "POST") {
-				return ErrorResponse(405,
-					"method_not_allowed",
-					"only POST on /search/results/{hash}/download");
+				return MethodNotAllowed(
+					"POST", "only POST on /search/results/{hash}/download");
 			}
 			return HandleSearchDownload(req, caps["hash"]);
 		}
@@ -1361,8 +1390,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 				return HandleSearchCommentsKadSearch(req, caps["hash"]);
 			}
 			if (req.method != "GET" && req.method != "HEAD") {
-				return ErrorResponse(405,
-					"method_not_allowed",
+				return MethodNotAllowed("GET, HEAD, POST",
 					"only GET / HEAD / POST on /search/results/{hash}/comments");
 			}
 			return HandleSearchComments(req, caps["hash"]);
@@ -1395,8 +1423,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 				return ErrorResponse(400, "bad_request", kBadSearchIdMessage);
 			}
 			if (req.method != "DELETE") {
-				return ErrorResponse(405,
-					"method_not_allowed",
+				return MethodNotAllowed("DELETE",
 					"only DELETE on /search/{id} (read its results at "
 					"GET /search/{id}/results)");
 			}
@@ -1417,9 +1444,8 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 			const std::string &action = caps["action"];
 			if (action == "results") {
 				if (req.method != "GET" && req.method != "HEAD") {
-					return ErrorResponse(405,
-						"method_not_allowed",
-						"only GET / HEAD on /search/{id}/results");
+					return MethodNotAllowed(
+						"GET, HEAD", "only GET / HEAD on /search/{id}/results");
 				}
 				return HandleSearchResults(req, sid);
 			}
@@ -1443,7 +1469,8 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	}
 
 	// /stats/graphs/{graph} — path-pattern matches the four allowed
-	// graph names ("download" / "upload" / "connections" / "kad").
+	// graph names ("download_speed" / "upload_speed" / "connections" /
+	// "kad_nodes" -- HandleStatsGraph rejects anything else).
 	{
 		static const auto graph_pattern = web_api_path::ParsePattern("/api/v0/stats/graphs/{graph}");
 		const auto segs = web_api_path::SplitPath(path);
@@ -1472,8 +1499,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 				return HandleDownloadCommentsKadSearch(req, caps["hash"]);
 			}
 			if (req.method != "GET" && req.method != "HEAD") {
-				return ErrorResponse(405,
-					"method_not_allowed",
+				return MethodNotAllowed("GET, HEAD, POST",
 					"only GET / HEAD / POST on /downloads/{hash}/comments");
 			}
 			return HandleDownloadComments(req, caps["hash"]);
@@ -1489,9 +1515,8 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(dl_filenames, path_segs, caps)) {
 			if (req.method != "GET" && req.method != "HEAD") {
-				return ErrorResponse(405,
-					"method_not_allowed",
-					"only GET / HEAD on /downloads/{hash}/filenames");
+				return MethodNotAllowed(
+					"GET, HEAD", "only GET / HEAD on /downloads/{hash}/filenames");
 			}
 			return HandleDownloadFilenames(req, caps["hash"]);
 		}
@@ -1525,9 +1550,8 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(dl_clients, path_segs, caps)) {
 			if (req.method != "GET" && req.method != "HEAD") {
-				return ErrorResponse(405,
-					"method_not_allowed",
-					"only GET / HEAD on /downloads/{hash}/clients");
+				return MethodNotAllowed(
+					"GET, HEAD", "only GET / HEAD on /downloads/{hash}/clients");
 			}
 			return HandleFileClients(req, caps["hash"], /*require_downloading=*/true);
 		}
@@ -1551,8 +1575,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 			if (req.method == "DELETE") {
 				return HandleDownloadDelete(req, caps["hash"]);
 			}
-			return ErrorResponse(405,
-				"method_not_allowed",
+			return MethodNotAllowed("GET, HEAD, PATCH, DELETE",
 				"only GET / HEAD / PATCH / DELETE on /downloads/{hash}");
 		}
 	}
@@ -1640,8 +1663,11 @@ CHttpServer::Response CApiDispatcher::ServeStaticFile(
 	// Conditional GET: client sent If-None-Match → 304 with no body
 	// when the ETag matches. ETag is mtime+size, so a rebuild of the
 	// frontend invalidates without manual cache-busting.
-	auto inm = req.headers.find("If-None-Match");
-	if (inm != req.headers.end() && inm->second == etag) {
+	// Case-insensitive: Beast preserves the client's wire casing, so a
+	// lowercase `if-none-match` -- what an HTTP/2-shaped client library
+	// produces -- used to miss here and silently lose conditional GET.
+	const std::string inm_val = FindHeaderCaseInsensitive(req.headers, "If-None-Match");
+	if (!inm_val.empty() && inm_val == etag) {
 		CHttpServer::Response r;
 		r.status = 304;
 		r.headers["ETag"] = etag;
@@ -1651,7 +1677,12 @@ CHttpServer::Response CApiDispatcher::ServeStaticFile(
 	CHttpServer::Response r;
 	r.status = 200;
 	r.content_type = StaticContentType(rel);
-	r.body = (req.method == "HEAD") ? std::string() : std::move(body);
+	// The body is kept for HEAD too. The transport writes headers only,
+	// so nothing reaches the wire, and keeping it is what lets
+	// Content-Length report the real size instead of 0 -- and what stops
+	// HEAD and GET disagreeing about this resource's validator, since the
+	// outer layer skips stamping whenever a handler set its own ETag.
+	r.body = std::move(body);
 	r.headers["ETag"] = etag;
 	return r;
 }

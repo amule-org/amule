@@ -1091,3 +1091,52 @@ TEST(State, ConcurrentReadersDontTearSnapshot)
 	// And no read saw a torn snapshot.
 	ASSERT_EQUALS(0, torn.load());
 }
+
+// --- SnapshotGovernsBody --------------------------------------------
+//
+// The ETag memo in the dispatcher is keyed on (target, snapshot_at), and
+// snapshot_at counts whole seconds. That key is only sound for bodies the
+// refresher snapshot actually governs; for anything refreshed on its own
+// schedule the body can move while the key stands still, and reusing the
+// memoized validator across that answers a later conditional GET with 304
+// for content that has changed.
+
+// The big snapshot-governed collections are exactly what the memo exists
+// for -- they are the multi-MB bodies worth not re-hashing every request.
+TEST(State, SnapshotGovernsBodyMemoizesSnapshotBackedTargets)
+{
+	ASSERT_TRUE(SnapshotGovernsBody("/api/v0/downloads"));
+	ASSERT_TRUE(SnapshotGovernsBody("/api/v0/shared"));
+	ASSERT_TRUE(SnapshotGovernsBody("/api/v0/status"));
+	ASSERT_TRUE(SnapshotGovernsBody("/api/v0/clients"));
+	ASSERT_TRUE(SnapshotGovernsBody("/api/v0/servers"));
+	// A query string selects a page, not a different resource.
+	ASSERT_TRUE(SnapshotGovernsBody("/api/v0/downloads?limit=10&offset=20"));
+}
+
+// The self-refreshing ones must never be memoized: /stats/* and
+// /logs/serverinfo hold their own 1 s TTL caches fetched out of phase with
+// the tick, /logs/amule grows between ticks, and a search's results are
+// refreshed on read.
+TEST(State, SnapshotGovernsBodyRefusesSelfRefreshingTargets)
+{
+	ASSERT_TRUE(!SnapshotGovernsBody("/api/v0/stats/tree"));
+	ASSERT_TRUE(!SnapshotGovernsBody("/api/v0/stats/graphs/download_speed"));
+	ASSERT_TRUE(!SnapshotGovernsBody("/api/v0/logs/amule"));
+	ASSERT_TRUE(!SnapshotGovernsBody("/api/v0/logs/serverinfo"));
+	ASSERT_TRUE(!SnapshotGovernsBody("/api/v0/search/7/results"));
+	// The query string must not smuggle one past the prefix check: the
+	// stats graphs are always queried, so a match on the full target
+	// rather than the path would have let every one of them memoize.
+	ASSERT_TRUE(!SnapshotGovernsBody("/api/v0/stats/graphs/download_speed?width=3"));
+	ASSERT_TRUE(!SnapshotGovernsBody("/api/v0/logs/amule?limit=50"));
+}
+
+// Prefix matching must not swallow a neighbour that merely starts with the
+// same letters. /api/v0/statistics is not /api/v0/stats/.
+TEST(State, SnapshotGovernsBodyPrefixIsSegmentBounded)
+{
+	ASSERT_TRUE(SnapshotGovernsBody("/api/v0/statistics"));
+	ASSERT_TRUE(SnapshotGovernsBody("/api/v0/searches"));
+	ASSERT_TRUE(SnapshotGovernsBody("/api/v0/logging"));
+}

@@ -313,6 +313,7 @@ public:
 		CHttpServer::StreamingHandler streaming_handler,
 		CHttpServer::StreamingPreflight streaming_preflight)
 	: m_stream(std::move(socket))
+	, m_request_timer(m_stream.get_executor())
 	, m_handler_pool(std::move(handler_pool))
 	, m_handler(std::move(handler))
 	, m_streaming_resolver(std::move(streaming_resolver))
@@ -394,24 +395,68 @@ private:
 		// (Authorization + a few Accept headers is < 2 KiB) and
 		// catches the drip-feed within ~1 KiB instead of ~MB.
 		m_parser->header_limit(16 * 1024);
-		// 10 s read timeout. amuleapi runs against localhost/LAN; a
+		// 10 s read budget. amuleapi runs against localhost/LAN; a
 		// real client never takes 10 s to send a 1 KiB request.
-		m_stream.expires_after(std::chrono::seconds(10));
+		//
+		// Two timers, deliberately. beast::tcp_stream's own expiry
+		// CLOSES the socket, so by the time the read handler sees
+		// beast::error::timeout there is nothing left to answer on --
+		// which is why a stalled request used to look identical to a
+		// crashed daemon. Our own timer fires first and gets to send a
+		// 408; the stream's expiry stays as the hard backstop for the
+		// case where writing that 408 also stalls.
+		m_stream.expires_after(std::chrono::seconds(20));
+		m_request_timer.expires_after(std::chrono::seconds(10));
+		{
+			auto self = shared_from_this();
+			m_request_timer.async_wait([self](const beast::error_code &tec) {
+				// operation_aborted = the read completed and cancelled
+				// us, which is the normal path.
+				if (tec == asio::error::operation_aborted)
+					return;
+				if (self->m_answered.exchange(true))
+					return;
+				self->WriteAndClose(
+					408, "request_timeout", "the request was not completed within 10 s");
+			});
+		}
 
 		auto self = shared_from_this();
 		http::async_read(
 			m_stream, m_buffer, *m_parser, [self](beast::error_code ec, std::size_t bytes) {
 				(void)bytes;
+				self->m_request_timer.cancel();
+				// The timeout timer got there first and has already
+				// written a 408; anything we do now would be a second
+				// response on the same connection.
+				if (self->m_answered.exchange(true))
+					return;
 				if (ec == http::error::end_of_stream) {
 					self->DoClose();
 					return;
 				}
 				if (ec) {
-					// Read error (timeout, peer close, framing error) —
-					// stay quiet. amuleapi-side log noise from health-
-					// check probes ("000 errors are normal" in our
-					// curl-tests README) isn't worth the line per
-					// connection.
+					// Three of these are limits WE imposed, and a
+					// caller cannot tell a silent close from "daemon
+					// crashed" or "firewall ate it" — every other
+					// rejection on this surface is a typed JSON
+					// envelope, so answer these the same way before
+					// closing. Any other read error (peer vanished,
+					// framing garbage) stays quiet: there is nobody
+					// left to tell, and health-check probes would
+					// otherwise cost a log line per connection.
+					if (ec == http::error::body_limit) {
+						self->WriteAndClose(413,
+							"payload_too_large",
+							"request body exceeds the 1 MiB limit");
+						return;
+					}
+					if (ec == http::error::header_limit) {
+						self->WriteAndClose(431,
+							"headers_too_large",
+							"request headers exceed the 16 KiB limit");
+						return;
+					}
 					self->DoClose();
 					return;
 				}
@@ -435,6 +480,9 @@ private:
 		// path and the streaming SocketWriter see the same decision;
 		// the header can't legally change between the two.
 		m_accepts_gzip = AcceptsGzip(std::string(req[http::field::accept_encoding]));
+		// HEAD is answered with the GET headers and no content. Recorded
+		// here because WriteResponse runs after the parser has moved on.
+		m_head_only = (r.method == "HEAD");
 		// Remote endpoint for rate-limiting. `.address()` returns a
 		// boost::asio::ip::address which `.to_string()`-es to the
 		// canonical IPv4 / IPv6 form ("192.0.2.1", "::1", "fe80::%lo0"...).
@@ -837,6 +885,20 @@ private:
 		SseGzipStream m_gzip;
 	};
 
+	// Typed error straight from the transport layer, for the read-side
+	// limits that never reach a handler. Hand-built rather than routed
+	// through the dispatcher's ErrorResponse: at this point the request
+	// was never parsed, so there is no route and no auth context.
+	void WriteAndClose(unsigned status, const char *code, const char *message)
+	{
+		CHttpServer::Response r;
+		r.status = status;
+		r.content_type = "application/json";
+		r.body = std::string("{\"error\":{\"code\":\"") + code + "\",\"message\":\"" + message +
+			 "\"}}";
+		WriteResponse(std::move(r));
+	}
+
 	void WriteResponse(CHttpServer::Response &&resp)
 	{
 		// Regular (non-streaming) response gzip encoding. Gated by:
@@ -873,7 +935,12 @@ private:
 		m_response->version(11);
 		m_response->result(resp.status);
 		m_response->set(http::field::server, "amuleapi");
-		m_response->set(http::field::content_type, resp.content_type);
+		// A Content-Type whose value is not a media type is malformed, so
+		// omit the header entirely on the bodiless replies (204, 304)
+		// whose handlers deliberately cleared it.
+		if (!resp.content_type.empty()) {
+			m_response->set(http::field::content_type, resp.content_type);
+		}
 		for (const auto &h : resp.headers) {
 			m_response->set(h.first, h.second);
 		}
@@ -881,6 +948,21 @@ private:
 		m_response->prepare_payload();
 
 		auto self = shared_from_this();
+		if (m_head_only) {
+			// RFC 9110 §9.3.2 — a HEAD response carries no content, on
+			// any status. prepare_payload() has already sized
+			// Content-Length from the full body, so serializing the
+			// header alone reports what a GET would return without
+			// putting a byte of it on the wire.
+			m_serializer.emplace(*m_response);
+			m_serializer->split(true);
+			http::async_write_header(
+				m_stream, *m_serializer, [self](beast::error_code ec, std::size_t) {
+					(void)ec;
+					self->DoClose();
+				});
+			return;
+		}
 		http::async_write(m_stream, *m_response, [self](beast::error_code ec, std::size_t) {
 			(void)ec;
 			self->DoClose();
@@ -889,6 +971,11 @@ private:
 
 	void DoClose()
 	{
+		// Drop the request timer first. It holds a shared_ptr to this
+		// Session, so leaving it armed keeps a closed connection alive
+		// for the rest of its 10 s and delays process teardown by the
+		// same amount.
+		m_request_timer.cancel();
 		// If we were streaming, write the chunked-encoding terminator
 		// (0-size chunk) before shutting down. Idempotent — if the
 		// peer already closed, the write fails silently.
@@ -904,6 +991,9 @@ private:
 	}
 
 	beast::tcp_stream m_stream;
+	// Fires before the stream's own expiry so a stalled request can be
+	// answered instead of silently dropped; see DoRead.
+	asio::steady_timer m_request_timer;
 	// Worker pool that runs the (non-streaming) request handler off the
 	// io_context thread. Shared with the server; declared before m_handler
 	// so the init list stays in declaration order.
@@ -911,6 +1001,9 @@ private:
 	beast::flat_buffer m_buffer{ 8192 };
 	boost::optional<http::request_parser<http::string_body>> m_parser;
 	boost::optional<http::response<http::string_body>> m_response;
+	// Header-only serializer, used for HEAD so Content-Length still
+	// reports the GET size while no content reaches the wire.
+	boost::optional<http::response_serializer<http::string_body>> m_serializer;
 	CHttpServer::Handler m_handler;
 
 	// streaming state.
@@ -938,6 +1031,9 @@ private:
 	// the same thread that populated it or on a worker spawned after
 	// the write, so no atomic is needed.
 	bool m_accepts_gzip = false;
+	bool m_head_only = false;
+	// One response per connection, whichever of the two paths wins.
+	std::atomic<bool> m_answered{ false };
 };
 
 // Accept loop. One Listener per HttpServer; spawns a Session per

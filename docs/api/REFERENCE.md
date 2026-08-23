@@ -1400,7 +1400,7 @@ Returns `202 Accepted`. amuled schedules the re-walk and answers immediately, so
 
 Repeated calls coalesce: requesting a reload while one is already pending, or while a walk is in progress, results in a single further walk rather than one per call.
 
-**Reading the result.** The walk brackets itself with two amule log lines, so read them back from [`GET /api/v0/logs/amule`](#get-apiv0logsamule) or the `log` SSE channel. Both are localised and the second is pluralised, so a client matching on them should pin the daemon's locale:
+**Reading the result.** The walk brackets itself with two amule log lines, so read them back from [`GET /api/v0/logs/amule`](#get-apiv0logsamule) or the `logs` SSE channel. Both are localised and the second is pluralised, so a client matching on them should pin the daemon's locale:
 
 - `Reloading shared files...` when the walk starts
 - `Found 1234 known shared files` when it ends
@@ -1565,7 +1565,7 @@ Returns `202 Accepted`. amuled queues the hashing task and answers immediately, 
 
 **Watching it run.** While the task is hashing, `hashing_progress` on the file's [`GET /shared`](#get-apiv0shared) row counts the parts done so far, and each advance pushes a `shared_updated` SSE event — enough to drive a progress bar without polling. It returns to `0` when the task finishes or aborts, which is the signal that the log line below is available.
 
-**Reading the result.** The verdict is emitted as an amule log line when the task completes, so read it back from [`GET /api/v0/logs/amule`](#get-apiv0logsamule) or the `log` SSE channel:
+**Reading the result.** The verdict is emitted as an amule log line when the task completes, so read it back from [`GET /api/v0/logs/amule`](#get-apiv0logsamule) or the `logs` SSE channel:
 
 - `Verify Local Data (MD4 & AICH): Result OK for <path>`
 - `Verify Local Data (MD4 & AICH): ERRORS FOUND! <path> Failed blocks: MD4: 3,7 AICH: 5: (0,2)`
@@ -2206,7 +2206,7 @@ Standalone view of the Kad subtree from `/status`, plus the detail fields the st
 
 The IP-filter *settings* are ordinary preferences (`security.ipfilter_*` on [`GET`/`PATCH /api/v0/preferences`](#get-apiv0preferences)). The two endpoints here are the standalone operations behind the desktop client's Security page buttons: reloading the filter files amuled already has on disk, and downloading a new one.
 
-Neither reports its outcome in the response — amuled answers both immediately and does the work asynchronously. What actually happened shows up only in the amule log, readable through [`GET /api/v0/logs/amule`](#get-apiv0logsamule) or the `log` SSE channel. The lines to watch for:
+Neither reports its outcome in the response — amuled answers both immediately and does the work asynchronously. What actually happened shows up only in the amule log, readable through [`GET /api/v0/logs/amule`](#get-apiv0logsamule) or the `logs` SSE channel. The lines to watch for:
 
 | Line | Meaning |
 |---|---|
@@ -2568,7 +2568,7 @@ amuled keeps a bounded ring of recent searches (20). A search evicted from that 
 }
 ```
 
-Each result carries `sources` as a nested `{total, complete}` object — `total` is the swarm size amuled reports and `complete` is how many of those hold the file complete. `already_have` is `true` when you are currently downloading the file or already have it completed/shared; it is `false` for a fresh result and for one you have canceled/removed (a canceled result is re-downloadable, so it does not read as held). `rating` is amuled's aggregated quality rating (`0` when unrated). `status` is this result's download status on your node — `"new"` / `"downloaded"` / `"queued"` / `"canceled"` / `"queued_canceled"`. `type` is the file-type token derived from the filename extension (same tokens as the shared-detail [`file_type`](#get-apiv0sharedhash), e.g. `"videos"` / `"audio"`; `""` when the name has no extension). `media` is the audio/video [media metadata](#media-metadata) object (same shape as the file-detail endpoints) — **present only** for a hit that is already known/probed locally, and **omitted entirely** for remote hits with no metadata (most global/Kad results), matching the blank Length/Bitrate/Codec columns in the desktop search list.
+Each result carries `sources` as a nested `{total, complete}` object — `total` is the swarm size amuled reports and `complete` is how many of those hold the file complete. `already_have` is `true` when you are currently downloading the file or already have it completed/shared; it is `false` for a fresh result and for one you have canceled/removed (a canceled result is re-downloadable, so it does not read as held). `rating` is amuled's aggregated quality rating (`0` when unrated). `status` is this result's download status on your node — `"new"` / `"downloaded"` / `"queued"` / `"canceled"` / `"queued_canceled"`. `type` is the file-type token derived from the filename extension (same tokens as the shared-detail [`file_type`](#get-apiv0sharedhash), e.g. `"videos"` / `"audio"`; `""` when the name has no extension). `media` is the audio/video [media metadata](#media-metadata) object (same shape as the file-detail endpoints), and is **omitted entirely** for a hit that carries no metadata (most global/Kad results), matching the blank Length/Bitrate/Codec columns in the desktop search list. **Unlike `media` on `GET /downloads/{hash}` and `GET /shared/{hash}`, which amuled probed locally, `media` on a search result is whatever the responding server advertised.** It is not verified against the file and can contradict it — a `.pdf` reporting a runtime and a video codec is a real observed result — so treat it as a hint, not as probed metadata.
 
 `directory` is the folder this file sits in **inside a browsed peer's share** — the desktop search list's *Directories* column. It is populated only for results filed from a peer's shared-file listing (see [peer browse](#post-apiv0clientsecidshared_files)) and is `""` on every ordinary server/Kad hit, which never carries it. It is per-result rather than per-search: two copies of one file in different folders of the same share group under a single parent and each keeps its own folder, exactly as the desktop shows them, which is why `children[]` entries carry it too.
 
@@ -2847,23 +2847,36 @@ Closing is **global**, the same way closing a search tab frees the search for ev
 
 ## Error code catalog
 
-Every error code emitted by `/api/v0/*`, sorted by what triggered it. The matching HTTP status is in parentheses.
+Every error code emitted by `/api/v0/*`, sorted by what triggered it. Two codes are emitted with **two different statuses** depending on the cause, so a client that switches on `code` alone must also look at the status for those.
 
 | Code | Status | Meaning |
 |------|--------|---------|
-| `method_not_allowed` | 405 | Wrong HTTP verb for the route. |
 | `bad_request` | 400 | Body, query, or path-segment validation failed. Body parse depth-cap rejects also surface here. |
+| `amuled_rejected` | 400, 502 | amuled rejected the EC operation and the message carries its reason verbatim (400); or amuled answered but its reply was unusable, e.g. no `search_id` came back from a search or a browse (502). |
+| `request_timeout` | 408 | The request was not completed within the 10 s read timeout. |
 | `unauthorized` | 401 | Missing token, bad signature, expired, revoked, or `iat` invariants failed. |
-| `invalid_credentials` | 401 | `/auth/login` password didn't match any role. |
+| `invalid_credentials` | 401, 403 | `/auth/login` password didn't match any role (401); or `PATCH /auth/passwords` was given a `current_password` that does not match (403). |
 | `forbidden` | 403 | Authenticated as `guest` but the endpoint requires `admin`. |
-| `not_found` | 404 | Resource doesn't exist (unknown hash, ECID, graph name). |
+| `not_found` | 404 | Resource doesn't exist (unknown hash, ECID, graph name, or no such endpoint). |
+| `method_not_allowed` | 405 | Wrong HTTP verb for the route. The response carries an `Allow` header listing the methods this resource does support. |
+| `conflict` | 409 | The request is valid but the daemon is not in a state that can serve it — the `mmap` capability gate. |
 | `partfile_unsupported` | 409 | Verify Local Data requested on a file that is still an incomplete partfile. |
+| `not_shared` | 409 | A comment or rating was posted against a file that is not shared. |
+| `not_completed` | 409 | `clear_completed` named a `hash` that is not a completed download. |
+| `completed_use_clear_completed` | 409 | A bulk `DELETE /downloads` matched a completed download; use `clear_completed` for those. |
 | `kad_more_exhausted` | 409 | `POST /search/{id}/more` on a Kad search that can no longer be widened — its 4-reask budget is spent, or it has entered the stopping window Kad begins 20 s before a keyword search ends. Terminal for that search; re-run the query for more. |
+| `update_check_unavailable` | 409 | `POST /version/check` cannot run — the daemon has no update-check capability. |
+| `payload_too_large` | 413 | Request body exceeds the 1 MiB limit. The connection closes after the response. |
 | `rate_limited` | 429 | Per-IP failure bucket full. `Retry-After: <seconds>` accompanies the response. |
-| `login_disabled` | 503 | `/auth/login` reached but no admin AND no guest password configured. |
+| `update_check_throttled` | 429 | `POST /version/check` was throttled by the daemon; try again shortly. |
+| `headers_too_large` | 431 | Request headers exceed the 16 KiB limit. The connection closes after the response. |
+| `internal_error` | 500 | A handler failed internally — hash decode or serialization. The body is generic; details land in the daemon's stderr. |
+| `internal` | 500 | A handler threw. Raised by the HTTP layer's catch-all rather than by a handler, so it is distinct from `internal_error` above; a client that wants every server-side failure must match both. |
+| `bad_gateway` | 502 | amuled returned an EC payload this endpoint could not decode. |
 | `ec_unavailable` | 503 | EC connection not ready yet (cold start, transient amuled restart). |
-| `amuled_rejected` | 400 | amuled rejected the EC operation; the message field carries amuled's reason verbatim. |
-| `internal` | 500 | Handler threw. The body is generic; details land in the daemon's stderr. |
+| `ec_unsupported` | 503 | The connected amuled is too old to serve this route — the chat endpoints and `/known_clients`. |
+| `login_disabled` | 503 | `/auth/login` reached but no admin AND no guest password configured. |
+| `sessions_exhausted` | 503 | Too many concurrent streaming sessions. `Retry-After` accompanies the response. |
 
 `message` is human-readable and may change between releases. Pin on `code`.
 

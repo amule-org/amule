@@ -128,13 +128,22 @@ std::string ToJsonDownloadEvent(const FileSnapshot &f)
 	return o.str();
 }
 
-// comments_updated event payload — the file's full comment/rating list, matching
-// the GET /downloads/{hash}/comments body. Covers both retrieved Kad notes and
-// comments reported by connected ed2k sources (they share source_comments).
+// comments_updated event payload — the GET /downloads/{hash}/comments body
+// plus `hash`. Covers both retrieved Kad notes and comments reported by
+// connected ed2k sources (they share source_comments).
+//
+// A strict superset of the endpoint, deliberately: the event needs `hash`
+// because nothing else in the frame identifies the file, and it needs
+// `kad_comment_search_running` because that flag is exactly what a client
+// wants while a POST /downloads/{hash}/comments lookup is in flight. It used
+// to carry the first and not the second, so a client that followed the docs
+// and fed the event into the view it built from the endpoint silently lost
+// the in-flight indicator.
 std::string ToJsonCommentsEvent(const FileSnapshot &f)
 {
 	std::ostringstream o;
 	o << "{\"hash\":\"" << EscJson(f.hash) << "\""
+	  << ",\"kad_comment_search_running\":" << (f.download.kad_comment_searching ? "true" : "false")
 	  << ",\"count\":" << f.download.source_comments.size() << ",\"comments\":[";
 	bool first = true;
 	for (const auto &c : f.download.source_comments) {

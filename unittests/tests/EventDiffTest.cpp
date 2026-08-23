@@ -978,3 +978,96 @@ TEST(EventDiff, RoleFlipRefreshesFieldsTheOtherRoleNeverCompared)
 	// And the baseline now carries it, so the next tick is silent.
 	ASSERT_EQUALS(static_cast<std::uint64_t>(999), prev.files.find(24)->second.download.size_done);
 }
+
+// --- comments_updated payload ---------------------------------------
+//
+// EVENTS.md promises the payload is the GET /downloads/{hash}/comments body
+// plus `hash`. It used to carry `hash` but NOT `kad_comment_search_running`,
+// so a client that followed the document and fed the event into the view it
+// built from the endpoint silently lost the in-flight-lookup flag -- exactly
+// the flag it needs while a POST /downloads/{hash}/comments Kad lookup runs.
+TEST(EventDiff, CommentsUpdatedIsASupersetOfTheRestBody)
+{
+	CState state;
+	state.MutateDownloads([](FileMap &files) {
+		FileSnapshot f;
+		f.ecid = 41;
+		f.hash = "5555555555555555555555555555eeee";
+		f.name = "commented.iso";
+		f.size = kPartSizeBytes * 2;
+		f.is_downloading = true;
+		files.emplace(f.ecid, f);
+	});
+
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state); // cold start: download_added
+	DrainAll(bus);
+
+	// A Kad lookup is in flight AND a note has landed, so the event fires
+	// with the flag still true -- the state a client is most likely to
+	// render, and the one the missing key made unrepresentable.
+	state.MutateDownloads([](FileMap &files) {
+		FileSnapshot &f = files.find(41)->second;
+		f.download.kad_comment_searching = true;
+		FileSnapshot::DownloadSide::SourceComment c;
+		c.username = "alice";
+		c.filename = "commented.iso";
+		c.rating = 5;
+		c.comment = "great quality";
+		f.download.source_comments.push_back(c);
+	});
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string payload;
+	for (const auto &e : DrainAll(bus)) {
+		if (e.name == "comments_updated")
+			payload = e.data;
+	}
+	ASSERT_TRUE(!payload.empty());
+	// The endpoint's three keys...
+	ASSERT_TRUE(payload.find("\"count\":1") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"kad_comment_search_running\":true") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"comments\":[") != std::string::npos);
+	// ...plus the one the event adds, because nothing else in the frame
+	// identifies the file.
+	ASSERT_TRUE(payload.find("\"hash\":\"5555555555555555555555555555eeee\"") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"username\":\"alice\"") != std::string::npos);
+}
+
+// And the flag tracks false, so a client can see the lookup finish.
+TEST(EventDiff, CommentsUpdatedReportsAnIdleKadLookup)
+{
+	CState state;
+	state.MutateDownloads([](FileMap &files) {
+		FileSnapshot f;
+		f.ecid = 42;
+		f.hash = "6666666666666666666666666666ffff";
+		f.name = "quiet.iso";
+		f.size = kPartSizeBytes;
+		f.is_downloading = true;
+		files.emplace(f.ecid, f);
+	});
+
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+	DrainAll(bus);
+
+	state.MutateDownloads([](FileMap &files) {
+		FileSnapshot &f = files.find(42)->second;
+		FileSnapshot::DownloadSide::SourceComment c;
+		c.username = "Kad user";
+		c.rating = 4;
+		f.download.source_comments.push_back(c);
+	});
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string payload;
+	for (const auto &e : DrainAll(bus)) {
+		if (e.name == "comments_updated")
+			payload = e.data;
+	}
+	ASSERT_TRUE(!payload.empty());
+	ASSERT_TRUE(payload.find("\"kad_comment_search_running\":false") != std::string::npos);
+}

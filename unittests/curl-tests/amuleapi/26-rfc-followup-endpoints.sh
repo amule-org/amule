@@ -473,9 +473,15 @@ else
 	_fail "events channel-filter positive" \
 		"no download/status events seen; sample: $(head -10 "$SSE")"
 fi
-LEAKED=$(grep -cE "^event: (client_|server_|shared_|log_|search_)" "$SSE" || true)
+# comments_ is in this list on purpose. comments_updated has the prefix
+# `comments`, which event_channel does not map, so its channel is literally
+# `comments` -- NOT `downloads`, even though the event is a downloads
+# concern and the prose reads that way. The channel table documents it as
+# its own row; if anyone later folds the prefix into `downloads` without
+# updating that table, this assertion is what notices.
+LEAKED=$(grep -cE "^event: (client_|server_|shared_|log_|search_|comments_)" "$SSE" || true)
 if [ "$LEAKED" -eq 0 ]; then
-	_pass "/events?channels=downloads,status excludes client/server/shared/log/search events"
+	_pass "/events?channels=downloads,status excludes client/server/shared/log/search/comments events"
 else
 	_fail "events channel-filter leak" \
 		"$LEAKED off-channel events leaked through"

@@ -583,6 +583,20 @@ struct ChatSessionSnapshot
 // is built from a GUI_ID, with no walker involved).
 std::string IPv4ToDotted(std::uint32_t ip_lsb_first);
 
+// Is this request target's body governed by the refresher snapshot, and so
+// safe to key an ETag memo on `snapshot_at`?
+//
+// False for the endpoints refreshed on their own schedule: /stats/* and
+// /logs/serverinfo hold their own 1 s TTL caches fetched out of phase with
+// the tick, /logs/amule is an append-only mirror that grows between ticks,
+// and a search's results are refreshed on read. `snapshot_at` counts whole
+// seconds, so any of those can change while the memo key stands still --
+// and a memo reused across such a change answers a later conditional GET
+// with 304 for content that has moved on. Takes the full target; the query
+// string is stripped here because it does not change which resource is
+// being read.
+bool SnapshotGovernsBody(const std::string &target);
+
 // The same key built straight from a GUI_ID, for paths that only have the id
 // (a session that was closed is gone from the snapshot, so there is no
 // ChatSessionSnapshot left to ask). GUI_ID is (ip << 16) | port.

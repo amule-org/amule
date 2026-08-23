@@ -28,6 +28,7 @@
 #include <iostream> // std::cerr
 
 #include <cstdio>
+#include <cstring> // std::strlen
 #include <ctime>
 
 #include <mutex>
@@ -497,6 +498,27 @@ std::string IPv4ToDotted(std::uint32_t ip_lsb_first)
 		static_cast<unsigned>((ip_lsb_first >> 16) & 0xFFu),
 		static_cast<unsigned>((ip_lsb_first >> 24) & 0xFFu));
 	return std::string(buf);
+}
+
+// See State.h. Prefix match on the path, so a query string (/stats/graphs is
+// always queried) does not change the verdict.
+bool SnapshotGovernsBody(const std::string &target)
+{
+	const std::string path = target.substr(0, target.find('?'));
+	// Each of these owns its own freshness: a TTL cache, an append-only
+	// mirror, or a refresh-on-read. None of them moves in step with the
+	// refresher tick that stamps snapshot_at.
+	static const char *const kSelfRefreshing[] = {
+		"/api/v0/stats/",
+		"/api/v0/logs/",
+		"/api/v0/search/",
+	};
+	for (const char *prefix : kSelfRefreshing) {
+		if (path.compare(0, std::strlen(prefix), prefix) == 0) {
+			return false;
+		}
+	}
+	return true;
 }
 
 std::string ChatPeerKeyFromGuiId(std::uint64_t gui_id)

@@ -19,8 +19,8 @@
 #     (cookie-auth-compatible with the per-origin echo).
 #   * Preflight: `OPTIONS` + `Access-Control-Request-Method` short-
 #     circuits before auth, replies 204 with
-#     `Access-Control-Allow-Methods: GET, HEAD, POST, PATCH, DELETE,
-#     OPTIONS` and `Access-Control-Allow-Headers: Authorization,
+#     `Access-Control-Allow-Methods: GET, HEAD, POST, PUT, PATCH,
+#     DELETE, OPTIONS` and `Access-Control-Allow-Headers: Authorization,
 #     Content-Type, If-None-Match, Last-Event-ID` and
 #     `Access-Control-Max-Age: 86400`.
 #   * SSE: the streaming response carries the same Allow-Origin /
@@ -284,6 +284,30 @@ if echo "$ACAM" | grep -q "POST" && echo "$ACAM" | grep -q "PATCH" \
 	_pass "Preflight: Allow-Methods lists mutating verbs"
 else
 	_fail "Allow-Methods" "expected POST/PATCH/DELETE listed, got '$ACAM'"
+fi
+# PUT specifically: PUT /api/v0/shared/directories is a real route (the
+# replace-the-whole-share-root-list form), and it was missing from the
+# advertised list. A browser doing a cross-origin PUT there was told the
+# method is not allowed and blocked the request before sending it -- the
+# route worked from curl and was unreachable from a page.
+if echo "$ACAM" | grep -q "PUT"; then
+	_pass "Preflight: Allow-Methods lists PUT"
+else
+	_fail "Allow-Methods PUT" "PUT is a real route on /shared/directories, got '$ACAM'"
+fi
+
+# And the same preflight asked about that route by name.
+_curl -X OPTIONS \
+	-H "Origin: https://allowed.example.com" \
+	-H "Access-Control-Request-Method: PUT" \
+	"$HOST/api/v0/shared/directories"
+PUT_STATUS=$(head -1 "$HDR" | awk '{print $2}')
+PUT_ACAM=$(_hdr "Access-Control-Allow-Methods")
+if [ "$PUT_STATUS" = "204" ] && echo "$PUT_ACAM" | grep -q "PUT"; then
+	_pass "Preflight for PUT /shared/directories advertises PUT"
+else
+	_fail "Preflight PUT /shared/directories" \
+		"status '$PUT_STATUS', Allow-Methods '$PUT_ACAM'"
 fi
 if echo "$ACAH" | grep -qi "Authorization" \
    && echo "$ACAH" | grep -qi "If-None-Match" \

@@ -162,6 +162,7 @@ Every event belongs to a single channel. The full set, prefix-mapped from the ev
 | `logs` | `log_*` | amuled log buffer (live tail; serverinfo is poll-only) |
 | `search` | `search_*` | Result deltas, completion, and the freeing of a search |
 | `chats` | `chat_*` | Peer chat messages, and conversations being closed |
+| `comments` | `comments_*` | Comment/rating lists on a download |
 
 By default every channel is delivered. To subscribe to a subset, pass `?channels=` with a comma-separated list:
 
@@ -269,11 +270,12 @@ Only the hash; clients look up and drop the cache entry by hash.
 
 #### `comments_updated`
 
-Fires whenever a download's comment/rating list changes — a Kad note arriving during a `POST /downloads/{hash}/comments` lookup, **or** a connected ed2k source reporting its comment. Payload is byte-for-byte the `GET /downloads/{hash}/comments` body, so a client can update its comments view directly from the event without re-fetching:
+Fires whenever a download's comment/rating list changes — a Kad note arriving during a `POST /downloads/{hash}/comments` lookup, **or** a connected ed2k source reporting its comment. Payload is the `GET /downloads/{hash}/comments` body plus `hash`, so a client can update its comments view directly from the event without re-fetching. The extra key is there because nothing else in the frame identifies the file:
 
 ```json
 {
   "hash": "8b54a3c2...",
+  "kad_comment_search_running": false,
   "count": 2,
   "comments": [
     { "username": "alice",    "filename": "Some.Movie.mkv", "rating": 5, "comment": "great quality" },
@@ -282,7 +284,7 @@ Fires whenever a download's comment/rating list changes — a Kad note arriving 
 }
 ```
 
-Downloads only. It's kept separate from `download_updated` so the per-tick download frame stays lean — comments ride their own event and only when they actually change.
+Downloads only, but it rides the `comments` channel, not `downloads` -- `?channels=downloads` alone will not deliver it. It's kept separate from `download_updated` so the per-tick download frame stays lean — comments ride their own event and only when they actually change.
 
 ### `shared` channel
 
