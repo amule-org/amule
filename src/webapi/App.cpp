@@ -49,6 +49,14 @@
 #include <iostream>
 #include <thread>
 
+// mallopt. Guarded because macOS has no <malloc.h>; M_ARENA_MAX below then
+// gates the call on the libc actually providing it.
+#if defined(__has_include)
+#if __has_include(<malloc.h>)
+#include <malloc.h>
+#endif
+#endif
+
 IMPLEMENT_APP(CamuleapiApp)
 
 namespace
@@ -86,6 +94,40 @@ void HandleEcConnectionLost()
 {
 	g_ecConnectionLost.store(true, std::memory_order_release);
 	g_shutdownRequested.store(true, std::memory_order_release);
+}
+
+// Bound glibc's per-thread malloc arenas: it hands out up to 8 x ncores (the
+// *host's* cores, which a container quota does not lower) and a non-main arena
+// never returns its high-water mark, so one handler's peak becomes permanent
+// RSS once per pool thread.
+//
+// 2 reserves nothing for the refresher -- reuse_arena() rotates main_arena in
+// too -- it buys a second lock domain and half the churn in an mmap'd arena
+// madvise can reclaim. An explicit MALLOC_ARENA_MAX or glibc.malloc.arena_max
+// wins; a zero or empty one does not, since glibc rejects it (minval 1) and
+// falls back to its own default.
+void CapMallocArenas()
+{
+#if defined(M_ARENA_MAX)
+	// Base 0, not 10: glibc's tunable parser takes hex and octal, so a base-10
+	// read of MALLOC_ARENA_MAX=0x8 gives 0 and we would cap over an operator
+	// who set 8. A value glibc itself rejects still parses as 0 here, which is
+	// what makes the cap apply to it.
+	const char *env = std::getenv("MALLOC_ARENA_MAX");
+	if (env && std::strtol(env, nullptr, 0) > 0) {
+		return;
+	}
+	const char *tunables = std::getenv("GLIBC_TUNABLES");
+	if (tunables) {
+		static const char key[] = "glibc.malloc.arena_max=";
+		const char *hit = std::strstr(tunables, key);
+		if (hit && std::strtol(hit + sizeof(key) - 1, nullptr, 0) > 0) {
+			return;
+		}
+	}
+	// M_ARENA_MAX does not set no_dyn_threshold, unlike M_MMAP_THRESHOLD.
+	mallopt(M_ARENA_MAX, 2);
+#endif
 }
 
 } // namespace
@@ -170,6 +212,10 @@ bool CamuleapiApp::OnCmdLineParsed(wxCmdLineParser &parser)
 
 bool CamuleapiApp::OnInit()
 {
+	// Before any secondary thread exists: an arena is assigned on a thread's
+	// first malloc and cached in its TLS, so a later cap cannot move it.
+	CapMallocArenas();
+
 	if (!CaMuleExternalConnector::OnInit()) {
 		return false;
 	}
