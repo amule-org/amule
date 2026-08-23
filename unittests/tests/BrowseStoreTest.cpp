@@ -273,17 +273,6 @@ TEST(BrowseStore, RemoveDisposesOfTheRecordWithItsSearch)
 	ASSERT_TRUE(s.Start(ALICE, kSidB, 7, 2000).started);
 }
 
-TEST(BrowseStore, IdsEnumeratesEveryTrackedBrowse)
-{
-	Store s;
-	s.Start(ALICE, kSidA, 7, 1000);
-	s.Start(BOB, kSidB, 8, 1000);
-	const auto ids = s.Ids();
-	ASSERT_EQUALS(static_cast<std::size_t>(2), ids.size());
-	ASSERT_EQUALS(kSidA, ids[0]);
-	ASSERT_EQUALS(kSidB, ids[1]);
-}
-
 TEST(BrowseStore, UnknownSearchIdsAnswerSafely)
 {
 	// The EC reply paths gate on Has(), but the accessors must not invent a
@@ -395,4 +384,24 @@ TEST(BrowseStore, AnIdAlreadyInUseIsRefused)
 	ASSERT_EQUALS(static_cast<std::size_t>(1), s.Size());
 	ASSERT_EQUALS(kSidA, s.SearchIdFor(ALICE));
 	ASSERT_EQUALS(static_cast<std::uint32_t>(0), s.SearchIdFor(BOB));
+}
+
+TEST(BrowseStore, ReusingAnIdIsRefusedEvenForTheSamePeer)
+{
+	// The ID guard is unconditional, so a peer re-browsed under the ID its own
+	// last browse still holds is turned away -- it must Remove() that one
+	// first. No caller does this: both routes allocate a fresh ID, and closing
+	// a tab frees the old record. Pinned because that safety lives entirely in
+	// the callers, and a store this permissive-looking invites the assumption
+	// that it does not.
+	Store s;
+	s.Start(ALICE, kSidA, 7, 1000);
+	s.Fail(ALICE);
+	ASSERT_FALSE(s.Start(ALICE, kSidA, 7, 2000).started);
+	// A different ID is the supported way, and works.
+	ASSERT_TRUE(s.Start(ALICE, kSidB, 7, 2000).started);
+	// ...as does reusing the ID once its record has been disposed of.
+	s.Remove(kSidB);
+	s.Remove(kSidA);
+	ASSERT_TRUE(s.Start(ALICE, kSidA, 7, 3000).started);
 }

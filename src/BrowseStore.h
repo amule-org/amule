@@ -84,19 +84,6 @@ public:
 	using ClientKey = const void *;
 
 	/**
-	 * Track a browse of `client` under `searchId`.
-	 *
-	 * Refuses when that client already has one STILL RUNNING: there is a
-	 * single exchange with a peer to report on, so a second record could only
-	 * ever describe the same browse. This is the rule the EC handler's "join
-	 * the browse already in flight" depends on being true.
-	 *
-	 * A browse that has ended is no obstacle, even before its peer has been
-	 * released -- matching SearchIdFor, which also answers only for a running
-	 * one. Disagreeing about that left a peer un-rebrowsable for the second
-	 * or so between its browse ending and the next tick.
-	 */
-	/**
 	 * The answer to Start: whether it took, and any peer it displaced.
 	 *
 	 * A peer whose last browse has ended may be browsed again straight away,
@@ -111,6 +98,24 @@ public:
 		Outcome displaced;
 	};
 
+	/**
+	 * Track a browse of `client` under `searchId`.
+	 *
+	 * Refuses when that client already has one STILL RUNNING: there is a
+	 * single exchange with a peer to report on, so a second record could only
+	 * ever describe the same browse. This is the rule the EC handler's "join
+	 * the browse already in flight" depends on being true.
+	 *
+	 * A browse that has ended is no obstacle, even before its peer has been
+	 * released -- matching SearchIdFor, which also answers only for a running
+	 * one. Disagreeing about that left a peer un-rebrowsable for the second
+	 * or so between its browse ending and the next tick.
+	 *
+	 * Refuses an ID already tracked, whatever its state: a second record on
+	 * one key would replace the first and everything it still has to answer
+	 * for. No caller reuses an ID -- both routes pass a freshly allocated one
+	 * -- so this guards an invariant rather than a case.
+	 */
 	StartResult Start(
 		ClientKey client, std::uint32_t searchId, std::uint32_t peerEcid, std::uint64_t now);
 
@@ -141,7 +146,6 @@ public:
 	bool Has(std::uint32_t searchId) const;
 	State StateOf(std::uint32_t searchId) const;
 	std::uint16_t BarValue(std::uint32_t searchId) const;
-	std::vector<std::uint32_t> Ids() const;
 	std::size_t Size() const { return m_records.size(); }
 
 private:

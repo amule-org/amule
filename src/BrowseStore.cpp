@@ -214,14 +214,4 @@ std::uint16_t Store::BarValue(std::uint32_t searchId) const
 	return it != m_records.end() ? browse::BarValue(it->second.rec) : 0xffff;
 }
 
-std::vector<std::uint32_t> Store::Ids() const
-{
-	std::vector<std::uint32_t> out;
-	out.reserve(m_records.size());
-	for (const auto &kv : m_records) {
-		out.push_back(kv.first);
-	}
-	return out;
-}
-
 } // namespace browse

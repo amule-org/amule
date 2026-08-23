@@ -2821,9 +2821,9 @@ static CECPacket *Get_EC_Response_Search_Results(CObjTagMap &tagmap, wxUIntPtr s
 // which demuxes by search ID), and its container's bulk-delete-on-poll works
 // correctly across the union. Only reached for m_multiSearchActive clients.
 //
-// Enumerates CSearchList::GetKnownSearchIds() + CBrowseManager::Ids() -- every
-// search AND "View Files" browse tab the core holds, started by the
-// monolithic GUI or by any EC client -- rather than s_ecSearches.ActiveIds(),
+// Enumerates CSearchList::GetKnownSearchIds() -- every search AND "View Files"
+// browse tab the core holds, started by the monolithic GUI or by any EC client
+// -- rather than s_ecSearches.ActiveIds(),
 // which only ever holds EC-initiated searches (Register() is called from
 // exactly one place, the EC_OP_SEARCH_START handler). A monolithic-started
 // search's results would otherwise never reach amulegui even once
@@ -2889,9 +2889,9 @@ static CECPacket *Get_EC_Response_Search_Results_Union(
 		}
 	};
 	// GetKnownSearchIds() covers browses too: RequestSharedFileList registers
-	// every one of them, by either route, before the request goes out. The
-	// second source this loop used to have -- CSearchList's browse-bar map,
-	// and briefly CBrowseManager::Ids() -- emitted each browse a second time.
+	// every one of them, by either route, before the request goes out, and
+	// RemoveResults drops the registration and the browse together. The second
+	// source this loop used to have emitted each browse a second time.
 	for (const auto &entry : theApp->searchlist->GetKnownSearchIds()) {
 		emitResultsFor(entry.first);
 	}
