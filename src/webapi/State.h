@@ -1460,11 +1460,18 @@ public:
 	// that want a specific order sort on their side (by name / date /
 	// progress / etc.).
 	//
-	// `Downloads()` filters `m_files` by `is_downloading`, `Shared()`
-	// filters by `is_shared`. Both views consult the same underlying
-	// unified map — see FileSnapshot above for the role-flag model.
-	std::vector<FileSnapshot> Downloads() const;
-	std::vector<FileSnapshot> Shared() const;
+	// The role-filtered views are gone: no reader wanted whole snapshots copied
+	// out. Filter `m_files` on the role flag inside WithFiles() instead.
+	//! Read the unified file map in place, under the shared lock. Same contract
+	//! as WithKnownClients: the callback must not call back into CState, nor
+	//! retain the reference. For readers wanting a few fields per file, or
+	//! pointers to sort and page -- a FileSnapshot is 848 bytes plus a heap
+	//! allocation per string, so copying the collection out is never cheap.
+	template <class F> void WithFiles(F &&fn) const
+	{
+		std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+		fn(static_cast<const FileMap &>(m_files));
+	}
 	// Unfiltered view used by EventDiff to compute role-flag
 	// transitions. Not surfaced on the REST API.
 	std::vector<FileSnapshot> Files() const;
