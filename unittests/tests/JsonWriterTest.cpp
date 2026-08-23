@@ -255,6 +255,38 @@ TEST(JsonWriter, LargeString)
 	ASSERT_EQUALS(expected, w.GetBuffer());
 }
 
+TEST(JsonWriter, TakeBufferLeavesTheWriterReusable)
+{
+	// EndArray() leaves a comma pending for the next sibling, so a writer that
+	// kept that state across a take would open its next document with a stray
+	// separator.
+	CJsonWriter w;
+	w.BeginArray();
+	w.ValueInt(1);
+	w.EndArray();
+	ASSERT_EQUALS(std::string("[1]"), w.TakeBuffer());
+	ASSERT_TRUE(w.GetBuffer().empty());
+
+	w.BeginArray();
+	w.ValueInt(2);
+	w.EndArray();
+	ASSERT_EQUALS(std::string("[2]"), w.TakeBuffer());
+}
+
+TEST(JsonWriter, TakeBufferLeavesACallerOwnedBufferAlone)
+{
+	// The external buffer is the caller's; taking copies out of it rather than
+	// emptying it.
+	std::string shared;
+	CJsonWriter w(&shared);
+	w.BeginObject();
+	w.Key("x");
+	w.ValueInt(1);
+	w.EndObject();
+	ASSERT_EQUALS(std::string("{\"x\":1}"), w.TakeBuffer());
+	ASSERT_EQUALS(std::string("{\"x\":1}"), shared);
+}
+
 // JsonDoubleToString is the one formatting both the REST writer and the SSE
 // payload builders go through. It exists because `ostream << double` differs
 // from it in two ways that matter on the wire.
