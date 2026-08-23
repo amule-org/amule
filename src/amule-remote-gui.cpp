@@ -2142,6 +2142,63 @@ uint32 CKnownFilesRem::GetItemID(CKnownFile *file)
 	return file->ECID();
 }
 
+namespace
+{
+
+// Copy the six FT_MEDIA_* fields off an EC tag onto the local proxy object, so
+// the identical GetIntTagValue / GetStrTagValue / GetMetaDataVer calls in the
+// File Details dialog work unchanged in the remote build.
+//
+// A zero / empty value is the daemon saying the field is GONE, not a value
+// worth storing -- it only sends one for a field it previously sent a real
+// value for (see AddMediaTagsPresent). Storing it would leave the dialog
+// showing 0:00 or a blank Artist where N/A is the honest answer.
+//
+// Shared by the known-file walker and the search-result one because the daemon
+// emits these from ONE place for both: CEC_SharedFile_Tag's base ctor, which
+// CEC_SearchFile_Tag derives from. Two copies of this loop would drift the
+// moment a seventh field appeared, and the search half is only being written
+// now because the first copy was missing there entirely.
+void DecodeMediaTags(const CECTag *tag, CAbstractFile *file)
+{
+	static const struct
+	{
+		ec_tagname_t ecId;
+		uint8 ftId;
+		bool isInt;
+	} kMedia[] = { { EC_TAG_KNOWNFILE_MEDIA_LENGTH, FT_MEDIA_LENGTH, true },
+		{ EC_TAG_KNOWNFILE_MEDIA_BITRATE, FT_MEDIA_BITRATE, true },
+		{ EC_TAG_KNOWNFILE_MEDIA_CODEC, FT_MEDIA_CODEC, false },
+		{ EC_TAG_KNOWNFILE_MEDIA_ARTIST, FT_MEDIA_ARTIST, false },
+		{ EC_TAG_KNOWNFILE_MEDIA_ALBUM, FT_MEDIA_ALBUM, false },
+		{ EC_TAG_KNOWNFILE_MEDIA_TITLE, FT_MEDIA_TITLE, false } };
+	for (const auto &entry : kMedia) {
+		const CECTag *m = tag->GetTagByName(entry.ecId);
+		if (!m) {
+			// Absent means UNCHANGED, per the CValueMap contract -- not
+			// cleared. Leave whatever is already stored.
+			continue;
+		}
+		if (entry.isInt) {
+			const uint32 v = m->GetInt();
+			if (v) {
+				file->AddTagUnique(CTagInt32(entry.ftId, v));
+			} else {
+				file->RemoveTag(entry.ftId);
+			}
+		} else {
+			const wxString v = m->GetStringData();
+			if (!v.IsEmpty()) {
+				file->AddTagUnique(CTagString(entry.ftId, v));
+			} else {
+				file->RemoveTag(entry.ftId);
+			}
+		}
+	}
+}
+
+} // namespace
+
 void CKnownFilesRem::ProcessItemUpdate(const CEC_SharedFile_Tag *tag, CKnownFile *file)
 {
 	const CECTag *parttag = tag->GetTagByName(EC_TAG_PARTFILE_PART_STATUS);
@@ -2289,44 +2346,7 @@ void CKnownFilesRem::ProcessItemUpdate(const CEC_SharedFile_Tag *tag, CKnownFile
 	// and the File Details dialog showed N/A for anything not currently
 	// downloading. The same mistake the comments/ratings decode already
 	// avoids for the same reason.
-	// A zero / empty value is the daemon saying the field is GONE, not a value
-	// worth storing -- it only sends one for a field it previously sent a real
-	// value for. Storing it would leave the detail dialog showing 0:00 or an
-	// empty Artist where N/A is the honest answer.
-	{
-		const struct
-		{
-			ec_tagname_t ecId;
-			uint8 ftId;
-			bool isInt;
-		} kMedia[] = { { EC_TAG_KNOWNFILE_MEDIA_LENGTH, FT_MEDIA_LENGTH, true },
-			{ EC_TAG_KNOWNFILE_MEDIA_BITRATE, FT_MEDIA_BITRATE, true },
-			{ EC_TAG_KNOWNFILE_MEDIA_CODEC, FT_MEDIA_CODEC, false },
-			{ EC_TAG_KNOWNFILE_MEDIA_ARTIST, FT_MEDIA_ARTIST, false },
-			{ EC_TAG_KNOWNFILE_MEDIA_ALBUM, FT_MEDIA_ALBUM, false },
-			{ EC_TAG_KNOWNFILE_MEDIA_TITLE, FT_MEDIA_TITLE, false } };
-		for (const auto &entry : kMedia) {
-			const CECTag *m = tag->GetTagByName(entry.ecId);
-			if (!m) {
-				continue;
-			}
-			if (entry.isInt) {
-				const uint32 v = m->GetInt();
-				if (v) {
-					file->AddTagUnique(CTagInt32(entry.ftId, v));
-				} else {
-					file->RemoveTag(entry.ftId);
-				}
-			} else {
-				const wxString v = m->GetStringData();
-				if (!v.IsEmpty()) {
-					file->AddTagUnique(CTagString(entry.ftId, v));
-				} else {
-					file->RemoveTag(entry.ftId);
-				}
-			}
-		}
-	}
+	DecodeMediaTags(tag, file);
 
 	if (file->IsPartFile()) {
 		ProcessItemUpdatePartfile(
@@ -4027,6 +4047,15 @@ void CSearchListRem::ProcessItemUpdate(const CEC_SearchFile_Tag *tag, CSearchFil
 	if (const CECTag *kadSearchTag = tag->GetTagByName(EC_TAG_PARTFILE_KAD_COMMENT_SEARCHING)) {
 		file->SetKadCommentSearchRunning(kadSearchTag->GetInt() != 0);
 	}
+
+	// The daemon has always sent these for search results -- CEC_SearchFile_Tag
+	// derives from CEC_SharedFile_Tag, whose base ctor emits them -- and this
+	// walker never read them back. So amulegui showed an empty Length /
+	// Bitrate / Codec for every hit while the monolithic client filled those
+	// columns in from the same server reply. CreateItem calls this immediately
+	// after constructing, so a result is decoded on arrival as well as on
+	// update.
+	DecodeMediaTags(tag, file);
 
 	if (file->m_sourceCount != sourceCount || file->m_completeSourceCount != completeSourceCount ||
 		file->m_downloadStatus != status) {
