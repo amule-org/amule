@@ -223,7 +223,7 @@ bool CSearchFile::WriteToFile(CFileDataIO *file) const
 		file->WriteUInt32(client.m_ip);
 		file->WriteUInt16(client.m_port);
 		file->WriteUInt32(client.m_serverIP);
-		file->WriteUInt16((uint16)client.m_serverPort);
+		file->WriteUInt16(client.m_serverPort);
 	}
 
 	file->WriteUInt16((uint16)m_children.size());
