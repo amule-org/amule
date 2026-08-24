@@ -49,7 +49,52 @@
 #include "DownloadQueue.h"    // Needed for CDownloadQueue
 #include "TransferWnd.h"      // Needed for CTransferWnd
 #include "Logger.h"           // Needed for AddLogLine
-#include "OtherFunctions.h"   // Needed for FormatLocalDateTime
+#include "OtherFunctions.h"   // Needed for FormatLocalDateTime, IsMediaProbeCandidate
+
+namespace
+{
+
+// Why a shared file can or cannot be re-probed. One classifier rather than the
+// same two conditions written at both call sites: the menu asks whether to
+// enable the entry, the handler asks how many of a selection it is leaving out
+// and why, and those answers must not be able to disagree.
+enum class MediaRefreshEligibility
+{
+	Eligible,
+	FeatureDisabled, //!< media metadata extraction is switched off in preferences
+	Incomplete,      //!< an in-progress download has no complete file to read
+	NotMedia,        //!< nothing for ffprobe to extract
+};
+
+MediaRefreshEligibility ClassifyForMediaRefresh(const CKnownFile *file)
+{
+	// First, because it decides the answer for every file at once: with the
+	// feature off the scheduler drops the job before looking at the file, so
+	// the entry would be enabled and do nothing at all -- which is exactly
+	// what happens today and gives the user no clue why.
+	//
+	// Correct in amulegui too. The daemon sends this preference over EC as a
+	// presence tag, and the receiving side maps an absent tag to false
+	// (ApplyBoolean in ECSpecialMuleTags), so a remote GUI reports the
+	// DAEMON's setting rather than its own default.
+	if (!thePrefs::GetMediaMetadataEnabled()) {
+		return MediaRefreshEligibility::FeatureDisabled;
+	}
+	// IsPartFile() is answered correctly in both binaries: amulegui files a
+	// shared partfile into its shared list as the very CPartFile the download
+	// queue holds, not a plain CKnownFile.
+	if (file->IsPartFile()) {
+		return MediaRefreshEligibility::Incomplete;
+	}
+	// The scheduler's own test, through the shared predicate in
+	// OtherFunctions, so the view cannot offer what the core will drop.
+	if (!IsMediaProbeCandidate(file->GetFileName())) {
+		return MediaRefreshEligibility::NotMedia;
+	}
+	return MediaRefreshEligibility::Eligible;
+}
+
+} // namespace
 
 wxBEGIN_EVENT_TABLE(CSharedFilesCtrl, CMuleVirtualDataViewCtrl)
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(wxID_ANY, CSharedFilesCtrl::OnItemRightClicked)
@@ -79,6 +124,7 @@ wxBEGIN_EVENT_TABLE(CSharedFilesCtrl, CMuleVirtualDataViewCtrl)
 	EVT_MENU(MP_GETAICHED2KLINK, CSharedFilesCtrl::OnCreateURI)
 	EVT_MENU(MP_GETAICHED2KLINKSRC, CSharedFilesCtrl::OnCreateURI)
 	EVT_MENU(MP_RENAME, CSharedFilesCtrl::OnRename)
+	EVT_MENU(MP_REFRESHMEDIAMETA, CSharedFilesCtrl::OnRefreshMediaMetadata)
 	EVT_MENU(MP_WS, CSharedFilesCtrl::OnGetFeedback)
 	EVT_MENU(MP_VERIFY, CSharedFilesCtrl::OnVerifyLocalData)
 wxEND_EVENT_TABLE()
@@ -191,6 +237,7 @@ void CSharedFilesCtrl::OnItemRightClicked(wxDataViewEvent &event)
 		m_menu->AppendSeparator();
 
 		m_menu->Append(MP_VERIFY, _("Verify Local Data"));
+		m_menu->Append(MP_REFRESHMEDIAMETA, _("Re-extract &media metadata"));
 		m_menu->AppendSeparator();
 
 		const bool isCollection = file->GetFileName().GetExt() == "emulecollection";
@@ -250,6 +297,20 @@ void CSharedFilesCtrl::OnItemRightClicked(wxDataViewEvent &event)
 		// shared partfile into its shared list as the very CPartFile the
 		// download queue holds (amule-remote-gui.cpp), not a plain CKnownFile.
 		m_menu->Enable(MP_VERIFY, !file->IsPartFile());
+		// Same two conditions the scheduler applies, asked through the shared
+		// predicate rather than a second copy of the rule: an in-progress
+		// download has no complete file for ffprobe to read, and a file that
+		// is not audio or video has nothing to extract. Greyed out rather
+		// than accepted and silently dropped, so the state is visible before
+		// the click (issue #1079).
+		//
+		// Built from the right-clicked row while the handler acts on the whole
+		// selection, exactly as Verify Local Data does -- a mixed selection is
+		// filtered there, and the dialog says what it left out.
+		// From the selection, not from `file`: the handler refreshes every
+		// eligible file in the selection and the confirmation accounts for the
+		// rest, so the entry is available whenever there is anything to do.
+		m_menu->Enable(MP_REFRESHMEDIAMETA, !PartitionForMediaRefresh().eligible.empty());
 
 		int priority = file->IsAutoUpPriority() ? PR_AUTO : file->GetUpPriority();
 
@@ -343,6 +404,105 @@ void CSharedFilesCtrl::OnVerifyLocalData(wxCommandEvent &WXUNUSED(event))
 			theApp->sharedfiles->VerifyLocalData(file);
 		}
 	}
+}
+
+CSharedFilesCtrl::MediaRefreshSelection CSharedFilesCtrl::PartitionForMediaRefresh() const
+{
+	// The action applies to the SELECTION, so the menu has to be enabled from
+	// the selection too. Judging it by the right-clicked row instead meant a
+	// mixed selection greyed the entry out whenever the row under the cursor
+	// happened to be the ineligible one -- select a .mp3 and a .zip,
+	// right-click the .zip, and an action that would have refreshed the .mp3
+	// was unavailable. Which row the cursor is over is not something the user
+	// is choosing with; the selection is.
+	MediaRefreshSelection out;
+	for (wxUIntPtr data : GetSelectedItemData()) {
+		CKnownFile *file = reinterpret_cast<CKnownFile *>(data);
+		switch (ClassifyForMediaRefresh(file)) {
+		case MediaRefreshEligibility::FeatureDisabled:
+			// Global rather than per-file: with the feature off every file
+			// lands here, the eligible list comes back empty, and the entry is
+			// greyed for the whole selection.
+			break;
+		case MediaRefreshEligibility::Incomplete:
+			++out.incomplete;
+			break;
+		case MediaRefreshEligibility::NotMedia:
+			++out.notMedia;
+			break;
+		case MediaRefreshEligibility::Eligible:
+			out.eligible.push_back(file->GetFileHash());
+			break;
+		}
+	}
+	return out;
+}
+
+void CSharedFilesCtrl::OnRefreshMediaMetadata(wxCommandEvent &WXUNUSED(event))
+{
+	const MediaRefreshSelection sel = PartitionForMediaRefresh();
+	const std::vector<CMD4Hash> &eligible = sel.eligible;
+	const unsigned incomplete = sel.incomplete;
+	const unsigned notMedia = sel.notMedia;
+	if (eligible.empty()) {
+		return;
+	}
+
+	// Say what is being left out whether or not a dialog follows. Select one
+	// .mp3 and ten .zip files and the dialog never appears, so without this the
+	// ten are passed over in silence -- and "I selected eleven files and it
+	// only did one" is precisely the kind of thing the log has to answer.
+	// Verify Local Data, the model for this handler, reports every file it
+	// refuses regardless of what else succeeded.
+	if (incomplete > 0) {
+		AddLogLineN(CFormat(wxPLURAL("Media metadata: skipping %u incomplete download",
+				    "Media metadata: skipping %u incomplete downloads",
+				    incomplete)) %
+			    incomplete);
+	}
+	if (notMedia > 0) {
+		AddLogLineN(CFormat(wxPLURAL("Media metadata: skipping %u file that is not audio or video",
+				    "Media metadata: skipping %u files that are not audio or video",
+				    notMedia)) %
+			    notMedia);
+	}
+
+	// One file is the "check whether this fixes it" case and queues straight
+	// away; a dialog there would cost a click on the common action. More than
+	// one is where the warning earns its place -- the cost is roughly 13 ms
+	// per file, so a large selection is real background work, and on slow
+	// media (network mounts, spun-down disks) considerably more.
+	if (eligible.size() > 1) {
+		wxString message = CFormat(wxPLURAL("Re-extract media metadata for %u file?",
+					   "Re-extract media metadata for %u files?",
+					   eligible.size())) %
+				   eligible.size();
+		if (incomplete > 0) {
+			message << wxT("\n\n")
+				<< (CFormat(wxPLURAL("%u incomplete download will be skipped.",
+					    "%u incomplete downloads will be skipped.",
+					    incomplete)) %
+					   incomplete);
+		}
+		if (notMedia > 0) {
+			message << (incomplete > 0 ? wxT("\n") : wxT("\n\n"))
+				<< (CFormat(wxPLURAL("%u file is not audio or video and will be skipped.",
+					    "%u files are not audio or video and will be skipped.",
+					    notMedia)) %
+					   notMedia);
+		}
+		message << wxT("\n\n") << _("This runs in the background. Progress is reported in the log.");
+		if (wxMessageBox(message, _("Re-extract media metadata"), wxYES_NO | wxICON_QUESTION, this) !=
+			wxYES) {
+			return;
+		}
+	}
+
+	// One call for the whole set, not one per file: amulegui turns each into an
+	// EC request, and the request fifo stalls the GUI's own polling past about
+	// twenty in flight -- "select all, refresh" on a large share would put one
+	// packet per shared file into the socket in a tight loop.
+	theApp->sharedfiles->RefreshMediaMetadata(eligible);
 }
 
 void CSharedFilesCtrl::OnGetFeedback(wxCommandEvent &WXUNUSED(event))

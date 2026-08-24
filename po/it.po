@@ -19,7 +19,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 12:18+0200\n"
+"POT-Creation-Date: 2026-08-24 13:43+0200\n"
 "PO-Revision-Date: 2026-08-22 15:34+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
@@ -2202,6 +2202,11 @@ msgstr "Nuova sessione chat iniziata"
 #, fuzzy
 msgid "No such chat session"
 msgstr "Chiude questa sessione di chat."
+
+#: src/ExternalConn.cpp
+#, fuzzy
+msgid "Media metadata extraction is disabled in preferences"
+msgstr "La rete Kad è disabilitata nelle Preferenze."
 
 #: src/ExternalConn.cpp
 msgid "File is not eligible for media metadata extraction (not an audio/video file, or an incomplete download)"
@@ -7170,6 +7175,11 @@ msgid "No shareable files found in directory: %s"
 msgstr "Nessun file condivisibile trovato nella cartella: %s"
 
 #: src/SharedFileList.cpp
+#, fuzzy
+msgid "Media metadata extraction is disabled in preferences, so there is nothing to re-extract."
+msgstr "Estrazione dei metadati multimediali"
+
+#: src/SharedFileList.cpp
 #, c-format
 msgid "Re-extracting media metadata for %u shared file"
 msgid_plural "Re-extracting media metadata for %u shared files"
@@ -7260,6 +7270,10 @@ msgid "Verify Local Data"
 msgstr "Verifica Dati Locali"
 
 #: src/SharedFilesCtrl.cpp
+msgid "Re-extract &media metadata"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
 msgid "Add files in collection to transfer list"
 msgstr "Aggiungi i file della collezione alla lista dei trasferimenti"
 
@@ -7299,6 +7313,49 @@ msgstr "Esporta i file selezionati in una emulecollection"
 #, c-format
 msgid "Verify Local Data on PartFile is currently not supported: %s"
 msgstr "Verifica Dati Locali su PartFile non è supportato al momento: %s"
+
+#: src/SharedFilesCtrl.cpp
+#, c-format
+msgid "Media metadata: skipping %u incomplete download"
+msgid_plural "Media metadata: skipping %u incomplete downloads"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/SharedFilesCtrl.cpp
+#, c-format
+msgid "Media metadata: skipping %u file that is not audio or video"
+msgid_plural "Media metadata: skipping %u files that are not audio or video"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/SharedFilesCtrl.cpp
+#, c-format
+msgid "Re-extract media metadata for %u file?"
+msgid_plural "Re-extract media metadata for %u files?"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/SharedFilesCtrl.cpp
+#, c-format
+msgid "%u incomplete download will be skipped."
+msgid_plural "%u incomplete downloads will be skipped."
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/SharedFilesCtrl.cpp
+#, c-format
+msgid "%u file is not audio or video and will be skipped."
+msgid_plural "%u files are not audio or video and will be skipped."
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/SharedFilesCtrl.cpp
+msgid "This runs in the background. Progress is reported in the log."
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
+msgid "Re-extract media metadata"
+msgstr ""
 
 #: src/SharedFilesCtrl.cpp
 msgid "You need a HighID to create a valid sourcelink"

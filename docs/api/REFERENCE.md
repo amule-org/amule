@@ -1436,7 +1436,9 @@ The work runs on amuled's media-probe worker, one file at a time, so downloads a
 
 Cost is roughly 13 ms per file — a probe reads the container header, not the file — so a 10 000-file library is on the order of two minutes of background work.
 
-**Errors:** `503 ec_unsupported` (the connected amuled predates this operation), `503 ec_unavailable`.
+**Errors:** `400 amuled_rejected` (media metadata extraction is disabled in amuled's preferences), `503 ec_unsupported` (the connected amuled predates this operation), `503 ec_unavailable`.
+
+`queued: 0` means the share held no eligible file, which is a legitimate answer for a share with no audio or video in it. It is no longer how a disabled feature reports itself: that is a `400`, so the two cannot be confused.
 
 #### `POST /api/v0/shared/{hash}/media/refresh`
 
@@ -1448,7 +1450,7 @@ The same operation for a single file, which is the quickest way to check a fix o
 { "ok": true, "scope": "file", "queued": 1 }
 ```
 
-**Errors:** `404 not_found` (no shared file with that hash), `409 partfile_unsupported` (an incomplete download has no complete file to read), `400 amuled_rejected` (the file is not eligible — its extension is not audio/video), `503 ec_unsupported`, `503 ec_unavailable`.
+**Errors:** `404 not_found` (no shared file with that hash), `409 partfile_unsupported` (an incomplete download has no complete file to read), `400 amuled_rejected` (media metadata extraction is disabled, or the file is not eligible: not audio/video, or an incomplete download), `503 ec_unsupported`, `503 ec_unavailable`.
 
 #### `GET /api/v0/shared/directories`
 

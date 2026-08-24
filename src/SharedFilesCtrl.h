@@ -27,6 +27,7 @@
 #define SHAREDFILESCTRL_H
 
 #include "MuleVirtualDataViewCtrl.h" // Needed for CMuleVirtualDataViewCtrl
+#include "MD4Hash.h"                 // Needed for CMD4Hash in MediaRefreshSelection
 
 #define COLUMN_SHARED_NAME 0
 #define COLUMN_SHARED_SIZE 1
@@ -315,6 +316,25 @@ private:
 	 * Event-handler for the Rename menu item.
 	 */
 	void OnRename(wxCommandEvent &event);
+	void OnRefreshMediaMetadata(wxCommandEvent &event);
+
+	//! The current selection split by whether a media re-extraction can act on
+	//! it. Shared by the menu's enable rule and the handler so the two cannot
+	//! disagree about what the action would do.
+	struct MediaRefreshSelection
+	{
+		// Hashes, not CKnownFile pointers. The confirmation dialog runs a
+		// nested event loop, and in amulegui the EC poll timer keeps running
+		// inside it -- CKnownFilesRem::DeleteItem ends in `delete file` for
+		// anything the daemon stops listing, so a pointer collected before the
+		// dialog can be dangling after it. A hash cannot dangle, and the
+		// refresh call takes one anyway; a file that went away in the meantime
+		// simply fails to resolve.
+		std::vector<CMD4Hash> eligible;
+		unsigned incomplete = 0; //!< in-progress downloads, nothing complete to read
+		unsigned notMedia = 0;   //!< not audio or video
+	};
+	MediaRefreshSelection PartitionForMediaRefresh() const;
 
 	/**
 	 * Checks for renaming via F2.

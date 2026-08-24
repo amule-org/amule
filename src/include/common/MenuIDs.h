@@ -89,6 +89,7 @@ enum
 	MP_CLOSE_OTHER_TABS,
 	MP_RENAME,
 	MP_VERIFY,
+	MP_REFRESHMEDIAMETA,
 
 	/* Razor 1a - Modif by MikaelB
 	     Opcodes for :

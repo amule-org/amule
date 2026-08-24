@@ -798,8 +798,11 @@ bool CSharedFileList::MaybeScheduleMediaProbe(CKnownFile *pFile, MediaProbeMode 
 	// subprocess off this thread and pays for it once per process rather
 	// than once per file.
 	const wxString &ffprobePath = thePrefs::GetMediaMetadataFFProbePath();
-	const EED2KFileType type = GetED2KFileTypeID(pFile->GetFileName());
-	if (type != ED2KFT_AUDIO && type != ED2KFT_VIDEO) {
+	// Shared with the GUI's menu-enable test (IsMediaProbeCandidate, in
+	// OtherFunctions): the view must not offer an action the scheduler will
+	// silently drop, which is what two copies of this rule would eventually
+	// produce.
+	if (!IsMediaProbeCandidate(pFile->GetFileName())) {
 		return false;
 	}
 	// Never probe an in-progress download. A partfile is shared while
@@ -872,8 +875,26 @@ bool CSharedFileList::MaybeScheduleMediaProbe(CKnownFile *pFile, MediaProbeMode 
 	return false;
 }
 
+// A user-triggered refresh must never decline in silence. The scheduler's own
+// "feature is off" check is a debug line, which compiles out of release builds,
+// so a refresh with media metadata disabled did exactly nothing and said
+// nothing -- the GUI greys its entry out for this now, but an older GUI, a
+// script driving EC, or the REST endpoint can still ask.
+static bool MediaRefreshAvailable()
+{
+	if (thePrefs::GetMediaMetadataEnabled()) {
+		return true;
+	}
+	AddLogLineN(_("Media metadata extraction is disabled in preferences, so there is nothing to "
+		      "re-extract."));
+	return false;
+}
+
 unsigned CSharedFileList::RefreshAllMediaMetadata()
 {
+	if (!MediaRefreshAvailable()) {
+		return 0;
+	}
 	// Snapshot under the lock, schedule outside it. Holding list_mut across a
 	// whole library's worth of scheduling would block every reader, including
 	// the EC handlers this is invoked from.
@@ -899,8 +920,29 @@ unsigned CSharedFileList::RefreshAllMediaMetadata()
 	return queued;
 }
 
+unsigned CSharedFileList::RefreshMediaMetadata(const std::vector<CMD4Hash> &hashes)
+{
+	if (!MediaRefreshAvailable()) {
+		return 0;
+	}
+	unsigned queued = 0;
+	for (const CMD4Hash &hash : hashes) {
+		CKnownFile *file = GetFileByID(hash);
+		// bulk: a selection of many files is one user action and reports one
+		// summary, the same as a whole-share refresh. A selection of one is a
+		// single file the user is looking at, and keeps its per-file line.
+		if (file && MaybeScheduleMediaProbe(file, MediaProbeMode::Refresh, hashes.size() > 1)) {
+			++queued;
+		}
+	}
+	return queued;
+}
+
 bool CSharedFileList::RefreshMediaMetadata(const CMD4Hash &hash)
 {
+	if (!MediaRefreshAvailable()) {
+		return false;
+	}
 	CKnownFile *file = GetFileByID(hash);
 	return file && MaybeScheduleMediaProbe(file, MediaProbeMode::Refresh);
 }

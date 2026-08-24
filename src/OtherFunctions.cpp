@@ -1301,6 +1301,12 @@ public:
 // get the list initialized *before* any code is accessing it
 CED2KFileTypes theED2KFileTypes;
 
+bool IsMediaProbeCandidate(const CPath &fileName)
+{
+	const EED2KFileType type = GetED2KFileTypeID(fileName);
+	return type == ED2KFT_AUDIO || type == ED2KFT_VIDEO;
+}
+
 EED2KFileType GetED2KFileTypeID(const CPath &fileName)
 {
 	const wxString ext = fileName.GetExt().Lower();

@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 12:18+0200\n"
+"POT-Creation-Date: 2026-08-24 13:43+0200\n"
 "PO-Revision-Date: 2026-08-22 15:36+0000\n"
 "Last-Translator: Hyunju Kang <rexington@gmail.com>\n"
 "Language-Team: Korean <hoenny@daum.net>\n"
@@ -2218,6 +2218,11 @@ msgstr "프로토콜 버젼 태그 없음"
 #, fuzzy
 msgid "No such chat session"
 msgstr "이 채팅세션을 닫습니다."
+
+#: src/ExternalConn.cpp
+#, fuzzy
+msgid "Media metadata extraction is disabled in preferences"
+msgstr "Kad는 환경설정에서 비활성화되어 있습니다."
 
 #: src/ExternalConn.cpp
 msgid "File is not eligible for media metadata extraction (not an audio/video file, or an incomplete download)"
@@ -7275,6 +7280,10 @@ msgid "No shareable files found in directory: %s"
 msgstr ""
 
 #: src/SharedFileList.cpp
+msgid "Media metadata extraction is disabled in preferences, so there is nothing to re-extract."
+msgstr ""
+
+#: src/SharedFileList.cpp
 #, c-format
 msgid "Re-extracting media metadata for %u shared file"
 msgid_plural "Re-extracting media metadata for %u shared files"
@@ -7370,6 +7379,10 @@ msgid "Verify Local Data"
 msgstr ""
 
 #: src/SharedFilesCtrl.cpp
+msgid "Re-extract &media metadata"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
 msgid "Add files in collection to transfer list"
 msgstr "컬렉션내의 파일을 전송목록에 추가"
 
@@ -7409,6 +7422,49 @@ msgstr ""
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Verify Local Data on PartFile is currently not supported: %s"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
+#, c-format
+msgid "Media metadata: skipping %u incomplete download"
+msgid_plural "Media metadata: skipping %u incomplete downloads"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/SharedFilesCtrl.cpp
+#, c-format
+msgid "Media metadata: skipping %u file that is not audio or video"
+msgid_plural "Media metadata: skipping %u files that are not audio or video"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/SharedFilesCtrl.cpp
+#, c-format
+msgid "Re-extract media metadata for %u file?"
+msgid_plural "Re-extract media metadata for %u files?"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/SharedFilesCtrl.cpp
+#, c-format
+msgid "%u incomplete download will be skipped."
+msgid_plural "%u incomplete downloads will be skipped."
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/SharedFilesCtrl.cpp
+#, c-format
+msgid "%u file is not audio or video and will be skipped."
+msgid_plural "%u files are not audio or video and will be skipped."
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/SharedFilesCtrl.cpp
+msgid "This runs in the background. Progress is reported in the log."
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
+msgid "Re-extract media metadata"
 msgstr ""
 
 #: src/SharedFilesCtrl.cpp
