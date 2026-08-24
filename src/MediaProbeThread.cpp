@@ -150,9 +150,22 @@ void *CMediaProbeThread::Entry()
 			const bool jobBulk = job.bulk || bulkProbed > 0;
 			const bool mayName = !jobBulk || bulkNamed < kMaxNamedFailures;
 			MediaInfo info;
-			++probed;
 			const MediaProbe::ProbeOutcome outcome = MediaProbe::Probe(
 				exe, job.path, info, kProbeTimeoutMs, m_bRun, jobBulk, mayName);
+			// A file that was gone before ffprobe ran is not an extraction
+			// that failed -- nothing was extracted from and no verdict was
+			// reached -- so it is counted in neither total. It still names
+			// itself above, so it is explained rather than silently dropped.
+			// Counting it as a failure put a number in the summary that
+			// nothing in the log accounted for, on every refresh of a share
+			// with stale entries.
+			if (outcome == MediaProbe::ProbeOutcome::Vanished) {
+				if (jobBulk && mayName) {
+					++bulkNamed;
+				}
+				continue;
+			}
+			++probed;
 			if (outcome == MediaProbe::ProbeOutcome::Extracted) {
 				// Marshal the result to the main thread, which
 				// resolves the hash to the CKnownFile and attaches

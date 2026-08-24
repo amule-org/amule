@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 11:10+0200\n"
+"POT-Creation-Date: 2026-08-24 11:21+0200\n"
 "PO-Revision-Date: 2026-08-22 15:48+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -3214,6 +3214,11 @@ msgstr "UYARI: "
 #: src/MediaProbe.cpp
 msgid "Media metadata: no ffprobe binary found. Install ffmpeg, or set the ffprobe path in preferences; length, bitrate and codec will not be extracted."
 msgstr "Ortam üst verileri: hiçbir ffprobe ikilisi bulunamadı. ffmpeg'i kurun veya ffprobe yolunu ayarlarda tanımlayın; süre, bir hızı ve kodlama bilgileri alınamayacaktır."
+
+#: src/MediaProbe.cpp
+#, fuzzy, c-format
+msgid "Media metadata: %s is gone, nothing to extract"
+msgstr "Ortam üst verisi çıkarımı"
 
 #: src/MediaProbe.cpp
 #, c-format

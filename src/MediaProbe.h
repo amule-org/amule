@@ -151,9 +151,18 @@ inline bool IsFileVerdict(ProbeOutcome outcome)
 	// launched is a different code path entirely (kSpawnFailed), so a missing
 	// or mistyped path never arrives here.
 	//
-	// The gap is a configured path that points at some other executable which
-	// exits non-zero: that reads as every file being unreadable. A media
-	// refresh clears the marks once the path is corrected.
+	// The gap: a non-zero exit cannot distinguish "ffprobe read this file and
+	// it is broken" from "ffprobe could not open it". FileExists() is a stat,
+	// so a file present but unreadable -- no read permission, or on a network
+	// mount that is away or hiccupping -- reaches a perfectly good ffprobe,
+	// exits non-zero, and is recorded as unprobeable. A share on SMB or NFS
+	// can lose a whole library's metadata to one bad moment that way, which is
+	// likelier than the other case here: a configured path pointing at some
+	// other executable that exits non-zero.
+	//
+	// Separating the two means reading ffprobe's stderr, which currently goes
+	// to /dev/null. Until then a media refresh is the way back: it ignores the
+	// marks and clears them on success.
 	return outcome == ProbeOutcome::NoUsableMetadata || outcome == ProbeOutcome::UnreadableFile ||
 	       outcome == ProbeOutcome::OutputTooLarge;
 }

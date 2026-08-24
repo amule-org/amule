@@ -775,9 +775,19 @@ ProbeOutcome Probe(const wxString &ffprobePath,
 	// being probed (issue #968) and then have a process spawned on it purely
 	// to fail. One stat is nothing against a fork+exec.
 	if (!file.FileExists()) {
+		// Info, not debug only. This used to be the one failure that printed
+		// nothing in a release build, which made it both invisible and, in the
+		// caller's accounting, indistinguishable from a file ffprobe rejected:
+		// it consumed a slot in the naming budget and landed in the failure
+		// count with no line to explain it. A share with stale known.met
+		// entries hits this on every refresh, so it has to say what happened.
 		AddDebugLogLineN(logMediaProbe,
 			CFormat(wxT("MediaProbe: %s vanished before probing, skipping")) %
 				file.GetPrintable());
+		if (logFailure) {
+			AddLogLineN(CFormat(_("Media metadata: %s is gone, nothing to extract")) %
+				    file.GetPrintable());
+		}
 		return ProbeOutcome::Vanished;
 	}
 
