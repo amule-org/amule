@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-24 19:01+0200\n"
-"PO-Revision-Date: 2026-08-22 15:50+0000\n"
+"PO-Revision-Date: 2026-08-24 18:20+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -2184,14 +2184,12 @@ msgid "Could not save the amuleapi password: %s"
 msgstr "无法保存 amuleapi 密码：%s"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Missing chat session id"
-msgstr "新的聊天对话已启动"
+msgstr "没有聊天会话 id"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "No such chat session"
-msgstr "结束本次聊天。"
+msgstr "没有这样的聊天会话"
 
 #: src/ExternalConn.cpp
 #, fuzzy
@@ -2204,12 +2202,11 @@ msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Empty chat message"
-msgstr ""
+msgstr "空的聊天信息"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Unknown chat target"
-msgstr "(未知名称)"
+msgstr "未知聊天目标"
 
 #: src/ExternalConn.cpp
 msgid "Kad is disabled in preferences."
@@ -3232,12 +3229,12 @@ msgstr "媒体元数据提取"
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Extracting media metadata with ffprobe: %s"
-msgstr ""
+msgstr "正用 ffprobe 提取媒体元数据：%s"
 
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: ffprobe timed out or was cancelled for %s"
-msgstr ""
+msgstr "媒体元数据：ffprobe 超时或取消了 %s 的 ffprobe"
 
 #: src/MediaProbe.cpp
 #, c-format
@@ -3252,7 +3249,7 @@ msgstr ""
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: ffprobe failed (code %d) for %s"
-msgstr ""
+msgstr "媒体元数据：%2$s 的 ffprobe 失败（代码 %1$d）"
 
 #: src/MediaProbe.cpp
 #, c-format
@@ -6477,11 +6474,15 @@ msgid ""
 "\n"
 "Start the new search anyway?"
 msgstr ""
+"还在运行一个 eD2k 搜索。启动一个新搜索会停止它，因为 eD2k 协议一次只允许一个搜索。\n"
+"\n"
+"已找到的结果将被保留；仅新结果会停止到来。\n"
+"\n"
+"仍要启动新搜索吗？"
 
 #: src/SearchDlg.cpp
-#, fuzzy
 msgid "Search in progress"
-msgstr "搜索进度: %u %% \n"
+msgstr "搜索中"
 
 #: src/SearchDlg.cpp
 msgid "Min size must be smaller than max size. Max size ignored."
@@ -7146,11 +7147,11 @@ msgstr "索引载入:"
 
 #: src/ServerWnd.cpp
 msgid "Average Users:"
-msgstr "平均用户:"
+msgstr "平均用户数:"
 
 #: src/ServerWnd.cpp
 msgid "Average Files:"
-msgstr "平均文件:"
+msgstr "平均文件数:"
 
 #: src/ServerWnd.cpp src/TextClient.cpp
 msgid "Not running"
@@ -7165,8 +7166,8 @@ msgstr "共享目录监测：后端溢出/错误 (%s); 回退到完整加载"
 #, c-format
 msgid "Shared-dir watcher: %u new subdirectory found since last run, rescanning shares"
 msgid_plural "Shared-dir watcher: %u new subdirectories found since last run, rescanning shares"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "共享目录监视：上次运行以来找到了 %u 个新的子目录，正重新扫描分享"
+msgstr[1] "共享目录监视：上次运行以来找到了 %u 个新的子目录，正重新扫描分享"
 
 #: src/SharedDirWatcher.cpp
 msgid "Shared-dir watcher: events dropped by backend, forcing a full shared-files reload to resync"
@@ -7219,35 +7220,35 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Now sharing file: %s"
-msgstr "保存 %s 文件时发生错误：%s"
+msgstr "正在分享文件：%s"
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Stopped sharing removed file: %s"
-msgstr "正在载入 server.met 文件：%s"
+msgstr "已停止分享已删除的文件：%s"
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Stopped sharing %u file under removed directory: %s"
 msgid_plural "Stopped sharing %u files under removed directory: %s"
-msgstr[0] "在目录中没有找到可以共享的文件：%s"
-msgstr[1] "在目录中没有找到可以共享的文件：%s"
+msgstr[0] "已停止分享已删除目录下的 %u 个文件：%s"
+msgstr[1] "已停止分享已删除目录下的 %u 个文件：%s"
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Now sharing %u file found in a new shared directory"
 msgid_plural "Now sharing %u files found in new shared directories"
-msgstr[0] "在目录中没有找到可以共享的文件：%s"
-msgstr[1] "在目录中没有找到可以共享的文件：%s"
+msgstr[0] "正分享在新共享目录中发现的 %u 个文件"
+msgstr[1] "正分享在新共享目录中发现的 %u 个文件"
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Discovered %u new shared file"
 msgid_plural "Discovered %u new shared files"
-msgstr[0] "发现 %i 个已知共享文件"
-msgstr[1] "发现 %i 个已知共享文件"
+msgstr[0] "发现了 %u 个新的共享文件"
+msgstr[1] "发现了 %u 个新的共享文件"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "User Name"
@@ -8295,19 +8296,19 @@ msgid "aMule text client"
 msgstr "aMule 文本客户端"
 
 #: src/ThreadTasks.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Hashing downloaded file: %s"
-msgstr "正在删除文件: %s"
+msgstr "正计算已下载文件哈希值: %s"
 
 #: src/ThreadTasks.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Hashing file: %s"
-msgstr "正在删除文件: %s"
+msgstr "正计算文件哈希: %s"
 
 #: src/ThreadTasks.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Rebuilding AICH hashset for file: %s"
-msgstr "继续上传此文件: %s"
+msgstr "正重建文件的 AICH 哈希集: %s"
 
 #: src/ThreadTasks.cpp
 #, c-format

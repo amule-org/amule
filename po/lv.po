@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-24 19:01+0200\n"
-"PO-Revision-Date: 2026-08-22 15:53+0000\n"
+"PO-Revision-Date: 2026-08-24 17:57+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: lv\n"
@@ -445,11 +445,11 @@ msgstr "vai nenogalinās jūsu suni. Bet tā jebkurā gadījumā *vajadzētu* b�
 
 #: src/amule.cpp
 msgid "More information, support and new releases can found at our homepage,\n"
-msgstr "Plašāka informācija, atbalsts un jaunās versijas ir pieejamas mūsu vietnē\n"
+msgstr "Plašāka informācija, atbalsts un jaunās versijas ir pieejamas mūsu\n"
 
 #: src/amule.cpp
 msgid "at https://amule-org.github.io, or in our IRC channel #aMule at irc.libera.chat.\n"
-msgstr "https://amule-org.github.io vai mūsu IRC kanālā #aMule vietnē irc.libera.chat.\n"
+msgstr "https://amule-org.github.io un mūsu IRC #aMule kanāla irc.libera.chat vietnē.\n"
 
 #: src/amule.cpp
 msgid "Feel free to report any bugs to https://github.com/amule-org/amule/issues"
@@ -1120,7 +1120,7 @@ msgstr ""
 #: src/ChatSelector.cpp
 #, c-format
 msgid "Chat-Session Started: %s (%s:%u) - %s %s"
-msgstr ""
+msgstr "Sākta ziņojumapmaiņas sesija: %s (%s:%u) - %s %s"
 
 #: src/ChatSelector.cpp
 msgid "*** Connected to Client ***"
@@ -1144,7 +1144,7 @@ msgstr ""
 
 #: src/ChatWnd.cpp
 msgid "Chat"
-msgstr ""
+msgstr "Ziņojumapmaiņa"
 
 #: src/ChatWnd.cpp src/MuleNotebook.cpp
 msgid "Close tab"
@@ -1265,7 +1265,7 @@ msgstr "Atslēgts"
 #: src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f KiB/s"
-msgstr ""
+msgstr "%.1f KiB/s"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 msgid "Name"
@@ -1273,7 +1273,7 @@ msgstr "Nosaukums"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 msgid "Software"
-msgstr ""
+msgstr "Programma"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
@@ -2156,13 +2156,12 @@ msgid "Could not save the amuleapi password: %s"
 msgstr ""
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Missing chat session id"
-msgstr "Trūkst protokola versijas birka."
+msgstr "Trūkst ziņojumapmaiņas sesijas identifikators"
 
 #: src/ExternalConn.cpp
 msgid "No such chat session"
-msgstr ""
+msgstr "Šāda ziņojumapmaiņas sesija nepastāv"
 
 #: src/ExternalConn.cpp
 msgid "Media metadata extraction is disabled in preferences"
@@ -2174,11 +2173,11 @@ msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Empty chat message"
-msgstr ""
+msgstr "Tukšs ziņojumapmaiņas ziņojums"
 
 #: src/ExternalConn.cpp
 msgid "Unknown chat target"
-msgstr ""
+msgstr "Nezināms ziņojumapmaiņas saņēmējs"
 
 #: src/ExternalConn.cpp
 msgid "Kad is disabled in preferences."
@@ -2665,7 +2664,7 @@ msgstr ""
 
 #: src/FriendList.cpp
 msgid "CRITICAL - no client on StartChatSession"
-msgstr ""
+msgstr "KRITISKI – ziņojumapmaiņas sesiju nevar uzsākt klienta trūkuma dēļ"
 
 #: src/FriendListCtrl.cpp src/muuli_wdr.cpp
 msgid "Friends"
@@ -5124,7 +5123,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Filter incoming messages (except current chat):"
-msgstr ""
+msgstr "Filtrēt ienākošos ziņojumus (izņemot esošo ziņojumapmaiņu):"
 
 #: src/muuli_wdr.cpp
 msgid "Filter all messages"
@@ -5308,7 +5307,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Close this chat-session."
-msgstr ""
+msgstr "Aizvērt šo ziņojumapmaiņas sesiju."
 
 #: src/muuli_wdr.cpp
 #, c-format
@@ -7151,12 +7150,12 @@ msgstr[1] ""
 msgstr[2] ""
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Discovered %u new shared file"
 msgid_plural "Discovered %u new shared files"
-msgstr[0] "Ielādē kopīgotās datnes"
-msgstr[1] "Ielādē kopīgotās datnes"
-msgstr[2] "Ielādē kopīgotās datnes"
+msgstr[0] "Atrada %u jaunas kopīgotas datnes"
+msgstr[1] "Atrada %u jaunu kopīgotu datni"
+msgstr[2] "Atrada %u jaunas kopīgotas datnes"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "User Name"
@@ -8284,7 +8283,7 @@ msgstr ""
 
 #: src/UserEvents.h
 msgid "New chat session started"
-msgstr ""
+msgstr "Sākta jauna ziņojumapmaiņas sesija"
 
 #: src/UserEvents.h
 msgid "Message sender."
