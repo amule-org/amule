@@ -83,6 +83,11 @@ void *CMediaProbeThread::Entry()
 	m_bRun = true;
 	AddDebugLogLineN(logMediaProbe, wxT("Media probe thread: started"));
 
+	// Accumulated across the drains of one bulk operation; see the summary at
+	// the end of the loop for why they cannot be per-drain.
+	unsigned bulkProbed = 0;
+	unsigned bulkFailed = 0;
+
 	for (;;) {
 		std::list<MediaProbeJob> workList;
 		{
@@ -127,9 +132,18 @@ void *CMediaProbeThread::Entry()
 			if (exe.IsEmpty()) {
 				continue;
 			}
+			// Part of a bulk operation either because it was scheduled that
+			// way, or because one is still draining: the tail of a share
+			// import arrives a file at a time, long after the walk that found
+			// it, and the scheduler can no longer tell those files from a
+			// single file dropped into a shared directory. The worker can --
+			// it is still finishing the same operation. Without this a large
+			// first import ends with a handful of per-file lines for no
+			// reason the user can see.
+			const bool jobBulk = job.bulk || bulkProbed > 0;
 			MediaInfo info;
 			++probed;
-			if (MediaProbe::Probe(exe, job.path, info, kProbeTimeoutMs, m_bRun, job.bulk)) {
+			if (MediaProbe::Probe(exe, job.path, info, kProbeTimeoutMs, m_bRun, jobBulk)) {
 				// Marshal the result to the main thread, which
 				// resolves the hash to the CKnownFile and attaches
 				// the FT_MEDIA_* tags (doing that here would race the
@@ -146,27 +160,44 @@ void *CMediaProbeThread::Entry()
 				CMediaProbeEvent evt(job.hash, empty, /*succeeded=*/false);
 				wxQueueEvent(wxTheApp, evt.Clone());
 			}
-			anyBulk = anyBulk || job.bulk;
+			anyBulk = anyBulk || jobBulk;
 		}
 
-		// One line for the whole drain. Only in bulk mode -- a single-file
-		// batch already said its piece per file, and saying it twice would be
-		// noise. Failures are named in the summary rather than hidden: the
-		// point of reporting them at all is that a misconfigured ffprobe must
-		// not look like success.
-		if (anyBulk && probed > 0) {
-			if (failed > 0) {
+		// One line for the whole OPERATION, not one per drain. The worker
+		// takes whatever is queued each time it wakes, so a single share scan
+		// is drained in several batches -- which used to produce several
+		// summaries ("from 7 files", "from 33 files", "from 42 files") for
+		// what the user experienced as one action, with no way to tell they
+		// belonged together or that the last one was the last (issue #1116).
+		// The counts accumulate across consecutive bulk drains and are
+		// reported once, when nothing is left queued.
+		if (anyBulk) {
+			bulkProbed += probed;
+			bulkFailed += failed;
+		}
+		bool queueEmpty;
+		{
+			wxMutexLocker lock(m_mutex);
+			queueEmpty = m_jobList.empty();
+		}
+		if (queueEmpty && bulkProbed > 0) {
+			if (bulkFailed > 0) {
 				AddLogLineN(
-					CFormat(wxPLURAL("Extracted media metadata from %u file (%u failed)",
-						"Extracted media metadata from %u files (%u failed)",
-						probed)) %
-					probed % failed);
+					CFormat(wxPLURAL("Finished extracting media metadata from %u shared "
+							 "file (%u failed)",
+						"Finished extracting media metadata from %u shared "
+						"files (%u failed)",
+						bulkProbed)) %
+					bulkProbed % bulkFailed);
 			} else {
-				AddLogLineN(CFormat(wxPLURAL("Extracted media metadata from %u file",
-						    "Extracted media metadata from %u files",
-						    probed)) %
-					    probed);
+				AddLogLineN(CFormat(wxPLURAL("Finished extracting media metadata from %u "
+							     "shared file",
+						    "Finished extracting media metadata from %u shared files",
+						    bulkProbed)) %
+					    bulkProbed);
 			}
+			bulkProbed = 0;
+			bulkFailed = 0;
 		}
 	}
 

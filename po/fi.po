@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 10:04+0200\n"
+"POT-Creation-Date: 2026-08-24 10:36+0200\n"
 "PO-Revision-Date: 2026-08-22 15:29+0000\n"
 "Last-Translator: Tapio Rantala <tapio.rantala@iki.fi>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -3253,15 +3253,15 @@ msgstr ""
 
 #: src/MediaProbeThread.cpp
 #, c-format
-msgid "Extracted media metadata from %u file (%u failed)"
-msgid_plural "Extracted media metadata from %u files (%u failed)"
+msgid "Finished extracting media metadata from %u shared file (%u failed)"
+msgid_plural "Finished extracting media metadata from %u shared files (%u failed)"
 msgstr[0] ""
 msgstr[1] ""
 
 #: src/MediaProbeThread.cpp
 #, c-format
-msgid "Extracted media metadata from %u file"
-msgid_plural "Extracted media metadata from %u files"
+msgid "Finished extracting media metadata from %u shared file"
+msgid_plural "Finished extracting media metadata from %u shared files"
 msgstr[0] ""
 msgstr[1] ""
 
