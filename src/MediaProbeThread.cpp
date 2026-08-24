@@ -93,6 +93,10 @@ void *CMediaProbeThread::Entry()
 	// share. Name the first few of an operation and count the rest.
 	unsigned bulkNamed = 0;
 	unsigned bulkUnnamed = 0;
+	// Vanished files are counted apart from failures: the two get separate
+	// closing lines because "failed" is not true of a file that simply is not
+	// there any more.
+	unsigned bulkGoneUnnamed = 0;
 	static const unsigned kMaxNamedFailures = 10;
 
 	for (;;) {
@@ -160,8 +164,20 @@ void *CMediaProbeThread::Entry()
 			// nothing in the log accounted for, on every refresh of a share
 			// with stale entries.
 			if (outcome == MediaProbe::ProbeOutcome::Vanished) {
-				if (jobBulk && mayName) {
-					++bulkNamed;
+				// Before the `continue`: an operation made up ENTIRELY of
+				// vanished files still has to end. Without this, anyBulk stays
+				// false, bulkProbed stays 0, the flush block below never runs
+				// and the naming budget is never reset -- so one refresh over
+				// a share whose files have moved would silence every failure
+				// for the rest of the process, which is the unnamed-failure
+				// symptom this whole change is about.
+				anyBulk = anyBulk || jobBulk;
+				if (jobBulk) {
+					if (mayName) {
+						++bulkNamed;
+					} else {
+						++bulkGoneUnnamed;
+					}
 				}
 				continue;
 			}
@@ -230,37 +246,63 @@ void *CMediaProbeThread::Entry()
 		// because there the running task IS the single file being asked
 		// about.) Costs at most one extra 500 ms wake before the summary.
 		const bool stillImporting = CThreadScheduler::GetPendingCount(wxT("Hashing")) > 0;
-		if (queueEmpty && !stillImporting && bulkProbed > 0) {
-			if (bulkFailed > 0) {
-				AddLogLineN(
-					CFormat(wxPLURAL("Finished extracting media metadata from %u shared "
-							 "file (%u failed)",
-						"Finished extracting media metadata from %u shared "
-						"files (%u failed)",
-						bulkProbed)) %
-					bulkProbed % bulkFailed);
-			} else {
-				AddLogLineN(CFormat(wxPLURAL("Finished extracting media metadata from %u "
-							     "shared file",
-						    "Finished extracting media metadata from %u shared files",
-						    bulkProbed)) %
-					    bulkProbed);
+		// bulkNamed / bulkGoneUnnamed in the guard, not just bulkProbed: an
+		// operation can consist only of vanished files, and it still has to
+		// reach the reset below. The summary itself is still printed only when
+		// something was actually probed.
+		if (queueEmpty && !stillImporting &&
+			(bulkProbed > 0 || bulkNamed > 0 || bulkGoneUnnamed > 0)) {
+			if (bulkProbed > 0) {
+				if (bulkFailed > 0) {
+					AddLogLineN(
+						CFormat(wxPLURAL(
+							"Finished extracting media metadata from %u shared "
+							"file (%u failed)",
+							"Finished extracting media metadata from %u shared "
+							"files (%u failed)",
+							bulkProbed)) %
+						bulkProbed % bulkFailed);
+				} else {
+					AddLogLineN(
+						CFormat(wxPLURAL("Finished extracting media metadata from %u "
+								 "shared file",
+							"Finished extracting media metadata from %u shared "
+							"files",
+							bulkProbed)) %
+						bulkProbed);
+				}
+				if (bulkUnnamed > 0) {
+					// Say what was withheld rather than letting the count and the
+					// named lines silently disagree.
+					AddLogLineN(
+						CFormat(wxPLURAL(
+							"%u further file failed media metadata extraction "
+							"(not listed individually)",
+							"%u further files failed media metadata extraction "
+							"(not listed individually)",
+							bulkUnnamed)) %
+						bulkUnnamed);
+				}
 			}
-			if (bulkUnnamed > 0) {
-				// Say what was withheld rather than letting the count and the
-				// named lines silently disagree.
-				AddLogLineN(
-					CFormat(wxPLURAL("%u further file failed media metadata extraction "
-							 "(not listed individually)",
-						"%u further files failed media metadata extraction "
-						"(not listed individually)",
-						bulkUnnamed)) %
-					bulkUnnamed);
+			if (bulkGoneUnnamed > 0) {
+				// Symmetric with the withheld-failures line above: past the
+				// cap a vanished file was counted nowhere and printed
+				// nowhere, so a refresh over a share that has moved named ten
+				// and said nothing about the rest. Its own line rather than
+				// the failure one, because a file that is gone did not fail
+				// to extract.
+				AddLogLineN(CFormat(wxPLURAL("%u further shared file is gone (not listed "
+							     "individually)",
+						    "%u further shared files are gone (not listed "
+						    "individually)",
+						    bulkGoneUnnamed)) %
+					    bulkGoneUnnamed);
 			}
 			bulkProbed = 0;
 			bulkFailed = 0;
 			bulkNamed = 0;
 			bulkUnnamed = 0;
+			bulkGoneUnnamed = 0;
 		}
 	}
 

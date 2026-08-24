@@ -24,7 +24,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 11:21+0200\n"
+"POT-Creation-Date: 2026-08-24 11:28+0200\n"
 "PO-Revision-Date: 2026-08-22 15:31+0000\n"
 "Last-Translator: Pablo <parodper@gmail.com>\n"
 "Language-Team: http://forum.amule.org/index.php?topic=13883\n"
@@ -3296,6 +3296,13 @@ msgstr[1] ""
 #, c-format
 msgid "%u further file failed media metadata extraction (not listed individually)"
 msgid_plural "%u further files failed media metadata extraction (not listed individually)"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/MediaProbeThread.cpp
+#, c-format
+msgid "%u further shared file is gone (not listed individually)"
+msgid_plural "%u further shared files are gone (not listed individually)"
 msgstr[0] ""
 msgstr[1] ""
 
