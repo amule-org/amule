@@ -1731,6 +1731,44 @@ bool CUpDownClient::Connect()
 	}
 }
 
+// Put the browse's ask on the wire, if this browse is still waiting for it.
+//
+// One implementation, two callers: ConnectionEstablished (the ask follows the
+// connect) and RequestSharedFileList (the peer was already on the line, so
+// there is no connect to follow). Extracted rather than duplicated because the
+// packet is the smaller half of what has to happen -- the guard and the clock
+// below are the rest of it, and a copy that dropped either would either spam
+// the peer or charge it for our connect time.
+//
+// The guard: ConnectionEstablished runs on every reconnect, and a browsed peer
+// that is also a download source reconnects often -- re-asking each time put
+// unrequested packets on the wire and an error line in the peer's log. Note it
+// only makes the ask single-shot for a DIRECTORY browse; a flat one stays
+// askable for its whole life, deliberately (see BrowseStore::AwaitingDirectoryList).
+void CUpDownClient::SendSharedFilesRequest()
+{
+	if (!theApp->browsemanager->AwaitingDirectoryList(this)) {
+		return;
+	}
+	CPacket *packet =
+		new CPacket(m_fSharedDirectories ? OP_ASKSHAREDDIRS : OP_ASKSHAREDFILES, 0, OP_EDONKEYPROT);
+	theStats::AddUpOverheadOther(packet->GetPacketSize());
+	SendPacket(packet, true, true);
+	// Re-base the silence deadline: Store::Start already set one, but from the
+	// click, and the connect that got us here may have taken a while. Without
+	// this the peer is charged for our connect time and the browse can expire
+	// early -- most visibly on the ConnectionEstablished path, where the gap
+	// is a whole connection attempt.
+	theApp->browsemanager->OnRequestSent(this, ::GetTickCount64());
+#ifdef __DEBUG__
+	if (m_fSharedDirectories) {
+		AddDebugLogLineN(logLocalClient, "Local Client: OP_ASKSHAREDDIRS to " + GetFullIP());
+	} else {
+		AddDebugLogLineN(logLocalClient, "Local Client: OP_ASKSHAREDFILES to " + GetFullIP());
+	}
+#endif
+}
+
 void CUpDownClient::ConnectionEstablished()
 {
 	/* Kry - First thing, check if this client was just used to retrieve
@@ -1821,26 +1859,7 @@ void CUpDownClient::ConnectionEstablished()
 				logLocalClient, "Local Client: OP_ACCEPTUPLOADREQ to " + GetFullIP());
 		}
 	}
-	// Only while the browse is still waiting to hear back. ConnectionEstablished
-	// runs on every reconnect, and a browsed peer that is also a download
-	// source reconnects often -- re-asking each time put unrequested packets
-	// on the wire and an error line in the peer's log.
-	if (theApp->browsemanager->AwaitingDirectoryList(this)) {
-		CPacket *packet = new CPacket(
-			m_fSharedDirectories ? OP_ASKSHAREDDIRS : OP_ASKSHAREDFILES, 0, OP_EDONKEYPROT);
-		theStats::AddUpOverheadOther(packet->GetPacketSize());
-		SendPacket(packet, true, true);
-		// The ask is on the wire now; the peer's clock starts here, not at
-		// the click, which may have been a connect ago.
-		theApp->browsemanager->OnRequestSent(this, ::GetTickCount64());
-#ifdef __DEBUG__
-		if (m_fSharedDirectories) {
-			AddDebugLogLineN(logLocalClient, "Local Client: OP_ASKSHAREDDIRS to " + GetFullIP());
-		} else {
-			AddDebugLogLineN(logLocalClient, "Local Client: OP_ASKSHAREDFILES to " + GetFullIP());
-		}
-#endif
-	}
+	SendSharedFilesRequest();
 
 	while (!m_WaitingPackets_list.empty()) {
 		CPacket *packet = m_WaitingPackets_list.front();
@@ -2148,6 +2167,27 @@ void CUpDownClient::RequestSharedFileList()
 	// Open the "View Files" tab up front (monolithic) so a peer that denies or
 	// never answers still shows a tab that can flip to "failed".
 	Notify_Browse_Started(ECID(), GetUserName(), (uint64)m_browseSearchId);
+
+	// Already on the line: ask over the socket we have, and skip TryToContact
+	// entirely.
+	//
+	// TryToContact answers a reachability question -- can we reach this peer
+	// if we are not already talking to it -- and for a LowID peer it answers
+	// Declined before it ever looks at the socket (the CanDoCallback block).
+	// Two of those declines do not imply we are unreachable at all: a LowID
+	// peer on our own server with Kad open, and being connected to neither
+	// network, both of which leave an established socket working. A browse
+	// over such a socket was failed on the spot even though the ask would
+	// have gone out fine.
+	//
+	// Deliberately narrow: TryToContact keeps its behaviour for every other
+	// caller. Hoisting the connected case inside it would also turn a
+	// connected LowID source's DS_LOWTOLOWIP into a SendFileRequest(), which
+	// is a download-path change with no business riding along here.
+	if (IsConnected()) {
+		SendSharedFilesRequest();
+		return;
+	}
 
 	switch (TryToContact(true)) {
 	case EContactResult::ClientDeleted:

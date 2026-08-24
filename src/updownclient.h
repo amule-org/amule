@@ -285,6 +285,16 @@ public:
 
 	void ClearDownloadBlockRequests();
 	void RequestSharedFileList();
+	/**
+	 * Put this browse's ask on the wire, if it is still waiting for one.
+	 *
+	 * Shared by the two ways a browse reaches the peer: after a connect
+	 * (ConnectionEstablished) and over a socket that was already open
+	 * (RequestSharedFileList). Carries the single-shot guard and re-bases the
+	 * browse's silence deadline onto the moment the ask went out, so neither
+	 * caller can get one without the other.
+	 */
+	void SendSharedFilesRequest();
 	void ProcessSharedFileList(const uint8_t *pachPacket, uint32 nSize, wxString &pszDirectory);
 	void SendSharedDirectories();
 	void SendSharedFilesOfDirectory(const wxString &strReqDir);

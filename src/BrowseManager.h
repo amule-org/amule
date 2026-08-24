@@ -90,7 +90,6 @@ public:
 	//! Terminalize the browse of `client`, if it has one. Safe to call for a
 	//! client that never had one, which is most of them.
 	void Fail(CUpDownClient *client);
-	void Finish(CUpDownClient *client);
 
 	/**
 	 * The client is being destroyed: fail its browse if one is still running,

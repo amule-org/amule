@@ -68,11 +68,6 @@ void CBrowseManager::Fail(CUpDownClient *client)
 	Perform(m_store.Fail(client));
 }
 
-void CBrowseManager::Finish(CUpDownClient *client)
-{
-	Perform(m_store.Finish(client));
-}
-
 void CBrowseManager::Forget(CUpDownClient *client)
 {
 	// Ordered: the failure is reported while the reference that names the peer
