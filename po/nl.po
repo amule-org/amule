@@ -13,7 +13,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-24 19:01+0200\n"
-"PO-Revision-Date: 2026-08-22 15:38+0000\n"
+"PO-Revision-Date: 2026-08-24 17:41+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
 "Language: nl\n"
@@ -386,7 +386,7 @@ msgstr "webserver draait met pid %d"
 
 #: src/amule.cpp
 msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
-msgstr "U hebt gevraagd om de webserver bij het opstarten uit te voeren, maar het binaire bestand amuleweb kan niet worden uitgevoerd. Installeer het pakket met de aMule-webserver, of bouw aMule vanuit de broncode met -DBUILD_WEBSERVER=YES en installeer het."
+msgstr "U hebt gevraagd om de webserver bij het opstarten uit te voeren, maar het programma amuleweb kan niet worden uitgevoerd. Installeer het pakket met de aMule-webserver, of bouw aMule vanuit de broncode met -DBUILD_WEBSERVER=YES en installeer het."
 
 #: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
 #: src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
@@ -405,7 +405,7 @@ msgstr "amuleapi actief met pid %d"
 
 #: src/amule.cpp
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
-msgstr "U hebt gevraagd om amuleapi bij het opstarten uit te voeren, maar het binaire bestand amuleapi kan niet worden uitgevoerd. Installeer het pakket met de REST API-server van aMule, of bouw aMule vanuit de broncode met -DBUILD_AMULEAPI=YES en installeer het."
+msgstr "U hebt gevraagd om amuleapi bij het opstarten uit te voeren, maar het programma amuleapi kan niet worden uitgevoerd. Installeer het pakket met de REST API-server van aMule, of bouw aMule vanuit de broncode met -DBUILD_AMULEAPI=YES en installeer het."
 
 #: src/amule.cpp
 #, c-format
@@ -2012,7 +2012,7 @@ msgstr "Onbekende versie"
 
 #: src/ExternalConn.cpp
 msgid "Incorrect EC version ID, there might be binary incompatibility. Use core and remote from same snapshot."
-msgstr "Incorrecte EV-versie ID, mogelijk niet compatible. Gebruik kern en op afstand van dezelfde snapshot."
+msgstr "Incorrecte EV-versie ID, mogelijk is het programma incompatibel. Gebruik kern en op afstand van dezelfde snapshot."
 
 #: src/ExternalConn.cpp
 msgid "You cannot connect to a release version from an arbitrary development snapshot! *sigh* possible crash prevented"
@@ -2176,7 +2176,7 @@ msgstr "Kon naam van bestand niet wijzigen."
 
 #: src/ExternalConn.cpp
 msgid "Client could not be swapped to that file."
-msgstr ""
+msgstr "Kan de client niet naar dat bestand overschakelen."
 
 #: src/ExternalConn.cpp
 #, c-format
@@ -2184,14 +2184,12 @@ msgid "Could not save the amuleapi password: %s"
 msgstr "Kon het amuleapi-wachtwoord niet opslaan: %s"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Missing chat session id"
-msgstr "Nieuwe chatsessie begonnen"
+msgstr "Ontbrekende chatsessie-id"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "No such chat session"
-msgstr "Sluit deze chat-sessie."
+msgstr "Chatsessie onvindbaar"
 
 #: src/ExternalConn.cpp
 #, fuzzy
@@ -2204,12 +2202,11 @@ msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Empty chat message"
-msgstr ""
+msgstr "Leeg chatbericht"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Unknown chat target"
-msgstr "(Onbekende naam)"
+msgstr "Onbekende doelchat"
 
 #: src/ExternalConn.cpp
 msgid "Kad is disabled in preferences."
@@ -3222,7 +3219,7 @@ msgstr "WAARSCHUWING: "
 
 #: src/MediaProbe.cpp
 msgid "Media metadata: no ffprobe binary found. Install ffmpeg, or set the ffprobe path in preferences; length, bitrate and codec will not be extracted."
-msgstr ""
+msgstr "Media-metadata: geen ffprobe-programma gevonden. Installeer ffmpeg of stel het pad naar ffprobe in Voorkeuren in; Lengte, bitrate en codec worden niet uitgelezen."
 
 #: src/MediaProbe.cpp
 #, fuzzy, c-format
@@ -3232,12 +3229,12 @@ msgstr "Extractie van mediametagegevens"
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Extracting media metadata with ffprobe: %s"
-msgstr ""
+msgstr "Media-metadata wordt uitgelezen met ffprobe: %s"
 
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: ffprobe timed out or was cancelled for %s"
-msgstr ""
+msgstr "Media-metadata: time-out van ffprobe of geannuleerd voor %s"
 
 #: src/MediaProbe.cpp
 #, c-format
@@ -3252,7 +3249,7 @@ msgstr ""
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: ffprobe failed (code %d) for %s"
-msgstr ""
+msgstr "Media-metadata: ffprobe mislukt (code %d) voor %s"
 
 #: src/MediaProbe.cpp
 #, c-format
@@ -4416,11 +4413,11 @@ msgstr "Geavanceerde I.C.H. vertrouwt elke hash (niet aanbevolen)"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "Media metadata extraction"
-msgstr "Extractie van mediametagegevens"
+msgstr "Uitlezen van media-metadata"
 
 #: src/muuli_wdr.cpp
 msgid "Extract length / bitrate / codec from shared audio and video files"
-msgstr "Lengte/bitrate/codec extraheren uit gedeelde audio- en videobestanden"
+msgstr "Lengte/bitrate/codec uitlezen uit gedeelde audio- en videobestanden"
 
 #: src/muuli_wdr.cpp
 msgid "When enabled, aMule runs ffprobe on each shared media file to fill in the Length / Bitrate / Codec columns other clients see when they find the file in a search. Requires ffmpeg (the ffprobe binary) to be installed."
@@ -6478,11 +6475,15 @@ msgid ""
 "\n"
 "Start the new search anyway?"
 msgstr ""
+"Een eD2k-zoekopdracht loopt nog. Door een nieuwe te starten stopt deze vorige, omdat het eD2k-protocol slechts één zoekopdracht tegelijkertijd toestaat.\n"
+"\n"
+"Gevonden resultaten worden behouden; nieuwe resultaten komen niet meer binnen.\n"
+"\n"
+"Alsnog de nieuwe zoekopdracht starten?"
 
 #: src/SearchDlg.cpp
-#, fuzzy
 msgid "Search in progress"
-msgstr "Voortgang zoeken: %u %% \n"
+msgstr "Zoekopdracht in uitvoering"
 
 #: src/SearchDlg.cpp
 msgid "Min size must be smaller than max size. Max size ignored."
@@ -6706,7 +6707,7 @@ msgstr "FOUT: Socket ongeldig op timeoutcheck"
 #: src/ServerConnect.cpp
 #, c-format
 msgid "Connection attempt to %s (%s:%i) timed out."
-msgstr "Poging tot verbinden met %s (%s:%i) gaf timeout."
+msgstr "Poging tot verbinden met %s (%s:%i) gaf time-out."
 
 #: src/ServerConnect.cpp
 msgid "Received late result of DNS lookup, discarding."
@@ -7166,8 +7167,8 @@ msgstr "Gedeelde map-wachter: back-end overstroming/fout (%s); terugvallen op vo
 #, c-format
 msgid "Shared-dir watcher: %u new subdirectory found since last run, rescanning shares"
 msgid_plural "Shared-dir watcher: %u new subdirectories found since last run, rescanning shares"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Gedeelde-map wachter: %u nieuwe submap gevonden sinds laatste uitvoering, deelmappen worden opnieuw gescand"
+msgstr[1] "Gedeelde-map wachter: %u nieuwe submappen gevonden sinds laatste uitvoering, deelmappen worden opnieuw gescand"
 
 #: src/SharedDirWatcher.cpp
 msgid "Shared-dir watcher: events dropped by backend, forcing a full shared-files reload to resync"
@@ -7220,35 +7221,35 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Now sharing file: %s"
-msgstr "Fout bij het bewaren van bestand %s: %s"
+msgstr "Dit bestand wordt nu gedeeld: %s"
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Stopped sharing removed file: %s"
-msgstr "Laden van server.met bestand: %s"
+msgstr "Gestopt met het delen van verwijderd bestand: %s"
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Stopped sharing %u file under removed directory: %s"
 msgid_plural "Stopped sharing %u files under removed directory: %s"
-msgstr[0] "Geen deelbare bestanden gevonden in map: %s"
-msgstr[1] "Geen deelbare bestanden gevonden in map: %s"
+msgstr[0] "Gestopt met delen van %u bestand in verwijderde map: %s"
+msgstr[1] "Gestopt met delen van %u bestanden in verwijderde map: %s"
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Now sharing %u file found in a new shared directory"
 msgid_plural "Now sharing %u files found in new shared directories"
-msgstr[0] "Geen deelbare bestanden gevonden in map: %s"
-msgstr[1] "Geen deelbare bestanden gevonden in map: %s"
+msgstr[0] "%u bestand gevonden in een nieuwe gedeelde map wordt nu gedeeld"
+msgstr[1] "%u bestanden gevonden in nieuwe gedeelde mappen worden nu gedeeld"
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Discovered %u new shared file"
 msgid_plural "Discovered %u new shared files"
-msgstr[0] "%i bekend gedeeld bestand gevonden"
-msgstr[1] "%i bekende gedeelde bestanden gevonden"
+msgstr[0] "%u nieuw gedeeld bestand ontdekt"
+msgstr[1] "%u nieuwe gedeelde bestanden ontdekt"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "User Name"
@@ -8300,19 +8301,19 @@ msgid "aMule text client"
 msgstr "aMule tekstclient"
 
 #: src/ThreadTasks.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Hashing downloaded file: %s"
-msgstr "Verwijderen van bestand: %s"
+msgstr "Gedownload bestand wordt gehashed: %s"
 
 #: src/ThreadTasks.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Hashing file: %s"
-msgstr "Verwijderen van bestand: %s"
+msgstr "Bestand wordt gehashed: %s"
 
 #: src/ThreadTasks.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Rebuilding AICH hashset for file: %s"
-msgstr "Verder gaan met uploads van bestand: %s"
+msgstr "AICH hash-set wordt herbouwd voor bestand: %s"
 
 #: src/ThreadTasks.cpp
 #, c-format

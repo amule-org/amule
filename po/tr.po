@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-24 19:01+0200\n"
-"PO-Revision-Date: 2026-08-22 15:48+0000\n"
+"PO-Revision-Date: 2026-08-24 17:51+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
 "Language: tr\n"
@@ -2180,14 +2180,12 @@ msgid "Could not save the amuleapi password: %s"
 msgstr "amuleapi parolası kaydedilemedi: %s"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Missing chat session id"
-msgstr "Yeni sohbet oturumu başladı"
+msgstr "Eksik sohbet oturum kimliği"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "No such chat session"
-msgstr "Bu sohbet oturumunu kapatır."
+msgstr "Böyle bir sohbet oturumu yok"
 
 #: src/ExternalConn.cpp
 #, fuzzy
@@ -2200,12 +2198,11 @@ msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Empty chat message"
-msgstr ""
+msgstr "Boş sohbet mesajı"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Unknown chat target"
-msgstr "(Bilinmeyen ad)"
+msgstr "Bilinmeyen sohbet hedefi"
 
 #: src/ExternalConn.cpp
 msgid "Kad is disabled in preferences."
@@ -3228,12 +3225,12 @@ msgstr "Ortam üst verisi çıkarımı"
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Extracting media metadata with ffprobe: %s"
-msgstr ""
+msgstr "ffprobe ile ortam üst verileri çıkarılıyor: %s"
 
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: ffprobe timed out or was cancelled for %s"
-msgstr ""
+msgstr "Ortam üst verileri: ffprobe %s için zaman aşımına uğradı veya iptal edildi"
 
 #: src/MediaProbe.cpp
 #, c-format
@@ -3248,7 +3245,7 @@ msgstr ""
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: ffprobe failed (code %d) for %s"
-msgstr ""
+msgstr "Ortam üst verileri: ffprobe başarısız oldu (kod %d), %s dosyası için"
 
 #: src/MediaProbe.cpp
 #, c-format
@@ -6473,11 +6470,15 @@ msgid ""
 "\n"
 "Start the new search anyway?"
 msgstr ""
+"Bir eD2k araması zaten işlemekte. Yeni bir arama başlatmak onu sonlandıracaktır çünkü eD2k protokolü aynı anda sadece bir aramaya izin verir.\n"
+"\n"
+"Halihazırda bulunan sonuçlar muhafaza edilir; sadece yenilerinin gelişi duracaktır.\n"
+"\n"
+"Yine de yeni arama başlatılsın mı?"
 
 #: src/SearchDlg.cpp
-#, fuzzy
 msgid "Search in progress"
-msgstr "Arama süreci: %u %% \n"
+msgstr "Arama devam ediyor"
 
 #: src/SearchDlg.cpp
 msgid "Min size must be smaller than max size. Max size ignored."
@@ -7161,8 +7162,8 @@ msgstr "Paylaşılan dizin izleyici: arka uç taşması/hatası (%s); tam yenide
 #, c-format
 msgid "Shared-dir watcher: %u new subdirectory found since last run, rescanning shares"
 msgid_plural "Shared-dir watcher: %u new subdirectories found since last run, rescanning shares"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Paylaşılan dizin izleyici: son çalıştırılmadan beri %u yeni alt dizin bulundu, paylaşımlar tekrar taranıyor"
+msgstr[1] "Paylaşılan dizin izleyici: son çalıştırılmadan beri %u yeni alt dizin bulundu, paylaşımlar tekrar taranıyor"
 
 #: src/SharedDirWatcher.cpp
 msgid "Shared-dir watcher: events dropped by backend, forcing a full shared-files reload to resync"
@@ -7215,35 +7216,35 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Now sharing file: %s"
-msgstr "%s dosyası kaydedilirken hata: %s"
+msgstr "Artık paylaşılan dosya: %s"
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Stopped sharing removed file: %s"
-msgstr "Server.met dosyası yükleniyor: %s"
+msgstr "Kaldırılan dosyanın paylaşılması durduruldu: %s"
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Stopped sharing %u file under removed directory: %s"
 msgid_plural "Stopped sharing %u files under removed directory: %s"
-msgstr[0] "Dizinde paylaşılabilir dosya bulunamadı: %s"
-msgstr[1] "Dizinde paylaşılabilir dosya bulunamadı: %s"
+msgstr[0] "Kaldırılan dizindeki %u dosyanın paylaşılması durduruldu: %s"
+msgstr[1] "Kaldırılan dizindeki %u dosyanın paylaşılması durduruldu: %s"
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Now sharing %u file found in a new shared directory"
 msgid_plural "Now sharing %u files found in new shared directories"
-msgstr[0] "Dizinde paylaşılabilir dosya bulunamadı: %s"
-msgstr[1] "Dizinde paylaşılabilir dosya bulunamadı: %s"
+msgstr[0] "Yeni paylaşılan dizindeki %u dosya artık paylaşılıyor"
+msgstr[1] "Yeni paylaşılan dizinlerdeki %u dosya artık paylaşılıyor"
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Discovered %u new shared file"
 msgid_plural "Discovered %u new shared files"
-msgstr[0] "Bilinen %i adet paylaşılmış dosya bulundu"
-msgstr[1] "Bilinen %i adet paylaşılmış dosya bulundu"
+msgstr[0] "Yeni paylaşılan %u dosya bulundu"
+msgstr[1] "Yeni paylaşılan %u dosya bulundu"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "User Name"
@@ -8294,19 +8295,19 @@ msgid "aMule text client"
 msgstr "aMule metin aracı"
 
 #: src/ThreadTasks.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Hashing downloaded file: %s"
-msgstr "Dosya siliniyor: %s"
+msgstr "İndirilen dosyanın karma değeri hesaplanıyor: %s"
 
 #: src/ThreadTasks.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Hashing file: %s"
-msgstr "Dosya siliniyor: %s"
+msgstr "Dosyanın karma değeri hesaplanıyor: %s"
 
 #: src/ThreadTasks.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Rebuilding AICH hashset for file: %s"
-msgstr "Şu dosya için gönderimler sürdürülüyor: %s"
+msgstr "AICH karma değer grubu dosya için yeniden derleniyor: %s"
 
 #: src/ThreadTasks.cpp
 #, c-format

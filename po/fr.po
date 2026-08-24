@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-24 19:01+0200\n"
-"PO-Revision-Date: 2026-08-22 15:30+0000\n"
+"PO-Revision-Date: 2026-08-24 17:33+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
 "Language: fr\n"
@@ -2187,14 +2187,12 @@ msgid "Could not save the amuleapi password: %s"
 msgstr "Impossible d’enregistrer le mot de passe d’amuleapi : %s"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Missing chat session id"
-msgstr "Nouvelle session de chat démarrée"
+msgstr "Identifiant de la session de discussion manquant"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "No such chat session"
-msgstr "Ferme cette session de discussion."
+msgstr "Discussion introuvable"
 
 #: src/ExternalConn.cpp
 #, fuzzy
@@ -2207,12 +2205,11 @@ msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Empty chat message"
-msgstr ""
+msgstr "Message de discussion vide"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Unknown chat target"
-msgstr "(Nom inconnu)"
+msgstr "Destinataire de discussion inconnu"
 
 #: src/ExternalConn.cpp
 msgid "Kad is disabled in preferences."
@@ -3235,12 +3232,12 @@ msgstr "Extraction des métadonnées des médias"
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Extracting media metadata with ffprobe: %s"
-msgstr ""
+msgstr "Extraire les métadonnées multimédias avec ffprobe : %s"
 
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: ffprobe timed out or was cancelled for %s"
-msgstr ""
+msgstr "Métadonnées multimédia : ffprobe a dépassé le délaai d'attente ou a été annulé pour %s"
 
 #: src/MediaProbe.cpp
 #, c-format
@@ -3255,7 +3252,7 @@ msgstr ""
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: ffprobe failed (code %d) for %s"
-msgstr ""
+msgstr "Métadonnées multimédia : échec de ffprobe (code %d) pour %s"
 
 #: src/MediaProbe.cpp
 #, c-format
@@ -6480,11 +6477,15 @@ msgid ""
 "\n"
 "Start the new search anyway?"
 msgstr ""
+"Une recherche eD2k est déjà en cours d'exécution. Démarrer une nouvelle recherche l'arrêtera, car le protocole eD2k n'autorise qu'une recherche à la fois.\n"
+"\n"
+"Les résultats déjà trouvés seront conservés ; seuls les nouveaux cesseront d'arriver.\n"
+"\n"
+"Démarrer la nouvelle recherche quand même ?"
 
 #: src/SearchDlg.cpp
-#, fuzzy
 msgid "Search in progress"
-msgstr "État d'avancement de la recherche : %u %% \n"
+msgstr "Recherche en cours"
 
 #: src/SearchDlg.cpp
 msgid "Min size must be smaller than max size. Max size ignored."
@@ -7168,8 +7169,8 @@ msgstr "Observateur de répertoire partagé : dépassement de capacité/erreur 
 #, c-format
 msgid "Shared-dir watcher: %u new subdirectory found since last run, rescanning shares"
 msgid_plural "Shared-dir watcher: %u new subdirectories found since last run, rescanning shares"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Observateur de répertoire partagé : %u nouveau sous-répertoire trouvé depuis la dernière exécution, nouvelle analyse des partages"
+msgstr[1] "Observateur de répertoire partagé : %u nouveaux sous-répertoires trouvés depuis la dernière exécution, nouvelle analyse des partages"
 
 #: src/SharedDirWatcher.cpp
 msgid "Shared-dir watcher: events dropped by backend, forcing a full shared-files reload to resync"
@@ -7222,35 +7223,35 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Now sharing file: %s"
-msgstr "Erreur lors de la sauvegarde du fichier %s : %s"
+msgstr "Partage de ce fichier en cours : %s"
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Stopped sharing removed file: %s"
-msgstr "Chargement du fichier server.met : %s"
+msgstr "Arrêt du partage du fichier supprimé : %s"
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Stopped sharing %u file under removed directory: %s"
 msgid_plural "Stopped sharing %u files under removed directory: %s"
-msgstr[0] "Aucun fichier partageable trouvé dans le répertoire : %s"
-msgstr[1] "Aucun fichier partageable trouvé dans le répertoire : %s"
+msgstr[0] "Arrêt du partage de %u fichier compris dans le répertoire enlevé : %s"
+msgstr[1] "Arrêt du partage de %u fichiers compris dans le répertoire enlevé : %s"
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Now sharing %u file found in a new shared directory"
 msgid_plural "Now sharing %u files found in new shared directories"
-msgstr[0] "Aucun fichier partageable trouvé dans le répertoire : %s"
-msgstr[1] "Aucun fichier partageable trouvé dans le répertoire : %s"
+msgstr[0] "Partage en cours de %u fichier trouvé dans un nouveau répertoire partagé"
+msgstr[1] "Partage en cours de %u fichiers trouvés dans les nouveaux répertoires partagés"
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Discovered %u new shared file"
 msgid_plural "Discovered %u new shared files"
-msgstr[0] "%i fichier partagé connu trouvé"
-msgstr[1] "%i fichiers partagés connus trouvés"
+msgstr[0] "%u nouveau fichier partagé découvert"
+msgstr[1] "%u nouveaux fichiers partagés découverts"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "User Name"
@@ -8301,19 +8302,19 @@ msgid "aMule text client"
 msgstr "client texte aMule"
 
 #: src/ThreadTasks.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Hashing downloaded file: %s"
-msgstr "Fichier supprimé : %s"
+msgstr "Hachage des fichiers téléchargés : %s"
 
 #: src/ThreadTasks.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Hashing file: %s"
-msgstr "Fichier supprimé : %s"
+msgstr "Hachage du fichier en cours : %s"
 
 #: src/ThreadTasks.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Rebuilding AICH hashset for file: %s"
-msgstr "Reprise des envois du fichier : %s"
+msgstr "Reconstruction du groupe de hachage AICH pour le fichier : %s"
 
 #: src/ThreadTasks.cpp
 #, c-format
