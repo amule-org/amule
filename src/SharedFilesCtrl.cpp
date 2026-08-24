@@ -431,7 +431,7 @@ CSharedFilesCtrl::MediaRefreshSelection CSharedFilesCtrl::PartitionForMediaRefre
 			++out.notMedia;
 			break;
 		case MediaRefreshEligibility::Eligible:
-			out.eligible.push_back(file);
+			out.eligible.push_back(file->GetFileHash());
 			break;
 		}
 	}
@@ -441,11 +441,30 @@ CSharedFilesCtrl::MediaRefreshSelection CSharedFilesCtrl::PartitionForMediaRefre
 void CSharedFilesCtrl::OnRefreshMediaMetadata(wxCommandEvent &WXUNUSED(event))
 {
 	const MediaRefreshSelection sel = PartitionForMediaRefresh();
-	const std::vector<CKnownFile *> &eligible = sel.eligible;
+	const std::vector<CMD4Hash> &eligible = sel.eligible;
 	const unsigned incomplete = sel.incomplete;
 	const unsigned notMedia = sel.notMedia;
 	if (eligible.empty()) {
 		return;
+	}
+
+	// Say what is being left out whether or not a dialog follows. Select one
+	// .mp3 and ten .zip files and the dialog never appears, so without this the
+	// ten are passed over in silence -- and "I selected eleven files and it
+	// only did one" is precisely the kind of thing the log has to answer.
+	// Verify Local Data, the model for this handler, reports every file it
+	// refuses regardless of what else succeeded.
+	if (incomplete > 0) {
+		AddLogLineN(CFormat(wxPLURAL("Media metadata: skipping %u incomplete download",
+				    "Media metadata: skipping %u incomplete downloads",
+				    incomplete)) %
+			    incomplete);
+	}
+	if (notMedia > 0) {
+		AddLogLineN(CFormat(wxPLURAL("Media metadata: skipping %u file that is not audio or video",
+				    "Media metadata: skipping %u files that are not audio or video",
+				    notMedia)) %
+			    notMedia);
 	}
 
 	// One file is the "check whether this fixes it" case and queues straight
@@ -479,9 +498,11 @@ void CSharedFilesCtrl::OnRefreshMediaMetadata(wxCommandEvent &WXUNUSED(event))
 		}
 	}
 
-	for (const CKnownFile *file : eligible) {
-		theApp->sharedfiles->RefreshMediaMetadata(file->GetFileHash());
-	}
+	// One call for the whole set, not one per file: amulegui turns each into an
+	// EC request, and the request fifo stalls the GUI's own polling past about
+	// twenty in flight -- "select all, refresh" on a large share would put one
+	// packet per shared file into the socket in a tight loop.
+	theApp->sharedfiles->RefreshMediaMetadata(eligible);
 }
 
 void CSharedFilesCtrl::OnGetFeedback(wxCommandEvent &WXUNUSED(event))

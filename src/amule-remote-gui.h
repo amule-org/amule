@@ -599,6 +599,7 @@ public:
 	// the daemon decides eligibility and reports the outcome in its own log.
 	// The monolithic form can answer for real because it schedules inline.
 	bool RefreshMediaMetadata(const CMD4Hash &hash);
+	unsigned RefreshMediaMetadata(const std::vector<CMD4Hash> &hashes);
 	void SearchKadNotes(CAbstractFile *file);
 	void CopyFileList(std::vector<CKnownFile *> &out_list) const;
 

@@ -920,6 +920,24 @@ unsigned CSharedFileList::RefreshAllMediaMetadata()
 	return queued;
 }
 
+unsigned CSharedFileList::RefreshMediaMetadata(const std::vector<CMD4Hash> &hashes)
+{
+	if (!MediaRefreshAvailable()) {
+		return 0;
+	}
+	unsigned queued = 0;
+	for (const CMD4Hash &hash : hashes) {
+		CKnownFile *file = GetFileByID(hash);
+		// bulk: a selection of many files is one user action and reports one
+		// summary, the same as a whole-share refresh. A selection of one is a
+		// single file the user is looking at, and keeps its per-file line.
+		if (file && MaybeScheduleMediaProbe(file, MediaProbeMode::Refresh, hashes.size() > 1)) {
+			++queued;
+		}
+	}
+	return queued;
+}
+
 bool CSharedFileList::RefreshMediaMetadata(const CMD4Hash &hash)
 {
 	if (!MediaRefreshAvailable()) {

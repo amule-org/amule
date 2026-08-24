@@ -168,6 +168,13 @@ public:
 	// extension, or an incomplete download.
 	bool RefreshMediaMetadata(const CMD4Hash &hash);
 
+	// The batched form the GUI uses. Returns how many probes were queued.
+	// Exists so amulegui can send ONE EC request for a selection rather than
+	// one per file: its request fifo stalls the GUI's own polling past about
+	// twenty in flight, and a "select all, refresh" would otherwise put one
+	// packet per shared file into the socket in a tight loop.
+	unsigned RefreshMediaMetadata(const std::vector<CMD4Hash> &hashes);
+
 	/**
 	 * Returns the name of a folder visible to the public.
 	 *

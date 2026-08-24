@@ -2081,6 +2081,29 @@ void CSharedFilesRem::VerifyLocalData(const CKnownFile *file) const
 	m_conn->SendPacket(&request);
 }
 
+unsigned CSharedFilesRem::RefreshMediaMetadata(const std::vector<CMD4Hash> &hashes)
+{
+	if (hashes.empty()) {
+		return 0;
+	}
+	// ONE packet carrying every hash. One request per file would push the
+	// selection through m_req_fifo a packet at a time, and OnPollTimer stops
+	// updating the GUI while that fifo is full -- on a large selection the
+	// window would go quiet for as long as it took to drain.
+	CECPacket request(EC_OP_REFRESH_MEDIA_METADATA);
+	for (const CMD4Hash &hash : hashes) {
+		// A FRESH tag per hash, deliberately. CECTag::AddTag swaps the
+		// argument's contents into the child list and leaves the original
+		// empty, so adding the same tag object twice appends one real child
+		// and one blank -- silently sending fewer hashes than intended.
+		request.AddTag(CECTag(EC_TAG_KNOWNFILE, hash));
+	}
+	m_conn->SendPacket(&request);
+	// Sent, not probed: the daemon decides eligibility and reports what it did
+	// in its own log, which this GUI displays.
+	return hashes.size();
+}
+
 bool CSharedFilesRem::RefreshMediaMetadata(const CMD4Hash &hash)
 {
 	CECPacket request(EC_OP_REFRESH_MEDIA_METADATA);

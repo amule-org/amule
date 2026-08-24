@@ -4284,9 +4284,31 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		// hash, otherwise for the whole share. Answers immediately with how
 		// many probes were queued -- the work happens on the media-probe
 		// worker, so a large library does not block this EC lane.
+		// Disabled is not the same answer as "nothing was eligible", and both
+		// used to arrive as queued = 0. A caller cannot act on that: a share
+		// with no media in it legitimately queues nothing. Answered first, and
+		// as a failure, so REST turns it into an error naming the reason
+		// instead of a cheerful 202 that did nothing.
+		if (!thePrefs::GetMediaMetadataEnabled()) {
+			response = new CECPacket(EC_OP_FAILED);
+			response->AddTag(CECTag(EC_TAG_STRING,
+				wxTRANSLATE("Media metadata extraction is disabled in preferences")));
+			break;
+		}
+		// Every EC_TAG_KNOWNFILE child, not just the first: the GUI sends one
+		// request for a whole selection rather than one packet per file, which
+		// would stall its own polling on the request fifo.
+		std::vector<CMD4Hash> hashes;
+		for (const CECTag &child : *request) {
+			if (child.GetTagName() == EC_TAG_KNOWNFILE) {
+				hashes.push_back(child.GetMD4Data());
+			}
+		}
 		unsigned queued = 0;
-		if (const CECTag *hashTag = request->GetTagByName(EC_TAG_KNOWNFILE)) {
-			const CMD4Hash hash = hashTag->GetMD4Data();
+		if (hashes.size() > 1) {
+			queued = theApp->sharedfiles->RefreshMediaMetadata(hashes);
+		} else if (!hashes.empty()) {
+			const CMD4Hash hash = hashes.front();
 			if (!theApp->sharedfiles->RefreshMediaMetadata(hash)) {
 				// The caller already resolved the hash against its own
 				// snapshot, so "no such file" is not the reason by the time
@@ -4296,9 +4318,8 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 				response = new CECPacket(EC_OP_FAILED);
 				response->AddTag(CECTag(EC_TAG_STRING,
 					wxTRANSLATE("File is not eligible for media metadata "
-						    "extraction (metadata extraction is disabled, the "
-						    "file is not audio/video, or it is an incomplete "
-						    "download)")));
+						    "extraction (not an audio/video file, or an "
+						    "incomplete download)")));
 				break;
 			}
 			queued = 1;
