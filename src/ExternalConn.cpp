@@ -51,6 +51,7 @@
 #include "BrowseManager.h"
 #include "amule.h"      // Needed for theApp
 #include "SearchList.h" // Needed for GetSearchResults
+#include "ClientVersionString.h"
 #include "ClientList.h"
 #include "ChatSessionStore.h"
 #include "ClientCreditsList.h" // Needed for CClientCreditsList
@@ -1928,16 +1929,13 @@ static CECPacket *Get_EC_Response_ClientHistory()
 			entry.AddTag(CECTag(EC_TAG_CLIENT_USER_PORT, meta.lastPort));
 			entry.AddTag(CECTag(EC_TAG_CLIENT_KAD_PORT, meta.kadPort));
 			entry.AddTag(CECTag(EC_TAG_CLIENT_SOFTWARE, meta.clientSoft));
-			// The generic major.minor.update form, not the per-software
-			// rendering ReGetClientSoft() produces. That one branches on
-			// the client type and is built from locals inside the
-			// handshake, so reproducing it here would mean either
-			// duplicating it or refactoring the handshake -- and the
-			// difference only shows on the few clients with a bespoke
-			// format (lPhant, eMule+), in a history row.
+			// The same per-software rendering the live path uses. This used
+			// to be a generic major.minor.update built here, on the reasoning
+			// that only lPhant and eMule+ have a bespoke format -- which
+			// overlooked plain eMule, whose update component is a letter, so
+			// every eMule in the history read as v0.70.1 rather than v0.70b.
 			entry.AddTag(CECTag(EC_TAG_CLIENT_SOFT_VER_STR,
-				CFormat(wxT("v%u.%u.%u")) % (meta.version / 100000) %
-					((meta.version % 100000) / 1000) % ((meta.version % 1000) / 100)));
+				FormatPackedClientVersion(meta.clientSoft, meta.version)));
 			entry.AddTag(CECTag(EC_TAG_CLIENT_FROM, meta.sourceFrom));
 			entry.AddTag(CECTag(EC_TAG_CLIENT_OBFUSCATION_STATUS, meta.obfuscation));
 #ifdef ENABLE_IP2COUNTRY

@@ -26,6 +26,34 @@ target_link_libraries (CTagTest
 # just stops updating in the GUI -- so the contract is pinned here rather than
 # left to a clean daemon run. Needs no app, no daemon and no database: the EC
 # tag types and their generated codes are the whole dependency.
+# How a peer's version is spelled. Each client project writes its own
+# differently -- eMule letters the update (0.70b), eMule Plus omits zero
+# components, lPhant counts its major one higher -- and the rendering used to
+# exist twice: once in the handshake, once in the client-history rows, which
+# re-derived it from the stored numeric and dropped every convention. The same
+# peer could appear in one window under two versions depending only on whether
+# it was online. Needs no app and no daemon.
+add_executable (ClientVersionStringTest
+	ClientVersionStringTest.cpp
+	${CMAKE_SOURCE_DIR}/src/ClientVersionString.cpp
+)
+
+add_test (NAME ClientVersionStringTest
+	COMMAND ClientVersionStringTest
+)
+
+target_include_directories (ClientVersionStringTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/libs
+)
+
+target_link_libraries (ClientVersionStringTest
+	muleunit
+	mulecommon
+)
+
 add_executable (ECIdDiffTest
 	ECIdDiffTest.cpp
 	# See the note on CValueMapTest below: libec.a references DoECLogLine /

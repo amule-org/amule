@@ -131,6 +131,7 @@ if (BUILD_MONOLITHIC OR BUILD_DAEMON OR BUILD_REMOTEGUI)
 		ProtocolHandlerManager.cpp
 		$<$<BOOL:${APPLE}>:ProtocolHandlerManager_mac.mm>
 		ClientRef.cpp
+		ClientVersionString.cpp
 		ECSpecialMuleTags.cpp
 		GetTickCount.cpp
 		GuiEvents.cpp
