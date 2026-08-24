@@ -1,6 +1,6 @@
 // Shared files view: list published files with session/total transfer,
 // request and accept counters; change upload priority (per-row or bulk),
-// multi-select with select-all, text filter, live totals, reload shares,
+// multi-select with select-all, status and text filters, live totals, reload shares,
 // bulk Verify Local Data over the selection.
 // Live via the SSE "shared" channel.
 
@@ -17,6 +17,8 @@ import { SplitDetail } from "./split-detail.js";
 const PRIORITIES = ["auto", "very_low", "low", "normal", "high", "release"]
   .map((v) => [v, t("shared_prio_" + v)]);
 
+const STATUS_FILTERS = [["all", t("shared_status_all")], ["uploading", t("shared_status_uploading")]];
+
 export default function Shared({ isGuest }) {
   // undefined until the first snapshot lands, [] once the share is known
   // empty; listPlaceholder tells the two apart.
@@ -27,6 +29,7 @@ export default function Shared({ isGuest }) {
   const [selection, setSelection] = useState(() => new Set());
   const { sortKey, sortDir, hidden, widths, toggleSort, toggleCol, setWidth, resetPrefs } =
     useTablePrefs("shared", { sortKey: "name", sortDir: 1, hidden: ["last_upload", "shared_since"] });
+  const [filterStatus, setFilterStatus] = useState("all");
   const [filterText, setFilterText] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [detailHash, setDetailHash] = useState(null); // row shown in the detail panel
@@ -109,8 +112,10 @@ export default function Shared({ isGuest }) {
   };
 
   // --- derived ----------------------------------------------------------
-  const match = textMatcher(filterText);
-  let list = filterText ? shared.filter((s) => match(s.name)) : shared.slice();
+  let list = shared.slice();
+  // `uploading` is a count of peers being served, so "uploading" means > 0.
+  if (filterStatus === "uploading") list = list.filter((s) => s.uploading > 0);
+  if (filterText) { const match = textMatcher(filterText); list = list.filter((s) => match(s.name)); }
   const allSelected = list.length > 0 && list.every((s) => selection.has(s.hash));
   const selectedCount = list.filter((s) => selection.has(s.hash)).length;
 
@@ -121,7 +126,7 @@ export default function Shared({ isGuest }) {
       const next = new Set(); prev.forEach((h) => vis.has(h) && next.add(h));
       return next.size === prev.size ? prev : next;
     });
-  }, [filterText]);
+  }, [filterStatus, filterText]);
 
   const columns = [
     { always: true, label: html`<input type="checkbox" title=${t("shared_select_all")} checked=${allSelected}
@@ -145,7 +150,7 @@ export default function Shared({ isGuest }) {
       sortVal: (s) => s.complete_sources || 0, cell: (s) => formatInt(s.complete_sources) },
     { key: "upspeed", label: t("shared_upload_speed"), num: true, width: "100px", sortable: true,
       sortVal: (s) => s.upload_speed_bps || 0, cell: (s) => formatSpeed(s.upload_speed_bps) },
-    { key: "uploading", label: t("shared_uploading"), num: true, width: "90px", sortable: true,
+    { key: "uploading", label: t("shared_upload_clients"), num: true, width: "90px", sortable: true,
       sortVal: (s) => s.uploading || 0, cell: (s) => formatInt(s.uploading) },
     { key: "last_upload", label: t("shared_last_upload"), width: "160px", sortable: true,
       sortVal: (s) => s.last_upload || 0, cell: (s) => formatTimestamp(s.last_upload) },
@@ -197,6 +202,9 @@ export default function Shared({ isGuest }) {
         </div>
         <div class="spacer"></div>
         <div class="toolbar">
+          <select class="input input-sm" title=${t("shared_status_label")} value=${filterStatus} onChange=${(e) => setFilterStatus(e.target.value)}>
+            ${STATUS_FILTERS.map(([v, l]) => html`<option value=${v}>${l}</option>`)}
+          </select>
           <input class="input input-sm" type="text" placeholder=${t("shared_filter")} value=${filterText} onInput=${(e) => setFilterText(e.target.value)} />
           <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} onReset=${resetPrefs} />
         </div>

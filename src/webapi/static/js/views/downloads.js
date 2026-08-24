@@ -266,7 +266,7 @@ export default function Downloads({ isGuest }) {
         </div>
         <div class="spacer"></div>
         <div class="toolbar">
-          <select class="input input-sm" value=${filterStatus} onChange=${(e) => setFilterStatus(e.target.value)}>
+          <select class="input input-sm" title=${t("downloads_status_label")} value=${filterStatus} onChange=${(e) => setFilterStatus(e.target.value)}>
             ${STATUS_FILTERS.map(([v, l]) => html`<option value=${v}>${l}</option>`)}
           </select>
           <input class="input input-sm" type="text" placeholder=${t("downloads_filter")} value=${filterText} onInput=${(e) => setFilterText(e.target.value)} />
