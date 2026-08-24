@@ -1513,11 +1513,9 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 		}
 	}
 
-	// Do not try to connect to source which are incompatible with our encryption setting (one requires
-	// it, and the other one doesn't supports it)
-	if (const EContactResult filtered = CheckContactPreconditions();
-		filtered != EContactResult::Contacting) {
-		return filtered;
+	if (const EContactResult refused = CheckContactPreconditions();
+		refused != EContactResult::Contacting) {
+		return refused;
 	}
 
 	if (GetKadState() == KS_QUEUED_FWCHECK) {
@@ -2225,9 +2223,11 @@ void CUpDownClient::RequestSharedFileList()
 	// The ask is the only part a browse needs, and it is what stays.
 	if (IsConnected()) {
 		// Re-validate first. TryToContact does this before it looks at the
-		// socket, so skipping straight past it would let a peer filtered or
-		// banned since the connection came up be browsed -- and be sent a
-		// packet -- where the old path would have severed the connection.
+		// socket, so skipping straight past it would let a peer that became
+		// unacceptable since the connection came up -- filtered, banned, or
+		// incompatible with an obfuscation setting switched on meanwhile --
+		// be browsed and be sent a packet, where the old path would have
+		// severed the connection.
 		// ClientDeleted means `this` is gone; the browse died with it.
 		switch (CheckContactPreconditions()) {
 		case EContactResult::ClientDeleted:
