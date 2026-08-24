@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 13:43+0200\n"
+"POT-Creation-Date: 2026-08-24 15:13+0200\n"
 "PO-Revision-Date: 2026-08-22 15:15+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: Bulgarian <dict@linux.zonebg.com>\n"
@@ -6531,6 +6531,46 @@ msgstr "Отказ"
 msgid "New"
 msgstr ""
 
+#: src/SearchProgressReport.cpp
+msgid "running"
+msgstr ""
+
+#: src/SearchProgressReport.cpp
+#, fuzzy
+msgid "finished"
+msgstr "фински"
+
+#: src/SearchProgressReport.cpp
+msgid "idle"
+msgstr ""
+
+#: src/SearchProgressReport.cpp
+#, c-format
+msgid "Search %u: %s, %u %% (%u results)\n"
+msgstr ""
+
+#: src/SearchProgressReport.cpp
+#, c-format
+msgid "Search %u \"%s\": %s, %u %% (%u results)\n"
+msgstr ""
+
+#: src/SearchProgressReport.cpp src/TextClient.cpp
+msgid "Search expired or unknown ID. Start a new search.\n"
+msgstr ""
+
+#: src/SearchProgressReport.cpp
+#, c-format
+msgid "Search progress: %u %% \n"
+msgstr ""
+
+#: src/SearchProgressReport.cpp
+msgid "Search progress not available"
+msgstr ""
+
+#: src/SearchProgressReport.cpp
+msgid "No search to report on.\n"
+msgstr ""
+
 #: src/ServerConnect.cpp
 #, fuzzy
 msgid "Failed to connect to all obfuscated static servers listed. Making another pass without obfuscation."
@@ -7783,21 +7823,8 @@ msgid "[PartFile]"
 msgstr ""
 
 #: src/TextClient.cpp
-msgid "Search expired or unknown ID. Start a new search.\n"
-msgstr ""
-
-#: src/TextClient.cpp
 #, c-format
 msgid "Number of search results: %i\n"
-msgstr ""
-
-#: src/TextClient.cpp
-#, c-format
-msgid "Search progress: %u %% \n"
-msgstr ""
-
-#: src/TextClient.cpp
-msgid "Search progress not available"
 msgstr ""
 
 #: src/TextClient.cpp

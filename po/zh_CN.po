@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 13:43+0200\n"
+"POT-Creation-Date: 2026-08-24 15:13+0200\n"
 "PO-Revision-Date: 2026-08-22 15:50+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -6591,6 +6591,48 @@ msgstr "已取消"
 msgid "New"
 msgstr "新建"
 
+#: src/SearchProgressReport.cpp
+#, fuzzy
+msgid "running"
+msgstr "正在运行"
+
+#: src/SearchProgressReport.cpp
+#, fuzzy
+msgid "finished"
+msgstr "芬兰语"
+
+#: src/SearchProgressReport.cpp
+msgid "idle"
+msgstr ""
+
+#: src/SearchProgressReport.cpp
+#, c-format
+msgid "Search %u: %s, %u %% (%u results)\n"
+msgstr ""
+
+#: src/SearchProgressReport.cpp
+#, c-format
+msgid "Search %u \"%s\": %s, %u %% (%u results)\n"
+msgstr ""
+
+#: src/SearchProgressReport.cpp src/TextClient.cpp
+msgid "Search expired or unknown ID. Start a new search.\n"
+msgstr "搜索已过期或未知的ID。开始新的搜索。\n"
+
+#: src/SearchProgressReport.cpp
+#, c-format
+msgid "Search progress: %u %% \n"
+msgstr "搜索进度: %u %% \n"
+
+#: src/SearchProgressReport.cpp
+msgid "Search progress not available"
+msgstr "搜索进度不可用"
+
+#: src/SearchProgressReport.cpp
+#, fuzzy
+msgid "No search to report on.\n"
+msgstr "未选中要导出的文件。"
+
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all obfuscated static servers listed. Making another pass without obfuscation."
 msgstr "无法连接至列出的全部混淆静态服务器，尝试不用混淆再连一次。"
@@ -7832,22 +7874,9 @@ msgid "[PartFile]"
 msgstr "[part 文件]"
 
 #: src/TextClient.cpp
-msgid "Search expired or unknown ID. Start a new search.\n"
-msgstr "搜索已过期或未知的ID。开始新的搜索。\n"
-
-#: src/TextClient.cpp
 #, c-format
 msgid "Number of search results: %i\n"
 msgstr "搜索结果数量：%i\n"
-
-#: src/TextClient.cpp
-#, c-format
-msgid "Search progress: %u %% \n"
-msgstr "搜索进度: %u %% \n"
-
-#: src/TextClient.cpp
-msgid "Search progress not available"
-msgstr "搜索进度不可用"
 
 #: src/TextClient.cpp
 #, c-format
