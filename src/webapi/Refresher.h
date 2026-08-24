@@ -271,15 +271,15 @@ SearchProgressSnapshot AdvanceSearchProgress(
 // suppression operates on the tag's *children*, not on the entity
 // itself), so cache entries not seen in this response are gone on
 // amuled's side (peer disconnected, dropped from queue, banned).
-// `file_hash_by_ecid` lets the walker resolve EC_TAG_CLIENT_UPLOAD_FILE
-// / EC_TAG_CLIENT_REQUEST_FILE (raw amuled ECIDs) into MD4 hashes
-// at walker time, so ClientSnapshot can surface the hash directly.
-// Build it from the unified file map AFTER the downloads/shared
-// walkers have run on the same tick. Empty map = correlator hashes
-// stay empty (matches "not currently transferring" semantics).
-void ApplyGetUpdateToClients(const CECPacket *resp,
-	std::map<std::uint32_t, ClientSnapshot> &cache,
-	const std::map<std::uint32_t, std::string> &file_hash_by_ecid);
+// `files` lets the walker resolve EC_TAG_CLIENT_UPLOAD_FILE /
+// EC_TAG_CLIENT_REQUEST_FILE (raw amuled ECIDs) into MD4 hashes at
+// walker time, so ClientSnapshot can surface the hash directly. It is
+// the live map, keyed by the same ECIDs, so pass it via
+// CState::MutateClientsWithFiles AFTER the downloads/shared walkers
+// have run on the same tick. Empty map = correlator hashes stay empty
+// (matches "not currently transferring" semantics).
+void ApplyGetUpdateToClients(
+	const CECPacket *resp, std::map<std::uint32_t, ClientSnapshot> &cache, const FileMap &files);
 
 } // namespace webapi
 

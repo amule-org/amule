@@ -119,8 +119,9 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 	// consumed below, into /clients and /friends respectively — /uploads
 	// stays bound to the upload-queue semantic via EC_OP_GET_ULOAD_QUEUE.
 	//
-	// Three Mutate calls under three separate lock acquisitions —
-	// snapshot_at is set after the whole tick succeeds; per-substruct
+	// Six exclusive acquisitions in this block: five Mutate calls (downloads,
+	// shared, servers, friends, clients+files) plus ReconcileKnownClients at
+	// the end — snapshot_at is set after the whole tick succeeds; per-substruct
 	// atomicity was already best-effort.
 	{
 		std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_GET_UPDATE, EC_DETAIL_INC_UPDATE));
@@ -174,22 +175,14 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		});
 
 		// /clients — every alive peer in theApp->clientlist (download
-		// sources, upload slots, queue waiters, etc.). Build an
-		// ecid→hash snapshot from the unified file map first so the
-		// clients walker can resolve EC_TAG_CLIENT_UPLOAD_FILE /
-		// REQUEST_FILE into MD4 hashes at walker time (the wire
-		// contract is hash-only — ECIDs never leak out).
-		std::map<std::uint32_t, std::string> file_hash_by_ecid;
-		state.WithFiles([&file_hash_by_ecid](const FileMap &files) {
-			for (const auto &entry : files) {
-				const FileSnapshot &f = entry.second;
-				if (!f.hash.empty())
-					file_hash_by_ecid.emplace(f.ecid, f.hash);
-			}
-		});
-		state.MutateClients([&](std::map<std::uint32_t, ClientSnapshot> &cache) {
-			ApplyGetUpdateToClients(resp, cache, file_hash_by_ecid);
-		});
+		// sources, upload slots, queue waiters, etc.). The walker turns each
+		// peer's file ECID into an MD4 hash as it goes — the wire contract is
+		// hash-only — so it needs the map the downloads/shared walkers just
+		// wrote: one acquisition hands it both.
+		state.MutateClientsWithFiles(
+			[&](std::map<std::uint32_t, ClientSnapshot> &cache, const FileMap &files) {
+				ApplyGetUpdateToClients(resp, cache, files);
+			});
 		delete resp;
 
 		// Fold this tick's peers into the known-clients store, so it stays
