@@ -362,6 +362,13 @@ bool EqualDownload(const FileSnapshot &a, const FileSnapshot &b)
 // change drives the separate comments_updated event, not download_updated).
 bool EqualComments(const FileSnapshot &a, const FileSnapshot &b)
 {
+	// The in-flight flag is part of the payload, so it has to be part of
+	// the comparison: without it the true->false edge at the end of a Kad
+	// lookup fires no event at all, and a `?channels=comments` subscriber
+	// is left with its spinner stuck on. Every field the event emits must
+	// be compared here or the event cannot announce it changing.
+	if (a.download.kad_comment_searching != b.download.kad_comment_searching)
+		return false;
 	const auto &ca = a.download.source_comments;
 	const auto &cb = b.download.source_comments;
 	if (ca.size() != cb.size())
@@ -729,7 +736,16 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 				if (now.is_downloading) {
 					if (!was_downloading) {
 						changed.emplace_back(Change::DownloadAdded, entry.first);
-						if (!now.download.source_comments.empty()) {
+						// The flag counts as comment state, exactly as
+						// it does in EqualComments. Gating on the list
+						// alone means a download first seen with a Kad
+						// lookup already in flight never announces the
+						// lookup at all -- the mirror of the edge where
+						// a finished lookup never announced its end,
+						// leaving the same indicator wrong in the
+						// opposite direction.
+						if (!now.download.source_comments.empty() ||
+							now.download.kad_comment_searching) {
 							changed.emplace_back(
 								Change::CommentsUpdated, entry.first);
 						}

@@ -552,7 +552,19 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 	m_ec_service.Start([this](const CECPacket *r) { return SendRecvMsg_v2(r); });
 
 	m_http = std::unique_ptr<CHttpServer>(new CHttpServer());
-	if (!m_http->Start(bind, port, handler, streaming_resolver, streaming_handler, streaming_preflight)) {
+	// Lets the transport stamp CORS on the replies it builds itself (408 /
+	// 413 / 431), which never reach the dispatcher's CORS pass.
+	auto cors_stamper = [dispatcher](std::map<std::string, std::string> &headers,
+				    const std::string &origin_header) {
+		dispatcher->StampCorsForTransport(headers, origin_header);
+	};
+	if (!m_http->Start(bind,
+		    port,
+		    handler,
+		    streaming_resolver,
+		    streaming_handler,
+		    streaming_preflight,
+		    cors_stamper)) {
 		Show(CFormat("amuleapi: HTTP server failed to start: %s\n") %
 			wxString::FromUTF8(m_http->LastError().c_str()));
 		return;

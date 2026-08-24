@@ -1092,51 +1092,150 @@ TEST(State, ConcurrentReadersDontTearSnapshot)
 	ASSERT_EQUALS(0, torn.load());
 }
 
-// --- SnapshotGovernsBody --------------------------------------------
+// --- MemoizableTarget -----------------------------------------------
 //
-// The ETag memo in the dispatcher is keyed on (target, snapshot_at), and
-// snapshot_at counts whole seconds. That key is only sound for bodies the
-// refresher snapshot actually governs; for anything refreshed on its own
-// schedule the body can move while the key stands still, and reusing the
-// memoized validator across that answers a later conditional GET with 304
-// for content that has changed.
+// The response-ETag memo is keyed on (target, snapshot revision). Eligibility
+// is opt-in: this used to be an exclusion list and it was wrong four separate
+// times -- a bare collection the prefixes never matched, a live EC roundtrip
+// nobody listed, a per-principal document, and a key that froze while bodies
+// moved. Inverting it makes an oversight cost a wasted hash instead of a 304
+// for changed content.
 
-// The big snapshot-governed collections are exactly what the memo exists
-// for -- they are the multi-MB bodies worth not re-hashing every request.
-TEST(State, SnapshotGovernsBodyMemoizesSnapshotBackedTargets)
+// The two collections the memo exists for: the multi-MB bodies where skipping
+// an MD5 is worth anything.
+TEST(State, MemoizableTargetCoversTheTwoBigCollections)
 {
-	ASSERT_TRUE(SnapshotGovernsBody("/api/v0/downloads"));
-	ASSERT_TRUE(SnapshotGovernsBody("/api/v0/shared"));
-	ASSERT_TRUE(SnapshotGovernsBody("/api/v0/status"));
-	ASSERT_TRUE(SnapshotGovernsBody("/api/v0/clients"));
-	ASSERT_TRUE(SnapshotGovernsBody("/api/v0/servers"));
-	// A query string selects a page, not a different resource.
-	ASSERT_TRUE(SnapshotGovernsBody("/api/v0/downloads?limit=10&offset=20"));
+	ASSERT_TRUE(MemoizableTarget("/api/v0/downloads"));
+	ASSERT_TRUE(MemoizableTarget("/api/v0/shared"));
+	// A query string picks a page, not a different resource.
+	ASSERT_TRUE(MemoizableTarget("/api/v0/downloads?limit=10&offset=20"));
+	ASSERT_TRUE(MemoizableTarget("/api/v0/shared?sort=name&order=desc"));
 }
 
-// The self-refreshing ones must never be memoized: /stats/* and
-// /logs/serverinfo hold their own 1 s TTL caches fetched out of phase with
-// the tick, /logs/amule grows between ticks, and a search's results are
-// refreshed on read.
-TEST(State, SnapshotGovernsBodyRefusesSelfRefreshingTargets)
+// Everything else hashes per request. Each of these was a live bug at some
+// point in this PR's history, and under an opt-in rule none of them can
+// recur: the self-refreshing ones, the live-EC ones, and the per-principal
+// one are all simply absent from the eligible set.
+TEST(State, MemoizableTargetExcludesEverythingElse)
 {
-	ASSERT_TRUE(!SnapshotGovernsBody("/api/v0/stats/tree"));
-	ASSERT_TRUE(!SnapshotGovernsBody("/api/v0/stats/graphs/download_speed"));
-	ASSERT_TRUE(!SnapshotGovernsBody("/api/v0/logs/amule"));
-	ASSERT_TRUE(!SnapshotGovernsBody("/api/v0/logs/serverinfo"));
-	ASSERT_TRUE(!SnapshotGovernsBody("/api/v0/search/7/results"));
-	// The query string must not smuggle one past the prefix check: the
-	// stats graphs are always queried, so a match on the full target
-	// rather than the path would have let every one of them memoize.
-	ASSERT_TRUE(!SnapshotGovernsBody("/api/v0/stats/graphs/download_speed?width=3"));
-	ASSERT_TRUE(!SnapshotGovernsBody("/api/v0/logs/amule?limit=50"));
+	// own TTL caches / append-only mirror / refresh-on-read
+	ASSERT_TRUE(!MemoizableTarget("/api/v0/stats/tree"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v0/stats/graphs/download_speed?width=3"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v0/logs/amule"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v0/logs/serverinfo"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v0/search/7/results"));
+	// live EC roundtrip per read, and the bare collection a trailing-slash
+	// prefix could never match
+	ASSERT_TRUE(!MemoizableTarget("/api/v0/search"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v0/shared/directories"));
+	// per-principal: one key cannot describe two callers' documents
+	ASSERT_TRUE(!MemoizableTarget("/api/v0/auth/session"));
+	// snapshot-backed, but not worth a memo -- and absent by default
+	ASSERT_TRUE(!MemoizableTarget("/api/v0/status"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v0/clients"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v0/servers"));
 }
 
-// Prefix matching must not swallow a neighbour that merely starts with the
-// same letters. /api/v0/statistics is not /api/v0/stats/.
-TEST(State, SnapshotGovernsBodyPrefixIsSegmentBounded)
+// A sub-resource of an eligible collection is NOT itself eligible: it is a
+// different body, and /shared/directories in particular is a live EC read
+// that an "everything under /shared" rule would have swept back in.
+TEST(State, MemoizableTargetDoesNotExtendToSubResources)
 {
-	ASSERT_TRUE(SnapshotGovernsBody("/api/v0/statistics"));
-	ASSERT_TRUE(SnapshotGovernsBody("/api/v0/searches"));
-	ASSERT_TRUE(SnapshotGovernsBody("/api/v0/logging"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v0/downloads/8b54a3c2"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v0/downloads/8b54a3c2/clients"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v0/shared/8b54a3c2"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v0/shared/directories"));
+	// and no prefix bleed onto a neighbour that merely starts the same
+	ASSERT_TRUE(!MemoizableTarget("/api/v0/downloads_archive"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v0/sharedfiles"));
+}
+
+// --- Snapshot revision ----------------------------------------------
+//
+// The ETag memo is keyed on this, not on snapshot_at. snapshot_at cannot
+// serve: it counts whole seconds, so two refreshes inside one second are
+// indistinguishable, and it is stamped only by the background loop, so the
+// inline refreshes that mutating handlers run never moved it. A mutation
+// therefore changed a body while the key stood still, and the next
+// conditional GET was answered 304 for content that had just changed.
+TEST(State, SnapshotRevisionAdvancesOnEveryBump)
+{
+	CState state;
+	const std::uint64_t r0 = state.SnapshotRevision();
+	state.BumpSnapshotRevision();
+	const std::uint64_t r1 = state.SnapshotRevision();
+	ASSERT_TRUE(r1 != r0);
+	state.BumpSnapshotRevision();
+	ASSERT_TRUE(state.SnapshotRevision() != r1);
+}
+
+// Two bumps inside the same wall-clock second must still be distinguishable
+// -- the precise case a time_t key collapses.
+TEST(State, SnapshotRevisionSeparatesTwoBumpsInOneSecond)
+{
+	CState state;
+	std::vector<std::uint64_t> seen;
+	for (int i = 0; i < 5; ++i) {
+		state.BumpSnapshotRevision();
+		seen.push_back(state.SnapshotRevision());
+	}
+	for (std::size_t i = 1; i < seen.size(); ++i) {
+		ASSERT_TRUE(seen[i] != seen[i - 1]);
+	}
+}
+
+// Every writer of a memoized body advances the key, and it is the WRITER
+// that does it rather than its callers. That is the whole point: the key was
+// advanced from the outside three times and missed a path each time -- the
+// inline refreshes mutating handlers run, and then a tick that failed partway
+// after it had already written. A writer cannot forget that it wrote.
+TEST(State, MutatingDownloadsAdvancesTheRevision)
+{
+	CState state;
+	const std::uint64_t before = state.SnapshotRevision();
+	state.MutateDownloads([](FileMap &files) {
+		FileSnapshot f;
+		f.ecid = 1;
+		f.hash = "1111111111111111111111111111aaaa";
+		f.is_downloading = true;
+		files.emplace(f.ecid, f);
+	});
+	ASSERT_TRUE(state.SnapshotRevision() != before);
+}
+
+TEST(State, MutatingSharedAdvancesTheRevision)
+{
+	CState state;
+	const std::uint64_t before = state.SnapshotRevision();
+	state.MutateShared([](FileMap &) {});
+	ASSERT_TRUE(state.SnapshotRevision() != before);
+}
+
+// The failure path specifically. A tick that dies partway still calls
+// ResetLists on the way back, and that wipe is as much a body change as any
+// mutation -- it is where the key used to freeze while the bodies moved, so
+// a whole EC outage was served 304 against the pre-failure validator.
+TEST(State, ResetListsAdvancesTheRevision)
+{
+	CState state;
+	state.MutateDownloads([](FileMap &files) {
+		FileSnapshot f;
+		f.ecid = 2;
+		f.hash = "2222222222222222222222222222bbbb";
+		files.emplace(f.ecid, f);
+	});
+	const std::uint64_t before = state.SnapshotRevision();
+	state.ResetLists();
+	ASSERT_TRUE(state.SnapshotRevision() != before);
+}
+
+// MarkTickSuccess stamps the timestamp; it deliberately does NOT advance the
+// revision, because RefresherTick owns that and the background loop calls
+// both. Pinning it so a future edit does not quietly double-count.
+TEST(State, MarkTickSuccessDoesNotAdvanceTheRevision)
+{
+	CState state;
+	const std::uint64_t before = state.SnapshotRevision();
+	state.MarkTickSuccess();
+	ASSERT_EQUALS(before, state.SnapshotRevision());
 }

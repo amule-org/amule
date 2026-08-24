@@ -49,6 +49,38 @@ class io_context;
 }
 } // namespace boost
 
+// Does this Accept-Encoding value ask for gzip? Token search, so
+// "gzip, deflate, br" and "gzip;q=1.0" both match and a longer name
+// containing the letters does not.
+//
+// Shared rather than reimplemented: the dispatcher has to answer the same
+// question when it describes what a GET would return, and a second copy of
+// this parser is how the header-merge logic ended up in three places.
+bool AcceptsGzip(const std::string &accept_encoding);
+
+// Will a response with this body be gzipped on the way out?
+//
+// Shared because two places have to agree: the transport, which compresses and
+// stamps the coding onto the validator, and the 304 paths, which must echo the
+// SAME validator the equivalent 200 would have sent. They cannot each carry
+// their own copy of the rule -- when they disagreed, a client that cached the
+// gzip form was handed the identity ETag on revalidation and could never match
+// its stored response again.
+//
+// `already_encoded` is true when a handler set Content-Encoding itself.
+bool WillCompressBody(
+	bool accepts_gzip, std::size_t body_size, const std::string &content_type, bool already_encoded);
+
+// Add one token to a comma-separated header without dropping what is already
+// there and without duplicating it. Comparison is token-by-token, so a short
+// name cannot match inside a longer one.
+//
+// Declared here because every writer that merges a header has to share one
+// definition: the logic previously existed in three copies, two consecutive
+// rounds of fixes each reached a different two of them, and the copy nobody
+// touched kept the old overwrite behaviour.
+void AppendHeaderToken(std::map<std::string, std::string> &headers, const char *name, const char *token);
+
 class CHttpServer
 {
 public:
@@ -126,6 +158,15 @@ public:
 	// "auth inside the handler" behaviour.
 	using StreamingPreflight = std::function<boost::optional<Response>(const Request &)>;
 
+	// Stamps the CORS bundle on a response the transport built itself --
+	// the 408 / 413 / 431 replies, which are written before any request
+	// reaches a handler. Without it those are the only replies on the
+	// surface a cross-origin browser client cannot read: it sees an opaque
+	// fetch failure instead of the typed envelope. Takes the raw Origin
+	// header, since at that point there is no parsed Request to hand over.
+	using CorsStamper = std::function<void(
+		std::map<std::string, std::string> &headers, const std::string &origin_header)>;
+
 	// Bind + listen on `bind_address`:`port`. Returns false (and
 	// populates LastError) on bind failure — the most common reason
 	// is the port being in use by another amuleapi instance or a
@@ -135,7 +176,8 @@ public:
 		Handler handler,
 		StreamingResolver streaming_resolver = nullptr,
 		StreamingHandler streaming_handler = nullptr,
-		StreamingPreflight streaming_preflight = nullptr);
+		StreamingPreflight streaming_preflight = nullptr,
+		CorsStamper cors_stamper = nullptr);
 
 	// Stops the io_context, joins the thread. Safe to call from any
 	// thread; Start() must have succeeded.

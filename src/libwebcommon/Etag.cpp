@@ -24,6 +24,8 @@
 
 #include "Etag.h"
 
+#include <cstring>
+
 // See CryptoPP_Inc.h for pragma rationale.
 #if defined(__clang__)
 #pragma clang diagnostic push
@@ -78,6 +80,28 @@ static std::string NormalizeOneValidator(const std::string &raw)
 		--end;
 	}
 	return raw.substr(start, end - start);
+}
+
+const char kGzipEtagSuffix[] = "-gzip";
+
+std::string WithCodingSuffix(const std::string &etag, bool coded)
+{
+	const std::size_t suffix_len = std::strlen(kGzipEtagSuffix);
+	// The opaque payload ends before the closing quote in RFC-quoted form
+	// and at the end otherwise; the suffix belongs on the payload, not
+	// outside the quotes.
+	const bool quoted = etag.size() >= 2 && etag.front() == '"' && etag.back() == '"';
+	const std::size_t end = quoted ? etag.size() - 1 : etag.size();
+	const bool present =
+		end >= suffix_len && etag.compare(end - suffix_len, suffix_len, kGzipEtagSuffix) == 0;
+	if (coded == present)
+		return etag;
+	std::string out = etag;
+	if (coded)
+		out.insert(end, kGzipEtagSuffix);
+	else
+		out.erase(end - suffix_len, suffix_len);
+	return out;
 }
 
 bool IfNoneMatchHits(const std::string &if_none_match, const std::string &etag)

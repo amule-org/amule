@@ -257,6 +257,41 @@ else
 	_fail "Vary on rejection" "got: $VARY"
 fi
 
+# --- Transport-built replies carry CORS too. ---------------------
+#
+# 408 / 413 / 431 / the streaming cap refusal / the handler catch-all are
+# built by the transport, before or instead of a handler, so the dispatcher's
+# CORS pass never sees them. They are the replies a cross-origin client most
+# needs to read, and they went uncovered: nulling the stamper left the whole
+# suite green.
+BIG_BODY=$(mktemp -t amuleapi_25_big.XXXXXX)
+if command -v python3 >/dev/null 2>&1 &&
+	python3 -c "import sys; sys.stdout.write('{\"password\":\"' + 'a'*2200000 + '\"}')" \
+		> "$BIG_BODY" 2>/dev/null && [ -s "$BIG_BODY" ]; then
+	_curl -X POST -H "Origin: https://allowed.example.com" \
+		-H "Content-Type: application/json" \
+		--data-binary @"$BIG_BODY" "$HOST/api/v0/auth/login"
+	BIG_STATUS=$(head -1 "$HDR" | awk '{print $2}')
+	BIG_ACAO=$(_hdr "Access-Control-Allow-Origin")
+	if [ "$BIG_STATUS" = "413" ]; then
+		if [ "$BIG_ACAO" = "https://allowed.example.com" ]; then
+			_pass "a transport-built 413 carries Allow-Origin"
+		else
+			_fail "transport-built 413 CORS" "expected the echoed origin, got '$BIG_ACAO'"
+		fi
+		BIG_EXPOSE=$(_hdr "Access-Control-Expose-Headers")
+		case "$BIG_EXPOSE" in
+		*Retry-After*) _pass "Expose-Headers advertises Retry-After" ;;
+		*) _fail "Expose-Headers Retry-After" "got '$BIG_EXPOSE'" ;;
+		esac
+	else
+		_fail "transport-built 413" "expected 413, got '$BIG_STATUS'"
+	fi
+else
+	_pass "SKIPPED transport-built 413 CORS (python3 unavailable)"
+fi
+rm -f "$BIG_BODY"
+
 # --- OPTIONS preflight (Mode C, allowed origin). -----------------
 _curl -X OPTIONS \
 	-H "Origin: https://allowed.example.com" \

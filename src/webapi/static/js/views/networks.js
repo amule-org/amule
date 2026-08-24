@@ -175,9 +175,11 @@ function ServersPanel({ isGuest }) {
     catch (e) { toast(terr(e) || t("networks_server_error"), "error"); }
   };
 
-  // The two sides format the address differently — the list ships "ip:port",
-  // status.ed2k.server_ip comes from EC_IPv4_t::StringIP() as "[ip:port]" — so
-  // compare the dotted quad pulled out of each, plus the port.
+  // The two sides format the address differently — the list ships "ip:port"
+  // while status.ed2k.server_ip is a bare dotted quad — so compare the quad
+  // pulled out of each, plus the port. The regex also tolerates the older
+  // "[ip:port]" form that server_ip used to carry, so this keeps working
+  // against a daemon that predates the fix.
   const ipv4 = (v) => { const m = String(v || "").match(/\d+\.\d+\.\d+\.\d+/); return m ? m[0] : ""; };
   const isConnected = (s) =>
     ed2k && ed2k.state === "connected"

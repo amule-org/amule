@@ -378,6 +378,13 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 	// in App.cpp calls EmitDiffsForEventBus() (below) after a
 	// successful tick; HTTP callers skip it and SSE subscribers see
 	// the diff on the next natural 1 s tick.
+	//
+	// The ETag memo key rides on this, so it has to be bumped HERE and
+	// not in MarkTickSuccess: the background loop calls that, but the
+	// mutating handlers refresh inline and never do, so a mutation moved
+	// the body while the key stood still and the next conditional GET was
+	// answered 304 for content that had just changed.
+	state.BumpSnapshotRevision();
 	return true;
 }
 

@@ -1071,3 +1071,75 @@ TEST(EventDiff, CommentsUpdatedReportsAnIdleKadLookup)
 	ASSERT_TRUE(!payload.empty());
 	ASSERT_TRUE(payload.find("\"kad_comment_search_running\":false") != std::string::npos);
 }
+
+// The Kad lookup finishing is a comments_updated in its own right. The flag
+// rides in the payload, so if EqualComments ignores it the true->false edge
+// produces no event and a ?channels=comments subscriber's in-flight
+// indicator never clears.
+TEST(EventDiff, CommentsUpdatedFiresWhenOnlyTheKadFlagClears)
+{
+	CState state;
+	state.MutateDownloads([](FileMap &files) {
+		FileSnapshot f;
+		f.ecid = 43;
+		f.hash = "7777777777777777777777777777aaaa";
+		f.name = "searching.iso";
+		f.size = kPartSizeBytes;
+		f.is_downloading = true;
+		f.download.kad_comment_searching = true;
+		files.emplace(f.ecid, f);
+	});
+
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state); // cold start
+	DrainAll(bus);
+
+	// The lookup ends. No comment arrived, so source_comments is untouched
+	// and ONLY the flag moves.
+	state.MutateDownloads(
+		[](FileMap &files) { files.find(43)->second.download.kad_comment_searching = false; });
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string payload;
+	for (const auto &e : DrainAll(bus)) {
+		if (e.name == "comments_updated")
+			payload = e.data;
+	}
+	ASSERT_TRUE(!payload.empty());
+	ASSERT_TRUE(payload.find("\"kad_comment_search_running\":false") != std::string::npos);
+}
+
+// Cold start with a lookup already running. The mirror of
+// CommentsUpdatedFiresWhenOnlyTheKadFlagClears: there the finished edge never
+// arrived, here the starting state never arrives, and a ?channels=comments
+// subscriber that joined after the download appeared would never learn a
+// lookup was in flight.
+TEST(EventDiff, CommentsUpdatedFiresWhenAFileArrivesMidKadLookup)
+{
+	CState state;
+	state.MutateDownloads([](FileMap &files) {
+		FileSnapshot f;
+		f.ecid = 44;
+		f.hash = "8888888888888888888888888888bbbb";
+		f.name = "arrived-searching.iso";
+		f.size = kPartSizeBytes;
+		f.is_downloading = true;
+		// No comments yet -- only the in-flight flag.
+		f.download.kad_comment_searching = true;
+		files.emplace(f.ecid, f);
+	});
+
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string payload;
+	for (const auto &e : DrainAll(bus)) {
+		if (e.name == "comments_updated")
+			payload = e.data;
+	}
+	ASSERT_TRUE(!payload.empty());
+	ASSERT_TRUE(payload.find("\"kad_comment_search_running\":true") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"count\":0") != std::string::npos);
+}

@@ -146,11 +146,11 @@ if [ "$CURL_SIZE" = "0" ]; then
 else
 	_fail "HEAD body" "expected 0 body bytes, got $CURL_SIZE"
 fi
-# Note: like every other amuleapi endpoint, HEAD comes back with
-# `Content-Length: 0` rather than the length the GET would return —
-# Dispatch() strips the body before Beast sizes the payload. That is
-# daemon-wide existing behaviour, not specific to this route, so it is
-# deliberately not asserted here.
+# HEAD reports the Content-Length the equivalent GET would return, with
+# no content on the wire: the transport serializes headers only, after
+# the payload has been sized from the full body. Not asserted here
+# because it is daemon-wide behaviour rather than anything specific to
+# this route -- 40-http-conformance covers it at the socket level.
 
 # --- 5. Already-compressed payload is not gzip-encoded. -----------
 # curl offers gzip in Accept-Encoding here. deflate over a PNG buys

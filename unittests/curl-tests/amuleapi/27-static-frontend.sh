@@ -101,9 +101,29 @@ echo "amuleapi 27-static-frontend @ $HOST — StaticRoot=$STATIC_ROOT"
 # Stage transient assets in StaticRoot for the duration of the run.
 # Restore the directory's pre-test state on exit so re-running doesn't
 # accumulate stale symlinks.
+# Section 10 rewrites index.html in place. That is the one file in here the
+# test does not own -- the others it plants itself -- so its restore runs from
+# the trap rather than from the end of the block: a _die anywhere in between
+# (a curl that cannot reach the daemon, say) would otherwise leave a
+# contributor with a mutated WebUI shell and no hint as to why.
+INDEX_BACKUP=
+_restore_index() {
+	# Refuse to restore from a backup that is missing or empty. A failed
+	# cp would otherwise overwrite a working shell with a zero-length
+	# file, which is a worse outcome than leaving the appended marker --
+	# that at least still renders and is visible in a diff.
+	if [ -n "$INDEX_BACKUP" ] && [ -s "$INDEX_BACKUP" ]; then
+		cp "$INDEX_BACKUP" "$STATIC_ROOT/index.html" 2>/dev/null \
+			|| echo "  WARN  could not restore $STATIC_ROOT/index.html from $INDEX_BACKUP"
+	elif [ -n "$INDEX_BACKUP" ]; then
+		echo "  WARN  backup $INDEX_BACKUP is missing or empty; leaving index.html as-is"
+	fi
+	[ -n "$INDEX_BACKUP" ] && rm -f "$INDEX_BACKUP"
+	INDEX_BACKUP=
+}
 trap 'rm -f "$CURL_BODY_FILE" "$CURL_HEAD_FILE" \
 	"$STATIC_ROOT/escape.txt" "$STATIC_ROOT/escape.css" \
-	"$STATIC_ROOT/huge.bin"' EXIT
+	"$STATIC_ROOT/huge.bin"; _restore_index' EXIT
 
 # --- 1. GET / serves the placeholder index. -----------------------
 _curl "$HOST/"
@@ -167,6 +187,72 @@ else
 fi
 _curl "$HOST/huge.bin"
 _assert_status 404 "Oversized /huge.bin (>16 MiB) → 404"
+
+# --- 10. A rewritten asset revalidates to its new bytes. ----------
+# Rewrite index.html the way a daemon upgrade does, then re-request it the
+# way a client holding the old copy would -- conditional on the validator it
+# stored -- and require the new bytes.
+#
+# What this does NOT guard is the cache policy. curl always sends the
+# conditional request, so it cannot exhibit the behaviour a freshness
+# lifetime causes, which is a browser reusing its copy WITHOUT asking; this
+# block passes byte-identically under `public, max-age=86400,
+# must-revalidate`. The guard for that is _assert_revalidates_every_time in
+# 40-http-conformance, which fails on that policy. What is asserted here is
+# narrower and still worth having: when a client does ask, it is told the
+# truth rather than answered 304 against a stale validator.
+INDEX_BACKUP=$(mktemp -t amuleapi_27_index.XXXXXX)
+if ! cp "$STATIC_ROOT/index.html" "$INDEX_BACKUP" 2>/dev/null || [ ! -s "$INDEX_BACKUP" ]; then
+	# No usable backup means no mutation: this block rewrites a file it
+	# does not own, and doing that without a way back is not worth one
+	# assertion.
+	_fail "a rewritten shell revalidates to its new bytes" \
+		"could not back up $STATIC_ROOT/index.html; skipped the rewrite rather than risk it"
+	# mktemp already created the file, so clearing the variable alone
+	# would leak the empty one.
+	rm -f "$INDEX_BACKUP"
+	INDEX_BACKUP=
+fi
+if [ -n "$INDEX_BACKUP" ]; then
+_curl "$HOST/index.html"
+OLD_ETAG=$(printf '%s' "$CURL_HEAD" | awk 'tolower($1)=="etag:"{print $2}' | tr -d '\r')
+OLD_BODY=$CURL_BODY
+if [ -z "$OLD_ETAG" ]; then
+	_fail "a rewritten shell revalidates to its new bytes" \
+		"no ETag on the first GET, nothing to revalidate with"
+else
+	# The validator is mtime+size, so change both. An upgrade that happens
+	# to preserve the size within the same second is a separate concern
+	# and not what this asserts.
+	printf '\n<!-- upgraded -->\n' >> "$STATIC_ROOT/index.html"
+	_curl "$HOST/index.html" -H "If-None-Match: $OLD_ETAG"
+	if [ "$CURL_STATUS" = "304" ]; then
+		_fail "a rewritten shell revalidates to its new bytes" \
+			"the rewritten file was answered 304 against the pre-upgrade validator"
+	elif [ "$CURL_STATUS" != "200" ]; then
+		_fail "a rewritten shell revalidates to its new bytes" \
+			"expected 200 with the new bytes, got HTTP $CURL_STATUS"
+	elif [ "$CURL_BODY" = "$OLD_BODY" ]; then
+		_fail "a rewritten shell revalidates to its new bytes" \
+			"200 carried the pre-upgrade bytes"
+	else
+		_pass "a rewritten shell revalidates to its new bytes (200, new bytes)"
+	fi
+	# And an UNCHANGED shell still revalidates cheaply. This is why the
+	# policy is no-cache rather than no-store: the copy stays in the cache
+	# and costs one bodiless 304, not a re-download.
+	_curl "$HOST/index.html"
+	NEW_ETAG=$(printf '%s' "$CURL_HEAD" | awk 'tolower($1)=="etag:"{print $2}' | tr -d '\r')
+	_curl "$HOST/index.html" -H "If-None-Match: $NEW_ETAG"
+	if [ "$CURL_STATUS" = "304" ]; then
+		_pass "an unchanged shell still costs one 304, not a re-download"
+	else
+		_fail "an unchanged shell still costs one 304" "got HTTP $CURL_STATUS"
+	fi
+fi
+# Restored by the EXIT trap, not here, so a _die in between cannot leave the
+# shell rewritten.
+fi
 
 # --- Summary. -----------------------------------------------------
 echo

@@ -136,3 +136,100 @@ TEST(Etag, IfNoneMatchHexCaseSensitive)
 	// send lowercase. Uppercase variant → no hit.
 	ASSERT_FALSE(IfNoneMatchHits("DEADBEEFDEADBEEF", "deadbeefdeadbeef"));
 }
+
+// --- Per-coding validators ------------------------------------------
+//
+// The body hash is taken before compression, so both codings of a resource
+// derive from one hash. A strong validator names ONE representation, so the
+// selected coding is appended to the wire value and the conditional-GET
+// comparison runs against THAT value. An earlier cut matched either coding,
+// which defeats the suffix entirely: a client holding gzip bytes and asking
+// for identity was told its copy was current.
+TEST(Etag, CodingSuffixDistinguishesTheTwoRepresentations)
+{
+	const std::string bare = "a1b2c3d4";
+	const std::string coded = bare + webcommon::kGzipEtagSuffix;
+	ASSERT_TRUE(bare != coded);
+	// Each validator matches its own representation...
+	ASSERT_TRUE(webcommon::IfNoneMatchHits("\"a1b2c3d4\"", bare));
+	ASSERT_TRUE(webcommon::IfNoneMatchHits("\"a1b2c3d4-gzip\"", coded));
+	// ...and NOT the other one. This is the whole purpose of the suffix.
+	ASSERT_TRUE(!webcommon::IfNoneMatchHits("\"a1b2c3d4-gzip\"", bare));
+	ASSERT_TRUE(!webcommon::IfNoneMatchHits("\"a1b2c3d4\"", coded));
+}
+
+// The grammar still applies to whichever representation was selected: `*`,
+// weak validators and comma-separated lists all work against the coded form.
+TEST(Etag, CodedValidatorKeepsTheFullGrammar)
+{
+	const std::string coded = std::string("a1b2c3d4") + webcommon::kGzipEtagSuffix;
+	ASSERT_TRUE(webcommon::IfNoneMatchHits("*", coded));
+	ASSERT_TRUE(webcommon::IfNoneMatchHits("W/\"a1b2c3d4-gzip\"", coded));
+	ASSERT_TRUE(webcommon::IfNoneMatchHits("\"nope\", \"a1b2c3d4-gzip\"", coded));
+	ASSERT_TRUE(!webcommon::IfNoneMatchHits("\"deadbeef-gzip\"", coded));
+}
+
+// The suffix is a marker on one body's validator, not a wildcard that joins
+// two different bodies.
+TEST(Etag, CodingSuffixIsNotAWildcard)
+{
+	ASSERT_TRUE(!webcommon::IfNoneMatchHits("\"-gzip\"", "a1b2c3d4"));
+	ASSERT_TRUE(!webcommon::IfNoneMatchHits("", "a1b2c3d4"));
+}
+
+// --- Naming a representation ----------------------------------------
+//
+// WithCodingSuffix is asked which coding the value must NAME, not whether to
+// add or remove a suffix. Three call sites used to spell that edit out by
+// hand -- two that could only add and one that could only add-or-strip -- and
+// the difference is what let a failed deflate ship a gzip validator on
+// identity bytes.
+TEST(Etag, CodingSuffixNamesTheSelectedRepresentation)
+{
+	ASSERT_TRUE(webcommon::WithCodingSuffix("a1b2c3d4", true) == "a1b2c3d4-gzip");
+	ASSERT_TRUE(webcommon::WithCodingSuffix("a1b2c3d4", false) == "a1b2c3d4");
+	// The quoted form the static path carries: the suffix belongs on the
+	// opaque payload, INSIDE the quotes, or the value stops being a valid
+	// entity-tag and no client matches it again.
+	ASSERT_TRUE(webcommon::WithCodingSuffix("\"1f-2a3b\"", true) == "\"1f-2a3b-gzip\"");
+	ASSERT_TRUE(webcommon::WithCodingSuffix("\"1f-2a3b-gzip\"", false) == "\"1f-2a3b\"");
+}
+
+// The transport calls this on a value the dispatcher may already have
+// stamped, so asking for the coding that is already named must not double it.
+TEST(Etag, CodingSuffixIsIdempotent)
+{
+	ASSERT_TRUE(webcommon::WithCodingSuffix("a1b2c3d4-gzip", true) == "a1b2c3d4-gzip");
+	ASSERT_TRUE(webcommon::WithCodingSuffix("\"a1b2c3d4-gzip\"", true) == "\"a1b2c3d4-gzip\"");
+	ASSERT_TRUE(webcommon::WithCodingSuffix("a1b2c3d4", false) == "a1b2c3d4");
+}
+
+// The reason the helper exists. GzipOnce can fail -- deflateInit2 or deflate
+// returning short -- after the dispatcher has already predicted compression
+// and stamped the suffix. The body then ships as identity, and the validator
+// has to come back down with it, or a cache stores identity bytes under the
+// gzip validator and serves them to a client that asked for gzip.
+TEST(Etag, AFailedCompressionTakesTheSuffixBackOff)
+{
+	const std::string predicted = webcommon::WithCodingSuffix("a1b2c3d4", true);
+	ASSERT_TRUE(predicted == "a1b2c3d4-gzip");
+	// ...deflate fails, so the coding that actually shipped is identity.
+	const std::string shipped = webcommon::WithCodingSuffix(predicted, false);
+	ASSERT_TRUE(shipped == "a1b2c3d4");
+	// And the identity validator is what an identity client will send back.
+	ASSERT_TRUE(webcommon::IfNoneMatchHits("\"a1b2c3d4\"", shipped));
+	ASSERT_TRUE(!webcommon::IfNoneMatchHits("\"a1b2c3d4-gzip\"", shipped));
+}
+
+// A body whose hash happens to end in the suffix text is not "already coded".
+// Guarded because the check is a suffix compare on the payload: if the digest
+// alphabet ever widened past hex, `...-gzip` could occur naturally and a
+// wrongly-detected prediction would strip a byte off a real validator.
+TEST(Etag, CodingSuffixLooksOnlyAtTheEndOfThePayload)
+{
+	ASSERT_TRUE(webcommon::WithCodingSuffix("-gzipa1b2", true) == "-gzipa1b2-gzip");
+	ASSERT_TRUE(webcommon::WithCodingSuffix("-gzipa1b2", false) == "-gzipa1b2");
+	// Degenerate inputs must not underflow the erase.
+	ASSERT_TRUE(webcommon::WithCodingSuffix("", false).empty());
+	ASSERT_TRUE(webcommon::WithCodingSuffix("", true) == "-gzip");
+}

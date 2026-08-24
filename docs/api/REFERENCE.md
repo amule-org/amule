@@ -296,7 +296,19 @@ Every non-2xx response carries the same shape:
 
 ### ETag and conditional GET
 
-Every `GET` or `HEAD` that returns `200` carries an `ETag: "<md5-hex>"` header. Clients that re-fetch should send `If-None-Match: "<etag>"` and accept `304 Not Modified` (no body, ETag preserved). The ETag is keyed on `(request target, last refresher snapshot timestamp)` and memoized — repeated GETs against the same path between refresher ticks skip the body hash entirely. `HEAD` returns the same headers (including ETag) with an empty body.
+Every `GET` or `HEAD` that returns `200` carries an `ETag` header. Clients that re-fetch should send `If-None-Match: "<etag>"` and accept `304 Not Modified` (no content, ETag preserved). `If-None-Match` accepts `*`, a comma-separated list, and weak `W/"..."` validators.
+
+The validator is memoized for two collections only, `/downloads` and `/shared`, keyed on the target plus a revision that every writer of those bodies advances. Repeated GETs between changes skip the body hash; everything else on the surface is hashed per request. Eligibility is opt-in rather than exclusion-based, because a resource qualifies only if its body moves solely when the state moves AND is identical for every caller. Anything with its own cache, an append-only mirror, a refresh-on-read, a live daemon roundtrip per request, or a per-caller body is simply not in the set. `/auth/session` is per-caller and is additionally marked `Cache-Control: private, no-store` (see below).
+
+`HEAD` returns the same headers as the equivalent `GET`, including `ETag` and a `Content-Length` describing the body the `GET` would return, and no content -- on every status, not only `200`. The one exception is [`GET /api/v0/events`](#get-apiv0events): its body is an unbounded chunked stream, so a `HEAD` there reports the stream's headers and no length. Note that this is why `curl -X HEAD` appears to hang or fail: `-X` only changes the method string, leaving curl waiting for a body that a HEAD response correctly never sends. Use `curl --head` (or `-I`).
+
+A validator names one representation, not one URL. When a response is compressed the `ETag` carries a `-gzip` suffix, so the gzipped and identity forms of the same resource never share a validator, and an `If-None-Match` is only a hit against the form the current request would actually receive. A client that stored `"abc123-gzip"` and then re-fetches with `Accept-Encoding: identity` gets a `200` with the identity body, which is the correct answer -- the stored entry does not describe it. Store the validator alongside the encoding you received, which is what an HTTP cache does anyway.
+
+**Caching policy.** Any request that presented credentials -- a bearer token or the session cookie -- is answered `Cache-Control: private` with `Cookie` added to `Vary`. `private` keeps the response out of shared caches, while still letting the client's own cache hold it and revalidate with `If-None-Match`; `no-store` would forbid that too and there would be no stored entry left for the conditional GET above to match. [`POST /api/v0/auth/session`](#post-apiv0authsession) is the deliberate exception and is `private, no-store`: it carries the credential itself, which should not be written down anywhere. Requests without credentials are left cacheable. Static assets are the other case. The WebUI shell and its bundles are byte-identical for every caller, so an authenticated request for one is answered exactly as an anonymous request is, and they carry `public, no-cache`. Both tokens do work. `no-cache` means revalidate every time -- not "do not store": the copy stays cached and an unchanged bundle costs one conditional request answered `304`. `public` is what lets a shared cache in front of the daemon keep one copy rather than one per caller: RFC 9111 §3.5 bars a shared cache from reusing a response to a request that carried an `Authorization` header unless the response is marked `public`, `must-revalidate` or `s-maxage`, and `no-cache` is not on that list. The browser WebUI is not the case that engages this -- it authenticates by cookie, which is why the authenticated stamp above adds `Cookie` to `Vary` rather than relying on §3.5 at all. A bearer-token client fetching the same shell is the case that engages it.
+
+There is no freshness lifetime on them because these filenames carry no content hash: `index.html`, `app.js` and `app.css` keep their names across a rebuild, so a `max-age` would let an upgraded daemon keep serving the old shell until the entry expired, and -- since each asset expires on its own clock -- pair a new shell with an old bundle. `must-revalidate` would not prevent that: it governs what a cache may do once an entry is *already* stale (RFC 9111 §5.2.2.2), not whether it may be used while fresh.
+
+The [country flags](#get-flagscodepng) take the opposite trade and keep `public, max-age=86400`. That artwork is compiled into the daemon, so it changes only with a new build, and a peer list is a page full of `<img>` tags: a day of freshness turns those into cache hits instead of one conditional request per distinct country per reload. The `max-age` is what bounds how long an upgraded daemon can keep serving the old art -- a day, not forever.
 
 Mutations (`POST`/`PATCH`/`DELETE`) and error responses are never ETag-stamped; the body always ships.
 
@@ -306,8 +318,8 @@ If `amuleapi.conf[Server]/AllowCORS=1`:
 
 - Every response carries `Vary: Origin`.
 - The origin is echoed in `Access-Control-Allow-Origin` if either the allowlist is empty (any-origin echo) or the request's `Origin` header matches a configured entry.
-- Allowed responses also carry `Access-Control-Allow-Credentials: true` and `Access-Control-Expose-Headers: ETag` so cookie-auth clients can read the validator from JS.
-- Preflight (`OPTIONS` with `Access-Control-Request-Method`) returns `204` with `Access-Control-Allow-Methods: GET, HEAD, POST, PATCH, DELETE, OPTIONS`, `Access-Control-Allow-Headers: Authorization, Content-Type, If-None-Match, Last-Event-ID`, and `Access-Control-Max-Age: 86400`.
+- Allowed responses also carry `Access-Control-Allow-Credentials: true` and `Access-Control-Expose-Headers: ETag, Allow, Retry-After` so cookie-auth clients can read the validator, the supported-method list from a `405`, and the back-off hint from a `429` or `503`, from JS.
+- Preflight (`OPTIONS` with `Access-Control-Request-Method`) returns `204` with `Access-Control-Allow-Methods: GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS`, `Access-Control-Allow-Headers: Authorization, Content-Type, If-None-Match, Last-Event-ID`, and `Access-Control-Max-Age: 86400`.
 
 ### Path validation
 
@@ -315,11 +327,12 @@ The dispatcher rejects paths containing NUL, encoded NUL (`%00`), encoded `..` (
 
 ### Request size limits
 
-- HTTP header section: hard cap 16 KiB.
-- Request body: hard cap 1 MiB.
+- HTTP header section: hard cap 16 KiB. Exceeding it is `431 headers_too_large`.
+- Request body: hard cap 1 MiB. Exceeding it is `413 payload_too_large`.
+- A request that is not fully sent within 10 s is `408 request_timeout`.
 - JSON nesting: `>32` opening `{` or `[` tokens → `400 bad_request`. Applies to every body parser and to the JWT header/payload sections of bearer tokens.
 
-Above any of these, the connection is rejected before the handler runs.
+The first three are answered by the transport before any handler runs, and each closes the connection after answering, with `Connection: close` on the response.
 
 ## Endpoint catalog
 
@@ -2859,7 +2872,7 @@ Every error code emitted by `/api/v0/*`, sorted by what triggered it. Two codes 
 | `forbidden` | 403 | Authenticated as `guest` but the endpoint requires `admin`. |
 | `not_found` | 404 | Resource doesn't exist (unknown hash, ECID, graph name, or no such endpoint). |
 | `method_not_allowed` | 405 | Wrong HTTP verb for the route. The response carries an `Allow` header listing the methods this resource does support. |
-| `conflict` | 409 | The request is valid but the daemon is not in a state that can serve it — the `mmap` capability gate. |
+| `conflict` | 409 | The request is valid but the daemon cannot serve it as asked: it was built without support for the option being set, or the client named on an A4AF request is not an A4AF source of that download. |
 | `partfile_unsupported` | 409 | Verify Local Data requested on a file that is still an incomplete partfile. |
 | `not_shared` | 409 | A comment or rating was posted against a file that is not shared. |
 | `not_completed` | 409 | `clear_completed` named a `hash` that is not a completed download. |

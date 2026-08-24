@@ -626,7 +626,7 @@ void ApplyCorsHeaders(
 {
 	if (!cors_enabled)
 		return;
-	headers["Vary"] = "Origin";
+	AppendHeaderToken(headers, "Vary", "Origin");
 	if (resolved_origin.empty())
 		return;
 	headers["Access-Control-Allow-Origin"] = resolved_origin;
@@ -636,7 +636,7 @@ void ApplyCorsHeaders(
 	// response headers (Cache-Control, Content-Language, Content-Type,
 	// Expires, Last-Modified, Pragma). amuleapi clients want to read
 	// ETag for cache validation; SSE clients don't need this list.
-	headers["Access-Control-Expose-Headers"] = "ETag";
+	headers["Access-Control-Expose-Headers"] = "ETag, Allow, Retry-After";
 }
 
 // The Kad `network` rollup, byte-identical on GET /status (nested
@@ -689,6 +689,22 @@ bool ParseJsonObjectBody(const std::string &body, picojson::value &out, std::str
 
 } // namespace
 
+// Did the caller present credentials at all? Mirrors what Authenticate()
+// accepts -- an Authorization header, or the session cookie the WebUI uses --
+// without verifying them: an invalid or expired credential still means the
+// response was computed for a specific caller and must not be shared.
+bool RequestCarriesCredentials(const CHttpServer::Request &req, const std::string &cookie_name)
+{
+	if (!FindHeaderCaseInsensitive(req.headers, "Authorization").empty()) {
+		return true;
+	}
+	const std::string cookie = FindHeaderCaseInsensitive(req.headers, "Cookie");
+	if (cookie.empty()) {
+		return false;
+	}
+	return !webapi::ExtractCookieValue(cookie, cookie_name).empty();
+}
+
 CHttpServer::Response CApiDispatcher::Dispatch(const CHttpServer::Request &req)
 {
 	const bool cors_enabled = m_config.ServerCfg().allow_cors;
@@ -725,7 +741,18 @@ CHttpServer::Response CApiDispatcher::Dispatch(const CHttpServer::Request &req)
 	// through unchanged — there's no benefit to ETag-caching a 4xx
 	// body, and a mutation's response carries the post-mutation
 	// state which the client always wants delivered.
+	// Sampled BEFORE the handler runs, and again after. The memo pairs an
+	// ETag with a revision, and the body is serialized inside the handler
+	// under its own read lock which it has dropped by the time we get here
+	// -- so reading the revision only afterwards can pair etag(old body)
+	// with the NEW revision if a write lands in that window, and every
+	// later hit then serves a validator that describes neither. Two
+	// samples make the window observable: if anything moved, this response
+	// is not attributable to a revision and is simply not memoized.
+	const std::uint64_t rev_before = m_state.SnapshotRevision();
 	CHttpServer::Response resp = DispatchToHandler(req);
+	const std::uint64_t rev_after = m_state.SnapshotRevision();
+	const bool rev_stable = (rev_before == rev_after);
 
 	const bool is_safe_method = (req.method == "GET" || req.method == "HEAD");
 	// A handler that computed its own validator owns it. Stamping the
@@ -735,27 +762,29 @@ CHttpServer::Response CApiDispatcher::Dispatch(const CHttpServer::Request &req)
 	// GET reached the hashing branch below.
 	const bool handler_set_etag = (resp.headers.find("ETag") != resp.headers.end());
 	if (is_safe_method && !handler_set_etag && resp.status == 200 && !resp.body.empty()) {
-		// Snapshot-versioned memoization: skip the MD5 over the
-		// (potentially multi-MB) body when the (target,
-		// snapshot_at) tuple matches what we already hashed.
+		// Skip the MD5 over a (potentially multi-MB) body when
+		// nothing has changed since we last hashed it. The key is
+		// (target, snapshot revision): the revision is advanced by
+		// every writer of an eligible body, so unlike a timestamp it
+		// cannot stand still through a mutation, cannot collapse two
+		// changes inside one second, and does not depend on any
+		// caller remembering to stamp it.
 		//
-		// Only sound for bodies the refresher snapshot actually
-		// governs. `snapshot_at` is stamped once per tick in whole
-		// seconds, and several endpoints are refreshed on their own
-		// schedule -- their own 1 s TTL caches, an append-only log
-		// mirror, a search refreshed on read -- so their body can
-		// change while the key does not. Reusing a memoized ETag
-		// there answers a later conditional GET with 304 for content
-		// that has changed (RFC 9110 §8.8.1 forbids exactly that).
-		// Those targets hash every time; they are small, and the memo
-		// exists for the multi-MB /downloads and /shared bodies.
-		const std::time_t snap = m_state.SnapshotAt();
-		const bool memoizable = webapi::SnapshotGovernsBody(req.target);
+		// Eligibility is opt-in -- see MemoizableTarget -- and covers
+		// only /downloads and /shared, which is where skipping a hash
+		// is worth anything. Everything else hashes per request and is
+		// immune to a mispaired validator by construction.
+		//
+		// `rev_stable` is the other half. Without it the key says
+		// which revision was current when we looked, not which one
+		// this body came from.
+		const std::uint64_t snap = rev_after;
+		const bool memoizable = webapi::MemoizableTarget(req.target) && rev_stable;
 		std::string etag;
 		if (memoizable) {
 			std::lock_guard<std::mutex> g(m_etagCacheMu);
 			auto it = m_etagCache.find(req.target);
-			if (it != m_etagCache.end() && it->second.snapshot_at == snap && snap != 0) {
+			if (it != m_etagCache.end() && it->second.snapshot_rev == snap && snap != 0) {
 				etag = it->second.etag;
 			}
 		}
@@ -770,16 +799,35 @@ CHttpServer::Response CApiDispatcher::Dispatch(const CHttpServer::Request &req)
 					m_etagCache.clear();
 				}
 				EtagCacheEntry e;
-				e.snapshot_at = snap;
+				e.snapshot_rev = snap;
 				e.etag = etag;
 				m_etagCache[req.target] = std::move(e);
 			}
 		}
 		// RFC 7232 §2.3 — the header value MUST be quoted.
-		resp.headers["ETag"] = "\"" + etag + "\"";
+		// Which representation is this validator naming? The transport
+		// appends the coding when it compresses, but a 304 carries no
+		// body for it to compress, so the answer has to be worked out
+		// here -- while the body is still present to measure -- and it
+		// has to be the SAME answer. A client that cached the gzip form
+		// and gets the identity ETag back can never match its stored
+		// response again.
+		const bool coded = WillCompressBody(
+			AcceptsGzip(FindHeaderCaseInsensitive(req.headers, "Accept-Encoding")),
+			resp.body.size(),
+			resp.content_type,
+			resp.headers.find("Content-Encoding") != resp.headers.end());
+		const std::string wire_etag = webcommon::WithCodingSuffix(etag, coded);
+		resp.headers["ETag"] = "\"" + wire_etag + "\"";
 
+		// Against wire_etag, which names the representation THIS request
+		// selected. Matching either coding would defeat the suffix
+		// entirely: a client holding the gzip bytes and asking for
+		// identity would be told its copy is current, and one holding
+		// identity bytes would be handed a 304 stamped with the gzip
+		// validator, matching nothing it stored.
 		const std::string inm = FindHeaderCaseInsensitive(req.headers, "If-None-Match");
-		if (webcommon::IfNoneMatchHits(inm, etag)) {
+		if (webcommon::IfNoneMatchHits(inm, wire_etag)) {
 			// 304 carries no body and no Content-Type, but the ETag
 			// header IS preserved (RFC 7232 §4.1 — clients use it to
 			// re-stamp the cached representation).
@@ -796,6 +844,39 @@ CHttpServer::Response CApiDispatcher::Dispatch(const CHttpServer::Request &req)
 	// next response on a keep-alive connection. It is not stripped here
 	// either: the transport writes headers only, so Content-Length still
 	// reports what the equivalent GET would return.
+
+	// A response produced for a caller who presented credentials is that
+	// caller's, and must not be stored where another caller can be served
+	// it. Authenticate() takes a bearer token OR a session cookie, and the
+	// browser WebUI uses the cookie -- so these requests carry no
+	// Authorization header, and RFC 9111 3.5's shared-cache prohibition
+	// never engages on them. Without an explicit expiry a shared cache may
+	// keep a 200 under heuristic freshness, and with Cookie absent from
+	// Vary two users share a cache key.
+	//
+	// Stamped here rather than in each handler so a new authenticated
+	// route cannot forget it, and only when the caller actually presented
+	// credentials: an unauthenticated public probe like /version stays
+	// cacheable and keeps its conditional GET. A handler that set its own
+	// policy -- the static assets' public, no-cache, the country flags'
+	// public, max-age, /auth/session's private, no-store, the SSE
+	// no-cache -- is left alone.
+	//
+	// `private` and NOT `no-store`: no-store forbids the client's OWN
+	// cache, so no browser would ever hold an entry to revalidate and no
+	// authenticated route would ever see an If-None-Match -- which throws
+	// away the whole point of the validator and memo machinery here, and
+	// makes the WebUI re-transfer the full download list on every load. It
+	// also lands on 304s, telling a cache to drop the entry it has just
+	// been told is good. `private` alone is what answers the concern:
+	// RFC 9111 3.5 stops a SHARED cache storing it, which is the cache
+	// that could serve one user's list to another.
+	if (RequestCarriesCredentials(req, kSessionCookieName) &&
+		resp.headers.find("Cache-Control") == resp.headers.end()) {
+		resp.headers["Cache-Control"] = "private";
+		// Vary is the half that matters to a cache which stores anyway.
+		AppendHeaderToken(resp.headers, "Vary", "Cookie");
+	}
 
 	// stamp CORS on every response (success and error paths)
 	// so browsers can read the body in the 4xx/5xx case too.
@@ -820,8 +901,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 
 	if (path == "/api/v0/version") {
 		if (req.method != "GET" && req.method != "HEAD") {
-			return ErrorResponse(
-				405, "method_not_allowed", "method not allowed on /api/v0/version");
+			return MethodNotAllowed("GET, HEAD", "method not allowed on /api/v0/version");
 		}
 		return HandleVersion(req);
 	}
@@ -864,6 +944,16 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		return MethodNotAllowed("GET, HEAD, PATCH", "only GET or PATCH on /auth/passwords");
 	}
 
+	// /events reaches the dispatcher only on a method the streaming
+	// resolver declined, since it diverts GET and HEAD before this point.
+	// Without an arm here the request fell through to the catch-all 404,
+	// so the one endpoint a client is most likely to probe reported that
+	// it does not exist -- and it was the only route to escape the Allow
+	// sweep, while the docs promise the header on every 405.
+	if (path == "/api/v0/events") {
+		return MethodNotAllowed("GET, HEAD", "only GET / HEAD on /events");
+	}
+
 	if (path == "/api/v0/status") {
 		if (req.method != "GET" && req.method != "HEAD") {
 			return MethodNotAllowed("GET, HEAD", "only GET on /status");
@@ -887,15 +977,14 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 			// bulk cancel+remove over {hashes:[...]}.
 			return HandleDownloadsBulkDelete(req);
 		}
-		return ErrorResponse(
-			405, "method_not_allowed", "only GET / HEAD / POST / PATCH / DELETE on /downloads");
+		return MethodNotAllowed("GET, HEAD, POST, PATCH, DELETE",
+			"only GET / HEAD / POST / PATCH / DELETE on /downloads");
 	}
 
 	// bulk clear-completed.
 	if (path == "/api/v0/downloads/clear_completed") {
 		if (req.method != "POST") {
-			return ErrorResponse(
-				405, "method_not_allowed", "only POST on /downloads/clear_completed");
+			return MethodNotAllowed("POST", "only POST on /downloads/clear_completed");
 		}
 		return HandleDownloadsClearCompleted(req);
 	}
@@ -948,8 +1037,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 			if (req.method == "POST") {
 				return HandleClientBrowse(req, caps["ecid"]);
 			}
-			return ErrorResponse(
-				405, "method_not_allowed", "only POST on /clients/{ecid}/shared_files");
+			return MethodNotAllowed("POST", "only POST on /clients/{ecid}/shared_files");
 		}
 	}
 
@@ -976,7 +1064,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// below or "media" would be captured as a hash.
 	if (path == "/api/v0/shared/media/refresh") {
 		if (req.method != "POST") {
-			return ErrorResponse(405, "method_not_allowed", "only POST on /shared/media/refresh");
+			return MethodNotAllowed("POST", "only POST on /shared/media/refresh");
 		}
 		return HandleSharedMediaRefresh(req);
 	}
@@ -1045,8 +1133,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 			if (req.method == "PATCH") {
 				return HandleFriendPatch(req, caps["ecid"]);
 			}
-			return ErrorResponse(
-				405, "method_not_allowed", "only DELETE / PATCH on /friends/{ecid}");
+			return MethodNotAllowed("PATCH, DELETE", "only DELETE / PATCH on /friends/{ecid}");
 		}
 	}
 
@@ -1095,15 +1182,13 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(friend_messages, path_segs, caps)) {
 			if (req.method != "POST") {
-				return ErrorResponse(
-					405, "method_not_allowed", "only POST on /friends/{ecid}/messages");
+				return MethodNotAllowed("POST", "only POST on /friends/{ecid}/messages");
 			}
 			return HandleFriendMessageSend(req, caps["ecid"]);
 		}
 		if (web_api_path::Match(client_messages, path_segs, caps)) {
 			if (req.method != "POST") {
-				return ErrorResponse(
-					405, "method_not_allowed", "only POST on /clients/{ecid}/messages");
+				return MethodNotAllowed("POST", "only POST on /clients/{ecid}/messages");
 			}
 			return HandleClientMessageSend(req, caps["ecid"]);
 		}
@@ -1130,8 +1215,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(server_connect, path_segs, caps)) {
 			if (req.method != "POST") {
-				return ErrorResponse(
-					405, "method_not_allowed", "only POST on /servers/{ecid}/connect");
+				return MethodNotAllowed("POST", "only POST on /servers/{ecid}/connect");
 			}
 			// `{ecid}` capture also matches "<ip>:<port>" because the
 			// path-pattern matcher is opaque-segment. Disambiguate
@@ -1144,8 +1228,8 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		}
 		if (web_api_path::Match(server_one, path_segs, caps)) {
 			if (req.method != "DELETE" && req.method != "PATCH") {
-				return ErrorResponse(
-					405, "method_not_allowed", "only DELETE / PATCH on /servers/{ecid}");
+				return MethodNotAllowed(
+					"PATCH, DELETE", "only DELETE / PATCH on /servers/{ecid}");
 			}
 			const bool by_address = caps["ecid"].find(':') != std::string::npos;
 			if (req.method == "PATCH") {
@@ -1225,16 +1309,13 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(shared_media_refresh, path_segs, caps)) {
 			if (req.method != "POST") {
-				return ErrorResponse(405,
-					"method_not_allowed",
-					"only POST on /shared/{hash}/media/refresh");
+				return MethodNotAllowed("POST", "only POST on /shared/{hash}/media/refresh");
 			}
 			return HandleSharedMediaRefreshOne(req, caps["hash"]);
 		}
 		if (web_api_path::Match(shared_verify, path_segs, caps)) {
 			if (req.method != "POST") {
-				return ErrorResponse(
-					405, "method_not_allowed", "only POST on /shared/{hash}/verify");
+				return MethodNotAllowed("POST", "only POST on /shared/{hash}/verify");
 			}
 			return HandleSharedVerify(req, caps["hash"]);
 		}
@@ -1296,8 +1377,8 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 			if (req.method == "DELETE") {
 				return HandleCategoryDelete(req, caps["index"]);
 			}
-			return ErrorResponse(
-				405, "method_not_allowed", "only PATCH / DELETE on /categories/{index}");
+			return MethodNotAllowed(
+				"PATCH, DELETE", "only PATCH / DELETE on /categories/{index}");
 		}
 	}
 
@@ -1328,8 +1409,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		if (req.method == "DELETE") {
 			return HandleLogServerinfoReset(req);
 		}
-		return ErrorResponse(
-			405, "method_not_allowed", "only GET / HEAD / DELETE on /logs/serverinfo");
+		return MethodNotAllowed("GET, HEAD, DELETE", "only GET / HEAD / DELETE on /logs/serverinfo");
 	}
 
 	if (path == "/api/v0/stats/tree") {
@@ -1451,15 +1531,13 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 			}
 			if (action == "stop") {
 				if (req.method != "POST") {
-					return ErrorResponse(
-						405, "method_not_allowed", "only POST on /search/{id}/stop");
+					return MethodNotAllowed("POST", "only POST on /search/{id}/stop");
 				}
 				return HandleSearchStop(req, sid);
 			}
 			if (action == "more") {
 				if (req.method != "POST") {
-					return ErrorResponse(
-						405, "method_not_allowed", "only POST on /search/{id}/more");
+					return MethodNotAllowed("POST", "only POST on /search/{id}/more");
 				}
 				return HandleSearchMore(req, sid);
 			}
@@ -1477,8 +1555,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(graph_pattern, segs, caps)) {
 			if (req.method != "GET" && req.method != "HEAD") {
-				return ErrorResponse(
-					405, "method_not_allowed", "only GET on /stats/graphs/{graph}");
+				return MethodNotAllowed("GET, HEAD", "only GET on /stats/graphs/{graph}");
 			}
 			return HandleStatsGraph(req, caps["graph"]);
 		}
@@ -1537,8 +1614,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 			// rather than a bare ECID, and `a4af_auto` is already on the
 			// download detail object. The POST stays -- the swap actions have
 			// no equivalent there, and its reply is still the A4AF view.
-			return ErrorResponse(
-				405, "method_not_allowed", "only POST on /downloads/{hash}/a4af");
+			return MethodNotAllowed("POST", "only POST on /downloads/{hash}/a4af");
 		}
 	}
 
@@ -1587,8 +1663,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// resource, and it carries no per-installation data.
 	if (path.compare(0, 7, "/flags/") == 0) {
 		if (req.method != "GET" && req.method != "HEAD") {
-			return ErrorResponse(
-				405, "method_not_allowed", "only GET / HEAD on /flags/{code}.png");
+			return MethodNotAllowed("GET, HEAD", "only GET / HEAD on /flags/{code}.png");
 		}
 		return ServeCountryFlag(req, path);
 	}
@@ -1666,11 +1741,45 @@ CHttpServer::Response CApiDispatcher::ServeStaticFile(
 	// Case-insensitive: Beast preserves the client's wire casing, so a
 	// lowercase `if-none-match` -- what an HTTP/2-shaped client library
 	// produces -- used to miss here and silently lose conditional GET.
+	// Through the shared matcher, not a string compare: the header may be
+	// `*`, a comma-separated list, or a weak `W/"..."` validator (which is
+	// what an nginx in front of us emits once it gzips). The outer layer
+	// used to supply that grammar for the GET path; now that it steps aside
+	// whenever a handler set its own ETag, this path has to speak it.
 	const std::string inm_val = FindHeaderCaseInsensitive(req.headers, "If-None-Match");
-	if (!inm_val.empty() && inm_val == etag) {
+	// A 304 has no body for the transport to compress, so which
+	// representation this validator names is decided here, while the body
+	// is still present to measure -- and the comparison uses that same
+	// value, so a client is only told "unchanged" about the representation
+	// it actually asked for.
+	const bool coded =
+		WillCompressBody(AcceptsGzip(FindHeaderCaseInsensitive(req.headers, "Accept-Encoding")),
+			body.size(),
+			StaticContentType(rel),
+			/*already_encoded=*/false);
+	// Through the shared helper, which takes the quoted form this path
+	// carries as readily as the bare form the API path does. Three separate
+	// hand-rolled spellings of "put the suffix on" is how the transport
+	// ended up with one that could not take it back off again.
+	const std::string wire_static_etag = webcommon::WithCodingSuffix(etag, coded);
+	const std::string wire_static_bare =
+		(wire_static_etag.size() >= 2 && wire_static_etag.front() == '"' &&
+			wire_static_etag.back() == '"')
+			? wire_static_etag.substr(1, wire_static_etag.size() - 2)
+			: wire_static_etag;
+	if (webcommon::IfNoneMatchHits(inm_val, wire_static_bare)) {
 		CHttpServer::Response r;
 		r.status = 304;
-		r.headers["ETag"] = etag;
+		// Response::content_type defaults to application/json, which on a
+		// 304 for an HTML or CSS asset is simply wrong. Cleared rather
+		// than corrected: a 304 carries no content, the transport omits
+		// the header when it is empty, and this matches what the API 304
+		// path already does.
+		r.content_type.clear();
+		r.headers["ETag"] = wire_static_etag;
+		// Same policy the 200 carries, or a cache is told the shell is
+		// private on the very response that confirms its copy is good.
+		r.headers["Cache-Control"] = "public, no-cache";
 		return r;
 	}
 
@@ -1684,6 +1793,39 @@ CHttpServer::Response CApiDispatcher::ServeStaticFile(
 	// outer layer skips stamping whenever a handler set its own ETag.
 	r.body = std::move(body);
 	r.headers["ETag"] = etag;
+	// The WebUI shell is the same bytes for everyone, so it carries its own
+	// policy rather than inheriting the authenticated default -- without
+	// this it was stamped private and re-fetched per session.
+	//
+	// no-cache, NOT a max-age. These filenames carry no content hash:
+	// index.html, app.js and app.css keep their names across a rebuild. A
+	// freshness lifetime therefore buys nothing that the ETag does not
+	// already give -- and costs correctness, because must-revalidate only
+	// governs what a cache may do once the entry is ALREADY stale
+	// (RFC 9111 5.2.2.2). Inside the lifetime the browser serves the copy
+	// it has without asking, so an upgraded daemon would keep handing out
+	// the old shell for the rest of the window, and since each asset
+	// expires on its own clock a new shell can be paired with an old
+	// bundle -- breakage that looks like a bug rather than a stale page.
+	//
+	// no-cache means revalidate every time, not "do not store": the copy
+	// stays in the cache and an unchanged bundle costs one conditional GET
+	// answered 304 with no body. Reserve a long max-age for content-hashed
+	// filenames, where the URL changes when the bytes do.
+	//
+	// public is load-bearing alongside it, not decoration. RFC 9111 3.5
+	// bars a shared cache from reusing a response to a request that
+	// carried an AUTHORIZATION HEADER unless the response carries one of
+	// public, must-revalidate or s-maxage, and no-cache is not on that
+	// list. The browser WebUI is not the case that engages it -- it
+	// authenticates by cookie, which is exactly why the credential stamp
+	// above needs Vary: Cookie instead. A bearer-token client fetching the
+	// same shell is: its request does carry the header. Without public, a
+	// proxy in front of the daemon must then hold a per-token copy of a
+	// file identical for every caller. It changes nothing for a client
+	// that is not a shared cache: no-cache still forces revalidation on
+	// every use.
+	r.headers["Cache-Control"] = "public, no-cache";
 	return r;
 }
 
@@ -1729,9 +1871,11 @@ CHttpServer::Response CApiDispatcher::ServeCountryFlag(
 	CHttpServer::Response r;
 	r.status = 200;
 	r.content_type = "image/png";
-	// HEAD body-stripping and the ETag / If-None-Match → 304 swap are
-	// applied to every 200 GET/HEAD by Dispatch(), so this handler only
-	// has to produce the bytes.
+	// The ETag / If-None-Match -> 304 swap is applied to every 200
+	// GET/HEAD by Dispatch(), and a HEAD is written as headers only by the
+	// transport rather than stripped here, so this handler only has to
+	// produce the bytes. (Dispatch no longer strips the body: keeping it
+	// is what lets Content-Length report what a GET would return.)
 	r.body.assign(reinterpret_cast<const char *>(icon->png_data), icon->png_len);
 	// The artwork is compiled in: it can only change with a new build,
 	// and a peer list is a page full of <img> tags pointing here. A day
@@ -2064,6 +2208,10 @@ CHttpServer::Response CApiDispatcher::HandleSession(const CHttpServer::Request &
 	w.Key("exp_unix");
 	w.ValueInt(static_cast<int64_t>(a.verified.exp));
 	w.EndObject();
+	// Per-principal document: a shared cache must not hand one caller
+	// another's session. Our own ETag memo excludes this target for the
+	// same reason; this is the half that binds anything in front of us.
+	r.headers["Cache-Control"] = "private, no-store";
 	FinalizeJsonBody(w, r);
 	return r;
 }
@@ -10458,6 +10606,20 @@ CHttpServer::Response CApiDispatcher::HandleSearchCommentsKadSearch(
 //
 // DispatchStreaming reads head out-params ONCE before writing, so
 // one function here sets the head AND runs the drain loop.
+// CORS for the replies the transport builds without a parsed request: the
+// read-side limits and the request timeout. Takes the raw Origin header
+// because at that point there is no Request to resolve one from.
+void CApiDispatcher::StampCorsForTransport(
+	std::map<std::string, std::string> &headers, const std::string &origin_header)
+{
+	CHttpServer::Request synthetic;
+	if (!origin_header.empty()) {
+		synthetic.headers.emplace("Origin", origin_header);
+	}
+	const std::string cors_org = ResolveCorsOrigin(synthetic, m_config);
+	ApplyCorsHeaders(headers, cors_org, m_config.ServerCfg().allow_cors);
+}
+
 boost::optional<CHttpServer::Response> CApiDispatcher::PreflightEvents(const CHttpServer::Request &req)
 {
 	// Same bearer/cookie check the live handler used to do, but run
@@ -10468,7 +10630,46 @@ boost::optional<CHttpServer::Response> CApiDispatcher::PreflightEvents(const CHt
 	// subscribers.
 	auto a = Authenticate(req);
 	if (!a.ok) {
+		// CORS on the rejection too. The HEAD probe below was moved
+		// into this function to pick the bundle up, and leaving the
+		// 401/403/429 without it means a cross-origin SSE client sees
+		// an opaque fetch failure exactly when it most needs to read
+		// why it was turned away.
+		{
+			const std::string cors_org = ResolveCorsOrigin(req, m_config);
+			ApplyCorsHeaders(a.rejection.headers, cors_org, m_config.ServerCfg().allow_cors);
+		}
 		return a.rejection;
+	}
+	// A HEAD here asks what a GET would answer with, not for the stream.
+	// Answered in the dispatcher rather than in the transport so it picks
+	// up the same CORS bundle the stream itself carries -- built in the
+	// transport it had none, and a credentialed cross-origin HEAD was
+	// blocked by the browser while the GET succeeded.
+	if (req.method == "HEAD") {
+		CHttpServer::Response probe;
+		probe.status = 200;
+		probe.content_type = "text/event-stream";
+		probe.headers["Cache-Control"] = "no-cache";
+		probe.headers["X-Accel-Buffering"] = "no";
+		// Mirror the encoding the GET would negotiate. The probe body
+		// is empty, so nothing downstream will compress it and the
+		// header has to be stated: without it a HEAD says identity
+		// while the stream it stands for arrives gzipped, which is the
+		// same divergence that makes a HEAD on any other route unsafe
+		// to cache against.
+		if (AcceptsGzip(FindHeaderCaseInsensitive(req.headers, "Accept-Encoding"))) {
+			probe.headers["Content-Encoding"] = "gzip";
+		}
+		// NOT keep-alive: this connection is answered and closed, and
+		// advertising reuse makes a pooling client fail its next
+		// request on a socket we already shut down.
+		probe.headers["Connection"] = "close";
+		{
+			const std::string cors_org = ResolveCorsOrigin(req, m_config);
+			ApplyCorsHeaders(probe.headers, cors_org, m_config.ServerCfg().allow_cors);
+		}
+		return probe;
 	}
 	return boost::none;
 }
