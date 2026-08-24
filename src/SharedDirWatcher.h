@@ -57,8 +57,9 @@ public:
 	// already enabled — no-op in that case.
 	void Enable();
 
-	// Stop watching and free the watcher object. Safe to call when
-	// already disabled.
+	// Stop watching. The watcher object itself is freed from the event
+	// queue rather than here -- see Disable(). Safe to call when already
+	// disabled.
 	void Disable();
 
 	bool IsEnabled() const { return m_watcher != NULL; }
@@ -151,8 +152,26 @@ private:
 	// are not still gets fully covered in one pass.
 	void WalkForUnknownSubdirs(const CPath &root, std::set<wxString> &known, std::vector<CPath> &out);
 
+	// Destroy the watchers Disable() detached. Queued with CallAfter() so
+	// the delete lands between dispatches; also called by the destructor
+	// for whatever the queue never reached.
+	void ReapPendingWatchers();
+
+	// Stop the debounce (and, on macOS, the run-loop pump) timer. Shared
+	// by Disable() and the destructor.
+	void StopTimers();
+
 	CSharedFileList *m_parent;
 	wxFileSystemWatcher *m_watcher;
+	//! Watchers detached by Disable() and not yet destroyed. ~wxFileSystemWatcher
+	//! frees the wxFDIOEventLoopSourceHandler wx registered for its inotify fd,
+	//! and wxEpollDispatcher::Dispatch walks a snapshot of the ready events
+	//! without re-checking any handler -- so freeing one from inside an event
+	//! handler makes that loop call a virtual on freed memory as soon as the
+	//! same batch reaches the watcher's fd. Destruction is therefore deferred
+	//! to the pending-event queue, which the event loop drains before it
+	//! dispatches, and the destructor sweeps whatever the queue never reached.
+	std::vector<wxFileSystemWatcher *> m_pendingDelete;
 	wxTimer m_debounceTimer;
 
 	// Per-path accumulator. Keyed on the raw filesystem path. Events
