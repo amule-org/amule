@@ -128,13 +128,22 @@ std::string ToJsonDownloadEvent(const FileSnapshot &f)
 	return o.str();
 }
 
-// comments_updated event payload — the file's full comment/rating list, matching
-// the GET /downloads/{hash}/comments body. Covers both retrieved Kad notes and
-// comments reported by connected ed2k sources (they share source_comments).
+// comments_updated event payload — the GET /downloads/{hash}/comments body
+// plus `hash`. Covers both retrieved Kad notes and comments reported by
+// connected ed2k sources (they share source_comments).
+//
+// A strict superset of the endpoint, deliberately: the event needs `hash`
+// because nothing else in the frame identifies the file, and it needs
+// `kad_comment_search_running` because that flag is exactly what a client
+// wants while a POST /downloads/{hash}/comments lookup is in flight. It used
+// to carry the first and not the second, so a client that followed the docs
+// and fed the event into the view it built from the endpoint silently lost
+// the in-flight indicator.
 std::string ToJsonCommentsEvent(const FileSnapshot &f)
 {
 	std::ostringstream o;
 	o << "{\"hash\":\"" << EscJson(f.hash) << "\""
+	  << ",\"kad_comment_search_running\":" << (f.download.kad_comment_searching ? "true" : "false")
 	  << ",\"count\":" << f.download.source_comments.size() << ",\"comments\":[";
 	bool first = true;
 	for (const auto &c : f.download.source_comments) {
@@ -353,6 +362,13 @@ bool EqualDownload(const FileSnapshot &a, const FileSnapshot &b)
 // change drives the separate comments_updated event, not download_updated).
 bool EqualComments(const FileSnapshot &a, const FileSnapshot &b)
 {
+	// The in-flight flag is part of the payload, so it has to be part of
+	// the comparison: without it the true->false edge at the end of a Kad
+	// lookup fires no event at all, and a `?channels=comments` subscriber
+	// is left with its spinner stuck on. Every field the event emits must
+	// be compared here or the event cannot announce it changing.
+	if (a.download.kad_comment_searching != b.download.kad_comment_searching)
+		return false;
 	const auto &ca = a.download.source_comments;
 	const auto &cb = b.download.source_comments;
 	if (ca.size() != cb.size())
@@ -720,7 +736,16 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 				if (now.is_downloading) {
 					if (!was_downloading) {
 						changed.emplace_back(Change::DownloadAdded, entry.first);
-						if (!now.download.source_comments.empty()) {
+						// The flag counts as comment state, exactly as
+						// it does in EqualComments. Gating on the list
+						// alone means a download first seen with a Kad
+						// lookup already in flight never announces the
+						// lookup at all -- the mirror of the edge where
+						// a finished lookup never announced its end,
+						// leaving the same indicator wrong in the
+						// opposite direction.
+						if (!now.download.source_comments.empty() ||
+							now.download.kad_comment_searching) {
 							changed.emplace_back(
 								Change::CommentsUpdated, entry.first);
 						}

@@ -499,6 +499,26 @@ std::string IPv4ToDotted(std::uint32_t ip_lsb_first)
 	return std::string(buf);
 }
 
+// See State.h. Matches on the path; the query string selects a page, not a
+// different resource.
+bool MemoizableTarget(const std::string &target)
+{
+	const std::string path = target.substr(0, target.find('?'));
+	// OPT-IN, and deliberately so. This was an exclusion list, and an
+	// exclusion list has to be right about every route that exists now and
+	// every route anyone adds later -- it was wrong four separate times,
+	// each for a different reason. Inverting it makes the failure mode
+	// "we hash a body we did not have to", which costs microseconds,
+	// instead of "we serve a 304 for content that changed".
+	//
+	// Only the two collections the memo was built for are listed. They are
+	// the multi-MB bodies where skipping an MD5 is worth anything; every
+	// other target hashes per request and is immune by construction.
+	// Before adding one, it must be BOTH governed by the refresher
+	// snapshot AND identical for every caller -- see State.h.
+	return path == "/api/v0/downloads" || path == "/api/v0/shared";
+}
+
 std::string ChatPeerKeyFromGuiId(std::uint64_t gui_id)
 {
 	const std::uint32_t ip = static_cast<std::uint32_t>(gui_id >> 16);
@@ -721,6 +741,12 @@ void CState::MutateDownloads(const std::function<void(FileMap &)> &fn)
 	const ReentryGuard guard(this);
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	fn(m_files);
+	// Bumped by the writer, not by its callers. The ETag memo keys on this,
+	// and every previous attempt to advance it from the outside missed a
+	// path: first the inline refreshes that mutating handlers run, then a
+	// tick that failed partway after already writing. A writer cannot
+	// forget to say that it wrote.
+	++m_snapshot_rev;
 }
 
 void CState::MutateShared(const std::function<void(FileMap &)> &fn)
@@ -728,6 +754,8 @@ void CState::MutateShared(const std::function<void(FileMap &)> &fn)
 	const ReentryGuard guard(this);
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	fn(m_files);
+	// See MutateDownloads: the memo key is advanced by the writer.
+	++m_snapshot_rev;
 }
 
 void CState::MutateClients(const std::function<void(std::map<std::uint32_t, ClientSnapshot> &)> &fn)
@@ -740,6 +768,10 @@ void CState::MutateClients(const std::function<void(std::map<std::uint32_t, Clie
 void CState::ResetLists()
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
+	// A wholesale wipe on EC reconnect is as much a body change as any
+	// mutation, and it runs on the failure path -- exactly where the key
+	// used to freeze while the bodies moved underneath it.
+	++m_snapshot_rev;
 	m_files.clear();
 	m_clients.clear();
 	m_servers.clear();
@@ -760,6 +792,18 @@ void CState::ResetLists()
 	// operator can see "EC disconnected at HH:MM" alongside earlier
 	// graph traffic; stats_tree's counters are amuled-uptime not
 	// amuleapi-tick scoped.
+}
+
+void CState::BumpSnapshotRevision()
+{
+	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
+	++m_snapshot_rev;
+}
+
+std::uint64_t CState::SnapshotRevision() const
+{
+	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+	return m_snapshot_rev;
 }
 
 void CState::MarkTickSuccess()

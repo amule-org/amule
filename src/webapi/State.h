@@ -583,6 +583,24 @@ struct ChatSessionSnapshot
 // is built from a GUI_ID, with no walker involved).
 std::string IPv4ToDotted(std::uint32_t ip_lsb_first);
 
+// Is this request target eligible for the response-ETag memo?
+//
+// OPT-IN. The memo key is (target, snapshot revision) and nothing else, which
+// makes two demands on anything eligible; a route that fails either one gets
+// answered 304 for content that has changed:
+//
+//  1. Its body must move only when the state moves, so the revision covers
+//     it. Endpoints with their own TTL cache, an append-only mirror, a
+//     refresh-on-read, or a live EC roundtrip per request do not qualify.
+//  2. Its body must be identical for every caller. The key carries no
+//     principal, so a per-caller document would share one validator between
+//     whoever asked first.
+//
+// This was an exclusion list and it was wrong four times over, each time for
+// a different reason. The eligible set is now spelled out instead, so the
+// cost of overlooking a route is a wasted hash rather than a stale 304.
+bool MemoizableTarget(const std::string &target);
+
 // The same key built straight from a GUI_ID, for paths that only have the id
 // (a session that was closed is gone from the snapshot, so there is no
 // ChatSessionSnapshot left to ask). GUI_ID is (ip << 16) | port.
@@ -1741,6 +1759,16 @@ public:
 	void WriteStatsTree(StatsTreeNode t);
 	void WriteGraphs(StatsGraphs g);
 	void MarkTickSuccess();
+	// Monotonic counter advanced by every successful refresh, from the
+	// background loop and from the inline refreshes that mutating handlers
+	// run. `snapshot_at` cannot play this role: it is whole seconds, so two
+	// refreshes inside one second are indistinguishable, and it is stamped
+	// only by the loop, so a mutation could change a body while it stood
+	// still -- which answered the next conditional GET with 304 for content
+	// that had just changed. Anything keyed on "has the state moved" wants
+	// this, not the timestamp.
+	void BumpSnapshotRevision();
+	std::uint64_t SnapshotRevision() const;
 	void MarkTickFailure();
 
 private:
@@ -1753,6 +1781,7 @@ private:
 	bool m_has_first_snapshot = false;
 	bool m_ec_connected = false;
 	std::time_t m_snapshot_at = 0;
+	std::uint64_t m_snapshot_rev = 0;
 
 	StatusSnapshot m_status;
 	KadSnapshot m_kad;

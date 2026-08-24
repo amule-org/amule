@@ -91,6 +91,9 @@ public:
 	// admit the connection; returns a 401/403/429 Response to short-
 	// circuit unauth peers without burning a slot.
 	boost::optional<CHttpServer::Response> PreflightEvents(const CHttpServer::Request &req);
+	// CORS for transport-built replies (408 / 413 / 431); see the .cpp.
+	void StampCorsForTransport(
+		std::map<std::string, std::string> &headers, const std::string &origin_header);
 
 private:
 	// Inner routing — picks the right Handle*() based on path/method,
@@ -369,7 +372,8 @@ private:
 	mutable std::mutex m_etagCacheMu;
 	struct EtagCacheEntry
 	{
-		std::time_t snapshot_at = 0;
+		// Refresh revision, not a timestamp; see CApiDispatcher::Dispatch.
+		std::uint64_t snapshot_rev = 0;
 		std::string etag;
 	};
 	std::map<std::string, EtagCacheEntry> m_etagCache;

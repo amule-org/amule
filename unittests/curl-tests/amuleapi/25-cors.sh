@@ -19,8 +19,8 @@
 #     (cookie-auth-compatible with the per-origin echo).
 #   * Preflight: `OPTIONS` + `Access-Control-Request-Method` short-
 #     circuits before auth, replies 204 with
-#     `Access-Control-Allow-Methods: GET, HEAD, POST, PATCH, DELETE,
-#     OPTIONS` and `Access-Control-Allow-Headers: Authorization,
+#     `Access-Control-Allow-Methods: GET, HEAD, POST, PUT, PATCH,
+#     DELETE, OPTIONS` and `Access-Control-Allow-Headers: Authorization,
 #     Content-Type, If-None-Match, Last-Event-ID` and
 #     `Access-Control-Max-Age: 86400`.
 #   * SSE: the streaming response carries the same Allow-Origin /
@@ -257,6 +257,41 @@ else
 	_fail "Vary on rejection" "got: $VARY"
 fi
 
+# --- Transport-built replies carry CORS too. ---------------------
+#
+# 408 / 413 / 431 / the streaming cap refusal / the handler catch-all are
+# built by the transport, before or instead of a handler, so the dispatcher's
+# CORS pass never sees them. They are the replies a cross-origin client most
+# needs to read, and they went uncovered: nulling the stamper left the whole
+# suite green.
+BIG_BODY=$(mktemp -t amuleapi_25_big.XXXXXX)
+if command -v python3 >/dev/null 2>&1 &&
+	python3 -c "import sys; sys.stdout.write('{\"password\":\"' + 'a'*2200000 + '\"}')" \
+		> "$BIG_BODY" 2>/dev/null && [ -s "$BIG_BODY" ]; then
+	_curl -X POST -H "Origin: https://allowed.example.com" \
+		-H "Content-Type: application/json" \
+		--data-binary @"$BIG_BODY" "$HOST/api/v0/auth/login"
+	BIG_STATUS=$(head -1 "$HDR" | awk '{print $2}')
+	BIG_ACAO=$(_hdr "Access-Control-Allow-Origin")
+	if [ "$BIG_STATUS" = "413" ]; then
+		if [ "$BIG_ACAO" = "https://allowed.example.com" ]; then
+			_pass "a transport-built 413 carries Allow-Origin"
+		else
+			_fail "transport-built 413 CORS" "expected the echoed origin, got '$BIG_ACAO'"
+		fi
+		BIG_EXPOSE=$(_hdr "Access-Control-Expose-Headers")
+		case "$BIG_EXPOSE" in
+		*Retry-After*) _pass "Expose-Headers advertises Retry-After" ;;
+		*) _fail "Expose-Headers Retry-After" "got '$BIG_EXPOSE'" ;;
+		esac
+	else
+		_fail "transport-built 413" "expected 413, got '$BIG_STATUS'"
+	fi
+else
+	_pass "SKIPPED transport-built 413 CORS (python3 unavailable)"
+fi
+rm -f "$BIG_BODY"
+
 # --- OPTIONS preflight (Mode C, allowed origin). -----------------
 _curl -X OPTIONS \
 	-H "Origin: https://allowed.example.com" \
@@ -284,6 +319,30 @@ if echo "$ACAM" | grep -q "POST" && echo "$ACAM" | grep -q "PATCH" \
 	_pass "Preflight: Allow-Methods lists mutating verbs"
 else
 	_fail "Allow-Methods" "expected POST/PATCH/DELETE listed, got '$ACAM'"
+fi
+# PUT specifically: PUT /api/v0/shared/directories is a real route (the
+# replace-the-whole-share-root-list form), and it was missing from the
+# advertised list. A browser doing a cross-origin PUT there was told the
+# method is not allowed and blocked the request before sending it -- the
+# route worked from curl and was unreachable from a page.
+if echo "$ACAM" | grep -q "PUT"; then
+	_pass "Preflight: Allow-Methods lists PUT"
+else
+	_fail "Allow-Methods PUT" "PUT is a real route on /shared/directories, got '$ACAM'"
+fi
+
+# And the same preflight asked about that route by name.
+_curl -X OPTIONS \
+	-H "Origin: https://allowed.example.com" \
+	-H "Access-Control-Request-Method: PUT" \
+	"$HOST/api/v0/shared/directories"
+PUT_STATUS=$(head -1 "$HDR" | awk '{print $2}')
+PUT_ACAM=$(_hdr "Access-Control-Allow-Methods")
+if [ "$PUT_STATUS" = "204" ] && echo "$PUT_ACAM" | grep -q "PUT"; then
+	_pass "Preflight for PUT /shared/directories advertises PUT"
+else
+	_fail "Preflight PUT /shared/directories" \
+		"status '$PUT_STATUS', Allow-Methods '$PUT_ACAM'"
 fi
 if echo "$ACAH" | grep -qi "Authorization" \
    && echo "$ACAH" | grep -qi "If-None-Match" \

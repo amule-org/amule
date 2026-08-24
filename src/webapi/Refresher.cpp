@@ -219,7 +219,15 @@ void ParseStatusFromPacket(const CECPacket *resp, StatusSnapshot &out)
 				if (name) {
 					out.server_name = std::string(name->GetStringData().utf8_str());
 				}
-				out.server_ip = std::string(server->GetIPv4Data().StringIP().utf8_str());
+				// Not StringIP(): every overload of it appends ":port"
+				// and wraps the result in brackets, so `server_ip` used
+				// to read "[77.42.68.79:4232]" -- contradicting both its
+				// name and its declared "dotted-quad" contract, and
+				// giving a client that joins it with `server_port` the
+				// nonsense "[77.42.68.79:4232]:4232". Format from the
+				// raw address the way every other IP on this surface is
+				// formatted; the port stays in `server_port`.
+				out.server_ip = FormatClientIpv4(server->GetIPv4Data().IP());
 				out.server_port = server->GetIPv4Data().m_port;
 			}
 			uint32 ed2kSince = 0;
@@ -2426,8 +2434,14 @@ void ApplySearchFull(const CECPacket *resp, std::map<std::uint32_t, SearchResult
 		if (const CECTag *x = sf->GetTagByName(EC_TAG_SEARCHFILE_DIRECTORY)) {
 			r.directory = std::string(x->GetStringData().utf8_str());
 		}
-		// Media metadata (issue #430): present only when the hit carried
-		// FT_MEDIA_* tags (known/probed locally). Any present tag marks
+		// Media metadata (issue #430): present when the hit carried
+		// FT_MEDIA_* tags. On a locally known/probed file those are our
+		// own probe's values; on a remote hit they are whatever the
+		// responding server advertised, which is not validated anywhere
+		// and can contradict the file (a .pdf with a runtime and an xvid
+		// codec is a real observed result). Passed through as sent -- the
+		// API documents the search-result `media` as unverified rather
+		// than second-guessing the server. Any present tag marks
 		// has_media so the API emits the `media` object.
 		{
 			std::uint32_t v = 0;

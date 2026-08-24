@@ -61,6 +61,29 @@ std::string Etag(const std::string &body_utf8);
 // equality).
 bool IfNoneMatchHits(const std::string &if_none_match, const std::string &etag);
 
+// Suffix distinguishing the gzipped representation of a body from the identity
+// one. A strong validator identifies ONE representation, so the same ETag must
+// not describe both codings of a resource -- a cache holding the gzip form and
+// revalidating for a client that cannot accept it would otherwise be told its
+// copy is current. The hash is taken before compression, so the coding is
+// appended by whoever selects the representation, and the conditional-GET
+// comparison runs against that same value -- matching either coding would
+// defeat the point, telling a client holding one representation that its copy
+// of the other is current.
+extern const char kGzipEtagSuffix[];
+
+// Returns `etag` naming the gzipped representation when `coded`, and the
+// identity one when not. Accepts either the bare-hex or the RFC-quoted form
+// and preserves which one it was given.
+//
+// Idempotent, and defined by the representation rather than by the edit: the
+// caller says which coding the value must name, not whether to add or remove
+// anything. That is what lets the transport reconcile the dispatcher's
+// prediction against what compression actually did -- when deflate fails after
+// the suffix was already stamped, the same call takes it back off, and when
+// the prediction held it changes nothing.
+std::string WithCodingSuffix(const std::string &etag, bool coded);
+
 } // namespace webcommon
 
 #endif // LIBWEBCOMMON_ETAG_H

@@ -26,6 +26,8 @@
 
 #include "JsonWriter.h"
 
+#include <Etag.h> // webcommon::WithCodingSuffix
+
 #include <wx/string.h>
 
 // See the note in LibSocketAsio.cpp: Boost 1.92's asio trips
@@ -49,6 +51,18 @@
 #pragma clang diagnostic pop
 #endif
 
+// strncasecmp lives in <strings.h> on POSIX (glibc also exposes it via
+// <string.h>, but musl/BSDs don't), and MSVC spells it _strnicmp. The same
+// shim Api.cpp and libwebcommon/HeaderParse.cpp carry: this file reads a
+// header name case-insensitively on the transport error paths, and it should
+// not depend on the declaration arriving transitively through someone else's
+// include.
+#ifdef _WIN32
+#define strncasecmp _strnicmp
+#else
+#include <strings.h>
+#endif
+
 #include <zlib.h>
 
 #include <atomic>
@@ -68,35 +82,39 @@ namespace http = boost::beast::http;
 namespace asio = boost::asio;
 using tcp = boost::asio::ip::tcp;
 
-namespace
-{
-
-// Per-connection session. Reads one request, hands it to the user
-// handler, writes the response, closes. No keep-alive — the API
-// surface is too small to benefit, and the one-shot model keeps the
-// state machine trivially auditable. If the streaming_resolver
-// matches the parsed request, the session takes a different path:
-// writes the response head and runs the streaming handler on a
-// worker thread, which can push chunks indefinitely via the Writer
-// interface until the handler returns or the peer disconnects.
+// See HttpServer.h.
 //
-// Process-wide cap on concurrent SSE subscribers. Each session
-// spawns one OS thread, so without a cap a non-loopback bind turns
-// the thread-per-connection model into a DoS amplifier. The cap is
-// sized for the single-operator dashboard pattern: a handful of
-// browser tabs + the odd shell script. Refused sessions get
-// `503 Service Unavailable` + a `Retry-After` hint inside the
-// streaming dispatch path before the worker thread is created.
-constexpr int kMaxConcurrentStreamingSessions = 32;
-
-// Size of the handler worker pool. Non-streaming request handlers run here
-// instead of on the single io_context thread, so a handler that blocks — a
-// synchronous EC roundtrip stalled up to the EC read timeout — can never
-// freeze accept or other connections. Sized with headroom over amuleapi's
-// typical concurrency (a handful of clients) so non-EC requests keep a free
-// worker even while several handlers are parked on a stalled EC roundtrip.
-constexpr int kHandlerPoolThreads = 16;
-std::atomic<int> g_streaming_session_count{ 0 };
+// Factored out deliberately. This logic existed in three places -- the regular
+// response writer, the SSE head writer, and the dispatcher's CORS pass -- and
+// two consecutive rounds of fixes each landed in a different two of the three,
+// leaving the untouched copy with the old overwrite behaviour. One definition
+// means a fix cannot land in only some of the writers.
+void AppendHeaderToken(std::map<std::string, std::string> &headers, const char *name, const char *token)
+{
+	auto it = headers.find(name);
+	if (it == headers.end() || it->second.empty()) {
+		headers[name] = token;
+		return;
+	}
+	// Token-by-token so a short name cannot match inside a longer one.
+	const std::string &cur = it->second;
+	std::size_t pos = 0;
+	while (pos <= cur.size()) {
+		const std::size_t comma = cur.find(',', pos);
+		const std::size_t end = (comma == std::string::npos) ? cur.size() : comma;
+		std::size_t b = pos, e = end;
+		while (b < e && (cur[b] == ' ' || cur[b] == '\t'))
+			++b;
+		while (e > b && (cur[e - 1] == ' ' || cur[e - 1] == '\t'))
+			--e;
+		if (cur.compare(b, e - b, token) == 0)
+			return;
+		if (comma == std::string::npos)
+			break;
+		pos = comma + 1;
+	}
+	it->second = cur + ", " + token;
+}
 
 // Bodies smaller than this are sent uncompressed. Below ~250 bytes the
 // gzip header (~10 bytes) + trailer (~8 bytes) plus the deflate block
@@ -128,6 +146,14 @@ bool IsPrecompressedType(const std::string &content_type)
 	return false;
 }
 
+// See HttpServer.h.
+bool WillCompressBody(
+	bool accepts_gzip, std::size_t body_size, const std::string &content_type, bool already_encoded)
+{
+	return accepts_gzip && body_size >= kGzipMinBodyBytes && !already_encoded &&
+	       !IsPrecompressedType(content_type);
+}
+
 // Case-insensitive token search for "gzip" in an Accept-Encoding header
 // value. Real clients (curl, browsers) send "gzip, deflate, br" or
 // "gzip;q=1.0" — no legitimate client sends "gzip;q=0" (which per
@@ -156,6 +182,52 @@ bool AcceptsGzip(const std::string &accept_encoding)
 	}
 	return false;
 }
+
+namespace
+{
+
+// Per-connection session. Reads one request, hands it to the user
+// handler, writes the response, closes. No keep-alive — the API
+// surface is too small to benefit, and the one-shot model keeps the
+// state machine trivially auditable. If the streaming_resolver
+// matches the parsed request, the session takes a different path:
+// writes the response head and runs the streaming handler on a
+// worker thread, which can push chunks indefinitely via the Writer
+// interface until the handler returns or the peer disconnects.
+//
+// Process-wide cap on concurrent SSE subscribers. Each session
+// spawns one OS thread, so without a cap a non-loopback bind turns
+// the thread-per-connection model into a DoS amplifier. The cap is
+// sized for the single-operator dashboard pattern: a handful of
+// browser tabs + the odd shell script. Refused sessions get
+// `503 Service Unavailable` + a `Retry-After` hint inside the
+// streaming dispatch path before the worker thread is created.
+constexpr int kMaxConcurrentStreamingSessions = 32;
+
+// Size of the handler worker pool. Non-streaming request handlers run here
+// instead of on the single io_context thread, so a handler that blocks — a
+// synchronous EC roundtrip stalled up to the EC read timeout — can never
+// freeze accept or other connections. Sized with headroom over amuleapi's
+// typical concurrency (a handful of clients) so non-EC requests keep a free
+// worker even while several handlers are parked on a stalled EC roundtrip.
+constexpr int kHandlerPoolThreads = 16;
+std::atomic<int> g_streaming_session_count{ 0 };
+
+// Largest request header block we accept. The read buffer below is sized
+// from this: the whole header has to sit in the buffer at once, so a buffer
+// smaller than the parser's header_limit means the buffer overflows first
+// and the limit never fires. They were 8 KiB and 16 KiB respectively, which
+// made the documented 16 KiB cap unreachable and the header_limit branch
+// dead code.
+constexpr std::size_t kMaxHeaderBytes = 16 * 1024;
+// Slack for the request line and the parser's own bookkeeping.
+constexpr std::size_t kReadBufferBytes = kMaxHeaderBytes + 2 * 1024;
+
+// Ceiling on how much of a rejected upload we read and throw away before
+// closing. Enough to clear the in-flight window for a normal client that
+// wrote its body before reading our answer, without letting a peer that
+// keeps pumping hold the session open.
+constexpr std::size_t kMaxDrainBytes = 4 * 1024 * 1024;
 
 // One-shot gzip encoder for regular (non-streaming) response bodies.
 // Returns false on any zlib error; the caller then serves the response
@@ -311,13 +383,16 @@ public:
 		CHttpServer::Handler handler,
 		CHttpServer::StreamingResolver streaming_resolver,
 		CHttpServer::StreamingHandler streaming_handler,
-		CHttpServer::StreamingPreflight streaming_preflight)
+		CHttpServer::StreamingPreflight streaming_preflight,
+		CHttpServer::CorsStamper cors_stamper)
 	: m_stream(std::move(socket))
+	, m_request_timer(m_stream.get_executor())
 	, m_handler_pool(std::move(handler_pool))
 	, m_handler(std::move(handler))
 	, m_streaming_resolver(std::move(streaming_resolver))
 	, m_streaming_handler(std::move(streaming_handler))
 	, m_streaming_preflight(std::move(streaming_preflight))
+	, m_cors_stamper(std::move(cors_stamper))
 	{
 	}
 
@@ -378,6 +453,21 @@ private:
 		// state. only reads one request, but leaving the reset
 		// in keeps the read loop forward-compatible if keep-alive is
 		// turned on later.
+		// Per-request, like the parser. m_answered decides which of the
+		// timeout timer and the read handler gets to answer; the rest
+		// describe how THIS request must be written and drained. All of
+		// them are latched today only because a connection serves one
+		// request -- the moment the keep-alive path above is turned on,
+		// a stale m_answered drops every later request, a stale
+		// m_drain_before_close makes an ordinary response drain, a
+		// stale m_head_probe_chunked mislabels its framing, and a
+		// stale m_drained shortens the next drain budget. Reset them
+		// together so the set cannot drift apart again.
+		m_answered.store(false, std::memory_order_relaxed);
+		m_head_only = false;
+		m_head_probe_chunked = false;
+		m_drain_before_close = false;
+		m_drained = 0;
 		m_parser.emplace();
 		// 1 MiB request cap — bigger than any sensible REST POST body
 		// (login JSON is ~64 bytes, etc.) but well under "someone is
@@ -393,25 +483,108 @@ private:
 		// defaults: 16 KiB is well over any legitimate request
 		// (Authorization + a few Accept headers is < 2 KiB) and
 		// catches the drip-feed within ~1 KiB instead of ~MB.
-		m_parser->header_limit(16 * 1024);
-		// 10 s read timeout. amuleapi runs against localhost/LAN; a
+		m_parser->header_limit(kMaxHeaderBytes);
+		// 10 s read budget. amuleapi runs against localhost/LAN; a
 		// real client never takes 10 s to send a 1 KiB request.
-		m_stream.expires_after(std::chrono::seconds(10));
+		//
+		// Two timers, deliberately. beast::tcp_stream's own expiry
+		// CLOSES the socket, so by the time the read handler sees
+		// beast::error::timeout there is nothing left to answer on --
+		// which is why a stalled request used to look identical to a
+		// crashed daemon. Our own timer fires first and gets to send a
+		// 408; the stream's expiry stays as the hard backstop for the
+		// case where writing that 408 also stalls.
+		m_stream.expires_after(std::chrono::seconds(20));
+		m_request_timer.expires_after(std::chrono::seconds(10));
+		{
+			auto self = shared_from_this();
+			m_request_timer.async_wait([self](const beast::error_code &tec) {
+				// operation_aborted = the read completed and cancelled
+				// us, which is the normal path.
+				if (tec == asio::error::operation_aborted)
+					return;
+				if (self->m_answered.exchange(true))
+					return;
+				// Same method recovery as the limit paths: this
+				// path never reaches Dispatch(), where
+				// m_head_only is normally set, so without it a
+				// HEAD drip-feeding its headers gets the 408
+				// envelope as content.
+				if (self->m_parser->get().method() == http::verb::head) {
+					self->m_head_only = true;
+				}
+				// No drain here: http::async_read is still
+				// outstanding on this socket, and a second
+				// read alongside it is an overlapping read.
+				// Retire it instead -- writing the envelope
+				// does not, and a peer that ignores the FIN
+				// would otherwise pin this Session and its fd
+				// until the stream backstop, which is twice
+				// the budget the single timer used to enforce.
+				{
+					beast::error_code cancel_ec;
+					self->m_stream.socket().cancel(cancel_ec);
+				}
+				self->WriteAndClose(408,
+					"request_timeout",
+					"the request was not completed within 10 s",
+					/*drain=*/false);
+			});
+		}
 
 		auto self = shared_from_this();
 		http::async_read(
 			m_stream, m_buffer, *m_parser, [self](beast::error_code ec, std::size_t bytes) {
 				(void)bytes;
+				self->m_request_timer.cancel();
+				// The timeout timer got there first and has already
+				// written a 408; anything we do now would be a second
+				// response on the same connection.
+				if (self->m_answered.exchange(true))
+					return;
 				if (ec == http::error::end_of_stream) {
 					self->DoClose();
 					return;
 				}
 				if (ec) {
-					// Read error (timeout, peer close, framing error) —
-					// stay quiet. amuleapi-side log noise from health-
-					// check probes ("000 errors are normal" in our
-					// curl-tests README) isn't worth the line per
-					// connection.
+					// Recover the method from whatever the parser
+					// managed to read before it gave up. Dispatch()
+					// is where m_head_only is normally set and these
+					// paths never reach it, so without this a HEAD
+					// rejected at the body or header cap answers with
+					// the error envelope as content -- the exact
+					// violation this commit removes everywhere else.
+					if (self->m_parser->get().method() == http::verb::head) {
+						self->m_head_only = true;
+					}
+					// Three of these are limits WE imposed, and a
+					// caller cannot tell a silent close from "daemon
+					// crashed" or "firewall ate it" — every other
+					// rejection on this surface is a typed JSON
+					// envelope, so answer these the same way before
+					// closing. Any other read error (peer vanished,
+					// framing garbage) stays quiet: there is nobody
+					// left to tell, and health-check probes would
+					// otherwise cost a log line per connection.
+					if (ec == http::error::body_limit) {
+						self->WriteAndClose(413,
+							"payload_too_large",
+							"request body exceeds the 1 MiB limit",
+							/*drain=*/true);
+						return;
+					}
+					// buffer_overflow is the same condition seen
+					// from the buffer's side: whichever of the two
+					// binds first, the caller sent more header than
+					// we accept.
+					if (ec == http::error::header_limit ||
+						ec == http::error::buffer_overflow) {
+						self->WriteAndClose(431,
+							"headers_too_large",
+							"request headers exceed the 16 KiB limit",
+							/*drain=*/true);
+						return;
+					}
 					self->DoClose();
 					return;
 				}
@@ -435,6 +608,9 @@ private:
 		// path and the streaming SocketWriter see the same decision;
 		// the header can't legally change between the two.
 		m_accepts_gzip = AcceptsGzip(std::string(req[http::field::accept_encoding]));
+		// HEAD is answered with the GET headers and no content. Recorded
+		// here because WriteResponse runs after the parser has moved on.
+		m_head_only = (r.method == "HEAD");
 		// Remote endpoint for rate-limiting. `.address()` returns a
 		// boost::asio::ip::address which `.to_string()`-es to the
 		// canonical IPv4 / IPv6 form ("192.0.2.1", "::1", "fe80::%lo0"...).
@@ -485,6 +661,14 @@ private:
 				resp.content_type = "application/json";
 				resp.body = "{\"error\":{\"code\":\"internal\","
 					    "\"message\":\"internal server error\"}}";
+				// The dispatcher's CORS pass died with the handler,
+				// so stamp it here: a cross-origin client should be
+				// able to read a 500 for the same reason it can read
+				// a 4xx.
+				if (self->m_cors_stamper) {
+					self->m_cors_stamper(
+						resp.headers, self->FindHeaderCaseInsensitiveRaw("Origin"));
+				}
 			}
 			auto out = std::make_shared<CHttpServer::Response>(std::move(resp));
 			boost::asio::post(self->m_stream.get_executor(),
@@ -505,6 +689,12 @@ private:
 		refused.status = 503;
 		refused.content_type = "application/json";
 		refused.headers["Retry-After"] = "10";
+		// Transport-built, so the dispatcher never sees it. Without the
+		// stamp this is one more reply a cross-origin client cannot
+		// read -- the same defect just fixed for 408/413/431.
+		if (m_cors_stamper) {
+			m_cors_stamper(refused.headers, FindHeaderCaseInsensitiveRaw("Origin"));
+		}
 		refused.body = "{\"error\":{\"code\":\"sessions_exhausted\","
 			       "\"message\":\"too many concurrent streaming sessions; "
 			       "retry in a few seconds\"}}";
@@ -570,7 +760,13 @@ private:
 		// the first time.
 		auto head = std::make_shared<SocketWriter::HeadData>();
 		head->headers["Cache-Control"] = "no-cache";
-		head->headers["Connection"] = "keep-alive";
+		// Not keep-alive. DoClose() writes the chunked terminator and
+		// then shuts the socket down, so a client that reads the stream
+		// to its clean end and returns the socket to a pool fails its
+		// next request on it -- the same reason every ordinary response
+		// says close. It also kept the HEAD probe, which does say
+		// close, contradicting the GET it stands for.
+		head->headers["Connection"] = "close";
 		// nginx (and many other reverse proxies) buffer response
 		// bodies by default when they detect chunked-transfer +
 		// text-ish content, which stalls SSE delivery entirely — the
@@ -769,13 +965,19 @@ private:
 			if (m_wants_gzip) {
 				if (m_gzip.Init()) {
 					m_head->headers["Content-Encoding"] = "gzip";
-					if (m_head->headers.find("Vary") == m_head->headers.end()) {
-						m_head->headers["Vary"] = "Accept-Encoding";
-					}
 				} else {
 					m_wants_gzip = false;
 				}
 			}
+			// Outside the gzip branch on purpose. Vary describes what
+			// the RESPONSE VARIES ON, not what this particular response
+			// was encoded as, so it belongs on the identity reply too --
+			// otherwise a cache keyed on the non-gzip answer serves it
+			// to a client that asked for gzip. WriteResponse adds it
+			// unconditionally, so leaving it inside the branch also put
+			// a plain SSE GET at odds with the HEAD probe for the same
+			// URL, which goes through that writer.
+			AppendHeaderToken(m_head->headers, "Vary", "Accept-Encoding");
 			std::ostringstream head;
 			head << "HTTP/1.1 " << m_head->status << " ";
 			switch (m_head->status) {
@@ -837,12 +1039,112 @@ private:
 		SseGzipStream m_gzip;
 	};
 
+	// Typed error straight from the transport layer, for the read-side
+	// limits that never reach a handler. Hand-built rather than routed
+	// through the dispatcher's ErrorResponse: at this point the request
+	// was never parsed, so there is no route and no auth context.
+	// Origin off the parser rather than a parsed Request: on these paths
+	// the request never got far enough to build one. Returns "" when the
+	// header block never arrived, which the stamper treats as no-origin.
+	std::string FindHeaderCaseInsensitiveRaw(const char *name) const
+	{
+		if (!m_parser) {
+			return std::string();
+		}
+		const auto &msg = m_parser->get();
+		for (const auto &h : msg) {
+			if (h.name_string().size() == std::strlen(name) &&
+				strncasecmp(std::string(h.name_string()).c_str(), name, std::strlen(name)) ==
+					0) {
+				return std::string(h.value());
+			}
+		}
+		return std::string();
+	}
+
+	void WriteAndClose(unsigned status, const char *code, const char *message, bool drain)
+	{
+		CHttpServer::Response r;
+		r.status = status;
+		r.content_type = "application/json";
+		r.body = std::string("{\"error\":{\"code\":\"") + code + "\",\"message\":\"" + message +
+			 "\"}}";
+		// `drain` only where the composed read has already completed.
+		// The size limits fire while the peer may still be writing (a
+		// client that sends its whole body before reading anything is
+		// the normal case for a POST), and closing with unread data
+		// queued lets the stack emit an RST that discards the response
+		// just written -- the caller then sees a connection reset
+		// instead of the 413 explaining it. The timeout path is the
+		// opposite case: http::async_read is still outstanding there,
+		// and a second read on the same socket is an overlapping read,
+		// which asio forbids.
+		// The only replies on the surface built without a parsed request,
+		// so the dispatcher's CORS pass never sees them. Stamp here or a
+		// cross-origin browser client gets an opaque failure instead of
+		// the typed envelope the docs promise.
+		if (m_cors_stamper) {
+			m_cors_stamper(r.headers, FindHeaderCaseInsensitiveRaw("Origin"));
+		}
+		m_drain_before_close = drain;
+		// Tell the peer not to reuse this connection. Without it a
+		// pooling client can read the error, keep the socket, and
+		// leave us parked in the drain read with nothing to collect.
+		r.headers["Connection"] = "close";
+		WriteResponse(std::move(r));
+	}
+
+	// Read and discard whatever the peer is still sending, then close.
+	// Bounded three ways: the stream's expiry (which is why this reads
+	// through the stream rather than the socket), a byte cap, and the
+	// `Connection: close` the error carries.
+	// Arms the drain deadline and starts the loop. The deadline is set
+	// ONCE, here: expires_after inside the loop would re-arm on every
+	// read and bound only the gap between them, so a peer trickling a
+	// byte just under the limit apart could hold the Session and its fd
+	// until the byte cap -- effectively forever.
+	void StartDrainThenClose()
+	{
+		// Short budget of its own, not the request budget. The point of
+		// the drain is to collect what is ALREADY in flight so the
+		// close does not RST away the error we just wrote -- not to
+		// wait for a peer that has finished talking. A client that sent
+		// an oversized header has said everything it intends to and is
+		// now waiting on us, so draining to EOF would have both sides
+		// waiting until the request expiry broke the tie, which reads
+		// to the caller as a hang rather than a 431.
+		m_stream.expires_after(std::chrono::seconds(1));
+		DrainThenClose();
+	}
+
+	void DrainThenClose()
+	{
+		auto self = shared_from_this();
+		// Through the beast stream, not the raw socket: the raw socket
+		// ignores the stream's expiry, so a peer that neither sends nor
+		// closes would park this read forever and leak the Session with
+		// its fd.
+		m_stream.async_read_some(
+			m_drain_buffer.prepare(4096), [self](beast::error_code ec, std::size_t n) {
+				self->m_drained += n;
+				if (ec || n == 0 || self->m_drained > kMaxDrainBytes) {
+					self->DoClose();
+					return;
+				}
+				// Loop, do NOT re-arm: the deadline set in
+				// StartDrainThenClose is the total budget, and
+				// re-arming here would reset it on every read.
+				self->DrainThenClose();
+			});
+	}
+
 	void WriteResponse(CHttpServer::Response &&resp)
 	{
 		// Regular (non-streaming) response gzip encoding. Gated by:
 		//  * client Accept-Encoding contains gzip,
-		//  * body is above kGzipMinBodyBytes (header overhead is a
-		//    significant fraction below that),
+		//  * body is at or above kGzipMinBodyBytes -- the bound is
+		//    inclusive; header overhead is a significant fraction of
+		//    anything smaller,
 		//  * handler didn't already set Content-Encoding (a future
 		//    pre-gzipped static asset path would use that hook),
 		//  * body isn't already entropy-coded (PNG flags, images and
@@ -856,39 +1158,135 @@ private:
 		// response was compressed, so any intermediary cache keys the
 		// entry correctly across clients that do / don't send the
 		// header.
-		if (m_accepts_gzip && resp.body.size() >= kGzipMinBodyBytes &&
-			resp.headers.find("Content-Encoding") == resp.headers.end() &&
-			!IsPrecompressedType(resp.content_type)) {
+		// HEAD is compressed too, even though the bytes are then
+		// discarded. Skipping it saves a deflate per probe and costs
+		// correctness: HEAD must describe what the equivalent GET would
+		// return, so with Accept-Encoding: gzip that means the SAME
+		// Content-Encoding and the SAME Content-Length. Diverging binds
+		// one strong ETag to two codings and, per RFC 9111 4.3.5, lets
+		// each probe invalidate the stored gzip response. The deflate
+		// is the cheaper of the two.
+		if (WillCompressBody(m_accepts_gzip,
+			    resp.body.size(),
+			    resp.content_type,
+			    resp.headers.find("Content-Encoding") != resp.headers.end())) {
 			std::string compressed;
-			if (GzipOnce(resp.body, compressed)) {
+			const bool gzipped = GzipOnce(resp.body, compressed);
+			if (gzipped) {
 				resp.body = std::move(compressed);
 				resp.headers["Content-Encoding"] = "gzip";
 			}
+			// Reconcile the validator with the coding that ACTUALLY
+			// shipped. The hash upstream is taken before compression,
+			// so without a marker both codings of a resource carry the
+			// same strong ETag; the dispatcher stamps it in advance
+			// because a 304 has no body left here to measure. When
+			// that prediction holds this is a no-op. When deflate
+			// fails the body ships as identity and the prediction is
+			// now wrong, and this takes the suffix back off -- leaving
+			// it would bind a gzip validator to identity bytes, which
+			// is the exact mispairing the suffix exists to prevent.
+			auto et = resp.headers.find("ETag");
+			if (et != resp.headers.end())
+				et->second = webcommon::WithCodingSuffix(et->second, gzipped);
 		}
-		if (resp.headers.find("Vary") == resp.headers.end()) {
-			resp.headers["Vary"] = "Accept-Encoding";
-		}
+		// Append, never overwrite: the dispatcher may already have set
+		// `Vary: Origin` for CORS, and replacing it would drop the
+		// encoding dimension from a response whose ETag was computed
+		// before compression.
+		AppendHeaderToken(resp.headers, "Vary", "Accept-Encoding");
 
 		m_response.emplace();
 		m_response->version(11);
 		m_response->result(resp.status);
 		m_response->set(http::field::server, "amuleapi");
-		m_response->set(http::field::content_type, resp.content_type);
+		// One request per connection: DoClose() shuts the socket down
+		// after every response, so HTTP/1.1's default persistence is a
+		// promise this server does not keep. Say so on every reply
+		// instead of on the handful that happened to set it, or a
+		// pooling client keeps the socket and fails its next request on
+		// it. Handlers that set it themselves are left alone.
+		if (resp.headers.find("Connection") == resp.headers.end()) {
+			m_response->set(http::field::connection, "close");
+		}
+		// A Content-Type whose value is not a media type is malformed, so
+		// omit the header entirely on the bodiless replies (204, 304)
+		// whose handlers deliberately cleared it.
+		if (!resp.content_type.empty()) {
+			m_response->set(http::field::content_type, resp.content_type);
+		}
 		for (const auto &h : resp.headers) {
 			m_response->set(h.first, h.second);
 		}
+		// The /events HEAD probe is the one response that stands in for
+		// a chunked stream; the dispatcher marks it by content type.
+		if (m_head_only && resp.content_type == "text/event-stream") {
+			m_head_probe_chunked = true;
+		}
 		m_response->body() = std::move(resp.body);
 		m_response->prepare_payload();
+		if (m_head_probe_chunked) {
+			// Mirror the framing a GET on this endpoint advertises.
+			// prepare_payload() sizes from the (empty) body and stamps
+			// `Content-Length: 0`, which would describe a zero-length
+			// document rather than the unbounded stream the caller
+			// asked about; chunked() ahead of it does not survive,
+			// since the body size is known. Set the framing directly,
+			// after. Only the header is written, so nothing has to
+			// honour it.
+			m_response->erase(http::field::content_length);
+			m_response->set(http::field::transfer_encoding, "chunked");
+		}
 
 		auto self = shared_from_this();
+		if (m_head_only) {
+			// RFC 9110 §9.3.2 — a HEAD response carries no content, on
+			// any status. prepare_payload() has already sized
+			// Content-Length from the full body, so serializing the
+			// header alone reports what a GET would return without
+			// putting a byte of it on the wire.
+			m_serializer.emplace(*m_response);
+			m_serializer->split(true);
+			http::async_write_header(
+				m_stream, *m_serializer, [self](beast::error_code ec, std::size_t) {
+					(void)ec;
+					// Same drain as the body path. A HEAD rejected at
+					// the header cap has just as much unread data
+					// queued as a GET does, and closing on top of it
+					// lets the RST discard the 431 that was just
+					// written -- intermittently, which is why a single
+					// probe can pass and hide it.
+					if (self->m_drain_before_close) {
+						self->StartDrainThenClose();
+						return;
+					}
+					self->DoClose();
+				});
+			return;
+		}
 		http::async_write(m_stream, *m_response, [self](beast::error_code ec, std::size_t) {
 			(void)ec;
+			if (self->m_drain_before_close) {
+				self->StartDrainThenClose();
+				return;
+			}
 			self->DoClose();
 		});
 	}
 
 	void DoClose()
 	{
+		// Drop the request timer first. It holds a shared_ptr to this
+		// Session, so leaving it armed keeps a closed connection alive
+		// for the rest of its 10 s and delays process teardown by the
+		// same amount. Posted rather than cancelled inline: DoClose also
+		// runs on the SSE worker thread, and the timer belongs to the
+		// io_context executor -- every other foreign-thread touch in
+		// this file goes through asio::post for the same reason.
+		{
+			auto self = shared_from_this();
+			asio::post(m_stream.get_executor(), [self]() { self->m_request_timer.cancel(); });
+		}
 		// If we were streaming, write the chunked-encoding terminator
 		// (0-size chunk) before shutting down. Idempotent — if the
 		// peer already closed, the write fails silently.
@@ -904,19 +1302,26 @@ private:
 	}
 
 	beast::tcp_stream m_stream;
+	// Fires before the stream's own expiry so a stalled request can be
+	// answered instead of silently dropped; see DoRead.
+	asio::steady_timer m_request_timer;
 	// Worker pool that runs the (non-streaming) request handler off the
 	// io_context thread. Shared with the server; declared before m_handler
 	// so the init list stays in declaration order.
 	std::shared_ptr<asio::thread_pool> m_handler_pool;
-	beast::flat_buffer m_buffer{ 8192 };
+	beast::flat_buffer m_buffer{ kReadBufferBytes };
 	boost::optional<http::request_parser<http::string_body>> m_parser;
 	boost::optional<http::response<http::string_body>> m_response;
+	// Header-only serializer, used for HEAD so Content-Length still
+	// reports the GET size while no content reaches the wire.
+	boost::optional<http::response_serializer<http::string_body>> m_serializer;
 	CHttpServer::Handler m_handler;
 
 	// streaming state.
 	CHttpServer::StreamingResolver m_streaming_resolver;
 	CHttpServer::StreamingHandler m_streaming_handler;
 	CHttpServer::StreamingPreflight m_streaming_preflight;
+	CHttpServer::CorsStamper m_cors_stamper;
 	std::atomic<bool> m_stream_alive{ false };
 	// Set true by the worker on exit. The Session destructor asserts
 	// on it before detach()ing the thread handle (Session is shared-
@@ -938,6 +1343,17 @@ private:
 	// the same thread that populated it or on a worker spawned after
 	// the write, so no atomic is needed.
 	bool m_accepts_gzip = false;
+	bool m_head_only = false;
+	// The /events HEAD probe answers for a chunked stream, so it is framed
+	// as one rather than as a zero-length body; see DispatchStreaming.
+	bool m_head_probe_chunked = false;
+	// Set on the transport-level error replies, which are written while the
+	// peer may still be uploading; see WriteAndClose.
+	bool m_drain_before_close = false;
+	std::size_t m_drained = 0;
+	beast::flat_buffer m_drain_buffer;
+	// One response per connection, whichever of the two paths wins.
+	std::atomic<bool> m_answered{ false };
 };
 
 // Accept loop. One Listener per HttpServer; spawns a Session per
@@ -951,7 +1367,8 @@ public:
 		CHttpServer::Handler handler,
 		CHttpServer::StreamingResolver streaming_resolver,
 		CHttpServer::StreamingHandler streaming_handler,
-		CHttpServer::StreamingPreflight streaming_preflight)
+		CHttpServer::StreamingPreflight streaming_preflight,
+		CHttpServer::CorsStamper cors_stamper)
 	: m_ioc(ioc)
 	, m_acceptor(asio::make_strand(ioc))
 	, m_handler_pool(std::move(handler_pool))
@@ -959,6 +1376,7 @@ public:
 	, m_streaming_resolver(std::move(streaming_resolver))
 	, m_streaming_handler(std::move(streaming_handler))
 	, m_streaming_preflight(std::move(streaming_preflight))
+	, m_cors_stamper(std::move(cors_stamper))
 	{
 		beast::error_code ec;
 		m_acceptor.open(endpoint.protocol(), ec);
@@ -1023,7 +1441,8 @@ private:
 						self->m_handler,
 						self->m_streaming_resolver,
 						self->m_streaming_handler,
-						self->m_streaming_preflight)
+						self->m_streaming_preflight,
+						self->m_cors_stamper)
 						->Start();
 				}
 				// Loop unless the acceptor has been closed. operation_aborted
@@ -1041,6 +1460,7 @@ private:
 	CHttpServer::StreamingResolver m_streaming_resolver;
 	CHttpServer::StreamingHandler m_streaming_handler;
 	CHttpServer::StreamingPreflight m_streaming_preflight;
+	CHttpServer::CorsStamper m_cors_stamper;
 	std::string m_error;
 };
 
@@ -1065,12 +1485,21 @@ CHttpServer::~CHttpServer()
 	Stop();
 }
 
+// Every callback here is a sink: taken by value, std::move()d into Listener,
+// which moves it on into its member. A const reference would force a copy at
+// that member instead. performance-unnecessary-value-param flags four of the
+// five anyway -- exactly the four carrying a default argument, including the
+// two this change never touched -- so the suppression covers the whole list
+// rather than singling out the two whose line numbers happened to move.
+// NOLINTBEGIN(performance-unnecessary-value-param)
 bool CHttpServer::Start(const std::string &bind_address,
 	unsigned port,
 	Handler handler,
 	StreamingResolver streaming_resolver,
 	StreamingHandler streaming_handler,
-	StreamingPreflight streaming_preflight)
+	StreamingPreflight streaming_preflight,
+	CorsStamper cors_stamper)
+// NOLINTEND(performance-unnecessary-value-param)
 {
 	if (m_impl) {
 		m_lastError = "HttpServer already started";
@@ -1113,7 +1542,8 @@ bool CHttpServer::Start(const std::string &bind_address,
 		std::move(handler),
 		std::move(streaming_resolver),
 		std::move(streaming_handler),
-		std::move(streaming_preflight));
+		std::move(streaming_preflight),
+		std::move(cors_stamper));
 	if (!m_impl->listener->Ok()) {
 		m_lastError = "bind to " + bind_address + ":" + std::to_string(port) +
 			      " failed: " + m_impl->listener->Error();
