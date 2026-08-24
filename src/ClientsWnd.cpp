@@ -22,7 +22,9 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "ClientsWnd.h" // Interface declarations
+#include "ClientsWnd.h"
+
+#include "ClientVersionString.h" // Interface declarations
 
 #include <wx/sizer.h>
 
@@ -218,8 +220,10 @@ void CClientsWnd::LoadHistory()
 			row.clientSoft = meta.clientSoft;
 			row.sourceFrom = meta.sourceFrom;
 			row.obfuscation = meta.obfuscation;
-			row.version = CFormat(wxT("v%u.%u.%u")) % (meta.version / 100000) %
-				      ((meta.version % 100000) / 1000) % ((meta.version % 1000) / 100);
+			// Rendered the same way the live list renders it, so one peer is
+			// not listed under two different versions depending on whether it
+			// happens to be online.
+			row.version = FormatPackedClientVersion(meta.clientSoft, meta.version);
 		}
 		// Correlate with the live list by hash. Not by ECID: those mean
 		// nothing outside one daemon process, whereas this is the same

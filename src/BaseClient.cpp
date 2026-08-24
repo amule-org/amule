@@ -58,8 +58,9 @@
 #include "MemFile.h"           // Needed for CMemFile
 #include "Packet.h"            // Needed for CPacket
 #include "Friend.h"            // Needed for CFriend
-#include "ClientList.h"        // Needed for CClientList
-#include "ChatSessionStore.h"  // Needed for CChatSessionStore
+#include "ClientVersionString.h"
+#include "ClientList.h"       // Needed for CClientList
+#include "ChatSessionStore.h" // Needed for CChatSessionStore
 #ifndef AMULE_DAEMON
 #include "amuleDlg.h"      // Needed for CamuleDlg
 #include "CaptchaDialog.h" // Needed for CCaptchaDialog
@@ -2019,40 +2020,16 @@ void CUpDownClient::ReGetClientSoft()
 			m_nClientVersion =
 				MAKE_CLIENT_VERSION(nClientMajVersion, nClientMinVersion, nClientUpVersion);
 
-			switch (m_clientSoft) {
-			case SO_AMULE:
-			case SO_LXMULE:
-			case SO_HYDRANODE:
-			case SO_MLDONKEY:
-			case SO_NEW_MLDONKEY:
-			case SO_NEW2_MLDONKEY:
-				// Kry - xMule started sending correct version tags on 1.9.1b.
-				// It only took them 4 months, and being told by me and the
-				// eMule+ developers, so I think they're slowly getting smarter.
-				// They are based on our implementation, so we use the same format
-				// for the version string.
-				m_clientVerString = CFormat("v%u.%u.%u") % nClientMajVersion %
-						    nClientMinVersion % nClientUpVersion;
-				break;
-			case SO_LPHANT:
-				m_clientVerString = CFormat(" v%u.%.2u%c") % (nClientMajVersion - 1) %
-						    nClientMinVersion % ('a' + nClientUpVersion);
-				break;
-			case SO_EMULEPLUS:
-				m_clientVerString = CFormat("v%u") % nClientMajVersion;
-				if (nClientMinVersion != 0) {
-					m_clientVerString += CFormat(".%u") % nClientMinVersion;
-				}
-				if (nClientUpVersion != 0) {
-					m_clientVerString += CFormat("%c") % ('a' + nClientUpVersion - 1);
-				}
-				break;
-			default:
+			if (m_clientSoft != SO_AMULE && m_clientSoft != SO_LXMULE &&
+				m_clientSoft != SO_HYDRANODE && m_clientSoft != SO_MLDONKEY &&
+				m_clientSoft != SO_NEW_MLDONKEY && m_clientSoft != SO_NEW2_MLDONKEY &&
+				m_clientSoft != SO_LPHANT && m_clientSoft != SO_EMULEPLUS) {
 				clientModString = GetClientModString();
-				m_clientVerString = CFormat("v%u.%u%c") % nClientMajVersion %
-						    nClientMinVersion % ('a' + nClientUpVersion);
-				break;
 			}
+			// One renderer for every consumer: the history rows derive the same
+			// string from the stored numeric, and used to disagree with this one.
+			m_clientVerString = FormatClientVersion(
+				m_clientSoft, nClientMajVersion, nClientMinVersion, nClientUpVersion);
 		}
 	} else if (m_bIsHybrid) {
 		// seen:
