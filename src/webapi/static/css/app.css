@@ -334,6 +334,11 @@ table.data td.num, table.data th.num { text-align: right; }
 table.data td.name { white-space: normal; word-break: break-word; min-width: 220px; max-width: 520px; }
 .row-selected, .row-selected:hover { background: var(--sel) !important; }
 
+/* Empty/error/loading placeholder for a table, rendered as a sibling of the
+   <table>: a table is often wider than the viewport, so a cell centred over its
+   full width lands off-screen. Sticky keeps it in view on sideways scroll. */
+.table-wrap .table-empty { position: sticky; left: 0; }
+
 /* virtualized tables: fixed layout keeps columns from jittering as the visible
    window changes; single-line cells keep every row the same fixed height. */
 .table-wrap.virtual { overflow-y: auto; overflow-x: auto; }
