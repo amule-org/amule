@@ -597,17 +597,22 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
 .prefs-actions { justify-content: center; }
 
 /* --- log/pre views --- */
-.logbox-wrap { position: relative; }
-.logbox-clear {
+.logbox-wrap { position: relative; min-width: 0; }
+/* Floats over the box's top-right corner to save vertical space; opaque so the
+   unwrapped lines scrolling underneath stay hidden. */
+.logbox-actions {
   position: absolute; top: 8px; right: 8px; z-index: 1;
+  display: flex; gap: 6px; padding: 4px; border-radius: var(--radius);
+  background: var(--surface-2);
 }
 .logbox {
   background: var(--surface-2); color: var(--text); border: 1px solid var(--border);
   font-family: var(--mono); font-size: 12.5px;
   padding: 12px; border-radius: var(--radius); overflow: auto; max-height: 30vh;
-  white-space: pre-wrap; word-break: break-word; margin: 0;
+  white-space: pre; margin: 0;
 }
 .logbox-sm { max-height: 22vh; }
+.logbox-err { white-space: pre-wrap; overflow-wrap: anywhere; }
 /* keep the box's line-height (and padding) when there is no log content yet */
 .logbox:empty::before { content: "\00a0"; }
 
@@ -680,8 +685,9 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
    dragging the splitter would just move empty space. */
 .net-split .net-pane:last-child { flex: none; min-height: 0; }
 .net-split .net-pane:last-child .net-pane-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
-/* Column so the <pre> is stretched to the wrapper width (cross axis) and wraps,
-   instead of a flex row where it keeps its longest-line width and overflows. */
+/* Column so the <pre> is stretched to the wrapper width (cross axis) and
+   scrolls its long lines, instead of a flex row where it would keep its
+   longest-line width and overflow the pane. */
 .net-split .logbox-wrap { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 .net-split .logbox { flex: 1 1 auto; max-height: none; min-height: 0; }
 /* Kad tab graph fills the top pane so it grows/shrinks with the splitter
