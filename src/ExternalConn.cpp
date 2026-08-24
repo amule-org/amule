@@ -1062,14 +1062,16 @@ void CExternalConnListener::OnAccept()
 	// non-blocking accept (although if we got here, there
 	// should ALWAYS be a pending connection).
 	if (AcceptWith(*sock, false)) {
-		// Apply EC keepalive on the freshly-accepted server-side
-		// socket so amuled detects a half-open EC client (gui
-		// process killed, network blip, FIN lost) symmetrically
-		// with what the client just enabled on its end. Without
-		// this, the kernel sits on the dead connection for the
-		// default ~2h TCP retransmit timeout, holding the
-		// CECServerSocket and its m_ec_notifier reference.
-		sock->ApplyEcKeepalive();
+		// Apply the EC socket options on the freshly-accepted
+		// server-side socket, symmetrically with what the client just
+		// enabled on its end: keepalive so amuled detects a half-open
+		// EC client (gui process killed, network blip, FIN lost)
+		// instead of sitting on the dead connection for the default
+		// ~2h TCP retransmit timeout, holding the CECServerSocket and
+		// its m_ec_notifier reference; and TCP_NODELAY, which only
+		// removes the ~40 ms Nagle/delayed-ACK stall on the replies we
+		// send if it is set on this end too.
+		sock->ApplyEcSocketOptions();
 		AddLogLineN(_("New external connection accepted"));
 	} else {
 		delete sock;

@@ -71,15 +71,25 @@ bool CECMuleSocket::InternalConnect(uint32_t ip, uint16_t port, bool wait)
 	if (ok) {
 		// Asio opens the socket fd during connect / async_connect, so
 		// setsockopt is valid here regardless of sync vs async mode.
-		ApplyEcKeepalive();
+		ApplyEcSocketOptions();
 	}
 	return ok;
 }
 
-void CECMuleSocket::ApplyEcKeepalive()
+void CECMuleSocket::ApplyEcSocketOptions()
 {
 	CLibSocket::EnableTcpKeepalive(
 		EC_KEEPALIVE_IDLE_SEC, EC_KEEPALIVE_INTERVAL_SEC, EC_KEEPALIVE_PROBE_COUNT);
+	// EC is request/response over a connection that stays open for the
+	// life of the client, and CECSocket::WritePacket emits each packet as
+	// several small writes (one EC_SOCKET_BUFFER_SIZE block per fragment
+	// plus the 16-byte AEAD tag as its own chunk). With Nagle on, every
+	// trailing write waits for the peer to ACK the previous one, and the
+	// peer has nothing to send back yet, so its delayed-ACK timer fires
+	// first: ~40 ms added per direction per roundtrip, independent of
+	// payload size. There is nothing to coalesce here anyway — the next
+	// write is the answer to a reply we have not received yet.
+	CLibSocket::EnableTcpNoDelay();
 }
 
 int CECMuleSocket::InternalGetLastError()
