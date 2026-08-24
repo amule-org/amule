@@ -29,6 +29,8 @@
 #include "Types.h"
 #include "config.h"
 
+#include <cstring> // Needed for memcpy
+
 #define ENDIAN_SWAP_16(x) (wxUINT16_SWAP_ON_BE(x))
 #define ENDIAN_SWAP_I_16(x) x = wxUINT16_SWAP_ON_BE(x)
 #define ENDIAN_SWAP_32(x) (wxUINT32_SWAP_ON_BE(x))
@@ -99,44 +101,44 @@ inline void PokeUInt32(void *p, uint32 nVal);
 inline void PokeUInt64(void *p, uint64 nVal);
 // \}
 
-#if defined(__arm__) || defined(__sparc__) || defined(__mips__) || defined(GCC_USES_STRICT_ALIASING)
-#define ARCHSPECIFIC_USE_MEMCPY
-#endif
+// The Raw* helpers below read and write through pointers whose alignment the
+// caller does not control -- packet buffers, and the 16-byte CMD4Hash array,
+// which sits at a 4-byte-aligned offset inside several objects. Reading eight
+// bytes from there via `*(uint64 *)p` is undefined behaviour regardless of the
+// architecture: it is a property of the C++ object model, not of what the CPU
+// tolerates. x86 and aarch64 happen to execute such a load, which is why this
+// went unnoticed for two decades, but the compiler is still entitled to assume
+// the alignment holds and optimise accordingly.
+//
+// So the memcpy form is now unconditional rather than selected per-arch. It
+// costs nothing: every compiler this project supports folds a fixed-size memcpy
+// into the same single load or store the cast would have emitted, and the two
+// are identical at -O2 on x86-64 and aarch64. The old guard listed __arm__,
+// __sparc__ and __mips__ -- 32-bit ARM only, written years before aarch64
+// existed, and never updated for it.
 
 ///////////////////////////////////////////////////////////////////////////////
 // Peek - helper functions for read-accessing memory without modifying the memory pointer
 
 inline uint16 RawPeekUInt16(const void *p)
 {
-#ifndef ARCHSPECIFIC_USE_MEMCPY
-	return *((uint16 *)p);
-#else
 	uint16 value;
 	memcpy(&value, p, sizeof(uint16));
 	return value;
-#endif
 }
 
 inline uint32 RawPeekUInt32(const void *p)
 {
-#ifndef ARCHSPECIFIC_USE_MEMCPY
-	return *((uint32 *)p);
-#else
 	uint32 value;
 	memcpy(&value, p, sizeof(uint32));
 	return value;
-#endif
 }
 
 inline uint64 RawPeekUInt64(const void *p)
 {
-#ifndef ARCHSPECIFIC_USE_MEMCPY
-	return *((uint64 *)p);
-#else
 	uint64 value;
 	memcpy(&value, p, sizeof(uint64));
 	return value;
-#endif
 }
 
 inline uint8 PeekUInt8(const void *p)
@@ -164,29 +166,17 @@ inline uint64 PeekUInt64(const void *p)
 
 inline void RawPokeUInt16(void *p, uint16 nVal)
 {
-#ifndef ARCHSPECIFIC_USE_MEMCPY
-	*((uint16 *)p) = nVal;
-#else
 	memcpy(p, &nVal, sizeof(uint16));
-#endif
 }
 
 inline void RawPokeUInt32(void *p, uint32 nVal)
 {
-#ifndef ARCHSPECIFIC_USE_MEMCPY
-	*((uint32 *)p) = nVal;
-#else
 	memcpy(p, &nVal, sizeof(uint32));
-#endif
 }
 
 inline void RawPokeUInt64(void *p, uint64 nVal)
 {
-#ifndef ARCHSPECIFIC_USE_MEMCPY
-	*((uint64 *)p) = nVal;
-#else
 	memcpy(p, &nVal, sizeof(uint64));
-#endif
 }
 
 inline void PokeUInt8(void *p, uint8 nVal)
@@ -208,9 +198,6 @@ inline void PokeUInt64(void *p, uint64 nVal)
 {
 	RawPokeUInt64(p, ENDIAN_SWAP_64(nVal));
 }
-
-// Don't pollute the preprocessor namespace
-#undef ARCHSPECIFIC_USE_MEMCPY
 
 #endif
 // File_checked_for_headers
