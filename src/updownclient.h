@@ -296,14 +296,15 @@ public:
 	 */
 	void SendSharedFilesRequest();
 	/**
-	 * Re-check this peer against the IP filter and the ban list, disconnecting
-	 * it on a hit. Contacting means clean; ClientDeleted means `this` is gone.
+	 * Re-check the standing reasons to refuse this peer -- obfuscation
+	 * settings, IP filter, ban list -- disconnecting it on a hit. Contacting
+	 * means clean; ClientDeleted means `this` is gone.
 	 *
-	 * Shared by TryToContact and the already-connected browse path, because
-	 * the filter list may have changed since the peer was admitted and both
-	 * routes to it have to notice.
+	 * Shared by TryToContact and the already-connected browse path. All three
+	 * checks are settings-derived and every one of those settings can change
+	 * while a connection is open, so both routes to a peer have to notice.
 	 */
-	EContactResult CheckFilteredOrBanned();
+	EContactResult CheckContactPreconditions();
 	void ProcessSharedFileList(const uint8_t *pachPacket, uint32 nSize, wxString &pszDirectory);
 	void SendSharedDirectories();
 	void SendSharedFilesOfDirectory(const wxString &strReqDir);

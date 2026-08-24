@@ -1435,8 +1435,8 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 	return result != EContactResult::ClientDeleted && result != EContactResult::ConnectNotStarted;
 }
 
-// Re-check this peer against the IP filter and the ban list, disconnecting it
-// on a hit.
+// Re-check the standing reasons to refuse this peer, disconnecting it on a hit:
+// incompatible obfuscation settings, a filtered IP, a banned IP.
 //
 // Returns Contacting when the peer is clean -- "carry on" rather than "we sent
 // something" -- and ClientDeleted or Declined otherwise, matching what the
@@ -1444,13 +1444,28 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 //
 // Extracted so it can run on both routes to a peer: TryToContact, which is
 // about to open a connection, and the already-connected browse path, which is
-// not. Both need it for the same reason the original comment gives -- the
-// filter list may have been updated since this peer was admitted -- and a
-// browse used to be one of the places that noticed. Keeping the Disconnected /
-// Safe_Delete handling in one place matters more than the two call sites: it
-// can delete `this`, and the callers have to agree on how that is reported.
-EContactResult CUpDownClient::CheckFilteredOrBanned()
+// not. All three share one property that makes them belong here rather than at
+// connect time only -- each is settings-derived and every one of those settings
+// is changeable while a connection is open. A peer admitted before the filter
+// list grew, or before "require obfuscation" was switched on, keeps its socket,
+// and a browse used to be one of the places that noticed. The max-sockets check
+// above is NOT here on purpose: it governs opening a new socket, which is
+// exactly what a peer we are already connected to does not need.
+//
+// Keeping the Disconnected / Safe_Delete handling in one place matters more
+// than the two call sites: it can delete `this`, and the callers have to agree
+// on how that is reported.
+EContactResult CUpDownClient::CheckContactPreconditions()
 {
+	if ((RequiresCryptLayer() && !thePrefs::IsClientCryptLayerSupported()) ||
+		(thePrefs::IsClientCryptLayerRequired() && !SupportsCryptLayer())) {
+		if (Disconnected("CryptLayer-Settings (Obfuscation) incompatible")) {
+			Safe_Delete();
+			return EContactResult::ClientDeleted;
+		}
+		return EContactResult::Declined;
+	}
+
 	uint32 uClientIP = GetIP();
 	if (uClientIP == 0 && !HasLowID()) {
 		uClientIP = wxUINT32_SWAP_ALWAYS(m_nUserIDHybrid);
@@ -1500,17 +1515,8 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 
 	// Do not try to connect to source which are incompatible with our encryption setting (one requires
 	// it, and the other one doesn't supports it)
-	if ((RequiresCryptLayer() && !thePrefs::IsClientCryptLayerSupported()) ||
-		(thePrefs::IsClientCryptLayerRequired() && !SupportsCryptLayer())) {
-		if (Disconnected("CryptLayer-Settings (Obfuscation) incompatible")) {
-			Safe_Delete();
-			return EContactResult::ClientDeleted;
-		} else {
-			return EContactResult::Declined;
-		}
-	}
-
-	if (const EContactResult filtered = CheckFilteredOrBanned(); filtered != EContactResult::Contacting) {
+	if (const EContactResult filtered = CheckContactPreconditions();
+		filtered != EContactResult::Contacting) {
 		return filtered;
 	}
 
@@ -2223,7 +2229,7 @@ void CUpDownClient::RequestSharedFileList()
 		// banned since the connection came up be browsed -- and be sent a
 		// packet -- where the old path would have severed the connection.
 		// ClientDeleted means `this` is gone; the browse died with it.
-		switch (CheckFilteredOrBanned()) {
+		switch (CheckContactPreconditions()) {
 		case EContactResult::ClientDeleted:
 			return;
 		case EContactResult::Declined:
@@ -2239,9 +2245,16 @@ void CUpDownClient::RequestSharedFileList()
 		// working, while here it would mean returning with the tab already
 		// announced, nothing on the wire and no terminal path -- the browse
 		// that waits out its deadline, which #1074 and #1088 removed.
-		// Start() guarantees the state, so this is a can't-happen; say so
-		// loudly rather than silently.
+		// Start() guarantees the state, so this is a can't-happen -- and it
+		// has to be greppable as one, because in the log a bare Fail() here
+		// is indistinguishable from an ordinary browse failure, which is the
+		// one case worth spotting.
 		if (!theApp->browsemanager->AwaitingDirectoryList(this)) {
+			AddDebugLogLineC(logClient,
+				CFormat("Browse of user %s (%u): the request guard was unset immediately "
+					"after Start() -- browse abandoned") %
+					GetUserName() % GetUserIDHybrid());
+			wxFAIL;
 			theApp->browsemanager->Fail(this);
 			return;
 		}
