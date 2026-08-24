@@ -131,6 +131,19 @@ void CapMallocArenas()
 #endif
 }
 
+// glibc shrinks an arena's top on free (systrim / heap_trim) but never the
+// free space fragmented below it, which is what a tick decoding the whole
+// daemon state leaves. malloc_trim walks every arena's free chunks instead.
+//
+// M_TRIM_THRESHOLD, not __GLIBC__ alone: the macro comes from <malloc.h>,
+// included conditionally above, so it is what says the declaration is in scope.
+void TrimMallocArenas()
+{
+#if defined(__GLIBC__) && defined(M_TRIM_THRESHOLD)
+	malloc_trim(0);
+#endif
+}
+
 } // namespace
 
 CamuleapiApp::CamuleapiApp() = default;
@@ -616,6 +629,10 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 	// keep publishing, so the returning client replays them instead.
 	constexpr unsigned kIdleTicksBeforeSuspend = 5;
 	unsigned idle_ticks = 0;
+	// Off the per-tick path: the call takes every arena's lock. Lands ~61 s
+	// apart, further if a tick overruns its second.
+	constexpr unsigned kTrimEveryTicks = 60;
+	unsigned trim_countdown = 0;
 	while (!g_shutdownRequested.load(std::memory_order_acquire)) {
 		const auto cycle_start = std::chrono::steady_clock::now();
 		if (was_failed) {
@@ -689,6 +706,16 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 				<< std::chrono::duration_cast<std::chrono::milliseconds>(kOverrunWarn).count()
 				<< " ms budget) — likely EC-mutex contention or a "
 				   "stalled SendRecvSerialized.\n";
+		}
+
+		// Deliberately not gated on "nobody subscribed": that gets it wrong
+		// both ways -- never firing while a browser tab holds the stream, and
+		// firing mid-load for a client that only polls REST.
+		if (trim_countdown > 0) {
+			--trim_countdown;
+		} else {
+			TrimMallocArenas();
+			trim_countdown = kTrimEveryTicks;
 		}
 		// Sleep the REMAINDER of the target cycle in small slices so
 		// shutdown latency stays bounded. A tick that already
