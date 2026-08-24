@@ -756,15 +756,16 @@ bool ParseProbeOutput(const wxArrayString &lines, MediaInfo &out)
 	return true;
 }
 
-bool Probe(const wxString &ffprobePath,
+ProbeOutcome Probe(const wxString &ffprobePath,
 	const CPath &file,
 	MediaInfo &out,
 	unsigned timeoutMs,
 	const std::atomic<bool> &keepRunning,
-	bool bulk)
+	bool bulk,
+	bool logFailure)
 {
 	if (ffprobePath.IsEmpty()) {
-		return false;
+		return ProbeOutcome::Unavailable;
 	}
 
 	// A job is queued only once hashing has finished, so the file existed
@@ -777,7 +778,7 @@ bool Probe(const wxString &ffprobePath,
 		AddDebugLogLineN(logMediaProbe,
 			CFormat(wxT("MediaProbe: %s vanished before probing, skipping")) %
 				file.GetPrintable());
-		return false;
+		return ProbeOutcome::Vanished;
 	}
 
 	// -show_entries constrains the output to what we care about; see
@@ -844,23 +845,42 @@ bool Probe(const wxString &ffprobePath,
 	// scan used to produce, tells the user that something is wrong and
 	// withholds the only thing they need to act on it.
 	if (rc == kKilled) {
-		AddLogLineN(CFormat(_("Media metadata: ffprobe timed out or was cancelled for %s")) %
-			    file.GetPrintable());
-		return false;
+		if (logFailure) {
+			AddLogLineN(CFormat(_("Media metadata: ffprobe timed out or was cancelled for %s")) %
+				    file.GetPrintable());
+		}
+		return ProbeOutcome::Cancelled;
 	}
 	if (rc == kOutputTooLarge) {
 		// ffprobe itself succeeded; what it produced was implausible for the
 		// five fields asked for, which means the file carries a tag crafted to
 		// be enormous. Named separately so this does not report as a failure
 		// of the binary.
-		AddLogLineN(CFormat(_("Media metadata: ignoring implausibly large ffprobe output for %s")) %
-			    file.GetPrintable());
-		return false;
+		if (logFailure) {
+			AddLogLineN(CFormat(_("Media metadata: ignoring implausibly large ffprobe output "
+					      "for %s")) %
+				    file.GetPrintable());
+		}
+		return ProbeOutcome::OutputTooLarge;
+	}
+	// Distinguished from a non-zero exit on purpose: this one is about the
+	// binary, not the file, so it must not be recorded against the file and it
+	// needs a message that sends the user to their ffprobe setting rather than
+	// to their media.
+	if (rc == kSpawnFailed) {
+		if (logFailure) {
+			AddLogLineN(CFormat(_("Media metadata: could not run ffprobe (%s) -- check the "
+					      "media metadata settings")) %
+				    ffprobePath);
+		}
+		return ProbeOutcome::Unavailable;
 	}
 	if (rc != 0) {
-		AddLogLineN(CFormat(_("Media metadata: ffprobe failed (code %d) for %s")) % rc %
-			    file.GetPrintable());
-		return false;
+		if (logFailure) {
+			AddLogLineN(CFormat(_("Media metadata: ffprobe failed (code %d) for %s")) % rc %
+				    file.GetPrintable());
+		}
+		return ProbeOutcome::UnreadableFile;
 	}
 
 	MediaInfo info;
@@ -873,16 +893,18 @@ bool Probe(const wxString &ffprobePath,
 		// file fails, since ffprobe exits 0 -- produced no output at all. The
 		// file was silently re-probed on every reload forever with nothing in
 		// the log to explain it.
-		AddLogLineN(CFormat(_("Media metadata: ffprobe found nothing usable in %s")) %
-			    file.GetPrintable());
-		return false;
+		if (logFailure) {
+			AddLogLineN(CFormat(_("Media metadata: ffprobe found nothing usable in %s")) %
+				    file.GetPrintable());
+		}
+		return ProbeOutcome::NoUsableMetadata;
 	}
 
 	AddDebugLogLineN(logMediaProbe,
 		CFormat(wxT("MediaProbe: extracted %s -> length=%us bitrate=%ukbps codec=%s")) %
 			file.GetPrintable() % info.length_seconds % info.bitrate_kbps % info.codec);
 	out = info;
-	return true;
+	return ProbeOutcome::Extracted;
 }
 
 } // namespace MediaProbe

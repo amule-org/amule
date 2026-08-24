@@ -290,18 +290,27 @@ public:
 	// see the ctor.
 	// succeeded == false carries no MediaInfo worth reading: the handler
 	// records the failure and leaves whatever tags the file already had.
-	CMediaProbeEvent(const CMD4Hash &hash, const MediaInfo &info, bool succeeded = true);
+	// markUnprobeable is meaningful only when succeeded is false: it says the
+	// probe reached a verdict about the FILE (ffprobe ran and found nothing
+	// usable) rather than failing on the environment (no binary, a timeout, a
+	// file that vanished). Only the former may be recorded against the file.
+	CMediaProbeEvent(const CMD4Hash &hash,
+		const MediaInfo &info,
+		bool succeeded = true,
+		bool markUnprobeable = false);
 
 	virtual wxEvent *Clone() const;
 
 	const CMD4Hash &GetHash() const { return m_hash; }
 	const MediaInfo &GetInfo() const { return m_info; }
 	bool Succeeded() const { return m_succeeded; }
+	bool MarkUnprobeable() const { return m_markUnprobeable; }
 
 private:
 	CMD4Hash m_hash;
 	MediaInfo m_info;
 	bool m_succeeded;
+	bool m_markUnprobeable;
 };
 
 /**

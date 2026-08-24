@@ -2356,11 +2356,18 @@ void CamuleApp::OnMediaProbeFinished(CMediaProbeEvent &evt)
 	// nothing about the file, so it is no grounds to discard what an earlier
 	// successful probe stored.
 	if (!evt.Succeeded()) {
-		file->AddTagUnique(CTagInt32(FT_MEDIA_PROBE_FAILED, 1));
-		if (sharedFile) {
-			sharedFile->AddTagUnique(CTagInt32(FT_MEDIA_PROBE_FAILED, 1));
+		// Only a verdict about the file is recorded. A missing or broken
+		// ffprobe, a timeout, or a file that vanished between queue and probe
+		// says nothing about the file itself, and marking on those would mean
+		// one mistyped ffprobe path brands every media file in the library and
+		// nothing re-probes them once it is corrected.
+		if (evt.MarkUnprobeable()) {
+			file->AddTagUnique(CTagInt32(FT_MEDIA_PROBE_FAILED, 1));
+			if (sharedFile) {
+				sharedFile->AddTagUnique(CTagInt32(FT_MEDIA_PROBE_FAILED, 1));
+			}
+			m_mediaTagsDirtiedMs = theStats::GetUptimeMillis();
 		}
-		m_mediaTagsDirtiedMs = theStats::GetUptimeMillis();
 		return;
 	}
 
@@ -2438,6 +2445,15 @@ void CamuleApp::OnMediaProbeFinished(CMediaProbeEvent &evt)
 	// EC exports the tag list; the remote GUI + web UI need to see
 	// the new values on next refresher tick.
 	file->MarkECChanged();
+	// The shared-list object is the one EC serves: CFileEncoderMap builds its
+	// encoders from CopyFileList(shares) keyed by ECID, so leaving it unmarked
+	// means Get_EC_Response_GetUpdate takes its unchanged shortcut and every
+	// remote client keeps showing the file bare -- the same "tags landed where
+	// nothing looked" failure this handler exists to fix, surviving on the
+	// clients.
+	if (sharedFile) {
+		sharedFile->MarkECChanged();
+	}
 	// Coalesce the known.met save instead of rewriting the whole file per
 	// probe. CKnownFileList::Save rewrites every known file, so a per-probe
 	// save is O(files) each time -- O(N^2) when the whole library is probed at

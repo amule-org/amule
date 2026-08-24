@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 10:36+0200\n"
+"POT-Creation-Date: 2026-08-24 11:10+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -3144,6 +3144,11 @@ msgstr ""
 
 #: src/MediaProbe.cpp
 #, c-format
+msgid "Media metadata: could not run ffprobe (%s) -- check the media metadata settings"
+msgstr ""
+
+#: src/MediaProbe.cpp
+#, c-format
 msgid "Media metadata: ffprobe failed (code %d) for %s"
 msgstr ""
 
@@ -3163,6 +3168,13 @@ msgstr[1] ""
 #, c-format
 msgid "Finished extracting media metadata from %u shared file"
 msgid_plural "Finished extracting media metadata from %u shared files"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/MediaProbeThread.cpp
+#, c-format
+msgid "%u further file failed media metadata extraction (not listed individually)"
+msgid_plural "%u further files failed media metadata extraction (not listed individually)"
 msgstr[0] ""
 msgstr[1] ""
 
