@@ -600,6 +600,20 @@ void CSearchDlg::OnSearchTypeChanged(wxCommandEvent &WXUNUSED(evt))
 	}
 }
 
+void CSearchDlg::ResetResultViews()
+{
+	for (size_t i = 0; i < m_notebook->GetPageCount(); ++i) {
+		CSearchListCtrl *page = dynamic_cast<CSearchListCtrl *>(m_notebook->GetPage(i));
+		if (page == nullptr) {
+			continue;
+		}
+		// Re-show the id the tab already has: same tab, same search, but the
+		// model reloads from the index rather than keeping items that no
+		// longer point at anything.
+		page->ShowResults(page->GetSearchId());
+	}
+}
+
 CSearchListCtrl *CSearchDlg::GetSearchList(wxUIntPtr id)
 {
 	int nPages = m_notebook->GetPageCount();
