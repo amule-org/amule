@@ -281,7 +281,14 @@ private:
 	// CMediaProbeThread::Entry swaps the whole job list out as soon as it is
 	// signalled, so against an idle worker the count is back to zero before
 	// the caller can look and every enqueue reads as a no-op.
-	bool MaybeScheduleMediaProbe(CKnownFile *pFile, MediaProbeMode mode = MediaProbeMode::Normal);
+	//
+	// `bulk` says whether this probe belongs to a mass operation (a share
+	// scan, a whole-share refresh) rather than to one file the user is
+	// looking at. It decides only logging verbosity, and it is passed rather
+	// than inferred downstream: the worker cannot tell, because it drains
+	// whatever happens to be queued when it wakes.
+	bool MaybeScheduleMediaProbe(
+		CKnownFile *pFile, MediaProbeMode mode = MediaProbeMode::Normal, bool bulk = false);
 
 	// Per-path attach: stat fname under directory, look it up in
 	// known.met, and either AddFile() the existing CKnownFile or push

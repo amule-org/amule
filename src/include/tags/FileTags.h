@@ -77,7 +77,23 @@
 #define FT_MEDIA_LENGTH 0xD3    // <uint32> !!!
 #define FT_MEDIA_BITRATE 0xD4   // <uint32>
 #define FT_MEDIA_CODEC 0xD5     // <string>
-#define FT_FILERATING 0xF7      // <uint8>
+// Set when ffprobe ran on this file and produced nothing usable -- a broken
+// or truncated container, an unreadable file, a binary that errored out.
+// Without it such a file is indistinguishable from one never probed, so the
+// "already probed" gate re-queues it on every share reload and every restart,
+// forever, to fail again the same way (issue #1116).
+//
+// aMule-internal, like FT_LASTSEEN: it is stored in known.met and is NOT
+// published -- the ed2k and Kad publishers build their tag lists by explicit
+// allow-list, so a peer never sees it. Deliberately NOT counted by
+// GetMetaDataVer(): "we tried and failed" is not metadata, and a file
+// carrying only this must still read as having none.
+//
+// A media refresh (issue #1079) ignores it and clears it on success, so the
+// marker is a default, never a life sentence: fix the file or install a
+// working ffprobe, ask for a refresh, and it is retried.
+#define FT_MEDIA_PROBE_FAILED 0x57 // <uint32> aMule-internal, see above
+#define FT_FILERATING 0xF7         // <uint8>
 
 // Kad search + some unused tags to mirror the ed2k ones.
 #define TAG_FILENAME wxT("\x01")    // <string>

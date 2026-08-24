@@ -2315,7 +2315,59 @@ void CamuleApp::OnMediaProbeFinished(CMediaProbeEvent &evt)
 	// we were probing. Re-resolve the hash instead of holding a
 	// CKnownFile* across the boundary.
 	CKnownFile *file = theApp->knownfiles->FindKnownFileByID(evt.GetHash());
+	// The shared list can hold a DIFFERENT object for the same hash than the
+	// known-file map does -- that is what happens when the same content is
+	// shared at more than one path, which on a media library is common. The
+	// probe is scheduled off the shared-list entry and its gate reads that
+	// entry, but the result was only ever applied to the known-file map's, so
+	// for such a file the tags landed on an object nothing consults: the
+	// shared entry stayed bare, still looked unprobed, and was re-queued on
+	// every reload and every restart -- succeeding every time, which is why it
+	// showed up as a repeating probe with no failures at all (issue #1116).
+	//
+	// Both objects are updated. Usually they ARE the same object and the
+	// second update is skipped.
+	CKnownFile *sharedFile =
+		theApp->sharedfiles ? theApp->sharedfiles->GetFileByID(evt.GetHash()) : nullptr;
+	if (sharedFile == file) {
+		sharedFile = nullptr;
+	}
+	if (!file && sharedFile) {
+		file = sharedFile;
+		sharedFile = nullptr;
+	}
 	if (!file) {
+		// The probe ran and its result is being thrown away. That is expected
+		// when the file was unshared mid-probe, but it is also the shape a
+		// silently-dropped result would have -- and a dropped result means the
+		// file keeps no metadata and no marker, so it is re-probed on every
+		// reload forever with nothing in the log to say why. Reported so that
+		// case is visible rather than inferred from a repeating probe count.
+		AddLogLineN(CFormat(_("Media metadata: probed file is no longer known, result discarded "
+				      "(%s)")) %
+			    evt.GetHash().Encode());
+		return;
+	}
+
+	// A probe that produced nothing still has to leave a trace, or the gate
+	// that skips already-probed files cannot tell it from a file never tried
+	// and re-queues it on every reload and every restart (issue #1116). The
+	// existing media tags are left alone: a probe that failed has established
+	// nothing about the file, so it is no grounds to discard what an earlier
+	// successful probe stored.
+	if (!evt.Succeeded()) {
+		// Only a verdict about the file is recorded. A missing or broken
+		// ffprobe, a timeout, or a file that vanished between queue and probe
+		// says nothing about the file itself, and marking on those would mean
+		// one mistyped ffprobe path brands every media file in the library and
+		// nothing re-probes them once it is corrected.
+		if (evt.MarkUnprobeable()) {
+			file->AddTagUnique(CTagInt32(FT_MEDIA_PROBE_FAILED, 1));
+			if (sharedFile) {
+				sharedFile->AddTagUnique(CTagInt32(FT_MEDIA_PROBE_FAILED, 1));
+			}
+			m_mediaTagsDirtiedMs = theStats::GetUptimeMillis();
+		}
 		return;
 	}
 
@@ -2348,17 +2400,27 @@ void CamuleApp::OnMediaProbeFinished(CMediaProbeEvent &evt)
 	// for.
 	const MediaInfo &info = evt.GetInfo();
 	const auto setOrClearInt = [&](uint8 id, uint32 value) {
-		if (value) {
-			file->AddTagUnique(CTagInt32(id, value));
-		} else {
-			file->RemoveTag(id);
+		for (CKnownFile *target : { file, sharedFile }) {
+			if (!target) {
+				continue;
+			}
+			if (value) {
+				target->AddTagUnique(CTagInt32(id, value));
+			} else {
+				target->RemoveTag(id);
+			}
 		}
 	};
 	const auto setOrClearStr = [&](uint8 id, const wxString &value) {
-		if (!value.IsEmpty()) {
-			file->AddTagUnique(CTagString(id, value));
-		} else {
-			file->RemoveTag(id);
+		for (CKnownFile *target : { file, sharedFile }) {
+			if (!target) {
+				continue;
+			}
+			if (!value.IsEmpty()) {
+				target->AddTagUnique(CTagString(id, value));
+			} else {
+				target->RemoveTag(id);
+			}
 		}
 	};
 	setOrClearInt(FT_MEDIA_LENGTH, info.length_seconds);
@@ -2367,6 +2429,12 @@ void CamuleApp::OnMediaProbeFinished(CMediaProbeEvent &evt)
 	setOrClearStr(FT_MEDIA_ARTIST, info.artist);
 	setOrClearStr(FT_MEDIA_ALBUM, info.album);
 	setOrClearStr(FT_MEDIA_TITLE, info.title);
+	// This probe worked, so any earlier failure is stale -- clear it, or a
+	// file that has since been fixed would keep a marker saying otherwise.
+	file->RemoveTag(FT_MEDIA_PROBE_FAILED);
+	if (sharedFile) {
+		sharedFile->RemoveTag(FT_MEDIA_PROBE_FAILED);
+	}
 	// Traced under logMediaProbe — the "metadata actually landed"
 	// confirmation, logged once per file when tags are attached.
 	AddDebugLogLineN(logMediaProbe,
@@ -2377,6 +2445,15 @@ void CamuleApp::OnMediaProbeFinished(CMediaProbeEvent &evt)
 	// EC exports the tag list; the remote GUI + web UI need to see
 	// the new values on next refresher tick.
 	file->MarkECChanged();
+	// The shared-list object is the one EC serves: CFileEncoderMap builds its
+	// encoders from CopyFileList(shares) keyed by ECID, so leaving it unmarked
+	// means Get_EC_Response_GetUpdate takes its unchanged shortcut and every
+	// remote client keeps showing the file bare -- the same "tags landed where
+	// nothing looked" failure this handler exists to fix, surviving on the
+	// clients.
+	if (sharedFile) {
+		sharedFile->MarkECChanged();
+	}
 	// Coalesce the known.met save instead of rewriting the whole file per
 	// probe. CKnownFileList::Save rewrites every known file, so a per-probe
 	// save is O(files) each time -- O(N^2) when the whole library is probed at

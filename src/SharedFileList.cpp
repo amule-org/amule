@@ -42,6 +42,7 @@
 #include "ThreadTasks.h"      // Needed for CThreadScheduler and CHasherTask
 #include "MediaProbeThread.h" // Needed for CMediaProbeThread (media probe queue)
 #include "OtherFunctions.h"   // Needed for GetED2KFileTypeID / ED2KFT_* (MaybeScheduleMediaProbe)
+#include "ThreadScheduler.h"  // Needed for CThreadScheduler::GetPendingCount (bulk probe logging)
 #include "Preferences.h"      // Needed for thePrefs
 #include "DownloadQueue.h"    // Needed for CDownloadQueue
 #include "amule.h"            // Needed for theApp
@@ -745,13 +746,27 @@ bool CSharedFileList::AddFile(CKnownFile *pFile)
 		const wxString key =
 			NormalizePathKey(pFile->GetFilePath().JoinPaths(pFile->GetFileName()).GetRaw());
 		m_pathIndex[key] = pFile;
-		MaybeScheduleMediaProbe(pFile);
+		// Two ways this is a mass operation rather than one file the user is
+		// watching. `reloading` covers the share walk itself. The hashing
+		// queue covers what the walk leaves behind: files it discovered are
+		// hashed asynchronously and only reach here when their task finishes,
+		// by which time the walk is long over -- so a first import of a large
+		// library would print one line per file with `reloading` alone, which
+		// is precisely the log flood the summary exists to prevent.
+		//
+		// `> 1`, not `> 0`: GetPendingCount counts the running task too, so a
+		// single file dropped into a shared directory reads as 1 while it is
+		// being hashed. Misjudging the last file of an import as singular
+		// costs one extra line; misjudging a single file as bulk would lose
+		// the only feedback that file ever produces.
+		const bool massOperation = reloading || CThreadScheduler::GetPendingCount(wxT("Hashing")) > 1;
+		MaybeScheduleMediaProbe(pFile, MediaProbeMode::Normal, massOperation);
 		return true;
 	}
 	return false;
 }
 
-bool CSharedFileList::MaybeScheduleMediaProbe(CKnownFile *pFile, MediaProbeMode mode)
+bool CSharedFileList::MaybeScheduleMediaProbe(CKnownFile *pFile, MediaProbeMode mode, bool bulk)
 {
 	// Callers must keep pFile alive for the duration of this call. AddFile
 	// holds list_mut, which does that; the refresh walk instead snapshots the
@@ -811,6 +826,18 @@ bool CSharedFileList::MaybeScheduleMediaProbe(CKnownFile *pFile, MediaProbeMode 
 			CFormat(wxT("MediaProbe: skip (already has metadata) %s")) % pFile->GetFileName());
 		return false;
 	}
+	// A file ffprobe already tried and could not read is not re-tried on the
+	// normal path. Nothing about it has changed since the last attempt, so a
+	// share reload would spawn ffprobe on every broken file in the library,
+	// every time, to fail identically (issue #1116). Refresh deliberately
+	// ignores this -- that is the whole point of an explicit re-extraction --
+	// and a successful probe clears the marker.
+	if (mode == MediaProbeMode::Normal && pFile->GetIntTagValue(FT_MEDIA_PROBE_FAILED)) {
+		AddDebugLogLineN(logMediaProbe,
+			CFormat(wxT("MediaProbe: skip (previous probe found nothing) %s")) %
+				pFile->GetFileName());
+		return false;
+	}
 	const CPath fullPath = pFile->GetFilePath().JoinPaths(pFile->GetFileName());
 	// Only probe a file that is actually on disk at this resolved path -- a
 	// stale known.met record can outlive its deleted file, and this is cheap
@@ -835,7 +862,7 @@ bool CSharedFileList::MaybeScheduleMediaProbe(CKnownFile *pFile, MediaProbeMode 
 		AddDebugLogLineN(logMediaProbe,
 			CFormat(wxT("MediaProbe: queueing %s (ffprobe=%s)")) % pFile->GetFileName() %
 				ffprobePath);
-		theApp->mediaProbeThread->QueueProbe(pFile->GetFileHash(), fullPath, ffprobePath);
+		theApp->mediaProbeThread->QueueProbe(pFile->GetFileHash(), fullPath, ffprobePath, bulk);
 		return true;
 	} else {
 		AddDebugLogLineN(logMediaProbe,
@@ -861,7 +888,7 @@ unsigned CSharedFileList::RefreshAllMediaMetadata()
 
 	unsigned queued = 0;
 	for (CKnownFile *file : files) {
-		if (MaybeScheduleMediaProbe(file, MediaProbeMode::Refresh)) {
+		if (MaybeScheduleMediaProbe(file, MediaProbeMode::Refresh, /*bulk=*/true)) {
 			++queued;
 		}
 	}

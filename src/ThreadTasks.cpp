@@ -989,9 +989,12 @@ wxDEFINE_EVENT(MULE_EVT_HASHING, wxEvent);
 wxDEFINE_EVENT(MULE_EVT_AICH_HASHING, wxEvent);
 wxDEFINE_EVENT(MULE_EVT_MEDIA_PROBE, wxEvent);
 
-CMediaProbeEvent::CMediaProbeEvent(const CMD4Hash &hash, const MediaInfo &info)
+CMediaProbeEvent::CMediaProbeEvent(
+	const CMD4Hash &hash, const MediaInfo &info, bool succeeded, bool markUnprobeable)
 : wxEvent(-1, MULE_EVT_MEDIA_PROBE)
 , m_hash(hash)
+, m_succeeded(succeeded)
+, m_markUnprobeable(markUnprobeable)
 {
 	// Deep-copy every string: this event is built on the probe worker and
 	// consumed on the main thread, and wxString is refcounted, so handing the
@@ -1006,7 +1009,7 @@ CMediaProbeEvent::CMediaProbeEvent(const CMD4Hash &hash, const MediaInfo &info)
 
 wxEvent *CMediaProbeEvent::Clone() const
 {
-	return new CMediaProbeEvent(m_hash, m_info);
+	return new CMediaProbeEvent(m_hash, m_info, m_succeeded, m_markUnprobeable);
 }
 CHashingEvent::CHashingEvent(wxEventType type, CKnownFile *result, const CKnownFile *owner)
 : wxEvent(-1, type)

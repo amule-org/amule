@@ -124,18 +124,66 @@ wxString DetectedPath(bool redetect = false);
 //
 // Callers MUST run this off the main thread — it blocks for the duration
 // of the child (typically 30-100 ms, at most `timeoutMs`).
+//! Why a probe produced no metadata. The distinction matters because one of
+//! these is a statement about the FILE and the rest are statements about the
+//! environment: only the first justifies recording "this file cannot be
+//! probed" and skipping it on later scans. Marking on the others would let a
+//! mistyped ffprobe path, a spun-down disk, or a shutdown mid-scan brand every
+//! file it touched as permanently unprobeable (issue #1116).
+enum class ProbeOutcome
+{
+	Extracted,        //!< usable metadata came back
+	NoUsableMetadata, //!< ffprobe ran and exited 0, and there was nothing in it
+	UnreadableFile,   //!< ffprobe ran and exited non-zero: it could not read this file
+	OutputTooLarge,   //!< ffprobe ran, but the file's tags are implausibly large
+	Unavailable,      //!< the binary could not be launched at all
+	Cancelled,        //!< timed out, or shutdown cancelled the drain
+	Vanished,         //!< the file was gone by the time the worker got to it
+};
+
+//! True for the outcomes that are a verdict on the file rather than on the
+//! machine it runs on, and so may be recorded against the file.
+inline bool IsFileVerdict(ProbeOutcome outcome)
+{
+	// UnreadableFile counts: a non-zero exit is how a WORKING ffprobe rejects
+	// a file it cannot parse, which is the ordinary broken-download case and
+	// the one users report as retried forever. A binary that cannot be
+	// launched is a different code path entirely (kSpawnFailed), so a missing
+	// or mistyped path never arrives here.
+	//
+	// The gap: a non-zero exit cannot distinguish "ffprobe read this file and
+	// it is broken" from "ffprobe could not open it". FileExists() is a stat,
+	// so a file present but unreadable -- no read permission, or on a network
+	// mount that is away or hiccupping -- reaches a perfectly good ffprobe,
+	// exits non-zero, and is recorded as unprobeable. A share on SMB or NFS
+	// can lose a whole library's metadata to one bad moment that way, which is
+	// likelier than the other case here: a configured path pointing at some
+	// other executable that exits non-zero.
+	//
+	// Separating the two means reading ffprobe's stderr, which currently goes
+	// to /dev/null. Until then a media refresh is the way back: it ignores the
+	// marks and clears them on success.
+	return outcome == ProbeOutcome::NoUsableMetadata || outcome == ProbeOutcome::UnreadableFile ||
+	       outcome == ProbeOutcome::OutputTooLarge;
+}
+
 //! \param bulk true when the caller is draining a batch of queued probes (a
-//! share scan), in which case this stays silent and the caller reports one
-//! summary for the batch -- otherwise a large media library produces one
-//! "extracting" line per file, and one more per failure, which is exactly the
-//! scale-with-the-share-size property the discovery lines were summarised to
-//! avoid. A batch of one is a genuine single-file event and still speaks.
-bool Probe(const wxString &ffprobePath,
+//! share scan), in which case the per-file "extracting" announcement is
+//! suppressed and the caller reports one summary for the whole operation --
+//! otherwise a large media library produces one line per file, which is
+//! exactly the scale-with-the-share-size property the discovery lines were
+//! summarised to avoid. A genuine single-file event still speaks.
+//! \param logFailure whether a failure may name its file. Failures are worth
+//! naming even in bulk (a count alone is not actionable), but a broken ffprobe
+//! fails EVERY file, so the caller caps how many it names per operation and
+//! folds the rest into the summary.
+ProbeOutcome Probe(const wxString &ffprobePath,
 	const CPath &file,
 	MediaInfo &out,
 	unsigned timeoutMs,
 	const std::atomic<bool> &keepRunning,
-	bool bulk = false);
+	bool bulk = false,
+	bool logFailure = true);
 
 } // namespace MediaProbe
 
