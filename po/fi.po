@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 15:13+0200\n"
+"POT-Creation-Date: 2026-08-24 19:01+0200\n"
 "PO-Revision-Date: 2026-08-22 15:29+0000\n"
 "Last-Translator: Tapio Rantala <tapio.rantala@iki.fi>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -7773,6 +7773,10 @@ msgstr "Komento '%s' prosessinumerolla '%d' on suoritettu paluukoodilla '%d'."
 #: src/TextClient.cpp
 msgid "Execute <str> and exit."
 msgstr "Suorita <str> ja poistu."
+
+#: src/TextClient.cpp
+msgid "Separate list fields with spaces, as before, instead of tabs."
+msgstr ""
 
 #: src/TextClient.cpp
 msgid "Invalid IP format. Use xxx.xxx.xxx.xxx:xxxx\n"

@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: aMule SVN\n"
-"POT-Creation-Date: 2026-07-30 17:31+0200\n"
+"POT-Creation-Date: 2026-08-24 19:02+0200\n"
 "PO-Revision-Date: 2026-08-22 15:52+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: none\n"
@@ -520,6 +520,11 @@ msgstr "Non cifrare il collegamento di connessione esterna. La cifratura viene n
 #: amulecmd.1.in amuleweb.1.in
 msgid "Force ZLIB compression on the External Connection link regardless of the dialed-IP locality.  Useful when the server side is reachable over a VPN tunnel that resolves to a LAN IP and the heuristic would otherwise skip compression."
 msgstr "Forza la compressione ZLIB sulla connessione esterna indipendentemente dalla località dell'IP contattato.  Utile quando il server è raggiungibile attraverso un tunnel VPN che risolve a un IP di LAN e l'euristica salterebbe altrimenti la compressione."
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Separate the fields of the list commands with spaces, as earlier versions did, instead of tabs.  Client names and file names may contain spaces, so the default tab separator is what lets a script split a row back into its fields; use this only for scripts written against the older output."
+msgstr ""
 
 # type: SH
 #. type: SH

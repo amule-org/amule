@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 15:13+0200\n"
+"POT-Creation-Date: 2026-08-24 19:01+0200\n"
 "PO-Revision-Date: 2026-08-22 15:36+0000\n"
 "Last-Translator: Hyunju Kang <rexington@gmail.com>\n"
 "Language-Team: Korean <hoenny@daum.net>\n"
@@ -7821,6 +7821,10 @@ msgstr "`%s' 명령(pid `%d')은 상태코드 `%d'로 종료되었습니다."
 #: src/TextClient.cpp
 msgid "Execute <str> and exit."
 msgstr "<str>을 실행하고 종료합니다."
+
+#: src/TextClient.cpp
+msgid "Separate list fields with spaces, as before, instead of tabs."
+msgstr ""
 
 #: src/TextClient.cpp
 msgid "Invalid IP format. Use xxx.xxx.xxx.xxx:xxxx\n"

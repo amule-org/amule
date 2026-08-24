@@ -14,6 +14,7 @@ amulecmd \- Console-based program to control aMule
 .RB_untranslated [ \-v ]
 .RB [ \-l " " \fI<lang> ]
 .RB { " " [ \-w ] " " | " " [ \-c " " \fI<command> ] " " }
+.RB_untranslated [ \-\-space\-separated ]
 
 .B_untranslated amulecmd
 .RB [ \-\-create\-config\-from = \fI<path> ]
@@ -69,6 +70,10 @@ Turning it off leaves everything after the login readable, and modifiable, by an
 .B_untranslated [ \-\-force\-zlib ]\fR
 Force ZLIB compression on the External Connection link regardless of the dialed-IP locality.
 Useful when the server side is reachable over a VPN tunnel that resolves to a LAN IP and the heuristic would otherwise skip compression.
+.TP
+.B_untranslated [ \-\-space\-separated ]\fR
+Separate the fields of the list commands with spaces, as earlier versions did, instead of tabs.
+Client names and file names may contain spaces, so the default tab separator is what lets a script split a row back into its fields; use this only for scripts written against the older output.
 .TP
 .B_untranslated [ \-\-version ]\fR
 Displays the current version number.
