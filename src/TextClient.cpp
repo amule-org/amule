@@ -227,9 +227,10 @@ void CamulecmdApp::OnInitCmdLine(wxCmdLineParser &parser)
 		_("Execute <str> and exit."),
 		wxCMD_LINE_VAL_STRING,
 		wxCMD_LINE_PARAM_OPTIONAL);
-	parser.AddSwitch(wxEmptyString,
+	parser.AddSwitch("",
 		"space-separated",
-		_("Separate list fields with spaces, as before, instead of tabs."));
+		_("Separate list fields with spaces, as before, instead of tabs."),
+		wxCMD_LINE_PARAM_OPTIONAL);
 }
 
 bool CamulecmdApp::OnCmdLineParsed(wxCmdLineParser &parser)
@@ -956,7 +957,7 @@ void CamulecmdApp::Process_Answer_v2(const CECPacket *response)
 			// Still two lines per entry: the newline delimits records and the
 			// leading tab marks the continuation, so splitting each line on
 			// the separator stays unambiguous.
-			s << tag->FileHashString() << Sep(" ") << tag->FileName()
+			s << tag->FileHashString() << Sep(" ") << Field(tag->FileName())
 			  << (CFormat("\n\t [%.1f%%]") % ((float)donesize / ((float)filesize) * 100.0))
 			  << Sep(" ")
 			  << (CFormat("%4i/%4i") %
@@ -997,8 +998,9 @@ void CamulecmdApp::Process_Answer_v2(const CECPacket *response)
 			if (clientName && partfileName && partfileSizeXfer && partfileSpeed) {
 				s << "\n"
 				  << CFormat("%10u") % tag->GetInt() << Sep(" ")
-				  << clientName->GetStringData() << Sep(" ") << partfileName->GetStringData()
-				  << Sep(" ") << CastItoXBytes(partfileSizeXfer->GetInt()) << Sep(" ")
+				  << Field(clientName->GetStringData()) << Sep(" ")
+				  << Field(partfileName->GetStringData()) << Sep(" ")
+				  << CastItoXBytes(partfileSizeXfer->GetInt()) << Sep(" ")
 				  << CastItoSpeed(partfileSpeed->GetInt());
 			}
 		}
@@ -1025,7 +1027,7 @@ void CamulecmdApp::Process_Answer_v2(const CECPacket *response)
 				} else {
 					s << ip << "\t";
 				}
-				s << serverName->GetStringData();
+				s << Field(serverName->GetStringData());
 				if (country && !country->GetStringData().IsEmpty()) {
 					s << Sep(" ") << "[" << country->GetStringData() << "]";
 				}
@@ -1053,14 +1055,14 @@ void CamulecmdApp::Process_Answer_v2(const CECPacket *response)
 			if (ispartfile) {
 				s << _("[PartFile]") << Sep(" ");
 			} else {
-				s << filePath
+				s << Field(filePath)
 #ifdef __WINDOWS__
 				  << '\\';
 #else
 				  << '/';
 #endif
 			}
-			s << tag->FileName() << "\n\t"
+			s << Field(tag->FileName()) << "\n\t"
 			  << PriorityToStr(tag->UpPrio() % 10, tag->UpPrio() >= 10) << Sep(" - ")
 			  << CFormat("%i(%i)") % tag->GetRequests() % tag->GetAllRequests() << Sep(" / ")
 			  << CFormat("%i(%i)") % tag->GetAccepts() % tag->GetAllAccepts() << Sep(" - ")
