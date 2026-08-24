@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-23 23:41+0200\n"
+"POT-Creation-Date: 2026-08-24 10:04+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -458,6 +458,11 @@ msgstr ""
 
 #: src/amule.cpp
 msgid "Server hostname notified"
+msgstr ""
+
+#: src/amule.cpp
+#, c-format
+msgid "Media metadata: probed file is no longer known, result discarded (%s)"
 msgstr ""
 
 #: src/amule.cpp
@@ -3141,6 +3146,11 @@ msgstr ""
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: ffprobe failed (code %d) for %s"
+msgstr ""
+
+#: src/MediaProbe.cpp
+#, c-format
+msgid "Media metadata: ffprobe found nothing usable in %s"
 msgstr ""
 
 #: src/MediaProbeThread.cpp

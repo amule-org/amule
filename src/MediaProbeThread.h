@@ -40,6 +40,14 @@ struct MediaProbeJob
 	CMD4Hash hash;        // resolved back to the CKnownFile on the main thread
 	CPath path;           // file to probe
 	wxString ffprobePath; // ffprobe binary
+	// Part of a mass operation (a share scan, a whole-share refresh) rather
+	// than a single user-visible file. Set by the scheduler, NOT inferred
+	// from how many jobs happen to be queued: the worker swaps the entire
+	// pending list out on each wake, so a batch size says only when the
+	// worker last woke up. Deciding it that way meant one arbitrary file per
+	// scan printed a per-file line while the rest were summarised, which
+	// reads as if that file were special (issue #1116).
+	bool bulk = false;
 };
 
 // Dedicated worker for ffprobe media-metadata extraction (#280).
@@ -70,7 +78,8 @@ public:
 	void EndThread();
 
 	// Enqueue a probe. Thread-safe; returns immediately.
-	void QueueProbe(const CMD4Hash &hash, const CPath &fullPath, const wxString &ffprobePath);
+	void QueueProbe(
+		const CMD4Hash &hash, const CPath &fullPath, const wxString &ffprobePath, bool bulk = false);
 
 	bool IsRunning() const { return m_bRun; }
 

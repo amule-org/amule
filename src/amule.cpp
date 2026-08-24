@@ -2316,6 +2316,27 @@ void CamuleApp::OnMediaProbeFinished(CMediaProbeEvent &evt)
 	// CKnownFile* across the boundary.
 	CKnownFile *file = theApp->knownfiles->FindKnownFileByID(evt.GetHash());
 	if (!file) {
+		// The probe ran and its result is being thrown away. That is expected
+		// when the file was unshared mid-probe, but it is also the shape a
+		// silently-dropped result would have -- and a dropped result means the
+		// file keeps no metadata and no marker, so it is re-probed on every
+		// reload forever with nothing in the log to say why. Reported so that
+		// case is visible rather than inferred from a repeating probe count.
+		AddLogLineN(CFormat(_("Media metadata: probed file is no longer known, result discarded "
+				      "(%s)")) %
+			    evt.GetHash().Encode());
+		return;
+	}
+
+	// A probe that produced nothing still has to leave a trace, or the gate
+	// that skips already-probed files cannot tell it from a file never tried
+	// and re-queues it on every reload and every restart (issue #1116). The
+	// existing media tags are left alone: a probe that failed has established
+	// nothing about the file, so it is no grounds to discard what an earlier
+	// successful probe stored.
+	if (!evt.Succeeded()) {
+		file->AddTagUnique(CTagInt32(FT_MEDIA_PROBE_FAILED, 1));
+		m_mediaTagsDirtiedMs = theStats::GetUptimeMillis();
 		return;
 	}
 
@@ -2367,6 +2388,9 @@ void CamuleApp::OnMediaProbeFinished(CMediaProbeEvent &evt)
 	setOrClearStr(FT_MEDIA_ARTIST, info.artist);
 	setOrClearStr(FT_MEDIA_ALBUM, info.album);
 	setOrClearStr(FT_MEDIA_TITLE, info.title);
+	// This probe worked, so any earlier failure is stale -- clear it, or a
+	// file that has since been fixed would keep a marker saying otherwise.
+	file->RemoveTag(FT_MEDIA_PROBE_FAILED);
 	// Traced under logMediaProbe — the "metadata actually landed"
 	// confirmation, logged once per file when tags are attached.
 	AddDebugLogLineN(logMediaProbe,

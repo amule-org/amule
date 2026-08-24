@@ -63,12 +63,14 @@ void CMediaProbeThread::EndThread()
 	Wait();
 }
 
-void CMediaProbeThread::QueueProbe(const CMD4Hash &hash, const CPath &fullPath, const wxString &ffprobePath)
+void CMediaProbeThread::QueueProbe(
+	const CMD4Hash &hash, const CPath &fullPath, const wxString &ffprobePath, bool bulk)
 {
 	MediaProbeJob job;
 	job.hash = hash;
 	job.path = fullPath;
 	job.ffprobePath = ffprobePath;
+	job.bulk = bulk;
 
 	wxMutexLocker lock(m_mutex);
 	m_jobList.push_back(job);
@@ -98,15 +100,17 @@ void *CMediaProbeThread::Entry()
 			workList.swap(m_jobList);
 		}
 
-		// A batch of one is a genuine single-file event -- a file just dropped
-		// into a shared directory -- and keeps its per-file lines. Anything
-		// larger is a share scan draining, where one line per file (and a
-		// second per failure) would make the log scale with the size of the
-		// media library. Those report one summary below instead, matching how
-		// the bulk share walk summarises its discoveries.
-		const bool bulk = (workList.size() > 1);
+		// Bulk-ness now rides on the job, set by whoever scheduled it. It
+		// used to be `workList.size() > 1`, which asked the wrong question:
+		// the worker swaps the whole pending list out as soon as it is
+		// signalled, so the size of a batch reflects the timing of that wake
+		// and nothing else. During one share scan some drains hold a single
+		// job and some hold dozens, so exactly which files printed a per-file
+		// line was decided by the scheduler -- one file named, the rest
+		// summarised, with nothing distinguishing them (issue #1116).
 		unsigned probed = 0;
 		unsigned failed = 0;
+		bool anyBulk = false;
 
 		for (const MediaProbeJob &job : workList) {
 			// Shut down promptly rather than draining a long backlog.
@@ -125,7 +129,7 @@ void *CMediaProbeThread::Entry()
 			}
 			MediaInfo info;
 			++probed;
-			if (MediaProbe::Probe(exe, job.path, info, kProbeTimeoutMs, m_bRun, bulk)) {
+			if (MediaProbe::Probe(exe, job.path, info, kProbeTimeoutMs, m_bRun, job.bulk)) {
 				// Marshal the result to the main thread, which
 				// resolves the hash to the CKnownFile and attaches
 				// the FT_MEDIA_* tags (doing that here would race the
@@ -134,7 +138,15 @@ void *CMediaProbeThread::Entry()
 				wxQueueEvent(wxTheApp, evt.Clone());
 			} else {
 				++failed;
+				// Report the failure to the main thread as well, so the file
+				// can be marked as tried-and-produced-nothing. Otherwise it
+				// keeps no trace of having been probed and is re-queued on
+				// every reload and every restart, to fail again identically.
+				MediaInfo empty;
+				CMediaProbeEvent evt(job.hash, empty, /*succeeded=*/false);
+				wxQueueEvent(wxTheApp, evt.Clone());
 			}
+			anyBulk = anyBulk || job.bulk;
 		}
 
 		// One line for the whole drain. Only in bulk mode -- a single-file
@@ -142,7 +154,7 @@ void *CMediaProbeThread::Entry()
 		// noise. Failures are named in the summary rather than hidden: the
 		// point of reporting them at all is that a misconfigured ffprobe must
 		// not look like success.
-		if (bulk && probed > 0) {
+		if (anyBulk && probed > 0) {
 			if (failed > 0) {
 				AddLogLineN(
 					CFormat(wxPLURAL("Extracted media metadata from %u file (%u failed)",

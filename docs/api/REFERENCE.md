@@ -1428,6 +1428,8 @@ Returns `202 Accepted`. `queued` is how many files were **accepted for probing**
 
 This is the only way to correct metadata that is *wrong* rather than missing. The normal scheduler skips any file that already carries a media tag, so a value stored by an older build — a cover-art codec, or a preview inherited from a search result before the local probe could overwrite it — is otherwise permanent short of deleting `known.met`, which would also discard the ed2k part hashes and every per-file statistic.
 
+A refresh also retries files a previous probe could not read. amuled records that ffprobe already ran on a file and found nothing usable, so a broken or truncated one is not re-probed on every share reload and every restart; that record is what a refresh clears. Repair the file, or install a working ffprobe, and ask for a refresh -- there is no need to touch `known.met`.
+
 Each probe **replaces** every media field, including *clearing* one the new probe no longer finds, so a refresh corrects a value in both directions. Nothing else about a file is touched: statistics, comment, rating, upload priority, AICH hash set and share state all survive, the file is not re-hashed, its ed2k hash does not change, and it never leaves the share.
 
 The work runs on amuled's media-probe worker, one file at a time, so downloads and uploads are unaffected and the daemon stays responsive. Shutting down mid-refresh is clean — files not yet reached keep their previous values. Progress is observable through [`GET /api/v0/logs/amule`](#get-apiv0logsamule) and, as each probe lands, `shared_updated` SSE events.

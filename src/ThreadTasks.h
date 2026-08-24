@@ -269,11 +269,16 @@ private:
 };
 
 /**
- * This event is sent when a CMediaProbeTask successfully extracted
- * media metadata. The main-thread handler resolves the hash back to
- * a CKnownFile* (via CKnownFileList::FindKnownFileByID) and attaches
- * the FT_MEDIA_* tags there — doing that from the worker thread would
- * race with the publish paths that read m_taglist.
+ * This event is sent when a probe finished, whether or not it extracted
+ * anything. The main-thread handler resolves the hash back to a CKnownFile*
+ * (via CKnownFileList::FindKnownFileByID) and attaches the FT_MEDIA_* tags
+ * there — doing that from the worker thread would race with the publish paths
+ * that read m_taglist.
+ *
+ * A FAILED probe is reported too (issue #1116): the handler records that the
+ * file was tried and produced nothing, so the "already probed" gate stops
+ * re-queueing it on every reload and every restart. Without that round trip a
+ * file ffprobe cannot read is indistinguishable from one never probed.
  */
 class CMediaProbeEvent : public wxEvent
 {
@@ -283,16 +288,20 @@ public:
 	// meant every new field touched the event, its ctor, its Clone and the
 	// handler. Strings are deep-copied on construction for the thread hop --
 	// see the ctor.
-	CMediaProbeEvent(const CMD4Hash &hash, const MediaInfo &info);
+	// succeeded == false carries no MediaInfo worth reading: the handler
+	// records the failure and leaves whatever tags the file already had.
+	CMediaProbeEvent(const CMD4Hash &hash, const MediaInfo &info, bool succeeded = true);
 
 	virtual wxEvent *Clone() const;
 
 	const CMD4Hash &GetHash() const { return m_hash; }
 	const MediaInfo &GetInfo() const { return m_info; }
+	bool Succeeded() const { return m_succeeded; }
 
 private:
 	CMD4Hash m_hash;
 	MediaInfo m_info;
+	bool m_succeeded;
 };
 
 /**

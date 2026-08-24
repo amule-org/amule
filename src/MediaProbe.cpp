@@ -835,11 +835,17 @@ bool Probe(const wxString &ffprobePath,
 	// line per file and, in a release build where AddDebugLogLineN compiles to
 	// nothing, no error whatsoever. Whether the binary actually works is one of
 	// the questions these lines exist to answer.
+	// Failures are named even in bulk. Suppressing them was meant to stop the
+	// log scaling with the size of the media library, but that reasoning only
+	// holds for the per-file SUCCESS announcement above -- it is one line per
+	// file in the share. Failures are not: they are rare, and now that a
+	// failed file is marked and not retried (issue #1116) each one is reported
+	// once and then never again. A count with no filenames, which is what a
+	// scan used to produce, tells the user that something is wrong and
+	// withholds the only thing they need to act on it.
 	if (rc == kKilled) {
-		if (!bulk) {
-			AddLogLineN(CFormat(_("Media metadata: ffprobe timed out or was cancelled for %s")) %
-				    file.GetPrintable());
-		}
+		AddLogLineN(CFormat(_("Media metadata: ffprobe timed out or was cancelled for %s")) %
+			    file.GetPrintable());
 		return false;
 	}
 	if (rc == kOutputTooLarge) {
@@ -847,18 +853,13 @@ bool Probe(const wxString &ffprobePath,
 		// five fields asked for, which means the file carries a tag crafted to
 		// be enormous. Named separately so this does not report as a failure
 		// of the binary.
-		if (!bulk) {
-			AddLogLineN(CFormat(_("Media metadata: ignoring implausibly large ffprobe output "
-					      "for %s")) %
-				    file.GetPrintable());
-		}
+		AddLogLineN(CFormat(_("Media metadata: ignoring implausibly large ffprobe output for %s")) %
+			    file.GetPrintable());
 		return false;
 	}
 	if (rc != 0) {
-		if (!bulk) {
-			AddLogLineN(CFormat(_("Media metadata: ffprobe failed (code %d) for %s")) % rc %
-				    file.GetPrintable());
-		}
+		AddLogLineN(CFormat(_("Media metadata: ffprobe failed (code %d) for %s")) % rc %
+			    file.GetPrintable());
 		return false;
 	}
 
@@ -866,8 +867,14 @@ bool Probe(const wxString &ffprobePath,
 	if (!ParseProbeOutput(stdout_lines, info)) {
 		// Neither a duration nor a codec came back, so there is nothing worth
 		// advertising -- report a failed probe rather than attaching empty tags.
-		AddDebugLogLineN(logMediaProbe,
-			CFormat(wxT("MediaProbe: no metadata parsed for %s")) % file.GetPrintable());
+		//
+		// Info, not debug: AddDebugLogLineN compiles to nothing without
+		// __DEBUG__, so in every release build this -- the most likely way a
+		// file fails, since ffprobe exits 0 -- produced no output at all. The
+		// file was silently re-probed on every reload forever with nothing in
+		// the log to explain it.
+		AddLogLineN(CFormat(_("Media metadata: ffprobe found nothing usable in %s")) %
+			    file.GetPrintable());
 		return false;
 	}
 
