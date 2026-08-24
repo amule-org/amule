@@ -295,6 +295,15 @@ public:
 	 * caller can get one without the other.
 	 */
 	void SendSharedFilesRequest();
+	/**
+	 * Re-check this peer against the IP filter and the ban list, disconnecting
+	 * it on a hit. Contacting means clean; ClientDeleted means `this` is gone.
+	 *
+	 * Shared by TryToContact and the already-connected browse path, because
+	 * the filter list may have changed since the peer was admitted and both
+	 * routes to it have to notice.
+	 */
+	EContactResult CheckFilteredOrBanned();
 	void ProcessSharedFileList(const uint8_t *pachPacket, uint32 nSize, wxString &pszDirectory);
 	void SendSharedDirectories();
 	void SendSharedFilesOfDirectory(const wxString &strReqDir);

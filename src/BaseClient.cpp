@@ -1435,6 +1435,56 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 	return result != EContactResult::ClientDeleted && result != EContactResult::ConnectNotStarted;
 }
 
+// Re-check this peer against the IP filter and the ban list, disconnecting it
+// on a hit.
+//
+// Returns Contacting when the peer is clean -- "carry on" rather than "we sent
+// something" -- and ClientDeleted or Declined otherwise, matching what the
+// callers already do with those.
+//
+// Extracted so it can run on both routes to a peer: TryToContact, which is
+// about to open a connection, and the already-connected browse path, which is
+// not. Both need it for the same reason the original comment gives -- the
+// filter list may have been updated since this peer was admitted -- and a
+// browse used to be one of the places that noticed. Keeping the Disconnected /
+// Safe_Delete handling in one place matters more than the two call sites: it
+// can delete `this`, and the callers have to agree on how that is reported.
+EContactResult CUpDownClient::CheckFilteredOrBanned()
+{
+	uint32 uClientIP = GetIP();
+	if (uClientIP == 0 && !HasLowID()) {
+		uClientIP = wxUINT32_SWAP_ALWAYS(m_nUserIDHybrid);
+	}
+	if (!uClientIP) {
+		return EContactResult::Contacting;
+	}
+	// Although we filter all received IPs (server sources, source exchange) and all incoming
+	// connection attempts, we do have to filter outgoing connection attempts here too, because we
+	// may have updated the ip filter list
+	if (theApp->ipfilter->IsFiltered(uClientIP)) {
+		AddDebugLogLineN(logIPFilter,
+			CFormat("Filtered ip %u (%s) on TryToConnect\n") % uClientIP %
+				Uint32toStringIP(uClientIP));
+		if (Disconnected("IPFilter")) {
+			Safe_Delete();
+			return EContactResult::ClientDeleted;
+		}
+		return EContactResult::Declined;
+	}
+
+	// for safety: check again whether that IP is banned
+	if (theApp->clientlist->IsBannedClient(uClientIP)) {
+		AddDebugLogLineN(
+			logClient, "Refused to connect to banned client " + Uint32toStringIP(uClientIP));
+		if (Disconnected("Banned IP")) {
+			Safe_Delete();
+			return EContactResult::ClientDeleted;
+		}
+		return EContactResult::Declined;
+	}
+	return EContactResult::Contacting;
+}
+
 EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 {
 	// Kad reviewed
@@ -1460,37 +1510,8 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 		}
 	}
 
-	// Ipfilter check
-	uint32 uClientIP = GetIP();
-	if (uClientIP == 0 && !HasLowID()) {
-		uClientIP = wxUINT32_SWAP_ALWAYS(m_nUserIDHybrid);
-	}
-
-	if (uClientIP) {
-		// Although we filter all received IPs (server sources, source exchange) and all incoming
-		// connection attempts, we do have to filter outgoing connection attempts here too, because we
-		// may have updated the ip filter list
-		if (theApp->ipfilter->IsFiltered(uClientIP)) {
-			AddDebugLogLineN(logIPFilter,
-				CFormat("Filtered ip %u (%s) on TryToConnect\n") % uClientIP %
-					Uint32toStringIP(uClientIP));
-			if (Disconnected("IPFilter")) {
-				Safe_Delete();
-				return EContactResult::ClientDeleted;
-			}
-			return EContactResult::Declined;
-		}
-
-		// for safety: check again whether that IP is banned
-		if (theApp->clientlist->IsBannedClient(uClientIP)) {
-			AddDebugLogLineN(logClient,
-				"Refused to connect to banned client " + Uint32toStringIP(uClientIP));
-			if (Disconnected("Banned IP")) {
-				Safe_Delete();
-				return EContactResult::ClientDeleted;
-			}
-			return EContactResult::Declined;
-		}
+	if (const EContactResult filtered = CheckFilteredOrBanned(); filtered != EContactResult::Contacting) {
+		return filtered;
 	}
 
 	if (GetKadState() == KS_QUEUED_FWCHECK) {
@@ -2184,7 +2205,46 @@ void CUpDownClient::RequestSharedFileList()
 	// caller. Hoisting the connected case inside it would also turn a
 	// connected LowID source's DS_LOWTOLOWIP into a SendFileRequest(), which
 	// is a download-path change with no business riding along here.
+	//
+	// Note what this caller gives up. A connected peer used to reach
+	// TryToContact's `else` branch and so ConnectionEstablished(), which does
+	// far more than send the ask: Kad fw-check transitions, chat
+	// MS_CONNECTING -> MS_CHATTING with its pending-message flush,
+	// DS_WAITCALLBACK -> DS_CONNECTED plus SendFileRequest(), the upload
+	// OP_ACCEPTUPLOADREQ, and the m_WaitingPackets_list drain. Not taking that
+	// branch is the point rather than a side effect: re-running connection
+	// setup because someone clicked "View Files" is the odd behaviour, and the
+	// states it drives are unreachable over a live socket anyway --
+	// DS_WAITCALLBACK means we are waiting for a connection we already have.
+	// The ask is the only part a browse needs, and it is what stays.
 	if (IsConnected()) {
+		// Re-validate first. TryToContact does this before it looks at the
+		// socket, so skipping straight past it would let a peer filtered or
+		// banned since the connection came up be browsed -- and be sent a
+		// packet -- where the old path would have severed the connection.
+		// ClientDeleted means `this` is gone; the browse died with it.
+		switch (CheckFilteredOrBanned()) {
+		case EContactResult::ClientDeleted:
+			return;
+		case EContactResult::Declined:
+		case EContactResult::ConnectNotStarted:
+			theApp->browsemanager->Fail(this);
+			return;
+		case EContactResult::Contacting:
+			break;
+		}
+		// The guard is checked here rather than left to the helper's silent
+		// return. The two callers want opposite things from it: on
+		// ConnectionEstablished a false guard is the reconnect suppression
+		// working, while here it would mean returning with the tab already
+		// announced, nothing on the wire and no terminal path -- the browse
+		// that waits out its deadline, which #1074 and #1088 removed.
+		// Start() guarantees the state, so this is a can't-happen; say so
+		// loudly rather than silently.
+		if (!theApp->browsemanager->AwaitingDirectoryList(this)) {
+			theApp->browsemanager->Fail(this);
+			return;
+		}
 		SendSharedFilesRequest();
 		return;
 	}
