@@ -10,6 +10,7 @@
 import { api, bulkFailures, setUnauthorizedHandler } from "./api.js";
 import { data } from "./events.js";
 import { searches } from "./searches.js";
+import { chats } from "./chats.js";
 import { html, render, useState, useEffect, useStore } from "./dom.js";
 import { toast, Placeholder } from "./components.js";
 import { formatSpeed, formatInt } from "./format.js";
@@ -26,6 +27,7 @@ const ROUTES = [
   { key: "downloads", label: t("app_nav_downloads") },
   { key: "shared", label: t("app_nav_shared") },
   { key: "clients", label: t("app_nav_clients") },
+  { key: "messages", label: t("app_nav_messages") },
   { key: "stats", label: t("app_nav_stats") },
   { key: "preferences", label: t("app_nav_preferences") },
   { key: "about", label: t("app_nav_about") },
@@ -59,6 +61,7 @@ function App() {
       // banning this IP.
       data.stop();
       searches.reset(); // its poll timer and tabs are module-level too
+      chats.reset();
       if (!alive) return;
       setNotice(reason === "rate_limited" ? t("login_err_rate_limited") : t("login_session_expired"));
       setAuth("out");
@@ -83,6 +86,8 @@ function Shell({ role, onLogout }) {
   useEffect(() => {
     document.body.classList.toggle("role-guest", role === "guest");
     data.ensureStatus();
+    // Shell-wide, not per-view, so the unread badge lights up from any section.
+    chats.ensure();
     if (!location.hash) location.hash = "#/" + DEFAULT_ROUTE;
     const onHash = () => setRoute(currentRoute());
     window.addEventListener("hashchange", onHash);
@@ -150,6 +155,7 @@ function VersionBanner() {
 function Toolbar({ route, onLogout }) {
   const [link, setLink] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const unread = (useStore("chats") || {}).unread || 0;
 
   const addEd2k = async () => {
     const value = link.trim();
@@ -188,6 +194,7 @@ function Toolbar({ route, onLogout }) {
     try { await api.logout(); } catch (_) {}
     data.stop(); // the SSE stream and poll timer outlive this component
     searches.reset(); // ...and so do the search tabs and their poll timer
+    chats.reset();
     location.hash = "";
     onLogout();
   };
@@ -211,6 +218,9 @@ function Toolbar({ route, onLogout }) {
              onClick=${() => setMenuOpen(false)}>
             <${Icon} name=${r.key} size=${20} />
             <span class="tool-label">${r.label}</span>
+            ${r.key === "messages" && unread
+              ? html`<span class="tool-badge" title=${t("messages_unread_tip", { n: unread })}>${unread}</span>`
+              : null}
           </a>`)}
         <div class="nav-tools">
           <form class="ed2k-add admin-only" onSubmit=${(e) => { e.preventDefault(); addEd2k(); }}>

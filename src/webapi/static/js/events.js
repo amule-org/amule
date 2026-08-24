@@ -207,9 +207,21 @@ function openSse() {
     try { store.set("comments:updated", JSON.parse(ev.data)); } catch (_) {}
   });
 
+  // Chat rides store keys like search, not the added/updated/removed model.
+  // chat_message is one frame per message, inbound AND outbound (an outbound one
+  // relays a send from another client); chats.js demuxes by `peer`.
+  es.addEventListener("chat_message", (ev) => {
+    try { store.set("chat:message", JSON.parse(ev.data)); } catch (_) {}
+  });
+  es.addEventListener("chat_session_closed", (ev) => {
+    try { store.set("chat:closed", JSON.parse(ev.data)); } catch (_) {}
+  });
+
   es.addEventListener("resync", () => {
     if (statusActive) refreshStatus();
     for (const k of active) seed(k);
+    // chats.js isn't an `active` resource, so the re-seed above misses it.
+    store.set("resync", (store.get("resync") || 0) + 1);
   });
 
   for (const spec of resources.values()) attachResourceListeners(spec);

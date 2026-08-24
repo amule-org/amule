@@ -8,6 +8,7 @@ import { data } from "../events.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
 import { Badge, listPlaceholder, CountryCell, toast } from "../components.js";
 import { searches } from "../searches.js";
+import { chats } from "../chats.js";
 import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker, ipNum } from "../table.js";
 import { formatBytes, formatSpeed } from "../format.js";
 import { Icon } from "../icons.js";
@@ -96,12 +97,25 @@ export const COLS = [
   // Search section, which is where this jumps to. Rides the shared column set,
   // so it also appears in the detail panels' Clients tab -- it targets a peer,
   // not a file, so that is correct.
-  { key: "actions", th: "downloads_peer_col_actions", cls: "row-actions admin-only", width: "70px",
+  //
+  // "Send message" opens the Messages section with this peer selected (no
+  // request; the core creates the conversation on the first message). Only for
+  // a peer with an address, the conversation key.
+  { key: "actions", th: "downloads_peer_col_actions", cls: "row-actions admin-only", width: "104px",
     cell: (c) => html`
       <button class="btn btn-icon btn-sm" type="button" title=${t("search_view_files")}
               onClick=${() => searches.browse(c.ecid, c.name).catch((e) => toast(terr(e), "error"))}>
         <${Icon} name="shared" />
-      </button>` },
+      </button>
+      ${c.ip && c.port ? html`
+        <button class="btn btn-icon btn-sm" type="button" title=${t("messages_send_message")}
+                onClick=${() => {
+                  chats.open({ peer: c.ip + ":" + c.port, ip: c.ip, port: c.port,
+                               name: c.name, clientEcid: c.ecid });
+                  location.hash = "#/messages";
+                }}>
+          <${Icon} name="messages" />
+        </button>` : null}` },
 ];
 
 // Raw-detail columns no consumer leads with; each adds its own defaultHidden set
