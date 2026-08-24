@@ -4296,8 +4296,9 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 				response = new CECPacket(EC_OP_FAILED);
 				response->AddTag(CECTag(EC_TAG_STRING,
 					wxTRANSLATE("File is not eligible for media metadata "
-						    "extraction (not an audio/video file, or an "
-						    "incomplete download)")));
+						    "extraction (metadata extraction is disabled, the "
+						    "file is not audio/video, or it is an incomplete "
+						    "download)")));
 				break;
 			}
 			queued = 1;

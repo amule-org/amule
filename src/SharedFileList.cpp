@@ -875,8 +875,26 @@ bool CSharedFileList::MaybeScheduleMediaProbe(CKnownFile *pFile, MediaProbeMode 
 	return false;
 }
 
+// A user-triggered refresh must never decline in silence. The scheduler's own
+// "feature is off" check is a debug line, which compiles out of release builds,
+// so a refresh with media metadata disabled did exactly nothing and said
+// nothing -- the GUI greys its entry out for this now, but an older GUI, a
+// script driving EC, or the REST endpoint can still ask.
+static bool MediaRefreshAvailable()
+{
+	if (thePrefs::GetMediaMetadataEnabled()) {
+		return true;
+	}
+	AddLogLineN(_("Media metadata extraction is disabled in preferences, so there is nothing to "
+		      "re-extract."));
+	return false;
+}
+
 unsigned CSharedFileList::RefreshAllMediaMetadata()
 {
+	if (!MediaRefreshAvailable()) {
+		return 0;
+	}
 	// Snapshot under the lock, schedule outside it. Holding list_mut across a
 	// whole library's worth of scheduling would block every reader, including
 	// the EC handlers this is invoked from.
@@ -904,6 +922,9 @@ unsigned CSharedFileList::RefreshAllMediaMetadata()
 
 bool CSharedFileList::RefreshMediaMetadata(const CMD4Hash &hash)
 {
+	if (!MediaRefreshAvailable()) {
+		return false;
+	}
 	CKnownFile *file = GetFileByID(hash);
 	return file && MaybeScheduleMediaProbe(file, MediaProbeMode::Refresh);
 }

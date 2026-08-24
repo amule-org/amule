@@ -1448,7 +1448,7 @@ The same operation for a single file, which is the quickest way to check a fix o
 { "ok": true, "scope": "file", "queued": 1 }
 ```
 
-**Errors:** `404 not_found` (no shared file with that hash), `409 partfile_unsupported` (an incomplete download has no complete file to read), `400 amuled_rejected` (the file is not eligible — its extension is not audio/video), `503 ec_unsupported`, `503 ec_unavailable`.
+**Errors:** `404 not_found` (no shared file with that hash), `409 partfile_unsupported` (an incomplete download has no complete file to read), `400 amuled_rejected` (the file is not eligible: media metadata extraction is disabled in amuled's preferences, the file is not audio/video, or it is an incomplete download), `503 ec_unsupported`, `503 ec_unavailable`.
 
 #### `GET /api/v0/shared/directories`
 

@@ -61,12 +61,25 @@ namespace
 enum class MediaRefreshEligibility
 {
 	Eligible,
-	Incomplete, //!< an in-progress download has no complete file to read
-	NotMedia,   //!< nothing for ffprobe to extract
+	FeatureDisabled, //!< media metadata extraction is switched off in preferences
+	Incomplete,      //!< an in-progress download has no complete file to read
+	NotMedia,        //!< nothing for ffprobe to extract
 };
 
 MediaRefreshEligibility ClassifyForMediaRefresh(const CKnownFile *file)
 {
+	// First, because it decides the answer for every file at once: with the
+	// feature off the scheduler drops the job before looking at the file, so
+	// the entry would be enabled and do nothing at all -- which is exactly
+	// what happens today and gives the user no clue why.
+	//
+	// Correct in amulegui too. The daemon sends this preference over EC as a
+	// presence tag, and the receiving side maps an absent tag to false
+	// (ApplyBoolean in ECSpecialMuleTags), so a remote GUI reports the
+	// DAEMON's setting rather than its own default.
+	if (!thePrefs::GetMediaMetadataEnabled()) {
+		return MediaRefreshEligibility::FeatureDisabled;
+	}
 	// IsPartFile() is answered correctly in both binaries: amulegui files a
 	// shared partfile into its shared list as the very CPartFile the download
 	// queue holds, not a plain CKnownFile.
@@ -404,6 +417,11 @@ void CSharedFilesCtrl::OnRefreshMediaMetadata(wxCommandEvent &WXUNUSED(event))
 	for (wxUIntPtr data : GetSelectedItemData()) {
 		CKnownFile *file = reinterpret_cast<CKnownFile *>(data);
 		switch (ClassifyForMediaRefresh(file)) {
+		case MediaRefreshEligibility::FeatureDisabled:
+			// Global, so this classifies every file the same way and the
+			// selection ends up empty -- the menu entry is greyed out in that
+			// state and this is only defensive.
+			break;
 		case MediaRefreshEligibility::Incomplete:
 			++incomplete;
 			break;
