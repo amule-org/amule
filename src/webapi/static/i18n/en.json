@@ -166,6 +166,7 @@
   "networks_log_clear": "Clear",
   "networks_log_confirm_clear_amule": "Clear the aMule log?",
   "networks_log_confirm_clear_serverinfo": "Clear the server-info log?",
+  "networks_log_download": "Download log",
   "networks_log_error": "Error",
   "networks_log_toast_cleared": "Log cleared",
   "search_actions": "Actions",

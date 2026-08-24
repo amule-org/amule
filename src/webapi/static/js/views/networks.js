@@ -333,11 +333,30 @@ const append = (box, text) => {
   box.appendChild(document.createTextNode(text));
   if (stick) box.scrollTop = box.scrollHeight;
 };
+const setText = (box, text, isErr) => {
+  box.textContent = text;
+  box.classList.toggle("logbox-err", !!isErr);
+};
 
-function logBox(clear, boxRef, extraCls) {
+const saveText = (name, text) => {
+  const url = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
+  const a = Object.assign(document.createElement("a"), { href: url, download: name });
+  a.click();
+  // Deferred: revoking in the same task can cancel the download.
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+};
+
+function logBox(clear, save, boxRef, extraCls) {
   return html`
     <div class="logbox-wrap">
-      <button class="btn admin-only logbox-clear" onClick=${clear}>${t("networks_log_clear")}</button>
+      <div class="logbox-actions">
+        <button class="btn btn-icon btn-sm" title=${t("networks_log_download")} onClick=${save}>
+          <${Icon} name="downloads" />
+        </button>
+        <button class="btn btn-icon btn-sm admin-only" title=${t("networks_log_clear")} onClick=${clear}>
+          <${Icon} name="trash" />
+        </button>
+      </div>
       <pre class=${"logbox" + (extraCls ? " " + extraCls : "")} ref=${boxRef}></pre>
     </div>`;
 }
@@ -350,13 +369,18 @@ function AmuleLogPanel() {
     try {
       const r = await api.get("logs/amule?tail=" + AMULE_TAIL);
       if (!boxRef.current) return;
-      boxRef.current.textContent = (r.lines || []).join("");
+      setText(boxRef.current, (r.lines || []).join(""));
       boxRef.current.scrollTop = boxRef.current.scrollHeight;
-    } catch (e) { if (boxRef.current) boxRef.current.textContent = terr(e) || t("networks_log_error"); }
+    } catch (e) { if (boxRef.current) setText(boxRef.current, terr(e) || t("networks_log_error"), true); }
   };
   const clear = async () => {
     if (!(await confirmDialog(t("networks_log_confirm_clear_amule")))) return;
-    try { await api.del("logs/amule"); if (boxRef.current) boxRef.current.textContent = ""; toast(t("networks_log_toast_cleared"), "success"); }
+    try { await api.del("logs/amule"); if (boxRef.current) setText(boxRef.current, ""); toast(t("networks_log_toast_cleared"), "success"); }
+    catch (e) { toast(terr(e) || t("networks_log_error"), "error"); }
+  };
+  // No `tail`: the whole history, not just the lines on screen.
+  const save = async () => {
+    try { const r = await api.get("logs/amule"); saveText("amule-log.txt", (r.lines || []).join("")); }
     catch (e) { toast(terr(e) || t("networks_log_error"), "error"); }
   };
 
@@ -372,7 +396,7 @@ function AmuleLogPanel() {
     return () => unsub();
   }, []);
 
-  return logBox(clear, boxRef);
+  return logBox(clear, save, boxRef);
 }
 
 // No SSE channel for this one — polled.
@@ -383,13 +407,17 @@ function ServerInfoPanel() {
     try {
       const r = await api.get("logs/serverinfo");
       if (!boxRef.current) return;
-      boxRef.current.textContent = r.text || "";
+      setText(boxRef.current, r.text || "");
       boxRef.current.scrollTop = boxRef.current.scrollHeight;
-    } catch (e) { if (boxRef.current) boxRef.current.textContent = terr(e) || t("networks_log_error"); }
+    } catch (e) { if (boxRef.current) setText(boxRef.current, terr(e) || t("networks_log_error"), true); }
   };
   const clear = async () => {
     if (!(await confirmDialog(t("networks_log_confirm_clear_serverinfo")))) return;
-    try { await api.del("logs/serverinfo"); if (boxRef.current) boxRef.current.textContent = ""; toast(t("networks_log_toast_cleared"), "success"); }
+    try { await api.del("logs/serverinfo"); if (boxRef.current) setText(boxRef.current, ""); toast(t("networks_log_toast_cleared"), "success"); }
+    catch (e) { toast(terr(e) || t("networks_log_error"), "error"); }
+  };
+  const save = async () => {
+    try { const r = await api.get("logs/serverinfo"); saveText("server-info.txt", r.text || ""); }
     catch (e) { toast(terr(e) || t("networks_log_error"), "error"); }
   };
 
@@ -399,7 +427,7 @@ function ServerInfoPanel() {
     return () => clearInterval(timer);
   }, []);
 
-  return logBox(clear, boxRef, "logbox-sm");
+  return logBox(clear, save, boxRef, "logbox-sm");
 }
 
 // --- bottom tabs: per-network info grids ---------------------------------

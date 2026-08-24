@@ -166,6 +166,7 @@
   "networks_log_clear": "Limpiar",
   "networks_log_confirm_clear_amule": "¿Limpiar el registro de aMule?",
   "networks_log_confirm_clear_serverinfo": "¿Limpiar el registro de info del servidor?",
+  "networks_log_download": "Descargar registro",
   "networks_log_error": "Error",
   "networks_log_toast_cleared": "Registro limpiado",
   "search_actions": "Acciones",
