@@ -285,6 +285,26 @@ public:
 
 	void ClearDownloadBlockRequests();
 	void RequestSharedFileList();
+	/**
+	 * Put this browse's ask on the wire, if it is still waiting for one.
+	 *
+	 * Shared by the two ways a browse reaches the peer: after a connect
+	 * (ConnectionEstablished) and over a socket that was already open
+	 * (RequestSharedFileList). Carries the single-shot guard and re-bases the
+	 * browse's silence deadline onto the moment the ask went out, so neither
+	 * caller can get one without the other.
+	 */
+	void SendSharedFilesRequest();
+	/**
+	 * Re-check the standing reasons to refuse this peer -- obfuscation
+	 * settings, IP filter, ban list -- disconnecting it on a hit. Contacting
+	 * means clean; ClientDeleted means `this` is gone.
+	 *
+	 * Shared by TryToContact and the already-connected browse path. All three
+	 * checks are settings-derived and every one of those settings can change
+	 * while a connection is open, so both routes to a peer have to notice.
+	 */
+	EContactResult CheckContactPreconditions();
 	void ProcessSharedFileList(const uint8_t *pachPacket, uint32 nSize, wxString &pszDirectory);
 	void SendSharedDirectories();
 	void SendSharedFilesOfDirectory(const wxString &strReqDir);

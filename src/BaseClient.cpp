@@ -1435,6 +1435,71 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 	return result != EContactResult::ClientDeleted && result != EContactResult::ConnectNotStarted;
 }
 
+// Re-check the standing reasons to refuse this peer, disconnecting it on a hit:
+// incompatible obfuscation settings, a filtered IP, a banned IP.
+//
+// Returns Contacting when the peer is clean -- "carry on" rather than "we sent
+// something" -- and ClientDeleted or Declined otherwise, matching what the
+// callers already do with those.
+//
+// Extracted so it can run on both routes to a peer: TryToContact, which is
+// about to open a connection, and the already-connected browse path, which is
+// not. All three share one property that makes them belong here rather than at
+// connect time only -- each is settings-derived and every one of those settings
+// is changeable while a connection is open. A peer admitted before the filter
+// list grew, or before "require obfuscation" was switched on, keeps its socket,
+// and a browse used to be one of the places that noticed. The max-sockets check
+// above is NOT here on purpose: it governs opening a new socket, which is
+// exactly what a peer we are already connected to does not need.
+//
+// Keeping the Disconnected / Safe_Delete handling in one place matters more
+// than the two call sites: it can delete `this`, and the callers have to agree
+// on how that is reported.
+EContactResult CUpDownClient::CheckContactPreconditions()
+{
+	if ((RequiresCryptLayer() && !thePrefs::IsClientCryptLayerSupported()) ||
+		(thePrefs::IsClientCryptLayerRequired() && !SupportsCryptLayer())) {
+		if (Disconnected("CryptLayer-Settings (Obfuscation) incompatible")) {
+			Safe_Delete();
+			return EContactResult::ClientDeleted;
+		}
+		return EContactResult::Declined;
+	}
+
+	uint32 uClientIP = GetIP();
+	if (uClientIP == 0 && !HasLowID()) {
+		uClientIP = wxUINT32_SWAP_ALWAYS(m_nUserIDHybrid);
+	}
+	if (!uClientIP) {
+		return EContactResult::Contacting;
+	}
+	// Although we filter all received IPs (server sources, source exchange) and all incoming
+	// connection attempts, we do have to filter outgoing connection attempts here too, because we
+	// may have updated the ip filter list
+	if (theApp->ipfilter->IsFiltered(uClientIP)) {
+		AddDebugLogLineN(logIPFilter,
+			CFormat("Filtered ip %u (%s) on TryToConnect\n") % uClientIP %
+				Uint32toStringIP(uClientIP));
+		if (Disconnected("IPFilter")) {
+			Safe_Delete();
+			return EContactResult::ClientDeleted;
+		}
+		return EContactResult::Declined;
+	}
+
+	// for safety: check again whether that IP is banned
+	if (theApp->clientlist->IsBannedClient(uClientIP)) {
+		AddDebugLogLineN(
+			logClient, "Refused to connect to banned client " + Uint32toStringIP(uClientIP));
+		if (Disconnected("Banned IP")) {
+			Safe_Delete();
+			return EContactResult::ClientDeleted;
+		}
+		return EContactResult::Declined;
+	}
+	return EContactResult::Contacting;
+}
+
 EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 {
 	// Kad reviewed
@@ -1448,49 +1513,9 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 		}
 	}
 
-	// Do not try to connect to source which are incompatible with our encryption setting (one requires
-	// it, and the other one doesn't supports it)
-	if ((RequiresCryptLayer() && !thePrefs::IsClientCryptLayerSupported()) ||
-		(thePrefs::IsClientCryptLayerRequired() && !SupportsCryptLayer())) {
-		if (Disconnected("CryptLayer-Settings (Obfuscation) incompatible")) {
-			Safe_Delete();
-			return EContactResult::ClientDeleted;
-		} else {
-			return EContactResult::Declined;
-		}
-	}
-
-	// Ipfilter check
-	uint32 uClientIP = GetIP();
-	if (uClientIP == 0 && !HasLowID()) {
-		uClientIP = wxUINT32_SWAP_ALWAYS(m_nUserIDHybrid);
-	}
-
-	if (uClientIP) {
-		// Although we filter all received IPs (server sources, source exchange) and all incoming
-		// connection attempts, we do have to filter outgoing connection attempts here too, because we
-		// may have updated the ip filter list
-		if (theApp->ipfilter->IsFiltered(uClientIP)) {
-			AddDebugLogLineN(logIPFilter,
-				CFormat("Filtered ip %u (%s) on TryToConnect\n") % uClientIP %
-					Uint32toStringIP(uClientIP));
-			if (Disconnected("IPFilter")) {
-				Safe_Delete();
-				return EContactResult::ClientDeleted;
-			}
-			return EContactResult::Declined;
-		}
-
-		// for safety: check again whether that IP is banned
-		if (theApp->clientlist->IsBannedClient(uClientIP)) {
-			AddDebugLogLineN(logClient,
-				"Refused to connect to banned client " + Uint32toStringIP(uClientIP));
-			if (Disconnected("Banned IP")) {
-				Safe_Delete();
-				return EContactResult::ClientDeleted;
-			}
-			return EContactResult::Declined;
-		}
+	if (const EContactResult refused = CheckContactPreconditions();
+		refused != EContactResult::Contacting) {
+		return refused;
 	}
 
 	if (GetKadState() == KS_QUEUED_FWCHECK) {
@@ -1731,6 +1756,44 @@ bool CUpDownClient::Connect()
 	}
 }
 
+// Put the browse's ask on the wire, if this browse is still waiting for it.
+//
+// One implementation, two callers: ConnectionEstablished (the ask follows the
+// connect) and RequestSharedFileList (the peer was already on the line, so
+// there is no connect to follow). Extracted rather than duplicated because the
+// packet is the smaller half of what has to happen -- the guard and the clock
+// below are the rest of it, and a copy that dropped either would either spam
+// the peer or charge it for our connect time.
+//
+// The guard: ConnectionEstablished runs on every reconnect, and a browsed peer
+// that is also a download source reconnects often -- re-asking each time put
+// unrequested packets on the wire and an error line in the peer's log. Note it
+// only makes the ask single-shot for a DIRECTORY browse; a flat one stays
+// askable for its whole life, deliberately (see BrowseStore::AwaitingDirectoryList).
+void CUpDownClient::SendSharedFilesRequest()
+{
+	if (!theApp->browsemanager->AwaitingDirectoryList(this)) {
+		return;
+	}
+	CPacket *packet =
+		new CPacket(m_fSharedDirectories ? OP_ASKSHAREDDIRS : OP_ASKSHAREDFILES, 0, OP_EDONKEYPROT);
+	theStats::AddUpOverheadOther(packet->GetPacketSize());
+	SendPacket(packet, true, true);
+	// Re-base the silence deadline: Store::Start already set one, but from the
+	// click, and the connect that got us here may have taken a while. Without
+	// this the peer is charged for our connect time and the browse can expire
+	// early -- most visibly on the ConnectionEstablished path, where the gap
+	// is a whole connection attempt.
+	theApp->browsemanager->OnRequestSent(this, ::GetTickCount64());
+#ifdef __DEBUG__
+	if (m_fSharedDirectories) {
+		AddDebugLogLineN(logLocalClient, "Local Client: OP_ASKSHAREDDIRS to " + GetFullIP());
+	} else {
+		AddDebugLogLineN(logLocalClient, "Local Client: OP_ASKSHAREDFILES to " + GetFullIP());
+	}
+#endif
+}
+
 void CUpDownClient::ConnectionEstablished()
 {
 	/* Kry - First thing, check if this client was just used to retrieve
@@ -1821,26 +1884,7 @@ void CUpDownClient::ConnectionEstablished()
 				logLocalClient, "Local Client: OP_ACCEPTUPLOADREQ to " + GetFullIP());
 		}
 	}
-	// Only while the browse is still waiting to hear back. ConnectionEstablished
-	// runs on every reconnect, and a browsed peer that is also a download
-	// source reconnects often -- re-asking each time put unrequested packets
-	// on the wire and an error line in the peer's log.
-	if (theApp->browsemanager->AwaitingDirectoryList(this)) {
-		CPacket *packet = new CPacket(
-			m_fSharedDirectories ? OP_ASKSHAREDDIRS : OP_ASKSHAREDFILES, 0, OP_EDONKEYPROT);
-		theStats::AddUpOverheadOther(packet->GetPacketSize());
-		SendPacket(packet, true, true);
-		// The ask is on the wire now; the peer's clock starts here, not at
-		// the click, which may have been a connect ago.
-		theApp->browsemanager->OnRequestSent(this, ::GetTickCount64());
-#ifdef __DEBUG__
-		if (m_fSharedDirectories) {
-			AddDebugLogLineN(logLocalClient, "Local Client: OP_ASKSHAREDDIRS to " + GetFullIP());
-		} else {
-			AddDebugLogLineN(logLocalClient, "Local Client: OP_ASKSHAREDFILES to " + GetFullIP());
-		}
-#endif
-	}
+	SendSharedFilesRequest();
 
 	while (!m_WaitingPackets_list.empty()) {
 		CPacket *packet = m_WaitingPackets_list.front();
@@ -2148,6 +2192,75 @@ void CUpDownClient::RequestSharedFileList()
 	// Open the "View Files" tab up front (monolithic) so a peer that denies or
 	// never answers still shows a tab that can flip to "failed".
 	Notify_Browse_Started(ECID(), GetUserName(), (uint64)m_browseSearchId);
+
+	// Already on the line: ask over the socket we have, and skip TryToContact
+	// entirely.
+	//
+	// TryToContact answers a reachability question -- can we reach this peer
+	// if we are not already talking to it -- and for a LowID peer it answers
+	// Declined before it ever looks at the socket (the CanDoCallback block).
+	// Two of those declines do not imply we are unreachable at all: a LowID
+	// peer on our own server with Kad open, and being connected to neither
+	// network, both of which leave an established socket working. A browse
+	// over such a socket was failed on the spot even though the ask would
+	// have gone out fine.
+	//
+	// Deliberately narrow: TryToContact keeps its behaviour for every other
+	// caller. Hoisting the connected case inside it would also turn a
+	// connected LowID source's DS_LOWTOLOWIP into a SendFileRequest(), which
+	// is a download-path change with no business riding along here.
+	//
+	// Note what this caller gives up. A connected peer used to reach
+	// TryToContact's `else` branch and so ConnectionEstablished(), which does
+	// far more than send the ask: Kad fw-check transitions, chat
+	// MS_CONNECTING -> MS_CHATTING with its pending-message flush,
+	// DS_WAITCALLBACK -> DS_CONNECTED plus SendFileRequest(), the upload
+	// OP_ACCEPTUPLOADREQ, and the m_WaitingPackets_list drain. Not taking that
+	// branch is the point rather than a side effect: re-running connection
+	// setup because someone clicked "View Files" is the odd behaviour, and the
+	// states it drives are unreachable over a live socket anyway --
+	// DS_WAITCALLBACK means we are waiting for a connection we already have.
+	// The ask is the only part a browse needs, and it is what stays.
+	if (IsConnected()) {
+		// Re-validate first. TryToContact does this before it looks at the
+		// socket, so skipping straight past it would let a peer that became
+		// unacceptable since the connection came up -- filtered, banned, or
+		// incompatible with an obfuscation setting switched on meanwhile --
+		// be browsed and be sent a packet, where the old path would have
+		// severed the connection.
+		// ClientDeleted means `this` is gone; the browse died with it.
+		switch (CheckContactPreconditions()) {
+		case EContactResult::ClientDeleted:
+			return;
+		case EContactResult::Declined:
+		case EContactResult::ConnectNotStarted:
+			theApp->browsemanager->Fail(this);
+			return;
+		case EContactResult::Contacting:
+			break;
+		}
+		// The guard is checked here rather than left to the helper's silent
+		// return. The two callers want opposite things from it: on
+		// ConnectionEstablished a false guard is the reconnect suppression
+		// working, while here it would mean returning with the tab already
+		// announced, nothing on the wire and no terminal path -- the browse
+		// that waits out its deadline, which #1074 and #1088 removed.
+		// Start() guarantees the state, so this is a can't-happen -- and it
+		// has to be greppable as one, because in the log a bare Fail() here
+		// is indistinguishable from an ordinary browse failure, which is the
+		// one case worth spotting.
+		if (!theApp->browsemanager->AwaitingDirectoryList(this)) {
+			AddDebugLogLineC(logClient,
+				CFormat("Browse of user %s (%u): the request guard was unset immediately "
+					"after Start() -- browse abandoned") %
+					GetUserName() % GetUserIDHybrid());
+			wxFAIL;
+			theApp->browsemanager->Fail(this);
+			return;
+		}
+		SendSharedFilesRequest();
+		return;
+	}
 
 	switch (TryToContact(true)) {
 	case EContactResult::ClientDeleted:
