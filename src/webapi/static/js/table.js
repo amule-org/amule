@@ -291,9 +291,10 @@ export function VirtualTable({
         <thead><tr>${columns.map(th)}</tr></thead>
         <tbody>
           ${total === 0
-            ? html`<tr><td colspan=${ncols}>${empty}</td></tr>`
+            ? null
             : html`${spacer(padTop)}${rows.slice(start, end).map(rowTr)}${spacer(padBot)}`}
         </tbody>
       </table>
+      ${total === 0 ? html`<div class="table-empty">${empty}</div>` : null}
     </div>`;
 }

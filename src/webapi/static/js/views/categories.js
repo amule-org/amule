@@ -79,8 +79,6 @@ export function CategoriesPanel({ isGuest }) {
         </td>`}
     </tr>`;
 
-  const colspan = isGuest ? 5 : 6;
-
   return html`
     <div class="card">
       <div class="cat-panel-header">
@@ -100,13 +98,11 @@ export function CategoriesPanel({ isGuest }) {
               ${isGuest ? null : html`<th class="admin-only">${t("downloads_cat_actions")}</th>`}
             </tr>
           </thead>
-          <tbody>
-            ${loadErr ? html`<tr><td colspan=${colspan}>${loadErr}</td></tr>`
-              : categories.length
-                ? categories.map(row)
-                : html`<tr><td colspan=${colspan}><${Placeholder} kind="info">${t("downloads_cat_empty")}<//></td></tr>`}
-          </tbody>
+          <tbody>${loadErr ? null : categories.map(row)}</tbody>
         </table>
+        ${loadErr ? html`<div class="table-empty"><${Placeholder} kind="error">${loadErr}<//></div>`
+          : categories.length ? null
+            : html`<div class="table-empty"><${Placeholder} kind="info">${t("downloads_cat_empty")}<//></div>`}
       </div>
     </div>
 
