@@ -307,8 +307,10 @@ void CSharedFilesCtrl::OnItemRightClicked(wxDataViewEvent &event)
 		// Built from the right-clicked row while the handler acts on the whole
 		// selection, exactly as Verify Local Data does -- a mixed selection is
 		// filtered there, and the dialog says what it left out.
-		m_menu->Enable(MP_REFRESHMEDIAMETA,
-			ClassifyForMediaRefresh(file) == MediaRefreshEligibility::Eligible);
+		// From the selection, not from `file`: the handler refreshes every
+		// eligible file in the selection and the confirmation accounts for the
+		// rest, so the entry is available whenever there is anything to do.
+		m_menu->Enable(MP_REFRESHMEDIAMETA, !PartitionForMediaRefresh().eligible.empty());
 
 		int priority = file->IsAutoUpPriority() ? PR_AUTO : file->GetUpPriority();
 
@@ -404,35 +406,44 @@ void CSharedFilesCtrl::OnVerifyLocalData(wxCommandEvent &WXUNUSED(event))
 	}
 }
 
-void CSharedFilesCtrl::OnRefreshMediaMetadata(wxCommandEvent &WXUNUSED(event))
+CSharedFilesCtrl::MediaRefreshSelection CSharedFilesCtrl::PartitionForMediaRefresh() const
 {
-	// The menu was enabled from the right-clicked row, but this acts on the
-	// whole selection -- right-click a completed .mp3 with a partfile and a
-	// .zip also selected and all three arrive here. Partition first, so the
-	// confirmation can say what it will actually do rather than quoting a
-	// selection size it is not going to honour.
-	std::vector<CKnownFile *> eligible;
-	unsigned incomplete = 0;
-	unsigned notMedia = 0;
+	// The action applies to the SELECTION, so the menu has to be enabled from
+	// the selection too. Judging it by the right-clicked row instead meant a
+	// mixed selection greyed the entry out whenever the row under the cursor
+	// happened to be the ineligible one -- select a .mp3 and a .zip,
+	// right-click the .zip, and an action that would have refreshed the .mp3
+	// was unavailable. Which row the cursor is over is not something the user
+	// is choosing with; the selection is.
+	MediaRefreshSelection out;
 	for (wxUIntPtr data : GetSelectedItemData()) {
 		CKnownFile *file = reinterpret_cast<CKnownFile *>(data);
 		switch (ClassifyForMediaRefresh(file)) {
 		case MediaRefreshEligibility::FeatureDisabled:
-			// Global, so this classifies every file the same way and the
-			// selection ends up empty -- the menu entry is greyed out in that
-			// state and this is only defensive.
+			// Global rather than per-file: with the feature off every file
+			// lands here, the eligible list comes back empty, and the entry is
+			// greyed for the whole selection.
 			break;
 		case MediaRefreshEligibility::Incomplete:
-			++incomplete;
+			++out.incomplete;
 			break;
 		case MediaRefreshEligibility::NotMedia:
-			++notMedia;
+			++out.notMedia;
 			break;
 		case MediaRefreshEligibility::Eligible:
-			eligible.push_back(file);
+			out.eligible.push_back(file);
 			break;
 		}
 	}
+	return out;
+}
+
+void CSharedFilesCtrl::OnRefreshMediaMetadata(wxCommandEvent &WXUNUSED(event))
+{
+	const MediaRefreshSelection sel = PartitionForMediaRefresh();
+	const std::vector<CKnownFile *> &eligible = sel.eligible;
+	const unsigned incomplete = sel.incomplete;
+	const unsigned notMedia = sel.notMedia;
 	if (eligible.empty()) {
 		return;
 	}

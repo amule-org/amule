@@ -317,6 +317,17 @@ private:
 	void OnRename(wxCommandEvent &event);
 	void OnRefreshMediaMetadata(wxCommandEvent &event);
 
+	//! The current selection split by whether a media re-extraction can act on
+	//! it. Shared by the menu's enable rule and the handler so the two cannot
+	//! disagree about what the action would do.
+	struct MediaRefreshSelection
+	{
+		std::vector<CKnownFile *> eligible;
+		unsigned incomplete = 0; //!< in-progress downloads, nothing complete to read
+		unsigned notMedia = 0;   //!< not audio or video
+	};
+	MediaRefreshSelection PartitionForMediaRefresh() const;
+
 	/**
 	 * Checks for renaming via F2.
 	 */
