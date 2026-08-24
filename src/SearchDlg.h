@@ -142,6 +142,16 @@ public:
 
 	CSearchListCtrl *GetSearchList(wxUIntPtr id);
 
+	// Drop every open tab's rows, keeping the tabs themselves.
+	//
+	// For a reconnect to a RESTARTED daemon: the stored searches come back
+	// under their original ids, so the tabs still correspond to something --
+	// but every result behind them has been freed, and a tab's rows are raw
+	// CSearchFile pointers (a wxDataViewItem IS the pointer). Resetting the
+	// models makes them re-read the now-empty index instead of painting
+	// through pointers the search list just deleted.
+	void ResetResultViews();
+
 	// Multi-search (remote GUI): remap a tab's search ID from the optimistic
 	// local ID to the daemon-allocated one once the START reply arrives.
 	void RekeySearch(wxUIntPtr oldID, wxUIntPtr newID);

@@ -970,6 +970,29 @@ void CamuleRemoteGuiApp::FinishReconnect(int result)
 			if (friendlist) {
 				friendlist->ResetForNewSession();
 			}
+			if (searchlist) {
+				// Searches survive a restart -- amuled persists them and
+				// re-registers each restored one, so the daemon hands the
+				// same results back under their original search ids. What
+				// does NOT survive is the per-result ECID: the counter
+				// restarts with the process, so every restored result
+				// arrives as an id this client has never seen and is added
+				// alongside the copy it already holds.
+				//
+				// Nothing reaps the stale copy on its own. The search list
+				// deletes only on an explicit EC_TAG_FILE_REMOVED tombstone
+				// (it opted out of the base class's absence sweep so an idle
+				// search costs no traffic), and a daemon that has just
+				// started never emits a tombstone for an ECID it never knew
+				// about. Both copies therefore stay -- issue #1101, where
+				// every result appears twice after a restart.
+				searchlist->ResetForNewSession();
+				if (amuledlg && amuledlg->m_searchwnd) {
+					// Frees every result, so the tabs must drop their rows
+					// before anything repaints through them.
+					amuledlg->m_searchwnd->ResetResultViews();
+				}
+			}
 		} else if (knownfiles) {
 			// Same daemon: the next full poll reconciles every list against
 			// the fresh snapshot in place (update / add / prune) — no wipe,
