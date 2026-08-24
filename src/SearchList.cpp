@@ -281,6 +281,7 @@ CSearchList::CSearchList()
 , m_64bitSearchPacket(false)
 , m_KadSearchFinished(true)
 , m_ed2kSearchFinished(true)
+, m_awaitingServerAnswer(false)
 , m_searchStart(0)
 , m_shuttingDown(false)
 {
@@ -692,6 +693,12 @@ wxString CSearchList::StartNewSearch(uint32 *searchID, SearchType type, CSearchP
 		theStats::AddUpOverheadServer(searchPacket->GetPacketSize());
 		theApp->serverconnect->SendPacket(searchPacket, (type == LocalSearch));
 
+		// Bound the wait for the server's answer, for either kind: a local
+		// search has no other terminal path, and a global one's sweep is
+		// armed by the very answer we are waiting for.
+		m_awaitingServerAnswer = true;
+		m_searchTimer.Start(SERVER_ANSWER_TIMEOUT_MS, true /* one shot */);
+
 		if (type == GlobalSearch) {
 			delete m_searchPacket;
 			m_searchPacket = searchPacket;
@@ -729,6 +736,20 @@ wxString CSearchList::StartNewSearch(uint32 *searchID, SearchType type, CSearchP
 
 void CSearchList::LocalSearchEnd()
 {
+	if (!m_searchInProgress) {
+		// Nothing left for this reply to end: the wait for it ran out, or the
+		// search was stopped. Without this, a late answer to a terminalized
+		// global search reaches the wxCHECK_RET below with the packet already
+		// released -- silent under NDEBUG, an assertion in a Debug build.
+		return;
+	}
+
+	// The answer is in; from here the global branch's sweep bounds itself and
+	// the local branch is already terminal, so the one-shot has nothing left
+	// to guard. Cleared before either branch, since the global one restarts
+	// the same timer as the sweep ticker.
+	m_awaitingServerAnswer = false;
+
 	if (m_searchType == GlobalSearch) {
 		wxCHECK_RET(m_searchPacket, "Global search, but no packet");
 
@@ -736,10 +757,19 @@ void CSearchList::LocalSearchEnd()
 		theApp->serverlist->RemoveObserver(&m_serverQueue);
 		m_searchTimer.Start(750);
 	} else {
-		m_searchInProgress = false;
-		m_ed2kSearchFinished = true;
-		Notify_SearchLocalEnd();
+		FinalizeLocalSearch();
 	}
+}
+
+void CSearchList::FinalizeLocalSearch()
+{
+	// Harmless when the server answered in time and the timer never fired;
+	// required when it did not, so the one-shot cannot outlive its search.
+	m_searchTimer.Stop();
+	m_awaitingServerAnswer = false;
+	m_searchInProgress = false;
+	m_ed2kSearchFinished = true;
+	Notify_SearchLocalEnd();
 }
 
 uint32 CSearchList::GetSearchProgress() const
@@ -838,6 +868,23 @@ uint8 CSearchList::GetSearchLifecyclePercent() const
 
 void CSearchList::OnGlobalSearchTimer(CTimerEvent &WXUNUSED(evt))
 {
+	if (m_awaitingServerAnswer && m_searchInProgress) {
+		// The one-shot armed at StartNewSearch: the connected server never
+		// sent OP_SEARCHRESULT, so neither kind of ed2k search has anything
+		// left that would end it. Terminalize through the finalizer the kind
+		// already has rather than leave it reporting RUNNING for good.
+		//
+		// Tested before the packet check below, which a local search would
+		// otherwise fall into: it has no search packet.
+		AddLogLineN(_("Search timed out: the server did not answer."));
+		if (m_searchType == GlobalSearch) {
+			FinalizeGlobalSearch();
+		} else {
+			FinalizeLocalSearch();
+		}
+		return;
+	}
+
 	// Ensure that the server-queue contains the current servers.
 	if (m_searchPacket == NULL) {
 		// This was a pending event, handled after 'Stop' was pressed.
@@ -1017,10 +1064,26 @@ static inline bool IsActiveSearchTypeEd2k(SearchType t)
 	return t == LocalSearch || t == GlobalSearch;
 }
 
+bool CSearchList::CanFileServerAnswer() const
+{
+	// Late server replies keep arriving after a search is over, and where they
+	// may be filed is not the same question as whether the search is still
+	// running. A terminalized search still owns its id -- both the timeout and
+	// the sweep's natural drain leave m_currentSearch alone -- so its results
+	// have a bucket of their own and are worth keeping.
+	//
+	// An explicit stop is what does not: it hands m_currentSearch back to the
+	// sentinel the EC handler pins across all its searches, and filing server
+	// hits there contaminates the bucket StartNewSearch takes care to keep
+	// clean. Test that, rather than m_searchInProgress, so nothing is dropped
+	// that had somewhere to go.
+	return IsActiveSearchTypeEd2k(m_searchType) && m_currentSearch != wxUIntPtr(-1);
+}
+
 void CSearchList::ProcessSearchAnswer(
 	const uint8_t *in_packet, uint32_t size, bool optUTF8, uint32_t serverIP, uint16_t serverPort)
 {
-	if (!IsActiveSearchTypeEd2k(m_searchType)) {
+	if (!CanFileServerAnswer()) {
 		return;
 	}
 	CMemFile packet(in_packet, size);
@@ -1034,7 +1097,7 @@ void CSearchList::ProcessSearchAnswer(
 void CSearchList::ProcessUDPSearchAnswer(
 	const CMemFile &packet, bool optUTF8, uint32_t serverIP, uint16_t serverPort)
 {
-	if (!IsActiveSearchTypeEd2k(m_searchType)) {
+	if (!CanFileServerAnswer()) {
 		return;
 	}
 	AddToList(new CSearchFile(packet, optUTF8, m_currentSearch, serverIP, serverPort), false);
@@ -1274,6 +1337,17 @@ void CSearchList::StopSearch(bool globalOnly)
 	if (m_searchType == GlobalSearch) {
 		FinalizeGlobalSearch();
 		m_currentSearch = -1;
+	} else if (m_searchType == LocalSearch) {
+		// A local search has no sweep to halt, but it does have an armed
+		// answer timeout and an m_searchInProgress that nothing else clears.
+		// Leaving both is what made a stopped local search hang; leaving just
+		// the timer would be worse still, announcing a timeout for a search
+		// the user stopped, against a server that may well have answered.
+		//
+		// Not gated on globalOnly: that spares Kad, and a local search is
+		// ed2k, exactly like the global branch above.
+		FinalizeLocalSearch();
+		m_currentSearch = -1;
 	} else if (m_searchType == KadSearch && !globalOnly) {
 		Kademlia::CSearchManager::StopSearch(m_currentSearch, false);
 		m_currentSearch = -1;
@@ -1447,6 +1521,7 @@ void CSearchList::FinalizeGlobalSearch()
 	m_searchPacket = NULL;
 	m_searchInProgress = false;
 	m_searchTimer.Stop();
+	m_awaitingServerAnswer = false;
 
 	CoreNotify_Search_Update_Progress(0xffff);
 }

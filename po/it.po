@@ -19,7 +19,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 11:28+0200\n"
+"POT-Creation-Date: 2026-08-24 12:18+0200\n"
 "PO-Revision-Date: 2026-08-22 15:34+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
@@ -6525,6 +6525,10 @@ msgstr "Nessuna chiave di ricerca per Kad - interruzione in corso"
 #: src/SearchList.cpp
 msgid "Unexpected error while attempting Kad search: "
 msgstr "Errore imprevisto durante la ricerca su Kad: "
+
+#: src/SearchList.cpp
+msgid "Search timed out: the server did not answer."
+msgstr ""
 
 #: src/SearchList.cpp
 msgid "Kad search: requested wider results from one more peer."

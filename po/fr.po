@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 11:28+0200\n"
+"POT-Creation-Date: 2026-08-24 12:18+0200\n"
 "PO-Revision-Date: 2026-08-22 15:30+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
@@ -6518,6 +6518,10 @@ msgstr "Pas de mot-clé pour la recherche Kad - abandon"
 #: src/SearchList.cpp
 msgid "Unexpected error while attempting Kad search: "
 msgstr "Erreur imprévue lors de la tentative de recherche Kad : "
+
+#: src/SearchList.cpp
+msgid "Search timed out: the server did not answer."
+msgstr ""
 
 #: src/SearchList.cpp
 msgid "Kad search: requested wider results from one more peer."

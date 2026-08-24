@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 11:28+0200\n"
+"POT-Creation-Date: 2026-08-24 12:18+0200\n"
 "PO-Revision-Date: 2026-08-22 15:51+0000\n"
 "Last-Translator: Wayne Su <mstarmstar@gmail.com>\n"
 "Language-Team: \n"
@@ -6551,6 +6551,10 @@ msgstr "搜尋的關鍵字：%s "
 #: src/SearchList.cpp
 msgid "Unexpected error while attempting Kad search: "
 msgstr "試圖 Kad 搜尋時發生無法預料的錯誤："
+
+#: src/SearchList.cpp
+msgid "Search timed out: the server did not answer."
+msgstr ""
 
 #: src/SearchList.cpp
 msgid "Kad search: requested wider results from one more peer."

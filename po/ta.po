@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 11:28+0200\n"
+"POT-Creation-Date: 2026-08-24 12:18+0200\n"
 "PO-Revision-Date: 2026-08-22 15:54+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -6373,6 +6373,10 @@ msgstr ""
 
 #: src/SearchList.cpp
 msgid "Unexpected error while attempting Kad search: "
+msgstr ""
+
+#: src/SearchList.cpp
+msgid "Search timed out: the server did not answer."
 msgstr ""
 
 #: src/SearchList.cpp

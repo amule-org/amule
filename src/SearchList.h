@@ -456,6 +456,41 @@ private:
 	void FinalizeGlobalSearch();
 
 	/**
+	 * Shared cleanup for local-search completion, whether the connected
+	 * server answered or the wait for it ran out.
+	 */
+	void FinalizeLocalSearch();
+
+	/**
+	 * Whether a server answer arriving now has a search to be filed under.
+	 *
+	 * Shared by the TCP and UDP result paths so the two cannot drift on what
+	 * counts as filable.
+	 */
+	bool CanFileServerAnswer() const;
+
+	/**
+	 * How long an ed2k search waits for the connected server's
+	 * OP_SEARCHRESULT before it is given up on.
+	 *
+	 * Both kinds need it, for the same reason. A local search has no other
+	 * terminal path at all: the single call to LocalSearchEnd is what ends
+	 * it. A global search does have one -- the sweep drains and calls
+	 * FinalizeGlobalSearch -- but the sweep is armed *by* LocalSearchEnd,
+	 * so until the server answers there is nothing running to bound it
+	 * either. A server that never replies therefore leaves either kind
+	 * RUNNING for as long as it stays the most recent search.
+	 *
+	 * Disconnection does not cover it: CServerConnect passes globalOnly,
+	 * and StopSearch ignores a local search entirely.
+	 *
+	 * Long enough that a slow-but-alive server is not cut off, short enough
+	 * that the progress bar, the Stop button and
+	 * EC_TAG_SEARCH_LIFECYCLE_STATE do not sit wrong for a visible stretch.
+	 */
+	static const int SERVER_ANSWER_TIMEOUT_MS = 12000;
+
+	/**
 	 * Adds the specified file to the current search's results.
 	 *
 	 * @param toadd The result to add.
@@ -534,6 +569,13 @@ private:
 	//! explicit abort). GetSearchLifecycleState uses this as the
 	//! RUNNING vs FINISHED signal for the ED2K branch.
 	bool m_ed2kSearchFinished;
+	/**
+	 * True from an ed2k search going out until the connected server answers.
+	 * Tells OnGlobalSearchTimer whether a tick is the answer-timeout one-shot
+	 * or a sweep tick: m_serverQueue is still inactive on the sweep's first
+	 * tick (that tick is what attaches the observer), so it cannot say.
+	 */
+	bool m_awaitingServerAnswer;
 
 	//! Wall-clock start of the current/last search. Stamped in
 	//! StartNewSearch; feeds the Kad cosmetic progress ramp in
