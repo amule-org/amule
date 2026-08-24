@@ -3033,6 +3033,10 @@ static void AppendSearchProgress(CECTag &out, wxUIntPtr sid)
 		out.AddTag(CECTag(EC_TAG_SEARCH_STATUS, bar));
 		out.AddTag(CECTag(EC_TAG_SEARCH_BROWSE_STATUS, browseStatus));
 		out.AddTag(CECTag(EC_TAG_SEARCH_ID, static_cast<uint32>(sid)));
+		// The peer's nickname, for a browse. Same tag and same source as the
+		// search list's, so a client polling progress can name what it is
+		// reporting on without a second round trip for the list.
+		out.AddTag(EC_TAG_SEARCH_NAME, theApp->searchlist->GetSearchStringById(sid));
 		out.AddTag(CECTag(EC_TAG_SEARCH_RESULT_COUNT,
 			static_cast<uint32>(theApp->searchlist->GetSearchResults(sid).size())));
 		// Also emit the standard lifecycle tags (mapped from the browse
@@ -3059,6 +3063,11 @@ static void AppendSearchProgress(CECTag &out, wxUIntPtr sid)
 	out.AddTag(CECTag(EC_TAG_SEARCH_STATUS, theApp->searchlist->GetSearchBarStatusById(sid)));
 	// Echo the ID so the client can confirm which search this is for.
 	out.AddTag(CECTag(EC_TAG_SEARCH_ID, static_cast<uint32>(sid)));
+	// ...and the query it was started with, so a progress reply is readable on
+	// its own. The search list carries the same tag from the same source; a
+	// client that polls progress per tab should not have to fetch the list as
+	// well just to label it.
+	out.AddTag(EC_TAG_SEARCH_NAME, theApp->searchlist->GetSearchStringById(sid));
 	out.AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_STATE, static_cast<uint8>(st)));
 	// Per-id kind (not the scalar): a multi-search client polls each tab by id
 	// and needs THIS search's real type, e.g. to enable the Kad-only "More"

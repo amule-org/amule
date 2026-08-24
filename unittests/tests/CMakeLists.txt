@@ -53,6 +53,39 @@ target_link_libraries (ECIdDiffTest
 	mulecommon
 )
 
+# amulecmd's `progress` output. The daemon answers EC_OP_SEARCH_PROGRESS in
+# three shapes and the client does not choose which: advertising the union
+# capability alongside multi-search is what decides it. Reading one shape as
+# another is invisible -- a top-level tag that is not there reads as zero, so
+# `progress` reported 0 % for every search whatever it was doing (#1126).
+# Needs no app and no daemon: the EC tag types are the whole dependency.
+add_executable (SearchProgressReportTest
+	SearchProgressReportTest.cpp
+	${CMAKE_SOURCE_DIR}/src/SearchProgressReport.cpp
+	# As for ECIdDiffTest: libec.a references DoECLogLine / theLogger
+	# unconditionally in Debug, so the no-op definitions have to be linked in.
+	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+)
+
+add_test (NAME SearchProgressReportTest
+	COMMAND SearchProgressReportTest
+)
+
+target_include_directories (SearchProgressReportTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/libs
+	PRIVATE ${CMAKE_BINARY_DIR}/src/libs
+	PRIVATE ${CMAKE_BINARY_DIR}/src/libs/ec/cpp
+)
+
+target_link_libraries (SearchProgressReportTest
+	muleunit
+	ec
+	mulecommon
+)
+
 add_executable (ECSocketFlagsTest
 	ECSocketFlagsTest.cpp
 	# As for ECIdDiffTest: libec.a references DoECLogLine / theLogger

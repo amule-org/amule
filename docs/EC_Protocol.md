@@ -351,6 +351,11 @@ request. A daemon that keyed the union off "no ids named" would answer a
 client that named several about only the first, and the client would read
 every other search's absence as an expiry.
 
+Each entry also carries `EC_TAG_SEARCH_NAME`, the query the search was
+started with — or, for a browse, the peer's nickname. It is the same tag
+and the same string `EC_OP_SEARCH_LIST` reports, so a client polling
+progress can label what it is reporting on without also fetching the list.
+
 The union reply carries no `EC_TAG_SEARCH_EXPIRED`: it reports the whole
 set, so an id the client asked about and did not get back is one the
 daemon no longer holds.
