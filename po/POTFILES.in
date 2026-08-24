@@ -71,6 +71,7 @@ src/PrefsUnifiedDlg.cpp
 src/SearchDlg.cpp
 src/SearchList.cpp
 src/SearchListCtrl.cpp
+src/SearchProgressReport.cpp
 src/ServerConnect.cpp
 src/Server.cpp
 src/ServerList.cpp

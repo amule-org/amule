@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 13:43+0200\n"
+"POT-Creation-Date: 2026-08-24 15:13+0200\n"
 "PO-Revision-Date: 2026-08-22 15:38+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
@@ -6592,6 +6592,48 @@ msgstr "Geannuleerd"
 msgid "New"
 msgstr "Nieuw"
 
+#: src/SearchProgressReport.cpp
+#, fuzzy
+msgid "running"
+msgstr "Draaiende"
+
+#: src/SearchProgressReport.cpp
+#, fuzzy
+msgid "finished"
+msgstr "Fins"
+
+#: src/SearchProgressReport.cpp
+msgid "idle"
+msgstr ""
+
+#: src/SearchProgressReport.cpp
+#, c-format
+msgid "Search %u: %s, %u %% (%u results)\n"
+msgstr ""
+
+#: src/SearchProgressReport.cpp
+#, c-format
+msgid "Search %u \"%s\": %s, %u %% (%u results)\n"
+msgstr ""
+
+#: src/SearchProgressReport.cpp src/TextClient.cpp
+msgid "Search expired or unknown ID. Start a new search.\n"
+msgstr "Zoekopdracht verlopen of onbekende ID. Start een nieuwe zoekopdracht.\n"
+
+#: src/SearchProgressReport.cpp
+#, c-format
+msgid "Search progress: %u %% \n"
+msgstr "Voortgang zoeken: %u %% \n"
+
+#: src/SearchProgressReport.cpp
+msgid "Search progress not available"
+msgstr "Voortgang zoeken niet beschikbaar"
+
+#: src/SearchProgressReport.cpp
+#, fuzzy
+msgid "No search to report on.\n"
+msgstr "Geen bestanden geselecteerd om te exporteren."
+
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all obfuscated static servers listed. Making another pass without obfuscation."
 msgstr "Kon geen verbinding maken met alle vermelde geobfusceerde statische servers. Er wordt nog een poging gedaan zonder obfuscatie."
@@ -7834,22 +7876,9 @@ msgid "[PartFile]"
 msgstr "[PartBestand]"
 
 #: src/TextClient.cpp
-msgid "Search expired or unknown ID. Start a new search.\n"
-msgstr "Zoekopdracht verlopen of onbekende ID. Start een nieuwe zoekopdracht.\n"
-
-#: src/TextClient.cpp
 #, c-format
 msgid "Number of search results: %i\n"
 msgstr "Aantal zoekresultaten: %i\n"
-
-#: src/TextClient.cpp
-#, c-format
-msgid "Search progress: %u %% \n"
-msgstr "Voortgang zoeken: %u %% \n"
-
-#: src/TextClient.cpp
-msgid "Search progress not available"
-msgstr "Voortgang zoeken niet beschikbaar"
 
 #: src/TextClient.cpp
 #, c-format

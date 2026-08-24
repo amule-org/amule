@@ -26,6 +26,8 @@
 #include "config.h" // Needed for VERSION
 #include "TextClient.h"
 
+#include "SearchProgressReport.h"
+
 #ifndef __WINDOWS__
 #include <unistd.h> // Do_not_auto_remove
 #endif
@@ -1071,20 +1073,14 @@ void CamulecmdApp::Process_Answer_v2(const CECPacket *response)
 		ShowResults(m_Results_map);
 		break;
 	}
-	case EC_OP_SEARCH_PROGRESS: {
-		if (response->GetTagByName(EC_TAG_SEARCH_EXPIRED)) {
-			s += _("Search expired or unknown ID. Start a new search.\n");
-			break;
-		}
-		const CECTag *tab = response->GetTagByNameSafe(EC_TAG_SEARCH_STATUS);
-		uint32 progress = tab->GetInt();
-		if (progress <= 100) {
-			s += CFormat(_("Search progress: %u %% \n")) % progress;
-		} else {
-			s += _("Search progress not available");
-		}
+	case EC_OP_SEARCH_PROGRESS:
+		// Every shape the daemon may answer with, decoded in one place. This
+		// used to read EC_TAG_SEARCH_STATUS off the top level, which the union
+		// reply does not carry there -- and since amulecmd advertises the
+		// union capability along with multi-search, the union is exactly what
+		// it gets, so `progress` reported 0 % whatever the search was doing.
+		s += ecprogress::FormatSearchProgress(*response);
 		break;
-	}
 	default:
 		s += CFormat(_("Received an unknown reply from the server, OpCode = %#x.")) %
 		     response->GetOpCode();

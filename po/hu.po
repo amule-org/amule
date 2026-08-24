@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 13:43+0200\n"
+"POT-Creation-Date: 2026-08-24 15:13+0200\n"
 "PO-Revision-Date: 2026-08-22 15:33+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: Hungarian <hu@li.org>\n"
@@ -6621,6 +6621,47 @@ msgstr "Megszakítva"
 msgid "New"
 msgstr "Új"
 
+#: src/SearchProgressReport.cpp
+#, fuzzy
+msgid "running"
+msgstr "Fut"
+
+#: src/SearchProgressReport.cpp
+#, fuzzy
+msgid "finished"
+msgstr "Finn"
+
+#: src/SearchProgressReport.cpp
+msgid "idle"
+msgstr ""
+
+#: src/SearchProgressReport.cpp
+#, c-format
+msgid "Search %u: %s, %u %% (%u results)\n"
+msgstr ""
+
+#: src/SearchProgressReport.cpp
+#, c-format
+msgid "Search %u \"%s\": %s, %u %% (%u results)\n"
+msgstr ""
+
+#: src/SearchProgressReport.cpp src/TextClient.cpp
+msgid "Search expired or unknown ID. Start a new search.\n"
+msgstr ""
+
+#: src/SearchProgressReport.cpp
+#, c-format
+msgid "Search progress: %u %% \n"
+msgstr "Keresés haladása: %u %% \n"
+
+#: src/SearchProgressReport.cpp
+msgid "Search progress not available"
+msgstr "Keresés haladása nem elérhető"
+
+#: src/SearchProgressReport.cpp
+msgid "No search to report on.\n"
+msgstr ""
+
 #: src/ServerConnect.cpp
 #, fuzzy
 msgid "Failed to connect to all obfuscated static servers listed. Making another pass without obfuscation."
@@ -7856,22 +7897,9 @@ msgid "[PartFile]"
 msgstr "[Részfájl]"
 
 #: src/TextClient.cpp
-msgid "Search expired or unknown ID. Start a new search.\n"
-msgstr ""
-
-#: src/TextClient.cpp
 #, c-format
 msgid "Number of search results: %i\n"
 msgstr "Keresés eredményeinek száma: %i\n"
-
-#: src/TextClient.cpp
-#, c-format
-msgid "Search progress: %u %% \n"
-msgstr "Keresés haladása: %u %% \n"
-
-#: src/TextClient.cpp
-msgid "Search progress not available"
-msgstr "Keresés haladása nem elérhető"
 
 #: src/TextClient.cpp
 #, c-format

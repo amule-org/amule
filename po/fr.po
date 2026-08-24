@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 13:43+0200\n"
+"POT-Creation-Date: 2026-08-24 15:13+0200\n"
 "PO-Revision-Date: 2026-08-22 15:30+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
@@ -6594,6 +6594,48 @@ msgstr "Annulé"
 msgid "New"
 msgstr "Nouveau"
 
+#: src/SearchProgressReport.cpp
+#, fuzzy
+msgid "running"
+msgstr "En marche"
+
+#: src/SearchProgressReport.cpp
+#, fuzzy
+msgid "finished"
+msgstr "Finlandais"
+
+#: src/SearchProgressReport.cpp
+msgid "idle"
+msgstr ""
+
+#: src/SearchProgressReport.cpp
+#, c-format
+msgid "Search %u: %s, %u %% (%u results)\n"
+msgstr ""
+
+#: src/SearchProgressReport.cpp
+#, c-format
+msgid "Search %u \"%s\": %s, %u %% (%u results)\n"
+msgstr ""
+
+#: src/SearchProgressReport.cpp src/TextClient.cpp
+msgid "Search expired or unknown ID. Start a new search.\n"
+msgstr "Recherche expirée ou ID inconnue. Démarrez une nouvelle recherche.\n"
+
+#: src/SearchProgressReport.cpp
+#, c-format
+msgid "Search progress: %u %% \n"
+msgstr "État d'avancement de la recherche : %u %% \n"
+
+#: src/SearchProgressReport.cpp
+msgid "Search progress not available"
+msgstr "Progrès de la recherche indisponibles"
+
+#: src/SearchProgressReport.cpp
+#, fuzzy
+msgid "No search to report on.\n"
+msgstr "Aucun fichier n'a été sélectionné pour être exporté."
+
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all obfuscated static servers listed. Making another pass without obfuscation."
 msgstr "Échec de la connexion à tous les serveurs statiques brouillés listés. Nouvel essai sans brouillage."
@@ -7835,22 +7877,9 @@ msgid "[PartFile]"
 msgstr "[Fichier .part]"
 
 #: src/TextClient.cpp
-msgid "Search expired or unknown ID. Start a new search.\n"
-msgstr "Recherche expirée ou ID inconnue. Démarrez une nouvelle recherche.\n"
-
-#: src/TextClient.cpp
 #, c-format
 msgid "Number of search results: %i\n"
 msgstr "Nombres de résultats de la recherche : %i\n"
-
-#: src/TextClient.cpp
-#, c-format
-msgid "Search progress: %u %% \n"
-msgstr "État d'avancement de la recherche : %u %% \n"
-
-#: src/TextClient.cpp
-msgid "Search progress not available"
-msgstr "Progrès de la recherche indisponibles"
 
 #: src/TextClient.cpp
 #, c-format

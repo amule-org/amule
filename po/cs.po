@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 13:43+0200\n"
+"POT-Creation-Date: 2026-08-24 15:13+0200\n"
 "PO-Revision-Date: 2026-08-22 15:58+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
@@ -6637,6 +6637,48 @@ msgstr "Zrušeno"
 msgid "New"
 msgstr "Nový"
 
+#: src/SearchProgressReport.cpp
+#, fuzzy
+msgid "running"
+msgstr "Běží"
+
+#: src/SearchProgressReport.cpp
+#, fuzzy
+msgid "finished"
+msgstr "Finština"
+
+#: src/SearchProgressReport.cpp
+msgid "idle"
+msgstr ""
+
+#: src/SearchProgressReport.cpp
+#, c-format
+msgid "Search %u: %s, %u %% (%u results)\n"
+msgstr ""
+
+#: src/SearchProgressReport.cpp
+#, c-format
+msgid "Search %u \"%s\": %s, %u %% (%u results)\n"
+msgstr ""
+
+#: src/SearchProgressReport.cpp src/TextClient.cpp
+msgid "Search expired or unknown ID. Start a new search.\n"
+msgstr ""
+
+#: src/SearchProgressReport.cpp
+#, c-format
+msgid "Search progress: %u %% \n"
+msgstr ""
+
+#: src/SearchProgressReport.cpp
+#, fuzzy
+msgid "Search progress not available"
+msgstr "Zobrazit procenta průběhu"
+
+#: src/SearchProgressReport.cpp
+msgid "No search to report on.\n"
+msgstr ""
+
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all obfuscated static servers listed. Making another pass without obfuscation."
 msgstr "Selhalo připojení ke všem stálým serverům s obfuskací. Zkouším to znovu bez obfuskace."
@@ -7912,23 +7954,9 @@ msgid "[PartFile]"
 msgstr "[PartSoubor]"
 
 #: src/TextClient.cpp
-msgid "Search expired or unknown ID. Start a new search.\n"
-msgstr ""
-
-#: src/TextClient.cpp
 #, c-format
 msgid "Number of search results: %i\n"
 msgstr "Počet výsledků vyhledávání: %i\n"
-
-#: src/TextClient.cpp
-#, c-format
-msgid "Search progress: %u %% \n"
-msgstr ""
-
-#: src/TextClient.cpp
-#, fuzzy
-msgid "Search progress not available"
-msgstr "Zobrazit procenta průběhu"
 
 #: src/TextClient.cpp
 #, c-format

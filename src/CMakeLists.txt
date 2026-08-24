@@ -172,6 +172,7 @@ if (BUILD_AMULECMD)
 		LoggerConsole.cpp
 		NetworkFunctions.cpp
 		OtherFunctions.cpp
+		SearchProgressReport.cpp
 		TextClient.cpp
 	)
 
