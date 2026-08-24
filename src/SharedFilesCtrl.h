@@ -315,6 +315,7 @@ private:
 	 * Event-handler for the Rename menu item.
 	 */
 	void OnRename(wxCommandEvent &event);
+	void OnRefreshMediaMetadata(wxCommandEvent &event);
 
 	/**
 	 * Checks for renaming via F2.

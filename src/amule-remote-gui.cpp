@@ -2081,6 +2081,18 @@ void CSharedFilesRem::VerifyLocalData(const CKnownFile *file) const
 	m_conn->SendPacket(&request);
 }
 
+bool CSharedFilesRem::RefreshMediaMetadata(const CMD4Hash &hash)
+{
+	CECPacket request(EC_OP_REFRESH_MEDIA_METADATA);
+	request.AddTag(CECTag(EC_TAG_KNOWNFILE, hash));
+	m_conn->SendPacket(&request);
+	// Sent, not probed. A daemon that predates the opcode answers EC_OP_FAILED
+	// and the reply is dropped here as it is for every other fire-and-forget
+	// request on this class; the user sees nothing happen, which is the same
+	// outcome as the action not existing.
+	return true;
+}
+
 void CSharedFilesRem::SetFileCommentRating(CKnownFile *file, const wxString &newComment, int8 newRating)
 {
 	CECPacket request(EC_OP_SHARED_FILE_SET_COMMENT);

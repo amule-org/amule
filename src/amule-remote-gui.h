@@ -589,6 +589,16 @@ public:
 	bool RenameFile(CKnownFile *file, const CPath &newName);
 	void SetFileCommentRating(CKnownFile *file, const wxString &newComment, int8 newRating);
 	void VerifyLocalData(const CKnownFile *file) const;
+
+	// Mirrors CSharedFileList's signature so the one call site in
+	// CSharedFilesCtrl compiles for both binaries -- muleappgui is built once
+	// and carries no build-variant defines, so the split has to live in the
+	// type of theApp->sharedfiles rather than in an #ifdef at the call site.
+	//
+	// Returns true when the request was SENT, not when anything was probed:
+	// the daemon decides eligibility and reports the outcome in its own log.
+	// The monolithic form can answer for real because it schedules inline.
+	bool RefreshMediaMetadata(const CMD4Hash &hash);
 	void SearchKadNotes(CAbstractFile *file);
 	void CopyFileList(std::vector<CKnownFile *> &out_list) const;
 

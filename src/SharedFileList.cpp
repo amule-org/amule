@@ -798,8 +798,11 @@ bool CSharedFileList::MaybeScheduleMediaProbe(CKnownFile *pFile, MediaProbeMode 
 	// subprocess off this thread and pays for it once per process rather
 	// than once per file.
 	const wxString &ffprobePath = thePrefs::GetMediaMetadataFFProbePath();
-	const EED2KFileType type = GetED2KFileTypeID(pFile->GetFileName());
-	if (type != ED2KFT_AUDIO && type != ED2KFT_VIDEO) {
+	// Shared with the GUI's menu-enable test (IsMediaProbeCandidate, in
+	// OtherFunctions): the view must not offer an action the scheduler will
+	// silently drop, which is what two copies of this rule would eventually
+	// produce.
+	if (!IsMediaProbeCandidate(pFile->GetFileName())) {
 		return false;
 	}
 	// Never probe an in-progress download. A partfile is shared while

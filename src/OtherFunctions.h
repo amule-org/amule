@@ -295,6 +295,21 @@ private:
 };
 
 EED2KFileType GetED2KFileTypeID(const CPath &fileName);
+
+//! True when a file's name marks it as something ffprobe could extract media
+//! metadata from -- audio or video by extension.
+//!
+//! Lives here, in muleappcommon, because the core and the GUI must agree on it:
+//! the scheduler uses it to decide what to probe, and the shared-files view
+//! uses it to decide whether to offer the action at all. Two copies of the same
+//! rule would eventually disagree, and the symptom would be a menu entry that
+//! is enabled and silently does nothing.
+//!
+//! Says nothing about whether the file is COMPLETE. An in-progress download is
+//! in the shared list as a partfile with nothing readable on disk, and callers
+//! test that separately -- the core so it can log the two skips distinctly, the
+//! GUI so it can say how many of a selection it left out and why.
+bool IsMediaProbeCandidate(const CPath &fileName);
 wxString GetED2KFileTypeSearchTerm(EED2KFileType iFileID);
 wxString GetFileTypeByName(const CPath &fileName);
 EED2KFileType GetED2KFileTypeSearchID(EED2KFileType iFileID);
