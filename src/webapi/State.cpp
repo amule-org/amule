@@ -519,6 +519,19 @@ bool MemoizableTarget(const std::string &target)
 	return path == "/api/v0/downloads" || path == "/api/v0/shared";
 }
 
+// See State.h. Ordered cheap-test-first: the revision comparison is two
+// integer loads, the target match copies and scans a string.
+bool MemoUsable(const std::string &target, std::uint64_t rev_before, std::uint64_t rev_after)
+{
+	return rev_before == rev_after && MemoizableTarget(target);
+}
+
+// See State.h.
+bool ShouldStampEtag(bool is_safe_method, bool handler_set_etag, unsigned status, bool body_empty)
+{
+	return is_safe_method && !handler_set_etag && status == 200 && !body_empty;
+}
+
 std::string ChatPeerKeyFromGuiId(std::uint64_t gui_id)
 {
 	const std::uint32_t ip = static_cast<std::uint32_t>(gui_id >> 16);
