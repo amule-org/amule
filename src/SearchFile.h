@@ -197,7 +197,7 @@ public:
 		uint32_t m_ip;
 		uint16_t m_port;
 		uint32_t m_serverIP;
-		uint32_t m_serverPort;
+		uint16_t m_serverPort;
 	};
 
 	void AddClient(const ClientStruct &client);
