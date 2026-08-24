@@ -24,7 +24,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 15:13+0200\n"
+"POT-Creation-Date: 2026-08-24 19:01+0200\n"
 "PO-Revision-Date: 2026-08-22 15:31+0000\n"
 "Last-Translator: Pablo <parodper@gmail.com>\n"
 "Language-Team: http://forum.amule.org/index.php?topic=13883\n"
@@ -7778,6 +7778,10 @@ msgstr "Comando «%s» con pid «%d» rematou con código de estado «%d»."
 #: src/TextClient.cpp
 msgid "Execute <str> and exit."
 msgstr "Executa <str> e sae."
+
+#: src/TextClient.cpp
+msgid "Separate list fields with spaces, as before, instead of tabs."
+msgstr ""
 
 #: src/TextClient.cpp
 msgid "Invalid IP format. Use xxx.xxx.xxx.xxx:xxxx\n"

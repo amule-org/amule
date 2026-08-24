@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 15:13+0200\n"
+"POT-Creation-Date: 2026-08-24 19:01+0200\n"
 "PO-Revision-Date: 2020-03-04 14:43+0100\n"
 "Last-Translator: Dévai Tamás <devait@vnet.hu>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -7555,6 +7555,10 @@ msgstr ""
 
 #: src/TextClient.cpp
 msgid "Execute <str> and exit."
+msgstr ""
+
+#: src/TextClient.cpp
+msgid "Separate list fields with spaces, as before, instead of tabs."
 msgstr ""
 
 #: src/TextClient.cpp

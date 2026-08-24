@@ -72,6 +72,28 @@ private:
 	void ShowResults(CResultMap results_map);
 	bool m_HasCmdOnCmdLine;
 	wxString m_CmdString;
+
+	/**
+	 * Print list fields separated by spaces, as before, instead of tabs.
+	 *
+	 * The rows carry client names and file names, both of which routinely
+	 * contain spaces, so a space-separated row cannot be split back into its
+	 * fields by anything reading it (discussion #161). Tabs are the default;
+	 * this restores the previous output byte for byte for scripts written
+	 * against it.
+	 */
+	bool m_spaceSeparated;
+
+	/**
+	 * The separator to print where @a legacy used to be printed.
+	 *
+	 * ONLY separators go through here. Column padding stays as it is, values
+	 * that merely contain punctuation (`12/34` source counts, `5(7)` request
+	 * counts) stay one field, and translated values (file status, priority)
+	 * are still translated -- a parser wanting stable text still wants
+	 * LC_ALL=C, or the REST API.
+	 */
+	wxString Sep(const wxString &legacy) const { return m_spaceSeparated ? legacy : wxString(wxT("\t")); }
 	virtual int OnRun();
 
 	int m_last_cmd_id;
