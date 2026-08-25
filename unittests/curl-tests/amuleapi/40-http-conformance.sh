@@ -178,6 +178,30 @@ fi
 _assert_eq "401" "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$HOST/api/v0/events")" \
 	"GET /events without credentials -> 401"
 
+# ---------------------------------------------------------------------------
+# Trailing slash: `/x/` names the same resource as `/x`
+# ---------------------------------------------------------------------------
+# The two spellings used to disagree by route kind, not by meaning. A literal
+# route is compared with `==` so `/status/` simply missed and answered "no such
+# endpoint"; a capture route matched with the capture bound to the empty string,
+# so `/clients/` reached the handler and was rejected there -- as a 400, for a
+# URL that names no resource, while an empty `{hash}` was a 404 for an equally
+# meaningless one.
+#
+# These assert the wiring, which the unit tests for StripTrailingSlash and the
+# empty-capture guard cannot: that the dispatcher actually applies the rule.
+for p in status version downloads clients shared servers friends; do
+	bare=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "${AUTH[@]}" "$HOST/api/v0/$p")
+	slash=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "${AUTH[@]}" "$HOST/api/v0/$p/")
+	_assert_eq "$bare" "$slash" "/$p and /$p/ answer alike ($bare)"
+done
+
+# The static fallthrough is deliberately not normalised -- there a trailing
+# slash is a directory rather than a spelling -- so the rule must not have
+# leaked outside the API prefix.
+_assert_eq "200" "$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "$HOST/")" \
+	"the static root still answers 200"
+
 # /events reaches the dispatcher only on a method the streaming resolver
 # declined, and with no route there it used to fall through to the catch-all
 # 404 -- reporting that the endpoint does not exist, on the one resource a

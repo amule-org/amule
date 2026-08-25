@@ -325,6 +325,10 @@ If `amuleapi.conf[Server]/AllowCORS=1`:
 
 The dispatcher rejects paths containing NUL, encoded NUL (`%00`), encoded `..` (any case of `%2e%2e`), or a literal `..` segment with `400 bad_request` before routing. Defence-in-depth against a future endpoint that admits path captures.
 
+**Trailing slash.** Under `/api/`, one trailing `/` is stripped before routing, so `/api/v0/status/` and `/api/v0/status` are the same request. Exactly one is stripped — `//` is a malformed path rather than a synonym, so `/api/v0/downloads//` does not reach `/api/v0/downloads`. The rule stops at the API prefix: a static asset path is a filesystem path, where a trailing slash means a directory.
+
+**Empty path captures.** A segment standing in for a `{capture}` cannot be empty. Every capture names a resource — a hash, an ECID, an index, an address — so a path that binds one to the empty string matches no route and is `404 not_found`, rather than reaching a handler and being rejected there with whatever status that endpoint happens to use.
+
 ### Request size limits
 
 - HTTP header section: hard cap 16 KiB. Exceeding it is `431 headers_too_large`.

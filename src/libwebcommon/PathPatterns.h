@@ -49,6 +49,19 @@ std::vector<std::string> SplitPath(const std::string &path);
 // protection.
 bool LooksMalicious(const std::string &path);
 
+// Strips one trailing '/' so `/x/` routes exactly as `/x` does.
+//
+// Without it the two spellings disagree in a way that depends on which
+// kind of route they land on: a literal route is compared with `==` and
+// simply misses, while a capture route matches with the capture bound to
+// the empty string and the handler is left to reject a URL that names no
+// resource -- picking its own status code as it does so.
+//
+// Never strips the root, and never strips more than one: `//` is a
+// malformed path rather than a synonym, and collapsing it would let
+// `/a//b` reach the route for `/a/b`.
+std::string StripTrailingSlash(const std::string &path);
+
 // Parses ?k=v&k2=v2 into a map. Percent-decodes `%hh` pairs and
 // converts `+` to space per application/x-www-form-urlencoded.
 // Malformed `%hh` triplets pass through verbatim so a stray `%` in
@@ -70,6 +83,12 @@ RoutePattern ParsePattern(const std::string &pattern);
 
 // Matches `path_segments` against `pattern`. On match, fills
 // `out_captures` with the captured segment values and returns true.
+//
+// An empty capture is not a match. Every capture on the surface names a
+// resource -- a hash, an ecid, an index, an address -- and none of them
+// can be the empty string, so a path that binds one is malformed rather
+// than merely absent. Rejecting it here keeps that judgement in one place
+// instead of leaving each handler to invent a status code for it.
 bool Match(const RoutePattern &pattern,
 	const std::vector<std::string> &path_segments,
 	std::map<std::string, std::string> &out_captures);
