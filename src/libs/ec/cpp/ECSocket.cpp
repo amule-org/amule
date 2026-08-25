@@ -635,8 +635,12 @@ void CECSocket::WriteBufferToSocket(const void *buffer, size_t len)
 			m_curr_tx_data->Write(wr_ptr, curr_free);
 			len -= curr_free;
 			wr_ptr += curr_free;
+			const size_t chunk = m_curr_tx_data->GetLength();
 			m_output_queue.push_back(m_curr_tx_data.release());
-			m_curr_tx_data.reset(new CQueuedData(EC_SOCKET_BUFFER_SIZE));
+			// CSmartPtr is std::auto_ptr without HAVE_UNIQUE_PTR, where
+			// make_unique does not exist.
+			// NOLINTNEXTLINE(modernize-make-unique)
+			m_curr_tx_data.reset(new CQueuedData(chunk));
 		} else {
 			m_curr_tx_data->Write(wr_ptr, len);
 			break;
@@ -894,6 +898,42 @@ bool CECSocket::WriteBuffer(const void *buffer, size_t len)
 	}
 }
 
+// Block size for a packet whose serialised body is this long: the whole thing
+// when it fits, EC_SOCKET_TX_CHUNK_MAX when it does not. Capped on purpose -- a
+// packet may legitimately be hundreds of MB (an uncompressed `show shared` on a
+// large library, see ReadHeader's post-auth gate) and one contiguous block that
+// big would be copied again by the send path. Floored at EC_SOCKET_BUFFER_SIZE
+// so no packet gets smaller blocks than it used to, which also keeps room in
+// the first block for the 8-byte header SealOutputQueue leaves in clear.
+// Guessing low is harmless: WriteBufferToSocket spills into a fresh block of
+// the same size, the pre-existing path -- so ZLIB shrinking the body below
+// bodyLen just leaves the last block short.
+size_t CECSocket::TxChunkSize(uint32 bodyLen)
+{
+	const size_t want = (size_t)bodyLen + EC_HEADER_SIZE;
+	if (want <= EC_SOCKET_BUFFER_SIZE)
+		return EC_SOCKET_BUFFER_SIZE;
+	return want < EC_SOCKET_TX_CHUNK_MAX ? want : EC_SOCKET_TX_CHUNK_MAX;
+}
+
+// Adopt that size for the packet about to be written. Both call sites are
+// reached with an empty block -- the previous packet ended in FlushBuffers,
+// which pushed its remainder, and every early return is ahead of the first
+// write -- so swapping it drops nothing. Asserted rather than left implicit
+// because a future `return` slipped between the writes and FlushBuffers would
+// silently discard a partial packet here.
+void CECSocket::SizeTxChunks(uint32 bodyLen)
+{
+	wxASSERT(m_curr_tx_data->GetDataLength() == 0);
+	const size_t chunk = TxChunkSize(bodyLen);
+	if (m_curr_tx_data->GetLength() != chunk) {
+		// CSmartPtr is std::auto_ptr without HAVE_UNIQUE_PTR, where
+		// make_unique does not exist.
+		// NOLINTNEXTLINE(modernize-make-unique)
+		m_curr_tx_data.reset(new CQueuedData(chunk));
+	}
+}
+
 bool CECSocket::FlushBuffers()
 {
 	if (m_tx_flags & EC_FLAG_ZLIB) {
@@ -910,8 +950,12 @@ bool CECSocket::FlushBuffers()
 		} while (m_z.avail_out == 0);
 	}
 	if (m_curr_tx_data->GetDataLength()) {
+		const size_t chunk = m_curr_tx_data->GetLength();
 		m_output_queue.push_back(m_curr_tx_data.release());
-		m_curr_tx_data.reset(new CQueuedData(EC_SOCKET_BUFFER_SIZE));
+		// CSmartPtr is std::auto_ptr without HAVE_UNIQUE_PTR, where
+		// make_unique does not exist.
+		// NOLINTNEXTLINE(modernize-make-unique)
+		m_curr_tx_data.reset(new CQueuedData(chunk));
 	}
 	return true;
 }
@@ -982,6 +1026,11 @@ uint32 CECSocket::WritePacket(const CECPacket *packet)
 			ShowZError(zerror, &m_z);
 		}
 	}
+
+	// Size this packet's blocks before the first byte goes in, from the length
+	// already computed above -- GetPacketLength() walks the whole tag tree, so
+	// it is not something to ask for twice.
+	SizeTxChunks(packet_logical_len);
 
 	uint32_t tmp_flags = ENDIAN_HTONL(flags);
 	WriteBufferToSocket(&tmp_flags, sizeof(uint32));
@@ -1093,6 +1142,11 @@ void CECSocket::SendCachedBodyResponse(
 			ShowZError(zerror, &m_z);
 		}
 	}
+
+	// Size this packet's blocks before the first byte goes in, from the blob
+	// total summed above. The bodies are already serialised here, so this is
+	// the exact wire length before ZLIB, not an estimate.
+	SizeTxChunks(body_bytes);
 
 	uint32_t tmp_flags = ENDIAN_HTONL(flags);
 	WriteBufferToSocket(&tmp_flags, sizeof(uint32));

@@ -60,14 +60,16 @@ public:
 	// would bypass virtual dispatch and only run the empty base.
 	virtual void OnLost(int) { static_cast<CECSocket *>(this)->OnLost(); }
 
-	// Apply EC-tuned TCP keepalive (idle=30s / probe=10s / count=3 →
-	// ~60s half-open detection). Called automatically from
-	// InternalConnect after a successful client-side connect; subclasses
-	// that take over OnConnect (CRemoteConnect) and the server-side
-	// accept path (ExternalConn.cpp::OnAccept on amuled) call this
-	// explicitly so detection is symmetric on both ends of every EC
-	// connection.
-	void ApplyEcKeepalive();
+	// Apply the EC-tuned socket options: TCP keepalive (idle=30s /
+	// probe=10s / count=3 → ~60s half-open detection) and TCP_NODELAY.
+	// Called automatically from InternalConnect after a successful
+	// client-side connect; subclasses that take over OnConnect
+	// (CRemoteConnect) and the server-side accept path
+	// (ExternalConn.cpp::OnAccept on amuled) call this explicitly so
+	// both ends of every EC connection get the same treatment — Nagle
+	// only stalls if it is still on at the sending end, so one-sided
+	// application only removes half the latency.
+	void ApplyEcSocketOptions();
 
 private:
 	bool InternalConnect(uint32_t ip, uint16_t port, bool wait);

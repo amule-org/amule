@@ -387,12 +387,12 @@ void CRemoteConnect::OnConnect()
 	// across a reconnect would otherwise carry the previous connection's
 	// staleness into the new one and trip the timeout immediately.
 	m_lastReplyAt = std::chrono::steady_clock::now();
-	// Apply the EC-tuned TCP keepalive timings now that the underlying
-	// asio socket is fully connected on the async path (sync clients
-	// got it inside CECMuleSocket::InternalConnect already; this is
-	// the amulegui / amuleweb side where InternalConnect returns before
-	// the connect actually completes).
-	ApplyEcKeepalive();
+	// Apply the EC-tuned socket options now that the underlying asio
+	// socket is fully connected on the async path (sync clients got
+	// them inside CECMuleSocket::InternalConnect already; this is the
+	// amulegui / amuleweb / amuleapi side where InternalConnect returns
+	// before the connect actually completes).
+	ApplyEcSocketOptions();
 
 	if (m_notifier) {
 		wxASSERT(m_ec_state == EC_CONNECT_SENT);

@@ -80,6 +80,12 @@ class CECSocket
 
 private:
 	static const unsigned int EC_SOCKET_BUFFER_SIZE = 2048;
+	// Cap on one queued output block. The tx path used to reuse
+	// EC_SOCKET_BUFFER_SIZE, so every packet left the socket in 2 KB writes
+	// and each one's sub-MSS remainder became a segment of its own. A cap and
+	// not a size: TxChunkSize() asks for what the packet needs and no more, so
+	// a small reply still costs a small block.
+	static const unsigned int EC_SOCKET_TX_CHUNK_MAX = 64 * 1024;
 	static const unsigned int EC_HEADER_SIZE = 8;
 	const bool m_use_events;
 
@@ -122,6 +128,11 @@ private:
 	bool m_last_rx_encrypted;
 
 protected:
+	// Pure arithmetic, protected rather than private so a test can pin the
+	// floor and the cap without standing up a socket -- the tree already
+	// reaches protected members by subclassing (see CECMemSocket).
+	static size_t TxChunkSize(uint32 bodyLen);
+
 	// Encryption state for the app dispatch's post-handshake checks:
 	// IsCryptReady() is true once keys exist, i.e. the session negotiated
 	// AEAD; WasLastPacketEncrypted() reports how the last packet arrived.
@@ -376,6 +387,7 @@ private:
 
 	// Internal stuff
 	bool FlushBuffers();
+	void SizeTxChunks(uint32 bodyLen);
 
 	size_t ReadBufferFromSocket(void *buffer, size_t len);
 	void WriteBufferToSocket(const void *buffer, size_t len);

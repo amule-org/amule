@@ -109,3 +109,54 @@ TEST(ECSocketFlags, ResetProtocolStateLeavesCapabilitiesAlone)
 
 	ASSERT_EQUALS(before, socket.Flags());
 }
+
+// The tx block size decides how many send() calls a packet costs, but it also
+// has two hard constraints that are easy to break while "simplifying" the
+// arithmetic: the first block has to leave room for the 8-byte header that
+// SealOutputQueue keeps in clear, and the cap has to hold, because a packet may
+// legitimately be hundreds of megabytes and a block that size would be copied
+// again by the send path.
+namespace
+{
+
+class CTxChunkProbe : public CECMemSocket
+{
+public:
+	using CECSocket::TxChunkSize;
+};
+
+const size_t kFloor = 2048;
+const size_t kCap = 64 * 1024;
+const size_t kHeader = 8;
+
+} // namespace
+
+TEST(ECSocketFlags, TxChunkSizeNeverDropsBelowTheHeaderFloor)
+{
+	// A body smaller than the floor still gets the floor, so the header always
+	// fits and no packet gets smaller blocks than before the size became
+	// per-packet.
+	ASSERT_EQUALS(kFloor, CTxChunkProbe::TxChunkSize(0));
+	ASSERT_EQUALS(kFloor, CTxChunkProbe::TxChunkSize(1));
+	ASSERT_EQUALS(kFloor, CTxChunkProbe::TxChunkSize(kFloor - kHeader));
+	ASSERT_TRUE(CTxChunkProbe::TxChunkSize(0) >= kHeader);
+}
+
+TEST(ECSocketFlags, TxChunkSizeCoversBodyPlusHeaderInBetween)
+{
+	// Between the floor and the cap the block is exactly what the packet needs,
+	// body plus the 8-byte header, so the whole thing is one block.
+	ASSERT_EQUALS(kFloor + 1, CTxChunkProbe::TxChunkSize(kFloor - kHeader + 1));
+	ASSERT_EQUALS((size_t)10000 + kHeader, CTxChunkProbe::TxChunkSize(10000));
+	ASSERT_EQUALS(kCap - 1, CTxChunkProbe::TxChunkSize(kCap - 1 - kHeader));
+}
+
+TEST(ECSocketFlags, TxChunkSizeStopsAtTheCap)
+{
+	// At and past the cap the block stops growing: a 256 MB packet must not
+	// become a 256 MB contiguous allocation.
+	ASSERT_EQUALS(kCap, CTxChunkProbe::TxChunkSize(kCap - kHeader));
+	ASSERT_EQUALS(kCap, CTxChunkProbe::TxChunkSize(kCap));
+	ASSERT_EQUALS(kCap, CTxChunkProbe::TxChunkSize(4 * 1024 * 1024));
+	ASSERT_EQUALS(kCap, CTxChunkProbe::TxChunkSize(256u * 1024 * 1024));
+}

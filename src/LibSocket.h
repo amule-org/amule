@@ -140,6 +140,12 @@ public:
 	// the underlying socket is not open.
 	void EnableTcpKeepalive(int idleSec, int probeIntervalSec, int probeCount);
 
+	// Turn off Nagle. Used by the EC sockets on both ends, where a
+	// packet's trailing small write would otherwise wait out the peer's
+	// delayed-ACK timer — see CECMuleSocket::ApplyEcSocketOptions. No-op
+	// if the underlying socket is not open.
+	void EnableTcpNoDelay();
+
 	// Handlers
 	virtual void OnConnect(int) {}
 	virtual void OnSend(int) {}
