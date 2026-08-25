@@ -89,6 +89,16 @@ public:
 		unsigned login_failure_window_seconds = 60;
 		unsigned login_failure_threshold = 5;
 		unsigned login_lockout_seconds = 300;
+		// The generic 401 limiter, counting every rejected token on any
+		// authenticated route rather than password failures on /auth/login.
+		// It was hard-coded while the three above were documented knobs, so an
+		// operator tuning what the docs described changed only one of the two
+		// limiters -- and could not loosen the one a browser tab left open
+		// overnight actually trips, spending 30 requests on a stale token
+		// before a five-minute lockout.
+		unsigned token_failure_window_seconds = 60;
+		unsigned token_failure_threshold = 30;
+		unsigned token_lockout_seconds = 300;
 	};
 
 	struct Streaming

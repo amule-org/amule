@@ -16,6 +16,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+ADMIN_PASS=${ADMIN_PASS:-adminpass}
 
 FAIL_COUNT=0
 TEST_COUNT=0
@@ -95,17 +96,65 @@ _assert_json_eq '.amule_version | length > 0' \
 _assert_json_eq '.daemon_version | length > 0' \
 	true '/api/v0/version reports a non-empty daemon_version'
 
-# 2c. update object — version-check info relayed from the daemon. Whether the
-#     daemon has actually completed a check depends on its build
+# 2c. update object. The identity fields above are unauthenticated because this
+#     is the liveness/version probe, but `update` reports whether THIS daemon is
+#     running an outdated build, which an unauthenticated caller on a reachable
+#     interface has no business learning. Absent without credentials, present
+#     with them.
+_assert_json_eq '. | has("update")' false \
+	'/api/v0/version omits the update object when unauthenticated'
+
+ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login" \
+	| jq -r '.token // empty')
+if [ -z "$ADMIN_TOKEN" ]; then
+	# Cookie-session build: fall back to the jar so the authenticated half
+	# still runs rather than silently reporting a pass it never made.
+	JAR=$(mktemp)
+	curl -s -c "$JAR" -X POST -H "Content-Type: application/json" \
+		-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login" >/dev/null
+	AUTH=(-b "$JAR")
+else
+	AUTH=(-H "Authorization: Bearer $ADMIN_TOKEN")
+fi
+
+#     Whether the daemon has actually completed a check depends on its build
 #     (ENABLE_VERSION_CHECK) and network access, so assert the shape (keys +
-#     types) rather than concrete values. update_available / last_checked are
-#     boolean|null / number|null; only assert their presence.
-_assert_json_eq '.update | type' object '/api/v0/version has an update object'
+#     types) rather than concrete values.
+_curl "${AUTH[@]}" "$HOST/api/v0/version"
+_assert_status 200 "GET /api/v0/version (authenticated) returns 200"
+_assert_json_eq '.update | type' object '/api/v0/version has an update object when authenticated'
 _assert_json_eq '.update.check_enabled | type' boolean 'update.check_enabled is boolean'
 _assert_json_eq '.update.checked | type' boolean 'update.checked is boolean'
 _assert_json_eq '.update.latest_version | type' string 'update.latest_version is string'
 _assert_json_eq '.update | has("update_available")' true 'update has update_available'
 _assert_json_eq '.update | has("last_checked")' true 'update has last_checked'
+
+# 2d. /health — the liveness probe. The surface had none, so /version was being
+#     used as one: a document whose body changes over time and whose name says
+#     something else. Unauthenticated like /version, no EC roundtrip, and always
+#     200 while the server answers, so a probe never restarts a healthy process
+#     because amuled went away. Readiness is in the body instead.
+_curl "$HOST/api/v0/health"
+_assert_status 200 "GET /api/v0/health returns 200 unauthenticated"
+_assert_json_eq '.status' ok '/health reports status=ok'
+_assert_json_eq '.ec_connected | type' boolean '/health reports ec_connected'
+_assert_json_eq '.snapshot | type' boolean '/health reports snapshot'
+
+_curl -I "$HOST/api/v0/health"
+_assert_status 200 "HEAD /api/v0/health returns 200"
+
+_curl -X POST "$HOST/api/v0/health"
+_assert_status 405 "POST /api/v0/health yields 405"
+_assert_json_eq '.error.code' method_not_allowed '/health 405 carries method_not_allowed'
+# _curl captures the body and status only, so read the header directly rather
+# than asserting against a variable that does not exist.
+ALLOW=$(curl -s -o /dev/null -D - --max-time 10 -X POST "$HOST/api/v0/health" \
+	| tr -d '\r' | awk -F': ' 'tolower($1)=="allow"{print $2}')
+case "$ALLOW" in
+*GET*HEAD*) _pass "/health 405 carries Allow: $ALLOW" ;;
+*) _fail "/health 405 Allow header" "got [$ALLOW]" ;;
+esac
 
 # 3. Method other than GET/HEAD → 405 with the canonical error envelope.
 _curl -X DELETE "$HOST/api/v0/version"

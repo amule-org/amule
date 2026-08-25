@@ -88,6 +88,25 @@ HAVE_GUEST=0
 sleep 4
 
 # --- 1. Auth + admin gate. -----------------------------------------
+# --- Member GET. ---------------------------------------------------
+#
+# Every other resource with a member path has a member GET. This one had PATCH
+# and DELETE only, so a client that had just created a category and wanted the
+# stored result had to re-fetch the whole collection and search it by index.
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories/0"
+_assert_status 200 "GET /categories/0 → 200"
+_assert_json_eq '.index' 0 '/categories/0 reports index 0'
+_assert_json_eq '.name | type' string '/categories/0 carries a name'
+
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories/250"
+_assert_status 404 "GET /categories/{absent} → 404"
+
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories/999"
+_assert_status 400 "GET /categories/{out-of-range} → 400"
+
+_curl -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories/0"
+_assert_status 405 "PUT /categories/0 → 405"
+
 # --- Shared list contract. -----------------------------------------
 #
 # /categories was the tenth list endpoint and the only one that never parsed

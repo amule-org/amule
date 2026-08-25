@@ -14,6 +14,7 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 - [Backward compatibility](#backward-compatibility)
 
 **System**
+- [`GET /api/v0/health`](#get-apiv0health) - liveness probe; readiness flags in the body
 - [`GET /api/v0/version`](#get-apiv0version) — public version probe (+ daemon update-availability)
 - [`POST /api/v0/version/check`](#post-apiv0versioncheck) — trigger a daemon-side version check
 - [`GET /api/v0/status`](#get-apiv0status) — connection state, network state, headline counters
@@ -82,6 +83,7 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 **Categories**
 - [`GET /api/v0/categories`](#get-apiv0categories) — list categories
 - [`POST /api/v0/categories`](#post-apiv0categories) — create
+- [`GET /api/v0/categories/{index}`](#get-apiv0categoriesindex) - read one category
 - [`PATCH /api/v0/categories/{index}`](#patch-apiv0categoriesindex) — modify
 - [`DELETE /api/v0/categories/{index}`](#delete-apiv0categoriesindex) — remove
 
@@ -190,7 +192,7 @@ This is what makes rotating a leaked password effective: without it, whoever hel
 Two per-IP failure counters, both with sliding-window semantics:
 
 - **Login limiter** — drives `/auth/login`. Defaults are `[Auth]/LoginFailureWindowSeconds=60`, `LoginFailureThreshold=5`, `LoginLockoutSeconds=300`. Configurable per-deployment.
-- **Generic 401 limiter** — drives every other auth-protected endpoint. Fixed at 30 failures in 60 s → 5-minute lockout. Catches credential-stuffing across the non-login surface.
+- **Generic 401 limiter** counts every rejected token (bad, missing, expired or revoked) on any other auth-protected endpoint. Defaults are `[Auth]/TokenFailureWindowSeconds=60`, `TokenFailureThreshold=30`, `TokenLockoutSeconds=300`. Configurable per-deployment, like the login limiter: this is the one a browser tab left open overnight actually trips, so an operator serving long-lived clients may want it looser.
 
 When the bucket fills, the next request from that IP returns `429 rate_limited` with a `Retry-After: <seconds>` header. The bucket clears on success or when the lockout expires.
 
@@ -390,9 +392,27 @@ Curl examples use `$HOST` for `127.0.0.1:4713` and `$TOKEN` for a previously-iss
 
 ### System
 
+#### `GET /api/v0/health`
+
+**Auth:** `NONE`. A probe has to work before anyone holds a token.
+
+```json
+{ "status": "ok", "ec_connected": true, "snapshot": true }
+```
+
+**Liveness, not readiness.** The status is `200` whenever the HTTP server is answering, so a container, systemd or load-balancer probe never restarts a healthy process just because `amuled` went away. Readiness is in the body instead: `ec_connected` is the live EC link and `snapshot` is whether the first refresher tick has landed. A caller that wants readiness keys on those two fields; a caller that wants liveness keys on the status code.
+
+The handler touches no EC. amuleapi serialises EC through one worker, so a probe that waited on the daemon could block behind an unrelated slow mutation and time out, reporting the service as down when it is merely busy.
+
+`HEAD` is supported. Any other method is `405` with `Allow: GET, HEAD`.
+
+**Conditional requests.** The body is small and changes only when those two flags change, so the usual `ETag` applies and a probe that sends `If-None-Match` will get `304 Not Modified`. That is a healthy answer, not an outage. A checker that treats anything other than `200` as failure should either not send the header or accept `304`.
+
 #### `GET /api/v0/version`
 
-**Auth:** `NONE` — always accessible, useful for health probes and version negotiation by SDK clients.
+**Auth:** `NONE` for the identity fields, so an unauthenticated caller can negotiate versions. Use [`GET /api/v0/health`](#get-apiv0health) for liveness probing rather than this endpoint.
+
+The `update` object is **omitted unless the request is authenticated**: it reports whether this daemon is running an outdated build, which is not something an unauthenticated caller on a deliberately reachable interface should learn. A client showing an "update available" banner is already authenticated when it does.
 
 ```sh
 curl -s http://$HOST/api/v0/version
@@ -456,7 +476,9 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" http://$HOST/api/v0/version/ch
 | --- | --- | --- |
 | `409` | `update_check_unavailable` | The daemon can't check (`update.check_enabled` is `false`). |
 | `429` | `update_check_throttled` | A check ran too recently; retry shortly. |
-| `503` | `ec_unavailable` | The EC round-trip to amuled failed. |
+| `503` | `ec_unavailable` | The EC round-trip to amuled failed, or the first snapshot has not landed yet. |
+
+The snapshot gate matters at startup: `version_check_available` defaults to false, so before the first EC tick this route used to answer `409 update_check_unavailable`, blaming the daemon's configuration for amuleapi not having read it yet. It answers `503` there now, which is the condition a client can retry.
 
 #### `GET /api/v0/status`
 
@@ -1993,6 +2015,16 @@ A list endpoint like the others: `?limit`, `?offset`, `?sort` and `?order` apply
 **Response:** `201 Created` → the new category object.
 
 **Errors:** `400 bad_request`, `400 amuled_rejected`, `503 ec_unavailable`.
+
+#### `GET /api/v0/categories/{index}`
+
+**Auth:** `GUEST`, matching the collection read.
+
+Returns the single category object, the same shape [`PATCH`](#patch-apiv0categoriesindex) returns. Every other resource with a member path has a member `GET`; this one did not, so a client that had just created a category and wanted the stored result had to re-fetch the whole collection and search it by index.
+
+`{index}` is a uint8. A non-numeric or out-of-range segment is `400 bad_request`; an index no category holds is `404 not_found`. Index `0` is always present, synthesised when amuled omits it, exactly as on the collection: the two routes cannot disagree about which categories exist.
+
+**Errors:** `400 bad_request`, `404 not_found`, `503 ec_unavailable`.
 
 #### `PATCH /api/v0/categories/{index}`
 

@@ -236,6 +236,9 @@ private:
 	CHttpServer::Response HandleSharedDirectoriesDelete(const CHttpServer::Request &);
 	// categories CRUD.
 	CHttpServer::Response HandleCategoryCreate(const CHttpServer::Request &);
+	CHttpServer::Response HandleHealth(const CHttpServer::Request &req);
+	CHttpServer::Response HandleCategoryOne(
+		const CHttpServer::Request &req, const std::string &index_str);
 	CHttpServer::Response HandleCategoryUpdate(
 		const CHttpServer::Request &, const std::string &index_str);
 	CHttpServer::Response HandleCategoryDelete(
