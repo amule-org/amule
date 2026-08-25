@@ -218,7 +218,7 @@ Nothing clamps. A count above its cap used to be quietly reduced on some endpoin
 
 ### List pagination and sorting
 
-The list endpoints — `GET /downloads`, `/clients`, `/shared`, `/servers`, `/friends`, the two per-file client routes, and `/search/{id}/results` — accept optional query parameters for server-side windowing and ordering, and always return pagination metadata beside the array:
+The list endpoints (`GET /downloads`, `/clients`, `/shared`, `/servers`, `/friends`, `/categories`, `/search`, the two per-file client routes, and `/search/{id}/results`) accept optional query parameters for server-side windowing and ordering, and always return pagination metadata beside the array:
 
 | Param    | Default          | Notes |
 |----------|------------------|-------|
@@ -252,6 +252,8 @@ Omitting all four parameters preserves the previous response exactly, plus the a
 | `GET /friends`        | `name`, `online` |
 | `GET /chats`          | `last_message_at`, `name` |
 | `GET /search/{id}/results` | `name`, `size`, `sources`, `rating`, `directory` |
+| `GET /search`         | `search_id`, `query`, `started_at`, `result_count` |
+| `GET /categories`     | `index`, `name` |
 
 ### Bulk mutations and the `results` envelope
 
@@ -1931,11 +1933,16 @@ amuled's category system lets users tag downloads with one of N user-defined buc
       "color": 0,
       "priority": "normal"
     }
-  ]
+  ],
+  "total": 1,
+  "offset": 0,
+  "limit": 1
 }
 ```
 
-**Errors:** `503 ec_unavailable`.
+A list endpoint like the others: `?limit`, `?offset`, `?sort` and `?order` apply, and the `total` / `offset` / `limit` trio describes the window. See [List pagination and sorting](#list-pagination-and-sorting); the sort keys are `index` and `name`. Category `0` is always present, synthesised when amuled omits it, so the list is never empty.
+
+**Errors:** `400 bad_request` (bad list params), `503 ec_unavailable`.
 
 #### `POST /api/v0/categories`
 
@@ -2497,9 +2504,14 @@ Lists every search amuled currently holds — including ones started by a **diff
     { "search_id": 42, "query": "ubuntu desktop iso", "kind": "global", "state": "finished", "started_at": 1751000000, "result_count": 182 },
     { "search_id": 43, "query": "debian",             "kind": "kad",    "state": "running",  "started_at": 1751000042, "result_count": 57  },
     { "search_id": 44, "query": "SomePeerNick",       "kind": "browse", "state": "running",  "client_ecid": 621,       "result_count": 237 }
-  ]
+  ],
+  "total": 3,
+  "offset": 0,
+  "limit": 3
 }
 ```
+
+This is a list endpoint like the others: it takes `?limit`, `?offset`, `?sort` and `?order`, and carries the same `total` / `offset` / `limit` trio. See [List pagination and sorting](#list-pagination-and-sorting); the sort keys are `search_id`, `query`, `started_at` and `result_count`.
 
 `search_id` is the value that fills `{id}` on every search-scoped path: [`GET /search/{id}/results`](#get-apiv0searchidresults) to read its hits, [`POST /search/{id}/stop`](#post-apiv0searchidstop) to stop it, [`DELETE /search/{id}`](#delete-apiv0searchid) to free it. `kind` is `"local"` | `"global"` | `"kad"` | `"browse"`. The first three are the vocabulary `POST /search`'s `type` accepts; `"browse"` is reported only, for a "View Files" listing of one peer's share, which is started through the client endpoints rather than by a query. `state` is `"running"` | `"finished"` | `"idle"`, same vocabulary and meaning as `GET /search/{id}/results`'s `progress.state`.
 
@@ -2509,7 +2521,7 @@ Browsing a peer that is **already being browsed** returns the id already in flig
 
 `query` is the daemon's name for the search. For a `"browse"` that is **the peer's nickname**, not a query string — a browse has no query. `client_ecid` is the browsed peer's ecid and is present **only** on browse entries, so a consumer can tell whose share is being listed and cross-reference [`GET /clients`](#get-apiv0clients); it is omitted entirely on an ordinary search.
 
-`started_at` is the Unix second amuleapi started the search, and it is the **only recency signal on this list**: entries arrive ordered by `search_id`, and id order is not start order — Kad search ids carry a high-bit mask and therefore always sort above eD2k ones. Sort on `started_at` when you need "the newest search".
+`started_at` is the Unix second amuleapi started the search, and it is the **only recency signal on this list**: entries arrive ordered by `search_id`, and id order is not start order, because Kad search ids carry a high-bit mask and therefore always sort above eD2k ones. Ask for `?sort=started_at&order=desc` when you need "the newest search".
 
 It is **omitted** for any search this `amuleapi` process did not start itself — one begun by another client, by the desktop GUI, or restored from the daemon's on-disk ring after a restart. The daemon ships no timestamp of its own, so there is nothing to report for those; treat a missing `started_at` as *unknown*, not as oldest.
 
