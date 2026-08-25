@@ -601,6 +601,30 @@ std::string IPv4ToDotted(std::uint32_t ip_lsb_first);
 // cost of overlooking a route is a wasted hash rather than a stale 304.
 bool MemoizableTarget(const std::string &target);
 
+// Whether a response may be read from, or written to, the ETag memo. Two
+// independent conditions, both required:
+//
+//  1. MemoizableTarget(target) -- the opt-in eligibility above.
+//  2. The snapshot revision did not move while the handler ran. The body is
+//     serialized inside the handler under its own read lock, dropped before
+//     the caller can sample again; if a write lands in that window the body
+//     belongs to `rev_before` while the key would claim `rev_after`, and every
+//     later hit serves a validator describing neither.
+//
+// Condition 2 guards a race, so nothing in a sequential test notices when it
+// is removed. It lives here, as a decision separate from the dispatch that
+// makes it, so that removing it fails a test instead of nothing.
+bool MemoUsable(const std::string &target, std::uint64_t rev_before, std::uint64_t rev_after);
+
+// Whether the dispatcher should hash the body and stamp its own ETag.
+//
+// `handler_set_etag` is the half worth spelling out: a handler that computed
+// its own validator owns it, and stamping the body hash over the top hands out
+// two different ETags for one resource depending on which branch answered.
+// That is exactly what the static path did before -- it clears the body for
+// HEAD, so only the GET reached the hashing branch.
+bool ShouldStampEtag(bool is_safe_method, bool handler_set_etag, unsigned status, bool body_empty);
+
 // The same key built straight from a GUI_ID, for paths that only have the id
 // (a session that was closed is gone from the snapshot, so there is no
 // ChatSessionSnapshot left to ask). GUI_ID is (ip << 16) | port.

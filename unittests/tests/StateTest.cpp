@@ -1103,6 +1103,61 @@ TEST(State, ConcurrentReadersDontTearSnapshot)
 
 // The two collections the memo exists for: the multi-MB bodies where skipping
 // an MD5 is worth anything.
+// --- MemoUsable / ShouldStampEtag -----------------------------------
+//
+// Both guard something a sequential test cannot observe: MemoUsable's second
+// condition guards a write landing while a handler serializes, and
+// ShouldStampEtag's `handler_set_etag` guards the dispatcher stamping over a
+// validator a handler already owns. Deleting either used to leave the whole
+// suite green, which is the same as having no guard at all -- these tests
+// exist to go red when that happens.
+
+// The revision moving across the handler is what disqualifies the response:
+// the body belongs to rev_before while the key would claim rev_after.
+TEST(State, MemoUsableRejectsAMovedRevision)
+{
+	ASSERT_TRUE(MemoUsable("/api/v0/downloads", 7, 7));
+	ASSERT_TRUE(!MemoUsable("/api/v0/downloads", 7, 8));
+	// Direction does not matter -- any inequality means the body cannot be
+	// attributed to a revision.
+	ASSERT_TRUE(!MemoUsable("/api/v0/downloads", 8, 7));
+	ASSERT_TRUE(MemoUsable("/api/v0/shared?limit=10", 3, 3));
+	ASSERT_TRUE(!MemoUsable("/api/v0/shared?limit=10", 3, 4));
+}
+
+// Both conditions are required, so an ineligible target stays ineligible even
+// with a perfectly stable revision, and vice versa.
+TEST(State, MemoUsableNeedsBothConditions)
+{
+	ASSERT_TRUE(!MemoUsable("/api/v0/auth/session", 5, 5));
+	ASSERT_TRUE(!MemoUsable("/api/v0/status", 5, 5));
+	ASSERT_TRUE(!MemoUsable("/api/v0/auth/session", 5, 6));
+	// Revision 0 is the pre-first-tick value; eligibility does not depend
+	// on the number, only on it holding still. The caller separately
+	// refuses to serve a memo entry stamped 0.
+	ASSERT_TRUE(MemoUsable("/api/v0/downloads", 0, 0));
+}
+
+// A handler that computed its own ETag owns it. Stamping over the top is what
+// gave the static path two validators for one resource, since it clears the
+// body for HEAD and only the GET reached the hashing branch.
+TEST(State, ShouldStampEtagLeavesAHandlerValidatorAlone)
+{
+	ASSERT_TRUE(ShouldStampEtag(true, false, 200, false));
+	ASSERT_TRUE(!ShouldStampEtag(true, true, 200, false));
+}
+
+// The other three terms: unsafe methods carry post-mutation state the client
+// always wants delivered, non-200s are not worth a validator, and an empty
+// body has nothing to hash.
+TEST(State, ShouldStampEtagOnlyForSafe200sWithABody)
+{
+	ASSERT_TRUE(!ShouldStampEtag(false, false, 200, false));
+	ASSERT_TRUE(!ShouldStampEtag(true, false, 404, false));
+	ASSERT_TRUE(!ShouldStampEtag(true, false, 304, true));
+	ASSERT_TRUE(!ShouldStampEtag(true, false, 200, true));
+}
+
 TEST(State, MemoizableTargetCoversTheTwoBigCollections)
 {
 	ASSERT_TRUE(MemoizableTarget("/api/v0/downloads"));

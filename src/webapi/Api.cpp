@@ -752,7 +752,6 @@ CHttpServer::Response CApiDispatcher::Dispatch(const CHttpServer::Request &req)
 	const std::uint64_t rev_before = m_state.SnapshotRevision();
 	CHttpServer::Response resp = DispatchToHandler(req);
 	const std::uint64_t rev_after = m_state.SnapshotRevision();
-	const bool rev_stable = (rev_before == rev_after);
 
 	const bool is_safe_method = (req.method == "GET" || req.method == "HEAD");
 	// A handler that computed its own validator owns it. Stamping the
@@ -761,7 +760,7 @@ CHttpServer::Response CApiDispatcher::Dispatch(const CHttpServer::Request &req)
 	// static path did, since it clears the body for HEAD and so only the
 	// GET reached the hashing branch below.
 	const bool handler_set_etag = (resp.headers.find("ETag") != resp.headers.end());
-	if (is_safe_method && !handler_set_etag && resp.status == 200 && !resp.body.empty()) {
+	if (webapi::ShouldStampEtag(is_safe_method, handler_set_etag, resp.status, resp.body.empty())) {
 		// Skip the MD5 over a (potentially multi-MB) body when
 		// nothing has changed since we last hashed it. The key is
 		// (target, snapshot revision): the revision is advanced by
@@ -775,11 +774,11 @@ CHttpServer::Response CApiDispatcher::Dispatch(const CHttpServer::Request &req)
 		// is worth anything. Everything else hashes per request and is
 		// immune to a mispaired validator by construction.
 		//
-		// `rev_stable` is the other half. Without it the key says
-		// which revision was current when we looked, not which one
-		// this body came from.
+		// Revision stability is the other half, and MemoUsable carries
+		// it: without it the key says which revision was current when
+		// we looked, not which one this body came from.
 		const std::uint64_t snap = rev_after;
-		const bool memoizable = webapi::MemoizableTarget(req.target) && rev_stable;
+		const bool memoizable = webapi::MemoUsable(req.target, rev_before, rev_after);
 		std::string etag;
 		if (memoizable) {
 			std::lock_guard<std::mutex> g(m_etagCacheMu);
