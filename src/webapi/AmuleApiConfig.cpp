@@ -179,6 +179,9 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 			       "LoginFailureWindowSeconds=60\n"
 			       "LoginFailureThreshold=5\n"
 			       "LoginLockoutSeconds=300\n"
+			       "TokenFailureWindowSeconds=60\n"
+			       "TokenFailureThreshold=30\n"
+			       "TokenLockoutSeconds=300\n"
 			       "\n"
 			       "[Streaming]\n"
 			       "EventBusRingCapacity=16384\n";
@@ -260,6 +263,15 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 	}
 	if (cfg.Read("/Auth/LoginLockoutSeconds", &n) && n > 0) {
 		m_auth.login_lockout_seconds = static_cast<unsigned>(n);
+	}
+	if (cfg.Read("/Auth/TokenFailureWindowSeconds", &n) && n > 0) {
+		m_auth.token_failure_window_seconds = static_cast<unsigned>(n);
+	}
+	if (cfg.Read("/Auth/TokenFailureThreshold", &n) && n > 0) {
+		m_auth.token_failure_threshold = static_cast<unsigned>(n);
+	}
+	if (cfg.Read("/Auth/TokenLockoutSeconds", &n) && n > 0) {
+		m_auth.token_lockout_seconds = static_cast<unsigned>(n);
 	}
 
 	// `[Streaming]/EventBusRingCapacity`. Below the CEventBus floor

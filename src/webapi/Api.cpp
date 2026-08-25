@@ -580,7 +580,9 @@ CApiDispatcher::CApiDispatcher(CAmuleApiConfig &config, CJwt &jwt, webapi::CStat
 // crash-pad against credential-stuffing across all non-
 // login endpoints and can become a config knob in 3.1 if
 // anyone asks.
-m_authRateLimiter(webapi::CRateLimiter::Config{ 60u, 30u, 300u })
+m_authRateLimiter(webapi::CRateLimiter::Config{ config.AuthCfg().token_failure_window_seconds,
+	config.AuthCfg().token_failure_threshold,
+	config.AuthCfg().token_lockout_seconds })
 {
 }
 
@@ -919,6 +921,13 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// trailing slash is a directory rather than a spelling.
 	if (path.compare(0, 5, "/api/") == 0) {
 		path = web_api_path::StripTrailingSlash(path);
+	}
+
+	if (path == "/api/v0/health") {
+		if (req.method != "GET" && req.method != "HEAD") {
+			return MethodNotAllowed("GET, HEAD", "only GET / HEAD on /health");
+		}
+		return HandleHealth(req);
 	}
 
 	if (path == "/api/v0/version") {
@@ -1393,14 +1402,17 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(category_one, path_segs, caps)) {
+			if (req.method == "GET" || req.method == "HEAD") {
+				return HandleCategoryOne(req, caps["index"]);
+			}
 			if (req.method == "PATCH") {
 				return HandleCategoryUpdate(req, caps["index"]);
 			}
 			if (req.method == "DELETE") {
 				return HandleCategoryDelete(req, caps["index"]);
 			}
-			return MethodNotAllowed(
-				"PATCH, DELETE", "only PATCH / DELETE on /categories/{index}");
+			return MethodNotAllowed("GET, HEAD, PATCH, DELETE",
+				"only GET / PATCH / DELETE on /categories/{index}");
 		}
 	}
 
@@ -1908,8 +1920,49 @@ CHttpServer::Response CApiDispatcher::ServeCountryFlag(
 	return r;
 }
 
-CHttpServer::Response CApiDispatcher::HandleVersion(const CHttpServer::Request &)
+// GET /health. The surface had no liveness probe, so `/version` was being used
+// as one -- a document whose body changes over time, whose name says something
+// else, and which reported the daemon's update state to an unauthenticated
+// caller.
+//
+// Liveness, not readiness: always 200 while the HTTP server is answering, so a
+// container or load-balancer probe never restarts a healthy process just
+// because amuled went away. Readiness is in the body instead, where a caller
+// that wants it can key on the two flags without the status code moving under
+// a caller that does not.
+//
+// No EC roundtrip. amuleapi serialises EC through one worker, so a probe that
+// waited on the daemon could block behind an unrelated slow mutation and time
+// out at the read deadline, reporting the service as down when it is merely
+// busy. Both flags are process-local reads.
+CHttpServer::Response CApiDispatcher::HandleHealth(const CHttpServer::Request &)
 {
+	CHttpServer::Response r;
+	r.status = 200;
+	r.content_type = "application/json";
+	CJsonWriter w;
+	w.BeginObject();
+	w.Key("status");
+	w.ValueString(wxT("ok"));
+	w.Key("ec_connected");
+	w.ValueBool(m_state.EcConnected());
+	w.Key("snapshot");
+	w.ValueBool(m_state.HasFirstSnapshot());
+	w.EndObject();
+	FinalizeJsonBody(w, r);
+	return r;
+}
+
+CHttpServer::Response CApiDispatcher::HandleVersion(const CHttpServer::Request &req)
+{
+	// The identity fields stay unauthenticated: this is the liveness/version
+	// probe, and a probe has to work before anyone holds a token. The `update`
+	// block does not, because it reports whether THIS daemon is running an
+	// outdated build, and that is not something an unauthenticated caller on a
+	// deliberately reachable interface should learn. A client that shows an
+	// "update available" banner is already authenticated when it does.
+	const auto auth = Authenticate(req);
+
 	CHttpServer::Response r;
 	r.status = 200;
 	r.content_type = "application/json";
@@ -1935,7 +1988,7 @@ CHttpServer::Response CApiDispatcher::HandleVersion(const CHttpServer::Request &
 	// daemon that emits none of these tags -- check_enabled is false and a
 	// client should show nothing. update_available / last_checked are null
 	// until a check has completed.
-	{
+	if (auth.ok) {
 		const auto prefs = m_state.Preferences();
 		const auto status = m_state.Status();
 		const bool check_enabled = prefs.version_check_available && prefs.check_new_version;
@@ -4620,6 +4673,16 @@ CHttpServer::Response CApiDispatcher::HandleVersionCheck(const CHttpServer::Requ
 	if (auto rej = RequireAdmin(a))
 		return *rej;
 
+	// Before the first EC snapshot there are no preferences to read, and
+	// version_check_available defaults to false -- so the capability check
+	// below used to answer 409 "disabled or unavailable on the connected
+	// daemon" during the window every client hits at startup, blaming the
+	// daemon's configuration for amuleapi not having read it yet. Every other
+	// handler that reads cached state answers 503 ec_unavailable there, which
+	// is the condition a client can retry.
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
+
 	// The daemon owns the check; amuleapi only triggers it. Reject early
 	// when the daemon can't check, so we never send an EC op that will fail
 	// and never expose the daemon's localized reason (English-only contract).
@@ -5528,6 +5591,53 @@ bool FindClientByEcid(const webapi::CState &state, std::uint32_t ecid, webapi::C
 // Same shape again for friends. The EC remove/slot ops are idempotent about
 // unknown ids, but a REST caller who mistypes one should get a 404 rather than
 // a cheerful 200, so every /friends/{ecid} handler looks the id up first.
+// The category set as a client sees it, which is not quite what amuled holds.
+//
+// amuled's EC suppresses the whole `EC_TAG_PREFS_CATEGORIES` block when no
+// custom categories exist, and starts including index 0 once the first custom
+// one is added. Faithful at the wire layer, but a client iterating /categories
+// expecting at least the default has to special-case the empty case, so a
+// synthetic index-0 entry is injected when missing. The defaults mirror what
+// amuled emits for category 0 itself: empty title/path/comment, color 0,
+// priority_code PR_LOW (the amuled default for `defaultcat->prio` in
+// CPreferences::LoadCats).
+//
+// Both read routes go through here. The collection did this inline and the
+// member route added later read the raw snapshot instead, so /categories
+// listed a category 0 that /categories/0 reported as absent. Mutations
+// deliberately do NOT use this: the synthetic entry is a read-shape
+// convenience rather than something the daemon holds, so there is nothing
+// there to PATCH or DELETE.
+std::vector<webapi::CategorySnapshot> CategoriesWithDefault(const webapi::CState &state)
+{
+	std::vector<webapi::CategorySnapshot> cats = state.Categories();
+	for (const auto &c : cats) {
+		if (c.index == 0) {
+			return cats;
+		}
+	}
+	webapi::CategorySnapshot d;
+	d.index = 0;
+	d.priority_code = 0; // PR_LOW (matches amuled default)
+	d.priority = "low";
+	cats.insert(cats.begin(), std::move(d));
+	return cats;
+}
+
+// Category counterpart to the FindXByEcid family above. Three handlers walked
+// m_state.Categories() with the same loop, and the read route added below would
+// have been a fourth.
+bool FindCategoryByIndex(const webapi::CState &state, std::uint8_t index, webapi::CategorySnapshot &out)
+{
+	for (const auto &c : state.Categories()) {
+		if (static_cast<std::uint8_t>(c.index) == index) {
+			out = c;
+			return true;
+		}
+	}
+	return false;
+}
+
 bool FindFriendByEcid(const webapi::CState &state, std::uint32_t ecid, webapi::FriendSnapshot &out)
 {
 	const auto all = state.Friends();
@@ -6844,21 +6954,7 @@ CHttpServer::Response CApiDispatcher::HandleCategories(const CHttpServer::Reques
 	// amuled emits for category 0 itself: empty title/path/comment,
 	// color 0, priority_code PR_LOW (the amuled default for
 	// `defaultcat->prio` in CPreferences::LoadCats).
-	std::vector<webapi::CategorySnapshot> cats = m_state.Categories();
-	bool has_zero = false;
-	for (const auto &c : cats) {
-		if (c.index == 0) {
-			has_zero = true;
-			break;
-		}
-	}
-	if (!has_zero) {
-		webapi::CategorySnapshot d;
-		d.index = 0;
-		d.priority_code = 0; // PR_LOW (matches amuled default)
-		d.priority = "low";
-		cats.insert(cats.begin(), std::move(d));
-	}
+	std::vector<webapi::CategorySnapshot> cats = CategoriesWithDefault(m_state);
 	ListParams params;
 	if (auto r = ParseListParams(QueryOf(req), params))
 		return *r;
@@ -9819,6 +9915,48 @@ CHttpServer::Response CApiDispatcher::HandleCategoryCreate(const CHttpServer::Re
 	return r;
 }
 
+// GET /categories/{index}. Every other resource with a member path has a member
+// GET; this one had PATCH and DELETE only, so a client that had just created a
+// category and wanted the stored result had to re-fetch the whole collection
+// and search it by index. GUEST, matching the collection read.
+CHttpServer::Response CApiDispatcher::HandleCategoryOne(
+	const CHttpServer::Request &req, const std::string &index_str)
+{
+	auto a = Authenticate(req);
+	if (!a.ok)
+		return a.rejection;
+
+	std::uint8_t idx = 0;
+	if (!ParseCategoryIndex(index_str, idx)) {
+		return ErrorResponse(400, "bad_request", "path `{index}` must be a uint8 in [0, 255]");
+	}
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
+
+	// The same set the collection lists, synthetic default included, so the
+	// two routes cannot disagree about which categories exist.
+	bool found = false;
+	webapi::CategorySnapshot cat;
+	for (const auto &c : CategoriesWithDefault(m_state)) {
+		if (static_cast<std::uint8_t>(c.index) == idx) {
+			cat = c;
+			found = true;
+			break;
+		}
+	}
+	if (!found) {
+		return ErrorResponse(404, "not_found", "no category with that index");
+	}
+
+	CHttpServer::Response r;
+	r.status = 200;
+	r.content_type = "application/json";
+	CJsonWriter w;
+	WriteCategoryObject(w, cat);
+	FinalizeJsonBody(w, r);
+	return r;
+}
+
 CHttpServer::Response CApiDispatcher::HandleCategoryUpdate(
 	const CHttpServer::Request &req, const std::string &index_str)
 {
@@ -9839,15 +9977,7 @@ CHttpServer::Response CApiDispatcher::HandleCategoryUpdate(
 	// field the PATCH body doesn't override (CEC_Category_Tag is
 	// not delta-friendly; we always send the full tag).
 	webapi::CategorySnapshot current;
-	bool found = false;
-	for (const auto &c : m_state.Categories()) {
-		if (static_cast<std::uint8_t>(c.index) == idx) {
-			current = c;
-			found = true;
-			break;
-		}
-	}
-	if (!found) {
+	if (!FindCategoryByIndex(m_state, idx, current)) {
 		return ErrorResponse(404, "not_found", "no category with that index");
 	}
 
@@ -9887,12 +10017,7 @@ CHttpServer::Response CApiDispatcher::HandleCategoryUpdate(
 
 	// Return the post-mutation category object.
 	webapi::CategorySnapshot after = current;
-	for (const auto &c : m_state.Categories()) {
-		if (static_cast<std::uint8_t>(c.index) == idx) {
-			after = c;
-			break;
-		}
-	}
+	(void)FindCategoryByIndex(m_state, idx, after);
 
 	CHttpServer::Response r;
 	r.status = 200;
@@ -9923,14 +10048,8 @@ CHttpServer::Response CApiDispatcher::HandleCategoryDelete(
 	if (idx == 0) {
 		return ErrorResponse(400, "bad_request", "cannot delete the default (index=0) category");
 	}
-	bool found = false;
-	for (const auto &c : m_state.Categories()) {
-		if (static_cast<std::uint8_t>(c.index) == idx) {
-			found = true;
-			break;
-		}
-	}
-	if (!found) {
+	webapi::CategorySnapshot existing;
+	if (!FindCategoryByIndex(m_state, idx, existing)) {
 		return ErrorResponse(404, "not_found", "no category with that index");
 	}
 
