@@ -126,17 +126,11 @@ export default function Downloads({ isGuest }) {
   // Apply the same field change (priority/category) to every selected row.
   const bulkPatch = (patch) => runBulk((h) => api.patch("downloads", { hashes: h, ...patch }));
 
-  // Clears every completed entry, so it reports per entry: a refusal is a
-  // 207 row, not a throw.
+  // The handler clears in one EC roundtrip: every row it returns is an ok,
+  // and any refusal is a whole-request error `mutate` already reports.
   const clearCompleted = async () => {
     if (!(await confirmDialog(t("downloads_confirm_clear_completed")))) return;
-    mutate(async () => {
-      const res = await api.post("downloads_clear_completed");
-      const failed = bulkFailures(res);
-      if (failed.length)
-        toast(t("common_bulk_partial", { failed: failed.length, total: res.results.length,
-                message: terr(failed[0].error) }), "warn");
-    });
+    mutate(() => api.post("downloads_clear_completed"));
   };
   // Same endpoint scoped to one hash, for the detail panel's Clear button.
   const clearOne = (h) => mutate(() => api.post("downloads_clear_completed", { hash: h }));

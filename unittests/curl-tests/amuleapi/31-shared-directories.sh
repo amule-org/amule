@@ -89,7 +89,7 @@ _restore() {
 }
 trap _restore EXIT
 
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
@@ -106,36 +106,36 @@ HAVE_GUEST=0
 
 # --- 1. Auth + method gates. ----------------------------------------
 _curl "$HOST/api/v0/share_directories"
-_assert_status 401 "GET /shared/directories (no token) → 401"
+_assert_status 401 "GET /share_directories (no token) → 401"
 
 _curl -X PUT -H "Content-Type: application/json" \
 	-d '{"directories":[]}' "$HOST/api/v0/share_directories"
-_assert_status 401 "PUT /shared/directories (no token) → 401"
+_assert_status 401 "PUT /share_directories (no token) → 401"
 
 if [ "$HAVE_GUEST" = "1" ]; then
 	# Reading the roots is GUEST, matching GET /shared and GET /preferences.
 	_curl -H "Authorization: Bearer $GUEST_TOKEN" "$HOST/api/v0/share_directories"
-	_assert_status 200 "GET /shared/directories (guest) → 200"
+	_assert_status 200 "GET /share_directories (guest) → 200"
 
 	_curl -X PUT -H "Authorization: Bearer $GUEST_TOKEN" -H "Content-Type: application/json" \
 		-d '{"directories":[]}' "$HOST/api/v0/share_directories"
-	_assert_status 403 "PUT /shared/directories (guest) → 403"
+	_assert_status 403 "PUT /share_directories (guest) → 403"
 
 	_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" -H "Content-Type: application/json" \
 		-d "{\"path\":\"$SCRATCH_DIR\"}" "$HOST/api/v0/share_directories"
-	_assert_status 403 "POST /shared/directories (guest) → 403"
+	_assert_status 403 "POST /share_directories (guest) → 403"
 
 	_curl -X DELETE -H "Authorization: Bearer $GUEST_TOKEN" \
 		"$HOST/api/v0/share_directories?path=%2Ftmp"
-	_assert_status 403 "DELETE /shared/directories (guest) → 403"
+	_assert_status 403 "DELETE /share_directories (guest) → 403"
 fi
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/share_directories"
-_assert_status 405 "PATCH /shared/directories → 405"
+_assert_status 405 "PATCH /share_directories → 405"
 
 # --- 2. Read the current configuration (and snapshot it). -----------
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/share_directories"
-_assert_status 200 "GET /shared/directories → 200"
+_assert_status 200 "GET /share_directories → 200"
 _assert_json_eq '.directories | type' 'array' "directories is an array"
 ORIGINAL_DIRS=$(printf '%s' "$CURL_BODY" | jq -c '.directories')
 [ -n "$ORIGINAL_DIRS" ] || _die "could not snapshot the current shared directories"

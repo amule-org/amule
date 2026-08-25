@@ -164,14 +164,14 @@ run_phase() {
 	"$BIN" --config-dir=/tmp/amuleapi-regtest \
 		--host="$EC_HOST" --port="$EC_PORT" \
 		> /tmp/amuleapi.log 2>&1 &
-	# Poll /version until the daemon is ready instead of guessing the
+	# Poll /health until the daemon is ready instead of guessing the
 	# cold-start time. The first EC GET_UPDATE roundtrip can take a
 	# couple of seconds on a slow CI runner, and the cap of 12 leaves
 	# headroom while still failing fast on a genuine bring-up bug.
 	local i
 	for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
 		if curl -s -o /dev/null --max-time 1 \
-		    http://localhost:4713/api/v0/version 2>/dev/null; then
+		    http://localhost:4713/api/v0/health 2>/dev/null; then
 			break
 		fi
 		sleep 0.5

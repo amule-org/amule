@@ -81,7 +81,7 @@ _assert_json_eq() {
 if ! command -v jq >/dev/null 2>&1; then
 	_die "jq is required. brew install jq."
 fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable. Start amuleapi first."
 fi
 
@@ -103,7 +103,7 @@ TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 # Wait for the refresher to land its first snapshot. On a fast
 # Linux host the first tick is sub-second; on the Windows VM the
 # 503 ec_unavailable window can stretch a few seconds under load.
-# Poll up to 15 s, same shape run-all.sh uses for /version, so
+# Poll up to 15 s, same shape run-all.sh uses for /health, so
 # the test doesn't drift to "disconnected" under runner pressure.
 for _ in $(seq 1 30); do
 	probe=$(curl -s -o /dev/null -w "%{http_code}" \

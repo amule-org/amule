@@ -1218,14 +1218,15 @@ TEST(State, MemoizableTargetExcludesEverythingElse)
 }
 
 // A sub-resource of an eligible collection is NOT itself eligible: it is a
-// different body, and /shared/directories in particular is a live EC read
-// that an "everything under /shared" rule would have swept back in.
+// different body, so an "everything under /downloads" or "everything under
+// /shared" rule would sweep back in exactly what the opt-in set leaves out.
+// (/share_directories used to be listed here as /shared/directories; it is no
+// longer under /shared at all, and the excluded-set test above covers it.)
 TEST(State, MemoizableTargetDoesNotExtendToSubResources)
 {
 	ASSERT_TRUE(!MemoizableTarget("/api/v0/downloads/8b54a3c2"));
 	ASSERT_TRUE(!MemoizableTarget("/api/v0/downloads/8b54a3c2/clients"));
 	ASSERT_TRUE(!MemoizableTarget("/api/v0/shared/8b54a3c2"));
-	ASSERT_TRUE(!MemoizableTarget("/api/v0/share_directories"));
 	// and no prefix bleed onto a neighbour that merely starts the same
 	ASSERT_TRUE(!MemoizableTarget("/api/v0/downloads_archive"));
 	ASSERT_TRUE(!MemoizableTarget("/api/v0/sharedfiles"));

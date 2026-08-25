@@ -81,7 +81,7 @@ _assert_json_eq() {
 if ! command -v jq >/dev/null 2>&1; then
 	_die "jq is required. brew install jq."
 fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable. Start amuleapi first."
 fi
 
@@ -160,6 +160,12 @@ if [ "$COUNT" -gt 0 ]; then
 	# which a client had to know meant "unknown".
 	_assert_json_eq '(.remaining_time == null or (.remaining_time | type) == "number")' true \
 		'/downloads/{hash} remaining_time is a number or null'
+	# Same rule: null, not a 0 that reads as 1970, when no complete copy of
+	# the file has ever been seen across the current sources.
+	_assert_json_eq '(.last_seen_complete == null or (.last_seen_complete | type) == "number")' true \
+		'/downloads/{hash} last_seen_complete is a number or null'
+	_assert_json_eq '.last_seen_complete != 0' true \
+		'/downloads/{hash} last_seen_complete never uses 0 as "never"'
 	_assert_json_eq '.aich_hash | type' string \
 		'/downloads/{hash} carries aich_hash'
 	_assert_json_eq '.met_file | type' string \

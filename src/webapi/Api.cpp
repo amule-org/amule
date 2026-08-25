@@ -574,12 +574,13 @@ CApiDispatcher::CApiDispatcher(CAmuleApiConfig &config, CJwt &jwt, webapi::CStat
 	  config.AuthCfg().login_failure_threshold,
 	  config.AuthCfg().login_lockout_seconds })
 ,
-// Generic-401 limiter: 30 failures within 60 s, 5-minute
-// lockout. Hard-coded for now — operators have a separate
-// knob for login-specific limits; the generic 401 cap is a
-// crash-pad against credential-stuffing across all non-
-// login endpoints and can become a config knob in 3.1 if
-// anyone asks.
+// Generic-401 limiter: a crash-pad against credential-
+// stuffing across every authenticated endpoint, counting
+// rejected tokens rather than bad passwords. Its three
+// `[Auth]/Token*` keys default to 30 failures within 60 s
+// and a 5-minute lockout, mirroring the login limiter's
+// keys above -- this is the one a browser tab left open
+// overnight trips, so it has to be tunable too.
 m_authRateLimiter(webapi::CRateLimiter::Config{ config.AuthCfg().token_failure_window_seconds,
 	config.AuthCfg().token_failure_threshold,
 	config.AuthCfg().token_lockout_seconds })
@@ -872,7 +873,7 @@ CHttpServer::Response CApiDispatcher::Dispatch(const CHttpServer::Request &req)
 	//
 	// Stamped here rather than in each handler so a new authenticated
 	// route cannot forget it, and only when the caller actually presented
-	// credentials: an unauthenticated public probe like /version stays
+	// credentials: an unauthenticated public probe like /health stays
 	// cacheable and keeps its conditional GET. A handler that set its own
 	// policy -- the static assets' public, no-cache, the country flags'
 	// public, max-age, /auth/session's private, no-store, the SSE
@@ -1015,7 +1016,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// bulk clear-completed.
 	if (path == "/api/v0/downloads_clear_completed") {
 		if (req.method != "POST") {
-			return MethodNotAllowed("POST", "only POST on /downloads/clear_completed");
+			return MethodNotAllowed("POST", "only POST on /downloads_clear_completed");
 		}
 		return HandleDownloadsClearCompleted(req);
 	}
@@ -1085,7 +1086,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 
 	if (path == "/api/v0/shared_reload") {
 		if (req.method != "POST") {
-			return MethodNotAllowed("POST", "only POST on /shared/reload");
+			return MethodNotAllowed("POST", "only POST on /shared_reload");
 		}
 		return HandleSharedReload(req);
 	}
@@ -1100,10 +1101,10 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		return HandleSharedMediaRefresh(req);
 	}
 
-	// /shared/directories — the configured share roots, as opposed to /shared
-	// which lists the files those roots produced. Literal path, so it has to be
-	// matched before the /shared/{hash} patterns below or "directories" would be
-	// captured as a hash.
+	// /share_directories — the configured share roots, as opposed to /shared
+	// which lists the files those roots produced. It used to be /shared/
+	// directories, one segment away from being read as a file hash; its own
+	// top-level path is why no ordering against /shared/{hash} is needed here.
 	if (path == "/api/v0/share_directories") {
 		if (req.method == "GET" || req.method == "HEAD") {
 			return HandleSharedDirectories(req);
@@ -1118,7 +1119,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 			return HandleSharedDirectoriesDelete(req);
 		}
 		return MethodNotAllowed("GET, HEAD, POST, PUT, DELETE",
-			"only GET / HEAD / PUT / POST / DELETE on /shared/directories");
+			"only GET / HEAD / PUT / POST / DELETE on /share_directories");
 	}
 
 	if (path == "/api/v0/servers") {
@@ -1227,17 +1228,17 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 
 	if (path == "/api/v0/servers_update") {
 		if (req.method != "POST") {
-			return MethodNotAllowed("POST", "only POST on /servers/update");
+			return MethodNotAllowed("POST", "only POST on /servers_update");
 		}
 		return HandleServerUpdateFromUrl(req);
 	}
 
-	// server connect & remove (single server by ECID).
-	// Address-keyed aliases live in the same block — same handlers,
-	// different lookup path. ECID forms are tried first because they
-	// match a single-segment pattern that's cheaper to dispatch; the
-	// address forms have a colon in the capture which the path pattern
-	// captures as a single segment too.
+	// server connect & remove, by ECID or by address. The two forms share their
+	// handlers and differ only in how they look the server up, so they live in
+	// one block. The address patterns are tried FIRST because they have the same
+	// segment count as their ECID counterparts: a request for the address form
+	// with "connect" as the address would otherwise match the ECID+connect
+	// pattern with `ecid == "by-address"`, and the literal segment has to win.
 	{
 		static const auto server_connect =
 			web_api_path::ParsePattern("/api/v0/servers/{ecid}/connect");
@@ -1951,13 +1952,32 @@ CHttpServer::Response CApiDispatcher::HandleHealth(const CHttpServer::Request &)
 
 CHttpServer::Response CApiDispatcher::HandleVersion(const CHttpServer::Request &req)
 {
-	// The identity fields stay unauthenticated: this is the liveness/version
-	// probe, and a probe has to work before anyone holds a token. The `update`
-	// block does not, because it reports whether THIS daemon is running an
-	// outdated build, and that is not something an unauthenticated caller on a
-	// deliberately reachable interface should learn. A client that shows an
-	// "update available" banner is already authenticated when it does.
-	const auto auth = Authenticate(req);
+	// The identity fields stay unauthenticated: version negotiation has to work
+	// before anyone holds a token. This is NOT the liveness probe, though it was
+	// used as one before there was a better answer -- /health owns that now, see
+	// HandleHealth.
+	//
+	// The `update` block does NOT stay unauthenticated, because it reports
+	// whether THIS daemon is running an outdated build, and that is not
+	// something an unauthenticated caller on a deliberately reachable interface
+	// should learn. A client that shows an "update available" banner is already
+	// authenticated when it does.
+	//
+	// Auth here is OPTIONAL, which is why this does not call Authenticate()
+	// unconditionally: that wrapper counts every 401 against the generic
+	// limiter, and a request with no credential is this endpoint's documented
+	// unauthenticated use rather than an auth failure. Counting it would let an
+	// anonymous poller -- or, behind a reverse proxy, one poller on the address
+	// every client shares -- spend the bucket in 30 requests and lock real
+	// sessions out of the whole authenticated surface for the lockout window.
+	// A credential that IS presented and rejected still counts: the `update`
+	// block appearing is an oracle a token guesser could otherwise read for
+	// free, and the wrapper's lockout pre-check keeps a locked-out address off
+	// the verify path.
+	AuthOutcome auth;
+	if (RequestCarriesCredentials(req, kSessionCookieName)) {
+		auth = Authenticate(req);
+	}
 
 	CHttpServer::Response r;
 	r.status = 200;
@@ -2803,8 +2823,13 @@ void WriteDownloadObject(
 									     f.download.speed_bps)
 						 : 0;
 		}
-		w.Key("last_seen_complete");
-		w.ValueInt(static_cast<int64_t>(f.download.last_seen_complete));
+		// Null rather than 0 for "no complete copy has ever been seen",
+		// the same rule `last_upload` / `shared_since` follow: a unix
+		// timestamp of 0 reads as 1970, not as "never".
+		WriteIntOrNull(w,
+			"last_seen_complete",
+			f.download.last_seen_complete != 0,
+			static_cast<std::int64_t>(f.download.last_seen_complete));
 		w.Key("last_changed");
 		w.ValueInt(static_cast<int64_t>(f.download.last_changed));
 		w.Key("download_active_time");
@@ -3637,16 +3662,9 @@ bool IsEcFailedResponse(const CECPacket *resp, std::string &out_msg)
 	return true;
 }
 
-// Map our wire-string priorities back to amule's PR_* encoding (the
-// inverse of DownloadPriorityName in Refresher.cpp). Downloads support
-// only LOW/NORMAL/HIGH plus AUTO: CPartFile's .part.met loader clamps
-// any download priority that isn't one of those back to PR_NORMAL on
-// load (PR_AUTO=5 is the magic value stored as High + the auto flag),
-// so `very_low` and `release` are shared/upload-side levels only. They
-// are intentionally rejected here so the download PATCH enum matches
-// what the daemon can actually hold; the shared side keeps the full
-// set in SharedPriorityToCode.
-// Returns false if the wire string isn't a known download priority.
+// Map our wire-string priorities back to amule's PR_* encoding -- the inverse of
+// PriorityName in Refresher.cpp, which is likewise one function for all three
+// resources. PR_AUTO=5 is the magic value stored as High plus the auto flag.
 // The one place the file-priority vocabulary is declared.
 //
 // /downloads, /shared and /categories all speak the PR_* code space and differ
@@ -3659,7 +3677,8 @@ bool IsEcFailedResponse(const CECPacket *resp, std::string &out_msg)
 // loader clamps anything but PR_LOW/PR_NORMAL/PR_HIGH back to Normal on
 // restart, so very_low and release are upload-side levels only and are refused
 // on the download path on purpose. Categories apply their priority to member
-// files as a download priority, so they inherit the download set.
+// files as a download priority (CDownloadQueue::SetCatPrio ->
+// CPartFile::SetDownPriority), so they inherit the download set.
 //
 // Servers are deliberately NOT in this table. SRV_PR_* is a different code
 // space in which the same word means a different number -- `low` is 0 for a
@@ -3715,7 +3734,7 @@ std::string FilePriorityAccepted(unsigned domain)
 	return "`priority` must be one of " + out;
 }
 
-// The three "fetch a list from a URL" endpoints — /servers/update,
+// The three "fetch a list from a URL" endpoints — /servers_update,
 // /kad/update and /ipfilter/update — are the same operation over three
 // different lists: take one http(s) URL, hand it to amuled in a single
 // string tag, echo the effective URL back with a 202. amuled persists the
@@ -5191,14 +5210,14 @@ CHttpServer::Response CApiDispatcher::HandleDownloadDelete(
 	// from Incoming, it just acks the post-completion notification.
 	// Conflating the two under one verb confused operators who
 	// reasonably expected DELETE to remove a file from disk. Route
-	// the completed case through POST /downloads/clear_completed
+	// the completed case through POST /downloads_clear_completed
 	// (which accepts an optional {hash} body for per-entry clears)
 	// so the verb-vs-disk-semantic mapping stays unambiguous.
 	if (d.download.status == "completed") {
 		return ErrorResponse(409,
 			"completed_use_clear_completed",
 			"DELETE only removes active downloads (deletes .part/.met "
-			"files from disk). Use POST /downloads/clear_completed "
+			"files from disk). Use POST /downloads_clear_completed "
 			"with optional {\"hash\":\"...\"} body to clear a completed "
 			"entry's post-completion notification — the file in the "
 			"Incoming directory is NEVER removed via this API.");
@@ -7029,13 +7048,13 @@ CHttpServer::Response CApiDispatcher::HandleKad(const CHttpServer::Request &req)
 namespace
 {
 
-// `?tail=N` parser. Returns 0 if the query is absent / unparseable;
-// the caller's contract is "0 means return everything". Negative or
-// non-numeric values clamp to 0.
+// `?tail=N` parser. An absent parameter yields 0, which is every caller's
+// contract for "return everything".
 // 100k lines is the cap: a bogus `?tail=2147483647` would otherwise try to
-// serialise the entire wxString through the JSON escaper. It used to clamp
-// silently, which meant a client asking for more got fewer with nothing saying
-// so; it is a 400 now, like every other out-of-range count.
+// serialise the entire wxString through the JSON escaper. Non-numeric and
+// out-of-range values are a 400, like every other count on the surface; it used
+// to clamp silently, which meant a client asking for more got fewer with
+// nothing saying so.
 std::unique_ptr<CHttpServer::Response> ParseTailParam(const std::string &query, std::size_t &out)
 {
 	const auto qmap = web_api_path::ParseQuery(query);
@@ -8623,7 +8642,7 @@ CHttpServer::Response CApiDispatcher::HandleNetworksDisconnect(const CHttpServer
 
 // POST /kad/update — refresh the Kad node list from a nodes.dat URL (#693).
 //
-// Shares ResolveFetchUrl / UrlFetchOp with /servers/update and
+// Shares ResolveFetchUrl / UrlFetchOp with /servers_update and
 // /ipfilter/update: same validation, same 202. The EC handler
 // (EC_OP_KAD_UPDATE_FROM_URL) persists the URL into preferences itself via
 // SetKadNodesUrl(), so this deliberately does NOT also patch
@@ -8802,20 +8821,12 @@ CHttpServer::Response CApiDispatcher::HandleKadBootstrap(const CHttpServer::Requ
 	return r;
 }
 
-namespace
-{
-
-// Inverse of SharedPriorityName in Refresher.cpp. Wire form mirrors
-// the /shared[].priority enum: bare upload priorities plus "auto".
-// Setting "auto" hands level selection to amuled (it derives the level
-// from the upload queue and reports it back as `priority` + a true
-// `priority_auto`); to pin a fixed level, send the bare name. The
-// combined "*_auto" strings are intentionally NOT accepted as input --
-// "auto" is the level the daemon computes, so a caller can't pin it.
-// Returns false on unknown enum.
-
-} // namespace
-
+// `priority` here mirrors the /shared[].priority enum: bare upload levels plus
+// "auto". Setting "auto" hands level selection to amuled -- it derives the level
+// from the upload queue and reports it back as `priority` plus a true
+// `priority_auto` -- so to pin a fixed level, send the bare name. The combined
+// "*_auto" strings are deliberately NOT accepted as input: "auto" is the level
+// the daemon computes, and a caller cannot pin it.
 CHttpServer::Response CApiDispatcher::HandleSharedPatch(
 	const CHttpServer::Request &req, const std::string &key)
 {
@@ -9090,13 +9101,13 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsBulkDelete(const CHttpServe
 			continue;
 		}
 		// Same guard as the single-item DELETE: completed entries are not
-		// removable here (use POST /downloads/clear_completed).
+		// removable here (use POST /downloads_clear_completed).
 		if (d.download.status == "completed") {
 			results.push_back(BulkErr(raw,
 				409,
 				"completed_use_clear_completed",
 				"DELETE only removes active downloads; use POST "
-				"/downloads/clear_completed to clear a completed entry"));
+				"/downloads_clear_completed to clear a completed entry"));
 			continue;
 		}
 		CMD4Hash file_hash;
@@ -9719,15 +9730,6 @@ bool ParseCategoryIndex(const std::string &s, std::uint8_t &out)
 	out = static_cast<std::uint8_t>(v);
 	return true;
 }
-
-// Inverse of CategoryPriorityName (Refresher.cpp's ParseCategoryTag).
-// A category priority is applied to member files as a DOWNLOAD priority
-// (CDownloadQueue::SetCatPrio -> CPartFile::SetDownPriority), so it must use
-// the same restricted set as DownloadPriorityToCode: low / normal / high /
-// auto. very_low and release are not real download levels -- the .part.met
-// loader clamps anything but PR_LOW/PR_NORMAL/PR_HIGH back to Normal on the
-// next restart -- so accepting them here would be the same silent downgrade
-// #396 fixed for the direct download PATCH path (issue #384).
 
 // Build the CEC_Category_Tag-shaped tag amuled expects. The shape is:
 //  parent tag EC_TAG_CATEGORY with the index as the int payload,
