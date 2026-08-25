@@ -1709,6 +1709,10 @@ public:
 	// its internal hash→ECID index in sync on every emplace/erase.
 	void MutateDownloads(const std::function<void(FileMap &)> &fn);
 	void MutateShared(const std::function<void(FileMap &)> &fn);
+	//! Clients only. Reach for MutateClientsWithFiles below when the callback
+	//! also needs the file map, rather than pairing this with WithFiles: that
+	//! pair is two acquisitions where one does, which is what the clients
+	//! walker was moved off.
 	void MutateClients(const std::function<void(std::map<std::uint32_t, ClientSnapshot> &)> &fn);
 	//! Clients plus a read-only view of the file map, under the one acquisition
 	//! this was already taking. The clients walker resolves ECIDs against the
