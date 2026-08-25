@@ -3173,6 +3173,93 @@ using ListComparators = std::vector<std::pair<std::string, std::function<bool(co
 // Sort keys for peer rows, shared by /clients and by the per-file client
 // routes -- the latter derive theirs from this set, so a key added here shows
 // up on every peer list rather than only the one it was added to.
+// One row of GET /search. The listing is built from a live EC response rather
+// than a snapshot vector, so it needs a materialised row before it can go
+// through the same envelope every other collection uses. Absent values stay
+// absent rather than becoming 0: `started_at` is unknowable for a search this
+// process did not start, and `result_count` is unreported by an older daemon,
+// which has to stay distinguishable from "found nothing".
+struct SearchListRow
+{
+	std::uint32_t search_id = 0;
+	wxString query;
+	std::string kind;
+	std::string state;
+	bool has_client_ecid = false;
+	std::uint32_t client_ecid = 0;
+	std::time_t started_at = 0; // 0 = not started by this process
+	bool has_result_count = false;
+	std::uint32_t result_count = 0;
+};
+
+void WriteSearchListRow(CJsonWriter &w, const SearchListRow &row)
+{
+	w.BeginObject();
+	w.Key("search_id");
+	w.ValueInt(static_cast<int64_t>(row.search_id));
+	w.Key("query");
+	w.ValueString(row.query);
+	w.Key("kind");
+	w.ValueString(wxString::FromUTF8(row.kind.c_str()));
+	w.Key("state");
+	w.ValueString(wxString::FromUTF8(row.state.c_str()));
+	if (row.has_client_ecid) {
+		w.Key("client_ecid");
+		w.ValueInt(static_cast<int64_t>(row.client_ecid));
+	}
+	if (row.started_at != 0) {
+		w.Key("started_at");
+		w.ValueInt(static_cast<int64_t>(row.started_at));
+	}
+	if (row.has_result_count) {
+		w.Key("result_count");
+		w.ValueInt(static_cast<int64_t>(row.result_count));
+	}
+	w.EndObject();
+}
+
+// Sort keys for /search. The daemon hands its searches back id-ascending and id
+// order is not recency (Kad ids carry SEARCH_ID_KAD_MASK and always sort above
+// ed2k ones), so a client had nothing to rank the list by.
+const ListComparators<SearchListRow> &SearchListComparators()
+{
+	static const ListComparators<SearchListRow> kComps = {
+		{ "search_id",
+			[](const SearchListRow &a, const SearchListRow &b) {
+				return a.search_id < b.search_id;
+			} },
+		{ "query", [](const SearchListRow &a, const SearchListRow &b) { return a.query < b.query; } },
+		{ "started_at",
+			[](const SearchListRow &a, const SearchListRow &b) {
+				return a.started_at < b.started_at;
+			} },
+		{ "result_count",
+			[](const SearchListRow &a, const SearchListRow &b) {
+				return a.result_count < b.result_count;
+			} },
+	};
+	return kComps;
+}
+
+// Sort keys for /categories. The tenth list endpoint was also the only one
+// that never parsed ?limit/&offset/&sort/&order, so the same query string was a
+// hard error on /downloads and a silent no-op here -- while the response still
+// carried the page-meta trio a caller could not influence.
+const ListComparators<webapi::CategorySnapshot> &CategoryComparators()
+{
+	static const ListComparators<webapi::CategorySnapshot> kComps = {
+		{ "index",
+			[](const webapi::CategorySnapshot &a, const webapi::CategorySnapshot &b) {
+				return a.index < b.index;
+			} },
+		{ "name",
+			[](const webapi::CategorySnapshot &a, const webapi::CategorySnapshot &b) {
+				return a.name < b.name;
+			} },
+	};
+	return kComps;
+}
+
 const ListComparators<webapi::ClientSnapshot> &ClientComparators()
 {
 	static const ListComparators<webapi::ClientSnapshot> kComps = {
@@ -6729,7 +6816,10 @@ CHttpServer::Response CApiDispatcher::HandleCategories(const CHttpServer::Reques
 		d.priority = "low";
 		cats.insert(cats.begin(), std::move(d));
 	}
-	return ListResponse(m_state, "categories", cats, WriteCategoryObject);
+	ListParams params;
+	if (auto r = ParseListParams(QueryOf(req), params))
+		return *r;
+	return ListResponse(m_state, "categories", cats, WriteCategoryObject, params, CategoryComparators());
 }
 
 CHttpServer::Response CApiDispatcher::HandleKad(const CHttpServer::Request &req)
@@ -7482,78 +7572,50 @@ CHttpServer::Response CApiDispatcher::HandleSearchList(const CHttpServer::Reques
 	if (!a.ok)
 		return a.rejection;
 
+	ListParams params;
+	if (auto r = ParseListParams(QueryOf(req), params))
+		return *r;
+
 	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_SEARCH_LIST));
 	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
 	if (!ec_resp) {
 		return ErrorResponse(503, "ec_unavailable", "EC roundtrip failed for SEARCH_LIST");
 	}
 
-	CHttpServer::Response r;
-	r.status = 200;
-	r.content_type = "application/json";
-	CJsonWriter w;
-	w.BeginObject();
-	w.Key("searches");
-	w.BeginArray();
+	std::vector<SearchListRow> rows;
 	for (const CECTag &entry : *ec_resp) {
-		w.BeginObject();
-		const std::uint32_t sid = static_cast<std::uint32_t>(entry.GetInt());
-		w.Key("search_id");
-		w.ValueInt(static_cast<int64_t>(sid));
+		SearchListRow row;
+		row.search_id = static_cast<std::uint32_t>(entry.GetInt());
 		const CECTag *nameTag = entry.GetTagByName(EC_TAG_SEARCH_NAME);
-		w.Key("query");
-		w.ValueString(nameTag ? nameTag->GetStringData() : wxString());
+		row.query = nameTag ? nameTag->GetStringData() : wxString();
 		const CECTag *kindTag = entry.GetTagByName(EC_TAG_SEARCH_LIFECYCLE_KIND);
-		w.Key("kind");
-		w.ValueString(SearchKindToString(
-			kindTag ? static_cast<std::uint8_t>(kindTag->GetInt()) : EC_SEARCH_GLOBAL));
+		row.kind = SearchKindToString(kindTag ? static_cast<std::uint8_t>(kindTag->GetInt()) : 0);
 		const CECTag *stateTag = entry.GetTagByName(EC_TAG_SEARCH_LIFECYCLE_STATE);
-		const std::uint8_t state_val = stateTag ? static_cast<std::uint8_t>(stateTag->GetInt()) : 0;
-		w.Key("state");
-		w.ValueString(SearchLifecycleStateToString(state_val));
+		row.state = SearchLifecycleStateToString(
+			stateTag ? static_cast<std::uint8_t>(stateTag->GetInt()) : 0);
 		// Browse ("View Files") entries carry the browsed peer's ecid. Without
 		// it a consumer sees `kind: "browse"` with no way to tell WHOSE share
-		// it is listing -- which is exactly what amulegui uses the tag for when
-		// it rebuilds a browse tab. Omitted entirely on an ordinary search,
-		// which never carries it. `client_` keeps its prefix because this
-		// names a DIFFERENT object than the one being described, unlike the
-		// entry's own `search_id`.
+		// it is listing. Absent on an ordinary search, which never carries it.
 		if (const CECTag *clientTag = entry.GetTagByName(EC_TAG_CLIENT)) {
-			w.Key("client_ecid");
-			w.ValueInt(static_cast<int64_t>(clientTag->GetInt()));
+			row.has_client_ecid = true;
+			row.client_ecid = static_cast<std::uint32_t>(clientTag->GetInt());
 		}
-		// When THIS amuleapi started the search. The daemon ships no
-		// timestamp and hands its searches back id-ascending (the listing
-		// walks a std::map), and id order is not recency -- Kad ids carry
-		// SEARCH_ID_KAD_MASK and always sort above ed2k ones -- so without
-		// this a client has nothing to rank the list by. Omitted, not zeroed,
-		// for a search this process did not start: another client's, or one
-		// the daemon restored from disk. Those are unknowable here, and a 0
-		// would read as 1970 rather than "no idea".
-		if (const std::time_t started = m_state.SearchStartedAt(sid); started != 0) {
-			w.Key("started_at");
-			w.ValueInt(static_cast<int64_t>(started));
-		}
-		// How many hits the daemon holds for this search -- the same number
-		// GET /search/{id}/results reports as `total`. A client that adopts
-		// the listing and fetches results lazily per tab has nothing else to
-		// label an unopened tab with.
-		//
-		// Omitted, not zeroed, when the tag is absent: a daemon older than
-		// this change reports no counts, and "does not report" has to stay
-		// distinguishable from "found nothing". Same rule client_ecid and
-		// started_at already follow above.
+		// When THIS amuleapi started the search. Absent for one this process
+		// did not start -- another client's, or one the daemon restored from
+		// disk -- because a 0 would read as 1970 rather than "no idea".
+		row.started_at = m_state.SearchStartedAt(row.search_id);
+		// The same number GET /search/{id}/results reports as `total`. Absent
+		// when the daemon is older than the tag, so that "does not report"
+		// stays distinguishable from "found nothing".
 		if (const CECTag *countTag = entry.GetTagByName(EC_TAG_SEARCH_RESULT_COUNT)) {
-			w.Key("result_count");
-			w.ValueInt(static_cast<int64_t>(countTag->GetInt()));
+			row.has_result_count = true;
+			row.result_count = static_cast<std::uint32_t>(countTag->GetInt());
 		}
-		w.EndObject();
+		rows.push_back(std::move(row));
 	}
-	w.EndArray();
-	w.EndObject();
-	FinalizeJsonBody(w, r);
 	delete ec_resp;
-	return r;
+
+	return ListResponse(m_state, "searches", rows, WriteSearchListRow, params, SearchListComparators());
 }
 
 CHttpServer::Response CApiDispatcher::HandleLogAmule(const CHttpServer::Request &req)

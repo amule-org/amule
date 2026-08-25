@@ -265,6 +265,32 @@ _assert_json_eq "[.searches[] | select(.search_id == $FIRST_SID)][0].result_coun
 # ...and it agrees with what the results endpoint reports as `total` -- but only
 # once the search has settled. While it runs, result_count is the daemon's live
 # index and `total` is whatever amuleapi last pulled into its cache, so the two
+# --- GET /search is a list endpoint like the others. ---------------
+#
+# It was the one collection with no envelope: no total, no offset, no limit and
+# no sort, so a client had to special-case it. It is also unbounded (whatever
+# EC_OP_SEARCH_LIST returns, including searches this process never started), and
+# entries arrive id-ascending while id order is not start order, because Kad ids
+# carry a high-bit mask and always sort above eD2k ones.
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
+_assert_status 200 "GET /search → 200"
+_assert_json_eq '.total | type'  number '/search carries total'
+_assert_json_eq '.offset | type' number '/search carries offset'
+_assert_json_eq '.limit | type'  number '/search carries limit'
+
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search?limit=1"
+_assert_status 200 "GET /search?limit=1 → 200"
+_assert_json_eq '.searches | length' 1 '/search?limit=1 returns one row'
+
+# The recency signal the docs point at is now actually askable.
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search?sort=started_at&order=desc"
+_assert_status 200 "GET /search?sort=started_at&order=desc → 200"
+
+for bad in "limit=abc" "limit=99999" "order=sideways" "sort=nonexistent_field"; do
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search?$bad"
+	_assert_status 400 "GET /search?$bad → 400"
+done
+
 # legitimately differ by a fetch.
 LIST_COUNT=$(printf '%s' "$CURL_BODY" \
 	| jq -r "[.searches[] | select(.search_id == $FIRST_SID)][0].result_count")

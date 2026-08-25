@@ -88,6 +88,32 @@ HAVE_GUEST=0
 sleep 4
 
 # --- 1. Auth + admin gate. -----------------------------------------
+# --- Shared list contract. -----------------------------------------
+#
+# /categories was the tenth list endpoint and the only one that never parsed
+# ?limit/&offset/&sort/&order: the same query string was a hard error on
+# /downloads and a silent no-op here, while the response still carried the
+# page-meta trio a caller could not influence.
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories"
+_assert_status 200 "GET /categories → 200"
+_assert_json_eq '.total | type'  number '/categories carries total'
+_assert_json_eq '.offset | type' number '/categories carries offset'
+_assert_json_eq '.limit | type'  number '/categories carries limit'
+
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories?limit=1"
+_assert_status 200 "GET /categories?limit=1 → 200"
+_assert_json_eq '.categories | length' 1 '/categories?limit=1 returns one row'
+_assert_json_eq '.limit' 1 '/categories?limit=1 echoes the limit'
+
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories?sort=index&order=desc"
+_assert_status 200 "GET /categories?sort=index&order=desc → 200"
+
+# The parameters are validated now, not ignored.
+for bad in "limit=abc" "limit=99999" "offset=-1" "order=sideways" "sort=nonexistent_field"; do
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories?$bad"
+	_assert_status 400 "GET /categories?$bad → 400"
+done
+
 _curl -X POST -H "Content-Type: application/json" \
 	-d "{\"name\":\"$TEST_NAME\"}" "$HOST/api/v0/categories"
 _assert_status 401 "POST /categories (no token) → 401"
