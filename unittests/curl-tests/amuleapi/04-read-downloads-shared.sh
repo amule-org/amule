@@ -156,8 +156,10 @@ if [ "$COUNT" -gt 0 ]; then
 	# Part-A detail fields (issue #417) — detail-only, type-tolerant.
 	_assert_json_eq '.part_count | type' number \
 		'/downloads/{hash} carries part_count'
-	_assert_json_eq '.remaining_time | type' number \
-		'/downloads/{hash} carries remaining_time'
+	# null when stalled/paused: nothing to compute an ETA from. It was -1,
+	# which a client had to know meant "unknown".
+	_assert_json_eq '(.remaining_time == null or (.remaining_time | type) == "number")' true \
+		'/downloads/{hash} remaining_time is a number or null'
 	_assert_json_eq '.aich_hash | type' string \
 		'/downloads/{hash} carries aich_hash'
 	_assert_json_eq '.met_file | type' string \
@@ -368,10 +370,11 @@ if [ "$SHCOUNT" -gt 0 ]; then
 		'/shared[0].upload_speed_bps is numeric (#466)'
 	_assert_json_eq '.shared[0].uploading | type' number \
 		'/shared[0].uploading is numeric (#466)'
-	_assert_json_eq '.shared[0].last_upload | type' number \
-		'/shared[0].last_upload is numeric (#466)'
-	_assert_json_eq '.shared[0].shared_since | type' number \
-		'/shared[0].shared_since is numeric (#466)'
+	# null when never uploaded, or on a known.met entry predating the field.
+	_assert_json_eq '(.shared[0].last_upload == null or (.shared[0].last_upload | type) == "number")' true \
+		'/shared[0].last_upload is a number or null (#466)'
+	_assert_json_eq '(.shared[0].shared_since == null or (.shared[0].shared_since | type) == "number")' true \
+		'/shared[0].shared_since is a number or null (#466)'
 	# Hashing progress on the shared row (issue #1054). Parts hashed so far
 	# by a Verify Local Data / AICH rebuild, 0 when idle. Only the type is
 	# asserted: a smoke run has no hash in flight, and racing one would make

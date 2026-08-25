@@ -115,6 +115,21 @@ void SplitPathAndQuery(const std::string &target, std::string &path, std::string
 // Serialise the writer's buffer into the response body. Every JSON response in
 // this file goes through here -- open-coding it is how nine handlers came to
 // hold a stale copy of the conversion.
+// Emit `key` as a number, or as null when the value is not known.
+//
+// Six sites spelled this out as a four-line if/else, which is how one response
+// family came to carry four different spellings of "I don't know". The rule is
+// in REFERENCE.md under `Unknown values`; this is the one place that implements
+// it, so a seventh nullable field cannot quietly pick -1 or 0 instead.
+void WriteIntOrNull(CJsonWriter &w, const char *key, bool known, std::int64_t value)
+{
+	w.Key(key);
+	if (known)
+		w.ValueInt(value);
+	else
+		w.ValueNull();
+}
+
 void FinalizeJsonBody(CJsonWriter &w, CHttpServer::Response &r)
 {
 	// The writer already holds UTF-8, so this is a move, not a convert+copy.
@@ -1939,12 +1954,10 @@ CHttpServer::Response CApiDispatcher::HandleVersion(const CHttpServer::Request &
 		} else {
 			w.ValueNull();
 		}
-		w.Key("last_checked");
-		if (checked && status.version_check_timestamp > 0) {
-			w.ValueUInt(status.version_check_timestamp);
-		} else {
-			w.ValueNull();
-		}
+		WriteIntOrNull(w,
+			"last_checked",
+			checked && status.version_check_timestamp > 0,
+			static_cast<std::int64_t>(status.version_check_timestamp));
 		w.EndObject();
 	}
 	w.EndObject();
@@ -2520,18 +2533,12 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 	// same reason.
 	w.Key("disk");
 	w.BeginObject();
-	w.Key("temp_free_bytes");
-	if (s.temp_free_bytes < 0) {
-		w.ValueNull();
-	} else {
-		w.ValueInt(static_cast<int64_t>(s.temp_free_bytes));
-	}
-	w.Key("incoming_free_bytes");
-	if (s.incoming_free_bytes < 0) {
-		w.ValueNull();
-	} else {
-		w.ValueInt(static_cast<int64_t>(s.incoming_free_bytes));
-	}
+	WriteIntOrNull(
+		w, "temp_free_bytes", s.temp_free_bytes >= 0, static_cast<std::int64_t>(s.temp_free_bytes));
+	WriteIntOrNull(w,
+		"incoming_free_bytes",
+		s.incoming_free_bytes >= 0,
+		static_cast<std::int64_t>(s.incoming_free_bytes));
 	w.EndObject();
 
 	w.Key("queue");
@@ -2734,10 +2741,15 @@ void WriteDownloadObject(
 		// list. `part_count` and `remaining_time` are computed here from
 		// the snapshot — no EC tag exists for them.
 		const std::int64_t part_count = static_cast<std::int64_t>(webapi::PartCountForSize(f.size));
-		// ETA seconds; -1 when stalled/paused (speed ~0), mirroring the
-		// desktop getTimeRemaining().
-		std::int64_t remaining_time = -1;
+		// ETA seconds, or null when stalled/paused (speed ~0) and there is
+		// nothing to compute from. It was -1, which a client had to know
+		// meant "unknown" while the neighbouring unknowns on this surface
+		// used 0, an omitted key, and null. One rule: nullable field,
+		// unknown is null.
+		bool has_remaining_time = false;
+		std::int64_t remaining_time = 0;
 		if (f.download.speed_bps > 0) {
+			has_remaining_time = true;
 			remaining_time = (f.size > f.download.size_done)
 						 ? static_cast<std::int64_t>((f.size - f.download.size_done) /
 									     f.download.speed_bps)
@@ -2753,8 +2765,7 @@ void WriteDownloadObject(
 		w.ValueInt(static_cast<int64_t>(f.download.available_part_count));
 		w.Key("part_count");
 		w.ValueInt(part_count);
-		w.Key("remaining_time");
-		w.ValueInt(remaining_time);
+		WriteIntOrNull(w, "remaining_time", has_remaining_time, remaining_time);
 		w.Key("lost_to_corruption");
 		w.ValueInt(static_cast<int64_t>(f.download.lost_to_corruption));
 		w.Key("gained_by_compression");
@@ -3057,15 +3068,18 @@ void WriteSharedBaseFields(CJsonWriter &w, const webapi::FileSnapshot &f)
 	w.EndObject();
 	// Live upload activity (issue #466). `upload_speed_bps` + `uploading`
 	// refresh every tick; `last_upload` / `shared_since` are unix seconds,
-	// 0 = unknown (never uploaded / pre-feature known.met entry).
+	// null when unknown -- never uploaded, or a known.met entry that predates
+	// the field. They were 0, which reads as 1970 rather than "no idea".
 	w.Key("upload_speed_bps");
 	w.ValueInt(static_cast<int64_t>(f.shared.upload_speed_bps));
 	w.Key("uploading");
 	w.ValueInt(static_cast<int64_t>(f.shared.uploading_count));
-	w.Key("last_upload");
-	w.ValueInt(static_cast<int64_t>(f.shared.last_upload));
-	w.Key("shared_since");
-	w.ValueInt(static_cast<int64_t>(f.shared.shared_since));
+	WriteIntOrNull(
+		w, "last_upload", f.shared.last_upload != 0, static_cast<std::int64_t>(f.shared.last_upload));
+	WriteIntOrNull(w,
+		"shared_since",
+		f.shared.shared_since != 0,
+		static_cast<std::int64_t>(f.shared.shared_since));
 	// Parts hashed so far by a Verify Local Data or an AICH hashset rebuild
 	// over this share; 0 when idle. Goes through the accessor so a shared
 	// download, which amuled reports as a partfile, still reads correctly.
