@@ -104,7 +104,28 @@ CSharedDirWatcher::CSharedDirWatcher(CSharedFileList *parent)
 
 CSharedDirWatcher::~CSharedDirWatcher()
 {
-	Disable();
+	StopTimers();
+	// Synchronous here, unlike Disable(): a CallAfter queued on a handler that
+	// is being destroyed is purged along with it, so a deferred delete would
+	// simply never run -- leaking the watcher along with its inotify fd and
+	// the event loop source wx registered for it.
+	//
+	// This can run from inside a dispatch, so it is not a dispatch-free spot:
+	// the macOS daemon build calls OnExit() straight out of OnCoreTimer
+	// (amule.cpp:1955). It is safe there for reasons that do not generalise --
+	// macOS watches through FSEvents/CFRunLoop rather than a wxFDIOHandler, so
+	// there is no epoll source to dangle, and the call is followed by
+	// _exit(0). Treat it as that exception rather than as a guarantee.
+	//
+	// Detach before the delete, for the reason spelled out in Disable():
+	// ~wxFileSystemWatcherBase runs RemoveAll(), which can emit a synchronous
+	// wxFSW_EVENT_WARNING -- here that would run OnFileSystemEvent() against
+	// the object under destruction.
+	if (m_watcher) {
+		m_watcher->SetOwner(nullptr);
+	}
+	delete m_watcher;
+	ReapPendingWatchers();
 }
 
 void CSharedDirWatcher::Enable()
@@ -156,7 +177,7 @@ void CSharedDirWatcher::Enable()
 	AddDebugLogLineN(logKnownFiles, "Shared-dir watcher enabled");
 }
 
-void CSharedDirWatcher::Disable()
+void CSharedDirWatcher::StopTimers()
 {
 	if (m_debounceTimer.IsRunning()) {
 		m_debounceTimer.Stop();
@@ -166,11 +187,57 @@ void CSharedDirWatcher::Disable()
 		m_macPumpTimer.Stop();
 	}
 #endif
+}
+
+void CSharedDirWatcher::ReapPendingWatchers()
+{
+	// Walk a local copy: ~wxFileSystemWatcher can re-enter this object through
+	// wx (see Disable()), and a Disable() reached from there would push_back
+	// into the vector being iterated.
+	std::vector<wxFileSystemWatcher *> doomed;
+	doomed.swap(m_pendingDelete);
+	for (wxFileSystemWatcher *w : doomed) {
+		delete w;
+	}
+}
+
+void CSharedDirWatcher::Disable()
+{
+	StopTimers();
 	if (!m_watcher) {
 		return;
 	}
-	delete m_watcher;
+	// Detach now, destroy from the pending-event queue. ~wxFileSystemWatcher
+	// frees the wxFDIOEventLoopSourceHandler wx registered for its inotify fd
+	// (fswatcher_inotify.cpp: Init() adds the source, Close() deletes it), and
+	// wxEpollDispatcher::Dispatch walks a stack snapshot of the ready events
+	// without re-checking a handler -- so freeing one from inside that loop
+	// leaves it calling OnReadWaiting() on freed memory the moment the same
+	// batch reaches this fd.
+	//
+	// No caller reaches here from inside that loop today: Disable() comes from
+	// the destructor, from the prefs dialog, from the guarded call in
+	// CamuleApp::OnInit, and from CEC_Prefs_Packet::Apply(), which the EC layer
+	// reaches through a queued wx event -- the pending-event phase that
+	// wxEventLoopManual::ProcessEvents drains *before* calling Dispatch. But
+	// fs-watcher events themselves are delivered from inside the loop
+	// (fswatcher_inotify.cpp SendEvent() does a synchronous ProcessEvent from
+	// the inotify source's OnReadWaiting), so one caller reached from
+	// OnFileSystemEvent would make this fatal. Deferring costs nothing and
+	// removes the question.
+	//
+	// Drop the owner as part of the detach: a detached watcher outlives the
+	// call, and SetOwner(nullptr) points its owner back at itself, where
+	// nothing is bound. Without that, everything it still emits before the
+	// reap lands on us -- the deltas the backend had already queued, and the
+	// wxFSW_EVENT_WARNING wxFSWatcherImplUnix::DoRemove() sends synchronously
+	// from RemoveAll() when inotify_rm_watch loses the race wx documents. That
+	// warning reads as a backend drop, so OnFileSystemEvent() would clear
+	// m_pendingEvents and force a full RequestReload() re-walk for nothing.
+	m_watcher->SetOwner(nullptr);
+	m_pendingDelete.push_back(m_watcher);
 	m_watcher = NULL;
+	CallAfter(&CSharedDirWatcher::ReapPendingWatchers);
 	AddDebugLogLineN(logKnownFiles, "Shared-dir watcher disabled");
 }
 
@@ -285,6 +352,18 @@ void CSharedDirWatcher::RegisterAllPaths()
 
 void CSharedDirWatcher::OnFileSystemEvent(wxFileSystemWatcherEvent &event)
 {
+	// Nothing to act on with no live watcher. Disable() drops the doomed
+	// watcher's owner, so nothing it emits afterwards gets here; what this
+	// catches is an event a backend had *queued* to us before that, which the
+	// MSW one does (wxFSWatcherImplMSW::SendEvent wxQueueEvent()s from its
+	// worker thread). Acting on it would re-arm the debounce timer
+	// StopTimers() just stopped, and a directory CREATE would reach
+	// RegisterNewSubdirectory and persist a shareddir_list change --
+	// SaveSharedFolders() and all -- after the user turned auto-rescan off.
+	if (!m_watcher) {
+		return;
+	}
+
 	const int changeType = event.GetChangeType();
 	const wxFileName &path = event.GetPath();
 
