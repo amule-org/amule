@@ -29,6 +29,14 @@
 
 #include <csignal>
 #include <cstring>
+
+// malloc_trim. Guarded because macOS has no <malloc.h>; the call site below
+// gates on the libc actually providing it.
+#if defined(__has_include)
+#if __has_include(<malloc.h>)
+#include <malloc.h>
+#endif
+#endif
 #include <wx/process.h>
 #include <wx/sstream.h>
 #include "config.h" // Needed for HAVE_GETRLIMIT, HAVE_SETRLIMIT,
@@ -1943,10 +1951,32 @@ void CamuleApp::OnTCPTimer(CTimerEvent &WXUNUSED(evt))
 	serverconnect->ConnectToAnyServer();
 }
 
+namespace
+{
+
+// glibc shrinks an arena's top on free but never the free space fragmented
+// below it, which is what a churning Kad index leaves. Without this the core
+// never returns a page: VmRSS tracks VmHWM for the life of the process. This
+// file is in CORE_SOURCES, so the trim runs in amuled and in the monolithic
+// amule alike -- both churn the same index; amulegui does not link it.
+//
+// Only the trim from amuleapi's #1153, not its mallopt(M_ARENA_MAX): the
+// per-thread arenas hold ~33 MB resident of ~1 GB reserved, so arena count is
+// not what inflates it, and a two-arena cap would put a dozen concurrent
+// threads on one malloc lock.
+void TrimMallocArenas()
+{
+#if defined(__GLIBC__) && defined(M_TRIM_THRESHOLD)
+	malloc_trim(0);
+#endif
+}
+
+} // namespace
+
 void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 {
 	// Former TimerProc section
-	static uint64 msPrev1, msPrev5, msPrevSave, msPrevHist, msPrevOS, msPrevKnownMet;
+	static uint64 msPrev1, msPrev5, msPrevSave, msPrevHist, msPrevOS, msPrevKnownMet, msPrevTrim;
 	uint64 msCur = theStats::GetUptimeMillis();
 	TheTime = msCur / 1000;
 
@@ -2078,6 +2108,17 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 	if (msCur - msPrevSave >= 60000) {
 		msPrevSave = msCur;
 		theStats::Save();
+	}
+
+	// The cost of a trim is per call, not per second: each one hands back ~6 MB
+	// the daemon re-faults within two minutes (measured on a live node, minor
+	// faults ~20/min -> ~1600/min at a 60 s cadence, for an unchanged RSS peak),
+	// and the yield per call is no worse at 15 min. Plain countdown, not gated
+	// on the daemon looking idle: the traffic that fragments the arenas is what
+	// busy looks like here, so a gate would skip the trim when it matters.
+	if (msCur - msPrevTrim >= 15 * 60 * 1000) {
+		msPrevTrim = msCur;
+		TrimMallocArenas();
 	}
 
 	// Special
