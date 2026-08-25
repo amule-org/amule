@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-24 19:01+0200\n"
-"PO-Revision-Date: 2026-08-24 17:26+0000\n"
+"PO-Revision-Date: 2026-08-25 10:03+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
 "Language: cs\n"
@@ -766,7 +766,7 @@ msgstr "Odesílání: %.1f%s (%.1f) | Stahování: %.1f%s (%.1f)"
 
 #: src/amuleDlg.cpp src/MuleTrayIcon.cpp
 msgid " MiB/s"
-msgstr ""
+msgstr " MiB/s"
 
 #: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/utils/wxCas/src/wxcasframe.cpp
 msgid " KiB/s"
@@ -4046,7 +4046,7 @@ msgstr "Název serveru:"
 
 #: src/muuli_wdr.cpp
 msgid "Obfuscation:"
-msgstr "Zatemnění:"
+msgstr "Zamaskování:"
 
 #: src/muuli_wdr.cpp
 msgid "Kad:"
@@ -4677,7 +4677,7 @@ msgstr "Použít MMAP: přístup k souborům mapovaným do paměti (nižší spo
 
 #: src/muuli_wdr.cpp
 msgid "Maps part files into memory instead of buffering them on the heap, lowering the process memory footprint. May reduce download speed on some disks; best for memory-constrained or upload-heavy hosts."
-msgstr ""
+msgstr "Mapuje dočasné soubory do paměti místo jejich ukládání do vyrovnávací paměti heap, čímž snižuje paměťovou náročnost procesu. Na některých discích může snížit rychlost stahování; nejlépe se hodí pro hostitele s omezenou pamětí nebo s velkým objemem odesílání."
 
 #: src/muuli_wdr.cpp
 msgid "Upload Queue Size: 5000 clients"
@@ -4685,11 +4685,11 @@ msgstr "Velikost fronty odesílání: 5000 klientů"
 
 #: src/muuli_wdr.cpp
 msgid "Server connection refresh interval: Disable"
-msgstr ""
+msgstr "Interval obnovení připojení k serveru: Zakázat"
 
 #: src/muuli_wdr.cpp
 msgid "Disable computer's timed standby mode"
-msgstr ""
+msgstr "Zakázat časovaný úsporný režim počítače"
 
 #: src/muuli_wdr.cpp
 msgid "Skin to use: "
@@ -4697,16 +4697,15 @@ msgstr "Vzhled: "
 
 #: src/muuli_wdr.cpp
 msgid "Show \"Fast eD2k Links Handler\" in every window."
-msgstr ""
+msgstr "Zobrazit \"Rychlou obsluhu eD2k odkazů\" v každém okně."
 
 #: src/muuli_wdr.cpp
 msgid "Show extended info on categories tabs"
 msgstr "Zobrazit rozšířené informace na tabech kategorií"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Show application version on title"
-msgstr "Zobrazit rychlosti přenosu v titulku okna"
+msgstr "Zobrazovat verzi aplikace v titulku okna"
 
 #: src/muuli_wdr.cpp
 msgid "Show transfer rates on title"
@@ -4730,11 +4729,11 @@ msgstr "Vertikální umístění nástrojové lišty"
 
 #: src/muuli_wdr.cpp
 msgid "Live column sorting (auto-reorder rows as their values change)"
-msgstr ""
+msgstr "Živé řazení sloupců (automatické přeuspořádání řádků při změně hodnot)"
 
 #: src/muuli_wdr.cpp
 msgid "Download Queue Files"
-msgstr ""
+msgstr "Soubory fronty stahování"
 
 #: src/muuli_wdr.cpp
 msgid "Show progress percentage"
@@ -4766,7 +4765,7 @@ msgstr "IP naslouchajícího zařízení:"
 
 #: src/muuli_wdr.cpp
 msgid "Enter here a valid ip in the a.b.c.d format for the listening EC interface. An empty field or 0.0.0.0 will mean any interface."
-msgstr ""
+msgstr "Zde zadejte platnou IP adresu ve formátu a.b.c.d pro naslouchající rozhraní EC. Prázdné pole nebo 0.0.0.0 bude znamenat libovolné rozhraní."
 
 #: src/muuli_wdr.cpp
 msgid "TCP port:"
@@ -4782,62 +4781,55 @@ msgstr "Heslo"
 
 #: src/muuli_wdr.cpp
 msgid "Require encrypted connections (rejects clients that cannot encrypt)"
-msgstr ""
+msgstr "Vyžadovat šifrovaná připojení (odmítá klienty bez podpory šifrování)"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "aMule API server parameters"
-msgstr "Parametry webserveru"
+msgstr "Parametry serveru aMule API"
 
 #: src/muuli_wdr.cpp
 msgid "Run amuleapi (REST API) on startup"
-msgstr ""
+msgstr "Spustit amuleapi (REST API) při startu"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "HTTP port:"
-msgstr "TCP port:"
+msgstr "HTTP port:"
 
 #: src/muuli_wdr.cpp
 msgid "The interface amuleapi's HTTP server listens on. 127.0.0.1 (default) accepts only local connections; use 0.0.0.0 or a specific IP to expose it to other hosts (set an admin password below)."
-msgstr ""
+msgstr "Rozhraní, na kterém naslouchá HTTP server amuleapi. 127.0.0.1 (výchozí) přijímá pouze místní připojení; použijte 0.0.0.0 nebo konkrétní IP adresu pro zpřístupnění ostatním hostitelům (nastavte níže heslo administrátora)."
 
 #: src/muuli_wdr.cpp
 msgid "Type a password to set or change it. Stored passwords cannot be shown, so leaving this empty keeps the current one."
-msgstr ""
+msgstr "Zadejte heslo pro jeho nastavení nebo změnu. Uložená hesla nelze zobrazit, takže ponecháním prázdného pole zůstane zachováno aktuální heslo."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Admin password"
-msgstr "Kontrola hesla\n"
+msgstr "Heslo administrátora"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "A password is set."
-msgstr "Kontrola hesla\n"
+msgstr "Heslo je nastaveno."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enable guest access"
-msgstr "Zakázat přístup hostům"
+msgstr "Povolit přístup pro hosty"
 
 #: src/muuli_wdr.cpp
 msgid "Guest sessions may read status and listings but cannot change anything. Turning this off clears the stored guest password."
 msgstr "Relace hostů mohou číst stav a seznamy, ale nemohou nic měnit. Vypnutím této volby se vymaže uložené heslo hosta."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Guest password"
-msgstr "Heslo pro omezený přístup k webserveru"
+msgstr "Heslo hosta"
 
 #: src/muuli_wdr.cpp
 msgid "Web server parameters"
 msgstr "Parametry webserveru"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Run webserver on startup (deprecated)"
-msgstr "Spustit webserver při spuštění aMule"
+msgstr "Spustit webový server při startu (zastaralé)"
 
 #: src/muuli_wdr.cpp
 msgid "Web template"
@@ -4918,7 +4910,7 @@ msgstr "Klikněte na toto tlačítko pro resetování logu."
 
 #: src/muuli_wdr.cpp
 msgid "Click on this button to update the servers list from URL ..."
-msgstr ""
+msgstr "Klikněte na toto tlačítko pro aktualizaci seznamu serverů z URL ..."
 
 #: src/muuli_wdr.cpp
 msgid "Server list"
@@ -4926,7 +4918,7 @@ msgstr "Seznam serverů"
 
 #: src/muuli_wdr.cpp
 msgid "Enter the url to a server.met file here and press the button to the left to update the list of known servers."
-msgstr ""
+msgstr "Zde zadejte URL souboru server.met a stiskněte tlačítko vlevo pro aktualizaci seznamu známých serverů."
 
 #: src/muuli_wdr.cpp
 msgid "Add server manually: Name"
@@ -4950,7 +4942,7 @@ msgstr "Zadejte port serveru."
 
 #: src/muuli_wdr.cpp
 msgid "Add manually a server (fill fields to the left before) ..."
-msgstr ""
+msgstr "Ručně přidat server (nejprve vyplňte pole vlevo) ..."
 
 #: src/muuli_wdr.cpp
 msgid "aMule Log"
@@ -4978,7 +4970,7 @@ msgstr "Uzly (0)"
 
 #: src/muuli_wdr.cpp
 msgid "Enter the url to a nodes.dat file here and press the button to the left to update the list of known nodes."
-msgstr ""
+msgstr "Zde zadejte URL souboru nodes.dat a stiskněte tlačítko vlevo pro aktualizaci seznamu známých uzlů."
 
 #: src/muuli_wdr.cpp
 msgid "Nodes stats"
@@ -4989,9 +4981,8 @@ msgid "Bootstrap from node: IP"
 msgstr "Zavedení prostřednictvím uzlu: IP"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enter the IP of the node here, using the x.x.x.x format."
-msgstr "Zadejte IP serveru ve tvaru x.x.x.x."
+msgstr "Zadejte sem IP adresu uzlu ve formátu x.x.x.x."
 
 #: src/muuli_wdr.cpp
 msgid "Port:"
@@ -5003,27 +4994,27 @@ msgstr "Použít bezpečnou uživatelskou identifikaci"
 
 #: src/muuli_wdr.cpp
 msgid "It is recommended to enable this option. You will not receive credits if SUI is not enabled."
-msgstr ""
+msgstr "Doporučuje se tuto možnost povolit. Pokud SUI není povoleno, nebudete dostávat kredity."
 
 #: src/muuli_wdr.cpp
 msgid "Protocol Obfuscation"
-msgstr "Zatemnění protokolu"
+msgstr "Zamaskování protokolu"
 
 #: src/muuli_wdr.cpp
 msgid "Support Protocol Obfuscation"
-msgstr "Podporuje zatemnění protokolu"
+msgstr "Podpora zamaskování protokolu"
 
 #: src/muuli_wdr.cpp
 msgid "This option enabled Protocol Obfuscation, and makes aMule accept obfuscated connections from other clients."
-msgstr ""
+msgstr "Tato možnost zapíná zamaskování protokolu a nastavuje aMule tak, aby přijímal zamaskovaná připojení od ostatních klientů."
 
 #: src/muuli_wdr.cpp
 msgid "Use obfuscation for outgoing connections"
-msgstr "Použít zatemnění protokolu pro odchozí spojení"
+msgstr "Použít zamaskování protokolu pro odchozí spojení"
 
 #: src/muuli_wdr.cpp
 msgid "This option makes aMule use Protocol Obfuscation when connecting other clients/servers."
-msgstr ""
+msgstr "Tato možnost nastavuje aMule tak, aby při připojování k ostatním klientům/serverům používal zamaskování protokolu."
 
 #: src/muuli_wdr.cpp
 msgid "Accept only obfuscated connections"
@@ -5031,7 +5022,7 @@ msgstr "Přijímat pouze zatemněná spojení"
 
 #: src/muuli_wdr.cpp
 msgid "This option makes aMule only accept obfuscated connections. You will have less sources, but all your traffic will be obfuscated"
-msgstr ""
+msgstr "Tato možnost nastavuje aMule tak, aby přijímal pouze zamaskovaná připojení. Budete mít méně zdrojů, ale veškerý váš provoz bude zamaskovaný"
 
 #: src/muuli_wdr.cpp
 msgid "Everybody"
@@ -5047,7 +5038,7 @@ msgstr "Kdo může prohlížet moje sdílené soubory:"
 
 #: src/muuli_wdr.cpp
 msgid "Select who can request to view a list of your shared files."
-msgstr ""
+msgstr "Vyberte, kdo může požádat o zobrazení seznamu vašich sdílených souborů."
 
 #: src/muuli_wdr.cpp
 msgid "IP-Filtering"
@@ -5059,7 +5050,7 @@ msgstr "Filtrovat klienty"
 
 #: src/muuli_wdr.cpp
 msgid "Enable filtering of the client IPs defined in the file ~/.aMule/ipfilter.dat."
-msgstr ""
+msgstr "Povolit filtrování IP adres klientů definovaných v souboru ~/.aMule/ipfilter.dat."
 
 #: src/muuli_wdr.cpp
 msgid "Filter servers"
@@ -5067,7 +5058,7 @@ msgstr "Filtrovat servery"
 
 #: src/muuli_wdr.cpp
 msgid "Enable filtering of the server IPs defined in the file ~/.aMule/ipfilter.dat."
-msgstr ""
+msgstr "Povolit filtrování IP adres serverů definovaných v souboru ~/.aMule/ipfilter.dat."
 
 #: src/muuli_wdr.cpp
 msgid "Reload List"
@@ -5075,7 +5066,7 @@ msgstr "Obnovit seznam"
 
 #: src/muuli_wdr.cpp
 msgid "Reload the list of IPs to filter from the file ~/.aMule/ipfilter.dat"
-msgstr ""
+msgstr "Znovu načíst seznam IP adres k filtrování ze souboru ~/.aMule/ipfilter.dat"
 
 #: src/muuli_wdr.cpp
 msgid "URL:"
@@ -5103,16 +5094,15 @@ msgstr "Paranoidní nakládání s nesouhlasícími IP"
 
 #: src/muuli_wdr.cpp
 msgid "Rejects a packet when its source IP differs from the IP the client claims (an anti-spoofing check). Disable only if it causes connection problems."
-msgstr ""
+msgstr "Odmítne paket, pokud se jeho zdrojová IP liší od IP, kterou uvádí klient (kontrola proti spoofingu). Zakažte pouze v případě, že způsobuje problémy s připojením."
 
 #: src/muuli_wdr.cpp
 msgid "Use system-wide ipfilter.dat if available"
 msgstr "Použít systémový ipfilter.dat, je-li dostupný"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "If there's no local ipfilter.dat found, allow usage of a system-wide ipfilter file."
-msgstr "Neexistuje-li místní ipfilter.dat, umožní použití systémového."
+msgstr "Pokud nebyl nalezen žádný místní soubor ipfilter.dat, povolit použití celosystémového souboru ipfilter."
 
 #: src/muuli_wdr.cpp
 msgid "Enable Online-Signature"
@@ -5120,7 +5110,7 @@ msgstr "Povolit online podpis"
 
 #: src/muuli_wdr.cpp
 msgid "Enables the writing of the OS file, which can be used by external apps to create signatures and the like."
-msgstr ""
+msgstr "Povolí zápis souboru OS, který mohou externí aplikace použít k vytváření podpisů a podobně."
 
 #: src/muuli_wdr.cpp
 msgid "Update Frequency (Secs):"
@@ -5128,7 +5118,7 @@ msgstr "Prodleva aktualizace (sek.):"
 
 #: src/muuli_wdr.cpp
 msgid "Change the frequency (in seconds) of Online Signature updates."
-msgstr ""
+msgstr "Změnit frekvenci (v sekundách) aktualizací online podpisu."
 
 #: src/muuli_wdr.cpp
 msgid "Save online signature file in: "
@@ -5136,24 +5126,23 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Click here to select the directory containing the the Online Signature files."
-msgstr ""
+msgstr "Klikněte sem pro výběr adresáře obsahujícího soubory online podpisu."
 
 #: src/muuli_wdr.cpp
 msgid "Show country flags for clients"
-msgstr ""
+msgstr "Zobrazit vlajky zemí u klientů"
 
 #: src/muuli_wdr.cpp
 msgid "Render the country flag column in the transfers, queue and search views. Requires a valid MMDB GeoIP database (see below)."
-msgstr ""
+msgstr "Zobrazit sloupec s vlajkou země v seznamu přenosů, frontě a hledání. Vyžaduje platnou GeoIP databázi MMDB (viz níže)."
 
 #: src/muuli_wdr.cpp
 msgid "Database"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Source:"
-msgstr "Zdroje"
+msgstr "Zdroj:"
 
 #: src/muuli_wdr.cpp
 msgid "DB-IP (free, no account)"
@@ -5165,7 +5154,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Custom URL"
-msgstr ""
+msgstr "Vlastní URL"
 
 #: src/muuli_wdr.cpp
 msgid "Choose which provider supplies the GeoIP MMDB database. DB-IP is the default - no account required. MaxMind requires a free account + license key. Use Custom URL to point at any other MMDB host (e.g. a local mirror)."
@@ -6120,9 +6109,8 @@ msgid "- External connect interface changed.\n"
 msgstr "Externí připojení uzavřeno."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- Protocol obfuscation support changed.\n"
-msgstr "Zatemnění protokolu"
+msgstr "- Podpora zamaskování protokolu změněna.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Proxy settings changed (needed for HTTP transfers).\n"
@@ -6681,11 +6669,11 @@ msgstr ""
 
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all obfuscated static servers listed. Making another pass without obfuscation."
-msgstr "Selhalo připojení ke všem stálým serverům s obfuskací. Zkouším to znovu bez obfuskace."
+msgstr "Selhalo připojení ke všem stálým serverům se zamaskováním, které jsou na seznamu. Zkouším to znovu bez zamaskování."
 
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all obfuscated servers listed. Making another pass without obfuscation."
-msgstr "Selhalo připojení ke všem serverům s obfuskací. Zkouším to znovu bez obfuskace."
+msgstr "Selhalo připojení ke všem uvedeným serverům s maskováním. Následuje další pokus bez maskování."
 
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all static servers listed."
@@ -7083,7 +7071,7 @@ msgstr "IP serveru %s (%s) je filtrována. Nepřipojuji se."
 
 #: src/ServerSocket.cpp
 msgid "using protocol obfuscation."
-msgstr "používám zatemňování protokolu (obfuscation)."
+msgstr "s použitím zamaskování protokolu."
 
 #: src/ServerSocket.cpp
 #, c-format

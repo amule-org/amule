@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "POT-Creation-Date: 2026-08-24 19:02+0200\n"
-"PO-Revision-Date: 2026-08-24 17:56+0000\n"
+"PO-Revision-Date: 2026-08-25 10:22+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: \n"
 "Language: tr\n"
@@ -453,7 +453,7 @@ msgstr "Seçilen IP adresinin konumuna bakılmaksızın Harici Bağlantı için 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Separate the fields of the list commands with spaces, as earlier versions did, instead of tabs.  Client names and file names may contain spaces, so the default tab separator is what lets a script split a row back into its fields; use this only for scripts written against the older output."
-msgstr ""
+msgstr "Liste komutlarının alanlarını, önceki sürümlerde olduğu gibi sekmeler yerine boşluklarla ayırın. İstemci isimleri ve dosya adları boşluk içerebilir, dolayısıyla bir komut dosyasının bir satırı tekrar alanlarına bölmesine olanak tanıyan şey varsayılan sekme ayırıcıdır; bunu yalnızca eski çıktıya karşı yazılan komut dosyaları için kullanın."
 
 #. type: SH
 #: amulecmd.1.in
