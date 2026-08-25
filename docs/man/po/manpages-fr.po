@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "POT-Creation-Date: 2026-08-24 19:02+0200\n"
-"PO-Revision-Date: 2026-08-24 17:55+0000\n"
+"PO-Revision-Date: 2026-08-25 10:21+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
 "Language: fr\n"
@@ -458,7 +458,7 @@ msgstr "Forcer la compression ZLIB sur le lien Connexion Externe quelle que soit
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Separate the fields of the list commands with spaces, as earlier versions did, instead of tabs.  Client names and file names may contain spaces, so the default tab separator is what lets a script split a row back into its fields; use this only for scripts written against the older output."
-msgstr ""
+msgstr "Séparez les champs des commandes de liste avec des espaces, comme les versions précédentes le faisaient, au lieu d'utiliser des tabulations.  Les noms des clients et les noms des fichiers peuvent contenir des espaces, donc le séparateur de tabulation par défaut est ce qui permet à un script de diviser une ligne en ses champs ; utilisez-le uniquement pour les scripts écrits pour l'ancienne sortie."
 
 #. type: SH
 #: amulecmd.1.in

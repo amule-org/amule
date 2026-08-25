@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-24 19:01+0200\n"
-"PO-Revision-Date: 2026-08-24 18:20+0000\n"
+"PO-Revision-Date: 2026-08-25 10:20+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -494,7 +494,7 @@ msgstr "获取服务器名称"
 #: src/amule.cpp
 #, c-format
 msgid "Media metadata: probed file is no longer known, result discarded (%s)"
-msgstr ""
+msgstr "媒体元数据：探测的文件不再已知，结果被丢弃（%s）"
 
 #: src/amule.cpp
 #, c-format
@@ -2192,13 +2192,12 @@ msgid "No such chat session"
 msgstr "没有这样的聊天会话"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Media metadata extraction is disabled in preferences"
-msgstr "Kad 在首选项中被禁用。"
+msgstr "首选项中禁用了媒体元数据提取"
 
 #: src/ExternalConn.cpp
 msgid "File is not eligible for media metadata extraction (not an audio/video file, or an incomplete download)"
-msgstr ""
+msgstr "文件不满足媒体元数据提取要求（不是音/视频文件，或者是不完整的下载）"
 
 #: src/ExternalConn.cpp
 msgid "Empty chat message"
@@ -2860,7 +2859,7 @@ msgstr "已将现有的 GeoLite2-Country.mmdb 迁移至 %s"
 #: src/IP2Country.cpp
 #, c-format
 msgid "%s is not a readable MaxMindDB file - discarding it. A fresh copy will be downloaded on the next start, or now via Preferences -> IP2Country -> 'Update now'."
-msgstr ""
+msgstr "%s 不是可读的 MaxMindDB 文件 —— 正在丢弃它。下次启动时会下载新副本，或者现在通过“首选项” -> IP2Country -> '立即更新' 下载。"
 
 #: src/IP2Country.cpp
 msgid "IP2Country: MaxMind selected as the GeoIP source but no License Key configured. Open Preferences -> IP2Country, paste your free MaxMind License Key and click 'Update now'."
@@ -3222,9 +3221,9 @@ msgid "Media metadata: no ffprobe binary found. Install ffmpeg, or set the ffpro
 msgstr "媒体元数据：未找到 ffprobe 二进制文件。安装 ffmpeg，或在首选项中设置 ffprobe 路径；不会提取长度、比特率和编解码器信息。"
 
 #: src/MediaProbe.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Media metadata: %s is gone, nothing to extract"
-msgstr "媒体元数据提取"
+msgstr "媒体元数据：缺少 %s，没有可提取的信息"
 
 #: src/MediaProbe.cpp
 #, c-format
@@ -3239,12 +3238,12 @@ msgstr "媒体元数据：ffprobe 超时或取消了 %s 的 ffprobe"
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: ignoring implausibly large ffprobe output for %s"
-msgstr ""
+msgstr "媒体元数据：忽略 %s 的难以置信的大 ffprobe 输出"
 
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: could not run ffprobe (%s) -- check the media metadata settings"
-msgstr ""
+msgstr "媒体元数据：无法运行 ffprobe (%s) —— 检查媒体元数据设置"
 
 #: src/MediaProbe.cpp
 #, c-format
@@ -3254,35 +3253,35 @@ msgstr "媒体元数据：%2$s 的 ffprobe 失败（代码 %1$d）"
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: ffprobe found nothing usable in %s"
-msgstr ""
+msgstr "媒体元数据：ffprobe 没有在 %s 找到可用信息"
 
 #: src/MediaProbeThread.cpp
 #, c-format
 msgid "Finished extracting media metadata from %u shared file (%u failed)"
 msgid_plural "Finished extracting media metadata from %u shared files (%u failed)"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "已完成从 %u 个共享文件中提取媒体元数据（%u 个失败）"
+msgstr[1] "已完成从 %u 个共享文件中提取媒体元数据（%u 个失败）"
 
 #: src/MediaProbeThread.cpp
 #, c-format
 msgid "Finished extracting media metadata from %u shared file"
 msgid_plural "Finished extracting media metadata from %u shared files"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "已完成从 %u 个共享文件中提取媒体元数据"
+msgstr[1] "已完成从 %u 个共享文件中提取媒体元数据"
 
 #: src/MediaProbeThread.cpp
 #, c-format
 msgid "%u further file failed media metadata extraction (not listed individually)"
 msgid_plural "%u further files failed media metadata extraction (not listed individually)"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "另外 %u 个文件的媒体元数据提取失败（未逐个列出）"
+msgstr[1] "另外 %u 个文件的媒体元数据提取失败（未逐个列出）"
 
 #: src/MediaProbeThread.cpp
 #, c-format
 msgid "%u further shared file is gone (not listed individually)"
 msgid_plural "%u further shared files are gone (not listed individually)"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "找不到另外 %u 个共享文件（未逐个列出）"
+msgstr[1] "找不到另外 %u 个共享文件（未逐个列出）"
 
 #: src/MuleNotebook.cpp src/muuli_wdr.cpp
 msgid "Close"
@@ -6524,7 +6523,7 @@ msgstr "尝试Kad搜索时出现未预料的错误： "
 
 #: src/SearchList.cpp
 msgid "Search timed out: the server did not answer."
-msgstr ""
+msgstr "搜索超时：服务器未回应。"
 
 #: src/SearchList.cpp
 msgid "Kad search: requested wider results from one more peer."
@@ -6593,28 +6592,26 @@ msgid "New"
 msgstr "新建"
 
 #: src/SearchProgressReport.cpp
-#, fuzzy
 msgid "running"
 msgstr "正在运行"
 
 #: src/SearchProgressReport.cpp
-#, fuzzy
 msgid "finished"
-msgstr "芬兰语"
+msgstr "已完成"
 
 #: src/SearchProgressReport.cpp
 msgid "idle"
-msgstr ""
+msgstr "空闲"
 
 #: src/SearchProgressReport.cpp
 #, c-format
 msgid "Search %u: %s, %u %% (%u results)\n"
-msgstr ""
+msgstr "搜索 %u: %s, %u %% (%u 个结果)\n"
 
 #: src/SearchProgressReport.cpp
 #, c-format
 msgid "Search %u \"%s\": %s, %u %% (%u results)\n"
-msgstr ""
+msgstr "搜索 %u \"%s\": %s, %u %% (%u 个结果)\n"
 
 #: src/SearchProgressReport.cpp src/TextClient.cpp
 msgid "Search expired or unknown ID. Start a new search.\n"
@@ -6630,9 +6627,8 @@ msgid "Search progress not available"
 msgstr "搜索进度不可用"
 
 #: src/SearchProgressReport.cpp
-#, fuzzy
 msgid "No search to report on.\n"
-msgstr "未选中要导出的文件。"
+msgstr "没有可报告的搜索。\n"
 
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all obfuscated static servers listed. Making another pass without obfuscation."
@@ -7208,16 +7204,15 @@ msgid "No shareable files found in directory: %s"
 msgstr "在目录中没有找到可以共享的文件：%s"
 
 #: src/SharedFileList.cpp
-#, fuzzy
 msgid "Media metadata extraction is disabled in preferences, so there is nothing to re-extract."
-msgstr "媒体元数据提取"
+msgstr "首选项中禁用了媒体元数据提取，因此没有要重新提取的信息。"
 
 #: src/SharedFileList.cpp
 #, c-format
 msgid "Re-extracting media metadata for %u shared file"
 msgid_plural "Re-extracting media metadata for %u shared files"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "重新提取 %u 个共享文件的媒体元数据"
+msgstr[1] "重新提取 %u 个共享文件的媒体元数据"
 
 #: src/SharedFileList.cpp
 #, c-format
@@ -7304,7 +7299,7 @@ msgstr "验证本地数据"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Re-extract &media metadata"
-msgstr ""
+msgstr "重新提取媒体元数据(&M)"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Add files in collection to transfer list"
@@ -7351,44 +7346,44 @@ msgstr "目前不支持验证 Part 文件的本地数据：%s"
 #, c-format
 msgid "Media metadata: skipping %u incomplete download"
 msgid_plural "Media metadata: skipping %u incomplete downloads"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "媒体元数据：跳过 %u 个不完整的下载"
+msgstr[1] "媒体元数据：跳过 %u 个不完整的下载"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Media metadata: skipping %u file that is not audio or video"
 msgid_plural "Media metadata: skipping %u files that are not audio or video"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "媒体元数据：跳过 %u 个非音频或视频文件"
+msgstr[1] "媒体元数据：跳过 %u 个非音频或视频文件"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Re-extract media metadata for %u file?"
 msgid_plural "Re-extract media metadata for %u files?"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "重新提取 %u 个文件的媒体元数据？"
+msgstr[1] "重新提取 %u 个文件的媒体元数据？"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%u incomplete download will be skipped."
 msgid_plural "%u incomplete downloads will be skipped."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "将跳过 %u 个不完整的下载。"
+msgstr[1] "将跳过 %u 个不完整的下载。"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%u file is not audio or video and will be skipped."
 msgid_plural "%u files are not audio or video and will be skipped."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%u 个文件不是音频或视频，将被跳过。"
+msgstr[1] "%u 个文件不是音频或视频，将被跳过。"
 
 #: src/SharedFilesCtrl.cpp
 msgid "This runs in the background. Progress is reported in the log."
-msgstr ""
+msgstr "这在后台运行。会在日志中报告进度。"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Re-extract media metadata"
-msgstr ""
+msgstr "重新提取媒体元数据"
 
 #: src/SharedFilesCtrl.cpp
 msgid "You need a HighID to create a valid sourcelink"
@@ -7705,7 +7700,7 @@ msgstr "执行 <str> 然后退出。"
 
 #: src/TextClient.cpp
 msgid "Separate list fields with spaces, as before, instead of tabs."
-msgstr ""
+msgstr "和前面一样，用空格键而非 tab 键分开列表字段。"
 
 #: src/TextClient.cpp
 msgid "Invalid IP format. Use xxx.xxx.xxx.xxx:xxxx\n"
