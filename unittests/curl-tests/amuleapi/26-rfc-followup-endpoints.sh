@@ -86,7 +86,7 @@ done
 
 # --- 2. POST /shared/reload. -------------------------------------
 RC=$(curl -s -o /tmp/p11_shared_reload.json -w "%{http_code}" -X POST "${H_AUTH[@]}" \
-	"$HOST/api/v0/shared/reload")
+	"$HOST/api/v0/shared_reload")
 if [ "$RC" = "202" ]; then
 	_pass "POST /shared/reload → 202"
 else
@@ -100,7 +100,7 @@ fi
 
 # --- 3. POST /servers/update — body validation. ------------------
 RC=$(curl -s -o /tmp/p11_su.json -w "%{http_code}" -X POST "${H_AUTH[@]}" \
-	-H "Content-Type: application/json" -d '{}' "$HOST/api/v0/servers/update")
+	-H "Content-Type: application/json" -d '{}' "$HOST/api/v0/servers_update")
 if [ "$RC" = "400" ]; then
 	_pass "POST /servers/update missing url → 400"
 else
@@ -108,7 +108,7 @@ else
 fi
 RC=$(curl -s -o /tmp/p11_su.json -w "%{http_code}" -X POST "${H_AUTH[@]}" \
 	-H "Content-Type: application/json" \
-	-d '{"servers_url":"ftp://nope"}' "$HOST/api/v0/servers/update")
+	-d '{"servers_url":"ftp://nope"}' "$HOST/api/v0/servers_update")
 if [ "$RC" = "400" ]; then
 	_pass "POST /servers/update non-http url → 400"
 else
@@ -117,7 +117,7 @@ fi
 RC=$(curl -s -o /tmp/p11_su.json -w "%{http_code}" -X POST "${H_AUTH[@]}" \
 	-H "Content-Type: application/json" \
 	-d '{"servers_url":"http://upd.emule-security.org/server.met"}' \
-	"$HOST/api/v0/servers/update")
+	"$HOST/api/v0/servers_update")
 if [ "$RC" = "202" ]; then
 	_pass "POST /servers/update valid url → 202"
 else
@@ -131,14 +131,14 @@ fi
 # than being turned away earlier as bad input.
 UNKNOWN_SRV=192.0.2.1:1
 RC=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${H_AUTH[@]}" \
-	"$HOST/api/v0/servers/$UNKNOWN_SRV/connect")
+	"$HOST/api/v0/servers/by-address/$UNKNOWN_SRV/connect")
 if [ "$RC" = "404" ]; then
 	_pass "POST /servers/<unknown-ip:port>/connect → 404"
 else
 	_fail "address alias 404" "expected 404, got $RC"
 fi
 RC=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "${H_AUTH[@]}" \
-	"$HOST/api/v0/servers/$UNKNOWN_SRV")
+	"$HOST/api/v0/servers/by-address/$UNKNOWN_SRV")
 if [ "$RC" = "404" ]; then
 	_pass "DELETE /servers/<unknown-ip:port> → 404"
 else
@@ -149,9 +149,9 @@ fi
 # ip == 0, so a 0.0.0.0 selector could otherwise resolve to whichever
 # such row shared the port. Rejected as bad input, and the message says
 # so rather than claiming a malformed quad.
-BODY=$(curl -s -X POST "${H_AUTH[@]}" "$HOST/api/v0/servers/0.0.0.0:4242/connect")
+BODY=$(curl -s -X POST "${H_AUTH[@]}" "$HOST/api/v0/servers/by-address/0.0.0.0:4242/connect")
 RC=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${H_AUTH[@]}" \
-	"$HOST/api/v0/servers/0.0.0.0:4242/connect")
+	"$HOST/api/v0/servers/by-address/0.0.0.0:4242/connect")
 if [ "$RC" = "400" ] && printf '%s' "$BODY" | jq -e '.error.code == "bad_request"' >/dev/null 2>&1; then
 	_pass "POST /servers/0.0.0.0:<port>/connect → 400 (not a server address)"
 else
@@ -163,7 +163,7 @@ else
 	_fail "0.0.0.0 rejection message" "still reports a syntax error: $BODY"
 fi
 # A genuinely malformed selector still reports malformed.
-BODY=$(curl -s -X POST "${H_AUTH[@]}" "$HOST/api/v0/servers/not-an-ip:4242/connect")
+BODY=$(curl -s -X POST "${H_AUTH[@]}" "$HOST/api/v0/servers/by-address/not-an-ip:4242/connect")
 if printf '%s' "$BODY" | jq -e '.error.message | test("malformed")' >/dev/null 2>&1; then
 	_pass "a malformed selector still reports malformed"
 else
@@ -177,7 +177,7 @@ ADDR=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/servers" \
 	| jq -r '.servers[0].address // empty')
 if [ -n "$ADDR" ] && [ "$ADDR" != "null" ]; then
 	RC=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${H_AUTH[@]}" \
-		"$HOST/api/v0/servers/$ADDR/connect")
+		"$HOST/api/v0/servers/by-address/$ADDR/connect")
 	if [ "$RC" = "202" ] || [ "$RC" = "200" ]; then
 		_pass "POST /servers/$ADDR/connect resolves alias and accepts ($RC)"
 	else

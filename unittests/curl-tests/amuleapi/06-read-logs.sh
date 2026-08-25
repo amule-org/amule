@@ -142,10 +142,8 @@ _assert_json_eq '.total_bytes' "$TOTAL_BYTES" \
 	'/logs/serverinfo?tail=3 reports the same total_bytes'
 
 # --- 6. Method gate. -----------------------------------------------
-# DELETE on /logs/{amule,serverinfo} now CLEARS the buffer (phase 11
-# / RFC §4.11 alignment); the 405 contract this test originally
-# asserted has been retired. PATCH stays a 405 — the logs are
-# read+reset only, never partially mutable.
+# DELETE on /logs/{amule,serverinfo} clears the buffer. PATCH is a 405:
+# the logs are read+reset only, never partially mutable.
 for ep in logs/amule logs/serverinfo; do
 	_curl -X PATCH -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/$ep"
 	_assert_status 405 "PATCH /api/v0/$ep → 405"

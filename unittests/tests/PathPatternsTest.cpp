@@ -329,9 +329,11 @@ TEST(PathPatterns, Match_RejectsAnEmptyCapture)
 // already handled: the comparison simply fails.
 TEST(PathPatterns, Match_StillRejectsAMissegmentedLiteral)
 {
-	const auto pat = ParsePattern("/api/v0/shared/reload");
+	// Same segment count, so the rejection has to come from the literal
+	// comparison rather than from the length check.
+	const auto pat = ParsePattern("/api/v0/version/check");
 	std::map<std::string, std::string> caps;
-	ASSERT_TRUE(!Match(pat, SplitPath("/api/v0/shared/"), caps));
+	ASSERT_TRUE(!Match(pat, SplitPath("/api/v0/version/"), caps));
 }
 
 // ----------------------------------------------------------------------

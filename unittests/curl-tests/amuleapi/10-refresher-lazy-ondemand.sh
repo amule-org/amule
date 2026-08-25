@@ -16,7 +16,7 @@
 #   * /search/{id}/results (EC_OP_SEARCH_RESULTS, on a finished search)
 #
 # Wire changes:
-#   * /uploads RETIRED → /clients is the unified peer surface
+#   * /clients is the unified peer surface
 #   * /clients ships every alive peer (upload + download + queue +
 #     idle), with role-decoded state strings
 #   * lazy endpoints' `snapshot_at` reflects per-endpoint fetch time
@@ -91,16 +91,7 @@ TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 # The first tick still needs ~1 s; sleep 4 covers it comfortably.
 sleep 4
 
-# --- 1. /uploads RETIRED → 404. ------------------------------------
-#
-# The legacy endpoint is gone; /clients replaces it with role-decoded
-# state for every peer (upload + download + queue + idle). Consumers
-# wanting the legacy view filter client-side by upload_state ==
-# "uploading".
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/uploads"
-_assert_status 404 "GET /uploads → 404 (endpoint retired)"
-
-# --- 2. /clients shape. --------------------------------------------
+# --- 1. /clients shape. --------------------------------------------
 #
 # Phase 4g unified peer surface. Every alive peer in
 # theApp->clientlist surfaces, populated from the EC_TAG_CLIENT

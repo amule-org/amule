@@ -208,10 +208,9 @@ if [ "$COUNT" -gt 0 ]; then
 	_assert_json_eq '.media | type' null \
 		'/downloads/{hash} omits media when unprobed'
 
-	# The A4AF read sub-resource (issue #421) was retired in favour of the
-	# per-file client rows below (issue #984), which carry the whole peer
-	# object per A4AF source rather than a bare ECID. `a4af_auto` lives on the
-	# download detail object, asserted above. The POST half is unaffected.
+	# A4AF sources are the per-file client rows below, which carry the whole
+	# peer object per source rather than a bare ECID, and `a4af_auto` lives on
+	# the download detail object, asserted above. The a4af path is POST-only.
 
 	# Unknown action → 400 (mutation validation; admin token).
 	_curl -X POST -H "Authorization: Bearer $TOKEN" \
@@ -277,10 +276,10 @@ if [ "$COUNT" -gt 0 ]; then
 		done
 	fi
 
-	# The A4AF read route is retired in favour of the rows above; its POST
-	# stays, so the path must answer 405 rather than 404.
+	# The a4af path exists for POST only, so a GET is 405 rather than 404:
+	# the resource is there, the method is not.
 	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH/a4af"
-	_assert_status 405 "GET /downloads/{hash}/a4af is retired → 405"
+	_assert_status 405 "GET /downloads/{hash}/a4af → 405 (POST-only route)"
 
 	# Per-source swap (issue #983): `client_ecid` narrows swap_this to one
 	# source. Validation is asserted here rather than the swap itself — a

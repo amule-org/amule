@@ -137,9 +137,9 @@ private:
 		const CHttpServer::Request &, const std::string &key);
 	// source-reported filenames + counts. `key` = 32-char MD4 hash.
 	CHttpServer::Response HandleDownloadFilenames(const CHttpServer::Request &, const std::string &key);
-	// A4AF swap action (POST). `key` = 32-char MD4 hash. The GET that once
-	// listed the sources is retired -- the rows now come from
-	// GET /downloads/{hash}/clients, which flags each one with `a4af`.
+	// A4AF swap action (POST). `key` = 32-char MD4 hash. The source rows
+	// come from GET /downloads/{hash}/clients, which flags each one with
+	// `a4af`.
 	CHttpServer::Response HandleDownloadA4afAction(const CHttpServer::Request &, const std::string &key);
 	// download lifecycle mutations.
 	CHttpServer::Response HandleDownloadAdd(const CHttpServer::Request &);

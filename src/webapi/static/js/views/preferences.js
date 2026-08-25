@@ -114,7 +114,7 @@ const TABS = [
       { key: "update_list_from_server", type: "bool" },
       { key: "update_list_from_client", type: "bool" },
       { key: "update_url", type: "text",
-        action: { path: "servers/update", body: "servers_url",
+        action: { path: "servers_update", body: "servers_url",
                   titleKey: "prefs_action_servers_update",
                   toastKey: "prefs_action_servers_update_toast" } },
     ] },

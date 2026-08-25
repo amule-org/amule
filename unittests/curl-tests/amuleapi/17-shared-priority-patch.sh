@@ -108,7 +108,7 @@ if [ "$COUNT" = "0" ]; then
 	fi
 	echo "    info: planted fixture $FIXTURE; reloading shares"
 	curl -s -o /dev/null -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-		"$HOST/api/v0/shared/reload"
+		"$HOST/api/v0/shared_reload"
 	# Wait for amuled to hash the file and surface it in /shared.
 	for _ in $(seq 1 30); do
 		sleep 1

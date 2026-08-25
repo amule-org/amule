@@ -1013,16 +1013,16 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	}
 
 	// bulk clear-completed.
-	if (path == "/api/v0/downloads/clear_completed") {
+	if (path == "/api/v0/downloads_clear_completed") {
 		if (req.method != "POST") {
 			return MethodNotAllowed("POST", "only POST on /downloads/clear_completed");
 		}
 		return HandleDownloadsClearCompleted(req);
 	}
 
-	// /uploads was retired in — /clients covers the full
-	// peer surface (every upload_state, including queue waiters and
-	// download peers); consumers filter client-side by upload_state.
+	// /clients is the whole peer surface: every upload_state, including
+	// queue waiters and download peers. Consumers filter client-side by
+	// upload_state rather than asking for a pre-filtered view.
 	if (path == "/api/v0/clients") {
 		if (req.method != "GET" && req.method != "HEAD") {
 			return MethodNotAllowed("GET, HEAD", "only GET on /clients");
@@ -1083,7 +1083,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		return MethodNotAllowed("GET, HEAD, PATCH", "only GET / HEAD / PATCH on /shared");
 	}
 
-	if (path == "/api/v0/shared/reload") {
+	if (path == "/api/v0/shared_reload") {
 		if (req.method != "POST") {
 			return MethodNotAllowed("POST", "only POST on /shared/reload");
 		}
@@ -1104,7 +1104,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// which lists the files those roots produced. Literal path, so it has to be
 	// matched before the /shared/{hash} patterns below or "directories" would be
 	// captured as a hash.
-	if (path == "/api/v0/shared/directories") {
+	if (path == "/api/v0/share_directories") {
 		if (req.method == "GET" || req.method == "HEAD") {
 			return HandleSharedDirectories(req);
 		}
@@ -1225,7 +1225,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		}
 	}
 
-	if (path == "/api/v0/servers/update") {
+	if (path == "/api/v0/servers_update") {
 		if (req.method != "POST") {
 			return MethodNotAllowed("POST", "only POST on /servers/update");
 		}
@@ -1242,18 +1242,35 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		static const auto server_connect =
 			web_api_path::ParsePattern("/api/v0/servers/{ecid}/connect");
 		static const auto server_one = web_api_path::ParsePattern("/api/v0/servers/{ecid}");
+		static const auto server_addr_connect =
+			web_api_path::ParsePattern("/api/v0/servers/by-address/{address}/connect");
+		static const auto server_addr_one =
+			web_api_path::ParsePattern("/api/v0/servers/by-address/{address}");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
+		// The address form has its own path rather than sharing {ecid}.
+		// One capture with two identity domains, disambiguated by sniffing
+		// for a colon, is a dispatch rule invisible from outside -- and it
+		// forecloses ever accepting an IPv6 literal here, since those are
+		// all colons.
+		if (web_api_path::Match(server_addr_connect, path_segs, caps)) {
+			if (req.method != "POST") {
+				return MethodNotAllowed(
+					"POST", "only POST on /servers/by-address/{address}/connect");
+			}
+			return HandleServerConnectByAddress(req, caps["address"]);
+		}
+		if (web_api_path::Match(server_addr_one, path_segs, caps)) {
+			if (req.method != "DELETE" && req.method != "PATCH") {
+				return MethodNotAllowed("PATCH, DELETE",
+					"only DELETE / PATCH on /servers/by-address/{address}");
+			}
+			return req.method == "PATCH" ? HandleServerPatchByAddress(req, caps["address"])
+						     : HandleServerDeleteByAddress(req, caps["address"]);
+		}
 		if (web_api_path::Match(server_connect, path_segs, caps)) {
 			if (req.method != "POST") {
 				return MethodNotAllowed("POST", "only POST on /servers/{ecid}/connect");
-			}
-			// `{ecid}` capture also matches "<ip>:<port>" because the
-			// path-pattern matcher is opaque-segment. Disambiguate
-			// here: if the capture contains a colon, treat it as an
-			// address-keyed alias.
-			if (caps["ecid"].find(':') != std::string::npos) {
-				return HandleServerConnectByAddress(req, caps["ecid"]);
 			}
 			return HandleServerConnect(req, caps["ecid"]);
 		}
@@ -1262,15 +1279,8 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 				return MethodNotAllowed(
 					"PATCH, DELETE", "only DELETE / PATCH on /servers/{ecid}");
 			}
-			const bool by_address = caps["ecid"].find(':') != std::string::npos;
-			if (req.method == "PATCH") {
-				return by_address ? HandleServerPatchByAddress(req, caps["ecid"])
-						  : HandleServerPatch(req, caps["ecid"]);
-			}
-			if (by_address) {
-				return HandleServerDeleteByAddress(req, caps["ecid"]);
-			}
-			return HandleServerDelete(req, caps["ecid"]);
+			return req.method == "PATCH" ? HandleServerPatch(req, caps["ecid"])
+						     : HandleServerDelete(req, caps["ecid"]);
 		}
 	}
 
@@ -1511,21 +1521,6 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		}
 	}
 
-	// The two retired paths, answered explicitly rather than falling into the
-	// {id} matcher below -- which would capture "results" / "stop" as an id
-	// and report a confusing "not a valid search id". Naming the replacement
-	// is the whole point of keeping these four lines.
-	if (path == "/api/v0/search/results") {
-		return ErrorResponse(404,
-			"not_found",
-			"retired: results are addressed per search at GET /search/{id}/results");
-	}
-	if (path == "/api/v0/search/stop") {
-		return ErrorResponse(404,
-			"not_found",
-			"retired: use POST /search/{id}/stop, or DELETE /search/{id} to also free it");
-	}
-
 	// /search/{id} — DELETE stops the search AND frees it (results included).
 	{
 		static const auto search_one = web_api_path::ParsePattern("/api/v0/search/{id}");
@@ -1643,11 +1638,12 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 			if (req.method == "POST") {
 				return HandleDownloadA4afAction(req, caps["hash"]);
 			}
-			// The read half is retired (issue #984): A4AF sources are rows of
-			// /downloads/{hash}/clients now, carrying the whole peer object
-			// rather than a bare ECID, and `a4af_auto` is already on the
-			// download detail object. The POST stays -- the swap actions have
-			// no equivalent there, and its reply is still the A4AF view.
+			// POST only. A4AF sources are rows of /downloads/{hash}/clients,
+			// carrying the whole peer object rather than a bare ECID, and
+			// `a4af_auto` is on the download detail object, so there is
+			// nothing for a GET here to add. The swap actions have no
+			// equivalent on those routes, and this reply is still the A4AF
+			// view.
 			return MethodNotAllowed("POST", "only POST on /downloads/{hash}/a4af");
 		}
 	}
@@ -2497,12 +2493,11 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 
 	CJsonWriter w;
 	w.BeginObject();
-	// snapshot_at + snapshot_at_unix were retired from
-	// every envelope response so the ETag/If-None-Match cache
-	// actually gets cache hits on list endpoints.
-	// `ec_connected` is the dedicated staleness signal — it flips
-	// false when the refresher tick fails. Standard HTTP `Date:`
-	// header carries wall-clock for any consumer that needs it.
+	// No snapshot timestamp in the envelope: a value that moves every tick
+	// changes the body bytes and defeats the ETag, so list endpoints would
+	// never see a cache hit. `ec_connected` is the staleness signal, flipping
+	// false when the refresher tick fails, and the HTTP `Date:` header
+	// carries wall-clock for any consumer that needs it.
 	w.Key("ec_connected");
 	w.ValueBool(ec);
 	(void)ts;
@@ -7345,7 +7340,7 @@ CHttpServer::Response CApiDispatcher::HandleStatsTree(const CHttpServer::Request
 	CHttpServer::Response r;
 	r.status = 200;
 	r.content_type = "application/json";
-	// snapshot_at retired in favour of the ETag
+	// No snapshot_at: the ETag is the cache validator
 	// as the cache validator. The TtlPair_StatsTree still tracks the
 	// fetched-at time internally (drives the 1 s TTL coalescer) — it
 	// just isn't surfaced any more.
@@ -7476,7 +7471,7 @@ CHttpServer::Response CApiDispatcher::HandleStatsGraph(
 	// repeating records. `points` is never longer than this.
 	w.Key("max_points");
 	w.ValueInt(static_cast<int64_t>(g.max_points));
-	// snapshot_at retired from the response. WritePointArray
+	// No snapshot_at in the response. WritePointArray
 	// still consumes `ts` to compute per-point timestamps (anchoring
 	// the time-series backwards from the fetch wall-clock).
 	//

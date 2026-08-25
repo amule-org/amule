@@ -1208,7 +1208,7 @@ TEST(State, MemoizableTargetExcludesEverythingElse)
 	// live EC roundtrip per read, and the bare collection a trailing-slash
 	// prefix could never match
 	ASSERT_TRUE(!MemoizableTarget("/api/v0/search"));
-	ASSERT_TRUE(!MemoizableTarget("/api/v0/shared/directories"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v0/share_directories"));
 	// per-principal: one key cannot describe two callers' documents
 	ASSERT_TRUE(!MemoizableTarget("/api/v0/auth/session"));
 	// snapshot-backed, but not worth a memo -- and absent by default
@@ -1225,7 +1225,7 @@ TEST(State, MemoizableTargetDoesNotExtendToSubResources)
 	ASSERT_TRUE(!MemoizableTarget("/api/v0/downloads/8b54a3c2"));
 	ASSERT_TRUE(!MemoizableTarget("/api/v0/downloads/8b54a3c2/clients"));
 	ASSERT_TRUE(!MemoizableTarget("/api/v0/shared/8b54a3c2"));
-	ASSERT_TRUE(!MemoizableTarget("/api/v0/shared/directories"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v0/share_directories"));
 	// and no prefix bleed onto a neighbour that merely starts the same
 	ASSERT_TRUE(!MemoizableTarget("/api/v0/downloads_archive"));
 	ASSERT_TRUE(!MemoizableTarget("/api/v0/sharedfiles"));

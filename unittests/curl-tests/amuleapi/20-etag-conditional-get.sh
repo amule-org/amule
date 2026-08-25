@@ -279,7 +279,7 @@ fi
 
 # --- 12. ETag is stable across ticks when data IS stable. --------
 #
-# Phase 7.1 retired snapshot_at from the envelope — list endpoints
+# The envelope carries no snapshot_at — list endpoints
 # now only churn their ETag when actual data churns. /preferences is
 # the most reliable "stable" surface for this check (no per-tick
 # refresh — it changes only when an operator runs PATCH).

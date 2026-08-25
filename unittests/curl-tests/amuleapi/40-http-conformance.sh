@@ -440,7 +440,7 @@ fi
 
 # A route with a richer verb set reports all of it.
 curl -s -o "$BODY_FILE" -D "$HDR_FILE" --max-time 10 \
-	"${AUTH[@]}" -X PATCH "$HOST/api/v0/shared/directories" >/dev/null
+	"${AUTH[@]}" -X PATCH "$HOST/api/v0/share_directories" >/dev/null
 ALLOW_DIRS=$(_hdr Allow)
 for m in GET HEAD POST PUT DELETE; do
 	case "$ALLOW_DIRS" in
@@ -495,7 +495,7 @@ fi
 
 # --- 4. The CORS preflight advertises every method the route serves. --
 #
-# PUT /api/v0/shared/directories is a real route (the replace-the-whole-list
+# PUT /api/v0/share_directories is a real route (the replace-the-whole-list
 # form). It was missing from the advertised list, so a browser doing a
 # cross-origin PUT there was told the method is not allowed and blocked the
 # request before it was ever sent -- reachable from curl, unreachable from a
@@ -503,7 +503,7 @@ fi
 curl -s -o /dev/null -D "$HDR_FILE" --max-time 10 -X OPTIONS \
 	-H "Origin: http://example.invalid" \
 	-H "Access-Control-Request-Method: PUT" \
-	"$HOST/api/v0/shared/directories" >/dev/null
+	"$HOST/api/v0/share_directories" >/dev/null
 ACAM=$(_hdr Access-Control-Allow-Methods)
 if [ -z "$ACAM" ]; then
 	_skip "preflight method list (CORS disabled; no Access-Control-Allow-Methods)"

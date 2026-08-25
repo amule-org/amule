@@ -128,10 +128,10 @@ export default function Downloads({ isGuest }) {
 
   const clearCompleted = async () => {
     if (!(await confirmDialog(t("downloads_confirm_clear_completed")))) return;
-    mutate(() => api.post("downloads/clear_completed"));
+    mutate(() => api.post("downloads_clear_completed"));
   };
   // Same endpoint scoped to one hash, for the detail panel's Clear button.
-  const clearOne = (h) => mutate(() => api.post("downloads/clear_completed", { hash: h }));
+  const clearOne = (h) => mutate(() => api.post("downloads_clear_completed", { hash: h }));
 
   // --- derived ----------------------------------------------------------
   let list = downloads.slice();
