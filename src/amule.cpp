@@ -894,17 +894,6 @@ bool CamuleApp::OnInit()
 	downloadqueue = new CDownloadQueue();
 	uploadqueue = new CUploadQueue();
 
-	// Restore search results saved on a previous clean shutdown (issue #641
-	// Phase 3, StoredSearches.met). Must run only once downloadqueue/
-	// knownfiles/canceledfiles all exist, since LoadSearches() recomputes
-	// each restored result's download status against them. Registering each
-	// restored search with the EC multi-search registry makes it reachable
-	// via EC_OP_SEARCH_LIST for any client (amuleGUI/amuleapi) that connects
-	// later; monolithic tab creation for these is wired separately in
-	// amule-gui.cpp, since the search dialog doesn't exist yet here.
-	for (uint32_t restoredId : searchlist->LoadSearches()) {
-		RegisterRestoredSearch(restoredId);
-	}
 	// partFileWriteThread / partFileHashThread are constructed AFTER
 	// InitGui() further down — both spawn a wxThread in their ctor,
 	// and the amuled `-f` fork only carries the calling thread to the
@@ -1130,6 +1119,35 @@ bool CamuleApp::OnInit()
 	downloadqueue->LoadMetFiles(thePrefs::GetTempDir());
 	sharedfiles->Reload();
 #endif
+
+	// Restore search results saved on a previous clean shutdown (issue #641
+	// Phase 3, StoredSearches.met). Registering each restored search with the
+	// EC multi-search registry makes it reachable via EC_OP_SEARCH_LIST for
+	// any client (amuleGUI/amuleapi) that connects later.
+	//
+	// Deliberately *after* LoadMetFiles() and sharedfiles->Reload(), not
+	// merely after those objects are constructed. LoadSearches() recomputes
+	// each restored result's download status through
+	// CSearchFile::SetDownloadStatus(), which asks three lists whether it
+	// knows the hash. knownfiles and canceledfiles load in their own
+	// constructors, so they answer correctly from the moment they exist --
+	// but CDownloadQueue's constructor only makes an empty queue, and it is
+	// LoadMetFiles() that fills it. Running the restore before that meant
+	// every result asked an empty download queue and was told "no", so
+	// anything already downloading came back NEW instead of QUEUED. Nothing
+	// corrected it afterwards either: LoadMetFiles() appends to m_filelist
+	// directly rather than through AddDownload(), so the
+	// UpdateSearchFileByHash() that would have re-run the check never fires
+	// (#1101 -- "Hide Known Files" stopped hiding those results, while the
+	// daemon still refused the download with "You are already trying to
+	// download the file").
+	for (uint32_t restoredId : searchlist->LoadSearches()) {
+		RegisterRestoredSearch(restoredId);
+	}
+	// The monolithic search tabs are built from what the loop above just
+	// restored, so they follow it rather than sitting in InitGui() where the
+	// list is still empty. No-op on the daemon.
+	RestoreSearchTabs();
 
 	// Source seeds need two things: the part files they belong to, loaded
 	// just above, and a filter to check the seeded IPs against, which the

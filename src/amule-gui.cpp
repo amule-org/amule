@@ -239,6 +239,18 @@ int CamuleGuiBase::InitGui(bool geometry_enabled, wxString &geom_string)
 		amuledlg = new CamuleDlg(NULL, m_FrameTitle);
 	}
 
+	return 0;
+}
+
+// See CamuleApp::RestoreSearchTabs(). Split out of InitGui() so it can run
+// after the download queue is loaded: CSearchList::LoadSearches() computes
+// each restored result's download status against downloadqueue/knownfiles/
+// canceledfiles, and the queue is still empty while the GUI is being built
+// (#1101 -- restored results that were already downloading came back as NEW,
+// so "Hide Known Files" stopped hiding them and the daemon answered "You are
+// already trying to download the file").
+void CamuleGuiBase::CreateRestoredSearchTabs()
+{
 #ifndef CLIENT_GUI
 	// Create a tab for every search restored from StoredSearches.met
 	// (CSearchList::LoadSearches(), issue #641 Phase 3). Reuses the same
@@ -249,7 +261,7 @@ int CamuleGuiBase::InitGui(bool geometry_enabled, wxString &geom_string)
 	// startup, so every entry here is by construction a restored one.
 	//
 	// Monolithic (CSearchList) only: this file is also compiled into the
-	// amuleGUI (CLIENT_GUI) target sharing CamuleGuiBase::InitGui, where
+	// amuleGUI (CLIENT_GUI) target sharing CamuleGuiBase, where
 	// theApp->searchlist is CSearchListRem -- restored searches reach that
 	// build over EC_OP_SEARCH_LIST instead, once RegisterRestoredSearch()
 	// (amule.cpp) has made them visible to the registry it polls.
@@ -259,7 +271,7 @@ int CamuleGuiBase::InitGui(bool geometry_enabled, wxString &geom_string)
 			static_cast<uint32>(theApp->searchlist->GetSearchLifecycleKindById(kv.first)));
 		// OnSearchAdded labels the tab " (0)", right for a freshly
 		// discovered foreign search but wrong here: the restored results
-		// are already indexed (LoadSearches() ran before this loop), so
+		// are already indexed (LoadSearches() ran before this call), so
 		// the tab's list is already populated -- only the label needs
 		// correcting to match.
 		if (theApp->amuledlg && theApp->amuledlg->m_searchwnd) {
@@ -270,8 +282,6 @@ int CamuleGuiBase::InitGui(bool geometry_enabled, wxString &geom_string)
 		}
 	}
 #endif
-
-	return 0;
 }
 
 // Sets m_FrameTitle
