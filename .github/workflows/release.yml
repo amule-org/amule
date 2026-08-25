@@ -229,6 +229,11 @@ jobs:
         with:
           name: source-bundle
           path: dist/
+      - name: Download amuleapi frontend bundle
+        uses: actions/download-artifact@v8
+        with:
+          name: amuleapi-frontend
+          path: dist/
 
       - name: List artifacts
         run: ls -la dist/
@@ -262,11 +267,12 @@ jobs:
           check "Windows installer .exe (x64 + arm64)" 2 'aMule-*-Windows-Setup-*.exe'
           check "Linux static daemon (x86_64 + aarch64)" 2 'aMule-*-Linux-*-static.tar.gz'
           check "Source bundle"                     1 'aMule-*-src.tar.gz'
+          check "amuleapi frontend bundle"          1 'aMule-*-amuleapi-frontend.zip'
           if [ "$fail" -ne 0 ]; then
             echo "::error::Artifact manifest incomplete — refusing to assemble the draft Release."
             exit 1
           fi
-          echo "All 12 expected release artifacts present."
+          echo "All 13 expected release artifacts present."
 
       - name: Create draft Release
         env:
