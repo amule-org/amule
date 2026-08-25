@@ -82,7 +82,7 @@ _assert_json_eq() {
 }
 
 if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
@@ -104,7 +104,7 @@ _curl -X DELETE "$HOST/api/v0/downloads/$TEST_HASH"
 _assert_status 401 "DELETE /downloads/{hash} (no token) → 401"
 
 _curl -X POST "$HOST/api/v0/downloads_clear_completed"
-_assert_status 401 "POST /downloads/clear_completed (no token) → 401"
+_assert_status 401 "POST /downloads_clear_completed (no token) → 401"
 
 if [ "$HAVE_GUEST" = "1" ]; then
 	_curl -X DELETE -H "Authorization: Bearer $GUEST_TOKEN" \
@@ -112,7 +112,7 @@ if [ "$HAVE_GUEST" = "1" ]; then
 	_assert_status 403 "DELETE /downloads/{hash} (guest) → 403"
 	_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" \
 		"$HOST/api/v0/downloads_clear_completed"
-	_assert_status 403 "POST /downloads/clear_completed (guest) → 403"
+	_assert_status 403 "POST /downloads_clear_completed (guest) → 403"
 else
 	echo "    info: no guest pass; admin-gate skipped"
 fi
@@ -130,7 +130,7 @@ _assert_status 404 "DELETE /downloads/{nonexistent} → 404"
 # call clear once to baseline, then move on.)
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/downloads_clear_completed"
-_assert_status 200 "POST /downloads/clear_completed (baseline) → 200"
+_assert_status 200 "POST /downloads_clear_completed (baseline) → 200"
 # The shared results envelope has no top-level `ok`: per-item success lives on
 # each entry, so a partial outcome cannot be reported as a single boolean.
 _assert_json_eq '.results | type' array 'clear_completed returns a results array'
@@ -138,7 +138,7 @@ _assert_json_eq '.results | type' array 'clear_completed returns a results array
 # Second call: now nothing is completed. cleared must be 0.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/downloads_clear_completed"
-_assert_status 200 "POST /downloads/clear_completed (idempotent no-op) → 200"
+_assert_status 200 "POST /downloads_clear_completed (idempotent no-op) → 200"
 # An empty `results` array is the no-op. It was `cleared: 0`, a shape only this
 # endpoint used.
 _assert_json_eq '.results | length' 0 'clear_completed second call cleared 0 entries'

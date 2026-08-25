@@ -97,10 +97,10 @@ _assert_json_eq '.daemon_version | length > 0' \
 	true '/api/v0/version reports a non-empty daemon_version'
 
 # 2c. update object. The identity fields above are unauthenticated because this
-#     is the liveness/version probe, but `update` reports whether THIS daemon is
-#     running an outdated build, which an unauthenticated caller on a reachable
-#     interface has no business learning. Absent without credentials, present
-#     with them.
+#     is the version-negotiation probe (liveness is /health's job), but `update`
+#     reports whether THIS daemon is running an outdated build, which an
+#     unauthenticated caller on a reachable interface has no business learning.
+#     Absent without credentials, present with them.
 _assert_json_eq '. | has("update")' false \
 	'/api/v0/version omits the update object when unauthenticated'
 
@@ -183,6 +183,28 @@ _curl "$HOST/api/v0/version/check"
 _assert_status 405 "GET /api/v0/version/check yields 405"
 _assert_json_eq '.error.code' method_not_allowed \
 	'/api/v0/version/check GET 405 carries error.code=method_not_allowed'
+
+# 8. An unauthenticated /version must NOT spend the generic-401 budget.
+#    Emitting `update` only to an authenticated caller is the only reason this
+#    endpoint authenticates at all, so a request with no credential is its
+#    documented unauthenticated use rather than an auth failure. Counted, it
+#    would let an anonymous poller -- or, behind a reverse proxy, one poller on
+#    the address every client shares -- fill the bucket in 30 requests and lock
+#    real sessions out of the entire authenticated surface for five minutes.
+#    Defaults: TokenFailureThreshold=30 within TokenFailureWindowSeconds=60.
+#
+#    Deliberately the last check in this file: if the guard regresses, the
+#    lockout it arms would poison every assertion after it.
+i=0
+while [ "$i" -lt 35 ]; do
+	curl -s -o /dev/null --max-time 10 "$HOST/api/v0/version"
+	i=$((i + 1))
+done
+# /auth/session rather than /status: authenticated, but with no EC dependency
+# that could answer 503 and mask the 429 this is looking for.
+_curl "${AUTH[@]}" "$HOST/api/v0/auth/session"
+_assert_status 200 \
+	"35 anonymous /version requests do not rate-limit an authenticated caller"
 
 # Summary.
 echo

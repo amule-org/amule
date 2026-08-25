@@ -89,7 +89,7 @@ trap 'rm -f /tmp/amuleapi_33_head /tmp/amuleapi_33_body' EXIT
 
 command -v jq >/dev/null 2>&1 || _die "jq is required"
 
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable. Start amuleapi first."
 fi
 

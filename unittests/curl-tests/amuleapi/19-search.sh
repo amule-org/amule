@@ -136,7 +136,7 @@ _assert_json_eq() {
 }
 
 if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
@@ -340,7 +340,7 @@ rm -f "$SECOND_CONFIG_DIR/amuleapi.conf.bak"
 SECOND_PID=$!
 
 for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
-	curl -s -o /dev/null --max-time 1 "http://$SECOND_HOST/api/v0/version" 2>/dev/null && break
+	curl -s -o /dev/null --max-time 1 "http://$SECOND_HOST/api/v0/health" 2>/dev/null && break
 	sleep 0.5
 done
 sleep 4
@@ -965,7 +965,7 @@ if [ -n "$SID_CLOSE" ] && [ "$SID_CLOSE" != "null" ]; then
 		--http-port=4715 >"$SECOND2_LOG" 2>&1 &
 	SECOND2_PID=$!
 	for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
-		curl -s -o /dev/null --max-time 1 "http://localhost:4715/api/v0/version" 2>/dev/null && break
+		curl -s -o /dev/null --max-time 1 "http://localhost:4715/api/v0/health" 2>/dev/null && break
 		sleep 0.5
 	done
 	sleep 2
@@ -1022,7 +1022,7 @@ rm -f "$FOREIGN_CONFIG_DIR/amuleapi.conf.bak"
 	--http-port=4716 >"$FOREIGN_LOG" 2>&1 &
 FOREIGN_PID=$!
 for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
-	curl -s -o /dev/null --max-time 1 "http://localhost:4716/api/v0/version" 2>/dev/null && break
+	curl -s -o /dev/null --max-time 1 "http://localhost:4716/api/v0/health" 2>/dev/null && break
 	sleep 0.5
 done
 sleep 2

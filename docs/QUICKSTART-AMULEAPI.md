@@ -112,8 +112,10 @@ All are readable only by you.
 ## Checking it works
 
 ```sh
-# No login needed.
-curl -s http://127.0.0.1:4713/api/v0/version
+# Is it up? /health is the probe: no login, and it answers from amuleapi's own
+# state without waiting on amuled, so it stays fast even when the daemon is
+# busy. The body also tells you whether the link to amuled is up.
+curl -s http://127.0.0.1:4713/api/v0/health
 
 # Log in, then use the token.
 TOKEN=$(curl -s -X POST "http://127.0.0.1:4713/api/v0/auth/login?type=bearer" \
@@ -121,6 +123,10 @@ TOKEN=$(curl -s -X POST "http://127.0.0.1:4713/api/v0/auth/login?type=bearer" \
     -d '{"password":"mySecret123"}' | jq -r .token)
 
 curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:4713/api/v0/status
+
+# Which versions are these? /version answers without a login too, but it only
+# reports the daemon's update-availability to a caller that has one.
+curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:4713/api/v0/version
 ```
 
 Browsers should call `/auth/login` *without* `?type=bearer` — they get a
@@ -199,6 +205,9 @@ Encryption=1              ; encrypt the link to amuled
 LoginFailureWindowSeconds=60
 LoginFailureThreshold=5   ; this many bad logins...
 LoginLockoutSeconds=300   ; ...locks that address out for this long
+TokenFailureWindowSeconds=60
+TokenFailureThreshold=30  ; same, for rejected tokens on any other endpoint
+TokenLockoutSeconds=300
 
 [Streaming]
 EventBusRingCapacity=16384

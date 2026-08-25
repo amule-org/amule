@@ -41,7 +41,7 @@ _status() { [ "$STATUS" = "$1" ] && _pass "$2 (HTTP $STATUS)" || _fail "$2" "wan
 _jq()     { local a; a=$(printf %s "$CURL_BODY" | jq -r "$1" 2>/dev/null); [ "$a" = "$2" ] && _pass "$3" || _fail "$3" "want '$2' got '$a'" "body: $CURL_BODY"; }
 
 command -v jq >/dev/null 2>&1 || _die "jq required"
-curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" || _die "amuleapi at $HOST not reachable"
+curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" || _die "amuleapi at $HOST not reachable"
 
 echo "amuleapi 29-bulk-mutations @ $HOST"
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" -d "{\"password\":\"$ADMIN_PASS\"}" \

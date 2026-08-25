@@ -4,10 +4,10 @@
 # review:
 #
 #   * GET    /status                       — `kad.network: {users,files,nodes}` rollup
-#   * POST   /shared/reload                — rescan share roots
-#   * POST   /servers/update               — refresh server list from server.met URL
-#   * POST   /servers/<ip>:<port>/connect  — address-keyed alias
-#   * DELETE /servers/<ip>:<port>          — address-keyed alias
+#   * POST   /shared_reload                — rescan share roots
+#   * POST   /servers_update               — refresh server list from server.met URL
+#   * POST   /servers/by-address/<ip>:<port>/connect — address-keyed route
+#   * DELETE /servers/by-address/<ip>:<port>         — address-keyed route
 #   * DELETE /logs/amule                   — clear amule log + in-process cache
 #   * DELETE /logs/serverinfo              — clear MOTD log + invalidate lazy cache
 #   * POST   /downloads {"links":[...]}    — array body, alongside `ed2k_link`
@@ -57,7 +57,7 @@ _fail() {
 }
 
 if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version"; then
+if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health"; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
@@ -84,47 +84,47 @@ for f in users files nodes; do
 	fi
 done
 
-# --- 2. POST /shared/reload. -------------------------------------
+# --- 2. POST /shared_reload. -------------------------------------
 RC=$(curl -s -o /tmp/p11_shared_reload.json -w "%{http_code}" -X POST "${H_AUTH[@]}" \
 	"$HOST/api/v0/shared_reload")
 if [ "$RC" = "202" ]; then
-	_pass "POST /shared/reload → 202"
+	_pass "POST /shared_reload → 202"
 else
-	_fail "shared/reload status" "expected 202, got $RC: $(cat /tmp/p11_shared_reload.json)"
+	_fail "shared_reload status" "expected 202, got $RC: $(cat /tmp/p11_shared_reload.json)"
 fi
 if jq -e '.ok == true' /tmp/p11_shared_reload.json >/dev/null 2>&1; then
-	_pass "POST /shared/reload .ok == true"
+	_pass "POST /shared_reload .ok == true"
 else
-	_fail "shared/reload body" "$(cat /tmp/p11_shared_reload.json)"
+	_fail "shared_reload body" "$(cat /tmp/p11_shared_reload.json)"
 fi
 
-# --- 3. POST /servers/update — body validation. ------------------
+# --- 3. POST /servers_update — body validation. ------------------
 RC=$(curl -s -o /tmp/p11_su.json -w "%{http_code}" -X POST "${H_AUTH[@]}" \
 	-H "Content-Type: application/json" -d '{}' "$HOST/api/v0/servers_update")
 if [ "$RC" = "400" ]; then
-	_pass "POST /servers/update missing url → 400"
+	_pass "POST /servers_update missing url → 400"
 else
-	_fail "servers/update no-body" "expected 400, got $RC"
+	_fail "servers_update no-body" "expected 400, got $RC"
 fi
 RC=$(curl -s -o /tmp/p11_su.json -w "%{http_code}" -X POST "${H_AUTH[@]}" \
 	-H "Content-Type: application/json" \
 	-d '{"servers_url":"ftp://nope"}' "$HOST/api/v0/servers_update")
 if [ "$RC" = "400" ]; then
-	_pass "POST /servers/update non-http url → 400"
+	_pass "POST /servers_update non-http url → 400"
 else
-	_fail "servers/update bad url" "expected 400, got $RC"
+	_fail "servers_update bad url" "expected 400, got $RC"
 fi
 RC=$(curl -s -o /tmp/p11_su.json -w "%{http_code}" -X POST "${H_AUTH[@]}" \
 	-H "Content-Type: application/json" \
 	-d '{"servers_url":"http://upd.emule-security.org/server.met"}' \
 	"$HOST/api/v0/servers_update")
 if [ "$RC" = "202" ]; then
-	_pass "POST /servers/update valid url → 202"
+	_pass "POST /servers_update valid url → 202"
 else
-	_fail "servers/update happy path" "got $RC: $(cat /tmp/p11_su.json)"
+	_fail "servers_update happy path" "got $RC: $(cat /tmp/p11_su.json)"
 fi
 
-# --- 4. /servers/<ip>:<port>/connect + DELETE alias. -------------
+# --- 4. /servers/by-address/<ip>:<port> connect + DELETE. --------
 # 404 path is always testable. 192.0.2.x is TEST-NET-1 (RFC 5737),
 # reserved for documentation and guaranteed never to be a real server,
 # so this reaches the "well-formed but no such server" branch rather
@@ -133,14 +133,14 @@ UNKNOWN_SRV=192.0.2.1:1
 RC=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${H_AUTH[@]}" \
 	"$HOST/api/v0/servers/by-address/$UNKNOWN_SRV/connect")
 if [ "$RC" = "404" ]; then
-	_pass "POST /servers/<unknown-ip:port>/connect → 404"
+	_pass "POST /servers/by-address/<unknown-ip:port>/connect → 404"
 else
 	_fail "address alias 404" "expected 404, got $RC"
 fi
 RC=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "${H_AUTH[@]}" \
 	"$HOST/api/v0/servers/by-address/$UNKNOWN_SRV")
 if [ "$RC" = "404" ]; then
-	_pass "DELETE /servers/<unknown-ip:port> → 404"
+	_pass "DELETE /servers/by-address/<unknown-ip:port> → 404"
 else
 	_fail "address alias DELETE 404" "expected 404, got $RC"
 fi
@@ -153,7 +153,7 @@ BODY=$(curl -s -X POST "${H_AUTH[@]}" "$HOST/api/v0/servers/by-address/0.0.0.0:4
 RC=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${H_AUTH[@]}" \
 	"$HOST/api/v0/servers/by-address/0.0.0.0:4242/connect")
 if [ "$RC" = "400" ] && printf '%s' "$BODY" | jq -e '.error.code == "bad_request"' >/dev/null 2>&1; then
-	_pass "POST /servers/0.0.0.0:<port>/connect → 400 (not a server address)"
+	_pass "POST /servers/by-address/0.0.0.0:<port>/connect → 400 (not a server address)"
 else
 	_fail "0.0.0.0 selector rejected" "expected 400 bad_request, got $RC: $BODY"
 fi

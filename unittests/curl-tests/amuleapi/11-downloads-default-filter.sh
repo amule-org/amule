@@ -19,8 +19,8 @@
 #      regardless of its status.
 #
 # Phase 5b exercises the clear-completed mutations:
-#   `POST /downloads/clear_completed`              (bulk-clear, no body)
-#   `POST /downloads/clear_completed {"hash":...}` (single-entry clear)
+#   `POST /downloads_clear_completed`              (bulk-clear, no body)
+#   `POST /downloads_clear_completed {"hash":...}` (single-entry clear)
 # Both wire to EC_OP_CLEAR_COMPLETED. `DELETE /downloads/{hash}` is
 # active-only and 409s on completed entries — see 13-downloads-delete-clear for the
 # 409 + per-entry clear assertions.
@@ -79,7 +79,7 @@ _assert_json_eq() {
 if ! command -v jq >/dev/null 2>&1; then
 	_die "jq is required."
 fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 

@@ -60,7 +60,7 @@ _assert_json_eq() {
 }
 
 command -v jq >/dev/null 2>&1 || _die "jq is required."
-curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null \
+curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null \
 	|| _die "amuleapi at $HOST is not reachable."
 
 echo "amuleapi 39-shared-media-refresh smoke @ $HOST"

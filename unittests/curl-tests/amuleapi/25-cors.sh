@@ -89,7 +89,7 @@ _fail() {
 }
 
 if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 if [ ! -x "$BIN" ]; then
@@ -127,9 +127,9 @@ EOF
 	"$BIN" --config-dir="$CONFIG_DIR" \
 		--host="$EC_HOST" --port="$EC_PORT" \
 		> "$LOG" 2>&1 &
-	# Wait for /version to respond.
+	# Wait for /health to respond.
 	for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
-		if curl -s -o /dev/null --max-time 1 "$HOST/api/v0/version" 2>/dev/null; then
+		if curl -s -o /dev/null --max-time 1 "$HOST/api/v0/health" 2>/dev/null; then
 			return 0
 		fi
 		sleep 0.5
@@ -328,7 +328,7 @@ fi
 if echo "$ACAM" | grep -q "PUT"; then
 	_pass "Preflight: Allow-Methods lists PUT"
 else
-	_fail "Allow-Methods PUT" "PUT is a real route on /shared/directories, got '$ACAM'"
+	_fail "Allow-Methods PUT" "PUT is a real route on /share_directories, got '$ACAM'"
 fi
 
 # And the same preflight asked about that route by name.
@@ -339,9 +339,9 @@ _curl -X OPTIONS \
 PUT_STATUS=$(head -1 "$HDR" | awk '{print $2}')
 PUT_ACAM=$(_hdr "Access-Control-Allow-Methods")
 if [ "$PUT_STATUS" = "204" ] && echo "$PUT_ACAM" | grep -q "PUT"; then
-	_pass "Preflight for PUT /shared/directories advertises PUT"
+	_pass "Preflight for PUT /share_directories advertises PUT"
 else
-	_fail "Preflight PUT /shared/directories" \
+	_fail "Preflight PUT /share_directories" \
 		"status '$PUT_STATUS', Allow-Methods '$PUT_ACAM'"
 fi
 if echo "$ACAH" | grep -qi "Authorization" \
