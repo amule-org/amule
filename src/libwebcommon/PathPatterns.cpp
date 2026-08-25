@@ -24,6 +24,8 @@
 
 #include "PathPatterns.h"
 
+#include <cstdint>
+
 namespace web_api_path
 {
 
@@ -110,6 +112,43 @@ std::string StripTrailingSlash(const std::string &path)
 		return path.substr(0, path.size() - 1);
 	}
 	return path;
+}
+
+// See PathPatterns.h.
+bool ParseBoundedUint(const std::string &s, std::uint64_t min, std::uint64_t max, std::uint64_t &out)
+{
+	if (s.empty()) {
+		return false;
+	}
+	std::uint64_t v = 0;
+	for (char c : s) {
+		if (c < '0' || c > '9') {
+			return false;
+		}
+		v = v * 10 + static_cast<std::uint64_t>(c - '0');
+		if (v > max) {
+			return false;
+		}
+	}
+	if (v < min) {
+		return false;
+	}
+	out = v;
+	return true;
+}
+
+// See PathPatterns.h.
+bool ParseBoolValue(const std::string &s, bool &out)
+{
+	if (s == "1" || s == "true" || s == "yes") {
+		out = true;
+		return true;
+	}
+	if (s == "0" || s == "false" || s == "no") {
+		out = false;
+		return true;
+	}
+	return false;
 }
 
 namespace

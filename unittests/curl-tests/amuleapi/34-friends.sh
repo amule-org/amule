@@ -116,14 +116,15 @@ _curl "$HOST/api/v0/friends?limit=1&offset=0"
 _assert_status 200 "GET /friends?limit=1"
 [ "$(_jq '.limit')" = "1" ] && _pass "limit is echoed" || _fail "limit echo" "got $(_jq '.limit')"
 
+# Over the cap is a rejection, not a silent clamp. It used to answer 200 with a
+# quietly reduced window, so a client asking for 99999 got 500 rows with nothing
+# in the response saying the request had been altered.
 _curl "$HOST/api/v0/friends?limit=99999"
-_assert_status 200 "GET /friends?limit=99999 (clamped, not rejected)"
-CLAMPED=$(_jq '.limit')
-if [ "$CLAMPED" -le 500 ] 2>/dev/null; then
-	_pass "limit clamped to $CLAMPED"
-else
-	_fail "limit clamp" "expected <= 500, got $CLAMPED"
-fi
+_assert_status 400 "GET /friends?limit=99999 is rejected, not clamped"
+
+# The cap itself is still valid.
+_curl "$HOST/api/v0/friends?limit=500"
+_assert_status 200 "GET /friends?limit=500 (the cap is in range)"
 
 for bad in "limit=abc" "limit=-1" "offset=-1" "order=sideways"; do
 	_curl "$HOST/api/v0/friends?$bad"

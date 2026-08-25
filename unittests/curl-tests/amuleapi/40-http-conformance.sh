@@ -179,6 +179,42 @@ _assert_eq "401" "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$HOST/a
 	"GET /events without credentials -> 401"
 
 # ---------------------------------------------------------------------------
+# Query parameters: unparseable and out-of-range are both 400, never a default
+# ---------------------------------------------------------------------------
+# Each parameter used to be parsed by hand and each site picked its own rule, so
+# the same typo was a hard error on one parameter and a silent behaviour change
+# on its neighbour -- `interval=abc` was a 400 while `width=abc` was a 200 that
+# quietly meant "everything", on the same endpoint. These assert the wiring: the
+# unit tests pin ParseBoundedUint/ParseBoolValue, but only a live request shows
+# that a handler routes through them.
+_qp() {
+	# $1 = query, $2 = expected status, $3 = label
+	_assert_eq "$2" "$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 \
+		"${AUTH[@]}" "$HOST/api/v0/$1")" "$3"
+}
+
+# Booleans: one vocabulary, and anything outside it is answerable.
+_qp "downloads?include_completed=1"     200 "include_completed=1 -> 200"
+_qp "downloads?include_completed=false" 200 "include_completed=false -> 200"
+_qp "downloads?include_completed=maybe" 400 "include_completed=maybe -> 400 (was a silent false)"
+
+# Counts: garbage and out-of-range are the same answer.
+_qp "downloads?limit=abc"   400 "limit=abc -> 400"
+_qp "downloads?limit=99999" 400 "limit=99999 -> 400 (was a silent clamp to 500)"
+_qp "downloads?limit=500"   200 "limit=500 -> 200 (the cap itself is valid)"
+_qp "downloads?limit="      400 "limit= (empty) -> 400, not an omission"
+
+# Two numeric parameters on one endpoint used to disagree with each other.
+_qp "stats/graphs/download_speed?interval=abc" 400 "interval=abc -> 400"
+_qp "stats/graphs/download_speed?width=abc"    400 "width=abc -> 400 (was a silent 200)"
+_qp "stats/graphs/download_speed?width=99999"  400 "width=99999 -> 400 (was a silent clamp)"
+_qp "stats/graphs/download_speed?interval=0"   400 "interval=0 -> 400 (below the documented minimum)"
+
+# The log tail clamped silently too.
+_qp "logs/amule?tail=abc"    400 "tail=abc -> 400"
+_qp "logs/amule?tail=999999" 400 "tail=999999 -> 400 (was a silent clamp to 100000)"
+
+# ---------------------------------------------------------------------------
 # Trailing slash: `/x/` names the same resource as `/x`
 # ---------------------------------------------------------------------------
 # The two spellings used to disagree by route kind, not by meaning. A literal

@@ -154,8 +154,8 @@ for v in true yes; do
 	fi
 done
 
-# --- 4. include_completed=0 / =false / =garbage → default behavior. -
-for v in 0 false bogus; do
+# --- 4. include_completed=0 / =false → default behavior. -----------
+for v in 0 false no; do
 	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads?include_completed=$v"
 	_assert_status 200 "GET /downloads?include_completed=$v → 200"
 	c=$(printf '%s' "$CURL_BODY" | jq '.downloads | length')
@@ -166,6 +166,13 @@ for v in 0 false bogus; do
 			"got $c entries, expected $DEFAULT_COUNT (default)"
 	fi
 done
+
+# A value that is not a boolean at all is a 400, not a silent false. It used
+# to fall through to the default here, which meant a typo quietly changed what
+# the caller got while the neighbouring `include_parts` answered 400 for the
+# same mistake.
+_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads?include_completed=bogus"
+_assert_status 400 "GET /downloads?include_completed=bogus → 400"
 
 # --- 5. Detail endpoint UNCHANGED — serves completed files too. ---
 #

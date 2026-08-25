@@ -25,6 +25,7 @@
 #ifndef LIBWEBCOMMON_PATHPATTERNS_H
 #define LIBWEBCOMMON_PATHPATTERNS_H
 
+#include <cstdint>
 #include <map>
 #include <string>
 #include <vector>
@@ -67,6 +68,18 @@ std::string StripTrailingSlash(const std::string &path);
 // Malformed `%hh` triplets pass through verbatim so a stray `%` in
 // a path query doesn't silently drop characters.
 std::map<std::string, std::string> ParseQuery(const std::string &q);
+
+// Parses a decimal query-parameter value into `out`, requiring it to fall in
+// [min, max] inclusive. Returns false on an empty value, any non-digit, or a
+// value outside the range -- the caller turns that into its own rejection.
+//
+// The running value is bounded inside the loop, so a long digit string cannot
+// wrap before the range check sees it.
+bool ParseBoundedUint(const std::string &s, std::uint64_t min, std::uint64_t max, std::uint64_t &out);
+
+// Parses a boolean query-parameter value: 1/0, true/false, yes/no. Returns
+// false on anything else rather than defaulting, so a typo is answerable.
+bool ParseBoolValue(const std::string &s, bool &out);
 
 // A pattern is a path string with optional `{name}` capture segments.
 // Example: "/downloads/{hash}/pause" parses to

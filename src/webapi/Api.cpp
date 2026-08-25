@@ -3193,39 +3193,74 @@ std::unique_ptr<CHttpServer::Response> BadRequestPtr(const char *message)
 	return std::make_unique<CHttpServer::Response>(ErrorResponse(400, "bad_request", message));
 }
 
-// Parse ?limit/&offset/&sort/&order from a raw query string. `limit` is
-// clamped to 500; a non-numeric/oversized limit or offset, and a bad
-// `order`, are 400s. `sort` is validated later against the endpoint's
-// comparator table (BuildListWindow).
+// Optional unsigned query parameter, with an inclusive upper bound.
+//
+// One parser for every count on the surface. The seven written by hand
+// disagreed about the two questions that decide what a client sees -- what an
+// unparseable value does, and what an out-of-range one does -- so a typo was a
+// hard error on `interval` and a silent behaviour change on `width`, on the
+// same endpoint. Rejecting both, here, is the only version of "consistent" a
+// tenth call site cannot quietly opt out of, and the status, the code and the
+// sentence are contract rather than local wording.
+//
+// Absent leaves `out` untouched, so the caller's default stands. `min` and
+// `max` are inclusive; the running value is bounded inside the loop, so a long
+// digit string cannot wrap before the range check sees it.
+std::unique_ptr<CHttpServer::Response> ParseUintParam(const std::map<std::string, std::string> &qmap,
+	const char *name,
+	std::uint64_t min,
+	std::uint64_t max,
+	std::uint64_t &out)
+{
+	const auto it = qmap.find(name);
+	if (it == qmap.end())
+		return nullptr;
+	if (!web_api_path::ParseBoundedUint(it->second, min, max, out)) {
+		const std::string msg = std::string("`") + name + "` must be an integer between " +
+					std::to_string(min) + " and " + std::to_string(max);
+		return BadRequestPtr(msg.c_str());
+	}
+	return nullptr;
+}
+
+// Optional boolean query parameter. Accepts 1/0, true/false and yes/no, and
+// rejects anything else -- `include_completed` used to read every other value
+// as false while its neighbour `include_parts` answered 400, so the same typo
+// was silent on one endpoint and fatal on the next.
+std::unique_ptr<CHttpServer::Response> ParseBoolParam(
+	const std::map<std::string, std::string> &qmap, const char *name, bool &out)
+{
+	const auto it = qmap.find(name);
+	if (it == qmap.end())
+		return nullptr;
+	if (!web_api_path::ParseBoolValue(it->second, out)) {
+		const std::string msg = std::string("`") + name + "` must be 1/0, true/false or yes/no";
+		return BadRequestPtr(msg.c_str());
+	}
+	return nullptr;
+}
+
+// Parse ?limit/&offset/&sort/&order from a raw query string. A non-numeric or
+// out-of-range `limit`/`offset`, and a bad `order`, are 400s. `sort` is
+// validated later against the endpoint's comparator table (BuildListWindow).
 std::unique_ptr<CHttpServer::Response> ParseListParams(const std::string &query, ListParams &out)
 {
 	const auto qmap = web_api_path::ParseQuery(query);
-	auto parseCount = [](const std::string &s, std::size_t &v) -> bool {
-		if (s.empty() || s.size() > 9) // > ~1e9 is nonsense for these lists
-			return false;
-		std::size_t val = 0;
-		for (char c : s) {
-			if (c < '0' || c > '9')
-				return false;
-			val = val * 10 + static_cast<std::size_t>(c - '0');
-		}
-		v = val;
-		return true;
-	};
-	const auto limit_it = qmap.find("limit");
-	if (limit_it != qmap.end()) {
-		std::size_t v = 0;
-		if (!parseCount(limit_it->second, v))
-			return BadRequestPtr("`limit` must be a non-negative integer");
+	// 500 is the window cap and 1e9 is well past anything these lists hold;
+	// both are now rejections rather than silent clamps, so a client that
+	// asks for more learns it did.
+	if (qmap.count("limit")) {
+		std::uint64_t v = 0;
+		if (auto r = ParseUintParam(qmap, "limit", 0, 500, v))
+			return r;
 		out.has_limit = true;
-		out.limit = std::min<std::size_t>(v, 500);
+		out.limit = static_cast<std::size_t>(v);
 	}
-	const auto offset_it = qmap.find("offset");
-	if (offset_it != qmap.end()) {
-		std::size_t v = 0;
-		if (!parseCount(offset_it->second, v))
-			return BadRequestPtr("`offset` must be a non-negative integer");
-		out.offset = v;
+	{
+		std::uint64_t v = 0;
+		if (auto r = ParseUintParam(qmap, "offset", 0, 1000000000ull, v))
+			return r;
+		out.offset = static_cast<std::size_t>(v);
 	}
 	const auto order_it = qmap.find("order");
 	if (order_it != qmap.end()) {
@@ -3652,11 +3687,8 @@ CHttpServer::Response CApiDispatcher::HandleDownloads(const CHttpServer::Request
 		if (q != std::string::npos)
 			query = req.target.substr(q + 1);
 		const auto qmap = web_api_path::ParseQuery(query);
-		const auto it = qmap.find("include_completed");
-		if (it != qmap.end()) {
-			const std::string &v = it->second;
-			include_completed = (v == "1" || v == "true" || v == "yes");
-		}
+		if (auto r = ParseBoolParam(qmap, "include_completed", include_completed))
+			return *r;
 	}
 
 	ListParams params;
@@ -3830,14 +3862,8 @@ CHttpServer::Response CApiDispatcher::HandleFileClients(
 	bool include_parts = false;
 	{
 		const auto qmap = web_api_path::ParseQuery(QueryOf(req));
-		const auto it = qmap.find("include_parts");
-		if (it != qmap.end()) {
-			if (it->second != "true" && it->second != "false") {
-				return ErrorResponse(
-					400, "bad_request", "`include_parts` must be \"true\" or \"false\"");
-			}
-			include_parts = (it->second == "true");
-		}
+		if (auto r = ParseBoolParam(qmap, "include_parts", include_parts))
+			return *r;
 	}
 
 	const std::uint64_t part_count = webapi::PartCountForSize(file.size);
@@ -5690,27 +5716,24 @@ CHttpServer::Response CApiDispatcher::HandleChatMessages(
 	// process, so a client never sees a duplicate and never skips one. They
 	// reset when the daemon restarts, which also empties the store.
 	std::uint32_t since_id = 0;
-	std::size_t limit = 0;
+	std::size_t tail = 0;
 	const auto qmap = web_api_path::ParseQuery(QueryOf(req));
 	{
-		const auto it = qmap.find("since_id");
-		if (it != qmap.end()) {
-			if (it->second.find_first_not_of("0123456789") != std::string::npos) {
-				return ErrorResponse(
-					400, "bad_request", "`since_id` must be a non-negative integer");
-			}
-			since_id = static_cast<std::uint32_t>(std::strtoul(it->second.c_str(), nullptr, 10));
-		}
+		std::uint64_t v = since_id;
+		if (auto r = ParseUintParam(qmap, "since_id", 0, 0xFFFFFFFFull, v))
+			return *r;
+		since_id = static_cast<std::uint32_t>(v);
 	}
 	{
-		const auto it = qmap.find("limit");
-		if (it != qmap.end()) {
-			if (it->second.find_first_not_of("0123456789") != std::string::npos) {
-				return ErrorResponse(
-					400, "bad_request", "`limit` must be a non-negative integer");
-			}
-			limit = static_cast<std::size_t>(std::strtoul(it->second.c_str(), nullptr, 10));
-		}
+		// `tail`, not `limit`. This selects the last N of the window
+		// rather than a page of it, which is what the log endpoints
+		// already call `tail` -- naming it `limit` gave the surface two
+		// meanings for one word, and the paginated one is the meaning a
+		// client meets on nine other collections.
+		std::uint64_t v = tail;
+		if (auto r = ParseUintParam(qmap, "tail", 0, 100000, v))
+			return *r;
+		tail = static_cast<std::size_t>(v);
 	}
 
 	std::vector<const webapi::ChatMessageSnapshot *> selected;
@@ -5718,11 +5741,11 @@ CHttpServer::Response CApiDispatcher::HandleChatMessages(
 		if (m.id > since_id)
 			selected.push_back(&m);
 	}
-	// `limit` means the LAST n, matching "show me the tail of this
+	// `tail` means the LAST n, matching "show me the tail of this
 	// conversation"; combined with since_id it trims the same window from the
 	// front, so the newest are always the ones kept.
-	if (limit && selected.size() > limit) {
-		selected.erase(selected.begin(), selected.end() - static_cast<std::ptrdiff_t>(limit));
+	if (tail && selected.size() > tail) {
+		selected.erase(selected.begin(), selected.end() - static_cast<std::ptrdiff_t>(tail));
 	}
 
 	CJsonWriter w;
@@ -6785,19 +6808,18 @@ namespace
 // `?tail=N` parser. Returns 0 if the query is absent / unparseable;
 // the caller's contract is "0 means return everything". Negative or
 // non-numeric values clamp to 0.
-std::size_t ParseTailParam(const std::string &query)
+// 100k lines is the cap: a bogus `?tail=2147483647` would otherwise try to
+// serialise the entire wxString through the JSON escaper. It used to clamp
+// silently, which meant a client asking for more got fewer with nothing saying
+// so; it is a 400 now, like every other out-of-range count.
+std::unique_ptr<CHttpServer::Response> ParseTailParam(const std::string &query, std::size_t &out)
 {
 	const auto qmap = web_api_path::ParseQuery(query);
-	const auto it = qmap.find("tail");
-	if (it == qmap.end())
-		return 0;
-	const long n = std::atol(it->second.c_str());
-	if (n <= 0)
-		return 0;
-	// Cap at 100k lines so a bogus `?tail=2147483647` doesn't try to
-	// serialise the entire wxString through the JSON escaper.
-	const long capped = std::min<long>(n, 100000);
-	return static_cast<std::size_t>(capped);
+	std::uint64_t v = 0;
+	if (auto r = ParseUintParam(qmap, "tail", 0, 100000, v))
+		return r;
+	out = static_cast<std::size_t>(v);
+	return nullptr;
 }
 
 // Return a copy of `all` containing at most `tail` trailing lines.
@@ -7051,17 +7073,10 @@ CHttpServer::Response CApiDispatcher::HandleStatsTree(const CHttpServer::Request
 		if (q != std::string::npos)
 			query = req.target.substr(q + 1);
 		const auto qmap = web_api_path::ParseQuery(query);
-		const auto it = qmap.find("max_client_versions");
-		if (it != qmap.end()) {
-			char *end = nullptr;
-			const long n = std::strtol(it->second.c_str(), &end, 10);
-			if (end == it->second.c_str() || *end != '\0' || n < 0 || n > 255) {
-				return ErrorResponse(400,
-					"bad_request",
-					"max_client_versions must be an integer between 0 and 255");
-			}
-			max_client_versions = static_cast<std::uint8_t>(n);
-		}
+		std::uint64_t v = max_client_versions;
+		if (auto r = ParseUintParam(qmap, "max_client_versions", 0, 255, v))
+			return *r;
+		max_client_versions = static_cast<std::uint8_t>(v);
 	}
 
 	// lazy-fetch with 1 s TTL coalescing. The fetcher runs
@@ -7157,16 +7172,10 @@ CHttpServer::Response CApiDispatcher::HandleStatsGraph(
 	// total) — besides, SCALE is a uint16 on the wire.
 	std::uint32_t interval = 1;
 	{
-		const auto it = qmap.find("interval");
-		if (it != qmap.end()) {
-			char *end = nullptr;
-			const long n = std::strtol(it->second.c_str(), &end, 10);
-			if (end == it->second.c_str() || *end != '\0' || n < 1 || n > 3600) {
-				return ErrorResponse(
-					400, "bad_request", "interval must be an integer between 1 and 3600");
-			}
-			interval = static_cast<std::uint32_t>(n);
-		}
+		std::uint64_t v = interval;
+		if (auto r = ParseUintParam(qmap, "interval", 1, 3600, v))
+			return *r;
+		interval = static_cast<std::uint32_t>(v);
 	}
 
 	// Lazy-fetch the full graph bundle (one EC call serves all four named
@@ -7216,12 +7225,10 @@ CHttpServer::Response CApiDispatcher::HandleStatsGraph(
 	// answers every (graph, width) combination.
 	std::size_t width = 0;
 	{
-		const auto it = qmap.find("width");
-		if (it != qmap.end()) {
-			const long n = std::atol(it->second.c_str());
-			if (n > 0)
-				width = static_cast<std::size_t>(std::min<long>(n, 1800));
-		}
+		std::uint64_t v = 0;
+		if (auto r = ParseUintParam(qmap, "width", 0, 1800, v))
+			return *r;
+		width = static_cast<std::size_t>(v);
 	}
 
 	const std::time_t ts = pair.second;
@@ -7562,7 +7569,9 @@ CHttpServer::Response CApiDispatcher::HandleLogAmule(const CHttpServer::Request 
 	if (q != std::string::npos) {
 		query = req.target.substr(q + 1);
 	}
-	const std::size_t tail = ParseTailParam(query);
+	std::size_t tail = 0;
+	if (auto r = ParseTailParam(query, tail))
+		return *r;
 	const auto all = m_state.AmuleLog();
 	const auto sliced = SliceTail(all, tail);
 
@@ -7634,7 +7643,9 @@ CHttpServer::Response CApiDispatcher::HandleLogServerinfo(const CHttpServer::Req
 	if (q != std::string::npos) {
 		query = req.target.substr(q + 1);
 	}
-	const std::size_t tail = ParseTailParam(query);
+	std::size_t tail = 0;
+	if (auto r = ParseTailParam(query, tail))
+		return *r;
 
 	// Lazy-fetch via TtlCache. EC_OP_GET_SERVERINFO ships one
 	// EC_TAG_STRING with the whole accumulated text — amuled rotates
