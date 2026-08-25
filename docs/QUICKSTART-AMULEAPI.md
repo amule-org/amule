@@ -207,6 +207,21 @@ EventBusRingCapacity=16384
 `--bind`, `--http-port`, `--host`, `--port` and `--config-dir` override the
 matching settings for one run.
 
+## Web frontend
+
+amuleapi serves a web frontend at `/` when it can find one. Leave `StaticRoot` empty and it looks for the `amuleapi-static` folder that a normal install puts on disk, so a package install needs no configuration — open `http://127.0.0.1:4713/` and it is there. If nothing is found, `/` answers 404 and the REST API still works; an API-only deployment needs no frontend.
+
+The static Linux daemon is the exception: it is a single binary and carries no files of its own, so there is nothing for it to find. Download `aMule-<version>-amuleapi-frontend.zip` from the release page, unzip it somewhere readable, and point `StaticRoot` at the unzipped folder:
+
+```ini
+[Server]
+StaticRoot=/opt/amule/aMule-3.1.0-amuleapi-frontend
+```
+
+The same zip works if you want to serve the frontend from a location of your own, or to keep a modified copy separate from the installed one.
+
+Unzip it as a unit and leave the layout alone. The page loads its stylesheet, its modules, the translations and the images by relative path, so moving or renaming anything inside the folder breaks it.
+
 ## CORS
 
 Off by default, so only pages served from the same origin can call the API.

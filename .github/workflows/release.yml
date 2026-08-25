@@ -183,6 +183,46 @@ jobs:
           name: source-bundle
           path: dist/aMule-*-src.tar.gz
 
+      - name: Create amuleapi frontend bundle
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.tag.outputs.tag }}"
+          STEM="aMule-${TAG#v}-amuleapi-frontend"
+          mkdir -p "dist/${STEM}"
+          # Copy the tree verbatim. The daemon ships no assets of its own,
+          # so a static-binary operator needs this whole directory to point
+          # StaticRoot at -- shell, stylesheet, every module including the
+          # vendored ones and their LICENSEs, the i18n dictionaries, the
+          # favicon and the logo.
+          cp -R src/webapi/static/. "dist/${STEM}/"
+          # The zip must be the tracked tree, not a subset someone has to
+          # remember to extend. Compare counts against git rather than
+          # spot-checking filenames: a new view, dictionary or image is then
+          # covered the day it lands.
+          tracked=$(git ls-files src/webapi/static | wc -l | tr -d ' ')
+          packed=$(find "dist/${STEM}" -type f | wc -l | tr -d ' ')
+          if [ "$packed" -ne "$tracked" ]; then
+            echo "::error::frontend bundle has ${packed} files, git tracks ${tracked}"
+            exit 1
+          fi
+          # An entry point that cannot load is worse than a missing asset,
+          # because it fails in the browser rather than here.
+          for required in index.html css/app.css js/app.js; do
+            if [ ! -s "dist/${STEM}/${required}" ]; then
+              echo "::error::frontend bundle is missing ${required}"
+              exit 1
+            fi
+          done
+          echo "frontend bundle: ${packed} files"
+          (cd dist && zip -qr "${STEM}.zip" "${STEM}")
+          rm -rf "dist/${STEM}"
+
+      - name: Upload amuleapi frontend bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: amuleapi-frontend
+          path: dist/aMule-*-amuleapi-frontend.zip
+
   release:
     name: Assemble draft Release
     needs: [build, source-bundle]
@@ -229,6 +269,11 @@ jobs:
         with:
           name: source-bundle
           path: dist/
+      - name: Download amuleapi frontend bundle
+        uses: actions/download-artifact@v8
+        with:
+          name: amuleapi-frontend
+          path: dist/
 
       - name: List artifacts
         run: ls -la dist/
@@ -262,11 +307,12 @@ jobs:
           check "Windows installer .exe (x64 + arm64)" 2 'aMule-*-Windows-Setup-*.exe'
           check "Linux static daemon (x86_64 + aarch64)" 2 'aMule-*-Linux-*-static.tar.gz'
           check "Source bundle"                     1 'aMule-*-src.tar.gz'
+          check "amuleapi frontend bundle"          1 'aMule-*-amuleapi-frontend.zip'
           if [ "$fail" -ne 0 ]; then
             echo "::error::Artifact manifest incomplete — refusing to assemble the draft Release."
             exit 1
           fi
-          echo "All 12 expected release artifacts present."
+          echo "All 13 expected release artifacts present."
 
       - name: Create draft Release
         env:
