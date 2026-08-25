@@ -773,9 +773,11 @@ void CState::MutateShared(const std::function<void(FileMap &)> &fn)
 
 void CState::MutateClients(const std::function<void(std::map<std::uint32_t, ClientSnapshot> &)> &fn)
 {
-	const ReentryGuard guard(this);
-	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
-	fn(m_clients);
+	// Forwards rather than repeating the guard-plus-lock body: the two differ
+	// only in what they hand the callback. Still exactly one acquisition, so
+	// a caller that does not need the files pays nothing for the convenience.
+	MutateClientsWithFiles(
+		[&fn](std::map<std::uint32_t, ClientSnapshot> &clients, const FileMap &) { fn(clients); });
 }
 
 void CState::MutateClientsWithFiles(
