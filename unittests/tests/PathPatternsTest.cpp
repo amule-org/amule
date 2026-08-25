@@ -333,3 +333,71 @@ TEST(PathPatterns, Match_StillRejectsAMissegmentedLiteral)
 	std::map<std::string, std::string> caps;
 	ASSERT_TRUE(!Match(pat, SplitPath("/api/v0/shared/"), caps));
 }
+
+// ----------------------------------------------------------------------
+// ParseBoundedUint / ParseBoolValue
+// ----------------------------------------------------------------------
+
+// Seven hand-written count parsers disagreed about the two questions that
+// decide what a client sees: what an unparseable value does, and what an
+// out-of-range one does. A typo was a hard error on `interval` and a silent
+// behaviour change on `width` -- on the same endpoint.
+TEST(PathPatterns, ParseBoundedUint_AcceptsInRange)
+{
+	std::uint64_t v = 999;
+	ASSERT_TRUE(ParseBoundedUint("0", 0, 500, v));
+	ASSERT_EQUALS(static_cast<std::uint64_t>(0), v);
+	ASSERT_TRUE(ParseBoundedUint("500", 0, 500, v));
+	ASSERT_EQUALS(static_cast<std::uint64_t>(500), v);
+	ASSERT_TRUE(ParseBoundedUint("1", 1, 3600, v));
+	ASSERT_EQUALS(static_cast<std::uint64_t>(1), v);
+}
+
+// Unparseable and out-of-range are the same answer, which is the whole point:
+// neither silently becomes a default.
+TEST(PathPatterns, ParseBoundedUint_RejectsGarbageAndOutOfRange)
+{
+	std::uint64_t v = 42;
+	ASSERT_TRUE(!ParseBoundedUint("", 0, 500, v));
+	ASSERT_TRUE(!ParseBoundedUint("abc", 0, 500, v));
+	ASSERT_TRUE(!ParseBoundedUint("12x", 0, 500, v));
+	ASSERT_TRUE(!ParseBoundedUint("-1", 0, 500, v));
+	ASSERT_TRUE(!ParseBoundedUint("501", 0, 500, v));
+	ASSERT_TRUE(!ParseBoundedUint("0", 1, 3600, v));
+	// A rejected parse leaves the caller's default alone.
+	ASSERT_EQUALS(static_cast<std::uint64_t>(42), v);
+}
+
+// The bound is checked while accumulating, so a digit string long enough to
+// wrap a uint64 is rejected rather than wrapping into range.
+TEST(PathPatterns, ParseBoundedUint_DoesNotWrapOnLongInput)
+{
+	std::uint64_t v = 7;
+	ASSERT_TRUE(!ParseBoundedUint("99999999999999999999999999", 0, 500, v));
+	ASSERT_TRUE(!ParseBoundedUint("18446744073709551617", 0, 500, v));
+	ASSERT_EQUALS(static_cast<std::uint64_t>(7), v);
+}
+
+// `include_completed` read every unrecognised value as false while its
+// neighbour `include_parts` answered 400, so one typo was silent and the next
+// was fatal. One vocabulary, and anything outside it is answerable.
+TEST(PathPatterns, ParseBoolValue_AcceptsTheThreeSpellings)
+{
+	bool b = false;
+	ASSERT_TRUE(ParseBoolValue("1", b) && b);
+	ASSERT_TRUE(ParseBoolValue("true", b) && b);
+	ASSERT_TRUE(ParseBoolValue("yes", b) && b);
+	ASSERT_TRUE(ParseBoolValue("0", b) && !b);
+	ASSERT_TRUE(ParseBoolValue("false", b) && !b);
+	ASSERT_TRUE(ParseBoolValue("no", b) && !b);
+}
+
+TEST(PathPatterns, ParseBoolValue_RejectsAnythingElse)
+{
+	bool b = true;
+	ASSERT_TRUE(!ParseBoolValue("maybe", b));
+	ASSERT_TRUE(!ParseBoolValue("", b));
+	ASSERT_TRUE(!ParseBoolValue("TRUE", b));
+	// Left alone on rejection.
+	ASSERT_TRUE(b);
+}

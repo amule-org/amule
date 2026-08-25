@@ -206,14 +206,24 @@ Header: `{"alg":"HS256","typ":"JWT"}`. Payload: `{"role":"admin"|"guest","iat":<
 
 Each endpoint documents its own response shape under the endpoint section. List endpoints wrap their array under the resource plural name (`{"downloads": [...]}`, `{"shared": [...]}`) so clients can extend the envelope with sibling metadata without breaking JSON-parser pipelines.
 
+### Query parameter validation
+
+One rule, everywhere: **a query parameter the server does not understand is a `400 bad_request`, never a silent default.** That covers both halves of "does not understand": a value that will not parse, and a value outside the parameter's documented range.
+
+- Booleans (`include_completed`, `include_parts`) accept `1`/`0`, `true`/`false` and `yes`/`no`. Anything else is a `400`.
+- Counts (`limit`, `offset`, `tail`, `width`, `interval`, `max_client_versions`, `since_id`) accept decimal digits within the range documented for that parameter. A non-numeric value, a negative one, or one outside the range is a `400` naming the bound.
+- An omitted parameter takes the documented default. Only omission does that; an empty value (`?limit=`) is a `400`, not an omission.
+
+Nothing clamps. A count above its cap used to be quietly reduced on some endpoints, so `?limit=99999` returned 500 rows with nothing in the response saying the request had been altered; it is now a rejection, which is the same answer the other endpoints already gave.
+
 ### List pagination and sorting
 
 The list endpoints — `GET /downloads`, `/clients`, `/shared`, `/servers`, `/friends`, the two per-file client routes, and `/search/{id}/results` — accept optional query parameters for server-side windowing and ordering, and always return pagination metadata beside the array:
 
 | Param    | Default          | Notes |
 |----------|------------------|-------|
-| `limit`  | *(all items)*    | Maximum items to return, capped at `500`. Omitted → the full set (pre-pagination behaviour). Non-integer or negative → `400 bad_request`. |
-| `offset` | `0`              | Items to skip before the window. Non-integer or negative → `400 bad_request`. |
+| `limit`  | *(all items)*    | Maximum items to return, `0`–`500`. Omitted → the full set (pre-pagination behaviour). Non-integer, negative or above `500` → `400 bad_request`. |
+| `offset` | `0`              | Items to skip before the window. Non-integer, negative or above `1000000000` → `400 bad_request`. |
 | `sort`   | *(native order)* | Field to sort by; endpoint-specific (table below). Unknown field → `400 bad_request`. |
 | `order`  | `asc`            | `asc` or `desc`; anything else → `400 bad_request`. |
 
@@ -325,9 +335,9 @@ If `amuleapi.conf[Server]/AllowCORS=1`:
 
 The dispatcher rejects paths containing NUL, encoded NUL (`%00`), encoded `..` (any case of `%2e%2e`), or a literal `..` segment with `400 bad_request` before routing. Defence-in-depth against a future endpoint that admits path captures.
 
-**Trailing slash.** Under `/api/`, one trailing `/` is stripped before routing, so `/api/v0/status/` and `/api/v0/status` are the same request. Exactly one is stripped — `//` is a malformed path rather than a synonym, so `/api/v0/downloads//` does not reach `/api/v0/downloads`. The rule stops at the API prefix: a static asset path is a filesystem path, where a trailing slash means a directory.
+**Trailing slash.** Under `/api/`, one trailing `/` is stripped before routing, so `/api/v0/status/` and `/api/v0/status` are the same request. Exactly one is stripped: `//` is a malformed path rather than a synonym, so `/api/v0/downloads//` does not reach `/api/v0/downloads`. The rule stops at the API prefix: a static asset path is a filesystem path, where a trailing slash means a directory.
 
-**Empty path captures.** A segment standing in for a `{capture}` cannot be empty. Every capture names a resource — a hash, an ECID, an index, an address — so a path that binds one to the empty string matches no route and is `404 not_found`, rather than reaching a handler and being rejected there with whatever status that endpoint happens to use.
+**Empty path captures.** A segment standing in for a `{capture}` cannot be empty. Every capture names a resource (a hash, an ECID, an index, an address), so a path that binds one to the empty string matches no route and is `404 not_found`, rather than reaching a handler and being rejected there with whatever status that endpoint happens to use.
 
 ### Request size limits
 
@@ -869,7 +879,7 @@ curl -H "Authorization: Bearer $TOKEN" \
   "http://$HOST/api/v0/downloads/8b54a3c2…/clients?include_parts=true"
 ```
 
-**Errors:** `404 not_found` (no download / no shared file with that hash), `400 bad_request` (bad list params, or `include_parts` other than `true` / `false`), `503 ec_unavailable`.
+**Errors:** `404 not_found` (no download / no shared file with that hash), `400 bad_request` (bad list params, or an `include_parts` that is not a boolean), `503 ec_unavailable`.
 
 #### `POST /api/v0/downloads/{hash}/a4af`
 
@@ -2432,7 +2442,7 @@ Time-series points behind the desktop Statistics graphs.
 | Parameter | Type | Default | Meaning |
 |---|---|---|---|
 | `interval` | int, `1`–`3600` | `1` | Seconds between samples. Changes what amuled is asked for, so it changes the reach of the window: `interval=10` covers ten times as long at a tenth the resolution. |
-| `width` | int, `1`–`1800` | full window | Tails the response to the last `N` samples. Applied after the fetch — it does not change what is requested, so it never changes the time span each sample covers. |
+| `width` | int, `0`–`1800` | full window | Tails the response to the last `N` samples. Applied after the fetch, so it does not change what is requested, so it never changes the time span each sample covers. `0` means the full window, same as omitting it. |
 
 ```json
 {
@@ -2467,7 +2477,7 @@ Each point has `t` (ISO-8601 UTC), `t_unix` (unix seconds) and `value`, spaced b
 | `kad_node_seconds` | **Not a transfer figure.** The running per-second sum of the Kad node count, i.e. node·seconds. Divide by `duration_seconds` for the session-average node count, which is its only use. |
 | `duration_seconds` | Daemon uptime at the newest point. `0` if the daemon does not report it. Divide any of the three figures above by it to get the session average the desktop plots. |
 
-**Errors:** `400 bad_request` (`interval` outside `1`–`3600` or non-numeric), `404 not_found` (unknown graph name), `503 ec_unavailable`.
+**Errors:** `400 bad_request` (`interval` or `width` non-numeric or out of range), `404 not_found` (unknown graph name), `503 ec_unavailable`.
 
 ---
 
@@ -2790,7 +2800,7 @@ Served from the refresher snapshot — no EC roundtrip per request. Standard [li
 
 **Auth:** `GUEST`
 
-**Query:** `since_id=N` (only messages with `id > N`), `limit=N` (the last N of that window).
+**Query:** `since_id=N` (only messages with `id > N`), `tail=N` (the last N of that window, max `100000`). This selects a tail rather than a page, which is why it is not called `limit`: on the list endpoints `limit` is a window paired with `offset`, and one word meaning two things is a rule a client has to learn twice.
 
 ```json
 {

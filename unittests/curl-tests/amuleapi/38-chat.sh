@@ -182,6 +182,30 @@ _curl -H "Authorization: Bearer $TOKEN" \
 _assert_json_eq '.messages | length'   1                'since_id returns exactly the new message'
 _assert_json_eq '.messages[0].text'    "second message" 'since_id returns the right message'
 
+# --- 5b. `tail`, not `limit`. --------------------------------------
+#
+# This selects the last N of the window rather than a page of it, which is
+# what the log endpoints already call `tail`. It was called `limit`, which
+# on nine other collections means a window paired with `offset` -- one word
+# with two meanings is a rule a client has to learn twice.
+_curl -H "Authorization: Bearer $TOKEN" \
+	"$HOST/api/v0/chats/$PEER/messages?tail=1"
+_assert_status 200 "GET messages?tail=1 → 200"
+_assert_json_eq '.messages | length' 1 'tail=1 returns just the newest message'
+_assert_json_eq '.messages[0].text' "second message" 'tail keeps the newest, not the oldest'
+
+# The old spelling is now an unknown parameter, which is simply ignored --
+# it is not a count the endpoint honours under another name.
+_curl -H "Authorization: Bearer $TOKEN" \
+	"$HOST/api/v0/chats/$PEER/messages?limit=1"
+_assert_status 200 "GET messages?limit=1 → 200 (unknown param, ignored)"
+_assert_json_eq '.messages | length' 2 'limit no longer truncates the chat window'
+
+# Same strict parsing as every other count on the surface.
+_curl -H "Authorization: Bearer $TOKEN" \
+	"$HOST/api/v0/chats/$PEER/messages?tail=abc"
+_assert_status 400 "GET messages?tail=abc → 400"
+
 # --- 6. Input validation. -----------------------------------------
 _curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/chats/notanaddress/messages"
 _assert_status 400 "GET messages with a malformed {peer} → 400"

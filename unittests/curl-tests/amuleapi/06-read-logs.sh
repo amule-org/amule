@@ -112,11 +112,15 @@ _assert_status 200 "GET /logs/amule?tail=0 → 200"
 _assert_json_eq '(.returned == .total_cached)' true \
 	'/logs/amule?tail=0 returns all (tail=0 is "no tailing")'
 
-# Bogus / non-numeric tail clamps to 0 (return all).
+# A non-numeric tail is a 400, not a silent "return all". It used to parse as
+# 0 and quietly hand back the whole buffer, so a typo changed the response
+# without saying so; the count is now validated like every other on the surface.
 _curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/logs/amule?tail=notanumber"
-_assert_status 200 "GET /logs/amule?tail=notanumber → 200"
-_assert_json_eq '(.returned == .total_cached)' true \
-	'/logs/amule?tail=<bogus> defaults to "no tailing"'
+_assert_status 400 "GET /logs/amule?tail=notanumber → 400"
+
+# Out of range is the same answer, where it used to clamp to 100000.
+_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/logs/amule?tail=999999"
+_assert_status 400 "GET /logs/amule?tail=999999 → 400"
 
 # --- 4. /logs/serverinfo shape. ------------------------------------
 _curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/logs/serverinfo"

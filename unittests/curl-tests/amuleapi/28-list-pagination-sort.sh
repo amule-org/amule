@@ -164,10 +164,15 @@ for pair in "${ENDPOINTS[@]}"; do
 	_curl "${AUTH[@]}" "$HOST/api/v0/$ep?sort=nonexistent_field"
 	_assert_status 400 "GET /$ep?sort=nonexistent_field → 400"
 
-	# 7. limit is capped at 500 (echoed limit never exceeds 500).
+	# 7. 500 is the cap, and asking for more is a rejection rather than a
+	# silent reduction: the echoed `limit` used to be the only place a
+	# client could notice its request had been altered, and `width` and
+	# `tail` had no such echo at all.
 	_curl "${AUTH[@]}" "$HOST/api/v0/$ep?limit=99999"
-	_assert_status 200 "GET /$ep?limit=99999 → 200 (clamped)"
-	_assert_json_le ".limit" 500 "/$ep?limit=99999 echoes limit <= 500"
+	_assert_status 400 "GET /$ep?limit=99999 → 400 (over the cap)"
+	_curl "${AUTH[@]}" "$HOST/api/v0/$ep?limit=500"
+	_assert_status 200 "GET /$ep?limit=500 → 200 (the cap is in range)"
+	_assert_json_eq ".limit" 500 "/$ep?limit=500 echoes the limit it used"
 done
 
 curl -s -X DELETE "${AUTH[@]}" "$HOST/api/v0/search/$SEARCH_SID" > /dev/null 2>&1
