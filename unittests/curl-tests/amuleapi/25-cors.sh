@@ -320,7 +320,7 @@ if echo "$ACAM" | grep -q "POST" && echo "$ACAM" | grep -q "PATCH" \
 else
 	_fail "Allow-Methods" "expected POST/PATCH/DELETE listed, got '$ACAM'"
 fi
-# PUT specifically: PUT /api/v0/shared/directories is a real route (the
+# PUT specifically: PUT /api/v0/share_directories is a real route (the
 # replace-the-whole-share-root-list form), and it was missing from the
 # advertised list. A browser doing a cross-origin PUT there was told the
 # method is not allowed and blocked the request before sending it -- the
@@ -335,7 +335,7 @@ fi
 _curl -X OPTIONS \
 	-H "Origin: https://allowed.example.com" \
 	-H "Access-Control-Request-Method: PUT" \
-	"$HOST/api/v0/shared/directories"
+	"$HOST/api/v0/share_directories"
 PUT_STATUS=$(head -1 "$HDR" | awk '{print $2}')
 PUT_ACAM=$(_hdr "Access-Control-Allow-Methods")
 if [ "$PUT_STATUS" = "204" ] && echo "$PUT_ACAM" | grep -q "PUT"; then

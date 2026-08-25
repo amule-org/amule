@@ -205,11 +205,16 @@ _assert_status 400 "POST /search (malformed JSON) → 400"
 # Multi-search: each POST /search gets its own daemon-allocated search_id
 # and its own result slot; a new search does NOT wipe the others. Every
 # read/stop/free names its id in the path -- there is no implicit target,
-# which is what the retired-route and bad-id assertions below pin down.
+# which is what the bad-id assertions below pin down.
+#
+# `results` and `stop` reach the {id} matcher and are rejected as ids, which
+# is the honest answer: they are not routes, and the rejection already names
+# where to find a real one.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results"
-_assert_status 404 "GET /search/results → 404 (retired: id goes in the path)"
+_assert_status 400 "GET /search/results → 400 (id goes in the path)"
+_assert_json_eq '.error.code' bad_request '/search/results rejection names the id rule'
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/stop"
-_assert_status 404 "POST /search/stop → 404 (retired: id goes in the path)"
+_assert_status 400 "POST /search/stop → 400 (id goes in the path)"
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \

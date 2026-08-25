@@ -107,7 +107,7 @@ export default function Shared({ isGuest }) {
     else toast(tn("shared_verify_started_selected", hashes.length), "info");
   };
   const reload = async () => {
-    try { await api.post("shared/reload"); toast(t("shared_toast_reloading"), "success"); setTimeout(() => data.refresh("shared"), 1500); }
+    try { await api.post("shared_reload"); toast(t("shared_toast_reloading"), "success"); setTimeout(() => data.refresh("shared"), 1500); }
     catch (e) { toast(terr(e) || t("shared_error"), "error"); }
   };
 

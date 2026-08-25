@@ -170,9 +170,10 @@ _assert_json_eq '.disk.incoming_free_bytes | type | . == "number" or . == "null"
 _assert_json_eq '[.disk[]] | map(select(. == 18446744073709551615)) | length == 0' true \
 	'disk figures never report the unsigned free-space sentinel'
 
-# Retired spellings must be gone from the whole body, not merely unused.
+# These spellings are not part of the surface; assert they are absent from the
+# whole body rather than merely unused by the assertions above.
 _assert_json_eq '[paths | join(".")] | map(select(test("low_id|upload_queue_length|total_source_count"))) | length == 0' \
-	true '/status no longer carries the retired field names'
+	true '/status carries none of these field names'
 
 # --- 4. /status with guest bearer also works (any-role read gate). --
 GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \

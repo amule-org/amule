@@ -104,7 +104,7 @@ if [ "$COUNT" = "0" ]; then
 	fi
 	echo "    info: planted fixture $FIXTURE; reloading shares"
 	curl -s -o /dev/null -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-		"$HOST/api/v0/shared/reload"
+		"$HOST/api/v0/shared_reload"
 	for _ in $(seq 1 30); do
 		sleep 1
 		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared"

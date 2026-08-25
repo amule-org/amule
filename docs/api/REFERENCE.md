@@ -39,7 +39,7 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 - [`DELETE /api/v0/downloads`](#delete-apiv0downloads) — bulk cancel + remove
 - [`PATCH /api/v0/downloads/{hash}`](#patch-apiv0downloadshash) — pause / resume / priority / category
 - [`DELETE /api/v0/downloads/{hash}`](#delete-apiv0downloadshash) — cancel + remove
-- [`POST /api/v0/downloads/clear_completed`](#post-apiv0downloadsclear_completed) — bulk-clear completed staging buffer
+- [`POST /api/v0/downloads_clear_completed`](#post-apiv0downloadsclear_completed) — bulk-clear completed staging buffer
 
 **Clients (peers)**
 - [`GET /api/v0/clients`](#get-apiv0clients) — list peers, optional filter
@@ -50,13 +50,13 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 - [`GET /api/v0/shared`](#get-apiv0shared) — list shared files
 - [`GET /api/v0/shared/{hash}`](#get-apiv0sharedhash) — detail view; every list field plus shared-detail fields
 - [`GET /api/v0/shared/{hash}/clients`](#get-apiv0sharedhashclients) — peers of one shared file
-- [`POST /api/v0/shared/reload`](#post-apiv0sharedreload) — re-walk shared directories
+- [`POST /api/v0/shared_reload`](#post-apiv0sharedreload) — re-walk shared directories
 - [`POST /api/v0/shared/media/refresh`](#post-apiv0sharedmediarefresh) — re-extract media metadata for the whole share
 - [`POST /api/v0/shared/{hash}/media/refresh`](#post-apiv0sharedhashmediarefresh) — re-extract it for one file
-- [`GET /api/v0/shared/directories`](#get-apiv0shareddirectories) — the configured share roots
-- [`PUT /api/v0/shared/directories`](#put-apiv0shareddirectories) — replace the configured share roots
-- [`POST /api/v0/shared/directories`](#post-apiv0shareddirectories) — add one share root
-- [`DELETE /api/v0/shared/directories`](#delete-apiv0shareddirectories) — remove one share root
+- [`GET /api/v0/share_directories`](#get-apiv0shareddirectories) — the configured share roots
+- [`PUT /api/v0/share_directories`](#put-apiv0shareddirectories) — replace the configured share roots
+- [`POST /api/v0/share_directories`](#post-apiv0shareddirectories) — add one share root
+- [`DELETE /api/v0/share_directories`](#delete-apiv0shareddirectories) — remove one share root
 - [`POST /api/v0/shared/{hash}/verify`](#post-apiv0sharedhashverify) — re-hash a shared file against its on-disk data
 - [`PATCH /api/v0/shared`](#patch-apiv0shared) — bulk change upload priority
 - [`PATCH /api/v0/shared/{hash}`](#patch-apiv0sharedhash) — change upload priority
@@ -67,7 +67,7 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 - [`POST /api/v0/servers/{ecid}/connect`](#post-apiv0serversecidconnect--post-apiv0serversipportconnect) — connect to specific server (ECID or `ip:port`)
 - [`DELETE /api/v0/servers/{ecid}`](#delete-apiv0serversecid--delete-apiv0serversipport) — remove server (ECID or `ip:port`)
 - [`PATCH /api/v0/servers/{ecid}`](#patch-apiv0serversecid--patch-apiv0serversipport) — set server priority / static flag (ECID or `ip:port`)
-- [`POST /api/v0/servers/update`](#post-apiv0serversupdate) — refresh from `server.met` URL
+- [`POST /api/v0/servers_update`](#post-apiv0serversupdate) — refresh from `server.met` URL
 - [`GET /api/v0/friends`](#get-apiv0friends) — list the friends list
 - [`POST /api/v0/friends`](#post-apiv0friends) — add a friend, by connected peer or by address
 - [`DELETE /api/v0/friends/{ecid}`](#delete-apiv0friendsecid) — remove a friend
@@ -932,7 +932,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 
 **Auth:** `ADMIN`
 
-> The `GET` on this path was retired: A4AF sources are rows of [`GET /downloads/{hash}/clients`](#get-apiv0downloadshashclients) now, carrying the whole peer object rather than a bare ECID, and `a4af_auto` is already on the download detail object. `GET` answers `405`.
+> `POST` only; a `GET` here answers `405`. A4AF sources are rows of [`GET /downloads/{hash}/clients`](#get-apiv0downloadshashclients), carrying the whole peer object rather than a bare ECID, and `a4af_auto` is on the download detail object.
 
 Force A4AF source-swapping for this download. Downloads-only.
 
@@ -1068,7 +1068,7 @@ curl -s -X DELETE -H "Authorization: Bearer $TOKEN" \
 
 **Errors:** `400 amuled_rejected`, `404 not_found`, `409 completed_use_clear_completed`, `503 ec_unavailable`.
 
-#### `POST /api/v0/downloads/clear_completed`
+#### `POST /api/v0/downloads_clear_completed`
 
 **Auth:** `ADMIN`
 
@@ -1079,13 +1079,13 @@ Two request shapes share this endpoint:
 ```sh
 # Bulk: no body. Clears every completed entry in one EC roundtrip.
 curl -s -X POST -H "Authorization: Bearer $TOKEN" \
-  "http://$HOST/api/v0/downloads/clear_completed"
+  "http://$HOST/api/v0/downloads_clear_completed"
 
 # Per-entry: clear a single completed entry by hash.
 curl -s -X POST -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"hash": "8b54a3c2..."}' \
-  "http://$HOST/api/v0/downloads/clear_completed"
+  "http://$HOST/api/v0/downloads_clear_completed"
 ```
 
 The response envelope is identical for both shapes:
@@ -1455,7 +1455,7 @@ For a shared file that is also still downloading, the same values are available 
 
 **Errors:** `404 not_found` (no shared file with that hash), `503 ec_unavailable`.
 
-#### `POST /api/v0/shared/reload`
+#### `POST /api/v0/shared_reload`
 
 **Auth:** `ADMIN`
 
@@ -1463,7 +1463,7 @@ Equivalent to the desktop client's "Reload" button — amuled re-walks its share
 
 ```sh
 curl -s -X POST -H "Authorization: Bearer $TOKEN" \
-  "http://$HOST/api/v0/shared/reload"
+  "http://$HOST/api/v0/shared_reload"
 ```
 
 ```json
@@ -1526,7 +1526,7 @@ The same operation for a single file, which is the quickest way to check a fix o
 
 **Errors:** `404 not_found` (no shared file with that hash), `409 partfile_unsupported` (an incomplete download has no complete file to read), `400 amuled_rejected` (media metadata extraction is disabled, or the file is not eligible: not audio/video, or an incomplete download), `503 ec_unsupported`, `503 ec_unavailable`.
 
-#### `GET /api/v0/shared/directories`
+#### `GET /api/v0/share_directories`
 
 **Auth:** `GUEST`
 
@@ -1534,7 +1534,7 @@ The share roots amuled is configured with — as opposed to [`GET /shared`](#get
 
 ```sh
 curl -s -H "Authorization: Bearer $TOKEN" \
-  "http://$HOST/api/v0/shared/directories"
+  "http://$HOST/api/v0/share_directories"
 ```
 
 ```json
@@ -1550,7 +1550,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 
 **Errors:** `502 amuled_rejected`, `503 ec_unavailable`.
 
-#### `PUT /api/v0/shared/directories`
+#### `PUT /api/v0/share_directories`
 
 **Auth:** `ADMIN`
 
@@ -1559,7 +1559,7 @@ Replace the whole set of roots. A full replace rather than a merge, because that
 ```sh
 curl -s -X PUT -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"directories":[{"path":"/home/user/media","recursive":true}]}' \
-  "http://$HOST/api/v0/shared/directories"
+  "http://$HOST/api/v0/share_directories"
 ```
 
 ```json
@@ -1581,11 +1581,11 @@ amuled validates every path: a REST client cannot stat the core's filesystem, so
 
 `reason` is `not_found` (missing, or not a directory) or `not_readable`. amuled reports these as codes and the API renders them, so its locale never leaks into your response.
 
-The **rescan is scheduled, not completed**, before the response returns: a successful reply means the new roots are validated and persisted, and that the re-walk will start on amuled's next processing tick. Until it finishes, [`GET /api/v0/shared`](#get-apiv0shared) still serves the previous file list. Observe completion the same way as [`POST /api/v0/shared/reload`](#post-apiv0sharedreload), whose notes on log lines and coalescing apply here too.
+The **rescan is scheduled, not completed**, before the response returns: a successful reply means the new roots are validated and persisted, and that the re-walk will start on amuled's next processing tick. Until it finishes, [`GET /api/v0/shared`](#get-apiv0shared) still serves the previous file list. Observe completion the same way as [`POST /api/v0/shared_reload`](#post-apiv0sharedreload), whose notes on log lines and coalescing apply here too.
 
 **Errors:** `400 bad_request` (`directories` not an array, an entry without a non-empty `path`, non-boolean `recursive`), `502 amuled_rejected`, `503 ec_unavailable`.
 
-#### `POST /api/v0/shared/directories`
+#### `POST /api/v0/share_directories`
 
 **Auth:** `ADMIN`
 
@@ -1594,14 +1594,14 @@ Add a single root, leaving the others alone — the convenience path for scripts
 ```sh
 curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"path":"/home/user/new","recursive":true}' \
-  "http://$HOST/api/v0/shared/directories"
+  "http://$HOST/api/v0/share_directories"
 ```
 
 Idempotent: adding a path that is already configured updates its `recursive` flag rather than failing, so "ensure this folder is shared" is safe to repeat. Same `{ok, rejected}` body as `PUT`.
 
 **Errors:** `400 bad_request` (missing/empty `path`, non-boolean `recursive`), `502 amuled_rejected`, `503 ec_unavailable`.
 
-#### `DELETE /api/v0/shared/directories`
+#### `DELETE /api/v0/share_directories`
 
 **Auth:** `ADMIN`
 
@@ -1612,11 +1612,11 @@ Pass the **exact** `path` string returned by `GET /shared/directories`, percent-
 ```sh
 # POSIX root: /home/user/new
 curl -s -X DELETE -H "Authorization: Bearer $TOKEN" \
-  "http://$HOST/api/v0/shared/directories?path=%2Fhome%2Fuser%2Fnew"
+  "http://$HOST/api/v0/share_directories?path=%2Fhome%2Fuser%2Fnew"
 
 # Windows root: C:\Users\bob\My Shares
 curl -s -X DELETE -H "Authorization: Bearer $TOKEN" \
-  "http://$HOST/api/v0/shared/directories?path=C%3A%5CUsers%5Cbob%5CMy%20Shares"
+  "http://$HOST/api/v0/share_directories?path=C%3A%5CUsers%5Cbob%5CMy%20Shares"
 ```
 
 Removing a path that is not configured is a `404` rather than a silent success, so a typo — or a path that does not byte-match what `GET` returned — is visible. Same `{ok, rejected}` body as `PUT`.
@@ -1808,7 +1808,7 @@ Tells amuled to disconnect from its current server and dial the specified one. T
 
 ```sh
 curl -s -X POST -H "Authorization: Bearer $TOKEN" \
-  "http://$HOST/api/v0/servers/203.0.113.5:4242/connect"
+  "http://$HOST/api/v0/servers/by-address/203.0.113.5:4242/connect"
 ```
 
 **Response:** `202 Accepted` → `{ "ok": true, "ecid": 1 }`.
@@ -1850,7 +1850,7 @@ curl -s -X PATCH -H "Authorization: Bearer $TOKEN" \
 
 **Errors:** `400 bad_request` (unknown `priority`, non-bool `static`, or neither field present), `400 amuled_rejected`, `404 not_found`, `503 ec_unavailable`.
 
-#### `POST /api/v0/servers/update`
+#### `POST /api/v0/servers_update`
 
 **Auth:** `ADMIN`
 
@@ -2245,7 +2245,7 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
 
 **Auth:** `ADMIN`
 
-Downloads a `nodes.dat` from the supplied URL and rebuilds the Kad node list from it — the Kad counterpart of [`POST /api/v0/servers/update`](#post-apiv0serversupdate), and the same operation the desktop GUI's "Update node list from URL" button drives.
+Downloads a `nodes.dat` from the supplied URL and rebuilds the Kad node list from it — the Kad counterpart of [`POST /api/v0/servers_update`](#post-apiv0serversupdate), and the same operation the desktop GUI's "Update node list from URL" button drives.
 
 **Body:**
 
@@ -2349,7 +2349,7 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
   "http://$HOST/api/v0/ipfilter/update"
 ```
 
-An explicit URL is **persisted** into the `security.ipfilter_update_url` preference, so a subsequent `GET /preferences` reflects it and the next startup auto-update (`security.ipfilter_auto_update`) uses it — the same side effect [`POST /api/v0/servers/update`](#post-apiv0serversupdate) and [`POST /api/v0/kad/update`](#post-apiv0kadupdate) have.
+An explicit URL is **persisted** into the `security.ipfilter_update_url` preference, so a subsequent `GET /preferences` reflects it and the next startup auto-update (`security.ipfilter_auto_update`) uses it — the same side effect [`POST /api/v0/servers_update`](#post-apiv0serversupdate) and [`POST /api/v0/kad/update`](#post-apiv0kadupdate) have.
 
 **Response:** `202 Accepted` → `{ "ok": true, "ipfilter_url": "..." }`. The effective URL is echoed back, so a caller that omitted it learns which one ran.
 

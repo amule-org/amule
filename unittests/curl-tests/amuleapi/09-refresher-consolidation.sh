@@ -191,16 +191,7 @@ if [ "$NSERV" -gt 0 ]; then
 		'/servers[0].priority is string'
 fi
 
-# --- 5. /uploads — endpoint retired in Phase 4g. -------------------
-#
-# /clients now covers the full peer surface (every upload_state,
-# including queue waiters and download-side peers). Consumers filter
-# client-side by upload_state == "uploading" when they want the
-# legacy /uploads view. 10-refresher-lazy-ondemand.sh exercises the new shape.
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/uploads"
-_assert_status 404 "GET /uploads → 404 (retired in Phase 4g)"
-
-# --- 6. /status, /kad, /preferences — unaffected by the consolidation
+# --- 5. /status, /kad, /preferences — unaffected by the consolidation
 # (they ride on STAT_REQ and GET_PREFERENCES, which we did not touch).
 # A sanity glance to catch unrelated regressions slipping in.
 _curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/status"

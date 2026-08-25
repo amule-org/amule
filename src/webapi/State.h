@@ -1568,8 +1568,8 @@ public:
 
 	// Full peer list (all upload_state values, including queue
 	// waiters, idle peers, and banned). Backs /clients.
-	// The legacy /uploads endpoint is retired — consumers query
-	// /clients and filter by role on their side.
+	// Consumers query /clients and filter by role on their side rather
+	// than asking for a pre-filtered upload view.
 	std::vector<ClientSnapshot> Clients() const;
 
 	// --- Known clients (the daemon's credit store) -------------------------

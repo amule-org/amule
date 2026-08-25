@@ -344,35 +344,35 @@ _assert_status 400 "DELETE /servers/not-a-number → 400"
 # caller's mistake (400), one that parses but names no server we hold is
 # simply absent (404). They used to collapse onto the same 404 because the
 # resolver signalled every failure by returning ECID 0.
-# Every case carries a colon on purpose: the dispatcher only routes to the
-# by-address handler when the capture contains one, so a colon-less value
-# would be read as an ECID and 400 for an unrelated reason.
+# The address form has its own path now, so a colon is no longer what selects
+# the handler: a value without one reaches the same place and is rejected for
+# being a malformed address rather than for looking like an ECID.
 for bad in "not-an-ip:4242" "1.2.3.4:" ":4242" "1.2.3.4:0" "1.2.3.4:70000" \
-	"1.2.3.4:abc" "999.1.1.1:4242"; do
+	"1.2.3.4:abc" "999.1.1.1:4242" "no-colon-at-all"; do
 	_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-		"$HOST/api/v0/servers/$bad"
-	_assert_status 400 "DELETE /servers/$bad (malformed selector) → 400"
+		"$HOST/api/v0/servers/by-address/$bad"
+	_assert_status 400 "DELETE /servers/by-address/$bad (malformed address) → 400"
 done
 
 # Well-formed but absent: TEST-NET-1 (RFC 5737), never a real server.
 _curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/servers/192.0.2.1:4242"
+	"$HOST/api/v0/servers/by-address/192.0.2.1:4242"
 _assert_status 404 "DELETE /servers/192.0.2.1:4242 (unknown server) → 404"
 _assert_json_eq '.error.code' not_found \
 	'unknown ip:port carries error.code=not_found'
 
 # Same split on the other two routes that take the selector.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/servers/not-an-ip:4242/connect"
+	"$HOST/api/v0/servers/by-address/not-an-ip:4242/connect"
 _assert_status 400 "POST /servers/{malformed}/connect → 400"
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/servers/192.0.2.1:4242/connect"
+	"$HOST/api/v0/servers/by-address/192.0.2.1:4242/connect"
 _assert_status 404 "POST /servers/{unknown ip:port}/connect → 404"
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" -d '{"static":true}' \
-	"$HOST/api/v0/servers/not-an-ip:4242"
+	"$HOST/api/v0/servers/by-address/not-an-ip:4242"
 _assert_status 400 "PATCH /servers/{malformed} → 400"
 
 # --- Summary. -----------------------------------------------------
