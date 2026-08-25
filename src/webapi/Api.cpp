@@ -3585,22 +3585,72 @@ bool IsEcFailedResponse(const CECPacket *resp, std::string &out_msg)
 // what the daemon can actually hold; the shared side keeps the full
 // set in SharedPriorityToCode.
 // Returns false if the wire string isn't a known download priority.
-bool DownloadPriorityToCode(const std::string &name, std::uint8_t &out)
+// The one place the file-priority vocabulary is declared.
+//
+// /downloads, /shared and /categories all speak the PR_* code space and differ
+// only in which names they accept, which is how three near-identical converters
+// came to exist: adding or renaming a level was a multi-site edit with no
+// compiler help, and each call site additionally spelled its accepted set out
+// again in a rejection string.
+//
+// The differences in what each accepts are deliberate and stay. The .part.met
+// loader clamps anything but PR_LOW/PR_NORMAL/PR_HIGH back to Normal on
+// restart, so very_low and release are upload-side levels only and are refused
+// on the download path on purpose. Categories apply their priority to member
+// files as a download priority, so they inherit the download set.
+//
+// Servers are deliberately NOT in this table. SRV_PR_* is a different code
+// space in which the same word means a different number -- `low` is 0 for a
+// file and 2 for a server -- so folding them together would produce one table
+// that lies about half its rows. ServerPriorityCode stays where it is.
+enum PriorityDomain : unsigned
 {
-	if (name == "low") {
-		out = PR_LOW;
-		return true;
-	} else if (name == "normal") {
-		out = PR_NORMAL;
-		return true;
-	} else if (name == "high") {
-		out = PR_HIGH;
-		return true;
-	} else if (name == "auto") {
-		out = PR_AUTO;
-		return true;
+	kPrioDownload = 1u << 0,
+	kPrioShared = 1u << 1,
+	kPrioCategory = 1u << 2,
+};
+
+struct FilePriorityLevel
+{
+	const char *name;
+	std::uint8_t code;
+	unsigned domains;
+};
+
+const FilePriorityLevel kFilePriorities[] = {
+	{ "very_low", PR_VERY_LOW, kPrioShared },
+	{ "low", PR_LOW, kPrioDownload | kPrioShared | kPrioCategory },
+	{ "normal", PR_NORMAL, kPrioDownload | kPrioShared | kPrioCategory },
+	{ "high", PR_HIGH, kPrioDownload | kPrioShared | kPrioCategory },
+	{ "release", PR_VERYHIGH, kPrioShared },
+	{ "auto", PR_AUTO, kPrioDownload | kPrioShared | kPrioCategory },
+};
+
+bool FilePriorityToCode(const std::string &name, unsigned domain, std::uint8_t &out)
+{
+	for (const FilePriorityLevel &level : kFilePriorities) {
+		if ((level.domains & domain) != 0 && name == level.name) {
+			out = level.code;
+			return true;
+		}
 	}
 	return false;
+}
+
+// The rejection names exactly what this domain accepts, built from the table
+// rather than restated at each call site -- five sites had their own copy, so a
+// new level would have been announced in some of them and not others.
+std::string FilePriorityAccepted(unsigned domain)
+{
+	std::string out;
+	for (const FilePriorityLevel &level : kFilePriorities) {
+		if ((level.domains & domain) == 0)
+			continue;
+		if (!out.empty())
+			out += ", ";
+		out += level.name;
+	}
+	return "`priority` must be one of " + out;
 }
 
 // The three "fetch a list from a URL" endpoints — /servers/update,
@@ -4962,11 +5012,9 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 					400, "bad_request", "`priority` must be a wire-string enum");
 			}
 			std::uint8_t code = 0;
-			if (!DownloadPriorityToCode(it->second.get<std::string>(), code)) {
-				return ErrorResponse(400,
-					"bad_request",
-					"`priority` must be one of "
-					"low, normal, high, auto");
+			if (!FilePriorityToCode(it->second.get<std::string>(), kPrioDownload, code)) {
+				return ErrorResponse(
+					400, "bad_request", FilePriorityAccepted(kPrioDownload).c_str());
 			}
 			auto err = send_op(
 				EC_OP_PARTFILE_PRIO_SET, /*has_inner=*/true, EC_TAG_PARTFILE_PRIO, code);
@@ -8679,29 +8727,6 @@ namespace
 // combined "*_auto" strings are intentionally NOT accepted as input --
 // "auto" is the level the daemon computes, so a caller can't pin it.
 // Returns false on unknown enum.
-bool SharedPriorityToCode(const std::string &name, std::uint8_t &out)
-{
-	if (name == "very_low") {
-		out = PR_VERY_LOW;
-		return true;
-	} else if (name == "low") {
-		out = PR_LOW;
-		return true;
-	} else if (name == "normal") {
-		out = PR_NORMAL;
-		return true;
-	} else if (name == "high") {
-		out = PR_HIGH;
-		return true;
-	} else if (name == "release") {
-		out = PR_VERYHIGH;
-		return true;
-	} else if (name == "auto") {
-		out = PR_AUTO;
-		return true;
-	}
-	return false;
-}
 
 } // namespace
 
@@ -8738,11 +8763,8 @@ CHttpServer::Response CApiDispatcher::HandleSharedPatch(
 			return ErrorResponse(400, "bad_request", "`priority` must be a wire-string enum");
 		}
 		std::uint8_t code = 0;
-		if (!SharedPriorityToCode(pit->second.get<std::string>(), code)) {
-			return ErrorResponse(400,
-				"bad_request",
-				"`priority` must be one of "
-				"very_low, low, normal, high, release, auto");
+		if (!FilePriorityToCode(pit->second.get<std::string>(), kPrioShared, code)) {
+			return ErrorResponse(400, "bad_request", FilePriorityAccepted(kPrioShared).c_str());
 		}
 		CMD4Hash file_hash;
 		if (!HashFromHex(s.hash, file_hash)) {
@@ -8881,10 +8903,9 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsBulkPatch(const CHttpServer
 				return ErrorResponse(
 					400, "bad_request", "`priority` must be a wire-string enum");
 			std::uint8_t code = 0;
-			if (!DownloadPriorityToCode(it->second.get<std::string>(), code))
-				return ErrorResponse(400,
-					"bad_request",
-					"`priority` must be one of low, normal, high, auto");
+			if (!FilePriorityToCode(it->second.get<std::string>(), kPrioDownload, code))
+				return ErrorResponse(
+					400, "bad_request", FilePriorityAccepted(kPrioDownload).c_str());
 			ops.push_back({ EC_OP_PARTFILE_PRIO_SET, true, EC_TAG_PARTFILE_PRIO, code });
 		}
 	}
@@ -9047,10 +9068,8 @@ CHttpServer::Response CApiDispatcher::HandleSharedBulkPatch(const CHttpServer::R
 	if (!pit->second.is<std::string>())
 		return ErrorResponse(400, "bad_request", "`priority` must be a wire-string enum");
 	std::uint8_t code = 0;
-	if (!SharedPriorityToCode(pit->second.get<std::string>(), code))
-		return ErrorResponse(400,
-			"bad_request",
-			"`priority` must be one of very_low, low, normal, high, release, auto");
+	if (!FilePriorityToCode(pit->second.get<std::string>(), kPrioShared, code))
+		return ErrorResponse(400, "bad_request", FilePriorityAccepted(kPrioShared).c_str());
 
 	std::vector<BulkItem> results;
 	results.reserve(hashes.size());
@@ -9622,23 +9641,6 @@ bool ParseCategoryIndex(const std::string &s, std::uint8_t &out)
 // loader clamps anything but PR_LOW/PR_NORMAL/PR_HIGH back to Normal on the
 // next restart -- so accepting them here would be the same silent downgrade
 // #396 fixed for the direct download PATCH path (issue #384).
-bool CategoryPriorityToCode(const std::string &name, std::uint8_t &out)
-{
-	if (name == "low") {
-		out = PR_LOW;
-		return true;
-	} else if (name == "normal") {
-		out = PR_NORMAL;
-		return true;
-	} else if (name == "high") {
-		out = PR_HIGH;
-		return true;
-	} else if (name == "auto") {
-		out = PR_AUTO;
-		return true;
-	}
-	return false;
-}
 
 // Build the CEC_Category_Tag-shaped tag amuled expects. The shape is:
 //  parent tag EC_TAG_CATEGORY with the index as the int payload,
@@ -9736,10 +9738,9 @@ CHttpServer::Response ParseCategoryFields(const picojson::object &obj, CategoryF
 				return ErrorResponse(
 					400, "bad_request", "`priority` must be a wire-string enum");
 			}
-			if (!CategoryPriorityToCode(it->second.get<std::string>(), out.prio)) {
-				return ErrorResponse(400,
-					"bad_request",
-					"`priority` must be one of low, normal, high, auto");
+			if (!FilePriorityToCode(it->second.get<std::string>(), kPrioCategory, out.prio)) {
+				return ErrorResponse(
+					400, "bad_request", FilePriorityAccepted(kPrioCategory).c_str());
 			}
 			out.has_prio = true;
 		}

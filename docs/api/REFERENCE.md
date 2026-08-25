@@ -282,6 +282,21 @@ Processing is **best-effort per item** — each item is an independent EC roundt
 
 A malformed **request** (missing/empty `hashes`, an invalid patch field) is still a top-level `400 bad_request` and returns the plain error envelope, not `results`. The `hashes` array is capped at 500 entries.
 
+### Priority levels
+
+`priority` appears on four resources and accepts three different sets. The differences are deliberate rather than drift, and they reflect what the daemon can actually store:
+
+| Resource | Accepted |
+|---|---|
+| Downloads (`PATCH /downloads`, `PATCH /downloads/{hash}`) | `low`, `normal`, `high`, `auto` |
+| Shared files (`PATCH /shared`, `PATCH /shared/{hash}`) | `very_low`, `low`, `normal`, `high`, `release`, `auto` |
+| Categories (`POST /categories`, `PATCH /categories/{index}`) | `low`, `normal`, `high`, `auto` |
+| Servers (`PATCH /servers/{ecid}`) | `low`, `normal`, `high` |
+
+`very_low` and `release` are upload-side levels only: the `.part.met` loader clamps anything outside low/normal/high back to normal on restart, so a download pinned to one of them would silently lose it. Categories apply their priority to member files as a *download* priority, so they take the download set. Servers have three levels and no `auto`.
+
+A rejection names the set that endpoint accepts, so sending a wrong value tells you the right ones. Note that a file which is both downloading and shared carries two independent priorities from the two sets, and changing one does not affect the other.
+
 ### Localization and number formatting
 
 The API is a machine contract: **all API text is English and all numbers use the C locale** (a `.` decimal separator, no digit grouping), independent of the `amuleapi`/`amuled` locale or the `--locale` option. Localization is a client concern.
