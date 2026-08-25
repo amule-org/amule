@@ -150,6 +150,32 @@ TEST(State, WriteStatusRoundtrip)
 	ASSERT_EQUALS(static_cast<std::uint32_t>(17), out.total_src_count);
 }
 
+TEST(State, FileMapEmplaceFilesTheSnapshotUnderItsKey)
+{
+	// The clients walker resolves an amuled ECID with find() and then reads
+	// the snapshot it gets back, so the key and FileSnapshot::ecid have to
+	// agree. emplace() makes them agree instead of trusting the caller: a
+	// snapshot carrying the wrong id would otherwise break /clients silently.
+	CState s;
+	s.MutateDownloads([](FileMap &cache) {
+		FileSnapshot f;
+		f.ecid = 999; // stale / wrong -- the key is what readers look up by
+		f.hash = "cccc2222cccc2222cccc2222cccc2222";
+		f.is_downloading = true;
+		cache.emplace(42, std::move(f));
+	});
+	s.WithFiles([](const FileMap &files) {
+		const auto it = files.find(42);
+		ASSERT_TRUE(it != files.end());
+		ASSERT_EQUALS(static_cast<std::uint32_t>(42), it->second.ecid);
+		ASSERT_TRUE(files.find(999) == files.end());
+		// The hash index is keyed off the same insert, so it agrees too.
+		std::uint32_t by_hash = 0;
+		ASSERT_TRUE(files.FindEcidByHash("cccc2222cccc2222cccc2222cccc2222", by_hash));
+		ASSERT_EQUALS(static_cast<std::uint32_t>(42), by_hash);
+	});
+}
+
 TEST(State, MutateDownloadsRoundtripAndFind)
 {
 	CState s;

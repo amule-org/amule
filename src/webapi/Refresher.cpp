@@ -811,10 +811,7 @@ void DecodePartStatusTag(const CECTag *client_tag,
 // On a cache-miss the caller pre-populates ecid + hashes; on a hit
 // the AssignIfExist pattern leaves cached values intact when the
 // tag is CValueMap-suppressed by amuled.
-void MergeClientTag(const CEC_UpDownClient_Tag *c,
-	ClientSnapshot &cs,
-	bool is_new,
-	const std::map<std::uint32_t, std::string> &file_hash_by_ecid)
+void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs, bool is_new, const FileMap &files)
 {
 	if (const CECTag *t = c->GetTagByName(EC_TAG_CLIENT_NAME)) {
 		cs.client_name = std::string(t->GetStringData().utf8_str());
@@ -897,10 +894,10 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c,
 		cs.download_file_name = std::string(fn.utf8_str());
 	}
 	// UPLOAD_FILE / REQUEST_FILE carry amuled-side ECIDs (the unified
-	// m_FileEncoder map's IDs). Resolve to MD4 hashes via the
-	// file_hash_by_ecid snapshot the caller built from m_files this
-	// tick. Empty hash if the ECID isn't in the map — file may have
-	// been removed between the file walkers and this client walker.
+	// m_FileEncoder map's IDs), which is what `files` is keyed by, so
+	// resolve to MD4 hashes with a lookup per transferring peer. Empty
+	// hash if the ECID isn't there — file may have been removed between
+	// the file walkers and this client walker.
 	//
 	// A zero ECID is the core saying "no file", not "unchanged":
 	// ECSpecialCoreTags.cpp:438-443 emits `file->ECID()` or a literal 0 for
@@ -921,8 +918,9 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c,
 		if (c->AssignIfExist(EC_TAG_CLIENT_UPLOAD_FILE, v)) {
 			std::string next;
 			if (v != 0) {
-				const auto it = file_hash_by_ecid.find(v);
-				next = (it != file_hash_by_ecid.end()) ? it->second : std::string();
+				const auto it = files.find(v);
+				if (it != files.end())
+					next = it->second.hash;
 			}
 			if (next != cs.upload_file_hash) {
 				cs.upload_file_hash = std::move(next);
@@ -937,8 +935,9 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c,
 		if (c->AssignIfExist(EC_TAG_CLIENT_REQUEST_FILE, v)) {
 			std::string next;
 			if (v != 0) {
-				const auto it = file_hash_by_ecid.find(v);
-				next = (it != file_hash_by_ecid.end()) ? it->second : std::string();
+				const auto it = files.find(v);
+				if (it != files.end())
+					next = it->second.hash;
 			}
 			if (next != cs.download_file_hash) {
 				cs.download_file_hash = std::move(next);
@@ -1445,9 +1444,8 @@ void ApplyGetUpdateToShared(
 // --- Clients (rides on the EC_TAG_CLIENT container inside the
 // consolidated GET_UPDATE response).
 
-void ApplyGetUpdateToClients(const CECPacket *resp,
-	std::map<std::uint32_t, ClientSnapshot> &cache,
-	const std::map<std::uint32_t, std::string> &file_hash_by_ecid)
+void ApplyGetUpdateToClients(
+	const CECPacket *resp, std::map<std::uint32_t, ClientSnapshot> &cache, const FileMap &files)
 {
 	if (!resp)
 		return;
@@ -1475,10 +1473,10 @@ void ApplyGetUpdateToClients(const CECPacket *resp,
 		if (map_it == cache.end()) {
 			ClientSnapshot fresh;
 			fresh.ecid = ecid;
-			MergeClientTag(cli, fresh, /*is_new=*/true, file_hash_by_ecid);
+			MergeClientTag(cli, fresh, /*is_new=*/true, files);
 			cache.emplace(ecid, std::move(fresh));
 		} else {
-			MergeClientTag(cli, map_it->second, /*is_new=*/false, file_hash_by_ecid);
+			MergeClientTag(cli, map_it->second, /*is_new=*/false, files);
 		}
 	}
 

@@ -1402,6 +1402,11 @@ struct StatusSnapshot
 // Invariant: a FileSnapshot's `hash` is content-derived and never
 // changes once set. Walkers MUST NOT reassign `hash` via the iterator
 // (the index would desync). Set hash before emplace, never after.
+//
+// Invariant: an entry's key IS its FileSnapshot::ecid, enforced by emplace()
+// rather than left to the caller. A snapshot filed under one id but carrying
+// another silently breaks every reader that resolves via find() and then
+// trusts what it gets back -- /clients' file hashes among them.
 class FileMap
 {
 public:
@@ -1423,6 +1428,8 @@ public:
 	// variadic emplace is too liberal for our index-keeping discipline.
 	std::pair<iterator, bool> emplace(std::uint32_t ecid, FileSnapshot f)
 	{
+		// The key wins -- readers resolve by it. See the invariant above.
+		f.ecid = ecid;
 		auto r = m_files.emplace(ecid, std::move(f));
 		if (r.second && !r.first->second.hash.empty()) {
 			m_hash_to_ecid[r.first->second.hash] = ecid;
@@ -1703,6 +1710,14 @@ public:
 	void MutateDownloads(const std::function<void(FileMap &)> &fn);
 	void MutateShared(const std::function<void(FileMap &)> &fn);
 	void MutateClients(const std::function<void(std::map<std::uint32_t, ClientSnapshot> &)> &fn);
+	//! Clients plus a read-only view of the file map, under the one acquisition
+	//! this was already taking. The clients walker resolves ECIDs against the
+	//! files but cannot fetch them itself: m_mu is a single non-recursive
+	//! mutex, so reaching back into CState from inside the callback trips
+	//! ReentryGuard. Second argument carries the same borrow contract as
+	//! WithFiles -- valid for the call only, never retained.
+	void MutateClientsWithFiles(
+		const std::function<void(std::map<std::uint32_t, ClientSnapshot> &, const FileMap &)> &fn);
 	void MutateServers(const std::function<void(std::map<std::uint32_t, ServerSnapshot> &)> &fn);
 	void MutateFriends(const std::function<void(std::map<std::uint32_t, FriendSnapshot> &)> &fn);
 	// The walker replaces the whole session vector each tick rather than

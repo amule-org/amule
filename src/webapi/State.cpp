@@ -778,6 +778,14 @@ void CState::MutateClients(const std::function<void(std::map<std::uint32_t, Clie
 	fn(m_clients);
 }
 
+void CState::MutateClientsWithFiles(
+	const std::function<void(std::map<std::uint32_t, ClientSnapshot> &, const FileMap &)> &fn)
+{
+	const ReentryGuard guard(this);
+	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
+	fn(m_clients, m_files);
+}
+
 void CState::ResetLists()
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
