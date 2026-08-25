@@ -275,3 +275,61 @@ TEST(PathPatterns, ShapeEqual_DifferentLengths)
 	RoutePattern b = ParsePattern("/a/b/c");
 	ASSERT_FALSE(ShapeEqual(a, b));
 }
+
+// ----------------------------------------------------------------------
+// StripTrailingSlash
+// ----------------------------------------------------------------------
+
+// `/x/` and `/x` name the same resource. Without this the two spellings
+// disagree by route kind: a literal route misses outright, a capture route
+// matches with an empty capture.
+TEST(PathPatterns, StripTrailingSlash_RemovesOne)
+{
+	ASSERT_EQUALS(std::string("/api/v0/status"), StripTrailingSlash("/api/v0/status/"));
+	ASSERT_EQUALS(std::string("/api/v0/clients"), StripTrailingSlash("/api/v0/clients/"));
+}
+
+// Already-bare paths are returned unchanged, and the root is not a spelling
+// of the empty string.
+TEST(PathPatterns, StripTrailingSlash_LeavesBareAndRootAlone)
+{
+	ASSERT_EQUALS(std::string("/api/v0/status"), StripTrailingSlash("/api/v0/status"));
+	ASSERT_EQUALS(std::string("/"), StripTrailingSlash("/"));
+	ASSERT_EQUALS(std::string(""), StripTrailingSlash(""));
+}
+
+// Only one. `//` is a malformed path rather than a synonym -- collapsing it
+// would let `/a//b` reach the route for `/a/b`.
+TEST(PathPatterns, StripTrailingSlash_StripsOnlyOne)
+{
+	ASSERT_EQUALS(std::string("/a/"), StripTrailingSlash("/a//"));
+}
+
+// ----------------------------------------------------------------------
+// Match: empty captures
+// ----------------------------------------------------------------------
+
+// Every capture on the surface names a resource -- a hash, an ecid, an
+// index, an address -- and none of them can be the empty string. Binding
+// one used to hand the handler a URL that names nothing and leave it to
+// pick a status code, which is why an empty {ecid} was a 400 while an empty
+// {hash} was a 404.
+TEST(PathPatterns, Match_RejectsAnEmptyCapture)
+{
+	const auto pat = ParsePattern("/api/v0/clients/{ecid}");
+	std::map<std::string, std::string> caps;
+	ASSERT_TRUE(!Match(pat, SplitPath("/api/v0/clients/"), caps));
+	// The non-empty case still matches, so the guard is not just refusing
+	// everything.
+	ASSERT_TRUE(Match(pat, SplitPath("/api/v0/clients/42"), caps));
+	ASSERT_EQUALS(std::string("42"), caps["ecid"]);
+}
+
+// A literal segment that happens to be empty is a different question and was
+// already handled: the comparison simply fails.
+TEST(PathPatterns, Match_StillRejectsAMissegmentedLiteral)
+{
+	const auto pat = ParsePattern("/api/v0/shared/reload");
+	std::map<std::string, std::string> caps;
+	ASSERT_TRUE(!Match(pat, SplitPath("/api/v0/shared/"), caps));
+}

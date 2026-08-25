@@ -898,6 +898,14 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		return ErrorResponse(400, "bad_request", "path contains a traversal/injection token");
 	}
 
+	// `/api/v0/status/` and `/api/v0/status` name the same resource, so
+	// route them the same way. Confined to the API prefix on purpose: the
+	// static fallthrough below maps a path onto a filesystem, where a
+	// trailing slash is a directory rather than a spelling.
+	if (path.compare(0, 5, "/api/") == 0) {
+		path = web_api_path::StripTrailingSlash(path);
+	}
+
 	if (path == "/api/v0/version") {
 		if (req.method != "GET" && req.method != "HEAD") {
 			return MethodNotAllowed("GET, HEAD", "method not allowed on /api/v0/version");
@@ -5318,6 +5326,21 @@ bool ParseEcidPath(const std::string &s, std::uint32_t &out)
 	return true;
 }
 
+// Path-capture counterpart to RequireSnapshot above, used the same way:
+// ` if (auto r = RequireEcidPath(caps["ecid"], ecid)) return *r;`.
+//
+// Nine handlers had spelled out the same parse-and-reject, and the status,
+// the code and the sentence are part of the API contract rather than local
+// wording -- a tenth route inheriting a different one is how a surface stops
+// being predictable.
+std::unique_ptr<CHttpServer::Response> RequireEcidPath(const std::string &s, std::uint32_t &out)
+{
+	if (!ParseEcidPath(s, out)) {
+		return BadRequestPtr("path `{ecid}` must be a non-negative integer");
+	}
+	return nullptr;
+}
+
 // Look up a server in the State cache by ECID. Returns false if
 // no match — the handler then 404s.
 bool FindServerByEcid(const webapi::CState &state, std::uint32_t ecid, webapi::ServerSnapshot &out)
@@ -5584,9 +5607,8 @@ CHttpServer::Response CApiDispatcher::HandleClientDetail(
 		return a.rejection;
 
 	std::uint32_t ecid = 0;
-	if (!ParseEcidPath(ecid_str, ecid)) {
-		return ErrorResponse(400, "bad_request", "path `{ecid}` must be a non-negative integer");
-	}
+	if (auto r = RequireEcidPath(ecid_str, ecid))
+		return *r;
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
 	webapi::ClientSnapshot cli;
@@ -5830,9 +5852,8 @@ CHttpServer::Response CApiDispatcher::HandleFriendMessageSend(
 			503, "ec_unsupported", "the connected amuled does not serve chat sessions");
 	}
 	std::uint32_t ecid = 0;
-	if (!ParseEcidPath(ecid_str, ecid)) {
-		return ErrorResponse(400, "bad_request", "path `{ecid}` must be a non-negative integer");
-	}
+	if (auto r = RequireEcidPath(ecid_str, ecid))
+		return *r;
 	return SendChatMessageTo(req, CECTag(EC_TAG_FRIEND, ecid));
 }
 
@@ -5849,9 +5870,8 @@ CHttpServer::Response CApiDispatcher::HandleClientMessageSend(
 			503, "ec_unsupported", "the connected amuled does not serve chat sessions");
 	}
 	std::uint32_t ecid = 0;
-	if (!ParseEcidPath(ecid_str, ecid)) {
-		return ErrorResponse(400, "bad_request", "path `{ecid}` must be a non-negative integer");
-	}
+	if (auto r = RequireEcidPath(ecid_str, ecid))
+		return *r;
 	return SendChatMessageTo(req, CECTag(EC_TAG_CLIENT, ecid));
 }
 
@@ -6094,9 +6114,8 @@ CHttpServer::Response CApiDispatcher::HandleFriendRemove(
 		return *r;
 
 	std::uint32_t ecid = 0;
-	if (!ParseEcidPath(ecid_str, ecid)) {
-		return ErrorResponse(400, "bad_request", "path `{ecid}` must be a non-negative integer");
-	}
+	if (auto r = RequireEcidPath(ecid_str, ecid))
+		return *r;
 	webapi::FriendSnapshot existing;
 	if (!FindFriendByEcid(m_state, ecid, existing)) {
 		return ErrorResponse(404, "not_found", "no friend with that ecid");
@@ -6147,9 +6166,8 @@ CHttpServer::Response CApiDispatcher::HandleFriendPatch(
 		return *r;
 
 	std::uint32_t ecid = 0;
-	if (!ParseEcidPath(ecid_str, ecid)) {
-		return ErrorResponse(400, "bad_request", "path `{ecid}` must be a non-negative integer");
-	}
+	if (auto r = RequireEcidPath(ecid_str, ecid))
+		return *r;
 	webapi::FriendSnapshot existing;
 	if (!FindFriendByEcid(m_state, ecid, existing)) {
 		return ErrorResponse(404, "not_found", "no friend with that ecid");
@@ -6287,9 +6305,8 @@ CHttpServer::Response CApiDispatcher::HandleServerConnect(
 		return *rej;
 
 	std::uint32_t ecid = 0;
-	if (!ParseEcidPath(ecid_str, ecid)) {
-		return ErrorResponse(400, "bad_request", "path `{ecid}` must be a non-negative integer");
-	}
+	if (auto r = RequireEcidPath(ecid_str, ecid))
+		return *r;
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
 	webapi::ServerSnapshot srv;
@@ -6343,9 +6360,8 @@ CHttpServer::Response CApiDispatcher::HandleServerDelete(
 		return *rej;
 
 	std::uint32_t ecid = 0;
-	if (!ParseEcidPath(ecid_str, ecid)) {
-		return ErrorResponse(400, "bad_request", "path `{ecid}` must be a non-negative integer");
-	}
+	if (auto r = RequireEcidPath(ecid_str, ecid))
+		return *r;
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
 	webapi::ServerSnapshot srv;
@@ -6540,9 +6556,8 @@ CHttpServer::Response CApiDispatcher::HandleServerPatch(
 		return *rej;
 
 	std::uint32_t ecid = 0;
-	if (!ParseEcidPath(ecid_str, ecid)) {
-		return ErrorResponse(400, "bad_request", "path `{ecid}` must be a non-negative integer");
-	}
+	if (auto r = RequireEcidPath(ecid_str, ecid))
+		return *r;
 
 	picojson::value root;
 	std::string parse_err;
@@ -9956,9 +9971,8 @@ CHttpServer::Response CApiDispatcher::HandleBrowse(
 		return *rej;
 
 	std::uint32_t ecid = 0;
-	if (!ParseEcidPath(ecid_str, ecid)) {
-		return ErrorResponse(400, "bad_request", "path `{ecid}` must be a non-negative integer");
-	}
+	if (auto r = RequireEcidPath(ecid_str, ecid))
+		return *r;
 
 	// Ask amuled to browse this peer's shared file list. In multi-search mode
 	// (amuleapi always is) the daemon allocates a browse search_id, echoes it in

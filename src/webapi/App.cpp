@@ -30,7 +30,8 @@
 #include "Refresher.h"
 
 #include "MD4Hash.h"
-#include "config.h" // VERSION
+#include "PathPatterns.h" // StripTrailingSlash
+#include "config.h"       // VERSION
 
 #include <ec/cpp/RemoteConnect.h> // SetEcConnectionLostHandler
 #include <wx/filename.h>          // wxFileName::FileExists
@@ -523,11 +524,13 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 	auto streaming_resolver = [](const CHttpServer::Request &req) {
 		if (req.method != "GET" && req.method != "HEAD")
 			return false;
-		// Tolerate optional ?query / trailing slashes.
+		// Tolerate optional ?query / trailing slash. Both are handled
+		// the same way the dispatcher handles them, so a request that
+		// streams here is exactly the set that would route there.
 		const std::string &t = req.target;
 		const std::size_t q = t.find('?');
-		std::string path = (q == std::string::npos) ? t : t.substr(0, q);
-		return path == "/api/v0/events";
+		const std::string path = (q == std::string::npos) ? t : t.substr(0, q);
+		return web_api_path::StripTrailingSlash(path) == "/api/v0/events";
 	};
 	auto streaming_handler = [dispatcher](const CHttpServer::Request &req,
 					 CHttpServer::Writer &writer,
