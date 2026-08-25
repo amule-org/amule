@@ -257,7 +257,7 @@ Omitting all four parameters preserves the previous response exactly, plus the a
 
 ### Bulk mutations and the `results` envelope
 
-Every mutation that operates on more than one item — `POST /downloads`, `PATCH /downloads`, `DELETE /downloads`, `PATCH /shared` — reports one entry per input item under a unified `results` array, so a client submitting N items learns the fate of each rather than an aggregate counter or a first-error-only summary:
+Every mutation that operates on more than one item (`POST /downloads`, `PATCH /downloads`, `DELETE /downloads`, `PATCH /shared`, `POST /downloads/clear_completed`, `PUT /shared/directories`) reports one entry per input item under a unified `results` array, so a client submitting N items learns the fate of each rather than an aggregate counter or a first-error-only summary:
 
 ```json
 {
@@ -1069,10 +1069,10 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
 The response envelope is identical for both shapes:
 
 ```json
-{ "ok": true, "cleared": 3, "cleared_hashes": ["...", "...", "..."] }
+{ "results": [ { "id": "<md4>", "ok": true }, { "id": "<md4>", "ok": true } ] }
 ```
 
-Bulk form returns `200 OK` with `cleared: 0` and no `cleared_hashes` field when nothing matches (no-op success, distinguishable from an amuled rejection). Per-entry form returns `404 not_found` if the hash doesn't exist and `409 not_completed` if it exists but isn't on the completed staging list (active partfile — caller probably wants `DELETE /downloads/{hash}` instead).
+One entry per cleared hash, in the shared [`results` envelope](#bulk-mutations-and-the-results-envelope). Bulk form returns `200 OK` with an empty `results` array when nothing matches, which is the no-op and stays distinguishable from an amuled rejection (a 4xx with an error envelope). Per-entry form returns `404 not_found` if the hash does not exist and `409 not_completed` if it exists but is not on the completed staging list (an active partfile, where the caller probably wants `DELETE /downloads/{hash}` instead).
 
 **Errors:** `400 amuled_rejected`, `400 bad_request` (malformed body or non-string `hash`), `404 not_found`, `409 not_completed`, `503 ec_unavailable`.
 
@@ -1541,15 +1541,20 @@ curl -s -X PUT -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/j
 ```
 
 ```json
-{ "ok": true, "rejected": [] }
+{ "results": [ { "id": "/srv/share", "ok": true } ] }
 ```
 
 `recursive` is optional and defaults to `false`.
 
-amuled validates every path — a REST client cannot stat the core's filesystem, so a typo would otherwise become a silently dead share. Paths that pass are applied and persisted before the response returns; the rest come back in `rejected`, so **one bad entry does not discard the edit**:
+amuled validates every path: a REST client cannot stat the core's filesystem, so a typo would otherwise become a silently dead share. Paths that pass are applied and persisted before the response returns, and every submitted path gets an entry either way, so **one bad entry does not discard the edit** and a caller can tell an applied path from one the response simply did not mention. A response with any rejection is `207 Multi-Status`, as with every other multi-item mutation:
 
 ```json
-{ "ok": true, "rejected": [ { "path": "/typo", "reason": "not_found" } ] }
+{
+  "results": [
+    { "id": "/srv/share", "ok": true },
+    { "id": "/typo", "ok": false, "code": "not_found", "message": "no such directory" }
+  ]
+}
 ```
 
 `reason` is `not_found` (missing, or not a directory) or `not_readable`. amuled reports these as codes and the API renders them, so its locale never leaks into your response.

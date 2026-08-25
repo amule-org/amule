@@ -182,7 +182,7 @@ SCRATCH_ENC=$(jq -rn --arg p "$SCRATCH_DIR" '$p|@uri')
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
 	-d "{\"path\":\"$SCRATCH_DIR\",\"recursive\":true}" "$HOST/api/v0/shared/directories"
 SCRATCH_REJECTION=$(printf '%s' "$CURL_BODY" |
-	jq -r "[.rejected[] | select(.path==\"$SCRATCH_DIR\")][0].reason" 2>/dev/null)
+	jq -r "[.results[] | select(.id==\"$SCRATCH_DIR\" and .ok==false)][0].error.code" 2>/dev/null)
 SHARE_FS_VISIBLE=1
 case "$SCRATCH_REJECTION" in
 not_found | not_readable)
@@ -196,8 +196,8 @@ esac
 
 if [ "$SHARE_FS_VISIBLE" -eq 1 ]; then
 _assert_status 200 "POST (add scratch dir, recursive) → 200"
-_assert_json_eq '.ok' 'true' "POST reports ok"
-_assert_json_eq '.rejected | length' '0' "POST rejected nothing"
+_assert_json_eq '.results | type' array "POST returns a results array"
+_assert_json_eq '[.results[] | select(.ok==false)] | length' '0' "POST rejected nothing"
 
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared/directories"
 _assert_json_eq \
@@ -227,9 +227,12 @@ fi # SHARE_FS_VISIBLE -- section 4
 BOGUS="$SCRATCH_DIR/definitely-not-here"
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
 	-d "{\"path\":\"$BOGUS\"}" "$HOST/api/v0/shared/directories"
-_assert_status 200 "POST (nonexistent path) → 200 with a rejection"
+# A rejection makes the whole response 207, as with every other multi-item
+# mutation. It was 200, which meant a caller had to read the body to learn that
+# part of the request had not applied.
+_assert_status 207 "POST (nonexistent path) → 207 with a rejection"
 _assert_json_eq \
-	"[.rejected[] | select(.path==\"$BOGUS\")][0].reason" 'not_found' \
+	"[.results[] | select(.id==\"$BOGUS\")][0].error.code" 'not_found' \
 	"nonexistent path rejected as not_found"
 
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared/directories"

@@ -5265,21 +5265,10 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsClearCompleted(const CHttpS
 	}
 
 	if (ecids.empty()) {
-		// Nothing to do — return 200 with cleared:0 so consumers can
-		// distinguish "no-op" from "amuled rejected" (both end up
-		// with no visible change).
-		CHttpServer::Response r;
-		r.status = 200;
-		r.content_type = "application/json";
-		CJsonWriter w;
-		w.BeginObject();
-		w.Key("ok");
-		w.ValueBool(true);
-		w.Key("cleared");
-		w.ValueInt(0);
-		w.EndObject();
-		FinalizeJsonBody(w, r);
-		return r;
+		// Nothing to do. An empty `results` array is the no-op, and it stays
+		// distinguishable from "amuled rejected" -- which is a 4xx with an
+		// error envelope -- without needing a shape of its own.
+		return BulkResultsResponse({}, 200);
 	}
 
 	// One EC roundtrip with all ECIDs (per amulegui's pattern at
@@ -5303,24 +5292,16 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsClearCompleted(const CHttpS
 	// show the post-clear state.
 	(void)RefresherTick(m_app, m_state);
 
-	CHttpServer::Response r;
-	r.status = 200;
-	r.content_type = "application/json";
-	CJsonWriter w;
-	w.BeginObject();
-	w.Key("ok");
-	w.ValueBool(true);
-	w.Key("cleared");
-	w.ValueInt(static_cast<int64_t>(ecids.size()));
-	w.Key("cleared_hashes");
-	w.BeginArray();
+	// One entry per hash, in the envelope every other multi-item mutation
+	// uses. `cleared` was a count and `cleared_hashes` a bare array, so a
+	// per-entry failure had nowhere to appear; the daemon clears them in one
+	// roundtrip today, but the shape no longer assumes that.
+	std::vector<BulkItem> results;
+	results.reserve(hashes_cleared.size());
 	for (const auto &h : hashes_cleared) {
-		w.ValueString(wxString::FromUTF8(h.c_str()));
+		results.push_back(BulkOk(h));
 	}
-	w.EndArray();
-	w.EndObject();
-	FinalizeJsonBody(w, r);
-	return r;
+	return BulkResultsResponse(results, 200);
 }
 
 // --- /servers, /kad, /categories, /preferences -------------------------
@@ -9256,35 +9237,36 @@ CHttpServer::Response ApplySharedDirs(CamuleapiApp &app, const std::vector<Share
 		return ErrorResponse(502, "amuled_rejected", ec_err_msg.c_str());
 	}
 
-	CHttpServer::Response r;
-	r.status = 200;
-	r.content_type = "application/json";
-	CJsonWriter w;
-	w.BeginObject();
-	w.Key("ok");
-	w.ValueBool(true);
-	// Paths the core would not take. Empty when everything applied; the reasons
-	// are rendered here rather than shipped as text from a core whose locale is
-	// not the caller's.
-	w.Key("rejected");
-	w.BeginArray();
+	// One entry per submitted path, in the envelope every other multi-item
+	// mutation uses. It reported only the rejects, in a shape of its own, so a
+	// caller could not tell an applied path from one the response simply did
+	// not mention. The reasons are still rendered here rather than shipped as
+	// text from a core whose locale is not the caller's.
+	std::map<std::string, std::string> rejected; // path -> reason code
 	for (const CECTag &tag : *ec_resp) {
 		if (tag.GetTagName() != EC_TAG_SHAREDDIR_REJECTED) {
 			continue;
 		}
 		const CECTag *err_tag = tag.GetTagByName(EC_TAG_SHAREDDIR_ERROR);
-		w.BeginObject();
-		w.Key("path");
-		w.ValueString(tag.GetStringData());
-		w.Key("reason");
-		w.ValueString((err_tag != nullptr && err_tag->GetInt() == 2) ? "not_readable" : "not_found");
-		w.EndObject();
+		rejected[std::string(tag.GetStringData().utf8_str())] =
+			(err_tag != nullptr && err_tag->GetInt() == 2) ? "not_readable" : "not_found";
 	}
-	w.EndArray();
-	w.EndObject();
 	delete ec_resp;
-	FinalizeJsonBody(w, r);
-	return r;
+
+	std::vector<BulkItem> results;
+	results.reserve(dirs.size());
+	for (const SharedDirEntry &entry : dirs) {
+		const std::string path(entry.path.utf8_str());
+		const auto it = rejected.find(path);
+		if (it == rejected.end()) {
+			results.push_back(BulkOk(path));
+		} else if (it->second == "not_readable") {
+			results.push_back(BulkErr(path, 403, "not_readable", "amuled cannot read that path"));
+		} else {
+			results.push_back(BulkErr(path, 404, "not_found", "no such directory"));
+		}
+	}
+	return BulkResultsResponse(results, 200);
 }
 } // namespace
 

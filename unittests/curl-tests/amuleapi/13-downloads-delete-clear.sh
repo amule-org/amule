@@ -131,13 +131,17 @@ _assert_status 404 "DELETE /downloads/{nonexistent} → 404"
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/downloads/clear_completed"
 _assert_status 200 "POST /downloads/clear_completed (baseline) → 200"
-_assert_json_eq '.ok' true 'clear_completed baseline response.ok==true'
+# The shared results envelope has no top-level `ok`: per-item success lives on
+# each entry, so a partial outcome cannot be reported as a single boolean.
+_assert_json_eq '.results | type' array 'clear_completed returns a results array'
 
 # Second call: now nothing is completed. cleared must be 0.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/downloads/clear_completed"
 _assert_status 200 "POST /downloads/clear_completed (idempotent no-op) → 200"
-_assert_json_eq '.cleared' 0 'clear_completed second call cleared 0 entries'
+# An empty `results` array is the no-op. It was `cleared: 0`, a shape only this
+# endpoint used.
+_assert_json_eq '.results | length' 0 'clear_completed second call cleared 0 entries'
 
 # --- 4. DELETE on an active partfile (happy path + no-stale GET). --
 #
@@ -273,9 +277,10 @@ if [ -n "$COMPLETED_HASH" ]; then
 		-d "{\"hash\":\"$COMPLETED_HASH\"}" \
 		"$HOST/api/v0/downloads/clear_completed"
 	_assert_status 200 "POST clear_completed {hash:completed} → 200"
-	_assert_json_eq '.cleared' 1 'per-hash clear_completed cleared exactly 1'
-	_assert_json_eq ".cleared_hashes[0]" "$COMPLETED_HASH" \
-		'cleared_hashes echoes the input hash'
+	_assert_json_eq '.results | length' 1 'per-hash clear_completed cleared exactly 1'
+	_assert_json_eq '.results[0].id' "$COMPLETED_HASH" \
+		'results[0].id echoes the input hash'
+	_assert_json_eq '.results[0].ok' true 'results[0] reports success'
 
 	# Second call → 404 (entry is gone).
 	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
