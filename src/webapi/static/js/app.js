@@ -310,7 +310,9 @@ function ConnectionStatus({ status }) {
   if (ed2k) {
     if (ed2k.state === "connected") {
       e2Cls = ed2k.high_id ? "ok" : "low";
-      e2Text = (ed2k.server_name || ed2k.server_ip || t("app_connected")) +
+      const e2Server = ed2k.server_name ||
+        (ed2k.server_ip ? ed2k.server_ip + ":" + ed2k.server_port : "");
+      e2Text = (e2Server || t("app_connected")) +
         " · " + (ed2k.high_id ? t("app_high_id") : t("app_low_id"));
     } else if (ed2k.state === "connecting") {
       e2Cls = "warn"; e2Text = t("app_connecting");

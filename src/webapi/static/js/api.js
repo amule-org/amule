@@ -69,7 +69,8 @@ async function request(method, path, { body, useEtag = false, noGate = false } =
   if (useEtag && (method === "GET" || method === "HEAD")) {
     cacheKey = url;
     const cached = etagCache.get(cacheKey);
-    if (cached) headers["If-None-Match"] = '"' + cached.etag + '"';
+    // Verbatim: re-quoting a stripped `W/"abc"` gives `"W/abc"`, matching nothing.
+    if (cached) headers["If-None-Match"] = cached.etag;
   }
 
   const init = { method, headers, credentials: "include" };
@@ -111,7 +112,7 @@ async function request(method, path, { body, useEtag = false, noGate = false } =
   }
 
   if (cacheKey) {
-    const etag = (resp.headers.get("ETag") || "").replace(/"/g, "");
+    const etag = (resp.headers.get("ETag") || "").trim();
     if (etag) etagCache.set(cacheKey, { etag, data: payload });
   }
 
