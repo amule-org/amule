@@ -391,6 +391,18 @@ public:
 	// derived classes may override those
 	virtual int InitGui(bool geometry_enable, wxString &geometry_string);
 
+	/**
+	 * Create a search tab for every search restored from StoredSearches.met.
+	 *
+	 * Separate from InitGui() because the two cannot share a slot in
+	 * startup order: the tabs need the restored results, and the restored
+	 * results need the download queue loaded before their status is
+	 * computed -- which happens well after the GUI is up. Called from
+	 * OnInit() right after CSearchList::LoadSearches(), and a no-op on
+	 * every build without a search dialog.
+	 */
+	virtual void RestoreSearchTabs() {}
+
 	virtual int ShowAlert(wxString msg, wxString title, int flags) = 0;
 
 	// Barry - To find out if app is running or shutting/shut down
@@ -734,6 +746,8 @@ public:
 	static void FollowSystemAppearance();
 
 	virtual int InitGui(bool geometry_enable, wxString &geometry_string);
+	//! See CamuleApp::RestoreSearchTabs().
+	void CreateRestoredSearchTabs();
 	virtual int ShowAlert(wxString msg, wxString title, int flags);
 
 	void AddGuiLogLine(const wxString &line);
@@ -757,6 +771,9 @@ class CamuleGuiApp : public CamuleApp, public CamuleGuiBase
 {
 
 	virtual int InitGui(bool geometry_enable, wxString &geometry_string);
+	// No `override`: this class declares none, and adding the first one
+	// turns -Winconsistent-missing-override into errors on every sibling.
+	virtual void RestoreSearchTabs() { CreateRestoredSearchTabs(); }
 
 	int OnExit();
 	bool OnInit();
