@@ -282,6 +282,14 @@ Processing is **best-effort per item** — each item is an independent EC roundt
 
 A malformed **request** (missing/empty `hashes`, an invalid patch field) is still a top-level `400 bad_request` and returns the plain error envelope, not `results`. The `hashes` array is capped at 500 entries.
 
+### Unknown values
+
+A field whose value is not known is `null`, not a sentinel. `remaining_time` is `null` rather than `-1` when there is no ETA to compute; `last_upload` and `shared_since` are `null` rather than `0` when a file has never uploaded or its `known.met` entry predates the field.
+
+A key is **omitted** only where absence itself is the meaning: something the daemon never reported, rather than something known to be absent. `started_at` on [`GET /search`](#get-apiv0search) is the example, missing for a search this process did not start, and `result_count` is missing when the daemon is too old to send it, which has to stay distinguishable from a search that found nothing.
+
+So: `null` means "no value", an absent key means "not reported", and neither is ever spelled `0` or `-1`.
+
 ### Priority levels
 
 `priority` appears on four resources and accepts three different sets. The differences are deliberate rather than drift, and they reflect what the daemon can actually store:
@@ -753,7 +761,7 @@ Same envelope as the list item, plus the detail-only fields below (all omitted f
 | `download_active_time` | int | Seconds spent actively downloading. |
 | `available_part_count` | int | Number of parts available across the current sources. |
 | `part_count` | int | Total parts, `ceil(size / 9.28 MiB)`. |
-| `remaining_time` | int | ETA in seconds; `-1` when stalled or paused (speed ≈ 0). |
+| `remaining_time` | int \| null | ETA in seconds, or `null` when stalled or paused (speed ≈ 0) and there is nothing to compute from. |
 | `lost_to_corruption` | int | Bytes discarded to corruption. |
 | `gained_by_compression` | int | Bytes saved by on-the-wire compression. |
 | `saved_by_ich` | int | Packets recovered by Intelligent Corruption Handling. |
@@ -1375,7 +1383,7 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/shared"
 
 `xfer.session` / `xfer.total` are bytes uploaded during the current amuled process vs over the file's lifetime. `requests` counts how many peers have asked for the file; `accepts` counts how many of those requests were granted an upload slot. The `session` counters reset on amuled restart; `total` is persisted in `known.met`.
 
-`upload_speed_bps` is the file's current combined upload rate in bytes/sec (summed over the peers it is uploading to), and `uploading` is how many peers it is actively uploading to right now — together the "is this file being seeded" signal, the upload-side analogue of the `/downloads` speed + transferring-source counts. Subtract `uploading` from the queued-client count (`queued_count`, on the detail view) to show `uploading / queued`. Both are live and refresh every tick. `last_upload` is the unix timestamp of the last time data was sent for the file, and `shared_since` is when the file was completed or first shared; both are persisted in `known.met` and are `0` when unknown — a file that has never uploaded, or a `known.met` entry written before these fields existed.
+`upload_speed_bps` is the file's current combined upload rate in bytes/sec (summed over the peers it is uploading to), and `uploading` is how many peers it is actively uploading to right now — together the "is this file being seeded" signal, the upload-side analogue of the `/downloads` speed + transferring-source counts. Subtract `uploading` from the queued-client count (`queued_count`, on the detail view) to show `uploading / queued`. Both are live and refresh every tick. `last_upload` is the unix timestamp of the last time data was sent for the file, and `shared_since` is when the file was completed or first shared; both are persisted in `known.met` and are `null` when unknown: a file that has never uploaded, or a `known.met` entry written before these fields existed.
 
 `priority` is the upload priority — `"very_low"` / `"low"` / `"normal"` / `"high"` / `"release"` — and `priority_auto` is `true` when amuled is deriving that level automatically from the upload queue. This mirrors the `/downloads` shape (base `priority` + separate `priority_auto` flag); on an auto file `priority` reports the current derived level, not the literal string `"auto"`. For a file that is both downloading and shared this upload priority is independent of the download priority reported by [`GET /api/v0/downloads`](#get-apiv0downloads).
 
