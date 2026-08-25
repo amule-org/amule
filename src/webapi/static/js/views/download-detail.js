@@ -52,7 +52,7 @@ export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDele
   // then), but not the percent bar above -- that is the download's own
   // completeness.
   const parts = (d.progress && d.progress.parts) || [];
-  const eta = (d.remaining_time == null || d.remaining_time < 0) ? "—" : formatDuration(d.remaining_time);
+  const eta = d.remaining_time == null ? "—" : formatDuration(d.remaining_time);
 
   const copy = (text) => copyText(text)
     .then(() => toast(t("downloads_detail_copied"), "success"))
