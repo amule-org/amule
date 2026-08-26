@@ -7,7 +7,7 @@
 import { api, bulkFailures } from "../api.js";
 import { data } from "../events.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
-import { listPlaceholder, toast, confirmDialog } from "../components.js";
+import { checkCell, listPlaceholder, toast, confirmDialog } from "../components.js";
 import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker } from "../table.js";
 import { formatBytes, formatFreeSpace, formatInt, formatSpeed, formatTimestamp, twin } from "../format.js";
 import { t, tn, terr } from "../i18n.js";
@@ -37,7 +37,7 @@ export default function Shared({ isGuest }) {
   // Open (or toggle closed) the detail panel; ignore clicks on a row's own
   // controls (the select-all/select checkbox and the priority dropdown).
   const onRowClick = (s, e) => {
-    if (e.target.closest("input,select,button,a")) return;
+    if (e.target.closest("input,select,button,a,label")) return;
     setDetailHash((h) => (h === s.hash ? null : s.hash));
   };
 
@@ -129,9 +129,9 @@ export default function Shared({ isGuest }) {
   }, [filterStatus, filterText]);
 
   const columns = [
-    { always: true, label: html`<input type="checkbox" title=${t("shared_select_all")} checked=${allSelected}
-                         onChange=${(e) => toggleAll(e.target.checked)} />`, width: "40px",
-      cell: (s) => html`<input type="checkbox" checked=${selection.has(s.hash)} onChange=${(e) => toggleRow(s.hash, e.target.checked)} />` },
+    { always: true, cls: "check", width: "40px",
+      label: checkCell(allSelected, toggleAll, t("shared_select_all")),
+      cell: (s) => checkCell(selection.has(s.hash), (v) => toggleRow(s.hash, v)) },
     { key: "name", always: true, label: t("shared_name"), cls: "name", sortable: true,
       sortVal: (s) => (s.name || "").toLowerCase(),
       cell: (s) => html`<span title=${s.name}>${s.name}</span>` },

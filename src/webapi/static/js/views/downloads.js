@@ -6,7 +6,7 @@
 import { api, bulkFailures } from "../api.js";
 import { data } from "../events.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
-import { ProgressBar, Badge, listPlaceholder, Tabs, toast, confirmDialog, PRIORITIES, prioValue, prioLabel } from "../components.js";
+import { ProgressBar, Badge, checkCell, listPlaceholder, Tabs, toast, confirmDialog, PRIORITIES, prioValue, prioLabel } from "../components.js";
 import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker } from "../table.js";
 import { formatBytes, formatFreeSpace, formatSpeed } from "../format.js";
 import { Icon } from "../icons.js";
@@ -39,7 +39,7 @@ export default function Downloads({ isGuest }) {
   // Open (or toggle closed) the detail panel; ignore clicks landing on a row's
   // own controls (checkbox / priority / category / action buttons).
   const onRowClick = (d, e) => {
-    if (e.target.closest("input,select,button,a")) return;
+    if (e.target.closest("input,select,button,a,label")) return;
     setDetailHash((h) => (h === d.hash ? null : d.hash));
   };
 
@@ -154,9 +154,9 @@ export default function Downloads({ isGuest }) {
   }, [filterStatus, filterCategory, filterText]);
 
   const columns = [
-    { always: true, label: html`<input type="checkbox" title=${t("downloads_select_all")} checked=${allSelected}
-                         onChange=${(e) => toggleAll(e.target.checked)} />`, width: "40px",
-      cell: (d) => html`<input type="checkbox" checked=${selection.has(d.hash)} onChange=${(e) => toggleRow(d.hash, e.target.checked)} />` },
+    { always: true, cls: "check", width: "40px",
+      label: checkCell(allSelected, toggleAll, t("downloads_select_all")),
+      cell: (d) => checkCell(selection.has(d.hash), (v) => toggleRow(d.hash, v)) },
     { key: "name", always: true, label: t("downloads_name"), cls: "name", sortable: true,
       sortVal: (d) => (d.name || "").toLowerCase(),
       cell: (d) => html`<span title=${d.name}>${d.name}</span>` },

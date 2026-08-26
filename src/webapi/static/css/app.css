@@ -331,6 +331,14 @@ table.data tbody tr.connecting:nth-child(even) { background: color-mix(in srgb, 
 table.data tbody tr.connecting:hover { background: color-mix(in srgb, var(--warn) 26%, var(--surface)); }
 table.data tbody tr.connecting td:first-child { box-shadow: inset 3px 0 0 var(--warn); }
 table.data td.num, table.data th.num { text-align: right; }
+/* Select column: .cell-check fills the cell, so the whole cell toggles the row.
+   No position on the th -- it is already sticky (its own containing block), and
+   relative would unstick the select-all header. */
+table.data td.check { position: relative; }
+table.data .cell-check {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
 table.data td.name { white-space: normal; word-break: break-word; min-width: 220px; max-width: 520px; }
 .row-selected, .row-selected:hover { background: var(--sel) !important; }
 
@@ -635,9 +643,12 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
 .tabs-extra { margin-left: auto; display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
 
 /* --- notebook-style tabs (CMuleNotebook look) --- */
+/* Inset shadow, not border-bottom: a scrolling strip clips at its padding box,
+   so over a real border the active tab could not paint its -1px overhang and
+   would look detached from the pane. */
 .tabs {
   display: flex; gap: 2px; flex-wrap: wrap;
-  border-bottom: 1px solid var(--border); margin-bottom: 12px;
+  box-shadow: inset 0 -1px 0 var(--border); margin-bottom: 12px;
 }
 .tab {
   border: 1px solid var(--border); border-bottom: none;
@@ -657,16 +668,12 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
 .tab.active .tab-badge { background: var(--accent); color: var(--accent-contrast); }
 
 /* Search: one tab per search, so the strip scrolls instead of wrapping at
-   every width (the .net-pane rule below only does that on phones). Two things
-   that overflow forces: flex-shrink:0, because an overflow other than
-   `visible` drops a flex item's automatic min-height and the strip would
-   collapse to a few pixels inside .net-pane's column flexbox; and the bottom
-   rule as an inset shadow rather than a border, because the clip is the
-   PADDING box -- over a real border the active tab could never paint its
-   -1px overhang, and every tab would look detached from the pane. */
+   every width (the .net-pane rule below only does that on phones).
+   flex-shrink:0 because an overflow other than `visible` drops a flex item's
+   automatic min-height and the strip would collapse to a few pixels inside
+   .net-pane's column flexbox. */
 .tabs.search-tabs {
   flex: 0 0 auto; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden;
-  border-bottom: none; box-shadow: inset 0 -1px 0 var(--border);
   scrollbar-width: thin; /* same as .nav: the bar only shows up once tabs overflow */
 }
 .tab-item { display: inline-flex; align-items: stretch; flex: 0 0 auto; }
