@@ -10,6 +10,7 @@ import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker } from
 import { formatBytes, formatDuration, formatInt } from "../format.js";
 import { Icon } from "../icons.js";
 import { searches } from "../searches.js";
+import { categoryOptions } from "./categories.js";
 import { t, tn, terr } from "../i18n.js";
 
 const SIZE_UNITS = { B: 1, KiB: 1024, MiB: 1048576, GiB: 1073741824 };
@@ -222,10 +223,6 @@ function ResultsPane({ tab, categories }) {
     catch (e) { toast(terr(e) || t("search_error"), "error"); }
   };
 
-  const catOptions = () => html`
-    <option value=${0}>${t("search_category_none")}</option>
-    ${categories.filter((c) => c.index !== 0).map((c) => html`<option value=${c.index}>${c.name || ("#" + c.index)}</option>`)}`;
-
   const columns = [
     { always: true, cls: "check", width: "40px",
       label: checkCell(allSelected, toggleAll, t("search_select_all")),
@@ -293,7 +290,7 @@ function ResultsPane({ tab, categories }) {
         <span class="admin-only">
           <select class="input input-sm" value=${catFor(r.hash)}
                   onChange=${(e) => setUi({ rowCat: { ...ui.rowCat, [r.hash]: Number(e.target.value) } })}>
-            ${catOptions()}
+            ${categoryOptions(categories)}
           </select>
           <button class="btn btn-icon btn-sm" type="button" title=${t("search_download")} onClick=${() => downloadOne(r.hash)}>
             <${Icon} name="downloads" />
@@ -331,7 +328,7 @@ function ResultsPane({ tab, categories }) {
     <div class="toolbar pane-toolbar">
       <select class="input input-sm admin-only" value=${Number(ui.cat) || 0}
               onChange=${(e) => setUi({ cat: Number(e.target.value) })}>
-        ${catOptions()}
+        ${categoryOptions(categories)}
       </select>
       <button class="btn btn-sm admin-only" type="button" onClick=${downloadSelected}>${t("search_download")}</button>
       <button class="btn btn-sm admin-only" type="button" onClick=${relatedSearch}

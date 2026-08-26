@@ -2987,8 +2987,6 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	w.ValueString(wxString::FromUTF8(c.mod_version.c_str()));
 	w.Key("view_shared_disabled");
 	w.ValueBool(c.view_shared_disabled);
-	// Omitted rather than sent negative when not computable (no linked
-	// download / unknown part count).
 	// null, not omitted, when there is no linked download to be a fraction
 	// of. -1 is the in-process sentinel and never reaches the wire.
 	w.Key("part_progress_percent");

@@ -11,7 +11,7 @@ import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker } from
 import { formatBytes, formatFreeSpace, formatSpeed } from "../format.js";
 import { Icon } from "../icons.js";
 import { t, tn, terr } from "../i18n.js";
-import { CategoriesPanel } from "./categories.js";
+import { CategoriesPanel, categoryName, categoryOptions } from "./categories.js";
 import { DownloadDetail } from "./download-detail.js";
 import { SplitDetail } from "./split-detail.js";
 
@@ -66,12 +66,6 @@ export default function Downloads({ isGuest }) {
   useEffect(() => {
     if (detailHash && !downloads.some((d) => d.hash === detailHash)) setDetailHash(null);
   }, [downloads]);
-
-  const categoryName = (idx) => {
-    if (idx === 0) return "—"; // category 0 = no category assigned
-    const c = categories.find((c) => c.index === idx);
-    return c ? c.name : String(idx);
-  };
 
   const toggleRow = (hash, checked) => {
     const next = new Set(selection);
@@ -183,14 +177,13 @@ export default function Downloads({ isGuest }) {
               ${PRIORITIES.map(([v, l]) => html`<option value=${v}>${v === "auto" && d.priority_auto ? prioLabel(d) : l}</option>`)}
             </select>` },
     { key: "category", label: t("downloads_category"), width: "150px", sortable: true,
-      sortVal: (d) => categoryName(d.category).toLowerCase(),
+      sortVal: (d) => categoryName(categories, d.category).toLowerCase(),
       cell: (d) => isGuest
-        ? categoryName(d.category)
+        ? categoryName(categories, d.category)
         : html`
             <select class="input input-sm admin-only" value=${d.category}
                     onChange=${(e) => setCategory(d.hash, Number(e.target.value))}>
-              <option value=${0}>${t("downloads_category_none")}</option>
-              ${categories.filter((c) => c.index !== 0).map((c) => html`<option value=${c.index}>${c.name || ("#" + c.index)}</option>`)}
+              ${categoryOptions(categories)}
             </select>` },
     { key: "actions", label: t("downloads_actions"), cls: "row-actions admin-only", width: "90px", cell: (d) => {
         const inactive = d.status === "paused" || d.status === "stopped";
@@ -261,8 +254,7 @@ export default function Downloads({ isGuest }) {
           <select class="input input-sm" value=""
                   onChange=${(e) => { const v = e.target.value; e.target.value = ""; if (v !== "") bulkPatch({ category: Number(v) }); }}>
             <option value="">${t("downloads_category")}…</option>
-            <option value=${0}>${t("downloads_category_none")}</option>
-            ${categories.filter((c) => c.index !== 0).map((c) => html`<option value=${c.index}>${c.name || ("#" + c.index)}</option>`)}
+            ${categoryOptions(categories)}
           </select>
           <span class="selected-count">${t("downloads_selected")} ${selectedCount}</span>
         </div>

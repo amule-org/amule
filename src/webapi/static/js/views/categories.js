@@ -1,9 +1,10 @@
 // Categories panel: CRUD for download categories, shown inline on the
 // Downloads page (it replaces the category tabs when "Manage categories" is
 // toggled on). No SSE channel, so the list is fetched on mount and after each
-// mutation. Index 0 (the default "all") cannot be edited or deleted. Adding
-// and editing open a modal form; deleting uses a confirm dialog. Admin-only
-// edit; guests see just the list.
+// mutation. Index 0 -- the default category, which holds every download that
+// has none -- cannot be edited or deleted. Adding and editing open a modal
+// form; deleting uses a confirm dialog. Admin-only edit; guests see just the
+// list.
 
 import { api } from "../api.js";
 import { html, useState, useEffect } from "../dom.js";
@@ -13,6 +14,21 @@ import { t, terr } from "../i18n.js";
 
 const PRIORITIES = ["auto", "low", "normal", "high"]
   .map((v) => [v, t("downloads_prio_" + v)]);
+
+// Category 0 is the bucket every download without a category falls into. The
+// API synthesizes it and names it "Default", but that name is a constant no
+// catalog translates, so the label comes from i18n here instead; every other
+// index shows the operator's own name.
+export const categoryName = (categories, index) => {
+  if (!index) return t("downloads_category_none");
+  const c = categories.find((c) => c.index === index);
+  return c ? (c.name || "#" + c.index) : String(index);
+};
+
+// The <option> set every category picker shares.
+export const categoryOptions = (categories) => html`
+  <option value=${0}>${t("downloads_category_none")}</option>
+  ${categories.filter((c) => c.index !== 0).map((c) => html`<option value=${c.index}>${c.name || ("#" + c.index)}</option>`)}`;
 
 export function CategoriesPanel({ isGuest }) {
   const [categories, setCategories] = useState([]);
@@ -62,7 +78,7 @@ export function CategoriesPanel({ isGuest }) {
 
   const row = (c) => html`
     <tr>
-      <td class="name">${c.index === 0 ? html`<strong>${t("downloads_cat_none")}</strong>` : c.name}</td>
+      <td class="name">${c.index === 0 ? html`<strong>${t("downloads_category_none")}</strong>` : c.name}</td>
       <td>${c.comment || ""}</td>
       <td>${c.path || ""}</td>
       <td>${prioLabel(c.priority)}</td>

@@ -21,7 +21,10 @@ export const isUp = (c) => (c.upload_speed_bps || 0) > 0 || ACTIVE(c.upload_stat
 // picker and picks which ones start hidden (see ClientTable's defaultHidden),
 // so a column is always one click away instead of missing from a tab.
 const softLabel = (c) => [c.software ? t("downloads_peer_soft_" + c.software) : "", c.software === "unknown" ? "" : c.software_version].filter(Boolean).join(" ") || "—";
-const rankLabel = (c) => !c.remote_queue_rank ? "—" : c.remote_queue_rank >= 0xFFFF ? t("downloads_peer_queue_full") : c.remote_queue_rank;
+// `remote_queue_rank` is null when the peer's queue is full (the API turns
+// amuled's 0xffff sentinel into null), and 0 when it reported no position at
+// all. Both are "not a position", so they sort together as 0.
+const rankLabel = (c) => c.remote_queue_rank === null ? t("downloads_peer_queue_full") : c.remote_queue_rank || "—";
 const bytesOf = (c, k) => formatBytes((c.xfer || {})[k]);
 // The "file" column is shared by both directions: download_file_name is the
 // peer-advertised name of what we're pulling FROM them; upload_file_name is

@@ -438,7 +438,7 @@ struct ClientSnapshot
 	std::uint16_t kad_port = 0;        // 0 => Kad not connected for this peer
 	std::string source_origin;         // "server" | "kad" | "source_exchange" | "passive" | "link" | ...
 	std::uint32_t available_parts = 0; // count of parts the peer has (EC_TAG_CLIENT_AVAILABLE_PARTS)
-	bool has_available_parts = false;  // false => tag absent, omit the field
+	bool has_available_parts = false;  // false => tag absent, emitted as null
 	std::string mod_version;           // EC_TAG_CLIENT_MOD_VERSION
 	bool view_shared_disabled = false; // peer forbids viewing its shared files
 	// Completeness of the linked download for this peer, as a percent
