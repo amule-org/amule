@@ -477,6 +477,51 @@ _assert_json_eq '.connection.max_upload_kbps' "$SAVED_MAX_UPLOAD" \
 _assert_json_eq '.connection.autoconnect' "$SAVED_AUTOCONNECT" \
 	'restored autoconnect to saved value'
 
+# --- core_tweaks intervals round-trip exactly (#1159 section 5). ---------
+#
+# The core stores whole minutes and its accessors multiply by 60000, so EC
+# carries milliseconds that are always a multiple of 60000. The API used to
+# expose that raw: a client writing 90000 read back 60000, and one writing
+# 30000 read back 0 -- accepted, reported as success, changed underneath. The
+# fields speak minutes now, so what goes in comes back.
+for FIELD in kad_reask_minutes source_reask_minutes; do
+	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+		-H "Content-Type: application/json" \
+		-d "{\"core_tweaks\":{\"$FIELD\":7}}" "$HOST/api/v0/preferences"
+	_assert_status 200 "PATCH core_tweaks.$FIELD=7 -> 200"
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+	_assert_json_eq ".core_tweaks.$FIELD" 7 "core_tweaks.$FIELD reads back what was written"
+done
+
+# The value that used to vanish: 0 is a legitimate setting, and a small
+# non-zero one must not truncate to it.
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"core_tweaks":{"kad_reask_minutes":1}}' "$HOST/api/v0/preferences"
+_assert_status 200 "PATCH core_tweaks.kad_reask_minutes=1 -> 200"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_assert_json_eq '.core_tweaks.kad_reask_minutes' 1 "one minute survives (was truncated to 0 as 30000 ms)"
+
+# --- online_signature.update_frequency_seconds is bounded (#1159 section 4).
+#
+# The schema declared the full uint32 range while CPreferences::SetOSUpdate
+# takes a uint16, so anything above 65535 wrapped on the way in: 86400 (daily)
+# became 20864, the PATCH reported success, and the following GET showed the
+# rewritten value. A rejected write is recoverable; a silently rewritten one is
+# not, because the client has no way to know it happened.
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"online_signature":{"update_frequency_seconds":86400}}' \
+	"$HOST/api/v0/preferences"
+_assert_status 400 "PATCH online_signature.update_frequency_seconds=86400 -> 400 (would wrap to 20864)"
+
+# The boundary itself is still accepted.
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"online_signature":{"update_frequency_seconds":65535}}' \
+	"$HOST/api/v0/preferences"
+_assert_status 200 "PATCH online_signature.update_frequency_seconds=65535 -> 200"
+
 # --- Summary. -----------------------------------------------------
 echo
 if [ "$FAIL_COUNT" -eq 0 ]; then

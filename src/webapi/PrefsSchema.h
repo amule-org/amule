@@ -108,6 +108,17 @@ struct PrefField
 	// core serializes into [General], but the API surfaces it next to the other
 	// UPnP settings under `connection`.
 	ec_tagname_t read_group;
+	// Divisor between the EC value and the API value, when the two use
+	// different units. 0 means "same unit", which is every row but three.
+	//
+	// The core stores these three as whole minutes and its accessors
+	// multiply by 60000 on the way out (Preferences.h:
+	// `s_sourceReaskMins * 60000`), so EC carries milliseconds that are
+	// always a multiple of 60000. Exposing that verbatim meant a client
+	// writing 90000 read back 60000 and one writing 30000 read back 0 --
+	// accepted, reported as success, changed underneath. The API therefore
+	// speaks the unit the daemon can actually hold, and converts here.
+	std::uint32_t ec_scale;
 };
 
 // EC group tag each category packs into. Two categories intentionally share

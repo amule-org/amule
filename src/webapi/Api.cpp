@@ -2928,8 +2928,15 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	w.ValueInt(static_cast<int64_t>(c.download_speed_bps));
 	w.Key("queue_waiting_position");
 	w.ValueInt(static_cast<int64_t>(c.queue_waiting_position));
-	w.Key("remote_queue_rank");
-	w.ValueInt(static_cast<int64_t>(c.remote_queue_rank));
+	// 0xffff is amuled's "that peer's queue is full" sentinel
+	// (ECSpecialCoreTags.cpp: IsRemoteQueueFull() ? 0xffff : rank), not a
+	// position. Relayed verbatim it renders as "position 65535", and a client
+	// sorting by queue position buries full queues at the far end as though
+	// they were merely very distant.
+	WriteIntOrNull(w,
+		"remote_queue_rank",
+		c.remote_queue_rank != webapi::kRemoteQueueFullSentinel,
+		static_cast<int64_t>(c.remote_queue_rank));
 	w.Key("score");
 	w.ValueInt(static_cast<int64_t>(c.score));
 	w.Key("obfuscation_status");
@@ -2943,8 +2950,12 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	// in EventDiff.cpp; a field in one but not the other never updates.
 	w.Key("source_origin");
 	w.ValueString(wxString::FromUTF8(c.source_origin.c_str()));
-	w.Key("available_parts");
-	w.ValueInt(static_cast<int64_t>(c.available_parts));
+	// Gated on the flag the refresher sets when the tag actually arrives.
+	// Emitted unconditionally, a peer that never reported its part map was
+	// indistinguishable from one reporting zero parts -- and zero is a real
+	// answer here, being what a fresh source looks like before its map turns
+	// up.
+	WriteIntOrNull(w, "available_parts", c.has_available_parts, static_cast<int64_t>(c.available_parts));
 	w.Key("mod_version");
 	w.ValueString(wxString::FromUTF8(c.mod_version.c_str()));
 	w.Key("view_shared_disabled");
@@ -8077,13 +8088,18 @@ struct PrefsParseError
 // Booleans always pack as a value tag (uint8 0/1): CEC_Prefs_Packet::
 // Apply reads `GetInt()!=0` under EC_DETAIL_FULL, so an empty presence
 // tag would be read as false.
+// `scale` converts the API value to the unit EC carries (see
+// PrefField::ec_scale); 0 means the two already agree. `max` is checked
+// against the value the caller sent, before scaling, so the error names the
+// number they actually wrote.
 bool PrefTakeUint(const picojson::object &o,
 	CECTag &group,
 	const char *key,
 	ec_tagname_t name,
 	std::uint32_t max,
 	bool &any,
-	std::string &err)
+	std::string &err,
+	std::uint32_t scale)
 {
 	const auto it = o.find(key);
 	if (it == o.end())
@@ -8097,7 +8113,8 @@ bool PrefTakeUint(const picojson::object &o,
 		err = std::string(key) + " out of range";
 		return false;
 	}
-	group.AddTag(CECTag(name, static_cast<std::uint32_t>(v)));
+	const std::uint64_t scaled = static_cast<std::uint64_t>(v) * (scale ? scale : 1u);
+	group.AddTag(CECTag(name, static_cast<std::uint32_t>(scaled)));
 	any = true;
 	return true;
 }
@@ -8384,7 +8401,7 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 			break;
 		case webapi::PrefType::Uint16:
 		case webapi::PrefType::Uint32:
-			ok = PrefTakeUint(*src, g, f.key, f.tag, f.max, any_change, err);
+			ok = PrefTakeUint(*src, g, f.key, f.tag, f.max, any_change, err, f.ec_scale);
 			break;
 		case webapi::PrefType::String:
 			ok = PrefTakeString(*src, g, f.key, f.tag, any_change, err);
@@ -8812,8 +8829,12 @@ CHttpServer::Response CApiDispatcher::HandleKadBootstrap(const CHttpServer::Requ
 	w.BeginObject();
 	w.Key("ok");
 	w.ValueBool(true);
+	// Echo the shape the caller may have sent, and the one every other IP on
+	// this surface uses. Answering the host-order integer meant a client that
+	// posted "1.2.3.4" and stored the reply held 16909060, which it could not
+	// post back without converting.
 	w.Key("ip");
-	w.ValueInt(static_cast<int64_t>(ip_he));
+	w.ValueString(Uint32toStringIP(ip_he));
 	w.Key("port");
 	w.ValueInt(static_cast<int64_t>(port));
 	w.EndObject();
@@ -10869,6 +10890,37 @@ boost::optional<CHttpServer::Response> CApiDispatcher::PreflightEvents(const CHt
 			ApplyCorsHeaders(probe.headers, cors_org, m_config.ServerCfg().allow_cors);
 		}
 		return probe;
+	}
+
+	// `?channels=` is a 400, not "no filter". The surface's own query rule
+	// already says an empty value is an error rather than an omission, and
+	// this is the parameter that would otherwise be its exception: a client
+	// joining an empty selection list produces exactly this URL, so a UI with
+	// every category unchecked was handed the full firehose instead of a
+	// complaint. Omitting the parameter remains the spelling for "every
+	// channel", so nothing is lost by refusing the empty one.
+	//
+	// Reading it as the empty set would be the tidier set semantics and the
+	// worse failure: a stream that opens, heartbeats and then delivers
+	// nothing forever is indistinguishable from a broken one, so the client
+	// that built the URL by accident would get a debugging session rather
+	// than an error message.
+	//
+	// Checked here rather than in the streaming handler because that one
+	// returns void -- by the time it parses the query the response has
+	// already been committed to.
+	{
+		std::string query;
+		const std::size_t q = req.target.find('?');
+		if (q != std::string::npos)
+			query = req.target.substr(q + 1);
+		const auto qmap = web_api_path::ParseQuery(query);
+		const auto it = qmap.find("channels");
+		if (it != qmap.end() && it->second.empty()) {
+			return ErrorResponse(400,
+				"bad_request",
+				"`channels` must not be empty; omit it to receive every channel");
+		}
 	}
 	return boost::none;
 }

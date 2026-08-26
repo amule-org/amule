@@ -286,7 +286,7 @@ A malformed **request** (missing/empty `hashes`, an invalid patch field) is stil
 
 ### Unknown values
 
-A field whose value is not known is `null`, not a sentinel. `remaining_time` is `null` rather than `-1` when there is no ETA to compute; `last_upload`, `shared_since` and `last_seen_complete` are `null` rather than `0` when a file has never uploaded, has never been seen complete, or its `known.met` entry predates the field.
+A field whose value is not known is `null`, not a sentinel. `remaining_time` is `null` rather than `-1` when there is no ETA to compute; `last_upload`, `shared_since` and `last_seen_complete` are `null` rather than `0` when a file has never uploaded, has never been seen complete, or its `known.met` entry predates the field. On a peer row, `available_parts` is `null` when that peer has not reported its part map -- distinct from `0`, which is a real answer and what a fresh source looks like -- and `remote_queue_rank` is `null` when the peer's queue is full, which the daemon signals with a `65535` sentinel rather than a position.
 
 A key is **omitted** only where absence itself is the meaning: something the daemon never reported, rather than something known to be absent. `started_at` on [`GET /search`](#get-apiv0search) is the example, missing for a search this process did not start, and `result_count` is missing when the daemon is too old to send it, which has to stay distinguishable from a search that found nothing.
 
@@ -1242,7 +1242,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 }
 ```
 
-The detail fields mirror the desktop "Client Details" modal. Five of the fields below — `source_origin`, `available_parts`, `mod_version`, `view_shared_disabled` and `part_progress_percent` — are **not** detail-only: they are on the [`GET /clients`](#get-apiv0clients) row and the SSE payload too, and are described here because this is where the rest of their neighbours live. `user_id_hybrid` is the peer's hybrid eD2k id; `high_id` is `true` for a HighID peer (id ≥ `16777216`, i.e. `0x1000000`) and `false` for LowID — the same threshold and the same spelling as `ed2k.high_id` on [`GET /status`](#get-apiv0status), so the value means the same thing on both ends of the API. `server_ip` / `server_port` / `server_name` describe the eD2k server the peer connects through (`server_ip` is `""` when unknown). `kad_port` is non-zero when the peer is reachable on Kad. `source_origin` is how the peer was discovered (values in the enumerated-fields table under [`GET /clients`](#get-apiv0clients)). (`upload_file_name` is part of the base field set — see [`GET /clients`](#get-apiv0clients) above.) `available_parts` is the count of parts the peer holds of the linked file; `mod_version` is the peer's client-mod string (often `""`); `view_shared_disabled` is `true` when the peer forbids browsing its shared files. `is_friend` is `true` when the peer is in your friends list (`CUpDownClient::IsFriend()`) — **distinct** from `friend_slot`, which is a *reserved upload slot* granted to a peer and can be set for non-friends. `dl_up_modifier` is the upload score modifier the GUI labels "DL/UP modifier" (`GetScoreRatio()`). `part_progress_percent` is the peer's completeness of the file we are downloading **from** them (`available_parts` over that file's part count) and is **omitted** when there is no linked download or the part count is unknown.
+The detail fields mirror the desktop "Client Details" modal. Five of the fields below — `source_origin`, `available_parts`, `mod_version`, `view_shared_disabled` and `part_progress_percent` — are **not** detail-only: they are on the [`GET /clients`](#get-apiv0clients) row and the SSE payload too, and are described here because this is where the rest of their neighbours live. `user_id_hybrid` is the peer's hybrid eD2k id; `high_id` is `true` for a HighID peer (id ≥ `16777216`, i.e. `0x1000000`) and `false` for LowID — the same threshold and the same spelling as `ed2k.high_id` on [`GET /status`](#get-apiv0status), so the value means the same thing on both ends of the API. `server_ip` / `server_port` / `server_name` describe the eD2k server the peer connects through (`server_ip` is `""` when unknown). `kad_port` is non-zero when the peer is reachable on Kad. `source_origin` is how the peer was discovered (values in the enumerated-fields table under [`GET /clients`](#get-apiv0clients)). (`upload_file_name` is part of the base field set — see [`GET /clients`](#get-apiv0clients) above.) `available_parts` is the count of parts the peer holds of the linked file, or `null` when the peer has not reported a part map (see [Unknown values](#unknown-values)); `mod_version` is the peer's client-mod string (often `""`); `view_shared_disabled` is `true` when the peer forbids browsing its shared files. `is_friend` is `true` when the peer is in your friends list (`CUpDownClient::IsFriend()`) — **distinct** from `friend_slot`, which is a *reserved upload slot* granted to a peer and can be set for non-friends. `dl_up_modifier` is the upload score modifier the GUI labels "DL/UP modifier" (`GetScoreRatio()`). `part_progress_percent` is the peer's completeness of the file we are downloading **from** them (`available_parts` over that file's part count) and is **omitted** when there is no linked download or the part count is unknown.
 
 > `is_friend` and `dl_up_modifier` ride two EC tags added for this endpoint. A webapi built against a newer core talking to an **older** amuled that doesn't send them degrades gracefully — `is_friend` reads `false` and `dl_up_modifier` reads `0`.
 
@@ -1990,7 +1990,15 @@ amuled's category system lets users tag downloads with one of N user-defined buc
 }
 ```
 
-A list endpoint like the others: `?limit`, `?offset`, `?sort` and `?order` apply, and the `total` / `offset` / `limit` trio describes the window. See [List pagination and sorting](#list-pagination-and-sorting); the sort keys are `index` and `name`. Category `0` is always present, synthesised when amuled omits it, so the list is never empty.
+A list endpoint like the others: `?limit`, `?offset`, `?sort` and `?order` apply, and the `total` / `offset` / `limit` trio describes the window. See [List pagination and sorting](#list-pagination-and-sorting); the sort keys are `index` and `name`.
+
+Category `0` is always present, so the list is never empty. The sample above is what a daemon that reports it looks like, which is the ordinary case. When amuled omits the row, amuleapi synthesises a placeholder rather than inventing values it was not told:
+
+```json
+{ "index": 0, "name": "", "path": "", "comment": "", "color": 0, "priority": "low" }
+```
+
+`name` and `path` are empty because the daemon did not supply them, and `priority` is `low` because that is amuled's own default for the row. A client rendering a category picker should treat an empty `name` on index `0` as "the category a download with no category belongs to" and label it itself -- the API does not put a display string there that the daemon never sent.
 
 **Errors:** `400 bad_request` (bad list params), `503 ec_unavailable`.
 
@@ -2141,8 +2149,8 @@ Returns every preference category amuled carries over EC. The `general` and `con
   "core_tweaks": {
     "max_new_connections_per_5s": 200, "verbose_logging": false,
     "file_buffer_bytes": 240000, "max_upload_queue_clients": 5000,
-    "server_keepalive_timeout_ms": 0, "kad_max_source_searches": 50,
-    "kad_reask_ms": 1800000, "source_reask_ms": 900000
+    "server_keepalive_timeout_minutes": 0, "kad_max_source_searches": 50,
+    "kad_reask_minutes": 30, "source_reask_minutes": 15
   },
   "kademlia": { "update_url": "http://upd.emule-security.org/nodes.dat" },
   "ip2country": {
@@ -2383,9 +2391,7 @@ amuled's general log buffer.
 
 Clears the buffer.
 
-```json
-{ "ok": true }
-```
+**Response:** `204 No Content`, with no body -- a pure action with nothing to report.
 
 #### `GET /api/v0/logs/serverinfo` / `DELETE /api/v0/logs/serverinfo`
 
@@ -2401,7 +2407,7 @@ The ed2k server-info log buffer. Unlike `/logs/amule`, amuled ships this one as 
 }
 ```
 
-`DELETE /api/v0/logs/serverinfo` clears the buffer and returns `{ "ok": true }`.
+`DELETE /api/v0/logs/serverinfo` clears the buffer and answers `204 No Content` with no body.
 
 ---
 
