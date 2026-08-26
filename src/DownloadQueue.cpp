@@ -1611,10 +1611,10 @@ bool CDownloadQueue::AddED2KLink(const CED2KServerLink *link)
 
 	server->SetListName(Uint32toStringIP(link->GetIP()));
 
-	theApp->serverlist->AddServer(server);
-
-	Notify_ServerAdd(server);
-
+	if (!theApp->AddServer(server, true)) {
+		delete server;
+		return false;
+	}
 	return true;
 }
 
