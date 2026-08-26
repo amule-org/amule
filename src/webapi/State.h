@@ -1392,16 +1392,28 @@ struct StatusSnapshot
 // maintained inline on every emplace/erase so the obvious lookup
 // directions both stay O(1) avg without a per-tick rebuild pass:
 //  * ECID → entry via std::unordered_map::find (file_map[]).
-//  * 32-char hex MD4 hash → ECID via FindEcidByHash (index[]).
+//  * 32-char hex MD4 hash + role → ECID via FindDownloadEcidByHash /
+//    FindSharedEcidByHash (one index per role).
+//
+// One index per role, not one overall, because a hash does NOT name a single
+// file here. A part file and the completed copy someone dropped into a shared
+// folder are two amuled objects with two ECIDs and the same hash, and this map
+// holds both. aMule keeps them apart by having a list per role
+// (CKnownFileList and CSharedFileList are each hash-keyed and de-duplicate on
+// insert, so neither ever holds two files under one hash); this map merges the
+// roles, so it has to carry the role in the key instead. With a single index
+// whichever entry was filed last won the slot and the other became
+// unreachable while still sitting in the map (#1161, reported as #1157).
 //
 // Walkers reach in via find()/emplace()/erase()/begin()/end() — the
 // same surface they had when this was a raw std::map<uint32_t,
 // FileSnapshot>&. The wrapper intercepts the two mutations that move
 // hashes around and keeps the index consistent.
 //
-// Invariant: a FileSnapshot's `hash` is content-derived and never
-// changes once set. Walkers MUST NOT reassign `hash` via the iterator
-// (the index would desync). Set hash before emplace, never after.
+// Invariant: `hash`, `is_downloading` and `is_shared` are what the indexes are
+// built from, so they are not assigned through the iterator -- go through
+// SetHash() / SetDownloading() / SetShared(), which re-file the entry. A raw
+// assignment compiles and silently desyncs the index.
 //
 // Invariant: an entry's key IS its FileSnapshot::ecid, enforced by emplace()
 // rather than left to the caller. A snapshot filed under one id but carrying
@@ -1431,44 +1443,115 @@ public:
 		// The key wins -- readers resolve by it. See the invariant above.
 		f.ecid = ecid;
 		auto r = m_files.emplace(ecid, std::move(f));
-		if (r.second && !r.first->second.hash.empty()) {
-			m_hash_to_ecid[r.first->second.hash] = ecid;
+		if (r.second) {
+			Reindex(r.first);
 		}
 		return r;
 	}
 
+	//! Assign `hash` on an existing entry and re-file it. The refresher can
+	//! learn a hash after the insert (a partfile frame with HASH suppressed,
+	//! then a knownfile frame carrying it), and the index has to follow.
+	void SetHash(iterator it, std::string hash)
+	{
+		if (it == m_files.end() || it->second.hash == hash)
+			return;
+		DropRows(it->first, it->second.hash);
+		it->second.hash = std::move(hash);
+		Reindex(it);
+	}
+
+	//! Add or remove the downloading role, keeping that role's index in step.
+	void SetDownloading(iterator it, bool on)
+	{
+		if (it == m_files.end() || it->second.is_downloading == on)
+			return;
+		it->second.is_downloading = on;
+		Reindex(it);
+	}
+
+	//! Add or remove the shared role, keeping that role's index in step.
+	void SetShared(iterator it, bool on)
+	{
+		if (it == m_files.end() || it->second.is_shared == on)
+			return;
+		it->second.is_shared = on;
+		Reindex(it);
+	}
+
 	iterator erase(iterator it)
 	{
-		if (!it->second.hash.empty()) {
-			auto hit = m_hash_to_ecid.find(it->second.hash);
-			// Defence: only clear the index slot if it still points at
-			// this ECID. A later emplace with the same hash but a
-			// different ECID could have rewired the slot already.
-			if (hit != m_hash_to_ecid.end() && hit->second == it->first) {
-				m_hash_to_ecid.erase(hit);
-			}
-		}
+		DropRows(it->first, it->second.hash);
 		return m_files.erase(it);
 	}
 
 	void clear()
 	{
 		m_files.clear();
-		m_hash_to_ecid.clear();
+		m_download_by_hash.clear();
+		m_shared_by_hash.clear();
 	}
 
-	bool FindEcidByHash(const std::string &hash, std::uint32_t &out) const
+	//! Resolve a hash to the entry carrying the DOWNLOADING role, ignoring a
+	//! share that happens to have the same content.
+	bool FindDownloadEcidByHash(const std::string &hash, std::uint32_t &out) const
 	{
-		auto it = m_hash_to_ecid.find(hash);
-		if (it == m_hash_to_ecid.end())
+		return Lookup(m_download_by_hash, hash, out);
+	}
+
+	//! Resolve a hash to the entry carrying the SHARED role.
+	bool FindSharedEcidByHash(const std::string &hash, std::uint32_t &out) const
+	{
+		return Lookup(m_shared_by_hash, hash, out);
+	}
+
+private:
+	using index_type = std::unordered_map<std::string, std::uint32_t>;
+
+	static bool Lookup(const index_type &idx, const std::string &hash, std::uint32_t &out)
+	{
+		auto it = idx.find(hash);
+		if (it == idx.end())
 			return false;
 		out = it->second;
 		return true;
 	}
 
-private:
+	//! Point `idx[hash]` at `ecid` when the role applies, and clear the row
+	//! when it no longer does -- but only if it still names this entry, since
+	//! the other entry sharing this hash may own the row.
+	static void FileRow(index_type &idx, const std::string &hash, std::uint32_t ecid, bool applies)
+	{
+		auto it = idx.find(hash);
+		if (applies) {
+			idx[hash] = ecid;
+		} else if (it != idx.end() && it->second == ecid) {
+			idx.erase(it);
+		}
+	}
+
+	//! Re-file one entry into whichever role indexes its current flags call
+	//! for. Cheap and idempotent, so callers can just call it after a change.
+	void Reindex(iterator it)
+	{
+		if (it->second.hash.empty())
+			return;
+		FileRow(m_download_by_hash, it->second.hash, it->first, it->second.is_downloading);
+		FileRow(m_shared_by_hash, it->second.hash, it->first, it->second.is_shared);
+	}
+
+	//! Remove every row naming `ecid` under `hash`, in both roles.
+	void DropRows(std::uint32_t ecid, const std::string &hash)
+	{
+		if (hash.empty())
+			return;
+		FileRow(m_download_by_hash, hash, ecid, false);
+		FileRow(m_shared_by_hash, hash, ecid, false);
+	}
+
 	map_type m_files;
-	std::unordered_map<std::string, std::uint32_t> m_hash_to_ecid;
+	index_type m_download_by_hash;
+	index_type m_shared_by_hash;
 };
 
 // One State instance per amuleapi process. The mutex protects every

@@ -689,7 +689,10 @@ bool CState::FindDownload(const std::string &hash_hex, FileSnapshot &out) const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
 	std::uint32_t ecid = 0;
-	if (!m_files.FindEcidByHash(hash_hex, ecid))
+	// Role-keyed: a share with the same content must not shadow the download
+	// (#1161). The is_downloading check below is now belt-and-braces rather
+	// than the thing standing between the caller and the wrong entry.
+	if (!m_files.FindDownloadEcidByHash(hash_hex, ecid))
 		return false;
 	const auto it = m_files.find(ecid);
 	if (it == m_files.end() || !it->second.is_downloading)
@@ -702,7 +705,9 @@ std::uint64_t CState::DownloadPartCount(const std::string &hash_hex) const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
 	std::uint32_t ecid = 0;
-	if (!m_files.FindEcidByHash(hash_hex, ecid))
+	// Same role-keyed resolution as FindDownload(): this answers a question
+	// about the download, so a share with the same hash must not answer it.
+	if (!m_files.FindDownloadEcidByHash(hash_hex, ecid))
 		return 0;
 	const auto it = m_files.find(ecid);
 	if (it == m_files.end() || !it->second.is_downloading)
@@ -724,7 +729,9 @@ bool CState::FindShared(const std::string &hash_hex, FileSnapshot &out) const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
 	std::uint32_t ecid = 0;
-	if (!m_files.FindEcidByHash(hash_hex, ecid))
+	// Role-keyed, mirroring FindDownload(): the part file being downloaded
+	// must not shadow the share.
+	if (!m_files.FindSharedEcidByHash(hash_hex, ecid))
 		return false;
 	const auto it = m_files.find(ecid);
 	if (it == m_files.end() || !it->second.is_shared)
