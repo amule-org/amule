@@ -10,7 +10,7 @@ import { api } from "../api.js";
 import { data } from "../events.js";
 import { store } from "../store.js";
 import { html, useState, useEffect, useRef, useStore } from "../dom.js";
-import { Tabs, listPlaceholder, toast, confirmDialog, CountryCell } from "../components.js";
+import { Tabs, listPlaceholder, toast, confirmDialog, CountryCell, Section, statRow } from "../components.js";
 import { VirtualTable, sortRows, useTablePrefs, ColumnPicker, ipNum } from "../table.js";
 import { Chart } from "../charts.js";
 import { formatInt, formatTimestamp } from "../format.js";
@@ -434,13 +434,6 @@ function ServerInfoPanel() {
 
 // --- bottom tabs: per-network info grids ---------------------------------
 
-function stat(label, value) {
-  return html`
-    <div class="kad-stat">
-      <div class="kad-stat-label">${label}</div>
-      <div class="kad-stat-value">${value}</div>
-    </div>`;
-}
 function yesno(b) { return html`<span class=${"status-chip " + (b ? "warn" : "ok")}>${b ? t("networks_kad_yes") : t("networks_kad_no")}</span>`; }
 
 // Mirrors amuleGUI's "Firewalled state:" row (CServerWnd::UpdateKadInfo): with a
@@ -483,27 +476,25 @@ function Ed2kInfoPanel() {
     })();
   }, []);
 
-  // A LowID encodes no address (public_ip is empty there); the desktop prints
-  // the literal "Server" instead.
-  const ipPort = !connected ? "—"
-    : !ed2k.high_id ? t("networks_ed2k_ip_port_server")
-    : !ed2k.public_ip ? "—"
-    : ed2k.public_ip + (port ? ":" + port : "");
+  // A LowID encodes no address, so public_ip is empty there.
+  const ipPort = connected && ed2k.public_ip ? ed2k.public_ip + (port ? ":" + port : "") : "—";
 
   return html`
-    <div class="card">
-      <div class="kad-grid">
-        ${stat(t("networks_ed2k_status"), html`
+    <div class="detail-sections">
+      ${Section([
+        statRow("networks_ed2k_status", html`
           <span class=${"status-chip " + (connected ? "ok" : "off")}>
             ${connected ? t("networks_ed2k_connected") : t("networks_ed2k_not_connected")}
-          </span>`)}
-        ${stat(t("networks_ed2k_ip_port"), ipPort)}
-        ${/* An identifier, not a quantity -- no thousands separators. */
-          stat(t("networks_ed2k_id"), connected ? String(ed2k.id || 0) : "—")}
-        ${stat(t("networks_ed2k_connection_type"),
-          connected ? (ed2k.high_id ? t("networks_ed2k_high_id") : t("networks_ed2k_low_id")) : "—")}
-        ${stat(t("networks_ed2k_connected_since"), formatTimestamp(ed2k.connected_since))}
-      </div>
+          </span>`),
+        statRow("networks_ed2k_connection_type",
+          connected ? (ed2k.high_id ? t("networks_ed2k_high_id") : t("networks_ed2k_low_id")) : "—"),
+        statRow("networks_ed2k_connected_since", formatTimestamp(ed2k.connected_since)),
+      ], "networks_ed2k_group_connection")}
+      ${Section([
+        // An identifier, not a quantity -- no thousands separators.
+        statRow("networks_ed2k_id", connected ? String(ed2k.id || 0) : "—"),
+        statRow("networks_ed2k_ip_port", ipPort),
+      ], "networks_ed2k_group_identity")}
     </div>`;
 }
 
@@ -530,25 +521,32 @@ function KadInfoPanel() {
   const buddy = d.buddy || {};
   const idx = d.indexed || {};
 
+  if (error) return html`<p>${error}</p>`;
+
   return html`
-    <div class="card">
-      ${error ? html`<p>${error}</p>` : html`
-        <div class="kad-grid">
-          ${stat(t("networks_kad_state"), html`<span class=${"status-chip " + (kad.state === "connected" ? "ok" : "off")}>${kad.state ? t("networks_kad_conn_" + kad.state) : "—"}</span>`)}
-          ${stat(t("networks_kad_node_id"), d.node_id || "—")}
-          ${stat(t("networks_kad_connected_since"), formatTimestamp(d.connected_since))}
-          ${stat(t("networks_kad_firewalled_tcp"), yesno(kad.firewalled))}
-          ${stat(t("networks_kad_firewalled_udp"), yesno(d.firewalled_udp))}
-          ${stat(t("networks_kad_in_lan_mode"), yesno(d.in_lan_mode))}
-          ${stat(t("networks_kad_your_ip"), d.public_ip || "—")}
-          ${stat(t("networks_kad_users"), formatInt(net.users))}
-          ${stat(t("networks_kad_files"), formatInt(net.files))}
-          ${stat(t("networks_kad_contacts_nodes"), formatInt(net.nodes))}
-          ${stat(t("networks_kad_buddy"), buddyText(kad.state, buddy, kad.firewalled, d.firewalled_udp))}
-          ${stat(t("networks_kad_indexed_sources"), formatInt(idx.sources))}
-          ${stat(t("networks_kad_indexed_keywords"), formatInt(idx.keywords))}
-          ${stat(t("networks_kad_indexed_notes"), formatInt(idx.notes))}
-          ${stat(t("networks_kad_indexed_load"), formatInt(idx.load))}
-        </div>`}
+    <div class="detail-sections">
+      ${Section([
+        statRow("networks_kad_state", html`<span class=${"status-chip " + (kad.state === "connected" ? "ok" : "off")}>${kad.state ? t("networks_kad_conn_" + kad.state) : "—"}</span>`),
+        statRow("networks_kad_firewalled_tcp", yesno(kad.firewalled)),
+        statRow("networks_kad_firewalled_udp", yesno(d.firewalled_udp)),
+        statRow("networks_kad_in_lan_mode", yesno(d.in_lan_mode)),
+        statRow("networks_kad_connected_since", formatTimestamp(d.connected_since)),
+      ], "networks_kad_group_connection")}
+      ${Section([
+        statRow("networks_kad_node_id", d.node_id || "—"),
+        statRow("networks_kad_your_ip", d.public_ip || "—"),
+        statRow("networks_kad_buddy", buddyText(kad.state, buddy, kad.firewalled, d.firewalled_udp)),
+      ], "networks_kad_group_identity")}
+      ${Section([
+        statRow("networks_kad_users", formatInt(net.users)),
+        statRow("networks_kad_files", formatInt(net.files)),
+        statRow("networks_kad_contacts_nodes", formatInt(net.nodes)),
+      ], "networks_kad_group_network")}
+      ${Section([
+        statRow("networks_kad_indexed_sources", formatInt(idx.sources)),
+        statRow("networks_kad_indexed_keywords", formatInt(idx.keywords)),
+        statRow("networks_kad_indexed_notes", formatInt(idx.notes)),
+        statRow("networks_kad_indexed_load", formatInt(idx.load)),
+      ], "networks_kad_group_index")}
     </div>`;
 }
