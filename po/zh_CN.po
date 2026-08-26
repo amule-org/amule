@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-24 19:01+0200\n"
-"PO-Revision-Date: 2026-08-25 10:20+0000\n"
+"PO-Revision-Date: 2026-08-26 20:31+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -2863,11 +2863,11 @@ msgstr "%s 不是可读的 MaxMindDB 文件 —— 正在丢弃它。下次启�
 
 #: src/IP2Country.cpp
 msgid "IP2Country: MaxMind selected as the GeoIP source but no License Key configured. Open Preferences -> IP2Country, paste your free MaxMind License Key and click 'Update now'."
-msgstr "IP2Country：已选择 MaxMind 作为 GeoIP 源，但未配置许可证密钥。请打开偏好设置 -> IP2Country，粘贴您的免费 MaxMind 许可证密钥，然后点击“立即更新”。"
+msgstr "IP2Country：已选择 MaxMind 作为 GeoIP 源，但未配置许可证密钥。请打开首选项 -> IP2Country，粘贴您的免费 MaxMind 许可证密钥，然后点击“立即更新”。"
 
 #: src/IP2Country.cpp
 msgid "IP2Country: Custom URL selected as the GeoIP source but no URL configured. Open Preferences -> IP2Country and supply a URL that points to an .mmdb (or .gz / .tar.gz containing one)."
-msgstr "IP2Country：已选择自定义 URL 作为 GeoIP 源，但未配置 URL。请打开偏好设置 -> IP2Country，并提供指向 .mmdb 文件（或包含该文件的.gz/.tar.gz 压缩包）的 URL。"
+msgstr "IP2Country：已选择自定义 URL 作为 GeoIP 源，但未配置 URL。请打开首选项 -> IP2Country，并提供指向 .mmdb 文件（或包含该文件的.gz/.tar.gz 压缩包）的 URL。"
 
 #: src/IP2Country.cpp
 msgid "IP2Country: failed to resolve a GeoIP download URL."

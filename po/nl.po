@@ -13,7 +13,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-24 19:01+0200\n"
-"PO-Revision-Date: 2026-08-25 10:14+0000\n"
+"PO-Revision-Date: 2026-08-26 20:30+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
 "Language: nl\n"
@@ -493,7 +493,7 @@ msgstr "Server-hostnaam geïnformeerd"
 #: src/amule.cpp
 #, c-format
 msgid "Media metadata: probed file is no longer known, result discarded (%s)"
-msgstr ""
+msgstr "Media-metadata: gepeild bestand is niet meer bekend, resultaat verwijderd (%s)"
 
 #: src/amule.cpp
 #, c-format
@@ -2192,13 +2192,12 @@ msgid "No such chat session"
 msgstr "Chatsessie onvindbaar"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Media metadata extraction is disabled in preferences"
-msgstr "Kad is uitgeschakeld in voorkeuren."
+msgstr "Uitlezen van media-metadata is uitgeschakeld in voorkeuren"
 
 #: src/ExternalConn.cpp
 msgid "File is not eligible for media metadata extraction (not an audio/video file, or an incomplete download)"
-msgstr ""
+msgstr "Bestand is niet kiesbaar voor uitlezen van media-metadata (geen audio-/videobestand of een incomplete download)"
 
 #: src/ExternalConn.cpp
 msgid "Empty chat message"
@@ -2860,7 +2859,7 @@ msgstr "Bestaand GeoLite2-Country.mmdb gemigreerd naar %s"
 #: src/IP2Country.cpp
 #, c-format
 msgid "%s is not a readable MaxMindDB file - discarding it. A fresh copy will be downloaded on the next start, or now via Preferences -> IP2Country -> 'Update now'."
-msgstr ""
+msgstr "%s is geen leesbaar MaxMindDB-bestand - wordt verwijderd. Een nieuwe kopie wordt gedownload bij de volgende start, of nu via Voorkeuren -> IP2Country -> 'Update nu'."
 
 #: src/IP2Country.cpp
 msgid "IP2Country: MaxMind selected as the GeoIP source but no License Key configured. Open Preferences -> IP2Country, paste your free MaxMind License Key and click 'Update now'."
@@ -3222,9 +3221,9 @@ msgid "Media metadata: no ffprobe binary found. Install ffmpeg, or set the ffpro
 msgstr "Media-metadata: geen ffprobe-programma gevonden. Installeer ffmpeg of stel het pad naar ffprobe in Voorkeuren in; Lengte, bitrate en codec worden niet uitgelezen."
 
 #: src/MediaProbe.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Media metadata: %s is gone, nothing to extract"
-msgstr "Extractie van mediametagegevens"
+msgstr "Media-metadata: %s is verdwenen, niets om uit te lezen"
 
 #: src/MediaProbe.cpp
 #, c-format
@@ -3239,12 +3238,12 @@ msgstr "Media-metadata: time-out van ffprobe of geannuleerd voor %s"
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: ignoring implausibly large ffprobe output for %s"
-msgstr ""
+msgstr "Media-metadata: ongelofelijk lange ffprobe-uitvoer wordt genegeerd voor %s"
 
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: could not run ffprobe (%s) -- check the media metadata settings"
-msgstr ""
+msgstr "Media-metadata: kon ffprobe niet uitvoeren (%s) -- controleer de media-metadata instellingen"
 
 #: src/MediaProbe.cpp
 #, c-format
@@ -3254,35 +3253,35 @@ msgstr "Media-metadata: ffprobe mislukt (code %d) voor %s"
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: ffprobe found nothing usable in %s"
-msgstr ""
+msgstr "Media-metadata: ffprobe vond niets bruikbaars in %s"
 
 #: src/MediaProbeThread.cpp
 #, c-format
 msgid "Finished extracting media metadata from %u shared file (%u failed)"
 msgid_plural "Finished extracting media metadata from %u shared files (%u failed)"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Uitlezen van media-metadata uit %u gedeeld bestand voltooid (%u mislukt)"
+msgstr[1] "Uitlezen van media-metadata uit %u gedeelde bestanden voltooid (%u mislukt)"
 
 #: src/MediaProbeThread.cpp
 #, c-format
 msgid "Finished extracting media metadata from %u shared file"
 msgid_plural "Finished extracting media metadata from %u shared files"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Uitlezen van media-metadata vanuit %u gedeeld bestand voltooid"
+msgstr[1] "Uitlezen van media-metadata vanuit %u gedeelde bestanden voltooid"
 
 #: src/MediaProbeThread.cpp
 #, c-format
 msgid "%u further file failed media metadata extraction (not listed individually)"
 msgid_plural "%u further files failed media metadata extraction (not listed individually)"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Uitlezen van media-metadata mislukt voor nog %u bestand (niet individueel vermeld)"
+msgstr[1] "Uitlezen van media-metadata mislukt voor nog %u bestanden (niet individueel vermeld)"
 
 #: src/MediaProbeThread.cpp
 #, c-format
 msgid "%u further shared file is gone (not listed individually)"
 msgid_plural "%u further shared files are gone (not listed individually)"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Nog %u gedeeld bestand is verdwenen (niet individueel vermeld)"
+msgstr[1] "Nog %u gedeelde bestanden zijn verdwenen (niet individueel vermeld)"
 
 #: src/MuleNotebook.cpp src/muuli_wdr.cpp
 msgid "Close"
@@ -6525,7 +6524,7 @@ msgstr "Onverwachte fout bij Kad-zoekopdracht: "
 
 #: src/SearchList.cpp
 msgid "Search timed out: the server did not answer."
-msgstr ""
+msgstr "Time-out van zoekopdracht: de server antwoordde niet."
 
 #: src/SearchList.cpp
 msgid "Kad search: requested wider results from one more peer."
@@ -6594,28 +6593,26 @@ msgid "New"
 msgstr "Nieuw"
 
 #: src/SearchProgressReport.cpp
-#, fuzzy
 msgid "running"
-msgstr "Draaiende"
+msgstr "Draaiend"
 
 #: src/SearchProgressReport.cpp
-#, fuzzy
 msgid "finished"
-msgstr "Fins"
+msgstr "voltooid"
 
 #: src/SearchProgressReport.cpp
 msgid "idle"
-msgstr ""
+msgstr "inactief"
 
 #: src/SearchProgressReport.cpp
 #, c-format
 msgid "Search %u: %s, %u %% (%u results)\n"
-msgstr ""
+msgstr "Zoekopdracht %u: %s, %u %% (%u resultaten)\n"
 
 #: src/SearchProgressReport.cpp
 #, c-format
 msgid "Search %u \"%s\": %s, %u %% (%u results)\n"
-msgstr ""
+msgstr "Zoekopdracht %u \"%s\": %s, %u %% (%u resultaten)\n"
 
 #: src/SearchProgressReport.cpp src/TextClient.cpp
 msgid "Search expired or unknown ID. Start a new search.\n"
@@ -6631,9 +6628,8 @@ msgid "Search progress not available"
 msgstr "Voortgang zoeken niet beschikbaar"
 
 #: src/SearchProgressReport.cpp
-#, fuzzy
 msgid "No search to report on.\n"
-msgstr "Geen bestanden geselecteerd om te exporteren."
+msgstr "Geen zoekopdrachten om over te rapporteren.\n"
 
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all obfuscated static servers listed. Making another pass without obfuscation."
@@ -6641,7 +6637,7 @@ msgstr "Kon geen verbinding maken met alle vermelde geobfusceerde statische serv
 
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all obfuscated servers listed. Making another pass without obfuscation."
-msgstr "Kon niet verbinden met een geobfusceerde server. Nogmaals proberen zonder obfuscatie."
+msgstr "Kon niet verbinden met alle vermeldde geobfusceerde servers. Nogmaals proberen zonder obfuscatie."
 
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all static servers listed."
@@ -7209,16 +7205,15 @@ msgid "No shareable files found in directory: %s"
 msgstr "Geen deelbare bestanden gevonden in map: %s"
 
 #: src/SharedFileList.cpp
-#, fuzzy
 msgid "Media metadata extraction is disabled in preferences, so there is nothing to re-extract."
-msgstr "Extractie van mediametagegevens"
+msgstr "Uitlezen van media-metadata is uitgeschakeld in voorkeuren, dus er is niets om opnieuw uit te lezen."
 
 #: src/SharedFileList.cpp
 #, c-format
 msgid "Re-extracting media metadata for %u shared file"
 msgid_plural "Re-extracting media metadata for %u shared files"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Opnieuw media-metadata aan het uitlezen voor %u gedeeld bestand"
+msgstr[1] "Opnieuw media-metadata aan het uitlezen voor %u gedeelde bestanden"
 
 #: src/SharedFileList.cpp
 #, c-format
@@ -7305,7 +7300,7 @@ msgstr "Lokale gegevens verifiëren"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Re-extract &media metadata"
-msgstr ""
+msgstr "Opnieuw uitlezen &media-metadata"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Add files in collection to transfer list"
@@ -7352,44 +7347,44 @@ msgstr "Lokale gegevens verifiëren op partbestand wordt momenteel niet onderste
 #, c-format
 msgid "Media metadata: skipping %u incomplete download"
 msgid_plural "Media metadata: skipping %u incomplete downloads"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Media-metadata: %u incomplete download wordt overgeslagen"
+msgstr[1] "Media-metadata: %u incomplete downloads worden overgeslagen"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Media metadata: skipping %u file that is not audio or video"
 msgid_plural "Media metadata: skipping %u files that are not audio or video"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Media-metadata: %u bestand dat geen audio of video is wordt overgeslagen"
+msgstr[1] "Media-metadata: %u bestanden die geen audio of video zijn worden overgeslagen"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Re-extract media metadata for %u file?"
 msgid_plural "Re-extract media metadata for %u files?"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Opnieuw media-metadata uitlezen voor %u bestand?"
+msgstr[1] "Opnieuw media-metadata uitlezen voor %u bestanden?"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%u incomplete download will be skipped."
 msgid_plural "%u incomplete downloads will be skipped."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%u incomplete download wordt overgeslagen."
+msgstr[1] "%u incomplete downloads worden overgeslagen."
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%u file is not audio or video and will be skipped."
 msgid_plural "%u files are not audio or video and will be skipped."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%u bestand is geen audio of video en zal worden overgeslagen."
+msgstr[1] "%u bestanden zijn geen audio of video en zullen worden overgeslagen."
 
 #: src/SharedFilesCtrl.cpp
 msgid "This runs in the background. Progress is reported in the log."
-msgstr ""
+msgstr "Dit draait in de achtergrond. Voortgang wordt gerapporteerd in het logbestand."
 
 #: src/SharedFilesCtrl.cpp
 msgid "Re-extract media metadata"
-msgstr ""
+msgstr "Opnieuw media-metadata uitlezen"
 
 #: src/SharedFilesCtrl.cpp
 msgid "You need a HighID to create a valid sourcelink"
@@ -7706,7 +7701,7 @@ msgstr "Voer <str> uit en sluit af."
 
 #: src/TextClient.cpp
 msgid "Separate list fields with spaces, as before, instead of tabs."
-msgstr ""
+msgstr "Gescheiden lijstvelden met spaties, zoals hiervoor, in plaats van tabs."
 
 #: src/TextClient.cpp
 msgid "Invalid IP format. Use xxx.xxx.xxx.xxx:xxxx\n"
