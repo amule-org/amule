@@ -9,7 +9,7 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 **Cross-cutting concerns**
 - [Base URL and transport](#base-url-and-transport)
 - [Authentication](#authentication) — [Login response shape](#login-response-shape), [Role model](#role-model), [Rate limiting](#rate-limiting), [JWT structure](#jwt-structure)
-- [Response model](#response-model) — [Success envelope](#success-envelope), [Mutation responses](#mutation-responses), [List pagination and sorting](#list-pagination-and-sorting), [Bulk mutations and the `results` envelope](#bulk-mutations-and-the-results-envelope), [Error envelope](#error-envelope), [ETag and conditional GET](#etag-and-conditional-get), [CORS](#cors), [Path validation](#path-validation), [Request size limits](#request-size-limits)
+- [Response model](#response-model) — [Success envelope](#success-envelope), [Mutation responses](#mutation-responses), [Idempotency](#idempotency), [IP addresses](#ip-addresses), [List pagination and sorting](#list-pagination-and-sorting), [Bulk mutations and the `results` envelope](#bulk-mutations-and-the-results-envelope), [Error envelope](#error-envelope), [ETag and conditional GET](#etag-and-conditional-get), [CORS](#cors), [Path validation](#path-validation), [Request size limits](#request-size-limits)
 - [Error code catalog](#error-code-catalog)
 - [Backward compatibility](#backward-compatibility)
 
@@ -223,7 +223,23 @@ Three bodies are deliberate exceptions, because each reports something no later 
 
 - the per-item [`results` envelope](#bulk-mutations-and-the-results-envelope), which carries a real outcome per input item;
 - `message` on the connection-control routes, which is the daemon's own explanation of what it did with the request;
-- `ip` / `port` on [`POST /kad/bootstrap`](#post-apiv0kadbootstrap), which reports **which** address the daemon parsed out of the two accepted input forms.
+- `ip` / `port` on [`POST /kad/bootstrap`](#post-apiv0kadbootstrap), which reports **which** address the daemon parsed.
+
+### Idempotency
+
+**Every endpoint is idempotent: sending the same request twice leaves the daemon in the state one request would have left it in.** A client library, a proxy or a browser can repeat a request without the caller knowing, so a surface that toggles rather than sets turns an invisible retry into a silent, wrong state change.
+
+In practice that means a mutation names the value it wants rather than the change it wants. `PATCH /downloads/{hash}` with `{"a4af_auto": true}` reaches `true` from either starting point and stays there however many times it arrives; there is deliberately no "flip it" spelling. Where the daemon's own operation was a flip, amuleapi does not paper over it by reading the current value and deciding -- the value goes down to the core, which stores it.
+
+Two things are idempotent without looking it: a `DELETE` of something already gone is a `404` rather than a second delete, and `POST /downloads` with a link already queued is refused per-item in the [`results` envelope](#bulk-mutations-and-the-results-envelope). Both report that the request had no effect, which is the point; neither does the work twice.
+
+The exceptions are the endpoints whose whole purpose is to do something again: `POST /shared_reload`, `POST /shared/{hash}/verify`, the `*/update` fetches, and `POST /search/{id}/more`. Asking twice asks for the work twice, which is what the caller meant.
+
+### IP addresses
+
+**Every IP address on this surface, in either direction, is a dotted-quad string.** `"203.0.113.5"`, never `3405803781`, and never a byte-order the caller has to know about. That covers request bodies, query parameters and response fields alike.
+
+The conversion to and from the host-order integers EC carries happens inside amuleapi. `POST /kad/bootstrap` used to accept a `uint32` alongside the quad, and the two disagreed: the quad parser packed `a.b.c.d` least-significant byte first while the integer was taken verbatim, so `2130706433` (`0x7F000001`, which is what a client computing an IPv4 integer the conventional way writes for `127.0.0.1`) reached the daemon as `1.0.0.127`. Only the quad is accepted now, and the question does not arise.
 
 ### Query parameter validation
 
@@ -254,7 +270,7 @@ Sorting is applied to the full filtered set **before** slicing, so pagination is
 
 - `total` — item count after any endpoint-specific filter (e.g. `/clients?filter=`), before slicing.
 - `offset` — the offset applied.
-- `limit` — the effective page size (equals the number of items returned when `limit` was omitted).
+- `limit` — the page size the request asked for, or `null` when it asked for none. It is not the row count: that is `total`. It reported the row count once, which no caller could reuse as a page size, since re-sending it is a `400` as soon as the list is longer than the `500` cap.
 
 Omitting all four parameters preserves the previous response exactly, plus the additive `total` / `offset` / `limit` keys.
 
@@ -962,10 +978,11 @@ Force A4AF source-swapping for this download. Downloads-only.
 | action | Effect |
 |---|---|
 | `swap_this` | Make other files' A4AF sources take over **this** file. |
-| `swap_this_auto` | Toggle automatic A4AF swapping for this file. |
 | `swap_others` | Release this file's sources to the other files that want them. |
 
-`client_ecid` is optional and valid **only with `swap_this`**, where it narrows the action from every A4AF source of this file to the single named one — the per-peer "Swap to this file" of the desktop client. It must name a client in the current snapshot that is an A4AF source of *this* download; pairing it with `swap_this_auto` or `swap_others` is a `400`, because the core has no per-source form of those.
+Both move sources one way. A third action, `swap_this_auto`, flipped the `a4af_auto` flag and is gone: a flip cannot be retried safely, and it set a field the download object already reports. Set it with [`PATCH /downloads/{hash}`](#patch-apiv0downloadshash) and `{"a4af_auto": true|false}` instead. Sending `swap_this_auto` here is a `400` naming the replacement.
+
+`client_ecid` is optional and valid **only with `swap_this`**, where it narrows the action from every A4AF source of this file to the single named one — the per-peer "Swap to this file" of the desktop client. It must name a client in the current snapshot that is an A4AF source of *this* download; pairing it with `swap_others` is a `400`, because the core has no per-source form of it.
 
 The swap moves the peer between two files' source lists, so an SSE subscriber sees `download_updated` for **both** the peer's former download and this one, plus `client_updated` for the peer itself.
 
@@ -977,7 +994,7 @@ The swap moves the peer between two files' source lists, so an SSE subscriber se
 
 `source_ecids` are the ECIDs of the peers holding this file as an A4AF source, joinable against [`GET /api/v0/clients`](#get-apiv0clients). The array is the post-action state, so a `swap_this` naming a single peer shows up as that ECID having left it. The same peers appear as rows with `"a4af": true` on [`GET /api/v0/downloads/{hash}/clients`](#get-apiv0downloadshashclients--get-apiv0sharedhashclients), which carries the whole peer object rather than a bare ECID.
 
-**Errors:** `400 bad_request` (missing or unknown `action`; a non-integer `client_ecid`; `client_ecid` with the wrong action), `400 amuled_rejected` (the daemon refused the swap — most commonly because the peer is actively sending data, which it will not be swapped away from), `404 not_found` (no download with that hash, or no client with that ECID), `409 conflict` (that client is not an A4AF source of this download), `503 ec_unavailable`.
+**Errors:** `400 bad_request` (missing or unknown `action`; `swap_this_auto`, which moved to `PATCH`; a non-integer `client_ecid`; `client_ecid` with the wrong action), `400 amuled_rejected` (the daemon refused the swap — most commonly because the peer is actively sending data, which it will not be swapped away from), `404 not_found` (no download with that hash, or no client with that ECID), `409 conflict` (that client is not an A4AF source of this download), `503 ec_unavailable`.
 
 #### `POST /api/v0/downloads`
 
@@ -1056,6 +1073,7 @@ Mutates one or more fields of a single partfile. `{hash}` is the 32-char MD4 hex
 - `status` — `"paused"`, `"resumed"` or `"stopped"`. `"paused"` halts transfer but keeps the file's sources; `"stopped"` additionally drops all known sources and resets the Kad source search (a stopped file must rediscover sources from scratch on resume); `"resumed"` clears either state. A stopped file reports `status: "stopped"` in the download object (see [`GET /downloads`](#get-apiv0downloads)).
 - `priority` — `"low"` / `"normal"` / `"high"` / `"auto"`. Downloads support only these levels and any other value is a `400`; the reason is that the daemon's `.part.met` loader would clamp it back to `normal` on the next restart. (Shared files support the wider `very_low` … `release` set — see [`PATCH /shared/{hash}`](#patch-apiv0sharedhash) and [Priority levels](#priority-levels).)
 - `category` — uint8
+- `a4af_auto` — bool. Turns automatic A4AF source-swapping on or off for this file. A named value, not a flip: sending `true` twice leaves it `true`. This is the only way to set the flag; the `swap_this_auto` action on [`POST /downloads/{hash}/a4af`](#post-apiv0downloadshasha4af) that used to toggle it is gone, because a toggle cannot survive a retry (see [Idempotency](#idempotency)).
 - `comment` + `rating` — set the file's comment (string, ≤ 50 chars) and rating (integer `0`–`5`). Must be sent **together**; only settable when the partfile is also shared (≥ 1 complete chunk), else `409 not_shared`. Primarily a shared-file action — see [`PATCH /shared/{hash}`](#patch-apiv0sharedhash).
 - `name` — rename the file (string). Must be non-empty and contain no path separators (`/` or `\`). See the [Takeover flow](#get-apiv0downloadshashfilenames).
 
@@ -2010,13 +2028,15 @@ amuled's category system lets users tag downloads with one of N user-defined buc
 
 A list endpoint like the others: `?limit`, `?offset`, `?sort` and `?order` apply, and the `total` / `offset` / `limit` trio describes the window. See [List pagination and sorting](#list-pagination-and-sorting); the sort keys are `index` and `name`.
 
-Category `0` is always present, so the list is never empty. The sample above is what a daemon that reports it looks like, which is the ordinary case. When amuled omits the row, amuleapi synthesises a placeholder rather than inventing values it was not told:
+Category `0` is always present, so the list is never empty. amuled's EC omits the row entirely until the first custom category exists, so amuleapi synthesises it when missing:
 
 ```json
-{ "index": 0, "name": "", "path": "", "comment": "", "color": 0, "priority": "low" }
+{ "index": 0, "name": "Default", "path": "/home/user/aMule/Incoming", "comment": "", "color": 0, "priority": "low" }
 ```
 
-`name` and `path` are empty because the daemon did not supply them, and `priority` is `low` because that is amuled's own default for the row. A client rendering a category picker should treat an empty `name` on index `0` as "the category a download with no category belongs to" and label it itself -- the API does not put a display string there that the daemon never sent.
+`name` and `path` are filled in for index `0` whether the row came from the daemon or was synthesised here. amuled holds neither -- its `defaultcat` is built with an empty title and path -- so a client rendering a category picker was left with a blank row it had to label itself, and nothing to show for where an uncategorised download lands. `path` is `directories.incoming` from [`GET /preferences`](#get-apiv0preferences), which is genuinely where such a file is saved. `priority` is `low`, amuled's own default for the row.
+
+Filling both in unconditionally is deliberate: doing it only for the synthesised row would mean `/categories/0` answered `"Default"` on a daemon with no custom categories and `""` as soon as the operator added one, which is a response shape that depends on unrelated state.
 
 **Errors:** `400 bad_request` (bad list params), `503 ec_unavailable`.
 
@@ -2048,7 +2068,7 @@ Category `0` is always present, so the list is never empty. The sample above is 
 
 Returns the single category object, the same shape [`PATCH`](#patch-apiv0categoriesindex) returns. Every other resource with a member path has a member `GET`; this one did not, so a client that had just created a category and wanted the stored result had to re-fetch the whole collection and search it by index.
 
-`{index}` is a uint8. A non-numeric or out-of-range segment is `400 bad_request`; an index no category holds is `404 not_found`. Index `0` is always present, synthesised when amuled omits it, exactly as on the collection: the two routes cannot disagree about which categories exist.
+`{index}` is a uint8. A non-numeric or out-of-range segment is `400 bad_request`; an index no category holds is `404 not_found`. Index `0` is always present, synthesised when amuled omits it and carrying the same `name` / `path` fill-in, exactly as on the collection: the two routes cannot disagree about which categories exist or about what they hold.
 
 **Errors:** `400 bad_request`, `404 not_found`, `503 ec_unavailable`.
 
@@ -2263,7 +2283,7 @@ These endpoints drive amuled's connect/disconnect to the ed2k network, the Kad n
 
 Manual Kad bootstrap against a single known-good Kad node. Fires `EC_OP_KAD_BOOTSTRAP_FROM_IP` against amuled. This is the only Kad bootstrap surface the EC protocol exposes — `nodes.dat` is read by amuled at startup from its own data directory and is NOT manageable via REST.
 
-**Body:** `{ "ip": "203.0.113.5" | <uint32 host-order>, "port": <uint16> }`. `ip` accepts either the dotted-quad string form or the uint32 host-order integer form (amuled's wire-level shape). `port` is the contact's UDP port.
+**Body:** `{ "ip": "203.0.113.5", "port": <uint16> }`. `ip` is a dotted-quad string, per the [IP addresses](#ip-addresses) rule; the conversion to the integer EC carries happens inside amuleapi. `port` is the contact's UDP port. A `uint32` was accepted here too and is now a `400`: the two spellings disagreed about byte order, so the same address reached the daemon differently depending on how it was written.
 
 ```sh
 curl -s -X POST -H "Authorization: Bearer $TOKEN" \

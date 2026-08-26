@@ -163,12 +163,19 @@ _assert_status 202 "POST /kad/bootstrap (dotted-quad) → 202"
 _assert_json_eq '. | has("ok")' false 'kad/bootstrap response has no constant ok field'
 _assert_json_eq '.port' 4672   'kad/bootstrap response echoes port'
 
-# Uint32 IP form should also work.
+# The uint32 form is refused. It was accepted alongside the quad and the two
+# disagreed about byte order: ParseIpv4Dotted() packs a.b.c.d least-significant
+# byte first, while the integer was taken verbatim, so 2130706433 (0x7F000001,
+# what a client computing an IPv4 integer the conventional way writes for
+# 127.0.0.1) bootstrapped 1.0.0.127. Every IP on this surface is a quad now, in
+# both directions, so the question does not arise.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{"ip":2130706433,"port":4672}' \
 	"$HOST/api/v0/kad/bootstrap"
-_assert_status 202 "POST /kad/bootstrap (uint32 IP) → 202"
+_assert_status 400 "POST /kad/bootstrap (uint32 IP) → 400 (quad only)"
+_assert_json_eq '.error.message | test("dotted-quad")' true \
+	'the uint32 400 says a dotted quad is wanted'
 
 # Error: missing port.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -245,11 +252,11 @@ _assert_status 405 "GET /kad/update → 405"
 
 # --- 7. kad/bootstrap echoes the IP as a dotted quad (#1159 section 2). ---
 #
-# The handler takes `ip` as either a dotted quad or a host-order uint32, and
-# used to answer with the integer whichever form came in. One key, two types
-# across the same request: a client that posted "1.2.3.4" and stored the reply
-# held 16909060, which it could not post back without converting, and which no
-# other endpoint on this surface produces -- every other IP is a dotted quad.
+# The handler answers with the address it parsed, and that echo is a quad --
+# the same spelling the request used, and the one every other IP on this
+# surface uses. It used to answer with the host-order integer, so a client that
+# posted "1.2.3.4" and stored the reply held 16909060, which it could not post
+# back without converting and which no other field on this surface produces.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{"ip":"127.0.0.1","port":4672}' \
@@ -257,28 +264,15 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 _assert_status 202 "POST /kad/bootstrap (dotted-quad) -> 202"
 _assert_json_eq '.ip' '127.0.0.1' 'kad/bootstrap echoes the IP as a dotted quad'
 
-# The integer input form answers with a quad too, so the response shape does
-# not depend on how the caller spelled the request.
-#
-# Asserted as a shape, not a value, deliberately. The two input forms currently
-# disagree about byte order: ParseIpv4Dotted() packs a.b.c.d least-significant
-# byte first (matching Uint32toStringIP), while this branch takes the JSON
-# integer verbatim -- so 2130706433 (0x7F000001, which a client computing an
-# IPv4 integer the conventional big-endian way writes for 127.0.0.1) comes back
-# as 1.0.0.127 and would bootstrap the reversed address. Pinning either reading
-# here would bake in an answer that has not been decided; what section 2 of
-# #1159 is about, and what this asserts, is that the echo is a quad rather than
-# an integer.
+# The echo round-trips: what came back can be posted straight back in, which
+# is what "one notation, both directions" has to mean to be worth anything.
+ECHOED=$(printf '%s' "$CURL_BODY" | jq -r '.ip')
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"ip":2130706433,"port":4672}' \
+	-d "{\"ip\":\"$ECHOED\",\"port\":4672}" \
 	"$HOST/api/v0/kad/bootstrap"
-_assert_status 202 "POST /kad/bootstrap (uint32 IP) -> 202"
-case "$(printf '%s' "$CURL_BODY" | jq -r '.ip')" in
-[0-9]*.[0-9]*.[0-9]*.[0-9]*) _pass "kad/bootstrap echoes a dotted quad for the uint32 form too" ;;
-*) _fail "kad/bootstrap echoes a dotted quad for the uint32 form too" \
-	"got [$(printf '%s' "$CURL_BODY" | jq -r '.ip')]" ;;
-esac
+_assert_status 202 'the echoed ip is accepted verbatim on a second request'
+_assert_json_eq '.ip' "$ECHOED" 'and echoes the same quad again'
 
 # --- Summary. -----------------------------------------------------
 echo

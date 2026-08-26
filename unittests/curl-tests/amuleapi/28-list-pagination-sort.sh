@@ -129,7 +129,13 @@ for pair in "${ENDPOINTS[@]}"; do
 	_assert_json_eq ".$key | type"  array  "/$ep .$key is an array"
 	_assert_json_eq ".total | type"  number "/$ep total is a number"
 	_assert_json_eq ".offset | type" number "/$ep offset is a number"
-	_assert_json_eq ".limit | type"  number "/$ep limit is a number"
+	# `limit` is null when the request did not ask for one -- it is the page
+	# size, and no page size was applied. It used to report the row count,
+	# which is not a page size and could not be reused as one: re-sending it
+	# is a 400 as soon as a list is longer than the 500 cap. The row count
+	# lives in `total`, which is asserted right above.
+	_assert_json_eq ".limit"         null   "/$ep limit is null when unlimited"
+	_assert_json_eq ". | has(\"limit\")" true "/$ep still carries the limit key"
 	_assert_json_eq ".offset"        0      "/$ep default offset is 0"
 
 	# 2. limit bounds the array length; limit echoes back.
@@ -137,6 +143,10 @@ for pair in "${ENDPOINTS[@]}"; do
 	_assert_status 200 "GET /$ep?limit=1 → 200"
 	_assert_json_le ".$key | length" 1 "/$ep?limit=1 returns <= 1 item"
 	_assert_json_eq ".limit" 1 "/$ep?limit=1 echoes limit=1"
+
+	# ...and a limit the caller did choose is echoed as a number, so null
+	# above is "no window", not "the field went away".
+	_assert_json_eq ".limit | type" number "/$ep?limit=1 limit is a number"
 
 	# 3. limit=0 → empty window, total still reported.
 	_curl "${AUTH[@]}" "$HOST/api/v0/$ep?limit=0"

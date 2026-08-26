@@ -105,7 +105,21 @@ sleep 4
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories/0"
 _assert_status 200 "GET /categories/0 → 200"
 _assert_json_eq '.index' 0 '/categories/0 reports index 0'
-_assert_json_eq '.name | type' string '/categories/0 carries a name'
+
+# Category 0 carries a name and a path amuled does not hold for it: its
+# `defaultcat` is built with an empty title and path, which left a client
+# rendering a picker with a blank row and nowhere to show where an
+# uncategorised download lands. `path` is not invented -- it is
+# directories.incoming, which is genuinely where such a file is saved.
+_assert_json_eq '.name' Default '/categories/0 is named Default'
+INCOMING=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" \
+	"$HOST/api/v0/preferences" | jq -r '.directories.incoming')
+_assert_json_eq '.path' "$INCOMING" '/categories/0 path is directories.incoming'
+
+# ...and the same values whether or not the daemon sent the row. This phase
+# creates a custom category below, which is what makes amuled start emitting
+# index 0 itself; asserting again after that would be the real regression
+# test, so section 6b does exactly that before the cleanup.
 
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories/250"
 _assert_status 404 "GET /categories/{absent} → 404"
@@ -126,7 +140,7 @@ _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories"
 _assert_status 200 "GET /categories → 200"
 _assert_json_eq '.total | type'  number '/categories carries total'
 _assert_json_eq '.offset | type' number '/categories carries offset'
-_assert_json_eq '.limit | type'  number '/categories carries limit'
+_assert_json_eq '.limit' null '/categories limit is null when unlimited'
 
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories?limit=1"
 _assert_status 200 "GET /categories?limit=1 → 200"
@@ -273,6 +287,25 @@ _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{"name":"x"}' "$HOST/api/v0/categories/not-a-number"
 _assert_status 400 "PATCH /categories non-numeric index → 400"
+
+# --- 5b. Category 0 reads the same now that amuled sends the row. ---
+#
+# amuled's EC omits index 0 entirely until a custom category exists, and the
+# create above added one -- so this is the same read as section 1, on the other
+# side of that switch. Filling name/path in only for the synthesised row would
+# have made /categories/0 answer "Default" before this point and "" after it,
+# which is a response shape that depends on unrelated state.
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories/0"
+_assert_status 200 "GET /categories/0 (amuled now sends it) → 200"
+_assert_json_eq '.name' Default '/categories/0 is still named Default'
+_assert_json_eq '.path' "$INCOMING" '/categories/0 path is still directories.incoming'
+
+# The collection agrees with the member route, on the same daemon state.
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories?limit=500"
+_assert_json_eq '[.categories[] | select(.index == 0)][0].name' Default \
+	'/categories lists index 0 as Default too'
+_assert_json_eq '[.categories[] | select(.index == 0)][0].path' "$INCOMING" \
+	'/categories lists index 0 with the incoming path too'
 
 # --- 6. DELETE happy path + cannot-delete-default + no-stale. ----
 _curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \

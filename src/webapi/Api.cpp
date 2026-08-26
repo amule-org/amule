@@ -3509,17 +3509,26 @@ std::unique_ptr<CHttpServer::Response> BuildListWindow(const std::vector<T> &ite
 	return BuildListWindowFromPtrs(ptrs, params, comparators, out_window, out_total);
 }
 
-// Emit the `total` / `offset` / `limit` pagination metadata. `limit`
-// echoes the effective page size (the actual number returned when the
-// caller omitted `limit`).
-void WritePageMeta(CJsonWriter &w, std::size_t total, const ListParams &params, std::size_t returned)
+// Emit the `total` / `offset` / `limit` pagination metadata. `limit` echoes
+// the page size the caller asked for, and is null when they asked for none.
+//
+// It used to report the row count instead, which is not a page size and could
+// not be used as one: a caller that stored it pinned its window to whatever
+// the first response happened to hold, and re-sending it is a 400 as soon as
+// the list is longer than the 500 cap -- the envelope handing back a value the
+// endpoint then rejects. null says what is true, that no window was applied;
+// `total` is where the row count already lives.
+void WritePageMeta(CJsonWriter &w, std::size_t total, const ListParams &params)
 {
 	w.Key("total");
 	w.ValueUInt(total);
 	w.Key("offset");
 	w.ValueUInt(params.offset);
 	w.Key("limit");
-	w.ValueUInt(params.has_limit ? params.limit : returned);
+	if (params.has_limit)
+		w.ValueUInt(params.limit);
+	else
+		w.ValueNull();
 }
 
 // Extract the raw query string from a request target ("/x?a=1" -> "a=1").
@@ -3562,7 +3571,7 @@ CHttpServer::Response ListResponseFromPtrsUnlocked(const char *plural_key,
 	for (const T *item : window)
 		write_item(w, *item);
 	w.EndArray();
-	WritePageMeta(w, total, params, window.size());
+	WritePageMeta(w, total, params);
 	w.EndObject();
 	FinalizeJsonBody(w, r);
 	return r;
@@ -3597,7 +3606,7 @@ CHttpServer::Response ListResponse(const webapi::CState &state,
 	for (const T *item : window)
 		write_item(w, *item);
 	w.EndArray();
-	WritePageMeta(w, total, params, window.size());
+	WritePageMeta(w, total, params);
 	w.EndObject();
 	FinalizeJsonBody(w, r);
 	return r;
@@ -4525,13 +4534,20 @@ CHttpServer::Response CApiDispatcher::HandleDownloadA4afAction(
 	ec_opcode_t op;
 	if (action == "swap_this")
 		op = EC_OP_PARTFILE_SWAP_A4AF_THIS;
-	else if (action == "swap_this_auto")
-		op = EC_OP_PARTFILE_SWAP_A4AF_THIS_AUTO;
 	else if (action == "swap_others")
 		op = EC_OP_PARTFILE_SWAP_A4AF_OTHERS;
-	else {
-		return ErrorResponse(
-			400, "bad_request", "`action` must be one of swap_this, swap_this_auto, swap_others");
+	else if (action == "swap_this_auto") {
+		// Was a third action here, and it was the odd one out: the other two
+		// move sources, while this flipped a flag the download object
+		// reports. A flip cannot be retried safely, so it is now
+		// `PATCH /downloads/{hash} {"a4af_auto": <bool>}` -- named value in,
+		// same value out, no matter how many times it arrives.
+		return ErrorResponse(400,
+			"bad_request",
+			"`swap_this_auto` is not accepted; set the flag with PATCH "
+			"/downloads/{hash} `{\"a4af_auto\": true|false}`");
+	} else {
+		return ErrorResponse(400, "bad_request", "`action` must be one of swap_this, swap_others");
 	}
 
 	// `client_ecid` narrows swap_this from "every A4AF source of this file" to
@@ -5167,6 +5183,36 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 		}
 	}
 
+	// a4af_auto: boolean
+	//
+	// A set, not a toggle. EC_OP_PARTFILE_SWAP_A4AF_THIS_AUTO flips the flag,
+	// which is what the desktop menu item wants and what an HTTP API must not
+	// expose: a client library or a browser can retry a request without the
+	// caller knowing, and a retried flip lands on the opposite value. Reaching
+	// a named value takes EC_OP_PARTFILE_SET_A4AF_AUTO, which carries the
+	// value; the core stores it and marks the file changed only if it moved,
+	// so re-sending the same body is a no-op rather than an undo.
+	//
+	// A PATCH field rather than another `action` on POST /downloads/{hash}
+	// /a4af: this sets a field the download object already reports, and the
+	// two remaining actions there (swap_this, swap_others) move sources one
+	// way, which is a different kind of operation.
+	{
+		const auto it = obj.find("a4af_auto");
+		if (it != obj.end()) {
+			if (!it->second.is<bool>()) {
+				return ErrorResponse(400, "bad_request", "`a4af_auto` must be a boolean");
+			}
+			auto err = send_op(EC_OP_PARTFILE_SET_A4AF_AUTO,
+				/*has_inner=*/true,
+				EC_TAG_PARTFILE_A4AFAUTO,
+				static_cast<std::uint8_t>(it->second.get<bool>() ? 1 : 0));
+			if (err.status >= 400)
+				return err;
+			any_change = true;
+		}
+	}
+
 	// comment + rating (both required together; issue #419). Only
 	// settable on a file that is shared (a downloading partfile with
 	// ≥1 complete chunk); otherwise TrySetCommentRating returns 409.
@@ -5641,10 +5687,22 @@ bool FindClientByEcid(const webapi::CState &state, std::uint32_t ecid, webapi::C
 // custom categories exist, and starts including index 0 once the first custom
 // one is added. Faithful at the wire layer, but a client iterating /categories
 // expecting at least the default has to special-case the empty case, so a
-// synthetic index-0 entry is injected when missing. The defaults mirror what
-// amuled emits for category 0 itself: empty title/path/comment, color 0,
-// priority_code PR_LOW (the amuled default for `defaultcat->prio` in
-// CPreferences::LoadCats).
+// synthetic index-0 entry is injected when missing. `priority_code` PR_LOW is
+// the amuled default for `defaultcat->prio` in CPreferences::LoadCats.
+//
+// Category 0 is also given a name and a path, whether it arrived from the
+// daemon or was synthesised here. amuled holds neither -- `defaultcat` is
+// constructed with an empty title and path -- so a client rendering a category
+// picker got a blank row it had to label itself, and had nowhere to show where
+// an uncategorised download lands. Neither value is invented: "Default" names
+// the row every client already has to describe somehow, and the path is
+// `directories.incoming`, which is genuinely where a file with no category is
+// saved.
+//
+// Filling both in unconditionally is the point. Doing it only for the
+// synthetic row would mean /categories/0 answered "Default" on a daemon with
+// no custom categories and "" as soon as the operator added one, which is a
+// response shape that depends on unrelated state.
 //
 // Both read routes go through here. The collection did this inline and the
 // member route added later read the raw snapshot instead, so /categories
@@ -5655,8 +5713,13 @@ bool FindClientByEcid(const webapi::CState &state, std::uint32_t ecid, webapi::C
 std::vector<webapi::CategorySnapshot> CategoriesWithDefault(const webapi::CState &state)
 {
 	std::vector<webapi::CategorySnapshot> cats = state.Categories();
-	for (const auto &c : cats) {
+	const auto fill_default = [&state](webapi::CategorySnapshot &c) {
+		c.name = "Default";
+		c.path = state.Preferences().directories.incoming;
+	};
+	for (auto &c : cats) {
 		if (c.index == 0) {
+			fill_default(c);
 			return cats;
 		}
 	}
@@ -5664,6 +5727,7 @@ std::vector<webapi::CategorySnapshot> CategoriesWithDefault(const webapi::CState
 	d.index = 0;
 	d.priority_code = 0; // PR_LOW (matches amuled default)
 	d.priority = "low";
+	fill_default(d);
 	cats.insert(cats.begin(), std::move(d));
 	return cats;
 }
@@ -6959,10 +7023,9 @@ CHttpServer::Response CApiDispatcher::HandleCategories(const CHttpServer::Reques
 	// wire layer, but a client iterating /categories expecting at
 	// least the default has to special-case the empty case. Inject
 	// a synthetic index-0 entry when missing so clients see the same
-	// shape regardless of category count. The defaults mirror what
-	// amuled emits for category 0 itself: empty title/path/comment,
-	// color 0, priority_code PR_LOW (the amuled default for
-	// `defaultcat->prio` in CPreferences::LoadCats).
+	// shape regardless of category count, and gives category 0 the
+	// name and path amuled does not hold for it -- see
+	// CategoriesWithDefault.
 	std::vector<webapi::CategorySnapshot> cats = CategoriesWithDefault(m_state);
 	ListParams params;
 	if (auto r = ParseListParams(QueryOf(req), params))
@@ -7599,7 +7662,7 @@ CHttpServer::Response CApiDispatcher::HandleSearchResults(
 	for (const webapi::SearchResult *item : window)
 		WriteSearchObject(w, *item);
 	w.EndArray();
-	WritePageMeta(w, total, params, window.size());
+	WritePageMeta(w, total, params);
 	// The search these results belong to. Echoed even though the caller put
 	// it in the path: clients key their tabs on it and it costs nothing.
 	w.Key("search_id");
@@ -8774,32 +8837,31 @@ CHttpServer::Response CApiDispatcher::HandleKadBootstrap(const CHttpServer::Requ
 	}
 	const auto &obj = root.get<picojson::object>();
 
-	// Body: {"ip": "1.2.3.4" | <uint32 host-order>, "port": <uint16>}.
-	// Accept the IP either as a dotted-quad string (friendly) OR as
-	// a uint32 (matches the EC tag's wire shape directly).
+	// Body: {"ip": "1.2.3.4", "port": <uint16>}. A dotted quad, and only that.
+	//
+	// This also took a host-order uint32, matching the EC tag's wire shape,
+	// and the two forms disagreed about byte order: ParseIpv4Dotted() packs
+	// a.b.c.d least-significant byte first (matching Uint32toStringIP), while
+	// the integer branch took the JSON value verbatim -- so 2130706433
+	// (0x7F000001, what a client computing an IPv4 integer the conventional
+	// big-endian way writes for 127.0.0.1) bootstrapped 1.0.0.127. Rather
+	// than pick a byte order for a spelling no other field on this surface
+	// uses, the spelling is gone: every IP the API reads or writes is a quad,
+	// and the conversion to the integer EC wants happens here.
 	std::uint32_t ip_he = 0;
 	{
 		const auto it = obj.find("ip");
 		if (it == obj.end()) {
 			return ErrorResponse(400, "bad_request", "required field `ip` is missing");
 		}
-		if (it->second.is<std::string>()) {
-			// Dotted-quad string. Parse with strtoul on each octet.
-			const std::string &s = it->second.get<std::string>();
-			if (!ParseIpv4Dotted(s, ip_he)) {
-				return ErrorResponse(400,
-					"bad_request",
-					"`ip` must be a dotted-quad IPv4 address or a "
-					"host-order uint32");
-			}
-		} else if (it->second.is<double>()) {
-			const double v = it->second.get<double>();
-			if (v < 0 || v > 4294967295.0) {
-				return ErrorResponse(400, "bad_request", "`ip` uint32 out of range");
-			}
-			ip_he = static_cast<std::uint32_t>(v);
-		} else {
-			return ErrorResponse(400, "bad_request", "`ip` must be a string or number");
+		if (!it->second.is<std::string>()) {
+			return ErrorResponse(400,
+				"bad_request",
+				"`ip` must be a dotted-quad IPv4 address string, e.g. "
+				"\"127.0.0.1\"");
+		}
+		if (!ParseIpv4Dotted(it->second.get<std::string>(), ip_he)) {
+			return ErrorResponse(400, "bad_request", "`ip` must be a dotted-quad IPv4 address");
 		}
 	}
 	std::uint16_t port = 0;
@@ -8839,11 +8901,9 @@ CHttpServer::Response CApiDispatcher::HandleKadBootstrap(const CHttpServer::Requ
 	w.BeginObject();
 	// `ok` dropped. `ip`/`port` stay as the documented exception to the
 	// no-body rule for actions: the echo reports which address the daemon
-	// actually parsed, which the caller cannot recover anywhere else.
-	// Echo the shape the caller may have sent, and the one every other IP on
-	// this surface uses. Answering the host-order integer meant a client that
-	// posted "1.2.3.4" and stored the reply held 16909060, which it could not
-	// post back without converting.
+	// actually parsed, which the caller cannot recover anywhere else. It is a
+	// quad, the same spelling the request used and the one every other IP on
+	// this surface uses, so a caller can post the reply straight back.
 	w.Key("ip");
 	w.ValueString(Uint32toStringIP(ip_he));
 	w.Key("port");
