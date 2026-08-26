@@ -462,6 +462,7 @@ function buddyText(kad_state, buddy, firewalled_tcp, firewalled_udp) {
 function Ed2kInfoPanel() {
   const status = useStore("status");
   const ed2k = (status && status.ed2k) || {};
+  const net = ed2k.network || {};
   const connected = ed2k.state === "connected";
   const [port, setPort] = useState(0);
 
@@ -478,6 +479,10 @@ function Ed2kInfoPanel() {
 
   // A LowID encodes no address, so public_ip is empty there.
   const ipPort = connected && ed2k.public_ip ? ed2k.public_ip + (port ? ":" + port : "") : "—";
+  // Same fallback as the status bar (app.js): the name, or the address the
+  // server list had no name for.
+  const server = !connected ? "—"
+    : ed2k.server_name || (ed2k.server_ip ? ed2k.server_ip + ":" + ed2k.server_port : "—");
 
   return html`
     <div class="detail-sections">
@@ -486,6 +491,7 @@ function Ed2kInfoPanel() {
           <span class=${"status-chip " + (connected ? "ok" : "off")}>
             ${connected ? t("networks_ed2k_connected") : t("networks_ed2k_not_connected")}
           </span>`),
+        statRow("networks_ed2k_server", server),
         statRow("networks_ed2k_connection_type",
           connected ? (ed2k.high_id ? t("networks_ed2k_high_id") : t("networks_ed2k_low_id")) : "—"),
         statRow("networks_ed2k_connected_since", formatTimestamp(ed2k.connected_since)),
@@ -495,6 +501,10 @@ function Ed2kInfoPanel() {
         statRow("networks_ed2k_id", connected ? String(ed2k.id || 0) : "—"),
         statRow("networks_ed2k_ip_port", ipPort),
       ], "networks_ed2k_group_identity")}
+      ${Section([
+        statRow("networks_ed2k_users", formatInt(net.users)),
+        statRow("networks_ed2k_files", formatInt(net.files)),
+      ], "networks_ed2k_group_network")}
     </div>`;
 }
 
