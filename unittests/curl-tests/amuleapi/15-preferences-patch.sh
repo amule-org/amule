@@ -252,6 +252,8 @@ SAVED_FFPROBE=$(printf '%s' "$CURL_BODY" | jq -r '.files.ffprobe_path')
 SAVED_PARANOID=$(printf '%s' "$CURL_BODY" | jq -r '.security.reject_spoofed_source_ips')
 SAVED_OSFREQ=$(printf '%s' "$CURL_BODY" | jq -r '.online_signature.update_frequency_seconds')
 SAVED_IFACE=$(printf '%s' "$CURL_BODY" | jq -r '.connection.bind_interface')
+SAVED_KADREASK=$(printf '%s' "$CURL_BODY" | jq -r '.core_tweaks.kad_reask_minutes')
+SAVED_SRCREASK=$(printf '%s' "$CURL_BODY" | jq -r '.core_tweaks.source_reask_minutes')
 
 # Round-trip a bool (files) + string (files) + bool (security) + int (onlinesig)
 # + string (connection.bind_interface).
@@ -521,6 +523,25 @@ _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-d '{"online_signature":{"update_frequency_seconds":65535}}' \
 	"$HOST/api/v0/preferences"
 _assert_status 200 "PATCH online_signature.update_frequency_seconds=65535 -> 200"
+
+# --- Restore what the two #1159 probes above changed. --------------
+#
+# Section 6 restores before those probes run, so the last writes of the script
+# used to be its own probe values -- 7 and 1 minutes and a 65535-second
+# online-signature interval, left on whatever daemon the suite was pointed at.
+# This has to stay the last mutation in the file.
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d "{\"core_tweaks\":{\"kad_reask_minutes\":$SAVED_KADREASK,\"source_reask_minutes\":$SAVED_SRCREASK},\"online_signature\":{\"update_frequency_seconds\":$SAVED_OSFREQ}}" \
+	"$HOST/api/v0/preferences"
+_assert_status 200 "PATCH (restore core_tweaks intervals + onlinesig interval) -> 200"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_assert_json_eq '.core_tweaks.kad_reask_minutes' "$SAVED_KADREASK" \
+	'restored core_tweaks.kad_reask_minutes to the saved value'
+_assert_json_eq '.core_tweaks.source_reask_minutes' "$SAVED_SRCREASK" \
+	'restored core_tweaks.source_reask_minutes to the saved value'
+_assert_json_eq '.online_signature.update_frequency_seconds' "$SAVED_OSFREQ" \
+	'restored online_signature.update_frequency_seconds to the saved value'
 
 # --- Summary. -----------------------------------------------------
 echo

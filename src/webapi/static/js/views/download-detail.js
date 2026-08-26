@@ -12,6 +12,7 @@ import { ProgressBar, Placeholder, PiecesBar, PiecesLegend, toast, confirmDialog
 import { formatBytes, formatSpeed, formatDuration, formatInt, formatPercent, formatTimestamp } from "../format.js";
 import { Icon } from "../icons.js";
 import { FileClients, HIDDEN_EVERYWHERE } from "./client-table.js";
+import { categoryName, categoryOptions } from "./categories.js";
 import { t, tn, terr } from "../i18n.js";
 
 // Peers of a download: show the download-side columns, keep the upload ones
@@ -173,12 +174,6 @@ function DetailActions({ d, isGuest, categories, onPatch, onDelete, onClear }) {
   // Completed rejects DELETE (409 completed_use_clear_completed): offer Clear.
   const done = d.status === "completed";
 
-  const categoryName = (idx) => {
-    if (!idx) return "—"; // category 0 = no category assigned
-    const c = categories.find((c) => c.index === idx);
-    return c ? (c.name || "#" + c.index) : String(idx);
-  };
-
   const clear = async () => {
     if (!(await confirmDialog(t("downloads_confirm_clear_this", { name: d.name })))) return;
     onClear(d.hash);
@@ -212,11 +207,10 @@ function DetailActions({ d, isGuest, categories, onPatch, onDelete, onClear }) {
       </div>
       <div class="field field-inline" title=${t("downloads_detail_tip_category")}>
         <label>${t("downloads_category")}</label>
-        ${isGuest ? html`<b>${categoryName(d.category)}</b>` : html`
+        ${isGuest ? html`<b>${categoryName(categories, d.category)}</b>` : html`
           <select class="input input-sm" value=${d.category}
                   onChange=${(e) => onPatch(d.hash, { category: Number(e.target.value) })}>
-            <option value=${0}>${t("downloads_category_none")}</option>
-            ${categories.filter((c) => c.index !== 0).map((c) => html`<option value=${c.index}>${c.name || ("#" + c.index)}</option>`)}
+            ${categoryOptions(categories)}
           </select>`}
       </div>
     </div>`;

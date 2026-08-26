@@ -445,7 +445,9 @@ CLIENT_JSON=$(grep -A2 -E "^event: client_(added|updated)$" "$SSE_OUT" \
 	| grep "^data: " | sed 's/^data: //' | head -1)
 if [ -n "$CLIENT_JSON" ]; then
 	if echo "$CLIENT_JSON" | jq -e \
-		'(.source_origin|type=="string") and (.available_parts|type=="number")
+		'(.source_origin|type=="string")
+		 and has("available_parts")
+		 and ((.available_parts|type)=="number" or (.available_parts|type)=="null")
 		 and (.mod_version|type=="string") and (.view_shared_disabled|type=="boolean")' \
 		>/dev/null 2>&1; then
 		_pass "client_added/updated carries the promoted peer fields (#984)"
@@ -458,11 +460,12 @@ if [ -n "$CLIENT_JSON" ]; then
 		_fail "client payload parts bitmap" "SSE must never carry parts: $CLIENT_JSON"
 	fi
 	if echo "$CLIENT_JSON" | jq -e \
-		'(has("part_progress_percent") | not) or (.part_progress_percent|type=="number")' \
+		'has("part_progress_percent")
+		 and ((.part_progress_percent|type)=="number" or (.part_progress_percent|type)=="null")' \
 		>/dev/null 2>&1; then
-		_pass "client_added/updated part_progress_percent is numeric when present"
+		_pass "client_added/updated part_progress_percent is present, number or null"
 	else
-		_fail "client payload part_progress_percent" "not numeric in: $CLIENT_JSON"
+		_fail "client payload part_progress_percent" "absent or wrong type in: $CLIENT_JSON"
 	fi
 else
 	_pass "no client frame this run (no peer changed; shape asserted when one fires)"
