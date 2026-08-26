@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-24 19:01+0200\n"
-"PO-Revision-Date: 2026-08-25 10:17+0000\n"
+"PO-Revision-Date: 2026-08-26 20:30+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
 "Language: ru\n"
@@ -498,7 +498,7 @@ msgstr "Имя сервера подтверждено"
 #: src/amule.cpp
 #, c-format
 msgid "Media metadata: probed file is no longer known, result discarded (%s)"
-msgstr ""
+msgstr "Метаданные медиафайла: проверяемый файл больше не известен, результат отброшен (%s)"
 
 #: src/amule.cpp
 #, c-format
@@ -2212,13 +2212,12 @@ msgid "No such chat session"
 msgstr "Такой беседы нет"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Media metadata extraction is disabled in preferences"
-msgstr "Kad выключена в настройках."
+msgstr "Извлечение метаданных медиафайлов отключено в настройках"
 
 #: src/ExternalConn.cpp
 msgid "File is not eligible for media metadata extraction (not an audio/video file, or an incomplete download)"
-msgstr ""
+msgstr "Файл не подходит для извлечения метаданных медиафайла (не аудио/видеофайл или незавершённая загрузка)"
 
 #: src/ExternalConn.cpp
 msgid "Empty chat message"
@@ -2880,7 +2879,7 @@ msgstr "Существующий файл GeoLite2-Country.mmdb перенесё
 #: src/IP2Country.cpp
 #, c-format
 msgid "%s is not a readable MaxMindDB file - discarding it. A fresh copy will be downloaded on the next start, or now via Preferences -> IP2Country -> 'Update now'."
-msgstr ""
+msgstr "%s не является читаемым файлом MaxMindDB — файл будет отброшен. Свежая копия будет загружена при следующем запуске или сейчас через Настройки → Страна по IP → «Обновить сейчас»."
 
 #: src/IP2Country.cpp
 msgid "IP2Country: MaxMind selected as the GeoIP source but no License Key configured. Open Preferences -> IP2Country, paste your free MaxMind License Key and click 'Update now'."
@@ -3248,9 +3247,9 @@ msgid "Media metadata: no ffprobe binary found. Install ffmpeg, or set the ffpro
 msgstr "Метаданные медиа: двоичный файл ffprobe не найден. Установите ffmpeg или укажите путь к ffprobe в настройках; длительность, битрейт и кодек не будут извлечены."
 
 #: src/MediaProbe.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Media metadata: %s is gone, nothing to extract"
-msgstr "Извлечение метаданных медиафайлов"
+msgstr "Метаданные медиафайла: %s отсутствует, извлекать нечего"
 
 #: src/MediaProbe.cpp
 #, c-format
@@ -3265,12 +3264,12 @@ msgstr "Метаданные медиафайла: ffprobe превысил вр
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: ignoring implausibly large ffprobe output for %s"
-msgstr ""
+msgstr "Метаданные медиафайла: игнорируется неправдоподобно большой вывод ffprobe для %s"
 
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: could not run ffprobe (%s) -- check the media metadata settings"
-msgstr ""
+msgstr "Метаданные медиафайла: не удалось запустить ffprobe (%s) — проверьте настройки извлечения метаданных медиафайлов"
 
 #: src/MediaProbe.cpp
 #, c-format
@@ -3280,39 +3279,39 @@ msgstr "Метаданные медиафайла: ffprobe завершился 
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: ffprobe found nothing usable in %s"
-msgstr ""
+msgstr "Метаданные медиафайла: ffprobe не нашёл ничего пригодного в %s"
 
 #: src/MediaProbeThread.cpp
 #, c-format
 msgid "Finished extracting media metadata from %u shared file (%u failed)"
 msgid_plural "Finished extracting media metadata from %u shared files (%u failed)"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Завершено извлечение метаданных медиафайлов для %u общего файла (%u с ошибкой)"
+msgstr[1] "Завершено извлечение метаданных медиафайлов для %u общих файлов (%u с ошибкой)"
+msgstr[2] "Завершено извлечение метаданных медиафайлов для %u общих файлов (%u с ошибкой)"
 
 #: src/MediaProbeThread.cpp
 #, c-format
 msgid "Finished extracting media metadata from %u shared file"
 msgid_plural "Finished extracting media metadata from %u shared files"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Завершено извлечение метаданных медиафайлов для %u общего файла"
+msgstr[1] "Завершено извлечение метаданных медиафайлов для %u общих файлов"
+msgstr[2] "Завершено извлечение метаданных медиафайлов для %u общих файлов"
 
 #: src/MediaProbeThread.cpp
 #, c-format
 msgid "%u further file failed media metadata extraction (not listed individually)"
 msgid_plural "%u further files failed media metadata extraction (not listed individually)"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Ещё для %u файла не удалось извлечь метаданные медиафайла (не показаны по отдельности)"
+msgstr[1] "Ещё для %u файлов не удалось извлечь метаданные медиафайлов (не показаны по отдельности)"
+msgstr[2] "Ещё для %u файлов не удалось извлечь метаданные медиафайлов (не показаны по отдельности)"
 
 #: src/MediaProbeThread.cpp
 #, c-format
 msgid "%u further shared file is gone (not listed individually)"
 msgid_plural "%u further shared files are gone (not listed individually)"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Ещё %u общий файл отсутствует (не показан по отдельности)"
+msgstr[1] "Ещё %u общих файла отсутствуют (не показаны по отдельности)"
+msgstr[2] "Ещё %u общих файлов отсутствуют (не показаны по отдельности)"
 
 #: src/MuleNotebook.cpp src/muuli_wdr.cpp
 msgid "Close"
@@ -6581,7 +6580,7 @@ msgstr "Ошибка при поиске через Kad: "
 
 #: src/SearchList.cpp
 msgid "Search timed out: the server did not answer."
-msgstr ""
+msgstr "Время поиска истекло: сервер не ответил."
 
 #: src/SearchList.cpp
 msgid "Kad search: requested wider results from one more peer."
@@ -6650,28 +6649,26 @@ msgid "New"
 msgstr "Новый"
 
 #: src/SearchProgressReport.cpp
-#, fuzzy
 msgid "running"
-msgstr "Выполняется"
+msgstr "выполняется"
 
 #: src/SearchProgressReport.cpp
-#, fuzzy
 msgid "finished"
-msgstr "Финский"
+msgstr "завершён"
 
 #: src/SearchProgressReport.cpp
 msgid "idle"
-msgstr ""
+msgstr "бездействует"
 
 #: src/SearchProgressReport.cpp
 #, c-format
 msgid "Search %u: %s, %u %% (%u results)\n"
-msgstr ""
+msgstr "Поиск %u: %s, %u %% (%u результатов)\n"
 
 #: src/SearchProgressReport.cpp
 #, c-format
 msgid "Search %u \"%s\": %s, %u %% (%u results)\n"
-msgstr ""
+msgstr "Поиск %u «%s»: %s, %u %% (%u результатов)\n"
 
 #: src/SearchProgressReport.cpp src/TextClient.cpp
 msgid "Search expired or unknown ID. Start a new search.\n"
@@ -6687,9 +6684,8 @@ msgid "Search progress not available"
 msgstr "Прогресс поиска недоступен"
 
 #: src/SearchProgressReport.cpp
-#, fuzzy
 msgid "No search to report on.\n"
-msgstr "Не выбрано ни одного файла для экспорта."
+msgstr "Нет поиска для отчёта.\n"
 
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all obfuscated static servers listed. Making another pass without obfuscation."
@@ -7274,17 +7270,16 @@ msgid "No shareable files found in directory: %s"
 msgstr "Нет публикуемых файлов в директории: %s"
 
 #: src/SharedFileList.cpp
-#, fuzzy
 msgid "Media metadata extraction is disabled in preferences, so there is nothing to re-extract."
-msgstr "Извлечение метаданных медиафайлов"
+msgstr "Извлечение метаданных медиафайлов отключено в настройках, поэтому нечего извлекать заново."
 
 #: src/SharedFileList.cpp
 #, c-format
 msgid "Re-extracting media metadata for %u shared file"
 msgid_plural "Re-extracting media metadata for %u shared files"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Повторное извлечение метаданных медиафайлов для %u общего файла"
+msgstr[1] "Повторное извлечение метаданных медиафайлов для %u общих файлов"
+msgstr[2] "Повторное извлечение метаданных медиафайлов для %u общих файлов"
 
 #: src/SharedFileList.cpp
 #, c-format
@@ -7376,7 +7371,7 @@ msgstr "Проверить локальные данные"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Re-extract &media metadata"
-msgstr ""
+msgstr "Извлечь метаданные медиафайлов заново"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Add files in collection to transfer list"
@@ -7423,49 +7418,49 @@ msgstr "Проверка локальных данных для part-файла 
 #, c-format
 msgid "Media metadata: skipping %u incomplete download"
 msgid_plural "Media metadata: skipping %u incomplete downloads"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Метаданные медиафайла: пропускается %u незавершённая загрузка"
+msgstr[1] "Метаданные медиафайлов: пропускаются %u незавершённые загрузки"
+msgstr[2] "Метаданные медиафайлов: пропускается %u незавершённых загрузок"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Media metadata: skipping %u file that is not audio or video"
 msgid_plural "Media metadata: skipping %u files that are not audio or video"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Метаданные медиафайла: пропускается %u файл, не являющийся аудио или видео"
+msgstr[1] "Метаданные медиафайлов: пропускаются %u файла, не являющиеся аудио или видео"
+msgstr[2] "Метаданные медиафайлов: пропускается %u файлов, не являющихся аудио или видео"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Re-extract media metadata for %u file?"
 msgid_plural "Re-extract media metadata for %u files?"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Извлечь метаданные медиафайлов заново для %u файла?"
+msgstr[1] "Извлечь метаданные медиафайлов заново для %u файлов?"
+msgstr[2] "Извлечь метаданные медиафайлов заново для %u файлов?"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%u incomplete download will be skipped."
 msgid_plural "%u incomplete downloads will be skipped."
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "%u незавершённая загрузка будет пропущена."
+msgstr[1] "%u незавершённые загрузки будут пропущены."
+msgstr[2] "%u незавершённых загрузок будет пропущено."
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%u file is not audio or video and will be skipped."
 msgid_plural "%u files are not audio or video and will be skipped."
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "%u файл не является аудио или видео и будет пропущен."
+msgstr[1] "%u файла не являются аудио или видео и будут пропущены."
+msgstr[2] "%u файлов не являются аудио или видео и будут пропущены."
 
 #: src/SharedFilesCtrl.cpp
 msgid "This runs in the background. Progress is reported in the log."
-msgstr ""
+msgstr "Это выполняется в фоновом режиме. Ход работы отображается в журнале."
 
 #: src/SharedFilesCtrl.cpp
 msgid "Re-extract media metadata"
-msgstr ""
+msgstr "Извлечь метаданные медиафайлов заново"
 
 #: src/SharedFilesCtrl.cpp
 msgid "You need a HighID to create a valid sourcelink"
@@ -7785,7 +7780,7 @@ msgstr "Выполнить <str> и выйти."
 
 #: src/TextClient.cpp
 msgid "Separate list fields with spaces, as before, instead of tabs."
-msgstr ""
+msgstr "Разделять поля списков пробелами, как раньше, вместо символов табуляции."
 
 #: src/TextClient.cpp
 msgid "Invalid IP format. Use xxx.xxx.xxx.xxx:xxxx\n"
