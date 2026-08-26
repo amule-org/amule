@@ -68,7 +68,9 @@ const TABS = [
       { key: "upload_slot_kbps", type: "int", min: 1, max: 100000 },
     ] },
     { legendKey: "prefs_group_ports", fields: [
-      { key: "tcp_port", type: "int", min: 0, max: 65535 },
+      // 65532, not 65535: the server UDP socket is TCP+3, and the core
+      // substitutes the default port for anything higher.
+      { key: "tcp_port", type: "int", min: 1, max: 65532 },
       // Not an API field: the desktop shows the server-request UDP port, which
       // the core derives as TCP+3. Computed, read-only, never sent.
       { key: "udp_server_port", type: "int", readonly: true,
@@ -260,14 +262,14 @@ const TABS = [
   ] },
   { id: "core_tweaks", labelKey: "prefs_core_tweaks", cat: "core_tweaks", noteKey: "prefs_core_tweaks_warning", groups: [
     { legendKey: "prefs_group_tweaks", fields: [
-      { key: "max_new_connections_per_5s", type: "int", min: 0 },
-      { key: "kad_max_source_searches", type: "int", min: 0 },
-      { key: "kad_reask_minutes", type: "int", min: 0 },
-      { key: "source_reask_minutes", type: "int", min: 0 },
-      { key: "file_buffer_bytes", type: "int", min: 0 },
+      { key: "max_new_connections_per_5s", type: "int", min: 0, max: 65535 },
+      { key: "kad_max_source_searches", type: "int", min: 5, max: 50 },
+      { key: "kad_reask_minutes", type: "int", min: 30, max: 60 },
+      { key: "source_reask_minutes", type: "int", min: 15, max: 60 },
+      { key: "file_buffer_bytes", type: "int", min: 0, max: 3825000, step: 15000 },
       { key: "mmap_enabled", type: "bool", cat: "files", gatedBy: "mmap_supported" },
       { key: "mmap_supported", type: "bool", cat: "files", hidden: true },
-      { key: "max_upload_queue_clients", type: "int", min: 0 },
+      { key: "max_upload_queue_clients", type: "int", min: 0, max: 25500, step: 100 },
       // Stored in ms, shown in minutes like the desktop slider (0-30).
       { key: "server_keepalive_timeout_minutes", type: "int", min: 0, max: 30 },
       { key: "verbose_logging", type: "bool" },
@@ -489,7 +491,7 @@ export default function Preferences({ isGuest }) {
       <input class="input" id=${id} disabled=${disabled}
              type=${f.type === "int" ? "number" : f.type === "password" ? "password" : "text"}
              autocomplete=${f.type === "password" ? "new-password" : null}
-             min=${f.min} max=${f.max}
+             min=${f.min} max=${f.max} step=${f.step}
              value=${val === undefined || val === null ? "" : val} onInput=${(e) => setVal(id, e.target.value)} />`;
     return html`
       <div class=${"field" + subCls}>
@@ -541,7 +543,12 @@ export default function Preferences({ isGuest }) {
           } else if (f.type === "bool") {
             out = !!val;
           } else if (f.type === "int") {
-            const n = clamp(f.scale ? (parseFloat(val) || 0) : (parseInt(val, 10) || 0), f.min, f.max);
+            let n = clamp(f.scale ? (parseFloat(val) || 0) : (parseInt(val, 10) || 0), f.min, f.max);
+            // Snap to the granularity the core stores at. These fields are
+            // backed by a uint8 the daemon multiplies back up, so the API
+            // rejects a value between two steps rather than truncating it;
+            // rounding here means the form cannot produce that 400.
+            if (f.step) n = clamp(Math.round(n / f.step) * f.step, f.min, f.max);
             out = Math.round(n * (f.scale || 1));
           } else {
             out = val == null ? "" : val;
