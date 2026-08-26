@@ -344,6 +344,12 @@ struct KnownClientSnapshot
 	bool online = false;
 };
 
+//! amuled substitutes this for the queue position when the peer's queue is
+//! full (ECSpecialCoreTags.cpp: `IsRemoteQueueFull() ? 0xffff : rank`). It is a
+//! sentinel, not a position: relayed as a number it reads as "position 65535",
+//! so the REST and SSE writers emit null for it instead.
+constexpr std::uint16_t kRemoteQueueFullSentinel = 0xffffu;
+
 struct ClientSnapshot
 {
 	std::uint32_t ecid = 0;
@@ -408,6 +414,8 @@ struct ClientSnapshot
 	// Remote queue rank — our position in THE PEER's upload queue
 	// (i.e. how many other ed2k clients they're going to upload to
 	// before us). 0xFFFF when their queue is full.
+	//! Carries amuled's queue-full sentinel as well as a real position; see
+	//! kRemoteQueueFullSentinel.
 	std::uint16_t remote_queue_rank = 0;
 
 	std::uint32_t score = 0; // EC_TAG_CLIENT_SCORE
@@ -1252,10 +1260,10 @@ struct PreferencesSnapshot
 		bool verbose_logging = false;
 		std::uint32_t file_buffer_bytes = 0;
 		std::uint32_t max_upload_queue_clients = 0;
-		std::uint32_t server_keepalive_timeout_ms = 0;
+		std::uint32_t server_keepalive_timeout_minutes = 0;
 		std::uint32_t kad_max_source_searches = 0;
-		std::uint32_t kad_reask_ms = 0;
-		std::uint32_t source_reask_ms = 0;
+		std::uint32_t kad_reask_minutes = 0;
+		std::uint32_t source_reask_minutes = 0;
 	} core_tweaks;
 
 	// [Kademlia] EC_TAG_PREFS_KADEMLIA

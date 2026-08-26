@@ -235,6 +235,43 @@ done
 _curl -X GET -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/kad/update"
 _assert_status 405 "GET /kad/update → 405"
 
+# --- 7. kad/bootstrap echoes the IP as a dotted quad (#1159 section 2). ---
+#
+# The handler takes `ip` as either a dotted quad or a host-order uint32, and
+# used to answer with the integer whichever form came in. One key, two types
+# across the same request: a client that posted "1.2.3.4" and stored the reply
+# held 16909060, which it could not post back without converting, and which no
+# other endpoint on this surface produces -- every other IP is a dotted quad.
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"ip":"127.0.0.1","port":4672}' \
+	"$HOST/api/v0/kad/bootstrap"
+_assert_status 202 "POST /kad/bootstrap (dotted-quad) -> 202"
+_assert_json_eq '.ip' '127.0.0.1' 'kad/bootstrap echoes the IP as a dotted quad'
+
+# The integer input form answers with a quad too, so the response shape does
+# not depend on how the caller spelled the request.
+#
+# Asserted as a shape, not a value, deliberately. The two input forms currently
+# disagree about byte order: ParseIpv4Dotted() packs a.b.c.d least-significant
+# byte first (matching Uint32toStringIP), while this branch takes the JSON
+# integer verbatim -- so 2130706433 (0x7F000001, which a client computing an
+# IPv4 integer the conventional big-endian way writes for 127.0.0.1) comes back
+# as 1.0.0.127 and would bootstrap the reversed address. Pinning either reading
+# here would bake in an answer that has not been decided; what section 2 of
+# #1159 is about, and what this asserts, is that the echo is a quad rather than
+# an integer.
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"ip":2130706433,"port":4672}' \
+	"$HOST/api/v0/kad/bootstrap"
+_assert_status 202 "POST /kad/bootstrap (uint32 IP) -> 202"
+case "$(printf '%s' "$CURL_BODY" | jq -r '.ip')" in
+[0-9]*.[0-9]*.[0-9]*.[0-9]*) _pass "kad/bootstrap echoes a dotted quad for the uint32 form too" ;;
+*) _fail "kad/bootstrap echoes a dotted quad for the uint32 form too" \
+	"got [$(printf '%s' "$CURL_BODY" | jq -r '.ip')]" ;;
+esac
+
 # --- Summary. -----------------------------------------------------
 echo
 if [ "$FAIL_COUNT" -eq 0 ]; then

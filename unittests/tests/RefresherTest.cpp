@@ -2296,7 +2296,9 @@ TEST(Refresher, PreferencesExtendedCategoriesDecode)
 	ASSERT_EQUALS(std::string("junk,scam"), p.message_filter.comment_keywords);
 
 	ASSERT_EQUALS(static_cast<std::uint32_t>(200), p.core_tweaks.max_new_connections_per_5s);
-	ASSERT_EQUALS(static_cast<std::uint32_t>(1800000), p.core_tweaks.kad_reask_ms);
+	// EC carries milliseconds; the API speaks the minutes the core actually
+	// stores, so the decode divides by 60000 (#1159 section 5).
+	ASSERT_EQUALS(static_cast<std::uint32_t>(30), p.core_tweaks.kad_reask_minutes);
 	ASSERT_EQUALS(std::string("http://nodes"), p.kademlia.update_url);
 
 	ASSERT_TRUE(p.ip2country.supported);

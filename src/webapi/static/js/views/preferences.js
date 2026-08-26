@@ -262,14 +262,14 @@ const TABS = [
     { legendKey: "prefs_group_tweaks", fields: [
       { key: "max_new_connections_per_5s", type: "int", min: 0 },
       { key: "kad_max_source_searches", type: "int", min: 0 },
-      { key: "kad_reask_ms", type: "int", min: 0, scale: 60000 },
-      { key: "source_reask_ms", type: "int", min: 0, scale: 60000 },
+      { key: "kad_reask_minutes", type: "int", min: 0 },
+      { key: "source_reask_minutes", type: "int", min: 0 },
       { key: "file_buffer_bytes", type: "int", min: 0 },
       { key: "mmap_enabled", type: "bool", cat: "files", gatedBy: "mmap_supported" },
       { key: "mmap_supported", type: "bool", cat: "files", hidden: true },
       { key: "max_upload_queue_clients", type: "int", min: 0 },
       // Stored in ms, shown in minutes like the desktop slider (0-30).
-      { key: "server_keepalive_timeout_ms", type: "int", min: 0, max: 30, scale: 60000 },
+      { key: "server_keepalive_timeout_minutes", type: "int", min: 0, max: 30 },
       { key: "verbose_logging", type: "bool" },
     ] },
   ] },

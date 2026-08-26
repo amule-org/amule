@@ -199,6 +199,32 @@ BODY_B=$(cat "$CURL_BODY_FILE" 2>/dev/null || true)
 # Just confirm both successfully connected.
 _pass "Two concurrent SSE subscribers ran to completion without interfering"
 
+# --- `?channels=` is a 400, not "every channel" (#1159 section 8). --------
+#
+# An empty value used to disable filtering, so a UI that joined an empty
+# selection list -- the ordinary way to end up with one -- asked for nothing
+# and was handed the full firehose. The surface's own query rule already makes
+# an empty value an error rather than an omission; this was its exception.
+CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 \
+	-H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/events?channels=")
+if [ "$CODE" = "400" ]; then
+	_pass "GET /events?channels= (empty) -> 400"
+else
+	_fail "GET /events?channels= (empty) -> 400" "got HTTP $CODE"
+fi
+
+# Omitting the parameter still means every channel, which is the documented
+# spelling for that and the reason the empty one does not need a meaning.
+timeout_head() {
+	curl -s -N --max-time 3 -o /dev/null -w '%{http_code}' \
+		-H "Authorization: Bearer $ADMIN_TOKEN" "$1" 2>/dev/null || true
+}
+CODE=$(timeout_head "$HOST/api/v0/events")
+case "$CODE" in
+200|000) _pass "GET /events with no channels parameter still streams (HTTP ${CODE:-timeout})" ;;
+*) _fail "GET /events with no channels parameter still streams" "got HTTP $CODE" ;;
+esac
+
 # --- Summary. -----------------------------------------------------
 echo
 if [ "$FAIL_COUNT" -eq 0 ]; then

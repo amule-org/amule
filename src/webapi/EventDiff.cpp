@@ -251,13 +251,15 @@ std::string ToJson(const ClientSnapshot &c)
 	  << ",\"up_total\":" << c.xfer_up_total << ",\"down_total\":" << c.xfer_down_total << "}"
 	  << ",\"upload_speed_bps\":" << c.upload_speed_bps
 	  << ",\"download_speed_bps\":" << c.download_speed_bps
-	  << ",\"queue_waiting_position\":" << c.queue_waiting_position
-	  << ",\"remote_queue_rank\":" << c.remote_queue_rank << ",\"score\":" << c.score
-	  << ",\"obfuscation_status\":\"" << EscJson(c.obfuscation_status) << "\""
+	  << ",\"queue_waiting_position\":" << c.queue_waiting_position << ",\"remote_queue_rank\":"
+	  << (c.remote_queue_rank == kRemoteQueueFullSentinel ? std::string("null")
+							      : std::to_string(c.remote_queue_rank))
+	  << ",\"score\":" << c.score << ",\"obfuscation_status\":\"" << EscJson(c.obfuscation_status) << "\""
 	  << ",\"friend_slot\":" << (c.friend_slot ? "true" : "false") << ",\"source_origin\":\""
 	  << EscJson(c.source_origin) << "\""
-	  << ",\"available_parts\":" << c.available_parts << ",\"mod_version\":\"" << EscJson(c.mod_version)
-	  << "\""
+	  << ",\"available_parts\":"
+	  << (c.has_available_parts ? std::to_string(c.available_parts) : std::string("null"))
+	  << ",\"mod_version\":\"" << EscJson(c.mod_version) << "\""
 	  << ",\"view_shared_disabled\":" << (c.view_shared_disabled ? "true" : "false");
 	// Omitted, not sent as the negative sentinel, exactly as the REST row
 	// does it: the field only exists for a peer we are downloading from.
@@ -443,7 +445,10 @@ bool Equal(const ClientSnapshot &a, const ClientSnapshot &b)
 	       a.remote_queue_rank == b.remote_queue_rank && a.score == b.score &&
 	       a.obfuscation_status == b.obfuscation_status && a.friend_slot == b.friend_slot &&
 	       a.source_origin == b.source_origin && a.available_parts == b.available_parts &&
-	       a.mod_version == b.mod_version && a.view_shared_disabled == b.view_shared_disabled &&
+	       // Without the flag, null -> 0 (the part map arriving and reporting
+	       // zero) compares equal and the row never updates.
+	       a.has_available_parts == b.has_available_parts && a.mod_version == b.mod_version &&
+	       a.view_shared_disabled == b.view_shared_disabled &&
 	       // Derived from available_parts and the linked file's part count,
 	       // so it normally moves only when a compared field does. The case
 	       // that needs it in its own right is the file going away: the

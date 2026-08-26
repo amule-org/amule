@@ -76,6 +76,10 @@ const char *const kIp2CountrySources[] = { "dbip", "maxmind", "custom", nullptr 
 #define PREF_U32(cat, key, tag, maxv, acc, memb) \
 	{cat, key, tag, PrefType::Uint32, PrefEnc::Value, false, acc, maxv, nullptr, nullptr, PREF_MEMBER(memb, std::uint32_t), 0}
 
+// Same as PREF_U32 but the API value is the EC value divided by `scale`.
+#define PREF_U32_SCALED(cat, key, tag, maxv, acc, memb, scale) \
+	{cat, key, tag, PrefType::Uint32, PrefEnc::Value, false, acc, maxv, nullptr, nullptr, PREF_MEMBER(memb, std::uint32_t), 0, scale}
+
 #define PREF_STR(cat, key, tag, acc, memb) \
 	{cat, key, tag, PrefType::String, PrefEnc::Value, false, acc, 0u, nullptr, nullptr, PREF_MEMBER(memb, std::string), 0}
 
@@ -226,16 +230,20 @@ const PrefField kSchema[] = {
 	// [online_signature]
 	PREF_STR("online_signature", "directory", EC_TAG_ONLINESIG_DIRECTORY, PrefAccess::ReadWrite, online_signature.directory),
 	PREF_BOOL("online_signature", "enabled", EC_TAG_ONLINESIG_ENABLED, PrefEnc::Presence, false, PrefAccess::ReadWrite, online_signature.enabled),
-	PREF_U32("online_signature", "update_frequency_seconds", EC_TAG_ONLINESIG_UPDATE, 0xFFFFFFFFu, PrefAccess::ReadWrite, online_signature.update_frequency_seconds),
+	// 65535, not the uint32 ceiling: CPreferences::SetOSUpdate takes a uint16
+	// (Preferences.h), so anything larger wraps on the way in -- 86400 (daily)
+	// became 20864 and the PATCH still reported success. Capping here turns a
+	// silent rewrite into the 400 every other numeric preference answers.
+	PREF_U32("online_signature", "update_frequency_seconds", EC_TAG_ONLINESIG_UPDATE, 65535u, PrefAccess::ReadWrite, online_signature.update_frequency_seconds),
 
 	// [core_tweaks]
 	PREF_U32("core_tweaks", "file_buffer_bytes", EC_TAG_CORETW_FILEBUFFER, 0xFFFFFFFFu, PrefAccess::ReadWrite, core_tweaks.file_buffer_bytes),
 	PREF_U32("core_tweaks", "kad_max_source_searches", EC_TAG_CORETW_KAD_MAX_SEARCHES, 0xFFFFFFFFu, PrefAccess::ReadWrite, core_tweaks.kad_max_source_searches),
-	PREF_U32("core_tweaks", "kad_reask_ms", EC_TAG_CORETW_KAD_REASK_MS, 0xFFFFFFFFu, PrefAccess::ReadWrite, core_tweaks.kad_reask_ms),
+	PREF_U32_SCALED("core_tweaks", "kad_reask_minutes", EC_TAG_CORETW_KAD_REASK_MS, 71582u, PrefAccess::ReadWrite, core_tweaks.kad_reask_minutes, 60000u),
 	PREF_U32("core_tweaks", "max_new_connections_per_5s", EC_TAG_CORETW_MAX_CONN_PER_FIVE, 0xFFFFFFFFu, PrefAccess::ReadWrite, core_tweaks.max_new_connections_per_5s),
 	PREF_U32("core_tweaks", "max_upload_queue_clients", EC_TAG_CORETW_UL_QUEUE, 0xFFFFFFFFu, PrefAccess::ReadWrite, core_tweaks.max_upload_queue_clients),
-	PREF_U32("core_tweaks", "server_keepalive_timeout_ms", EC_TAG_CORETW_SRV_KEEPALIVE_TIMEOUT, 0xFFFFFFFFu, PrefAccess::ReadWrite, core_tweaks.server_keepalive_timeout_ms),
-	PREF_U32("core_tweaks", "source_reask_ms", EC_TAG_CORETW_SOURCE_REASK_MS, 0xFFFFFFFFu, PrefAccess::ReadWrite, core_tweaks.source_reask_ms),
+	PREF_U32_SCALED("core_tweaks", "server_keepalive_timeout_minutes", EC_TAG_CORETW_SRV_KEEPALIVE_TIMEOUT, 71582u, PrefAccess::ReadWrite, core_tweaks.server_keepalive_timeout_minutes, 60000u),
+	PREF_U32_SCALED("core_tweaks", "source_reask_minutes", EC_TAG_CORETW_SOURCE_REASK_MS, 71582u, PrefAccess::ReadWrite, core_tweaks.source_reask_minutes, 60000u),
 	PREF_BOOL("core_tweaks", "verbose_logging", EC_TAG_CORETW_VERBOSE, PrefEnc::Presence, false, PrefAccess::ReadWrite, core_tweaks.verbose_logging),
 
 	// [kademlia]

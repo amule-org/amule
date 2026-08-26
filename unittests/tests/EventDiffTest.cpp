@@ -613,6 +613,133 @@ TEST(EventDiff, SearchClosedFiresOnceWhenTheSlotIsFreed)
 // resource: it is derived rather than refreshed (it needs the part count of
 // the linked download, which lives in a different snapshot), so the diff pass
 // never computed it and the payload silently lacked a key the REST row had.
+// #1159 section 1. ClientSnapshot carries has_available_parts precisely so a
+// peer that never reported its part map can be told apart from one reporting
+// zero -- and zero is a real answer, being what a fresh source looks like
+// before its map arrives. The field was emitted unconditionally, so nothing
+// read the flag and both cases went out as 0.
+TEST(EventDiff, ClientEventEmitsNullAvailablePartsWhenTheMapIsUnreported)
+{
+	CState state;
+	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &clients) {
+		ClientSnapshot c;
+		c.ecid = 71;
+		c.client_name = "no-map";
+		// has_available_parts stays false: the tag never arrived.
+		clients.emplace(c.ecid, c);
+	});
+
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string payload;
+	for (const auto &e : DrainAll(bus)) {
+		if (e.name == "client_added")
+			payload = e.data;
+	}
+	ASSERT_TRUE(!payload.empty());
+	ASSERT_TRUE(payload.find("\"available_parts\":null") != std::string::npos);
+}
+
+// ...and a peer that did report zero still says zero.
+TEST(EventDiff, ClientEventEmitsZeroAvailablePartsWhenTheMapSaysZero)
+{
+	CState state;
+	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &clients) {
+		ClientSnapshot c;
+		c.ecid = 72;
+		c.client_name = "empty-map";
+		c.available_parts = 0;
+		c.has_available_parts = true;
+		clients.emplace(c.ecid, c);
+	});
+
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string payload;
+	for (const auto &e : DrainAll(bus)) {
+		if (e.name == "client_added")
+			payload = e.data;
+	}
+	ASSERT_TRUE(!payload.empty());
+	ASSERT_TRUE(payload.find("\"available_parts\":0") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"available_parts\":null") == std::string::npos);
+}
+
+// The comparator has to see the flag too. null -> 0 is a visible change; with
+// only the value compared it reads as equal and the row never updates.
+TEST(EventDiff, ClientUpdateFiresWhenThePartMapFinallyArrivesReportingZero)
+{
+	CState state;
+	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &clients) {
+		ClientSnapshot c;
+		c.ecid = 73;
+		c.client_name = "late-map";
+		clients.emplace(c.ecid, c);
+	});
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+	DrainAll(bus);
+
+	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &clients) {
+		auto it = clients.find(73);
+		it->second.available_parts = 0;
+		it->second.has_available_parts = true;
+	});
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	bool updated = false;
+	for (const auto &e : DrainAll(bus)) {
+		if (e.name == "client_updated")
+			updated = true;
+	}
+	ASSERT_TRUE(updated);
+}
+
+// #1159 section 9. amuled sends 0xffff for "that peer's queue is full" rather
+// than a position, so relaying it verbatim rendered "position 65535" and sorted
+// full queues to the far end as if they were merely very distant.
+TEST(EventDiff, ClientEventEmitsNullRemoteQueueRankWhenTheQueueIsFull)
+{
+	CState state;
+	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &clients) {
+		ClientSnapshot full;
+		full.ecid = 74;
+		full.client_name = "full-queue";
+		full.remote_queue_rank = kRemoteQueueFullSentinel;
+		clients.emplace(full.ecid, full);
+
+		ClientSnapshot ranked;
+		ranked.ecid = 75;
+		ranked.client_name = "ranked";
+		ranked.remote_queue_rank = 12;
+		clients.emplace(ranked.ecid, ranked);
+	});
+
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string full_payload, ranked_payload;
+	for (const auto &e : DrainAll(bus)) {
+		if (e.name != "client_added")
+			continue;
+		if (e.data.find("full-queue") != std::string::npos)
+			full_payload = e.data;
+		if (e.data.find("ranked") != std::string::npos)
+			ranked_payload = e.data;
+	}
+	ASSERT_TRUE(!full_payload.empty());
+	ASSERT_TRUE(full_payload.find("\"remote_queue_rank\":null") != std::string::npos);
+	// A real position is still a number.
+	ASSERT_TRUE(!ranked_payload.empty());
+	ASSERT_TRUE(ranked_payload.find("\"remote_queue_rank\":12") != std::string::npos);
+}
+
 TEST(EventDiff, ClientEventCarriesPartProgressPercent)
 {
 	CState state;

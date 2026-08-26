@@ -2730,9 +2730,16 @@ void ApplyPrefFieldFromTag(const PrefField &f, const CECTag *group, PreferencesS
 	case PrefType::Uint16:
 		*static_cast<std::uint16_t *>(f.member(out)) = static_cast<std::uint16_t>(t->GetInt());
 		break;
-	case PrefType::Uint32:
-		*static_cast<std::uint32_t *>(f.member(out)) = static_cast<std::uint32_t>(t->GetInt());
+	case PrefType::Uint32: {
+		// ec_scale != 0 means EC and the API use different units; see
+		// PrefField::ec_scale. Division is exact for the three rows that
+		// use it -- the core stores whole minutes and multiplies on the
+		// way out -- so nothing is lost here.
+		const std::uint64_t raw = static_cast<std::uint64_t>(t->GetInt());
+		*static_cast<std::uint32_t *>(f.member(out)) =
+			static_cast<std::uint32_t>(f.ec_scale ? raw / f.ec_scale : raw);
 		break;
+	}
 	case PrefType::String:
 		*static_cast<std::string *>(f.member(out)) = std::string(t->GetStringData().utf8_str());
 		break;
