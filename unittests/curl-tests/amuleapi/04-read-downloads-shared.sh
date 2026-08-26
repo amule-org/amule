@@ -224,6 +224,49 @@ if [ "$COUNT" -gt 0 ]; then
 		-d '{"action":"bogus"}' "$HOST/api/v0/downloads/$HASH/a4af"
 	_assert_status 400 "POST /downloads/{hash}/a4af unknown action → 400"
 
+	# `swap_this_auto` was a third action here and is refused, not ignored:
+	# it flipped a flag rather than moving sources, and a flip cannot be
+	# retried safely. The message names where the flag is set instead.
+	_curl -X POST -H "Authorization: Bearer $TOKEN" \
+		-H "Content-Type: application/json" \
+		-d '{"action":"swap_this_auto"}' "$HOST/api/v0/downloads/$HASH/a4af"
+	_assert_status 400 "POST a4af swap_this_auto → 400 (moved to PATCH)"
+	_assert_json_eq '.error.message | test("a4af_auto")' true \
+		'the swap_this_auto 400 names the PATCH field'
+
+	# --- a4af_auto is a set, and setting it twice is not an undo. -------
+	#
+	# This is the whole point of moving it: EC_OP_PARTFILE_SWAP_A4AF_THIS_AUTO
+	# maps to SetA4AFAuto(!IsA4AFAuto()), so the old action landed on the
+	# opposite value whenever a request was repeated -- which an HTTP library
+	# or a browser can do without the caller knowing.
+	for want in true false true; do
+		_curl -X PATCH -H "Authorization: Bearer $TOKEN" \
+			-H "Content-Type: application/json" \
+			-d "{\"a4af_auto\":$want}" "$HOST/api/v0/downloads/$HASH"
+		_assert_status 200 "PATCH a4af_auto=$want → 200"
+		_assert_json_eq '.a4af_auto' "$want" "PATCH a4af_auto=$want reads back $want"
+
+		# Same body again: the value must not move.
+		_curl -X PATCH -H "Authorization: Bearer $TOKEN" \
+			-H "Content-Type: application/json" \
+			-d "{\"a4af_auto\":$want}" "$HOST/api/v0/downloads/$HASH"
+		_assert_status 200 "PATCH a4af_auto=$want again → 200"
+		_assert_json_eq '.a4af_auto' "$want" \
+			"a repeated PATCH a4af_auto=$want is a no-op, not a flip"
+
+		# ...and a re-read agrees, so the PATCH body is not the only place
+		# the new value exists.
+		_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH"
+		_assert_json_eq '.a4af_auto' "$want" "GET after PATCH reports $want"
+	done
+
+	# A non-boolean is a 400 rather than a coerced truthy value.
+	_curl -X PATCH -H "Authorization: Bearer $TOKEN" \
+		-H "Content-Type: application/json" \
+		-d '{"a4af_auto":"yes"}' "$HOST/api/v0/downloads/$HASH"
+	_assert_status 400 "PATCH a4af_auto non-boolean → 400"
+
 	# Per-file client rows (issue #984): the peers of one file, with their
 	# relation to it, replacing a client-side join against the global list.
 	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH/clients"

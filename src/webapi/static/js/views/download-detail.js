@@ -58,9 +58,16 @@ export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDele
     .then(() => toast(t("downloads_detail_copied"), "success"))
     .catch(() => toast(t("downloads_detail_copy_failed"), "error"));
 
-  // `a4af_auto` is not part of EqualDownload (EventDiff.cpp), so toggling it emits
+  // `a4af_auto` is not part of EqualDownload (EventDiff.cpp), so changing it emits
   // no download_updated and the tick-driven re-fetch never sees it — bump `reload`.
   const a4af = (action) => api.post("downloads/" + hash + "/a4af", { action })
+    .then(() => { toast(t("downloads_a4af_done"), "success"); setReload((n) => n + 1); })
+    .catch((e) => toast(terr(e), "error"));
+
+  // The auto flag is set, not toggled: send the value the button is moving to
+  // rather than asking the daemon to flip whatever it currently holds. A retry
+  // then lands on the same value instead of undoing the press.
+  const setA4afAuto = (value) => api.patch("downloads/" + hash, { a4af_auto: value })
     .then(() => { toast(t("downloads_a4af_done"), "success"); setReload((n) => n + 1); })
     .catch((e) => toast(terr(e), "error"));
 
@@ -146,7 +153,7 @@ export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDele
             </button>
             <button class=${"btn btn-sm admin-only" + (d.a4af_auto ? " btn-primary" : "")} type="button"
                     title=${t("downloads_a4af_tip_auto")}
-                    aria-pressed=${!!d.a4af_auto} onClick=${() => a4af("swap_this_auto")}>
+                    aria-pressed=${!!d.a4af_auto} onClick=${() => setA4afAuto(!d.a4af_auto)}>
               ${t("downloads_a4af_auto")}
             </button>`)}
         ${IdentityLine({ file: d, copy, titleKey: "downloads_detail_group_identity", extra: [

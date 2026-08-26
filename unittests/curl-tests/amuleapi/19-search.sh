@@ -316,7 +316,7 @@ _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
 _assert_status 200 "GET /search → 200"
 _assert_json_eq '.total | type'  number '/search carries total'
 _assert_json_eq '.offset | type' number '/search carries offset'
-_assert_json_eq '.limit | type'  number '/search carries limit'
+_assert_json_eq '.limit' null '/search limit is null when unlimited'
 
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search?limit=1"
 _assert_status 200 "GET /search?limit=1 → 200"

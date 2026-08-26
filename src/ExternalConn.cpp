@@ -2306,6 +2306,22 @@ static CECPacket *Get_EC_Response_PartFile_Cmd(const CECPacket *request)
 		case EC_OP_PARTFILE_SWAP_A4AF_THIS_AUTO:
 			CoreNotify_PartFile_Swap_A4AF_Auto(pfile);
 			break;
+		case EC_OP_PARTFILE_SET_A4AF_AUTO:
+			// Set, rather than flip. The op above cannot express "make it
+			// true": a caller that cannot see the current value cannot ask
+			// for a particular one, and a repeated request undoes itself.
+			// That is fine for the GUI menu item driving it, and wrong for
+			// an HTTP API, where a library or a browser may retry without
+			// the caller knowing.
+			//
+			// SetA4AFAuto() only marks the file EC-changed when the value
+			// actually moves, so re-sending the value it already holds
+			// costs nothing and pushes no update.
+			//
+			// Value rides as a child of EC_TAG_PARTFILE, the same shape
+			// EC_OP_PARTFILE_SET_CAT and _PRIO_SET use.
+			pfile->SetA4AFAuto(hashtag.GetFirstTagSafe()->GetInt() != 0);
+			break;
 		case EC_OP_PARTFILE_SWAP_A4AF_OTHERS:
 			CoreNotify_PartFile_Swap_A4AF_Others(pfile);
 			break;
@@ -3784,6 +3800,7 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		break;
 	case EC_OP_PARTFILE_SWAP_A4AF_THIS:
 	case EC_OP_PARTFILE_SWAP_A4AF_THIS_AUTO:
+	case EC_OP_PARTFILE_SET_A4AF_AUTO:
 	case EC_OP_PARTFILE_SWAP_A4AF_OTHERS:
 	case EC_OP_PARTFILE_PAUSE:
 	case EC_OP_PARTFILE_RESUME:
