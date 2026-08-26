@@ -267,18 +267,39 @@ TEST(EventDiff, StatusEventCarriesIdentityFields)
 	StatusSnapshot s;
 	s.ed2k_state = "connected";
 	s.ed2k_high_id = true;
-	s.ed2k_id = 1234567890u;
+	s.ed2k_user_id = 1234567890u;
 	s.ed2k_public_ip = "210.2.150.73";
 	s.download_overhead_bps = 8700;
 
 	const std::string payload = EmitStatusAndGetPayload(s);
 
 	ASSERT_TRUE(payload.find("\"high_id\":true") != std::string::npos);
-	ASSERT_TRUE(payload.find("\"id\":1234567890") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"user_id\":1234567890") != std::string::npos);
 	ASSERT_TRUE(payload.find("\"public_ip\":\"210.2.150.73\"") != std::string::npos);
 	ASSERT_TRUE(payload.find("\"download_overhead_bps\":8700") != std::string::npos);
-	// The retired spelling must not linger anywhere in the payload.
+	// The retired spellings must not linger anywhere in the payload. A bare
+	// "id" would also match inside "user_id", so the quoted key is the test.
 	ASSERT_TRUE(payload.find("low_id") == std::string::npos);
+	ASSERT_TRUE(payload.find("\"id\":") == std::string::npos);
+}
+
+// The Kad firewall verdict is the one field on this payload a subscriber is
+// most likely to be watching for, and Equal(StatusSnapshot) is what decides
+// whether the event is published at all. Drop it from that comparator and a
+// firewall flip stops reaching subscribers entirely -- silently, since the
+// REST body keeps reporting the new value. Pinned here so a future edit to
+// the comparator cannot quietly lose it.
+TEST(EventDiff, StatusEventFiresWhenOnlyKadFirewalledTcpMoved)
+{
+	StatusSnapshot s;
+	s.kad_firewalled_tcp = true;
+
+	const std::string payload = EmitStatusAndGetPayload(s);
+
+	ASSERT_TRUE(!payload.empty());
+	ASSERT_TRUE(payload.find("\"firewalled_tcp\":true") != std::string::npos);
+	// The pre-rename spelling must not survive anywhere in the payload.
+	ASSERT_TRUE(payload.find("\"firewalled\":") == std::string::npos);
 }
 
 // A tick where only the overhead moved still has to fire: the field is in the

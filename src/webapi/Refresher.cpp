@@ -199,13 +199,13 @@ void ParseStatusFromPacket(const CECPacket *resp, StatusSnapshot &out)
 		// reads 0, and HasLowID() is "id < HIGHEST_LOWID_ED2K_KAD", so a
 		// disconnected daemon would otherwise be reported as a LowID.
 		out.ed2k_high_id = conn->IsConnectedED2K() && !conn->HasLowID();
-		out.kad_firewalled = conn->IsKadFirewalled();
+		out.kad_firewalled_tcp = conn->IsKadFirewalled();
 		if (conn->IsConnectedED2K()) {
 			// 0xffffffff is the "connect in flight, no id yet" sentinel
 			// (ECSpecialCoreTags.cpp) and must not reach a consumer.
 			const std::uint32_t id = static_cast<std::uint32_t>(conn->GetEd2kId());
 			if (id != 0xffffffffu) {
-				out.ed2k_id = id;
+				out.ed2k_user_id = id;
 				// A HighID *is* our public address, LSB-first, the same
 				// layout EC_TAG_CLIENT_USER_IP uses. A LowID is a small
 				// number the server picked and carries no address.
@@ -1556,7 +1556,7 @@ void ParseKadFromPacket(const CECPacket *resp, KadSnapshot &out)
 
 	out.state = KadStateString(conn);
 	if (conn) {
-		out.firewalled = conn->IsKadFirewalled();
+		out.firewalled_tcp = conn->IsKadFirewalled();
 		// Our own node id. amuled ships EC_TAG_KAD_ID only while Kad
 		// is running, which is the same condition KadStateString()
 		// reports as anything other than "disabled" -- so an absent
@@ -1602,7 +1602,7 @@ void ParseKadFromPacket(const CECPacket *resp, KadSnapshot &out)
 		out.public_ip = IPv4ToDotted(static_cast<std::uint32_t>(t->GetInt()));
 	}
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_KAD_IN_LAN_MODE)) {
-		out.in_lan_mode = (t->GetInt() != 0);
+		out.lan_mode = (t->GetInt() != 0);
 	}
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_BUDDY_STATUS)) {
 		out.buddy_status = KadBuddyStatusName(static_cast<std::uint32_t>(t->GetInt()));

@@ -325,8 +325,8 @@ function ConnectionStatus({ status }) {
   const kad = status && status.kad;
   let kText = t("app_not_connected"), kCls = "off";
   if (kad && kad.state === "connected") {
-    kCls = kad.firewalled ? "warn" : "ok";
-    kText = t("app_connected") + (kad.firewalled ? " · " + t("app_firewalled") : "");
+    kCls = kad.firewalled_tcp ? "warn" : "ok";
+    kText = t("app_connected") + (kad.firewalled_tcp ? " · " + t("app_firewalled") : "");
   }
 
   return html`

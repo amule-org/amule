@@ -653,9 +653,9 @@ struct KadSnapshot
 	// id, this one is persisted (preferencesKad.dat) and survives
 	// daemon restarts.
 	std::string node_id;
-	bool firewalled = false;
+	bool firewalled_tcp = false;
 	bool firewalled_udp = false;
-	bool in_lan_mode = false;
+	bool lan_mode = false;
 	std::uint32_t users = 0;
 	std::uint32_t files = 0;
 	std::uint32_t nodes = 0;
@@ -1329,16 +1329,20 @@ struct StatusSnapshot
 
 	// Our eD2k id as assigned by the connected server. 0 when not
 	// connected; the 0xffffffff "connect in flight" sentinel is normalized
-	// to 0 rather than surfaced.
-	std::uint32_t ed2k_id = 0;
+	// to 0 rather than surfaced. Packed LSB-first, unlike the peer-side
+	// user_id_hybrid on CUpDownClient, which byte-swaps a HighID.
+	std::uint32_t ed2k_user_id = 0;
 
-	// Our public IPv4 in dotted-quad form, derived from ed2k_id when that
+	// Our public IPv4 in dotted-quad form, derived from ed2k_user_id when that
 	// is a HighID -- a HighID *is* the address. Empty for a LowID or while
 	// disconnected, where no address exists. Formatted here rather than in
 	// the handler, matching every other address in these snapshots.
 	std::string ed2k_public_ip;
-	// True when Kad is running but firewalled.
-	bool kad_firewalled = false;
+	// True when Kad is running but firewalled for TCP. The verdict is a
+	// vote: two peers must confirm reachability over an incoming TCP
+	// connection before it clears. Distinct from the UDP test, which is
+	// a different mechanism -- see KadSnapshot::firewalled_udp.
+	bool kad_firewalled_tcp = false;
 
 	// Unix timestamp of the most recent connect (amule-org/amule#174),
 	// from EC_TAG_CONNSTATE's optional {ED2K,KAD}_CONNECTED_SINCE

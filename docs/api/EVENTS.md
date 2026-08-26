@@ -495,7 +495,7 @@ Rate impact is small: the overhead rates move about as often as the speeds alrea
   "ed2k": {
     "state":       "connected",
     "high_id":     true,
-    "id":          1234567890,
+    "user_id":     1234567890,
     "public_ip":   "210.2.150.73",
     "connected_since": 1751000000,
     "server_name": "eMule Server",
@@ -505,7 +505,7 @@ Rate impact is small: the overhead rates move about as often as the speeds alrea
   },
   "kad": {
     "state":      "connected",
-    "firewalled": false,
+    "firewalled_tcp": false,
     "connected_since": 1751000000,
     "network":    { "users": 5400000, "files": 1400000000, "nodes": 2400 }
   },

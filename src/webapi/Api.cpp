@@ -2552,9 +2552,11 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 	w.ValueBool(s.ed2k_high_id);
 	// Our server-assigned id; a HighID (>= 16777216) is our public address
 	// packed LSB-first, which is where public_ip comes from. Both are 0 /
-	// empty while disconnected.
-	w.Key("id");
-	w.ValueInt(static_cast<int64_t>(s.ed2k_id));
+	// empty while disconnected. Not the same encoding as the peer-side
+	// user_id_hybrid on /clients/{ecid}: that one byte-swaps a HighID, so
+	// the two must not be compared or fed through each other's decoder.
+	w.Key("user_id");
+	w.ValueInt(static_cast<int64_t>(s.ed2k_user_id));
 	w.Key("public_ip");
 	w.ValueString(wxString::FromUTF8(s.ed2k_public_ip.c_str()));
 	// 0 when not connected -- gate on ed2k.state, not on this being nonzero.
@@ -2583,8 +2585,11 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 	w.BeginObject();
 	w.Key("state");
 	w.ValueString(wxString::FromUTF8(s.kad_state.c_str()));
-	w.Key("firewalled");
-	w.ValueBool(s.kad_firewalled);
+	// TCP half of the firewall verdict. Named for the transport because
+	// GET /kad reports it beside firewalled_udp, which is a separate
+	// measurement rather than a refinement of this one.
+	w.Key("firewalled_tcp");
+	w.ValueBool(s.kad_firewalled_tcp);
 	// 0 when not connected -- gate on kad.state, not on this being nonzero.
 	w.Key("connected_since");
 	w.ValueInt(static_cast<int64_t>(s.kad_connected_since));
@@ -7063,12 +7068,17 @@ CHttpServer::Response CApiDispatcher::HandleKad(const CHttpServer::Request &req)
 	// stable across restarts.
 	w.Key("node_id");
 	w.ValueString(wxString::FromUTF8(k.node_id.c_str()));
-	w.Key("firewalled");
-	w.ValueBool(k.firewalled);
+	// Two independent measurements, not a verdict and a refinement.
+	// firewalled_tcp is a vote needing two peers to confirm reachability
+	// and defaults to true with no verdict; firewalled_udp is a directed
+	// test sent only while Kad is connected, so it reads false when Kad
+	// is down. LAN mode forces both to false.
+	w.Key("firewalled_tcp");
+	w.ValueBool(k.firewalled_tcp);
 	w.Key("firewalled_udp");
 	w.ValueBool(k.firewalled_udp);
-	w.Key("in_lan_mode");
-	w.ValueBool(k.in_lan_mode);
+	w.Key("lan_mode");
+	w.ValueBool(k.lan_mode);
 	// Same value GET /status reports as kad.connected_since; 0 when
 	// not connected, so gate on `state` rather than on a nonzero.
 	w.Key("connected_since");

@@ -306,7 +306,7 @@ std::string ToJsonStatusEvent(const StatusSnapshot &s, const KadSnapshot &k, boo
 	o << "{"
 	  << "\"ec_connected\":" << (ec_connected ? "true" : "false") << ",\"ed2k\":{"
 	  << "\"state\":\"" << EscJson(s.ed2k_state) << "\""
-	  << ",\"high_id\":" << (s.ed2k_high_id ? "true" : "false") << ",\"id\":" << s.ed2k_id
+	  << ",\"high_id\":" << (s.ed2k_high_id ? "true" : "false") << ",\"user_id\":" << s.ed2k_user_id
 	  << ",\"public_ip\":\"" << EscJson(s.ed2k_public_ip) << "\""
 	  << ",\"connected_since\":" << s.ed2k_connected_since << ",\"server_name\":\""
 	  << EscJson(s.server_name) << "\""
@@ -315,7 +315,7 @@ std::string ToJsonStatusEvent(const StatusSnapshot &s, const KadSnapshot &k, boo
 	  << "\"users\":" << s.ed2k_users << ",\"files\":" << s.ed2k_files << "}}"
 	  << ",\"kad\":{"
 	  << "\"state\":\"" << EscJson(s.kad_state) << "\""
-	  << ",\"firewalled\":" << (s.kad_firewalled ? "true" : "false")
+	  << ",\"firewalled_tcp\":" << (s.kad_firewalled_tcp ? "true" : "false")
 	  << ",\"connected_since\":" << s.kad_connected_since << ",\"network\":{"
 	  << "\"users\":" << k.users << ",\"files\":" << k.files << ",\"nodes\":" << k.nodes << "}"
 	  << "}"
@@ -466,14 +466,15 @@ bool Equal(const ClientSnapshot &a, const ClientSnapshot &b)
 }
 bool Equal(const StatusSnapshot &a, const StatusSnapshot &b)
 {
-	// public_ip is derived from ed2k_id, so comparing the id covers it.
+	// public_ip is derived from ed2k_user_id, so comparing the id covers it.
 	return a.ed2k_state == b.ed2k_state && a.kad_state == b.kad_state &&
-	       a.ed2k_high_id == b.ed2k_high_id && a.ed2k_id == b.ed2k_id &&
+	       a.ed2k_high_id == b.ed2k_high_id && a.ed2k_user_id == b.ed2k_user_id &&
 	       a.ed2k_connected_since == b.ed2k_connected_since &&
-	       a.kad_connected_since == b.kad_connected_since && a.kad_firewalled == b.kad_firewalled &&
-	       a.server_name == b.server_name && a.server_ip == b.server_ip &&
-	       a.server_port == b.server_port && a.download_bps == b.download_bps &&
-	       a.upload_bps == b.upload_bps && a.download_overhead_bps == b.download_overhead_bps &&
+	       a.kad_connected_since == b.kad_connected_since &&
+	       a.kad_firewalled_tcp == b.kad_firewalled_tcp && a.server_name == b.server_name &&
+	       a.server_ip == b.server_ip && a.server_port == b.server_port &&
+	       a.download_bps == b.download_bps && a.upload_bps == b.upload_bps &&
+	       a.download_overhead_bps == b.download_overhead_bps &&
 	       a.upload_overhead_bps == b.upload_overhead_bps && a.temp_free_bytes == b.temp_free_bytes &&
 	       a.incoming_free_bytes == b.incoming_free_bytes && a.ul_queue_len == b.ul_queue_len &&
 	       a.total_src_count == b.total_src_count && a.ed2k_users == b.ed2k_users &&

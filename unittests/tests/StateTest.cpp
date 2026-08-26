@@ -112,13 +112,13 @@ TEST(State, WriteStatusRoundtrip)
 	in.ed2k_state = "connected";
 	in.kad_state = "connecting";
 	in.ed2k_high_id = true;
-	in.ed2k_id = 1234567890u; // 210.2.150.73 packed LSB-first
+	in.ed2k_user_id = 1234567890u; // 210.2.150.73 packed LSB-first
 	in.ed2k_public_ip = "210.2.150.73";
 	in.download_overhead_bps = 8700;
 	in.upload_overhead_bps = 1100;
 	in.temp_free_bytes = 48318382080LL;
 	in.incoming_free_bytes = -1; // unknown
-	in.kad_firewalled = false;
+	in.kad_firewalled_tcp = false;
 	in.server_name = "Some Server";
 	in.server_ip = "192.0.2.42";
 	in.server_port = 4242;
@@ -132,7 +132,7 @@ TEST(State, WriteStatusRoundtrip)
 	ASSERT_EQUALS(std::string("connected"), out.ed2k_state);
 	ASSERT_EQUALS(std::string("connecting"), out.kad_state);
 	ASSERT_TRUE(out.ed2k_high_id);
-	ASSERT_EQUALS(static_cast<std::uint32_t>(1234567890u), out.ed2k_id);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(1234567890u), out.ed2k_user_id);
 	ASSERT_EQUALS(std::string("210.2.150.73"), out.ed2k_public_ip);
 	ASSERT_EQUALS(static_cast<std::uint64_t>(8700), out.download_overhead_bps);
 	ASSERT_EQUALS(static_cast<std::uint64_t>(1100), out.upload_overhead_bps);
@@ -140,7 +140,7 @@ TEST(State, WriteStatusRoundtrip)
 	// -1 must survive the round trip as -1: it is what the handler turns
 	// into JSON null, and an unsigned slot would make it 1.8e19.
 	ASSERT_EQUALS(static_cast<std::int64_t>(-1), out.incoming_free_bytes);
-	ASSERT_FALSE(out.kad_firewalled);
+	ASSERT_FALSE(out.kad_firewalled_tcp);
 	ASSERT_EQUALS(std::string("Some Server"), out.server_name);
 	ASSERT_EQUALS(std::string("192.0.2.42"), out.server_ip);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(4242), out.server_port);
@@ -635,7 +635,7 @@ TEST(State, WriteKadAndPreferencesRoundtrip)
 	KadSnapshot k;
 	k.state = "connected";
 	k.users = 12345;
-	k.firewalled = true;
+	k.firewalled_tcp = true;
 	k.public_ip = "1.2.3.4";
 	k.node_id = "8f3a1c07d94b2e5a6018bb4c7f209d3e";
 	s.WriteKad(k);
@@ -669,7 +669,7 @@ TEST(State, WriteKadAndPreferencesRoundtrip)
 	const auto k_out = s.Kad();
 	ASSERT_EQUALS(std::string("connected"), k_out.state);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(12345), k_out.users);
-	ASSERT_TRUE(k_out.firewalled);
+	ASSERT_TRUE(k_out.firewalled_tcp);
 	// The two string fields were written but never read back, so a
 	// rename could pass this test while dropping the value.
 	ASSERT_EQUALS(std::string("1.2.3.4"), k_out.public_ip);
