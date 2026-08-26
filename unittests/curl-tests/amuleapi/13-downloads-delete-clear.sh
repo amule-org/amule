@@ -81,6 +81,15 @@ _assert_json_eq() {
 	fi
 }
 
+_assert_body_empty() {
+	local label=$1
+	if [ -z "$CURL_BODY" ]; then
+		_pass "$label"
+	else
+		_fail "$label" "expected an empty body, got: $(printf '%s' "$CURL_BODY" | head -c 200)"
+	fi
+}
+
 if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
 if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
@@ -150,13 +159,13 @@ _assert_json_eq '.results | length' 0 'clear_completed second call cleared 0 ent
 # active-path EC_OP_PARTFILE_DELETE branch.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d "{\"ed2k_link\":\"$TEST_LINK\"}" "$HOST/api/v0/downloads"
+	-d "{\"links\":[\"$TEST_LINK\"]}" "$HOST/api/v0/downloads"
 _assert_status 202 "POST /downloads (Ubuntu ISO) → 202 (setup)"
 
 APPEARED=0
 for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25; do
 	_curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-		"$HOST/api/v0/downloads?include_completed=1"
+		"$HOST/api/v0/downloads?status=all"
 	if printf '%s' "$CURL_BODY" \
 	   | jq -e --arg h "$TEST_HASH" '.downloads[] | select(.hash == $h)' \
 	   >/dev/null 2>&1; then
@@ -171,9 +180,9 @@ _pass "Ubuntu ISO surfaced for DELETE setup"
 # DELETE it.
 _curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/downloads/$TEST_HASH"
-_assert_status 200 "DELETE /downloads/{Ubuntu ISO hash} → 200"
-_assert_json_eq '.ok'   true        'DELETE response.ok==true'
-_assert_json_eq '.hash' "$TEST_HASH" 'DELETE response echoes hash'
+# 204, no body: `hash` came from the URL and `ok` restated the status code.
+_assert_status 204 "DELETE /downloads/{Ubuntu ISO hash} → 204"
+_assert_body_empty 'DELETE sends no body'
 
 # Immediate GET — no stale cache.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -182,7 +191,7 @@ _assert_status 404 "IMMEDIATE GET after DELETE → 404 (no stale cache)"
 
 # Same in list view — entry must be gone from the default response.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/downloads?include_completed=1"
+	"$HOST/api/v0/downloads?status=all"
 STILL_THERE=$(printf '%s' "$CURL_BODY" \
 	| jq --arg h "$TEST_HASH" '[.downloads[] | select(.hash == $h)] | length')
 if [ "$STILL_THERE" = "0" ]; then
@@ -226,13 +235,13 @@ _assert_status 400 "POST clear_completed {hash: non-string} → 400"
 # m_completedDownloads.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d "{\"ed2k_link\":\"$TEST_LINK\"}" "$HOST/api/v0/downloads"
+	-d "{\"links\":[\"$TEST_LINK\"]}" "$HOST/api/v0/downloads"
 _assert_status 202 "POST /downloads (Ubuntu ISO re-add) → 202 (setup)"
 
 APPEARED=0
 for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25; do
 	_curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-		"$HOST/api/v0/downloads?include_completed=1"
+		"$HOST/api/v0/downloads?status=all"
 	if printf '%s' "$CURL_BODY" \
 	   | jq -e --arg h "$TEST_HASH" '.downloads[] | select(.hash == $h)' \
 	   >/dev/null 2>&1; then
@@ -254,13 +263,13 @@ _assert_json_eq '.error.code' not_completed \
 # Cleanup the active partfile.
 _curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/downloads/$TEST_HASH"
-_assert_status 200 "Cleanup: DELETE /downloads/{Ubuntu ISO hash} (2nd) → 200"
+_assert_status 204 "Cleanup: DELETE /downloads/{Ubuntu ISO hash} (2nd) → 204"
 
 # --- 9. DELETE / clear_completed against any naturally-completed
 #         entry — covers the by-hash success path AND the 409 from
 #         DELETE on a completed entry. SKIP if the daemon has none.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/downloads?include_completed=1"
+	"$HOST/api/v0/downloads?status=all"
 COMPLETED_HASH=$(printf '%s' "$CURL_BODY" \
 	| jq -r '[.downloads[] | select(.status == "completed") | .hash][0] // empty')
 if [ -n "$COMPLETED_HASH" ]; then

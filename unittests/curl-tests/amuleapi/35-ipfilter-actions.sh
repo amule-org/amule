@@ -3,8 +3,8 @@
 # amuleapi 35-ipfilter-actions — POST /ipfilter/reload, POST /ipfilter/update.
 #
 # Endpoints:
-#   POST /api/v0/ipfilter/reload   → 202 {"ok":true}
-#   POST /api/v0/ipfilter/update   → 202 {"ok":true,"ipfilter_url":"..."}
+#   POST /api/v0/ipfilter/reload   → 202, no `ok` field
+#   POST /api/v0/ipfilter/update   → 202, no body at all
 #
 # The two actions the desktop Security page's "Reload List" and "Update now"
 # buttons drive, as EC opcodes that have existed for years. Both are accepted,
@@ -12,6 +12,13 @@
 # ("IP filter is ready", "Failed to download ipfilter.dat from <url>"), so
 # there is nothing to assert about the outcome — the contract under test is
 # the accept path, the URL resolution and the guards.
+#
+# Neither reports anything the caller did not already have. update answers
+# with no body at all: the URL it used to echo came straight back out of the
+# request, and where it came from preferences instead the caller reads it from
+# GET /preferences, which section 5 already does. reload shares the
+# connection-control shape, so its body is an object carrying whatever status
+# string amuled returned - for this opcode, none - and never a constant `ok`.
 #
 # The update happy path deliberately uses an unroutable URL: the download
 # fails asynchronously, amuled logs it and keeps the current filter live, so
@@ -79,6 +86,15 @@ _assert_json_eq() {
 	fi
 }
 
+_assert_body_empty() {
+	local label=$1
+	if [ -z "$CURL_BODY" ]; then
+		_pass "$label"
+	else
+		_fail "$label" "expected an empty body, got: $(printf '%s' "$CURL_BODY" | head -c 200)"
+	fi
+}
+
 # Read one preference out of GET /preferences.
 _pref() {
 	curl -s --max-time 10 -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -133,7 +149,7 @@ fi
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/ipfilter/reload"
 _assert_status 202 "POST /ipfilter/reload → 202"
-_assert_json_eq '.ok' true "reload response .ok == true"
+_assert_json_eq '. | has("ok")' false "reload response has no constant ok field"
 
 _curl -X GET -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/ipfilter/reload"
 _assert_status 405 "GET /ipfilter/reload → 405"
@@ -190,8 +206,7 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"ipfilter_url\":\"$TEST_URL\"}" "$HOST/api/v0/ipfilter/update"
 _assert_status 202 "POST /ipfilter/update explicit URL → 202"
-_assert_json_eq '.ok' true "update response .ok == true"
-_assert_json_eq '.ipfilter_url' "$TEST_URL" "update echoes the URL it ran"
+_assert_body_empty "update sends no body"
 
 # CIPFilter::Update() stores the URL it was handed, the same way the ed2k
 # and Kad list downloads do, so the next auto-update at startup uses it.
@@ -209,16 +224,21 @@ else
 		"(needs the core-side CIPFilter::Update() change; an older amuled will not persist)"
 fi
 
-# --- 6. No body, configured URL → 202 echoing the configured one. --
+# --- 6. No body: the configured URL is what runs. ------------------
+#
+# Section 4 already pinned the other half of this: with no configured URL and
+# no body, the same request is a 400. Reaching 202 here is what says the
+# handler fell back to security.ipfilter_update_url, which section 5 just
+# proved holds $TEST_URL.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/ipfilter/update"
 _assert_status 202 "POST /ipfilter/update no body, configured URL → 202"
-_assert_json_eq '.ipfilter_url' "$TEST_URL" "bodyless update echoes the configured URL"
+_assert_body_empty "bodyless update sends no body"
 
 # An empty JSON object is the same case as no body at all.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" -d '{}' "$HOST/api/v0/ipfilter/update"
 _assert_status 202 "POST /ipfilter/update {} with configured URL → 202"
-_assert_json_eq '.ipfilter_url' "$TEST_URL" "{} update echoes the configured URL"
+_assert_body_empty "{} update sends no body"
 
 # --- 7. Method gate. -----------------------------------------------
 _curl -X GET -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/ipfilter/update"

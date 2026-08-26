@@ -193,10 +193,15 @@ _qp() {
 		"${AUTH[@]}" "$HOST/api/v0/$1")" "$3"
 }
 
-# Booleans: one vocabulary, and anything outside it is answerable.
-_qp "downloads?include_completed=1"     200 "include_completed=1 -> 200"
-_qp "downloads?include_completed=false" 200 "include_completed=false -> 200"
-_qp "downloads?include_completed=maybe" 400 "include_completed=maybe -> 400 (was a silent false)"
+# Enumerations: one vocabulary, and anything outside it is answerable.
+_qp "downloads?status=active"    200 "status=active -> 200"
+_qp "downloads?status=all"       200 "status=all -> 200"
+_qp "downloads?status=completed" 200 "status=completed -> 200"
+_qp "downloads?status=maybe"     400 "status=maybe -> 400, not a silent default"
+
+# The boolean `status` replaced is refused, not ignored: a caller left on the
+# old spelling is told so instead of silently getting the default slice.
+_qp "downloads?include_completed=1" 400 "include_completed=1 -> 400 (replaced by status=)"
 
 # Counts: garbage and out-of-range are the same answer.
 _qp "downloads?limit=abc"   400 "limit=abc -> 400"

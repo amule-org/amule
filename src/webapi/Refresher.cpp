@@ -2355,10 +2355,11 @@ const char *SearchStatusName(std::uint32_t code)
 	}
 }
 
-// Locale-independent file-type token from the filename, mirroring the
-// desktop's GetFiletypeByName (untranslated) lowercased — same tokens as
-// the shared-detail `file_type`.
-std::string SearchTypeToken(const std::string &name)
+} // namespace
+
+// Definition of the shared token helper declared in Refresher.h; see there
+// for why there is only one.
+std::string FileTypeToken(const std::string &name)
 {
 	const wxString desc =
 		GetFiletypeByName(CPath(wxString::FromUTF8(name.c_str())), /*translated=*/false);
@@ -2368,7 +2369,6 @@ std::string SearchTypeToken(const std::string &name)
 	});
 	return s;
 }
-} // namespace
 
 void ApplySearchFull(const CECPacket *resp, std::map<std::uint32_t, SearchResult> &cache)
 {
@@ -2424,7 +2424,7 @@ void ApplySearchFull(const CECPacket *resp, std::map<std::uint32_t, SearchResult
 			r.status = SearchStatusName(sf->AssignIfExist(EC_TAG_PARTFILE_STATUS, v) ? v : 0);
 		}
 		// File type, computed from the filename (no EC data needed).
-		r.type = SearchTypeToken(r.name);
+		r.type = FileTypeToken(r.name);
 		// Browse-only: the folder this file sits in inside the peer's
 		// share. The core attaches it to results filed from a shared-file
 		// listing and to nothing else, so an ordinary server/Kad hit

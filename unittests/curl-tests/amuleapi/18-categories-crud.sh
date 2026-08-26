@@ -67,6 +67,15 @@ _assert_json_eq() {
 	fi
 }
 
+_assert_body_empty() {
+	local label=$1
+	if [ -z "$CURL_BODY" ]; then
+		_pass "$label"
+	else
+		_fail "$label" "expected an empty body, got: $(printf '%s' "$CURL_BODY" | head -c 200)"
+	fi
+}
+
 if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
 if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
@@ -152,32 +161,52 @@ if [ "$HAVE_GUEST" = "1" ]; then
 fi
 
 # --- 2. POST /categories (create). --------------------------------
+#
+# Snapshot the indexes first. The create answers with no body, so the new
+# index is whichever one the collection did not hold before -- which beats
+# looking the name up afterwards, since nothing stops the daemon from already
+# holding a category by that name (a previous run of this smoke that died
+# before its cleanup, say), and a name lookup would then hand back the older
+# row and delete that instead.
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories?limit=500"
+BEFORE_IDX=$(printf '%s' "$CURL_BODY" | jq -c '[.categories[].index]')
+
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"name\":\"$TEST_NAME\",\"path\":\"$TEST_PATH\",\"comment\":\"18-categories-crud test\",\"priority\":\"high\"}" \
 	"$HOST/api/v0/categories"
-_assert_status 201 "POST /categories (create) → 201"
-_assert_json_eq '.ok'   true        'create response.ok==true'
-_assert_json_eq '.name' "$TEST_NAME" 'create response echoes name'
+# 202 with no body. EC_OP_CREATE_CATEGORY answers success or failure and never
+# returns the index it assigned, so naming the new category here meant scanning
+# the snapshot for one with a matching name and falling back to a bodiless 201
+# when the scan came up short. The caller re-reads the collection, which is what
+# the lookup below does.
+_assert_status 202 "POST /categories (create) → 202"
+_assert_body_empty 'create sends no body'
 
-NEW_IDX=$(printf '%s' "$CURL_BODY" | jq -r '.index')
-if [ -n "$NEW_IDX" ] && [ "$NEW_IDX" != "null" ]; then
-	_pass "create response includes assigned index ($NEW_IDX)"
+# Verify by GET /categories, which is also where the assigned index comes from.
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories?limit=500"
+NEW_IDX=$(printf '%s' "$CURL_BODY" \
+	| jq -r --argjson b "$BEFORE_IDX" \
+	  '[.categories[].index] - $b | first // empty')
+if [ -n "$NEW_IDX" ]; then
+	_pass "the created category is readable from /categories (index=$NEW_IDX)"
 else
-	_die "could not parse new category index from create response"
+	_die "created category not in /categories: ${CURL_BODY:0:300}"
 fi
-
-# Verify by GET /categories.
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories"
+# The stored row is what the POST body asked for. Asserted here rather than off
+# a create response, which is the whole reason the create carries no body: this
+# reads what the daemon actually kept, not what amuleapi guessed it kept.
 LOOKUP=$(printf '%s' "$CURL_BODY" \
-	| jq --arg n "$TEST_NAME" \
-	  '[.categories[] | select(.name == $n)] | first')
-if [ "$LOOKUP" != "null" ]; then
-	_pass "Created category surfaces in /categories list"
-else
-	_fail "Created category lookup" \
-		"could not find $TEST_NAME in /categories list"
-fi
+	| jq --argjson i "$NEW_IDX" '[.categories[] | select(.index == $i)] | first')
+for f in name:"$TEST_NAME" path:"$TEST_PATH" priority:high; do
+	key=${f%%:*}; want=${f#*:}
+	got=$(printf '%s' "$LOOKUP" | jq -r ".$key")
+	if [ "$got" = "$want" ]; then
+		_pass "created category round-trips $key=$want"
+	else
+		_fail "created category $key" "expected $want, got $got"
+	fi
+done
 
 # --- 3. POST error paths. -----------------------------------------
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -252,9 +281,9 @@ _assert_status 400 "DELETE /categories/0 (default) → 400"
 
 _curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/categories/$NEW_IDX"
-_assert_status 200 "DELETE /categories/$NEW_IDX → 200"
-_assert_json_eq '.ok'    true       'DELETE response.ok==true'
-_assert_json_eq '.index' "$NEW_IDX" 'DELETE response echoes index'
+# 204, no body: the index came from the URL and `ok` restated the status code.
+_assert_status 204 "DELETE /categories/$NEW_IDX → 204"
+_assert_body_empty 'DELETE sends no body'
 
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories"
 STILL=$(printf '%s' "$CURL_BODY" \

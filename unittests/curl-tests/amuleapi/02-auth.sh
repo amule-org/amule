@@ -77,6 +77,15 @@ _assert_json_eq() {
 	fi
 }
 
+_assert_body_empty() {
+	local label=$1
+	if [ -z "$CURL_BODY" ]; then
+		_pass "$label"
+	else
+		_fail "$label" "expected an empty body, got: $(printf '%s' "$CURL_BODY" | head -c 200)"
+	fi
+}
+
 _assert_header_contains() {
 	local needle=$1 label=$2
 	if printf '%s' "$CURL_HDR" | grep -qi -- "$needle"; then
@@ -150,10 +159,12 @@ _assert_json_eq '.error.code' unauthorized \
 _curl -H "Authorization: Bearer not.a.real.jwt" "$HOST/api/v0/auth/session"
 _assert_status 401 "GET /auth/session (bogus bearer) → 401"
 
-# --- 7. /auth/logout (bearer) → 200 + clearing Set-Cookie. ---------
+# --- 7. /auth/logout (bearer) → 204 + clearing Set-Cookie. ---------
+# 204, not 200: the old body was a constant {ok:true} restating the status
+# code, and the clearing Set-Cookie is the only thing the caller needs.
 _curl -X POST -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/auth/logout"
-_assert_status 200 "POST /auth/logout (bearer) → 200"
-_assert_json_eq '.ok' true 'logout body acks {ok:true}'
+_assert_status 204 "POST /auth/logout (bearer) → 204"
+_assert_body_empty 'logout sends no body'
 _assert_header_contains 'set-cookie: amuleapi_token=;' \
 	'logout sends a clearing Set-Cookie'
 

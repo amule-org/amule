@@ -48,7 +48,7 @@ export default function Downloads({ isGuest }) {
 
   useEffect(() => {
     data.register({ key: "downloads", eventPrefix: "download", id: "hash",
-      list: () => api.get("downloads?include_completed=1").then((r) => r.downloads || []) });
+      list: () => api.get("downloads?status=all").then((r) => r.downloads || []) });
     loadCategories();
     data.ensure("downloads");
   }, []);

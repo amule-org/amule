@@ -130,6 +130,28 @@ void WriteIntOrNull(CJsonWriter &w, const char *key, bool known, std::int64_t va
 		w.ValueNull();
 }
 
+void WriteUIntOrNull(CJsonWriter &w, const char *key, bool known, std::uint64_t value)
+{
+	w.Key(key);
+	if (known)
+		w.ValueUInt(value);
+	else
+		w.ValueNull();
+}
+
+// Siblings of WriteIntOrNull for the other two shapes the rule reaches. An
+// empty string is NOT the same as unknown -- `server_ip` is legitimately ""
+// when the peer has no server -- so callers pass the predicate rather than
+// letting this guess from the value.
+void WriteStringOrNull(CJsonWriter &w, const char *key, bool known, const std::string &value)
+{
+	w.Key(key);
+	if (known)
+		w.ValueString(wxString::FromUTF8(value.c_str()));
+	else
+		w.ValueNull();
+}
+
 void FinalizeJsonBody(CJsonWriter &w, CHttpServer::Response &r)
 {
 	// The writer already holds UTF-8, so this is a move, not a convert+copy.
@@ -2198,7 +2220,7 @@ CHttpServer::Response CApiDispatcher::HandleLogout(const CHttpServer::Request &r
 	}
 
 	// Logout is idempotent. A revoked-but-not-yet-expired token
-	// should still get a 200 noop — the operation it requested has
+	// should still get a 204 noop — the operation it requested has
 	// already happened. Without this, a browser tab that does
 	// `fetch('/auth/logout', ...)` twice in quick succession (page
 	// reload during the request, double-tap on the menu, etc.) sees
@@ -2242,7 +2264,7 @@ CHttpServer::Response CApiDispatcher::HandleLogout(const CHttpServer::Request &r
 		m_authRateLimiter.NoteFailure(ip);
 		return ErrorResponse(401, "unauthorized", "invalid or expired token");
 	}
-	// Already revoked → 200 noop (don't re-revoke, don't re-emit a
+	// Already revoked → 204 noop (don't re-revoke, don't re-emit a
 	// clear-cookie that might race with the browser's own delete).
 	if (!m_revocations.IsRevoked(v.jti)) {
 		// Add the jti to the revocation set with the JWT's own exp as
@@ -2253,16 +2275,13 @@ CHttpServer::Response CApiDispatcher::HandleLogout(const CHttpServer::Request &r
 	m_authRateLimiter.NoteSuccess(ip);
 
 	CHttpServer::Response r;
-	r.status = 200;
-	r.content_type = "application/json";
+	// 204 with no body. Everything this used to echo came from the request
+	// URL, and `ok` restated the status code -- see the mutation-response
+	// rule in REFERENCE.md.
+	r.status = 204;
+	r.content_type.clear();
 	r.headers["Set-Cookie"] = MakeClearCookie(kSessionCookieName);
 
-	CJsonWriter w;
-	w.BeginObject();
-	w.Key("ok");
-	w.ValueBool(true);
-	w.EndObject();
-	FinalizeJsonBody(w, r);
 	return r;
 }
 
@@ -2725,13 +2744,21 @@ void WriteSharedAvailabilityParts(CJsonWriter &w, const webapi::FileSnapshot &f)
 	w.EndArray();
 }
 
-// Emit the `media` object (issue #418) when the file carries probed
-// audio/video metadata; nothing at all otherwise. Shared by the download
-// and shared detail writers.
+// Emit the `media` object (issue #418), or null when the file carries no
+// probed audio/video metadata. Shared by the download and shared detail
+// writers, and by the search-result writer.
+//
+// null rather than omitted so the key is always there. This is the one place
+// the unknown-value rule reaches an object rather than a scalar, so a client
+// tests `media === null` before reaching into it -- which it had to do anyway,
+// since the object's own fields can be absent.
 void WriteMediaIfPresent(CJsonWriter &w, const webapi::FileSnapshot &f)
 {
-	if (!f.has_media)
+	if (!f.has_media) {
+		w.Key("media");
+		w.ValueNull();
 		return;
+	}
 	w.Key("media");
 	w.BeginObject();
 	w.Key("length_s");
@@ -2962,10 +2989,13 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	w.ValueBool(c.view_shared_disabled);
 	// Omitted rather than sent negative when not computable (no linked
 	// download / unknown part count).
-	if (c.part_progress_percent >= 0.0) {
-		w.Key("part_progress_percent");
+	// null, not omitted, when there is no linked download to be a fraction
+	// of. -1 is the in-process sentinel and never reaches the wire.
+	w.Key("part_progress_percent");
+	if (c.part_progress_percent >= 0.0)
 		w.ValueDouble(c.part_progress_percent);
-	}
+	else
+		w.ValueNull();
 }
 
 // List-level client object (GET /clients).
@@ -3034,48 +3064,31 @@ void WriteKnownClientObject(CJsonWriter &w, const webapi::KnownClientSnapshot &c
 	w.BeginObject();
 	w.Key("user_hash");
 	w.ValueString(wxString::FromUTF8(c.user_hash.c_str()));
-	if (!c.client_name.empty()) {
-		w.Key("name");
-		w.ValueString(wxString::FromUTF8(c.client_name.c_str()));
-	}
-	if (!c.ip.empty()) {
-		w.Key("ip");
-		w.ValueString(wxString::FromUTF8(c.ip.c_str()));
-		w.Key("port");
-		w.ValueInt(static_cast<int64_t>(c.port));
-		w.Key("kad_port");
-		w.ValueInt(static_cast<int64_t>(c.kad_port));
-	}
-	if (!c.country_code.empty()) {
-		w.Key("country_code");
-		w.ValueString(wxString::FromUTF8(c.country_code.c_str()));
-	}
-	if (!c.software.empty()) {
-		w.Key("software");
-		w.ValueString(wxString::FromUTF8(c.software.c_str()));
-		w.Key("version");
-		w.ValueString(wxString::FromUTF8(c.version.c_str()));
-	}
-	if (!c.source_origin.empty()) {
-		w.Key("source_origin");
-		w.ValueString(wxString::FromUTF8(c.source_origin.c_str()));
-	}
-	if (!c.obfuscation.empty()) {
-		w.Key("obfuscation");
-		w.ValueString(wxString::FromUTF8(c.obfuscation.c_str()));
-	}
+	// Eleven keys behind seven guards used to be omitted here. The rule in
+	// REFERENCE.md is that an unknown value is null and a key is omitted only
+	// where absence itself is the meaning -- which is not the case for any of
+	// these: "the daemon did not report this peer's IP" is a value, and the
+	// client should not have to distinguish it from a key that never existed.
+	WriteStringOrNull(w, "name", !c.client_name.empty(), c.client_name);
+	const bool has_addr = !c.ip.empty();
+	WriteStringOrNull(w, "ip", has_addr, c.ip);
+	WriteIntOrNull(w, "port", has_addr, static_cast<int64_t>(c.port));
+	WriteIntOrNull(w, "kad_port", has_addr, static_cast<int64_t>(c.kad_port));
+	WriteStringOrNull(w, "country_code", !c.country_code.empty(), c.country_code);
+	const bool has_software = !c.software.empty();
+	WriteStringOrNull(w, "software", has_software, c.software);
+	WriteStringOrNull(w, "version", has_software, c.version);
+	WriteStringOrNull(w, "source_origin", !c.source_origin.empty(), c.source_origin);
+	WriteStringOrNull(w, "obfuscation", !c.obfuscation.empty(), c.obfuscation);
 	w.Key("total_uploaded");
 	w.ValueUInt(static_cast<uint64_t>(c.total_uploaded));
 	w.Key("total_downloaded");
 	w.ValueUInt(static_cast<uint64_t>(c.total_downloaded));
 	w.Key("last_seen");
 	w.ValueUInt(static_cast<uint64_t>(c.last_seen));
-	if (c.first_seen != 0) {
-		w.Key("first_seen");
-		w.ValueUInt(static_cast<uint64_t>(c.first_seen));
-		w.Key("sessions");
-		w.ValueUInt(static_cast<uint64_t>(c.sessions));
-	}
+	const bool has_first_seen = c.first_seen != 0;
+	WriteUIntOrNull(w, "first_seen", has_first_seen, static_cast<uint64_t>(c.first_seen));
+	WriteUIntOrNull(w, "sessions", has_first_seen, static_cast<uint64_t>(c.sessions));
 	// Correlate with /clients by user_hash to reach the live peer.
 	w.Key("online");
 	w.ValueBool(c.online);
@@ -3186,21 +3199,6 @@ void WriteSharedObject(CJsonWriter &w, const webapi::FileSnapshot &f)
 	w.EndObject();
 }
 
-// Locale-independent file-type token for the shared detail endpoint:
-// the desktop's own category label (GetFiletypeByName, untranslated)
-// lowercased — e.g. "audio", "video"(s), "cd-images", "any". Reuses the
-// GUI categorization rather than duplicating the extension table.
-std::string FileTypeToken(const std::string &name)
-{
-	const wxString desc =
-		GetFiletypeByName(CPath(wxString::FromUTF8(name.c_str())), /*translated=*/false);
-	std::string s(desc.utf8_str());
-	std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) {
-		return static_cast<char>(std::tolower(c));
-	});
-	return s;
-}
-
 // GET /shared/{hash} detail: every list field plus the shared-table gaps
 // + shared-applicable identity fields. See issue #417 Part B.
 void WriteSharedDetailObject(CJsonWriter &w, const webapi::FileSnapshot &f)
@@ -3208,7 +3206,7 @@ void WriteSharedDetailObject(CJsonWriter &w, const webapi::FileSnapshot &f)
 	w.BeginObject();
 	WriteSharedBaseFields(w, f);
 	w.Key("file_type");
-	w.ValueString(wxString::FromUTF8(FileTypeToken(f.name).c_str()));
+	w.ValueString(wxString::FromUTF8(webapi::FileTypeToken(f.name).c_str()));
 	w.Key("share_ratio");
 	w.ValueDouble(
 		f.size > 0 ? static_cast<double>(f.shared.xfer_total) / static_cast<double>(f.size) : 0.0);
@@ -3301,10 +3299,7 @@ void WriteSearchListRow(CJsonWriter &w, const SearchListRow &row)
 	w.ValueString(wxString::FromUTF8(row.kind.c_str()));
 	w.Key("state");
 	w.ValueString(wxString::FromUTF8(row.state.c_str()));
-	if (row.has_client_ecid) {
-		w.Key("client_ecid");
-		w.ValueInt(static_cast<int64_t>(row.client_ecid));
-	}
+	WriteIntOrNull(w, "client_ecid", row.has_client_ecid, static_cast<int64_t>(row.client_ecid));
 	if (row.started_at != 0) {
 		w.Key("started_at");
 		w.ValueInt(static_cast<int64_t>(row.started_at));
@@ -3409,9 +3404,11 @@ std::unique_ptr<CHttpServer::Response> ParseUintParam(const std::map<std::string
 }
 
 // Optional boolean query parameter. Accepts 1/0, true/false and yes/no, and
-// rejects anything else -- `include_completed` used to read every other value
-// as false while its neighbour `include_parts` answered 400, so the same typo
-// was silent on one endpoint and fatal on the next.
+// rejects anything else. Every boolean goes through here so the vocabulary
+// cannot drift per call site: `include_completed` (since replaced by
+// `status=`) used to read every other value as false while its neighbour
+// `include_parts` answered 400, so the same typo was silent on one endpoint
+// and fatal on the next.
 std::unique_ptr<CHttpServer::Response> ParseBoolParam(
 	const std::map<std::string, std::string> &qmap, const char *name, bool &out)
 {
@@ -3869,16 +3866,10 @@ CHttpServer::Response UrlFetchOp(
 	}
 
 	CHttpServer::Response r;
+	// 202 with no body: the URL echoed back came from the request, and the
+	// download runs asynchronously -- its outcome arrives on the log channel.
 	r.status = 202;
-	r.content_type = "application/json";
-	CJsonWriter w;
-	w.BeginObject();
-	w.Key("ok");
-	w.ValueBool(true);
-	w.Key(spec.field);
-	w.ValueString(wxString::FromUTF8(url.c_str()));
-	w.EndObject();
-	FinalizeJsonBody(w, r);
+	r.content_type.clear();
 	return r;
 }
 
@@ -3900,24 +3891,54 @@ CHttpServer::Response CApiDispatcher::HandleDownloads(const CHttpServer::Request
 	if (!a.ok)
 		return a.rejection;
 
-	// /downloads filters status=="completed" out by default.
-	// amuled holds finished downloads in `m_completedDownloads` as a
-	// separate "awaiting clear" list; surfacing them in /downloads
-	// alongside in-progress files confuses consumers reading
-	// "what's currently in the transfer queue." Opt back in with
-	// `?include_completed=1`. The detail endpoint
-	// `GET /downloads/{hash}` is unaffected — consumer asked for that
-	// specific file. may add an explicit clear-completed
-	// mutation.
-	bool include_completed = false;
+	// `?status=` selects which part of the queue to list. amuled holds
+	// finished downloads in `m_completedDownloads` as a separate
+	// "awaiting clear" list, so a caller reading "what is currently
+	// transferring" and one reading "what finished" want different rows.
+	//
+	// This replaces `?include_completed=`, a boolean over an axis with three
+	// states: it could say active-only and active-plus-completed, but there
+	// was no way to ask for completed-only, which is the third state the
+	// collection has and the one a Finished view needs. It also named the
+	// mechanism rather than the axis -- a client reading
+	// include_completed=false could not tell whether the excluded rows were
+	// hidden or absent. `status` is the key the download object already
+	// reports, so the filter and the field now agree.
+	//
+	// The detail endpoint GET /downloads/{hash} is unaffected: the caller
+	// asked for that specific file.
+	enum class DownloadsFilter
+	{
+		Active,
+		All,
+		Completed,
+	};
+	DownloadsFilter filter = DownloadsFilter::Active;
 	{
 		std::string query;
 		const std::size_t q = req.target.find('?');
 		if (q != std::string::npos)
 			query = req.target.substr(q + 1);
 		const auto qmap = web_api_path::ParseQuery(query);
-		if (auto r = ParseBoolParam(qmap, "include_completed", include_completed))
-			return *r;
+		if (qmap.count("include_completed")) {
+			return ErrorResponse(400,
+				"bad_request",
+				"`include_completed` is not accepted; use "
+				"`status=active|all|completed`");
+		}
+		const auto it = qmap.find("status");
+		if (it != qmap.end()) {
+			if (it->second == "active") {
+				filter = DownloadsFilter::Active;
+			} else if (it->second == "all") {
+				filter = DownloadsFilter::All;
+			} else if (it->second == "completed") {
+				filter = DownloadsFilter::Completed;
+			} else {
+				return ErrorResponse(
+					400, "bad_request", "`status` must be one of active, all, completed");
+			}
+		}
 	}
 
 	ListParams params;
@@ -3950,14 +3971,17 @@ CHttpServer::Response CApiDispatcher::HandleDownloads(const CHttpServer::Request
 	// Pointers into the live map rather than copies; see HandleSharedList.
 	CHttpServer::Response resp;
 	// Named captures; see HandleSharedList.
-	m_state.WithFiles([&resp, &params, include_completed](const webapi::FileMap &files) {
+	m_state.WithFiles([&resp, &params, filter](const webapi::FileMap &files) {
 		std::vector<const webapi::FileSnapshot *> ptrs;
 		ptrs.reserve(files.size());
 		for (const auto &entry : files) {
 			const webapi::FileSnapshot &d = entry.second;
 			if (!d.is_downloading)
 				continue;
-			if (!include_completed && d.download.status == "completed")
+			const bool done = d.download.status == "completed";
+			if (filter == DownloadsFilter::Active && done)
+				continue;
+			if (filter == DownloadsFilter::Completed && !done)
 				continue;
 			ptrs.push_back(&d);
 		}
@@ -4399,14 +4423,13 @@ CHttpServer::Response CApiDispatcher::HandleDownloadCommentsKadSearch(
 	delete ec_resp;
 
 	CHttpServer::Response r;
+	// 202 with no body. The field it used to carry could hold exactly one
+	// value, so it said nothing the status code had not already said -- and
+	// `status` everywhere else on this surface is a transfer state
+	// (downloading, paused, hashing), so a client switching on it had to know
+	// which kind of object it was holding first.
 	r.status = 202;
-	r.content_type = "application/json";
-	CJsonWriter w;
-	w.BeginObject();
-	w.Key("status");
-	w.ValueString("kad_search_started");
-	w.EndObject();
-	FinalizeJsonBody(w, r);
+	r.content_type.clear();
 	return r;
 }
 
@@ -4738,14 +4761,10 @@ CHttpServer::Response CApiDispatcher::HandleVersionCheck(const CHttpServer::Requ
 	// (latest_version / update_available / last_checked) appears on a
 	// subsequent GET /api/v0/version once it completes.
 	CHttpServer::Response r;
+	// 202 with no body; see the comment on the comments routes. "started" is
+	// what the status code says.
 	r.status = 202;
-	r.content_type = "application/json";
-	CJsonWriter w;
-	w.BeginObject();
-	w.Key("status");
-	w.ValueString("started");
-	w.EndObject();
-	FinalizeJsonBody(w, r);
+	r.content_type.clear();
 	return r;
 }
 
@@ -4760,12 +4779,12 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(const CHttpServer::Reque
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
 
-	// Body shape (two forms — both accepted, exactly one required):
-	//  {"ed2k_link": "ed2k://|file|...|/", "category": 0}    — singular
-	//  {"links": ["ed2k://|file|...|/", ...], "category": 0} — array
-	// `links` is the RFC §4.2 shape (PR #132); `ed2k_link` ships for
-	// backwards compatibility with the v0.1.0 wire. Mixing both is a
-	// 400.
+	// Body shape, one form:
+	//  {"links": ["ed2k://|file|...|/", ...], "category": 0}
+	// A singular `ed2k_link` was accepted alongside it and is now refused
+	// with a message naming the replacement: one input with two spellings,
+	// on the endpoint that already answers with the bulk `results` envelope
+	// for a single item.
 	picojson::value root;
 	std::string parse_err;
 	if (!ParseJsonObjectBody(req.body, root, parse_err)) {
@@ -4775,20 +4794,25 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(const CHttpServer::Reque
 
 	std::vector<std::string> links;
 	{
-		const auto it_single = obj.find("ed2k_link");
+		// `links` only. This took `ed2k_link` as a singular alias too, so one
+		// input had two spellings on the one endpoint that already answers
+		// with the bulk `results` envelope even for a single item -- and every
+		// future field that varies by arity would have inherited the question.
+		// `links: ["..."]` covers the single case at the cost of two
+		// characters.
 		const auto it_array = obj.find("links");
-		if (it_single != obj.end() && it_array != obj.end()) {
+		if (obj.find("ed2k_link") != obj.end()) {
 			return ErrorResponse(400,
 				"bad_request",
-				"send either `ed2k_link` (single) or `links` (array), "
-				"not both");
+				"`ed2k_link` is not accepted; send `links` as an array, "
+				"`{\"links\": [\"ed2k://...\"]}` for a single link");
 		}
-		if (it_single != obj.end()) {
-			if (!it_single->second.is<std::string>()) {
-				return ErrorResponse(400, "bad_request", "`ed2k_link` must be a string");
+		{
+			if (it_array == obj.end()) {
+				return ErrorResponse(400,
+					"bad_request",
+					"required field missing: `links` (array of ed2k:// strings)");
 			}
-			links.push_back(it_single->second.get<std::string>());
-		} else if (it_array != obj.end()) {
 			if (!it_array->second.is<picojson::array>()) {
 				return ErrorResponse(
 					400, "bad_request", "`links` must be an array of ed2k://strings");
@@ -4807,11 +4831,6 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(const CHttpServer::Reque
 				}
 				links.push_back(v.get<std::string>());
 			}
-		} else {
-			return ErrorResponse(400,
-				"bad_request",
-				"required field missing: send `ed2k_link` (string) or "
-				"`links` (array of strings)");
 		}
 		for (const auto &link : links) {
 			if (link.size() < 7 || link.compare(0, 7, "ed2k://") != 0) {
@@ -5192,7 +5211,12 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 	r.status = 200;
 	r.content_type = "application/json";
 	CJsonWriter w;
-	WriteDownloadObject(w, d_after, /*include_parts=*/false);
+	// Same shape GET /downloads/{hash} returns, not the narrower list row.
+	// A client that PATCHes and stores the response used to hold a different
+	// object than one that PATCHes and re-GETs -- missing progress.parts and
+	// sixteen other keys -- which is a difference nothing in the API
+	// announced.
+	WriteDownloadObject(w, d_after, /*include_parts=*/true, /*detail=*/true);
 	FinalizeJsonBody(w, r);
 	return r;
 }
@@ -5258,16 +5282,11 @@ CHttpServer::Response CApiDispatcher::HandleDownloadDelete(
 	(void)RefresherTick(m_app, m_state);
 
 	CHttpServer::Response r;
-	r.status = 200;
-	r.content_type = "application/json";
-	CJsonWriter w;
-	w.BeginObject();
-	w.Key("ok");
-	w.ValueBool(true);
-	w.Key("hash");
-	w.ValueString(wxString::FromUTF8(d.hash.c_str()));
-	w.EndObject();
-	FinalizeJsonBody(w, r);
+	// 204 with no body. Everything this used to echo came from the request
+	// URL, and `ok` restated the status code -- see the mutation-response
+	// rule in REFERENCE.md.
+	r.status = 204;
+	r.content_type.clear();
 	return r;
 }
 
@@ -5763,10 +5782,13 @@ void WriteChatObject(CJsonWriter &w, const webapi::ChatSessionSnapshot &s)
 	w.ValueInt(static_cast<int64_t>(s.messages.empty() ? 0 : s.messages.back().timestamp));
 	// The transcript itself is deliberately NOT on the list: a 50-session
 	// store at 200 messages each would be 10 000 objects per list read.
-	if (!s.messages.empty()) {
-		w.Key("last_message");
+	// null, not omitted: a session with no messages yet has no last message,
+	// which is a value rather than something the daemon failed to report.
+	w.Key("last_message");
+	if (!s.messages.empty())
 		WriteChatMessageObject(w, s.messages.back());
-	}
+	else
+		w.ValueNull();
 	w.EndObject();
 }
 
@@ -6086,8 +6108,9 @@ CHttpServer::Response CApiDispatcher::SendChatMessageTo(const CHttpServer::Reque
 	// *** Connecting to Client ***.
 	CJsonWriter w;
 	w.BeginObject();
-	w.Key("ok");
-	w.ValueBool(true);
+	// `ok` dropped. The nested `message` object stays: it is the created
+	// resource, carrying the id and direction the daemon assigned, and there
+	// is no per-message GET route whose shape it could mirror instead.
 	w.Key("peer");
 	w.ValueString(wxString::FromUTF8(webapi::ChatPeerKeyFromGuiId(gui_id).c_str()));
 	w.Key("message");
@@ -6193,17 +6216,11 @@ CHttpServer::Response CApiDispatcher::HandleChatClose(
 	}
 	delete ec_resp;
 
-	CJsonWriter w;
-	w.BeginObject();
-	w.Key("ok");
-	w.ValueBool(true);
-	w.Key("peer");
-	w.ValueString(wxString::FromUTF8(peer.c_str()));
-	w.EndObject();
+	// 204 with no body: `peer` came from the request and `ok` restated the
+	// status code.
 	CHttpServer::Response r;
-	r.status = 200;
-	r.content_type = "application/json";
-	FinalizeJsonBody(w, r);
+	r.status = 204;
+	r.content_type.clear();
 	return r;
 }
 
@@ -6341,10 +6358,6 @@ CHttpServer::Response CApiDispatcher::HandleFriendAdd(const CHttpServer::Request
 	}
 	ec_req->AddTag(addtag);
 
-	std::set<std::uint32_t> before;
-	for (const auto &f : m_state.Friends())
-		before.insert(f.ecid);
-
 	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
 	if (!ec_resp) {
 		return ErrorResponse(503, "ec_unavailable", "EC roundtrip failed for FRIEND add");
@@ -6356,36 +6369,18 @@ CHttpServer::Response CApiDispatcher::HandleFriendAdd(const CHttpServer::Request
 	}
 	delete ec_resp;
 
-	// The daemon applies the add synchronously but the record only reaches us
-	// on a GET_UPDATE, so tick before answering and return the real object.
+	// Tick so the new record is in the snapshot the caller's follow-up GET
+	// reads, even though this response does not carry it.
 	(void)RefresherTick(m_app, m_state);
 
 	CHttpServer::Response r;
-	r.status = 201;
-	r.content_type = "application/json";
-	CJsonWriter w;
-	// The daemon does not echo the new friend's ECID, so identify it as the
-	// one the pre-add snapshot did not have. Diffing beats picking the
-	// highest id: nothing promises ECIDs are handed out in ascending order,
-	// and a concurrent removal could free a lower one for reuse.
-	webapi::FriendSnapshot added;
-	bool found = false;
-	for (const auto &f : m_state.Friends()) {
-		if (before.find(f.ecid) == before.end()) {
-			added = f;
-			found = true;
-			break;
-		}
-	}
-	if (found) {
-		WriteFriendObject(w, added);
-	} else {
-		w.BeginObject();
-		w.Key("ok");
-		w.ValueBool(true);
-		w.EndObject();
-	}
-	FinalizeJsonBody(w, r);
+	// 202 with no body. EC's FRIEND op answers success or failure and never
+	// returns the created object, so the only way to name it here was to
+	// diff the snapshot against a pre-add copy and hope the inline refresh
+	// had already surfaced it -- the object when the scan won, a bare {ok}
+	// when it lost. The caller re-reads /friends, which it had to do anyway.
+	r.status = 202;
+	r.content_type.clear();
 	return r;
 }
 
@@ -6428,16 +6423,11 @@ CHttpServer::Response CApiDispatcher::HandleFriendRemove(
 	(void)RefresherTick(m_app, m_state);
 
 	CHttpServer::Response r;
-	r.status = 200;
-	r.content_type = "application/json";
-	CJsonWriter w;
-	w.BeginObject();
-	w.Key("ok");
-	w.ValueBool(true);
-	w.Key("ecid");
-	w.ValueInt(static_cast<int64_t>(ecid));
-	w.EndObject();
-	FinalizeJsonBody(w, r);
+	// 204 with no body. Everything this used to echo came from the request
+	// URL, and `ok` restated the status code -- see the mutation-response
+	// rule in REFERENCE.md.
+	r.status = 204;
+	r.content_type.clear();
 	return r;
 }
 
@@ -6570,16 +6560,13 @@ CHttpServer::Response CApiDispatcher::HandleServerAdd(const CHttpServer::Request
 	(void)RefresherTick(m_app, m_state);
 
 	CHttpServer::Response r;
-	r.status = 201;
-	r.content_type = "application/json";
-	CJsonWriter w;
-	w.BeginObject();
-	w.Key("ok");
-	w.ValueBool(true);
-	w.Key("address");
-	w.ValueString(wxString::FromUTF8(address.c_str()));
-	w.EndObject();
-	FinalizeJsonBody(w, r);
+	// 202 with no body. amuled's EC op answers success or failure and does
+	// not return the created object, so anything this reported would be a
+	// reconstruction from the snapshot after an inline refresh -- a guess
+	// that can silently come back short. The client re-reads the
+	// collection, which is what it had to do anyway.
+	r.status = 202;
+	r.content_type.clear();
 	return r;
 }
 
@@ -6625,16 +6612,10 @@ CHttpServer::Response CApiDispatcher::HandleServerConnect(
 	(void)RefresherTick(m_app, m_state);
 
 	CHttpServer::Response r;
+	// 202 with no body: `ecid` came from the request and the connect is
+	// asynchronous -- the outcome shows up on /status and the SSE stream.
 	r.status = 202;
-	r.content_type = "application/json";
-	CJsonWriter w;
-	w.BeginObject();
-	w.Key("ok");
-	w.ValueBool(true);
-	w.Key("ecid");
-	w.ValueInt(static_cast<int64_t>(ecid));
-	w.EndObject();
-	FinalizeJsonBody(w, r);
+	r.content_type.clear();
 	return r;
 }
 
@@ -6674,16 +6655,11 @@ CHttpServer::Response CApiDispatcher::HandleServerDelete(
 	(void)RefresherTick(m_app, m_state);
 
 	CHttpServer::Response r;
-	r.status = 200;
-	r.content_type = "application/json";
-	CJsonWriter w;
-	w.BeginObject();
-	w.Key("ok");
-	w.ValueBool(true);
-	w.Key("ecid");
-	w.ValueInt(static_cast<int64_t>(ecid));
-	w.EndObject();
-	FinalizeJsonBody(w, r);
+	// 204 with no body. Everything this used to echo came from the request
+	// URL, and `ok` restated the status code -- see the mutation-response
+	// rule in REFERENCE.md.
+	r.status = 204;
+	r.content_type.clear();
 	return r;
 }
 
@@ -6913,16 +6889,24 @@ CHttpServer::Response CApiDispatcher::HandleServerPatch(
 	// the new values, matching the sibling server mutations.
 	(void)RefresherTick(m_app, m_state);
 
+	// A mutation answers with the resource, in the shape GET on this URL
+	// returns -- not an id the caller already had. See the mutation-response
+	// rule in REFERENCE.md. The inline refresh above is what makes the
+	// re-read see the values just written.
+	webapi::ServerSnapshot s_after;
+	if (!FindServerByEcid(m_state, ecid, s_after)) {
+		// The server went away between the patch and the re-read. Nothing
+		// to describe, and inventing a body would be worse than saying so.
+		CHttpServer::Response gone;
+		gone.status = 204;
+		gone.content_type.clear();
+		return gone;
+	}
 	CHttpServer::Response r;
 	r.status = 200;
 	r.content_type = "application/json";
 	CJsonWriter w;
-	w.BeginObject();
-	w.Key("ok");
-	w.ValueBool(true);
-	w.Key("ecid");
-	w.ValueInt(static_cast<int64_t>(ecid));
-	w.EndObject();
+	WriteServerObject(w, s_after);
 	FinalizeJsonBody(w, r);
 	return r;
 }
@@ -7134,42 +7118,42 @@ void WriteStatsValue(CJsonWriter &w, const webapi::StatsTreeValue &v)
 	// Additive, locale-independent token for well-known sentinel values
 	// ("never"/"not_available"); the English "value" above is kept so old
 	// clients keep working. Omitted when the value is not a sentinel.
-	if (!v.enum_token.empty()) {
-		// `token`, not `enum`: `enum` is a reserved word in C++, C#, Java,
-		// Rust, PHP and Swift, so a generated client cannot name a field
-		// after the key. Matches the internal enum_token.
-		w.Key("token");
-		w.ValueString(wxString::FromUTF8(v.enum_token.c_str()));
-	}
+	// `token`, not `enum`: `enum` is a reserved word in C++, C#, Java, Rust,
+	// PHP and Swift, so a generated client cannot name a field after the key.
+	// null when the value is not a sentinel -- there is no token, which is a
+	// value rather than something the daemon failed to send.
+	WriteStringOrNull(w, "token", !v.enum_token.empty(), v.enum_token);
 	// Optional nested sub-value. Three different quantities depending on
 	// the node -- percentage of parent, packet count, or all-time total --
 	// so a client formats it from its `type`, not from its position.
-	if (!v.extra.empty()) {
-		w.Key("extra");
+	w.Key("extra");
+	if (!v.extra.empty())
 		WriteStatsValue(w, v.extra.front());
-	}
+	else
+		w.ValueNull();
 	w.EndObject();
 }
 
 void WriteStatsNode(CJsonWriter &w, const webapi::StatsTreeNode &n)
 {
 	w.BeginObject();
-	// Stable machine key, when the daemon provides one (omitted otherwise
-	// so a legacy daemon simply yields no "key" field).
+	// Stable machine key, when the daemon provides one. OMITTED rather than
+	// null when absent, and deliberately: absence here means a daemon too old
+	// to send it, which REFERENCE.md's unknown-value rule keeps distinct from
+	// "there is no key" -- the same distinction that keeps `result_count`
+	// omitted on /search.
 	if (!n.key.empty()) {
 		w.Key("key");
 		w.ValueString(wxString::FromUTF8(n.key.c_str()));
 	}
 	// Raw machine value (client version / OS string) for data-labelled
 	// nodes; omitted when absent so clients read it without parsing `label`.
-	if (!n.raw.empty()) {
-		// `label_value`, not `raw`: for a row whose label is itself data
-		// ("v0.70b: %s") this carries the datum. "raw" says unprocessed
-		// without saying of what, and sits next to values[] where a reader
-		// would look for a raw value.
-		w.Key("label_value");
-		w.ValueString(wxString::FromUTF8(n.raw.c_str()));
-	}
+	// `label_value`, not `raw`: for a row whose label is itself data
+	// ("v0.70b: %s") this carries the datum. "raw" says unprocessed without
+	// saying of what, and sits next to values[] where a reader would look for
+	// a raw value. null on a node whose label is not data -- there is no
+	// datum, as against the daemon not having sent one.
+	WriteStringOrNull(w, "label_value", !n.raw.empty(), n.raw);
 	w.Key("label");
 	w.ValueString(wxString::FromUTF8(n.label.c_str()));
 	w.Key("values");
@@ -8302,6 +8286,9 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 	// presence tag the daemon uses when serializing in the other direction.
 	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_SET_PREFERENCES, EC_DETAIL_FULL));
 	bool any_change = false;
+	// Names of read-only fields the body carried, so a request naming only
+	// those can say which ones rather than claiming none were known.
+	std::string skipped_read_only;
 
 	// One CECTag per EC group, created on first use. Two categories can share
 	// a group (remote_controls.webserver / .amuleapi), so they must land in
@@ -8359,10 +8346,25 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 			continue;
 
 		// Read-only fields (daemon capabilities, live status) are ignored
-		// rather than rejected, matching how the endpoint has always treated
-		// them. Bespoke fields are applied by dedicated code further down.
-		if (f.access == webapi::PrefAccess::ReadOnly || f.access == webapi::PrefAccess::Bespoke)
+		// rather than rejected: the read-modify-write round trip -- GET the
+		// object, flip one value, PATCH it back -- necessarily sends them
+		// back, and failing that would make the obvious way to use this
+		// endpoint the wrong one. Bespoke fields are applied by dedicated
+		// code further down.
+		//
+		// Remember the names, though. A body naming ONLY non-writable fields
+		// used to fall through to "did not include any known pref fields",
+		// which is untrue of a field this same endpoint emitted a moment ago
+		// -- and made the same key behave differently depending on whether a
+		// writable field happened to travel with it.
+		if (f.access == webapi::PrefAccess::ReadOnly || f.access == webapi::PrefAccess::Bespoke) {
+			if (f.access == webapi::PrefAccess::ReadOnly) {
+				if (!skipped_read_only.empty())
+					skipped_read_only += ", ";
+				skipped_read_only += std::string(f.category) + "." + f.key;
+			}
 			continue;
+		}
 
 		if (f.access == webapi::PrefAccess::Rejected) {
 			return ErrorResponse(400,
@@ -8471,6 +8473,13 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 		ec_req->AddTag(groups.find(tag)->second);
 
 	if (!any_change) {
+		if (!skipped_read_only.empty()) {
+			const std::string msg =
+				"no writable fields in the request; " + skipped_read_only +
+				(skipped_read_only.find(',') == std::string::npos ? " is read-only"
+										  : " are read-only");
+			return ErrorResponse(400, "bad_request", msg.c_str());
+		}
 		return ErrorResponse(
 			400, "bad_request", "request body did not include any known pref fields");
 	}
@@ -8546,8 +8555,9 @@ CHttpServer::Response SimpleConnControlOp(
 	r.content_type = "application/json";
 	CJsonWriter w;
 	w.BeginObject();
-	w.Key("ok");
-	w.ValueBool(true);
+	// `ok` dropped: the status code already said it. `message` stays -- it is
+	// the daemon's own explanation of what it did with the request, which is
+	// not recoverable from any subsequent read.
 	if (!message.empty()) {
 		w.Key("message");
 		w.ValueString(wxString::FromUTF8(message.c_str()));
@@ -8827,8 +8837,9 @@ CHttpServer::Response CApiDispatcher::HandleKadBootstrap(const CHttpServer::Requ
 	r.content_type = "application/json";
 	CJsonWriter w;
 	w.BeginObject();
-	w.Key("ok");
-	w.ValueBool(true);
+	// `ok` dropped. `ip`/`port` stay as the documented exception to the
+	// no-body rule for actions: the echo reports which address the daemon
+	// actually parsed, which the caller cannot recover anywhere else.
 	// Echo the shape the caller may have sent, and the one every other IP on
 	// this surface uses. Answering the host-order integer meant a client that
 	// posted "1.2.3.4" and stored the reply held 16909060, which it could not
@@ -8943,7 +8954,10 @@ CHttpServer::Response CApiDispatcher::HandleSharedPatch(
 	r.status = 200;
 	r.content_type = "application/json";
 	CJsonWriter w;
-	WriteSharedObject(w, s_after);
+	// Same writer GET /shared/{hash} uses, for the same reason as the
+	// download PATCH above: the list row is a narrower object, and answering
+	// a mutation with it made PATCH-and-store differ from PATCH-and-re-GET.
+	WriteSharedDetailObject(w, s_after);
 	FinalizeJsonBody(w, r);
 	return r;
 }
@@ -9279,15 +9293,12 @@ CHttpServer::Response CApiDispatcher::HandleSharedVerify(
 	// PrintReport -> "Verify Local Data (...): Result OK" / "ERRORS
 	// FOUND!"), which clients read back through /logs/amule or the SSE log
 	// channel. No RefresherTick: nothing observable has changed yet.
+	// 202 with no body. The verify is asynchronous and its outcome arrives
+	// on the log channel, so there is nothing to report here that the status
+	// code has not said.
 	CHttpServer::Response r;
 	r.status = 202;
-	r.content_type = "application/json";
-	CJsonWriter w;
-	w.BeginObject();
-	w.Key("ok");
-	w.ValueBool(true);
-	w.EndObject();
-	FinalizeJsonBody(w, r);
+	r.content_type.clear();
 	return r;
 }
 
@@ -9645,8 +9656,8 @@ CHttpServer::Response SendMediaRefresh(CamuleapiApp &app, const CECTag *hashTag,
 	r.content_type = "application/json";
 	CJsonWriter w;
 	w.BeginObject();
-	w.Key("ok");
-	w.ValueBool(true);
+	// `ok` dropped; `scope` and `queued` stay -- `queued` is a real count of
+	// the rescans this triggered.
 	w.Key("scope");
 	w.ValueString(wxString::FromAscii(what));
 	w.Key("queued");
@@ -9901,35 +9912,19 @@ CHttpServer::Response CApiDispatcher::HandleCategoryCreate(const CHttpServer::Re
 	}
 	delete ec_resp;
 
+	// Tick so the new category is in the snapshot the caller's follow-up GET
+	// reads, even though this response does not carry it.
 	(void)RefresherTick(m_app, m_state);
 
-	// Look up the newly-created category by name to get its assigned
-	// index. (amuled's CREATE returns NOOP without the index; we have
-	// to scan the cache.) Fall back to 201 with no index if we can't
-	// find it — shouldn't happen but keeps the surface honest.
-	int created_index = -1;
-	for (const auto &c : m_state.Categories()) {
-		if (c.name == f.name) {
-			created_index = static_cast<int>(c.index);
-			break;
-		}
-	}
-
 	CHttpServer::Response r;
-	r.status = 201;
-	r.content_type = "application/json";
-	CJsonWriter w;
-	w.BeginObject();
-	w.Key("ok");
-	w.ValueBool(true);
-	w.Key("name");
-	w.ValueString(wxString::FromUTF8(f.name.c_str()));
-	if (created_index >= 0) {
-		w.Key("index");
-		w.ValueInt(static_cast<int64_t>(created_index));
-	}
-	w.EndObject();
-	FinalizeJsonBody(w, r);
+	// 202 with no body. amuled's EC op answers success or failure and does
+	// not return the index it assigned, so naming the new category here meant
+	// scanning the snapshot for one with a matching name and falling back to
+	// a 201 with no index when the scan came up short -- a guess that can
+	// silently answer the wrong shape. The client re-reads the collection,
+	// which is what it had to do anyway.
+	r.status = 202;
+	r.content_type.clear();
 	return r;
 }
 
@@ -10114,16 +10109,11 @@ CHttpServer::Response CApiDispatcher::HandleCategoryDelete(
 	});
 
 	CHttpServer::Response r;
-	r.status = 200;
-	r.content_type = "application/json";
-	CJsonWriter w;
-	w.BeginObject();
-	w.Key("ok");
-	w.ValueBool(true);
-	w.Key("index");
-	w.ValueInt(static_cast<int64_t>(idx));
-	w.EndObject();
-	FinalizeJsonBody(w, r);
+	// 204 with no body. Everything this used to echo came from the request
+	// URL, and `ok` restated the status code -- see the mutation-response
+	// rule in REFERENCE.md.
+	r.status = 204;
+	r.content_type.clear();
 	return r;
 }
 
@@ -10240,16 +10230,27 @@ CHttpServer::Response CApiDispatcher::HandleBrowse(
 	}
 	m_state.MarkSearchStarted(search_id, "browse", peer_name);
 
+	// A creation answers with the created resource and a Location, because
+	// here the daemon really does hand one back: SEARCH_START returns
+	// EC_TAG_SEARCH_ID, and this handler already treats its absence as a
+	// hard error. The three creations that get a bare 202 instead are the
+	// ones where EC answers success or failure and nothing more.
+	//
+	// The row is the same shape GET /search lists, written through the same
+	// writer, so a client can drop it straight into the collection it keeps.
+	SearchListRow row;
+	row.search_id = search_id;
+	row.query = wxString::FromUTF8(peer_name.c_str());
+	row.kind = "browse";
+	row.state = "running";
+	row.started_at = m_state.SearchStartedAt(search_id);
+
 	CHttpServer::Response r;
 	r.status = 202;
 	r.content_type = "application/json";
+	r.headers["Location"] = "/api/v0/search/" + std::to_string(search_id);
 	CJsonWriter w;
-	w.BeginObject();
-	w.Key("ok");
-	w.ValueBool(true);
-	w.Key("search_id");
-	w.ValueInt(static_cast<int64_t>(search_id));
-	w.EndObject();
+	WriteSearchListRow(w, row);
 	FinalizeJsonBody(w, r);
 	return r;
 }
@@ -10414,18 +10415,27 @@ CHttpServer::Response CApiDispatcher::HandleSearchStart(const CHttpServer::Reque
 	// can report what this search was for.
 	m_state.MarkSearchStarted(search_id, search_kind, query);
 
+	// A creation answers with the created resource and a Location, because
+	// here the daemon really does hand one back: SEARCH_START returns
+	// EC_TAG_SEARCH_ID, and this handler already treats its absence as a
+	// hard error. The three creations that get a bare 202 instead are the
+	// ones where EC answers success or failure and nothing more.
+	//
+	// The row is the same shape GET /search lists, written through the same
+	// writer, so a client can drop it straight into the collection it keeps.
+	SearchListRow row;
+	row.search_id = search_id;
+	row.query = wxString::FromUTF8(query.c_str());
+	row.kind = search_kind;
+	row.state = "running";
+	row.started_at = m_state.SearchStartedAt(search_id);
+
 	CHttpServer::Response r;
 	r.status = 202;
 	r.content_type = "application/json";
+	r.headers["Location"] = "/api/v0/search/" + std::to_string(search_id);
 	CJsonWriter w;
-	w.BeginObject();
-	w.Key("ok");
-	w.ValueBool(true);
-	w.Key("search_id");
-	w.ValueInt(static_cast<int64_t>(search_id));
-	w.Key("query");
-	w.ValueString(wxString::FromUTF8(query.c_str()));
-	w.EndObject();
+	WriteSearchListRow(w, row);
 	FinalizeJsonBody(w, r);
 	return r;
 }
@@ -10465,20 +10475,11 @@ CHttpServer::Response CApiDispatcher::SendSearchOp(
 
 	CHttpServer::Response r;
 	r.status = success_status;
-	if (success_status == 204) {
-		// No body, per RFC 9110: a 204 must not carry one. Clearing the
-		// content type explicitly is what the other 204 handlers do --
-		// a default-constructed Response does not necessarily start empty.
-		r.content_type.clear();
-		return r;
-	}
-	r.content_type = "application/json";
-	CJsonWriter w;
-	w.BeginObject();
-	w.Key("ok");
-	w.ValueBool(true);
-	w.EndObject();
-	FinalizeJsonBody(w, r);
+	// No body on any of the three: the status code is the whole answer, and a
+	// 204 must not carry one at all per RFC 9110. Clearing the content type
+	// explicitly is what the other bodiless handlers do -- a
+	// default-constructed Response does not necessarily start empty.
+	r.content_type.clear();
 	return r;
 }
 
@@ -10496,7 +10497,11 @@ CHttpServer::Response CApiDispatcher::HandleSearchStop(
 	// Stop only: the results stay readable -- amuled keeps them until the
 	// search is closed or evicted -- so a consumer viewing this search sees
 	// the same set it was just looking at. Siblings are untouched.
-	return SendSearchOp(EC_OP_SEARCH_STOP, search_id, /*close=*/false, 200);
+	//
+	// 204, matching DELETE /search/{id}: with `ok` gone there is nothing left
+	// to say, and a 200 whose body is empty is the one shape a client cannot
+	// parse either way.
+	return SendSearchOp(EC_OP_SEARCH_STOP, search_id, /*close=*/false, 204);
 }
 
 CHttpServer::Response CApiDispatcher::HandleSearchClose(
@@ -10663,18 +10668,10 @@ CHttpServer::Response CApiDispatcher::HandleSearchDownload(
 	(void)RefresherTick(m_app, m_state);
 
 	CHttpServer::Response r;
+	// 202 with no body: `hash` came from the request and `category` is the
+	// value applied, recoverable from the download itself.
 	r.status = 202;
-	r.content_type = "application/json";
-	CJsonWriter w;
-	w.BeginObject();
-	w.Key("ok");
-	w.ValueBool(true);
-	w.Key("hash");
-	w.ValueString(wxString::FromUTF8(needle.c_str()));
-	w.Key("category");
-	w.ValueInt(static_cast<int64_t>(category));
-	w.EndObject();
-	FinalizeJsonBody(w, r);
+	r.content_type.clear();
 	return r;
 }
 
@@ -10807,14 +10804,13 @@ CHttpServer::Response CApiDispatcher::HandleSearchCommentsKadSearch(
 	RefreshSearchIfStale(owner_search_id);
 
 	CHttpServer::Response r;
+	// 202 with no body. The field it used to carry could hold exactly one
+	// value, so it said nothing the status code had not already said -- and
+	// `status` everywhere else on this surface is a transfer state
+	// (downloading, paused, hashing), so a client switching on it had to know
+	// which kind of object it was holding first.
 	r.status = 202;
-	r.content_type = "application/json";
-	CJsonWriter w;
-	w.BeginObject();
-	w.Key("status");
-	w.ValueString("kad_search_started");
-	w.EndObject();
-	FinalizeJsonBody(w, r);
+	r.content_type.clear();
 	return r;
 }
 

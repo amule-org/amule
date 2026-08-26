@@ -183,12 +183,19 @@ std::string ToJsonSharedEvent(const FileSnapshot &f)
 	// otherwise invisible to a subscriber: the refresh endpoints answer 202
 	// with no result, so this is how a client learns a probe landed. Six
 	// small scalars, unlike the per-part arrays the list endpoints omit.
+	//
+	// null rather than absent when the file has none, matching the REST row
+	// this event promises key parity with -- a subscriber diffing the two
+	// must not find a key on one side only.
+	o << ",\"media\":";
 	if (f.has_media) {
-		o << ",\"media\":{\"length_s\":" << f.media.length_s << ",\"bitrate\":" << f.media.bitrate
+		o << "{\"length_s\":" << f.media.length_s << ",\"bitrate\":" << f.media.bitrate
 		  << ",\"codec\":\"" << EscJson(f.media.codec) << "\""
 		  << ",\"artist\":\"" << EscJson(f.media.artist) << "\""
 		  << ",\"album\":\"" << EscJson(f.media.album) << "\""
 		  << ",\"title\":\"" << EscJson(f.media.title) << "\"}";
+	} else {
+		o << "null";
 	}
 	o << "}";
 	return o.str();
@@ -261,15 +268,16 @@ std::string ToJson(const ClientSnapshot &c)
 	  << (c.has_available_parts ? std::to_string(c.available_parts) : std::string("null"))
 	  << ",\"mod_version\":\"" << EscJson(c.mod_version) << "\""
 	  << ",\"view_shared_disabled\":" << (c.view_shared_disabled ? "true" : "false");
-	// Omitted, not sent as the negative sentinel, exactly as the REST row
-	// does it: the field only exists for a peer we are downloading from.
-	// Formatted through the shared writer, not `<<`: the stream default is 6
+	// null, not omitted, matching the REST row: the field only means
+	// something for a peer we are downloading from, and -1 is the
+	// in-process sentinel that must never reach the wire. Formatted
+	// through the shared writer rather than `<<`: the stream default is 6
 	// significant digits (so SSE read 33.3333 where REST read
 	// 33.333333333333336) and it honours LC_NUMERIC, which on an it/de/fr
 	// locale would emit a comma and break the frame's JSON outright.
-	if (c.part_progress_percent >= 0.0) {
-		o << ",\"part_progress_percent\":" << JsonDoubleToString(c.part_progress_percent);
-	}
+	o << ",\"part_progress_percent\":"
+	  << (c.part_progress_percent >= 0.0 ? JsonDoubleToString(c.part_progress_percent)
+					     : std::string("null"));
 	o << "}";
 	return o.str();
 }

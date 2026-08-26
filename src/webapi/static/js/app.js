@@ -161,7 +161,10 @@ function Toolbar({ route, onLogout }) {
     while ((match = regex.exec(value)) !== null) {
       links.push(match[1].trim());
     }
-    const payload = links.length > 0 ? { links } : { ed2k_link: value };
+    // `links` is the only body form the endpoint takes. Where the regex found
+    // nothing, send the raw input as a one-item array anyway so the daemon
+    // answers with its own verdict on the string the user typed.
+    const payload = { links: links.length > 0 ? links : [value] };
 
     try {
       // POST /downloads returns the bulk `results` envelope keyed by link; on a
@@ -169,7 +172,7 @@ function Toolbar({ route, onLogout }) {
       const failed = bulkFailures(await api.post("downloads", payload));
       if (failed.length) {
         toast(t("common_bulk_partial", { failed: failed.length,
-                total: (payload.links ? payload.links.length : 1),
+                total: payload.links.length,
                 message: terr(failed[0].error) }), "warn");
       } else {
         setLink("");
