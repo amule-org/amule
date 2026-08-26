@@ -539,7 +539,7 @@ curl -s -H "Authorization: Bearer $TOKEN" http://$HOST/api/v0/status
   "ed2k": {
     "state": "connected",
     "high_id": true,
-    "id": 1234567890,
+    "user_id": 1234567890,
     "public_ip": "210.2.150.73",
     "connected_since": 1751000000,
     "server_name": "eMule Server",
@@ -549,7 +549,7 @@ curl -s -H "Authorization: Bearer $TOKEN" http://$HOST/api/v0/status
   },
   "kad": {
     "state": "connected",
-    "firewalled": false,
+    "firewalled_tcp": false,
     "connected_since": 1751000000,
     "network": { "users": 5400000, "files": 1400000000, "nodes": 2400 }
   },
@@ -568,9 +568,13 @@ curl -s -H "Authorization: Bearer $TOKEN" http://$HOST/api/v0/status
 
 `ed2k.connected_since` / `kad.connected_since` are unix timestamps of the most recent connect, `0` while not connected — gate on `ed2k.state` / `kad.state` rather than trust a `0` timestamp alone.
 
-**Our eD2k identity.** `ed2k.id` is the id the connected server assigned us, and `ed2k.high_id` is `true` when it is a HighID — an id `>= 16777216`, the same threshold the peer-side `high_id` on [`GET /clients/{ecid}`](#get-apiv0clientsecid) uses. A HighID **is** our public IPv4 packed into that integer, which is where `ed2k.public_ip` comes from; a LowID is a small number the server picked for a firewalled client and carries no address, so `public_ip` is `""` there.
+**`kad.firewalled_tcp` is named for its transport.** It is the TCP half of a pair; [`GET /api/v0/kad`](#get-apiv0kad) reports `firewalled_udp` alongside it. The two are independent measurements taken by different mechanisms, not a verdict and a refinement of it. See the `/kad` field table for what each one measures and how their defaults differ.
 
-While disconnected `id` is `0`, `public_ip` is `""` and `high_id` is `false` — so read `high_id` **together with `state`**: `false` means "LowID" only once `state` is `"connected"`, and means "no id yet" otherwise. The transient `0xffffffff` the daemon sends mid-connect is normalized to `0` and never appears.
+**Our eD2k identity.** `ed2k.user_id` is the id the connected server assigned us, and `ed2k.high_id` is `true` when it is a HighID — an id `>= 16777216`, the same threshold the peer-side `high_id` on [`GET /clients/{ecid}`](#get-apiv0clientsecid) uses. A HighID **is** our public IPv4 packed into that integer, which is where `ed2k.public_ip` comes from; a LowID is a small number the server picked for a firewalled client and carries no address, so `public_ip` is `""` there.
+
+While disconnected `user_id` is `0`, `public_ip` is `""` and `high_id` is `false` — so read `high_id` **together with `state`**: `false` means "LowID" only once `state` is `"connected"`, and means "no id yet" otherwise. The transient `0xffffffff` the daemon sends mid-connect is normalized to `0` and never appears.
+
+**`ed2k.user_id` is not the same encoding as a peer's `user_id_hybrid`.** [`GET /api/v0/clients/{ecid}`](#get-apiv0clientsecid) reports `user_id_hybrid` for a remote peer, and the similar name invites the assumption that the two are interchangeable. They are not. Ours is stored exactly as the server sent it and is read least-significant-byte-first to produce `public_ip`; a peer's HighID is **byte-swapped** on the way in. A consumer that compares the two values, or feeds one through the other's IP decoder, gets a reversed address. The `>= 16777216` HighID threshold *is* common to both; the byte order is not.
 
 **Overhead is additive.** `speeds.download_overhead_bps` / `upload_overhead_bps` are protocol and control traffic, counted **separately** from `download_bps` / `upload_bps` rather than being part of them — the desktop shows them as a second figure in parentheses. Both are `0` when the daemon reports nothing.
 
@@ -2327,15 +2331,15 @@ Two side effects are worth planning for. The URL is **persisted** into the `kade
 
 **Auth:** `GUEST`
 
-Standalone view of the Kad subtree from `/status`, plus the detail fields the status rollup omits (`node_id`, `firewalled_udp`, `in_lan_mode`, your `public_ip`, the `indexed` Kad-store counters, and `buddy` contact info for low-ID peers). Together with `GET /api/v0/preferences` (for the TCP/UDP port numbers the firewalled messages quote) this covers every row of the desktop client's **Networks → Kad Info** panel.
+Standalone view of the Kad subtree from `/status`, plus the detail fields the status rollup omits (`node_id`, `firewalled_udp`, `lan_mode`, your `public_ip`, the `indexed` Kad-store counters, and `buddy` contact info for low-ID peers). Together with `GET /api/v0/preferences` (for the TCP/UDP port numbers the firewalled messages quote) this covers every row of the desktop client's **Networks → Kad Info** panel.
 
 ```json
 {
   "state": "connected",
   "node_id": "8f3a1c07d94b2e5a6018bb4c7f209d3e",
-  "firewalled": false,
+  "firewalled_tcp": false,
   "firewalled_udp": false,
-  "in_lan_mode": false,
+  "lan_mode": false,
   "connected_since": 1751000000,
   "public_ip": "203.0.113.5",
   "network": { "users": 5400000, "files": 1400000000, "nodes": 2400 },
@@ -2346,9 +2350,16 @@ Standalone view of the Kad subtree from `/status`, plus the detail fields the st
 
 | Field | Type | Meaning |
 |---|---|---|
+| `state` | string | `disabled` / `connecting` / `connected`. `disabled` means Kad is not running at all, which is the condition several fields below key their "no measurement" value on. The same value `GET /api/v0/status` reports as `kad.state`. |
 | `node_id` | string | This node's own 128-bit Kademlia id, 32 lowercase hex characters (the desktop panel shows the same value uppercase). `""` while Kad is not running, which is exactly when `state` is `disabled`. Persisted by the daemon, so unlike the session-scoped ECIDs and the server-assigned eD2k id it is stable across restarts — the one identifier for the local node a consumer can key on. It is a DHT routing key, not a credential: every Kad contact the daemon talks to learns it. |
 | `connected_since` | int | Unix seconds of the most recent Kad connect, the same value `GET /api/v0/status` reports as `kad.connected_since`. `0` when not connected, so gate on `state` rather than trusting a `0`. |
-| `public_ip` | string | This node's externally-visible IPv4, as a remote Kad contact reported it back. Two "not known" cases, both matching what the desktop panel's *IP address* row shows: `""` while Kad is not connected (the daemon sends the field only then), and `0.0.0.0` while connected but not yet told its own address by any contact. Distinct from `preferences.connection.bind_address`, which is the local interface the daemon binds to. Named `public_ip` rather than `ip` because `buddy.ip` in the same payload belongs to somebody else. |
+| `public_ip` | string | This node's externally-visible IPv4, as a remote Kad contact reported it back. Two "not known" cases, both matching what the desktop panel's *IP address* row shows: `""` while Kad is not connected (the daemon sends the field only then), and `0.0.0.0` while connected but not yet told its own address by any contact. **Two distinct "unknown" sentinels, one of them a syntactically valid address**: a consumer that only checks for `""` will treat `0.0.0.0` as a real IP. Distinct from `preferences.connection.bind_address`, which is the local interface the daemon binds to. Named `public_ip` rather than `ip` because `buddy.ip` in the same payload belongs to somebody else. |
+| `firewalled_tcp` | bool | Whether this node is firewalled for **TCP**. The verdict is a **vote**: two distinct peers must confirm reachability by opening an incoming TCP connection carrying `OP_KAD_FWTCPCHECK_ACK` before it clears to `false`. With no verdict yet it defaults to **`true`**, which is the conservative reading: assume firewalled until proven otherwise. During an IP recheck it freezes at its previous value rather than momentarily reporting a false LowID. Named for the transport because it is one half of a pair, not an overall verdict that `firewalled_udp` refines. |
+| `firewalled_udp` | bool | Whether this node is firewalled for **UDP**, measured by an entirely different mechanism: a directed test with its own state, which can also declare firewalled **by timeout** after six minutes. amuled sends this only while Kad is connected, so it reads **`false` whenever Kad is down**. That is the absence of a measurement, *not* "UDP is open". Note the asymmetry with `firewalled_tcp`, which defaults the other way: a consumer reading both while Kad is disconnected sees `true` / `false` and neither value means anything. This is the most likely field on the payload to be misread. |
+| `lan_mode` | bool | `true` when the daemon is running Kad in LAN mode. It **forces both firewalled fields to `false`** regardless of any measurement, which is why it belongs beside them: a `false` on either flag is only meaningful once you have checked this one. |
+| `network.users` / `.files` / `.nodes` | int | Network-wide estimates for the whole Kad network, not counts belonging to this node. Unlike everything else in this payload they are **not** gated on Kad being connected, so they can be non-zero while `state` is `disabled`. The same values `GET /api/v0/status` reports under `kad.network`. |
+| `indexed.sources` / `.keywords` / `.notes` | int | Kad-store counters: how many entries this node is holding for the network as a DHT participant. Sent only while connected, so all three read `0` while Kad is down. |
+| `indexed.load` | int | A **load figure, not a count**, despite sitting beside three counts: it is the Kad store's fill level. Sent only while connected, so it reads `0` while Kad is down. |
 | `buddy.status` | string | LowID-buddy state for NAT-traversal peers: `no_buddy` / `connecting` / `connected` (`unknown` only if the daemon ever ships a value outside its own enum). Reads `no_buddy` while Kad is not connected — the daemon sends the field only while connected, and that absence is what both the core and the desktop client treat as *no buddy*. `buddy.ip` / `buddy.port` are only meaningful under `connected`: they are `0.0.0.0` / `0` while connected with no buddy, and `""` / `0` while Kad is down. |
 
 ---

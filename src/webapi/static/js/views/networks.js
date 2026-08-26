@@ -498,7 +498,7 @@ function Ed2kInfoPanel() {
       ], "networks_ed2k_group_connection")}
       ${Section([
         // An identifier, not a quantity -- no thousands separators.
-        statRow("networks_ed2k_id", connected ? String(ed2k.id || 0) : "—"),
+        statRow("networks_ed2k_id", connected ? String(ed2k.user_id || 0) : "—"),
         statRow("networks_ed2k_ip_port", ipPort),
       ], "networks_ed2k_group_identity")}
       ${Section([
@@ -537,15 +537,15 @@ function KadInfoPanel() {
     <div class="detail-sections">
       ${Section([
         statRow("networks_kad_state", html`<span class=${"status-chip " + (kad.state === "connected" ? "ok" : "off")}>${kad.state ? t("networks_kad_conn_" + kad.state) : "—"}</span>`),
-        statRow("networks_kad_firewalled_tcp", yesno(kad.firewalled)),
+        statRow("networks_kad_firewalled_tcp", yesno(kad.firewalled_tcp)),
         statRow("networks_kad_firewalled_udp", yesno(d.firewalled_udp)),
-        statRow("networks_kad_in_lan_mode", yesno(d.in_lan_mode)),
+        statRow("networks_kad_in_lan_mode", yesno(d.lan_mode)),
         statRow("networks_kad_connected_since", formatTimestamp(d.connected_since)),
       ], "networks_kad_group_connection")}
       ${Section([
         statRow("networks_kad_node_id", d.node_id || "—"),
         statRow("networks_kad_your_ip", d.public_ip || "—"),
-        statRow("networks_kad_buddy", buddyText(kad.state, buddy, kad.firewalled, d.firewalled_udp)),
+        statRow("networks_kad_buddy", buddyText(kad.state, buddy, kad.firewalled_tcp, d.firewalled_udp)),
       ], "networks_kad_group_identity")}
       ${Section([
         statRow("networks_kad_users", formatInt(net.users)),

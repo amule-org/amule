@@ -2712,7 +2712,7 @@ TEST(Refresher, StatusHighIdLandsIdAndDottedQuad)
 
 	ASSERT_EQUALS(std::string("connected"), out.ed2k_state);
 	ASSERT_TRUE(out.ed2k_high_id);
-	ASSERT_EQUALS(static_cast<std::uint32_t>(1234567890u), out.ed2k_id);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(1234567890u), out.ed2k_user_id);
 	ASSERT_EQUALS(std::string("210.2.150.73"), out.ed2k_public_ip);
 }
 
@@ -2731,7 +2731,7 @@ TEST(Refresher, StatusLowIdKeepsIdButHasNoPublicAddress)
 
 	ASSERT_EQUALS(std::string("connected"), out.ed2k_state);
 	ASSERT_TRUE(!out.ed2k_high_id);
-	ASSERT_EQUALS(static_cast<std::uint32_t>(42u), out.ed2k_id);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(42u), out.ed2k_user_id);
 	ASSERT_TRUE(out.ed2k_public_ip.empty());
 }
 
@@ -2748,7 +2748,7 @@ TEST(Refresher, StatusConnectingSentinelNeverReachesTheSnapshot)
 	StatusSnapshot out;
 	ParseStatusFromPacket(&resp, out);
 
-	ASSERT_EQUALS(static_cast<std::uint32_t>(0u), out.ed2k_id);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(0u), out.ed2k_user_id);
 	ASSERT_TRUE(out.ed2k_public_ip.empty());
 }
 
@@ -2766,7 +2766,7 @@ TEST(Refresher, StatusDisconnectedIsNotReportedAsLowId)
 
 	ASSERT_EQUALS(std::string("disconnected"), out.ed2k_state);
 	ASSERT_TRUE(!out.ed2k_high_id);
-	ASSERT_EQUALS(static_cast<std::uint32_t>(0u), out.ed2k_id);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(0u), out.ed2k_user_id);
 	ASSERT_TRUE(out.ed2k_public_ip.empty());
 }
 

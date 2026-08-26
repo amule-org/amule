@@ -137,9 +137,25 @@ _curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/kad"
 _assert_status 200 "GET /kad (admin) → 200"
 _assert_json_eq '.state | test("^(disabled|connecting|connected)$")' \
 	true '/kad.state is a known enum value'
-_assert_json_eq '.firewalled       | type' boolean '/kad.firewalled is boolean'
+# firewalled_tcp and firewalled_udp are two independent measurements, not a
+# verdict and a refinement -- which is what the unqualified `firewalled` used
+# to imply. The TCP one is a vote (two peers must confirm reachability over an
+# incoming connection); the UDP one is a directed test with its own timeout.
+_assert_json_eq '.firewalled_tcp   | type' boolean '/kad.firewalled_tcp is boolean'
 _assert_json_eq '.firewalled_udp   | type' boolean '/kad.firewalled_udp is boolean'
-_assert_json_eq '.in_lan_mode      | type' boolean '/kad.in_lan_mode is boolean'
+_assert_json_eq '.lan_mode         | type' boolean '/kad.lan_mode is boolean'
+# The pre-rename spellings must be gone, not merely shadowed by the new ones.
+_assert_json_eq 'has("firewalled")'   false '/kad.firewalled is gone'
+_assert_json_eq 'has("in_lan_mode")'  false '/kad.in_lan_mode is gone'
+# LAN mode forces both firewall flags false (Kademlia.h, UDPFirewallTester.cpp),
+# so the three cannot all be true at once.
+_assert_json_eq '(.lan_mode | not) or ((.firewalled_tcp | not) and (.firewalled_udp | not))' \
+	true '/kad LAN mode forces both firewalled flags false'
+# amuled sends the UDP test result only while Kad is connected, so a false
+# there is the absence of a measurement rather than "UDP is open". The TCP
+# side defaults the other way: true until two peers vouch for us.
+_assert_json_eq '(.state == "connected") or (.firewalled_udp | not)' \
+	true '/kad.firewalled_udp reads false while Kad is not connected'
 _assert_json_eq '.connected_since  | type' number  '/kad.connected_since is numeric'
 # Ours. Named apart from the buddy's address, which the rename must not touch.
 _assert_json_eq '.public_ip        | type' string  '/kad.public_ip is string'
@@ -154,6 +170,18 @@ _assert_json_eq '.network.users    | type' number  '/kad.network.users is numeri
 _assert_json_eq '.network.files    | type' number  '/kad.network.files is numeric'
 _assert_json_eq '.network.nodes    | type' number  '/kad.network.nodes is numeric'
 _assert_json_eq '.indexed.sources  | type' number  '/kad.indexed.sources is numeric'
+_assert_json_eq '.indexed.keywords | type' number  '/kad.indexed.keywords is numeric'
+_assert_json_eq '.indexed.notes    | type' number  '/kad.indexed.notes is numeric'
+# A load figure, not a count, despite sitting beside three counts.
+_assert_json_eq '.indexed.load     | type' number  '/kad.indexed.load is numeric'
+# The store counters ride on a tag amuled sends only while connected.
+_assert_json_eq '(.state == "connected") or (.indexed.sources == 0)' \
+	true '/kad.indexed.sources is 0 while Kad is not connected'
+# Two distinct "unknown" sentinels: "" while Kad is not connected, and a
+# syntactically valid 0.0.0.0 while connected but not yet told our address.
+_assert_json_eq '(.state == "connected") or (.public_ip == "")' \
+	true '/kad.public_ip is empty while Kad is not connected'
+_assert_json_eq '.buddy.port       | type' number  '/kad.buddy.port is numeric'
 _assert_json_eq '.buddy.status     | test("^(no_buddy|connecting|connected|unknown)$")' \
 	true '/kad.buddy.status is a known enum value'
 _assert_json_eq '.buddy.ip         | type' string  '/kad.buddy.ip survives the ip rename'
