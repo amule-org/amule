@@ -222,7 +222,6 @@
   "search_update_results": "Update results",
   "search_tab_close": "Close search",
   "search_close_all": "Close all",
-  "search_no_tabs": "No searches open. Start one above.",
   "search_extend": "Extend",
   "search_extend_title": "Ask the Kad nodes already queried for a wider set of results",
   "search_extend_kad_only": "Only a Kad search can be extended",

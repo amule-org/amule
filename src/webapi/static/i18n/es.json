@@ -222,7 +222,6 @@
   "search_update_results": "Actualizar resultados",
   "search_tab_close": "Cerrar búsqueda",
   "search_close_all": "Cerrar todas",
-  "search_no_tabs": "No hay búsquedas abiertas. Inicia una arriba.",
   "search_extend": "Ampliar",
   "search_extend_title": "Pide un conjunto de resultados más amplio a los nodos Kad ya consultados",
   "search_extend_kad_only": "Solo se puede ampliar una búsqueda Kad",

@@ -41,6 +41,14 @@ export function listPlaceholder(loading, emptyMsg) {
     : html`<${Placeholder} kind="info">${emptyMsg}<//>`;
 }
 
+// Row/select-all checkbox for a table's select column. The <label> fills the
+// cell (see .cell-check), so the whole cell is the click target -- a bare box
+// is a poor one.
+export function checkCell(checked, onToggle, title) {
+  return html`<label class="cell-check"><input type="checkbox" title=${title}
+    checked=${checked} onChange=${(e) => onToggle(e.target.checked)} /></label>`;
+}
+
 // Relative, like BASE in api.js: it has to survive a reverse-proxy subpath.
 const FLAG_BASE = window.location.pathname.replace(/\/?$/, "/") + "flags/";
 const REGIONS = (() => {
