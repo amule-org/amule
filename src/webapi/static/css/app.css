@@ -531,10 +531,16 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
 .net-pane .pane-toolbar { margin-bottom: 12px; }
 .hint { color: var(--text-dim); font-size: 13px; margin: 8px 0 0; }
 
-/* --- kad / stat grid --- */
-.kad-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+/* --- stat grid (components.js Section) --- */
+/* Flex, not a track grid: fields pack left at their natural width and wrap,
+   instead of every group stretching its cells over a fixed track count. */
+.kad-grid { display: flex; flex-wrap: wrap; gap: 12px 30px; }
+.kad-grid > div { min-width: 150px; max-width: 100%; }
 .kad-stat-label { font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
-.kad-stat-value { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.kad-stat-value {
+  font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums;
+  word-break: break-word;
+}
 
 /* --- stats --- */
 .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-bottom: 16px; }
@@ -689,7 +695,10 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
    so the log box grows to the pane instead of its default 30vh cap — otherwise
    dragging the splitter would just move empty space. */
 .net-split .net-pane:last-child { flex: none; min-height: 0; }
-.net-split .net-pane:last-child .net-pane-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+/* overflow only here: the info tabs are taller than the pane the splitter
+   leaves them. Not on .net-pane-body itself -- that would clip the
+   ColumnPicker menu, which hangs out of the table panes. */
+.net-split .net-pane:last-child .net-pane-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: auto; }
 /* Column so the <pre> is stretched to the wrapper width (cross axis) and
    scrolls its long lines, instead of a flex row where it would keep its
    longest-line width and overflow the pane. */
@@ -805,19 +814,12 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
 }
 /* Each group is a full-width horizontal strip, stacked top to bottom. */
 .detail-sections { display: flex; flex-direction: column; gap: 18px; }
-/* Flex, not the base rule's grid: fields pack left at their natural width and
-   wrap, instead of every group stretching its cells over a fixed track count. */
-.detail-panel .kad-grid { display: flex; flex-wrap: wrap; gap: 12px 30px; }
-.detail-panel .kad-grid > div { min-width: 150px; max-width: 100%; }
 .detail-group-title {
   flex: 0 0 100%; margin: 0; padding-bottom: 5px;
   border-bottom: 1px solid var(--border);
   font-size: 11px; font-weight: 600; letter-spacing: .04em;
   text-transform: uppercase; color: var(--text-dim);
 }
-/* Field values: kept bold (from .kad-stat-value) but a touch smaller than the
-   Kad stat grid to pack the detail groups tighter. */
-.detail-panel .kad-stat-value { font-size: 13px; word-break: break-word; }
 .detail-panel .mono { font-family: var(--mono); font-size: 13px; }
 /* Tabs hang off the content box's top edge (no gap), notebook-style. */
 .detail-panel .tabs { margin-top: 0; margin-bottom: 0; flex: none; }
