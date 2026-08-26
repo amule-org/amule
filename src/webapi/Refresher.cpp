@@ -1296,7 +1296,7 @@ void ApplyGetUpdateToDownloads(
 			const std::uint32_t ecid = static_cast<std::uint32_t>(t->GetInt());
 			auto fit = cache.find(ecid);
 			if (fit != cache.end()) {
-				fit->second.is_downloading = false;
+				cache.SetDownloading(fit, false);
 				// Reset the download sub-block so a future role-true
 				// transition (or even a stale FindDownload lookup
 				// after the role flag was checked) can't surface
@@ -1327,7 +1327,7 @@ void ApplyGetUpdateToDownloads(
 			DecodeRleBlobsForPartFile(pf, f, rle_state);
 			cache.emplace(ecid, std::move(f));
 		} else {
-			map_it->second.is_downloading = true;
+			cache.SetDownloading(map_it, true);
 			MergePartFileTag(pf, map_it->second, /*is_new=*/false);
 			DecodeRleBlobsForPartFile(pf, map_it->second, rle_state);
 		}
@@ -1363,7 +1363,7 @@ void ApplyGetUpdateToShared(
 			const std::uint32_t ecid = static_cast<std::uint32_t>(t->GetInt());
 			auto fit = cache.find(ecid);
 			if (fit != cache.end()) {
-				fit->second.is_shared = false;
+				cache.SetShared(fit, false);
 				if (!fit->second.is_downloading)
 					cache.erase(fit);
 				else
@@ -1391,7 +1391,7 @@ void ApplyGetUpdateToShared(
 					// preserved (persistent file attribute).
 					auto fit = cache.find(ecid);
 					if (fit != cache.end()) {
-						fit->second.is_shared = false;
+						cache.SetShared(fit, false);
 						ClearSharedRoleKeepPriority(fit->second);
 					}
 					continue;
@@ -1427,9 +1427,9 @@ void ApplyGetUpdateToShared(
 			if (map_it->second.hash.empty()) {
 				const std::string h = TagHashLower(sf);
 				if (!h.empty())
-					map_it->second.hash = h;
+					cache.SetHash(map_it, h);
 			}
-			map_it->second.is_shared = true;
+			cache.SetShared(map_it, true);
 			MergeSharedTag(sf, map_it->second);
 			// PARTFILE tags are decoded by the downloads walker, which
 			// already ran on this same response; decoding them again
