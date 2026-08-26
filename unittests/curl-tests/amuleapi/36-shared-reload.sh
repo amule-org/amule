@@ -3,7 +3,7 @@
 # amuleapi 36-shared-reload — POST /shared_reload.
 #
 # Endpoint:
-#   POST /api/v0/shared_reload   → 202 {"ok":true}
+#   POST /api/v0/shared_reload   → 202, no `ok` field
 #
 # amuled schedules a re-walk of every configured share root and answers
 # immediately, so the call is accepted (202), never completed (200). The walk
@@ -73,6 +73,15 @@ _assert_json_eq() {
 	fi
 }
 
+_assert_body_empty() {
+	local label=$1
+	if [ -z "$CURL_BODY" ]; then
+		_pass "$label"
+	else
+		_fail "$label" "expected an empty body, got: $(printf '%s' "$CURL_BODY" | head -c 200)"
+	fi
+}
+
 if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
 if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
@@ -105,7 +114,8 @@ fi
 # --- 2. Accept path. -----------------------------------------------
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared_reload"
 _assert_status 202 "POST /shared_reload (admin) → 202"
-_assert_json_eq '.ok' true "/shared_reload → ok=true"
+# No constant `ok`: the 202 already said the call was accepted.
+_assert_json_eq '. | has("ok")' false "/shared_reload has no constant ok field"
 
 # --- 3. Repeated calls coalesce. -----------------------------------
 # A second request while the first is still pending (or its walk running)
@@ -114,7 +124,7 @@ _assert_json_eq '.ok' true "/shared_reload → ok=true"
 # collapse into one walk is amuled-side and shows up in its log.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared_reload"
 _assert_status 202 "POST /shared_reload again immediately → 202"
-_assert_json_eq '.ok' true "second /shared_reload → ok=true"
+_assert_json_eq '. | has("ok")' false "second /shared_reload has no constant ok field"
 
 # --- 4. The reply does not wait for the walk. ----------------------
 # Generous bound: this is a smoke against a regression to the old inline

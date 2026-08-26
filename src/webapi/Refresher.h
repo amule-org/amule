@@ -141,6 +141,18 @@ bool ParseSearchProgressUnion(
 void ParsePreferencesFromPacket(
 	const CECPacket *resp, PreferencesSnapshot &out_prefs, std::vector<CategorySnapshot> &out_cats);
 
+// Locale-independent file-type token from a filename: the desktop's own
+// category label (GetFiletypeByName, untranslated) lowercased -- "audio",
+// "video", "cd-images", "any". Reuses the GUI categorization rather than
+// duplicating the extension table.
+//
+// One owner. This lived twice, character for character, as FileTypeToken in
+// Api.cpp (feeding `file_type` on /shared/{hash}) and SearchTypeToken in
+// Refresher.cpp (feeding `type` on a search result), with neither file
+// mentioning the other -- so a change to the token set could land in one and
+// not the other and the two keys would drift apart silently.
+std::string FileTypeToken(const std::string &name);
+
 // `EC_OP_GET_UPDATE` at `EC_DETAIL_INC_UPDATE` is the consolidated
 // fetch backing downloads + shared + servers in a single roundtrip.
 // Response shape (ExternalConn.cpp:869):

@@ -131,7 +131,7 @@ sleep 1
 for _ in 1 2 3 4; do
 	curl -s -o /dev/null -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d "{\"ed2k_link\":\"$FILL_LINK\"}" "$HOST/api/v0/downloads"
+		-d "{\"links\":[\"$FILL_LINK\"]}" "$HOST/api/v0/downloads"
 	sleep 2
 	curl -s -o /dev/null -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
 		"$HOST/api/v0/downloads/$FILL_HASH"
@@ -262,7 +262,7 @@ PID=$!
 sleep 2
 curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d "{\"ed2k_link\":\"$TEST_LINK\"}" \
+	-d "{\"links\":[\"$TEST_LINK\"]}" \
 	"$HOST/api/v0/downloads" > /dev/null
 sleep 11
 kill $PID 2>/dev/null

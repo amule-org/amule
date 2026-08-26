@@ -80,6 +80,15 @@ _assert_json_eq() {
 	fi
 }
 
+_assert_body_empty() {
+	local label=$1
+	if [ -z "$CURL_BODY" ]; then
+		_pass "$label"
+	else
+		_fail "$label" "expected an empty body, got: $(printf '%s' "$CURL_BODY" | head -c 200)"
+	fi
+}
+
 if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
 if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
@@ -165,10 +174,16 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"address\":\"$TEST_ADDRESS\",\"name\":\"$TEST_NAME\"}" \
 	"$HOST/api/v0/servers"
-# Accept 201 (fresh add) OR 400 (already in list — server was added
+# Accept 202 (accepted) OR 400 (already in list — server was added
 # by a prior smoke or the operator). Both are valid endings.
-if [ "$CURL_STATUS" = "201" ]; then
-	_pass "POST /servers (add tagged server) → 201"
+#
+# 202 with no body, not 201 + the created object: EC_OP_SERVER_ADD answers
+# success or failure and never returns the server it made, so a body here
+# could only be reconstructed from the snapshot after an inline refresh.
+# The caller re-reads /servers, which it had to do anyway.
+if [ "$CURL_STATUS" = "202" ]; then
+	_pass "POST /servers (add tagged server) → 202"
+	_assert_body_empty "POST /servers sends no body"
 elif [ "$CURL_STATUS" = "400" ]; then
 	ERR_CODE=$(printf '%s' "$CURL_BODY" | jq -r '.error.code')
 	if [ "$ERR_CODE" = "amuled_rejected" ]; then
@@ -179,7 +194,7 @@ elif [ "$CURL_STATUS" = "400" ]; then
 	fi
 else
 	_fail "POST /servers" \
-		"expected 201 or 400, got $CURL_STATUS" \
+		"expected 202 or 400, got $CURL_STATUS" \
 		"body: $CURL_BODY"
 fi
 
@@ -216,11 +231,13 @@ _assert_status 400 "POST /servers (malformed JSON) → 400"
 # --- 5. POST /servers/{ecid}/connect. ------------------------------
 #
 # This kicks off an ed2k connect attempt. amuled accepts the command
-# (returns NOOP); the actual TCP connect is async. 202 Accepted.
+# (returns NOOP); the actual TCP connect is async. 202 Accepted, no body:
+# `ecid` came from the URL and the outcome only shows up later on
+# /status.ed2k.state and the SSE stream.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/servers/$ECID/connect"
 _assert_status 202 "POST /servers/{ecid}/connect → 202"
-_assert_json_eq '.ok' true 'connect response.ok==true'
+_assert_body_empty 'connect sends no body'
 
 # Bad ECID → 400 (path can't parse), or 404 (parses but no match).
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -271,8 +288,13 @@ _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{"priority":"high","static":true}' "$HOST/api/v0/servers/$ECID"
 _assert_status 200 "PATCH /servers/{ecid} priority+static together → 200"
-_assert_json_eq '.ok' true 'PATCH response carries ok:true'
-_assert_json_eq '.ecid' "$ECID" 'PATCH response echoes the ecid'
+# The response is the full server object as it now stands, not an {ok} ack:
+# a PATCH answers with the state the caller just produced, so no re-read is
+# needed to see it.
+_assert_json_eq '.ecid' "$ECID" 'PATCH response is the server object, keyed by ecid'
+_assert_json_eq '.priority' high 'PATCH response carries the new priority'
+_assert_json_eq '.static' true 'PATCH response carries the new static flag'
+_assert_json_eq '. | has("ok")' false 'PATCH response has no constant ok field'
 
 # --- 5c. PATCH error paths. ----------------------------------------
 _curl -X PATCH -H "Content-Type: application/json" \
@@ -313,9 +335,9 @@ _assert_status 404 "PATCH /servers/{unknown ecid} → 404 (EC no-ops silently, #
 # --- 6. DELETE /servers/{ecid} happy path + no-stale invariant. ---
 _curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/servers/$ECID"
-_assert_status 200 "DELETE /servers/$ECID → 200"
-_assert_json_eq '.ok'   true        'DELETE response.ok==true'
-_assert_json_eq '.ecid' "$ECID"     'DELETE response echoes ecid'
+# 204, no body: `ecid` came from the URL and `ok` restated the status code.
+_assert_status 204 "DELETE /servers/$ECID → 204"
+_assert_body_empty 'DELETE sends no body'
 
 # Immediate GET — entry must be gone from the cache.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/servers"

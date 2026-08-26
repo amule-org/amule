@@ -10,7 +10,7 @@
 #   GET    /chats                   → list envelope of conversations
 #   GET    /chats/{peer}/messages   → { peer, messages[], total, last_msg_id }
 #   POST   /chats/{peer}/messages   → 202 + the created message
-#   DELETE /chats/{peer}            → 200 { ok, peer }
+#   DELETE /chats/{peer}            → 204, no body
 #   POST   /friends/{ecid}/messages → 202 (reaches an OFFLINE friend)
 #   POST   /clients/{ecid}/messages → 202
 #
@@ -80,6 +80,15 @@ _assert_json_eq() {
 	fi
 }
 
+_assert_body_empty() {
+	local label=$1
+	if [ -z "$CURL_BODY" ]; then
+		_pass "$label"
+	else
+		_fail "$label" "expected an empty body, got: $(printf '%s' "$CURL_BODY" | head -c 200)"
+	fi
+}
+
 command -v jq >/dev/null 2>&1 || _die "jq is required."
 curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null \
 	|| _die "amuleapi at $HOST is not reachable."
@@ -118,7 +127,10 @@ _assert_json_eq '.chats | type' array '/chats .chats is array'
 _curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
 	-d '{"text":"curl-test hello"}' "$HOST/api/v0/chats/$PEER/messages"
 _assert_status 202 "POST /chats/{peer}/messages → 202 Accepted"
-_assert_json_eq '.ok'                  true    'send reports ok'
+# The created message stays in the body: no per-message GET defines a shape
+# for it, so the id and the timestamp the store assigned are only readable
+# here. `ok` is gone; the 202 already carried it.
+_assert_json_eq '. | has("ok")' false 'send response has no constant ok field'
 _assert_json_eq '.peer'                "$PEER" 'send echoes the conversation key'
 _assert_json_eq '.message.direction'   out     'sent message is direction=out'
 _assert_json_eq '.message.text'        "curl-test hello" 'send echoes the text'
@@ -250,9 +262,9 @@ fi
 
 # --- 9. Closing is global and actually removes it. ----------------
 _curl -X DELETE -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/chats/$PEER"
-_assert_status 200 "DELETE /chats/{peer} → 200"
-_assert_json_eq '.ok'   true    'close reports ok'
-_assert_json_eq '.peer' "$PEER" 'close echoes the conversation key'
+# 204, no body: `peer` came from the URL and `ok` restated the status code.
+_assert_status 204 "DELETE /chats/{peer} → 204"
+_assert_body_empty 'close sends no body'
 sleep 3
 _curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/chats"
 GONE=$(printf '%s' "$CURL_BODY" | jq --arg p "$PEER" '[.chats[] | select(.peer == $p)] | length')

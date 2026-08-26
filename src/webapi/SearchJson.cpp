@@ -61,8 +61,11 @@ void WriteSearchResultFields(CJsonWriter &w, const SearchResult &r)
 	// never carries the tag.
 	w.Key("directory");
 	w.ValueString(wxString::FromUTF8(r.directory.c_str()));
-	// Media metadata (issue #430) — same shape as the file-detail `media`
-	// object; omitted entirely when the hit carries no media tags.
+	// Media metadata (issue #430) -- same shape as the file-detail `media`
+	// object, and null when the hit carries no media tags. null rather than
+	// omitted so the key is always present: this is the one place the
+	// unknown-value rule reaches an object instead of a scalar, so a client
+	// tests `media === null` before reaching into it.
 	if (r.has_media) {
 		w.Key("media");
 		w.BeginObject();
@@ -79,6 +82,9 @@ void WriteSearchResultFields(CJsonWriter &w, const SearchResult &r)
 		w.Key("title");
 		w.ValueString(wxString::FromUTF8(r.media.title.c_str()));
 		w.EndObject();
+	} else {
+		w.Key("media");
+		w.ValueNull();
 	}
 	// Result grouping (issue #431): the same-hash/same-size hit's
 	// alternative filenames. Always emitted (empty array when the hit was

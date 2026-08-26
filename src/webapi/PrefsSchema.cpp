@@ -212,6 +212,14 @@ const PrefField kSchema[] = {
 
 	// [remote_controls.webserver]
 	PREF_BOOL("remote_controls.webserver", "enabled", EC_TAG_WEBSERVER_AUTORUN, PrefEnc::Presence, false, PrefAccess::ReadWrite, remote_controls.webserver.enabled),
+	// Its partner `remote_controls.webserver.guest_password` deliberately has
+	// NO row here, and that is not an oversight -- neither access level fits.
+	// The two share one EC tag (EC_TAG_WEBSERVER_GUEST carries the enable
+	// bool with the password hash as a child), so a WriteOnly row would send
+	// the generic loop at the tag a second time behind the bespoke packing;
+	// and Bespoke rows are emitted on GET, which a password must never be.
+	// It is therefore applied only by the hand-written branch in Api.cpp and
+	// documented in REFERENCE.md, which is where a client can find it.
 	PREF_BOOL("remote_controls.webserver", "guest_enabled", EC_TAG_WEBSERVER_GUEST, PrefEnc::Presence, false, PrefAccess::Bespoke, remote_controls.webserver.guest_enabled),
 	PREF_U32("remote_controls.webserver", "port", EC_TAG_WEBSERVER_PORT, 65535u, PrefAccess::ReadWrite, remote_controls.webserver.port),
 	PREF_U32("remote_controls.webserver", "refresh_seconds", EC_TAG_WEBSERVER_REFRESH, 0xFFFFFFFFu, PrefAccess::ReadWrite, remote_controls.webserver.refresh_seconds),

@@ -3,7 +3,7 @@
 # amuleapi 12-downloads-add-patch — download lifecycle mutations.
 #
 # Endpoints landed:
-#   POST  /api/v0/downloads             — add a download by ed2k_link
+#   POST  /api/v0/downloads             — add downloads by `links` array
 #   PATCH /api/v0/downloads/{hash}      — status/priority/category
 #
 # Mutate-then-refresh contract: every mutation handler runs
@@ -115,7 +115,7 @@ sleep 4
 
 # --- 1. Auth gate (no token → 401). --------------------------------
 _curl -X POST -H "Content-Type: application/json" \
-	-d "{\"ed2k_link\":\"$TEST_LINK\"}" "$HOST/api/v0/downloads"
+	-d "{\"links\":[\"$TEST_LINK\"]}" "$HOST/api/v0/downloads"
 _assert_status 401 "POST /downloads (no token) → 401"
 
 _curl -X PATCH -H "Content-Type: application/json" \
@@ -126,7 +126,7 @@ _assert_status 401 "PATCH /downloads/{hash} (no token) → 401"
 if [ "$HAVE_GUEST" = "1" ]; then
 	_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d "{\"ed2k_link\":\"$TEST_LINK\"}" "$HOST/api/v0/downloads"
+		-d "{\"links\":[\"$TEST_LINK\"]}" "$HOST/api/v0/downloads"
 	_assert_status 403 "POST /downloads (guest token) → 403"
 	_assert_json_eq '.error.code' forbidden \
 		'POST /downloads guest carries error.code=forbidden'
@@ -152,7 +152,7 @@ fi
 # --- 3. POST /downloads happy: add the test ISO. -------------------
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d "{\"ed2k_link\":\"$TEST_LINK\"}" "$HOST/api/v0/downloads"
+	-d "{\"links\":[\"$TEST_LINK\"]}" "$HOST/api/v0/downloads"
 _assert_status 202 "POST /downloads (Ubuntu ISO) → 202"
 # Unified per-item envelope (#358): one accepted result keyed by the link.
 _assert_json_eq '.results | length' 1 'POST /downloads returns one result'
@@ -165,7 +165,7 @@ _assert_json_eq ".results[0].id" "$TEST_LINK" 'POST /downloads results[0].id ech
 APPEARED=0
 for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25; do
 	_curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-		"$HOST/api/v0/downloads?include_completed=1"
+		"$HOST/api/v0/downloads?status=all"
 	if printf '%s' "$CURL_BODY" \
 	   | jq -e --arg h "$TEST_HASH" '.downloads[] | select(.hash == $h)' \
 	   >/dev/null 2>&1; then
@@ -183,7 +183,7 @@ fi
 # --- 4. POST /downloads error paths. -------------------------------
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"ed2k_link":"http://not-an-ed2k.com/foo"}' "$HOST/api/v0/downloads"
+	-d '{"links":["http://not-an-ed2k.com/foo"]}' "$HOST/api/v0/downloads"
 _assert_status 400 "POST /downloads (non-ed2k URL) → 400"
 _assert_json_eq '.error.code' bad_request \
 	'POST /downloads invalid URL carries error.code=bad_request'
@@ -191,7 +191,17 @@ _assert_json_eq '.error.code' bad_request \
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{}' "$HOST/api/v0/downloads"
-_assert_status 400 "POST /downloads (missing ed2k_link) → 400"
+_assert_status 400 "POST /downloads (missing links) → 400"
+
+# `links` is the only spelling. The singular `ed2k_link` alias this used to
+# take is refused, not ignored: one input with two spellings, on the endpoint
+# that answers with the bulk `results` envelope even for a single item.
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d "{\"ed2k_link\":\"$TEST_LINK\"}" "$HOST/api/v0/downloads"
+_assert_status 400 "POST /downloads (singular ed2k_link) → 400"
+_assert_json_eq '.error.message | test("`links`")' true \
+	'the ed2k_link 400 names `links` as the replacement'
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \

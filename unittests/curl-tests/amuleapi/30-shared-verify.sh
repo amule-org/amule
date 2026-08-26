@@ -70,6 +70,15 @@ _assert_json_eq() {
 	fi
 }
 
+_assert_body_empty() {
+	local label=$1
+	if [ -z "$CURL_BODY" ]; then
+		_pass "$label"
+	else
+		_fail "$label" "expected an empty body, got: $(printf '%s' "$CURL_BODY" | head -c 200)"
+	fi
+}
+
 if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
 if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
@@ -147,8 +156,10 @@ fi
 # --- 2. Happy path: accepted, not completed. -----------------------
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/shared/$TEST_HASH/verify"
+# 202 with no body: the hash came from the URL, and the outcome only arrives
+# later, on hashing_progress and the log line.
 _assert_status 202 "POST /shared/{hash}/verify → 202"
-_assert_json_eq '.ok' true "verify response .ok == true"
+_assert_body_empty "verify sends no body"
 
 # Uppercase hash resolves the same file (lookup lowercases the capture).
 UPPER_HASH=$(printf '%s' "$TEST_HASH" | tr 'a-f' 'A-F')

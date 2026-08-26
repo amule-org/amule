@@ -94,7 +94,8 @@ FAIL_COUNT=0
 TEST_COUNT=0
 
 CURL_BODY_FILE=$(mktemp -t amuleapi_19_search_body.XXXXXX)
-trap 'rm -f "$CURL_BODY_FILE"' EXIT
+CURL_HDR_FILE=$(mktemp -t amuleapi_19_search_hdr.XXXXXX)
+trap 'rm -f "$CURL_BODY_FILE" "$CURL_HDR_FILE"' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
 _pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
@@ -107,10 +108,12 @@ _fail() {
 
 _curl() {
 	local resp
-	resp=$(curl -s --max-time 10 -o "$CURL_BODY_FILE" -w '%{http_code}' "$@") \
+	resp=$(curl -s --max-time 10 -D "$CURL_HDR_FILE" \
+		-o "$CURL_BODY_FILE" -w '%{http_code}' "$@") \
 		|| _die "curl invocation failed for $*"
 	CURL_STATUS=$resp
 	CURL_BODY=$(cat "$CURL_BODY_FILE")
+	CURL_HDR=$(cat "$CURL_HDR_FILE")
 }
 
 _assert_status() {
@@ -132,6 +135,25 @@ _assert_json_eq() {
 		_pass "$label"
 	else
 		_fail "$label" "expected $expected, got $actual" "body: $CURL_BODY"
+	fi
+}
+
+_assert_header_contains() {
+	local needle=$1 label=$2
+	if printf '%s' "$CURL_HDR" | grep -qi -- "$needle"; then
+		_pass "$label"
+	else
+		_fail "$label" "needle '$needle' not in response headers" \
+			"headers: $(printf '%s' "$CURL_HDR" | head -c 400)"
+	fi
+}
+
+_assert_body_empty() {
+	local label=$1
+	if [ -z "$CURL_BODY" ]; then
+		_pass "$label"
+	else
+		_fail "$label" "expected an empty body, got: $(printf '%s' "$CURL_BODY" | head -c 200)"
 	fi
 }
 
@@ -220,10 +242,23 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"query\":\"$TEST_QUERY\",\"type\":\"global\"}" "$HOST/api/v0/search"
 _assert_status 202 "POST /search (query=$TEST_QUERY, type=global) → 202"
-_assert_json_eq '.ok'    true         'POST /search response.ok==true'
+# A creation answers with the created resource, because here the daemon really
+# does hand one back: SEARCH_START returns EC_TAG_SEARCH_ID. The body is the
+# same row GET /search lists, written through the same writer, so a client can
+# drop it straight into the collection it keeps -- which is why `kind` and
+# `state` are asserted here and not just on the list. `ok` is gone; the 202
+# carried it.
+_assert_json_eq '. | has("ok")' false 'POST /search response has no constant ok field'
 _assert_json_eq '.query' "$TEST_QUERY" 'POST /search echoes query'
 _assert_json_eq '.search_id | type' number 'POST /search returns a numeric search_id'
+_assert_json_eq '.kind'  global       'POST /search response reports kind=global'
+_assert_json_eq '.state' running      'POST /search response reports state=running'
+_assert_json_eq '.started_at | type' number 'POST /search response stamps started_at'
 FIRST_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id')
+# ...and a Location naming where the resource now lives, so a client that
+# ignores the body still knows the id it was given.
+_assert_header_contains "location: /api/v0/search/$FIRST_SID" \
+	'POST /search sends a Location for the search it created'
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$FIRST_SID/results"
 _assert_json_eq '.search_id' "$FIRST_SID" 'GET /search/{id}/results echoes its search_id'
 _assert_json_eq '.query' "$TEST_QUERY" 'GET /search/{id}/results reports the query it was started with'
@@ -504,7 +539,7 @@ if [ "$CURL_STATUS" = "202" ]; then
 	KAD_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id')
 	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$KAD_SID/more"
 	_assert_status 202 "POST /search/{id}/more on a running Kad search → 202"
-	_assert_json_eq '.ok' true 'more response.ok==true'
+	_assert_body_empty 'more sends no body'
 
 	# The timing edge, which is deterministic where the reask cap is not.
 	# Kad calls PrepareToStop on a keyword search 20 s before its 45 s life
@@ -549,8 +584,10 @@ fi
 # --- 5. POST /search/{id}/stop. -----------------------------------
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/search/$FIRST_SID/stop"
-_assert_status 200 "POST /search/{id}/stop → 200"
-_assert_json_eq '.ok' true 'search stop response.ok==true'
+# 204, the same as DELETE /search/{id}: with `ok` gone there is nothing left
+# to report, and only the results-survive check below tells the two apart.
+_assert_status 204 "POST /search/{id}/stop → 204"
+_assert_body_empty 'search stop sends no body'
 # Stop keeps the results readable — that is what distinguishes it from
 # DELETE, and a consumer viewing the search must not lose its rows.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$FIRST_SID/results"
@@ -564,18 +601,18 @@ if [ -n "$RESULT_HASH" ]; then
 		-H "Content-Type: application/json" \
 		-d '{"category":0}' \
 		"$HOST/api/v0/search/results/$RESULT_HASH/download"
+	# 202 with no body: `hash` came from the URL, `category` came from the
+	# request, and the download itself reports the category it landed in.
 	_assert_status 202 "POST /search/results/{hash}/download → 202"
-	_assert_json_eq '.ok'       true         'download response.ok==true'
-	_assert_json_eq '.hash'     "$RESULT_HASH" 'download response echoes hash'
-	_assert_json_eq '.category' 0            'download response category=0'
+	_assert_body_empty 'download sends no body'
 
 	# Empty-body POST should also succeed (category defaults to 0).
 	# But first DELETE the just-created download so we don't trip
 	# "already in queue".
 	_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
 		"$HOST/api/v0/downloads/$RESULT_HASH"
-	# 200 if found, 404 if already evicted by amuled — either is OK.
-	if [ "$CURL_STATUS" = "200" ] || [ "$CURL_STATUS" = "404" ]; then
+	# 204 if found, 404 if already evicted by amuled — either is OK.
+	if [ "$CURL_STATUS" = "204" ] || [ "$CURL_STATUS" = "404" ]; then
 		_pass "Cleanup: DELETE /downloads/{result hash} → $CURL_STATUS"
 	else
 		_fail "Cleanup DELETE" "unexpected status $CURL_STATUS"
@@ -763,8 +800,13 @@ if [ -n "$CMT_HASH" ]; then
 	# Trigger an on-demand Kad notes lookup for the result.
 	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 		"$HOST/api/v0/search/results/$CMT_HASH/comments"
+	# 202 with no body. The `status` it used to carry could hold exactly one
+	# value, so it restated the status code -- and `status` everywhere else on
+	# this surface is a transfer state, so a client switching on it had to know
+	# which kind of object it held first. The lookup's progress is read from
+	# `kad_comment_search_running` on the GET below.
 	_assert_status 202 "POST /search/results/{hash}/comments → 202"
-	_assert_json_eq '.status' kad_search_started 'search comments POST status==kad_search_started'
+	_assert_body_empty 'search comments POST sends no body'
 
 	# Per-result comments view.
 	_curl -H "Authorization: Bearer $ADMIN_TOKEN" \

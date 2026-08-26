@@ -115,7 +115,7 @@ sleep 1
 echo "    info: POST Ubuntu ISO..."
 curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d "{\"ed2k_link\":\"$TEST_LINK\"}" \
+	-d "{\"links\":[\"$TEST_LINK\"]}" \
 	"$HOST/api/v0/downloads" > /dev/null
 
 # Wait for the download_added event. Poll the stream file every
@@ -240,7 +240,7 @@ sleep 2
 # Add ISO again — emit download_added.
 curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d "{\"ed2k_link\":\"$TEST_LINK\"}" \
+	-d "{\"links\":[\"$TEST_LINK\"]}" \
 	"$HOST/api/v0/downloads" > /dev/null
 sleep 5
 # Then delete to clean up.

@@ -380,9 +380,11 @@ TEST(PathPatterns, ParseBoundedUint_DoesNotWrapOnLongInput)
 	ASSERT_EQUALS(static_cast<std::uint64_t>(7), v);
 }
 
-// `include_completed` read every unrecognised value as false while its
-// neighbour `include_parts` answered 400, so one typo was silent and the next
-// was fatal. One vocabulary, and anything outside it is answerable.
+// Every boolean parameter goes through here so the vocabulary cannot drift
+// per call site: `include_completed` (since replaced by `status=`) read every
+// unrecognised value as false while its neighbour `include_parts` answered
+// 400, so one typo was silent and the next was fatal. One vocabulary, and
+// anything outside it is answerable.
 TEST(PathPatterns, ParseBoolValue_AcceptsTheThreeSpellings)
 {
 	bool b = false;

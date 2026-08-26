@@ -16,7 +16,10 @@
 #       body: {nodes_url: "https://.../nodes.dat"}
 #
 # amuled's CONNECT/DISCONNECT return EC_OP_STRINGS with status
-# messages — the handler relays those into `response.message`.
+# messages — the handler relays those into `response.message`. That
+# message is the whole body: `ok` was dropped because the status code
+# already carried it, while the daemon's own explanation of what it did
+# is not recoverable from any later read.
 
 set -u
 set -o pipefail
@@ -102,13 +105,13 @@ fi
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/networks/disconnect"
 _assert_status 200 "POST /networks/disconnect → 200"
-_assert_json_eq '.ok' true 'disconnect response.ok==true'
+_assert_json_eq '. | has("ok")' false 'disconnect response has no constant ok field'
 
 # --- 3. networks/connect → 202 + message. --------------------------
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/networks/connect"
 _assert_status 202 "POST /networks/connect → 202"
-_assert_json_eq '.ok' true 'connect response.ok==true'
+_assert_json_eq '. | has("ok")' false 'connect response has no constant ok field'
 _assert_json_eq '.message | type' string 'connect response carries .message'
 
 # --- 4. networks/{disconnect,connect} (Kad-only via selector). ----
@@ -119,14 +122,16 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-d '{"network":"kad"}' \
 	"$HOST/api/v0/networks/disconnect"
 _assert_status 200 "POST /networks/disconnect {network:kad} → 200"
-_assert_json_eq '.ok' true 'networks/disconnect(kad) response.ok==true'
+_assert_json_eq '. | has("ok")' false \
+	'networks/disconnect(kad) response has no constant ok field'
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{"network":"kad"}' \
 	"$HOST/api/v0/networks/connect"
 _assert_status 202 "POST /networks/connect {network:kad} → 202"
-_assert_json_eq '.ok' true 'networks/connect(kad) response.ok==true'
+_assert_json_eq '. | has("ok")' false \
+	'networks/connect(kad) response has no constant ok field'
 
 # ed2k-only selector should also round-trip via the network field.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -152,7 +157,10 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-d '{"ip":"127.0.0.1","port":4672}' \
 	"$HOST/api/v0/kad/bootstrap"
 _assert_status 202 "POST /kad/bootstrap (dotted-quad) → 202"
-_assert_json_eq '.ok'   true   'kad/bootstrap response.ok==true'
+# `ip`/`port` are the documented exception to the no-body rule for actions:
+# the echo reports which address the daemon actually parsed, which the caller
+# cannot read back anywhere else. `ok` is gone; the 202 carried it.
+_assert_json_eq '. | has("ok")' false 'kad/bootstrap response has no constant ok field'
 _assert_json_eq '.port' 4672   'kad/bootstrap response echoes port'
 
 # Uint32 IP form should also work.

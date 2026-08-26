@@ -301,11 +301,17 @@ export const searches = {
   // POST /search -> a new tab, which becomes active. `label` overrides what
   // the strip shows (a related:: query is unreadable in a tab).
   async start(body, label) {
+    // The 202 answers with the created search as the same row GET /search
+    // lists, so the tab is seeded from what the daemon recorded rather than
+    // from what we asked for -- `kind` and `startedAt` in particular, which
+    // the request only implies.
     const r = await api.post("search", body);
     const id = r.search_id;
     tabs.set(id, newTab({
       id, query: r.query || body.query || "", label: label || "",
-      kind: body.type || "global", state: "running", startedAt: nowSec(),
+      kind: r.kind || body.type || "global",
+      state: r.state || "running",
+      startedAt: r.started_at || nowSec(),
     }));
     setActive(id);
     return id;
@@ -327,8 +333,10 @@ export const searches = {
       if (name) { open.query = name; open.label = name; }
     } else {
       tabs.set(id, newTab({
-        id, query: name || "", label: name || "", kind: "browse",
-        state: "running", startedAt: nowSec(),
+        id, query: name || r.query || "", label: name || r.query || "",
+        kind: r.kind || "browse",
+        state: r.state || "running",
+        startedAt: r.started_at || nowSec(),
       }));
     }
     setActive(id);

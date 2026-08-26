@@ -126,20 +126,29 @@ _assert_json_eq '[.. | objects | select(.key? == "ul_dl_ratio") | .values[0].typ
 _assert_json_eq '[.. | objects | select(has("ratio")) | .ratio | (.session, .total)
 	| select(. != null) | type] | all(. == "number")' \
 	true '/stats/tree ratio fields, when present, are numbers'
-# raw: the untranslated version/OS value on per-client-software rows. Absent
-# unless peers with version/OS info have connected, so assert shape, not
-# presence -- when present it is a string and rides a keyed dynamic row.
-_assert_json_eq '[.. | objects | select(has("raw")) | .raw | type] | all(. == "string")' \
-	true '/stats/tree raw fields, when present, are strings'
-# enum: additive locale-independent token on well-known sentinel string values
-# ("never"/"not_available"). Assert the tokens are from the known set and always
-# accompany a string value (the English value is kept alongside).
-_assert_json_eq '([.. | objects | .values? // empty | .[]? | select(has("token")) | .token]
+# label_value: the untranslated version/OS value on per-client-software rows.
+# `null` on every other node rather than absent, so the presence test is
+# `!= null` -- the key is always there. Assert shape, not presence: it is only
+# non-null once peers with version/OS info have connected.
+_assert_json_eq '[.. | objects | select(has("label_value")) | .label_value] | all(. == null or type == "string")' \
+	true '/stats/tree label_value is a string or null on every node'
+# Every node carries the key, so a client can read it without a has() guard.
+_assert_json_eq '[.. | objects | select(has("label") and has("values")) | has("label_value")] | all(.)' \
+	true '/stats/tree label_value is present on every node, null where there is no datum'
+# token: additive locale-independent marker on well-known sentinel string
+# values ("never"/"not_available"), and `null` on every other value. Assert the
+# non-null tokens are from the known set and always accompany a string value
+# (the English value is kept alongside).
+_assert_json_eq '([.. | objects | .values? // empty | .[]? | .token | select(. != null)]
 	| unique) - ["never","not_available"] | length == 0' \
 	true '/stats/tree value tokens are from the known set'
-_assert_json_eq '[.. | objects | .values? // empty | .[]? | select(has("token"))
+_assert_json_eq '[.. | objects | .values? // empty | .[]? | select(.token != null)
 	| (.type == "string" and (.value | type) == "string")] | all(.)' \
 	true '/stats/tree value tokens ride on a string value (kept for legacy clients)'
+# Same for the two optional value keys: always present, null when there is
+# nothing to report.
+_assert_json_eq '[.. | objects | .values? // empty | .[]? | (has("token") and has("extra"))] | all(.)' \
+	true '/stats/tree values always carry token and extra, null where absent'
 
 # --- 3. /stats/graphs/{graph} — all four named graphs. -------------
 for g in download_speed upload_speed connections kad_nodes; do

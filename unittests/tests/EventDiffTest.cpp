@@ -779,11 +779,12 @@ TEST(EventDiff, ClientEventCarriesPartProgressPercent)
 	ASSERT_TRUE(payload.find("\"part_progress_percent\":75") != std::string::npos);
 }
 
-TEST(EventDiff, ClientEventOmitsPartProgressPercentWithNoLinkedFile)
+TEST(EventDiff, ClientEventNullsPartProgressPercentWithNoLinkedFile)
 {
 	// A peer that only downloads FROM us has no meaningful denominator, so
-	// the field stays at its sentinel and the key is omitted -- the same rule
-	// the REST row follows. A negative percent must never reach the wire.
+	// the field is null -- the same rule the REST row follows since #1160
+	// section 1, where an unknown value is null rather than an absent key.
+	// The -1 sentinel is in-process only and must never reach the wire.
 	CState state;
 	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &clients) {
 		ClientSnapshot c;
@@ -802,8 +803,73 @@ TEST(EventDiff, ClientEventOmitsPartProgressPercentWithNoLinkedFile)
 			payload = e.data;
 	}
 	ASSERT_TRUE(!payload.empty());
-	ASSERT_TRUE(payload.find("part_progress_percent") == std::string::npos);
+	ASSERT_TRUE(payload.find("\"part_progress_percent\":null") != std::string::npos);
 	ASSERT_TRUE(payload.find("-1") == std::string::npos);
+}
+
+// `media` is null, never absent, on a shared event whose file has no metadata.
+// The event promises key parity with the /shared row, and that row reports the
+// key unconditionally -- a subscriber diffing the two must not find `media` on
+// one side only. This drifted once already: the REST writer moved to null while
+// this one kept skipping the key, and only a live parity check caught it.
+TEST(EventDiff, SharedEventNullsMediaWithNoMetadata)
+{
+	CState state;
+	state.MutateShared([](FileMap &files) {
+		FileSnapshot f;
+		f.ecid = 12;
+		f.hash = "1212121212121212121212121212bbbb";
+		f.name = "no-metadata.bin";
+		f.size = kPartSizeBytes;
+		f.is_shared = true;
+		f.has_media = false;
+		files.emplace(f.ecid, f);
+	});
+
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string payload;
+	for (const auto &e : DrainAll(bus)) {
+		if (e.name == "shared_added")
+			payload = e.data;
+	}
+	ASSERT_TRUE(!payload.empty());
+	ASSERT_TRUE(payload.find("\"media\":null") != std::string::npos);
+}
+
+// ...and the object itself when there is one, so the null above is the
+// no-value answer rather than the writer having lost the field.
+TEST(EventDiff, SharedEventCarriesMediaWhenPresent)
+{
+	CState state;
+	state.MutateShared([](FileMap &files) {
+		FileSnapshot f;
+		f.ecid = 13;
+		f.hash = "1313131313131313131313131313cccc";
+		f.name = "clip.mkv";
+		f.size = kPartSizeBytes;
+		f.is_shared = true;
+		f.has_media = true;
+		f.media.length_s = 5400;
+		f.media.bitrate = 1500;
+		f.media.codec = "h264";
+		files.emplace(f.ecid, f);
+	});
+
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string payload;
+	for (const auto &e : DrainAll(bus)) {
+		if (e.name == "shared_added")
+			payload = e.data;
+	}
+	ASSERT_TRUE(!payload.empty());
+	ASSERT_TRUE(payload.find("\"media\":{\"length_s\":5400") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"codec\":\"h264\"") != std::string::npos);
 }
 
 // Hashing progress on the shared side (issue #1054). amuled emits one tag kind

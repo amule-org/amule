@@ -10,7 +10,7 @@
 #   * DELETE /servers/by-address/<ip>:<port>         — address-keyed route
 #   * DELETE /logs/amule                   — clear amule log + in-process cache
 #   * DELETE /logs/serverinfo              — clear MOTD log + invalidate lazy cache
-#   * POST   /downloads {"links":[...]}    — array body, alongside `ed2k_link`
+#   * POST   /downloads {"links":[...]}    — array body, the only spelling
 #   * POST   /networks/disconnect          — `{"network":"ed2k"|"kad"|"both"}` selector
 #   * GET    /clients?filter=uploads|downloads|active
 #   * GET    /events?channels=<csv>        — subscribe to a subset of event types
@@ -92,8 +92,9 @@ if [ "$RC" = "202" ]; then
 else
 	_fail "shared_reload status" "expected 202, got $RC: $(cat /tmp/p11_shared_reload.json)"
 fi
-if jq -e '.ok == true' /tmp/p11_shared_reload.json >/dev/null 2>&1; then
-	_pass "POST /shared_reload .ok == true"
+# No constant `ok`: the 202 already said the call was accepted.
+if jq -e 'has("ok") | not' /tmp/p11_shared_reload.json >/dev/null 2>&1; then
+	_pass "POST /shared_reload has no constant ok field"
 else
 	_fail "shared_reload body" "$(cat /tmp/p11_shared_reload.json)"
 fi
@@ -260,26 +261,24 @@ if jq -e '(.results | length) == 1 and .results[0].ok == true' /tmp/p11_dl.json 
 else
 	_fail "downloads array results" "$(cat /tmp/p11_dl.json)"
 fi
-# Mixing both forms → 400
-RC=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${H_AUTH[@]}" \
-	-H "Content-Type: application/json" \
-	-d "{\"ed2k_link\":\"$TEST_LINK\",\"links\":[\"$TEST_LINK\"]}" \
-	"$HOST/api/v0/downloads")
-if [ "$RC" = "400" ]; then
-	_pass "POST /downloads mixing ed2k_link AND links → 400"
+# `links` is the only spelling. The singular `ed2k_link` alias is refused
+# rather than ignored, with or without `links` alongside it, and the message
+# names the array form so a caller on the old field is told where to go.
+for BODY in \
+	"{\"ed2k_link\":\"$TEST_LINK\",\"links\":[\"$TEST_LINK\"]}" \
+	"{\"ed2k_link\":\"$TEST_LINK\"}"; do
+	RC=$(curl -s -o /tmp/p11_dl_alias.json -w "%{http_code}" -X POST "${H_AUTH[@]}" \
+		-H "Content-Type: application/json" -d "$BODY" "$HOST/api/v0/downloads")
+	if [ "$RC" = "400" ]; then
+		_pass "POST /downloads with ed2k_link → 400"
+	else
+		_fail "downloads ed2k_link body" "expected 400, got $RC"
+	fi
+done
+if jq -e '.error.message | test("`links`")' /tmp/p11_dl_alias.json >/dev/null 2>&1; then
+	_pass "the ed2k_link 400 names `links` as the replacement"
 else
-	_fail "downloads mixed body" "expected 400, got $RC"
-fi
-# Backwards-compat singular form still works.
-curl -s -X DELETE "${H_AUTH[@]}" "$HOST/api/v0/downloads/$TEST_HASH" > /dev/null
-_wait_for_no_download || true
-RC=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${H_AUTH[@]}" \
-	-H "Content-Type: application/json" \
-	-d "{\"ed2k_link\":\"$TEST_LINK\"}" "$HOST/api/v0/downloads")
-if [ "$RC" = "202" ]; then
-	_pass "POST /downloads singular ed2k_link still accepted (backwards-compat)"
-else
-	_fail "downloads singular body" "expected 202, got $RC"
+	_fail "ed2k_link 400 message" "$(cat /tmp/p11_dl_alias.json)"
 fi
 
 # --- 8. POST /networks/disconnect selector. ----------------------
@@ -460,7 +459,7 @@ _wait_for_no_download || true
 PID=$!
 sleep 2
 curl -s -X POST "${H_AUTH[@]}" -H "Content-Type: application/json" \
-	-d "{\"ed2k_link\":\"$TEST_LINK\"}" "$HOST/api/v0/downloads" > /dev/null
+	-d "{\"links\":[\"$TEST_LINK\"]}" "$HOST/api/v0/downloads" > /dev/null
 sleep 6
 kill $PID 2>/dev/null
 wait $PID 2>/dev/null

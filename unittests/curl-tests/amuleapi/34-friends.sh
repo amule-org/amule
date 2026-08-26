@@ -15,14 +15,16 @@
 #   * `limit` is clamped and a bad `limit` / `offset` / `order` is a 400,
 #     the same contract as every other list endpoint,
 #   * both advertised sort keys are accepted and an unknown one is a 400,
-#   * a friend added by address round-trips: it appears in the list with
-#     the address given, and `online` is false while nothing is linked,
+#   * a friend added by address round-trips: the POST is a bodyless 202
+#     (EC's FRIEND op never returns the record it made) and the friend
+#     then appears in the list with the address given, `online` false
+#     while nothing is linked,
 #   * `user_hash` is either empty or a 32-char lowercase MD4, so it
 #     correlates with /clients `user_hash` directly,
 #   * `friend_slot` toggles through PATCH and reads back, which is the
 #     part that needed the daemon to serialize the flag at all,
-#   * DELETE removes it and a second DELETE is a 404 — the EC op is
-#     idempotent but a mistyped id must not answer 200,
+#   * DELETE removes it (204, no body) and a second DELETE is a 404 -
+#     the EC op is idempotent but a mistyped id must not answer 204,
 #   * the mutations require ADMIN and the read does not,
 #   * malformed bodies are rejected before any EC traffic,
 #   * HEAD is routed like GET, and non-routed methods are 405.
@@ -146,21 +148,36 @@ TEST_PORT=4662
 _curl -X POST -H "Content-Type: application/json" \
 	-d "{\"ip\":\"$TEST_IP\",\"port\":$TEST_PORT,\"name\":\"curltest-friend\"}" \
 	"$HOST/api/v0/friends"
-_assert_status 201 "POST /friends (address form)"
+# 202 with no body. EC's FRIEND op answers success or failure and never
+# returns the record it created, so the handler used to name the new friend by
+# diffing the snapshot against a pre-add copy - the object when the inline
+# refresh had landed, a bare {ok} when it had not. The caller re-reads
+# /friends instead, which is what the rest of this phase does.
+_assert_status 202 "POST /friends (address form)"
+[ -z "$CURL_BODY" ] && _pass "POST /friends sends no body" \
+	|| _fail "POST body" "expected empty, got: ${CURL_BODY:0:200}"
 
-NEW_ECID=$(_jq '.ecid')
-if [ -n "$NEW_ECID" ] && [ "$NEW_ECID" != "null" ]; then
-	_pass "response carries ecid ($NEW_ECID)"
-else
-	_fail "POST response" "no ecid in: ${CURL_BODY:0:200}"
-fi
-[ "$(_jq '.ip')" = "$TEST_IP" ] && _pass "ip round-trips" || _fail "ip" "got $(_jq '.ip')"
-[ "$(_jq '.port')" = "$TEST_PORT" ] && _pass "port round-trips" || _fail "port" "got $(_jq '.port')"
-[ "$(_jq '.online')" = "false" ] && _pass "a friend with no linked peer is offline" \
-	|| _fail "online" "expected false, got $(_jq '.online')"
-
-_curl "$HOST/api/v0/friends"
+_curl "$HOST/api/v0/friends?limit=500"
 AFTER=$(_jq '.total')
+
+# Find the friend just added, by the address it was added with.
+NEW_ECID=$(echo "$CURL_BODY" | jq -r --arg ip "$TEST_IP" --argjson p "$TEST_PORT" \
+	'[.friends[] | select(.ip == $ip and .port == $p)] | first | .ecid // empty')
+if [ -n "$NEW_ECID" ]; then
+	_pass "the added friend is readable from /friends (ecid=$NEW_ECID)"
+else
+	_fail "friend lookup" "no friend at $TEST_IP:$TEST_PORT in: ${CURL_BODY:0:300}"
+	_die "cannot continue without the new friend's ecid"
+fi
+NEW=$(echo "$CURL_BODY" | jq -r --argjson e "$NEW_ECID" \
+	'[.friends[] | select(.ecid == $e)] | first')
+[ "$(echo "$NEW" | jq -r .ip)" = "$TEST_IP" ] \
+	&& _pass "ip round-trips" || _fail "ip" "got $(echo "$NEW" | jq -r .ip)"
+[ "$(echo "$NEW" | jq -r .port)" = "$TEST_PORT" ] \
+	&& _pass "port round-trips" || _fail "port" "got $(echo "$NEW" | jq -r .port)"
+[ "$(echo "$NEW" | jq -r .online)" = "false" ] \
+	&& _pass "a friend with no linked peer is offline" \
+	|| _fail "online" "expected false, got $(echo "$NEW" | jq -r .online)"
 if [ "$AFTER" -gt "$BEFORE" ] 2>/dev/null; then
 	_pass "the list grew ($BEFORE -> $AFTER)"
 else
@@ -247,9 +264,10 @@ fi
 
 # --- 8. Remove, and prove a stale id does not answer 200. ----------
 _curl -X DELETE "$HOST/api/v0/friends/$NEW_ECID"
-_assert_status 200 "DELETE /friends/$NEW_ECID"
-[ "$(_jq '.ecid')" = "$NEW_ECID" ] && _pass "DELETE echoes the id" \
-	|| _fail "DELETE echo" "got $(_jq '.ecid')"
+# 204, no body: the ecid came from the URL and `ok` restated the status code.
+_assert_status 204 "DELETE /friends/$NEW_ECID"
+[ -z "$CURL_BODY" ] && _pass "DELETE sends no body" \
+	|| _fail "DELETE body" "expected empty, got: ${CURL_BODY:0:200}"
 
 _curl -X DELETE "$HOST/api/v0/friends/$NEW_ECID"
 _assert_status 404 "a second DELETE of the same id is a 404"
