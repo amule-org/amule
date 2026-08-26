@@ -2251,6 +2251,24 @@ amuleapi's own `admin` and `guest` passwords are **not** settable here; `remote_
 
 **Response:** `200 OK` — full preferences object (post-mutation), so a read-modify-write client can confirm what landed without a follow-up GET.
 
+**Numeric fields are bounded to what the daemon can actually hold**, not to the width of their JSON type. A value outside the range is a `400` naming the range; it is never accepted and quietly changed. Several of these bounds are much narrower than they look, because the core stores the setting differently from how the API spells it:
+
+| Field | Range | Step | Why |
+|---|---|---|---|
+| `connection.tcp_port` | `1`–`65532` | | the server UDP socket is TCP+3, and the core substitutes the default port for anything higher |
+| `core_tweaks.file_buffer_bytes` | `0`–`3825000` | `15000` | stored as a `uint8` count of 15000-byte blocks |
+| `core_tweaks.max_upload_queue_clients` | `0`–`25500` | `100` | stored as a `uint8` count of hundreds |
+| `core_tweaks.max_new_connections_per_5s` | `0`–`65535` | | stored as a `uint16` |
+| `core_tweaks.kad_max_source_searches` | `5`–`50` | | clamped to this range at daemon start |
+| `core_tweaks.kad_reask_minutes` | `30`–`60` | | clamped to this range at daemon start |
+| `core_tweaks.source_reask_minutes` | `15`–`60` | | clamped to this range at daemon start; below it the UDP reask gets you auto-banned for reask spam |
+
+The two fields with a **step** accept only whole multiples of it: `file_buffer_bytes: 20000` is a `400`, not a silent round down to `15000`. The names stay in the unit you think in rather than being renamed to the daemon's internal one, and the price is that the API is strict about the values in between.
+
+The three **clamped at daemon start** rows are the reason this is enforced on the write rather than left to the client to check. Their setters assign the value raw, so a `GET` right after the `PATCH` reports it back faithfully and only the next restart reveals that the daemon never kept it.
+
+**A low `connection.max_upload_kbps` caps `max_download_kbps`,** which is the one place a `PATCH` changes a field the request did not name. Below `4` kB/s up the download limit is forced to 3× the upload; below `10` it is forced to 4×. So `PATCH {"connection": {"max_upload_kbps": 3}}` also sets `max_download_kbps` to `9`. This is a deliberate anti-leech rule in the core rather than a defect, it applies whichever of the two you write, and the `PATCH` response echoes the whole preferences object so the adjusted value is visible in the reply.
+
 **Errors:** `400 bad_request` (unknown/mis-typed field, or a body with no recognized fields), `400 amuled_rejected`, `503 ec_unavailable`.
 
 ---

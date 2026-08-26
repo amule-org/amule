@@ -28,6 +28,7 @@
 
 #include "PrefsSchema.h"
 #include "Server.h" // SRV_PR_*
+#include "PrefsSchema.h"
 #include "Refresher.h"
 #include "State.h"
 
@@ -48,6 +49,10 @@ using namespace muleunit;
 using namespace webapi;
 
 DECLARE_SIMPLE(Refresher)
+// Own suite: the preference-schema domain guards below are about
+// PrefsSchema.cpp, which this target already compiles and links, not about the
+// EC walkers the rest of the file covers.
+DECLARE_SIMPLE(PrefsSchema)
 
 // ----------------------------------------------------------------------
 // EC_TAG_FILE_REMOVED — INC-protocol deletion marker. With GET_UPDATE
@@ -2823,4 +2828,76 @@ TEST(Refresher, StatusWithoutStatsTagsKeepsZeroOverheadAndUnknownDisk)
 	ASSERT_EQUALS(static_cast<std::uint64_t>(0), out.upload_overhead_bps);
 	ASSERT_EQUALS(static_cast<std::int64_t>(-1), out.temp_free_bytes);
 	ASSERT_EQUALS(static_cast<std::int64_t>(-1), out.incoming_free_bytes);
+}
+
+// ----------------------------------------------------------------------
+// Preference schema domains (#1174).
+//
+// The schema's bounds and the core's storage limits are two copies of one
+// fact, and nothing used to fail when they drifted apart: eight fields
+// declared a range wider than what CPreferences could hold, so a PATCH inside
+// the declared range was accepted, answered 200, and the value was changed by
+// integer division, by a uint8/uint16 wrap, or by a clamp that did not run
+// until the next daemon start.
+//
+// These assert the properties that are checkable from the schema alone. They
+// deliberately do not restate each field's numbers -- a test that hardcodes
+// the same constants as the table only asserts the table equals a copy of
+// itself. What they catch is the SHAPE of the defect.
+// ----------------------------------------------------------------------
+
+TEST(PrefsSchema, NumericRowsHaveACoherentDomain)
+{
+	const webapi::PrefField *schema = webapi::PrefSchema();
+	for (std::size_t i = 0; i < webapi::PrefSchemaSize(); ++i) {
+		const webapi::PrefField &f = schema[i];
+		if (f.type != webapi::PrefType::Uint16 && f.type != webapi::PrefType::Uint32)
+			continue;
+		const std::string where = std::string(f.category) + "." + f.key;
+		ASSERT_TRUE_M(f.min <= f.max, (where + ": min above max"));
+		// A Uint16 row whose ceiling does not fit in a uint16 is the
+		// max_new_connections_per_5s defect exactly: the declared range says
+		// one thing and the wire type says another, and the excess wraps.
+		if (f.type == webapi::PrefType::Uint16) {
+			ASSERT_TRUE_M(f.max <= 65535u, (where + ": Uint16 row declares a max above 65535"));
+		}
+		if (f.step) {
+			// Both endpoints have to be reachable, or the range advertises
+			// values the step forbids.
+			ASSERT_TRUE_M((f.max % f.step) == 0, (where + ": max is not a multiple of step"));
+			ASSERT_TRUE_M((f.min % f.step) == 0, (where + ": min is not a multiple of step"));
+		}
+	}
+}
+
+TEST(PrefsSchema, AnUnboundedNumericRowIsADeliberateChoice)
+{
+	// The forcing function. A new numeric row that leaves its ceiling at the
+	// full uint32 range fails here until someone puts it on this list, which
+	// is the review conversation the eight fields in #1174 never had. Both
+	// entries below were resolved to genuine uint32 members in the core during
+	// that audit.
+	static const char *const kKnownUnbounded[] = {
+		"files.min_free_space_mb",
+		"remote_controls.webserver.refresh_seconds",
+	};
+	const webapi::PrefField *schema = webapi::PrefSchema();
+	for (std::size_t i = 0; i < webapi::PrefSchemaSize(); ++i) {
+		const webapi::PrefField &f = schema[i];
+		if (f.type != webapi::PrefType::Uint16 && f.type != webapi::PrefType::Uint32)
+			continue;
+		if (f.max != 0xFFFFFFFFu)
+			continue;
+		const std::string where = std::string(f.category) + "." + f.key;
+		bool listed = false;
+		for (const char *known : kKnownUnbounded) {
+			if (where == known) {
+				listed = true;
+				break;
+			}
+		}
+		ASSERT_TRUE_M(listed,
+			(where + ": numeric row is unbounded; give it a real max, or add it to "
+				 "kKnownUnbounded once you have checked the core's storage width"));
+	}
 }

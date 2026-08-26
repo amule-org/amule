@@ -8151,7 +8151,9 @@ bool PrefTakeUint(const picojson::object &o,
 	CECTag &group,
 	const char *key,
 	ec_tagname_t name,
+	std::uint32_t min,
 	std::uint32_t max,
+	std::uint32_t step,
 	bool &any,
 	std::string &err,
 	std::uint32_t scale)
@@ -8164,8 +8166,20 @@ bool PrefTakeUint(const picojson::object &o,
 		return false;
 	}
 	const double v = it->second.get<double>();
-	if (v < 0 || v > static_cast<double>(max)) {
-		err = std::string(key) + " out of range";
+	if (v < 0 || v > static_cast<double>(max) || v < static_cast<double>(min)) {
+		// Name the bounds. These domains are narrower than the field's type for
+		// reasons a caller cannot infer -- a uint8 behind a byte count, a clamp
+		// that does not run until the next daemon start -- so "out of range"
+		// alone leaves them guessing which end they hit and by how much.
+		err = std::string(key) + " out of range (" + std::to_string(min) + "-" + std::to_string(max) +
+		      ")";
+		return false;
+	}
+	// Quantised rows: the core's setter divides, so a value between two steps
+	// is truncated on the way in. Rejected rather than silently rounded, so the
+	// value a client writes is always the value stored.
+	if (step && (static_cast<std::uint64_t>(v) % step) != 0) {
+		err = std::string(key) + " must be a multiple of " + std::to_string(step);
 		return false;
 	}
 	const std::uint64_t scaled = static_cast<std::uint64_t>(v) * (scale ? scale : 1u);
@@ -8474,7 +8488,8 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 			break;
 		case webapi::PrefType::Uint16:
 		case webapi::PrefType::Uint32:
-			ok = PrefTakeUint(*src, g, f.key, f.tag, f.max, any_change, err, f.ec_scale);
+			ok = PrefTakeUint(
+				*src, g, f.key, f.tag, f.min, f.max, f.step, any_change, err, f.ec_scale);
 			break;
 		case webapi::PrefType::String:
 			ok = PrefTakeString(*src, g, f.key, f.tag, any_change, err);

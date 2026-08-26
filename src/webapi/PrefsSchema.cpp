@@ -80,6 +80,23 @@ const char *const kIp2CountrySources[] = { "dbip", "maxmind", "custom", nullptr 
 #define PREF_U32_SCALED(cat, key, tag, maxv, acc, memb, scale) \
 	{cat, key, tag, PrefType::Uint32, PrefEnc::Value, false, acc, maxv, nullptr, nullptr, PREF_MEMBER(memb, std::uint32_t), 0, scale}
 
+// Numeric rows whose real domain is narrower than their type. `minv`/`maxv` are
+// both inclusive and both rejected with a 400; `stepv` is the granularity the
+// core stores at, 0 when the row is not quantised. See the notes on
+// PrefField::min and ::step for why this is declared rather than clamped.
+#define PREF_U32_DOMAIN(cat, key, tag, minv, maxv, stepv, acc, memb) \
+	{cat, key, tag, PrefType::Uint32, PrefEnc::Value, false, acc, maxv, nullptr, nullptr, \
+		PREF_MEMBER(memb, std::uint32_t), 0, 0, minv, stepv}
+
+#define PREF_U16_DOMAIN(cat, key, tag, minv, maxv, acc, memb) \
+	{cat, key, tag, PrefType::Uint16, PrefEnc::Value, false, acc, maxv, nullptr, nullptr, \
+		PREF_MEMBER(memb, std::uint16_t), 0, 0, minv, 0}
+
+// Scaled and bounded: bounds are in the API's unit, applied before scaling.
+#define PREF_U32_SCALED_DOMAIN(cat, key, tag, minv, maxv, acc, memb, scale) \
+	{cat, key, tag, PrefType::Uint32, PrefEnc::Value, false, acc, maxv, nullptr, nullptr, \
+		PREF_MEMBER(memb, std::uint32_t), 0, scale, minv, 0}
+
 #define PREF_STR(cat, key, tag, acc, memb) \
 	{cat, key, tag, PrefType::String, PrefEnc::Value, false, acc, 0u, nullptr, nullptr, PREF_MEMBER(memb, std::string), 0}
 
@@ -132,7 +149,10 @@ const PrefField kSchema[] = {
 	PREF_ENUM("connection", "proxy_type", EC_TAG_PROXY_TYPE, kProxyTypes, PrefAccess::ReadWrite, proxy_type),
 	PREF_STR("connection", "proxy_user", EC_TAG_PROXY_USER, PrefAccess::ReadWrite, proxy_user),
 	PREF_BOOL("connection", "reconnect", EC_TAG_CONN_RECONNECT, PrefEnc::Presence, false, PrefAccess::ReadWrite, reconnect),
-	PREF_U16("connection", "tcp_port", EC_TAG_CONN_TCP_PORT, 65535u, PrefAccess::ReadWrite, tcp_port),
+	// 65532, not 65535: SetPort() substitutes DEFAULT_TCP_PORT when val + 3
+	// exceeds 65535, because the server UDP socket is TCP+3. A 65534 here was a
+	// 200 that left the daemon listening on 4662.
+	PREF_U16_DOMAIN("connection", "tcp_port", EC_TAG_CONN_TCP_PORT, 1u, 65532u, PrefAccess::ReadWrite, tcp_port),
 	PREF_U16("connection", "udp_port", EC_TAG_CONN_UDP_PORT, 65535u, PrefAccess::ReadWrite, udp_port),
 	PREF_U32("connection", "upload_slot_kbps", EC_TAG_CONN_SLOT_ALLOCATION, 65535u, PrefAccess::ReadWrite, upload_slot_kbps),
 	PREF_BOOL_INGROUP("connection", "upnp_available", EC_TAG_GENERAL_UPNP_AVAILABLE, PrefEnc::Value, PrefAccess::ReadOnly, upnp_available, EC_TAG_PREFS_GENERAL),
@@ -245,13 +265,21 @@ const PrefField kSchema[] = {
 	PREF_U32("online_signature", "update_frequency_seconds", EC_TAG_ONLINESIG_UPDATE, 65535u, PrefAccess::ReadWrite, online_signature.update_frequency_seconds),
 
 	// [core_tweaks]
-	PREF_U32("core_tweaks", "file_buffer_bytes", EC_TAG_CORETW_FILEBUFFER, 0xFFFFFFFFu, PrefAccess::ReadWrite, core_tweaks.file_buffer_bytes),
-	PREF_U32("core_tweaks", "kad_max_source_searches", EC_TAG_CORETW_KAD_MAX_SEARCHES, 0xFFFFFFFFu, PrefAccess::ReadWrite, core_tweaks.kad_max_source_searches),
-	PREF_U32_SCALED("core_tweaks", "kad_reask_minutes", EC_TAG_CORETW_KAD_REASK_MS, 71582u, PrefAccess::ReadWrite, core_tweaks.kad_reask_minutes, 60000u),
-	PREF_U32("core_tweaks", "max_new_connections_per_5s", EC_TAG_CORETW_MAX_CONN_PER_FIVE, 0xFFFFFFFFu, PrefAccess::ReadWrite, core_tweaks.max_new_connections_per_5s),
-	PREF_U32("core_tweaks", "max_upload_queue_clients", EC_TAG_CORETW_UL_QUEUE, 0xFFFFFFFFu, PrefAccess::ReadWrite, core_tweaks.max_upload_queue_clients),
+	// s_iFileBufferSize is a uint8 holding val/15000, so the domain is 255
+	// blocks of 15000 bytes and nothing between them.
+	PREF_U32_DOMAIN("core_tweaks", "file_buffer_bytes", EC_TAG_CORETW_FILEBUFFER, 0u, 3825000u, 15000u, PrefAccess::ReadWrite, core_tweaks.file_buffer_bytes),
+	// LoadAllItems() clamps this to 5..50 on the next start, so anything else
+	// was a value GET reported until the daemon was restarted.
+	PREF_U32_DOMAIN("core_tweaks", "kad_max_source_searches", EC_TAG_CORETW_KAD_MAX_SEARCHES, 5u, 50u, 0u, PrefAccess::ReadWrite, core_tweaks.kad_max_source_searches),
+	PREF_U32_SCALED_DOMAIN("core_tweaks", "kad_reask_minutes", EC_TAG_CORETW_KAD_REASK_MS, 30u, 60u, PrefAccess::ReadWrite, core_tweaks.kad_reask_minutes, 60000u),
+	// s_MaxConperFive is a uint16; 70000 wrapped to 4464.
+	PREF_U32_DOMAIN("core_tweaks", "max_new_connections_per_5s", EC_TAG_CORETW_MAX_CONN_PER_FIVE, 0u, 65535u, 0u, PrefAccess::ReadWrite, core_tweaks.max_new_connections_per_5s),
+	// s_iQueueSize is a uint8 holding val/100: 255 hundreds, nothing between.
+	PREF_U32_DOMAIN("core_tweaks", "max_upload_queue_clients", EC_TAG_CORETW_UL_QUEUE, 0u, 25500u, 100u, PrefAccess::ReadWrite, core_tweaks.max_upload_queue_clients),
 	PREF_U32_SCALED("core_tweaks", "server_keepalive_timeout_minutes", EC_TAG_CORETW_SRV_KEEPALIVE_TIMEOUT, 71582u, PrefAccess::ReadWrite, core_tweaks.server_keepalive_timeout_minutes, 60000u),
-	PREF_U32_SCALED("core_tweaks", "source_reask_minutes", EC_TAG_CORETW_SOURCE_REASK_MS, 71582u, PrefAccess::ReadWrite, core_tweaks.source_reask_minutes, 60000u),
+	// The 15-minute floor is load-bearing: the UDP reask goes out at
+	// getter - 20s, and below ~10 min peers auto-ban for reask spam.
+	PREF_U32_SCALED_DOMAIN("core_tweaks", "source_reask_minutes", EC_TAG_CORETW_SOURCE_REASK_MS, 15u, 60u, PrefAccess::ReadWrite, core_tweaks.source_reask_minutes, 60000u),
 	PREF_BOOL("core_tweaks", "verbose_logging", EC_TAG_CORETW_VERBOSE, PrefEnc::Presence, false, PrefAccess::ReadWrite, core_tweaks.verbose_logging),
 
 	// [kademlia]
