@@ -62,6 +62,9 @@ export function SharedDetail({ hash }) {
 
   const s = detail;
   const media = s.media;
+  // "audio"/"videos" are the file_type tokens the daemon's
+  // IsMediaProbeCandidate accepts, so the button matches what the core probes.
+  const isMedia = s.file_type === "audio" || s.file_type === "videos";
 
   const copy = (text) => copyText(text)
     .then(() => toast(t("downloads_detail_copied"), "success"))
@@ -76,6 +79,15 @@ export function SharedDetail({ hash }) {
     try {
       await api.post("shared/" + s.hash + "/verify");
       toast(t("shared_verify_started"), "info");
+    } catch (e) { toast(terr(e), "error"); }
+  };
+
+  // Single file: no confirmation (cheap, non-destructive). 202 is async, so the
+  // toast only says it started; new values arrive on the next shared tick.
+  const refreshMedia = async () => {
+    try {
+      await api.post("shared/" + s.hash + "/media/refresh");
+      toast(t("shared_media_refresh_started"), "info");
     } catch (e) { toast(terr(e), "error"); }
   };
 
@@ -138,7 +150,13 @@ export function SharedDetail({ hash }) {
                   title=${t(s.incomplete ? "shared_verify_tip_partfile" : "shared_verify_tip")}
                   onClick=${verify}>
             ${t("shared_verify")}
-          </button>`)}
+          </button>
+          ${isMedia ? html`
+          <button class="btn btn-sm admin-only" type="button" disabled=${!!s.incomplete}
+                  title=${t(s.incomplete ? "shared_media_refresh_tip_partfile" : "shared_media_refresh_tip")}
+                  onClick=${refreshMedia}>
+            ${t("shared_media_refresh")}
+          </button>` : null}`)}
         ${media ? Section([
           media.title ? statRow("downloads_detail_media_title", media.title, "downloads_detail_tip_media_title") : null,
           media.artist ? statRow("downloads_detail_media_artist", media.artist, "downloads_detail_tip_media_artist") : null,
