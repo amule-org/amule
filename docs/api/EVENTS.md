@@ -46,34 +46,10 @@ const es = new EventSource("/api/v0/events", { withCredentials: true });
 for (const t of EVENT_TYPES) es.addEventListener(t, onEvent);
 es.addEventListener("resync", () => location.reload()); // simplest recovery
 
-// 2. Pull baseline snapshots in parallel.
-const [downloads, shared, clients, servers, status] = await Promise.all([
-  fetch("/api/v0/downloads").then((r) => r.json()),
-  fetch("/api/v0/shared").then((r) => r.json()),
-  fetch("/api/v0/clients").then((r) => r.json()),
-  fetch("/api/v0/servers").then((r) => r.json()),
-  fetch("/api/v0/status").then((r) => r.json()),
-]);
-
-// 3. Load each snapshot into the store, drain the buffer, flip the flag —
-//    single synchronous block so no event can fire between drain and flip.
-//    `loadSnapshot` is your store-specific "replace this collection" call,
-//    e.g. `store.set(name, payload)` or `collections.set(name, new Map(...))`.
-loadSnapshot("downloads", downloads);
-loadSnapshot("shared",    shared);
-loadSnapshot("clients",   clients);
-loadSnapshot("servers",   servers);
-loadSnapshot("status",    status);
-for (const ev of buffered) applyEvent(ev);
-buffered.length = 0;
-booting = false;
-```
-
-### Step 2 is a sweep, not a `GET`
-
-`limit` defaults to 100, so one `GET` per collection covers 100 of N rows and the stream then delivers `*_updated` for rows the client never fetched. Page the whole set instead, anchored on the endpoint's identity column (see [REFERENCE.md](REFERENCE.md#paging-a-whole-collection-safely) for which one):
-
-```js
+// Page one collection to completion on its identity column (`hash`, `ecid`,
+// ... — see REFERENCE.md). Anchored on `after`, not `offset`, so a row removed
+// mid-sweep cannot slide the window and hide another row. "Why step 2 sweeps"
+// below is why the whole sweep belongs inside step 2.
 async function sweep(collection, key, idField) {
   const out = [];
   let after = null;
@@ -85,7 +61,35 @@ async function sweep(collection, key, idField) {
     after = page[page.length - 1][idField];
   }
 }
+
+// 2. Pull baseline snapshots in parallel. `limit` defaults to 100, so a list
+//    collection is *swept* page by page; /status is a singleton GET.
+const [downloads, shared, clients, servers, status] = await Promise.all([
+  sweep("downloads", "downloads", "hash"),
+  sweep("shared",    "shared",    "hash"),
+  sweep("clients",   "clients",   "ecid"),
+  sweep("servers",   "servers",   "ecid"),
+  fetch("/api/v0/status").then((r) => r.json()),
+]);
+
+// 3. Load each snapshot into the store, drain the buffer, flip the flag —
+//    single synchronous block so no event can fire between drain and flip.
+//    `loadSnapshot` is your store-specific "replace this collection" call,
+//    e.g. `store.set(name, rows)` or `collections.set(name, new Map(...))`.
+//    The swept collections are arrays of rows; /status is its envelope.
+loadSnapshot("downloads", downloads);
+loadSnapshot("shared",    shared);
+loadSnapshot("clients",   clients);
+loadSnapshot("servers",   servers);
+loadSnapshot("status",    status);
+for (const ev of buffered) applyEvent(ev);
+buffered.length = 0;
+booting = false;
 ```
+
+### Why step 2 sweeps
+
+`limit` defaults to 100, so a single `GET` per collection would cover only 100 of N rows and the stream would then deliver `*_updated` for rows the client never fetched. The `sweep()` helper in step 2 above pages the whole set instead, anchored on the endpoint's identity column (see [REFERENCE.md](REFERENCE.md#paging-a-whole-collection-safely) for which one).
 
 Three rules go with it:
 
