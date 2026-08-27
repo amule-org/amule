@@ -544,6 +544,8 @@ Rate impact is small: the overhead rates move about as often as the speeds alrea
 }
 ```
 
+The network figures and `firewalled_tcp` are `null` whenever the corresponding network is not `connected`, byte-identical to [`GET /status`](REFERENCE.md#get-apiv0status). The event fires on that edge in both directions, so a subscriber sees the flip to and from `null` rather than a value that quietly stops updating. The sample above is the connected case.
+
 Subscribe to this channel alone for a thin "header bar" client that just wants connection state and headline counters.
 
 ### `logs` channel

@@ -296,6 +296,21 @@ std::string JsonFreeSpace(std::int64_t v)
 	return v < 0 ? std::string("null") : std::to_string(v);
 }
 
+// `null` when the value was never measured, matching WriteIntOrNull /
+// WriteBoolOrNull on the REST side. The two bodies are promised to be
+// byte-identical, so the disconnected fields have to print `null` here too --
+// and the comparators below have to treat null<->value as a change, or the
+// event stops firing on the very edge that flips them.
+std::string JsonNumOrNull(bool known, std::uint64_t v)
+{
+	return known ? std::to_string(v) : std::string("null");
+}
+
+std::string JsonBoolOrNull(bool known, bool v)
+{
+	return known ? std::string(v ? "true" : "false") : std::string("null");
+}
+
 // Mirrors HandleStatus key for key -- EVENTS.md promises this payload is
 // identical to the REST /status envelope, and 22-sse-diff-emission.sh asserts
 // it. Both connected_since values are 0 while not connected, same rule as
@@ -312,12 +327,15 @@ std::string ToJsonStatusEvent(const StatusSnapshot &s, const KadSnapshot &k, boo
 	  << EscJson(s.server_name) << "\""
 	  << ",\"server_ip\":\"" << EscJson(s.server_ip) << "\""
 	  << ",\"server_port\":" << s.server_port << ",\"network\":{"
-	  << "\"users\":" << s.ed2k_users << ",\"files\":" << s.ed2k_files << "}}"
+	  << "\"users\":" << JsonNumOrNull(s.has_ed2k_network, s.ed2k_users)
+	  << ",\"files\":" << JsonNumOrNull(s.has_ed2k_network, s.ed2k_files) << "}}"
 	  << ",\"kad\":{"
 	  << "\"state\":\"" << EscJson(s.kad_state) << "\""
-	  << ",\"firewalled_tcp\":" << (s.kad_firewalled_tcp ? "true" : "false")
+	  << ",\"firewalled_tcp\":" << JsonBoolOrNull(s.has_kad_firewalled_tcp, s.kad_firewalled_tcp)
 	  << ",\"connected_since\":" << s.kad_connected_since << ",\"network\":{"
-	  << "\"users\":" << k.users << ",\"files\":" << k.files << ",\"nodes\":" << k.nodes << "}"
+	  << "\"users\":" << JsonNumOrNull(k.has_network, k.users)
+	  << ",\"files\":" << JsonNumOrNull(k.has_network, k.files)
+	  << ",\"nodes\":" << JsonNumOrNull(k.has_network, k.nodes) << "}"
 	  << "}"
 	  << ",\"speeds\":{"
 	  << "\"download_bps\":" << s.download_bps << ",\"upload_bps\":" << s.upload_bps
@@ -477,12 +495,22 @@ bool Equal(const StatusSnapshot &a, const StatusSnapshot &b)
 	       a.download_overhead_bps == b.download_overhead_bps &&
 	       a.upload_overhead_bps == b.upload_overhead_bps && a.temp_free_bytes == b.temp_free_bytes &&
 	       a.incoming_free_bytes == b.incoming_free_bytes && a.ul_queue_len == b.ul_queue_len &&
-	       a.total_src_count == b.total_src_count && a.ed2k_users == b.ed2k_users &&
-	       a.ed2k_files == b.ed2k_files;
+	       a.total_src_count == b.total_src_count &&
+	       // The has_ flags are part of the comparison, not just the values: a
+	       // disconnect flips these to null while the underlying ints keep
+	       // their last reading, so comparing the ints alone would miss the
+	       // edge and the event would stop firing exactly when it matters.
+	       a.has_ed2k_network == b.has_ed2k_network && a.ed2k_users == b.ed2k_users &&
+	       a.ed2k_files == b.ed2k_files && a.has_kad_firewalled_tcp == b.has_kad_firewalled_tcp;
 }
 bool Equal(const KadSnapshot &a, const KadSnapshot &b)
 {
-	return a.users == b.users && a.files == b.files && a.nodes == b.nodes;
+	// This is the SEPARATE gate for the kad half of status_changed -- the
+	// status comparator above does not cover these. has_network is compared
+	// first because it is the field that changes on a connect/disconnect edge
+	// while users/files/nodes keep their last values underneath.
+	return a.has_network == b.has_network && a.users == b.users && a.files == b.files &&
+	       a.nodes == b.nodes;
 }
 
 // Generic map-diff helper. Walks both old and new, emitting:

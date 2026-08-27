@@ -149,8 +149,23 @@ _assert_json_eq '.kad.state | test("^(connected|connecting|disabled)$")' \
 	true 'kad.state is a known enum value'
 # Named for the transport: this is the TCP half of the pair GET /kad reports,
 # not an overall verdict refined by firewalled_udp.
-_assert_json_eq '.kad.firewalled_tcp | type' boolean \
-	'kad.firewalled_tcp is boolean'
+# Gated on Kad being connected: the underlying connstate bit outlives a
+# disconnect, so this reported a reachability verdict for a network the daemon
+# was not on. Same rule as /kad's own copy of the field.
+_assert_json_eq '(.kad.state == "connected") or (.kad.firewalled_tcp == null)' true \
+	'kad.firewalled_tcp is null while Kad is not connected'
+_assert_json_eq '(.kad.state != "connected") or ((.kad.firewalled_tcp | type) == "boolean")' true \
+	'kad.firewalled_tcp is boolean while Kad is connected'
+# The network rollups, both sides. ed2k's summed the whole known SERVER LIST
+# rather than the attached server and nothing zeroed them, so a disconnected
+# daemon repeated its connected figures verbatim and indefinitely.
+for P in "ed2k users" "ed2k files" "kad users" "kad files" "kad nodes"; do
+	set -- $P
+	_assert_json_eq "(.$1.state == \"connected\") or (.$1.network.$2 == null)" true \
+		"$1.network.$2 is null while $1 is not connected"
+	_assert_json_eq "(.$1.state != \"connected\") or ((.$1.network.$2 | type) == \"number\")" true \
+		"$1.network.$2 is numeric while $1 is connected"
+done
 _assert_json_eq '.kad | has("firewalled")' false \
 	'kad.firewalled is gone, replaced by kad.firewalled_tcp'
 

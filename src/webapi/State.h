@@ -653,16 +653,42 @@ struct KadSnapshot
 	// id, this one is persisted (preferencesKad.dat) and survives
 	// daemon restarts.
 	std::string node_id;
+	// Everything below is emitted as `null` unless Kad is CONNECTED, and the
+	// `has_*` flags are what carries that -- one per JSON object rather than
+	// one per field, since they share a single gate.
+	//
+	// These used to be plain values with a `0`/`false` default, so a
+	// disconnected daemon answered with numbers that looked live. Measured on a
+	// real node with Kad stopped: `nodes` reported 2 and `firewalled_tcp`
+	// reported true -- claims about a network we are not on. `nodes` is the
+	// worst, because it is the size of our OWN routing table rather than
+	// anything network-wide, and contacts outlive the disconnect.
+	//
+	// REFERENCE.md's "Unknown values" rule is explicit that an unknown value is
+	// `null` and "neither is ever spelled `0` or `-1`". A count for a network
+	// we are not connected to is precisely unknown: `0` reads as "the network
+	// is empty" and a stale figure reads as "this is current" -- both worse
+	// than `null`, because both are syntactically valid answers a consumer will
+	// happily plot.
+	//
+	// Safe as a default-false flag because RefresherTick builds a fresh
+	// KadSnapshot every tick, so an ungated field keeps its default rather than
+	// the previous tick's value.
 	bool firewalled_tcp = false;
+	bool has_firewalled_tcp = false;
 	bool firewalled_udp = false;
+	bool has_firewalled_udp = false;
 	bool lan_mode = false;
+	bool has_lan_mode = false;
 	std::uint32_t users = 0;
 	std::uint32_t files = 0;
 	std::uint32_t nodes = 0;
+	bool has_network = false; // gates users/files/nodes together
 	std::uint32_t indexed_sources = 0;
 	std::uint32_t indexed_keywords = 0;
 	std::uint32_t indexed_notes = 0;
 	std::uint32_t indexed_load = 0;
+	bool has_indexed = false; // gates the four indexed_* together
 	// Our externally-visible address as a remote Kad contact reported
 	// it back, dotted-quad. Named to match the JSON and to keep it
 	// apart from `buddy_ip` below, which is somebody else's. Empty
@@ -680,6 +706,7 @@ struct KadSnapshot
 	// read that absence as `Disconnected`. An empty string would be a
 	// fourth value outside the endpoint's own enum.
 	std::string buddy_status = "no_buddy"; // "no_buddy" | "connecting" | "connected"
+	bool has_buddy = false;                // gates buddy_status/ip/port together
 	// The buddy's address, dotted-quad. "0.0.0.0"/0 while Kad is
 	// connected with no buddy (amuled ships the tags as 0), empty
 	// while Kad is not connected at all -- same "not known" split as
@@ -1343,6 +1370,9 @@ struct StatusSnapshot
 	// connection before it clears. Distinct from the UDP test, which is
 	// a different mechanism -- see KadSnapshot::firewalled_udp.
 	bool kad_firewalled_tcp = false;
+	// `null` unless Kad is connected: IsKadFirewalled() reads a connstate bit
+	// that survives the disconnect, so this answered `true` on a stopped Kad.
+	bool has_kad_firewalled_tcp = false;
 
 	// Unix timestamp of the most recent connect (amule-org/amule#174),
 	// from EC_TAG_CONNSTATE's optional {ED2K,KAD}_CONNECTED_SINCE
@@ -1385,8 +1415,16 @@ struct StatusSnapshot
 	// kad.network.{users,files,nodes} on KadSnapshot. Populated from
 	// EC_TAG_STATS_ED2K_{USERS,FILES}, present in the same
 	// EC_OP_STAT_REQ response we already parse.
+	//
+	// `null` unless eD2k is connected. These are summed over the whole known
+	// SERVER LIST rather than the server we are attached to, and nothing zeroes
+	// them on disconnect: measured on a real node, a disconnected daemon kept
+	// reporting the identical figures it had while connected, indefinitely. A
+	// consumer cannot tell that from live data, which is what makes it worse
+	// than a `0`.
 	std::uint32_t ed2k_users = 0;
 	std::uint32_t ed2k_files = 0;
+	bool has_ed2k_network = false; // gates ed2k_users/ed2k_files together
 
 	// Version-check result, relayed on the same EC_OP_STATS round-trip
 	// (EC_TAG_GENERAL_VERSION_CHECK_*). done == a check has completed;
