@@ -233,7 +233,7 @@ In practice that means a mutation names the value it wants rather than the chang
 
 Two things are idempotent without looking it: a `DELETE` of something already gone is a `404` rather than a second delete, and `POST /downloads` with a link already queued is refused per-item in the [`results` envelope](#bulk-mutations-and-the-results-envelope). Both report that the request had no effect, which is the point; neither does the work twice.
 
-The exceptions are the endpoints whose whole purpose is to do something again: `POST /shared_reload`, `POST /shared/{hash}/verify`, the `*/update` fetches, and `POST /search/{id}/more`. Asking twice asks for the work twice, which is what the caller meant.
+The exceptions are the endpoints whose whole purpose is to do something again: `POST /shared_reload`, `POST /shared/{hash}/verify`, `POST /shared/media/refresh`, `POST /shared/{hash}/media/refresh`, the `*/update` fetches, and `POST /search/{id}/more`. Asking twice asks for the work twice, which is what the caller meant.
 
 ### IP addresses
 

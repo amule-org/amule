@@ -1,7 +1,7 @@
 // Shared files view: list published files with session/total transfer,
 // request and accept counters; change upload priority (per-row or bulk),
 // multi-select with select-all, status and text filters, live totals, reload shares,
-// bulk Verify Local Data over the selection.
+// bulk Verify Local Data over the selection, whole-share media re-extract.
 // Live via the SSE "shared" channel.
 
 import { api, bulkFailures } from "../api.js";
@@ -110,6 +110,15 @@ export default function Shared({ isGuest }) {
     try { await api.post("shared_reload"); toast(t("shared_toast_reloading"), "success"); setTimeout(() => data.refresh("shared"), 1500); }
     catch (e) { toast(terr(e) || t("shared_error"), "error"); }
   };
+  // Whole-share endpoint (one call), not one POST per selected file -- that is
+  // the point of it on a large library. Confirmed because it is bulk work.
+  const refreshAllMedia = async () => {
+    if (!(await confirmDialog(t("shared_media_refresh_all_confirm")))) return;
+    try {
+      const r = await api.post("shared/media/refresh");
+      toast(tn("shared_media_refresh_all_started", (r && r.queued) || 0), "info");
+    } catch (e) { toast(terr(e) || t("shared_error"), "error"); }
+  };
 
   // --- derived ----------------------------------------------------------
   let list = shared.slice();
@@ -199,6 +208,8 @@ export default function Shared({ isGuest }) {
           <span class="selected-count">${t("shared_selected")} ${selectedCount}</span>
           <span class="vsep" aria-hidden="true"></span>
           <button class="btn btn-sm" onClick=${reload}>${t("shared_refresh_shares")}</button>
+          <button class="btn btn-sm" onClick=${refreshAllMedia}
+                  title=${t("shared_media_refresh_all_tip")}>${t("shared_media_refresh_all")}</button>
         </div>
         <div class="spacer"></div>
         <div class="toolbar">

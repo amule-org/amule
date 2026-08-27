@@ -3,8 +3,8 @@
 # amuleapi 39-shared-media-refresh — re-extracting media metadata (issue #1079).
 #
 # Wire contract:
-#   POST /shared/media/refresh          → 202 { ok, scope:"all",  queued }
-#   POST /shared/{hash}/media/refresh   → 202 { ok, scope:"file", queued }
+#   POST /shared/media/refresh          → 202 { scope:"all",  queued }
+#   POST /shared/{hash}/media/refresh   → 202 { scope:"file", queued }
 #
 # `queued` counts files ACCEPTED for probing, not files that produced
 # metadata: the scheduler drops anything that is not audio/video by
@@ -12,7 +12,8 @@
 # been extracted when the response returns -- the probes run on amuled's
 # media-probe worker.
 #
-# Tolerates an empty share and a daemon that predates the operation (501).
+# Tolerates an empty share and a daemon that predates the operation
+# (503 ec_unsupported).
 
 set -u
 set -o pipefail
