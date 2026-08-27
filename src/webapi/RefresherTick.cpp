@@ -284,11 +284,36 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 	}
 
 	// Results for every search in one roundtrip, before the per-search
-	// progress loop below. Not gated on active_sids: a finished search still
-	// changes (a hit gets downloaded, a Kad notes lookup lands) and now costs
-	// nothing to keep polling, which is what lets those changes be observed
-	// at all rather than only on a client's next read.
-	if (FetchSearchResults(app, state) == SearchFetchOutcome::EcFailed) {
+	// progress loop below.
+	//
+	// Gated on there being any search at all, not on which ones are active. A
+	// finished search still changes -- a hit gets downloaded, a Kad notes
+	// lookup lands -- and now costs nothing to keep polling, which is what
+	// lets those changes be seen rather than only appearing on a client's
+	// next read. What is not worth paying for is the empty case: a daemon
+	// holding no searches would otherwise take a roundtrip a second forever
+	// to be told so.
+	//
+	// Deliberately NOT gated on SSE subscribers. The diff walk is (see
+	// CEventBus's subscriber accounting), but the fetch cannot be: a REST
+	// client polling GET /search/{id}/results reads this cache, and for an
+	// active search nothing else refreshes it -- ClaimSearchRefresh covers
+	// only slots that are not active. Skipping the fetch when nobody is
+	// subscribed would hand that client frozen results.
+	//
+	// HasAnySearch() asks about OUR slots, not the daemon's searches, and the
+	// daemon never tells us about one unasked: a slot exists only because
+	// this process started the search or because a read discovered it
+	// (RequireSearch -> DiscoverSearchIfHeldByCore, a one-off
+	// EC_OP_SEARCH_LIST on a cache miss). A search begun in amulegui or the
+	// monolithic GUI therefore leaves this false, and the union is not sent.
+	//
+	// That costs nothing, because ApplySearchUnion drops results for a search
+	// with no slot anyway -- polling on an empty map would fetch them only to
+	// discard them. Neither discovery route runs through here: GET /search
+	// goes straight to EC_OP_SEARCH_LIST every call, and a by-id read seeds
+	// the slot itself, after which this opens.
+	if (state.HasAnySearch() && FetchSearchResults(app, state) == SearchFetchOutcome::EcFailed) {
 		// Same rule as every other step in the tick: a failed roundtrip bails
 		// the whole tick rather than exposing a half-refreshed cache.
 		return false;

@@ -275,6 +275,12 @@ std::vector<std::uint32_t> CState::AllSearchIds() const
 	return out;
 }
 
+bool CState::HasAnySearch() const
+{
+	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+	return !m_searches.empty();
+}
+
 bool CState::FindSearchResultByHash(
 	const std::string &hash_hex, SearchResult &out, std::uint32_t *owner_search_id) const
 {
