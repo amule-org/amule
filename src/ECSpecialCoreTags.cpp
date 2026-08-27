@@ -589,6 +589,13 @@ CEC_SearchFile_Tag::CEC_SearchFile_Tag(
 	// The container itself stays gated on there being notes, and stays off the
 	// valuemap: an empty one must never be sent, because a client reads its
 	// absence as "no notes" rather than as "unchanged".
+	//
+	// One consequence worth naming, since it looks like a bug from the other
+	// end: a result that HAS notes is never elided by the multi-search union.
+	// The union skips a result whose tag came out childless, and this
+	// container is a child that off-valuemap means it is re-emitted on every
+	// poll, unchanged or not. That is the correct trade -- the alternative
+	// silently drops notes -- and it is bounded by how few results carry any.
 	if (!list.empty()) {
 		CECEmptyTag sc(EC_TAG_PARTFILE_COMMENTS);
 		for (FileRatingList::const_iterator it = list.begin(); it != list.end(); ++it) {

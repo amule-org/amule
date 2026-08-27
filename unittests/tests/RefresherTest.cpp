@@ -2854,6 +2854,81 @@ TEST(Refresher, SearchUnionIgnoresResultsForAnUnknownSearch)
 	ASSERT_TRUE(owner.find(70) == owner.end());
 }
 
+TEST(Refresher, SearchUnionLeavesADetachedSlotAlone)
+{
+	// The daemon evicted the search from its ring. That makes it emit an
+	// EC_TAG_FILE_REMOVED for every result it had sent us -- but the tick has
+	// already detached the slot, precisely so those tombstones do not erase
+	// the results the retirement path means to keep for late reads.
+	std::map<std::uint32_t, SearchSlot> slots;
+	std::map<std::uint32_t, std::uint32_t> owner;
+	SearchSlot &slot = slots[kSid];
+	SearchResult keep;
+	keep.name = "kept.bin";
+	keep.status = "new";
+	slot.raw[70] = keep;
+	slot.results[70] = keep;
+	slot.detached = true;
+	owner[70] = kSid;
+
+	CECPacket resp(EC_OP_SEARCH_RESULTS);
+	resp.AddTag(CECTag(EC_TAG_FILE_REMOVED, static_cast<std::uint32_t>(70)));
+	ApplySearchUnion(&resp, slots, owner);
+
+	ASSERT_EQUALS(static_cast<size_t>(1), slots[kSid].raw.size());
+	ASSERT_EQUALS(static_cast<size_t>(1), slots[kSid].results.size());
+	ASSERT_EQUALS(std::string("kept.bin"), slots[kSid].results[70].name);
+	// The index entry stays too: nothing will re-establish it, and dropping
+	// it would strand the result it points at.
+	ASSERT_TRUE(owner.find(70) != owner.end());
+}
+
+TEST(Refresher, SearchUnionDoesNotUpdateADetachedSlot)
+{
+	// Same freeze in the other direction. A diffed tag arriving for a search
+	// the daemon no longer holds is the tail of an eviction, not news.
+	std::map<std::uint32_t, SearchSlot> slots;
+	std::map<std::uint32_t, std::uint32_t> owner;
+	SearchSlot &slot = slots[kSid];
+	SearchResult keep;
+	keep.name = "kept.bin";
+	keep.source_count = 3;
+	slot.raw[70] = keep;
+	slot.results[70] = keep;
+	slot.detached = true;
+	owner[70] = kSid;
+
+	CECPacket resp(EC_OP_SEARCH_RESULTS);
+	CECTag sf(EC_TAG_SEARCHFILE, static_cast<std::uint32_t>(70));
+	sf.AddTag(CECTag(EC_TAG_SEARCH_ID, kSid));
+	sf.AddTag(CECTag(EC_TAG_PARTFILE_SOURCE_COUNT, static_cast<uint32>(99)));
+	resp.AddTag(sf);
+	ApplySearchUnion(&resp, slots, owner);
+
+	ASSERT_EQUALS(static_cast<std::uint32_t>(3), slots[kSid].results[70].source_count);
+}
+
+TEST(Refresher, SearchUnionDefaultSidAdoptsAnIdLessReply)
+{
+	// The per-search EC_DETAIL_FULL fetch -- the resync path the differential
+	// union has no opcode for. Its reply carries no EC_TAG_SEARCH_ID at all,
+	// so every tag in it has to be attributed to the search that was asked
+	// for, and the ECID index built from that.
+	std::map<std::uint32_t, SearchSlot> slots;
+	std::map<std::uint32_t, std::uint32_t> owner;
+	slots[kSid];
+
+	CECPacket resp(EC_OP_SEARCH_RESULTS);
+	CECTag sf(EC_TAG_SEARCHFILE, static_cast<std::uint32_t>(71));
+	sf.AddTag(CECTag(EC_TAG_PARTFILE_NAME, std::string("seeded.bin")));
+	resp.AddTag(sf);
+	ApplySearchUnion(&resp, slots, owner, kSid);
+
+	ASSERT_EQUALS(static_cast<size_t>(1), slots[kSid].results.size());
+	ASSERT_EQUALS(std::string("seeded.bin"), slots[kSid].results[71].name);
+	ASSERT_EQUALS(kSid, owner[71]);
+}
+
 TEST(Refresher, SearchProgressUnionParsesEveryEntry)
 {
 	CECPacket resp(EC_OP_SEARCH_PROGRESS);

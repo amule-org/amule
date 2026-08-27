@@ -1552,6 +1552,81 @@ TEST(State, ResetListsAdvancesTheRevision)
 // MarkTickSuccess stamps the timestamp; it deliberately does NOT advance the
 // revision, because RefresherTick owns that and the background loop calls
 // both. Pinning it so a future edit does not quietly double-count.
+// ResetLists fires when the PREVIOUS tick returned null against a socket that
+// is still up -- an actual dropped connection shuts amuleapi down instead. The
+// daemon's search registry is therefore alive, along with its record of what it
+// has already sent us, and the multi-search union has no resync opcode. Wiping
+// our side would leave every search permanently short by whatever it held when
+// one tick happened to fail.
+TEST(State, ResetListsKeepsSearchSlots)
+{
+	CState state;
+	state.MarkSearchStarted(42, "global", "ubuntu");
+	state.MutateAllSearches([](std::map<std::uint32_t, SearchSlot> &slots,
+					std::map<std::uint32_t, std::uint32_t> &owner) {
+		SearchResult r;
+		r.name = "ubuntu.iso";
+		slots[42].raw[70] = r;
+		slots[42].results[70] = r;
+		owner[70] = 42;
+	});
+
+	state.ResetLists();
+
+	ASSERT_TRUE(state.HasAnySearch());
+	ASSERT_EQUALS(static_cast<size_t>(1), state.Search(42).size());
+}
+
+// A restarted search must not show the previous one's hits through the gaps in
+// a diffed tag. `results` alone is not enough: `raw` is what the union merges
+// into, and RebuildFoldedResults would put any survivor straight back.
+TEST(State, MarkSearchStartedClearsTheRawResultsAndTheIndex)
+{
+	CState state;
+	state.MarkSearchStarted(42, "global", "ubuntu");
+	state.MutateAllSearches([](std::map<std::uint32_t, SearchSlot> &slots,
+					std::map<std::uint32_t, std::uint32_t> &owner) {
+		SearchResult r;
+		r.name = "stale.iso";
+		slots[42].raw[70] = r;
+		slots[42].results[70] = r;
+		owner[70] = 42;
+	});
+
+	state.MarkSearchStarted(42, "global", "debian");
+
+	state.MutateAllSearches([](std::map<std::uint32_t, SearchSlot> &slots,
+					std::map<std::uint32_t, std::uint32_t> &owner) {
+		ASSERT_TRUE(slots[42].raw.empty());
+		ASSERT_TRUE(slots[42].results.empty());
+		ASSERT_TRUE(owner.find(70) == owner.end());
+	});
+}
+
+// Slots are capped, or a long-lived process watching a busy GUI accumulates one
+// result map per search forever. Active searches are never the victim, and a
+// detached one -- the daemon no longer holds it, so nothing is lost -- outranks
+// an attached one however much younger.
+TEST(State, SurplusSearchSlotsAreEvictedDetachedFirst)
+{
+	CState state;
+	// Two finished slots, oldest first, then fill well past the cap.
+	state.MarkSearchStarted(1, "global", "oldest-attached");
+	state.MarkSearchStarted(2, "global", "younger-detached");
+	state.WriteSearchProgress(1, SearchProgressSnapshot{});
+	state.WriteSearchProgress(2, SearchProgressSnapshot{});
+	state.DetachSearch(2);
+	for (std::uint32_t sid = 100; sid < 100 + 70; ++sid) {
+		state.MarkSearchStarted(sid, "global", "filler");
+		state.WriteSearchProgress(sid, SearchProgressSnapshot{});
+	}
+
+	const std::vector<std::uint32_t> left = state.AllSearchIds();
+	ASSERT_TRUE(left.size() <= 64);
+	// The detached one went even though slot 1 is older.
+	ASSERT_TRUE(std::find(left.begin(), left.end(), 2u) == left.end());
+}
+
 TEST(State, MarkTickSuccessDoesNotAdvanceTheRevision)
 {
 	CState state;

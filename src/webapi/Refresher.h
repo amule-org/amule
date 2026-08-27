@@ -73,6 +73,12 @@ enum class SearchFetchOutcome
 // route has the same shape.
 SearchFetchOutcome FetchSearchResults(CamuleapiApp &app, CState &state);
 
+// Re-fetch one search at EC_DETAIL_FULL. The union has no resync opcode, so
+// this is how a newly discovered slot is filled and how a request handler
+// refreshes without becoming a second issuer of the stateful stream. See the
+// definition.
+SearchFetchOutcome FetchOneSearchFull(CamuleapiApp &app, CState &state, std::uint32_t search_id);
+
 // Single-threaded SSE diff emission. Called ONLY from the wxApp
 // refresher loop after a successful RefresherTick so that the
 // LastSeenState walk (which mutates app.LastSeenForEvents()) is

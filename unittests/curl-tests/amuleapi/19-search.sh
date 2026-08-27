@@ -943,20 +943,40 @@ if [ -n "$SID_G" ] && [ -n "$SID_K" ] && [ "$SID_G" != "null" ] && [ "$SID_K" !=
 		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$SID_G/results"
 		_assert_status 200 "union: GET /search/{global}/results after repeated polls → 200"
 		_assert_json_eq '.search_id' "$SID_G" 'union: the global search still reports its own id'
-		G_HASHES=$(printf '%s' "$CURL_BODY" | jq -r '[.results[].hash] | sort | join(",")')
+		G_TOTAL=$(printf '%s' "$CURL_BODY" | jq -r '.total')
 
 		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$SID_K/results"
 		_assert_status 200 "union: GET /search/{kad}/results after repeated polls → 200"
 		_assert_json_eq '.search_id' "$SID_K" 'union: the kad search still reports its own id'
-		K_HASHES=$(printf '%s' "$CURL_BODY" | jq -r '[.results[].hash] | sort | join(",")')
+		K_TOTAL=$(printf '%s' "$CURL_BODY" | jq -r '.total')
 
-		# Results must not migrate between searches. Identical non-empty sets would
-		# mean the index attributed one search's diffed tags to the other.
-		if [ -n "$G_HASHES" ] && [ "$G_HASHES" = "$K_HASHES" ]; then
-			_fail "union: two searches hold an identical result set" \
-				"the ECID index may be cross-wiring diffed tags"
+		# Results must not migrate between searches. Checked against the daemon's own
+		# per-search count from GET /search, which comes from EC_OP_SEARCH_LIST and so
+		# is independent of the cache the union maintains -- comparing the two searches
+		# to each other proves nothing, since a global and a Kad search for the same
+		# query may legitimately return the same files.
+		#
+		# One-sided on purpose: the cached total is the FOLDED view (children counted
+		# inside their parent) while the daemon counts what it holds, so it may
+		# legitimately be lower. It can only ever exceed the daemon's count by holding
+		# results that belong to another search, which is exactly the cross-wiring
+		# this is looking for.
+		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
+		if [ "$(printf '%s' "$CURL_BODY" | jq --argjson g "$SID_G" --argjson k "$SID_K" \
+			'[.searches[] | select(.search_id == $g or .search_id == $k) | select(has("result_count"))] | length')" -eq 2 ]; then
+			for _pair in "$SID_G:$G_TOTAL:global" "$SID_K:$K_TOTAL:kad"; do
+				_sid=${_pair%%:*}; _rest=${_pair#*:}; _cached=${_rest%%:*}; _label=${_rest#*:}
+				_held=$(printf '%s' "$CURL_BODY" | jq -r --argjson s "$_sid" \
+					'.searches[] | select(.search_id == $s) | .result_count')
+				if [ "$_cached" -gt "$_held" ]; then
+					_fail "union: the $_label search holds more results than the daemon has for it" \
+						"cached $_cached > daemon $_held; the ECID index is cross-wiring diffed tags"
+				else
+					_pass "union: the $_label search holds no results the daemon attributes elsewhere"
+				fi
+			done
 		else
-			_pass "union: the two searches keep distinct result sets"
+			echo "    info: daemon reported no result_count for one of the searches; cross-wiring check skipped"
 		fi
 
 		# Every row still carries the fields that only travel on a result's FIRST

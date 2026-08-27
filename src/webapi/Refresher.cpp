@@ -2636,7 +2636,19 @@ void ApplySearchUnion(const CECPacket *resp,
 			if (oit == owner.end())
 				continue;
 			const auto sit = slots.find(oit->second);
-			if (sit != slots.end() && sit->second.raw.erase(ecid) != 0)
+			if (sit == slots.end()) {
+				owner.erase(oit);
+				continue;
+			}
+			if (sit->second.detached) {
+				// The daemon evicted this whole search and is tombstoning
+				// its results on the way out. Retirement deliberately keeps
+				// them for late reads, so the removals are ignored -- and
+				// the index entries with them, since nothing else will
+				// re-establish them.
+				continue;
+			}
+			if (sit->second.raw.erase(ecid) != 0)
 				touched.insert(oit->second);
 			owner.erase(oit);
 			continue;
@@ -2672,11 +2684,25 @@ void ApplySearchUnion(const CECPacket *resp,
 
 		const auto sit = slots.find(sid);
 		if (sit == slots.end()) {
-			// Results for a search this session has no slot for. Dropped
-			// rather than auto-created: MarkSearchStarted / discovery own
-			// slot creation, and they also set the lifecycle state that
+			// Results for a search this session has no slot for -- one
+			// started in amulegui or the monolithic GUI, since the union
+			// responder walks every search the core holds. Dropped rather
+			// than auto-created: MarkSearchStarted / discovery own slot
+			// creation, and they also set the lifecycle state that
 			// GET /search reports.
+			//
+			// The drop is not the loss it would otherwise be, because the
+			// daemon has now marked these ECIDs sent and will elide them
+			// from every later poll. Whoever creates the slot re-reads the
+			// search in full instead: DiscoverSearchIfHeldByCore seeds it
+			// via FetchOneSearchFull, which bypasses the differential
+			// stream entirely.
 			owner.erase(ecid);
+			continue;
+		}
+		if (sit->second.detached) {
+			// Frozen: the daemon no longer holds this search, so anything
+			// arriving for it is the tail of an eviction, not an update.
 			continue;
 		}
 		auto &slot_results = sit->second.raw;

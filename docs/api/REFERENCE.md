@@ -2757,7 +2757,7 @@ A finished search keeps being refreshed. The daemon is polled for every search i
 
 This endpoint additionally refreshes on read, coalesced by a ~1 s TTL, which covers the sub-tick window: a client that starts a Kad notes lookup and immediately re-reads sees the flag without waiting for the next tick. Repeated polling costs at most one EC roundtrip per second, not one per request.
 
-`POST /search` is one way a search becomes readable; an unknown `search_id` (one this session never started) triggers a one-off `EC_OP_SEARCH_LIST` check before the `404`, and once confirmed it is polled every tick from there — so a search another client (or the monolithic GUI) started is readable here too, not just listable via [`GET /search`](#get-apiv0search).
+`POST /search` is one way a search becomes readable; an unknown `search_id` (one this session never started) triggers a one-off `EC_OP_SEARCH_LIST` check before the `404`. Once confirmed, that same request reads the search in full, so the first response already carries its whole result set rather than an empty one that fills in over the following ticks; it is then polled every tick like any other. A search another client (or the monolithic GUI) started is therefore readable here too, not just listable via [`GET /search`](#get-apiv0search).
 
 amuled keeps a bounded ring of recent searches (20). A search evicted from that ring (because 20 newer searches were started) is reported to amuleapi as expired: its slot is retired as `finished` and reads with its `search_id` then return `404`.
 

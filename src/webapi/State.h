@@ -1055,6 +1055,22 @@ struct SearchSlot
 	// this stamp. Default-constructed (epoch) means "never fetched", which
 	// is always stale.
 	std::chrono::steady_clock::time_point last_fetch{};
+	// The daemon no longer holds this search: its EC ring evicted it, or it
+	// was closed core-side. Set by the tick when EC_OP_SEARCH_PROGRESS comes
+	// back expired, before that same tick applies the results union -- which
+	// would otherwise tombstone away exactly the results the retirement path
+	// means to keep for late reads, since the union emits EC_TAG_FILE_REMOVED
+	// for every result of an evicted search.
+	//
+	// A detached slot is frozen: ApplySearchUnion skips it for merges and
+	// tombstones alike, since nothing about it can change any more. It is
+	// also the preferred eviction victim, because it is the only kind whose
+	// eviction costs nothing -- the daemon has nothing left to re-send.
+	bool detached = false;
+	// Insertion order, for oldest-first eviction. Not started_at: that is 0
+	// for a discovered slot, which would make every adopted search tie for
+	// oldest and evict in map order.
+	std::uint64_t seq = 0;
 };
 
 // `m_amule_log_lines` in CState caches /logs/amule. amule's EC
@@ -1941,6 +1957,11 @@ public:
 	// derived: 100 for a finished search (true by definition), 0 for a
 	// running one (the tick corrects it within a second, and inventing a
 	// number would flash a wrong one meanwhile).
+	/**
+	 * Mark a slot as no longer backed by the daemon. Freezes its results:
+	 * see SearchSlot::detached. Idempotent; a no-op for an unknown id.
+	 */
+	void DetachSearch(std::uint32_t search_id);
 	void MarkSearchDiscovered(std::uint32_t search_id,
 		const std::string &kind,
 		const std::string &query,
@@ -2031,6 +2052,23 @@ private:
 	// writes the result maps -- an index that can drift from the map it
 	// mirrors is how #1028 leaked keys a reload could not heal.
 	std::map<std::uint32_t, std::uint32_t> m_resultOwner;
+	//! Monotonic source for SearchSlot::seq.
+	std::uint64_t m_search_seq = 0;
+	// Ceiling on retained slots. A client that never DELETEs its searches,
+	// or one watching a busy monolithic GUI, would otherwise accumulate a
+	// slot and its whole result map per search for the life of the process:
+	// the daemon's own kMaxEcSearches bounds only the searches it holds for
+	// *this* connection, and detached slots outlive even those.
+	//
+	// Eviction is recoverable, which is why a cap is affordable at all: a
+	// later read of an evicted id misses the cache, re-discovers it via
+	// EC_OP_SEARCH_LIST and re-seeds it in full through FetchOneSearchFull.
+	// Detached slots are preferred as victims anyway, since for those the
+	// daemon has nothing left to re-send and nothing is lost.
+	static constexpr std::size_t kMaxSearchSlots = 64;
+	// Trim m_searches back to kMaxSearchSlots, and drop the evicted slots'
+	// entries from m_resultOwner with them. Caller holds the write lock.
+	void EvictSurplusSearchSlotsLocked();
 };
 
 } // namespace webapi
