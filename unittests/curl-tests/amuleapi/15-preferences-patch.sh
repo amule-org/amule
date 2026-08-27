@@ -592,6 +592,20 @@ for CASE in \
 	_assert_status 400 "PATCH $1.$2=$3 -> 400 (was silently $4)"
 done
 
+# The 400 body names which bound was hit and by what unit -- "out of range"
+# alone leaves a caller guessing which end and, for a step, why an in-range
+# value was refused. Assert the message for one range case and one step case.
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"connection":{"tcp_port":99999}}' "$HOST/api/v0/preferences"
+_assert_json_eq '.error.message | contains("(1-65532)")' true \
+	"tcp_port 400 names the range in the message"
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"core_tweaks":{"file_buffer_bytes":20000}}' "$HOST/api/v0/preferences"
+_assert_json_eq '.error.message | contains("multiple of 15000")' true \
+	"file_buffer_bytes 400 names the step in the message"
+
 # accept: the domain's own endpoints, which must round-trip untouched. A bound
 # that rejects its own boundary is the failure mode this half guards.
 for CASE in \

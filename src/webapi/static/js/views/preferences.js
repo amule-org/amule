@@ -65,7 +65,7 @@ const TABS = [
     { legendKey: "prefs_group_bandwidth", fields: [
       { key: "max_download_kbps", type: "int", min: 0, max: 1000000 },
       { key: "max_upload_kbps", type: "int", min: 0, max: 1000000 },
-      { key: "upload_slot_kbps", type: "int", min: 1, max: 100000 },
+      { key: "upload_slot_kbps", type: "int", min: 1, max: 65535 },
     ] },
     { legendKey: "prefs_group_ports", fields: [
       // 65532, not 65535: the server UDP socket is TCP+3, and the core
