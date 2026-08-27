@@ -121,7 +121,7 @@ export const IDENT_FILTERS = ["all", ...IDENT_STATES].map((v) => [v, t("download
 export function useClients() {
   useEffect(() => {
     data.register({ key: "clients", eventPrefix: "client", id: "ecid",
-      list: () => api.get("clients").then((r) => r.clients || []) });
+      list: () => api.list("clients").then((r) => r.clients || []) });
     data.ensure("clients");
   }, []);
   return useStore("clients");

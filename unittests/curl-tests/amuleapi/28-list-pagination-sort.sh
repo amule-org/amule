@@ -129,12 +129,12 @@ for pair in "${ENDPOINTS[@]}"; do
 	_assert_json_eq ".$key | type"  array  "/$ep .$key is an array"
 	_assert_json_eq ".total | type"  number "/$ep total is a number"
 	_assert_json_eq ".offset | type" number "/$ep offset is a number"
-	# `limit` is null when the request did not ask for one -- it is the page
-	# size, and no page size was applied. It used to report the row count,
-	# which is not a page size and could not be reused as one: re-sending it
-	# is a 400 as soon as a list is longer than the 500 cap. The row count
-	# lives in `total`, which is asserted right above.
-	_assert_json_eq ".limit"         null   "/$ep limit is null when unlimited"
+	# `limit` always reports a real page size now: an omitted parameter selects
+	# the default page rather than the whole collection, so {total, offset,
+	# limit} round-trips straight back into the next request. It is not the row
+	# count -- that is `total`, asserted right above.
+	_assert_json_eq ".limit"         100    "/$ep omitted limit echoes the default 100"
+	_assert_json_le ".$key | length" 100    "/$ep omitted limit returns at most 100 rows"
 	_assert_json_eq ". | has(\"limit\")" true "/$ep still carries the limit key"
 	_assert_json_eq ".offset"        0      "/$ep default offset is 0"
 
@@ -174,16 +174,97 @@ for pair in "${ENDPOINTS[@]}"; do
 	_curl "${AUTH[@]}" "$HOST/api/v0/$ep?sort=nonexistent_field"
 	_assert_status 400 "GET /$ep?sort=nonexistent_field → 400"
 
-	# 7. 500 is the cap, and asking for more is a rejection rather than a
-	# silent reduction: the echoed `limit` used to be the only place a
-	# client could notice its request had been altered, and `width` and
-	# `tail` had no such echo at all.
+	# 7. The ceiling is 1e9, past any collection that can exist, so a caller
+	# asking for the whole set gets it and a fat-fingered value is still a
+	# rejection rather than a silent reduction.
+	_curl "${AUTH[@]}" "$HOST/api/v0/$ep?limit=1000000001"
+	_assert_status 400 "GET /$ep?limit=1000000001 → 400 (over the ceiling)"
 	_curl "${AUTH[@]}" "$HOST/api/v0/$ep?limit=99999"
-	_assert_status 400 "GET /$ep?limit=99999 → 400 (over the cap)"
-	_curl "${AUTH[@]}" "$HOST/api/v0/$ep?limit=500"
-	_assert_status 200 "GET /$ep?limit=500 → 200 (the cap is in range)"
-	_assert_json_eq ".limit" 500 "/$ep?limit=500 echoes the limit it used"
+	_assert_status 200 "GET /$ep?limit=99999 → 200 (legal now; was the old cap's rejection)"
+	_curl "${AUTH[@]}" "$HOST/api/v0/$ep?limit=1000000000"
+	_assert_status 200 "GET /$ep?limit=1000000000 → 200 (the ceiling is in range)"
+	_assert_json_eq ".limit" 1000000000 "/$ep?limit=1000000000 echoes the limit it used"
+
+	# 8. The overflow case a reviewer cannot see by reading the diff. The
+	# window used to compute `min(offset + limit, total)`, so the addition
+	# happened before the clamp and wrapped on a 32-bit size_t; an inverted
+	# iterator range is undefined behaviour, not a large page. The count is
+	# clamped before it is added now.
+	_curl "${AUTH[@]}" "$HOST/api/v0/$ep?limit=1000000000&offset=5"
+	_assert_status 200 "GET /$ep?limit=1e9&offset=5 → 200 (no overflow)"
+	_assert_json_eq ".offset" 5 "/$ep?offset=5 echoes offset=5"
+
+	# 9. `after` needs an identity sort and ascending order; both refusals are
+	# explicit rather than a silent fall back to the first page, which would
+	# read to a paging client as "the collection never grows".
+	_curl "${AUTH[@]}" "$HOST/api/v0/$ep?after=zzz"
+	_assert_status 400 "GET /$ep?after= without sort → 400"
 done
+
+# --- Keyset sweep: walk a whole collection with no row repeated or skipped.
+#
+# The property that offset paging cannot provide. `/shared` is the collection a
+# real client actually has to page, so sweep that one for real: anchor on the
+# identity column, take one row at a time so the walk is many pages rather than
+# one, and check the union against an unpaged fetch.
+#
+# Deliberately NOT asserted with offset: a row removed from an already-fetched
+# page slides every later index down by one, so an offset walk skips a row --
+# and since that row was not itself added, updated or removed, no SSE event
+# repairs it. That is the whole reason `after` exists.
+_curl "${AUTH[@]}" "$HOST/api/v0/shared?limit=1000000000&sort=hash"
+SWEEP_TOTAL=$(printf '%s' "$CURL_BODY" | jq -r '.total')
+ALL_HASHES=$(printf '%s' "$CURL_BODY" | jq -r '.shared[].hash' | sort)
+echo "    info: /shared holds $SWEEP_TOTAL rows"
+
+if [ "$SWEEP_TOTAL" -gt 0 ]; then
+	SWEPT=""
+	AFTER=""
+	PAGES=0
+	# Bounded so a bug cannot spin: one row per page means at most TOTAL
+	# pages, plus one for the short final page that ends the walk.
+	while [ "$PAGES" -le "$SWEEP_TOTAL" ]; do
+		if [ -z "$AFTER" ]; then
+			_curl "${AUTH[@]}" "$HOST/api/v0/shared?sort=hash&limit=1"
+		else
+			_curl "${AUTH[@]}" "$HOST/api/v0/shared?sort=hash&limit=1&after=$AFTER"
+		fi
+		[ "$CURL_STATUS" = "200" ] || break
+		GOT=$(printf '%s' "$CURL_BODY" | jq -r '.shared | length')
+		[ "$GOT" -eq 0 ] && break
+		AFTER=$(printf '%s' "$CURL_BODY" | jq -r '.shared[-1].hash')
+		SWEPT="$SWEPT$AFTER
+"
+		PAGES=$((PAGES+1))
+	done
+	SWEPT_SORTED=$(printf '%s' "$SWEPT" | grep -v '^$' | sort)
+	SWEPT_UNIQ=$(printf '%s' "$SWEPT_SORTED" | sort -u)
+	if [ "$SWEPT_SORTED" = "$SWEPT_UNIQ" ]; then
+		_pass "keyset sweep of /shared repeated no row ($PAGES pages)"
+	else
+		_fail "keyset sweep repeated a row" "$(printf '%s' "$SWEPT_SORTED" | uniq -d | head -3)"
+	fi
+	if [ "$SWEPT_UNIQ" = "$ALL_HASHES" ]; then
+		_pass "keyset sweep of /shared covered every row ($SWEEP_TOTAL rows)"
+	else
+		_fail "keyset sweep skipped a row" \
+			"missing: $(comm -23 <(printf '%s\n' "$ALL_HASHES") <(printf '%s\n' "$SWEPT_UNIQ") | head -3)"
+	fi
+
+	# An anchor past the end is an empty page, not an error: that is how a
+	# sweep terminates when the last row is deleted mid-walk.
+	_curl "${AUTH[@]}" "$HOST/api/v0/shared?sort=hash&after=ffffffffffffffffffffffffffffffff"
+	_assert_status 200 "after= past the last row → 200"
+	_assert_json_eq '.shared | length' 0 "after= past the last row returns an empty page"
+
+	# Mutable column refused as an anchor, and desc refused outright.
+	_curl "${AUTH[@]}" "$HOST/api/v0/shared?sort=name&after=x"
+	_assert_status 400 "after= on a mutable sort column → 400"
+	_curl "${AUTH[@]}" "$HOST/api/v0/shared?sort=hash&order=desc&after=x"
+	_assert_status 400 "after= with order=desc → 400"
+else
+	echo "    info: nothing shared; keyset sweep skipped"
+fi
 
 curl -s -X DELETE "${AUTH[@]}" "$HOST/api/v0/search/$SEARCH_SID" > /dev/null 2>&1
 

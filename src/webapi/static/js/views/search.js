@@ -49,7 +49,7 @@ export default function Search({ isGuest }) {
     // An unopened tab has no amuleapi slot, so no SSE refreshes its badge --
     // re-list on every mount instead. Debounced, so the first one is free.
     searches.nudgeAdopt();
-    api.get("categories").then((r) => setCategories(r.categories || [])).catch(() => {});
+    api.list("categories").then((r) => setCategories(r.categories || [])).catch(() => {});
   }, []);
 
   const sizeBytes = (v, unit) => { const n = Number(v); return (!n || n < 0) ? 0 : Math.round(n * SIZE_UNITS[unit]); };

@@ -140,7 +140,7 @@ _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories"
 _assert_status 200 "GET /categories → 200"
 _assert_json_eq '.total | type'  number '/categories carries total'
 _assert_json_eq '.offset | type' number '/categories carries offset'
-_assert_json_eq '.limit' null '/categories limit is null when unlimited'
+_assert_json_eq '.limit' 100 '/categories omitted limit echoes the default 100'
 
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories?limit=1"
 _assert_status 200 "GET /categories?limit=1 → 200"
@@ -151,7 +151,7 @@ _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories?sort=inde
 _assert_status 200 "GET /categories?sort=index&order=desc → 200"
 
 # The parameters are validated now, not ignored.
-for bad in "limit=abc" "limit=99999" "offset=-1" "order=sideways" "sort=nonexistent_field"; do
+for bad in "limit=abc" "limit=1000000001" "offset=-1" "order=sideways" "sort=nonexistent_field"; do
 	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories?$bad"
 	_assert_status 400 "GET /categories?$bad → 400"
 done

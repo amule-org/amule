@@ -15,7 +15,7 @@ Clients connect once, leave the connection open, and react to typed events as th
 REST snapshots and the `/events` stream need a specific call ordering or events that fire between them are silently lost. The right sequence:
 
 1. **Open `/api/v0/events` first** — buffer arrivals, don't apply yet. No `Last-Event-ID` is fine; the cursor anchors on whatever id was newest at handshake time.
-2. **`GET` the REST collections** in parallel.
+2. **`GET` the REST collections** in parallel. A collection larger than one page needs a **keyset sweep**, not a single `GET` — see below.
 3. **Load, drain, flip** — load each snapshot into the store, drain the buffer in arrival order, then switch to direct-apply, all in one synchronous turn so no event can land between drain and flip.
 
 Buffer-then-replay (rather than merging the snapshot into a live store) is required because of `_removed` events: a snapshot built before the refresher's exclusive lock for a removing tick can still contain the deleted entity, and a merge-style load would `set()` it back over a buffered delete. With buffer-then-replay the snapshot lands first, the buffered `_removed` then clears the stale entry.
@@ -68,6 +68,32 @@ for (const ev of buffered) applyEvent(ev);
 buffered.length = 0;
 booting = false;
 ```
+
+### Step 2 is a sweep, not a `GET`
+
+`limit` defaults to 100, so one `GET` per collection covers 100 of N rows and the stream then delivers `*_updated` for rows the client never fetched. Page the whole set instead, anchored on the endpoint's identity column (see [REFERENCE.md](REFERENCE.md#paging-a-whole-collection-safely) for which one):
+
+```js
+async function sweep(collection, key, idField) {
+  const out = [];
+  let after = null;
+  for (;;) {
+    const q = `${collection}?sort=${idField}&limit=500` + (after ? `&after=${after}` : "");
+    const page = (await (await fetch(`/api/v0/${q}`)).json())[key];
+    out.push(...page);
+    if (page.length < 500) return out;          // short page == last page
+    after = page[page.length - 1][idField];
+  }
+}
+```
+
+Three rules go with it:
+
+- **The whole sweep happens inside step 2**, before the drain and flip. Events arriving mid-sweep are buffered as they already are, so a row added or removed while the sweep runs is corrected when the buffer replays. This is what makes paging safe, and it is why the stream is opened first.
+- **A `resync` mid-sweep restarts the sweep**, the same way it already invalidates a single-`GET` bootstrap.
+- **Anchor on the identity column, never on a mutable one.** `sort=speed` with `after` is a `400` precisely because the anchor value would move between requests. `offset` paging is not a substitute: a row can be skipped by a *different* row's deletion, and since that row was not itself added, updated or removed, no event repairs it.
+
+Buffer depth is the one bound worth knowing: a 50 000-row collection at `limit=500` is 100 round-trips of buffering, and an overflow raises `resync`, which restarts the sweep.
 
 If the daemon restarts between steps 1 and 2, or the ring buffer overflows on a very busy bus, the synthetic `resync` event tells the client to wipe its cache and re-GET. See [Reconnect and Last-Event-ID](#reconnect-and-last-event-id) for the recovery rules — the bootstrap path is the same `GET` sweep, just on a non-fresh cache.
 

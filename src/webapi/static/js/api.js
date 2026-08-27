@@ -119,8 +119,26 @@ async function request(method, path, { body, useEtag = false, noGate = false } =
   return payload === null ? {} : payload;
 }
 
+// The API pages list responses at 100 rows by default. This UI does not page
+// yet, so a list request asks for the whole collection explicitly rather than
+// silently rendering the first 100 of N.
+//
+// 1e9 is the API's own ceiling: past any collection that can exist, and well
+// inside JS's exact-integer range (2^53-1), so the number sent is the number
+// that arrives. Do NOT reach for Number.MAX_SAFE_INTEGER here -- the server
+// rejects anything above the ceiling, and a value that large would round on
+// the way through a float anyway.
+export const LIMIT_ALL = 1000000000;
+
 export const api = {
   get: (path, opts) => request("GET", path, { useEtag: true, ...opts }),
+
+  // A list GET. Distinct from get() so the "give me all of it" decision lives
+  // in one place: when this UI grows real pagination, the call sites stay and
+  // only this changes.
+  list: (path, opts) =>
+    request("GET", path + (path.includes("?") ? "&" : "?") + "limit=" + LIMIT_ALL,
+            { useEtag: true, ...opts }),
   post: (path, body) => request("POST", path, { body }),
   patch: (path, body) => request("PATCH", path, { body }),
   del: (path, body) => request("DELETE", path, { body }),

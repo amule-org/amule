@@ -316,7 +316,7 @@ _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
 _assert_status 200 "GET /search → 200"
 _assert_json_eq '.total | type'  number '/search carries total'
 _assert_json_eq '.offset | type' number '/search carries offset'
-_assert_json_eq '.limit' null '/search limit is null when unlimited'
+_assert_json_eq '.limit' 100 '/search omitted limit echoes the default 100'
 
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search?limit=1"
 _assert_status 200 "GET /search?limit=1 → 200"
@@ -326,7 +326,7 @@ _assert_json_eq '.searches | length' 1 '/search?limit=1 returns one row'
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search?sort=started_at&order=desc"
 _assert_status 200 "GET /search?sort=started_at&order=desc → 200"
 
-for bad in "limit=abc" "limit=99999" "order=sideways" "sort=nonexistent_field"; do
+for bad in "limit=abc" "limit=1000000001" "order=sideways" "sort=nonexistent_field"; do
 	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search?$bad"
 	_assert_status 400 "GET /search?$bad → 400"
 done

@@ -103,7 +103,7 @@ async function refresh(id) {
   if (!tab || tab.fetching) return;
   tab.fetching = true;
   try {
-    const r = await api.get("search/" + id + "/results");
+    const r = await api.list("search/" + id + "/results");
     const cur = tabs.get(id);
     if (!cur) return;
     cur.results = new Map((r.results || []).map((x) => [x.hash, x]));
@@ -131,7 +131,7 @@ async function refresh(id) {
 async function adopt() {
   lastAdopt = Date.now();
   let list;
-  try { list = (await api.get("search")).searches || []; } catch (_) { return; }
+  try { list = (await api.list("search")).searches || []; } catch (_) { return; }
   list = list.slice().sort((a, b) => ord(a) - ord(b));
   let added = false;
   for (const s of list) {
@@ -353,7 +353,7 @@ export const searches = {
   async related(hashes, label) {
     const ed2k = (store.get("status") || {}).ed2k || {};
     try {
-      const list = (await api.get("servers")).servers || [];
+      const list = (await api.list("servers")).servers || [];
       const ip = (v) => { const m = String(v || "").match(/\d+\.\d+\.\d+\.\d+/); return m ? m[0] : ""; };
       const cur = list.find((s) => ip(s.address) && ip(s.address) === ip(ed2k.server_ip)
                                    && s.port === ed2k.server_port);

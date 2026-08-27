@@ -3277,23 +3277,72 @@ void WriteSharedDetailObject(CJsonWriter &w, const webapi::FileSnapshot &f)
 // --- List pagination + sorting (issue #357) ---------------------------
 // Server-side window shared by every list endpoint. `limit` (capped at
 // 500), `offset`, `sort` (an endpoint-defined field) and `order`
-// (asc|desc). Omitting `limit` returns the full set, preserving the
-// pre-#357 behaviour; `total`, `offset` and `limit` metadata are always
-// emitted so a paging consumer can size its requests.
+// (asc|desc), `after` (keyset anchor). `total`, `offset` and `limit` metadata
+// are always emitted so a paging consumer can size its requests.
+//
+// `limit` DEFAULTS rather than meaning "everything when omitted". The old rule
+// was not monotonic -- 500 rows, then an error at 501, then the whole
+// collection at zero -- and it capped the explicit caller while leaving the
+// naive one unbounded, which is backwards from what a cap is for. A caller
+// that wants the whole set now says so, and an operator can see it in the
+// access log.
 struct ListParams
 {
-	bool has_limit = false;
-	std::size_t limit = 0;
+	static const std::size_t kDefaultLimit = 100;
+	std::size_t limit = kDefaultLimit;
 	std::size_t offset = 0;
-	std::string sort; // empty = unsorted (native snapshot order)
+	std::string sort;  // empty = unsorted (native snapshot order)
+	std::string after; // empty = no keyset anchor; needs an identity `sort`
 	bool desc = false;
 };
 
-// Endpoint-specific sortable fields: field name -> ascending comparator.
-// A vector (not a map) so the definition site reads as an ordered list
-// and an unknown `sort` value is simply a lookup miss -> 400.
-template <class T>
-using ListComparators = std::vector<std::pair<std::string, std::function<bool(const T &, const T &)>>>;
+// One sortable column of a list endpoint.
+//
+// `less` is the ascending comparator. `after_less` is what makes the column
+// usable as a KEYSET anchor: given the raw `?after=` token and a row, is the
+// token ordered before that row. Only an IDENTITY column provides one --
+// anchoring on a mutable column is meaningless, because the anchor's own value
+// moves between two page requests and the window silently skips or repeats.
+//
+// Why keyset at all, when `offset` already pages: `offset` is a position, and a
+// position shifts whenever the set changes size BELOW the cursor. Delete one
+// row from an already-fetched page and every later index slides down by one,
+// so the next request starts one row late and that row is never fetched -- by
+// anything. It was not added, updated or removed, so no SSE event mentions it
+// either, which is what makes the loss permanent rather than eventually
+// repaired. Anchoring on a value instead of a count removes the arithmetic
+// that fails: `after=<hash>` means the same rows whatever happened before it.
+template <class T> struct ListSortColumn
+{
+	const char *name;
+	std::function<bool(const T &, const T &)> less;
+	std::function<bool(const std::string &, const T &)> after_less; // null == not anchorable
+};
+
+// Endpoint-specific sortable fields, in definition order. A vector (not a map)
+// so the definition site reads as an ordered list and an unknown `sort` value
+// is simply a lookup miss -> 400.
+template <class T> using ListComparators = std::vector<ListSortColumn<T>>;
+
+// One member (possibly nested: SORT_BY(download.percent)) in ascending order.
+// Collapses what was a five-line lambda per column; the column tables are
+// long enough that the boilerplate hid what they actually sort on.
+#define SORT_BY(field) [](const auto &a, const auto &b) { return a.field < b.field; }
+
+// The anchor half, for an identity column. Same member the column sorts on --
+// they have to agree, or `after` would seek into a differently-ordered set.
+#define ANCHOR_ON(field) [](const std::string &tok, const auto &r) { return tok < r.field; }
+
+// Numeric identity (an ECID). The token is parsed once per upper_bound probe,
+// which is O(log n) for the whole seek rather than per row. A token that is
+// not a number sorts before everything, so a malformed `after` yields the
+// first page instead of an error -- the same shape as an out-of-range offset.
+#define ANCHOR_ON_NUM(field) \
+	[](const std::string &tok, const auto &r) { \
+		char *end = nullptr; \
+		const unsigned long long v = std::strtoull(tok.c_str(), &end, 10); \
+		return (end == tok.c_str()) ? true : v < static_cast<unsigned long long>(r.field); \
+	}
 
 // Sort keys for peer rows, shared by /clients and by the per-file client
 // routes -- the latter derive theirs from this set, so a key added here shows
@@ -3346,19 +3395,10 @@ void WriteSearchListRow(CJsonWriter &w, const SearchListRow &row)
 const ListComparators<SearchListRow> &SearchListComparators()
 {
 	static const ListComparators<SearchListRow> kComps = {
-		{ "search_id",
-			[](const SearchListRow &a, const SearchListRow &b) {
-				return a.search_id < b.search_id;
-			} },
-		{ "query", [](const SearchListRow &a, const SearchListRow &b) { return a.query < b.query; } },
-		{ "started_at",
-			[](const SearchListRow &a, const SearchListRow &b) {
-				return a.started_at < b.started_at;
-			} },
-		{ "result_count",
-			[](const SearchListRow &a, const SearchListRow &b) {
-				return a.result_count < b.result_count;
-			} },
+		{ "search_id", SORT_BY(search_id), ANCHOR_ON_NUM(search_id) },
+		{ "query", SORT_BY(query) },
+		{ "started_at", SORT_BY(started_at) },
+		{ "result_count", SORT_BY(result_count) },
 	};
 	return kComps;
 }
@@ -3370,14 +3410,8 @@ const ListComparators<SearchListRow> &SearchListComparators()
 const ListComparators<webapi::CategorySnapshot> &CategoryComparators()
 {
 	static const ListComparators<webapi::CategorySnapshot> kComps = {
-		{ "index",
-			[](const webapi::CategorySnapshot &a, const webapi::CategorySnapshot &b) {
-				return a.index < b.index;
-			} },
-		{ "name",
-			[](const webapi::CategorySnapshot &a, const webapi::CategorySnapshot &b) {
-				return a.name < b.name;
-			} },
+		{ "index", SORT_BY(index), ANCHOR_ON_NUM(index) },
+		{ "name", SORT_BY(name) },
 	};
 	return kComps;
 }
@@ -3385,14 +3419,12 @@ const ListComparators<webapi::CategorySnapshot> &CategoryComparators()
 const ListComparators<webapi::ClientSnapshot> &ClientComparators()
 {
 	static const ListComparators<webapi::ClientSnapshot> kComps = {
-		{ "name",
-			[](const webapi::ClientSnapshot &a, const webapi::ClientSnapshot &b) {
-				return a.client_name < b.client_name;
-			} },
-		{ "software",
-			[](const webapi::ClientSnapshot &a, const webapi::ClientSnapshot &b) {
-				return a.software < b.software;
-			} },
+		// Identity column: immutable, so it is the one a keyset sweep can
+		// anchor on. Listed first because that is the order a paging client
+		// cares about, not the order a UI table does.
+		{ "ecid", SORT_BY(ecid), ANCHOR_ON_NUM(ecid) },
+		{ "name", SORT_BY(client_name) },
+		{ "software", SORT_BY(software) },
 	};
 	return kComps;
 }
@@ -3457,14 +3489,18 @@ std::unique_ptr<CHttpServer::Response> ParseBoolParam(
 std::unique_ptr<CHttpServer::Response> ParseListParams(const std::string &query, ListParams &out)
 {
 	const auto qmap = web_api_path::ParseQuery(query);
-	// 500 is the window cap and 1e9 is well past anything these lists hold;
-	// both are now rejections rather than silent clamps, so a client that
-	// asks for more learns it did.
+	// 1e9 on both, matching each other. Past any collection that can exist, so
+	// it reads as "no upper bound" to a caller, while still rejecting a
+	// fat-fingered limit rather than treating it as "everything".
+	//
+	// Not SIZE_MAX / UINT64_MAX: `offset + limit` has to stay inside a 32-bit
+	// size_t for the 32-bit builds, and 1e9 + 1e9 is the largest round pair
+	// that does. It is also inside JS's exact-integer range (2^53-1), so a
+	// browser client can send the ceiling and get back the number it sent.
 	if (qmap.count("limit")) {
 		std::uint64_t v = 0;
-		if (auto r = ParseUintParam(qmap, "limit", 0, 500, v))
+		if (auto r = ParseUintParam(qmap, "limit", 0, 1000000000ull, v))
 			return r;
-		out.has_limit = true;
 		out.limit = static_cast<std::size_t>(v);
 	}
 	{
@@ -3485,6 +3521,9 @@ std::unique_ptr<CHttpServer::Response> ParseListParams(const std::string &query,
 	const auto sort_it = qmap.find("sort");
 	if (sort_it != qmap.end())
 		out.sort = sort_it->second;
+	const auto after_it = qmap.find("after");
+	if (after_it != qmap.end())
+		out.after = after_it->second;
 	return nullptr;
 }
 
@@ -3501,20 +3540,47 @@ std::unique_ptr<CHttpServer::Response> BuildListWindowFromPtrs(std::vector<const
 {
 	out_total = ptrs.size();
 
+	const ListSortColumn<T> *col = nullptr;
 	if (!params.sort.empty()) {
 		auto c = std::find_if(comparators.begin(), comparators.end(), [&](const auto &p) {
-			return p.first == params.sort;
+			return params.sort == p.name;
 		});
 		if (c == comparators.end())
 			return BadRequestPtr("unknown `sort` field for this endpoint");
-		const auto &cmp = c->second;
+		col = &*c;
+		const auto &cmp = col->less;
 		std::stable_sort(ptrs.begin(), ptrs.end(), [&](const T *a, const T *b) {
 			return params.desc ? cmp(*b, *a) : cmp(*a, *b);
 		});
 	}
 
-	const std::size_t begin = std::min(params.offset, out_total);
-	const std::size_t end = params.has_limit ? std::min(begin + params.limit, out_total) : out_total;
+	// Keyset seek. Anchored on a value, so nothing that happened to the rows
+	// before it can move the window -- see ListSortColumn.
+	//
+	// Rejected rather than ignored on a column that cannot anchor: silently
+	// falling back to the whole set would hand a paging client the first page
+	// forever, which reads as "the collection never grows" rather than as an
+	// error it can fix.
+	std::size_t seek = 0;
+	if (!params.after.empty()) {
+		if (!col || !col->after_less)
+			return BadRequestPtr("`after` needs a `sort` field that identifies a row");
+		if (params.desc)
+			return BadRequestPtr("`after` is ascending-only; drop `order=desc`");
+		const auto it = std::upper_bound(
+			ptrs.begin(), ptrs.end(), params.after, [&](const std::string &tok, const T *r) {
+				return col->after_less(tok, *r);
+			});
+		seek = static_cast<std::size_t>(it - ptrs.begin());
+	}
+
+	// `offset` counts from the seek, so `after` alone pages a collection and
+	// the two compose for a caller that wants both.
+	const std::size_t begin = std::min(seek + std::min(params.offset, out_total - seek), out_total);
+	// Clamp the COUNT before adding it, never the sum. `begin + limit` first
+	// overflows a 32-bit size_t on the ceilings this API accepts, and an
+	// inverted iterator range is undefined behaviour rather than a big page.
+	const std::size_t end = begin + std::min(params.limit, out_total - begin);
 	out_window.assign(ptrs.begin() + begin, ptrs.begin() + end);
 	return nullptr;
 }
@@ -3553,11 +3619,10 @@ void WritePageMeta(CJsonWriter &w, std::size_t total, const ListParams &params)
 	w.ValueUInt(total);
 	w.Key("offset");
 	w.ValueUInt(params.offset);
+	// Never null now: every response has a real page size, so round-tripping
+	// {total, offset, limit} straight back into the next request works.
 	w.Key("limit");
-	if (params.has_limit)
-		w.ValueUInt(params.limit);
-	else
-		w.ValueNull();
+	w.ValueUInt(params.limit);
 }
 
 // Extract the raw query string from a request target ("/x?a=1" -> "a=1").
@@ -3983,26 +4048,15 @@ CHttpServer::Response CApiDispatcher::HandleDownloads(const CHttpServer::Request
 	if (auto err = ParseListParams(QueryOf(req), params))
 		return *err;
 	static const ListComparators<webapi::FileSnapshot> kComps = {
-		{ "name",
-			[](const webapi::FileSnapshot &a, const webapi::FileSnapshot &b) {
-				return a.name < b.name;
-			} },
-		{ "size",
-			[](const webapi::FileSnapshot &a, const webapi::FileSnapshot &b) {
-				return a.size < b.size;
-			} },
-		{ "progress",
-			[](const webapi::FileSnapshot &a, const webapi::FileSnapshot &b) {
-				return a.download.percent < b.download.percent;
-			} },
-		{ "speed",
-			[](const webapi::FileSnapshot &a, const webapi::FileSnapshot &b) {
-				return a.download.speed_bps < b.download.speed_bps;
-			} },
-		{ "status",
-			[](const webapi::FileSnapshot &a, const webapi::FileSnapshot &b) {
-				return a.download.status < b.download.status;
-			} },
+		// Identity column: immutable, so it is the one a keyset sweep can
+		// anchor on. Listed first because that is the order a paging client
+		// cares about, not the order a UI table does.
+		{ "hash", SORT_BY(hash), ANCHOR_ON(hash) },
+		{ "name", SORT_BY(name) },
+		{ "size", SORT_BY(size) },
+		{ "progress", SORT_BY(download.percent) },
+		{ "speed", SORT_BY(download.speed_bps) },
+		{ "status", SORT_BY(download.status) },
 	};
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
@@ -4056,12 +4110,24 @@ struct FileClientRow
 const ListComparators<FileClientRow> &FileClientComparators()
 {
 	static const ListComparators<FileClientRow> kComps = [] {
+		// Both halves are lifted, not just the comparator: a column that can
+		// anchor a keyset page on /clients has to anchor one here too, or the
+		// two surfaces drift in exactly the way this derivation exists to
+		// prevent -- and the drift would only show up as a paging client
+		// silently missing rows on one of them.
 		ListComparators<FileClientRow> out;
-		for (const auto &kv : ClientComparators()) {
-			auto fn = kv.second;
-			out.emplace_back(kv.first, [fn](const FileClientRow &a, const FileClientRow &b) {
-				return fn(a.client, b.client);
-			});
+		for (const auto &col : ClientComparators()) {
+			auto less = col.less;
+			auto after = col.after_less;
+			out.push_back({ col.name,
+				[less](const FileClientRow &a, const FileClientRow &b) {
+					return less(a.client, b.client);
+				},
+				after ? std::function<bool(const std::string &, const FileClientRow &)>(
+						[after](const std::string &tok, const FileClientRow &r) {
+							return after(tok, r.client);
+						})
+				      : nullptr });
 		}
 		return out;
 	}();
@@ -4275,14 +4341,12 @@ CHttpServer::Response CApiDispatcher::HandleSharedList(const CHttpServer::Reques
 	if (auto err = ParseListParams(QueryOf(req), params))
 		return *err;
 	static const ListComparators<webapi::FileSnapshot> kComps = {
-		{ "name",
-			[](const webapi::FileSnapshot &a, const webapi::FileSnapshot &b) {
-				return a.name < b.name;
-			} },
-		{ "size",
-			[](const webapi::FileSnapshot &a, const webapi::FileSnapshot &b) {
-				return a.size < b.size;
-			} },
+		// Identity column: immutable, so it is the one a keyset sweep can
+		// anchor on. Listed first because that is the order a paging client
+		// cares about, not the order a UI table does.
+		{ "hash", SORT_BY(hash), ANCHOR_ON(hash) },
+		{ "name", SORT_BY(name) },
+		{ "size", SORT_BY(size) },
 	};
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
@@ -5615,22 +5679,14 @@ CHttpServer::Response CApiDispatcher::HandleServers(const CHttpServer::Request &
 	if (auto err = ParseListParams(QueryOf(req), params))
 		return *err;
 	static const ListComparators<webapi::ServerSnapshot> kComps = {
-		{ "name",
-			[](const webapi::ServerSnapshot &a, const webapi::ServerSnapshot &b) {
-				return a.name < b.name;
-			} },
-		{ "users",
-			[](const webapi::ServerSnapshot &a, const webapi::ServerSnapshot &b) {
-				return a.users < b.users;
-			} },
-		{ "ping",
-			[](const webapi::ServerSnapshot &a, const webapi::ServerSnapshot &b) {
-				return a.ping_ms < b.ping_ms;
-			} },
-		{ "files",
-			[](const webapi::ServerSnapshot &a, const webapi::ServerSnapshot &b) {
-				return a.files < b.files;
-			} },
+		// Identity column: immutable, so it is the one a keyset sweep can
+		// anchor on. Listed first because that is the order a paging client
+		// cares about, not the order a UI table does.
+		{ "ecid", SORT_BY(ecid), ANCHOR_ON_NUM(ecid) },
+		{ "name", SORT_BY(name) },
+		{ "users", SORT_BY(users) },
+		{ "ping", SORT_BY(ping_ms) },
+		{ "files", SORT_BY(files) },
 	};
 	return ListResponse(m_state, "servers", m_state.Servers(), WriteServerObject, params, kComps);
 }
@@ -5961,34 +6017,17 @@ CHttpServer::Response CApiDispatcher::HandleKnownClients(const CHttpServer::Requ
 	}
 
 	static const ListComparators<webapi::KnownClientSnapshot> kComps = {
-		{ "name",
-			[](const webapi::KnownClientSnapshot &a, const webapi::KnownClientSnapshot &b) {
-				return a.client_name < b.client_name;
-			} },
-		{ "software",
-			[](const webapi::KnownClientSnapshot &a, const webapi::KnownClientSnapshot &b) {
-				return a.software < b.software;
-			} },
-		{ "first_seen",
-			[](const webapi::KnownClientSnapshot &a, const webapi::KnownClientSnapshot &b) {
-				return a.first_seen < b.first_seen;
-			} },
-		{ "last_seen",
-			[](const webapi::KnownClientSnapshot &a, const webapi::KnownClientSnapshot &b) {
-				return a.last_seen < b.last_seen;
-			} },
-		{ "sessions",
-			[](const webapi::KnownClientSnapshot &a, const webapi::KnownClientSnapshot &b) {
-				return a.sessions < b.sessions;
-			} },
-		{ "total_uploaded",
-			[](const webapi::KnownClientSnapshot &a, const webapi::KnownClientSnapshot &b) {
-				return a.total_uploaded < b.total_uploaded;
-			} },
-		{ "total_downloaded",
-			[](const webapi::KnownClientSnapshot &a, const webapi::KnownClientSnapshot &b) {
-				return a.total_downloaded < b.total_downloaded;
-			} },
+		// Identity column: immutable, so it is the one a keyset sweep can
+		// anchor on. Listed first because that is the order a paging client
+		// cares about, not the order a UI table does.
+		{ "user_hash", SORT_BY(user_hash), ANCHOR_ON(user_hash) },
+		{ "name", SORT_BY(client_name) },
+		{ "software", SORT_BY(software) },
+		{ "first_seen", SORT_BY(first_seen) },
+		{ "last_seen", SORT_BY(last_seen) },
+		{ "sessions", SORT_BY(sessions) },
+		{ "total_uploaded", SORT_BY(total_uploaded) },
+		{ "total_downloaded", SORT_BY(total_downloaded) },
 	};
 
 	// Built under the state's read lock: the store is never copied out, so the
@@ -6054,6 +6093,10 @@ CHttpServer::Response CApiDispatcher::HandleChats(const CHttpServer::Request &re
 	const std::vector<webapi::ChatSessionSnapshot> chats = m_state.Chats();
 
 	static const ListComparators<webapi::ChatSessionSnapshot> kComps = {
+		// Identity column: immutable, so it is the one a keyset sweep can
+		// anchor on. Listed first because that is the order a paging client
+		// cares about, not the order a UI table does.
+		{ "client_ecid", SORT_BY(client_ecid), ANCHOR_ON_NUM(client_ecid) },
 		{ "last_message_at",
 			[](const webapi::ChatSessionSnapshot &x, const webapi::ChatSessionSnapshot &y) {
 				const std::uint32_t xa = x.messages.empty() ? 0 : x.messages.back().timestamp;
@@ -6327,10 +6370,11 @@ CHttpServer::Response CApiDispatcher::HandleFriends(const CHttpServer::Request &
 	if (auto err = ParseListParams(QueryOf(req), params))
 		return *err;
 	static const ListComparators<webapi::FriendSnapshot> kComps = {
-		{ "name",
-			[](const webapi::FriendSnapshot &a, const webapi::FriendSnapshot &b) {
-				return a.name < b.name;
-			} },
+		// Identity column: immutable, so it is the one a keyset sweep can
+		// anchor on. Listed first because that is the order a paging client
+		// cares about, not the order a UI table does.
+		{ "ecid", SORT_BY(ecid), ANCHOR_ON_NUM(ecid) },
+		{ "name", SORT_BY(name) },
 		{ "online",
 			[](const webapi::FriendSnapshot &a, const webapi::FriendSnapshot &b) {
 				return (a.client_ecid != 0) < (b.client_ecid != 0);
@@ -7656,30 +7700,19 @@ CHttpServer::Response CApiDispatcher::HandleSearchResults(
 	if (auto err = ParseListParams(QueryOf(req), params))
 		return *err;
 	static const ListComparators<webapi::SearchResult> kComps = {
-		{ "name",
-			[](const webapi::SearchResult &a, const webapi::SearchResult &b) {
-				return a.name < b.name;
-			} },
-		{ "size",
-			[](const webapi::SearchResult &a, const webapi::SearchResult &b) {
-				return a.size < b.size;
-			} },
-		{ "sources",
-			[](const webapi::SearchResult &a, const webapi::SearchResult &b) {
-				return a.source_count < b.source_count;
-			} },
-		{ "rating",
-			[](const webapi::SearchResult &a, const webapi::SearchResult &b) {
-				return a.rating < b.rating;
-			} },
+		// Identity column: immutable, so it is the one a keyset sweep can
+		// anchor on. Listed first because that is the order a paging client
+		// cares about, not the order a UI table does.
+		{ "hash", SORT_BY(hash), ANCHOR_ON(hash) },
+		{ "name", SORT_BY(name) },
+		{ "size", SORT_BY(size) },
+		{ "sources", SORT_BY(source_count) },
+		{ "rating", SORT_BY(rating) },
 		// Browse listings are read folder by folder, which is how the
 		// desktop sorts its Directories column too. Empty on server/Kad
 		// hits, so sorting a non-browse search by it is a stable no-op
 		// rather than an error.
-		{ "directory",
-			[](const webapi::SearchResult &a, const webapi::SearchResult &b) {
-				return a.directory < b.directory;
-			} },
+		{ "directory", SORT_BY(directory) },
 	};
 	std::vector<const webapi::SearchResult *> window;
 	std::size_t total = 0;

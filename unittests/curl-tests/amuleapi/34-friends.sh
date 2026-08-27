@@ -121,8 +121,8 @@ _assert_status 200 "GET /friends?limit=1"
 # Over the cap is a rejection, not a silent clamp. It used to answer 200 with a
 # quietly reduced window, so a client asking for 99999 got 500 rows with nothing
 # in the response saying the request had been altered.
-_curl "$HOST/api/v0/friends?limit=99999"
-_assert_status 400 "GET /friends?limit=99999 is rejected, not clamped"
+_curl "$HOST/api/v0/friends?limit=1000000001"
+_assert_status 400 "GET /friends?limit=1000000001 is rejected, not clamped"
 
 # The cap itself is still valid.
 _curl "$HOST/api/v0/friends?limit=500"

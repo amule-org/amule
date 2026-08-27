@@ -44,11 +44,11 @@ export default function Downloads({ isGuest }) {
   };
 
   const loadCategories = () =>
-    api.get("categories").then((r) => setCategories(r.categories || [])).catch(() => {});
+    api.list("categories").then((r) => setCategories(r.categories || [])).catch(() => {});
 
   useEffect(() => {
     data.register({ key: "downloads", eventPrefix: "download", id: "hash",
-      list: () => api.get("downloads?status=all").then((r) => r.downloads || []) });
+      list: () => api.list("downloads?status=all").then((r) => r.downloads || []) });
     loadCategories();
     data.ensure("downloads");
   }, []);

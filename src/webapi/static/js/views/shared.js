@@ -43,7 +43,7 @@ export default function Shared({ isGuest }) {
 
   useEffect(() => {
     data.register({ key: "shared", eventPrefix: "shared", id: "hash",
-      list: () => api.get("shared").then((r) => r.shared || []) });
+      list: () => api.list("shared").then((r) => r.shared || []) });
     data.ensure("shared");
   }, []);
 

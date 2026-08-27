@@ -205,7 +205,7 @@ _qp "downloads?include_completed=1" 400 "include_completed=1 -> 400 (replaced by
 
 # Counts: garbage and out-of-range are the same answer.
 _qp "downloads?limit=abc"   400 "limit=abc -> 400"
-_qp "downloads?limit=99999" 400 "limit=99999 -> 400 (was a silent clamp to 500)"
+_qp "downloads?limit=1000000001" 400 "limit above the 1e9 ceiling -> 400 (never a silent clamp)"
 _qp "downloads?limit=500"   200 "limit=500 -> 200 (the cap itself is valid)"
 _qp "downloads?limit="      400 "limit= (empty) -> 400, not an omission"
 

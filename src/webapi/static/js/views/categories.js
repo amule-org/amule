@@ -42,7 +42,7 @@ export function CategoriesPanel({ isGuest }) {
   const [prio, setPrio] = useState("auto");
 
   const load = async () => {
-    try { setCategories((await api.get("categories")).categories || []); setLoadErr(""); }
+    try { setCategories((await api.list("categories")).categories || []); setLoadErr(""); }
     catch (e) { setLoadErr(terr(e) || t("downloads_cat_error")); }
   };
   useEffect(() => { load(); }, []);
