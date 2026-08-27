@@ -2753,7 +2753,9 @@ Returns one search's results buffer at the moment of the call PLUS a progress en
 
 This endpoint does NOT busy-wait — it returns whatever amuled has in its result buffer right now. A client that wants to wait for completion should poll while `progress.state == "running"`. While a search is **running** the refresher polls amuled (`EC_OP_SEARCH_RESULTS` + `EC_OP_SEARCH_PROGRESS`, addressed by `search_id`) every tick, so this GET reads straight from that snapshot and successive polls see the growing result set with no extra EC roundtrip.
 
-Once a search is **finished** the refresher stops polling it, so this endpoint refreshes it **on read** instead, coalesced by a ~1 s TTL. That is what keeps a finished search's results live rather than frozen at the moment it completed: a Kad notes lookup started on one of its hits reports back, and a hit you download from it starts reading `status: "downloaded"` / `already_have: true`. Repeated polling of a finished search costs at most one EC roundtrip per second, not one per request.
+A finished search keeps being refreshed. The daemon is polled for every search it holds in one incremental request per tick, so a search that has completed costs nothing to keep current and is not dropped from the poll set: a hit you download from it starts reading `status: "downloaded"` / `already_have: true` without anyone having to ask.
+
+This endpoint additionally refreshes on read, coalesced by a ~1 s TTL, which covers the sub-tick window: a client that starts a Kad notes lookup and immediately re-reads sees the flag without waiting for the next tick. Repeated polling costs at most one EC roundtrip per second, not one per request.
 
 `POST /search` is one way a search becomes readable; an unknown `search_id` (one this session never started) triggers a one-off `EC_OP_SEARCH_LIST` check before the `404`, and once confirmed it is polled every tick from there — so a search another client (or the monolithic GUI) started is readable here too, not just listable via [`GET /search`](#get-apiv0search).
 

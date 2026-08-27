@@ -923,6 +923,64 @@ if [ -n "$SID_G" ] && [ -n "$SID_K" ] && [ "$SID_G" != "null" ] && [ "$SID_K" !=
 		echo "    info: global search returned 0 alongside Kad — daemon may lack ed2k hits for '$TEST_QUERY'"
 	fi
 
+	# --- 11.1 Two searches stay separate across the incremental union poll. ---
+	#
+	# The refresher now fetches every search's results in ONE id-less
+	# EC_OP_SEARCH_RESULTS at EC_DETAIL_INC_UPDATE, so all searches share a reply
+	# and the daemon stops repeating a result it has already sent. Attribution then
+	# rests on amuleapi's own ECID -> search_id index rather than on a tag in the
+	# packet, which is the thing that can silently cross-wire two searches.
+	#
+	# Poll both several times: the first pass populates, later ones are the diffed
+	# ones where the search id is no longer on the wire.
+	if [ -n "$SID_G" ] && [ -n "$SID_K" ] && [ "$SID_G" != "$SID_K" ]; then
+		for _ in 1 2 3 4 5; do
+			sleep 1
+			_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$SID_G/results"
+			_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$SID_K/results"
+		done
+
+		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$SID_G/results"
+		_assert_status 200 "union: GET /search/{global}/results after repeated polls → 200"
+		_assert_json_eq '.search_id' "$SID_G" 'union: the global search still reports its own id'
+		G_HASHES=$(printf '%s' "$CURL_BODY" | jq -r '[.results[].hash] | sort | join(",")')
+
+		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$SID_K/results"
+		_assert_status 200 "union: GET /search/{kad}/results after repeated polls → 200"
+		_assert_json_eq '.search_id' "$SID_K" 'union: the kad search still reports its own id'
+		K_HASHES=$(printf '%s' "$CURL_BODY" | jq -r '[.results[].hash] | sort | join(",")')
+
+		# Results must not migrate between searches. Identical non-empty sets would
+		# mean the index attributed one search's diffed tags to the other.
+		if [ -n "$G_HASHES" ] && [ "$G_HASHES" = "$K_HASHES" ]; then
+			_fail "union: two searches hold an identical result set" \
+				"the ECID index may be cross-wiring diffed tags"
+		else
+			_pass "union: the two searches keep distinct result sets"
+		fi
+
+		# Every row still carries the fields that only travel on a result's FIRST
+		# appearance. A merge that dropped a guard would blank these on the first
+		# diffed poll, which is the failure mode with no other symptom.
+		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$SID_G/results"
+		if [ "$(printf '%s' "$CURL_BODY" | jq '.results | length')" -gt 0 ]; then
+			_assert_json_eq '[.results[] | select(.name == "" or .name == null)] | length' 0 \
+				'union: no result lost its name across diffed polls'
+			_assert_json_eq '[.results[] | select(.size == 0 or .size == null)] | length' 0 \
+				'union: no result lost its size across diffed polls'
+			_assert_json_eq '[.results[] | select(.hash == "" or .hash == null)] | length' 0 \
+				'union: no result lost its hash across diffed polls'
+			_assert_json_eq '[.results[] | select(.status == "" or .status == null)] | length' 0 \
+				'union: no result lost its status across diffed polls'
+			_assert_json_eq '[.results[] | select(.type == "" or .type == null)] | length' 0 \
+				'union: no result lost its type across diffed polls'
+		else
+			echo "    info: global search returned no rows; per-field retention checks skipped"
+		fi
+	else
+		echo "    info: no two distinct searches available; union separation check skipped"
+	fi
+
 	# DELETE the global search: its slot is freed (404), the Kad search
 	# is untouched (still 200). Freeing one from one tab must never take
 	# a sibling with it.
@@ -941,6 +999,41 @@ if [ -n "$SID_G" ] && [ -n "$SID_K" ] && [ "$SID_G" != "null" ] && [ "$SID_K" !=
 		"$HOST/api/v0/search/$SID_K" >/dev/null 2>&1
 else
 	_fail "Multi-search setup" "POST /search did not return search_ids (G=$SID_G K=$SID_K)"
+fi
+
+# --- 11.2 A finished search keeps being refreshed. -----------------
+#
+# The tick used to poll only searches with progress.active, so once a search
+# finished nothing re-read it and a hit downloaded afterwards kept reporting
+# already_have=false forever. Eliding made polling finished searches free, so
+# they stay in the poll set -- this pins that the row is still being maintained
+# rather than frozen at the moment the search completed.
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$FIRST_SID/results"
+if [ "$CURL_STATUS" = "200" ]; then
+	FIN_STATE=$(printf '%s' "$CURL_BODY" | jq -r '.progress.state')
+	FIN_N=$(printf '%s' "$CURL_BODY" | jq '.results | length')
+	echo "    info: search $FIRST_SID is $FIN_STATE with $FIN_N result(s)"
+	if [ "$FIN_STATE" = "finished" ] && [ "$FIN_N" -gt 0 ]; then
+		# Two reads a couple of ticks apart: the row must still be there and
+		# still complete. A finished search dropped from the poll set would
+		# have kept whatever it had, so this is a regression guard on the
+		# merge rather than a liveness assertion about values that may not
+		# change on an idle daemon.
+		BEFORE_N=$FIN_N
+		sleep 3
+		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$FIRST_SID/results"
+		_assert_status 200 "union: a finished search is still readable after further ticks"
+		_assert_json_eq '.results | length' "$BEFORE_N" \
+			'union: a finished search keeps its results across ticks'
+		_assert_json_eq '[.results[] | select(.name == "" or .name == null)] | length' 0 \
+			'union: a finished search keeps its result names across ticks'
+		_assert_json_eq '[.results[] | select(.already_have | type != "boolean")] | length' 0 \
+			'union: a finished search still reports already_have as a boolean'
+	else
+		echo "    info: search $FIRST_SID not finished-with-results; finished-poll check skipped"
+	fi
+else
+	echo "    info: search $FIRST_SID no longer readable; finished-poll check skipped"
 fi
 
 # --- 12. Close actually frees the search on the daemon. ------------

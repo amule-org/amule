@@ -45,26 +45,37 @@
 namespace webapi
 {
 
-SearchFetchOutcome FetchSearchResults(CamuleapiApp &app, CState &state, std::uint32_t search_id)
+// One id-less EC_OP_SEARCH_RESULTS at EC_DETAIL_INC_UPDATE: the daemon answers
+// with every result of every search it holds, incrementally.
+//
+// This replaced one EC_DETAIL_FULL roundtrip per active search, each carrying
+// that search's whole result set on every tick whether or not anything had
+// changed. With eliding, an unchanged result costs nothing on the wire and an
+// idle or finished search costs nothing at all -- which is what makes polling
+// finished searches affordable, and is why the caller no longer filters on
+// ActiveSearchIds().
+//
+// No single-search fallback: amuleapi already advertises multi-search
+// unconditionally and never checks whether the daemon supports it (App.cpp),
+// so it has always required a matching daemon for search. EC_TAG_CAN_PARTIAL_SEARCH
+// is advertised for every client of CRemoteConnect, so the daemon is already
+// eliding for this connection.
+SearchFetchOutcome FetchSearchResults(CamuleapiApp &app, CState &state)
 {
-	std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_SEARCH_RESULTS, EC_DETAIL_FULL));
+	std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_SEARCH_RESULTS, EC_DETAIL_INC_UPDATE));
 	// Opt into result grouping (issue #431): the empty EC_TAG_SEARCH_PARENT
-	// flag tells the FULL responder to also emit each same-hash/different-name
+	// flag tells the responder to also emit each same-hash/different-name
 	// child so the results list can nest them.
 	req->AddTag(CECEmptyTag(EC_TAG_SEARCH_PARENT));
-	req->AddTag(CECTag(EC_TAG_SEARCH_ID, search_id));
 	const CECPacket *resp = app.SendRecvSerialized(req.get());
 	if (!resp)
 		return SearchFetchOutcome::EcFailed;
-	SearchFetchOutcome outcome = SearchFetchOutcome::Updated;
-	if (resp->GetTagByName(EC_TAG_SEARCH_EXPIRED)) {
-		outcome = SearchFetchOutcome::Expired;
-	} else {
-		state.MutateSearch(search_id,
-			[&](std::map<std::uint32_t, SearchResult> &cache) { ApplySearchFull(resp, cache); });
-	}
+	state.MutateAllSearches([&](std::map<std::uint32_t, SearchSlot> &slots,
+					std::map<std::uint32_t, std::uint32_t> &owner) {
+		ApplySearchUnion(resp, slots, owner);
+	});
 	delete resp;
-	return outcome;
+	return SearchFetchOutcome::Updated;
 }
 
 bool RefresherTick(CamuleapiApp &app, CState &state)
@@ -272,22 +283,21 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		delete resp;
 	}
 
+	// Results for every search in one roundtrip, before the per-search
+	// progress loop below. Not gated on active_sids: a finished search still
+	// changes (a hit gets downloaded, a Kad notes lookup lands) and now costs
+	// nothing to keep polling, which is what lets those changes be observed
+	// at all rather than only on a client's next read.
+	if (FetchSearchResults(app, state) == SearchFetchOutcome::EcFailed) {
+		// Same rule as every other step in the tick: a failed roundtrip bails
+		// the whole tick rather than exposing a half-refreshed cache.
+		return false;
+	}
 	for (std::uint32_t sid : active_sids) {
 		std::uint32_t percent = 0;
 		std::uint32_t lifecycle_state = 0;
 		bool expired = false;
-		switch (FetchSearchResults(app, state, sid)) {
-		case SearchFetchOutcome::EcFailed:
-			// Same rule as every other step in the tick: a failed roundtrip
-			// bails the whole tick rather than exposing a half-refreshed cache.
-			return false;
-		case SearchFetchOutcome::Expired:
-			expired = true;
-			break;
-		case SearchFetchOutcome::Updated:
-			break;
-		}
-		if (!expired && have_union) {
+		if (have_union) {
 			// Already fetched above; absent means the daemon dropped it.
 			const auto found = union_progress.find(sid);
 			if (found == union_progress.end()) {
@@ -296,7 +306,7 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 				percent = found->second.first;
 				lifecycle_state = found->second.second;
 			}
-		} else if (!expired) {
+		} else {
 			std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_SEARCH_PROGRESS));
 			req->AddTag(CECTag(EC_TAG_SEARCH_ID, sid));
 			const CECPacket *resp = app.SendRecvSerialized(req.get());

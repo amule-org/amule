@@ -7794,7 +7794,17 @@ void CApiDispatcher::RefreshSearchIfStale(std::uint32_t search_id)
 	// previous set is strictly better than failing a read that has a
 	// perfectly good answer. An expiry is left to the tick's own retirement
 	// path rather than duplicated here.
-	(void)webapi::FetchSearchResults(m_app, m_state, search_id);
+	//
+	// The fetch is the multi-search union, so it refreshes every search rather
+	// than just this one. The claim above stays per-search on purpose: it is
+	// what bounds how often a read can trigger a roundtrip, and the union
+	// costs the same whether one search is stale or all of them are.
+	//
+	// Kept even though the tick now polls finished searches too: this covers
+	// the sub-tick window a client hits when it GETs immediately after
+	// starting a Kad notes lookup, which is what the poll-until-false loop in
+	// the reference does.
+	(void)webapi::FetchSearchResults(m_app, m_state);
 }
 
 // See the declaration in Api.h for why this is shared rather than inlined

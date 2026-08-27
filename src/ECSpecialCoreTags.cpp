@@ -569,20 +569,36 @@ CEC_SearchFile_Tag::CEC_SearchFile_Tag(
 	// and an empty container never clears the remote list.
 	FileRatingList list;
 	file->GetRatingAndComments(list);
-	if (file->IsKadCommentSearchRunning() || !list.empty()) {
-		AddTag(EC_TAG_PARTFILE_KAD_COMMENT_SEARCHING,
-			(uint64)(file->IsKadCommentSearchRunning() ? 1 : 0));
-		if (!list.empty()) {
-			CECEmptyTag sc(EC_TAG_PARTFILE_COMMENTS);
-			for (FileRatingList::const_iterator it = list.begin(); it != list.end(); ++it) {
-				// Tag children are evaluated by index, not by name.
-				sc.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, it->UserName));
-				sc.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, it->FileName));
-				sc.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, (uint64)it->Rating));
-				sc.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, it->Comment));
-			}
-			AddTag(sc);
+	// Always emitted, and through the valuemap -- the same shape the download
+	// side has always used for this tag (CEC_PartFile_Tag above).
+	//
+	// It used to be emitted only while the lookup was running or had notes to
+	// show, so "finished, found nothing" was signalled by the tag going away.
+	// That cannot survive the incremental union: a result whose only change is
+	// a tag no longer being built produces a tag with no children, which
+	// Get_EC_Response_Search_Results_Union drops as unchanged. The transition
+	// was therefore invisible to every incremental client -- amulegui latched
+	// the flag on, and so did amuleapi -- and only a full re-read cleared it.
+	//
+	// Through the valuemap the 1 -> 0 transition is itself a child tag, so the
+	// result is not elided and every client sees the lookup end. A steady
+	// state still costs nothing: unchanged, it is diffed away as before.
+	AddTag(EC_TAG_PARTFILE_KAD_COMMENT_SEARCHING,
+		(uint64)(file->IsKadCommentSearchRunning() ? 1 : 0),
+		valuemap);
+	// The container itself stays gated on there being notes, and stays off the
+	// valuemap: an empty one must never be sent, because a client reads its
+	// absence as "no notes" rather than as "unchanged".
+	if (!list.empty()) {
+		CECEmptyTag sc(EC_TAG_PARTFILE_COMMENTS);
+		for (FileRatingList::const_iterator it = list.begin(); it != list.end(); ++it) {
+			// Tag children are evaluated by index, not by name.
+			sc.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, it->UserName));
+			sc.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, it->FileName));
+			sc.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, (uint64)it->Rating));
+			sc.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, it->Comment));
 		}
+		AddTag(sc);
 	}
 
 	if (detail_level == EC_DETAIL_UPDATE) {

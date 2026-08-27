@@ -2407,145 +2407,189 @@ std::string FileTypeToken(const std::string &name)
 	return s;
 }
 
-void ApplySearchFull(const CECPacket *resp, std::map<std::uint32_t, SearchResult> &cache)
+// Merge one EC_TAG_SEARCHFILE onto a result, writing only the fields the tag
+// actually carries.
+//
+// This is the whole contract of the incremental union poll: the daemon diffs a
+// result against what it last sent us and emits only what moved, so an absent
+// field means "unchanged", never "cleared". Every write below is therefore
+// guarded on its tag being present -- including the ones a full fetch could
+// take unconditionally, because their accessors go through GetTagByNameSafe
+// and answer 0 / "" for a tag that is not there.
+void MergeSearchResultTag(const CEC_SearchFile_Tag *sf, SearchResult &r)
 {
-	cache.clear();
-	if (!resp)
-		return;
-	for (CECPacket::const_iterator it = resp->begin(); it != resp->end(); ++it) {
-		const CECTag *t = &*it;
-		if (t->GetTagName() != EC_TAG_SEARCHFILE)
-			continue;
-		const CEC_SearchFile_Tag *sf = static_cast<const CEC_SearchFile_Tag *>(t);
-		SearchResult r;
-		r.ecid = sf->ID();
-		{
-			std::string h(sf->FileHashString().utf8_str());
-			std::transform(h.begin(), h.end(), h.begin(), [](unsigned char c) {
-				return std::tolower(c);
-			});
-			r.hash = std::move(h);
-		}
-		r.name = std::string(sf->FileName().utf8_str());
-		r.size = sf->SizeFull();
-		{
-			std::uint32_t v = 0;
-			if (sf->AssignIfExist(EC_TAG_PARTFILE_SOURCE_COUNT, v))
-				r.source_count = v;
-		}
-		{
-			std::uint32_t v = 0;
-			if (sf->AssignIfExist(EC_TAG_PARTFILE_SOURCE_COUNT_XFER, v))
-				r.complete_source_count = v;
-		}
-		r.already_have = sf->AlreadyHave();
-		// Grouping (issue #431): a child hit carries its parent's ECID in
-		// EC_TAG_SEARCH_PARENT. Recorded here; folded into the parent's
-		// children[] in the second pass below.
-		{
-			std::uint32_t v = 0;
-			if (sf->AssignIfExist(EC_TAG_SEARCH_PARENT, v)) {
-				r.parent_ecid = v;
-				r.has_parent = true;
-			}
-		}
-		{
-			std::uint8_t v = 0;
-			if (sf->AssignIfExist(EC_TAG_KNOWNFILE_RATING, v))
-				r.rating = v;
-		}
-		// Download status (issue #429): amuled packs the CSearchFile
-		// status in EC_TAG_PARTFILE_STATUS on every search-result tag.
-		{
-			std::uint32_t v = 0;
-			r.status = SearchStatusName(sf->AssignIfExist(EC_TAG_PARTFILE_STATUS, v) ? v : 0);
-		}
-		// File type, computed from the filename (no EC data needed).
-		r.type = FileTypeToken(r.name);
-		// Browse-only: the folder this file sits in inside the peer's
-		// share. The core attaches it to results filed from a shared-file
-		// listing and to nothing else, so an ordinary server/Kad hit
-		// simply leaves it empty.
-		if (const CECTag *x = sf->GetTagByName(EC_TAG_SEARCHFILE_DIRECTORY)) {
-			r.directory = std::string(x->GetStringData().utf8_str());
-		}
-		// Media metadata (issue #430): present when the hit carried
-		// FT_MEDIA_* tags. On a locally known/probed file those are our
-		// own probe's values; on a remote hit they are whatever the
-		// responding server advertised, which is not validated anywhere
-		// and can contradict the file (a .pdf with a runtime and an xvid
-		// codec is a real observed result). Passed through as sent -- the
-		// API documents the search-result `media` as unverified rather
-		// than second-guessing the server. Any present tag marks
-		// has_media so the API emits the `media` object.
-		{
-			std::uint32_t v = 0;
-			if (sf->AssignIfExist(EC_TAG_KNOWNFILE_MEDIA_LENGTH, v)) {
-				r.media.length_s = v;
-			}
-			if (sf->AssignIfExist(EC_TAG_KNOWNFILE_MEDIA_BITRATE, v)) {
-				r.media.bitrate = v;
-			}
-		}
-		if (const CECTag *x = sf->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_CODEC)) {
-			r.media.codec = std::string(x->GetStringData().utf8_str());
-		}
-		if (const CECTag *x = sf->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_ARTIST)) {
-			r.media.artist = std::string(x->GetStringData().utf8_str());
-		}
-		if (const CECTag *x = sf->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_ALBUM)) {
-			r.media.album = std::string(x->GetStringData().utf8_str());
-		}
-		if (const CECTag *x = sf->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_TITLE)) {
-			r.media.title = std::string(x->GetStringData().utf8_str());
-		}
-		// Derived from the fields, exactly as MergeKnownFileDetail does for a
-		// shared file. Both paths share AddMediaTagsPresent on the daemon
-		// side, so either can be sent a zero / empty "this field is gone" tag
-		// -- latching on any tag being present would mark a result as having
-		// media with every field blank.
-		r.has_media = r.media.length_s != 0 || r.media.bitrate != 0 || !r.media.codec.empty() ||
-			      !r.media.artist.empty() || !r.media.album.empty() || !r.media.title.empty();
-		// On-demand Kad community ratings/comments (issue #434). Same
-		// 4-children-per-entry positional container the download side uses
-		// (username, filename, rating, comment); a search hit's comments are
-		// purely Kad notes.
-		if (const CECTag *cont = sf->GetTagByName(EC_TAG_PARTFILE_COMMENTS)) {
-			std::vector<const CECTag *> kids;
-			for (const CECTag &kid : *cont)
-				kids.push_back(&kid);
-			for (std::size_t i = 0; i + 3 < kids.size(); i += 4) {
-				SearchResult::Comment c;
-				c.username = std::string(kids[i]->GetStringData().utf8_str());
-				c.filename = std::string(kids[i + 1]->GetStringData().utf8_str());
-				c.rating = static_cast<std::int32_t>(
-					static_cast<std::int64_t>(kids[i + 2]->GetInt()));
-				c.comment = std::string(kids[i + 3]->GetStringData().utf8_str());
-				r.comments.push_back(std::move(c));
-			}
-		}
-		{
-			std::uint32_t v = 0;
-			if (sf->AssignIfExist(EC_TAG_PARTFILE_KAD_COMMENT_SEARCHING, v))
-				r.kad_comment_searching = v != 0;
-		}
-		cache.emplace(r.ecid, std::move(r));
+	r.ecid = sf->ID();
+	// Identity and the immutable descriptors. Under INC_UPDATE these
+	// travel once and are diffed away afterwards, and the accessors
+	// answer through GetTagByNameSafe -- an absent tag reads as an empty
+	// string or 0, which would wipe the field rather than leave it. So
+	// each one is written only when its tag is actually on this packet.
+	if (sf->GetTagByName(EC_TAG_PARTFILE_HASH)) {
+		std::string h(sf->FileHashString().utf8_str());
+		std::transform(
+			h.begin(), h.end(), h.begin(), [](unsigned char c) { return std::tolower(c); });
+		r.hash = std::move(h);
 	}
+	if (sf->GetTagByName(EC_TAG_PARTFILE_NAME)) {
+		r.name = std::string(sf->FileName().utf8_str());
+	}
+	if (sf->GetTagByName(EC_TAG_PARTFILE_SIZE_FULL)) {
+		r.size = sf->SizeFull();
+	}
+	{
+		std::uint32_t v = 0;
+		if (sf->AssignIfExist(EC_TAG_PARTFILE_SOURCE_COUNT, v))
+			r.source_count = v;
+	}
+	{
+		std::uint32_t v = 0;
+		if (sf->AssignIfExist(EC_TAG_PARTFILE_SOURCE_COUNT_XFER, v))
+			r.complete_source_count = v;
+	}
+	// Grouping (issue #431): a child hit carries its parent's ECID in
+	// EC_TAG_SEARCH_PARENT. Recorded here; folded into the parent's
+	// children[] in the second pass below.
+	{
+		std::uint32_t v = 0;
+		if (sf->AssignIfExist(EC_TAG_SEARCH_PARENT, v)) {
+			r.parent_ecid = v;
+			r.has_parent = true;
+		}
+	}
+	{
+		std::uint8_t v = 0;
+		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_RATING, v))
+			r.rating = v;
+	}
+	// Download status (issue #429): amuled packs the CSearchFile
+	// status in EC_TAG_PARTFILE_STATUS on every search-result tag.
+	// Download status (issue #429): amuled packs the CSearchFile status
+	// in EC_TAG_PARTFILE_STATUS. `already_have` is not its own field on
+	// the wire -- AlreadyHave() reads the same tag -- so both move
+	// together, and both are left alone when the tag is diffed away.
+	// Writing the absent case as status 0 would report every unchanged
+	// result as "new" on the very polls that say nothing changed.
+	{
+		std::uint32_t v = 0;
+		if (sf->AssignIfExist(EC_TAG_PARTFILE_STATUS, v)) {
+			r.status = SearchStatusName(v);
+			r.already_have = sf->AlreadyHave();
+		}
+	}
+	// File type, computed from the filename (no EC data needed).
+	// Derived from the filename, so it is recomputed whenever the name is.
+	if (!r.name.empty()) {
+		r.type = FileTypeToken(r.name);
+	}
+	// Browse-only: the folder this file sits in inside the peer's
+	// share. The core attaches it to results filed from a shared-file
+	// listing and to nothing else, so an ordinary server/Kad hit
+	// simply leaves it empty.
+	if (const CECTag *x = sf->GetTagByName(EC_TAG_SEARCHFILE_DIRECTORY)) {
+		r.directory = std::string(x->GetStringData().utf8_str());
+	}
+	// Media metadata (issue #430): present when the hit carried
+	// FT_MEDIA_* tags. On a locally known/probed file those are our
+	// own probe's values; on a remote hit they are whatever the
+	// responding server advertised, which is not validated anywhere
+	// and can contradict the file (a .pdf with a runtime and an xvid
+	// codec is a real observed result). Passed through as sent -- the
+	// API documents the search-result `media` as unverified rather
+	// than second-guessing the server. Any present tag marks
+	// has_media so the API emits the `media` object.
+	{
+		std::uint32_t v = 0;
+		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_MEDIA_LENGTH, v)) {
+			r.media.length_s = v;
+		}
+		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_MEDIA_BITRATE, v)) {
+			r.media.bitrate = v;
+		}
+	}
+	if (const CECTag *x = sf->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_CODEC)) {
+		r.media.codec = std::string(x->GetStringData().utf8_str());
+	}
+	if (const CECTag *x = sf->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_ARTIST)) {
+		r.media.artist = std::string(x->GetStringData().utf8_str());
+	}
+	if (const CECTag *x = sf->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_ALBUM)) {
+		r.media.album = std::string(x->GetStringData().utf8_str());
+	}
+	if (const CECTag *x = sf->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_TITLE)) {
+		r.media.title = std::string(x->GetStringData().utf8_str());
+	}
+	// Derived from the fields, exactly as MergeKnownFileDetail does for a
+	// shared file. Both paths share AddMediaTagsPresent on the daemon
+	// side, so either can be sent a zero / empty "this field is gone" tag
+	// -- latching on any tag being present would mark a result as having
+	// media with every field blank.
+	r.has_media = r.media.length_s != 0 || r.media.bitrate != 0 || !r.media.codec.empty() ||
+		      !r.media.artist.empty() || !r.media.album.empty() || !r.media.title.empty();
+	// On-demand Kad community ratings/comments (issue #434). Same
+	// 4-children-per-entry positional container the download side uses
+	// (username, filename, rating, comment); a search hit's comments are
+	// purely Kad notes.
+	// The comments container is the one field where absence is a value,
+	// not silence: it is built only when there are notes and is added
+	// without the valuemap, so it is never diffed away. An absent one
+	// therefore means "no notes", and a present one replaces the set
+	// rather than appending to it.
+	//
+	// The searching flag beside it is NOT in that category -- it goes
+	// through the valuemap like every other field, so it follows the
+	// ordinary absent-means-unchanged rule below.
+	r.comments.clear();
+	if (const CECTag *cont = sf->GetTagByName(EC_TAG_PARTFILE_COMMENTS)) {
+		std::vector<const CECTag *> kids;
+		for (const CECTag &kid : *cont)
+			kids.push_back(&kid);
+		for (std::size_t i = 0; i + 3 < kids.size(); i += 4) {
+			SearchResult::Comment c;
+			c.username = std::string(kids[i]->GetStringData().utf8_str());
+			c.filename = std::string(kids[i + 1]->GetStringData().utf8_str());
+			c.rating =
+				static_cast<std::int32_t>(static_cast<std::int64_t>(kids[i + 2]->GetInt()));
+			c.comment = std::string(kids[i + 3]->GetStringData().utf8_str());
+			r.comments.push_back(std::move(c));
+		}
+	}
+	{
+		std::uint32_t v = 0;
+		if (sf->AssignIfExist(EC_TAG_PARTFILE_KAD_COMMENT_SEARCHING, v))
+			r.kad_comment_searching = v != 0;
+	}
+}
 
-	// Second pass (issue #431): fold each child into its parent's
-	// children[] and drop it from the top-level set, so the API serves
-	// one parent row per hash+size with the alternative filenames nested.
-	// A child whose parent isn't in the set (shouldn't happen — the core
-	// emits the parent before its children) is left as a top-level row so
-	// nothing is silently lost.
-	std::vector<std::uint32_t> folded;
-	for (auto &kv : cache) {
-		SearchResult &child = kv.second;
+// Rebuild the folded view (`results`) from the flat merge target (`raw`).
+//
+// Kept as a pass over `raw` rather than merged into directly: a grouped child
+// is addressable by its own ECID on the wire and gets diffed tags of its own,
+// so it has to stay in `raw`, while every reader wants it nested in its
+// parent. Rebuilding is O(n) in one search's results and runs only when that
+// search actually changed.
+void RebuildFoldedResults(
+	const std::map<std::uint32_t, SearchResult> &raw, std::map<std::uint32_t, SearchResult> &out)
+{
+	out.clear();
+	// Parents first, so a child always finds its parent already present.
+	for (const auto &kv : raw) {
+		if (!kv.second.has_parent)
+			out.emplace(kv.first, kv.second);
+	}
+	// Then fold each child into its parent's children[] (issue #431), so the
+	// API serves one row per hash+size with the alternative filenames nested.
+	// A child whose parent is not in the set -- which should not happen, the
+	// core emits the parent first -- is promoted to a top-level row instead,
+	// so nothing is silently lost.
+	for (const auto &kv : raw) {
+		const SearchResult &child = kv.second;
 		if (!child.has_parent)
 			continue;
-		auto pit = cache.find(child.parent_ecid);
-		if (pit == cache.end())
+		auto pit = out.find(child.parent_ecid);
+		if (pit == out.end()) {
+			out.emplace(kv.first, child);
 			continue;
+		}
 		SearchResult::Child c;
 		c.ecid = child.ecid;
 		c.name = child.name;
@@ -2554,10 +2598,112 @@ void ApplySearchFull(const CECPacket *resp, std::map<std::uint32_t, SearchResult
 		c.complete_source_count = child.complete_source_count;
 		c.directory = child.directory;
 		pit->second.children.push_back(std::move(c));
-		folded.push_back(kv.first);
 	}
-	for (std::uint32_t ecid : folded) {
-		cache.erase(ecid);
+}
+
+// Apply one incremental multi-search union reply across every search slot.
+//
+// The reply is not per-search: it carries every result of every search the
+// daemon holds, and it carries them incrementally. Two consequences drive the
+// shape here.
+//
+// First, EC_TAG_SEARCH_ID travels only the first time the daemon tells us
+// about a result -- after that the tag is diffed away, because a result never
+// changes owner. So a tag without one is attributed through `owner`, the index
+// this function is responsible for keeping in step with the slots.
+//
+// Second, absence no longer means deletion. A result the daemon still holds
+// but has nothing new to say about is omitted entirely; removal is explicit,
+// as one EC_TAG_FILE_REMOVED per gone ECID. Sweeping "anything missing is
+// gone" here would delete the whole result set on the first quiet poll.
+void ApplySearchUnion(const CECPacket *resp,
+	std::map<std::uint32_t, SearchSlot> &slots,
+	std::map<std::uint32_t, std::uint32_t> &owner,
+	std::uint32_t default_sid)
+{
+	if (!resp)
+		return;
+	// Slots that actually took a change, so the fold below only re-runs for
+	// those rather than for every open search on every poll.
+	std::set<std::uint32_t> touched;
+
+	for (const CECTag &tag : *resp) {
+		const CECTag *t = &tag;
+
+		if (t->GetTagName() == EC_TAG_FILE_REMOVED) {
+			const std::uint32_t ecid = static_cast<std::uint32_t>(t->GetInt());
+			const auto oit = owner.find(ecid);
+			if (oit == owner.end())
+				continue;
+			const auto sit = slots.find(oit->second);
+			if (sit != slots.end() && sit->second.raw.erase(ecid) != 0)
+				touched.insert(oit->second);
+			owner.erase(oit);
+			continue;
+		}
+
+		if (t->GetTagName() != EC_TAG_SEARCHFILE)
+			continue;
+		const CEC_SearchFile_Tag *sf = static_cast<const CEC_SearchFile_Tag *>(t);
+		const std::uint32_t ecid = sf->ID();
+
+		// Present on a result's first appearance, diffed away afterwards.
+		std::uint32_t sid = 0;
+		if (const CECTag *x = sf->GetTagByName(EC_TAG_SEARCH_ID)) {
+			sid = static_cast<std::uint32_t>(x->GetInt());
+			owner[ecid] = sid;
+		} else if (default_sid != 0) {
+			// A per-search reply: every tag in it belongs to the search the
+			// caller asked for, and that form carries no id of its own.
+			sid = default_sid;
+			owner[ecid] = sid;
+		} else {
+			const auto oit = owner.find(ecid);
+			if (oit == owner.end()) {
+				// A diffed tag for a result we have no record of. Only
+				// reachable if our slot went away while the daemon still
+				// believed we held it -- there is nothing to apply it to,
+				// and inventing a slot would produce a search with no
+				// lifecycle state behind it.
+				continue;
+			}
+			sid = oit->second;
+		}
+
+		const auto sit = slots.find(sid);
+		if (sit == slots.end()) {
+			// Results for a search this session has no slot for. Dropped
+			// rather than auto-created: MarkSearchStarted / discovery own
+			// slot creation, and they also set the lifecycle state that
+			// GET /search reports.
+			owner.erase(ecid);
+			continue;
+		}
+		auto &slot_results = sit->second.raw;
+		const auto existing = slot_results.find(ecid);
+		if (existing == slot_results.end()) {
+			// First sight of this result. Seed the fields whose "absent"
+			// reading differs between a fresh row and a diff: status has no
+			// sensible empty value, and the daemon's own default for a hit
+			// it has said nothing about is the zero code. Merging onto a
+			// default-constructed SearchResult would leave it "", which is
+			// not a state any consumer knows.
+			SearchResult fresh;
+			fresh.ecid = ecid;
+			fresh.status = SearchStatusName(0);
+			MergeSearchResultTag(sf, fresh);
+			slot_results.emplace(ecid, std::move(fresh));
+		} else {
+			MergeSearchResultTag(sf, existing->second);
+			existing->second.ecid = ecid;
+		}
+		touched.insert(sid);
+	}
+
+	for (std::uint32_t sid : touched) {
+		const auto sit = slots.find(sid);
+		if (sit != slots.end())
+			RebuildFoldedResults(sit->second.raw, sit->second.results);
 	}
 }
 

@@ -292,29 +292,6 @@ bool CState::FindSearchResultByHash(
 	return false;
 }
 
-void CState::EvictSurplusSearchSlotsLocked()
-{
-	// Bound the retained slots: a client that never frees its searches would
-	// otherwise accumulate one slot (with its result map) per search for the
-	// whole process lifetime. Evict oldest-first, never an active
-	// (still-polling) one — the surplus is always finished slots.
-	while (m_searches.size() > kMaxSearchSlots) {
-		auto victim = m_searches.end();
-		for (auto it = m_searches.begin(); it != m_searches.end(); ++it) {
-			if (it->second.progress.active) {
-				continue;
-			}
-			if (victim == m_searches.end() || it->second.seq < victim->second.seq) {
-				victim = it;
-			}
-		}
-		if (victim == m_searches.end()) {
-			break; // every remaining slot is still active — nothing to evict
-		}
-		m_searches.erase(victim);
-	}
-}
-
 void CState::MarkSearchStarted(std::uint32_t search_id, const std::string &kind, const std::string &query)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
@@ -328,10 +305,8 @@ void CState::MarkSearchStarted(std::uint32_t search_id, const std::string &kind,
 	slot.progress.kind = kind;
 	slot.progress.generation = next_generation;
 	slot.query = query;
-	slot.seq = ++m_search_seq;
 	slot.started_at = std::time(nullptr);
 	slot.last_fetch = {};
-	EvictSurplusSearchSlotsLocked();
 }
 
 void CState::MarkSearchDiscovered(std::uint32_t search_id,
@@ -377,8 +352,6 @@ void CState::MarkSearchDiscovered(std::uint32_t search_id,
 		reported_percent >= 0 ? static_cast<std::uint32_t>(reported_percent) : (complete ? 100u : 0u);
 	slot.progress.kind = kind;
 	slot.query = query;
-	slot.seq = ++m_search_seq;
-	EvictSurplusSearchSlotsLocked();
 }
 
 void CState::WriteSearchProgress(std::uint32_t search_id, SearchProgressSnapshot s)
@@ -389,10 +362,27 @@ void CState::WriteSearchProgress(std::uint32_t search_id, SearchProgressSnapshot
 		it->second.progress = std::move(s);
 }
 
+void CState::MutateAllSearches(const std::function<void(
+		std::map<std::uint32_t, SearchSlot> &, std::map<std::uint32_t, std::uint32_t> &)> &fn)
+{
+	const ReentryGuard guard(this);
+	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
+	fn(m_searches, m_resultOwner);
+}
+
 void CState::CloseSearch(std::uint32_t search_id)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
-	m_searches.erase(search_id);
+	const auto it = m_searches.find(search_id);
+	if (it == m_searches.end())
+		return;
+	// The index mirrors this slot's result map, so it has to lose the same
+	// ECIDs in the same locked step. Walking the slot's own results is what
+	// keeps that exact: erasing by value over the whole index would be O(n)
+	// in every search rather than this one.
+	for (const auto &kv : it->second.raw)
+		m_resultOwner.erase(kv.first);
+	m_searches.erase(it);
 }
 
 void CState::WriteStatsTree(StatsTreeNode t)
@@ -812,6 +802,11 @@ void CState::ResetLists()
 	// re-baselines its per-search state when a slot it was tracking
 	// disappears, so no generation carry-over is needed here.)
 	m_searches.clear();
+	// The ECID->search_id index mirrors those slots, and the daemon's
+	// per-connection diff state died with the same socket, so it re-sends
+	// every result in full on the new one. Keeping stale entries here would
+	// attribute a reused ECID to a search that no longer exists.
+	m_resultOwner.clear();
 	// The credit store deliberately does NOT go with them. This runs when a
 	// tick failed against a socket that is still up, and dropping the store
 	// there would refetch the whole thing after one null tick -- the cost this

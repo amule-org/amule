@@ -32,6 +32,7 @@
 #include <vector>
 
 class CECPacket;
+class CEC_SearchFile_Tag;
 class CamuleapiApp;
 class PartFileEncoderData;
 
@@ -70,7 +71,7 @@ enum class SearchFetchOutcome
 // identical request (EC_DETAIL_FULL plus the EC_TAG_SEARCH_PARENT grouping
 // flag) and feed the identical applier — a results list read through either
 // route has the same shape.
-SearchFetchOutcome FetchSearchResults(CamuleapiApp &app, CState &state, std::uint32_t search_id);
+SearchFetchOutcome FetchSearchResults(CamuleapiApp &app, CState &state);
 
 // Single-threaded SSE diff emission. Called ONLY from the wxApp
 // refresher loop after a successful RefresherTick so that the
@@ -263,7 +264,28 @@ void ParseGraphsFromPacket(const CECPacket *resp, StatsGraphs &out);
 // Cache is keyed by ECID; cleared on each refresher tick before
 // applying.
 struct SearchResult;
-void ApplySearchFull(const CECPacket *resp, std::map<std::uint32_t, SearchResult> &cache);
+struct SearchSlot;
+// Merge one EC_TAG_SEARCHFILE onto a result, writing only the fields the tag
+// carries. Exposed for the unit tests, which drive it directly to pin the
+// absent-means-unchanged contract field by field.
+void MergeSearchResultTag(const CEC_SearchFile_Tag *sf, SearchResult &r);
+
+// Rebuild the folded view from the flat merge target: children nested into
+// their parents, orphans promoted.
+void RebuildFoldedResults(
+	const std::map<std::uint32_t, SearchResult> &raw, std::map<std::uint32_t, SearchResult> &out);
+
+// Apply one incremental multi-search union reply across every slot, keeping
+// the ECID -> search_id index in step. See the definition for why absence
+// cannot mean deletion here.
+// `default_sid` attributes tags that carry no EC_TAG_SEARCH_ID of their own.
+// Zero for the union reply, where a missing id means "already known" and the
+// index answers it; set for a per-search reply, where the whole packet belongs
+// to one search and the responder never stamps an id.
+void ApplySearchUnion(const CECPacket *resp,
+	std::map<std::uint32_t, SearchSlot> &slots,
+	std::map<std::uint32_t, std::uint32_t> &owner,
+	std::uint32_t default_sid = 0);
 
 // Search-progress derivation from the EC_TAG_SEARCH_LIFECYCLE_* tags.
 // `lifecycle_state` is the uint8 enum value (0=idle, 1=running,

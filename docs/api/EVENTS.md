@@ -572,6 +572,8 @@ Driven by the refresher state machine that owns the `POST /search` → completio
 
 Emitted per new result that appears in the results map between refresher ticks.
 
+**Add-only.** There is no `search_result_updated`, so a result's mutable fields (`sources`, `status`, `already_have`, `children[]`, `comments[]`) do not push after the row first arrives. While a search runs, [`search_progress`](#search_progress) fires on every advance and is the cue to re-read [`GET /search/{id}/results`](REFERENCE.md#get-apiv0searchidresults); once it finishes, that endpoint refreshes on read. The daemon is polled for every search it holds, finished ones included, so a re-read is current -- but the stream will not tell you when to make one.
+
 ```json
 {
   "search_id": 42,

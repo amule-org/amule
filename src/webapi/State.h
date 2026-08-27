@@ -1020,6 +1020,18 @@ void ComputePartProgressPercent(const CState &state, ClientSnapshot &cli);
 // daemon-allocated search_id (see m_searches).
 struct SearchSlot
 {
+	// What the daemon last told us, flat: every result ECID it has sent for
+	// this search, parents and grouped children alike, exactly as they
+	// arrived. This is the merge target for the incremental union poll --
+	// a diffed tag names one ECID and carries only the fields that moved, so
+	// there has to be somewhere addressable by ECID to apply it to.
+	std::map<std::uint32_t, SearchResult> raw;
+	// The view every reader uses: `raw` with each child folded into its
+	// parent's children[] and dropped from the top level, so the API serves
+	// one row per hash+size. Rebuilt from `raw` after each merge rather than
+	// merged into directly, which keeps every consumer (Search(),
+	// FindSearchResultByHash, EventDiff) on exactly the shape it had before
+	// incremental polling existed.
 	std::map<std::uint32_t, SearchResult> results;
 	SearchProgressSnapshot progress;
 	// What was searched for, so a consumer reading one search's results
@@ -1028,10 +1040,6 @@ struct SearchSlot
 	// nickname, not a query. Empty only for a slot seeded by discovery
 	// before its name was observed.
 	std::string query;
-	// Monotonic insertion order, used to evict the oldest slots when the map
-	// exceeds its cap (a client that starts many searches without closing them
-	// would otherwise accumulate slots for the whole process lifetime).
-	std::uint64_t seq = 0;
 	// Wall-clock second this session started the search, for ranking the
 	// entries GET /search returns: that listing comes straight off
 	// EC_OP_SEARCH_LIST, which walks a std::map keyed by search_id and
@@ -1867,6 +1875,13 @@ public:
 	// overwrite). No-op if the id names no live slot.
 	void MutateSearch(std::uint32_t search_id,
 		const std::function<void(std::map<std::uint32_t, SearchResult> &)> &fn);
+	// Mutate every search slot and the ECID->search_id index together, under
+	// one exclusive lock. The incremental union poll needs both: a diffed tag
+	// names no search, so the index resolves it, and a result that moves or
+	// disappears has to leave the map and the index in step. Handing out both
+	// halves to one callback is what makes that atomic.
+	void MutateAllSearches(const std::function<void(std::map<std::uint32_t, SearchSlot> &,
+			std::map<std::uint32_t, std::uint32_t> &)> &fn);
 
 	// Wholesale reset paths. Called by the refresher after a
 	// MarkTickFailure → MarkTickSuccess transition (the server's
@@ -2002,18 +2017,15 @@ private:
 	// the REST surface by its daemon-allocated search_id. One slot per search
 	// holds that search's results (by result ECID) and its lifecycle progress.
 	std::map<std::uint32_t, SearchSlot> m_searches;
-	// Ever-increasing sequence stamped on each new slot for oldest-first
-	// eviction. Never wraps in practice (one bump per POST /search).
-	std::uint64_t m_search_seq = 0;
-	// Hard cap on retained slots. Comfortably above the daemon's 20-search
-	// ring so every live search always fits; excess is finished slots a
-	// client never closed, evicted oldest-first.
-	static constexpr std::size_t kMaxSearchSlots = 64;
-
-	// Trim m_searches back to kMaxSearchSlots, dropping the oldest slot that
-	// is not still being polled. Shared by both slot-creating paths, which
-	// need the identical rule. MUST be called with m_mu held exclusively.
-	void EvictSurplusSearchSlotsLocked();
+	// Result ECID -> owning search_id, mirroring m_searches' result maps.
+	//
+	// Required by the incremental union poll: the daemon sends
+	// EC_TAG_SEARCH_ID only the first time it tells us about a result, and
+	// EC_TAG_FILE_REMOVED carries the bare ECID, so every later tag has to be
+	// attributed from here. Maintained inside the same locked mutation that
+	// writes the result maps -- an index that can drift from the map it
+	// mirrors is how #1028 leaked keys a reload could not heal.
+	std::map<std::uint32_t, std::uint32_t> m_resultOwner;
 };
 
 } // namespace webapi
