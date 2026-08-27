@@ -141,7 +141,7 @@ function ServersPanel({ isGuest }) {
 
   useEffect(() => {
     data.register({ key: "servers", eventPrefix: "server", id: "ecid",
-      list: () => api.get("servers").then((r) => r.servers || []) });
+      list: () => api.list("servers").then((r) => r.servers || []) });
     data.ensure("servers");
   }, []);
 

@@ -258,8 +258,10 @@ Everything under `/api/v0/`, with full details in
 - **Search** — start a search, read results, download one.
 - **Categories**, **preferences**, **logs** and **statistics**.
 
-Lists take `limit`, `offset`, `sort` and `order`. Bulk actions report each
-item's outcome separately rather than one overall result.
+Lists take `limit`, `offset`, `sort`, `order` and `after` (a keyset anchor for
+paging). `limit` defaults to 100, so a list request returns the first page
+unless it asks for more — see [`docs/api/REFERENCE.md`](api/REFERENCE.md). Bulk
+actions report each item's outcome separately rather than one overall result.
 
 `GET /api/v0/events` streams changes as they happen and can resume where it
 left off after a dropped connection — see
