@@ -558,10 +558,10 @@ function KadInfoPanel() {
         statRow("networks_kad_contacts_nodes", connected ? formatInt(net.nodes) : "—"),
       ], "networks_kad_group_network")}
       ${Section([
-        statRow("networks_kad_indexed_sources", formatInt(idx.sources)),
-        statRow("networks_kad_indexed_keywords", formatInt(idx.keywords)),
-        statRow("networks_kad_indexed_notes", formatInt(idx.notes)),
-        statRow("networks_kad_indexed_load", formatInt(idx.load)),
+        statRow("networks_kad_indexed_sources", connected ? formatInt(idx.sources) : "—"),
+        statRow("networks_kad_indexed_keywords", connected ? formatInt(idx.keywords) : "—"),
+        statRow("networks_kad_indexed_notes", connected ? formatInt(idx.notes) : "—"),
+        statRow("networks_kad_indexed_load", connected ? formatInt(idx.load) : "—"),
       ], "networks_kad_group_index")}
     </div>`;
 }
