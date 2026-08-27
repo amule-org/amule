@@ -143,6 +143,18 @@ void WriteUIntOrNull(CJsonWriter &w, const char *key, bool known, std::uint64_t 
 // empty string is NOT the same as unknown -- `server_ip` is legitimately ""
 // when the peer has no server -- so callers pass the predicate rather than
 // letting this guess from the value.
+// Bool half of the OrNull family. `false` and "not measured" are different
+// answers for a firewall verdict or a LAN-mode flag, and only one of them is
+// something a consumer should act on.
+void WriteBoolOrNull(CJsonWriter &w, const char *key, bool known, bool value)
+{
+	w.Key(key);
+	if (known)
+		w.ValueBool(value);
+	else
+		w.ValueNull();
+}
+
 void WriteStringOrNull(CJsonWriter &w, const char *key, bool known, const std::string &value)
 {
 	w.Key(key);
@@ -713,12 +725,13 @@ void WriteKadNetworkObject(CJsonWriter &w, const webapi::KadSnapshot &k)
 {
 	w.Key("network");
 	w.BeginObject();
-	w.Key("users");
-	w.ValueInt(static_cast<int64_t>(k.users));
-	w.Key("files");
-	w.ValueInt(static_cast<int64_t>(k.files));
-	w.Key("nodes");
-	w.ValueInt(static_cast<int64_t>(k.nodes));
+	// null unless Kad is connected. `users`/`files` are the last estimate and
+	// survive into `connecting`; `nodes` is our own routing-table size and was
+	// measured at 2 with Kad fully stopped, so not even the terminal state
+	// reaches 0. A number here would be a claim about a network we are not on.
+	WriteIntOrNull(w, "users", k.has_network, static_cast<int64_t>(k.users));
+	WriteIntOrNull(w, "files", k.has_network, static_cast<int64_t>(k.files));
+	WriteIntOrNull(w, "nodes", k.has_network, static_cast<int64_t>(k.nodes));
 	w.EndObject();
 }
 
@@ -2600,10 +2613,10 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 	// on — no extra round-trip.
 	w.Key("network");
 	w.BeginObject();
-	w.Key("users");
-	w.ValueInt(static_cast<int64_t>(s.ed2k_users));
-	w.Key("files");
-	w.ValueInt(static_cast<int64_t>(s.ed2k_files));
+	// null unless eD2k is connected: these sum the whole known server list, not
+	// the server we are attached to, and nothing zeroes them on disconnect.
+	WriteIntOrNull(w, "users", s.has_ed2k_network, static_cast<int64_t>(s.ed2k_users));
+	WriteIntOrNull(w, "files", s.has_ed2k_network, static_cast<int64_t>(s.ed2k_files));
 	w.EndObject();
 	w.EndObject();
 
@@ -2614,8 +2627,7 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 	// TCP half of the firewall verdict. Named for the transport because
 	// GET /kad reports it beside firewalled_udp, which is a separate
 	// measurement rather than a refinement of this one.
-	w.Key("firewalled_tcp");
-	w.ValueBool(s.kad_firewalled_tcp);
+	WriteBoolOrNull(w, "firewalled_tcp", s.has_kad_firewalled_tcp, s.kad_firewalled_tcp);
 	// 0 when not connected -- gate on kad.state, not on this being nonzero.
 	w.Key("connected_since");
 	w.ValueInt(static_cast<int64_t>(s.kad_connected_since));
@@ -7137,16 +7149,16 @@ CHttpServer::Response CApiDispatcher::HandleKad(const CHttpServer::Request &req)
 	w.Key("node_id");
 	w.ValueString(wxString::FromUTF8(k.node_id.c_str()));
 	// Two independent measurements, not a verdict and a refinement.
-	// firewalled_tcp is a vote needing two peers to confirm reachability
-	// and defaults to true with no verdict; firewalled_udp is a directed
-	// test sent only while Kad is connected, so it reads false when Kad
-	// is down. LAN mode forces both to false.
-	w.Key("firewalled_tcp");
-	w.ValueBool(k.firewalled_tcp);
-	w.Key("firewalled_udp");
-	w.ValueBool(k.firewalled_udp);
-	w.Key("lan_mode");
-	w.ValueBool(k.lan_mode);
+	// firewalled_tcp is a vote needing two peers to confirm reachability;
+	// firewalled_udp is a directed test. LAN mode forces both to false.
+	//
+	// All three are null unless Kad is connected. They used to answer
+	// `true`/`false` regardless -- firewalled_tcp from a connstate bit that
+	// outlives the disconnect, the other two from their struct defaults -- so a
+	// stopped Kad reported a reachability verdict it had not measured.
+	WriteBoolOrNull(w, "firewalled_tcp", k.has_firewalled_tcp, k.firewalled_tcp);
+	WriteBoolOrNull(w, "firewalled_udp", k.has_firewalled_udp, k.firewalled_udp);
+	WriteBoolOrNull(w, "lan_mode", k.has_lan_mode, k.lan_mode);
 	// Same value GET /status reports as kad.connected_since; 0 when
 	// not connected, so gate on `state` rather than on a nonzero.
 	w.Key("connected_since");
@@ -7156,25 +7168,21 @@ CHttpServer::Response CApiDispatcher::HandleKad(const CHttpServer::Request &req)
 	w.Key("public_ip");
 	w.ValueString(wxString::FromUTF8(k.public_ip.c_str()));
 	WriteKadNetworkObject(w, k);
+	// Both objects are null-valued unless Kad is connected: amuled only ships
+	// these tags inside its own connected gate, so the numbers below were the
+	// struct defaults rather than a measurement.
 	w.Key("indexed");
 	w.BeginObject();
-	w.Key("sources");
-	w.ValueInt(static_cast<int64_t>(k.indexed_sources));
-	w.Key("keywords");
-	w.ValueInt(static_cast<int64_t>(k.indexed_keywords));
-	w.Key("notes");
-	w.ValueInt(static_cast<int64_t>(k.indexed_notes));
-	w.Key("load");
-	w.ValueInt(static_cast<int64_t>(k.indexed_load));
+	WriteIntOrNull(w, "sources", k.has_indexed, static_cast<int64_t>(k.indexed_sources));
+	WriteIntOrNull(w, "keywords", k.has_indexed, static_cast<int64_t>(k.indexed_keywords));
+	WriteIntOrNull(w, "notes", k.has_indexed, static_cast<int64_t>(k.indexed_notes));
+	WriteIntOrNull(w, "load", k.has_indexed, static_cast<int64_t>(k.indexed_load));
 	w.EndObject();
 	w.Key("buddy");
 	w.BeginObject();
-	w.Key("status");
-	w.ValueString(wxString::FromUTF8(k.buddy_status.c_str()));
-	w.Key("ip");
-	w.ValueString(wxString::FromUTF8(k.buddy_ip.c_str()));
-	w.Key("port");
-	w.ValueInt(static_cast<int64_t>(k.buddy_port));
+	WriteStringOrNull(w, "status", k.has_buddy, k.buddy_status);
+	WriteStringOrNull(w, "ip", k.has_buddy, k.buddy_ip);
+	WriteIntOrNull(w, "port", k.has_buddy, static_cast<int64_t>(k.buddy_port));
 	w.EndObject();
 	w.EndObject();
 	FinalizeJsonBody(w, r);

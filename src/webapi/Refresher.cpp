@@ -199,7 +199,13 @@ void ParseStatusFromPacket(const CECPacket *resp, StatusSnapshot &out)
 		// reads 0, and HasLowID() is "id < HIGHEST_LOWID_ED2K_KAD", so a
 		// disconnected daemon would otherwise be reported as a LowID.
 		out.ed2k_high_id = conn->IsConnectedED2K() && !conn->HasLowID();
-		out.kad_firewalled_tcp = conn->IsKadFirewalled();
+		// Gated: IsKadFirewalled() reads a connstate bit that survives a
+		// disconnect, so an unconnected daemon answered `true` -- a
+		// reachability verdict about a network it is not on.
+		if (conn->IsConnectedKademlia()) {
+			out.kad_firewalled_tcp = conn->IsKadFirewalled();
+			out.has_kad_firewalled_tcp = true;
+		}
 		if (conn->IsConnectedED2K()) {
 			// 0xffffffff is the "connect in flight, no id yet" sentinel
 			// (ECSpecialCoreTags.cpp) and must not reach a consumer.
@@ -277,11 +283,20 @@ void ParseStatusFromPacket(const CECPacket *resp, StatusSnapshot &out)
 	// next to them (ExternalConn.cpp:762-768). Read them here so
 	// /status can surface ed2k.network.{users,files} symmetric with
 	// kad.network.{users,files,nodes} — no extra EC round-trip.
-	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_ED2K_USERS)) {
-		out.ed2k_users = static_cast<std::uint32_t>(t->GetInt());
-	}
-	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_ED2K_FILES)) {
-		out.ed2k_files = static_cast<std::uint32_t>(t->GetInt());
+	//
+	// Gated on being connected. amuled emits these tags unconditionally, above
+	// its own `if (IsConnected())` block, and CServerList::GetUserFileStatus
+	// sums the whole known server list rather than the server we are attached
+	// to -- so nothing zeroes them on disconnect. Measured: a disconnected
+	// daemon kept reporting the identical figures it had while connected.
+	if (out.ed2k_state == "connected") {
+		if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_ED2K_USERS)) {
+			out.ed2k_users = static_cast<std::uint32_t>(t->GetInt());
+		}
+		if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_ED2K_FILES)) {
+			out.ed2k_files = static_cast<std::uint32_t>(t->GetInt());
+		}
+		out.has_ed2k_network = true;
 	}
 	// Version-check result (present only once the daemon has completed a
 	// check). LATEST carries the release string; its presence means a check
@@ -1556,7 +1571,13 @@ void ParseKadFromPacket(const CECPacket *resp, KadSnapshot &out)
 
 	out.state = KadStateString(conn);
 	if (conn) {
-		out.firewalled_tcp = conn->IsKadFirewalled();
+		// Gated like the /status copy of this field: IsKadFirewalled() reads a
+		// connstate bit that outlives the disconnect, so an unconnected daemon
+		// reported a reachability verdict it had not measured.
+		if (conn->IsConnectedKademlia()) {
+			out.firewalled_tcp = conn->IsKadFirewalled();
+			out.has_firewalled_tcp = true;
+		}
 		// Our own node id. amuled ships EC_TAG_KAD_ID only while Kad
 		// is running, which is the same condition KadStateString()
 		// reports as anything other than "disabled" -- so an absent
@@ -1571,20 +1592,29 @@ void ParseKadFromPacket(const CECPacket *resp, KadSnapshot &out)
 		}
 	}
 
-	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_KAD_USERS)) {
-		out.users = static_cast<std::uint32_t>(t->GetInt());
-	}
-	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_KAD_FILES)) {
-		out.files = static_cast<std::uint32_t>(t->GetInt());
-	}
-	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_KAD_NODES)) {
-		out.nodes = static_cast<std::uint32_t>(t->GetInt());
+	// Gated on `connected`, unlike the tags below, which amuled already gates
+	// itself. These three ship unconditionally: `users`/`files` are the last
+	// persisted estimate and survive into `connecting`, and `nodes` is our own
+	// routing-table size -- measured at 2 with Kad fully stopped, so not even
+	// the terminal state reaches 0.
+	if (out.state == "connected") {
+		if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_KAD_USERS)) {
+			out.users = static_cast<std::uint32_t>(t->GetInt());
+		}
+		if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_KAD_FILES)) {
+			out.files = static_cast<std::uint32_t>(t->GetInt());
+		}
+		if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_KAD_NODES)) {
+			out.nodes = static_cast<std::uint32_t>(t->GetInt());
+		}
+		out.has_network = true;
 	}
 
 	// These ship only when Kad is connected (server gates them at
 	// ExternalConn.cpp:755 `if (Kademlia::CKademlia::IsConnected())`).
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_KAD_FIREWALLED_UDP)) {
 		out.firewalled_udp = (t->GetInt() != 0);
+		out.has_firewalled_udp = true;
 	}
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_KAD_INDEXED_SOURCES)) {
 		out.indexed_sources = static_cast<std::uint32_t>(t->GetInt());
@@ -1598,14 +1628,21 @@ void ParseKadFromPacket(const CECPacket *resp, KadSnapshot &out)
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_KAD_INDEXED_LOAD)) {
 		out.indexed_load = static_cast<std::uint32_t>(t->GetInt());
 	}
+	// One flag for the group: amuled ships all four together, inside its own
+	// `if (IsConnected())`, so any one arriving means the set did.
+	out.has_indexed = resp->GetTagByName(EC_TAG_STATS_KAD_INDEXED_LOAD) != nullptr;
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_KAD_IP_ADDRESS)) {
 		out.public_ip = IPv4ToDotted(static_cast<std::uint32_t>(t->GetInt()));
 	}
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_KAD_IN_LAN_MODE)) {
 		out.lan_mode = (t->GetInt() != 0);
+		out.has_lan_mode = true;
 	}
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_BUDDY_STATUS)) {
 		out.buddy_status = KadBuddyStatusName(static_cast<std::uint32_t>(t->GetInt()));
+		// The group's flag: amuled ships status/ip/port together inside its
+		// connected gate, and status is the one that is always in the set.
+		out.has_buddy = true;
 	}
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_BUDDY_IP)) {
 		out.buddy_ip = IPv4ToDotted(static_cast<std::uint32_t>(t->GetInt()));

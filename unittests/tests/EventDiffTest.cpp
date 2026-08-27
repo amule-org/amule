@@ -293,6 +293,10 @@ TEST(EventDiff, StatusEventFiresWhenOnlyKadFirewalledTcpMoved)
 {
 	StatusSnapshot s;
 	s.kad_firewalled_tcp = true;
+	// The verdict only means anything while Kad is connected, so the payload
+	// prints it as a bool only when it was actually measured. Without this the
+	// field is `null` and the assertion below is about the wrong thing.
+	s.has_kad_firewalled_tcp = true;
 
 	const std::string payload = EmitStatusAndGetPayload(s);
 
@@ -300,6 +304,81 @@ TEST(EventDiff, StatusEventFiresWhenOnlyKadFirewalledTcpMoved)
 	ASSERT_TRUE(payload.find("\"firewalled_tcp\":true") != std::string::npos);
 	// The pre-rename spelling must not survive anywhere in the payload.
 	ASSERT_TRUE(payload.find("\"firewalled\":") == std::string::npos);
+}
+
+// The disconnect edge is the one this whole gate exists for, and it is the one
+// a value-only comparator misses: the bool underneath keeps its last reading,
+// so only the has_ flag moves. If Equal(StatusSnapshot) ignores that flag the
+// event never fires and a subscriber keeps rendering a firewall verdict for a
+// network the daemon has left.
+TEST(EventDiff, StatusEventFiresWhenTheKadFirewallVerdictBecomesUnknown)
+{
+	CState state;
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state); // baseline tick
+
+	StatusSnapshot measured;
+	measured.kad_firewalled_tcp = true;
+	measured.has_kad_firewalled_tcp = true;
+	state.WriteStatus(measured);
+	EmitDiffsAndUpdate(bus, prev, state);
+	DrainAll(bus);
+
+	// Kad drops. The bool is deliberately left true -- that is exactly the
+	// stale reading the gate has to suppress, and comparing values alone would
+	// see no change at all here.
+	StatusSnapshot dropped;
+	dropped.kad_firewalled_tcp = true;
+	dropped.has_kad_firewalled_tcp = false;
+	state.WriteStatus(dropped);
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string payload;
+	for (const auto &ev : DrainAll(bus)) {
+		if (ev.name == "status_changed")
+			payload = ev.data;
+	}
+
+	ASSERT_TRUE(!payload.empty());
+	ASSERT_TRUE(payload.find("\"firewalled_tcp\":null") != std::string::npos);
+}
+
+// Same edge, the kad half. status_changed fires on
+// !Equal(status) || !Equal(kad), and kad.network.* is gated by the SECOND
+// comparator -- a fix applied only to Equal(StatusSnapshot) leaves this silent.
+TEST(EventDiff, StatusEventFiresWhenTheKadNetworkFiguresBecomeUnknown)
+{
+	CState state;
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state); // baseline tick
+
+	KadSnapshot measured;
+	measured.users = 45793;
+	measured.files = 4945644;
+	measured.nodes = 499;
+	measured.has_network = true;
+	state.WriteKad(measured);
+	EmitDiffsAndUpdate(bus, prev, state);
+	DrainAll(bus);
+
+	// Kad drops; the counts underneath are untouched, as the daemon leaves
+	// them. Only has_network moves.
+	KadSnapshot dropped = measured;
+	dropped.has_network = false;
+	state.WriteKad(dropped);
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string payload;
+	for (const auto &ev : DrainAll(bus)) {
+		if (ev.name == "status_changed")
+			payload = ev.data;
+	}
+
+	ASSERT_TRUE(!payload.empty());
+	ASSERT_TRUE(payload.find("\"nodes\":null") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"nodes\":499") == std::string::npos);
 }
 
 // A tick where only the overhead moved still has to fire: the field is in the
