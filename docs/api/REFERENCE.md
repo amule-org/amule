@@ -249,7 +249,7 @@ One rule, everywhere: **a query parameter the server does not understand is a `4
 - Counts (`limit`, `offset`, `tail`, `width`, `interval`, `max_client_versions`, `since_id`) accept decimal digits within the range documented for that parameter. A non-numeric value, a negative one, or one outside the range is a `400` naming the bound.
 - An omitted parameter takes the documented default. Only omission does that; an empty value (`?limit=`) is a `400`, not an omission.
 
-Nothing clamps. A count above its cap used to be quietly reduced on some endpoints, so `?limit=99999` returned 500 rows with nothing in the response saying the request had been altered; it is now a rejection, which is the same answer the other endpoints already gave.
+Nothing clamps. A count above its cap used to be quietly reduced on some endpoints, so a count over the cap returned a full page with nothing in the response saying the request had been altered; it is now a rejection, which is the same answer the other endpoints already gave.
 
 ### List pagination and sorting
 
@@ -257,10 +257,15 @@ The list endpoints (`GET /downloads`, `/clients`, `/known_clients`, `/shared`, `
 
 | Param    | Default          | Notes |
 |----------|------------------|-------|
-| `limit`  | *(all items)*    | Maximum items to return, `0`–`500`. Omitted → the full set (pre-pagination behaviour). Non-integer, negative or above `500` → `400 bad_request`. |
-| `offset` | `0`              | Items to skip before the window. Non-integer, negative or above `1000000000` → `400 bad_request`. |
+| `limit`  | `100`            | Maximum items to return, `0`–`1000000000`. **Omitting it selects the first 100 items, not the whole collection.** Ask for the whole collection explicitly (`limit=1000000000`). Non-integer, negative or above the ceiling → `400 bad_request`. |
+| `offset` | `0`              | Items to skip before the window, counted from the `after` anchor when one is given. Non-integer, negative or above `1000000000` → `400 bad_request`. |
 | `sort`   | *(native order)* | Field to sort by; endpoint-specific (table below). Unknown field → `400 bad_request`. |
 | `order`  | `asc`            | `asc` or `desc`; anything else → `400 bad_request`. |
+| `after`  | *(none)*         | Keyset anchor: return the items ordered **after** this value. Requires a `sort` on that endpoint's identity column (marked in the table below) and `order=asc`; anything else → `400 bad_request`. |
+
+**Why `limit` defaults rather than meaning "everything".** The old rule was not monotonic — 500 rows, an error at 501, and the whole collection at zero — so a response size could not be predicted from the parameter, and the cap bounded the explicit caller while leaving the naive one unbounded. A caller that wants everything now says so, which is also a thing an operator can see in an access log.
+
+**Why the ceiling is `1000000000` and not the largest integer available.** `offset + limit` has to stay inside a 32-bit `size_t` for the 32-bit builds, and `1e9 + 1e9` is the largest round pair that does. It is also inside JavaScript's exact-integer range (`2^53 - 1`), so a browser client gets back the number it sent.
 
 Sorting is applied to the full filtered set **before** slicing, so pagination is stable across requests (a stable sort — equal keys keep native order). The response adds three sibling keys to the array:
 
@@ -270,25 +275,44 @@ Sorting is applied to the full filtered set **before** slicing, so pagination is
 
 - `total` — item count after any endpoint-specific filter (e.g. `/clients?filter=`), before slicing.
 - `offset` — the offset applied.
-- `limit` — the page size the request asked for, or `null` when it asked for none. It is not the row count: that is `total`. It reported the row count once, which no caller could reuse as a page size, since re-sending it is a `400` as soon as the list is longer than the `500` cap.
+- `limit` — the page size applied. Never `null`: every response has a real page size, so `{total, offset, limit}` round-trips straight back into the next request. It is not the row count — that is `total`.
 
-Omitting all four parameters preserves the previous response exactly, plus the additive `total` / `offset` / `limit` keys.
+### Paging a whole collection safely
+
+`offset` is a **position**, and a position moves when the collection changes size below it. Delete one row from a page already fetched and every later index slides down by one, so the next request starts a row late and that row is never returned — by anything. It was not added, updated or removed, so no [SSE event](EVENTS.md) mentions it either, which is what makes the loss last for the session rather than being repaired a tick later.
+
+`after` removes the arithmetic that fails. It anchors on a **value** instead of a count, so nothing that happens to the rows before it can move the window:
+
+```
+GET /api/v0/shared?sort=hash&limit=500
+GET /api/v0/shared?sort=hash&limit=500&after=<hash of the last row returned>
+...repeat until a page comes back shorter than `limit`
+```
+
+Two rules make this correct:
+
+- **Sort on the endpoint's identity column** — the ones marked **id** below. Anchoring on a mutable column is meaningless because the anchor's own value moves between two requests, so the API rejects it rather than silently skipping rows.
+- **Ascending only.** `order=desc` with `after` is a `400`.
+
+Rows added or removed *during* a sweep are not missed: both emit an SSE event, so a client that opened the stream before starting the sweep (which is the [documented bootstrap order](EVENTS.md#bootstrap-snapshot--stream)) learns about them from the stream even when the sweep itself does not return them.
 
 **Sortable fields per endpoint:**
 
 | Endpoint              | `sort` values |
 |-----------------------|---------------|
-| `GET /downloads`      | `name`, `size`, `progress`, `speed`, `status` |
-| `GET /clients`        | `name`, `software` |
-| `GET /downloads/{hash}/clients`<br>`GET /shared/{hash}/clients` | same keys as `/clients` |
-| `GET /known_clients`  | `name`, `software`, `first_seen`, `last_seen`, `sessions`, `total_uploaded`, `total_downloaded` |
-| `GET /shared`         | `name`, `size` |
-| `GET /servers`        | `name`, `users`, `ping`, `files` |
-| `GET /friends`        | `name`, `online` |
-| `GET /chats`          | `last_message_at`, `name` |
-| `GET /search/{id}/results` | `name`, `size`, `sources`, `rating`, `directory` |
-| `GET /search`         | `search_id`, `query`, `started_at`, `result_count` |
-| `GET /categories`     | `index`, `name` |
+| `GET /downloads`      | **`hash`** (id), `name`, `size`, `progress`, `speed`, `status` |
+| `GET /clients`        | **`ecid`** (id), `name`, `software` |
+| `GET /downloads/{hash}/clients`<br>`GET /shared/{hash}/clients` | same keys as `/clients`, `after` included |
+| `GET /known_clients`  | **`user_hash`** (id), `name`, `software`, `first_seen`, `last_seen`, `sessions`, `total_uploaded`, `total_downloaded` |
+| `GET /shared`         | **`hash`** (id), `name`, `size` |
+| `GET /servers`        | **`ecid`** (id), `name`, `users`, `ping`, `files` |
+| `GET /friends`        | **`ecid`** (id), `name`, `online` |
+| `GET /chats`          | **`client_ecid`** (id), `last_message_at`, `name` |
+| `GET /search/{id}/results` | **`hash`** (id), `name`, `size`, `sources`, `rating`, `directory` |
+| `GET /search`         | **`search_id`** (id), `query`, `started_at`, `result_count` |
+| `GET /categories`     | **`index`** (id), `name` |
+
+The column marked **id** is the endpoint's identity: immutable for the life of the row, and the only one `after` accepts. Note that `ecid` is stable **within a daemon session** only — `CECID` hands ids out from a counter that restarts with the process — which is enough for a bootstrap sweep, since a reconnect invalidates the sweep anyway and triggers a `resync`.
 
 ### Bulk mutations and the `results` envelope
 
