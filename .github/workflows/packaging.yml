@@ -36,8 +36,7 @@ on:
           Comma-separated list of platform tracks to run.
           Default empty = run all. Useful during iteration to focus
           on the failing tracks without paying for the green ones.
-          Valid: appimage, flatpak, macos, windows, linux-static,
-          frontend.
+          Valid: appimage, flatpak, macos, windows, linux-static.
         required: false
         type: string
         default: ''
@@ -127,62 +126,6 @@ jobs:
   # runtime shared-library deps, for containers / minimal / musl hosts.
   # See packaging/docker/Dockerfile.static-daemon.
   # ------------------------------------------------------------------
-  # ------------------------------------------------------------------
-  # amuleapi web frontend — platform-independent, so one job, no matrix
-  # ------------------------------------------------------------------
-  frontend:
-    name: amuleapi frontend
-    if: >-
-      github.event_name != 'workflow_dispatch' ||
-      inputs.only == '' ||
-      contains(inputs.only, 'frontend')
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0  # git describe for the version string
-
-      - name: Pack the frontend
-        run: |
-          set -euo pipefail
-          VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo snapshot)
-          STEM="aMule-${VERSION#v}-amuleapi-frontend"
-          mkdir -p "dist/${STEM}"
-          # Copy the tree verbatim. The daemon ships no assets of its own,
-          # so a static-binary operator needs this whole directory to point
-          # StaticRoot at -- shell, stylesheet, every module including the
-          # vendored ones and their LICENSEs, the i18n dictionaries, the
-          # favicon and the logo.
-          cp -R src/webapi/static/. "dist/${STEM}/"
-          # The zip must be the tracked tree, not a subset someone has to
-          # remember to extend. Compare counts against git rather than
-          # spot-checking filenames: a new view, dictionary or image is then
-          # covered the day it lands instead of the day someone updates a
-          # list here.
-          tracked=$(git ls-files src/webapi/static | wc -l | tr -d ' ')
-          packed=$(find "dist/${STEM}" -type f | wc -l | tr -d ' ')
-          if [ "$packed" -ne "$tracked" ]; then
-            echo "::error::frontend bundle has ${packed} files, git tracks ${tracked}"
-            exit 1
-          fi
-          # An entry point that cannot load is worse than a missing asset,
-          # because it fails in the browser rather than here.
-          for required in index.html css/app.css js/app.js; do
-            if [ ! -s "dist/${STEM}/${required}" ]; then
-              echo "::error::frontend bundle is missing ${required}"
-              exit 1
-            fi
-          done
-          echo "frontend bundle: ${packed} files"
-          (cd dist && zip -qr "${STEM}.zip" "${STEM}")
-          rm -rf "dist/${STEM}"
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: amuleapi-frontend
-          path: dist/aMule-*-amuleapi-frontend.zip
-          if-no-files-found: error
-
   linux-static:
     name: Linux static (${{ matrix.arch }})
     if: >-

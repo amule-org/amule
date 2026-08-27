@@ -218,18 +218,18 @@ matching settings for one run.
 
 ## Web frontend
 
-amuleapi serves a web frontend at `/` when it can find one. Leave `StaticRoot` empty and it looks for the `amuleapi-static` folder that a normal install puts on disk, so a package install needs no configuration — open `http://127.0.0.1:4713/` and it is there. If nothing is found, `/` answers 404 and the REST API still works; an API-only deployment needs no frontend.
+amuleapi serves a web frontend at `/` when it can find one. Leave `StaticRoot` empty and it looks for an `amuleapi-static` folder in the usual places: inside the macOS `.app` bundle, next to its own executable, at the path it was configured with at build time, and in the platform's shared-data directory. A package install and the Linux static tarball both need no configuration — open `http://127.0.0.1:4713/` and it is there. If nothing is found, `/` answers 404 and the REST API still works; an API-only deployment needs no frontend.
 
-The static Linux daemon is the exception: it is a single binary and carries no files of its own, so there is nothing for it to find. Download `aMule-<version>-amuleapi-frontend.zip` from the release page, unzip it somewhere readable, and point `StaticRoot` at the unzipped folder:
+"Next to its own executable" is what makes the Linux static tarball work: it extracts to three binaries and an `amuleapi-static/` folder beside them, and amuleapi finds that folder wherever you put the directory. Keep them together and rename nothing. Note that this is the directory the binary lives in, not the directory you happen to run it from -- starting the daemon from elsewhere changes nothing.
+
+To serve the frontend from a location of your own, or to keep a modified copy separate from the installed one, copy the folder somewhere readable and point `StaticRoot` at it:
 
 ```ini
 [Server]
-StaticRoot=/opt/amule/aMule-3.1.0-amuleapi-frontend
+StaticRoot=/opt/amule/amuleapi-static
 ```
 
-The same zip works if you want to serve the frontend from a location of your own, or to keep a modified copy separate from the installed one.
-
-Unzip it as a unit and leave the layout alone. The page loads its stylesheet, its modules, the translations and the images by relative path, so moving or renaming anything inside the folder breaks it.
+Copy it as a unit and leave the layout alone. The page loads its stylesheet, its modules, the translations and the images by relative path, so moving or renaming anything inside the folder breaks it.
 
 ## CORS
 
