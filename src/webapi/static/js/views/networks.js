@@ -488,12 +488,14 @@ function Ed2kInfoPanel() {
     <div class="detail-sections">
       ${Section([
         statRow("networks_ed2k_status", html`
-          <span class=${"status-chip " + (connected ? "ok" : "off")}>
-            ${connected ? t("networks_ed2k_connected") : t("networks_ed2k_not_connected")}
+          <span class=${"status-chip " + (connected ? "ok" : "bad")}>
+            ${connected ? t("networks_ed2k_connected") : t("networks_ed2k_disconnected")}
           </span>`),
         statRow("networks_ed2k_server", server),
         statRow("networks_ed2k_connection_type",
-          connected ? (ed2k.high_id ? t("networks_ed2k_high_id") : t("networks_ed2k_low_id")) : "—"),
+          connected
+            ? html`<span class=${"status-chip " + (ed2k.high_id ? "ok" : "warn")}>${ed2k.high_id ? t("networks_ed2k_high_id") : t("networks_ed2k_low_id")}</span>`
+            : "—"),
         statRow("networks_ed2k_connected_since", formatTimestamp(ed2k.connected_since)),
       ], "networks_ed2k_group_connection")}
       ${Section([
@@ -502,8 +504,8 @@ function Ed2kInfoPanel() {
         statRow("networks_ed2k_ip_port", ipPort),
       ], "networks_ed2k_group_identity")}
       ${Section([
-        statRow("networks_ed2k_users", formatInt(net.users)),
-        statRow("networks_ed2k_files", formatInt(net.files)),
+        statRow("networks_ed2k_users", connected ? formatInt(net.users) : "—"),
+        statRow("networks_ed2k_files", connected ? formatInt(net.files) : "—"),
       ], "networks_ed2k_group_network")}
     </div>`;
 }
@@ -530,17 +532,20 @@ function KadInfoPanel() {
   const d = detail || {};
   const buddy = d.buddy || {};
   const idx = d.indexed || {};
+  const connected = kad.state === "connected";
 
   if (error) return html`<p>${error}</p>`;
 
   return html`
     <div class="detail-sections">
       ${Section([
-        statRow("networks_kad_state", html`<span class=${"status-chip " + (kad.state === "connected" ? "ok" : "off")}>${kad.state ? t("networks_kad_conn_" + kad.state) : "—"}</span>`),
-        statRow("networks_kad_firewalled_tcp", yesno(kad.firewalled_tcp)),
-        statRow("networks_kad_firewalled_udp", yesno(d.firewalled_udp)),
-        statRow("networks_kad_in_lan_mode", yesno(d.lan_mode)),
-        statRow("networks_kad_connected_since", formatTimestamp(d.connected_since)),
+        statRow("networks_kad_state", kad.state
+          ? html`<span class=${"status-chip " + (connected ? "ok" : kad.state === "connecting" ? "warn" : "bad")}>${t("networks_kad_conn_" + kad.state)}</span>`
+          : "—"),
+        statRow("networks_kad_firewalled_tcp", connected ? yesno(kad.firewalled_tcp) : "—"),
+        statRow("networks_kad_firewalled_udp", connected ? yesno(d.firewalled_udp) : "—"),
+        statRow("networks_kad_in_lan_mode", connected ? yesno(d.lan_mode) : "—"),
+        statRow("networks_kad_connected_since", connected ? formatTimestamp(d.connected_since) : "—"),
       ], "networks_kad_group_connection")}
       ${Section([
         statRow("networks_kad_node_id", d.node_id || "—"),
@@ -548,9 +553,9 @@ function KadInfoPanel() {
         statRow("networks_kad_buddy", buddyText(kad.state, buddy, kad.firewalled_tcp, d.firewalled_udp)),
       ], "networks_kad_group_identity")}
       ${Section([
-        statRow("networks_kad_users", formatInt(net.users)),
-        statRow("networks_kad_files", formatInt(net.files)),
-        statRow("networks_kad_contacts_nodes", formatInt(net.nodes)),
+        statRow("networks_kad_users", connected ? formatInt(net.users) : "—"),
+        statRow("networks_kad_files", connected ? formatInt(net.files) : "—"),
+        statRow("networks_kad_contacts_nodes", connected ? formatInt(net.nodes) : "—"),
       ], "networks_kad_group_network")}
       ${Section([
         statRow("networks_kad_indexed_sources", formatInt(idx.sources)),
