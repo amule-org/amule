@@ -194,6 +194,7 @@ b { font-weight: 600; }
 .status-chip.ok { color: var(--ok); border-color: var(--ok); }
 .status-chip.warn, .status-chip.low { color: var(--warn); border-color: var(--warn); }
 .status-chip.off { color: var(--text-dim); }
+.status-chip.bad { color: var(--bad); border-color: var(--bad); }
 .speeds { gap: 12px; font-variant-numeric: tabular-nums; }
 .speed { display: inline-flex; align-items: center; gap: 4px; }
 .speed .icon { width: 14px; height: 14px; }
