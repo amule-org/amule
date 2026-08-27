@@ -515,8 +515,9 @@ std::string BuildStaticEtag(const struct stat &st)
 // [Server]/StaticRoot is empty. Mirrors amuleweb's GetTemplateDir
 // (src/webserver/src/WebInterface.cpp): try the macOS .app bundle's
 // Resources/ first (so an installed aMule.app surfaces the bundled
-// frontend without a conf edit), then the compile-time install path
-// from AMULEAPI_STATIC_DIR, then wxStandardPaths' platform-adjusted
+// frontend without a conf edit), then a copy beside the running binary
+// (the relocatable Linux static tarball), then the compile-time install
+// path from AMULEAPI_STATIC_DIR, then wxStandardPaths' platform-adjusted
 // resource dir. Returns the first existing directory; empty if none.
 std::string ResolveDefaultStaticDir()
 {
@@ -557,6 +558,31 @@ std::string ResolveDefaultStaticDir()
 		}
 	}
 #endif // __WXMAC__
+
+	// A copy sitting next to the binary that is running. This is what the
+	// Linux static tarball ships: three binaries and an `amuleapi-static/`
+	// directory beside them, extracted wherever the operator chose, with no
+	// install step and no conf edit. None of the other candidates can find
+	// that -- each resolves through a *resources* directory (a macOS bundle,
+	// a compile-time prefix, wxStandardPaths' platform-adjusted share tree),
+	// and a relocatable bundle has none of them.
+	//
+	// The executable's own directory, deliberately NOT the working
+	// directory: a daemon is commonly started from ~ or /, and resolving
+	// assets against cwd would make what it serves depend on where it
+	// happened to be launched from -- and would let a directory an
+	// unprivileged user can create decide what a root daemon serves.
+	{
+		const wxString exe = wxStandardPaths::Get().GetExecutablePath();
+		if (!exe.empty()) {
+			wxFileName exe_dir(exe);
+			exe_dir.SetFullName(wxEmptyString);
+			const wxString cand = wxFileName(exe_dir.GetPath(), asset).GetFullPath();
+			const std::string s(cand.utf8_str());
+			if (webapi::IsDir(s))
+				return s;
+		}
+	}
 
 #ifdef AMULEAPI_STATIC_DIR
 	if (webapi::IsDir(AMULEAPI_STATIC_DIR)) {

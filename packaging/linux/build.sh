@@ -299,6 +299,38 @@ build_static() {
     local stem="aMule-${version}-Linux-${arch_label}-static"
     mkdir -p "${outdir}/${stem}"
     cp "${outdir}/amuled" "${outdir}/amulecmd" "${outdir}/amuleapi" "${outdir}/${stem}/"
+
+    # The WebUI ships inside this bundle. amuleapi serves no assets of its
+    # own, so a static-binary operator who fetched this tarball had a daemon
+    # that answered /api/v0 and nothing on /, and had to find a separate
+    # download to fix it -- which is why that separate amuleapi-frontend zip
+    # existed and why it no longer needs to. amuleapi finds this copy on its own because it
+    # looks next to its own executable (ResolveDefaultStaticDir), so the
+    # directory name here is load-bearing -- it must stay `amuleapi-static`.
+    local webui="${outdir}/${stem}/amuleapi-static"
+    mkdir -p "${webui}"
+    cp -R "${REPO_ROOT}/src/webapi/static/." "${webui}/"
+
+    # Same guard the frontend-zip job uses: compare against git rather than
+    # spot-checking filenames, so a new view, dictionary or image is covered
+    # the day it lands instead of the day someone remembers to extend a list.
+    local tracked packed
+    tracked=$(cd "${REPO_ROOT}" && git ls-files src/webapi/static | wc -l | tr -d ' ')
+    packed=$(find "${webui}" -type f | wc -l | tr -d ' ')
+    if [ "${packed}" -ne "${tracked}" ]; then
+        echo "fatal: bundled WebUI has ${packed} files, git tracks ${tracked}" >&2
+        exit 1
+    fi
+    # An entry point that cannot load fails in the browser rather than here.
+    local required
+    for required in index.html css/app.css js/app.js; do
+        if [ ! -s "${webui}/${required}" ]; then
+            echo "fatal: bundled WebUI is missing ${required}" >&2
+            exit 1
+        fi
+    done
+    echo "==> Bundled WebUI: ${packed} files"
+
     local tarball="${artifact_dir}/${stem}.tar.gz"
     echo "==> Bundling ${tarball}"
     tar -czf "${tarball}" -C "${outdir}" "${stem}"
