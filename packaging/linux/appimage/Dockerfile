@@ -12,6 +12,9 @@ ARG LINUXDEPLOY_GTK_SHA
 ARG LIBUPNP_VERSION
 ARG LIBUPNP_TARBALL_URL
 ARG LIBUPNP_SHA256
+ARG APPINDICATOR_VERSION
+ARG APPINDICATOR_TARBALL_URL
+ARG APPINDICATOR_SHA256
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Etc/UTC
@@ -50,13 +53,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         # GTK3 dev headers (linker target for wx) + Wayland/X11 client headers
         libgtk-3-dev \
         libwayland-dev \
-        # libayatana-appindicator3: enables the StatusNotifierItem (SNI)
-        # tray-icon backend in MuleTrayIcon. Without it the tray falls
+        # Build deps for libayatana-appindicator, which is built from source
+        # below rather than taken from the archive -- see the RUN block for
+        # why. The library itself enables the StatusNotifierItem (SNI)
+        # tray-icon backend in MuleTrayIcon; without it the tray falls
         # back to wxTaskBarIcon → legacy GtkStatusIcon, which GNOME
         # dropped in 3.26 and wlroots compositors never implemented.
         # Ubuntu's GNOME Shell extension renders both, but Fedora /
         # vanilla GNOME / Sway need the SNI path to see the icon at all.
-        libayatana-appindicator3-dev \
+        libayatana-indicator3-dev \
+        libdbusmenu-gtk3-dev \
+        # g-ir-scanner. appindicator calls find_package(GObjectIntrospection
+        # REQUIRED) but the find module does not fail configure when the
+        # scanner is missing -- it leaves INTROSPECTION_SCANNER empty and the
+        # .gir rule then runs its own first argument as the command, failing
+        # with "app-indicator.c: not found" at build time instead.
+        libgirepository1.0-dev \
         # AppImage runtime / linuxdeploy-plugin-gtk deps
         libglib2.0-bin \
         libgdk-pixbuf-2.0-0 \
@@ -77,6 +89,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # the AppImage). pupnp 22.x is CMake-only. CMAKE_INSTALL_LIBDIR=lib keeps
 # libupnp.pc / .so / the UPNP CMake config out of lib64 where pkg-config, cmake
 # and ldconfig wouldn't find them.
+# libayatana-appindicator from source: 22.04 ships 0.5.90, and only 0.6.0
+# answers the StatusNotifierItem Activate D-Bus method, which is what a host
+# sends on left-click. On anything older the tray icon can only open its menu,
+# so left-click and right-click do the same thing (discussion #1115). Shared,
+# so linuxdeploy bundles the .so into the AppImage. Its own dependencies
+# (ayatana-indicator3 >= 0.8.4, dbusmenu-gtk3, GTK >= 3.24) are satisfied by
+# the archive packages installed above, so nothing else needs building.
+RUN wget -qO /tmp/appindicator.tar.gz "${APPINDICATOR_TARBALL_URL}" \
+    && echo "${APPINDICATOR_SHA256}  /tmp/appindicator.tar.gz" | sha256sum -c - \
+    && mkdir -p /tmp/appindicator && tar -xf /tmp/appindicator.tar.gz -C /tmp/appindicator --strip-components=1 \
+    && cmake -S /tmp/appindicator -B /tmp/appindicator/build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+        -DFLAVOUR_GTK3=ON -DENABLE_BINDINGS_MONO=OFF -DENABLE_BINDINGS_VALA=OFF \
+        -DENABLE_TESTS=OFF -DENABLE_GTKDOC=OFF \
+        -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_INSTALL_LIBDIR=lib \
+    && cmake --build /tmp/appindicator/build && cmake --install /tmp/appindicator/build \
+    && ldconfig \
+    && rm -rf /tmp/appindicator /tmp/appindicator.tar.gz
+
 RUN wget -qO /tmp/libupnp.tar.gz "${LIBUPNP_TARBALL_URL}" \
     && echo "${LIBUPNP_SHA256}  /tmp/libupnp.tar.gz" | sha256sum -c - \
     && mkdir -p /tmp/libupnp && tar -xf /tmp/libupnp.tar.gz -C /tmp/libupnp --strip-components=1 \

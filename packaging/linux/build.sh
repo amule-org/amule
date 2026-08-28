@@ -103,6 +103,9 @@ build_appimage() {
         --build-arg "LIBUPNP_VERSION=${LIBUPNP_VERSION}" \
         --build-arg "LIBUPNP_TARBALL_URL=${LIBUPNP_TARBALL_URL}" \
         --build-arg "LIBUPNP_SHA256=${LIBUPNP_SHA256}" \
+        --build-arg "APPINDICATOR_VERSION=${APPINDICATOR_VERSION}" \
+        --build-arg "APPINDICATOR_TARBALL_URL=${APPINDICATOR_TARBALL_URL}" \
+        --build-arg "APPINDICATOR_SHA256=${APPINDICATOR_SHA256}" \
         -t "${image_tag}" \
         "${SCRIPT_DIR}/appimage"
 
@@ -281,6 +284,9 @@ build_static() {
         --build-arg "LIBUPNP_VERSION=${LIBUPNP_VERSION}" \
         --build-arg "LIBUPNP_TARBALL_URL=${LIBUPNP_TARBALL_URL}" \
         --build-arg "LIBUPNP_SHA256=${LIBUPNP_SHA256}" \
+        --build-arg "APPINDICATOR_VERSION=${APPINDICATOR_VERSION}" \
+        --build-arg "APPINDICATOR_TARBALL_URL=${APPINDICATOR_TARBALL_URL}" \
+        --build-arg "APPINDICATOR_SHA256=${APPINDICATOR_SHA256}" \
         "${cache_args[@]}" \
         --output "type=local,dest=${outdir}" \
         "${REPO_ROOT}"
