@@ -136,24 +136,7 @@ SearchFetchOutcome FetchOneSearchFull(CamuleapiApp &app, CState &state, std::uin
 		// reply carries no EC_TAG_SEARCH_ID of its own, hence the explicit id.
 		state.MutateAllSearches([&](std::map<std::uint32_t, SearchSlot> &slots,
 						std::map<std::uint32_t, std::uint32_t> &owner) {
-			auto sit = slots.find(search_id);
-			if (sit == slots.end())
-				return;
-			if (replace) {
-				for (const auto &entry : sit->second.raw)
-					owner.erase(entry.first);
-				sit->second.raw.clear();
-			}
-			ApplySearchUnion(resp, slots, owner, search_id);
-			sit = slots.find(search_id);
-			if (sit == slots.end())
-				return;
-			// ApplySearchUnion only refolds slots it touched, and an empty
-			// reply touches nothing -- which is exactly the case where the
-			// stale fold has to be cleared rather than kept.
-			if (replace)
-				RebuildFoldedResults(sit->second.raw, sit->second.results);
-			sit->second.needs_resync = false;
+			ApplySearchFullReply(resp, slots, owner, search_id, replace);
 		});
 	}
 	if (outcome == SearchFetchOutcome::Expired) {
@@ -474,7 +457,9 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 	// Anything the last failed union reply covered is unrecoverable from the
 	// stream itself, so re-seed those slots in full before polling again.
 	// Ordered after the retirement loop so a slot the daemon has dropped is
-	// already detached and not asked for.
+	// already detached by the time this runs, and SearchesNeedingResync skips
+	// it: the ordering alone only makes the slot detached, it does not keep it
+	// out of the list.
 	for (std::uint32_t sid : state.SearchesNeedingResync()) {
 		if (FetchOneSearchFull(app, state, sid, /*replace=*/true) == SearchFetchOutcome::EcFailed) {
 			return false;

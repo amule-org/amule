@@ -1688,6 +1688,30 @@ TEST(State, AFailedUnionFlagsEveryLiveSlotForResync)
 	ASSERT_EQUALS(2u, pending[1]);
 }
 
+TEST(State, ADetachedSlotDropsOutOfTheResyncList)
+{
+	// MarkAllSearchesNeedResync skips detached slots; the drain has to apply
+	// the same rule, because a slot can be flagged first and detached later.
+	// That is the ordinary sequence: the union fails and flags every live
+	// slot, then the next tick's retirement loop detaches the ones the daemon
+	// has expired -- before the resync loop runs. Left in, each costs a
+	// roundtrip that can only come back expired, and a replace-mode apply
+	// against a detached slot clears the last-known results the detach exists
+	// to preserve.
+	CState state;
+	state.MarkSearchStarted(11, "global", "alpha");
+	state.MarkSearchStarted(12, "global", "beta");
+
+	state.MarkAllSearchesNeedResync();
+	ASSERT_EQUALS(static_cast<size_t>(2), state.SearchesNeedingResync().size());
+
+	state.DetachSearch(12);
+
+	const std::vector<std::uint32_t> pending = state.SearchesNeedingResync();
+	ASSERT_EQUALS(static_cast<size_t>(1), pending.size());
+	ASSERT_EQUALS(11u, pending[0]);
+}
+
 TEST(State, ClearingTheResyncFlagStopsItBeingRequestedAgain)
 {
 	// The daemon answering "expired" is a definitive answer. Left set, the id

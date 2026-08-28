@@ -2743,6 +2743,41 @@ void ApplySearchUnion(const CECPacket *resp,
 	}
 }
 
+void ApplySearchFullReply(const CECPacket *resp,
+	std::map<std::uint32_t, SearchSlot> &slots,
+	std::map<std::uint32_t, std::uint32_t> &owner,
+	std::uint32_t search_id,
+	bool replace)
+{
+	auto sit = slots.find(search_id);
+	if (sit == slots.end())
+		return;
+	if (replace) {
+		// Drop the old rows AND their index entries: the reply below re-adds
+		// an entry for every result it carries, so anything not re-added is a
+		// row the daemon no longer holds.
+		for (const auto &entry : sit->second.raw)
+			owner.erase(entry.first);
+		sit->second.raw.clear();
+	}
+	ApplySearchUnion(resp, slots, owner, search_id);
+	sit = slots.find(search_id);
+	if (sit == slots.end())
+		return;
+	// ApplySearchUnion only refolds slots it touched, and an empty reply
+	// touches nothing -- which is exactly the case where the stale fold has to
+	// be cleared rather than kept.
+	if (replace) {
+		RebuildFoldedResults(sit->second.raw, sit->second.results);
+		// Only a replace answers the question the flag asks. A merge re-reads
+		// every row the daemon still has, but it cannot remove one it has
+		// dropped -- the tombstones for those went out in the union reply that
+		// was lost, and the daemon will not mention them again. Clearing the
+		// flag here would leave those rows in place for the life of the slot.
+		sit->second.needs_resync = false;
+	}
+}
+
 // --- Search-progress, daemon-supplied lifecycle path -------------------
 //
 // Reads EC_TAG_SEARCH_LIFECYCLE_STATE from the EC_OP_SEARCH_PROGRESS
