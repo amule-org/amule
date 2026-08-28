@@ -236,6 +236,20 @@ enum TrayAction
 	TRAY_ACTION_SET_DOWNLOAD_LIMIT,
 };
 
+// Left-click on the indicator. SNI hosts (KDE Plasma, and GNOME via the
+// AppIndicator extension) call org.kde.StatusNotifierItem.Activate for the
+// primary button; libayatana-appindicator forwards that as this signal.
+//
+// Signature comes from AppIndicatorClass::activate_event: the x/y of the
+// click, which we do not need -- the window goes wherever it already was.
+void on_indicator_activate(AppIndicator *, gint, gint, gpointer user_data)
+{
+	CMuleTrayIcon *tray = static_cast<CMuleTrayIcon *>(user_data);
+	// Toggle rather than always-show, matching the Windows tray, where a
+	// single left click has flipped show/hide since 3.0.1.
+	tray->DoShowHide();
+}
+
 void on_menu_item_activated(GtkMenuItem *item, gpointer user_data)
 {
 	CMuleTrayIcon *tray = static_cast<CMuleTrayIcon *>(user_data);
@@ -340,6 +354,30 @@ CMuleTrayIcon::CMuleTrayIcon()
 	// without it some SNI hosts render the indicator as invisible.)
 	app_indicator_set_status(m_indicator, APP_INDICATOR_STATUS_ACTIVE);
 	app_indicator_set_title(m_indicator, "aMule");
+
+	// Left-click opens the main window instead of the menu, where the
+	// installed library can tell us about it. libayatana-appindicator only
+	// grew an Activate handler in 0.6.0; before that the primary click was
+	// not exposed at all, which is why the tray has behaved this way on Linux
+	// since the SNI backend landed (discussion #1115).
+	//
+	// Looked up at RUNTIME rather than behind a build-time version check,
+	// because the two genuinely differ: a distro may ship a newer library
+	// than we built against, and our AppImage and Flatpak bundle their own.
+	// On an older library the lookup returns 0, nothing is connected, and the
+	// panel keeps opening the menu exactly as it does today. The library
+	// handles that direction too, answering the Activate D-Bus call with an
+	// error when no handler is connected so the host falls back to the menu.
+	// Nothing is logged in that case: a debug line compiles out of release
+	// builds, which is precisely where this would matter.
+	//
+	// APP_INDICATOR_TYPE, not G_OBJECT_TYPE(m_indicator): the latter is a raw
+	// dereference and app_indicator_new can return NULL. The GObject setters
+	// above only warn on NULL, so this must not be the line that crashes.
+	g_type_class_ref(APP_INDICATOR_TYPE);
+	if (m_indicator && g_signal_lookup("activate", APP_INDICATOR_TYPE)) {
+		g_signal_connect(m_indicator, "activate", G_CALLBACK(on_indicator_activate), this);
+	}
 
 	RebuildMenu();
 }
