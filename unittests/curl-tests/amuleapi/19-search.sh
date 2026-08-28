@@ -1567,10 +1567,111 @@ _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/servers"
 _assert_json_eq '[.servers[]? | .tcp_flags | has("related_search")] | all' true \
 	'every server advertises its related_search capability in tcp_flags'
 
+# --- 13. A foreign search discovered AFTER the union has been polling. -----
+# Section 3.2 covers the easy ordering: a second instance that has never POSTed
+# anything reads a search it did not start. That one cannot regress, because an
+# instance with no slots of its own never sends the union at all.
+#
+# The ordering that DID break is this one. Once a session holds any slot, its
+# tick polls the multi-search union, and the union responder walks every search
+# the core holds -- so it hands over a foreign search's results to a session
+# with no slot to put them in. They are dropped, but the daemon has marked them
+# sent and seeds its valuemap, so every later poll elides them. Discovering that
+# search afterwards used to yield a permanently empty result set that no number
+# of ticks would fill.
+#
+# Deliberately the LAST section in this file: it starts two extra searches on
+# the shared daemon, and doing that earlier reorders what the sections above see.
+if [ "$HAVE_SECOND_INSTANCE" -eq 1 ]; then
+	THIRD_HOST="localhost:4715"
+	THIRD_CONFIG_DIR=$(mktemp -d -t amuleapi_19_search_third.XXXXXX)
+	THIRD_LOG=$(mktemp -t amuleapi_19_search_third_log.XXXXXX)
+	"$AMULEAPI_BIN" --config-dir="$THIRD_CONFIG_DIR" \
+		--host="$EC_HOST" --port="$EC_PORT" \
+		--set-admin-pass="$ADMIN_PASS" >/dev/null 2>&1
+	sed -i'.bak' "s|^Password=.*|Password=$EC_PASSWORD|" "$THIRD_CONFIG_DIR/amuleapi.conf"
+	rm -f "$THIRD_CONFIG_DIR/amuleapi.conf.bak"
+	"$AMULEAPI_BIN" --config-dir="$THIRD_CONFIG_DIR" \
+		--host="$EC_HOST" --port="$EC_PORT" \
+		--http-port=4715 >"$THIRD_LOG" 2>&1 &
+	THIRD_PID=$!
+	for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+		curl -s -o /dev/null --max-time 1 "http://$THIRD_HOST/api/v0/health" 2>/dev/null && break
+		sleep 0.5
+	done
+	sleep 3
+
+	THIRD_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
+		-d "{\"password\":\"$ADMIN_PASS\"}" "http://$THIRD_HOST/api/v0/auth/login?type=bearer" \
+		| jq -r .token)
+
+	if [ -n "$THIRD_TOKEN" ] && [ "$THIRD_TOKEN" != "null" ]; then
+		# Give the third instance a slot of its own. From here its tick sends the
+		# union every second, which is the precondition for the bug.
+		OWN_SID=$(curl -s -X POST -H "Authorization: Bearer $THIRD_TOKEN" \
+			-H "Content-Type: application/json" \
+			-d "{\"query\":\"$TEST_QUERY\"}" "http://$THIRD_HOST/api/v0/search" \
+			| jq -r '.search_id // empty')
+		sleep 3
+
+		# NOW start a search it knows nothing about, and let its union poll run
+		# over the results several times. Every one of those polls offers this
+		# search's results to a session with no slot for them.
+		_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+			-H "Content-Type: application/json" \
+			-d "{\"query\":\"$TEST_QUERY\"}" "$HOST/api/v0/search"
+		_assert_status 202 'late-discovery: first instance starts a search the third has never seen'
+		LATE_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id // empty')
+		sleep 12
+
+		if [ -n "$LATE_SID" ]; then
+			# What the daemon actually holds, so an empty read is distinguishable
+			# from a search that genuinely found nothing.
+			_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
+			LATE_HELD=$(printf '%s' "$CURL_BODY" \
+				| jq -r "[.searches[] | select(.search_id == $LATE_SID)][0].result_count // 0")
+			if [ "$LATE_HELD" -gt 0 ]; then
+				# First read by the third instance: discovery has to seed the slot in
+				# full here, because the differential stream has nothing left to send.
+				_curl -H "Authorization: Bearer $THIRD_TOKEN" \
+					"http://$THIRD_HOST/api/v0/search/$LATE_SID/results"
+				_assert_status 200 'late-discovery: third instance reads the late search → 200'
+				_assert_json_eq '.search_id' "$LATE_SID" 'late-discovery: it echoes the discovered id'
+				_assert_json_eq '[.results[]] | length > 0' true \
+					"late-discovery: the discovered search is seeded (daemon holds $LATE_HELD)"
+				# And it stays: a seed that only survived until the next union poll
+				# would be worse than none.
+				sleep 3
+				_curl -H "Authorization: Bearer $THIRD_TOKEN" \
+					"http://$THIRD_HOST/api/v0/search/$LATE_SID/results"
+				_assert_json_eq '[.results[]] | length > 0' true \
+					'late-discovery: the seeded results survive the next union polls'
+			else
+				_skip "late-discovery: the daemon holds no results for the late search"
+			fi
+			curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
+				"$HOST/api/v0/search/$LATE_SID" >/dev/null 2>&1
+		else
+			_skip 'late-discovery: no search id returned for the late search'
+		fi
+		[ -n "$OWN_SID" ] && curl -s -X DELETE -H "Authorization: Bearer $THIRD_TOKEN" \
+			"http://$THIRD_HOST/api/v0/search/$OWN_SID" >/dev/null 2>&1
+	else
+		_fail "late-discovery: third amuleapi instance admin login" \
+			"could not obtain a token; log: $(tail -c 300 "$THIRD_LOG")"
+	fi
+
+	kill "$THIRD_PID" >/dev/null 2>&1
+	wait "$THIRD_PID" 2>/dev/null
+	rm -rf "$THIRD_CONFIG_DIR" "$THIRD_LOG"
+else
+	_skip 'late-discovery: no amuleapi binary to start a third instance'
+fi
+
 # --- Summary. -----------------------------------------------------
 echo
 SKIP_NOTE=""
-[ "$SKIP_COUNT" -gt 0 ] && SKIP_NOTE=" ($SKIP_COUNT section(s) skipped: no second amuleapi instance)"
+[ "$SKIP_COUNT" -gt 0 ] && SKIP_NOTE=" ($SKIP_COUNT check(s) skipped -- see the SKIP lines above for why)"
 if [ "$FAIL_COUNT" -eq 0 ]; then
 	echo "OK: $TEST_COUNT/$TEST_COUNT passed$SKIP_NOTE"
 	exit 0
