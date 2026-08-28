@@ -51,6 +51,7 @@ The API is versioned in the path. **`/api/v0/` is the pre-release surface and is
 - [`GET /api/v0/shared`](#get-apiv0shared) — list shared files
 - [`GET /api/v0/shared/{hash}`](#get-apiv0sharedhash) — detail view; every list field plus shared-detail fields
 - [`GET /api/v0/shared/{hash}/clients`](#get-apiv0downloadshashclients--get-apiv0sharedhashclients) — clients of one shared file
+- [`GET /api/v0/shared/{hash}/content`](#get-apiv0sharedhashcontent) — download the shared file's bytes, with `Range` support
 - [`POST /api/v0/shared_reload`](#post-apiv0shared_reload) — re-walk shared directories
 - [`POST /api/v0/shared/media/refresh`](#post-apiv0sharedmediarefresh) — re-extract media metadata for the whole share
 - [`POST /api/v0/shared/{hash}/media/refresh`](#post-apiv0sharedhashmediarefresh) — re-extract it for one file
@@ -1571,6 +1572,48 @@ This is deliberately detail-only. A 100 GB file has ~10 800 parts, so carrying t
 For a shared file that is also still downloading, the same values are available as `progress.parts[].sources` on [`GET /downloads/{hash}`](#get-apiv0downloadshash); both come from one encoder in amuled, so they agree.
 
 **Errors:** `404 not_found` (no shared file with that hash), `503 ec_unavailable`.
+
+#### `GET /api/v0/shared/{hash}/content`
+
+**Auth:** `GUEST` — `HEAD` is accepted too; any other method is `405 method_not_allowed` with `Allow: GET, HEAD`.
+
+Downloads the bytes of a completed shared file. `{hash}` is the 32-char MD4 hex hash (case-insensitive), the same one [`GET /shared`](#get-apiv0shared) reports. This is the only route that serves library content: everything else on the surface describes files, this one hands them over.
+
+```sh
+curl -s -H "Authorization: Bearer $TOKEN" \
+  "http://$HOST/api/v0/shared/8b54a3c20fae9e4b9f7e0c2c8c01b6b1/content" -o file.bin
+```
+
+**Response headers** on a `200` or `206`:
+
+| Header | Value |
+|---|---|
+| `Content-Type` | `application/octet-stream`, always |
+| `Content-Disposition` | `attachment; filename="<name>"; filename*=UTF-8''<name>` |
+| `X-Content-Type-Options` | `nosniff` |
+| `Content-Security-Policy` | `default-src 'none'; sandbox` |
+| `Accept-Ranges` | `bytes` |
+| `ETag` | `"<mtime>-<size>"`, hex, set by this handler rather than hashed from the body |
+| `Content-Length` | the exact number of bytes the response carries |
+| `Content-Range` | on a `206` and a `416` only |
+
+**Never `inline`, never the file's real media type.** A completed download lands in Incoming, which is itself shared, so both the bytes and the filename came from strangers on the ed2k network — and amuleapi serves the Web UI from this same origin. A shared `evil.html`, or a scripted `.svg`, returned under its "real" type would execute against the user's own session. `octet-stream` + `attachment` + `nosniff` + a sandbox CSP are four independent reasons the browser will not run it. The filename is sanitised for the quoted form and percent-encoded for the extended one, so a name carrying quotes or control characters cannot forge further parameters or split the header.
+
+**Ranges.** A single byte range is served as `206 Partial Content` with a `Content-Range`; `bytes=0-9` and the suffix form `bytes=-100` both work. A range that starts at or past EOF is `416 range_not_satisfiable` with `Content-Range: bytes */<size>`, so the client learns the true length without a second request.
+
+Everything else is **ignored** rather than refused, and answered `200` with the full body — an unrecognised range unit (per RFC 9110 §14.2), a value too large for a 64-bit offset (rejected, never wrapped), and, deliberately, a **multi-range** request. RFC 7233 §3.1 permits a server to ignore `Range`, and never emitting `multipart/byteranges` is what makes the CVE-2011-3192 "Apache Killer" amplification shape a no-op here: a request naming hundreds of overlapping windows costs exactly one linear read of the file, the same as no `Range` header at all. `If-Range` is likewise ignored; a client that sends one gets the `Range` honoured as though the header were absent, which is live bytes rather than a silently stitched mix of two versions.
+
+**Conditional GET.** The `ETag` is `mtime-size` rather than a hash of the body — hashing a multi-gigabyte file per request would not be a slow path but an unusable one. `If-None-Match` is answered here rather than by the generic stamping described in [ETag and conditional GET](#etag-and-conditional-get), and accepts `*`, a comma-separated list, and weak `W/"..."` validators. A match is `304 Not Modified` with no content and the `ETag` preserved. It is evaluated **before** `Range`, per RFC 9110 §13.2.2, so a conditional request that also carries a `Range` answers `304`, never `206`. The validator carries no `-gzip` suffix because a file response is never compressed: there is exactly one representation to name, and `Accept-Encoding` cannot produce a `Content-Encoding` on this route.
+
+**Concurrency.** The transport caps concurrent file responses at 6, because each one pins a file descriptor and a streaming buffer for as long as the client takes to drain it. Over the cap the answer is `503 file_responses_exhausted` with a `Retry-After`, the same shape the SSE session cap uses — an honest refusal rather than a queue that grows without bound. Within the cap the body streams through a fixed 64 KiB buffer and is never held in memory, so a multi-gigabyte transfer moves the daemon's RSS by kilobytes.
+
+**Same-host only.** The bytes are read from the filesystem **amuleapi** is running on, not amuled's. The two are usually the same machine, but the EC endpoint is configurable, so amuleapi can be pointed at a remote amuled — and then the daemon's paths mean nothing here. The desktop remote GUI carries a whole path-mapping layer for exactly this split; amuleapi has no equivalent, and does not guess. A path that resolves to nothing is `503 ec_content_unreachable`; a path that resolves to a *different* file that merely shares a name is caught by the size invariant and is `503 ec_content_mismatch` rather than being served under the wrong hash. Both say the deployment is misconfigured, not that the request was wrong. On a split deployment, download through amuled instead.
+
+**Errors:** `401 unauthorized` (no token), `404 not_found` (no shared file with that hash — and every path-resolution refusal, collapsed into the same reply so it cannot be used to probe the share layout), `405 method_not_allowed`, `409 partfile_unsupported`, `416 range_not_satisfiable`, `503 path_unavailable`, `503 ec_content_unreachable`, `503 ec_content_mismatch`, `503 file_responses_exhausted`, `503 ec_unavailable`.
+
+Only completed files can be downloaded. A file still downloading is rejected with `409 partfile_unsupported`: a partfile's on-disk layout is gapped and its offsets do not correspond to the completed file's, so a byte range taken out of it would be silently **wrong** rather than merely unavailable.
+
+`503 path_unavailable` carries `Retry-After: 5` and is transient rather than an error in the request. The file's directory rides an EC tag amuled emits only on the frames where it changed, so a snapshot taken before the first such frame knows the file but not where it lives. The resource exists; it just cannot be addressed yet.
 
 #### `POST /api/v0/shared_reload`
 
@@ -3183,13 +3226,14 @@ Every error code emitted by `/api/v0/*`, sorted by what triggered it. Two codes 
 | `method_not_allowed` | 405 | Wrong HTTP verb for the route. The response carries an `Allow` header listing the methods this resource does support. |
 | `option_not_supported` | 409 | `PATCH /preferences` set an option the connected daemon was built without. |
 | `not_a4af_source` | 409 | The client named on a `POST /downloads/{hash}/a4af` request is not an A4AF source of that download. |
-| `partfile_unsupported` | 409 | Verify Local Data requested on a file that is still an incomplete partfile. |
+| `partfile_unsupported` | 409 | Verify Local Data, or a content download, requested on a file that is still an incomplete partfile. |
 | `not_shared` | 409 | A comment or rating was posted against a file that is not shared. |
 | `not_completed` | 409 | `clear_completed` named a `hash` that is not a completed download. |
 | `download_completed` | 409 | A `DELETE /downloads` matched a completed download; use `clear_completed` for those. |
 | `kad_more_exhausted` | 409 | `POST /search/{id}/more` on a Kad search that can no longer be widened — its 4-reask budget is spent, or it has entered the stopping window Kad begins 20 s before a keyword search ends. Terminal for that search; re-run the query for more. |
 | `update_check_unavailable` | 409 | `POST /version/check` cannot run — the daemon has no update-check capability. |
 | `payload_too_large` | 413 | Request body exceeds the 1 MiB limit. The connection closes after the response. |
+| `range_not_satisfiable` | 416 | A `Range` on [`GET /shared/{hash}/content`](#get-apiv0sharedhashcontent) starts at or past EOF. `Content-Range: bytes */<size>` accompanies the response. |
 | `rate_limited` | 429 | Too many requests: the per-IP auth-failure bucket is full, or `POST /version/check` was throttled by the daemon. `Retry-After: <seconds>` accompanies the auth case. |
 | `headers_too_large` | 431 | Request headers exceed the 16 KiB limit. The connection closes after the response. |
 | `internal_error` | 500 | A server-side failure: a handler failed internally (hash decode, serialization) or threw and was caught by the HTTP layer. The body is generic; details land in the daemon's stderr. |
@@ -3198,6 +3242,10 @@ Every error code emitted by `/api/v0/*`, sorted by what triggered it. Two codes 
 | `ec_unsupported` | 503 | The connected amuled is too old to serve this route — the chat endpoints and `/known_clients`. |
 | `login_disabled` | 503 | `/auth/login` reached but no admin AND no guest password configured. |
 | `too_many_streams` | 503 | Too many concurrent SSE streams. `Retry-After` accompanies the response. |
+| `file_responses_exhausted` | 503 | Too many concurrent file responses (cap 6) on [`GET /shared/{hash}/content`](#get-apiv0sharedhashcontent). `Retry-After` accompanies the response. |
+| `path_unavailable` | 503 | The shared file's on-disk directory has not yet arrived over EC. Transient; `Retry-After: 5` accompanies the response. |
+| `ec_content_unreachable` | 503 | The shared file is not present on the filesystem running amuleapi — a deployment where amuleapi talks to a **remote** amuled. |
+| `ec_content_mismatch` | 503 | The file at the resolved path disagrees in size with the shared file the hash names — the same remote-amuled split, resolving to an unrelated local file of the same name. |
 
 `message` is human-readable and may change between releases. Pin on `code`.
 
