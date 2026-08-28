@@ -266,6 +266,16 @@ std::vector<std::uint32_t> CState::ActiveSearchIds() const
 	return out;
 }
 
+std::vector<std::uint32_t> CState::AttachedSearchIds() const
+{
+	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+	std::vector<std::uint32_t> out;
+	for (const auto &kv : m_searches)
+		if (!kv.second.detached)
+			out.push_back(kv.first);
+	return out;
+}
+
 std::vector<std::uint32_t> CState::AllSearchIds() const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
@@ -274,21 +284,6 @@ std::vector<std::uint32_t> CState::AllSearchIds() const
 	for (const auto &kv : m_searches)
 		out.push_back(kv.first);
 	return out;
-}
-
-bool CState::HasAnySearch() const
-{
-	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
-	// Detached slots do not count. The daemon has already evicted those
-	// searches, so it has nothing left to send for them -- a session holding
-	// only detached slots would otherwise poll once a second forever with
-	// nothing on the other end, which is what a user who runs one search and
-	// never deletes it ends up with once the daemon's ring drops it.
-	return std::any_of(m_searches.begin(),
-		m_searches.end(),
-		[](const std::pair<const std::uint32_t, SearchSlot> &entry) {
-			return !entry.second.detached;
-		});
 }
 
 bool CState::FindSearchResultByHash(

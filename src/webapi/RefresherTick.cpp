@@ -37,6 +37,7 @@
 #include <ec/cpp/ECSpecialTags.h>
 #include <ec/cpp/ECPacket.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <map>
 #include <memory>
@@ -332,14 +333,27 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 	std::map<std::uint32_t, std::pair<std::uint32_t, std::uint32_t>> union_progress;
 	bool have_union = false;
 	const std::vector<std::uint32_t> active_sids = state.ActiveSearchIds();
-	// Nothing active means nothing to ask about. Without this guard the union
-	// would cost a roundtrip every tick forever on an idle daemon, where the
-	// per-id loop below simply had nothing to iterate.
-	if (app.IsServerSearchProgressUnionActive() && !active_sids.empty()) {
+	// Every slot the daemon could still speak for, finished ones included.
+	// A finished search is never polled for progress -- there is none left to
+	// report -- but it still has to be watched for EXPIRY, because the ring
+	// evicting it is what tombstones its results, and a slot that is not
+	// detached by then has them erased by the union below. That is the whole
+	// point of detaching: keep the last-known results for late reads.
+	//
+	// Naming these ids is also what stops the eviction happening so soon.
+	// The daemon touches its LRU for exactly the ids a client names, so
+	// leaving finished searches out made them the least-recently-used and the
+	// first victims of anyone's next search -- amuleapi stopped refreshing
+	// precisely the searches it had decided to keep.
+	const std::vector<std::uint32_t> attached_sids = state.AttachedSearchIds();
+	// Nothing attached means nothing to ask about. Without this guard the
+	// union would cost a roundtrip every tick forever on an idle daemon,
+	// where the per-id loop below simply had nothing to iterate.
+	if (app.IsServerSearchProgressUnionActive() && !attached_sids.empty()) {
 		std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_SEARCH_PROGRESS));
 		// Name the searches we track so the daemon bumps exactly those in its
 		// LRU, matching what the per-id poll did.
-		for (std::uint32_t sid : active_sids) {
+		for (std::uint32_t sid : attached_sids) {
 			req->AddTag(CECTag(EC_TAG_SEARCH_ID, sid));
 		}
 		const CECPacket *resp = app.SendRecvSerialized(req.get());
@@ -358,10 +372,16 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 	// roundtrip each against an older daemon). Runs BEFORE the results poll
 	// below so an eviction is seen, and the slot frozen, while its results
 	// are still there to keep -- see the `expired` branch.
-	for (std::uint32_t sid : active_sids) {
+	for (std::uint32_t sid : attached_sids) {
 		std::uint32_t percent = 0;
 		std::uint32_t lifecycle_state = 0;
 		bool expired = false;
+		// A finished slot is here for the expiry verdict only. Its progress
+		// is terminal and must not be re-derived: AdvanceSearchProgress reads
+		// a missing lifecycle tag as IDLE and would reset complete/percent
+		// back to 0, turning a finished search into an idle one.
+		const bool was_active =
+			std::find(active_sids.begin(), active_sids.end(), sid) != active_sids.end();
 		if (have_union) {
 			// Already fetched above; absent means the daemon dropped it.
 			const auto found = union_progress.find(sid);
@@ -371,7 +391,11 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 				percent = found->second.first;
 				lifecycle_state = found->second.second;
 			}
-		} else {
+		} else if (was_active) {
+			// No union on this daemon: fall back to one roundtrip per search,
+			// and only for the active ones. Paying a roundtrip per FINISHED
+			// slot every tick to learn about an eviction that may never come
+			// is the trade the union makes cheap and this form does not.
 			std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_SEARCH_PROGRESS));
 			req->AddTag(CECTag(EC_TAG_SEARCH_ID, sid));
 			const CECPacket *resp = app.SendRecvSerialized(req.get());
@@ -415,6 +439,11 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 			state.WriteSearchProgress(sid, fin);
 			continue;
 		}
+		if (!was_active) {
+			// Not expired, and not active: nothing to advance. Leaving the
+			// snapshot alone is what keeps a finished search finished.
+			continue;
+		}
 		const SearchProgressSnapshot next =
 			AdvanceSearchProgress(state.SearchProgress(sid), lifecycle_state, percent);
 		state.WriteSearchProgress(sid, next);
@@ -437,8 +466,8 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 	// only slots that are not active. Skipping the fetch when nobody is
 	// subscribed would hand that client frozen results.
 	//
-	// HasAnySearch() asks about OUR slots -- specifically the ones the daemon
-	// could still speak for, since a detached slot's search has already been
+	// The gate asks about OUR slots -- specifically the ones the daemon could
+	// still speak for, since a detached slot's search has already been
 	// evicted core-side and polling for it would never return anything. It
 	// does not ask about the daemon's searches, and the daemon never tells us
 	// about one unasked: a slot exists only because
@@ -465,7 +494,11 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 			return false;
 		}
 	}
-	if (state.HasAnySearch()) {
+	// The same set the progress union above asked about, reused rather than
+	// recomputed against a second spelling of the same !detached test. A slot
+	// an HTTP thread created since is missed for this one tick and picked up
+	// by the next, which is the poll interval either way.
+	if (!attached_sids.empty()) {
 		if (FetchSearchResults(app, state) == SearchFetchOutcome::EcFailed) {
 			// The daemon commits its differential state while building the
 			// reply, so what this one carried is already gone from its point
