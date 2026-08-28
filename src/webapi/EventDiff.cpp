@@ -913,8 +913,35 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 	prev.kad = new_kad;
 	prev.ec_connected = new_ec;
 
+	// The stable-but-mutable field set for `search_result_updated`. A hit's
+	// identity fields (hash, name, size, type, directory, media, children)
+	// never change for a given ECID, and its source counts churn every tick
+	// while the search runs -- where `search_progress` is already the re-read
+	// cue. What is left is the set that can change AFTER a search finishes,
+	// when no other signal exists: download state (`status` /
+	// `already_have`), and the Kad-notes cluster (`comments[]`, the
+	// in-flight flag, and `rating`, which aggregates from the comments).
+	// Comparing only these keeps the search channel quiet on a running
+	// search instead of firing per-result frames on source-count churn.
+	const auto result_mutated = [](const SearchResult &a, const SearchResult &b) {
+		if (a.status != b.status || a.already_have != b.already_have || a.rating != b.rating ||
+			a.kad_comment_searching != b.kad_comment_searching ||
+			a.comments.size() != b.comments.size())
+			return true;
+		for (std::size_t i = 0; i < a.comments.size(); ++i) {
+			const auto &ca = a.comments[i];
+			const auto &cb = b.comments[i];
+			if (ca.username != cb.username || ca.filename != cb.filename ||
+				ca.rating != cb.rating || ca.comment != cb.comment)
+				return true;
+		}
+		return false;
+	};
+
 	// Search events. `search_result_added` per new ECID in the results
-	// map; `search_progress` on any percent change while running and on
+	// map; `search_result_updated` when one of a held result's
+	// stable-but-mutable fields changes (see result_mutated above);
+	// `search_progress` on any percent change while running and on
 	// the running→finished edge. The finished frame (state="finished",
 	// percent=100) is just the terminal search_progress — there is no
 	// separate search_finished event. The refresher's state machine
@@ -946,23 +973,38 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 			}
 
 			auto &pstate = prev.searches[sid];
-			// New result entries for this search.
+			// New and mutated result entries for this search.
 			for (const auto &kv : search_now) {
-				if (pstate.results.find(kv.first) == pstate.results.end()) {
-					// `search_id` routes the event to a tab/view; every
-					// field after it comes from the same writer
-					// GET /search/{id}/results uses, which is what makes
-					// the documented "byte-for-byte identical to a
-					// results-list entry" promise hold by construction
-					// rather than by review.
-					CJsonWriter w;
-					w.BeginObject();
-					w.Key("search_id");
-					w.ValueInt(static_cast<int64_t>(sid));
-					WriteSearchResultFields(w, kv.second);
-					w.EndObject();
-					bus.Publish("search_result_added", w.TakeBuffer());
-				}
+				const auto pit = pstate.results.find(kv.first);
+				const bool is_new = pit == pstate.results.end();
+				if (!is_new && !result_mutated(pit->second, kv.second))
+					continue;
+				// `search_id` routes the event to a tab/view; every
+				// field after it comes from the same writer
+				// GET /search/{id}/results uses, which is what makes
+				// the documented "byte-for-byte identical to a
+				// results-list entry" promise hold by construction
+				// rather than by review.
+				//
+				// `search_result_updated` carries the identical payload
+				// under its own name, rather than re-firing _added with
+				// upsert semantics: a consumer that only handles _added
+				// keeps exactly the behaviour it had, and one that wants
+				// live rows opts in by handling the new event. It is the
+				// close of the one window where a client could not know:
+				// a finished search stops emitting search_progress, yet a
+				// hit downloaded from it flips status / already_have, and
+				// a Kad notes lookup lands comments / rating after the
+				// fact. (Those fields are polled at all because the union
+				// keeps finished searches in the per-tick poll set.)
+				CJsonWriter w;
+				w.BeginObject();
+				w.Key("search_id");
+				w.ValueInt(static_cast<int64_t>(sid));
+				WriteSearchResultFields(w, kv.second);
+				w.EndObject();
+				bus.Publish(is_new ? "search_result_added" : "search_result_updated",
+					w.TakeBuffer());
 			}
 			// search_progress: a percent change while running, the
 			// running→finished edge (complete false→true), or a

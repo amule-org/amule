@@ -39,7 +39,7 @@ const EVENT_TYPES = [
   "server_added",   "server_updated",   "server_removed",
   "friend_added",   "friend_updated",   "friend_removed",
   "status_changed", "log_appended",
-  "search_result_added", "search_progress", "search_closed",
+  "search_result_added", "search_result_updated", "search_progress", "search_closed",
   "comments_updated",
 ];
 const es = new EventSource("/api/v0/events", { withCredentials: true });
@@ -573,11 +573,13 @@ Only the amuled log has a live channel; the serverinfo buffer has no SSE feed an
 
 Driven by the refresher state machine that owns the `POST /search` → completion lifecycle (see [REFERENCE.md](REFERENCE.md#search)). Result and progress events only fire while a search is active; the channel is otherwise silent apart from `search_closed`. The [Bootstrap example](#bootstrap-snapshot--stream) omits the search endpoints because searches are normally client-initiated post-boot; if your UI persists a "search-in-progress" state across reloads, list them with `GET /search` and fetch `GET /search/{id}/results` in step 2 too.
 
-#### `search_result_added`
+#### `search_result_added` / `search_result_updated`
 
-Emitted per new result that appears in the results map between refresher ticks.
+`_added` fires per new result that appears in the results map between refresher ticks. `_updated` fires when a result you already hold changes in one of the fields below. Both carry the identical payload, so a subscriber can handle them with one function keyed by `(search_id, hash)`; they are separate names so that a consumer written against the add-only channel keeps its existing behaviour instead of silently acquiring upsert semantics.
 
-**Add-only.** There is no `search_result_updated`, so a result's mutable fields (`sources`, `status`, `already_have`, `children[]`, `comments[]`) do not push after the row first arrives. While a search runs, [`search_progress`](#search_progress) fires on every advance and is the cue to re-read [`GET /search/{id}/results`](REFERENCE.md#get-apiv0searchidresults); once it finishes, that endpoint refreshes on read. The daemon is polled for every search it holds, finished ones included, so a re-read is current -- but the stream will not tell you when to make one.
+**What `_updated` covers, and what it deliberately does not.** It fires on `status`, `already_have`, `comments[]`, `kad_comment_search_running` and `rating` (which aggregates from the comments). Those are the fields that can change *after* a search finishes, which is the window where nothing else tells you: `search_progress` has stopped, so a hit you download from a finished search would otherwise read `already_have: false` forever, and a Kad notes lookup that lands afterwards would be invisible until someone re-read the endpoint.
+
+It does **not** fire on `sources` or `children[]`. Those churn on essentially every tick of a running search, and [`search_progress`](#search_progress) already fires on every advance there and is the cue to re-read [`GET /search/{id}/results`](REFERENCE.md#get-apiv0searchidresults). Pushing them per result would duplicate an existing signal on the noisiest fields on the surface. The identity fields (`hash`, `name`, `size`, `type`, `directory`, `media`) never change for a given result, so there is nothing to push.
 
 ```json
 {
@@ -595,7 +597,7 @@ Emitted per new result that appears in the results map between refresher ticks.
 }
 ```
 
-`search_id` routes the result to the search that produced it — amuleapi runs several searches at once (see [REFERENCE.md](REFERENCE.md#post-apiv0search)), so demux on it. Key results by `(search_id, hash)`. Aside from the leading `search_id`, the payload is byte-for-byte identical to a `/search/{id}/results` array entry — the two are emitted by the same writer, so the promise holds by construction. That includes `status`, `type`, `directory` (the folder inside a browsed peer's share, `""` on ordinary hits), `kad_comment_search_running`, `comments[]` and the `children[]` grouping array — see [REFERENCE.md](REFERENCE.md#get-apiv0searchidresults); `sources` is the nested `{total, complete}` object, `media` — the audio/video metadata object — is present for locally-known/probed hits and `null` otherwise (the one place the unknown-value rule reaches an object rather than a scalar, so test `media === null` before reaching into it), and `children` holds the same-hash/different-name alternatives (empty for a single-name hit), same as the REST endpoint. Only parent results fire this event — children are folded into their parent's `children[]`, never emitted as their own `search_result_added`. Each `search_id` is an independent result space — a new `POST /search` starts a fresh one without disturbing the others.
+`search_id` routes the result to the search that produced it — amuleapi runs several searches at once (see [REFERENCE.md](REFERENCE.md#post-apiv0search)), so demux on it. Key results by `(search_id, hash)`. Aside from the leading `search_id`, the payload is byte-for-byte identical to a `/search/{id}/results` array entry — the two are emitted by the same writer, so the promise holds by construction. That includes `status`, `type`, `directory` (the folder inside a browsed peer's share, `""` on ordinary hits), `kad_comment_search_running`, `comments[]` and the `children[]` grouping array — see [REFERENCE.md](REFERENCE.md#get-apiv0searchidresults); `sources` is the nested `{total, complete}` object, `media` — the audio/video metadata object — is present for locally-known/probed hits and `null` otherwise (the one place the unknown-value rule reaches an object rather than a scalar, so test `media === null` before reaching into it), and `children` holds the same-hash/different-name alternatives (empty for a single-name hit), same as the REST endpoint. Only parent results fire these events — children are folded into their parent's `children[]`, never emitted on their own. A change to a child therefore surfaces as a `search_result_updated` for its parent. Each `search_id` is an independent result space — a new `POST /search` starts a fresh one without disturbing the others.
 
 #### `search_progress`
 
@@ -613,7 +615,7 @@ Emitted whenever a search's completion advances and once more on its completion;
 - `state` — `"running"` while the search is in flight, `"finished"` on the terminal frame.
 - `percent` — `0..100`, daemon-computed for every search kind. For **global** it is the real server-queue progress. For **Kad**, which has no measurable progress, it is a cosmetic time-ramp derived from the fixed 45 s keyword-search lifetime (capped at 99 until the daemon authoritatively reports completion, then 100); see [REFERENCE.md](REFERENCE.md#get-apiv0searchidresults). Treat the Kad value as a liveliness indicator, not an accurate completion estimate.
 - `kind` — the originally-requested search type (`"local"` | `"global"` | `"kad"` | `"browse"`).
-- `results` — the current results-map size; subscribers can reconcile against any `search_result_added` they may have missed via `GET /search/{id}/results`.
+- `results` — the current results-map size; subscribers can reconcile against any `search_result_added` / `search_result_updated` they may have missed via `GET /search/{id}/results`.
 
 A Kad search hitting its result cap (`SEARCHKEYWORD_TOTAL`, 300) before the 45 s deadline finishes early — the lifecycle flips to `finished` and `percent` jumps straight to 100 ahead of the ramp.
 

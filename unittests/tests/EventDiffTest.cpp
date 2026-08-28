@@ -604,6 +604,136 @@ TEST(EventDiff, ServerFlagsJsonShape)
 	ASSERT_TRUE(webapi::ServerUdpFlagsJson(0x8000u).find("\"bitmask\":32768") != std::string::npos);
 }
 
+// --- search_result_updated: the fields that change after the search ends ---
+//
+// The window this closes: a finished search stops emitting search_progress,
+// so a hit downloaded from it, or a Kad notes lookup that lands afterwards,
+// used to be invisible until someone re-read the endpoint.
+namespace
+{
+// Seed one result and baseline it, so each case below starts from "the
+// subscriber already holds this row".
+void SeedOneResult(CState &state, CEventBus &bus, LastSeenState &prev)
+{
+	state.MarkSearchStarted(42, "global", "ubuntu");
+	EmitDiffsAndUpdate(bus, prev, state); // cold-start baseline
+	state.MutateSearch(42, [](std::map<std::uint32_t, SearchResult> &cache) {
+		SearchResult r;
+		r.ecid = 7;
+		r.hash = "8b54a3c28b54a3c28b54a3c28b54a3c2";
+		r.name = "ubuntu.iso";
+		r.size = 4096;
+		r.status = "new";
+		cache.emplace(r.ecid, r);
+	});
+	EmitDiffsAndUpdate(bus, prev, state); // the _added
+}
+
+std::size_t CountEvent(CEventBus &bus, const char *name)
+{
+	std::size_t n = 0;
+	for (const auto &e : DrainAll(bus))
+		if (e.name == name)
+			++n;
+	return n;
+}
+} // namespace
+
+TEST(EventDiff, SearchResultUpdatedFiresWhenADownloadStateChanges)
+{
+	CState state;
+	CEventBus bus;
+	LastSeenState prev;
+	SeedOneResult(state, bus, prev);
+	ASSERT_EQUALS(static_cast<size_t>(1), CountEvent(bus, "search_result_added"));
+	ASSERT_EQUALS(static_cast<size_t>(0), CountEvent(bus, "search_result_updated"));
+
+	// You start downloading the hit. On a finished search nothing else would
+	// ever tell a subscriber this.
+	state.MutateSearch(42, [](std::map<std::uint32_t, SearchResult> &cache) {
+		cache[7].status = "downloaded";
+		cache[7].already_have = true;
+	});
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	ASSERT_EQUALS(static_cast<size_t>(1), CountEvent(bus, "search_result_updated"));
+	// Still exactly one _added: the row was not re-announced as new.
+	ASSERT_EQUALS(static_cast<size_t>(1), CountEvent(bus, "search_result_added"));
+
+	std::string payload;
+	for (const auto &e : DrainAll(bus))
+		if (e.name == "search_result_updated")
+			payload = e.data;
+	// Same shape as _added, search_id first, carrying the new values.
+	ASSERT_TRUE(payload.compare(0, 15, "{\"search_id\":42") == 0);
+	ASSERT_TRUE(payload.find("\"status\":\"downloaded\"") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"already_have\":true") != std::string::npos);
+}
+
+TEST(EventDiff, SearchResultUpdatedFiresWhenKadNotesLand)
+{
+	CState state;
+	CEventBus bus;
+	LastSeenState prev;
+	SeedOneResult(state, bus, prev);
+
+	// The lookup starts...
+	state.MutateSearch(42,
+		[](std::map<std::uint32_t, SearchResult> &cache) { cache[7].kad_comment_searching = true; });
+	EmitDiffsAndUpdate(bus, prev, state);
+	ASSERT_EQUALS(static_cast<size_t>(1), CountEvent(bus, "search_result_updated"));
+
+	// ...and lands, bringing a note and the rating it aggregates into.
+	state.MutateSearch(42, [](std::map<std::uint32_t, SearchResult> &cache) {
+		cache[7].kad_comment_searching = false;
+		cache[7].rating = 4;
+		SearchResult::Comment c;
+		c.username = "alice";
+		c.filename = "ubuntu.iso";
+		c.rating = 4;
+		c.comment = "good";
+		cache[7].comments.push_back(c);
+	});
+	EmitDiffsAndUpdate(bus, prev, state);
+	ASSERT_EQUALS(static_cast<size_t>(2), CountEvent(bus, "search_result_updated"));
+}
+
+// The reason this is a restricted comparator rather than a full struct
+// compare: source counts move on essentially every tick of a running search,
+// and search_progress is already the re-read cue for them. Pushing them per
+// result would make this the loudest channel on the bus.
+TEST(EventDiff, SearchResultUpdatedIgnoresSourceCountChurn)
+{
+	CState state;
+	CEventBus bus;
+	LastSeenState prev;
+	SeedOneResult(state, bus, prev);
+
+	state.MutateSearch(42, [](std::map<std::uint32_t, SearchResult> &cache) {
+		cache[7].source_count = 99;
+		cache[7].complete_source_count = 42;
+	});
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	ASSERT_EQUALS(static_cast<size_t>(0), CountEvent(bus, "search_result_updated"));
+}
+
+// A quiet tick must not emit: the comparator has to be a real comparison, not
+// "we saw this row again".
+TEST(EventDiff, SearchResultUpdatedStaysSilentOnAnUnchangedResult)
+{
+	CState state;
+	CEventBus bus;
+	LastSeenState prev;
+	SeedOneResult(state, bus, prev);
+
+	EmitDiffsAndUpdate(bus, prev, state);
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	ASSERT_EQUALS(static_cast<size_t>(0), CountEvent(bus, "search_result_updated"));
+	ASSERT_EQUALS(static_cast<size_t>(1), CountEvent(bus, "search_result_added"));
+}
+
 // --- search_result_added is the results-list entry, verbatim ---------
 //
 // EVENTS.md promises the payload is byte-for-byte a
