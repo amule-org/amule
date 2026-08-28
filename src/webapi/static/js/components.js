@@ -5,7 +5,7 @@
 import { html, render, useState, useEffect, useRef } from "./dom.js";
 import { formatPercent } from "./format.js";
 import { t, tn, terr, getLang } from "./i18n.js";
-import { api } from "./api.js";
+import { api, apiUrl } from "./api.js";
 import { Icon } from "./icons.js";
 
 // --- presentational components -----------------------------------------
@@ -25,6 +25,52 @@ export function ProgressBar({ percent }) {
 // Inline status/label pill.
 export function Badge({ kind = "", title, children }) {
   return html`<span class=${"badge " + kind} title=${title}>${children}</span>`;
+}
+
+// "Save this file to your device" control, shared by the shared-file detail
+// panel and the detail panel of a finished download (a completed download has
+// been moved into Incoming, which is shared, so the same hash resolves under
+// shared/{hash}/content).
+//
+// Deliberately a plain <a href>, never a fetch(): the endpoint answers with
+// Content-Disposition: attachment, so a navigation hands the response straight
+// to the browser's own downloader — the current page is left mounted and the
+// bytes never enter JS. A fetch()+Blob would buffer the whole file in browser
+// memory, throwing away the constant-memory streaming the endpoint exists for.
+// The session cookie is HttpOnly and same-origin, so the navigation carries the
+// credential by itself; no token goes in the URL, where it would leak into
+// history, Referer and any proxy log in between.
+//
+// Not admin-only, on purpose: GET shared/{hash}/content is GUEST-accessible,
+// exactly like the GET /shared listing it hangs off — a session allowed to see
+// the file is allowed its bytes.
+//
+// A partfile has nothing servable (the endpoint answers 409
+// partfile_unsupported), so it renders as a disabled button instead — an anchor
+// cannot be disabled. That flag is also why there is no per-row action in the
+// shared list: `incomplete` is detail-only, so a row control could not tell a
+// servable file from a partfile.
+//
+// A navigation cannot be intercepted, so 401, 404 and 503 also render their
+// JSON in place of the app; 401 additionally bypasses markSessionDead(), which
+// only runs inside request(). Accepted rather than fixed: the window is one
+// tick, since any poll or the SSE stream unmounts the panel on a dead session.
+// target="_blank" would contain it, but Firefox can leave an empty tab on the
+// success path — trading a common-path annoyance for a rare-path recovery.
+export function DownloadLink({ hash, incomplete, tipKey = "shared_download_tip" }) {
+  if (incomplete) {
+    return html`
+      <button class="btn btn-sm" type="button" disabled title=${t("shared_download_tip_partfile")}>
+        <${Icon} name="download" /> ${t("shared_download")}
+      </button>`;
+  }
+  // No `download` attribute: the server already sends the sanitised filename in
+  // Content-Disposition, and overriding it here would only let the client
+  // rename the file to something the server never vetted.
+  return html`
+    <a class="btn btn-sm" href=${apiUrl("shared/" + hash + "/content")} title=${t(tipKey)}>
+      <${Icon} name="download" /> ${t("shared_download")}
+    </a>`;
 }
 
 // Empty / loading / error placeholder for view bodies.
