@@ -340,9 +340,14 @@ Identical to the REST [`/api/v0/shared`](REFERENCE.md#get-apiv0shared) list-item
   "uploading":        2,
   "last_upload":      1700000500,
   "shared_since":     1699000000,
-  "hashing_progress": 0
+  "hashing_progress": 0,
+  "media": { "length_s": 5400, "bitrate": 1500, "codec": "h264", "artist": "", "album": "", "title": "" }
 }
 ```
+
+`media` is always present, and `null` on a file with no probed metadata -- the same object [`GET /shared`](REFERENCE.md#get-apiv0shared) carries, so the byte-for-byte parity promised above holds for it too. A metadata re-extraction changes it and therefore fires a `shared_updated`, which is the only way a subscriber learns a probe landed: the refresh endpoint answers `202` with no result.
+
+`last_upload` and `shared_since` are unix seconds and `null` when unknown -- a file that has never uploaded (the common case), or a `known.met` entry written before those fields existed. They are never `0`.
 
 `hashing_progress` counts the parts hashed so far by a [`POST /shared/{hash}/verify`](REFERENCE.md#post-apiv0sharedhashverify) run or an AICH hashset rebuild, and is `0` when nothing is hashing — each advance pushes a `shared_updated`, so a progress bar can be driven straight off the stream. A file that is both downloading and shared reports the same value on both channels.
 

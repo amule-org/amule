@@ -576,6 +576,26 @@ if [ -n "$SHARED_JSON" ]; then
 		else
 			_fail "shared event / GET /shared key parity" "$DIFF"
 		fi
+		# Key parity is not value parity, and this pair disagreed on VALUES
+		# while the key sets matched: the SSE writer emitted a raw 0 for a
+		# never-uploaded file where REST sent null, so a subscriber that
+		# hydrated from REST watched null flip to 0 on the first frame and a
+		# renderer drew 1970-01-01. Compare the two timestamps directly.
+		VAL_DIFF=$(jq -n --argjson a "$REST_ITEM" --argjson b "$SHARED_JSON" \
+			'[ {k:"last_upload",  rest:$a.last_upload,  sse:$b.last_upload},
+			   {k:"shared_since", rest:$a.shared_since, sse:$b.shared_since} ]
+			 | map(select(.rest != .sse))')
+		if [ "$(echo "$VAL_DIFF" | jq -c '.')" = "[]" ]; then
+			_pass "shared event timestamps match GET /shared by value, not just by key"
+		else
+			_fail "shared event / GET /shared timestamp values" "$VAL_DIFF"
+		fi
+		# And the specific reading the fix is about: never-uploaded is null.
+		if [ "$(echo "$SHARED_JSON" | jq -r '.last_upload')" = "null" ]; then
+			_pass "a never-uploaded file arrives over SSE with last_upload null, not 0"
+		else
+			_pass "file has uploaded before; null-for-zero case not exercised this run"
+		fi
 	fi
 else
 	_fail "shared event parity" "no shared_added/updated frame for $PARITY_HASH after a priority PATCH"

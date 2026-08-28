@@ -276,7 +276,7 @@ for BODY in \
 	fi
 done
 if jq -e '.error.message | test("`links`")' /tmp/p11_dl_alias.json >/dev/null 2>&1; then
-	_pass "the ed2k_link 400 names `links` as the replacement"
+	_pass 'the ed2k_link 400 names `links` as the replacement'
 else
 	_fail "ed2k_link 400 message" "$(cat /tmp/p11_dl_alias.json)"
 fi
@@ -285,30 +285,30 @@ fi
 # Default (no body) = both
 RC=$(curl -s -o /tmp/p11_nd.json -w "%{http_code}" -X POST "${H_AUTH[@]}" \
 	"$HOST/api/v0/networks/disconnect")
-if [ "$RC" = "200" ]; then
-	_pass "POST /networks/disconnect (no body) → 200 default=both"
+if [ "$RC" = "202" ]; then
+	_pass "POST /networks/disconnect (no body) → 202 default=both"
 else
-	_fail "networks disconnect no-body" "expected 200, got $RC"
+	_fail "networks disconnect no-body" "expected 202, got $RC"
 fi
 sleep 2
 # selector=ed2k
 RC=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${H_AUTH[@]}" \
 	-H "Content-Type: application/json" \
 	-d '{"network":"ed2k"}' "$HOST/api/v0/networks/disconnect")
-if [ "$RC" = "200" ]; then
-	_pass "POST /networks/disconnect {\"network\":\"ed2k\"} → 200"
+if [ "$RC" = "202" ]; then
+	_pass "POST /networks/disconnect {\"network\":\"ed2k\"} → 202"
 else
-	_fail "networks disconnect ed2k" "expected 200, got $RC"
+	_fail "networks disconnect ed2k" "expected 202, got $RC"
 fi
 sleep 1
 # selector=kad
 RC=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${H_AUTH[@]}" \
 	-H "Content-Type: application/json" \
 	-d '{"network":"kad"}' "$HOST/api/v0/networks/disconnect")
-if [ "$RC" = "200" ]; then
-	_pass "POST /networks/disconnect {\"network\":\"kad\"} → 200"
+if [ "$RC" = "202" ]; then
+	_pass "POST /networks/disconnect {\"network\":\"kad\"} → 202"
 else
-	_fail "networks disconnect kad" "expected 200, got $RC"
+	_fail "networks disconnect kad" "expected 202, got $RC"
 fi
 # Invalid selector
 RC=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${H_AUTH[@]}" \

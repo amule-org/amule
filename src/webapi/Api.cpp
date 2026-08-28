@@ -5245,7 +5245,9 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 		}
 	}
 
-	// priority: "very_low"|"low"|"normal"|"high"|"release"|"auto"
+	// priority: "low"|"normal"|"high"|"auto" -- the kPrioDownload domain.
+	// "very_low" and "release" are upload-side only (kPrioShared) and are
+	// refused here with a 400, by design; see kFilePriorities.
 	{
 		const auto it = obj.find("priority");
 		if (it != obj.end()) {
@@ -5670,10 +5672,12 @@ void WriteFriendObject(CJsonWriter &w, const webapi::FriendSnapshot &f)
 	w.ValueString(wxString::FromUTF8(f.ip.c_str()));
 	w.Key("port");
 	w.ValueInt(static_cast<int64_t>(f.port));
-	// The live peer this friend is linked to, joinable against /clients. 0
-	// when the friend is not connected, which is what `online` reports.
-	w.Key("client_ecid");
-	w.ValueInt(static_cast<int64_t>(f.client_ecid));
+	// The live peer this friend is linked to, joinable against /clients. null
+	// when the friend is not connected, which is the common case and which
+	// `online` also reports. Deliberately not the 0 it used to be: the surface
+	// spells "no value" as null and never as 0 or -1, and a client joining
+	// naively on the raw value was building GET /clients/0 and taking a 404.
+	WriteIntOrNull(w, "client_ecid", f.client_ecid != 0, static_cast<int64_t>(f.client_ecid));
 	w.Key("online");
 	w.ValueBool(f.client_ecid != 0);
 	w.Key("friend_slot");
@@ -5929,10 +5933,11 @@ void WriteChatObject(CJsonWriter &w, const webapi::ChatSessionSnapshot &s)
 	w.ValueInt(static_cast<int64_t>(s.port));
 	w.Key("name");
 	w.ValueString(wxString::FromUTF8(s.DisplayName().c_str()));
-	w.Key("client_ecid");
-	w.ValueInt(static_cast<int64_t>(s.client_ecid));
-	w.Key("friend_ecid");
-	w.ValueInt(static_cast<int64_t>(s.friend_ecid));
+	// null rather than 0 for "no live connection" / "not a friend", for the
+	// same reason as the /friends row above: 0 is not how this surface spells
+	// absence, and /clients/0 is a 404 waiting to happen.
+	WriteIntOrNull(w, "client_ecid", s.client_ecid != 0, static_cast<int64_t>(s.client_ecid));
+	WriteIntOrNull(w, "friend_ecid", s.friend_ecid != 0, static_cast<int64_t>(s.friend_ecid));
 	w.Key("online");
 	w.ValueBool(s.client_ecid != 0);
 	w.Key("message_count");
@@ -8692,9 +8697,15 @@ namespace
 {
 
 // Issue a single-shot mutation EC packet (no body), check the
-// response, run RefresherTick inline, return a standard
-// `{ok: true, message?: "..."}` response. Used by every connection-
-// control endpoint where the EC op is parameterless.
+// response, run RefresherTick inline, return `{message?: "..."}` -- the
+// daemon's own account of what it did, and nothing else. (`ok` was dropped
+// when mutation responses collapsed onto the status code; see the body
+// below.) Used by every connection-control endpoint where the EC op is
+// parameterless.
+//
+// Callers pass 202, not 200: the request is handed to the daemon over EC and
+// returns before the effect is observable, which is as true of a disconnect
+// as of a connect.
 CHttpServer::Response SimpleConnControlOp(
 	CamuleapiApp &app, webapi::CState &state, ec_opcode_t op, unsigned http_status)
 {
@@ -8827,14 +8838,14 @@ CHttpServer::Response CApiDispatcher::HandleNetworksDisconnect(const CHttpServer
 	}
 
 	if (network == "ed2k") {
-		return SimpleConnControlOp(m_app, m_state, EC_OP_SERVER_DISCONNECT, 200);
+		return SimpleConnControlOp(m_app, m_state, EC_OP_SERVER_DISCONNECT, 202);
 	}
 	if (network == "kad") {
-		return SimpleConnControlOp(m_app, m_state, EC_OP_KAD_STOP, 200);
+		return SimpleConnControlOp(m_app, m_state, EC_OP_KAD_STOP, 202);
 	}
 	// "both": amuled's EC_OP_DISCONNECT short-circuits to both
 	// SERVER_DISCONNECT and KAD_STOP in one EC roundtrip.
-	return SimpleConnControlOp(m_app, m_state, EC_OP_DISCONNECT, 200);
+	return SimpleConnControlOp(m_app, m_state, EC_OP_DISCONNECT, 202);
 }
 
 // HandleKadConnect / HandleKadDisconnect were removed — strict

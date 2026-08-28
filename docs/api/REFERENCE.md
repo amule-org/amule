@@ -353,7 +353,7 @@ The rule now reaches the whole surface rather than just the download and shared 
 
 `media` is the one place this reaches an **object** rather than a scalar, so a client tests `media === null` before reaching into it -- which it had to do regardless, since the object's own fields can be absent.
 
-Four keys stay omitted, because for them absence really is the meaning: `started_at` and `result_count` on [`GET /search`](#get-apiv0search) as described above, `key` on a statistics node (absent from a daemon too old to send it), and `parts` under [`?include_parts=true`](#get-apiv0downloadshashclients) -- there the caller opted in, so the key's absence answers a question they did not ask.
+Five keys stay omitted, because for them absence really is the meaning: `started_at` and `result_count` on [`GET /search`](#get-apiv0search) as described above, `key` on a statistics node (absent from a daemon too old to send it), `ratio` on the statistics ratio node (absent when the daemon reported neither component), and `parts` under [`?include_parts=true`](#get-apiv0downloadshashclients) -- there the caller opted in, so the key's absence answers a question they did not ask.
 
 ### Priority levels
 
@@ -817,7 +817,7 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/downloads"
 }
 ```
 
-`status` is one of `"downloading"`, `"waiting"`, `"hashing"`, `"allocating"`, `"paused"`, `"stopped"`, `"completing"` or `"completed"`. `"stopped"` is a paused file that has also dropped all its sources and reset its Kad source search (set via `PATCH` `status:"stopped"`); it is distinct from `"paused"`, which retains its sources.
+`status` is one of `"downloading"`, `"waiting"`, `"hashing"`, `"allocating"`, `"paused"`, `"stopped"`, `"completing"`, `"completed"`, `"erroneous"`, `"insufficient_disk"` or `"unknown"`. The last three are terminal-ish conditions a client must handle rather than fall through: `"erroneous"` is a failed partfile, `"insufficient_disk"` is one that ran the volume out of space, and `"unknown"` is a status code this version does not recognise. `"stopped"` is a paused file that has also dropped all its sources and reset its Kad source search (set via `PATCH` `status:"stopped"`); it is distinct from `"paused"`, which retains its sources.
 
 `priority` is the download priority — one of `"low"`, `"normal"` or `"high"` — and `priority_auto` is `true` when amuled is deriving that level automatically. Downloads never report `very_low` or `release`; those are shared/upload-side levels only. A file that is simultaneously downloading and shared carries two independent priorities: this download priority, and the upload priority reported by [`GET /api/v0/shared`](#get-apiv0shared). Changing one does not affect the other.
 
@@ -846,7 +846,7 @@ Same envelope as the list item, plus the detail-only fields below (all omitted f
 
 | Field | Type | Meaning |
 |---|---|---|
-| `progress.parts` | array | One entry per ~9.28 MiB chunk: `{ "state": string, "sources": int }` — `state` is `transferring`/`complete`/`empty`/`corrupt`/…, `sources` counts peers offering that chunk. |
+| `progress.parts` | array | One entry per ~9.28 MiB chunk: `{ "state": string, "sources": int }` — `state` is `complete`/`incomplete`/`missing` -- complete when the chunk is done, otherwise whether any peer offers it -- and `sources` counts peers offering that chunk. |
 | `last_seen_complete` | int \| null | Unix ts a complete copy was last seen across sources; `null` when no complete copy has ever been seen, or the daemon does not report it. |
 | `last_changed` | int | Unix ts the partfile last received data. |
 | `download_active_time` | int | Seconds spent actively downloading. |
@@ -864,13 +864,13 @@ Same envelope as the list item, plus the detail-only fields below (all omitted f
 | `comment` | string | The user's own comment on this file (`""` if none). |
 | `rating` | int | The user's own rating, `0`–`5` (`0` = unrated). See the [rating scale](#get-apiv0downloadshashcomments). |
 | `a4af_auto` | bool | Whether automatic A4AF source-swapping is on for this file. See [A4AF](#post-apiv0downloadshasha4af). |
-| `media` | object | Audio/video metadata — see [Media metadata](#media-metadata). **Omitted entirely** when the file has no probed metadata. |
+| `media` | object | Audio/video metadata — see [Media metadata](#media-metadata). **`null`** when the file has no probed metadata; the key is always present. |
 
 **Errors:** `404 not_found` (no partfile with that hash), `503 ec_unavailable`.
 
 ##### Media metadata
 
-The `media` object (on both `GET /downloads/{hash}` and `GET /shared/{hash}`) carries the audio/video metadata amuled probed for the file. It is **omitted entirely** when the file has not been probed (a non-media file, or one probing hasn't reached yet).
+The `media` object (on both `GET /downloads/{hash}` and `GET /shared/{hash}`) carries the audio/video metadata amuled probed for the file. It is **`null`** when the file has not been probed (a non-media file, or one probing hasn't reached yet) -- the key is always present, so test `media === null` rather than for the key.
 
 ```json
 "media": {
@@ -984,7 +984,7 @@ Each entry is the [`/clients`](#get-apiv0clients) list object plus three keys:
 
 `parts` is opt-in because it is one boolean per chunk per peer — a multi-TiB file is 100k+ entries each. It is exactly `part_count` entries, and it describes the file this row is about: the download bitmap for a `source`, the upload bitmap for a `peer`. A peer the core reports as holding every part comes back all-`true`. A pure A4AF row has no bitmap for this file and omits the key. **`parts` never appears in SSE payloads.**
 
-The file's own five-state part view is on [`GET /downloads/{hash}`](#get-apiv0downloadshash); combine it with this bitmap to render the desktop's per-source bar.
+The file's own three-state part view is on [`GET /downloads/{hash}`](#get-apiv0downloadshash); combine it with this bitmap to render the desktop's per-source bar.
 
 Both routes accept `limit` / `offset` / `sort` / `order` exactly as `/clients` does. A partfile with at least one completed chunk is both a download and a shared file, and then **both routes return the same body** — they differ only in which collection the hash must belong to, which is what the `404` checks.
 
@@ -1324,7 +1324,7 @@ Browse a peer's shared file list — the API equivalent of "View Files" in the G
 The browse runs **asynchronously**: the peer answers over the network, one directory at a time, and a HighID/reachable peer may take seconds while a LowID peer needs a server callback or Kad first. So this endpoint does **not** return the files — it returns a `search_id` and the results flow through the **search machinery**, exactly like a query search:
 
 - `GET /api/v0/search/{id}/results` reads the accumulated files as they arrive (standard search-result fields, plus `directory` — the folder each file sits in inside the peer's share). The browse also appears in [`GET /api/v0/search`](#get-apiv0search) with `kind: "browse"` and the browsed peer's `client_ecid`.
-- The refresher advances `search_progress` for this `search_id` while the browse is live, and emits a `search_finished` SSE event when the peer's list is complete or the browse fails (denied / peer unreachable / connection lost). A denied or failed browse finishes with zero results — there is no distinct error event.
+- The refresher advances `search_progress` for this `search_id` while the browse is live, and completion arrives as the terminal `search_progress` frame with `"state": "finished"` — when the peer's list is complete or the browse fails (denied / peer unreachable / connection lost). There is **no** `search_finished` event; a client waiting for one waits forever. A denied or failed browse finishes with zero results, so there is no distinct error event either.
 
 Reusing the search id-space means one poll loop and one SSE stream cover both queries and browses; a client tells them apart by remembering which `search_id` it started with which verb.
 
@@ -1341,10 +1341,12 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
   "query":       "some peer",
   "kind":        "browse",
   "state":       "running",
-  "client_ecid": 4382,
+  "client_ecid": null,
   "started_at":  1750412400
 }
 ```
+
+`client_ecid` is `null` in this reply even though you addressed the peer by ecid: the row is built locally before the daemon has reported anything about the browse, and `client_ecid` is one of the fields it fills in. [`GET /search`](#get-apiv0search) carries the peer's ecid for the same browse from the next refresher tick onward.
 
 A browse the daemon cannot even start — a LowID peer it has no way to call back, for instance — is reported as `finished` immediately rather than left pending: no connection is attempted, so there is nothing to wait for. It carries no results, the same as a browse the peer denied.
 
@@ -1357,7 +1359,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
   "http://$HOST/api/v0/search/17/results"
 ```
 
-**Errors:** `400 bad_request` (`{ecid}` is not a non-negative integer), `403 forbidden` (guest token — browsing is `ADMIN`-only), `404 not_found` (no peer with that ecid), `405 method_not_allowed` (non-POST), `502 bad_gateway` (core accepted the request but returned no `search_id`), `503 ec_unavailable`.
+**Errors:** `400 bad_request` (`{ecid}` is not a non-negative integer), `403 forbidden` (guest token — browsing is `ADMIN`-only), `404 not_found` (no peer with that ecid), `405 method_not_allowed` (non-POST), `502 amuled_rejected` (core accepted the request but returned no `search_id`), `503 ec_unavailable`.
 
 ---
 
@@ -1487,7 +1489,7 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/shared"
 
 A file that is both downloading and shared reports its progress here as well: amuled describes such a file as a partfile, so the value is read across from the download side and the two agree. That makes `hashing_progress` usable from either list without checking which one owns the file.
 
-`media` is present only on an audio or video file that has been probed, and absent entirely otherwise — check for the key rather than for empty values. Its six fields are the same ones the detail endpoint reports, and a [media refresh](#post-apiv0sharedmediarefresh) replaces all of them, clearing any the new probe no longer finds.
+`media` is an object on an audio or video file that has been probed and `null` otherwise — the key is always present, so test `media === null` rather than checking for the key. Its six fields are the same ones the detail endpoint reports, and a [media refresh](#post-apiv0sharedmediarefresh) replaces all of them, clearing any the new probe no longer finds.
 
 The SSE `shared_added` / `shared_updated` event payload matches this object byte-for-byte, so a subscriber that received `shared_updated` does not need to re-GET to see the moved counters — including `media`, which is what makes a metadata refresh observable without polling.
 
@@ -1517,7 +1519,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 | `queued_count` | int | Clients waiting on this file's upload queue. |
 | `comment` | string | The user's own comment on this file (`""` if none). |
 | `rating` | int | The user's own rating, `0`–`5` (`0` = unrated). |
-| `media` | object | Audio/video metadata — see [Media metadata](#media-metadata). **Omitted entirely** when the file has no probed metadata. |
+| `media` | object | Audio/video metadata — see [Media metadata](#media-metadata). **`null`** when the file has no probed metadata; the key is always present. |
 
 `hashing_progress` comes through from the list item; pair it with `part_count` here for a percentage.
 
@@ -1644,12 +1646,12 @@ amuled validates every path: a REST client cannot stat the core's filesystem, so
 {
   "results": [
     { "id": "/srv/share", "ok": true },
-    { "id": "/typo", "ok": false, "code": "not_found", "message": "no such directory" }
+    { "id": "/typo", "ok": false, "error": { "code": "not_found", "message": "no such directory" } }
   ]
 }
 ```
 
-`reason` is `not_found` (missing, or not a directory) or `not_readable`. amuled reports these as codes and the API renders them, so its locale never leaks into your response.
+`error.code` is `not_found` (missing, or not a directory) or `not_readable` (`403`, amuled cannot read the path). amuled reports these as codes and the API renders them, so its locale never leaks into your response.
 
 The **rescan is scheduled, not completed**, before the response returns: a successful reply means the new roots are validated and persisted, and that the re-walk will start on amuled's next processing tick. Until it finishes, [`GET /api/v0/shared`](#get-apiv0shared) still serves the previous file list. Observe completion the same way as [`POST /api/v0/shared_reload`](#post-apiv0shared_reload), whose notes on log lines and coalescing apply here too.
 
@@ -1667,7 +1669,7 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/
   "http://$HOST/api/v0/share_directories"
 ```
 
-Idempotent: adding a path that is already configured updates its `recursive` flag rather than failing, so "ensure this folder is shared" is safe to repeat. Same `{ok, rejected}` body as `PUT`.
+Idempotent: adding a path that is already configured updates its `recursive` flag rather than failing, so "ensure this folder is shared" is safe to repeat. Same `{results: [...]}` envelope as `PUT`.
 
 **Errors:** `400 bad_request` (missing/empty `path`, non-boolean `recursive`), `502 amuled_rejected`, `503 ec_unavailable`.
 
@@ -1689,7 +1691,7 @@ curl -s -X DELETE -H "Authorization: Bearer $TOKEN" \
   "http://$HOST/api/v0/share_directories?path=C%3A%5CUsers%5Cbob%5CMy%20Shares"
 ```
 
-Removing a path that is not configured is a `404` rather than a silent success, so a typo — or a path that does not byte-match what `GET` returned — is visible. Same `{ok, rejected}` body as `PUT`.
+Removing a path that is not configured is a `404` rather than a silent success, so a typo — or a path that does not byte-match what `GET` returned — is visible. Same `{results: [...]}` envelope as `PUT`.
 
 **Errors:** `400 bad_request` (no `path` parameter), `404 not_found` (path not configured), `502 amuled_rejected`, `503 ec_unavailable`.
 
@@ -1755,7 +1757,7 @@ Send a bare priority level to pin it (the file's `priority_auto` becomes `false`
 
 `name` renames the file — a non-empty string with no path separators (`/` or `\`, rejected to prevent the rename escaping the file's directory). Rename works on any known file, so it is accepted on both this endpoint and [`PATCH /downloads/{hash}`](#patch-apiv0downloadshash).
 
-**Errors:** `400 bad_request` (missing/invalid fields, `comment`/`rating` sent alone, or a `name` that is empty or contains a path separator), `409 not_shared` (comment/rating on a non-shared file), `400 amuled_rejected`, `503 ec_unavailable`.
+**Errors:** `400 bad_request` (missing/invalid fields, `comment`/`rating` sent alone, or a `name` that is empty or contains a path separator), `404 not_found` (no shared file with that hash), `409 not_shared` (comment/rating on a non-shared file), `400 amuled_rejected`, `503 ec_unavailable`.
 
 ---
 
@@ -1879,7 +1881,7 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
 
 **Response:** `202 Accepted`, no body. The connect is asynchronous; its outcome shows up on [`GET /status`](#get-apiv0status)'s `ed2k.state` and on the SSE stream.
 
-**Errors:** `400 bad_request` (unparseable address/ECID), `404 not_found`, `503 ec_unavailable`.
+**Errors:** `400 bad_request` (unparseable address/ECID), `400 amuled_rejected` (the daemon refused the connect), `404 not_found`, `503 ec_unavailable`.
 
 #### `DELETE /api/v0/servers/{ecid}` / `DELETE /api/v0/servers/by-address/{address}`
 
@@ -1928,11 +1930,11 @@ Tells amuled to fetch the `server.met` from the supplied URL and refresh its lis
 { "servers_url": "http://example.com/server.met" }
 ```
 
-The URL must start with `http://` or `https://`; anything else is rejected `400 bad_request`.
+`servers_url` is **required** here, and must start with `http://` or `https://`; omitting it, or sending anything else, is a `400 bad_request`. This differs from [`POST /ipfilter/update`](#post-apiv0ipfilterupdate), which does fall back to its configured preference when the field is absent.
 
 The URL is **persisted** into the `servers.update_url` preference, so a subsequent `GET /preferences` reflects it — there is no need to PATCH it separately.
 
-**Response:** `202 Accepted`, no body. The URL came from the request (or, when omitted, from the preference this documents), and the download runs asynchronously -- its outcome arrives on the log channel.
+**Response:** `202 Accepted`, no body. The download runs asynchronously -- its outcome arrives on the log channel.
 
 **Errors:** `400 bad_request`, `400 amuled_rejected`, `503 ec_unavailable`.
 
@@ -2043,11 +2045,11 @@ amuled's category system lets users tag downloads with one of N user-defined buc
   "categories": [
     {
       "index": 0,
-      "name": "All",
+      "name": "Default",
       "path": "/home/user/aMule/Incoming",
       "comment": "",
       "color": 0,
-      "priority": "normal"
+      "priority": "low"
     }
   ],
   "total": 1,
@@ -2114,7 +2116,7 @@ Any subset of the POST body fields. `index 0` (the default category) can be patc
 
 **Response:** `204 No Content`.
 
-Deleting `index 0` is rejected by amuled (`400 amuled_rejected`).
+Deleting `index 0` is refused here, before any EC roundtrip: `400 bad_request` ("cannot delete the default (index=0) category"). amuled is never asked.
 
 ---
 
@@ -2295,7 +2297,7 @@ The three **clamped at daemon start** rows are the reason this is enforced on th
 
 **A low `connection.max_upload_kbps` caps `max_download_kbps`,** which is the one place a `PATCH` changes a field the request did not name. Below `4` kB/s up the download limit is forced to 3× the upload; below `10` it is forced to 4×. So `PATCH {"connection": {"max_upload_kbps": 3}}` also sets `max_download_kbps` to `9`. This is a deliberate anti-leech rule in the core rather than a defect, it applies whichever of the two you write, and the `PATCH` response echoes the whole preferences object so the adjusted value is visible in the reply.
 
-**Errors:** `400 bad_request` (unknown/mis-typed field, or a body with no recognized fields), `400 amuled_rejected`, `503 ec_unavailable`.
+**Errors:** `400 bad_request` (unknown/mis-typed field, or a body with no recognized fields), `409 conflict` (the daemon was built without support for the option being set), `400 amuled_rejected`, `503 ec_unavailable`.
 
 ---
 
@@ -2309,9 +2311,15 @@ These endpoints drive amuled's connect/disconnect to the ed2k network, the Kad n
 
 **Body:** `{ "network": "ed2k" | "kad" | "both" }` (optional; defaults to `"both"`). Same shape as `/networks/disconnect` — `"ed2k"` fires `EC_OP_SERVER_CONNECT`, `"kad"` fires `EC_OP_KAD_START`, omitted/`"both"` fires `EC_OP_CONNECT`.
 
-**Response:** `202 Accepted`.
+**Response:** `202 Accepted`, with amuled's own account of what it did:
 
-**Errors:** `400 bad_request` (unknown selector), `503 ec_unavailable`.
+```json
+{ "message": "Connecting to eDonkey network..." }
+```
+
+`message` is absent when the daemon said nothing. `202` rather than `200`: the request is handed to amuled over EC and returns before the effect is observable, which is as true of a disconnect as of a connect -- the two used to disagree on this for no reason a client could see.
+
+**Errors:** `400 bad_request` (unknown selector), `400 amuled_rejected` (the daemon refused the operation), `503 ec_unavailable`.
 
 #### `POST /api/v0/networks/disconnect`
 
@@ -2319,9 +2327,15 @@ These endpoints drive amuled's connect/disconnect to the ed2k network, the Kad n
 
 **Body:** `{ "network": "ed2k" | "kad" | "both" }` (optional; defaults to `"both"`).
 
-**Response:** `200 OK`.
+**Response:** `202 Accepted`, with amuled's own account of what it did:
 
-**Errors:** `400 bad_request`, `503 ec_unavailable`.
+```json
+{ "message": "Connecting to eDonkey network..." }
+```
+
+`message` is absent when the daemon said nothing. `202` rather than `200`: the request is handed to amuled over EC and returns before the effect is observable, which is as true of a disconnect as of a connect -- the two used to disagree on this for no reason a client could see.
+
+**Errors:** `400 bad_request` (unknown selector), `400 amuled_rejected` (the daemon refused the operation), `503 ec_unavailable`.
 
 > Dedicated `POST /api/v0/kad/connect` and `POST /api/v0/kad/disconnect` shortcuts existed in an earlier draft of v0 but were dropped in favour of the `/networks/{connect,disconnect}` body selector — `{"network":"kad"}` does exactly what they did. The `/kad/bootstrap` endpoint below is genuinely distinct and stays.
 
@@ -2532,7 +2546,7 @@ The envelope is `{ "nodes": [...] }`. Each node is `{ "key": "<id>", "label_valu
 
 `key` is a **stable, machine-readable identifier** for the node (e.g. `"upload_data"`, `"ul_dl_ratio"`, `"servers_working"`). Unlike `label`, it does not change when the label is reworded, and it is never translated — use it to locate a specific field instead of matching on the label string. The `key` is optional: it is present only for nodes the daemon assigns one to, and it is omitted entirely when absent (older daemons that predate this field emit no `key` at all). Keys are unique among the fixed skeleton nodes; the dynamic per-client-software rows share a key by kind (see below).
 
-`label_value` is the **raw, untranslated machine value** for nodes whose `label` is itself data — the per-client-software breakdown rows, where the label is a version or OS string (`"v0.70b: %s"`, `"Linux: %s"`). It carries just that value (`"v0.70b"`, `"Linux"`) so a client reads it directly instead of parsing it out of the `label`. Present only on those rows; omitted otherwise and on daemons that predate the field. These rows are grouped under the `client_versions` / `client_operating_system` container nodes and each row carries `key: "client_version"` / `key: "client_os"` — so the `key` tells you the kind and `label_value` gives the value.
+`label_value` is the **raw, untranslated machine value** for nodes whose `label` is itself data — the per-client-software breakdown rows, where the label is a version or OS string (`"v0.70b: %s"`, `"Linux: %s"`). It carries just that value (`"v0.70b"`, `"Linux"`) so a client reads it directly instead of parsing it out of the `label`. Present as a string on those rows and `null` otherwise, including on daemons that predate the field; the key itself is always emitted. These rows are grouped under the `client_versions` / `client_operating_system` container nodes and each row carries `key: "client_version"` / `key: "client_os"` — so the `key` tells you the kind and `label_value` gives the value.
 
 Each value is `{ "type": "<type>", "value": <raw> }`:
 
@@ -2545,7 +2559,7 @@ Each value is `{ "type": "<type>", "value": <raw> }`:
 | `double` | number | raw double |
 | `string` | string | opaque English string (e.g. a ratio, or `"Not available"`) |
 
-A `string` value that is a **well-known sentinel** additionally carries a `token` field with a stable, locale-independent token — currently `"never"` (a "Never" timestamp, e.g. max-connection-limit-reached) and `"not_available"` (a ratio with no data yet). The English `value` is left in place unchanged, so this is purely additive: prefer `token` when present and fall back to `value` otherwise. It is absent on non-sentinel values and on daemons that predate the field.
+A `string` value that is a **well-known sentinel** additionally carries a `token` field with a stable, locale-independent token — currently `"never"` (a "Never" timestamp, e.g. max-connection-limit-reached) and `"not_available"` (a ratio with no data yet). The English `value` is left in place unchanged, so this is purely additive: prefer `token` when present and fall back to `value` otherwise. It is `null` on non-sentinel values and on daemons that predate the field; the key itself is always emitted.
 
 A value may carry a nested `extra` value of the same shape — whatever the desktop prints in parentheses. It is **three different quantities** depending on the node, so format it from its own `type` rather than assuming: a **percentage of the parent** on counter nodes that show one, a **packet count** beside a byte total on the packet nodes, and the **all-time total** beside a session figure on the transfer counters.
 
@@ -2557,23 +2571,27 @@ The UL:DL ratio node (`key: "ul_dl_ratio"`) additionally carries a `ratio` objec
     {
       "key": "transfer",
       "label": "Transfers",
+      "label_value": null,
       "values": [],
       "children": [
         {
           "key": "uploads",
           "label": "Uploads",
+          "label_value": null,
           "values": [],
           "children": [
             {
               "key": "upload_data",
               "label": "Total uploaded: %s",
-              "values": [ { "type": "bytes", "value": 13314398208 } ],
+              "label_value": null,
+              "values": [ { "type": "bytes", "value": 13314398208, "token": null, "extra": null } ],
               "children": []
             },
             {
               "key": "ul_dl_ratio",
               "label": "Session UL:DL Ratio (Total): %s",
-              "values": [ { "type": "string", "value": "1 : 769.34 (1 : 1125.54)" } ],
+              "label_value": null,
+              "values": [ { "type": "string", "value": "1 : 769.34 (1 : 1125.54)", "token": null, "extra": null } ],
               "ratio": { "session": 769.34, "total": 1125.54 },
               "children": []
             }
@@ -2592,7 +2610,7 @@ A per-client-software version row (note `label_value`, and an `extra` that is a 
   "key": "client_version",
   "label_value": "v0.70b",
   "label": "v0.70b: %s",
-  "values": [ { "type": "integer", "value": 42, "extra": { "type": "double", "value": 12.5 } } ],
+  "values": [ { "type": "integer", "value": 42, "token": null, "extra": { "type": "double", "value": 12.5 } } ],
   "children": []
 }
 ```
@@ -2600,7 +2618,7 @@ A per-client-software version row (note `label_value`, and an `extra` that is a 
 ```json
 {
   "label": "Max Connection Limit Reached: %s",
-  "values": [ { "type": "string", "value": "Never", "token": "never" } ],
+  "values": [ { "type": "string", "value": "Never", "token": "never", "extra": null } ],
   "children": []
 }
 ```
@@ -2793,7 +2811,7 @@ amuled keeps a bounded ring of recent searches (20). A search evicted from that 
 }
 ```
 
-Each result carries `sources` as a nested `{total, complete}` object — `total` is the swarm size amuled reports and `complete` is how many of those hold the file complete. `already_have` is `true` when you are currently downloading the file or already have it completed/shared; it is `false` for a fresh result and for one you have canceled/removed (a canceled result is re-downloadable, so it does not read as held). `rating` is amuled's aggregated quality rating (`0` when unrated). `status` is this result's download status on your node — `"new"` / `"downloaded"` / `"queued"` / `"canceled"` / `"queued_canceled"`. `type` is the file-type token derived from the filename extension (same tokens as the shared-detail [`file_type`](#get-apiv0sharedhash), e.g. `"videos"` / `"audio"`; `""` when the name has no extension). `media` is the audio/video [media metadata](#media-metadata) object (same shape as the file-detail endpoints), and is **omitted entirely** for a hit that carries no metadata (most global/Kad results), matching the blank Length/Bitrate/Codec columns in the desktop search list. **Unlike `media` on `GET /downloads/{hash}` and `GET /shared/{hash}`, which amuled probed locally, `media` on a search result is whatever the responding server advertised.** It is not verified against the file and can contradict it — a `.pdf` reporting a runtime and a video codec is a real observed result — so treat it as a hint, not as probed metadata.
+Each result carries `sources` as a nested `{total, complete}` object — `total` is the swarm size amuled reports and `complete` is how many of those hold the file complete. `already_have` is `true` when you are currently downloading the file or already have it completed/shared; it is `false` for a fresh result and for one you have canceled/removed (a canceled result is re-downloadable, so it does not read as held). `rating` is amuled's aggregated quality rating (`0` when unrated). `status` is this result's download status on your node — `"new"` / `"downloaded"` / `"queued"` / `"canceled"` / `"queued_canceled"`. `type` is the file-type token derived from the filename extension (same tokens as the shared-detail [`file_type`](#get-apiv0sharedhash), e.g. `"videos"` / `"audio"`; `""` when the name has no extension). `media` is the audio/video [media metadata](#media-metadata) object (same shape as the file-detail endpoints), and is **`null`** for a hit that carries no metadata (most global/Kad results), matching the blank Length/Bitrate/Codec columns in the desktop search list. The key is always present. **Unlike `media` on `GET /downloads/{hash}` and `GET /shared/{hash}`, which amuled probed locally, `media` on a search result is whatever the responding server advertised.** It is not verified against the file and can contradict it — a `.pdf` reporting a runtime and a video codec is a real observed result — so treat it as a hint, not as probed metadata.
 
 `directory` is the folder this file sits in **inside a browsed peer's share** — the desktop search list's *Directories* column. It is populated only for results filed from a peer's shared-file listing (see [peer browse](#post-apiv0clientsecidshared_files)) and is `""` on every ordinary server/Kad hit, which never carries it. It is per-result rather than per-search: two copies of one file in different folders of the same share group under a single parent and each keeps its own folder, exactly as the desktop shows them, which is why `children[]` entries carry it too.
 
@@ -2811,7 +2829,7 @@ The `progress` object carries the same `state` / `kind` / `percent` fields as th
 
 A client that wants to wait for completion polls while `state == "running"`. Because amuled now reports the lifecycle state directly (no sentinel decode), `state == "running"` unambiguously means in-flight even for Kad — there is no longer any "is `percent: 0` a stalled Kad search or no search at all?" ambiguity; check `state` instead. A Kad search that hits its result cap (`SEARCHKEYWORD_TOTAL`, 300) before the 45 s deadline finishes early — `state` flips to `finished` and `percent` jumps to 100 ahead of the ramp.
 
-**Errors:** `400 bad_request` (bad `{id}`), `404 not_found` (no such search), `503 ec_unavailable`.
+**Errors:** `400 bad_request` (bad `{id}`), `404 not_found` (no such search). No `503`: this endpoint serves the refresher's cache, and a failed EC roundtrip while adopting an unknown `{id}` surfaces as the `404` rather than as an availability error.
 
 #### `POST /api/v0/search/{id}/stop`
 
@@ -2988,7 +3006,7 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/chats"
 
 `name` falls back to `"IP: <ip> Port: <port>"` when the core has no nickname for the peer, matching what the desktop shows; the same string appears in the SSE payload. `client_ecid` is `0` when the peer is offline, `friend_ecid` is `0` when the peer is not a friend — join against [`GET /clients`](#get-apiv0clients) and [`GET /friends`](#get-apiv0friends). `online` is simply `client_ecid != 0`.
 
-`last_message` is omitted for a conversation that holds none. The full transcript is deliberately **not** on the list: 50 conversations at 200 messages each would be 10 000 objects per read. Use the messages endpoint below.
+`last_message` is `null` for a conversation that holds none; the key is always present. The full transcript is deliberately **not** on the list: 50 conversations at 200 messages each would be 10 000 objects per read. Use the messages endpoint below.
 
 Served from the refresher snapshot — no EC roundtrip per request. Standard [list envelope](#list-pagination-and-sorting); sortable on `last_message_at` and `name`.
 
@@ -3032,7 +3050,7 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/
   "message": { "id": 92, "direction": "out", "text": "hello" } }
 ```
 
-The created message stays in the body: no per-message `GET` defines a shape for it, so the `id` and the timestamp the store assigned are only readable here.
+The created message stays in the body because no per-message `GET` defines a shape for it, so the store-assigned `id` is only readable here. The **timestamp is not** in this reply — read it back from [`GET /chats`](#get-apiv0chats) (as `last_message`), from the per-conversation messages endpoint, or from the `chat_message` SSE event.
 
 The core creates the conversation if it does not exist, so this doubles as "start a chat with this address" — an unknown `{peer}` is not a `404` here.
 
@@ -3085,6 +3103,7 @@ Every error code emitted by `/api/v0/*`, sorted by what triggered it. Two codes 
 | `invalid_credentials` | 401, 403 | `/auth/login` password didn't match any role (401); or `PATCH /auth/passwords` was given a `current_password` that does not match (403). |
 | `forbidden` | 403 | Authenticated as `guest` but the endpoint requires `admin`. |
 | `not_found` | 404 | Resource doesn't exist (unknown hash, ECID, graph name, or no such endpoint). |
+| `not_readable` | 403 | Per-item code from the [`/share_directories`](#post-apiv0share_directories) bulk envelope: amuled cannot read that path. Only ever appears inside a `results[].error`, never as a whole-response error. |
 | `method_not_allowed` | 405 | Wrong HTTP verb for the route. The response carries an `Allow` header listing the methods this resource does support. |
 | `conflict` | 409 | The request is valid but the daemon cannot serve it as asked: it was built without support for the option being set, or the client named on an A4AF request is not an A4AF source of that download. |
 | `partfile_unsupported` | 409 | Verify Local Data requested on a file that is still an incomplete partfile. |

@@ -101,10 +101,11 @@ if [ "$HAVE_GUEST" = "1" ]; then
 	_assert_status 403 "POST /networks/disconnect (guest) → 403"
 fi
 
-# --- 2. networks/disconnect → 200 + message. -----------------------
+# --- 2. networks/disconnect → 202 + message. -----------------------
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/networks/disconnect"
-_assert_status 200 "POST /networks/disconnect → 200"
+_assert_status 202 "POST /networks/disconnect → 202"
+_assert_json_eq '.message | type' string 'disconnect response carries .message'
 _assert_json_eq '. | has("ok")' false 'disconnect response has no constant ok field'
 
 # --- 3. networks/connect → 202 + message. --------------------------
@@ -121,7 +122,7 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{"network":"kad"}' \
 	"$HOST/api/v0/networks/disconnect"
-_assert_status 200 "POST /networks/disconnect {network:kad} → 200"
+_assert_status 202 "POST /networks/disconnect {network:kad} → 202"
 _assert_json_eq '. | has("ok")' false \
 	'networks/disconnect(kad) response has no constant ok field'
 

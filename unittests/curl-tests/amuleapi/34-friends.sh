@@ -178,6 +178,12 @@ NEW=$(echo "$CURL_BODY" | jq -r --argjson e "$NEW_ECID" \
 [ "$(echo "$NEW" | jq -r .online)" = "false" ] \
 	&& _pass "a friend with no linked peer is offline" \
 	|| _fail "online" "expected false, got $(echo "$NEW" | jq -r .online)"
+# ...and reports that as null, not as the 0 sentinel it used to send. 0 is not
+# how this surface spells "no value" anywhere else, and a client joining
+# naively on the raw number was building GET /clients/0 and taking a 404.
+[ "$(echo "$NEW" | jq -r '.client_ecid')" = "null" ] \
+	&& _pass "an offline friend reports client_ecid null, not a 0 sentinel" \
+	|| _fail "client_ecid" "expected null, got $(echo "$NEW" | jq -r .client_ecid)"
 if [ "$AFTER" -gt "$BEFORE" ] 2>/dev/null; then
 	_pass "the list grew ($BEFORE -> $AFTER)"
 else

@@ -175,10 +175,26 @@ std::string ToJsonSharedEvent(const FileSnapshot &f)
 	  << ",\"total\":" << f.shared.requests_total << "}"
 	  << ",\"accepts\":{\"session\":" << f.shared.accepts_session
 	  << ",\"total\":" << f.shared.accepts_total << "}"
-	  << ",\"upload_speed_bps\":" << f.shared.upload_speed_bps
-	  << ",\"uploading\":" << f.shared.uploading_count << ",\"last_upload\":" << f.shared.last_upload
-	  << ",\"shared_since\":" << f.shared.shared_since
-	  << ",\"hashing_progress\":" << SharedHashingProgress(f);
+	  << ",\"upload_speed_bps\":" << f.shared.upload_speed_bps << ",\"uploading\":"
+	  << f.shared.uploading_count
+	  // Unix seconds, null when unknown -- never uploaded, or a known.met entry
+	  // that predates the field. 0 reads as 1970 rather than "no idea", and the
+	  // REST row this event promises key parity with has always sent null here
+	  // (WriteIntOrNull in the shared list writer). A subscriber that hydrates
+	  // from REST and live-updates from this saw its null flip to 0 on the
+	  // first tick the file changed. Never-uploaded is the common case, so this
+	  // was the routine reading, not an edge one.
+	  << ",\"last_upload\":";
+	if (f.shared.last_upload != 0)
+		o << f.shared.last_upload;
+	else
+		o << "null";
+	o << ",\"shared_since\":";
+	if (f.shared.shared_since != 0)
+		o << f.shared.shared_since;
+	else
+		o << "null";
+	o << ",\"hashing_progress\":" << SharedHashingProgress(f);
 	// Media metadata rides the event because a metadata re-extraction is
 	// otherwise invisible to a subscriber: the refresh endpoints answer 202
 	// with no result, so this is how a client learns a probe landed. Six
