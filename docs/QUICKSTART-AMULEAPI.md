@@ -118,7 +118,7 @@ All are readable only by you.
 curl -s http://127.0.0.1:4713/api/v0/health
 
 # Log in, then use the token.
-TOKEN=$(curl -s -X POST "http://127.0.0.1:4713/api/v0/auth/login?type=bearer" \
+TOKEN=$(curl -s -X POST "http://127.0.0.1:4713/api/v0/auth/login?include_token=true" \
     -H 'Content-Type: application/json' \
     -d '{"password":"mySecret123"}' | jq -r .token)
 
@@ -129,7 +129,7 @@ curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:4713/api/v0/status
 curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:4713/api/v0/version
 ```
 
-Browsers should call `/auth/login` *without* `?type=bearer` — they get a
+Browsers should call `/auth/login` *without* `?include_token=true` — they get a
 cookie instead, which keeps the token out of reach of page scripts.
 
 ## Reaching it from another machine
@@ -252,7 +252,7 @@ Everything under `/api/v0/`, with full details in
 - **Downloads** — the queue: add, pause, cancel, clear completed, plus
   comments, filenames and alternate sources.
 - **Shared files** — list, verify, and the shared folders.
-- **Peers** — who you are connected to, and browsing their shared files.
+- **Clients** — who you are connected to, and browsing their shared files.
 - **Servers** — the ed2k server list, connecting, and refreshing it.
 - **Network** — connect and disconnect ed2k and Kad.
 - **Search** — start a search, read results, download one.

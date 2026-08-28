@@ -380,7 +380,7 @@ fi
 # HEAD doesn't trigger the streaming handler, so we do a short -m 2.
 : > "$HDR"; : > "$SSE"
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
 [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
 curl -sS -m 2 -D "$HDR" -o "$SSE" \
 	-H "Origin: https://allowed.example.com" \

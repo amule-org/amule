@@ -133,32 +133,4 @@ std::string ExtractCookieValue(const std::string &cookie_header, const std::stri
 	return std::string(v.first, v.second);
 }
 
-// ---------- ISO-8601 ---------------------------------------------
-
-std::string FormatIso8601Utc(std::time_t t)
-{
-	std::tm out{};
-#ifdef _WIN32
-	gmtime_s(&out, &t);
-#else
-	gmtime_r(&t, &out);
-#endif
-	char buf[32];
-	const int n = std::snprintf(buf,
-		sizeof(buf),
-		"%04d-%02d-%02dT%02d:%02d:%02dZ",
-		out.tm_year + 1900,
-		out.tm_mon + 1,
-		out.tm_mday,
-		out.tm_hour,
-		out.tm_min,
-		out.tm_sec);
-	// snprintf's return is the bytes that *would* have been written.
-	// Our format produces exactly 20 chars + NUL, so anything else
-	// is a libc bug — return whatever we got rather than crashing.
-	if (n < 0)
-		return std::string();
-	return std::string(buf, std::min<size_t>(n, sizeof(buf) - 1));
-}
-
 } // namespace webapi

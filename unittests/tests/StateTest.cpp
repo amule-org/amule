@@ -1441,7 +1441,7 @@ TEST(State, MemoizableTargetExcludesEverythingElse)
 	ASSERT_TRUE(!MemoizableTarget("/api/v0/stats/tree"));
 	ASSERT_TRUE(!MemoizableTarget("/api/v0/stats/graphs/download_speed?width=3"));
 	ASSERT_TRUE(!MemoizableTarget("/api/v0/logs/amule"));
-	ASSERT_TRUE(!MemoizableTarget("/api/v0/logs/serverinfo"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v0/logs/server_info"));
 	ASSERT_TRUE(!MemoizableTarget("/api/v0/search/7/results"));
 	// live EC roundtrip per read, and the bare collection a trailing-slash
 	// prefix could never match

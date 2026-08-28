@@ -165,11 +165,11 @@ fi
 echo "amuleapi 19-search smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
 [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
 
 GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$GUEST_PASS\"}" "$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
+	-d "{\"password\":\"$GUEST_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
 HAVE_GUEST=0
 [ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ] && HAVE_GUEST=1
 
@@ -381,7 +381,7 @@ done
 sleep 4
 
 SECOND_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "http://$SECOND_HOST/api/v0/auth/login?type=bearer" \
+	-d "{\"password\":\"$ADMIN_PASS\"}" "http://$SECOND_HOST/api/v0/auth/login?include_token=true" \
 	| jq -r .token)
 
 if [ -n "$SECOND_TOKEN" ] && [ "$SECOND_TOKEN" != "null" ]; then
@@ -1128,7 +1128,7 @@ if [ -n "$SID_CLOSE" ] && [ "$SID_CLOSE" != "null" ]; then
 	sleep 2
 	SECOND2_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 		-d "{\"password\":\"$ADMIN_PASS\"}" \
-		"http://localhost:4715/api/v0/auth/login?type=bearer" | jq -r .token)
+		"http://localhost:4715/api/v0/auth/login?include_token=true" | jq -r .token)
 	if [ -n "$SECOND2_TOKEN" ] && [ "$SECOND2_TOKEN" != "null" ]; then
 		_curl -H "Authorization: Bearer $SECOND2_TOKEN" "http://localhost:4715/api/v0/search"
 		_assert_json_eq "[.searches[] | select(.id == $SID_CLOSE)] | length" 0 \
@@ -1185,7 +1185,7 @@ done
 sleep 2
 FOREIGN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"http://localhost:4716/api/v0/auth/login?type=bearer" | jq -r .token)
+	"http://localhost:4716/api/v0/auth/login?include_token=true" | jq -r .token)
 
 if [ -n "$FOREIGN_TOKEN" ] && [ "$FOREIGN_TOKEN" != "null" ]; then
 	FOREIGN_RES=$(curl -s -X POST -H "Authorization: Bearer $FOREIGN_TOKEN" \
@@ -1604,7 +1604,7 @@ if [ "$HAVE_SECOND_INSTANCE" -eq 1 ]; then
 	sleep 3
 
 	THIRD_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-		-d "{\"password\":\"$ADMIN_PASS\"}" "http://$THIRD_HOST/api/v0/auth/login?type=bearer" \
+		-d "{\"password\":\"$ADMIN_PASS\"}" "http://$THIRD_HOST/api/v0/auth/login?include_token=true" \
 		| jq -r .token)
 
 	if [ -n "$THIRD_TOKEN" ] && [ "$THIRD_TOKEN" != "null" ]; then

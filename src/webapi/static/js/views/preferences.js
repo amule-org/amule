@@ -321,15 +321,15 @@ function AmuleApiCredentials({ isGuest }) {
   useEffect(() => {
     if (isGuest) return; // admin-only endpoint
     api.get("auth/passwords")
-      .then((s) => { setKnown(s); setGuestOn(!!s.guest_enabled); })
-      // Stay hidden rather than guess: sending guest_enabled without knowing
+      .then((s) => { setKnown(s); setGuestOn(!!s.guest_access_enabled); })
+      // Stay hidden rather than guess: sending guest_access_enabled without knowing
       // the stored state would clear a password nobody can read back.
       .catch(() => {});
   }, [isGuest]);
 
   if (isGuest || !known) return null;
 
-  const wasGuestOn = !!known.guest_enabled;
+  const wasGuestOn = !!known.guest_access_enabled;
   const settingGuestPw = guestOn && guestPw !== "";
   // Ticked guest, nothing typed, nothing stored: "keep the current" has
   // nothing to keep.
@@ -342,13 +342,13 @@ function AmuleApiCredentials({ isGuest }) {
     // back to resend it.
     const body = { current_password: current };
     if (admin !== "") body.admin_password = admin;
-    if (guestOn !== wasGuestOn) body.guest_enabled = guestOn;
+    if (guestOn !== wasGuestOn) body.guest_access_enabled = guestOn;
     if (settingGuestPw) body.guest_password = guestPw;
     setBusy(true);
     try {
       const res = await api.patch("auth/passwords", body);
       setKnown(res);
-      setGuestOn(!!res.guest_enabled);
+      setGuestOn(!!res.guest_access_enabled);
       setCurrent(""); setAdmin(""); setGuestPw("");
       toast(t("prefs_creds_saved"), "success");
     } catch (err) {

@@ -302,7 +302,7 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		PublishChatEvents(app.EventBus(), new_messages, closed);
 	}
 
-	// /logs/serverinfo, /stats/tree, /stats/graphs/{graph} are NOT
+	// /logs/server_info, /stats/tree, /stats/graphs/{graph} are NOT
 	// fetched per-tick — they're lazy-fetched on first GET via
 	// CTtlCache (1 s TTL coalesces burst reads). HTTP handlers in
 	// Api.cpp drive their own EC roundtrips under m_ec_mtx. Per-tick

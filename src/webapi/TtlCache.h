@@ -34,7 +34,7 @@ namespace webapi
 {
 
 // Single-flight TTL cache for lazy-fetched endpoints
-// (/logs/serverinfo, /stats/tree, /stats/graphs/{graph},
+// (/logs/server_info, /stats/tree, /stats/graphs/{graph},
 // /search/results). HTTP handlers drive their own EC fetches on
 // demand, coalescing burst reads via a 1 s TTL.
 //

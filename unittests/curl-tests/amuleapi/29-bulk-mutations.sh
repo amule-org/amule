@@ -45,7 +45,7 @@ curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" || _die "amuleapi at $HO
 
 echo "amuleapi 29-bulk-mutations @ $HOST"
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" -d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
+	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
 [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || _die "login failed"
 sleep 2
 

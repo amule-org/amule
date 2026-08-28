@@ -103,14 +103,14 @@ If the daemon restarts between steps 1 and 2, or the ring buffer overflows on a 
 
 ## Connecting
 
-`GET /api/v0/events` opens the stream. Auth runs synchronously BEFORE the worker thread is spawned and before the 32-slot streaming budget is touched, so an unauthenticated peer can't tie up a slot for the read-timeout window.
+`GET /api/v0/events` opens the stream. Auth runs synchronously BEFORE the worker thread is spawned and before the 32-slot streaming budget is touched, so an unauthenticated client can't tie up a slot for the read-timeout window.
 
 `HEAD` returns the stream's headers and no body. Any other method is `405` with `Allow: GET, HEAD`, like every other route — it used to be a `404` here, which read as "the endpoint does not exist" to a client probing the surface. A trailing slash is stripped first, so `/api/v0/events/` opens the same stream.
 
 ```sh
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
   -d '{"password":"adminpass"}' \
-  "http://$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
+  "http://$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
 
 curl -N -H "Authorization: Bearer $TOKEN" http://$HOST/api/v0/events
 ```
@@ -188,12 +188,12 @@ Every event belongs to a single channel. The full set, prefix-mapped from the ev
 | `downloads` | `download_*` | Transfers in the active queue |
 | `shared` | `shared_*` | Shared file list |
 | `servers` | `server_*` | Known ed2k servers |
-| `clients` | `client_*` | Peers we're exchanging with |
+| `clients` | `client_*` | Clients we're exchanging with |
 | `friends` | `friend_*` | The friends list, and whether each one is online |
 | `status` | `status_*` | Connection state + headline counters |
-| `logs` | `log_*` | amuled log buffer (live tail; serverinfo is poll-only) |
+| `logs` | `log_*` | amuled log buffer (live tail; server_info is poll-only) |
 | `search` | `search_*` | Result deltas, completion, and the freeing of a search |
-| `chats` | `chat_*` | Peer chat messages, and conversations being closed |
+| `chats` | `chat_*` | Client chat messages, and conversations being closed |
 | `comments` | `comments_*` | Comment/rating lists on a download |
 
 By default every channel is delivered. To subscribe to a subset, pass `?channels=` with a comma-separated list:
@@ -424,7 +424,7 @@ Identical to the REST [`/api/v0/friends`](REFERENCE.md#get-apiv0friends) list-it
 }
 ```
 
-`friend_updated` fires on any observable change, including a friend coming online or going offline — that transition is `client_ecid` moving between a live peer's ECID and `0`, which is what drives the connected indicator in the desktop client.
+`friend_updated` fires on any observable change, including a friend coming online or going offline — that transition is `client_ecid` moving between a live client's ECID and `0`, which is what drives the connected indicator in the desktop client.
 
 One `PATCH /api/v0/friends/{ecid}` can produce **two** `friend_updated` events. Only one friend may hold the friend slot, so granting it to one clears it on whoever held it before, and both records change.
 
@@ -506,12 +506,12 @@ Identical to the REST [`/api/v0/clients`](REFERENCE.md#get-apiv0clients) list-it
 ```
 Carries the same field set as the [`/clients`](REFERENCE.md#get-apiv0clients) list row, including `source_origin`, `parts_offered_count`, `client_mod_name` and `shared_files_browsable`.
 
-`part_progress_percent` follows the same rule as on the REST row: it is how much of the file we are downloading **from** this peer the peer already holds, and it is `null` when there is no such file, rather than sent as a negative sentinel. It is derived from `parts_offered_count` and the linked download's part count, so it moves when `parts_offered_count` does, and goes back to `null` if that download goes away. The key is always present -- see [REFERENCE.md's unknown-value rule](REFERENCE.md#unknown-values), under which `null` means "no value" and an absent key means "not reported".
+`part_progress_percent` follows the same rule as on the REST row: it is how much of the file we are downloading **from** this client the client already holds, and it is `null` when there is no such file, rather than sent as a negative sentinel. It is derived from `parts_offered_count` and the linked download's part count, so it moves when `parts_offered_count` does, and goes back to `null` if that download goes away. The key is always present -- see [REFERENCE.md's unknown-value rule](REFERENCE.md#unknown-values), under which `null` means "no value" and an absent key means "not reported".
 
-It never carries a `parts` bitmap — those are opt-in on the per-file client routes only, being one boolean per chunk per peer.
+It never carries a `parts` bitmap — those are opt-in on the per-file client routes only, being one boolean per chunk per client.
 
 
-`upload_file_hash` (file we're uploading TO this peer) and `download_file_hash` (file we're downloading FROM this peer) are 32-char MD4 hex hashes — directly resolvable against [`/api/v0/downloads/{hash}`](REFERENCE.md#get-apiv0downloadshash) (in-progress) or the corresponding entry in [`/api/v0/shared`](REFERENCE.md#get-apiv0shared) by `.hash`. Either field can be empty when the peer is queued / idle in that direction. `download_file_name` is the filename the peer advertised while we download from them; `upload_file_name` is the partfile they're downloading from us, resolved locally — see [`GET /clients`](REFERENCE.md#get-apiv0clients) for details.
+`upload_file_hash` (file we're uploading TO this client) and `download_file_hash` (file we're downloading FROM this client) are 32-char MD4 hex hashes — directly resolvable against [`/api/v0/downloads/{hash}`](REFERENCE.md#get-apiv0downloadshash) (in-progress) or the corresponding entry in [`/api/v0/shared`](REFERENCE.md#get-apiv0shared) by `.hash`. Either field can be empty when the client is queued / idle in that direction. `download_file_name` is the filename the client advertised while we download from them; `upload_file_name` is the partfile they're downloading from us, resolved locally — see [`GET /clients`](REFERENCE.md#get-apiv0clients) for details.
 
 #### `client_removed`
 
@@ -570,7 +570,7 @@ Emitted when the amuled log buffer appends new lines.
 { "lines": ["2026-06-19 11:00:00: line one", "2026-06-19 11:00:01: line two"] }
 ```
 
-Only the amuled log has a live channel; the serverinfo buffer has no SSE feed and is fetched by polling [`GET /logs/serverinfo`](REFERENCE.md#get-apiv0logsserverinfo). Multiple lines may be batched into a single event when the buffer landed several lines between refresher ticks. The [Bootstrap example](#bootstrap-snapshot--stream) doesn't pull `/logs/amule` — fetch it in step 2 if your UI shows historical log lines, otherwise treat `log_appended` as a live-only feed.
+Only the amuled log has a live channel; the server_info buffer has no SSE feed and is fetched by polling [`GET /logs/serverinfo`](REFERENCE.md#get-apiv0logsserverinfo). Multiple lines may be batched into a single event when the buffer landed several lines between refresher ticks. The [Bootstrap example](#bootstrap-snapshot--stream) doesn't pull `/logs/amule` — fetch it in step 2 if your UI shows historical log lines, otherwise treat `log_appended` as a live-only feed.
 
 ### `search` channel
 
@@ -600,7 +600,7 @@ It does **not** fire on `sources` or `alternate_names[]`. Those churn on essenti
 }
 ```
 
-`search_id` routes the result to the search that produced it — amuleapi runs several searches at once (see [REFERENCE.md](REFERENCE.md#post-apiv0search)), so demux on it. Key results by `(search_id, hash)`. Aside from the leading `search_id`, the payload is byte-for-byte identical to a `/search/{id}/results` array entry — the two are emitted by the same writer, so the promise holds by construction. That includes `status`, `type`, `directory` (the folder inside a browsed peer's share, `""` on ordinary hits), `kad_comment_lookup_running`, `comments[]` and the `alternate_names[]` grouping array — see [REFERENCE.md](REFERENCE.md#get-apiv0searchidresults); `sources` is the nested `{total, complete}` object, `media` — the audio/video metadata object — is present for locally-known/probed hits and `null` otherwise (the one place the unknown-value rule reaches an object rather than a scalar, so test `media === null` before reaching into it), and `alternate_names` holds the same-hash/different-name alternatives (empty for a single-name hit), same as the REST endpoint. Only parent results fire these events — children are folded into their parent's `alternate_names[]`, never emitted on their own. A change to a child therefore surfaces as a `search_result_updated` for its parent. Each `search_id` is an independent result space — a new `POST /search` starts a fresh one without disturbing the others.
+`search_id` routes the result to the search that produced it — amuleapi runs several searches at once (see [REFERENCE.md](REFERENCE.md#post-apiv0search)), so demux on it. Key results by `(search_id, hash)`. Aside from the leading `search_id`, the payload is byte-for-byte identical to a `/search/{id}/results` array entry — the two are emitted by the same writer, so the promise holds by construction. That includes `status`, `type`, `directory` (the folder inside a browsed client's share, `""` on ordinary hits), `kad_comment_lookup_running`, `comments[]` and the `alternate_names[]` grouping array — see [REFERENCE.md](REFERENCE.md#get-apiv0searchidresults); `sources` is the nested `{total, complete}` object, `media` — the audio/video metadata object — is present for locally-known/probed hits and `null` otherwise (the one place the unknown-value rule reaches an object rather than a scalar, so test `media === null` before reaching into it), and `alternate_names` holds the same-hash/different-name alternatives (empty for a single-name hit), same as the REST endpoint. Only parent results fire these events — children are folded into their parent's `alternate_names[]`, never emitted on their own. A change to a child therefore surfaces as a `search_result_updated` for its parent. Each `search_id` is an independent result space — a new `POST /search` starts a fresh one without disturbing the others.
 
 #### `search_progress`
 
@@ -622,7 +622,7 @@ Emitted whenever a search's completion advances and once more on its completion;
 
 A Kad search hitting its result cap (`SEARCHKEYWORD_TOTAL`, 300) before the 45 s deadline finishes early — the lifecycle flips to `finished` and `percent` jumps straight to 100 ahead of the ramp.
 
-A **browse** started via [`POST /clients/{ecid}/shared_files`](REFERENCE.md#post-apiv0clientsecidshared_files) rides this same channel: its `search_id` fires `search_result_added` per file the peer returns and `search_progress` frames with `"type": "browse"`, where `percent` tracks the directories received so far. A denied / unreachable / lost browse flips to `finished` with the results it managed to collect (often zero) — same terminal frame as a completed one, no distinct failure event.
+A **browse** started via [`POST /clients/{ecid}/shared_files`](REFERENCE.md#post-apiv0clientsecidshared_files) rides this same channel: its `search_id` fires `search_result_added` per file the client returns and `search_progress` frames with `"type": "browse"`, where `percent` tracks the directories received so far. A denied / unreachable / lost browse flips to `finished` with the results it managed to collect (often zero) — same terminal frame as a completed one, no distinct failure event.
 
 #### `search_closed`
 

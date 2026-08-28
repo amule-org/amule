@@ -81,7 +81,7 @@ if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
 fi
 
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
 [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || _die "admin login failed"
 AUTH=(-H "Authorization: Bearer $TOKEN")
 
@@ -810,7 +810,7 @@ fi
 # different documents, and the second was answered 304 against the first's.
 GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"${GUEST_PASS:-guestpass}\"}" \
-	"$HOST/api/v0/auth/login?type=bearer" 2>/dev/null | jq -r .token)
+	"$HOST/api/v0/auth/login?include_token=true" 2>/dev/null | jq -r .token)
 if [ -z "$GUEST_TOKEN" ] || [ "$GUEST_TOKEN" = "null" ]; then
 	_skip "per-principal ETag check (no guest password configured)"
 else

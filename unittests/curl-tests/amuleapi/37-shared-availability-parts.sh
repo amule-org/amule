@@ -85,7 +85,7 @@ echo "amuleapi 37-shared-availability-parts smoke @ $HOST"
 
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
+	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
 [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || _die "login failed"
 
 # The RLE decoder needs the first EC_TAG_KNOWNFILE frame to seed itself
@@ -204,7 +204,7 @@ if [ "$COUNT" -gt 0 ]; then
 	# --- 8. Guest sessions see the bar too (read-only data). -------
 	GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 		-d "{\"password\":\"${GUEST_PASS:-guestpass}\"}" \
-		"$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
+		"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
 	if [ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ]; then
 		_curl -H "Authorization: Bearer $GUEST_TOKEN" "$HOST/api/v0/shared/$FIRST_HASH"
 		_assert_status 200 "GET /shared/{hash} as guest → 200"

@@ -407,7 +407,7 @@ function ServerInfoPanel() {
 
   const load = async () => {
     try {
-      const r = await api.get("logs/serverinfo");
+      const r = await api.get("logs/server_info");
       if (!boxRef.current) return;
       setText(boxRef.current, r.text || "");
       boxRef.current.scrollTop = boxRef.current.scrollHeight;
@@ -415,11 +415,11 @@ function ServerInfoPanel() {
   };
   const clear = async () => {
     if (!(await confirmDialog(t("networks_log_confirm_clear_serverinfo")))) return;
-    try { await api.del("logs/serverinfo"); if (boxRef.current) setText(boxRef.current, ""); toast(t("networks_log_toast_cleared"), "success"); }
+    try { await api.del("logs/server_info"); if (boxRef.current) setText(boxRef.current, ""); toast(t("networks_log_toast_cleared"), "success"); }
     catch (e) { toast(terr(e) || t("networks_log_error"), "error"); }
   };
   const save = async () => {
-    try { const r = await api.get("logs/serverinfo"); saveText("server-info.txt", r.text || ""); }
+    try { const r = await api.get("logs/server_info"); saveText("server-info.txt", r.text || ""); }
     catch (e) { toast(terr(e) || t("networks_log_error"), "error"); }
   };
 

@@ -98,11 +98,11 @@ fi
 echo "amuleapi 13-downloads-delete-clear smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
 [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
 
 GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$GUEST_PASS\"}" "$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
+	-d "{\"password\":\"$GUEST_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
 HAVE_GUEST=0
 [ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ] && HAVE_GUEST=1
 
@@ -277,8 +277,8 @@ if [ -n "$COMPLETED_HASH" ]; then
 	_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
 		"$HOST/api/v0/downloads/$COMPLETED_HASH"
 	_assert_status 409 "DELETE /downloads/{completed} → 409"
-	_assert_json_eq '.error.code' completed_use_clear_completed \
-		'DELETE on completed .error.code == completed_use_clear_completed'
+	_assert_json_eq '.error.code' download_completed \
+		'DELETE on completed .error.code == download_completed'
 
 	# clear_completed {hash:completed} → 200, exactly 1 cleared.
 	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \

@@ -100,10 +100,10 @@ function Shell({ role, onLogout }) {
 }
 
 // Persistent alerts from the one-shot GET /version fetch, both linking to About:
-//   - version mismatch: amuleapi's build (amule_version) differs from the
+//   - version mismatch: amuleapi's build (amuleapi_version) differs from the
 //     connected amuled (daemon_version) — a config mismatch a toast would miss.
 //   - update available: the daemon's version check found a newer release
-//     (update.check_enabled && update.update_available).
+//     (update.check_enabled && update.available).
 // Lives in Shell so a dismiss sticks for the session; each row dismisses on its
 // own. daemon_version is empty when EC isn't connected; skip mismatch then.
 function VersionBanner() {
@@ -117,10 +117,10 @@ function VersionBanner() {
     api.get("version")
       .then((v) => {
         if (!alive) return;
-        if (v.daemon_version && v.amule_version !== v.daemon_version) {
-          setMismatch({ ui: v.amule_version, daemon: v.daemon_version });
+        if (v.daemon_version && v.amuleapi_version !== v.daemon_version) {
+          setMismatch({ ui: v.amuleapi_version, daemon: v.daemon_version });
         }
-        if (v.update && v.update.check_enabled && v.update.update_available === true) {
+        if (v.update && v.update.check_enabled && v.update.available === true) {
           setUpdate({ version: v.update.latest_version });
         }
       })

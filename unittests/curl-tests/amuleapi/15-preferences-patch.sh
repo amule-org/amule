@@ -83,11 +83,11 @@ fi
 echo "amuleapi 15-preferences-patch smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
 [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
 
 GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$GUEST_PASS\"}" "$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
+	-d "{\"password\":\"$GUEST_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
 HAVE_GUEST=0
 [ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ] && HAVE_GUEST=1
 
@@ -348,7 +348,9 @@ else
 	echo "    info: daemon built without mmap — exercising the 409 capability gate"
 	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
 		-d '{"files":{"mmap_enabled":true}}' "$HOST/api/v0/preferences"
-	_assert_status 409 "PATCH files.mmap_enabled on non-mmap daemon → 409 conflict"
+	_assert_status 409 "PATCH files.mmap_enabled on non-mmap daemon → 409"
+	_assert_json_eq '.error.code' option_not_supported \
+		'the 409 names option_not_supported, not a bare conflict'
 fi
 
 # --- Proxy: readable fields present, round-trip, write-only password. -----

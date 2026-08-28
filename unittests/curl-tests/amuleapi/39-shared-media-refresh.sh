@@ -3,10 +3,10 @@
 # amuleapi 39-shared-media-refresh — re-extracting media metadata (issue #1079).
 #
 # Wire contract:
-#   POST /shared/media/refresh          → 202 { scope:"all",  queued }
-#   POST /shared/{hash}/media/refresh   → 202 { scope:"file", queued }
+#   POST /shared/media/refresh          → 202 { scope:"all",  queued_file_count }
+#   POST /shared/{hash}/media/refresh   → 202 { scope:"file", queued_file_count }
 #
-# `queued` counts files ACCEPTED for probing, not files that produced
+# `queued_file_count` counts files ACCEPTED for probing, not files that produced
 # metadata: the scheduler drops anything that is not audio/video by
 # extension, is an incomplete download, or is missing on disk. Nothing has
 # been extracted when the response returns -- the probes run on amuled's
@@ -68,7 +68,7 @@ echo "amuleapi 39-shared-media-refresh smoke @ $HOST"
 
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
+	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
 [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || _die "login failed"
 
 # --- 1. Whole-share refresh. ---------------------------------------
@@ -98,11 +98,11 @@ if [ "$CURL_STATUS" = "503" ]; then
 	exit 1
 fi
 _assert_status 202 "POST /shared/media/refresh → 202 Accepted"
-# `scope` and `queued` stay: `queued` is a real count of what the scheduler
+# `scope` and the count stay: it is a real count of what the scheduler
 # accepted, which no later read reports. `ok` is gone; the 202 carried it.
 _assert_json_eq '. | has("ok")' false 'whole-share refresh has no constant ok field'
 _assert_json_eq '.scope'         all   'whole-share refresh reports scope=all'
-_assert_json_eq '.queued | type' number 'queued is numeric'
+_assert_json_eq '.queued_file_count | type' number 'queued_file_count is numeric'
 
 # --- 2. Method + auth gating. --------------------------------------
 _curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/shared/media/refresh"
@@ -112,7 +112,7 @@ _assert_status 401 "POST without a token → 401"
 
 GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"${GUEST_PASS}\"}" \
-	"$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
+	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
 if [ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ]; then
 	_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" "$HOST/api/v0/shared/media/refresh"
 	_assert_status 403 "POST as guest → 403 (refresh is admin-only)"
