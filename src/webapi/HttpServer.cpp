@@ -235,7 +235,21 @@ std::atomic<int> g_streaming_session_count{ 0 };
 //
 // Over the cap the transport answers 503 + Retry-After, exactly as the SSE
 // dispatch refuses a 33rd subscriber.
-constexpr int kMaxConcurrentFileResponses = 6;
+//
+// Six is the right DEFAULT and the wrong ceiling. The reasoning above is a
+// single-spindle one, and it is also a per-address one that a reverse proxy
+// erases: behind nginx every client arrives from one remote_addr, so this is a
+// global budget with no per-user fairness in it. A NAS with an SSD and four
+// household devices wants more; a Pi serving off the same USB disk it downloads
+// to may want less. So the number is `[Streaming]/MaxConcurrentFileResponses`
+// in amuleapi.conf, defaulting here.
+constexpr int kDefaultMaxConcurrentFileResponses = 6;
+// Written once by SetMaxConcurrentFileResponses before Start() binds the
+// listener, and only read afterwards. Atomic rather than plain int because the
+// reader is the io_context thread while the writer is whatever thread
+// configured the server; the ordering is established by the listener not
+// existing yet, but the object still has to be race-free to be well-defined.
+std::atomic<int> g_max_concurrent_file_responses{ kDefaultMaxConcurrentFileResponses };
 std::atomic<int> g_file_response_count{ 0 };
 
 // Largest request header block we accept. The read buffer below is sized
@@ -1223,7 +1237,7 @@ private:
 			// the OLD value, so the slot is ours iff that value was
 			// strictly below the cap; otherwise roll back and refuse.
 			const int prior = g_file_response_count.fetch_add(1, std::memory_order_acq_rel);
-			if (prior >= kMaxConcurrentFileResponses) {
+			if (prior >= g_max_concurrent_file_responses.load(std::memory_order_relaxed)) {
 				g_file_response_count.fetch_sub(1, std::memory_order_acq_rel);
 				WriteFileTransportError(503,
 					"file_responses_exhausted",
@@ -1277,6 +1291,18 @@ private:
 		if (resp.headers.find("Connection") == resp.headers.end()) {
 			out.set(http::field::connection, "close");
 		}
+		// Same opt-out the SSE head sets, for the mirror-image reason. nginx
+		// buffers proxied responses by default and spools anything larger
+		// than `proxy_buffers` to disk, up to `proxy_max_temp_file_size` --
+		// 1 GB out of the box. On this path that means the proxy writes a
+		// second copy of the file to its own disk before the client sees the
+		// first byte, which both delays the response and moves the I/O cost
+		// this transport was built to avoid onto the proxy host. Set here
+		// rather than by the handler because it is a property of streaming a
+		// large body off disk, not of one route: any future file-serving
+		// endpoint inherits it. Written before the handler's own header pass
+		// below, so a handler that has a reason to buffer can still override.
+		out.set("X-Accel-Buffering", "no");
 		if (!resp.content_type.empty()) {
 			out.set(http::field::content_type, resp.content_type);
 		}
@@ -1706,6 +1732,17 @@ CHttpServer::~CHttpServer()
 // five anyway -- exactly the four carrying a default argument, including the
 // two this change never touched -- so the suppression covers the whole list
 // rather than singling out the two whose line numbers happened to move.
+void CHttpServer::SetMaxConcurrentFileResponses(int max_responses)
+{
+	// Silently ignoring a bad value rather than clamping it: the config
+	// layer has already rejected everything outside the sane band and fallen
+	// back to the default, so anything that still gets here is a programming
+	// error, and the default is a better answer to that than zero.
+	if (max_responses > 0) {
+		g_max_concurrent_file_responses.store(max_responses, std::memory_order_relaxed);
+	}
+}
+
 // NOLINTBEGIN(performance-unnecessary-value-param)
 bool CHttpServer::Start(const std::string &bind_address,
 	unsigned port,

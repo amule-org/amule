@@ -87,6 +87,71 @@ TEST(AmuleApiConfig, FreshLoadProducesStreamingDefaults)
 	CAmuleApiConfig cfg;
 	ASSERT_TRUE(cfg.Load(dir));
 	ASSERT_EQUALS(static_cast<unsigned>(16384), cfg.StreamingCfg().event_bus_ring_capacity);
+	ASSERT_EQUALS(static_cast<unsigned>(6), cfg.StreamingCfg().max_concurrent_file_responses);
+}
+
+// Hand-writes an amuleapi.conf carrying one `[Streaming]` line, at the 0600
+// Load() insists on, and reports what the parser made of the file-response cap.
+// The dir is created first so the first-run path can't get in ahead and write
+// the defaults we are trying to override.
+unsigned LoadedFileResponseCap(const char *tag, const char *streaming_line)
+{
+	// Not MakeTmpDir: that one is a member of the DECLARE block and these
+	// helpers live outside it. Same naming scheme, same straggler cleanup.
+	wxString dir;
+	dir.Printf("%s/amuleapi-cfg-test-%s-%ld",
+		wxStandardPaths::Get().GetTempDir(),
+		tag,
+		static_cast<long>(::wxGetProcessId()));
+	::wxRemoveFile(dir + "/amuleapi-jwt-secret");
+	::wxRemoveFile(dir + "/amuleapi-passwords");
+	::wxRemoveFile(dir + "/amuleapi.conf");
+	::wxRmdir(dir);
+	::wxMkdir(dir, 0700);
+
+	const std::string conf = std::string("[Server]\nBindAddress=127.0.0.1\nPort=4713\n"
+					     "\n[Streaming]\n") +
+				 streaming_line + "\n";
+	wxFile f(dir + "/amuleapi.conf", wxFile::write);
+	f.Write(conf.c_str(), conf.size());
+	f.Close();
+#ifndef _WIN32
+	::chmod(std::string((dir + "/amuleapi.conf").utf8_str()).c_str(), S_IRUSR | S_IWUSR);
+#endif
+
+	CAmuleApiConfig cfg;
+	if (!cfg.Load(dir)) {
+		return 0;
+	}
+	return cfg.StreamingCfg().max_concurrent_file_responses;
+}
+
+TEST(AmuleApiConfig, FileResponseCapIsConfigurable)
+{
+	// The point of the whole option: 6 is a default, not a ceiling. A NAS
+	// with several devices behind one proxy address raises it; a Pi serving
+	// off the disk it downloads to lowers it.
+	ASSERT_EQUALS(
+		static_cast<unsigned>(24), LoadedFileResponseCap("cap-24", "MaxConcurrentFileResponses=24"));
+	ASSERT_EQUALS(
+		static_cast<unsigned>(1), LoadedFileResponseCap("cap-1", "MaxConcurrentFileResponses=1"));
+}
+
+TEST(AmuleApiConfig, InvalidFileResponseCapFallsBackToDefault)
+{
+	// Every one of these has to land on 6 rather than on itself. Zero and a
+	// negative would close the route outright; the four-digit value would
+	// trade away the bounded-RSS property the streaming path exists for;
+	// the non-numeric one is what a comment or a stray unit looks like to
+	// wxFileConfig.
+	ASSERT_EQUALS(
+		static_cast<unsigned>(6), LoadedFileResponseCap("cap-zero", "MaxConcurrentFileResponses=0"));
+	ASSERT_EQUALS(
+		static_cast<unsigned>(6), LoadedFileResponseCap("cap-neg", "MaxConcurrentFileResponses=-4"));
+	ASSERT_EQUALS(static_cast<unsigned>(6),
+		LoadedFileResponseCap("cap-huge", "MaxConcurrentFileResponses=100000"));
+	ASSERT_EQUALS(static_cast<unsigned>(6),
+		LoadedFileResponseCap("cap-junk", "MaxConcurrentFileResponses=lots"));
 }
 
 TEST(AmuleApiConfig, GeneratedJwtSecretIs32Bytes)

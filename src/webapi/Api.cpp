@@ -9710,13 +9710,13 @@ namespace
 std::vector<std::string> ShareRootsFromPrefs(const webapi::PreferencesSnapshot &p)
 {
 	std::vector<std::string> roots;
-	roots.reserve(p.directories.shared.size() + 1);
-	for (const std::string &d : p.directories.shared) {
+	roots.reserve(p.directories.shared_paths.size() + 1);
+	for (const std::string &d : p.directories.shared_paths) {
 		if (!d.empty())
 			roots.push_back(d);
 	}
-	if (!p.directories.incoming.empty()) {
-		roots.push_back(p.directories.incoming);
+	if (!p.directories.incoming_path.empty()) {
+		roots.push_back(p.directories.incoming_path);
 	}
 	return roots;
 }

@@ -194,11 +194,11 @@ if [ ! -d "$AMULE_SHARED_DIR" ] || [ ! -w "$AMULE_SHARED_DIR" ]; then
 fi
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
 [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
 
 GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$GUEST_PASS\"}" "$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
+	-d "{\"password\":\"$GUEST_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
 HAVE_GUEST=0
 [ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ] && HAVE_GUEST=1
 
@@ -247,7 +247,7 @@ done
 	|| _die "fixture $FIXTURE_NAME planted in $AMULE_SHARED_DIR but never appeared in /shared"
 
 SERVED_SIZE=$(printf '%s' "$CURL_BODY" \
-	| jq -r --arg n "$FIXTURE_NAME" '.shared[] | select(.name == $n) | .size' | head -1)
+	| jq -r --arg n "$FIXTURE_NAME" '.shared[] | select(.name == $n) | .size_bytes' | head -1)
 _assert_eq "$FIXTURE_SIZE" "$SERVED_SIZE" "/shared reports the fixture at its on-disk size"
 
 if [ "$HAVE_ODD" = "1" ]; then
@@ -315,6 +315,11 @@ _assert_hdr_eq "X-Content-Type-Options" "nosniff" "X-Content-Type-Options: nosni
 _assert_hdr_eq "Content-Security-Policy" "default-src 'none'; sandbox" \
 	"Content-Security-Policy sandboxes the response"
 _assert_hdr_eq "Accept-Ranges" "bytes" "Accept-Ranges: bytes advertises range support"
+# nginx buffers a proxied response by default and spools it to its own disk up
+# to proxy_max_temp_file_size (1 GB), which would delay the first byte and copy
+# the whole file onto the proxy host. The transport opts out on every file
+# response, the same way the SSE head does.
+_assert_hdr_eq "X-Accel-Buffering" "no" "200 carries X-Accel-Buffering: no (proxy must not buffer)"
 _assert_hdr_eq "Content-Disposition" \
 	"attachment; filename=\"$FIXTURE_NAME\"; filename*=UTF-8''$FIXTURE_NAME" \
 	"Content-Disposition is attachment with both filename forms"
@@ -331,6 +336,8 @@ _curl "${AUTH[@]}" -H "Range: bytes=0-9" "$CONTENT_URL"
 _assert_status 206 "Range: bytes=0-9 → 206"
 _assert_hdr_eq "Content-Range" "bytes 0-9/$FIXTURE_SIZE" "first-ten Content-Range"
 _assert_hdr_eq "Content-Length" "10" "first-ten Content-Length"
+# Set by the transport, not the handler, so a partial response gets it too.
+_assert_hdr_eq "X-Accel-Buffering" "no" "206 carries X-Accel-Buffering: no as well"
 head -c 10 "$FIXTURE_PATH" > "$CURL_HEAD_FILE.expect10"
 if cmp -s "$CURL_HEAD_FILE.expect10" "$CURL_BODY_FILE"; then
 	_pass "bytes=0-9 returns the first ten bytes of the file"
@@ -527,25 +534,33 @@ else
 fi
 
 # --- 10. Concurrent-file-response cap. -------------------------------
-# The transport caps concurrent file responses (kMaxConcurrentFileResponses,
-# HttpServer.cpp) because each one pins a file descriptor and a streaming
-# buffer for as long as the peer takes to drain it. Over the cap the answer
-# is an honest 503 with a Retry-After, not a queue that grows without
-# bound. Probed on raw sockets that read only the status line and then hold
-# the connection: a curl fan-out would finish each transfer too quickly to
-# overlap reliably.
+# The transport caps concurrent file responses because each one pins a file
+# descriptor and a streaming buffer for as long as the peer takes to drain
+# it. Over the cap the answer is an honest 503 with a Retry-After, not a
+# queue that grows without bound. Probed on raw sockets that read only the
+# status line and then hold the connection: a curl fan-out would finish each
+# transfer too quickly to overlap reliably.
+#
+# The cap is amuleapi.conf[Streaming]/MaxConcurrentFileResponses (default 6),
+# so the fan-out is sized from it rather than hard-coded at 9 -- a run against
+# a daemon configured with a different value proves the SAME property instead
+# of failing for the wrong reason. Set FILE_RESPONSE_CAP to match the conf.
+FILE_RESPONSE_CAP=${FILE_RESPONSE_CAP:-6}
+CAP_OVERFLOW=3
+CAP_TOTAL=$((FILE_RESPONSE_CAP + CAP_OVERFLOW))
 if ! command -v python3 >/dev/null 2>&1; then
 	_skip "concurrent-file-response cap (python3 unavailable)"
 else
-	CAP_RESULT=$(python3 - "$HOST" "/api/v0/shared/$TEST_HASH/content" "$ADMIN_TOKEN" <<'PYEOF'
+	CAP_RESULT=$(python3 - "$HOST" "/api/v0/shared/$TEST_HASH/content" "$ADMIN_TOKEN" "$CAP_TOTAL" <<'PYEOF'
 import socket, sys
 hostport, path, token = sys.argv[1], sys.argv[2], sys.argv[3]
+total = int(sys.argv[4])
 host, _, port = hostport.partition(":")
 host = host or "localhost"
 port = int(port or 4713)
 socks, statuses, bodies = [], [], []
 try:
-    for _ in range(9):
+    for _ in range(total):
         s = socket.create_connection((host, port), timeout=30)
         s.sendall((
             "GET %s HTTP/1.1\r\nHost: x\r\nAuthorization: Bearer %s\r\n"
@@ -585,11 +600,12 @@ print("%d %d %s %s" % (ok, busy, retry_after, code))
 PYEOF
 )
 	read -r cap_ok cap_busy cap_retry cap_code <<<"$CAP_RESULT"
-	if [ "$cap_ok" -gt 0 ] && [ "$cap_busy" -gt 0 ] && [ $((cap_ok + cap_busy)) -eq 9 ]; then
-		_pass "9 simultaneous file requests split into ${cap_ok}x200 + ${cap_busy}x503"
+	if [ "$cap_ok" = "$FILE_RESPONSE_CAP" ] && [ "$cap_busy" = "$CAP_OVERFLOW" ]; then
+		_pass "$CAP_TOTAL simultaneous file requests split into ${cap_ok}x200 + ${cap_busy}x503"
 	else
-		_fail "9 simultaneous file requests hit the concurrency cap" \
-			"got ${cap_ok}x200 + ${cap_busy}x503 out of 9"
+		_fail "$CAP_TOTAL simultaneous file requests split at the configured cap" \
+			"expected ${FILE_RESPONSE_CAP}x200 + ${CAP_OVERFLOW}x503," \
+			"got ${cap_ok}x200 + ${cap_busy}x503 out of $CAP_TOTAL"
 	fi
 	_assert_eq "yes" "$cap_retry" "the over-cap 503 carries a Retry-After header"
 	_assert_eq "file_responses_exhausted" "$cap_code" \

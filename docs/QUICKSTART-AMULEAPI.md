@@ -171,7 +171,10 @@ Either way you need a domain name pointing at the machine, with ports 80 and
 443 reachable — that is how the certificate authority checks you own the name.
 Event streams need no extra buffering or timeout settings: amuleapi already
 sends the header that turns nginx buffering off, and its 15-second heartbeat
-keeps idle connections from being dropped.
+keeps idle connections from being dropped. File downloads from
+`/shared/{hash}/content` send the same header, so nginx streams them straight
+through instead of spooling a gigabyte to its own disk first. A proxy that
+ignores `X-Accel-Buffering` wants `proxy_buffering off;` in that location.
 
 On a home network, with no domain name, an SSH tunnel does the same job with
 no certificate at all:
@@ -211,7 +214,18 @@ TokenLockoutSeconds=300
 
 [Streaming]
 EventBusRingCapacity=16384
+MaxConcurrentFileResponses=6   ; simultaneous downloads from /shared/{hash}/content
 ```
+
+`MaxConcurrentFileResponses` is how many clients can be pulling file content
+out of amuleapi at once; over it, the extra requests get a `503` telling them
+to retry rather than joining an unbounded queue. It accepts `1` to `256` and
+falls back to `6` for anything else. Six is sized for one mechanical disk that
+aMule is already hashing and uploading from — raise it on an SSD-backed box
+with several devices in the house, lower it on a Pi that downloads to the same
+USB disk it serves from. Note that it is a budget for the whole machine, not
+per client: behind a reverse proxy every request arrives from one address, so
+there is nothing to divide it up by.
 
 `--bind`, `--http-port`, `--host`, `--port` and `--config-dir` override the
 matching settings for one run.

@@ -222,6 +222,19 @@ public:
 		StreamingPreflight streaming_preflight = nullptr,
 		CorsStamper cors_stamper = nullptr);
 
+	// Process-wide cap on concurrent file-backed responses
+	// (`Response::file`), from `[Streaming]/MaxConcurrentFileResponses`.
+	// Zero or negative is ignored, so a caller that has not read a
+	// configuration file cannot accidentally close the route.
+	//
+	// Must be called BEFORE Start(): the value is published without
+	// synchronisation beyond the atomic itself, and what makes that safe is
+	// that no connection -- and therefore no reader -- exists yet. A setter
+	// rather than an eighth Start() parameter, five of which already carry
+	// defaults; this is a tunable, not part of the wiring a caller must get
+	// right to have a working server.
+	static void SetMaxConcurrentFileResponses(int max_responses);
+
 	// Stops the io_context, joins the thread. Safe to call from any
 	// thread; Start() must have succeeded.
 	void Stop();
