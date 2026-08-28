@@ -12,7 +12,7 @@
 #   * DELETE /logs/server_info              — clear MOTD log + invalidate lazy cache
 #   * POST   /downloads {"links":[...]}    — array body, the only spelling
 #   * POST   /networks/disconnect          — `{"network":"ed2k"|"kad"|"both"}` selector
-#   * GET    /clients?filter=uploads|downloads|active
+#   * GET    /clients?activity=uploading|downloading|active
 #   * GET    /events?channels=<csv>        — subscribe to a subset of event types
 #
 # All log-mutating tests verify that a *fast* GET immediately after the
@@ -324,54 +324,54 @@ fi
 # Get baseline first
 TOTAL_CLIENTS=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients" \
 	| jq '.clients | length')
-UP_CLIENTS=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients?filter=uploads" \
+UP_CLIENTS=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients?activity=uploading" \
 	| jq '.clients | length')
-DOWN_CLIENTS=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients?filter=downloads" \
+DOWN_CLIENTS=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients?activity=downloading" \
 	| jq '.clients | length')
-ACTIVE_CLIENTS=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients?filter=active" \
+ACTIVE_CLIENTS=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients?activity=active" \
 	| jq '.clients | length')
 if [ "$UP_CLIENTS" -le "$TOTAL_CLIENTS" ] 2>/dev/null \
    && [ "$DOWN_CLIENTS" -le "$TOTAL_CLIENTS" ] 2>/dev/null \
    && [ "$ACTIVE_CLIENTS" -le "$TOTAL_CLIENTS" ] 2>/dev/null; then
-	_pass "/clients filters: total=$TOTAL_CLIENTS up=$UP_CLIENTS down=$DOWN_CLIENTS active=$ACTIVE_CLIENTS (each ≤ total)"
+	_pass "/clients activity: total=$TOTAL_CLIENTS up=$UP_CLIENTS down=$DOWN_CLIENTS active=$ACTIVE_CLIENTS (each ≤ total)"
 else
-	_fail "clients filter sizing" \
+	_fail "clients activity sizing" \
 		"total=$TOTAL_CLIENTS up=$UP_CLIENTS down=$DOWN_CLIENTS active=$ACTIVE_CLIENTS"
 fi
-# `active` = |uploads ∪ downloads|, so it sits in
+# `active` = |uploading ∪ downloading|, so it sits in
 # [max(up, down), up+down]. The lower bound holds because every
-# uploads-or-downloads-only peer is in active; the upper bound holds
-# because a peer simultaneously in both states (upload_state=uploading
+# uploading-or-downloading-only client is in active; the upper bound holds
+# because a client simultaneously in both states (upload_state=uploading
 # AND download_state=downloading) gets counted once in active but
 # twice in (up + down). Exact equality is intentionally not asserted
-# because the intersection count is unobservable from filter results
+# because the intersection count is unobservable from activity results
 # alone.
 EXP_UPPER=$((UP_CLIENTS + DOWN_CLIENTS))
 if [ "$ACTIVE_CLIENTS" -ge "$UP_CLIENTS" ] 2>/dev/null \
    && [ "$ACTIVE_CLIENTS" -ge "$DOWN_CLIENTS" ] 2>/dev/null \
    && [ "$ACTIVE_CLIENTS" -le "$EXP_UPPER" ] 2>/dev/null; then
-	_pass "/clients?filter=active sits in [max(up,down), up+down]"
+	_pass "/clients?activity=active sits in [max(up,down), up+down]"
 else
 	_fail "clients active span" \
 		"active=$ACTIVE_CLIENTS up=$UP_CLIENTS down=$DOWN_CLIENTS (expected max..sum)"
 fi
-# Verify every entry in /clients?filter=uploads truly has upload_state=uploading
-BAD=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients?filter=uploads" \
+# Verify every entry in /clients?activity=uploading truly has upload_state=uploading
+BAD=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients?activity=uploading" \
 	| jq -r '.clients[] | select(.upload_state != "uploading") | .ecid' \
 	| head -1)
 if [ -z "$BAD" ]; then
-	_pass "/clients?filter=uploads only returns upload_state=uploading peers"
+	_pass "/clients?activity=uploading only returns upload_state=uploading clients"
 else
-	_fail "clients uploads filter content" \
+	_fail "clients activity=uploading content" \
 		"client_ecid $BAD has wrong upload_state"
 fi
 # Bogus filter → 400
 RC=$(curl -s -o /dev/null -w "%{http_code}" "${H_AUTH[@]}" \
-	"$HOST/api/v0/clients?filter=alphabetical")
+	"$HOST/api/v0/clients?activity=alphabetical")
 if [ "$RC" = "400" ]; then
-	_pass "/clients?filter=<bogus> → 400"
+	_pass "/clients?activity=<bogus> → 400"
 else
-	_fail "clients bogus filter" "expected 400, got $RC"
+	_fail "clients bogus activity" "expected 400, got $RC"
 fi
 
 # --- 9a-bis. Base transfer-filename fields on the LIST object -----

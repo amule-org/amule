@@ -2482,7 +2482,8 @@ CHttpServer::Response CApiDispatcher::HandleAuthPasswordsPatch(const CHttpServer
 		has_guest_access_enabled = (it != obj.end());
 		if (has_guest_access_enabled) {
 			if (!it->second.is<bool>()) {
-				return ErrorResponse(400, "bad_request", "`guest_access_enabled` must be a boolean");
+				return ErrorResponse(
+					400, "bad_request", "`guest_access_enabled` must be a boolean");
 			}
 			guest_access_enabled = it->second.get<bool>();
 		}
@@ -4362,40 +4363,46 @@ CHttpServer::Response CApiDispatcher::HandleClients(const CHttpServer::Request &
 	if (!a.ok)
 		return a.rejection;
 
-	// Optional `?filter=uploads | downloads | active` query parameter.
-	// `uploads`   → peers actively transferring TO us (upload_state ==
-	//              "uploading"). Subset that maps to the legacy
-	//              amuleweb "Uploads" page.
-	// `downloads` → peers we're actively pulling FROM (download_state
-	//              == "downloading").
-	// `active`    → union of the two; everything currently moving
-	//              bytes either direction.
-	// No filter → every peer the daemon knows about (default, v0.1
-	// shape).
-	std::string filter;
+	// Optional `?activity=uploading | downloading | active` query parameter.
+	// `activity`, not `filter`: "filter" named the mechanism rather than the
+	// axis being filtered on, and every list endpoint filters somehow. The
+	// values are client states, so they are spelled the way the client's own
+	// `upload_state` / `download_state` spell them rather than as plural
+	// nouns for the transfers.
+	// `uploading`   → clients actively transferring TO us (upload_state ==
+	//                "uploading"). Subset that maps to the legacy
+	//                amuleweb "Uploads" page.
+	// `downloading` → clients we're actively pulling FROM (download_state
+	//                == "downloading").
+	// `active`      → union of the two; everything currently moving
+	//                bytes either direction.
+	// No activity → every client the daemon knows about (the default).
+	std::string activity;
 	{
 		std::string query;
 		const std::size_t q = req.target.find('?');
 		if (q != std::string::npos)
 			query = req.target.substr(q + 1);
 		const auto qmap = web_api_path::ParseQuery(query);
-		const auto it = qmap.find("filter");
+		const auto it = qmap.find("activity");
 		if (it != qmap.end())
-			filter = it->second;
+			activity = it->second;
 	}
-	if (!filter.empty() && filter != "uploads" && filter != "downloads" && filter != "active") {
-		return ErrorResponse(
-			400, "bad_request", "`filter` must be one of \"uploads\", \"downloads\", \"active\"");
+	if (!activity.empty() && activity != "uploading" && activity != "downloading" &&
+		activity != "active") {
+		return ErrorResponse(400,
+			"bad_request",
+			"`activity` must be one of \"uploading\", \"downloading\", \"active\"");
 	}
 
 	auto clients = m_state.Clients();
-	if (!filter.empty()) {
+	if (!activity.empty()) {
 		auto matches = [&](const webapi::ClientSnapshot &c) {
 			const bool up = (c.upload_state == "uploading");
 			const bool down = (c.download_state == "downloading");
-			if (filter == "uploads")
+			if (activity == "uploading")
 				return up;
-			if (filter == "downloads")
+			if (activity == "downloading")
 				return down;
 			/* active */ return up || down;
 		};
@@ -4950,9 +4957,8 @@ CHttpServer::Response CApiDispatcher::HandleVersionCheck(const CHttpServer::Requ
 	if (failed) {
 		// The only expected failure past the gate above is the daemon's
 		// throttle. Report an English code; the daemon's message is not relayed.
-		return ErrorResponse(429,
-			"rate_limited",
-			"version check was throttled by the daemon; try again shortly");
+		return ErrorResponse(
+			429, "rate_limited", "version check was throttled by the daemon; try again shortly");
 	}
 
 	// Accepted. The check runs asynchronously on the daemon; the result

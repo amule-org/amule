@@ -252,7 +252,7 @@ Everything under `/api/v0/`, with full details in
 - **Downloads** — the queue: add, pause, cancel, clear completed, plus
   comments, filenames and alternate sources.
 - **Shared files** — list, verify, and the shared folders.
-- **Peers** — who you are connected to, and browsing their shared files.
+- **Clients** — who you are connected to, and browsing their shared files.
 - **Servers** — the ed2k server list, connecting, and refreshing it.
 - **Network** — connect and disconnect ed2k and Kad.
 - **Search** — start a search, read results, download one.
