@@ -294,6 +294,24 @@ void ApplySearchUnion(const CECPacket *resp,
 	std::map<std::uint32_t, std::uint32_t> &owner,
 	std::uint32_t default_sid = 0);
 
+// Apply one per-search EC_DETAIL_FULL reply to a single slot.
+//
+// `replace` swaps the slot's results for what the daemon reports now instead
+// of merging onto them, which is what a re-seed after a lost union reply
+// needs: a FULL reply carries no tombstones, so a merge cannot express a row
+// the daemon has dropped. It is also the only mode that discharges
+// SearchSlot::needs_resync -- a merge leaves exactly the rows the flag exists
+// to clear, so clearing it there would strand them permanently.
+//
+// Split out of FetchOneSearchFull so the bookkeeping is reachable from the
+// tests: RefresherTick.cpp is kept out of the test target for its CamuleapiApp
+// dependency, and this is where the resync contract actually lives.
+void ApplySearchFullReply(const CECPacket *resp,
+	std::map<std::uint32_t, SearchSlot> &slots,
+	std::map<std::uint32_t, std::uint32_t> &owner,
+	std::uint32_t search_id,
+	bool replace);
+
 // Search-progress derivation from the EC_TAG_SEARCH_LIFECYCLE_* tags.
 // `lifecycle_state` is the uint8 enum value (0=idle, 1=running,
 // 2=finished). `pct_now` is the EC_TAG_SEARCH_LIFECYCLE_PERCENT value —

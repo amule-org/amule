@@ -409,7 +409,12 @@ std::vector<std::uint32_t> CState::SearchesNeedingResync() const
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
 	std::vector<std::pair<std::uint64_t, std::uint32_t>> pending;
 	for (const auto &kv : m_searches) {
-		if (kv.second.needs_resync)
+		// Same exemption the flag's writer applies, and for the same reason:
+		// a slot detached after it was flagged has had its search dropped by
+		// the daemon, so a full re-read would only come back expired. Asking
+		// anyway costs a roundtrip per slot, and a replace-mode apply against
+		// a detached slot would clear the results the detach exists to keep.
+		if (kv.second.needs_resync && !kv.second.detached)
 			pending.emplace_back(kv.second.seq, kv.first);
 	}
 	std::sort(pending.begin(), pending.end());

@@ -2972,6 +2972,91 @@ TEST(Refresher, SearchUnionStillIndexesAResultItAccepts)
 	ASSERT_EQUALS(std::string("kept.bin"), slots[kSid].results[73].name);
 }
 
+TEST(Refresher, AMergingFullReplyLeavesTheResyncFlagSet)
+{
+	// The flag says "a union reply was lost, so this slot may hold rows the
+	// daemon has already dropped". Only a replace answers that: a merge
+	// re-reads what the daemon still has and cannot remove what it does not.
+	// Clearing it on a merge strands those rows for the life of the slot --
+	// the tombstones went out in the reply that was lost, and the daemon
+	// never mentions them again. The HTTP refresh path (RefreshSearchIfStale)
+	// takes exactly this mode, and it serves the same non-active slots the
+	// flag is set on.
+	std::map<std::uint32_t, SearchSlot> slots;
+	std::map<std::uint32_t, std::uint32_t> owner;
+	SearchSlot &slot = slots[kSid];
+	slot.needs_resync = true;
+	slot.raw[80].ecid = 80;
+	slot.raw[80].name = "dropped-by-the-daemon.bin";
+	owner[80] = kSid;
+
+	// A FULL reply that no longer carries ECID 80. No tombstone: a FULL reply
+	// has none to carry.
+	CECPacket resp(EC_OP_SEARCH_RESULTS);
+	CECTag sf(EC_TAG_SEARCHFILE, static_cast<std::uint32_t>(81));
+	sf.AddTag(CECTag(EC_TAG_PARTFILE_NAME, std::string("still-here.bin")));
+	resp.AddTag(sf);
+	ApplySearchFullReply(&resp, slots, owner, kSid, /*replace=*/false);
+
+	// The stale row survives the merge, which is precisely why the obligation
+	// must survive with it.
+	ASSERT_TRUE(slots[kSid].raw.find(80) != slots[kSid].raw.end());
+	ASSERT_TRUE(slots[kSid].needs_resync);
+}
+
+TEST(Refresher, AReplacingFullReplyDropsStaleRowsAndClearsTheFlag)
+{
+	// The re-seed the tick issues. Swapping the rows wholesale is the only
+	// way to express a deletion from a reply that carries no tombstones, and
+	// having done it the slot is authoritative again.
+	std::map<std::uint32_t, SearchSlot> slots;
+	std::map<std::uint32_t, std::uint32_t> owner;
+	SearchSlot &slot = slots[kSid];
+	slot.needs_resync = true;
+	slot.raw[80].ecid = 80;
+	slot.raw[80].name = "dropped-by-the-daemon.bin";
+	slot.results = slot.raw;
+	owner[80] = kSid;
+
+	CECPacket resp(EC_OP_SEARCH_RESULTS);
+	CECTag sf(EC_TAG_SEARCHFILE, static_cast<std::uint32_t>(81));
+	sf.AddTag(CECTag(EC_TAG_PARTFILE_NAME, std::string("still-here.bin")));
+	resp.AddTag(sf);
+	ApplySearchFullReply(&resp, slots, owner, kSid, /*replace=*/true);
+
+	ASSERT_TRUE(slots[kSid].raw.find(80) == slots[kSid].raw.end());
+	ASSERT_TRUE(slots[kSid].results.find(80) == slots[kSid].results.end());
+	// The index entry goes with the row, or a later result reusing the ECID
+	// resolves through it.
+	ASSERT_TRUE(owner.find(80) == owner.end());
+	ASSERT_EQUALS(std::string("still-here.bin"), slots[kSid].results[81].name);
+	ASSERT_TRUE(!slots[kSid].needs_resync);
+}
+
+TEST(Refresher, AnEmptyReplacingReplyClearsTheFoldedView)
+{
+	// The daemon reporting nothing left is a real answer, and the one an
+	// empty-reply merge cannot express: ApplySearchUnion refolds only slots
+	// it touched, so without the unconditional refold the stale fold would
+	// outlive the rows it was built from.
+	std::map<std::uint32_t, SearchSlot> slots;
+	std::map<std::uint32_t, std::uint32_t> owner;
+	SearchSlot &slot = slots[kSid];
+	slot.needs_resync = true;
+	slot.raw[80].ecid = 80;
+	slot.raw[80].name = "gone.bin";
+	slot.results = slot.raw;
+	owner[80] = kSid;
+
+	CECPacket resp(EC_OP_SEARCH_RESULTS);
+	ApplySearchFullReply(&resp, slots, owner, kSid, /*replace=*/true);
+
+	ASSERT_TRUE(slots[kSid].raw.empty());
+	ASSERT_TRUE(slots[kSid].results.empty());
+	ASSERT_TRUE(owner.empty());
+	ASSERT_TRUE(!slots[kSid].needs_resync);
+}
+
 TEST(Refresher, SearchProgressUnionParsesEveryEntry)
 {
 	CECPacket resp(EC_OP_SEARCH_PROGRESS);

@@ -1983,6 +1983,8 @@ public:
 	// reply carried, and the daemon will not send it again.
 	void MarkAllSearchesNeedResync();
 	// Ids awaiting that re-seed, oldest slot first. Drained by the tick.
+	// Detached slots are excluded, matching MarkAllSearchesNeedResync: one
+	// detached after it was flagged has nothing left to re-seed.
 	std::vector<std::uint32_t> SearchesNeedingResync() const;
 	// Clears the flag for one slot without re-seeding it, for when the daemon
 	// answers that the search is gone.
