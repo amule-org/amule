@@ -609,6 +609,102 @@ curl -s -o /dev/null -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/shared/$PARITY_HASH"
 fi
 
+# --- search_result_updated fires on a held result's mutable fields. -----
+# The window this closes: once a search finishes, search_progress stops, so a
+# subscriber holding its rows has no signal for the fields that can still
+# change. Driven here by starting a download of one hit, which flips
+# already_have / status on the matching search result.
+#
+# Last section in the file: it starts a search on the shared daemon.
+#
+# This file predates the _curl wrapper the other phases use, so it drives
+# curl directly, same as every section above.
+SSE_SEARCH_SID=$(curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"query":"ubuntu"}' "$HOST/api/v0/search" | jq -r '.search_id // empty')
+UPD_HASH=""
+UPD_NAME=""
+UPD_SIZE=""
+UPD_ROW=""
+if [ -n "$SSE_SEARCH_SID" ]; then
+	for _ in $(seq 1 30); do
+		sleep 1
+		UPD_ROW=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" \
+			"$HOST/api/v0/search/$SSE_SEARCH_SID/results" \
+			| jq -c '[.results[] | select(.already_have == false)] | first // empty')
+		UPD_HASH=$(printf '%s' "$UPD_ROW" | jq -r '.hash // empty')
+		UPD_NAME=$(printf '%s' "$UPD_ROW" | jq -r '.name // empty' | sed 's/|/_/g')
+		UPD_SIZE=$(printf '%s' "$UPD_ROW" | jq -r '.size // empty')
+		[ -n "$UPD_HASH" ] && break
+	done
+fi
+if [ -n "$UPD_HASH" ]; then
+	# Subscribe to the search channel only, which also pins that the new event
+	# routes there rather than needing its own channel name.
+	: > "$SSE_OUT"
+	(curl -s -m 20 -N -H "Authorization: Bearer $ADMIN_TOKEN" \
+		"$HOST/api/v0/events?channels=search" >> "$SSE_OUT" 2>&1) &
+	UPD_PID=$!
+	# Wait for the stream to actually be up before provoking the change, or
+	# the frame lands before the subscription and the section flakes.
+	for _ in $(seq 1 60); do
+		[ -s "$SSE_OUT" ] && break
+		sleep 0.25
+	done
+	# Provoke the change by starting a download of the hit. That flips
+	# already_have / status on the search result deterministically and
+	# locally -- the partfile is created on the spot, no peer needed. A Kad
+	# NOTES lookup moves the other half of the comparator but depends on Kad
+	# actually answering, which would make a missing frame ambiguous between
+	# "the event is broken" and "Kad was quiet". This way a missing frame can
+	# only mean the former, so the check below is a real gate.
+	curl -s -o /dev/null -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+		-H "Content-Type: application/json" \
+		-d "{\"links\":[\"ed2k://|file|$UPD_NAME|$UPD_SIZE|$UPD_HASH|/\"]}" \
+		"$HOST/api/v0/downloads"
+	UPD_FRAME=""
+	for _ in $(seq 1 60); do
+		UPD_FRAME=$(grep -A2 "^event: search_result_updated$" "$SSE_OUT" 2>/dev/null \
+			| grep "^data: " | sed 's/^data: //' \
+			| jq -c --arg h "$UPD_HASH" 'select(.hash == $h)' 2>/dev/null | head -1)
+		[ -n "$UPD_FRAME" ] && break
+		sleep 0.25
+	done
+	kill $UPD_PID 2>/dev/null
+	wait $UPD_PID 2>/dev/null
+	if [ -n "$UPD_FRAME" ]; then
+		_pass "search_result_updated fires for a held result whose download state changed"
+		if echo "$UPD_FRAME" | jq -e --argjson s "$SSE_SEARCH_SID" '.search_id == $s' >/dev/null 2>&1; then
+			_pass "search_result_updated carries its own search_id"
+		else
+			_fail "search_result_updated .search_id" "expected $SSE_SEARCH_SID in $UPD_FRAME"
+		fi
+		# Same writer as _added and as the REST entry, so the whole row is
+		# there rather than a delta a client would have to merge blindly.
+		if echo "$UPD_FRAME" | jq -e 'has("name") and has("size") and has("status") and has("kad_comment_search_running")' >/dev/null 2>&1; then
+			_pass "search_result_updated carries the full results-entry shape"
+		else
+			_fail "search_result_updated shape" "$UPD_FRAME"
+		fi
+		# The point of the event: the row now reads as held.
+		if echo "$UPD_FRAME" | jq -e '.already_have == true' >/dev/null 2>&1; then
+			_pass "search_result_updated reports the hit as already_have after the download starts"
+		else
+			_fail "search_result_updated .already_have" "expected true in $UPD_FRAME"
+		fi
+	else
+		_fail "search_result_updated" \
+			"no frame for $UPD_HASH within 15 s of starting a download of it"
+	fi
+	# Leave the daemon as we found it: drop the partfile we planted.
+	curl -s -o /dev/null -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
+		"$HOST/api/v0/downloads/$UPD_HASH" 2>/dev/null
+	curl -s -o /dev/null -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
+		"$HOST/api/v0/search/$SSE_SEARCH_SID" 2>/dev/null
+else
+	echo "    info: no search results available; search_result_updated check skipped"
+fi
+
 # --- Summary. -----------------------------------------------------
 echo
 if [ "$FAIL_COUNT" -eq 0 ]; then

@@ -176,9 +176,18 @@ function openSse() {
   // by hash, nested sources {total, complete}); search_progress carries
   // {state, percent, results, kind} and its terminal frame (state:
   // "finished") is the completion signal. Inert unless a search is active.
-  es.addEventListener("search_result_added", (ev) => {
+  //
+  // search_result_updated carries the identical payload for a row that
+  // changed after it arrived -- a hit you started downloading, or a Kad note
+  // that landed. Both land on the same store key because the view keys by
+  // hash and overwrites, which is exactly the upsert the two events describe
+  // between them; they stay distinct on the wire so a consumer that only
+  // wants additions is not silently given updates too.
+  const onSearchResult = (ev) => {
     try { store.set("search:result", JSON.parse(ev.data)); } catch (_) {}
-  });
+  };
+  es.addEventListener("search_result_added", onSearchResult);
+  es.addEventListener("search_result_updated", onSearchResult);
   es.addEventListener("search_progress", (ev) => {
     try { store.set("search:progress", JSON.parse(ev.data)); } catch (_) {}
   });
