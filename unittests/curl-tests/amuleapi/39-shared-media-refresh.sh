@@ -141,7 +141,7 @@ HASH=
 for CANDIDATE in $(printf '%s' "$CURL_BODY" | jq -r '.shared[0:20][].hash'); do
 	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/shared/$CANDIDATE"
 	FTYPE=$(printf '%s' "$CURL_BODY" | jq -r '.file_type // empty')
-	if [ "$FTYPE" = "audio" ] || [ "$FTYPE" = "videos" ]; then
+	if [ "$FTYPE" = "audio" ] || [ "$FTYPE" = "video" ]; then
 		HASH=$CANDIDATE
 		echo "    info: probing $FTYPE file $HASH"
 		break

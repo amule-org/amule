@@ -631,7 +631,7 @@ TEST(Refresher, SharedPartfileTransitionsOutClearsSharedRole)
 		s.hash = "dddd4444dddd4444dddd4444dddd4444";
 		s.name = "was-sharing.iso";
 		s.is_shared = true;
-		s.shared.xfer_session = 99; // stale stat to verify the reset
+		s.shared.uploaded_bytes_session = 99; // stale stat to verify the reset
 		cache.emplace(70, s);
 	}
 	CECPacket resp(EC_OP_SHARED_FILES);
@@ -647,7 +647,7 @@ TEST(Refresher, SharedPartfileTransitionsOutClearsSharedRole)
 	ASSERT_TRUE(!cache.find(70)->second.is_shared);
 	// Stale upload stats from the prior sharing period must be cleared
 	// so /shared can never re-surface them.
-	ASSERT_EQUALS(static_cast<std::uint64_t>(0), cache.find(70)->second.shared.xfer_session);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(0), cache.find(70)->second.shared.uploaded_bytes_session);
 }
 
 TEST(Refresher, SuppressedSharedFlagPreservesCachedPartfile)
@@ -911,7 +911,7 @@ TEST(Refresher, SharedDetailTagsDecodeIntoSnapshot)
 	ASSERT_EQUALS(std::string("/home/me/Incoming"), s.on_disk_dir);
 	// Upload activity (issue #466) decodes into the shared sub-block.
 	ASSERT_EQUALS(static_cast<std::uint32_t>(51200), s.shared.upload_speed_bps);
-	ASSERT_EQUALS(static_cast<std::uint16_t>(3), s.shared.uploading_count);
+	ASSERT_EQUALS(static_cast<std::uint16_t>(3), s.shared.uploading_client_count);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(1700000500), s.shared.last_upload);
 	ASSERT_EQUALS(static_cast<std::uint16_t>(4), s.shared.hashing_progress);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(1699000000), s.shared.shared_since);
@@ -1694,9 +1694,10 @@ TEST(Refresher, SearchResultStatusAndTypeDecode)
 	const auto it = cache.find(70);
 	ASSERT_TRUE(it != cache.end());
 	ASSERT_EQUALS(std::string("queued"), it->second.status);
-	// GetFiletypeByName's label lowercased — "videos", same tokens as the
-	// shared-detail file_type (issue #417), not a bespoke "video".
-	ASSERT_EQUALS(std::string("videos"), it->second.type);
+	// Normalised from GetFiletypeByName's UI label: singular, snake_case,
+	// and "unknown" rather than "any". Same token set as the shared-detail
+	// file_type, which shares this helper.
+	ASSERT_EQUALS(std::string("video"), it->second.type);
 
 	const auto it2 = cache.find(71);
 	ASSERT_TRUE(it2 != cache.end());
@@ -2614,7 +2615,7 @@ TEST(Refresher, SearchUnionSecondPollKeepsFieldsTheDiffOmits)
 	ASSERT_EQUALS(static_cast<std::uint64_t>(123), it->second.size);
 	ASSERT_EQUALS(std::string("queued"), it->second.status);
 	ASSERT_TRUE(it->second.already_have);
-	ASSERT_EQUALS(std::string("videos"), it->second.type);
+	ASSERT_EQUALS(std::string("video"), it->second.type);
 }
 
 TEST(Refresher, SearchUnionAppliesAStatusChangeOnAFinishedSearch)

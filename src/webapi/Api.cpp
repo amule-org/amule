@@ -2767,14 +2767,18 @@ const std::vector<std::uint16_t> &SharedPartSources(const webapi::FileSnapshot &
 // `parts` for the shared detail endpoint: one `{sources}` per part, in
 // file order, always exactly `part_count` long. Deliberately NOT the
 // downloads shape -- `state` there encodes local completeness, which is
-// meaningless for a share and would invite a progress-bar renderer. The
-// caller omits the key entirely when nothing has been decoded yet, so
-// "no data" and "no sources anywhere" stay distinguishable.
+// meaningless for a share and would invite a progress-bar renderer. The key
+// is always present and null when nothing has been decoded yet (R10), which
+// keeps "no data" distinguishable from "no sources for any part" without a
+// client having to probe for the key.
 void WriteSharedAvailabilityParts(CJsonWriter &w, const webapi::FileSnapshot &f)
 {
 	const std::vector<std::uint16_t> &part_sources = SharedPartSources(f);
-	if (part_sources.empty())
+	if (part_sources.empty()) {
+		w.Key("parts");
+		w.ValueNull();
 		return;
+	}
 	w.Key("parts");
 	w.BeginArray();
 	const std::uint64_t part_count = webapi::PartCountForSize(f.size);
@@ -3185,7 +3189,12 @@ void WriteClientDetailObject(CJsonWriter &w, const webapi::ClientSnapshot &c)
 
 // Base shared-file fields, shared by the list writer and the detail
 // writer. Emits keys into an already-open object (no Begin/End).
-void WriteSharedBaseFields(CJsonWriter &w, const webapi::FileSnapshot &f)
+//
+// `detail` widens the `sources` group with the estimated range, which only
+// the detail endpoint carries. It is a parameter rather than a second
+// `w.Key("sources")` block in the detail writer because a JSON object has to
+// be emitted in one piece.
+void WriteSharedBaseFields(CJsonWriter &w, const webapi::FileSnapshot &f, bool detail = false)
 {
 	w.Key("hash");
 	w.ValueString(wxString::FromUTF8(f.hash.c_str()));
@@ -3193,53 +3202,65 @@ void WriteSharedBaseFields(CJsonWriter &w, const webapi::FileSnapshot &f)
 	w.ValueString(wxString::FromUTF8(f.name.c_str()));
 	w.Key("ed2k_link");
 	w.ValueString(wxString::FromUTF8(f.ed2k_link.c_str()));
-	w.Key("size");
+	w.Key("size_bytes");
 	w.ValueInt(static_cast<int64_t>(f.size));
 	w.Key("priority");
 	w.ValueString(wxString::FromUTF8(f.shared.priority.c_str()));
 	w.Key("priority_auto");
 	w.ValueBool(f.shared.priority_auto);
-	w.Key("complete_sources");
+	// A stated exception to R11: this wraps a single quantity on the list.
+	// The identical figure is `sources.complete` on a search result, so one
+	// access path works on every endpoint that has the concept -- cross-
+	// endpoint predictability beats R11's anti-wrapping default here.
+	w.Key("sources");
+	w.BeginObject();
+	w.Key("complete");
 	w.ValueInt(static_cast<int64_t>(f.shared.complete_sources));
-	w.Key("xfer");
-	w.BeginObject();
-	w.Key("session");
-	w.ValueInt(static_cast<int64_t>(f.shared.xfer_session));
-	w.Key("total");
-	w.ValueInt(static_cast<int64_t>(f.shared.xfer_total));
+	if (detail) {
+		// The estimated range of that same count, so it belongs beside it
+		// rather than in the separate `complete_sources_range` object it used
+		// to occupy.
+		w.Key("complete_min");
+		w.ValueInt(static_cast<int64_t>(f.shared.complete_sources_low));
+		w.Key("complete_max");
+		w.ValueInt(static_cast<int64_t>(f.shared.complete_sources_high));
+	}
 	w.EndObject();
-	w.Key("requests");
-	w.BeginObject();
-	w.Key("session");
-	w.ValueInt(static_cast<int64_t>(f.shared.requests_session));
-	w.Key("total");
-	w.ValueInt(static_cast<int64_t>(f.shared.requests_total));
-	w.EndObject();
-	w.Key("accepts");
-	w.BeginObject();
-	w.Key("session");
-	w.ValueInt(static_cast<int64_t>(f.shared.accepts_session));
-	w.Key("total");
-	w.ValueInt(static_cast<int64_t>(f.shared.accepts_total));
-	w.EndObject();
+	// Flattened (R11): the window belongs in the key, not a wrapper.
+	w.Key("uploaded_bytes_session");
+	w.ValueInt(static_cast<int64_t>(f.shared.uploaded_bytes_session));
+	w.Key("uploaded_bytes_total");
+	w.ValueInt(static_cast<int64_t>(f.shared.uploaded_bytes_total));
+	w.Key("request_count_session");
+	w.ValueInt(static_cast<int64_t>(f.shared.request_count_session));
+	w.Key("request_count_total");
+	w.ValueInt(static_cast<int64_t>(f.shared.request_count_total));
+	// `accepts` was a verb doing duty as a plural noun.
+	w.Key("accepted_request_count_session");
+	w.ValueInt(static_cast<int64_t>(f.shared.accepted_request_count_session));
+	w.Key("accepted_request_count_total");
+	w.ValueInt(static_cast<int64_t>(f.shared.accepted_request_count_total));
 	// Live upload activity (issue #466). `upload_speed_bps` + `uploading`
 	// refresh every tick; `last_upload` / `shared_since` are unix seconds,
 	// null when unknown -- never uploaded, or a known.met entry that predates
 	// the field. They were 0, which reads as 1970 rather than "no idea".
 	w.Key("upload_speed_bps");
 	w.ValueInt(static_cast<int64_t>(f.shared.upload_speed_bps));
-	w.Key("uploading");
-	w.ValueInt(static_cast<int64_t>(f.shared.uploading_count));
-	WriteIntOrNull(
-		w, "last_upload", f.shared.last_upload != 0, static_cast<std::int64_t>(f.shared.last_upload));
+	// Read as a boolean, held an integer.
+	w.Key("uploading_client_count");
+	w.ValueInt(static_cast<int64_t>(f.shared.uploading_client_count));
 	WriteIntOrNull(w,
-		"shared_since",
+		"last_upload_at",
+		f.shared.last_upload != 0,
+		static_cast<std::int64_t>(f.shared.last_upload));
+	WriteIntOrNull(w,
+		"shared_since_at",
 		f.shared.shared_since != 0,
 		static_cast<std::int64_t>(f.shared.shared_since));
 	// Parts hashed so far by a Verify Local Data or an AICH hashset rebuild
 	// over this share; 0 when idle. Goes through the accessor so a shared
 	// download, which amuled reports as a partfile, still reads correctly.
-	w.Key("hashing_progress");
+	w.Key("hashed_part_count");
 	w.ValueInt(static_cast<int64_t>(webapi::SharedHashingProgress(f)));
 }
 
@@ -3263,13 +3284,13 @@ void WriteSharedObject(CJsonWriter &w, const webapi::FileSnapshot &f)
 void WriteSharedDetailObject(CJsonWriter &w, const webapi::FileSnapshot &f)
 {
 	w.BeginObject();
-	WriteSharedBaseFields(w, f);
+	WriteSharedBaseFields(w, f, /*detail=*/true);
 	w.Key("file_type");
 	w.ValueString(wxString::FromUTF8(webapi::FileTypeToken(f.name).c_str()));
-	w.Key("share_ratio");
+	w.Key("upload_ratio");
 	w.ValueDouble(
-		f.size > 0 ? static_cast<double>(f.shared.xfer_total) / static_cast<double>(f.size) : 0.0);
-	w.Key("path");
+		f.size > 0 ? static_cast<double>(f.shared.uploaded_bytes_total) / static_cast<double>(f.size) : 0.0);
+	w.Key("directory");
 	// The on-disk directory (Temp while downloading, destination once
 	// completed) -- the same value /downloads/{hash} reports for this file.
 	// This was once masked with a placeholder while the file was incomplete,
@@ -3282,23 +3303,15 @@ void WriteSharedDetailObject(CJsonWriter &w, const webapi::FileSnapshot &f)
 	// Detail-only, like `path`: the list object and the shared_updated diff
 	// deliberately carry neither, so the SSE event rate is unaffected.
 	w.ValueBool(f.IsIncompletePartfile());
-	w.Key("complete_sources_range");
-	w.BeginObject();
-	w.Key("low");
-	w.ValueInt(static_cast<int64_t>(f.shared.complete_sources_low));
-	w.Key("high");
-	w.ValueInt(static_cast<int64_t>(f.shared.complete_sources_high));
-	w.EndObject();
-	w.Key("aich_hash");
-	w.ValueString(wxString::FromUTF8(f.aich_hash.c_str()));
-	w.Key("part_count");
+	WriteStringOrNull(w, "aich_hash", !f.aich_hash.empty(), f.aich_hash);
+	w.Key("parts_total_count");
 	w.ValueInt(static_cast<int64_t>(webapi::PartCountForSize(f.size)));
 	WriteSharedAvailabilityParts(w, f);
-	w.Key("queued_count");
+	w.Key("upload_queue_count");
 	w.ValueInt(static_cast<int64_t>(f.queued_count));
-	w.Key("comment");
+	w.Key("my_comment");
 	w.ValueString(wxString::FromUTF8(f.comment.c_str()));
-	w.Key("rating");
+	w.Key("my_rating");
 	w.ValueInt(static_cast<int64_t>(f.rating));
 	WriteMediaIfPresent(w, f);
 	w.EndObject();
@@ -4385,7 +4398,8 @@ CHttpServer::Response CApiDispatcher::HandleSharedList(const CHttpServer::Reques
 		// cares about, not the order a UI table does.
 		{ "hash", SORT_BY(hash), ANCHOR_ON(hash) },
 		{ "name", SORT_BY(name) },
-		{ "size", SORT_BY(size) },
+		// R7: spelled like the response key it orders by.
+		{ "size_bytes", SORT_BY(size) },
 	};
 	if (auto r = RequireSnapshot(m_state))
 		return *r;

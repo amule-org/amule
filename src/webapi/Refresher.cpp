@@ -48,6 +48,7 @@
 #include <ec/cpp/ECSpecialTags.h>
 #include <ec/cpp/ECPacket.h>
 
+#include <map>
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
@@ -1140,34 +1141,34 @@ void MergeSharedTag(const CEC_SharedFile_Tag *sf, FileSnapshot &f)
 			f.size = v;
 	}
 	{
-		std::uint64_t v = f.shared.xfer_session;
+		std::uint64_t v = f.shared.uploaded_bytes_session;
 		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_XFERRED, v))
-			f.shared.xfer_session = v;
+			f.shared.uploaded_bytes_session = v;
 	}
 	{
-		std::uint64_t v = f.shared.xfer_total;
+		std::uint64_t v = f.shared.uploaded_bytes_total;
 		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_XFERRED_ALL, v))
-			f.shared.xfer_total = v;
+			f.shared.uploaded_bytes_total = v;
 	}
 	{
-		std::uint32_t v = f.shared.requests_session;
+		std::uint32_t v = f.shared.request_count_session;
 		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_REQ_COUNT, v))
-			f.shared.requests_session = v;
+			f.shared.request_count_session = v;
 	}
 	{
-		std::uint32_t v = f.shared.requests_total;
+		std::uint32_t v = f.shared.request_count_total;
 		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_REQ_COUNT_ALL, v))
-			f.shared.requests_total = v;
+			f.shared.request_count_total = v;
 	}
 	{
-		std::uint32_t v = f.shared.accepts_session;
+		std::uint32_t v = f.shared.accepted_request_count_session;
 		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_ACCEPT_COUNT, v))
-			f.shared.accepts_session = v;
+			f.shared.accepted_request_count_session = v;
 	}
 	{
-		std::uint32_t v = f.shared.accepts_total;
+		std::uint32_t v = f.shared.accepted_request_count_total;
 		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_ACCEPT_COUNT_ALL, v))
-			f.shared.accepts_total = v;
+			f.shared.accepted_request_count_total = v;
 	}
 	{
 		std::uint16_t v = 0;
@@ -1202,9 +1203,9 @@ void MergeSharedTag(const CEC_SharedFile_Tag *sf, FileSnapshot &f)
 			f.shared.upload_speed_bps = v;
 	}
 	{
-		std::uint16_t v = f.shared.uploading_count;
+		std::uint16_t v = f.shared.uploading_client_count;
 		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_UPLOADING_COUNT, v))
-			f.shared.uploading_count = v;
+			f.shared.uploading_client_count = v;
 	}
 	{
 		std::uint32_t v = f.shared.last_upload;
@@ -2402,7 +2403,24 @@ std::string FileTypeToken(const std::string &name)
 	std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) {
 		return static_cast<char>(std::tolower(c));
 	});
-	return s;
+	// GetFiletypeDesc() returns UI labels, and lowercasing them left three
+	// problems in one enum: plurals where the token names ONE file's type, a
+	// hyphen where every other enum token on the surface is snake_case, and
+	// "any" meaning "unknown". Normalise rather than expose the label.
+	static const std::map<std::string, std::string> kNormalised = {
+		{ "videos", "video" },
+		{ "audio", "audio" },
+		{ "archives", "archive" },
+		{ "cd-images", "cd_image" },
+		{ "pictures", "picture" },
+		{ "texts", "text" },
+		{ "programs", "program" },
+		{ "any", "unknown" },
+	};
+	const auto it = kNormalised.find(s);
+	// An unrecognised label means the core grew a type this build does not
+	// know; "unknown" is the honest answer, and matches what "any" meant.
+	return it != kNormalised.end() ? it->second : std::string("unknown");
 }
 
 // Merge one EC_TAG_SEARCHFILE onto a result, writing only the fields the tag

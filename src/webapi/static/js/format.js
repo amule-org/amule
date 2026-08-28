@@ -39,10 +39,13 @@ export function formatInt(n) {
   return (Number(n) || 0).toLocaleString();
 }
 
-// "session / total" pair from an object's two counter fields (e.g. xfer,
-// requests, accepts). Shared by the Shared table and its detail panel.
-export function twin(o, a, b, fmt) {
-  return fmt((o && o[a]) || 0) + " / " + fmt((o && o[b]) || 0);
+// "session / total" pair from a row's two sibling counter fields (e.g.
+// uploaded_bytes_session + uploaded_bytes_total). Shared by the Shared table
+// and its detail panel. The counters used to live in `xfer` / `requests` /
+// `accepts` wrapper objects; they were flattened, so this takes the row and
+// two key names rather than a sub-object.
+export function twin(row, a, b, fmt) {
+  return fmt((row && row[a]) || 0) + " / " + fmt((row && row[b]) || 0);
 }
 
 // Free disk space for the two directories /status reports, as one string. Temp

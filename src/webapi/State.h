@@ -227,12 +227,12 @@ struct FileSnapshot
 		// Upload-side auto-priority flag, mirroring `download.priority_auto`;
 		// says whether amuled is deriving it automatically from the queue.
 		bool priority_auto = false;
-		std::uint64_t xfer_session = 0;
-		std::uint64_t xfer_total = 0;
-		std::uint32_t requests_session = 0;
-		std::uint32_t requests_total = 0;
-		std::uint32_t accepts_session = 0;
-		std::uint32_t accepts_total = 0;
+		std::uint64_t uploaded_bytes_session = 0;
+		std::uint64_t uploaded_bytes_total = 0;
+		std::uint32_t request_count_session = 0;
+		std::uint32_t request_count_total = 0;
+		std::uint32_t accepted_request_count_session = 0;
+		std::uint32_t accepted_request_count_total = 0;
 		std::uint32_t complete_sources = 0;
 
 		// Detail-only (GET /shared/{hash}). The complete-sources range
@@ -271,12 +271,12 @@ struct FileSnapshot
 		std::uint16_t hashing_progress = 0;
 
 		// Live upload activity (issue #466), the upload-side analogue of
-		// the download stats. `upload_speed_bps` + `uploading_count` are
+		// the download stats. `upload_speed_bps` + `uploading_client_count` are
 		// live (refresh every tick); `last_upload` / `shared_since` are
 		// unix timestamps, 0 = unknown (a file that has never uploaded, or
 		// a known.met entry that predates the feature).
 		std::uint32_t upload_speed_bps = 0;
-		std::uint16_t uploading_count = 0;
+		std::uint16_t uploading_client_count = 0;
 		std::uint32_t last_upload = 0;
 		std::uint32_t shared_since = 0;
 	} shared;

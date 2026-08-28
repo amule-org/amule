@@ -136,13 +136,13 @@ if [ "$COUNT" -gt 0 ]; then
 		_assert_json_eq '.parts | type' array '/shared/{hash}.parts is array'
 		PARTS_LEN=$(printf '%s' "$CURL_BODY" | jq '.parts | length')
 
-		# --- 3. parts.length == part_count == ceil(size/PARTSIZE). --
-		PART_COUNT=$(printf '%s' "$CURL_BODY" | jq '.part_count')
+		# --- 3. parts.length == parts_total_count == ceil(size/PARTSIZE). --
+		PART_COUNT=$(printf '%s' "$CURL_BODY" | jq '.parts_total_count')
 		if [ "$PARTS_LEN" = "$PART_COUNT" ]; then
-			_pass "/shared/{hash}.parts.length == part_count ($PARTS_LEN)"
+			_pass "/shared/{hash}.parts.length == parts_total_count ($PARTS_LEN)"
 		else
-			_fail "/shared/{hash}.parts.length vs part_count" \
-				"part_count=$PART_COUNT, parts.length=$PARTS_LEN"
+			_fail "/shared/{hash}.parts.length vs parts_total_count" \
+				"parts_total_count=$PART_COUNT, parts.length=$PARTS_LEN"
 		fi
 		if [ "$FIRST_SIZE" -gt 0 ]; then
 			EXPECTED_PARTS=$(( (FIRST_SIZE + 9728000 - 1) / 9728000 ))
@@ -182,15 +182,15 @@ if [ "$COUNT" -gt 0 ]; then
 					"$OUT_OF_RANGE parts have sources outside [0,255]"
 			fi
 
-			# --- 6. complete_sources agrees with min(parts). --------
-			# amuled derives complete_sources as the minimum of the
+			# --- 6. sources.complete agrees with min(parts). --------
+			# amuled derives sources.complete as the minimum of the
 			# availability vector, so a scalar above that minimum means
 			# the two are out of step. Reported as info, not a failure:
 			# the count is refreshed only on the increment path in the
 			# core, so it legitimately lags the vector downward.
 			MIN_SRC=$(printf '%s' "$CURL_BODY" | jq '[.parts[].sources] | min')
-			CS=$(printf '%s' "$CURL_BODY" | jq '.complete_sources // 0')
-			echo "    info: complete_sources=$CS, min(parts[].sources)=$MIN_SRC"
+			CS=$(printf '%s' "$CURL_BODY" | jq '.sources.complete // 0')
+			echo "    info: sources.complete=$CS, min(parts[].sources)=$MIN_SRC"
 		fi
 
 		# --- 7. URL hash case-insensitive. ----------------------

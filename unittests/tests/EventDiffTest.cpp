@@ -1132,7 +1132,7 @@ TEST(EventDiff, SharedEventCarriesHashingProgressFromTheSharedSide)
 			payload = e.data;
 	}
 	ASSERT_TRUE(!payload.empty());
-	ASSERT_TRUE(payload.find("\"hashing_progress\":2") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"hashed_part_count\":2") != std::string::npos);
 }
 
 TEST(EventDiff, SharedEventFallsBackToTheDownloadSideHashingProgress)
@@ -1163,7 +1163,7 @@ TEST(EventDiff, SharedEventFallsBackToTheDownloadSideHashingProgress)
 			payload = e.data;
 	}
 	ASSERT_TRUE(!payload.empty());
-	ASSERT_TRUE(payload.find("\"hashing_progress\":3") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"hashed_part_count\":3") != std::string::npos);
 }
 
 TEST(EventDiff, SharedUpdatedFiresWhenOnlyHashingProgressMoved)
@@ -1198,7 +1198,7 @@ TEST(EventDiff, SharedUpdatedFiresWhenOnlyHashingProgressMoved)
 			payload = e.data;
 	}
 	ASSERT_TRUE(!payload.empty());
-	ASSERT_TRUE(payload.find("\"hashing_progress\":2") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"hashed_part_count\":2") != std::string::npos);
 }
 
 TEST(EventDiff, DownloadUpdatedFiresWhenOnlyHashingProgressMoved)

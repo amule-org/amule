@@ -305,7 +305,7 @@ Rows added or removed *during* a sweep are not missed: both emit an SSE event, s
 | `GET /clients`        | **`ecid`** (id), `name`, `software` |
 | `GET /downloads/{hash}/clients`<br>`GET /shared/{hash}/clients` | same keys as `/clients`, `after` included |
 | `GET /known_clients`  | **`user_hash`** (id), `name`, `software`, `first_seen_at`, `last_seen_at`, `session_count`, `uploaded_bytes_total`, `downloaded_bytes_total` |
-| `GET /shared`         | **`hash`** (id), `name`, `size` |
+| `GET /shared`         | **`hash`** (id), `name`, `size_bytes` |
 | `GET /servers`        | **`ecid`** (id), `name`, `users`, `ping`, `files` |
 | `GET /friends`        | **`ecid`** (id), `name`, `online` |
 | `GET /chats`          | **`client_ecid`** (id), `last_message_at`, `name` |
@@ -1474,7 +1474,7 @@ The cost is one EC roundtrip per amuleapi process, and the store stays resident 
 
 **Auth:** `GUEST`
 
-Lists every file the local node is sharing. The `complete_sources` counter is amuled's estimate of how many peers in the swarm hold the file complete.
+Lists every file the local node is sharing. The `sources.complete` counter is amuled's estimate of how many peers in the swarm hold the file complete.
 
 ```sh
 curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/shared"
@@ -1487,18 +1487,21 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/shared"
       "hash":             "1a2b3c4d...",
       "name":             "release-notes.txt",
       "ed2k_link":        "ed2k://|file|release-notes.txt|3217|1a2b...|/",
-      "size":             3217,
+      "size_bytes":       3217,
       "priority":         "normal",
       "priority_auto":    false,
-      "complete_sources": 12,
-      "xfer":     { "session": 5242880,  "total": 314572800 },
-      "requests": { "session": 42,       "total": 1837 },
-      "accepts":  { "session": 18,       "total": 921 },
+      "sources":          { "complete": 12 },
+      "uploaded_bytes_session":         5242880,
+      "uploaded_bytes_total":           314572800,
+      "request_count_session":          42,
+      "request_count_total":            1837,
+      "accepted_request_count_session": 18,
+      "accepted_request_count_total":   921,
       "upload_speed_bps": 51200,
-      "uploading":        2,
-      "last_upload":      1700000500,
-      "shared_since":     1699000000,
-      "hashing_progress": 0,
+      "uploading_client_count": 2,
+      "last_upload_at":      1700000500,
+      "shared_since_at":     1699000000,
+      "hashed_part_count": 0,
       "media": {
         "duration_seconds": 212,
         "bitrate":  320,
@@ -1512,15 +1515,15 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/shared"
 }
 ```
 
-`xfer.session` / `xfer.total` are bytes uploaded during the current amuled process vs over the file's lifetime. `requests` counts how many peers have asked for the file; `accepts` counts how many of those requests were granted an upload slot. The `session` counters reset on amuled restart; `total` is persisted in `known.met`.
+`uploaded_bytes_session` / `uploaded_bytes_total` are bytes uploaded during the current amuled process vs over the file's lifetime. `requests` counts how many peers have asked for the file; `accepts` counts how many of those requests were granted an upload slot. The `session` counters reset on amuled restart; `total` is persisted in `known.met`.
 
-`upload_speed_bps` is the file's current combined upload rate in bytes/sec (summed over the peers it is uploading to), and `uploading` is how many peers it is actively uploading to right now — together the "is this file being seeded" signal, the upload-side analogue of the `/downloads` speed + transferring-source counts. Subtract `uploading` from the queued-client count (`queued_count`, on the detail view) to show `uploading / queued`. Both are live and refresh every tick. `last_upload` is the unix timestamp of the last time data was sent for the file, and `shared_since` is when the file was completed or first shared; both are persisted in `known.met` and are `null` when unknown: a file that has never uploaded, or a `known.met` entry written before these fields existed.
+`upload_speed_bps` is the file's current combined upload rate in bytes/sec (summed over the peers it is uploading to), and `uploading_client_count` is how many peers it is actively uploading to right now — together the "is this file being seeded" signal, the upload-side analogue of the `/downloads` speed + transferring-source counts. Subtract `uploading_client_count` from the queued-client count (`upload_queue_count`, on the detail view) to show `uploading / queued`. Both are live and refresh every tick. `last_upload_at` is the unix timestamp of the last time data was sent for the file, and `shared_since_at` is when the file was completed or first shared; both are persisted in `known.met` and are `null` when unknown: a file that has never uploaded, or a `known.met` entry written before these fields existed.
 
 `priority` is the upload priority — `"very_low"` / `"low"` / `"normal"` / `"high"` / `"release"` — and `priority_auto` is `true` when amuled is deriving that level automatically from the upload queue. This mirrors the `/downloads` shape (base `priority` + separate `priority_auto` flag); on an auto file `priority` reports the current derived level, not the literal string `"auto"`. For a file that is both downloading and shared this upload priority is independent of the download priority reported by [`GET /api/v0/downloads`](#get-apiv0downloads).
 
-`hashing_progress` is the number of parts hashed so far by a pass running over the file — a [`POST /shared/{hash}/verify`](#post-apiv0sharedhashverify) run, or an AICH hashset rebuild — and `0` when nothing is hashing. It is a count of completed parts, not the index of the part in flight, so it runs `0` → `part_count` (see the detail endpoint, or compute `ceil(size / 9728000)`).
+`hashed_part_count` is the number of parts hashed so far by a pass running over the file — a [`POST /shared/{hash}/verify`](#post-apiv0sharedhashverify) run, or an AICH hashset rebuild — and `0` when nothing is hashing. It is a count of completed parts, not the index of the part in flight, so it runs `0` → `parts_total_count` (see the detail endpoint, or compute `ceil(size / 9728000)`).
 
-A file that is both downloading and shared reports its progress here as well: amuled describes such a file as a partfile, so the value is read across from the download side and the two agree. That makes `hashing_progress` usable from either list without checking which one owns the file.
+A file that is both downloading and shared reports its progress here as well: amuled describes such a file as a partfile, so the value is read across from the download side and the two agree. That makes `hashed_part_count` usable from either list without checking which one owns the file.
 
 `media` is an object on an audio or video file that has been probed and `null` otherwise — the key is always present, so test `media === null` rather than checking for the key. Its six fields are the same ones the detail endpoint reports, and a [media refresh](#post-apiv0sharedmediarefresh) replaces all of them, clearing any the new probe no longer finds.
 
@@ -1542,19 +1545,19 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 | Field | Type | Meaning |
 |---|---|---|
 | `file_type` | string | Category token derived from the extension, lowercased: `"audio"`, `"videos"`, `"archives"`, `"cd-images"`, `"pictures"`, `"texts"`, `"programs"`, or `"any"` for unknown. |
-| `share_ratio` | number | `xfer.total / size`; `0` when `size == 0`. |
-| `path` | string | Directory path of the on-disk file — the temp directory while the file is still an incomplete partfile, the destination directory once it has completed. Identical to `path` on `/downloads/{hash}` for the same file. |
+| `upload_ratio` | number | `xfer.total / size`; `0` when `size == 0`. |
+| `directory` | string | Directory path of the on-disk file — the temp directory while the file is still an incomplete partfile, the destination directory once it has completed. Identical to `directory` on `/downloads/{hash}` for the same file. |
 | `incomplete` | bool | `true` while the file is still an incomplete partfile, `false` once complete. Always present. A download that has finished but has not been cleared yet reports `false`, since its data already sits in the destination directory. |
-| `complete_sources_range` | object | `{ "low": int, "high": int }` — the estimated full-copy source range behind the scalar `complete_sources`. |
+| `sources.complete_min` / `sources.complete_max` | object | `{ "low": int, "high": int }` — the estimated full-copy source range behind the scalar `sources.complete`. |
 | `aich_hash` | string | AICH master hash (hex); `""` if not yet computed. |
-| `part_count` | int | Total parts, `ceil(size / 9.28 MiB)`. |
-| `parts` | array | Per-part source availability, `[{ "sources": int }, ...]`, exactly `part_count` entries in file order. **Omitted entirely** until the first decode has landed, so "no data yet" and "no sources for any part" stay distinguishable. See below. |
-| `queued_count` | int | Clients waiting on this file's upload queue. |
-| `comment` | string | The user's own comment on this file (`""` if none). |
-| `rating` | int | The user's own rating, `0`–`5` (`0` = unrated). |
+| `parts_total_count` | int | Total parts, `ceil(size / 9.28 MiB)`. |
+| `parts` | array | Per-part source availability, `[{ "sources": int }, ...]`, exactly `parts_total_count` entries in file order. **Omitted entirely** until the first decode has landed, so "no data yet" and "no sources for any part" stay distinguishable. See below. |
+| `upload_queue_count` | int | Clients waiting on this file's upload queue. |
+| `my_comment` | string | The user's own comment on this file (`""` if none). |
+| `my_rating` | int | The user's own rating, `0`–`5` (`0` = unrated). |
 | `media` | object | Audio/video metadata — see [Media metadata](#media-metadata). **`null`** when the file has no probed metadata; the key is always present. |
 
-`hashing_progress` comes through from the list item; pair it with `part_count` here for a percentage.
+`hashed_part_count` comes through from the list item; pair it with `parts_total_count` here for a percentage.
 
 `parts[].sources` is how many peers currently requesting this file hold that part — an **availability** measure, not a progress one. A shared file is fully local by definition, so a part with `"sources": 0` means no other peer has it and you are its only source. Counts saturate at `255`.
 

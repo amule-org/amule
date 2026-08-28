@@ -420,10 +420,11 @@ if [ "$SHCOUNT" -gt 0 ]; then
 		'/shared[0].hash is 32-char hex'
 	_assert_json_eq '.shared[0].ecid | type' null \
 		'/shared[0] does not expose internal ecid'
-	_assert_json_eq '.shared[0].xfer | type' object \
-		'/shared[0].xfer is object'
-	_assert_json_eq '.shared[0].xfer.total | type' number \
-		'/shared[0].xfer.total is numeric'
+	# xfer / requests / accepts were flattened (R11).
+	_assert_json_eq '.shared[0] | has("xfer")' false \
+		'/shared[0] no longer wraps counters in xfer'
+	_assert_json_eq '.shared[0].uploaded_bytes_total | type' number \
+		'/shared[0].uploaded_bytes_total is numeric'
 	_assert_json_eq '.shared[0].priority | type' string \
 		'/shared[0].priority is string'
 	_assert_json_eq '.shared[0].priority_auto | type' boolean \
@@ -431,19 +432,19 @@ if [ "$SHCOUNT" -gt 0 ]; then
 	# Live upload activity (issue #466).
 	_assert_json_eq '.shared[0].upload_speed_bps | type' number \
 		'/shared[0].upload_speed_bps is numeric (#466)'
-	_assert_json_eq '.shared[0].uploading | type' number \
-		'/shared[0].uploading is numeric (#466)'
+	_assert_json_eq '.shared[0].uploading_client_count | type' number \
+		'/shared[0].uploading_client_count is numeric (#466)'
 	# null when never uploaded, or on a known.met entry predating the field.
-	_assert_json_eq '(.shared[0].last_upload == null or (.shared[0].last_upload | type) == "number")' true \
-		'/shared[0].last_upload is a number or null (#466)'
-	_assert_json_eq '(.shared[0].shared_since == null or (.shared[0].shared_since | type) == "number")' true \
-		'/shared[0].shared_since is a number or null (#466)'
+	_assert_json_eq '(.shared[0].last_upload_at == null or (.shared[0].last_upload_at | type) == "number")' true \
+		'/shared[0].last_upload_at is a number or null (#466)'
+	_assert_json_eq '(.shared[0].shared_since_at == null or (.shared[0].shared_since_at | type) == "number")' true \
+		'/shared[0].shared_since_at is a number or null (#466)'
 	# Hashing progress on the shared row (issue #1054). Parts hashed so far
 	# by a Verify Local Data / AICH rebuild, 0 when idle. Only the type is
 	# asserted: a smoke run has no hash in flight, and racing one would make
 	# the check flaky rather than stronger.
-	_assert_json_eq '.shared[0].hashing_progress | type' number \
-		'/shared[0].hashing_progress is numeric (#1054)'
+	_assert_json_eq '.shared[0].hashed_part_count | type' number \
+		'/shared[0].hashed_part_count is numeric (#1054)'
 
 	# --- 6b. GET /shared/{hash} detail endpoint (issue #417 Part B). ---
 	SHASH=$(printf '%s' "$CURL_BODY" | jq -r '.shared[0].hash')
@@ -455,23 +456,23 @@ if [ "$SHCOUNT" -gt 0 ]; then
 		'/shared/{hash} has no snapshot_at envelope (bare object)'
 	_assert_json_eq '.file_type | type' string \
 		'/shared/{hash} carries file_type'
-	_assert_json_eq '.share_ratio | type' number \
-		'/shared/{hash} carries share_ratio'
+	_assert_json_eq '.upload_ratio | type' number \
+		'/shared/{hash} carries upload_ratio'
 	_assert_json_eq '.path | type' string \
 		'/shared/{hash} carries path'
-	_assert_json_eq '.complete_sources_range | type' object \
-		'/shared/{hash} carries complete_sources_range'
+	_assert_json_eq '.sources | type' object \
+		'/shared/{hash} carries sources'
 	_assert_json_eq '.aich_hash | type' string \
 		'/shared/{hash} carries aich_hash'
-	_assert_json_eq '.part_count | type' number \
-		'/shared/{hash} carries part_count'
-	_assert_json_eq '.hashing_progress | type' number \
-		'/shared/{hash} carries hashing_progress (#1054)'
+	_assert_json_eq '.parts_total_count | type' number \
+		'/shared/{hash} carries parts_total_count'
+	_assert_json_eq '.hashed_part_count | type' number \
+		'/shared/{hash} carries hashed_part_count (#1054)'
 	_assert_json_eq '.comment | type' string \
 		'/shared/{hash} carries comment'
 	_assert_json_eq '.rating | type' number \
 		'/shared/{hash} carries rating'
-	SHPARTCOUNT=$(printf '%s' "$CURL_BODY" | jq -r '.part_count')
+	SHPARTCOUNT=$(printf '%s' "$CURL_BODY" | jq -r '.parts_total_count')
 
 	# --- 6c. GET /shared/{hash}/clients: the upload-side half of the
 	# per-file client rows (issue #984). Same handler and same row shape as
@@ -503,7 +504,7 @@ if [ "$SHCOUNT" -gt 0 ]; then
 	SHBITMAPS=$(printf '%s' "$CURL_BODY" | jq '[.clients[] | select(has("parts"))] | length')
 	if [ "$SHBITMAPS" -gt 0 ]; then
 		_assert_json_eq "[.clients[] | select(has(\"parts\")) | select((.parts | length) != $SHPARTCOUNT)] | length" \
-			0 "every shared-side parts bitmap ($SHBITMAPS of them) is exactly part_count entries"
+			0 "every shared-side parts bitmap ($SHBITMAPS of them) is exactly parts_total_count entries"
 	else
 		_skip "shared-side parts-length check: no row carries a bitmap"
 	fi
