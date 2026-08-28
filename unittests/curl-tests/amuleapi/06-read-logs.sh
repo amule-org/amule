@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# amuleapi 06-read-logs — /logs/amule + /logs/serverinfo. amule log
+# amuleapi 06-read-logs — /logs/amule + /logs/server_info. amule log
 # rides on STAT_REQ's `EC_TAG_STATS_LOGGER_MESSAGE` channel (per-EC-
 # connection cursor, incremental); server-info log is full-snapshot
 # via `EC_OP_GET_SERVERINFO`.
@@ -71,7 +71,7 @@ echo "amuleapi 06-read-logs smoke @ $HOST"
 
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
+	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
 [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || _die "login failed"
 
 # Give the refresher a few seconds to drain the initial log baseline
@@ -82,34 +82,34 @@ sleep 5
 # --- 1. Auth gate. -------------------------------------------------
 _curl "$HOST/api/v0/logs/amule"
 _assert_status 401 "GET /logs/amule (no creds) → 401"
-_curl "$HOST/api/v0/logs/serverinfo"
-_assert_status 401 "GET /logs/serverinfo (no creds) → 401"
+_curl "$HOST/api/v0/logs/server_info"
+_assert_status 401 "GET /logs/server_info (no creds) → 401"
 
 # --- 2. /logs/amule full response shape. ---------------------------
 _curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/logs/amule"
 _assert_status 200 "GET /logs/amule → 200"
 _assert_json_eq '.lines | type'         array  '/logs/amule.lines is an array'
-_assert_json_eq '.total_cached | type'  number '/logs/amule.total_cached is numeric'
-_assert_json_eq '.returned | type'      number '/logs/amule.returned is numeric'
+_assert_json_eq '.total_lines | type'  number '/logs/amule.total_lines is numeric'
+_assert_json_eq '.returned_lines | type'      number '/logs/amule.returned_lines is numeric'
 _assert_json_eq '.lines | length > 0'   true   '/logs/amule.lines is non-empty (amule emits a banner on connect)'
-# When no tail is given, returned == total_cached.
-_assert_json_eq '(.returned == .total_cached)' true \
-	'/logs/amule: returned == total_cached when no ?tail given'
+# When no tail is given, returned_lines == total_lines.
+_assert_json_eq '(.returned_lines == .total_lines)' true \
+	'/logs/amule: returned_lines == total_lines when no ?tail given'
 
-TOTAL=$(printf '%s' "$CURL_BODY" | jq '.total_cached')
+TOTAL=$(printf '%s' "$CURL_BODY" | jq '.total_lines')
 
 # --- 3. /logs/amule?tail=N. ----------------------------------------
 _curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/logs/amule?tail=2"
 _assert_status 200 "GET /logs/amule?tail=2 → 200"
-_assert_json_eq '.returned'           2      '/logs/amule?tail=2 returns 2 lines'
+_assert_json_eq '.returned_lines'           2      '/logs/amule?tail=2 returns 2 lines'
 _assert_json_eq '.lines | length'     2      '/logs/amule?tail=2 array length is 2'
-_assert_json_eq '.total_cached'       "$TOTAL" '/logs/amule?tail=2 still reports full cached count'
+_assert_json_eq '.total_lines'       "$TOTAL" '/logs/amule?tail=2 still reports the full line count'
 
 # tail=0 means "no tailing" → all lines. The wire contract makes 0
 # the inert default (matches the helper's behaviour: 0 = unbounded).
 _curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/logs/amule?tail=0"
 _assert_status 200 "GET /logs/amule?tail=0 → 200"
-_assert_json_eq '(.returned == .total_cached)' true \
+_assert_json_eq '(.returned_lines == .total_lines)' true \
 	'/logs/amule?tail=0 returns all (tail=0 is "no tailing")'
 
 # A non-numeric tail is a 400, not a silent "return all". It used to parse as
@@ -122,29 +122,29 @@ _assert_status 400 "GET /logs/amule?tail=notanumber → 400"
 _curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/logs/amule?tail=999999"
 _assert_status 400 "GET /logs/amule?tail=999999 → 400"
 
-# --- 4. /logs/serverinfo shape. ------------------------------------
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/logs/serverinfo"
-_assert_status 200 "GET /logs/serverinfo → 200"
-_assert_json_eq '.text | type'           string '/logs/serverinfo.text is string'
-_assert_json_eq '.total_bytes | type'    number '/logs/serverinfo.total_bytes is numeric'
-_assert_json_eq '.returned_bytes | type' number '/logs/serverinfo.returned_bytes is numeric'
+# --- 4. /logs/server_info shape. ------------------------------------
+_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/logs/server_info"
+_assert_status 200 "GET /logs/server_info → 200"
+_assert_json_eq '.text | type'           string '/logs/server_info.text is string'
+_assert_json_eq '.total_bytes | type'    number '/logs/server_info.total_bytes is numeric'
+_assert_json_eq '.returned_bytes | type' number '/logs/server_info.returned_bytes is numeric'
 _assert_json_eq '(.returned_bytes == .total_bytes)' true \
-	'/logs/serverinfo: returned_bytes == total_bytes when no ?tail given'
+	'/logs/server_info: returned_bytes == total_bytes when no ?tail given'
 
 TOTAL_BYTES=$(printf '%s' "$CURL_BODY" | jq '.total_bytes')
 
-# --- 5. /logs/serverinfo?tail=3 — line-boundary slicing. -----------
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/logs/serverinfo?tail=3"
-_assert_status 200 "GET /logs/serverinfo?tail=3 → 200"
+# --- 5. /logs/server_info?tail=3 — line-boundary slicing. -----------
+_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/logs/server_info?tail=3"
+_assert_status 200 "GET /logs/server_info?tail=3 → 200"
 _assert_json_eq '(.returned_bytes <= .total_bytes)' true \
-	'/logs/serverinfo?tail=3: returned_bytes <= total_bytes'
+	'/logs/server_info?tail=3: returned_bytes <= total_bytes'
 _assert_json_eq '.total_bytes' "$TOTAL_BYTES" \
-	'/logs/serverinfo?tail=3 reports the same total_bytes'
+	'/logs/server_info?tail=3 reports the same total_bytes'
 
 # --- 6. Method gate. -----------------------------------------------
 # DELETE on /logs/{amule,serverinfo} clears the buffer. PATCH is a 405:
 # the logs are read+reset only, never partially mutable.
-for ep in logs/amule logs/serverinfo; do
+for ep in logs/amule logs/server_info; do
 	_curl -X PATCH -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/$ep"
 	_assert_status 405 "PATCH /api/v0/$ep → 405"
 done

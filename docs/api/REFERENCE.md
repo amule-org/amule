@@ -107,8 +107,8 @@ The API is versioned in the path. **`/api/v0/` is the pre-release surface and is
 **Logs**
 - [`GET /api/v0/logs/amule`](#get-apiv0logsamule) — amule log buffer
 - [`DELETE /api/v0/logs/amule`](#delete-apiv0logsamule) — clear amule buffer
-- [`GET /api/v0/logs/serverinfo`](#get-apiv0logsserverinfo--delete-apiv0logsserverinfo) — server-info log buffer
-- [`DELETE /api/v0/logs/serverinfo`](#get-apiv0logsserverinfo--delete-apiv0logsserverinfo) — clear server-info buffer
+- [`GET /api/v0/logs/server_info`](#get-apiv0logsserver_info--delete-apiv0logsserver_info) — server-info log buffer
+- [`DELETE /api/v0/logs/server_info`](#get-apiv0logsserver_info--delete-apiv0logsserver_info) — clear server-info buffer
 
 **Statistics**
 - [`GET /api/v0/stats/tree`](#get-apiv0statstree) — full statistics tree
@@ -147,13 +147,17 @@ If both arrive on the same request, the bearer header wins. The cookie attribute
 
 The JSON body of `POST /auth/login` deliberately omits the token by default — XSS that can `fetch('/auth/login', ...)` and read the body would defeat the HttpOnly protection. Browser clients work entirely off the Set-Cookie attached to the response. SDK clients that need the token in the body opt in via either:
 
-- `?type=bearer` query string, or
+- `?include_token=true` query string, or
 - `Accept: application/jwt` request header.
+
+The two are equivalent.
 
 | Mode | Body keys | Set-Cookie |
 |------|-----------|------------|
-| Default (cookie) | `role`, `expires_at`, `expires_at_unix` | yes |
-| Bearer opt-in | `token`, `role`, `expires_at`, `expires_at_unix`, `jti` | yes (cookie also goes out so a hybrid client can use either) |
+| Default (cookie) | `role`, `expires_at`, `session_id` | yes |
+| Token opt-in | `token`, `role`, `expires_at`, `session_id` | yes (cookie also goes out so a hybrid client can use either) |
+
+`include_token` adds exactly the one key it names: `session_id` and `expires_at` are unconditional, so a cookie client can identify and expire its own session without asking for a token it will not use.
 
 ### Role model
 
@@ -355,7 +359,7 @@ The rule now reaches the whole surface rather than just the download and shared 
 
 `media` is the one place this reaches an **object** rather than a scalar, so a client tests `media === null` before reaching into it -- which it had to do regardless, since the object's own fields can be absent.
 
-Five keys stay omitted, because for them absence really is the meaning: `started_at` and `result_count` on [`GET /search`](#get-apiv0search) as described above, `key` on a statistics node (absent from a daemon too old to send it), `ratio` on the statistics ratio node (absent when the daemon reported neither component), and `parts` under [`?include_parts=true`](#get-apiv0downloadshashclients) -- there the caller opted in, so the key's absence answers a question they did not ask.
+Five keys stay omitted, because for them absence really is the meaning: `started_at` and `result_count` on [`GET /search`](#get-apiv0search) as described above, `key` on a statistics node (absent from a daemon too old to send it), `ratio` on the statistics ratio node (absent when the daemon reported neither component), and `parts` under [`?include_parts=true`](#get-apiv0downloadshashclients--get-apiv0sharedhashclients) -- there the caller opted in, so the key's absence answers a question they did not ask.
 
 ### Priority levels
 
@@ -518,16 +522,16 @@ curl -s http://$HOST/api/v0/version
 
 ```json
 {
-  "name": "amuleapi",
+  "service": "amuleapi",
   "api_version": "v0",
-  "amule_version": "2.4.0-29-g...",
+  "amuleapi_version": "2.4.0-29-g...",
   "daemon_version": "2.4.0-29-g...",
   "update": {
     "check_enabled": true,
     "checked": true,
     "latest_version": "3.0.1",
-    "update_available": false,
-    "last_checked": 1783675590
+    "available": false,
+    "last_checked_at": 1783675590
   }
 }
 ```
@@ -536,7 +540,7 @@ curl -s http://$HOST/api/v0/version
 | --- | --- |
 | `name` | Always `"amuleapi"`. |
 | `api_version` | REST contract version served on this path (`"v0"`). |
-| `amule_version` | amuleapi's **own** build version. |
+| `amuleapi_version` | amuleapi's **own** build version. |
 | `daemon_version` | Version of the **connected amuled**, from the EC handshake. Empty string when EC is not (yet) connected, or when the daemon is old enough not to advertise it. Normally equal to `amule_version` (both are built from the same source tree), but they can differ if a mismatched amuleapi is pointed at a different amuled. |
 | `update` | Update-availability, **relayed from the connected daemon** — amuleapi never contacts GitHub itself. See the sub-table. |
 
@@ -547,8 +551,8 @@ The `update` object:
 | `check_enabled` | `true` only when the daemon can check **and** is configured to: built with `ENABLE_VERSION_CHECK` **and** its `NewVersionCheck` preference on. `false` for OS-package builds, the preference off, or a pre-3.1 daemon. When `false`, a client should show nothing. |
 | `checked` | `true` once the daemon has completed at least one check this session (so `latest_version` is known). The daemon checks at startup; use `POST /api/v0/version/check` to trigger a fresh one. |
 | `latest_version` | Latest release string (e.g. `"3.0.1"`); empty string when not yet checked or unavailable. |
-| `update_available` | `true` when a newer release exists, `false` when up to date, `null` when unknown (not yet checked or disabled). |
-| `last_checked` | Unix time (seconds) the last check completed; `null` when never checked. Useful because checks are startup-only unless re-triggered. |
+| `available` | `true` when a newer release exists, `false` when up to date, `null` when unknown (not yet checked or disabled). |
+| `last_checked_at` | Unix time (seconds) the last check completed; `null` when never checked. Useful because checks are startup-only unless re-triggered. |
 
 #### `POST /api/v0/version/check`
 
@@ -649,7 +653,7 @@ To reproduce the desktop's low-space warning, compare `temp_free_bytes` against 
 
 Mints a JWT for the role that matched the supplied password.
 
-**Query parameters:** `?type=bearer` (optional) — opt into the bearer body response shape. Equivalent to sending `Accept: application/jwt`.
+**Query parameters:** `?include_token=true` (optional) — also return the token in the body. Equivalent to sending `Accept: application/jwt`.
 
 **Body:**
 
@@ -670,13 +674,13 @@ HTTP/1.1 200 OK
 Set-Cookie: amuleapi_token=eyJhbGciOi...; HttpOnly; SameSite=Strict; Path=/api/v0; Max-Age=86400
 Content-Type: application/json
 
-{"role":"admin","expires_at":"2026-06-20T11:00:00Z","expires_at_unix":1781434800}
+{"role":"admin","expires_at":1781434800,"session_id":"b3iY9oA1tUW2pK..."}
 ```
 
-**Bearer opt-in request:**
+**Token opt-in request:**
 
 ```sh
-curl -s -X POST "http://$HOST/api/v0/auth/login?type=bearer" \
+curl -s -X POST "http://$HOST/api/v0/auth/login?include_token=true" \
   -H 'Content-Type: application/json' \
   -d '{"password":"adminpass"}'
 ```
@@ -685,11 +689,12 @@ curl -s -X POST "http://$HOST/api/v0/auth/login?type=bearer" \
 {
   "token": "eyJhbGciOi...",
   "role": "admin",
-  "expires_at": "2026-06-20T11:00:00Z",
-  "expires_at_unix": 1781434800,
-  "jti": "b3iY9oA1tUW2pK..."
+  "expires_at": 1781434800,
+  "session_id": "b3iY9oA1tUW2pK..."
 }
 ```
+
+`expires_at` is unix seconds, like every other `_at` key on this surface.
 
 **Errors:**
 
@@ -725,9 +730,8 @@ curl -s -H "Authorization: Bearer $TOKEN" http://$HOST/api/v0/auth/session
 ```json
 {
   "role": "admin",
-  "exp": "2026-06-20T11:00:00Z",
-  "exp_unix": 1781434800,
-  "jti": "b3iY9oA1tUW2pK..."
+  "session_id": "b3iY9oA1tUW2pK...",
+  "expires_at": 1781434800
 }
 ```
 
@@ -745,12 +749,12 @@ curl -s -H "Authorization: Bearer $TOKEN" http://$HOST/api/v0/auth/passwords
 
 ```json
 {
-  "admin_set": true,
-  "guest_enabled": false
+  "admin_password_set": true,
+  "guest_access_enabled": false
 }
 ```
 
-`guest_enabled` is simply whether a guest password exists.
+`guest_access_enabled` is simply whether a guest password exists.
 
 ---
 
@@ -764,8 +768,8 @@ Changes the admin password, and turns guest access on or off or changes its pass
 |-------|------|---------|
 | `current_password` | string | **Required.** The admin password as it is now. |
 | `admin_password` | string | New admin password. Omit to leave it unchanged. |
-| `guest_password` | string | New guest password. Implies `guest_enabled: true` unless that field says otherwise. Omit to leave it unchanged. |
-| `guest_enabled` | bool | `false` clears the guest password, turning guest access off. Omit to leave the current state. |
+| `guest_password` | string | New guest password. Implies `guest_access_enabled: true` unless that field says otherwise. Omit to leave it unchanged. |
+| `guest_access_enabled` | bool | `false` clears the guest password, turning guest access off. Omit to leave the current state. |
 
 Omitting a field means "leave it alone" — the same rule every other interface follows, and a necessary one, because a client cannot read a stored password back in order to resend it.
 
@@ -775,23 +779,21 @@ Omitting a field means "leave it alone" — the same rule every other interface 
 curl -s -X PATCH -H "Authorization: Bearer $TOKEN" \
     -H 'Content-Type: application/json' \
     -d '{"current_password":"old-secret","admin_password":"new-secret"}' \
-    "http://$HOST/api/v0/auth/passwords?type=bearer"
+    "http://$HOST/api/v0/auth/passwords?include_token=true"
 ```
 
 ```json
 {
-  "admin_set": true,
-  "guest_enabled": false,
-  "other_sessions_revoked": true,
+  "admin_password_set": true,
+  "guest_access_enabled": false,
   "token": "eyJhbGciOiJIUzI1NiIs...",
   "role": "admin",
-  "expires_at": "2026-06-21T11:00:00Z",
-  "expires_at_unix": 1781521200,
-  "jti": "9pQ2xR7mLk4vTn..."
+  "expires_at": 1781521200,
+  "session_id": "9pQ2xR7mLk4vTn..."
 }
 ```
 
-The response re-issues the caller's session — same shape and same `?type=bearer` / `Accept: application/jwt` opt-in as `/auth/login`, cookie included. Every *other* session is now invalid, which is what `other_sessions_revoked` reports. Clients that ignore the new token will get `401 unauthorized` on their next request.
+The response re-issues the caller's session — same shape and same `?include_token=true` / `Accept: application/jwt` opt-in as `/auth/login`, cookie included. Every *other* session is now invalid — unconditionally, which is why the body carries no key for it. Clients that ignore the new token will get `401 unauthorized` on their next request.
 
 **Errors**
 
@@ -1604,7 +1606,7 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
 ```
 
 ```json
-{ "scope": "all", "queued": 812 }
+{ "scope": "all", "queued_file_count": 812 }
 ```
 
 Returns `202 Accepted`. `queued` is how many files were **accepted for probing**, not how many produced metadata — files the scheduler drops (not audio/video by extension, an incomplete download, missing on disk) are not counted, and nothing has been extracted yet when the response returns.
@@ -1630,7 +1632,7 @@ Cost is roughly 13 ms per file — a probe reads the container header, not the f
 The same operation for a single file, which is the quickest way to check a fix on one file rather than a whole library.
 
 ```json
-{ "scope": "file", "queued": 1 }
+{ "scope": "file", "queued_file_count": 1 }
 ```
 
 **Errors:** `404 not_found` (no shared file with that hash), `409 partfile_unsupported` (an incomplete download has no complete file to read), `400 amuled_rejected` (media metadata extraction is disabled, or the file is not eligible: not audio/video, or an incomplete download), `503 ec_unsupported`, `503 ec_unavailable`.
@@ -2319,7 +2321,7 @@ amuleapi's own `admin` and `guest` passwords are **not** settable here; `remote_
 
 **`geoip`** accepts `enabled`, `source` (`"dbip"` / `"maxmind"` / `"custom"` — any other value is a `400`), `custom_update_url`, `maxmind_license`, and `auto_update`. `supported` and the read-only status fields (`loaded_source`, `db_path`, `db_loaded`, `download_in_progress`, `last_update_status`) are ignored if sent.
 
-Downloading a database **now** is [`POST /geoip/update`](#post-apiv0geoipupdate), not a field here. It used to be a write-only `geoip.update_now` boolean; sending that key is now a `400` naming the endpoint. It is an action, not a setting — nothing read it back, and writing `false` meant nothing.
+Downloading a database **now** is [`POST /geoip/update`](#post-apiv0geoipupdate), not a field here: it is an action, not a setting. Sending `geoip.update_now` in this body is a `400` naming that endpoint.
 
 > **Note:** these are the daemon's live settings — the same ones the desktop GUI edits. Some are self-affecting: changing `remote_controls.amuleapi.port` / `.bind_address`, or `directories.incoming_path` / `temp_path`, alters the very daemon you are talking to. A port/bind change only takes effect on the next amuled restart, so it will not drop your current connection mid-request.
 
@@ -2569,12 +2571,12 @@ amuled's general log buffer.
 ```json
 {
   "lines": ["2026-06-19 11:00:00: line one", "...line two"],
-  "total_cached": 1024,
-  "returned": 2
+  "total_lines": 1024,
+  "returned_lines": 2
 }
 ```
 
-`lines` is the array of log lines; `total_cached` is how many lines are held in the buffer and `returned` how many this response carried (≤ `tail`).
+`lines` is the array of log lines; `total_lines` is how many lines are held in the buffer and `returned_lines` how many this response carried (≤ `tail`).
 
 #### `DELETE /api/v0/logs/amule`
 
@@ -2584,7 +2586,7 @@ Clears the buffer.
 
 **Response:** `204 No Content`, with no body -- a pure action with nothing to report.
 
-#### `GET /api/v0/logs/serverinfo` / `DELETE /api/v0/logs/serverinfo`
+#### `GET /api/v0/logs/server_info` / `DELETE /api/v0/logs/server_info`
 
 **Auth:** `GUEST` / `ADMIN`
 
@@ -2598,7 +2600,7 @@ The ed2k server-info log buffer. Unlike `/logs/amule`, amuled ships this one as 
 }
 ```
 
-`DELETE /api/v0/logs/serverinfo` clears the buffer and answers `204 No Content` with no body.
+`DELETE /api/v0/logs/server_info` clears the buffer and answers `204 No Content` with no body.
 
 ---
 
@@ -3213,4 +3215,4 @@ What that means in practice, until the freeze:
 
 **`/api/v1/` is where the guarantee starts.** It is cut once the naming rules below hold across the whole surface and the result has been exercised end to end. From that point the additive-only discipline applies: anything that could break a conformant client is deferred to the next version rather than applied in place.
 
-`POST /api/v0/auth/login`'s default body shape (no token unless `?type=bearer`) IS a change from the very first amuleapi cuts; the legacy "token always in body" behaviour is reachable only via the opt-in. This is documented and committed.
+`POST /api/v0/auth/login`'s default body shape (no token unless `?include_token=true`) IS a change from the very first amuleapi cuts; the legacy "token always in body" behaviour is reachable only via the opt-in. This is documented and committed.

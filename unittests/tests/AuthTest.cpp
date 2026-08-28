@@ -272,27 +272,3 @@ TEST(Auth, ExtractCookieValue_MissingReturnsEmpty)
 	ASSERT_TRUE(ExtractCookieValue("foo=1; bar=2", "amuleapi_token").empty());
 	ASSERT_TRUE(ExtractCookieValue("", "amuleapi_token").empty());
 }
-
-// ---------- ISO-8601 ---------------------------------------------
-
-TEST(Auth, FormatIso8601Utc_KnownTimestamp)
-{
-	// 1768523696 = 2026-01-16T00:34:56Z (verified via
-	// `date -r 1768523696 -u`); a single point exercises the standard
-	// year/month/day/hour/min/sec formatting path.
-	const std::time_t t = 1768523696;
-	ASSERT_EQUALS(std::string("2026-01-16T00:34:56Z"), FormatIso8601Utc(t));
-}
-
-TEST(Auth, FormatIso8601Utc_FixedWidth)
-{
-	// 1735734005 = 2025-01-01T12:20:05Z (verified via
-	// `date -r 1735734005 -u`). Single-digit month / day / second
-	// here all need leading zeros — pinning length=20 + trailing
-	// 'Z' catches any %d → %2d regression.
-	const std::time_t t = 1735734005;
-	const std::string s = FormatIso8601Utc(t);
-	ASSERT_EQUALS(static_cast<size_t>(20), s.size());
-	ASSERT_EQUALS('Z', s.back());
-	ASSERT_EQUALS(std::string("2025-01-01T12:20:05Z"), s);
-}

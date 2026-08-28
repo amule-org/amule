@@ -55,7 +55,7 @@ export default function About() {
     <div class="card">
       <h3>aMule Web</h3>
       <div class="form-grid form-grid-2">
-        <div class="field"><label>${t("about_amuleapi_version")}</label><span>${info.amule_version}</span></div>
+        <div class="field"><label>${t("about_amuleapi_version")}</label><span>${info.amuleapi_version}</span></div>
         <div class="field"><label>${t("about_daemon_version")}</label><span>${daemon}</span></div>
         <div class="field"><label>${t("about_api_version")}</label><span>${info.api_version}</span></div>
       </div>
@@ -66,17 +66,17 @@ export default function About() {
       <div class="form-grid form-grid-2">
         <div class="field">
           <label>${t("about_update_status")}</label>
-          <span class=${"update-status" + (u.update_available ? " available" : "")}>
+          <span class=${"update-status" + (u.available ? " available" : "")}>
             ${!u.checked ? t("about_update_not_checked")
-              : u.update_available ? t("about_update_available") : t("about_update_uptodate")}
+              : u.available ? t("about_update_available") : t("about_update_uptodate")}
           </span>
         </div>
         ${u.checked && u.latest_version ? html`
         <div class="field"><label>${t("about_update_latest")}</label><span>${u.latest_version}</span></div>` : null}
-        ${u.last_checked ? html`
+        ${u.last_checked_at ? html`
         <div class="field">
           <label>${t("about_update_last_checked")}</label>
-          <span>${new Date(u.last_checked * 1000).toLocaleString()}</span>
+          <span>${new Date(u.last_checked_at * 1000).toLocaleString()}</span>
         </div>` : null}
       </div>
       <div class="toolbar update-actions">

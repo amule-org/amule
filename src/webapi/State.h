@@ -1096,7 +1096,7 @@ struct SearchSlot
 // in memory until amuleapi restarts; log volume is bounded by
 // operator habits (idle ~tens of KB/day; busy ~hundreds).
 
-// /logs/serverinfo. amule has no incremental EC op for this log
+// /logs/server_info. amule has no incremental EC op for this log
 // (no equivalent of CLoggerAccess for ServerInfoLog), so the
 // refresher fetches the entire string via EC_OP_GET_SERVERINFO each
 // tick and the cache stores the latest snapshot. Server-info logs

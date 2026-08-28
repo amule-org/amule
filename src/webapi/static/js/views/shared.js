@@ -116,7 +116,7 @@ export default function Shared({ isGuest }) {
     if (!(await confirmDialog(t("shared_media_refresh_all_confirm")))) return;
     try {
       const r = await api.post("shared/media/refresh");
-      toast(tn("shared_media_refresh_all_started", (r && r.queued) || 0), "info");
+      toast(tn("shared_media_refresh_all_started", (r && r.queued_file_count) || 0), "info");
     } catch (e) { toast(terr(e) || t("shared_error"), "error"); }
   };
 

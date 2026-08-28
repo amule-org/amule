@@ -10,7 +10,7 @@
 #   3. EC_OP_GET_PREFERENCES                → /preferences + /categories
 #
 # Four endpoints lazy-fetched on first GET, coalesced via 1 s TTL:
-#   * /logs/serverinfo  (EC_OP_GET_SERVERINFO)
+#   * /logs/server_info  (EC_OP_GET_SERVERINFO)
 #   * /stats/tree       (EC_OP_GET_STATSTREE)
 #   * /stats/graphs/{X} (EC_OP_GET_STATSGRAPHS — one fetch serves all 4)
 #   * /search/{id}/results (EC_OP_SEARCH_RESULTS, on a finished search)
@@ -84,7 +84,7 @@ echo "amuleapi 10-refresher-lazy-ondemand smoke @ $HOST"
 
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
+	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
 [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || _die "login failed"
 
 # Refresher has 3 ops/tick now (STAT_REQ + GET_UPDATE + PREFERENCES).
@@ -148,7 +148,7 @@ fi
 # --- 3. Lazy-fetch endpoints — fresh per-endpoint snapshot_at. -----
 #
 # Per Phase 4g, /stats/tree, /stats/graphs/{X}, /search/{id}/results, and
-# /logs/serverinfo no longer ride the refresher tick. Each handler
+# /logs/server_info no longer ride the refresher tick. Each handler
 # drives its own EC roundtrip on first call, coalesced via 1 s TTL.
 # The `snapshot_at` field on each reflects the per-endpoint fetch
 # time, not the refresher tick.
@@ -200,10 +200,10 @@ _assert_json_eq '.results | type' array '/search/{id}/results .results is array'
 _curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/search/4294967290/results"
 _assert_status 404 "GET /search/{unknown}/results → 404 (no implicit fallback)"
 
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/logs/serverinfo"
-_assert_status 200 "GET /logs/serverinfo → 200 (lazy fetch)"
-_assert_json_eq '.text | type' string '/logs/serverinfo .text is string'
-_assert_json_eq '.total_bytes | type' number '/logs/serverinfo .total_bytes is numeric'
+_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/logs/server_info"
+_assert_status 200 "GET /logs/server_info → 200 (lazy fetch)"
+_assert_json_eq '.text | type' string '/logs/server_info .text is string'
+_assert_json_eq '.total_bytes | type' number '/logs/server_info .total_bytes is numeric'
 
 # --- 4. Per-tick endpoints still fresh from the refresher. ---------
 #

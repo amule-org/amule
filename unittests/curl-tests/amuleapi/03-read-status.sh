@@ -3,7 +3,7 @@
 # amuleapi 03-read-status — read endpoints, /status only. Validates the
 # refresher → state cache → handler chain end-to-end against a live
 # amuled. The remaining 12 endpoints (downloads, uploads, shared,
-# servers, kad, categories, logs/amule, logs/serverinfo, preferences,
+# servers, kad, categories, logs/amule, logs/server_info, preferences,
 # stats/tree, stats/graphs, search/results) land in subsequent
 # sub-phases (4b/4c/4d); their phase scripts share this directory.
 #
@@ -96,7 +96,7 @@ _assert_json_eq '.error.code' unauthorized \
 # --- 2. Log in as admin and capture the bearer. --------------------
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
+	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
 [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] \
 	|| _die "could not log in for /status tests"
 
@@ -201,7 +201,7 @@ _assert_json_eq '[paths | join(".")] | map(select(test("low_id|upload_queue_leng
 # --- 4. /status with guest bearer also works (any-role read gate). --
 GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$GUEST_PASS\"}" \
-	"$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
+	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
 if [ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ]; then
 	_curl -H "Authorization: Bearer $GUEST_TOKEN" "$HOST/api/v0/status"
 	_assert_status 200 "GET /api/v0/status (guest bearer) → 200"

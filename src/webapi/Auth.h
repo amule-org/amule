@@ -96,10 +96,6 @@ std::string ExtractBearerToken(const std::string &authorization_header);
 // empty string on miss.
 std::string ExtractCookieValue(const std::string &cookie_header, const std::string &cookie_name);
 
-// ISO-8601 / RFC 3339 in UTC: "2026-06-19T11:00:00Z". 20-char fixed
-// length; clients can `Date.parse(...)` it.
-std::string FormatIso8601Utc(std::time_t t);
-
 } // namespace webapi
 
 #endif // WEBAPI_AUTH_H

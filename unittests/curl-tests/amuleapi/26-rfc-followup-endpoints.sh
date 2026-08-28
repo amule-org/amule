@@ -9,7 +9,7 @@
 #   * POST   /servers/by-address/<ip>:<port>/connect — address-keyed route
 #   * DELETE /servers/by-address/<ip>:<port>         — address-keyed route
 #   * DELETE /logs/amule                   — clear amule log + in-process cache
-#   * DELETE /logs/serverinfo              — clear MOTD log + invalidate lazy cache
+#   * DELETE /logs/server_info              — clear MOTD log + invalidate lazy cache
 #   * POST   /downloads {"links":[...]}    — array body, the only spelling
 #   * POST   /networks/disconnect          — `{"network":"ed2k"|"kad"|"both"}` selector
 #   * GET    /clients?filter=uploads|downloads|active
@@ -64,7 +64,7 @@ fi
 echo "amuleapi 26-rfc-followup-endpoints smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
 [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
 H_AUTH=(-H "Authorization: Bearer $ADMIN_TOKEN")
 sleep 4
@@ -199,7 +199,7 @@ fi
 # Fast GET immediately after — must show empty / post-reset state.
 GET_BODY=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/logs/amule")
 LINES=$(echo "$GET_BODY" | jq -r '.lines | length' 2>/dev/null)
-TOTAL=$(echo "$GET_BODY" | jq -r '.total_cached' 2>/dev/null)
+TOTAL=$(echo "$GET_BODY" | jq -r '.total_lines' 2>/dev/null)
 if [ "$LINES" = "0" ] && [ "$TOTAL" = "0" ]; then
 	_pass "GET /logs/amule immediately after DELETE returns empty (no stale cache)"
 else
@@ -207,21 +207,21 @@ else
 		"lines=$LINES total=$TOTAL — expected 0/0"
 fi
 
-# --- 6. DELETE /logs/serverinfo + freshness (lazy cache!). -------
+# --- 6. DELETE /logs/server_info + freshness (lazy cache!). -------
 RC=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "${H_AUTH[@]}" \
-	"$HOST/api/v0/logs/serverinfo")
+	"$HOST/api/v0/logs/server_info")
 if [ "$RC" = "204" ]; then
-	_pass "DELETE /logs/serverinfo → 204"
+	_pass "DELETE /logs/server_info → 204"
 else
-	_fail "logs/serverinfo DELETE" "expected 204, got $RC"
+	_fail "logs/server_info DELETE" "expected 204, got $RC"
 fi
 # Fast GET immediately after — must show empty / post-reset.
-GET_BODY=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/logs/serverinfo")
+GET_BODY=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/logs/server_info")
 BYTES=$(echo "$GET_BODY" | jq -r '.total_bytes' 2>/dev/null)
 if [ "$BYTES" = "0" ]; then
-	_pass "GET /logs/serverinfo immediately after DELETE returns empty (lazy cache invalidated)"
+	_pass "GET /logs/server_info immediately after DELETE returns empty (lazy cache invalidated)"
 else
-	_fail "logs/serverinfo post-DELETE freshness" \
+	_fail "logs/server_info post-DELETE freshness" \
 		"total_bytes=$BYTES — expected 0"
 fi
 

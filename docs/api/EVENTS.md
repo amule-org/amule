@@ -110,7 +110,7 @@ If the daemon restarts between steps 1 and 2, or the ring buffer overflows on a 
 ```sh
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
   -d '{"password":"adminpass"}' \
-  "http://$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
+  "http://$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
 
 curl -N -H "Authorization: Bearer $TOKEN" http://$HOST/api/v0/events
 ```
@@ -191,7 +191,7 @@ Every event belongs to a single channel. The full set, prefix-mapped from the ev
 | `clients` | `client_*` | Peers we're exchanging with |
 | `friends` | `friend_*` | The friends list, and whether each one is online |
 | `status` | `status_*` | Connection state + headline counters |
-| `logs` | `log_*` | amuled log buffer (live tail; serverinfo is poll-only) |
+| `logs` | `log_*` | amuled log buffer (live tail; server_info is poll-only) |
 | `search` | `search_*` | Result deltas, completion, and the freeing of a search |
 | `chats` | `chat_*` | Peer chat messages, and conversations being closed |
 | `comments` | `comments_*` | Comment/rating lists on a download |
@@ -570,7 +570,7 @@ Emitted when the amuled log buffer appends new lines.
 { "lines": ["2026-06-19 11:00:00: line one", "2026-06-19 11:00:01: line two"] }
 ```
 
-Only the amuled log has a live channel; the serverinfo buffer has no SSE feed and is fetched by polling [`GET /logs/serverinfo`](REFERENCE.md#get-apiv0logsserverinfo). Multiple lines may be batched into a single event when the buffer landed several lines between refresher ticks. The [Bootstrap example](#bootstrap-snapshot--stream) doesn't pull `/logs/amule` — fetch it in step 2 if your UI shows historical log lines, otherwise treat `log_appended` as a live-only feed.
+Only the amuled log has a live channel; the server_info buffer has no SSE feed and is fetched by polling [`GET /logs/serverinfo`](REFERENCE.md#get-apiv0logsserverinfo). Multiple lines may be batched into a single event when the buffer landed several lines between refresher ticks. The [Bootstrap example](#bootstrap-snapshot--stream) doesn't pull `/logs/amule` — fetch it in step 2 if your UI shows historical log lines, otherwise treat `log_appended` as a live-only feed.
 
 ### `search` channel
 

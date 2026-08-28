@@ -118,7 +118,7 @@ All are readable only by you.
 curl -s http://127.0.0.1:4713/api/v0/health
 
 # Log in, then use the token.
-TOKEN=$(curl -s -X POST "http://127.0.0.1:4713/api/v0/auth/login?type=bearer" \
+TOKEN=$(curl -s -X POST "http://127.0.0.1:4713/api/v0/auth/login?include_token=true" \
     -H 'Content-Type: application/json' \
     -d '{"password":"mySecret123"}' | jq -r .token)
 
@@ -129,7 +129,7 @@ curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:4713/api/v0/status
 curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:4713/api/v0/version
 ```
 
-Browsers should call `/auth/login` *without* `?type=bearer` — they get a
+Browsers should call `/auth/login` *without* `?include_token=true` — they get a
 cookie instead, which keeps the token out of reach of page scripts.
 
 ## Reaching it from another machine

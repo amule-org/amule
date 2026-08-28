@@ -76,20 +76,20 @@ echo "amuleapi 01-version-and-errors smoke @ $HOST"
 # 1. GET /api/v0/version → 200 + JSON with name=amuleapi, api_version=v0.
 _curl "$HOST/api/v0/version"
 _assert_status 200 "GET /api/v0/version returns 200"
-_assert_json_eq '.name'        amuleapi '/api/v0/version reports name=amuleapi'
+_assert_json_eq '.service'     amuleapi '/api/v0/version reports service=amuleapi'
 _assert_json_eq '.api_version' v0       '/api/v0/version reports api_version=v0'
 
-# 2. amule_version field — non-empty. On release builds it's
+# 2. amuleapi_version field — non-empty. On release builds it's
 #    e.g. "3.0.1"; on the `master` line it's the literal "GIT"
 #    (PACKAGE_VERSION default in the top-level CMakeLists.txt).
 #    Pinning a shape would force the smoke to know which kind of
 #    build it's poking at, so just assert the field is populated.
-_assert_json_eq '.amule_version | length > 0' \
-	true '/api/v0/version reports a non-empty amule_version'
+_assert_json_eq '.amuleapi_version | length > 0' \
+	true '/api/v0/version reports a non-empty amuleapi_version'
 
 # 2b. daemon_version field — the connected amuled's version, taken from
 #     the EC_TAG_SERVER_VERSION handshake tag. Distinct from
-#     amule_version (which is amuleapi's own build). The regression
+#     amuleapi_version (which is amuleapi's own build). The regression
 #     amuled is a live modern build that always advertises the tag, so
 #     assert it's populated. (Against a daemon old enough to omit the
 #     tag, or before EC connects, this field is legitimately empty.)
@@ -126,9 +126,12 @@ _assert_status 200 "GET /api/v0/version (authenticated) returns 200"
 _assert_json_eq '.update | type' object '/api/v0/version has an update object when authenticated'
 _assert_json_eq '.update.check_enabled | type' boolean 'update.check_enabled is boolean'
 _assert_json_eq '.update.checked | type' boolean 'update.checked is boolean'
-_assert_json_eq '.update.latest_version | type' string 'update.latest_version is string'
-_assert_json_eq '.update | has("update_available")' true 'update has update_available'
-_assert_json_eq '.update | has("last_checked")' true 'update has last_checked'
+# latest_version is null until a check completes (R10), so it is string-or-null
+# rather than always-string -- the same shape as its two siblings.
+_assert_json_eq '(.update.latest_version | type) as $t | $t == "string" or $t == "null"' \
+	true 'update.latest_version is string or null'
+_assert_json_eq '.update | has("available")' true 'update has available'
+_assert_json_eq '.update | has("last_checked_at")' true 'update has last_checked_at'
 
 # 2d. /health — the liveness probe. The surface had none, so /version was being
 #     used as one: a document whose body changes over time and whose name says

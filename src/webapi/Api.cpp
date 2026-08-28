@@ -1520,14 +1520,14 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		return MethodNotAllowed("GET, HEAD, DELETE", "only GET / HEAD / DELETE on /logs/amule");
 	}
 
-	if (path == "/api/v0/logs/serverinfo") {
+	if (path == "/api/v0/logs/server_info") {
 		if (req.method == "GET" || req.method == "HEAD") {
 			return HandleLogServerinfo(req);
 		}
 		if (req.method == "DELETE") {
 			return HandleLogServerinfoReset(req);
 		}
-		return MethodNotAllowed("GET, HEAD, DELETE", "only GET / HEAD / DELETE on /logs/serverinfo");
+		return MethodNotAllowed("GET, HEAD, DELETE", "only GET / HEAD / DELETE on /logs/server_info");
 	}
 
 	if (path == "/api/v0/stats/tree") {
@@ -2057,15 +2057,20 @@ CHttpServer::Response CApiDispatcher::HandleVersion(const CHttpServer::Request &
 	r.content_type = "application/json";
 	CJsonWriter w;
 	w.BeginObject();
-	w.Key("name");
+	// `service`, not `name`: "name" of what? The value is the constant
+	// "amuleapi", so the key should say which thing it names.
+	w.Key("service");
 	w.ValueString(wxT("amuleapi"));
 	w.Key("api_version");
 	w.ValueString(wxT("v0"));
-	w.Key("amule_version");
+	// `amuleapi_version`, not `amule_version`: this is the VERSION the
+	// amuleapi binary was built from, which need not match the aMule daemon
+	// it is talking to. The old name said the opposite of what it holds.
+	w.Key("amuleapi_version");
 	w.ValueString(wxString::FromAscii(VERSION));
 	// Version of the connected amuled, from the EC handshake. Empty
 	// string when EC is not (yet) connected or the daemon predates the
-	// EC_TAG_SERVER_VERSION tag. Distinct from amule_version above,
+	// EC_TAG_SERVER_VERSION tag. Distinct from amuleapi_version above,
 	// which is amuleapi's own build version.
 	w.Key("daemon_version");
 	w.ValueString(m_app.GetDaemonVersion());
@@ -2075,8 +2080,8 @@ CHttpServer::Response CApiDispatcher::HandleVersion(const CHttpServer::Request &
 	// contract. When the daemon can't check -- built without
 	// ENABLE_VERSION_CHECK, the check_new_version pref off, or a pre-3.1
 	// daemon that emits none of these tags -- check_enabled is false and a
-	// client should show nothing. update_available / last_checked are null
-	// until a check has completed.
+	// client should show nothing. `available`, `latest_version` and
+	// `last_checked_at` are null until a check has completed.
 	if (auth.ok) {
 		const auto prefs = m_state.Preferences();
 		const auto status = m_state.Status();
@@ -2088,16 +2093,22 @@ CHttpServer::Response CApiDispatcher::HandleVersion(const CHttpServer::Request &
 		w.ValueBool(check_enabled);
 		w.Key("checked");
 		w.ValueBool(checked);
-		w.Key("latest_version");
-		w.ValueString(wxString::FromUTF8(status.version_check_latest.c_str()));
-		w.Key("update_available");
+		// null rather than "" before a check completes: R10, and its two
+		// siblings on this object already answer that way.
+		WriteStringOrNull(w,
+			"latest_version",
+			checked && !status.version_check_latest.empty(),
+			status.version_check_latest);
+		// `available`, not `update_available`: it stutters inside its own
+		// `update` object.
+		w.Key("available");
 		if (checked) {
 			w.ValueBool(status.version_check_outdated);
 		} else {
 			w.ValueNull();
 		}
 		WriteIntOrNull(w,
-			"last_checked",
+			"last_checked_at",
 			checked && status.version_check_timestamp > 0,
 			static_cast<std::int64_t>(status.version_check_timestamp));
 		w.EndObject();
@@ -2210,10 +2221,11 @@ void CApiDispatcher::BeginSession(
 	// the body and exfiltrate the bearer. So the default response is
 	// deliberately token-less.
 	//
-	// Bearer opt-in (SDK / curl / no cookie jar): client passes
-	// `Accept: application/jwt` or `?type=bearer` to get the bearer
-	// shape — `token`, `expires_at`, `expires_at_unix`, `jti`. The
-	// cookie still ships; bearer clients can ignore it.
+	// Token opt-in (SDK / curl / no cookie jar): client passes
+	// `Accept: application/jwt` or `?include_token=true` to get `token` in
+	// the body as well. The cookie still ships; token clients can ignore it.
+	// Everything else on this response is unconditional -- `include_token`
+	// adds the one key it names and nothing else.
 	bool wants_bearer = false;
 	{
 		const std::string accept = FindHeaderCaseInsensitive(req.headers, "Accept");
@@ -2226,8 +2238,10 @@ void CApiDispatcher::BeginSession(
 			if (qpos != std::string::npos)
 				q = req.target.substr(qpos + 1);
 			const auto qmap = web_api_path::ParseQuery(q);
-			const auto it = qmap.find("type");
-			if (it != qmap.end() && it->second == "bearer") {
+			// `include_token=true`, not `type=bearer`: "type" named no
+			// axis, and the parameter only ever added one key.
+			const auto it = qmap.find("include_token");
+			if (it != qmap.end() && it->second == "true") {
 				wants_bearer = true;
 			}
 		}
@@ -2239,14 +2253,15 @@ void CApiDispatcher::BeginSession(
 	}
 	w.Key("role");
 	w.ValueString(role == Role::ADMIN ? wxT("admin") : wxT("guest"));
+	// One `expires_at`, unix seconds, like every other `_at` on the surface.
+	// It used to ship twice -- ISO here and unix as `expires_at_unix`.
 	w.Key("expires_at");
-	w.ValueString(wxString::FromUTF8(webapi::FormatIso8601Utc(issued.expires_at).c_str()));
-	w.Key("expires_at_unix");
 	w.ValueInt(static_cast<int64_t>(issued.expires_at));
-	if (wants_bearer) {
-		w.Key("jti");
-		w.ValueString(wxString::FromUTF8(issued.jti.c_str()));
-	}
+	// `session_id`, not `jti` (a JWT internal), and emitted unconditionally:
+	// it used to appear only in the token shape, so every cookie-auth login
+	// lacked the id that /auth/session returns for the same session.
+	w.Key("session_id");
+	w.ValueString(wxString::FromUTF8(issued.jti.c_str()));
 }
 
 CHttpServer::Response CApiDispatcher::HandleLogout(const CHttpServer::Request &req)
@@ -2360,11 +2375,9 @@ CHttpServer::Response CApiDispatcher::HandleSession(const CHttpServer::Request &
 	w.BeginObject();
 	w.Key("role");
 	w.ValueString(a.verified.role == Role::ADMIN ? wxT("admin") : wxT("guest"));
-	w.Key("jti");
+	w.Key("session_id");
 	w.ValueString(wxString::FromUTF8(a.verified.jti.c_str()));
-	w.Key("exp");
-	w.ValueString(wxString::FromUTF8(webapi::FormatIso8601Utc(a.verified.exp).c_str()));
-	w.Key("exp_unix");
+	w.Key("expires_at");
 	w.ValueInt(static_cast<int64_t>(a.verified.exp));
 	w.EndObject();
 	// Per-principal document: a shared cache must not hand one caller
@@ -2392,9 +2405,9 @@ CHttpServer::Response CApiDispatcher::HandleAuthPasswords(const CHttpServer::Req
 
 	CJsonWriter w;
 	w.BeginObject();
-	w.Key("admin_set");
+	w.Key("admin_password_set");
 	w.ValueBool(!m_config.AdminCredential().empty());
-	w.Key("guest_enabled");
+	w.Key("guest_access_enabled");
 	w.ValueBool(!m_config.GuestCredential().empty());
 	w.EndObject();
 	FinalizeJsonBody(w, r);
@@ -2462,31 +2475,31 @@ CHttpServer::Response CApiDispatcher::HandleAuthPasswordsPatch(const CHttpServer
 		return ErrorResponse(400, "bad_request", "`current_password` is required");
 	}
 
-	bool guest_enabled = !m_config.GuestCredential().empty();
-	bool has_guest_enabled = false;
+	bool guest_access_enabled = !m_config.GuestCredential().empty();
+	bool has_guest_access_enabled = false;
 	{
-		auto it = obj.find("guest_enabled");
-		has_guest_enabled = (it != obj.end());
-		if (has_guest_enabled) {
+		auto it = obj.find("guest_access_enabled");
+		has_guest_access_enabled = (it != obj.end());
+		if (has_guest_access_enabled) {
 			if (!it->second.is<bool>()) {
-				return ErrorResponse(400, "bad_request", "`guest_enabled` must be a boolean");
+				return ErrorResponse(400, "bad_request", "`guest_access_enabled` must be a boolean");
 			}
-			guest_enabled = it->second.get<bool>();
+			guest_access_enabled = it->second.get<bool>();
 		}
 	}
 	// Setting a guest password while switching the role off is
 	// contradictory; guessing at which half was meant would silently do
 	// the wrong one.
-	if (has_guest && !guest_new.empty() && has_guest_enabled && !guest_enabled) {
+	if (has_guest && !guest_new.empty() && has_guest_access_enabled && !guest_access_enabled) {
 		return ErrorResponse(400,
 			"bad_request",
-			"`guest_password` cannot be set together with `guest_enabled: false`");
+			"`guest_password` cannot be set together with `guest_access_enabled: false`");
 	}
 	// A guest password on its own means "turn guest on with this".
-	if (has_guest && !guest_new.empty() && !has_guest_enabled) {
-		guest_enabled = true;
+	if (has_guest && !guest_new.empty() && !has_guest_access_enabled) {
+		guest_access_enabled = true;
 	}
-	if (!has_admin && !has_guest && !has_guest_enabled) {
+	if (!has_admin && !has_guest && !has_guest_access_enabled) {
 		return ErrorResponse(400, "bad_request", "nothing to change");
 	}
 	// There is no way to clear the admin password; an admin-less daemon
@@ -2507,7 +2520,9 @@ CHttpServer::Response CApiDispatcher::HandleAuthPasswordsPatch(const CHttpServer
 	m_rateLimiter.NoteSuccess(ip);
 
 	webcommon::CredentialChange change;
-	change.guest_enabled = guest_enabled;
+	// `change` belongs to libwebcommon's credential file format, shared with
+	// amuleweb, so its member keeps the name the file uses.
+	change.guest_enabled = guest_access_enabled;
 	if (has_admin) {
 		change.admin_md5 = std::string(
 			MD5Sum(wxString::FromUTF8(admin_new.c_str())).GetHash().Lower().utf8_str());
@@ -2533,16 +2548,16 @@ CHttpServer::Response CApiDispatcher::HandleAuthPasswordsPatch(const CHttpServer
 
 	CJsonWriter w;
 	w.BeginObject();
-	w.Key("admin_set");
+	w.Key("admin_password_set");
 	w.ValueBool(!m_config.AdminCredential().empty());
-	w.Key("guest_enabled");
+	w.Key("guest_access_enabled");
 	w.ValueBool(!m_config.GuestCredential().empty());
 	// Writing the file invalidated every token issued before it, this
 	// caller's included. Re-issue theirs in the same response so the
 	// operator who changed the password stays signed in while everyone
-	// else is signed out — which is the point of changing it.
-	w.Key("other_sessions_revoked");
-	w.ValueBool(true);
+	// else is signed out — which is the point of changing it. That is
+	// unconditional, so it carried no information as a key and the
+	// always-true `other_sessions_revoked` is gone; the reference says it.
 	BeginSession(req, Role::ADMIN, r, w);
 	w.EndObject();
 	FinalizeJsonBody(w, r);
@@ -4941,7 +4956,7 @@ CHttpServer::Response CApiDispatcher::HandleVersionCheck(const CHttpServer::Requ
 	}
 
 	// Accepted. The check runs asynchronously on the daemon; the result
-	// (latest_version / update_available / last_checked) appears on a
+	// (latest_version / available / last_checked_at) appears on a
 	// subsequent GET /api/v0/version once it completes.
 	CHttpServer::Response r;
 	// 202 with no body; see the comment on the comments routes. "started" is
@@ -7312,7 +7327,7 @@ std::vector<std::string> SliceTail(const std::vector<std::string> &all, std::siz
 	return std::vector<std::string>(all.begin() + (all.size() - tail), all.end());
 }
 
-// For a single-string log (e.g. /logs/serverinfo), `?tail=N` slices
+// For a single-string log (e.g. /logs/server_info), `?tail=N` slices
 // at line boundaries from the END so the first line of the response
 // is always whole. tail=0 returns the input verbatim.
 std::string TailString(const std::string &text, std::size_t tail_lines)
@@ -8058,9 +8073,9 @@ CHttpServer::Response CApiDispatcher::HandleLogAmule(const CHttpServer::Request 
 	w.EndArray();
 	// Operator-debug metadata: total cached + how many we returned.
 	// Lets a client paging through history know what it missed.
-	w.Key("total_cached");
+	w.Key("total_lines");
 	w.ValueInt(static_cast<int64_t>(all.size()));
-	w.Key("returned");
+	w.Key("returned_lines");
 	w.ValueInt(static_cast<int64_t>(sliced.size()));
 	w.EndObject();
 	FinalizeJsonBody(w, r);
@@ -8183,7 +8198,7 @@ CHttpServer::Response CApiDispatcher::HandleLogServerinfoReset(const CHttpServer
 	}
 	delete ec_resp;
 
-	// Lazy cache for /logs/serverinfo would otherwise return stale
+	// Lazy cache for /logs/server_info would otherwise return stale
 	// text until its 1 s TTL expires; force the next GET to re-fetch.
 	m_server_info_cache.Invalidate();
 
@@ -10000,11 +10015,11 @@ CHttpServer::Response SendMediaRefresh(CamuleapiApp &app, const CECTag *hashTag,
 	r.content_type = "application/json";
 	CJsonWriter w;
 	w.BeginObject();
-	// `ok` dropped; `scope` and `queued` stay -- `queued` is a real count of
-	// the rescans this triggered.
+	// `ok` dropped; `scope` and the count stay -- the count is a real number
+	// of rescans this triggered, so R5 spells it out.
 	w.Key("scope");
 	w.ValueString(wxString::FromAscii(what));
-	w.Key("queued");
+	w.Key("queued_file_count");
 	w.ValueInt(static_cast<int64_t>(queued));
 	w.EndObject();
 	FinalizeJsonBody(w, r);
