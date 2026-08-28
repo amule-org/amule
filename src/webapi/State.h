@@ -114,8 +114,8 @@ struct FileSnapshot
 	bool has_media = false;
 	struct Media
 	{
-		std::uint32_t length_s = 0; // duration, seconds
-		std::uint32_t bitrate = 0;
+		std::uint32_t duration_seconds = 0; // duration, seconds
+		std::uint32_t bitrate_kilobits_per_second = 0;
 		std::string codec;
 		std::string artist;
 		std::string album;
@@ -125,7 +125,7 @@ struct FileSnapshot
 	// The partfile's control-file basename (e.g. `001.part`), from
 	// EC_TAG_KNOWNFILE_FILENAME. Meaningful only while the file is still
 	// an incomplete partfile — once it completes, the daemon reuses that
-	// EC tag to carry the directory path, so `met_file` on /downloads is
+	// EC tag to carry the directory path, so `part_file_name` on /downloads is
 	// gated on the download status (empty once completed). See #417.
 	std::string part_met_basename;
 
@@ -140,9 +140,9 @@ struct FileSnapshot
 	// by `/downloads` when the flag is false).
 	struct DownloadSide
 	{
-		std::uint64_t size_done = 0;
-		std::uint64_t size_xfer = 0;
-		std::uint32_t speed_bps = 0;
+		std::uint64_t completed_bytes = 0;
+		std::uint64_t transferred_bytes = 0;
+		std::uint32_t speed_bytes_per_second = 0;
 		std::string status; // "downloading" | "paused"
 				    // | "completed" | "hashing" | ...
 		// Download priority: "very_low" | "low" | "normal" | "high"
@@ -152,22 +152,21 @@ struct FileSnapshot
 		std::uint32_t category = 0;
 		double percent = 0.0;
 		std::uint32_t sources_total = 0;
-		std::uint32_t sources_not_current = 0;
+		std::uint32_t sources_unavailable = 0;
 		std::uint32_t sources_transferring = 0;
 		std::uint32_t sources_a4af = 0;
 
 		// Detail-only fields (GET /downloads/{hash}); the list endpoint
 		// omits them. All decoded from tags CEC_PartFile_Tag already
 		// emits under INC_UPDATE.
-		std::uint32_t last_seen_complete = 0;    // unix ts; 0 = unknown
-		std::uint32_t last_changed = 0;          // unix ts of last change
-		std::uint32_t download_active_time = 0;  // seconds downloading
-		std::uint16_t available_part_count = 0;  // parts across sources
-		std::uint16_t hashing_progress = 0;      // parts hashed so far; 0 = idle
-		std::uint64_t lost_to_corruption = 0;    // bytes
-		std::uint64_t gained_by_compression = 0; // bytes
-		std::uint32_t saved_by_ich = 0;          // packets recovered by ICH
-		std::uint32_t partmet_id = 0;            // numeric partfile id
+		std::uint32_t last_seen_complete_at = 0;       // unix ts; 0 = unknown
+		std::uint32_t last_received_at = 0;            // unix ts of last change
+		std::uint32_t active_seconds = 0;              // seconds downloading
+		std::uint16_t parts_available_count = 0;       // parts across sources
+		std::uint16_t hashed_part_count = 0;           // parts hashed so far; 0 = idle
+		std::uint64_t lost_to_corruption_bytes = 0;    // bytes
+		std::uint64_t gained_by_compression_bytes = 0; // bytes
+		std::uint32_t ich_recovered_packet_count = 0;  // packets recovered by ICH
 
 		// Per-source comments/ratings (GET /downloads/{hash}/comments,
 		// issue #419). Downloads-only — needs a live source list. A
@@ -266,7 +265,7 @@ struct FileSnapshot
 		// which both tasks restore when they finish or abort.
 		//
 		// A download that is also shared arrives as EC_TAG_PARTFILE, so its
-		// progress lands in download.hashing_progress and this stays 0 --
+		// progress lands in download.hashed_part_count and this stays 0 --
 		// read both through SharedHashingProgress() rather than this field
 		// directly, the same fallback decoded_part_sources needs.
 		std::uint16_t hashing_progress = 0;
@@ -897,8 +896,8 @@ struct SearchResult
 	bool has_media = false;
 	struct Media
 	{
-		std::uint32_t length_s = 0;
-		std::uint32_t bitrate = 0;
+		std::uint32_t duration_seconds = 0;
+		std::uint32_t bitrate_kilobits_per_second = 0;
 		std::string codec;
 		std::string artist;
 		std::string album;

@@ -268,29 +268,30 @@ Every event the bus publishes. The `_added` and `_updated` payloads are BYTE-FOR
 
 #### `download_added` / `download_updated`
 
-Identical to the REST [`/api/v0/downloads`](REFERENCE.md#get-apiv0downloads) list-item shape. `_updated` fires on any field-level change including `size_done`, `size_xfer`, `speed_bps`, the source counters, `kad_comment_search_running` and `hashing_progress` — clients see live progress (and the Kad-notes lookup start → finish edge, and a running hash) without polling.
+Identical to the REST [`/api/v0/downloads`](REFERENCE.md#get-apiv0downloads) list-item shape. `_updated` fires on any field-level change including `completed_bytes`, `transferred_bytes`, `speed_bytes_per_second`, the source counters, `kad_comment_lookup_running` and `hashed_part_count` — clients see live progress (and the Kad-notes lookup start → finish edge, and a running hash) without polling.
 
 ```json
 {
   "hash":          "8b54a3c2...",
   "name":          "ubuntu-26.04-desktop-amd64.iso",
   "ed2k_link":     "ed2k://|file|ubuntu...|3825..|8b54...|/",
-  "size":          3825205248,
-  "size_done":     1142000000,
-  "size_xfer":     1102450000,
-  "speed_bps":     4500000,
+  "size_bytes":     3825205248,
+  "completed_bytes":     1142000000,
+  "transferred_bytes":     1102450000,
+  "speed_bytes_per_second":     4500000,
   "status":        "downloading",
   "priority":      "normal",
   "priority_auto": true,
-  "category":      0,
-  "sources":  { "total": 217, "not_current": 23, "transferring": 8, "a4af": 4 },
+  "category_index": 0,
+  "sources":  { "total": 217, "unavailable": 23, "transferring": 8, "a4af": 4 },
   "progress": { "percent": 29.85 },
-  "kad_comment_search_running": false,
-  "hashing_progress": 0
+  "kad_comment_lookup_running": false,
+  "hashed_part_count":  0,
+  "parts_total_count":  411
 }
 ```
 
-A `POST /downloads/{hash}/comments` flips `kad_comment_search_running` to `true`, producing a `download_updated`; when the Kad lookup finishes (typically ~45 s, or sooner) it flips back to `false`, producing another. Retrieved notes are then read via `GET /downloads/{hash}/comments`.
+A `POST /downloads/{hash}/comments` flips `kad_comment_lookup_running` to `true`, producing a `download_updated`; when the Kad lookup finishes (typically ~45 s, or sooner) it flips back to `false`, producing another. Retrieved notes are then read via `GET /downloads/{hash}/comments`.
 
 #### `download_removed`
 
@@ -307,8 +308,8 @@ Fires whenever a download's comment/rating list changes — a Kad note arriving 
 ```json
 {
   "hash": "8b54a3c2...",
-  "kad_comment_search_running": false,
-  "count": 2,
+  "kad_comment_lookup_running": false,
+  "total": 2,
   "comments": [
     { "username": "alice",    "filename": "Some.Movie.mkv", "rating": 5, "comment": "great quality" },
     { "username": "Kad user", "filename": "some_movie.avi", "rating": 4, "comment": "" }
@@ -341,7 +342,7 @@ Identical to the REST [`/api/v0/shared`](REFERENCE.md#get-apiv0shared) list-item
   "last_upload":      1700000500,
   "shared_since":     1699000000,
   "hashing_progress": 0,
-  "media": { "length_s": 5400, "bitrate": 1500, "codec": "h264", "artist": "", "album": "", "title": "" }
+  "media": { "duration_seconds": 5400, "bitrate": 1500, "codec": "h264", "artist": "", "album": "", "title": "" }
 }
 ```
 
@@ -577,7 +578,7 @@ Driven by the refresher state machine that owns the `POST /search` → completio
 
 `_added` fires per new result that appears in the results map between refresher ticks. `_updated` fires when a result you already hold changes in one of the fields below. Both carry the identical payload, so a subscriber can handle them with one function keyed by `(search_id, hash)`; they are separate names so that a consumer written against the add-only channel keeps its existing behaviour instead of silently acquiring upsert semantics.
 
-**What `_updated` covers, and what it deliberately does not.** It fires on `status`, `already_have`, `comments[]`, `kad_comment_search_running` and `rating` (which aggregates from the comments). Those are the fields that can change *after* a search finishes, which is the window where nothing else tells you: `search_progress` has stopped, so a hit you download from a finished search would otherwise read `already_have: false` forever, and a Kad notes lookup that lands afterwards would be invisible until someone re-read the endpoint.
+**What `_updated` covers, and what it deliberately does not.** It fires on `status`, `already_have`, `comments[]`, `kad_comment_lookup_running` and `rating` (which aggregates from the comments). Those are the fields that can change *after* a search finishes, which is the window where nothing else tells you: `search_progress` has stopped, so a hit you download from a finished search would otherwise read `already_have: false` forever, and a Kad notes lookup that lands afterwards would be invisible until someone re-read the endpoint.
 
 It does **not** fire on `sources` or `children[]`. Those churn on essentially every tick of a running search, and [`search_progress`](#search_progress) already fires on every advance there and is the cue to re-read [`GET /search/{id}/results`](REFERENCE.md#get-apiv0searchidresults). Pushing them per result would duplicate an existing signal on the noisiest fields on the surface. The identity fields (`hash`, `name`, `size`, `type`, `directory`, `media`) never change for a given result, so there is nothing to push.
 
@@ -592,12 +593,12 @@ It does **not** fire on `sources` or `children[]`. Those churn on essentially ev
   "rating": 0,
   "status": "new",
   "type": "videos",
-  "media": { "length_s": 5400, "bitrate": 1500, "codec": "h264", "artist": "", "album": "", "title": "" },
+  "media": { "duration_seconds": 5400, "bitrate": 1500, "codec": "h264", "artist": "", "album": "", "title": "" },
   "children": []
 }
 ```
 
-`search_id` routes the result to the search that produced it — amuleapi runs several searches at once (see [REFERENCE.md](REFERENCE.md#post-apiv0search)), so demux on it. Key results by `(search_id, hash)`. Aside from the leading `search_id`, the payload is byte-for-byte identical to a `/search/{id}/results` array entry — the two are emitted by the same writer, so the promise holds by construction. That includes `status`, `type`, `directory` (the folder inside a browsed peer's share, `""` on ordinary hits), `kad_comment_search_running`, `comments[]` and the `children[]` grouping array — see [REFERENCE.md](REFERENCE.md#get-apiv0searchidresults); `sources` is the nested `{total, complete}` object, `media` — the audio/video metadata object — is present for locally-known/probed hits and `null` otherwise (the one place the unknown-value rule reaches an object rather than a scalar, so test `media === null` before reaching into it), and `children` holds the same-hash/different-name alternatives (empty for a single-name hit), same as the REST endpoint. Only parent results fire these events — children are folded into their parent's `children[]`, never emitted on their own. A change to a child therefore surfaces as a `search_result_updated` for its parent. Each `search_id` is an independent result space — a new `POST /search` starts a fresh one without disturbing the others.
+`search_id` routes the result to the search that produced it — amuleapi runs several searches at once (see [REFERENCE.md](REFERENCE.md#post-apiv0search)), so demux on it. Key results by `(search_id, hash)`. Aside from the leading `search_id`, the payload is byte-for-byte identical to a `/search/{id}/results` array entry — the two are emitted by the same writer, so the promise holds by construction. That includes `status`, `type`, `directory` (the folder inside a browsed peer's share, `""` on ordinary hits), `kad_comment_lookup_running`, `comments[]` and the `children[]` grouping array — see [REFERENCE.md](REFERENCE.md#get-apiv0searchidresults); `sources` is the nested `{total, complete}` object, `media` — the audio/video metadata object — is present for locally-known/probed hits and `null` otherwise (the one place the unknown-value rule reaches an object rather than a scalar, so test `media === null` before reaching into it), and `children` holds the same-hash/different-name alternatives (empty for a single-name hit), same as the REST endpoint. Only parent results fire these events — children are folded into their parent's `children[]`, never emitted on their own. A change to a child therefore surfaces as a `search_result_updated` for its parent. Each `search_id` is an independent result space — a new `POST /search` starts a fresh one without disturbing the others.
 
 #### `search_progress`
 

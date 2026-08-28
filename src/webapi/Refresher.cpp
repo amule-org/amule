@@ -325,7 +325,7 @@ namespace
 // recognise. "downloading" is overloaded: it covers PS_READY (the
 // daemon's "transferring" state) AND PS_EMPTY (no sources right now
 // but the file isn't paused) — clients distinguish by reading
-// `speed_bps` and `sources.transferring`.
+// `speed_bytes_per_second` and `sources.transferring`.
 const char *DownloadStatusName(std::uint8_t ps_code, bool stopped)
 {
 	// PS_COMPLETE / PS_COMPLETING take priority over `stopped` —
@@ -472,10 +472,10 @@ void MergeKnownFileDetail(const CECTag *t, FileSnapshot &f)
 	{
 		std::uint32_t v = 0;
 		if (t->AssignIfExist(EC_TAG_KNOWNFILE_MEDIA_LENGTH, v)) {
-			f.media.length_s = v;
+			f.media.duration_seconds = v;
 		}
 		if (t->AssignIfExist(EC_TAG_KNOWNFILE_MEDIA_BITRATE, v)) {
-			f.media.bitrate = v;
+			f.media.bitrate_kilobits_per_second = v;
 		}
 	}
 	if (const CECTag *x = t->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_CODEC)) {
@@ -495,8 +495,9 @@ void MergeKnownFileDetail(const CECTag *t, FileSnapshot &f)
 	// clearing that field, so latching would report has_media on a file whose
 	// every field has since been cleared -- and assigning the empty value
 	// above is what makes a clear propagate at all.
-	f.has_media = f.media.length_s != 0 || f.media.bitrate != 0 || !f.media.codec.empty() ||
-		      !f.media.artist.empty() || !f.media.album.empty() || !f.media.title.empty();
+	f.has_media = f.media.duration_seconds != 0 || f.media.bitrate_kilobits_per_second != 0 ||
+		      !f.media.codec.empty() || !f.media.artist.empty() || !f.media.album.empty() ||
+		      !f.media.title.empty();
 }
 
 void MergePartFileTag(const CEC_PartFile_Tag *pf, FileSnapshot &f, bool is_new)
@@ -517,19 +518,19 @@ void MergePartFileTag(const CEC_PartFile_Tag *pf, FileSnapshot &f, bool is_new)
 			f.size = v;
 	}
 	{
-		std::uint64_t v = f.download.size_done;
+		std::uint64_t v = f.download.completed_bytes;
 		if (pf->AssignIfExist(EC_TAG_PARTFILE_SIZE_DONE, v))
-			f.download.size_done = v;
+			f.download.completed_bytes = v;
 	}
 	{
-		std::uint64_t v = f.download.size_xfer;
+		std::uint64_t v = f.download.transferred_bytes;
 		if (pf->AssignIfExist(EC_TAG_PARTFILE_SIZE_XFER, v))
-			f.download.size_xfer = v;
+			f.download.transferred_bytes = v;
 	}
 	{
-		std::uint32_t v = f.download.speed_bps;
+		std::uint32_t v = f.download.speed_bytes_per_second;
 		if (pf->AssignIfExist(EC_TAG_PARTFILE_SPEED, v))
-			f.download.speed_bps = v;
+			f.download.speed_bytes_per_second = v;
 	}
 	{
 		// Status + stopped flag interact — re-derive the wire string
@@ -575,7 +576,7 @@ void MergePartFileTag(const CEC_PartFile_Tag *pf, FileSnapshot &f, bool is_new)
 		if (pf->AssignIfExist(EC_TAG_PARTFILE_SOURCE_COUNT, v))
 			f.download.sources_total = v;
 		if (pf->AssignIfExist(EC_TAG_PARTFILE_SOURCE_COUNT_NOT_CURRENT, v))
-			f.download.sources_not_current = v;
+			f.download.sources_unavailable = v;
 		if (pf->AssignIfExist(EC_TAG_PARTFILE_SOURCE_COUNT_XFER, v))
 			f.download.sources_transferring = v;
 		if (pf->AssignIfExist(EC_TAG_PARTFILE_SOURCE_COUNT_A4AF, v))
@@ -585,29 +586,27 @@ void MergePartFileTag(const CEC_PartFile_Tag *pf, FileSnapshot &f, bool is_new)
 	{
 		std::uint32_t v = 0;
 		if (pf->AssignIfExist(EC_TAG_PARTFILE_LAST_SEEN_COMP, v))
-			f.download.last_seen_complete = v;
+			f.download.last_seen_complete_at = v;
 		if (pf->AssignIfExist(EC_TAG_PARTFILE_LAST_RECV, v))
-			f.download.last_changed = v;
+			f.download.last_received_at = v;
 		if (pf->AssignIfExist(EC_TAG_PARTFILE_DOWNLOAD_ACTIVE, v))
-			f.download.download_active_time = v;
+			f.download.active_seconds = v;
 		if (pf->AssignIfExist(EC_TAG_PARTFILE_SAVED_ICH, v))
-			f.download.saved_by_ich = v;
-		if (pf->AssignIfExist(EC_TAG_PARTFILE_PARTMETID, v))
-			f.download.partmet_id = v;
+			f.download.ich_recovered_packet_count = v;
 	}
 	{
 		std::uint16_t v = 0;
 		if (pf->AssignIfExist(EC_TAG_PARTFILE_AVAILABLE_PARTS, v))
-			f.download.available_part_count = v;
+			f.download.parts_available_count = v;
 		if (pf->AssignIfExist(EC_TAG_PARTFILE_HASHED_PART_COUNT, v))
-			f.download.hashing_progress = v;
+			f.download.hashed_part_count = v;
 	}
 	{
 		std::uint64_t v = 0;
 		if (pf->AssignIfExist(EC_TAG_PARTFILE_LOST_CORRUPTION, v))
-			f.download.lost_to_corruption = v;
+			f.download.lost_to_corruption_bytes = v;
 		if (pf->AssignIfExist(EC_TAG_PARTFILE_GAINED_COMPRESSION, v))
-			f.download.gained_by_compression = v;
+			f.download.gained_by_compression_bytes = v;
 	}
 	// Per-source comments/ratings (issue #419). The EC container packs
 	// four children per source, evaluated by index: username, filename,
@@ -673,13 +672,12 @@ void MergePartFileTag(const CEC_PartFile_Tag *pf, FileSnapshot &f, bool is_new)
 		for (const CECTag &src : *a4af)
 			f.download.a4af_sources.push_back(static_cast<std::uint32_t>(src.GetInt()));
 	}
-	// Base CKnownFile detail tags (aich_hash, queued_count, met_file).
+	// Base CKnownFile detail tags (aich_hash, upload_queue_count, part_file_name).
 	MergeKnownFileDetail(pf, f);
 	// Recompute percent unconditionally — both inputs may have moved.
-	f.download.percent =
-		(f.size > 0)
-			? (static_cast<double>(f.download.size_done) * 100.0 / static_cast<double>(f.size))
-			: 0.0;
+	f.download.percent = (f.size > 0) ? (static_cast<double>(f.download.completed_bytes) * 100.0 /
+						    static_cast<double>(f.size))
+					  : 0.0;
 }
 
 // State-code → wire-string decoders for the four enums amule ships
@@ -1185,7 +1183,7 @@ void MergeSharedTag(const CEC_SharedFile_Tag *sf, FileSnapshot &f)
 		// rebuild over this complete share. Rides every update tick,
 		// CValueMap-suppressed when unchanged, so it moves only while a
 		// hash is actually running. The partfile equivalent is decoded
-		// into download.hashing_progress above.
+		// into download.hashed_part_count above.
 		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_HASHED_PART_COUNT, v))
 			f.shared.hashing_progress = v;
 	}
@@ -2500,10 +2498,10 @@ void MergeSearchResultTag(const CEC_SearchFile_Tag *sf, SearchResult &r)
 	{
 		std::uint32_t v = 0;
 		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_MEDIA_LENGTH, v)) {
-			r.media.length_s = v;
+			r.media.duration_seconds = v;
 		}
 		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_MEDIA_BITRATE, v)) {
-			r.media.bitrate = v;
+			r.media.bitrate_kilobits_per_second = v;
 		}
 	}
 	if (const CECTag *x = sf->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_CODEC)) {
@@ -2523,8 +2521,9 @@ void MergeSearchResultTag(const CEC_SearchFile_Tag *sf, SearchResult &r)
 	// side, so either can be sent a zero / empty "this field is gone" tag
 	// -- latching on any tag being present would mark a result as having
 	// media with every field blank.
-	r.has_media = r.media.length_s != 0 || r.media.bitrate != 0 || !r.media.codec.empty() ||
-		      !r.media.artist.empty() || !r.media.album.empty() || !r.media.title.empty();
+	r.has_media = r.media.duration_seconds != 0 || r.media.bitrate_kilobits_per_second != 0 ||
+		      !r.media.codec.empty() || !r.media.artist.empty() || !r.media.album.empty() ||
+		      !r.media.title.empty();
 	// On-demand Kad community ratings/comments (issue #434). Same
 	// 4-children-per-entry positional container the download side uses
 	// (username, filename, rating, comment); a search hit's comments are

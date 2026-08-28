@@ -53,7 +53,7 @@ export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDele
   // then), but not the percent bar above -- that is the download's own
   // completeness.
   const parts = (d.progress && d.progress.parts) || [];
-  const eta = d.remaining_time == null ? "—" : formatDuration(d.remaining_time);
+  const eta = d.remaining_seconds == null ? "—" : formatDuration(d.remaining_seconds);
 
   const copy = (text) => copyText(text)
     .then(() => toast(t("downloads_detail_copied"), "success"))
@@ -94,8 +94,8 @@ export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDele
         <${FileClients} hash=${d.hash} prefsKey="download_clients" defaultHidden=${DL_HIDDEN}
                         defaultSort="downloaded" />
       ` : tab === "comments" ? html`
-        <${DownloadComments} hash=${d.hash} comment=${d.comment} rating=${d.rating}
-                             running=${!!(downloads.find((x) => x.hash === d.hash) || {}).kad_comment_search_running}
+        <${DownloadComments} hash=${d.hash} comment=${d.my_comment} rating=${d.my_rating}
+                             running=${!!(downloads.find((x) => x.hash === d.hash) || {}).kad_comment_lookup_running}
                              parts=${parts} />
       ` : tab === "filename" ? html`
         <${DownloadFilenames} hash=${d.hash} name=${d.name}
@@ -104,41 +104,41 @@ export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDele
       <div class="detail-sections">
         <div class="detail-progress">
           <${ProgressBar} percent=${d.progress && d.progress.percent} />
-          ${d.hashing_progress > 0 && d.part_count ? html`
-            <${PiecesBar} mode="hashing" total=${d.part_count} hashed=${d.hashing_progress} />
-            <${PiecesLegend} mode="hashing" total=${d.part_count} hashed=${d.hashing_progress} />`
+          ${d.hashed_part_count > 0 && d.parts_total_count ? html`
+            <${PiecesBar} mode="hashing" total=${d.parts_total_count} hashed=${d.hashed_part_count} />
+            <${PiecesLegend} mode="hashing" total=${d.parts_total_count} hashed=${d.hashed_part_count} />`
           : parts.length ? html`
             <${PiecesBar} parts=${parts} />
             <${PiecesLegend} parts=${parts} />` : null}
         </div>
         ${Section([
           statRow("downloads_status_label", t("downloads_status_" + d.status), "downloads_detail_tip_status"),
-          statRow("downloads_detail_completed", formatBytes(d.size_done) + " (" + formatPercent(d.progress && d.progress.percent) + ")", "downloads_detail_tip_completed"),
-          statRow("downloads_speed", formatSpeed(d.speed_bps), "downloads_detail_tip_speed"),
+          statRow("downloads_detail_completed", formatBytes(d.completed_bytes) + " (" + formatPercent(d.progress && d.progress.percent) + ")", "downloads_detail_tip_completed"),
+          statRow("downloads_speed", formatSpeed(d.speed_bytes_per_second), "downloads_detail_tip_speed"),
           statRow("downloads_detail_eta", eta, "downloads_detail_tip_eta"),
           statRow("downloads_sources", (src.transferring || 0) + " / " + (src.total || 0), "downloads_detail_tip_sources"),
-          statRow("downloads_size", formatBytes(d.size), "downloads_detail_tip_size"),
-          statRow("downloads_detail_transferred", formatBytes(d.size_xfer), "downloads_detail_tip_transferred"),
+          statRow("downloads_size", formatBytes(d.size_bytes), "downloads_detail_tip_size"),
+          statRow("downloads_detail_transferred", formatBytes(d.transferred_bytes), "downloads_detail_tip_transferred"),
         ], "downloads_detail_group_transfer")}
         ${Section([
-          statRow("downloads_detail_active_time", formatDuration(d.download_active_time), "downloads_detail_tip_active_time"),
-          statRow("downloads_detail_last_changed", formatTimestamp(d.last_changed), "downloads_detail_tip_last_changed"),
-          statRow("downloads_detail_last_seen_complete", formatTimestamp(d.last_seen_complete), "downloads_detail_tip_last_seen_complete"),
-          statRow("downloads_detail_queued", formatInt(d.queued_count), "downloads_detail_tip_queued"),
+          statRow("downloads_detail_active_time", formatDuration(d.active_seconds), "downloads_detail_tip_active_time"),
+          statRow("downloads_detail_last_changed", formatTimestamp(d.last_received_at), "downloads_detail_tip_last_changed"),
+          statRow("downloads_detail_last_seen_complete", formatTimestamp(d.last_seen_complete_at), "downloads_detail_tip_last_seen_complete"),
+          statRow("downloads_detail_queued", formatInt(d.upload_queue_count), "downloads_detail_tip_queued"),
         ], "downloads_detail_group_history")}
         ${media ? Section([
           media.title ? statRow("downloads_detail_media_title", media.title, "downloads_detail_tip_media_title") : null,
           media.artist ? statRow("downloads_detail_media_artist", media.artist, "downloads_detail_tip_media_artist") : null,
           media.album ? statRow("downloads_detail_media_album", media.album, "downloads_detail_tip_media_album") : null,
-          media.length_s ? statRow("downloads_detail_media_length", formatDuration(media.length_s), "downloads_detail_tip_media_length") : null,
-          media.bitrate ? statRow("downloads_detail_media_bitrate", formatInt(media.bitrate), "downloads_detail_tip_media_bitrate") : null,
+          media.duration_seconds ? statRow("downloads_detail_media_length", formatDuration(media.duration_seconds), "downloads_detail_tip_media_length") : null,
+          media.bitrate_kilobits_per_second ? statRow("downloads_detail_media_bitrate", formatInt(media.bitrate_kilobits_per_second), "downloads_detail_tip_media_bitrate") : null,
           media.codec ? statRow("downloads_detail_media_codec", media.codec, "downloads_detail_tip_media_codec") : null,
         ].filter(Boolean), "downloads_detail_group_media") : null}
         ${Section([
-          statRow("downloads_detail_available_parts", formatInt(d.available_part_count) + " / " + formatInt(d.part_count), "downloads_detail_tip_available_parts"),
-          statRow("downloads_detail_saved_ich", formatInt(d.saved_by_ich) + " " + t("downloads_detail_ich_unit"), "downloads_detail_tip_saved_ich"),
-          statRow("downloads_detail_lost_corruption", formatBytes(d.lost_to_corruption), "downloads_detail_tip_lost_corruption"),
-          statRow("downloads_detail_gained_compression", formatBytes(d.gained_by_compression), "downloads_detail_tip_gained_compression"),
+          statRow("downloads_detail_available_parts", formatInt(d.parts_available_count) + " / " + formatInt(d.parts_total_count), "downloads_detail_tip_available_parts"),
+          statRow("downloads_detail_saved_ich", formatInt(d.ich_recovered_packet_count) + " " + t("downloads_detail_ich_unit"), "downloads_detail_tip_saved_ich"),
+          statRow("downloads_detail_lost_corruption", formatBytes(d.lost_to_corruption_bytes), "downloads_detail_tip_lost_corruption"),
+          statRow("downloads_detail_gained_compression", formatBytes(d.gained_by_compression_bytes), "downloads_detail_tip_gained_compression"),
         ], "downloads_detail_group_integrity")}
         ${Section(
           [statRow("downloads_sources", formatInt(src.a4af || 0), "downloads_detail_tip_a4af")],
@@ -158,8 +158,8 @@ export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDele
               ${t("downloads_a4af_auto")}
             </button>`)}
         ${IdentityLine({ file: d, copy, titleKey: "downloads_detail_group_identity", extra: [
-          statRow("downloads_detail_path", d.path || "—", "downloads_detail_tip_path"),
-          statRow("downloads_detail_met_file", d.met_file || "—", "downloads_detail_tip_met_file"),
+          statRow("downloads_detail_directory", d.directory || "—", "downloads_detail_tip_directory"),
+          statRow("downloads_detail_part_file", d.part_file_name || "—", "downloads_detail_tip_part_file"),
         ] })}
       </div>`}
       </div>
@@ -179,7 +179,7 @@ function DetailActions({ d, isGuest, categories, onPatch, onDelete, onClear }) {
     onClear(d.hash);
   };
 
-  // admin-only per button, not on the bar: guests keep the priority/category readout.
+  // admin-only per button, not on the bar: guests keep the priority/category_index readout.
   return html`
     <div class="detail-actions">
       <button class="btn btn-sm admin-only" type="button"
@@ -207,9 +207,9 @@ function DetailActions({ d, isGuest, categories, onPatch, onDelete, onClear }) {
       </div>
       <div class="field field-inline" title=${t("downloads_detail_tip_category")}>
         <label>${t("downloads_category")}</label>
-        ${isGuest ? html`<b>${categoryName(categories, d.category)}</b>` : html`
-          <select class="input input-sm" value=${d.category}
-                  onChange=${(e) => onPatch(d.hash, { category: Number(e.target.value) })}>
+        ${isGuest ? html`<b>${categoryName(categories, d.category_index)}</b>` : html`
+          <select class="input input-sm" value=${d.category_index}
+                  onChange=${(e) => onPatch(d.hash, { category_index: Number(e.target.value) })}>
             ${categoryOptions(categories)}
           </select>`}
       </div>

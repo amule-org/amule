@@ -149,22 +149,22 @@ if [ -n "$ADDED" ]; then
 		_fail "download_added .data.name" "not a string in $JSON"
 	fi
 	# Kad-notes search state rides the download event (issue #434).
-	if echo "$JSON" | jq -e '.kad_comment_search_running | type == "boolean"' >/dev/null 2>&1; then
-		_pass "download_added .data.kad_comment_search_running is boolean"
+	if echo "$JSON" | jq -e '.kad_comment_lookup_running | type == "boolean"' >/dev/null 2>&1; then
+		_pass "download_added .data.kad_comment_lookup_running is boolean"
 	else
-		_fail "download_added .data.kad_comment_search_running" "not boolean in $JSON"
+		_fail "download_added .data.kad_comment_lookup_running" "not boolean in $JSON"
 	fi
-	if echo "$JSON" | jq -e '.size | type == "number"' >/dev/null 2>&1; then
-		_pass "download_added .data.size is a number"
+	if echo "$JSON" | jq -e '.size_bytes | type == "number"' >/dev/null 2>&1; then
+		_pass "download_added .data.size_bytes is a number"
 	else
-		_fail "download_added .data.size" "not a number in $JSON"
+		_fail "download_added .data.size_bytes" "not a number in $JSON"
 	fi
 	# Hashing progress rides the download event too (issue #1054), so a
 	# client watching the stream sees a Verify Local Data pass advance.
-	if echo "$JSON" | jq -e '.hashing_progress | type == "number"' >/dev/null 2>&1; then
-		_pass "download_added .data.hashing_progress is a number"
+	if echo "$JSON" | jq -e '.hashed_part_count | type == "number"' >/dev/null 2>&1; then
+		_pass "download_added .data.hashed_part_count is a number"
 	else
-		_fail "download_added .data.hashing_progress" "not a number in $JSON"
+		_fail "download_added .data.hashed_part_count" "not a number in $JSON"
 	fi
 else
 	_fail "download_added missing" \
@@ -681,7 +681,7 @@ if [ -n "$UPD_HASH" ]; then
 		fi
 		# Same writer as _added and as the REST entry, so the whole row is
 		# there rather than a delta a client would have to merge blindly.
-		if echo "$UPD_FRAME" | jq -e 'has("name") and has("size") and has("status") and has("kad_comment_search_running")' >/dev/null 2>&1; then
+		if echo "$UPD_FRAME" | jq -e 'has("name") and has("size") and has("status") and has("kad_comment_lookup_running")' >/dev/null 2>&1; then
 			_pass "search_result_updated carries the full results-entry shape"
 		else
 			_fail "search_result_updated shape" "$UPD_FRAME"

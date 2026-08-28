@@ -47,7 +47,7 @@ std::uint64_t PartCountForSize(std::uint64_t size)
 
 std::uint16_t SharedHashingProgress(const FileSnapshot &f)
 {
-	return f.shared.hashing_progress ? f.shared.hashing_progress : f.download.hashing_progress;
+	return f.shared.hashing_progress ? f.shared.hashing_progress : f.download.hashed_part_count;
 }
 
 // Completeness of the file we download FROM this peer: parts the peer has over

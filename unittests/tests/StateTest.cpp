@@ -189,7 +189,7 @@ TEST(State, MutateDownloadsRoundtripAndFind)
 		a.name = "foo.iso";
 		a.size = 1000;
 		a.is_downloading = true;
-		a.download.size_done = 250;
+		a.download.completed_bytes = 250;
 		a.download.priority = "high";
 		a.download.status = "downloading";
 		a.download.percent = 25.0;

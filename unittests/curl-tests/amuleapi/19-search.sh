@@ -599,7 +599,7 @@ _assert_status 404 "POST /search/{unknown}/stop → 404"
 if [ -n "$RESULT_HASH" ]; then
 	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d '{"category":0}' \
+		-d '{"category_index":0}' \
 		"$HOST/api/v0/search/results/$RESULT_HASH/download"
 	# 202 with no body: `hash` came from the URL, `category` came from the
 	# request, and the download itself reports the category it landed in.
@@ -627,7 +627,7 @@ _assert_status 400 "POST download (bad hash format) → 400"
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"category":300}' \
+	-d '{"category_index":300}' \
 	"$HOST/api/v0/search/results/baadbaadbaadbaadbaadbaadbaadbaad/download"
 _assert_status 400 "POST download (category out of range) → 400"
 
@@ -792,8 +792,8 @@ done
 
 if [ -n "$CMT_HASH" ]; then
 	# Every result carries the comment fields on the list itself.
-	_assert_json_eq '.results[0].kad_comment_search_running | type' boolean \
-		'/search/{id}/results[0].kad_comment_search_running is boolean (issue #434)'
+	_assert_json_eq '.results[0].kad_comment_lookup_running | type' boolean \
+		'/search/{id}/results[0].kad_comment_lookup_running is boolean (issue #434)'
 	_assert_json_eq '.results[0].comments | type' array \
 		'/search/{id}/results[0].comments is an array'
 
@@ -804,7 +804,7 @@ if [ -n "$CMT_HASH" ]; then
 	# value, so it restated the status code -- and `status` everywhere else on
 	# this surface is a transfer state, so a client switching on it had to know
 	# which kind of object it held first. The lookup's progress is read from
-	# `kad_comment_search_running` on the GET below.
+	# `kad_comment_lookup_running` on the GET below.
 	_assert_status 202 "POST /search/results/{hash}/comments → 202"
 	_assert_body_empty 'search comments POST sends no body'
 
@@ -813,8 +813,8 @@ if [ -n "$CMT_HASH" ]; then
 		"$HOST/api/v0/search/results/$CMT_HASH/comments"
 	_assert_status 200 "GET /search/results/{hash}/comments → 200"
 	_assert_json_eq '.count | type' number 'search comments.count is numeric'
-	_assert_json_eq '.kad_comment_search_running | type' boolean \
-		'search comments carries kad_comment_search_running flag'
+	_assert_json_eq '.kad_comment_lookup_running | type' boolean \
+		'search comments carries kad_comment_lookup_running flag'
 	_assert_json_eq '.comments | type' array 'search comments.comments is an array'
 
 	# The lookup's outcome only reaches amuleapi through the owning
@@ -837,7 +837,7 @@ if [ -n "$CMT_HASH" ]; then
 	for _ in $(seq 1 30); do
 		_curl -H "Authorization: Bearer $ADMIN_TOKEN" \
 			"$HOST/api/v0/search/results/$CMT_HASH/comments"
-		RUNNING=$(printf '%s' "$CURL_BODY" | jq -r '.kad_comment_search_running')
+		RUNNING=$(printf '%s' "$CURL_BODY" | jq -r '.kad_comment_lookup_running')
 		NOTES=$(printf '%s' "$CURL_BODY" | jq -r '.count')
 		[ "$RUNNING" = "true" ] && SAW_FLAG=1
 		if [ "$SAW_FLAG" = "1" ] && { [ "$RUNNING" = "false" ] || [ "$NOTES" -gt 0 ] 2>/dev/null; }; then
@@ -847,7 +847,7 @@ if [ -n "$CMT_HASH" ]; then
 		sleep 2
 	done
 	if [ "$SAW_FLAG" = "0" ]; then
-		echo "    info: kad_comment_search_running never turned on — Kad likely down;"
+		echo "    info: kad_comment_lookup_running never turned on — Kad likely down;"
 		echo "    info: skipping the finished-search comments reporting assertion."
 	elif [ "$REPORTED" = "1" ]; then
 		_pass "kad notes lookup on a FINISHED search reports back (running=$RUNNING notes=$NOTES)"

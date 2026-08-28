@@ -787,7 +787,7 @@ TEST(EventDiff, SearchResultAddedCarriesTheFullResultsEntry)
 	ASSERT_TRUE(payload.find("\"directory\":\"Backup/ISOs\"") != std::string::npos);
 	// The two fields the previously hand-rolled event payload omitted
 	// while the REST writer emitted them.
-	ASSERT_TRUE(payload.find("\"kad_comment_search_running\":false") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"kad_comment_lookup_running\":false") != std::string::npos);
 	ASSERT_TRUE(payload.find("\"comments\":[]") != std::string::npos);
 }
 
@@ -1082,8 +1082,8 @@ TEST(EventDiff, SharedEventCarriesMediaWhenPresent)
 		f.size = kPartSizeBytes;
 		f.is_shared = true;
 		f.has_media = true;
-		f.media.length_s = 5400;
-		f.media.bitrate = 1500;
+		f.media.duration_seconds = 5400;
+		f.media.bitrate_kilobits_per_second = 1500;
 		f.media.codec = "h264";
 		files.emplace(f.ecid, f);
 	});
@@ -1098,7 +1098,7 @@ TEST(EventDiff, SharedEventCarriesMediaWhenPresent)
 			payload = e.data;
 	}
 	ASSERT_TRUE(!payload.empty());
-	ASSERT_TRUE(payload.find("\"media\":{\"length_s\":5400") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"media\":{\"duration_seconds\":5400") != std::string::npos);
 	ASSERT_TRUE(payload.find("\"codec\":\"h264\"") != std::string::npos);
 }
 
@@ -1149,7 +1149,7 @@ TEST(EventDiff, SharedEventFallsBackToTheDownloadSideHashingProgress)
 		f.size = kPartSizeBytes * 4;
 		f.is_shared = true;
 		f.is_downloading = true;
-		f.download.hashing_progress = 3;
+		f.download.hashed_part_count = 3;
 		files.emplace(f.ecid, f);
 	});
 
@@ -1180,7 +1180,7 @@ TEST(EventDiff, SharedUpdatedFiresWhenOnlyHashingProgressMoved)
 		f.size = kPartSizeBytes * 4;
 		f.is_shared = true;
 		f.is_downloading = true;
-		f.download.hashing_progress = 1;
+		f.download.hashed_part_count = 1;
 		files.emplace(f.ecid, f);
 	});
 
@@ -1189,7 +1189,7 @@ TEST(EventDiff, SharedUpdatedFiresWhenOnlyHashingProgressMoved)
 	EmitDiffsAndUpdate(bus, prev, state); // cold start: shared_added
 	DrainAll(bus);
 
-	state.MutateShared([](FileMap &files) { files.find(13)->second.download.hashing_progress = 2; });
+	state.MutateShared([](FileMap &files) { files.find(13)->second.download.hashed_part_count = 2; });
 	EmitDiffsAndUpdate(bus, prev, state);
 
 	std::string payload;
@@ -1222,7 +1222,7 @@ TEST(EventDiff, DownloadUpdatedFiresWhenOnlyHashingProgressMoved)
 	EmitDiffsAndUpdate(bus, prev, state);
 	DrainAll(bus);
 
-	state.MutateDownloads([](FileMap &files) { files.find(14)->second.download.hashing_progress = 5; });
+	state.MutateDownloads([](FileMap &files) { files.find(14)->second.download.hashed_part_count = 5; });
 	EmitDiffsAndUpdate(bus, prev, state);
 
 	std::string payload;
@@ -1231,7 +1231,7 @@ TEST(EventDiff, DownloadUpdatedFiresWhenOnlyHashingProgressMoved)
 			payload = e.data;
 	}
 	ASSERT_TRUE(!payload.empty());
-	ASSERT_TRUE(payload.find("\"hashing_progress\":5") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"hashed_part_count\":5") != std::string::npos);
 }
 
 // A file leaving the map fires download_removed carrying its hash, and drops
@@ -1374,7 +1374,7 @@ TEST(EventDiff, RoleFlipRefreshesFieldsTheOtherRoleNeverCompared)
 		f.name = "reshared.iso";
 		f.size = kPartSizeBytes * 4;
 		f.is_shared = true;
-		f.download.size_done = 111;
+		f.download.completed_bytes = 111;
 		files.emplace(f.ecid, f);
 	});
 
@@ -1386,7 +1386,7 @@ TEST(EventDiff, RoleFlipRefreshesFieldsTheOtherRoleNeverCompared)
 	state.MutateShared([](FileMap &files) {
 		FileSnapshot &f = files.find(24)->second;
 		f.is_downloading = true;
-		f.download.size_done = 999;
+		f.download.completed_bytes = 999;
 	});
 	EmitDiffsAndUpdate(bus, prev, state);
 
@@ -1399,13 +1399,13 @@ TEST(EventDiff, RoleFlipRefreshesFieldsTheOtherRoleNeverCompared)
 	ASSERT_TRUE(payload.find("999") != std::string::npos);
 	ASSERT_TRUE(payload.find("111") == std::string::npos);
 	// And the baseline now carries it, so the next tick is silent.
-	ASSERT_EQUALS(static_cast<std::uint64_t>(999), prev.files.find(24)->second.download.size_done);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(999), prev.files.find(24)->second.download.completed_bytes);
 }
 
 // --- comments_updated payload ---------------------------------------
 //
 // EVENTS.md promises the payload is the GET /downloads/{hash}/comments body
-// plus `hash`. It used to carry `hash` but NOT `kad_comment_search_running`,
+// plus `hash`. It used to carry `hash` but NOT `kad_comment_lookup_running`,
 // so a client that followed the document and fed the event into the view it
 // built from the endpoint silently lost the in-flight-lookup flag -- exactly
 // the flag it needs while a POST /downloads/{hash}/comments Kad lookup runs.
@@ -1449,8 +1449,8 @@ TEST(EventDiff, CommentsUpdatedIsASupersetOfTheRestBody)
 	}
 	ASSERT_TRUE(!payload.empty());
 	// The endpoint's three keys...
-	ASSERT_TRUE(payload.find("\"count\":1") != std::string::npos);
-	ASSERT_TRUE(payload.find("\"kad_comment_search_running\":true") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"total\":1") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"kad_comment_lookup_running\":true") != std::string::npos);
 	ASSERT_TRUE(payload.find("\"comments\":[") != std::string::npos);
 	// ...plus the one the event adds, because nothing else in the frame
 	// identifies the file.
@@ -1492,7 +1492,7 @@ TEST(EventDiff, CommentsUpdatedReportsAnIdleKadLookup)
 			payload = e.data;
 	}
 	ASSERT_TRUE(!payload.empty());
-	ASSERT_TRUE(payload.find("\"kad_comment_search_running\":false") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"kad_comment_lookup_running\":false") != std::string::npos);
 }
 
 // The Kad lookup finishing is a comments_updated in its own right. The flag
@@ -1530,7 +1530,7 @@ TEST(EventDiff, CommentsUpdatedFiresWhenOnlyTheKadFlagClears)
 			payload = e.data;
 	}
 	ASSERT_TRUE(!payload.empty());
-	ASSERT_TRUE(payload.find("\"kad_comment_search_running\":false") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"kad_comment_lookup_running\":false") != std::string::npos);
 }
 
 // Cold start with a lookup already running. The mirror of
@@ -1563,6 +1563,6 @@ TEST(EventDiff, CommentsUpdatedFiresWhenAFileArrivesMidKadLookup)
 			payload = e.data;
 	}
 	ASSERT_TRUE(!payload.empty());
-	ASSERT_TRUE(payload.find("\"kad_comment_search_running\":true") != std::string::npos);
-	ASSERT_TRUE(payload.find("\"count\":0") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"kad_comment_lookup_running\":true") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"total\":0") != std::string::npos);
 }

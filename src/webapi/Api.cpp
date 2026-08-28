@@ -2736,9 +2736,12 @@ void WriteProgressParts(CJsonWriter &w, const webapi::FileSnapshot &f)
 		const std::uint16_t sources = (static_cast<std::size_t>(i) < part_sources.size())
 						      ? part_sources[static_cast<std::size_t>(i)]
 						      : static_cast<std::uint16_t>(0);
+		// "pending": we lack it and a source has it. "unavailable": we lack
+		// it and no source does. The old spellings ("incomplete" /
+		// "missing") both read as "we lack it" and hid which one it was.
 		const char *state = !has_gap[static_cast<std::size_t>(i)]
 					    ? "complete"
-					    : (sources > 0 ? "incomplete" : "missing");
+					    : (sources > 0 ? "pending" : "unavailable");
 		w.BeginObject();
 		w.Key("state");
 		w.ValueString(wxString::FromAscii(state));
@@ -2804,10 +2807,10 @@ void WriteMediaIfPresent(CJsonWriter &w, const webapi::FileSnapshot &f)
 	}
 	w.Key("media");
 	w.BeginObject();
-	w.Key("length_s");
-	w.ValueInt(static_cast<int64_t>(f.media.length_s));
-	w.Key("bitrate");
-	w.ValueInt(static_cast<int64_t>(f.media.bitrate));
+	w.Key("duration_seconds");
+	w.ValueInt(static_cast<int64_t>(f.media.duration_seconds));
+	w.Key("bitrate_kilobits_per_second");
+	w.ValueInt(static_cast<int64_t>(f.media.bitrate_kilobits_per_second));
 	w.Key("codec");
 	w.ValueString(wxString::FromUTF8(f.media.codec.c_str()));
 	w.Key("artist");
@@ -2829,28 +2832,28 @@ void WriteDownloadObject(
 	w.ValueString(wxString::FromUTF8(f.name.c_str()));
 	w.Key("ed2k_link");
 	w.ValueString(wxString::FromUTF8(f.ed2k_link.c_str()));
-	w.Key("size");
+	w.Key("size_bytes");
 	w.ValueInt(static_cast<int64_t>(f.size));
-	w.Key("size_done");
-	w.ValueInt(static_cast<int64_t>(f.download.size_done));
-	w.Key("size_xfer");
-	w.ValueInt(static_cast<int64_t>(f.download.size_xfer));
-	w.Key("speed_bps");
-	w.ValueInt(static_cast<int64_t>(f.download.speed_bps));
+	w.Key("completed_bytes");
+	w.ValueInt(static_cast<int64_t>(f.download.completed_bytes));
+	w.Key("transferred_bytes");
+	w.ValueInt(static_cast<int64_t>(f.download.transferred_bytes));
+	w.Key("speed_bytes_per_second");
+	w.ValueInt(static_cast<int64_t>(f.download.speed_bytes_per_second));
 	w.Key("status");
 	w.ValueString(wxString::FromUTF8(f.download.status.c_str()));
 	w.Key("priority");
 	w.ValueString(wxString::FromUTF8(f.download.priority.c_str()));
 	w.Key("priority_auto");
 	w.ValueBool(f.download.priority_auto);
-	w.Key("category");
+	w.Key("category_index");
 	w.ValueInt(static_cast<int64_t>(f.download.category));
 	w.Key("sources");
 	w.BeginObject();
 	w.Key("total");
 	w.ValueInt(static_cast<int64_t>(f.download.sources_total));
-	w.Key("not_current");
-	w.ValueInt(static_cast<int64_t>(f.download.sources_not_current));
+	w.Key("unavailable");
+	w.ValueInt(static_cast<int64_t>(f.download.sources_unavailable));
 	w.Key("transferring");
 	w.ValueInt(static_cast<int64_t>(f.download.sources_transferring));
 	w.Key("a4af");
@@ -2867,74 +2870,79 @@ void WriteDownloadObject(
 	// True while an on-demand Kad notes lookup is in flight (issue #434). Kept in
 	// the shared object so list, detail and the SSE download event stay identical;
 	// clients can watch download_updated for the start -> finish transition.
-	w.Key("kad_comment_search_running");
+	w.Key("kad_comment_lookup_running");
 	w.ValueBool(f.download.kad_comment_searching);
 	// On the list, not detail-only: a client rendering a hashing indicator
 	// needs it wherever the file appears, and it only moves while a hash is
 	// actually running. Parts hashed so far, not an index -- 0 when idle.
-	w.Key("hashing_progress");
-	w.ValueInt(static_cast<int64_t>(f.download.hashing_progress));
+	w.Key("hashed_part_count");
+	w.ValueInt(static_cast<int64_t>(f.download.hashed_part_count));
+	// Its denominator, on the list for the same reason. A rising count with
+	// no total beside it cannot be rendered: fed straight to a progress bar
+	// it shows 3% for three parts of a hundred and 300% for three hundred of
+	// a thousand. Computed, not decoded -- there is no EC tag for it.
+	const std::int64_t parts_total_count = static_cast<std::int64_t>(webapi::PartCountForSize(f.size));
+	w.Key("parts_total_count");
+	w.ValueInt(parts_total_count);
 	if (detail) {
 		// Detail-only fields (GET /downloads/{hash}); omitted from the
-		// list. `part_count` and `remaining_time` are computed here from
-		// the snapshot — no EC tag exists for them.
-		const std::int64_t part_count = static_cast<std::int64_t>(webapi::PartCountForSize(f.size));
+		// list. `remaining_seconds` is computed here from the snapshot --
+		// no EC tag exists for it.
 		// ETA seconds, or null when stalled/paused (speed ~0) and there is
 		// nothing to compute from. It was -1, which a client had to know
 		// meant "unknown" while the neighbouring unknowns on this surface
 		// used 0, an omitted key, and null. One rule: nullable field,
 		// unknown is null.
-		bool has_remaining_time = false;
-		std::int64_t remaining_time = 0;
-		if (f.download.speed_bps > 0) {
-			has_remaining_time = true;
-			remaining_time = (f.size > f.download.size_done)
-						 ? static_cast<std::int64_t>((f.size - f.download.size_done) /
-									     f.download.speed_bps)
-						 : 0;
+		bool has_remaining_seconds = false;
+		std::int64_t remaining_seconds = 0;
+		if (f.download.speed_bytes_per_second > 0) {
+			has_remaining_seconds = true;
+			remaining_seconds =
+				(f.size > f.download.completed_bytes)
+					? static_cast<std::int64_t>((f.size - f.download.completed_bytes) /
+								    f.download.speed_bytes_per_second)
+					: 0;
 		}
 		// Null rather than 0 for "no complete copy has ever been seen",
 		// the same rule `last_upload` / `shared_since` follow: a unix
 		// timestamp of 0 reads as 1970, not as "never".
 		WriteIntOrNull(w,
-			"last_seen_complete",
-			f.download.last_seen_complete != 0,
-			static_cast<std::int64_t>(f.download.last_seen_complete));
-		w.Key("last_changed");
-		w.ValueInt(static_cast<int64_t>(f.download.last_changed));
-		w.Key("download_active_time");
-		w.ValueInt(static_cast<int64_t>(f.download.download_active_time));
-		w.Key("available_part_count");
-		w.ValueInt(static_cast<int64_t>(f.download.available_part_count));
-		w.Key("part_count");
-		w.ValueInt(part_count);
-		WriteIntOrNull(w, "remaining_time", has_remaining_time, remaining_time);
-		w.Key("lost_to_corruption");
-		w.ValueInt(static_cast<int64_t>(f.download.lost_to_corruption));
-		w.Key("gained_by_compression");
-		w.ValueInt(static_cast<int64_t>(f.download.gained_by_compression));
-		w.Key("saved_by_ich");
-		w.ValueInt(static_cast<int64_t>(f.download.saved_by_ich));
-		w.Key("aich_hash");
-		w.ValueString(wxString::FromUTF8(f.aich_hash.c_str()));
-		w.Key("met_file");
+			"last_seen_complete_at",
+			f.download.last_seen_complete_at != 0,
+			static_cast<std::int64_t>(f.download.last_seen_complete_at));
+		w.Key("last_received_at");
+		w.ValueInt(static_cast<int64_t>(f.download.last_received_at));
+		w.Key("active_seconds");
+		w.ValueInt(static_cast<int64_t>(f.download.active_seconds));
+		w.Key("parts_available_count");
+		w.ValueInt(static_cast<int64_t>(f.download.parts_available_count));
+		WriteIntOrNull(w, "remaining_seconds", has_remaining_seconds, remaining_seconds);
+		w.Key("lost_to_corruption_bytes");
+		w.ValueInt(static_cast<int64_t>(f.download.lost_to_corruption_bytes));
+		w.Key("gained_by_compression_bytes");
+		w.ValueInt(static_cast<int64_t>(f.download.gained_by_compression_bytes));
+		w.Key("ich_recovered_packet_count");
+		w.ValueInt(static_cast<int64_t>(f.download.ich_recovered_packet_count));
+		// null, not "": the AICH hashset does not exist until the file has
+		// been hashed, and R10 spells an absent value null rather than an
+		// empty string a client has to know is a sentinel.
+		WriteStringOrNull(w, "aich_hash", !f.aich_hash.empty(), f.aich_hash);
+		w.Key("part_file_name");
 		// The ".part" control-file basename. Empty once the download
 		// completes: the daemon then reuses the _FILENAME tag to carry the
 		// directory path, so only surface it while still a partfile (#417).
 		w.ValueString(f.download.status == "completed"
 				      ? wxString()
 				      : wxString::FromUTF8(f.part_met_basename.c_str()));
-		w.Key("path");
+		w.Key("directory");
 		// The on-disk directory (Temp while downloading, destination once
 		// completed) — mirrors the `path` field on /shared/{hash} (#417).
 		w.ValueString(wxString::FromUTF8(f.on_disk_dir.c_str()));
-		w.Key("partmet_id");
-		w.ValueInt(static_cast<int64_t>(f.download.partmet_id));
-		w.Key("queued_count");
+		w.Key("upload_queue_count");
 		w.ValueInt(static_cast<int64_t>(f.queued_count));
-		w.Key("comment");
+		w.Key("my_comment");
 		w.ValueString(wxString::FromUTF8(f.comment.c_str()));
-		w.Key("rating");
+		w.Key("my_rating");
 		w.ValueInt(static_cast<int64_t>(f.rating));
 		w.Key("a4af_auto");
 		w.ValueBool(f.download.a4af_auto);
@@ -4065,9 +4073,12 @@ CHttpServer::Response CApiDispatcher::HandleDownloads(const CHttpServer::Request
 		// cares about, not the order a UI table does.
 		{ "hash", SORT_BY(hash), ANCHOR_ON(hash) },
 		{ "name", SORT_BY(name) },
-		{ "size", SORT_BY(size) },
-		{ "progress", SORT_BY(download.percent) },
-		{ "speed", SORT_BY(download.speed_bps) },
+		// R7: each value is spelled exactly like the response key it orders
+		// by, dotted for a nested one, so a field rename can never orphan a
+		// sort value and the reference needs no mapping table.
+		{ "size_bytes", SORT_BY(size) },
+		{ "progress.percent", SORT_BY(download.percent) },
+		{ "speed_bytes_per_second", SORT_BY(download.speed_bytes_per_second) },
 		{ "status", SORT_BY(download.status) },
 	};
 	if (auto r = RequireSnapshot(m_state))
@@ -4468,11 +4479,11 @@ CHttpServer::Response CApiDispatcher::HandleDownloadComments(
 	r.content_type = "application/json";
 	CJsonWriter w;
 	w.BeginObject();
-	w.Key("count");
+	w.Key("total");
 	w.ValueInt(static_cast<int64_t>(d.download.source_comments.size()));
 	// True while an on-demand Kad notes lookup is in flight (issue #434); poll
 	// this endpoint until it flips back to false to observe retrieved notes.
-	w.Key("kad_comment_search_running");
+	w.Key("kad_comment_lookup_running");
 	w.ValueBool(d.download.kad_comment_searching);
 	w.Key("comments");
 	w.BeginArray();
@@ -4571,9 +4582,9 @@ CHttpServer::Response CApiDispatcher::HandleDownloadFilenames(
 	w.BeginArray();
 	for (const auto &kv : d.download.source_names) {
 		w.BeginObject();
-		w.Key("name");
+		w.Key("filename");
 		w.ValueString(wxString::FromUTF8(kv.second.name.c_str()));
-		w.Key("count");
+		w.Key("source_count");
 		w.ValueInt(static_cast<int64_t>(kv.second.count));
 		w.EndObject();
 	}
@@ -4901,7 +4912,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(const CHttpServer::Reque
 		return *r;
 
 	// Body shape, one form:
-	//  {"links": ["ed2k://|file|...|/", ...], "category": 0}
+	//  {"links": ["ed2k://|file|...|/", ...], "category_index": 0}
 	// A singular `ed2k_link` was accepted alongside it and is now refused
 	// with a message naming the replacement: one input with two spellings,
 	// on the endpoint that already answers with the bulk `results` envelope
@@ -4962,15 +4973,17 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(const CHttpServer::Reque
 	}
 	std::uint8_t category = 0;
 	{
-		const auto it = obj.find("category");
+		const auto it = obj.find("category_index");
 		if (it != obj.end()) {
 			if (!it->second.is<double>()) {
-				return ErrorResponse(
-					400, "bad_request", "`category` must be a non-negative integer");
+				return ErrorResponse(400,
+					"bad_request",
+					"`category_index` must be a non-negative integer");
 			}
 			const double v = it->second.get<double>();
 			if (v < 0 || v > 255) {
-				return ErrorResponse(400, "bad_request", "`category` must be in [0, 255]");
+				return ErrorResponse(
+					400, "bad_request", "`category_index` must be in [0, 255]");
 			}
 			category = static_cast<std::uint8_t>(v);
 		}
@@ -5216,27 +5229,29 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 
 	bool any_change = false;
 
-	// status: "paused" | "resumed" | "stopped"
+	// action: "pause" | "resume" | "stop" -- a command, not a state. The read
+	// side's `status` has eleven values (DownloadStatusName), of which this
+	// accepted three, in a different tense.
 	{
-		const auto it = obj.find("status");
+		const auto it = obj.find("action");
 		if (it != obj.end()) {
 			if (!it->second.is<std::string>()) {
 				return ErrorResponse(400,
 					"bad_request",
-					"`status` must be one of \"paused\", \"resumed\" or \"stopped\"");
+					"`action` must be one of \"pause\", \"resume\" or \"stop\"");
 			}
 			const std::string &v = it->second.get<std::string>();
 			ec_opcode_t op;
-			if (v == "paused")
+			if (v == "pause")
 				op = EC_OP_PARTFILE_PAUSE;
-			else if (v == "resumed")
+			else if (v == "resume")
 				op = EC_OP_PARTFILE_RESUME;
-			else if (v == "stopped")
+			else if (v == "stop")
 				op = EC_OP_PARTFILE_STOP;
 			else {
 				return ErrorResponse(400,
 					"bad_request",
-					"`status` must be one of \"paused\", \"resumed\" or \"stopped\"");
+					"`action` must be one of \"pause\", \"resume\" or \"stop\"");
 			}
 			auto err = send_op(op, /*has_inner=*/false, static_cast<ec_tagname_t>(0), 0);
 			if (err.status >= 400)
@@ -5270,15 +5285,17 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 
 	// category: integer
 	{
-		const auto it = obj.find("category");
+		const auto it = obj.find("category_index");
 		if (it != obj.end()) {
 			if (!it->second.is<double>()) {
-				return ErrorResponse(
-					400, "bad_request", "`category` must be a non-negative integer");
+				return ErrorResponse(400,
+					"bad_request",
+					"`category_index` must be a non-negative integer");
 			}
 			const double v = it->second.get<double>();
 			if (v < 0 || v > 255) {
-				return ErrorResponse(400, "bad_request", "`category` must be in [0, 255]");
+				return ErrorResponse(
+					400, "bad_request", "`category_index` must be in [0, 255]");
 			}
 			auto err = send_op(EC_OP_PARTFILE_SET_CAT,
 				/*has_inner=*/true,
@@ -5346,7 +5363,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 		return ErrorResponse(400,
 			"bad_request",
 			"request body must include at least one of "
-			"`status`, `priority`, `category`, `comment`+`rating`, or `name`");
+			"`action`, `priority`, `category_index`, `my_comment`+`my_rating`, or `name`");
 	}
 
 	// Inline refresh so the response below sees post-mutation state.
@@ -9190,26 +9207,26 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsBulkPatch(const CHttpServer
 	};
 	std::vector<PatchOp> ops;
 	{
-		const auto it = obj.find("status");
+		const auto it = obj.find("action");
 		if (it != obj.end()) {
 			if (!it->second.is<std::string>())
 				return ErrorResponse(400,
 					"bad_request",
-					"`status` must be one of \"paused\", \"resumed\" or \"stopped\"");
+					"`action` must be one of \"pause\", \"resume\" or \"stop\"");
 			const std::string &v = it->second.get<std::string>();
-			if (v == "paused")
+			if (v == "pause")
 				ops.push_back(
 					{ EC_OP_PARTFILE_PAUSE, false, static_cast<ec_tagname_t>(0), 0 });
-			else if (v == "resumed")
+			else if (v == "resume")
 				ops.push_back(
 					{ EC_OP_PARTFILE_RESUME, false, static_cast<ec_tagname_t>(0), 0 });
-			else if (v == "stopped")
+			else if (v == "stop")
 				ops.push_back(
 					{ EC_OP_PARTFILE_STOP, false, static_cast<ec_tagname_t>(0), 0 });
 			else
 				return ErrorResponse(400,
 					"bad_request",
-					"`status` must be one of \"paused\", \"resumed\" or \"stopped\"");
+					"`action` must be one of \"pause\", \"resume\" or \"stop\"");
 		}
 	}
 	{
@@ -9226,14 +9243,16 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsBulkPatch(const CHttpServer
 		}
 	}
 	{
-		const auto it = obj.find("category");
+		const auto it = obj.find("category_index");
 		if (it != obj.end()) {
 			if (!it->second.is<double>())
-				return ErrorResponse(
-					400, "bad_request", "`category` must be a non-negative integer");
+				return ErrorResponse(400,
+					"bad_request",
+					"`category_index` must be a non-negative integer");
 			const double v = it->second.get<double>();
 			if (v < 0 || v > 255)
-				return ErrorResponse(400, "bad_request", "`category` must be in [0, 255]");
+				return ErrorResponse(
+					400, "bad_request", "`category_index` must be in [0, 255]");
 			ops.push_back({ EC_OP_PARTFILE_SET_CAT,
 				true,
 				EC_TAG_PARTFILE_CAT,
@@ -9243,7 +9262,8 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsBulkPatch(const CHttpServer
 	if (ops.empty())
 		return ErrorResponse(400,
 			"bad_request",
-			"request body must include at least one of `status`, `priority`, or `category`");
+			"request body must include at least one of `action`, `priority`, or "
+			"`category_index`");
 
 	std::vector<BulkItem> results;
 	results.reserve(hashes.size());
@@ -10777,7 +10797,7 @@ CHttpServer::Response CApiDispatcher::HandleSearchDownload(
 		return ErrorResponse(400, "bad_request", "`{hash}` must be a 32-char hex MD4");
 	}
 
-	// Optional body: {"category": uint8, "ecid": uint32}. amulegui's
+	// Optional body: {"category_index": uint8, "ecid": uint32}. amulegui's
 	// CDownQueueRem::AddSearchToDownload defaults to category 0
 	// when none is supplied; we mirror that. The body itself is
 	// optional — clients that don't care about category POST with
@@ -10795,15 +10815,17 @@ CHttpServer::Response CApiDispatcher::HandleSearchDownload(
 			return ErrorResponse(400, "bad_request", parse_err.c_str());
 		}
 		const auto &obj = root.get<picojson::object>();
-		const auto it = obj.find("category");
+		const auto it = obj.find("category_index");
 		if (it != obj.end()) {
 			if (!it->second.is<double>()) {
-				return ErrorResponse(
-					400, "bad_request", "`category` must be a non-negative integer");
+				return ErrorResponse(400,
+					"bad_request",
+					"`category_index` must be a non-negative integer");
 			}
 			const double v = it->second.get<double>();
 			if (v < 0 || v > 255) {
-				return ErrorResponse(400, "bad_request", "`category` must be in [0, 255]");
+				return ErrorResponse(
+					400, "bad_request", "`category_index` must be in [0, 255]");
 			}
 			category = static_cast<std::uint8_t>(v);
 		}
@@ -10852,7 +10874,7 @@ CHttpServer::Response CApiDispatcher::HandleSearchDownload(
 	(void)RefresherTick(m_app, m_state);
 
 	CHttpServer::Response r;
-	// 202 with no body: `hash` came from the request and `category` is the
+	// 202 with no body: `hash` came from the request and `category_index` is the
 	// value applied, recoverable from the download itself.
 	r.status = 202;
 	r.content_type.clear();
@@ -10887,7 +10909,7 @@ CHttpServer::Response CApiDispatcher::HandleSearchComments(
 	// amuleapi through the owning search's result fetch, and a finished
 	// search is never fetched by the tick. Without this refresh a lookup
 	// started after the search completed -- which is when a user actually
-	// reads a result list -- would leave `kad_comment_search_running` stuck
+	// reads a result list -- would leave `kad_comment_lookup_running` stuck
 	// and `comments` empty forever. Re-read the hit afterwards so the
 	// response reflects the refresh rather than the snapshot before it.
 	RefreshSearchIfStale(owner_search_id);
@@ -10906,7 +10928,7 @@ CHttpServer::Response CApiDispatcher::HandleSearchComments(
 	w.BeginObject();
 	w.Key("count");
 	w.ValueInt(static_cast<int64_t>(hit.comments.size()));
-	w.Key("kad_comment_search_running");
+	w.Key("kad_comment_lookup_running");
 	w.ValueBool(hit.kad_comment_searching);
 	w.Key("comments");
 	w.BeginArray();
@@ -10983,7 +11005,7 @@ CHttpServer::Response CApiDispatcher::HandleSearchCommentsKadSearch(
 	// Order matters. Refreshing first cached a pre-lookup snapshot and spent
 	// the one-second ClaimSearchRefresh token on it, so a GET issued straight
 	// afterwards fell inside the TTL and reported
-	// `kad_comment_search_running: false` for a lookup that had just begun --
+	// `kad_comment_lookup_running: false` for a lookup that had just begun --
 	// breaking the poll-until-false loop the docs prescribe.
 	RefreshSearchIfStale(owner_search_id);
 
