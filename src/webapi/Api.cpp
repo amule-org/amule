@@ -43,6 +43,7 @@
 #include "Refresher.h"     // ParseStatsTreeFromPacket / ParseGraphsFromPacket / ApplySearchFull
 #include "StaticFs.h"      // IsDir, ResolveWithinRoot
 #include "SharedContent.h" // /shared/{hash}/content: path resolution, Range, disposition
+#include "PartIndex.h"     // UsablePartIndex / UsableLastDownloadingPart, unit-tested standalone
 #include <cstring>
 #include <map>
 
@@ -4230,6 +4231,13 @@ struct FileClientRow
 	bool a4af = false;
 	std::vector<bool> parts;
 	bool has_parts = false;
+	// Whether each index actually addresses a chunk of THIS file that this
+	// row also carries a bitmap for. Resolved in the handler, which is the
+	// only place that knows part_count; false here means the key goes out as
+	// null. Not a copy of `include_parts` -- that is the same on every row,
+	// so it is passed to WriteFileClientRow rather than stored per row.
+	bool next_requested_part_known = false;
+	bool last_downloading_part_known = false;
 };
 
 // Sort keys, derived from the /clients set rather than restated, so the two
@@ -4261,7 +4269,7 @@ const ListComparators<FileClientRow> &FileClientComparators()
 	return kComps;
 }
 
-void WriteFileClientRow(CJsonWriter &w, const FileClientRow &row)
+void WriteFileClientRow(CJsonWriter &w, const FileClientRow &row, bool include_parts)
 {
 	w.BeginObject();
 	WriteClientBaseFields(w, row.client);
@@ -4284,6 +4292,31 @@ void WriteFileClientRow(CJsonWriter &w, const FileClientRow &row)
 			w.ValueBool(b);
 		}
 		w.EndArray();
+	}
+	// The two chunks the desktop's source bar paints on top of the bitmap:
+	// the one in flight and the one queued behind it
+	// (GenericClientListCtrl.cpp: crPending and crNextPending). They live on
+	// the row rather than in WriteClientBaseFields for the same reason
+	// `parts` does -- they describe a peer's relation to ONE file, not the
+	// peer -- which also keeps them out of the shared SSE client payload,
+	// where a value that moves every tick would be noise no listener renders.
+	//
+	// Gated on include_parts because an index is meaningless without the
+	// bitmap it indexes: a caller that did not ask for `parts` does not know
+	// the file's part count and has no bar to paint the stripe on. Under the
+	// flag both keys are always present -- null, never omitted, on a row
+	// where the index does not apply -- so one query yields one row shape.
+	// Unlike `parts`, whose absence is the only way to say "no bitmap of the
+	// right length exists", these have a null to say it with.
+	if (include_parts) {
+		WriteIntOrNull(w,
+			"next_requested_part_index",
+			row.next_requested_part_known,
+			static_cast<int64_t>(row.client.next_requested_part));
+		WriteIntOrNull(w,
+			"downloading_part_index",
+			row.last_downloading_part_known,
+			static_cast<int64_t>(row.client.last_downloading_part));
 	}
 	w.EndObject();
 }
@@ -4386,6 +4419,32 @@ CHttpServer::Response CApiDispatcher::HandleFileClients(
 					client.has_part_status,
 					part_count,
 					row.parts);
+				// The two part indices are indices into that download
+				// map, so they address this file only on a source row.
+				// On a pure "peer" or A4AF row they belong to whatever
+				// else the peer is pulling and must not be relayed as
+				// though they described this one -- left false, they go
+				// out as null.
+				//
+				// `row.has_parts` is part of the test, not just the
+				// role: ResolvePartBitmap declines a source that has
+				// sent no part status yet, and one whose decoded bitmap
+				// cannot cover the file. Either way the row ships no
+				// `parts`, and a stripe coordinate with no bar to paint
+				// it on is the exact thing the gating exists to prevent.
+				// Ordering matters -- both reads happen after the
+				// ResolvePartBitmap call above has set it.
+				row.next_requested_part_known =
+					row.has_parts &&
+					webapi::UsablePartIndex(client.has_next_requested_part,
+						client.next_requested_part,
+						part_count);
+				row.last_downloading_part_known =
+					row.has_parts &&
+					webapi::UsableLastDownloadingPart(client.download_state,
+						client.has_last_downloading_part,
+						client.last_downloading_part,
+						part_count);
 			} else if (is_peer) {
 				row.has_parts = ResolvePartBitmap(client.upload_part_status,
 					client.upload_part_status_all,
@@ -4398,7 +4457,15 @@ CHttpServer::Response CApiDispatcher::HandleFileClients(
 		rows.push_back(std::move(row));
 	}
 
-	return ListResponse(m_state, "clients", rows, WriteFileClientRow, params, FileClientComparators());
+	return ListResponse(
+		m_state,
+		"clients",
+		rows,
+		[include_parts](CJsonWriter &w, const FileClientRow &row) {
+			WriteFileClientRow(w, row, include_parts);
+		},
+		params,
+		FileClientComparators());
 }
 
 CHttpServer::Response CApiDispatcher::HandleClients(const CHttpServer::Request &req)
@@ -4443,7 +4510,7 @@ CHttpServer::Response CApiDispatcher::HandleClients(const CHttpServer::Request &
 	if (!activity.empty()) {
 		auto matches = [&](const webapi::ClientSnapshot &c) {
 			const bool up = (c.upload_state == "uploading");
-			const bool down = (c.download_state == "downloading");
+			const bool down = (c.download_state == webapi::kDownloadStateDownloading);
 			if (activity == "uploading")
 				return up;
 			if (activity == "downloading")

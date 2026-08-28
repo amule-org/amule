@@ -36,6 +36,13 @@
 #include <unordered_map>
 #include <vector>
 
+// kNoPartPendingSentinel: the same shape of sentinel as
+// kRemoteQueueFullSentinel below, for the two part indices on ClientSnapshot.
+// It lives in that header rather than here because the predicates that test it
+// are unit-tested standalone, and a constant defined twice is a constant that
+// drifts.
+#include "PartIndex.h"
+
 // Cached snapshot of amuled state. One instance lives inside
 // CamuleapiApp for the whole process; the refresher (wxApp thread)
 // writes; the HTTP server (Boost.Asio thread) reads.
@@ -468,12 +475,20 @@ struct ClientSnapshot
 	// Indices into the download bitmap; absent from the wire means unchanged,
 	// so the has_ flags distinguish "never reported" from "reported as 0".
 	//
-	// Decoded but not yet surfaced: no endpoint serializes these and no
-	// comparator sorts on them. Kept because the decode is already paid for
-	// on every INC_UPDATE tick and they are the natural companions of the
-	// bitmaps above -- a client wanting to show which chunk a peer is
-	// feeding needs them. Delete them rather than leave them rotting if
-	// that never materialises.
+	// Both are indices into the *download* bitmap of the peer's request
+	// file (ECSpecialCoreTags.cpp emits them inside the `pfile` guard, next
+	// to EC_TAG_CLIENT_PART_STATUS), so they address one file, not the peer
+	// as a whole. Surfaced by the per-file client rows only --
+	// `next_requested_part_index` / `downloading_part_index` on
+	// GET /downloads/{hash}/clients under `include_parts` -- which is why
+	// no comparator sorts on them and no SSE payload carries them. Values
+	// are relayed raw and validated by the serializer rather than here,
+	// because only the endpoint knows the file: kNoPartPendingSentinel is
+	// the core's "nothing pending" answer, any index past the file's part
+	// count is unusable, the row needs the bitmap the index indexes, and
+	// last_downloading_part is a stale 0 (BaseClient.cpp inits it so, and
+	// the tag is sent unconditionally) unless download_state is
+	// "downloading" -- all of which come out as null.
 	std::uint16_t next_requested_part = 0;
 	std::uint16_t last_downloading_part = 0;
 	bool has_next_requested_part = false;

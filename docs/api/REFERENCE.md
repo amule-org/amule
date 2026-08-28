@@ -362,6 +362,8 @@ The rule now reaches the whole surface rather than just the download and shared 
 
 Five keys stay omitted, because for them absence really is the meaning: `started_at` and `result_count` on [`GET /search`](#get-apiv0search) as described above, `key` on a statistics node (absent from a daemon too old to send it), `ratio` on the statistics ratio node (absent when the daemon reported neither component), and `parts` under [`?include_parts=true`](#get-apiv0downloadshashclients--get-apiv0sharedhashclients) -- there the caller opted in, so the key's absence answers a question they did not ask.
 
+Opting out is not one of them. `parts`, `next_requested_part_index` and `downloading_part_index` are all absent from a client row unless `?include_parts=true` was asked for, but that absence is a property of the request, not a fact about the client, so it is not what the null-versus-absent rule above is about. Under the flag the two index keys are *always* present — `null`, never absent, wherever the index does not apply — which is why only `parts` is in the list above.
+
 ### Priority levels
 
 `priority` appears on four resources and accepts three different sets. The differences are deliberate rather than drift, and they reflect what the daemon can actually store:
@@ -1003,19 +1005,23 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 
 The clients of one file: sources serving it to us, clients pulling it from us, and — on the downloads side — A4AF sources parked on another file. Replaces the client-side join of the global `/clients` list against `download_file_hash` / `upload_file_hash`, which could never produce the A4AF rows.
 
-Each entry is the [`/clients`](#get-apiv0clients) list object plus three keys:
+Each entry is the [`/clients`](#get-apiv0clients) list object plus five keys:
 
 | Key | Meaning |
 |---|---|
 | `role` | which direction this row moves the file: `"downloading_from"` — we pull the file from it (including queued); `"uploading_to"` — it pulls the file from us; `"both"`; `"none"` |
 | `a4af` | `true` for a source parked on another file — the desktop's A4AF row |
 | `parts` | the client's per-part bitmap, **only** when `?include_parts=true` |
+| `next_requested_part_index` | index of the chunk queued next from this client, or `null`; **only** when `?include_parts=true` |
+| `downloading_part_index` | index of the chunk currently in flight from this client, or `null`; **only** when `?include_parts=true` |
 
 `role` and `a4af` are orthogonal: a pure A4AF row is `role: "none"`, `a4af: true`, but a client can be parked on another file *and* be pulling this one from us (`role: "uploading_to"`, `a4af: true`).
 
 `parts` is opt-in because it is one boolean per chunk per client — a multi-TiB file is 100k+ entries each. It is exactly `parts_total_count` entries, and it describes the file this row is about: the download bitmap for a `"downloading_from"` row, the upload bitmap for an `"uploading_to"` one. A client the core reports as holding every part comes back all-`true`. A pure A4AF row has no bitmap for this file and omits the key. **`parts` never appears in SSE payloads.**
 
-The file's own three-state part view is on [`GET /downloads/{hash}`](#get-apiv0downloadshash); combine it with this bitmap to render the desktop's per-source bar.
+`next_requested_part_index` and `downloading_part_index` are the two extra states the desktop paints on top of that bitmap — the chunk in flight in amber, the one queued behind it in pale yellow — turning a three-state bar into the desktop's five-state one. Both are `0`-based indices into `parts`, and both ride `include_parts` for the same reason: an index is meaningless without the bitmap it indexes, and a caller that did not ask for `parts` does not know the file's `parts_total_count`. Under the flag both keys are always present, `null` rather than omitted whenever the index does not apply, so one query returns one row shape. `null` covers every such case: the client never reported the value, it reported the `0xffff` "nothing pending" sentinel, the index does not address a chunk of this file, the row is not a source for this file at all (`role: "uploading_to"` or a pure A4AF row, whose indices belong to whatever else that client is downloading), or the row carries no `parts` bitmap for the index to point into. `downloading_part_index` carries one further rule: it is `null` unless the client's `download_state` is `"downloading"`, because the daemon reports a stale `0` for a source that is merely connected or queued — treat a number here as "this chunk is arriving right now", which is what makes it safe to paint, and which is why it is named for the present tense rather than for a previous part. Note that `0` is a real chunk index, never a stand-in for unknown — see [`Unknown values`](#unknown-values). Neither key ever appears in SSE payloads.
+
+The file's own three-state part view (`complete` / `incomplete` / `missing`) is on [`GET /downloads/{hash}`](#get-apiv0downloadshash); combine it with this bitmap and the two indices above to render the desktop's five-state per-source bar.
 
 Both routes accept `limit` / `offset` / `sort` / `order` exactly as `/clients` does. A partfile with at least one completed chunk is both a download and a shared file, and then **both routes return the same body** — they differ only in which collection the hash must belong to, which is what the `404` checks.
 
