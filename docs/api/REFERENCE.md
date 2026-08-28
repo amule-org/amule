@@ -309,8 +309,8 @@ Rows added or removed *during* a sweep are not missed: both emit an SSE event, s
 | `GET /servers`        | **`ecid`** (id), `name`, `user_count`, `ping_ms`, `file_count` |
 | `GET /friends`        | **`ecid`** (id), `name`, `online` |
 | `GET /chats`          | **`client_ecid`** (id), `last_message_at`, `name` |
-| `GET /search/{id}/results` | **`hash`** (id), `name`, `size`, `sources`, `rating`, `directory` |
-| `GET /search`         | **`search_id`** (id), `query`, `started_at`, `result_count` |
+| `GET /search/{id}/results` | **`hash`** (id), `name`, `size_bytes`, `sources.total`, `rating`, `directory` |
+| `GET /search`         | **`id`** (id), `query`, `started_at`, `result_count` |
 | `GET /categories`     | **`index`** (id), `name` |
 
 The column marked **id** is the endpoint's identity: immutable for the life of the row, and the only one `after` accepts. Note that `ecid` is stable **within a daemon session** only — `CECID` hands ids out from a counter that restarts with the process — which is enough for a bootstrap sweep, since a reconnect invalidates the sweep anyway and triggers a `resync`.
@@ -2733,9 +2733,9 @@ Lists every search amuled currently holds — including ones started by a **diff
 ```json
 {
   "searches": [
-    { "search_id": 42, "query": "ubuntu desktop iso", "kind": "global", "state": "finished", "started_at": 1751000000, "result_count": 182 },
-    { "search_id": 43, "query": "debian",             "kind": "kad",    "state": "running",  "started_at": 1751000042, "result_count": 57  },
-    { "search_id": 44, "query": "SomePeerNick",       "kind": "browse", "state": "running",  "client_ecid": 621,       "result_count": 237 }
+    { "id": 42, "query": "ubuntu desktop iso", "type": "global", "state": "finished", "started_at": 1751000000, "result_count": 182 },
+    { "id": 43, "query": "debian",             "type": "kad",    "state": "running",  "started_at": 1751000042, "result_count": 57  },
+    { "id": 44, "query": "SomePeerNick",       "type": "browse", "state": "running",  "client_ecid": 621,       "result_count": 237 }
   ],
   "total": 3,
   "offset": 0,
@@ -2745,7 +2745,7 @@ Lists every search amuled currently holds — including ones started by a **diff
 
 This is a list endpoint like the others: it takes `?limit`, `?offset`, `?sort` and `?order`, and carries the same `total` / `offset` / `limit` trio. See [List pagination and sorting](#list-pagination-and-sorting); the sort keys are `search_id`, `query`, `started_at` and `result_count`.
 
-`search_id` is the value that fills `{id}` on every search-scoped path: [`GET /search/{id}/results`](#get-apiv0searchidresults) to read its hits, [`POST /search/{id}/stop`](#post-apiv0searchidstop) to stop it, [`DELETE /search/{id}`](#delete-apiv0searchid) to free it. `kind` is `"local"` | `"global"` | `"kad"` | `"browse"`. The first three are the vocabulary `POST /search`'s `type` accepts; `"browse"` is reported only, for a "View Files" listing of one peer's share, which is started through the client endpoints rather than by a query. `state` is `"running"` | `"finished"` | `"idle"`, same vocabulary and meaning as `GET /search/{id}/results`'s `progress.state`.
+`id` is the value that fills `{id}` on every search-scoped path: [`GET /search/{id}/results`](#get-apiv0searchidresults) to read its hits, [`POST /search/{id}/stop`](#post-apiv0searchidstop) to stop it, [`DELETE /search/{id}`](#delete-apiv0searchid) to free it. `kind` is `"local"` | `"global"` | `"kad"` | `"browse"`. The first three are the vocabulary `POST /search`'s `type` accepts; `"browse"` is reported only, for a "View Files" listing of one peer's share, which is started through the client endpoints rather than by a query. `state` is `"running"` | `"finished"` | `"idle"`, same vocabulary and meaning as `GET /search/{id}/results`'s `progress.state`.
 
 For a `"browse"` entry, `state` and the results endpoint's `progress.percent` come from the browse's own lifecycle rather than from a query's: the request being sent is `"running"`, and the peer having answered, denied the request, or disconnected mid-list is `"finished"` — a browse is never reported as `"idle"`. `percent` is the share of the peer's directory list received so far, so it climbs while the listing streams in rather than jumping straight from `0` to `100`.
 
@@ -2779,9 +2779,9 @@ Kicks off a new search. amuleapi supports **several concurrent searches** — a 
   "type":      "global",
   "file_type": "iso",
   "extension": "iso",
-  "min_size":  1000000000,
-  "max_size":  5000000000,
-  "min_avail": 5
+  "min_size_bytes":  1000000000,
+  "max_size_bytes":  5000000000,
+  "min_source_count": 5
 }
 ```
 
@@ -2791,16 +2791,16 @@ Only `query` is required. `type` defaults to `"global"`; valid values are `"loca
 
 ```json
 {
-  "search_id":   42,
+  "id":         42,
   "query":       "ubuntu desktop iso",
-  "kind":        "global",
+  "type":        "global",
   "state":       "running",
   "client_ecid": null,
   "started_at":  1750412400
 }
 ```
 
-Keep the `search_id` to read this search's results/progress or to stop it. This is one of the two creations that answer with the resource, because `EC_OP_SEARCH_START` really does hand one back; the ones whose EC op answers success or failure and nothing more are a bare `202` with no body.
+Keep the `id` to read this search's results/progress or to stop it. This is one of the two creations that answer with the resource, because `EC_OP_SEARCH_START` really does hand one back; the ones whose EC op answers success or failure and nothing more are a bare `202` with no body.
 
 **Errors:** `502 amuled_rejected` (daemon returned no search_id), `503 ec_unavailable`.
 
@@ -2830,13 +2830,13 @@ amuled keeps a bounded ring of recent searches (20). A search evicted from that 
       "name":         "example-distribution-26.04-amd64.iso",
       "size":         3825205248,
       "sources":      { "total": 217, "complete": 142 },
-      "already_have": false,
+      "already_downloaded": false,
       "rating":       0,
       "status":       "new",
       "type":         "videos",
       "directory":    "",
       "media":        { "duration_seconds": 5400, "bitrate": 1500, "codec": "h264", "artist": "", "album": "", "title": "" },
-      "children": [
+      "alternate_names": [
         { "ecid": 621, "name": "example-distribution-26.04.iso", "hash": "8b54a3c2...", "sources": { "total": 40, "complete": 22 }, "directory": "" },
         { "ecid": 622, "name": "example_distro_2604_amd64.iso",  "hash": "8b54a3c2...", "sources": { "total": 10, "complete":  3 }, "directory": "" }
       ],
@@ -2844,23 +2844,23 @@ amuled keeps a bounded ring of recent searches (20). A search evicted from that 
       "comments": []
     }
   ],
-  "search_id": 42,
+  "id":         42,
   "query": "ubuntu desktop iso",
   "progress": {
     "state":    "running",
-    "kind":     "kad",
+    "type":     "kad",
     "percent":  67
   }
 }
 ```
 
-Each result carries `sources` as a nested `{total, complete}` object — `total` is the swarm size amuled reports and `complete` is how many of those hold the file complete. `already_have` is `true` when you are currently downloading the file or already have it completed/shared; it is `false` for a fresh result and for one you have canceled/removed (a canceled result is re-downloadable, so it does not read as held). `rating` is amuled's aggregated quality rating (`0` when unrated). `status` is this result's download status on your node — `"new"` / `"downloaded"` / `"queued"` / `"canceled"` / `"queued_canceled"`. `type` is the file-type token derived from the filename extension (same tokens as the shared-detail [`file_type`](#get-apiv0sharedhash), e.g. `"videos"` / `"audio"`; `""` when the name has no extension). `media` is the audio/video [media metadata](#media-metadata) object (same shape as the file-detail endpoints), and is **`null`** for a hit that carries no metadata (most global/Kad results), matching the blank Length/Bitrate/Codec columns in the desktop search list. The key is always present. **Unlike `media` on `GET /downloads/{hash}` and `GET /shared/{hash}`, which amuled probed locally, `media` on a search result is whatever the responding server advertised.** It is not verified against the file and can contradict it — a `.pdf` reporting a runtime and a video codec is a real observed result — so treat it as a hint, not as probed metadata.
+Each result carries `sources` as a nested `{total, complete}` object — `total` is the swarm size amuled reports and `complete` is how many of those hold the file complete. `already_downloaded` is `true` when you are currently downloading the file or already have it completed/shared; it is `false` for a fresh result and for one you have canceled/removed (a canceled result is re-downloadable, so it does not read as held). `rating` is amuled's aggregated quality rating (`0` when unrated). `status` is this result's download status on your node — `"new"` / `"downloaded"` / `"queued"` / `"canceled"` / `"queued_canceled"`. `type` is the file-type token derived from the filename extension (same tokens as the shared-detail [`file_type`](#get-apiv0sharedhash), e.g. `"videos"` / `"audio"`; `""` when the name has no extension). `media` is the audio/video [media metadata](#media-metadata) object (same shape as the file-detail endpoints), and is **`null`** for a hit that carries no metadata (most global/Kad results), matching the blank Length/Bitrate/Codec columns in the desktop search list. The key is always present. **Unlike `media` on `GET /downloads/{hash}` and `GET /shared/{hash}`, which amuled probed locally, `media` on a search result is whatever the responding server advertised.** It is not verified against the file and can contradict it — a `.pdf` reporting a runtime and a video codec is a real observed result — so treat it as a hint, not as probed metadata.
 
 `directory` is the folder this file sits in **inside a browsed peer's share** — the desktop search list's *Directories* column. It is populated only for results filed from a peer's shared-file listing (see [peer browse](#post-apiv0clientsecidshared_files)) and is `""` on every ordinary server/Kad hit, which never carries it. It is per-result rather than per-search: two copies of one file in different folders of the same share group under a single parent and each keeps its own folder, exactly as the desktop shows them, which is why `children[]` entries carry it too.
 
 `search_id` and `query` identify the search these results belong to. `search_id` echoes the path so clients can key a view on the response alone; `query` is what the search was started with, so a client that adopted an id from [`GET /search`](#get-apiv0search) can label it without a second call. For a **browse**, `query` is the peer's nickname rather than a query string. `query` is `""` only for a search discovered before amuled reported a name for it.
 
-`children` is the result-grouping tree: amuled collapses hits that are the **same file** (same ed2k hash **and** size) but advertised under **different filenames** into one parent row, and `children[]` holds the alternative names. Each child carries the parent's `hash` (that's why they group), its own `sources`, and a distinct `ecid` — pass that `ecid` to [`POST /search/results/{hash}/download`](#post-apiv0searchresultshashdownload) to download the file **under that chosen filename**. `children` is always present and is an empty array for a hit seen under a single name. The top-level `results[]` contains parents only — a child never appears as its own top-level entry.
+`alternate_names` is the result-grouping tree: amuled collapses hits that are the **same file** (same ed2k hash **and** size) but advertised under **different filenames** into one parent row, and `children[]` holds the alternative names. Each child carries the parent's `hash` (that's why they group), its own `sources`, and a distinct `ecid` — pass that `ecid` to [`POST /search/results/{hash}/download`](#post-apiv0searchresultshashdownload) to download the file **under that chosen filename**. `alternate_names` is always present and is an empty array for a hit seen under a single name. The top-level `results[]` contains parents only — a child never appears as its own top-level entry.
 
 `kad_comment_lookup_running` and `comments` carry the file's community ratings/comments fetched from Kad. Unlike a download — whose comments come from connected sources — a search result has no sources, so `comments` is populated purely by an on-demand Kad notes lookup you start with [`POST /search/results/{hash}/comments`](#post-apiv0searchresultshashcomments). `kad_comment_lookup_running` is `true` while that lookup is in flight and flips back to `false` when it finishes; `comments` is an empty array until notes arrive, each entry shaped like a download comment (`username` / `filename` / `rating` / `comment`, with `username` the responding node's IP or `Kad user`). Both fields are always present.
 

@@ -652,7 +652,7 @@ TEST(EventDiff, SearchResultUpdatedFiresWhenADownloadStateChanges)
 	// ever tell a subscriber this.
 	state.MutateSearch(42, [](std::map<std::uint32_t, SearchResult> &cache) {
 		cache[7].status = "downloaded";
-		cache[7].already_have = true;
+		cache[7].already_downloaded = true;
 	});
 	EmitDiffsAndUpdate(bus, prev, state);
 
@@ -667,7 +667,7 @@ TEST(EventDiff, SearchResultUpdatedFiresWhenADownloadStateChanges)
 	// Same shape as _added, search_id first, carrying the new values.
 	ASSERT_TRUE(payload.compare(0, 15, "{\"search_id\":42") == 0);
 	ASSERT_TRUE(payload.find("\"status\":\"downloaded\"") != std::string::npos);
-	ASSERT_TRUE(payload.find("\"already_have\":true") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"already_downloaded\":true") != std::string::npos);
 }
 
 TEST(EventDiff, SearchResultUpdatedFiresWhenKadNotesLand)

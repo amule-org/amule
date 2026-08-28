@@ -3413,11 +3413,14 @@ struct SearchListRow
 void WriteSearchListRow(CJsonWriter &w, const SearchListRow &row)
 {
 	w.BeginObject();
-	w.Key("search_id");
+	// `id`, not `search_id`: the object would be prefixing its own key with
+	// its own type. References from OUTSIDE keep the prefix -- the SSE
+	// payloads and the results envelope point into this object.
+	w.Key("id");
 	w.ValueInt(static_cast<int64_t>(row.search_id));
 	w.Key("query");
 	w.ValueString(row.query);
-	w.Key("kind");
+	w.Key("type");
 	w.ValueString(wxString::FromUTF8(row.kind.c_str()));
 	w.Key("state");
 	w.ValueString(wxString::FromUTF8(row.state.c_str()));
@@ -3439,7 +3442,7 @@ void WriteSearchListRow(CJsonWriter &w, const SearchListRow &row)
 const ListComparators<SearchListRow> &SearchListComparators()
 {
 	static const ListComparators<SearchListRow> kComps = {
-		{ "search_id", SORT_BY(search_id), ANCHOR_ON_NUM(search_id) },
+		{ "id", SORT_BY(search_id), ANCHOR_ON_NUM(search_id) },
 		{ "query", SORT_BY(query) },
 		{ "started_at", SORT_BY(started_at) },
 		{ "result_count", SORT_BY(result_count) },
@@ -7788,8 +7791,9 @@ CHttpServer::Response CApiDispatcher::HandleSearchResults(
 		// cares about, not the order a UI table does.
 		{ "hash", SORT_BY(hash), ANCHOR_ON(hash) },
 		{ "name", SORT_BY(name) },
-		{ "size", SORT_BY(size) },
-		{ "sources", SORT_BY(source_count) },
+		// R7: spelled like the response keys they order by.
+		{ "size_bytes", SORT_BY(size) },
+		{ "sources.total", SORT_BY(source_count) },
 		{ "rating", SORT_BY(rating) },
 		// Browse listings are read folder by folder, which is how the
 		// desktop sorts its Directories column too. Empty on server/Kad
@@ -7832,7 +7836,8 @@ CHttpServer::Response CApiDispatcher::HandleSearchResults(
 	w.BeginObject();
 	w.Key("state");
 	w.ValueString(SearchLifecycleStateToString(progress.complete ? 2 : progress.active ? 1 : 0));
-	w.Key("kind");
+	// `type`, matching POST /search's body field and the searches[] row (R6).
+	w.Key("type");
 	w.ValueString(wxString::FromUTF8(progress.kind.c_str()));
 	w.Key("percent");
 	w.ValueInt(static_cast<int64_t>(progress.percent));
@@ -10599,43 +10604,45 @@ CHttpServer::Response CApiDispatcher::HandleSearchStart(const CHttpServer::Reque
 	std::uint64_t max_size = 0;
 	std::uint32_t min_avail = 0;
 	{
-		const auto it = obj.find("min_size");
+		const auto it = obj.find("min_size_bytes");
 		if (it != obj.end()) {
 			if (!it->second.is<double>()) {
 				return ErrorResponse(400,
 					"bad_request",
-					"`min_size` must be a non-negative integer (bytes)");
+					"`min_size_bytes` must be a non-negative integer (bytes)");
 			}
 			const double v = it->second.get<double>();
 			if (v < 0)
-				return ErrorResponse(400, "bad_request", "`min_size` must be >= 0");
+				return ErrorResponse(400, "bad_request", "`min_size_bytes` must be >= 0");
 			min_size = static_cast<std::uint64_t>(v);
 		}
 	}
 	{
-		const auto it = obj.find("max_size");
+		const auto it = obj.find("max_size_bytes");
 		if (it != obj.end()) {
 			if (!it->second.is<double>()) {
 				return ErrorResponse(400,
 					"bad_request",
-					"`max_size` must be a non-negative integer (bytes; 0 = no cap)");
+					"`max_size_bytes` must be a non-negative integer (bytes; 0 = no "
+					"cap)");
 			}
 			const double v = it->second.get<double>();
 			if (v < 0)
-				return ErrorResponse(400, "bad_request", "`max_size` must be >= 0");
+				return ErrorResponse(400, "bad_request", "`max_size_bytes` must be >= 0");
 			max_size = static_cast<std::uint64_t>(v);
 		}
 	}
 	{
-		const auto it = obj.find("min_avail");
+		const auto it = obj.find("min_source_count");
 		if (it != obj.end()) {
 			if (!it->second.is<double>()) {
-				return ErrorResponse(
-					400, "bad_request", "`min_avail` must be a non-negative integer");
+				return ErrorResponse(400,
+					"bad_request",
+					"`min_source_count` must be a non-negative integer");
 			}
 			const double v = it->second.get<double>();
 			if (v < 0 || v > 4294967295.0) {
-				return ErrorResponse(400, "bad_request", "`min_avail` out of range");
+				return ErrorResponse(400, "bad_request", "`min_source_count` out of range");
 			}
 			min_avail = static_cast<std::uint32_t>(v);
 		}

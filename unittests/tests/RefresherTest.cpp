@@ -2614,7 +2614,7 @@ TEST(Refresher, SearchUnionSecondPollKeepsFieldsTheDiffOmits)
 	ASSERT_EQUALS(std::string("cool.movie.mkv"), it->second.name);
 	ASSERT_EQUALS(static_cast<std::uint64_t>(123), it->second.size);
 	ASSERT_EQUALS(std::string("queued"), it->second.status);
-	ASSERT_TRUE(it->second.already_have);
+	ASSERT_TRUE(it->second.already_downloaded);
 	ASSERT_EQUALS(std::string("video"), it->second.type);
 }
 
@@ -2634,7 +2634,7 @@ TEST(Refresher, SearchUnionAppliesAStatusChangeOnAFinishedSearch)
 	sf.AddTag(CECTag(EC_TAG_PARTFILE_STATUS, static_cast<std::uint32_t>(0))); // NEW
 	first.AddTag(sf);
 	ApplySearchUnion(&first, slots, owner);
-	ASSERT_TRUE(!slots[kSid].results.find(70)->second.already_have);
+	ASSERT_TRUE(!slots[kSid].results.find(70)->second.already_downloaded);
 
 	CECPacket second(EC_OP_SEARCH_RESULTS);
 	CECTag d(EC_TAG_SEARCHFILE, static_cast<std::uint32_t>(70));
@@ -2644,7 +2644,7 @@ TEST(Refresher, SearchUnionAppliesAStatusChangeOnAFinishedSearch)
 
 	const auto &r = slots[kSid].results.find(70)->second;
 	ASSERT_EQUALS(std::string("downloaded"), r.status);
-	ASSERT_TRUE(r.already_have);
+	ASSERT_TRUE(r.already_downloaded);
 }
 
 TEST(Refresher, SearchUnionQuietPollRemovesNothing)

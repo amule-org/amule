@@ -78,7 +78,7 @@ sleep 4
 # script starts one rather than relying on a removed implicit default.
 _curl -X POST -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
 	-d '{"query":"amuleapi-phase07","type":"local"}' "$HOST/api/v0/search"
-SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id // empty')
+SID=$(printf '%s' "$CURL_BODY" | jq -r '.id // empty')
 [ -n "$SID" ] || _die "POST /search returned no search_id"
 
 # --- 1. Auth gate. -------------------------------------------------

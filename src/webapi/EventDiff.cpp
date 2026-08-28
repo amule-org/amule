@@ -947,13 +947,13 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 	// while the search runs -- where `search_progress` is already the re-read
 	// cue. What is left is the set that can change AFTER a search finishes,
 	// when no other signal exists: download state (`status` /
-	// `already_have`), and the Kad-notes cluster (`comments[]`, the
+	// `already_downloaded`), and the Kad-notes cluster (`comments[]`, the
 	// in-flight flag, and `rating`, which aggregates from the comments).
 	// Comparing only these keeps the search channel quiet on a running
 	// search instead of firing per-result frames on source-count churn.
 	const auto result_mutated = [](const SearchResult &a, const SearchResult &b) {
-		if (a.status != b.status || a.already_have != b.already_have || a.rating != b.rating ||
-			a.kad_comment_searching != b.kad_comment_searching ||
+		if (a.status != b.status || a.already_downloaded != b.already_downloaded ||
+			a.rating != b.rating || a.kad_comment_searching != b.kad_comment_searching ||
 			a.comments.size() != b.comments.size())
 			return true;
 		for (std::size_t i = 0; i < a.comments.size(); ++i) {
@@ -1021,7 +1021,7 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 				// live rows opts in by handling the new event. It is the
 				// close of the one window where a client could not know:
 				// a finished search stops emitting search_progress, yet a
-				// hit downloaded from it flips status / already_have, and
+				// hit downloaded from it flips status / already_downloaded, and
 				// a Kad notes lookup lands comments / rating after the
 				// fact. (Those fields are polled at all because the union
 				// keeps finished searches in the per-tick poll set.)
@@ -1048,8 +1048,12 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 				std::ostringstream payload;
 				payload << "{\"search_id\":" << sid << ",\"state\":\""
 					<< (progress_now.complete ? "finished" : "running") << "\""
-					<< ",\"percent\":" << progress_now.percent
-					<< ",\"results\":" << search_now.size() << ",\"kind\":\""
+					<< ",\"percent\":"
+					<< progress_now.percent
+					// `result_count`: a plural key held an integer while `results` is an
+					// array everywhere else, and GET /search already calls this number
+					// result_count.
+					<< ",\"result_count\":" << search_now.size() << ",\"type\":\""
 					<< EscJson(progress_now.kind) << "\""
 					<< "}";
 				bus.Publish("search_progress", payload.str());
