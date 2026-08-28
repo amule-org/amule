@@ -109,7 +109,7 @@ else
 fi
 RC=$(curl -s -o /tmp/p11_su.json -w "%{http_code}" -X POST "${H_AUTH[@]}" \
 	-H "Content-Type: application/json" \
-	-d '{"servers_url":"ftp://nope"}' "$HOST/api/v0/servers_update")
+	-d '{"url":"ftp://nope"}' "$HOST/api/v0/servers_update")
 if [ "$RC" = "400" ]; then
 	_pass "POST /servers_update non-http url → 400"
 else
@@ -117,7 +117,7 @@ else
 fi
 RC=$(curl -s -o /tmp/p11_su.json -w "%{http_code}" -X POST "${H_AUTH[@]}" \
 	-H "Content-Type: application/json" \
-	-d '{"servers_url":"http://upd.emule-security.org/server.met"}' \
+	-d '{"url":"http://upd.emule-security.org/server.met"}' \
 	"$HOST/api/v0/servers_update")
 if [ "$RC" = "202" ]; then
 	_pass "POST /servers_update valid url → 202"

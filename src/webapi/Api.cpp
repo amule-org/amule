@@ -2767,14 +2767,18 @@ const std::vector<std::uint16_t> &SharedPartSources(const webapi::FileSnapshot &
 // `parts` for the shared detail endpoint: one `{sources}` per part, in
 // file order, always exactly `part_count` long. Deliberately NOT the
 // downloads shape -- `state` there encodes local completeness, which is
-// meaningless for a share and would invite a progress-bar renderer. The
-// caller omits the key entirely when nothing has been decoded yet, so
-// "no data" and "no sources anywhere" stay distinguishable.
+// meaningless for a share and would invite a progress-bar renderer. The key
+// is always present and null when nothing has been decoded yet (R10), which
+// keeps "no data" distinguishable from "no sources for any part" without a
+// client having to probe for the key.
 void WriteSharedAvailabilityParts(CJsonWriter &w, const webapi::FileSnapshot &f)
 {
 	const std::vector<std::uint16_t> &part_sources = SharedPartSources(f);
-	if (part_sources.empty())
+	if (part_sources.empty()) {
+		w.Key("parts");
+		w.ValueNull();
 		return;
+	}
 	w.Key("parts");
 	w.BeginArray();
 	const std::uint64_t part_count = webapi::PartCountForSize(f.size);
@@ -3185,7 +3189,12 @@ void WriteClientDetailObject(CJsonWriter &w, const webapi::ClientSnapshot &c)
 
 // Base shared-file fields, shared by the list writer and the detail
 // writer. Emits keys into an already-open object (no Begin/End).
-void WriteSharedBaseFields(CJsonWriter &w, const webapi::FileSnapshot &f)
+//
+// `detail` widens the `sources` group with the estimated range, which only
+// the detail endpoint carries. It is a parameter rather than a second
+// `w.Key("sources")` block in the detail writer because a JSON object has to
+// be emitted in one piece.
+void WriteSharedBaseFields(CJsonWriter &w, const webapi::FileSnapshot &f, bool detail = false)
 {
 	w.Key("hash");
 	w.ValueString(wxString::FromUTF8(f.hash.c_str()));
@@ -3193,53 +3202,65 @@ void WriteSharedBaseFields(CJsonWriter &w, const webapi::FileSnapshot &f)
 	w.ValueString(wxString::FromUTF8(f.name.c_str()));
 	w.Key("ed2k_link");
 	w.ValueString(wxString::FromUTF8(f.ed2k_link.c_str()));
-	w.Key("size");
+	w.Key("size_bytes");
 	w.ValueInt(static_cast<int64_t>(f.size));
 	w.Key("priority");
 	w.ValueString(wxString::FromUTF8(f.shared.priority.c_str()));
 	w.Key("priority_auto");
 	w.ValueBool(f.shared.priority_auto);
-	w.Key("complete_sources");
+	// A stated exception to R11: this wraps a single quantity on the list.
+	// The identical figure is `sources.complete` on a search result, so one
+	// access path works on every endpoint that has the concept -- cross-
+	// endpoint predictability beats R11's anti-wrapping default here.
+	w.Key("sources");
+	w.BeginObject();
+	w.Key("complete");
 	w.ValueInt(static_cast<int64_t>(f.shared.complete_sources));
-	w.Key("xfer");
-	w.BeginObject();
-	w.Key("session");
-	w.ValueInt(static_cast<int64_t>(f.shared.xfer_session));
-	w.Key("total");
-	w.ValueInt(static_cast<int64_t>(f.shared.xfer_total));
+	if (detail) {
+		// The estimated range of that same count, so it belongs beside it
+		// rather than in the separate `complete_sources_range` object it used
+		// to occupy.
+		w.Key("complete_min");
+		w.ValueInt(static_cast<int64_t>(f.shared.complete_sources_low));
+		w.Key("complete_max");
+		w.ValueInt(static_cast<int64_t>(f.shared.complete_sources_high));
+	}
 	w.EndObject();
-	w.Key("requests");
-	w.BeginObject();
-	w.Key("session");
-	w.ValueInt(static_cast<int64_t>(f.shared.requests_session));
-	w.Key("total");
-	w.ValueInt(static_cast<int64_t>(f.shared.requests_total));
-	w.EndObject();
-	w.Key("accepts");
-	w.BeginObject();
-	w.Key("session");
-	w.ValueInt(static_cast<int64_t>(f.shared.accepts_session));
-	w.Key("total");
-	w.ValueInt(static_cast<int64_t>(f.shared.accepts_total));
-	w.EndObject();
+	// Flattened (R11): the window belongs in the key, not a wrapper.
+	w.Key("uploaded_bytes_session");
+	w.ValueInt(static_cast<int64_t>(f.shared.uploaded_bytes_session));
+	w.Key("uploaded_bytes_total");
+	w.ValueInt(static_cast<int64_t>(f.shared.uploaded_bytes_total));
+	w.Key("request_count_session");
+	w.ValueInt(static_cast<int64_t>(f.shared.request_count_session));
+	w.Key("request_count_total");
+	w.ValueInt(static_cast<int64_t>(f.shared.request_count_total));
+	// `accepts` was a verb doing duty as a plural noun.
+	w.Key("accepted_request_count_session");
+	w.ValueInt(static_cast<int64_t>(f.shared.accepted_request_count_session));
+	w.Key("accepted_request_count_total");
+	w.ValueInt(static_cast<int64_t>(f.shared.accepted_request_count_total));
 	// Live upload activity (issue #466). `upload_speed_bps` + `uploading`
 	// refresh every tick; `last_upload` / `shared_since` are unix seconds,
 	// null when unknown -- never uploaded, or a known.met entry that predates
 	// the field. They were 0, which reads as 1970 rather than "no idea".
 	w.Key("upload_speed_bps");
 	w.ValueInt(static_cast<int64_t>(f.shared.upload_speed_bps));
-	w.Key("uploading");
-	w.ValueInt(static_cast<int64_t>(f.shared.uploading_count));
-	WriteIntOrNull(
-		w, "last_upload", f.shared.last_upload != 0, static_cast<std::int64_t>(f.shared.last_upload));
+	// Read as a boolean, held an integer.
+	w.Key("uploading_client_count");
+	w.ValueInt(static_cast<int64_t>(f.shared.uploading_client_count));
 	WriteIntOrNull(w,
-		"shared_since",
+		"last_upload_at",
+		f.shared.last_upload != 0,
+		static_cast<std::int64_t>(f.shared.last_upload));
+	WriteIntOrNull(w,
+		"shared_since_at",
 		f.shared.shared_since != 0,
 		static_cast<std::int64_t>(f.shared.shared_since));
 	// Parts hashed so far by a Verify Local Data or an AICH hashset rebuild
 	// over this share; 0 when idle. Goes through the accessor so a shared
 	// download, which amuled reports as a partfile, still reads correctly.
-	w.Key("hashing_progress");
+	w.Key("hashed_part_count");
 	w.ValueInt(static_cast<int64_t>(webapi::SharedHashingProgress(f)));
 }
 
@@ -3263,13 +3284,14 @@ void WriteSharedObject(CJsonWriter &w, const webapi::FileSnapshot &f)
 void WriteSharedDetailObject(CJsonWriter &w, const webapi::FileSnapshot &f)
 {
 	w.BeginObject();
-	WriteSharedBaseFields(w, f);
+	WriteSharedBaseFields(w, f, /*detail=*/true);
 	w.Key("file_type");
 	w.ValueString(wxString::FromUTF8(webapi::FileTypeToken(f.name).c_str()));
-	w.Key("share_ratio");
+	w.Key("upload_ratio");
 	w.ValueDouble(
-		f.size > 0 ? static_cast<double>(f.shared.xfer_total) / static_cast<double>(f.size) : 0.0);
-	w.Key("path");
+		f.size > 0 ? static_cast<double>(f.shared.uploaded_bytes_total) / static_cast<double>(f.size)
+			   : 0.0);
+	w.Key("directory");
 	// The on-disk directory (Temp while downloading, destination once
 	// completed) -- the same value /downloads/{hash} reports for this file.
 	// This was once masked with a placeholder while the file was incomplete,
@@ -3282,23 +3304,15 @@ void WriteSharedDetailObject(CJsonWriter &w, const webapi::FileSnapshot &f)
 	// Detail-only, like `path`: the list object and the shared_updated diff
 	// deliberately carry neither, so the SSE event rate is unaffected.
 	w.ValueBool(f.IsIncompletePartfile());
-	w.Key("complete_sources_range");
-	w.BeginObject();
-	w.Key("low");
-	w.ValueInt(static_cast<int64_t>(f.shared.complete_sources_low));
-	w.Key("high");
-	w.ValueInt(static_cast<int64_t>(f.shared.complete_sources_high));
-	w.EndObject();
-	w.Key("aich_hash");
-	w.ValueString(wxString::FromUTF8(f.aich_hash.c_str()));
-	w.Key("part_count");
+	WriteStringOrNull(w, "aich_hash", !f.aich_hash.empty(), f.aich_hash);
+	w.Key("parts_total_count");
 	w.ValueInt(static_cast<int64_t>(webapi::PartCountForSize(f.size)));
 	WriteSharedAvailabilityParts(w, f);
-	w.Key("queued_count");
+	w.Key("upload_queue_count");
 	w.ValueInt(static_cast<int64_t>(f.queued_count));
-	w.Key("comment");
+	w.Key("my_comment");
 	w.ValueString(wxString::FromUTF8(f.comment.c_str()));
-	w.Key("rating");
+	w.Key("my_rating");
 	w.ValueInt(static_cast<int64_t>(f.rating));
 	WriteMediaIfPresent(w, f);
 	w.EndObject();
@@ -3840,11 +3854,16 @@ struct FilePriorityLevel
 };
 
 const FilePriorityLevel kFilePriorities[] = {
-	{ "very_low", PR_VERY_LOW, kPrioShared },
+	// R9: a writable field accepts the values the same field returns. A
+	// category's `priority` is rendered by PriorityName(), which can answer
+	// very_low and release, so the write side has to admit them -- it used to
+	// reject exactly the two values a round-trip could hand back. The download
+	// domain stays narrow because its read side cannot produce them either.
+	{ "very_low", PR_VERY_LOW, kPrioShared | kPrioCategory },
 	{ "low", PR_LOW, kPrioDownload | kPrioShared | kPrioCategory },
 	{ "normal", PR_NORMAL, kPrioDownload | kPrioShared | kPrioCategory },
 	{ "high", PR_HIGH, kPrioDownload | kPrioShared | kPrioCategory },
-	{ "release", PR_VERYHIGH, kPrioShared },
+	{ "release", PR_VERYHIGH, kPrioShared | kPrioCategory },
 	{ "auto", PR_AUTO, kPrioDownload | kPrioShared | kPrioCategory },
 };
 
@@ -4385,7 +4404,8 @@ CHttpServer::Response CApiDispatcher::HandleSharedList(const CHttpServer::Reques
 		// cares about, not the order a UI table does.
 		{ "hash", SORT_BY(hash), ANCHOR_ON(hash) },
 		{ "name", SORT_BY(name) },
-		{ "size", SORT_BY(size) },
+		// R7: spelled like the response key it orders by.
+		{ "size_bytes", SORT_BY(size) },
 	};
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
@@ -5056,7 +5076,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(const CHttpServer::Reque
 
 namespace
 {
-// Handle the optional `comment`+`rating` pair shared by PATCH
+// Handle the optional `my_comment`+`my_rating` pair shared by PATCH
 // /downloads/{hash} and PATCH /shared/{hash} (issue #419). Both must be
 // present together or neither. Sends EC_OP_SHARED_FILE_SET_COMMENT, which
 // amuled resolves against the shared-files registry — so the file must be
@@ -5070,34 +5090,34 @@ bool TrySetCommentRating(CamuleapiApp &app,
 	CHttpServer::Response &err)
 {
 	applied = false;
-	const auto cit = obj.find("comment");
-	const auto rit = obj.find("rating");
+	const auto cit = obj.find("my_comment");
+	const auto rit = obj.find("my_rating");
 	const bool has_c = cit != obj.end();
 	const bool has_r = rit != obj.end();
 	if (!has_c && !has_r)
 		return true;
 	if (has_c != has_r) {
-		err = ErrorResponse(400, "bad_request", "`comment` and `rating` must be set together");
+		err = ErrorResponse(400, "bad_request", "`my_comment` and `my_rating` must be set together");
 		return false;
 	}
 	if (!cit->second.is<std::string>()) {
-		err = ErrorResponse(400, "bad_request", "`comment` must be a string");
+		err = ErrorResponse(400, "bad_request", "`my_comment` must be a string");
 		return false;
 	}
 	const std::string comment = cit->second.get<std::string>();
 	// MAXFILECOMMENTLEN (include/protocol/ed2k/Constants.h) = 50.
 	if (comment.size() > 50) {
-		err = ErrorResponse(400, "bad_request", "`comment` exceeds 50 characters");
+		err = ErrorResponse(400, "bad_request", "`my_comment` exceeds 50 characters");
 		return false;
 	}
 	if (!rit->second.is<double>()) {
-		err = ErrorResponse(400, "bad_request", "`rating` must be an integer in [0, 5]");
+		err = ErrorResponse(400, "bad_request", "`my_rating` must be an integer in [0, 5]");
 		return false;
 	}
 	const double rd = rit->second.get<double>();
 	const int rating = static_cast<int>(rd);
 	if (static_cast<double>(rating) != rd || rating < 0 || rating > 5) {
-		err = ErrorResponse(400, "bad_request", "`rating` must be an integer in [0, 5]");
+		err = ErrorResponse(400, "bad_request", "`my_rating` must be an integer in [0, 5]");
 		return false;
 	}
 	if (!f.is_shared) {
@@ -5632,16 +5652,19 @@ void WriteServerObject(CJsonWriter &w, const webapi::ServerSnapshot &s)
 	w.ValueString(wxString::FromUTF8(s.version.c_str()));
 	w.Key("address");
 	w.ValueString(wxString::FromUTF8(s.address.c_str()));
-	// ISO 3166-1 alpha-2 (lowercase); "" when GeoIP is off/unresolved (#440).
-	w.Key("country_code");
-	w.ValueString(wxString::FromUTF8(s.country_code.c_str()));
+	// The bare IP beside the "ip:port" form. Every client needed it and had
+	// to re-parse `address` to get it.
+	w.Key("ip");
+	w.ValueString(wxString::FromUTF8(s.address.substr(0, s.address.rfind(':')).c_str()));
+	// ISO 3166-1 alpha-2 (lowercase); null when GeoIP is off/unresolved (#440).
+	WriteStringOrNull(w, "country_code", !s.country_code.empty(), s.country_code);
 	w.Key("port");
 	w.ValueInt(static_cast<int64_t>(s.port));
-	w.Key("users");
+	w.Key("user_count");
 	w.ValueInt(static_cast<int64_t>(s.users));
-	w.Key("max_users");
+	w.Key("max_user_count");
 	w.ValueInt(static_cast<int64_t>(s.max_users));
-	w.Key("files");
+	w.Key("file_count");
 	w.ValueInt(static_cast<int64_t>(s.files));
 	// 0 means the server has not reported a limit yet, not a limit of zero;
 	// the sentinel is documented so a UI can render it blank the way the
@@ -5656,7 +5679,9 @@ void WriteServerObject(CJsonWriter &w, const webapi::ServerSnapshot &s)
 	w.ValueInt(static_cast<int64_t>(s.ping_ms));
 	w.Key("failed_count");
 	w.ValueInt(static_cast<int64_t>(s.failed_count));
-	w.Key("static");
+	// `permanent`, not `permanent`: a reserved word in C++, Java, C# and
+	// TypeScript-adjacent codegen, so a generated client has to mangle it.
+	w.Key("permanent");
 	w.ValueBool(s.is_static);
 	// Decoded capability bits. Written as a pre-built fragment from the shared
 	// tables so this object and the SSE payload in EventDiff.cpp -- two
@@ -5675,12 +5700,22 @@ void WriteCategoryObject(CJsonWriter &w, const webapi::CategorySnapshot &c)
 	w.ValueInt(static_cast<int64_t>(c.index));
 	w.Key("name");
 	w.ValueString(wxString::FromUTF8(c.name.c_str()));
-	w.Key("path");
+	// `save_path`, not `path`: it is where finished files in this category
+	// land, which `path` did not distinguish from directories.incoming.
+	w.Key("save_path");
 	w.ValueString(wxString::FromUTF8(c.path.c_str()));
 	w.Key("comment");
 	w.ValueString(wxString::FromUTF8(c.comment.c_str()));
+	// "#rrggbb", not the raw 24-bit integer. Mind the byte order: the core
+	// packs it as 0x00BBGGRR -- red in the LOW byte (CMuleColour) -- so a
+	// naive hex print of the integer yields #bbggrr, reversed.
 	w.Key("color");
-	w.ValueInt(static_cast<int64_t>(c.color));
+	{
+		const unsigned r = c.color & 0xFF;
+		const unsigned g = (c.color >> 8) & 0xFF;
+		const unsigned b = (c.color >> 16) & 0xFF;
+		w.ValueString(wxString::Format(wxT("#%02x%02x%02x"), r, g, b));
+	}
 	w.Key("priority");
 	w.ValueString(wxString::FromUTF8(c.priority.c_str()));
 	w.EndObject();
@@ -5733,9 +5768,10 @@ CHttpServer::Response CApiDispatcher::HandleServers(const CHttpServer::Request &
 		// cares about, not the order a UI table does.
 		{ "ecid", SORT_BY(ecid), ANCHOR_ON_NUM(ecid) },
 		{ "name", SORT_BY(name) },
-		{ "users", SORT_BY(users) },
-		{ "ping", SORT_BY(ping_ms) },
-		{ "files", SORT_BY(files) },
+		// R7: spelled like the response keys they order by.
+		{ "user_count", SORT_BY(users) },
+		{ "ping_ms", SORT_BY(ping_ms) },
+		{ "file_count", SORT_BY(files) },
 	};
 	return ListResponse(m_state, "servers", m_state.Servers(), WriteServerObject, params, kComps);
 }
@@ -6865,7 +6901,7 @@ CHttpServer::Response CApiDispatcher::HandleServerUpdateFromUrl(const CHttpServe
 	// grabs whatever's already there; the `server_added` SSE events keep
 	// firing on subsequent natural ticks as more entries land.
 	static const UrlFetchSpec kSpec = {
-		"servers_url", EC_OP_SERVER_UPDATE_FROM_URL, EC_TAG_SERVERS_UPDATE_URL, true, true
+		"url", EC_OP_SERVER_UPDATE_FROM_URL, EC_TAG_SERVERS_UPDATE_URL, true, true
 	};
 	std::string url;
 	CHttpServer::Response rejection;
@@ -7033,9 +7069,9 @@ CHttpServer::Response CApiDispatcher::HandleServerPatch(
 
 	bool is_static = false;
 	bool has_static = false;
-	if (const auto it = obj.find("static"); it != obj.end()) {
+	if (const auto it = obj.find("permanent"); it != obj.end()) {
 		if (!it->second.is<bool>()) {
-			return ErrorResponse(400, "bad_request", "`static` must be a bool");
+			return ErrorResponse(400, "bad_request", "`permanent` must be a bool");
 		}
 		is_static = it->second.get<bool>();
 		has_static = true;
@@ -7043,7 +7079,7 @@ CHttpServer::Response CApiDispatcher::HandleServerPatch(
 
 	if (!has_prio && !has_static) {
 		return ErrorResponse(
-			400, "bad_request", "body must include at least one of `priority`, `static`");
+			400, "bad_request", "body must include at least one of `priority`, `permanent`");
 	}
 
 	if (auto r = RequireSnapshot(m_state))
@@ -8912,7 +8948,7 @@ CHttpServer::Response CApiDispatcher::HandleKadUpdateFromUrl(const CHttpServer::
 	// the download completes amuled stops Kad, swaps nodes.dat in and
 	// starts Kad again, and the natural tick reports that.
 	static const UrlFetchSpec kSpec = {
-		"nodes_url", EC_OP_KAD_UPDATE_FROM_URL, EC_TAG_KADEMLIA_UPDATE_URL, true, false
+		"url", EC_OP_KAD_UPDATE_FROM_URL, EC_TAG_KADEMLIA_UPDATE_URL, true, false
 	};
 	std::string url;
 	CHttpServer::Response rejection;
@@ -8963,9 +8999,7 @@ CHttpServer::Response CApiDispatcher::HandleIpfilterUpdate(const CHttpServer::Re
 	// by name, so the tag is EC_TAG_STRING — what amulegui has always sent.
 	// No inline RefresherTick: the download is asynchronous and lands in
 	// amuled's filter, not in a cache this process holds.
-	static const UrlFetchSpec kSpec = {
-		"ipfilter_url", EC_OP_IPFILTER_UPDATE, EC_TAG_STRING, false, false
-	};
+	static const UrlFetchSpec kSpec = { "url", EC_OP_IPFILTER_UPDATE, EC_TAG_STRING, false, false };
 	// Named local: Preferences() hands back a snapshot by value. Offer it as
 	// the fallback only once there is a snapshot to read — before the first
 	// one the defaults would look like "no URL configured".
@@ -10053,7 +10087,8 @@ CHttpServer::Response ParseCategoryFields(const picojson::object &obj, CategoryF
 	auto r1 = get_string("name", out.name, out.has_name);
 	if (r1.status >= 400)
 		return r1;
-	auto r2 = get_string("path", out.path, out.has_path);
+	// `save_path` on the write side too (R9/R6 with the read key).
+	auto r2 = get_string("save_path", out.path, out.has_path);
 	if (r2.status >= 400)
 		return r2;
 	auto r3 = get_string("comment", out.comment, out.has_comment);
@@ -10062,14 +10097,24 @@ CHttpServer::Response ParseCategoryFields(const picojson::object &obj, CategoryF
 	{
 		const auto it = obj.find("color");
 		if (it != obj.end()) {
-			if (!it->second.is<double>()) {
-				return ErrorResponse(400, "bad_request", "`color` must be a uint32");
+			if (!it->second.is<std::string>()) {
+				return ErrorResponse(
+					400, "bad_request", "`color` must be a \"#rrggbb\" string");
 			}
-			const double v = it->second.get<double>();
-			if (v < 0 || v > 4294967295.0) {
-				return ErrorResponse(400, "bad_request", "`color` out of range");
+			const std::string v = it->second.get<std::string>();
+			const bool well_formed = v.size() == 7 && v[0] == '#' &&
+						 std::all_of(v.begin() + 1, v.end(), [](unsigned char ch) {
+							 return std::isxdigit(ch) != 0;
+						 });
+			if (!well_formed) {
+				return ErrorResponse(
+					400, "bad_request", "`color` must be a \"#rrggbb\" string");
 			}
-			out.color = static_cast<std::uint32_t>(v);
+			const auto hex = [&v](std::size_t i) {
+				return static_cast<std::uint32_t>(std::stoul(v.substr(i, 2), nullptr, 16));
+			};
+			// Repack into the core's 0x00BBGGRR layout, red in the low byte.
+			out.color = hex(1) | (hex(3) << 8) | (hex(5) << 16);
 			out.has_color = true;
 		}
 	}

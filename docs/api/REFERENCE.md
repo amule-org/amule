@@ -305,8 +305,8 @@ Rows added or removed *during* a sweep are not missed: both emit an SSE event, s
 | `GET /clients`        | **`ecid`** (id), `name`, `software` |
 | `GET /downloads/{hash}/clients`<br>`GET /shared/{hash}/clients` | same keys as `/clients`, `after` included |
 | `GET /known_clients`  | **`user_hash`** (id), `name`, `software`, `first_seen_at`, `last_seen_at`, `session_count`, `uploaded_bytes_total`, `downloaded_bytes_total` |
-| `GET /shared`         | **`hash`** (id), `name`, `size` |
-| `GET /servers`        | **`ecid`** (id), `name`, `users`, `ping`, `files` |
+| `GET /shared`         | **`hash`** (id), `name`, `size_bytes` |
+| `GET /servers`        | **`ecid`** (id), `name`, `user_count`, `ping_ms`, `file_count` |
 | `GET /friends`        | **`ecid`** (id), `name`, `online` |
 | `GET /chats`          | **`client_ecid`** (id), `last_message_at`, `name` |
 | `GET /search/{id}/results` | **`hash`** (id), `name`, `size`, `sources`, `rating`, `directory` |
@@ -371,7 +371,7 @@ Five keys stay omitted, because for them absence really is the meaning: `started
 
 A rejection names the set that endpoint accepts, so sending a wrong value tells you the right ones. Note that a file which is both downloading and shared carries two independent priorities from the two sets, and changing one does not affect the other.
 
-**Categories read wider than they write.** The table above is the *write* domain. A category's `priority` is formatted on read from the same six-level file set as downloads and shared files, so `GET /api/v0/categories` can in principle report `very_low` or `release` -- values `POST` and `PATCH` will refuse with a `400`. Read-modify-write on such a category therefore fails on a field the client never touched.
+**Categories read and write the same six levels.** A category's `priority` is formatted on read from the same file-priority set as downloads and shared files, so `GET /api/v0/categories` can report `very_low` or `release` -- and `POST` / `PATCH` accept them, so a read-modify-write round-trip cannot fail on a field the client never touched (R9). The narrower four-value set still applies to downloads, whose read side cannot produce the other two.
 
 Reaching it takes a category whose stored priority was not set through this API or the desktop: the desktop's category priority control offers only Low / Normal / High / Auto, and `CDownloadQueue::SetCatPrio` applies whatever it is given as a *download* priority, which is the same four. A hand-edited `amule.conf`, or another client, is what it would take.
 
@@ -1474,7 +1474,7 @@ The cost is one EC roundtrip per amuleapi process, and the store stays resident 
 
 **Auth:** `GUEST`
 
-Lists every file the local node is sharing. The `complete_sources` counter is amuled's estimate of how many peers in the swarm hold the file complete.
+Lists every file the local node is sharing. The `sources.complete` counter is amuled's estimate of how many peers in the swarm hold the file complete.
 
 ```sh
 curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/shared"
@@ -1487,18 +1487,21 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/shared"
       "hash":             "1a2b3c4d...",
       "name":             "release-notes.txt",
       "ed2k_link":        "ed2k://|file|release-notes.txt|3217|1a2b...|/",
-      "size":             3217,
+      "size_bytes":       3217,
       "priority":         "normal",
       "priority_auto":    false,
-      "complete_sources": 12,
-      "xfer":     { "session": 5242880,  "total": 314572800 },
-      "requests": { "session": 42,       "total": 1837 },
-      "accepts":  { "session": 18,       "total": 921 },
+      "sources":          { "complete": 12 },
+      "uploaded_bytes_session":         5242880,
+      "uploaded_bytes_total":           314572800,
+      "request_count_session":          42,
+      "request_count_total":            1837,
+      "accepted_request_count_session": 18,
+      "accepted_request_count_total":   921,
       "upload_speed_bps": 51200,
-      "uploading":        2,
-      "last_upload":      1700000500,
-      "shared_since":     1699000000,
-      "hashing_progress": 0,
+      "uploading_client_count": 2,
+      "last_upload_at":      1700000500,
+      "shared_since_at":     1699000000,
+      "hashed_part_count": 0,
       "media": {
         "duration_seconds": 212,
         "bitrate":  320,
@@ -1512,15 +1515,15 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/shared"
 }
 ```
 
-`xfer.session` / `xfer.total` are bytes uploaded during the current amuled process vs over the file's lifetime. `requests` counts how many peers have asked for the file; `accepts` counts how many of those requests were granted an upload slot. The `session` counters reset on amuled restart; `total` is persisted in `known.met`.
+`uploaded_bytes_session` / `uploaded_bytes_total` are bytes uploaded during the current amuled process vs over the file's lifetime. `requests` counts how many peers have asked for the file; `accepts` counts how many of those requests were granted an upload slot. The `session` counters reset on amuled restart; `total` is persisted in `known.met`.
 
-`upload_speed_bps` is the file's current combined upload rate in bytes/sec (summed over the peers it is uploading to), and `uploading` is how many peers it is actively uploading to right now — together the "is this file being seeded" signal, the upload-side analogue of the `/downloads` speed + transferring-source counts. Subtract `uploading` from the queued-client count (`queued_count`, on the detail view) to show `uploading / queued`. Both are live and refresh every tick. `last_upload` is the unix timestamp of the last time data was sent for the file, and `shared_since` is when the file was completed or first shared; both are persisted in `known.met` and are `null` when unknown: a file that has never uploaded, or a `known.met` entry written before these fields existed.
+`upload_speed_bps` is the file's current combined upload rate in bytes/sec (summed over the peers it is uploading to), and `uploading_client_count` is how many peers it is actively uploading to right now — together the "is this file being seeded" signal, the upload-side analogue of the `/downloads` speed + transferring-source counts. Subtract `uploading_client_count` from the queued-client count (`upload_queue_count`, on the detail view) to show `uploading / queued`. Both are live and refresh every tick. `last_upload_at` is the unix timestamp of the last time data was sent for the file, and `shared_since_at` is when the file was completed or first shared; both are persisted in `known.met` and are `null` when unknown: a file that has never uploaded, or a `known.met` entry written before these fields existed.
 
 `priority` is the upload priority — `"very_low"` / `"low"` / `"normal"` / `"high"` / `"release"` — and `priority_auto` is `true` when amuled is deriving that level automatically from the upload queue. This mirrors the `/downloads` shape (base `priority` + separate `priority_auto` flag); on an auto file `priority` reports the current derived level, not the literal string `"auto"`. For a file that is both downloading and shared this upload priority is independent of the download priority reported by [`GET /api/v0/downloads`](#get-apiv0downloads).
 
-`hashing_progress` is the number of parts hashed so far by a pass running over the file — a [`POST /shared/{hash}/verify`](#post-apiv0sharedhashverify) run, or an AICH hashset rebuild — and `0` when nothing is hashing. It is a count of completed parts, not the index of the part in flight, so it runs `0` → `part_count` (see the detail endpoint, or compute `ceil(size / 9728000)`).
+`hashed_part_count` is the number of parts hashed so far by a pass running over the file — a [`POST /shared/{hash}/verify`](#post-apiv0sharedhashverify) run, or an AICH hashset rebuild — and `0` when nothing is hashing. It is a count of completed parts, not the index of the part in flight, so it runs `0` → `parts_total_count` (see the detail endpoint, or compute `ceil(size / 9728000)`).
 
-A file that is both downloading and shared reports its progress here as well: amuled describes such a file as a partfile, so the value is read across from the download side and the two agree. That makes `hashing_progress` usable from either list without checking which one owns the file.
+A file that is both downloading and shared reports its progress here as well: amuled describes such a file as a partfile, so the value is read across from the download side and the two agree. That makes `hashed_part_count` usable from either list without checking which one owns the file.
 
 `media` is an object on an audio or video file that has been probed and `null` otherwise — the key is always present, so test `media === null` rather than checking for the key. Its six fields are the same ones the detail endpoint reports, and a [media refresh](#post-apiv0sharedmediarefresh) replaces all of them, clearing any the new probe no longer finds.
 
@@ -1542,19 +1545,19 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 | Field | Type | Meaning |
 |---|---|---|
 | `file_type` | string | Category token derived from the extension, lowercased: `"audio"`, `"videos"`, `"archives"`, `"cd-images"`, `"pictures"`, `"texts"`, `"programs"`, or `"any"` for unknown. |
-| `share_ratio` | number | `xfer.total / size`; `0` when `size == 0`. |
-| `path` | string | Directory path of the on-disk file — the temp directory while the file is still an incomplete partfile, the destination directory once it has completed. Identical to `path` on `/downloads/{hash}` for the same file. |
+| `upload_ratio` | number | `xfer.total / size`; `0` when `size == 0`. |
+| `directory` | string | Directory path of the on-disk file — the temp directory while the file is still an incomplete partfile, the destination directory once it has completed. Identical to `directory` on `/downloads/{hash}` for the same file. |
 | `incomplete` | bool | `true` while the file is still an incomplete partfile, `false` once complete. Always present. A download that has finished but has not been cleared yet reports `false`, since its data already sits in the destination directory. |
-| `complete_sources_range` | object | `{ "low": int, "high": int }` — the estimated full-copy source range behind the scalar `complete_sources`. |
+| `sources.complete_min` / `sources.complete_max` | object | `{ "low": int, "high": int }` — the estimated full-copy source range behind the scalar `sources.complete`. |
 | `aich_hash` | string | AICH master hash (hex); `""` if not yet computed. |
-| `part_count` | int | Total parts, `ceil(size / 9.28 MiB)`. |
-| `parts` | array | Per-part source availability, `[{ "sources": int }, ...]`, exactly `part_count` entries in file order. **Omitted entirely** until the first decode has landed, so "no data yet" and "no sources for any part" stay distinguishable. See below. |
-| `queued_count` | int | Clients waiting on this file's upload queue. |
-| `comment` | string | The user's own comment on this file (`""` if none). |
-| `rating` | int | The user's own rating, `0`–`5` (`0` = unrated). |
+| `parts_total_count` | int | Total parts, `ceil(size / 9.28 MiB)`. |
+| `parts` | array | Per-part source availability, `[{ "sources": int }, ...]`, exactly `parts_total_count` entries in file order. **Omitted entirely** until the first decode has landed, so "no data yet" and "no sources for any part" stay distinguishable. See below. |
+| `upload_queue_count` | int | Clients waiting on this file's upload queue. |
+| `my_comment` | string | The user's own comment on this file (`""` if none). |
+| `my_rating` | int | The user's own rating, `0`–`5` (`0` = unrated). |
 | `media` | object | Audio/video metadata — see [Media metadata](#media-metadata). **`null`** when the file has no probed metadata; the key is always present. |
 
-`hashing_progress` comes through from the list item; pair it with `part_count` here for a percentage.
+`hashed_part_count` comes through from the list item; pair it with `parts_total_count` here for a percentage.
 
 `parts[].sources` is how many peers currently requesting this file hold that part — an **availability** measure, not a progress one. A shared file is fully local by definition, so a part with `"sources": 0` means no other peer has it and you are its only source. Counts saturate at `255`.
 
@@ -1772,25 +1775,25 @@ Bulk upload-priority change over multiple shared files — the same `priority` a
 
 **Auth:** `ADMIN`
 
-Changes the upload priority and/or the comment+rating of a single shared file. `{hash}` is the 32-char MD4 hex hash (case-insensitive). The body must include at least one of `priority` or the `comment`+`rating` pair.
+Changes the upload priority and/or the comment+rating of a single shared file. `{hash}` is the 32-char MD4 hex hash (case-insensitive). The body must include at least one of `priority` or the `my_comment`+`my_rating` pair.
 
 **Body:**
 
 ```json
 {
   "priority": "very_low" | "low" | "normal" | "high" | "release" | "auto",
-  "comment":  "<string, ≤ 50 chars>",
-  "rating":   0
+  "my_comment":  "<string, ≤ 50 chars>",
+  "my_rating":   0
 }
 ```
 
 Send a bare priority level to pin it (the file's `priority_auto` becomes `false`). Send `"auto"` to hand level selection to amuled — it derives the level from the upload queue, and `GET /api/v0/shared` then reports the derived base `priority` with `priority_auto: true`. The combined `"*_auto"` strings are not accepted as input, since `"auto"` is the level the daemon computes rather than one the caller pins.
 
-`comment` and `rating` must be sent **together** (both or neither) — the daemon writes them as one atomic operation. `comment` is capped at 50 characters; `rating` is an integer `0`–`5`. Setting them requires the file to be shared. The same fields are accepted on [`PATCH /downloads/{hash}`](#patch-apiv0downloadshash) for a downloading file that is also shared.
+`my_comment` and `my_rating` must be sent **together** (both or neither) — the daemon writes them as one atomic operation. `my_comment` is capped at 50 characters; `my_rating` is an integer `0`–`5`. Setting them requires the file to be shared. The same fields are accepted on [`PATCH /downloads/{hash}`](#patch-apiv0downloadshash) for a downloading file that is also shared.
 
 `name` renames the file — a non-empty string with no path separators (`/` or `\`, rejected to prevent the rename escaping the file's directory). Rename works on any known file, so it is accepted on both this endpoint and [`PATCH /downloads/{hash}`](#patch-apiv0downloadshash).
 
-**Errors:** `400 bad_request` (missing/invalid fields, `comment`/`rating` sent alone, or a `name` that is empty or contains a path separator), `404 not_found` (no shared file with that hash), `409 not_shared` (comment/rating on a non-shared file), `400 amuled_rejected`, `503 ec_unavailable`.
+**Errors:** `400 bad_request` (missing/invalid fields, `my_comment`/`my_rating` sent alone, or a `name` that is empty or contains a path separator), `404 not_found` (no shared file with that hash), `409 not_shared` (comment/rating on a non-shared file), `400 amuled_rejected`, `503 ec_unavailable`.
 
 ---
 
@@ -1811,15 +1814,15 @@ Send a bare priority level to pin it (the file's `priority_auto` becomes `false`
       "address": "203.0.113.5:4242",
       "country_code": "de",
       "port": 4242,
-      "users": 312000,
-      "max_users": 500000,
-      "files": 75000000,
+      "user_count": 312000,
+      "max_user_count": 500000,
+      "file_count": 75000000,
       "soft_file_limit": 1000,
       "hard_file_limit": 5000,
       "priority": "normal",
       "ping_ms": 42,
       "failed_count": 0,
-      "static": false,
+      "permanent": false,
       "tcp_flags": {
         "bitmask": 1497,
         "compression": true,
@@ -1848,7 +1851,7 @@ Send a bare priority level to pin it (the file's `priority_auto` becomes `false`
 
 `country_code` is the ISO 3166-1 alpha-2 code (lowercase, e.g. `"de"`) of the server host, resolved server-side from the server IP by the daemon's GeoIP database — same semantics and empty-string fallback as the peer `country_code` on `/clients`, and the same artwork route, [`GET /flags/{code}.png`](#get-flagscodepng).
 
-`files` is how many files the server indexes. `soft_file_limit` and `hard_file_limit` are something else entirely: the per-user publishing limits the server advertises. Below the soft limit a client may publish every file it shares, between soft and hard only its rarest, above the hard limit nothing. Both arrive only once the server has answered a UDP status request, so **`0` means "not reported yet", not "the limit is zero"** — render it blank rather than as a number, the way the desktop's Soft Files / Hard Files columns do. `users`, `max_users` and `files` share that sentinel.
+`file_count` is how many files the server indexes. `soft_file_limit` and `hard_file_limit` are something else entirely: the per-user publishing limits the server advertises. Below the soft limit a client may publish every file it shares, between soft and hard only its rarest, above the hard limit nothing. Both arrive only once the server has answered a UDP status request, so **`0` means "not reported yet", not "the limit is zero"** — render it blank rather than as a number, the way the desktop's Soft Files / Hard Files columns do. `user_count`, `max_user_count` and `file_count` share that sentinel.
 
 `failed_count` is the number of consecutive failed connection attempts, not a boolean.
 
@@ -1935,21 +1938,21 @@ Sets an ed2k server's priority, its static flag, or both — the same operation 
 **Body:** both fields are optional, and only the ones present are applied; a body with neither is a `400`.
 
 ```json
-{ "priority": "high", "static": true }
+{ "priority": "high", "permanent": true }
 ```
 
-`priority` is one of `"low"` / `"normal"` / `"high"` — the same values `GET /servers` reports. `static` marks the server as one amuled keeps across list updates.
+`priority` is one of `"low"` / `"normal"` / `"high"` — the same values `GET /servers` reports. `permanent` marks the server as one amuled keeps across list updates.
 
 ```sh
 curl -s -X PATCH -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
-  -d '{"priority":"high","static":true}' \
+  -d '{"priority":"high","permanent":true}' \
   "http://$HOST/api/v0/servers/1"
 ```
 
 **Response:** `200 OK` → the full server object as it now stands, the same shape [`GET /servers`](#get-apiv0servers) lists. A `PATCH` answers with the state the caller just produced, so no re-read is needed to see it.
 
-**Errors:** `400 bad_request` (unknown `priority`, non-bool `static`, or neither field present), `400 amuled_rejected`, `404 not_found`, `503 ec_unavailable`.
+**Errors:** `400 bad_request` (unknown `priority`, non-bool `permanent`, or neither field present), `400 amuled_rejected`, `404 not_found`, `503 ec_unavailable`.
 
 #### `POST /api/v0/servers_update`
 
@@ -1960,10 +1963,12 @@ Tells amuled to fetch the `server.met` from the supplied URL and refresh its lis
 **Body:**
 
 ```json
-{ "servers_url": "http://example.com/server.met" }
+{ "url": "http://example.com/server.met" }
 ```
 
-`servers_url` is **required** here, and must start with `http://` or `https://`; omitting it, or sending anything else, is a `400 bad_request`. This differs from [`POST /ipfilter/update`](#post-apiv0ipfilterupdate), which does fall back to its configured preference when the field is absent.
+`url` is **required** here, and must start with `http://` or `https://`; omitting it, or sending anything else, is a `400 bad_request`. This differs from [`POST /ipfilter/update`](#post-apiv0ipfilterupdate), which does fall back to its configured preference when the field is absent.
+
+All three `*/update` endpoints -- servers, Kad nodes and the IP filter -- name this field `url` (R6). Each used to repeat a noun the path already carries (`servers_url`, `nodes_url`, `ipfilter_url`).
 
 The URL is **persisted** into the `servers.update_url` preference, so a subsequent `GET /preferences` reflects it — there is no need to PATCH it separately.
 
@@ -2079,9 +2084,9 @@ amuled's category system lets users tag downloads with one of N user-defined buc
     {
       "index": 0,
       "name": "Default",
-      "path": "/home/user/aMule/Incoming",
+      "save_path": "/home/user/aMule/Incoming",
       "comment": "",
-      "color": 0,
+      "color": "#1664c0",
       "priority": "low"
     }
   ],
@@ -2096,10 +2101,10 @@ A list endpoint like the others: `?limit`, `?offset`, `?sort` and `?order` apply
 Category `0` is always present, so the list is never empty. amuled's EC omits the row entirely until the first custom category exists, so amuleapi synthesises it when missing:
 
 ```json
-{ "index": 0, "name": "Default", "path": "/home/user/aMule/Incoming", "comment": "", "color": 0, "priority": "low" }
+{ "index": 0, "name": "Default", "save_path": "/home/user/aMule/Incoming", "comment": "", "color": "#1664c0", "priority": "low" }
 ```
 
-`name` and `path` are filled in for index `0` whether the row came from the daemon or was synthesised here. amuled holds neither -- its `defaultcat` is built with an empty title and path -- so a client rendering a category picker was left with a blank row it had to label itself, and nothing to show for where an uncategorised download lands. `path` is `directories.incoming` from [`GET /preferences`](#get-apiv0preferences), which is genuinely where such a file is saved. `priority` is `low`, amuled's own default for the row.
+`name` and `save_path` are filled in for index `0` whether the row came from the daemon or was synthesised here. amuled holds neither -- its `defaultcat` is built with an empty title and path -- so a client rendering a category picker was left with a blank row it had to label itself, and nothing to show for where an uncategorised download lands. `save_path` is `directories.incoming` from [`GET /preferences`](#get-apiv0preferences), which is genuinely where such a file is saved. `priority` is `low`, amuled's own default for the row.
 
 Filling both in unconditionally is deliberate: doing it only for the synthesised row would mean `/categories/0` answered `"Default"` on a daemon with no custom categories and `""` as soon as the operator added one, which is a response shape that depends on unrelated state.
 
@@ -2114,14 +2119,19 @@ Filling both in unconditionally is deliberate: doing it only for the synthesised
 ```json
 {
   "name": "Linux ISOs",
-  "path": "/home/user/aMule/Incoming/Linux",
+  "save_path": "/home/user/aMule/Incoming/Linux",
   "comment": "Distros only",
-  "color": 16711680,
+  "color": "#1664c0",
   "priority": "high"
 }
 ```
 
-`name` required; others optional. `color` is a 24-bit RGB integer. `priority` is applied to the category's member files as a download priority, so it takes the same restricted set as [`PATCH /downloads`](#patch-apiv0downloads) — `"low"` / `"normal"` / `"high"` / `"auto"`. `very_low` and `release` are rejected (the daemon would clamp them to `normal` on the next restart).
+`name` required; others optional. `color` is a `"#rrggbb"` string in both
+directions -- it used to be the raw 24-bit integer amuled stores, which a
+client had to unpack itself, and which is easy to get wrong: the core packs
+it as `0x00BBGGRR` with **red in the low byte**, so a naive hex print of the
+integer comes out reversed. Anything that is not `#` followed by six hex
+digits is a `400 bad_request`. `priority` accepts the same six levels the category read side can return — `"very_low"` / `"low"` / `"normal"` / `"high"` / `"release"` / `"auto"` — so a read-modify-write round-trip always succeeds (R9). It is applied to the category's member files as a download priority.
 
 **Response:** `202 Accepted`, no body. `EC_OP_CREATE_CATEGORY` answers success or failure and never returns the index it assigned, so naming the new category here meant scanning the snapshot for one with a matching name and falling back to a bodiless `201` when the scan came up short. Re-read [`GET /categories`](#get-apiv0categories) for the assigned index.
 
@@ -2133,7 +2143,7 @@ Filling both in unconditionally is deliberate: doing it only for the synthesised
 
 Returns the single category object, the same shape [`PATCH`](#patch-apiv0categoriesindex) returns. Every other resource with a member path has a member `GET`; this one did not, so a client that had just created a category and wanted the stored result had to re-fetch the whole collection and search it by index.
 
-`{index}` is a uint8. A non-numeric or out-of-range segment is `400 bad_request`; an index no category holds is `404 not_found`. Index `0` is always present, synthesised when amuled omits it and carrying the same `name` / `path` fill-in, exactly as on the collection: the two routes cannot disagree about which categories exist or about what they hold.
+`{index}` is a uint8. A non-numeric or out-of-range segment is `400 bad_request`; an index no category holds is `404 not_found`. Index `0` is always present, synthesised when amuled omits it and carrying the same `name` / `save_path` fill-in, exactly as on the collection: the two routes cannot disagree about which categories exist or about what they hold.
 
 **Errors:** `400 bad_request`, `404 not_found`, `503 ec_unavailable`.
 
@@ -2402,13 +2412,13 @@ Downloads a `nodes.dat` from the supplied URL and rebuilds the Kad node list fro
 **Body:**
 
 ```json
-{ "nodes_url": "https://upd.emule-security.org/nodes.dat" }
+{ "url": "https://upd.emule-security.org/nodes.dat" }
 ```
 
 ```sh
 curl -s -X POST -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
-  -d '{"nodes_url":"https://upd.emule-security.org/nodes.dat"}' \
+  -d '{"url":"https://upd.emule-security.org/nodes.dat"}' \
   "http://$HOST/api/v0/kad/update"
 ```
 
@@ -2416,7 +2426,7 @@ Two side effects are worth planning for. The URL is **persisted** into the `kade
 
 **Response:** `202 Accepted`, no body. The URL came from the request, and the download is asynchronous -- the `202` confirms amuled accepted the request, not that the node list was replaced, and its outcome arrives on the log channel.
 
-**Errors:** `400 bad_request` (missing/non-string/empty `nodes_url`, or a scheme other than `http://` / `https://`), `400 amuled_rejected`, `503 ec_unavailable`.
+**Errors:** `400 bad_request` (missing/non-string/empty `url`, or a scheme other than `http://` / `https://`), `400 amuled_rejected`, `503 ec_unavailable`.
 
 #### `GET /api/v0/kad`
 
@@ -2497,15 +2507,15 @@ Downloads an `ipfilter.dat` from a URL, swaps it in and reloads — the desktop 
 **Body (optional):**
 
 ```json
-{ "ipfilter_url": "http://upd.emule-security.org/ipfilter.zip" }
+{ "url": "http://upd.emule-security.org/ipfilter.zip" }
 ```
 
-`ipfilter_url` must start with `http://` or `https://` when given. Omit it and the configured `security.ipfilter_update_url` is used instead; if that is empty too the request is rejected `400 bad_request` rather than accepted and silently dropped. The configured value is read from amuleapi's preferences snapshot, which trails amuled by up to one refresh tick — a `PATCH /preferences` immediately followed by a bodyless update can still send the previous URL, so pass `ipfilter_url` explicitly when it matters which one runs.
+`url` must start with `http://` or `https://` when given. Omit it and the configured `security.ipfilter_update_url` is used instead; if that is empty too the request is rejected `400 bad_request` rather than accepted and silently dropped. The configured value is read from amuleapi's preferences snapshot, which trails amuled by up to one refresh tick — a `PATCH /preferences` immediately followed by a bodyless update can still send the previous URL, so pass `url` explicitly when it matters which one runs.
 
 ```sh
 curl -s -X POST -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
-  -d '{"ipfilter_url":"http://upd.emule-security.org/ipfilter.zip"}' \
+  -d '{"url":"http://upd.emule-security.org/ipfilter.zip"}' \
   "http://$HOST/api/v0/ipfilter/update"
 ```
 
@@ -2513,7 +2523,7 @@ An explicit URL is **persisted** into the `security.ipfilter_update_url` prefere
 
 **Response:** `202 Accepted`, no body. Where the request named a URL it already knows which one ran; where it omitted one, `security.ipfilter_update_url` on [`GET /preferences`](#get-apiv0preferences) is the answer, and the paragraph above is why reading it there is the honest version -- the snapshot this handler resolves from is the same one that endpoint serves.
 
-**Errors:** `400 bad_request` (non-string / empty / non-`http(s)` `ipfilter_url`, or no URL available at all), `400 amuled_rejected`, `503 ec_unavailable`.
+**Errors:** `400 bad_request` (non-string / empty / non-`http(s)` `url`, or no URL available at all), `400 amuled_rejected`, `503 ec_unavailable`.
 
 ---
 

@@ -4,9 +4,9 @@
 #
 # Endpoints:
 #   POST   /api/v0/categories             — create
-#       body: {name, path?, comment?, color?, priority?}
+#       body: {name, save_path?, comment?, color?, priority?}
 #   PATCH  /api/v0/categories/{index}     — update
-#       body: any subset of {name, path, comment, color, priority}
+#       body: any subset of {name, save_path, comment, color, priority}
 #   DELETE /api/v0/categories/{index}     — remove
 #
 # The default (index=0) "All" category cannot be deleted —
@@ -114,7 +114,12 @@ _assert_json_eq '.index' 0 '/categories/0 reports index 0'
 _assert_json_eq '.name' Default '/categories/0 is named Default'
 INCOMING=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/preferences" | jq -r '.directories.incoming')
-_assert_json_eq '.path' "$INCOMING" '/categories/0 path is directories.incoming'
+_assert_json_eq '.save_path' "$INCOMING" '/categories/0 save_path is directories.incoming'
+# color is "#rrggbb", not the raw 24-bit integer. The core packs it as
+# 0x00BBGGRR (red in the low byte), so a naive hex print of the integer
+# would come out reversed -- pin the format so that cannot regress.
+_assert_json_eq '(.color | test("^#[0-9a-f]{6}$"))' true \
+	'/categories/0 color is a #rrggbb string'
 
 # ...and the same values whether or not the daemon sent the row. This phase
 # creates a custom category below, which is what makes amuled start emitting
@@ -187,7 +192,7 @@ BEFORE_IDX=$(printf '%s' "$CURL_BODY" | jq -c '[.categories[].index]')
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d "{\"name\":\"$TEST_NAME\",\"path\":\"$TEST_PATH\",\"comment\":\"18-categories-crud test\",\"priority\":\"high\"}" \
+	-d "{\"name\":\"$TEST_NAME\",\"save_path\":\"$TEST_PATH\",\"comment\":\"18-categories-crud test\",\"priority\":\"high\"}" \
 	"$HOST/api/v0/categories"
 # 202 with no body. EC_OP_CREATE_CATEGORY answers success or failure and never
 # returns the index it assigned, so naming the new category here meant scanning
@@ -212,7 +217,7 @@ fi
 # reads what the daemon actually kept, not what amuleapi guessed it kept.
 LOOKUP=$(printf '%s' "$CURL_BODY" \
 	| jq --argjson i "$NEW_IDX" '[.categories[] | select(.index == $i)] | first')
-for f in name:"$TEST_NAME" path:"$TEST_PATH" priority:high; do
+for f in name:"$TEST_NAME" save_path:"$TEST_PATH" priority:high; do
 	key=${f%%:*}; want=${f#*:}
 	got=$(printf '%s' "$LOOKUP" | jq -r ".$key")
 	if [ "$got" = "$want" ]; then
@@ -233,15 +238,21 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-d "{\"name\":\"x\",\"priority\":\"bogus\"}" "$HOST/api/v0/categories"
 _assert_status 400 "POST /categories (bad priority enum) → 400"
 
-# A category priority is applied to its files as a DOWNLOAD priority, so it
-# takes the restricted download set (low/normal/high/auto). very_low and
-# release are downloads-invalid — the daemon clamps them to Normal on the
-# next restart — so they must be rejected here too (issue #384).
+# R9: a category's priority is rendered on read from the full six-level file
+# set, so the write side accepts the same six. very_low and release used to be
+# refused here, which meant a read-modify-write round-trip failed on a field
+# the client never touched.
 for p in very_low release; do
 	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d "{\"name\":\"x\",\"priority\":\"$p\"}" "$HOST/api/v0/categories"
-	_assert_status 400 "POST /categories (priority=$p rejected) → 400"
+		-d "{\"name\":\"prio-$p\",\"save_path\":\"$TEST_PATH\",\"priority\":\"$p\"}" \
+		"$HOST/api/v0/categories"
+	_assert_status 202 "POST /categories (priority=$p accepted, R9) → 202"
+	# Leave no residue: a leftover category poisons the next run's create.
+	PRIO_IDX=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories" \
+		| jq -r --arg n "prio-$p" '[.categories[] | select(.name == $n)][0].index // empty')
+	[ -n "$PRIO_IDX" ] && curl -s -o /dev/null -X DELETE \
+		-H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories/$PRIO_IDX"
 done
 
 # --- 4. PATCH /categories/{idx}. ----------------------------------
@@ -275,8 +286,13 @@ for p in very_low release; do
 	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
 		-d "{\"priority\":\"$p\"}" "$HOST/api/v0/categories/$NEW_IDX"
-	_assert_status 400 "PATCH /categories (priority=$p rejected) → 400"
+	_assert_status 200 "PATCH /categories (priority=$p accepted, R9) → 200"
 done
+# ...and back to a value the rest of the phase expects.
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"priority":"high"}' "$HOST/api/v0/categories/$NEW_IDX"
+_assert_status 200 "PATCH /categories priority restored to high → 200"
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
@@ -298,14 +314,14 @@ _assert_status 400 "PATCH /categories non-numeric index → 400"
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories/0"
 _assert_status 200 "GET /categories/0 (amuled now sends it) → 200"
 _assert_json_eq '.name' Default '/categories/0 is still named Default'
-_assert_json_eq '.path' "$INCOMING" '/categories/0 path is still directories.incoming'
+_assert_json_eq '.save_path' "$INCOMING" '/categories/0 save_path is still directories.incoming'
 
 # The collection agrees with the member route, on the same daemon state.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories?limit=500"
 _assert_json_eq '[.categories[] | select(.index == 0)][0].name' Default \
 	'/categories lists index 0 as Default too'
-_assert_json_eq '[.categories[] | select(.index == 0)][0].path' "$INCOMING" \
-	'/categories lists index 0 with the incoming path too'
+_assert_json_eq '[.categories[] | select(.index == 0)][0].save_path' "$INCOMING" \
+	'/categories lists index 0 with the incoming save_path too'
 
 # --- 6. DELETE happy path + cannot-delete-default + no-stale. ----
 _curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \

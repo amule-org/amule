@@ -158,8 +158,8 @@ if [ "$SCOUNT" -gt 0 ]; then
 		'/shared[0].hash is 32-char hex'
 	_assert_json_eq '.shared[0].name | type'   string \
 		'/shared[0].name is string'
-	_assert_json_eq '.shared[0].size | type'   number \
-		'/shared[0].size is numeric'
+	_assert_json_eq '.shared[0].size_bytes | type'   number \
+		'/shared[0].size_bytes is numeric'
 	_assert_json_eq '.shared[0].priority | type' string \
 		'/shared[0].priority is string'
 	_assert_json_eq '.shared[0].priority_auto | type' boolean \

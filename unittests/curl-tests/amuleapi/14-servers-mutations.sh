@@ -5,7 +5,7 @@
 # Endpoints:
 #   POST   /api/v0/servers                   — add by {address, name?}
 #   POST   /api/v0/servers/{ecid}/connect    — connect to one server
-#   PATCH  /api/v0/servers/{ecid}            — set priority / static flag
+#   PATCH  /api/v0/servers/{ecid}            — set priority / permanent flag
 #   DELETE /api/v0/servers/{ecid}            — remove from the list
 #
 # All keyed by ECID on the URL — the EC ops (CONNECT/REMOVE) actually
@@ -248,7 +248,7 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/servers/4294967295/connect"
 _assert_status 404 "POST /servers/{unknown ecid}/connect → 404"
 
-# --- 5b. PATCH /servers/{ecid} — priority + static (#692). ---------
+# --- 5b. PATCH /servers/{ecid} — priority + permanent (#692). ------
 # The SRV_PR_* wire values are not monotone (NORMAL=0, HIGH=1, LOW=2),
 # so round-tripping every name through the API is what actually proves
 # the reverse mapping, not just that a 200 came back.
@@ -267,33 +267,33 @@ for PRIO in high low normal; do
 	fi
 done
 
-# static flag, both directions.
+# permanent flag, both directions.
 for FLAG in true false; do
 	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d "{\"static\":$FLAG}" "$HOST/api/v0/servers/$ECID"
-	_assert_status 200 "PATCH /servers/{ecid} static=$FLAG → 200"
+		-d "{\"permanent\":$FLAG}" "$HOST/api/v0/servers/$ECID"
+	_assert_status 200 "PATCH /servers/{ecid} permanent=$FLAG → 200"
 	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/servers"
 	GOT=$(printf '%s' "$CURL_BODY" | jq -r --argjson e "$ECID" \
-		'.servers[] | select(.ecid == $e) | .static')
+		'.servers[] | select(.ecid == $e) | .permanent')
 	if [ "$GOT" = "$FLAG" ]; then
-		_pass "static=$FLAG round-trips through GET /servers"
+		_pass "permanent=$FLAG round-trips through GET /servers"
 	else
-		_fail "static round-trip" "set $FLAG, GET returned $GOT"
+		_fail "permanent round-trip" "set $FLAG, GET returned $GOT"
 	fi
 done
 
 # Both fields in one body.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"priority":"high","static":true}' "$HOST/api/v0/servers/$ECID"
-_assert_status 200 "PATCH /servers/{ecid} priority+static together → 200"
+	-d '{"priority":"high","permanent":true}' "$HOST/api/v0/servers/$ECID"
+_assert_status 200 "PATCH /servers/{ecid} priority+permanent together → 200"
 # The response is the full server object as it now stands, not an {ok} ack:
 # a PATCH answers with the state the caller just produced, so no re-read is
 # needed to see it.
 _assert_json_eq '.ecid' "$ECID" 'PATCH response is the server object, keyed by ecid'
 _assert_json_eq '.priority' high 'PATCH response carries the new priority'
-_assert_json_eq '.static' true 'PATCH response carries the new static flag'
+_assert_json_eq '.permanent' true 'PATCH response carries the new permanent flag'
 _assert_json_eq '. | has("ok")' false 'PATCH response has no constant ok field'
 
 # --- 5c. PATCH error paths. ----------------------------------------
@@ -319,8 +319,8 @@ _assert_status 400 "PATCH /servers/{ecid} unknown priority → 400"
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"static":"yes"}' "$HOST/api/v0/servers/$ECID"
-_assert_status 400 "PATCH /servers/{ecid} non-bool static → 400"
+	-d '{"permanent":"yes"}' "$HOST/api/v0/servers/$ECID"
+_assert_status 400 "PATCH /servers/{ecid} non-bool permanent → 400"
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
@@ -394,7 +394,7 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 _assert_status 404 "POST /servers/by-address/192.0.2.1:4242/connect (unknown) → 404"
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
-	-H "Content-Type: application/json" -d '{"static":true}' \
+	-H "Content-Type: application/json" -d '{"permanent":true}' \
 	"$HOST/api/v0/servers/by-address/not-an-ip:4242"
 _assert_status 400 "PATCH /servers/by-address/not-an-ip:4242 (malformed) → 400"
 

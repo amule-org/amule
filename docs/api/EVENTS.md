@@ -323,34 +323,37 @@ Downloads only, but it rides the `comments` channel, not `downloads` -- `?channe
 
 #### `shared_added` / `shared_updated`
 
-Identical to the REST [`/api/v0/shared`](REFERENCE.md#get-apiv0shared) list-item shape. `_updated` fires on any field-level change including `priority`, `priority_auto`, `xfer.session`, `xfer.total`, `requests.*`, `accepts.*` and `hashing_progress` — clients see live upload counters (and priority changes, and a running hash) without polling.
+Identical to the REST [`/api/v0/shared`](REFERENCE.md#get-apiv0shared) list-item shape. `_updated` fires on any field-level change including `priority`, `priority_auto`, `uploaded_bytes_session`, `uploaded_bytes_total`, `requests.*`, `accepts.*` and `hashed_part_count` — clients see live upload counters (and priority changes, and a running hash) without polling.
 
 ```json
 {
   "hash":             "1a2b3c4d...",
   "name":             "release-notes.txt",
   "ed2k_link":        "ed2k://|file|release-notes.txt|3217|1a2b...|/",
-  "size":             3217,
+  "size_bytes":       3217,
   "priority":         "normal",
   "priority_auto":    false,
-  "complete_sources": 12,
-  "xfer":     { "session": 5242880, "total": 314572800 },
-  "requests": { "session": 42,      "total": 1837 },
-  "accepts":  { "session": 18,      "total": 921 },
+  "sources":          { "complete": 12 },
+  "uploaded_bytes_session":         5242880,
+  "uploaded_bytes_total":           314572800,
+  "request_count_session":          42,
+  "request_count_total":            1837,
+  "accepted_request_count_session": 18,
+  "accepted_request_count_total":   921,
   "upload_speed_bps": 51200,
-  "uploading":        2,
-  "last_upload":      1700000500,
-  "shared_since":     1699000000,
-  "hashing_progress": 0,
-  "media": { "duration_seconds": 5400, "bitrate": 1500, "codec": "h264", "artist": "", "album": "", "title": "" }
+  "uploading_client_count": 2,
+  "last_upload_at":   1700000500,
+  "shared_since_at":  1699000000,
+  "hashed_part_count": 0,
+  "media": { "duration_seconds": 5400, "bitrate_kilobits_per_second": 1500, "codec": "h264", "artist": "", "album": "", "title": "" }
 }
 ```
 
 `media` is always present, and `null` on a file with no probed metadata -- the same object [`GET /shared`](REFERENCE.md#get-apiv0shared) carries, so the byte-for-byte parity promised above holds for it too. A metadata re-extraction changes it and therefore fires a `shared_updated`, which is the only way a subscriber learns a probe landed: the refresh endpoint answers `202` with no result.
 
-`last_upload` and `shared_since` are unix seconds and `null` when unknown -- a file that has never uploaded (the common case), or a `known.met` entry written before those fields existed. They are never `0`.
+`last_upload_at` and `shared_since_at` are unix seconds and `null` when unknown -- a file that has never uploaded (the common case), or a `known.met` entry written before those fields existed. They are never `0`.
 
-`hashing_progress` counts the parts hashed so far by a [`POST /shared/{hash}/verify`](REFERENCE.md#post-apiv0sharedhashverify) run or an AICH hashset rebuild, and is `0` when nothing is hashing — each advance pushes a `shared_updated`, so a progress bar can be driven straight off the stream. A file that is both downloading and shared reports the same value on both channels.
+`hashed_part_count` counts the parts hashed so far by a [`POST /shared/{hash}/verify`](REFERENCE.md#post-apiv0sharedhashverify) run or an AICH hashset rebuild, and is `0` when nothing is hashing — each advance pushes a `shared_updated`, so a progress bar can be driven straight off the stream. A file that is both downloading and shared reports the same value on both channels.
 
 #### `shared_removed`
 
@@ -371,17 +374,18 @@ Identical to the REST [`/api/v0/servers`](REFERENCE.md#get-apiv0servers) list-it
   "description": "Public server",
   "version":     "17.15",
   "address":     "203.0.113.5:4242",
+  "ip":          "203.0.113.5",
   "country_code": "de",
   "port":        4242,
-  "users":       312000,
-  "max_users":   500000,
-  "files":       75000000,
+  "user_count":     312000,
+  "max_user_count": 500000,
+  "file_count":     75000000,
   "soft_file_limit": 1000,
   "hard_file_limit": 5000,
   "priority":    "normal",
   "ping_ms":     42,
   "failed_count": 0,
-  "static":      false,
+  "permanent":   false,
   "tcp_flags":   { "bitmask": 1497, "compression": true, "new_tags": true, "unicode": true,
                    "related_search": true, "type_tag_integer": true, "large_files": true,
                    "tcp_obfuscation": true },
@@ -591,7 +595,7 @@ It does **not** fire on `sources` or `children[]`. Those churn on essentially ev
   "rating": 0,
   "status": "new",
   "type": "videos",
-  "media": { "duration_seconds": 5400, "bitrate": 1500, "codec": "h264", "artist": "", "album": "", "title": "" },
+  "media": { "duration_seconds": 5400, "bitrate_kilobits_per_second": 1500, "codec": "h264", "artist": "", "album": "", "title": "" },
   "children": []
 }
 ```

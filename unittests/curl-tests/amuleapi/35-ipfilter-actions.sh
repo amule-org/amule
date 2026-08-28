@@ -159,26 +159,26 @@ _assert_status 405 "DELETE /ipfilter/reload → 405"
 
 # --- 2. /ipfilter/update: auth + admin gate. -----------------------
 _curl -X POST -H "Content-Type: application/json" \
-	-d "{\"ipfilter_url\":\"$TEST_URL\"}" "$HOST/api/v0/ipfilter/update"
+	-d "{\"url\":\"$TEST_URL\"}" "$HOST/api/v0/ipfilter/update"
 _assert_status 401 "POST /ipfilter/update (no token) → 401"
 
 if [ "$HAVE_GUEST" = "1" ]; then
 	_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d "{\"ipfilter_url\":\"$TEST_URL\"}" "$HOST/api/v0/ipfilter/update"
+		-d "{\"url\":\"$TEST_URL\"}" "$HOST/api/v0/ipfilter/update"
 	_assert_status 403 "POST /ipfilter/update (guest) → 403"
 fi
 
 # --- 3. Body validation. -------------------------------------------
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-	-H "Content-Type: application/json" -d '{"ipfilter_url":""}' \
+	-H "Content-Type: application/json" -d '{"url":""}' \
 	"$HOST/api/v0/ipfilter/update"
-_assert_status 400 "POST /ipfilter/update empty ipfilter_url → 400"
+_assert_status 400 "POST /ipfilter/update empty url → 400"
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-	-H "Content-Type: application/json" -d '{"ipfilter_url":123}' \
+	-H "Content-Type: application/json" -d '{"url":123}' \
 	"$HOST/api/v0/ipfilter/update"
-_assert_status 400 "POST /ipfilter/update non-string ipfilter_url → 400"
+_assert_status 400 "POST /ipfilter/update non-string url → 400"
 
 # Scheme gate: amuled hands the string to the HTTP downloader, so a
 # non-http(s) scheme is rejected here or it fails asynchronously with no
@@ -186,7 +186,7 @@ _assert_status 400 "POST /ipfilter/update non-string ipfilter_url → 400"
 for BAD in "ftp://example.com/ipfilter.dat" "file:///etc/passwd" "example.com/ipfilter.dat"; do
 	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d "{\"ipfilter_url\":\"$BAD\"}" "$HOST/api/v0/ipfilter/update"
+		-d "{\"url\":\"$BAD\"}" "$HOST/api/v0/ipfilter/update"
 	_assert_status 400 "POST /ipfilter/update rejects scheme: $BAD → 400"
 done
 
@@ -204,7 +204,7 @@ fi
 # --- 5. Explicit URL: accepted, echoed, and persisted. -------------
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d "{\"ipfilter_url\":\"$TEST_URL\"}" "$HOST/api/v0/ipfilter/update"
+	-d "{\"url\":\"$TEST_URL\"}" "$HOST/api/v0/ipfilter/update"
 _assert_status 202 "POST /ipfilter/update explicit URL → 202"
 _assert_body_empty "update sends no body"
 

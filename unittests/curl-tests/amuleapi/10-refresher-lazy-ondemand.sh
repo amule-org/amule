@@ -114,7 +114,10 @@ if [ "$CCOUNT" -gt 0 ]; then
 	_assert_json_eq '.clients[0].software | type'       string   '/clients[0].software is string'
 	# #439 peer country: always-present ISO 3166-1 alpha-2 string,
 	# empty when GeoIP is off/unresolved (never absent/null).
-	_assert_json_eq '.clients[0].country_code | type'   string   '/clients[0].country_code is string (#439)'
+	# Nullable since the R10 pass: null means GeoIP is off or the lookup has
+	# not resolved, which used to be spelled "".
+	_assert_json_eq '(.clients[0].country_code == null or (.clients[0].country_code | type) == "string")' \
+		true '/clients[0].country_code is a string or null'
 	# xfer was flattened (R11): the window belongs in the key, not a wrapper.
 	_assert_json_eq '.clients[0] | has("xfer")' false '/clients[0] no longer wraps counters in xfer'
 	_assert_json_eq '.clients[0].uploaded_bytes_session | type'   number '/clients[0].uploaded_bytes_session is numeric'

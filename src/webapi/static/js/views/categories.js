@@ -53,8 +53,8 @@ export function CategoriesPanel({ isGuest }) {
   };
   const openEdit = (c) => {
     setEditing(c.index);
-    setName(c.name || ""); setPath(c.path || ""); setComment(c.comment || "");
-    setColor(intToHex(c.color)); setPrio(c.priority || "auto");
+    setName(c.name || ""); setPath(c.save_path || ""); setComment(c.comment || "");
+    setColor(c.color || "#000000"); setPrio(c.priority || "auto");
     setFormOpen(true);
   };
 
@@ -62,7 +62,11 @@ export function CategoriesPanel({ isGuest }) {
     e.preventDefault();
     const n = name.trim(), p = path.trim();
     if (!n || !p) { toast(t("downloads_cat_toast_name_path_required"), "warn"); return; }
-    const body = { name: n, path: p, color: hexToInt(color), priority: prio };
+    // `color` is now "#rrggbb" on the wire in both directions, so no
+    // conversion here. The old intToHex/hexToInt pair printed the raw
+    // integer naively and had red and blue swapped: the core packs
+    // 0x00BBGGRR, red in the low byte.
+    const body = { name: n, save_path: p, color, priority: prio };
     if (comment.trim()) body.comment = comment.trim();
     try {
       if (editing !== null) await api.patch("categories/" + editing, body);
@@ -80,9 +84,9 @@ export function CategoriesPanel({ isGuest }) {
     <tr>
       <td class="name">${c.index === 0 ? html`<strong>${t("downloads_category_none")}</strong>` : c.name}</td>
       <td>${c.comment || ""}</td>
-      <td>${c.path || ""}</td>
+      <td>${c.save_path || ""}</td>
       <td>${prioLabel(c.priority)}</td>
-      <td><span class="color-swatch" style=${{ background: intToHex(c.color) }}></span> ${intToHex(c.color)}</td>
+      <td><span class="color-swatch" style=${{ background: c.color || "#000000" }}></span> ${c.color || ""}</td>
       ${isGuest ? null : html`
         <td class="row-actions admin-only">
           ${c.index === 0 ? null : html`
@@ -148,8 +152,6 @@ export function CategoriesPanel({ isGuest }) {
 function field(label, control) {
   return html`<div class="field"><label>${label}</label>${control}</div>`;
 }
-function intToHex(n) { return "#" + ((Number(n) || 0) & 0xffffff).toString(16).padStart(6, "0"); }
-function hexToInt(hex) { return parseInt((hex || "#000000").slice(1), 16) || 0; }
 function prioLabel(p) {
   const f = PRIORITIES.find(([v]) => v === p);
   return f ? f[1] : (p || "");

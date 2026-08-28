@@ -169,16 +169,24 @@ std::string ToJsonSharedEvent(const FileSnapshot &f)
 	  << "\"hash\":\"" << EscJson(f.hash) << "\""
 	  << ",\"name\":\"" << EscJson(f.name) << "\""
 	  << ",\"ed2k_link\":\"" << EscJson(f.ed2k_link) << "\""
-	  << ",\"size\":" << f.size << ",\"priority\":\"" << EscJson(f.shared.priority) << "\""
-	  << ",\"priority_auto\":" << (f.shared.priority_auto ? "true" : "false")
-	  << ",\"complete_sources\":" << f.shared.complete_sources
-	  << ",\"xfer\":{\"session\":" << f.shared.xfer_session << ",\"total\":" << f.shared.xfer_total << "}"
-	  << ",\"requests\":{\"session\":" << f.shared.requests_session
-	  << ",\"total\":" << f.shared.requests_total << "}"
-	  << ",\"accepts\":{\"session\":" << f.shared.accepts_session
-	  << ",\"total\":" << f.shared.accepts_total << "}"
-	  << ",\"upload_speed_bps\":" << f.shared.upload_speed_bps << ",\"uploading\":"
-	  << f.shared.uploading_count
+	  << ",\"size_bytes\":" << f.size << ",\"priority\":\"" << EscJson(f.shared.priority) << "\""
+	  << ",\"priority_auto\":"
+	  << (f.shared.priority_auto ? "true" : "false")
+	  // Nested to match the REST row: a stated exception to R11, so that
+	  // `sources.complete` is one access path across every endpoint that has
+	  // the concept. The list shape carries `complete` only; the range is
+	  // detail-only and does not ride the event.
+	  << ",\"sources\":{\"complete\":" << f.shared.complete_sources
+	  << "}"
+	  // Flattened (R11), same as the REST row this promises key parity with.
+	  << ",\"uploaded_bytes_session\":" << f.shared.uploaded_bytes_session
+	  << ",\"uploaded_bytes_total\":" << f.shared.uploaded_bytes_total
+	  << ",\"request_count_session\":" << f.shared.request_count_session
+	  << ",\"request_count_total\":" << f.shared.request_count_total
+	  << ",\"accepted_request_count_session\":" << f.shared.accepted_request_count_session
+	  << ",\"accepted_request_count_total\":" << f.shared.accepted_request_count_total
+	  << ",\"upload_speed_bps\":" << f.shared.upload_speed_bps << ",\"uploading_client_count\":"
+	  << f.shared.uploading_client_count
 	  // Unix seconds, null when unknown -- never uploaded, or a known.met entry
 	  // that predates the field. 0 reads as 1970 rather than "no idea", and the
 	  // REST row this event promises key parity with has always sent null here
@@ -186,17 +194,17 @@ std::string ToJsonSharedEvent(const FileSnapshot &f)
 	  // from REST and live-updates from this saw its null flip to 0 on the
 	  // first tick the file changed. Never-uploaded is the common case, so this
 	  // was the routine reading, not an edge one.
-	  << ",\"last_upload\":";
+	  << ",\"last_upload_at\":";
 	if (f.shared.last_upload != 0)
 		o << f.shared.last_upload;
 	else
 		o << "null";
-	o << ",\"shared_since\":";
+	o << ",\"shared_since_at\":";
 	if (f.shared.shared_since != 0)
 		o << f.shared.shared_since;
 	else
 		o << "null";
-	o << ",\"hashing_progress\":" << SharedHashingProgress(f);
+	o << ",\"hashed_part_count\":" << SharedHashingProgress(f);
 	// Media metadata rides the event because a metadata re-extraction is
 	// otherwise invisible to a subscriber: the refresh endpoints answer 202
 	// with no result, so this is how a client learns a probe landed. Six
@@ -227,12 +235,16 @@ std::string ToJson(const ServerSnapshot &s)
 	  << "\"ecid\":" << s.ecid << ",\"name\":\"" << EscJson(s.name) << "\""
 	  << ",\"description\":\"" << EscJson(s.description) << "\""
 	  << ",\"version\":\"" << EscJson(s.version) << "\""
-	  << ",\"address\":\"" << EscJson(s.address) << "\""
-	  << ",\"country_code\":\"" << EscJson(s.country_code) << "\""
-	  << ",\"port\":" << s.port << ",\"users\":" << s.users << ",\"max_users\":" << s.max_users
-	  << ",\"files\":" << s.files << ",\"soft_file_limit\":" << s.soft_file_limit
+	  << ",\"address\":\"" << EscJson(s.address)
+	  << "\""
+	  // The bare IP beside the "ip:port" form, matching the REST row.
+	  << ",\"ip\":\"" << EscJson(s.address.substr(0, s.address.rfind(':'))) << "\""
+	  << ",\"country_code\":"
+	  << (s.country_code.empty() ? std::string("null") : "\"" + EscJson(s.country_code) + "\"")
+	  << ",\"port\":" << s.port << ",\"user_count\":" << s.users << ",\"max_user_count\":" << s.max_users
+	  << ",\"file_count\":" << s.files << ",\"soft_file_limit\":" << s.soft_file_limit
 	  << ",\"hard_file_limit\":" << s.hard_file_limit << ",\"priority\":\"" << EscJson(s.priority) << "\""
-	  << ",\"ping_ms\":" << s.ping_ms << ",\"failed_count\":" << s.failed_count << ",\"static\":"
+	  << ",\"ping_ms\":" << s.ping_ms << ",\"failed_count\":" << s.failed_count << ",\"permanent\":"
 	  << (s.is_static ? "true" : "false")
 	  // Same fragment builder WriteServerObject uses, so the event payload and
 	  // the REST object stay byte-identical here by construction.
@@ -443,13 +455,14 @@ bool EqualShared(const FileSnapshot &a, const FileSnapshot &b)
 	       a.size == b.size && a.shared.priority == b.shared.priority &&
 	       a.shared.priority_auto == b.shared.priority_auto &&
 	       a.shared.complete_sources == b.shared.complete_sources &&
-	       a.shared.xfer_session == b.shared.xfer_session && a.shared.xfer_total == b.shared.xfer_total &&
-	       a.shared.requests_session == b.shared.requests_session &&
-	       a.shared.requests_total == b.shared.requests_total &&
-	       a.shared.accepts_session == b.shared.accepts_session &&
-	       a.shared.accepts_total == b.shared.accepts_total &&
+	       a.shared.uploaded_bytes_session == b.shared.uploaded_bytes_session &&
+	       a.shared.uploaded_bytes_total == b.shared.uploaded_bytes_total &&
+	       a.shared.request_count_session == b.shared.request_count_session &&
+	       a.shared.request_count_total == b.shared.request_count_total &&
+	       a.shared.accepted_request_count_session == b.shared.accepted_request_count_session &&
+	       a.shared.accepted_request_count_total == b.shared.accepted_request_count_total &&
 	       a.shared.upload_speed_bps == b.shared.upload_speed_bps &&
-	       a.shared.uploading_count == b.shared.uploading_count &&
+	       a.shared.uploading_client_count == b.shared.uploading_client_count &&
 	       a.shared.last_upload == b.shared.last_upload &&
 	       a.shared.shared_since == b.shared.shared_since &&
 	       // Media metadata, so a re-extraction emits shared_updated at all.

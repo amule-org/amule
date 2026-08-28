@@ -122,8 +122,9 @@ export default function Shared({ isGuest }) {
 
   // --- derived ----------------------------------------------------------
   let list = shared.slice();
-  // `uploading` is a count of peers being served, so "uploading" means > 0.
-  if (filterStatus === "uploading") list = list.filter((s) => s.uploading > 0);
+  // `uploading_client_count` is a count of clients being served, so the
+  // "uploading" filter means > 0.
+  if (filterStatus === "uploading") list = list.filter((s) => s.uploading_client_count > 0);
   if (filterText) { const match = textMatcher(filterText); list = list.filter((s) => match(s.name)); }
   const allSelected = list.length > 0 && list.every((s) => selection.has(s.hash));
   const selectedCount = list.filter((s) => selection.has(s.hash)).length;
@@ -145,10 +146,10 @@ export default function Shared({ isGuest }) {
       sortVal: (s) => (s.name || "").toLowerCase(),
       cell: (s) => html`<span title=${s.name}>${s.name}</span>` },
     { key: "size", label: t("shared_size"), num: true, width: "110px", sortable: true,
-      sortVal: (s) => s.size || 0, cell: (s) => formatBytes(s.size) },
+      sortVal: (s) => s.size_bytes || 0, cell: (s) => formatBytes(s.size_bytes) },
     { key: "xfer", label: t("shared_transferred"), num: true, width: "170px", sortable: true,
-      sortVal: (s) => (s.xfer && s.xfer.total) || 0,
-      cell: (s) => twin(s.xfer, "session", "total", formatBytes) },
+      sortVal: (s) => s.uploaded_bytes_total || 0,
+      cell: (s) => twin(s, "uploaded_bytes_session", "uploaded_bytes_total", formatBytes) },
     { key: "requests", label: t("shared_requested"), num: true, width: "120px", sortable: true,
       sortVal: (s) => (s.requests && s.requests.total) || 0,
       cell: (s) => twin(s.requests, "session", "total", formatInt) },
@@ -156,15 +157,15 @@ export default function Shared({ isGuest }) {
       sortVal: (s) => (s.accepts && s.accepts.total) || 0,
       cell: (s) => twin(s.accepts, "session", "total", formatInt) },
     { key: "sources", label: t("shared_complete_src"), num: true, width: "90px", sortable: true,
-      sortVal: (s) => s.complete_sources || 0, cell: (s) => formatInt(s.complete_sources) },
+      sortVal: (s) => (s.sources && s.sources.complete) || 0, cell: (s) => formatInt((s.sources && s.sources.complete) || 0) },
     { key: "upspeed", label: t("shared_upload_speed"), num: true, width: "100px", sortable: true,
       sortVal: (s) => s.upload_speed_bps || 0, cell: (s) => formatSpeed(s.upload_speed_bps) },
     { key: "uploading", label: t("shared_upload_clients"), num: true, width: "90px", sortable: true,
-      sortVal: (s) => s.uploading || 0, cell: (s) => formatInt(s.uploading) },
+      sortVal: (s) => s.uploading_client_count || 0, cell: (s) => formatInt(s.uploading_client_count) },
     { key: "last_upload", label: t("shared_last_upload"), width: "160px", sortable: true,
-      sortVal: (s) => s.last_upload || 0, cell: (s) => formatTimestamp(s.last_upload) },
+      sortVal: (s) => s.last_upload_at || 0, cell: (s) => formatTimestamp(s.last_upload_at) },
     { key: "shared_since", label: t("shared_shared_since"), width: "160px", sortable: true,
-      sortVal: (s) => s.shared_since || 0, cell: (s) => formatTimestamp(s.shared_since) },
+      sortVal: (s) => s.shared_since_at || 0, cell: (s) => formatTimestamp(s.shared_since_at) },
     { key: "priority", label: t("shared_priority"), width: "160px", sortable: true,
       sortVal: (s) => s.priority || "", cell: (s) => isGuest
         ? prioLabel(s)
@@ -182,9 +183,9 @@ export default function Shared({ isGuest }) {
 
   let size = 0, xs = 0, xt = 0, up = 0;
   for (const s of list) {
-    size += s.size || 0;
-    xs += (s.xfer && s.xfer.session) || 0;
-    xt += (s.xfer && s.xfer.total) || 0;
+    size += s.size_bytes || 0;
+    xs += s.uploaded_bytes_session || 0;
+    xt += s.uploaded_bytes_total || 0;
     up += s.upload_speed_bps || 0;
   }
 

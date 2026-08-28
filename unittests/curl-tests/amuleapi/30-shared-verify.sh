@@ -157,7 +157,7 @@ fi
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/shared/$TEST_HASH/verify"
 # 202 with no body: the hash came from the URL, and the outcome only arrives
-# later, on hashing_progress and the log line.
+# later, on hashed_part_count and the log line.
 _assert_status 202 "POST /shared/{hash}/verify → 202"
 _assert_body_empty "verify sends no body"
 
