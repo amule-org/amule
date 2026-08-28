@@ -2660,15 +2660,23 @@ void ApplySearchUnion(const CECPacket *resp,
 		const std::uint32_t ecid = sf->ID();
 
 		// Present on a result's first appearance, diffed away afterwards.
+		//
+		// The index is written only once this tag is known to be applicable,
+		// below: a slot that turns out to be missing or detached takes an
+		// early exit, and an entry written ahead of those would outlive the
+		// slot it points at -- eviction drops index entries by walking the
+		// slot's own results, so one that never made it there is never
+		// cleaned up.
 		std::uint32_t sid = 0;
+		bool sid_is_new = false;
 		if (const CECTag *x = sf->GetTagByName(EC_TAG_SEARCH_ID)) {
 			sid = static_cast<std::uint32_t>(x->GetInt());
-			owner[ecid] = sid;
+			sid_is_new = true;
 		} else if (default_sid != 0) {
 			// A per-search reply: every tag in it belongs to the search the
 			// caller asked for, and that form carries no id of its own.
 			sid = default_sid;
-			owner[ecid] = sid;
+			sid_is_new = true;
 		} else {
 			const auto oit = owner.find(ecid);
 			if (oit == owner.end()) {
@@ -2705,6 +2713,8 @@ void ApplySearchUnion(const CECPacket *resp,
 			// arriving for it is the tail of an eviction, not an update.
 			continue;
 		}
+		if (sid_is_new)
+			owner[ecid] = sid;
 		auto &slot_results = sit->second.raw;
 		const auto existing = slot_results.find(ecid);
 		if (existing == slot_results.end()) {
