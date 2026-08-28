@@ -12,7 +12,7 @@
 
 import { api } from "../api.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
-import { Placeholder, PiecesBar, PiecesLegend, toast, confirmDialog, Section, statRow, IdentityLine, copyText, Tabs, CommentEditor, RenameForm } from "../components.js";
+import { Placeholder, PiecesBar, PiecesLegend, toast, confirmDialog, Section, statRow, IdentityLine, copyText, Tabs, CommentEditor, RenameForm, DownloadLink } from "../components.js";
 import { formatBytes, formatInt, formatDuration, formatSpeed, formatTimestamp, twin } from "../format.js";
 import { FileClients, HIDDEN_EVERYWHERE } from "./client-table.js";
 import { t, terr } from "../i18n.js";
@@ -147,6 +147,7 @@ export function SharedDetail({ hash }) {
           statRow("downloads_detail_queued", formatInt(s.upload_queue_count), "downloads_detail_tip_queued"),
           statRow("shared_detail_file_type", s.file_type || "—", "shared_detail_tip_file_type"),
         ], "shared_detail_group_file", html`
+          <${DownloadLink} hash=${s.hash} incomplete=${!!s.incomplete} />
           <button class="btn btn-sm admin-only" type="button" disabled=${!!s.incomplete}
                   title=${t(s.incomplete ? "shared_verify_tip_partfile" : "shared_verify_tip")}
                   onClick=${verify}>

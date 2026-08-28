@@ -35,6 +35,11 @@ const ICONS = {
   trash: () => html`<path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/>`,
   edit: () => html`<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>`,
   copy: () => html`<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>`,
+  // Same arrow-into-tray drawing as the `downloads` nav icon, under the name an
+  // action button wants: this one means "save these bytes to your device", not
+  // "go to the download queue". Aliasing keeps the two readings from drifting
+  // apart visually (cf. `remove`/`cancel`).
+  download: () => html`<path d="M12 3v10"/><path d="M8 9l4 4 4-4"/><path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/>`,
   pause: () => html`<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>`,
   play: () => html`<path d="M7 5l12 7-12 7z"/>`,
   stop: () => html`<rect x="6" y="6" width="12" height="12" rx="1"/>`,
