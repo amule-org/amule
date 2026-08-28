@@ -102,6 +102,7 @@ The API is versioned in the path. **`/api/v0/` is the pre-release surface and is
 **IP filter**
 - [`POST /api/v0/ipfilter/reload`](#post-apiv0ipfilterreload) — re-read the on-disk IP filter files
 - [`POST /api/v0/ipfilter/update`](#post-apiv0ipfilterupdate) — download a fresh `ipfilter.dat` from a URL
+- [`POST /api/v0/geoip/update`](#post-apiv0geoipupdate) — download a fresh GeoIP database
 
 **Logs**
 - [`GET /api/v0/logs/amule`](#get-apiv0logsamule) — amule log buffer
@@ -2104,7 +2105,7 @@ Category `0` is always present, so the list is never empty. amuled's EC omits th
 { "index": 0, "name": "Default", "save_path": "/home/user/aMule/Incoming", "comment": "", "color": "#1664c0", "priority": "low" }
 ```
 
-`name` and `save_path` are filled in for index `0` whether the row came from the daemon or was synthesised here. amuled holds neither -- its `defaultcat` is built with an empty title and path -- so a client rendering a category picker was left with a blank row it had to label itself, and nothing to show for where an uncategorised download lands. `save_path` is `directories.incoming` from [`GET /preferences`](#get-apiv0preferences), which is genuinely where such a file is saved. `priority` is `low`, amuled's own default for the row.
+`name` and `save_path` are filled in for index `0` whether the row came from the daemon or was synthesised here. amuled holds neither -- its `defaultcat` is built with an empty title and path -- so a client rendering a category picker was left with a blank row it had to label itself, and nothing to show for where an uncategorised download lands. `save_path` is `directories.incoming_path` from [`GET /preferences`](#get-apiv0preferences), which is genuinely where such a file is saved. `priority` is `low`, amuled's own default for the row.
 
 Filling both in unconditionally is deliberate: doing it only for the synthesised row would mean `/categories/0` answered `"Default"` on a daemon with no custom categories and `""` as soon as the operator added one, which is a response shape that depends on unrelated state.
 
@@ -2176,22 +2177,22 @@ Returns every preference category amuled carries over EC. The `general` and `con
   "general": {
     "nickname": "MyNode",
     "user_hash": "abcd...",
-    "local_host_name": "host.example.com",
-    "check_new_version": true
+    "daemon_host_name": "host.example.com",
+    "version_check_enabled": true
   },
   "connection": {
-    "max_upload_kbps":   50,
-    "max_download_kbps": 0,
-    "upload_slot_kbps":  3,
-    "tcp_port":          4662,
-    "udp_port":          4672,
+    "max_upload_kbps":      50,
+    "max_download_kbps":    0,
+    "upload_slot_min_kbps": 3,
+    "tcp_port":             4662,
+    "udp_port":             4672,
     "extended_udp_port_enabled": true,
-    "max_sources_per_file": 250,
-    "max_connections":      400,
+    "max_sources_per_file_count": 250,
+    "max_connection_count":       400,
     "autoconnect": true,
-    "reconnect":   true,
-    "network_ed2k": true,
-    "network_kad":  true,
+    "reconnect_on_connection_loss": true,
+    "ed2k_enabled": true,
+    "kad_enabled":  true,
     "bind_address": "",
     "bind_interface": "",
     "proxy_enabled": false,
@@ -2200,37 +2201,37 @@ Returns every preference category amuled carries over EC. The `general` and `con
     "proxy_port": 1080,
     "proxy_auth": false,
     "proxy_user": "",
-    "upnp_available": true,
+    "upnp_supported": true,
     "upnp_enabled": false,
-    "upnp_tcp_port": 50000
+    "upnp_control_point_port": 50000
   },
   "directories": {
-    "incoming": "/home/me/.aMule/Incoming",
-    "temp":     "/home/me/.aMule/Temp",
-    "shared":   ["/home/me/media"],
+    "incoming_path":   "/home/me/.aMule/Incoming",
+    "temp_path":       "/home/me/.aMule/Temp",
+    "shared_paths":    ["/home/me/media"],
     "share_hidden":    false,
-    "auto_rescan":     true,
+    "rescan_on_startup": true,
     "follow_symlinks": false,
     "exclude_patterns": "",
     "exclude_patterns_use_regex": false
   },
-  "file_count": {
-    "ich_enabled": true, "aich_trust_every_hash": false,
+  "files": {
+    "ich_enabled": true, "trust_unverified_aich_hashes": false,
     "add_new_downloads_paused": false, "new_downloads_auto_priority": false,
     "new_shared_files_auto_priority": false,
-    "prioritize_first_last_chunks": false, "start_next_paused": false,
-    "start_next_same_category": false,
-    "save_source_seeds_for_rare_files": true, "preallocate_full_file_size": false,
+    "prioritize_first_last_chunks": false, "on_finished_start_next_paused": false,
+    "on_finished_start_next_in_same_category": false,
+    "save_sources_for_rare_files": true, "preallocate_full_file_size": false,
     "mmap_supported": true, "mmap_enabled": false,
     "stop_on_low_disk_space": true, "min_free_space_mb": 1, "create_sparse_files": true,
-    "start_next_alphabetical": false, "endgame_enabled": false,
+    "on_finished_start_next_alphabetically": false, "endgame_mode_enabled": false,
     "media_metadata_enabled": true, "ffprobe_path": ""
   },
   "servers": {
-    "remove_dead": true, "dead_server_retries": 3, "auto_update": false,
+    "remove_dead_servers": true, "dead_server_retry_count": 3, "update_list_at_startup": false,
     "update_list_from_server": true, "update_list_from_client": true,
-    "use_priority_system": true,
-    "smart_id_check": true, "safe_connect": false,
+    "server_priority_system_enabled": true,
+    "smart_lowid_check_enabled": true, "safe_server_connect_enabled": false,
     "autoconnect_static_servers_only": false, "manual_servers_high_priority": false,
     "update_url": "http://upd.emule-security.org/server.met"
   },
@@ -2238,37 +2239,37 @@ Returns every preference category amuled carries over EC. The `general` and `con
     "shared_files_visibility": "everybody",
     "ipfilter_clients": true, "ipfilter_servers": true,
     "ipfilter_auto_update": false, "ipfilter_update_url": "",
-    "ipfilter_block_below_access_level": 127, "ipfilter_include_lan_ips": true,
-    "use_secident": true,
-    "obfuscation_enabled": true, "obfuscation_requested": true, "obfuscation_required": false,
-    "reject_spoofed_source_ips": true, "use_system_ipfilter": false
+    "ipfilter_min_access_level": 127, "ipfilter_include_lan_ips": true,
+    "secure_identification_enabled": true,
+    "protocol_obfuscation_enabled": true, "obfuscation_requested": true, "obfuscation_required": false,
+    "reject_spoofed_source_ips": true, "system_ipfilter_enabled": false
   },
   "message_filter": {
     "enabled": false, "filter_all_messages": false,
     "accept_from_friends_only": false, "accept_from_known_clients_only": false,
-    "by_keyword": false, "keywords": "",
-    "show_in_log": true, "filter_comments": false, "comment_keywords": ""
+    "filter_by_keyword": false, "keywords": "",
+    "log_filtered_messages": true, "filter_comments": false, "comment_keywords": ""
   },
   "remote_controls": {
     "webserver": {
-      "enabled": false, "port": 4711, "use_gzip": true,
-      "refresh_seconds": 120, "template": "", "guest_enabled": false
+      "enabled": false, "port": 4711, "gzip_enabled": true,
+      "refresh_seconds": 120, "template_name": "", "guest_enabled": false
     },
     "amuleapi": { "enabled": true, "port": 4713, "bind_address": "0.0.0.0" }
   },
   "online_signature": { "enabled": false, "directory": "/home/me/.aMule", "update_frequency_seconds": 5 },
-  "core_tweaks": {
-    "max_new_connections_per_5s": 200, "verbose_logging": false,
+  "advanced": {
+    "max_new_connections_per_5_seconds": 200, "verbose_logging": false,
     "file_buffer_bytes": 240000, "max_upload_queue_clients": 5000,
-    "server_keepalive_timeout_minutes": 0, "kad_max_source_searches": 50,
-    "kad_reask_minutes": 30, "source_reask_minutes": 15
+    "server_keepalive_timeout_minutes": 0, "kad_max_concurrent_source_searches": 50,
+    "kad_source_reask_minutes": 30, "source_reask_minutes": 15
   },
-  "kademlia": { "update_url": "http://upd.emule-security.org/nodes.dat" },
-  "ip2country": {
+  "kad": { "update_url": "http://upd.emule-security.org/nodes.dat" },
+  "geoip": {
     "supported": true, "enabled": true, "source": "dbip",
-    "custom_url": "", "maxmind_license": "", "auto_update": true,
+    "custom_update_url": "", "maxmind_license": "", "auto_update": true,
     "loaded_source": "dbip", "db_path": "/home/me/.aMule/GeoIP/dbip.mmdb",
-    "db_loaded": true, "download_in_progress": false, "last_update_result": "ok"
+    "db_loaded": true, "download_in_progress": false, "last_update_status": "ok"
   }
 }
 ```
@@ -2277,13 +2278,13 @@ Booleans are plain JSON `true`/`false` regardless of how amuled encodes them on 
 
 `connection.extended_udp_port_enabled` is positive-sense: `true` means the extended UDP port (Kad / global search) is on. `security.shared_files_visibility` is a 3-state enum string, not a bool: `"everybody"` / `"friends"` / `"nobody"`.
 
-`ip2country` is the GeoIP (IP-to-country) config category. `supported` is a capability flag: `false` when the connected daemon is built without GeoIP — the config fields are then present but inert. `source` is one of `"dbip"` / `"maxmind"` / `"custom"` (the next-download database selector). `maxmind_license` is returned plainly (it is a config string the daemon already round-trips, not a masked password). `loaded_source`, `db_path`, `db_loaded`, `download_in_progress`, and `last_update_result` are **read-only** live status (the currently loaded DB and any in-flight refresh); they are ignored if sent on PATCH.
+`geoip` is the GeoIP (IP-to-country) config category. `supported` is a capability flag: `false` when the connected daemon is built without GeoIP — the config fields are then present but inert. `source` is one of `"dbip"` / `"maxmind"` / `"custom"` (the next-download database selector). `maxmind_license` is returned plainly (it is a config string the daemon already round-trips, not a masked password). `loaded_source`, `db_path`, `db_loaded`, `download_in_progress`, and `last_update_status` are **read-only** live status (the currently loaded DB and any in-flight refresh); they are ignored if sent on PATCH.
 
-`files.media_metadata_enabled` / `files.ffprobe_path` control media-metadata extraction: when enabled, the daemon probes shared audio/video with `ffprobe` to advertise length, bitrate, codec, artist, album and title. `ffprobe_path` is a **daemon-side** path — an empty string means the daemon auto-detects the binary, trying `ffprobe` on its `PATH` and then a per-platform list of well-known install locations. The detected path is deliberately **not** written back: it describes the daemon's machine rather than a choice you made, so `ffprobe_path` keeps reading as `""` while extraction works, and a daemon that moves to a host with ffmpeg somewhere else re-detects on its own. Set the field explicitly to pin one binary and override detection. When nothing is found the daemon logs one line saying so — visible on [`GET /api/v0/logs/amule`](#get-apiv0logsamule) — and extraction stays inert until ffmpeg is installed or the path is set. `connection.bind_address` (empty = bind to any local IP), `connection.bind_interface` (a daemon-side interface name such as `eth0` / `en0` / `tun0`; empty = any), and `online_signature.directory` are likewise daemon-side paths/addresses. These, together with `files.start_next_alphabetical`, `security.reject_spoofed_source_ips`, `security.use_system_ipfilter`, and `online_signature.update_frequency_seconds`, are ordinary daemon settings; a `bind_address` change takes effect on the next amuled restart.
+`files.media_metadata_enabled` / `files.ffprobe_path` control media-metadata extraction: when enabled, the daemon probes shared audio/video with `ffprobe` to advertise length, bitrate, codec, artist, album and title. `ffprobe_path` is a **daemon-side** path — an empty string means the daemon auto-detects the binary, trying `ffprobe` on its `PATH` and then a per-platform list of well-known install locations. The detected path is deliberately **not** written back: it describes the daemon's machine rather than a choice you made, so `ffprobe_path` keeps reading as `""` while extraction works, and a daemon that moves to a host with ffmpeg somewhere else re-detects on its own. Set the field explicitly to pin one binary and override detection. When nothing is found the daemon logs one line saying so — visible on [`GET /api/v0/logs/amule`](#get-apiv0logsamule) — and extraction stays inert until ffmpeg is installed or the path is set. `connection.bind_address` (empty = bind to any local IP), `connection.bind_interface` (a daemon-side interface name such as `eth0` / `en0` / `tun0`; empty = any), and `online_signature.directory` are likewise daemon-side paths/addresses. These, together with `files.on_finished_start_next_alphabetically`, `security.reject_spoofed_source_ips`, `security.system_ipfilter_enabled`, and `online_signature.update_frequency_seconds`, are ordinary daemon settings; a `bind_address` change takes effect on the next amuled restart.
 
 `files.mmap_supported` is **read-only** — the daemon advertises whether it was built with memory-mapped file I/O (`false` on a core without mmap support, e.g. Windows or a build with `-DENABLE_MMAP=OFF`); it is ignored if sent on PATCH. `files.mmap_enabled` is the runtime toggle for memory-mapped block I/O — download writes to part files, upload reads of both shared (completed) and partial files, and hashing (lower per-process memory use, at some write-path cost; best for upload-heavy or memory-constrained hosts). It is **capability-gated**: a PATCH that sets `files.mmap_enabled` is rejected with **409 `conflict`** when `files.mmap_supported` is `false`, so the option is only writable against a daemon that can actually use it. Safe to toggle with active transfers.
 
-`connection.upnp_enabled` toggles UPnP router forwarding of the daemon's P2P ports — the ports themselves are `connection.tcp_port` (ed2k TCP) and `connection.udp_port` (ed2k/Kad UDP). `connection.upnp_tcp_port` is a separate optional knob: the fixed local port the UPnP control point (libupnp) binds to for the router's callbacks, `0` meaning auto-assign — **not** a forwarded port. `connection.upnp_available` is **read-only** — the daemon advertises whether it was built with UPnP (`false` on a core built `-DENABLE_UPNP=OFF`, where `upnp_enabled` has no effect); it is ignored if sent on PATCH. (Web-server and EC-port UPnP are intentionally not exposed — amuleweb is deprecated and the EC port is not a P2P port.)
+`connection.upnp_enabled` toggles UPnP router forwarding of the daemon's P2P ports — the ports themselves are `connection.tcp_port` (ed2k TCP) and `connection.udp_port` (ed2k/Kad UDP). `connection.upnp_control_point_port` is a separate optional knob: the fixed local port the UPnP control point (libupnp) binds to for the router's callbacks, `0` meaning auto-assign — **not** a forwarded port. `connection.upnp_supported` is **read-only** — the daemon advertises whether it was built with UPnP (`false` on a core built `-DENABLE_UPNP=OFF`, where `upnp_enabled` has no effect); it is ignored if sent on PATCH. (Web-server and EC-port UPnP are intentionally not exposed — amuleweb is deprecated and the EC port is not a P2P port.)
 
 The `connection.proxy_*` fields configure the proxy the **daemon** routes its P2P and HTTP traffic through. `proxy_type` is one of `"socks5"` / `"socks4"` / `"http"` / `"socks4a"` — any other value is a `400`. It is the empty string when the daemon has no proxy type configured at all (the core's `PROXY_NONE`), a state that cannot be set back through this API; use `proxy_enabled: false` to turn the proxy off. `proxy_auth` toggles username/password authentication. `proxy_password` is **write-only** — accepted on PATCH but never returned on GET (same as the `remote_controls` passwords); PATCH the other proxy fields without it to leave the stored password unchanged.
 
@@ -2297,8 +2298,8 @@ The `connection.proxy_*` fields configure the proxy the **daemon** routes its P2
 
 | Kind | What `PATCH` does | Examples |
 | --- | --- | --- |
-| Settable | applied | most of the 125 -- `files.mmap_enabled`, `connection.max_connections`, … |
-| Read-only status | ignored, request still succeeds | `files.mmap_supported`, `connection.upnp_available`, the six `ip2country.*` |
+| Settable | applied | most of the 125 -- `files.mmap_enabled`, `connection.max_connection_count`, … |
+| Read-only status | ignored, request still succeeds | `files.mmap_supported`, `connection.upnp_supported`, the six `geoip.*` |
 | Write-only | applied, never echoed on `GET` | `remote_controls.webserver.password`, `.guest_password` |
 | Refused | `400 bad_request` | `remote_controls.amuleapi.password`, `.guest_password`, `.guest_enabled` |
 
@@ -2307,7 +2308,7 @@ Read-only fields are **ignored rather than rejected** when they arrive alongside
 Body shape mirrors the GET; every sub-object and every field is optional, and fields not present are left unchanged. Subset example:
 
 ```json
-{ "file_count": { "add_new_downloads_paused": true }, "servers": { "dead_server_retries": 5 } }
+{ "files": { "add_new_downloads_paused": true }, "servers": { "dead_server_retry_count": 5 } }
 ```
 
 `remote_controls` nests its two independent subsystems as `remote_controls.webserver` and `remote_controls.amuleapi` rather than prefixing every field. It reports amuleapi's `enabled` / `port` / `bind_address`, but **not** whether its admin or guest password is set. Those live in `amuleapi-passwords`, which amuleapi owns and which may sit on a different host from amuled — so the daemon's view of that file can be the wrong one. Ask the API that actually reads it: [`GET /auth/passwords`](#get-apiv0authpasswords), which is admin-only, whereas this endpoint is readable by any authenticated role. `webserver.guest_enabled` is reported because it is a genuine amuled preference rather than a fact about another process's file.
@@ -2316,9 +2317,11 @@ Body shape mirrors the GET; every sub-object and every field is optional, and fi
 
 amuleapi's own `admin` and `guest` passwords are **not** settable here; `remote_controls.amuleapi.password`, `.guest_password` and `.guest_enabled` are rejected with `400 bad_request`. Use [`PATCH /auth/passwords`](#patch-apiv0authpasswords), which writes the credential file this daemon actually reads, requires the current password, and is rate-limited. A field here would instead travel over EC to whichever aMule this amuleapi is attached to and land in that host's config directory.
 
-**`ip2country`** accepts `enabled`, `source` (`"dbip"` / `"maxmind"` / `"custom"` — any other value is a `400`), `custom_url`, `maxmind_license`, and `auto_update`. It also accepts a **write-only** `update_now` boolean that triggers an immediate database download from the (just-applied) source; it is never echoed on GET. `supported` and the read-only status fields (`loaded_source`, `db_path`, `db_loaded`, `download_in_progress`, `last_update_result`) are ignored if sent.
+**`geoip`** accepts `enabled`, `source` (`"dbip"` / `"maxmind"` / `"custom"` — any other value is a `400`), `custom_update_url`, `maxmind_license`, and `auto_update`. `supported` and the read-only status fields (`loaded_source`, `db_path`, `db_loaded`, `download_in_progress`, `last_update_status`) are ignored if sent.
 
-> **Note:** these are the daemon's live settings — the same ones the desktop GUI edits. Some are self-affecting: changing `remote_controls.amuleapi.port` / `.bind_address`, or `directories.incoming` / `temp`, alters the very daemon you are talking to. A port/bind change only takes effect on the next amuled restart, so it will not drop your current connection mid-request.
+Downloading a database **now** is [`POST /geoip/update`](#post-apiv0geoipupdate), not a field here. It used to be a write-only `geoip.update_now` boolean; sending that key is now a `400` naming the endpoint. It is an action, not a setting — nothing read it back, and writing `false` meant nothing.
+
+> **Note:** these are the daemon's live settings — the same ones the desktop GUI edits. Some are self-affecting: changing `remote_controls.amuleapi.port` / `.bind_address`, or `directories.incoming_path` / `temp_path`, alters the very daemon you are talking to. A port/bind change only takes effect on the next amuled restart, so it will not drop your current connection mid-request.
 
 **Response:** `200 OK` — full preferences object (post-mutation), so a read-modify-write client can confirm what landed without a follow-up GET.
 
@@ -2327,12 +2330,13 @@ amuleapi's own `admin` and `guest` passwords are **not** settable here; `remote_
 | Field | Range | Step | Why |
 |---|---|---|---|
 | `connection.tcp_port` | `1`–`65532` | | the server UDP socket is TCP+3, and the core substitutes the default port for anything higher |
-| `core_tweaks.file_buffer_bytes` | `0`–`3825000` | `15000` | stored as a `uint8` count of 15000-byte blocks |
-| `core_tweaks.max_upload_queue_clients` | `0`–`25500` | `100` | stored as a `uint8` count of hundreds |
-| `core_tweaks.max_new_connections_per_5s` | `0`–`65535` | | stored as a `uint16` |
-| `core_tweaks.kad_max_source_searches` | `5`–`50` | | clamped to this range at daemon start |
-| `core_tweaks.kad_reask_minutes` | `30`–`60` | | clamped to this range at daemon start |
-| `core_tweaks.source_reask_minutes` | `15`–`60` | | clamped to this range at daemon start; below it the UDP reask gets you auto-banned for reask spam |
+| `advanced.file_buffer_bytes` | `0`–`3825000` | `15000` | stored as a `uint8` count of 15000-byte blocks |
+| `advanced.max_upload_queue_clients` | `0`–`25500` | `100` | stored as a `uint8` count of hundreds |
+| `advanced.max_new_connections_per_5_seconds` | `0`–`65535` | | stored as a `uint16` |
+| `advanced.kad_max_concurrent_source_searches` | `5`–`50` | | clamped to this range at daemon start |
+| `advanced.kad_source_reask_minutes` | `30`–`60` | | clamped to this range at daemon start |
+| `advanced.source_reask_minutes` | `15`–`60` | | clamped to this range at daemon start; below it the UDP reask gets you auto-banned for reask spam |
+| `security.ipfilter_min_access_level` | `0`–`255` | | an ipfilter.dat access level, not a percentage: an entry is enforced when its level is **below** this value, so `0` disables the list and `255` enforces every entry |
 
 The two fields with a **step** accept only whole multiples of it: `file_buffer_bytes: 20000` is a `400`, not a silent round down to `15000`. The names stay in the unit you think in rather than being renamed to the daemon's internal one, and the price is that the API is strict about the values in between.
 
@@ -2422,7 +2426,7 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
   "http://$HOST/api/v0/kad/update"
 ```
 
-Two side effects are worth planning for. The URL is **persisted** into the `kademlia.update_url` preference, so a subsequent `GET /preferences` reflects it — there is no need to PATCH it separately. And once the download completes, amuled **stops Kad, swaps in the new `nodes.dat`, and starts Kad again**; expect a brief Kad outage and a `kad_state` transition on the SSE stream. The desktop GUI prompts before doing this; the API does not.
+Two side effects are worth planning for. The URL is **persisted** into the `kad.update_url` preference, so a subsequent `GET /preferences` reflects it — there is no need to PATCH it separately. And once the download completes, amuled **stops Kad, swaps in the new `nodes.dat`, and starts Kad again**; expect a brief Kad outage and a `kad_state` transition on the SSE stream. The desktop GUI prompts before doing this; the API does not.
 
 **Response:** `202 Accepted`, no body. The URL came from the request, and the download is asynchronous -- the `202` confirms amuled accepted the request, not that the node list was replaced, and its outcome arrives on the log channel.
 
@@ -2524,6 +2528,31 @@ An explicit URL is **persisted** into the `security.ipfilter_update_url` prefere
 **Response:** `202 Accepted`, no body. Where the request named a URL it already knows which one ran; where it omitted one, `security.ipfilter_update_url` on [`GET /preferences`](#get-apiv0preferences) is the answer, and the paragraph above is why reading it there is the honest version -- the snapshot this handler resolves from is the same one that endpoint serves.
 
 **Errors:** `400 bad_request` (non-string / empty / non-`http(s)` `url`, or no URL available at all), `400 amuled_rejected`, `503 ec_unavailable`.
+
+---
+
+### GeoIP
+
+#### `POST /api/v0/geoip/update`
+
+**Auth:** `ADMIN`
+
+Downloads a fresh GeoIP database now — the desktop client's "Update database now" button. No body.
+
+Unlike the three sibling fetch endpoints this one takes **no URL**: which database to download is `geoip.source` (`"dbip"` / `"maxmind"` / `"custom"`) and, for `"custom"`, `geoip.custom_update_url`. Both stay ordinary preferences, so set them with [`PATCH /preferences`](#patch-apiv0preferences) first and then call this. Nothing about the request is persisted.
+
+```sh
+curl -s -X POST -H "Authorization: Bearer $TOKEN" \
+  "http://$HOST/api/v0/geoip/update"
+```
+
+**Response:** `202 Accepted`, empty object. The download runs in the daemon after the reply: watch `geoip.download_in_progress` on [`GET /preferences`](#get-apiv0preferences) while it runs, and `geoip.last_update_status` for the outcome.
+
+`geoip.last_update_status` is a **human-readable message, localised to the daemon's language** (`"Successfully updated dbip"`, `"Failed to download dbip from …"`) — not a status enum. Do not parse it; use `db_loaded` and `loaded_source` for the machine-readable answer to "is a database in use, and which one".
+
+A daemon built without GeoIP (`geoip.supported` is `false`) answers `400 amuled_rejected`.
+
+**Errors:** `400 amuled_rejected` (no GeoIP support, or the daemon refused the trigger), `503 ec_unavailable`.
 
 ---
 

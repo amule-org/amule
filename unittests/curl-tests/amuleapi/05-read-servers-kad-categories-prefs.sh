@@ -237,15 +237,15 @@ _assert_json_eq '.snapshot_at | type' null \
 
 _assert_json_eq '.general.nickname             | type' string  '/preferences.general.nickname is string'
 _assert_json_eq '.general.user_hash | length'                          32   '/preferences.general.user_hash is 32-char hex'
-_assert_json_eq '.general.check_new_version    | type' boolean '/preferences.general.check_new_version is boolean'
+_assert_json_eq '.general.version_check_enabled    | type' boolean '/preferences.general.version_check_enabled is boolean'
 
 _assert_json_eq '.connection.tcp_port          | type' number  '/preferences.connection.tcp_port is numeric'
 _assert_json_eq '.connection.udp_port          | type' number  '/preferences.connection.udp_port is numeric'
 _assert_json_eq '.connection.extended_udp_port_enabled | type' boolean '/preferences.connection.extended_udp_port_enabled is boolean (#596)'
-_assert_json_eq '.connection.network_ed2k      | type' boolean '/preferences.connection.network_ed2k is boolean'
-_assert_json_eq '.connection.network_kad       | type' boolean '/preferences.connection.network_kad is boolean'
+_assert_json_eq '.connection.ed2k_enabled      | type' boolean '/preferences.connection.ed2k_enabled is boolean'
+_assert_json_eq '.connection.kad_enabled       | type' boolean '/preferences.connection.kad_enabled is boolean'
 _assert_json_eq '.connection.autoconnect       | type' boolean '/preferences.connection.autoconnect is boolean'
-_assert_json_eq '.connection.max_sources_per_file | type' number '/preferences.connection.max_sources_per_file is numeric'
+_assert_json_eq '.connection.max_sources_per_file_count | type' number '/preferences.connection.max_sources_per_file_count is numeric'
 # Statistics graph-scale caps were dropped from /preferences (#596).
 _assert_json_eq '.connection.max_upload_cap_kbps   | type' null '/preferences.connection.max_upload_cap_kbps removed (#596)'
 _assert_json_eq '.connection.max_download_cap_kbps | type' null '/preferences.connection.max_download_cap_kbps removed (#596)'
@@ -254,31 +254,31 @@ _assert_json_eq '.connection.max_download_cap_kbps | type' null '/preferences.co
 # endgame newly exposed (#596).
 _assert_json_eq '.security.shared_files_visibility | test("^(everybody|friends|nobody)$")' \
 	true '/preferences.security.shared_files_visibility is a known 3-state enum value (#655)'
-_assert_json_eq '.files.endgame_enabled        | type' boolean '/preferences.files.endgame_enabled is boolean (#596)'
+_assert_json_eq '.files.endgame_mode_enabled        | type' boolean '/preferences.files.endgame_mode_enabled is boolean (#596)'
 # Old names must be gone, not merely shadowed by the new ones (#655).
 _assert_json_eq '.security.can_see_shares      | type' null    '/preferences.security.can_see_shares removed (#655)'
 _assert_json_eq '.files.endgame                | type' null    '/preferences.files.endgame removed (#655)'
 
 # message_filter show-in-log + comment filter, wired over EC (#596).
-_assert_json_eq '.message_filter.show_in_log      | type' boolean '/preferences.message_filter.show_in_log is boolean (#596)'
+_assert_json_eq '.message_filter.log_filtered_messages      | type' boolean '/preferences.message_filter.log_filtered_messages is boolean (#596)'
 _assert_json_eq '.message_filter.filter_comments  | type' boolean '/preferences.message_filter.filter_comments is boolean (#596)'
 _assert_json_eq '.message_filter.comment_keywords | type' string  '/preferences.message_filter.comment_keywords is string (#596)'
 
-# ip2country config category (#440). Field types are always present even
+# geoip config category (#440). Field types are always present even
 # on a GeoIP-less daemon (supported=false, strings empty); source is one
 # of the known enum values.
-_assert_json_eq '.ip2country.supported       | type' boolean '/preferences.ip2country.supported is boolean'
-_assert_json_eq '.ip2country.enabled         | type' boolean '/preferences.ip2country.enabled is boolean'
-_assert_json_eq '.ip2country.source | test("^(dbip|maxmind|custom)$")' \
-	true '/preferences.ip2country.source is a known enum value'
-_assert_json_eq '.ip2country.custom_url      | type' string  '/preferences.ip2country.custom_url is string'
-_assert_json_eq '.ip2country.maxmind_license | type' string  '/preferences.ip2country.maxmind_license is string'
-_assert_json_eq '.ip2country.auto_update     | type' boolean '/preferences.ip2country.auto_update is boolean'
-_assert_json_eq '.ip2country.loaded_source   | type' string  '/preferences.ip2country.loaded_source is string'
-_assert_json_eq '.ip2country.db_path         | type' string  '/preferences.ip2country.db_path is string'
-_assert_json_eq '.ip2country.db_loaded       | type' boolean '/preferences.ip2country.db_loaded is boolean'
-_assert_json_eq '.ip2country.download_in_progress | type' boolean '/preferences.ip2country.download_in_progress is boolean'
-_assert_json_eq '.ip2country.last_update_result  | type' string  '/preferences.ip2country.last_update_result is string'
+_assert_json_eq '.geoip.supported       | type' boolean '/preferences.geoip.supported is boolean'
+_assert_json_eq '.geoip.enabled         | type' boolean '/preferences.geoip.enabled is boolean'
+_assert_json_eq '.geoip.source | test("^(dbip|maxmind|custom)$")' \
+	true '/preferences.geoip.source is a known enum value'
+_assert_json_eq '.geoip.custom_update_url      | type' string  '/preferences.geoip.custom_update_url is string'
+_assert_json_eq '.geoip.maxmind_license | type' string  '/preferences.geoip.maxmind_license is string'
+_assert_json_eq '.geoip.auto_update     | type' boolean '/preferences.geoip.auto_update is boolean'
+_assert_json_eq '.geoip.loaded_source   | type' string  '/preferences.geoip.loaded_source is string'
+_assert_json_eq '.geoip.db_path         | type' string  '/preferences.geoip.db_path is string'
+_assert_json_eq '.geoip.db_loaded       | type' boolean '/preferences.geoip.db_loaded is boolean'
+_assert_json_eq '.geoip.download_in_progress | type' boolean '/preferences.geoip.download_in_progress is boolean'
+_assert_json_eq '.geoip.last_update_status  | type' string  '/preferences.geoip.last_update_status is string'
 
 # --- Nested remote_controls (#655). ----------------------------
 # The two subsystems are sub-objects, not webserver_* / amuleapi_* prefixes.
@@ -287,7 +287,7 @@ _assert_json_eq '.remote_controls.amuleapi         | type' object  '/preferences
 _assert_json_eq '.remote_controls.webserver.enabled         | type' boolean '/preferences.remote_controls.webserver.enabled is boolean'
 _assert_json_eq '.remote_controls.webserver.port            | type' number  '/preferences.remote_controls.webserver.port is numeric'
 _assert_json_eq '.remote_controls.webserver.refresh_seconds | type' number  '/preferences.remote_controls.webserver.refresh_seconds is numeric'
-_assert_json_eq '.remote_controls.webserver.template        | type' string  '/preferences.remote_controls.webserver.template is string'
+_assert_json_eq '.remote_controls.webserver.template_name        | type' string  '/preferences.remote_controls.webserver.template_name is string'
 _assert_json_eq '.remote_controls.amuleapi.enabled          | type' boolean '/preferences.remote_controls.amuleapi.enabled is boolean'
 _assert_json_eq '.remote_controls.amuleapi.port             | type' number  '/preferences.remote_controls.amuleapi.port is numeric'
 _assert_json_eq '.remote_controls.amuleapi.bind_address     | type' string  '/preferences.remote_controls.amuleapi.bind_address is string'

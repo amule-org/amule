@@ -20,11 +20,11 @@ import { Placeholder, toast, Tabs } from "../components.js";
 import { Icon } from "../icons.js";
 import { t, terr } from "../i18n.js";
 
-// Field types: text (default), int, bool, select, password, textarea, trigger.
+// Field types: text (default), int, bool, select, password, textarea.
 // Flags: readonly (shown disabled, never sent), hidden (capability flag loaded
 // only to gate others), gatedBy (disabled + skipped when values[cap] === false),
-// password (write-only, only sent when non-empty), trigger (write-only action,
-// only sent when checked), scale (int shown/edited in value/scale units, e.g.
+// password (write-only, only sent when non-empty), scale (int shown/edited
+// in value/scale units, e.g.
 // ms stored but minutes shown), cat (override the tab's API category),
 // action (an endpoint the field POSTs to, see runAction — the endpoint
 // persists whatever it is given itself, so no Apply needed). On a text field
@@ -56,8 +56,8 @@ const TABS = [
   { id: "general", labelKey: "prefs_general", cat: "general", groups: [
     { legendKey: "prefs_group_general", fields: [
       { key: "nickname", type: "text" },
-      { key: "check_new_version", type: "bool" },
-      { key: "local_host_name", type: "text", readonly: true },
+      { key: "version_check_enabled", type: "bool" },
+      { key: "daemon_host_name", type: "text", readonly: true },
       { key: "user_hash", type: "text", readonly: true },
     ] },
   ] },
@@ -65,7 +65,7 @@ const TABS = [
     { legendKey: "prefs_group_bandwidth", fields: [
       { key: "max_download_kbps", type: "int", min: 0, max: 1000000 },
       { key: "max_upload_kbps", type: "int", min: 0, max: 1000000 },
-      { key: "upload_slot_kbps", type: "int", min: 1, max: 65535 },
+      { key: "upload_slot_min_kbps", type: "int", min: 1, max: 65535 },
     ] },
     { legendKey: "prefs_group_ports", fields: [
       // 65532, not 65535: the server UDP socket is TCP+3, and the core
@@ -77,32 +77,32 @@ const TABS = [
         derived: (v, cat) => (parseInt(v[cat + ".tcp_port"], 10) || 0) + 3 },
       { key: "extended_udp_port_enabled", type: "bool" },
       { key: "udp_port", type: "int", min: 0, max: 65535, sub: true, gatedBy: "extended_udp_port_enabled" },
-      { key: "upnp_enabled", type: "bool", gatedBy: "upnp_available" },
-      { key: "upnp_tcp_port", type: "int", min: 0, max: 65535, sub: true, gatedBy: ["upnp_available", "upnp_enabled"] },
-      { key: "upnp_available", type: "bool", hidden: true },
+      { key: "upnp_enabled", type: "bool", gatedBy: "upnp_supported" },
+      { key: "upnp_control_point_port", type: "int", min: 0, max: 65535, sub: true, gatedBy: ["upnp_supported", "upnp_enabled"] },
+      { key: "upnp_supported", type: "bool", hidden: true },
     ] },
     { legendKey: "prefs_group_binding", fields: [
       { key: "bind_address", type: "text" },
       { key: "bind_interface", type: "text" },
     ] },
     { legendKey: "prefs_group_conn_limits", fields: [
-      { key: "max_sources_per_file", type: "int", min: 40, max: 5000 },
-      { key: "max_connections", type: "int", min: 5, max: 7500 },
+      { key: "max_sources_per_file_count", type: "int", min: 40, max: 5000 },
+      { key: "max_connection_count", type: "int", min: 5, max: 7500 },
     ] },
     { legendKey: "prefs_group_networks", fields: [
-      { key: "network_kad", type: "bool" },
-      { key: "network_ed2k", type: "bool", readonly: true, labelKey: "prefs_ed2k_readonly" },
+      { key: "kad_enabled", type: "bool" },
+      { key: "ed2k_enabled", type: "bool", readonly: true, labelKey: "prefs_ed2k_readonly" },
       { key: "autoconnect", type: "bool" },
-      { key: "reconnect", type: "bool" },
+      { key: "reconnect_on_connection_loss", type: "bool" },
     ] },
   ] },
   { id: "directories", labelKey: "prefs_directories", cat: "directories", groups: [
-    { legendKey: "prefs_group_incoming", fields: [{ key: "incoming", type: "text" }] },
-    { legendKey: "prefs_group_temp", fields: [{ key: "temp", type: "text" }] },
+    { legendKey: "prefs_group_incoming", fields: [{ key: "incoming_path", type: "text" }] },
+    { legendKey: "prefs_group_temp", fields: [{ key: "temp_path", type: "text" }] },
     { legendKey: "prefs_group_shared", fields: [
-      { key: "shared", type: "textarea" },
+      { key: "shared_paths", type: "textarea" },
       { key: "share_hidden", type: "bool" },
-      { key: "auto_rescan", type: "bool" },
+      { key: "rescan_on_startup", type: "bool" },
       { key: "follow_symlinks", type: "bool" },
       { key: "exclude_patterns", type: "text" },
       { key: "exclude_patterns_use_regex", type: "bool" },
@@ -110,9 +110,9 @@ const TABS = [
   ] },
   { id: "servers", labelKey: "prefs_servers", cat: "servers", groups: [
     { legendKey: "prefs_group_server_list", fields: [
-      { key: "remove_dead", type: "bool" },
-      { key: "dead_server_retries", type: "int", min: 1, max: 10, sub: true, gatedBy: "remove_dead" },
-      { key: "auto_update", type: "bool" },
+      { key: "remove_dead_servers", type: "bool" },
+      { key: "dead_server_retry_count", type: "int", min: 1, max: 10, sub: true, gatedBy: "remove_dead_servers" },
+      { key: "update_list_at_startup", type: "bool" },
       { key: "update_list_from_server", type: "bool" },
       { key: "update_list_from_client", type: "bool" },
       { key: "update_url", type: "text",
@@ -121,14 +121,14 @@ const TABS = [
                   toastKey: "prefs_action_servers_update_toast" } },
     ] },
     { legendKey: "prefs_group_server_conn", fields: [
-      { key: "use_priority_system", type: "bool" },
-      { key: "smart_id_check", type: "bool" },
-      { key: "safe_connect", type: "bool" },
+      { key: "server_priority_system_enabled", type: "bool" },
+      { key: "smart_lowid_check_enabled", type: "bool" },
+      { key: "safe_server_connect_enabled", type: "bool" },
       { key: "autoconnect_static_servers_only", type: "bool" },
       { key: "manual_servers_high_priority", type: "bool" },
     ] },
-    { legendKey: "prefs_group_kademlia", fields: [
-      { key: "update_url", type: "text", cat: "kademlia",
+    { legendKey: "prefs_group_kad", fields: [
+      { key: "update_url", type: "text", cat: "kad",
         action: { path: "kad/update", body: "url",
                   titleKey: "prefs_action_kad_update",
                   toastKey: "prefs_action_kad_update_toast" } },
@@ -139,22 +139,22 @@ const TABS = [
       { key: "add_new_downloads_paused", type: "bool" },
       { key: "new_downloads_auto_priority", type: "bool" },
       { key: "prioritize_first_last_chunks", type: "bool" },
-      { key: "start_next_paused", type: "bool" },
-      { key: "start_next_same_category", type: "bool", sub: true, gatedBy: "start_next_paused" },
-      { key: "start_next_alphabetical", type: "bool", sub: true, gatedBy: "start_next_paused" },
-      { key: "endgame_enabled", type: "bool" },
+      { key: "on_finished_start_next_paused", type: "bool" },
+      { key: "on_finished_start_next_in_same_category", type: "bool", sub: true, gatedBy: "on_finished_start_next_paused" },
+      { key: "on_finished_start_next_alphabetically", type: "bool", sub: true, gatedBy: "on_finished_start_next_paused" },
+      { key: "endgame_mode_enabled", type: "bool" },
       { key: "preallocate_full_file_size", type: "bool" },
       { key: "create_sparse_files", type: "bool" },
       { key: "stop_on_low_disk_space", type: "bool" },
       { key: "min_free_space_mb", type: "int", min: 1, max: 1000000, sub: true, gatedBy: "stop_on_low_disk_space" },
-      { key: "save_source_seeds_for_rare_files", type: "bool" },
+      { key: "save_sources_for_rare_files", type: "bool" },
     ] },
     { legendKey: "prefs_group_uploads", fields: [
       { key: "new_shared_files_auto_priority", type: "bool" },
     ] },
     { legendKey: "prefs_group_ich", fields: [
       { key: "ich_enabled", type: "bool" },
-      { key: "aich_trust_every_hash", type: "bool" },
+      { key: "trust_unverified_aich_hashes", type: "bool" },
     ] },
     { legendKey: "prefs_group_media", fields: [
       { key: "media_metadata_enabled", type: "bool" },
@@ -163,13 +163,13 @@ const TABS = [
   ] },
   { id: "security", labelKey: "prefs_security", cat: "security", groups: [
     { legendKey: "prefs_group_privacy", fields: [
-      { key: "use_secident", type: "bool" },
+      { key: "secure_identification_enabled", type: "bool" },
       { key: "shared_files_visibility", type: "select", int: true, options: SEE_SHARES },
     ] },
     { legendKey: "prefs_group_obfuscation", fields: [
-      { key: "obfuscation_enabled", type: "bool" },
-      { key: "obfuscation_requested", type: "bool", sub: true, gatedBy: "obfuscation_enabled" },
-      { key: "obfuscation_required", type: "bool", sub: true, gatedBy: "obfuscation_enabled" },
+      { key: "protocol_obfuscation_enabled", type: "bool" },
+      { key: "obfuscation_requested", type: "bool", sub: true, gatedBy: "protocol_obfuscation_enabled" },
+      { key: "obfuscation_required", type: "bool", sub: true, gatedBy: "protocol_obfuscation_enabled" },
     ] },
     { legendKey: "prefs_group_ipfilter", fields: [
       { key: "ipfilter_clients", type: "bool" },
@@ -183,29 +183,32 @@ const TABS = [
                   titleKey: "prefs_action_ipfilter_update",
                   toastKey: "prefs_action_ipfilter_update_toast" } },
       { key: "ipfilter_auto_update", type: "bool" },
-      { key: "ipfilter_block_below_access_level", type: "int", min: 0, max: 255 },
+      { key: "ipfilter_min_access_level", type: "int", min: 0, max: 255 },
       { key: "ipfilter_include_lan_ips", type: "bool" },
       { key: "reject_spoofed_source_ips", type: "bool" },
-      { key: "use_system_ipfilter", type: "bool" },
+      { key: "system_ipfilter_enabled", type: "bool" },
     ] },
   ] },
-  { id: "ip2country", labelKey: "prefs_ip2country", cat: "ip2country",
-    hideWhen: (v) => v["ip2country.supported"] === false, groups: [
+  { id: "geoip", labelKey: "prefs_geoip", cat: "geoip",
+    hideWhen: (v) => v["geoip.supported"] === false, groups: [
     { legendKey: "prefs_group_geoip_db", fields: [
       { key: "enabled", type: "bool", gatedBy: "supported" },
       { key: "supported", type: "bool", hidden: true },
       { key: "source", type: "select", options: GEOIP_SOURCES, sub: true, gatedBy: ["supported", "enabled"] },
-      { key: "custom_url", type: "text", sub: 2, gatedBy: ["supported", "enabled"], gatedByEq: { key: "source", value: "custom" } },
+      { key: "custom_update_url", type: "text", sub: 2, gatedBy: ["supported", "enabled"], gatedByEq: { key: "source", value: "custom" } },
       { key: "maxmind_license", type: "text", sub: 2, gatedBy: ["supported", "enabled"], gatedByEq: { key: "source", value: "maxmind" } },
       { key: "auto_update", type: "bool", sub: true, gatedBy: ["supported", "enabled"] },
     ] },
     { legendKey: "prefs_group_geoip_status", fields: [
-      { key: "update_now", type: "trigger", gatedBy: ["supported", "enabled"] },
+      { key: "update_now", type: "button", gatedBy: ["supported", "enabled"],
+        action: { path: "geoip/update",
+                  titleKey: "prefs_action_geoip_update",
+                  toastKey: "prefs_action_geoip_update_toast" } },
       { key: "download_in_progress", type: "bool", readonly: true },
       { key: "loaded_source", type: "text", readonly: true },
       { key: "db_path", type: "text", readonly: true },
       { key: "db_loaded", type: "bool", readonly: true },
-      { key: "last_update_result", type: "text", readonly: true },
+      { key: "last_update_status", type: "text", readonly: true },
     ] },
   ] },
   { id: "proxy", labelKey: "prefs_proxy", cat: "connection", groups: [
@@ -225,9 +228,9 @@ const TABS = [
       { key: "filter_all_messages", type: "bool", sub: true, gatedBy: "enabled" },
       { key: "accept_from_friends_only", type: "bool", sub: true, gatedBy: "enabled" },
       { key: "accept_from_known_clients_only", type: "bool", sub: true, gatedBy: "enabled" },
-      { key: "by_keyword", type: "bool", sub: true, gatedBy: "enabled" },
-      { key: "keywords", type: "text", sub: 2, gatedBy: ["enabled", "by_keyword"] },
-      { key: "show_in_log", type: "bool" },
+      { key: "filter_by_keyword", type: "bool", sub: true, gatedBy: "enabled" },
+      { key: "keywords", type: "text", sub: 2, gatedBy: ["enabled", "filter_by_keyword"] },
+      { key: "log_filtered_messages", type: "bool" },
     ] },
     { legendKey: "prefs_group_comments", fields: [
       { key: "filter_comments", type: "bool" },
@@ -244,13 +247,13 @@ const TABS = [
     ] },
     { legendKey: "prefs_group_webserver", fields: [
       { key: "enabled", type: "bool", cat: "remote_controls.webserver" },
-      { key: "template", type: "text", sub: true, cat: "remote_controls.webserver", gatedBy: "enabled" },
+      { key: "template_name", type: "text", sub: true, cat: "remote_controls.webserver", gatedBy: "enabled" },
       { key: "password", type: "password", sub: true, cat: "remote_controls.webserver", gatedBy: "enabled" },
       { key: "guest_enabled", type: "bool", sub: true, cat: "remote_controls.webserver", gatedBy: "enabled" },
       { key: "guest_password", type: "password", sub: 2, cat: "remote_controls.webserver", gatedBy: ["enabled", "guest_enabled"] },
       { key: "port", type: "int", min: 0, max: 65535, sub: true, cat: "remote_controls.webserver", gatedBy: "enabled" },
       { key: "refresh_seconds", type: "int", min: 0, sub: true, cat: "remote_controls.webserver", gatedBy: "enabled" },
-      { key: "use_gzip", type: "bool", sub: true, cat: "remote_controls.webserver", gatedBy: "enabled" },
+      { key: "gzip_enabled", type: "bool", sub: true, cat: "remote_controls.webserver", gatedBy: "enabled" },
     ] },
   ] },
   { id: "online_signature", labelKey: "prefs_online_signature", cat: "online_signature", groups: [
@@ -260,11 +263,11 @@ const TABS = [
       { key: "directory", type: "text", sub: true, gatedBy: "enabled" },
     ] },
   ] },
-  { id: "core_tweaks", labelKey: "prefs_core_tweaks", cat: "core_tweaks", noteKey: "prefs_core_tweaks_warning", groups: [
+  { id: "advanced", labelKey: "prefs_advanced", cat: "advanced", noteKey: "prefs_advanced_warning", groups: [
     { legendKey: "prefs_group_tweaks", fields: [
-      { key: "max_new_connections_per_5s", type: "int", min: 0, max: 65535 },
-      { key: "kad_max_source_searches", type: "int", min: 5, max: 50 },
-      { key: "kad_reask_minutes", type: "int", min: 30, max: 60 },
+      { key: "max_new_connections_per_5_seconds", type: "int", min: 0, max: 65535 },
+      { key: "kad_max_concurrent_source_searches", type: "int", min: 5, max: 50 },
+      { key: "kad_source_reask_minutes", type: "int", min: 30, max: 60 },
       { key: "source_reask_minutes", type: "int", min: 15, max: 60 },
       { key: "file_buffer_bytes", type: "int", min: 0, max: 3825000, step: 15000 },
       { key: "mmap_enabled", type: "bool", cat: "files", gatedBy: "mmap_supported" },
@@ -456,7 +459,7 @@ export default function Preferences({ isGuest }) {
           </button>
         </div>`;
     }
-    if (f.type === "bool" || f.type === "trigger") {
+    if (f.type === "bool") {
       // invert: the API stores the opposite sense but we show an "Enable ..."
       // checkbox. State keeps the API value; only the checkbox's checked state
       // and its toggle are flipped.
@@ -533,9 +536,6 @@ export default function Preferences({ isGuest }) {
           if (f.type === "password") {
             if (typeof val !== "string" || val === "") continue;
             out = val;
-          } else if (f.type === "trigger") {
-            if (!val) continue;
-            out = true;
           } else if (f.type === "textarea") {
             out = String(val || "").split("\n").map((s) => s.trim()).filter(Boolean);
           } else if (f.type === "select") {

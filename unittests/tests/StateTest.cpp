@@ -645,7 +645,7 @@ TEST(State, WriteKadAndPreferencesRoundtrip)
 	p.user_hash = "deadbeefdeadbeefdeadbeefdeadbeef";
 	p.tcp_port = 4662;
 	p.udp_port = 4672;
-	p.network_ed2k = true;
+	p.ed2k_enabled = true;
 	s.WritePreferences(p);
 
 	std::vector<CategorySnapshot> cats;
@@ -678,8 +678,8 @@ TEST(State, WriteKadAndPreferencesRoundtrip)
 	const auto p_out = s.Preferences();
 	ASSERT_EQUALS(std::string("tester"), p_out.nickname);
 	ASSERT_EQUALS(static_cast<std::uint16_t>(4662), p_out.tcp_port);
-	ASSERT_TRUE(p_out.network_ed2k);
-	ASSERT_FALSE(p_out.network_kad);
+	ASSERT_TRUE(p_out.ed2k_enabled);
+	ASSERT_FALSE(p_out.kad_enabled);
 
 	const auto c_out = s.Categories();
 	ASSERT_EQUALS(static_cast<size_t>(2), c_out.size());

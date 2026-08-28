@@ -2861,10 +2861,10 @@ void ParseGeneralPrefs(const CECTag *gen, PreferencesSnapshot &out)
 		out.user_hash = std::string(t->GetMD4Data().Encode().Lower().utf8_str());
 	}
 	if (const CECTag *t = gen->GetTagByName(EC_TAG_USER_HOST)) {
-		out.local_host_name = std::string(t->GetStringData().utf8_str());
+		out.daemon_host_name = std::string(t->GetStringData().utf8_str());
 	}
 	if (gen->GetTagByName(EC_TAG_GENERAL_CHECK_NEW_VERSION)) {
-		out.check_new_version = true;
+		out.version_check_enabled = true;
 	}
 	// Capability: 3.1+ daemons always send this bool (true when built with
 	// ENABLE_VERSION_CHECK, false when compiled out). Absent means a pre-3.1
@@ -2873,7 +2873,7 @@ void ParseGeneralPrefs(const CECTag *gen, PreferencesSnapshot &out)
 		out.version_check_available = t->GetInt() != 0;
 	}
 	if (const CECTag *t = gen->GetTagByName(EC_TAG_GENERAL_UPNP_AVAILABLE)) {
-		out.upnp_available = t->GetInt() != 0;
+		out.upnp_supported = t->GetInt() != 0;
 	}
 }
 
@@ -2886,7 +2886,7 @@ void ParseConnectionPrefs(const CECTag *conn, PreferencesSnapshot &out)
 		out.max_download_kbps = static_cast<std::uint32_t>(t->GetInt());
 	}
 	if (const CECTag *t = conn->GetTagByName(EC_TAG_CONN_SLOT_ALLOCATION)) {
-		out.upload_slot_kbps = static_cast<std::uint32_t>(t->GetInt());
+		out.upload_slot_min_kbps = static_cast<std::uint32_t>(t->GetInt());
 	}
 	if (const CECTag *t = conn->GetTagByName(EC_TAG_CONN_TCP_PORT)) {
 		out.tcp_port = static_cast<std::uint16_t>(t->GetInt());
@@ -2899,9 +2899,9 @@ void ParseConnectionPrefs(const CECTag *conn, PreferencesSnapshot &out)
 	// extended UDP port is off, so absence = enabled.
 	out.extended_udp_port_enabled = conn->GetTagByName(EC_TAG_CONN_UDP_DISABLE) == nullptr;
 	out.autoconnect = conn->GetTagByName(EC_TAG_CONN_AUTOCONNECT) != nullptr;
-	out.reconnect = conn->GetTagByName(EC_TAG_CONN_RECONNECT) != nullptr;
-	out.network_ed2k = conn->GetTagByName(EC_TAG_NETWORK_ED2K) != nullptr;
-	out.network_kad = conn->GetTagByName(EC_TAG_NETWORK_KADEMLIA) != nullptr;
+	out.reconnect_on_connection_loss = conn->GetTagByName(EC_TAG_CONN_RECONNECT) != nullptr;
+	out.ed2k_enabled = conn->GetTagByName(EC_TAG_NETWORK_ED2K) != nullptr;
+	out.kad_enabled = conn->GetTagByName(EC_TAG_NETWORK_KADEMLIA) != nullptr;
 	if (const CECTag *t = conn->GetTagByName(EC_TAG_CONN_BIND_ADDRESS)) {
 		out.bind_address = std::string(t->GetStringData().utf8_str());
 	}
@@ -2949,14 +2949,14 @@ void ParseConnectionPrefs(const CECTag *conn, PreferencesSnapshot &out)
 		out.upnp_enabled = t->GetInt() != 0;
 	}
 	if (const CECTag *t = conn->GetTagByName(EC_TAG_CONN_UPNP_TCP_PORT)) {
-		out.upnp_tcp_port = static_cast<std::uint16_t>(t->GetInt());
+		out.upnp_control_point_port = static_cast<std::uint16_t>(t->GetInt());
 	}
 
 	if (const CECTag *t = conn->GetTagByName(EC_TAG_CONN_MAX_FILE_SOURCES)) {
-		out.max_sources_per_file = static_cast<std::uint32_t>(t->GetInt());
+		out.max_sources_per_file_count = static_cast<std::uint32_t>(t->GetInt());
 	}
 	if (const CECTag *t = conn->GetTagByName(EC_TAG_CONN_MAX_CONN)) {
-		out.max_connections = static_cast<std::uint32_t>(t->GetInt());
+		out.max_connection_count = static_cast<std::uint32_t>(t->GetInt());
 	}
 }
 

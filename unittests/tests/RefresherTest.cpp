@@ -2239,7 +2239,7 @@ TEST(Refresher, ClientDetailFieldsDecode)
 // (share_hidden/exclude_patterns_use_regex -> GetInt()!=0) and bare presence
 // tags (ich_enabled/use_secident/endgame_enabled -> tag present == true), the
 // 3-state shared_files_visibility enum decoded from the wire int (#596, #655),
-// plus ints, strings, and the directories.shared string array.
+// plus ints, strings, and the directories.shared_paths string array.
 TEST(Refresher, PreferencesExtendedCategoriesDecode)
 {
 	CECPacket resp(EC_OP_SET_PREFERENCES);
@@ -2305,51 +2305,51 @@ TEST(Refresher, PreferencesExtendedCategoriesDecode)
 	std::vector<CategorySnapshot> cats;
 	ParsePreferencesFromPacket(&resp, p, cats);
 
-	ASSERT_EQUALS(std::string("/inc"), p.directories.incoming);
-	ASSERT_EQUALS(std::string("/tmp"), p.directories.temp);
-	ASSERT_EQUALS(static_cast<size_t>(2), p.directories.shared.size());
-	ASSERT_EQUALS(std::string("/a"), p.directories.shared[0]);
+	ASSERT_EQUALS(std::string("/inc"), p.directories.incoming_path);
+	ASSERT_EQUALS(std::string("/tmp"), p.directories.temp_path);
+	ASSERT_EQUALS(static_cast<size_t>(2), p.directories.shared_paths.size());
+	ASSERT_EQUALS(std::string("/a"), p.directories.shared_paths[0]);
 	ASSERT_TRUE(p.directories.share_hidden);
 	ASSERT_TRUE(p.directories.exclude_patterns_use_regex);
-	ASSERT_TRUE(!p.directories.auto_rescan); // absent -> false
+	ASSERT_TRUE(!p.directories.rescan_on_startup); // absent -> false
 
 	ASSERT_TRUE(p.files.ich_enabled);
-	ASSERT_TRUE(!p.files.aich_trust_every_hash); // absent presence tag -> false
-	ASSERT_TRUE(p.files.endgame_enabled);        // presence tag -> true (#596)
+	ASSERT_TRUE(!p.files.trust_unverified_aich_hashes); // absent presence tag -> false
+	ASSERT_TRUE(p.files.endgame_mode_enabled);          // presence tag -> true (#596)
 	ASSERT_EQUALS(static_cast<std::uint32_t>(512), p.files.min_free_space_mb);
 
-	ASSERT_EQUALS(static_cast<std::uint32_t>(5), p.servers.dead_server_retries);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(5), p.servers.dead_server_retry_count);
 	ASSERT_EQUALS(std::string("http://srv"), p.servers.update_url);
 
 	// 3-state (#596): the middle/high value round-trips, not just 0/1, and
 	// decodes to its enum string rather than the wire int (#655).
 	ASSERT_EQUALS(std::string("nobody"), p.security.shared_files_visibility);
-	ASSERT_EQUALS(static_cast<std::uint32_t>(100), p.security.ipfilter_block_below_access_level);
-	ASSERT_TRUE(p.security.use_secident);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(100), p.security.ipfilter_min_access_level);
+	ASSERT_TRUE(p.security.secure_identification_enabled);
 	ASSERT_TRUE(!p.security.obfuscation_required); // absent -> false
 
 	ASSERT_TRUE(p.message_filter.enabled);
-	ASSERT_TRUE(p.message_filter.show_in_log);
+	ASSERT_TRUE(p.message_filter.log_filtered_messages);
 	ASSERT_TRUE(p.message_filter.filter_comments);
 	ASSERT_TRUE(!p.message_filter.filter_all_messages); // absent -> false
 	ASSERT_EQUALS(std::string("spam,ads"), p.message_filter.keywords);
 	ASSERT_EQUALS(std::string("junk,scam"), p.message_filter.comment_keywords);
 
-	ASSERT_EQUALS(static_cast<std::uint32_t>(200), p.core_tweaks.max_new_connections_per_5s);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(200), p.advanced.max_new_connections_per_5_seconds);
 	// EC carries milliseconds; the API speaks the minutes the core actually
 	// stores, so the decode divides by 60000 (#1159 section 5).
-	ASSERT_EQUALS(static_cast<std::uint32_t>(30), p.core_tweaks.kad_reask_minutes);
-	ASSERT_EQUALS(std::string("http://nodes"), p.kademlia.update_url);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(30), p.advanced.kad_source_reask_minutes);
+	ASSERT_EQUALS(std::string("http://nodes"), p.kad.update_url);
 
-	ASSERT_TRUE(p.ip2country.supported);
-	ASSERT_TRUE(p.ip2country.enabled);
-	ASSERT_EQUALS(std::string("maxmind"), p.ip2country.source); // uint8 1 -> "maxmind"
-	ASSERT_EQUALS(std::string("http://geo"), p.ip2country.custom_url);
-	ASSERT_EQUALS(std::string("LICKEY"), p.ip2country.maxmind_license);
-	ASSERT_TRUE(!p.ip2country.auto_update); // absent -> false
-	ASSERT_TRUE(p.ip2country.db_loaded);
-	ASSERT_EQUALS(std::string("maxmind"), p.ip2country.loaded_source);
-	ASSERT_TRUE(!p.ip2country.download_in_progress); // absent -> false
+	ASSERT_TRUE(p.geoip.supported);
+	ASSERT_TRUE(p.geoip.enabled);
+	ASSERT_EQUALS(std::string("maxmind"), p.geoip.source); // uint8 1 -> "maxmind"
+	ASSERT_EQUALS(std::string("http://geo"), p.geoip.custom_update_url);
+	ASSERT_EQUALS(std::string("LICKEY"), p.geoip.maxmind_license);
+	ASSERT_TRUE(!p.geoip.auto_update); // absent -> false
+	ASSERT_TRUE(p.geoip.db_loaded);
+	ASSERT_EQUALS(std::string("maxmind"), p.geoip.loaded_source);
+	ASSERT_TRUE(!p.geoip.download_in_progress); // absent -> false
 }
 
 // --- #655: enum strings and the nested remote_controls shape ----------
@@ -2520,7 +2520,7 @@ TEST(Refresher, PrefsSchemaIrregularitiesStayContained)
 		}
 		if (f.read_group != 0) {
 			++foreign_group;
-			ASSERT_EQUALS(std::string("upnp_available"), std::string(f.key));
+			ASSERT_EQUALS(std::string("upnp_supported"), std::string(f.key));
 		}
 		if (f.access == PrefAccess::Bespoke) {
 			++bespoke;
