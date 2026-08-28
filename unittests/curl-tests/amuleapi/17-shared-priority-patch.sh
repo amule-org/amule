@@ -192,16 +192,16 @@ _assert_status 400 "PATCH removed variant high_auto → 400"
 # --- 3c. PATCH comment + rating (issue #419). ---------------------
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"comment":"nice file","rating":4}' "$HOST/api/v0/shared/$TEST_HASH"
+	-d '{"my_comment":"nice file","my_rating":4}' "$HOST/api/v0/shared/$TEST_HASH"
 _assert_status 200 "PATCH comment+rating → 200"
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared/$TEST_HASH"
-_assert_json_eq '.comment' "nice file" "GET /shared/{hash} shows the set comment"
-_assert_json_eq '.rating' 4 "GET /shared/{hash} shows the set rating"
+_assert_json_eq '.my_comment' "nice file" "GET /shared/{hash} shows the set comment"
+_assert_json_eq '.my_rating' 4 "GET /shared/{hash} shows the set rating"
 
 # Partial (comment without rating) → 400 (both required together).
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"comment":"solo"}' "$HOST/api/v0/shared/$TEST_HASH"
+	-d '{"my_comment":"solo"}' "$HOST/api/v0/shared/$TEST_HASH"
 _assert_status 400 "PATCH comment without rating → 400"
 
 # Rating out of range → 400.

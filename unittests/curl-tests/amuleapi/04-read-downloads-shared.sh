@@ -458,8 +458,8 @@ if [ "$SHCOUNT" -gt 0 ]; then
 		'/shared/{hash} carries file_type'
 	_assert_json_eq '.upload_ratio | type' number \
 		'/shared/{hash} carries upload_ratio'
-	_assert_json_eq '.path | type' string \
-		'/shared/{hash} carries path'
+	_assert_json_eq '.directory | type' string \
+		'/shared/{hash} carries directory'
 	_assert_json_eq '.sources | type' object \
 		'/shared/{hash} carries sources'
 	_assert_json_eq '.aich_hash | type' string \
@@ -468,10 +468,10 @@ if [ "$SHCOUNT" -gt 0 ]; then
 		'/shared/{hash} carries parts_total_count'
 	_assert_json_eq '.hashed_part_count | type' number \
 		'/shared/{hash} carries hashed_part_count (#1054)'
-	_assert_json_eq '.comment | type' string \
-		'/shared/{hash} carries comment'
-	_assert_json_eq '.rating | type' number \
-		'/shared/{hash} carries rating'
+	_assert_json_eq '.my_comment | type' string \
+		'/shared/{hash} carries my_comment'
+	_assert_json_eq '.my_rating | type' number \
+		'/shared/{hash} carries my_rating'
 	SHPARTCOUNT=$(printf '%s' "$CURL_BODY" | jq -r '.parts_total_count')
 
 	# --- 6c. GET /shared/{hash}/clients: the upload-side half of the

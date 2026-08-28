@@ -170,12 +170,14 @@ std::string ToJsonSharedEvent(const FileSnapshot &f)
 	  << ",\"name\":\"" << EscJson(f.name) << "\""
 	  << ",\"ed2k_link\":\"" << EscJson(f.ed2k_link) << "\""
 	  << ",\"size_bytes\":" << f.size << ",\"priority\":\"" << EscJson(f.shared.priority) << "\""
-	  << ",\"priority_auto\":" << (f.shared.priority_auto ? "true" : "false")
+	  << ",\"priority_auto\":"
+	  << (f.shared.priority_auto ? "true" : "false")
 	  // Nested to match the REST row: a stated exception to R11, so that
 	  // `sources.complete` is one access path across every endpoint that has
 	  // the concept. The list shape carries `complete` only; the range is
 	  // detail-only and does not ride the event.
-	  << ",\"sources\":{\"complete\":" << f.shared.complete_sources << "}"
+	  << ",\"sources\":{\"complete\":" << f.shared.complete_sources
+	  << "}"
 	  // Flattened (R11), same as the REST row this promises key parity with.
 	  << ",\"uploaded_bytes_session\":" << f.shared.uploaded_bytes_session
 	  << ",\"uploaded_bytes_total\":" << f.shared.uploaded_bytes_total
@@ -233,14 +235,14 @@ std::string ToJson(const ServerSnapshot &s)
 	  << "\"ecid\":" << s.ecid << ",\"name\":\"" << EscJson(s.name) << "\""
 	  << ",\"description\":\"" << EscJson(s.description) << "\""
 	  << ",\"version\":\"" << EscJson(s.version) << "\""
-	  << ",\"address\":\"" << EscJson(s.address) << "\""
+	  << ",\"address\":\"" << EscJson(s.address)
+	  << "\""
 	  // The bare IP beside the "ip:port" form, matching the REST row.
 	  << ",\"ip\":\"" << EscJson(s.address.substr(0, s.address.rfind(':'))) << "\""
 	  << ",\"country_code\":"
 	  << (s.country_code.empty() ? std::string("null") : "\"" + EscJson(s.country_code) + "\"")
-	  << ",\"port\":" << s.port << ",\"user_count\":" << s.users
-	  << ",\"max_user_count\":" << s.max_users << ",\"file_count\":" << s.files
-	  << ",\"soft_file_limit\":" << s.soft_file_limit
+	  << ",\"port\":" << s.port << ",\"user_count\":" << s.users << ",\"max_user_count\":" << s.max_users
+	  << ",\"file_count\":" << s.files << ",\"soft_file_limit\":" << s.soft_file_limit
 	  << ",\"hard_file_limit\":" << s.hard_file_limit << ",\"priority\":\"" << EscJson(s.priority) << "\""
 	  << ",\"ping_ms\":" << s.ping_ms << ",\"failed_count\":" << s.failed_count << ",\"permanent\":"
 	  << (s.is_static ? "true" : "false")
@@ -453,7 +455,8 @@ bool EqualShared(const FileSnapshot &a, const FileSnapshot &b)
 	       a.size == b.size && a.shared.priority == b.shared.priority &&
 	       a.shared.priority_auto == b.shared.priority_auto &&
 	       a.shared.complete_sources == b.shared.complete_sources &&
-	       a.shared.uploaded_bytes_session == b.shared.uploaded_bytes_session && a.shared.uploaded_bytes_total == b.shared.uploaded_bytes_total &&
+	       a.shared.uploaded_bytes_session == b.shared.uploaded_bytes_session &&
+	       a.shared.uploaded_bytes_total == b.shared.uploaded_bytes_total &&
 	       a.shared.request_count_session == b.shared.request_count_session &&
 	       a.shared.request_count_total == b.shared.request_count_total &&
 	       a.shared.accepted_request_count_session == b.shared.accepted_request_count_session &&

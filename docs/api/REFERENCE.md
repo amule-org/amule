@@ -371,7 +371,7 @@ Five keys stay omitted, because for them absence really is the meaning: `started
 
 A rejection names the set that endpoint accepts, so sending a wrong value tells you the right ones. Note that a file which is both downloading and shared carries two independent priorities from the two sets, and changing one does not affect the other.
 
-**Categories read wider than they write.** The table above is the *write* domain. A category's `priority` is formatted on read from the same six-level file set as downloads and shared files, so `GET /api/v0/categories` can in principle report `very_low` or `release` -- values `POST` and `PATCH` will refuse with a `400`. Read-modify-write on such a category therefore fails on a field the client never touched.
+**Categories read and write the same six levels.** A category's `priority` is formatted on read from the same file-priority set as downloads and shared files, so `GET /api/v0/categories` can report `very_low` or `release` -- and `POST` / `PATCH` accept them, so a read-modify-write round-trip cannot fail on a field the client never touched (R9). The narrower four-value set still applies to downloads, whose read side cannot produce the other two.
 
 Reaching it takes a category whose stored priority was not set through this API or the desktop: the desktop's category priority control offers only Low / Normal / High / Auto, and `CDownloadQueue::SetCatPrio` applies whatever it is given as a *download* priority, which is the same four. A hand-edited `amule.conf`, or another client, is what it would take.
 
@@ -1775,25 +1775,25 @@ Bulk upload-priority change over multiple shared files — the same `priority` a
 
 **Auth:** `ADMIN`
 
-Changes the upload priority and/or the comment+rating of a single shared file. `{hash}` is the 32-char MD4 hex hash (case-insensitive). The body must include at least one of `priority` or the `comment`+`rating` pair.
+Changes the upload priority and/or the comment+rating of a single shared file. `{hash}` is the 32-char MD4 hex hash (case-insensitive). The body must include at least one of `priority` or the `my_comment`+`my_rating` pair.
 
 **Body:**
 
 ```json
 {
   "priority": "very_low" | "low" | "normal" | "high" | "release" | "auto",
-  "comment":  "<string, ≤ 50 chars>",
-  "rating":   0
+  "my_comment":  "<string, ≤ 50 chars>",
+  "my_rating":   0
 }
 ```
 
 Send a bare priority level to pin it (the file's `priority_auto` becomes `false`). Send `"auto"` to hand level selection to amuled — it derives the level from the upload queue, and `GET /api/v0/shared` then reports the derived base `priority` with `priority_auto: true`. The combined `"*_auto"` strings are not accepted as input, since `"auto"` is the level the daemon computes rather than one the caller pins.
 
-`comment` and `rating` must be sent **together** (both or neither) — the daemon writes them as one atomic operation. `comment` is capped at 50 characters; `rating` is an integer `0`–`5`. Setting them requires the file to be shared. The same fields are accepted on [`PATCH /downloads/{hash}`](#patch-apiv0downloadshash) for a downloading file that is also shared.
+`my_comment` and `my_rating` must be sent **together** (both or neither) — the daemon writes them as one atomic operation. `my_comment` is capped at 50 characters; `my_rating` is an integer `0`–`5`. Setting them requires the file to be shared. The same fields are accepted on [`PATCH /downloads/{hash}`](#patch-apiv0downloadshash) for a downloading file that is also shared.
 
 `name` renames the file — a non-empty string with no path separators (`/` or `\`, rejected to prevent the rename escaping the file's directory). Rename works on any known file, so it is accepted on both this endpoint and [`PATCH /downloads/{hash}`](#patch-apiv0downloadshash).
 
-**Errors:** `400 bad_request` (missing/invalid fields, `comment`/`rating` sent alone, or a `name` that is empty or contains a path separator), `404 not_found` (no shared file with that hash), `409 not_shared` (comment/rating on a non-shared file), `400 amuled_rejected`, `503 ec_unavailable`.
+**Errors:** `400 bad_request` (missing/invalid fields, `my_comment`/`my_rating` sent alone, or a `name` that is empty or contains a path separator), `404 not_found` (no shared file with that hash), `409 not_shared` (comment/rating on a non-shared file), `400 amuled_rejected`, `503 ec_unavailable`.
 
 ---
 
@@ -2084,9 +2084,9 @@ amuled's category system lets users tag downloads with one of N user-defined buc
     {
       "index": 0,
       "name": "Default",
-      "path": "/home/user/aMule/Incoming",
+      "save_path": "/home/user/aMule/Incoming",
       "comment": "",
-      "color": 0,
+      "color": "#1664c0",
       "priority": "low"
     }
   ],
@@ -2101,10 +2101,10 @@ A list endpoint like the others: `?limit`, `?offset`, `?sort` and `?order` apply
 Category `0` is always present, so the list is never empty. amuled's EC omits the row entirely until the first custom category exists, so amuleapi synthesises it when missing:
 
 ```json
-{ "index": 0, "name": "Default", "path": "/home/user/aMule/Incoming", "comment": "", "color": 0, "priority": "low" }
+{ "index": 0, "name": "Default", "save_path": "/home/user/aMule/Incoming", "comment": "", "color": "#1664c0", "priority": "low" }
 ```
 
-`name` and `path` are filled in for index `0` whether the row came from the daemon or was synthesised here. amuled holds neither -- its `defaultcat` is built with an empty title and path -- so a client rendering a category picker was left with a blank row it had to label itself, and nothing to show for where an uncategorised download lands. `path` is `directories.incoming` from [`GET /preferences`](#get-apiv0preferences), which is genuinely where such a file is saved. `priority` is `low`, amuled's own default for the row.
+`name` and `save_path` are filled in for index `0` whether the row came from the daemon or was synthesised here. amuled holds neither -- its `defaultcat` is built with an empty title and path -- so a client rendering a category picker was left with a blank row it had to label itself, and nothing to show for where an uncategorised download lands. `save_path` is `directories.incoming` from [`GET /preferences`](#get-apiv0preferences), which is genuinely where such a file is saved. `priority` is `low`, amuled's own default for the row.
 
 Filling both in unconditionally is deliberate: doing it only for the synthesised row would mean `/categories/0` answered `"Default"` on a daemon with no custom categories and `""` as soon as the operator added one, which is a response shape that depends on unrelated state.
 
@@ -2119,14 +2119,19 @@ Filling both in unconditionally is deliberate: doing it only for the synthesised
 ```json
 {
   "name": "Linux ISOs",
-  "path": "/home/user/aMule/Incoming/Linux",
+  "save_path": "/home/user/aMule/Incoming/Linux",
   "comment": "Distros only",
-  "color": 16711680,
+  "color": "#1664c0",
   "priority": "high"
 }
 ```
 
-`name` required; others optional. `color` is a 24-bit RGB integer. `priority` is applied to the category's member files as a download priority, so it takes the same restricted set as [`PATCH /downloads`](#patch-apiv0downloads) — `"low"` / `"normal"` / `"high"` / `"auto"`. `very_low` and `release` are rejected (the daemon would clamp them to `normal` on the next restart).
+`name` required; others optional. `color` is a `"#rrggbb"` string in both
+directions -- it used to be the raw 24-bit integer amuled stores, which a
+client had to unpack itself, and which is easy to get wrong: the core packs
+it as `0x00BBGGRR` with **red in the low byte**, so a naive hex print of the
+integer comes out reversed. Anything that is not `#` followed by six hex
+digits is a `400 bad_request`. `priority` accepts the same six levels the category read side can return — `"very_low"` / `"low"` / `"normal"` / `"high"` / `"release"` / `"auto"` — so a read-modify-write round-trip always succeeds (R9). It is applied to the category's member files as a download priority.
 
 **Response:** `202 Accepted`, no body. `EC_OP_CREATE_CATEGORY` answers success or failure and never returns the index it assigned, so naming the new category here meant scanning the snapshot for one with a matching name and falling back to a bodiless `201` when the scan came up short. Re-read [`GET /categories`](#get-apiv0categories) for the assigned index.
 
@@ -2138,7 +2143,7 @@ Filling both in unconditionally is deliberate: doing it only for the synthesised
 
 Returns the single category object, the same shape [`PATCH`](#patch-apiv0categoriesindex) returns. Every other resource with a member path has a member `GET`; this one did not, so a client that had just created a category and wanted the stored result had to re-fetch the whole collection and search it by index.
 
-`{index}` is a uint8. A non-numeric or out-of-range segment is `400 bad_request`; an index no category holds is `404 not_found`. Index `0` is always present, synthesised when amuled omits it and carrying the same `name` / `path` fill-in, exactly as on the collection: the two routes cannot disagree about which categories exist or about what they hold.
+`{index}` is a uint8. A non-numeric or out-of-range segment is `400 bad_request`; an index no category holds is `404 not_found`. Index `0` is always present, synthesised when amuled omits it and carrying the same `name` / `save_path` fill-in, exactly as on the collection: the two routes cannot disagree about which categories exist or about what they hold.
 
 **Errors:** `400 bad_request`, `404 not_found`, `503 ec_unavailable`.
 

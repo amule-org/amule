@@ -97,16 +97,18 @@ if [ "$COUNT" -gt 0 ]; then
 	_assert_json_eq '.servers[0].address  | type' string  '/servers[0].address is string'
 	# Added beside `address`: every client had to re-parse the ip:port form.
 	_assert_json_eq '.servers[0].ip       | type' string  '/servers[0].ip is string'
-	_assert_json_eq '(.servers[0].address | startswith(.servers[0].ip))' true \
+	_assert_json_eq '.servers[0] as $s | ($s.address | startswith($s.ip))' true \
 		'/servers[0].address begins with the bare ip'
 	_assert_json_eq '.servers[0].port     | type' number  '/servers[0].port is numeric'
 	_assert_json_eq '.servers[0].user_count | type' number  '/servers[0].user_count is numeric'
 	_assert_json_eq '.servers[0].priority | test("^(low|normal|high)$")' \
 		true '/servers[0].priority is a known enum value'
-	_assert_json_eq '.servers[0].static   | type' boolean '/servers[0].static is boolean'
+	_assert_json_eq '.servers[0].permanent | type' boolean '/servers[0].permanent is boolean'
 	# #440 server country: always-present ISO 3166-1 alpha-2 string,
 	# empty when GeoIP is off/unresolved (never absent/null).
-	_assert_json_eq '.servers[0].country_code | type' string '/servers[0].country_code is string (#440)'
+	# Nullable since the R10 pass, same as the client row.
+	_assert_json_eq '(.servers[0].country_code == null or (.servers[0].country_code | type) == "string")' \
+		true '/servers[0].country_code is a string or null'
 	# Consecutive failed connection attempts -- a counter, not a boolean,
 	# which is why the key is not just "failed".
 	_assert_json_eq '.servers[0].failed_count | type' number '/servers[0].failed_count is numeric'

@@ -3289,7 +3289,8 @@ void WriteSharedDetailObject(CJsonWriter &w, const webapi::FileSnapshot &f)
 	w.ValueString(wxString::FromUTF8(webapi::FileTypeToken(f.name).c_str()));
 	w.Key("upload_ratio");
 	w.ValueDouble(
-		f.size > 0 ? static_cast<double>(f.shared.uploaded_bytes_total) / static_cast<double>(f.size) : 0.0);
+		f.size > 0 ? static_cast<double>(f.shared.uploaded_bytes_total) / static_cast<double>(f.size)
+			   : 0.0);
 	w.Key("directory");
 	// The on-disk directory (Temp while downloading, destination once
 	// completed) -- the same value /downloads/{hash} reports for this file.
@@ -3853,11 +3854,16 @@ struct FilePriorityLevel
 };
 
 const FilePriorityLevel kFilePriorities[] = {
-	{ "very_low", PR_VERY_LOW, kPrioShared },
+	// R9: a writable field accepts the values the same field returns. A
+	// category's `priority` is rendered by PriorityName(), which can answer
+	// very_low and release, so the write side has to admit them -- it used to
+	// reject exactly the two values a round-trip could hand back. The download
+	// domain stays narrow because its read side cannot produce them either.
+	{ "very_low", PR_VERY_LOW, kPrioShared | kPrioCategory },
 	{ "low", PR_LOW, kPrioDownload | kPrioShared | kPrioCategory },
 	{ "normal", PR_NORMAL, kPrioDownload | kPrioShared | kPrioCategory },
 	{ "high", PR_HIGH, kPrioDownload | kPrioShared | kPrioCategory },
-	{ "release", PR_VERYHIGH, kPrioShared },
+	{ "release", PR_VERYHIGH, kPrioShared | kPrioCategory },
 	{ "auto", PR_AUTO, kPrioDownload | kPrioShared | kPrioCategory },
 };
 
@@ -5070,7 +5076,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(const CHttpServer::Reque
 
 namespace
 {
-// Handle the optional `comment`+`rating` pair shared by PATCH
+// Handle the optional `my_comment`+`my_rating` pair shared by PATCH
 // /downloads/{hash} and PATCH /shared/{hash} (issue #419). Both must be
 // present together or neither. Sends EC_OP_SHARED_FILE_SET_COMMENT, which
 // amuled resolves against the shared-files registry — so the file must be
@@ -5084,34 +5090,34 @@ bool TrySetCommentRating(CamuleapiApp &app,
 	CHttpServer::Response &err)
 {
 	applied = false;
-	const auto cit = obj.find("comment");
-	const auto rit = obj.find("rating");
+	const auto cit = obj.find("my_comment");
+	const auto rit = obj.find("my_rating");
 	const bool has_c = cit != obj.end();
 	const bool has_r = rit != obj.end();
 	if (!has_c && !has_r)
 		return true;
 	if (has_c != has_r) {
-		err = ErrorResponse(400, "bad_request", "`comment` and `rating` must be set together");
+		err = ErrorResponse(400, "bad_request", "`my_comment` and `my_rating` must be set together");
 		return false;
 	}
 	if (!cit->second.is<std::string>()) {
-		err = ErrorResponse(400, "bad_request", "`comment` must be a string");
+		err = ErrorResponse(400, "bad_request", "`my_comment` must be a string");
 		return false;
 	}
 	const std::string comment = cit->second.get<std::string>();
 	// MAXFILECOMMENTLEN (include/protocol/ed2k/Constants.h) = 50.
 	if (comment.size() > 50) {
-		err = ErrorResponse(400, "bad_request", "`comment` exceeds 50 characters");
+		err = ErrorResponse(400, "bad_request", "`my_comment` exceeds 50 characters");
 		return false;
 	}
 	if (!rit->second.is<double>()) {
-		err = ErrorResponse(400, "bad_request", "`rating` must be an integer in [0, 5]");
+		err = ErrorResponse(400, "bad_request", "`my_rating` must be an integer in [0, 5]");
 		return false;
 	}
 	const double rd = rit->second.get<double>();
 	const int rating = static_cast<int>(rd);
 	if (static_cast<double>(rating) != rd || rating < 0 || rating > 5) {
-		err = ErrorResponse(400, "bad_request", "`rating` must be an integer in [0, 5]");
+		err = ErrorResponse(400, "bad_request", "`my_rating` must be an integer in [0, 5]");
 		return false;
 	}
 	if (!f.is_shared) {
@@ -5694,12 +5700,22 @@ void WriteCategoryObject(CJsonWriter &w, const webapi::CategorySnapshot &c)
 	w.ValueInt(static_cast<int64_t>(c.index));
 	w.Key("name");
 	w.ValueString(wxString::FromUTF8(c.name.c_str()));
-	w.Key("path");
+	// `save_path`, not `path`: it is where finished files in this category
+	// land, which `path` did not distinguish from directories.incoming.
+	w.Key("save_path");
 	w.ValueString(wxString::FromUTF8(c.path.c_str()));
 	w.Key("comment");
 	w.ValueString(wxString::FromUTF8(c.comment.c_str()));
+	// "#rrggbb", not the raw 24-bit integer. Mind the byte order: the core
+	// packs it as 0x00BBGGRR -- red in the LOW byte (CMuleColour) -- so a
+	// naive hex print of the integer yields #bbggrr, reversed.
 	w.Key("color");
-	w.ValueInt(static_cast<int64_t>(c.color));
+	{
+		const unsigned r = c.color & 0xFF;
+		const unsigned g = (c.color >> 8) & 0xFF;
+		const unsigned b = (c.color >> 16) & 0xFF;
+		w.ValueString(wxString::Format(wxT("#%02x%02x%02x"), r, g, b));
+	}
 	w.Key("priority");
 	w.ValueString(wxString::FromUTF8(c.priority.c_str()));
 	w.EndObject();
@@ -8983,9 +8999,7 @@ CHttpServer::Response CApiDispatcher::HandleIpfilterUpdate(const CHttpServer::Re
 	// by name, so the tag is EC_TAG_STRING — what amulegui has always sent.
 	// No inline RefresherTick: the download is asynchronous and lands in
 	// amuled's filter, not in a cache this process holds.
-	static const UrlFetchSpec kSpec = {
-		"url", EC_OP_IPFILTER_UPDATE, EC_TAG_STRING, false, false
-	};
+	static const UrlFetchSpec kSpec = { "url", EC_OP_IPFILTER_UPDATE, EC_TAG_STRING, false, false };
 	// Named local: Preferences() hands back a snapshot by value. Offer it as
 	// the fallback only once there is a snapshot to read — before the first
 	// one the defaults would look like "no URL configured".
@@ -10073,7 +10087,8 @@ CHttpServer::Response ParseCategoryFields(const picojson::object &obj, CategoryF
 	auto r1 = get_string("name", out.name, out.has_name);
 	if (r1.status >= 400)
 		return r1;
-	auto r2 = get_string("path", out.path, out.has_path);
+	// `save_path` on the write side too (R9/R6 with the read key).
+	auto r2 = get_string("save_path", out.path, out.has_path);
 	if (r2.status >= 400)
 		return r2;
 	auto r3 = get_string("comment", out.comment, out.has_comment);
@@ -10082,14 +10097,24 @@ CHttpServer::Response ParseCategoryFields(const picojson::object &obj, CategoryF
 	{
 		const auto it = obj.find("color");
 		if (it != obj.end()) {
-			if (!it->second.is<double>()) {
-				return ErrorResponse(400, "bad_request", "`color` must be a uint32");
+			if (!it->second.is<std::string>()) {
+				return ErrorResponse(
+					400, "bad_request", "`color` must be a \"#rrggbb\" string");
 			}
-			const double v = it->second.get<double>();
-			if (v < 0 || v > 4294967295.0) {
-				return ErrorResponse(400, "bad_request", "`color` out of range");
+			const std::string v = it->second.get<std::string>();
+			const bool well_formed = v.size() == 7 && v[0] == '#' &&
+						 std::all_of(v.begin() + 1, v.end(), [](unsigned char ch) {
+							 return std::isxdigit(ch) != 0;
+						 });
+			if (!well_formed) {
+				return ErrorResponse(
+					400, "bad_request", "`color` must be a \"#rrggbb\" string");
 			}
-			out.color = static_cast<std::uint32_t>(v);
+			const auto hex = [&v](std::size_t i) {
+				return static_cast<std::uint32_t>(std::stoul(v.substr(i, 2), nullptr, 16));
+			};
+			// Repack into the core's 0x00BBGGRR layout, red in the low byte.
+			out.color = hex(1) | (hex(3) << 8) | (hex(5) << 16);
 			out.has_color = true;
 		}
 	}
