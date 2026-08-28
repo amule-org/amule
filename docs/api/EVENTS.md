@@ -478,7 +478,7 @@ Identical to the REST [`/api/v0/clients`](REFERENCE.md#get-apiv0clients) list-it
   "port":                   4662,
   "software":               "emule",
   "software_version":       "0.50a",
-  "os_info":                "Linux",
+  "reported_os":                "Linux",
   "upload_state":           "uploading",
   "download_state":         "idle",
   "ident_state":            "identified",
@@ -486,25 +486,23 @@ Identical to the REST [`/api/v0/clients`](REFERENCE.md#get-apiv0clients) list-it
   "download_file_hash":     "",
   "download_file_name":     "",
   "upload_file_name":       "example-distribution.iso",
-  "xfer": {
-    "up_session":   22000000,
-    "down_session": 0,
-    "up_total":     452000000,
-    "down_total":   189000000
-  },
+  "uploaded_bytes_session":   22000000,
+  "downloaded_bytes_session": 0,
+  "uploaded_bytes_total":     452000000,
+  "downloaded_bytes_total":   189000000,
   "upload_speed_bps":       22000,
   "download_speed_bps":     0,
-  "queue_waiting_position": 0,
-  "remote_queue_rank":      0,
-  "score":                  150,
-  "obfuscation_status":     "enabled",
+  "upload_queue_position": 0,
+  "remote_queue_position":      0,
+  "upload_queue_score":                  150,
+  "obfuscation_state":     "enabled",
   "friend_slot":            false,
   "part_progress_percent":  75.0
 }
 ```
-Carries the same field set as the [`/clients`](REFERENCE.md#get-apiv0clients) list row, including `source_origin`, `available_parts`, `mod_version` and `view_shared_disabled`.
+Carries the same field set as the [`/clients`](REFERENCE.md#get-apiv0clients) list row, including `source_origin`, `parts_offered_count`, `client_mod_name` and `shared_files_browsable`.
 
-`part_progress_percent` follows the same rule as on the REST row: it is how much of the file we are downloading **from** this peer the peer already holds, and it is `null` when there is no such file, rather than sent as a negative sentinel. It is derived from `available_parts` and the linked download's part count, so it moves when `available_parts` does, and goes back to `null` if that download goes away. The key is always present -- see [REFERENCE.md's unknown-value rule](REFERENCE.md#unknown-values), under which `null` means "no value" and an absent key means "not reported".
+`part_progress_percent` follows the same rule as on the REST row: it is how much of the file we are downloading **from** this peer the peer already holds, and it is `null` when there is no such file, rather than sent as a negative sentinel. It is derived from `parts_offered_count` and the linked download's part count, so it moves when `parts_offered_count` does, and goes back to `null` if that download goes away. The key is always present -- see [REFERENCE.md's unknown-value rule](REFERENCE.md#unknown-values), under which `null` means "no value" and an absent key means "not reported".
 
 It never carries a `parts` bitmap — those are opt-in on the per-file client routes only, being one boolean per chunk per peer.
 

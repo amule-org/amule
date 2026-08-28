@@ -17,7 +17,7 @@
 #   * every `sort` key the endpoint advertises is accepted and an
 #     unknown one is a 400,
 #   * each record carries the fields that are always recorded (user_hash,
-#     the totals, last_seen, online) and omits — rather than empties —
+#     the totals, last_seen_at, online) and omits — rather than empties —
 #     the ones a pre-metadata record has no value for,
 #   * `user_hash` is a 32-char lowercase MD4, so it correlates with
 #     /clients `user_hash` directly,
@@ -149,21 +149,21 @@ for bad in "limit=abc" "limit=99999999999" "offset=-1" "order=sideways"; do
 done
 
 # --- 3. Sort keys. -------------------------------------------------
-for key in name software first_seen last_seen sessions total_uploaded total_downloaded; do
+for key in name software first_seen_at last_seen_at session_count uploaded_bytes_total downloaded_bytes_total; do
 	_curl "$HOST/api/v0/known_clients?sort=$key&limit=1"
 	_assert_status 200 "sort=$key is accepted"
 done
 _curl "$HOST/api/v0/known_clients?sort=nonsense"
 _assert_status 400 "an unknown sort key is rejected"
 
-_curl "$HOST/api/v0/known_clients?sort=last_seen&order=desc&limit=1"
-_assert_status 200 "sort=last_seen&order=desc is accepted"
+_curl "$HOST/api/v0/known_clients?sort=last_seen_at&order=desc&limit=1"
+_assert_status 200 "sort=last_seen_at&order=desc is accepted"
 
 # --- 4. Record shape. ----------------------------------------------
 if [ "${TOTAL:-0}" -gt 0 ]; then
 	_curl "$HOST/api/v0/known_clients?limit=1"
 
-	for k in user_hash total_uploaded total_downloaded last_seen online; do
+	for k in user_hash uploaded_bytes_total downloaded_bytes_total last_seen_at online; do
 		if [ "$(_jq ".known_clients[0] | has(\"$k\")")" = "true" ]; then
 			_pass "record always carries $k"
 		else
@@ -194,11 +194,11 @@ if [ "${TOTAL:-0}" -gt 0 ]; then
 		_fail "optional fields" "$EMPTY_NAMES record(s) have name == \"\""
 	fi
 
-	# first_seen and sessions travel together — both come from the same
+	# first_seen_at and session_count travel together — both come from the same
 	# metadata block, so one without the other means a decode bug.
-	MISMATCH=$(_jq '[.known_clients[] | select(has("first_seen") != has("sessions"))] | length')
+	MISMATCH=$(_jq '[.known_clients[] | select(has("first_seen_at") != has("session_count"))] | length')
 	if [ "${MISMATCH:-0}" -eq 0 ]; then
-		_pass "first_seen and sessions are present or absent together"
+		_pass "first_seen_at and session_count are present or absent together"
 	else
 		_fail "metadata pairing" "$MISMATCH record(s) have one without the other"
 	fi
@@ -217,15 +217,15 @@ fi
 # Sorted, for the same reason as the row check below: an unsorted page of a
 # large store contains no online records at all, and the check would skip
 # itself forever while looking like it had run.
-_curl "$HOST/api/v0/known_clients?sort=last_seen&order=desc&limit=500"
+_curl "$HOST/api/v0/known_clients?sort=last_seen_at&order=desc&limit=500"
 ACTIVE_HASH=$(_jq '[.known_clients[] | select(.online)][0].user_hash')
 if [ -n "$ACTIVE_HASH" ] && [ "$ACTIVE_HASH" != "null" ]; then
 	BEFORE=$(_jq "[.known_clients[] | select(.user_hash == \"$ACTIVE_HASH\")][0]
-		| .total_downloaded + .total_uploaded")
+		| .downloaded_bytes_total + .uploaded_bytes_total")
 	sleep 4
-	_curl "$HOST/api/v0/known_clients?sort=last_seen&order=desc&limit=500"
+	_curl "$HOST/api/v0/known_clients?sort=last_seen_at&order=desc&limit=500"
 	AFTER=$(_jq "[.known_clients[] | select(.user_hash == \"$ACTIVE_HASH\")][0]
-		| .total_downloaded + .total_uploaded")
+		| .downloaded_bytes_total + .uploaded_bytes_total")
 	if [ "${AFTER:-0}" -gt "${BEFORE:-0}" ]; then
 		_pass "a connected peer's totals move without a refetch ($BEFORE -> $AFTER)"
 	else
@@ -243,7 +243,7 @@ fi
 # appear here -- if it does not, the maintenance has stopped and the endpoint
 # is quietly serving a frozen snapshot.
 #
-# Sorted by last_seen descending and read one page: a connected peer is last
+# Sorted by last_seen_at descending and read one page: a connected peer is last
 # seen *now*, so the online records are the newest in the store and cannot be
 # pushed off the first page by anything else. `limit` is clamped to 500 by the
 # shared parser, which is well above MaxConnections -- asking for the whole
@@ -259,7 +259,7 @@ LIVE_TOTAL=$(printf '%s' "$LIVE_CLIENTS_JSON" | jq -r '.clients | length' 2>/dev
 LIVE_HASHES=$(printf '%s' "$LIVE_CLIENTS_JSON" \
 	| jq -r '.clients[].user_hash // empty | select(. != "" and (test("^0+$") | not))' | sort -u)
 if [ -n "$LIVE_HASHES" ]; then
-	_curl "$HOST/api/v0/known_clients?sort=last_seen&order=desc&limit=500"
+	_curl "$HOST/api/v0/known_clients?sort=last_seen_at&order=desc&limit=500"
 	MISSING=0
 	CHECKED=0
 	for h in $LIVE_HASHES; do

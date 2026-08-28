@@ -261,32 +261,40 @@ std::string ToJson(const ClientSnapshot &c)
 	  << "\"ecid\":" << c.ecid << ",\"name\":\"" << EscJson(c.client_name) << "\""
 	  << ",\"user_hash\":\"" << EscJson(c.user_hash) << "\""
 	  << ",\"ip\":\"" << EscJson(c.ip) << "\""
-	  << ",\"country_code\":\"" << EscJson(c.country_code) << "\""
+	  << ",\"country_code\":"
+	  // null, not "", when the lookup has not resolved -- the REST row this
+	  // event promises key parity with emits null here.
+	  << (c.country_code.empty() ? std::string("null") : "\"" + EscJson(c.country_code) + "\"")
 	  << ",\"port\":" << c.port << ",\"software\":\"" << EscJson(c.software) << "\""
 	  << ",\"software_version\":\"" << EscJson(c.software_version) << "\""
-	  << ",\"os_info\":\"" << EscJson(c.os_info) << "\""
+	  << ",\"reported_os\":\"" << EscJson(c.reported_os) << "\""
 	  << ",\"upload_state\":\"" << EscJson(c.upload_state) << "\""
 	  << ",\"download_state\":\"" << EscJson(c.download_state) << "\""
 	  << ",\"ident_state\":\"" << EscJson(c.ident_state) << "\""
 	  << ",\"download_file_name\":\"" << EscJson(c.download_file_name) << "\""
 	  << ",\"upload_file_name\":\"" << EscJson(c.upload_file_name) << "\""
 	  << ",\"upload_file_hash\":\"" << EscJson(c.upload_file_hash) << "\""
-	  << ",\"download_file_hash\":\"" << EscJson(c.download_file_hash) << "\""
-	  << ",\"xfer\":{"
-	  << "\"up_session\":" << c.xfer_up_session << ",\"down_session\":" << c.xfer_down_session
-	  << ",\"up_total\":" << c.xfer_up_total << ",\"down_total\":" << c.xfer_down_total << "}"
+	  << ",\"download_file_hash\":\"" << EscJson(c.download_file_hash)
+	  << "\""
+	  // Flattened out of the old `xfer` wrapper (R11), same as the REST row
+	  // this payload promises key parity with.
+	  << ",\"uploaded_bytes_session\":" << c.uploaded_bytes_session
+	  << ",\"downloaded_bytes_session\":" << c.downloaded_bytes_session
+	  << ",\"uploaded_bytes_total\":" << c.uploaded_bytes_total
+	  << ",\"downloaded_bytes_total\":" << c.downloaded_bytes_total
 	  << ",\"upload_speed_bps\":" << c.upload_speed_bps
 	  << ",\"download_speed_bps\":" << c.download_speed_bps
-	  << ",\"queue_waiting_position\":" << c.queue_waiting_position << ",\"remote_queue_rank\":"
-	  << (c.remote_queue_rank == kRemoteQueueFullSentinel ? std::string("null")
-							      : std::to_string(c.remote_queue_rank))
-	  << ",\"score\":" << c.score << ",\"obfuscation_status\":\"" << EscJson(c.obfuscation_status) << "\""
+	  << ",\"upload_queue_position\":" << c.upload_queue_position << ",\"remote_queue_position\":"
+	  << (c.remote_queue_position == kRemoteQueueFullSentinel ? std::string("null")
+								  : std::to_string(c.remote_queue_position))
+	  << ",\"upload_queue_score\":" << c.score << ",\"obfuscation_state\":\""
+	  << EscJson(c.obfuscation_state) << "\""
 	  << ",\"friend_slot\":" << (c.friend_slot ? "true" : "false") << ",\"source_origin\":\""
 	  << EscJson(c.source_origin) << "\""
-	  << ",\"available_parts\":"
-	  << (c.has_available_parts ? std::to_string(c.available_parts) : std::string("null"))
-	  << ",\"mod_version\":\"" << EscJson(c.mod_version) << "\""
-	  << ",\"view_shared_disabled\":" << (c.view_shared_disabled ? "true" : "false");
+	  << ",\"parts_offered_count\":"
+	  << (c.has_parts_offered_count ? std::to_string(c.parts_offered_count) : std::string("null"))
+	  << ",\"client_mod_name\":\"" << EscJson(c.client_mod_name) << "\""
+	  << ",\"shared_files_browsable\":" << (c.view_shared_disabled ? "false" : "true");
 	// null, not omitted, matching the REST row: the field only means
 	// something for a peer we are downloading from, and -1 is the
 	// in-process sentinel that must never reach the wire. Formatted
@@ -480,23 +488,25 @@ bool Equal(const ClientSnapshot &a, const ClientSnapshot &b)
 {
 	return a.client_name == b.client_name && a.user_hash == b.user_hash && a.ip == b.ip &&
 	       a.country_code == b.country_code && a.port == b.port && a.software == b.software &&
-	       a.software_version == b.software_version && a.os_info == b.os_info &&
+	       a.software_version == b.software_version && a.reported_os == b.reported_os &&
 	       a.upload_state == b.upload_state && a.download_state == b.download_state &&
 	       a.ident_state == b.ident_state && a.download_file_name == b.download_file_name &&
 	       a.upload_file_name == b.upload_file_name && a.upload_file_hash == b.upload_file_hash &&
-	       a.download_file_hash == b.download_file_hash && a.xfer_up_session == b.xfer_up_session &&
-	       a.xfer_down_session == b.xfer_down_session && a.xfer_up_total == b.xfer_up_total &&
-	       a.xfer_down_total == b.xfer_down_total && a.upload_speed_bps == b.upload_speed_bps &&
-	       a.download_speed_bps == b.download_speed_bps &&
-	       a.queue_waiting_position == b.queue_waiting_position &&
-	       a.remote_queue_rank == b.remote_queue_rank && a.score == b.score &&
-	       a.obfuscation_status == b.obfuscation_status && a.friend_slot == b.friend_slot &&
-	       a.source_origin == b.source_origin && a.available_parts == b.available_parts &&
+	       a.download_file_hash == b.download_file_hash &&
+	       a.uploaded_bytes_session == b.uploaded_bytes_session &&
+	       a.downloaded_bytes_session == b.downloaded_bytes_session &&
+	       a.uploaded_bytes_total == b.uploaded_bytes_total &&
+	       a.downloaded_bytes_total == b.downloaded_bytes_total &&
+	       a.upload_speed_bps == b.upload_speed_bps && a.download_speed_bps == b.download_speed_bps &&
+	       a.upload_queue_position == b.upload_queue_position &&
+	       a.remote_queue_position == b.remote_queue_position && a.score == b.score &&
+	       a.obfuscation_state == b.obfuscation_state && a.friend_slot == b.friend_slot &&
+	       a.source_origin == b.source_origin && a.parts_offered_count == b.parts_offered_count &&
 	       // Without the flag, null -> 0 (the part map arriving and reporting
 	       // zero) compares equal and the row never updates.
-	       a.has_available_parts == b.has_available_parts && a.mod_version == b.mod_version &&
-	       a.view_shared_disabled == b.view_shared_disabled &&
-	       // Derived from available_parts and the linked file's part count,
+	       a.has_parts_offered_count == b.has_parts_offered_count &&
+	       a.client_mod_name == b.client_mod_name && a.view_shared_disabled == b.view_shared_disabled &&
+	       // Derived from parts_offered_count and the linked file's part count,
 	       // so it normally moves only when a compared field does. The case
 	       // that needs it in its own right is the file going away: the
 	       // percent drops back to its sentinel while every other field

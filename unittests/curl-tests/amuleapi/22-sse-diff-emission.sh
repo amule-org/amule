@@ -446,9 +446,9 @@ CLIENT_JSON=$(grep -A2 -E "^event: client_(added|updated)$" "$SSE_OUT" \
 if [ -n "$CLIENT_JSON" ]; then
 	if echo "$CLIENT_JSON" | jq -e \
 		'(.source_origin|type=="string")
-		 and has("available_parts")
-		 and ((.available_parts|type)=="number" or (.available_parts|type)=="null")
-		 and (.mod_version|type=="string") and (.view_shared_disabled|type=="boolean")' \
+		 and has("parts_offered_count")
+		 and ((.parts_offered_count|type)=="number" or (.parts_offered_count|type)=="null")
+		 and (.client_mod_name|type=="string") and (.shared_files_browsable|type=="boolean")' \
 		>/dev/null 2>&1; then
 		_pass "client_added/updated carries the promoted peer fields (#984)"
 	else

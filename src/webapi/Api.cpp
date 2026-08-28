@@ -2592,7 +2592,7 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 	// Our server-assigned id; a HighID (>= 16777216) is our public address
 	// packed LSB-first, which is where public_ip comes from. Both are 0 /
 	// empty while disconnected. Not the same encoding as the peer-side
-	// user_id_hybrid on /clients/{ecid}: that one byte-swaps a HighID, so
+	// ed2k_user_id on /clients/{ecid}: that one byte-swaps a HighID, so
 	// the two must not be compared or fed through each other's decoder.
 	w.Key("user_id");
 	w.ValueInt(static_cast<int64_t>(s.ed2k_user_id));
@@ -2967,14 +2967,13 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	w.Key("port");
 	w.ValueInt(static_cast<int64_t>(c.port));
 	// ISO 3166-1 alpha-2 (lowercase); "" when GeoIP is off/unresolved (#439).
-	w.Key("country_code");
-	w.ValueString(wxString::FromUTF8(c.country_code.c_str()));
+	WriteStringOrNull(w, "country_code", !c.country_code.empty(), c.country_code);
 	w.Key("software");
 	w.ValueString(wxString::FromUTF8(c.software.c_str()));
 	w.Key("software_version");
 	w.ValueString(wxString::FromUTF8(c.software_version.c_str()));
-	w.Key("os_info");
-	w.ValueString(wxString::FromUTF8(c.os_info.c_str()));
+	w.Key("reported_os");
+	w.ValueString(wxString::FromUTF8(c.reported_os.c_str()));
 	w.Key("upload_state");
 	w.ValueString(wxString::FromUTF8(c.upload_state.c_str()));
 	w.Key("download_state");
@@ -2989,36 +2988,37 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	w.ValueString(wxString::FromUTF8(c.upload_file_hash.c_str()));
 	w.Key("download_file_hash");
 	w.ValueString(wxString::FromUTF8(c.download_file_hash.c_str()));
-	w.Key("xfer");
-	w.BeginObject();
-	w.Key("up_session");
-	w.ValueInt(static_cast<int64_t>(c.xfer_up_session));
-	w.Key("down_session");
-	w.ValueInt(static_cast<int64_t>(c.xfer_down_session));
-	w.Key("up_total");
-	w.ValueInt(static_cast<int64_t>(c.xfer_up_total));
-	w.Key("down_total");
-	w.ValueInt(static_cast<int64_t>(c.xfer_down_total));
-	w.EndObject();
+	// R11: flattened out of the old `xfer` wrapper. A sub-object earns its
+	// place by grouping DIFFERENT quantities; this grouped one quantity split
+	// by time window, which belongs in the key. It also meant `xfer` named a
+	// 4-field up/down pair here and an upload-only pair on /shared.
+	w.Key("uploaded_bytes_session");
+	w.ValueInt(static_cast<int64_t>(c.uploaded_bytes_session));
+	w.Key("downloaded_bytes_session");
+	w.ValueInt(static_cast<int64_t>(c.downloaded_bytes_session));
+	w.Key("uploaded_bytes_total");
+	w.ValueInt(static_cast<int64_t>(c.uploaded_bytes_total));
+	w.Key("downloaded_bytes_total");
+	w.ValueInt(static_cast<int64_t>(c.downloaded_bytes_total));
 	w.Key("upload_speed_bps");
 	w.ValueInt(static_cast<int64_t>(c.upload_speed_bps));
 	w.Key("download_speed_bps");
 	w.ValueInt(static_cast<int64_t>(c.download_speed_bps));
-	w.Key("queue_waiting_position");
-	w.ValueInt(static_cast<int64_t>(c.queue_waiting_position));
+	w.Key("upload_queue_position");
+	w.ValueInt(static_cast<int64_t>(c.upload_queue_position));
 	// 0xffff is amuled's "that peer's queue is full" sentinel
 	// (ECSpecialCoreTags.cpp: IsRemoteQueueFull() ? 0xffff : rank), not a
 	// position. Relayed verbatim it renders as "position 65535", and a client
 	// sorting by queue position buries full queues at the far end as though
 	// they were merely very distant.
 	WriteIntOrNull(w,
-		"remote_queue_rank",
-		c.remote_queue_rank != webapi::kRemoteQueueFullSentinel,
-		static_cast<int64_t>(c.remote_queue_rank));
-	w.Key("score");
+		"remote_queue_position",
+		c.remote_queue_position != webapi::kRemoteQueueFullSentinel,
+		static_cast<int64_t>(c.remote_queue_position));
+	w.Key("upload_queue_score");
 	w.ValueInt(static_cast<int64_t>(c.score));
-	w.Key("obfuscation_status");
-	w.ValueString(wxString::FromUTF8(c.obfuscation_status.c_str()));
+	w.Key("obfuscation_state");
+	w.ValueString(wxString::FromUTF8(c.obfuscation_state.c_str()));
 	w.Key("friend_slot");
 	w.ValueBool(c.friend_slot);
 	// Promoted out of the detail object (issue #984): the desktop's per-file
@@ -3033,11 +3033,16 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	// indistinguishable from one reporting zero parts -- and zero is a real
 	// answer here, being what a fresh source looks like before its map turns
 	// up.
-	WriteIntOrNull(w, "available_parts", c.has_available_parts, static_cast<int64_t>(c.available_parts));
-	w.Key("mod_version");
-	w.ValueString(wxString::FromUTF8(c.mod_version.c_str()));
-	w.Key("view_shared_disabled");
-	w.ValueBool(c.view_shared_disabled);
+	WriteIntOrNull(w,
+		"parts_offered_count",
+		c.has_parts_offered_count,
+		static_cast<int64_t>(c.parts_offered_count));
+	w.Key("client_mod_name");
+	w.ValueString(wxString::FromUTF8(c.client_mod_name.c_str()));
+	// Inverted from the old `view_shared_disabled`: a negated boolean forces
+	// `=== false` at every call site, and R4 wants the positive form.
+	w.Key("shared_files_browsable");
+	w.ValueBool(!c.view_shared_disabled);
 	// null, not omitted, when there is no linked download to be a fraction
 	// of. -1 is the in-process sentinel and never reaches the wire.
 	w.Key("part_progress_percent");
@@ -3126,18 +3131,19 @@ void WriteKnownClientObject(CJsonWriter &w, const webapi::KnownClientSnapshot &c
 	WriteStringOrNull(w, "country_code", !c.country_code.empty(), c.country_code);
 	const bool has_software = !c.software.empty();
 	WriteStringOrNull(w, "software", has_software, c.software);
-	WriteStringOrNull(w, "version", has_software, c.version);
+	WriteStringOrNull(w, "software_version", has_software, c.version);
 	WriteStringOrNull(w, "source_origin", !c.source_origin.empty(), c.source_origin);
-	WriteStringOrNull(w, "obfuscation", !c.obfuscation.empty(), c.obfuscation);
-	w.Key("total_uploaded");
+	WriteStringOrNull(w, "obfuscation_state", !c.obfuscation.empty(), c.obfuscation);
+	// Same quantity as the live /clients row, so the same key (R6).
+	w.Key("uploaded_bytes_total");
 	w.ValueUInt(static_cast<uint64_t>(c.total_uploaded));
-	w.Key("total_downloaded");
+	w.Key("downloaded_bytes_total");
 	w.ValueUInt(static_cast<uint64_t>(c.total_downloaded));
-	w.Key("last_seen");
+	w.Key("last_seen_at");
 	w.ValueUInt(static_cast<uint64_t>(c.last_seen));
 	const bool has_first_seen = c.first_seen != 0;
-	WriteUIntOrNull(w, "first_seen", has_first_seen, static_cast<uint64_t>(c.first_seen));
-	WriteUIntOrNull(w, "sessions", has_first_seen, static_cast<uint64_t>(c.sessions));
+	WriteUIntOrNull(w, "first_seen_at", has_first_seen, static_cast<uint64_t>(c.first_seen));
+	WriteUIntOrNull(w, "session_count", has_first_seen, static_cast<uint64_t>(c.sessions));
 	// Correlate with /clients by user_hash to reach the live peer.
 	w.Key("online");
 	w.ValueBool(c.online);
@@ -3151,8 +3157,8 @@ void WriteClientDetailObject(CJsonWriter &w, const webapi::ClientSnapshot &c)
 {
 	w.BeginObject();
 	WriteClientBaseFields(w, c);
-	w.Key("user_id_hybrid");
-	w.ValueUInt(static_cast<uint64_t>(c.user_id_hybrid));
+	w.Key("ed2k_user_id");
+	w.ValueUInt(static_cast<uint64_t>(c.ed2k_user_id));
 	w.Key("high_id");
 	w.ValueBool(c.high_id);
 	w.Key("server_ip");
@@ -3163,13 +3169,17 @@ void WriteClientDetailObject(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	w.ValueString(wxString::FromUTF8(c.server_name.c_str()));
 	w.Key("kad_port");
 	w.ValueInt(static_cast<int64_t>(c.kad_port));
-	// Friend status + DL/UP modifier (issue #423). is_friend is
-	// friends-list membership, distinct from the friend_slot reserved
+	// Friend status + the credit-system modifier (issue #423). `friend` is
+	// friends-list membership, distinct from the `friend_slot` reserved
 	// upload slot above.
-	w.Key("is_friend");
+	//
+	// The key drops the `is_` prefix per R4; the C++ member cannot follow it,
+	// because `friend` is a keyword. This is the one place on the surface
+	// where key and member deliberately differ.
+	w.Key("friend");
 	w.ValueBool(c.is_friend);
-	w.Key("dl_up_modifier");
-	w.ValueDouble(c.dl_up_modifier);
+	w.Key("credit_ratio");
+	w.ValueDouble(c.credit_ratio);
 	w.EndObject();
 }
 
@@ -4122,7 +4132,7 @@ namespace
 struct FileClientRow
 {
 	webapi::ClientSnapshot client;
-	std::string role; // "source" | "peer" | "both" | "none"
+	std::string role; // "downloading_from" | "uploading_to" | "both" | "none"
 	bool a4af = false;
 	std::vector<bool> parts;
 	bool has_parts = false;
@@ -4161,10 +4171,11 @@ void WriteFileClientRow(CJsonWriter &w, const FileClientRow &row)
 {
 	w.BeginObject();
 	WriteClientBaseFields(w, row.client);
-	// The peer's relation to THIS file, which the global /clients row cannot
-	// express: "source" serves it to us, "peer" pulls it from us, "both" does
-	// each way, "none" is a row that exists only because it is parked here as
-	// an A4AF source.
+	// This client's relation to THIS file, which the global /clients row
+	// cannot express: "downloading_from" means we pull the file from it,
+	// "uploading_to" means it pulls the file from us, "both" is each way, and
+	// "none" is a row that exists only because it is parked here as an A4AF
+	// source.
 	w.Key("role");
 	w.ValueString(wxString::FromUTF8(row.role.c_str()));
 	// Orthogonal to role on purpose: a peer can be parked on another file and
@@ -4260,8 +4271,13 @@ CHttpServer::Response CApiDispatcher::HandleFileClients(
 		}
 
 		FileClientRow row;
-		row.role =
-			is_source && is_peer ? "both" : (is_source ? "source" : (is_peer ? "peer" : "none"));
+		// R12: named by direction. The old pair was `source` / `peer`, which is
+		// not even one axis -- `source` names a relation to the file, `peer`
+		// names the entity -- and `peer` was the last contract-level use of that
+		// word outside /chats.
+		row.role = is_source && is_peer
+				   ? "both"
+				   : (is_source ? "downloading_from" : (is_peer ? "uploading_to" : "none"));
 		row.a4af = is_a4af;
 		ComputePartProgressPercent(m_state, client);
 		if (include_parts) {
@@ -6057,11 +6073,12 @@ CHttpServer::Response CApiDispatcher::HandleKnownClients(const CHttpServer::Requ
 		{ "user_hash", SORT_BY(user_hash), ANCHOR_ON(user_hash) },
 		{ "name", SORT_BY(client_name) },
 		{ "software", SORT_BY(software) },
-		{ "first_seen", SORT_BY(first_seen) },
-		{ "last_seen", SORT_BY(last_seen) },
-		{ "sessions", SORT_BY(sessions) },
-		{ "total_uploaded", SORT_BY(total_uploaded) },
-		{ "total_downloaded", SORT_BY(total_downloaded) },
+		// R7: each value is spelled exactly like the response key it orders by.
+		{ "first_seen_at", SORT_BY(first_seen) },
+		{ "last_seen_at", SORT_BY(last_seen) },
+		{ "session_count", SORT_BY(sessions) },
+		{ "uploaded_bytes_total", SORT_BY(total_uploaded) },
+		{ "downloaded_bytes_total", SORT_BY(total_downloaded) },
 	};
 
 	// Built under the state's read lock: the store is never copied out, so the

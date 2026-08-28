@@ -366,7 +366,7 @@ struct ClientSnapshot
 	// short label here so consumers don't need the lookup table.
 	std::string software;         // "amule" | "emule" | "edonkey" | "mldonkey" | ...
 	std::string software_version; // free-form string from EC_TAG_CLIENT_SOFT_VER_STR
-	std::string os_info;          // free-form (CLIENT_OS_INFO)
+	std::string reported_os;      // free-form (CLIENT_OS_INFO)
 
 	// State machine values. We decode the raw US_*/DS_*/IS_* ints
 	// into wire strings so consumers don't reach into amule's enums.
@@ -400,48 +400,48 @@ struct ClientSnapshot
 	// Per-session transfer stats. CLIENT_UPLOAD_SESSION = bytes
 	// uploaded TO this peer; PARTFILE_SIZE_XFER (when re-keyed on a
 	// CLIENT_* tag) = bytes downloaded FROM this peer.
-	std::uint64_t xfer_up_session = 0;
-	std::uint64_t xfer_down_session = 0;
-	std::uint64_t xfer_up_total = 0;
-	std::uint64_t xfer_down_total = 0;
+	std::uint64_t uploaded_bytes_session = 0;
+	std::uint64_t downloaded_bytes_session = 0;
+	std::uint64_t uploaded_bytes_total = 0;
+	std::uint64_t downloaded_bytes_total = 0;
 	std::uint32_t upload_speed_bps = 0;
 	std::uint32_t download_speed_bps = 0;
 
 	// Upload queue position (for peers in US_ONUPLOADQUEUE).
 	// 0 when not queued.
-	std::uint32_t queue_waiting_position = 0;
+	std::uint32_t upload_queue_position = 0;
 	// Remote queue rank — our position in THE PEER's upload queue
 	// (i.e. how many other ed2k clients they're going to upload to
 	// before us). 0xFFFF when their queue is full.
 	//! Carries amuled's queue-full sentinel as well as a real position; see
 	//! kRemoteQueueFullSentinel.
-	std::uint16_t remote_queue_rank = 0;
+	std::uint16_t remote_queue_position = 0;
 
 	std::uint32_t score = 0; // EC_TAG_CLIENT_SCORE
 	// Complete set, see ClientObfuscationName() in Refresher.cpp:
-	std::string obfuscation_status; // "undefined" | "enabled" | "supported" | "not_supported" |
-					// "disabled" | "unknown"
+	std::string obfuscation_state; // "undefined" | "enabled" | "supported" | "not_supported" |
+				       // "disabled" | "unknown"
 	bool friend_slot = false;
 
 	// --- Extra fields decoded off the INC_UPDATE wire (issue #422) ----
 	// Originally detail-only. Five of them -- source_origin,
-	// available_parts, mod_version, view_shared_disabled and the derived
+	// parts_offered_count, client_mod_name, view_shared_disabled and the derived
 	// part_progress_percent -- were since promoted to the /clients list row
 	// and the SSE client_* payloads (#995, #1015); the rest are still
 	// serialized only by GET /clients/{ecid}.
-	std::uint32_t user_id_hybrid = 0; // EC_TAG_CLIENT_USER_ID (hybrid eD2k id)
-	bool high_id = false;             // derived: !IsLowID(user_id_hybrid)
-	std::string server_ip;            // dotted-quad; "" when unknown/0
+	std::uint32_t ed2k_user_id = 0; // EC_TAG_CLIENT_USER_ID (hybrid eD2k id)
+	bool high_id = false;           // derived: !IsLowID(ed2k_user_id)
+	std::string server_ip;          // dotted-quad; "" when unknown/0
 	std::uint16_t server_port = 0;
 	std::string server_name;
-	std::uint16_t kad_port = 0;        // 0 => Kad not connected for this peer
-	std::string source_origin;         // "server" | "kad" | "source_exchange" | "passive" | "link" | ...
-	std::uint32_t available_parts = 0; // count of parts the peer has (EC_TAG_CLIENT_AVAILABLE_PARTS)
-	bool has_available_parts = false;  // false => tag absent, emitted as null
-	std::string mod_version;           // EC_TAG_CLIENT_MOD_VERSION
-	bool view_shared_disabled = false; // peer forbids viewing its shared files
+	std::uint16_t kad_port = 0; // 0 => Kad not connected for this peer
+	std::string source_origin;  // "server" | "kad" | "source_exchange" | "passive" | "link" | ...
+	std::uint32_t parts_offered_count = 0; // count of parts the peer has (EC_TAG_CLIENT_AVAILABLE_PARTS)
+	bool has_parts_offered_count = false;  // false => tag absent, emitted as null
+	std::string client_mod_name;           // EC_TAG_CLIENT_MOD_VERSION
+	bool view_shared_disabled = false;     // peer forbids viewing its shared files
 	// Completeness of the linked download for this peer, as a percent
-	// (available_parts / file part count). < 0 => not computable (no
+	// (parts_offered_count / file part count). < 0 => not computable (no
 	// linked file / no part count). Derived rather than decoded: filled in
 	// by ComputePartProgressPercent at every site that serializes a client
 	// -- the list, the per-file rows, the detail object and the SSE
@@ -480,8 +480,8 @@ struct ClientSnapshot
 	bool has_last_downloading_part = false;
 
 	// --- Detail-only fields (issue #423, new EC tags) ----------------
-	bool is_friend = false;      // CUpDownClient::IsFriend(); distinct from friend_slot
-	double dl_up_modifier = 0.0; // CUpDownClient::GetScoreRatio() ("DL/UP modifier")
+	bool is_friend = false;    // CUpDownClient::IsFriend(); distinct from friend_slot
+	double credit_ratio = 0.0; // CUpDownClient::GetScoreRatio() ("DL/UP modifier")
 };
 
 // One per eD2k server in the configured server list. Identity is
@@ -538,7 +538,7 @@ struct FriendSnapshot
 	std::uint32_t client_ecid = 0; // live peer this friend is linked to, 0 = offline
 	// Reported by cores that serialize EC_TAG_FRIEND_FRIENDSLOT. An older
 	// daemon omits the tag and this stays false, the same way is_friend and
-	// dl_up_modifier degrade on /clients.
+	// credit_ratio degrade on /clients.
 	bool friend_slot = false;
 };
 
@@ -1393,7 +1393,7 @@ struct StatusSnapshot
 	// Our eD2k id as assigned by the connected server. 0 when not
 	// connected; the 0xffffffff "connect in flight" sentinel is normalized
 	// to 0 rather than surfaced. Packed LSB-first, unlike the peer-side
-	// user_id_hybrid on CUpDownClient, which byte-swaps a HighID.
+	// ed2k_user_id on CUpDownClient, which byte-swaps a HighID.
 	std::uint32_t ed2k_user_id = 0;
 
 	// Our public IPv4 in dotted-quad form, derived from ed2k_user_id when that

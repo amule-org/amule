@@ -409,12 +409,12 @@ if [ -n "$FIRST_ECID" ]; then
 		(.ecid == $e)
 		and has("user_hash")
 		and has("upload_file_name") and has("download_file_name")
-		and has("user_id_hybrid") and has("high_id")
+		and has("ed2k_user_id") and has("high_id")
 		and has("server_ip") and has("server_port") and has("server_name")
 		and has("kad_port") and has("source_origin")
-		and has("available_parts") and has("mod_version")
-		and has("view_shared_disabled")
-		and has("is_friend") and has("dl_up_modifier")')
+		and has("parts_offered_count") and has("client_mod_name")
+		and has("shared_files_browsable")
+		and has("friend") and has("credit_ratio")')
 	if [ "$OK" = "true" ]; then
 		_pass "/clients/{ecid} returns detail superset (ecid=$FIRST_ECID)"
 	else
