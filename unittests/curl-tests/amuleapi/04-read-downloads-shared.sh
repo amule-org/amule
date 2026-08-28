@@ -287,7 +287,7 @@ if [ "$COUNT" -gt 0 ]; then
 	DLROWS=$(printf '%s' "$CURL_BODY" | jq '.clients | length')
 	echo "  --- /downloads/{hash}/clients returned $DLROWS row(s) ---"
 	if [ "$DLROWS" -gt 0 ]; then
-		_assert_json_eq '[.clients[] | select(.role as $r | ($r == null) or ((["source","peer","both","none"] | index($r)) == null))] | length' \
+		_assert_json_eq '[.clients[] | select(.role as $r | ($r == null) or ((["downloading_from","uploading_to","both","none"] | index($r)) == null))] | length' \
 			0 "every row has a valid role"
 		_assert_json_eq '[.clients[] | select(.a4af == null)] | length' 0 "every row has an a4af flag"
 		_assert_json_eq '[.clients[] | select(has("parts"))] | length' 0 "no parts bitmap without include_parts"
@@ -335,7 +335,7 @@ if [ "$COUNT" -gt 0 ]; then
 	# just the detail object — the desktop renders them as table columns.
 	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/clients?limit=1"
 	if [ "$(echo "$CURL_BODY" | jq -r '.clients | length')" != "0" ]; then
-		for k in source_origin available_parts mod_version view_shared_disabled; do
+		for k in source_origin parts_offered_count client_mod_name shared_files_browsable; do
 			_assert_json_eq ".clients[0] | has(\"$k\")" true "/clients row carries $k"
 		done
 	fi
@@ -488,7 +488,7 @@ if [ "$SHCOUNT" -gt 0 ]; then
 	SHROWS=$(printf '%s' "$CURL_BODY" | jq '.clients | length')
 	echo "  --- /shared/{hash}/clients returned $SHROWS row(s) ---"
 	if [ "$SHROWS" -gt 0 ]; then
-		_assert_json_eq '[.clients[] | select(.role as $r | ($r == null) or ((["source","peer","both","none"] | index($r)) == null))] | length' \
+		_assert_json_eq '[.clients[] | select(.role as $r | ($r == null) or ((["downloading_from","uploading_to","both","none"] | index($r)) == null))] | length' \
 			0 "every shared-side row has a valid role"
 		_assert_json_eq '[.clients[] | select(.a4af == null)] | length' 0 \
 			"every shared-side row has an a4af flag"

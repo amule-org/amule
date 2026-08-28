@@ -115,9 +115,10 @@ if [ "$CCOUNT" -gt 0 ]; then
 	# #439 peer country: always-present ISO 3166-1 alpha-2 string,
 	# empty when GeoIP is off/unresolved (never absent/null).
 	_assert_json_eq '.clients[0].country_code | type'   string   '/clients[0].country_code is string (#439)'
-	_assert_json_eq '.clients[0].xfer | type'           object   '/clients[0].xfer is object'
-	_assert_json_eq '.clients[0].xfer.up_session | type'   number '/clients[0].xfer.up_session is numeric'
-	_assert_json_eq '.clients[0].xfer.down_session | type' number '/clients[0].xfer.down_session is numeric'
+	# xfer was flattened (R11): the window belongs in the key, not a wrapper.
+	_assert_json_eq '.clients[0] | has("xfer")' false '/clients[0] no longer wraps counters in xfer'
+	_assert_json_eq '.clients[0].uploaded_bytes_session | type'   number '/clients[0].uploaded_bytes_session is numeric'
+	_assert_json_eq '.clients[0].downloaded_bytes_session | type' number '/clients[0].downloaded_bytes_session is numeric'
 
 	# State enum allowlists — any peer's upload_state must be one of
 	# the wire strings the walker emits. Catch silent regressions if

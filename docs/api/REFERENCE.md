@@ -304,7 +304,7 @@ Rows added or removed *during* a sweep are not missed: both emit an SSE event, s
 | `GET /downloads`      | **`hash`** (id), `name`, `size_bytes`, `progress.percent`, `speed_bytes_per_second`, `status` |
 | `GET /clients`        | **`ecid`** (id), `name`, `software` |
 | `GET /downloads/{hash}/clients`<br>`GET /shared/{hash}/clients` | same keys as `/clients`, `after` included |
-| `GET /known_clients`  | **`user_hash`** (id), `name`, `software`, `first_seen`, `last_seen`, `sessions`, `total_uploaded`, `total_downloaded` |
+| `GET /known_clients`  | **`user_hash`** (id), `name`, `software`, `first_seen_at`, `last_seen_at`, `session_count`, `uploaded_bytes_total`, `downloaded_bytes_total` |
 | `GET /shared`         | **`hash`** (id), `name`, `size` |
 | `GET /servers`        | **`ecid`** (id), `name`, `users`, `ping`, `files` |
 | `GET /friends`        | **`ecid`** (id), `name`, `online` |
@@ -344,13 +344,13 @@ A malformed **request** (missing/empty `hashes`, an invalid patch field) is stil
 
 ### Unknown values
 
-A field whose value is not known is `null`, not a sentinel. `remaining_seconds` is `null` rather than `-1` when there is no ETA to compute; `last_upload`, `shared_since` and `last_seen_complete_at` are `null` rather than `0` when a file has never uploaded, has never been seen complete, or its `known.met` entry predates the field. On a peer row, `available_parts` is `null` when that peer has not reported its part map -- distinct from `0`, which is a real answer and what a fresh source looks like -- and `remote_queue_rank` is `null` when the peer's queue is full, which the daemon signals with a `65535` sentinel rather than a position.
+A field whose value is not known is `null`, not a sentinel. `remaining_seconds` is `null` rather than `-1` when there is no ETA to compute; `last_upload`, `shared_since` and `last_seen_complete_at` are `null` rather than `0` when a file has never uploaded, has never been seen complete, or its `known.met` entry predates the field. On a peer row, `parts_offered_count` is `null` when that peer has not reported its part map -- distinct from `0`, which is a real answer and what a fresh source looks like -- and `remote_queue_position` is `null` when the peer's queue is full, which the daemon signals with a `65535` sentinel rather than a position.
 
 A key is **omitted** only where absence itself is the meaning: something the daemon never reported, rather than something known to be absent. `started_at` on [`GET /search`](#get-apiv0search) is the example, missing for a search this process did not start, and `result_count` is missing when the daemon is too old to send it, which has to stay distinguishable from a search that found nothing.
 
 So: `null` means "no value", an absent key means "not reported", and neither is ever spelled `0` or `-1`.
 
-The rule now reaches the whole surface rather than just the download and shared objects. Keys that used to disappear and are `null` instead: `name`, `ip`, `port`, `kad_port`, `country_code`, `software`, `version`, `source_origin`, `obfuscation`, `first_seen` and `sessions` on [`GET /known_clients`](#get-apiv0known_clients); `part_progress_percent` and `available_parts` on the peer rows and the `client_*` events; `client_ecid` on [`GET /search`](#get-apiv0search); `last_message` on [`GET /chats`](#get-apiv0chats); `token`, `label_value` and `extra` on the statistics tree; and `media` everywhere it appears.
+The rule now reaches the whole surface rather than just the download and shared objects. Keys that used to disappear and are `null` instead: `name`, `ip`, `port`, `kad_port`, `country_code`, `software`, `version`, `source_origin`, `obfuscation`, `first_seen` and `sessions` on [`GET /known_clients`](#get-apiv0known_clients); `part_progress_percent` and `parts_offered_count` on the peer rows and the `client_*` events; `client_ecid` on [`GET /search`](#get-apiv0search); `last_message` on [`GET /chats`](#get-apiv0chats); `token`, `label_value` and `extra` on the statistics tree; and `media` everywhere it appears.
 
 `media` is the one place this reaches an **object** rather than a scalar, so a client tests `media === null` before reaching into it -- which it had to do regardless, since the object's own fields can be absent.
 
@@ -626,7 +626,7 @@ curl -s -H "Authorization: Bearer $TOKEN" http://$HOST/api/v0/status
 
 While disconnected `user_id` is `0`, `public_ip` is `""` and `high_id` is `false` — so read `high_id` **together with `state`**: `false` means "LowID" only once `state` is `"connected"`, and means "no id yet" otherwise. The transient `0xffffffff` the daemon sends mid-connect is normalized to `0` and never appears.
 
-**`ed2k.user_id` is not the same encoding as a peer's `user_id_hybrid`.** [`GET /api/v0/clients/{ecid}`](#get-apiv0clientsecid) reports `user_id_hybrid` for a remote peer, and the similar name invites the assumption that the two are interchangeable. They are not. Ours is stored exactly as the server sent it and is read least-significant-byte-first to produce `public_ip`; a peer's HighID is **byte-swapped** on the way in. A consumer that compares the two values, or feeds one through the other's IP decoder, gets a reversed address. The `>= 16777216` HighID threshold *is* common to both; the byte order is not.
+**`ed2k.user_id` is not the same encoding as a client's `ed2k_user_id`.** [`GET /api/v0/clients/{ecid}`](#get-apiv0clientsecid) reports `ed2k_user_id` for a remote client, and the similar name invites the assumption that the two are interchangeable. They are not. Ours is stored exactly as the server sent it and is read least-significant-byte-first to produce `public_ip`; a peer's HighID is **byte-swapped** on the way in. A consumer that compares the two values, or feeds one through the other's IP decoder, gets a reversed address. The `>= 16777216` HighID threshold *is* common to both; the byte order is not.
 
 **Overhead is additive.** `speeds.download_overhead_bps` / `upload_overhead_bps` are protocol and control traffic, counted **separately** from `download_bps` / `upload_bps` rather than being part of them — the desktop shows them as a second figure in parentheses. Both are `0` when the daemon reports nothing.
 
@@ -1224,7 +1224,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
       "port": 4662,
       "software": "emule",
       "software_version": "0.50a",
-      "os_info": "Linux",
+      "reported_os": "Linux",
       "upload_state": "uploading",
       "download_state": "idle",
       "ident_state": "identified",
@@ -1232,18 +1232,21 @@ curl -s -H "Authorization: Bearer $TOKEN" \
       "upload_file_name": "example-distribution.iso",
       "upload_file_hash": "8b54a3c20fae9e4b9f7e0c2c8c01b6b1",
       "download_file_hash": "",
-      "xfer": { "up_session": 22000000, "down_session": 0, "up_total": 452000000, "down_total": 189000000 },
+      "uploaded_bytes_session": 22000000,
+      "downloaded_bytes_session": 0,
+      "uploaded_bytes_total": 452000000,
+      "downloaded_bytes_total": 189000000,
       "upload_speed_bps": 22000,
       "download_speed_bps": 0,
-      "queue_waiting_position": 0,
-      "remote_queue_rank": 0,
+      "upload_queue_position": 0,
+      "remote_queue_position": 0,
       "score": 150,
-      "obfuscation_status": "enabled",
+      "obfuscation_state": "enabled",
       "friend_slot": false,
       "source_origin": "kad",
-      "available_parts": 42,
-      "mod_version": "",
-      "view_shared_disabled": false,
+      "parts_offered_count": 42,
+      "client_mod_name": "",
+      "shared_files_browsable": false,
       "part_progress_percent": 87.5
     }
   ]
@@ -1256,7 +1259,7 @@ The last five were originally detail-only and were promoted onto this row (and o
 
 `upload_file_hash` / `download_file_hash` are the 32-char MD4 hex hashes of the partfile or shared file the peer is currently transferring with — directly resolvable against [`/api/v0/downloads/{hash}`](#get-apiv0downloadshash) (in-progress) or the corresponding entry in [`/api/v0/shared`](#get-apiv0shared) by `.hash`. Either field can be empty when the peer is queued / idle in that direction. `download_file_name` is the filename the peer advertised in `OP_REQFILENAMEANSWER` and is populated only while we're actively downloading from them. `upload_file_name` is the partfile the peer is downloading **from us**, resolved locally against our own partfile list — present only while we're uploading to them.
 
-`software` and `software_version` are locale-independent, per the API's English-only contract. `software` is one of the tokens in the enumerated-fields table below; `software_version` is a free-form string. A peer the daemon could not identify reports `"software": "unknown"` and `"software_version": "unknown"` — a lowercase sentinel, never a daemon-localized string (the daemon's own version formatting is gettext-translated and is deliberately not surfaced here). `os_info` is the peer's *own* self-reported OS string (raw external data, not normalized by amuled) and is frequently empty, since most clients don't send it.
+`software` and `software_version` are locale-independent, per the API's English-only contract. `software` is one of the tokens in the enumerated-fields table below; `software_version` is a free-form string. A peer the daemon could not identify reports `"software": "unknown"` and `"software_version": "unknown"` — a lowercase sentinel, never a daemon-localized string (the daemon's own version formatting is gettext-translated and is deliberately not surfaced here). `reported_os` is the peer's *own* self-reported OS string (raw external data, not normalized by amuled) and is frequently empty, since most clients don't send it.
 
 `ident_state` is the peer's secure-identification (SecIdent) state, one of `"not_available"` (the peer does not support SecIdent, or this build has no crypto), `"id_needed"` (its public key is known but the signature exchange has not completed), `"identified"` (verified), `"id_failed"` (signature verification failed), `"bad_guy"` (verified earlier, but currently connecting from a *different* IP than the one it was verified on) or `"unknown"` (state not yet reported for a newly seen peer). `"bad_guy"` is also briefly reported for a legitimate peer that reconnected after an IP change and has not re-identified yet, so treat it as a hint rather than a verdict.
 
@@ -1267,11 +1270,11 @@ The last five were originally detail-only and were promoted onto this row (and o
 | `upload_state` | `uploading`, `queued`, `waitcallback`, `connecting`, `pending`, `lowtolowip`, `banned`, `error`, `idle`, `unknown` |
 | `download_state` | `downloading`, `onqueue`, `connected`, `connecting`, `waitcallback`, `waitcallbackkad`, `reqhashset`, `noneededparts`, `toomanyconns`, `toomanyconnskad`, `lowtolowip`, `banned`, `error`, `idle`, `remotequeuefull`, `unknown` |
 | `ident_state` | `not_available`, `id_needed`, `identified`, `id_failed`, `bad_guy`, `unknown` |
-| `obfuscation_status` | `undefined`, `enabled`, `supported`, `not_supported`, `disabled`, `unknown` |
+| `obfuscation_state` | `undefined`, `enabled`, `supported`, `not_supported`, `disabled`, `unknown` |
 | `software` | `emule`, `cdonkey`, `lxmule`, `amule`, `shareaza`, `emule_plus`, `hydranode`, `mldonkey`, `lphant`, `edonkey_hybrid`, `edonkey`, `old_emule`, `compat`, `unknown` |
 | `source_origin` | `server`, `kad`, `source_exchange`, `passive`, `link`, `source_seeds`, `search_result`, `unknown` |
 
-Every one of them falls back to `"unknown"` for a code the daemon does not map, so a client can treat `"unknown"` as its default branch and never has to handle an absent or unexpected token. Note the two distinct sentinels on `obfuscation_status`: `"undefined"` is *the peer has not told us yet*, `"unknown"` is *the daemon received a code it does not recognise*. The authoritative mappings are the `Client*Name()` / `SourceOriginName()` functions in `src/webapi/Refresher.cpp`.
+Every one of them falls back to `"unknown"` for a code the daemon does not map, so a client can treat `"unknown"` as its default branch and never has to handle an absent or unexpected token. Note the two distinct sentinels on `obfuscation_state`: `"undefined"` is *the peer has not told us yet*, `"unknown"` is *the daemon received a code it does not recognise*. The authoritative mappings are the `Client*Name()` / `SourceOriginName()` functions in `src/webapi/Refresher.cpp`.
 
 `country_code` is the peer's ISO 3166-1 alpha-2 country code (lowercase, e.g. `"de"`), resolved server-side from the peer IP by the daemon's GeoIP database. It is an empty string when GeoIP is disabled or unsupported by the build, or when the IP does not resolve — render the flag and localized country name client-side from the code. The flag image is served by [`GET /flags/{code}.png`](#get-flagscodepng); the localized name has no endpoint because the browser already has it (`Intl.DisplayNames` with `{ type: "region" }`).
 
@@ -1302,22 +1305,25 @@ curl -s -H "Authorization: Bearer $TOKEN" \
   "port": 4662,
   "software": "emule",
   "software_version": "0.50a",
-  "os_info": "Linux",
+  "reported_os": "Linux",
   "upload_state": "uploading",
   "download_state": "idle",
   "ident_state": "identified",
   "download_file_name": "",
   "upload_file_hash": "8b54a3c20fae9e4b9f7e0c2c8c01b6b1",
   "download_file_hash": "",
-  "xfer": { "up_session": 22000000, "down_session": 0, "up_total": 452000000, "down_total": 189000000 },
+  "uploaded_bytes_session": 22000000,
+      "downloaded_bytes_session": 0,
+      "uploaded_bytes_total": 452000000,
+      "downloaded_bytes_total": 189000000,
   "upload_speed_bps": 22000,
   "download_speed_bps": 0,
-  "queue_waiting_position": 0,
-  "remote_queue_rank": 0,
+  "upload_queue_position": 0,
+  "remote_queue_position": 0,
   "score": 150,
-  "obfuscation_status": "enabled",
+  "obfuscation_state": "enabled",
   "friend_slot": false,
-  "user_id_hybrid": 3232238090,
+  "ed2k_user_id": 3232238090,
   "high_id": true,
   "server_ip": "203.0.113.9",
   "server_port": 4242,
@@ -1325,18 +1331,18 @@ curl -s -H "Authorization: Bearer $TOKEN" \
   "kad_port": 4672,
   "source_origin": "kad",
   "upload_file_name": "example-distribution.iso",
-  "available_parts": 42,
-  "mod_version": "",
-  "view_shared_disabled": false,
-  "is_friend": false,
-  "dl_up_modifier": 1.0,
+  "parts_offered_count": 42,
+  "client_mod_name": "",
+  "shared_files_browsable": false,
+  "friend": false,
+  "credit_ratio": 1.0,
   "part_progress_percent": 87.5
 }
 ```
 
-The detail fields mirror the desktop "Client Details" modal. Five of the fields below — `source_origin`, `available_parts`, `mod_version`, `view_shared_disabled` and `part_progress_percent` — are **not** detail-only: they are on the [`GET /clients`](#get-apiv0clients) row and the SSE payload too, and are described here because this is where the rest of their neighbours live. `user_id_hybrid` is the peer's hybrid eD2k id; `high_id` is `true` for a HighID peer (id ≥ `16777216`, i.e. `0x1000000`) and `false` for LowID — the same threshold and the same spelling as `ed2k.high_id` on [`GET /status`](#get-apiv0status), so the value means the same thing on both ends of the API. `server_ip` / `server_port` / `server_name` describe the eD2k server the peer connects through (`server_ip` is `""` when unknown). `kad_port` is non-zero when the peer is reachable on Kad. `source_origin` is how the peer was discovered (values in the enumerated-fields table under [`GET /clients`](#get-apiv0clients)). (`upload_file_name` is part of the base field set — see [`GET /clients`](#get-apiv0clients) above.) `available_parts` is the count of parts the peer holds of the linked file, or `null` when the peer has not reported a part map (see [Unknown values](#unknown-values)); `mod_version` is the peer's client-mod string (often `""`); `view_shared_disabled` is `true` when the peer forbids browsing its shared files. `is_friend` is `true` when the peer is in your friends list (`CUpDownClient::IsFriend()`) — **distinct** from `friend_slot`, which is a *reserved upload slot* granted to a peer and can be set for non-friends. `dl_up_modifier` is the upload score modifier the GUI labels "DL/UP modifier" (`GetScoreRatio()`). `part_progress_percent` is the peer's completeness of the file we are downloading **from** them (`available_parts` over that file's part count) and is `null` when there is no linked download or the part count is unknown (see [Unknown values](#unknown-values)).
+The detail fields mirror the desktop "Client Details" modal. Five of the fields below — `source_origin`, `parts_offered_count`, `client_mod_name`, `shared_files_browsable` and `part_progress_percent` — are **not** detail-only: they are on the [`GET /clients`](#get-apiv0clients) row and the SSE payload too, and are described here because this is where the rest of their neighbours live. `ed2k_user_id` is the peer's hybrid eD2k id; `high_id` is `true` for a HighID peer (id ≥ `16777216`, i.e. `0x1000000`) and `false` for LowID — the same threshold and the same spelling as `ed2k.high_id` on [`GET /status`](#get-apiv0status), so the value means the same thing on both ends of the API. `server_ip` / `server_port` / `server_name` describe the eD2k server the peer connects through (`server_ip` is `""` when unknown). `kad_port` is non-zero when the peer is reachable on Kad. `source_origin` is how the peer was discovered (values in the enumerated-fields table under [`GET /clients`](#get-apiv0clients)). (`upload_file_name` is part of the base field set — see [`GET /clients`](#get-apiv0clients) above.) `parts_offered_count` is the count of parts the peer holds of the linked file, or `null` when the peer has not reported a part map (see [Unknown values](#unknown-values)); `client_mod_name` is the peer's client-mod string (often `""`); `shared_files_browsable` is `true` when the peer forbids browsing its shared files. `friend` is `true` when the peer is in your friends list (`CUpDownClient::IsFriend()`) — **distinct** from `friend_slot`, which is a *reserved upload slot* granted to a peer and can be set for non-friends. `credit_ratio` is the upload score modifier the GUI labels "DL/UP modifier" (`GetScoreRatio()`). `part_progress_percent` is the peer's completeness of the file we are downloading **from** them (`parts_offered_count` over that file's part count) and is `null` when there is no linked download or the part count is unknown (see [Unknown values](#unknown-values)).
 
-> `is_friend` and `dl_up_modifier` ride two EC tags added for this endpoint. A webapi built against a newer core talking to an **older** amuled that doesn't send them degrades gracefully — `is_friend` reads `false` and `dl_up_modifier` reads `0`.
+> `friend` and `credit_ratio` ride two EC tags added for this endpoint. A webapi built against a newer core talking to an **older** amuled that doesn't send them degrades gracefully — `friend` reads `false` and `credit_ratio` reads `0`.
 
 **Errors:** `400 bad_request` (`{ecid}` is not a non-negative integer), `404 not_found` (no peer with that ecid in the current snapshot), `405 method_not_allowed` (non-GET), `503 ec_unavailable`.
 
@@ -1421,8 +1427,8 @@ curl -s -H "Authorization: Bearer $TOKEN" \
       "version": "v2.3.1",
       "source_origin": "kad",
       "obfuscation": "supported",
-      "total_uploaded": 0,
-      "total_downloaded": 0,
+      "uploaded_bytes_total": 0,
+      "downloaded_bytes_total": 0,
       "last_seen": 1786652714,
       "first_seen": 1786652714,
       "sessions": 1,
@@ -1442,7 +1448,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 | `software`, `version` | Same tokens `GET /clients` uses. Absent together. |
 | `source_origin` | How the peer was first found — `server`, `kad`, `source_exchange`, `passive`, … |
 | `obfuscation` | Protocol-obfuscation state as of the last session. |
-| `total_uploaded`, `total_downloaded` | Lifetime bytes, from the credit record. Always present. |
+| `uploaded_bytes_total`, `downloaded_bytes_total` | Lifetime bytes, from the credit record. Always present. |
 | `last_seen` | Unix seconds. Always present. For a peer that is connected this is *now* — it is being seen — so the connected records are the most recent in the store under `sort=last_seen&order=desc`. A peer that left during the current tick carries the same timestamp and ties with them; ties keep a stable order across requests. |
 | `first_seen`, `sessions` | Present together, and only for a record the daemon holds metadata for. |
 | `online` | Whether this peer is connected right now, correlated by `user_hash`. |
@@ -1452,7 +1458,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 The store is read from the daemon **once**, on the first request, and maintained from there: every refresher tick folds the connected peers back in, so later requests never touch EC at all. That is sound rather than a shortcut — a record whose peer is not connected cannot change, since credit totals only move during a transfer and `last_seen` is written at disconnect. What the maintenance covers:
 
 - a peer that connects is added, with `first_seen` and `sessions` set to what the daemon recorded when it said hello;
-- a connected peer's `online`, `total_uploaded` and `total_downloaded` track the live client state;
+- a connected peer's `online`, `uploaded_bytes_total` and `downloaded_bytes_total` track the live client state;
 - a bare record gains its name, address, software and origin once its peer identifies;
 - a connected peer's `last_seen` is now, and a peer that leaves has `online` cleared with `last_seen` stamped at the moment it went.
 
@@ -1999,7 +2005,7 @@ The friends list amuled persists to `emfriends.met`. The daemon ships the whole 
 
 `client_ecid` is the live peer this friend is currently linked to, joinable against [`GET /api/v0/clients`](#get-apiv0clients), and `0` when the friend is offline — `online` is the convenience form of that test. `user_hash` is `""` for a friend added by address only, and `ip` is `""` for a zero address.
 
-`friend_slot` reads `false` against a daemon predating the tag that carries it, the same way `is_friend` and `dl_up_modifier` degrade on `/clients`.
+`friend_slot` reads `false` against a daemon predating the tag that carries it, the same way `friend` and `credit_ratio` degrade on `/clients`.
 
 **Errors:** `503 ec_unavailable`.
 

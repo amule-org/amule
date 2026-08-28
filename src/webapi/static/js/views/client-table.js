@@ -21,11 +21,11 @@ export const isUp = (c) => (c.upload_speed_bps || 0) > 0 || ACTIVE(c.upload_stat
 // picker and picks which ones start hidden (see ClientTable's defaultHidden),
 // so a column is always one click away instead of missing from a tab.
 const softLabel = (c) => [c.software ? t("downloads_peer_soft_" + c.software) : "", c.software === "unknown" ? "" : c.software_version].filter(Boolean).join(" ") || "—";
-// `remote_queue_rank` is null when the peer's queue is full (the API turns
+// `remote_queue_position` is null when the peer's queue is full (the API turns
 // amuled's 0xffff sentinel into null), and 0 when it reported no position at
 // all. Both are "not a position", so they sort together as 0.
-const rankLabel = (c) => c.remote_queue_rank === null ? t("downloads_peer_queue_full") : c.remote_queue_rank || "—";
-const bytesOf = (c, k) => formatBytes((c.xfer || {})[k]);
+const rankLabel = (c) => c.remote_queue_position === null ? t("downloads_peer_queue_full") : c.remote_queue_position || "—";
+const bytesOf = (c, k) => formatBytes(c[k]);
 // The "file" column is shared by both directions: download_file_name is the
 // peer-advertised name of what we're pulling FROM them; upload_file_name is
 // the partfile they're pulling FROM us. An upload-only peer has no
@@ -62,7 +62,7 @@ export const COLS = [
     sortVal: (c) => softLabel(c).toLowerCase(), cell: (c) => softLabel(c) },
   // The peer's own self-reported OS string -- frequently empty.
   { key: "os", th: "downloads_peer_col_os", width: "110px", sortable: true,
-    sortVal: (c) => (c.os_info || "").toLowerCase(), cell: (c) => c.os_info || "—" },
+    sortVal: (c) => (c.reported_os || "").toLowerCase(), cell: (c) => c.reported_os || "—" },
   { key: "file", th: "downloads_peer_col_file", cls: "name", sortable: true,
     sortVal: (c) => fileNameOf(c).toLowerCase(),
     cell: (c) => html`<span title=${fileNameOf(c)}>${fileNameOf(c) || "—"}</span>` },
@@ -72,24 +72,24 @@ export const COLS = [
   { key: "dl_speed", th: "downloads_peer_col_dl_speed", num: true, width: "100px", sortable: true,
     sortVal: (c) => c.download_speed_bps || 0, cell: (c) => formatSpeed(c.download_speed_bps) },
   { key: "downloaded", th: "downloads_peer_col_downloaded", num: true, width: "100px", sortable: true,
-    sortVal: (c) => (c.xfer && c.xfer.down_total) || 0, cell: (c) => bytesOf(c, "down_total") },
+    sortVal: (c) => c.downloaded_bytes_total || 0, cell: (c) => bytesOf(c, "downloaded_bytes_total") },
   { key: "dl_session", th: "downloads_peer_col_downloaded_session", num: true, width: "100px", sortable: true,
-    sortVal: (c) => (c.xfer && c.xfer.down_session) || 0, cell: (c) => bytesOf(c, "down_session") },
+    sortVal: (c) => c.downloaded_bytes_session || 0, cell: (c) => bytesOf(c, "downloaded_bytes_session") },
   { key: "remote_rank", th: "downloads_peer_col_remote_rank", num: true, width: "90px", sortable: true,
-    sortVal: (c) => c.remote_queue_rank || 0, cell: (c) => rankLabel(c) },
+    sortVal: (c) => c.remote_queue_position || 0, cell: (c) => rankLabel(c) },
 
   { key: "ul_state", th: "downloads_peer_col_ul_state", width: "120px", sortable: true,
     sortVal: (c) => c.upload_state || "", cell: (c) => stateBadge(c.upload_state) },
   { key: "ul_speed", th: "downloads_peer_col_ul_speed", num: true, width: "100px", sortable: true,
     sortVal: (c) => c.upload_speed_bps || 0, cell: (c) => formatSpeed(c.upload_speed_bps) },
   { key: "uploaded", th: "downloads_peer_col_uploaded", num: true, width: "100px", sortable: true,
-    sortVal: (c) => (c.xfer && c.xfer.up_total) || 0, cell: (c) => bytesOf(c, "up_total") },
+    sortVal: (c) => c.uploaded_bytes_total || 0, cell: (c) => bytesOf(c, "uploaded_bytes_total") },
   { key: "ul_session", th: "downloads_peer_col_uploaded_session", num: true, width: "100px", sortable: true,
-    sortVal: (c) => (c.xfer && c.xfer.up_session) || 0, cell: (c) => bytesOf(c, "up_session") },
+    sortVal: (c) => c.uploaded_bytes_session || 0, cell: (c) => bytesOf(c, "uploaded_bytes_session") },
   { key: "queue_pos", th: "downloads_peer_col_queue_pos", num: true, width: "90px", sortable: true,
-    sortVal: (c) => c.queue_waiting_position || 0, cell: (c) => c.queue_waiting_position || "—" },
+    sortVal: (c) => c.upload_queue_position || 0, cell: (c) => c.upload_queue_position || "—" },
   { key: "score", th: "downloads_peer_col_score", num: true, width: "80px", sortable: true,
-    sortVal: (c) => c.score || 0, cell: (c) => c.score || "—" },
+    sortVal: (c) => c.upload_queue_score || 0, cell: (c) => c.upload_queue_score || "—" },
 
   // "View files": browse this peer's share, the desktop's context-menu action.
   // A browse is an ordinary search on the API, so it opens as a tab in the
@@ -136,7 +136,7 @@ export function peerFlags(c) {
   // states are just an absence of SecIdent and earn no icon.
   if (c.ident_state === "identified") flags.push(["verified", identTip()]);
   else if (c.ident_state === "bad_guy" || c.ident_state === "id_failed") flags.push(["warning", identTip()]);
-  if (c.obfuscation_status === "enabled")
+  if (c.obfuscation_state === "enabled")
     flags.push(["lock", t("downloads_peer_obfuscation") + ": " + t("downloads_peer_enabled")]);
   if (c.friend_slot)
     flags.push(["star", t("downloads_peer_friend")]);

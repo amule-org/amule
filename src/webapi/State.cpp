@@ -57,7 +57,7 @@ std::uint16_t SharedHashingProgress(const FileSnapshot &f)
 // the field.
 void ComputePartProgressPercent(const CState &state, ClientSnapshot &cli)
 {
-	if (!cli.has_available_parts || cli.download_file_hash.empty()) {
+	if (!cli.has_parts_offered_count || cli.download_file_hash.empty()) {
 		return;
 	}
 	// DownloadPartCount, not FindDownload: this runs once per source per
@@ -69,7 +69,7 @@ void ComputePartProgressPercent(const CState &state, ClientSnapshot &cli)
 	if (part_count == 0) {
 		return;
 	}
-	double pct = 100.0 * static_cast<double>(cli.available_parts) / static_cast<double>(part_count);
+	double pct = 100.0 * static_cast<double>(cli.parts_offered_count) / static_cast<double>(part_count);
 	if (pct > 100.0)
 		pct = 100.0;
 	cli.part_progress_percent = pct;
@@ -744,8 +744,8 @@ void CState::ReconcileKnownClientsLocked()
 		// connected as last seen months ago, and now is what the core writes
 		// to the record at its own disconnect handling anyway.
 		k.last_seen = now;
-		k.total_uploaded = c.xfer_up_total;
-		k.total_downloaded = c.xfer_down_total;
+		k.total_uploaded = c.uploaded_bytes_total;
+		k.total_downloaded = c.downloaded_bytes_total;
 		// Identity, when the peer in front of us knows more than the record.
 		// A record only gains a name once the core writes its metadata, so a
 		// peer we have never finished a session with is otherwise nameless.
@@ -760,7 +760,7 @@ void CState::ReconcileKnownClientsLocked()
 			k.software = c.software;
 			k.version = c.software_version;
 			k.source_origin = c.source_origin;
-			k.obfuscation = c.obfuscation_status;
+			k.obfuscation = c.obfuscation_state;
 		}
 	}
 

@@ -2207,7 +2207,7 @@ TEST(Refresher, ClientDetailFieldsDecode)
 	const auto it = cache.find(50);
 	ASSERT_TRUE(it != cache.end());
 	const ClientSnapshot &cs = it->second;
-	ASSERT_EQUALS(static_cast<std::uint32_t>(0x04030201), cs.user_id_hybrid);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(0x04030201), cs.ed2k_user_id);
 	ASSERT_TRUE(cs.high_id);
 	ASSERT_EQUALS(std::string("127.0.0.1"), cs.server_ip);
 	ASSERT_EQUALS(static_cast<std::uint16_t>(4242), cs.server_port);
@@ -2216,20 +2216,20 @@ TEST(Refresher, ClientDetailFieldsDecode)
 	ASSERT_EQUALS(static_cast<std::uint16_t>(4672), cs.kad_port);
 	ASSERT_EQUALS(std::string("kad"), cs.source_origin);
 	ASSERT_EQUALS(std::string("upload.iso"), cs.upload_file_name);
-	ASSERT_TRUE(cs.has_available_parts);
-	ASSERT_EQUALS(static_cast<std::uint32_t>(7), cs.available_parts);
-	ASSERT_EQUALS(std::string("mod-x"), cs.mod_version);
+	ASSERT_TRUE(cs.has_parts_offered_count);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(7), cs.parts_offered_count);
+	ASSERT_EQUALS(std::string("mod-x"), cs.client_mod_name);
 	ASSERT_TRUE(cs.view_shared_disabled);
 	ASSERT_TRUE(cs.is_friend);
-	ASSERT_TRUE(cs.dl_up_modifier > 2.4 && cs.dl_up_modifier < 2.6);
+	ASSERT_TRUE(cs.credit_ratio > 2.4 && cs.credit_ratio < 2.6);
 
 	const auto it2 = cache.find(51);
 	ASSERT_TRUE(it2 != cache.end());
 	ASSERT_TRUE(!it2->second.high_id);
-	ASSERT_TRUE(!it2->second.has_available_parts);
+	ASSERT_TRUE(!it2->second.has_parts_offered_count);
 	// #423 fields absent on the wire => defaults preserved.
 	ASSERT_TRUE(!it2->second.is_friend);
-	ASSERT_TRUE(it2->second.dl_up_modifier == 0.0);
+	ASSERT_TRUE(it2->second.credit_ratio == 0.0);
 }
 
 // --- #437: extended EC preference categories decode ------------------

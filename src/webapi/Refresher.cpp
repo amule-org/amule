@@ -869,11 +869,11 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs, bool is_n
 	if (cs.software_version.empty()) {
 		cs.software_version = "unknown";
 	}
-	// os_info is the peer's own self-reported OS string (raw external data,
+	// reported_os is the peer's own self-reported OS string (raw external data,
 	// not gettext-translated by our daemon), so it carries no locale-leak;
 	// it is frequently empty because most clients don't send it.
 	if (const CECTag *t = c->GetTagByName(EC_TAG_CLIENT_OS_INFO)) {
-		cs.os_info = std::string(t->GetStringData().utf8_str());
+		cs.reported_os = std::string(t->GetStringData().utf8_str());
 	}
 	{
 		std::uint8_t v = 0;
@@ -961,24 +961,24 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs, bool is_n
 		}
 	}
 	{
-		std::uint64_t v = cs.xfer_up_session;
+		std::uint64_t v = cs.uploaded_bytes_session;
 		if (c->AssignIfExist(EC_TAG_CLIENT_UPLOAD_SESSION, v))
-			cs.xfer_up_session = v;
+			cs.uploaded_bytes_session = v;
 	}
 	{
-		std::uint64_t v = cs.xfer_down_session;
+		std::uint64_t v = cs.downloaded_bytes_session;
 		if (c->AssignIfExist(EC_TAG_PARTFILE_SIZE_XFER, v))
-			cs.xfer_down_session = v;
+			cs.downloaded_bytes_session = v;
 	}
 	{
-		std::uint64_t v = cs.xfer_up_total;
+		std::uint64_t v = cs.uploaded_bytes_total;
 		if (c->AssignIfExist(EC_TAG_CLIENT_UPLOAD_TOTAL, v))
-			cs.xfer_up_total = v;
+			cs.uploaded_bytes_total = v;
 	}
 	{
-		std::uint64_t v = cs.xfer_down_total;
+		std::uint64_t v = cs.downloaded_bytes_total;
 		if (c->AssignIfExist(EC_TAG_CLIENT_DOWNLOAD_TOTAL, v))
-			cs.xfer_down_total = v;
+			cs.downloaded_bytes_total = v;
 	}
 	{
 		std::uint32_t v = cs.upload_speed_bps;
@@ -996,14 +996,14 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs, bool is_n
 		}
 	}
 	{
-		std::uint32_t v = cs.queue_waiting_position;
+		std::uint32_t v = cs.upload_queue_position;
 		if (c->AssignIfExist(EC_TAG_CLIENT_WAITING_POSITION, v))
-			cs.queue_waiting_position = v;
+			cs.upload_queue_position = v;
 	}
 	{
-		std::uint16_t v = cs.remote_queue_rank;
+		std::uint16_t v = cs.remote_queue_position;
 		if (c->AssignIfExist(EC_TAG_CLIENT_REMOTE_QUEUE_RANK, v))
-			cs.remote_queue_rank = v;
+			cs.remote_queue_position = v;
 	}
 	{
 		std::uint32_t v = cs.score;
@@ -1013,7 +1013,7 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs, bool is_n
 	{
 		std::uint8_t v = 0;
 		if (c->AssignIfExist(EC_TAG_CLIENT_OBFUSCATION_STATUS, v)) {
-			cs.obfuscation_status = ClientObfuscationName(v);
+			cs.obfuscation_state = ClientObfuscationName(v);
 		}
 	}
 	{
@@ -1028,7 +1028,7 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs, bool is_n
 	{
 		std::uint32_t v = 0;
 		if (c->AssignIfExist(EC_TAG_CLIENT_USER_ID, v)) {
-			cs.user_id_hybrid = v;
+			cs.ed2k_user_id = v;
 			// A LowID peer has a hybrid id below 0x1000000 (IsLowID(),
 			// NetworkFunctions.h); inline the ed2k-stable ceiling rather
 			// than drag the core header into the webapi decoder.
@@ -1095,12 +1095,12 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs, bool is_n
 	{
 		std::uint32_t v = 0;
 		if (c->AssignIfExist(EC_TAG_CLIENT_AVAILABLE_PARTS, v)) {
-			cs.available_parts = v;
-			cs.has_available_parts = true;
+			cs.parts_offered_count = v;
+			cs.has_parts_offered_count = true;
 		}
 	}
 	if (const CECTag *t = c->GetTagByName(EC_TAG_CLIENT_MOD_VERSION)) {
-		cs.mod_version = std::string(t->GetStringData().utf8_str());
+		cs.client_mod_name = std::string(t->GetStringData().utf8_str());
 	}
 	{
 		bool v = false;
@@ -1118,7 +1118,7 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs, bool is_n
 			cs.is_friend = v;
 	}
 	if (const CECTag *t = c->GetTagByName(EC_TAG_CLIENT_SCORE_RATIO)) {
-		cs.dl_up_modifier = t->GetDoubleData();
+		cs.credit_ratio = t->GetDoubleData();
 	}
 }
 
