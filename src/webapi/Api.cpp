@@ -40,8 +40,9 @@
 #include <mutex> // serialises the shared-directory read-modify-write
 #include "Jwt.h"
 #include "PathPatterns.h"
-#include "Refresher.h" // ParseStatsTreeFromPacket / ParseGraphsFromPacket / ApplySearchFull
-#include "StaticFs.h"  // IsDir, ResolveWithinRoot
+#include "Refresher.h"     // ParseStatsTreeFromPacket / ParseGraphsFromPacket / ApplySearchFull
+#include "StaticFs.h"      // IsDir, ResolveWithinRoot
+#include "SharedContent.h" // /shared/{hash}/content: path resolution, Range, disposition
 #include <cstring>
 #include <map>
 
@@ -1449,6 +1450,23 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 					"GET, HEAD", "only GET / HEAD on /shared/{hash}/clients");
 			}
 			return HandleFileClients(req, caps["hash"], /*require_downloading=*/false);
+		}
+	}
+
+	// the file's own bytes. Two-segment like its neighbours above and for the
+	// same reason matched before `/shared/{hash}`; "content" cannot be read
+	// as a hash, so the ordering is locality rather than necessity.
+	{
+		static const auto shared_content =
+			web_api_path::ParsePattern("/api/v0/shared/{hash}/content");
+		const auto path_segs = web_api_path::SplitPath(path);
+		std::map<std::string, std::string> caps;
+		if (web_api_path::Match(shared_content, path_segs, caps)) {
+			if (req.method != "GET" && req.method != "HEAD") {
+				return MethodNotAllowed(
+					"GET, HEAD", "only GET / HEAD on /shared/{hash}/content");
+			}
+			return HandleSharedContent(req, caps["hash"]);
 		}
 	}
 
@@ -9664,6 +9682,289 @@ CHttpServer::Response CApiDispatcher::HandleSharedVerify(
 	CHttpServer::Response r;
 	r.status = 202;
 	r.content_type.clear();
+	return r;
+}
+namespace
+{
+
+// The set of directories this endpoint is willing to serve bytes out of.
+//
+// Read off the preferences snapshot rather than fetched with an
+// EC_OP_GET_SHARED_DIRS roundtrip, for two reasons. The cheap one is cost:
+// the refresher already pulls EC_PREFS_DIRECTORIES on every 5 s tick
+// (RefresherTick.cpp:347-362), so this costs a mutex instead of a roundtrip
+// on a route a seeking media player hits once per range. The correctness one
+// is coverage: GET_SHARED_DIRS serialises only the two *intent* lists
+// (ExternalConn.cpp:1648-1655), which on a default install are both empty --
+// Incoming is shared implicitly and appears in neither. Containment against
+// that list alone would 404 every file in the one directory aMule always
+// shares. `directories.shared` is the runtime union the core keeps
+// (explicit + expanded recursive, ECSpecialMuleTags.cpp:399-403), and
+// `incoming` is the implicit root it omits; together they are the real
+// answer.
+//
+// Staleness is bounded by the same tick that produced the file list this
+// request resolved against, so a directory the user has just un-shared
+// disappears from /shared and from here on the same frame rather than one
+// outliving the other.
+std::vector<std::string> ShareRootsFromPrefs(const webapi::PreferencesSnapshot &p)
+{
+	std::vector<std::string> roots;
+	roots.reserve(p.directories.shared.size() + 1);
+	for (const std::string &d : p.directories.shared) {
+		if (!d.empty())
+			roots.push_back(d);
+	}
+	if (!p.directories.incoming.empty()) {
+		roots.push_back(p.directories.incoming);
+	}
+	return roots;
+}
+
+} // namespace
+
+// The bytes of one completed shared file, streamed off disk.
+//
+// GET / HEAD only, and the only route in this file whose response body is not
+// materialised in memory: it hands the transport a path plus a byte window
+// (CHttpServer::Response::file) and the 64 KiB streaming body does the rest.
+// That is the entire reason this handler exists rather than a `body =
+// ReadStaticFile(...)` one-liner -- the share routinely holds files larger
+// than the daemon's address space is willing to hold sixteen times over.
+CHttpServer::Response CApiDispatcher::HandleSharedContent(
+	const CHttpServer::Request &req, const std::string &key)
+{
+	// There is no auth middleware in this codebase: every route gates itself.
+	// A content route that forgot this line would publish the whole share to
+	// the internet and nothing would flag it, which is why it is first.
+	// Authenticate but NOT RequireAdmin -- reading a file the user already
+	// chose to share is a read, and the guest role can already list it.
+	auto a = Authenticate(req);
+	if (!a.ok)
+		return a.rejection;
+
+	if (auto r = RequireSnapshot(m_state))
+		return *r;
+
+	webapi::FileSnapshot s;
+	if (!FindSharedByKey(m_state, key, s)) {
+		return ErrorResponse(404, "not_found", "no shared file with that hash");
+	}
+
+	// Completed files only, and IsIncompletePartfile() is exactly that test --
+	// same guard, same code as /shared/{hash}/verify. A partfile's bytes on
+	// disk are a gapped .part file whose offsets do not correspond to the
+	// file's own, so a byte range served out of it would be silently wrong
+	// rather than merely unavailable.
+	if (s.IsIncompletePartfile()) {
+		return ErrorResponse(
+			409, "partfile_unsupported", "content download is not supported on a partfile");
+	}
+
+	// The directory rides EC_TAG_KNOWNFILE_PATH, which amuled emits only
+	// outside EC_DETAIL_UPDATE (ECSpecialCoreTags.cpp:375-392) and, being on
+	// the valuemap path, only on the frames where it changed. A snapshot
+	// taken before the first such frame therefore has the file but not its
+	// location. That resolves itself on the next full frame, which is what
+	// makes this a 503-with-Retry-After rather than a 404: the resource
+	// exists, we just cannot address it yet.
+	if (s.on_disk_dir.empty()) {
+		CHttpServer::Response r =
+			ErrorResponse(503, "path_unavailable", "the file's on-disk path is not known yet");
+		r.headers["Retry-After"] = "5";
+		return r;
+	}
+
+	// Resolution and the containment check are the HANDLER's job -- the
+	// transport opens whatever path it is given (HttpServer.h:120-127). Every
+	// rejection below collapses into one 404 with the same message the
+	// unknown-hash branch used, so the reply cannot be used to probe whether
+	// a path exists, what the share layout is, or where the boundary sits
+	// (the discipline StaticFs.h:28-33 states).
+	const std::vector<std::string> roots = ShareRootsFromPrefs(m_state.Preferences());
+
+	std::string fs_path;
+	if (!webapi::ResolveSharedContentPath(roots, s.on_disk_dir, s.name, fs_path)) {
+		// One case inside that failure is emphatically NOT the client's
+		// fault and must not be reported as a missing hash: amuleapi is not
+		// guaranteed to share a filesystem with amuled. The EC endpoint is
+		// configurable (AmuleApiConfig.h:78-79), and the desktop remote GUI
+		// carries a whole path-mapping layer (Preferences.h:497-518) for
+		// precisely this split -- amuleapi has no equivalent, so a remote
+		// deployment resolves the daemon's paths against the wrong
+		// filesystem and finds nothing. Distinguishing it costs one stat of
+		// the joined path, and leaks nothing the caller can steer: the path
+		// comes from the daemon's own metadata, never from the request.
+		std::string joined;
+		struct stat probe
+		{
+		};
+		if (webapi::JoinSharedPath(s.on_disk_dir, s.name, joined) &&
+			::stat(joined.c_str(), &probe) != 0) {
+			return ErrorResponse(503,
+				"ec_content_unreachable",
+				"the file is not present on the filesystem running amuleapi");
+		}
+		return ErrorResponse(404, "not_found", "no shared file with that hash");
+	}
+
+	// Re-stat the RESOLVED path for the numbers the response is built from.
+	// ResolveSharedContentPath already proved it is a regular file, but it
+	// does not hand back the stat, and the window, the Content-Length and the
+	// validator all have to come from one observation of one path.
+	struct stat st
+	{
+	};
+	if (::stat(fs_path.c_str(), &st) != 0 || !S_ISREG(st.st_mode)) {
+		return ErrorResponse(503,
+			"ec_content_unreachable",
+			"the file is not present on the filesystem running amuleapi");
+	}
+
+	// The other half of the same remote-EC hazard, and the more dangerous
+	// half: the path resolved and something regular is sitting there, but it
+	// is not the file the hash names. On a split deployment the daemon's
+	// /srv/share/foo.iso and this host's /srv/share/foo.iso are unrelated
+	// files that merely agree on a name, and serving the local one under the
+	// remote one's hash would hand the caller bytes it did not ask for while
+	// telling it they matched. Size is the cheap invariant that catches it --
+	// a knownfile's size is fixed at hash time and never changes afterwards,
+	// so a disagreement is never benign. Same 503: the deployment is
+	// misconfigured, the request was fine.
+	if (static_cast<std::uint64_t>(st.st_size) != s.size) {
+		return ErrorResponse(
+			503, "ec_content_mismatch", "the file on disk does not match the shared file's size");
+	}
+
+	const std::uint64_t file_size = static_cast<std::uint64_t>(st.st_size);
+
+	CHttpServer::Response r;
+	// Hard-coded, never derived from the extension -- StaticContentType is
+	// deliberately NOT reused here. Completed downloads land in Incoming,
+	// which is itself shared, so both the bytes and the filename came from
+	// strangers on the ed2k network; amuleapi serves the Web UI from this
+	// same origin. A shared evil.html or a scripted .svg returned as its
+	// "real" type would therefore execute against the user's own session.
+	// octet-stream + attachment + nosniff + a sandbox CSP is four
+	// independent reasons the browser will not run it.
+	r.content_type = "application/octet-stream";
+	r.headers["Content-Disposition"] = webapi::BuildContentDisposition(s.name);
+	r.headers["X-Content-Type-Options"] = "nosniff";
+	// Scoped to this response only. A global CSP would change every route in
+	// the server including the Web UI itself, which is a separate decision
+	// and a separate change; this one just makes the sandbox explicit for the
+	// one response that carries attacker-authored bytes.
+	r.headers["Content-Security-Policy"] = "default-src 'none'; sandbox";
+	// Set by the handler so Dispatch stands aside (Api.cpp:825-828) instead
+	// of MD5-ing the body to derive a validator -- there is no body here to
+	// hash, and hashing a multi-GB file per request is not a slow path but an
+	// unusable one.
+	const std::string content_etag = webapi::BuildContentEtag(
+		static_cast<std::uint64_t>(st.st_mtime), static_cast<std::uint64_t>(st.st_size));
+	r.headers["ETag"] = content_etag;
+
+	// Conditional GET, answered HERE and not by Dispatch. Taking the
+	// handler-set-ETag escape above also takes on this obligation: the whole
+	// If-None-Match block in Dispatch sits inside ShouldStampEtag, which
+	// returns false the moment a handler owns the validator, so a route that
+	// sets its own ETag and does not do this hands out a validator no client
+	// can ever revalidate against. The static path states the same rule at
+	// Api.cpp:1841-1845 and answers it the same way.
+	//
+	// Through the shared matcher rather than a string compare, because the
+	// header may be `*`, a comma-separated list, or a weak `W/"..."` form --
+	// which is exactly what an nginx in front of us emits. IfNoneMatchHits
+	// wants the BARE validator, so the quotes BuildContentEtag adds for the
+	// wire come off for the comparison.
+	//
+	// No coding suffix, unlike the static path: the transport never deflates
+	// a file response (HttpServer.h:141-144), so this route has exactly one
+	// representation and there is nothing for a suffix to disambiguate.
+	// Calling WillCompressBody here would be dead logic asserting a
+	// negotiation that cannot happen.
+	//
+	// Evaluated BEFORE the Range header, per RFC 9110 13.2.2: a matching
+	// precondition wins outright, so a conditional request carrying a Range
+	// answers 304 and never 206.
+	//
+	// If-Range is NOT supported and is deliberately ignored: a client that
+	// sends one with a stale validator gets the Range honoured as if the
+	// header were absent, which is a 200 or a 206 of live bytes rather than
+	// a silently stitched mix of two versions. That is safe -- the file is
+	// immutable while shared, and a changed file changes both mtime and this
+	// validator -- but it is not the RFC's optimisation, and implementing it
+	// belongs in its own change.
+	const std::string inm_val = FindHeaderCaseInsensitive(req.headers, "If-None-Match");
+	const std::string content_etag_bare =
+		(content_etag.size() >= 2 && content_etag.front() == '"' && content_etag.back() == '"')
+			? content_etag.substr(1, content_etag.size() - 2)
+			: content_etag;
+	if (webcommon::IfNoneMatchHits(inm_val, content_etag_bare)) {
+		CHttpServer::Response nm;
+		nm.status = 304;
+		// A 304 carries no content, so no content_type (the default is
+		// application/json, which would be a lie here), no body, no
+		// Response::file, and none of the range headers -- only the
+		// validator RFC 7232 4.1 requires so the client can re-stamp its
+		// cached copy.
+		nm.content_type.clear();
+		nm.headers["ETag"] = content_etag;
+		return nm;
+	}
+
+	std::uint64_t first = 0;
+	std::uint64_t last = 0;
+	const std::string range_hdr = FindHeaderCaseInsensitive(req.headers, "Range");
+	const webapi::RangeResult rr = webapi::ParseSingleByteRange(range_hdr, file_size, first, last);
+
+	if (rr == webapi::RangeResult::kUnsatisfiable) {
+		// 416 carries the error envelope rather than a file window, so it
+		// goes down the ordinary buffered path. Content-Range in the
+		// unsatisfied form is what RFC 9110 §14.4 requires so the client can
+		// learn the current length and re-ask.
+		CHttpServer::Response err = ErrorResponse(
+			416, "range_not_satisfiable", "the requested range lies outside the file");
+		err.headers["Content-Range"] = "bytes */" + std::to_string(file_size);
+		err.headers["Accept-Ranges"] = "bytes";
+		return err;
+	}
+
+	// A zero-length file has no valid byte window at all, so there is nothing
+	// for Response::file to describe -- the transport rejects [0, 0] on an
+	// empty file rather than clamping it (HttpServer.h:128-135). An empty
+	// buffered body is the honest 200 for it.
+	if (file_size == 0) {
+		r.status = 200;
+		r.headers["Accept-Ranges"] = "bytes";
+		return r;
+	}
+
+	if (rr == webapi::RangeResult::kOk) {
+		r.status = 206;
+		r.headers["Content-Range"] = "bytes " + std::to_string(first) + "-" + std::to_string(last) +
+					     "/" + std::to_string(file_size);
+	} else {
+		// kAbsent (no header) and kIgnore (unsupported, malformed, or a
+		// multi-range set) both answer 200 with the whole file. kIgnore is
+		// RFC 7233 §3.1's explicit permission being used as the
+		// CVE-2011-3192 mitigation -- see SharedContent.h:84-94. A 200 is
+		// also the answer least likely to make a client retry the same
+		// header, which an error would invite.
+		r.status = 200;
+		first = 0;
+		last = file_size - 1;
+	}
+	r.headers["Accept-Ranges"] = "bytes";
+
+	CHttpServer::Response::FileSource fs;
+	fs.fs_path = fs_path;
+	fs.first = first;
+	fs.last = last;
+	r.file = fs;
+	// HEAD needs the window too: the transport runs the serializer in split
+	// mode, so it never reads a byte, but Content-Length still comes from
+	// RangeFileBody::size and so reports exactly what the equivalent GET
+	// would send (HttpServer.cpp:1214-1219, 1288-1292).
 	return r;
 }
 
