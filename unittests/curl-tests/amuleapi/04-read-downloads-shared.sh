@@ -123,8 +123,8 @@ if [ "$COUNT" -gt 0 ]; then
 		'/downloads[0] does not expose internal ecid'
 	_assert_json_eq '.downloads[0].name | type' string \
 		'/downloads[0].name is string'
-	_assert_json_eq '.downloads[0].size | type' number \
-		'/downloads[0].size is numeric'
+	_assert_json_eq '.downloads[0].size_bytes | type' number \
+		'/downloads[0].size_bytes is numeric'
 	_assert_json_eq '.downloads[0].status | test("^(downloading|paused|stopped|completed|hashing|erroneous|completing|allocating|waiting|insufficient_disk|unknown)$")' \
 		true '/downloads[0].status is a known enum value'
 	_assert_json_eq '.downloads[0].priority | test("^(very_low|low|normal|high|release|auto)$")' \
@@ -135,12 +135,12 @@ if [ "$COUNT" -gt 0 ]; then
 		'/downloads[0].sources is object'
 	_assert_json_eq '.downloads[0].sources.total | type' number \
 		'/downloads[0].sources.total is numeric'
-	_assert_json_eq '.downloads[0].kad_comment_search_running | type' boolean \
-		'/downloads[0].kad_comment_search_running is boolean (issue #434)'
+	_assert_json_eq '.downloads[0].kad_comment_lookup_running | type' boolean \
+		'/downloads[0].kad_comment_lookup_running is boolean (issue #434)'
 	# Moved onto the list by issue #1054 — it used to be detail-only, which
 	# left a list-driven client with no way to see a hash running.
-	_assert_json_eq '.downloads[0].hashing_progress | type' number \
-		'/downloads[0].hashing_progress is numeric (#1054)'
+	_assert_json_eq '.downloads[0].hashed_part_count | type' number \
+		'/downloads[0].hashed_part_count is numeric (#1054)'
 
 	# --- 4. /downloads/{hash} bare-object detail. -----------------
 	HASH=$(printf '%s' "$CURL_BODY" | jq -r '.downloads[0].hash')
@@ -154,42 +154,45 @@ if [ "$COUNT" -gt 0 ]; then
 	_assert_json_eq '.progress.percent | type' number \
 		'/downloads/{hash} carries progress.percent'
 	# Part-A detail fields (issue #417) — detail-only, type-tolerant.
-	_assert_json_eq '.part_count | type' number \
-		'/downloads/{hash} carries part_count'
+	_assert_json_eq '.parts_total_count | type' number \
+		'/downloads/{hash} carries parts_total_count'
 	# null when stalled/paused: nothing to compute an ETA from. It was -1,
 	# which a client had to know meant "unknown".
-	_assert_json_eq '(.remaining_time == null or (.remaining_time | type) == "number")' true \
-		'/downloads/{hash} remaining_time is a number or null'
+	_assert_json_eq '(.remaining_seconds == null or (.remaining_seconds | type) == "number")' true \
+		'/downloads/{hash} remaining_seconds is a number or null'
 	# Same rule: null, not a 0 that reads as 1970, when no complete copy of
 	# the file has ever been seen across the current sources.
-	_assert_json_eq '(.last_seen_complete == null or (.last_seen_complete | type) == "number")' true \
-		'/downloads/{hash} last_seen_complete is a number or null'
-	_assert_json_eq '.last_seen_complete != 0' true \
-		'/downloads/{hash} last_seen_complete never uses 0 as "never"'
-	_assert_json_eq '.aich_hash | type' string \
-		'/downloads/{hash} carries aich_hash'
-	_assert_json_eq '.met_file | type' string \
-		'/downloads/{hash} carries met_file'
-	_assert_json_eq '.path | type' string \
-		'/downloads/{hash} carries path (#417)'
-	_assert_json_eq '.queued_count | type' number \
-		'/downloads/{hash} carries queued_count'
-	_assert_json_eq '.comment | type' string \
-		'/downloads/{hash} carries comment'
-	_assert_json_eq '.rating | type' number \
-		'/downloads/{hash} carries rating'
+	_assert_json_eq '(.last_seen_complete_at == null or (.last_seen_complete_at | type) == "number")' true \
+		'/downloads/{hash} last_seen_complete_at is a number or null'
+	_assert_json_eq '.last_seen_complete_at != 0' true \
+		'/downloads/{hash} last_seen_complete_at never uses 0 as "never"'
+	# R10: null until the hashset exists, never the "" sentinel it used to be.
+	_assert_json_eq '(.aich_hash == null or (.aich_hash | type) == "string")' true \
+		'/downloads/{hash} aich_hash is a string or null, never ""'
+	_assert_json_eq '.aich_hash != ""' true \
+		'/downloads/{hash} aich_hash never uses the empty-string sentinel'
+	_assert_json_eq '.part_file_name | type' string \
+		'/downloads/{hash} carries part_file_name'
+	_assert_json_eq '.directory | type' string \
+		'/downloads/{hash} carries directory (#417)'
+	_assert_json_eq '.upload_queue_count | type' number \
+		'/downloads/{hash} carries upload_queue_count'
+	_assert_json_eq '.my_comment | type' string \
+		'/downloads/{hash} carries my_comment (yours, not comments[].comment)'
+	_assert_json_eq '.my_rating | type' number \
+		'/downloads/{hash} carries my_rating (yours, not comments[].rating)'
 	_assert_json_eq '.a4af_auto | type' boolean \
 		'/downloads/{hash} carries a4af_auto'
 
 	# Per-source comments sub-resource (issue #419).
 	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH/comments"
 	_assert_status 200 "GET /downloads/{hash}/comments → 200"
-	_assert_json_eq '.count | type' number \
-		'/downloads/{hash}/comments carries numeric count'
+	_assert_json_eq '.total | type' number \
+		'/downloads/{hash}/comments carries numeric total'
 	_assert_json_eq '.comments | type' array \
 		'/downloads/{hash}/comments.comments is an array'
-	_assert_json_eq '.kad_comment_search_running | type' boolean \
-		'/downloads/{hash}/comments carries kad_comment_search_running flag'
+	_assert_json_eq '.kad_comment_lookup_running | type' boolean \
+		'/downloads/{hash}/comments carries kad_comment_lookup_running flag'
 
 	# Trigger an on-demand Kad notes lookup (issue #434). Async on the daemon;
 	# 202 Accepted (or 400 amuled_rejected if Kad is not connected in the smoke
@@ -292,17 +295,29 @@ if [ "$COUNT" -gt 0 ]; then
 		_skip "row-shape checks: no peer is connected to the download"
 	fi
 
-	# Opt-in bitmaps are exactly part_count long for a row that has one.
+	# Opt-in bitmaps are exactly parts_total_count long for a row that has one.
 	PARTCOUNT=$(curl -s -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH" | jq -r '.progress.parts | length')
 	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH/clients?include_parts=true"
 	_assert_status 200 "GET /downloads/{hash}/clients?include_parts=true → 200"
 	DLBITMAPS=$(printf '%s' "$CURL_BODY" | jq '[.clients[] | select(has("parts"))] | length')
 	if [ "$DLBITMAPS" -gt 0 ]; then
 		_assert_json_eq "[.clients[] | select(has(\"parts\")) | select((.parts | length) != $PARTCOUNT)] | length" \
-			0 "every parts bitmap ($DLBITMAPS of them) is exactly part_count entries"
+			0 "every parts bitmap ($DLBITMAPS of them) is exactly parts_total_count entries"
 	else
 		_skip "parts-length check: no row carries a bitmap"
 	fi
+
+	# R7: a sort value is spelled exactly like the response key it orders by,
+	# so a field rename can never orphan one. These three moved with the keys;
+	# the old spellings must now be rejected rather than silently accepted.
+	for _sk in size_bytes progress.percent speed_bytes_per_second hash name status; do
+		_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads?sort=$_sk&limit=1"
+		_assert_status 200 "/downloads?sort=$_sk (R7: sort value == response key) → 200"
+	done
+	for _sk in size progress speed; do
+		_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads?sort=$_sk&limit=1"
+		_assert_status 400 "/downloads?sort=$_sk (pre-rename spelling) → 400"
+	done
 
 	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH/clients?include_parts=maybe"
 	_assert_status 400 "include_parts must be true/false"

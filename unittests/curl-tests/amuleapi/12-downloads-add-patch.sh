@@ -119,7 +119,7 @@ _curl -X POST -H "Content-Type: application/json" \
 _assert_status 401 "POST /downloads (no token) → 401"
 
 _curl -X PATCH -H "Content-Type: application/json" \
-	-d '{"status":"paused"}' "$HOST/api/v0/downloads/$TEST_HASH"
+	-d '{"action":"pause"}' "$HOST/api/v0/downloads/$TEST_HASH"
 _assert_status 401 "PATCH /downloads/{hash} (no token) → 401"
 
 # --- 2. Admin gate (guest → 403). ----------------------------------
@@ -133,7 +133,7 @@ if [ "$HAVE_GUEST" = "1" ]; then
 
 	_curl -X PATCH -H "Authorization: Bearer $GUEST_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d '{"status":"paused"}' "$HOST/api/v0/downloads/$TEST_HASH"
+		-d '{"action":"pause"}' "$HOST/api/v0/downloads/$TEST_HASH"
 	_assert_status 403 "PATCH /downloads/{hash} (guest token) → 403"
 
 	# The comments POST drives an unbounded Kad NOTES lookup on the daemon
@@ -223,7 +223,7 @@ echo "    info: saved state status=$SAVED_STATUS priority=$SAVED_PRIORITY catego
 # contract.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"status":"paused"}' "$HOST/api/v0/downloads/$TEST_HASH"
+	-d '{"action":"pause"}' "$HOST/api/v0/downloads/$TEST_HASH"
 _assert_status 200 "PATCH /downloads/{hash} status=paused → 200"
 _assert_json_eq '.status' paused \
 	'PATCH response body shows status=paused'
@@ -237,7 +237,7 @@ _assert_json_eq '.status' paused \
 # 5b. PATCH status=resumed. Same invariant in the opposite direction.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"status":"resumed"}' "$HOST/api/v0/downloads/$TEST_HASH"
+	-d '{"action":"resume"}' "$HOST/api/v0/downloads/$TEST_HASH"
 _assert_status 200 "PATCH /downloads/{hash} status=resumed → 200"
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/downloads/$TEST_HASH"
@@ -256,7 +256,7 @@ fi
 # sources). Response body + immediate GET must both show it.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"status":"stopped"}' "$HOST/api/v0/downloads/$TEST_HASH"
+	-d '{"action":"stop"}' "$HOST/api/v0/downloads/$TEST_HASH"
 _assert_status 200 "PATCH /downloads/{hash} status=stopped → 200"
 _assert_json_eq '.status' stopped 'PATCH response body shows status=stopped'
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -268,7 +268,7 @@ _assert_json_eq '.status' stopped \
 # paused and stopped flags), so the next GET must be neither.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"status":"resumed"}' "$HOST/api/v0/downloads/$TEST_HASH"
+	-d '{"action":"resume"}' "$HOST/api/v0/downloads/$TEST_HASH"
 _assert_status 200 "PATCH status=resumed (clear stop) → 200"
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/downloads/$TEST_HASH"
@@ -296,12 +296,12 @@ _assert_json_eq '.priority' high \
 # 5d. Combined PATCH — status + priority + category in one body.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"status":"paused","priority":"low","category":0}' \
+	-d '{"action":"pause","priority":"low","category_index":0}' \
 	"$HOST/api/v0/downloads/$TEST_HASH"
-_assert_status 200 "PATCH combined (status+priority+category) → 200"
+_assert_status 200 "PATCH combined (action+priority+category_index) → 200"
 _assert_json_eq '.status'   paused 'combined PATCH response status=paused'
 _assert_json_eq '.priority' low    'combined PATCH response priority=low'
-_assert_json_eq '.category' 0      'combined PATCH response category=0'
+_assert_json_eq '.category_index' 0      'combined PATCH response category_index=0'
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/downloads/$TEST_HASH"
 _assert_json_eq '.status'   paused 'IMMEDIATE GET after combined PATCH status=paused'
@@ -338,7 +338,7 @@ _assert_status 400 "PATCH unknown status enum → 400"
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"status":"paused"}' "$HOST/api/v0/downloads/baadbaadbaadbaadbaadbaadbaadbaad"
+	-d '{"action":"pause"}' "$HOST/api/v0/downloads/baadbaadbaadbaadbaadbaadbaadbaad"
 _assert_status 404 "PATCH unknown hash → 404"
 
 # --- 7. Restore the pre-mutation state so the Ubuntu ISO ends up

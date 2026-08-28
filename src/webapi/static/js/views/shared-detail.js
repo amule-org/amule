@@ -161,8 +161,8 @@ export function SharedDetail({ hash }) {
           media.title ? statRow("downloads_detail_media_title", media.title, "downloads_detail_tip_media_title") : null,
           media.artist ? statRow("downloads_detail_media_artist", media.artist, "downloads_detail_tip_media_artist") : null,
           media.album ? statRow("downloads_detail_media_album", media.album, "downloads_detail_tip_media_album") : null,
-          media.length_s ? statRow("downloads_detail_media_length", formatDuration(media.length_s), "downloads_detail_tip_media_length") : null,
-          media.bitrate ? statRow("downloads_detail_media_bitrate", formatInt(media.bitrate), "downloads_detail_tip_media_bitrate") : null,
+          media.duration_seconds ? statRow("downloads_detail_media_length", formatDuration(media.duration_seconds), "downloads_detail_tip_media_length") : null,
+          media.bitrate_kilobits_per_second ? statRow("downloads_detail_media_bitrate", formatInt(media.bitrate_kilobits_per_second), "downloads_detail_tip_media_bitrate") : null,
           media.codec ? statRow("downloads_detail_media_codec", media.codec, "downloads_detail_tip_media_codec") : null,
         ].filter(Boolean), "downloads_detail_group_media") : null}
         ${IdentityLine({ file: s, copy, titleKey: "downloads_detail_group_identity", extra: [

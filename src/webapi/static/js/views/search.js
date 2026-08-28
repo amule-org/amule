@@ -143,8 +143,8 @@ function ResultsPane({ tab, categories }) {
   const browse = tab.kind === "browse";
   const { sortKey, sortDir, hidden, widths, toggleSort, toggleCol, setWidth, resetPrefs } =
     useTablePrefs(browse ? "search-browse" : "search", browse
-      ? { sortKey: "directory", sortDir: 1, hidden: ["sources", "rating", "status", "length", "bitrate", "codec"] }
-      : { sortKey: "sources", sortDir: -1, hidden: ["directory", "length", "bitrate", "codec"] });
+      ? { sortKey: "directory", sortDir: 1, hidden: ["sources", "rating", "status", "length", "bitrate_kilobits_per_second", "codec"] }
+      : { sortKey: "sources", sortDir: -1, hidden: ["directory", "length", "bitrate_kilobits_per_second", "codec"] });
 
   // Selection, filters and per-row choices belong to the TAB, not to this
   // component: switching tabs and coming back must restore them.
@@ -278,11 +278,11 @@ function ResultsPane({ tab, categories }) {
       sortVal: (r) => ((r.directory || "") + "/" + (r.name || "")).toLowerCase(),
       cell: (r) => html`<span title=${r.directory}>${r.directory || "—"}</span>` },
     { key: "length", label: t("downloads_detail_media_length"), num: true, width: "100px", sortable: true,
-      sortVal: (r) => (r.media && r.media.length_s) || 0,
-      cell: (r) => (r.media && r.media.length_s) ? formatDuration(r.media.length_s) : "" },
-    { key: "bitrate", label: t("downloads_detail_media_bitrate"), num: true, width: "90px", sortable: true,
-      sortVal: (r) => (r.media && r.media.bitrate) || 0,
-      cell: (r) => (r.media && r.media.bitrate) ? formatInt(r.media.bitrate) : "" },
+      sortVal: (r) => (r.media && r.media.duration_seconds) || 0,
+      cell: (r) => (r.media && r.media.duration_seconds) ? formatDuration(r.media.duration_seconds) : "" },
+    { key: "bitrate_kilobits_per_second", label: t("downloads_detail_media_bitrate"), num: true, width: "90px", sortable: true,
+      sortVal: (r) => (r.media && r.media.bitrate_kilobits_per_second) || 0,
+      cell: (r) => (r.media && r.media.bitrate_kilobits_per_second) ? formatInt(r.media.bitrate_kilobits_per_second) : "" },
     { key: "codec", label: t("downloads_detail_media_codec"), width: "90px", sortable: true,
       sortVal: (r) => (r.media && r.media.codec) || "", cell: (r) => (r.media && r.media.codec) || "" },
     { key: "actions", label: t("search_actions"), cls: "row-actions", width: "220px",
@@ -375,14 +375,14 @@ function ResultComments({ result, onClose }) {
         setD(x);
         // Capped: the Kad lookup lives ~45 s, so a stuck flag must not poll
         // for ever.
-        if (x.kad_comment_search_running && tries++ < 30) timer = setTimeout(load, 2000);
+        if (x.kad_comment_lookup_running && tries++ < 30) timer = setTimeout(load, 2000);
       })
       .catch(() => { if (alive) setD({ count: 0, comments: [] }); });
     load();
     return () => { alive = false; clearTimeout(timer); };
   }, [result.hash, nonce]);
 
-  const running = !!(d && d.kad_comment_search_running);
+  const running = !!(d && d.kad_comment_lookup_running);
   const list = (d && d.comments) || [];
   const getKad = () => api.post("search/results/" + result.hash + "/comments")
     .then(() => { toast(t("comments_kad_started"), "info"); setNonce((n) => n + 1); })

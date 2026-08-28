@@ -2,7 +2,7 @@
 
 This document is the contract for every REST endpoint exposed by the `amuleapi` daemon under the `/api/v0/` prefix. For the SSE stream see [EVENTS.md](EVENTS.md). For first-run setup see [../QUICKSTART-AMULEAPI.md](../QUICKSTART-AMULEAPI.md).
 
-The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/v0/` is frozen against any backwards-incompatible change for the lifetime of the v0 surface.
+The API is versioned in the path. **`/api/v0/` is the pre-release surface and is not frozen**: it has no consumers outside this repository, so a name or a shape that is wrong gets corrected in place rather than carried forward. Renames land as they are agreed, and this document is the contract as of the current commit. `/api/v1/` is what gets frozen, and it is cut once the surface has settled and been exercised end to end -- not before.
 
 ## Index
 
@@ -10,6 +10,7 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 - [Base URL and transport](#base-url-and-transport)
 - [Authentication](#authentication) — [Login response shape](#login-response-shape), [Role model](#role-model), [Rate limiting](#rate-limiting), [JWT structure](#jwt-structure)
 - [Response model](#response-model) — [Success envelope](#success-envelope), [Mutation responses](#mutation-responses), [Idempotency](#idempotency), [IP addresses](#ip-addresses), [List pagination and sorting](#list-pagination-and-sorting), [Bulk mutations and the `results` envelope](#bulk-mutations-and-the-results-envelope), [Error envelope](#error-envelope), [ETag and conditional GET](#etag-and-conditional-get), [CORS](#cors), [Path validation](#path-validation), [Request size limits](#request-size-limits)
+- [Naming rules](#naming-rules) — the conventions every path, parameter and key follows, and why rates are spelled out
 - [Error code catalog](#error-code-catalog)
 - [Backward compatibility](#backward-compatibility)
 
@@ -300,7 +301,7 @@ Rows added or removed *during* a sweep are not missed: both emit an SSE event, s
 
 | Endpoint              | `sort` values |
 |-----------------------|---------------|
-| `GET /downloads`      | **`hash`** (id), `name`, `size`, `progress`, `speed`, `status` |
+| `GET /downloads`      | **`hash`** (id), `name`, `size_bytes`, `progress.percent`, `speed_bytes_per_second`, `status` |
 | `GET /clients`        | **`ecid`** (id), `name`, `software` |
 | `GET /downloads/{hash}/clients`<br>`GET /shared/{hash}/clients` | same keys as `/clients`, `after` included |
 | `GET /known_clients`  | **`user_hash`** (id), `name`, `software`, `first_seen`, `last_seen`, `sessions`, `total_uploaded`, `total_downloaded` |
@@ -343,7 +344,7 @@ A malformed **request** (missing/empty `hashes`, an invalid patch field) is stil
 
 ### Unknown values
 
-A field whose value is not known is `null`, not a sentinel. `remaining_time` is `null` rather than `-1` when there is no ETA to compute; `last_upload`, `shared_since` and `last_seen_complete` are `null` rather than `0` when a file has never uploaded, has never been seen complete, or its `known.met` entry predates the field. On a peer row, `available_parts` is `null` when that peer has not reported its part map -- distinct from `0`, which is a real answer and what a fresh source looks like -- and `remote_queue_rank` is `null` when the peer's queue is full, which the daemon signals with a `65535` sentinel rather than a position.
+A field whose value is not known is `null`, not a sentinel. `remaining_seconds` is `null` rather than `-1` when there is no ETA to compute; `last_upload`, `shared_since` and `last_seen_complete_at` are `null` rather than `0` when a file has never uploaded, has never been seen complete, or its `known.met` entry predates the field. On a peer row, `available_parts` is `null` when that peer has not reported its part map -- distinct from `0`, which is a real answer and what a fresh source looks like -- and `remote_queue_rank` is `null` when the peer's queue is full, which the daemon signals with a `65535` sentinel rather than a position.
 
 A key is **omitted** only where absence itself is the meaning: something the daemon never reported, rather than something known to be absent. `started_at` on [`GET /search`](#get-apiv0search) is the example, missing for a search this process did not start, and `result_count` is missing when the daemon is too old to send it, which has to stay distinguishable from a search that found nothing.
 
@@ -443,6 +444,31 @@ The dispatcher rejects paths containing NUL, encoded NUL (`%00`), encoded `..` (
 - JSON nesting: `>32` opening `{` or `[` tokens → `400 bad_request`. Applies to every body parser and to the JWT header/payload sections of bearer tokens.
 
 The first three are answered by the transport before any handler runs, and each closes the connection after answering, with `Connection: close` on the response.
+
+## Naming rules
+
+Every path segment, query parameter and JSON key on this surface follows the rules below. They exist so a client can predict a name instead of looking it up, and so a reviewer has something to point at other than taste. Where the surface does not yet follow them, that is a defect being worked through resource by resource, not an exception.
+
+| # | Rule |
+|---|---|
+| **R1** | `snake_case` for every path segment, query parameter and JSON key. |
+| **R2** | **Units live in the name, spelled out.** `_bytes`, `_bytes_per_second`, `_seconds`, `_minutes`, `_ms`, `_percent` (always 0-100). A bare number is only acceptable for a dimensionless count. See the note below on why rates are spelled out rather than abbreviated. |
+| **R3** | **Timestamps are integer unix seconds and end in `_at`.** One representation, not two: no parallel ISO-8601 twin. Formatting is a client concern. |
+| **R4** | **Booleans carry no `is_`/`has_`/`can_` prefix.** A boolean already reads as a predicate: an adjective or past participle (`online`, `incomplete`, `recursive`), or an `_enabled`/`_supported` suffix on a stateful noun. A boolean is never a field holding a count, a bare command-verb that reads as an imperative, or a reserved word. |
+| **R5** | **Counts end in `_count`** — except inside an object that already names the thing being counted, where the parent carries it (`sources.total`, `sources.transferring`). The pagination envelope keeps `total` for "matching items before the window". |
+| **R6** | **One concept, one key, everywhere.** The same quantity does not get one name on one resource and another on the next. |
+| **R7** | **A `sort` value *is* the response key it orders by**, spelled identically, dotted for nested keys (`sort=sources.total`). No stripped suffixes and no per-endpoint mapping table. |
+| **R8** | **No implementation vocabulary in public names.** EC tag names, C++ member names, aMule config-file section names and on-disk format details stay internal. Protocol terms aMule's own UI shows the user — `ed2k`, `kad`, `a4af`, `ich`, `aich`, `ecid` — stay, and are expanded once here. |
+| **R9** | **A writable field accepts the values the same field returns.** Where a write is really a command it belongs in a differently-named key (`action`), not in the read field's name. |
+| **R10** | **Always emit the key.** An unknown value is `null`, never an omitted key and never a `0`/`-1` sentinel. The few deliberate exceptions are enumerated under [Response model](#response-model). |
+| **R11** | **Group by quantity, not by scope.** A sub-object earns its place when it groups *different* quantities (`sources`, `progress`, `media`). One quantity split by time window does not — the window belongs in the key, not in a wrapper. |
+| **R12** | **One word for the remote party: `client`.** `peer` is not used in a key, a path or an enum value. `source` is not a synonym: a source is a client *in a role with respect to one file*, so it survives only where that relation is what is being described (`sources.total`, `source_origin`). |
+
+### Why rates are spelled out
+
+A byte rate is `_bytes_per_second`, not `_bps`. The abbreviation was considered and rejected: in networking `bps` means **bits** per second, and every rate on this surface is bytes. The neighbouring fields make that trap concrete rather than theoretical — [`GET /downloads/{hash}`](#get-apiv0downloadshash) returns `size_bytes` and `completed_bytes` beside `speed_bytes_per_second`, and `(size_bytes - completed_bytes) / speed` is the most natural thing to compute from the object. Two adjacent, identical-looking fields differing by 8x with nothing on screen to say so is a worse failure than a long name, because a name is visible and a factor of 8 is not.
+
+The same reasoning gives the media bitrate its full spelling. `media.bitrate_kilobits_per_second` really is kilo**bits** — `ParseBitrateKbps` divides ffprobe's bits/second by 1000 — so it is the one quantity on the surface that is not bytes, and the one place `kilo` means 1000 rather than 1024. Abbreviating it would put the surface's only bit-valued rate one character away from its byte-valued ones.
 
 ## Endpoint catalog
 
@@ -608,7 +634,7 @@ While disconnected `user_id` is `0`, `public_ip` is `""` and `high_id` is `false
 
 The two are **equal whenever Temp and Incoming share a filesystem**, which is the default layout — that is correct, not a bug. `incoming_free_bytes` describes the **default category's** incoming directory; a category pointed at another filesystem is not covered, because the daemon publishes no per-category figure.
 
-To reproduce the desktop's low-space warning, compare `temp_free_bytes` against the bytes still to write across the queue (`size - size_done` summed over [`GET /downloads`](#get-apiv0downloads)), or against the `files.min_free_space_mb` preference when `files.stop_on_low_disk_space` is on. Note that preference is in **MiB** while these fields are bytes.
+To reproduce the desktop's low-space warning, compare `temp_free_bytes` against the bytes still to write across the queue (`size - completed_bytes` summed over [`GET /downloads`](#get-apiv0downloads)), or against the `files.min_free_space_mb` preference when `files.stop_on_low_disk_space` is on. Note that preference is in **MiB** while these fields are bytes.
 
 **Errors:** `503 ec_unavailable` if amuleapi hasn't received its first EC snapshot yet.
 
@@ -800,32 +826,34 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/downloads"
       "hash":          "8b54a3c2...",
       "name":          "ubuntu-26.04-desktop-amd64.iso",
       "ed2k_link":     "ed2k://|file|ubuntu...|3825..|8b54...|/",
-      "size":          3825205248,
-      "size_done":     1142000000,
-      "size_xfer":     1102450000,
-      "speed_bps":     4500000,
+      "size_bytes":    3825205248,
+      "completed_bytes":     1142000000,
+      "transferred_bytes":     1102450000,
+      "speed_bytes_per_second":     4500000,
       "status":        "downloading",
       "priority":      "normal",
       "priority_auto": true,
-      "category":      0,
-      "sources":  { "total": 217, "not_current": 23, "transferring": 8, "a4af": 4 },
+      "category_index": 0,
+      "sources":  { "total": 217, "unavailable": 23, "transferring": 8, "a4af": 4 },
       "progress": { "percent": 29.85 },
-      "kad_comment_search_running": false,
-      "hashing_progress": 0
+      "kad_comment_lookup_running": false,
+      "hashed_part_count": 0
     }
   ]
 }
 ```
 
-`status` is one of `"downloading"`, `"waiting"`, `"hashing"`, `"allocating"`, `"paused"`, `"stopped"`, `"completing"`, `"completed"`, `"erroneous"`, `"insufficient_disk"` or `"unknown"`. The last three are terminal-ish conditions a client must handle rather than fall through: `"erroneous"` is a failed partfile, `"insufficient_disk"` is one that ran the volume out of space, and `"unknown"` is a status code this version does not recognise. `"stopped"` is a paused file that has also dropped all its sources and reset its Kad source search (set via `PATCH` `status:"stopped"`); it is distinct from `"paused"`, which retains its sources.
+`progress.percent` is a float in the range **0-100** (not 0-1), per [R2](#naming-rules).
+
+`status` is one of `"downloading"`, `"waiting"`, `"hashing"`, `"allocating"`, `"paused"`, `"stopped"`, `"completing"`, `"completed"`, `"erroneous"`, `"insufficient_disk"` or `"unknown"`. The last three are terminal-ish conditions a client must handle rather than fall through: `"erroneous"` is a failed partfile, `"insufficient_disk"` is one that ran the volume out of space, and `"unknown"` is a status code this version does not recognise. `"stopped"` is a paused file that has also dropped all its sources and reset its Kad source search (set via `PATCH` `action:"stop"`); it is distinct from `"paused"`, which retains its sources.
 
 `priority` is the download priority — one of `"low"`, `"normal"` or `"high"` — and `priority_auto` is `true` when amuled is deriving that level automatically. Downloads never report `very_low` or `release`; those are shared/upload-side levels only. A file that is simultaneously downloading and shared carries two independent priorities: this download priority, and the upload priority reported by [`GET /api/v0/shared`](#get-apiv0shared). Changing one does not affect the other.
 
 The list shape omits `progress.parts` to keep large libraries compact. Use the detail endpoint for per-part state.
 
-`kad_comment_search_running` is `true` while an on-demand Kad notes lookup is in flight for the file (started by [`POST /downloads/{hash}/comments`](#post-apiv0downloadshashcomments)); it flips back to `false` when the lookup finishes. Because it lives on the download object, a client can watch the `download_updated` SSE event for the start → finish transition instead of polling.
+`kad_comment_lookup_running` is `true` while an on-demand Kad notes lookup is in flight for the file (started by [`POST /downloads/{hash}/comments`](#post-apiv0downloadshashcomments)); it flips back to `false` when the lookup finishes. Because it lives on the download object, a client can watch the `download_updated` SSE event for the start → finish transition instead of polling.
 
-`hashing_progress` is the number of parts hashed so far by a pass running over the file — a `hashing` status, an [`AICH`](#post-apiv0sharedhashverify) hashset rebuild — and `0` when nothing is hashing. It is a count of completed parts, not the index of the part in flight, so it runs `0` → `part_count`; divide by `part_count` (from the detail endpoint, or `ceil(size / 9728000)`) for a percentage.
+`hashed_part_count` is the number of parts hashed so far by a pass running over the file — a `hashing` status, an [`AICH`](#post-apiv0sharedhashverify) hashset rebuild — and `0` when nothing is hashing. It is a count of completed parts, not the index of the part in flight, so it runs `0` → `parts_total_count`; divide by `parts_total_count` (from the detail endpoint, or `ceil(size / 9728000)`) for a percentage.
 
 The SSE `download_added` / `download_updated` event payload matches this object byte-for-byte.
 
@@ -847,22 +875,21 @@ Same envelope as the list item, plus the detail-only fields below (all omitted f
 | Field | Type | Meaning |
 |---|---|---|
 | `progress.parts` | array | One entry per ~9.28 MiB chunk: `{ "state": string, "sources": int }` — `state` is `complete`/`incomplete`/`missing` -- complete when the chunk is done, otherwise whether any peer offers it -- and `sources` counts peers offering that chunk. |
-| `last_seen_complete` | int \| null | Unix ts a complete copy was last seen across sources; `null` when no complete copy has ever been seen, or the daemon does not report it. |
-| `last_changed` | int | Unix ts the partfile last received data. |
-| `download_active_time` | int | Seconds spent actively downloading. |
-| `available_part_count` | int | Number of parts available across the current sources. |
-| `part_count` | int | Total parts, `ceil(size / 9.28 MiB)`. |
-| `remaining_time` | int \| null | ETA in seconds, or `null` when stalled or paused (speed ≈ 0) and there is nothing to compute from. |
-| `lost_to_corruption` | int | Bytes discarded to corruption. |
-| `gained_by_compression` | int | Bytes saved by on-the-wire compression. |
-| `saved_by_ich` | int | Packets recovered by Intelligent Corruption Handling. |
-| `aich_hash` | string | AICH master hash (hex); `""` if not yet computed. |
-| `met_file` | string | The partfile's `.part` control-file basename (e.g. `001.part`). `""` once the download has completed (status `completed`, before `clear_completed`). |
-| `path` | string | Directory the file lives in on disk — the Temp directory while downloading, the destination directory once completed. |
-| `partmet_id` | int | Numeric partfile id. |
-| `queued_count` | int | Clients waiting on this file's upload queue. |
-| `comment` | string | The user's own comment on this file (`""` if none). |
-| `rating` | int | The user's own rating, `0`–`5` (`0` = unrated). See the [rating scale](#get-apiv0downloadshashcomments). |
+| `last_seen_complete_at` | int \| null | Unix ts a complete copy was last seen across sources; `null` when no complete copy has ever been seen, or the daemon does not report it. |
+| `last_received_at` | int | Unix ts the partfile last received data. |
+| `active_seconds` | int | Seconds spent actively downloading. |
+| `parts_available_count` | int | Number of parts available across the current sources. |
+| `parts_total_count` | int | Total parts, `ceil(size / 9.28 MiB)`. |
+| `remaining_seconds` | int \| null | ETA in seconds, or `null` when stalled or paused (speed ≈ 0) and there is nothing to compute from. |
+| `lost_to_corruption_bytes` | int | Bytes discarded to corruption. |
+| `gained_by_compression_bytes` | int | Bytes saved by on-the-wire compression. |
+| `ich_recovered_packet_count` | int | Packets recovered by **I.C.H.** (Intelligent Corruption Handling), the recovery pass aMule's own UI names. Packets, not bytes -- unlike its two byte-valued neighbours above. |
+| `aich_hash` | string\|null | AICH master hash (hex), or `null` until the hashset exists. |
+| `part_file_name` | string | The partfile's `.part` control-file basename (e.g. `001.part`). `""` once the download has completed (status `completed`, before `clear_completed`). |
+| `directory` | string | Directory the file lives in on disk — the Temp directory while downloading, the destination directory once completed. |
+| `upload_queue_count` | int | Clients waiting on this file's upload queue. |
+| `my_comment` | string | The user's own comment on this file (`""` if none). Named apart from `comments[].comment`, which are *other clients'*. |
+| `my_rating` | int | The user's own rating, `0`–`5` (`0` = unrated). See the [rating scale](#get-apiv0downloadshashcomments). |
 | `a4af_auto` | bool | Whether automatic A4AF source-swapping is on for this file. See [A4AF](#post-apiv0downloadshasha4af). |
 | `media` | object | Audio/video metadata — see [Media metadata](#media-metadata). **`null`** when the file has no probed metadata; the key is always present. |
 
@@ -874,7 +901,7 @@ The `media` object (on both `GET /downloads/{hash}` and `GET /shared/{hash}`) ca
 
 ```json
 "media": {
-  "length_s": 5400,
+  "duration_seconds": 5400,
   "bitrate": 1500,
   "codec": "h264",
   "artist": "…",
@@ -885,7 +912,7 @@ The `media` object (on both `GET /downloads/{hash}` and `GET /shared/{hash}`) ca
 
 | Field | Type | Meaning |
 |---|---|---|
-| `length_s` | int | Duration in seconds. |
+| `duration_seconds` | int | Duration in seconds. |
 | `bitrate` | int | Bitrate (kbps). |
 | `codec` | string | Codec identifier (e.g. `"h264"`). |
 | `artist` / `album` / `title` | string | Tag metadata; `""` when the file carries none. |
@@ -905,8 +932,8 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 
 ```json
 {
-  "count": 2,
-  "kad_comment_search_running": false,
+  "total": 2,
+  "kad_comment_lookup_running": false,
   "comments": [
     { "username": "alice",    "filename": "Some.Movie.mkv", "rating": 5, "comment": "great quality" },
     { "username": "Kad user", "filename": "some_movie.avi", "rating": 4, "comment": "" }
@@ -914,7 +941,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 }
 ```
 
-`kad_comment_search_running` is `true` while an on-demand Kad notes lookup (triggered by the `POST` below) is in flight; poll until it returns to `false` to know the lookup finished. Kad notes appear as ordinary entries whose `username` is the responding node's IP (or `Kad user` when the note carries no IP).
+`kad_comment_lookup_running` is `true` while an on-demand Kad notes lookup (triggered by the `POST` below) is in flight; poll until it returns to `false` to know the lookup finished. Kad notes appear as ordinary entries whose `username` is the responding node's IP (or `Kad user` when the note carries no IP).
 
 A per-source `rating` of `-1` means the source left a comment but no rating. Rating scale (from the desktop `GetRateString()`):
 
@@ -940,7 +967,7 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
   "http://$HOST/api/v0/downloads/8b54a3c2…/comments"
 ```
 
-**Response:** `202 Accepted`, with no body. The lookup is asynchronous; results appear on the download's `comments` and via `kad_comment_search_running`.
+**Response:** `202 Accepted`, with no body. The lookup is asynchronous; results appear on the download's `comments` and via `kad_comment_lookup_running`.
 
 **Errors:** `403 forbidden` (guest token — the lookup makes the daemon do network work, so it is `ADMIN`-only), `404 not_found` (no download with that hash), `503 ec_unavailable`, `400 amuled_rejected` (daemon refused, e.g. Kad not connected).
 
@@ -958,8 +985,8 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 ```json
 {
   "filenames": [
-    { "name": "Some.Movie.2024.mkv", "count": 7 },
-    { "name": "some_movie.mkv", "count": 2 }
+    { "filename": "Some.Movie.2024.mkv", "source_count": 7 },
+    { "filename": "some_movie.mkv", "source_count": 2 }
   ]
 }
 ```
@@ -982,7 +1009,7 @@ Each entry is the [`/clients`](#get-apiv0clients) list object plus three keys:
 
 `role` and `a4af` are orthogonal: a pure A4AF row is `role: "none"`, `a4af: true`, but a peer can be parked on another file *and* be pulling this one from us (`role: "peer"`, `a4af: true`).
 
-`parts` is opt-in because it is one boolean per chunk per peer — a multi-TiB file is 100k+ entries each. It is exactly `part_count` entries, and it describes the file this row is about: the download bitmap for a `source`, the upload bitmap for a `peer`. A peer the core reports as holding every part comes back all-`true`. A pure A4AF row has no bitmap for this file and omits the key. **`parts` never appears in SSE payloads.**
+`parts` is opt-in because it is one boolean per chunk per peer — a multi-TiB file is 100k+ entries each. It is exactly `parts_total_count` entries, and it describes the file this row is about: the download bitmap for a `source`, the upload bitmap for a `peer`. A peer the core reports as holding every part comes back all-`true`. A pure A4AF row has no bitmap for this file and omits the key. **`parts` never appears in SSE payloads.**
 
 The file's own three-state part view is on [`GET /downloads/{hash}`](#get-apiv0downloadshash); combine it with this bitmap to render the desktop's per-source bar.
 
@@ -1035,10 +1062,10 @@ Adds one or more ed2k links to the transfer queue.
 **Body:**
 
 ```json
-{ "links": ["ed2k://|file|a|...|/", "ed2k://|file|b|...|/"], "category": 0 }
+{ "links": ["ed2k://|file|a|...|/", "ed2k://|file|b|...|/"], "category_index": 0 }
 ```
 
-`links` is an array even for one link -- `{"links": ["ed2k://|file|a|...|/"]}` -- and the response is the per-item `results` envelope either way. `category` is optional (defaults to 0).
+`links` is an array even for one link -- `{"links": ["ed2k://|file|a|...|/"]}` -- and the response is the per-item `results` envelope either way. `category_index` is optional (defaults to 0).
 
 A singular `ed2k_link` was accepted here previously and is now refused with a `400` naming the replacement.
 
@@ -1069,7 +1096,7 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
 
 Bulk pause/resume, priority, or category change over multiple downloads — the same patch applied to every listed hash.
 
-**Body:** `{ "hashes": ["<md4>", …], … }` — a non-empty `hashes` array (max 500) plus at least one of the single-item PATCH fields: `status` (`"paused"` | `"resumed"` | `"stopped"`), `priority` (`low` | `normal` | `high` | `auto`), `category` (integer 0–255).
+**Body:** `{ "hashes": ["<md4>", …], … }` — a non-empty `hashes` array (max 500) plus at least one of the single-item PATCH fields: `action` (`"pause"` | `"resume"` | `"stop"`), `priority` (`low` | `normal` | `high` | `auto`), `category_index` (integer 0–255).
 
 ```sh
 curl -s -X PATCH -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
@@ -1100,11 +1127,11 @@ Mutates one or more fields of a single partfile. `{hash}` is the 32-char MD4 hex
 
 **Body:** at least one of:
 
-- `status` — `"paused"`, `"resumed"` or `"stopped"`. `"paused"` halts transfer but keeps the file's sources; `"stopped"` additionally drops all known sources and resets the Kad source search (a stopped file must rediscover sources from scratch on resume); `"resumed"` clears either state. A stopped file reports `status: "stopped"` in the download object (see [`GET /downloads`](#get-apiv0downloads)).
+- `action` — `"pause"`, `"resume"` or `"stop"`. A command, not a state, which is why it is not spelled `status`: the read-side `status` has eleven values and this accepts three of them, in a different tense. `"pause"` halts transfer but keeps the file's sources; `"stop"` additionally drops all known sources and resets the Kad source search (a stopped file must rediscover sources from scratch on resume); `"resume"` clears either state. A stopped file reports `status: "stopped"` in the download object (see [`GET /downloads`](#get-apiv0downloads)).
 - `priority` — `"low"` / `"normal"` / `"high"` / `"auto"`. Downloads support only these levels and any other value is a `400`; the reason is that the daemon's `.part.met` loader would clamp it back to `normal` on the next restart. (Shared files support the wider `very_low` … `release` set — see [`PATCH /shared/{hash}`](#patch-apiv0sharedhash) and [Priority levels](#priority-levels).)
-- `category` — uint8
+- `category_index` — uint8
 - `a4af_auto` — bool. Turns automatic A4AF source-swapping on or off for this file. A named value, not a flip: sending `true` twice leaves it `true`. This is the only way to set the flag; the `swap_this_auto` action on [`POST /downloads/{hash}/a4af`](#post-apiv0downloadshasha4af) that used to toggle it is gone, because a toggle cannot survive a retry (see [Idempotency](#idempotency)).
-- `comment` + `rating` — set the file's comment (string, ≤ 50 chars) and rating (integer `0`–`5`). Must be sent **together**; only settable when the partfile is also shared (≥ 1 complete chunk), else `409 not_shared`. Primarily a shared-file action — see [`PATCH /shared/{hash}`](#patch-apiv0sharedhash).
+- `my_comment` + `my_rating` — set the file's comment (string, ≤ 50 chars) and rating (integer `0`–`5`). Must be sent **together**; only settable when the partfile is also shared (≥ 1 complete chunk), else `409 not_shared`. Primarily a shared-file action — see [`PATCH /shared/{hash}`](#patch-apiv0sharedhash).
 - `name` — rename the file (string). Must be non-empty and contain no path separators (`/` or `\`). See the [Takeover flow](#get-apiv0downloadshashfilenames).
 
 ```sh
@@ -1116,7 +1143,7 @@ curl -s -X PATCH -H "Authorization: Bearer $TOKEN" \
 
 **Response:** `200 OK` — the updated download object (full detail envelope including `progress.parts`).
 
-**Errors:** `400 bad_request` (no recognised field, invalid enum, or `comment`/`rating` sent alone), `409 not_shared` (comment/rating on a non-shared file), `400 amuled_rejected`, `404 not_found`, `503 ec_unavailable`.
+**Errors:** `400 bad_request` (no recognised field, invalid enum, or `my_comment`/`my_rating` sent alone), `409 not_shared` (comment/rating on a non-shared file), `400 amuled_rejected`, `404 not_found`, `503 ec_unavailable`.
 
 #### `DELETE /api/v0/downloads/{hash}`
 
@@ -1467,7 +1494,7 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/shared"
       "shared_since":     1699000000,
       "hashing_progress": 0,
       "media": {
-        "length_s": 212,
+        "duration_seconds": 212,
         "bitrate":  320,
         "codec":    "mp3",
         "artist":   "Some Artist",
@@ -2792,12 +2819,12 @@ amuled keeps a bounded ring of recent searches (20). A search evicted from that 
       "status":       "new",
       "type":         "videos",
       "directory":    "",
-      "media":        { "length_s": 5400, "bitrate": 1500, "codec": "h264", "artist": "", "album": "", "title": "" },
+      "media":        { "duration_seconds": 5400, "bitrate": 1500, "codec": "h264", "artist": "", "album": "", "title": "" },
       "children": [
         { "ecid": 621, "name": "example-distribution-26.04.iso", "hash": "8b54a3c2...", "sources": { "total": 40, "complete": 22 }, "directory": "" },
         { "ecid": 622, "name": "example_distro_2604_amd64.iso",  "hash": "8b54a3c2...", "sources": { "total": 10, "complete":  3 }, "directory": "" }
       ],
-      "kad_comment_search_running": false,
+      "kad_comment_lookup_running": false,
       "comments": []
     }
   ],
@@ -2819,7 +2846,7 @@ Each result carries `sources` as a nested `{total, complete}` object — `total`
 
 `children` is the result-grouping tree: amuled collapses hits that are the **same file** (same ed2k hash **and** size) but advertised under **different filenames** into one parent row, and `children[]` holds the alternative names. Each child carries the parent's `hash` (that's why they group), its own `sources`, and a distinct `ecid` — pass that `ecid` to [`POST /search/results/{hash}/download`](#post-apiv0searchresultshashdownload) to download the file **under that chosen filename**. `children` is always present and is an empty array for a hit seen under a single name. The top-level `results[]` contains parents only — a child never appears as its own top-level entry.
 
-`kad_comment_search_running` and `comments` carry the file's community ratings/comments fetched from Kad. Unlike a download — whose comments come from connected sources — a search result has no sources, so `comments` is populated purely by an on-demand Kad notes lookup you start with [`POST /search/results/{hash}/comments`](#post-apiv0searchresultshashcomments). `kad_comment_search_running` is `true` while that lookup is in flight and flips back to `false` when it finishes; `comments` is an empty array until notes arrive, each entry shaped like a download comment (`username` / `filename` / `rating` / `comment`, with `username` the responding node's IP or `Kad user`). Both fields are always present.
+`kad_comment_lookup_running` and `comments` carry the file's community ratings/comments fetched from Kad. Unlike a download — whose comments come from connected sources — a search result has no sources, so `comments` is populated purely by an on-demand Kad notes lookup you start with [`POST /search/results/{hash}/comments`](#post-apiv0searchresultshashcomments). `kad_comment_lookup_running` is `true` while that lookup is in flight and flips back to `false` when it finishes; `comments` is an empty array until notes arrive, each entry shaped like a download comment (`username` / `filename` / `rating` / `comment`, with `username` the responding node's IP or `Kad user`). Both fields are always present.
 
 The `progress` object carries the same `state` / `kind` / `percent` fields as the [`search_progress`](EVENTS.md#search_progress) SSE event, so REST pollers and stream consumers interpret progress identically. (The event additionally carries a `results` count, since — unlike this response — it has no `results` array beside it.)
 
@@ -2908,7 +2935,7 @@ The route is deliberately **not** nested under a search id: amuled runs one Kad 
 ```json
 {
   "count": 2,
-  "kad_comment_search_running": false,
+  "kad_comment_lookup_running": false,
   "comments": [
     { "username": "203.0.113.7", "filename": "example-distribution-26.04-amd64.iso", "rating": 5, "comment": "Verified good, fast sources." },
     { "username": "Kad user",    "filename": "example-distribution-26.04-amd64.iso", "rating": 4, "comment": "Works." }
@@ -2916,9 +2943,9 @@ The route is deliberately **not** nested under a search id: amuled runs one Kad 
 }
 ```
 
-`kad_comment_search_running` is `true` while an on-demand Kad notes lookup (triggered by the `POST` below) is in flight; poll until it returns to `false` to know the lookup finished. `username` is the responding Kad node's IP, or `Kad user` when the note carries no IP.
+`kad_comment_lookup_running` is `true` while an on-demand Kad notes lookup (triggered by the `POST` below) is in flight; poll until it returns to `false` to know the lookup finished. `username` is the responding Kad node's IP, or `Kad user` when the note carries no IP.
 
-**Polling is the only mechanism here — there is no event to wait for.** [`comments_updated`](EVENTS.md#comments_updated) is emitted for downloads only and never fires for a search hit, so a client that starts a lookup polls this endpoint (or the results list) while `kad_comment_search_running` is `true`.
+**Polling is the only mechanism here — there is no event to wait for.** [`comments_updated`](EVENTS.md#comments_updated) is emitted for downloads only and never fires for a search hit, so a client that starts a lookup polls this endpoint (or the results list) while `kad_comment_lookup_running` is `true`.
 
 **Errors:** `404 not_found` (no live search result with that hash), `503 ec_unavailable`.
 
@@ -3128,12 +3155,17 @@ Every error code emitted by `/api/v0/*`, sorted by what triggered it. Two codes 
 
 ## Backward compatibility
 
-`/api/v0/` is frozen against any breaking change once released. Within a version only **additive** changes are made, and a conformant client must tolerate them:
+**`/api/v0/` is not frozen, and offers no compatibility guarantee.** It is the surface under construction: it has no consumers outside this repository, so a field whose name is wrong is renamed in place rather than aliased, deprecated or carried into the next version. A client written against v0 must expect to be updated alongside it, and the bundled Web UI is exactly that client.
 
-- **New endpoints** may be added at any time.
-- **New optional query parameters** may be added to existing endpoints, always with a backward-compatible default — omitting the parameter preserves the prior behaviour (as the list-pagination `limit`/`offset`/`sort`/`order` params did).
-- **New fields** may be added to response bodies, and new optional fields to request bodies. Clients **MUST ignore unknown fields**, and must not depend on field order or on a field's absence.
+This is a deliberate position, not an oversight. Freezing a surface still being corrected would mean shipping v1 with the mistakes intact and a compatibility shim for each one.
 
-Anything that could break a conformant client — renaming, removing, or retyping a field; changing a field's semantics or an endpoint's default behaviour; making an optional input required; or removing an endpoint — is deferred to the next version (`/api/v1/`) rather than applied in place.
+What that means in practice, until the freeze:
+
+- **Fields get renamed**, and the old name stops existing the same commit the new one appears. There is no alias window.
+- **Response shapes change** where the current one misleads — a key that reports a count but is named like a percentage, a write field that accepts values the matching read field never returns.
+- **Enum values change** where the token is wrong for what it describes.
+- **New endpoints, parameters and fields** may be added at any time. Clients **MUST ignore unknown fields**, and must not depend on field order or on a field's absence.
+
+**`/api/v1/` is where the guarantee starts.** It is cut once the naming rules below hold across the whole surface and the result has been exercised end to end. From that point the additive-only discipline applies: anything that could break a conformant client is deferred to the next version rather than applied in place.
 
 `POST /api/v0/auth/login`'s default body shape (no token unless `?type=bearer`) IS a change from the very first amuleapi cuts; the legacy "token always in body" behaviour is reachable only via the opt-in. This is documented and committed.

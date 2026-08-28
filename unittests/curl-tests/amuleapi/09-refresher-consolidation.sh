@@ -119,8 +119,8 @@ if [ "$DCOUNT" -gt 0 ]; then
 		'/downloads[0].hash is 32-char hex (identity from one tick)'
 	_assert_json_eq '.downloads[0].name | type'   string \
 		'/downloads[0].name is non-null string'
-	_assert_json_eq '.downloads[0].size | type'   number \
-		'/downloads[0].size is numeric'
+	_assert_json_eq '.downloads[0].size_bytes | type'   number \
+		'/downloads[0].size_bytes is numeric'
 	_assert_json_eq '.downloads[0].status | type' string \
 		'/downloads[0].status is string'
 	_assert_json_eq '.downloads[0].priority | type' string \

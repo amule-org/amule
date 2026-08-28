@@ -113,21 +113,25 @@ export function Section(rows, titleKey, actions) {
     </div>`;
 }
 
-// `path` is the directory only, so the file path has to be composed; separator
-// taken from the path itself since amuled may be on Windows. Names the *file*:
-// a partfile's bytes are still under `met_file`, so this is where the download
-// will land rather than what is on disk right now.
+// The directory only, so the file path has to be composed; separator taken from
+// the path itself since amuled may be on Windows. Names the *file*: a
+// partfile's bytes are still under `part_file_name`, so this is where the
+// download will land rather than what is on disk right now.
+//
+// Reads `directory` with a `path` fallback because this helper serves both
+// detail panels and only /downloads has been renamed so far. Drop the fallback
+// when /shared moves.
 function fullPath(file) {
-  const dir = file.path || "";
+  const dir = file.directory || file.path || "";
   return dir + (dir.includes("\\") ? "\\" : "/") + (file.name || "");
 }
 
 // Rejects "" (a path the daemon has not reported yet); accepts a POSIX path
 // or a Windows drive letter.
-const hasRealPath = (file) => /^([/\\]|[A-Za-z]:)/.test(file.path || "");
+const hasRealPath = (file) => /^([/\\]|[A-Za-z]:)/.test(file.directory || file.path || "");
 
 // The identity group shared by both detail panels: the hash plus extra fields
-// (path, met_file / parts), with the copy buttons as the group's action row.
+// (directory, part_file_name / parts), with the copy buttons as the group's action row.
 // `extra` is a list of statRow tuples; `titleKey` is forwarded to Section().
 export function IdentityLine({ file, copy, extra, titleKey }) {
   const hash = statRow("identity_hash",

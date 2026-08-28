@@ -39,7 +39,7 @@ struct SearchResult;
 // `search_result_added` SSE payload (which prepends its own `search_id` and is
 // otherwise byte-for-byte the same). They used to be two hand-written
 // serialisers that had to be kept in step by hand, and had already drifted --
-// the REST one grew `kad_comment_search_running` and `comments[]` that the
+// the REST one grew `kad_comment_lookup_running` and `comments[]` that the
 // event never gained. Emitting the fields from one place is what makes the
 // documented promise structural instead of aspirational.
 //

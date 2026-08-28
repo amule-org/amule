@@ -69,10 +69,10 @@ void WriteSearchResultFields(CJsonWriter &w, const SearchResult &r)
 	if (r.has_media) {
 		w.Key("media");
 		w.BeginObject();
-		w.Key("length_s");
-		w.ValueInt(static_cast<int64_t>(r.media.length_s));
-		w.Key("bitrate");
-		w.ValueInt(static_cast<int64_t>(r.media.bitrate));
+		w.Key("duration_seconds");
+		w.ValueInt(static_cast<int64_t>(r.media.duration_seconds));
+		w.Key("bitrate_kilobits_per_second");
+		w.ValueInt(static_cast<int64_t>(r.media.bitrate_kilobits_per_second));
 		w.Key("codec");
 		w.ValueString(wxString::FromUTF8(r.media.codec.c_str()));
 		w.Key("artist");
@@ -114,11 +114,11 @@ void WriteSearchResultFields(CJsonWriter &w, const SearchResult &r)
 		w.EndObject();
 	}
 	w.EndArray();
-	// On-demand Kad community ratings/comments (issue #434). `kad_comment_search_running`
+	// On-demand Kad community ratings/comments (issue #434). `kad_comment_lookup_running`
 	// is true while a lookup started via POST /search/results/{hash}/comments is
 	// in flight; `comments` carries the Kad notes retrieved so far (empty until
 	// then). Both are always present so clients need no presence check.
-	w.Key("kad_comment_search_running");
+	w.Key("kad_comment_lookup_running");
 	w.ValueBool(r.kad_comment_searching);
 	w.Key("comments");
 	w.BeginArray();

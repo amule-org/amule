@@ -113,18 +113,20 @@ std::string ToJsonDownloadEvent(const FileSnapshot &f)
 	  << "\"hash\":\"" << EscJson(f.hash) << "\""
 	  << ",\"name\":\"" << EscJson(f.name) << "\""
 	  << ",\"ed2k_link\":\"" << EscJson(f.ed2k_link) << "\""
-	  << ",\"size\":" << f.size << ",\"size_done\":" << f.download.size_done
-	  << ",\"size_xfer\":" << f.download.size_xfer << ",\"speed_bps\":" << f.download.speed_bps
-	  << ",\"status\":\"" << EscJson(f.download.status) << "\""
+	  << ",\"size_bytes\":" << f.size << ",\"completed_bytes\":" << f.download.completed_bytes
+	  << ",\"transferred_bytes\":" << f.download.transferred_bytes
+	  << ",\"speed_bytes_per_second\":" << f.download.speed_bytes_per_second << ",\"status\":\""
+	  << EscJson(f.download.status) << "\""
 	  << ",\"priority\":\"" << EscJson(f.download.priority) << "\""
 	  << ",\"priority_auto\":" << (f.download.priority_auto ? "true" : "false")
-	  << ",\"category\":" << f.download.category << ",\"sources\":{"
-	  << "\"total\":" << f.download.sources_total << ",\"not_current\":" << f.download.sources_not_current
+	  << ",\"category_index\":" << f.download.category << ",\"sources\":{"
+	  << "\"total\":" << f.download.sources_total << ",\"unavailable\":" << f.download.sources_unavailable
 	  << ",\"transferring\":" << f.download.sources_transferring
 	  << ",\"a4af\":" << f.download.sources_a4af << "}"
 	  << ",\"progress\":{\"percent\":" << JsonDoubleToString(f.download.percent) << "}"
-	  << ",\"kad_comment_search_running\":" << (f.download.kad_comment_searching ? "true" : "false")
-	  << ",\"hashing_progress\":" << f.download.hashing_progress << "}";
+	  << ",\"kad_comment_lookup_running\":" << (f.download.kad_comment_searching ? "true" : "false")
+	  << ",\"hashed_part_count\":" << f.download.hashed_part_count
+	  << ",\"parts_total_count\":" << webapi::PartCountForSize(f.size) << "}";
 	return o.str();
 }
 
@@ -134,7 +136,7 @@ std::string ToJsonDownloadEvent(const FileSnapshot &f)
 //
 // A strict superset of the endpoint, deliberately: the event needs `hash`
 // because nothing else in the frame identifies the file, and it needs
-// `kad_comment_search_running` because that flag is exactly what a client
+// `kad_comment_lookup_running` because that flag is exactly what a client
 // wants while a POST /downloads/{hash}/comments lookup is in flight. It used
 // to carry the first and not the second, so a client that followed the docs
 // and fed the event into the view it built from the endpoint silently lost
@@ -143,8 +145,8 @@ std::string ToJsonCommentsEvent(const FileSnapshot &f)
 {
 	std::ostringstream o;
 	o << "{\"hash\":\"" << EscJson(f.hash) << "\""
-	  << ",\"kad_comment_search_running\":" << (f.download.kad_comment_searching ? "true" : "false")
-	  << ",\"count\":" << f.download.source_comments.size() << ",\"comments\":[";
+	  << ",\"kad_comment_lookup_running\":" << (f.download.kad_comment_searching ? "true" : "false")
+	  << ",\"total\":" << f.download.source_comments.size() << ",\"comments\":[";
 	bool first = true;
 	for (const auto &c : f.download.source_comments) {
 		if (!first)
@@ -205,7 +207,8 @@ std::string ToJsonSharedEvent(const FileSnapshot &f)
 	// must not find a key on one side only.
 	o << ",\"media\":";
 	if (f.has_media) {
-		o << "{\"length_s\":" << f.media.length_s << ",\"bitrate\":" << f.media.bitrate
+		o << "{\"duration_seconds\":" << f.media.duration_seconds
+		  << ",\"bitrate_kilobits_per_second\":" << f.media.bitrate_kilobits_per_second
 		  << ",\"codec\":\"" << EscJson(f.media.codec) << "\""
 		  << ",\"artist\":\"" << EscJson(f.media.artist) << "\""
 		  << ",\"album\":\"" << EscJson(f.media.album) << "\""
@@ -389,17 +392,19 @@ bool EqualDownload(const FileSnapshot &a, const FileSnapshot &b)
 {
 	return a.ecid == b.ecid && a.hash == b.hash && a.name == b.name && a.ed2k_link == b.ed2k_link &&
 	       a.size == b.size && a.download.priority == b.download.priority &&
-	       a.download.size_done == b.download.size_done && a.download.size_xfer == b.download.size_xfer &&
-	       a.download.speed_bps == b.download.speed_bps && a.download.status == b.download.status &&
+	       a.download.completed_bytes == b.download.completed_bytes &&
+	       a.download.transferred_bytes == b.download.transferred_bytes &&
+	       a.download.speed_bytes_per_second == b.download.speed_bytes_per_second &&
+	       a.download.status == b.download.status &&
 	       a.download.priority_auto == b.download.priority_auto &&
 	       a.download.category == b.download.category &&
 	       a.download.sources_total == b.download.sources_total &&
-	       a.download.sources_not_current == b.download.sources_not_current &&
+	       a.download.sources_unavailable == b.download.sources_unavailable &&
 	       a.download.sources_transferring == b.download.sources_transferring &&
 	       a.download.sources_a4af == b.download.sources_a4af &&
 	       a.download.percent == b.download.percent &&
 	       a.download.kad_comment_searching == b.download.kad_comment_searching &&
-	       a.download.hashing_progress == b.download.hashing_progress;
+	       a.download.hashed_part_count == b.download.hashed_part_count;
 }
 
 // Comment list equality (deliberately NOT part of EqualDownload — a comment
@@ -445,10 +450,10 @@ bool EqualShared(const FileSnapshot &a, const FileSnapshot &b)
 	       // only progress signal the 202-returning refresh endpoints have.
 	       // These change once per probe, not per tick, so they cost nothing
 	       // in event volume.
-	       a.has_media == b.has_media && a.media.length_s == b.media.length_s &&
-	       a.media.bitrate == b.media.bitrate && a.media.codec == b.media.codec &&
-	       a.media.artist == b.media.artist && a.media.album == b.media.album &&
-	       a.media.title == b.media.title &&
+	       a.has_media == b.has_media && a.media.duration_seconds == b.media.duration_seconds &&
+	       a.media.bitrate_kilobits_per_second == b.media.bitrate_kilobits_per_second &&
+	       a.media.codec == b.media.codec && a.media.artist == b.media.artist &&
+	       a.media.album == b.media.album && a.media.title == b.media.title &&
 	       // Through the accessor, not the raw field: a shared download's
 	       // progress lives on the download side, and comparing the raw
 	       // field would hold every tick of it back from shared_updated.

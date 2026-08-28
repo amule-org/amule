@@ -845,6 +845,9 @@ TEST(Refresher, DownloadDetailTagsDecodeIntoSnapshot)
 	pf.AddTag(CECTag(EC_TAG_PARTFILE_LOST_CORRUPTION, static_cast<std::uint64_t>(9728000)));
 	pf.AddTag(CECTag(EC_TAG_PARTFILE_GAINED_COMPRESSION, static_cast<std::uint64_t>(4096)));
 	pf.AddTag(CECTag(EC_TAG_PARTFILE_SAVED_ICH, static_cast<std::uint32_t>(7)));
+	// Still sent by the daemon, deliberately not decoded any more: partmet_id
+	// was dropped from the surface, and an undecoded tag must not disturb the
+	// rest of the parse.
 	pf.AddTag(CECTag(EC_TAG_PARTFILE_PARTMETID, static_cast<std::uint32_t>(42)));
 	// Base CKnownFile tags carried on the partfile tag too.
 	pf.AddTag(CECTag(EC_TAG_KNOWNFILE_ON_QUEUE, static_cast<std::uint32_t>(5)));
@@ -858,15 +861,14 @@ TEST(Refresher, DownloadDetailTagsDecodeIntoSnapshot)
 	const auto it = cache.find(101);
 	ASSERT_TRUE(it != cache.end());
 	const auto &d = it->second;
-	ASSERT_EQUALS(static_cast<std::uint32_t>(1700000000), d.download.last_seen_complete);
-	ASSERT_EQUALS(static_cast<std::uint32_t>(1700000123), d.download.last_changed);
-	ASSERT_EQUALS(static_cast<std::uint32_t>(3600), d.download.download_active_time);
-	ASSERT_EQUALS(static_cast<std::uint16_t>(12), d.download.available_part_count);
-	ASSERT_EQUALS(static_cast<std::uint16_t>(3), d.download.hashing_progress);
-	ASSERT_EQUALS(static_cast<std::uint64_t>(9728000), d.download.lost_to_corruption);
-	ASSERT_EQUALS(static_cast<std::uint64_t>(4096), d.download.gained_by_compression);
-	ASSERT_EQUALS(static_cast<std::uint32_t>(7), d.download.saved_by_ich);
-	ASSERT_EQUALS(static_cast<std::uint32_t>(42), d.download.partmet_id);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(1700000000), d.download.last_seen_complete_at);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(1700000123), d.download.last_received_at);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(3600), d.download.active_seconds);
+	ASSERT_EQUALS(static_cast<std::uint16_t>(12), d.download.parts_available_count);
+	ASSERT_EQUALS(static_cast<std::uint16_t>(3), d.download.hashed_part_count);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(9728000), d.download.lost_to_corruption_bytes);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(4096), d.download.gained_by_compression_bytes);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(7), d.download.ich_recovered_packet_count);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(5), d.queued_count);
 	ASSERT_EQUALS(std::string("ABCDEF0123"), d.aich_hash);
 	ASSERT_EQUALS(std::string("042.part"), d.part_met_basename);
@@ -1057,8 +1059,8 @@ TEST(Refresher, MediaMetadataDecode)
 	const auto it = cache.find(606);
 	ASSERT_TRUE(it != cache.end());
 	ASSERT_TRUE(it->second.has_media);
-	ASSERT_EQUALS(static_cast<std::uint32_t>(5400), it->second.media.length_s);
-	ASSERT_EQUALS(static_cast<std::uint32_t>(1500), it->second.media.bitrate);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(5400), it->second.media.duration_seconds);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(1500), it->second.media.bitrate_kilobits_per_second);
 	ASSERT_EQUALS(std::string("h264"), it->second.media.codec);
 	ASSERT_EQUALS(std::string("Some Artist"), it->second.media.artist);
 	ASSERT_EQUALS(std::string("Some Album"), it->second.media.album);
@@ -1105,8 +1107,8 @@ TEST(Refresher, MediaMetadataClearRemovesFieldsAndRecomputesHasMedia)
 	}
 	const auto it = cache.find(700);
 	ASSERT_TRUE(it != cache.end());
-	ASSERT_EQUALS(static_cast<std::uint32_t>(0), it->second.media.length_s);
-	ASSERT_EQUALS(static_cast<std::uint32_t>(0), it->second.media.bitrate);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(0), it->second.media.duration_seconds);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(0), it->second.media.bitrate_kilobits_per_second);
 	ASSERT_TRUE(it->second.media.artist.empty());
 	// The codec was not mentioned this time, which means UNCHANGED -- not
 	// cleared. Distinguishing those two is the whole point of the design.
@@ -1788,8 +1790,8 @@ TEST(Refresher, SearchResultMediaDecode)
 	const auto it = cache.find(80);
 	ASSERT_TRUE(it != cache.end());
 	ASSERT_TRUE(it->second.has_media);
-	ASSERT_EQUALS(static_cast<std::uint32_t>(1320), it->second.media.length_s);
-	ASSERT_EQUALS(static_cast<std::uint32_t>(2500), it->second.media.bitrate);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(1320), it->second.media.duration_seconds);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(2500), it->second.media.bitrate_kilobits_per_second);
 	ASSERT_EQUALS(std::string("h264"), it->second.media.codec);
 
 	const auto it2 = cache.find(81);

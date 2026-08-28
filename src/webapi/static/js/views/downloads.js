@@ -1,6 +1,6 @@
 // Downloads view: downloads queue (with actions).
-// Mirrors the aMule desktop "Downloads" page: category tabs, status filter,
-// multi-select, column sorting, per-row pause/resume/priority/category/cancel,
+// Mirrors the aMule desktop "Downloads" page: category_index tabs, status filter,
+// multi-select, column sorting, per-row pause/resume/priority/category_index/cancel,
 // bulk actions, clear-completed, live totals, and an ed2k adder for mobile.
 
 import { api, bulkFailures } from "../api.js";
@@ -29,7 +29,7 @@ export default function Downloads({ isGuest }) {
   const [categories, setCategories] = useState([]);
   const [selection, setSelection] = useState(() => new Set());
   const { sortKey, sortDir, hidden, widths, toggleSort, toggleCol, setWidth, resetPrefs } =
-    useTablePrefs("downloads", { sortKey: "name", sortDir: 1, hidden: ["done", "category"] });
+    useTablePrefs("downloads", { sortKey: "name", sortDir: 1, hidden: ["done", "category_index"] });
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterText, setFilterText] = useState("");
@@ -37,7 +37,7 @@ export default function Downloads({ isGuest }) {
   const [detailHash, setDetailHash] = useState(null); // row shown in the detail panel
 
   // Open (or toggle closed) the detail panel; ignore clicks landing on a row's
-  // own controls (checkbox / priority / category / action buttons).
+  // own controls (checkbox / priority / category_index / action buttons).
   const onRowClick = (d, e) => {
     if (e.target.closest("input,select,button,a,label")) return;
     setDetailHash((h) => (h === d.hash ? null : d.hash));
@@ -53,7 +53,7 @@ export default function Downloads({ isGuest }) {
     data.ensure("downloads");
   }, []);
 
-  // A deleted category renumbers the survivors, so a stale filter tab can point
+  // A deleted category_index renumbers the survivors, so a stale filter tab can point
   // at a now-missing index (empty list, no active tab). Fall back to "all".
   useEffect(() => {
     if (filterCategory !== "all" &&
@@ -83,7 +83,7 @@ export default function Downloads({ isGuest }) {
   const pause = (h) => mutate(() => api.patch("downloads/" + h, { status: "paused" }));
   const resume = (h) => mutate(() => api.patch("downloads/" + h, { status: "resumed" }));
   const setPriority = (h, p) => mutate(() => api.patch("downloads/" + h, { priority: p }));
-  const setCategory = (h, c) => mutate(() => api.patch("downloads/" + h, { category: c }));
+  const setCategory = (h, c) => mutate(() => api.patch("downloads/" + h, { category_index: c }));
 
   const del = async (d) => {
     if (!(await confirmDialog(t("downloads_confirm_cancel_download", { name: d.name })))) return;
@@ -117,7 +117,7 @@ export default function Downloads({ isGuest }) {
     return runBulk((h) => api.patch("downloads", { hashes: h, status }));
   };
 
-  // Apply the same field change (priority/category) to every selected row.
+  // Apply the same field change (priority/category_index) to every selected row.
   const bulkPatch = (patch) => runBulk((h) => api.patch("downloads", { hashes: h, ...patch }));
 
   // The handler clears in one EC roundtrip: every row it returns is an ok,
@@ -132,7 +132,7 @@ export default function Downloads({ isGuest }) {
   // --- derived ----------------------------------------------------------
   let list = downloads.slice();
   if (filterStatus !== "all") list = list.filter((d) => matchStatus(d, filterStatus));
-  if (filterCategory !== "all") list = list.filter((d) => d.category === Number(filterCategory));
+  if (filterCategory !== "all") list = list.filter((d) => d.category_index === Number(filterCategory));
   if (filterText) { const match = textMatcher(filterText); list = list.filter((d) => match(d.name)); }
   const allSelected = list.length > 0 && list.every((d) => selection.has(d.hash));
   const selectedCount = list.filter((d) => selection.has(d.hash)).length;
@@ -155,14 +155,14 @@ export default function Downloads({ isGuest }) {
       sortVal: (d) => (d.name || "").toLowerCase(),
       cell: (d) => html`<span title=${d.name}>${d.name}</span>` },
     { key: "size", label: t("downloads_size"), num: true, width: "110px", sortable: true,
-      sortVal: (d) => d.size || 0, cell: (d) => formatBytes(d.size) },
+      sortVal: (d) => d.size_bytes || 0, cell: (d) => formatBytes(d.size_bytes) },
     { key: "done", label: t("downloads_col_done"), num: true, width: "110px", sortable: true,
-      sortVal: (d) => d.size_done || 0, cell: (d) => formatBytes(d.size_done) },
+      sortVal: (d) => d.completed_bytes || 0, cell: (d) => formatBytes(d.completed_bytes) },
     { key: "progress", label: t("downloads_progress"), width: "150px", sortable: true,
       sortVal: (d) => (d.progress && d.progress.percent) || 0,
       cell: (d) => html`<${ProgressBar} percent=${d.progress && d.progress.percent} />` },
     { key: "speed", label: t("downloads_speed"), num: true, width: "100px", sortable: true,
-      sortVal: (d) => d.speed_bps || 0, cell: (d) => formatSpeed(d.speed_bps) },
+      sortVal: (d) => d.speed_bytes_per_second || 0, cell: (d) => formatSpeed(d.speed_bytes_per_second) },
     { key: "sources", label: t("downloads_sources"), num: true, width: "100px", sortable: true,
       sortVal: (d) => (d.sources && d.sources.total) || 0,
       cell: (d) => { const src = d.sources || {}; return html`<span title=${t("downloads_title_transferring_total")}>${(src.transferring || 0) + " / " + (src.total || 0)}</span>`; } },
@@ -176,12 +176,12 @@ export default function Downloads({ isGuest }) {
                     onChange=${(e) => setPriority(d.hash, e.target.value)}>
               ${PRIORITIES.map(([v, l]) => html`<option value=${v}>${v === "auto" && d.priority_auto ? prioLabel(d) : l}</option>`)}
             </select>` },
-    { key: "category", label: t("downloads_category"), width: "150px", sortable: true,
-      sortVal: (d) => categoryName(categories, d.category).toLowerCase(),
+    { key: "category_index", label: t("downloads_category"), width: "150px", sortable: true,
+      sortVal: (d) => categoryName(categories, d.category_index).toLowerCase(),
       cell: (d) => isGuest
-        ? categoryName(categories, d.category)
+        ? categoryName(categories, d.category_index)
         : html`
-            <select class="input input-sm admin-only" value=${d.category}
+            <select class="input input-sm admin-only" value=${d.category_index}
                     onChange=${(e) => setCategory(d.hash, Number(e.target.value))}>
               ${categoryOptions(categories)}
             </select>` },
@@ -203,7 +203,7 @@ export default function Downloads({ isGuest }) {
     (selection.has(d.hash) ? "row-selected " : "") + (d.hash === detailHash ? "row-active" : "");
 
   let size = 0, done = 0, speed = 0;
-  for (const d of list) { size += d.size || 0; done += d.size_done || 0; speed += d.speed_bps || 0; }
+  for (const d of list) { size += d.size_bytes || 0; done += d.completed_bytes || 0; speed += d.speed_bytes_per_second || 0; }
 
   const freeSpace = formatFreeSpace(disk.temp_free_bytes, disk.incoming_free_bytes);
 
@@ -211,11 +211,11 @@ export default function Downloads({ isGuest }) {
     { key: "all", label: t("downloads_all"), badge: downloads.length },
     ...categories.filter((c) => c.index !== 0).map((c) => ({
       key: String(c.index), label: c.name || ("#" + c.index),
-      badge: downloads.filter((d) => d.category === c.index).length,
+      badge: downloads.filter((d) => d.category_index === c.index).length,
     })),
   ];
 
-  // View-level actions ride the right of the category tab strip (no separate
+  // View-level actions ride the right of the category_index tab strip (no separate
   // title row — the nav already names the page). The manage-categories mode has
   // no tab strip, so they get a plain toolbar row there.
   const actions = html`
@@ -252,7 +252,7 @@ export default function Downloads({ isGuest }) {
             ${PRIORITIES.map(([v, l]) => html`<option value=${v}>${l}</option>`)}
           </select>
           <select class="input input-sm" value=""
-                  onChange=${(e) => { const v = e.target.value; e.target.value = ""; if (v !== "") bulkPatch({ category: Number(v) }); }}>
+                  onChange=${(e) => { const v = e.target.value; e.target.value = ""; if (v !== "") bulkPatch({ category_index: Number(v) }); }}>
             <option value="">${t("downloads_category")}…</option>
             ${categoryOptions(categories)}
           </select>
