@@ -411,8 +411,11 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 	// only slots that are not active. Skipping the fetch when nobody is
 	// subscribed would hand that client frozen results.
 	//
-	// HasAnySearch() asks about OUR slots, not the daemon's searches, and the
-	// daemon never tells us about one unasked: a slot exists only because
+	// HasAnySearch() asks about OUR slots -- specifically the ones the daemon
+	// could still speak for, since a detached slot's search has already been
+	// evicted core-side and polling for it would never return anything. It
+	// does not ask about the daemon's searches, and the daemon never tells us
+	// about one unasked: a slot exists only because
 	// this process started the search or because a read discovered it
 	// (RequireSearch -> DiscoverSearchIfHeldByCore, a one-off
 	// EC_OP_SEARCH_LIST on a cache miss). A search begun in amulegui or the

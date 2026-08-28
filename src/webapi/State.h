@@ -1807,10 +1807,12 @@ public:
 	std::vector<std::uint32_t> ActiveSearchIds() const;
 	// Every live slot id, for the SSE per-search diff.
 	std::vector<std::uint32_t> AllSearchIds() const;
-	// Whether any slot exists at all. The union poll asks for every search in
-	// one request, so it needs no id list -- only whether the request is worth
-	// sending. Separate from AllSearchIds() to avoid building and copying a
-	// vector once a second just to test it for emptiness.
+	// Whether any slot the daemon could still speak for exists. The union poll
+	// asks for every search in one request, so it needs no id list -- only
+	// whether the request is worth sending. Detached slots are excluded: the
+	// daemon has evicted those, so polling on their behalf is a roundtrip a
+	// second that can never return anything. Separate from AllSearchIds() to
+	// avoid building and copying a vector once a second just to test it.
 	bool HasAnySearch() const;
 	// Find a result carrying this (already-lowercased) hash across ALL open
 	// searches — the hash-keyed comments endpoints are search-agnostic. The

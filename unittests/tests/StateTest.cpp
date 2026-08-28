@@ -1603,6 +1603,26 @@ TEST(State, MarkSearchStartedClearsTheRawResultsAndTheIndex)
 	});
 }
 
+// The union poll is gated on there being a slot the daemon could still speak
+// for. A detached slot is not one: its search is gone core-side, so polling on
+// its behalf is a roundtrip a second that can never return anything. Without
+// this, a user who runs one search and never deletes it keeps amuleapi polling
+// forever once the daemon's ring drops it.
+TEST(State, DetachedSlotsDoNotKeepTheUnionPollAlive)
+{
+	CState state;
+	state.MarkSearchStarted(42, "global", "ubuntu");
+	ASSERT_TRUE(state.HasAnySearch());
+
+	state.DetachSearch(42);
+	ASSERT_TRUE(!state.HasAnySearch());
+
+	// A second, still-attached slot re-opens it: the poll covers every search
+	// in one request, so one live slot is reason enough to send it.
+	state.MarkSearchStarted(43, "kad", "debian");
+	ASSERT_TRUE(state.HasAnySearch());
+}
+
 // Slots are capped, or a long-lived process watching a busy GUI accumulates one
 // result map per search forever. Active searches are never the victim, and a
 // detached one -- the daemon no longer holds it, so nothing is lost -- outranks
