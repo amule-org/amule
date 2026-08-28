@@ -201,11 +201,11 @@ function ServersPanel({ isGuest }) {
     { key: "description", label: t("networks_server_description"), sortable: true,
       sortVal: (s) => (s.description || "").toLowerCase(), cell: (s) => s.description || "" },
     { key: "users", label: t("networks_server_users"), num: true, width: "130px", sortable: true,
-      sortVal: (s) => s.users || 0,
-      cell: (s) => formatInt(s.users) + (s.max_users ? " / " + formatInt(s.max_users) : "") },
+      sortVal: (s) => s.user_count || 0,
+      cell: (s) => formatInt(s.user_count) + (s.max_user_count ? " / " + formatInt(s.max_user_count) : "") },
     { key: "files", label: t("networks_server_files"), num: true, width: "110px", sortable: true,
-      sortVal: (s) => s.files || 0, cell: (s) => formatInt(s.files) },
-    // Per-user publishing limits the server advertises, not subsets of `files`.
+      sortVal: (s) => s.file_count || 0, cell: (s) => formatInt(s.file_count) },
+    // Per-user publishing limits the server advertises, not subsets of `file_count`.
     // 0 means "the server has not told us yet" — blank, not "0", exactly as the
     // desktop's Soft/Hard Files columns and the API docs say.
     { key: "soft_files", label: t("networks_server_soft_limit"), num: true, width: "110px", sortable: true,
@@ -233,12 +233,12 @@ function ServersPanel({ isGuest }) {
     // Static and priority are both PATCH /servers/{ecid} fields, so both cells are
     // selects for an admin and plain labels for a guest (as in downloads/shared).
     { key: "static", label: t("networks_server_static"), width: "90px", sortable: true,
-      sortVal: (s) => (s.static ? 1 : 0),
+      sortVal: (s) => (s.permanent ? 1 : 0),
       cell: (s) => isGuest
-        ? (s.static ? t("networks_server_static_yes") : t("networks_server_static_no"))
+        ? (s.permanent ? t("networks_server_static_yes") : t("networks_server_static_no"))
         : html`
-            <select class="input input-sm admin-only" value=${s.static ? "yes" : "no"}
-                    onChange=${(e) => patchServer(s.ecid, { static: e.target.value === "yes" })}>
+            <select class="input input-sm admin-only" value=${s.permanent ? "yes" : "no"}
+                    onChange=${(e) => patchServer(s.ecid, { permanent: e.target.value === "yes" })}>
               <option value="yes">${t("networks_server_static_yes")}</option>
               <option value="no">${t("networks_server_static_no")}</option>
             </select>` },

@@ -306,7 +306,7 @@ Rows added or removed *during* a sweep are not missed: both emit an SSE event, s
 | `GET /downloads/{hash}/clients`<br>`GET /shared/{hash}/clients` | same keys as `/clients`, `after` included |
 | `GET /known_clients`  | **`user_hash`** (id), `name`, `software`, `first_seen_at`, `last_seen_at`, `session_count`, `uploaded_bytes_total`, `downloaded_bytes_total` |
 | `GET /shared`         | **`hash`** (id), `name`, `size_bytes` |
-| `GET /servers`        | **`ecid`** (id), `name`, `users`, `ping`, `files` |
+| `GET /servers`        | **`ecid`** (id), `name`, `user_count`, `ping_ms`, `file_count` |
 | `GET /friends`        | **`ecid`** (id), `name`, `online` |
 | `GET /chats`          | **`client_ecid`** (id), `last_message_at`, `name` |
 | `GET /search/{id}/results` | **`hash`** (id), `name`, `size`, `sources`, `rating`, `directory` |
@@ -1814,15 +1814,15 @@ Send a bare priority level to pin it (the file's `priority_auto` becomes `false`
       "address": "203.0.113.5:4242",
       "country_code": "de",
       "port": 4242,
-      "users": 312000,
-      "max_users": 500000,
-      "files": 75000000,
+      "user_count": 312000,
+      "max_user_count": 500000,
+      "file_count": 75000000,
       "soft_file_limit": 1000,
       "hard_file_limit": 5000,
       "priority": "normal",
       "ping_ms": 42,
       "failed_count": 0,
-      "static": false,
+      "permanent": false,
       "tcp_flags": {
         "bitmask": 1497,
         "compression": true,
@@ -1851,7 +1851,7 @@ Send a bare priority level to pin it (the file's `priority_auto` becomes `false`
 
 `country_code` is the ISO 3166-1 alpha-2 code (lowercase, e.g. `"de"`) of the server host, resolved server-side from the server IP by the daemon's GeoIP database — same semantics and empty-string fallback as the peer `country_code` on `/clients`, and the same artwork route, [`GET /flags/{code}.png`](#get-flagscodepng).
 
-`files` is how many files the server indexes. `soft_file_limit` and `hard_file_limit` are something else entirely: the per-user publishing limits the server advertises. Below the soft limit a client may publish every file it shares, between soft and hard only its rarest, above the hard limit nothing. Both arrive only once the server has answered a UDP status request, so **`0` means "not reported yet", not "the limit is zero"** — render it blank rather than as a number, the way the desktop's Soft Files / Hard Files columns do. `users`, `max_users` and `files` share that sentinel.
+`file_count` is how many files the server indexes. `soft_file_limit` and `hard_file_limit` are something else entirely: the per-user publishing limits the server advertises. Below the soft limit a client may publish every file it shares, between soft and hard only its rarest, above the hard limit nothing. Both arrive only once the server has answered a UDP status request, so **`0` means "not reported yet", not "the limit is zero"** — render it blank rather than as a number, the way the desktop's Soft Files / Hard Files columns do. `user_count`, `max_user_count` and `file_count` share that sentinel.
 
 `failed_count` is the number of consecutive failed connection attempts, not a boolean.
 
@@ -1938,21 +1938,21 @@ Sets an ed2k server's priority, its static flag, or both — the same operation 
 **Body:** both fields are optional, and only the ones present are applied; a body with neither is a `400`.
 
 ```json
-{ "priority": "high", "static": true }
+{ "priority": "high", "permanent": true }
 ```
 
-`priority` is one of `"low"` / `"normal"` / `"high"` — the same values `GET /servers` reports. `static` marks the server as one amuled keeps across list updates.
+`priority` is one of `"low"` / `"normal"` / `"high"` — the same values `GET /servers` reports. `permanent` marks the server as one amuled keeps across list updates.
 
 ```sh
 curl -s -X PATCH -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
-  -d '{"priority":"high","static":true}' \
+  -d '{"priority":"high","permanent":true}' \
   "http://$HOST/api/v0/servers/1"
 ```
 
 **Response:** `200 OK` → the full server object as it now stands, the same shape [`GET /servers`](#get-apiv0servers) lists. A `PATCH` answers with the state the caller just produced, so no re-read is needed to see it.
 
-**Errors:** `400 bad_request` (unknown `priority`, non-bool `static`, or neither field present), `400 amuled_rejected`, `404 not_found`, `503 ec_unavailable`.
+**Errors:** `400 bad_request` (unknown `priority`, non-bool `permanent`, or neither field present), `400 amuled_rejected`, `404 not_found`, `503 ec_unavailable`.
 
 #### `POST /api/v0/servers_update`
 
@@ -1963,10 +1963,12 @@ Tells amuled to fetch the `server.met` from the supplied URL and refresh its lis
 **Body:**
 
 ```json
-{ "servers_url": "http://example.com/server.met" }
+{ "url": "http://example.com/server.met" }
 ```
 
-`servers_url` is **required** here, and must start with `http://` or `https://`; omitting it, or sending anything else, is a `400 bad_request`. This differs from [`POST /ipfilter/update`](#post-apiv0ipfilterupdate), which does fall back to its configured preference when the field is absent.
+`url` is **required** here, and must start with `http://` or `https://`; omitting it, or sending anything else, is a `400 bad_request`. This differs from [`POST /ipfilter/update`](#post-apiv0ipfilterupdate), which does fall back to its configured preference when the field is absent.
+
+All three `*/update` endpoints -- servers, Kad nodes and the IP filter -- name this field `url` (R6). Each used to repeat a noun the path already carries (`servers_url`, `nodes_url`, `ipfilter_url`).
 
 The URL is **persisted** into the `servers.update_url` preference, so a subsequent `GET /preferences` reflects it — there is no need to PATCH it separately.
 
@@ -2405,13 +2407,13 @@ Downloads a `nodes.dat` from the supplied URL and rebuilds the Kad node list fro
 **Body:**
 
 ```json
-{ "nodes_url": "https://upd.emule-security.org/nodes.dat" }
+{ "url": "https://upd.emule-security.org/nodes.dat" }
 ```
 
 ```sh
 curl -s -X POST -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
-  -d '{"nodes_url":"https://upd.emule-security.org/nodes.dat"}' \
+  -d '{"url":"https://upd.emule-security.org/nodes.dat"}' \
   "http://$HOST/api/v0/kad/update"
 ```
 
@@ -2419,7 +2421,7 @@ Two side effects are worth planning for. The URL is **persisted** into the `kade
 
 **Response:** `202 Accepted`, no body. The URL came from the request, and the download is asynchronous -- the `202` confirms amuled accepted the request, not that the node list was replaced, and its outcome arrives on the log channel.
 
-**Errors:** `400 bad_request` (missing/non-string/empty `nodes_url`, or a scheme other than `http://` / `https://`), `400 amuled_rejected`, `503 ec_unavailable`.
+**Errors:** `400 bad_request` (missing/non-string/empty `url`, or a scheme other than `http://` / `https://`), `400 amuled_rejected`, `503 ec_unavailable`.
 
 #### `GET /api/v0/kad`
 
@@ -2500,15 +2502,15 @@ Downloads an `ipfilter.dat` from a URL, swaps it in and reloads — the desktop 
 **Body (optional):**
 
 ```json
-{ "ipfilter_url": "http://upd.emule-security.org/ipfilter.zip" }
+{ "url": "http://upd.emule-security.org/ipfilter.zip" }
 ```
 
-`ipfilter_url` must start with `http://` or `https://` when given. Omit it and the configured `security.ipfilter_update_url` is used instead; if that is empty too the request is rejected `400 bad_request` rather than accepted and silently dropped. The configured value is read from amuleapi's preferences snapshot, which trails amuled by up to one refresh tick — a `PATCH /preferences` immediately followed by a bodyless update can still send the previous URL, so pass `ipfilter_url` explicitly when it matters which one runs.
+`url` must start with `http://` or `https://` when given. Omit it and the configured `security.ipfilter_update_url` is used instead; if that is empty too the request is rejected `400 bad_request` rather than accepted and silently dropped. The configured value is read from amuleapi's preferences snapshot, which trails amuled by up to one refresh tick — a `PATCH /preferences` immediately followed by a bodyless update can still send the previous URL, so pass `url` explicitly when it matters which one runs.
 
 ```sh
 curl -s -X POST -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
-  -d '{"ipfilter_url":"http://upd.emule-security.org/ipfilter.zip"}' \
+  -d '{"url":"http://upd.emule-security.org/ipfilter.zip"}' \
   "http://$HOST/api/v0/ipfilter/update"
 ```
 
@@ -2516,7 +2518,7 @@ An explicit URL is **persisted** into the `security.ipfilter_update_url` prefere
 
 **Response:** `202 Accepted`, no body. Where the request named a URL it already knows which one ran; where it omitted one, `security.ipfilter_update_url` on [`GET /preferences`](#get-apiv0preferences) is the answer, and the paragraph above is why reading it there is the honest version -- the snapshot this handler resolves from is the same one that endpoint serves.
 
-**Errors:** `400 bad_request` (non-string / empty / non-`http(s)` `ipfilter_url`, or no URL available at all), `400 amuled_rejected`, `503 ec_unavailable`.
+**Errors:** `400 bad_request` (non-string / empty / non-`http(s)` `url`, or no URL available at all), `400 amuled_rejected`, `503 ec_unavailable`.
 
 ---
 

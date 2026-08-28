@@ -13,7 +13,7 @@
 #   POST /api/v0/kad/bootstrap          — EC_OP_KAD_BOOTSTRAP_FROM_IP
 #       body: {ip: "1.2.3.4" | uint32, port: uint16}
 #   POST /api/v0/kad/update             — EC_OP_KAD_UPDATE_FROM_URL
-#       body: {nodes_url: "https://.../nodes.dat"}
+#       body: {url: "https://.../nodes.dat"}
 #
 # amuled's CONNECT/DISCONNECT return EC_OP_STRINGS with status
 # messages — the handler relays those into `response.message`. That
@@ -214,29 +214,29 @@ _assert_status 405 "DELETE /kad/bootstrap → 405"
 # instead; what is pinned here is everything that must be rejected
 # before any of that can happen.
 _curl -X POST -H "Content-Type: application/json" \
-	-d '{"nodes_url":"https://example.com/nodes.dat"}' "$HOST/api/v0/kad/update"
+	-d '{"url":"https://example.com/nodes.dat"}' "$HOST/api/v0/kad/update"
 _assert_status 401 "POST /kad/update (no token) → 401"
 
 if [ "$HAVE_GUEST" = "1" ]; then
 	_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d '{"nodes_url":"https://example.com/nodes.dat"}' "$HOST/api/v0/kad/update"
+		-d '{"url":"https://example.com/nodes.dat"}' "$HOST/api/v0/kad/update"
 	_assert_status 403 "POST /kad/update (guest) → 403"
 fi
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" -d '{}' "$HOST/api/v0/kad/update"
-_assert_status 400 "POST /kad/update missing nodes_url → 400"
+_assert_status 400 "POST /kad/update missing url → 400"
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"nodes_url":""}' "$HOST/api/v0/kad/update"
-_assert_status 400 "POST /kad/update empty nodes_url → 400"
+	-d '{"url":""}' "$HOST/api/v0/kad/update"
+_assert_status 400 "POST /kad/update empty url → 400"
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"nodes_url":123}' "$HOST/api/v0/kad/update"
-_assert_status 400 "POST /kad/update non-string nodes_url → 400"
+	-d '{"url":123}' "$HOST/api/v0/kad/update"
+_assert_status 400 "POST /kad/update non-string url → 400"
 
 # Scheme gate: amuled hands the string to libcurl, so a non-http(s)
 # scheme has to be rejected here or it fails asynchronously with no
@@ -244,7 +244,7 @@ _assert_status 400 "POST /kad/update non-string nodes_url → 400"
 for BAD in "ftp://example.com/nodes.dat" "file:///etc/passwd" "example.com/nodes.dat"; do
 	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d "{\"nodes_url\":\"$BAD\"}" "$HOST/api/v0/kad/update"
+		-d "{\"url\":\"$BAD\"}" "$HOST/api/v0/kad/update"
 	_assert_status 400 "POST /kad/update rejects scheme: $BAD → 400"
 done
 

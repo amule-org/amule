@@ -234,11 +234,15 @@ std::string ToJson(const ServerSnapshot &s)
 	  << ",\"description\":\"" << EscJson(s.description) << "\""
 	  << ",\"version\":\"" << EscJson(s.version) << "\""
 	  << ",\"address\":\"" << EscJson(s.address) << "\""
-	  << ",\"country_code\":\"" << EscJson(s.country_code) << "\""
-	  << ",\"port\":" << s.port << ",\"users\":" << s.users << ",\"max_users\":" << s.max_users
-	  << ",\"files\":" << s.files << ",\"soft_file_limit\":" << s.soft_file_limit
+	  // The bare IP beside the "ip:port" form, matching the REST row.
+	  << ",\"ip\":\"" << EscJson(s.address.substr(0, s.address.rfind(':'))) << "\""
+	  << ",\"country_code\":"
+	  << (s.country_code.empty() ? std::string("null") : "\"" + EscJson(s.country_code) + "\"")
+	  << ",\"port\":" << s.port << ",\"user_count\":" << s.users
+	  << ",\"max_user_count\":" << s.max_users << ",\"file_count\":" << s.files
+	  << ",\"soft_file_limit\":" << s.soft_file_limit
 	  << ",\"hard_file_limit\":" << s.hard_file_limit << ",\"priority\":\"" << EscJson(s.priority) << "\""
-	  << ",\"ping_ms\":" << s.ping_ms << ",\"failed_count\":" << s.failed_count << ",\"static\":"
+	  << ",\"ping_ms\":" << s.ping_ms << ",\"failed_count\":" << s.failed_count << ",\"permanent\":"
 	  << (s.is_static ? "true" : "false")
 	  // Same fragment builder WriteServerObject uses, so the event payload and
 	  // the REST object stay byte-identical here by construction.

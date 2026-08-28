@@ -95,8 +95,12 @@ if [ "$COUNT" -gt 0 ]; then
 	echo "  --- /servers has $COUNT entry/entries; per-item shape ---"
 	_assert_json_eq '.servers[0].name     | type' string  '/servers[0].name is string'
 	_assert_json_eq '.servers[0].address  | type' string  '/servers[0].address is string'
+	# Added beside `address`: every client had to re-parse the ip:port form.
+	_assert_json_eq '.servers[0].ip       | type' string  '/servers[0].ip is string'
+	_assert_json_eq '(.servers[0].address | startswith(.servers[0].ip))' true \
+		'/servers[0].address begins with the bare ip'
 	_assert_json_eq '.servers[0].port     | type' number  '/servers[0].port is numeric'
-	_assert_json_eq '.servers[0].users    | type' number  '/servers[0].users is numeric'
+	_assert_json_eq '.servers[0].user_count | type' number  '/servers[0].user_count is numeric'
 	_assert_json_eq '.servers[0].priority | test("^(low|normal|high)$")' \
 		true '/servers[0].priority is a known enum value'
 	_assert_json_eq '.servers[0].static   | type' boolean '/servers[0].static is boolean'

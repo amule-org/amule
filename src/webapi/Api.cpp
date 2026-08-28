@@ -5646,16 +5646,19 @@ void WriteServerObject(CJsonWriter &w, const webapi::ServerSnapshot &s)
 	w.ValueString(wxString::FromUTF8(s.version.c_str()));
 	w.Key("address");
 	w.ValueString(wxString::FromUTF8(s.address.c_str()));
-	// ISO 3166-1 alpha-2 (lowercase); "" when GeoIP is off/unresolved (#440).
-	w.Key("country_code");
-	w.ValueString(wxString::FromUTF8(s.country_code.c_str()));
+	// The bare IP beside the "ip:port" form. Every client needed it and had
+	// to re-parse `address` to get it.
+	w.Key("ip");
+	w.ValueString(wxString::FromUTF8(s.address.substr(0, s.address.rfind(':')).c_str()));
+	// ISO 3166-1 alpha-2 (lowercase); null when GeoIP is off/unresolved (#440).
+	WriteStringOrNull(w, "country_code", !s.country_code.empty(), s.country_code);
 	w.Key("port");
 	w.ValueInt(static_cast<int64_t>(s.port));
-	w.Key("users");
+	w.Key("user_count");
 	w.ValueInt(static_cast<int64_t>(s.users));
-	w.Key("max_users");
+	w.Key("max_user_count");
 	w.ValueInt(static_cast<int64_t>(s.max_users));
-	w.Key("files");
+	w.Key("file_count");
 	w.ValueInt(static_cast<int64_t>(s.files));
 	// 0 means the server has not reported a limit yet, not a limit of zero;
 	// the sentinel is documented so a UI can render it blank the way the
@@ -5670,7 +5673,9 @@ void WriteServerObject(CJsonWriter &w, const webapi::ServerSnapshot &s)
 	w.ValueInt(static_cast<int64_t>(s.ping_ms));
 	w.Key("failed_count");
 	w.ValueInt(static_cast<int64_t>(s.failed_count));
-	w.Key("static");
+	// `permanent`, not `permanent`: a reserved word in C++, Java, C# and
+	// TypeScript-adjacent codegen, so a generated client has to mangle it.
+	w.Key("permanent");
 	w.ValueBool(s.is_static);
 	// Decoded capability bits. Written as a pre-built fragment from the shared
 	// tables so this object and the SSE payload in EventDiff.cpp -- two
@@ -5747,9 +5752,10 @@ CHttpServer::Response CApiDispatcher::HandleServers(const CHttpServer::Request &
 		// cares about, not the order a UI table does.
 		{ "ecid", SORT_BY(ecid), ANCHOR_ON_NUM(ecid) },
 		{ "name", SORT_BY(name) },
-		{ "users", SORT_BY(users) },
-		{ "ping", SORT_BY(ping_ms) },
-		{ "files", SORT_BY(files) },
+		// R7: spelled like the response keys they order by.
+		{ "user_count", SORT_BY(users) },
+		{ "ping_ms", SORT_BY(ping_ms) },
+		{ "file_count", SORT_BY(files) },
 	};
 	return ListResponse(m_state, "servers", m_state.Servers(), WriteServerObject, params, kComps);
 }
@@ -6879,7 +6885,7 @@ CHttpServer::Response CApiDispatcher::HandleServerUpdateFromUrl(const CHttpServe
 	// grabs whatever's already there; the `server_added` SSE events keep
 	// firing on subsequent natural ticks as more entries land.
 	static const UrlFetchSpec kSpec = {
-		"servers_url", EC_OP_SERVER_UPDATE_FROM_URL, EC_TAG_SERVERS_UPDATE_URL, true, true
+		"url", EC_OP_SERVER_UPDATE_FROM_URL, EC_TAG_SERVERS_UPDATE_URL, true, true
 	};
 	std::string url;
 	CHttpServer::Response rejection;
@@ -7047,9 +7053,9 @@ CHttpServer::Response CApiDispatcher::HandleServerPatch(
 
 	bool is_static = false;
 	bool has_static = false;
-	if (const auto it = obj.find("static"); it != obj.end()) {
+	if (const auto it = obj.find("permanent"); it != obj.end()) {
 		if (!it->second.is<bool>()) {
-			return ErrorResponse(400, "bad_request", "`static` must be a bool");
+			return ErrorResponse(400, "bad_request", "`permanent` must be a bool");
 		}
 		is_static = it->second.get<bool>();
 		has_static = true;
@@ -7057,7 +7063,7 @@ CHttpServer::Response CApiDispatcher::HandleServerPatch(
 
 	if (!has_prio && !has_static) {
 		return ErrorResponse(
-			400, "bad_request", "body must include at least one of `priority`, `static`");
+			400, "bad_request", "body must include at least one of `priority`, `permanent`");
 	}
 
 	if (auto r = RequireSnapshot(m_state))
@@ -8926,7 +8932,7 @@ CHttpServer::Response CApiDispatcher::HandleKadUpdateFromUrl(const CHttpServer::
 	// the download completes amuled stops Kad, swaps nodes.dat in and
 	// starts Kad again, and the natural tick reports that.
 	static const UrlFetchSpec kSpec = {
-		"nodes_url", EC_OP_KAD_UPDATE_FROM_URL, EC_TAG_KADEMLIA_UPDATE_URL, true, false
+		"url", EC_OP_KAD_UPDATE_FROM_URL, EC_TAG_KADEMLIA_UPDATE_URL, true, false
 	};
 	std::string url;
 	CHttpServer::Response rejection;
@@ -8978,7 +8984,7 @@ CHttpServer::Response CApiDispatcher::HandleIpfilterUpdate(const CHttpServer::Re
 	// No inline RefresherTick: the download is asynchronous and lands in
 	// amuled's filter, not in a cache this process holds.
 	static const UrlFetchSpec kSpec = {
-		"ipfilter_url", EC_OP_IPFILTER_UPDATE, EC_TAG_STRING, false, false
+		"url", EC_OP_IPFILTER_UPDATE, EC_TAG_STRING, false, false
 	};
 	// Named local: Preferences() hands back a snapshot by value. Offer it as
 	// the fallback only once there is a snapshot to read — before the first
