@@ -1403,6 +1403,16 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		return HandleIpfilterUpdate(req);
 	}
 
+	// GeoIP action. The GeoIP *settings* are ordinary preferences under
+	// [geoip]; this is the standalone "update now" operation, a route
+	// rather than a write-only boolean inside PATCH /preferences.
+	if (path == "/api/v0/geoip/update") {
+		if (req.method != "POST") {
+			return MethodNotAllowed("POST", "only POST on /geoip/update");
+		}
+		return HandleGeoipUpdate(req);
+	}
+
 	// re-hash one shared file against its on-disk data. Matched before the
 	// single-segment `/shared/{hash}` pattern below purely for locality —
 	// the two can't collide, this one carries an extra path segment.
@@ -2070,7 +2080,7 @@ CHttpServer::Response CApiDispatcher::HandleVersion(const CHttpServer::Request &
 	if (auth.ok) {
 		const auto prefs = m_state.Preferences();
 		const auto status = m_state.Status();
-		const bool check_enabled = prefs.version_check_available && prefs.check_new_version;
+		const bool check_enabled = prefs.version_check_available && prefs.version_check_enabled;
 		const bool checked = status.version_check_done;
 		w.Key("update");
 		w.BeginObject();
@@ -4908,7 +4918,7 @@ CHttpServer::Response CApiDispatcher::HandleVersionCheck(const CHttpServer::Requ
 	// when the daemon can't check, so we never send an EC op that will fail
 	// and never expose the daemon's localized reason (English-only contract).
 	const auto prefs = m_state.Preferences();
-	if (!(prefs.version_check_available && prefs.check_new_version)) {
+	if (!(prefs.version_check_available && prefs.version_check_enabled)) {
 		return ErrorResponse(409,
 			"update_check_unavailable",
 			"version check is disabled or unavailable on the connected daemon");
@@ -5706,7 +5716,7 @@ void WriteCategoryObject(CJsonWriter &w, const webapi::CategorySnapshot &c)
 	w.Key("name");
 	w.ValueString(wxString::FromUTF8(c.name.c_str()));
 	// `save_path`, not `path`: it is where finished files in this category
-	// land, which `path` did not distinguish from directories.incoming.
+	// land, which `path` did not distinguish from directories.incoming_path.
 	w.Key("save_path");
 	w.ValueString(wxString::FromUTF8(c.path.c_str()));
 	w.Key("comment");
@@ -5871,7 +5881,7 @@ bool FindClientByEcid(const webapi::CState &state, std::uint32_t ecid, webapi::C
 // picker got a blank row it had to label itself, and had nowhere to show where
 // an uncategorised download lands. Neither value is invented: "Default" names
 // the row every client already has to describe somehow, and the path is
-// `directories.incoming`, which is genuinely where a file with no category is
+// `directories.incoming_path`, which is genuinely where a file with no category is
 // saved.
 //
 // Filling both in unconditionally is the point. Doing it only for the
@@ -5890,7 +5900,7 @@ std::vector<webapi::CategorySnapshot> CategoriesWithDefault(const webapi::CState
 	std::vector<webapi::CategorySnapshot> cats = state.Categories();
 	const auto fill_default = [&state](webapi::CategorySnapshot &c) {
 		c.name = "Default";
-		c.path = state.Preferences().directories.incoming;
+		c.path = state.Preferences().directories.incoming_path;
 	};
 	for (auto &c : cats) {
 		if (c.index == 0) {
@@ -8193,7 +8203,7 @@ namespace
 // Categories whose name contains a dot are nested one level under their
 // prefix (remote_controls.webserver -> "remote_controls": {"webserver": {...}}),
 // which is how the two remote-control subsystems avoid prefixing every field.
-// Write-only rows (passwords, the ip2country trigger) and Rejected rows are
+// Write-only rows (passwords) and Rejected rows are
 // never emitted.
 void WritePrefFieldValue(CJsonWriter &w, const webapi::PrefField &f, const webapi::PreferencesSnapshot &p)
 {
@@ -8395,7 +8405,7 @@ bool PrefTakeBool(const picojson::object &o,
 // while EC carries the bare ordinal. `names` lists the accepted strings in
 // wire order, so a name's index is exactly the value the daemon's Apply()
 // casts back to its enum. Shared by connection.proxy_type,
-// security.shared_files_visibility and ip2country.source.
+// security.shared_files_visibility and geoip.source.
 bool PrefTakeEnum(const picojson::object &o,
 	CECTag &group,
 	const char *key,
@@ -8448,7 +8458,7 @@ bool PrefTakeString(const picojson::object &o,
 	return true;
 }
 
-// String-array field (directories.shared): a JSON array of strings
+// String-array field (directories.shared_paths): a JSON array of strings
 // packed as EC_TAG_STRING children, mirroring the core serializer.
 bool PrefTakeStringArray(const picojson::object &o,
 	CECTag &group,
@@ -8630,6 +8640,14 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 		}
 
 		if (f.access == webapi::PrefAccess::Rejected) {
+			// Each Rejected row names the endpoint that owns the field, so
+			// the answer is a redirection rather than a flat refusal.
+			if (std::strcmp(f.category, "geoip") == 0) {
+				return ErrorResponse(400,
+					"bad_request",
+					"`geoip.update_now` is an action, not a setting: "
+					"POST /geoip/update instead");
+			}
 			return ErrorResponse(400,
 				"bad_request",
 				"amuleapi passwords are managed through PATCH /auth/passwords, "
@@ -8943,7 +8961,7 @@ CHttpServer::Response CApiDispatcher::HandleNetworksDisconnect(const CHttpServer
 // /ipfilter/update: same validation, same 202. The EC handler
 // (EC_OP_KAD_UPDATE_FROM_URL) persists the URL into preferences itself via
 // SetKadNodesUrl(), so this deliberately does NOT also patch
-// kademlia.update_url — doing both would diverge from the ed2k path and could
+// kad.update_url — doing both would diverge from the ed2k path and could
 // race it.
 //
 // Side effect worth knowing: once the download completes amuled stops Kad,
@@ -9025,6 +9043,64 @@ CHttpServer::Response CApiDispatcher::HandleIpfilterUpdate(const CHttpServer::Re
 		return rejection;
 	}
 	return UrlFetchOp(m_app, m_state, kSpec, url);
+}
+
+// POST /geoip/update -- fetch a fresh GeoIP database now.
+//
+// This used to be `geoip.update_now`, a write-only boolean inside
+// PATCH /preferences. It is an action, not a setting: nothing reads it back,
+// writing `false` means nothing, and the value never survives the request.
+// It is a route now, alongside /servers_update, /kad/update and
+// /ipfilter/update -- the other three "go fetch a list" operations (#1189).
+//
+// Unlike those three it takes no URL: which database to fetch comes from
+// geoip.source and geoip.custom_update_url, which stay ordinary preferences.
+// So the body is empty and the whole request is the verb.
+//
+// The core has no EC opcode for it -- the trigger is a preferences tag -- so
+// the packet is still EC_OP_SET_PREFERENCES carrying that one tag. That is
+// an implementation detail of the daemon's side, not of the API's, which is
+// exactly why it should not have been visible as a preference key.
+CHttpServer::Response CApiDispatcher::HandleGeoipUpdate(const CHttpServer::Request &req)
+{
+	auto a = Authenticate(req);
+	if (!a.ok)
+		return a.rejection;
+	if (auto rej = RequireAdmin(a))
+		return *rej;
+
+	// EC_DETAIL_FULL and a value tag, for the same reason PATCH /preferences
+	// uses both: CEC_Prefs_Packet::Apply() only calls ApplyBoolean when the
+	// detail level is FULL, and reads the flag from the tag's value.
+	auto ec_req = std::make_unique<CECPacket>(EC_OP_SET_PREFERENCES, EC_DETAIL_FULL);
+	CECTag group(EC_TAG_PREFS_IP2COUNTRY, static_cast<std::uint32_t>(0));
+	group.AddTag(CECTag(EC_TAG_IP2COUNTRY_UPDATE_NOW, static_cast<std::uint8_t>(1)));
+	ec_req->AddTag(group);
+
+	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
+	if (!ec_resp) {
+		return ErrorResponse(503, "ec_unavailable", "EC roundtrip failed");
+	}
+	std::string ec_err_msg;
+	if (IsEcFailedResponse(ec_resp, ec_err_msg)) {
+		delete ec_resp;
+		return ErrorResponse(400, "amuled_rejected", ec_err_msg.c_str());
+	}
+	delete ec_resp;
+
+	(void)RefresherTick(m_app, m_state);
+
+	// 202, like the three sibling fetch routes: the download runs in the
+	// daemon after the reply. Progress is observable on GET /preferences as
+	// geoip.download_in_progress, and the outcome as geoip.last_update_status.
+	CHttpServer::Response r;
+	r.status = 202;
+	r.content_type = "application/json";
+	CJsonWriter w;
+	w.BeginObject();
+	w.EndObject();
+	FinalizeJsonBody(w, r);
+	return r;
 }
 
 CHttpServer::Response CApiDispatcher::HandleKadBootstrap(const CHttpServer::Request &req)

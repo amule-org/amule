@@ -110,11 +110,11 @@ _assert_json_eq '.index' 0 '/categories/0 reports index 0'
 # `defaultcat` is built with an empty title and path, which left a client
 # rendering a picker with a blank row and nowhere to show where an
 # uncategorised download lands. `path` is not invented -- it is
-# directories.incoming, which is genuinely where such a file is saved.
+# directories.incoming_path, which is genuinely where such a file is saved.
 _assert_json_eq '.name' Default '/categories/0 is named Default'
 INCOMING=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/preferences" | jq -r '.directories.incoming')
-_assert_json_eq '.save_path' "$INCOMING" '/categories/0 save_path is directories.incoming'
+	"$HOST/api/v0/preferences" | jq -r '.directories.incoming_path')
+_assert_json_eq '.save_path' "$INCOMING" '/categories/0 save_path is directories.incoming_path'
 # color is "#rrggbb", not the raw 24-bit integer. The core packs it as
 # 0x00BBGGRR (red in the low byte), so a naive hex print of the integer
 # would come out reversed -- pin the format so that cannot regress.
@@ -314,7 +314,7 @@ _assert_status 400 "PATCH /categories non-numeric index → 400"
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories/0"
 _assert_status 200 "GET /categories/0 (amuled now sends it) → 200"
 _assert_json_eq '.name' Default '/categories/0 is still named Default'
-_assert_json_eq '.save_path' "$INCOMING" '/categories/0 save_path is still directories.incoming'
+_assert_json_eq '.save_path' "$INCOMING" '/categories/0 save_path is still directories.incoming_path'
 
 # The collection agrees with the member route, on the same daemon state.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories?limit=500"

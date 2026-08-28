@@ -187,6 +187,10 @@ private:
 	// falls back to the configured security.ipfilter_update_url.
 	CHttpServer::Response HandleIpfilterReload(const CHttpServer::Request &);
 	CHttpServer::Response HandleIpfilterUpdate(const CHttpServer::Request &);
+	// POST /geoip/update — fetch a fresh GeoIP database now. An action, so
+	// it is a route rather than the write-only `geoip.update_now` boolean
+	// it used to be inside PATCH /preferences.
+	CHttpServer::Response HandleGeoipUpdate(const CHttpServer::Request &);
 	// single shared-file detail (GET / HEAD). `key` = 32-char MD4 hash.
 	CHttpServer::Response HandleSharedDetail(const CHttpServer::Request &, const std::string &key);
 	// shared file priority PATCH. `key` = hash OR ECID.

@@ -6,7 +6,7 @@
 #   PATCH /api/v0/preferences
 #       body: { general?, connection?, directories?, files?, servers?,
 #               security?, message_filter?, remote_controls?,
-#               online_signature?, core_tweaks?, kademlia? }  (issue #437)
+#               online_signature?, advanced?, kad? }  (issue #437)
 #
 # Wire shape mirrors the /preferences GET response. Both sub-objects
 # optional; all fields within optional. Only fields present are
@@ -218,28 +218,28 @@ _assert_json_eq '(.security|type)' object '/preferences has security object'
 _assert_json_eq '(.message_filter|type)' object '/preferences has message_filter object'
 _assert_json_eq '(.remote_controls|type)' object '/preferences has remote_controls object'
 _assert_json_eq '(.online_signature|type)' object '/preferences has online_signature object'
-_assert_json_eq '(.core_tweaks|type)' object '/preferences has core_tweaks object'
-_assert_json_eq '(.kademlia|type)' object '/preferences has kademlia object'
-_assert_json_eq '(.directories.shared|type)' array 'directories.shared is an array'
+_assert_json_eq '(.advanced|type)' object '/preferences has advanced object'
+_assert_json_eq '(.kad|type)' object '/preferences has kad object'
+_assert_json_eq '(.directories.shared_paths|type)' array 'directories.shared_paths is an array'
 _assert_json_eq '(.files.min_free_space_mb|type)' number 'files.min_free_space_mb is numeric'
 # Passwords are write-only — no password key ever appears on GET
 # (user_hash is the identity hash, deliberately not matched here).
 _assert_json_eq '[paths(scalars) as $p | select($p[-1]|tostring|test("password";"i"))] | length' \
 	0 'no password key present in GET /preferences'
 SAVED_NEW_PAUSED=$(printf '%s' "$CURL_BODY" | jq -r '.files.add_new_downloads_paused')
-SAVED_RETRIES=$(printf '%s' "$CURL_BODY" | jq -r '.servers.dead_server_retries')
+SAVED_RETRIES=$(printf '%s' "$CURL_BODY" | jq -r '.servers.dead_server_retry_count')
 
 # Round-trip a bool (files) + int (servers) and confirm no stale GET.
 NEW_PAUSED_TOGGLE=$([ "$SAVED_NEW_PAUSED" = "true" ] && echo false || echo true)
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d "{\"files\":{\"add_new_downloads_paused\":$NEW_PAUSED_TOGGLE},\"servers\":{\"dead_server_retries\":9}}" \
+	-d "{\"files\":{\"add_new_downloads_paused\":$NEW_PAUSED_TOGGLE},\"servers\":{\"dead_server_retry_count\":9}}" \
 	"$HOST/api/v0/preferences"
 _assert_status 200 "PATCH files+servers categories → 200"
 _assert_json_eq '.files.add_new_downloads_paused' "$NEW_PAUSED_TOGGLE" 'files.add_new_downloads_paused toggled in response'
-_assert_json_eq '.servers.dead_server_retries' 9 'servers.dead_server_retries=9 in response'
+_assert_json_eq '.servers.dead_server_retry_count' 9 'servers.dead_server_retry_count=9 in response'
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
 _assert_json_eq '.files.add_new_downloads_paused' "$NEW_PAUSED_TOGGLE" 'files.add_new_downloads_paused persisted (no stale GET)'
-_assert_json_eq '.servers.dead_server_retries' 9 'servers.dead_server_retries persisted'
+_assert_json_eq '.servers.dead_server_retry_count' 9 'servers.dead_server_retry_count persisted'
 
 # Wrong type on a new-category field → 400.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
@@ -248,7 +248,7 @@ _assert_status 400 "PATCH files.min_free_space_mb as string → 400"
 
 # Restore the #437 fields we touched.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d "{\"files\":{\"add_new_downloads_paused\":$SAVED_NEW_PAUSED},\"servers\":{\"dead_server_retries\":$SAVED_RETRIES}}" \
+	-d "{\"files\":{\"add_new_downloads_paused\":$SAVED_NEW_PAUSED},\"servers\":{\"dead_server_retry_count\":$SAVED_RETRIES}}" \
 	"$HOST/api/v0/preferences"
 _assert_status 200 "PATCH (restore #437 fields) → 200"
 
@@ -259,11 +259,11 @@ _assert_status 200 "PATCH (restore #437 fields) → 200"
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
 _assert_json_eq '(.files.media_metadata_enabled|type)' boolean 'files.media_metadata_enabled is bool'
 _assert_json_eq '(.files.ffprobe_path|type)' string 'files.ffprobe_path is string'
-_assert_json_eq '(.files.start_next_alphabetical|type)' boolean 'files.start_next_alphabetical is bool'
+_assert_json_eq '(.files.on_finished_start_next_alphabetically|type)' boolean 'files.on_finished_start_next_alphabetically is bool'
 _assert_json_eq '(.connection.bind_address|type)' string 'connection.bind_address is string'
 _assert_json_eq '(.connection.bind_interface|type)' string 'connection.bind_interface is string'
 _assert_json_eq '(.security.reject_spoofed_source_ips|type)' boolean 'security.reject_spoofed_source_ips is bool'
-_assert_json_eq '(.security.use_system_ipfilter|type)' boolean 'security.use_system_ipfilter is bool'
+_assert_json_eq '(.security.system_ipfilter_enabled|type)' boolean 'security.system_ipfilter_enabled is bool'
 _assert_json_eq '(.online_signature.directory|type)' string 'online_signature.directory is string'
 _assert_json_eq '(.online_signature.update_frequency_seconds|type)' number 'online_signature.update_frequency_seconds is numeric'
 
@@ -272,8 +272,8 @@ SAVED_FFPROBE=$(printf '%s' "$CURL_BODY" | jq -r '.files.ffprobe_path')
 SAVED_PARANOID=$(printf '%s' "$CURL_BODY" | jq -r '.security.reject_spoofed_source_ips')
 SAVED_OSFREQ=$(printf '%s' "$CURL_BODY" | jq -r '.online_signature.update_frequency_seconds')
 SAVED_IFACE=$(printf '%s' "$CURL_BODY" | jq -r '.connection.bind_interface')
-SAVED_KADREASK=$(printf '%s' "$CURL_BODY" | jq -r '.core_tweaks.kad_reask_minutes')
-SAVED_SRCREASK=$(printf '%s' "$CURL_BODY" | jq -r '.core_tweaks.source_reask_minutes')
+SAVED_KADREASK=$(printf '%s' "$CURL_BODY" | jq -r '.advanced.kad_source_reask_minutes')
+SAVED_SRCREASK=$(printf '%s' "$CURL_BODY" | jq -r '.advanced.source_reask_minutes')
 
 # Round-trip a bool (files) + string (files) + bool (security) + int (onlinesig)
 # + string (connection.bind_interface).
@@ -296,26 +296,26 @@ _assert_json_eq '.connection.bind_interface' tun0 'connection.bind_interface per
 # --- 5c-bis. message_filter show-in-log + comment filter (#596). ----------
 # Newly EC-wired: previously amulegui-local / unreachable over EC.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
-_assert_json_eq '(.message_filter.show_in_log|type)' boolean 'message_filter.show_in_log is bool'
+_assert_json_eq '(.message_filter.log_filtered_messages|type)' boolean 'message_filter.log_filtered_messages is bool'
 _assert_json_eq '(.message_filter.filter_comments|type)' boolean 'message_filter.filter_comments is bool'
 _assert_json_eq '(.message_filter.comment_keywords|type)' string 'message_filter.comment_keywords is string'
-SAVED_SHOW_IN_LOG=$(printf '%s' "$CURL_BODY" | jq -r '.message_filter.show_in_log')
+SAVED_SHOW_IN_LOG=$(printf '%s' "$CURL_BODY" | jq -r '.message_filter.log_filtered_messages')
 SAVED_FILTER_COMMENTS=$(printf '%s' "$CURL_BODY" | jq -r '.message_filter.filter_comments')
 SAVED_COMMENT_KW=$(printf '%s' "$CURL_BODY" | jq -r '.message_filter.comment_keywords')
 SHOW_TOGGLE=$([ "$SAVED_SHOW_IN_LOG" = "true" ] && echo false || echo true)
 FC_TOGGLE=$([ "$SAVED_FILTER_COMMENTS" = "true" ] && echo false || echo true)
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d "{\"message_filter\":{\"show_in_log\":$SHOW_TOGGLE,\"filter_comments\":$FC_TOGGLE,\"comment_keywords\":\"spam,ads\"}}" \
+	-d "{\"message_filter\":{\"log_filtered_messages\":$SHOW_TOGGLE,\"filter_comments\":$FC_TOGGLE,\"comment_keywords\":\"spam,ads\"}}" \
 	"$HOST/api/v0/preferences"
-_assert_status 200 "PATCH message_filter (show_in_log+filter_comments+comment_keywords) → 200"
-_assert_json_eq '.message_filter.show_in_log' "$SHOW_TOGGLE" 'message_filter.show_in_log toggled in response'
+_assert_status 200 "PATCH message_filter (log_filtered_messages+filter_comments+comment_keywords) → 200"
+_assert_json_eq '.message_filter.log_filtered_messages' "$SHOW_TOGGLE" 'message_filter.log_filtered_messages toggled in response'
 _assert_json_eq '.message_filter.filter_comments' "$FC_TOGGLE" 'message_filter.filter_comments toggled in response'
 _assert_json_eq '.message_filter.comment_keywords' 'spam,ads' 'message_filter.comment_keywords set in response'
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
 _assert_json_eq '.message_filter.comment_keywords' 'spam,ads' 'message_filter.comment_keywords persisted (no stale GET)'
 # Restore.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d "{\"message_filter\":{\"show_in_log\":$SAVED_SHOW_IN_LOG,\"filter_comments\":$SAVED_FILTER_COMMENTS,\"comment_keywords\":\"$SAVED_COMMENT_KW\"}}" \
+	-d "{\"message_filter\":{\"log_filtered_messages\":$SAVED_SHOW_IN_LOG,\"filter_comments\":$SAVED_FILTER_COMMENTS,\"comment_keywords\":\"$SAVED_COMMENT_KW\"}}" \
 	"$HOST/api/v0/preferences"
 _assert_status 200 "PATCH (restore message_filter fields) → 200"
 
@@ -448,29 +448,29 @@ _assert_status 200 "PATCH (restore remote_controls fields) → 200"
 
 # --- P2P-router UPnP: readable, round-trip, read-only capability. --------
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
-_assert_json_eq '(.connection.upnp_available|type)' boolean 'connection.upnp_available is bool'
+_assert_json_eq '(.connection.upnp_supported|type)' boolean 'connection.upnp_supported is bool'
 _assert_json_eq '(.connection.upnp_enabled|type)'   boolean 'connection.upnp_enabled is bool'
-_assert_json_eq '(.connection.upnp_tcp_port|type)'  number  'connection.upnp_tcp_port is numeric'
+_assert_json_eq '(.connection.upnp_control_point_port|type)'  number  'connection.upnp_control_point_port is numeric'
 SAVED_UPNPEN=$(printf '%s' "$CURL_BODY" | jq -r '.connection.upnp_enabled')
-SAVED_UPNPPORT=$(printf '%s' "$CURL_BODY" | jq -r '.connection.upnp_tcp_port')
-SAVED_UPNPAVAIL=$(printf '%s' "$CURL_BODY" | jq -r '.connection.upnp_available')
+SAVED_UPNPPORT=$(printf '%s' "$CURL_BODY" | jq -r '.connection.upnp_control_point_port')
+SAVED_UPNPAVAIL=$(printf '%s' "$CURL_BODY" | jq -r '.connection.upnp_supported')
 UPNP_TOGGLE=$([ "$SAVED_UPNPEN" = "true" ] && echo false || echo true)
 AVAIL_FLIP=$([ "$SAVED_UPNPAVAIL" = "true" ] && echo false || echo true)
 # Round-trip the two settable fields, and include the read-only capability in
 # the same body to prove it is ignored (response reflects the daemon, not us).
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d "{\"connection\":{\"upnp_enabled\":$UPNP_TOGGLE,\"upnp_tcp_port\":51234,\"upnp_available\":$AVAIL_FLIP}}" \
+	-d "{\"connection\":{\"upnp_enabled\":$UPNP_TOGGLE,\"upnp_control_point_port\":51234,\"upnp_supported\":$AVAIL_FLIP}}" \
 	"$HOST/api/v0/preferences"
-_assert_status 200 "PATCH upnp_enabled + upnp_tcp_port (+ ignored upnp_available) → 200"
+_assert_status 200 "PATCH upnp_enabled + upnp_control_point_port (+ ignored upnp_supported) → 200"
 _assert_json_eq '.connection.upnp_enabled' "$UPNP_TOGGLE" 'upnp_enabled toggled in response'
-_assert_json_eq '.connection.upnp_tcp_port' 51234 'upnp_tcp_port=51234 in response'
-_assert_json_eq '.connection.upnp_available' "$SAVED_UPNPAVAIL" 'upnp_available unchanged (read-only, reflects daemon)'
+_assert_json_eq '.connection.upnp_control_point_port' 51234 'upnp_control_point_port=51234 in response'
+_assert_json_eq '.connection.upnp_supported' "$SAVED_UPNPAVAIL" 'upnp_supported unchanged (read-only, reflects daemon)'
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
 _assert_json_eq '.connection.upnp_enabled' "$UPNP_TOGGLE" 'upnp_enabled persisted (no stale GET)'
-_assert_json_eq '.connection.upnp_tcp_port' 51234 'upnp_tcp_port persisted'
+_assert_json_eq '.connection.upnp_control_point_port' 51234 'upnp_control_point_port persisted'
 # Restore.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d "{\"connection\":{\"upnp_enabled\":$SAVED_UPNPEN,\"upnp_tcp_port\":$SAVED_UPNPPORT}}" \
+	-d "{\"connection\":{\"upnp_enabled\":$SAVED_UPNPEN,\"upnp_control_point_port\":$SAVED_UPNPPORT}}" \
 	"$HOST/api/v0/preferences"
 _assert_status 200 "PATCH (restore UPnP fields) → 200"
 
@@ -499,7 +499,7 @@ _assert_json_eq '.connection.max_upload_kbps' "$SAVED_MAX_UPLOAD" \
 _assert_json_eq '.connection.autoconnect' "$SAVED_AUTOCONNECT" \
 	'restored autoconnect to saved value'
 
-# --- core_tweaks intervals round-trip exactly (#1159 section 5). ---------
+# --- advanced intervals round-trip exactly (#1159 section 5). ---------
 #
 # The core stores whole minutes and its accessors multiply by 60000, so EC
 # carries milliseconds that are always a multiple of 60000. The API used to
@@ -511,16 +511,16 @@ _assert_json_eq '.connection.autoconnect' "$SAVED_AUTOCONNECT" \
 # to a bound: LoadAllItems() clamps kad_reask to 30..60 and source_reask to
 # 15..60 at the next daemon start, and 7 -- what this loop used to send -- is
 # below both (#1174).
-for FIELD_PROBE in "kad_reask_minutes 31" "source_reask_minutes 16"; do
+for FIELD_PROBE in "kad_source_reask_minutes 31" "source_reask_minutes 16"; do
 	set -- $FIELD_PROBE
 	FIELD=$1
 	VALUE=$2
 	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d "{\"core_tweaks\":{\"$FIELD\":$VALUE}}" "$HOST/api/v0/preferences"
-	_assert_status 200 "PATCH core_tweaks.$FIELD=$VALUE -> 200"
+		-d "{\"advanced\":{\"$FIELD\":$VALUE}}" "$HOST/api/v0/preferences"
+	_assert_status 200 "PATCH advanced.$FIELD=$VALUE -> 200"
 	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
-	_assert_json_eq ".core_tweaks.$FIELD" "$VALUE" "core_tweaks.$FIELD reads back what was written"
+	_assert_json_eq ".advanced.$FIELD" "$VALUE" "advanced.$FIELD reads back what was written"
 done
 
 # One minute used to be a 200 that the daemon threw away at the next start --
@@ -530,10 +530,10 @@ done
 # the daemon would not keep. Below the floor is a 400 now (#1174).
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"core_tweaks":{"kad_reask_minutes":1}}' "$HOST/api/v0/preferences"
-_assert_status 400 "PATCH core_tweaks.kad_reask_minutes=1 -> 400 (below the 30 floor)"
+	-d '{"advanced":{"kad_source_reask_minutes":1}}' "$HOST/api/v0/preferences"
+_assert_status 400 "PATCH advanced.kad_source_reask_minutes=1 -> 400 (below the 30 floor)"
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
-_assert_json_eq '.core_tweaks.kad_reask_minutes' 31 "the rejected write left the previous value alone"
+_assert_json_eq '.advanced.kad_source_reask_minutes' 31 "the rejected write left the previous value alone"
 
 # --- online_signature.update_frequency_seconds is bounded (#1159 section 4).
 #
@@ -558,10 +558,10 @@ _assert_status 200 "PATCH online_signature.update_frequency_seconds=65535 -> 200
 # Saved before the boundary sweep below, which leaves every field it touches on
 # an endpoint. Restored with the rest at the end of the file.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
-SAVED_FILEBUF=$(printf '%s' "$CURL_BODY" | jq -r '.core_tweaks.file_buffer_bytes')
-SAVED_ULQUEUE=$(printf '%s' "$CURL_BODY" | jq -r '.core_tweaks.max_upload_queue_clients')
-SAVED_CONN5=$(printf '%s' "$CURL_BODY" | jq -r '.core_tweaks.max_new_connections_per_5s')
-SAVED_KADSEARCH=$(printf '%s' "$CURL_BODY" | jq -r '.core_tweaks.kad_max_source_searches')
+SAVED_FILEBUF=$(printf '%s' "$CURL_BODY" | jq -r '.advanced.file_buffer_bytes')
+SAVED_ULQUEUE=$(printf '%s' "$CURL_BODY" | jq -r '.advanced.max_upload_queue_clients')
+SAVED_CONN5=$(printf '%s' "$CURL_BODY" | jq -r '.advanced.max_new_connections_per_5_seconds')
+SAVED_KADSEARCH=$(printf '%s' "$CURL_BODY" | jq -r '.advanced.kad_max_concurrent_source_searches')
 SAVED_MAXUL=$(printf '%s' "$CURL_BODY" | jq -r '.connection.max_upload_kbps')
 SAVED_MAXDL=$(printf '%s' "$CURL_BODY" | jq -r '.connection.max_download_kbps')
 
@@ -575,15 +575,15 @@ SAVED_MAXDL=$(printf '%s' "$CURL_BODY" | jq -r '.connection.max_download_kbps')
 #
 # reject: the value, and what the daemon used to turn it into.
 for CASE in \
-	"core_tweaks file_buffer_bytes 4000000 150000_uint8_wrap" \
-	"core_tweaks file_buffer_bytes 14999 0_divided_away" \
-	"core_tweaks file_buffer_bytes 20000 15000_truncated_to_the_step" \
-	"core_tweaks max_upload_queue_clients 30000 4400_uint8_wrap" \
-	"core_tweaks max_upload_queue_clients 250 200_truncated_to_the_step" \
-	"core_tweaks max_new_connections_per_5s 70000 4464_uint16_wrap" \
-	"core_tweaks kad_max_source_searches 100000 34464_uint16_wrap" \
-	"core_tweaks kad_max_source_searches 1 5_clamped_at_next_start" \
-	"core_tweaks source_reask_minutes 7 15_clamped_at_next_start" \
+	"advanced file_buffer_bytes 4000000 150000_uint8_wrap" \
+	"advanced file_buffer_bytes 14999 0_divided_away" \
+	"advanced file_buffer_bytes 20000 15000_truncated_to_the_step" \
+	"advanced max_upload_queue_clients 30000 4400_uint8_wrap" \
+	"advanced max_upload_queue_clients 250 200_truncated_to_the_step" \
+	"advanced max_new_connections_per_5_seconds 70000 4464_uint16_wrap" \
+	"advanced kad_max_concurrent_source_searches 100000 34464_uint16_wrap" \
+	"advanced kad_max_concurrent_source_searches 1 5_clamped_at_next_start" \
+	"advanced source_reask_minutes 7 15_clamped_at_next_start" \
 	; do
 	set -- $CASE
 	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -602,25 +602,25 @@ _assert_json_eq '.error.message | contains("(1-65532)")' true \
 	"tcp_port 400 names the range in the message"
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"core_tweaks":{"file_buffer_bytes":20000}}' "$HOST/api/v0/preferences"
+	-d '{"advanced":{"file_buffer_bytes":20000}}' "$HOST/api/v0/preferences"
 _assert_json_eq '.error.message | contains("multiple of 15000")' true \
 	"file_buffer_bytes 400 names the step in the message"
 
 # accept: the domain's own endpoints, which must round-trip untouched. A bound
 # that rejects its own boundary is the failure mode this half guards.
 for CASE in \
-	"core_tweaks file_buffer_bytes 3825000" \
-	"core_tweaks file_buffer_bytes 15000" \
-	"core_tweaks file_buffer_bytes 0" \
-	"core_tweaks max_upload_queue_clients 25500" \
-	"core_tweaks max_upload_queue_clients 100" \
-	"core_tweaks max_new_connections_per_5s 65535" \
-	"core_tweaks kad_max_source_searches 5" \
-	"core_tweaks kad_max_source_searches 50" \
-	"core_tweaks source_reask_minutes 15" \
-	"core_tweaks source_reask_minutes 60" \
-	"core_tweaks kad_reask_minutes 30" \
-	"core_tweaks kad_reask_minutes 60" \
+	"advanced file_buffer_bytes 3825000" \
+	"advanced file_buffer_bytes 15000" \
+	"advanced file_buffer_bytes 0" \
+	"advanced max_upload_queue_clients 25500" \
+	"advanced max_upload_queue_clients 100" \
+	"advanced max_new_connections_per_5_seconds 65535" \
+	"advanced kad_max_concurrent_source_searches 5" \
+	"advanced kad_max_concurrent_source_searches 50" \
+	"advanced source_reask_minutes 15" \
+	"advanced source_reask_minutes 60" \
+	"advanced kad_source_reask_minutes 30" \
+	"advanced kad_source_reask_minutes 60" \
 	; do
 	set -- $CASE
 	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -650,19 +650,58 @@ _assert_json_eq '.connection.max_download_kbps' 9 \
 # This has to stay the last mutation in the file.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d "{\"core_tweaks\":{\"kad_reask_minutes\":$SAVED_KADREASK,\"source_reask_minutes\":$SAVED_SRCREASK,\"file_buffer_bytes\":$SAVED_FILEBUF,\"max_upload_queue_clients\":$SAVED_ULQUEUE,\"max_new_connections_per_5s\":$SAVED_CONN5,\"kad_max_source_searches\":$SAVED_KADSEARCH},\"connection\":{\"tcp_port\":$SAVED_TCPPORT,\"max_upload_kbps\":$SAVED_MAXUL,\"max_download_kbps\":$SAVED_MAXDL},\"online_signature\":{\"update_frequency_seconds\":$SAVED_OSFREQ}}" \
+	-d "{\"advanced\":{\"kad_source_reask_minutes\":$SAVED_KADREASK,\"source_reask_minutes\":$SAVED_SRCREASK,\"file_buffer_bytes\":$SAVED_FILEBUF,\"max_upload_queue_clients\":$SAVED_ULQUEUE,\"max_new_connections_per_5_seconds\":$SAVED_CONN5,\"kad_max_concurrent_source_searches\":$SAVED_KADSEARCH},\"connection\":{\"tcp_port\":$SAVED_TCPPORT,\"max_upload_kbps\":$SAVED_MAXUL,\"max_download_kbps\":$SAVED_MAXDL},\"online_signature\":{\"update_frequency_seconds\":$SAVED_OSFREQ}}" \
 	"$HOST/api/v0/preferences"
-_assert_status 200 "PATCH (restore core_tweaks + connection + onlinesig) -> 200"
+_assert_status 200 "PATCH (restore advanced + connection + onlinesig) -> 200"
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
 _assert_json_eq '.connection.tcp_port' "$SAVED_TCPPORT" \
 	'restored connection.tcp_port to the saved value'
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
-_assert_json_eq '.core_tweaks.kad_reask_minutes' "$SAVED_KADREASK" \
-	'restored core_tweaks.kad_reask_minutes to the saved value'
-_assert_json_eq '.core_tweaks.source_reask_minutes' "$SAVED_SRCREASK" \
-	'restored core_tweaks.source_reask_minutes to the saved value'
+_assert_json_eq '.advanced.kad_source_reask_minutes' "$SAVED_KADREASK" \
+	'restored advanced.kad_source_reask_minutes to the saved value'
+_assert_json_eq '.advanced.source_reask_minutes' "$SAVED_SRCREASK" \
+	'restored advanced.source_reask_minutes to the saved value'
 _assert_json_eq '.online_signature.update_frequency_seconds' "$SAVED_OSFREQ" \
 	'restored online_signature.update_frequency_seconds to the saved value'
+
+# --- 7. `geoip.update_now` moved out to POST /geoip/update (#1189). --
+#
+# It was a write-only boolean in this payload; it is an action, so it is a
+# route now. Both halves of that move are contract, so both are asserted:
+# the old key is refused with a message naming the endpoint, and the endpoint
+# exists with the right method and auth.
+#
+# The 202 happy path is deliberately NOT exercised: it makes the daemon fetch
+# a real database from db-ip.com, and a smoke suite should not hit a third
+# party on every run. Everything up to the fetch is covered here.
+#
+# Placed after the restore block because none of it mutates anything -- the
+# restore has to stay the last *mutation* in this file.
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"geoip":{"update_now":true}}' "$HOST/api/v0/preferences"
+_assert_status 400 "PATCH geoip.update_now -> 400 (moved to POST /geoip/update)"
+_assert_json_eq '.error.code' bad_request \
+	'the refusal carries error.code=bad_request'
+_assert_json_eq '(.error.message | test("POST /geoip/update"))' true \
+	'the refusal names the endpoint that took the action over'
+
+_curl "$HOST/api/v0/geoip/update"
+_assert_status 405 "GET /geoip/update -> 405 (POST only)"
+_assert_json_eq '.error.code' method_not_allowed \
+	'/geoip/update GET 405 carries error.code=method_not_allowed'
+
+_curl -X POST "$HOST/api/v0/geoip/update"
+_assert_status 401 "POST /geoip/update without auth -> 401"
+
+# GUEST is not ADMIN: the fetch writes daemon state, so it is admin-only like
+# its three sibling update routes.
+if [ "$HAVE_GUEST" = "1" ]; then
+	_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" "$HOST/api/v0/geoip/update"
+	_assert_status 403 "POST /geoip/update as guest -> 403"
+else
+	echo "    info: no guest pass; /geoip/update admin-gate skipped"
+fi
 
 # --- Summary. -----------------------------------------------------
 echo

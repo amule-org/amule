@@ -73,7 +73,7 @@ enum class PrefAccess
 {
 	ReadWrite, // emitted on GET, applied on PATCH
 	ReadOnly,  // emitted on GET, silently ignored on PATCH (capabilities, live status)
-	WriteOnly, // never emitted, applied on PATCH (passwords, triggers)
+	WriteOnly, // never emitted, applied on PATCH (passwords)
 	Rejected,  // never emitted, 400 if sent -- the field belongs to another endpoint
 	Bespoke,   // emitted on GET, PATCH handled by dedicated code (see below)
 };
@@ -104,7 +104,7 @@ struct PrefField
 	void *(*member)(PreferencesSnapshot &);
 	// EC group this field's tag actually lives in, when that is not the group
 	// its JSON category maps to. 0 means "the category's own group". Exactly
-	// one field needs it: connection.upnp_available is a daemon capability the
+	// one field needs it: connection.upnp_supported is a daemon capability the
 	// core serializes into [General], but the API surfaces it next to the other
 	// UPnP settings under `connection`.
 	ec_tagname_t read_group;

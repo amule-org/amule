@@ -1117,30 +1117,30 @@ struct PreferencesSnapshot
 	// [General]
 	std::string nickname;
 	std::string user_hash;
-	std::string local_host_name;
-	bool check_new_version = false;
+	std::string daemon_host_name;
+	bool version_check_enabled = false;
 	// Capability: the connected daemon is built with ENABLE_VERSION_CHECK
 	// (emits EC_TAG_GENERAL_VERSION_CHECK_AVAILABLE). False for OS-package
-	// or pre-3.1 daemons; combined with check_new_version to decide whether
+	// or pre-3.1 daemons; combined with version_check_enabled to decide whether
 	// update checking is active. See /version's "update" object.
 	bool version_check_available = false;
 
 	// [Connection]
 	std::uint32_t max_upload_kbps = 0;
 	std::uint32_t max_download_kbps = 0;
-	std::uint32_t upload_slot_kbps = 0;
+	std::uint32_t upload_slot_min_kbps = 0;
 	std::uint16_t tcp_port = 0;
 	std::uint16_t udp_port = 0;
 	// Positive sense: true = the extended UDP port (Kad / global search) is on.
 	// The EC layer carries the opposite (EC_TAG_CONN_UDP_DISABLE); the API
 	// inverts on read and write.
 	bool extended_udp_port_enabled = true;
-	std::uint32_t max_sources_per_file = 0;
-	std::uint32_t max_connections = 0;
+	std::uint32_t max_sources_per_file_count = 0;
+	std::uint32_t max_connection_count = 0;
 	bool autoconnect = false;
-	bool reconnect = false;
-	bool network_ed2k = false;
-	bool network_kad = false;
+	bool reconnect_on_connection_loss = false;
+	bool ed2k_enabled = false;
+	bool kad_enabled = false;
 	// Bind the daemon's listening sockets to this local IP (empty = any).
 	// Applied on next daemon start, same as the desktop control.
 	std::string bind_address;
@@ -1161,13 +1161,13 @@ struct PreferencesSnapshot
 	bool proxy_auth = false;
 	std::string proxy_user;
 	// UPnP. upnp_enabled toggles router forwarding of the P2P ports (which
-	// are tcp_port / udp_port themselves); upnp_tcp_port is the UPnP control
-	// point's own local port (0 = auto), not a forwarded port. upnp_available
+	// are tcp_port / udp_port themselves); upnp_control_point_port is the UPnP control
+	// point's own local port (0 = auto), not a forwarded port. upnp_supported
 	// is a read-only capability: the daemon advertises whether it was built
 	// with UPnP (false on a core built -DENABLE_UPNP=OFF).
-	bool upnp_available = false;
+	bool upnp_supported = false;
 	bool upnp_enabled = false;
-	std::uint16_t upnp_tcp_port = 0;
+	std::uint16_t upnp_control_point_port = 0;
 
 	// --- Extended EC-carried categories (issue #437) -----------------
 	// Every field below maps 1:1 to an EC tag the daemon already
@@ -1178,11 +1178,11 @@ struct PreferencesSnapshot
 	// [Directories] EC_TAG_PREFS_DIRECTORIES
 	struct DirectoriesPrefs
 	{
-		std::string incoming;
-		std::string temp;
-		std::vector<std::string> shared;
+		std::string incoming_path;
+		std::string temp_path;
+		std::vector<std::string> shared_paths;
 		bool share_hidden = false;
-		bool auto_rescan = false;
+		bool rescan_on_startup = false;
 		bool follow_symlinks = false;
 		std::string exclude_patterns;
 		bool exclude_patterns_use_regex = false;
@@ -1192,17 +1192,17 @@ struct PreferencesSnapshot
 	struct FilesPrefs
 	{
 		bool ich_enabled = false;
-		bool aich_trust_every_hash = false;
+		bool trust_unverified_aich_hashes = false;
 		bool add_new_downloads_paused = false;
 		bool new_downloads_auto_priority = false;
 		bool new_shared_files_auto_priority = false;
 		bool prioritize_first_last_chunks = false;
-		bool start_next_paused = false;
-		bool start_next_same_category = false;
-		bool save_source_seeds_for_rare_files = false;
+		bool on_finished_start_next_paused = false;
+		bool on_finished_start_next_in_same_category = false;
+		bool save_sources_for_rare_files = false;
 		bool preallocate_full_file_size = false;
 		// Memory-mapped file I/O (#565). mmap_supported is a read-only daemon
-		// capability (mirrors upnp_available): true only when the core was built
+		// capability (mirrors upnp_supported): true only when the core was built
 		// with mmap support. mmap_enabled is the runtime preference and is only
 		// accepted on PATCH when mmap_supported is true.
 		bool mmap_supported = false;
@@ -1218,8 +1218,8 @@ struct PreferencesSnapshot
 		// runs on Windows -- on POSIX both branches create the part file
 		// identically.
 		bool create_sparse_files = true;
-		bool start_next_alphabetical = false;
-		bool endgame_enabled = false;
+		bool on_finished_start_next_alphabetically = false;
+		bool endgame_mode_enabled = false;
 		// Media metadata (issue #140): probe shared files with ffprobe to
 		// advertise length/bitrate/codec. Empty path = daemon auto-detect.
 		bool media_metadata_enabled = false;
@@ -1229,14 +1229,14 @@ struct PreferencesSnapshot
 	// [Servers] EC_TAG_PREFS_SERVERS
 	struct ServersPrefs
 	{
-		bool remove_dead = false;
-		std::uint32_t dead_server_retries = 0;
-		bool auto_update = false;
+		bool remove_dead_servers = false;
+		std::uint32_t dead_server_retry_count = 0;
+		bool update_list_at_startup = false;
 		bool update_list_from_server = false;
 		bool update_list_from_client = false;
-		bool use_priority_system = false;
-		bool smart_id_check = false;
-		bool safe_connect = false;
+		bool server_priority_system_enabled = false;
+		bool smart_lowid_check_enabled = false;
+		bool safe_server_connect_enabled = false;
 		bool autoconnect_static_servers_only = false;
 		bool manual_servers_high_priority = false;
 		std::string update_url;
@@ -1254,14 +1254,14 @@ struct PreferencesSnapshot
 		bool ipfilter_servers = false;
 		bool ipfilter_auto_update = false;
 		std::string ipfilter_update_url;
-		std::uint32_t ipfilter_block_below_access_level = 0;
+		std::uint32_t ipfilter_min_access_level = 0;
 		bool ipfilter_include_lan_ips = false;
-		bool use_secident = false;
-		bool obfuscation_enabled = false;
+		bool secure_identification_enabled = false;
+		bool protocol_obfuscation_enabled = false;
 		bool obfuscation_requested = false;
 		bool obfuscation_required = false;
 		bool reject_spoofed_source_ips = false;
-		bool use_system_ipfilter = false;
+		bool system_ipfilter_enabled = false;
 	} security;
 
 	// [MessageFilter] EC_TAG_PREFS_MESSAGEFILTER
@@ -1271,9 +1271,9 @@ struct PreferencesSnapshot
 		bool filter_all_messages = false;
 		bool accept_from_friends_only = false;
 		bool accept_from_known_clients_only = false;
-		bool by_keyword = false;
+		bool filter_by_keyword = false;
 		std::string keywords;
-		bool show_in_log = false;
+		bool log_filtered_messages = false;
 		bool filter_comments = false;
 		std::string comment_keywords;
 	} message_filter;
@@ -1292,11 +1292,10 @@ struct PreferencesSnapshot
 		{
 			bool enabled = false;
 			std::uint32_t port = 0;
-			bool use_gzip = false;
+			bool gzip_enabled = false;
 			std::uint32_t refresh_seconds = 0;
-			// JSON key is "template"; the member cannot be, since `template`
-			// is a C++ keyword. Only field in the payload where the two names
-			// differ.
+			// `template_name`, not `template`: the JSON key was renamed to
+			// match the member, which could never be `template` (C++ keyword).
 			std::string template_name;
 			bool guest_enabled = false;
 		} webserver;
@@ -1316,26 +1315,26 @@ struct PreferencesSnapshot
 		std::uint32_t update_frequency_seconds = 0;
 	} online_signature;
 
-	// [CoreTweaks] EC_TAG_PREFS_CORETWEAKS
-	struct CoreTweaksPrefs
+	// [advanced] (EC group: CORETWEAKS)
+	struct AdvancedPrefs
 	{
-		std::uint32_t max_new_connections_per_5s = 0;
+		std::uint32_t max_new_connections_per_5_seconds = 0;
 		bool verbose_logging = false;
 		std::uint32_t file_buffer_bytes = 0;
 		std::uint32_t max_upload_queue_clients = 0;
 		std::uint32_t server_keepalive_timeout_minutes = 0;
-		std::uint32_t kad_max_source_searches = 0;
-		std::uint32_t kad_reask_minutes = 0;
+		std::uint32_t kad_max_concurrent_source_searches = 0;
+		std::uint32_t kad_source_reask_minutes = 0;
 		std::uint32_t source_reask_minutes = 0;
-	} core_tweaks;
+	} advanced;
 
-	// [Kademlia] EC_TAG_PREFS_KADEMLIA
-	struct KademliaPrefs
+	// [kad] (EC group: KADEMLIA)
+	struct KadPrefs
 	{
 		std::string update_url;
-	} kademlia;
+	} kad;
 
-	// [IP2Country] EC_TAG_PREFS_IP2COUNTRY (#440). The daemon only emits
+	// [geoip] (EC group: IP2COUNTRY, #440). The daemon only emits
 	// this category on a GeoIP-capable build, so an absent category leaves
 	// `supported` false (mirrors version_check_available: a capability the
 	// connected daemon advertises, not a stored setting). `source` is the
@@ -1344,20 +1343,20 @@ struct PreferencesSnapshot
 	// `maxmind_license` round-trips plainly — it is a config string the
 	// core already serializes and the desktop GeoIP panel shows, not a
 	// masked password like the [RemoteControls] ones.
-	struct Ip2CountryPrefs
+	struct GeoipPrefs
 	{
 		bool supported = false;
 		bool enabled = false;
 		std::string source; // "dbip" / "maxmind" / "custom"
-		std::string custom_url;
+		std::string custom_update_url;
 		std::string maxmind_license;
 		bool auto_update = false;
 		std::string loaded_source;
 		std::string db_path;
 		bool db_loaded = false;
 		bool download_in_progress = false;
-		std::string last_update_result;
-	} ip2country;
+		std::string last_update_status;
+	} geoip;
 };
 
 struct StatusSnapshot
