@@ -348,7 +348,9 @@ else
 	echo "    info: daemon built without mmap — exercising the 409 capability gate"
 	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
 		-d '{"files":{"mmap_enabled":true}}' "$HOST/api/v0/preferences"
-	_assert_status 409 "PATCH files.mmap_enabled on non-mmap daemon → 409 conflict"
+	_assert_status 409 "PATCH files.mmap_enabled on non-mmap daemon → 409"
+	_assert_json_eq '.error.code' option_not_supported \
+		'the 409 names option_not_supported, not a bare conflict'
 fi
 
 # --- Proxy: readable fields present, round-trip, write-only password. -----

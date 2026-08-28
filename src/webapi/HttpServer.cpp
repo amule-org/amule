@@ -659,7 +659,7 @@ private:
 				std::cerr << "amuleapi: 500 from handler: " << e.what() << "\n";
 				resp.status = 500;
 				resp.content_type = "application/json";
-				resp.body = "{\"error\":{\"code\":\"internal\","
+				resp.body = "{\"error\":{\"code\":\"internal_error\","
 					    "\"message\":\"internal server error\"}}";
 				// The dispatcher's CORS pass died with the handler,
 				// so stamp it here: a cross-origin client should be
@@ -695,7 +695,7 @@ private:
 		if (m_cors_stamper) {
 			m_cors_stamper(refused.headers, FindHeaderCaseInsensitiveRaw("Origin"));
 		}
-		refused.body = "{\"error\":{\"code\":\"sessions_exhausted\","
+		refused.body = "{\"error\":{\"code\":\"too_many_streams\","
 			       "\"message\":\"too many concurrent streaming sessions; "
 			       "retry in a few seconds\"}}";
 		WriteResponse(std::move(refused));

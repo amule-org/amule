@@ -171,7 +171,7 @@ export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDele
 function DetailActions({ d, isGuest, categories, onPatch, onDelete, onClear }) {
   const inactive = d.status === "paused" || d.status === "stopped";
   const canStop = d.status !== "stopped" && d.status !== "completed" && d.status !== "completing";
-  // Completed rejects DELETE (409 completed_use_clear_completed): offer Clear.
+  // Completed rejects DELETE (409 download_completed): offer Clear.
   const done = d.status === "completed";
 
   const clear = async () => {

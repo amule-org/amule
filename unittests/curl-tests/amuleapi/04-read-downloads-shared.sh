@@ -347,7 +347,7 @@ if [ "$COUNT" -gt 0 ]; then
 
 	# Per-source swap (issue #983): `client_ecid` narrows swap_this to one
 	# source. Validation is asserted here rather than the swap itself — a
-	# regtest daemon has no A4AF source to move, and the conflict/not-found
+	# regtest daemon has no A4AF source to move, and the rejection/not-found
 	# paths are the ones that must never silently succeed.
 	_curl -X POST -H "Authorization: Bearer $TOKEN" \
 		-H "Content-Type: application/json" \
@@ -369,7 +369,7 @@ if [ "$COUNT" -gt 0 ]; then
 		-d '{"action":"swap_this","client_ecid":4294967290}' "$HOST/api/v0/downloads/$HASH/a4af"
 	_assert_status 404 "POST a4af naming an unknown client_ecid → 404"
 
-	# A live peer that is not an A4AF source of this file is a conflict, not a
+	# A live client that is not an A4AF source of this file is a rejection, not a
 	# no-op: pick any client from /clients and ensure it is absent from the
 	# A4AF list before asserting.
 	OTHER_ECID=$(curl -s -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/clients?limit=1" \
@@ -384,6 +384,8 @@ if [ "$COUNT" -gt 0 ]; then
 				-d "{\"action\":\"swap_this\",\"client_ecid\":$OTHER_ECID}" \
 				"$HOST/api/v0/downloads/$HASH/a4af"
 			_assert_status 409 "POST a4af for a non-A4AF client → 409"
+			_assert_json_eq '.error.code' not_a4af_source \
+				'the 409 names not_a4af_source, not a bare conflict'
 		fi
 	fi
 

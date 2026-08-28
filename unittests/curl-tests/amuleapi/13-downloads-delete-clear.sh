@@ -277,8 +277,8 @@ if [ -n "$COMPLETED_HASH" ]; then
 	_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
 		"$HOST/api/v0/downloads/$COMPLETED_HASH"
 	_assert_status 409 "DELETE /downloads/{completed} → 409"
-	_assert_json_eq '.error.code' completed_use_clear_completed \
-		'DELETE on completed .error.code == completed_use_clear_completed'
+	_assert_json_eq '.error.code' download_completed \
+		'DELETE on completed .error.code == download_completed'
 
 	# clear_completed {hash:completed} → 200, exactly 1 cleared.
 	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \

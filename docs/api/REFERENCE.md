@@ -571,7 +571,7 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" http://$HOST/api/v0/version/ch
 | Status | `error.code` | When |
 | --- | --- | --- |
 | `409` | `update_check_unavailable` | The daemon can't check (`update.check_enabled` is `false`). |
-| `429` | `update_check_throttled` | A check ran too recently; retry shortly. |
+| `429` | `rate_limited` | A check ran too recently; retry shortly. |
 | `503` | `ec_unavailable` | The EC round-trip to amuled failed, or the first snapshot has not landed yet. |
 
 The snapshot gate matters at startup: `version_check_available` defaults to false, so before the first EC tick this route used to answer `409 update_check_unavailable`, blaming the daemon's configuration for amuleapi not having read it yet. It answers `503` there now, which is the condition a client can retry.
@@ -1114,11 +1114,11 @@ curl -s -X PATCH -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application
 
 **Auth:** `ADMIN`
 
-Bulk cancel + remove of active downloads (deletes each `.part`/`.met` from disk). A completed entry is rejected per-item with `completed_use_clear_completed` — clear those via `POST /downloads_clear_completed`.
+Bulk cancel + remove of active downloads (deletes each `.part`/`.met` from disk). A completed entry is rejected per-item with `download_completed` — clear those via `POST /downloads_clear_completed`.
 
 **Body:** `{ "hashes": ["<md4>", …] }` (non-empty, max 500).
 
-**Response:** the [bulk `results` envelope](#bulk-mutations-and-the-results-envelope), keyed by hash. Per-item `error.code` is `not_found`, `completed_use_clear_completed`, `amuled_rejected`, or `ec_unavailable`.
+**Response:** the [bulk `results` envelope](#bulk-mutations-and-the-results-envelope), keyed by hash. Per-item `error.code` is `not_found`, `download_completed`, `amuled_rejected`, or `ec_unavailable`.
 
 **Errors:** `400 bad_request` (missing/empty `hashes`), `503 ec_unavailable`.
 
@@ -1161,7 +1161,7 @@ curl -s -X DELETE -H "Authorization: Bearer $TOKEN" \
 
 **Response:** `204 No Content`.
 
-**Errors:** `400 amuled_rejected`, `404 not_found`, `409 completed_use_clear_completed`, `503 ec_unavailable`.
+**Errors:** `400 amuled_rejected`, `404 not_found`, `409 download_completed`, `503 ec_unavailable`.
 
 #### `POST /api/v0/downloads_clear_completed`
 
@@ -2284,7 +2284,7 @@ Booleans are plain JSON `true`/`false` regardless of how amuled encodes them on 
 
 `files.media_metadata_enabled` / `files.ffprobe_path` control media-metadata extraction: when enabled, the daemon probes shared audio/video with `ffprobe` to advertise length, bitrate, codec, artist, album and title. `ffprobe_path` is a **daemon-side** path — an empty string means the daemon auto-detects the binary, trying `ffprobe` on its `PATH` and then a per-platform list of well-known install locations. The detected path is deliberately **not** written back: it describes the daemon's machine rather than a choice you made, so `ffprobe_path` keeps reading as `""` while extraction works, and a daemon that moves to a host with ffmpeg somewhere else re-detects on its own. Set the field explicitly to pin one binary and override detection. When nothing is found the daemon logs one line saying so — visible on [`GET /api/v0/logs/amule`](#get-apiv0logsamule) — and extraction stays inert until ffmpeg is installed or the path is set. `connection.bind_address` (empty = bind to any local IP), `connection.bind_interface` (a daemon-side interface name such as `eth0` / `en0` / `tun0`; empty = any), and `online_signature.directory` are likewise daemon-side paths/addresses. These, together with `files.on_finished_start_next_alphabetically`, `security.reject_spoofed_source_ips`, `security.system_ipfilter_enabled`, and `online_signature.update_frequency_seconds`, are ordinary daemon settings; a `bind_address` change takes effect on the next amuled restart.
 
-`files.mmap_supported` is **read-only** — the daemon advertises whether it was built with memory-mapped file I/O (`false` on a core without mmap support, e.g. Windows or a build with `-DENABLE_MMAP=OFF`); it is ignored if sent on PATCH. `files.mmap_enabled` is the runtime toggle for memory-mapped block I/O — download writes to part files, upload reads of both shared (completed) and partial files, and hashing (lower per-process memory use, at some write-path cost; best for upload-heavy or memory-constrained hosts). It is **capability-gated**: a PATCH that sets `files.mmap_enabled` is rejected with **409 `conflict`** when `files.mmap_supported` is `false`, so the option is only writable against a daemon that can actually use it. Safe to toggle with active transfers.
+`files.mmap_supported` is **read-only** — the daemon advertises whether it was built with memory-mapped file I/O (`false` on a core without mmap support, e.g. Windows or a build with `-DENABLE_MMAP=OFF`); it is ignored if sent on PATCH. `files.mmap_enabled` is the runtime toggle for memory-mapped block I/O — download writes to part files, upload reads of both shared (completed) and partial files, and hashing (lower per-process memory use, at some write-path cost; best for upload-heavy or memory-constrained hosts). It is **capability-gated**: a PATCH that sets `files.mmap_enabled` is rejected with **409 `option_not_supported`** when `files.mmap_supported` is `false`, so the option is only writable against a daemon that can actually use it. Safe to toggle with active transfers.
 
 `connection.upnp_enabled` toggles UPnP router forwarding of the daemon's P2P ports — the ports themselves are `connection.tcp_port` (ed2k TCP) and `connection.udp_port` (ed2k/Kad UDP). `connection.upnp_control_point_port` is a separate optional knob: the fixed local port the UPnP control point (libupnp) binds to for the router's callbacks, `0` meaning auto-assign — **not** a forwarded port. `connection.upnp_supported` is **read-only** — the daemon advertises whether it was built with UPnP (`false` on a core built `-DENABLE_UPNP=OFF`, where `upnp_enabled` has no effect); it is ignored if sent on PATCH. (Web-server and EC-port UPnP are intentionally not exposed — amuleweb is deprecated and the EC port is not a P2P port.)
 
@@ -3179,24 +3179,23 @@ Every error code emitted by `/api/v0/*`, sorted by what triggered it. Two codes 
 | `not_found` | 404 | Resource doesn't exist (unknown hash, ECID, graph name, or no such endpoint). |
 | `not_readable` | 403 | Per-item code from the [`/share_directories`](#post-apiv0share_directories) bulk envelope: amuled cannot read that path. Only ever appears inside a `results[].error`, never as a whole-response error. |
 | `method_not_allowed` | 405 | Wrong HTTP verb for the route. The response carries an `Allow` header listing the methods this resource does support. |
-| `conflict` | 409 | The request is valid but the daemon cannot serve it as asked: it was built without support for the option being set, or the client named on an A4AF request is not an A4AF source of that download. |
+| `option_not_supported` | 409 | `PATCH /preferences` set an option the connected daemon was built without. |
+| `not_a4af_source` | 409 | The client named on a `POST /downloads/{hash}/a4af` request is not an A4AF source of that download. |
 | `partfile_unsupported` | 409 | Verify Local Data requested on a file that is still an incomplete partfile. |
 | `not_shared` | 409 | A comment or rating was posted against a file that is not shared. |
 | `not_completed` | 409 | `clear_completed` named a `hash` that is not a completed download. |
-| `completed_use_clear_completed` | 409 | A bulk `DELETE /downloads` matched a completed download; use `clear_completed` for those. |
+| `download_completed` | 409 | A `DELETE /downloads` matched a completed download; use `clear_completed` for those. |
 | `kad_more_exhausted` | 409 | `POST /search/{id}/more` on a Kad search that can no longer be widened — its 4-reask budget is spent, or it has entered the stopping window Kad begins 20 s before a keyword search ends. Terminal for that search; re-run the query for more. |
 | `update_check_unavailable` | 409 | `POST /version/check` cannot run — the daemon has no update-check capability. |
 | `payload_too_large` | 413 | Request body exceeds the 1 MiB limit. The connection closes after the response. |
-| `rate_limited` | 429 | Per-IP failure bucket full. `Retry-After: <seconds>` accompanies the response. |
-| `update_check_throttled` | 429 | `POST /version/check` was throttled by the daemon; try again shortly. |
+| `rate_limited` | 429 | Too many requests: the per-IP auth-failure bucket is full, or `POST /version/check` was throttled by the daemon. `Retry-After: <seconds>` accompanies the auth case. |
 | `headers_too_large` | 431 | Request headers exceed the 16 KiB limit. The connection closes after the response. |
-| `internal_error` | 500 | A handler failed internally — hash decode or serialization. The body is generic; details land in the daemon's stderr. |
-| `internal` | 500 | A handler threw. Raised by the HTTP layer's catch-all rather than by a handler, so it is distinct from `internal_error` above; a client that wants every server-side failure must match both. |
-| `bad_gateway` | 502 | amuled returned an EC payload this endpoint could not decode. |
+| `internal_error` | 500 | A server-side failure: a handler failed internally (hash decode, serialization) or threw and was caught by the HTTP layer. The body is generic; details land in the daemon's stderr. |
+| `amuled_response_invalid` | 502 | amuled returned an EC payload this endpoint could not decode. |
 | `ec_unavailable` | 503 | EC connection not ready yet (cold start, transient amuled restart). |
 | `ec_unsupported` | 503 | The connected amuled is too old to serve this route — the chat endpoints and `/known_clients`. |
 | `login_disabled` | 503 | `/auth/login` reached but no admin AND no guest password configured. |
-| `sessions_exhausted` | 503 | Too many concurrent streaming sessions. `Retry-After` accompanies the response. |
+| `too_many_streams` | 503 | Too many concurrent SSE streams. `Retry-After` accompanies the response. |
 
 `message` is human-readable and may change between releases. Pin on `code`.
 

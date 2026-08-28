@@ -4759,7 +4759,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadA4afAction(
 		const auto &srcs = d.download.a4af_sources;
 		if (std::find(srcs.begin(), srcs.end(), client_ecid) == srcs.end()) {
 			return ErrorResponse(
-				409, "conflict", "that client is not an A4AF source of this download");
+				409, "not_a4af_source", "that client is not an A4AF source of this download");
 		}
 	}
 
@@ -4951,7 +4951,7 @@ CHttpServer::Response CApiDispatcher::HandleVersionCheck(const CHttpServer::Requ
 		// The only expected failure past the gate above is the daemon's
 		// throttle. Report an English code; the daemon's message is not relayed.
 		return ErrorResponse(429,
-			"update_check_throttled",
+			"rate_limited",
 			"version check was throttled by the daemon; try again shortly");
 	}
 
@@ -5486,7 +5486,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadDelete(
 	// so the verb-vs-disk-semantic mapping stays unambiguous.
 	if (d.download.status == "completed") {
 		return ErrorResponse(409,
-			"completed_use_clear_completed",
+			"download_completed",
 			"DELETE only removes active downloads (deletes .part/.met "
 			"files from disk). Use POST /downloads_clear_completed "
 			"with optional {\"hash\":\"...\"} body to clear a completed "
@@ -6130,7 +6130,7 @@ CHttpServer::Response CApiDispatcher::HandleKnownClients(const CHttpServer::Requ
 			// and older ones are refused above -- but the cost of being wrong
 			// is permanent, and retrying next request is free.
 			return ErrorResponse(502,
-				"bad_gateway",
+				"amuled_response_invalid",
 				"the core answered the history request with an unknown reply");
 		}
 		m_state.SetKnownClients(std::move(rows));
@@ -8685,7 +8685,7 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 			}
 			if (!ok) {
 				return ErrorResponse(409,
-					"conflict",
+					"option_not_supported",
 					"this daemon was built without support for that option");
 			}
 		}
@@ -9499,7 +9499,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsBulkDelete(const CHttpServe
 		if (d.download.status == "completed") {
 			results.push_back(BulkErr(raw,
 				409,
-				"completed_use_clear_completed",
+				"download_completed",
 				"DELETE only removes active downloads; use POST "
 				"/downloads_clear_completed to clear a completed entry"));
 			continue;
