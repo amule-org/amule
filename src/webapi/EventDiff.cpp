@@ -352,7 +352,7 @@ std::string JsonBoolOrNull(bool known, bool v)
 
 // Mirrors HandleStatus key for key -- EVENTS.md promises this payload is
 // identical to the REST /status envelope, and 22-sse-diff-emission.sh asserts
-// it. Both connected_since values are 0 while not connected, same rule as
+// it. Both connected_since_at values are 0 while not connected, same rule as
 // there: gate on state rather than trusting a 0 timestamp.
 std::string ToJsonStatusEvent(const StatusSnapshot &s, const KadSnapshot &k, bool ec_connected)
 {
@@ -362,19 +362,19 @@ std::string ToJsonStatusEvent(const StatusSnapshot &s, const KadSnapshot &k, boo
 	  << "\"state\":\"" << EscJson(s.ed2k_state) << "\""
 	  << ",\"high_id\":" << (s.ed2k_high_id ? "true" : "false") << ",\"user_id\":" << s.ed2k_user_id
 	  << ",\"public_ip\":\"" << EscJson(s.ed2k_public_ip) << "\""
-	  << ",\"connected_since\":" << s.ed2k_connected_since << ",\"server_name\":\""
+	  << ",\"connected_since_at\":" << s.ed2k_connected_since << ",\"server_name\":\""
 	  << EscJson(s.server_name) << "\""
 	  << ",\"server_ip\":\"" << EscJson(s.server_ip) << "\""
 	  << ",\"server_port\":" << s.server_port << ",\"network\":{"
-	  << "\"users\":" << JsonNumOrNull(s.has_ed2k_network, s.ed2k_users)
-	  << ",\"files\":" << JsonNumOrNull(s.has_ed2k_network, s.ed2k_files) << "}}"
+	  << "\"user_count\":" << JsonNumOrNull(s.has_ed2k_network, s.ed2k_users)
+	  << ",\"file_count\":" << JsonNumOrNull(s.has_ed2k_network, s.ed2k_files) << "}}"
 	  << ",\"kad\":{"
 	  << "\"state\":\"" << EscJson(s.kad_state) << "\""
 	  << ",\"firewalled_tcp\":" << JsonBoolOrNull(s.has_kad_firewalled_tcp, s.kad_firewalled_tcp)
-	  << ",\"connected_since\":" << s.kad_connected_since << ",\"network\":{"
-	  << "\"users\":" << JsonNumOrNull(k.has_network, k.users)
-	  << ",\"files\":" << JsonNumOrNull(k.has_network, k.files)
-	  << ",\"nodes\":" << JsonNumOrNull(k.has_network, k.nodes) << "}"
+	  << ",\"connected_since_at\":" << s.kad_connected_since << ",\"network\":{"
+	  << "\"user_count\":" << JsonNumOrNull(k.has_network, k.users)
+	  << ",\"file_count\":" << JsonNumOrNull(k.has_network, k.files)
+	  << ",\"node_count\":" << JsonNumOrNull(k.has_network, k.nodes) << "}"
 	  << "}"
 	  << ",\"speeds\":{"
 	  << "\"download_bps\":" << s.download_bps << ",\"upload_bps\":" << s.upload_bps
@@ -685,14 +685,13 @@ void EnforceSinglePublisher()
 } // namespace
 
 // One chat message as the `message` object both the SSE payload and
-// GET /chats/{peer}/messages expose. Written here in the same string-building
+// GET /chats/{client_address}/messages expose. Written here in the same string-building
 // style as the other event payloads in this file; the REST side renders the
 // identical shape through CJsonWriter.
 std::string ChatMessageJson(const ChatMessageSnapshot &msg)
 {
 	return "{\"id\":" + std::to_string(msg.id) + ",\"direction\":\"" + (msg.outgoing ? "out" : "in") +
-	       "\",\"text\":\"" + EscJson(msg.text) + "\",\"timestamp\":" + std::to_string(msg.timestamp) +
-	       "}";
+	       "\",\"text\":\"" + EscJson(msg.text) + "\",\"sent_at\":" + std::to_string(msg.timestamp) + "}";
 }
 
 void PublishChatEvents(CEventBus &bus,
@@ -706,19 +705,25 @@ void PublishChatEvents(CEventBus &bus,
 	for (const ChatSessionSnapshot &session : new_messages) {
 		const std::string peer = session.PeerKey();
 		for (const ChatMessageSnapshot &msg : session.messages) {
-			std::string payload = "{\"peer\":\"" + EscJson(peer) + "\",\"ip\":\"" +
+			std::string payload = "{\"client_address\":\"" + EscJson(peer) + "\",\"ip\":\"" +
 					      EscJson(session.ip) +
 					      "\",\"port\":" + std::to_string(session.port) + ",\"name\":\"" +
 					      EscJson(session.DisplayName()) +
-					      "\",\"client_ecid\":" + std::to_string(session.client_ecid) +
-					      ",\"friend_ecid\":" + std::to_string(session.friend_ecid) +
+					      // client_ecid / friend_ecid are null rather than the 0
+					      // sentinel, matching the REST row (R10).
+					      "\",\"client_ecid\":" +
+					      (session.client_ecid ? std::to_string(session.client_ecid)
+								   : std::string("null")) +
+					      ",\"friend_ecid\":" +
+					      (session.friend_ecid ? std::to_string(session.friend_ecid)
+								   : std::string("null")) +
 					      ",\"message\":" + ChatMessageJson(msg) + "}";
 			batch.emplace_back("chat_message", std::move(payload));
 		}
 	}
 	for (std::uint64_t gui_id : closed) {
 		const std::string peer = ChatPeerKeyFromGuiId(gui_id);
-		batch.emplace_back("chat_session_closed", "{\"peer\":\"" + EscJson(peer) + "\"}");
+		batch.emplace_back("chat_session_closed", "{\"client_address\":\"" + EscJson(peer) + "\"}");
 	}
 	bus.PublishBatch(batch);
 }
@@ -947,13 +952,13 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 	// while the search runs -- where `search_progress` is already the re-read
 	// cue. What is left is the set that can change AFTER a search finishes,
 	// when no other signal exists: download state (`status` /
-	// `already_have`), and the Kad-notes cluster (`comments[]`, the
+	// `already_downloaded`), and the Kad-notes cluster (`comments[]`, the
 	// in-flight flag, and `rating`, which aggregates from the comments).
 	// Comparing only these keeps the search channel quiet on a running
 	// search instead of firing per-result frames on source-count churn.
 	const auto result_mutated = [](const SearchResult &a, const SearchResult &b) {
-		if (a.status != b.status || a.already_have != b.already_have || a.rating != b.rating ||
-			a.kad_comment_searching != b.kad_comment_searching ||
+		if (a.status != b.status || a.already_downloaded != b.already_downloaded ||
+			a.rating != b.rating || a.kad_comment_searching != b.kad_comment_searching ||
 			a.comments.size() != b.comments.size())
 			return true;
 		for (std::size_t i = 0; i < a.comments.size(); ++i) {
@@ -1021,7 +1026,7 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 				// live rows opts in by handling the new event. It is the
 				// close of the one window where a client could not know:
 				// a finished search stops emitting search_progress, yet a
-				// hit downloaded from it flips status / already_have, and
+				// hit downloaded from it flips status / already_downloaded, and
 				// a Kad notes lookup lands comments / rating after the
 				// fact. (Those fields are polled at all because the union
 				// keeps finished searches in the per-tick poll set.)
@@ -1048,8 +1053,12 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 				std::ostringstream payload;
 				payload << "{\"search_id\":" << sid << ",\"state\":\""
 					<< (progress_now.complete ? "finished" : "running") << "\""
-					<< ",\"percent\":" << progress_now.percent
-					<< ",\"results\":" << search_now.size() << ",\"kind\":\""
+					<< ",\"percent\":"
+					<< progress_now.percent
+					// `result_count`: a plural key held an integer while `results` is an
+					// array everywhere else, and GET /search already calls this number
+					// result_count.
+					<< ",\"result_count\":" << search_now.size() << ",\"type\":\""
 					<< EscJson(progress_now.kind) << "\""
 					<< "}";
 				bus.Publish("search_progress", payload.str());

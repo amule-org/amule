@@ -70,7 +70,7 @@ export default function Stats() {
           : pts.length && pts[0].active_downloads !== undefined
             ? [pts.map((p) => p.active_downloads), pts.map((p) => p.active_uploads)]
             : [];
-        if (alive) setGraphData((d) => ({ ...d, [g.name]: [pts.map((p) => p.t_unix), ys, ...rest] }));
+        if (alive) setGraphData((d) => ({ ...d, [g.name]: [pts.map((p) => p.at), ys, ...rest] }));
       } catch (_) { /* leave previous data */ }
     };
     const loadTree = async () => {

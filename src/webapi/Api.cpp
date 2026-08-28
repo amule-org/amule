@@ -725,13 +725,14 @@ void WriteKadNetworkObject(CJsonWriter &w, const webapi::KadSnapshot &k)
 {
 	w.Key("network");
 	w.BeginObject();
-	// null unless Kad is connected. `users`/`files` are the last estimate and
-	// survive into `connecting`; `nodes` is our own routing-table size and was
+	// null unless Kad is connected. `user_count`/`file_count` are the last
+	// estimate and survive into `connecting`; `node_count` is our own
+	// routing-table size and was
 	// measured at 2 with Kad fully stopped, so not even the terminal state
 	// reaches 0. A number here would be a claim about a network we are not on.
-	WriteIntOrNull(w, "users", k.has_network, static_cast<int64_t>(k.users));
-	WriteIntOrNull(w, "files", k.has_network, static_cast<int64_t>(k.files));
-	WriteIntOrNull(w, "nodes", k.has_network, static_cast<int64_t>(k.nodes));
+	WriteIntOrNull(w, "user_count", k.has_network, static_cast<int64_t>(k.users));
+	WriteIntOrNull(w, "file_count", k.has_network, static_cast<int64_t>(k.files));
+	WriteIntOrNull(w, "node_count", k.has_network, static_cast<int64_t>(k.nodes));
 	w.EndObject();
 }
 
@@ -1241,25 +1242,26 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// matched first, same ordering rationale as the server / friend routes:
 	// the longer pattern would otherwise be shadowed.
 	{
-		static const auto chat_messages = web_api_path::ParsePattern("/api/v0/chats/{peer}/messages");
-		static const auto chat_one = web_api_path::ParsePattern("/api/v0/chats/{peer}");
+		static const auto chat_messages =
+			web_api_path::ParsePattern("/api/v0/chats/{client_address}/messages");
+		static const auto chat_one = web_api_path::ParsePattern("/api/v0/chats/{client_address}");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(chat_messages, path_segs, caps)) {
 			if (req.method == "GET" || req.method == "HEAD") {
-				return HandleChatMessages(req, caps["peer"]);
+				return HandleChatMessages(req, caps["client_address"]);
 			}
 			if (req.method == "POST") {
-				return HandleChatSend(req, caps["peer"]);
+				return HandleChatSend(req, caps["client_address"]);
 			}
-			return MethodNotAllowed(
-				"GET, HEAD, POST", "only GET / HEAD / POST on /chats/{peer}/messages");
+			return MethodNotAllowed("GET, HEAD, POST",
+				"only GET / HEAD / POST on /chats/{client_address}/messages");
 		}
 		if (web_api_path::Match(chat_one, path_segs, caps)) {
 			if (req.method == "DELETE") {
-				return HandleChatClose(req, caps["peer"]);
+				return HandleChatClose(req, caps["client_address"]);
 			}
-			return MethodNotAllowed("DELETE", "only DELETE on /chats/{peer}");
+			return MethodNotAllowed("DELETE", "only DELETE on /chats/{client_address}");
 		}
 	}
 
@@ -2599,7 +2601,7 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 	w.Key("public_ip");
 	w.ValueString(wxString::FromUTF8(s.ed2k_public_ip.c_str()));
 	// 0 when not connected -- gate on ed2k.state, not on this being nonzero.
-	w.Key("connected_since");
+	w.Key("connected_since_at");
 	w.ValueInt(static_cast<int64_t>(s.ed2k_connected_since));
 	w.Key("server_name");
 	w.ValueString(wxString::FromUTF8(s.server_name.c_str()));
@@ -2615,8 +2617,8 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 	w.BeginObject();
 	// null unless eD2k is connected: these sum the whole known server list, not
 	// the server we are attached to, and nothing zeroes them on disconnect.
-	WriteIntOrNull(w, "users", s.has_ed2k_network, static_cast<int64_t>(s.ed2k_users));
-	WriteIntOrNull(w, "files", s.has_ed2k_network, static_cast<int64_t>(s.ed2k_files));
+	WriteIntOrNull(w, "user_count", s.has_ed2k_network, static_cast<int64_t>(s.ed2k_users));
+	WriteIntOrNull(w, "file_count", s.has_ed2k_network, static_cast<int64_t>(s.ed2k_files));
 	w.EndObject();
 	w.EndObject();
 
@@ -2629,7 +2631,7 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 	// measurement rather than a refinement of this one.
 	WriteBoolOrNull(w, "firewalled_tcp", s.has_kad_firewalled_tcp, s.kad_firewalled_tcp);
 	// 0 when not connected -- gate on kad.state, not on this being nonzero.
-	w.Key("connected_since");
+	w.Key("connected_since_at");
 	w.ValueInt(static_cast<int64_t>(s.kad_connected_since));
 	// Network rollup — same numbers GET /kad serves under
 	// `network.{users,files,nodes}`, written by the same helper so
@@ -3413,11 +3415,14 @@ struct SearchListRow
 void WriteSearchListRow(CJsonWriter &w, const SearchListRow &row)
 {
 	w.BeginObject();
-	w.Key("search_id");
+	// `id`, not `search_id`: the object would be prefixing its own key with
+	// its own type. References from OUTSIDE keep the prefix -- the SSE
+	// payloads and the results envelope point into this object.
+	w.Key("id");
 	w.ValueInt(static_cast<int64_t>(row.search_id));
 	w.Key("query");
 	w.ValueString(row.query);
-	w.Key("kind");
+	w.Key("type");
 	w.ValueString(wxString::FromUTF8(row.kind.c_str()));
 	w.Key("state");
 	w.ValueString(wxString::FromUTF8(row.state.c_str()));
@@ -3439,7 +3444,7 @@ void WriteSearchListRow(CJsonWriter &w, const SearchListRow &row)
 const ListComparators<SearchListRow> &SearchListComparators()
 {
 	static const ListComparators<SearchListRow> kComps = {
-		{ "search_id", SORT_BY(search_id), ANCHOR_ON_NUM(search_id) },
+		{ "id", SORT_BY(search_id), ANCHOR_ON_NUM(search_id) },
 		{ "query", SORT_BY(query) },
 		{ "started_at", SORT_BY(started_at) },
 		{ "result_count", SORT_BY(result_count) },
@@ -5736,8 +5741,8 @@ void WriteFriendObject(CJsonWriter &w, const webapi::FriendSnapshot &f)
 	w.ValueString(wxString::FromUTF8(f.name.c_str()));
 	w.Key("user_hash");
 	w.ValueString(wxString::FromUTF8(f.user_hash.c_str()));
-	w.Key("ip");
-	w.ValueString(wxString::FromUTF8(f.ip.c_str()));
+	// null rather than "" when the daemon has not reported an address (R10).
+	WriteStringOrNull(w, "ip", !f.ip.empty(), f.ip);
 	w.Key("port");
 	w.ValueInt(static_cast<int64_t>(f.port));
 	// The live peer this friend is linked to, joinable against /clients. null
@@ -5986,7 +5991,7 @@ void WriteChatMessageObject(CJsonWriter &w, const webapi::ChatMessageSnapshot &m
 	w.ValueString(wxString::FromAscii(m.outgoing ? "out" : "in"));
 	w.Key("text");
 	w.ValueString(wxString::FromUTF8(m.text.c_str()));
-	w.Key("timestamp");
+	w.Key("sent_at");
 	w.ValueInt(static_cast<int64_t>(m.timestamp));
 	w.EndObject();
 }
@@ -5994,7 +5999,7 @@ void WriteChatMessageObject(CJsonWriter &w, const webapi::ChatMessageSnapshot &m
 void WriteChatObject(CJsonWriter &w, const webapi::ChatSessionSnapshot &s)
 {
 	w.BeginObject();
-	w.Key("peer");
+	w.Key("client_address");
 	w.ValueString(wxString::FromUTF8(s.PeerKey().c_str()));
 	w.Key("ip");
 	w.ValueString(wxString::FromUTF8(s.ip.c_str()));
@@ -6011,10 +6016,14 @@ void WriteChatObject(CJsonWriter &w, const webapi::ChatSessionSnapshot &s)
 	w.ValueBool(s.client_ecid != 0);
 	w.Key("message_count");
 	w.ValueInt(static_cast<int64_t>(s.messages.size()));
-	w.Key("last_msg_id");
+	w.Key("last_message_id");
 	w.ValueInt(static_cast<int64_t>(s.LastMsgId()));
-	w.Key("last_message_at");
-	w.ValueInt(static_cast<int64_t>(s.messages.empty() ? 0 : s.messages.back().timestamp));
+	// null, not 0: a session with no messages has no last-message time, and
+	// 0 reads as 1970 (R10).
+	WriteIntOrNull(w,
+		"last_message_at",
+		!s.messages.empty(),
+		static_cast<int64_t>(s.messages.empty() ? 0 : s.messages.back().timestamp));
 	// The transcript itself is deliberately NOT on the list: a 50-session
 	// store at 200 messages each would be 10 000 objects per list read.
 	// null, not omitted: a session with no messages yet has no last message,
@@ -6213,7 +6222,7 @@ CHttpServer::Response CApiDispatcher::HandleChatMessages(
 
 	std::uint64_t gui_id = 0;
 	if (!ParseChatPeerKey(peer, gui_id)) {
-		return ErrorResponse(400, "bad_request", "path `{peer}` must be `<ip>:<port>`");
+		return ErrorResponse(400, "bad_request", "path `{client_address}` must be `<ip>:<port>`");
 	}
 
 	const std::vector<webapi::ChatSessionSnapshot> chats = m_state.Chats();
@@ -6222,7 +6231,7 @@ CHttpServer::Response CApiDispatcher::HandleChatMessages(
 		return ErrorResponse(404, "not_found", "no chat session with that peer");
 	}
 
-	// `since_id` is a safe polling cursor: ids are monotonic per daemon
+	// `since_message_id` is a safe polling cursor: ids are monotonic per daemon
 	// process, so a client never sees a duplicate and never skips one. They
 	// reset when the daemon restarts, which also empties the store.
 	std::uint32_t since_id = 0;
@@ -6230,7 +6239,7 @@ CHttpServer::Response CApiDispatcher::HandleChatMessages(
 	const auto qmap = web_api_path::ParseQuery(QueryOf(req));
 	{
 		std::uint64_t v = since_id;
-		if (auto r = ParseUintParam(qmap, "since_id", 0, 0xFFFFFFFFull, v))
+		if (auto r = ParseUintParam(qmap, "since_message_id", 0, 0xFFFFFFFFull, v))
 			return *r;
 		since_id = static_cast<std::uint32_t>(v);
 	}
@@ -6260,7 +6269,7 @@ CHttpServer::Response CApiDispatcher::HandleChatMessages(
 
 	CJsonWriter w;
 	w.BeginObject();
-	w.Key("peer");
+	w.Key("client_address");
 	w.ValueString(wxString::FromUTF8(session->PeerKey().c_str()));
 	w.Key("messages");
 	w.BeginArray();
@@ -6269,7 +6278,7 @@ CHttpServer::Response CApiDispatcher::HandleChatMessages(
 	w.EndArray();
 	w.Key("total");
 	w.ValueInt(static_cast<int64_t>(session->messages.size()));
-	w.Key("last_msg_id");
+	w.Key("last_message_id");
 	w.ValueInt(static_cast<int64_t>(session->LastMsgId()));
 	w.EndObject();
 	CHttpServer::Response r;
@@ -6334,7 +6343,7 @@ CHttpServer::Response CApiDispatcher::SendChatMessageTo(const CHttpServer::Reque
 	// `ok` dropped. The nested `message` object stays: it is the created
 	// resource, carrying the id and direction the daemon assigned, and there
 	// is no per-message GET route whose shape it could mirror instead.
-	w.Key("peer");
+	w.Key("client_address");
 	w.ValueString(wxString::FromUTF8(webapi::ChatPeerKeyFromGuiId(gui_id).c_str()));
 	w.Key("message");
 	w.BeginObject();
@@ -6366,7 +6375,7 @@ CHttpServer::Response CApiDispatcher::HandleChatSend(const CHttpServer::Request 
 	}
 	std::uint64_t gui_id = 0;
 	if (!ParseChatPeerKey(peer, gui_id)) {
-		return ErrorResponse(400, "bad_request", "path `{peer}` must be `<ip>:<port>`");
+		return ErrorResponse(400, "bad_request", "path `{client_address}` must be `<ip>:<port>`");
 	}
 	// No 404 for an unknown peer here: the core creates the session if it does
 	// not exist, so this doubles as "start a chat with this address".
@@ -6423,7 +6432,7 @@ CHttpServer::Response CApiDispatcher::HandleChatClose(
 	}
 	std::uint64_t gui_id = 0;
 	if (!ParseChatPeerKey(peer, gui_id)) {
-		return ErrorResponse(400, "bad_request", "path `{peer}` must be `<ip>:<port>`");
+		return ErrorResponse(400, "bad_request", "path `{client_address}` must be `<ip>:<port>`");
 	}
 
 	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_CHAT_CLOSE_SESSION));
@@ -7236,7 +7245,7 @@ CHttpServer::Response CApiDispatcher::HandleKad(const CHttpServer::Request &req)
 	WriteBoolOrNull(w, "lan_mode", k.has_lan_mode, k.lan_mode);
 	// Same value GET /status reports as kad.connected_since; 0 when
 	// not connected, so gate on `state` rather than on a nonzero.
-	w.Key("connected_since");
+	w.Key("connected_since_at");
 	w.ValueInt(static_cast<int64_t>(d.status.kad_connected_since));
 	// Ours, as opposed to `buddy.ip` below — which is why this one
 	// is not called plain `ip`.
@@ -7251,11 +7260,11 @@ CHttpServer::Response CApiDispatcher::HandleKad(const CHttpServer::Request &req)
 	WriteIntOrNull(w, "sources", k.has_indexed, static_cast<int64_t>(k.indexed_sources));
 	WriteIntOrNull(w, "keywords", k.has_indexed, static_cast<int64_t>(k.indexed_keywords));
 	WriteIntOrNull(w, "notes", k.has_indexed, static_cast<int64_t>(k.indexed_notes));
-	WriteIntOrNull(w, "load", k.has_indexed, static_cast<int64_t>(k.indexed_load));
+	WriteIntOrNull(w, "load_percent", k.has_indexed, static_cast<int64_t>(k.indexed_load));
 	w.EndObject();
 	w.Key("buddy");
 	w.BeginObject();
-	WriteStringOrNull(w, "status", k.has_buddy, k.buddy_status);
+	WriteStringOrNull(w, "state", k.has_buddy, k.buddy_status);
 	WriteStringOrNull(w, "ip", k.has_buddy, k.buddy_ip);
 	WriteIntOrNull(w, "port", k.has_buddy, static_cast<int64_t>(k.buddy_port));
 	w.EndObject();
@@ -7441,9 +7450,11 @@ void WritePointArray(CJsonWriter &w,
 		const std::time_t t =
 			snapshot_at - static_cast<std::time_t>((samples.size() - 1 - i) * interval);
 		w.BeginObject();
-		w.Key("t");
-		w.ValueString(wxString::FromUTF8(webapi::FormatIso8601Utc(t).c_str()));
-		w.Key("t_unix");
+		// One representation, unix seconds, named `_at` like every other time
+		// on the surface (R3). The ISO twin is dropped: formatting is a client
+		// concern, and it cost a key plus ~22 bytes on every point of an array
+		// that runs to max_points.
+		w.Key("at");
 		w.ValueInt(static_cast<int64_t>(t));
 		w.Key("value");
 		w.ValueInt(static_cast<int64_t>(samples[i]));
@@ -7788,8 +7799,9 @@ CHttpServer::Response CApiDispatcher::HandleSearchResults(
 		// cares about, not the order a UI table does.
 		{ "hash", SORT_BY(hash), ANCHOR_ON(hash) },
 		{ "name", SORT_BY(name) },
-		{ "size", SORT_BY(size) },
-		{ "sources", SORT_BY(source_count) },
+		// R7: spelled like the response keys they order by.
+		{ "size_bytes", SORT_BY(size) },
+		{ "sources.total", SORT_BY(source_count) },
 		{ "rating", SORT_BY(rating) },
 		// Browse listings are read folder by folder, which is how the
 		// desktop sorts its Directories column too. Empty on server/Kad
@@ -7832,7 +7844,8 @@ CHttpServer::Response CApiDispatcher::HandleSearchResults(
 	w.BeginObject();
 	w.Key("state");
 	w.ValueString(SearchLifecycleStateToString(progress.complete ? 2 : progress.active ? 1 : 0));
-	w.Key("kind");
+	// `type`, matching POST /search's body field and the searches[] row (R6).
+	w.Key("type");
 	w.ValueString(wxString::FromUTF8(progress.kind.c_str()));
 	w.Key("percent");
 	w.ValueInt(static_cast<int64_t>(progress.percent));
@@ -10599,43 +10612,45 @@ CHttpServer::Response CApiDispatcher::HandleSearchStart(const CHttpServer::Reque
 	std::uint64_t max_size = 0;
 	std::uint32_t min_avail = 0;
 	{
-		const auto it = obj.find("min_size");
+		const auto it = obj.find("min_size_bytes");
 		if (it != obj.end()) {
 			if (!it->second.is<double>()) {
 				return ErrorResponse(400,
 					"bad_request",
-					"`min_size` must be a non-negative integer (bytes)");
+					"`min_size_bytes` must be a non-negative integer (bytes)");
 			}
 			const double v = it->second.get<double>();
 			if (v < 0)
-				return ErrorResponse(400, "bad_request", "`min_size` must be >= 0");
+				return ErrorResponse(400, "bad_request", "`min_size_bytes` must be >= 0");
 			min_size = static_cast<std::uint64_t>(v);
 		}
 	}
 	{
-		const auto it = obj.find("max_size");
+		const auto it = obj.find("max_size_bytes");
 		if (it != obj.end()) {
 			if (!it->second.is<double>()) {
 				return ErrorResponse(400,
 					"bad_request",
-					"`max_size` must be a non-negative integer (bytes; 0 = no cap)");
+					"`max_size_bytes` must be a non-negative integer (bytes; 0 = no "
+					"cap)");
 			}
 			const double v = it->second.get<double>();
 			if (v < 0)
-				return ErrorResponse(400, "bad_request", "`max_size` must be >= 0");
+				return ErrorResponse(400, "bad_request", "`max_size_bytes` must be >= 0");
 			max_size = static_cast<std::uint64_t>(v);
 		}
 	}
 	{
-		const auto it = obj.find("min_avail");
+		const auto it = obj.find("min_source_count");
 		if (it != obj.end()) {
 			if (!it->second.is<double>()) {
-				return ErrorResponse(
-					400, "bad_request", "`min_avail` must be a non-negative integer");
+				return ErrorResponse(400,
+					"bad_request",
+					"`min_source_count` must be a non-negative integer");
 			}
 			const double v = it->second.get<double>();
 			if (v < 0 || v > 4294967295.0) {
-				return ErrorResponse(400, "bad_request", "`min_avail` out of range");
+				return ErrorResponse(400, "bad_request", "`min_source_count` out of range");
 			}
 			min_avail = static_cast<std::uint32_t>(v);
 		}

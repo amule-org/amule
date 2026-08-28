@@ -272,7 +272,7 @@ SSE_SEARCH=$(curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"query\":\"$SEARCH_QUERY\",\"type\":\"local\"}" \
 	"$HOST/api/v0/search")
-SSE_SID=$(printf '%s' "$SSE_SEARCH" | jq -r '.search_id // empty')
+SSE_SID=$(printf '%s' "$SSE_SEARCH" | jq -r '.id // empty')
 SEARCH_FINISHED=""
 for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 \
          21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40; do
@@ -297,26 +297,26 @@ if [ -n "$SEARCH_FINISHED" ]; then
 	else
 		_fail "search_progress .data.state" "expected 'finished' in $JSON"
 	fi
-	if echo "$JSON" | jq -e '.kind == "local"' >/dev/null 2>&1; then
-		_pass "search_progress .data.kind == 'local'"
+	if echo "$JSON" | jq -e '.type == "local"' >/dev/null 2>&1; then
+		_pass "search_progress .data.type == 'local'"
 	else
-		_fail "search_progress .data.kind" "expected 'local' in $JSON"
+		_fail "search_progress .data.type" "expected 'local' in $JSON"
 	fi
 	if echo "$JSON" | jq -e '.percent | type == "number"' >/dev/null 2>&1; then
 		_pass "search_progress .data.percent is numeric"
 	else
 		_fail "search_progress .data.percent" "missing/non-numeric in $JSON"
 	fi
-	if echo "$JSON" | jq -e '.results | type == "number"' >/dev/null 2>&1; then
-		_pass "search_progress .data.results is numeric"
+	if echo "$JSON" | jq -e '.result_count | type == "number"' >/dev/null 2>&1; then
+		_pass "search_progress .data.result_count is numeric"
 	else
-		_fail "search_progress .data.results" "missing/non-numeric in $JSON"
+		_fail "search_progress .data.result_count" "missing/non-numeric in $JSON"
 	fi
 	# search_result_added is content-dependent — only assert it
 	# fired if the local search produced any hits. On a fully-
 	# disconnected daemon it won't fire, and that's correct.
 	N_ADDED=$(grep -c "^event: search_result_added$" "$SSE_OUT" || true)
-	RESULTS_TOTAL=$(echo "$JSON" | jq '.results')
+	RESULTS_TOTAL=$(echo "$JSON" | jq '.result_count')
 	if [ "$RESULTS_TOTAL" -gt 0 ] 2>/dev/null; then
 		if [ "$N_ADDED" -ge 1 ]; then
 			_pass "search_result_added fired ($N_ADDED times; finished reports $RESULTS_TOTAL results)"
@@ -613,7 +613,7 @@ fi
 # The window this closes: once a search finishes, search_progress stops, so a
 # subscriber holding its rows has no signal for the fields that can still
 # change. Driven here by starting a download of one hit, which flips
-# already_have / status on the matching search result.
+# already_downloaded / status on the matching search result.
 #
 # Last section in the file: it starts a search on the shared daemon.
 #
@@ -621,7 +621,7 @@ fi
 # curl directly, same as every section above.
 SSE_SEARCH_SID=$(curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"query":"ubuntu"}' "$HOST/api/v0/search" | jq -r '.search_id // empty')
+	-d '{"query":"ubuntu"}' "$HOST/api/v0/search" | jq -r '.id // empty')
 UPD_HASH=""
 UPD_NAME=""
 UPD_SIZE=""
@@ -631,10 +631,10 @@ if [ -n "$SSE_SEARCH_SID" ]; then
 		sleep 1
 		UPD_ROW=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" \
 			"$HOST/api/v0/search/$SSE_SEARCH_SID/results" \
-			| jq -c '[.results[] | select(.already_have == false)] | first // empty')
+			| jq -c '[.results[] | select(.already_downloaded == false)] | first // empty')
 		UPD_HASH=$(printf '%s' "$UPD_ROW" | jq -r '.hash // empty')
 		UPD_NAME=$(printf '%s' "$UPD_ROW" | jq -r '.name // empty' | sed 's/|/_/g')
-		UPD_SIZE=$(printf '%s' "$UPD_ROW" | jq -r '.size // empty')
+		UPD_SIZE=$(printf '%s' "$UPD_ROW" | jq -r '.size_bytes // empty')
 		[ -n "$UPD_HASH" ] && break
 	done
 fi
@@ -652,7 +652,7 @@ if [ -n "$UPD_HASH" ]; then
 		sleep 0.25
 	done
 	# Provoke the change by starting a download of the hit. That flips
-	# already_have / status on the search result deterministically and
+	# already_downloaded / status on the search result deterministically and
 	# locally -- the partfile is created on the spot, no peer needed. A Kad
 	# NOTES lookup moves the other half of the comparator but depends on Kad
 	# actually answering, which would make a missing frame ambiguous between
@@ -681,16 +681,16 @@ if [ -n "$UPD_HASH" ]; then
 		fi
 		# Same writer as _added and as the REST entry, so the whole row is
 		# there rather than a delta a client would have to merge blindly.
-		if echo "$UPD_FRAME" | jq -e 'has("name") and has("size") and has("status") and has("kad_comment_lookup_running")' >/dev/null 2>&1; then
+		if echo "$UPD_FRAME" | jq -e 'has("name") and has("size_bytes") and has("status") and has("kad_comment_lookup_running")' >/dev/null 2>&1; then
 			_pass "search_result_updated carries the full results-entry shape"
 		else
 			_fail "search_result_updated shape" "$UPD_FRAME"
 		fi
 		# The point of the event: the row now reads as held.
-		if echo "$UPD_FRAME" | jq -e '.already_have == true' >/dev/null 2>&1; then
-			_pass "search_result_updated reports the hit as already_have after the download starts"
+		if echo "$UPD_FRAME" | jq -e '.already_downloaded == true' >/dev/null 2>&1; then
+			_pass "search_result_updated reports the hit as already_downloaded after the download starts"
 		else
-			_fail "search_result_updated .already_have" "expected true in $UPD_FRAME"
+			_fail "search_result_updated .already_downloaded" "expected true in $UPD_FRAME"
 		fi
 	else
 		_fail "search_result_updated" \

@@ -2480,7 +2480,7 @@ void MergeSearchResultTag(const CEC_SearchFile_Tag *sf, SearchResult &r)
 	// Download status (issue #429): amuled packs the CSearchFile
 	// status in EC_TAG_PARTFILE_STATUS on every search-result tag.
 	// Download status (issue #429): amuled packs the CSearchFile status
-	// in EC_TAG_PARTFILE_STATUS. `already_have` is not its own field on
+	// in EC_TAG_PARTFILE_STATUS. `already_downloaded` is not its own field on
 	// the wire -- AlreadyHave() reads the same tag -- so both move
 	// together, and both are left alone when the tag is diffed away.
 	// Writing the absent case as status 0 would report every unchanged
@@ -2489,7 +2489,7 @@ void MergeSearchResultTag(const CEC_SearchFile_Tag *sf, SearchResult &r)
 		std::uint32_t v = 0;
 		if (sf->AssignIfExist(EC_TAG_PARTFILE_STATUS, v)) {
 			r.status = SearchStatusName(v);
-			r.already_have = sf->AlreadyHave();
+			r.already_downloaded = sf->AlreadyHave();
 		}
 	}
 	// File type, computed from the filename (no EC data needed).

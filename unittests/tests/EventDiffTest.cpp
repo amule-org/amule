@@ -377,8 +377,8 @@ TEST(EventDiff, StatusEventFiresWhenTheKadNetworkFiguresBecomeUnknown)
 	}
 
 	ASSERT_TRUE(!payload.empty());
-	ASSERT_TRUE(payload.find("\"nodes\":null") != std::string::npos);
-	ASSERT_TRUE(payload.find("\"nodes\":499") == std::string::npos);
+	ASSERT_TRUE(payload.find("\"node_count\":null") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"node_count\":499") == std::string::npos);
 }
 
 // A tick where only the overhead moved still has to fire: the field is in the
@@ -409,8 +409,8 @@ TEST(EventDiff, StatusEventCarriesBothConnectedSince)
 
 	const std::string payload = EmitStatusAndGetPayload(s);
 
-	ASSERT_TRUE(payload.find("\"connected_since\":1751000000") != std::string::npos);
-	ASSERT_TRUE(payload.find("\"connected_since\":1751000042") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"connected_since_at\":1751000000") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"connected_since_at\":1751000042") != std::string::npos);
 }
 
 // A reconnect can leave every other field identical -- same server, same id,
@@ -424,7 +424,7 @@ TEST(EventDiff, StatusEventFiresWhenOnlyConnectedSinceMoved)
 	const std::string payload = EmitStatusAndGetPayload(s);
 
 	ASSERT_TRUE(!payload.empty());
-	ASSERT_TRUE(payload.find("\"connected_since\":1751000000") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"connected_since_at\":1751000000") != std::string::npos);
 }
 
 TEST(EventDiff, ClientAddedCarriesUploadFileName)
@@ -652,7 +652,7 @@ TEST(EventDiff, SearchResultUpdatedFiresWhenADownloadStateChanges)
 	// ever tell a subscriber this.
 	state.MutateSearch(42, [](std::map<std::uint32_t, SearchResult> &cache) {
 		cache[7].status = "downloaded";
-		cache[7].already_have = true;
+		cache[7].already_downloaded = true;
 	});
 	EmitDiffsAndUpdate(bus, prev, state);
 
@@ -667,7 +667,7 @@ TEST(EventDiff, SearchResultUpdatedFiresWhenADownloadStateChanges)
 	// Same shape as _added, search_id first, carrying the new values.
 	ASSERT_TRUE(payload.compare(0, 15, "{\"search_id\":42") == 0);
 	ASSERT_TRUE(payload.find("\"status\":\"downloaded\"") != std::string::npos);
-	ASSERT_TRUE(payload.find("\"already_have\":true") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"already_downloaded\":true") != std::string::npos);
 }
 
 TEST(EventDiff, SearchResultUpdatedFiresWhenKadNotesLand)

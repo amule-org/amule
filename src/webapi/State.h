@@ -870,7 +870,7 @@ struct SearchResult
 	std::uint64_t size = 0;
 	std::uint32_t source_count = 0;
 	std::uint32_t complete_source_count = 0;
-	bool already_have = false;
+	bool already_downloaded = false;
 	std::uint8_t rating = 0;
 	// Download status of the result on this node (issue #429), a lowercase
 	// string from the CSearchFile enum: "new" | "downloaded" | "queued" |

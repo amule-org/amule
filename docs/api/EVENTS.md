@@ -444,27 +444,27 @@ One event per message, **inbound and outbound alike**. An outbound one is how a 
 
 ```json
 {
-  "peer":        "203.0.113.42:4662",
+  "client_address": "203.0.113.42:4662",
   "ip":          "203.0.113.42",
   "port":        4662,
   "name":        "alice",
   "client_ecid": 4382,
   "friend_ecid": 12,
-  "message":     { "id": 91, "direction": "in", "text": "thanks!", "timestamp": 1786652714 }
+  "message":     { "id": 91, "direction": "in", "text": "thanks!", "sent_at": 1786652714 }
 }
 ```
 
-`message` is identical to a `messages[]` entry on [`GET /api/v0/chats/{peer}/messages`](REFERENCE.md#get-apiv0chatspeermessages), and `name` uses the same `"IP: <ip> Port: <port>"` fallback the REST list does.
+`message` is identical to a `messages[]` entry on [`GET /api/v0/chats/{client_address}/messages`](REFERENCE.md#get-apiv0chatsclient_addressmessages), and `name` uses the same `"IP: <ip> Port: <port>"` fallback the REST list does.
 
-There is no separate "conversation started" event: a conversation that did not exist yet is implied by the first message carrying its `peer`.
+There is no separate "conversation started" event: a conversation that did not exist yet is implied by the first message carrying its `client_address`.
 
 #### `chat_session_closed`
 
 ```json
-{ "peer": "203.0.113.42:4662" }
+{ "client_address": "203.0.113.42:4662" }
 ```
 
-Closing is global — see [`DELETE /api/v0/chats/{peer}`](REFERENCE.md#delete-apiv0chatspeer). This fires whichever client closed it, including the desktop GUI, so a viewer should drop the conversation rather than assume it still exists.
+Closing is global — see [`DELETE /api/v0/chats/{client_address}`](REFERENCE.md#delete-apiv0chatsclient_address). This fires whichever client closed it, including the desktop GUI, so a viewer should drop the conversation rather than assume it still exists.
 
 ### `clients` channel
 
@@ -535,17 +535,17 @@ Rate impact is small: the overhead rates move about as often as the speeds alrea
     "high_id":     true,
     "user_id":     1234567890,
     "public_ip":   "210.2.150.73",
-    "connected_since": 1751000000,
+    "connected_since_at": 1751000000,
     "server_name": "eMule Server",
     "server_ip":   "203.0.113.5",
     "server_port": 4242,
-    "network":     { "users": 312000, "files": 75000000 }
+    "network":     { "user_count": 312000, "file_count": 75000000 }
   },
   "kad": {
     "state":      "connected",
     "firewalled_tcp": false,
-    "connected_since": 1751000000,
-    "network":    { "users": 5400000, "files": 1400000000, "nodes": 2400 }
+    "connected_since_at": 1751000000,
+    "network":    { "user_count": 5400000, "file_count": 1400000000, "node_count": 2400 }
   },
   "speeds": {
     "download_bps": 4500000, "upload_bps": 50000,
@@ -580,49 +580,49 @@ Driven by the refresher state machine that owns the `POST /search` → completio
 
 `_added` fires per new result that appears in the results map between refresher ticks. `_updated` fires when a result you already hold changes in one of the fields below. Both carry the identical payload, so a subscriber can handle them with one function keyed by `(search_id, hash)`; they are separate names so that a consumer written against the add-only channel keeps its existing behaviour instead of silently acquiring upsert semantics.
 
-**What `_updated` covers, and what it deliberately does not.** It fires on `status`, `already_have`, `comments[]`, `kad_comment_lookup_running` and `rating` (which aggregates from the comments). Those are the fields that can change *after* a search finishes, which is the window where nothing else tells you: `search_progress` has stopped, so a hit you download from a finished search would otherwise read `already_have: false` forever, and a Kad notes lookup that lands afterwards would be invisible until someone re-read the endpoint.
+**What `_updated` covers, and what it deliberately does not.** It fires on `status`, `already_downloaded`, `comments[]`, `kad_comment_lookup_running` and `rating` (which aggregates from the comments). Those are the fields that can change *after* a search finishes, which is the window where nothing else tells you: `search_progress` has stopped, so a hit you download from a finished search would otherwise read `already_have: false` forever, and a Kad notes lookup that lands afterwards would be invisible until someone re-read the endpoint.
 
-It does **not** fire on `sources` or `children[]`. Those churn on essentially every tick of a running search, and [`search_progress`](#search_progress) already fires on every advance there and is the cue to re-read [`GET /search/{id}/results`](REFERENCE.md#get-apiv0searchidresults). Pushing them per result would duplicate an existing signal on the noisiest fields on the surface. The identity fields (`hash`, `name`, `size`, `type`, `directory`, `media`) never change for a given result, so there is nothing to push.
+It does **not** fire on `sources` or `alternate_names[]`. Those churn on essentially every tick of a running search, and [`search_progress`](#search_progress) already fires on every advance there and is the cue to re-read [`GET /search/{id}/results`](REFERENCE.md#get-apiv0searchidresults). Pushing them per result would duplicate an existing signal on the noisiest fields on the surface. The identity fields (`hash`, `name`, `size`, `type`, `directory`, `media`) never change for a given result, so there is nothing to push.
 
 ```json
 {
   "search_id": 42,
   "hash": "0123456789abcdef0123456789abcdef",
   "name": "ubuntu-24.04-desktop-amd64.iso",
-  "size": 5765873664,
+  "size_bytes": 5765873664,
   "sources": { "total": 12, "complete": 7 },
-  "already_have": false,
+  "already_downloaded": false,
   "rating": 0,
   "status": "new",
   "type": "videos",
   "media": { "duration_seconds": 5400, "bitrate_kilobits_per_second": 1500, "codec": "h264", "artist": "", "album": "", "title": "" },
-  "children": []
+  "alternate_names": []
 }
 ```
 
-`search_id` routes the result to the search that produced it — amuleapi runs several searches at once (see [REFERENCE.md](REFERENCE.md#post-apiv0search)), so demux on it. Key results by `(search_id, hash)`. Aside from the leading `search_id`, the payload is byte-for-byte identical to a `/search/{id}/results` array entry — the two are emitted by the same writer, so the promise holds by construction. That includes `status`, `type`, `directory` (the folder inside a browsed peer's share, `""` on ordinary hits), `kad_comment_lookup_running`, `comments[]` and the `children[]` grouping array — see [REFERENCE.md](REFERENCE.md#get-apiv0searchidresults); `sources` is the nested `{total, complete}` object, `media` — the audio/video metadata object — is present for locally-known/probed hits and `null` otherwise (the one place the unknown-value rule reaches an object rather than a scalar, so test `media === null` before reaching into it), and `children` holds the same-hash/different-name alternatives (empty for a single-name hit), same as the REST endpoint. Only parent results fire these events — children are folded into their parent's `children[]`, never emitted on their own. A change to a child therefore surfaces as a `search_result_updated` for its parent. Each `search_id` is an independent result space — a new `POST /search` starts a fresh one without disturbing the others.
+`search_id` routes the result to the search that produced it — amuleapi runs several searches at once (see [REFERENCE.md](REFERENCE.md#post-apiv0search)), so demux on it. Key results by `(search_id, hash)`. Aside from the leading `search_id`, the payload is byte-for-byte identical to a `/search/{id}/results` array entry — the two are emitted by the same writer, so the promise holds by construction. That includes `status`, `type`, `directory` (the folder inside a browsed peer's share, `""` on ordinary hits), `kad_comment_lookup_running`, `comments[]` and the `alternate_names[]` grouping array — see [REFERENCE.md](REFERENCE.md#get-apiv0searchidresults); `sources` is the nested `{total, complete}` object, `media` — the audio/video metadata object — is present for locally-known/probed hits and `null` otherwise (the one place the unknown-value rule reaches an object rather than a scalar, so test `media === null` before reaching into it), and `alternate_names` holds the same-hash/different-name alternatives (empty for a single-name hit), same as the REST endpoint. Only parent results fire these events — children are folded into their parent's `alternate_names[]`, never emitted on their own. A change to a child therefore surfaces as a `search_result_updated` for its parent. Each `search_id` is an independent result space — a new `POST /search` starts a fresh one without disturbing the others.
 
 #### `search_progress`
 
 Emitted whenever a search's completion advances and once more on its completion; every frame carries the `search_id` it refers to. Two triggers, both off the daemon's unambiguous `EC_TAG_SEARCH_LIFECYCLE_*` tags (see [REFERENCE.md](REFERENCE.md#get-apiv0searchidresults)): the `percent` changing between refresher ticks while the search runs, and the lifecycle flipping to finished (the `state` `running` → `finished` edge). A newly-started search also emits its initial `running` frame. The completion frame is just the terminal `search_progress` with `"state": "finished"` — there is **no** separate `search_finished` event.
 
 ```json
-{ "search_id": 42, "state": "running", "percent": 47, "results": 88, "kind": "kad" }
+{ "search_id": 42, "state": "running", "percent": 47, "result_count": 88, "type": "kad" }
 ```
 
 ```json
-{ "search_id": 42, "state": "finished", "percent": 100, "results": 153, "kind": "local" }
+{ "search_id": 42, "state": "finished", "percent": 100, "result_count": 153, "type": "local" }
 ```
 
 - `search_id` — which search this frame is about.
 - `state` — `"running"` while the search is in flight, `"finished"` on the terminal frame.
 - `percent` — `0..100`, daemon-computed for every search kind. For **global** it is the real server-queue progress. For **Kad**, which has no measurable progress, it is a cosmetic time-ramp derived from the fixed 45 s keyword-search lifetime (capped at 99 until the daemon authoritatively reports completion, then 100); see [REFERENCE.md](REFERENCE.md#get-apiv0searchidresults). Treat the Kad value as a liveliness indicator, not an accurate completion estimate.
 - `kind` — the originally-requested search type (`"local"` | `"global"` | `"kad"` | `"browse"`).
-- `results` — the current results-map size; subscribers can reconcile against any `search_result_added` / `search_result_updated` they may have missed via `GET /search/{id}/results`.
+- `result_count` — the current results-map size; subscribers can reconcile against any `search_result_added` / `search_result_updated` they may have missed via `GET /search/{id}/results`.
 
 A Kad search hitting its result cap (`SEARCHKEYWORD_TOTAL`, 300) before the 45 s deadline finishes early — the lifecycle flips to `finished` and `percent` jumps straight to 100 ahead of the ramp.
 
-A **browse** started via [`POST /clients/{ecid}/shared_files`](REFERENCE.md#post-apiv0clientsecidshared_files) rides this same channel: its `search_id` fires `search_result_added` per file the peer returns and `search_progress` frames with `"kind": "browse"`, where `percent` tracks the directories received so far. A denied / unreachable / lost browse flips to `finished` with the results it managed to collect (often zero) — same terminal frame as a completed one, no distinct failure event.
+A **browse** started via [`POST /clients/{ecid}/shared_files`](REFERENCE.md#post-apiv0clientsecidshared_files) rides this same channel: its `search_id` fires `search_result_added` per file the peer returns and `search_progress` frames with `"type": "browse"`, where `percent` tracks the directories received so far. A denied / unreachable / lost browse flips to `finished` with the results it managed to collect (often zero) — same terminal frame as a completed one, no distinct failure event.
 
 #### `search_closed`
 

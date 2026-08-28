@@ -159,7 +159,7 @@ _assert_json_eq '(.kad.state != "connected") or ((.kad.firewalled_tcp | type) ==
 # The network rollups, both sides. ed2k's summed the whole known SERVER LIST
 # rather than the attached server and nothing zeroed them, so a disconnected
 # daemon repeated its connected figures verbatim and indefinitely.
-for P in "ed2k users" "ed2k files" "kad users" "kad files" "kad nodes"; do
+for P in "ed2k user_count" "ed2k file_count" "kad user_count" "kad file_count" "kad node_count"; do
 	set -- $P
 	_assert_json_eq "(.$1.state == \"connected\") or (.$1.network.$2 == null)" true \
 		"$1.network.$2 is null while $1 is not connected"

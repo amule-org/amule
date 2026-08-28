@@ -112,7 +112,7 @@ async function refresh(id) {
     if (r.query && !cur.label) cur.label = r.query;
     const pr = r.progress || {};
     if (pr.state) cur.state = pr.state;
-    if (pr.kind) cur.kind = pr.kind;
+    if (pr.type) cur.kind = pr.type;
     cur.percent = pr.percent || 0;
     publishTabs();
     publishResults(id);
@@ -135,7 +135,7 @@ async function adopt() {
   list = list.slice().sort((a, b) => ord(a) - ord(b));
   let added = false;
   for (const s of list) {
-    const known = tabs.get(s.search_id);
+    const known = tabs.get(s.id);
     if (known) {
       if (!known.query && s.query) { known.query = s.query; known.label = known.label || s.query; }
       // Keep an unopened tab's badge current. Only while it holds no results
@@ -151,8 +151,8 @@ async function adopt() {
     // result_count is what makes an unopened tab show a real badge instead of
     // 0 after a reload; it is omitted by a daemon that does not report counts,
     // in which case the badge stays 0 until the tab is opened and fetched.
-    tabs.set(s.search_id, newTab({
-      id: s.search_id, query: s.query || "", kind: s.kind || "global",
+    tabs.set(s.id, newTab({
+      id: s.id, query: s.query || "", kind: s.type || "global",
       state: s.state || "finished", startedAt: s.started_at || 0,
       count: typeof s.result_count === "number" ? s.result_count : 0,
     }));
@@ -161,7 +161,7 @@ async function adopt() {
   if (!tabs.has(activeId)) {
     const running = list.filter((s) => s.state === "running");
     const pick = (running.length ? running : list).slice(-1)[0];
-    if (pick) { setActive(pick.search_id); return; }
+    if (pick) { setActive(pick.id); return; }
     activeId = 0;
   }
   if (added) publishTabs();
@@ -216,11 +216,11 @@ function onProgress(p) {
   if (!tab) { nudgeAdopt(); return; }
   const wasRunning = tab.state === "running";
   if (p.state) tab.state = p.state;
-  if (p.kind) tab.kind = p.kind;
+  if (p.type) tab.kind = p.type;
   tab.percent = p.percent || 0;
   // The event's count is the backend's own map size and may legitimately run
   // ahead of the upserts seen so far.
-  if (typeof p.results === "number") tab.count = p.results;
+  if (typeof p.result_count === "number") tab.count = p.result_count;
   publishTabsSoon();
   // Terminal frame: reconcile once against REST to pick up anything the
   // stream dropped, and to land the final status/children of every row.
@@ -306,10 +306,10 @@ export const searches = {
     // from what we asked for -- `kind` and `startedAt` in particular, which
     // the request only implies.
     const r = await api.post("search", body);
-    const id = r.search_id;
+    const id = r.id;
     tabs.set(id, newTab({
       id, query: r.query || body.query || "", label: label || "",
-      kind: r.kind || body.type || "global",
+      kind: r.type || body.type || "global",
       state: r.state || "running",
       startedAt: r.started_at || nowSec(),
     }));
@@ -327,7 +327,7 @@ export const searches = {
   // filter, per-row category) for a browse that never restarted.
   async browse(ecid, name) {
     const r = await api.post("clients/" + ecid + "/shared_files");
-    const id = r.search_id;
+    const id = r.id;
     const open = tabs.get(id);
     if (open) {
       if (name) { open.query = name; open.label = name; }

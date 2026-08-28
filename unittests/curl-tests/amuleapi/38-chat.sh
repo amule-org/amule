@@ -8,9 +8,9 @@
 #
 # Wire contract:
 #   GET    /chats                   → list envelope of conversations
-#   GET    /chats/{peer}/messages   → { peer, messages[], total, last_msg_id }
-#   POST   /chats/{peer}/messages   → 202 + the created message
-#   DELETE /chats/{peer}            → 204, no body
+#   GET    /chats/{client_address}/messages   → { peer, messages[], total, last_message_id }
+#   POST   /chats/{client_address}/messages   → 202 + the created message
+#   DELETE /chats/{client_address}            → 204, no body
 #   POST   /friends/{ecid}/messages → 202 (reaches an OFFLINE friend)
 #   POST   /clients/{ecid}/messages → 202
 #
@@ -126,12 +126,12 @@ _assert_json_eq '.chats | type' array '/chats .chats is array'
 # doubles as "start a chat with this address".
 _curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
 	-d '{"text":"curl-test hello"}' "$HOST/api/v0/chats/$PEER/messages"
-_assert_status 202 "POST /chats/{peer}/messages → 202 Accepted"
+_assert_status 202 "POST /chats/{client_address}/messages → 202 Accepted"
 # The created message stays in the body: no per-message GET defines a shape
 # for it, so the id and the timestamp the store assigned are only readable
 # here. `ok` is gone; the 202 already carried it.
 _assert_json_eq '. | has("ok")' false 'send response has no constant ok field'
-_assert_json_eq '.peer'                "$PEER" 'send echoes the conversation key'
+_assert_json_eq '.client_address'                "$PEER" 'send echoes the conversation key'
 _assert_json_eq '.message.direction'   out     'sent message is direction=out'
 _assert_json_eq '.message.text'        "curl-test hello" 'send echoes the text'
 FIRST_ID=$(printf '%s' "$CURL_BODY" | jq -r '.message.id')
@@ -142,14 +142,14 @@ sleep 3
 # --- 3. The conversation is now on the list. ----------------------
 _curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/chats"
 _assert_status 200 "GET /chats → 200 after send"
-FOUND=$(printf '%s' "$CURL_BODY" | jq --arg p "$PEER" '[.chats[] | select(.peer == $p)] | length')
+FOUND=$(printf '%s' "$CURL_BODY" | jq --arg p "$PEER" '[.chats[] | select(.client_address == $p)] | length')
 if [ "$FOUND" = "1" ]; then
 	_pass "/chats lists the new conversation"
 else
 	_fail "/chats conversation presence" "expected exactly 1 row for $PEER, got $FOUND"
 fi
 # Narrow the body to just this conversation's row for the field checks.
-ROW=$(printf '%s' "$CURL_BODY" | jq --arg p "$PEER" -c '.chats[] | select(.peer == $p)')
+ROW=$(printf '%s' "$CURL_BODY" | jq --arg p "$PEER" -c '.chats[] | select(.client_address == $p)')
 printf '%s' "$ROW" > "$CURL_BODY_FILE"; CURL_BODY=$ROW
 _assert_json_eq '.ip'                 "$PEER_IP"   'row carries the split ip'
 _assert_json_eq '.port'               "$PEER_PORT" 'row carries the split port'
@@ -163,37 +163,37 @@ _assert_json_eq '.name' "IP: $PEER_IP Port: $PEER_PORT" 'name falls back to the 
 
 # --- 4. Reading the transcript. -----------------------------------
 _curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/chats/$PEER/messages"
-_assert_status 200 "GET /chats/{peer}/messages → 200"
-_assert_json_eq '.peer'            "$PEER" 'messages echo the conversation key'
+_assert_status 200 "GET /chats/{client_address}/messages → 200"
+_assert_json_eq '.client_address'            "$PEER" 'messages echo the conversation key'
 _assert_json_eq '.messages | type' array   'messages is an array'
 _assert_json_eq '.messages[0].direction' out 'first message is direction=out'
 
-# Every message object is exactly {id, direction, text, timestamp}.
+# Every message object is exactly {id, direction, text, sent_at}.
 WRONG=$(printf '%s' "$CURL_BODY" | jq \
-	'[.messages[] | select((keys | sort) != ["direction","id","text","timestamp"])] | length')
+	'[.messages[] | select((keys | sort) != ["direction","id","sent_at","text"])] | length')
 if [ "$WRONG" = "0" ]; then
-	_pass "every message object is {id, direction, text, timestamp}"
+	_pass "every message object is {id, direction, text, sent_at}"
 else
 	_fail "message object shape" "$WRONG messages carry unexpected keys"
 fi
 
-# --- 5. since_id is a safe cursor. --------------------------------
+# --- 5. since_message_id is a safe cursor. --------------------------------
 #
 # ids are monotonic per daemon process, so a client polling with the
 # highest id it holds must never see a duplicate and never skip one.
 _curl -H "Authorization: Bearer $TOKEN" \
-	"$HOST/api/v0/chats/$PEER/messages?since_id=$FIRST_ID"
-_assert_status 200 "GET messages?since_id → 200"
-_assert_json_eq '.messages | length' 0 'since_id at the head returns nothing new'
+	"$HOST/api/v0/chats/$PEER/messages?since_message_id=$FIRST_ID"
+_assert_status 200 "GET messages?since_message_id → 200"
+_assert_json_eq '.messages | length' 0 'since_message_id at the head returns nothing new'
 
 _curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
 	-d '{"text":"second message"}' "$HOST/api/v0/chats/$PEER/messages"
 _assert_status 202 "POST second message → 202"
 sleep 3
 _curl -H "Authorization: Bearer $TOKEN" \
-	"$HOST/api/v0/chats/$PEER/messages?since_id=$FIRST_ID"
-_assert_json_eq '.messages | length'   1                'since_id returns exactly the new message'
-_assert_json_eq '.messages[0].text'    "second message" 'since_id returns the right message'
+	"$HOST/api/v0/chats/$PEER/messages?since_message_id=$FIRST_ID"
+_assert_json_eq '.messages | length'   1                'since_message_id returns exactly the new message'
+_assert_json_eq '.messages[0].text'    "second message" 'since_message_id returns the right message'
 
 # --- 5b. `tail`, not `limit`. --------------------------------------
 #
@@ -243,7 +243,7 @@ _assert_status 404 "POST to an unknown friend ECID → 404"
 _curl -X PUT -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/chats"
 _assert_status 405 "PUT /chats → 405"
 _curl -X PATCH -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/chats/$PEER"
-_assert_status 405 "PATCH /chats/{peer} → 405"
+_assert_status 405 "PATCH /chats/{client_address} → 405"
 
 # --- 8. Guests read but do not write. -----------------------------
 GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
@@ -264,11 +264,11 @@ fi
 # --- 9. Closing is global and actually removes it. ----------------
 _curl -X DELETE -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/chats/$PEER"
 # 204, no body: `peer` came from the URL and `ok` restated the status code.
-_assert_status 204 "DELETE /chats/{peer} → 204"
+_assert_status 204 "DELETE /chats/{client_address} → 204"
 _assert_body_empty 'close sends no body'
 sleep 3
 _curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/chats"
-GONE=$(printf '%s' "$CURL_BODY" | jq --arg p "$PEER" '[.chats[] | select(.peer == $p)] | length')
+GONE=$(printf '%s' "$CURL_BODY" | jq --arg p "$PEER" '[.chats[] | select(.client_address == $p)] | length')
 if [ "$GONE" = "0" ]; then
 	_pass "closed conversation is gone from /chats"
 else

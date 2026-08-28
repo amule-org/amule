@@ -39,7 +39,7 @@ void WriteSearchResultFields(CJsonWriter &w, const SearchResult &r)
 	w.ValueString(wxString::FromUTF8(r.hash.c_str()));
 	w.Key("name");
 	w.ValueString(wxString::FromUTF8(r.name.c_str()));
-	w.Key("size");
+	w.Key("size_bytes");
 	w.ValueInt(static_cast<int64_t>(r.size));
 	w.Key("sources");
 	w.BeginObject();
@@ -48,13 +48,17 @@ void WriteSearchResultFields(CJsonWriter &w, const SearchResult &r)
 	w.Key("complete");
 	w.ValueInt(static_cast<int64_t>(r.complete_source_count));
 	w.EndObject();
-	w.Key("already_have");
-	w.ValueBool(r.already_have);
+	// `have` reads as the wire verb; `downloaded` is the state (R4: no prefix).
+	w.Key("already_downloaded");
+	w.ValueBool(r.already_downloaded);
 	w.Key("rating");
 	w.ValueInt(static_cast<int64_t>(r.rating));
 	w.Key("status");
 	w.ValueString(wxString::FromUTF8(r.status.c_str()));
-	w.Key("type");
+	// `file_type`, matching POST /search's own filter field and the key
+	// /shared/{hash} derives from the same helper. Next to a `media` object a
+	// bare `type` also reads as a MIME type.
+	w.Key("file_type");
 	w.ValueString(wxString::FromUTF8(r.type.c_str()));
 	// Browse-only (the folder inside the peer's share). Always present so
 	// clients need no presence check; empty on every server/Kad hit, which
@@ -92,7 +96,9 @@ void WriteSearchResultFields(CJsonWriter &w, const SearchResult &r)
 	// without a presence check. Each child shares the parent's `hash`; the
 	// distinct `ecid` selects it for download-under-that-name (see
 	// POST /search/results/{hash}/download).
-	w.Key("children");
+	// Not `children`: there is no hierarchy, only one file advertised under
+	// several names. Each entry's hash is by construction this result's.
+	w.Key("alternate_names");
 	w.BeginArray();
 	for (const auto &c : r.children) {
 		w.BeginObject();
@@ -100,8 +106,6 @@ void WriteSearchResultFields(CJsonWriter &w, const SearchResult &r)
 		w.ValueInt(static_cast<int64_t>(c.ecid));
 		w.Key("name");
 		w.ValueString(wxString::FromUTF8(c.name.c_str()));
-		w.Key("hash");
-		w.ValueString(wxString::FromUTF8(c.hash.c_str()));
 		w.Key("sources");
 		w.BeginObject();
 		w.Key("total");

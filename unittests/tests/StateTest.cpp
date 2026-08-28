@@ -934,7 +934,7 @@ TEST(State, SearchResultsRoundtripAndOrderByEcid)
 		b.name = "first-by-ecid.iso";
 		b.size = 7000;
 		b.complete_source_count = 5;
-		b.already_have = true;
+		b.already_downloaded = true;
 		cache.emplace(b.ecid, b);
 	});
 
@@ -943,8 +943,8 @@ TEST(State, SearchResultsRoundtripAndOrderByEcid)
 	ASSERT_EQUALS(static_cast<size_t>(2), out.size());
 	ASSERT_EQUALS(std::string("first-by-ecid.iso"), out[0].name);
 	ASSERT_EQUALS(std::string("ascii-name.iso"), out[1].name);
-	ASSERT_TRUE(out[0].already_have);
-	ASSERT_FALSE(out[1].already_have);
+	ASSERT_TRUE(out[0].already_downloaded);
+	ASSERT_FALSE(out[1].already_downloaded);
 	// The query rides on the slot, so a results read can report what was
 	// searched for without a second lookup.
 	ASSERT_EQUALS(std::string("ubuntu"), s.SearchQuery(sid));

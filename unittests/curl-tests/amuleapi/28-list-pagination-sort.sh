@@ -121,7 +121,7 @@ AUTH=(-H "Authorization: Bearer $TOKEN")
 # rather than relying on a removed implicit default.
 SEARCH_SID=$(curl -s -X POST "${AUTH[@]}" -H "Content-Type: application/json" \
 	-d '{"query":"amuleapi-phase28","type":"local"}' "$HOST/api/v0/search" \
-	| jq -r '.search_id // empty')
+	| jq -r '.id // empty')
 [ -n "$SEARCH_SID" ] || _die "POST /search returned no search_id"
 
 # endpoint:array-key pairs. The search results list wraps under "results".
@@ -295,7 +295,7 @@ fi
 _curl "${AUTH[@]}" "$HOST/api/v0/categories?limit=1000000000&sort=index"
 BEFORE_IDX=$(printf '%s' "$CURL_BODY" | jq -c '[.categories[].index]')
 curl -s -X POST "${AUTH[@]}" -H "Content-Type: application/json" \
-	-d '{"name":"phase28-cat","path":"/tmp/28-cat-sweep"}' \
+	-d '{"name":"phase28-cat","save_path":"/tmp/28-cat-sweep"}' \
 	"$HOST/api/v0/categories" > /dev/null 2>&1
 _curl "${AUTH[@]}" "$HOST/api/v0/categories?limit=1000000000&sort=index"
 _assert_json_ge '.total' 2 '/categories seeded a row to step past'
