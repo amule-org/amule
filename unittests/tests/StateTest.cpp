@@ -1647,6 +1647,61 @@ TEST(State, SurplusSearchSlotsAreEvictedDetachedFirst)
 	ASSERT_TRUE(std::find(left.begin(), left.end(), 2u) == left.end());
 }
 
+TEST(State, EvictionNeverTakesTheSlotBeingSeeded)
+{
+	// Eviction runs straight after the insert. With every other slot active
+	// -- never a victim -- the slot just created is the only eligible one, so
+	// without an exemption the seed evicts itself and the caller then applies
+	// a full re-read to a slot that is no longer there.
+	CState state;
+	for (std::uint32_t sid = 100; sid < 100 + 64; ++sid) {
+		SearchProgressSnapshot running;
+		running.active = true;
+		state.MarkSearchStarted(sid, "global", "busy");
+		state.WriteSearchProgress(sid, running);
+	}
+	// Discovered as finished, so it is the one slot that is not active.
+	state.MarkSearchDiscovered(4242, "global", "adopted", false, true, 100);
+
+	const std::vector<std::uint32_t> left = state.AllSearchIds();
+	ASSERT_TRUE(std::find(left.begin(), left.end(), 4242u) != left.end());
+}
+
+TEST(State, AFailedUnionFlagsEveryLiveSlotForResync)
+{
+	// The daemon commits its differential state while building a reply, so a
+	// reply we never applied is gone rather than repeated. Every slot it could
+	// have covered has to be re-seeded in full.
+	CState state;
+	state.MarkSearchStarted(1, "global", "alpha");
+	state.MarkSearchStarted(2, "kad", "beta");
+	state.MarkSearchStarted(3, "global", "gone");
+	state.DetachSearch(3);
+
+	state.MarkAllSearchesNeedResync();
+	const std::vector<std::uint32_t> pending = state.SearchesNeedingResync();
+
+	ASSERT_EQUALS(static_cast<size_t>(2), pending.size());
+	// Oldest slot first, and the detached one is skipped: the daemon holds
+	// nothing for it, so a full re-read would only come back expired.
+	ASSERT_EQUALS(1u, pending[0]);
+	ASSERT_EQUALS(2u, pending[1]);
+}
+
+TEST(State, ClearingTheResyncFlagStopsItBeingRequestedAgain)
+{
+	// The daemon answering "expired" is a definitive answer. Left set, the id
+	// would be re-requested on every tick for the life of the slot.
+	CState state;
+	state.MarkSearchStarted(7, "global", "alpha");
+	state.MarkAllSearchesNeedResync();
+	ASSERT_EQUALS(static_cast<size_t>(1), state.SearchesNeedingResync().size());
+
+	state.ClearSearchResyncFlag(7);
+
+	ASSERT_TRUE(state.SearchesNeedingResync().empty());
+}
+
 TEST(State, MarkTickSuccessDoesNotAdvanceTheRevision)
 {
 	CState state;

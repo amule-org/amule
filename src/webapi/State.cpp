@@ -335,7 +335,7 @@ void CState::MarkSearchStarted(std::uint32_t search_id, const std::string &kind,
 	slot.query = query;
 	slot.started_at = std::time(nullptr);
 	slot.last_fetch = {};
-	EvictSurplusSearchSlotsLocked();
+	EvictSurplusSearchSlotsLocked(search_id);
 }
 
 void CState::MarkSearchDiscovered(std::uint32_t search_id,
@@ -382,7 +382,7 @@ void CState::MarkSearchDiscovered(std::uint32_t search_id,
 		reported_percent >= 0 ? static_cast<std::uint32_t>(reported_percent) : (complete ? 100u : 0u);
 	slot.progress.kind = kind;
 	slot.query = query;
-	EvictSurplusSearchSlotsLocked();
+	EvictSurplusSearchSlotsLocked(search_id);
 }
 
 void CState::DetachSearch(std::uint32_t search_id)
@@ -393,7 +393,42 @@ void CState::DetachSearch(std::uint32_t search_id)
 		it->second.detached = true;
 }
 
-void CState::EvictSurplusSearchSlotsLocked()
+void CState::MarkAllSearchesNeedResync()
+{
+	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
+	for (auto &kv : m_searches) {
+		// A detached slot is frozen and the daemon holds nothing for it, so
+		// there is nothing to re-seed and the FULL would come back expired.
+		if (!kv.second.detached)
+			kv.second.needs_resync = true;
+	}
+}
+
+std::vector<std::uint32_t> CState::SearchesNeedingResync() const
+{
+	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+	std::vector<std::pair<std::uint64_t, std::uint32_t>> pending;
+	for (const auto &kv : m_searches) {
+		if (kv.second.needs_resync)
+			pending.emplace_back(kv.second.seq, kv.first);
+	}
+	std::sort(pending.begin(), pending.end());
+	std::vector<std::uint32_t> out;
+	out.reserve(pending.size());
+	for (const auto &p : pending)
+		out.push_back(p.second);
+	return out;
+}
+
+void CState::ClearSearchResyncFlag(std::uint32_t search_id)
+{
+	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
+	auto it = m_searches.find(search_id);
+	if (it != m_searches.end())
+		it->second.needs_resync = false;
+}
+
+void CState::EvictSurplusSearchSlotsLocked(std::uint32_t exempt_id)
 {
 	while (m_searches.size() > kMaxSearchSlots) {
 		auto victim = m_searches.end();
@@ -401,6 +436,9 @@ void CState::EvictSurplusSearchSlotsLocked()
 			// Never an active one: it is still being polled, and the surplus
 			// is always made of slots that have stopped moving.
 			if (it->second.progress.active)
+				continue;
+			// Never the slot the caller is in the middle of seeding.
+			if (exempt_id != 0 && it->first == exempt_id)
 				continue;
 			// A detached slot always outranks an attached one, however much
 			// younger: the daemon no longer holds it, so evicting it drops

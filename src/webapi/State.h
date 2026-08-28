@@ -1067,6 +1067,19 @@ struct SearchSlot
 	// also the preferred eviction victim, because it is the only kind whose
 	// eviction costs nothing -- the daemon has nothing left to re-send.
 	bool detached = false;
+	// Set when a union roundtrip failed against a live socket, and cleared
+	// once this slot has been re-seeded in full.
+	//
+	// The daemon commits its differential state while BUILDING the reply --
+	// Get_EC_Response_Search_Results_Union swaps io_lastSentResultIds and
+	// writes the valuemap before the packet reaches the socket -- so a reply
+	// we never apply is not re-sent, it is lost. Every later poll elides the
+	// results it covered. Nothing else recovers them: ResetLists deliberately
+	// keeps the search state (wiping it would resync nothing), and
+	// ClaimSearchRefresh refuses an active slot because the tick is supposed
+	// to be covering it. This flag is what turns that dead end into one FULL
+	// re-seed on the next tick.
+	bool needs_resync = false;
 	// Insertion order, for oldest-first eviction. Not started_at: that is 0
 	// for a discovered slot, which would make every adopted search tie for
 	// oldest and evict in map order.
@@ -1964,6 +1977,17 @@ public:
 	 * see SearchSlot::detached. Idempotent; a no-op for an unknown id.
 	 */
 	void DetachSearch(std::uint32_t search_id);
+
+	// Flag every slot the daemon could still speak for as needing a full
+	// re-seed. Called when a union roundtrip failed: we cannot know what that
+	// reply carried, and the daemon will not send it again.
+	void MarkAllSearchesNeedResync();
+	// Ids awaiting that re-seed, oldest slot first. Drained by the tick.
+	std::vector<std::uint32_t> SearchesNeedingResync() const;
+	// Clears the flag for one slot without re-seeding it, for when the daemon
+	// answers that the search is gone.
+	void ClearSearchResyncFlag(std::uint32_t search_id);
+
 	void MarkSearchDiscovered(std::uint32_t search_id,
 		const std::string &kind,
 		const std::string &query,
@@ -2067,10 +2091,19 @@ private:
 	// EC_OP_SEARCH_LIST and re-seeds it in full through FetchOneSearchFull.
 	// Detached slots are preferred as victims anyway, since for those the
 	// daemon has nothing left to re-send and nothing is lost.
+	//
+	// A soft cap, not a hard bound: an active slot is never a victim, so a
+	// burst of more than this many concurrent searches sits above the cap
+	// until they finish. That is deliberate -- evicting a search still being
+	// polled would drop results the daemon has already marked delivered.
 	static constexpr std::size_t kMaxSearchSlots = 64;
 	// Trim m_searches back to kMaxSearchSlots, and drop the evicted slots'
 	// entries from m_resultOwner with them. Caller holds the write lock.
-	void EvictSurplusSearchSlotsLocked();
+	//
+	// `exempt_id` is never chosen as a victim: callers evict straight after
+	// inserting, and with every other slot active the freshly-inserted one is
+	// the only eligible victim, so it would evict what it just seeded.
+	void EvictSurplusSearchSlotsLocked(std::uint32_t exempt_id = 0);
 };
 
 } // namespace webapi

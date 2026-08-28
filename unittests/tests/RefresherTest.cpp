@@ -2929,6 +2929,49 @@ TEST(Refresher, SearchUnionDefaultSidAdoptsAnIdLessReply)
 	ASSERT_EQUALS(kSid, owner[71]);
 }
 
+TEST(Refresher, SearchUnionLeavesNoIndexEntryForADetachedSlot)
+{
+	// The index is what eviction walks to clean up after a slot, and it walks
+	// it via the slot's own results. An entry written for a result that was
+	// then dropped on the detached guard is in neither place, so nothing ever
+	// removes it -- and a reused ECID would resolve through it to a search
+	// that is gone.
+	std::map<std::uint32_t, SearchSlot> slots;
+	std::map<std::uint32_t, std::uint32_t> owner;
+	SearchSlot &slot = slots[kSid];
+	slot.detached = true;
+
+	CECPacket resp(EC_OP_SEARCH_RESULTS);
+	CECTag sf(EC_TAG_SEARCHFILE, static_cast<std::uint32_t>(72));
+	sf.AddTag(CECTag(EC_TAG_SEARCH_ID, kSid));
+	sf.AddTag(CECTag(EC_TAG_PARTFILE_NAME, std::string("late.bin")));
+	resp.AddTag(sf);
+	ApplySearchUnion(&resp, slots, owner);
+
+	// Not merged, and no index entry left pointing at the slot that refused it.
+	ASSERT_TRUE(slots[kSid].raw.empty());
+	ASSERT_TRUE(owner.find(72) == owner.end());
+}
+
+TEST(Refresher, SearchUnionStillIndexesAResultItAccepts)
+{
+	// The guard above must not cost the normal path its index entry: that is
+	// what attributes every later diffed tag, which carries no search id.
+	std::map<std::uint32_t, SearchSlot> slots;
+	std::map<std::uint32_t, std::uint32_t> owner;
+	slots[kSid];
+
+	CECPacket resp(EC_OP_SEARCH_RESULTS);
+	CECTag sf(EC_TAG_SEARCHFILE, static_cast<std::uint32_t>(73));
+	sf.AddTag(CECTag(EC_TAG_SEARCH_ID, kSid));
+	sf.AddTag(CECTag(EC_TAG_PARTFILE_NAME, std::string("kept.bin")));
+	resp.AddTag(sf);
+	ApplySearchUnion(&resp, slots, owner);
+
+	ASSERT_EQUALS(kSid, owner[73]);
+	ASSERT_EQUALS(std::string("kept.bin"), slots[kSid].results[73].name);
+}
+
 TEST(Refresher, SearchProgressUnionParsesEveryEntry)
 {
 	CECPacket resp(EC_OP_SEARCH_PROGRESS);

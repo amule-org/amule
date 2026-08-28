@@ -40,7 +40,9 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <set>
+#include <vector>
 
 namespace webapi
 {
@@ -60,8 +62,20 @@ namespace webapi
 // so it has always required a matching daemon for search. EC_TAG_CAN_PARTIAL_SEARCH
 // is advertised for every client of CRemoteConnect, so the daemon is already
 // eliding for this connection.
+// Serialises the two issuers of the search stream across the roundtrip AND the
+// apply. SendRecvSerialized only orders the roundtrips: both callers then take
+// the State lock separately, so a union reply and a FULL reply can still be
+// applied in the opposite order to the one they were fetched in. That matters
+// because the union's tombstones are one-shot -- the daemon drops an ECID from
+// io_lastSentResultIds as it emits EC_TAG_FILE_REMOVED for it -- so a stale
+// FULL landing after a tombstone re-inserts a row nothing will ever remove
+// again. Held across the EC call, which is the same wait the EC worker already
+// imposes; the State lock is always taken inside this one, never the reverse.
+std::mutex g_search_stream_mtx;
+
 SearchFetchOutcome FetchSearchResults(CamuleapiApp &app, CState &state)
 {
+	std::lock_guard<std::mutex> stream_lock(g_search_stream_mtx);
 	std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_SEARCH_RESULTS, EC_DETAIL_INC_UPDATE));
 	// Opt into result grouping (issue #431): the empty EC_TAG_SEARCH_PARENT
 	// flag tells the responder to also emit each same-hash/different-name
@@ -95,11 +109,17 @@ SearchFetchOutcome FetchSearchResults(CamuleapiApp &app, CState &state)
 //
 // Serving the HTTP thread. The union must have exactly one issuer, or two
 // replies can be applied out of order and leave a ghost row no later poll can
-// clear -- SendRecvSerialized serialises the roundtrip, not the roundtrip plus
-// the apply. A FULL reply is self-contained and idempotent, so issuing this
-// from a request handler races nothing.
-SearchFetchOutcome FetchOneSearchFull(CamuleapiApp &app, CState &state, std::uint32_t search_id)
+// clear. A FULL reply is self-contained, but it is not ordered against the
+// union's one-shot tombstones, so this shares g_search_stream_mtx with the
+// union rather than relying on idempotence alone.
+//
+// Re-seeding after a lost union reply, with `replace`. A merge cannot express
+// a deletion, and a FULL reply carries no tombstones, so a plain merge would
+// leave behind rows the daemon has since dropped. In replace mode the slot's
+// results are swapped wholesale for what the daemon reports now.
+SearchFetchOutcome FetchOneSearchFull(CamuleapiApp &app, CState &state, std::uint32_t search_id, bool replace)
 {
+	std::lock_guard<std::mutex> stream_lock(g_search_stream_mtx);
 	std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_SEARCH_RESULTS, EC_DETAIL_FULL));
 	req->AddTag(CECEmptyTag(EC_TAG_SEARCH_PARENT));
 	req->AddTag(CECTag(EC_TAG_SEARCH_ID, search_id));
@@ -116,8 +136,31 @@ SearchFetchOutcome FetchOneSearchFull(CamuleapiApp &app, CState &state, std::uin
 		// reply carries no EC_TAG_SEARCH_ID of its own, hence the explicit id.
 		state.MutateAllSearches([&](std::map<std::uint32_t, SearchSlot> &slots,
 						std::map<std::uint32_t, std::uint32_t> &owner) {
+			auto sit = slots.find(search_id);
+			if (sit == slots.end())
+				return;
+			if (replace) {
+				for (const auto &entry : sit->second.raw)
+					owner.erase(entry.first);
+				sit->second.raw.clear();
+			}
 			ApplySearchUnion(resp, slots, owner, search_id);
+			sit = slots.find(search_id);
+			if (sit == slots.end())
+				return;
+			// ApplySearchUnion only refolds slots it touched, and an empty
+			// reply touches nothing -- which is exactly the case where the
+			// stale fold has to be cleared rather than kept.
+			if (replace)
+				RebuildFoldedResults(sit->second.raw, sit->second.results);
+			sit->second.needs_resync = false;
 		});
+	}
+	if (outcome == SearchFetchOutcome::Expired) {
+		// Definitive answer, just not a useful one: the daemon no longer has
+		// this search, so retirement owns the slot from here. Clearing the
+		// flag stops it being re-requested every tick forever.
+		state.ClearSearchResyncFlag(search_id);
 	}
 	delete resp;
 	return outcome;
@@ -428,10 +471,28 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 	// them forever after. Neither discovery route runs through here:
 	// GET /search goes straight to EC_OP_SEARCH_LIST every call, and a by-id
 	// read seeds the slot in full via FetchOneSearchFull before this opens.
-	if (state.HasAnySearch() && FetchSearchResults(app, state) == SearchFetchOutcome::EcFailed) {
-		// Same rule as every other step in the tick: a failed roundtrip bails
-		// the whole tick rather than exposing a half-refreshed cache.
-		return false;
+	// Anything the last failed union reply covered is unrecoverable from the
+	// stream itself, so re-seed those slots in full before polling again.
+	// Ordered after the retirement loop so a slot the daemon has dropped is
+	// already detached and not asked for.
+	for (std::uint32_t sid : state.SearchesNeedingResync()) {
+		if (FetchOneSearchFull(app, state, sid, /*replace=*/true) == SearchFetchOutcome::EcFailed) {
+			return false;
+		}
+	}
+	if (state.HasAnySearch()) {
+		if (FetchSearchResults(app, state) == SearchFetchOutcome::EcFailed) {
+			// The daemon commits its differential state while building the
+			// reply, so what this one carried is already gone from its point
+			// of view. Flag the slots for a full re-seed above on the next
+			// tick; without it every result that reply covered would be
+			// elided from every later poll.
+			state.MarkAllSearchesNeedResync();
+			// Same rule as every other step in the tick: a failed roundtrip
+			// bails the whole tick rather than exposing a half-refreshed
+			// cache.
+			return false;
+		}
 	}
 
 	// /preferences + /categories — one EC roundtrip populates both.
