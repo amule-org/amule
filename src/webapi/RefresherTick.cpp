@@ -466,8 +466,8 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 	// only slots that are not active. Skipping the fetch when nobody is
 	// subscribed would hand that client frozen results.
 	//
-	// HasAnySearch() asks about OUR slots -- specifically the ones the daemon
-	// could still speak for, since a detached slot's search has already been
+	// The gate asks about OUR slots -- specifically the ones the daemon could
+	// still speak for, since a detached slot's search has already been
 	// evicted core-side and polling for it would never return anything. It
 	// does not ask about the daemon's searches, and the daemon never tells us
 	// about one unasked: a slot exists only because
@@ -494,7 +494,11 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 			return false;
 		}
 	}
-	if (state.HasAnySearch()) {
+	// The same set the progress union above asked about, reused rather than
+	// recomputed against a second spelling of the same !detached test. A slot
+	// an HTTP thread created since is missed for this one tick and picked up
+	// by the next, which is the poll interval either way.
+	if (!attached_sids.empty()) {
 		if (FetchSearchResults(app, state) == SearchFetchOutcome::EcFailed) {
 			// The daemon commits its differential state while building the
 			// reply, so what this one carried is already gone from its point

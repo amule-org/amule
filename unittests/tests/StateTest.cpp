@@ -1573,7 +1573,7 @@ TEST(State, ResetListsKeepsSearchSlots)
 
 	state.ResetLists();
 
-	ASSERT_TRUE(state.HasAnySearch());
+	ASSERT_TRUE(!state.AttachedSearchIds().empty());
 	ASSERT_EQUALS(static_cast<size_t>(1), state.Search(42).size());
 }
 
@@ -1612,15 +1612,15 @@ TEST(State, DetachedSlotsDoNotKeepTheUnionPollAlive)
 {
 	CState state;
 	state.MarkSearchStarted(42, "global", "ubuntu");
-	ASSERT_TRUE(state.HasAnySearch());
+	ASSERT_TRUE(!state.AttachedSearchIds().empty());
 
 	state.DetachSearch(42);
-	ASSERT_TRUE(!state.HasAnySearch());
+	ASSERT_TRUE(state.AttachedSearchIds().empty());
 
 	// A second, still-attached slot re-opens it: the poll covers every search
 	// in one request, so one live slot is reason enough to send it.
 	state.MarkSearchStarted(43, "kad", "debian");
-	ASSERT_TRUE(state.HasAnySearch());
+	ASSERT_TRUE(!state.AttachedSearchIds().empty());
 }
 
 // Slots are capped, or a long-lived process watching a busy GUI accumulates one
