@@ -168,11 +168,11 @@ _assert_json_eq '.client_address'            "$PEER" 'messages echo the conversa
 _assert_json_eq '.messages | type' array   'messages is an array'
 _assert_json_eq '.messages[0].direction' out 'first message is direction=out'
 
-# Every message object is exactly {id, direction, text, timestamp}.
+# Every message object is exactly {id, direction, text, sent_at}.
 WRONG=$(printf '%s' "$CURL_BODY" | jq \
-	'[.messages[] | select((keys | sort) != ["direction","id","text","timestamp"])] | length')
+	'[.messages[] | select((keys | sort) != ["direction","id","sent_at","text"])] | length')
 if [ "$WRONG" = "0" ]; then
-	_pass "every message object is {id, direction, text, timestamp}"
+	_pass "every message object is {id, direction, text, sent_at}"
 else
 	_fail "message object shape" "$WRONG messages carry unexpected keys"
 fi

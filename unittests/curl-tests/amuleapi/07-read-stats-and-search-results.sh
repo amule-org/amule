@@ -214,12 +214,14 @@ _curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/download_spee
 _assert_status 200 "GET /stats/graphs/download_speed?width=5 → 200"
 _assert_json_eq '.points | length <= 5' true \
 	'/stats/graphs/download_speed?width=5 returns ≤5 points'
-# When a point exists, it must carry both t (ISO-8601) and t_unix.
+# One timestamp per point, unix seconds, named `at` (R3). The ISO-8601 twin
+# was dropped: formatting is a client concern, and it cost a key plus its
+# value on every point of an array that runs to max_points.
 if [ "$(printf '%s' "$CURL_BODY" | jq '.points | length')" -gt 0 ]; then
-	_assert_json_eq '.points[0].t | length' 20 \
-		'/stats/graphs/download_speed point.t is 20-char ISO-8601'
-	_assert_json_eq '.points[0].t_unix | type' number \
-		'/stats/graphs/download_speed point.t_unix is numeric'
+	_assert_json_eq '.points[0].at | type' number \
+		'/stats/graphs/download_speed point.at is numeric (unix seconds)'
+	_assert_json_eq '.points[0] | has("t")' false \
+		'/stats/graphs point no longer carries the ISO-8601 twin'
 	_assert_json_eq '.points[0].value | type' number \
 		'/stats/graphs/download_speed point.value is numeric'
 fi

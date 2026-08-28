@@ -634,7 +634,7 @@ if [ -n "$SSE_SEARCH_SID" ]; then
 			| jq -c '[.results[] | select(.already_downloaded == false)] | first // empty')
 		UPD_HASH=$(printf '%s' "$UPD_ROW" | jq -r '.hash // empty')
 		UPD_NAME=$(printf '%s' "$UPD_ROW" | jq -r '.name // empty' | sed 's/|/_/g')
-		UPD_SIZE=$(printf '%s' "$UPD_ROW" | jq -r '.size // empty')
+		UPD_SIZE=$(printf '%s' "$UPD_ROW" | jq -r '.size_bytes // empty')
 		[ -n "$UPD_HASH" ] && break
 	done
 fi
@@ -681,7 +681,7 @@ if [ -n "$UPD_HASH" ]; then
 		fi
 		# Same writer as _added and as the REST entry, so the whole row is
 		# there rather than a delta a client would have to merge blindly.
-		if echo "$UPD_FRAME" | jq -e 'has("name") and has("size") and has("status") and has("kad_comment_lookup_running")' >/dev/null 2>&1; then
+		if echo "$UPD_FRAME" | jq -e 'has("name") and has("size_bytes") and has("status") and has("kad_comment_lookup_running")' >/dev/null 2>&1; then
 			_pass "search_result_updated carries the full results-entry shape"
 		else
 			_fail "search_result_updated shape" "$UPD_FRAME"

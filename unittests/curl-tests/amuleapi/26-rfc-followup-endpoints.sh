@@ -3,7 +3,7 @@
 # amuleapi 26-rfc-followup-endpoints — endpoints added to align with the RFC PR #132
 # review:
 #
-#   * GET    /status                       — `kad.network: {users,files,nodes}` rollup
+#   * GET    /status                       — `kad.network: {user_count,file_count,node_count}` rollup
 #   * POST   /shared_reload                — rescan share roots
 #   * POST   /servers_update               — refresh server list from server.met URL
 #   * POST   /servers/by-address/<ip>:<port>/connect — address-keyed route
@@ -76,7 +76,7 @@ if echo "$STATUS" | jq -e '.kad.network | type == "object"' >/dev/null 2>&1; the
 else
 	_fail "/status kad.network" "missing: $(echo "$STATUS" | jq -c .kad)"
 fi
-for f in users files nodes; do
+for f in user_count file_count node_count; do
 	if echo "$STATUS" | jq -e ".kad.network.$f | type == \"number\"" >/dev/null 2>&1; then
 		_pass "/status .kad.network.$f is a number"
 	else

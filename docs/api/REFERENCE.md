@@ -591,17 +591,17 @@ curl -s -H "Authorization: Bearer $TOKEN" http://$HOST/api/v0/status
     "high_id": true,
     "user_id": 1234567890,
     "public_ip": "210.2.150.73",
-    "connected_since": 1751000000,
+    "connected_since_at": 1751000000,
     "server_name": "eMule Server",
     "server_ip": "203.0.113.5",
     "server_port": 4242,
-    "network": { "users": 312000, "files": 75000000 }
+    "network": { "user_count": 312000, "file_count": 75000000 }
   },
   "kad": {
     "state": "connected",
     "firewalled_tcp": false,
-    "connected_since": 1751000000,
-    "network": { "users": 5400000, "files": 1400000000, "nodes": 2400 }
+    "connected_since_at": 1751000000,
+    "network": { "user_count": 5400000, "file_count": 1400000000, "node_count": 2400 }
   },
   "speeds": {
     "download_bps": 4500000,
@@ -2214,7 +2214,7 @@ Returns every preference category amuled carries over EC. The `general` and `con
     "exclude_patterns": "",
     "exclude_patterns_use_regex": false
   },
-  "files": {
+  "file_count": {
     "ich_enabled": true, "aich_trust_every_hash": false,
     "add_new_downloads_paused": false, "new_downloads_auto_priority": false,
     "new_shared_files_auto_priority": false,
@@ -2307,7 +2307,7 @@ Read-only fields are **ignored rather than rejected** when they arrive alongside
 Body shape mirrors the GET; every sub-object and every field is optional, and fields not present are left unchanged. Subset example:
 
 ```json
-{ "files": { "add_new_downloads_paused": true }, "servers": { "dead_server_retries": 5 } }
+{ "file_count": { "add_new_downloads_paused": true }, "servers": { "dead_server_retries": 5 } }
 ```
 
 `remote_controls` nests its two independent subsystems as `remote_controls.webserver` and `remote_controls.amuleapi` rather than prefixing every field. It reports amuleapi's `enabled` / `port` / `bind_address`, but **not** whether its admin or guest password is set. Those live in `amuleapi-passwords`, which amuleapi owns and which may sit on a different host from amuled — so the daemon's view of that file can be the wrong one. Ask the API that actually reads it: [`GET /auth/passwords`](#get-apiv0authpasswords), which is admin-only, whereas this endpoint is readable by any authenticated role. `webserver.guest_enabled` is reported because it is a genuine amuled preference rather than a fact about another process's file.
@@ -2441,10 +2441,10 @@ Standalone view of the Kad subtree from `/status`, plus the detail fields the st
   "firewalled_tcp": false,
   "firewalled_udp": false,
   "lan_mode": false,
-  "connected_since": 1751000000,
+  "connected_since_at": 1751000000,
   "public_ip": "203.0.113.5",
-  "network": { "users": 5400000, "files": 1400000000, "nodes": 2400 },
-  "indexed": { "sources": 12000, "keywords": 8500, "notes": 0, "load": 14 },
+  "network": { "user_count": 5400000, "file_count": 1400000000, "node_count": 2400 },
+  "indexed": { "sources": 12000, "keywords": 8500, "notes": 0, "load_percent": 14 },
   "buddy": { "status": "connected", "ip": "203.0.113.9", "port": 4672 }
 }
 ```
@@ -2453,16 +2453,16 @@ Standalone view of the Kad subtree from `/status`, plus the detail fields the st
 |---|---|---|
 | `state` | string | `disabled` / `connecting` / `connected`. `disabled` means Kad is not running at all, which is the condition several fields below key their "no measurement" value on. The same value `GET /api/v0/status` reports as `kad.state`. |
 | `node_id` | string | This node's own 128-bit Kademlia id, 32 lowercase hex characters (the desktop panel shows the same value uppercase). `""` while Kad is not running, which is exactly when `state` is `disabled`. Persisted by the daemon, so unlike the session-scoped ECIDs and the server-assigned eD2k id it is stable across restarts — the one identifier for the local node a consumer can key on. It is a DHT routing key, not a credential: every Kad contact the daemon talks to learns it. |
-| `connected_since` | int | Unix seconds of the most recent Kad connect, the same value `GET /api/v0/status` reports as `kad.connected_since`. `0` when not connected, so gate on `state` rather than trusting a `0`. |
+| `connected_since_at` | int | Unix seconds of the most recent Kad connect, the same value `GET /api/v0/status` reports as `kad.connected_since`. `0` when not connected, so gate on `state` rather than trusting a `0`. |
 | `public_ip` | string | This node's externally-visible IPv4, as a remote Kad contact reported it back. Two "not known" cases, both matching what the desktop panel's *IP address* row shows: `""` while Kad is not connected (the daemon sends the field only then), and `0.0.0.0` while connected but not yet told its own address by any contact. **Two distinct "unknown" sentinels, one of them a syntactically valid address**: a consumer that only checks for `""` will treat `0.0.0.0` as a real IP. Distinct from `preferences.connection.bind_address`, which is the local interface the daemon binds to. Named `public_ip` rather than `ip` because `buddy.ip` in the same payload belongs to somebody else. |
 | `firewalled_tcp` | bool \| null | Whether this node is firewalled for **TCP**. The verdict is a **vote**: two distinct peers must confirm reachability by opening an incoming TCP connection carrying `OP_KAD_FWTCPCHECK_ACK` before it clears to `false`. With no verdict yet it reads **`true`**, the conservative assumption. During an IP recheck it freezes at its previous value rather than momentarily reporting a false LowID. **`null` unless `state` is `connected`** - the underlying bit outlives a disconnect, so this used to report a reachability verdict for a network the daemon was not on. Named for the transport because it is one half of a pair, not an overall verdict that `firewalled_udp` refines. |
 | `firewalled_udp` | bool \| null | Whether this node is firewalled for **UDP**, measured by an entirely different mechanism: a directed test with its own state, which can also declare firewalled **by timeout** after six minutes. **`null` unless `state` is `connected`.** It previously read `false` while Kad was down, which was the absence of a measurement dressed as "UDP is open" - the asymmetry with `firewalled_tcp`'s `true` made the pair actively misleading. Both are `null` now, so there is nothing to misread. |
 | `lan_mode` | bool \| null | `true` when the daemon is running Kad in LAN mode. It **forces both firewalled fields to `false`** regardless of any measurement, which is why it belongs beside them: a `false` on either flag is only meaningful once you have checked this one. `null` unless `state` is `connected`. |
-| `network.users` / `.files` | int \| null | Network-wide estimates for the whole Kad network, not counts belonging to this node. The same values `GET /api/v0/status` reports under `kad.network`. **`null` unless `state` is `connected`** - they used to keep their last estimate through a disconnect, indistinguishable from a live reading. |
-| `network.nodes` | int \| null | **This node's own routing table size** - how many Kad contacts it currently holds - *not* a network-wide figure like the two above. Saturates at 65535 (the daemon counts it in a `uint16`). **`null` unless `state` is `connected`**: routing contacts outlive the disconnect, so this was measured at `2` on a fully stopped Kad. |
+| `network.user_count` / `.files` | int \| null | Network-wide estimates for the whole Kad network, not counts belonging to this node. The same values `GET /api/v0/status` reports under `kad.network`. **`null` unless `state` is `connected`** - they used to keep their last estimate through a disconnect, indistinguishable from a live reading. |
+| `network.node_count` | int \| null | **This node's own routing table size** - how many Kad contacts it currently holds - *not* a network-wide figure like the two above. Saturates at 65535 (the daemon counts it in a `uint16`). **`null` unless `state` is `connected`**: routing contacts outlive the disconnect, so this was measured at `2` on a fully stopped Kad. |
 | `indexed.sources` / `.keywords` / `.notes` | int \| null | Kad-store counters: how many entries this node is holding for the network as a DHT participant. `null` unless `state` is `connected` - they previously read `0`, which is a real count and indistinguishable from an idle but connected node. |
-| `indexed.load` | int \| null | A **load figure, not a count**, despite sitting beside three counts: it is the Kad store's fill level. `null` unless `state` is `connected`, on the same gate as the three counters above. |
-| `buddy.status` | string \| null | LowID-buddy state for NAT-traversal peers: `no_buddy` / `connecting` / `connected` (`unknown` only if the daemon ever ships a value outside its own enum). **`null` unless `state` is `connected`**, along with `buddy.ip` / `buddy.port`; it previously read `no_buddy`, which is a real state rather than the absence of one. While connected with no buddy, `ip` / `port` are `0.0.0.0` / `0`. |
+| `indexed.load_percent` | int \| null | A **load figure, not a count**, despite sitting beside three counts: it is the Kad store's fill level. `null` unless `state` is `connected`, on the same gate as the three counters above. |
+| `buddy.state` | string \| null | LowID-buddy state for NAT-traversal peers: `no_buddy` / `connecting` / `connected` (`unknown` only if the daemon ever ships a value outside its own enum). **`null` unless `state` is `connected`**, along with `buddy.ip` / `buddy.port`; it previously read `no_buddy`, which is a real state rather than the absence of one. While connected with no buddy, `ip` / `port` are `0.0.0.0` / `0`. |
 
 ---
 
@@ -2690,8 +2690,8 @@ Time-series points behind the desktop Statistics graphs.
   "interval_seconds": 1,
   "max_points": 1800,
   "points": [
-    { "t": "2026-06-14T09:40:00Z", "t_unix": 1781430000, "value": 42, "active_downloads": 7, "active_uploads": 4 },
-    { "t": "2026-06-14T09:40:01Z", "t_unix": 1781430001, "value": 44, "active_downloads": 8, "active_uploads": 4 }
+    { "at": 1781430000, "value": 42, "active_downloads": 7, "active_uploads": 4 },
+    { "at": 1781430001, "value": 44, "active_downloads": 8, "active_uploads": 4 }
   ],
   "session": {
     "download_bytes": 12400000000,
@@ -2702,7 +2702,7 @@ Time-series points behind the desktop Statistics graphs.
 }
 ```
 
-Each point has `t` (ISO-8601 UTC), `t_unix` (unix seconds) and `value`, spaced by `interval_seconds`. `unit` is `"bytes_per_second"` for the two speed graphs and `"count"` for the other two.
+Each point has `t` (ISO-8601 UTC), `at` (unix seconds) and `value`, spaced by `interval_seconds`. `unit` is `"bytes_per_second"` for the two speed graphs and `"count"` for the other two.
 
 `max_points` is how many points this daemon can answer with before it starts repeating records; `points` is never longer than it. It is not a constant across daemons, so a client that wants the deepest window available should read it rather than assume 1800.
 

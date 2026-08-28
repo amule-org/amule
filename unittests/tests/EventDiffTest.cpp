@@ -377,8 +377,8 @@ TEST(EventDiff, StatusEventFiresWhenTheKadNetworkFiguresBecomeUnknown)
 	}
 
 	ASSERT_TRUE(!payload.empty());
-	ASSERT_TRUE(payload.find("\"nodes\":null") != std::string::npos);
-	ASSERT_TRUE(payload.find("\"nodes\":499") == std::string::npos);
+	ASSERT_TRUE(payload.find("\"node_count\":null") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"node_count\":499") == std::string::npos);
 }
 
 // A tick where only the overhead moved still has to fire: the field is in the
@@ -409,8 +409,8 @@ TEST(EventDiff, StatusEventCarriesBothConnectedSince)
 
 	const std::string payload = EmitStatusAndGetPayload(s);
 
-	ASSERT_TRUE(payload.find("\"connected_since\":1751000000") != std::string::npos);
-	ASSERT_TRUE(payload.find("\"connected_since\":1751000042") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"connected_since_at\":1751000000") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"connected_since_at\":1751000042") != std::string::npos);
 }
 
 // A reconnect can leave every other field identical -- same server, same id,
@@ -424,7 +424,7 @@ TEST(EventDiff, StatusEventFiresWhenOnlyConnectedSinceMoved)
 	const std::string payload = EmitStatusAndGetPayload(s);
 
 	ASSERT_TRUE(!payload.empty());
-	ASSERT_TRUE(payload.find("\"connected_since\":1751000000") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"connected_since_at\":1751000000") != std::string::npos);
 }
 
 TEST(EventDiff, ClientAddedCarriesUploadFileName)

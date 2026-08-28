@@ -352,7 +352,7 @@ std::string JsonBoolOrNull(bool known, bool v)
 
 // Mirrors HandleStatus key for key -- EVENTS.md promises this payload is
 // identical to the REST /status envelope, and 22-sse-diff-emission.sh asserts
-// it. Both connected_since values are 0 while not connected, same rule as
+// it. Both connected_since_at values are 0 while not connected, same rule as
 // there: gate on state rather than trusting a 0 timestamp.
 std::string ToJsonStatusEvent(const StatusSnapshot &s, const KadSnapshot &k, bool ec_connected)
 {
@@ -362,19 +362,19 @@ std::string ToJsonStatusEvent(const StatusSnapshot &s, const KadSnapshot &k, boo
 	  << "\"state\":\"" << EscJson(s.ed2k_state) << "\""
 	  << ",\"high_id\":" << (s.ed2k_high_id ? "true" : "false") << ",\"user_id\":" << s.ed2k_user_id
 	  << ",\"public_ip\":\"" << EscJson(s.ed2k_public_ip) << "\""
-	  << ",\"connected_since\":" << s.ed2k_connected_since << ",\"server_name\":\""
+	  << ",\"connected_since_at\":" << s.ed2k_connected_since << ",\"server_name\":\""
 	  << EscJson(s.server_name) << "\""
 	  << ",\"server_ip\":\"" << EscJson(s.server_ip) << "\""
 	  << ",\"server_port\":" << s.server_port << ",\"network\":{"
-	  << "\"users\":" << JsonNumOrNull(s.has_ed2k_network, s.ed2k_users)
-	  << ",\"files\":" << JsonNumOrNull(s.has_ed2k_network, s.ed2k_files) << "}}"
+	  << "\"user_count\":" << JsonNumOrNull(s.has_ed2k_network, s.ed2k_users)
+	  << ",\"file_count\":" << JsonNumOrNull(s.has_ed2k_network, s.ed2k_files) << "}}"
 	  << ",\"kad\":{"
 	  << "\"state\":\"" << EscJson(s.kad_state) << "\""
 	  << ",\"firewalled_tcp\":" << JsonBoolOrNull(s.has_kad_firewalled_tcp, s.kad_firewalled_tcp)
-	  << ",\"connected_since\":" << s.kad_connected_since << ",\"network\":{"
-	  << "\"users\":" << JsonNumOrNull(k.has_network, k.users)
-	  << ",\"files\":" << JsonNumOrNull(k.has_network, k.files)
-	  << ",\"nodes\":" << JsonNumOrNull(k.has_network, k.nodes) << "}"
+	  << ",\"connected_since_at\":" << s.kad_connected_since << ",\"network\":{"
+	  << "\"user_count\":" << JsonNumOrNull(k.has_network, k.users)
+	  << ",\"file_count\":" << JsonNumOrNull(k.has_network, k.files)
+	  << ",\"node_count\":" << JsonNumOrNull(k.has_network, k.nodes) << "}"
 	  << "}"
 	  << ",\"speeds\":{"
 	  << "\"download_bps\":" << s.download_bps << ",\"upload_bps\":" << s.upload_bps

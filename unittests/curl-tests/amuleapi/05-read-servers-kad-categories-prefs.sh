@@ -168,7 +168,7 @@ _assert_json_eq '(.lan_mode | not) or ((.firewalled_tcp | not) and (.firewalled_
 # side defaults the other way: true until two peers vouch for us.
 # Was: "reads false while not connected". That false was the absence of a
 # measurement wearing the costume of one, and it is null now.
-_assert_json_eq '.connected_since  | type' number  '/kad.connected_since is numeric'
+_assert_json_eq '.connected_since_at | type' number  '/kad.connected_since_ate is numeric'
 # Ours. Named apart from the buddy's address, which the rename must not touch.
 _assert_json_eq '.public_ip        | type' string  '/kad.public_ip is string'
 _assert_json_eq '.ip               | type' null    '/kad has no bare top-level ip'
@@ -182,14 +182,14 @@ _assert_json_eq '(.state != "disabled") or (.node_id == "")' \
 # `nodes` is the sharp one: it is this node's OWN routing-table size, and
 # contacts outlive a disconnect, so it was measured at 2 on a fully stopped Kad
 # -- a non-zero figure for a network the daemon was not on.
-for F in network.users network.files network.nodes \
-	indexed.sources indexed.keywords indexed.notes indexed.load; do
+for F in network.user_count network.file_count network.node_count \
+	indexed.sources indexed.keywords indexed.notes indexed.load_percent; do
 	_assert_json_eq "(.state == \"connected\") or (.$F == null)" true \
 		"/kad.$F is null while Kad is not connected"
 	_assert_json_eq "(.state != \"connected\") or ((.$F | type) == \"number\")" true \
 		"/kad.$F is numeric while Kad is connected"
 done
-# indexed.load is a load figure rather than a count, despite sitting beside
+# indexed.load_percent is a load figure rather than a count, despite sitting beside
 # three counts -- covered by the loop above.
 # Two distinct "unknown" sentinels: "" while Kad is not connected, and a
 # syntactically valid 0.0.0.0 while connected but not yet told our address.
@@ -198,7 +198,7 @@ _assert_json_eq '(.state == "connected") or (.public_ip == "")' \
 # Gated with the rest: `no_buddy` is a real state, so reporting it on a stopped
 # Kad claimed we had looked and found none. Null when not connected; the enum
 # and the types still hold while connected.
-for F in buddy.status buddy.ip buddy.port; do
+for F in buddy.state buddy.ip buddy.port; do
 	_assert_json_eq "(.state == \"connected\") or (.$F == null)" true \
 		"/kad.$F is null while Kad is not connected"
 done
@@ -206,8 +206,8 @@ _assert_json_eq '(.state != "connected") or ((.buddy.port | type) == "number")' 
 	true '/kad.buddy.port is numeric while Kad is connected'
 _assert_json_eq '(.state != "connected") or ((.buddy.ip | type) == "string")' \
 	true '/kad.buddy.ip survives the ip rename'
-_assert_json_eq '(.state != "connected") or (.buddy.status | test("^(no_buddy|connecting|connected|unknown)$"))' \
-	true '/kad.buddy.status is a known enum value while Kad is connected'
+_assert_json_eq '(.state != "connected") or (.buddy.state | test("^(no_buddy|connecting|connected|unknown)$"))' \
+	true '/kad.buddy.state is a known enum value while Kad is connected'
 
 # --- 3. /categories -----------------------------------------------
 _curl "$HOST/api/v0/categories"
