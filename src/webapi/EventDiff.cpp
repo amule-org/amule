@@ -685,14 +685,13 @@ void EnforceSinglePublisher()
 } // namespace
 
 // One chat message as the `message` object both the SSE payload and
-// GET /chats/{peer}/messages expose. Written here in the same string-building
+// GET /chats/{client_address}/messages expose. Written here in the same string-building
 // style as the other event payloads in this file; the REST side renders the
 // identical shape through CJsonWriter.
 std::string ChatMessageJson(const ChatMessageSnapshot &msg)
 {
 	return "{\"id\":" + std::to_string(msg.id) + ",\"direction\":\"" + (msg.outgoing ? "out" : "in") +
-	       "\",\"text\":\"" + EscJson(msg.text) + "\",\"timestamp\":" + std::to_string(msg.timestamp) +
-	       "}";
+	       "\",\"text\":\"" + EscJson(msg.text) + "\",\"sent_at\":" + std::to_string(msg.timestamp) + "}";
 }
 
 void PublishChatEvents(CEventBus &bus,
@@ -706,19 +705,25 @@ void PublishChatEvents(CEventBus &bus,
 	for (const ChatSessionSnapshot &session : new_messages) {
 		const std::string peer = session.PeerKey();
 		for (const ChatMessageSnapshot &msg : session.messages) {
-			std::string payload = "{\"peer\":\"" + EscJson(peer) + "\",\"ip\":\"" +
+			std::string payload = "{\"client_address\":\"" + EscJson(peer) + "\",\"ip\":\"" +
 					      EscJson(session.ip) +
 					      "\",\"port\":" + std::to_string(session.port) + ",\"name\":\"" +
 					      EscJson(session.DisplayName()) +
-					      "\",\"client_ecid\":" + std::to_string(session.client_ecid) +
-					      ",\"friend_ecid\":" + std::to_string(session.friend_ecid) +
+					      // client_ecid / friend_ecid are null rather than the 0
+					      // sentinel, matching the REST row (R10).
+					      "\",\"client_ecid\":" +
+					      (session.client_ecid ? std::to_string(session.client_ecid)
+								   : std::string("null")) +
+					      ",\"friend_ecid\":" +
+					      (session.friend_ecid ? std::to_string(session.friend_ecid)
+								   : std::string("null")) +
 					      ",\"message\":" + ChatMessageJson(msg) + "}";
 			batch.emplace_back("chat_message", std::move(payload));
 		}
 	}
 	for (std::uint64_t gui_id : closed) {
 		const std::string peer = ChatPeerKeyFromGuiId(gui_id);
-		batch.emplace_back("chat_session_closed", "{\"peer\":\"" + EscJson(peer) + "\"}");
+		batch.emplace_back("chat_session_closed", "{\"client_address\":\"" + EscJson(peer) + "\"}");
 	}
 	bus.PublishBatch(batch);
 }

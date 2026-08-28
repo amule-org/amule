@@ -1241,25 +1241,26 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// matched first, same ordering rationale as the server / friend routes:
 	// the longer pattern would otherwise be shadowed.
 	{
-		static const auto chat_messages = web_api_path::ParsePattern("/api/v0/chats/{peer}/messages");
-		static const auto chat_one = web_api_path::ParsePattern("/api/v0/chats/{peer}");
+		static const auto chat_messages =
+			web_api_path::ParsePattern("/api/v0/chats/{client_address}/messages");
+		static const auto chat_one = web_api_path::ParsePattern("/api/v0/chats/{client_address}");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(chat_messages, path_segs, caps)) {
 			if (req.method == "GET" || req.method == "HEAD") {
-				return HandleChatMessages(req, caps["peer"]);
+				return HandleChatMessages(req, caps["client_address"]);
 			}
 			if (req.method == "POST") {
-				return HandleChatSend(req, caps["peer"]);
+				return HandleChatSend(req, caps["client_address"]);
 			}
-			return MethodNotAllowed(
-				"GET, HEAD, POST", "only GET / HEAD / POST on /chats/{peer}/messages");
+			return MethodNotAllowed("GET, HEAD, POST",
+				"only GET / HEAD / POST on /chats/{client_address}/messages");
 		}
 		if (web_api_path::Match(chat_one, path_segs, caps)) {
 			if (req.method == "DELETE") {
-				return HandleChatClose(req, caps["peer"]);
+				return HandleChatClose(req, caps["client_address"]);
 			}
-			return MethodNotAllowed("DELETE", "only DELETE on /chats/{peer}");
+			return MethodNotAllowed("DELETE", "only DELETE on /chats/{client_address}");
 		}
 	}
 
@@ -5739,8 +5740,8 @@ void WriteFriendObject(CJsonWriter &w, const webapi::FriendSnapshot &f)
 	w.ValueString(wxString::FromUTF8(f.name.c_str()));
 	w.Key("user_hash");
 	w.ValueString(wxString::FromUTF8(f.user_hash.c_str()));
-	w.Key("ip");
-	w.ValueString(wxString::FromUTF8(f.ip.c_str()));
+	// null rather than "" when the daemon has not reported an address (R10).
+	WriteStringOrNull(w, "ip", !f.ip.empty(), f.ip);
 	w.Key("port");
 	w.ValueInt(static_cast<int64_t>(f.port));
 	// The live peer this friend is linked to, joinable against /clients. null
@@ -5989,7 +5990,7 @@ void WriteChatMessageObject(CJsonWriter &w, const webapi::ChatMessageSnapshot &m
 	w.ValueString(wxString::FromAscii(m.outgoing ? "out" : "in"));
 	w.Key("text");
 	w.ValueString(wxString::FromUTF8(m.text.c_str()));
-	w.Key("timestamp");
+	w.Key("sent_at");
 	w.ValueInt(static_cast<int64_t>(m.timestamp));
 	w.EndObject();
 }
@@ -5997,7 +5998,7 @@ void WriteChatMessageObject(CJsonWriter &w, const webapi::ChatMessageSnapshot &m
 void WriteChatObject(CJsonWriter &w, const webapi::ChatSessionSnapshot &s)
 {
 	w.BeginObject();
-	w.Key("peer");
+	w.Key("client_address");
 	w.ValueString(wxString::FromUTF8(s.PeerKey().c_str()));
 	w.Key("ip");
 	w.ValueString(wxString::FromUTF8(s.ip.c_str()));
@@ -6014,10 +6015,14 @@ void WriteChatObject(CJsonWriter &w, const webapi::ChatSessionSnapshot &s)
 	w.ValueBool(s.client_ecid != 0);
 	w.Key("message_count");
 	w.ValueInt(static_cast<int64_t>(s.messages.size()));
-	w.Key("last_msg_id");
+	w.Key("last_message_id");
 	w.ValueInt(static_cast<int64_t>(s.LastMsgId()));
-	w.Key("last_message_at");
-	w.ValueInt(static_cast<int64_t>(s.messages.empty() ? 0 : s.messages.back().timestamp));
+	// null, not 0: a session with no messages has no last-message time, and
+	// 0 reads as 1970 (R10).
+	WriteIntOrNull(w,
+		"last_message_at",
+		!s.messages.empty(),
+		static_cast<int64_t>(s.messages.empty() ? 0 : s.messages.back().timestamp));
 	// The transcript itself is deliberately NOT on the list: a 50-session
 	// store at 200 messages each would be 10 000 objects per list read.
 	// null, not omitted: a session with no messages yet has no last message,
@@ -6216,7 +6221,7 @@ CHttpServer::Response CApiDispatcher::HandleChatMessages(
 
 	std::uint64_t gui_id = 0;
 	if (!ParseChatPeerKey(peer, gui_id)) {
-		return ErrorResponse(400, "bad_request", "path `{peer}` must be `<ip>:<port>`");
+		return ErrorResponse(400, "bad_request", "path `{client_address}` must be `<ip>:<port>`");
 	}
 
 	const std::vector<webapi::ChatSessionSnapshot> chats = m_state.Chats();
@@ -6225,7 +6230,7 @@ CHttpServer::Response CApiDispatcher::HandleChatMessages(
 		return ErrorResponse(404, "not_found", "no chat session with that peer");
 	}
 
-	// `since_id` is a safe polling cursor: ids are monotonic per daemon
+	// `since_message_id` is a safe polling cursor: ids are monotonic per daemon
 	// process, so a client never sees a duplicate and never skips one. They
 	// reset when the daemon restarts, which also empties the store.
 	std::uint32_t since_id = 0;
@@ -6233,7 +6238,7 @@ CHttpServer::Response CApiDispatcher::HandleChatMessages(
 	const auto qmap = web_api_path::ParseQuery(QueryOf(req));
 	{
 		std::uint64_t v = since_id;
-		if (auto r = ParseUintParam(qmap, "since_id", 0, 0xFFFFFFFFull, v))
+		if (auto r = ParseUintParam(qmap, "since_message_id", 0, 0xFFFFFFFFull, v))
 			return *r;
 		since_id = static_cast<std::uint32_t>(v);
 	}
@@ -6263,7 +6268,7 @@ CHttpServer::Response CApiDispatcher::HandleChatMessages(
 
 	CJsonWriter w;
 	w.BeginObject();
-	w.Key("peer");
+	w.Key("client_address");
 	w.ValueString(wxString::FromUTF8(session->PeerKey().c_str()));
 	w.Key("messages");
 	w.BeginArray();
@@ -6272,7 +6277,7 @@ CHttpServer::Response CApiDispatcher::HandleChatMessages(
 	w.EndArray();
 	w.Key("total");
 	w.ValueInt(static_cast<int64_t>(session->messages.size()));
-	w.Key("last_msg_id");
+	w.Key("last_message_id");
 	w.ValueInt(static_cast<int64_t>(session->LastMsgId()));
 	w.EndObject();
 	CHttpServer::Response r;
@@ -6337,7 +6342,7 @@ CHttpServer::Response CApiDispatcher::SendChatMessageTo(const CHttpServer::Reque
 	// `ok` dropped. The nested `message` object stays: it is the created
 	// resource, carrying the id and direction the daemon assigned, and there
 	// is no per-message GET route whose shape it could mirror instead.
-	w.Key("peer");
+	w.Key("client_address");
 	w.ValueString(wxString::FromUTF8(webapi::ChatPeerKeyFromGuiId(gui_id).c_str()));
 	w.Key("message");
 	w.BeginObject();
@@ -6369,7 +6374,7 @@ CHttpServer::Response CApiDispatcher::HandleChatSend(const CHttpServer::Request 
 	}
 	std::uint64_t gui_id = 0;
 	if (!ParseChatPeerKey(peer, gui_id)) {
-		return ErrorResponse(400, "bad_request", "path `{peer}` must be `<ip>:<port>`");
+		return ErrorResponse(400, "bad_request", "path `{client_address}` must be `<ip>:<port>`");
 	}
 	// No 404 for an unknown peer here: the core creates the session if it does
 	// not exist, so this doubles as "start a chat with this address".
@@ -6426,7 +6431,7 @@ CHttpServer::Response CApiDispatcher::HandleChatClose(
 	}
 	std::uint64_t gui_id = 0;
 	if (!ParseChatPeerKey(peer, gui_id)) {
-		return ErrorResponse(400, "bad_request", "path `{peer}` must be `<ip>:<port>`");
+		return ErrorResponse(400, "bad_request", "path `{client_address}` must be `<ip>:<port>`");
 	}
 
 	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_CHAT_CLOSE_SESSION));

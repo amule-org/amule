@@ -444,27 +444,27 @@ One event per message, **inbound and outbound alike**. An outbound one is how a 
 
 ```json
 {
-  "peer":        "203.0.113.42:4662",
+  "client_address": "203.0.113.42:4662",
   "ip":          "203.0.113.42",
   "port":        4662,
   "name":        "alice",
   "client_ecid": 4382,
   "friend_ecid": 12,
-  "message":     { "id": 91, "direction": "in", "text": "thanks!", "timestamp": 1786652714 }
+  "message":     { "id": 91, "direction": "in", "text": "thanks!", "sent_at": 1786652714 }
 }
 ```
 
-`message` is identical to a `messages[]` entry on [`GET /api/v0/chats/{peer}/messages`](REFERENCE.md#get-apiv0chatspeermessages), and `name` uses the same `"IP: <ip> Port: <port>"` fallback the REST list does.
+`message` is identical to a `messages[]` entry on [`GET /api/v0/chats/{client_address}/messages`](REFERENCE.md#get-apiv0chatsclient_addressmessages), and `name` uses the same `"IP: <ip> Port: <port>"` fallback the REST list does.
 
-There is no separate "conversation started" event: a conversation that did not exist yet is implied by the first message carrying its `peer`.
+There is no separate "conversation started" event: a conversation that did not exist yet is implied by the first message carrying its `client_address`.
 
 #### `chat_session_closed`
 
 ```json
-{ "peer": "203.0.113.42:4662" }
+{ "client_address": "203.0.113.42:4662" }
 ```
 
-Closing is global — see [`DELETE /api/v0/chats/{peer}`](REFERENCE.md#delete-apiv0chatspeer). This fires whichever client closed it, including the desktop GUI, so a viewer should drop the conversation rather than assume it still exists.
+Closing is global — see [`DELETE /api/v0/chats/{client_address}`](REFERENCE.md#delete-apiv0chatsclient_address). This fires whichever client closed it, including the desktop GUI, so a viewer should drop the conversation rather than assume it still exists.
 
 ### `clients` channel
 

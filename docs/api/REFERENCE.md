@@ -76,9 +76,9 @@ The API is versioned in the path. **`/api/v0/` is the pre-release surface and is
 - [`POST /api/v0/friends/{ecid}/shared_files`](#post-apiv0friendsecidshared_files) — browse a friend's shared files
 - [`POST /api/v0/friends/{ecid}/messages`](#post-apiv0friendsecidmessages) — message a friend, online or offline
 - [`GET /api/v0/chats`](#get-apiv0chats) — list chat conversations
-- [`GET /api/v0/chats/{peer}/messages`](#get-apiv0chatspeermessages) — read a conversation's history
-- [`POST /api/v0/chats/{peer}/messages`](#post-apiv0chatspeermessages) — send a message to a peer address
-- [`DELETE /api/v0/chats/{peer}`](#delete-apiv0chatspeer) — close a conversation
+- [`GET /api/v0/chats/{client_address}/messages`](#get-apiv0chatsclient_addressmessages) — read a conversation's history
+- [`POST /api/v0/chats/{client_address}/messages`](#post-apiv0chatsclient_addressmessages) — send a message to a peer address
+- [`DELETE /api/v0/chats/{client_address}`](#delete-apiv0chatsclient_address) — close a conversation
 - [`POST /api/v0/clients/{ecid}/messages`](#post-apiv0clientsecidmessages) — message a connected peer
 
 **Categories**
@@ -247,7 +247,7 @@ The conversion to and from the host-order integers EC carries happens inside amu
 One rule, everywhere: **a query parameter the server does not understand is a `400 bad_request`, never a silent default.** That covers both halves of "does not understand": a value that will not parse, and a value outside the parameter's documented range.
 
 - Booleans (`include_parts`) accept `1`/`0`, `true`/`false` and `yes`/`no`. Anything else is a `400`.
-- Counts (`limit`, `offset`, `tail`, `width`, `interval`, `max_client_versions`, `since_id`) accept decimal digits within the range documented for that parameter. A non-numeric value, a negative one, or one outside the range is a `400` naming the bound.
+- Counts (`limit`, `offset`, `tail`, `width`, `interval`, `max_client_versions`, `since_message_id`) accept decimal digits within the range documented for that parameter. A non-numeric value, a negative one, or one outside the range is a `400` naming the bound.
 - An omitted parameter takes the documented default. Only omission does that; an empty value (`?limit=`) is a `400`, not an omission.
 
 Nothing clamps. A count above its cap used to be quietly reduced on some endpoints, so a count over the cap returned a full page with nothing in the response saying the request had been altered; it is now a rejection, which is the same answer the other endpoints already gave.
@@ -462,7 +462,7 @@ Every path segment, query parameter and JSON key on this surface follows the rul
 | **R9** | **A writable field accepts the values the same field returns.** Where a write is really a command it belongs in a differently-named key (`action`), not in the read field's name. |
 | **R10** | **Always emit the key.** An unknown value is `null`, never an omitted key and never a `0`/`-1` sentinel. The few deliberate exceptions are enumerated under [Response model](#response-model). |
 | **R11** | **Group by quantity, not by scope.** A sub-object earns its place when it groups *different* quantities (`sources`, `progress`, `media`). One quantity split by time window does not — the window belongs in the key, not in a wrapper. |
-| **R12** | **One word for the remote party: `client`.** `peer` is not used in a key, a path or an enum value. `source` is not a synonym: a source is a client *in a role with respect to one file*, so it survives only where that relation is what is being described (`sources.total`, `source_origin`). |
+| **R12** | **One word for the remote party: `client`.** `client_address` is not used in a key, a path or an enum value. `source` is not a synonym: a source is a client *in a role with respect to one file*, so it survives only where that relation is what is being described (`sources.total`, `source_origin`). |
 
 ### Why rates are spelled out
 
@@ -1009,7 +1009,7 @@ Each entry is the [`/clients`](#get-apiv0clients) list object plus three keys:
 
 `role` and `a4af` are orthogonal: a pure A4AF row is `role: "none"`, `a4af: true`, but a peer can be parked on another file *and* be pulling this one from us (`role: "peer"`, `a4af: true`).
 
-`parts` is opt-in because it is one boolean per chunk per peer — a multi-TiB file is 100k+ entries each. It is exactly `parts_total_count` entries, and it describes the file this row is about: the download bitmap for a `source`, the upload bitmap for a `peer`. A peer the core reports as holding every part comes back all-`true`. A pure A4AF row has no bitmap for this file and omits the key. **`parts` never appears in SSE payloads.**
+`parts` is opt-in because it is one boolean per chunk per peer — a multi-TiB file is 100k+ entries each. It is exactly `parts_total_count` entries, and it describes the file this row is about: the download bitmap for a `source`, the upload bitmap for a `client_address`. A peer the core reports as holding every part comes back all-`true`. A pure A4AF row has no bitmap for this file and omits the key. **`parts` never appears in SSE payloads.**
 
 The file's own three-state part view is on [`GET /downloads/{hash}`](#get-apiv0downloadshash); combine it with this bitmap to render the desktop's per-source bar.
 
@@ -3010,11 +3010,11 @@ Peers whose country could not be resolved — GeoIP disabled, unsupported by the
 
 Conversations with peers, backed by the chat session store in `amuled`. The store is shared: a message sent from the desktop GUI, from amulegui or through this API lands in the same transcript, and every client sees the same conversation.
 
-A conversation is keyed on `{peer}` = `"<ip>:<port>"` (for example `203.0.113.42:4662`). That is the readable form of the internal id the EC wire already uses, it is stable across peer reconnects — unlike an ECID — and it needs no identifier of its own. A `{peer}` that is not four dotted octets plus a port is a `400`.
+A conversation is keyed on `{client_address}` = `"<ip>:<port>"` (for example `203.0.113.42:4662`). That is the readable form of the internal id the EC wire already uses, it is stable across peer reconnects — unlike an ECID — and it needs no identifier of its own. A `{client_address}` that is not four dotted octets plus a port is a `400`.
 
 The store is **in memory**: an `amuled` restart empties every conversation, exactly as the desktop's own transcript dies with its notebook tab. Retention is bounded at 200 messages per conversation and 50 conversations, evicting the least recently active first.
 
-Message `id` is monotonic per `amuled` process and never reused, which makes it a safe polling cursor: `since_id` never returns a duplicate and never skips a message. It resets when the daemon restarts, which also empties the store.
+Message `id` is monotonic per `amuled` process and never reused, which makes it a safe polling cursor: `since_message_id` never returns a duplicate and never skips a message. It resets when the daemon restarts, which also empties the store.
 
 Every endpoint here answers `503 ec_unsupported` when the connected `amuled` does not serve chat.
 
@@ -3030,7 +3030,7 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/chats"
 {
   "chats": [
     {
-      "peer":            "203.0.113.42:4662",
+      "client_address":            "203.0.113.42:4662",
       "ip":              "203.0.113.42",
       "port":            4662,
       "name":            "alice",
@@ -3038,9 +3038,9 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/chats"
       "friend_ecid":     12,
       "online":          true,
       "message_count":   14,
-      "last_msg_id":     91,
+      "last_message_id":     91,
       "last_message_at": 1786652714,
-      "last_message":    { "id": 91, "direction": "in", "text": "thanks!", "timestamp": 1786652714 }
+      "last_message":    { "id": 91, "direction": "in", "text": "thanks!", "sent_at": 1786652714 }
     }
   ],
   "total": 1, "offset": 0, "limit": 1
@@ -3055,29 +3055,29 @@ Served from the refresher snapshot — no EC roundtrip per request. Standard [li
 
 **Errors:** `503 ec_unsupported`, `503 ec_unavailable`.
 
-#### `GET /api/v0/chats/{peer}/messages`
+#### `GET /api/v0/chats/{client_address}/messages`
 
 **Auth:** `GUEST`
 
-**Query:** `since_id=N` (only messages with `id > N`), `tail=N` (the last N of that window, max `100000`). This selects a tail rather than a page, which is why it is not called `limit`: on the list endpoints `limit` is a window paired with `offset`, and one word meaning two things is a rule a client has to learn twice.
+**Query:** `since_message_id=N` (only messages with `id > N`), `tail=N` (the last N of that window, max `100000`). This selects a tail rather than a page, which is why it is not called `limit`: on the list endpoints `limit` is a window paired with `offset`, and one word meaning two things is a rule a client has to learn twice.
 
 ```json
 {
-  "peer": "203.0.113.42:4662",
+  "client_address": "203.0.113.42:4662",
   "messages": [
-    { "id": 90, "direction": "out", "text": "hi",      "timestamp": 1786652700 },
-    { "id": 91, "direction": "in",  "text": "thanks!", "timestamp": 1786652714 }
+    { "id": 90, "direction": "out", "text": "hi",      "sent_at": 1786652700 },
+    { "id": 91, "direction": "in",  "text": "thanks!", "sent_at": 1786652714 }
   ],
   "total": 14,
-  "last_msg_id": 91
+  "last_message_id": 91
 }
 ```
 
-`direction` is `"in"` (from the peer) or `"out"` (sent by us — from **any** client: this API, amulegui, or the desktop GUI). `timestamp` is stamped by the core when the message was received or sent. `total` counts everything the store holds for this conversation, not the returned window.
+`direction` is `"in"` (from the peer) or `"out"` (sent by us — from **any** client: this API, amulegui, or the desktop GUI). `sent_at` is stamped by the core when the message was received or sent. `total` counts everything the store holds for this conversation, not the returned window.
 
-**Errors:** `404 not_found` (no such conversation), `400 bad_request` (malformed `{peer}` or query), `503 ec_unsupported`, `503 ec_unavailable`.
+**Errors:** `404 not_found` (no such conversation), `400 bad_request` (malformed `{client_address}` or query), `503 ec_unsupported`, `503 ec_unavailable`.
 
-#### `POST /api/v0/chats/{peer}/messages`
+#### `POST /api/v0/chats/{client_address}/messages`
 
 **Auth:** `ADMIN`
 
@@ -3089,13 +3089,13 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/
 ```
 
 ```json
-{ "peer": "203.0.113.42:4662",
+{ "client_address": "203.0.113.42:4662",
   "message": { "id": 92, "direction": "out", "text": "hello" } }
 ```
 
 The created message stays in the body because no per-message `GET` defines a shape for it, so the store-assigned `id` is only readable here. The **timestamp is not** in this reply — read it back from [`GET /chats`](#get-apiv0chats) (as `last_message`), from the per-conversation messages endpoint, or from the `chat_message` SSE event.
 
-The core creates the conversation if it does not exist, so this doubles as "start a chat with this address" — an unknown `{peer}` is not a `404` here.
+The core creates the conversation if it does not exist, so this doubles as "start a chat with this address" — an unknown `{client_address}` is not a `404` here.
 
 Returns `202 Accepted`, not `200`: the core acknowledges that it queued the message on the peer connection, not that the peer received it. An unreachable peer is not an error — the desktop behaves the same, optimistically showing `*** Connecting to Client ***`.
 
@@ -3109,7 +3109,7 @@ Message a friend by friend ECID. This is the form that reaches an **offline** fr
 
 **Body:** `{ "text": "hello" }`
 
-**Response:** `202 Accepted` → `{ "peer": "203.0.113.42:4662", "message": { … } }`, so the caller learns the conversation key to read back.
+**Response:** `202 Accepted` → `{ "client_address": "203.0.113.42:4662", "message": { … } }`, so the caller learns the conversation key to read back.
 
 **Errors:** `404 not_found` (no friend with that ECID), plus the set above.
 
@@ -3121,7 +3121,7 @@ The peer-addressed form, for a caller holding a peer row that should not have to
 
 **Errors:** `404 not_found` (no live peer with that ECID), plus the set above.
 
-#### `DELETE /api/v0/chats/{peer}`
+#### `DELETE /api/v0/chats/{client_address}`
 
 **Auth:** `ADMIN`
 
