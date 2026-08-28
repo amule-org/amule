@@ -154,7 +154,8 @@ printf '%s' "$ROW" > "$CURL_BODY_FILE"; CURL_BODY=$ROW
 _assert_json_eq '.ip'                 "$PEER_IP"   'row carries the split ip'
 _assert_json_eq '.port'               "$PEER_PORT" 'row carries the split port'
 _assert_json_eq '.online'             false        'unrouted peer is offline'
-_assert_json_eq '.client_ecid'        0            'offline peer has client_ecid 0'
+_assert_json_eq '.client_ecid'        null         'offline peer has client_ecid null, not a 0 sentinel'
+_assert_json_eq '.friend_ecid'        null         'a non-friend peer has friend_ecid null, not a 0 sentinel'
 _assert_json_eq '.last_message.text'  "curl-test hello" 'row carries last_message'
 # The core has no nickname for a peer that never answered, so the row must
 # fall back to the desktop's own rendering rather than an empty string.
