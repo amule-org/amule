@@ -7794,7 +7794,21 @@ void CApiDispatcher::RefreshSearchIfStale(std::uint32_t search_id)
 	// previous set is strictly better than failing a read that has a
 	// perfectly good answer. An expiry is left to the tick's own retirement
 	// path rather than duplicated here.
-	(void)webapi::FetchSearchResults(m_app, m_state, search_id);
+	//
+	// Deliberately the per-search FULL fetch and not the union, even though
+	// the union would refresh every stale search in one roundtrip. The union
+	// is a differential stream keyed on what the daemon has already sent this
+	// connection, so it tolerates exactly one issuer: with the refresher
+	// thread issuing it every tick, a second issuer here could have its reply
+	// applied out of order and leave a row no later poll can correct, because
+	// by then the daemon considers every field of it unchanged. A FULL reply
+	// carries the whole search and is idempotent, so it races nothing.
+	//
+	// Kept even though the tick now polls finished searches too: this covers
+	// the sub-tick window a client hits when it GETs immediately after
+	// starting a Kad notes lookup, which is what the poll-until-false loop in
+	// the reference does.
+	(void)webapi::FetchOneSearchFull(m_app, m_state, search_id);
 }
 
 // See the declaration in Api.h for why this is shared rather than inlined
@@ -7841,6 +7855,15 @@ bool CApiDispatcher::DiscoverSearchIfHeldByCore(std::uint32_t search_id)
 		break;
 	}
 	delete ec_resp;
+	if (found) {
+		// Seed the slot's results immediately, at EC_DETAIL_FULL. Waiting for
+		// the next union poll would leave it permanently empty: the union
+		// responder walks every search the core holds, so it has very likely
+		// already offered this search's results to this connection, found no
+		// slot for them, and dropped them -- and having sent them once, it
+		// will elide them from here on. This is the only chance to read them.
+		(void)webapi::FetchOneSearchFull(m_app, m_state, search_id);
+	}
 	return found;
 }
 

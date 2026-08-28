@@ -1020,6 +1020,18 @@ void ComputePartProgressPercent(const CState &state, ClientSnapshot &cli);
 // daemon-allocated search_id (see m_searches).
 struct SearchSlot
 {
+	// What the daemon last told us, flat: every result ECID it has sent for
+	// this search, parents and grouped children alike, exactly as they
+	// arrived. This is the merge target for the incremental union poll --
+	// a diffed tag names one ECID and carries only the fields that moved, so
+	// there has to be somewhere addressable by ECID to apply it to.
+	std::map<std::uint32_t, SearchResult> raw;
+	// The view every reader uses: `raw` with each child folded into its
+	// parent's children[] and dropped from the top level, so the API serves
+	// one row per hash+size. Rebuilt from `raw` after each merge rather than
+	// merged into directly, which keeps every consumer (Search(),
+	// FindSearchResultByHash, EventDiff) on exactly the shape it had before
+	// incremental polling existed.
 	std::map<std::uint32_t, SearchResult> results;
 	SearchProgressSnapshot progress;
 	// What was searched for, so a consumer reading one search's results
@@ -1028,10 +1040,6 @@ struct SearchSlot
 	// nickname, not a query. Empty only for a slot seeded by discovery
 	// before its name was observed.
 	std::string query;
-	// Monotonic insertion order, used to evict the oldest slots when the map
-	// exceeds its cap (a client that starts many searches without closing them
-	// would otherwise accumulate slots for the whole process lifetime).
-	std::uint64_t seq = 0;
 	// Wall-clock second this session started the search, for ranking the
 	// entries GET /search returns: that listing comes straight off
 	// EC_OP_SEARCH_LIST, which walks a std::map keyed by search_id and
@@ -1047,6 +1055,22 @@ struct SearchSlot
 	// this stamp. Default-constructed (epoch) means "never fetched", which
 	// is always stale.
 	std::chrono::steady_clock::time_point last_fetch{};
+	// The daemon no longer holds this search: its EC ring evicted it, or it
+	// was closed core-side. Set by the tick when EC_OP_SEARCH_PROGRESS comes
+	// back expired, before that same tick applies the results union -- which
+	// would otherwise tombstone away exactly the results the retirement path
+	// means to keep for late reads, since the union emits EC_TAG_FILE_REMOVED
+	// for every result of an evicted search.
+	//
+	// A detached slot is frozen: ApplySearchUnion skips it for merges and
+	// tombstones alike, since nothing about it can change any more. It is
+	// also the preferred eviction victim, because it is the only kind whose
+	// eviction costs nothing -- the daemon has nothing left to re-send.
+	bool detached = false;
+	// Insertion order, for oldest-first eviction. Not started_at: that is 0
+	// for a discovered slot, which would make every adopted search tie for
+	// oldest and evict in map order.
+	std::uint64_t seq = 0;
 };
 
 // `m_amule_log_lines` in CState caches /logs/amule. amule's EC
@@ -1783,6 +1807,13 @@ public:
 	std::vector<std::uint32_t> ActiveSearchIds() const;
 	// Every live slot id, for the SSE per-search diff.
 	std::vector<std::uint32_t> AllSearchIds() const;
+	// Whether any slot the daemon could still speak for exists. The union poll
+	// asks for every search in one request, so it needs no id list -- only
+	// whether the request is worth sending. Detached slots are excluded: the
+	// daemon has evicted those, so polling on their behalf is a roundtrip a
+	// second that can never return anything. Separate from AllSearchIds() to
+	// avoid building and copying a vector once a second just to test it.
+	bool HasAnySearch() const;
 	// Find a result carrying this (already-lowercased) hash across ALL open
 	// searches — the hash-keyed comments endpoints are search-agnostic. The
 	// parent owns any fetched Kad notes, so it matches ahead of its children.
@@ -1867,6 +1898,13 @@ public:
 	// overwrite). No-op if the id names no live slot.
 	void MutateSearch(std::uint32_t search_id,
 		const std::function<void(std::map<std::uint32_t, SearchResult> &)> &fn);
+	// Mutate every search slot and the ECID->search_id index together, under
+	// one exclusive lock. The incremental union poll needs both: a diffed tag
+	// names no search, so the index resolves it, and a result that moves or
+	// disappears has to leave the map and the index in step. Handing out both
+	// halves to one callback is what makes that atomic.
+	void MutateAllSearches(const std::function<void(std::map<std::uint32_t, SearchSlot> &,
+			std::map<std::uint32_t, std::uint32_t> &)> &fn);
 
 	// Wholesale reset paths. Called by the refresher after a
 	// MarkTickFailure → MarkTickSuccess transition (the server's
@@ -1921,6 +1959,11 @@ public:
 	// derived: 100 for a finished search (true by definition), 0 for a
 	// running one (the tick corrects it within a second, and inventing a
 	// number would flash a wrong one meanwhile).
+	/**
+	 * Mark a slot as no longer backed by the daemon. Freezes its results:
+	 * see SearchSlot::detached. Idempotent; a no-op for an unknown id.
+	 */
+	void DetachSearch(std::uint32_t search_id);
 	void MarkSearchDiscovered(std::uint32_t search_id,
 		const std::string &kind,
 		const std::string &query,
@@ -2002,17 +2045,31 @@ private:
 	// the REST surface by its daemon-allocated search_id. One slot per search
 	// holds that search's results (by result ECID) and its lifecycle progress.
 	std::map<std::uint32_t, SearchSlot> m_searches;
-	// Ever-increasing sequence stamped on each new slot for oldest-first
-	// eviction. Never wraps in practice (one bump per POST /search).
+	// Result ECID -> owning search_id, mirroring m_searches' result maps.
+	//
+	// Required by the incremental union poll: the daemon sends
+	// EC_TAG_SEARCH_ID only the first time it tells us about a result, and
+	// EC_TAG_FILE_REMOVED carries the bare ECID, so every later tag has to be
+	// attributed from here. Maintained inside the same locked mutation that
+	// writes the result maps -- an index that can drift from the map it
+	// mirrors is how #1028 leaked keys a reload could not heal.
+	std::map<std::uint32_t, std::uint32_t> m_resultOwner;
+	//! Monotonic source for SearchSlot::seq.
 	std::uint64_t m_search_seq = 0;
-	// Hard cap on retained slots. Comfortably above the daemon's 20-search
-	// ring so every live search always fits; excess is finished slots a
-	// client never closed, evicted oldest-first.
+	// Ceiling on retained slots. A client that never DELETEs its searches,
+	// or one watching a busy monolithic GUI, would otherwise accumulate a
+	// slot and its whole result map per search for the life of the process:
+	// the daemon's own kMaxEcSearches bounds only the searches it holds for
+	// *this* connection, and detached slots outlive even those.
+	//
+	// Eviction is recoverable, which is why a cap is affordable at all: a
+	// later read of an evicted id misses the cache, re-discovers it via
+	// EC_OP_SEARCH_LIST and re-seeds it in full through FetchOneSearchFull.
+	// Detached slots are preferred as victims anyway, since for those the
+	// daemon has nothing left to re-send and nothing is lost.
 	static constexpr std::size_t kMaxSearchSlots = 64;
-
-	// Trim m_searches back to kMaxSearchSlots, dropping the oldest slot that
-	// is not still being polled. Shared by both slot-creating paths, which
-	// need the identical rule. MUST be called with m_mu held exclusively.
+	// Trim m_searches back to kMaxSearchSlots, and drop the evicted slots'
+	// entries from m_resultOwner with them. Caller holds the write lock.
 	void EvictSurplusSearchSlotsLocked();
 };
 
