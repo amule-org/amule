@@ -266,6 +266,16 @@ std::vector<std::uint32_t> CState::ActiveSearchIds() const
 	return out;
 }
 
+std::vector<std::uint32_t> CState::AttachedSearchIds() const
+{
+	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+	std::vector<std::uint32_t> out;
+	for (const auto &kv : m_searches)
+		if (!kv.second.detached)
+			out.push_back(kv.first);
+	return out;
+}
+
 std::vector<std::uint32_t> CState::AllSearchIds() const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);

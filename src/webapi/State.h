@@ -1817,6 +1817,13 @@ public:
 	std::time_t SearchStartedAt(std::uint32_t search_id) const;
 	// Slots the refresher must still poll (progress.active).
 	std::vector<std::uint32_t> ActiveSearchIds() const;
+	// Every slot the daemon could still speak for: attached, active or not.
+	// The tick polls THIS set for expiry, not ActiveSearchIds(), because a
+	// finished search is exactly the one the daemon's ring drops first and
+	// the one whose results we are keeping. Naming them in the progress
+	// union also refreshes their LRU entry daemon-side, which is what the
+	// daemon means by "the searches a client still has open".
+	std::vector<std::uint32_t> AttachedSearchIds() const;
 	// Every live slot id, for the SSE per-search diff.
 	std::vector<std::uint32_t> AllSearchIds() const;
 	// Whether any slot the daemon could still speak for exists. The union poll

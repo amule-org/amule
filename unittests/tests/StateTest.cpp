@@ -1667,6 +1667,50 @@ TEST(State, EvictionNeverTakesTheSlotBeingSeeded)
 	ASSERT_TRUE(std::find(left.begin(), left.end(), 4242u) != left.end());
 }
 
+TEST(State, AttachedSearchIdsKeepsFinishedSlotsAndDropsDetachedOnes)
+{
+	// The tick polls THIS set for expiry. A finished search has to stay in it:
+	// it is the one the daemon's ring drops first, and the eviction tombstones
+	// its results, so a slot not detached by then has them erased -- which is
+	// exactly what detaching exists to prevent. A detached slot drops out
+	// because the daemon already has nothing to say about it.
+	CState state;
+	state.MarkSearchStarted(1, "global", "running");
+	SearchProgressSnapshot running;
+	running.active = true;
+	state.WriteSearchProgress(1, running);
+
+	state.MarkSearchStarted(2, "global", "finished");
+	SearchProgressSnapshot done;
+	done.active = false;
+	done.complete = true;
+	done.percent = 100;
+	state.WriteSearchProgress(2, done);
+
+	// Detached exactly the way the tick does it: the expiry branch detaches
+	// AND writes the terminal snapshot, so a detached slot is never left
+	// marked active. Detaching alone would be a state the product never
+	// produces, and asserting against it would prove nothing.
+	state.MarkSearchStarted(3, "global", "gone");
+	state.DetachSearch(3);
+	SearchProgressSnapshot retired;
+	retired.active = false;
+	retired.complete = true;
+	retired.percent = 100;
+	state.WriteSearchProgress(3, retired);
+
+	const std::vector<std::uint32_t> attached = state.AttachedSearchIds();
+	ASSERT_EQUALS(static_cast<size_t>(2), attached.size());
+	ASSERT_TRUE(std::find(attached.begin(), attached.end(), 1u) != attached.end());
+	ASSERT_TRUE(std::find(attached.begin(), attached.end(), 2u) != attached.end());
+	ASSERT_TRUE(std::find(attached.begin(), attached.end(), 3u) == attached.end());
+
+	// The active set is the narrower one the progress advance still uses.
+	const std::vector<std::uint32_t> active = state.ActiveSearchIds();
+	ASSERT_EQUALS(static_cast<size_t>(1), active.size());
+	ASSERT_EQUALS(1u, active[0]);
+}
+
 TEST(State, AFailedUnionFlagsEveryLiveSlotForResync)
 {
 	// The daemon commits its differential state while building a reply, so a
