@@ -88,55 +88,39 @@ std::string TrimOws(const std::string &s)
 }
 
 // Canonicalise `candidate` (an ABSOLUTE path) and accept it only if it
-// lands inside `root`.
+// names a regular file.
 //
-// StaticFs::ResolveWithinRoot cannot be reused here: it joins root and
-// the caller's path (`root_real + "/" + rel`), which is exactly right
-// for a URL path but produces "/srv/share//srv/share/f" for an absolute
-// candidate. The shared-file case has no relative form to offer — the
-// directory arrives from EC_TAG_KNOWNFILE_PATH already absolute, and
-// making it relative would mean a lexical prefix strip, i.e. deciding
-// containment before checking it.
+// Split from the containment test below, and deliberately: the candidate
+// is the same path whichever root it is being compared against, but
+// realpath() is a full path walk that stat()s every component. Recomputing
+// it per root made an N-root share pay up to 2N of those walks on every
+// range request, and the category paths just raised N. Resolving once and
+// comparing the result against each root decides exactly the same thing —
+// the boundary rule below is a pure string comparison over two paths that
+// are already canonical.
 //
-// So this is a sibling, not a weakening: same realpath()-based
-// canonicalisation, and byte-for-byte the same boundary rule (the
-// character at root_len must be a separator or the terminator, which is
-// what stops "/srv/share-evil" from passing as "/srv/share").
-bool AbsoluteWithinRoot(const std::string &root, const std::string &candidate, std::string &fs_out)
+// The regular-file test rides along here rather than after containment
+// because it is a property of the candidate alone. Running it before the
+// roots are walked cannot change the verdict: a non-regular file is
+// refused whichever root it sits under, and the refusal is the same
+// opaque false either way.
+bool CanonicaliseRegularFile(const std::string &candidate, std::string &fs_out)
 {
-	if (root.empty() || candidate.empty())
+	if (candidate.empty())
 		return false;
 
-	char root_real[PATH_MAX];
 	char fs_real[PATH_MAX];
 #ifdef _WIN32
 	// _fullpath() is lexical-only (no reparse-point resolution). Same
 	// trade-off StaticFs documents: on Windows symlinks require
 	// elevation, so lexical containment covers the operator-misconfig
 	// case this check targets.
-	if (!_fullpath(root_real, root.c_str(), PATH_MAX))
-		return false;
 	if (!_fullpath(fs_real, candidate.c_str(), PATH_MAX))
 		return false;
 #else
-	if (!realpath(root.c_str(), root_real))
-		return false;
 	if (!realpath(candidate.c_str(), fs_real))
 		return false;
 #endif
-
-	// _fullpath() preserves a trailing separator from its input, which
-	// then breaks the prefix comparison; POSIX realpath() strips them.
-	// Normalise so the boundary check is platform-agnostic.
-	std::size_t root_len = std::strlen(root_real);
-	while (root_len > 1 && (root_real[root_len - 1] == '/' || root_real[root_len - 1] == '\\')) {
-		root_real[--root_len] = '\0';
-	}
-	if (std::strncmp(fs_real, root_real, root_len) != 0)
-		return false;
-	const char sep = fs_real[root_len];
-	if (sep != '/' && sep != '\\' && sep != '\0')
-		return false;
 
 	// A directory (or a device, or a fifo) is not content. Checked here
 	// rather than left to the caller's open() so that "it exists but is
@@ -150,6 +134,52 @@ bool AbsoluteWithinRoot(const std::string &root, const std::string &candidate, s
 		return false;
 
 	fs_out.assign(fs_real);
+	return true;
+}
+
+// Does the already-canonical `fs_real` land inside `root`?
+//
+// StaticFs::ResolveWithinRoot cannot be reused here: it joins root and
+// the caller's path (`root_real + "/" + rel`), which is exactly right
+// for a URL path but produces "/srv/share//srv/share/f" for an absolute
+// candidate. The shared-file case has no relative form to offer — the
+// directory arrives from EC_TAG_KNOWNFILE_PATH already absolute, and
+// making it relative would mean a lexical prefix strip, i.e. deciding
+// containment before checking it.
+//
+// So this is a sibling, not a weakening: same realpath()-based
+// canonicalisation, and byte-for-byte the same boundary rule (the
+// character at root_len must be a separator or the terminator, which is
+// what stops "/srv/share-evil" from passing as "/srv/share").
+bool CanonicalWithinRoot(const std::string &root, const std::string &fs_real)
+{
+	if (root.empty() || fs_real.empty())
+		return false;
+
+	char root_real[PATH_MAX];
+#ifdef _WIN32
+	if (!_fullpath(root_real, root.c_str(), PATH_MAX))
+		return false;
+#else
+	if (!realpath(root.c_str(), root_real))
+		return false;
+#endif
+
+	// _fullpath() preserves a trailing separator from its input, which
+	// then breaks the prefix comparison; POSIX realpath() strips them.
+	// Normalise so the boundary check is platform-agnostic.
+	std::size_t root_len = std::strlen(root_real);
+	while (root_len > 1 && (root_real[root_len - 1] == '/' || root_real[root_len - 1] == '\\')) {
+		root_real[--root_len] = '\0';
+	}
+	if (fs_real.compare(0, root_len, root_real, root_len) != 0)
+		return false;
+	// Reads the NUL terminator when the paths are equal in length, which
+	// is the "the candidate IS the root" case and exactly as intended.
+	const char sep = fs_real.c_str()[root_len];
+	if (sep != '/' && sep != '\\' && sep != '\0')
+		return false;
+
 	return true;
 }
 
@@ -265,13 +295,22 @@ bool ResolveSharedContentPath(const std::vector<std::string> &roots,
 	if (!JoinSharedPath(dir, name, candidate))
 		return false;
 
+	// Resolved ONCE, before the roots are walked, rather than inside the
+	// loop: this is the walk, and the roots only ever compare against its
+	// result.
+	std::string fs_real;
+	if (!CanonicaliseRegularFile(candidate, fs_real))
+		return false;
+
 	// Inside ANY root is enough — aMule's share is a list of separately
 	// added directories, so there is no single tree to be inside of. An
 	// empty list therefore shares nothing, which is the correct reading
 	// of "the user has configured no shares".
 	for (std::size_t i = 0; i < roots.size(); ++i) {
-		if (AbsoluteWithinRoot(roots[i], candidate, fs_out))
+		if (CanonicalWithinRoot(roots[i], fs_real)) {
+			fs_out.swap(fs_real);
 			return true;
+		}
 	}
 	return false;
 }
@@ -401,6 +440,36 @@ std::string BuildContentEtag(std::uint64_t mtime, std::uint64_t size)
 	std::ostringstream oss;
 	oss << '"' << std::hex << mtime << '-' << size << '"';
 	return oss.str();
+}
+
+bool IfRangeAllowsRange(const std::string &if_range, const std::string &etag)
+{
+	const std::string value = TrimOws(if_range);
+	// No precondition to fail. The Range stands on its own, which is also
+	// the ordinary case: If-Range only ever appears on a resume.
+	if (value.empty())
+		return true;
+
+	// RFC 9110 §13.1.5 says a valid entity-tag is told apart from a valid
+	// HTTP-date by looking at the first two characters for a DQUOTE, and
+	// that only the STRONG form may match. Both rejections land here: a
+	// weak `W/"..."` starts with 'W', and every HTTP-date starts with a
+	// day name, so neither reaches the comparison below.
+	//
+	// The date form is not implemented, and the fall-through is the safe
+	// direction rather than a shortcut. A date validator has one-second
+	// resolution, so a representation replaced twice inside the same
+	// second compares EQUAL to the copy the client holds — precisely the
+	// race this header exists to close. Treating a date as "does not
+	// match" costs a full transfer the client may not have needed;
+	// honouring it can cost a silently spliced file.
+	if (value[0] != '"')
+		return false;
+
+	// Opaque octet-for-octet equality, quotes included. No list to walk
+	// and no `*` to special-case: unlike If-None-Match, If-Range carries
+	// exactly one validator by grammar.
+	return value == etag;
 }
 
 } // namespace webapi

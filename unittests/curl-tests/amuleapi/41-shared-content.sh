@@ -20,10 +20,14 @@
 # returned as text/html would execute against the user's own session.
 #
 # Why each status is what it is:
-#   200  full representation, or a Range header that was ignored (below)
+#   200  full representation, or a Range header that was ignored (below),
+#        or an If-Range whose validator no longer matches
 #   206  a single satisfiable byte range
 #   304  If-None-Match matched. Evaluated BEFORE Range, per RFC 9110 13.2.2,
 #        so a conditional request carrying a Range answers 304, never 206.
+#        If-Range is the OTHER precondition here (RFC 9110 13.1.5) and uses
+#        STRONG comparison, so a weak validator that satisfies If-None-Match
+#        must NOT satisfy it.
 #   401  no bearer token — the share list is not public
 #   404  no shared file with that hash. Also every path-resolution refusal,
 #        collapsed into the same reply so it cannot be used to probe the
@@ -83,6 +87,11 @@ ODD_NAME='amuleapi-content "odd; name.bin'
 
 FAIL_COUNT=0
 TEST_COUNT=0
+# Skips are counted apart from TEST_COUNT, never folded into it: a skipped
+# check is coverage that did not happen, and adding it to the passed tally
+# would report the absence of a check as a check that succeeded. Same form
+# as 40-http-conformance.
+SKIP_COUNT=0
 
 CURL_BODY_FILE=$(mktemp -t amuleapi_41_shared_content_body.XXXXXX)
 CURL_HEAD_FILE=$(mktemp -t amuleapi_41_shared_content_head.XXXXXX)
@@ -96,7 +105,7 @@ _fail() {
 	shift
 	for arg in "$@"; do echo "        $arg"; done
 }
-_skip() { echo "  SKIP  $1"; }
+_skip() { SKIP_COUNT=$((SKIP_COUNT+1)); echo "  SKIP  $1"; }
 
 _curl() {
 	local resp
@@ -467,7 +476,72 @@ _curl "${AUTH[@]}" -H "If-None-Match: $CONTENT_ETAG" -H "Range: bytes=0-9" "$CON
 _assert_status 304 "If-None-Match + Range → 304, not 206 (precondition first)"
 _assert_body_empty "the 304 that pre-empts a Range still carries no body"
 
-# --- 9. HEAD, on a raw socket. ---------------------------------------
+# --- 9. If-Range. ----------------------------------------------------
+# The resume path, and the one precondition on this route whose failure
+# corrupts silently. A client resuming an interrupted download sends the
+# validator it holds next to `Range: bytes=N-` so that a representation
+# which changed underneath it answers 200 with the WHOLE new file. A
+# server that honours the Range regardless returns a 206 of the new
+# bytes, and the client -- reading the 206 as confirmation its validator
+# held -- appends them to its copy of the old one. RFC 9110 13.1.5.
+#
+# Evaluated after If-None-Match (13.2.2 keeps a 304 winning outright) and
+# before the Range is parsed.
+
+# The match case: same validator, so the client's copy is still current
+# and the window it asked for is safe to serve.
+_curl "${AUTH[@]}" -H "If-Range: $CONTENT_ETAG" -H "Range: bytes=0-9" "$CONTENT_URL"
+_assert_status 206 "If-Range with the current ETag + Range → 206"
+_assert_hdr_eq "Content-Range" "bytes 0-9/$FIXTURE_SIZE" "the honoured If-Range serves the named window"
+_assert_hdr_eq "Content-Length" "10" "the honoured If-Range serves ten bytes"
+
+# The stale case, and the whole point of the header: the Range is dropped
+# and the full representation is returned, so the client cannot splice.
+_curl "${AUTH[@]}" -H "If-Range: \"not-the-validator\"" -H "Range: bytes=0-9" "$CONTENT_URL"
+_assert_status 200 "If-Range with a stale validator + Range → 200, not 206"
+_assert_hdr_eq "Content-Length" "$FIXTURE_SIZE" "a stale If-Range returns the whole file"
+if _has_hdr "Content-Range"; then
+	_fail "a stale If-Range emits no Content-Range" "got: $(_hdr Content-Range)"
+else
+	_pass "a stale If-Range emits no Content-Range"
+fi
+
+# 13.1.5 requires STRONG comparison, which is where this parts company
+# with If-None-Match: the same weak validator that answers 304 in section
+# 8 must NOT license a byte range, because weak means "equivalent
+# representation", not "identical bytes". A regression that reused the
+# If-None-Match matcher here would answer 206 and pass every other case
+# in this section.
+_curl "${AUTH[@]}" -H "If-Range: W/$CONTENT_ETAG" -H "Range: bytes=0-9" "$CONTENT_URL"
+_assert_status 200 "weak W/\"...\" If-Range + Range → 200 (strong comparison rejects it)"
+_assert_hdr_eq "Content-Length" "$FIXTURE_SIZE" "a weak If-Range returns the whole file"
+
+# The HTTP-date form is not implemented and is treated as non-matching
+# rather than honoured. A date validator is second-resolution, so a
+# representation replaced twice inside one second would compare equal --
+# exactly the race the header exists to close. The cost of the choice is
+# a full transfer; the cost of the other one is a spliced file.
+_curl "${AUTH[@]}" -H "If-Range: Sat, 01 Jan 2000 00:00:00 GMT" \
+	-H "Range: bytes=0-9" "$CONTENT_URL"
+_assert_status 200 "HTTP-date If-Range + Range → 200 (the date form is not honoured)"
+_assert_hdr_eq "Content-Length" "$FIXTURE_SIZE" "an unsupported If-Range form returns the whole file"
+
+# Without a Range there is nothing to condition, so the header is ignored
+# entirely -- a stale one must not turn a plain GET into anything other
+# than the ordinary 200.
+_curl "${AUTH[@]}" -H "If-Range: \"not-the-validator\"" "$CONTENT_URL"
+_assert_status 200 "If-Range with no Range → ignored, plain 200"
+_assert_hdr_eq "Content-Length" "$FIXTURE_SIZE" "If-Range alone still returns the whole file"
+
+# And a 304 still wins over both: If-None-Match is evaluated first, so a
+# matching validator pre-empts the If-Range/Range pair rather than
+# racing it.
+_curl "${AUTH[@]}" -H "If-None-Match: $CONTENT_ETAG" -H "If-Range: $CONTENT_ETAG" \
+	-H "Range: bytes=0-9" "$CONTENT_URL"
+_assert_status 304 "If-None-Match still wins over a satisfiable If-Range + Range"
+_assert_body_empty "that 304 carries no body either"
+
+# --- 10. HEAD, on a raw socket. ---------------------------------------
 # curl KNOWS a HEAD response has no body and will not read one, so it
 # reports zero bytes whether or not the server actually wrote them —
 # which is exactly the bug worth testing. Same technique as
@@ -533,7 +607,7 @@ else
 	_assert_eq "0" "$c_bytes" "304 puts no content on the wire"
 fi
 
-# --- 10. Concurrent-file-response cap. -------------------------------
+# --- 11. Concurrent-file-response cap. -------------------------------
 # The transport caps concurrent file responses because each one pins a file
 # descriptor and a streaming buffer for as long as the peer takes to drain
 # it. Over the cap the answer is an honest 503 with a Retry-After, not a
@@ -612,12 +686,35 @@ PYEOF
 		"the over-cap 503 reports error.code=file_responses_exhausted"
 fi
 
-# --- 11. Content-Disposition cannot be steered by the filename. ------
+# --- 12. Content-Disposition cannot be steered by the filename. ------
 # The filename comes from the ed2k network, so it is attacker-authored. A
 # quote closes the quoted-string form and a CR/LF would split the header
 # outright; neither may survive into the response.
 if [ "$HAVE_ODD" = "1" ]; then
-	_curl "${AUTH[@]}" "$HOST/api/v0/shared/$ODD_HASH/content"
+	# Settle first. Section 10 saturated the concurrent-file-response cap
+	# with six sockets and then closed them, but the slot is released in
+	# ~Session -- asynchronously with the client's close, not as part of
+	# it. Asserting a 200 straight afterwards can therefore read a 503 that
+	# has nothing to do with Content-Disposition, which is a flake, not a
+	# finding. A cheap HEAD polls for the slots to come back; it is exempt
+	# from the cap itself, so it probes the route without competing for
+	# what it is waiting on.
+	#
+	# Bounded, and loud when it expires: a poll that waited forever would
+	# turn a genuine regression in slot release into a hung suite, which is
+	# strictly worse than a failed assertion.
+	ODD_URL="$HOST/api/v0/shared/$ODD_HASH/content"
+	ODD_SETTLE=000
+	for _ in $(seq 1 10); do
+		ODD_SETTLE=$(curl -s -o /dev/null -I --max-time 10 \
+			-w '%{http_code}' "${AUTH[@]}" "$ODD_URL")
+		[ "$ODD_SETTLE" = "200" ] && break
+		sleep 1
+	done
+	_assert_eq "200" "$ODD_SETTLE" \
+		"the file-response slots section 10 held are released within 10s"
+
+	_curl "${AUTH[@]}" "$ODD_URL"
 	_assert_status 200 "GET content of a file whose name carries quote/semicolon → 200"
 	ODD_CD=$(_hdr "Content-Disposition")
 	case "$ODD_CD" in
@@ -652,7 +749,7 @@ else
 	_skip "Content-Disposition injection case (no odd-named fixture available)"
 fi
 
-# --- 12. Partfile guard. ---------------------------------------------
+# --- 13. Partfile guard. ---------------------------------------------
 # A partfile's on-disk layout is gapped and its offsets do not correspond
 # to the completed file's, so any window out of it would be silently wrong.
 # Refused outright rather than served partially.
@@ -667,8 +764,10 @@ fi
 
 # --- Summary. -----------------------------------------------------
 echo
+SKIP_NOTE=""
+[ "$SKIP_COUNT" -gt 0 ] && SKIP_NOTE=" ($SKIP_COUNT check(s) skipped)"
 if [ "$FAIL_COUNT" -eq 0 ]; then
-	echo "OK: $TEST_COUNT/$TEST_COUNT passed"
+	echo "OK: $TEST_COUNT/$TEST_COUNT passed$SKIP_NOTE"
 	exit 0
 fi
 echo "FAIL: $FAIL_COUNT/$TEST_COUNT failed"

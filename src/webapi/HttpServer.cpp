@@ -1295,7 +1295,8 @@ private:
 		}
 		if (ec) {
 			m_file_response.reset();
-			WriteFileTransportError(500, "internal", "could not read the requested file", false);
+			WriteFileTransportError(
+				500, "internal_error", "could not read the requested file", false);
 			return;
 		}
 

@@ -650,3 +650,75 @@ TEST(SharedContent, EtagHandlesLargeFileSizes)
 	// the size half must not be truncated to 32 bits.
 	ASSERT_EQUALS(std::string("\"0-200000000\""), BuildContentEtag(0, 8589934592ull));
 }
+
+// ---------------------------------------------------------------------
+// If-Range (RFC 9110 §13.1.5).
+//
+// The comparison here is STRONG, unlike the one If-None-Match uses, and
+// these cases exist mostly to pin that difference down: the weak-form
+// test below is the exact regression a reviewer would expect from
+// reaching for webcommon::IfNoneMatchHits, which answers "hit" for the
+// same input.
+// ---------------------------------------------------------------------
+
+TEST(SharedContent, IfRangeAbsentLeavesTheRangeAlone)
+{
+	// No precondition, nothing to fail — the Range stands on its own.
+	ASSERT_TRUE(IfRangeAllowsRange("", "\"abc-100\""));
+	ASSERT_TRUE(IfRangeAllowsRange("   ", "\"abc-100\""));
+}
+
+TEST(SharedContent, IfRangeMatchingStrongValidatorAllowsTheRange)
+{
+	ASSERT_TRUE(IfRangeAllowsRange("\"abc-100\"", "\"abc-100\""));
+	// Optional whitespace around a field value is not part of it.
+	ASSERT_TRUE(IfRangeAllowsRange("  \"abc-100\"\t", "\"abc-100\""));
+}
+
+TEST(SharedContent, IfRangeStaleValidatorRefusesTheRange)
+{
+	// The case the header exists for: the representation moved, so the
+	// window the client asked for belongs to a file it no longer holds.
+	ASSERT_FALSE(IfRangeAllowsRange("\"abc-100\"", "\"def-200\""));
+	// Same opaque payload, different length — no substring matching.
+	ASSERT_FALSE(IfRangeAllowsRange("\"abc-10\"", "\"abc-100\""));
+}
+
+TEST(SharedContent, IfRangeWeakValidatorNeverMatches)
+{
+	// Strong comparison. A weak validator marks two representations as
+	// equivalent, not byte-identical, which is not a guarantee a byte
+	// range can be built on — even though If-None-Match accepts exactly
+	// this input as a hit.
+	ASSERT_FALSE(IfRangeAllowsRange("W/\"abc-100\"", "\"abc-100\""));
+	ASSERT_FALSE(IfRangeAllowsRange("w/\"abc-100\"", "\"abc-100\""));
+}
+
+TEST(SharedContent, IfRangeBareOrWildcardFormsDoNotMatch)
+{
+	// The unquoted form is tolerated by IfNoneMatchHits for
+	// non-canonical clients; it is not tolerated here, because §13.1.5
+	// distinguishes an entity-tag from an HTTP-date by the leading
+	// DQUOTE. And `*` is not in the If-Range grammar at all.
+	ASSERT_FALSE(IfRangeAllowsRange("abc-100", "\"abc-100\""));
+	ASSERT_FALSE(IfRangeAllowsRange("*", "\"abc-100\""));
+}
+
+TEST(SharedContent, IfRangeHttpDateFormIsTreatedAsNonMatching)
+{
+	// Not implemented, and refused rather than honoured: a
+	// second-resolution validator compares equal across a replacement
+	// that happened inside the same second, which is the race the
+	// header is there to close. Serving the whole file is the safe
+	// direction.
+	ASSERT_FALSE(IfRangeAllowsRange("Sat, 01 Jan 2000 00:00:00 GMT", "\"abc-100\""));
+	ASSERT_FALSE(IfRangeAllowsRange("Wed, 21 Oct 2015 07:28:00 GMT", "\"abc-100\""));
+}
+
+TEST(SharedContent, IfRangeIsNotAListAndDoesNotWalkOne)
+{
+	// If-Range carries exactly one validator by grammar. A comma-joined
+	// pair is malformed, and a malformed precondition must fail closed
+	// rather than be split until something matches.
+	ASSERT_FALSE(IfRangeAllowsRange("\"nope\", \"abc-100\"", "\"abc-100\""));
+}

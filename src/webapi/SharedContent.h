@@ -126,6 +126,34 @@ std::string BuildContentDisposition(const std::string &filename);
 // full-file hash.
 std::string BuildContentEtag(std::uint64_t mtime, std::uint64_t size);
 
+// Does an If-Range precondition permit the accompanying Range to be
+// honoured? `etag` is the quoted wire form BuildContentEtag returns.
+//
+// RFC 9110 §13.1.5, and the reason it is not optional: a client resuming
+// an interrupted download sends the validator it already holds next to
+// `Range: bytes=N-`, precisely so that a representation which changed
+// underneath it answers 200 with the whole new file instead of a window
+// of it. A server that honours the Range regardless returns a 206 of the
+// NEW bytes, and the client — reading that 206 as confirmation its
+// validator held — appends them to its copy of the OLD representation.
+// The result is a file spliced from two versions that passes every
+// length check the client can make. Immutability makes that rare here,
+// not impossible, and silent rarely-wrong is the worst failure shape
+// there is.
+//
+// STRONG comparison, which is the one thing this cannot borrow from
+// webcommon::IfNoneMatchHits: that function accepts the weak `W/"..."`
+// form, correctly, because If-None-Match asks whether two
+// representations are equivalent. A byte range needs them
+// byte-identical, so a weak validator must never match here. Reusing it
+// would be the bug.
+//
+// An absent (empty) header returns true: no precondition, nothing to
+// fail. A non-matching one returns false, and the caller is expected to
+// drop the Range and serve the whole representation — §13.1.5 says to
+// ignore the Range, not to reject the request.
+bool IfRangeAllowsRange(const std::string &if_range, const std::string &etag);
+
 } // namespace webapi
 
 #endif // AMULE_WEBAPI_SHAREDCONTENT_H

@@ -9912,15 +9912,9 @@ CHttpServer::Response CApiDispatcher::HandleSharedContent(
 	//
 	// Evaluated BEFORE the Range header, per RFC 9110 13.2.2: a matching
 	// precondition wins outright, so a conditional request carrying a Range
-	// answers 304 and never 206.
-	//
-	// If-Range is NOT supported and is deliberately ignored: a client that
-	// sends one with a stale validator gets the Range honoured as if the
-	// header were absent, which is a 200 or a 206 of live bytes rather than
-	// a silently stitched mix of two versions. That is safe -- the file is
-	// immutable while shared, and a changed file changes both mtime and this
-	// validator -- but it is not the RFC's optimisation, and implementing it
-	// belongs in its own change.
+	// answers 304 and never 206. If-Range is a second precondition with a
+	// different comparison rule; it is applied below, after this one has
+	// had its say.
 	const std::string inm_val = FindHeaderCaseInsensitive(req.headers, "If-None-Match");
 	const std::string content_etag_bare =
 		(content_etag.size() >= 2 && content_etag.front() == '"' && content_etag.back() == '"')
@@ -9941,7 +9935,30 @@ CHttpServer::Response CApiDispatcher::HandleSharedContent(
 
 	std::uint64_t first = 0;
 	std::uint64_t last = 0;
-	const std::string range_hdr = FindHeaderCaseInsensitive(req.headers, "Range");
+	std::string range_hdr = FindHeaderCaseInsensitive(req.headers, "Range");
+
+	// If-Range, RFC 9110 13.1.5. Only meaningful next to a Range -- on its
+	// own there is nothing to condition -- so the lookup is skipped
+	// entirely when there is no Range to guard.
+	//
+	// A failed precondition DROPS the Range rather than rejecting the
+	// request, which is what the section says to do and also what the
+	// caller needs: it asked for a window of a representation it no longer
+	// holds, and the whole current one is the answer that leaves it with a
+	// correct file. Dropping it here rather than after parsing also keeps a
+	// stale validator from turning into a 416, which would be an error
+	// about the OLD file's length.
+	//
+	// Note the comparison is NOT IfNoneMatchHits: 13.1.5 requires the
+	// strong form, and that function deliberately matches the weak one --
+	// see SharedContent.h for why the two cannot share an implementation.
+	if (!range_hdr.empty()) {
+		const std::string ifr_val = FindHeaderCaseInsensitive(req.headers, "If-Range");
+		if (!webapi::IfRangeAllowsRange(ifr_val, content_etag)) {
+			range_hdr.clear();
+		}
+	}
+
 	const webapi::RangeResult rr = webapi::ParseSingleByteRange(range_hdr, file_size, first, last);
 
 	if (rr == webapi::RangeResult::kUnsatisfiable) {
