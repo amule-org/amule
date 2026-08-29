@@ -720,8 +720,8 @@ void CState::ReconcileKnownClientsLocked()
 			// same arrival twice.
 			KnownClientSnapshot k;
 			k.user_hash = c.user_hash;
-			k.first_seen = now;
-			k.last_seen = now;
+			k.first_seen_at = now;
+			k.last_seen_at = now;
 			m_known_clients.push_back(std::move(k));
 			it = m_known_of_hash.emplace(c.user_hash, m_known_clients.size() - 1).first;
 		}
@@ -737,15 +737,15 @@ void CState::ReconcileKnownClientsLocked()
 		// daemon's own figure replaces this at the next fetch, so any drift
 		// lives no longer than the connection to that core.
 		if (!k.online)
-			k.sessions++;
+			k.session_count++;
 		k.online = true;
 		// A peer in front of us was last seen now, not whenever it previously
 		// disconnected. Leaving the stored value would report a peer that is
 		// connected as last seen months ago, and now is what the core writes
 		// to the record at its own disconnect handling anyway.
-		k.last_seen = now;
-		k.total_uploaded = c.uploaded_bytes_total;
-		k.total_downloaded = c.downloaded_bytes_total;
+		k.last_seen_at = now;
+		k.uploaded_bytes_total = c.uploaded_bytes_total;
+		k.downloaded_bytes_total = c.downloaded_bytes_total;
 		// Identity, when the peer in front of us knows more than the record.
 		// A record only gains a name once the core writes its metadata, so a
 		// peer we have never finished a session with is otherwise nameless.
@@ -758,9 +758,9 @@ void CState::ReconcileKnownClientsLocked()
 			k.kad_port = c.kad_port;
 			k.country_code = c.country_code;
 			k.software = c.software;
-			k.version = c.software_version;
+			k.software_version = c.software_version;
 			k.source_origin = c.source_origin;
-			k.obfuscation = c.obfuscation_state;
+			k.obfuscation_state = c.obfuscation_state;
 		}
 	}
 
@@ -775,7 +775,7 @@ void CState::ReconcileKnownClientsLocked()
 		// at its own disconnect handling. The stored value is the *previous*
 		// disconnect, so leaving it would show a peer that was here a second
 		// ago as last seen months back.
-		m_known_clients[idx].last_seen = now;
+		m_known_clients[idx].last_seen_at = now;
 	}
 	m_known_online.swap(still_online);
 }

@@ -327,16 +327,16 @@ struct KnownClientSnapshot
 	std::string ip; // dotted-quad; "" when the record predates metadata
 	std::uint16_t port = 0;
 	std::uint16_t kad_port = 0;
-	std::string country_code; // ISO 3166-1 alpha-2, resolved daemon-side
-	std::string software;     // resolved name, e.g. "eMule"
-	std::string version;      // "v0.50.0"
+	std::string country_code;     // ISO 3166-1 alpha-2, resolved daemon-side
+	std::string software;         // resolved name, e.g. "eMule"
+	std::string software_version; // "v0.50.0"
 	std::string source_origin;
-	std::string obfuscation;
-	std::uint64_t total_uploaded = 0;
-	std::uint64_t total_downloaded = 0;
-	std::time_t first_seen = 0; // 0 when the record carries no metadata
-	std::time_t last_seen = 0;
-	std::uint32_t sessions = 0;
+	std::string obfuscation_state;
+	std::uint64_t uploaded_bytes_total = 0;
+	std::uint64_t downloaded_bytes_total = 0;
+	std::time_t first_seen_at = 0; // 0 when the record carries no metadata
+	std::time_t last_seen_at = 0;
+	std::uint32_t session_count = 0;
 	//! This peer is connected right now, correlated by user hash against the
 	//! live client list. Never by ECID: those mean nothing across daemon
 	//! restarts, while the hash is what the credit store is keyed on.
