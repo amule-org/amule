@@ -185,7 +185,8 @@ std::string ToJsonSharedEvent(const FileSnapshot &f)
 	  << ",\"request_count_total\":" << f.shared.request_count_total
 	  << ",\"accepted_request_count_session\":" << f.shared.accepted_request_count_session
 	  << ",\"accepted_request_count_total\":" << f.shared.accepted_request_count_total
-	  << ",\"upload_speed_bps\":" << f.shared.upload_speed_bps << ",\"uploading_client_count\":"
+	  << ",\"upload_speed_bytes_per_second\":" << f.shared.upload_speed_bytes_per_second
+	  << ",\"uploading_client_count\":"
 	  << f.shared.uploading_client_count
 	  // Unix seconds, null when unknown -- never uploaded, or a known.met entry
 	  // that predates the field. 0 reads as 1970 rather than "no idea", and the
@@ -294,8 +295,8 @@ std::string ToJson(const ClientSnapshot &c)
 	  << ",\"downloaded_bytes_session\":" << c.downloaded_bytes_session
 	  << ",\"uploaded_bytes_total\":" << c.uploaded_bytes_total
 	  << ",\"downloaded_bytes_total\":" << c.downloaded_bytes_total
-	  << ",\"upload_speed_bps\":" << c.upload_speed_bps
-	  << ",\"download_speed_bps\":" << c.download_speed_bps
+	  << ",\"upload_speed_bytes_per_second\":" << c.upload_speed_bytes_per_second
+	  << ",\"download_speed_bytes_per_second\":" << c.download_speed_bytes_per_second
 	  << ",\"upload_queue_position\":" << c.upload_queue_position << ",\"remote_queue_position\":"
 	  << (c.remote_queue_position == kRemoteQueueFullSentinel ? std::string("null")
 								  : std::to_string(c.remote_queue_position))
@@ -377,9 +378,10 @@ std::string ToJsonStatusEvent(const StatusSnapshot &s, const KadSnapshot &k, boo
 	  << ",\"node_count\":" << JsonNumOrNull(k.has_network, k.nodes) << "}"
 	  << "}"
 	  << ",\"speeds\":{"
-	  << "\"download_bps\":" << s.download_bps << ",\"upload_bps\":" << s.upload_bps
-	  << ",\"download_overhead_bps\":" << s.download_overhead_bps
-	  << ",\"upload_overhead_bps\":" << s.upload_overhead_bps << "}"
+	  << "\"download_bytes_per_second\":" << s.download_bytes_per_second
+	  << ",\"upload_bytes_per_second\":" << s.upload_bytes_per_second
+	  << ",\"download_overhead_bytes_per_second\":" << s.download_overhead_bytes_per_second
+	  << ",\"upload_overhead_bytes_per_second\":" << s.upload_overhead_bytes_per_second << "}"
 	  << ",\"disk\":{"
 	  // null, not the -1 sentinel and not 0 -- same reasoning as the REST body.
 	  << "\"temp_free_bytes\":" << JsonFreeSpace(s.temp_free_bytes)
@@ -461,7 +463,7 @@ bool EqualShared(const FileSnapshot &a, const FileSnapshot &b)
 	       a.shared.request_count_total == b.shared.request_count_total &&
 	       a.shared.accepted_request_count_session == b.shared.accepted_request_count_session &&
 	       a.shared.accepted_request_count_total == b.shared.accepted_request_count_total &&
-	       a.shared.upload_speed_bps == b.shared.upload_speed_bps &&
+	       a.shared.upload_speed_bytes_per_second == b.shared.upload_speed_bytes_per_second &&
 	       a.shared.uploading_client_count == b.shared.uploading_client_count &&
 	       a.shared.last_upload == b.shared.last_upload &&
 	       a.shared.shared_since == b.shared.shared_since &&
@@ -510,7 +512,8 @@ bool Equal(const ClientSnapshot &a, const ClientSnapshot &b)
 	       a.downloaded_bytes_session == b.downloaded_bytes_session &&
 	       a.uploaded_bytes_total == b.uploaded_bytes_total &&
 	       a.downloaded_bytes_total == b.downloaded_bytes_total &&
-	       a.upload_speed_bps == b.upload_speed_bps && a.download_speed_bps == b.download_speed_bps &&
+	       a.upload_speed_bytes_per_second == b.upload_speed_bytes_per_second &&
+	       a.download_speed_bytes_per_second == b.download_speed_bytes_per_second &&
 	       a.upload_queue_position == b.upload_queue_position &&
 	       a.remote_queue_position == b.remote_queue_position && a.score == b.score &&
 	       a.obfuscation_state == b.obfuscation_state && a.friend_slot == b.friend_slot &&
@@ -535,11 +538,12 @@ bool Equal(const StatusSnapshot &a, const StatusSnapshot &b)
 	       a.kad_connected_since == b.kad_connected_since &&
 	       a.kad_firewalled_tcp == b.kad_firewalled_tcp && a.server_name == b.server_name &&
 	       a.server_ip == b.server_ip && a.server_port == b.server_port &&
-	       a.download_bps == b.download_bps && a.upload_bps == b.upload_bps &&
-	       a.download_overhead_bps == b.download_overhead_bps &&
-	       a.upload_overhead_bps == b.upload_overhead_bps && a.temp_free_bytes == b.temp_free_bytes &&
-	       a.incoming_free_bytes == b.incoming_free_bytes && a.ul_queue_len == b.ul_queue_len &&
-	       a.total_src_count == b.total_src_count &&
+	       a.download_bytes_per_second == b.download_bytes_per_second &&
+	       a.upload_bytes_per_second == b.upload_bytes_per_second &&
+	       a.download_overhead_bytes_per_second == b.download_overhead_bytes_per_second &&
+	       a.upload_overhead_bytes_per_second == b.upload_overhead_bytes_per_second &&
+	       a.temp_free_bytes == b.temp_free_bytes && a.incoming_free_bytes == b.incoming_free_bytes &&
+	       a.ul_queue_len == b.ul_queue_len && a.total_src_count == b.total_src_count &&
 	       // The has_ flags are part of the comparison, not just the values: a
 	       // disconnect flips these to null while the underlying ints keep
 	       // their last reading, so comparing the ints alone would miss the

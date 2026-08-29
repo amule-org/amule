@@ -340,7 +340,7 @@ Identical to the REST [`/api/v0/shared`](REFERENCE.md#get-apiv0shared) list-item
   "request_count_total":            1837,
   "accepted_request_count_session": 18,
   "accepted_request_count_total":   921,
-  "upload_speed_bps": 51200,
+  "upload_speed_bytes_per_second": 51200,
   "uploading_client_count": 2,
   "last_upload_at":   1700000500,
   "shared_since_at":  1699000000,
@@ -494,8 +494,8 @@ Identical to the REST [`/api/v0/clients`](REFERENCE.md#get-apiv0clients) list-it
   "downloaded_bytes_session": 0,
   "uploaded_bytes_total":     452000000,
   "downloaded_bytes_total":   189000000,
-  "upload_speed_bps":       22000,
-  "download_speed_bps":     0,
+  "upload_speed_bytes_per_second":       22000,
+  "download_speed_bytes_per_second":     0,
   "upload_queue_position": 0,
   "remote_queue_position":      0,
   "upload_queue_score":                  150,
@@ -548,8 +548,8 @@ Rate impact is small: the overhead rates move about as often as the speeds alrea
     "network":    { "user_count": 5400000, "file_count": 1400000000, "node_count": 2400 }
   },
   "speeds": {
-    "download_bps": 4500000, "upload_bps": 50000,
-    "download_overhead_bps": 8700, "upload_overhead_bps": 1100
+    "download_bytes_per_second": 4500000, "upload_bytes_per_second": 50000,
+    "download_overhead_bytes_per_second": 8700, "upload_overhead_bytes_per_second": 1100
   },
   "disk":   { "temp_free_bytes": 48318382080, "incoming_free_bytes": 48318382080 },
   "queue":  { "upload_clients_waiting": 12, "download_sources_total": 1843 }

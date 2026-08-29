@@ -2673,16 +2673,16 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 
 	w.Key("speeds");
 	w.BeginObject();
-	w.Key("download_bps");
-	w.ValueInt(static_cast<int64_t>(s.download_bps));
-	w.Key("upload_bps");
-	w.ValueInt(static_cast<int64_t>(s.upload_bps));
+	w.Key("download_bytes_per_second");
+	w.ValueInt(static_cast<int64_t>(s.download_bytes_per_second));
+	w.Key("upload_bytes_per_second");
+	w.ValueInt(static_cast<int64_t>(s.upload_bytes_per_second));
 	// Additive to the two above, not a subset: amuled counts protocol
 	// overhead separately from payload.
-	w.Key("download_overhead_bps");
-	w.ValueInt(static_cast<int64_t>(s.download_overhead_bps));
-	w.Key("upload_overhead_bps");
-	w.ValueInt(static_cast<int64_t>(s.upload_overhead_bps));
+	w.Key("download_overhead_bytes_per_second");
+	w.ValueInt(static_cast<int64_t>(s.download_overhead_bytes_per_second));
+	w.Key("upload_overhead_bytes_per_second");
+	w.ValueInt(static_cast<int64_t>(s.upload_overhead_bytes_per_second));
 	w.EndObject();
 
 	// null rather than a number when the daemon has no figure. Emitting the
@@ -3032,10 +3032,10 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	w.ValueInt(static_cast<int64_t>(c.uploaded_bytes_total));
 	w.Key("downloaded_bytes_total");
 	w.ValueInt(static_cast<int64_t>(c.downloaded_bytes_total));
-	w.Key("upload_speed_bps");
-	w.ValueInt(static_cast<int64_t>(c.upload_speed_bps));
-	w.Key("download_speed_bps");
-	w.ValueInt(static_cast<int64_t>(c.download_speed_bps));
+	w.Key("upload_speed_bytes_per_second");
+	w.ValueInt(static_cast<int64_t>(c.upload_speed_bytes_per_second));
+	w.Key("download_speed_bytes_per_second");
+	w.ValueInt(static_cast<int64_t>(c.download_speed_bytes_per_second));
 	w.Key("upload_queue_position");
 	w.ValueInt(static_cast<int64_t>(c.upload_queue_position));
 	// 0xffff is amuled's "that peer's queue is full" sentinel
@@ -3268,12 +3268,12 @@ void WriteSharedBaseFields(CJsonWriter &w, const webapi::FileSnapshot &f, bool d
 	w.ValueInt(static_cast<int64_t>(f.shared.accepted_request_count_session));
 	w.Key("accepted_request_count_total");
 	w.ValueInt(static_cast<int64_t>(f.shared.accepted_request_count_total));
-	// Live upload activity (issue #466). `upload_speed_bps` + `uploading`
+	// Live upload activity (issue #466). `upload_speed_bytes_per_second` + `uploading`
 	// refresh every tick; `last_upload` / `shared_since` are unix seconds,
 	// null when unknown -- never uploaded, or a known.met entry that predates
 	// the field. They were 0, which reads as 1970 rather than "no idea".
-	w.Key("upload_speed_bps");
-	w.ValueInt(static_cast<int64_t>(f.shared.upload_speed_bps));
+	w.Key("upload_speed_bytes_per_second");
+	w.ValueInt(static_cast<int64_t>(f.shared.upload_speed_bytes_per_second));
 	// Read as a boolean, held an integer.
 	w.Key("uploading_client_count");
 	w.ValueInt(static_cast<int64_t>(f.shared.uploading_client_count));
@@ -7714,9 +7714,9 @@ CHttpServer::Response CApiDispatcher::HandleStatsGraph(
 	const webapi::StatsGraphs &g = pair.first;
 	const std::vector<std::uint32_t> *series = nullptr;
 	if (graph == "download_speed") {
-		series = &g.download_bps;
+		series = &g.download_bytes_per_second;
 	} else if (graph == "upload_speed") {
-		series = &g.upload_bps;
+		series = &g.upload_bytes_per_second;
 	} else if (graph == "connections") {
 		series = &g.connections;
 	} else /* kad_nodes */ {

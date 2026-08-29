@@ -251,20 +251,20 @@ void ParseStatusFromPacket(const CECPacket *resp, StatusSnapshot &out)
 	}
 
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_DL_SPEED)) {
-		out.download_bps = static_cast<std::uint64_t>(t->GetInt());
+		out.download_bytes_per_second = static_cast<std::uint64_t>(t->GetInt());
 	}
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_UL_SPEED)) {
-		out.upload_bps = static_cast<std::uint64_t>(t->GetInt());
+		out.upload_bytes_per_second = static_cast<std::uint64_t>(t->GetInt());
 	}
 	// Overhead rates and free space ride the same EC_DETAIL_FULL response.
 	// The two disk figures are cast through int64 on purpose: amuled's
 	// FREE_SPACE_UNKNOWN is -1 and the serializer casts it to uint64, so an
 	// unsigned read would turn "unknown" into 18446744073709551615.
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_UP_OVERHEAD)) {
-		out.upload_overhead_bps = static_cast<std::uint64_t>(t->GetInt());
+		out.upload_overhead_bytes_per_second = static_cast<std::uint64_t>(t->GetInt());
 	}
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_DOWN_OVERHEAD)) {
-		out.download_overhead_bps = static_cast<std::uint64_t>(t->GetInt());
+		out.download_overhead_bytes_per_second = static_cast<std::uint64_t>(t->GetInt());
 	}
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_TEMP_FREE_SPACE)) {
 		out.temp_free_bytes = static_cast<std::int64_t>(t->GetInt());
@@ -982,9 +982,9 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs, bool is_n
 			cs.downloaded_bytes_total = v;
 	}
 	{
-		std::uint32_t v = cs.upload_speed_bps;
+		std::uint32_t v = cs.upload_speed_bytes_per_second;
 		if (c->AssignIfExist(EC_TAG_CLIENT_UP_SPEED, v))
-			cs.upload_speed_bps = v;
+			cs.upload_speed_bytes_per_second = v;
 	}
 	{
 		// EC_TAG_CLIENT_DOWN_SPEED is emitted as a double-encoded
@@ -993,7 +993,7 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs, bool is_n
 		// extract via the typed read and convert.
 		if (const CECTag *t = c->GetTagByName(EC_TAG_CLIENT_DOWN_SPEED)) {
 			const double kBps = t->GetDoubleData();
-			cs.download_speed_bps = static_cast<std::uint32_t>(kBps * 1024.0);
+			cs.download_speed_bytes_per_second = static_cast<std::uint32_t>(kBps * 1024.0);
 		}
 	}
 	{
@@ -1198,9 +1198,9 @@ void MergeSharedTag(const CEC_SharedFile_Tag *sf, FileSnapshot &f)
 	}
 	// Live upload activity + timestamps (issue #466).
 	{
-		std::uint32_t v = f.shared.upload_speed_bps;
+		std::uint32_t v = f.shared.upload_speed_bytes_per_second;
 		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_UPLOAD_SPEED, v))
-			f.shared.upload_speed_bps = v;
+			f.shared.upload_speed_bytes_per_second = v;
 	}
 	{
 		std::uint16_t v = f.shared.uploading_client_count;
@@ -2305,8 +2305,8 @@ void ParseGraphsFromPacket(const CECPacket *resp, StatsGraphs &out)
 			/*num_channels=*/4,
 			channels);
 		if (channels.size() >= 4) {
-			out.download_bps = std::move(channels[0]);
-			out.upload_bps = std::move(channels[1]);
+			out.download_bytes_per_second = std::move(channels[0]);
+			out.upload_bytes_per_second = std::move(channels[1]);
 			out.connections = std::move(channels[2]);
 			out.kad_nodes = std::move(channels[3]);
 		}
@@ -2359,8 +2359,8 @@ void ParseGraphsFromPacket(const CECPacket *resp, StatsGraphs &out)
 	// those draws them as distinct samples -- silently compressing time
 	// across the older part of the plot. A no-op where the request width
 	// and the reported depth agree, which is the current-build case.
-	TruncateToLast(out.download_bps, out.max_points);
-	TruncateToLast(out.upload_bps, out.max_points);
+	TruncateToLast(out.download_bytes_per_second, out.max_points);
+	TruncateToLast(out.upload_bytes_per_second, out.max_points);
 	TruncateToLast(out.connections, out.max_points);
 	TruncateToLast(out.kad_nodes, out.max_points);
 	TruncateToLast(out.active_uploads, out.max_points);

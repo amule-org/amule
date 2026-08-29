@@ -14,8 +14,8 @@ import { Icon } from "../icons.js";
 import { t, terr } from "../i18n.js";
 
 const ACTIVE = (s) => s && s !== "idle" && s !== "unknown";
-export const isDown = (c) => (c.download_speed_bps || 0) > 0 || ACTIVE(c.download_state);
-export const isUp = (c) => (c.upload_speed_bps || 0) > 0 || ACTIVE(c.upload_state);
+export const isDown = (c) => (c.download_speed_bytes_per_second || 0) > 0 || ACTIVE(c.download_state);
+export const isUp = (c) => (c.upload_speed_bytes_per_second || 0) > 0 || ACTIVE(c.upload_state);
 
 // Column set, declared once. Every consumer offers all of them in the column
 // picker and picks which ones start hidden (see ClientTable's defaultHidden),
@@ -35,8 +35,8 @@ export const fileNameOf = (c) => c.download_file_name || c.upload_file_name || "
 
 // Default order when no column sort is chosen: busiest peers first.
 export const bySpeed = (a, b) =>
-  ((b.download_speed_bps || 0) + (b.upload_speed_bps || 0)) -
-  ((a.download_speed_bps || 0) + (a.upload_speed_bps || 0));
+  ((b.download_speed_bytes_per_second || 0) + (b.upload_speed_bytes_per_second || 0)) -
+  ((a.download_speed_bytes_per_second || 0) + (a.upload_speed_bytes_per_second || 0));
 
 // Each column carries key + sortVal so the header is clickable-to-sort (the
 // flags column has no key → stays non-sortable).
@@ -70,7 +70,7 @@ export const COLS = [
   { key: "dl_state", th: "downloads_peer_col_dl_state", width: "120px", sortable: true,
     sortVal: (c) => c.download_state || "", cell: (c) => stateBadge(c.download_state) },
   { key: "dl_speed", th: "downloads_peer_col_dl_speed", num: true, width: "100px", sortable: true,
-    sortVal: (c) => c.download_speed_bps || 0, cell: (c) => formatSpeed(c.download_speed_bps) },
+    sortVal: (c) => c.download_speed_bytes_per_second || 0, cell: (c) => formatSpeed(c.download_speed_bytes_per_second) },
   { key: "downloaded", th: "downloads_peer_col_downloaded", num: true, width: "100px", sortable: true,
     sortVal: (c) => c.downloaded_bytes_total || 0, cell: (c) => bytesOf(c, "downloaded_bytes_total") },
   { key: "dl_session", th: "downloads_peer_col_downloaded_session", num: true, width: "100px", sortable: true,
@@ -81,7 +81,7 @@ export const COLS = [
   { key: "ul_state", th: "downloads_peer_col_ul_state", width: "120px", sortable: true,
     sortVal: (c) => c.upload_state || "", cell: (c) => stateBadge(c.upload_state) },
   { key: "ul_speed", th: "downloads_peer_col_ul_speed", num: true, width: "100px", sortable: true,
-    sortVal: (c) => c.upload_speed_bps || 0, cell: (c) => formatSpeed(c.upload_speed_bps) },
+    sortVal: (c) => c.upload_speed_bytes_per_second || 0, cell: (c) => formatSpeed(c.upload_speed_bytes_per_second) },
   { key: "uploaded", th: "downloads_peer_col_uploaded", num: true, width: "100px", sortable: true,
     sortVal: (c) => c.uploaded_bytes_total || 0, cell: (c) => bytesOf(c, "uploaded_bytes_total") },
   { key: "ul_session", th: "downloads_peer_col_uploaded_session", num: true, width: "100px", sortable: true,

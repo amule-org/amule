@@ -269,14 +269,14 @@ TEST(EventDiff, StatusEventCarriesIdentityFields)
 	s.ed2k_high_id = true;
 	s.ed2k_user_id = 1234567890u;
 	s.ed2k_public_ip = "210.2.150.73";
-	s.download_overhead_bps = 8700;
+	s.download_overhead_bytes_per_second = 8700;
 
 	const std::string payload = EmitStatusAndGetPayload(s);
 
 	ASSERT_TRUE(payload.find("\"high_id\":true") != std::string::npos);
 	ASSERT_TRUE(payload.find("\"user_id\":1234567890") != std::string::npos);
 	ASSERT_TRUE(payload.find("\"public_ip\":\"210.2.150.73\"") != std::string::npos);
-	ASSERT_TRUE(payload.find("\"download_overhead_bps\":8700") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"download_overhead_bytes_per_second\":8700") != std::string::npos);
 	// The retired spellings must not linger anywhere in the payload. A bare
 	// "id" would also match inside "user_id", so the quoted key is the test.
 	ASSERT_TRUE(payload.find("low_id") == std::string::npos);
@@ -387,12 +387,12 @@ TEST(EventDiff, StatusEventFiresWhenTheKadNetworkFiguresBecomeUnknown)
 TEST(EventDiff, StatusEventFiresWhenOnlyOverheadMoved)
 {
 	StatusSnapshot s;
-	s.download_overhead_bps = 8700;
+	s.download_overhead_bytes_per_second = 8700;
 
 	const std::string payload = EmitStatusAndGetPayload(s);
 
 	ASSERT_TRUE(!payload.empty());
-	ASSERT_TRUE(payload.find("\"download_overhead_bps\":8700") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"download_overhead_bytes_per_second\":8700") != std::string::npos);
 }
 
 // EVENTS.md promises this payload is "identical to the REST /status envelope",

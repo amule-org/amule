@@ -609,10 +609,10 @@ curl -s -H "Authorization: Bearer $TOKEN" http://$HOST/api/v0/status
     "network": { "user_count": 5400000, "file_count": 1400000000, "node_count": 2400 }
   },
   "speeds": {
-    "download_bps": 4500000,
-    "upload_bps": 50000,
-    "download_overhead_bps": 8700,
-    "upload_overhead_bps": 1100
+    "download_bytes_per_second": 4500000,
+    "upload_bytes_per_second": 50000,
+    "download_overhead_bytes_per_second": 8700,
+    "upload_overhead_bytes_per_second": 1100
   },
   "disk": { "temp_free_bytes": 48318382080, "incoming_free_bytes": 48318382080 },
   "queue": { "upload_clients_waiting": 12, "download_sources_total": 1843 }
@@ -633,7 +633,7 @@ While disconnected `user_id` is `0`, `public_ip` is `""` and `high_id` is `false
 
 **`ed2k.user_id` is not the same encoding as a client's `ed2k_user_id`.** [`GET /api/v0/clients/{ecid}`](#get-apiv0clientsecid) reports `ed2k_user_id` for a remote client, and the similar name invites the assumption that the two are interchangeable. They are not. Ours is stored exactly as the server sent it and is read least-significant-byte-first to produce `public_ip`; a client's HighID is **byte-swapped** on the way in. A consumer that compares the two values, or feeds one through the other's IP decoder, gets a reversed address. The `>= 16777216` HighID threshold *is* common to both; the byte order is not.
 
-**Overhead is additive.** `speeds.download_overhead_bps` / `upload_overhead_bps` are protocol and control traffic, counted **separately** from `download_bps` / `upload_bps` rather than being part of them — the desktop shows them as a second figure in parentheses. Both are `0` when the daemon reports nothing.
+**Overhead is additive.** `speeds.download_overhead_bytes_per_second` / `upload_overhead_bytes_per_second` are protocol and control traffic, counted **separately** from `download_bytes_per_second` / `upload_bytes_per_second` rather than being part of them — the desktop shows them as a second figure in parentheses. Both are `0` when the daemon reports nothing.
 
 **Disk figures may be `null`.** `disk.temp_free_bytes` is free space on the filesystem holding the part files, `disk.incoming_free_bytes` where finished downloads land. Either is `null` when the daemon has no figure — the first seconds after startup, or a directory it cannot stat, such as an unreachable network mount. `null` rather than `0`, because `0` would read as a full disk.
 
@@ -1241,8 +1241,8 @@ curl -s -H "Authorization: Bearer $TOKEN" \
       "downloaded_bytes_session": 0,
       "uploaded_bytes_total": 452000000,
       "downloaded_bytes_total": 189000000,
-      "upload_speed_bps": 22000,
-      "download_speed_bps": 0,
+      "upload_speed_bytes_per_second": 22000,
+      "download_speed_bytes_per_second": 0,
       "upload_queue_position": 0,
       "remote_queue_position": 0,
       "score": 150,
@@ -1321,8 +1321,8 @@ curl -s -H "Authorization: Bearer $TOKEN" \
       "downloaded_bytes_session": 0,
       "uploaded_bytes_total": 452000000,
       "downloaded_bytes_total": 189000000,
-  "upload_speed_bps": 22000,
-  "download_speed_bps": 0,
+  "upload_speed_bytes_per_second": 22000,
+  "download_speed_bytes_per_second": 0,
   "upload_queue_position": 0,
   "remote_queue_position": 0,
   "score": 150,
@@ -1502,7 +1502,7 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/shared"
       "request_count_total":            1837,
       "accepted_request_count_session": 18,
       "accepted_request_count_total":   921,
-      "upload_speed_bps": 51200,
+      "upload_speed_bytes_per_second": 51200,
       "uploading_client_count": 2,
       "last_upload_at":      1700000500,
       "shared_since_at":     1699000000,
@@ -1522,7 +1522,7 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/shared"
 
 `uploaded_bytes_session` / `uploaded_bytes_total` are bytes uploaded during the current amuled process vs over the file's lifetime. `requests` counts how many clients have asked for the file; `accepts` counts how many of those requests were granted an upload slot. The `session` counters reset on amuled restart; `total` is persisted in `known.met`.
 
-`upload_speed_bps` is the file's current combined upload rate in bytes/sec (summed over the clients it is uploading to), and `uploading_client_count` is how many clients it is actively uploading to right now — together the "is this file being seeded" signal, the upload-side analogue of the `/downloads` speed + transferring-source counts. Subtract `uploading_client_count` from the queued-client count (`upload_queue_count`, on the detail view) to show `uploading / queued`. Both are live and refresh every tick. `last_upload_at` is the unix timestamp of the last time data was sent for the file, and `shared_since_at` is when the file was completed or first shared; both are persisted in `known.met` and are `null` when unknown: a file that has never uploaded, or a `known.met` entry written before these fields existed.
+`upload_speed_bytes_per_second` is the file's current combined upload rate in bytes/sec (summed over the clients it is uploading to), and `uploading_client_count` is how many clients it is actively uploading to right now — together the "is this file being seeded" signal, the upload-side analogue of the `/downloads` speed + transferring-source counts. Subtract `uploading_client_count` from the queued-client count (`upload_queue_count`, on the detail view) to show `uploading / queued`. Both are live and refresh every tick. `last_upload_at` is the unix timestamp of the last time data was sent for the file, and `shared_since_at` is when the file was completed or first shared; both are persisted in `known.met` and are `null` when unknown: a file that has never uploaded, or a `known.met` entry written before these fields existed.
 
 `priority` is the upload priority — `"very_low"` / `"low"` / `"normal"` / `"high"` / `"release"` — and `priority_auto` is `true` when amuled is deriving that level automatically from the upload queue. This mirrors the `/downloads` shape (base `priority` + separate `priority_auto` flag); on an auto file `priority` reports the current derived level, not the literal string `"auto"`. For a file that is both downloading and shared this upload priority is independent of the download priority reported by [`GET /api/v0/downloads`](#get-apiv0downloads).
 

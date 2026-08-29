@@ -159,7 +159,7 @@ export default function Shared({ isGuest }) {
     { key: "sources", label: t("shared_complete_src"), num: true, width: "90px", sortable: true,
       sortVal: (s) => (s.sources && s.sources.complete) || 0, cell: (s) => formatInt((s.sources && s.sources.complete) || 0) },
     { key: "upspeed", label: t("shared_upload_speed"), num: true, width: "100px", sortable: true,
-      sortVal: (s) => s.upload_speed_bps || 0, cell: (s) => formatSpeed(s.upload_speed_bps) },
+      sortVal: (s) => s.upload_speed_bytes_per_second || 0, cell: (s) => formatSpeed(s.upload_speed_bytes_per_second) },
     { key: "uploading", label: t("shared_upload_clients"), num: true, width: "90px", sortable: true,
       sortVal: (s) => s.uploading_client_count || 0, cell: (s) => formatInt(s.uploading_client_count) },
     { key: "last_upload", label: t("shared_last_upload"), width: "160px", sortable: true,
@@ -186,7 +186,7 @@ export default function Shared({ isGuest }) {
     size += s.size_bytes || 0;
     xs += s.uploaded_bytes_session || 0;
     xt += s.uploaded_bytes_total || 0;
-    up += s.upload_speed_bps || 0;
+    up += s.upload_speed_bytes_per_second || 0;
   }
 
   const freeSpace = formatFreeSpace(disk.temp_free_bytes, disk.incoming_free_bytes);

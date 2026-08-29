@@ -133,7 +133,7 @@ export function SharedDetail({ hash }) {
         ${Section([
           statRow("shared_size", formatBytes(s.size_bytes), "shared_detail_tip_size"),
           statRow("shared_detail_uploaded", twin(s, "uploaded_bytes_session", "uploaded_bytes_total", formatBytes), "shared_detail_tip_uploaded"),
-          statRow("shared_detail_upload_speed", formatSpeed(s.upload_speed_bps), "shared_detail_tip_upload_speed"),
+          statRow("shared_detail_upload_speed", formatSpeed(s.upload_speed_bytes_per_second), "shared_detail_tip_upload_speed"),
           statRow("shared_detail_uploading", formatInt(s.uploading_client_count), "shared_detail_tip_uploading"),
           statRow("shared_detail_last_upload", formatTimestamp(s.last_upload_at), "shared_detail_tip_last_upload"),
           statRow("shared_detail_shared_since", formatTimestamp(s.shared_since_at), "shared_detail_tip_shared_since"),

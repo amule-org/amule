@@ -170,14 +170,14 @@ _assert_json_eq '.kad | has("firewalled")' false \
 	'kad.firewalled is gone, replaced by kad.firewalled_tcp'
 
 # speeds + queue subtrees.
-_assert_json_eq '.speeds.download_bps | type' number \
-	'speeds.download_bps is numeric'
-_assert_json_eq '.speeds.upload_bps | type' number \
-	'speeds.upload_bps is numeric'
-_assert_json_eq '.speeds.download_overhead_bps | type' number \
-	'speeds.download_overhead_bps is numeric'
-_assert_json_eq '.speeds.upload_overhead_bps | type' number \
-	'speeds.upload_overhead_bps is numeric'
+_assert_json_eq '.speeds.download_bytes_per_second | type' number \
+	'speeds.download_bytes_per_second is numeric'
+_assert_json_eq '.speeds.upload_bytes_per_second | type' number \
+	'speeds.upload_bytes_per_second is numeric'
+_assert_json_eq '.speeds.download_overhead_bytes_per_second | type' number \
+	'speeds.download_overhead_bytes_per_second is numeric'
+_assert_json_eq '.speeds.upload_overhead_bytes_per_second | type' number \
+	'speeds.upload_overhead_bytes_per_second is numeric'
 _assert_json_eq '.queue.upload_clients_waiting | type' number \
 	'queue.upload_clients_waiting is numeric'
 _assert_json_eq '.queue.download_sources_total | type' number \
