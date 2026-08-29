@@ -271,11 +271,11 @@ struct FileSnapshot
 		std::uint16_t hashing_progress = 0;
 
 		// Live upload activity (issue #466), the upload-side analogue of
-		// the download stats. `upload_speed_bps` + `uploading_client_count` are
+		// the download stats. `upload_speed_bytes_per_second` + `uploading_client_count` are
 		// live (refresh every tick); `last_upload` / `shared_since` are
 		// unix timestamps, 0 = unknown (a file that has never uploaded, or
 		// a known.met entry that predates the feature).
-		std::uint32_t upload_speed_bps = 0;
+		std::uint32_t upload_speed_bytes_per_second = 0;
 		std::uint16_t uploading_client_count = 0;
 		std::uint32_t last_upload = 0;
 		std::uint32_t shared_since = 0;
@@ -404,8 +404,8 @@ struct ClientSnapshot
 	std::uint64_t downloaded_bytes_session = 0;
 	std::uint64_t uploaded_bytes_total = 0;
 	std::uint64_t downloaded_bytes_total = 0;
-	std::uint32_t upload_speed_bps = 0;
-	std::uint32_t download_speed_bps = 0;
+	std::uint32_t upload_speed_bytes_per_second = 0;
+	std::uint32_t download_speed_bytes_per_second = 0;
 
 	// Upload queue position (for peers in US_ONUPLOADQUEUE).
 	// 0 when not queued.
@@ -819,8 +819,8 @@ struct StatsGraphs
 	// entry fetched at one interval must not answer a request for another.
 	std::uint32_t interval_seconds = 1;
 
-	std::vector<std::uint32_t> download_bps;
-	std::vector<std::uint32_t> upload_bps;
+	std::vector<std::uint32_t> download_bytes_per_second;
+	std::vector<std::uint32_t> upload_bytes_per_second;
 	std::vector<std::uint32_t> connections;
 	std::vector<std::uint32_t> kad_nodes;
 
@@ -1418,15 +1418,15 @@ struct StatusSnapshot
 
 	// Bytes per second (NOT kB) so the field name matches the wire
 	// units throughout. Clients that want kB/s do the divide.
-	std::uint64_t download_bps = 0;
-	std::uint64_t upload_bps = 0;
+	std::uint64_t download_bytes_per_second = 0;
+	std::uint64_t upload_bytes_per_second = 0;
 
 	// Protocol/control-traffic overhead, bytes/second. ADDITIVE to the two
 	// rates above rather than a subset of them -- amuled keeps them as
 	// separate counters and the desktop renders them as a second figure in
 	// parentheses. 0 when the daemon reports nothing.
-	std::uint64_t download_overhead_bps = 0;
-	std::uint64_t upload_overhead_bps = 0;
+	std::uint64_t download_overhead_bytes_per_second = 0;
+	std::uint64_t upload_overhead_bytes_per_second = 0;
 
 	// Aggregate counts pulled by the same EC_OP_STATS round-trip.
 	std::uint32_t ul_queue_len = 0;

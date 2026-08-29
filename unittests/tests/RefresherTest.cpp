@@ -910,7 +910,7 @@ TEST(Refresher, SharedDetailTagsDecodeIntoSnapshot)
 	// (the write layer reports it verbatim, with `incomplete` alongside).
 	ASSERT_EQUALS(std::string("/home/me/Incoming"), s.on_disk_dir);
 	// Upload activity (issue #466) decodes into the shared sub-block.
-	ASSERT_EQUALS(static_cast<std::uint32_t>(51200), s.shared.upload_speed_bps);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(51200), s.shared.upload_speed_bytes_per_second);
 	ASSERT_EQUALS(static_cast<std::uint16_t>(3), s.shared.uploading_client_count);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(1700000500), s.shared.last_upload);
 	ASSERT_EQUALS(static_cast<std::uint16_t>(4), s.shared.hashing_progress);
@@ -3306,8 +3306,8 @@ TEST(Refresher, StatusOverheadAndFreeSpaceTagsDecode)
 	StatusSnapshot out;
 	ParseStatusFromPacket(&resp, out);
 
-	ASSERT_EQUALS(static_cast<std::uint64_t>(8700), out.download_overhead_bps);
-	ASSERT_EQUALS(static_cast<std::uint64_t>(1100), out.upload_overhead_bps);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(8700), out.download_overhead_bytes_per_second);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(1100), out.upload_overhead_bytes_per_second);
 	ASSERT_EQUALS(static_cast<std::int64_t>(48318382080LL), out.temp_free_bytes);
 	ASSERT_EQUALS(static_cast<std::int64_t>(24159191040LL), out.incoming_free_bytes);
 }
@@ -3343,8 +3343,8 @@ TEST(Refresher, StatusWithoutStatsTagsKeepsZeroOverheadAndUnknownDisk)
 	StatusSnapshot out;
 	ParseStatusFromPacket(&resp, out);
 
-	ASSERT_EQUALS(static_cast<std::uint64_t>(0), out.download_overhead_bps);
-	ASSERT_EQUALS(static_cast<std::uint64_t>(0), out.upload_overhead_bps);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(0), out.download_overhead_bytes_per_second);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(0), out.upload_overhead_bytes_per_second);
 	ASSERT_EQUALS(static_cast<std::int64_t>(-1), out.temp_free_bytes);
 	ASSERT_EQUALS(static_cast<std::int64_t>(-1), out.incoming_free_bytes);
 }

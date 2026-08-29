@@ -432,8 +432,8 @@ if [ "$SHCOUNT" -gt 0 ]; then
 	_assert_json_eq '.shared[0].priority_auto | type' boolean \
 		'/shared[0].priority_auto is boolean'
 	# Live upload activity (issue #466).
-	_assert_json_eq '.shared[0].upload_speed_bps | type' number \
-		'/shared[0].upload_speed_bps is numeric (#466)'
+	_assert_json_eq '.shared[0].upload_speed_bytes_per_second | type' number \
+		'/shared[0].upload_speed_bytes_per_second is numeric (#466)'
 	_assert_json_eq '.shared[0].uploading_client_count | type' number \
 		'/shared[0].uploading_client_count is numeric (#466)'
 	# null when never uploaded, or on a known.met entry predating the field.

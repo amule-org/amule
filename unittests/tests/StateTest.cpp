@@ -114,16 +114,16 @@ TEST(State, WriteStatusRoundtrip)
 	in.ed2k_high_id = true;
 	in.ed2k_user_id = 1234567890u; // 210.2.150.73 packed LSB-first
 	in.ed2k_public_ip = "210.2.150.73";
-	in.download_overhead_bps = 8700;
-	in.upload_overhead_bps = 1100;
+	in.download_overhead_bytes_per_second = 8700;
+	in.upload_overhead_bytes_per_second = 1100;
 	in.temp_free_bytes = 48318382080LL;
 	in.incoming_free_bytes = -1; // unknown
 	in.kad_firewalled_tcp = false;
 	in.server_name = "Some Server";
 	in.server_ip = "192.0.2.42";
 	in.server_port = 4242;
-	in.download_bps = 12345;
-	in.upload_bps = 6789;
+	in.download_bytes_per_second = 12345;
+	in.upload_bytes_per_second = 6789;
 	in.ul_queue_len = 3;
 	in.total_src_count = 17;
 	s.WriteStatus(in);
@@ -134,8 +134,8 @@ TEST(State, WriteStatusRoundtrip)
 	ASSERT_TRUE(out.ed2k_high_id);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(1234567890u), out.ed2k_user_id);
 	ASSERT_EQUALS(std::string("210.2.150.73"), out.ed2k_public_ip);
-	ASSERT_EQUALS(static_cast<std::uint64_t>(8700), out.download_overhead_bps);
-	ASSERT_EQUALS(static_cast<std::uint64_t>(1100), out.upload_overhead_bps);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(8700), out.download_overhead_bytes_per_second);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(1100), out.upload_overhead_bytes_per_second);
 	ASSERT_EQUALS(static_cast<std::int64_t>(48318382080LL), out.temp_free_bytes);
 	// -1 must survive the round trip as -1: it is what the handler turns
 	// into JSON null, and an unsigned slot would make it 1.8e19.
@@ -144,8 +144,8 @@ TEST(State, WriteStatusRoundtrip)
 	ASSERT_EQUALS(std::string("Some Server"), out.server_name);
 	ASSERT_EQUALS(std::string("192.0.2.42"), out.server_ip);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(4242), out.server_port);
-	ASSERT_EQUALS(static_cast<std::uint64_t>(12345), out.download_bps);
-	ASSERT_EQUALS(static_cast<std::uint64_t>(6789), out.upload_bps);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(12345), out.download_bytes_per_second);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(6789), out.upload_bytes_per_second);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(3), out.ul_queue_len);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(17), out.total_src_count);
 }
@@ -607,7 +607,7 @@ TEST(State, MutateClientsAndSharedRoundtrip)
 		c.ecid = 10;
 		c.client_name = "peer-1";
 		c.upload_state = "uploading";
-		c.upload_speed_bps = 1234;
+		c.upload_speed_bytes_per_second = 1234;
 		cache.emplace(c.ecid, c);
 	});
 	ASSERT_EQUALS(static_cast<size_t>(1), s.Clients().size());
@@ -867,8 +867,8 @@ TEST(State, WriteGraphsRoundtripAllSeries)
 	CState s;
 	StatsGraphs g;
 	g.interval_seconds = 1;
-	g.download_bps = { 100, 200, 300 };
-	g.upload_bps = { 10, 20, 30 };
+	g.download_bytes_per_second = { 100, 200, 300 };
+	g.upload_bytes_per_second = { 10, 20, 30 };
 	g.connections = { 1, 2, 3 };
 	g.kad_nodes = { 500, 600, 700 };
 	g.active_uploads = { 4, 5, 6 };
@@ -882,8 +882,8 @@ TEST(State, WriteGraphsRoundtripAllSeries)
 
 	const StatsGraphs out = s.Graphs();
 	ASSERT_EQUALS(static_cast<std::uint32_t>(1), out.interval_seconds);
-	ASSERT_EQUALS(static_cast<size_t>(3), out.download_bps.size());
-	ASSERT_EQUALS(static_cast<std::uint32_t>(300), out.download_bps[2]);
+	ASSERT_EQUALS(static_cast<size_t>(3), out.download_bytes_per_second.size());
+	ASSERT_EQUALS(static_cast<std::uint32_t>(300), out.download_bytes_per_second[2]);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(700), out.kad_nodes[2]);
 	// The second data blob rides along point-aligned with the first.
 	ASSERT_EQUALS(static_cast<size_t>(3), out.active_uploads.size());
@@ -903,7 +903,7 @@ TEST(State, WriteGraphsWithoutConnBlobLeavesExtraSeriesEmpty)
 {
 	CState s;
 	StatsGraphs g;
-	g.download_bps = { 100, 200, 300 };
+	g.download_bytes_per_second = { 100, 200, 300 };
 	g.connections = { 1, 2, 3 };
 	s.WriteGraphs(g);
 
@@ -1298,7 +1298,7 @@ TEST(State, ConcurrentReadersDontTearSnapshot)
 	// a *self-consistent* snapshot (the four numeric fields below
 	// are written under one unique_lock, so a shared_lock reader
 	// must see them all from the same generation). A teared read
-	// would manifest as a mismatched (download_bps, upload_bps)
+	// would manifest as a mismatched (download_bytes_per_second, upload_bytes_per_second)
 	// pair, which we then assert against.
 
 	CState s;
@@ -1310,8 +1310,8 @@ TEST(State, ConcurrentReadersDontTearSnapshot)
 		std::uint64_t gen = 1;
 		while (!stop.load()) {
 			StatusSnapshot v;
-			v.download_bps = gen;
-			v.upload_bps = gen * 2;
+			v.download_bytes_per_second = gen;
+			v.upload_bytes_per_second = gen * 2;
 			v.ul_queue_len = static_cast<std::uint32_t>(gen & 0xffffffff);
 			v.total_src_count = static_cast<std::uint32_t>(gen & 0xffffffff);
 			s.WriteStatus(v);
@@ -1326,9 +1326,9 @@ TEST(State, ConcurrentReadersDontTearSnapshot)
 				StatusSnapshot r = s.Status();
 				observed.fetch_add(1);
 				// Invariants enforced by the writer's single
-				// unique_lock acquisition: upload_bps == 2 *
-				// download_bps; ul_queue_len == total_src_count.
-				if (r.upload_bps != 2 * r.download_bps)
+				// unique_lock acquisition: upload_bytes_per_second == 2 *
+				// download_bytes_per_second; ul_queue_len == total_src_count.
+				if (r.upload_bytes_per_second != 2 * r.download_bytes_per_second)
 					torn.fetch_add(1);
 				if (r.ul_queue_len != r.total_src_count)
 					torn.fetch_add(1);
