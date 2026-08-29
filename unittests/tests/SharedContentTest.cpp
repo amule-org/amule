@@ -210,8 +210,12 @@ TEST(SharedContent, ResolveAcceptsFileInsideOneOfSeveralRoots)
 	std::string out;
 	ASSERT_TRUE(ResolveSharedContentPath(roots, root_b, "movie.avi", out));
 	// $TMPDIR is a symlink on macOS, so the canonical result is not
-	// textually the path we built. The basename is the stable part.
-	ASSERT_TRUE(EndsWith(out, "/movie.avi"));
+	// textually the path we built. The basename is the stable part -- and
+	// the separator in front of it is not: the Windows branch canonicalises
+	// through _fullpath(), which returns backslashes. Assert what is
+	// actually invariant, the same way the production code treats either
+	// separator as a boundary.
+	ASSERT_TRUE(EndsWith(out, "/movie.avi") || EndsWith(out, "\\movie.avi"));
 
 	RemoveAll(parent);
 }

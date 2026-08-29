@@ -306,8 +306,8 @@ bool ResolveSharedContentPath(const std::vector<std::string> &roots,
 	// added directories, so there is no single tree to be inside of. An
 	// empty list therefore shares nothing, which is the correct reading
 	// of "the user has configured no shares".
-	for (std::size_t i = 0; i < roots.size(); ++i) {
-		if (CanonicalWithinRoot(roots[i], fs_real)) {
+	for (const std::string &root : roots) {
+		if (CanonicalWithinRoot(root, fs_real)) {
 			fs_out.swap(fs_real);
 			return true;
 		}
