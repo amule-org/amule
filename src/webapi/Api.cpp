@@ -9707,16 +9707,42 @@ namespace
 // request resolved against, so a directory the user has just un-shared
 // disappears from /shared and from here on the same frame rather than one
 // outliving the other.
-std::vector<std::string> ShareRootsFromPrefs(const webapi::PreferencesSnapshot &p)
+//
+// The category paths are the third root and are just as implicit as Incoming:
+// CSharedFileList::Reload seeds its scan list with GetIncomingDir() followed by
+// GetCatPath(i) for every category (SharedFileList.cpp:434-438) BEFORE it
+// appends the explicit shares, so a download that completed into a category's
+// own directory is shared by the core and listed by /shared while appearing in
+// neither `shared_paths` nor `incoming_path`. Without them containment rejects
+// that file, and because the joined path stats fine the remote-EC probe below
+// falls through to 404 -- the endpoint would answer "no such hash" about a file
+// sitting on its own disk, which is what anyone using categories hits on their
+// very first download.
+//
+// The one thing the core auto-shares that is deliberately NOT a root here is
+// the part-file set (SharedFileList.cpp:420-429): those live in the temp
+// directory and are only ever reachable through this handler as a partfile,
+// which it has already refused with 409 before containment runs. Adding temp
+// as a root would widen the boundary for bytes this route will never serve.
+std::vector<std::string> ShareRootsFromPrefs(
+	const webapi::PreferencesSnapshot &p, const std::vector<webapi::CategorySnapshot> &cats)
 {
 	std::vector<std::string> roots;
-	roots.reserve(p.directories.shared_paths.size() + 1);
+	roots.reserve(p.directories.shared_paths.size() + cats.size() + 1);
 	for (const std::string &d : p.directories.shared_paths) {
 		if (!d.empty())
 			roots.push_back(d);
 	}
 	if (!p.directories.incoming_path.empty()) {
 		roots.push_back(p.directories.incoming_path);
+	}
+	// Empty paths are skipped rather than defaulted: amuled holds an empty
+	// path for a category that saves to Incoming, and Incoming is already a
+	// root above. An empty string here would be a root that contains
+	// everything.
+	for (const webapi::CategorySnapshot &c : cats) {
+		if (!c.path.empty())
+			roots.push_back(c.path);
 	}
 	return roots;
 }
@@ -9781,7 +9807,8 @@ CHttpServer::Response CApiDispatcher::HandleSharedContent(
 	// unknown-hash branch used, so the reply cannot be used to probe whether
 	// a path exists, what the share layout is, or where the boundary sits
 	// (the discipline StaticFs.h:28-33 states).
-	const std::vector<std::string> roots = ShareRootsFromPrefs(m_state.Preferences());
+	const std::vector<std::string> roots =
+		ShareRootsFromPrefs(m_state.Preferences(), m_state.Categories());
 
 	std::string fs_path;
 	if (!webapi::ResolveSharedContentPath(roots, s.on_disk_dir, s.name, fs_path)) {

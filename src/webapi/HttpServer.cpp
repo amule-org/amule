@@ -268,6 +268,29 @@ constexpr std::size_t kReadBufferBytes = kMaxHeaderBytes + 2 * 1024;
 // keeps pumping hold the session open.
 constexpr std::size_t kMaxDrainBytes = 4 * 1024 * 1024;
 
+// Idle deadline on a file response: the longest a file transfer may go without
+// the socket accepting a single further byte before the transport gives up and
+// closes, releasing the concurrency slot the response holds.
+//
+// A PROGRESS deadline, not a total one. The 20 s request expiry cannot be left
+// armed across a file body -- a legitimate multi-GB download over a slow link
+// runs for hours -- but leaving the stream on expires_never() means a peer that
+// advertises a zero receive window and then stops reading pins its slot until
+// the process restarts: TCP does not time that out on its own, it just keeps
+// probing with the persist timer, and neither TCP_USER_TIMEOUT nor keepalive is
+// set on these sockets. Six such peers -- a phone that slept mid-download will
+// do it, no malice required -- would permanently 503 the endpoint. Re-arming
+// per write attempt bounds the stalled peer while a slow one, which by
+// definition keeps making progress, resets the clock every time it does.
+//
+// 120 s is deliberately far past any real link. Each async_write_some completes
+// as soon as the socket accepts ANY bytes of the pending chunk, so exceeding
+// this means the peer's window stayed shut for two full minutes; even the
+// pessimistic reading, a whole 64 KiB chunk taking longer than this, works out
+// to under 4.5 kbit/s of goodput, well below dial-up. It is a stall detector,
+// not a rate limit.
+constexpr std::chrono::seconds kFileWriteIdleTimeout{ 120 };
+
 // One-shot gzip encoder for regular (non-streaming) response bodies.
 // Returns false on any zlib error; the caller then serves the response
 // uncompressed rather than 500ing, since a transient zlib failure
@@ -1316,13 +1339,17 @@ private:
 		out.prepare_payload();
 
 		// The read timeout was disarmed in Dispatch (m_stream.expires_never()
-		// before the handler ran) and nothing between there and here re-arms
-		// it -- expires_after appears only in DoRead and in the drain loop,
-		// neither of which is on this path. That is load-bearing: a legitimate
-		// multi-GB download over a slow link takes far longer than the 20 s
-		// stream expiry, and re-introducing a timer here would kill it
-		// mid-transfer. A stalled peer is still bounded, by TCP itself and by
-		// Listener::Stop closing the socket at shutdown.
+		// before the handler ran), and the body is NOT written back under it:
+		// a legitimate multi-GB download over a slow link takes far longer
+		// than the 20 s stream expiry, so a total deadline would kill exactly
+		// the transfers this endpoint exists for.
+		//
+		// What bounds a stall instead is kFileWriteIdleTimeout, re-armed by
+		// WriteFileChunk before every write attempt -- which is why the body
+		// goes out as a WriteFileChunk loop over async_write_some rather than
+		// as one async_write: a single async_write offers no per-chunk hook to
+		// re-arm from. See the constant for why a progress deadline is
+		// required here and why TCP does not supply one.
 		auto self = shared_from_this();
 		m_file_serializer.emplace(out);
 		if (m_head_only) {
@@ -1332,6 +1359,11 @@ private:
 			// Content-Length still reports what the GET would have sent,
 			// which is what 40-http-conformance.sh asserts.
 			m_file_serializer->split(true);
+			// Same deadline on the header-only write. It is a few hundred
+			// bytes, but a peer that opens a connection, sends HEAD and
+			// then refuses to read holds a file-response slot just as
+			// firmly as one that stalls a GET.
+			m_stream.expires_after(kFileWriteIdleTimeout);
 			http::async_write_header(
 				m_stream, *m_file_serializer, [self](beast::error_code ec, std::size_t) {
 					(void)ec;
@@ -1343,18 +1375,43 @@ private:
 				});
 			return;
 		}
-		http::async_write(m_stream, *m_file_serializer, [self](beast::error_code ec, std::size_t) {
-			// `ec` discarded as on the buffered path: a peer that walked
-			// away mid-download is the normal end of a media request, not
-			// something to log. The slot this response holds is released
-			// by ~Session when `self` drops here.
-			(void)ec;
-			if (self->m_drain_before_close) {
-				self->StartDrainThenClose();
-				return;
-			}
-			self->DoClose();
-		});
+		WriteFileChunk();
+	}
+
+	// One turn of the file-body write loop: re-arm the progress deadline, hand
+	// the serializer's next buffer to the socket, and come back for the rest.
+	//
+	// This is what `http::async_write` does internally, unrolled so the
+	// deadline can be re-armed between turns. async_write_some completes as
+	// soon as the socket accepts any bytes at all, so each turn is a real
+	// observation that the peer is still draining its receive window, and the
+	// deadline measures the gap between two such observations -- the definition
+	// of a progress deadline. A peer that stops reading never completes a turn,
+	// its expiry fires, beast::tcp_stream closes the socket underneath the
+	// pending write, the handler runs with beast::error::timeout, and the slot
+	// goes back with ~Session.
+	void WriteFileChunk()
+	{
+		auto self = shared_from_this();
+		m_stream.expires_after(kFileWriteIdleTimeout);
+		http::async_write_some(
+			m_stream, *m_file_serializer, [self](beast::error_code ec, std::size_t) {
+				// `ec` discarded as on the buffered path: a peer that
+				// walked away mid-download is the normal end of a media
+				// request, not something to log -- and so is the timeout
+				// above, which is the same event with a slower peer. The
+				// slot this response holds is released by ~Session when
+				// `self` drops at the end of the chain.
+				if (!ec && !self->m_file_serializer->is_done()) {
+					self->WriteFileChunk();
+					return;
+				}
+				if (self->m_drain_before_close) {
+					self->StartDrainThenClose();
+					return;
+				}
+				self->DoClose();
+			});
 	}
 
 	void WriteResponse(CHttpServer::Response &&resp)
@@ -1548,9 +1605,16 @@ private:
 	// The file-backed alternative to the pair above, engaged only when the
 	// handler set Response::file. Two separate pairs rather than a variant
 	// body because the message type is baked into the serializer at compile
-	// time; only one of the two is ever engaged on a given connection, and
-	// the 64 KiB read buffer lives inside the serializer's writer, so an
-	// ordinary JSON response does not pay for it.
+	// time; only one of the two is ever engaged on a given connection.
+	//
+	// Both optionals reserve their storage INLINE in every Session whether or
+	// not they are ever engaged, and response_serializer holds its `writer` by
+	// value -- so while the writer kept its 64 KiB read buffer as a member
+	// array, every session on the process paid for it, an hours-long SSE
+	// connection included. sizeof(Session) was 67432 bytes; the writer now
+	// heap-allocates that buffer on first get() (RangeFileBody.h) and it is
+	// 1904. Anything added to RangeFileBody::writer lands here again, by value,
+	// on every connection.
 	boost::optional<http::response<RangeFileBody>> m_file_response;
 	boost::optional<http::response_serializer<RangeFileBody>> m_file_serializer;
 	// Whether this session is accounted against g_file_response_count; see

@@ -52,7 +52,10 @@
 // up to 16 x filesize resident, with filesize routinely in the gigabytes for
 // ed2k content. This body reads through one `kRangeFileReadChunkBytes` buffer owned by
 // the writer, so the resident cost of a response is O(1) in the file size and
-// the whole feature stops being a memory hazard.
+// the whole feature stops being a memory hazard. That buffer is heap-allocated
+// on first use rather than held inline in the writer, because the writer is
+// stored by value inside the serializer and the serializer sits in a
+// `boost::optional` member of every Session — see writer::m_buf.
 //
 // SCOPE
 // -----
@@ -62,6 +65,21 @@
 // `writer`, so the type still satisfies everything the write path asks for; a
 // parser instantiated over this Body would fail to compile, which is the
 // correct outcome rather than a silently wrong one.
+
+// BOOST FLOOR
+// -----------
+// Everything used here must exist in Boost 1.70 (`MIN_BOOST_VERSION`,
+// CMakeLists.txt:4), which is close to what ubuntu:22.04's libboost-dev ships
+// and therefore what the AppImage actually compiles amuleapi against
+// (appimage/build.sh:43) — unlike the Flatpak, it does not build the pinned
+// 1.87 from source, and packaging.yml only fires on push to master, so a
+// too-new API breaks AFTER merge with nothing on the PR to catch it. Two such
+// traps have already been hit and are documented at their use sites:
+// `BOOST_BEAST_ASSIGN_EC` (a private beast/core/detail header, absent in 1.70)
+// and `http::error::short_read` (added in 1.73). The rest of the surface this
+// file touches — `beast::file` / `file_mode` / `is_file`, `beast::error_code`,
+// `http::error::bad_field`, `http::error::partial_message`, the Body/writer
+// concept itself and `boost::optional` — is all present in 1.70.
 
 #include <boost/asio/buffer.hpp>
 #include <boost/assert.hpp>
@@ -75,17 +93,20 @@
 
 #include <cstdint>
 #include <cstring>
+#include <memory>
 #include <string>
 #include <utility>
 
 // Size of the writer's read buffer, and therefore the largest single chunk
 // handed to the socket. 64 KiB is picked to be comfortably larger than a
 // typical 16-64 KiB socket send buffer — so the syscall count is bounded by the
-// socket, not by us — while still being small enough that the buffer lives
-// inside the per-session serializer without mattering: at the file-response
-// concurrency cap the transport enforces, the total is a few hundred KiB. The
-// point of the whole type is that this number, not the file size, is what the
-// process pays.
+// socket, not by us — while still being small enough that a handful can be in
+// flight at once at the file-response concurrency cap the transport enforces.
+// The point of the whole type is that this number, not the file size, is what
+// the process pays.
+//
+// It is heap-allocated by the writer on first use rather than held inline (see
+// writer::m_buf), so a connection that never streams a file never allocates it.
 constexpr std::size_t kRangeFileReadChunkBytes = 64 * 1024;
 
 // Boost.Beast Body concept implementation. `File` is the Beast file abstraction
@@ -178,7 +199,16 @@ public:
 	void SetWindow(std::uint64_t first, std::uint64_t last, boost::beast::error_code &ec)
 	{
 		if (!m_file.is_open() || first > last || first >= m_file_size || last >= m_file_size) {
-			BOOST_BEAST_ASSIGN_EC(ec, boost::beast::http::error::bad_field);
+			// Plain assignment rather than BOOST_BEAST_ASSIGN_EC: that macro
+			// lives in boost/beast/core/detail/config.hpp, i.e. it is a private
+			// Beast implementation detail, and it does not exist at all in the
+			// 1.70 this project declares as its floor (CMakeLists.txt:4) -- the
+			// AppImage really does build against ubuntu:22.04's libboost-dev
+			// (appimage/build.sh:43), and packaging.yml only fires on push to
+			// master, so nothing on a PR would have caught it. On the branch
+			// without source locations the macro expands to exactly this
+			// assignment; only the diagnostic location is lost.
+			ec = boost::beast::http::error::bad_field;
 			m_have_window = false;
 			return;
 		}
@@ -206,7 +236,16 @@ template <class File> class BasicRangeFileBody<File>::writer
 	value_type &m_body;
 	// Bytes of the window not yet handed to the serializer.
 	std::uint64_t m_remain;
-	char m_buf[kRangeFileReadChunkBytes];
+	// Heap, not `char m_buf[kRangeFileReadChunkBytes]`. `response_serializer`
+	// stores its `writer wr_` BY VALUE (beast/http/serializer.hpp), and the
+	// transport parks that serializer in a `boost::optional` member of every
+	// Session, which reserves its storage inline whether or not it is ever
+	// engaged. An inline array therefore charged 64 KiB to every connection --
+	// including an SSE stream that lives for hours and never touches this type
+	// at all. Allocated lazily in get(), so the cost lands only on a connection
+	// that actually streams file bytes: init() runs for HEAD too (see below) but
+	// get() does not, so a HEAD still costs no allocation.
+	std::unique_ptr<char[]> m_buf;
 
 public:
 	using const_buffers_type = boost::asio::const_buffer;
@@ -248,17 +287,28 @@ public:
 	// can never over-read past `last` even though the file continues.
 	boost::optional<std::pair<const_buffers_type, bool>> get(boost::beast::error_code &ec)
 	{
-		const std::size_t amount =
-			m_remain > sizeof(m_buf) ? sizeof(m_buf) : static_cast<std::size_t>(m_remain);
+		const std::size_t amount = m_remain > kRangeFileReadChunkBytes
+						   ? kRangeFileReadChunkBytes
+						   : static_cast<std::size_t>(m_remain);
 
 		// Window fully served. (Also the degenerate zero-length case, which
 		// SetWindow refuses to create but a defaulted value_type still has.)
+		// Tested before the allocation below, so the no-bytes case stays
+		// allocation-free.
 		if (amount == 0) {
 			ec = {};
 			return boost::none;
 		}
 
-		const std::size_t nread = m_body.m_file.read(m_buf, amount, ec);
+		if (!m_buf) {
+			// Throwing new, not nothrow: a failed 64 KiB allocation is a
+			// process already past saving, and the bad_alloc propagates out of
+			// the async op into the same connection teardown the read-error
+			// branch below produces.
+			m_buf.reset(new char[kRangeFileReadChunkBytes]);
+		}
+
+		const std::size_t nread = m_body.m_file.read(m_buf.get(), amount, ec);
 		if (ec) {
 			return boost::none;
 		}
@@ -269,15 +319,22 @@ public:
 		// Content-Length is already on the wire — so surface it as an error
 		// and let the transport tear the connection down, which is the only
 		// signal a client can still read at that point.
+		//
+		// `partial_message` and not the more descriptive `short_read`: that
+		// enumerator was only added to http::error in Boost 1.73, and this
+		// project's floor is 1.70 (CMakeLists.txt:4) -- same trap as the
+		// BOOST_BEAST_ASSIGN_EC note in SetWindow above. Nothing reads the
+		// value: WriteFileResponse's completion handler discards `ec` and
+		// closes the connection, which is the whole of the contract here.
 		if (nread == 0) {
-			BOOST_BEAST_ASSIGN_EC(ec, boost::beast::http::error::short_read);
+			ec = boost::beast::http::error::partial_message;
 			return boost::none;
 		}
 		BOOST_ASSERT(nread <= m_remain);
 
 		m_remain -= nread;
 		ec = {};
-		return { { const_buffers_type{ m_buf, nread }, m_remain > 0 } };
+		return { { const_buffers_type{ m_buf.get(), nread }, m_remain > 0 } };
 	}
 };
 
