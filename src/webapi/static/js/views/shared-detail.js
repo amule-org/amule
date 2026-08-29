@@ -168,7 +168,7 @@ export function SharedDetail({ hash }) {
         ].filter(Boolean), "downloads_detail_group_media") : null}
         ${IdentityLine({ file: s, copy, titleKey: "downloads_detail_group_identity", extra: [
           statRow("shared_detail_directory", s.directory || "—", "shared_detail_tip_directory"),
-          statRow("shared_detail_parts", formatInt(s.part_count), "shared_detail_tip_parts"),
+          statRow("shared_detail_parts", formatInt(s.parts_total_count), "shared_detail_tip_parts"),
         ] })}
       </div>`}
       </div>
