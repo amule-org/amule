@@ -349,6 +349,77 @@ _curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/categories/$NEW_IDX"
 _assert_status 404 "DELETE same index twice → 404"
 
+# --- 8. The path-substitution contract (partial success, not failure). ---
+#
+# amuled answers EC_OP_FAILED for these two ops when it created or updated the
+# category but could not use the path, keeping another one and returning it in
+# EC_TAG_CATEGORY_PATH. The category exists either way, so the API reports
+# success and `save_path` carries the path that was actually kept. Relaying it
+# as a 400 used to claim the request failed while the category was sitting in
+# the list.
+#
+# Placed last because each case creates a category; each cleans up its own.
+
+# 8a. No save_path at all. The daemon's documented default is the incoming
+#     directory, so this is an ordinary create, not an error.
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"name":"18-cat-nopath"}' "$HOST/api/v0/categories"
+_assert_status 202 "POST /categories with no save_path -> 202 (defaults to incoming)"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories"
+NOPATH_IDX=$(printf '%s' "$CURL_BODY" \
+	| jq -r '[.categories[] | select(.name == "18-cat-nopath")][0].index // empty')
+if [ -n "$NOPATH_IDX" ]; then
+	_pass "the category created without save_path is in the list (index=$NOPATH_IDX)"
+	_assert_json_eq '[.categories[] | select(.name == "18-cat-nopath")][0].save_path' \
+		"$INCOMING" 'a create with no save_path lands on directories.incoming_path'
+	_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories/$NOPATH_IDX"
+	_assert_status 204 "cleanup: DELETE /categories/$NOPATH_IDX -> 204"
+else
+	_fail "create without save_path" "202 returned but no such category in /categories"
+fi
+
+# 8b. A save_path the daemon cannot create. It keeps the incoming directory and
+#     the category still exists. Running as root the mkdir would succeed, so the
+#     assertion is guarded on the substitution actually having happened.
+UNUSABLE=/18-cat-unusable-$$/sub
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d "{\"name\":\"18-cat-badpath\",\"save_path\":\"$UNUSABLE\"}" "$HOST/api/v0/categories"
+_assert_status 202 "POST /categories with an uncreatable save_path -> 202 (path substituted)"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories"
+BAD_IDX=$(printf '%s' "$CURL_BODY" \
+	| jq -r '[.categories[] | select(.name == "18-cat-badpath")][0].index // empty')
+if [ -n "$BAD_IDX" ]; then
+	_pass "the category survives an uncreatable save_path (index=$BAD_IDX)"
+	BAD_PATH=$(printf '%s' "$CURL_BODY" \
+		| jq -r '[.categories[] | select(.name == "18-cat-badpath")][0].save_path')
+	if [ "$BAD_PATH" = "$UNUSABLE" ]; then
+		_skip "path-substitution check: the daemon could create $UNUSABLE (running as root?)"
+	else
+		_assert_json_eq '[.categories[] | select(.name == "18-cat-badpath")][0].save_path' \
+			"$INCOMING" 'the refused path is replaced by directories.incoming_path, not stored'
+	fi
+
+	# 8c. The same contract on PATCH: an update whose path is refused still
+	#     applies every other field, and the echoed object reports the path
+	#     that was kept rather than the one that was asked for.
+	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+		-H "Content-Type: application/json" \
+		-d "{\"name\":\"18-cat-badpath-renamed\",\"save_path\":\"$UNUSABLE\"}" \
+		"$HOST/api/v0/categories/$BAD_IDX"
+	_assert_status 200 "PATCH /categories/$BAD_IDX with an uncreatable save_path -> 200"
+	_assert_json_eq '.name' '18-cat-badpath-renamed' \
+		'the rest of the PATCH lands even when the path is refused'
+	_assert_json_eq "(.save_path == \"$UNUSABLE\")" false \
+		'the echoed save_path is the kept one, not the refused one'
+
+	_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories/$BAD_IDX"
+	_assert_status 204 "cleanup: DELETE /categories/$BAD_IDX -> 204"
+else
+	_fail "create with an uncreatable save_path" "202 returned but no such category in /categories"
+fi
+
 # --- Summary. -----------------------------------------------------
 echo
 if [ "$FAIL_COUNT" -eq 0 ]; then

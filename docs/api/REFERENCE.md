@@ -2138,6 +2138,8 @@ it as `0x00BBGGRR` with **red in the low byte**, so a naive hex print of the
 integer comes out reversed. Anything that is not `#` followed by six hex
 digits is a `400 bad_request`. `priority` accepts the same six levels the category read side can return — `"very_low"` / `"low"` / `"normal"` / `"high"` / `"release"` / `"auto"` — so a read-modify-write round-trip always succeeds (R9). It is applied to the category's member files as a download priority.
 
+**`save_path` is resolved on the daemon's filesystem, not yours,** so it is accepted without being checked here. Omit it and the category is created on the incoming directory, which is amuled's own default. Give a path amuled cannot use — it does not exist and cannot be created — and the category is still created, on the incoming directory again. Either way this is a success, and [`GET /categories/{index}`](#get-apiv0categoriesindex) reports the path that was actually stored. Compare it with what you sent if it matters to you; a `save_path` that comes back different is the daemon saying it could not use yours.
+
 **Response:** `202 Accepted`, no body. `EC_OP_CREATE_CATEGORY` answers success or failure and never returns the index it assigned, so naming the new category here meant scanning the snapshot for one with a matching name and falling back to a bodiless `201` when the scan came up short. Re-read [`GET /categories`](#get-apiv0categories) for the assigned index.
 
 **Errors:** `400 bad_request`, `400 amuled_rejected`, `503 ec_unavailable`.
@@ -2157,6 +2159,12 @@ Returns the single category object, the same shape [`PATCH`](#patch-apiv0categor
 **Auth:** `ADMIN`
 
 Any subset of the POST body fields. `index 0` (the default category) can be patched but not deleted.
+
+**Response:** `200 OK` with the category object as stored, the same shape [`GET /categories/{index}`](#get-apiv0categoriesindex) returns, so a client can see what landed without a follow-up read.
+
+`save_path` follows the same rule as on create: amuled resolves it on its own filesystem, and when it cannot use the path it keeps the one the category already had. The rest of the request still applies — `name`, `comment`, `color` and `priority` all land — and the echoed object reports the path that was kept. That is the one case where a field you sent is not the field you get back, which is why the response echoes the object rather than answering `204`.
+
+**Errors:** `400 bad_request` (non-numeric or out-of-range `{index}`, malformed `color`, unknown `priority`), `404 not_found` (no category at that index), `400 amuled_rejected`, `503 ec_unavailable`.
 
 #### `DELETE /api/v0/categories/{index}`
 
