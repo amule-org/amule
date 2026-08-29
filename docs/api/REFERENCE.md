@@ -1006,13 +1006,13 @@ Each entry is the [`/clients`](#get-apiv0clients) list object plus three keys:
 
 | Key | Meaning |
 |---|---|
-| `role` | which direction this row moves the file: `"source"` — it serves the file to us (including queued); `"client"` — it pulls the file from us; `"both"`; `"none"` |
+| `role` | which direction this row moves the file: `"downloading_from"` — we pull the file from it (including queued); `"uploading_to"` — it pulls the file from us; `"both"`; `"none"` |
 | `a4af` | `true` for a source parked on another file — the desktop's A4AF row |
 | `parts` | the client's per-part bitmap, **only** when `?include_parts=true` |
 
-`role` and `a4af` are orthogonal: a pure A4AF row is `role: "none"`, `a4af: true`, but a client can be parked on another file *and* be pulling this one from us (`role: "client"`, `a4af: true`).
+`role` and `a4af` are orthogonal: a pure A4AF row is `role: "none"`, `a4af: true`, but a client can be parked on another file *and* be pulling this one from us (`role: "uploading_to"`, `a4af: true`).
 
-`parts` is opt-in because it is one boolean per chunk per client — a multi-TiB file is 100k+ entries each. It is exactly `parts_total_count` entries, and it describes the file this row is about: the download bitmap for a `source`, the upload bitmap for a `client_address`. A client the core reports as holding every part comes back all-`true`. A pure A4AF row has no bitmap for this file and omits the key. **`parts` never appears in SSE payloads.**
+`parts` is opt-in because it is one boolean per chunk per client — a multi-TiB file is 100k+ entries each. It is exactly `parts_total_count` entries, and it describes the file this row is about: the download bitmap for a `"downloading_from"` row, the upload bitmap for an `"uploading_to"` one. A client the core reports as holding every part comes back all-`true`. A pure A4AF row has no bitmap for this file and omits the key. **`parts` never appears in SSE payloads.**
 
 The file's own three-state part view is on [`GET /downloads/{hash}`](#get-apiv0downloadshash); combine it with this bitmap to render the desktop's per-source bar.
 
