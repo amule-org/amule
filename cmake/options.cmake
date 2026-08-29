@@ -253,6 +253,21 @@ endif()
 
 add_compile_definitions ($<$<CONFIG:DEBUG>:__DEBUG__>)
 
+# Refuse deprecated Boost.Asio APIs. Set for EVERY target on purpose, never in
+# a single source file: the macro does not only hide deprecated names, it
+# switches BOOST_ASIO_SYNC_OP_VOID between void and error_code, which changes
+# the return type of basic_socket::close() and its siblings. Those are weak
+# inline templates, so a translation unit that disagrees with the rest still
+# links -- against whichever definition the linker happened to keep -- and the
+# caller then sets up the wrong ABI for the call. Defined in one .cpp, it made
+# amuleapi write a returned error_code over a live socket object and abort with
+# bad_weak_ptr on shutdown (issue #1214).
+#
+# Safe only while Asio is header-only, which it is here: nothing links a
+# prebuilt Boost. If that ever changes, this has to match how that Boost was
+# built, or the same mismatch returns at the library boundary.
+add_compile_definitions (BOOST_ASIO_NO_DEPRECATED)
+
 if (WIN32)
 	add_compile_definitions ($<$<CONFIG:DEBUG>:wxDEBUG_LEVEL=0>)
 endif (WIN32)
