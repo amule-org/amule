@@ -201,6 +201,13 @@ private:
 	// `key` = 32-char MD4 hash. amuled schedules the hashing task and answers
 	// immediately, so this is accepted rather than completed.
 	CHttpServer::Response HandleSharedVerify(const CHttpServer::Request &, const std::string &key);
+	// the bytes of one completed shared file (GET / HEAD). `key` = 32-char
+	// MD4 hash. The only handler that answers with a streamed file window
+	// rather than a buffered body: it resolves and containment-checks the
+	// path itself, then hands the transport a CHttpServer::Response::file.
+	// Honours a single byte Range (206), ignores multi-range sets per RFC
+	// 7233 3.1, and refuses partfiles with 409.
+	CHttpServer::Response HandleSharedContent(const CHttpServer::Request &, const std::string &key);
 
 	// Static-frontend fallthrough. Resolves `url_path` under
 	// ServerCfg().static_root, returns the file with a content-type

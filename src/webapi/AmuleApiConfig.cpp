@@ -184,7 +184,8 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 			       "TokenLockoutSeconds=300\n"
 			       "\n"
 			       "[Streaming]\n"
-			       "EventBusRingCapacity=16384\n";
+			       "EventBusRingCapacity=16384\n"
+			       "MaxConcurrentFileResponses=6\n";
 
 	if (!wxFileExists(path)) {
 		// First-run: write mode-0600 defaults file. EC password stays
@@ -279,6 +280,18 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 	// positive value here.
 	if (cfg.Read("/Streaming/EventBusRingCapacity", &n) && n > 0) {
 		m_streaming.event_bus_ring_capacity = static_cast<unsigned>(n);
+	}
+
+	// `[Streaming]/MaxConcurrentFileResponses`. Bounded on both sides
+	// rather than merely positive, the way `/Server/Port` is: unlike the
+	// ring above -- which the bus clamps for us -- nothing downstream
+	// second-guesses this one, and every slot it grants pins a file
+	// descriptor and a 64 KiB buffer until the peer drains. 256 is already
+	// far past any plausible household deployment and keeps the worst case
+	// in the tens of megabytes; anything outside the band is a typo, and a
+	// typo gets the default rather than a number the operator did not mean.
+	if (cfg.Read("/Streaming/MaxConcurrentFileResponses", &n) && n > 0 && n <= 256) {
+		m_streaming.max_concurrent_file_responses = static_cast<unsigned>(n);
 	}
 
 	return true;

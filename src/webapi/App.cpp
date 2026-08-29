@@ -568,6 +568,12 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 	m_ec_service.Start([this](const CECPacket *r) { return SendRecvMsg_v2(r); });
 
 	m_http = std::unique_ptr<CHttpServer>(new CHttpServer());
+	// Before Start(), which is the whole contract: the cap is read by the
+	// io_context thread on every file response, and the only thing that
+	// makes an unsynchronised publish safe here is that the listener does
+	// not exist yet, so there is no reader to race.
+	CHttpServer::SetMaxConcurrentFileResponses(
+		static_cast<int>(m_apiConfig.StreamingCfg().max_concurrent_file_responses));
 	// Lets the transport stamp CORS on the replies it builds itself (408 /
 	// 413 / 431), which never reach the dispatcher's CORS pass.
 	auto cors_stamper = [dispatcher](std::map<std::string, std::string> &headers,

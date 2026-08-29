@@ -616,6 +616,23 @@ target_link_libraries (StaticFsTest
 	mulecommon
 )
 
+# amuleapi shared-file content endpoint: path containment against the
+# share-root list, Range parsing, and the Content-Disposition builder.
+# SharedContent.cpp is plain std/POSIX (no wx, Beast or EC), same as
+# StaticFs.cpp, so it links standalone here.
+add_executable (SharedContentTest
+	SharedContentTest.cpp
+	${CMAKE_SOURCE_DIR}/src/webapi/SharedContent.cpp
+)
+target_include_directories (SharedContentTest
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/webapi
+)
+add_test (NAME SharedContentTest COMMAND SharedContentTest)
+target_link_libraries (SharedContentTest
+	muleunit
+	mulecommon
+)
+
 add_executable (EventBusTest
 	EventBusTest.cpp
 	${CMAKE_SOURCE_DIR}/src/webapi/EventBus.cpp
@@ -925,4 +942,27 @@ target_include_directories (ListColumnStoreTest
 target_link_libraries (ListColumnStoreTest
 	muleunit
 	mulecommon
+)
+
+# RangeFileBody is the Boost.Beast Body amuleapi serves shared content with: a
+# bounded [first, last] window read through a fixed 64 KiB buffer. Header-only
+# and free of wx and of the rest of the webapi tree, so the test compiles on
+# its own -- it only needs the Boost headers amuleapi already builds against.
+add_executable (RangeFileBodyTest
+	RangeFileBodyTest.cpp
+)
+
+add_test (NAME RangeFileBodyTest
+	COMMAND RangeFileBodyTest
+)
+
+target_include_directories (RangeFileBodyTest
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/webapi
+	PRIVATE ${Boost_INCLUDE_DIR}
+)
+
+target_link_libraries (RangeFileBodyTest
+	muleunit
+	mulecommon
+	${Boost_LIBRARIES}
 )

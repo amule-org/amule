@@ -47,6 +47,10 @@
 #include <boost/beast/http.hpp>
 #include <boost/beast/version.hpp>
 #include <boost/optional.hpp>
+// Inside the suppression block on purpose: it pulls in the same asio headers
+// the lines above do, and reaching them first from an unguarded include would
+// resurrect the -Wdeprecated-copy-with-user-provided-dtor error.
+#include "RangeFileBody.h"
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #endif
@@ -213,6 +217,41 @@ constexpr int kMaxConcurrentStreamingSessions = 32;
 constexpr int kHandlerPoolThreads = 16;
 std::atomic<int> g_streaming_session_count{ 0 };
 
+// Process-wide cap on concurrent file-backed responses (Response::file), which
+// is a budget of its own -- independent of both the 16 handler-pool threads and
+// the 32 SSE slots, because it protects a different resource from either.
+//
+// Unlike the SSE path this costs no OS thread: the body is written by
+// async_write on the io_context, so a file response in flight holds a socket
+// and a 64 KiB buffer and nothing else. That is the whole reason serving
+// multi-GB content out of amuleapi is affordable at all, and it is also why the
+// number here is NOT about threads. What it is about is that these responses
+// read from the same spindles the hasher and the ed2k uploader are already
+// using, and push bytes down the same NIC; six concurrent whole-file reads is
+// roughly where a single mechanical disk stops doing sequential I/O and starts
+// seeking between streams. Small enough to keep aMule's own transfers usable,
+// large enough for a browser (which opens a handful of parallel range requests
+// per media element) plus a second client.
+//
+// Over the cap the transport answers 503 + Retry-After, exactly as the SSE
+// dispatch refuses a 33rd subscriber.
+//
+// Six is the right DEFAULT and the wrong ceiling. The reasoning above is a
+// single-spindle one, and it is also a per-address one that a reverse proxy
+// erases: behind nginx every client arrives from one remote_addr, so this is a
+// global budget with no per-user fairness in it. A NAS with an SSD and four
+// household devices wants more; a Pi serving off the same USB disk it downloads
+// to may want less. So the number is `[Streaming]/MaxConcurrentFileResponses`
+// in amuleapi.conf, defaulting here.
+constexpr int kDefaultMaxConcurrentFileResponses = 6;
+// Written once by SetMaxConcurrentFileResponses before Start() binds the
+// listener, and only read afterwards. Atomic rather than plain int because the
+// reader is the io_context thread while the writer is whatever thread
+// configured the server; the ordering is established by the listener not
+// existing yet, but the object still has to be race-free to be well-defined.
+std::atomic<int> g_max_concurrent_file_responses{ kDefaultMaxConcurrentFileResponses };
+std::atomic<int> g_file_response_count{ 0 };
+
 // Largest request header block we accept. The read buffer below is sized
 // from this: the whole header has to sit in the buffer at once, so a buffer
 // smaller than the parser's header_limit means the buffer overflows first
@@ -228,6 +267,29 @@ constexpr std::size_t kReadBufferBytes = kMaxHeaderBytes + 2 * 1024;
 // wrote its body before reading our answer, without letting a peer that
 // keeps pumping hold the session open.
 constexpr std::size_t kMaxDrainBytes = 4 * 1024 * 1024;
+
+// Idle deadline on a file response: the longest a file transfer may go without
+// the socket accepting a single further byte before the transport gives up and
+// closes, releasing the concurrency slot the response holds.
+//
+// A PROGRESS deadline, not a total one. The 20 s request expiry cannot be left
+// armed across a file body -- a legitimate multi-GB download over a slow link
+// runs for hours -- but leaving the stream on expires_never() means a peer that
+// advertises a zero receive window and then stops reading pins its slot until
+// the process restarts: TCP does not time that out on its own, it just keeps
+// probing with the persist timer, and neither TCP_USER_TIMEOUT nor keepalive is
+// set on these sockets. Six such peers -- a phone that slept mid-download will
+// do it, no malice required -- would permanently 503 the endpoint. Re-arming
+// per write attempt bounds the stalled peer while a slow one, which by
+// definition keeps making progress, resets the clock every time it does.
+//
+// 120 s is deliberately far past any real link. Each async_write_some completes
+// as soon as the socket accepts ANY bytes of the pending chunk, so exceeding
+// this means the peer's window stayed shut for two full minutes; even the
+// pessimistic reading, a whole 64 KiB chunk taking longer than this, works out
+// to under 4.5 kbit/s of goodput, well below dial-up. It is a stall detector,
+// not a rate limit.
+constexpr std::chrono::seconds kFileWriteIdleTimeout{ 120 };
 
 // One-shot gzip encoder for regular (non-streaming) response bodies.
 // Returns false on any zlib error; the caller then serves the response
@@ -420,6 +482,17 @@ public:
 		// actually acquired one (DispatchStreaming sets the flag).
 		if (m_session_slot_held) {
 			g_streaming_session_count.fetch_sub(1, std::memory_order_acq_rel);
+		}
+		// Same accounting for the file-response budget, and released from
+		// the same place for the same reason: the destructor is the ONE
+		// point every exit path funnels through. A file write can end by
+		// completing, by erroring mid-body, by the peer vanishing, or by
+		// Listener::Stop closing the socket underneath it -- releasing the
+		// slot in the write completion handler would cover the first of
+		// those and leak on the rest, and a leaked slot here is permanent,
+		// since nothing ever resets the counter.
+		if (m_file_slot_held) {
+			g_file_response_count.fetch_sub(1, std::memory_order_acq_rel);
 		}
 	}
 
@@ -1138,8 +1211,223 @@ private:
 			});
 	}
 
+	// Transport-built error reply for the file path. Kept separate from the
+	// handler's own error shapes because these are written after the handler
+	// has already returned a perfectly good response, and the body must still
+	// match the error contract the rest of the surface uses.
+	//
+	// The CORS stamp matters for the same reason it does on 408/413/431: the
+	// dispatcher's pass never ran on a reply the transport invented, and
+	// without it these are the only answers on the surface a cross-origin
+	// browser client sees as an opaque failure instead of a typed envelope.
+	void WriteFileTransportError(unsigned status, const char *code, const char *message, bool retry_after)
+	{
+		CHttpServer::Response err;
+		err.status = status;
+		err.content_type = "application/json";
+		if (retry_after) {
+			err.headers["Retry-After"] = "10";
+		}
+		if (m_cors_stamper) {
+			m_cors_stamper(err.headers, FindHeaderCaseInsensitiveRaw("Origin"));
+		}
+		err.body = std::string("{\"error\":{\"code\":\"") + code + "\",\"message\":\"" + message +
+			   "\"}}";
+		// `err.file` is unset, so this lands on the ordinary buffered path
+		// and cannot recurse back into here.
+		WriteResponse(std::move(err));
+	}
+
+	// File-backed response: serialise a bounded byte window straight off disk
+	// instead of out of resp.body. Split from WriteResponse rather than folded
+	// into it because almost none of that function applies -- there is no body
+	// in memory to deflate, nothing to reconcile an ETag against, and the
+	// message type differs, which decides the serializer at compile time.
+	//
+	// Everything else about the reply is deliberately identical to the normal
+	// path: same Server header, same Connection: close default, same handler
+	// header pass, same Vary, same close-after-write.
+	void WriteFileResponse(CHttpServer::Response &&resp)
+	{
+		// A HEAD is exempt from the concurrency budget. The cap exists to
+		// bound concurrent BYTES off the disk and onto the NIC, and a HEAD
+		// moves none: the serializer runs in split mode, so writer::get is
+		// never called and the file is opened and seeked but never read.
+		// Spending a download slot on a metadata probe would let a burst of
+		// HEADs lock out the transfers the cap is there to protect.
+		if (!m_head_only) {
+			// Claim the slot before opening anything. fetch_add returns
+			// the OLD value, so the slot is ours iff that value was
+			// strictly below the cap; otherwise roll back and refuse.
+			const int prior = g_file_response_count.fetch_add(1, std::memory_order_acq_rel);
+			if (prior >= g_max_concurrent_file_responses.load(std::memory_order_relaxed)) {
+				g_file_response_count.fetch_sub(1, std::memory_order_acq_rel);
+				WriteFileTransportError(503,
+					"file_responses_exhausted",
+					"too many concurrent file transfers; retry in a few seconds",
+					true);
+				return;
+			}
+			// From here on the destructor owns the release. Set the flag
+			// BEFORE anything that can fail, so an early return below
+			// still gives the slot back.
+			m_file_slot_held = true;
+		}
+
+		m_file_response.emplace();
+		auto &out = *m_file_response;
+
+		// The handler already resolved and containment-checked the path; the
+		// transport opens it blindly. Both failures below are 500s and not
+		// something more specific on purpose -- a 404 here would mean the
+		// handler said yes to a path that then vanished, which is a race or a
+		// bug, not a client error. They are still safe to answer, because
+		// nothing has been written to the socket yet: the headers are
+		// committed at the first async_write below, not before.
+		beast::error_code ec;
+		out.body().Open(resp.file->fs_path.c_str(), ec);
+		if (!ec) {
+			// Rejects, rather than clamps, a window that does not fit the
+			// file. The handler has usually already put a Content-Range on
+			// the response describing exactly this window, and shipping a
+			// different one would make the reply contradict itself.
+			out.body().SetWindow(resp.file->first, resp.file->last, ec);
+		}
+		if (ec) {
+			m_file_response.reset();
+			WriteFileTransportError(
+				500, "internal_error", "could not read the requested file", false);
+			return;
+		}
+
+		// Emitted even though a file response never varies by encoding: the
+		// same URL can legitimately answer from the buffered path too (a 304,
+		// a 416, an error envelope), and those DO vary. An intermediary that
+		// cached this one without the dimension would then serve it in place
+		// of a form that differs.
+		AppendHeaderToken(resp.headers, "Vary", "Accept-Encoding");
+
+		out.version(11);
+		out.result(resp.status);
+		out.set(http::field::server, "amuleapi");
+		// Same one-request-per-connection contract as everywhere else;
+		// DoClose() shuts the socket down after this write.
+		if (resp.headers.find("Connection") == resp.headers.end()) {
+			out.set(http::field::connection, "close");
+		}
+		// Same opt-out the SSE head sets, for the mirror-image reason. nginx
+		// buffers proxied responses by default and spools anything larger
+		// than `proxy_buffers` to disk, up to `proxy_max_temp_file_size` --
+		// 1 GB out of the box. On this path that means the proxy writes a
+		// second copy of the file to its own disk before the client sees the
+		// first byte, which both delays the response and moves the I/O cost
+		// this transport was built to avoid onto the proxy host. Set here
+		// rather than by the handler because it is a property of streaming a
+		// large body off disk, not of one route: any future file-serving
+		// endpoint inherits it. Written before the handler's own header pass
+		// below, so a handler that has a reason to buffer can still override.
+		out.set("X-Accel-Buffering", "no");
+		if (!resp.content_type.empty()) {
+			out.set(http::field::content_type, resp.content_type);
+		}
+		for (const auto &h : resp.headers) {
+			out.set(h.first, h.second);
+		}
+		// Content-Length comes from RangeFileBody::size, i.e. the WINDOW
+		// length rather than the file length or the bytes-to-EOF that stock
+		// file_body would have reported. This is the number a HEAD has to
+		// answer with as well, and it gets it from the same call.
+		out.prepare_payload();
+
+		// The read timeout was disarmed in Dispatch (m_stream.expires_never()
+		// before the handler ran), and the body is NOT written back under it:
+		// a legitimate multi-GB download over a slow link takes far longer
+		// than the 20 s stream expiry, so a total deadline would kill exactly
+		// the transfers this endpoint exists for.
+		//
+		// What bounds a stall instead is kFileWriteIdleTimeout, re-armed by
+		// WriteFileChunk before every write attempt -- which is why the body
+		// goes out as a WriteFileChunk loop over async_write_some rather than
+		// as one async_write: a single async_write offers no per-chunk hook to
+		// re-arm from. See the constant for why a progress deadline is
+		// required here and why TCP does not supply one.
+		auto self = shared_from_this();
+		m_file_serializer.emplace(out);
+		if (m_head_only) {
+			// RFC 9110 9.3.2 again: headers only, on any status. split(true)
+			// stops the serializer after the header, so writer::get never
+			// runs and not one byte of the file is read -- while
+			// Content-Length still reports what the GET would have sent,
+			// which is what 40-http-conformance.sh asserts.
+			m_file_serializer->split(true);
+			// Same deadline on the header-only write. It is a few hundred
+			// bytes, but a peer that opens a connection, sends HEAD and
+			// then refuses to read holds a file-response slot just as
+			// firmly as one that stalls a GET.
+			m_stream.expires_after(kFileWriteIdleTimeout);
+			http::async_write_header(
+				m_stream, *m_file_serializer, [self](beast::error_code ec, std::size_t) {
+					(void)ec;
+					if (self->m_drain_before_close) {
+						self->StartDrainThenClose();
+						return;
+					}
+					self->DoClose();
+				});
+			return;
+		}
+		WriteFileChunk();
+	}
+
+	// One turn of the file-body write loop: re-arm the progress deadline, hand
+	// the serializer's next buffer to the socket, and come back for the rest.
+	//
+	// This is what `http::async_write` does internally, unrolled so the
+	// deadline can be re-armed between turns. async_write_some completes as
+	// soon as the socket accepts any bytes at all, so each turn is a real
+	// observation that the peer is still draining its receive window, and the
+	// deadline measures the gap between two such observations -- the definition
+	// of a progress deadline. A peer that stops reading never completes a turn,
+	// its expiry fires, beast::tcp_stream closes the socket underneath the
+	// pending write, the handler runs with beast::error::timeout, and the slot
+	// goes back with ~Session.
+	void WriteFileChunk()
+	{
+		auto self = shared_from_this();
+		m_stream.expires_after(kFileWriteIdleTimeout);
+		http::async_write_some(
+			m_stream, *m_file_serializer, [self](beast::error_code ec, std::size_t) {
+				// `ec` discarded as on the buffered path: a peer that
+				// walked away mid-download is the normal end of a media
+				// request, not something to log -- and so is the timeout
+				// above, which is the same event with a slower peer. The
+				// slot this response holds is released by ~Session when
+				// `self` drops at the end of the chain.
+				if (!ec && !self->m_file_serializer->is_done()) {
+					self->WriteFileChunk();
+					return;
+				}
+				if (self->m_drain_before_close) {
+					self->StartDrainThenClose();
+					return;
+				}
+				self->DoClose();
+			});
+	}
+
 	void WriteResponse(CHttpServer::Response &&resp)
 	{
+		// A file-backed response shares none of the machinery below: it must
+		// not be gzipped (deflating a byte range breaks the accounting its
+		// Content-Range describes, and shared content is normally already
+		// entropy-coded), and it has no in-memory body for the ETag
+		// reconciliation to measure. Branch before any of it runs, so the
+		// deflate path below cannot be reached with a body that is not there.
+		if (resp.file) {
+			WriteFileResponse(std::move(resp));
+			return;
+		}
+
 		// Regular (non-streaming) response gzip encoding. Gated by:
 		//  * client Accept-Encoding contains gzip,
 		//  * body is at or above kGzipMinBodyBytes -- the bound is
@@ -1315,6 +1603,24 @@ private:
 	// Header-only serializer, used for HEAD so Content-Length still
 	// reports the GET size while no content reaches the wire.
 	boost::optional<http::response_serializer<http::string_body>> m_serializer;
+	// The file-backed alternative to the pair above, engaged only when the
+	// handler set Response::file. Two separate pairs rather than a variant
+	// body because the message type is baked into the serializer at compile
+	// time; only one of the two is ever engaged on a given connection.
+	//
+	// Both optionals reserve their storage INLINE in every Session whether or
+	// not they are ever engaged, and response_serializer holds its `writer` by
+	// value -- so while the writer kept its 64 KiB read buffer as a member
+	// array, every session on the process paid for it, an hours-long SSE
+	// connection included. sizeof(Session) was 67432 bytes; the writer now
+	// heap-allocates that buffer on first get() (RangeFileBody.h) and it is
+	// 1904. Anything added to RangeFileBody::writer lands here again, by value,
+	// on every connection.
+	boost::optional<http::response<RangeFileBody>> m_file_response;
+	boost::optional<http::response_serializer<RangeFileBody>> m_file_serializer;
+	// Whether this session is accounted against g_file_response_count; see
+	// the destructor.
+	bool m_file_slot_held = false;
 	CHttpServer::Handler m_handler;
 
 	// streaming state.
@@ -1491,6 +1797,17 @@ CHttpServer::~CHttpServer()
 // five anyway -- exactly the four carrying a default argument, including the
 // two this change never touched -- so the suppression covers the whole list
 // rather than singling out the two whose line numbers happened to move.
+void CHttpServer::SetMaxConcurrentFileResponses(int max_responses)
+{
+	// Silently ignoring a bad value rather than clamping it: the config
+	// layer has already rejected everything outside the sane band and fallen
+	// back to the default, so anything that still gets here is a programming
+	// error, and the default is a better answer to that than zero.
+	if (max_responses > 0) {
+		g_max_concurrent_file_responses.store(max_responses, std::memory_order_relaxed);
+	}
+}
+
 // NOLINTBEGIN(performance-unnecessary-value-param)
 bool CHttpServer::Start(const std::string &bind_address,
 	unsigned port,

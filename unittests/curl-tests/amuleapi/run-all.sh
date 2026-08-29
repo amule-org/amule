@@ -258,6 +258,7 @@ PHASES=(
 	38-chat.sh
 	39-shared-media-refresh.sh
 	40-http-conformance.sh
+	41-shared-content.sh
 )
 
 # Override list from the command line if given.

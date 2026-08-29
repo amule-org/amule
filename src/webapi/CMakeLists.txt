@@ -36,6 +36,7 @@ add_executable (amuleapi
 	Refresher.cpp
 	RefresherTick.cpp
 	SearchJson.cpp
+	SharedContent.cpp
 	StaticFs.cpp
 	State.cpp
 )

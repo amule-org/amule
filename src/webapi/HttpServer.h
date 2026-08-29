@@ -25,6 +25,7 @@
 #ifndef WEBAPI_HTTPSERVER_H
 #define WEBAPI_HTTPSERVER_H
 
+#include <cstdint>
 #include <functional>
 #include <map>
 #include <memory>
@@ -105,6 +106,48 @@ public:
 		std::string content_type = "application/json";
 		std::map<std::string, std::string> headers;
 		std::string body;
+
+		// Serve the body straight off disk instead of out of `body`.
+		//
+		// Exists because the buffered `body` above is a memory hazard for
+		// shared content: the handler pool is 16 threads wide, so a
+		// multi-GB file answered through a std::string is up to 16 x
+		// filesize resident. When `file` is set the transport streams the
+		// window through a fixed 64 KiB buffer (see RangeFileBody.h) and
+		// `body` is ignored entirely.
+		struct FileSource
+		{
+			// Absolute path. The HANDLER owns resolution and the
+			// containment check -- by the time the transport gets here
+			// it opens the path blindly, and its only failure answer is
+			// a 500, because a rejection at this depth may already be
+			// too late to say anything more specific. Anything that
+			// should have been a 403 or a 404 has to have been decided
+			// upstream.
+			std::string fs_path;
+			// Inclusive window, RFC 9110 byte-range semantics: `last`
+			// is the index of the last byte SENT, so a whole file of N
+			// bytes is [0, N-1]. Both must lie inside the file; the
+			// transport answers 500 rather than silently clamping,
+			// since the handler has usually already described the
+			// window in a `Content-Range` header. A zero-length file
+			// has no valid window at all and belongs on the `body`
+			// path.
+			std::uint64_t first = 0;
+			std::uint64_t last = 0;
+		};
+		// Setting this opts the response out of two things it would
+		// otherwise get for free:
+		//  * gzip. The transport never deflates a file response --
+		//    compressing a range would break the byte accounting the
+		//    Content-Range describes, and shared content is generally
+		//    already entropy-coded anyway.
+		//  * the dispatcher's whole-body ETag, which is computed by
+		//    hashing `body`. There is no body here to hash, so a
+		//    validator for a file response has to be built by the
+		//    handler out of something cheap (size + mtime), and the
+		//    dispatcher's gzip-coding suffix must not be applied to it.
+		boost::optional<FileSource> file;
 	};
 
 	using Handler = std::function<Response(const Request &)>;
@@ -178,6 +221,19 @@ public:
 		StreamingHandler streaming_handler = nullptr,
 		StreamingPreflight streaming_preflight = nullptr,
 		CorsStamper cors_stamper = nullptr);
+
+	// Process-wide cap on concurrent file-backed responses
+	// (`Response::file`), from `[Streaming]/MaxConcurrentFileResponses`.
+	// Zero or negative is ignored, so a caller that has not read a
+	// configuration file cannot accidentally close the route.
+	//
+	// Must be called BEFORE Start(): the value is published without
+	// synchronisation beyond the atomic itself, and what makes that safe is
+	// that no connection -- and therefore no reader -- exists yet. A setter
+	// rather than an eighth Start() parameter, five of which already carry
+	// defaults; this is a tunable, not part of the wiring a caller must get
+	// right to have a working server.
+	static void SetMaxConcurrentFileResponses(int max_responses);
 
 	// Stops the io_context, joins the thread. Safe to call from any
 	// thread; Start() must have succeeded.

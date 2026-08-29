@@ -111,6 +111,19 @@ public:
 		// replay. Operators with very heavy nodes can raise this;
 		// memory ≈ capacity × ~1 KB JSON payload.
 		unsigned event_bus_ring_capacity = 16384;
+
+		// Concurrent file-backed responses allowed on
+		// `GET /shared/{hash}/content`; over it the transport answers
+		// 503 + Retry-After. Six suits one mechanical disk shared with
+		// the hasher and the ed2k uploader, but it is a GLOBAL budget:
+		// behind a reverse proxy every client arrives from one address,
+		// so there is no per-user fairness in it and a household with
+		// several devices on an SSD-backed NAS can raise it. The upper
+		// bound is the transport's, not a taste: each slot pins a file
+		// descriptor and a 64 KiB buffer for as long as the peer takes
+		// to drain, so a four-digit value would trade the RSS ceiling
+		// the streaming path exists to hold for nothing.
+		unsigned max_concurrent_file_responses = 6;
 	};
 
 	// Bring everything into memory from `config_dir`. Returns true on
