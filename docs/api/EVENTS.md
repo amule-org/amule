@@ -268,7 +268,7 @@ Every event the bus publishes. The `_added` and `_updated` payloads are BYTE-FOR
 
 #### `download_added` / `download_updated`
 
-Identical to the REST [`/api/v0/downloads`](REFERENCE.md#get-apiv0downloads) list-item shape. `_updated` fires on any field-level change including `completed_bytes`, `transferred_bytes`, `speed_bytes_per_second`, the source counters, `kad_comment_lookup_running` and `hashed_part_count` — clients see live progress (and the Kad-notes lookup start → finish edge, and a running hash) without polling.
+Identical to the REST [`/api/v0/downloads`](REFERENCE.md#get-apiv0downloads) list-item shape. `_updated` fires on any field-level change including `completed_bytes`, `transferred_bytes`, `speed_bytes_per_second`, the source counters, `kad_comment_lookup_running`, `hashed_part_count` and `source_ecids` — clients see live progress (and the Kad-notes lookup start → finish edge, and a running hash) without polling.
 
 ```json
 {
@@ -287,9 +287,12 @@ Identical to the REST [`/api/v0/downloads`](REFERENCE.md#get-apiv0downloads) lis
   "progress": { "percent": 29.85 },
   "kad_comment_lookup_running": false,
   "hashed_part_count":  0,
-  "parts_total_count":  411
+  "parts_total_count":  411,
+  "source_ecids":  [ 1234, 5678 ]
 }
 ```
+
+`source_ecids` is the A4AF membership: the ECIDs of the clients parked on this file while pulling another. It is compared as a list, not through the `sources.a4af` count beside it, so a swap that moves one client out and another in still fires `download_updated`. Join it against the `clients` channel to shade the A4AF rows of a per-file client list without polling [`GET /downloads/{hash}/clients`](REFERENCE.md#get-apiv0downloadshashclients--get-apiv0sharedhashclients) — A4AF is a client-to-*file* relation, so it is the one such row attribute the client object cannot carry.
 
 A `POST /downloads/{hash}/comments` flips `kad_comment_lookup_running` to `true`, producing a `download_updated`; when the Kad lookup finishes (typically ~45 s, or sooner) it flips back to `false`, producing another. Retrieved notes are then read via `GET /downloads/{hash}/comments`.
 

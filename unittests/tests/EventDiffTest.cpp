@@ -1234,6 +1234,71 @@ TEST(EventDiff, DownloadUpdatedFiresWhenOnlyHashingProgressMoved)
 	ASSERT_TRUE(payload.find("\"hashed_part_count\":5") != std::string::npos);
 }
 
+// The A4AF membership rides download_updated, and the predicate compares the
+// list rather than the count that summarises it. A swap moves one client out
+// and another in, so `sources_a4af` never moves -- comparing only the count
+// left the panel showing the client that had already left.
+TEST(EventDiff, DownloadUpdatedFiresWhenTheA4afSourceSetSwapsAtAConstantCount)
+{
+	CState state;
+	state.MutateDownloads([](FileMap &files) {
+		FileSnapshot f;
+		f.ecid = 15;
+		f.hash = "5555555555555555555555555555eeee";
+		f.name = "parked.iso";
+		f.size = kPartSizeBytes * 2;
+		f.is_downloading = true;
+		f.download.sources_a4af = 2;
+		f.download.a4af_sources = { 7, 9 };
+		files.emplace(f.ecid, f);
+	});
+
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+	DrainAll(bus);
+
+	state.MutateDownloads(
+		[](FileMap &files) { files.find(15)->second.download.a4af_sources = { 7, 11 }; });
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string payload;
+	for (const auto &e : DrainAll(bus)) {
+		if (e.name == "download_updated")
+			payload = e.data;
+	}
+	ASSERT_TRUE(!payload.empty());
+	ASSERT_TRUE(payload.find("\"source_ecids\":[7,11]") != std::string::npos);
+}
+
+// R10: the key is always there. A download with no A4AF sources reports an
+// empty array, so a client can index it without first testing for the key.
+TEST(EventDiff, DownloadEventCarriesAnEmptySourceEcidsArrayWithNoA4afSources)
+{
+	CState state;
+	state.MutateDownloads([](FileMap &files) {
+		FileSnapshot f;
+		f.ecid = 16;
+		f.hash = "6666666666666666666666666666ffff";
+		f.name = "lonely.iso";
+		f.size = kPartSizeBytes;
+		f.is_downloading = true;
+		files.emplace(f.ecid, f);
+	});
+
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string payload;
+	for (const auto &e : DrainAll(bus)) {
+		if (e.name == "download_added")
+			payload = e.data;
+	}
+	ASSERT_TRUE(!payload.empty());
+	ASSERT_TRUE(payload.find("\"source_ecids\":[]") != std::string::npos);
+}
+
 // A file leaving the map fires download_removed carrying its hash, and drops
 // out of the baseline — the `gone` erase. Without it the baseline would grow
 // without bound across a session and keep re-firing the removal every tick.
