@@ -843,7 +843,9 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/downloads"
       "sources":  { "total": 217, "unavailable": 23, "transferring": 8, "a4af": 4 },
       "progress": { "percent": 29.85 },
       "kad_comment_lookup_running": false,
-      "hashed_part_count": 0
+      "hashed_part_count": 0,
+      "parts_total_count": 394,
+      "source_ecids": [ 1234, 5678 ]
     }
   ]
 }
@@ -860,6 +862,8 @@ The list shape omits `progress.parts` to keep large libraries compact. Use the d
 `kad_comment_lookup_running` is `true` while an on-demand Kad notes lookup is in flight for the file (started by [`POST /downloads/{hash}/comments`](#post-apiv0downloadshashcomments)); it flips back to `false` when the lookup finishes. Because it lives on the download object, a client can watch the `download_updated` SSE event for the start → finish transition instead of polling.
 
 `hashed_part_count` is the number of parts hashed so far by a pass running over the file — a `hashing` status, an [`AICH`](#post-apiv0sharedhashverify) hashset rebuild — and `0` when nothing is hashing. It is a count of completed parts, not the index of the part in flight, so it runs `0` → `parts_total_count`; divide by `parts_total_count` (from the detail endpoint, or `ceil(size / 9728000)`) for a percentage.
+
+`source_ecids` are the ECIDs of the clients holding this file as an A4AF source — the same array, under the same name, that [`POST /downloads/{hash}/a4af`](#post-apiv0downloadshasha4af) returns, and `[]` when there are none. It is the one thing a per-file client list needs that [`GET /api/v0/clients`](#get-apiv0clients) and the `clients` SSE channel cannot say: A4AF is a relation between a client and a *file*, so it does not live on the client object. With it on the download event, a Clients panel driven by the `downloads` and `clients` channels can shade its A4AF rows from the stream instead of polling [`GET /downloads/{hash}/clients`](#get-apiv0downloadshashclients--get-apiv0sharedhashclients). Note the name is scoped to A4AF, not to sources at large — the count of *all* sources is `sources.total`.
 
 The SSE `download_added` / `download_updated` event payload matches this object byte-for-byte.
 
@@ -1059,7 +1063,7 @@ The swap moves the client between two files' source lists, so an SSE subscriber 
 { "a4af_auto": false, "source_ecids": [ 1234, 5678 ] }
 ```
 
-`source_ecids` are the ECIDs of the clients holding this file as an A4AF source, joinable against [`GET /api/v0/clients`](#get-apiv0clients). The array is the post-action state, so a `swap_this` naming a single client shows up as that ECID having left it. The same clients appear as rows with `"a4af": true` on [`GET /api/v0/downloads/{hash}/clients`](#get-apiv0downloadshashclients--get-apiv0sharedhashclients), which carries the whole client object rather than a bare ECID.
+`source_ecids` are the ECIDs of the clients holding this file as an A4AF source, joinable against [`GET /api/v0/clients`](#get-apiv0clients). The same array, under the same name, rides the download object and its `download_updated` SSE event, so a subscriber does not have to POST here to keep it current. The array is the post-action state, so a `swap_this` naming a single client shows up as that ECID having left it. The same clients appear as rows with `"a4af": true` on [`GET /api/v0/downloads/{hash}/clients`](#get-apiv0downloadshashclients--get-apiv0sharedhashclients), which carries the whole client object rather than a bare ECID.
 
 **Errors:** `400 bad_request` (missing or unknown `action`; `swap_this_auto`, which moved to `PATCH`; a non-integer `client_ecid`; `client_ecid` with the wrong action), `400 amuled_rejected` (the daemon refused the swap — most commonly because the client is actively sending data, which it will not be swapped away from), `404 not_found` (no download with that hash, or no client with that ECID), `409 conflict` (that client is not an A4AF source of this download), `503 ec_unavailable`.
 

@@ -2935,6 +2935,16 @@ void WriteDownloadObject(
 	const std::int64_t parts_total_count = static_cast<std::int64_t>(webapi::PartCountForSize(f.size));
 	w.Key("parts_total_count");
 	w.ValueInt(parts_total_count);
+	// On the list, not detail-only, so the SSE download event carries it:
+	// A4AF is a client-to-file relation, the one thing a per-file client
+	// list needs that the `clients` channel cannot say. Same spelling as on
+	// POST /downloads/{hash}/a4af (R6).
+	w.Key("source_ecids");
+	w.BeginArray();
+	for (const std::uint32_t ecid : f.download.a4af_sources) {
+		w.ValueInt(static_cast<int64_t>(ecid));
+	}
+	w.EndArray();
 	if (detail) {
 		// Detail-only fields (GET /downloads/{hash}); omitted from the
 		// list. `remaining_seconds` is computed here from the snapshot --

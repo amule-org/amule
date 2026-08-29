@@ -141,6 +141,12 @@ if [ "$COUNT" -gt 0 ]; then
 	# left a list-driven client with no way to see a hash running.
 	_assert_json_eq '.downloads[0].hashed_part_count | type' number \
 		'/downloads[0].hashed_part_count is numeric (#1054)'
+	# A4AF membership on the list, so the SSE download event carries it and a
+	# per-file Clients panel stops polling /downloads/{hash}/clients for it.
+	_assert_json_eq '.downloads[0].source_ecids | type' array \
+		'/downloads[0].source_ecids is an array'
+	_assert_json_eq '[.downloads[0].source_ecids[] | type] | all(. == "number")' true \
+		'/downloads[0].source_ecids holds only numeric ECIDs'
 
 	# --- 4. /downloads/{hash} bare-object detail. -----------------
 	HASH=$(printf '%s' "$CURL_BODY" | jq -r '.downloads[0].hash')
@@ -183,6 +189,8 @@ if [ "$COUNT" -gt 0 ]; then
 		'/downloads/{hash} carries my_rating (yours, not comments[].rating)'
 	_assert_json_eq '.a4af_auto | type' boolean \
 		'/downloads/{hash} carries a4af_auto'
+	_assert_json_eq '.source_ecids | type' array \
+		'/downloads/{hash} carries source_ecids (same key as POST .../a4af)'
 
 	# Per-source comments sub-resource (issue #419).
 	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH/comments"

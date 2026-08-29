@@ -32,6 +32,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cstdint>
 #include <cstdlib>
 #include <iostream>
 #include <sstream>
@@ -126,7 +127,15 @@ std::string ToJsonDownloadEvent(const FileSnapshot &f)
 	  << ",\"progress\":{\"percent\":" << JsonDoubleToString(f.download.percent) << "}"
 	  << ",\"kad_comment_lookup_running\":" << (f.download.kad_comment_searching ? "true" : "false")
 	  << ",\"hashed_part_count\":" << f.download.hashed_part_count
-	  << ",\"parts_total_count\":" << webapi::PartCountForSize(f.size) << "}";
+	  << ",\"parts_total_count\":" << webapi::PartCountForSize(f.size) << ",\"source_ecids\":[";
+	bool first_a4af = true;
+	for (const std::uint32_t ecid : f.download.a4af_sources) {
+		if (!first_a4af)
+			o << ",";
+		first_a4af = false;
+		o << ecid;
+	}
+	o << "]}";
 	return o.str();
 }
 
@@ -426,7 +435,11 @@ bool EqualDownload(const FileSnapshot &a, const FileSnapshot &b)
 	       a.download.sources_a4af == b.download.sources_a4af &&
 	       a.download.percent == b.download.percent &&
 	       a.download.kad_comment_searching == b.download.kad_comment_searching &&
-	       a.download.hashed_part_count == b.download.hashed_part_count;
+	       a.download.hashed_part_count == b.download.hashed_part_count &&
+	       // The membership, not the `sources_a4af` count beside it: a swap
+	       // moves one client out and another in, so the count never budges
+	       // and comparing it would publish nothing.
+	       a.download.a4af_sources == b.download.a4af_sources;
 }
 
 // Comment list equality (deliberately NOT part of EqualDownload — a comment

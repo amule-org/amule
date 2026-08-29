@@ -166,6 +166,20 @@ if [ -n "$ADDED" ]; then
 	else
 		_fail "download_added .data.hashed_part_count" "not a number in $JSON"
 	fi
+	# A4AF membership rides the download event: it is the only per-file
+	# client relation the `clients` channel cannot carry, and a per-file
+	# Clients panel polled /downloads/{hash}/clients purely to get it.
+	# Always an array, never absent (R10) — empty for a fresh download.
+	if echo "$JSON" | jq -e '.source_ecids | type == "array"' >/dev/null 2>&1; then
+		_pass "download_added .data.source_ecids is an array"
+	else
+		_fail "download_added .data.source_ecids" "not an array in $JSON"
+	fi
+	if echo "$JSON" | jq -e '[.source_ecids[] | type] | all(. == "number")' >/dev/null 2>&1; then
+		_pass "download_added .data.source_ecids holds only numeric ECIDs"
+	else
+		_fail "download_added .data.source_ecids" "non-numeric entry in $JSON"
+	fi
 else
 	_fail "download_added missing" \
 		"no event with the Ubuntu ISO hash within 12 s; stream sample: $(head -30 "$SSE_OUT")"
