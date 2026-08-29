@@ -3106,15 +3106,15 @@ webapi::KnownClientSnapshot DecodeKnownClient(const CECTag &entry)
 	c.user_hash = std::string(entry.GetMD4Data().Encode().Lower().utf8_str());
 
 	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_UPLOAD_TOTAL))
-		c.total_uploaded = t->GetInt();
+		c.uploaded_bytes_total = t->GetInt();
 	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_DOWNLOAD_TOTAL))
-		c.total_downloaded = t->GetInt();
+		c.downloaded_bytes_total = t->GetInt();
 	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_LAST_SEEN))
-		c.last_seen = static_cast<std::time_t>(t->GetInt());
+		c.last_seen_at = static_cast<std::time_t>(t->GetInt());
 	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_FIRST_SEEN))
-		c.first_seen = static_cast<std::time_t>(t->GetInt());
+		c.first_seen_at = static_cast<std::time_t>(t->GetInt());
 	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_SESSIONS))
-		c.sessions = static_cast<std::uint32_t>(t->GetInt());
+		c.session_count = static_cast<std::uint32_t>(t->GetInt());
 	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_NAME))
 		c.client_name = std::string(t->GetStringData().utf8_str());
 	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_USER_IP)) {
@@ -3131,11 +3131,11 @@ webapi::KnownClientSnapshot DecodeKnownClient(const CECTag &entry)
 	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_SOFTWARE))
 		c.software = webapi::ClientSoftwareName(static_cast<std::uint32_t>(t->GetInt()));
 	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_SOFT_VER_STR))
-		c.version = std::string(t->GetStringData().utf8_str());
+		c.software_version = std::string(t->GetStringData().utf8_str());
 	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_FROM))
 		c.source_origin = webapi::SourceOriginName(static_cast<std::uint32_t>(t->GetInt()));
 	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_OBFUSCATION_STATUS))
-		c.obfuscation = webapi::ClientObfuscationName(static_cast<std::uint8_t>(t->GetInt()));
+		c.obfuscation_state = webapi::ClientObfuscationName(static_cast<std::uint8_t>(t->GetInt()));
 	return c;
 }
 
@@ -3163,19 +3163,19 @@ void WriteKnownClientObject(CJsonWriter &w, const webapi::KnownClientSnapshot &c
 	WriteStringOrNull(w, "country_code", !c.country_code.empty(), c.country_code);
 	const bool has_software = !c.software.empty();
 	WriteStringOrNull(w, "software", has_software, c.software);
-	WriteStringOrNull(w, "software_version", has_software, c.version);
+	WriteStringOrNull(w, "software_version", has_software, c.software_version);
 	WriteStringOrNull(w, "source_origin", !c.source_origin.empty(), c.source_origin);
-	WriteStringOrNull(w, "obfuscation_state", !c.obfuscation.empty(), c.obfuscation);
+	WriteStringOrNull(w, "obfuscation_state", !c.obfuscation_state.empty(), c.obfuscation_state);
 	// Same quantity as the live /clients row, so the same key (R6).
 	w.Key("uploaded_bytes_total");
-	w.ValueUInt(static_cast<uint64_t>(c.total_uploaded));
+	w.ValueUInt(static_cast<uint64_t>(c.uploaded_bytes_total));
 	w.Key("downloaded_bytes_total");
-	w.ValueUInt(static_cast<uint64_t>(c.total_downloaded));
+	w.ValueUInt(static_cast<uint64_t>(c.downloaded_bytes_total));
 	w.Key("last_seen_at");
-	w.ValueUInt(static_cast<uint64_t>(c.last_seen));
-	const bool has_first_seen = c.first_seen != 0;
-	WriteUIntOrNull(w, "first_seen_at", has_first_seen, static_cast<uint64_t>(c.first_seen));
-	WriteUIntOrNull(w, "session_count", has_first_seen, static_cast<uint64_t>(c.sessions));
+	w.ValueUInt(static_cast<uint64_t>(c.last_seen_at));
+	const bool has_first_seen = c.first_seen_at != 0;
+	WriteUIntOrNull(w, "first_seen_at", has_first_seen, static_cast<uint64_t>(c.first_seen_at));
+	WriteUIntOrNull(w, "session_count", has_first_seen, static_cast<uint64_t>(c.session_count));
 	// Correlate with /clients by user_hash to reach the live peer.
 	w.Key("online");
 	w.ValueBool(c.online);
@@ -6150,11 +6150,11 @@ CHttpServer::Response CApiDispatcher::HandleKnownClients(const CHttpServer::Requ
 		{ "name", SORT_BY(client_name) },
 		{ "software", SORT_BY(software) },
 		// R7: each value is spelled exactly like the response key it orders by.
-		{ "first_seen_at", SORT_BY(first_seen) },
-		{ "last_seen_at", SORT_BY(last_seen) },
-		{ "session_count", SORT_BY(sessions) },
-		{ "uploaded_bytes_total", SORT_BY(total_uploaded) },
-		{ "downloaded_bytes_total", SORT_BY(total_downloaded) },
+		{ "first_seen_at", SORT_BY(first_seen_at) },
+		{ "last_seen_at", SORT_BY(last_seen_at) },
+		{ "session_count", SORT_BY(session_count) },
+		{ "uploaded_bytes_total", SORT_BY(uploaded_bytes_total) },
+		{ "downloaded_bytes_total", SORT_BY(downloaded_bytes_total) },
 	};
 
 	// Built under the state's read lock: the store is never copied out, so the
