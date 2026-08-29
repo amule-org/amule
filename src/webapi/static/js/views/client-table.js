@@ -5,8 +5,8 @@
 
 import { api } from "../api.js";
 import { data } from "../events.js";
-import { html, useState, useEffect, useStore } from "../dom.js";
-import { Badge, listPlaceholder, CountryCell, toast } from "../components.js";
+import { html, useState, useEffect, useMemo, useStore } from "../dom.js";
+import { Badge, listPlaceholder, Placeholder, CountryCell, toast } from "../components.js";
 import { searches } from "../searches.js";
 import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker, ipNum } from "../table.js";
 import { formatBytes, formatSpeed } from "../format.js";
@@ -32,6 +32,37 @@ const bytesOf = (c, k) => formatBytes(c[k]);
 // download_file_name, so falling back to upload_file_name is what actually
 // makes the column non-blank for uploads (previously always "—" there).
 export const fileNameOf = (c) => c.download_file_name || c.upload_file_name || "";
+const originLabel = (c) => t("downloads_peer_origin_" + (c.source_origin || "unknown"));
+// No inversion: the API renamed `view_shared_disabled` to stop consumers negating it.
+const sharesListLabel = (c) => t(c.shared_files_browsable ? "common_yes" : "common_no");
+
+// The OTHER partfile an A4AF row is parked on: not on the row, so resolve
+// download_file_hash against `downloads`; "?" when unresolved, as the desktop does.
+//
+// Resolved once per row, up front, and cached on the row as `a4af_file_name`:
+// sortRows() calls sortVal per *comparison*, so a lookup that walked the
+// downloads collection from inside the comparator would be O(rows·log rows·M).
+// Same reason the parts column precomputes; the cell reads the same cached
+// value it sorts by, so the two can never disagree.
+function withA4afNames(rows, downloads) {
+  if (!Array.isArray(rows) || !rows.some((c) => c.a4af)) return rows;
+  const names = new Map();
+  if (Array.isArray(downloads)) for (const d of downloads) names.set(d.hash, d.name);
+  return rows.map((c) => (c.a4af ? { ...c, a4af_file_name: a4afFileName(c, names) } : c));
+}
+
+function a4afFileName(c, names) {
+  return (c.download_file_hash && names.get(c.download_file_hash)) || "?";
+}
+
+// A source queued for this file while it currently serves another one. Text
+// rather than colour alone, and it names the file the peer is parked on.
+function a4afCell(c) {
+  if (!c.a4af) return "—";
+  const other = c.a4af_file_name || "?";
+  return html`<span class="peer-a4af" title=${t("downloads_peer_a4af_tip") + " — " + other}>
+    ${t("downloads_peer_a4af")}: ${other}</span>`;
+}
 
 // Default order when no column sort is chosen: busiest peers first.
 export const bySpeed = (a, b) =>
@@ -63,10 +94,16 @@ export const COLS = [
   // The peer's own self-reported OS string -- frequently empty.
   { key: "os", th: "downloads_peer_col_os", width: "110px", sortable: true,
     sortVal: (c) => (c.reported_os || "").toLowerCase(), cell: (c) => c.reported_os || "—" },
+  { key: "origin", th: "downloads_peer_col_origin", width: "120px", sortable: true,
+    sortVal: (c) => originLabel(c).toLowerCase(), cell: (c) => originLabel(c) },
+  { key: "shares_list", th: "downloads_peer_col_shares_list", width: "110px", sortable: true,
+    sortVal: (c) => (c.shared_files_browsable ? 1 : 0),
+    cell: (c) => html`<span title=${t("downloads_peer_col_shares_list_tip")}>${sharesListLabel(c)}</span>` },
   { key: "file", th: "downloads_peer_col_file", cls: "name", sortable: true,
     sortVal: (c) => fileNameOf(c).toLowerCase(),
     cell: (c) => html`<span title=${fileNameOf(c)}>${fileNameOf(c) || "—"}</span>` },
-
+  { key: "a4af", th: "downloads_peer_a4af", width: "180px", sortable: true,
+    sortVal: (c) => (c.a4af ? (c.a4af_file_name || "?").toLowerCase() : ""), cell: (c) => a4afCell(c) },
   { key: "dl_state", th: "downloads_peer_col_dl_state", width: "120px", sortable: true,
     sortVal: (c) => c.download_state || "", cell: (c) => stateBadge(c.download_state) },
   { key: "dl_speed", th: "downloads_peer_col_dl_speed", num: true, width: "100px", sortable: true,
@@ -106,7 +143,17 @@ export const COLS = [
 
 // Raw-detail columns no consumer leads with; each adds its own defaultHidden set
 // on top of these.
-export const HIDDEN_EVERYWHERE = ["address", "os", "user_hash", "ident"];
+export const HIDDEN_EVERYWHERE = ["address", "os", "user_hash", "ident", "origin", "shares_list"];
+
+// A `defaultHidden` entry only reaches a user who has never touched the column
+// picker: useTablePrefs restores a stored `hidden` array wholesale, and a column
+// that did not exist when it was stored is absent from it, so it arrives
+// visible. PREFS_VERSION + ADDED_COLS is the one-shot migration for that: on the
+// first load after the bump, every key listed here that the consumer's own
+// defaultHidden also hides is folded into the stored array. Bump the version and
+// list the key whenever a column is added to a defaultHidden set.
+export const PREFS_VERSION = 1;
+export const ADDED_COLS = ["origin", "shares_list", "a4af"];
 
 // 1:1 with ClientIdentStateName() in src/webapi/Refresher.cpp.
 export const IDENT_STATES = ["identified", "not_available", "id_needed", "id_failed", "bad_guy", "unknown"];
@@ -162,12 +209,12 @@ export function stateBadge(s) {
 // (biggest transfer first), so only the column key is a prop. `toolbar` is
 // whatever filter controls the caller wants left of the picker. Returns the
 // two siblings so the caller keeps owning the layout box around them.
-// `loading` (useClients() still undefined) makes empty `rows` mean "not seeded
-// yet" rather than "no peers".
+// `loading` makes empty `rows` mean "not seeded yet"; `empty` overrides it.
 export function ClientTable({ rows, prefsKey, defaultHidden, defaultSort, toolbar, toolbarCls = "toolbar",
-                              loading = false }) {
+                              loading = false, empty = null }) {
   const { sortKey, sortDir, hidden, widths, toggleSort, toggleCol, setWidth, resetPrefs } =
-    useTablePrefs(prefsKey, { sortKey: defaultSort, sortDir: -1, hidden: defaultHidden });
+    useTablePrefs(prefsKey, { sortKey: defaultSort, sortDir: -1, hidden: defaultHidden,
+                              version: PREFS_VERSION, added: ADDED_COLS });
 
   const columns = COLS.map((col) => ({ ...col, label: col.th ? t(col.th) : "" }));
   const shown = columns.filter((c) => !c.key || !hidden.has(c.key));
@@ -187,28 +234,80 @@ export function ClientTable({ rows, prefsKey, defaultHidden, defaultSort, toolba
                      sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort}
                      widths=${widths} onResize=${setWidth}
                      maxHeight="none"
-                     empty=${listPlaceholder(loading, t("downloads_peer_empty"))} />`;
+                     empty=${empty || listPlaceholder(loading, t("downloads_peer_empty"))} />`;
 }
 
-// Per-file peer table for the detail panels. Rows are the live clients whose
-// download_file_hash (they serve us this file) or upload_file_hash (they pull
-// it from us) matches; both hashes come from the same m_files map that produced
-// the file's own hash, so a plain string compare is enough. Peers that are not
-// currently connected for this file (A4AF, offline sources) have neither hash
-// and therefore never show up here.
-export function FileClients({ hash, prefsKey, defaultHidden, defaultSort }) {
-  const clients = useClients();
+// How often an open Clients tab re-reads its peer list. Deliberately an
+// interval and not the `scope` store tick: publish() hands out a fresh array
+// every 500 ms while a queue is active, so a store-keyed fetch effect fired
+// ~120 requests a minute at a route that walks the whole client map and
+// serialises every matching row -- for a panel whose numbers a human reads at
+// walking pace. 5 s is the same order as the SSE-less poll loop in events.js
+// and keeps the two properties that matter: it refreshes while the tab is open,
+// and clearInterval on unmount stops it dead when the tab closes.
+const REFRESH_MS = 5000;
+
+// Per-file peer table for the detail panels, fed by GET {scope}/{hash}/clients
+// (issue #984). `scope` ("downloads" or "shared") is a prop rather than a guess: a
+// partfile with one completed chunk is in both collections at once. Unlike the old
+// client-side hash join, the route also returns A4AF rows.
+export function FileClients({ hash, scope, prefsKey, defaultHidden, defaultSort }) {
+  // A4AF badges name the other file, so this panel needs `downloads` live even for a
+  // *shared* file. Must be the SAME loader views/downloads.js registers, since register
+  // is first-wins: api.list appends limit=<all>, a plain GET would cap it at 100.
+  useEffect(() => {
+    data.register({ key: "downloads", eventPrefix: "download", id: "hash",
+      list: () => api.list("downloads?status=all").then((r) => r.downloads || []) });
+    data.ensure("downloads");
+  }, []);
+  const downloads = useStore("downloads");
+  const [rows, setRows] = useState(undefined); // undefined until the first fetch lands
+  const [failed, setFailed] = useState(null);
   const [ident, setIdent] = useState("all");
   const [q, setQ] = useState("");
+  const [tick, setTick] = useState(0);
 
-  let rows = (clients || []).filter((c) => c.download_file_hash === hash || c.upload_file_hash === hash);
-  if (ident !== "all") rows = rows.filter((c) => c.ident_state === ident);
-  if (q) { const match = textMatcher(q); rows = rows.filter((c) => match((c.name || "") + " " + fileNameOf(c))); }
+  useEffect(() => {
+    const id = setInterval(() => setTick((n) => n + 1), REFRESH_MS);
+    return () => clearInterval(id);
+  }, []);
+
+  // Kept apart from the fetch below, which also re-runs on every tick and must
+  // NOT blank a populated table. This one runs only when the file changes, and
+  // it has to: until the new response lands `rows` still holds the previous
+  // file's peers, and the panel would present them under the new file's name.
+  // undefined feeds `loading`, so the table spins instead of lying.
+  useEffect(() => { setRows(undefined); setFailed(null); }, [hash, scope]);
+
+  useEffect(() => {
+    if (!hash || !scope) return;
+    let alive = true;
+    api.list(scope + "/" + hash + "/clients")
+      .then((r) => {
+        if (!alive) return;
+        setRows(r.clients || []);
+        setFailed(null);
+      })
+      // Keep the last good rows on a transient failure; the tick re-fetches soon.
+      .catch((e) => { if (alive) { setFailed(e); setRows((prev) => prev || []); } });
+    return () => { alive = false; };
+  }, [hash, scope, tick]);
+
+  // Resolve the A4AF file names once per row, here, rather than per comparison
+  // inside the sort. Memoised on both inputs: a row set with no A4AF source
+  // comes back untouched, so a `downloads` publish costs nothing.
+  let list = useMemo(() => withA4afNames(rows, downloads), [rows, downloads]) || [];
+  if (ident !== "all") list = list.filter((c) => c.ident_state === ident);
+  if (q) { const match = textMatcher(q); list = list.filter((c) => match((c.name || "") + " " + fileNameOf(c))); }
+
+  const errorNode = failed && !(rows || []).length
+    ? html`<${Placeholder} kind="error">${terr(failed)}<//>` : null;
 
   return html`
     <div class="detail-clients">
-      <${ClientTable} rows=${rows} prefsKey=${prefsKey} defaultHidden=${defaultHidden}
-                      defaultSort=${defaultSort} loading=${clients === undefined}
+      <${ClientTable} rows=${list} prefsKey=${prefsKey} defaultHidden=${defaultHidden}
+                      defaultSort=${defaultSort} loading=${rows === undefined}
+                      empty=${errorNode}
                       toolbar=${ClientFilters({ ident, setIdent, q, setQ })} />
     </div>`;
 }

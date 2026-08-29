@@ -11,12 +11,16 @@ import { ClientFilters, ClientTable, HIDDEN_EVERYWHERE, fileNameOf, isDown, isUp
 import { textMatcher } from "../table.js";
 import { t } from "../i18n.js";
 
+// The global /clients rows carry no A4AF flag -- that only comes from the
+// per-file route -- so the column would be a wall of dashes here.
+const CLIENTS_HIDDEN = [...HIDDEN_EVERYWHERE, "a4af"];
+
 // Every tab lists the full column set in the picker; these are the ones each
 // starts with hidden, so its default view stays focused on that direction.
 const TAB_HIDDEN = {
-  all: [...HIDDEN_EVERYWHERE, "dl_session", "remote_rank", "ul_session", "queue_pos", "score"],
-  downloads: [...HIDDEN_EVERYWHERE, "ul_state", "ul_speed", "uploaded", "ul_session", "queue_pos", "score"],
-  uploads: [...HIDDEN_EVERYWHERE, "dl_state", "dl_speed", "downloaded", "dl_session", "remote_rank"],
+  all: [...CLIENTS_HIDDEN, "dl_session", "remote_rank", "ul_session", "queue_pos", "score"],
+  downloads: [...CLIENTS_HIDDEN, "ul_state", "ul_speed", "uploaded", "ul_session", "queue_pos", "score"],
+  uploads: [...CLIENTS_HIDDEN, "dl_state", "dl_speed", "downloaded", "dl_session", "remote_rank"],
 };
 // Default sort per tab: most transferred first, in the tab's own direction.
 const TAB_SORT = { all: "downloaded", downloads: "downloaded", uploads: "uploaded" };

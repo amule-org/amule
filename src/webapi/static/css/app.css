@@ -515,6 +515,13 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
 .row-actions .btn { vertical-align: middle; }
 .peer-flags { white-space: nowrap; }
 .peer-flags .icon { vertical-align: middle; margin-right: 3px; color: var(--text-dim); }
+/* A4AF badge: a source parked on another file -- bordered like the desktop's,
+   and text so it does not lean on colour. */
+.peer-a4af {
+  display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+  padding: 1px 5px; border: 1px solid var(--border); border-radius: 3px;
+  font-size: 11px; font-weight: 600; color: var(--text-dim);
+}
 .row-actions .btn + .btn { margin-left: 4px; }
 .row-actions select + .btn { margin-left: 6px; }
 /* A select sizes itself to its longest option, so a long category name would

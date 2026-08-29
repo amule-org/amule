@@ -21,7 +21,11 @@ const PRIORITIES = ["very_low", "low", "normal", "high", "release"];
 
 // Peers of a shared file: show the upload-side columns, keep the download ones
 // (and the redundant per-row file name) one click away in the column picker.
-const SH_HIDDEN = [...HIDDEN_EVERYWHERE, "file", "dl_state", "dl_speed", "downloaded", "dl_session", "remote_rank"];
+// A4AF too: a peer queued for another file while it serves this one is a fact
+// about that download, not about this share, so the route never marks a shared
+// file's rows A4AF and the column would be a wall of dashes. Hidden, not
+// removed -- it stays in the picker, like every other column here.
+const SH_HIDDEN = [...HIDDEN_EVERYWHERE, "a4af", "file", "dl_state", "dl_speed", "downloaded", "dl_session", "remote_rank"];
 
 // Human upload-priority label, matching the shared list (auto shows the
 // derived level in parentheses).
@@ -109,8 +113,8 @@ export function SharedDetail({ hash }) {
 
       <div class="detail-body">
       ${tab === "clients" ? html`
-        <${FileClients} hash=${s.hash} prefsKey="shared_clients" defaultHidden=${SH_HIDDEN}
-                        defaultSort="uploaded" />
+        <${FileClients} hash=${s.hash} scope="shared" prefsKey="shared_clients"
+                        defaultHidden=${SH_HIDDEN} defaultSort="uploaded" />
       ` : tab === "comments" ? html`
         <div class="detail-comments">
           <${CommentEditor} key=${s.hash} hash=${s.hash} kind="shared" comment=${s.my_comment} rating=${s.my_rating} />
