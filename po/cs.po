@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-24 19:01+0200\n"
-"PO-Revision-Date: 2026-08-25 10:03+0000\n"
+"PO-Revision-Date: 2026-08-28 20:01+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
 "Language: cs\n"
@@ -4142,7 +4142,7 @@ msgstr "Zaregistruje v operačním systému záznam automatického spouštění 
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
-msgstr "Nastaví aMule jako výchozí obslužný program pro odkazy ed2k://, takže se otevře kliknutím na takový odkaz v prohlížeči nebo ve správci souborů."
+msgstr "Nastaví aMule jako výchozí program/ovladač pro odkazy ed2k://, takže se otevře kliknutím na takový odkaz v prohlížeči nebo ve správci souborů."
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "aMule only handles eD2k-compatible magnets (containing xt=urn:ed2k:). BitTorrent magnets are NOT supported and clicking them will silently fail. If you use a BitTorrent client (Transmission, qBittorrent, etc.), leave this off."
@@ -4697,7 +4697,7 @@ msgstr "Vzhled: "
 
 #: src/muuli_wdr.cpp
 msgid "Show \"Fast eD2k Links Handler\" in every window."
-msgstr "Zobrazit \"Rychlou obsluhu eD2k odkazů\" v každém okně."
+msgstr "Zobrazit \"Rychlý ovladač eD2k odkazů\" v každém okně."
 
 #: src/muuli_wdr.cpp
 msgid "Show extended info on categories tabs"
@@ -5158,7 +5158,7 @@ msgstr "Vlastní URL"
 
 #: src/muuli_wdr.cpp
 msgid "Choose which provider supplies the GeoIP MMDB database. DB-IP is the default - no account required. MaxMind requires a free account + license key. Use Custom URL to point at any other MMDB host (e.g. a local mirror)."
-msgstr ""
+msgstr "Vyberte poskytovatele GeoIP databáze MMDB. Výchozí je DB-IP - není vyžadován účet. MaxMind vyžaduje bezplatný účet + licenční klíč. Pomocí Vlastní URL můžete odkázat na jiný zdroj MMDB (např. místní zrcadlo)."
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -5167,6 +5167,10 @@ msgid ""
 "IP-to-Country data by DB-IP.com - https://db-ip.com\n"
 "License: Creative Commons BY 4.0 - https://creativecommons.org/licenses/by/4.0/"
 msgstr ""
+"Není vyžadována žádná konfigurace.\n"
+"\n"
+"Data IP-to-Country poskytuje DB-IP.com - https://db-ip.com\n"
+"Licence: Creative Commons BY 4.0 - https://creativecommons.org/licenses/by/4.0/"
 
 #: src/muuli_wdr.cpp
 msgid "License key:"
@@ -5181,11 +5185,16 @@ msgid ""
 "License: MaxMind GeoLite2 EULA - https://www.maxmind.com/en/geolite2/eula\n"
 "Requires attribution and account registration; refresh at least every 30 days."
 msgstr ""
+"Zaregistrujte si bezplatný účet MaxMind a poté vygenerujte licenční klíč:\n"
+"https://www.maxmind.com/en/geolite2/signup\n"
+"\n"
+"Tento produkt obsahuje data GeoLite2 vytvořená společností MaxMind - https://www.maxmind.com\n"
+"Licence: MaxMind GeoLite2 EULA - https://www.maxmind.com/en/geolite2/eula\n"
+"Vyžaduje uvedení zdroje a registraci účtu; obnovujte alespoň každých 30 dní."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Download URL:"
-msgstr "Stahování: "
+msgstr "Adresa URL pro stažení:"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -5193,19 +5202,21 @@ msgid ""
 "URL may include credentials (https://user:pass@host/...).\n"
 "License and attribution terms are set by the upstream URL - you are responsible."
 msgstr ""
+"Musí odkazovat na soubor .mmdb nebo na .gz / .tar.gz, který jej obsahuje.\n"
+"URL může obsahovat přihlašovací údaje (https://user:pass@host/...).\n"
+"Podmínky licence a uvedení zdroje určuje zdrojová URL - odpovědnost nesete vy."
 
 #: src/muuli_wdr.cpp
 msgid "Download the GeoIP database from the selected source."
-msgstr ""
+msgstr "Stáhnout GeoIP databázi z vybraného zdroje."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Auto-update on startup"
-msgstr "Automaticky aktualizovat IP filtr po spuštění"
+msgstr "Automatická aktualizace při spuštění"
 
 #: src/muuli_wdr.cpp
 msgid "Re-download the GeoIP database from the selected source every time aMule starts."
-msgstr ""
+msgstr "Znovu stáhnout GeoIP databázi z vybraného zdroje při každém spuštění aMule."
 
 #: src/muuli_wdr.cpp
 msgid "Filter incoming messages (except current chat):"
@@ -5233,7 +5244,7 @@ msgstr "zadejte slova, která by měla amule filtrovat a blokovat zprávy obsahu
 
 #: src/muuli_wdr.cpp
 msgid "Show received messages in the log"
-msgstr ""
+msgstr "Zobrazit přijaté zprávy v logu"
 
 #: src/muuli_wdr.cpp
 msgid "Comments"
@@ -5312,23 +5323,20 @@ msgid "Remember those settings"
 msgstr "Zapamatovat si toto nastavení"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Encrypt the connection (recommended)"
-msgstr "Externí připojení uzavřeno."
+msgstr "Šifrovat připojení (doporučeno)"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Force ZLIB compression"
-msgstr "Použít gzip kompresi"
+msgstr "Vynutit kompresi ZLIB"
 
 #: src/muuli_wdr.cpp
 msgid "Enable Verbose Debug-Logging."
-msgstr ""
+msgstr "Povolit podrobné ladicí logování."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Only to Logfile"
-msgstr "&Otevřít tento soubor"
+msgstr "Pouze do souboru logu"
 
 #: src/muuli_wdr.cpp
 msgid "Message Categories:"
@@ -5344,7 +5352,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Retry selected"
-msgstr ""
+msgstr "Opakovat vybrané"
 
 #: src/muuli_wdr.cpp
 msgid "Remove selected"
@@ -5356,31 +5364,27 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Statistics and queued clients for selected file(s) : Session / All time"
-msgstr ""
+msgstr "Statistiky a klienti ve frontě pro vybrané soubory: relace / celkem"
 
 #: src/muuli_wdr.cpp
 msgid "Active Uploads"
 msgstr "Aktivní odesílání"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Show Clients for"
-msgstr "Zobrazit klienty"
+msgstr "Zobrazit klienty pro"
 
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "All files"
-msgstr "Všechny sdílené soubory"
+msgstr "Všechny soubory"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Selected files"
-msgstr "Sdílené soubory"
+msgstr "Vybrané soubory"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Active uploads only"
-msgstr "Aktivní odesílání"
+msgstr "Pouze aktivní odesílání"
 
 #: src/muuli_wdr.cpp
 msgid "Reload:"
@@ -5403,19 +5407,19 @@ msgid "Close this chat-session."
 msgstr "Zavře tento chat."
 
 #: src/muuli_wdr.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Cancel %s"
-msgstr "Zrušit"
+msgstr "Zrušit %s"
 
 #: src/muuli_wdr.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Disconnect %s"
-msgstr "Odpojit"
+msgstr "Odpojit %s"
 
 #: src/muuli_wdr.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connect %s"
-msgstr "Připojit"
+msgstr "Připojit %s"
 
 #: src/OScopeCtrl.cpp
 #, c-format
@@ -5511,7 +5515,7 @@ msgstr "Používám konfigurační adresář: %s"
 
 #: src/PartFileConvert.cpp
 msgid "Waiting for partfile convert thread to die..."
-msgstr ""
+msgstr "Čekání na ukončení vlákna pro převod souboru part..."
 
 #: src/PartFileConvert.cpp
 #, c-format
@@ -5524,7 +5528,7 @@ msgstr "Čtení dočasné složky"
 
 #: src/PartFileConvert.cpp
 msgid "Retrieving basic information from download info file"
-msgstr ""
+msgstr "Načítání základních informací ze souboru informací o stahování"
 
 #: src/PartFileConvert.cpp
 msgid "Creating destination file"
@@ -5538,11 +5542,11 @@ msgstr ""
 #: src/PartFileConvert.cpp
 #, c-format
 msgid "Saving data block into new single download file (%u of %u)"
-msgstr ""
+msgstr "Ukládání bloku dat do nového jednoho souboru stahování (%u z %u)"
 
 #: src/PartFileConvert.cpp
 msgid "Retrieving source downloadfile information"
-msgstr ""
+msgstr "Načítání informací o zdrojovém souboru stahování"
 
 #: src/PartFileConvert.cpp
 msgid "Adding download and saving new partfile"
@@ -5570,18 +5574,16 @@ msgid "Please choose a folder to search for temporary downloads! (subfolders wil
 msgstr "Vyberte prosím složku, ve které se mají hledat dočasná stahování! (zahrnou se i podsložky)"
 
 #: src/PartFileConvertDlg.cpp
-#, fuzzy
 msgid "Do you want the source files of successfully imported downloads be deleted?"
-msgstr "Přejete si smazat zdrojové soubory úspěšný importovaných stahování?"
+msgstr "Chcete, aby byly zdrojové soubory úspěšně importovaných stahování smazány?"
 
 #: src/PartFileConvertDlg.cpp
 msgid "Remove sources?"
 msgstr "Odstranit zdroje?"
 
 #: src/PartFile.cpp
-#, fuzzy
 msgid "ERROR: Failed to create partfile"
-msgstr "CHYBA: Částečný soubor nelze vytvořit)"
+msgstr "CHYBA: Nepodařilo se vytvořit soubor part"
 
 #: src/PartFile.cpp
 #, c-format
@@ -5604,14 +5606,14 @@ msgid "ERROR: Invalid part.met file version: %s ==> %s"
 msgstr "CHYBA: Neplatná verze souboru part.met: %s ==> %s"
 
 #: src/PartFile.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Error: %s (%s) is corrupt (bad tags: %s), unable to load file."
-msgstr "Chyba: %s (%s) je porušený (špatný \"tagcount\"), nelze načíst soubor."
+msgstr "Chyba: %s (%s) je poškozen (chybné štítky: %s), soubor nelze načíst."
 
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: %s (%s) is corrupt (wrong tagcount), unable to load file."
-msgstr ""
+msgstr "CHYBA: %s (%s) je poškozen (nesprávný počet štítků), soubor nelze načíst."
 
 #: src/PartFile.cpp
 msgid "Trying to recover file info..."
@@ -5651,7 +5653,7 @@ msgstr "I/O chyba během ukládání části: "
 #: src/PartFile.cpp
 #, c-format
 msgid "Wrote 0/unknown bytes to '%s' -- preserving existing .part.met."
-msgstr ""
+msgstr "Zapsáno 0/neznámý počet bajtů do '%s' -- zachovává se stávající .part.met."
 
 #: src/PartFile.cpp
 #, c-format
@@ -5662,32 +5664,32 @@ msgstr "Selhalo ukládání souboru part.met.seeds pro %s"
 #, c-format
 msgid "Saved %i source seed for partfile: %s (%s)"
 msgid_plural "Saved %i source seeds for partfile: %s (%s)"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Uložen %i zdrojový seed pro částečný soubor: %s (%s)"
+msgstr[1] "Uloženy %i zdrojové seedy pro částečný soubor: %s (%s)"
+msgstr[2] "Uloženo %i zdrojových seedů pro částečný soubor: %s (%s)"
 
 #: src/PartFile.cpp
 #, c-format
 msgid "Can't read seeds file for Partfile %s (%s)"
-msgstr ""
+msgstr "Nelze přečíst soubor zdrojů seeds pro soubor Partfile %s (%s)"
 
 #: src/PartFile.cpp
 #, c-format
 msgid "Error reading partfile's seeds file (%s - %s): %s"
-msgstr ""
+msgstr "Chyba při čtení souboru zdrojů seeds patřícímu k částečnému souboru Partfile (%s - %s): %s"
 
 #: src/PartFile.cpp
 #, c-format
 msgid "Found corrupted part (%d) in %d part file %s - FileResultHash |%s| FileHash |%s|"
 msgid_plural "Found corrupted part (%d) in %d parts file %s - FileResultHash |%s| FileHash |%s|"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Nalezena poškozená část (%d) v %d částečném souboru %s - FileResultHash |%s| FileHash |%s|"
+msgstr[1] "Nalezena poškozená část (%d) v %d částečných souborech %s - FileResultHash |%s| FileHash |%s|"
+msgstr[2] "Nalezena poškozená část (%d) v %d částečných souborech %s - FileResultHash |%s| FileHash |%s|"
 
 #: src/PartFile.cpp
 #, c-format
 msgid "Found completed part (%i) in %s"
-msgstr ""
+msgstr "Nalezena dokončená část (%i) v %s"
 
 #: src/PartFile.cpp
 #, c-format
@@ -5697,7 +5699,7 @@ msgstr "Dokončeno přehashování %s"
 #: src/PartFile.cpp
 #, c-format
 msgid "Unexpected error while completing %s. File paused"
-msgstr ""
+msgstr "Neočekávaná chyba při dokončování %s. Soubor pozastaven"
 
 #: src/PartFile.cpp
 #, c-format
@@ -5705,11 +5707,13 @@ msgid "Finished downloading: %s"
 msgstr "Dokončené stahování: %s"
 
 #: src/PartFile.cpp
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Finished downloading:\n"
 "%s"
-msgstr "Dokončené stahování: %s"
+msgstr ""
+"Dokončené stahování: \n"
+"%s"
 
 #: src/PartFile.cpp
 #, c-format
@@ -5719,22 +5723,22 @@ msgstr "Mazání souboru: %s"
 #: src/PartFile.cpp
 #, c-format
 msgid "WARNING: Unable to hash downloaded part - hashset incomplete for '%s'"
-msgstr ""
+msgstr "VAROVÁNÍ: Nelze vytvořit hash stažené části - sada hashů je neúplná pro '%s'"
 
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Unable to hash downloaded part - hashset incomplete (%s). This should never happen"
-msgstr ""
+msgstr "CHYBA: Nelze vytvořit hash stažené části - sada hashů je neúplná (%s). K tomu by nikdy nemělo dojít"
 
 #: src/PartFile.cpp
 #, c-format
 msgid "Part %u of '%s' marked complete but partfile is shorter than expected (have %llu bytes, need %llu); reopening gap for re-download."
-msgstr ""
+msgstr "Část %u z '%s' byla označena jako dokončená, ale soubor partfile je kratší, než se očekávalo (má %llu bajtů, potřebuje %llu); mezera je znovu otevírána pro opětovné stažení."
 
 #: src/PartFile.cpp
 #, c-format
 msgid "EOF while hashing downloaded part %u with length %u (max %u) of partfile '%s' with length %u: %s"
-msgstr ""
+msgstr "Konec souboru při vytváření hashe stažené části %u o délce %u (max %u) souboru part '%s' o délce %u: %s"
 
 #: src/PartFile.cpp
 #, c-format
@@ -5749,7 +5753,7 @@ msgstr "Stažená část %i souboru '%s' je poškozená."
 #: src/PartFile.cpp
 #, c-format
 msgid "ICH: Recovered corrupted part %i for %s -> Saved bytes: %s"
-msgstr ""
+msgstr "ICH: Obnovena poškozená část %i pro %s -> Uloženo bajtů: %s"
 
 #: src/PartFile.cpp
 msgid "Allocating"
@@ -5762,7 +5766,7 @@ msgstr "Nedostatek místa na disku"
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
-msgstr ""
+msgstr "CHYBA: Nepodařilo se otevřít soubor part '%s'"
 
 #: src/Preferences.cpp
 msgid "System default"
@@ -5821,9 +5825,8 @@ msgid "English (U.K.)"
 msgstr "Angličtina (britská)"
 
 #: src/Preferences.cpp
-#, fuzzy
 msgid "English (U.S.)"
-msgstr "Angličtina (britská)"
+msgstr "Angličtina (USA)"
 
 #: src/Preferences.cpp
 msgid "Estonian"
@@ -5930,9 +5933,8 @@ msgid "There are no translations installed for aMule"
 msgstr ""
 
 #: src/Preferences.cpp
-#, fuzzy
 msgid "No languages available"
-msgstr "Nedostupný"
+msgstr "Nejsou k dispozici žádné jazyky"
 
 #: src/Preferences.cpp
 msgid "no options available"
@@ -6014,14 +6016,17 @@ msgid ""
 "    %PARTFILE - full path to the file\n"
 "    %PARTNAME - file name only"
 msgstr ""
+"Budou nahrazeny následující proměnné:\n"
+"    %PARTFILE - úplná cesta k souboru\n"
+"    %PARTNAME - pouze název souboru"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Tray icon support requires libayatana-appindicator3 at compile time."
-msgstr ""
+msgstr "Podpora ikony v systémové liště vyžaduje knihovnu libayatana-appindicator3 v době kompilace."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Not available on Wayland: the protocol does not report when a window is minimized, so this option cannot intercept the system minimize button. Workaround: launch aMule with `GDK_BACKEND=x11` to use XWayland instead."
-msgstr ""
+msgstr "Není dostupné na Waylandu: protokol nehlásí, kdy je okno minimalizováno, takže tato možnost nemůže zachytit systémové tlačítko minimalizace. Řešení: spusťte aMule s `GDK_BACKEND=x11`, abyste místo toho použili XWayland."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6042,12 +6047,12 @@ msgstr ""
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Failed to connect Cfg to widget with the ID %d and key %s"
-msgstr ""
+msgstr "Nepodařilo se propojit Cfg s prvkem s ID %d a klíčem %s"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Failed to transfer data from Cfg to Widget with the ID %d and key %s"
-msgstr ""
+msgstr "Nepodařilo se přenést data z Cfg do prvku s ID %d a klíčem %s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The type of proxy you are connecting to"
@@ -6056,22 +6061,23 @@ msgstr "Typ proxy, ke které se připojujete"
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Failed to transfer data from Widget to Cfg with the ID %d and key %s"
-msgstr ""
+msgstr "Nepodařilo se přenést data z prvku do Cfg s ID %d a klíčem %s"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "No password set."
-msgstr "Kontrola hesla\n"
+msgstr "Heslo není nastaveno."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Guest access needs a password. Type one in the guest password field, or untick Enable guest access."
-msgstr ""
+msgstr "Přístup pro hosty vyžaduje heslo. Zadejte jej do pole heslo hosta, nebo zrušte zaškrtnutí volby Povolit přístup pro hosty."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
 "You have enabled external connections but have not specified a password.\n"
 "External connections cannot be enabled unless a valid password is specified."
 msgstr ""
+"Povolili jste externí připojení, ale nezadali jste heslo.\n"
+"Externí připojení nelze povolit, dokud nezadáte platné heslo."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6094,19 +6100,16 @@ msgid "- Network interface binding changed.\n"
 msgstr "- Bylo změněno přidružení k síťovému rozhraní.\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- External connect port changed.\n"
-msgstr "Externí připojení uzavřeno."
+msgstr "- Port externího připojení změněn.\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- External connect acceptance changed.\n"
-msgstr "Nové externí připojení přijato"
+msgstr "- Nastavení přijímání externích připojení bylo změněno.\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- External connect interface changed.\n"
-msgstr "Externí připojení uzavřeno."
+msgstr "- Rozhraní externího připojení bylo změněno.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Protocol obfuscation support changed.\n"
@@ -6117,20 +6120,21 @@ msgid "- Proxy settings changed (needed for HTTP transfers).\n"
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- amuleapi settings changed.\n"
-msgstr "- Jazyk byl změněn.\n"
+msgstr "- Nastavení amuleapi bylo změněno.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
 "Your Auto-update server list is empty.\n"
 "'Auto-update server list at startup' will be disabled."
 msgstr ""
+"Váš seznam serverů pro automatickou aktualizaci je prázdný.\n"
+"Volba 'Automaticky aktualizovat seznam serverů po spuštění' bude zakázána."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "The amuleapi password could not be saved: %s"
-msgstr ""
+msgstr "Heslo amuleapi se nepodařilo uložit: %s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Language changed.\n"
@@ -6146,18 +6150,19 @@ msgstr "- Síť eD2k povolena.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The shared-file exclusion pattern is not a valid regular expression. The filter has been left disabled."
-msgstr ""
+msgstr "Vzor pro vyloučení sdílených souborů není platný regulární výraz. Filtr zůstal zakázán."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Invalid regular expression"
-msgstr "Neplatná verze protokolu."
+msgstr "Neplatný regulární výraz"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
 "Both eD2k and Kad network are disabled.\n"
 "You won't be able to connect until you enable at least one of them."
 msgstr ""
+"Sítě eD2k i Kad jsou zakázány.\n"
+"Nebudete se moci připojit, dokud alespoň jednu z nich nepovolíte."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6179,16 +6184,15 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not register aMule for autostart at login. The autostart store may be read-only."
-msgstr ""
+msgstr "Nepodařilo se zaregistrovat aMule pro automatické spuštění při přihlášení. Úložiště automatického spuštění může být pouze pro čtení."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not remove the autostart-at-login entry."
-msgstr ""
+msgstr "Nepodařilo se odebrat záznam automatického spuštění při přihlášení."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Autostart"
-msgstr "Automatické obnovování spuštěno"
+msgstr "Automatické spuštění"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Register file type"
@@ -6196,12 +6200,12 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Register URL handler"
-msgstr ""
+msgstr "Zaregistrovat ovladač URL"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "aMule only handles eD2k-compatible magnets. If you replace the current magnet handler (%s), BitTorrent magnet links will stop working - aMule cannot download BitTorrent content. Continue?"
-msgstr ""
+msgstr "aMule zpracovává pouze magnety kompatibilní s eD2k. Pokud nahradíte současný obslužný program/ovladač magnet odkazů (%s), magnet odkazy BitTorrent přestanou fungovat - aMule nedokáže stahovat obsah BitTorrent. Pokračovat?"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -6211,7 +6215,7 @@ msgstr ""
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Another application is currently the default handler for these links (%s). Replace it with aMule?"
-msgstr ""
+msgstr "Výchozím obslužným programem/ovladačem těchto odkazů je momentálně jiná aplikace (%s). Nahradit ji aMule?"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not register aMule for .emulecollection files. The registration store may be read-only."
@@ -6224,11 +6228,11 @@ msgstr "Soubor %s se již pokoušíte stáhnout"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not register aMule as the URL handler. The registration store may be read-only."
-msgstr ""
+msgstr "Nepodařilo se zaregistrovat aMule jako ovladač URL. Úložiště registrací může být pouze pro čtení."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not remove the URL handler registration."
-msgstr ""
+msgstr "Nepodařilo se odstranit registraci ovladače URL."
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
