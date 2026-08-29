@@ -58,20 +58,36 @@ const colClass = (c) => [c.num ? "num" : "", c.cls || ""].filter(Boolean).join("
 
 // Per-table UI prefs (sort direction + hidden columns + resized widths)
 // persisted as one object under "amule.table.<storageKey>". `defaults` =
-// { sortKey, sortDir, hidden:[] }. Stored prefs are spread over the defaults
-// so a column added as default-hidden later stays hidden only for users who
-// never opened the picker (their stored object has no entry for it → the
-// default wins), while everyone else keeps their explicit choice. Returns
-// the current sort plus toggles the view wires to VirtualTable.onSort and
-// the ColumnPicker.
+// { sortKey, sortDir, hidden:[], version?, added?:[] }. Stored prefs are spread
+// over the defaults, and `hidden` is one array: a stored one replaces the
+// default wholesale, so `defaults.hidden` alone only ever reaches a user who
+// has never opened the column picker. Anyone else gets a newly added column
+// visible, whatever the view declared -- their stored array simply predates it.
+//
+// `version` + `added` is the migration for that, and the only way to make a new
+// default apply to an existing user: on the first load after a version bump,
+// the added keys this view also lists in `hidden` are folded into the stored
+// array. It fires once (the stamp is saved with the prefs), so a user who then
+// re-enables the column keeps it. Views without a `version` are unaffected.
+// Returns the current sort plus toggles the view wires to VirtualTable.onSort
+// and the ColumnPicker.
 export function useTablePrefs(storageKey, defaults) {
-  const [prefs, setPrefs] = useState(() => ({
-    sortKey: defaults.sortKey,
-    sortDir: defaults.sortDir,
-    hidden: defaults.hidden || [],
-    widths: {},
-    ...loadPref("table." + storageKey, {}),
-  }));
+  const [prefs, setPrefs] = useState(() => {
+    const stored = loadPref("table." + storageKey, {});
+    const prefs = {
+      sortKey: defaults.sortKey,
+      sortDir: defaults.sortDir,
+      hidden: defaults.hidden || [],
+      widths: {},
+      ...stored,
+      v: defaults.version || 0,
+    };
+    if (Array.isArray(stored.hidden) && (stored.v || 0) < (defaults.version || 0)) {
+      const add = (defaults.added || []).filter((k) => (defaults.hidden || []).includes(k));
+      prefs.hidden = [...new Set([...prefs.hidden, ...add])];
+    }
+    return prefs;
+  });
   useEffect(() => { savePref("table." + storageKey, prefs); }, [prefs]);
 
   const toggleSort = (key) =>
@@ -92,7 +108,7 @@ export function useTablePrefs(storageKey, defaults) {
   // linger in localStorage).
   const resetPrefs = () =>
     setPrefs({ sortKey: defaults.sortKey, sortDir: defaults.sortDir,
-               hidden: defaults.hidden || [], widths: {} });
+               hidden: defaults.hidden || [], widths: {}, v: defaults.version || 0 });
 
   return { sortKey: prefs.sortKey, sortDir: prefs.sortDir,
            hidden: new Set(prefs.hidden), widths: prefs.widths || {},
