@@ -291,6 +291,11 @@ if [ "$COUNT" -gt 0 ]; then
 			0 "every row has a valid role"
 		_assert_json_eq '[.clients[] | select(.a4af == null)] | length' 0 "every row has an a4af flag"
 		_assert_json_eq '[.clients[] | select(has("parts"))] | length' 0 "no parts bitmap without include_parts"
+		# The two part indices ride include_parts with the bitmap: an
+		# index into a bitmap the caller did not ask for is unreadable,
+		# so neither key may appear here either.
+		_assert_json_eq '[.clients[] | select(has("next_requested_part_index") or has("downloading_part_index"))] | length' \
+			0 "no part indices without include_parts"
 	else
 		_skip "row-shape checks: no peer is connected to the download"
 	fi
@@ -318,6 +323,69 @@ if [ "$COUNT" -gt 0 ]; then
 		_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads?sort=$_sk&limit=1"
 		_assert_status 400 "/downloads?sort=$_sk (pre-rename spelling) → 400"
 	done
+	# The two part indices the desktop's source bar paints over the bitmap.
+	# Under include_parts both keys are ALWAYS present on every row, null
+	# rather than omitted when the index does not apply, so one query yields
+	# one row shape -- assert presence separately from type, or a missing key
+	# and a null one both read as `null` and the test proves nothing.
+	#
+	# Re-issued rather than reusing the include_parts body fetched above: the
+	# sort loops in between have each overwritten $CURL_BODY, and the last of
+	# them left a 400 error envelope there. `.clients` on that is null, `null
+	# | length` is 0, and the whole block below would have skipped itself on
+	# every run while reporting "no peer is connected".
+	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH/clients?include_parts=true"
+	_assert_status 200 "GET /downloads/{hash}/clients?include_parts=true (part-index block) → 200"
+	DLIDXROWS=$(printf '%s' "$CURL_BODY" | jq '.clients | length')
+	echo "  --- part-index block sees $DLIDXROWS row(s) ---"
+	if [ "$DLIDXROWS" -gt 0 ]; then
+		for k in next_requested_part_index downloading_part_index; do
+			_assert_json_eq "[.clients[] | select(has(\"$k\") | not)] | length" 0 \
+				"every row carries $k under include_parts"
+			# Number or null, never a string and never a bool: null is
+			# how "the peer never reported it", the 0xffff "nothing
+			# pending" sentinel, and a non-source row are all spelled.
+			_assert_json_eq "[.clients[] | select((.$k | type) as \$t | \$t != \"number\" and \$t != \"null\")] | length" \
+				0 "$k is a number or null on every row"
+			# 0 is a real chunk index, so an unknown value must be a
+			# JSON null and not a 0 standing in for one; and a known
+			# value must address a chunk of THIS file.
+			_assert_json_eq "[.clients[] | select(.$k != null) | select(.$k < 0 or .$k >= $PARTCOUNT)] | length" \
+				0 "$k, when not null, is an index inside [0, part_count)"
+		done
+		# A row that is not a source for this file has no download bitmap,
+		# so its indices belong to some other file: both must be null.
+		_assert_json_eq '[.clients[] | select(.role == "uploading_to" or .role == "none") | select(.next_requested_part_index != null or .downloading_part_index != null)] | length' \
+			0 "non-source rows report both part indices as null"
+		# An index is only meaningful against the bitmap it indexes, and
+		# role alone does not guarantee one: a source that has sent no
+		# part status yet, or whose decoded bitmap cannot cover the file,
+		# ships no `parts` key at all. Such a row is a stripe coordinate
+		# with no bar to paint it on, so both indices must be null there
+		# too. Count the rows that actually exercised it, so a green run
+		# with no such row cannot be read as having proved the gate.
+		DLNOBITS=$(printf '%s' "$CURL_BODY" | jq '[.clients[] | select(has("parts") | not)] | length')
+		_assert_json_eq '[.clients[] | select(has("parts") | not) | select(.next_requested_part_index != null or .downloading_part_index != null)] | length' \
+			0 "a row without a parts bitmap reports both part indices as null ($DLNOBITS such row(s))"
+		# The state guard: the daemon reports downloading_part_index as a
+		# stale 0 for a source that is merely connected or queued, which
+		# would have a renderer paint "downloading now" on chunk 0 of
+		# every idle row. Anything but download_state "downloading" must
+		# come back null -- and null, not 0, is what distinguishes it
+		# from a peer genuinely feeding chunk 0.
+		DLIDLE=$(printf '%s' "$CURL_BODY" | jq '[.clients[] | select(.role == "downloading_from" or .role == "both") | select(.download_state != "downloading")] | length')
+		if [ "$DLIDLE" -gt 0 ]; then
+			_assert_json_eq '[.clients[] | select(.role == "downloading_from" or .role == "both") | select(.download_state != "downloading") | select(.downloading_part_index != null)] | length' \
+				0 "a source that is not downloading reports downloading_part_index null, not 0 ($DLIDLE such row(s))"
+		else
+			_skip "idle-source downloading_part_index check: every source row is actively downloading"
+		fi
+		# Report which path the run actually exercised, so a green run
+		# cannot be read as having seen a live peer feeding a chunk.
+		echo "  --- non-null part indices observed: next=$(printf '%s' "$CURL_BODY" | jq '[.clients[] | select(.next_requested_part_index != null)] | length') last=$(printf '%s' "$CURL_BODY" | jq '[.clients[] | select(.downloading_part_index != null)] | length') of $DLIDXROWS row(s) ---"
+	else
+		_skip "part-index checks: no peer is connected to the download"
+	fi
 
 	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH/clients?include_parts=maybe"
 	_assert_status 400 "include_parts must be true/false"
@@ -497,8 +565,49 @@ if [ "$SHCOUNT" -gt 0 ]; then
 			"every shared-side row has an a4af flag"
 		_assert_json_eq '[.clients[] | select(has("parts"))] | length' 0 \
 			"no parts bitmap on the shared route without include_parts"
+		_assert_json_eq '[.clients[] | select(has("next_requested_part_index") or has("downloading_part_index"))] | length' \
+			0 "no part indices on the shared route without include_parts"
 	else
 		_skip "shared-side row-shape checks: no peer is downloading the shared file"
+	fi
+
+	# Same two keys on the shared route, which is the same handler. A shared
+	# file's rows are overwhelmingly role "uploading_to" -- someone pulling from us --
+	# and a peer's download indices describe whatever IT is downloading, not
+	# this file, so the interesting case here is that they come back null.
+	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/shared/$SHASH/clients?include_parts=true"
+	_assert_status 200 "GET /shared/{hash}/clients?include_parts=true → 200"
+	SHIDXROWS=$(printf '%s' "$CURL_BODY" | jq '.clients | length')
+	if [ "$SHIDXROWS" -gt 0 ]; then
+		for k in next_requested_part_index downloading_part_index; do
+			_assert_json_eq "[.clients[] | select(has(\"$k\") | not)] | length" 0 \
+				"every shared-side row carries $k under include_parts"
+			_assert_json_eq "[.clients[] | select((.$k | type) as \$t | \$t != \"number\" and \$t != \"null\")] | length" \
+				0 "$k is a number or null on every shared-side row"
+			_assert_json_eq "[.clients[] | select(.$k != null) | select(.$k < 0 or .$k >= $SHPARTCOUNT)] | length" \
+				0 "$k, when not null, indexes a chunk of the shared file"
+		done
+		_assert_json_eq '[.clients[] | select(.role == "uploading_to" or .role == "none") | select(.next_requested_part_index != null or .downloading_part_index != null)] | length' \
+			0 "shared-side non-source rows report both part indices as null"
+		# An index is only meaningful against the bitmap it indexes, and
+		# role alone does not guarantee one: a source that has sent no
+		# part status yet, or whose decoded bitmap cannot cover the file,
+		# ships no `parts` key at all. Such a row is a stripe coordinate
+		# with no bar to paint it on, so both indices must be null there
+		# too. Count the rows that actually exercised it, so a green run
+		# with no such row cannot be read as having proved the gate.
+		SHNOBITS=$(printf '%s' "$CURL_BODY" | jq '[.clients[] | select(has("parts") | not)] | length')
+		_assert_json_eq '[.clients[] | select(has("parts") | not) | select(.next_requested_part_index != null or .downloading_part_index != null)] | length' \
+			0 "a shared-side row without a parts bitmap reports both part indices as null ($SHNOBITS such row(s))"
+		SHIDLE=$(printf '%s' "$CURL_BODY" | jq '[.clients[] | select(.role == "downloading_from" or .role == "both") | select(.download_state != "downloading")] | length')
+		if [ "$SHIDLE" -gt 0 ]; then
+			_assert_json_eq '[.clients[] | select(.role == "downloading_from" or .role == "both") | select(.download_state != "downloading") | select(.downloading_part_index != null)] | length' \
+				0 "a shared-side source that is not downloading reports downloading_part_index null ($SHIDLE such row(s))"
+		else
+			_skip "shared-side idle-source downloading_part_index check: no idle source row"
+		fi
+	else
+		_skip "shared-side part-index checks: no peer is downloading the shared file"
 	fi
 
 	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/shared/$SHASH/clients?include_parts=true"
