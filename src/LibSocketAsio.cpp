@@ -48,8 +48,6 @@
 #include <poll.h> // Bounded readability wait for the sync-read no-progress timeout
 #endif
 
-// Trip the compile if we accidentally pull a deprecated Asio API back in.
-#define BOOST_ASIO_NO_DEPRECATED
 // Boost 1.92's asio declares several exception types with a user-provided
 // destructor and no matching copy constructor, which is the P0806 deprecation
 // -Wdeprecated-copy-with-user-provided-dtor reports. The build promotes it to
