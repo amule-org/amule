@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 19:01+0200\n"
+"POT-Creation-Date: 2026-08-29 20:55+0200\n"
 "PO-Revision-Date: 2026-08-25 10:12+0000\n"
 "Last-Translator: Hyunju Kang <rexington@gmail.com>\n"
 "Language-Team: Korean <hoenny@daum.net>\n"
@@ -2787,6 +2787,24 @@ msgid ""
 msgstr ""
 "하나 이상의 친구칸으로 설정이 허락되지않습니다\n"
 "단지 하나의 칸만 가능합니다."
+
+#: src/GenericClientListCtrl.cpp
+msgid ""
+"One block per part of the file.\n"
+"Light grey: this source does not have the part.\n"
+"Green: this source has it and so do you.\n"
+"Amber: downloading this part from this source now.\n"
+"Pale yellow: the next part you will request from this source.\n"
+"Dark grey: this source has it and you still need it.\n"
+"The whole bar is dimmed while the download is stopped."
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid ""
+"One block per part of your shared file.\n"
+"Dark grey: this peer already has the part.\n"
+"Light grey: this peer does not have it."
+msgstr ""
 
 #: src/GenericClientListCtrl.cpp
 #, fuzzy, c-format
@@ -7367,10 +7385,9 @@ msgstr[1] "알려진 공유 파일 %i개를 찾았음"
 msgid "User Name"
 msgstr "사용자이름"
 
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-#, fuzzy
-msgid "Available Parts"
-msgstr "가능함 :"
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Parts on Peer"
+msgstr ""
 
 #: src/SharedFilePeersListCtrl.cpp
 #, fuzzy
@@ -7567,6 +7584,11 @@ msgstr "공유된 파일(%i)"
 #, fuzzy, c-format
 msgid "Reloading shared files: %u files scanned"
 msgstr "공유된 파일 목록을 다시 읽어들입니다."
+
+#: src/SourceListCtrl.cpp
+#, fuzzy
+msgid "Part Status"
+msgstr "상태"
 
 #: src/SourceListCtrl.cpp
 #, fuzzy
@@ -9260,6 +9282,10 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy
+#~ msgid "Available Parts"
+#~ msgstr "가능함 :"
 
 #, fuzzy, c-format
 #~ msgid "Found %i known shared file, %i unknown"

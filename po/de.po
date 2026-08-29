@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 19:01+0200\n"
+"POT-Creation-Date: 2026-08-29 20:55+0200\n"
 "PO-Revision-Date: 2026-08-25 10:04+0000\n"
 "Last-Translator: Werner Mahr <werner@vollstreckernet.de>\n"
 "Language-Team: German <>\n"
@@ -2776,6 +2776,24 @@ msgid ""
 msgstr ""
 "Du darfst nicht mehr als einen Friendslot vergeben.\n"
 " Nur ein Slot wurde vergeben."
+
+#: src/GenericClientListCtrl.cpp
+msgid ""
+"One block per part of the file.\n"
+"Light grey: this source does not have the part.\n"
+"Green: this source has it and so do you.\n"
+"Amber: downloading this part from this source now.\n"
+"Pale yellow: the next part you will request from this source.\n"
+"Dark grey: this source has it and you still need it.\n"
+"The whole bar is dimmed while the download is stopped."
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid ""
+"One block per part of your shared file.\n"
+"Dark grey: this peer already has the part.\n"
+"Light grey: this peer does not have it."
+msgstr ""
 
 #: src/GenericClientListCtrl.cpp
 #, c-format
@@ -7314,9 +7332,9 @@ msgstr[1] "%i bekannte freigegebene Dateien gefunden"
 msgid "User Name"
 msgstr "Benutzername"
 
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Available Parts"
-msgstr "Verfügbare Teile"
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Parts on Peer"
+msgstr ""
 
 #: src/SharedFilePeersListCtrl.cpp
 msgid "Upload Status"
@@ -7510,6 +7528,11 @@ msgstr "Freigegebene Dateien (%i)"
 #, c-format
 msgid "Reloading shared files: %u files scanned"
 msgstr "Liste freigegebener Dateien neu laden: %u Dateien gelesen"
+
+#: src/SourceListCtrl.cpp
+#, fuzzy
+msgid "Part Status"
+msgstr "Status"
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
@@ -9221,6 +9244,9 @@ msgstr "aMule scheint zu laufen. Bitte schließen und das Entfernprogram erneut 
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Entferne Benutzerdaten von $APPDATA\\aMule..."
+
+#~ msgid "Available Parts"
+#~ msgstr "Verfügbare Teile"
 
 #, c-format
 #~ msgid "Found %i known shared file, %i unknown"

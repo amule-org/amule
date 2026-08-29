@@ -292,6 +292,21 @@ private:
 	void OnMouseMiddleClick(wxMouseEvent &event);
 
 	/**
+	 * Shows the colour legend of the chunk-bar column as a tooltip while the
+	 * pointer is over it, and clears it elsewhere. The bar has no other
+	 * explanation of what its colours mean (issue #1192), and the two
+	 * variants of the column -- ColumnUserProgress for Sources,
+	 * ColumnUserAvailable for Peers -- have different palettes, so the text
+	 * is chosen per cid.
+	 */
+	void OnMouseMotion(wxMouseEvent &event);
+
+	//! Tooltip text currently set on the control, so a motion event that does
+	//! not change it does not re-set it: re-setting on every move makes the
+	//! tooltip flicker and re-pop on GTK and MSW.
+	wxString m_tooltipText;
+
+	/**
 	 * The item the context menu was built for, by identity rather than row —
 	 * see the identical field on CDownloadListCtrl for why (PopupMenu runs a
 	 * nested event loop, so a row index would not survive it).

@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 19:01+0200\n"
+"POT-Creation-Date: 2026-08-29 20:55+0200\n"
 "PO-Revision-Date: 2026-08-25 10:21+0000\n"
 "Last-Translator: Wayne Su <mstarmstar@gmail.com>\n"
 "Language-Team: \n"
@@ -2768,6 +2768,24 @@ msgid ""
 msgstr ""
 "不允許設定超過一個好友位置。\n"
 " 只設定了一個位置。"
+
+#: src/GenericClientListCtrl.cpp
+msgid ""
+"One block per part of the file.\n"
+"Light grey: this source does not have the part.\n"
+"Green: this source has it and so do you.\n"
+"Amber: downloading this part from this source now.\n"
+"Pale yellow: the next part you will request from this source.\n"
+"Dark grey: this source has it and you still need it.\n"
+"The whole bar is dimmed while the download is stopped."
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid ""
+"One block per part of your shared file.\n"
+"Dark grey: this peer already has the part.\n"
+"Light grey: this peer does not have it."
+msgstr ""
 
 #: src/GenericClientListCtrl.cpp
 #, c-format
@@ -7290,9 +7308,9 @@ msgstr[0] "找到 %i 個已知的分享檔案"
 msgid "User Name"
 msgstr "使用者名稱"
 
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Available Parts"
-msgstr "可取得的部份"
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Parts on Peer"
+msgstr ""
 
 #: src/SharedFilePeersListCtrl.cpp
 msgid "Upload Status"
@@ -7480,6 +7498,11 @@ msgstr "分享檔案 (%i)"
 #, fuzzy, c-format
 msgid "Reloading shared files: %u files scanned"
 msgstr "重新載入分享檔案清單。"
+
+#: src/SourceListCtrl.cpp
+#, fuzzy
+msgid "Part Status"
+msgstr "狀態"
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
@@ -9168,6 +9191,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "Available Parts"
+#~ msgstr "可取得的部份"
 
 #, c-format
 #~ msgid "Found %i known shared file, %i unknown"

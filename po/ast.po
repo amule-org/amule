@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 19:01+0200\n"
+"POT-Creation-Date: 2026-08-29 20:55+0200\n"
 "PO-Revision-Date: 2026-08-25 10:02+0000\n"
 "Last-Translator: astur <malditoastur@gmail.com>\n"
 "Language-Team: Language ast <malditoastur@gmail.com>\n"
@@ -2778,6 +2778,24 @@ msgid ""
 msgstr ""
 "Nun se-y permite asignar más d'ún puestu reserváu.\n"
 " Namái s'asignó un puestu reserváu."
+
+#: src/GenericClientListCtrl.cpp
+msgid ""
+"One block per part of the file.\n"
+"Light grey: this source does not have the part.\n"
+"Green: this source has it and so do you.\n"
+"Amber: downloading this part from this source now.\n"
+"Pale yellow: the next part you will request from this source.\n"
+"Dark grey: this source has it and you still need it.\n"
+"The whole bar is dimmed while the download is stopped."
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid ""
+"One block per part of your shared file.\n"
+"Dark grey: this peer already has the part.\n"
+"Light grey: this peer does not have it."
+msgstr ""
 
 #: src/GenericClientListCtrl.cpp
 #, fuzzy, c-format
@@ -7353,10 +7371,9 @@ msgstr[1] "Alcontráronse %i ficheros compartíos"
 msgid "User Name"
 msgstr "Nome usuariu:"
 
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-#, fuzzy
-msgid "Available Parts"
-msgstr "Disponibles :"
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Parts on Peer"
+msgstr ""
 
 #: src/SharedFilePeersListCtrl.cpp
 #, fuzzy
@@ -7554,6 +7571,11 @@ msgstr "Ficheros Compartíos (%i)"
 #, fuzzy, c-format
 msgid "Reloading shared files: %u files scanned"
 msgstr "Recargar llista de ficheros compartíos."
+
+#: src/SourceListCtrl.cpp
+#, fuzzy
+msgid "Part Status"
+msgstr "Estáu"
 
 #: src/SourceListCtrl.cpp
 #, fuzzy
@@ -9262,6 +9284,10 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy
+#~ msgid "Available Parts"
+#~ msgstr "Disponibles :"
 
 #, c-format
 #~ msgid "Found %i known shared file, %i unknown"

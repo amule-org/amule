@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 19:01+0200\n"
+"POT-Creation-Date: 2026-08-29 20:55+0200\n"
 "PO-Revision-Date: 2026-08-25 10:05+0000\n"
 "Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
@@ -2772,6 +2772,24 @@ msgid ""
 msgstr ""
 "No se le permite asignar más de un puesto reservado.\n"
 " Solo se ha asignado uno."
+
+#: src/GenericClientListCtrl.cpp
+msgid ""
+"One block per part of the file.\n"
+"Light grey: this source does not have the part.\n"
+"Green: this source has it and so do you.\n"
+"Amber: downloading this part from this source now.\n"
+"Pale yellow: the next part you will request from this source.\n"
+"Dark grey: this source has it and you still need it.\n"
+"The whole bar is dimmed while the download is stopped."
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid ""
+"One block per part of your shared file.\n"
+"Dark grey: this peer already has the part.\n"
+"Light grey: this peer does not have it."
+msgstr ""
 
 #: src/GenericClientListCtrl.cpp
 #, c-format
@@ -7261,9 +7279,9 @@ msgstr[1] "Encontrados %i archivos compartidos"
 msgid "User Name"
 msgstr "Nombre de usuario"
 
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Available Parts"
-msgstr "Partes disponibles"
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Parts on Peer"
+msgstr ""
 
 #: src/SharedFilePeersListCtrl.cpp
 msgid "Upload Status"
@@ -7456,6 +7474,11 @@ msgstr "Archivos compartidos (%i)"
 #, c-format
 msgid "Reloading shared files: %u files scanned"
 msgstr "Recargando archivos compartidos: %u archivos escaneados"
+
+#: src/SourceListCtrl.cpp
+#, fuzzy
+msgid "Part Status"
+msgstr "Estado"
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
@@ -9166,6 +9189,9 @@ msgstr "aMule parece estar en ejecución. Por favor, ciérrelo y vuelva a ejecut
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Eliminando los datos de usuario en $APPDATA\\aMule..."
+
+#~ msgid "Available Parts"
+#~ msgstr "Partes disponibles"
 
 #, c-format
 #~ msgid "Found %i known shared file, %i unknown"

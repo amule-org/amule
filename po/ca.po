@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 19:01+0200\n"
+"POT-Creation-Date: 2026-08-29 20:55+0200\n"
 "PO-Revision-Date: 2026-08-25 10:03+0000\n"
 "Last-Translator: minterior <minterior@gmail.com>\n"
 "Language-Team: Català\n"
@@ -2771,6 +2771,24 @@ msgid ""
 msgstr ""
 "No podeu establir més d'una posició d'amic.\n"
 " Només s'ha assignat una posició."
+
+#: src/GenericClientListCtrl.cpp
+msgid ""
+"One block per part of the file.\n"
+"Light grey: this source does not have the part.\n"
+"Green: this source has it and so do you.\n"
+"Amber: downloading this part from this source now.\n"
+"Pale yellow: the next part you will request from this source.\n"
+"Dark grey: this source has it and you still need it.\n"
+"The whole bar is dimmed while the download is stopped."
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid ""
+"One block per part of your shared file.\n"
+"Dark grey: this peer already has the part.\n"
+"Light grey: this peer does not have it."
+msgstr ""
 
 #: src/GenericClientListCtrl.cpp
 #, c-format
@@ -7319,9 +7337,9 @@ msgstr[1] "S'han trobat %i fitxers compartits"
 msgid "User Name"
 msgstr "Nom d'usuari"
 
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Available Parts"
-msgstr "Parts disponibles"
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Parts on Peer"
+msgstr ""
 
 #: src/SharedFilePeersListCtrl.cpp
 msgid "Upload Status"
@@ -7515,6 +7533,11 @@ msgstr "Fitxers compartits (%i)"
 #, fuzzy, c-format
 msgid "Reloading shared files: %u files scanned"
 msgstr "Recarrega la llista de fitxers compartits."
+
+#: src/SourceListCtrl.cpp
+#, fuzzy
+msgid "Part Status"
+msgstr "Estat"
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
@@ -9207,6 +9230,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "Available Parts"
+#~ msgstr "Parts disponibles"
 
 #, c-format
 #~ msgid "Found %i known shared file, %i unknown"

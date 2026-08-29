@@ -104,6 +104,7 @@ wxBEGIN_EVENT_TABLE(CGenericClientListCtrl, CMuleVirtualDataViewCtrl)
 	EVT_DATAVIEW_ITEM_ACTIVATED(wxID_ANY, CGenericClientListCtrl::OnItemActivated)
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(wxID_ANY, CGenericClientListCtrl::OnItemRightClicked)
 	EVT_MIDDLE_DOWN(CGenericClientListCtrl::OnMouseMiddleClick)
+	EVT_MOTION(CGenericClientListCtrl::OnMouseMotion)
 
 	EVT_MENU(MP_CHANGE2FILE, CGenericClientListCtrl::OnSwapSource)
 	EVT_MENU(MP_SHOWLIST, CGenericClientListCtrl::OnViewFiles)
@@ -629,6 +630,65 @@ void CGenericClientListCtrl::OnMouseMiddleClick(wxMouseEvent &event)
 		return;
 	}
 	CClientDetailDialog(this, reinterpret_cast<ClientCtrlItem_Struct *>(data)->GetSource()).ShowModal();
+}
+
+namespace
+{
+/**
+ * Colour legend of a chunk-bar column, or an empty string for any other
+ * column. The two bar columns share one renderer but not one palette, so
+ * each gets its own text -- which is also why they no longer share one
+ * header label (issue #1192).
+ */
+wxString BarColumnTooltip(GenericColumnEnum cid)
+{
+	switch (cid) {
+	case ColumnUserProgress:
+		// Five states, in the order GetItemBarFill() tests them.
+		return _("One block per part of the file.\n"
+			 "Light grey: this source does not have the part.\n"
+			 "Green: this source has it and so do you.\n"
+			 "Amber: downloading this part from this source now.\n"
+			 "Pale yellow: the next part you will request from this source.\n"
+			 "Dark grey: this source has it and you still need it.\n"
+			 "The whole bar is dimmed while the download is stopped.");
+	case ColumnUserAvailable:
+		return _("One block per part of your shared file.\n"
+			 "Dark grey: this peer already has the part.\n"
+			 "Light grey: this peer does not have it.");
+	default:
+		return wxEmptyString;
+	}
+}
+} // namespace
+
+void CGenericClientListCtrl::OnMouseMotion(wxMouseEvent &event)
+{
+	// The base class and the platform both still need this event (hover
+	// highlight, drag tracking); the tooltip is purely additive.
+	event.Skip();
+
+	wxDataViewItem hitItem;
+	wxDataViewColumn *hitColumn = nullptr;
+	HitTest(event.GetPosition(), hitItem, hitColumn);
+
+	wxString tip;
+	if (hitColumn) {
+		const unsigned column = hitColumn->GetModelColumn();
+		if (column < static_cast<unsigned>(m_columndata.n_columns)) {
+			tip = BarColumnTooltip(m_columndata.columns[column].cid);
+		}
+	}
+
+	if (tip == m_tooltipText) {
+		return;
+	}
+	m_tooltipText = tip;
+	if (tip.IsEmpty()) {
+		UnsetToolTip();
+	} else {
+		SetToolTip(tip);
+	}
 }
 
 void CGenericClientListCtrl::OnItemRightClicked(wxDataViewEvent &event)

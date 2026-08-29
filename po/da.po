@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 19:01+0200\n"
+"POT-Creation-Date: 2026-08-29 20:55+0200\n"
 "PO-Revision-Date: 2026-08-25 10:03+0000\n"
 "Last-Translator: Alex Thomsen Leth <alexl@stofanet.dk>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -2725,6 +2725,24 @@ msgstr "Er du sikker på at du ønsker at slette de(n) valgt(e) ven(ner)?"
 msgid ""
 "You are not allowed to set more than one friendslot.\n"
 " Only one slot was assigned."
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid ""
+"One block per part of the file.\n"
+"Light grey: this source does not have the part.\n"
+"Green: this source has it and so do you.\n"
+"Amber: downloading this part from this source now.\n"
+"Pale yellow: the next part you will request from this source.\n"
+"Dark grey: this source has it and you still need it.\n"
+"The whole bar is dimmed while the download is stopped."
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid ""
+"One block per part of your shared file.\n"
+"Dark grey: this peer already has the part.\n"
+"Light grey: this peer does not have it."
 msgstr ""
 
 #: src/GenericClientListCtrl.cpp
@@ -7254,10 +7272,9 @@ msgstr[1] "Fandt %i kendte delte filer"
 msgid "User Name"
 msgstr "Brugernavn"
 
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-#, fuzzy
-msgid "Available Parts"
-msgstr "Tilgængelig :"
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Parts on Peer"
+msgstr ""
 
 #: src/SharedFilePeersListCtrl.cpp
 #, fuzzy
@@ -7456,6 +7473,11 @@ msgstr "Delte Filer (%i)"
 #, fuzzy, c-format
 msgid "Reloading shared files: %u files scanned"
 msgstr "Fandt %i kendte delte filer"
+
+#: src/SourceListCtrl.cpp
+#, fuzzy
+msgid "Part Status"
+msgstr "Status"
 
 #: src/SourceListCtrl.cpp
 #, fuzzy
@@ -9102,6 +9124,10 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy
+#~ msgid "Available Parts"
+#~ msgstr "Tilgængelig :"
 
 #, fuzzy, c-format
 #~ msgid "Found %i known shared file, %i unknown"
