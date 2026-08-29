@@ -3848,6 +3848,32 @@ bool IsEcFailedResponse(const CECPacket *resp, std::string &out_msg)
 	return true;
 }
 
+// The two category ops answer EC_OP_FAILED for a *partial success*, not a
+// failure: amuled created or updated the category and then found it could not
+// use the path, so it kept another one -- the incoming directory for a create,
+// the previous path for an update -- and returns that path in
+// EC_TAG_CATEGORY_PATH beside the category index (ExternalConn.cpp,
+// EC_OP_CREATE_CATEGORY / EC_OP_UPDATE_CATEGORY, and the rewrite in
+// CEC_Category_Tag::Create / ::Apply). An update keeps name, comment, colour
+// and priority in that case; only the path is refused.
+//
+// The desktop reads exactly this: CCatHandler::HandlePacket corrects its local
+// copy from the tag and tells the user "keeping directory ...". Relaying it as
+// a 400 instead says the request failed while the category exists, and throws
+// away the one field that says what happened.
+//
+// A reply carrying no such tag is a genuine failure.
+bool EcCategoryPathKept(const CECPacket *resp, std::string &kept_path)
+{
+	if (!resp || resp->GetOpCode() != EC_OP_FAILED)
+		return false;
+	const CECTag *t = resp->GetTagByName(EC_TAG_CATEGORY_PATH);
+	if (!t)
+		return false;
+	kept_path = std::string(t->GetStringData().utf8_str());
+	return true;
+}
+
 // Map our wire-string priorities back to amule's PR_* encoding -- the inverse of
 // PriorityName in Refresher.cpp, which is likewise one function for all three
 // resources. PR_AUTO=5 is the magic value stored as High plus the auto flag.
@@ -10283,10 +10309,18 @@ CHttpServer::Response CApiDispatcher::HandleCategoryCreate(const CHttpServer::Re
 	}
 	std::string ec_err_msg;
 	if (IsEcFailedResponse(ec_resp, ec_err_msg)) {
+		// A kept-path reply means the category exists; only the path was
+		// refused, and `save_path` on the follow-up read is the truthful
+		// answer. Anything else is a real failure.
+		std::string kept_path;
+		const bool kept = EcCategoryPathKept(ec_resp, kept_path);
 		delete ec_resp;
-		return ErrorResponse(400, "amuled_rejected", ec_err_msg.c_str());
+		if (!kept) {
+			return ErrorResponse(400, "amuled_rejected", ec_err_msg.c_str());
+		}
+	} else {
+		delete ec_resp;
 	}
-	delete ec_resp;
 
 	// Tick so the new category is in the snapshot the caller's follow-up GET
 	// reads, even though this response does not carry it.
@@ -10397,10 +10431,18 @@ CHttpServer::Response CApiDispatcher::HandleCategoryUpdate(
 	}
 	std::string ec_err_msg;
 	if (IsEcFailedResponse(ec_resp, ec_err_msg)) {
+		// As on create: a kept-path reply is a partial success. The name,
+		// comment, colour and priority in this request all landed, and the
+		// echoed object below reports the path that was actually kept.
+		std::string kept_path;
+		const bool kept = EcCategoryPathKept(ec_resp, kept_path);
 		delete ec_resp;
-		return ErrorResponse(400, "amuled_rejected", ec_err_msg.c_str());
+		if (!kept) {
+			return ErrorResponse(400, "amuled_rejected", ec_err_msg.c_str());
+		}
+	} else {
+		delete ec_resp;
 	}
-	delete ec_resp;
 
 	(void)RefresherTick(m_app, m_state);
 
