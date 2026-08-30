@@ -11,8 +11,8 @@ import { ClientFilters, ClientTable, HIDDEN_EVERYWHERE, fileNameOf, isDown, isUp
 import { textMatcher } from "../table.js";
 import { t } from "../i18n.js";
 
-// The global /clients rows carry no A4AF flag -- that only comes from the
-// per-file route -- so the column would be a wall of dashes here.
+// A4AF is a relation between a client and one file, so it has no meaning on a
+// list that is not scoped to a file; the column would be a wall of dashes here.
 const CLIENTS_HIDDEN = [...HIDDEN_EVERYWHERE, "a4af"];
 
 // Every tab lists the full column set in the picker; these are the ones each

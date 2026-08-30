@@ -635,6 +635,7 @@
   "downloads_peer_col_shares_list_tip": "Indica si este par permite explorar sus archivos compartidos",
   "downloads_peer_a4af": "A4AF",
   "downloads_peer_a4af_tip": "Pidió otro archivo: este par está en cola para este archivo, pero ahora mismo sirve el que se indica aquí.",
+  "downloads_peer_a4af_unknown_tip": "Este demonio no informa de qué fuentes han pedido otro archivo.",
   "downloads_peer_origin_server": "Servidor",
   "downloads_peer_origin_kad": "Kad",
   "downloads_peer_origin_source_exchange": "Intercambio de fuentes",

@@ -6,7 +6,7 @@
 import { api } from "../api.js";
 import { data } from "../events.js";
 import { html, useState, useEffect, useMemo, useStore } from "../dom.js";
-import { Badge, listPlaceholder, Placeholder, CountryCell, toast } from "../components.js";
+import { Badge, listPlaceholder, CountryCell, toast } from "../components.js";
 import { searches } from "../searches.js";
 import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker, ipNum } from "../table.js";
 import { formatBytes, formatSpeed } from "../format.js";
@@ -36,28 +36,42 @@ const originLabel = (c) => t("downloads_peer_origin_" + (c.source_origin || "unk
 // No inversion: the API renamed `view_shared_disabled` to stop consumers negating it.
 const sharesListLabel = (c) => t(c.shared_files_browsable ? "common_yes" : "common_no");
 
-// The OTHER partfile an A4AF row is parked on: not on the row, so resolve
-// download_file_hash against `downloads`; "?" when unresolved, as the desktop does.
+// Peers for one file: those transferring it in either direction, plus its A4AF
+// sources -- queued for this file while they serve another one, so neither hash
+// points here and the plain join alone would leave them invisible. Membership
+// comes off the download record (`source_ecids`, #1219), because A4AF is a
+// relation between a client and a *file* and cannot live on the client row.
 //
-// Resolved once per row, up front, and cached on the row as `a4af_file_name`:
-// sortRows() calls sortVal per *comparison*, so a lookup that walked the
-// downloads collection from inside the comparator would be O(rows·log rows·M).
-// Same reason the parts column precomputes; the cell reads the same cached
-// value it sorts by, so the two can never disagree.
-function withA4afNames(rows, downloads) {
-  if (!Array.isArray(rows) || !rows.some((c) => c.a4af)) return rows;
+// Every derived field is computed here, once per row, and the cells read back
+// what they sorted by. sortRows() calls sortVal per *comparison*, so testing set
+// membership or resolving the other file's name inside a comparator would cost
+// O(rows·log rows) scans instead of one pass.
+function fileRows(clients, hash, downloads) {
+  if (!Array.isArray(clients) || !Array.isArray(downloads)) return undefined;
+  const dl = downloads.find((d) => d.hash === hash);
+  // A file we only share has no download queue, so it has no A4AF sources. A
+  // download record without `source_ecids` is a daemon older than #1219:
+  // unknown, which must not be shown as "no".
+  const ecids = dl ? dl.source_ecids : [];
+  const sources = Array.isArray(ecids) ? new Set(ecids) : null;
   const names = new Map();
-  if (Array.isArray(downloads)) for (const d of downloads) names.set(d.hash, d.name);
-  return rows.map((c) => (c.a4af ? { ...c, a4af_file_name: a4afFileName(c, names) } : c));
-}
+  for (const d of downloads) names.set(d.hash, d.name);
 
-function a4afFileName(c, names) {
-  return (c.download_file_hash && names.get(c.download_file_hash)) || "?";
+  const rows = [];
+  for (const c of clients) {
+    const a4af = sources ? sources.has(c.ecid) : undefined;
+    if (!a4af && c.download_file_hash !== hash && c.upload_file_hash !== hash) continue;
+    rows.push({ ...c, a4af,
+                a4af_file_name: a4af ? names.get(c.download_file_hash) || "?" : "" });
+  }
+  return rows;
 }
 
 // A source queued for this file while it currently serves another one. Text
 // rather than colour alone, and it names the file the peer is parked on.
 function a4afCell(c) {
+  if (c.a4af === undefined)
+    return html`<span title=${t("downloads_peer_a4af_unknown_tip")}>?</span>`;
   if (!c.a4af) return "—";
   const other = c.a4af_file_name || "?";
   return html`<span class="peer-a4af" title=${t("downloads_peer_a4af_tip") + " — " + other}>
@@ -209,9 +223,10 @@ export function stateBadge(s) {
 // (biggest transfer first), so only the column key is a prop. `toolbar` is
 // whatever filter controls the caller wants left of the picker. Returns the
 // two siblings so the caller keeps owning the layout box around them.
-// `loading` makes empty `rows` mean "not seeded yet"; `empty` overrides it.
+// `loading` (rows still undefined) makes empty `rows` mean "not seeded yet"
+// rather than "no peers".
 export function ClientTable({ rows, prefsKey, defaultHidden, defaultSort, toolbar, toolbarCls = "toolbar",
-                              loading = false, empty = null }) {
+                              loading = false }) {
   const { sortKey, sortDir, hidden, widths, toggleSort, toggleCol, setWidth, resetPrefs } =
     useTablePrefs(prefsKey, { sortKey: defaultSort, sortDir: -1, hidden: defaultHidden,
                               version: PREFS_VERSION, added: ADDED_COLS });
@@ -234,80 +249,41 @@ export function ClientTable({ rows, prefsKey, defaultHidden, defaultSort, toolba
                      sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort}
                      widths=${widths} onResize=${setWidth}
                      maxHeight="none"
-                     empty=${empty || listPlaceholder(loading, t("downloads_peer_empty"))} />`;
+                     empty=${listPlaceholder(loading, t("downloads_peer_empty"))} />`;
 }
 
-// How often an open Clients tab re-reads its peer list. Deliberately an
-// interval and not the `scope` store tick: publish() hands out a fresh array
-// every 500 ms while a queue is active, so a store-keyed fetch effect fired
-// ~120 requests a minute at a route that walks the whole client map and
-// serialises every matching row -- for a panel whose numbers a human reads at
-// walking pace. 5 s is the same order as the SSE-less poll loop in events.js
-// and keeps the two properties that matter: it refreshes while the tab is open,
-// and clearInterval on unmount stops it dead when the tab closes.
-const REFRESH_MS = 5000;
-
-// Per-file peer table for the detail panels, fed by GET {scope}/{hash}/clients
-// (issue #984). `scope` ("downloads" or "shared") is a prop rather than a guess: a
-// partfile with one completed chunk is in both collections at once. Unlike the old
-// client-side hash join, the route also returns A4AF rows.
-export function FileClients({ hash, scope, prefsKey, defaultHidden, defaultSort }) {
-  // A4AF badges name the other file, so this panel needs `downloads` live even for a
-  // *shared* file. Must be the SAME loader views/downloads.js registers, since register
-  // is first-wins: api.list appends limit=<all>, a plain GET would cap it at 100.
+// Per-file peer table for the detail panels (issue #984). Rows are derived from
+// the live `clients` store, so an open tab issues no request of its own and a
+// closed one costs nothing at all.
+export function FileClients({ hash, prefsKey, defaultHidden, defaultSort }) {
+  const clients = useClients();
+  // Both the A4AF membership and the name of the file an A4AF peer is parked on
+  // hang off the download record, so this panel needs `downloads` live even for
+  // a *shared* file. Must be the SAME loader views/downloads.js registers, since
+  // register is first-wins: api.list appends limit=<all>, a plain GET would cap
+  // it at 100.
   useEffect(() => {
     data.register({ key: "downloads", eventPrefix: "download", id: "hash",
       list: () => api.list("downloads?status=all").then((r) => r.downloads || []) });
     data.ensure("downloads");
   }, []);
   const downloads = useStore("downloads");
-  const [rows, setRows] = useState(undefined); // undefined until the first fetch lands
-  const [failed, setFailed] = useState(null);
   const [ident, setIdent] = useState("all");
   const [q, setQ] = useState("");
-  const [tick, setTick] = useState(0);
 
-  useEffect(() => {
-    const id = setInterval(() => setTick((n) => n + 1), REFRESH_MS);
-    return () => clearInterval(id);
-  }, []);
+  // undefined until both stores have seeded, so an empty table reads as "no
+  // peers" and never as "not known yet". Keyed on `hash`, which is what keeps
+  // one file's peers from ever being drawn under another file's name.
+  const rows = useMemo(() => fileRows(clients, hash, downloads), [clients, hash, downloads]);
 
-  // Kept apart from the fetch below, which also re-runs on every tick and must
-  // NOT blank a populated table. This one runs only when the file changes, and
-  // it has to: until the new response lands `rows` still holds the previous
-  // file's peers, and the panel would present them under the new file's name.
-  // undefined feeds `loading`, so the table spins instead of lying.
-  useEffect(() => { setRows(undefined); setFailed(null); }, [hash, scope]);
-
-  useEffect(() => {
-    if (!hash || !scope) return;
-    let alive = true;
-    api.list(scope + "/" + hash + "/clients")
-      .then((r) => {
-        if (!alive) return;
-        setRows(r.clients || []);
-        setFailed(null);
-      })
-      // Keep the last good rows on a transient failure; the tick re-fetches soon.
-      .catch((e) => { if (alive) { setFailed(e); setRows((prev) => prev || []); } });
-    return () => { alive = false; };
-  }, [hash, scope, tick]);
-
-  // Resolve the A4AF file names once per row, here, rather than per comparison
-  // inside the sort. Memoised on both inputs: a row set with no A4AF source
-  // comes back untouched, so a `downloads` publish costs nothing.
-  let list = useMemo(() => withA4afNames(rows, downloads), [rows, downloads]) || [];
+  let list = rows || [];
   if (ident !== "all") list = list.filter((c) => c.ident_state === ident);
   if (q) { const match = textMatcher(q); list = list.filter((c) => match((c.name || "") + " " + fileNameOf(c))); }
-
-  const errorNode = failed && !(rows || []).length
-    ? html`<${Placeholder} kind="error">${terr(failed)}<//>` : null;
 
   return html`
     <div class="detail-clients">
       <${ClientTable} rows=${list} prefsKey=${prefsKey} defaultHidden=${defaultHidden}
                       defaultSort=${defaultSort} loading=${rows === undefined}
-                      empty=${errorNode}
                       toolbar=${ClientFilters({ ident, setIdent, q, setQ })} />
     </div>`;
 }
