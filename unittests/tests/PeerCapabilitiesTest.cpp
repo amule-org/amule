@@ -127,7 +127,7 @@ TEST(PeerCapabilities, RoundTripsEveryKnownBit)
 	for (uint32_t bits = 0; bits <= MOD_MISCOPT_KNOWN_MASK; ++bits) {
 		CPeerCapabilities caps;
 		caps.SetFromWire(bits);
-		ASSERT_EQUALS(bits, caps.ToWire());
+		ASSERT_EQUALS(bits, caps.KnownBits());
 	}
 }
 
@@ -140,7 +140,7 @@ TEST(PeerCapabilities, ReservedBitsAreMaskedOff)
 	caps.SetFromWire(0x00000080u); // bit 7
 
 	ASSERT_TRUE(caps.IsEmpty());
-	ASSERT_EQUALS(0x00000000u, caps.ToWire());
+	ASSERT_EQUALS(0x00000000u, caps.KnownBits());
 	ASSERT_FALSE(caps.SupportsExtendedSourceExchange());
 	ASSERT_FALSE(caps.SupportsNatTraversal());
 	ASSERT_FALSE(caps.SupportsIPv6());
@@ -150,7 +150,7 @@ TEST(PeerCapabilities, ReservedBitsAreMaskedOff)
 	// All reserved bits at once, plus every known bit: only the known five
 	// come back out.
 	caps.SetFromWire(0xFFFFFFFFu);
-	ASSERT_EQUALS(MOD_MISCOPT_KNOWN_MASK, caps.ToWire());
+	ASSERT_EQUALS(MOD_MISCOPT_KNOWN_MASK, caps.KnownBits());
 }
 
 // The whole point of the change: aMule reads these capabilities but implements
@@ -170,10 +170,10 @@ TEST(PeerCapabilities, SetterAndDecoderAgree)
 
 	caps.Set(MOD_MISCOPT_IPV6, true);
 	caps.Set(MOD_MISCOPT_NAT_TRAVERSAL_QUIC, true);
-	ASSERT_EQUALS(0x00000014u, caps.ToWire());
+	ASSERT_EQUALS(0x00000014u, caps.KnownBits());
 
 	caps.Set(MOD_MISCOPT_IPV6, false);
-	ASSERT_EQUALS(0x00000010u, caps.ToWire());
+	ASSERT_EQUALS(0x00000010u, caps.KnownBits());
 
 	caps.Reset();
 	ASSERT_TRUE(caps.IsEmpty());

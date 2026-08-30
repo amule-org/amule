@@ -53,7 +53,7 @@ TEST(ECClientCapabilities, TagCodeIsExact)
 	ASSERT_EQUALS(0x0632, (int)EC_TAG_CLIENT_MOD_CAPABILITIES);
 }
 
-// The core emits CPeerCapabilities::ToWire() and an EC client reads it back
+// The core emits CPeerCapabilities::KnownBits() and an EC client reads it back
 // with AssignIfExist. Nothing in between may alter the value.
 //
 // Deliberately no assertion on the tag's *type*: libec narrows an integer tag
@@ -68,7 +68,7 @@ TEST(ECClientCapabilities, WordSurvivesTheRoundTrip)
 		caps.SetFromWire(bits);
 
 		CECTag client(EC_TAG_CLIENT, (uint32_t)1);
-		client.AddTag(CECTag(EC_TAG_CLIENT_MOD_CAPABILITIES, caps.ToWire()));
+		client.AddTag(CECTag(EC_TAG_CLIENT_MOD_CAPABILITIES, caps.KnownBits()));
 
 		uint32_t received = 0xDEADBEEF;
 		ASSERT_TRUE(client.AssignIfExist(EC_TAG_CLIENT_MOD_CAPABILITIES, received));
@@ -77,7 +77,7 @@ TEST(ECClientCapabilities, WordSurvivesTheRoundTrip)
 		// And it decodes on the far side to the same capability set.
 		CPeerCapabilities mirrored;
 		mirrored.SetFromWire(received);
-		ASSERT_EQUALS(caps.ToWire(), mirrored.ToWire());
+		ASSERT_EQUALS(caps.KnownBits(), mirrored.KnownBits());
 	}
 }
 
@@ -91,7 +91,7 @@ TEST(ECClientCapabilities, ReservedBitsNeverCrossTheProtocol)
 	caps.SetFromWire(0xFFFFFFFFu);
 
 	CECTag client(EC_TAG_CLIENT, (uint32_t)1);
-	client.AddTag(CECTag(EC_TAG_CLIENT_MOD_CAPABILITIES, caps.ToWire()));
+	client.AddTag(CECTag(EC_TAG_CLIENT_MOD_CAPABILITIES, caps.KnownBits()));
 
 	uint32_t received = 0;
 	ASSERT_TRUE(client.AssignIfExist(EC_TAG_CLIENT_MOD_CAPABILITIES, received));
@@ -130,7 +130,7 @@ TEST(ECClientCapabilities, DisplayTextMatchesOnBothSidesOfTheProtocol)
 	core.SetFromWire(MOD_MISCOPT_IPV6 | MOD_MISCOPT_NAT_TRAVERSAL_QUIC);
 
 	CECTag client(EC_TAG_CLIENT, (uint32_t)1);
-	client.AddTag(CECTag(EC_TAG_CLIENT_MOD_CAPABILITIES, core.ToWire()));
+	client.AddTag(CECTag(EC_TAG_CLIENT_MOD_CAPABILITIES, core.KnownBits()));
 
 	uint32_t received = 0;
 	ASSERT_TRUE(client.AssignIfExist(EC_TAG_CLIENT_MOD_CAPABILITIES, received));
