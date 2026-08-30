@@ -666,7 +666,7 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 				m_modCapabilities.SetFromWire((uint32)temptag.GetInt());
 				AddDebugLogLineN(logClient,
 					CFormat("Peer advertises vendor capabilities 0x%02X (%s)") %
-						m_modCapabilities.ToWire() %
+						m_modCapabilities.KnownBits() %
 						m_modCapabilities.GetDisplayText());
 			}
 			break;

@@ -80,8 +80,9 @@ public:
 	//! once, rather than at each query site.
 	void SetFromWire(uint32_t bits) { m_bits = bits & MOD_MISCOPT_KNOWN_MASK; }
 
-	//! The word as it would go back on the wire.
-	uint32_t ToWire() const { return m_bits & MOD_MISCOPT_KNOWN_MASK; }
+	//! The peer's recorded capability bits, already limited to the known set
+	//! by SetFromWire(). For display and logging, not for re-encoding.
+	uint32_t KnownBits() const { return m_bits; }
 
 	void Reset() { m_bits = 0; }
 	bool IsEmpty() const { return m_bits == 0; }
