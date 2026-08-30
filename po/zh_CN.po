@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-29 20:55+0200\n"
+"POT-Creation-Date: 2026-08-30 16:16+0200\n"
 "PO-Revision-Date: 2026-08-26 20:31+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -2766,22 +2766,42 @@ msgstr ""
 " 只能指定一个通道。"
 
 #: src/GenericClientListCtrl.cpp
-msgid ""
-"One block per part of the file.\n"
-"Light grey: this source does not have the part.\n"
-"Green: this source has it and so do you.\n"
-"Amber: downloading this part from this source now.\n"
-"Pale yellow: the next part you will request from this source.\n"
-"Dark grey: this source has it and you still need it.\n"
-"The whole bar is dimmed while the download is stopped."
+#, fuzzy
+msgid "This source does not have the part"
+msgstr "此命令不需要任何参数。"
+
+#: src/GenericClientListCtrl.cpp
+msgid "You and this source both have the part"
 msgstr ""
 
 #: src/GenericClientListCtrl.cpp
-msgid ""
-"One block per part of your shared file.\n"
-"Dark grey: this peer already has the part.\n"
-"Light grey: this peer does not have it."
+msgid "Being downloaded from this source now"
 msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "The next part that will be asked of this source"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This source has the part and you still need it"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This peer already has the part"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This peer does not have the part"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "One block per part of the file being downloaded."
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+#, fuzzy
+msgid "One block per part of the shared file."
+msgstr "在此请输入服务器端口。"
 
 #: src/GenericClientListCtrl.cpp
 #, c-format

@@ -32,6 +32,7 @@
 #include "Constants.h"               // Needed for DownloadItemType
 #include "ClientRef.h"               // Needed for CClientRef (stored by value below)
 #include "MuleVirtualDataViewCtrl.h" // Needed for CMuleVirtualDataViewCtrl
+#include "PartBarLegend.h"           // Needed for GenericColumnEnum, partbar::BarLegendKind
 #include "amuleDlg.h"                // Needed for CamuleDlg::DialogType
 
 class CPartFile;
@@ -75,26 +76,6 @@ private:
 	CKnownFile *m_owner;
 	CClientRef m_sourceValue;
 	SourceItemType m_type;
-};
-
-enum GenericColumnEnum
-{
-	ColumnUserName = 0,
-	ColumnUserDownloaded,
-	ColumnUserUploaded,
-	ColumnUserSpeedDown,
-	ColumnUserSpeedUp,
-	ColumnUserProgress,
-	ColumnUserAvailable,
-	ColumnUserVersion,
-	ColumnUserQueueRankLocal,
-	ColumnUserQueueRankRemote,
-	ColumnUserOrigin,
-	ColumnUserFileNameDownload,
-	ColumnUserFileNameUpload,
-	ColumnUserFileNameDownloadRemote,
-	ColumnUserSharedFiles,
-	ColumnInvalid
 };
 
 struct CGenericClientListCtrlColumn
@@ -292,19 +273,25 @@ private:
 	void OnMouseMiddleClick(wxMouseEvent &event);
 
 	/**
-	 * Shows the colour legend of the chunk-bar column as a tooltip while the
-	 * pointer is over it, and clears it elsewhere. The bar has no other
-	 * explanation of what its colours mean (issue #1192), and the two
+	 * Opens the colour legend when the click landed on the "?" marker of a
+	 * chunk-bar column header, and sorts as usual otherwise. The bar has no
+	 * other explanation of what its colours mean (issue #1192), and the two
 	 * variants of the column -- ColumnUserProgress for Sources,
-	 * ColumnUserAvailable for Peers -- have different palettes, so the text
-	 * is chosen per cid.
+	 * ColumnUserAvailable for Peers -- have different palettes, so the
+	 * legend is chosen per cid (partbar::LegendForColumn).
 	 */
-	void OnMouseMotion(wxMouseEvent &event);
+	void OnColumnHeaderClick(wxDataViewEvent &event);
 
-	//! Tooltip text currently set on the control, so a motion event that does
-	//! not change it does not re-set it: re-setting on every move makes the
-	//! tooltip flicker and re-pop on GTK and MSW.
-	wxString m_tooltipText;
+	//! Left edge of a column in the header's own coordinates, horizontal
+	//! scroll already applied, or -1 when it cannot be resolved. Hidden
+	//! columns take up no width. Separate from the click handler only
+	//! because it is the half that needs the live control.
+	int GetColumnLeft(unsigned column) const;
+
+	//! Pops up the legend of @a kind, titled with @a columnTitle. Swatches
+	//! are filled from partbar::SourcePartColour()/PeerPartColour(), the same
+	//! functions GetItemBarFill() fills the bar itself from.
+	void ShowBarLegend(partbar::BarLegendKind kind, const wxString &columnTitle);
 
 	/**
 	 * The item the context menu was built for, by identity rather than row —

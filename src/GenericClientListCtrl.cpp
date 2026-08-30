@@ -62,6 +62,12 @@
 #endif
 #include "FriendList.h"
 
+#include <wx/dcmemory.h> // Needed for wxMemoryDC (legend swatches)
+#include <wx/dialog.h>   // Needed for wxDialog (legend)
+#include <wx/sizer.h>    // Needed for wxBoxSizer, wxFlexGridSizer
+#include <wx/statbmp.h>  // Needed for wxStaticBitmap
+#include <wx/stattext.h> // Needed for wxStaticText
+
 namespace
 {
 /**
@@ -96,6 +102,64 @@ public:
 		return true;
 	}
 };
+
+//! Appended to the header of a column that has a colour legend, and clicked to
+//! open it. Not translated: it is punctuation, and the click handler resolves
+//! it by its rendered width, so the two have to stay the same string. A plain
+//! literal rather than a wxString, which at namespace scope would be built
+//! before the app is.
+const char kLegendMarker[] = "  (?)";
+
+/**
+ * A 16x16 swatch of one bar colour, drawn the way CCatDialog::MakeBitmap()
+ * draws the category colour: a wxMemoryDC over a wxBitmap, default pen, so the
+ * fill keeps a border and the two pale greys stay visible on a light dialog.
+ */
+wxBitmap MakeLegendSwatch(const partbar::BarColour &colour)
+{
+	wxBitmap bitmap(16, 16);
+	wxMemoryDC dc(bitmap);
+
+	dc.SetBrush(CMuleColour(colour.red, colour.green, colour.blue).GetBrush());
+	dc.DrawRectangle(0, 0, 16, 16);
+
+	return bitmap;
+}
+
+wxString SourcePartStateLabel(partbar::SourcePartState state)
+{
+	switch (state) {
+	case partbar::SourcePartState::Missing:
+		return _("This source does not have the part");
+	case partbar::SourcePartState::Complete:
+		return _("You and this source both have the part");
+	case partbar::SourcePartState::Downloading:
+		return _("Being downloaded from this source now");
+	case partbar::SourcePartState::NextRequested:
+		return _("The next part that will be asked of this source");
+	case partbar::SourcePartState::Needed:
+		return _("This source has the part and you still need it");
+	}
+	return wxEmptyString;
+}
+
+wxString PeerPartStateLabel(partbar::PeerPartState state)
+{
+	switch (state) {
+	case partbar::PeerPartState::Present:
+		return _("This peer already has the part");
+	case partbar::PeerPartState::Missing:
+		return _("This peer does not have the part");
+	}
+	return wxEmptyString;
+}
+
+//! One swatch-and-text row of a legend.
+void AddLegendRow(wxWindow *parent, wxSizer *grid, const partbar::BarColour &colour, const wxString &label)
+{
+	grid->Add(new wxStaticBitmap(parent, wxID_ANY, MakeLegendSwatch(colour)), 0, wxALIGN_CENTRE_VERTICAL);
+	grid->Add(new wxStaticText(parent, wxID_ANY, label), 0, wxALIGN_CENTRE_VERTICAL);
+}
 } // namespace
 
 #define m_ImageList theApp->amuledlg->m_imagelist
@@ -104,7 +168,9 @@ wxBEGIN_EVENT_TABLE(CGenericClientListCtrl, CMuleVirtualDataViewCtrl)
 	EVT_DATAVIEW_ITEM_ACTIVATED(wxID_ANY, CGenericClientListCtrl::OnItemActivated)
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(wxID_ANY, CGenericClientListCtrl::OnItemRightClicked)
 	EVT_MIDDLE_DOWN(CGenericClientListCtrl::OnMouseMiddleClick)
-	EVT_MOTION(CGenericClientListCtrl::OnMouseMotion)
+	// Ahead of the base class's own binding, which sorts: this one sorts too,
+	// unless the click landed on a bar column's "?" marker.
+	EVT_DATAVIEW_COLUMN_HEADER_CLICK(wxID_ANY, CGenericClientListCtrl::OnColumnHeaderClick)
 
 	EVT_MENU(MP_CHANGE2FILE, CGenericClientListCtrl::OnSwapSource)
 	EVT_MENU(MP_SHOWLIST, CGenericClientListCtrl::OnViewFiles)
@@ -223,7 +289,11 @@ void CGenericClientListCtrl::InitColumnData()
 
 	for (int i = 0; i < m_columndata.n_columns; ++i) {
 		const GenericColumnEnum cid = m_columndata.columns[i].cid;
-		const wxString title = wxGetTranslation(m_columndata.columns[i].title);
+		// The two chunk-bar columns carry a "?" that opens their colour
+		// legend -- see OnColumnHeaderClick().
+		const bool hasLegend = partbar::LegendForColumn(cid) != partbar::BarLegendKind::None;
+		const wxString title =
+			wxGetTranslation(m_columndata.columns[i].title) + (hasLegend ? kLegendMarker : "");
 		const wxString key = TranslateCIDToName(cid);
 		const int width = m_columndata.columns[i].width;
 
@@ -632,63 +702,101 @@ void CGenericClientListCtrl::OnMouseMiddleClick(wxMouseEvent &event)
 	CClientDetailDialog(this, reinterpret_cast<ClientCtrlItem_Struct *>(data)->GetSource()).ShowModal();
 }
 
-namespace
+int CGenericClientListCtrl::GetColumnLeft(unsigned column) const
 {
-/**
- * Colour legend of a chunk-bar column, or an empty string for any other
- * column. The two bar columns share one renderer but not one palette, so
- * each gets its own text -- which is also why they no longer share one
- * header label (issue #1192).
- */
-wxString BarColumnTooltip(GenericColumnEnum cid)
-{
-	switch (cid) {
-	case ColumnUserProgress:
-		// Five states, in the order GetItemBarFill() tests them.
-		return _("One block per part of the file.\n"
-			 "Light grey: this source does not have the part.\n"
-			 "Green: this source has it and so do you.\n"
-			 "Amber: downloading this part from this source now.\n"
-			 "Pale yellow: the next part you will request from this source.\n"
-			 "Dark grey: this source has it and you still need it.\n"
-			 "The whole bar is dimmed while the download is stopped.");
-	case ColumnUserAvailable:
-		return _("One block per part of your shared file.\n"
-			 "Dark grey: this peer already has the part.\n"
-			 "Light grey: this peer does not have it.");
-	default:
-		return wxEmptyString;
+	const unsigned columns = GetColumnCount();
+	if (column >= columns) {
+		return -1;
 	}
+	// Model column and view index coincide here -- CMuleDataViewCtrl asserts
+	// as much when it appends its columns -- so summing the widths of the
+	// preceding, visible columns gives the logical left edge.
+	int left = 0;
+	for (unsigned i = 0; i < column; ++i) {
+		const wxDataViewColumn *col = GetColumn(i);
+		if (col == nullptr) {
+			return -1;
+		}
+		if (!col->IsHidden()) {
+			left += col->GetWidth();
+		}
+	}
+	return left;
 }
-} // namespace
 
-void CGenericClientListCtrl::OnMouseMotion(wxMouseEvent &event)
+void CGenericClientListCtrl::ShowBarLegend(partbar::BarLegendKind kind, const wxString &columnTitle)
 {
-	// The base class and the platform both still need this event (hover
-	// highlight, drag tracking); the tooltip is purely additive.
-	event.Skip();
+	// Both legends read their colours from the functions GetItemBarFill()
+	// fills the bar from, under the bar preference in force right now: a
+	// swatch cannot disagree with the pixels it explains.
+	const bool bFlat = thePrefs::UseFlatBar();
 
-	wxDataViewItem hitItem;
-	wxDataViewColumn *hitColumn = nullptr;
-	HitTest(event.GetPosition(), hitItem, hitColumn);
+	wxDialog dialog(this, wxID_ANY, columnTitle);
+	wxFlexGridSizer *grid = new wxFlexGridSizer(2, wxSize(8, 6));
 
-	wxString tip;
-	if (hitColumn) {
-		const unsigned column = hitColumn->GetModelColumn();
-		if (column < static_cast<unsigned>(m_columndata.n_columns)) {
-			tip = BarColumnTooltip(m_columndata.columns[column].cid);
+	wxString intro;
+	if (kind == partbar::BarLegendKind::SourceParts) {
+		intro = _("One block per part of the file being downloaded.");
+		for (std::size_t i = 0; i < partbar::kSourceLegendSize; ++i) {
+			const partbar::SourcePartState state = partbar::kSourceLegendOrder[i];
+			AddLegendRow(&dialog,
+				grid,
+				partbar::SourcePartColour(state, bFlat),
+				SourcePartStateLabel(state));
+		}
+	} else {
+		intro = _("One block per part of the shared file.");
+		for (std::size_t i = 0; i < partbar::kPeerLegendSize; ++i) {
+			const partbar::PeerPartState state = partbar::kPeerLegendOrder[i];
+			AddLegendRow(&dialog,
+				grid,
+				partbar::PeerPartColour(state, bFlat),
+				PeerPartStateLabel(state));
 		}
 	}
 
-	if (tip == m_tooltipText) {
-		return;
+	wxBoxSizer *top = new wxBoxSizer(wxVERTICAL);
+	top->Add(new wxStaticText(&dialog, wxID_ANY, intro), 0, wxALL, 10);
+	top->Add(grid, 0, wxLEFT | wxRIGHT | wxBOTTOM, 10);
+	if (wxSizer *buttons = dialog.CreateButtonSizer(wxOK)) {
+		top->Add(buttons, 0, wxALIGN_RIGHT | wxLEFT | wxRIGHT | wxBOTTOM, 10);
 	}
-	m_tooltipText = tip;
-	if (tip.IsEmpty()) {
-		UnsetToolTip();
-	} else {
-		SetToolTip(tip);
+
+	dialog.SetSizerAndFit(top);
+	dialog.CentreOnParent();
+	dialog.ShowModal();
+}
+
+void CGenericClientListCtrl::OnColumnHeaderClick(wxDataViewEvent &event)
+{
+	wxDataViewColumn *col = event.GetDataViewColumn();
+	if (col != nullptr) {
+		const unsigned column = static_cast<unsigned>(col->GetModelColumn());
+		if (column < static_cast<unsigned>(m_columndata.n_columns)) {
+			const partbar::BarLegendKind kind =
+				partbar::LegendForColumn(m_columndata.columns[column].cid);
+			const int left = GetColumnLeft(column);
+			// A header click carries no position of its own, so the
+			// pointer is read back: it cannot have moved between the
+			// click and this handler. Both x values are shifted into the
+			// header's own, unscrolled space before they are compared.
+			const int clickX =
+				ScreenToClient(wxGetMousePosition()).x + GetScrollPos(wxHORIZONTAL);
+			if (kind != partbar::BarLegendKind::None && left >= 0 &&
+				partbar::InLegendMarker(clickX,
+					left,
+					col->GetWidth(),
+					GetTextExtent(kLegendMarker).GetWidth())) {
+				ShowBarLegend(kind, wxGetTranslation(m_columndata.columns[column].title));
+				return;
+			}
+		}
 	}
+
+	// Everything else -- a column with no legend, a click beside the marker,
+	// a geometry that could not be resolved -- is an ordinary header click.
+	// Sorting must not depend on the marker being placed correctly.
+	CMuleDataViewCtrl::OnColumnHeaderClick(event);
 }
 
 void CGenericClientListCtrl::OnItemRightClicked(wxDataViewEvent &event)
@@ -891,23 +999,12 @@ bool CGenericClientListCtrl::GetItemAttr(wxUIntPtr data, unsigned column, wxData
 
 namespace
 {
-const CMuleColour crBoth(0, 192, 0);
-const CMuleColour crFlatBoth(0, 150, 0);
-
-const CMuleColour crNeither(240, 240, 240);
-const CMuleColour crFlatNeither(224, 224, 224);
-
-const CMuleColour crClientOnly(104, 104, 104);
-const CMuleColour crFlatClientOnly(0, 0, 0);
-
-const CMuleColour crPending(255, 208, 0);
-const CMuleColour crNextPending(255, 255, 100);
-
-const CMuleColour crUnavailable(240, 240, 240);
-const CMuleColour crFlatUnavailable(224, 224, 224);
-
-const CMuleColour crAvailable(104, 104, 104);
-const CMuleColour crFlatAvailable(0, 0, 0);
+//! The bar palette lives in PartBarLegend.h, where the legend reads the same
+//! values -- see the header comment for why they cannot be kept in two places.
+inline CMuleColour ToMuleColour(const partbar::BarColour &colour)
+{
+	return CMuleColour(colour.red, colour.green, colour.blue);
+}
 } // namespace
 
 void CGenericClientListCtrl::GetItemBarFill(wxUIntPtr data, unsigned column, CBarFillSpec &out) const
@@ -951,25 +1048,34 @@ void CGenericClientListCtrl::GetItemBarFill(wxUIntPtr data, unsigned column, CBa
 				const uint64 uStart = PARTSIZE * i;
 				const uint64 uEnd = uStart + reqfile->GetPartSize(static_cast<uint16>(i)) - 1;
 
-				CMuleColour colour;
+				// The order of these tests is the order the legend
+				// lists the states in (partbar::kSourceLegendOrder).
+				partbar::SourcePartState state;
 				if (!partStatus.get(i)) {
-					colour = bFlat ? crFlatNeither : crNeither;
+					state = partbar::SourcePartState::Missing;
 				} else if (reqfile->IsComplete(static_cast<uint16>(i))) {
-					colour = bFlat ? crFlatBoth : crBoth;
+					state = partbar::SourcePartState::Complete;
 				} else if (lastDownloadingPart == static_cast<uint16>(i)) {
-					colour = crPending;
+					state = partbar::SourcePartState::Downloading;
 				} else if (nextRequestedPart == static_cast<uint16>(i)) {
-					colour = crNextPending;
+					state = partbar::SourcePartState::NextRequested;
 				} else {
-					colour = bFlat ? crFlatClientOnly : crClientOnly;
+					state = partbar::SourcePartState::Needed;
 				}
+				CMuleColour colour = ToMuleColour(partbar::SourcePartColour(state, bFlat));
 				if (stopped) {
+					// Not in the legend: a dimmed swatch out of
+					// context reads as a sixth state rather than as
+					// the same five turned down.
 					colour.Blend(50);
 				}
 				spans.push_back({ uStart, uEnd, colour });
 			}
 		} else {
-			spans.push_back({ 0, 1, bFlat ? crFlatNeither : crNeither });
+			spans.push_back({ 0,
+				1,
+				ToMuleColour(partbar::SourcePartColour(
+					partbar::SourcePartState::Missing, bFlat)) });
 		}
 
 		out = CBarFillSpec(data, fileSize, std::move(spans));
@@ -992,8 +1098,10 @@ void CGenericClientListCtrl::GetItemBarFill(wxUIntPtr data, unsigned column, CBa
 			const uint64 uEnd = uStart + PARTSIZE - 1;
 			spans.push_back({ uStart,
 				uEnd,
-				client.IsUpPartAvailable(i) ? (bFlat ? crFlatAvailable : crAvailable)
-							    : (bFlat ? crFlatUnavailable : crUnavailable) });
+				ToMuleColour(partbar::PeerPartColour(
+					client.IsUpPartAvailable(i) ? partbar::PeerPartState::Present
+								    : partbar::PeerPartState::Missing,
+					bFlat)) });
 		}
 		out = CBarFillSpec(data, static_cast<uint64>(partCount) * PARTSIZE, std::move(spans));
 		return;
