@@ -737,8 +737,7 @@ void CGenericClientListCtrl::ShowBarLegend(partbar::BarLegendKind kind, const wx
 	wxString intro;
 	if (kind == partbar::BarLegendKind::SourceParts) {
 		intro = _("One block per part of the file being downloaded.");
-		for (std::size_t i = 0; i < partbar::kSourceLegendSize; ++i) {
-			const partbar::SourcePartState state = partbar::kSourceLegendOrder[i];
+		for (const partbar::SourcePartState state : partbar::kSourceLegendOrder) {
 			AddLegendRow(&dialog,
 				grid,
 				partbar::SourcePartColour(state, bFlat),
@@ -746,8 +745,7 @@ void CGenericClientListCtrl::ShowBarLegend(partbar::BarLegendKind kind, const wx
 		}
 	} else {
 		intro = _("One block per part of the shared file.");
-		for (std::size_t i = 0; i < partbar::kPeerLegendSize; ++i) {
-			const partbar::PeerPartState state = partbar::kPeerLegendOrder[i];
+		for (const partbar::PeerPartState state : partbar::kPeerLegendOrder) {
 			AddLegendRow(&dialog,
 				grid,
 				partbar::PeerPartColour(state, bFlat),
