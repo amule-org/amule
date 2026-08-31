@@ -2808,6 +2808,10 @@ msgid "One block per part of the shared file."
 msgstr "Informe a porta do servidor aqui."
 
 #: src/GenericClientListCtrl.cpp
+msgid "Colour legend"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
 #, c-format
 msgid "On Queue: %u (%i)"
 msgstr "Em Fila: %u (%i)"

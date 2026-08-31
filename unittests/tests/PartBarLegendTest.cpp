@@ -22,8 +22,8 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-// The chunk-bar palette and the legend the "?" beside the two bar column
-// headers opens (issue #1192).
+// The chunk-bar palette and the legend the row context menu opens to explain
+// it (issue #1192).
 //
 // A legend explaining colours is only worth anything while it agrees with the
 // bar, and the way that agreement dies is silent: someone changes a colour in
@@ -38,8 +38,8 @@
 //
 // It links no wx and opens no display session, which is the point: this is the
 // half of the feature that a headless CI run can actually check. The drawing
-// (16x16 swatches through a wxMemoryDC, the "?" hit region in real pixels) is
-// not reachable from here.
+// (16x16 swatches through a wxMemoryDC) and the context-menu entry that opens
+// the dialog are not reachable from here.
 
 #include <muleunit/test.h>
 
@@ -173,52 +173,12 @@ TEST(PartBarLegend, OnlyTheTwoBarColumnsHaveALegend)
 	ASSERT_TRUE(BarLegendKind::SourceParts == LegendForColumn(ColumnUserProgress));
 	ASSERT_TRUE(BarLegendKind::PeerParts == LegendForColumn(ColumnUserAvailable));
 
-	// Every other column, exhaustively: a "?" on a text column would open a
-	// legend for a bar that is not there.
+	// Every other column, exhaustively: a legend offered for a text column
+	// would explain a bar that is not there.
 	for (std::size_t i = 0; i < kAllColumnsSize; ++i) {
 		if (kAllColumns[i] == ColumnUserProgress || kAllColumns[i] == ColumnUserAvailable) {
 			continue;
 		}
 		ASSERT_TRUE(BarLegendKind::None == LegendForColumn(kAllColumns[i]));
 	}
-}
-
-// --- the "?" hit region -------------------------------------------------
-
-TEST(PartBarLegend, TheMarkerClaimsTheTrailingPixelsOfItsOwnColumn)
-{
-	// A 170-wide column starting at 300, with a 24px marker: the marker owns
-	// [446, 470) and nothing else.
-	ASSERT_TRUE(InLegendMarker(446, 300, 170, 24));
-	ASSERT_TRUE(InLegendMarker(469, 300, 170, 24));
-	ASSERT_FALSE(InLegendMarker(445, 300, 170, 24));
-	ASSERT_FALSE(InLegendMarker(300, 300, 170, 24));
-
-	// The right edge belongs to the next column, not to this marker.
-	ASSERT_FALSE(InLegendMarker(470, 300, 170, 24));
-	ASSERT_FALSE(InLegendMarker(600, 300, 170, 24));
-
-	// Nor does anything to the left of the column.
-	ASSERT_FALSE(InLegendMarker(299, 300, 170, 24));
-	ASSERT_FALSE(InLegendMarker(0, 300, 170, 24));
-}
-
-TEST(PartBarLegend, AColumnNarrowerThanItsMarkerIsAllMarker)
-{
-	// Dragged down to less than the marker's own width, the column has no
-	// room left for a non-marker part; the alternative arithmetic would give
-	// the marker a left edge outside the column.
-	ASSERT_TRUE(InLegendMarker(300, 300, 20, 24));
-	ASSERT_TRUE(InLegendMarker(319, 300, 20, 24));
-	ASSERT_FALSE(InLegendMarker(320, 300, 20, 24));
-	ASSERT_FALSE(InLegendMarker(299, 300, 20, 24));
-}
-
-TEST(PartBarLegend, AHiddenOrUnmeasurableColumnHasNoMarker)
-{
-	// Zero width is a hidden column; a zero-width marker means the text
-	// could not be measured. Either way there is nothing to click, and the
-	// click has to fall through to sorting rather than open a legend.
-	ASSERT_FALSE(InLegendMarker(300, 300, 0, 24));
-	ASSERT_FALSE(InLegendMarker(300, 300, 170, 0));
 }

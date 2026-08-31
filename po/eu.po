@@ -2812,6 +2812,10 @@ msgid "One block per part of the shared file."
 msgstr "Idatzi zerbitzariaren ataka hemen."
 
 #: src/GenericClientListCtrl.cpp
+msgid "Colour legend"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
 #, c-format
 msgid "On Queue: %u (%i)"
 msgstr "Ilaran: %u (%i)"

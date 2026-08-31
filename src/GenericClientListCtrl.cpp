@@ -103,13 +103,6 @@ public:
 	}
 };
 
-//! Appended to the header of a column that has a colour legend, and clicked to
-//! open it. Not translated: it is punctuation, and the click handler resolves
-//! it by its rendered width, so the two have to stay the same string. A plain
-//! literal rather than a wxString, which at namespace scope would be built
-//! before the app is.
-const char kLegendMarker[] = "  (?)";
-
 /**
  * A 16x16 swatch of one bar colour, drawn the way CCatDialog::MakeBitmap()
  * draws the category colour: a wxMemoryDC over a wxBitmap, default pen, so the
@@ -168,9 +161,6 @@ wxBEGIN_EVENT_TABLE(CGenericClientListCtrl, CMuleVirtualDataViewCtrl)
 	EVT_DATAVIEW_ITEM_ACTIVATED(wxID_ANY, CGenericClientListCtrl::OnItemActivated)
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(wxID_ANY, CGenericClientListCtrl::OnItemRightClicked)
 	EVT_MIDDLE_DOWN(CGenericClientListCtrl::OnMouseMiddleClick)
-	// Ahead of the base class's own binding, which sorts: this one sorts too,
-	// unless the click landed on a bar column's "?" marker.
-	EVT_DATAVIEW_COLUMN_HEADER_CLICK(wxID_ANY, CGenericClientListCtrl::OnColumnHeaderClick)
 
 	EVT_MENU(MP_CHANGE2FILE, CGenericClientListCtrl::OnSwapSource)
 	EVT_MENU(MP_SHOWLIST, CGenericClientListCtrl::OnViewFiles)
@@ -178,6 +168,7 @@ wxBEGIN_EVENT_TABLE(CGenericClientListCtrl, CMuleVirtualDataViewCtrl)
 	EVT_MENU(MP_FRIENDSLOT, CGenericClientListCtrl::OnSetFriendslot)
 	EVT_MENU(MP_SENDMESSAGE, CGenericClientListCtrl::OnSendMessage)
 	EVT_MENU(MP_DETAIL, CGenericClientListCtrl::OnViewClientInfo)
+	EVT_MENU(MP_BARLEGEND, CGenericClientListCtrl::OnShowBarLegend)
 wxEND_EVENT_TABLE()
 
 CGenericClientListCtrl::CGenericClientListCtrl(const wxString &tablename,
@@ -289,11 +280,7 @@ void CGenericClientListCtrl::InitColumnData()
 
 	for (int i = 0; i < m_columndata.n_columns; ++i) {
 		const GenericColumnEnum cid = m_columndata.columns[i].cid;
-		// The two chunk-bar columns carry a "?" that opens their colour
-		// legend -- see OnColumnHeaderClick().
-		const bool hasLegend = partbar::LegendForColumn(cid) != partbar::BarLegendKind::None;
-		const wxString title =
-			wxGetTranslation(m_columndata.columns[i].title) + (hasLegend ? kLegendMarker : "");
+		const wxString title = wxGetTranslation(m_columndata.columns[i].title);
 		const wxString key = TranslateCIDToName(cid);
 		const int width = m_columndata.columns[i].width;
 
@@ -702,26 +689,20 @@ void CGenericClientListCtrl::OnMouseMiddleClick(wxMouseEvent &event)
 	CClientDetailDialog(this, reinterpret_cast<ClientCtrlItem_Struct *>(data)->GetSource()).ShowModal();
 }
 
-int CGenericClientListCtrl::GetColumnLeft(unsigned column) const
+int CGenericClientListCtrl::FindBarLegendColumn() const
 {
-	const unsigned columns = GetColumnCount();
-	if (column >= columns) {
-		return -1;
-	}
-	// Model column and view index coincide here -- CMuleDataViewCtrl asserts
-	// as much when it appends its columns -- so summing the widths of the
-	// preceding, visible columns gives the logical left edge.
-	int left = 0;
-	for (unsigned i = 0; i < column; ++i) {
-		const wxDataViewColumn *col = GetColumn(i);
-		if (col == nullptr) {
-			return -1;
+	for (int i = 0; i < m_columndata.n_columns; ++i) {
+		if (partbar::LegendForColumn(m_columndata.columns[i].cid) == partbar::BarLegendKind::None) {
+			continue;
 		}
-		if (!col->IsHidden()) {
-			left += col->GetWidth();
+		// A bar the user has hidden is not on screen to be explained. Model
+		// id and view position coincide here -- InitColumnState() requires
+		// it -- so one index answers both.
+		if (!IsColumnHidden(i)) {
+			return i;
 		}
 	}
-	return left;
+	return -1;
 }
 
 void CGenericClientListCtrl::ShowBarLegend(partbar::BarLegendKind kind, const wxString &columnTitle)
@@ -765,36 +746,17 @@ void CGenericClientListCtrl::ShowBarLegend(partbar::BarLegendKind kind, const wx
 	dialog.ShowModal();
 }
 
-void CGenericClientListCtrl::OnColumnHeaderClick(wxDataViewEvent &event)
+void CGenericClientListCtrl::OnShowBarLegend(wxCommandEvent &WXUNUSED(event))
 {
-	wxDataViewColumn *col = event.GetDataViewColumn();
-	if (col != nullptr) {
-		const unsigned column = static_cast<unsigned>(col->GetModelColumn());
-		if (column < static_cast<unsigned>(m_columndata.n_columns)) {
-			const partbar::BarLegendKind kind =
-				partbar::LegendForColumn(m_columndata.columns[column].cid);
-			const int left = GetColumnLeft(column);
-			// A header click carries no position of its own, so the
-			// pointer is read back: it cannot have moved between the
-			// click and this handler. Both x values are shifted into the
-			// header's own, unscrolled space before they are compared.
-			const int clickX =
-				ScreenToClient(wxGetMousePosition()).x + GetScrollPos(wxHORIZONTAL);
-			if (kind != partbar::BarLegendKind::None && left >= 0 &&
-				partbar::InLegendMarker(clickX,
-					left,
-					col->GetWidth(),
-					GetTextExtent(kLegendMarker).GetWidth())) {
-				ShowBarLegend(kind, wxGetTranslation(m_columndata.columns[column].title));
-				return;
-			}
-		}
+	// Resolved again rather than remembered from when the menu was built: the
+	// entry only exists on menus built while a bar column was on screen, and
+	// re-asking costs a walk over at most a couple of dozen columns.
+	const int column = FindBarLegendColumn();
+	if (column < 0) {
+		return;
 	}
-
-	// Everything else -- a column with no legend, a click beside the marker,
-	// a geometry that could not be resolved -- is an ordinary header click.
-	// Sorting must not depend on the marker being placed correctly.
-	CMuleDataViewCtrl::OnColumnHeaderClick(event);
+	ShowBarLegend(partbar::LegendForColumn(m_columndata.columns[column].cid),
+		wxGetTranslation(m_columndata.columns[column].title));
 }
 
 void CGenericClientListCtrl::OnItemRightClicked(wxDataViewEvent &event)
@@ -820,6 +782,16 @@ void CGenericClientListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 	// Same menu the global clients list offers; "Swap to this file" is the one
 	// entry only a per-file list can act on.
 	m_menu = BuildClientContextMenu(client, item->GetType() == A4AF_SOURCE);
+
+	// Appended here rather than inside BuildClientContextMenu(): that builder
+	// is shared with CClientRowListCtrl, the Clients tab, which draws no chunk
+	// bar and so must not offer to explain one. Asking the list which of its
+	// own columns has a legend keeps that true for any future subclass without
+	// naming one here.
+	if (FindBarLegendColumn() >= 0) {
+		m_menu->AppendSeparator();
+		m_menu->Append(MP_BARLEGEND, _("Colour legend"));
+	}
 
 	PopupMenu(m_menu, event.GetPosition());
 

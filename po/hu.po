@@ -2803,6 +2803,10 @@ msgid "One block per part of the shared file."
 msgstr "Add meg a kiszolgáló portját."
 
 #: src/GenericClientListCtrl.cpp
+msgid "Colour legend"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
 #, c-format
 msgid "On Queue: %u (%i)"
 msgstr "Várólistán: %u (%i)"

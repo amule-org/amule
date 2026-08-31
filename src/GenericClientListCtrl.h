@@ -258,6 +258,14 @@ private:
 	void OnSetFriendslot(wxCommandEvent &event);
 	void OnSendMessage(wxCommandEvent &event);
 	void OnViewClientInfo(wxCommandEvent &event);
+	/**
+	 * Opens the colour legend for this list's chunk-bar column. The bar has no
+	 * other explanation of what its colours mean (issue #1192), and the two
+	 * variants of the column -- ColumnUserProgress for Sources,
+	 * ColumnUserAvailable for Peers -- have different palettes, so the legend
+	 * is chosen per cid (partbar::LegendForColumn).
+	 */
+	void OnShowBarLegend(wxCommandEvent &event);
 
 	// Misc event-handlers
 	void OnItemActivated(wxDataViewEvent &event);
@@ -273,20 +281,14 @@ private:
 	void OnMouseMiddleClick(wxMouseEvent &event);
 
 	/**
-	 * Opens the colour legend when the click landed on the "?" marker of a
-	 * chunk-bar column header, and sorts as usual otherwise. The bar has no
-	 * other explanation of what its colours mean (issue #1192), and the two
-	 * variants of the column -- ColumnUserProgress for Sources,
-	 * ColumnUserAvailable for Peers -- have different palettes, so the
-	 * legend is chosen per cid (partbar::LegendForColumn).
+	 * Index in m_columndata of the chunk-bar column this list shows, or -1
+	 * when there is none on screen -- either the subclass declares no bar
+	 * column, or the user has hidden the one it declares. Found by asking
+	 * partbar::LegendForColumn() about the list's own columns rather than by
+	 * naming cids here, so a subclass that gains or loses a bar column needs
+	 * nothing changed in this class.
 	 */
-	void OnColumnHeaderClick(wxDataViewEvent &event);
-
-	//! Left edge of a column in the header's own coordinates, horizontal
-	//! scroll already applied, or -1 when it cannot be resolved. Hidden
-	//! columns take up no width. Separate from the click handler only
-	//! because it is the half that needs the live control.
-	int GetColumnLeft(unsigned column) const;
+	int FindBarLegendColumn() const;
 
 	//! Pops up the legend of @a kind, titled with @a columnTitle. Swatches
 	//! are filled from partbar::SourcePartColour()/PeerPartColour(), the same

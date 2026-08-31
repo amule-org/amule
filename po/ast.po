@@ -2818,6 +2818,10 @@ msgid "One block per part of the shared file."
 msgstr "Introduz el puertu del sirvidor"
 
 #: src/GenericClientListCtrl.cpp
+msgid "Colour legend"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
 #, fuzzy, c-format
 msgid "On Queue: %u (%i)"
 msgstr "LC: %u (%i)"

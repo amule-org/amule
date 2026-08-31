@@ -2832,6 +2832,10 @@ msgid "One block per part of the shared file."
 msgstr "Sem vnesite vrata strežnika."
 
 #: src/GenericClientListCtrl.cpp
+msgid "Colour legend"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
 #, c-format
 msgid "On Queue: %u (%i)"
 msgstr "V vrsti: %u (%i)"

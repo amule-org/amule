@@ -2827,6 +2827,10 @@ msgid "One block per part of the shared file."
 msgstr "서버의 포트를 이곳에 입력하세요."
 
 #: src/GenericClientListCtrl.cpp
+msgid "Colour legend"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
 #, fuzzy, c-format
 msgid "On Queue: %u (%i)"
 msgstr "QR: %u (%i)"

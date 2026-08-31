@@ -26,7 +26,7 @@
 #define PARTBARLEGEND_H
 
 // The palette of the two chunk-bar columns of the client lists, and the legend
-// the "?" beside their headers opens.
+// the row context menu opens to explain it.
 //
 // The point of this header is that there is exactly one copy of each colour.
 // A legend that restated the palette -- in words, or in swatches filled from a
@@ -136,7 +136,7 @@ constexpr BarColour PeerPartColour(PeerPartState state, bool flat)
 					       : (flat ? kFlatUnavailable : kUnavailable);
 }
 
-//! Which legend, if any, belongs behind a column's header.
+//! Which legend, if any, explains a column's cells.
 enum class BarLegendKind
 {
 	None = 0,    //!< the column draws no chunk bar
@@ -144,8 +144,9 @@ enum class BarLegendKind
 	PeerParts    //!< ColumnUserAvailable, two states
 };
 
-//! The legend the "?" beside a column header opens. BarLegendKind::None means
-//! the header carries no "?" at all.
+//! The legend a column's colours are explained by. BarLegendKind::None means
+//! the column draws no bar, so a list showing only such columns offers no
+//! legend at all.
 constexpr BarLegendKind LegendForColumn(GenericColumnEnum cid)
 {
 	return cid == ColumnUserProgress    ? BarLegendKind::SourceParts
@@ -166,28 +167,6 @@ constexpr std::size_t kSourceLegendSize = sizeof(kSourceLegendOrder) / sizeof(kS
 constexpr PeerPartState kPeerLegendOrder[] = { PeerPartState::Present, PeerPartState::Missing };
 
 constexpr std::size_t kPeerLegendSize = sizeof(kPeerLegendOrder) / sizeof(kPeerLegendOrder[0]);
-
-/**
- * True when a header click at @a clickX landed on the "?" marker of a column
- * spanning [@a columnLeft, columnLeft + @a columnWidth), whose marker occupies
- * the trailing @a markerWidth pixels.
- *
- * Split out from the click handler because it is the only part of the
- * affordance that can be got wrong silently: everything else either draws or
- * does not. All four values are in the same horizontal coordinate space; the
- * caller is responsible for having applied the horizontal scroll offset to
- * both @a clickX and @a columnLeft.
- *
- * A marker wider than the column (a column dragged narrower than its own
- * header text) claims the whole column rather than a negative span, which is
- * the harmless end of that trade: the column is then too narrow to sort by
- * clicking anyway.
- */
-constexpr bool InLegendMarker(int clickX, int columnLeft, int columnWidth, int markerWidth)
-{
-	return columnWidth > 0 && markerWidth > 0 && clickX < columnLeft + columnWidth &&
-	       clickX >= columnLeft + (markerWidth >= columnWidth ? 0 : columnWidth - markerWidth);
-}
 
 } // namespace partbar
 
