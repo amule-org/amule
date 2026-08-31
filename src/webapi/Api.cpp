@@ -5083,8 +5083,14 @@ CHttpServer::Response CApiDispatcher::HandleVersionCheck(const CHttpServer::Requ
 	if (failed) {
 		// The only expected failure past the gate above is the daemon's
 		// throttle. Report an English code; the daemon's message is not relayed.
-		return ErrorResponse(
-			429, "rate_limited", "version check was throttled by the daemon; try again shortly");
+		//
+		// Its own code, not the auth limiter's `rate_limited`: both answer 429,
+		// and a client that cannot tell them apart has to treat a throttled
+		// update check as a lost session. The Web UI did exactly that and logged
+		// the user out on "Check now".
+		return ErrorResponse(429,
+			"version_check_throttled",
+			"version check was throttled by the daemon; try again shortly");
 	}
 
 	// Accepted. The check runs asynchronously on the daemon; the result

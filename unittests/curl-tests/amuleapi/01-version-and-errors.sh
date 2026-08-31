@@ -181,6 +181,23 @@ _assert_status 200 "HEAD /api/v0/version returns 200"
 _curl -X POST "$HOST/api/v0/version/check"
 _assert_status 401 "POST /api/v0/version/check without auth yields 401"
 
+# 6b. The throttled check answers its own code, not the auth limiter's.
+#     Both are 429, and a client that cannot tell them apart has to read a
+#     throttled update check as a lost session -- which is exactly what the Web
+#     UI did, logging the user out on "Check now".
+#
+#     Two POSTs back to back: the daemon's cooldown is 60 s and its startup
+#     check already consumed one attempt, so whichever way the first lands, the
+#     second is inside the window. Deterministic regardless of daemon uptime.
+_curl "${AUTH[@]}" -X POST "$HOST/api/v0/version/check"
+_curl "${AUTH[@]}" -X POST "$HOST/api/v0/version/check"
+_assert_status 429 "second POST /version/check inside the cooldown yields 429"
+# Asserted as the exact code rather than "not rate_limited": the negative form
+# also passes on an `unauthorized` body, so it would go green on a broken
+# request instead of catching it.
+_assert_json_eq '.error.code' version_check_throttled \
+	'throttled /version/check carries error.code=version_check_throttled'
+
 # 7. GET /api/v0/version/check → 405 (POST only).
 _curl "$HOST/api/v0/version/check"
 _assert_status 405 "GET /api/v0/version/check yields 405"
