@@ -37,6 +37,9 @@ enum
 	MP_SHOWLIST,
 	MP_FRIENDSLOT,
 	MP_CHANGE2FILE,
+	// Explains the colours of a chunk-bar column. Only the client lists that
+	// actually draw one offer it -- see CGenericClientListCtrl.
+	MP_BARLEGEND,
 	MP_CANCEL,
 	MP_STOP,
 	MP_RESUME,

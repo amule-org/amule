@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 19:01+0200\n"
+"POT-Creation-Date: 2026-08-30 16:16+0200\n"
 "PO-Revision-Date: 2026-08-25 10:18+0000\n"
 "Last-Translator: Fation <dj_barthezz@linuxmail.org lushnja_corps@hotmail.Language-Team:\n"
 "Language: sq\n"
@@ -2780,6 +2780,48 @@ msgid ""
 msgstr ""
 "Ju nuk lejoheni qe te vendosni me shume se nje slot per shoket.\n"
 " Vetem nje slot i vetem u vendos."
+
+#: src/GenericClientListCtrl.cpp
+#, fuzzy
+msgid "This source does not have the part"
+msgstr "Kjo komande nuk duhet te kete parametra."
+
+#: src/GenericClientListCtrl.cpp
+msgid "You and this source both have the part"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "Being downloaded from this source now"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "The next part that will be asked of this source"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This source has the part and you still need it"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This peer already has the part"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This peer does not have the part"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "One block per part of the file being downloaded."
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+#, fuzzy
+msgid "One block per part of the shared file."
+msgstr "Futni porten e serverit ketu."
+
+#: src/GenericClientListCtrl.cpp
+msgid "Colour legend"
+msgstr ""
 
 #: src/GenericClientListCtrl.cpp
 #, fuzzy, c-format
@@ -7351,10 +7393,9 @@ msgstr[1] "U gjenden %i faile te njohura te ndara"
 msgid "User Name"
 msgstr "Emri i Perdoruesit"
 
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-#, fuzzy
-msgid "Available Parts"
-msgstr "Te disponueshem :"
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Parts on Peer"
+msgstr ""
 
 #: src/SharedFilePeersListCtrl.cpp
 #, fuzzy
@@ -7552,6 +7593,11 @@ msgstr "Faile te ndara (%i)"
 #, fuzzy, c-format
 msgid "Reloading shared files: %u files scanned"
 msgstr "Ringarko listen e faileve te ndara."
+
+#: src/SourceListCtrl.cpp
+#, fuzzy
+msgid "Part Status"
+msgstr "Gjendja"
 
 #: src/SourceListCtrl.cpp
 #, fuzzy
@@ -9241,6 +9287,10 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy
+#~ msgid "Available Parts"
+#~ msgstr "Te disponueshem :"
 
 #, c-format
 #~ msgid "Found %i known shared file, %i unknown"

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 19:01+0200\n"
+"POT-Creation-Date: 2026-08-30 16:16+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -2673,6 +2673,46 @@ msgstr ""
 msgid ""
 "You are not allowed to set more than one friendslot.\n"
 " Only one slot was assigned."
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This source does not have the part"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "You and this source both have the part"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "Being downloaded from this source now"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "The next part that will be asked of this source"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This source has the part and you still need it"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This peer already has the part"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This peer does not have the part"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "One block per part of the file being downloaded."
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "One block per part of the shared file."
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "Colour legend"
 msgstr ""
 
 #: src/GenericClientListCtrl.cpp
@@ -7097,8 +7137,8 @@ msgstr[0] ""
 msgid "User Name"
 msgstr ""
 
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Available Parts"
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Parts on Peer"
 msgstr ""
 
 #: src/SharedFilePeersListCtrl.cpp
@@ -7284,6 +7324,10 @@ msgstr ""
 #: src/SharedFilesReloadProgress.cpp
 #, c-format
 msgid "Reloading shared files: %u files scanned"
+msgstr ""
+
+#: src/SourceListCtrl.cpp
+msgid "Part Status"
 msgstr ""
 
 #: src/SourceListCtrl.cpp

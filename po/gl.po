@@ -24,7 +24,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 19:01+0200\n"
+"POT-Creation-Date: 2026-08-30 16:16+0200\n"
 "PO-Revision-Date: 2026-08-25 10:08+0000\n"
 "Last-Translator: Pablo <parodper@gmail.com>\n"
 "Language-Team: http://forum.amule.org/index.php?topic=13883\n"
@@ -2789,6 +2789,48 @@ msgid ""
 msgstr ""
 "Non está permitindo establecer máis dun espazo de amigo.\n"
 " Só se asignou un espazo."
+
+#: src/GenericClientListCtrl.cpp
+#, fuzzy
+msgid "This source does not have the part"
+msgstr "Esta orde non debería ter ningún parámetro."
+
+#: src/GenericClientListCtrl.cpp
+msgid "You and this source both have the part"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "Being downloaded from this source now"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "The next part that will be asked of this source"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This source has the part and you still need it"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This peer already has the part"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This peer does not have the part"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "One block per part of the file being downloaded."
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+#, fuzzy
+msgid "One block per part of the shared file."
+msgstr "Introduza o porto do servidor aquí."
+
+#: src/GenericClientListCtrl.cpp
+msgid "Colour legend"
+msgstr ""
 
 #: src/GenericClientListCtrl.cpp
 #, c-format
@@ -7329,9 +7371,9 @@ msgstr[1] "Atopados %i ficheiros compartidos"
 msgid "User Name"
 msgstr "Nome de usuario"
 
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Available Parts"
-msgstr "Partes dispoñibles"
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Parts on Peer"
+msgstr ""
 
 #: src/SharedFilePeersListCtrl.cpp
 msgid "Upload Status"
@@ -7525,6 +7567,11 @@ msgstr "Ficheiros compartidos (%i)"
 #, c-format
 msgid "Reloading shared files: %u files scanned"
 msgstr "Recargouse a lista de ficheiros compartidos: atopáronse %u ficheiros"
+
+#: src/SourceListCtrl.cpp
+#, fuzzy
+msgid "Part Status"
+msgstr "Estado"
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
@@ -9231,6 +9278,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "Available Parts"
+#~ msgstr "Partes dispoñibles"
 
 #, c-format
 #~ msgid "Found %i known shared file, %i unknown"

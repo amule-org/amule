@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 19:01+0200\n"
+"POT-Creation-Date: 2026-08-30 16:16+0200\n"
 "PO-Revision-Date: 2026-08-26 20:30+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
@@ -2764,6 +2764,48 @@ msgid ""
 msgstr ""
 "U kunt maximaal één vriendenslot instellen.\n"
 " Slechts één slot is toegekend."
+
+#: src/GenericClientListCtrl.cpp
+#, fuzzy
+msgid "This source does not have the part"
+msgstr "Dit commando heeft geen parameters."
+
+#: src/GenericClientListCtrl.cpp
+msgid "You and this source both have the part"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "Being downloaded from this source now"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "The next part that will be asked of this source"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This source has the part and you still need it"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This peer already has the part"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This peer does not have the part"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "One block per part of the file being downloaded."
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+#, fuzzy
+msgid "One block per part of the shared file."
+msgstr "Voer hier de poort van de server in."
+
+#: src/GenericClientListCtrl.cpp
+msgid "Colour legend"
+msgstr ""
 
 #: src/GenericClientListCtrl.cpp
 #, c-format
@@ -7250,9 +7292,9 @@ msgstr[1] "%u nieuwe gedeelde bestanden ontdekt"
 msgid "User Name"
 msgstr "Gebruikersnaam"
 
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Available Parts"
-msgstr "Beschikbare delen"
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Parts on Peer"
+msgstr ""
 
 #: src/SharedFilePeersListCtrl.cpp
 msgid "Upload Status"
@@ -7445,6 +7487,11 @@ msgstr "Gedeelde bestanden (%i)"
 #, c-format
 msgid "Reloading shared files: %u files scanned"
 msgstr "Gedeelde bestanden opnieuw laden: %u bestanden gescand"
+
+#: src/SourceListCtrl.cpp
+#, fuzzy
+msgid "Part Status"
+msgstr "Status"
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
@@ -9159,6 +9206,9 @@ msgstr "aMule lijkt te worden uitgevoerd. Sluit het en voer het verwijderprogram
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Gebruikersgegevens op $APPDATA\\aMule worden verwijderd..."
+
+#~ msgid "Available Parts"
+#~ msgstr "Beschikbare delen"
 
 #, c-format
 #~ msgid "Found %i known shared file, %i unknown"

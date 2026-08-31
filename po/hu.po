@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 19:01+0200\n"
+"POT-Creation-Date: 2026-08-30 16:16+0200\n"
 "PO-Revision-Date: 2026-08-25 10:09+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: Hungarian <hu@li.org>\n"
@@ -2763,6 +2763,48 @@ msgid ""
 msgstr ""
 "Nem lehet egynél több barát slot-ot létrehozni.\n"
 "Csak egy slot lett hozzárendelve."
+
+#: src/GenericClientListCtrl.cpp
+#, fuzzy
+msgid "This source does not have the part"
+msgstr "Ennek a parancsnak nem kellene paraméterének lennie."
+
+#: src/GenericClientListCtrl.cpp
+msgid "You and this source both have the part"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "Being downloaded from this source now"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "The next part that will be asked of this source"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This source has the part and you still need it"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This peer already has the part"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This peer does not have the part"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "One block per part of the file being downloaded."
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+#, fuzzy
+msgid "One block per part of the shared file."
+msgstr "Add meg a kiszolgáló portját."
+
+#: src/GenericClientListCtrl.cpp
+msgid "Colour legend"
+msgstr ""
 
 #: src/GenericClientListCtrl.cpp
 #, c-format
@@ -7280,9 +7322,9 @@ msgstr[0] "%i ismert megosztott fájlt találtam"
 msgid "User Name"
 msgstr "Felhasználói név"
 
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Available Parts"
-msgstr "Elérhető részek"
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Parts on Peer"
+msgstr ""
 
 #: src/SharedFilePeersListCtrl.cpp
 msgid "Upload Status"
@@ -7469,6 +7511,11 @@ msgstr "Megosztott fájlok (%i)"
 #, fuzzy, c-format
 msgid "Reloading shared files: %u files scanned"
 msgstr "A megosztott fájlok listájának újratöltése."
+
+#: src/SourceListCtrl.cpp
+#, fuzzy
+msgid "Part Status"
+msgstr "Állapot"
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
@@ -9163,6 +9210,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "Available Parts"
+#~ msgstr "Elérhető részek"
 
 #, c-format
 #~ msgid "Found %i known shared file, %i unknown"

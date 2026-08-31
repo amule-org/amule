@@ -31,7 +31,7 @@ CGenericClientListCtrlColumn s_sources_column_info[] = { { ColumnUserName, wxTRA
 	{ ColumnUserSpeedDown, wxTRANSLATE("Download Speed"), 65 },
 	{ ColumnUserUploaded, wxTRANSLATE("Uploaded"), 65 },
 	{ ColumnUserSpeedUp, wxTRANSLATE("Upload Speed"), 65 },
-	{ ColumnUserAvailable, wxTRANSLATE("Available Parts"), 170 },
+	{ ColumnUserAvailable, wxTRANSLATE("Parts on Peer"), 170 },
 	{ ColumnUserVersion, wxTRANSLATE("Version"), 50 },
 	{ ColumnUserQueueRankLocal, wxTRANSLATE("Upload Status"), 70 },
 	{ ColumnUserQueueRankRemote, wxTRANSLATE("Download Status"), 70 },

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 19:01+0200\n"
+"POT-Creation-Date: 2026-08-30 16:16+0200\n"
 "PO-Revision-Date: 2026-08-25 10:20+0000\n"
 "Last-Translator: Oleksandr Kovalenko <alx.kovalenko@gmail.com>\n"
 "Language-Team: Ukrainian <translation@linux.org.ua>\n"
@@ -2790,6 +2790,48 @@ msgid ""
 msgstr ""
 "Встановлення більш ніж одного шматка для друга не дозволено.\n"
 "Був виділений тільки один слот."
+
+#: src/GenericClientListCtrl.cpp
+#, fuzzy
+msgid "This source does not have the part"
+msgstr "Ця команда не повинна мати жодного параметру."
+
+#: src/GenericClientListCtrl.cpp
+msgid "You and this source both have the part"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "Being downloaded from this source now"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "The next part that will be asked of this source"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This source has the part and you still need it"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This peer already has the part"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This peer does not have the part"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "One block per part of the file being downloaded."
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+#, fuzzy
+msgid "One block per part of the shared file."
+msgstr "Введіть тут порт сервера."
+
+#: src/GenericClientListCtrl.cpp
+msgid "Colour legend"
+msgstr ""
 
 #: src/GenericClientListCtrl.cpp
 #, fuzzy, c-format
@@ -7400,10 +7442,9 @@ msgstr[2] "Знайдено %i нових спільних файлів"
 msgid "User Name"
 msgstr "Ім'я користувача"
 
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-#, fuzzy
-msgid "Available Parts"
-msgstr "Наявні:"
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Parts on Peer"
+msgstr ""
 
 #: src/SharedFilePeersListCtrl.cpp
 #, fuzzy
@@ -7608,6 +7649,11 @@ msgstr "Спільні файли (%i)"
 #, fuzzy, c-format
 msgid "Reloading shared files: %u files scanned"
 msgstr "Перезавантажується перелік спільних файлів."
+
+#: src/SourceListCtrl.cpp
+#, fuzzy
+msgid "Part Status"
+msgstr "Стан"
 
 #: src/SourceListCtrl.cpp
 #, fuzzy
@@ -9318,6 +9364,10 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy
+#~ msgid "Available Parts"
+#~ msgstr "Наявні:"
 
 #, c-format
 #~ msgid "Found %i known shared file, %i unknown"

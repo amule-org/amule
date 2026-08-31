@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 19:01+0200\n"
+"POT-Creation-Date: 2026-08-30 16:16+0200\n"
 "PO-Revision-Date: 2026-08-26 20:30+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
@@ -2784,6 +2784,48 @@ msgid ""
 msgstr ""
 "Устанавка более одного слота для друзей запрещена.\n"
 " Был выделен только один слот."
+
+#: src/GenericClientListCtrl.cpp
+#, fuzzy
+msgid "This source does not have the part"
+msgstr "У этой команды не должно быть параметров."
+
+#: src/GenericClientListCtrl.cpp
+msgid "You and this source both have the part"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "Being downloaded from this source now"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "The next part that will be asked of this source"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This source has the part and you still need it"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This peer already has the part"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This peer does not have the part"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "One block per part of the file being downloaded."
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+#, fuzzy
+msgid "One block per part of the shared file."
+msgstr "Введите здесь порт сервера."
+
+#: src/GenericClientListCtrl.cpp
+msgid "Colour legend"
+msgstr ""
 
 #: src/GenericClientListCtrl.cpp
 #, c-format
@@ -7319,9 +7361,9 @@ msgstr[2] "Обнаружено %u новых публикуемых файло�
 msgid "User Name"
 msgstr "Имя пользователя"
 
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-msgid "Available Parts"
-msgstr "Доступные части"
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Parts on Peer"
+msgstr ""
 
 #: src/SharedFilePeersListCtrl.cpp
 msgid "Upload Status"
@@ -7523,6 +7565,11 @@ msgstr "Общие файлы (%i)"
 #, c-format
 msgid "Reloading shared files: %u files scanned"
 msgstr "Переподгрузка общих файлов: просканировано файлов — %u"
+
+#: src/SourceListCtrl.cpp
+#, fuzzy
+msgid "Part Status"
+msgstr "Состояние"
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
@@ -9237,6 +9284,9 @@ msgstr "Похоже, что aMule запущен. Закройте его и п
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Удаление пользовательских данных в $APPDATA\\aMule…"
+
+#~ msgid "Available Parts"
+#~ msgstr "Доступные части"
 
 #, c-format
 #~ msgid "Found %i known shared file, %i unknown"

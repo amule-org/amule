@@ -32,6 +32,7 @@
 #include "Constants.h"               // Needed for DownloadItemType
 #include "ClientRef.h"               // Needed for CClientRef (stored by value below)
 #include "MuleVirtualDataViewCtrl.h" // Needed for CMuleVirtualDataViewCtrl
+#include "PartBarLegend.h"           // Needed for GenericColumnEnum, partbar::BarLegendKind
 #include "amuleDlg.h"                // Needed for CamuleDlg::DialogType
 
 class CPartFile;
@@ -75,26 +76,6 @@ private:
 	CKnownFile *m_owner;
 	CClientRef m_sourceValue;
 	SourceItemType m_type;
-};
-
-enum GenericColumnEnum
-{
-	ColumnUserName = 0,
-	ColumnUserDownloaded,
-	ColumnUserUploaded,
-	ColumnUserSpeedDown,
-	ColumnUserSpeedUp,
-	ColumnUserProgress,
-	ColumnUserAvailable,
-	ColumnUserVersion,
-	ColumnUserQueueRankLocal,
-	ColumnUserQueueRankRemote,
-	ColumnUserOrigin,
-	ColumnUserFileNameDownload,
-	ColumnUserFileNameUpload,
-	ColumnUserFileNameDownloadRemote,
-	ColumnUserSharedFiles,
-	ColumnInvalid
 };
 
 struct CGenericClientListCtrlColumn
@@ -277,6 +258,14 @@ private:
 	void OnSetFriendslot(wxCommandEvent &event);
 	void OnSendMessage(wxCommandEvent &event);
 	void OnViewClientInfo(wxCommandEvent &event);
+	/**
+	 * Opens the colour legend for this list's chunk-bar column. The bar has no
+	 * other explanation of what its colours mean (issue #1192), and the two
+	 * variants of the column -- ColumnUserProgress for Sources,
+	 * ColumnUserAvailable for Peers -- have different palettes, so the legend
+	 * is chosen per cid (partbar::LegendForColumn).
+	 */
+	void OnShowBarLegend(wxCommandEvent &event);
 
 	// Misc event-handlers
 	void OnItemActivated(wxDataViewEvent &event);
@@ -290,6 +279,21 @@ private:
 	 * selection.
 	 */
 	void OnMouseMiddleClick(wxMouseEvent &event);
+
+	/**
+	 * Index in m_columndata of the chunk-bar column this list shows, or -1
+	 * when there is none on screen -- either the subclass declares no bar
+	 * column, or the user has hidden the one it declares. Found by asking
+	 * partbar::LegendForColumn() about the list's own columns rather than by
+	 * naming cids here, so a subclass that gains or loses a bar column needs
+	 * nothing changed in this class.
+	 */
+	int FindBarLegendColumn() const;
+
+	//! Pops up the legend of @a kind, titled with @a columnTitle. Swatches
+	//! are filled from partbar::SourcePartColour()/PeerPartColour(), the same
+	//! functions GetItemBarFill() fills the bar itself from.
+	void ShowBarLegend(partbar::BarLegendKind kind, const wxString &columnTitle);
 
 	/**
 	 * The item the context menu was built for, by identity rather than row —

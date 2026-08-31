@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-24 19:01+0200\n"
+"POT-Creation-Date: 2026-08-30 16:16+0200\n"
 "PO-Revision-Date: 2026-08-25 10:03+0000\n"
 "Last-Translator: Alex Thomsen Leth <alexl@stofanet.dk>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -2725,6 +2725,46 @@ msgstr "Er du sikker på at du ønsker at slette de(n) valgt(e) ven(ner)?"
 msgid ""
 "You are not allowed to set more than one friendslot.\n"
 " Only one slot was assigned."
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This source does not have the part"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "You and this source both have the part"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "Being downloaded from this source now"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "The next part that will be asked of this source"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This source has the part and you still need it"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This peer already has the part"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "This peer does not have the part"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "One block per part of the file being downloaded."
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "One block per part of the shared file."
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp
+msgid "Colour legend"
 msgstr ""
 
 #: src/GenericClientListCtrl.cpp
@@ -7254,10 +7294,9 @@ msgstr[1] "Fandt %i kendte delte filer"
 msgid "User Name"
 msgstr "Brugernavn"
 
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-#, fuzzy
-msgid "Available Parts"
-msgstr "Tilgængelig :"
+#: src/SharedFilePeersListCtrl.cpp
+msgid "Parts on Peer"
+msgstr ""
 
 #: src/SharedFilePeersListCtrl.cpp
 #, fuzzy
@@ -7456,6 +7495,11 @@ msgstr "Delte Filer (%i)"
 #, fuzzy, c-format
 msgid "Reloading shared files: %u files scanned"
 msgstr "Fandt %i kendte delte filer"
+
+#: src/SourceListCtrl.cpp
+#, fuzzy
+msgid "Part Status"
+msgstr "Status"
 
 #: src/SourceListCtrl.cpp
 #, fuzzy
@@ -9102,6 +9146,10 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy
+#~ msgid "Available Parts"
+#~ msgstr "Tilgængelig :"
 
 #, fuzzy, c-format
 #~ msgid "Found %i known shared file, %i unknown"
