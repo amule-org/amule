@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-31 17:03+0200\n"
-"PO-Revision-Date: 2026-08-31 10:05+0000\n"
+"PO-Revision-Date: 2026-08-31 15:30+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
 "Language: fr\n"
@@ -2796,46 +2796,44 @@ msgstr ""
 " Seul un slot a été attribué."
 
 #: src/GenericClientListCtrl.cpp
-#, fuzzy
 msgid "This source does not have the part"
-msgstr "Cette commande ne devrait pas avoir de paramètres."
+msgstr "Cette source n'a pas la partie"
 
 #: src/GenericClientListCtrl.cpp
 msgid "You and this source both have the part"
-msgstr ""
+msgstr "Vous et cette source avez tous les deux la partie"
 
 #: src/GenericClientListCtrl.cpp
 msgid "Being downloaded from this source now"
-msgstr ""
+msgstr "En cours de téléchargement depuis cette source"
 
 #: src/GenericClientListCtrl.cpp
 msgid "The next part that will be asked of this source"
-msgstr ""
+msgstr "La partie suivante qui sera demandée à cette source"
 
 #: src/GenericClientListCtrl.cpp
 msgid "This source has the part and you still need it"
-msgstr ""
+msgstr "Cette source a la partie et vous en avez encore besoin"
 
 #: src/GenericClientListCtrl.cpp
 msgid "This peer already has the part"
-msgstr ""
+msgstr "Ce pair a déjà la partie"
 
 #: src/GenericClientListCtrl.cpp
 msgid "This peer does not have the part"
-msgstr ""
+msgstr "Ce pair n'a pas la partie"
 
 #: src/GenericClientListCtrl.cpp
 msgid "One block per part of the file being downloaded."
-msgstr ""
+msgstr "Un bloc par partie du fichier en cours de téléchargement."
 
 #: src/GenericClientListCtrl.cpp
-#, fuzzy
 msgid "One block per part of the shared file."
-msgstr "Entrer ici le port du serveur."
+msgstr "Un bloc par partie du fichier partagé."
 
 #: src/GenericClientListCtrl.cpp
 msgid "Colour legend"
-msgstr ""
+msgstr "Légende des couleurs"
 
 #: src/GenericClientListCtrl.cpp
 #, c-format

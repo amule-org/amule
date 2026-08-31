@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-31 17:03+0200\n"
-"PO-Revision-Date: 2026-08-31 10:11+0000\n"
+"PO-Revision-Date: 2026-08-31 15:33+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
 "Language: pt_BR\n"
@@ -2797,46 +2797,44 @@ msgstr ""
 " Apenas um foi definido."
 
 #: src/GenericClientListCtrl.cpp
-#, fuzzy
 msgid "This source does not have the part"
-msgstr "Este comando não precisa de parâmetros."
+msgstr "Esta fonte não tem a parte"
 
 #: src/GenericClientListCtrl.cpp
 msgid "You and this source both have the part"
-msgstr ""
+msgstr "Você e esta fonte, ambos têm a parte"
 
 #: src/GenericClientListCtrl.cpp
 msgid "Being downloaded from this source now"
-msgstr ""
+msgstr "Sendo baixada agora desta fonte"
 
 #: src/GenericClientListCtrl.cpp
 msgid "The next part that will be asked of this source"
-msgstr ""
+msgstr "A pŕoxima parte que será pedida desta fonte"
 
 #: src/GenericClientListCtrl.cpp
 msgid "This source has the part and you still need it"
-msgstr ""
+msgstr "Esta fonte tem a parte e você ainda precisa dela"
 
 #: src/GenericClientListCtrl.cpp
 msgid "This peer already has the part"
-msgstr ""
+msgstr "Este par já tem a parte"
 
 #: src/GenericClientListCtrl.cpp
 msgid "This peer does not have the part"
-msgstr ""
+msgstr "Este par não tem a parte"
 
 #: src/GenericClientListCtrl.cpp
 msgid "One block per part of the file being downloaded."
-msgstr ""
+msgstr "Um bloco por parte do arquivo sendo baixado."
 
 #: src/GenericClientListCtrl.cpp
-#, fuzzy
 msgid "One block per part of the shared file."
-msgstr "Informe a porta do servidor aqui."
+msgstr "Um bloco por parte do arquivo compartilhado."
 
 #: src/GenericClientListCtrl.cpp
 msgid "Colour legend"
-msgstr ""
+msgstr "Legenda colorida"
 
 #: src/GenericClientListCtrl.cpp
 #, c-format
@@ -7320,7 +7318,7 @@ msgstr "Nome de Usuário"
 
 #: src/SharedFilePeersListCtrl.cpp
 msgid "Parts on Peer"
-msgstr ""
+msgstr "Partes no par"
 
 #: src/SharedFilePeersListCtrl.cpp
 msgid "Upload Status"
@@ -7515,9 +7513,8 @@ msgid "Reloading shared files: %u files scanned"
 msgstr "Recarregando arquivos compartilhados: %u arquivos encontrados"
 
 #: src/SourceListCtrl.cpp
-#, fuzzy
 msgid "Part Status"
-msgstr "Status"
+msgstr "Estado da parte"
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
