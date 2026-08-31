@@ -548,8 +548,19 @@ std::vector<uint32_t> CSearchList::LoadSearches()
 		// started. Partitioned on the id's own high bit rather than the
 		// persisted `kind` byte: bit 31 is intrinsic to which counter owns
 		// the value, while `kind` is a separate field from the same record
-		// that could disagree with it if the file were corrupt.
-		if (entry.id & 0x80000000) {
+		// that could disagree with it if the file were corrupt. The one id
+		// that bit is wrong about is the legacy sentinel, handled first.
+		if (entry.id == 0xffffffff) {
+			// The legacy single-search bucket comes from neither counter:
+			// every EC client predating multi-search reuses this one id for
+			// all of its searches, so there is no allocation to advance past.
+			// It has to be excluded explicitly because the bit-31 test below
+			// would hand an ed2k search to the Kad counter -- and since this
+			// is the largest uint32 there is, ReserveSearchId would pin
+			// m_nextID at its maximum and the next Kad allocation
+			// (++m_nextID | SEARCH_ID_KAD_MASK) would wrap to the FIRST Kad
+			// id, which is the collision this reservation exists to prevent.
+		} else if (entry.id & 0x80000000) {
 			Kademlia::CSearchManager::ReserveSearchId(entry.id);
 		} else {
 			ReserveEd2kId(entry.id);

@@ -75,6 +75,7 @@ CSearch::CSearch()
 	m_answers = 0;
 	m_totalRequestAnswers = 0;
 	m_searchID = (uint32_t)-1;
+	m_searchIDAssigned = false;
 	m_stopping = false;
 	m_totalLoad = 0;
 	m_totalLoadResponses = 0;

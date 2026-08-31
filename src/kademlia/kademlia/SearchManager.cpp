@@ -103,6 +103,19 @@ bool CSearchManager::RequestMoreResults(uint32_t searchID, bool *out_fired)
 bool CSearchManager::IsKadSearch(uint32_t searchID)
 {
 	for (SearchMap::const_iterator it = m_searches.begin(); it != m_searches.end(); ++it) {
+		// Skip searches that were never given an id. Their m_searchID is the
+		// constructor's 0xFFFFFFFF, which is also the single bucket every EC
+		// client predating multi-search reuses for all of its searches -- so
+		// without this an ordinary node lookup, buddy lookup or UDP firewall
+		// check answers "yes, that is a running Kad search" for a legacy
+		// client's ed2k search. The whole per-id lifecycle then follows: the
+		// search is reported as kind Kad, RUNNING, and its percent comes from
+		// the Kad time-ramp (pinned at 99) until the unrelated internal search
+		// happens to end. Only PrepareFindKeywords and PrepareLookup assign an
+		// id; the three FindNode* paths do not.
+		if (!it->second->HasSearchID()) {
+			continue;
+		}
 		if (it->second->GetSearchID() == searchID) {
 			return true;
 		}

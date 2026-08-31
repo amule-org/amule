@@ -59,7 +59,20 @@ class CSearch
 
 public:
 	uint32_t GetSearchID() const noexcept { return m_searchID; }
-	void SetSearchID(uint32_t id) noexcept { m_searchID = id; }
+	void SetSearchID(uint32_t id) noexcept
+	{
+		m_searchID = id;
+		m_searchIDAssigned = true;
+	}
+	// Whether this search was ever given an id. Only PrepareFindKeywords and
+	// PrepareLookup assign one; FindNode, FindNodeSpecial and
+	// FindNodeFWCheckUDP leave the constructor's default, which is the same
+	// value an EC client that predates multi-search uses for every search it
+	// runs (0xFFFFFFFF). An id lookup must not resolve to a search that never
+	// claimed one, or aMule's own node lookups answer for a legacy client's
+	// search. The value alone cannot say: a legacy Kad keyword search really
+	// does get 0xFFFFFFFF assigned, deliberately, in PrepareFindKeywords.
+	bool HasSearchID() const noexcept { return m_searchIDAssigned; }
 	uint32_t GetSearchTypes() const noexcept { return m_type; }
 	void SetSearchTypes(uint32_t val) noexcept { m_type = val; }
 	void SetTargetID(const CUInt128 &val) noexcept { m_target = val; }
@@ -174,6 +187,7 @@ private:
 	uint32_t m_lastResponse;
 
 	uint32_t m_searchID;
+	bool m_searchIDAssigned;
 	CUInt128 m_target;
 	uint32_t m_searchTermsDataSize;
 	uint8_t *m_searchTermsData;
