@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-31 17:03+0200\n"
+"POT-Creation-Date: 2026-08-31 22:39+0200\n"
 "PO-Revision-Date: 2026-08-31 15:29+0000\n"
 "Last-Translator: Tapio Rantala <tapio.rantala@iki.fi>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -2222,6 +2222,11 @@ msgstr ""
 #, c-format
 msgid "Could not save the amuleapi password: %s"
 msgstr ""
+
+#: src/ExternalConn.cpp
+#, fuzzy
+msgid "No such category."
+msgstr "Sulje tämä keskustelu."
 
 #: src/ExternalConn.cpp
 #, fuzzy

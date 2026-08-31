@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-31 17:03+0200\n"
+"POT-Creation-Date: 2026-08-31 22:39+0200\n"
 "PO-Revision-Date: 2026-08-31 15:36+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -2209,6 +2209,11 @@ msgstr "无法交换客户端到那个文件。"
 #, c-format
 msgid "Could not save the amuleapi password: %s"
 msgstr "无法保存 amuleapi 密码：%s"
+
+#: src/ExternalConn.cpp
+#, fuzzy
+msgid "No such category."
+msgstr "没有这样的聊天会话"
 
 #: src/ExternalConn.cpp
 msgid "Missing chat session id"

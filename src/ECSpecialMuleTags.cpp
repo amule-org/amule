@@ -64,6 +64,21 @@ CEC_Category_Tag::CEC_Category_Tag(
 
 bool CEC_Category_Tag::Apply()
 {
+	// The index arrives from an EC client and the protocol does not constrain
+	// it: the tag admits any uint8 while only GetCatCount() categories exist.
+	// Refusing here rather than only inside UpdateCategory, because BOTH calls
+	// below index with this value -- the failure branch reads GetCatPath(),
+	// which is guarded by a wxASSERT that aborts a debug build and vanishes in
+	// a release one. Left unchecked, UpdateCategory indexed m_CatList (a
+	// std::vector) out of range and dereferenced the result comparing paths,
+	// which took the daemon down with SIGABRT and every transfer with it
+	// (amule-org/amule#1227).
+	if (GetInt() >= theApp->glob_prefs->GetCatCount()) {
+		// The EC_OP_UPDATE_CATEGORY handler turns false into EC_OP_FAILED
+		// carrying the category and the client's own path, which is the
+		// rejection this case wants -- no new protocol surface needed.
+		return false;
+	}
 	bool ret = theApp->glob_prefs->UpdateCategory(
 		GetInt(), Name(), CPath(Path()), Comment(), Color(), Prio());
 	if (!ret) {

@@ -4213,6 +4213,22 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		if (request->GetTagCount() == 1) {
 			CEC_Category_Tag tag(
 				*static_cast<const CEC_Category_Tag *>(request->GetFirstTagSafe()));
+			if (tag.GetInt() >= theApp->glob_prefs->GetCatCount()) {
+				// No such category. Deliberately WITHOUT
+				// EC_TAG_CATEGORY_PATH: on a failed update that tag means
+				// "everything but the path was applied, and here is the
+				// path kept instead", which clients answer as a success
+				// (amule-org/amule#1213). Emitting it here would report a
+				// category that does not exist as updated. The index is
+				// whatever the client sent -- it used to be indexed
+				// straight into m_CatList (amule-org/amule#1227).
+				response = new CECPacket(EC_OP_FAILED);
+				response->AddTag(CECTag(EC_TAG_CATEGORY, tag.GetInt()));
+				response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("No such category.")));
+				// No Notify either: there is nothing to refresh, and the
+				// monolithic handler would index on this same value.
+				break;
+			}
 			if (tag.Apply()) {
 				response = new CECPacket(EC_OP_NOOP);
 			} else {
