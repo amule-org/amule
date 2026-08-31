@@ -19,7 +19,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-30 16:16+0200\n"
+"POT-Creation-Date: 2026-08-31 17:03+0200\n"
 "PO-Revision-Date: 2026-08-31 10:08+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
@@ -772,6 +772,38 @@ msgid "Kad: Off"
 msgstr "Kad: Spento"
 
 #: src/amuleDlg.cpp
+msgid "Core"
+msgstr ""
+
+#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Version"
+msgstr "Versione"
+
+#: src/amuleDlg.cpp
+msgid "The core and aMuleGUI are different versions."
+msgstr ""
+
+#: src/amuleDlg.cpp
+msgid "The core and aMuleGUI are the same version."
+msgstr ""
+
+#: src/amuleDlg.cpp src/ServerListCtrl.cpp
+msgid "Address"
+msgstr "Indirizzo"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "Encryption"
+msgstr "Descrizione"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "aMuleGUI"
+msgstr "log di aMuleGUI"
+
+#: src/amuleDlg.cpp
 #, c-format
 msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
 msgstr "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
@@ -978,6 +1010,10 @@ msgstr ""
 #: src/amule-remote-gui.cpp
 msgid "Connection to the remote core was lost. Trying to reconnect..."
 msgstr "Connessione al core remoto persa. Tentativo di riconnessione..."
+
+#: src/amule-remote-gui.cpp src/ClientDetailDialog.cpp
+msgid "Disabled"
+msgstr "Disabilitato"
 
 #: src/amule-remote-gui.cpp
 msgid "Reconnected to the remote core."
@@ -1290,10 +1326,6 @@ msgstr "Supportato"
 msgid "Not supported"
 msgstr "Non supportato"
 
-#: src/ClientDetailDialog.cpp
-msgid "Disabled"
-msgstr "Disabilitato"
-
 #: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp
 #: src/TextClient.cpp
 msgid "Connected"
@@ -1316,11 +1348,6 @@ msgstr "Nome"
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 msgid "Software"
 msgstr "Software"
-
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
-msgid "Version"
-msgstr "Versione"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 msgid "IP Address"
@@ -6882,10 +6909,6 @@ msgstr "Il server locale è filtrato dal filtro IP, mi connetto a un altro serve
 #: src/ServerListCtrl.cpp
 msgid "Server Name"
 msgstr "Nome server"
-
-#: src/ServerListCtrl.cpp
-msgid "Address"
-msgstr "Indirizzo"
 
 #: src/ServerListCtrl.cpp
 msgid "Port"

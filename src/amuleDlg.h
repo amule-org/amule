@@ -148,7 +148,25 @@ public:
 	void BeginLogBatch();
 	void EndLogBatch();
 
+	// Last values pushed by ShowCoreVersion, so the click handler can build
+	// the dialog without re-reading the EC connection.
+	wxString m_coreVersion;
+	wxString m_coreEndpoint;
+	wxString m_coreEncryption;
+	bool m_coreEncrypted = false;
+
 	void ShowUserCount(const wxString &info = "");
+	// Reveal and populate the status-bar core-version field. `coreVersion`
+	// is what the core reported over EC; `endpoint` is the host:port it
+	// was reached on. amulegui only.
+	void ShowCoreVersion(const wxString &coreVersion,
+		const wxString &endpoint,
+		const wxString &encryption,
+		bool encrypted);
+	// Details dialog for the status-bar core-version field. A dialog rather
+	// than a tooltip: the bar shifts sideways whenever the speed text
+	// changes width, which cancels a hover before it can fire.
+	void OnCoreVersionClicked(wxMouseEvent &event);
 	void ShowConnectionState();
 	void ShowTransferRate();
 

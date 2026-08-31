@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-30 16:16+0200\n"
+"POT-Creation-Date: 2026-08-31 17:03+0200\n"
 "PO-Revision-Date: 2026-08-31 10:10+0000\n"
 "Last-Translator: Michał Trzebiatowski <hippie_1968@hotmail.com>\n"
 "Language-Team: translationproject.org/team/pl.html <translation-team-pl@lists.sourceforge.net>\n"
@@ -761,6 +761,38 @@ msgid "Kad: Off"
 msgstr "Kad: Wyłączony"
 
 #: src/amuleDlg.cpp
+msgid "Core"
+msgstr ""
+
+#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Version"
+msgstr "Wersja"
+
+#: src/amuleDlg.cpp
+msgid "The core and aMuleGUI are different versions."
+msgstr ""
+
+#: src/amuleDlg.cpp
+msgid "The core and aMuleGUI are the same version."
+msgstr ""
+
+#: src/amuleDlg.cpp src/ServerListCtrl.cpp
+msgid "Address"
+msgstr "Adres"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "Encryption"
+msgstr "Opis"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "aMuleGUI"
+msgstr "Logi aMule"
+
+#: src/amuleDlg.cpp
 #, fuzzy, c-format
 msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
 msgstr "Wysł: %.1f(%.1f) | Pobr: %.1f(%.1f)"
@@ -964,6 +996,10 @@ msgstr ""
 #: src/amule-remote-gui.cpp
 msgid "Connection to the remote core was lost. Trying to reconnect..."
 msgstr ""
+
+#: src/amule-remote-gui.cpp src/ClientDetailDialog.cpp
+msgid "Disabled"
+msgstr "Wyłączony"
 
 #: src/amule-remote-gui.cpp
 #, fuzzy
@@ -1284,10 +1320,6 @@ msgstr "Obsługiwany"
 msgid "Not supported"
 msgstr "Nieobsługiwany"
 
-#: src/ClientDetailDialog.cpp
-msgid "Disabled"
-msgstr "Wyłączony"
-
 #: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp
 #: src/TextClient.cpp
 msgid "Connected"
@@ -1311,11 +1343,6 @@ msgstr "Nazwa:"
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 msgid "Software"
 msgstr ""
-
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
-msgid "Version"
-msgstr "Wersja"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 #, fuzzy
@@ -6980,10 +7007,6 @@ msgstr "Serwer lokalny jest filtrowany przez IPFilters, podłączam ponownie do 
 #: src/ServerListCtrl.cpp
 msgid "Server Name"
 msgstr "Nazwa serwera"
-
-#: src/ServerListCtrl.cpp
-msgid "Address"
-msgstr "Adres"
 
 #: src/ServerListCtrl.cpp
 msgid "Port"

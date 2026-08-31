@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-30 16:16+0200\n"
+"POT-Creation-Date: 2026-08-31 17:03+0200\n"
 "PO-Revision-Date: 2026-08-31 09:56+0000\n"
 "Last-Translator: minterior <minterior@gmail.com>\n"
 "Language-Team: Català\n"
@@ -758,6 +758,38 @@ msgid "Kad: Off"
 msgstr "Kad: Inativa"
 
 #: src/amuleDlg.cpp
+msgid "Core"
+msgstr ""
+
+#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Version"
+msgstr "Versió"
+
+#: src/amuleDlg.cpp
+msgid "The core and aMuleGUI are different versions."
+msgstr ""
+
+#: src/amuleDlg.cpp
+msgid "The core and aMuleGUI are the same version."
+msgstr ""
+
+#: src/amuleDlg.cpp src/ServerListCtrl.cpp
+msgid "Address"
+msgstr "Adreça"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "Encryption"
+msgstr "Descripció"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "aMuleGUI"
+msgstr "Registre de l'aMule"
+
+#: src/amuleDlg.cpp
 #, c-format
 msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
 msgstr "PU: %.1f%s (%.1f) | BA: %.1f%s (%.1f)"
@@ -961,6 +993,10 @@ msgstr ""
 #: src/amule-remote-gui.cpp
 msgid "Connection to the remote core was lost. Trying to reconnect..."
 msgstr ""
+
+#: src/amule-remote-gui.cpp src/ClientDetailDialog.cpp
+msgid "Disabled"
+msgstr "Inhabilitada"
 
 #: src/amule-remote-gui.cpp
 #, fuzzy
@@ -1277,10 +1313,6 @@ msgstr "Suportada"
 msgid "Not supported"
 msgstr "No suportada"
 
-#: src/ClientDetailDialog.cpp
-msgid "Disabled"
-msgstr "Inhabilitada"
-
 #: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp
 #: src/TextClient.cpp
 msgid "Connected"
@@ -1304,11 +1336,6 @@ msgstr "Nom:"
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 msgid "Software"
 msgstr ""
-
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
-msgid "Version"
-msgstr "Versió"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 #, fuzzy
@@ -6935,10 +6962,6 @@ msgstr "El servidor local està filtrat pels filtres IP, s'està reconnectant a 
 #: src/ServerListCtrl.cpp
 msgid "Server Name"
 msgstr "Nom"
-
-#: src/ServerListCtrl.cpp
-msgid "Address"
-msgstr "Adreça"
 
 #: src/ServerListCtrl.cpp
 msgid "Port"

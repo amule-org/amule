@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-30 16:16+0200\n"
+"POT-Creation-Date: 2026-08-31 17:03+0200\n"
 "PO-Revision-Date: 2026-08-31 10:09+0000\n"
 "Last-Translator: Dovydas Sankauskas <laisve@gmail.com>\n"
 "Language-Team: Lithuanian <komp_lt@konf.lt>\n"
@@ -763,6 +763,38 @@ msgid "Kad: Off"
 msgstr "Kad: išjungta"
 
 #: src/amuleDlg.cpp
+msgid "Core"
+msgstr ""
+
+#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Version"
+msgstr "Versija"
+
+#: src/amuleDlg.cpp
+msgid "The core and aMuleGUI are different versions."
+msgstr ""
+
+#: src/amuleDlg.cpp
+msgid "The core and aMuleGUI are the same version."
+msgstr ""
+
+#: src/amuleDlg.cpp src/ServerListCtrl.cpp
+msgid "Address"
+msgstr "Adresas"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "Encryption"
+msgstr "Aprašymas"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "aMuleGUI"
+msgstr "aMule žurnalas"
+
+#: src/amuleDlg.cpp
 #, fuzzy, c-format
 msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
 msgstr "Išs.: %.1f(%.1f) | Ats.: %.1f(%.1f)"
@@ -971,6 +1003,10 @@ msgstr ""
 #: src/amule-remote-gui.cpp
 msgid "Connection to the remote core was lost. Trying to reconnect..."
 msgstr ""
+
+#: src/amule-remote-gui.cpp src/ClientDetailDialog.cpp
+msgid "Disabled"
+msgstr "Išjungta"
 
 #: src/amule-remote-gui.cpp
 #, fuzzy
@@ -1292,10 +1328,6 @@ msgstr "Palaikoma"
 msgid "Not supported"
 msgstr "Nepalaikoma"
 
-#: src/ClientDetailDialog.cpp
-msgid "Disabled"
-msgstr "Išjungta"
-
 #: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp
 #: src/TextClient.cpp
 msgid "Connected"
@@ -1319,11 +1351,6 @@ msgstr "Pavadinimas:"
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 msgid "Software"
 msgstr ""
-
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
-msgid "Version"
-msgstr "Versija"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 #, fuzzy
@@ -7000,10 +7027,6 @@ msgstr "Vietinis serveris filtruojamas IP filtro, jungiamasi prie kito serverio!
 #: src/ServerListCtrl.cpp
 msgid "Server Name"
 msgstr "Serverio pavadinimas"
-
-#: src/ServerListCtrl.cpp
-msgid "Address"
-msgstr "Adresas"
 
 #: src/ServerListCtrl.cpp
 msgid "Port"

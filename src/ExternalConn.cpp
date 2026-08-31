@@ -52,6 +52,7 @@
 #include "amule.h"      // Needed for theApp
 #include "SearchList.h" // Needed for GetSearchResults
 #include "ClientVersionString.h"
+#include "MuleVersion.h" // Needed for GetShortMuleVersion()
 #include "ClientList.h"
 #include "ChatSessionStore.h"
 #include "ClientCreditsList.h" // Needed for CClientCreditsList
@@ -1379,7 +1380,12 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 				const std::vector<uint8_t> serverConfirm = ServerConfirm(authSecret);
 				ActivateAEAD();
 				response = new CECPacket(EC_OP_AUTH_OK);
-				response->AddTag(CECTag(EC_TAG_SERVER_VERSION, VERSION));
+				// Short form rather than bare VERSION: on a development
+				// build VERSION is the literal "GIT", so every snapshot
+				// would identify itself identically and a client could
+				// not tell which revision it is talking to. No change on
+				// a tagged release, where GITDATE is undefined.
+				response->AddTag(CECTag(EC_TAG_SERVER_VERSION, GetShortMuleVersion()));
 				// Our half of the proof. Travels inside the now-sealed
 				// AUTH_OK, so the client learns both that we hold the
 				// credential and that we hold the key, from one packet.
@@ -4436,7 +4442,9 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			delete tree;
 		}
 		if (request->GetDetailLevel() == EC_DETAIL_WEB) {
-			response->AddTag(CECTag(EC_TAG_SERVER_VERSION, VERSION));
+			// Same short form as the AUTH_OK handshake above, so amuleweb
+			// and the GUI never see two spellings of one build.
+			response->AddTag(CECTag(EC_TAG_SERVER_VERSION, GetShortMuleVersion()));
 			response->AddTag(CECTag(EC_TAG_USER_NICK, thePrefs::GetUserNick()));
 		}
 		break;

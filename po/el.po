@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-30 16:16+0200\n"
+"POT-Creation-Date: 2026-08-31 17:03+0200\n"
 "PO-Revision-Date: 2026-08-31 10:01+0000\n"
 "Last-Translator: Dimitris <dgalanak@yahoo.com>\n"
 "Language-Team: Greek\n"
@@ -763,6 +763,38 @@ msgid "Kad: Off"
 msgstr "Kad: Εκτός"
 
 #: src/amuleDlg.cpp
+msgid "Core"
+msgstr ""
+
+#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Version"
+msgstr "Έκδοση"
+
+#: src/amuleDlg.cpp
+msgid "The core and aMuleGUI are different versions."
+msgstr ""
+
+#: src/amuleDlg.cpp
+msgid "The core and aMuleGUI are the same version."
+msgstr ""
+
+#: src/amuleDlg.cpp src/ServerListCtrl.cpp
+msgid "Address"
+msgstr "Διεύθυνση"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "Encryption"
+msgstr "Περιγραφή"
+
+#: src/amuleDlg.cpp
+#, fuzzy
+msgid "aMuleGUI"
+msgstr "Αρχείο καταγραφής aMule"
+
+#: src/amuleDlg.cpp
 #, fuzzy, c-format
 msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
 msgstr "Πάνω: %.1f(%.1f) | Κάτω: %.1f(%.1f)"
@@ -971,6 +1003,10 @@ msgstr ""
 #: src/amule-remote-gui.cpp
 msgid "Connection to the remote core was lost. Trying to reconnect..."
 msgstr ""
+
+#: src/amule-remote-gui.cpp src/ClientDetailDialog.cpp
+msgid "Disabled"
+msgstr "Απενεργοποιημένο"
 
 #: src/amule-remote-gui.cpp
 #, fuzzy
@@ -1288,10 +1324,6 @@ msgstr "Υποστηρίζεται"
 msgid "Not supported"
 msgstr "Δεν υποστηρίζεται"
 
-#: src/ClientDetailDialog.cpp
-msgid "Disabled"
-msgstr "Απενεργοποιημένο"
-
 #: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp
 #: src/TextClient.cpp
 msgid "Connected"
@@ -1315,11 +1347,6 @@ msgstr "Όνομα:"
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 msgid "Software"
 msgstr ""
-
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
-msgid "Version"
-msgstr "Έκδοση"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 #, fuzzy
@@ -6978,10 +7005,6 @@ msgstr "Ο τοπικός διακομιστής είναι φιλτραρισμ
 #: src/ServerListCtrl.cpp
 msgid "Server Name"
 msgstr "Όνομα διακομιστή"
-
-#: src/ServerListCtrl.cpp
-msgid "Address"
-msgstr "Διεύθυνση"
 
 #: src/ServerListCtrl.cpp
 msgid "Port"

@@ -40,6 +40,7 @@
 #include "DataToText.h"           // Needed for PriorityToStr
 #include "FileDetailDialog.h"     // Needed for CFileDetailDialog
 #include "GuiEvents.h"            // Needed for CoreNotify_*
+#include "InfoGridDialog.h"       // Needed for ShowInfoGridDialog
 #ifdef GEOIP_GUI
 #include "CountryFlags.h"   // Needed for CCountryFlags (flag bitmaps)
 #include "CountryDisplay.h" // Needed for GetDisplayCountryCode
@@ -711,39 +712,29 @@ void CGenericClientListCtrl::ShowBarLegend(partbar::BarLegendKind kind, const wx
 	// fills the bar from, under the bar preference in force right now: a
 	// swatch cannot disagree with the pixels it explains.
 	const bool bFlat = thePrefs::UseFlatBar();
+	const bool sourceKind = (kind == partbar::BarLegendKind::SourceParts);
 
-	wxDialog dialog(this, wxID_ANY, columnTitle);
-	wxFlexGridSizer *grid = new wxFlexGridSizer(2, wxSize(8, 6));
-
-	wxString intro;
-	if (kind == partbar::BarLegendKind::SourceParts) {
-		intro = _("One block per part of the file being downloaded.");
-		for (const partbar::SourcePartState state : partbar::kSourceLegendOrder) {
-			AddLegendRow(&dialog,
-				grid,
-				partbar::SourcePartColour(state, bFlat),
-				SourcePartStateLabel(state));
-		}
-	} else {
-		intro = _("One block per part of the shared file.");
-		for (const partbar::PeerPartState state : partbar::kPeerLegendOrder) {
-			AddLegendRow(&dialog,
-				grid,
-				partbar::PeerPartColour(state, bFlat),
-				PeerPartStateLabel(state));
-		}
-	}
-
-	wxBoxSizer *top = new wxBoxSizer(wxVERTICAL);
-	top->Add(new wxStaticText(&dialog, wxID_ANY, intro), 0, wxALL, 10);
-	top->Add(grid, 0, wxLEFT | wxRIGHT | wxBOTTOM, 10);
-	if (wxSizer *buttons = dialog.CreateButtonSizer(wxOK)) {
-		top->Add(buttons, 0, wxALIGN_RIGHT | wxLEFT | wxRIGHT | wxBOTTOM, 10);
-	}
-
-	dialog.SetSizerAndFit(top);
-	dialog.CentreOnParent();
-	dialog.ShowModal();
+	ShowInfoGridDialog(this,
+		columnTitle,
+		sourceKind ? _("One block per part of the file being downloaded.")
+			   : _("One block per part of the shared file."),
+		[bFlat, sourceKind](wxWindow *dlg, wxSizer *grid) {
+			if (sourceKind) {
+				for (const partbar::SourcePartState state : partbar::kSourceLegendOrder) {
+					AddLegendRow(dlg,
+						grid,
+						partbar::SourcePartColour(state, bFlat),
+						SourcePartStateLabel(state));
+				}
+			} else {
+				for (const partbar::PeerPartState state : partbar::kPeerLegendOrder) {
+					AddLegendRow(dlg,
+						grid,
+						partbar::PeerPartColour(state, bFlat),
+						PeerPartStateLabel(state));
+				}
+			}
+		});
 }
 
 void CGenericClientListCtrl::OnShowBarLegend(wxCommandEvent &WXUNUSED(event))

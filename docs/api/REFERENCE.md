@@ -527,8 +527,8 @@ curl -s http://$HOST/api/v0/version
 {
   "service": "amuleapi",
   "api_version": "v0",
-  "amuleapi_version": "2.4.0-29-g...",
-  "daemon_version": "2.4.0-29-g...",
+  "amuleapi_version": "GIT rev. 3.0.1-773-g500293ba3",
+  "daemon_version": "GIT rev. 3.0.1-773-g500293ba3",
   "update": {
     "check_enabled": true,
     "checked": true,
@@ -543,8 +543,8 @@ curl -s http://$HOST/api/v0/version
 | --- | --- |
 | `name` | Always `"amuleapi"`. |
 | `api_version` | REST contract version served on this path (`"v0"`). |
-| `amuleapi_version` | amuleapi's **own** build version. |
-| `daemon_version` | Version of the **connected amuled**, from the EC handshake. Empty string when EC is not (yet) connected, or when the daemon is old enough not to advertise it. Normally equal to `amuleapi_version` (both are built from the same source tree), but they can differ if a mismatched amuleapi is pointed at a different amuled. |
+| `amuleapi_version` | amuleapi's **own** build version. On a tagged release this is the release number (`"3.0.1"`); on a development build it is `"GIT"` followed by the revision (`"GIT rev. 3.0.1-773-g500293ba3"`), because `"GIT"` alone is the same string for every snapshot and identifies nothing. |
+| `daemon_version` | Version of the **connected amuled**, from the EC handshake, in the same spelling as `amuleapi_version` above. Empty string when EC is not (yet) connected, or when the daemon is old enough not to advertise it. Normally equal to `amuleapi_version` (both are built from the same source tree), but they can differ if a mismatched amuleapi is pointed at a different amuled. On development builds the revision makes that comparison meaningful, which bare `"GIT"` could not. |
 | `update` | Update-availability, **relayed from the connected daemon** — amuleapi never contacts GitHub itself. See the sub-table. |
 
 The `update` object:

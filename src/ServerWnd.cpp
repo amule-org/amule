@@ -113,9 +113,8 @@ CServerWnd::CServerWnd(wxWindow *pParent /*=NULL*/, int splitter_pos)
 
 #ifdef CLIENT_GUI
 	// amulegui only: "aMule Log" carries the daemon/core log forwarded over EC,
-	// so give the GUI client's own messages a second tab. Inserted here rather
-	// than in serverListDlg() because muuli_wdr is compiled into a shared
-	// library without CLIENT_GUI and cannot tell the two builds apart.
+	// so give the GUI client's own messages a second tab. Inserted after the
+	// notebook is built rather than inside serverListDlg().
 	wxNotebook *srvLogNotebook = CastChild(ID_SRVLOG_NOTEBOOK, wxNotebook);
 	if (srvLogNotebook) {
 		wxPanel *guiLogPanel = new wxPanel(srvLogNotebook, -1);
