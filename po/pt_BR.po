@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-31 17:03+0200\n"
+"POT-Creation-Date: 2026-08-31 22:39+0200\n"
 "PO-Revision-Date: 2026-08-31 15:33+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
@@ -2213,6 +2213,11 @@ msgstr "O cliente não pode ser trocado para este arquivo."
 #, c-format
 msgid "Could not save the amuleapi password: %s"
 msgstr "Não foi possível salvar a senha da amuleapi: %s"
+
+#: src/ExternalConn.cpp
+#, fuzzy
+msgid "No such category."
+msgstr "Esta sessão de chat não existe"
 
 #: src/ExternalConn.cpp
 msgid "Missing chat session id"

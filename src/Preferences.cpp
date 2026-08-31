@@ -2518,6 +2518,16 @@ bool CPreferences::CreateCategory(Category_Struct *&category,
 bool CPreferences::UpdateCategory(
 	uint8 cat, const wxString &name, const CPath &path, const wxString &comment, uint32 color, uint8 prio)
 {
+	// Backstop for the index. CreateCategory and the category dialog both pass
+	// one that is valid by construction; the EC handler does not, and its
+	// value comes straight off the wire. Returning false rather than indexing
+	// keeps an out-of-range id from reaching m_CatList, which is a std::vector
+	// -- operator[] past the end is undefined, and what it actually did was
+	// hand back a garbage pointer that the path comparison below dereferenced
+	// (amule-org/amule#1227). Callers already treat false as "not applied".
+	if (cat >= m_CatList.size()) {
+		return false;
+	}
 	Category_Struct *category = m_CatList[cat];
 
 	// return true if path is ok, false if not

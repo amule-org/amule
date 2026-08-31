@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-31 17:03+0200\n"
+"POT-Creation-Date: 2026-08-31 22:39+0200\n"
 "PO-Revision-Date: 2026-08-31 15:32+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
@@ -2209,6 +2209,11 @@ msgstr "Kan de client niet naar dat bestand overschakelen."
 #, c-format
 msgid "Could not save the amuleapi password: %s"
 msgstr "Kon het amuleapi-wachtwoord niet opslaan: %s"
+
+#: src/ExternalConn.cpp
+#, fuzzy
+msgid "No such category."
+msgstr "Chatsessie onvindbaar"
 
 #: src/ExternalConn.cpp
 msgid "Missing chat session id"
