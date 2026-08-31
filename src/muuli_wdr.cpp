@@ -123,6 +123,33 @@ wxSizer *muleDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     wxStaticLine *item9 = new wxStaticLine( parent, -1, wxDefaultPosition, wxSize(-1,20), wxLI_VERTICAL );
     item6->Add( item9, wxSizerFlags().Center().Border(wxLEFT, 5) );
 
+#ifdef CLIENT_GUI
+    // Connected core's version, left of the counters it heads. amulegui only:
+    // this file is compiled per-executable, so CLIENT_GUI is the consuming
+    // target's and monolithic aMule never builds it. Hidden until the EC
+    // handshake reports a version. Clickable, so it gets the hand cursor.
+    //
+    // 16x16 explicitly: with no size the bundle defaults to the icon's PNG
+    // twin, 256x256 for the logo. The size is logical, so it still renders
+    // from the SVG at the display's scale.
+    wxStaticBitmap *coreVerIcon = new wxStaticBitmap( parent, -1, wxArtProvider::GetBitmapBundle( "amule:amule", wxART_OTHER, wxSize(16, 16) ), wxDefaultPosition, wxDefaultSize );
+    coreVerIcon->SetName( "coreVersionImage" );
+    coreVerIcon->SetCursor( wxCursor( wxCURSOR_HAND ) );
+    coreVerIcon->Show( false );
+    item6->Add( coreVerIcon, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
+
+    wxStaticText *coreVerLabel = new wxStaticText( parent, -1, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+    coreVerLabel->SetName( "coreVersionLabel" );
+    coreVerLabel->SetCursor( wxCursor( wxCURSOR_HAND ) );
+    coreVerLabel->Show( false );
+    item6->Add( coreVerLabel, wxSizerFlags().Center().Border(wxRIGHT, 5) );
+
+    wxStaticLine *coreVerSep = new wxStaticLine( parent, -1, wxDefaultPosition, wxSize(-1,20), wxLI_VERTICAL );
+    coreVerSep->SetName( "coreVersionSep" );
+    coreVerSep->Show( false );
+    item6->Add( coreVerSep, wxSizerFlags().Center().Border(wxLEFT, 5) );
+#endif // CLIENT_GUI
+
     wxStaticBitmap *item10 = new wxStaticBitmap( parent, -1, wxArtProvider::GetBitmapBundle( "amule:status_users" ), wxDefaultPosition, wxDefaultSize );
     item10->SetToolTip( _("Number of users on the server you are connected to ...") );
     item6->Add( item10, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
@@ -2684,8 +2711,7 @@ wxSizer *serverListDlgDown( wxWindow *parent, bool call_fit, bool set_sizer )
     item3->AddPage( item4, _("aMule Log") );
 
     // NB: the amulegui-only "aMuleGUI Log" page is inserted here at runtime by
-    // CServerWnd -- this file (muuli_wdr) is compiled into a shared library
-    // without CLIENT_GUI, so it cannot make the distinction itself.
+    // CServerWnd, under its own CLIENT_GUI guard.
 
     wxPanel *item5 = new wxPanel( item3, -1 );
     ServerInfoLog( item5, FALSE );

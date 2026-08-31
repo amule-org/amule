@@ -1030,6 +1030,11 @@ class CamuleRemoteGuiApp : public wxApp, public CamuleGuiBase, public CamuleAppC
 	/// dialog was ever shown -- reconnecting behind a minimised window
 	/// finishes without one.
 	void FinishReconnect(int result);
+	// Push the connected core's version and endpoint to the status bar.
+	// Called on first connect and again after every reconnect: a
+	// reconnect may have reached a daemon that was upgraded and
+	// restarted meanwhile, so the version on screen can go stale.
+	void UpdateCoreVersionIndicator();
 
 	virtual int InitGui(bool geometry_enable, wxString &geometry_string);
 

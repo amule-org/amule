@@ -89,7 +89,8 @@
 
 #include "PicoJson_Inc.h"
 
-#include "config.h" // VERSION
+#include "config.h"      // VERSION
+#include "MuleVersion.h" // Needed for GetShortMuleVersion()
 
 #include "Types.h" // uint8 (required by libs/common/MD5Sum.h)
 #include <common/MD5Sum.h>
@@ -2086,7 +2087,11 @@ CHttpServer::Response CApiDispatcher::HandleVersion(const CHttpServer::Request &
 	// amuleapi binary was built from, which need not match the aMule daemon
 	// it is talking to. The old name said the opposite of what it holds.
 	w.Key("amuleapi_version");
-	w.ValueString(wxString::FromAscii(VERSION));
+	// Same short form the daemon reports for itself, so the two stay
+	// comparable: bare VERSION is the literal "GIT" on a development
+	// build, which would make this differ from daemon_version on every
+	// such build even when both come from the same tree.
+	w.ValueString(GetShortMuleVersion());
 	// Version of the connected amuled, from the EC handshake. Empty
 	// string when EC is not (yet) connected or the daemon predates the
 	// EC_TAG_SERVER_VERSION tag. Distinct from amuleapi_version above,

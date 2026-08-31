@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-30 16:16+0200\n"
+"POT-Creation-Date: 2026-08-31 17:03+0200\n"
 "PO-Revision-Date: 2020-03-04 14:43+0100\n"
 "Last-Translator: Dévai Tamás <devait@vnet.hu>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -726,6 +726,36 @@ msgid "Kad: Off"
 msgstr ""
 
 #: src/amuleDlg.cpp
+msgid "Core"
+msgstr ""
+
+#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Version"
+msgstr ""
+
+#: src/amuleDlg.cpp
+msgid "The core and aMuleGUI are different versions."
+msgstr ""
+
+#: src/amuleDlg.cpp
+msgid "The core and aMuleGUI are the same version."
+msgstr ""
+
+#: src/amuleDlg.cpp src/ServerListCtrl.cpp
+msgid "Address"
+msgstr ""
+
+#: src/amuleDlg.cpp
+msgid "Encryption"
+msgstr ""
+
+#: src/amuleDlg.cpp
+msgid "aMuleGUI"
+msgstr ""
+
+#: src/amuleDlg.cpp
 #, c-format
 msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
 msgstr ""
@@ -925,6 +955,10 @@ msgstr ""
 
 #: src/amule-remote-gui.cpp
 msgid "Connection to the remote core was lost. Trying to reconnect..."
+msgstr ""
+
+#: src/amule-remote-gui.cpp src/ClientDetailDialog.cpp
+msgid "Disabled"
 msgstr ""
 
 #: src/amule-remote-gui.cpp
@@ -1236,10 +1270,6 @@ msgstr ""
 msgid "Not supported"
 msgstr ""
 
-#: src/ClientDetailDialog.cpp
-msgid "Disabled"
-msgstr ""
-
 #: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp
 #: src/TextClient.cpp
 msgid "Connected"
@@ -1261,11 +1291,6 @@ msgstr ""
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 msgid "Software"
-msgstr ""
-
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
-msgid "Version"
 msgstr ""
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
@@ -6728,10 +6753,6 @@ msgstr ""
 
 #: src/ServerListCtrl.cpp
 msgid "Server Name"
-msgstr ""
-
-#: src/ServerListCtrl.cpp
-msgid "Address"
 msgstr ""
 
 #: src/ServerListCtrl.cpp

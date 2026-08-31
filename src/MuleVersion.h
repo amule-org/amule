@@ -42,6 +42,34 @@
 extern wxString MuleBoostVersion;
 
 /**
+ * The build's version in the short form exchanged over EC and shown in the UI.
+ *
+ * `VERSION` alone is not enough to identify a development build: on any
+ * untagged build it is the literal string "GIT", so every snapshot reports the
+ * same value and two different revisions look identical. The revision lives in
+ * GITDATE, which CMake sets from `git describe`.
+ *
+ * On a tagged release CMake unsets GITDATE (config.h.cm renders `#undef
+ * GITDATE`), so this returns exactly VERSION -- e.g. "3.0.1" -- and the
+ * appended part compiles away entirely. Only development builds gain the
+ * suffix, e.g. "GIT rev. 3.0.1-773-g500293ba3".
+ *
+ * Deliberately shorter than GetMuleVersion(): that one describes the whole
+ * build for debugging (wx toolkit, Boost, debug flag) and is far too long for
+ * a status-bar field or a protocol tag. Both the core that reports this over
+ * EC and the client that compares it against its own build call this, so the
+ * two can never disagree about how the string is spelled.
+ */
+inline wxString GetShortMuleVersion()
+{
+	return wxString(VERSION)
+#ifdef GITDATE
+	       + " " GITDATE
+#endif
+		;
+}
+
+/**
  * Returns a description of the version of aMule being used.
  *
  * @return A detailed description of the aMule version, including wx information.

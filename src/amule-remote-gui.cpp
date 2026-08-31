@@ -22,7 +22,8 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include <algorithm> // Needed for std::min
+#include <algorithm>             // Needed for std::min
+#include "libs/ec/cpp/ECCrypt.h" // Needed for ECCrypt::CipherName
 
 #include <wx/ipc.h>
 #include <wx/cmdline.h>  // Needed for wxCmdLineParser
@@ -925,6 +926,26 @@ void CamuleRemoteGuiApp::ShowReconnectDialog()
 	FinishReconnect(result);
 }
 
+void CamuleRemoteGuiApp::UpdateCoreVersionIndicator()
+{
+	if (!amuledlg || !m_connect) {
+		return;
+	}
+	// Cipher names are protocol identifiers ("AES-128-GCM"), not prose, so
+	// only the not-encrypted case needs the catalog.
+	const bool encrypted = m_connect->IsAEADEnabled();
+	const wxString encryption =
+		encrypted ? wxString::FromAscii(ECCrypt::CipherName(m_connect->GetAEADCipher()))
+			  : _("Disabled");
+
+	// Empty against a daemon too old to send EC_TAG_SERVER_VERSION; the
+	// dialog hides the field in that case rather than showing a blank.
+	amuledlg->ShowCoreVersion(m_connect->GetServerVersion(),
+		CFormat(wxT("%s:%d")) % m_ecHost % m_ecPort,
+		encryption,
+		encrypted);
+}
+
 void CamuleRemoteGuiApp::FinishReconnect(int result)
 {
 	m_reconnecting = false;
@@ -937,6 +958,10 @@ void CamuleRemoteGuiApp::FinishReconnect(int result)
 
 	if (result == wxID_OK) {
 		AddLogLineCS(_("Reconnected to the remote core."));
+
+		// The daemon may have been upgraded while we were away, so re-read
+		// the version rather than leaving the pre-drop one on screen.
+		UpdateCoreVersionIndicator();
 
 		// Everything we hold is keyed by ECID, and an ECID only means
 		// something within one daemon process: CECID hands them out from a
@@ -1195,6 +1220,10 @@ void CamuleRemoteGuiApp::Startup()
 
 	// Create main dialog
 	InitGui(m_geometryEnabled, m_geometryString);
+
+	// Needs the dialog to exist, so it cannot happen with the rest of the
+	// handshake bookkeeping above.
+	UpdateCoreVersionIndicator();
 
 	// Forward wxLog events to CLogger
 	wxLog::SetActiveTarget(new CLoggerTarget);

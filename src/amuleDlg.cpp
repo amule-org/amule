@@ -90,7 +90,8 @@
 #include <wx/iconbndl.h> // Needed for wxIconBundle // Needed for wxArtProvider::GetIcon
 
 #include "kademlia/kademlia/Kademlia.h"
-#include "MuleVersion.h" // Needed for GetMuleVersion()
+#include "MuleVersion.h"    // Needed for GetMuleVersion(), GetShortMuleVersion()
+#include "InfoGridDialog.h" // Needed for ShowInfoGridDialog
 
 #ifdef ENABLE_IP2COUNTRY
 #include "IP2Country.h" // Needed for IP2Country
@@ -355,6 +356,15 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 	m_chatwnd = new CChatWnd(p_cnt);
 	m_clientswnd = new CClientsWnd(p_cnt);
 	m_kademliawnd = CastChild("kadWnd", CKadDlg);
+
+	// Status-bar core-version field opens its details dialog on click. Null in
+	// monolithic aMule, which does not build it.
+	if (wxWindow *coreVerLabel = CastChild("coreVersionLabel", wxWindow)) {
+		coreVerLabel->Bind(wxEVT_LEFT_UP, &CamuleDlg::OnCoreVersionClicked, this);
+	}
+	if (wxWindow *coreVerIcon = CastChild("coreVersionImage", wxWindow)) {
+		coreVerIcon->Bind(wxEVT_LEFT_UP, &CamuleDlg::OnCoreVersionClicked, this);
+	}
 
 	m_serverwnd->Show(false);
 	m_searchwnd->Show(false);
@@ -1395,6 +1405,103 @@ void CamuleDlg::ShowConnectionState()
 
 		connBitmap->SetBitmap(statusIcon);
 	}
+}
+
+void CamuleDlg::ShowCoreVersion(
+	const wxString &coreVersion, const wxString &endpoint, const wxString &encryption, bool encrypted)
+{
+	wxStaticText *label = CastChild("coreVersionLabel", wxStaticText);
+	wxStaticBitmap *icon = CastChild("coreVersionImage", wxStaticBitmap);
+	wxWindow *sep = CastChild("coreVersionSep", wxWindow);
+	// Absent in monolithic aMule, which never builds them.
+	if (!label || !icon || !sep) {
+		return;
+	}
+
+	// Empty before the handshake, and from a core too old to send
+	// EC_TAG_SERVER_VERSION. Hide rather than show a blank.
+	if (coreVersion.IsEmpty()) {
+		label->Show(false);
+		icon->Show(false);
+		sep->Show(false);
+		return;
+	}
+
+	m_coreVersion = coreVersion;
+	m_coreEndpoint = endpoint;
+	m_coreEncryption = encryption;
+	m_coreEncrypted = encrypted;
+
+	// Exact inequality: a dev build reports "GIT rev. <describe>", which has no
+	// ordering against a release number, so "newer" is unanswerable.
+	const bool differs = (coreVersion != GetShortMuleVersion());
+
+	label->Show(true);
+	icon->Show(true);
+	sep->Show(true);
+
+	// "%s: %s" is punctuation, so only the word needs translating.
+	UpdateStatusLabel(label, CFormat(wxT("%s: %s")) % _("Core") % coreVersion);
+
+	// Same idiom as SetFreeSpaceLabel above: recolour only on a real change.
+	const wxColour colour = differs ? *wxRED : wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT);
+	if (label->GetForegroundColour() != colour) {
+		label->SetForegroundColour(colour);
+		label->Refresh();
+	}
+}
+
+void CamuleDlg::OnCoreVersionClicked(wxMouseEvent &WXUNUSED(event))
+{
+	if (m_coreVersion.IsEmpty()) {
+		return;
+	}
+	const wxString ownVersion = GetShortMuleVersion();
+	const wxString endpoint = m_coreEndpoint;
+	const wxString encryption = m_coreEncryption;
+	const bool encrypted = m_coreEncrypted;
+	const wxString coreVersion = m_coreVersion;
+
+	const bool differs = (coreVersion != ownVersion);
+
+	// Our own client_red / client_green rather than stock wx art: on macOS the
+	// stock glyphs are template symbols that take the system label colour, so
+	// they render grey and ignore a tint, and tinting is not portable either --
+	// GTK's error icon is already a red disc with a white cross, which a blanket
+	// recolour would flatten. These two are a matched pair from one set, so the
+	// states differ only in colour.
+	ShowInfoGridDialog(
+		this,
+		_("Version"),
+		differs ? _("The core and aMuleGUI are different versions.")
+			: _("The core and aMuleGUI are the same version."),
+		[&](wxWindow *dlg, wxSizer *grid) {
+			const struct
+			{
+				wxString label;
+				wxString value;
+				wxColour colour;
+			} rows[] = {
+				{ _("Address"), endpoint, wxNullColour },
+				// Red only when off: an encrypted link is the expected
+				// state and needs no colour to say so.
+				{ _("Encryption"), encryption, encrypted ? wxNullColour : *wxRED },
+				{ _("Core"), coreVersion, wxNullColour },
+				{ _("aMuleGUI"), ownVersion, wxNullColour },
+			};
+			for (const auto &row : rows) {
+				grid->Add(new wxStaticText(dlg, wxID_ANY, row.label),
+					0,
+					wxALIGN_CENTRE_VERTICAL);
+				wxStaticText *value = new wxStaticText(dlg, wxID_ANY, row.value);
+				if (row.colour.IsOk()) {
+					value->SetForegroundColour(row.colour);
+				}
+				grid->Add(value, 0, wxALIGN_CENTRE_VERTICAL);
+			}
+		},
+		differs ? wxString("amule:client_red") : wxString("amule:client_green"),
+		differs ? *wxRED : wxNullColour);
 }
 
 void CamuleDlg::ShowUserCount(const wxString &info)
