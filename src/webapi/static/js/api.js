@@ -103,8 +103,9 @@ async function request(method, path, { body, useEtag = false, noGate = false } =
     const err = payload && payload.error ? payload.error : {};
     // 401 (cookie gone / expired / revoked) and the auth limiter's own 429
     // are terminal for this session. Match 429 on the code, not the status:
-    // other endpoints answer 429 for their own throttles (the daemon's
-    // update check, say) and those must not log the user out.
+    // other endpoints answer 429 for their own throttles and must not log the
+    // user out. POST /version/check is the one that bit -- it answered
+    // `rate_limited` too, so "Check now" ended the session.
     if (!noGate && (resp.status === 401 || (resp.status === 429 && err.code === "rate_limited"))) {
       markSessionDead(resp.status === 429 ? "rate_limited" : "unauthorized");
     }

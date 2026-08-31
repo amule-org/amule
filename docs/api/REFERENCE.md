@@ -574,7 +574,7 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" http://$HOST/api/v0/version/ch
 | Status | `error.code` | When |
 | --- | --- | --- |
 | `409` | `update_check_unavailable` | The daemon can't check (`update.check_enabled` is `false`). |
-| `429` | `rate_limited` | A check ran too recently; retry shortly. |
+| `429` | `version_check_throttled` | A check ran too recently; retry shortly. Distinct from the auth limiter's `rate_limited`, which also answers `429` but ends the session. |
 | `503` | `ec_unavailable` | The EC round-trip to amuled failed, or the first snapshot has not landed yet. |
 
 The snapshot gate matters at startup: `version_check_available` defaults to false, so before the first EC tick this route used to answer `409 update_check_unavailable`, blaming the daemon's configuration for amuleapi not having read it yet. It answers `503` there now, which is the condition a client can retry.
@@ -3263,7 +3263,8 @@ Every error code emitted by `/api/v0/*`, sorted by what triggered it. Two codes 
 | `update_check_unavailable` | 409 | `POST /version/check` cannot run — the daemon has no update-check capability. |
 | `payload_too_large` | 413 | Request body exceeds the 1 MiB limit. The connection closes after the response. |
 | `range_not_satisfiable` | 416 | A `Range` on [`GET /shared/{hash}/content`](#get-apiv0sharedhashcontent) starts at or past EOF. `Content-Range: bytes */<size>` accompanies the response. |
-| `rate_limited` | 429 | Too many requests: the per-IP auth-failure bucket is full, or `POST /version/check` was throttled by the daemon. `Retry-After: <seconds>` accompanies the auth case. |
+| `rate_limited` | 429 | The per-IP auth-failure bucket is full, so the address is locked out of every authenticated route. `Retry-After: <seconds>` accompanies it. A client should treat this as the session ending. |
+| `version_check_throttled` | 429 | [`POST /version/check`](#post-apiv0versioncheck) arrived inside the daemon's 60 s cooldown. Affects that route only, so a client must not read it as a lost session. |
 | `headers_too_large` | 431 | Request headers exceed the 16 KiB limit. The connection closes after the response. |
 | `internal_error` | 500 | A server-side failure: a handler failed internally (hash decode, serialization) or threw and was caught by the HTTP layer. The body is generic; details land in the daemon's stderr. |
 | `amuled_response_invalid` | 502 | amuled returned an EC payload this endpoint could not decode. |
