@@ -6,7 +6,8 @@ ARG UBUNTU_BASE
 FROM ubuntu:${UBUNTU_BASE}
 
 ARG WX_VERSION
-ARG WX_SHA256
+ARG WX_GIT_URL
+ARG WX_COMMIT
 ARG LINUXDEPLOY_VERSION
 ARG LINUXDEPLOY_GTK_SHA
 ARG LIBUPNP_VERSION
@@ -124,10 +125,17 @@ RUN wget -qO /tmp/libupnp.tar.gz "${LIBUPNP_TARBALL_URL}" \
 # Ubuntu 22.04 base. Subsystems aMule doesn't use are disabled to
 # shrink the static archives.
 WORKDIR /opt/wxwidgets
-RUN wget -q "https://github.com/wxWidgets/wxWidgets/releases/download/v${WX_VERSION}/wxWidgets-${WX_VERSION}.tar.bz2" -O wx.tar.bz2 \
-    && echo "${WX_SHA256}  wx.tar.bz2" | sha256sum -c - \
-    && tar xf wx.tar.bz2 \
-    && cd "wxWidgets-${WX_VERSION}" \
+# Fetched from the 3.2 branch at a pinned commit, not a release tarball: no
+# 3.2.x release yet carries the wxEpollDispatcher unregister fix amuled needs
+# (amule-org/amule#1136). Fetching the SHA directly keeps this reproducible
+# and avoids cloning the full history; submodules supply wx's bundled
+# third-party sources. Revert to the tarball when 3.2.12 ships.
+RUN git init wx \
+    && cd wx \
+    && git remote add origin "${WX_GIT_URL}" \
+    && git fetch --depth 1 origin "${WX_COMMIT}" \
+    && git checkout FETCH_HEAD \
+    && git submodule update --init --depth 1 --recursive \
     && ./configure \
         --prefix=/usr/local \
         --with-gtk=3 \

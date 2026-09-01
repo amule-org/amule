@@ -222,9 +222,12 @@ modules:
       - --without-opengl
       - --with-libcurl
     sources:
-      - type: archive
-        url: https://github.com/wxWidgets/wxWidgets/releases/download/v3.2.6/wxWidgets-3.2.6.tar.bz2
-        sha256: 939e5b77ddc5b6092d1d7d29491fe67010a2433cf9b9c0d841ee4d04acb9dce7
+      # 3.2 branch at a pinned commit: no 3.2.x release carries the
+      # wxEpollDispatcher unregister fix amuled needs (amule-org/amule#1136).
+      # Revert to a type: archive tarball when 3.2.12 ships.
+      - type: git
+        url: https://github.com/wxWidgets/wxWidgets.git
+        commit: d73e1df63abee30759a6c8f134be8c091b619b7e
 
   - name: amule
     buildsystem: cmake-ninja

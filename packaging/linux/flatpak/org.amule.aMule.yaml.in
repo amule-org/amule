@@ -331,9 +331,12 @@ modules:
       - --without-opengl
       - --with-libcurl
     sources:
-      - type: archive
-        url: ${WX_TARBALL_URL}
-        sha256: ${WX_SHA256}
+      # 3.2 branch at a pinned commit: no 3.2.x release carries the
+      # wxEpollDispatcher unregister fix amuled needs (amule-org/amule#1136).
+      # Revert to a type: archive tarball when 3.2.12 ships.
+      - type: git
+        url: ${WX_GIT_URL}
+        commit: ${WX_COMMIT}
 
   - name: amule
     buildsystem: cmake-ninja

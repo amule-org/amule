@@ -93,11 +93,28 @@ build_appimage() {
             exit 1
         fi
     fi
-    docker build \
+    # Optional buildx layer cache, mirroring the static track. CI sets
+    # APPIMAGE_CACHE_SCOPE for non-release runs so the wxWidgets, pupnp and
+    # appindicator layers persist across runs -- wx alone is minutes of
+    # compile that no ccache covers, because it happens inside the image
+    # build. Unset = plain build, so release (workflow_call) builds
+    # cold-compile, same rule as the static track.
+    local -a cache_args=()
+    if [[ -n "${APPIMAGE_CACHE_SCOPE:-}" ]]; then
+        cache_args+=(--cache-from "type=gha,scope=${APPIMAGE_CACHE_SCOPE}")
+        cache_args+=(--cache-to "type=gha,mode=max,scope=${APPIMAGE_CACHE_SCOPE}")
+    fi
+
+    # buildx rather than plain `docker build`: the gha cache backend needs
+    # it. --load puts the image in the local daemon, which the docker run
+    # below requires; it is a no-op on the default driver, so local dev
+    # builds are unaffected.
+    docker buildx build \
         --platform "${docker_platform}" \
         --build-arg "UBUNTU_BASE=${UBUNTU_BASE}" \
         --build-arg "WX_VERSION=${WX_VERSION}" \
-        --build-arg "WX_SHA256=${WX_SHA256}" \
+        --build-arg "WX_GIT_URL=${WX_GIT_URL}" \
+        --build-arg "WX_COMMIT=${WX_COMMIT}" \
         --build-arg "LINUXDEPLOY_VERSION=${LINUXDEPLOY_VERSION}" \
         --build-arg "LINUXDEPLOY_GTK_SHA=${LINUXDEPLOY_GTK_SHA}" \
         --build-arg "LIBUPNP_VERSION=${LIBUPNP_VERSION}" \
@@ -107,6 +124,8 @@ build_appimage() {
         --build-arg "APPINDICATOR_TARBALL_URL=${APPINDICATOR_TARBALL_URL}" \
         --build-arg "APPINDICATOR_SHA256=${APPINDICATOR_SHA256}" \
         -t "${image_tag}" \
+        "${cache_args[@]}" \
+        --load \
         "${SCRIPT_DIR}/appimage"
 
     echo "==> Building AppImage (${target_arch})"
@@ -278,8 +297,8 @@ build_static() {
         -f "${SCRIPT_DIR}/static/Dockerfile" \
         --build-arg "ALPINE_STATIC_BASE=${ALPINE_STATIC_BASE}" \
         --build-arg "WX_VERSION=${WX_VERSION}" \
-        --build-arg "WX_TARBALL_URL=${WX_TARBALL_URL}" \
-        --build-arg "WX_SHA256=${WX_SHA256}" \
+        --build-arg "WX_GIT_URL=${WX_GIT_URL}" \
+        --build-arg "WX_COMMIT=${WX_COMMIT}" \
         --build-arg "CRYPTOPP_TAG_SUFFIX=${CRYPTOPP_TAG_SUFFIX}" \
         --build-arg "LIBUPNP_VERSION=${LIBUPNP_VERSION}" \
         --build-arg "LIBUPNP_TARBALL_URL=${LIBUPNP_TARBALL_URL}" \
