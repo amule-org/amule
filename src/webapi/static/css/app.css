@@ -401,6 +401,7 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
 .badge.downloading { color: var(--ok); border-color: var(--ok); }
 .badge.paused { color: var(--text-dim); }
 .badge.stopped { color: var(--bad); border-color: var(--bad); }
+.badge.error { color: var(--bad); border-color: var(--bad); }
 .badge.waiting { color: var(--warn); border-color: var(--warn); }
 
 /* --- placeholders --- */

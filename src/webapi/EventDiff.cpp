@@ -270,7 +270,8 @@ std::string ToJson(const FriendSnapshot &f)
 	  << "\"ecid\":" << f.ecid << ",\"name\":\"" << EscJson(f.name) << "\""
 	  << ",\"user_hash\":\"" << EscJson(f.user_hash) << "\""
 	  << ",\"ip\":\"" << EscJson(f.ip) << "\""
-	  << ",\"port\":" << f.port << ",\"client_ecid\":" << f.client_ecid
+	  << ",\"port\":" << f.port
+	  << ",\"client_ecid\":" << (f.client_ecid ? std::to_string(f.client_ecid) : std::string("null"))
 	  << ",\"online\":" << (f.client_ecid != 0 ? "true" : "false")
 	  << ",\"friend_slot\":" << (f.friend_slot ? "true" : "false") << "}";
 	return o.str();
