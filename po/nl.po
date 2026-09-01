@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-31 22:39+0200\n"
+"POT-Creation-Date: 2026-09-01 11:32+0200\n"
 "PO-Revision-Date: 2026-08-31 15:32+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
@@ -1045,6 +1045,15 @@ msgstr "De kern heeft deze gedeelde mappen geweigerd:%s"
 #: src/amule-remote-gui.cpp src/ExternalConn.cpp
 msgid "Invalid link or already on list."
 msgstr "Ongeldige link of al op de lijst."
+
+#: src/amule-remote-gui.cpp
+msgid "The daemon refused the request."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+#, fuzzy, c-format
+msgid "Could not delete the category: %s"
+msgstr "Kon het amuleapi-wachtwoord niet opslaan: %s"
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -2214,6 +2223,14 @@ msgstr "Kon het amuleapi-wachtwoord niet opslaan: %s"
 #, fuzzy
 msgid "No such category."
 msgstr "Chatsessie onvindbaar"
+
+#: src/ExternalConn.cpp
+msgid "Malformed category request."
+msgstr ""
+
+#: src/ExternalConn.cpp
+msgid "The default category cannot be deleted."
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Missing chat session id"

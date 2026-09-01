@@ -4242,12 +4242,32 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		}
 		break;
 	case EC_OP_DELETE_CATEGORY:
-		if (request->GetTagCount() == 1) {
-			uint32 cat = request->GetFirstTagSafe()->GetInt();
-			// this does not only update the gui, but actually deletes the cat
-			Notify_CategoryDelete(cat);
+		// Rejections answer EC_OP_FAILED, not the blanket EC_OP_NOOP this used
+		// to send: the guards downstream discard these silently, so a client
+		// could not tell a completed delete from a discarded one
+		// (amule-org/amule#1231). Never attach EC_TAG_CATEGORY_PATH -- on a
+		// failed category command clients read it as success (#1213).
+		if (request->GetTagCount() != 1) {
+			response = new CECPacket(EC_OP_FAILED);
+			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Malformed category request.")));
+		} else {
+			const uint32 cat = request->GetFirstTagSafe()->GetInt();
+			if (cat == 0) {
+				// The "all downloads" bucket, which CategoryDelete refuses.
+				response = new CECPacket(EC_OP_FAILED);
+				response->AddTag(CECTag(EC_TAG_CATEGORY, cat));
+				response->AddTag(CECTag(EC_TAG_STRING,
+					wxTRANSLATE("The default category cannot be deleted.")));
+			} else if (cat >= theApp->glob_prefs->GetCatCount()) {
+				response = new CECPacket(EC_OP_FAILED);
+				response->AddTag(CECTag(EC_TAG_CATEGORY, cat));
+				response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("No such category.")));
+			} else {
+				// this does not only update the gui, but actually deletes the cat
+				Notify_CategoryDelete(cat);
+				response = new CECPacket(EC_OP_NOOP);
+			}
 		}
-		response = new CECPacket(EC_OP_NOOP);
 		break;
 
 	//

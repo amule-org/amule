@@ -281,21 +281,35 @@ void CTransferWnd::OnDelCategory(wxCommandEvent &WXUNUSED(event))
 
 void CTransferWnd::RemoveCategory(int index)
 {
-	if (index > 0) {
-		theApp->downloadqueue->ResetCatParts(index);
-		theApp->glob_prefs->RemoveCat(index);
-		RemoveCategoryPage(index);
-		if (theApp->glob_prefs->GetCatCount() == 1) {
-			thePrefs::SetAllcatFilter(acfAll);
-		}
-		theApp->glob_prefs->SaveCats();
-		theApp->amuledlg->m_searchwnd->UpdateCatChoice();
-		// RemoveCat() asks for a re-walk (the category's directory leaves the
-		// shareset). Run it here behind a progress dialog rather than letting
-		// it land silently on a core tick -- CPreferences is shared with the
-		// daemon, so it cannot raise one itself.
-		ReloadSharedFilesIfPending(this);
+	if (index <= 0) {
+		return;
 	}
+	// Granted immediately in the monolithic build; in amulegui it goes out as
+	// EC_OP_DELETE_CATEGORY and the reply handler commits instead, so a
+	// refused delete cannot close the tab (amule-org/amule#1231).
+	if (theApp->glob_prefs->RequestRemoveCat(index)) {
+		CommitRemoveCategory(index);
+	}
+}
+
+void CTransferWnd::CommitRemoveCategory(int index)
+{
+	if (index <= 0) {
+		return;
+	}
+	theApp->downloadqueue->ResetCatParts(index);
+	theApp->glob_prefs->RemoveCat(index);
+	RemoveCategoryPage(index);
+	if (theApp->glob_prefs->GetCatCount() == 1) {
+		thePrefs::SetAllcatFilter(acfAll);
+	}
+	theApp->glob_prefs->SaveCats();
+	theApp->amuledlg->m_searchwnd->UpdateCatChoice();
+	// RemoveCat() asks for a re-walk (the category's directory leaves the
+	// shareset). Run it here behind a progress dialog rather than letting
+	// it land silently on a core tick -- CPreferences is shared with the
+	// daemon, so it cannot raise one itself.
+	ReloadSharedFilesIfPending(this);
 }
 
 void CTransferWnd::RemoveCategoryPage(int index)

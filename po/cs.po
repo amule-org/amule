@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-31 22:39+0200\n"
+"POT-Creation-Date: 2026-09-01 11:32+0200\n"
 "PO-Revision-Date: 2026-08-31 15:27+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
@@ -1044,6 +1044,15 @@ msgstr "Jádro odmítlo tyto sdílené složky:%s"
 #: src/amule-remote-gui.cpp src/ExternalConn.cpp
 msgid "Invalid link or already on list."
 msgstr "Neplatný odkaz, nebo je již v seznamu."
+
+#: src/amule-remote-gui.cpp
+msgid "The daemon refused the request."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+#, fuzzy, c-format
+msgid "Could not delete the category: %s"
+msgstr "Nepodařilo se uložit heslo amuleapi: %s"
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -2219,6 +2228,14 @@ msgstr "Nepodařilo se uložit heslo amuleapi: %s"
 #, fuzzy
 msgid "No such category."
 msgstr "Zavře tento chat."
+
+#: src/ExternalConn.cpp
+msgid "Malformed category request."
+msgstr ""
+
+#: src/ExternalConn.cpp
+msgid "The default category cannot be deleted."
+msgstr ""
 
 #: src/ExternalConn.cpp
 #, fuzzy

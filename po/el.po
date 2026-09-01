@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-31 22:39+0200\n"
+"POT-Creation-Date: 2026-09-01 11:32+0200\n"
 "PO-Revision-Date: 2026-08-31 15:28+0000\n"
 "Last-Translator: Dimitris <dgalanak@yahoo.com>\n"
 "Language-Team: Greek\n"
@@ -1052,6 +1052,15 @@ msgstr ""
 #: src/amule-remote-gui.cpp src/ExternalConn.cpp
 msgid "Invalid link or already on list."
 msgstr "Άκυρος σύνδεσμο ή ήδη στην λίστα."
+
+#: src/amule-remote-gui.cpp
+msgid "The daemon refused the request."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+#, fuzzy, c-format
+msgid "Could not delete the category: %s"
+msgstr "Κατάλογος για τα προσωρινά αρχεία"
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -2243,6 +2252,14 @@ msgstr ""
 #, fuzzy
 msgid "No such category."
 msgstr "Κλείσιμο της συνομιλίας."
+
+#: src/ExternalConn.cpp
+msgid "Malformed category request."
+msgstr ""
+
+#: src/ExternalConn.cpp
+msgid "The default category cannot be deleted."
+msgstr ""
 
 #: src/ExternalConn.cpp
 #, fuzzy

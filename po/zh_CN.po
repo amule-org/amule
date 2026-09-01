@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-31 22:39+0200\n"
+"POT-Creation-Date: 2026-09-01 11:32+0200\n"
 "PO-Revision-Date: 2026-08-31 15:36+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -1046,6 +1046,15 @@ msgstr "核心拒绝了这些共享的文件夹：%s"
 #: src/amule-remote-gui.cpp src/ExternalConn.cpp
 msgid "Invalid link or already on list."
 msgstr "非法链接或已经存在列表中。"
+
+#: src/amule-remote-gui.cpp
+msgid "The daemon refused the request."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+#, fuzzy, c-format
+msgid "Could not delete the category: %s"
+msgstr "无法保存 amuleapi 密码：%s"
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -2214,6 +2223,14 @@ msgstr "无法保存 amuleapi 密码：%s"
 #, fuzzy
 msgid "No such category."
 msgstr "没有这样的聊天会话"
+
+#: src/ExternalConn.cpp
+msgid "Malformed category request."
+msgstr ""
+
+#: src/ExternalConn.cpp
+msgid "The default category cannot be deleted."
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Missing chat session id"
