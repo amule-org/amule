@@ -101,7 +101,14 @@ jobs:
       - name: Zero ccache stats
         if: github.event_name != 'workflow_call'
         run: ccache --zero-stats
+      # buildx + a gha layer cache for the image build, matching the static
+      # track. wxWidgets is compiled inside the image, so ccache never sees
+      # it; without this every run rebuilds it from scratch.
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v4
       - name: Build AppImage
+        env:
+          APPIMAGE_CACHE_SCOPE: ${{ github.event_name != 'workflow_call' && format('appimage-{0}', matrix.arch) || '' }}
         run: packaging/linux/build.sh appimage
       - name: Validate via cross-distro Docker matrix
         run: packaging/linux/build.sh validate
