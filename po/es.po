@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-01 11:32+0200\n"
-"PO-Revision-Date: 2026-08-31 15:28+0000\n"
+"PO-Revision-Date: 2026-09-01 18:07+0000\n"
 "Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
 "Language: es\n"
@@ -767,7 +767,7 @@ msgstr "Kad: apagado"
 
 #: src/amuleDlg.cpp
 msgid "Core"
-msgstr ""
+msgstr "Núcleo"
 
 #: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 #: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
@@ -777,25 +777,23 @@ msgstr "Versión"
 
 #: src/amuleDlg.cpp
 msgid "The core and aMuleGUI are different versions."
-msgstr ""
+msgstr "El núcleo y aMuleGUI son versiones diferentes."
 
 #: src/amuleDlg.cpp
 msgid "The core and aMuleGUI are the same version."
-msgstr ""
+msgstr "El núcleo y aMuleGUI son la misma versión."
 
 #: src/amuleDlg.cpp src/ServerListCtrl.cpp
 msgid "Address"
 msgstr "Dirección"
 
 #: src/amuleDlg.cpp
-#, fuzzy
 msgid "Encryption"
-msgstr "Descripción"
+msgstr "Encriptación"
 
 #: src/amuleDlg.cpp
-#, fuzzy
 msgid "aMuleGUI"
-msgstr "Registro de aMuleGUI"
+msgstr "aMuleGUI"
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -2237,32 +2235,28 @@ msgid "The default category cannot be deleted."
 msgstr ""
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Missing chat session id"
-msgstr "Nueva sesión de chat iniciada"
+msgstr "Falta el id de la sesión de chat"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "No such chat session"
-msgstr "Cerrar esta sesión de chat."
+msgstr "Sesión de chat inexistente"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Media metadata extraction is disabled in preferences"
-msgstr "Kad está deshabilitado en las preferencias."
+msgstr "La extracción de metadatos multimedia está desactivado en preferencias"
 
 #: src/ExternalConn.cpp
 msgid "File is not eligible for media metadata extraction (not an audio/video file, or an incomplete download)"
-msgstr ""
+msgstr "El archivo no es apto para la extracción de metadatos multimedia (no es un archivo audio/video, o es una descarga incompleta)"
 
 #: src/ExternalConn.cpp
 msgid "Empty chat message"
-msgstr ""
+msgstr "Mensaje de chat vacío"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Unknown chat target"
-msgstr "(Nombre desconocido)"
+msgstr "Objetivo de chat desconocido"
 
 #: src/ExternalConn.cpp
 msgid "Kad is disabled in preferences."
@@ -2666,7 +2660,7 @@ msgstr "Puerto UDP adicional (Kad / búsqueda global) "
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Enable UPnP for router port forwarding"
-msgstr "Habilitar UPnP para el reenvío del puerto del \"router\""
+msgstr "Activar UPnP para la redirección de puertos del router"
 
 #: src/FirstRunWizard.cpp
 msgid ""
@@ -2674,9 +2668,9 @@ msgid ""
 "peers can reach you (a \"HighID\"). Turn off if your router\n"
 "doesn't support UPnP or you forward ports manually."
 msgstr ""
-"Permite aMule pedir a su router que reenvíe los puertos por encima de otros\n"
-"los pares pueden llegar a usted (un a\"Id Alta\"). Apaga si tu router\n"
-"no soporta UPnP o si rediriges los puertos manualmente."
+"Permite a aMule pedir a su router que reenvíe los puertos por encima de otros\n"
+"los pares pueden llegar a usted (una\"ID Alta\"). Desactívelo si su router\n"
+"no soporta UPnP o si redirige los puertos manualmente."
 
 #: src/FirstRunWizard.cpp
 msgid "Bootstrap files"
@@ -2823,46 +2817,44 @@ msgstr ""
 " Solo se ha asignado uno."
 
 #: src/GenericClientListCtrl.cpp
-#, fuzzy
 msgid "This source does not have the part"
-msgstr "El comando no debe tener ningún parámetro."
+msgstr "La fuente no tiene la parte"
 
 #: src/GenericClientListCtrl.cpp
 msgid "You and this source both have the part"
-msgstr ""
+msgstr "Ambos, tú y esta fuente, tenéis la parte"
 
 #: src/GenericClientListCtrl.cpp
 msgid "Being downloaded from this source now"
-msgstr ""
+msgstr "Está siendo descargado de esta fuente ahora"
 
 #: src/GenericClientListCtrl.cpp
 msgid "The next part that will be asked of this source"
-msgstr ""
+msgstr "La próxima parte se le pedirá a esta fuente"
 
 #: src/GenericClientListCtrl.cpp
 msgid "This source has the part and you still need it"
-msgstr ""
+msgstr "Esta fuente tiene la parte y todavía la necesitas"
 
 #: src/GenericClientListCtrl.cpp
 msgid "This peer already has the part"
-msgstr ""
+msgstr "Este par ya tiene la parte"
 
 #: src/GenericClientListCtrl.cpp
 msgid "This peer does not have the part"
-msgstr ""
+msgstr "Este par no tiene la parte"
 
 #: src/GenericClientListCtrl.cpp
 msgid "One block per part of the file being downloaded."
-msgstr ""
+msgstr "Un bloque por parte del archivo que se está descargando."
 
 #: src/GenericClientListCtrl.cpp
-#, fuzzy
 msgid "One block per part of the shared file."
-msgstr "Introduzca el puerto del servidor."
+msgstr "Un bloque por parte del archivo compartido."
 
 #: src/GenericClientListCtrl.cpp
 msgid "Colour legend"
-msgstr ""
+msgstr "Leyenda de color"
 
 #: src/GenericClientListCtrl.cpp
 #, c-format
@@ -2958,7 +2950,7 @@ msgstr "GeoLite2-Country.mmdb migrado a %s"
 #: src/IP2Country.cpp
 #, c-format
 msgid "%s is not a readable MaxMindDB file - discarding it. A fresh copy will be downloaded on the next start, or now via Preferences -> IP2Country -> 'Update now'."
-msgstr ""
+msgstr "%s no es un archivo MaxMindDB legible - descartandolo. Una nueva copia se descargará en el siguiente inicio, o ahora a través de Preferencias -> IP2Country -> \"Actualizar ahora\"."
 
 #: src/IP2Country.cpp
 msgid "IP2Country: MaxMind selected as the GeoIP source but no License Key configured. Open Preferences -> IP2Country, paste your free MaxMind License Key and click 'Update now'."
@@ -3317,70 +3309,70 @@ msgstr "AVISO: "
 
 #: src/MediaProbe.cpp
 msgid "Media metadata: no ffprobe binary found. Install ffmpeg, or set the ffprobe path in preferences; length, bitrate and codec will not be extracted."
-msgstr ""
+msgstr "Metadatos multimedia: no se encontró el binario de ffprobe. Instala ffmpeg o establece la ruta de ffprobe en las preferencias; la duración, la tasa de bits y el códec no se extraerán."
 
 #: src/MediaProbe.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Media metadata: %s is gone, nothing to extract"
-msgstr "Extracción de metadatos multimedia"
+msgstr "Metadatos multimedia: %s ya no existe, nada que extraer"
 
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Extracting media metadata with ffprobe: %s"
-msgstr ""
+msgstr "Extrayendo metadatos multimedia con ffprobe: %s"
 
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: ffprobe timed out or was cancelled for %s"
-msgstr ""
+msgstr "Metadatos multimedia: se superó el tiempo de espera de ffprobe o se canceló para %s"
 
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: ignoring implausibly large ffprobe output for %s"
-msgstr ""
+msgstr "Metadatos multimedia: se ignora la salida inverosímilmente grande de ffprobe para %s"
 
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: could not run ffprobe (%s) -- check the media metadata settings"
-msgstr ""
+msgstr "Metadatos multimedia: no se pudo ejecutar ffprobe (%s) -- compruebe la configuración de metadatos multimedia"
 
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: ffprobe failed (code %d) for %s"
-msgstr ""
+msgstr "Metadatos multimedia: ffprobe falló (código %d) para %s"
 
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: ffprobe found nothing usable in %s"
-msgstr ""
+msgstr "Metadatos multimedia: ffprobe no encontró nada utilizable en %s"
 
 #: src/MediaProbeThread.cpp
 #, c-format
 msgid "Finished extracting media metadata from %u shared file (%u failed)"
 msgid_plural "Finished extracting media metadata from %u shared files (%u failed)"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Extracción de metadatos multimedia finalizada en %u archivo compartido (%u con error)"
+msgstr[1] "Extracción de metadatos multimedia finalizada en %u archivos compartidos (%u con errores)"
 
 #: src/MediaProbeThread.cpp
 #, c-format
 msgid "Finished extracting media metadata from %u shared file"
 msgid_plural "Finished extracting media metadata from %u shared files"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Se completó la extracción de metadatos multimedia de %u archivo compartido"
+msgstr[1] "Se completó la extracción de metadatos multimedia de %u archivos compartidos"
 
 #: src/MediaProbeThread.cpp
 #, c-format
 msgid "%u further file failed media metadata extraction (not listed individually)"
 msgid_plural "%u further files failed media metadata extraction (not listed individually)"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Falló la extracción de metadatos multimedia en %u archivo más (no listado individualmente)"
+msgstr[1] "Falló la extracción de metadatos multimedia en %u archivos más (no listados individualmente)"
 
 #: src/MediaProbeThread.cpp
 #, c-format
 msgid "%u further shared file is gone (not listed individually)"
 msgid_plural "%u further shared files are gone (not listed individually)"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%u archivo compartido más ya no está disponible (no listado individualmente)"
+msgstr[1] "%u archivos compartidos más ya no están disponibles (no listados individualmente)"
 
 #: src/MuleNotebook.cpp src/muuli_wdr.cpp
 msgid "Close"
@@ -4926,7 +4918,7 @@ msgstr "Contraseña del invitado"
 
 #: src/muuli_wdr.cpp
 msgid "Enable UPnP port forwarding of the web server port"
-msgstr "Habilitar el reenvío de puertos UPnP en el puerto del servidor web"
+msgstr "Habilitar la redirección de puertos UPnP en el puerto del servidor web"
 
 #: src/muuli_wdr.cpp
 msgid "Web server UPnP TCP port (Optional)"
@@ -6576,11 +6568,15 @@ msgid ""
 "\n"
 "Start the new search anyway?"
 msgstr ""
+"Todavía se esta realizando una búsqueda de eD2k. Comenzar una nueva la detendrá, porque el protocolo eD2k permite sólo una búsqueda a la vez.\n"
+"\n"
+"Los resultados ya encontrados se mantienen; sólo los nuevos dejan de llegar.\n"
+"\n"
+"¿Iniciar la nueva búsqueda de todas formas?"
 
 #: src/SearchDlg.cpp
-#, fuzzy
 msgid "Search in progress"
-msgstr "Progreso de la búsqueda: %u %% \n"
+msgstr "Búsqueda en curso"
 
 #: src/SearchDlg.cpp
 msgid "Min size must be smaller than max size. Max size ignored."
@@ -6622,7 +6618,7 @@ msgstr "Error imprevisto al intentar la búsqueda en Kad: "
 
 #: src/SearchList.cpp
 msgid "Search timed out: the server did not answer."
-msgstr ""
+msgstr "La búsqueda superó el tiempo de espera: el servidor no respondió."
 
 #: src/SearchList.cpp
 msgid "Kad search: requested wider results from one more peer."
@@ -6691,28 +6687,26 @@ msgid "New"
 msgstr "Nuevo"
 
 #: src/SearchProgressReport.cpp
-#, fuzzy
 msgid "running"
-msgstr "En ejecución"
+msgstr "en ejecución"
 
 #: src/SearchProgressReport.cpp
-#, fuzzy
 msgid "finished"
-msgstr "Finés"
+msgstr "Finalizado"
 
 #: src/SearchProgressReport.cpp
 msgid "idle"
-msgstr ""
+msgstr "En espera"
 
 #: src/SearchProgressReport.cpp
 #, c-format
 msgid "Search %u: %s, %u %% (%u results)\n"
-msgstr ""
+msgstr "Búsqueda %u: %s, %u %% (%u resultados)\n"
 
 #: src/SearchProgressReport.cpp
 #, c-format
 msgid "Search %u \"%s\": %s, %u %% (%u results)\n"
-msgstr ""
+msgstr "Búsqueda %u \"%s\": %s, %u %% (%u resultados)\n"
 
 #: src/SearchProgressReport.cpp src/TextClient.cpp
 msgid "Search expired or unknown ID. Start a new search.\n"

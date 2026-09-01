@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-01 11:32+0200\n"
-"PO-Revision-Date: 2026-08-31 15:30+0000\n"
+"PO-Revision-Date: 2026-09-01 20:34+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
 "Language: fr\n"
@@ -766,7 +766,7 @@ msgstr "Kad : Coupé"
 
 #: src/amuleDlg.cpp
 msgid "Core"
-msgstr ""
+msgstr "Noyau"
 
 #: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 #: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
@@ -776,25 +776,23 @@ msgstr "Version"
 
 #: src/amuleDlg.cpp
 msgid "The core and aMuleGUI are different versions."
-msgstr ""
+msgstr "Le noyau est aMuleGUI sont des versions différentes."
 
 #: src/amuleDlg.cpp
 msgid "The core and aMuleGUI are the same version."
-msgstr ""
+msgstr "Le noyau et aMuleGUI sont de la même version."
 
 #: src/amuleDlg.cpp src/ServerListCtrl.cpp
 msgid "Address"
 msgstr "Adresse"
 
 #: src/amuleDlg.cpp
-#, fuzzy
 msgid "Encryption"
-msgstr "Description"
+msgstr "Chiffrement"
 
 #: src/amuleDlg.cpp
-#, fuzzy
 msgid "aMuleGUI"
-msgstr "Journal d'aMuleGUI"
+msgstr "aMuleGUI"
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -1052,12 +1050,12 @@ msgstr "Lien invalide ou déjà dans la liste."
 
 #: src/amule-remote-gui.cpp
 msgid "The daemon refused the request."
-msgstr ""
+msgstr "Le démon a refusé la requête."
 
 #: src/amule-remote-gui.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not delete the category: %s"
-msgstr "Impossible d’enregistrer le mot de passe d’amuleapi : %s"
+msgstr "Échec de la suppression de la catégorie : %s"
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -2223,17 +2221,16 @@ msgid "Could not save the amuleapi password: %s"
 msgstr "Impossible d’enregistrer le mot de passe d’amuleapi : %s"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "No such category."
-msgstr "Discussion introuvable"
+msgstr "La catégorie n'existe pas."
 
 #: src/ExternalConn.cpp
 msgid "Malformed category request."
-msgstr ""
+msgstr "Requête de catégorie malformée."
 
 #: src/ExternalConn.cpp
 msgid "The default category cannot be deleted."
-msgstr ""
+msgstr "La catégorie par défaut ne peut être effacée."
 
 #: src/ExternalConn.cpp
 msgid "Missing chat session id"
@@ -7339,7 +7336,7 @@ msgstr "Nom d'Utilisateur"
 
 #: src/SharedFilePeersListCtrl.cpp
 msgid "Parts on Peer"
-msgstr ""
+msgstr "Parties chez le pair"
 
 #: src/SharedFilePeersListCtrl.cpp
 msgid "Upload Status"
@@ -7534,9 +7531,8 @@ msgid "Reloading shared files: %u files scanned"
 msgstr "Rechargement des fichiers partagés : %u fichiers analysés"
 
 #: src/SourceListCtrl.cpp
-#, fuzzy
 msgid "Part Status"
-msgstr "Statut"
+msgstr "État des parties"
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
