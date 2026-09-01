@@ -271,11 +271,51 @@ jobs:
           # x86_64 Homebrew at /usr/local so we can fetch x86_64 bottles
           # for our deps. The native /opt/homebrew install is left alone.
           arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      - name: Update Homebrew
+        run: ${{ matrix.archcmd }} ${{ matrix.brew_prefix }}/bin/brew update
+      # Homebrew dropped macOS Intel support in September 2026, so pcre2
+      # and openssl@3 now publish arm64_* macOS tags only (plus
+      # x86_64_linux, a Linuxbrew ELF build unusable on a Mac). The
+      # x86_64 prefix cannot be filled from bottles alone: `brew install`
+      # aborts with "no bottle available!" before reaching the rest of
+      # the list. Building the two from source costs ~68 min, so the
+      # kegs are cached; only a version bump pays that again.
+      - name: Resolve x86_64 source-built versions
+        id: intelkegs
+        if: matrix.arch == 'x86_64'
+        run: |
+          # Key on the versions brew resolved after `update`, not a
+          # literal: a stale keg must never shadow a newer release.
+          V=$(${{ matrix.archcmd }} ${{ matrix.brew_prefix }}/bin/brew info --json=v2 pcre2 openssl@3 \
+              | python3 -c 'import sys,json;print("-".join(f["versions"]["stable"] for f in json.load(sys.stdin)["formulae"]))')
+          echo "vers=$V" >> "$GITHUB_OUTPUT"
+      - name: Restore x86_64 source-built kegs
+        if: matrix.arch == 'x86_64' && github.event_name != 'workflow_call'
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            /usr/local/Cellar/pcre2
+            /usr/local/Cellar/openssl@3
+            /usr/local/opt/pcre2
+            /usr/local/opt/openssl@3
+          key: ${{ runner.os }}-macos-intel-kegs-${{ steps.intelkegs.outputs.vers }}
       - name: Install Homebrew deps
         run: |
           BREW=${{ matrix.brew_prefix }}/bin/brew
-          ${{ matrix.archcmd }} $BREW update
-          ${{ matrix.archcmd }} $BREW install --quiet \
+          if [ "${{ matrix.arch }}" = "x86_64" ]; then
+              # No-op when the cache restored a keg of the same version.
+              ${{ matrix.archcmd }} $BREW install --build-from-source pcre2 openssl@3
+              # A restored keg has no /usr/local/{lib,include} symlinks --
+              # only the Cellar and opt paths are cached -- so relink or
+              # dependents will not find the headers. openssl@3 is keg-only
+              # and is found through its opt path, which is cached.
+              ${{ matrix.archcmd }} $BREW link --overwrite pcre2
+          fi
+          # NOT --quiet: when the next formula loses its Intel bottle,
+          # the reason has to be in the log. It was suppressed here, so
+          # this step failed with a bare exit 1 and the breakage only
+          # surfaced two steps later as "ccache: command not found".
+          ${{ matrix.archcmd }} $BREW install \
               cmake wxwidgets cryptopp libupnp gd gettext boost dylibbundler libmaxminddb \
               ccache
           # Prepend the matrix-selected brew prefix to PATH so every
@@ -284,6 +324,16 @@ jobs:
           # is keg-only on macOS; add msgfmt to PATH for the NLS probe.
           echo "${{ matrix.brew_prefix }}/bin" >> "$GITHUB_PATH"
           echo "${{ matrix.brew_prefix }}/opt/gettext/bin" >> "$GITHUB_PATH"
+      - name: Save x86_64 source-built kegs
+        if: matrix.arch == 'x86_64' && github.event_name != 'workflow_call'
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            /usr/local/Cellar/pcre2
+            /usr/local/Cellar/openssl@3
+            /usr/local/opt/pcre2
+            /usr/local/opt/openssl@3
+          key: ${{ runner.os }}-macos-intel-kegs-${{ steps.intelkegs.outputs.vers }}
       - name: Restore ccache
         if: github.event_name != 'workflow_call'
         uses: actions/cache/restore@v6
