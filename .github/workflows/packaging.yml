@@ -106,7 +106,7 @@ jobs:
       - name: Validate via cross-distro Docker matrix
         run: packaging/linux/build.sh validate
       - name: Save ccache
-        if: always() && github.event_name != 'workflow_call'
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: actions/cache/save@v6
         with:
           path: ${{ env.CCACHE_DIR }}
@@ -220,7 +220,7 @@ jobs:
       - name: Build Flatpak
         run: packaging/linux/build.sh flatpak
       - name: Save flatpak-builder ccache
-        if: always() && github.event_name != 'workflow_call'
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: actions/cache/save@v6
         with:
           path: ${{ env.CCACHE_DIR }}
@@ -373,7 +373,7 @@ jobs:
           [ -d "${MNT}/aMuleGUI.app" ] || { echo "aMuleGUI.app missing from per-arch dmg" >&2; exit 1; }
           hdiutil detach "${MNT}"
       - name: Save ccache
-        if: always() && github.event_name != 'workflow_call'
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: actions/cache/save@v6
         with:
           path: ${{ env.CCACHE_DIR }}
@@ -607,7 +607,7 @@ jobs:
           # any tagged-release banner ("aMuleD 3.0.0 ...", etc.).
           grep -q '^aMuleD ' /tmp/version.txt
       - name: Save ccache
-        if: always() && github.event_name != 'workflow_call'
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: actions/cache/save@v6
         with:
           path: ${{ env.CCACHE_DIR }}

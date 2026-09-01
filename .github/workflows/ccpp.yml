@@ -156,7 +156,7 @@ jobs:
         run: cmake --build build
       - name: save ccache
         uses: actions/cache/save@v6
-        if: always()
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ runner.os }}-${{ matrix.build_type }}-ccache-${{ github.run_id }}
@@ -207,7 +207,7 @@ jobs:
         run: cmake --build build
       - name: save ccache
         uses: actions/cache/save@v6
-        if: always()
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ runner.os }}-${{ matrix.build_type }}-ccache-${{ github.run_id }}
@@ -271,7 +271,7 @@ jobs:
         run: cmake --build build
       - name: save ccache
         uses: actions/cache/save@v6
-        if: always()
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ runner.os }}-${{ matrix.build_type }}-ccache-${{ github.run_id }}

@@ -1,0 +1,84 @@
+# Keeps one Actions cache per key prefix.
+#
+# Every ccache save key ends in `-${{ github.run_id }}` so that a run never
+# collides with an earlier one -- actions/cache refuses to overwrite a key, and
+# a stable key would freeze the cache at its first write. The cost is that
+# nothing is ever replaced: each run mints a fresh 400-500 MB entry and the
+# repo drifted to 32 GB across 139 entries against a 10 GB limit, so GitHub was
+# evicting continuously and entries were being deleted before they served a
+# hit.
+#
+# Restores key on hashFiles() but fall back through `restore-keys: <prefix>-`,
+# which resolves to the newest match, so older generations are never chosen.
+# Deleting them loses nothing.
+name: Cache retention
+
+on:
+  # After every master push, i.e. right behind the runs that write the caches
+  # this prunes. Cheap: one API listing plus a handful of DELETEs, no build.
+  push:
+    branches:
+      - master
+  # Backstop for stretches with no merges, and a manual handle.
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+jobs:
+  prune:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Keep only the newest cache per prefix
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh api --paginate "repos/${REPO}/actions/caches?per_page=100" \
+            --jq '.actions_caches[] | [.id, .created_at, .size_in_bytes, .key] | @tsv' > caches.tsv
+          python3 - <<'PY' > to_delete.txt
+          import re, collections, os
+          rows = []
+          for line in open("caches.tsv"):
+              cid, created, size, key = line.rstrip("\n").split("\t", 3)
+              rows.append((int(cid), created, int(size), key))
+          # Group by the key with a trailing numeric run id removed. Keys that
+          # carry no run id (e.g. the macOS Intel keg cache, whose key is the
+          # formula versions) form single-entry groups and are always kept.
+          # Normalise the run id AND embedded hashes: CodeQL and msys2 key on a
+          # commit sha rather than a run id, so without this each lands in its
+          # own group and survives forever (5 CodeQL TRAP entries alone were
+          # 4.3 GB).
+          def family(key):
+              k = re.sub(r"-\d{6,}$", "", key)
+              return re.sub(r"[0-9a-f]{16,}", "<h>", k)
+          # Rank by the run id in the key, not by created_at. Two master merges
+          # in quick succession can finish out of order, and the later WRITE may
+          # be the older COMMIT; the run id orders by when the run started, so
+          # the newer commit's cache is the one kept. Falls back to the
+          # timestamp for keys that carry no run id.
+          def rank(entry):
+              created, cid, size, key = entry
+              m = re.search(r"-(\d{6,})$", key)
+              return (1, int(m.group(1))) if m else (0, created)
+          groups = collections.defaultdict(list)
+          for cid, created, size, key in rows:
+              groups[family(key)].append((created, cid, size, key))
+          freed = kept = 0
+          for prefix, entries in groups.items():
+              entries.sort(key=rank, reverse=True)   # newest run first
+              kept += 1
+              for created, cid, size, key in entries[1:]:
+                  freed += size
+                  print(cid)
+          print(f"::notice::keeping {kept} caches, freeing {freed/2**30:.1f} GB", file=__import__("sys").stderr)
+          PY
+          cat to_delete.txt | while read -r id; do
+              [ -n "$id" ] || continue
+              gh api -X DELETE "repos/${REPO}/actions/caches/${id}" >/dev/null 2>&1 \
+                && echo "deleted $id" || echo "skip $id (already gone)"
+          done
+          echo "remaining: $(gh api "repos/${REPO}/actions/cache/usage" --jq '.active_caches_count') caches, \
+          $(gh api "repos/${REPO}/actions/cache/usage" --jq '(.active_caches_size_in_bytes/1073741824*10|floor)/10') GB"

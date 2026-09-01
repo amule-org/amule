@@ -143,7 +143,7 @@ jobs:
         run: cmake --build build
       - name: save ccache
         uses: actions/cache/save@v6
-        if: always()
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
         with:
           path: ${{ env.CCACHE_DIR }}
           key: clang-tidy-ccache-${{ github.run_id }}
@@ -191,7 +191,7 @@ jobs:
       # this run. Unlike ccache (filled by the build), ctcache is filled here.
       - name: save ctcache
         uses: actions/cache/save@v6
-        if: always()
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
         with:
           path: ${{ env.CTCACHE_DIR }}
           key: clang-tidy-ctcache-llvm${{ env.LLVM_VERSION }}-${{ env.CTCACHE_SHA }}-${{ github.run_id }}
@@ -241,7 +241,7 @@ jobs:
         run: cmake --build build
       - name: save ccache
         uses: actions/cache/save@v6
-        if: always()
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
         with:
           path: ${{ env.CCACHE_DIR }}
           key: clang-tidy-ccache-${{ github.run_id }}
