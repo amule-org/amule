@@ -183,11 +183,11 @@ function DetailActions({ d, isGuest, categories, onPatch, onDelete, onClear }) {
   return html`
     <div class="detail-actions">
       <button class="btn btn-sm admin-only" type="button"
-              onClick=${() => onPatch(d.hash, { status: inactive ? "resumed" : "paused" })}>
+              onClick=${() => onPatch(d.hash, { action: inactive ? "resume" : "pause" })}>
         <${Icon} name=${inactive ? "play" : "pause"} /> ${inactive ? t("downloads_resume") : t("downloads_pause")}
       </button>
       ${canStop ? html`
-        <button class="btn btn-sm admin-only" type="button" onClick=${() => onPatch(d.hash, { status: "stopped" })}>
+        <button class="btn btn-sm admin-only" type="button" onClick=${() => onPatch(d.hash, { action: "stop" })}>
           <${Icon} name="stop" /> ${t("downloads_stop")}
         </button>` : null}
       ${done ? html`

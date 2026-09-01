@@ -2757,9 +2757,9 @@ namespace
 // branch's `EmitProgressParts` (WebServerApi.cpp:897-952):
 //  - count = ceil(size / PARTSIZE)
 //  - mark a part "has gap" if any byte-range in `gaps` covers it
-//  - state = "complete"   (no gap) /
-//            "incomplete" (gap + sources > 0) /
-//            "missing"    (gap + zero sources)
+//  - state = "complete"    (no gap) /
+//            "pending"     (gap + sources > 0) /
+//            "unavailable" (gap + zero sources)
 // `gaps` is flat (start, end) uint64 pairs. Both inclusive on amule's
 // side (CGapList::Encode semantics).
 void WriteProgressParts(CJsonWriter &w, const webapi::FileSnapshot &f)

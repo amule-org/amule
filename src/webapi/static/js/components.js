@@ -235,7 +235,7 @@ export function CommentEditor({ hash, kind, comment, rating, onSaved, disabled =
   const save = async () => {
     setBusy(true);
     try {
-      await api.patch(kind + "/" + hash, { comment: text, rating: Number(rate) });
+      await api.patch(kind + "/" + hash, { my_comment: text, my_rating: Number(rate) });
       toast(t("comments_saved"), "success");
       if (onSaved) onSaved();
     } catch (e) {
@@ -479,7 +479,7 @@ export function PiecesBar({ parts, mode = "download", total = 0, hashed = 0 }) {
         else if (avail) {
           fill = p.sources > 0 ? availShade(p.sources, availLo, availHi) : missing;
         } else if (p.state === "complete") fill = complete;
-        else if (p.state === "incomplete") {
+        else if (p.state === "pending") {
           fill = availShade(p.sources, availLo, availHi);
         } else fill = missing;
         ctx.fillStyle = fill;
@@ -508,15 +508,15 @@ export function PiecesBar({ parts, mode = "download", total = 0, hashed = 0 }) {
       if (hover < 0 || hover >= count) { canvas.title = ""; return; }
       const p = list[hover];
       // Show the source count only where the colour actually encodes it,
-      // i.e. wherever the fill came from availShade(). An `incomplete` part
+      // i.e. wherever the fill came from availShade(). A `pending` part
       // with no sources still paints blue but has nothing to count.
-      const graded = !hashing && (avail || p.state === "incomplete") && p.sources > 0;
+      const graded = !hashing && (avail || p.state === "pending") && p.sources > 0;
       const label = hashing
         ? t(hover < hashedRef.current ? "pieces_hashed" : "pieces_pending")
         : avail
         ? t(p.sources > 0 ? "pieces_available" : "pieces_no_sources")
         : t(p.state === "complete" ? "pieces_complete"
-          : p.state === "incomplete" ? "pieces_available" : "pieces_missing");
+          : p.state === "pending" ? "pieces_available" : "pieces_missing");
       // Only write on a real change: mousemove fires far more often than the
       // hovered piece changes, and each write is a DOM attribute mutation.
       const next = "#" + (hover + 1) + " \u00b7 " + label + (graded ? " \u00b7 " + p.sources : "");
@@ -592,7 +592,7 @@ export function PiecesLegend({ parts, mode = "download", total = 0, hashed = 0 }
         <span class="pieces-total">${tn("pieces_count", parts.length)}</span>
       </div>`;
   }
-  const counts = { complete: 0, incomplete: 0, missing: 0 };
+  const counts = { complete: 0, pending: 0, unavailable: 0 };
   for (const p of parts) counts[p.state] = (counts[p.state] || 0) + 1;
   // One line: three flat state chips (green/red/blue), then the availability
   // gradient scale grouped right after "Available" (it explains that blue's
@@ -600,10 +600,10 @@ export function PiecesLegend({ parts, mode = "download", total = 0, hashed = 0 }
   return html`
     <div class="chart-legend pieces-legend">
       <span class="legend-item">${chip("--ok")} ${t("pieces_complete")} <b>${counts.complete}</b></span>
-      <span class="legend-item">${chip("--bad")} ${t("pieces_missing")} <b>${counts.missing}</b></span>
+      <span class="legend-item">${chip("--bad")} ${t("pieces_missing")} <b>${counts.unavailable}</b></span>
       <span class="legend-item" title=${t("pieces_hint_sources")}>
-        ${chip("--piece-avail")} ${t("pieces_available")} <b>${counts.incomplete}</b>
-        ${counts.incomplete > 0 ? html`
+        ${chip("--piece-avail")} ${t("pieces_available")} <b>${counts.pending}</b>
+        ${counts.pending > 0 ? html`
           <span class="pieces-scale">
             <small>(${t("pieces_fewer")}</small>
             <span class="pieces-scale-bar"></span>

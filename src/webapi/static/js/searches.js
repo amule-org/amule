@@ -94,9 +94,11 @@ function publishResultsSoon(id) {
 
 // --- reads ---------------------------------------------------------------
 
-// Authoritative re-read. Results are add-only on the stream and there is no
-// search_result_updated, so this is the ONLY way a hit's status, comments or
-// children[] ever change. amuleapi coalesces it behind a ~1 s TTL, so calling
+// Authoritative re-read: seeds a tab's results on activation and reconciles
+// against anything the stream did not push. search_result_updated now pushes a
+// held hit's status / already_downloaded / comments / rating live, but its
+// source counts and alternate names stay add-only on the stream, so this is
+// still how those refresh. amuleapi coalesces it behind a ~1 s TTL, so calling
 // it per tab activation is cheap.
 async function refresh(id) {
   const tab = tabs.get(id);
@@ -178,7 +180,7 @@ function setActive(id) {
   publishTabs();
   if (!tabs.get(activeId)) return;
   publishResults(activeId); // whatever is already held, instantly
-  refresh(activeId);        // then reconcile, per the add-only rule above
+  refresh(activeId);        // then reconcile the fields the stream does not push
 }
 
 function drop(id, notify) {
@@ -223,7 +225,7 @@ function onProgress(p) {
   if (typeof p.result_count === "number") tab.count = p.result_count;
   publishTabsSoon();
   // Terminal frame: reconcile once against REST to pick up anything the
-  // stream dropped, and to land the final status/children of every row.
+  // stream dropped, and to land the final status/alternate_names of every row.
   if (wasRunning && tab.state === "finished") refresh(tab.id);
 }
 
@@ -334,7 +336,7 @@ export const searches = {
     } else {
       tabs.set(id, newTab({
         id, query: name || r.query || "", label: name || r.query || "",
-        kind: r.kind || "browse",
+        kind: r.type || "browse",
         state: r.state || "running",
         startedAt: r.started_at || nowSec(),
       }));

@@ -61,10 +61,10 @@ export default function Search({ isGuest }) {
     const body = { query: q, type };
     if (fileType) body.file_type = fileType;
     if (ext.trim()) body.extension = ext.trim();
-    if (Number(minAvail) > 0) body.min_avail = Number(minAvail);
+    if (Number(minAvail) > 0) body.min_source_count = Number(minAvail);
     const mn = sizeBytes(minSize, minUnit), mx = sizeBytes(maxSize, maxUnit);
-    if (mn) body.min_size = mn;
-    if (mx) body.max_size = mx;
+    if (mn) body.min_size_bytes = mn;
+    if (mx) body.max_size_bytes = mx;
     try {
       // Every start opens its own tab; the query stays in the box so refining
       // and re-running is one edit.
@@ -183,14 +183,14 @@ function ResultsPane({ tab, categories }) {
   const selectedCount = filtered.filter((r) => ui.selection.has(r.hash)).length;
 
   const downloadBody = (hash) => {
-    const body = { category: catFor(hash) };
+    const body = { category_index: catFor(hash) };
     // A grouped child is picked by its own ecid, which is what queues the file
     // under that advertised name instead of the aggregated one.
     const ecid = ui.rowEcid[hash];
     if (ecid) body.ecid = Number(ecid);
     return body;
   };
-  const afterDownload = () => searches.refresh(tab.id); // status/already_have only move on a read
+  const afterDownload = () => searches.refresh(tab.id); // status/already_downloaded only move on a read
 
   const downloadSelected = async () => {
     const hashes = Array.from(ui.selection);
@@ -229,7 +229,7 @@ function ResultsPane({ tab, categories }) {
       cell: (r) => checkCell(ui.selection.has(r.hash), (v) => toggleRow(r.hash, v)) },
     { key: "name", always: true, label: t("search_name"), cls: "name", sortable: true,
       sortVal: (r) => (r.name || "").toLowerCase(),
-      // already_have is signalled by the row background (.row-have), not a badge.
+      // already_downloaded is signalled by the row background (.row-have), not a badge.
       // A hit advertised under several filenames picks one here, and that is
       // what the download uses -- single row and bulk alike, via the ecid.
       cell: (r) => {

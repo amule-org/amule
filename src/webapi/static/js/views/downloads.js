@@ -24,7 +24,6 @@ export default function Downloads({ isGuest }) {
   const rawDownloads = useStore("downloads");
   const downloads = rawDownloads || [];
   const loading = rawDownloads === undefined;
-  // Not bound as `status`: bulk() below already uses that name for a partfile state.
   const disk = (useStore("status") || {}).disk || {};
   const [categories, setCategories] = useState([]);
   const [selection, setSelection] = useState(() => new Set());
@@ -80,8 +79,8 @@ export default function Downloads({ isGuest }) {
     try { await fn(); data.refresh("downloads"); }
     catch (e) { toast(terr(e) || t("downloads_error"), "error"); }
   };
-  const pause = (h) => mutate(() => api.patch("downloads/" + h, { status: "paused" }));
-  const resume = (h) => mutate(() => api.patch("downloads/" + h, { status: "resumed" }));
+  const pause = (h) => mutate(() => api.patch("downloads/" + h, { action: "pause" }));
+  const resume = (h) => mutate(() => api.patch("downloads/" + h, { action: "resume" }));
   const setPriority = (h, p) => mutate(() => api.patch("downloads/" + h, { priority: p }));
   const setCategory = (h, c) => mutate(() => api.patch("downloads/" + h, { category_index: c }));
 
@@ -113,8 +112,7 @@ export default function Downloads({ isGuest }) {
       if (!(await confirmDialog(tn("downloads_confirm_cancel_selected", hashes.length)))) return;
       return runBulk((h) => api.del("downloads", { hashes: h }), { clearSelection: true });
     }
-    const status = action === "pause" ? "paused" : action === "stop" ? "stopped" : "resumed";
-    return runBulk((h) => api.patch("downloads", { hashes: h, status }));
+    return runBulk((h) => api.patch("downloads", { hashes: h, action }));
   };
 
   // Apply the same field change (priority/category_index) to every selected row.
@@ -298,6 +296,7 @@ function matchStatus(d, f) {
 function statusBadge(s) {
   const cls = s === "downloading" ? "downloading" : s === "paused" ? "paused"
     : s === "stopped" ? "stopped"
+    : (s === "erroneous" || s === "insufficient_disk") ? "error"
     : (s === "waiting" || s === "hashing" || s === "allocating") ? "waiting" : "";
   // t() falls back to the raw status for values without a key.
   return html`<${Badge} kind=${cls}>${t("downloads_status_" + s)}<//>`;
