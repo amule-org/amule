@@ -26,8 +26,8 @@ ARG ALPINE_STATIC_BASE
 FROM alpine:${ALPINE_STATIC_BASE} AS builder
 
 ARG WX_VERSION
-ARG WX_TARBALL_URL
-ARG WX_SHA256
+ARG WX_GIT_URL
+ARG WX_COMMIT
 ARG CRYPTOPP_TAG_SUFFIX
 ARG LIBUPNP_VERSION
 ARG LIBUPNP_TARBALL_URL
@@ -60,10 +60,16 @@ RUN git clone --depth 1 --branch "CRYPTOPP_${CRYPTOPP_TAG_SUFFIX}" \
  && make -C /tmp/cryptopp PREFIX=/usr/local install
 
 # --- wxWidgets (static, base + net, no GUI) ---
-RUN wget -qO /tmp/wx.tar.bz2 "${WX_TARBALL_URL}" \
- && echo "${WX_SHA256}  /tmp/wx.tar.bz2" | sha256sum -c - \
- && mkdir -p /tmp/wx && tar -xf /tmp/wx.tar.bz2 -C /tmp/wx --strip-components=1 \
- && cd /tmp/wx && ./configure \
+# From the 3.2 branch at a pinned commit rather than a release tarball: no
+# 3.2.x release carries the wxEpollDispatcher unregister fix amuled needs
+# (amule-org/amule#1136). Revert to the tarball when 3.2.12 ships.
+RUN git init /tmp/wx \
+ && cd /tmp/wx \
+ && git remote add origin "${WX_GIT_URL}" \
+ && git fetch --depth 1 origin "${WX_COMMIT}" \
+ && git checkout FETCH_HEAD \
+ && git submodule update --init --depth 1 --recursive \
+ && ./configure \
         --disable-shared \
         --disable-gui \
         --with-zlib=builtin \

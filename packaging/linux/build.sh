@@ -97,7 +97,8 @@ build_appimage() {
         --platform "${docker_platform}" \
         --build-arg "UBUNTU_BASE=${UBUNTU_BASE}" \
         --build-arg "WX_VERSION=${WX_VERSION}" \
-        --build-arg "WX_SHA256=${WX_SHA256}" \
+        --build-arg "WX_GIT_URL=${WX_GIT_URL}" \
+        --build-arg "WX_COMMIT=${WX_COMMIT}" \
         --build-arg "LINUXDEPLOY_VERSION=${LINUXDEPLOY_VERSION}" \
         --build-arg "LINUXDEPLOY_GTK_SHA=${LINUXDEPLOY_GTK_SHA}" \
         --build-arg "LIBUPNP_VERSION=${LIBUPNP_VERSION}" \
@@ -278,8 +279,8 @@ build_static() {
         -f "${SCRIPT_DIR}/static/Dockerfile" \
         --build-arg "ALPINE_STATIC_BASE=${ALPINE_STATIC_BASE}" \
         --build-arg "WX_VERSION=${WX_VERSION}" \
-        --build-arg "WX_TARBALL_URL=${WX_TARBALL_URL}" \
-        --build-arg "WX_SHA256=${WX_SHA256}" \
+        --build-arg "WX_GIT_URL=${WX_GIT_URL}" \
+        --build-arg "WX_COMMIT=${WX_COMMIT}" \
         --build-arg "CRYPTOPP_TAG_SUFFIX=${CRYPTOPP_TAG_SUFFIX}" \
         --build-arg "LIBUPNP_VERSION=${LIBUPNP_VERSION}" \
         --build-arg "LIBUPNP_TARBALL_URL=${LIBUPNP_TARBALL_URL}" \
