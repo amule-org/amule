@@ -82,6 +82,9 @@ public:
 	 * Remove category
 	 */
 	void RemoveCategory(int index);
+	//! Everything that follows a category really being gone. Split out so the
+	//! monolithic build can run it inline and amulegui from the EC reply.
+	void CommitRemoveCategory(int index);
 	void RemoveCategoryPage(int index);
 
 	/**

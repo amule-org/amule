@@ -555,6 +555,10 @@ public:
 	// Download Categories
 	uint32 AddCat(Category_Struct *cat);
 	void RemoveCat(size_t index);
+	//! May the caller commit the removal now? Always yes here: this process
+	//! owns the list. amulegui hides this to defer until the daemon replies
+	//! (amule-org/amule#1231); bound by static type, like RemoveCat already is.
+	bool RequestRemoveCat(size_t) { return true; }
 	uint32 GetCatCount();
 	Category_Struct *GetCategory(size_t index);
 	const CPath &GetCatPath(uint8 index);

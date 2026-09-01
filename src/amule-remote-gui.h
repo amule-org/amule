@@ -123,7 +123,10 @@ public:
 		uint32 color,
 		uint8 prio);
 
-	void RemoveCat(uint8 cat);
+	//! Sends EC_OP_DELETE_CATEGORY and always answers false: the daemon owns
+	//! the list, so CCatDeleteHandler commits only once it agrees. size_t to
+	//! match the base it hides, so the shared call site widens.
+	bool RequestRemoveCat(size_t cat);
 
 	bool LoadRemote();
 	void SendToRemote();
