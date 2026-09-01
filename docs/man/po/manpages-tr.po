@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "POT-Creation-Date: 2026-08-24 19:02+0200\n"
-"PO-Revision-Date: 2026-08-31 15:37+0000\n"
+"PO-Revision-Date: 2026-09-01 20:43+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: \n"
 "Language: tr\n"
@@ -839,7 +839,7 @@ msgstr "aMule Daemon v@PACKAGE_VERSION@"
 #: amuled.1.in
 #, no-wrap
 msgid "aMule Daemon"
-msgstr "aMule Daemon"
+msgstr "aMule Daemon'u"
 
 #. type: Plain text
 #: amuled.1.in
