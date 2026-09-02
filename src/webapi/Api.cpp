@@ -3483,10 +3483,10 @@ struct SearchListRow
 void WriteSearchListRow(CJsonWriter &w, const SearchListRow &row)
 {
 	w.BeginObject();
-	// `id`, not `search_id`: the object would be prefixing its own key with
-	// its own type. References from OUTSIDE keep the prefix -- the SSE
-	// payloads and the results envelope point into this object.
-	w.Key("id");
+	// `search_id`, the same key the SSE payloads and the results envelope
+	// already use for this value -- one spelling for a search's id across the
+	// whole surface, so a client never has to read it under two names.
+	w.Key("search_id");
 	w.ValueInt(static_cast<int64_t>(row.search_id));
 	w.Key("query");
 	w.ValueString(row.query);
@@ -3512,7 +3512,7 @@ void WriteSearchListRow(CJsonWriter &w, const SearchListRow &row)
 const ListComparators<SearchListRow> &SearchListComparators()
 {
 	static const ListComparators<SearchListRow> kComps = {
-		{ "id", SORT_BY(search_id), ANCHOR_ON_NUM(search_id) },
+		{ "search_id", SORT_BY(search_id), ANCHOR_ON_NUM(search_id) },
 		{ "query", SORT_BY(query) },
 		{ "started_at", SORT_BY(started_at) },
 		{ "result_count", SORT_BY(result_count) },
