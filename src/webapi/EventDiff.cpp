@@ -268,9 +268,15 @@ std::string ToJson(const FriendSnapshot &f)
 	std::ostringstream o;
 	o << "{"
 	  << "\"ecid\":" << f.ecid << ",\"name\":\"" << EscJson(f.name) << "\""
-	  << ",\"user_hash\":\"" << EscJson(f.user_hash) << "\""
-	  << ",\"ip\":\"" << EscJson(f.ip) << "\""
-	  << ",\"port\":" << f.port
+	  << ",\"user_hash\":\"" << EscJson(f.user_hash)
+	  << "\""
+	  // null, not "" / 0, when the daemon has not reported an address: the
+	  // REST row this event promises key parity with emits null for both
+	  // (WriteFriendObject), and a subscriber hydrating from GET /friends
+	  // would otherwise see ip flip null -> "" on the first tick that
+	  // touches the row, with no real change behind it.
+	  << ",\"ip\":" << (f.ip.empty() ? std::string("null") : "\"" + EscJson(f.ip) + "\"")
+	  << ",\"port\":" << (f.ip.empty() ? std::string("null") : std::to_string(f.port))
 	  << ",\"client_ecid\":" << (f.client_ecid ? std::to_string(f.client_ecid) : std::string("null"))
 	  << ",\"online\":" << (f.client_ecid != 0 ? "true" : "false")
 	  << ",\"friend_slot\":" << (f.friend_slot ? "true" : "false") << "}";
@@ -282,13 +288,17 @@ std::string ToJson(const ClientSnapshot &c)
 	std::ostringstream o;
 	o << "{"
 	  << "\"ecid\":" << c.ecid << ",\"name\":\"" << EscJson(c.client_name) << "\""
-	  << ",\"user_hash\":\"" << EscJson(c.user_hash) << "\""
-	  << ",\"ip\":\"" << EscJson(c.ip) << "\""
+	  << ",\"user_hash\":\"" << EscJson(c.user_hash)
+	  << "\""
+	  // Same guard as country_code below and as WriteKnownClientObject's
+	  // has_addr, which nulls ip/port/kad_port together.
+	  << ",\"ip\":" << (c.ip.empty() ? std::string("null") : "\"" + EscJson(c.ip) + "\"")
 	  << ",\"country_code\":"
 	  // null, not "", when the lookup has not resolved -- the REST row this
 	  // event promises key parity with emits null here.
 	  << (c.country_code.empty() ? std::string("null") : "\"" + EscJson(c.country_code) + "\"")
-	  << ",\"port\":" << c.port << ",\"software\":\"" << EscJson(c.software) << "\""
+	  << ",\"port\":" << (c.ip.empty() ? std::string("null") : std::to_string(c.port))
+	  << ",\"software\":\"" << EscJson(c.software) << "\""
 	  << ",\"software_version\":\"" << EscJson(c.software_version) << "\""
 	  << ",\"reported_os\":\"" << EscJson(c.reported_os) << "\""
 	  << ",\"upload_state\":\"" << EscJson(c.upload_state) << "\""
@@ -397,8 +407,8 @@ std::string ToJsonStatusEvent(const StatusSnapshot &s, const KadSnapshot &k, boo
 	  << "\"temp_free_bytes\":" << JsonFreeSpace(s.temp_free_bytes)
 	  << ",\"incoming_free_bytes\":" << JsonFreeSpace(s.incoming_free_bytes) << "}"
 	  << ",\"queue\":{"
-	  << "\"upload_clients_waiting\":" << s.ul_queue_len
-	  << ",\"download_sources_total\":" << s.total_src_count << "}"
+	  << "\"waiting_upload_client_count\":" << s.ul_queue_len
+	  << ",\"download_source_count\":" << s.total_src_count << "}"
 	  << "}";
 	return o.str();
 }

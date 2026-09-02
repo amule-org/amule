@@ -170,7 +170,8 @@ _assert_json_eq '(.lan_mode | not) or ((.firewalled_tcp | not) and (.firewalled_
 # measurement wearing the costume of one, and it is null now.
 _assert_json_eq '.connected_since_at | type' number  '/kad.connected_since_ate is numeric'
 # Ours. Named apart from the buddy's address, which the rename must not touch.
-_assert_json_eq '.public_ip        | type' string  '/kad.public_ip is string'
+_assert_json_eq '.public_ip | type | . == "string" or . == "null"' true \
+	'/kad.public_ip is a string or null'
 _assert_json_eq '.ip               | type' null    '/kad has no bare top-level ip'
 # 32 lowercase hex while Kad runs, "" while it does not -- gated on .state,
 # which is "disabled" exactly when amuled withholds EC_TAG_KAD_ID.
@@ -191,10 +192,10 @@ for F in network.user_count network.file_count network.node_count \
 done
 # indexed.load_percent is a load figure rather than a count, despite sitting beside
 # three counts -- covered by the loop above.
-# Two distinct "unknown" sentinels: "" while Kad is not connected, and a
+# Two distinct "unknown" answers: null while Kad is not connected, and a
 # syntactically valid 0.0.0.0 while connected but not yet told our address.
-_assert_json_eq '(.state == "connected") or (.public_ip == "")' \
-	true '/kad.public_ip is empty while Kad is not connected'
+_assert_json_eq '(.state == "connected") or (.public_ip == null)' \
+	true '/kad.public_ip is null while Kad is not connected'
 # Gated with the rest: `no_buddy` is a real state, so reporting it on a stopped
 # Kad claimed we had looked and found none. Null when not connected; the enum
 # and the types still hold while connected.

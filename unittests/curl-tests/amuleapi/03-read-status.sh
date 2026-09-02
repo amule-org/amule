@@ -132,12 +132,13 @@ _assert_json_eq '.ed2k.user_id | type' number \
 # the server-assigned identity it actually is.
 _assert_json_eq '.ed2k | has("id")' false \
 	'ed2k.id is gone, replaced by ed2k.user_id'
-_assert_json_eq '.ed2k.public_ip | type' string \
-	'ed2k.public_ip is string'
+_assert_json_eq '.ed2k.public_ip | type | . == "string" or . == "null"' true \
+	'ed2k.public_ip is a string or null'
 # A public address exists exactly when we hold a HighID on a live connection;
-# a LowID carries none, and neither does a disconnected daemon.
-_assert_json_eq '(.ed2k.public_ip != "") == (.ed2k.high_id and .ed2k.state == "connected")' \
-	true 'ed2k.public_ip is non-empty exactly when high_id and connected'
+# a LowID carries none, and neither does a disconnected daemon. Absent is null,
+# not "" -- the surface spells "no value" one way (R10).
+_assert_json_eq '(.ed2k.public_ip != null) == (.ed2k.high_id and .ed2k.state == "connected")' \
+	true 'ed2k.public_ip is non-null exactly when high_id and connected'
 # The 0xffffffff "connect in flight" sentinel must never surface.
 _assert_json_eq '.ed2k.user_id != 4294967295' true \
 	'ed2k.user_id never reports the connecting sentinel'
@@ -178,10 +179,10 @@ _assert_json_eq '.speeds.download_overhead_bytes_per_second | type' number \
 	'speeds.download_overhead_bytes_per_second is numeric'
 _assert_json_eq '.speeds.upload_overhead_bytes_per_second | type' number \
 	'speeds.upload_overhead_bytes_per_second is numeric'
-_assert_json_eq '.queue.upload_clients_waiting | type' number \
-	'queue.upload_clients_waiting is numeric'
-_assert_json_eq '.queue.download_sources_total | type' number \
-	'queue.download_sources_total is numeric'
+_assert_json_eq '.queue.waiting_upload_client_count | type' number \
+	'queue.waiting_upload_client_count is numeric'
+_assert_json_eq '.queue.download_source_count | type' number \
+	'queue.download_source_count is numeric'
 
 # disk subtree: a number, or null when the daemon has no figure. Never the
 # unsigned reading of the -1 sentinel, and never 0 (which would read as a
