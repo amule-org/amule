@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-01 11:32+0200\n"
+"POT-Creation-Date: 2026-09-02 12:15+0200\n"
 "PO-Revision-Date: 2026-09-01 17:58+0000\n"
 "Last-Translator: astur <malditoastur@gmail.com>\n"
 "Language-Team: Language ast <malditoastur@gmail.com>\n"
@@ -1254,10 +1254,6 @@ msgstr "Ver ficheros"
 #: src/ClientContextActions.cpp
 msgid "Send message"
 msgstr "Unviar mensax"
-
-#: src/ClientContextActions.cpp
-msgid "Swap to this file"
-msgstr "Intercambia esti ficheru"
 
 #: src/ClientContextActions.cpp
 #, fuzzy
@@ -2865,6 +2861,10 @@ msgstr ""
 #, fuzzy
 msgid "One block per part of the shared file."
 msgstr "Introduz el puertu del sirvidor"
+
+#: src/GenericClientListCtrl.cpp
+msgid "Swap to this file"
+msgstr "Intercambia esti ficheru"
 
 #: src/GenericClientListCtrl.cpp
 msgid "Colour legend"

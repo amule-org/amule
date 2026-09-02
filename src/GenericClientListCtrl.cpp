@@ -770,15 +770,21 @@ void CGenericClientListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 	CClientRef &client = item->GetSource();
 
 	delete m_menu;
-	// Same menu the global clients list offers; "Swap to this file" is the one
-	// entry only a per-file list can act on.
-	m_menu = BuildClientContextMenu(client, item->GetType() == A4AF_SOURCE);
+	// Same menu the global clients list offers.
+	m_menu = BuildClientContextMenu(client);
 
-	// Appended here rather than inside BuildClientContextMenu(): that builder
-	// is shared with CClientRowListCtrl, the Clients tab, which draws no chunk
-	// bar and so must not offer to explain one. Asking the list which of its
-	// own columns has a legend keeps that true for any future subclass without
-	// naming one here.
+	// Both of these are appended here rather than inside
+	// BuildClientContextMenu(): that builder is shared with CClientRowListCtrl,
+	// the Clients tab, which has no file in context and draws no chunk bar, so
+	// neither entry can mean anything there.
+	//
+	// Disabled for a non-A4AF source, where the peer is already on the file it
+	// would swap to: "not right now" rather than "never here".
+	m_menu->Append(MP_CHANGE2FILE, _("Swap to this file"));
+	m_menu->Enable(MP_CHANGE2FILE, item->GetType() == A4AF_SOURCE);
+
+	// Asking the list which of its own columns has a legend keeps this true for
+	// any future subclass without naming one here.
 	if (FindBarLegendColumn() >= 0) {
 		m_menu->AppendSeparator();
 		m_menu->Append(MP_BARLEGEND, _("Colour legend"));

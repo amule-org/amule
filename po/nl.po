@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-01 11:32+0200\n"
+"POT-Creation-Date: 2026-09-02 12:15+0200\n"
 "PO-Revision-Date: 2026-09-01 18:20+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
@@ -1255,10 +1255,6 @@ msgstr "Bekijk bestanden"
 #: src/ClientContextActions.cpp
 msgid "Send message"
 msgstr "Verstuur bericht"
-
-#: src/ClientContextActions.cpp
-msgid "Swap to this file"
-msgstr "Wissel uit naar dit bestand"
 
 #: src/ClientContextActions.cpp
 msgid ""
@@ -2849,6 +2845,10 @@ msgstr "Één blok per onderdeel van het bestand dat wordt gedownload."
 #: src/GenericClientListCtrl.cpp
 msgid "One block per part of the shared file."
 msgstr "Één blok per onderdeel van het gedeelde bestand."
+
+#: src/GenericClientListCtrl.cpp
+msgid "Swap to this file"
+msgstr "Wissel uit naar dit bestand"
 
 #: src/GenericClientListCtrl.cpp
 msgid "Colour legend"

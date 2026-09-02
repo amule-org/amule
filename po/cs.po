@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-01 11:32+0200\n"
+"POT-Creation-Date: 2026-09-02 12:15+0200\n"
 "PO-Revision-Date: 2026-09-01 18:02+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
@@ -1256,10 +1256,6 @@ msgstr "Zobrazit soubory"
 #: src/ClientContextActions.cpp
 msgid "Send message"
 msgstr "Poslat zprávu"
-
-#: src/ClientContextActions.cpp
-msgid "Swap to this file"
-msgstr "Swapovat do tohoto souboru"
 
 #: src/ClientContextActions.cpp
 msgid ""
@@ -2860,6 +2856,10 @@ msgstr ""
 #, fuzzy
 msgid "One block per part of the shared file."
 msgstr "Zadejte port serveru."
+
+#: src/GenericClientListCtrl.cpp
+msgid "Swap to this file"
+msgstr "Swapovat do tohoto souboru"
 
 #: src/GenericClientListCtrl.cpp
 msgid "Colour legend"
