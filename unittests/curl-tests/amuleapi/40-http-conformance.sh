@@ -851,14 +851,14 @@ PREFS="$HOST/api/v0/preferences"
 curl -s -o "$BODY_FILE" -D "$HDR_FILE" --max-time 10 "${AUTH[@]}" "$PREFS" >/dev/null
 PREF_ETAG=$(_hdr ETag)
 PREF_BEFORE=$(cat "$BODY_FILE")
-ORIG_UP=$(printf '%s' "$PREF_BEFORE" | jq -r '.connection.max_upload_kbps // 0' 2>/dev/null)
+ORIG_UP=$(printf '%s' "$PREF_BEFORE" | jq -r '.connection.max_upload_kibibytes_per_second // 0' 2>/dev/null)
 if [ -z "$PREF_ETAG" ] || [ -z "$ORIG_UP" ]; then
 	_skip "mutation-changes-validator check (no ETag or no readable preferences)"
 else
 	NEW_UP=$((ORIG_UP + 7))
 	curl -s -o /dev/null --max-time 10 "${AUTH[@]}" -X PATCH \
 		-H "Content-Type: application/json" \
-		-d "{\"connection\":{\"max_upload_kbps\":$NEW_UP}}" "$PREFS" >/dev/null
+		-d "{\"connection\":{\"max_upload_kibibytes_per_second\":$NEW_UP}}" "$PREFS" >/dev/null
 	curl -s -o "$BODY_FILE" -D "$HDR_FILE" --max-time 10 "${AUTH[@]}" "$PREFS" >/dev/null
 	PREF_AFTER=$(cat "$BODY_FILE")
 	PREF_ETAG2=$(_hdr ETag)
@@ -879,7 +879,7 @@ else
 	# put it back
 	curl -s -o /dev/null --max-time 10 "${AUTH[@]}" -X PATCH \
 		-H "Content-Type: application/json" \
-		-d "{\"connection\":{\"max_upload_kbps\":$ORIG_UP}}" "$PREFS" >/dev/null
+		-d "{\"connection\":{\"max_upload_kibibytes_per_second\":$ORIG_UP}}" "$PREFS" >/dev/null
 fi
 
 # --- 7d. An authenticated body is not shared cache material. ---------

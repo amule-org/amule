@@ -478,6 +478,8 @@ A byte rate is `_bytes_per_second`, not `_bps`. The abbreviation was considered 
 
 The same reasoning gives the media bitrate its full spelling. `media.bitrate_kilobits_per_second` really is kilo**bits** — `ParseBitrateKbps` divides ffprobe's bits/second by 1000 — so it is the one quantity on the surface that is not bytes, and the one place `kilo` means 1000 rather than 1024. Abbreviating it would put the surface's only bit-valued rate one character away from its byte-valued ones.
 
+The three bandwidth caps under `connection` are the one place a rate is not per-byte: `max_download_kibibytes_per_second`, `max_upload_kibibytes_per_second` and `upload_slot_min_kibibytes_per_second` carry the KiB/s figure the user types, unconverted, because the core stores and enforces it in those units (`GetMaxUpload() * 1024`). `kibibytes` is spelled out for the same reason every other unit is, and it says 1024 without the reader having to guess which `k` this is.
+
 ## Endpoint catalog
 
 The catalog below is grouped by resource. Each entry documents:
@@ -573,11 +575,11 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" http://$HOST/api/v0/version/ch
 
 | Status | `error.code` | When |
 | --- | --- | --- |
-| `409` | `update_check_unavailable` | The daemon can't check (`update.check_enabled` is `false`). |
+| `409` | `version_check_unavailable` | The daemon can't check (`update.check_enabled` is `false`). |
 | `429` | `version_check_throttled` | A check ran too recently; retry shortly. Distinct from the auth limiter's `rate_limited`, which also answers `429` but ends the session. |
 | `503` | `ec_unavailable` | The EC round-trip to amuled failed, or the first snapshot has not landed yet. |
 
-The snapshot gate matters at startup: `version_check_available` defaults to false, so before the first EC tick this route used to answer `409 update_check_unavailable`, blaming the daemon's configuration for amuleapi not having read it yet. It answers `503` there now, which is the condition a client can retry.
+The snapshot gate matters at startup: `version_check_available` defaults to false, so before the first EC tick this route used to answer `409 version_check_unavailable`, blaming the daemon's configuration for amuleapi not having read it yet. It answers `503` there now, which is the condition a client can retry.
 
 #### `GET /api/v0/status`
 
@@ -642,7 +644,7 @@ While disconnected `user_id` is `0`, `public_ip` is `null` and `high_id` is `fal
 
 The two are **equal whenever Temp and Incoming share a filesystem**, which is the default layout — that is correct, not a bug. `incoming_free_bytes` describes the **default category's** incoming directory; a category pointed at another filesystem is not covered, because the daemon publishes no per-category figure.
 
-To reproduce the desktop's low-space warning, compare `temp_free_bytes` against the bytes still to write across the queue (`size - completed_bytes` summed over [`GET /downloads`](#get-apiv0downloads)), or against the `files.min_free_space_mb` preference when `files.stop_on_low_disk_space` is on. Note that preference is in **MiB** while these fields are bytes.
+To reproduce the desktop's low-space warning, compare `temp_free_bytes` against the bytes still to write across the queue (`size - completed_bytes` summed over [`GET /downloads`](#get-apiv0downloads)), or against the `files.min_free_space_mebibytes` preference when `files.stop_on_low_disk_space` is on. Note that preference is in **MiB** while these fields are bytes.
 
 **Errors:** `503 ec_unavailable` if amuleapi hasn't received its first EC snapshot yet.
 
@@ -1283,8 +1285,8 @@ The last five were originally detail-only and were promoted onto this row (and o
 
 | Field | Values |
 |---|---|
-| `upload_state` | `uploading`, `queued`, `waitcallback`, `connecting`, `pending`, `lowtolowip`, `banned`, `error`, `idle`, `unknown` |
-| `download_state` | `downloading`, `onqueue`, `connected`, `connecting`, `waitcallback`, `waitcallbackkad`, `reqhashset`, `noneededparts`, `toomanyconns`, `toomanyconnskad`, `lowtolowip`, `banned`, `error`, `idle`, `remotequeuefull`, `unknown` |
+| `upload_state` | `uploading`, `queued`, `waiting_callback`, `connecting`, `pending`, `low_to_low_ip`, `banned`, `error`, `idle`, `unknown` |
+| `download_state` | `downloading`, `queued`, `connected`, `connecting`, `waiting_callback`, `waiting_callback_kad`, `requesting_hashset`, `no_needed_parts`, `too_many_connections`, `too_many_connections_kad`, `low_to_low_ip`, `banned`, `error`, `idle`, `remote_queue_full`, `unknown` |
 | `ident_state` | `not_available`, `id_needed`, `identified`, `id_failed`, `bad_guy`, `unknown` |
 | `obfuscation_state` | `undefined`, `enabled`, `supported`, `not_supported`, `disabled`, `unknown` |
 | `software` | `emule`, `cdonkey`, `lxmule`, `amule`, `shareaza`, `emule_plus`, `hydranode`, `mldonkey`, `lphant`, `edonkey_hybrid`, `edonkey`, `old_emule`, `compat`, `unknown` |
@@ -2257,18 +2259,18 @@ Returns every preference category amuled carries over EC. The `general` and `con
     "version_check_enabled": true
   },
   "connection": {
-    "max_upload_kbps":      50,
-    "max_download_kbps":    0,
-    "upload_slot_min_kbps": 3,
-    "tcp_port":             4662,
-    "udp_port":             4672,
+    "max_upload_kibibytes_per_second": 50,
+    "max_download_kibibytes_per_second": 0,
+    "upload_slot_min_kibibytes_per_second": 3,
+    "tcp_port": 4662,
+    "udp_port": 4672,
     "extended_udp_port_enabled": true,
     "max_sources_per_file_count": 250,
-    "max_connection_count":       400,
+    "max_connection_count": 400,
     "autoconnect": true,
     "reconnect_on_connection_loss": true,
     "ed2k_enabled": true,
-    "kad_enabled":  true,
+    "kad_enabled": true,
     "bind_address": "",
     "bind_interface": "",
     "proxy_enabled": false,
@@ -2299,7 +2301,7 @@ Returns every preference category amuled carries over EC. The `general` and `con
     "on_finished_start_next_in_same_category": false,
     "save_sources_for_rare_files": true, "preallocate_full_file_size": false,
     "mmap_supported": true, "mmap_enabled": false,
-    "stop_on_low_disk_space": true, "min_free_space_mb": 1, "create_sparse_files": true,
+    "stop_on_low_disk_space": true, "min_free_space_mebibytes": 1, "create_sparse_files": true,
     "on_finished_start_next_alphabetically": false, "endgame_mode_enabled": false,
     "media_metadata_enabled": true, "ffprobe_path": ""
   },
@@ -2418,7 +2420,7 @@ The two fields with a **step** accept only whole multiples of it: `file_buffer_b
 
 The three **clamped at daemon start** rows are the reason this is enforced on the write rather than left to the client to check. Their setters assign the value raw, so a `GET` right after the `PATCH` reports it back faithfully and only the next restart reveals that the daemon never kept it.
 
-**A low `connection.max_upload_kbps` caps `max_download_kbps`,** which is the one place a `PATCH` changes a field the request did not name. Below `4` kB/s up the download limit is forced to 3× the upload; below `10` it is forced to 4×. So `PATCH {"connection": {"max_upload_kbps": 3}}` also sets `max_download_kbps` to `9`. This is a deliberate anti-leech rule in the core rather than a defect, it applies whichever of the two you write, and the `PATCH` response echoes the whole preferences object so the adjusted value is visible in the reply.
+**A low `connection.max_upload_kibibytes_per_second` caps `max_download_kibibytes_per_second`,** which is the one place a `PATCH` changes a field the request did not name. Below `4` KiB/s up the download limit is forced to 3× the upload; below `10` it is forced to 4×. So `PATCH {"connection": {"max_upload_kibibytes_per_second": 3}}` also sets `max_download_kibibytes_per_second` to `9`. This is a deliberate anti-leech rule in the core rather than a defect, it applies whichever of the two you write, and the `PATCH` response echoes the whole preferences object so the adjusted value is visible in the reply.
 
 **Errors:** `400 bad_request` (unknown/mis-typed field, or a body with no recognized fields), `409 option_not_supported` (the daemon was built without support for the option being set), `400 amuled_rejected`, `503 ec_unavailable`.
 
@@ -3260,7 +3262,7 @@ Every error code emitted by `/api/v0/*`, sorted by what triggered it. Two codes 
 | `not_completed` | 409 | `clear_completed` named a `hash` that is not a completed download. |
 | `download_completed` | 409 | A `DELETE /downloads` matched a completed download; use `clear_completed` for those. |
 | `kad_more_exhausted` | 409 | `POST /search/{id}/more` on a Kad search that can no longer be widened — its 4-reask budget is spent, or it has entered the stopping window Kad begins 20 s before a keyword search ends. Terminal for that search; re-run the query for more. |
-| `update_check_unavailable` | 409 | `POST /version/check` cannot run — the daemon has no update-check capability. |
+| `version_check_unavailable` | 409 | `POST /version/check` cannot run - the daemon has no update-check capability. |
 | `payload_too_large` | 413 | Request body exceeds the 1 MiB limit. The connection closes after the response. |
 | `range_not_satisfiable` | 416 | A `Range` on [`GET /shared/{hash}/content`](#get-apiv0sharedhashcontent) starts at or past EOF. `Content-Range: bytes */<size>` accompanies the response. |
 | `rate_limited` | 429 | The per-IP auth-failure bucket is full, so the address is locked out of every authenticated route. `Retry-After: <seconds>` accompanies it. A client should treat this as the session ending. |

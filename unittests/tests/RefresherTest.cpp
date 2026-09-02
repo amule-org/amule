@@ -2316,7 +2316,7 @@ TEST(Refresher, PreferencesExtendedCategoriesDecode)
 	ASSERT_TRUE(p.files.ich_enabled);
 	ASSERT_TRUE(!p.files.trust_unverified_aich_hashes); // absent presence tag -> false
 	ASSERT_TRUE(p.files.endgame_mode_enabled);          // presence tag -> true (#596)
-	ASSERT_EQUALS(static_cast<std::uint32_t>(512), p.files.min_free_space_mb);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(512), p.files.min_free_space_mebibytes);
 
 	ASSERT_EQUALS(static_cast<std::uint32_t>(5), p.servers.dead_server_retry_count);
 	ASSERT_EQUALS(std::string("http://srv"), p.servers.update_url);
@@ -3397,7 +3397,7 @@ TEST(PrefsSchema, AnUnboundedNumericRowIsADeliberateChoice)
 	// entries below were resolved to genuine uint32 members in the core during
 	// that audit.
 	static const char *const kKnownUnbounded[] = {
-		"files.min_free_space_mb",
+		"files.min_free_space_mebibytes",
 		"remote_controls.webserver.refresh_seconds",
 	};
 	const webapi::PrefField *schema = webapi::PrefSchema();

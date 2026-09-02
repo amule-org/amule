@@ -1499,7 +1499,7 @@ fi
 # peer-dependent assertions in this suite.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/clients"
 UNREACHABLE_ECID=$(printf '%s' "$CURL_BODY" \
-	| jq -r '[.clients[] | select(.download_state == "lowtolowip")][0].ecid // empty')
+	| jq -r '[.clients[] | select(.download_state == "low_to_low_ip")][0].ecid // empty')
 if [ -n "$UNREACHABLE_ECID" ]; then
 	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 		"$HOST/api/v0/clients/$UNREACHABLE_ECID/shared_files"
@@ -1547,7 +1547,7 @@ if [ -n "$UNREACHABLE_ECID" ]; then
 		echo "    info: browse of $UNREACHABLE_ECID returned $CURL_STATUS — skipping"
 	fi
 else
-	echo "    info: no uncontactable (lowtolowip) peer — skipping the dead-browse check"
+	echo "    info: no uncontactable (low_to_low_ip) peer — skipping the dead-browse check"
 fi
 
 # --- Related-files search (docs contract). -------------------------
