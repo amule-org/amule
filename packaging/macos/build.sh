@@ -171,12 +171,7 @@ make_dmg() {
     ln -s /Applications "${stage}/Applications"
 
     local out="${DIST_DIR}/aMule-${VERSION}-macOS.dmg"
-    rm -f "${out}"
-    hdiutil create \
-        -volname "aMule ${VERSION}" \
-        -srcfolder "${stage}" \
-        -ov -format UDZO \
-        "${out}"
+    "${SCRIPT_DIR}/create-dmg.sh" "aMule ${VERSION}" "${stage}" "${out}"
 
     echo "==> Produced ${out}"
 }
