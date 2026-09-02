@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-01 11:32+0200\n"
+"POT-Creation-Date: 2026-09-02 12:15+0200\n"
 "PO-Revision-Date: 2026-09-01 18:31+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -1254,10 +1254,6 @@ msgstr "查看共享文件"
 #: src/ClientContextActions.cpp
 msgid "Send message"
 msgstr "发送消息"
-
-#: src/ClientContextActions.cpp
-msgid "Swap to this file"
-msgstr "转移到这个文件"
 
 #: src/ClientContextActions.cpp
 msgid ""
@@ -2847,6 +2843,10 @@ msgstr "正被下载的文件每部分对应一个区块。"
 #: src/GenericClientListCtrl.cpp
 msgid "One block per part of the shared file."
 msgstr "共享文件每个部分对应一个区块。"
+
+#: src/GenericClientListCtrl.cpp
+msgid "Swap to this file"
+msgstr "转移到这个文件"
 
 #: src/GenericClientListCtrl.cpp
 msgid "Colour legend"

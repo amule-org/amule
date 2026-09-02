@@ -38,7 +38,7 @@
 #include "OtherFunctions.h"     // Needed for GUI_ID
 #include "SearchDlg.h"          // Needed for CSearchDlg::ActivateBrowseTabIfOpen
 
-wxMenu *BuildClientContextMenu(const CClientRef &client, bool allowSwapSource)
+wxMenu *BuildClientContextMenu(const CClientRef &client)
 {
 	// const_cast because the accessors this menu reads are non-const on
 	// CClientRef; nothing here modifies the peer.
@@ -58,10 +58,7 @@ wxMenu *BuildClientContextMenu(const CClientRef &client, bool allowSwapSource)
 
 	menu->Append(MP_SHOWLIST, _("View Files"));
 	menu->Append(MP_SENDMESSAGE, _("Send message"));
-	menu->Append(MP_CHANGE2FILE, _("Swap to this file"));
 
-	// Only meaningful for an A4AF source, which only a per-file list has.
-	menu->Enable(MP_CHANGE2FILE, allowSwapSource);
 	// We need a valid IP if we are to message the client.
 	menu->Enable(MP_SENDMESSAGE, c.GetIP() != 0);
 	menu->Enable(MP_SHOWLIST, !c.HasDisabledSharedFiles());

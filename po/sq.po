@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-01 11:32+0200\n"
+"POT-Creation-Date: 2026-09-02 12:15+0200\n"
 "PO-Revision-Date: 2026-09-01 18:27+0000\n"
 "Last-Translator: Fation <dj_barthezz@linuxmail.org lushnja_corps@hotmail.Language-Team:\n"
 "Language: sq\n"
@@ -1258,10 +1258,6 @@ msgstr "Shiko failet"
 #: src/ClientContextActions.cpp
 msgid "Send message"
 msgstr "Dergo mesazh"
-
-#: src/ClientContextActions.cpp
-msgid "Swap to this file"
-msgstr "Sposto tek ky fail"
 
 #: src/ClientContextActions.cpp
 #, fuzzy
@@ -2867,6 +2863,10 @@ msgstr ""
 #, fuzzy
 msgid "One block per part of the shared file."
 msgstr "Futni porten e serverit ketu."
+
+#: src/GenericClientListCtrl.cpp
+msgid "Swap to this file"
+msgstr "Sposto tek ky fail"
 
 #: src/GenericClientListCtrl.cpp
 msgid "Colour legend"

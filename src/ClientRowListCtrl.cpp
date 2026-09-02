@@ -88,9 +88,10 @@ void CClientRowListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 		return;
 	}
 
-	// No swap-to-file: that acts on an A4AF source of one particular download,
-	// which is a per-file notion neither of these lists has.
-	wxMenu *menu = BuildClientContextMenu(clients.front(), false);
+	// The builder omits "Swap to this file": it acts on an A4AF source of one
+	// particular download, which is a per-file notion neither of these lists
+	// has.
+	wxMenu *menu = BuildClientContextMenu(clients.front());
 	PopupMenu(menu, event.GetPosition());
 	delete menu;
 }

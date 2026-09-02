@@ -43,14 +43,14 @@ class wxWindow;
  */
 
 /**
- * Build the menu for `client`.
+ * Build the menu for `client`, with the entries every caller can act on.
  *
- * @param allowSwapSource Enables "Swap to this file", which only means anything
- *                        for an A4AF source in a per-file list.
+ * "Swap to this file" is not among them: it needs a file in context, so the
+ * per-file lists append it themselves.
  *
  * Caller owns the returned menu.
  */
-wxMenu *BuildClientContextMenu(const CClientRef &client, bool allowSwapSource);
+wxMenu *BuildClientContextMenu(const CClientRef &client);
 
 //! Browse each peer's shared files, reusing an already-open tab per peer.
 void ClientActionViewFiles(const std::vector<CClientRef> &clients);

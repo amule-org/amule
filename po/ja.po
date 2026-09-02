@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-01 11:32+0200\n"
+"POT-Creation-Date: 2026-09-02 12:15+0200\n"
 "PO-Revision-Date: 2026-09-01 18:16+0000\n"
 "Last-Translator: \n"
 "Language-Team: Japanese\n"
@@ -1256,10 +1256,6 @@ msgstr "ファイルを見る"
 #: src/ClientContextActions.cpp
 msgid "Send message"
 msgstr "メッセージを送る"
-
-#: src/ClientContextActions.cpp
-msgid "Swap to this file"
-msgstr "このファイルへ交換する"
 
 #: src/ClientContextActions.cpp
 #, fuzzy
@@ -2859,6 +2855,10 @@ msgstr ""
 #, fuzzy
 msgid "One block per part of the shared file."
 msgstr "サーバのポートをここに入力してください。"
+
+#: src/GenericClientListCtrl.cpp
+msgid "Swap to this file"
+msgstr "このファイルへ交換する"
 
 #: src/GenericClientListCtrl.cpp
 msgid "Colour legend"

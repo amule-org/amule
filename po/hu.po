@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-01 11:32+0200\n"
+"POT-Creation-Date: 2026-09-02 12:15+0200\n"
 "PO-Revision-Date: 2026-09-01 18:14+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: Hungarian <hu@li.org>\n"
@@ -1253,10 +1253,6 @@ msgstr "Fájlok megtekintése"
 #: src/ClientContextActions.cpp
 msgid "Send message"
 msgstr "Üzenet küldése"
-
-#: src/ClientContextActions.cpp
-msgid "Swap to this file"
-msgstr "Csere ehhez a fájlhoz"
 
 #: src/ClientContextActions.cpp
 msgid ""
@@ -2850,6 +2846,10 @@ msgstr ""
 #, fuzzy
 msgid "One block per part of the shared file."
 msgstr "Add meg a kiszolgáló portját."
+
+#: src/GenericClientListCtrl.cpp
+msgid "Swap to this file"
+msgstr "Csere ehhez a fájlhoz"
 
 #: src/GenericClientListCtrl.cpp
 msgid "Colour legend"
