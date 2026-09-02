@@ -142,7 +142,7 @@ TEST(PartIndex, LastDownloadingPartNeedsTheDownloadingState)
 	// every row. Only the exact state string opens the gate.
 	ASSERT_TRUE(UsableLastDownloadingPart("downloading", true, 0, 100));
 
-	ASSERT_FALSE(UsableLastDownloadingPart("onqueue", true, 0, 100));
+	ASSERT_FALSE(UsableLastDownloadingPart("queued", true, 0, 100));
 	ASSERT_FALSE(UsableLastDownloadingPart("connecting", true, 0, 100));
 	ASSERT_FALSE(UsableLastDownloadingPart("connected", true, 0, 100));
 	ASSERT_FALSE(UsableLastDownloadingPart("", true, 0, 100));
@@ -150,8 +150,8 @@ TEST(PartIndex, LastDownloadingPartNeedsTheDownloadingState)
 	// Not just the stale 0: a genuinely in-range value is still refused while
 	// the peer is not transferring, because it describes a chunk that finished
 	// arriving at some point in the past.
-	ASSERT_FALSE(UsableLastDownloadingPart("onqueue", true, 42, 100));
-	ASSERT_FALSE(UsableLastDownloadingPart("toomanyconns", true, 42, 100));
+	ASSERT_FALSE(UsableLastDownloadingPart("queued", true, 42, 100));
+	ASSERT_FALSE(UsableLastDownloadingPart("too_many_connections", true, 42, 100));
 }
 
 TEST(PartIndex, TheStateComparisonIsExact)

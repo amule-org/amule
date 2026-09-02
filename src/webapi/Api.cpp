@@ -5076,7 +5076,7 @@ CHttpServer::Response CApiDispatcher::HandleVersionCheck(const CHttpServer::Requ
 	const auto prefs = m_state.Preferences();
 	if (!(prefs.version_check_available && prefs.version_check_enabled)) {
 		return ErrorResponse(409,
-			"update_check_unavailable",
+			"version_check_unavailable",
 			"version check is disabled or unavailable on the connected daemon");
 	}
 

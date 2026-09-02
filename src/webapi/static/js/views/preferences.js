@@ -63,9 +63,9 @@ const TABS = [
   ] },
   { id: "connection", labelKey: "prefs_connection", cat: "connection", groups: [
     { legendKey: "prefs_group_bandwidth", fields: [
-      { key: "max_download_kbps", type: "int", min: 0, max: 1000000 },
-      { key: "max_upload_kbps", type: "int", min: 0, max: 1000000 },
-      { key: "upload_slot_min_kbps", type: "int", min: 1, max: 65535 },
+      { key: "max_download_kibibytes_per_second", type: "int", min: 0, max: 1000000 },
+      { key: "max_upload_kibibytes_per_second", type: "int", min: 0, max: 1000000 },
+      { key: "upload_slot_min_kibibytes_per_second", type: "int", min: 1, max: 65535 },
     ] },
     { legendKey: "prefs_group_ports", fields: [
       // 65532, not 65535: the server UDP socket is TCP+3, and the core
@@ -146,7 +146,7 @@ const TABS = [
       { key: "preallocate_full_file_size", type: "bool" },
       { key: "create_sparse_files", type: "bool" },
       { key: "stop_on_low_disk_space", type: "bool" },
-      { key: "min_free_space_mb", type: "int", min: 1, max: 1000000, sub: true, gatedBy: "stop_on_low_disk_space" },
+      { key: "min_free_space_mebibytes", type: "int", min: 1, max: 1000000, sub: true, gatedBy: "stop_on_low_disk_space" },
       { key: "save_sources_for_rare_files", type: "bool" },
     ] },
     { legendKey: "prefs_group_uploads", fields: [

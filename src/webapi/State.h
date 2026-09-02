@@ -378,7 +378,7 @@ struct ClientSnapshot
 	// State machine values. We decode the raw US_*/DS_*/IS_* ints
 	// into wire strings so consumers don't reach into amule's enums.
 	std::string upload_state;   // "uploading" | "queued" | "banned" | "connecting" | "idle" | ...
-	std::string download_state; // "downloading" | "onqueue" | "noneededparts" | ... | "idle"
+	std::string download_state; // "downloading" | "queued" | "no_needed_parts" | ... | "idle"
 	// Complete set, see ClientIdentStateName() in Refresher.cpp:
 	std::string ident_state; // "not_available" | "id_needed" | "identified" | "id_failed" | "bad_guy" |
 				 // "unknown"
@@ -1141,9 +1141,9 @@ struct PreferencesSnapshot
 	bool version_check_available = false;
 
 	// [Connection]
-	std::uint32_t max_upload_kbps = 0;
-	std::uint32_t max_download_kbps = 0;
-	std::uint32_t upload_slot_min_kbps = 0;
+	std::uint32_t max_upload_kibibytes_per_second = 0;
+	std::uint32_t max_download_kibibytes_per_second = 0;
+	std::uint32_t upload_slot_min_kibibytes_per_second = 0;
 	std::uint16_t tcp_port = 0;
 	std::uint16_t udp_port = 0;
 	// Positive sense: true = the extended UDP port (Kad / global search) is on.
@@ -1223,7 +1223,7 @@ struct PreferencesSnapshot
 		bool mmap_supported = false;
 		bool mmap_enabled = false;
 		bool stop_on_low_disk_space = false;
-		std::uint32_t min_free_space_mb = 0;
+		std::uint32_t min_free_space_mebibytes = 0;
 		// Positive sense (#655): true = part files are created sparse, so
 		// blocks are allocated on demand. The core stores exactly this
 		// (s_createFilesSparse, default on); it is only the EC layer that

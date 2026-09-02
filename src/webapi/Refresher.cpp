@@ -682,9 +682,9 @@ void MergePartFileTag(const CEC_PartFile_Tag *pf, FileSnapshot &f, bool is_new)
 }
 
 // State-code → wire-string decoders for the four enums amule ships
-// on `EC_TAG_CLIENT_*_STATE`. Wire forms match the names amule uses
-// in its UI (Constants.h enums, lowercased). All decoders fall back
-// to "unknown" for codes outside the enum.
+// on `EC_TAG_CLIENT_*_STATE`. Wire forms are snake_case names of our
+// own, not the Constants.h identifiers lowercased. All decoders fall
+// back to "unknown" for codes outside the enum.
 
 const char *ClientUploadStateName(std::uint8_t code)
 {
@@ -694,13 +694,13 @@ const char *ClientUploadStateName(std::uint8_t code)
 	case US_ONUPLOADQUEUE:
 		return "queued";
 	case US_WAITCALLBACK:
-		return "waitcallback";
+		return "waiting_callback";
 	case US_CONNECTING:
 		return "connecting";
 	case US_PENDING:
 		return "pending";
 	case US_LOWTOLOWIP:
-		return "lowtolowip";
+		return "low_to_low_ip";
 	case US_BANNED:
 		return "banned";
 	case US_ERROR:
@@ -718,25 +718,25 @@ const char *ClientDownloadStateName(std::uint8_t code)
 	case DS_DOWNLOADING:
 		return "downloading";
 	case DS_ONQUEUE:
-		return "onqueue";
+		return "queued";
 	case DS_CONNECTED:
 		return "connected";
 	case DS_CONNECTING:
 		return "connecting";
 	case DS_WAITCALLBACK:
-		return "waitcallback";
+		return "waiting_callback";
 	case DS_WAITCALLBACKKAD:
-		return "waitcallbackkad";
+		return "waiting_callback_kad";
 	case DS_REQHASHSET:
-		return "reqhashset";
+		return "requesting_hashset";
 	case DS_NONEEDEDPARTS:
-		return "noneededparts";
+		return "no_needed_parts";
 	case DS_TOOMANYCONNS:
-		return "toomanyconns";
+		return "too_many_connections";
 	case DS_TOOMANYCONNSKAD:
-		return "toomanyconnskad";
+		return "too_many_connections_kad";
 	case DS_LOWTOLOWIP:
-		return "lowtolowip";
+		return "low_to_low_ip";
 	case DS_BANNED:
 		return "banned";
 	case DS_ERROR:
@@ -744,7 +744,7 @@ const char *ClientDownloadStateName(std::uint8_t code)
 	case DS_NONE:
 		return "idle";
 	case DS_REMOTEQUEUEFULL:
-		return "remotequeuefull";
+		return "remote_queue_full";
 	default:
 		return "unknown";
 	}
@@ -2880,13 +2880,13 @@ void ParseGeneralPrefs(const CECTag *gen, PreferencesSnapshot &out)
 void ParseConnectionPrefs(const CECTag *conn, PreferencesSnapshot &out)
 {
 	if (const CECTag *t = conn->GetTagByName(EC_TAG_CONN_MAX_UL)) {
-		out.max_upload_kbps = static_cast<std::uint32_t>(t->GetInt());
+		out.max_upload_kibibytes_per_second = static_cast<std::uint32_t>(t->GetInt());
 	}
 	if (const CECTag *t = conn->GetTagByName(EC_TAG_CONN_MAX_DL)) {
-		out.max_download_kbps = static_cast<std::uint32_t>(t->GetInt());
+		out.max_download_kibibytes_per_second = static_cast<std::uint32_t>(t->GetInt());
 	}
 	if (const CECTag *t = conn->GetTagByName(EC_TAG_CONN_SLOT_ALLOCATION)) {
-		out.upload_slot_min_kbps = static_cast<std::uint32_t>(t->GetInt());
+		out.upload_slot_min_kibibytes_per_second = static_cast<std::uint32_t>(t->GetInt());
 	}
 	if (const CECTag *t = conn->GetTagByName(EC_TAG_CONN_TCP_PORT)) {
 		out.tcp_port = static_cast<std::uint16_t>(t->GetInt());
