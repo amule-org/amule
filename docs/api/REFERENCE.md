@@ -316,7 +316,7 @@ Rows added or removed *during* a sweep are not missed: both emit an SSE event, s
 | `GET /friends`        | **`ecid`** (id), `name`, `online` |
 | `GET /chats`          | **`client_ecid`** (id), `last_message_at`, `name` |
 | `GET /search/{id}/results` | **`hash`** (id), `name`, `size_bytes`, `sources.total`, `rating`, `directory` |
-| `GET /search`         | **`id`** (id), `query`, `started_at`, `result_count` |
+| `GET /search`         | **`search_id`** (id), `query`, `started_at`, `result_count` |
 | `GET /categories`     | **`index`** (id), `name` |
 
 The column marked **id** is the endpoint's identity: immutable for the life of the row, and the only one `after` accepts. Note that `ecid` is stable **within a daemon session** only — `CECID` hands ids out from a counter that restarts with the process — which is enough for a bootstrap sweep, since a reconnect invalidates the sweep anyway and triggers a `resync`.
@@ -1388,7 +1388,7 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
 {
   "search_id":   17,
   "query":       "some client",
-  "kind":        "browse",
+  "type":        "browse",
   "state":       "running",
   "client_ecid": null,
   "started_at":  1750412400
@@ -2838,9 +2838,9 @@ Lists every search amuled currently holds — including ones started by a **diff
 ```json
 {
   "searches": [
-    { "id": 42, "query": "ubuntu desktop iso", "type": "global", "state": "finished", "client_ecid": null, "started_at": 1751000000, "result_count": 182 },
-    { "id": 43, "query": "debian",             "type": "kad",    "state": "running",  "client_ecid": null, "started_at": 1751000042, "result_count": 57  },
-    { "id": 44, "query": "SomePeerNick",       "type": "browse", "state": "running",  "client_ecid": 621,  "result_count": 237 }
+    { "search_id": 42, "query": "ubuntu desktop iso", "type": "global", "state": "finished", "client_ecid": null, "started_at": 1751000000, "result_count": 182 },
+    { "search_id": 43, "query": "debian",             "type": "kad",    "state": "running",  "client_ecid": null, "started_at": 1751000042, "result_count": 57  },
+    { "search_id": 44, "query": "SomePeerNick",       "type": "browse", "state": "running",  "client_ecid": 621,  "result_count": 237 }
   ],
   "total": 3,
   "offset": 0,
@@ -2848,9 +2848,9 @@ Lists every search amuled currently holds — including ones started by a **diff
 }
 ```
 
-This is a list endpoint like the others: it takes `?limit`, `?offset`, `?sort` and `?order`, and carries the same `total` / `offset` / `limit` trio. See [List pagination and sorting](#list-pagination-and-sorting); the sort keys are `id`, `query`, `started_at` and `result_count`.
+This is a list endpoint like the others: it takes `?limit`, `?offset`, `?sort` and `?order`, and carries the same `total` / `offset` / `limit` trio. See [List pagination and sorting](#list-pagination-and-sorting); the sort keys are `search_id`, `query`, `started_at` and `result_count`.
 
-`id` is the value that fills `{id}` on every search-scoped path: [`GET /search/{id}/results`](#get-apiv0searchidresults) to read its hits, [`POST /search/{id}/stop`](#post-apiv0searchidstop) to stop it, [`DELETE /search/{id}`](#delete-apiv0searchid) to free it. `type` is `"local"` | `"global"` | `"kad"` | `"browse"`. The first three are the vocabulary `POST /search`'s `type` accepts; `"browse"` is reported only, for a "View Files" listing of one client's share, which is started through the client endpoints rather than by a query. `state` is `"running"` | `"finished"` | `"idle"`, same vocabulary and meaning as `GET /search/{id}/results`'s `progress.state`.
+`search_id` is the value that fills `{id}` on every search-scoped path: [`GET /search/{id}/results`](#get-apiv0searchidresults) to read its hits, [`POST /search/{id}/stop`](#post-apiv0searchidstop) to stop it, [`DELETE /search/{id}`](#delete-apiv0searchid) to free it. `type` is `"local"` | `"global"` | `"kad"` | `"browse"`. The first three are the vocabulary `POST /search`'s `type` accepts; `"browse"` is reported only, for a "View Files" listing of one client's share, which is started through the client endpoints rather than by a query. `state` is `"running"` | `"finished"` | `"idle"`, same vocabulary and meaning as `GET /search/{id}/results`'s `progress.state`.
 
 For a `"browse"` entry, `state` and the results endpoint's `progress.percent` come from the browse's own lifecycle rather than from a query's: the request being sent is `"running"`, and the client having answered, denied the request, or disconnected mid-list is `"finished"` — a browse is never reported as `"idle"`. `percent` is the share of the client's directory list received so far, so it climbs while the listing streams in rather than jumping straight from `0` to `100`.
 
@@ -2896,7 +2896,7 @@ Only `query` is required. `type` defaults to `"global"`; valid values are `"loca
 
 ```json
 {
-  "id":         42,
+  "search_id":  42,
   "query":       "ubuntu desktop iso",
   "type":        "global",
   "state":       "running",
@@ -2905,7 +2905,7 @@ Only `query` is required. `type` defaults to `"global"`; valid values are `"loca
 }
 ```
 
-Keep the `id` to read this search's results/progress or to stop it. This is one of the two creations that answer with the resource, because `EC_OP_SEARCH_START` really does hand one back; the ones whose EC op answers success or failure and nothing more are a bare `202` with no body.
+Keep the `search_id` to read this search's results/progress or to stop it. This is one of the two creations that answer with the resource, because `EC_OP_SEARCH_START` really does hand one back; the ones whose EC op answers success or failure and nothing more are a bare `202` with no body.
 
 **Errors:** `502 amuled_rejected` (daemon returned no search_id), `503 ec_unavailable`.
 

@@ -137,7 +137,7 @@ async function adopt() {
   list = list.slice().sort((a, b) => ord(a) - ord(b));
   let added = false;
   for (const s of list) {
-    const known = tabs.get(s.id);
+    const known = tabs.get(s.search_id);
     if (known) {
       if (!known.query && s.query) { known.query = s.query; known.label = known.label || s.query; }
       // Keep an unopened tab's badge current. Only while it holds no results
@@ -153,8 +153,8 @@ async function adopt() {
     // result_count is what makes an unopened tab show a real badge instead of
     // 0 after a reload; it is omitted by a daemon that does not report counts,
     // in which case the badge stays 0 until the tab is opened and fetched.
-    tabs.set(s.id, newTab({
-      id: s.id, query: s.query || "", kind: s.type || "global",
+    tabs.set(s.search_id, newTab({
+      id: s.search_id, query: s.query || "", kind: s.type || "global",
       state: s.state || "finished", startedAt: s.started_at || 0,
       count: typeof s.result_count === "number" ? s.result_count : 0,
     }));
@@ -163,7 +163,7 @@ async function adopt() {
   if (!tabs.has(activeId)) {
     const running = list.filter((s) => s.state === "running");
     const pick = (running.length ? running : list).slice(-1)[0];
-    if (pick) { setActive(pick.id); return; }
+    if (pick) { setActive(pick.search_id); return; }
     activeId = 0;
   }
   if (added) publishTabs();
@@ -308,7 +308,7 @@ export const searches = {
     // from what we asked for -- `kind` and `startedAt` in particular, which
     // the request only implies.
     const r = await api.post("search", body);
-    const id = r.id;
+    const id = r.search_id;
     tabs.set(id, newTab({
       id, query: r.query || body.query || "", label: label || "",
       kind: r.type || body.type || "global",
@@ -329,7 +329,7 @@ export const searches = {
   // filter, per-row category) for a browse that never restarted.
   async browse(ecid, name) {
     const r = await api.post("clients/" + ecid + "/shared_files");
-    const id = r.id;
+    const id = r.search_id;
     const open = tabs.get(id);
     if (open) {
       if (name) { open.query = name; open.label = name; }
