@@ -487,8 +487,7 @@ jobs:
           cp -R aMule.app    "${STAGE}/"
           cp -R aMuleGUI.app "${STAGE}/"
           ln -s /Applications "${STAGE}/Applications"
-          hdiutil create -volname "aMule ${VERSION}" \
-              -srcfolder "${STAGE}" -ov -format UDZO \
+          packaging/macos/create-dmg.sh "aMule ${VERSION}" "${STAGE}" \
               "dist/aMule-${VERSION}-macOS-universal2.dmg"
       - uses: actions/upload-artifact@v7
         with:
@@ -683,7 +682,29 @@ jobs:
         # build.sh installer auto-discovers makensis at the standard
         # install dir, so no $GITHUB_PATH plumbing is needed.
         shell: pwsh
-        run: choco install -y --no-progress nsis
+        run: |
+          # choco exits 0 when the community feed is unreachable ("Unable to
+          # find package 'nsis'" after a 504), so the missing tool only
+          # surfaces two steps later as "makensis not on PATH". Verify what
+          # actually landed, at the paths build.sh searches, and retry the
+          # outage rather than trusting the exit code.
+          $nsis = @(
+            "C:\Program Files (x86)\NSIS\makensis.exe",
+            "C:\Program Files\NSIS\makensis.exe"
+          )
+          foreach ($attempt in 1..3) {
+            if ($nsis | Where-Object { Test-Path $_ }) { break }
+            if ($attempt -gt 1) {
+              Write-Host "NSIS still missing, retrying in 20s (attempt $attempt/3)"
+              Start-Sleep -Seconds 20
+            }
+            choco install -y --no-progress nsis
+          }
+          $found = $nsis | Where-Object { Test-Path $_ }
+          if (-not $found) {
+            throw "NSIS install reported success but makensis.exe is at neither $($nsis -join ' nor ')"
+          }
+          Write-Host "makensis: $($found[0])"
       - name: Configure git safe.directory for MSYS2 git
         run: git config --global --add safe.directory '*'
       - name: Download portable .zip from windows-zip job
