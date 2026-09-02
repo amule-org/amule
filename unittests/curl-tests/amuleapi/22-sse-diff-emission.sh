@@ -390,7 +390,7 @@ fi
 # is validated manually.
 CU=$(grep -A1 "^event: comments_updated$" "$SSE_OUT" | grep "^data: " | head -1 | sed 's/^data: //')
 if [ -n "$CU" ]; then
-	if echo "$CU" | jq -e '(.hash|type=="string") and (.count|type=="number") and (.comments|type=="array")' >/dev/null 2>&1; then
+	if echo "$CU" | jq -e '(.hash|type=="string") and (.total|type=="number") and (.comments|type=="array")' >/dev/null 2>&1; then
 		_pass "comments_updated payload shape valid"
 	else
 		_fail "comments_updated payload shape" "unexpected: $CU"

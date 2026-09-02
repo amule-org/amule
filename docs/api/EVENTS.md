@@ -427,6 +427,8 @@ Identical to the REST [`/api/v0/friends`](REFERENCE.md#get-apiv0friends) list-it
 }
 ```
 
+`ip` and `port` are `null` for a friend with no address, exactly as the [`GET /friends`](REFERENCE.md#get-apiv0friends) row emits them - the payloads are key-for-key identical, so a subscriber hydrating from REST never sees a value flip `null` to `""` on the first tick that touches the row.
+
 `friend_updated` fires on any observable change, including a friend coming online or going offline — that transition is `client_ecid` moving between a live client's ECID and `null`, which is what drives the connected indicator in the desktop client.
 
 One `PATCH /api/v0/friends/{ecid}` can produce **two** `friend_updated` events. Only one friend may hold the friend slot, so granting it to one clears it on whoever held it before, and both records change.
@@ -555,7 +557,7 @@ Rate impact is small: the overhead rates move about as often as the speeds alrea
     "download_overhead_bytes_per_second": 8700, "upload_overhead_bytes_per_second": 1100
   },
   "disk":   { "temp_free_bytes": 48318382080, "incoming_free_bytes": 48318382080 },
-  "queue":  { "upload_clients_waiting": 12, "download_sources_total": 1843 }
+  "queue":  { "waiting_upload_client_count": 12, "download_source_count": 1843 }
 }
 ```
 

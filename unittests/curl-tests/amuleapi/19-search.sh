@@ -814,7 +814,7 @@ if [ -n "$CMT_HASH" ]; then
 	_curl -H "Authorization: Bearer $ADMIN_TOKEN" \
 		"$HOST/api/v0/search/results/$CMT_HASH/comments"
 	_assert_status 200 "GET /search/results/{hash}/comments → 200"
-	_assert_json_eq '.count | type' number 'search comments.count is numeric'
+	_assert_json_eq '.total | type' number 'search comments.total is numeric'
 	_assert_json_eq '.kad_comment_lookup_running | type' boolean \
 		'search comments carries kad_comment_lookup_running flag'
 	_assert_json_eq '.comments | type' array 'search comments.comments is an array'
