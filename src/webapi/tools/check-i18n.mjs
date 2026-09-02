@@ -11,8 +11,19 @@ import assert from "node:assert";
 
 const here = dirname(new URL(import.meta.url).pathname);
 const dir = join(here, "..", "static", "i18n");
-const load = (f) => JSON.parse(readFileSync(join(dir, f), "utf8"));
 const placeholders = (s) => (s.match(/\{[a-z_]+\}/g) || []).sort().join(",");
+
+// JSON.parse silently keeps the last value for a repeated key, so a duplicate
+// is invisible to a parsed comparison. The catalogs are flat, one "key": per
+// line, so the raw keys are reliable to scan.
+const load = (f) => {
+  const raw = readFileSync(join(dir, f), "utf8");
+  const seen = new Set(), dupes = new Set();
+  for (const [, k] of raw.matchAll(/^\s*"((?:[^"\\]|\\.)*)"\s*:/gm))
+    (seen.has(k) ? dupes : seen).add(k);
+  assert.deepStrictEqual([...dupes], [], f + ": duplicate keys");
+  return JSON.parse(raw);
+};
 
 const en = load("en.json");
 for (const file of readdirSync(dir).filter((f) => f.endsWith(".json") && f !== "en.json")) {

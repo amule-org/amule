@@ -660,7 +660,6 @@
   "downloads_peer_state_downloading": "Descargando",
   "downloads_peer_state_uploading": "Subiendo",
   "downloads_peer_state_queued": "En cola",
-  "downloads_peer_state_queued": "En cola",
   "downloads_peer_state_pending": "Pendiente",
   "downloads_peer_state_waiting_callback": "Esperando callback",
   "downloads_peer_state_waiting_callback_kad": "Esperando callback (Kad)",
