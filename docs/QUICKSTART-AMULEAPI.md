@@ -84,6 +84,12 @@ cannot be read back, only replaced — which is why the preference fields open
 blank, and why leaving one empty keeps the current password. Changes apply at
 the next login, with no restart.
 
+Guest is read-only, not a sandbox: it can see the daemon's incoming, temp and
+shared folder paths, this node's user hash, the configured proxy user, and the
+raw amuled log with the peer addresses and filenames in it. Hand a guest
+password to someone you would give read access to the machine, and not to
+anyone else.
+
 If amuleapi runs on a different machine from aMule, set its password there:
 the preferences panel only writes the file on aMule's own host.
 
@@ -195,7 +201,7 @@ restarts.
 BindAddress=127.0.0.1     ; who can reach the API
 Port=4713                 ; amuleapi's own HTTP port
 AllowCORS=0               ; see CORS below
-CorsOriginAllowlist=
+CorsOriginAllowlist=      ; origins allowed to log in cross-origin
 StaticRoot=               ; folder to serve a web frontend from
 
 [EC]
@@ -253,10 +259,20 @@ To allow others:
 ```ini
 [Server]
 AllowCORS=1
-CorsOriginAllowlist=https://your-app.example.com
+CorsOriginAllowlist=https://your-app.example.com, http://localhost:5173
 ```
 
-Leaving the allowlist empty accepts any origin.
+The allowlist is comma-separated and matched exactly against the browser's
+`Origin`: scheme, host and port, no path and no wildcards. So
+`https://example.com` does not cover `https://www.example.com`, and two ports
+on one host are two entries.
+
+**List the origins you actually use.** Leaving the allowlist empty still
+accepts any origin, but only for anonymous requests: a cross-origin page
+cannot then send the session cookie or a bearer token, because amuleapi
+withholds `Access-Control-Allow-Credentials` on that path. Otherwise any site
+your browser visits could call the API as you. A web frontend that logs in
+needs its origin listed.
 
 ## What you get
 

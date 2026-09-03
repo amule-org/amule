@@ -171,6 +171,8 @@ A role is implicitly assigned at login based on which password matched; the veri
 
 Guest access is on exactly when a guest password is configured — there is no separate switch. Clearing the guest password is how guest access is turned off.
 
+**What `guest` is, and is not.** It is a read-only role for someone you already trust on the network, not a sandbox for a hostile party. A guest reads the whole read surface, and that surface includes things an operator may not think of as public: the daemon's incoming, temp and shared **filesystem paths**; the node's `user_hash`; the configured `proxy_user`; and the raw daemon **log**, which carries peer addresses and file names as they are logged. None of that is a defect - a read-only API that hid the paths it is reading from would be hard to use - but it means guest credentials should be handed out on the same basis as read access to the machine, and a guest password is not a way to expose amuleapi to the open internet safely. If a caller should not see those, do not give them a credential at all.
+
 ### Where the passwords live
 
 Both are stored in `${config_dir}/amuleapi-passwords` (mode 0600), each as a salted PBKDF2-HMAC-SHA256 record rather than a reversible digest. That file is the only store; nothing is kept in `amule.conf`.
@@ -435,7 +437,8 @@ If `amuleapi.conf[Server]/AllowCORS=1`:
 
 - Every response carries `Vary: Origin`.
 - The origin is echoed in `Access-Control-Allow-Origin` if either the allowlist is empty (any-origin echo) or the request's `Origin` header matches a configured entry.
-- Allowed responses also carry `Access-Control-Allow-Credentials: true` and `Access-Control-Expose-Headers: ETag, Allow, Retry-After` so cookie-auth clients can read the validator, the supported-method list from a `405`, and the back-off hint from a `429` or `503`, from JS.
+- **`Access-Control-Allow-Credentials: true` is sent only for an origin the allowlist names.** With an empty allowlist the echo is `*`-equivalent, and granting credentials there would let any site the user happens to visit call this API with their session cookie and read the replies, which is what the same-origin policy exists to prevent. Anonymous cross-origin reads still work with an empty allowlist; a **credentialed** cross-origin client needs its origin listed in `amuleapi.conf[Server]/CorsOriginAllowlist`: a comma-separated list, entries trimmed, matched by exact string equality against the request's `Origin` header. An origin is a scheme, host and port (`https://app.example.com`, or `http://localhost:5173` in development) with no path and no wildcards, so `https://example.com` does not cover `https://www.example.com` and the two ports of the same host are two entries.
+- Allowed responses carry `Access-Control-Expose-Headers: ETag, Allow, Retry-After` so clients can read the validator, the supported-method list from a `405`, and the back-off hint from a `429` or `503`, from JS.
 - Preflight (`OPTIONS` with `Access-Control-Request-Method`) returns `204` with `Access-Control-Allow-Methods: GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS`, `Access-Control-Allow-Headers: Authorization, Content-Type, If-None-Match, Last-Event-ID`, and `Access-Control-Max-Age: 86400`.
 
 ### Path validation
