@@ -2619,8 +2619,18 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request, bool multiSea
 						theApp->searchlist->RegisterBrowseSearch(
 							browseId, Friend->GetName(), subtag->GetInt());
 					}
-					theApp->friendlist->RequestSharedFileList(Friend, browseId);
-					response = BuildBrowseReply(browseId, reftag);
+					if (theApp->friendlist->RequestSharedFileList(Friend, browseId)) {
+						response = BuildBrowseReply(browseId, reftag);
+					} else {
+						// Nothing was asked, so nothing will ever answer or
+						// time out. Release the id registered above, or the
+						// tab it names sits pending for the whole session.
+						if (browseId) {
+							theApp->searchlist->RemoveResults(browseId);
+						}
+						response = browseFailure(
+							wxTRANSLATE("No address known for that friend yet."));
+					}
 				}
 			} else {
 				response = browseFailure(wxTRANSLATE("Friend not found."));

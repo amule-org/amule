@@ -97,6 +97,8 @@ protected:
 private:
 	void OnItemActivated(wxDataViewEvent &event);
 	void ShowDetailsForSelection();
+	//! Renders the details dialog for one peer, live client or stored record.
+	void ShowDetailsFor(const PeerIdentity &peer);
 	/**
 	 * Whether a bulk action over `count` rows should go ahead.
 	 *

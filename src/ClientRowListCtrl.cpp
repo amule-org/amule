@@ -31,6 +31,7 @@
 #include <common/MenuIDs.h>
 
 #include "ClientContextActions.h" // Needed for BuildClientContextMenu, ClientAction*
+#include "Logger.h"               // Needed for AddLogLineC
 #include "MuleBarRenderer.h"      // Needed for CBarFillSpec
 
 wxBEGIN_EVENT_TABLE(CClientRowListCtrl, CMuleVirtualDataViewCtrl)
@@ -105,10 +106,13 @@ void CClientRowListCtrl::OnItemActivated(wxDataViewEvent &event)
 void CClientRowListCtrl::ShowDetailsForSelection()
 {
 	const std::vector<PeerIdentity> peers = SelectedPeers();
-	if (peers.size() != 1) {
-		return;
+	if (peers.size() == 1) {
+		ShowDetailsFor(peers.front());
 	}
-	const PeerIdentity &peer = peers.front();
+}
+
+void CClientRowListCtrl::ShowDetailsFor(const PeerIdentity &peer)
+{
 	if (peer.client.IsLinked()) {
 		ClientActionShowDetails(this, { peer.client });
 	} else if (peer.hasDetail) {
@@ -169,39 +173,52 @@ bool CClientRowListCtrl::ConfirmBulkPeerAction(size_t count, const wxString &mes
 
 void CClientRowListCtrl::OnViewFiles(wxCommandEvent &WXUNUSED(event))
 {
-	const std::vector<PeerIdentity> peers = SelectedPeers();
-	if (peers.empty()) {
+	// Counted from the control, not from resolving the rows: resolving is the
+	// cost the prompt exists to guard against, so it cannot come first.
+	const size_t count = GetSelectedItemsCount();
+	if (count == 0) {
 		return;
 	}
 	// Each one opens its own connection and its own browse tab.
 	wxString message = CFormat(wxPLURAL("Request the shared files of %u client?",
 				   "Request the shared files of %u clients?",
-				   peers.size())) %
-			   peers.size();
+				   count)) %
+			   count;
 	message << wxT("\n\n") << _("A connection is opened to each of them.");
-	if (!ConfirmBulkPeerAction(peers.size(), message)) {
+	if (!ConfirmBulkPeerAction(count, message)) {
 		return;
 	}
+	const std::vector<PeerIdentity> peers = SelectedPeers();
+	size_t skipped = 0;
 	for (const PeerIdentity &peer : peers) {
-		PeerActionViewFiles(peer);
+		if (!PeerActionViewFiles(peer)) {
+			++skipped;
+		}
+	}
+	if (skipped > 0) {
+		// A mixed selection can contain peers this build cannot address.
+		// Saying so beats a browse that quietly covers only some of them.
+		AddLogLineC(CFormat(wxPLURAL("Could not ask %u selected client for its shared files.",
+				    "Could not ask %u selected clients for their shared files.",
+				    skipped)) %
+			    skipped);
 	}
 }
 
 void CClientRowListCtrl::OnAddFriend(wxCommandEvent &WXUNUSED(event))
 {
-	const std::vector<PeerIdentity> peers = SelectedPeers();
-	if (peers.empty()) {
+	const size_t count = GetSelectedItemsCount();
+	if (count == 0) {
 		return;
 	}
-	// Each row is added or removed on its own, and the friend list is written
-	// out for every one of them.
 	const wxString message = CFormat(wxPLURAL("Add or remove %u client from your friend list?",
 					 "Add or remove %u clients from your friend list?",
-					 peers.size())) %
-				 peers.size();
-	if (!ConfirmBulkPeerAction(peers.size(), message)) {
+					 count)) %
+				 count;
+	if (!ConfirmBulkPeerAction(count, message)) {
 		return;
 	}
+	const std::vector<PeerIdentity> peers = SelectedPeers();
 	PeerActionToggleFriends(peers);
 }
 
@@ -223,7 +240,7 @@ void CClientRowListCtrl::OnSendMessage(wxCommandEvent &WXUNUSED(event))
 	// Single row only, as the connected-client path has always been, and the
 	// row the menu named rather than a re-resolved selection.
 	PeerIdentity peer;
-	if (GetSelectedItemsCount() != 1 || !MenuPeer(peer)) {
+	if (!MenuPeer(peer)) {
 		return;
 	}
 	PeerActionSendMessage(peer);
@@ -231,6 +248,11 @@ void CClientRowListCtrl::OnSendMessage(wxCommandEvent &WXUNUSED(event))
 
 void CClientRowListCtrl::OnViewClientInfo(wxCommandEvent &WXUNUSED(event))
 {
-	ShowDetailsForSelection();
+	// The row the menu described, not the selection: a menu entry that is
+	// offered has to do something when it is picked.
+	PeerIdentity peer;
+	if (MenuPeer(peer)) {
+		ShowDetailsFor(peer);
+	}
 }
 // File_checked_for_headers

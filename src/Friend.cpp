@@ -80,7 +80,10 @@ void CFriend::LinkClient(CClientRef client)
 		// and shows its friend as permanently connected.
 		CFriend *other = client.GetFriend();
 		if (other != nullptr && other != this) {
-			other->UnLinkClient(false);
+			// Notified: that record is losing its client and its row has to
+			// stop showing it as connected, which is the visible half of the
+			// problem this exists to fix.
+			other->UnLinkClient();
 		}
 		m_LinkedClient = client;
 		m_LinkedClient.SetFriend(this);

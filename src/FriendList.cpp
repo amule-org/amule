@@ -237,7 +237,7 @@ void CFriendList::RemoveAllFriendSlots()
 	}
 }
 
-void CFriendList::RequestSharedFileList(CFriend *cur_friend, uint32 browseSearchId)
+bool CFriendList::RequestSharedFileList(CFriend *cur_friend, uint32 browseSearchId)
 {
 	if (cur_friend) {
 		CUpDownClient *client = cur_friend->GetLinkedClient().GetClient();
@@ -254,7 +254,7 @@ void CFriendList::RequestSharedFileList(CFriend *cur_friend, uint32 browseSearch
 				AddLogLineC(CFormat(_("No address known for friend '%s' yet, cannot browse "
 						      "them.")) %
 					    cur_friend->GetName());
-				return;
+				return false;
 			}
 			cur_friend->LinkClient(ref);
 			client = ref.GetClient();
@@ -269,7 +269,9 @@ void CFriendList::RequestSharedFileList(CFriend *cur_friend, uint32 browseSearch
 			client->PinBrowseSearchId(browseSearchId);
 		}
 		client->RequestSharedFileList();
+		return true;
 	}
+	return false;
 }
 
 void CFriendList::SetFriendSlot(CFriend *Friend, bool new_state)

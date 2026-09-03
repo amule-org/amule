@@ -174,22 +174,27 @@ bool PeerBrowseIsPossible()
 #endif
 }
 
-void PeerActionViewFiles(const PeerIdentity &peer)
+bool PeerActionViewFiles(const PeerIdentity &peer)
 {
 	if (peer.client.IsLinked()) {
 		ClientActionViewFiles({ peer.client });
-		return;
+		return true;
 	}
-#ifndef CLIENT_GUI
 	if (!peer.CanOpenConnection()) {
-		return;
+		return false;
 	}
+#ifdef CLIENT_GUI
+	// Nothing to name this peer with on the wire, so say so rather than
+	// leaving the caller to assume the browse was asked for.
+	return false;
+#else
 	// Only now is a client made and a connection opened: the user asked to
 	// browse, which cannot be answered from the stored record. Passing the
 	// hash lets the call reuse the client it made last time instead of
 	// stacking up a new one per click.
 	ClientActionViewFiles(
 		{ theApp->clientlist->CreateForAddress(peer.hash, peer.ip, peer.port, peer.name) });
+	return true;
 #endif
 }
 

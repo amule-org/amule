@@ -82,7 +82,15 @@ public:
 	void RemoveFriend(CFriend *toremove);
 	// browseSearchId != 0 pins an EC-allocated browse ("View Files") search ID on
 	// the friend's client so ProcessSharedFileList files the listing under it.
-	void RequestSharedFileList(CFriend *Friend, uint32 browseSearchId = 0);
+	/**
+	 * Asks a friend for its shared files.
+	 *
+	 * False when there is nobody to ask: no client is held for the friend and
+	 * its record carries no address to build one from. The caller owns any
+	 * browse id it allocated and has to release it, or the search sits
+	 * pending forever with nothing to terminate it.
+	 */
+	bool RequestSharedFileList(CFriend *cur_friend, uint32 browseSearchId = 0);
 
 	void SetFriendSlot(CFriend *Friend, bool new_state);
 	void StartChatSession(CFriend *Friend);

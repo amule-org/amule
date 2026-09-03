@@ -72,8 +72,13 @@ wxMenu *BuildPeerContextMenu(const PeerIdentity &peer);
  */
 bool PeerBrowseIsPossible();
 
-//! Browse a peer we are not connected to, opening a connection to do it.
-void PeerActionViewFiles(const PeerIdentity &peer);
+/**
+ * Browse a peer, opening a connection to it if we are not already talking.
+ *
+ * False when nothing was asked: amulegui cannot name a peer it has no ECID
+ * for, and the caller reports what it skipped rather than failing silently.
+ */
+bool PeerActionViewFiles(const PeerIdentity &peer);
 
 //! Friend or unfriend a peer from its stored identity. Opens no connection.
 void PeerActionToggleFriend(const PeerIdentity &peer);
