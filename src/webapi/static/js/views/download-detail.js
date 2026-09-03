@@ -92,7 +92,8 @@ export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDele
       <div class="detail-body">
       ${tab === "clients" ? html`
         <${FileClients} hash=${d.hash} prefsKey="download_clients" defaultHidden=${DL_HIDDEN}
-                        defaultSort="downloaded" />
+                        defaultSort="downloaded" a4afEcids=${d.source_ecids || []}
+                        partsTotal=${d.total_part_count} files=${downloads} />
       ` : tab === "comments" ? html`
         <${DownloadComments} hash=${d.hash} comment=${d.my_comment} rating=${d.my_rating}
                              running=${!!(downloads.find((x) => x.hash === d.hash) || {}).kad_comment_lookup_running}

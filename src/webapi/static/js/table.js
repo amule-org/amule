@@ -263,7 +263,7 @@ export function VirtualTable({
   // shifts parity, so app.css disables nth-child striping for .virtual tables.
   const rowTr = (r, i) => html`
     <tr key=${rowKey(r)}
-        class=${((start + i) % 2 ? "stripe " : "") + (rowClass ? rowClass(r) : "")}
+        class=${(onRowClick ? "clickable " : "") + ((start + i) % 2 ? "stripe " : "") + (rowClass ? rowClass(r) : "")}
         onClick=${onRowClick ? (e) => onRowClick(r, e) : null}
         style=${{ height: rowHeight + "px" }}>
       ${columns.map((c) => html`<td class=${colClass(c)}>${c.cell(r)}</td>`)}

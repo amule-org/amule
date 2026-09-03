@@ -366,6 +366,13 @@ table.data.virtual tbody tr.row-have,
 table.data.virtual tbody tr.row-have.stripe { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); }
 table.data.virtual tbody tr.row-have:hover { background: color-mix(in srgb, var(--accent) 26%, var(--surface)); }
 table.data.virtual tbody tr.row-have td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+/* Rows that open a detail panel on click take the pointer cursor, so it reads
+   as clickable (downloads, shared files, clients). */
+table.data.virtual tbody tr.clickable { cursor: pointer; }
+/* A4AF source row (parked on another file): muted, and the "A4AF: <file>" badge
+   that replaces the parts cell reads as a label, not transfer data. */
+table.data.virtual tbody tr.a4af td { color: var(--text-dim); font-style: italic; }
+.a4af-badge { color: var(--text-dim); font-style: italic; }
 /* flex name cell: ellipsize the name, keep any trailing element visible. */
 table.data.virtual td .name-cell { display: flex; align-items: center; gap: 6px; }
 table.data.virtual td .name-cell .name-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
@@ -984,6 +991,17 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
      Uncapped, the wrap grows to fit every row and the row window — computed
      from clientHeight — renders the whole list. */
   .split-view .table-wrap.virtual, .fill-view .table-wrap.virtual { flex: none; min-height: 0; max-height: 60vh !important; }
+  /* Clients has no totals bar to pad it out, so unlike Downloads/Shared its
+     pane stops short and leaves dead space below. Keep the desktop fill: the
+     list grows to the viewport and scrolls internally (on phones the detail is
+     a fixed sheet, so a tall list never hides it). */
+  .fill-view.clients-fill { height: 100%; }
+  .fill-view.clients-fill .pane-fill,
+  .fill-view.clients-fill .pane-fill .net-pane-body { flex: 1 1 auto; }
+  /* The tab strip must not shrink: it is a flex sibling of the (growing) table
+     body, and with overflow-y:hidden any shrink clips the tabs to a sliver. */
+  .fill-view.clients-fill .pane-fill > .tabs { flex: 0 0 auto; }
+  .fill-view.clients-fill .table-wrap.virtual { flex: 1 1 auto; max-height: none !important; }
   /* Phones: one column, each region capped and scrolling, so the compose box
      stays on screen below a long friends list. */
   .msg-split { grid-template-columns: 1fr; height: auto; gap: 14px; }
