@@ -377,7 +377,7 @@ Opting out is not one of them. `parts`, `next_requested_part_index` and `downloa
 | Categories (`POST /categories`, `PATCH /categories/{index}`) | `low`, `normal`, `high`, `auto` |
 | Servers (`PATCH /servers/{ecid}`) | `low`, `normal`, `high` |
 
-`very_low` and `release` are upload-side levels only: the `.part.met` loader clamps anything outside low/normal/high back to normal on restart, so a download pinned to one of them would silently lose it. Categories apply their priority to member files as a *download* priority, so they take the download set. Servers have three levels and no `auto`.
+`very_low` and `release` are upload-side levels only: the `.part.met` loader clamps anything outside low/normal/high back to normal on restart, so a download pinned to one of them would silently lose it. Categories take the full six-level set on both read and write (see below), even though they apply their priority to member files as a *download* priority. Servers have three levels and no `auto`.
 
 A rejection names the set that endpoint accepts, so sending a wrong value tells you the right ones. Note that a file which is both downloading and shared carries two independent priorities from the two sets, and changing one does not affect the other.
 
@@ -806,7 +806,7 @@ The response re-issues the caller's session — same shape and same `?include_to
 
 | Status | Code | Cause |
 |--------|------|-------|
-| `400` | `bad_request` | no changeable field given; a password field is not a string; `admin_password` empty (the admin role cannot be removed); `guest_password` sent together with `guest_enabled: false` |
+| `400` | `bad_request` | no changeable field given; a password field is not a string; `admin_password` empty (the admin role cannot be removed); `guest_password` sent together with `guest_access_enabled: false` |
 | `403` | `invalid_credentials` | `current_password` is not the admin password |
 | `403` | `forbidden` | the token is a guest token |
 | `429` | `rate_limited` | too many failed `current_password` attempts from this IP |
@@ -1260,7 +1260,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
       "download_speed_bytes_per_second": 0,
       "upload_queue_position": 0,
       "remote_queue_position": 0,
-      "score": 150,
+      "upload_queue_score": 150,
       "obfuscation_state": "enabled",
       "friend_slot": false,
       "source_origin": "kad",
@@ -1296,7 +1296,7 @@ The last five were originally detail-only and were promoted onto this row (and o
 
 Every one of them falls back to `"unknown"` for a code the daemon does not map, so a client can treat `"unknown"` as its default branch and never has to handle an absent or unexpected token. Note the two distinct sentinels on `obfuscation_state`: `"undefined"` is *the client has not told us yet*, `"unknown"` is *the daemon received a code it does not recognise*. The authoritative mappings are the `Client*Name()` / `SourceOriginName()` functions in `src/webapi/Refresher.cpp`.
 
-`country_code` is the client's ISO 3166-1 alpha-2 country code (lowercase, e.g. `"de"`), resolved server-side from the client IP by the daemon's GeoIP database. It is an empty string when GeoIP is disabled or unsupported by the build, or when the IP does not resolve — render the flag and localized country name client-side from the code. The flag image is served by [`GET /flags/{code}.png`](#get-flagscodepng); the localized name has no endpoint because the browser already has it (`Intl.DisplayNames` with `{ type: "region" }`).
+`country_code` is the client's ISO 3166-1 alpha-2 country code (lowercase, e.g. `"de"`), resolved server-side from the client IP by the daemon's GeoIP database. It is `null` when GeoIP is disabled or unsupported by the build, or when the IP does not resolve — render the flag and localized country name client-side from the code. The flag image is served by [`GET /flags/{code}.png`](#get-flagscodepng); the localized name has no endpoint because the browser already has it (`Intl.DisplayNames` with `{ type: "region" }`).
 
 **Errors:** `400 bad_request` (unknown filter token), `503 ec_unavailable`.
 
@@ -1340,7 +1340,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
   "download_speed_bytes_per_second": 0,
   "upload_queue_position": 0,
   "remote_queue_position": 0,
-  "score": 150,
+  "upload_queue_score": 150,
   "obfuscation_state": "enabled",
   "friend_slot": false,
   "ed2k_user_id": 3232238090,
@@ -1568,10 +1568,10 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 | `upload_ratio` | number | `xfer.total / size`; `0` when `size == 0`. |
 | `directory` | string | Directory path of the on-disk file — the temp directory while the file is still an incomplete partfile, the destination directory once it has completed. Identical to `directory` on `/downloads/{hash}` for the same file. |
 | `incomplete` | bool | `true` while the file is still an incomplete partfile, `false` once complete. Always present. A download that has finished but has not been cleared yet reports `false`, since its data already sits in the destination directory. |
-| `sources.complete_min` / `sources.complete_max` | object | `{ "low": int, "high": int }` — the estimated full-copy source range behind the scalar `sources.complete`. |
-| `aich_hash` | string | AICH master hash (hex); `""` if not yet computed. |
+| `sources.complete_min` / `sources.complete_max` | int | The low and high ends of the estimated full-copy source range behind `sources.complete`. Two scalars, not a nested object. |
+| `aich_hash` | string\|null | AICH master hash (hex), or `null` until the hashset exists. |
 | `parts_total_count` | int | Total parts, `ceil(size / 9.28 MiB)`. |
-| `parts` | array | Per-part source availability, `[{ "sources": int }, ...]`, exactly `parts_total_count` entries in file order. **Omitted entirely** until the first decode has landed, so "no data yet" and "no sources for any part" stay distinguishable. See below. |
+| `parts` | array | Per-part source availability, `[{ "sources": int }, ...]`, exactly `parts_total_count` entries in file order. **`null`** until the first decode has landed, so "no data yet" and "no sources for any part" stay distinguishable. The key is always present. See below. |
 | `upload_queue_count` | int | Clients waiting on this file's upload queue. |
 | `my_comment` | string | The user's own comment on this file (`""` if none). |
 | `my_rating` | int | The user's own rating, `0`–`5` (`0` = unrated). |
@@ -1610,7 +1610,8 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 | `ETag` | `"<mtime>-<size>"`, hex, set by this handler rather than hashed from the body |
 | `Content-Length` | the exact number of bytes the response carries |
 | `Content-Range` | on a `206` and a `416` only |
-| `X-Accel-Buffering` | `no`, always |
+| `X-Accel-Buffering` | `no` on every streamed response. A zero-byte file is answered with a buffered empty `200` and does not carry it - there is nothing to stream and nothing for a proxy to spool. |
+| `Vary` | `Accept-Encoding` on every file response. |
 
 **Never `inline`, never the file's real media type.** A completed download lands in Incoming, which is itself shared, so both the bytes and the filename came from strangers on the ed2k network — and amuleapi serves the Web UI from this same origin. A shared `evil.html`, or a scripted `.svg`, returned under its "real" type would execute against the user's own session. `octet-stream` + `attachment` + `nosniff` + a sandbox CSP are four independent reasons the browser will not run it. The filename is sanitised for the quoted form and percent-encoded for the extended one, so a name carrying quotes or control characters cannot forge further parameters or split the header.
 
@@ -1885,6 +1886,7 @@ Send a bare priority level to pin it (the file's `priority_auto` becomes `false`
       "description": "Public server",
       "version": "17.15",
       "address": "203.0.113.5:4242",
+      "ip":      "203.0.113.5",
       "country_code": "de",
       "port": 4242,
       "user_count": 312000,
@@ -2393,7 +2395,7 @@ Body shape mirrors the GET; every sub-object and every field is optional, and fi
 
 `remote_controls` nests its two independent subsystems as `remote_controls.webserver` and `remote_controls.amuleapi` rather than prefixing every field. It reports amuleapi's `enabled` / `port` / `bind_address`, but **not** whether its admin or guest password is set. Those live in `amuleapi-passwords`, which amuleapi owns and which may sit on a different host from amuled — so the daemon's view of that file can be the wrong one. Ask the API that actually reads it: [`GET /auth/passwords`](#get-apiv0authpasswords), which is admin-only, whereas this endpoint is readable by any authenticated role. `webserver.guest_enabled` is reported because it is a genuine amuled preference rather than a fact about another process's file.
 
-**Write-only passwords** (accepted here, never echoed on GET) live under `remote_controls.webserver`: `password`, `guest_password`. Send the plaintext — amuled stores the hash. `guest_password` requires that guest access be enabled (pass `guest_enabled: true` in the same request, or leave it already enabled).
+**Write-only passwords** (accepted here, never echoed on GET) live under `remote_controls.webserver`: `password`, `guest_password`. Send the plaintext — amuled stores the hash. `guest_password` is accepted whether or not the webserver's guest access is enabled: amuled stores the hash either way, and it simply sits inert until `guest_enabled` is turned on. (amuleapi's own [`PATCH /auth/passwords`](#patch-apiv0authpasswords) does enforce the pairing, and answers `400`; these are different credentials on different daemons.)
 
 amuleapi's own `admin` and `guest` passwords are **not** settable here; `remote_controls.amuleapi.password`, `.guest_password` and `.guest_enabled` are rejected with `400 bad_request`. Use [`PATCH /auth/passwords`](#patch-apiv0authpasswords), which writes the credential file this daemon actually reads, requires the current password, and is rate-limited. A field here would instead travel over EC to whichever aMule this amuleapi is attached to and land in that host's config directory.
 
@@ -2418,6 +2420,8 @@ Downloading a database **now** is [`POST /geoip/update`](#post-apiv0geoipupdate)
 | `advanced.kad_source_reask_minutes` | `30`–`60` | | clamped to this range at daemon start |
 | `advanced.source_reask_minutes` | `15`–`60` | | clamped to this range at daemon start; below it the UDP reask gets you auto-banned for reask spam |
 | `security.ipfilter_min_access_level` | `0`–`255` | | an ipfilter.dat access level, not a percentage: an entry is enforced when its level is **below** this value, so `0` disables the list and `255` enforces every entry |
+| `online_signature.update_frequency_seconds` | `0`–`65535` | | stored as a `uint16` |
+| `advanced.server_keepalive_timeout_minutes` | `0`–`71582` | | the core stores milliseconds in a `uint32`, and 71582 minutes is where that overflows |
 
 The two fields with a **step** accept only whole multiples of it: `file_buffer_bytes: 20000` is a `400`, not a silent round down to `15000`. The names stay in the unit you think in rather than being renamed to the daemon's internal one, and the price is that the API is strict about the values in between.
 
@@ -2776,7 +2780,7 @@ A per-client-software version row (note `label_value`, and an `extra` that is a 
 }
 ```
 
-**Errors:** `503 ec_unavailable`.
+**Errors:** `400 bad_request` for a `max_client_versions` outside `0`-`255` or not an integer; `503 ec_unavailable`.
 
 #### `GET /api/v0/stats/graphs/{graph}`
 
@@ -2912,7 +2916,7 @@ Only `query` is required. `type` defaults to `"global"`; valid values are `"loca
 
 Keep the `search_id` to read this search's results/progress or to stop it. This is one of the two creations that answer with the resource, because `EC_OP_SEARCH_START` really does hand one back; the ones whose EC op answers success or failure and nothing more are a bare `202` with no body.
 
-**Errors:** `502 amuled_rejected` (daemon returned no search_id), `503 ec_unavailable`.
+**Errors:** `400 bad_request` for any body validation (missing or non-string `query`, an unknown `type`, a malformed `file_type`, out-of-range size or availability bounds, and the rest of the body rules above); `400 amuled_rejected` when the daemon refuses the search (its own message is passed through); `502 amuled_rejected` when the daemon accepts it but returns no search_id; `503 ec_unavailable`.
 
 #### `GET /api/v0/search/{id}/results`
 
@@ -2974,10 +2978,10 @@ Each result carries `sources` as a nested `{total, complete}` object — `total`
 
 `kad_comment_lookup_running` and `comments` carry the file's community ratings/comments fetched from Kad. Unlike a download — whose comments come from connected sources — a search result has no sources, so `comments` is populated purely by an on-demand Kad notes lookup you start with [`POST /search/results/{hash}/comments`](#post-apiv0searchresultshashcomments). `kad_comment_lookup_running` is `true` while that lookup is in flight and flips back to `false` when it finishes; `comments` is an empty array until notes arrive, each entry shaped like a download comment (`username` / `filename` / `rating` / `comment`, with `username` the responding node's IP or `Kad user`). Both fields are always present.
 
-The `progress` object carries the same `state` / `kind` / `percent` fields as the [`search_progress`](EVENTS.md#search_progress) SSE event, so REST pollers and stream consumers interpret progress identically. (The event additionally carries a `results` count, since — unlike this response — it has no `results` array beside it.)
+The `progress` object carries the same `state` / `type` / `percent` fields as the [`search_progress`](EVENTS.md#search_progress) SSE event, so REST pollers and stream consumers interpret progress identically. (The event additionally carries a `results` count, since — unlike this response — it has no `results` array beside it.)
 
 - `state` — `"running"` while the search is in flight, `"finished"` once amuled reports completion, `"idle"` when no search has run this session. This single field is canonical and replaces the older `complete` / `active` booleans (derive them as `complete = state == "finished"`, `active = state == "running"`).
-- `kind` — the originally-requested search type (`"local"` | `"global"` | `"kad"` | `"browse"`).
+- `type` — the originally-requested search type (`"local"` | `"global"` | `"kad"` | `"browse"`), spelled like `POST /search`'s body field and the `searches[]` row.
 - `percent` — `[0, 100]`, computed by amuled for every search kind from its `EC_TAG_SEARCH_LIFECYCLE_PERCENT` tag. For **global** it is the real server-queue progress. For **Kad** — which has no measurable mid-flight progress — it is a cosmetic time-ramp off the fixed 45 s keyword-search lifetime, capped at 99 until amuled authoritatively reports completion (`EC_TAG_SEARCH_LIFECYCLE_STATE` = finished), at which point it snaps to 100. Treat the Kad value as a liveliness indicator, not an accurate estimate.
 
 A client that wants to wait for completion polls while `state == "running"`. Because amuled now reports the lifecycle state directly (no sentinel decode), `state == "running"` unambiguously means in-flight even for Kad — there is no longer any "is `percent: 0` a stalled Kad search or no search at all?" ambiguity; check `state` instead. A Kad search that hits its result cap (`SEARCHKEYWORD_TOTAL`, 300) before the 45 s deadline finishes early — `state` flips to `finished` and `percent` jumps to 100 ahead of the ramp.
@@ -3046,7 +3050,7 @@ Not every server implements related search. Check the connected server's capabil
 
 Promote a search result into the transfer queue. Equivalent to clicking "Download" on a desktop search row.
 
-**Body:** `{ "category": 0, "ecid": 621 }` — both optional. `category` is the download category (default `0`). `ecid` selects one grouped **alternative** by its `results[].alternate_names[].ecid`, so the file downloads **under that alternative's filename**; omit it to download the parent (the aggregated/highest-source name). Since grouped alternatives share the parent's hash, `{hash}` alone can't disambiguate them — `ecid` is how you pick a specific advertised name.
+**Body:** `{ "category_index": 0, "ecid": 621 }` — both optional. `category_index` is the download category (default `0`), spelled like the same field on [`PATCH /downloads/{hash}`](#patch-apiv0downloadshash). `ecid` selects one grouped **alternative** by its `results[].alternate_names[].ecid`, so the file downloads **under that alternative's filename**; omit it to download the parent (the aggregated/highest-source name). Since grouped alternatives share the parent's hash, `{hash}` alone can't disambiguate them — `ecid` is how you pick a specific advertised name.
 
 **Response:** `202 Accepted`, no body. `hash` came from the URL and `category` is the value the request supplied; the download itself reports the category it landed in.
 

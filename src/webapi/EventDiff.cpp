@@ -960,10 +960,10 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 
 	// /status: one event when anything in the dashboard envelope
 	// changes (StatusSnapshot fields OR Kad network rollup OR
-	// ec_connected). Cold-start gates on `status_initialised` so we
-	// don't blast a status_changed on the very first tick (SSE
-	// subscribers already see the current state via REST; the
-	// *change* events are what they're here for).
+	// ec_connected). Cold start is its own branch, gated on
+	// `status_initialised`: it publishes exactly one status_changed and
+	// seeds the baseline, so the comparison below never runs against an
+	// empty prev and mistakes every field for a change.
 	if (!prev.status_initialised) {
 		bus.Publish("status_changed", ToJsonStatusEvent(new_status, new_kad, new_ec));
 		prev.status_initialised = true;
