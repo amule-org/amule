@@ -297,6 +297,18 @@ const ClientNameCell *CClientHistoryListCtrl::NameCellFor(wxUIntPtr item) const
 	return row != nullptr ? &row->nameCell : nullptr;
 }
 
+namespace
+{
+
+// Without metadata the hash is all we know a peer by, which is still more
+// useful than an empty cell.
+wxString DisplayNameFor(const ClientHistoryRow &row)
+{
+	return row.name.IsEmpty() ? row.hash.Encode() : row.name;
+}
+
+} // namespace
+
 std::vector<PeerIdentity> CClientHistoryListCtrl::SelectedPeers() const
 {
 	// Identity comes from the row, so a peer we are not connected to is still
@@ -315,7 +327,9 @@ std::vector<PeerIdentity> CClientHistoryListCtrl::SelectedPeers() const
 		}
 		PeerIdentity peer;
 		peer.hash = row->hash;
-		peer.name = row->name;
+		// The same fallback the Name column uses, so an action started from a
+		// row carries what that row is labelled with rather than nothing.
+		peer.name = DisplayNameFor(*row);
 		peer.ip = row->ip;
 		peer.port = row->port;
 
@@ -365,9 +379,7 @@ wxString CClientHistoryListCtrl::GetItemColumnText(wxUIntPtr item, unsigned colu
 
 	switch (column) {
 	case COLUMN_HISTORY_NAME:
-		// Without metadata the hash is all we know it by, which is still
-		// more useful than an empty cell.
-		return row->name.IsEmpty() ? row->hash.Encode() : row->name;
+		return DisplayNameFor(*row);
 
 	case COLUMN_HISTORY_SOFTWARE:
 		return row->identityKnown ? GetSoftName(row->clientSoft) : wxString();

@@ -131,23 +131,27 @@ wxMenu *BuildPeerContextMenu(const PeerIdentity &peer)
 	// the peer forbids browsing is live state we do not have, and an unknown
 	// is not a refusal, so View Files stays offered on that count.
 	//
-	// amulegui cannot offer either for a peer that is not connected: the
-	// daemon owns the clients, and there is no EC operation for "browse this
-	// address" or "chat to this address". Friending is unaffected -- it is a
-	// property of our own list and CFriendListRem carries it over EC.
-	const bool canOpenConnection = PeerConnectionsArePossible() && peer.ip != 0 && peer.port != 0;
-	menu->Enable(MP_SENDMESSAGE, canOpenConnection);
-	menu->Enable(MP_SHOWLIST, canOpenConnection);
+	// Only browsing is out of amulegui's reach, because EC names a browse
+	// target by ECID and this peer has no daemon-side object. Chat addresses
+	// by GUI_ID, which is the address itself, so it works in both builds.
+	// Friending is unaffected either way: it is a property of our own list.
+	const bool haveAddress = peer.ip != 0 && peer.port != 0;
+	menu->Enable(MP_SENDMESSAGE, haveAddress);
+	menu->Enable(MP_SHOWLIST, haveAddress && PeerBrowseIsPossible());
 
 	return menu;
 }
 
-// Whether this build can reach a peer it is not already connected to.
+// Whether this build can browse a peer it is not already connected to.
 //
 // Monolithic aMule owns its client list and can make one from an address.
-// amulegui does not: the daemon owns the clients, and EC has no "browse this
-// address" or "chat to this address" operation to stand in for it.
-bool PeerConnectionsArePossible()
+// amulegui cannot: EC names a browse target by ECID, and a peer that is
+// neither connected nor a friend has no daemon-side object to have one.
+//
+// Chat is deliberately NOT covered by this. EC_OP_CHAT_SEND takes a bare
+// GUI_ID, which is built from the address alone, so messaging a peer we only
+// hold an address for works in both builds.
+bool PeerBrowseIsPossible()
 {
 #ifdef CLIENT_GUI
 	return false;
@@ -181,15 +185,19 @@ void PeerActionSendMessage(const PeerIdentity &peer)
 		ClientActionSendMessage({ peer.client });
 		return;
 	}
-#ifndef CLIENT_GUI
 	if (peer.ip == 0 || peer.port == 0) {
 		return;
 	}
-	// No client is made here: the chat path is addressed by GUI_ID and
-	// CClientList::SendChatMessage() creates one itself if the peer is not
-	// already known.
-	PromptAndSendChatMessage(peer.name, GUI_ID(peer.ip, peer.port));
+#ifndef CLIENT_GUI
+	// Make the client here rather than leaving it to SendChatMessage(). That
+	// path builds one from the GUI_ID but never seeds GetIP(), so AddClient()
+	// leaves it out of the address index and the lookup that opens the next
+	// message cannot find it -- one unreachable client per message sent.
+	theApp->clientlist->CreateForAddress(peer.hash, peer.ip, peer.port, peer.name);
 #endif
+	// The address is the whole target: monolithic looks the client up by it,
+	// and amulegui sends the GUI_ID over EC for the daemon to resolve.
+	PromptAndSendChatMessage(peer.name, GUI_ID(peer.ip, peer.port));
 }
 
 void PeerActionToggleFriend(const PeerIdentity &peer)

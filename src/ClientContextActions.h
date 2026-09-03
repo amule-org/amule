@@ -64,13 +64,13 @@ wxMenu *BuildClientContextMenu(const CClientRef &client);
 wxMenu *BuildPeerContextMenu(const PeerIdentity &peer);
 
 /**
- * Whether this build can reach a peer it is not already connected to.
+ * Whether this build can browse a peer it is not already connected to.
  *
- * False in amulegui: the daemon owns the clients and EC has no operation for
- * browsing or chatting to a bare address. The menu greys those entries rather
- * than offering something that cannot happen.
+ * False in amulegui: EC names a browse target by ECID, which a peer that is
+ * neither connected nor a friend does not have. Chat is not covered by this
+ * and works in both builds, because EC_OP_CHAT_SEND addresses by GUI_ID.
  */
-bool PeerConnectionsArePossible();
+bool PeerBrowseIsPossible();
 
 //! Browse a peer we are not connected to, opening a connection to do it.
 void PeerActionViewFiles(const PeerIdentity &peer);

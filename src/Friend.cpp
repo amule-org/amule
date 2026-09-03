@@ -79,7 +79,16 @@ void CFriend::LinkClient(CClientRef client)
 		// Apply the persistent friend-slot flag to the live client. This
 		// is the path that restores the slot when a friend reconnects
 		// after a disconnect (or after a daemon restart).
-		if (m_HasFriendSlot) {
+		//
+		// Only once the peer has said who it is. A client built from a
+		// stored address has not handshaked yet, and an address can have
+		// been recycled, so granting here could hand the slot to a
+		// stranger. Nothing is lost by waiting: the handshake links again
+		// with a hash, and that pass applies it.
+		const bool identityAgrees =
+			m_UserHash.IsEmpty() ||
+			(!client.GetUserHash().IsEmpty() && client.GetUserHash() == m_UserHash);
+		if (m_HasFriendSlot && identityAgrees) {
 			m_LinkedClient.SetFriendSlot(true);
 		}
 	}
