@@ -813,6 +813,7 @@ The response re-issues the caller's session — same shape and same `?include_to
 | `403` | `invalid_credentials` | `current_password` is not the admin password |
 | `403` | `forbidden` | the token is a guest token |
 | `429` | `rate_limited` | too many failed `current_password` attempts from this IP |
+| `500` | `internal_error` | the credential file could not be written (permissions, full disk); the passwords are unchanged |
 
 ---
 
@@ -896,7 +897,6 @@ Same envelope as the list item, plus the detail-only fields below (all omitted f
 | `last_received_at` | int | Unix ts the partfile last received data. |
 | `active_seconds` | int | Seconds spent actively downloading. |
 | `available_part_count` | int | Number of parts available across the current sources. |
-| `total_part_count` | int | Total parts, `ceil(size / 9.28 MiB)`. |
 | `remaining_seconds` | int \| null | ETA in seconds, or `null` when stalled or paused (speed ≈ 0) and there is nothing to compute from. |
 | `lost_to_corruption_bytes` | int | Bytes discarded to corruption. |
 | `gained_by_compression_bytes` | int | Bytes saved by on-the-wire compression. |
@@ -2124,7 +2124,7 @@ Sending `client_ecid` together with any address field is a `400`.
 
 Removing the friend that currently holds the friend slot clears it.
 
-**Errors:** `404 not_found`, `400 amuled_rejected`, `503 ec_unavailable`.
+**Errors:** `400 bad_request` (`{ecid}` is not a non-negative integer), `404 not_found`, `400 amuled_rejected`, `503 ec_unavailable`.
 
 #### `PATCH /api/v0/friends/{ecid}`
 
@@ -2146,7 +2146,7 @@ Browse a friend's shared files. The friend-addressed twin of [`POST /api/v0/clie
 
 **Response:** `202 Accepted`, with a `Location` header and the browse row as the body, exactly as on the clients route. Poll [`GET /api/v0/search/{id}/results`](#get-apiv0searchidresults) with the `search_id` it carries. Idempotent while a browse of that client is running, exactly as on the clients route.
 
-**Errors:** `403 forbidden`, `404 not_found`, `502 amuled_rejected`, `503 ec_unavailable`.
+**Errors:** `400 bad_request` (`{ecid}` is not a non-negative integer), `403 forbidden`, `404 not_found`, `502 amuled_rejected`, `503 ec_unavailable`.
 
 ### Categories
 
@@ -2244,6 +2244,8 @@ Any subset of the POST body fields. `index 0` (the default category) can be patc
 **Auth:** `ADMIN`
 
 **Response:** `204 No Content`.
+
+**Errors:** `400 bad_request` (non-numeric or out-of-range `{index}`, or index `0`), `404 not_found` (no category at that index), `400 amuled_rejected`, `503 ec_unavailable`.
 
 Deleting `index 0` is refused here, before any EC roundtrip: `400 bad_request` ("cannot delete the default (index=0) category"). amuled is never asked.
 
@@ -2664,6 +2666,8 @@ amuled's general log buffer.
 
 `lines` is the array of log lines; `total_lines` is how many lines are held in the buffer and `returned_lines` how many this response carried (≤ `tail`).
 
+**Errors:** `400 bad_request` (`tail` is not an integer, or outside `0`-`100000`).
+
 #### `DELETE /api/v0/logs/amule`
 
 **Auth:** `ADMIN`
@@ -2671,6 +2675,8 @@ amuled's general log buffer.
 Clears the buffer.
 
 **Response:** `204 No Content`, with no body -- a pure action with nothing to report.
+
+**Errors:** `400 amuled_rejected` (the daemon refused the reset), `503 ec_unavailable`.
 
 #### `GET /api/v0/logs/server_info` / `DELETE /api/v0/logs/server_info`
 
@@ -3000,7 +3006,7 @@ Stops one search. No request body. Its cached results stay readable until it is 
 
 **Response:** `204 No Content`. The same status [`DELETE /search/{id}`](#delete-apiv0searchid) answers with: what separates the two is that the results survive this one.
 
-**Errors:** `400 bad_request` (bad `{id}`), `404 not_found` (no such search), `405`, `503 ec_unavailable`.
+**Errors:** `400 bad_request` (bad `{id}`), `404 not_found` (no such search), `405`, `400 amuled_rejected` (the daemon refused the operation), `503 ec_unavailable`.
 
 #### `DELETE /api/v0/search/{id}`
 
@@ -3012,7 +3018,7 @@ Freeing a search delivers a [`search_closed`](EVENTS.md#search_closed) event to 
 
 **Response:** `204 No Content`.
 
-**Errors:** `400 bad_request` (bad `{id}`), `404 not_found` (no such search), `405`, `503 ec_unavailable`.
+**Errors:** `400 bad_request` (bad `{id}`), `404 not_found` (no such search), `405`, `400 amuled_rejected` (the daemon refused the operation), `503 ec_unavailable`.
 
 #### `POST /api/v0/search/{id}/more`
 
@@ -3055,6 +3061,8 @@ Not every server implements related search. Check the connected server's capabil
 Promote a search result into the transfer queue. Equivalent to clicking "Download" on a desktop search row.
 
 **Body:** `{ "category_index": 0, "ecid": 621 }` — both optional. `category_index` is the download category (default `0`), spelled like the same field on [`PATCH /downloads/{hash}`](#patch-apiv0downloadshash). `ecid` selects one grouped **alternative** by its `results[].alternate_names[].ecid`, so the file downloads **under that alternative's filename**; omit it to download the parent (the aggregated/highest-source name). Since grouped alternatives share the parent's hash, `{hash}` alone can't disambiguate them — `ecid` is how you pick a specific advertised name.
+
+**Errors:** `400 bad_request` (malformed `{hash}`, or a non-integer `category_index` / `ecid`), `400 amuled_rejected` (the daemon refused the download), `503 ec_unavailable`.
 
 **Response:** `202 Accepted`, no body. `hash` came from the URL and `category` is the value the request supplied; the download itself reports the category it landed in.
 
