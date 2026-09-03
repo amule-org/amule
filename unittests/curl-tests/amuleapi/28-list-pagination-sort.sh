@@ -121,7 +121,7 @@ AUTH=(-H "Authorization: Bearer $TOKEN")
 # rather than relying on a removed implicit default.
 SEARCH_SID=$(curl -s -X POST "${AUTH[@]}" -H "Content-Type: application/json" \
 	-d '{"query":"amuleapi-phase28","type":"local"}' "$HOST/api/v0/search" \
-	| jq -r '.id // empty')
+	| jq -r '.search_id // empty')
 [ -n "$SEARCH_SID" ] || _die "POST /search returned no search_id"
 
 # endpoint:array-key pairs. The search results list wraps under "results".

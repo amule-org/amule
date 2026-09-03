@@ -255,7 +255,7 @@ fi
 
 # Free the search to leave the daemon clean. The id comes from the start
 # reply -- there is no unaddressed stop to fall back on.
-SID=$(printf '%s' "$CURL_BODY" | jq -r '.id // empty')
+SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id // empty')
 if [ -n "$SID" ]; then
 	curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
 		"$HOST/api/v0/search/$SID" > /dev/null
