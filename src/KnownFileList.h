@@ -46,6 +46,27 @@ public:
 	CKnownFile *FindKnownFile(const CPath &filename, time_t in_date, uint64 in_size);
 	CKnownFile *FindKnownFileByID(const CMD4Hash &hash);
 
+	// Make `file` the record that hash-keyed lookups resolve to, and
+	// return whether that changed anything.
+	//
+	// m_knownFileMap holds exactly one record per hash: whichever
+	// known.met entry was loaded last, since Append demotes the
+	// earlier ones to m_duplicateFileList. For content that exists at
+	// several paths that record is not necessarily the copy the share
+	// scan found on disk, and once its own copy is deleted it is not
+	// on disk at all. FindKnownFileByID then hands out a record whose
+	// path cannot be opened, which is what broke "verify local data",
+	// the EC rename handler and the search "already known" flag for a
+	// deleted duplicate (issue #1265). The cap/TTL prune cannot heal
+	// it either: it only evicts duplicate-list records, and it keeps
+	// the dead live entry precisely because a same-hash record is
+	// shared.
+	//
+	// Called by the share scan for each file it actually shares, so
+	// the record backed by a file we just saw wins the hash. A no-op
+	// in the common case where `file` is already canonical.
+	bool PromoteToCanonical(CKnownFile *file);
+
 	// Returns true iff `file` is currently a member of the canonical
 	// known-file map. Pointer-value comparison only — `file` may
 	// already be freed when this is called, in which case the
@@ -127,6 +148,20 @@ private:
 	typedef std::multimap<std::pair<uint32, uint32>, CKnownFile *> KnownFileSizeMap;
 	KnownFileSizeMap *m_knownSizeMap;
 	KnownFileSizeMap *m_duplicateSizeMap;
+
+	// Drop `record`'s entry from one of the (size, mtime) indexes
+	// above. Each index mirrors a list, so a record that moves between
+	// the live map and the duplicate list has to be moved here too or
+	// FindKnownFile hands out a pointer that no longer belongs to the
+	// list it was indexed under. Takes the index rather than reading
+	// the member, because every caller moves a record in one specific
+	// direction.
+	void EraseFromSizeMap(KnownFileSizeMap *sizeMap, CKnownFile *record);
+
+	// Add `record` to one of the indexes above, keyed the same way
+	// EraseFromSizeMap looks it up. The two must agree on the key, so
+	// they live side by side.
+	void InsertIntoSizeMap(KnownFileSizeMap *sizeMap, CKnownFile *record);
 
 	// Duplicate-list records that FindKnownFile / IsOnDuplicates
 	// returned during this session — i.e. their (name, date, size)

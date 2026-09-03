@@ -677,6 +677,16 @@ CSharedFileList::AddPathResult CSharedFileList::AddPathToShares(
 		toadd->SetFilePath(directory);
 		if (AddFile(toadd)) {
 			AddDebugLogLineN(logKnownFiles, CFormat("Added known file '%s' to shares") % fname);
+			// This record matched a file we just saw on disk and it now
+			// owns the hash in the shared list. Give it the hash in the
+			// known-file map too: that map keeps whichever known.met
+			// entry loaded last, which for duplicated content can be a
+			// different record -- and if that record's own copy has been
+			// deleted, every hash-keyed known-file lookup resolves to a
+			// path that cannot be opened (issue #1265). Called outside
+			// AddFile's lock on purpose: nothing may enter knownfiles
+			// while holding the shared-list lock.
+			filelist->PromoteToCanonical(toadd);
 			// The bulk-Reload caller repaints the whole view once its
 			// walk finishes; the incremental watcher caller has no such
 			// follow-up, so tell the GUI about this freshly-shared file
