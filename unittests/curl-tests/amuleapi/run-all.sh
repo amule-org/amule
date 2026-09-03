@@ -260,6 +260,7 @@ PHASES=(
 	39-shared-media-refresh.sh
 	40-http-conformance.sh
 	41-shared-content.sh
+	42-path-and-body-contracts.sh
 )
 
 # Override list from the command line if given.

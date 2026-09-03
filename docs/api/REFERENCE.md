@@ -360,7 +360,7 @@ A key is **omitted** only where absence itself is the meaning: something the dae
 
 So: `null` means "no value", an absent key means "not reported", and neither is ever spelled `0` or `-1`.
 
-The rule now reaches the whole surface rather than just the download and shared objects. Keys that used to disappear and are `null` instead: `name`, `ip`, `port`, `kad_port`, `country_code`, `software`, `version`, `source_origin`, `obfuscation`, `first_seen` and `sessions` on [`GET /known_clients`](#get-apiv0known_clients); `part_progress_percent` and `parts_offered_count` on the client rows and the `client_*` events; `client_ecid` on [`GET /search`](#get-apiv0search), [`GET /friends`](#get-apiv0friends) and the `friend_*` events; `last_message` on [`GET /chats`](#get-apiv0chats); `token`, `label_value` and `extra` on the statistics tree; and `media` everywhere it appears. The same pass reached the remaining address fields: `port` on [`GET /friends`](#get-apiv0friends) and the `friend_*` events, `ed2k.public_ip` and `ed2k.server_ip` on [`GET /status`](#get-apiv0status), and `public_ip` on [`GET /kad`](#get-apiv0kad); and `server_ip` / `server_port` on [`GET /clients/{ecid}`](#get-apiv0clientsecid), which used `""` for the same "unknown" its own snapshot field documents. Completing that sweep: `ip` and `port` on [`GET /clients`](#get-apiv0clients) and the client detail row, which the `client_*` events already nulled, and `ed2k.server_port` on [`GET /status`](#get-apiv0status), which stayed a bare `0` beside its own nulled `server_ip`. The `status_changed` event nulls `ed2k.public_ip`, `ed2k.server_ip` and `ed2k.server_port` to match the REST row.
+The rule now reaches the whole surface rather than just the download and shared objects. Keys that used to disappear and are `null` instead: `name`, `ip`, `port`, `kad_port`, `country_code`, `software`, `version`, `source_origin`, `obfuscation`, `first_seen` and `sessions` on [`GET /known_clients`](#get-apiv0known_clients); `part_progress_percent` and `parts_offered_count` on the client rows and the `client_*` events; `client_ecid` on [`GET /search`](#get-apiv0search), [`GET /friends`](#get-apiv0friends) and the `friend_*` events; `last_message` on [`GET /chats`](#get-apiv0chats); `token`, `label_value` and `extra` on the statistics tree; and `media` everywhere it appears. The same pass reached the remaining address fields: `port` on [`GET /friends`](#get-apiv0friends) and the `friend_*` events, `ed2k.public_ip` and `ed2k.server_ip` on [`GET /status`](#get-apiv0status), and `public_ip` on [`GET /kad`](#get-apiv0kad); and `server_ip` / `server_port` on [`GET /clients/{ecid}`](#get-apiv0clientsecid), which used `""` for the same "unknown" its own snapshot field documents. Completing that sweep: `ip` and `port` on [`GET /clients`](#get-apiv0clients) and the client detail row, which the `client_*` events already nulled, and `ed2k.server_port` on [`GET /status`](#get-apiv0status), which stayed a bare `0` beside its own nulled `server_ip`. The `status_changed` event nulls `ed2k.public_ip`, `ed2k.server_ip` and `ed2k.server_port` to match the REST row. Continuing it: `kad_port` on [`GET /api/v0/clients/{ecid}`](#get-apiv0clientsecid), which stayed a raw `0` beside the `ip`/`port` it is nulled with everywhere else; `last_received_at` on [`GET /api/v0/downloads/{hash}`](#get-apiv0downloadshash), which read as 1970 for a partfile that had received nothing; and `node_id` on [`GET /api/v0/kad`](#get-apiv0kad), the last `""` sentinel in an object whose every other field already answered `null`.
 
 `media` is the one place this reaches an **object** rather than a scalar, so a client tests `media === null` before reaching into it -- which it had to do regardless, since the object's own fields can be absent.
 
@@ -894,7 +894,7 @@ Same envelope as the list item, plus the detail-only fields below (all omitted f
 |---|---|---|
 | `progress.parts` | array | One entry per ~9.28 MiB chunk: `{ "state": string, "sources": int }` — `state` is `complete`/`pending`/`unavailable` -- `complete` when the chunk is done, `pending` when a gap remains and at least one client offers it, `unavailable` when a gap remains and none does -- and `sources` counts clients offering that chunk. |
 | `last_seen_complete_at` | int \| null | Unix ts a complete copy was last seen across sources; `null` when no complete copy has ever been seen, or the daemon does not report it. |
-| `last_received_at` | int | Unix ts the partfile last received data. |
+| `last_received_at` | int \| null | Unix ts the partfile last received data, `null` when it has never received a byte (see [Unknown values](#unknown-values)). |
 | `active_seconds` | int | Seconds spent actively downloading. |
 | `available_part_count` | int | Number of parts available across the current sources. |
 | `remaining_seconds` | int \| null | ETA in seconds, or `null` when stalled or paused (speed ≈ 0) and there is nothing to compute from. |
@@ -910,7 +910,7 @@ Same envelope as the list item, plus the detail-only fields below (all omitted f
 | `a4af_auto` | bool | Whether automatic A4AF source-swapping is on for this file. See [A4AF](#post-apiv0downloadshasha4af). |
 | `media` | object | Audio/video metadata — see [Media metadata](#media-metadata). **`null`** when the file has no probed metadata; the key is always present. |
 
-**Errors:** `404 not_found` (no partfile with that hash), `503 ec_unavailable`.
+**Errors:** `400 bad_request` (`{hash}` is not 32 hex characters), `404 not_found` (no partfile with that hash), `503 ec_unavailable`.
 
 ##### Media metadata
 
@@ -971,7 +971,7 @@ A per-source `rating` of `-1` means the source left a comment but no rating. Rat
 | 4 | Good |
 | 5 | Excellent |
 
-**Errors:** `404 not_found` (no download with that hash), `503 ec_unavailable`.
+**Errors:** `400 bad_request` (`{hash}` is not 32 hex characters), `404 not_found` (no download with that hash), `503 ec_unavailable`.
 
 #### `POST /api/v0/downloads/{hash}/comments`
 
@@ -1164,7 +1164,7 @@ curl -s -X PATCH -H "Authorization: Bearer $TOKEN" \
 
 **Response:** `200 OK` — the updated download object (full detail envelope including `progress.parts`).
 
-**Errors:** `400 bad_request` (no recognised field, invalid enum, or `my_comment`/`my_rating` sent alone), `409 not_shared` (comment/rating on a non-shared file), `400 amuled_rejected`, `404 not_found`, `503 ec_unavailable`.
+**Errors:** `400 bad_request` (`{hash}` is not 32 hex characters, no recognised field, invalid enum, or `my_comment`/`my_rating` sent alone), `409 not_shared` (comment/rating on a non-shared file), `400 amuled_rejected`, `404 not_found`, `503 ec_unavailable`.
 
 #### `DELETE /api/v0/downloads/{hash}`
 
@@ -1179,7 +1179,7 @@ curl -s -X DELETE -H "Authorization: Bearer $TOKEN" \
 
 **Response:** `204 No Content`.
 
-**Errors:** `400 amuled_rejected`, `404 not_found`, `409 download_completed`, `503 ec_unavailable`.
+**Errors:** `400 bad_request` (`{hash}` is not 32 hex characters), `400 amuled_rejected`, `404 not_found`, `409 download_completed`, `503 ec_unavailable`.
 
 #### `POST /api/v0/downloads_clear_completed`
 
@@ -1363,7 +1363,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 }
 ```
 
-The detail fields mirror the desktop "Client Details" modal. Five of the fields below — `source_origin`, `parts_offered_count`, `client_mod_name`, `shared_files_browsable` and `part_progress_percent` — are **not** detail-only: they are on the [`GET /clients`](#get-apiv0clients) row and the SSE payload too, and are described here because this is where the rest of their neighbours live. `ed2k_user_id` is the client's hybrid eD2k id; `high_id` is `true` for a HighID client (id ≥ `16777216`, i.e. `0x1000000`) and `false` for LowID — the same threshold and the same spelling as `ed2k.high_id` on [`GET /status`](#get-apiv0status), so the value means the same thing on both ends of the API. `server_ip` / `server_port` / `server_name` describe the eD2k server the client connects through; `server_ip` and `server_port` are `null` together when the server is unknown. `kad_port` is non-zero when the client is reachable on Kad. `source_origin` is how the client was discovered (values in the enumerated-fields table under [`GET /clients`](#get-apiv0clients)). (`upload_file_name` is part of the base field set — see [`GET /clients`](#get-apiv0clients) above.) `parts_offered_count` is the count of parts the client holds of the linked file, or `null` when the client has not reported a part map (see [Unknown values](#unknown-values)); `client_mod_name` is the client's client-mod string (often `""`); `shared_files_browsable` is `true` when the client allows browsing its shared files, and `false` when it forbids it. `friend` is `true` when the client is in your friends list (`CUpDownClient::IsFriend()`) — **distinct** from `friend_slot`, which is a *reserved upload slot* granted to a client and can be set for non-friends. `credit_ratio` is the upload score modifier the GUI labels "DL/UP modifier" (`GetScoreRatio()`). `part_progress_percent` is the client's completeness of the file we are downloading **from** them (`parts_offered_count` over that file's part count) and is `null` when there is no linked download or the part count is unknown (see [Unknown values](#unknown-values)).
+The detail fields mirror the desktop "Client Details" modal. Five of the fields below — `source_origin`, `parts_offered_count`, `client_mod_name`, `shared_files_browsable` and `part_progress_percent` — are **not** detail-only: they are on the [`GET /clients`](#get-apiv0clients) row and the SSE payload too, and are described here because this is where the rest of their neighbours live. `ed2k_user_id` is the client's hybrid eD2k id; `high_id` is `true` for a HighID client (id ≥ `16777216`, i.e. `0x1000000`) and `false` for LowID — the same threshold and the same spelling as `ed2k.high_id` on [`GET /status`](#get-apiv0status), so the value means the same thing on both ends of the API. `server_ip` / `server_port` / `server_name` describe the eD2k server the client connects through; `server_ip` and `server_port` are `null` together when the server is unknown. `kad_port` is non-zero when the client is reachable on Kad, and `null` when the client has no recorded address at all — it is nulled together with `ip` and `port`, the way [`GET /known_clients`](#get-apiv0known_clients) has always nulled the three. `source_origin` is how the client was discovered (values in the enumerated-fields table under [`GET /clients`](#get-apiv0clients)). (`upload_file_name` is part of the base field set — see [`GET /clients`](#get-apiv0clients) above.) `parts_offered_count` is the count of parts the client holds of the linked file, or `null` when the client has not reported a part map (see [Unknown values](#unknown-values)); `client_mod_name` is the client's client-mod string (often `""`); `shared_files_browsable` is `true` when the client allows browsing its shared files, and `false` when it forbids it. `friend` is `true` when the client is in your friends list (`CUpDownClient::IsFriend()`) — **distinct** from `friend_slot`, which is a *reserved upload slot* granted to a client and can be set for non-friends. `credit_ratio` is the upload score modifier the GUI labels "DL/UP modifier" (`GetScoreRatio()`). `part_progress_percent` is the client's completeness of the file we are downloading **from** them (`parts_offered_count` over that file's part count) and is `null` when there is no linked download or the part count is unknown (see [Unknown values](#unknown-values)).
 
 > `friend` and `credit_ratio` ride two EC tags added for this endpoint. A webapi built against a newer core talking to an **older** amuled that doesn't send them degrades gracefully — `friend` reads `false` and `credit_ratio` reads `0`.
 
@@ -1588,7 +1588,7 @@ This is deliberately detail-only. A 100 GB file has ~10 800 parts, so carrying t
 
 For a shared file that is also still downloading, the same values are available as `progress.parts[].sources` on [`GET /downloads/{hash}`](#get-apiv0downloadshash); both come from one encoder in amuled, so they agree.
 
-**Errors:** `404 not_found` (no shared file with that hash), `503 ec_unavailable`.
+**Errors:** `400 bad_request` (`{hash}` is not 32 hex characters), `404 not_found` (no shared file with that hash), `503 ec_unavailable`.
 
 #### `GET /api/v0/shared/{hash}/content`
 
@@ -1870,7 +1870,7 @@ Send a bare priority level to pin it (the file's `priority_auto` becomes `false`
 
 `name` renames the file — a non-empty string with no path separators (`/` or `\`, rejected to prevent the rename escaping the file's directory). Rename works on any known file, so it is accepted on both this endpoint and [`PATCH /downloads/{hash}`](#patch-apiv0downloadshash).
 
-**Errors:** `400 bad_request` (missing/invalid fields, `my_comment`/`my_rating` sent alone, or a `name` that is empty or contains a path separator), `404 not_found` (no shared file with that hash), `409 not_shared` (comment/rating on a non-shared file), `400 amuled_rejected`, `503 ec_unavailable`.
+**Errors:** `400 bad_request` (`{hash}` is not 32 hex characters, missing/invalid fields, `my_comment`/`my_rating` sent alone, or a `name` that is empty or contains a path separator), `404 not_found` (no shared file with that hash), `409 not_shared` (comment/rating on a non-shared file), `400 amuled_rejected`, `503 ec_unavailable`.
 
 ---
 
@@ -2104,7 +2104,7 @@ Promote a connected client:
 { "client_ecid": 4382 }
 ```
 
-Or add by address, where `ip` and `port` are required and non-zero, `user_hash` must be 32 hexadecimal characters when given, and `name` defaults to the address:
+Or add by address, where `ip` and `port` are required and `port` is an integer in `1..65535` (the same contract [`POST /api/v0/kad/bootstrap`](#post-apiv0kadbootstrap) enforces), `user_hash` must be 32 hexadecimal characters when given, and `name` defaults to the address:
 
 ```json
 { "ip": "203.0.113.42", "port": 4662, "name": "alice", "user_hash": "a1b2c3d4e5060e708090a0b0c0d06f00" }
@@ -2495,7 +2495,7 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
 
 The echo is the documented exception to the no-body rule for actions: it reports **which address the daemon parsed**, which the caller cannot read back anywhere else. `ip` comes back as a dotted quad whichever form the request used -- answering with the host-order integer meant a client that posted `"1.2.3.4"` and stored the reply held `16909060`, a value no other field on this surface produces and one it could not post back without converting.
 
-**Errors:** `400 bad_request` (missing `ip`, or an `ip` that is not a string — a numeric one included, missing/non-numeric `port`, port outside `[0, 65535]`, malformed dotted-quad), `400 amuled_rejected`, `503 ec_unavailable`.
+**Errors:** `400 bad_request` (missing `ip`, or an `ip` that is not a string — a numeric one included, missing/non-integer `port`, port outside `1..65535`, malformed dotted-quad), `400 amuled_rejected`, `503 ec_unavailable`.
 
 #### `POST /api/v0/kad/update`
 
@@ -2546,7 +2546,7 @@ Standalone view of the Kad subtree from `/status`, plus the detail fields the st
 | Field | Type | Meaning |
 |---|---|---|
 | `state` | string | `disabled` / `connecting` / `connected`. `disabled` means Kad is not running at all, which is the condition several fields below key their "no measurement" value on. The same value `GET /api/v0/status` reports as `kad.state`. |
-| `node_id` | string | This node's own 128-bit Kademlia id, 32 lowercase hex characters (the desktop panel shows the same value uppercase). `""` while Kad is not running, which is exactly when `state` is `disabled`. Persisted by the daemon, so unlike the session-scoped ECIDs and the server-assigned eD2k id it is stable across restarts — the one identifier for the local node a consumer can key on. It is a DHT routing key, not a credential: every Kad contact the daemon talks to learns it. |
+| `node_id` | string \| null | This node's own 128-bit Kademlia id, 32 lowercase hex characters (the desktop panel shows the same value uppercase). `null` while Kad is not running, which is exactly when `state` is `disabled`. Persisted by the daemon, so unlike the session-scoped ECIDs and the server-assigned eD2k id it is stable across restarts — the one identifier for the local node a consumer can key on. It is a DHT routing key, not a credential: every Kad contact the daemon talks to learns it. |
 | `connected_since_at` | int | Unix seconds of the most recent Kad connect, the same value `GET /api/v0/status` reports as `kad.connected_since`. `0` when not connected, so gate on `state` rather than trusting a `0`. |
 | `public_ip` | string | This node's externally-visible IPv4, as a remote Kad contact reported it back. Two "not known" cases, both matching what the desktop panel's *IP address* row shows: `null` while Kad is not connected (the daemon sends the field only then), and `0.0.0.0` while connected but not yet told its own address by any contact. **Two distinct "unknown" sentinels, one of them a syntactically valid address**: a consumer that only checks for `null` will treat `0.0.0.0` as a real IP. Distinct from `preferences.connection.bind_address`, which is the local interface the daemon binds to. Named `public_ip` rather than `ip` because `buddy.ip` in the same payload belongs to somebody else. |
 | `firewalled_tcp` | bool \| null | Whether this node is firewalled for **TCP**. The verdict is a **vote**: two distinct clients must confirm reachability by opening an incoming TCP connection carrying `OP_KAD_FWTCPCHECK_ACK` before it clears to `false`. With no verdict yet it reads **`true`**, the conservative assumption. During an IP recheck it freezes at its previous value rather than momentarily reporting a false LowID. **`null` unless `state` is `connected`** - the underlying bit outlives a disconnect, so this used to report a reachability verdict for a network the daemon was not on. Named for the transport because it is one half of a pair, not an overall verdict that `firewalled_udp` refines. |
@@ -2909,7 +2909,7 @@ Kicks off a new search. amuleapi supports **several concurrent searches** — a 
 }
 ```
 
-Only `query` is required. `type` defaults to `"global"`; valid values are `"local"`, `"global"`, `"kad"`. A `"global"`/`"local"` (ed2k) search and a `"kad"` search run independently and can be in flight at the same time; starting one never disturbs the other.
+Only `query` is required. `type` defaults to `"global"`; valid values are `"local"`, `"global"`, `"kad"`. `min_size_bytes`, `max_size_bytes` and `min_source_count` are integers: a fractional value is a `400` rather than being truncated, so a client that computed a size cannot half-apply a filter it thinks it set. A `"global"`/`"local"` (ed2k) search and a `"kad"` search run independently and can be in flight at the same time; starting one never disturbs the other.
 
 **Response:** `202 Accepted`, with a `Location: /api/v0/search/{search_id}` header and the created search as the body -- the same row [`GET /search`](#get-apiv0search) lists, so it can go straight into a collection the client already keeps:
 
@@ -3089,7 +3089,7 @@ The route is deliberately **not** nested under a search id: amuled runs one Kad 
 
 **Polling is the only mechanism here — there is no event to wait for.** [`comments_updated`](EVENTS.md#comments_updated) is emitted for downloads only and never fires for a search hit, so a client that starts a lookup polls this endpoint (or the results list) while `kad_comment_lookup_running` is `true`.
 
-**Errors:** `404 not_found` (no live search result with that hash), `503 ec_unavailable`.
+**Errors:** `400 bad_request` (`{hash}` is not 32 hex characters), `404 not_found` (no live search result with that hash), `503 ec_unavailable`.
 
 #### `POST /api/v0/search/results/{hash}/comments`
 
