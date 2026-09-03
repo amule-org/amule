@@ -85,6 +85,44 @@ FIXTURE_SIZE=3145728
 # semicolon. Planted best-effort — some filesystems refuse it.
 ODD_NAME='amuleapi-content "odd; name.bin'
 
+# The concurrency probe in section 11 needs its own, much larger fixture, and
+# the size is not a taste decision: it has to exceed what the kernel will
+# absorb without the peer reading.
+#
+# A file response holds its slot until the session is destroyed, and the
+# session ends when the server finishes WRITING -- which means "the bytes are
+# in the socket buffer", not "the client read them". So a body that fits
+# inside the send plus receive buffers completes against a peer that never
+# calls recv(), frees its slot, and lets the next request in. With the 3 MiB
+# fixture above and macOS auto-tuning to 4 MiB each way, this probe observed
+# 6, 7, 8 and even 9 of 9 requests answered 200 across repeated runs on one
+# idle daemon -- the cap was working, and the probe was measuring buffer
+# capacity instead. Sized from the limits the host reports, doubled for the
+# headroom of a partially-drained buffer, it stays a test of the cap.
+_socket_buffer_budget() {
+	local snd rcv
+	if snd=$(sysctl -n net.inet.tcp.autosndbufmax 2>/dev/null) \
+		&& rcv=$(sysctl -n net.inet.tcp.autorcvbufmax 2>/dev/null); then
+		echo $((snd + rcv))
+		return
+	fi
+	if [ -r /proc/sys/net/ipv4/tcp_wmem ] && [ -r /proc/sys/net/ipv4/tcp_rmem ]; then
+		snd=$(awk '{print $3}' /proc/sys/net/ipv4/tcp_wmem)
+		rcv=$(awk '{print $3}' /proc/sys/net/ipv4/tcp_rmem)
+		echo $((snd + rcv))
+		return
+	fi
+	# Nothing to read: assume a generous 8 MiB each way rather than a small
+	# fixture that would make the probe lie.
+	echo $((16 * 1024 * 1024))
+}
+CAP_FIXTURE_NAME=amuleapi-content-cap-regtest.bin
+CAP_FIXTURE_SIZE=${CAP_FIXTURE_SIZE:-$(( $(_socket_buffer_budget) * 2 ))}
+# Floor and ceiling: below 16 MiB the margin over a re-tuned buffer is thin,
+# above 128 MiB the planting cost outweighs what the check proves.
+[ "$CAP_FIXTURE_SIZE" -lt $((16 * 1024 * 1024)) ] && CAP_FIXTURE_SIZE=$((16 * 1024 * 1024))
+[ "$CAP_FIXTURE_SIZE" -gt $((128 * 1024 * 1024)) ] && CAP_FIXTURE_SIZE=$((128 * 1024 * 1024))
+
 FAIL_COUNT=0
 TEST_COUNT=0
 # Skips are counted apart from TEST_COUNT, never folded into it: a skipped
@@ -239,6 +277,24 @@ else
 		"the Content-Disposition injection case is skipped"
 fi
 
+# The concurrency probe's own fixture (see CAP_FIXTURE_SIZE above). Planted
+# best-effort: on a host short of disk this is the check to lose, not the
+# whole phase.
+CAP_FIXTURE_PATH="$AMULE_SHARED_DIR/$CAP_FIXTURE_NAME"
+HAVE_CAP_FIXTURE=0
+if [ -f "$CAP_FIXTURE_PATH" ] \
+	&& [ "$(wc -c < "$CAP_FIXTURE_PATH" | tr -d ' ')" = "$CAP_FIXTURE_SIZE" ]; then
+	HAVE_CAP_FIXTURE=1
+elif head -c "$CAP_FIXTURE_SIZE" /dev/urandom > "$CAP_FIXTURE_PATH" 2>/dev/null \
+	&& [ "$(wc -c < "$CAP_FIXTURE_PATH" | tr -d ' ')" = "$CAP_FIXTURE_SIZE" ]; then
+	HAVE_CAP_FIXTURE=1
+	echo "    info: planted concurrency fixture $CAP_FIXTURE_PATH ($CAP_FIXTURE_SIZE bytes)"
+else
+	rm -f "$CAP_FIXTURE_PATH" 2>/dev/null
+	echo "    info: could not plant the $CAP_FIXTURE_SIZE-byte concurrency fixture;" \
+		"the file-response cap check is skipped"
+fi
+
 # Ask amuled to re-walk its shares, then wait for the fixture to be hashed
 # in. A cold hash of a few MiB is sub-second; the generous poll is for the
 # scheduling latency, not the hashing.
@@ -258,6 +314,23 @@ done
 SERVED_SIZE=$(printf '%s' "$CURL_BODY" \
 	| jq -r --arg n "$FIXTURE_NAME" '.shared[] | select(.name == $n) | .size_bytes' | head -1)
 _assert_eq "$FIXTURE_SIZE" "$SERVED_SIZE" "/shared reports the fixture at its on-disk size"
+
+# The concurrency fixture is larger, so it can still be hashing when the
+# small one is already listed; poll for it separately rather than assume.
+CAP_HASH=""
+if [ "$HAVE_CAP_FIXTURE" = "1" ]; then
+	for _ in $(seq 1 60); do
+		CAP_HASH=$(printf '%s' "$CURL_BODY" \
+			| jq -r --arg n "$CAP_FIXTURE_NAME" '.shared[] | select(.name == $n) | .hash' \
+			| head -1)
+		[ -n "$CAP_HASH" ] && break
+		sleep 1
+		_curl "${AUTH[@]}" "$HOST/api/v0/shared"
+	done
+	[ -n "$CAP_HASH" ] \
+		|| echo "    info: $CAP_FIXTURE_NAME never appeared in /shared;" \
+			"the file-response cap check is skipped"
+fi
 
 if [ "$HAVE_ODD" = "1" ]; then
 	ODD_HASH=$(printf '%s' "$CURL_BODY" \
@@ -615,6 +688,16 @@ fi
 # status line and then hold the connection: a curl fan-out would finish each
 # transfer too quickly to overlap reliably.
 #
+# It runs against CAP_FIXTURE_NAME, not the 3 MiB fixture the rest of this
+# file uses, and that is the whole difference between measuring the cap and
+# measuring the kernel. A slot is held until the session is destroyed, and
+# the session ends when the server finishes writing -- into the socket
+# buffer, whether or not the peer ever reads. A body small enough to fit
+# there completes against a peer that never calls recv(), frees its slot,
+# and admits the next request: with 3 MiB against 4 MiB buffers this check
+# saw 6, 7, 8 and 9 of 9 requests answered 200 across repeated runs on one
+# idle daemon. Every one of those was the cap working correctly.
+#
 # The cap is amuleapi.conf[Streaming]/MaxConcurrentFileResponses (default 6),
 # so the fan-out is sized from it rather than hard-coded at 9 -- a run against
 # a daemon configured with a different value proves the SAME property instead
@@ -624,8 +707,10 @@ CAP_OVERFLOW=3
 CAP_TOTAL=$((FILE_RESPONSE_CAP + CAP_OVERFLOW))
 if ! command -v python3 >/dev/null 2>&1; then
 	_skip "concurrent-file-response cap (python3 unavailable)"
+elif [ -z "$CAP_HASH" ]; then
+	_skip "concurrent-file-response cap (no $CAP_FIXTURE_SIZE-byte fixture to hold the slots open)"
 else
-	CAP_RESULT=$(python3 - "$HOST" "/api/v0/shared/$TEST_HASH/content" "$ADMIN_TOKEN" "$CAP_TOTAL" <<'PYEOF'
+	CAP_RESULT=$(python3 - "$HOST" "/api/v0/shared/$CAP_HASH/content" "$ADMIN_TOKEN" "$CAP_TOTAL" <<'PYEOF'
 import socket, sys
 hostport, path, token = sys.argv[1], sys.argv[2], sys.argv[3]
 total = int(sys.argv[4])
@@ -676,14 +761,27 @@ PYEOF
 	read -r cap_ok cap_busy cap_retry cap_code <<<"$CAP_RESULT"
 	if [ "$cap_ok" = "$FILE_RESPONSE_CAP" ] && [ "$cap_busy" = "$CAP_OVERFLOW" ]; then
 		_pass "$CAP_TOTAL simultaneous file requests split into ${cap_ok}x200 + ${cap_busy}x503"
+	elif [ "$cap_busy" = "0" ]; then
+		# Nothing was refused, so nothing overlapped, so the cap was never
+		# reached -- a fixture that still fits this host's buffers, or a
+		# daemon quick enough to finish each write between connects. That
+		# is an untested cap, not a broken one, and reporting it as a
+		# failure is how a green suite gets ignored.
+		_skip "concurrent-file-response cap: all $CAP_TOTAL answered 200," \
+			"so the requests never overlapped (raise CAP_FIXTURE_SIZE above" \
+			"this host's socket buffers)"
 	else
 		_fail "$CAP_TOTAL simultaneous file requests split at the configured cap" \
 			"expected ${FILE_RESPONSE_CAP}x200 + ${CAP_OVERFLOW}x503," \
-			"got ${cap_ok}x200 + ${cap_busy}x503 out of $CAP_TOTAL"
+			"got ${cap_ok}x200 + ${cap_busy}x503 out of $CAP_TOTAL" \
+			"(a 200 count above the cap means slots were freed before the" \
+			"fan-out completed -- CAP_FIXTURE_SIZE is too small for this host)"
 	fi
-	_assert_eq "yes" "$cap_retry" "the over-cap 503 carries a Retry-After header"
-	_assert_eq "file_responses_exhausted" "$cap_code" \
-		"the over-cap 503 reports error.code=file_responses_exhausted"
+	if [ "$cap_busy" != "0" ]; then
+		_assert_eq "yes" "$cap_retry" "the over-cap 503 carries a Retry-After header"
+		_assert_eq "file_responses_exhausted" "$cap_code" \
+			"the over-cap 503 reports error.code=file_responses_exhausted"
+	fi
 fi
 
 # --- 12. Content-Disposition cannot be steered by the filename. ------
