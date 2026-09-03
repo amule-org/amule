@@ -2666,14 +2666,12 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 	w.ValueInt(static_cast<int64_t>(s.ed2k_connected_since));
 	w.Key("server_name");
 	w.ValueString(wxString::FromUTF8(s.server_name.c_str()));
-	// Null when not connected. The "an empty string is legitimately 'no
-	// server'" note on WriteStringOrNull is about a PEER's server_ip
-	// (WriteKnownClientObject, untouched): a connected peer can genuinely
-	// have none. This is our own connection, where ed2k.state already says
-	// whether there is a server, so "" here only ever meant "not connected".
-	WriteStringOrNull(w, "server_ip", !s.server_ip.empty(), s.server_ip);
-	w.Key("server_port");
-	w.ValueInt(static_cast<int64_t>(s.server_port));
+	// Null when not connected, port with address: ed2k.state already says
+	// whether there is a server, so "" here only ever meant "not connected",
+	// and a port on its own describes nothing.
+	const bool has_server = !s.server_ip.empty();
+	WriteStringOrNull(w, "server_ip", has_server, s.server_ip);
+	WriteIntOrNull(w, "server_port", has_server, static_cast<int64_t>(s.server_port));
 	// Network rollup, symmetric with kad.network below. Aggregate
 	// user + file counts across all connected ed2k servers, taken
 	// from the same EC_OP_STAT_REQ response the kad counters ride
@@ -3043,11 +3041,13 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	w.ValueString(wxString::FromUTF8(c.client_name.c_str()));
 	w.Key("user_hash");
 	w.ValueString(wxString::FromUTF8(c.user_hash.c_str()));
-	w.Key("ip");
-	w.ValueString(wxString::FromUTF8(c.ip.c_str()));
-	w.Key("port");
-	w.ValueInt(static_cast<int64_t>(c.port));
-	// ISO 3166-1 alpha-2 (lowercase); "" when GeoIP is off/unresolved (#439).
+	// Nulled together, keyed on the address: a port without one describes
+	// nothing. Matches the SSE row this promises key parity with, and
+	// WriteKnownClientObject, which nulls ip/port/kad_port the same way.
+	const bool has_addr = !c.ip.empty();
+	WriteStringOrNull(w, "ip", has_addr, c.ip);
+	WriteIntOrNull(w, "port", has_addr, static_cast<int64_t>(c.port));
+	// ISO 3166-1 alpha-2 (lowercase); null when GeoIP is off/unresolved (#439).
 	WriteStringOrNull(w, "country_code", !c.country_code.empty(), c.country_code);
 	w.Key("software");
 	w.ValueString(wxString::FromUTF8(c.software.c_str()));

@@ -2863,8 +2863,10 @@ void ParseGeneralPrefs(const CECTag *gen, PreferencesSnapshot &out)
 	if (const CECTag *t = gen->GetTagByName(EC_TAG_USER_HOST)) {
 		out.daemon_host_name = std::string(t->GetStringData().utf8_str());
 	}
-	if (gen->GetTagByName(EC_TAG_GENERAL_CHECK_NEW_VERSION)) {
-		out.version_check_enabled = true;
+	// Read the value, not the tag's presence: the core always sends this one,
+	// so presence-testing it could only ever answer true.
+	if (const CECTag *t = gen->GetTagByName(EC_TAG_GENERAL_CHECK_NEW_VERSION)) {
+		out.version_check_enabled = (t->GetInt() != 0);
 	}
 	// Capability: 3.1+ daemons always send this bool (true when built with
 	// ENABLE_VERSION_CHECK, false when compiled out). Absent means a pre-3.1
