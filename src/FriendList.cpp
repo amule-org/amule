@@ -129,8 +129,31 @@ void CFriendList::LoadList()
 	}
 }
 
+void CFriendList::BeginBatch()
+{
+	++m_batchDepth;
+}
+
+void CFriendList::EndBatch()
+{
+	if (m_batchDepth == 0) {
+		return;
+	}
+	if (--m_batchDepth == 0 && m_savePending) {
+		m_savePending = false;
+		SaveList();
+	}
+}
+
 void CFriendList::SaveList()
 {
+	if (m_batchDepth > 0) {
+		// Inside a batch: remember that a write is owed and let EndBatch()
+		// do it once, rather than rewriting the whole file per friend.
+		m_savePending = true;
+		return;
+	}
+
 	CFile file;
 	if (file.Create(thePrefs::GetConfigDir() + "emfriends.met", true)) {
 		try {

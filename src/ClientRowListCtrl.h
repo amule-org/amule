@@ -99,8 +99,16 @@ private:
 	 */
 	bool ConfirmBulkPeerAction(size_t count, const wxString &message);
 
-	//! Runs an action on the first selected peer, the one the menu describes.
-	void ForSelectedPeer(void (*action)(const PeerIdentity &));
+	/**
+	 * The row the context menu was last built for.
+	 *
+	 * Single-row entries act on this rather than re-reading the selection, so
+	 * the entry and the action can never describe different peers. Bulk
+	 * entries still use the whole selection, which is what they are for.
+	 */
+	PeerIdentity m_menuPeer;
+	bool m_menuPeerValid = false;
+
 	void OnItemRightClicked(wxDataViewEvent &event);
 	void OnViewFiles(wxCommandEvent &event);
 	void OnAddFriend(wxCommandEvent &event);

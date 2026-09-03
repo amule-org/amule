@@ -42,7 +42,19 @@ public:
 	~CFriendList();
 
 	bool IsAlreadyFriend(uint32 dwLastUsedIP, uint32 nLastUsedPort);
+	/**
+	 * Writes emfriends.met, unless a batch is open.
+	 *
+	 * Every add and remove saves, so a bulk operation over a large selection
+	 * rewrites the whole file once per friend, on the GUI thread, with the
+	 * file growing as it goes. Opening a batch defers the write to the end of
+	 * it, which is transparent to every existing caller.
+	 */
 	void SaveList();
+
+	//! Defer SaveList() until the matching EndBatch(). Nestable.
+	void BeginBatch();
+	void EndBatch();
 	void LoadList();
 	/**
 	 * Looks a friend up without altering the list.
@@ -101,6 +113,10 @@ public:
 	const_iterator end() const { return const_iterator(m_FriendList.end()); }
 
 private:
+	//! Nesting depth of BeginBatch()/EndBatch(), and whether one was skipped.
+	unsigned m_batchDepth = 0;
+	bool m_savePending = false;
+
 	FriendList m_FriendList;
 };
 

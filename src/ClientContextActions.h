@@ -88,7 +88,17 @@ void PeerActionSendMessage(const PeerIdentity &peer);
  * live client, so it works for a friend that is currently offline. Warns, as
  * the connected-client path does, when more than one row was selected.
  */
-void PeerActionSetFriendSlot(wxWindow *parent, const std::vector<PeerIdentity> &peers, bool checked);
+/**
+ * Grant or revoke the friend slot for one peer.
+ *
+ * Resolves the friend record the same way the menu did, so the entry and the
+ * action cannot describe different peers. `selected` is the size of the
+ * selection, used only to warn that a wider one still got a single slot.
+ */
+void PeerActionSetFriendSlot(wxWindow *parent, const PeerIdentity &peer, bool checked, size_t selected);
+
+//! Friend or unfriend every peer given, writing the friend list once.
+void PeerActionToggleFriends(const std::vector<PeerIdentity> &peers);
 
 //! Browse each peer's shared files, reusing an already-open tab per peer.
 void ClientActionViewFiles(const std::vector<CClientRef> &clients);

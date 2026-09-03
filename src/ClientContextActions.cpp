@@ -192,7 +192,12 @@ void PeerActionSendMessage(const PeerIdentity &peer)
 	// and amulegui sends the GUI_ID over EC for the daemon to resolve. Either
 	// way CClientList::SendChatMessage() makes the client if there is none,
 	// so there is nothing to pre-create here.
-	PromptAndSendChatMessage(peer.name, GUI_ID(peer.ip, peer.port));
+	//
+	// The hash stands in for a missing name here, and only here: this label
+	// titles the chat tab and is not stored anywhere, unlike the name that
+	// goes into a friend record.
+	PromptAndSendChatMessage(
+		peer.name.IsEmpty() ? peer.hash.Encode() : peer.name, GUI_ID(peer.ip, peer.port));
 }
 
 void PeerActionToggleFriend(const PeerIdentity &peer)
@@ -211,18 +216,26 @@ void PeerActionToggleFriend(const PeerIdentity &peer)
 	}
 }
 
-void PeerActionSetFriendSlot(wxWindow *parent, const std::vector<PeerIdentity> &peers, bool checked)
+void PeerActionToggleFriends(const std::vector<PeerIdentity> &peers)
 {
-	if (peers.empty()) {
-		return;
+	// One write for the whole run. CFriendList saves after every add and
+	// remove, so without this a large selection rewrites emfriends.met once
+	// per row, on the GUI thread, with the file growing as it goes.
+	theApp->friendlist->BeginBatch();
+	for (const PeerIdentity &peer : peers) {
+		PeerActionToggleFriend(peer);
 	}
+	theApp->friendlist->EndBatch();
+}
+
+void PeerActionSetFriendSlot(wxWindow *parent, const PeerIdentity &peer, bool checked, size_t selected)
+{
 	// Resolve the friend the same way the menu decided whether to offer this
 	// entry: through the live client's own linkage when there is one, and
 	// from the stored record otherwise. Resolving it differently is how the
 	// menu ends up describing one peer while the action runs on another.
 	// Either way the slot is a property of our own list, so it is settable
 	// on a peer that is not connected, which is the case this list covers.
-	const PeerIdentity &peer = peers.front();
 	CFriend *known = nullptr;
 	if (peer.client.IsLinked()) {
 		CClientRef &live = const_cast<CClientRef &>(peer.client);
@@ -232,7 +245,7 @@ void PeerActionSetFriendSlot(wxWindow *parent, const std::vector<PeerIdentity> &
 	}
 	theApp->friendlist->SetFriendSlot(known, checked);
 
-	WarnIfMultipleFriendSlot(parent, peers.size());
+	WarnIfMultipleFriendSlot(parent, selected);
 }
 
 void ClientActionViewFiles(const std::vector<CClientRef> &clients)

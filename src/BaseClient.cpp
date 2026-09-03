@@ -707,7 +707,19 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 		Ban();
 	}
 
-	if ((m_Friend = theApp->friendlist->FindFriend(m_UserHash, m_dwUserIP, m_nUserPort)) != NULL) {
+	// A friend record can already be linked to this client from before the
+	// handshake, matched on address alone, and an address gets recycled. Now
+	// that the peer has said who it is, a record that turns out to be about
+	// somebody else has to let go: clearing only this client's side would
+	// leave that record pointing here and showing its friend as connected.
+	// Unlink first, because UnLinkClient() clears m_Friend as it goes.
+	CFriend *previous = m_Friend;
+	CFriend *found = theApp->friendlist->FindFriend(m_UserHash, m_dwUserIP, m_nUserPort);
+	if (previous != nullptr && previous != found) {
+		previous->UnLinkClient();
+	}
+	m_Friend = found;
+	if (m_Friend != nullptr) {
 		m_Friend->LinkClient(
 			CCLIENTREF(this, "CUpDownClient::ProcessHelloTypePacket m_Friend->LinkClient"));
 	} else {

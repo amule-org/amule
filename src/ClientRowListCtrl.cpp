@@ -132,28 +132,17 @@ void CClientRowListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 	if (!event.GetItem().IsOk()) {
 		return;
 	}
-	PeerIdentity peer;
-	if (!PeerForItem(ItemAt(GetModelRow(event.GetItem())), peer)) {
+	m_menuPeerValid = PeerForItem(ItemAt(GetModelRow(event.GetItem())), m_menuPeer);
+	if (!m_menuPeerValid) {
 		return;
 	}
 
 	// The builder omits "Swap to this file": it acts on an A4AF source of one
 	// particular download, which is a per-file notion neither of these lists
 	// has.
-	wxMenu *menu = BuildPeerContextMenu(peer);
+	wxMenu *menu = BuildPeerContextMenu(m_menuPeer);
 	PopupMenu(menu, event.GetPosition());
 	delete menu;
-}
-
-// For actions that are meaningful on exactly one row and do nothing at all on
-// a wider selection, which is how the connected-client paths have always
-// treated them.
-void CClientRowListCtrl::ForSelectedPeer(void (*action)(const PeerIdentity &))
-{
-	const std::vector<PeerIdentity> peers = SelectedPeers();
-	if (peers.size() == 1) {
-		action(peers.front());
-	}
 }
 
 // Both lists are multi-select (CMuleDataViewCtrl forces wxDV_MULTIPLE) and the
@@ -206,22 +195,29 @@ void CClientRowListCtrl::OnAddFriend(wxCommandEvent &WXUNUSED(event))
 	if (!ConfirmBulkPeerAction(peers.size(), message)) {
 		return;
 	}
-	for (const PeerIdentity &peer : peers) {
-		PeerActionToggleFriend(peer);
-	}
+	PeerActionToggleFriends(peers);
 }
 
 void CClientRowListCtrl::OnSetFriendslot(wxCommandEvent &evt)
 {
-	// Reads the same selection the menu was built from. Resolving through
-	// live clients instead would both act on a different peer than the one
-	// the menu described and drop offline friends, whose slot is settable.
-	PeerActionSetFriendSlot(this, SelectedPeers(), evt.IsChecked());
+	// The row the menu was built for, not whatever the selection happens to
+	// be: the checkbox describes one peer, so the slot has to land on that
+	// one. The count comes from the control rather than from resolving every
+	// selected row, which the warning is all it is needed for.
+	if (!m_menuPeerValid) {
+		return;
+	}
+	PeerActionSetFriendSlot(this, m_menuPeer, evt.IsChecked(), GetSelectedItemsCount());
 }
 
 void CClientRowListCtrl::OnSendMessage(wxCommandEvent &WXUNUSED(event))
 {
-	ForSelectedPeer(PeerActionSendMessage);
+	// Single row only, as the connected-client path has always been, and the
+	// row the menu named rather than a re-resolved selection.
+	if (!m_menuPeerValid || GetSelectedItemsCount() != 1) {
+		return;
+	}
+	PeerActionSendMessage(m_menuPeer);
 }
 
 void CClientRowListCtrl::OnViewClientInfo(wxCommandEvent &WXUNUSED(event))

@@ -850,6 +850,12 @@ public:
 	void AddFriend(
 		const CMD4Hash &userhash, uint32 lastUsedIP, uint32 lastUsedPort, const wxString &name);
 	void RemoveFriend(CFriend *toremove);
+
+	// The same batch API CFriendList exposes, so shared GUI code can bracket
+	// a bulk operation without knowing which build it is in. Nothing to defer
+	// here: the daemon owns emfriends.met and each change is one EC packet.
+	void BeginBatch() {}
+	void EndBatch() {}
 	void RequestSharedFileList(CFriend *Friend);
 	void RequestSharedFileList(CClientRef &client);
 	void SetFriendSlot(CFriend *Friend, bool new_state);
