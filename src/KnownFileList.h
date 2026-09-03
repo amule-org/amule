@@ -67,8 +67,11 @@ public:
 	// in the common case where `file` is already canonical.
 	bool PromoteToCanonical(CKnownFile *file);
 
-	// Returns true iff `file` is currently a member of the canonical
-	// known-file map. Pointer-value comparison only — `file` may
+	// Returns true iff `file` is still one of this list's records,
+	// canonical or duplicate. It answers "does this record still
+	// exist", not "is it canonical": PromoteToCanonical demotes live
+	// records, so a map-only answer would report a live file as
+	// destroyed. Pointer-value comparison only — `file` may
 	// already be freed when this is called, in which case the
 	// comparison reliably returns false without dereferencing it.
 	// Used by the async-task completion handlers (OnFinishedHashing,
