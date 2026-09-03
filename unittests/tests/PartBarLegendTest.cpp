@@ -477,6 +477,32 @@ TEST(PartBarLegend, TheSharedFilesBarColumnGetsALegendPerMode)
 		    LegendForColumn(SharedFilesBarColumn::SourceAvailability, BarMode::None));
 }
 
+TEST(PartBarLegend, ASharedFilesRowResolvesItsLegendFromTwoIntegers)
+{
+	// What the row context menu has to decide when it is clicked: the file
+	// gives a hashed-part count and a part count, and the legend follows from
+	// those two numbers alone. Composed once here rather than at the call site
+	// so the composition is checkable without a display -- opening the dialog
+	// is not, but choosing which one to open is.
+	//
+	// Expected values are the mode table of the spec, not a second call to
+	// ModeFor(): if the composition were wired the wrong way round, reading the
+	// answer back out of the same expression would agree with it.
+	ASSERT_TRUE(BarLegendKind::SharedAvailability == LegendForSharedFilesRow(0, 9));
+	ASSERT_TRUE(BarLegendKind::SharedHashing == LegendForSharedFilesRow(1, 9));
+	ASSERT_TRUE(BarLegendKind::SharedHashing == LegendForSharedFilesRow(9, 9));
+
+	// A count past the end of the file still means a hash is running:
+	// CHashingTask reports part + 1, so a finished pass reports one too many.
+	ASSERT_TRUE(BarLegendKind::SharedHashing == LegendForSharedFilesRow(9, 4));
+
+	// No parts, no bar, no legend -- for every hashed count, including one
+	// that claims progress through a file with nothing in it.
+	ASSERT_TRUE(BarLegendKind::None == LegendForSharedFilesRow(0, 0));
+	ASSERT_TRUE(BarLegendKind::None == LegendForSharedFilesRow(1, 0));
+	ASSERT_TRUE(BarLegendKind::None == LegendForSharedFilesRow(9, 0));
+}
+
 TEST(PartBarLegend, TheClientListLegendsAreUnaffectedByTheSharedFilesModes)
 {
 	// The mode argument belongs to the shared-files overload alone. The two

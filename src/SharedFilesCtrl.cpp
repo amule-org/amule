@@ -43,6 +43,8 @@
 #include "ServerConnect.h"    // Needed for CServerConnect
 #include "Preferences.h"      // Needed for thePrefs
 #include "MuleBarRenderer.h"  // Needed for CBarFillSpec, CBarFillSpan
+#include "PartBarLegendUI.h"  // Needed for ShowPartBarLegend, ToMuleColour
+#include "PartBarSpans.h"     // Needed for partbar::SpanFor, ModeFor, HashedPartsClamped
 #include "DataToText.h"       // Needed for PriorityToStr
 #include "Statistics.h"       // Needed for theStats (incoming free space)
 #include "GuiEvents.h"        // Needed for CoreNotify_*
@@ -127,6 +129,7 @@ wxBEGIN_EVENT_TABLE(CSharedFilesCtrl, CMuleVirtualDataViewCtrl)
 	EVT_MENU(MP_REFRESHMEDIAMETA, CSharedFilesCtrl::OnRefreshMediaMetadata)
 	EVT_MENU(MP_WS, CSharedFilesCtrl::OnGetFeedback)
 	EVT_MENU(MP_VERIFY, CSharedFilesCtrl::OnVerifyLocalData)
+	EVT_MENU(MP_BARLEGEND, CSharedFilesCtrl::OnShowBarLegend)
 wxEND_EVENT_TABLE()
 
 CSharedFilesCtrl::CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos, wxSize size, int flags)
@@ -259,6 +262,24 @@ void CSharedFilesCtrl::OnItemRightClicked(wxDataViewEvent &event)
 		m_menu->AppendSeparator();
 		m_menu->Append(MP_EXPORTCOLLECTION, _("Export selected files to an emulecollection"));
 
+		// The bar column is the only cell in this list whose colours need
+		// explaining, and it explains two unrelated things depending on the
+		// row, so the legend is chosen from the clicked file: right-click a
+		// file being re-hashed and the hashing legend opens, not the
+		// availability one.
+		//
+		// Guarded by IsColumnHidden() rather than by
+		// CGenericClientListCtrl::FindBarLegendColumn(), which is a member of
+		// the other list and does not reach here. Model id and view position
+		// coincide -- InitColumnState() requires it -- so COLUMN_SHARED_PART
+		// answers both. A bar the user has hidden is not on screen to explain.
+		const partbar::BarLegendKind legend =
+			partbar::LegendForSharedFilesRow(file->GetHashingProgress(), file->GetPartCount());
+		if (legend != partbar::BarLegendKind::None && !IsColumnHidden(COLUMN_SHARED_PART)) {
+			m_menu->AppendSeparator();
+			m_menu->Append(MP_BARLEGEND, _("Colour legend"));
+		}
+
 		// Offered only when the file is reachable from this host: the shared
 		// list carries the daemon's directory in amulegui, which resolves here
 		// only on a shared filesystem, and a locally shared file can have been
@@ -349,6 +370,27 @@ void CSharedFilesCtrl::ShowFileDetailDialog(long focused)
 		files.push_back(FileAtRow(i));
 	}
 	CFileDetailDialog(this, files, index).ShowModal();
+}
+
+void CSharedFilesCtrl::OnShowBarLegend(wxCommandEvent &WXUNUSED(event))
+{
+	// Bound re-checked, for the reason OnOpenFile gives: PopupMenu runs a
+	// nested event loop, so the shared-dir watcher can drop the row while the
+	// menu is open.
+	if (m_menuItem == 0 || !HasItemData(m_menuItem)) {
+		return;
+	}
+
+	// Resolved again rather than remembered from when the entry was appended: a
+	// re-hash can start or finish while the menu is up, and the legend has to
+	// explain what the cell is drawing now.
+	const CKnownFile *file = reinterpret_cast<CKnownFile *>(m_menuItem);
+
+	// Titled from the live column rather than from a second copy of its label,
+	// so the two cannot end up saying different things.
+	ShowPartBarLegend(this,
+		partbar::LegendForSharedFilesRow(file->GetHashingProgress(), file->GetPartCount()),
+		GetColumn(COLUMN_SHARED_PART)->GetTitle());
 }
 
 void CSharedFilesCtrl::OnViewFileDetails(wxCommandEvent &WXUNUSED(event))
@@ -633,51 +675,77 @@ void CSharedFilesCtrl::GetItemBarFill(wxUIntPtr item, unsigned column, CBarFillS
 		return;
 	}
 	CKnownFile *file = reinterpret_cast<CKnownFile *>(item);
-	if (!file->GetPartCount()) {
-		return;
-	}
 
-	std::vector<CBarFillSpan> spans;
+	const uint64 fileSize = file->GetFileSize();
+	const std::size_t partCount = file->GetPartCount();
 	const bool bFlat = thePrefs::UseFlatBar();
 
-	if (file->GetHashingProgress() > 0) {
-		const CMuleColour crPending(255, 208, 0);
-		const CMuleColour crFlatPending(255, 255, 100);
-		const CMuleColour crProgress(0, 224, 0);
-		const CMuleColour crFlatProgress(0, 150, 0);
+	std::vector<CBarFillSpan> spans;
 
-		uint64 left = file->GetHashingProgress() * PARTSIZE;
-		if (left < file->GetFileSize() - 1) {
-			spans.push_back(
-				{ left + 1, file->GetFileSize() - 1, bFlat ? crFlatPending : crPending });
-		} else {
-			left = file->GetFileSize() - 1;
+	// Which of the two unrelated things this cell is drawing. Decided from the
+	// same two integers the row context menu picks the legend from, so the bar
+	// and its explanation cannot disagree about which one is on screen.
+	switch (partbar::ModeFor(file->GetHashingProgress(), partCount)) {
+	case partbar::BarMode::None:
+		return;
+
+	case partbar::BarMode::Hashing: {
+		// CHashingTask reports part + 1, so a finished pass reports one part
+		// past the end of the file and the raw count cannot be used as an
+		// index. Clamped, then turned into the last hashed byte.
+		const std::size_t hashedParts =
+			partbar::HashedPartsClamped(file->GetHashingProgress(), partCount);
+		const uint64 hashedEnd = partbar::SpanFor(hashedParts - 1, PARTSIZE, fileSize).end;
+
+		if (hashedEnd < fileSize - 1) {
+			spans.push_back({ hashedEnd + 1,
+				fileSize - 1,
+				ToMuleColour(partbar::HashingPartColour(
+					partbar::HashingPartState::NotYetHashed, bFlat)) });
 		}
-		// The amount already hashed, in green.
-		spans.push_back({ 0, left, bFlat ? crFlatProgress : crProgress });
-	} else {
-		// Reference to the availability list
+		spans.push_back({ 0,
+			hashedEnd,
+			ToMuleColour(partbar::HashingPartColour(partbar::HashingPartState::Hashed, bFlat)) });
+		break;
+	}
+
+	case partbar::BarMode::Availability: {
+		// A partfile's availability is what the download queue sees from its
+		// sources; a complete file's is what our own uploads have observed.
 		const ArrayOfUInts16 &list = file->IsPartFile()
 						     ? static_cast<CPartFile *>(file)->m_SrcpartFrequency
 						     : file->m_AvailPartFrequency;
 
-		uint64 end = 0;
-		for (unsigned int i = 0; i < list.size(); ++i) {
-			const uint64 start = PARTSIZE * static_cast<uint64>(i);
-			end = PARTSIZE * static_cast<uint64>(i + 1);
-			spans.push_back({ start,
-				end,
-				CMuleColour(list[i] ? 0 : 255,
-					list[i] ? ((210 - (22 * (list[i] - 1)) < 0)
-								  ? 0
-								  : (210 - (22 * (list[i] - 1))))
-						: 0,
-					list[i] ? 255 : 0) });
+		// Indexed alongside the range rather than by subscript: the index is
+		// the part number SpanFor() wants, not a way of reaching the element.
+		std::size_t index = 0;
+		for (const uint16 sources : list) {
+			const partbar::Span span = partbar::SpanFor(index++, PARTSIZE, fileSize);
+			spans.push_back({ span.start,
+				span.end,
+				ToMuleColour(
+					sources == 0
+						? partbar::AvailabilityPartColour(
+							  partbar::AvailabilityPartState::ZeroSources, bFlat)
+						: partbar::SourceAvailabilityColour(sources)) });
 		}
-		spans.push_back({ end + 1, file->GetFileSize() - 1, CMuleColour(255, 0, 0) });
+
+		// Whatever the availability array did not cover. It is normally exactly
+		// partCount long, but a remote GUI can see a share before the daemon's
+		// frequencies arrive, and a tail nobody is known to hold reads as the
+		// same red a zero count draws rather than as unpainted background.
+		const uint64 covered = PARTSIZE * static_cast<uint64>(list.size());
+		if (covered < fileSize) {
+			spans.push_back({ covered,
+				fileSize - 1,
+				ToMuleColour(partbar::AvailabilityPartColour(
+					partbar::AvailabilityPartState::ZeroSources, bFlat)) });
+		}
+		break;
+	}
 	}
 
-	out = CBarFillSpec(item, file->GetFileSize(), std::move(spans));
+	out = CBarFillSpec(item, fileSize, std::move(spans));
 }
 
 bool CSharedFilesCtrl::AltSortAllowed(unsigned column) const

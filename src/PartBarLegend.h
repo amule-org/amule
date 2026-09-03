@@ -323,6 +323,20 @@ constexpr BarLegendKind LegendForColumn(SharedFilesBarColumn column, BarMode mod
 								  : BarLegendKind::None;
 }
 
+/**
+ * The legend for a shared-files row, straight from the two integers the file
+ * reports.
+ *
+ * The row context menu has exactly this decision to make and nothing else:
+ * which of the one column's two legends the clicked file wants, or none at all.
+ * Composed here rather than at the call site because the composition is the
+ * part a headless run can check -- opening the dialog is not.
+ */
+constexpr BarLegendKind LegendForSharedFilesRow(std::uint64_t hashedPartCount, std::size_t partCount)
+{
+	return LegendForColumn(SharedFilesBarColumn::SourceAvailability, ModeFor(hashedPartCount, partCount));
+}
+
 //! Rows of the Sources legend, top to bottom.
 constexpr SourcePartState kSourceLegendOrder[] = { SourcePartState::Missing,
 	SourcePartState::Complete,

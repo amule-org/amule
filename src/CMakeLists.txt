@@ -972,6 +972,7 @@ if (NEED_LIB_MULEAPPGUI)
 		MuleNotebook.cpp
 		MuleTextCtrl.cpp
 		MuleLogCtrl.cpp
+		PartBarLegendUI.cpp
 	)
 
 
