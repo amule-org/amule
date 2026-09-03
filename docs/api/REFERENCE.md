@@ -2668,7 +2668,7 @@ amuled's general log buffer.
 
 `lines` is the array of log lines; `total_lines` is how many lines are held in the buffer and `returned_lines` how many this response carried (≤ `tail`).
 
-**Errors:** `400 bad_request` (`tail` is not an integer, or outside `0`-`100000`).
+**Errors:** `400 bad_request` (`tail` is not an integer, or outside `0`-`100000`), `400 amuled_rejected` (the daemon refused the read), `503 ec_unavailable`.
 
 #### `DELETE /api/v0/logs/amule`
 
