@@ -864,7 +864,7 @@ TEST(Refresher, DownloadDetailTagsDecodeIntoSnapshot)
 	ASSERT_EQUALS(static_cast<std::uint32_t>(1700000000), d.download.last_seen_complete_at);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(1700000123), d.download.last_received_at);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(3600), d.download.active_seconds);
-	ASSERT_EQUALS(static_cast<std::uint16_t>(12), d.download.parts_available_count);
+	ASSERT_EQUALS(static_cast<std::uint16_t>(12), d.download.available_part_count);
 	ASSERT_EQUALS(static_cast<std::uint16_t>(3), d.download.hashed_part_count);
 	ASSERT_EQUALS(static_cast<std::uint64_t>(9728000), d.download.lost_to_corruption_bytes);
 	ASSERT_EQUALS(static_cast<std::uint64_t>(4096), d.download.gained_by_compression_bytes);

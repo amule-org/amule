@@ -423,7 +423,7 @@ function availShade(sources, lo, hi) {
 // while a re-hash runs over the file (Verify Local Data, or an AICH hashset
 // rebuild), mirroring the desktop's two-span bar. That pass reports only a
 // *count* of parts done, never a per-part map, so it is driven by
-// `total` (= parts_total_count) + `hashed` instead of `parts`.
+// `total` (= total_part_count) + `hashed` instead of `parts`.
 // Canvas rather than N <div>s so files with hundreds/thousands of parts redraw
 // cheaply on every live tick. Colours are read from the theme each draw.
 export function PiecesBar({ parts, mode = "download", total = 0, hashed = 0 }) {

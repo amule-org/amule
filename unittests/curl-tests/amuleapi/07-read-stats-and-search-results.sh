@@ -123,9 +123,12 @@ _assert_json_eq '[.. | objects | select(.key? == "ul_dl_ratio") | .values[0].typ
 	string '/stats/tree ratio node still carries its composite string value'
 # ...and when the daemon can compute it, exposes numeric ratio fields. Absent
 # on a freshly-started daemon with no transfer, so assert shape, not presence.
-_assert_json_eq '[.. | objects | select(has("ratio")) | .ratio | (.session, .total)
+_assert_json_eq '[.. | objects | (.ratio_session, .ratio_total)
 	| select(. != null) | type] | all(. == "number")' \
 	true '/stats/tree ratio fields, when present, are numbers'
+# Flattened per R11: the window belongs in the key, so there is no wrapper left.
+_assert_json_eq '[.. | objects | select(has("ratio"))] | length' 0 \
+	'/stats/tree emits no wrapping ratio object'
 # label_value: the untranslated version/OS value on per-client-software rows.
 # `null` on every other node rather than absent, so the presence test is
 # `!= null` -- the key is always there. Assert shape, not presence: it is only
@@ -180,11 +183,11 @@ _assert_json_eq '.session | has("kad_bytes")' false \
 # The connections graph carries the second data blob's two series when the
 # daemon reports it; the other graphs never do.
 if [ "$(printf '%s' "$CURL_BODY" | jq '.points | length')" -gt 0 ]; then
-	_assert_json_eq '[.points[] | has("active_uploads")] | (all(.) or (any(.) | not))' true \
+	_assert_json_eq '[.points[] | has("active_upload_count")] | (all(.) or (any(.) | not))' true \
 		'/stats/graphs/connections active_uploads is present on all points or none'
 fi
 _curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/download_speed"
-_assert_json_eq '[.points[]? | has("active_uploads")] | any(.) | not' true \
+_assert_json_eq '[.points[]? | has("active_upload_count")] | any(.) | not' true \
 	'/stats/graphs/download_speed never carries the connections-only series'
 
 # --- 3b. ?interval=N and its validation. ---------------------------

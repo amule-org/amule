@@ -289,7 +289,7 @@ Identical to the REST [`/api/v0/downloads`](REFERENCE.md#get-apiv0downloads) lis
   "progress": { "percent": 29.85 },
   "kad_comment_lookup_running": false,
   "hashed_part_count":  0,
-  "parts_total_count":  411,
+  "total_part_count":  411,
   "source_ecids":  [ 1234, 5678 ]
 }
 ```
@@ -451,7 +451,7 @@ One event per message, **inbound and outbound alike**. An outbound one is how a 
 
 ```json
 {
-  "client_address": "203.0.113.42:4662",
+  "address": "203.0.113.42:4662",
   "ip":          "203.0.113.42",
   "port":        4662,
   "name":        "alice",
@@ -461,17 +461,17 @@ One event per message, **inbound and outbound alike**. An outbound one is how a 
 }
 ```
 
-`message` is identical to a `messages[]` entry on [`GET /api/v0/chats/{client_address}/messages`](REFERENCE.md#get-apiv0chatsclient_addressmessages), and `name` uses the same `"IP: <ip> Port: <port>"` fallback the REST list does.
+`message` is identical to a `messages[]` entry on [`GET /api/v0/chats/{address}/messages`](REFERENCE.md#get-apiv0chatsaddressmessages), and `name` uses the same `"IP: <ip> Port: <port>"` fallback the REST list does.
 
-There is no separate "conversation started" event: a conversation that did not exist yet is implied by the first message carrying its `client_address`.
+There is no separate "conversation started" event: a conversation that did not exist yet is implied by the first message carrying its `address`.
 
 #### `chat_session_closed`
 
 ```json
-{ "client_address": "203.0.113.42:4662" }
+{ "address": "203.0.113.42:4662" }
 ```
 
-Closing is global — see [`DELETE /api/v0/chats/{client_address}`](REFERENCE.md#delete-apiv0chatsclient_address). This fires whichever client closed it, including the desktop GUI, so a viewer should drop the conversation rather than assume it still exists.
+Closing is global — see [`DELETE /api/v0/chats/{address}`](REFERENCE.md#delete-apiv0chatsaddress). This fires whichever client closed it, including the desktop GUI, so a viewer should drop the conversation rather than assume it still exists.
 
 ### `clients` channel
 
