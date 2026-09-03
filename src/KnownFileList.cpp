@@ -245,17 +245,32 @@ size_t CKnownFileList::GetKnownFileCount() const
 
 bool CKnownFileList::IsKnownFile(const CKnownFile *file) const
 {
-	// Pointer-value scan over the canonical map; safe to call with a
+	// Pointer-value scan over both lists; safe to call with a
 	// possibly-freed `file` pointer (no deref). Used by
 	// OnFinishedHashing / OnFinishedAICHHashing to validate the
-	// owner pointer survived hashing. m_knownFileMap is hash-keyed
-	// not pointer-keyed, so we walk it — linear in shareset size but
+	// owner pointer survived hashing. Neither container is
+	// pointer-keyed, so we walk them — linear in shareset size but
 	// invoked only on rare events (hash completion). For 100 k+
 	// sharesets this is the cost; a per-pointer index would speed
 	// it up but isn't justified for the call rate.
 	wxMutexLocker sLock(list_mut);
-	for (CKnownFileMap::const_iterator it = m_knownFileMap.begin(); it != m_knownFileMap.end(); ++it) {
-		if (it->second == file) {
+	for (const auto &entry : m_knownFileMap) {
+		if (entry.second == file) {
+			return true;
+		}
+	}
+	// The duplicate list counts as alive: this asks whether the record
+	// still exists, not whether it is canonical. PromoteToCanonical
+	// moves a perfectly live record out of the map whenever the share
+	// scan finds a better copy for its hash, and an AICH result landing
+	// after that must not be read as "owner was destroyed" -- the
+	// result would be dropped with a log line that says the opposite of
+	// what happened, and the hashset recomputed on some later run.
+	// A record that really was freed is erased from this list by
+	// PruneDuplicates under the same lock, so the freed case still
+	// answers false, and this stays a pointer comparison either way.
+	for (const CKnownFile *record : m_duplicateFileList) {
+		if (record == file) {
 			return true;
 		}
 	}
@@ -404,6 +419,14 @@ CKnownFile *CKnownFileList::FindKnownFileByID(const CMD4Hash &hash)
 void CKnownFileList::EraseFromSizeMap(KnownFileSizeMap *sizeMap, CKnownFile *record)
 {
 	// Caller must hold list_mut.
+	//
+	// The key is recomputed from the record's CURRENT size and mtime, so
+	// a record whose either value changed while it was indexed cannot be
+	// found and the erase silently leaves the old entry behind. Every
+	// caller today either indexes a record it has not mutated or sets the
+	// new values before the first insert, so nothing hits it -- but a
+	// future caller that mutates an already-indexed record has to erase
+	// under the old key first.
 	if (!sizeMap) {
 		return;
 	}
