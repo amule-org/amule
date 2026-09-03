@@ -3553,6 +3553,13 @@ const ListComparators<webapi::ClientSnapshot> &ClientComparators()
 		{ "ecid", SORT_BY(ecid), ANCHOR_ON_NUM(ecid) },
 		{ "name", SORT_BY(client_name) },
 		{ "software", SORT_BY(software) },
+		// R7: each value is spelled exactly like the response key it orders
+		// by. Only keys this row actually emits -- /known_clients can also
+		// sort by session_count / last_seen_at, which are not on a live peer.
+		{ "uploaded_bytes_total", SORT_BY(uploaded_bytes_total) },
+		{ "downloaded_bytes_total", SORT_BY(downloaded_bytes_total) },
+		{ "upload_speed_bytes_per_second", SORT_BY(upload_speed_bytes_per_second) },
+		{ "download_speed_bytes_per_second", SORT_BY(download_speed_bytes_per_second) },
 	};
 	return kComps;
 }
@@ -4586,8 +4593,12 @@ CHttpServer::Response CApiDispatcher::HandleSharedList(const CHttpServer::Reques
 		// cares about, not the order a UI table does.
 		{ "hash", SORT_BY(hash), ANCHOR_ON(hash) },
 		{ "name", SORT_BY(name) },
-		// R7: spelled like the response key it orders by.
+		// R7: spelled like the response key it orders by. The upload-side
+		// pair rather than /downloads' progress.percent / status: those
+		// describe a transfer this row does not report.
 		{ "size_bytes", SORT_BY(size) },
+		{ "uploaded_bytes_total", SORT_BY(shared.uploaded_bytes_total) },
+		{ "upload_speed_bytes_per_second", SORT_BY(shared.upload_speed_bytes_per_second) },
 	};
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
@@ -4892,7 +4903,11 @@ CHttpServer::Response CApiDispatcher::HandleDownloadA4afAction(
 	bool per_source = false;
 	std::uint32_t client_ecid = 0;
 	if (const auto cit = obj.find("client_ecid"); cit != obj.end()) {
-		if (!cit->second.is<double>() || cit->second.get<double>() < 0) {
+		// Integrality checked, not just the sign: the message says integer,
+		// and without it 2.9 was accepted and truncated to 2.
+		if (!cit->second.is<double>() || cit->second.get<double>() < 0 ||
+			cit->second.get<double>() !=
+				static_cast<double>(static_cast<std::int64_t>(cit->second.get<double>()))) {
 			return ErrorResponse(
 				400, "bad_request", "`client_ecid` must be a non-negative integer");
 		}
@@ -5204,7 +5219,9 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(const CHttpServer::Reque
 					"`category_index` must be a non-negative integer");
 			}
 			const double v = it->second.get<double>();
-			if (v < 0 || v > 255) {
+			// The integrality test the message already promises: without it
+			// 2.9 was accepted and truncated to 2.
+			if (v < 0 || v > 255 || v != static_cast<double>(static_cast<int>(v))) {
 				return ErrorResponse(
 					400, "bad_request", "`category_index` must be in [0, 255]");
 			}
@@ -5516,7 +5533,9 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 					"`category_index` must be a non-negative integer");
 			}
 			const double v = it->second.get<double>();
-			if (v < 0 || v > 255) {
+			// The integrality test the message already promises: without it
+			// 2.9 was accepted and truncated to 2.
+			if (v < 0 || v > 255 || v != static_cast<double>(static_cast<int>(v))) {
 				return ErrorResponse(
 					400, "bad_request", "`category_index` must be in [0, 255]");
 			}
@@ -6175,8 +6194,9 @@ void WriteChatMessageObject(CJsonWriter &w, const webapi::ChatMessageSnapshot &m
 	w.ValueString(wxString::FromAscii(m.outgoing ? "out" : "in"));
 	w.Key("text");
 	w.ValueString(wxString::FromUTF8(m.text.c_str()));
-	w.Key("sent_at");
-	w.ValueInt(static_cast<int64_t>(m.timestamp));
+	// null, not 0, when the core has not stamped it: the send response builds
+	// its echo through here before any timestamp exists.
+	WriteIntOrNull(w, "sent_at", m.timestamp != 0, static_cast<int64_t>(m.timestamp));
 	w.EndObject();
 }
 
@@ -6525,19 +6545,20 @@ CHttpServer::Response CApiDispatcher::SendChatMessageTo(const CHttpServer::Reque
 	CJsonWriter w;
 	w.BeginObject();
 	// `ok` dropped. The nested `message` object stays: it is the created
-	// resource, carrying the id and direction the daemon assigned, and there
-	// is no per-message GET route whose shape it could mirror instead.
+	// resource, carrying the id and direction the daemon assigned. Built
+	// through the same writer GET /chats and GET /chats/{address}/messages
+	// use, so the row a client optimistically appends has the shape it will
+	// read back. `sent_at` is null here and only here: EC_OP_CHAT_SEND
+	// answers with the client and message ids and no timestamp, and the core
+	// is the only thing entitled to stamp one.
 	w.Key("client_address");
 	w.ValueString(wxString::FromUTF8(webapi::ChatPeerKeyFromGuiId(gui_id).c_str()));
 	w.Key("message");
-	w.BeginObject();
-	w.Key("id");
-	w.ValueInt(static_cast<int64_t>(msg_id));
-	w.Key("direction");
-	w.ValueString(wxString::FromAscii("out"));
-	w.Key("text");
-	w.ValueString(wxString::FromUTF8(text.c_str()));
-	w.EndObject();
+	webapi::ChatMessageSnapshot sent;
+	sent.id = msg_id;
+	sent.outgoing = true;
+	sent.text = text;
+	WriteChatMessageObject(w, sent);
 	w.EndObject();
 	CHttpServer::Response r;
 	r.status = 202;
@@ -6698,7 +6719,8 @@ CHttpServer::Response CApiDispatcher::HandleFriendAdd(const CHttpServer::Request
 	if (has_client) {
 		// Promote a connected peer, the desktop's "Add to Friends" item.
 		const auto &v = obj.at("client_ecid");
-		if (!v.is<double>() || v.get<double>() < 0) {
+		if (!v.is<double>() || v.get<double>() < 0 ||
+			v.get<double>() != static_cast<double>(static_cast<std::int64_t>(v.get<double>()))) {
 			return ErrorResponse(
 				400, "bad_request", "`client_ecid` must be a non-negative integer");
 		}
@@ -9013,16 +9035,21 @@ CHttpServer::Response SimpleConnControlOp(
 
 	CHttpServer::Response r;
 	r.status = http_status;
+	// `ok` dropped: the status code already said it. `message` stays -- it is
+	// the daemon's own explanation of what it did with the request, which is
+	// not recoverable from any subsequent read. With nothing to say, no body
+	// at all rather than `{}`: the URL-fetch triggers beside these answer the
+	// same 202 with no body, and `ipfilter/reload` vs `ipfilter/update` is
+	// otherwise two shapes for the same fire-and-forget shrug.
+	if (message.empty()) {
+		r.content_type.clear();
+		return r;
+	}
 	r.content_type = "application/json";
 	CJsonWriter w;
 	w.BeginObject();
-	// `ok` dropped: the status code already said it. `message` stays -- it is
-	// the daemon's own explanation of what it did with the request, which is
-	// not recoverable from any subsequent read.
-	if (!message.empty()) {
-		w.Key("message");
-		w.ValueString(wxString::FromUTF8(message.c_str()));
-	}
+	w.Key("message");
+	w.ValueString(wxString::FromUTF8(message.c_str()));
 	w.EndObject();
 	FinalizeJsonBody(w, r);
 	return r;
@@ -9561,7 +9588,9 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsBulkPatch(const CHttpServer
 					"bad_request",
 					"`category_index` must be a non-negative integer");
 			const double v = it->second.get<double>();
-			if (v < 0 || v > 255)
+			// The integrality test the message already promises: without it
+			// 2.9 was accepted and truncated to 2.
+			if (v < 0 || v > 255 || v != static_cast<double>(static_cast<int>(v)))
 				return ErrorResponse(
 					400, "bad_request", "`category_index` must be in [0, 255]");
 			ops.push_back({ EC_OP_PARTFILE_SET_CAT,
@@ -11490,7 +11519,9 @@ CHttpServer::Response CApiDispatcher::HandleSearchDownload(
 					"`category_index` must be a non-negative integer");
 			}
 			const double v = it->second.get<double>();
-			if (v < 0 || v > 255) {
+			// The integrality test the message already promises: without it
+			// 2.9 was accepted and truncated to 2.
+			if (v < 0 || v > 255 || v != static_cast<double>(static_cast<int>(v))) {
 				return ErrorResponse(
 					400, "bad_request", "`category_index` must be in [0, 255]");
 			}

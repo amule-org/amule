@@ -134,6 +134,11 @@ _assert_json_eq '. | has("ok")' false 'send response has no constant ok field'
 _assert_json_eq '.client_address'                "$PEER" 'send echoes the conversation key'
 _assert_json_eq '.message.direction'   out     'sent message is direction=out'
 _assert_json_eq '.message.text'        "curl-test hello" 'send echoes the text'
+# Same object shape the GET returns, from the same writer -- including the
+# sent_at key. It is null here and only here: EC_OP_CHAT_SEND answers with the
+# message id and no timestamp.
+_assert_json_eq '.message | has("sent_at")' true 'send echo carries the sent_at key'
+_assert_json_eq '.message.sent_at' null 'send echo sent_at is null, not a fabricated stamp'
 FIRST_ID=$(printf '%s' "$CURL_BODY" | jq -r '.message.id')
 
 # The refresher mirrors the store on its next tick (1 s).

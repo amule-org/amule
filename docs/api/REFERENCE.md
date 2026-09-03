@@ -231,7 +231,7 @@ That resolves to four shapes:
 Three bodies are deliberate exceptions, because each reports something no later read recovers:
 
 - the per-item [`results` envelope](#bulk-mutations-and-the-results-envelope), which carries a real outcome per input item;
-- `message` on the connection-control routes, which is the daemon's own explanation of what it did with the request;
+- `message` on the connection-control routes, which is the daemon's own explanation of what it did with the request - and only when the daemon actually said something: with nothing to report those routes answer `202` with no body, like the URL fetches beside them, rather than an empty object;
 - `ip` / `port` on [`POST /kad/bootstrap`](#post-apiv0kadbootstrap), which reports **which** address the daemon parsed.
 
 ### Idempotency
@@ -3183,7 +3183,7 @@ Served from the refresher snapshot — no EC roundtrip per request. Standard [li
 }
 ```
 
-`direction` is `"in"` (from the client) or `"out"` (sent by us — from **any** client: this API, amulegui, or the desktop GUI). `sent_at` is stamped by the core when the message was received or sent. `total` counts everything the store holds for this conversation, not the returned window.
+`direction` is `"in"` (from the client) or `"out"` (sent by us — from **any** client: this API, amulegui, or the desktop GUI). `sent_at` is stamped by the core when the message was received or sent, and is `null` only in the reply to a send: `EC_OP_CHAT_SEND` answers with the message id and no timestamp, and the core is the only thing entitled to stamp one. That reply is otherwise the same object shape this endpoint returns, emitted by the same writer, so a client can append it optimistically and reconcile on the next read. `total` counts everything the store holds for this conversation, not the returned window.
 
 **Errors:** `404 not_found` (no such conversation), `400 bad_request` (malformed `{client_address}` or query), `503 ec_unsupported`, `503 ec_unavailable`.
 
@@ -3200,10 +3200,10 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/
 
 ```json
 { "client_address": "203.0.113.42:4662",
-  "message": { "id": 92, "direction": "out", "text": "hello" } }
+  "message": { "id": 92, "direction": "out", "text": "hello", "sent_at": null } }
 ```
 
-The created message stays in the body because no per-message `GET` defines a shape for it, so the store-assigned `id` is only readable here. The **timestamp is not** in this reply — read it back from [`GET /chats`](#get-apiv0chats) (as `last_message`), from the per-conversation messages endpoint, or from the `chat_message` SSE event.
+The created message stays in the body because the store-assigned `id` is only readable here. It is the same object shape [`GET /chats/{client_address}/messages`](#get-apiv0chatsclient_addressmessages) returns, emitted by the same writer, with one difference: `sent_at` is **`null`**, because `EC_OP_CHAT_SEND` answers with the message id and no timestamp. Read the timestamp back from [`GET /chats`](#get-apiv0chats) (as `last_message`), from the per-conversation messages endpoint, or from the `chat_message` SSE event.
 
 The core creates the conversation if it does not exist, so this doubles as "start a chat with this address" — an unknown `{client_address}` is not a `404` here.
 
