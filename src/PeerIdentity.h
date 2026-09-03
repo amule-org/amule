@@ -53,6 +53,23 @@ struct PeerIdentity
 	 * dialog snapshots the client instead, which knows strictly more.
 	 */
 	ClientDetailInfo detail;
+
+	/**
+	 * Whether a connection to this peer can be opened at all.
+	 *
+	 * Either we are already talking to it, or we hold an address to dial.
+	 */
+	bool CanOpenConnection() const { return client.IsLinked() || (ip != 0 && port != 0); }
+
+	/**
+	 * Whether a friend record can be stored for this peer.
+	 *
+	 * A friend is reached by address, and CAddFriend refuses to store one
+	 * without a usable ip and port. A record written from here has to meet
+	 * the same bar: an address-less friend keys every chat tab on GUI_ID(0,0)
+	 * and can never be dialled.
+	 */
+	bool CanBeFriended() const { return ip != 0 && port != 0; }
 	bool hasDetail = false;
 };
 

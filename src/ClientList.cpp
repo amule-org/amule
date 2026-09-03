@@ -143,6 +143,14 @@ CClientRef CClientList::CreateForAddress(const CMD4Hash &hash, uint32 ip, uint16
 		return CCLIENTREF(client, wxT("CClientList::CreateForAddress"));
 	}
 
+	if (ip == 0 || port == 0) {
+		// Nothing held for this peer and nowhere to dial: an invented client
+		// would only ever target 0.0.0.0, and AddClient() will not index a
+		// zero address, so the next lookup would miss it and make another.
+		// Callers ask IsLinked() rather than assuming they got one.
+		return CClientRef();
+	}
+
 	client = new CUpDownClient(port, ip, 0, 0, nullptr, true, true);
 	// The ctor only records the address to connect to, leaving GetIP() at 0.
 	// Seed it, or anything that reads the peer's IP back -- a friend record
@@ -882,6 +890,11 @@ bool CClientList::IsDeadSource(const CUpDownClient *client)
 
 bool CClientList::SendChatMessage(uint64 client_id, const wxString &message)
 {
+	if (client_id == 0) {
+		// Names no peer: every such message would allocate another client
+		// aimed at 0.0.0.0, since a zero address is never indexed.
+		return false;
+	}
 	CUpDownClient *client = FindClientByIP(IP_FROM_GUI_ID(client_id), PORT_FROM_GUI_ID(client_id));
 	AddDebugLogLineN(logClient, "Trying to Send Message.");
 	if (client) {
@@ -901,6 +914,9 @@ bool CClientList::SendChatMessage(uint64 client_id, const wxString &message)
 		// to get it right rather than at either call site.
 		CClientRef ref = CreateForAddress(
 			CMD4Hash(), IP_FROM_GUI_ID(client_id), PORT_FROM_GUI_ID(client_id), wxEmptyString);
+		if (!ref.IsLinked()) {
+			return false;
+		}
 		client = ref.GetClient();
 	}
 	// Record before sending, and record regardless of the result: a false

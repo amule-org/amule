@@ -74,6 +74,14 @@ void CFriend::LinkClient(CClientRef client)
 		if (m_LinkedClient.IsLinked()) { // What, is already linked?
 			UnLinkClient(false);
 		}
+		// The client may already belong to another record: reusing an
+		// existing client rather than always building a fresh one makes that
+		// reachable. Tell that record to let go, or it keeps a live reference
+		// and shows its friend as permanently connected.
+		CFriend *other = client.GetFriend();
+		if (other != nullptr && other != this) {
+			other->UnLinkClient(false);
+		}
 		m_LinkedClient = client;
 		m_LinkedClient.SetFriend(this);
 		// Apply the persistent friend-slot flag to the live client. This

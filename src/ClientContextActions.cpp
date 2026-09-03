@@ -147,9 +147,11 @@ wxMenu *BuildPeerContextMenu(const PeerIdentity &peer)
 	// target by ECID and this peer has no daemon-side object. Chat addresses
 	// by GUI_ID, which is the address itself, so it works in both builds.
 	// Friending is unaffected either way: it is a property of our own list.
-	const bool haveAddress = peer.ip != 0 && peer.port != 0;
-	menu->Enable(MP_SENDMESSAGE, haveAddress);
-	menu->Enable(MP_SHOWLIST, haveAddress && PeerBrowseIsPossible());
+	// Unfriending only needs the record we already have; friending needs an
+	// address to store, and both connection entries need somewhere to dial.
+	menu->Enable(MP_ADDFRIEND, known != nullptr || peer.CanBeFriended());
+	menu->Enable(MP_SENDMESSAGE, peer.CanOpenConnection());
+	menu->Enable(MP_SHOWLIST, peer.CanOpenConnection() && PeerBrowseIsPossible());
 
 	return menu;
 }
@@ -179,7 +181,7 @@ void PeerActionViewFiles(const PeerIdentity &peer)
 		return;
 	}
 #ifndef CLIENT_GUI
-	if (peer.ip == 0 || peer.port == 0) {
+	if (!peer.CanOpenConnection()) {
 		return;
 	}
 	// Only now is a client made and a connection opened: the user asked to
@@ -197,7 +199,7 @@ void PeerActionSendMessage(const PeerIdentity &peer)
 		ClientActionSendMessage({ peer.client });
 		return;
 	}
-	if (peer.ip == 0 || peer.port == 0) {
+	if (!peer.CanOpenConnection()) {
 		return;
 	}
 	// The address is the whole target: monolithic looks the client up by it,
@@ -223,7 +225,9 @@ void PeerActionToggleFriend(const PeerIdentity &peer)
 	CFriend *known = theApp->friendlist->LookupFriend(peer.hash, peer.ip, peer.port);
 	if (known) {
 		theApp->friendlist->RemoveFriend(known);
-	} else {
+	} else if (peer.CanBeFriended()) {
+		// Without an address there is nothing to dial later, and CAddFriend
+		// refuses to store such a record for the same reason.
 		theApp->friendlist->AddFriend(peer.hash, peer.ip, peer.port, peer.name);
 	}
 }
