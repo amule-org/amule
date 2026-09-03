@@ -174,9 +174,14 @@ _assert_json_eq '.unit' count '/stats/graphs/connections reports unit=count'
 # Session object: the two byte counters are scaled back from the KiB the
 # daemon sends, kad is node-seconds rather than bytes, and duration is what
 # turns any of them into an average.
-_assert_json_eq '.session | has("download_bytes") and has("upload_bytes")
+_assert_json_eq '.session | has("downloaded_bytes") and has("uploaded_bytes")
 	and has("kad_node_seconds") and has("duration_seconds")' true \
 	'/stats/graphs session carries the four corrected fields'
+# Past tense, like downloaded_bytes_session / uploaded_bytes_session on the
+# client and shared rows: the `session` wrapper scopes the quantity, it does
+# not license a second spelling of it.
+_assert_json_eq '.session | has("download_bytes") or has("upload_bytes")' false \
+	'/stats/graphs session no longer reports the present-tense spellings'
 _assert_json_eq '.session | has("kad_bytes")' false \
 	'/stats/graphs session no longer reports the misnamed kad_bytes'
 
@@ -190,16 +195,16 @@ _curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/download_spee
 _assert_json_eq '[.points[]? | has("active_upload_count")] | any(.) | not' true \
 	'/stats/graphs/download_speed never carries the connections-only series'
 
-# --- 3b. ?interval=N and its validation. ---------------------------
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/download_speed?interval=10"
-_assert_status 200 "GET /stats/graphs/download_speed?interval=10 → 200"
+# --- 3b. ?interval_seconds=N and its validation. ---------------------------
+_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/download_speed?interval_seconds=10"
+_assert_status 200 "GET /stats/graphs/download_speed?interval_seconds=10 → 200"
 _assert_json_eq '.interval_seconds' 10 \
-	'/stats/graphs?interval=10 reports the interval it applied'
+	'/stats/graphs?interval_seconds=10 reports the interval it applied'
 for bad in 0 3601 abc; do
-	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/download_speed?interval=$bad"
-	_assert_status 400 "GET /stats/graphs/download_speed?interval=$bad → 400"
+	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/download_speed?interval_seconds=$bad"
+	_assert_status 400 "GET /stats/graphs/download_speed?interval_seconds=$bad → 400"
 	_assert_json_eq '.error.code' bad_request \
-		"/stats/graphs?interval=$bad carries error.code=bad_request"
+		"/stats/graphs?interval_seconds=$bad carries error.code=bad_request"
 done
 
 # --- 3c. /stats/tree ?max_client_versions=N and its validation. ----

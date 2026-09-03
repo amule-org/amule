@@ -210,9 +210,9 @@ const PrefField kSchema[] = {
 	// [security]
 	PREF_BOOL("security", "ipfilter_auto_update", EC_TAG_IPFILTER_AUTO_UPDATE, PrefEnc::Presence, false, PrefAccess::ReadWrite, security.ipfilter_auto_update),
 	PREF_U32("security", "ipfilter_min_access_level", EC_TAG_IPFILTER_LEVEL, 255u, PrefAccess::ReadWrite, security.ipfilter_min_access_level),
-	PREF_BOOL("security", "ipfilter_clients", EC_TAG_IPFILTER_CLIENTS, PrefEnc::Presence, false, PrefAccess::ReadWrite, security.ipfilter_clients),
+	PREF_BOOL("security", "ipfilter_clients_enabled", EC_TAG_IPFILTER_CLIENTS, PrefEnc::Presence, false, PrefAccess::ReadWrite, security.ipfilter_clients_enabled),
 	PREF_BOOL("security", "ipfilter_include_lan_ips", EC_TAG_IPFILTER_FILTER_LAN, PrefEnc::Presence, false, PrefAccess::ReadWrite, security.ipfilter_include_lan_ips),
-	PREF_BOOL("security", "ipfilter_servers", EC_TAG_IPFILTER_SERVERS, PrefEnc::Presence, false, PrefAccess::ReadWrite, security.ipfilter_servers),
+	PREF_BOOL("security", "ipfilter_servers_enabled", EC_TAG_IPFILTER_SERVERS, PrefEnc::Presence, false, PrefAccess::ReadWrite, security.ipfilter_servers_enabled),
 	PREF_STR("security", "ipfilter_update_url", EC_TAG_IPFILTER_UPDATE_URL, PrefAccess::ReadWrite, security.ipfilter_update_url),
 	PREF_BOOL("security", "protocol_obfuscation_enabled", EC_TAG_SECURITY_OBFUSCATION_SUPPORTED, PrefEnc::Presence, false, PrefAccess::ReadWrite, security.protocol_obfuscation_enabled),
 	PREF_BOOL("security", "obfuscation_requested", EC_TAG_SECURITY_OBFUSCATION_REQUESTED, PrefEnc::Presence, false, PrefAccess::ReadWrite, security.obfuscation_requested),
@@ -273,12 +273,12 @@ const PrefField kSchema[] = {
 	PREF_U32_DOMAIN("advanced", "file_buffer_bytes", EC_TAG_CORETW_FILEBUFFER, 0u, 3825000u, 15000u, PrefAccess::ReadWrite, advanced.file_buffer_bytes),
 	// LoadAllItems() clamps this to 5..50 on the next start, so anything else
 	// was a value GET reported until the daemon was restarted.
-	PREF_U32_DOMAIN("advanced", "kad_max_concurrent_source_searches", EC_TAG_CORETW_KAD_MAX_SEARCHES, 5u, 50u, 0u, PrefAccess::ReadWrite, advanced.kad_max_concurrent_source_searches),
+	PREF_U32_DOMAIN("advanced", "kad_max_concurrent_source_search_count", EC_TAG_CORETW_KAD_MAX_SEARCHES, 5u, 50u, 0u, PrefAccess::ReadWrite, advanced.kad_max_concurrent_source_search_count),
 	PREF_U32_SCALED_DOMAIN("advanced", "kad_source_reask_minutes", EC_TAG_CORETW_KAD_REASK_MS, 30u, 60u, PrefAccess::ReadWrite, advanced.kad_source_reask_minutes, 60000u),
 	// s_MaxConperFive is a uint16; 70000 wrapped to 4464.
 	PREF_U32_DOMAIN("advanced", "max_new_connections_per_5_seconds", EC_TAG_CORETW_MAX_CONN_PER_FIVE, 0u, 65535u, 0u, PrefAccess::ReadWrite, advanced.max_new_connections_per_5_seconds),
 	// s_iQueueSize is a uint8 holding val/100: 255 hundreds, nothing between.
-	PREF_U32_DOMAIN("advanced", "max_upload_queue_clients", EC_TAG_CORETW_UL_QUEUE, 0u, 25500u, 100u, PrefAccess::ReadWrite, advanced.max_upload_queue_clients),
+	PREF_U32_DOMAIN("advanced", "max_upload_queue_client_count", EC_TAG_CORETW_UL_QUEUE, 0u, 25500u, 100u, PrefAccess::ReadWrite, advanced.max_upload_queue_client_count),
 	PREF_U32_SCALED("advanced", "server_keepalive_timeout_minutes", EC_TAG_CORETW_SRV_KEEPALIVE_TIMEOUT, 71582u, PrefAccess::ReadWrite, advanced.server_keepalive_timeout_minutes, 60000u),
 	// The 15-minute floor is load-bearing: the UDP reask goes out at
 	// getter - 20s, and below ~10 min peers auto-ban for reask spam.

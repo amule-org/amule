@@ -561,9 +561,9 @@ _assert_status 200 "PATCH online_signature.update_frequency_seconds=65535 -> 200
 # an endpoint. Restored with the rest at the end of the file.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
 SAVED_FILEBUF=$(printf '%s' "$CURL_BODY" | jq -r '.advanced.file_buffer_bytes')
-SAVED_ULQUEUE=$(printf '%s' "$CURL_BODY" | jq -r '.advanced.max_upload_queue_clients')
+SAVED_ULQUEUE=$(printf '%s' "$CURL_BODY" | jq -r '.advanced.max_upload_queue_client_count')
 SAVED_CONN5=$(printf '%s' "$CURL_BODY" | jq -r '.advanced.max_new_connections_per_5_seconds')
-SAVED_KADSEARCH=$(printf '%s' "$CURL_BODY" | jq -r '.advanced.kad_max_concurrent_source_searches')
+SAVED_KADSEARCH=$(printf '%s' "$CURL_BODY" | jq -r '.advanced.kad_max_concurrent_source_search_count')
 SAVED_MAXUL=$(printf '%s' "$CURL_BODY" | jq -r '.connection.max_upload_kibibytes_per_second')
 SAVED_MAXDL=$(printf '%s' "$CURL_BODY" | jq -r '.connection.max_download_kibibytes_per_second')
 
@@ -580,11 +580,11 @@ for CASE in \
 	"advanced file_buffer_bytes 4000000 150000_uint8_wrap" \
 	"advanced file_buffer_bytes 14999 0_divided_away" \
 	"advanced file_buffer_bytes 20000 15000_truncated_to_the_step" \
-	"advanced max_upload_queue_clients 30000 4400_uint8_wrap" \
-	"advanced max_upload_queue_clients 250 200_truncated_to_the_step" \
+	"advanced max_upload_queue_client_count 30000 4400_uint8_wrap" \
+	"advanced max_upload_queue_client_count 250 200_truncated_to_the_step" \
 	"advanced max_new_connections_per_5_seconds 70000 4464_uint16_wrap" \
-	"advanced kad_max_concurrent_source_searches 100000 34464_uint16_wrap" \
-	"advanced kad_max_concurrent_source_searches 1 5_clamped_at_next_start" \
+	"advanced kad_max_concurrent_source_search_count 100000 34464_uint16_wrap" \
+	"advanced kad_max_concurrent_source_search_count 1 5_clamped_at_next_start" \
 	"advanced source_reask_minutes 7 15_clamped_at_next_start" \
 	; do
 	set -- $CASE
@@ -614,11 +614,11 @@ for CASE in \
 	"advanced file_buffer_bytes 3825000" \
 	"advanced file_buffer_bytes 15000" \
 	"advanced file_buffer_bytes 0" \
-	"advanced max_upload_queue_clients 25500" \
-	"advanced max_upload_queue_clients 100" \
+	"advanced max_upload_queue_client_count 25500" \
+	"advanced max_upload_queue_client_count 100" \
 	"advanced max_new_connections_per_5_seconds 65535" \
-	"advanced kad_max_concurrent_source_searches 5" \
-	"advanced kad_max_concurrent_source_searches 50" \
+	"advanced kad_max_concurrent_source_search_count 5" \
+	"advanced kad_max_concurrent_source_search_count 50" \
 	"advanced source_reask_minutes 15" \
 	"advanced source_reask_minutes 60" \
 	"advanced kad_source_reask_minutes 30" \
@@ -652,7 +652,7 @@ _assert_json_eq '.connection.max_download_kibibytes_per_second' 9 \
 # This has to stay the last mutation in the file.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d "{\"advanced\":{\"kad_source_reask_minutes\":$SAVED_KADREASK,\"source_reask_minutes\":$SAVED_SRCREASK,\"file_buffer_bytes\":$SAVED_FILEBUF,\"max_upload_queue_clients\":$SAVED_ULQUEUE,\"max_new_connections_per_5_seconds\":$SAVED_CONN5,\"kad_max_concurrent_source_searches\":$SAVED_KADSEARCH},\"connection\":{\"tcp_port\":$SAVED_TCPPORT,\"max_upload_kibibytes_per_second\":$SAVED_MAXUL,\"max_download_kibibytes_per_second\":$SAVED_MAXDL},\"online_signature\":{\"update_frequency_seconds\":$SAVED_OSFREQ}}" \
+	-d "{\"advanced\":{\"kad_source_reask_minutes\":$SAVED_KADREASK,\"source_reask_minutes\":$SAVED_SRCREASK,\"file_buffer_bytes\":$SAVED_FILEBUF,\"max_upload_queue_client_count\":$SAVED_ULQUEUE,\"max_new_connections_per_5_seconds\":$SAVED_CONN5,\"kad_max_concurrent_source_search_count\":$SAVED_KADSEARCH},\"connection\":{\"tcp_port\":$SAVED_TCPPORT,\"max_upload_kibibytes_per_second\":$SAVED_MAXUL,\"max_download_kibibytes_per_second\":$SAVED_MAXDL},\"online_signature\":{\"update_frequency_seconds\":$SAVED_OSFREQ}}" \
 	"$HOST/api/v0/preferences"
 _assert_status 200 "PATCH (restore advanced + connection + onlinesig) -> 200"
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"

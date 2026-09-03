@@ -404,8 +404,8 @@ std::string ToJsonStatusEvent(const StatusSnapshot &s, const KadSnapshot &k, boo
 	  << ",\"node_count\":" << JsonNumOrNull(k.has_network, k.nodes) << "}"
 	  << "}"
 	  << ",\"speeds\":{"
-	  << "\"download_bytes_per_second\":" << s.download_bytes_per_second
-	  << ",\"upload_bytes_per_second\":" << s.upload_bytes_per_second
+	  << "\"download_speed_bytes_per_second\":" << s.download_bytes_per_second
+	  << ",\"upload_speed_bytes_per_second\":" << s.upload_bytes_per_second
 	  << ",\"download_overhead_bytes_per_second\":" << s.download_overhead_bytes_per_second
 	  << ",\"upload_overhead_bytes_per_second\":" << s.upload_overhead_bytes_per_second << "}"
 	  << ",\"disk\":{"

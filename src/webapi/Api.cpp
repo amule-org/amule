@@ -1737,8 +1737,8 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		}
 	}
 
-	// /downloads/{hash}/a4af — A4AF source list (GET) + swap actions
-	// (POST). Downloads-only (issue #421).
+	// /downloads/{hash}/a4af — A4AF swap actions (POST). Downloads-only
+	// (issue #421).
 	{
 		static const auto dl_a4af = web_api_path::ParsePattern("/api/v0/downloads/{hash}/a4af");
 		const auto path_segs = web_api_path::SplitPath(path);
@@ -2724,9 +2724,15 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 
 	w.Key("speeds");
 	w.BeginObject();
-	w.Key("download_bytes_per_second");
+	// `download_speed_bytes_per_second`, not `download_bytes_per_second`:
+	// the `speeds` wrapper does not rename the quantity. Every other live
+	// rate on the surface spells it with `speed` (download rows, client
+	// rows, shared rows, the graph enum), and the short form read close
+	// enough to the cumulative `downloaded_bytes_total` to be misread as
+	// one.
+	w.Key("download_speed_bytes_per_second");
 	w.ValueInt(static_cast<int64_t>(s.download_bytes_per_second));
-	w.Key("upload_bytes_per_second");
+	w.Key("upload_speed_bytes_per_second");
 	w.ValueInt(static_cast<int64_t>(s.upload_bytes_per_second));
 	// Additive to the two above, not a subset: amuled counts protocol
 	// overhead separately from payload.
@@ -5919,7 +5925,12 @@ void WriteServerObject(CJsonWriter &w, const webapi::ServerSnapshot &s)
 	w.ValueString(wxString::FromUTF8(s.name.c_str()));
 	w.Key("description");
 	w.ValueString(wxString::FromUTF8(s.description.c_str()));
-	w.Key("version");
+	// `software_version`, not `version`: every version on this surface is
+	// named for its subject (`api_version`, `amuleapi_version`,
+	// `daemon_version`, and `software_version` on the client and
+	// known-client rows), and a bare `version` beside them reads as the
+	// API's own.
+	w.Key("software_version");
 	w.ValueString(wxString::FromUTF8(s.version.c_str()));
 	w.Key("address");
 	w.ValueString(wxString::FromUTF8(s.address.c_str()));
@@ -5950,8 +5961,9 @@ void WriteServerObject(CJsonWriter &w, const webapi::ServerSnapshot &s)
 	w.ValueInt(static_cast<int64_t>(s.ping_ms));
 	w.Key("failed_count");
 	w.ValueInt(static_cast<int64_t>(s.failed_count));
-	// `permanent`, not `permanent`: a reserved word in C++, Java, C# and
-	// TypeScript-adjacent codegen, so a generated client has to mangle it.
+	// `permanent`, not `static`: `static` is a reserved word in C++, Java,
+	// C# and TypeScript-adjacent codegen, so a generated client has to
+	// mangle it.
 	w.Key("permanent");
 	w.ValueBool(s.is_static);
 	// Decoded capability bits. Written as a pre-built fragment from the shared
@@ -7907,7 +7919,7 @@ CHttpServer::Response CApiDispatcher::HandleStatsGraph(
 		query = req.target.substr(q + 1);
 	const auto qmap = web_api_path::ParseQuery(query);
 
-	// ?interval=N — seconds between samples, passed through as
+	// ?interval_seconds=N — seconds between samples, passed through as
 	// EC_TAG_STATSGRAPH_SCALE. Rejected rather than clamped: 0 makes the
 	// daemon answer EC_OP_FAILED, which would reach the caller as an
 	// unexplained empty graph, and past an hour almost every point falls
@@ -7916,7 +7928,10 @@ CHttpServer::Response CApiDispatcher::HandleStatsGraph(
 	std::uint32_t interval = 1;
 	{
 		std::uint64_t v = interval;
-		if (auto r = ParseUintParam(qmap, "interval", 1, 3600, v))
+		// Named for its unit, and named the same on the way in as on the
+		// way out: the response has always echoed `interval_seconds`, so
+		// a client had to write one spelling and read back another.
+		if (auto r = ParseUintParam(qmap, "interval_seconds", 1, 3600, v))
 			return *r;
 		interval = static_cast<std::uint32_t>(v);
 	}
@@ -8015,9 +8030,13 @@ CHttpServer::Response CApiDispatcher::HandleStatsGraph(
 	// duration_seconds for the session average the desktop plots.
 	w.Key("session");
 	w.BeginObject();
-	w.Key("download_bytes");
+	// Past tense, like `downloaded_bytes_session` / `uploaded_bytes_session`
+	// on the client and shared rows: these are bytes already moved, not a
+	// rate and not a plan. The `session` wrapper scopes them; it does not
+	// license a second spelling of the same quantity.
+	w.Key("downloaded_bytes");
 	w.ValueInt(static_cast<int64_t>(g.session_download_bytes));
-	w.Key("upload_bytes");
+	w.Key("uploaded_bytes");
 	w.ValueInt(static_cast<int64_t>(g.session_upload_bytes));
 	w.Key("kad_node_seconds");
 	w.ValueInt(static_cast<int64_t>(g.session_kad_node_seconds));

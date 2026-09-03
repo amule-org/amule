@@ -1265,8 +1265,8 @@ struct PreferencesSnapshot
 		// s_iSeeShares: 0 = everybody, 1 = friends only, 2 = nobody); the
 		// API spells it out, and the name says it is not a yes/no question.
 		std::string shared_files_visibility = "everybody";
-		bool ipfilter_clients = false;
-		bool ipfilter_servers = false;
+		bool ipfilter_clients_enabled = false;
+		bool ipfilter_servers_enabled = false;
 		bool ipfilter_auto_update = false;
 		std::string ipfilter_update_url;
 		std::uint32_t ipfilter_min_access_level = 0;
@@ -1336,9 +1336,9 @@ struct PreferencesSnapshot
 		std::uint32_t max_new_connections_per_5_seconds = 0;
 		bool verbose_logging = false;
 		std::uint32_t file_buffer_bytes = 0;
-		std::uint32_t max_upload_queue_clients = 0;
+		std::uint32_t max_upload_queue_client_count = 0;
 		std::uint32_t server_keepalive_timeout_minutes = 0;
-		std::uint32_t kad_max_concurrent_source_searches = 0;
+		std::uint32_t kad_max_concurrent_source_search_count = 0;
 		std::uint32_t kad_source_reask_minutes = 0;
 		std::uint32_t source_reask_minutes = 0;
 	} advanced;
