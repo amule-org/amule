@@ -778,10 +778,18 @@ void CGenericClientListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 	// the Clients tab, which has no file in context and draws no chunk bar, so
 	// neither entry can mean anything there.
 	//
+	// Swapping is a download notion: it moves a source off whatever it is
+	// currently downloading and onto this file, and A4AF only means anything
+	// among a download's sources. The shared-files peer list shows clients
+	// downloading FROM us, so there is nothing to swap and the entry is
+	// omitted rather than shown dead -- the same rule the Clients tab follows.
+	//
 	// Disabled for a non-A4AF source, where the peer is already on the file it
 	// would swap to: "not right now" rather than "never here".
-	m_menu->Append(MP_CHANGE2FILE, _("Swap to this file"));
-	m_menu->Enable(MP_CHANGE2FILE, item->GetType() == A4AF_SOURCE);
+	if (IsShowingDownloadSources()) {
+		m_menu->Append(MP_CHANGE2FILE, _("Swap to this file"));
+		m_menu->Enable(MP_CHANGE2FILE, item->GetType() == A4AF_SOURCE);
+	}
 
 	// Asking the list which of its own columns has a legend keeps this true for
 	// any future subclass without naming one here.
