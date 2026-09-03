@@ -225,16 +225,16 @@ else
 	_skip 'client detail kad_port check: every connected client has an address'
 fi
 
-_curl -H "$AUTH" "$HOST/api/v0/downloads?limit=50"
-FRESH_HASH=$(printf '%s' "$CURL_BODY" \
-	| jq -r 'first(.downloads[]? | select(.completed_bytes == 0) | .hash) // empty')
-if [ -n "$FRESH_HASH" ]; then
-	_curl -H "$AUTH" "$HOST/api/v0/downloads/$FRESH_HASH"
-	_assert_json_eq '.last_received_at' null \
-		'download that has received nothing nulls last_received_at'
-else
-	_skip 'last_received_at null check: no download with 0 bytes received'
-fi
+# `last_received_at` is the partfile's last-changed stamp, which amuled sets
+# even for a download that has transferred nothing -- so "0 bytes received"
+# is NOT the never-case and cannot be used to find one. What the contract
+# forbids is the raw 0 itself: the serializer maps it to null, because a
+# unix 0 reads as 1970 rather than as "never". Assert that no row carries
+# one, which holds on any daemon state and fails the moment the mapping is
+# dropped.
+_curl -H "$AUTH" "$HOST/api/v0/downloads?limit=200"
+_assert_json_eq '[.downloads[]? | select(.last_received_at == 0)] | length' 0 \
+	'no download reports last_received_at as a raw 0 (the never-case is null)'
 
 # --- Summary. -----------------------------------------------------
 echo
