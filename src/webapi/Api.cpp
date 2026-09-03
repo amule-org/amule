@@ -3400,8 +3400,8 @@ void WriteSharedDetailObject(CJsonWriter &w, const webapi::FileSnapshot &f)
 }
 
 // --- List pagination + sorting (issue #357) ---------------------------
-// Server-side window shared by every list endpoint. `limit` (capped at
-// 500), `offset`, `sort` (an endpoint-defined field) and `order`
+// Server-side window shared by every list endpoint. `limit` (default 100,
+// accepted up to 1e9), `offset`, `sort` (an endpoint-defined field) and `order`
 // (asc|desc), `after` (keyset anchor). `total`, `offset` and `limit` metadata
 // are always emitted so a paging consumer can size its requests.
 //
