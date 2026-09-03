@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-02 12:15+0200\n"
-"PO-Revision-Date: 2026-09-01 18:23+0000\n"
+"PO-Revision-Date: 2026-09-03 11:08+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
 "Language: pt_BR\n"
@@ -1051,12 +1051,12 @@ msgstr "Link inválido ou já está na lista."
 
 #: src/amule-remote-gui.cpp
 msgid "The daemon refused the request."
-msgstr ""
+msgstr "O daemon recusou a solicitação."
 
 #: src/amule-remote-gui.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not delete the category: %s"
-msgstr "Não foi possível salvar a senha da amuleapi: %s"
+msgstr "Não foi possível excluir a categoria: %s"
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -2218,17 +2218,16 @@ msgid "Could not save the amuleapi password: %s"
 msgstr "Não foi possível salvar a senha da amuleapi: %s"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "No such category."
-msgstr "Esta sessão de chat não existe"
+msgstr "Não existe tal categoria."
 
 #: src/ExternalConn.cpp
 msgid "Malformed category request."
-msgstr ""
+msgstr "Solicitação de categoria malformada."
 
 #: src/ExternalConn.cpp
 msgid "The default category cannot be deleted."
-msgstr ""
+msgstr "A categoria padrão não pode ser excluída."
 
 #: src/ExternalConn.cpp
 msgid "Missing chat session id"

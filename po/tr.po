@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-02 12:15+0200\n"
-"PO-Revision-Date: 2026-09-01 18:29+0000\n"
+"PO-Revision-Date: 2026-09-03 11:11+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
 "Language: tr\n"
@@ -1043,12 +1043,12 @@ msgstr "Geçersiz bağlantı veya zaten listede mevcut."
 
 #: src/amule-remote-gui.cpp
 msgid "The daemon refused the request."
-msgstr ""
+msgstr "Daemon, talebi reddetti."
 
 #: src/amule-remote-gui.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not delete the category: %s"
-msgstr "amuleapi parolası kaydedilemedi: %s"
+msgstr "Kategori silinemedi: %s"
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -2210,17 +2210,16 @@ msgid "Could not save the amuleapi password: %s"
 msgstr "amuleapi parolası kaydedilemedi: %s"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "No such category."
-msgstr "Böyle bir sohbet oturumu yok"
+msgstr "Böyle bir kategori yok."
 
 #: src/ExternalConn.cpp
 msgid "Malformed category request."
-msgstr ""
+msgstr "Hatalı biçimlendirilmiş kategori talebi."
 
 #: src/ExternalConn.cpp
 msgid "The default category cannot be deleted."
-msgstr ""
+msgstr "Varsayılan kategori silinemez."
 
 #: src/ExternalConn.cpp
 msgid "Missing chat session id"

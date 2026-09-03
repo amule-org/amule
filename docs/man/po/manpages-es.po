@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: es\n"
 "POT-Creation-Date: 2026-08-24 19:02+0200\n"
-"PO-Revision-Date: 2026-09-01 18:32+0000\n"
+"PO-Revision-Date: 2026-09-03 11:12+0000\n"
 "Last-Translator: Mad-Soft <mad.soft@gmail.com>\n"
 "Language-Team: Spanish <es_ES@li.org>\n"
 "Language: es\n"
@@ -457,7 +457,7 @@ msgstr "Forzar la compresión ZLIB en el protocolo de Conexiones Externas aunque
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Separate the fields of the list commands with spaces, as earlier versions did, instead of tabs.  Client names and file names may contain spaces, so the default tab separator is what lets a script split a row back into its fields; use this only for scripts written against the older output."
-msgstr ""
+msgstr "Separa los campos de los comandos de lista con espacios, como hacían las versiones anteriores, en lugar de tabulaciones.  Los nombres de cliente y de archivo pueden contener espacios, por lo que el separador de tabulación predeterminado es lo que permite a un script volver a dividir una fila en sus campos; use esta opción únicamente para scripts diseñados para la salida antigua."
 
 #. type: SH
 #: amulecmd.1.in

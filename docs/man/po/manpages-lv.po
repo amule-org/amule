@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-06-10 16:45+0200\n"
-"PO-Revision-Date: 2026-09-01 18:35+0000\n"
+"PO-Revision-Date: 2026-09-03 11:13+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: lv\n"
@@ -899,7 +899,7 @@ msgstr "aMuleGUI v@PACKAGE_VERSION@"
 #: amulegui.1.in:1
 #, no-wrap
 msgid "aMuleGUI"
-msgstr "aMuleGUI"
+msgstr "aMule grafiskā lietotāja saskarne"
 
 #. type: Plain text
 #: amulegui.1.in:6

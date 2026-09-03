@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-02 12:15+0200\n"
-"PO-Revision-Date: 2026-09-01 18:02+0000\n"
+"PO-Revision-Date: 2026-09-03 11:02+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
 "Language: cs\n"
@@ -6301,7 +6301,7 @@ msgstr "aMule zpracovává pouze magnety kompatibilní s eD2k. Pokud nahradíte 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Another application currently opens .emulecollection files (%s). Replace it with aMule?"
-msgstr ""
+msgstr "Soubory .emulecollection nyní otevírá jiná aplikace (%s). Nahradit ji aMule?"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -6310,12 +6310,11 @@ msgstr "Výchozím obslužným programem/ovladačem těchto odkazů je momentál
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not register aMule for .emulecollection files. The registration store may be read-only."
-msgstr ""
+msgstr "Nepodařilo se zaregistrovat aMule pro soubory .emulecollection. Úložiště registrací může být pouze pro čtení."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Could not remove the file type registration."
-msgstr "Soubor %s se již pokoušíte stáhnout"
+msgstr "Nepodařilo se odebrat registraci typu souboru."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not register aMule as the URL handler. The registration store may be read-only."
@@ -6326,9 +6325,8 @@ msgid "Could not remove the URL handler registration."
 msgstr "Nepodařilo se odstranit registraci ovladače URL."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "The web server and aMule API require external connections to be enabled."
-msgstr "Heslo nastaveno a externí připojení povoleno."
+msgstr "Webový server a aMule API vyžadují povolení externích připojení."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The aMule web server is deprecated. Consider running the aMule API instead."
@@ -6340,6 +6338,9 @@ msgid ""
 "Please fill in at least one URL to point to a valid server.met file.\n"
 "Click on the button \"List\" by this checkbox to enter an URL."
 msgstr ""
+"Váš seznam pro automatickou aktualizaci serverů je prázdný.\n"
+"Zadejte prosím alespoň jednu URL adresu odkazující na platný soubor server.met.\n"
+"Kliknutím na tlačítko \"Seznam\" vedle tohoto zaškrtávacího políčka zadáte URL."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Temporary files"
@@ -6359,12 +6360,12 @@ msgid "Choose a folder for %s"
 msgstr "Zvolte složku pro %s"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Would exclude %u of %u shared file"
 msgid_plural "Would exclude %u of %u shared files"
-msgstr[0] "Znovu načíst vaše sdílené soubory"
-msgstr[1] "Znovu načíst vaše sdílené soubory"
-msgstr[2] "Znovu načíst vaše sdílené soubory"
+msgstr[0] "Bylo by vyloučeno %u z %u sdíleného souboru"
+msgstr[1] "Bylo by vyloučeno %u z %u sdílených souborů"
+msgstr[2] "Bylo by vyloučeno %u z %u sdílených souborů"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Browse for videoplayer"
@@ -6375,9 +6376,8 @@ msgid "Select browser"
 msgstr "Výběr prohlížeče"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Select ffprobe binary"
-msgstr "Výběr prohlížeče"
+msgstr "Vybrat binární soubor ffprobe"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -6386,7 +6386,7 @@ msgstr "Spustitelný soubor %s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "ffprobe not found on PATH or in the standard install locations. Install ffmpeg (which ships ffprobe) or use Browse to pick a binary manually."
-msgstr ""
+msgstr "ffprobe nebyl nalezen v PATH ani ve standardních instalačních umístěních. Nainstalujte ffmpeg (který obsahuje ffprobe), nebo pomocí tlačítka Procházet vyberte binární soubor ručně."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Reset the settings on this page to their default values?"
@@ -6414,34 +6414,33 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Data by MaxMind GeoLite2"
-msgstr ""
+msgstr "Data od MaxMind GeoLite2"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Custom source"
-msgstr "Kompletní zdroje"
+msgstr "Vlastní zdroj"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Data by DB-IP.com"
-msgstr ""
+msgstr "Data od DB-IP.com"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Status: Loaded%s"
-msgstr "Stav:"
+msgstr "Stav: načteno%s"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Status: Loaded%s - %s"
-msgstr "Stav:"
+msgstr "Stav: načteno%s - %s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Status: Failed to load - click 'Update now' to refresh."
-msgstr ""
+msgstr "Stav: načtení selhalo – kliknutím na „Aktualizovat nyní“ proveďte aktualizaci."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Status: Not found - click 'Update now' to download."
-msgstr ""
+msgstr "Stav: databáze nenalezena – kliknutím na „Aktualizovat nyní“ ji stáhnete."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -6452,25 +6451,25 @@ msgstr[1] ""
 msgstr[2] ""
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Time for average graph: %d minute"
 msgid_plural "Time for average graph: %d minutes"
-msgstr[0] "Čas pro průměrný graf: %d minut"
-msgstr[1] "Čas pro průměrný graf: %d minut"
-msgstr[2] ""
+msgstr[0] "Čas pro graf průměru: %d minuta"
+msgstr[1] "Čas pro graf průměru: %d minuty"
+msgstr[2] "Čas pro graf průměru: %d minut"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Connections Graph Scale: %d"
-msgstr ""
+msgstr "Měřítko grafu připojení: %d"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "File Buffer Size: %d byte"
 msgid_plural "File Buffer Size: %d bytes"
-msgstr[0] "Velikost zásobníku pro soubory: %d bajtů"
-msgstr[1] "Velikost zásobníku pro soubory: %d bajtů"
-msgstr[2] ""
+msgstr[0] "Velikost zásobníku souborů: %d bajt"
+msgstr[1] "Velikost zásobníku souborů: %d bajty"
+msgstr[2] "Velikost zásobníku souborů: %d bajtů"
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy, c-format
