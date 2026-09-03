@@ -110,7 +110,7 @@ export function SharedDetail({ hash }) {
       <div class="detail-body">
       ${tab === "clients" ? html`
         <${FileClients} hash=${s.hash} prefsKey="shared_clients" defaultHidden=${SH_HIDDEN}
-                        defaultSort="uploaded" />
+                        defaultSort="uploaded" partsTotal=${s.total_part_count} />
       ` : tab === "comments" ? html`
         <div class="detail-comments">
           <${CommentEditor} key=${s.hash} hash=${s.hash} kind="shared" comment=${s.my_comment} rating=${s.my_rating} />

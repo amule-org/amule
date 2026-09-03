@@ -10,7 +10,7 @@ import { Badge, listPlaceholder, CountryCell, toast } from "../components.js";
 import { searches } from "../searches.js";
 import { chats } from "../chats.js";
 import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker, ipNum } from "../table.js";
-import { formatBytes, formatSpeed } from "../format.js";
+import { formatBytes, formatSpeed, formatInt, formatTimestamp } from "../format.js";
 import { Icon } from "../icons.js";
 import { t, terr } from "../i18n.js";
 
@@ -21,7 +21,7 @@ export const isUp = (c) => (c.upload_speed_bytes_per_second || 0) > 0 || ACTIVE(
 // Column set, declared once. Every consumer offers all of them in the column
 // picker and picks which ones start hidden (see ClientTable's defaultHidden),
 // so a column is always one click away instead of missing from a tab.
-const softLabel = (c) => [c.software ? t("downloads_peer_soft_" + c.software) : "", c.software === "unknown" ? "" : c.software_version].filter(Boolean).join(" ") || "—";
+export const softLabel = (c) => [c.software ? t("downloads_peer_soft_" + c.software) : "", c.software === "unknown" ? "" : c.software_version].filter(Boolean).join(" ") || "—";
 // `remote_queue_position` is null when the peer's queue is full (the API turns
 // amuled's 0xffff sentinel into null), and 0 when it reported no position at
 // all. Both are "not a position", so they sort together as 0.
@@ -64,9 +64,23 @@ export const COLS = [
   // The peer's own self-reported OS string -- frequently empty.
   { key: "os", th: "downloads_peer_col_os", width: "110px", sortable: true,
     sortVal: (c) => (c.reported_os || "").toLowerCase(), cell: (c) => c.reported_os || "—" },
+  // How this source was found (server/kad/passive/…), the desktop's Origin column.
+  { key: "origin", th: "downloads_peer_col_origin", width: "120px", sortable: true,
+    sortVal: (c) => c.source_origin || "",
+    cell: (c) => c.source_origin ? t("downloads_peer_origin_" + c.source_origin) : "—" },
   { key: "file", th: "downloads_peer_col_file", cls: "name", sortable: true,
     sortVal: (c) => fileNameOf(c).toLowerCase(),
-    cell: (c) => html`<span title=${fileNameOf(c)}>${fileNameOf(c) || "—"}</span>` },
+    // A4AF row: the peer-advertised name belongs to the other file it is parked
+    // on, so the desktop blanks it (the A4AF badge is in the "avail" cell).
+    cell: (c) => c.a4af ? "—" : html`<span title=${fileNameOf(c)}>${fileNameOf(c) || "—"}</span>` },
+  // Parts the peer offers of this file. On an A4AF row, the whole cell becomes
+  // the "A4AF: <other file>" badge, mirroring the desktop's Part Status cell.
+  { key: "avail", th: "downloads_peer_col_avail", width: "130px", sortable: true,
+    sortVal: (c) => c.parts_offered_count || 0,
+    cell: (c) => c.a4af
+      ? html`<span class="a4af-badge" title=${c.a4af_name || "?"}>${t("downloads_peer_a4af")}: ${c.a4af_name || "?"}</span>`
+      : c.parts_offered_count == null ? "—"
+      : formatInt(c.parts_offered_count) + (c.parts_total_count ? " / " + formatInt(c.parts_total_count) : "") },
 
   { key: "dl_state", th: "downloads_peer_col_dl_state", width: "120px", sortable: true,
     sortVal: (c) => c.download_state || "", cell: (c) => stateBadge(c.download_state) },
@@ -91,6 +105,11 @@ export const COLS = [
     sortVal: (c) => c.upload_queue_position || 0, cell: (c) => c.upload_queue_position || "—" },
   { key: "score", th: "downloads_peer_col_score", num: true, width: "80px", sortable: true,
     sortVal: (c) => c.upload_queue_score || 0, cell: (c) => c.upload_queue_score || "—" },
+  // Whether the peer lets us browse its shared list (desktop "Shares File List").
+  { key: "shares", th: "downloads_peer_col_shares", width: "80px", sortable: true,
+    sortVal: (c) => c.shared_files_browsable ? 1 : 0,
+    cell: (c) => c.shared_files_browsable == null ? "—"
+      : c.shared_files_browsable ? t("common_yes") : t("common_no") },
 
   // "View files": browse this peer's share, the desktop's context-menu action.
   // A browse is an ordinary search on the API, so it opens as a tab in the
@@ -126,6 +145,68 @@ export const HIDDEN_EVERYWHERE = ["address", "os", "user_hash", "ident"];
 export const IDENT_STATES = ["identified", "not_available", "id_needed", "id_failed", "bad_guy", "unknown"];
 export const identLabel = (s) => t("downloads_peer_ident_" + (s || "unknown"));
 export const IDENT_FILTERS = ["all", ...IDENT_STATES].map((v) => [v, t("downloads_peer_ident_" + v)]);
+
+// Column set for the Known-clients tab (GET /known_clients, the credit store).
+// Reuses the identity cells; swaps live transfer columns for first/last seen,
+// session count and the cross-session totals.
+export const KNOWN_COLS = [
+  { key: "country", th: "downloads_peer_col_country", width: "70px", sortable: true,
+    sortVal: (c) => c.country_code || "", cell: (c) => html`<${CountryCell} code=${c.country_code} />` },
+  { key: "name", th: "downloads_peer_col_name", width: "180px", sortable: true,
+    sortVal: (c) => (c.name || "").toLowerCase(),
+    cell: (c) => html`<span title=${c.name}>${c.name || "—"}</span>` },
+  { key: "user_hash", th: "downloads_peer_col_user_hash", width: "150px", sortable: true,
+    sortVal: (c) => c.user_hash || "",
+    cell: (c) => html`<span title=${c.user_hash}>${c.user_hash || "—"}</span>` },
+  { key: "software", th: "downloads_peer_col_software", width: "150px", sortable: true,
+    sortVal: (c) => softLabel(c).toLowerCase(), cell: (c) => softLabel(c) },
+  { key: "origin", th: "downloads_peer_col_origin", width: "120px", sortable: true,
+    sortVal: (c) => c.source_origin || "",
+    cell: (c) => c.source_origin ? t("downloads_peer_origin_" + c.source_origin) : "—" },
+  { key: "address", th: "downloads_peer_col_address", num: true, width: "170px", sortable: true,
+    sortVal: (c) => ipNum(c.ip), cell: (c) => c.ip ? c.ip + ":" + c.port : "—" },
+  { key: "first_seen", th: "downloads_peer_col_first_seen", width: "160px", sortable: true,
+    sortVal: (c) => c.first_seen_at || 0, cell: (c) => formatTimestamp(c.first_seen_at) },
+  // "Online now" while the peer is connected (matched by user hash against the
+  // live /clients store), the last-seen timestamp otherwise.
+  { key: "last_seen", th: "downloads_peer_col_last_seen", width: "160px", sortable: true,
+    sortVal: (c) => c.online ? Infinity : (c.last_seen_at || 0),
+    cell: (c) => c.online
+      ? html`<${Badge} kind="downloading">${t("clients_online_now")}<//>`
+      : formatTimestamp(c.last_seen_at) },
+  { key: "sessions", th: "downloads_peer_col_sessions", num: true, width: "90px", sortable: true,
+    sortVal: (c) => c.session_count || 0,
+    cell: (c) => c.session_count == null ? "—" : formatInt(c.session_count) },
+  // Grouped by direction: DL speed + total, then UL speed + total. Speeds are
+  // borrowed from the online peer (see ClientsPanel); "—" offline, matching the
+  // desktop's History list (live-only speed columns).
+  { key: "dl_speed", th: "downloads_peer_col_dl_speed", num: true, width: "100px", sortable: true,
+    sortVal: (c) => c.download_speed_bytes_per_second || 0, cell: (c) => formatSpeed(c.download_speed_bytes_per_second) },
+  { key: "downloaded", th: "downloads_peer_col_downloaded", num: true, width: "100px", sortable: true,
+    sortVal: (c) => c.downloaded_bytes_total || 0, cell: (c) => bytesOf(c, "downloaded_bytes_total") },
+  { key: "ul_speed", th: "downloads_peer_col_ul_speed", num: true, width: "100px", sortable: true,
+    sortVal: (c) => c.upload_speed_bytes_per_second || 0, cell: (c) => formatSpeed(c.upload_speed_bytes_per_second) },
+  { key: "uploaded", th: "downloads_peer_col_uploaded", num: true, width: "100px", sortable: true,
+    sortVal: (c) => c.uploaded_bytes_total || 0, cell: (c) => bytesOf(c, "uploaded_bytes_total") },
+];
+
+export const KNOWN_HIDDEN = ["user_hash"];
+
+// Known clients (GET /known_clients): the daemon's credit store. A plain fetch,
+// not an SSE resource -- "online" and live activity are derived by the caller
+// cross-referencing user_hash against the live clients store. `enabled` gates
+// the fetch so it only runs once its tab is opened (and re-runs on re-open).
+export function useKnownClients(enabled = true) {
+  const [rows, setRows] = useState(undefined);
+  useEffect(() => {
+    if (!enabled) return;
+    let alive = true;
+    api.list("known_clients").then((r) => { if (alive) setRows(r.known_clients || []); })
+       .catch(() => { if (alive) setRows([]); });
+    return () => { alive = false; };
+  }, [enabled]);
+  return rows;
+}
 
 // Live `clients` collection (GET /clients seed + SSE client_added/updated/
 // removed). register/ensure are idempotent, so every consumer can just call
@@ -178,12 +259,12 @@ export function stateBadge(s) {
 // two siblings so the caller keeps owning the layout box around them.
 // `loading` (useClients() still undefined) makes empty `rows` mean "not seeded
 // yet" rather than "no peers".
-export function ClientTable({ rows, prefsKey, defaultHidden, defaultSort, toolbar, toolbarCls = "toolbar",
-                              loading = false }) {
+export function ClientTable({ rows, cols = COLS, prefsKey, defaultHidden, defaultSort, toolbar,
+                              toolbarCls = "toolbar", loading = false, onRowClick, rowClass, selectedKey }) {
   const { sortKey, sortDir, hidden, widths, toggleSort, toggleCol, setWidth, resetPrefs } =
     useTablePrefs(prefsKey, { sortKey: defaultSort, sortDir: -1, hidden: defaultHidden });
 
-  const columns = COLS.map((col) => ({ ...col, label: col.th ? t(col.th) : "" }));
+  const columns = cols.map((col) => ({ ...col, label: col.th ? t(col.th) : "" }));
   const shown = columns.filter((c) => !c.key || !hidden.has(c.key));
   // Sort by the chosen column when set; otherwise keep the default "busiest
   // peers first" order (combined dl+ul speed, descending).
@@ -191,31 +272,49 @@ export function ClientTable({ rows, prefsKey, defaultHidden, defaultSort, toolba
     ? sortRows(rows, columns, sortKey, sortDir)
     : rows.slice().sort(bySpeed);
 
+  // Highlight the row shown in the detail panel (keyed by ecid, or user_hash on
+  // the Known tab), on top of whatever class the caller already asks for.
+  const key = (c) => c.ecid != null ? c.ecid : c.user_hash;
+  const rowClassFn = selectedKey == null ? rowClass
+    : (c) => ((rowClass ? rowClass(c) + " " : "") + (key(c) === selectedKey ? "row-active" : "")).trim();
+
   return html`
     <div class=${toolbarCls}>
       ${toolbar}
       <div class="spacer"></div>
       <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} onReset=${resetPrefs} />
     </div>
-    <${VirtualTable} columns=${shown} rows=${list} rowKey=${(c) => c.ecid}
+    <${VirtualTable} columns=${shown} rows=${list} rowKey=${key}
                      sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort}
+                     onRowClick=${onRowClick} rowClass=${rowClassFn}
                      widths=${widths} onResize=${setWidth}
                      maxHeight="none"
                      empty=${listPlaceholder(loading, t("downloads_peer_empty"))} />`;
 }
 
-// Per-file peer table for the detail panels. Rows are the live clients whose
-// download_file_hash (they serve us this file) or upload_file_hash (they pull
-// it from us) matches; both hashes come from the same m_files map that produced
-// the file's own hash, so a plain string compare is enough. Peers that are not
-// currently connected for this file (A4AF, offline sources) have neither hash
-// and therefore never show up here.
-export function FileClients({ hash, prefsKey, defaultHidden, defaultSort }) {
+// Per-file peer table for the detail panels. Rows come from the live `clients`
+// store: every peer transferring this file (download_file_hash / upload_file_hash
+// match) PLUS the A4AF sources parked on another file, whose ecids ride the
+// download object's `source_ecids` (join-SSE, no polling). `partsTotal` and
+// `files` (the downloads list) only matter for the download side: the first
+// fills the "n / total" parts cell, the second resolves an A4AF row's other
+// file name.
+export function FileClients({ hash, prefsKey, defaultHidden, defaultSort, a4afEcids = [], partsTotal, files = [] }) {
   const clients = useClients();
   const [ident, setIdent] = useState("all");
   const [q, setQ] = useState("");
 
-  let rows = (clients || []).filter((c) => c.download_file_hash === hash || c.upload_file_hash === hash);
+  const a4afSet = new Set(a4afEcids);
+  const nameByHash = new Map((files || []).map((f) => [f.hash, f.name]));
+  const inThisFile = (c) => c.download_file_hash === hash || c.upload_file_hash === hash;
+
+  let rows = [];
+  for (const c of clients || []) {
+    const a4af = a4afSet.has(c.ecid);
+    if (!a4af && !inThisFile(c)) continue;
+    rows.push({ ...c, a4af, parts_total_count: partsTotal,
+                a4af_name: a4af ? (nameByHash.get(c.download_file_hash) || c.download_file_name || "?") : undefined });
+  }
   if (ident !== "all") rows = rows.filter((c) => c.ident_state === ident);
   if (q) { const match = textMatcher(q); rows = rows.filter((c) => match((c.name || "") + " " + fileNameOf(c))); }
 
@@ -223,6 +322,7 @@ export function FileClients({ hash, prefsKey, defaultHidden, defaultSort }) {
     <div class="detail-clients">
       <${ClientTable} rows=${rows} prefsKey=${prefsKey} defaultHidden=${defaultHidden}
                       defaultSort=${defaultSort} loading=${clients === undefined}
+                      rowClass=${(c) => c.a4af ? "a4af" : ""}
                       toolbar=${ClientFilters({ ident, setIdent, q, setQ })} />
     </div>`;
 }
