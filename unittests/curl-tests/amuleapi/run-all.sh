@@ -220,6 +220,7 @@ run_phase() {
 PHASES=(
 	01-version-and-errors.sh
 	02-auth.sh
+	02b-auth-lockout-isolation.sh
 	03-read-status.sh
 	04-read-downloads-shared.sh
 	05-read-servers-kad-categories-prefs.sh
