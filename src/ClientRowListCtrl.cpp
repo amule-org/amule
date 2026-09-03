@@ -25,7 +25,9 @@
 #include "ClientRowListCtrl.h" // Interface declarations
 
 #include <wx/menu.h>
+#include <wx/msgdlg.h>
 
+#include <common/Format.h> // Needed for CFormat
 #include <common/MenuIDs.h>
 
 #include "ClientContextActions.h" // Needed for BuildClientContextMenu, ClientAction*
@@ -61,6 +63,15 @@ void CClientRowListCtrl::GetItemBarFill(wxUIntPtr data, unsigned column, CBarFil
 	// paints.
 	out = CBarFillSpec(reinterpret_cast<wxUIntPtr>(cell), 0, {});
 }
+
+namespace
+{
+// Above this a bulk action asks before running. One row must never cost a
+// click and a few is plainly deliberate, but Clients -> Known lists every peer
+// we have credit for, so a select-all there is thousands of rows and each one
+// costs an outbound connection or a rewrite of the friend list.
+const size_t kBulkPeerActionPrompt = 10;
+} // namespace
 
 void CClientRowListCtrl::OnItemActivated(wxDataViewEvent &event)
 {
@@ -115,16 +126,6 @@ void CClientRowListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 	delete menu;
 }
 
-// For actions that are meaningful on any number of rows. Both lists are
-// multi-select (CMuleDataViewCtrl forces wxDV_MULTIPLE), and the connected-client
-// paths these replaced acted on the whole selection.
-void CClientRowListCtrl::ForEachSelectedPeer(void (*action)(const PeerIdentity &))
-{
-	for (const PeerIdentity &peer : SelectedPeers()) {
-		action(peer);
-	}
-}
-
 // For actions that are meaningful on exactly one row and do nothing at all on
 // a wider selection, which is how the connected-client paths have always
 // treated them.
@@ -136,14 +137,59 @@ void CClientRowListCtrl::ForSelectedPeer(void (*action)(const PeerIdentity &))
 	}
 }
 
+// Both lists are multi-select (CMuleDataViewCtrl forces wxDV_MULTIPLE) and the
+// connected-client paths act on the whole selection, so these do too. But the
+// history list is the entire credit store rather than the handful of peers we
+// happen to be talking to, and the menu is built for one row while the action
+// runs on all of them, so a large selection says so first. Same shape as the
+// shared-files media refresh: one row never costs a click, and what is about to
+// happen is stated in full.
+bool CClientRowListCtrl::ConfirmBulkPeerAction(size_t count, const wxString &message)
+{
+	if (count <= kBulkPeerActionPrompt) {
+		return true;
+	}
+	return wxMessageBox(message, _("Multiple selection"), wxYES_NO | wxICON_QUESTION, this) == wxYES;
+}
+
 void CClientRowListCtrl::OnViewFiles(wxCommandEvent &WXUNUSED(event))
 {
-	ForEachSelectedPeer(PeerActionViewFiles);
+	const std::vector<PeerIdentity> peers = SelectedPeers();
+	if (peers.empty()) {
+		return;
+	}
+	// Each one opens its own connection and its own browse tab.
+	wxString message = CFormat(wxPLURAL("Request the shared files of %u client?",
+				   "Request the shared files of %u clients?",
+				   peers.size())) %
+			   peers.size();
+	message << wxT("\n\n") << _("A connection is opened to each of them.");
+	if (!ConfirmBulkPeerAction(peers.size(), message)) {
+		return;
+	}
+	for (const PeerIdentity &peer : peers) {
+		PeerActionViewFiles(peer);
+	}
 }
 
 void CClientRowListCtrl::OnAddFriend(wxCommandEvent &WXUNUSED(event))
 {
-	ForEachSelectedPeer(PeerActionToggleFriend);
+	const std::vector<PeerIdentity> peers = SelectedPeers();
+	if (peers.empty()) {
+		return;
+	}
+	// Each row is added or removed on its own, and the friend list is written
+	// out for every one of them.
+	const wxString message = CFormat(wxPLURAL("Add or remove %u client from your friend list?",
+					 "Add or remove %u clients from your friend list?",
+					 peers.size())) %
+				 peers.size();
+	if (!ConfirmBulkPeerAction(peers.size(), message)) {
+		return;
+	}
+	for (const PeerIdentity &peer : peers) {
+		PeerActionToggleFriend(peer);
+	}
 }
 
 void CClientRowListCtrl::OnSetFriendslot(wxCommandEvent &evt)

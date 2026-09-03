@@ -91,6 +91,12 @@ public:
 	 * failing that by address, so repeating an action reuses the object the
 	 * previous one made instead of stacking up unreachable duplicates.
 	 */
+	/**
+	 * The client at this address that could still be the peer with this hash,
+	 * or nullptr. Skips any that identifies as somebody else.
+	 */
+	CUpDownClient *FindReusableClient(const CMD4Hash &hash, uint32 ip, uint16 port);
+
 	CClientRef CreateForAddress(const CMD4Hash &hash, uint32 ip, uint16 port, const wxString &name);
 
 	/**

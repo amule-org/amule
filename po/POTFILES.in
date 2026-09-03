@@ -19,6 +19,7 @@ src/ClientCreditsList.cpp
 src/ClientDetailDialog.cpp
 src/ClientHistoryListCtrl.cpp
 src/ClientRef.cpp
+src/ClientRowListCtrl.cpp
 src/ClientsListCtrl.cpp
 src/ClientsWnd.cpp
 src/ClientTCPSocket.cpp

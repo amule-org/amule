@@ -99,6 +99,28 @@ CClientList::~CClientList()
 	wxASSERT(m_clientList.empty());
 }
 
+CUpDownClient *CClientList::FindReusableClient(const CMD4Hash &hash, uint32 ip, uint16 port)
+{
+	// Every client at this address, not just the first. FindClientByIP()
+	// stops at the first port match, which may be an unrelated client holding
+	// an address our peer used to have; rejecting that one without looking
+	// further would allocate a new object on every call.
+	std::pair<IDMap::iterator, IDMap::iterator> range = m_ipList.equal_range(ip);
+	for (; range.first != range.second; ++range.first) {
+		CUpDownClient *cur_client = range.first->second.GetClient();
+		if (cur_client->GetUserPort() != port) {
+			continue;
+		}
+		// Unidentified is a candidate: it is either this peer before its
+		// handshake, or a placeholder an earlier call made for it. An
+		// identified one is only this peer if the hashes agree.
+		if (cur_client->GetUserHash().IsEmpty() || cur_client->GetUserHash() == hash) {
+			return cur_client;
+		}
+	}
+	return nullptr;
+}
+
 CClientRef CClientList::CreateForAddress(const CMD4Hash &hash, uint32 ip, uint16 port, const wxString &name)
 {
 	// Reuse the client we already hold for this peer, so a repeated action
@@ -112,15 +134,10 @@ CClientRef CClientList::CreateForAddress(const CMD4Hash &hash, uint32 ip, uint16
 	}
 	if (client == nullptr) {
 		// An address alone identifies a peer only while nothing contradicts
-		// it. A stored address goes stale, and an unrelated client can hold
-		// it by the time we look: adopting that one would hand a friend
-		// record the stranger's hash through CFriend::LinkClient(), which
-		// then saves it and loses the friend for good.
-		CUpDownClient *byAddress = FindClientByIP(ip, port);
-		if (byAddress != nullptr &&
-			(byAddress->GetUserHash().IsEmpty() || byAddress->GetUserHash() == hash)) {
-			client = byAddress;
-		}
+		// it. A stored address goes stale, and handing an unrelated client
+		// to CFriend::LinkClient() copies the stranger's hash into the
+		// friend record and saves it, losing the friend for good.
+		client = FindReusableClient(hash, ip, port);
 	}
 	if (client != nullptr) {
 		return CCLIENTREF(client, wxT("CClientList::CreateForAddress"));
@@ -132,13 +149,13 @@ CClientRef CClientList::CreateForAddress(const CMD4Hash &hash, uint32 ip, uint16
 	// saving itself, a menu deciding whether it can message -- sees 0.0.0.0.
 	client->SetIP(ip);
 	client->SetUserName(name);
-	// The hash is deliberately NOT seeded here. This client has never
-	// connected, so it carries no credits and reports zero for every
-	// lifetime total, while a hash is exactly what makes the Clients page
-	// treat it as a peer whose totals are known: it would publish those
-	// zeroes over the stored Total Up / Down of the row that asked for it,
-	// and mark that row online. The handshake sets the real hash when the
-	// peer answers. Repeat calls still find this object by address.
+	// The hash is deliberately NOT seeded. This client has never connected,
+	// so it carries no credits and reports zero for every lifetime total,
+	// while a hash is exactly what makes the Clients page treat it as a peer
+	// whose totals are known: it would publish those zeroes over the stored
+	// Total Up / Down of the row that asked for it, and mark that row online.
+	// The handshake sets the real hash when the peer answers, and the lookup
+	// above finds this object again in the meantime.
 	AddClient(client);
 	return CCLIENTREF(client, wxT("CClientList::CreateForAddress"));
 }

@@ -81,8 +81,14 @@ protected:
 private:
 	void OnItemActivated(wxDataViewEvent &event);
 	void ShowDetailsForSelection();
-	//! Runs an action on every selected peer.
-	void ForEachSelectedPeer(void (*action)(const PeerIdentity &));
+	/**
+	 * Whether a bulk action over `count` rows should go ahead.
+	 *
+	 * True without asking for a small selection. Larger ones are confirmed,
+	 * because the history list is the whole credit store and the menu was
+	 * built for a single row.
+	 */
+	bool ConfirmBulkPeerAction(size_t count, const wxString &message);
 
 	//! Runs an action on the first selected peer, the one the menu describes.
 	void ForSelectedPeer(void (*action)(const PeerIdentity &));

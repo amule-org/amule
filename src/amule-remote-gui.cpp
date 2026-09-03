@@ -3496,7 +3496,8 @@ CFriend *CFriendListRem::LookupFriend(const CMD4Hash &userhash, uint32 dwIP, uin
 			if (cur_friend->GetUserHash() == userhash) {
 				return cur_friend;
 			}
-		} else if (cur_friend->GetIP() == dwIP && cur_friend->GetPort() == nPort) {
+		} else if (dwIP != 0 && cur_friend->GetIP() == dwIP && cur_friend->GetPort() == nPort) {
+			// A zero address is the absence of one, not a value to match on.
 			return cur_friend;
 		}
 	}
