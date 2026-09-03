@@ -379,8 +379,8 @@ function Speeds({ status }) {
   const sp = (status && status.speeds) || {};
   return html`
     <span class="status-item speeds">
-      <span class="speed dl"><${Icon} name="down" /> ${formatSpeed(sp.download_bytes_per_second)}</span>
-      <span class="speed ul"><${Icon} name="up" /> ${formatSpeed(sp.upload_bytes_per_second)}</span>
+      <span class="speed dl"><${Icon} name="down" /> ${formatSpeed(sp.download_speed_bytes_per_second)}</span>
+      <span class="speed ul"><${Icon} name="up" /> ${formatSpeed(sp.upload_speed_bytes_per_second)}</span>
     </span>`;
 }
 

@@ -183,7 +183,7 @@ _assert_eq "401" "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$HOST/a
 # ---------------------------------------------------------------------------
 # Each parameter used to be parsed by hand and each site picked its own rule, so
 # the same typo was a hard error on one parameter and a silent behaviour change
-# on its neighbour -- `interval=abc` was a 400 while `width=abc` was a 200 that
+# on its neighbour -- `interval_seconds=abc` was a 400 while `width=abc` was a 200 that
 # quietly meant "everything", on the same endpoint. These assert the wiring: the
 # unit tests pin ParseBoundedUint/ParseBoolValue, but only a live request shows
 # that a handler routes through them.
@@ -210,10 +210,10 @@ _qp "downloads?limit=500"   200 "limit=500 -> 200 (the cap itself is valid)"
 _qp "downloads?limit="      400 "limit= (empty) -> 400, not an omission"
 
 # Two numeric parameters on one endpoint used to disagree with each other.
-_qp "stats/graphs/download_speed?interval=abc" 400 "interval=abc -> 400"
+_qp "stats/graphs/download_speed?interval_seconds=abc" 400 "interval_seconds=abc -> 400"
 _qp "stats/graphs/download_speed?width=abc"    400 "width=abc -> 400 (was a silent 200)"
 _qp "stats/graphs/download_speed?width=99999"  400 "width=99999 -> 400 (was a silent clamp)"
-_qp "stats/graphs/download_speed?interval=0"   400 "interval=0 -> 400 (below the documented minimum)"
+_qp "stats/graphs/download_speed?interval_seconds=0"   400 "interval_seconds=0 -> 400 (below the documented minimum)"
 
 # The log tail clamped silently too.
 _qp "logs/amule?tail=abc"    400 "tail=abc -> 400"

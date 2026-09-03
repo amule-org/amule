@@ -172,8 +172,8 @@ const TABS = [
       { key: "obfuscation_required", type: "bool", sub: true, gatedBy: "protocol_obfuscation_enabled" },
     ] },
     { legendKey: "prefs_group_ipfilter", fields: [
-      { key: "ipfilter_clients", type: "bool" },
-      { key: "ipfilter_servers", type: "bool" },
+      { key: "ipfilter_clients_enabled", type: "bool" },
+      { key: "ipfilter_servers_enabled", type: "bool" },
       { key: "ipfilter_reload", type: "button",
         action: { path: "ipfilter/reload",
                   titleKey: "prefs_action_ipfilter_reload",
@@ -266,13 +266,13 @@ const TABS = [
   { id: "advanced", labelKey: "prefs_advanced", cat: "advanced", noteKey: "prefs_advanced_warning", groups: [
     { legendKey: "prefs_group_tweaks", fields: [
       { key: "max_new_connections_per_5_seconds", type: "int", min: 0, max: 65535 },
-      { key: "kad_max_concurrent_source_searches", type: "int", min: 5, max: 50 },
+      { key: "kad_max_concurrent_source_search_count", type: "int", min: 5, max: 50 },
       { key: "kad_source_reask_minutes", type: "int", min: 30, max: 60 },
       { key: "source_reask_minutes", type: "int", min: 15, max: 60 },
       { key: "file_buffer_bytes", type: "int", min: 0, max: 3825000, step: 15000 },
       { key: "mmap_enabled", type: "bool", cat: "files", gatedBy: "mmap_supported" },
       { key: "mmap_supported", type: "bool", cat: "files", hidden: true },
-      { key: "max_upload_queue_clients", type: "int", min: 0, max: 25500, step: 100 },
+      { key: "max_upload_queue_client_count", type: "int", min: 0, max: 25500, step: 100 },
       // Stored in ms, shown in minutes like the desktop slider (0-30).
       { key: "server_keepalive_timeout_minutes", type: "int", min: 0, max: 30 },
       { key: "verbose_logging", type: "bool" },

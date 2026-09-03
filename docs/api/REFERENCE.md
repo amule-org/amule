@@ -257,7 +257,7 @@ The conversion to and from the host-order integers EC carries happens inside amu
 One rule, everywhere: **a query parameter the server does not understand is a `400 bad_request`, never a silent default.** That covers both halves of "does not understand": a value that will not parse, and a value outside the parameter's documented range.
 
 - Booleans (`include_parts`) accept `1`/`0`, `true`/`false` and `yes`/`no`. Anything else is a `400`.
-- Counts (`limit`, `offset`, `tail`, `width`, `interval`, `max_client_versions`, `since_message_id`) accept decimal digits within the range documented for that parameter. A non-numeric value, a negative one, or one outside the range is a `400` naming the bound.
+- Counts (`limit`, `offset`, `tail`, `width`, `max_client_versions`, `since_message_id`) and the one duration (`interval_seconds`) accept decimal digits within the range documented for that parameter. A non-numeric value, a negative one, or one outside the range is a `400` naming the bound.
 - An omitted parameter takes the documented default. Only omission does that; an empty value (`?limit=`) is a `400`, not an omission.
 
 Nothing clamps. A count above its cap used to be quietly reduced on some endpoints, so a count over the cap returned a full page with nothing in the response saying the request had been altered; it is now a rejection, which is the same answer the other endpoints already gave.
@@ -619,8 +619,8 @@ curl -s -H "Authorization: Bearer $TOKEN" http://$HOST/api/v0/status
     "network": { "user_count": 5400000, "file_count": 1400000000, "node_count": 2400 }
   },
   "speeds": {
-    "download_bytes_per_second": 4500000,
-    "upload_bytes_per_second": 50000,
+    "download_speed_bytes_per_second": 4500000,
+    "upload_speed_bytes_per_second": 50000,
     "download_overhead_bytes_per_second": 8700,
     "upload_overhead_bytes_per_second": 1100
   },
@@ -643,7 +643,7 @@ While disconnected `user_id` is `0`, `public_ip` is `null` and `high_id` is `fal
 
 **`ed2k.user_id` is not the same encoding as a client's `ed2k_user_id`.** [`GET /api/v0/clients/{ecid}`](#get-apiv0clientsecid) reports `ed2k_user_id` for a remote client, and the similar name invites the assumption that the two are interchangeable. They are not. Ours is stored exactly as the server sent it and is read least-significant-byte-first to produce `public_ip`; a client's HighID is **byte-swapped** on the way in. A consumer that compares the two values, or feeds one through the other's IP decoder, gets a reversed address. The `>= 16777216` HighID threshold *is* common to both; the byte order is not.
 
-**Overhead is additive.** `speeds.download_overhead_bytes_per_second` / `upload_overhead_bytes_per_second` are protocol and control traffic, counted **separately** from `download_bytes_per_second` / `upload_bytes_per_second` rather than being part of them — the desktop shows them as a second figure in parentheses. Both are `0` when the daemon reports nothing.
+**Overhead is additive.** `speeds.download_overhead_bytes_per_second` / `upload_overhead_bytes_per_second` are protocol and control traffic, counted **separately** from `download_speed_bytes_per_second` / `upload_speed_bytes_per_second` rather than being part of them — the desktop shows them as a second figure in parentheses. Both are `0` when the daemon reports nothing.
 
 **Disk figures may be `null`.** `disk.temp_free_bytes` is free space on the filesystem holding the part files, `disk.incoming_free_bytes` where finished downloads land. Either is `null` when the daemon has no figure — the first seconds after startup, or a directory it cannot stat, such as an unreachable network mount. `null` rather than `0`, because `0` would read as a full disk.
 
@@ -1887,7 +1887,7 @@ Send a bare priority level to pin it (the file's `priority_auto` becomes `false`
       "ecid": 1,
       "name": "eMule Server",
       "description": "Public server",
-      "version": "17.15",
+      "software_version": "17.15",
       "address": "203.0.113.5:4242",
       "ip":      "203.0.113.5",
       "country_code": "de",
@@ -2324,7 +2324,7 @@ Returns every preference category amuled carries over EC. The `general` and `con
   },
   "security": {
     "shared_files_visibility": "everybody",
-    "ipfilter_clients": true, "ipfilter_servers": true,
+    "ipfilter_clients_enabled": true, "ipfilter_servers_enabled": true,
     "ipfilter_auto_update": false, "ipfilter_update_url": "",
     "ipfilter_min_access_level": 127, "ipfilter_include_lan_ips": true,
     "secure_identification_enabled": true,
@@ -2347,8 +2347,8 @@ Returns every preference category amuled carries over EC. The `general` and `con
   "online_signature": { "enabled": false, "directory": "/home/me/.aMule", "update_frequency_seconds": 5 },
   "advanced": {
     "max_new_connections_per_5_seconds": 200, "verbose_logging": false,
-    "file_buffer_bytes": 240000, "max_upload_queue_clients": 5000,
-    "server_keepalive_timeout_minutes": 0, "kad_max_concurrent_source_searches": 50,
+    "file_buffer_bytes": 240000, "max_upload_queue_client_count": 5000,
+    "server_keepalive_timeout_minutes": 0, "kad_max_concurrent_source_search_count": 50,
     "kad_source_reask_minutes": 30, "source_reask_minutes": 15
   },
   "kad": { "update_url": "http://upd.emule-security.org/nodes.dat" },
@@ -2419,9 +2419,9 @@ Downloading a database **now** is [`POST /geoip/update`](#post-apiv0geoipupdate)
 | `connection.tcp_port` | `1`–`65532` | | the server UDP socket is TCP+3, and the core substitutes the default port for anything higher |
 | `connection.upload_slot_min_kibibytes_per_second` | `1`–`65535` | | the core clamps anything lower up to `1`, so a `0` would answer `200` and read back as `1` |
 | `advanced.file_buffer_bytes` | `0`–`3825000` | `15000` | stored as a `uint8` count of 15000-byte blocks |
-| `advanced.max_upload_queue_clients` | `0`–`25500` | `100` | stored as a `uint8` count of hundreds |
+| `advanced.max_upload_queue_client_count` | `0`–`25500` | `100` | stored as a `uint8` count of hundreds |
 | `advanced.max_new_connections_per_5_seconds` | `0`–`65535` | | stored as a `uint16` |
-| `advanced.kad_max_concurrent_source_searches` | `5`–`50` | | clamped to this range at daemon start |
+| `advanced.kad_max_concurrent_source_search_count` | `5`–`50` | | clamped to this range at daemon start |
 | `advanced.kad_source_reask_minutes` | `30`–`60` | | clamped to this range at daemon start |
 | `advanced.source_reask_minutes` | `15`–`60` | | clamped to this range at daemon start; below it the UDP reask gets you auto-banned for reask spam |
 | `security.ipfilter_min_access_level` | `0`–`255` | | an ipfilter.dat access level, not a percentage: an entry is enforced when its level is **below** this value, so `0` disables the list and `255` enforces every entry |
@@ -2804,7 +2804,7 @@ Time-series points behind the desktop Statistics graphs.
 
 | Parameter | Type | Default | Meaning |
 |---|---|---|---|
-| `interval` | int, `1`–`3600` | `1` | Seconds between samples. Changes what amuled is asked for, so it changes the reach of the window: `interval=10` covers ten times as long at a tenth the resolution. |
+| `interval_seconds` | int, `1`–`3600` | `1` | Seconds between samples, and the same key the response echoes. Changes what amuled is asked for, so it changes the reach of the window: `interval_seconds=10` covers ten times as long at a tenth the resolution. |
 | `width` | int, `0`–`1800` | full window | Tails the response to the last `N` samples. Applied after the fetch, so it does not change what is requested, so it never changes the time span each sample covers. `0` means the full window, same as omitting it. |
 
 ```json
@@ -2818,8 +2818,8 @@ Time-series points behind the desktop Statistics graphs.
     { "at": 1781430001, "value": 44, "active_download_count": 8, "active_upload_count": 4 }
   ],
   "session": {
-    "download_bytes": 12400000000,
-    "upload_bytes": 980000000,
+    "downloaded_bytes": 12400000000,
+    "uploaded_bytes": 980000000,
     "kad_node_seconds": 5400000,
     "duration_seconds": 86400
   }
@@ -2840,7 +2840,7 @@ Each point has `at` (unix seconds) and `value`, spaced by `interval_seconds`. `u
 | `kad_node_seconds` | **Not a transfer figure.** The running per-second sum of the Kad node count, i.e. node·seconds. Divide by `duration_seconds` for the session-average node count, which is its only use. |
 | `duration_seconds` | Daemon uptime at the newest point. `0` if the daemon does not report it. Divide any of the three figures above by it to get the session average the desktop plots. |
 
-**Errors:** `400 bad_request` (`interval` or `width` non-numeric or out of range), `404 not_found` (unknown graph name), `503 ec_unavailable`.
+**Errors:** `400 bad_request` (`interval_seconds` or `width` non-numeric or out of range), `404 not_found` (unknown graph name), `503 ec_unavailable`.
 
 ---
 

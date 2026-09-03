@@ -555,7 +555,7 @@ Rate impact is small: the overhead rates move about as often as the speeds alrea
     "network":    { "user_count": 5400000, "file_count": 1400000000, "node_count": 2400 }
   },
   "speeds": {
-    "download_bytes_per_second": 4500000, "upload_bytes_per_second": 50000,
+    "download_speed_bytes_per_second": 4500000, "upload_speed_bytes_per_second": 50000,
     "download_overhead_bytes_per_second": 8700, "upload_overhead_bytes_per_second": 1100
   },
   "disk":   { "temp_free_bytes": 48318382080, "incoming_free_bytes": 48318382080 },
