@@ -250,11 +250,11 @@ _assert_status 202 "POST /search (query=$TEST_QUERY, type=global) → 202"
 # carried it.
 _assert_json_eq '. | has("ok")' false 'POST /search response has no constant ok field'
 _assert_json_eq '.query' "$TEST_QUERY" 'POST /search echoes query'
-_assert_json_eq '.id | type' number 'POST /search returns a numeric id'
+_assert_json_eq '.search_id | type' number 'POST /search returns a numeric id'
 _assert_json_eq '.type'  global       'POST /search response reports type=global'
 _assert_json_eq '.state' running      'POST /search response reports state=running'
 _assert_json_eq '.started_at | type' number 'POST /search response stamps started_at'
-FIRST_SID=$(printf '%s' "$CURL_BODY" | jq -r '.id')
+FIRST_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id')
 # ...and a Location naming where the resource now lives, so a client that
 # ignores the body still knows the id it was given.
 _assert_header_contains "location: /api/v0/search/$FIRST_SID" \
@@ -282,25 +282,25 @@ _assert_status 404 "GET /search/{unknown}/results → 404"
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
 _assert_status 200 "GET /search → 200"
 _assert_json_eq '.searches | type' array 'GET /search .searches is an array'
-_assert_json_eq "[.searches[] | select(.id == $FIRST_SID)] | length" 1 \
+_assert_json_eq "[.searches[] | select(.search_id == $FIRST_SID)] | length" 1 \
 	'GET /search lists the search just started via POST /search'
-_assert_json_eq "[.searches[] | select(.id == $FIRST_SID)][0].query" "$TEST_QUERY" \
+_assert_json_eq "[.searches[] | select(.search_id == $FIRST_SID)][0].query" "$TEST_QUERY" \
 	'GET /search entry echoes the query'
-_assert_json_eq "[.searches[] | select(.id == $FIRST_SID)][0].type" global \
+_assert_json_eq "[.searches[] | select(.search_id == $FIRST_SID)][0].type" global \
 	'GET /search entry reports kind==global'
-_assert_json_eq "[[.searches[] | select(.id == $FIRST_SID)][0].state] | inside([\"running\",\"finished\"])" \
+_assert_json_eq "[[.searches[] | select(.search_id == $FIRST_SID)][0].state] | inside([\"running\",\"finished\"])" \
 	true 'GET /search entry state is running or finished (never idle for an active search)'
 # started_at is the list's only recency signal: entries arrive id-ascending
 # and id order is not start order (Kad ids carry a high-bit mask and sort
 # above ed2k ones), so a client that wants "the newest search" sorts on this.
 # Present because THIS amuleapi started the search.
-_assert_json_eq "[.searches[] | select(.id == $FIRST_SID)][0].started_at | type" number \
+_assert_json_eq "[.searches[] | select(.search_id == $FIRST_SID)][0].started_at | type" number \
 	'GET /search stamps started_at on a search this session started'
-_assert_json_eq "[.searches[] | select(.id == $FIRST_SID)][0].started_at > 1700000000" \
+_assert_json_eq "[.searches[] | select(.search_id == $FIRST_SID)][0].started_at > 1700000000" \
 	true 'started_at is a plausible recent unix second, not 0'
 # result_count lets a client label a tab it has not opened yet, instead of
 # fetching every search's results just to learn one integer each.
-_assert_json_eq "[.searches[] | select(.id == $FIRST_SID)][0].result_count | type" number \
+_assert_json_eq "[.searches[] | select(.search_id == $FIRST_SID)][0].result_count | type" number \
 	'GET /search entry carries a numeric result_count'
 # ...and it agrees with what the results endpoint reports as `total` -- but only
 # once the search has settled. While it runs, result_count is the daemon's live
@@ -333,9 +333,9 @@ done
 
 # legitimately differ by a fetch.
 LIST_COUNT=$(printf '%s' "$CURL_BODY" \
-	| jq -r "[.searches[] | select(.id == $FIRST_SID)][0].result_count")
+	| jq -r "[.searches[] | select(.search_id == $FIRST_SID)][0].result_count")
 LIST_STATE=$(printf '%s' "$CURL_BODY" \
-	| jq -r "[.searches[] | select(.id == $FIRST_SID)][0].state")
+	| jq -r "[.searches[] | select(.search_id == $FIRST_SID)][0].state")
 if [ "$LIST_STATE" = "finished" ]; then
 	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$FIRST_SID/results"
 	_assert_json_eq '.total' "$LIST_COUNT" \
@@ -387,11 +387,11 @@ SECOND_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 if [ -n "$SECOND_TOKEN" ] && [ "$SECOND_TOKEN" != "null" ]; then
 	_curl -H "Authorization: Bearer $SECOND_TOKEN" "http://$SECOND_HOST/api/v0/search"
 	_assert_status 200 "second amuleapi instance: GET /search → 200"
-	_assert_json_eq "[.searches[] | select(.id == $FIRST_SID)] | length" 1 \
+	_assert_json_eq "[.searches[] | select(.search_id == $FIRST_SID)] | length" 1 \
 		'second amuleapi instance (never POSTed) still lists the first instance'"'"'s search'
 	# ...but cannot stamp it: that instance did not start the search and the
 	# daemon ships no timestamp, so the key is omitted rather than zeroed.
-	_assert_json_eq "[.searches[] | select(.id == $FIRST_SID)][0] | has(\"started_at\")" \
+	_assert_json_eq "[.searches[] | select(.search_id == $FIRST_SID)][0] | has(\"started_at\")" \
 		false 'a foreign search carries no started_at (unknown, not 1970)'
 
 	_curl -H "Authorization: Bearer $SECOND_TOKEN" \
@@ -538,7 +538,7 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"query\":\"${TEST_QUERY}more\",\"type\":\"kad\"}" "$HOST/api/v0/search"
 if [ "$CURL_STATUS" = "202" ]; then
-	KAD_SID=$(printf '%s' "$CURL_BODY" | jq -r '.id')
+	KAD_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id')
 	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$KAD_SID/more"
 	_assert_status 202 "POST /search/{id}/more on a running Kad search → 202"
 	_assert_body_empty 'more sends no body'
@@ -679,7 +679,7 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"query\":\"$TEST_QUERY\",\"type\":\"kad\"}" "$HOST/api/v0/search"
 _assert_status 202 "POST /search type=kad → 202"
-RAMP_SID=$(printf '%s' "$CURL_BODY" | jq -r '.id')
+RAMP_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id')
 
 KAD_STATES=""; KAD_PCTS=""; SAW_RUNNING_KAD=0
 for _ in 1 2 3 4 5 6; do
@@ -780,7 +780,7 @@ _assert_status 405 "PATCH search comments → 405"
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"query\":\"$TEST_QUERY\",\"type\":\"global\"}" "$HOST/api/v0/search"
-CMT_SID=$(printf '%s' "$CURL_BODY" | jq -r '.id // empty')
+CMT_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id // empty')
 CMT_HASH=""
 for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
 	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/$CMT_SID/results"
@@ -878,7 +878,7 @@ fi
 G=$(curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"query\":\"$TEST_QUERY\",\"type\":\"global\"}" "$HOST/api/v0/search")
-SID_G=$(printf '%s' "$G" | jq -r '.id')
+SID_G=$(printf '%s' "$G" | jq -r '.search_id')
 # Distinct Kad keyword again: amuled keeps a keyword on its Kademlia
 # search list for the search's lifetime and refuses a second search for
 # the same one, so reusing $TEST_QUERY here would couple this section to
@@ -886,7 +886,7 @@ SID_G=$(printf '%s' "$G" | jq -r '.id')
 K=$(curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"query\":\"${TEST_QUERY}multi\",\"type\":\"kad\"}" "$HOST/api/v0/search")
-SID_K=$(printf '%s' "$K" | jq -r '.id')
+SID_K=$(printf '%s' "$K" | jq -r '.search_id')
 
 if [ -n "$SID_G" ] && [ -n "$SID_K" ] && [ "$SID_G" != "null" ] && [ "$SID_K" != "null" ]; then
 	if [ "$SID_G" != "$SID_K" ]; then
@@ -965,11 +965,11 @@ if [ -n "$SID_G" ] && [ -n "$SID_K" ] && [ "$SID_G" != "null" ] && [ "$SID_K" !=
 		# this is looking for.
 		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
 		if [ "$(printf '%s' "$CURL_BODY" | jq --argjson g "$SID_G" --argjson k "$SID_K" \
-			'[.searches[] | select(.id == $g or .id == $k) | select(has("result_count"))] | length')" -eq 2 ]; then
+			'[.searches[] | select(.search_id == $g or .id == $k) | select(has("result_count"))] | length')" -eq 2 ]; then
 			for _pair in "$SID_G:$G_TOTAL:global" "$SID_K:$K_TOTAL:kad"; do
 				_sid=${_pair%%:*}; _rest=${_pair#*:}; _cached=${_rest%%:*}; _label=${_rest#*:}
 				_held=$(printf '%s' "$CURL_BODY" | jq -r --argjson s "$_sid" \
-					'.searches[] | select(.id == $s) | .result_count')
+					'.searches[] | select(.search_id == $s) | .result_count')
 				if [ "$_cached" -gt "$_held" ]; then
 					_fail "union: the $_label search holds more results than the daemon has for it" \
 						"cached $_cached > daemon $_held; the ECID index is cross-wiring diffed tags"
@@ -1077,13 +1077,13 @@ fi
 CLOSE_RES=$(curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"query\":\"$TEST_QUERY\",\"type\":\"global\"}" "$HOST/api/v0/search")
-SID_CLOSE=$(printf '%s' "$CLOSE_RES" | jq -r '.id')
+SID_CLOSE=$(printf '%s' "$CLOSE_RES" | jq -r '.search_id')
 
 if [ -n "$SID_CLOSE" ] && [ "$SID_CLOSE" != "null" ]; then
 	# Precondition: the daemon holds it. Without this the "gone" assertion
 	# below would also pass against a search that was never there.
 	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
-	_assert_json_eq "[.searches[] | select(.id == $SID_CLOSE)] | length" 1 \
+	_assert_json_eq "[.searches[] | select(.search_id == $SID_CLOSE)] | length" 1 \
 		'close: daemon lists the search before the close'
 
 	# A plain stop (no close) halts activity but must KEEP the search --
@@ -1092,7 +1092,7 @@ if [ -n "$SID_CLOSE" ] && [ "$SID_CLOSE" != "null" ]; then
 	curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 		"$HOST/api/v0/search/$SID_CLOSE/stop" >/dev/null 2>&1
 	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
-	_assert_json_eq "[.searches[] | select(.id == $SID_CLOSE)] | length" 1 \
+	_assert_json_eq "[.searches[] | select(.search_id == $SID_CLOSE)] | length" 1 \
 		'close: a plain stop leaves the search on the daemon'
 
 	# Now free it, and assert it is GONE from the daemon's own list.
@@ -1100,7 +1100,7 @@ if [ -n "$SID_CLOSE" ] && [ "$SID_CLOSE" != "null" ]; then
 		"$HOST/api/v0/search/$SID_CLOSE" >/dev/null 2>&1
 	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
 	_assert_status 200 'close: GET /search after close → 200'
-	_assert_json_eq "[.searches[] | select(.id == $SID_CLOSE)] | length" 0 \
+	_assert_json_eq "[.searches[] | select(.search_id == $SID_CLOSE)] | length" 0 \
 		'close: the closed search is GONE from the daemon list'
 
 	# And it is gone for everyone, not just the session that closed it --
@@ -1131,7 +1131,7 @@ if [ -n "$SID_CLOSE" ] && [ "$SID_CLOSE" != "null" ]; then
 		"http://localhost:4715/api/v0/auth/login?include_token=true" | jq -r .token)
 	if [ -n "$SECOND2_TOKEN" ] && [ "$SECOND2_TOKEN" != "null" ]; then
 		_curl -H "Authorization: Bearer $SECOND2_TOKEN" "http://localhost:4715/api/v0/search"
-		_assert_json_eq "[.searches[] | select(.id == $SID_CLOSE)] | length" 0 \
+		_assert_json_eq "[.searches[] | select(.search_id == $SID_CLOSE)] | length" 0 \
 			'close: a second session also no longer sees the closed search'
 	else
 		_fail "close: second instance login" "no token; log: $(tail -c 300 "$SECOND2_LOG")"
@@ -1192,12 +1192,12 @@ if [ -n "$FOREIGN_TOKEN" ] && [ "$FOREIGN_TOKEN" != "null" ]; then
 		-H "Content-Type: application/json" \
 		-d "{\"query\":\"$TEST_QUERY\",\"type\":\"global\"}" \
 		"http://localhost:4716/api/v0/search")
-	SID_FOREIGN=$(printf '%s' "$FOREIGN_RES" | jq -r '.id')
+	SID_FOREIGN=$(printf '%s' "$FOREIGN_RES" | jq -r '.search_id')
 
 	if [ -n "$SID_FOREIGN" ] && [ "$SID_FOREIGN" != "null" ]; then
 		# The primary session can SEE it (this already worked).
 		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
-		_assert_json_eq "[.searches[] | select(.id == $SID_FOREIGN)] | length" 1 \
+		_assert_json_eq "[.searches[] | select(.search_id == $SID_FOREIGN)] | length" 1 \
 			'foreign stop: primary session lists the foreign search'
 
 		# ...and can also FREE it. This is the assertion that was 404ing.
@@ -1206,7 +1206,7 @@ if [ -n "$FOREIGN_TOKEN" ] && [ "$FOREIGN_TOKEN" != "null" ]; then
 		_assert_status 204 'foreign stop: freeing a foreign search → 204 (not 404)'
 
 		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
-		_assert_json_eq "[.searches[] | select(.id == $SID_FOREIGN)] | length" 0 \
+		_assert_json_eq "[.searches[] | select(.search_id == $SID_FOREIGN)] | length" 0 \
 			'foreign stop: the foreign search is actually gone afterwards'
 	else
 		_fail "foreign stop setup" "second instance POST /search returned no id ($FOREIGN_RES)"
@@ -1246,11 +1246,11 @@ _assert_json_eq '.searches | type' array 'failed start: /search still enumerable
 AFTER_BAD=$(curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"query\":\"$TEST_QUERY\",\"type\":\"global\"}" "$HOST/api/v0/search")
-SID_AFTER=$(printf '%s' "$AFTER_BAD" | jq -r '.id')
+SID_AFTER=$(printf '%s' "$AFTER_BAD" | jq -r '.search_id')
 if [ -n "$SID_AFTER" ] && [ "$SID_AFTER" != "null" ] && [ "$SID_AFTER" != "0" ]; then
 	_pass "failed start: a subsequent search still starts (id $SID_AFTER)"
 	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
-	_assert_json_eq "[.searches[] | select(.id == $SID_AFTER)] | length" 1 \
+	_assert_json_eq "[.searches[] | select(.search_id == $SID_AFTER)] | length" 1 \
 		'failed start: the subsequent search is discoverable'
 	curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
 		"$HOST/api/v0/search/$SID_AFTER" >/dev/null 2>&1
@@ -1277,23 +1277,23 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"query\":\"$ZERO_QUERY\",\"type\":\"global\"}" "$HOST/api/v0/search"
 _assert_status 202 "POST /search (zero-result probe) → 202"
-ZERO_SID=$(printf '%s' "$CURL_BODY" | jq -r '.id')
+ZERO_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id')
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"query\":\"${ZERO_QUERY}b\",\"type\":\"global\"}" "$HOST/api/v0/search"
 _assert_status 202 "POST /search (demotes the zero-result probe) → 202"
-DEMOTER_SID=$(printf '%s' "$CURL_BODY" | jq -r '.id')
+DEMOTER_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id')
 
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
 _assert_status 200 "GET /search → 200 (after the zero-result probe)"
 ZERO_COUNT=$(printf '%s' "$CURL_BODY" \
-	| jq -r "[.searches[] | select(.id == $ZERO_SID)][0].result_count // empty")
+	| jq -r "[.searches[] | select(.search_id == $ZERO_SID)][0].result_count // empty")
 # Guarded on the probe actually having retained nothing: on a daemon where the
 # nonsense keyword somehow matched, this assertion would pass through the
 # results-retained branch and prove nothing.
 if [ "$ZERO_COUNT" = "0" ]; then
-	_assert_json_eq "[.searches[] | select(.id == $ZERO_SID)][0].state" finished \
+	_assert_json_eq "[.searches[] | select(.search_id == $ZERO_SID)][0].state" finished \
 		'a demoted search that retained no results reports finished, not idle'
 else
 	_skip "zero-result lifecycle: probe retained ${ZERO_COUNT:-no} result(s), not 0"
@@ -1345,17 +1345,17 @@ if [ -n "$PEER_ECID" ]; then
 	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 		"$HOST/api/v0/clients/$PEER_ECID/shared_files"
 	if [ "$CURL_STATUS" = "202" ]; then
-		BROWSE_SID=$(printf '%s' "$CURL_BODY" | jq -r '.id')
+		BROWSE_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id')
 		_pass "POST /clients/{ecid}/shared_files (live peer) → 202 (search_id $BROWSE_SID)"
 
 		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
-		_assert_json_eq "[.searches[] | select(.id == $BROWSE_SID)][0].type" browse \
+		_assert_json_eq "[.searches[] | select(.search_id == $BROWSE_SID)][0].type" browse \
 			'GET /search reports the browse with kind=browse'
-		_assert_json_eq "[.searches[] | select(.id == $BROWSE_SID)][0].client_ecid" \
+		_assert_json_eq "[.searches[] | select(.search_id == $BROWSE_SID)][0].client_ecid" \
 			"$PEER_ECID" 'GET /search reports the browsed peer as client_ecid'
 		# Files received from the peer so far -- no total comparison, a browse
 		# is still running here.
-		_assert_json_eq "[.searches[] | select(.id == $BROWSE_SID)][0].result_count | type" \
+		_assert_json_eq "[.searches[] | select(.search_id == $BROWSE_SID)][0].result_count | type" \
 			number 'GET /search carries a numeric result_count on the browse'
 
 		# A browse must never report `idle` on the listing
@@ -1369,7 +1369,7 @@ if [ -n "$PEER_ECID" ]; then
 		# request is sent, but a peer that denies instantly can terminalize
 		# the browse before this round trip completes. `idle` is the failure.
 		LIST_STATE=$(printf '%s' "$CURL_BODY" | \
-			jq -r "[.searches[] | select(.id == $BROWSE_SID)][0].state")
+			jq -r "[.searches[] | select(.search_id == $BROWSE_SID)][0].state")
 		case "$LIST_STATE" in
 		running | finished)
 			_pass "GET /search reports the browse as $LIST_STATE, never idle"
@@ -1420,10 +1420,10 @@ if [ -n "$PEER_ECID" ]; then
 		_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 			"$HOST/api/v0/clients/$PEER_ECID/shared_files"
 		_assert_status 202 "POST /clients/{ecid}/shared_files (duplicate) → 202"
-		DUP_SID=$(printf '%s' "$CURL_BODY" | jq -r '.id')
+		DUP_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id')
 		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
 		FIRST_STATE=$(printf '%s' "$CURL_BODY" | \
-			jq -r "[.searches[] | select(.id == $BROWSE_SID)][0].state")
+			jq -r "[.searches[] | select(.search_id == $BROWSE_SID)][0].state")
 		BROWSE_COUNT_AFTER=$(printf '%s' "$CURL_BODY" | \
 			jq "[.searches[] | select(.type == \"browse\")] | length")
 		if [ "$DUP_SID" = "$BROWSE_SID" ]; then
@@ -1470,7 +1470,7 @@ if [ -n "$PEER_ECID" ]; then
 		# `running` is still legitimate for a peer genuinely still streaming.
 		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
 		LIST_STATE=$(printf '%s' "$CURL_BODY" | \
-			jq -r "[.searches[] | select(.id == $BROWSE_SID)][0].state")
+			jq -r "[.searches[] | select(.search_id == $BROWSE_SID)][0].state")
 		if [ "$LIST_STATE" = "finished" ] || [ "$LIST_STATE" = "running" ]; then
 			_pass "browse listing state is $LIST_STATE after settling (never idle)"
 		else
@@ -1504,7 +1504,7 @@ if [ -n "$UNREACHABLE_ECID" ]; then
 	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 		"$HOST/api/v0/clients/$UNREACHABLE_ECID/shared_files"
 	if [ "$CURL_STATUS" = "202" ]; then
-		DEAD_SID=$(printf '%s' "$CURL_BODY" | jq -r '.id')
+		DEAD_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id')
 		# No peer round trip is involved -- the daemon decides not to contact
 		# it and fails the browse in the same call -- so a short settle is
 		# enough. Poll rather than sleep blindly, to keep it quick when it
@@ -1513,7 +1513,7 @@ if [ -n "$UNREACHABLE_ECID" ]; then
 		for _ in 1 2 3 4 5 6 7 8 9 10; do
 			_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
 			DEAD_STATE=$(printf '%s' "$CURL_BODY" | \
-				jq -r "[.searches[] | select(.id == $DEAD_SID)][0].state")
+				jq -r "[.searches[] | select(.search_id == $DEAD_SID)][0].state")
 			[ "$DEAD_STATE" = "finished" ] && break
 			sleep 1
 		done
@@ -1532,7 +1532,7 @@ if [ -n "$UNREACHABLE_ECID" ]; then
 		# is still browsable rather than joined to a dead browse for good.
 		_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 			"$HOST/api/v0/clients/$UNREACHABLE_ECID/shared_files"
-		RETRY_SID=$(printf '%s' "$CURL_BODY" | jq -r '.id')
+		RETRY_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id')
 		if [ "$RETRY_SID" != "$DEAD_SID" ]; then
 			_pass "a later browse of that peer starts fresh ($RETRY_SID), not the dead id"
 		else
@@ -1560,7 +1560,7 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-d '{"query":"related::baadbaadbaadbaadbaadbaadbaadbaad","type":"local"}' \
 	"$HOST/api/v0/search"
 _assert_status 202 'POST /search with a related:: query → 202 (no dedicated endpoint needed)'
-REL_SID=$(printf '%s' "$CURL_BODY" | jq -r '.id // empty')
+REL_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id // empty')
 [ -n "$REL_SID" ] && curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/search/$REL_SID" >/dev/null 2>&1
 # The capability a client should check before reading "no hits" as
@@ -1613,7 +1613,7 @@ if [ "$HAVE_SECOND_INSTANCE" -eq 1 ]; then
 		OWN_SID=$(curl -s -X POST -H "Authorization: Bearer $THIRD_TOKEN" \
 			-H "Content-Type: application/json" \
 			-d "{\"query\":\"$TEST_QUERY\"}" "http://$THIRD_HOST/api/v0/search" \
-			| jq -r '.id // empty')
+			| jq -r '.search_id // empty')
 		sleep 3
 
 		# NOW start a search it knows nothing about, and let its union poll run
@@ -1623,7 +1623,7 @@ if [ "$HAVE_SECOND_INSTANCE" -eq 1 ]; then
 			-H "Content-Type: application/json" \
 			-d "{\"query\":\"$TEST_QUERY\"}" "$HOST/api/v0/search"
 		_assert_status 202 'late-discovery: first instance starts a search the third has never seen'
-		LATE_SID=$(printf '%s' "$CURL_BODY" | jq -r '.id // empty')
+		LATE_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id // empty')
 		sleep 12
 
 		if [ -n "$LATE_SID" ]; then
@@ -1631,7 +1631,7 @@ if [ "$HAVE_SECOND_INSTANCE" -eq 1 ]; then
 			# from a search that genuinely found nothing.
 			_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
 			LATE_HELD=$(printf '%s' "$CURL_BODY" \
-				| jq -r "[.searches[] | select(.id == $LATE_SID)][0].result_count // 0")
+				| jq -r "[.searches[] | select(.search_id == $LATE_SID)][0].result_count // 0")
 			if [ "$LATE_HELD" -gt 0 ]; then
 				# First read by the third instance: discovery has to seed the slot in
 				# full here, because the differential stream has nothing left to send.

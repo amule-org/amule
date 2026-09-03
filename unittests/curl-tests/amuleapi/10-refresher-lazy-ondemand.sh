@@ -189,7 +189,7 @@ _assert_status 404 "GET /stats/graphs/bogus → 404 (still validated)"
 # which is the lazy-fetch behaviour this phase is about.
 _curl -X POST -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
 	-d '{"query":"amuleapi-phase10","type":"local"}' "$HOST/api/v0/search"
-SID=$(printf '%s' "$CURL_BODY" | jq -r '.id // empty')
+SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id // empty')
 [ -n "$SID" ] || _die "POST /search returned no search_id"
 
 _curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/search/$SID/results"
