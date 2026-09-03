@@ -39,7 +39,8 @@ const EVENT_TYPES = [
   "server_added",   "server_updated",   "server_removed",
   "friend_added",   "friend_updated",   "friend_removed",
   "status_changed", "log_appended",
-  "search_result_added", "search_result_updated", "search_progress", "search_closed",
+  "search_result_added", "search_result_updated", "search_result_removed",
+  "search_progress", "search_closed",
   "comments_updated",
 ];
 const es = new EventSource("/api/v0/events", { withCredentials: true });
@@ -262,7 +263,7 @@ On any of them, the client's correct response is:
 
 ## Event catalog
 
-Every event the bus publishes. The `_added` and `_updated` payloads are BYTE-FOR-BYTE identical to the matching REST resource's list-item shape — clients receiving a `*_updated` event get the full new state and never need to re-GET. `_removed` carries only the identity field — `hash` for files (`download_removed`, `shared_removed`) and `ecid` for every ECID-keyed collection (`client_removed`, `friend_removed`, `server_removed`) — so the client can drop the cache entry without needing the old object. Three events don't fit the collection-delta model: `status_changed` ships a full status envelope (replace, not merge), `log_appended` is an append operation (`{lines}` — push the lines onto the amule log buffer, don't replace), and `search_closed` retires a whole result space rather than one item (`{search_id}` — drop the view, not a row). Branch on the event type in your dispatcher accordingly.
+Every event the bus publishes. The `_added` and `_updated` payloads are BYTE-FOR-BYTE identical to the matching REST resource's list-item shape — clients receiving a `*_updated` event get the full new state and never need to re-GET. `_removed` carries only the identity field — `hash` for files (`download_removed`, `shared_removed`) and `ecid` for every ECID-keyed collection (`client_removed`, `friend_removed`, `server_removed`) — so the client can drop the cache entry without needing the old object. `search_result_removed` follows the same rule with the `search_id` that scopes it: `{search_id, hash}`. Three events don't fit the collection-delta model: `status_changed` ships a full status envelope (replace, not merge), `log_appended` is an append operation (`{lines}` — push the lines onto the amule log buffer, don't replace), and `search_closed` retires a whole result space rather than one item (`{search_id}` — drop the view, not a row). Branch on the event type in your dispatcher accordingly.
 
 ### `downloads` channel
 
@@ -606,6 +607,18 @@ It does **not** fire on `sources` or `alternate_names[]`. Those churn on essenti
 ```
 
 `search_id` routes the result to the search that produced it — amuleapi runs several searches at once (see [REFERENCE.md](REFERENCE.md#post-apiv0search)), so demux on it. Key results by `(search_id, hash)`. Aside from the leading `search_id`, the payload is byte-for-byte identical to a `/search/{id}/results` array entry — the two are emitted by the same writer, so the promise holds by construction. That includes `status`, `file_type`, `directory` (the folder inside a browsed client's share, `""` on ordinary hits), `kad_comment_lookup_running`, `comments[]` and the `alternate_names[]` grouping array — see [REFERENCE.md](REFERENCE.md#get-apiv0searchidresults); `sources` is the nested `{total, complete}` object, `media` — the audio/video metadata object — is present for locally-known/probed hits and `null` otherwise (the one place the unknown-value rule reaches an object rather than a scalar, so test `media === null` before reaching into it), and `alternate_names` holds the same-hash/different-name alternatives (empty for a single-name hit), same as the REST endpoint. Only parent results fire these events — children are folded into their parent's `alternate_names[]`, never emitted on their own. A change to a child therefore surfaces as a `search_result_updated` for its parent. Each `search_id` is an independent result space — a new `POST /search` starts a fresh one without disturbing the others.
+
+#### `search_result_removed`
+
+```json
+{ "search_id": 42, "hash": "0a1b..." }
+```
+
+A result the daemon no longer serves for this search. Identity-only, like every other `_removed`: drop the row keyed by `(search_id, hash)`; there is nothing to merge and no re-read needed.
+
+Two things produce one. The incremental union merge erases a result the daemon stopped reporting, and the folding pass drops a row that has since become a child of another result, surfacing instead inside that parent's `alternate_names[]` — so a removal is sometimes a regrouping rather than a disappearance, and the parent's `search_result_updated` carries the new grouping.
+
+This matters most on a **finished** search, which publishes no further [`search_progress`](#search_progress): without this event nothing would signal that a row the API has stopped serving is still on screen.
 
 #### `search_progress`
 

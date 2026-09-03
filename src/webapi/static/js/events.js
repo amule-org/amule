@@ -169,9 +169,9 @@ function openSse() {
     try { store.set("log:appended", JSON.parse(ev.data)); } catch (_) {}
   });
 
-  // Search has its own channel but doesn't fit the added/updated/removed
-  // resource model (no _removed; each search is a fresh result space), so
-  // it's surfaced via store keys the search view consumes directly.
+  // Search has its own channel and only partly fits the collection model --
+  // each search is a fresh result space -- so it's surfaced via store keys the
+  // search view consumes directly rather than the generic resource plumbing.
   // search_result_added is byte-for-byte a /search/{id}/results[] entry (keyed
   // by hash, nested sources {total, complete}); search_progress carries
   // {state, percent, results, kind} and its terminal frame (state:
@@ -188,6 +188,11 @@ function openSse() {
   };
   es.addEventListener("search_result_added", onSearchResult);
   es.addEventListener("search_result_updated", onSearchResult);
+  // Identity-only ({search_id, hash}), so it gets its own key: routing it
+  // through onSearchResult would upsert a row with no fields.
+  es.addEventListener("search_result_removed", (ev) => {
+    try { store.set("search:result_removed", JSON.parse(ev.data)); } catch (_) {}
+  });
   es.addEventListener("search_progress", (ev) => {
     try { store.set("search:progress", JSON.parse(ev.data)); } catch (_) {}
   });

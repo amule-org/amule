@@ -1040,6 +1040,23 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 			}
 
 			auto &pstate = prev.searches[sid];
+			// Results do leave an attached search: the union merge erases an
+			// ECID the daemon stopped reporting, and RebuildFoldedResults drops
+			// a row that has since been folded into a parent's
+			// alternate_names[]. Emitted before the additions below, the order
+			// DiffMap uses, and identity-only like every other _removed.
+			//
+			// Without this the row stays on every subscriber's screen for the
+			// life of the search: a finished one publishes no further
+			// search_progress, so nothing even hints that a re-read is due.
+			for (const auto &kv : pstate.results) {
+				if (search_now.find(kv.first) != search_now.end())
+					continue;
+				std::ostringstream removed;
+				removed << "{\"search_id\":" << sid << ",\"hash\":\""
+					<< EscJson(kv.second.hash) << "\"}";
+				bus.Publish("search_result_removed", removed.str());
+			}
 			// New and mutated result entries for this search.
 			for (const auto &kv : search_now) {
 				const auto pit = pstate.results.find(kv.first);
