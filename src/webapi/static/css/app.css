@@ -878,6 +878,81 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
 .rating-4 { color: var(--accent); }
 .rating-5 { color: var(--ok); }
 
+/* --- Messages (friends + chat) --- */
+/* Friends left, Messages right. A fixed track, not a draggable sash, so it
+   collapses cleanly to one column on a phone. Keeps .fill-view's height:100%
+   so each pane scrolls its own body. */
+.msg-split {
+  display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 12px;
+  align-items: stretch;
+}
+/* notebook look, same as .net-pane: header outside the box, content boxed */
+.msg-pane { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.msg-pane-head {
+  flex: none; display: flex; align-items: center; gap: 6px;
+  margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--text-dim);
+}
+.msg-pane-body {
+  flex: 1 1 auto; min-height: 0; overflow: auto;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 6px;
+}
+.msg-tabs { margin-bottom: 0; }
+.msg-tabs + .msg-pane-body { border-top-left-radius: 0; border-top-right-radius: 0; }
+.msg-pane-foot { flex: none; padding-top: 8px; }
+.msg-pane-foot .btn { width: 100%; justify-content: center; }
+
+/* friends list */
+.friend-list { list-style: none; margin: 0; padding: 0; }
+.friend-row { display: flex; align-items: center; gap: 2px; border-radius: var(--radius); }
+.friend-row:hover { background: var(--surface-2); }
+.friend-row.active { background: var(--sel); }
+/* The row's open action is a real button, so it must not look like one. */
+.friend-open {
+  flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 8px;
+  background: none; border: none; border-radius: var(--radius);
+  padding: 6px; font: inherit; color: inherit; text-align: left; cursor: pointer;
+}
+.friend-dot {
+  flex: none; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--border); box-shadow: inset 0 0 0 1px var(--text-dim);
+}
+.friend-dot.online { background: var(--ok); box-shadow: none; }
+.friend-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Desktop paints a connected friend blue (#0000FF); a theme token instead. */
+.friend-open.online .friend-name { color: var(--accent); }
+.friend-row .row-actions { flex: none; display: flex; gap: 2px; }
+/* the friend holding the friend slot */
+.friend-row .btn.active { color: var(--accent); border-color: var(--accent); }
+
+/* conversation */
+.chat-body { display: flex; flex-direction: column; gap: 6px; overflow: hidden; }
+.chat-peer {
+  flex: none; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding-bottom: 6px; border-bottom: 1px solid var(--border); font-size: 13px;
+}
+/* Flat text log, not bubbles; messages.js pins it to the bottom. */
+.chatlog {
+  flex: 1 1 auto; min-height: 0; overflow: auto;
+  font-family: var(--mono); font-size: 12.5px; line-height: 1.55;
+  padding: 4px 2px; overflow-wrap: anywhere;
+}
+.chat-line { white-space: pre-wrap; }
+.chat-time { color: var(--text-dim); margin-right: 4px; }
+.chat-nick { font-weight: 600; }
+.chat-nick.in { color: var(--accent); }   /* peer — the desktop's blue */
+.chat-nick.out { color: var(--ok); }      /* us — the desktop's green */
+.chat-compose { flex: none; display: flex; gap: 6px; padding-top: 8px; }
+.chat-compose .input { flex: 1 1 auto; min-width: 0; }
+
+/* Unread counter on the nav's Messages button. */
+.tool-btn { position: relative; }
+.tool-badge {
+  position: absolute; top: 2px; right: 2px; min-width: 16px; padding: 0 4px;
+  border-radius: 999px; font-size: 10px; line-height: 16px; font-weight: 700;
+  background: var(--bad); color: var(--accent-contrast); text-align: center;
+}
+
 /* --- responsive --- */
 @media (max-width: 1100px) {
   .prefs-groups { column-count: 2; }
@@ -909,6 +984,20 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
      Uncapped, the wrap grows to fit every row and the row window — computed
      from clientHeight — renders the whole list. */
   .split-view .table-wrap.virtual, .fill-view .table-wrap.virtual { flex: none; min-height: 0; max-height: 60vh !important; }
+  /* Phones: one column, each region capped and scrolling, so the compose box
+     stays on screen below a long friends list. */
+  .msg-split { grid-template-columns: 1fr; height: auto; gap: 14px; }
+  .msg-split .msg-pane, .msg-split .msg-pane-body { flex: 0 0 auto; }
+  .friend-list-wrap { max-height: 30vh; }
+  .msg-split .chat-body { min-height: 0; }
+  .msg-split .chatlog { max-height: 45vh; }
+  /* Wrap the strip so the close-all button isn't clipped off the row's end. */
+  .msg-tabs { flex-wrap: wrap; }
+  .msg-tabs .tab-item, .msg-tabs .tab { flex: 0 0 auto; }
+  .msg-tabs .tabs-extra { flex: 0 0 100%; margin: 4px 0 0; }
+  /* No room to overlay the nav label in the drawer; sit at the row's end. */
+  .tool-badge { position: static; margin-left: auto; }
+
   /* Networks: no splitter on phones — restore the inter-pane gap, let the
      bottom pane flow, and give the log box back its own height cap. */
   .net-split { gap: 16px; }
