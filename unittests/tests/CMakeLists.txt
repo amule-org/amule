@@ -1016,6 +1016,14 @@ add_test (NAME PartBarLegendTest
 	COMMAND PartBarLegendTest
 )
 
+# The one thing in this suite that is not header-only: the availability fade is
+# duplicated in the Web UI, which has no build step to generate one side from the
+# other, so the test reads the browser's own sources and compares. Same SRCDIR
+# trick as TextFileTest.
+target_compile_definitions (PartBarLegendTest
+	PRIVATE "SRCDIR=${CMAKE_CURRENT_SOURCE_DIR}"
+)
+
 target_include_directories (PartBarLegendTest
 	PRIVATE ${CMAKE_SOURCE_DIR}/src
 )
