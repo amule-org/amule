@@ -279,7 +279,11 @@ rm -f "$SSE_A" "$SSE_B"
 # network. Even on a fully-disconnected daemon `local` returns
 # immediately with 0 results, which still triggers the finished frame.
 # (search_progress supersedes the old standalone search_finished event.)
-SSE_PID=$(_sse_start 15)
+# 25 s, not 15: the terminal frame arrives when the SERVER declares the search
+# done, which on a LowID link is routinely slower than the old 8 s poll allowed
+# -- the check failed intermittently for that reason alone, which is the kind
+# of flake that teaches people to ignore a red run.
+SSE_PID=$(_sse_start 25)
 sleep 1
 SEARCH_QUERY=ubuntu
 SSE_SEARCH=$(curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -288,11 +292,10 @@ SSE_SEARCH=$(curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/search")
 SSE_SID=$(printf '%s' "$SSE_SEARCH" | jq -r '.search_id // empty')
 SEARCH_FINISHED=""
-for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 \
-         21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40; do
+for _ in $(seq 1 110); do
 	# The terminal frame is a search_progress event whose data has
 	# state=="finished". Several running frames may precede it; pick the
-	# finished one.
+	# finished one. 110 x 0.2 s = 22 s, inside the stream's 25 s.
 	if grep -q "^event: search_progress$" "$SSE_OUT"; then
 		SEARCH_FINISHED=$(grep -A2 "^event: search_progress$" "$SSE_OUT" \
 			| grep "^data: " | sed 's/^data: //' \
@@ -304,7 +307,7 @@ done
 wait $SSE_PID 2>/dev/null
 
 if [ -n "$SEARCH_FINISHED" ]; then
-	_pass "search_progress finished frame fired within 8 s of POST /search type=local"
+	_pass "search_progress finished frame fired within 22 s of POST /search type=local"
 	JSON="$SEARCH_FINISHED"
 	if echo "$JSON" | jq -e '.state == "finished"' >/dev/null 2>&1; then
 		_pass "search_progress .data.state == 'finished'"
@@ -350,7 +353,7 @@ if [ -n "$SEARCH_FINISHED" ]; then
 	fi
 else
 	_fail "search_progress finished frame missing" \
-		"no finished search_progress within 8 s of POST /search; stream sample: $(head -40 "$SSE_OUT")"
+		"no finished search_progress within 22 s of POST /search; stream sample: $(head -40 "$SSE_OUT")"
 fi
 
 # --- 6.1 search_closed fires when a search is freed. ---------------

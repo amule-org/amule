@@ -73,6 +73,21 @@ _assert_json_eq() {
 	fi
 }
 
+# A 202 from a connection-control trigger carries a body only when amuled had
+# something to say: `{"message": ...}` if it did, no body at all if it did not
+# (the empty `{}` was dropped so these match the URL-fetch triggers beside
+# them). Either is correct; a constant `ok` field is not.
+_assert_no_body_or_message() {
+	local what=$1
+	if [ -z "$CURL_BODY" ]; then
+		_pass "$what: 202 with no body (amuled reported nothing)"
+	elif echo "$CURL_BODY" | jq -e '(has("ok") | not) and (.message | type == "string")' >/dev/null 2>&1; then
+		_pass "$what: 202 body carries amuled's message and no constant ok"
+	else
+		_fail "$what 202 body" "expected no body or {message}, got: $CURL_BODY"
+	fi
+}
+
 if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
 if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
@@ -123,16 +138,14 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-d '{"network":"kad"}' \
 	"$HOST/api/v0/networks/disconnect"
 _assert_status 202 "POST /networks/disconnect {network:kad} → 202"
-_assert_json_eq '. | has("ok")' false \
-	'networks/disconnect(kad) response has no constant ok field'
+_assert_no_body_or_message 'networks/disconnect(kad)'
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{"network":"kad"}' \
 	"$HOST/api/v0/networks/connect"
 _assert_status 202 "POST /networks/connect {network:kad} → 202"
-_assert_json_eq '. | has("ok")' false \
-	'networks/connect(kad) response has no constant ok field'
+_assert_no_body_or_message 'networks/connect(kad)'
 
 # ed2k-only selector should also round-trip via the network field.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \

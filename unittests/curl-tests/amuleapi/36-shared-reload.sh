@@ -73,6 +73,20 @@ _assert_json_eq() {
 	fi
 }
 
+# A 202 from shared_reload carries a body only when amuled had
+# something to say: `{"message": ...}` if it did, no body at all if it did not
+# (the empty `{}` was dropped so this matches the URL-fetch triggers). Either is correct; a constant `ok` field is not.
+_assert_no_body_or_message() {
+	local what=$1
+	if [ -z "$CURL_BODY" ]; then
+		_pass "$what: 202 with no body (amuled reported nothing)"
+	elif echo "$CURL_BODY" | jq -e '(has("ok") | not) and (.message | type == "string")' >/dev/null 2>&1; then
+		_pass "$what: 202 body carries amuled's message and no constant ok"
+	else
+		_fail "$what 202 body" "expected no body or {message}, got: $CURL_BODY"
+	fi
+}
+
 _assert_body_empty() {
 	local label=$1
 	if [ -z "$CURL_BODY" ]; then
@@ -114,8 +128,7 @@ fi
 # --- 2. Accept path. -----------------------------------------------
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared_reload"
 _assert_status 202 "POST /shared_reload (admin) → 202"
-# No constant `ok`: the 202 already said the call was accepted.
-_assert_json_eq '. | has("ok")' false "/shared_reload has no constant ok field"
+_assert_no_body_or_message "/shared_reload"
 
 # --- 3. Repeated calls coalesce. -----------------------------------
 # A second request while the first is still pending (or its walk running)
@@ -124,7 +137,7 @@ _assert_json_eq '. | has("ok")' false "/shared_reload has no constant ok field"
 # collapse into one walk is amuled-side and shows up in its log.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared_reload"
 _assert_status 202 "POST /shared_reload again immediately → 202"
-_assert_json_eq '. | has("ok")' false "second /shared_reload has no constant ok field"
+_assert_no_body_or_message "second /shared_reload"
 
 # --- 4. The reply does not wait for the walk. ----------------------
 # Generous bound: this is a smoke against a regression to the old inline
