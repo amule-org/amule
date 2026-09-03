@@ -211,15 +211,28 @@ void CClientRowListCtrl::OnAddFriend(wxCommandEvent &WXUNUSED(event))
 	if (count == 0) {
 		return;
 	}
-	const wxString message = CFormat(wxPLURAL("Add or remove %u client from your friend list?",
-					 "Add or remove %u clients from your friend list?",
-					 count)) %
-				 count;
+	// The direction comes from the entry the user picked, so what happens
+	// matches what it said. Toggling each row would remove the friends inside
+	// a selection whose menu read "Add to Friends", and below the prompt
+	// threshold that would happen without a word.
+	PeerIdentity menuPeer;
+	if (!MenuPeer(menuPeer)) {
+		return;
+	}
+	const bool addThem = !PeerIsFriend(menuPeer);
+	const wxString message =
+		addThem ? wxString(CFormat(wxPLURAL("Add %u client to your friend list?",
+					   "Add %u clients to your friend list?",
+					   count)) %
+				   count)
+			: wxString(CFormat(wxPLURAL("Remove %u client from your friend list?",
+					   "Remove %u clients from your friend list?",
+					   count)) %
+				   count);
 	if (!ConfirmBulkPeerAction(count, message)) {
 		return;
 	}
-	const std::vector<PeerIdentity> peers = SelectedPeers();
-	PeerActionToggleFriends(peers);
+	PeerActionSetFriends(SelectedPeers(), addThem);
 }
 
 void CClientRowListCtrl::OnSetFriendslot(wxCommandEvent &evt)

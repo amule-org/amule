@@ -64,13 +64,17 @@ wxMenu *BuildClientContextMenu(const CClientRef &client);
 wxMenu *BuildPeerContextMenu(const PeerIdentity &peer);
 
 /**
- * Whether this build can browse a peer it is not already connected to.
+ * Whether this build can browse this particular peer.
  *
- * False in amulegui: EC names a browse target by ECID, which a peer that is
- * neither connected nor a friend does not have. Chat is not covered by this
- * and works in both builds, because EC_OP_CHAT_SEND addresses by GUI_ID.
+ * Always true in monolithic. In amulegui it depends on the peer: EC names a
+ * browse target by ECID, so a connected peer or a friend can be named, and
+ * one that is neither cannot. Chat is not covered by this and works in both
+ * builds, because EC_OP_CHAT_SEND addresses by GUI_ID.
  */
-bool PeerBrowseIsPossible();
+bool PeerBrowseIsPossible(const PeerIdentity &peer);
+
+//! Whether this peer is already on our friend list.
+bool PeerIsFriend(const PeerIdentity &peer);
 
 /**
  * Browse a peer, opening a connection to it if we are not already talking.
@@ -95,8 +99,14 @@ void PeerActionSendMessage(const PeerIdentity &peer);
  */
 void PeerActionSetFriendSlot(wxWindow *parent, const PeerIdentity &peer, bool checked, size_t selected);
 
-//! Friend or unfriend every peer given, writing the friend list once.
-void PeerActionToggleFriends(const std::vector<PeerIdentity> &peers);
+/**
+ * Friend or unfriend every peer given, writing the friend list once.
+ *
+ * One direction for the whole run rather than a per-row toggle: the menu
+ * entry is labelled from a single row, and a selection holding both friends
+ * and strangers would otherwise do the opposite of that label to half of it.
+ */
+void PeerActionSetFriends(const std::vector<PeerIdentity> &peers, bool addThem);
 
 //! Browse each peer's shared files, reusing an already-open tab per peer.
 void ClientActionViewFiles(const std::vector<CClientRef> &clients);

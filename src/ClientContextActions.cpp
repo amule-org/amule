@@ -151,7 +151,7 @@ wxMenu *BuildPeerContextMenu(const PeerIdentity &peer)
 	// address to store, and both connection entries need somewhere to dial.
 	menu->Enable(MP_ADDFRIEND, known != nullptr || peer.CanBeFriended());
 	menu->Enable(MP_SENDMESSAGE, peer.CanOpenConnection());
-	menu->Enable(MP_SHOWLIST, peer.CanOpenConnection() && PeerBrowseIsPossible());
+	menu->Enable(MP_SHOWLIST, peer.CanOpenConnection() && PeerBrowseIsPossible(peer));
 
 	return menu;
 }
@@ -165,12 +165,17 @@ wxMenu *BuildPeerContextMenu(const PeerIdentity &peer)
 // Chat is deliberately NOT covered by this. EC_OP_CHAT_SEND takes a bare
 // GUI_ID, which is built from the address alone, so messaging a peer we only
 // hold an address for works in both builds.
-bool PeerBrowseIsPossible()
+bool PeerBrowseIsPossible(const PeerIdentity &peer)
 {
-#ifdef CLIENT_GUI
-	return false;
-#else
+#ifndef CLIENT_GUI
+	(void)peer;
 	return true;
+#else
+	// EC names a browse target by ECID. A peer we are connected to has one as
+	// a client, and a friend has one as a friend record, and CFriendListRem
+	// already browses both. Only a peer that is neither has no daemon-side
+	// object to name, which is the case this cannot reach.
+	return peer.client.IsLinked() || PeerIsFriend(peer);
 #endif
 }
 
@@ -184,7 +189,13 @@ bool PeerActionViewFiles(const PeerIdentity &peer)
 		return false;
 	}
 #ifdef CLIENT_GUI
-	// Nothing to name this peer with on the wire, so say so rather than
+	// A friend can be named on the wire by its ECID even when we are not
+	// connected to it, which is the one handle a stored row can have.
+	if (CFriend *known = theApp->friendlist->LookupFriend(peer.hash, peer.ip, peer.port)) {
+		theApp->friendlist->RequestSharedFileList(known);
+		return true;
+	}
+	// Otherwise there is nothing to name it with, so say so rather than
 	// leaving the caller to assume the browse was asked for.
 	return false;
 #else
@@ -237,7 +248,12 @@ void PeerActionToggleFriend(const PeerIdentity &peer)
 	}
 }
 
-void PeerActionToggleFriends(const std::vector<PeerIdentity> &peers)
+bool PeerIsFriend(const PeerIdentity &peer)
+{
+	return theApp->friendlist->LookupFriend(peer.hash, peer.ip, peer.port) != nullptr;
+}
+
+void PeerActionSetFriends(const std::vector<PeerIdentity> &peers, bool addThem)
 {
 	// One write for the whole run. CFriendList saves after every add and
 	// remove, so without this a large selection rewrites emfriends.met once
@@ -248,7 +264,18 @@ void PeerActionToggleFriends(const std::vector<PeerIdentity> &peers)
 	// single escape from this loop would lose the friend list on exit.
 	FriendListBatch batch;
 	for (const PeerIdentity &peer : peers) {
-		PeerActionToggleFriend(peer);
+		CFriend *known = theApp->friendlist->LookupFriend(peer.hash, peer.ip, peer.port);
+		// One direction for the whole run, taken from the entry the user
+		// picked. Toggling per row means a selection holding both friends and
+		// strangers does the opposite of its own label to half of it, and
+		// removing a friend is the loss of something they curated.
+		if (addThem) {
+			if (known == nullptr && peer.CanBeFriended()) {
+				theApp->friendlist->AddFriend(peer.hash, peer.ip, peer.port, peer.name);
+			}
+		} else if (known != nullptr) {
+			theApp->friendlist->RemoveFriend(known);
+		}
 	}
 }
 
