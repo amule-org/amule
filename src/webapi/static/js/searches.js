@@ -34,7 +34,7 @@ let tabsTimer = 0;
 let resultsTimer = 0;
 let lastAdopt = 0;
 let offs = [];
-let lastResult = null, lastProgress = null, lastClosed = null;
+let lastResult = null, lastResultRemoved = null, lastProgress = null, lastClosed = null;
 
 function newTab({ id, query = "", label = "", kind = "global", state = "running", startedAt = 0,
                  percent = 0, count = 0 }) {
@@ -211,6 +211,19 @@ function onResult(p) {
   publishResultsSoon(p.search_id);
 }
 
+// The row left the daemon's result space (folded into a parent's alternate
+// names, or dropped by the union merge). Identity-only payload, like every
+// other _removed: drop the cache entry, no re-fetch.
+function onResultRemoved(p) {
+  if (!p || p === lastResultRemoved) return;
+  lastResultRemoved = p;
+  const tab = tabs.get(p.search_id);
+  if (!tab || !tab.results.delete(p.hash)) return;
+  tab.count = tab.results.size;
+  publishTabsSoon();
+  publishResultsSoon(p.search_id);
+}
+
 function onProgress(p) {
   if (!p || p === lastProgress) return;
   lastProgress = p;
@@ -260,9 +273,11 @@ export const searches = {
     if (started) return;
     started = true;
     lastResult = store.get("search:result");
+    lastResultRemoved = store.get("search:result_removed");
     lastProgress = store.get("search:progress");
     lastClosed = store.get("search:closed");
     offs.push(store.subscribe("search:result", onResult));
+    offs.push(store.subscribe("search:result_removed", onResultRemoved));
     offs.push(store.subscribe("search:progress", onProgress));
     offs.push(store.subscribe("search:closed", onClosed));
     startPolling();

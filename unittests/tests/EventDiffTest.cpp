@@ -639,6 +639,60 @@ std::size_t CountEvent(CEventBus &bus, const char *name)
 }
 } // namespace
 
+// --- search_result_removed: the row the API stopped serving ---
+//
+// Every other collection emits a _removed; the search diff walked only the
+// current results, so a row that left the result space stayed on every
+// subscriber's screen for the life of the search. On a finished search no
+// further search_progress fires either, so nothing prompted a re-read.
+TEST(EventDiff, SearchResultRemovedFiresWhenAResultLeavesTheSearch)
+{
+	CState state;
+	CEventBus bus;
+	LastSeenState prev;
+	SeedOneResult(state, bus, prev);
+	ASSERT_EQUALS(static_cast<size_t>(1), CountEvent(bus, "search_result_added"));
+
+	// The daemon stops reporting it: the union merge erases the ECID, or the
+	// fold makes it a child of another row.
+	state.MutateSearch(42, [](std::map<std::uint32_t, SearchResult> &cache) { cache.erase(7); });
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	ASSERT_EQUALS(static_cast<size_t>(1), CountEvent(bus, "search_result_removed"));
+	// Counts are cumulative over the run: still the one _added from the seed,
+	// and the row was not announced as an update on its way out.
+	ASSERT_EQUALS(static_cast<size_t>(1), CountEvent(bus, "search_result_added"));
+	ASSERT_EQUALS(static_cast<size_t>(0), CountEvent(bus, "search_result_updated"));
+
+	std::string payload;
+	for (const auto &e : DrainAll(bus))
+		if (e.name == "search_result_removed")
+			payload = e.data;
+	// Identity only, scoped by the search that owned the row.
+	ASSERT_EQUALS(
+		std::string("{\"search_id\":42,\"hash\":\"8b54a3c28b54a3c28b54a3c28b54a3c2\"}"), payload);
+
+	// Idempotent: with the baseline updated, a further tick adds no second
+	// removal (the count is cumulative, so it must still read exactly one).
+	EmitDiffsAndUpdate(bus, prev, state);
+	ASSERT_EQUALS(static_cast<size_t>(1), CountEvent(bus, "search_result_removed"));
+}
+
+// A row that stays put must not be announced as removed.
+TEST(EventDiff, SearchResultRemovedSilentWhileTheResultRemains)
+{
+	CState state;
+	CEventBus bus;
+	LastSeenState prev;
+	SeedOneResult(state, bus, prev);
+
+	state.MutateSearch(
+		42, [](std::map<std::uint32_t, SearchResult> &cache) { cache[7].status = "downloaded"; });
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	ASSERT_EQUALS(static_cast<size_t>(0), CountEvent(bus, "search_result_removed"));
+}
+
 TEST(EventDiff, SearchResultUpdatedFiresWhenADownloadStateChanges)
 {
 	CState state;
