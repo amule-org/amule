@@ -115,16 +115,14 @@ bool CClientDetailDialog::OnInitDialog()
 	// measurement, and these are the absence of one.
 	static const wxString kNoValue = "-";
 
-	// Username, Userhash
-	if (!m_info.userName.IsEmpty()) {
-		CastChild(ID_DNAME, wxStaticText)->SetLabel(m_info.userName);
-		// if we have client name we have userhash
-		wxASSERT(!m_info.userHash.IsEmpty());
-		CastChild(ID_DHASH, wxStaticText)->SetLabel(m_info.userHash.Encode());
-	} else {
-		CastChild(ID_DNAME, wxStaticText)->SetLabel(_("Unknown"));
-		CastChild(ID_DHASH, wxStaticText)->SetLabel(_("Unknown"));
-	}
+	// Username and hash are reported independently. A credit record keeps a
+	// hash long before it has a name, because the core only writes the name
+	// out at disconnect, so the two are not known together and the list row
+	// is already showing that hash beside this dialog.
+	CastChild(ID_DNAME, wxStaticText)
+		->SetLabel(m_info.userName.IsEmpty() ? _("Unknown") : m_info.userName);
+	CastChild(ID_DHASH, wxStaticText)
+		->SetLabel(m_info.userHash.IsEmpty() ? _("Unknown") : m_info.userHash.Encode());
 
 	// Client Software
 	if (!m_info.osInfo.IsEmpty()) {

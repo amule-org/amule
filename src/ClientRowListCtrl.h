@@ -28,7 +28,6 @@
 #include <vector>
 
 #include "ClientNameCell.h" // Needed for ClientNameCell
-#include "ClientRef.h"      // Needed for CClientRef
 #include "PeerIdentity.h"   // Needed for PeerIdentity
 #include "MuleVirtualDataViewCtrl.h"
 
@@ -50,9 +49,8 @@
  * Rows hold values, never clients. A CClientRef would be owning, so a list
  * holding one would keep every peer it ever showed alive; the peer is resolved
  * only when something is actually done to it, and a row whose peer has since
- * gone simply resolves to nothing.
+ * gone still names it well enough to act on from the record alone.
  */
-
 class CClientRowListCtrl : public CMuleVirtualDataViewCtrl
 {
 public:
@@ -75,13 +73,6 @@ protected:
 	 * built on top of it is shared.
 	 */
 	virtual std::vector<PeerIdentity> SelectedPeers() const = 0;
-
-	/**
-	 * The subset of SelectedPeers() we are actually connected to.
-	 *
-	 * For the actions that need a live peer and cannot make one.
-	 */
-	std::vector<CClientRef> SelectedClients() const;
 
 	void GetItemBarFill(wxUIntPtr data, unsigned column, CBarFillSpec &out) const override;
 

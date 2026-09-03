@@ -62,17 +62,6 @@ void CClientRowListCtrl::GetItemBarFill(wxUIntPtr data, unsigned column, CBarFil
 	out = CBarFillSpec(reinterpret_cast<wxUIntPtr>(cell), 0, {});
 }
 
-std::vector<CClientRef> CClientRowListCtrl::SelectedClients() const
-{
-	std::vector<CClientRef> clients;
-	for (const PeerIdentity &peer : SelectedPeers()) {
-		if (peer.client.IsLinked()) {
-			clients.push_back(peer.client);
-		}
-	}
-	return clients;
-}
-
 void CClientRowListCtrl::OnItemActivated(wxDataViewEvent &event)
 {
 	if (!event.GetItem().IsOk()) {
@@ -136,12 +125,13 @@ void CClientRowListCtrl::ForEachSelectedPeer(void (*action)(const PeerIdentity &
 	}
 }
 
-// For actions that only make sense on one row, matching the menu, which is
-// built for the first selected peer.
+// For actions that are meaningful on exactly one row and do nothing at all on
+// a wider selection, which is how the connected-client paths have always
+// treated them.
 void CClientRowListCtrl::ForSelectedPeer(void (*action)(const PeerIdentity &))
 {
 	const std::vector<PeerIdentity> peers = SelectedPeers();
-	if (!peers.empty()) {
+	if (peers.size() == 1) {
 		action(peers.front());
 	}
 }
@@ -158,9 +148,9 @@ void CClientRowListCtrl::OnAddFriend(wxCommandEvent &WXUNUSED(event))
 
 void CClientRowListCtrl::OnSetFriendslot(wxCommandEvent &evt)
 {
-	// Reads the same selection the menu was built from. Going through
-	// SelectedClients() would both act on a different peer than the one the
-	// menu described and drop offline friends, whose slot is settable.
+	// Reads the same selection the menu was built from. Resolving through
+	// live clients instead would both act on a different peer than the one
+	// the menu described and drop offline friends, whose slot is settable.
 	PeerActionSetFriendSlot(this, SelectedPeers(), evt.IsChecked());
 }
 
