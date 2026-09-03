@@ -180,7 +180,7 @@ protected:
 		wxUIntPtr data1, wxUIntPtr data2, unsigned column, bool alt, int modifier) const override;
 	const ClientNameCell *NameCellFor(wxUIntPtr item) const override;
 	unsigned NameColumn() const override { return COLUMN_HISTORY_NAME; }
-	std::vector<PeerIdentity> SelectedPeers() const override;
+	bool PeerForItem(wxUIntPtr data, PeerIdentity &out) const override;
 
 private:
 	const ClientHistoryRow *RowFor(wxUIntPtr item) const;

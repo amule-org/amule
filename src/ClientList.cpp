@@ -892,9 +892,16 @@ bool CClientList::SendChatMessage(uint64 client_id, const wxString &message)
 				"Creating") %
 				client_id % Uint32toStringIP(IP_FROM_GUI_ID(client_id)) %
 				PORT_FROM_GUI_ID(client_id));
-		client = new CUpDownClient(
-			PORT_FROM_GUI_ID(client_id), IP_FROM_GUI_ID(client_id), 0, 0, NULL, true, true);
-		AddClient(client);
+		// Through CreateForAddress(), which seeds GetIP() and reuses any
+		// client we already hold for this peer. Constructing one here
+		// directly leaves GetIP() at 0, so AddClient() keeps it out of the
+		// address index and the lookup above misses it next time: one
+		// unreachable client for every message sent. Both builds arrive
+		// here, amulegui by way of EC_OP_CHAT_SEND, so this is the place
+		// to get it right rather than at either call site.
+		CClientRef ref = CreateForAddress(
+			CMD4Hash(), IP_FROM_GUI_ID(client_id), PORT_FROM_GUI_ID(client_id), wxEmptyString);
+		client = ref.GetClient();
 	}
 	// Record before sending, and record regardless of the result: a false
 	// return from CUpDownClient::SendChatMessage means "queued while

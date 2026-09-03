@@ -64,15 +64,24 @@ protected:
 	virtual unsigned NameColumn() const = 0;
 
 	/**
-	 * The peers behind the current selection.
+	 * The peer behind one row, or false when the row names none usable.
 	 *
 	 * Identity comes from the row, so a peer we are not talking to is still
 	 * named here -- `client` is simply unlinked for it. The two lists key on
 	 * different things (ECID within a process, user hash across restarts),
-	 * which is why finding the live peer stays per-list while everything
-	 * built on top of it is shared.
+	 * which is why resolving one row stays per-list while everything built
+	 * on top of it is shared.
+	 *
+	 * Per row rather than per selection so the context menu, which describes
+	 * a single row, can resolve just that one. Resolving the whole selection
+	 * to read its first entry costs a full ClientDetailInfo and a client
+	 * lookup for every other selected row, which is the entire credit store
+	 * after a select-all.
 	 */
-	virtual std::vector<PeerIdentity> SelectedPeers() const = 0;
+	virtual bool PeerForItem(wxUIntPtr data, PeerIdentity &out) const = 0;
+
+	//! The peers behind the current selection, in display order.
+	std::vector<PeerIdentity> SelectedPeers() const;
 
 	void GetItemBarFill(wxUIntPtr data, unsigned column, CBarFillSpec &out) const override;
 

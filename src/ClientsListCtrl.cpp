@@ -181,7 +181,7 @@ const ClientNameCell *CClientsListCtrl::NameCellFor(wxUIntPtr item) const
 	return row != nullptr ? &row->nameCell : nullptr;
 }
 
-std::vector<PeerIdentity> CClientsListCtrl::SelectedPeers() const
+bool CClientsListCtrl::PeerForItem(wxUIntPtr data, PeerIdentity &out) const
 {
 	// By ECID: within one daemon process that names exactly this peer. A row is
 	// only ever as current as the last sweep, so a miss means the peer has gone.
@@ -189,37 +189,32 @@ std::vector<PeerIdentity> CClientsListCtrl::SelectedPeers() const
 	// Every row here is a peer we are connected to, so identity is taken from
 	// the live client rather than from the row -- there is no case where one is
 	// known and the other is not.
-	std::vector<PeerIdentity> peers;
-	for (wxUIntPtr data : GetSelectedItemData()) {
-		const Row *row = RowFor(data);
-		if (row == nullptr || row->ecid == 0) {
-			continue;
-		}
-		CClientRef found;
-#ifdef CLIENT_GUI
-		// The container already holds a reference; copying it links another.
-		CClientRef *ref = theApp->clientlist->GetByID(row->ecid);
-		if (ref != nullptr && ref->GetClient() != nullptr) {
-			found = *ref;
-		}
-#else
-		CUpDownClient *client = theApp->clientlist->FindClientByECID(row->ecid);
-		if (client != nullptr) {
-			found = CCLIENTREF(client, wxT("CClientsListCtrl::SelectedPeers"));
-		}
-#endif
-		if (!found.IsLinked()) {
-			continue;
-		}
-		PeerIdentity peer;
-		peer.hash = found.GetUserHash();
-		peer.name = found.GetUserName();
-		peer.ip = found.GetIP();
-		peer.port = found.GetUserPort();
-		peer.client = found;
-		peers.push_back(std::move(peer));
+	const Row *row = RowFor(data);
+	if (row == nullptr || row->ecid == 0) {
+		return false;
 	}
-	return peers;
+	CClientRef found;
+#ifdef CLIENT_GUI
+	// The container already holds a reference; copying it links another.
+	CClientRef *ref = theApp->clientlist->GetByID(row->ecid);
+	if (ref != nullptr && ref->GetClient() != nullptr) {
+		found = *ref;
+	}
+#else
+	CUpDownClient *client = theApp->clientlist->FindClientByECID(row->ecid);
+	if (client != nullptr) {
+		found = CCLIENTREF(client, wxT("CClientsListCtrl::PeerForItem"));
+	}
+#endif
+	if (!found.IsLinked()) {
+		return false;
+	}
+	out.hash = found.GetUserHash();
+	out.name = found.GetUserName();
+	out.ip = found.GetIP();
+	out.port = found.GetUserPort();
+	out.client = found;
+	return true;
 }
 
 wxString CClientsListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) const

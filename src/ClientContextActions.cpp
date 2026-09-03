@@ -188,15 +188,10 @@ void PeerActionSendMessage(const PeerIdentity &peer)
 	if (peer.ip == 0 || peer.port == 0) {
 		return;
 	}
-#ifndef CLIENT_GUI
-	// Make the client here rather than leaving it to SendChatMessage(). That
-	// path builds one from the GUI_ID but never seeds GetIP(), so AddClient()
-	// leaves it out of the address index and the lookup that opens the next
-	// message cannot find it -- one unreachable client per message sent.
-	theApp->clientlist->CreateForAddress(peer.hash, peer.ip, peer.port, peer.name);
-#endif
 	// The address is the whole target: monolithic looks the client up by it,
-	// and amulegui sends the GUI_ID over EC for the daemon to resolve.
+	// and amulegui sends the GUI_ID over EC for the daemon to resolve. Either
+	// way CClientList::SendChatMessage() makes the client if there is none,
+	// so there is nothing to pre-create here.
 	PromptAndSendChatMessage(peer.name, GUI_ID(peer.ip, peer.port));
 }
 

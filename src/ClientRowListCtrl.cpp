@@ -73,6 +73,18 @@ namespace
 const size_t kBulkPeerActionPrompt = 10;
 } // namespace
 
+std::vector<PeerIdentity> CClientRowListCtrl::SelectedPeers() const
+{
+	std::vector<PeerIdentity> peers;
+	for (wxUIntPtr data : GetSelectedItemData()) {
+		PeerIdentity peer;
+		if (PeerForItem(data, peer)) {
+			peers.push_back(std::move(peer));
+		}
+	}
+	return peers;
+}
+
 void CClientRowListCtrl::OnItemActivated(wxDataViewEvent &event)
 {
 	if (!event.GetItem().IsOk()) {
@@ -113,15 +125,22 @@ void CClientRowListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 	// A peer we are not connected to still gets a menu. Friending and the
 	// friend slot are persistent and need no connection at all; browsing and
 	// messaging open one when the user picks them.
-	const std::vector<PeerIdentity> peers = SelectedPeers();
-	if (peers.empty()) {
+	//
+	// Only the row under the cursor is resolved. The menu describes that one,
+	// and building the whole selection to read its first entry would resolve
+	// every other selected row for nothing.
+	if (!event.GetItem().IsOk()) {
+		return;
+	}
+	PeerIdentity peer;
+	if (!PeerForItem(ItemAt(GetModelRow(event.GetItem())), peer)) {
 		return;
 	}
 
 	// The builder omits "Swap to this file": it acts on an A4AF source of one
 	// particular download, which is a per-file notion neither of these lists
 	// has.
-	wxMenu *menu = BuildPeerContextMenu(peers.front());
+	wxMenu *menu = BuildPeerContextMenu(peer);
 	PopupMenu(menu, event.GetPosition());
 	delete menu;
 }

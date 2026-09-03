@@ -309,7 +309,7 @@ wxString DisplayNameFor(const ClientHistoryRow &row)
 
 } // namespace
 
-std::vector<PeerIdentity> CClientHistoryListCtrl::SelectedPeers() const
+bool CClientHistoryListCtrl::PeerForItem(wxUIntPtr data, PeerIdentity &out) const
 {
 	// Identity comes from the row, so a peer we are not connected to is still
 	// named: the hash, name, address and port the store kept are enough to
@@ -319,58 +319,53 @@ std::vector<PeerIdentity> CClientHistoryListCtrl::SelectedPeers() const
 	// rather than ECID: a history row outlives the daemon process whose ECIDs
 	// would have named the peer, and the hash is what the credit store is
 	// keyed on.
-	std::vector<PeerIdentity> peers;
-	for (wxUIntPtr data : GetSelectedItemData()) {
-		const ClientHistoryRow *row = RowFor(data);
-		if (row == nullptr || row->hash.IsEmpty()) {
-			continue;
-		}
-		PeerIdentity peer;
-		peer.hash = row->hash;
-		// The record's own name, not the Name column's fallback. This one
-		// is written to disk by AddFriend() and set on the live client by
-		// CreateForAddress(), so a placeholder here would persist a hex
-		// hash as somebody's name. Empty is meaningful: CFriend renders it
-		// as "?" until the peer tells us what it is called.
-		peer.name = row->name;
-		peer.ip = row->ip;
-		peer.port = row->port;
+	const ClientHistoryRow *row = RowFor(data);
+	if (row == nullptr || row->hash.IsEmpty()) {
+		return false;
+	}
+	out.hash = row->hash;
+	// The record's own name, not the Name column's fallback. This one is
+	// written to disk by AddFriend() and set on the live client by
+	// CreateForAddress(), so a placeholder here would persist a hex hash as
+	// somebody's name. Empty is meaningful: CFriend renders it as "?" until
+	// the peer tells us what it is called.
+	out.name = row->name;
+	out.ip = row->ip;
+	out.port = row->port;
 
-		// The half of the details dialog a stored record can answer. The
-		// session half stays absent, which is what hasSession says.
-		peer.detail.userName = row->name;
-		peer.detail.userHash = row->hash;
-		peer.detail.softStr = row->identityKnown ? GetSoftName(row->clientSoft) : wxString();
-		peer.detail.softVerStr = row->version;
-		// Left empty when unknown, so the dialog says so rather than
-		// rendering a literal 0.0.0.0.
-		peer.detail.fullIp = row->ip ? Uint32toStringIP(row->ip) : wxString();
-		peer.detail.userPort = row->port;
-		peer.detail.obfuscationStatus = row->obfuscation;
-		// Same direction the list's own Total Up / Total Down columns use.
-		peer.detail.uploadedTotal = row->uploaded;
-		peer.detail.downloadedTotal = row->downloaded;
-		peer.detail.hasSession = false;
-		peer.hasDetail = true;
+	// The half of the details dialog a stored record can answer. The session
+	// half stays absent, which is what hasSession says.
+	out.detail.userName = row->name;
+	out.detail.userHash = row->hash;
+	out.detail.softStr = row->identityKnown ? GetSoftName(row->clientSoft) : wxString();
+	out.detail.softVerStr = row->version;
+	// Left empty when unknown, so the dialog says so rather than rendering a
+	// literal 0.0.0.0.
+	out.detail.fullIp = row->ip ? Uint32toStringIP(row->ip) : wxString();
+	out.detail.userPort = row->port;
+	out.detail.obfuscationStatus = row->obfuscation;
+	// Same direction the list's own Total Up / Total Down columns use.
+	out.detail.uploadedTotal = row->uploaded;
+	out.detail.downloadedTotal = row->downloaded;
+	out.detail.hasSession = false;
+	out.hasDetail = true;
 #ifdef CLIENT_GUI
-		if (theApp->clientlist != nullptr) {
-			for (const auto &entry : *theApp->clientlist) {
-				CUpDownClient *client = entry->GetClient();
-				if (client != nullptr && client->GetUserHash() == row->hash) {
-					peer.client = *entry;
-					break;
-				}
+	if (theApp->clientlist != nullptr) {
+		for (const auto &entry : *theApp->clientlist) {
+			CUpDownClient *client = entry->GetClient();
+			if (client != nullptr && client->GetUserHash() == row->hash) {
+				out.client = *entry;
+				break;
 			}
 		}
-#else
-		for (const CClientRef &ref : theApp->clientlist->GetClientsByHash(row->hash)) {
-			peer.client = ref;
-			break;
-		}
-#endif
-		peers.push_back(std::move(peer));
 	}
-	return peers;
+#else
+	for (const CClientRef &ref : theApp->clientlist->GetClientsByHash(row->hash)) {
+		out.client = ref;
+		break;
+	}
+#endif
+	return true;
 }
 
 wxString CClientHistoryListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) const
