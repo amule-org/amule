@@ -974,11 +974,40 @@ target_link_libraries (RangeFileBodyTest
 # parts, a source whose state flips to "downloading" -- so PartIndex.h is
 # header-only and free of wx, Beast and EC, and the test needs nothing but
 # the harness.
-# The chunk-bar palette and the two legends the "?" beside the bar column
-# headers opens. Header-only and wx-free on purpose (see PartBarLegend.h): the
-# colours, the rows of each legend, which legend a column gets and where the "?"
-# is clickable are all decided without a toolkit, so a headless run can check
-# the half of the feature that can drift silently. Needs no app and no daemon.
+# The chunk-bar palette and the two legends the row context menu opens.
+# Header-only and wx-free on purpose (see PartBarLegend.h): the colours, the rows
+# of each legend and which legend a column gets are all decided without a
+# toolkit, so a headless run can check the half of the feature that can drift
+# silently. Needs no app and no daemon.
+#
+# This comment described a "?" beside the column headers until now. That
+# affordance never shipped: #1218 replaced it with a row context-menu entry
+# because the header hit test could not work -- clickX and GetColumnLeft() are
+# not in the same coordinate space -- and header clicks only sort. The test it
+# claimed to cover went with it.
+# Where each part sits in a chunk bar, and which of the two unrelated things the
+# shared-files bar draws. Header-only and wx-free (see PartBarSpans.h): the
+# geometry and the mode choice come from two integers, so a headless run can
+# check the arithmetic that was silently wrong. Needs no app and no daemon.
+add_executable (PartBarSpansTest
+	PartBarSpansTest.cpp
+)
+
+add_test (NAME PartBarSpansTest
+	COMMAND PartBarSpansTest
+)
+
+target_include_directories (PartBarSpansTest
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+)
+
+# mulecommon even though the header is inline-only: macOS links without it,
+# GNU ld and mingw do not (see JsonDepthScanTest).
+target_link_libraries (PartBarSpansTest
+	muleunit
+	mulecommon
+)
+
 add_executable (PartBarLegendTest
 	PartBarLegendTest.cpp
 )
