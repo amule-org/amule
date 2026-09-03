@@ -70,6 +70,11 @@ public:
 	// a socket nobody ticks -- one we are browsing rather than downloading
 	// from -- never reads again: its half-received packet never completes,
 	// and the peer looks like it answered nothing at all.
+	// Registration is on an empty bucket, not on what the socket is doing,
+	// so under a saturated cap this also collects sockets a part file will
+	// wake anyway. Those get a second, cheap wake per tick (WakeIfPaused()
+	// is a bool test when nothing is pending); telling the two apart from
+	// here would mean teaching the throttler about download sources.
 	void PauseUntilRefill(CEMSocket *socket);
 	void Forget(CEMSocket *socket);
 

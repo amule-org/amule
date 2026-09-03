@@ -57,8 +57,14 @@ public:
 	uint8 GetConState() { return byConnected; }
 	// Re-trigger OnReceive if this socket suspended its read loop last
 	// tick because CDownloadBandwidthThrottler's bucket was empty.
-	// Called once per tick from CPartFile::Process via
-	// CUpDownClient::TickDownloadAndMeasure.
+	//
+	// Two callers, once per tick each. CDownloadBandwidthThrottler::
+	// WakePaused() drives the sockets the bucket itself parked, which is the
+	// only wake a socket gets when it belongs to no download. CPartFile::
+	// Process(), via CUpDownClient::TickDownloadAndMeasure(), drives the
+	// downloading ones, and is the only wake for the two pendingOnReceive
+	// cases the throttler does not register: a read that would block, and a
+	// read that filled its grant with more still pending.
 	void WakeIfPaused();
 
 	virtual uint64 GetTimeOut() const;
