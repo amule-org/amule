@@ -672,30 +672,36 @@ std::string FindHeaderCaseInsensitive(
 	return std::string();
 }
 
-// resolve the CORS Origin echo for this request. Returns
-// the verbatim Origin to put in `Access-Control-Allow-Origin`, or
-// an empty string when CORS is disabled, the request had no Origin
-// (same-origin browser navigation; non-browser caller), or the
-// allowlist rejected the value. Wildcard semantics: `allow_cors=1`
-// with an empty allowlist echoes the request's Origin verbatim,
-// which is `*`-equivalent but cookie-auth-compatible (the literal
-// `*` is incompatible with `Access-Control-Allow-Credentials: true`
-// per CORS Fetch §3.2.5).
-std::string ResolveCorsOrigin(const CHttpServer::Request &req, const CAmuleApiConfig &cfg)
+// resolve the CORS Origin echo for this request. Returns the verbatim
+// Origin to put in `Access-Control-Allow-Origin` plus whether the
+// allowlist named it, or an empty origin when CORS is disabled, the
+// request had no Origin (same-origin browser navigation; non-browser
+// caller), or the allowlist rejected the value.
+//
+// Wildcard semantics: `allow_cors=1` with an empty allowlist echoes the
+// request's Origin verbatim, which is `*`-equivalent. Credentials are
+// NOT granted on that path -- see ApplyCorsHeaders.
+struct CorsDecision
+{
+	std::string origin;
+	bool allowlisted = false;
+};
+
+CorsDecision ResolveCorsOrigin(const CHttpServer::Request &req, const CAmuleApiConfig &cfg)
 {
 	if (!cfg.ServerCfg().allow_cors)
-		return std::string();
+		return CorsDecision{};
 	const std::string origin = FindHeaderCaseInsensitive(req.headers, "Origin");
 	if (origin.empty())
-		return std::string();
+		return CorsDecision{};
 	const auto &list = cfg.ServerCfg().cors_origin_allowlist;
 	if (list.empty())
-		return origin; // echo any origin
+		return CorsDecision{ origin, false }; // echo any origin, no credentials
 	for (const auto &allowed : list) {
 		if (allowed == origin)
-			return origin;
+			return CorsDecision{ origin, true };
 	}
-	return std::string();
+	return CorsDecision{};
 }
 
 // stamp the resolved CORS headers onto a response. `Vary:
@@ -704,15 +710,22 @@ std::string ResolveCorsOrigin(const CHttpServer::Request &req, const CAmuleApiCo
 // against a same-origin cache key. The auth + content headers go
 // on iff the origin was actually allowed.
 void ApplyCorsHeaders(
-	std::map<std::string, std::string> &headers, const std::string &resolved_origin, bool cors_enabled)
+	std::map<std::string, std::string> &headers, const CorsDecision &cors, bool cors_enabled)
 {
 	if (!cors_enabled)
 		return;
 	AppendHeaderToken(headers, "Vary", "Origin");
-	if (resolved_origin.empty())
+	if (cors.origin.empty())
 		return;
-	headers["Access-Control-Allow-Origin"] = resolved_origin;
-	headers["Access-Control-Allow-Credentials"] = "true";
+	headers["Access-Control-Allow-Origin"] = cors.origin;
+	// Credentials only for an origin the operator named. With an empty
+	// allowlist the echo is `*`-equivalent, and granting credentials there
+	// would let any site the user happens to visit call this API with their
+	// session cookie and read the replies -- the exact thing the same-origin
+	// policy exists to stop. An anonymous cross-origin read still works;
+	// a credentialed one needs an allowlist entry.
+	if (cors.allowlisted)
+		headers["Access-Control-Allow-Credentials"] = "true";
 	// Header names the client may read from `fetch().headers.get(...)`
 	// — by default the Fetch spec only exposes the CORS-safelisted
 	// response headers (Cache-Control, Content-Language, Content-Type,
@@ -792,7 +805,7 @@ bool RequestCarriesCredentials(const CHttpServer::Request &req, const std::strin
 CHttpServer::Response CApiDispatcher::Dispatch(const CHttpServer::Request &req)
 {
 	const bool cors_enabled = m_config.ServerCfg().allow_cors;
-	const std::string cors_org = ResolveCorsOrigin(req, m_config);
+	const CorsDecision cors_org = ResolveCorsOrigin(req, m_config);
 
 	// CORS preflight short-circuit. OPTIONS requests with
 	// `Access-Control-Request-Method` are browser preflights — they
@@ -806,7 +819,7 @@ CHttpServer::Response CApiDispatcher::Dispatch(const CHttpServer::Request &req)
 		pre.status = 204;
 		pre.content_type.clear();
 		ApplyCorsHeaders(pre.headers, cors_org, cors_enabled);
-		if (!cors_org.empty()) {
+		if (!cors_org.origin.empty()) {
 			pre.headers["Access-Control-Allow-Methods"] =
 				"GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS";
 			// Headers actual requests may send. Authorization for
@@ -11736,7 +11749,7 @@ void CApiDispatcher::StampCorsForTransport(
 	if (!origin_header.empty()) {
 		synthetic.headers.emplace("Origin", origin_header);
 	}
-	const std::string cors_org = ResolveCorsOrigin(synthetic, m_config);
+	const CorsDecision cors_org = ResolveCorsOrigin(synthetic, m_config);
 	ApplyCorsHeaders(headers, cors_org, m_config.ServerCfg().allow_cors);
 }
 
@@ -11756,7 +11769,7 @@ boost::optional<CHttpServer::Response> CApiDispatcher::PreflightEvents(const CHt
 		// an opaque fetch failure exactly when it most needs to read
 		// why it was turned away.
 		{
-			const std::string cors_org = ResolveCorsOrigin(req, m_config);
+			const CorsDecision cors_org = ResolveCorsOrigin(req, m_config);
 			ApplyCorsHeaders(a.rejection.headers, cors_org, m_config.ServerCfg().allow_cors);
 		}
 		return a.rejection;
@@ -11786,7 +11799,7 @@ boost::optional<CHttpServer::Response> CApiDispatcher::PreflightEvents(const CHt
 		// request on a socket we already shut down.
 		probe.headers["Connection"] = "close";
 		{
-			const std::string cors_org = ResolveCorsOrigin(req, m_config);
+			const CorsDecision cors_org = ResolveCorsOrigin(req, m_config);
 			ApplyCorsHeaders(probe.headers, cors_org, m_config.ServerCfg().allow_cors);
 		}
 		return probe;
@@ -11860,7 +11873,7 @@ void CApiDispatcher::DispatchEvents(const CHttpServer::Request &req,
 	// cross-origin streams. No Expose-Headers needed (SSE clients don't
 	// read response headers programmatically).
 	{
-		const std::string cors_org = ResolveCorsOrigin(req, m_config);
+		const CorsDecision cors_org = ResolveCorsOrigin(req, m_config);
 		ApplyCorsHeaders(response_headers, cors_org, m_config.ServerCfg().allow_cors);
 	}
 	// Also disable Connection: keep-alive override — chunked +

@@ -167,6 +167,11 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 			       "BindAddress=127.0.0.1\n"
 			       "Port=4713\n"
 			       "AllowCORS=0\n"
+			       // Written empty so the key is discoverable: with
+			       // AllowCORS=1 and no entries the echo is anonymous-only,
+			       // and a cross-origin client that logs in needs its origin
+			       // listed here.
+			       "CorsOriginAllowlist=\n"
 			       "StaticRoot=\n"
 			       "\n"
 			       "[EC]\n"

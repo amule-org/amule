@@ -14,9 +14,10 @@
 #     echoed only if it appears verbatim in the comma-separated
 #     allowlist. Non-matching origins receive `Vary: Origin` but
 #     no `Access-Control-Allow-Origin`.
-#   * Credentials: when an origin is allowed,
-#     `Access-Control-Allow-Credentials: true` is always set
-#     (cookie-auth-compatible with the per-origin echo).
+#   * Credentials: `Access-Control-Allow-Credentials: true` is set
+#     only for an origin the allowlist names. The empty-allowlist
+#     wildcard echoes the Origin but withholds credentials, so a
+#     drive-by site cannot call the API with the user's cookie.
 #   * Preflight: `OPTIONS` + `Access-Control-Request-Method` short-
 #     circuits before auth, replies 204 with
 #     `Access-Control-Allow-Methods: GET, HEAD, POST, PUT, PATCH,
@@ -191,10 +192,14 @@ if [ "$ACAO" = "https://wild.example.com" ]; then
 else
 	_fail "Wildcard echo" "expected 'https://wild.example.com', got '$ACAO'"
 fi
-if [ "$ACAC" = "true" ]; then
-	_pass "AllowCORS=1: Access-Control-Allow-Credentials: true"
+# The wildcard echo must NOT grant credentials: with no allowlist the echo
+# is `*`-equivalent, so any site the user visits could otherwise call this
+# API with their session cookie and read the replies. An anonymous
+# cross-origin read still works; a credentialed one needs an allowlist entry.
+if [ -z "$ACAC" ]; then
+	_pass "AllowCORS=1 (wildcard): no Access-Control-Allow-Credentials"
 else
-	_fail "Allow-Credentials" "expected 'true', got '$ACAC'"
+	_fail "wildcard Allow-Credentials" "expected no header, got '$ACAC'"
 fi
 if echo "$ACEH" | grep -qi "ETag"; then
 	_pass "AllowCORS=1: Access-Control-Expose-Headers lists ETag"
