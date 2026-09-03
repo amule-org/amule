@@ -325,7 +325,9 @@ std::vector<PeerIdentity> CClientHistoryListCtrl::SelectedPeers() const
 		peer.detail.userHash = row->hash;
 		peer.detail.softStr = row->identityKnown ? GetSoftName(row->clientSoft) : wxString();
 		peer.detail.softVerStr = row->version;
-		peer.detail.fullIp = Uint32toStringIP(row->ip);
+		// Left empty when unknown, so the dialog says so rather than
+		// rendering a literal 0.0.0.0.
+		peer.detail.fullIp = row->ip ? Uint32toStringIP(row->ip) : wxString();
 		peer.detail.userPort = row->port;
 		peer.detail.obfuscationStatus = row->obfuscation;
 		// Same direction the list's own Total Up / Total Down columns use.

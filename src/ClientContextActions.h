@@ -81,6 +81,15 @@ void PeerActionToggleFriend(const PeerIdentity &peer);
 //! Message a peer we are not connected to, opening a connection to do it.
 void PeerActionSendMessage(const PeerIdentity &peer);
 
+/**
+ * Grant or revoke the friend slot for the first selected peer.
+ *
+ * Resolves the friend record from the peer's own identity rather than from a
+ * live client, so it works for a friend that is currently offline. Warns, as
+ * the connected-client path does, when more than one row was selected.
+ */
+void PeerActionSetFriendSlot(wxWindow *parent, const std::vector<PeerIdentity> &peers, bool checked);
+
 //! Browse each peer's shared files, reusing an already-open tab per peer.
 void ClientActionViewFiles(const std::vector<CClientRef> &clients);
 

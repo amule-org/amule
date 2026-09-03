@@ -99,14 +99,36 @@ CClientList::~CClientList()
 	wxASSERT(m_clientList.empty());
 }
 
-CClientRef CClientList::CreateForAddress(uint32 ip, uint16 port, const wxString &name)
+CClientRef CClientList::CreateForAddress(const CMD4Hash &hash, uint32 ip, uint16 port, const wxString &name)
 {
-	CUpDownClient *client = new CUpDownClient(port, ip, 0, 0, nullptr, true, true);
+	// Reuse the client we already hold for this peer. Making a fresh one per
+	// call piles up entries that no later lookup matches, so a repeated
+	// action would neither find its own earlier attempt nor reach the tab it
+	// already opened.
+	CUpDownClient *client = nullptr;
+	if (!hash.IsEmpty()) {
+		const SourceList byHash = GetClientsByHash(hash);
+		if (!byHash.empty()) {
+			client = byHash.front().GetClient();
+		}
+	}
+	if (client == nullptr) {
+		client = FindClientByIP(ip, port);
+	}
+	if (client != nullptr) {
+		return CCLIENTREF(client, wxT("CClientList::CreateForAddress"));
+	}
+
+	client = new CUpDownClient(port, ip, 0, 0, nullptr, true, true);
 	// The ctor only records the address to connect to, leaving GetIP() at 0.
 	// Seed it, or anything that reads the peer's IP back -- a friend record
 	// saving itself, a menu deciding whether it can message -- sees 0.0.0.0.
 	client->SetIP(ip);
 	client->SetUserName(name);
+	// Set before AddClient(), which is what indexes the client by hash.
+	if (!hash.IsEmpty()) {
+		client->SetUserHash(hash);
+	}
 	AddClient(client);
 	return CCLIENTREF(client, wxT("CClientList::CreateForAddress"));
 }

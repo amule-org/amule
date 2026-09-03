@@ -3489,7 +3489,7 @@ void CFriendListRem::AddFriend(
 	m_conn->SendPacket(&req);
 }
 
-CFriend *CFriendListRem::FindFriend(const CMD4Hash &userhash, uint32 dwIP, uint16 nPort)
+CFriend *CFriendListRem::LookupFriend(const CMD4Hash &userhash, uint32 dwIP, uint16 nPort) const
 {
 	for (CFriend *cur_friend : m_items) {
 		if (!userhash.IsEmpty() && cur_friend->HasHash()) {
@@ -3516,6 +3516,9 @@ void CFriendListRem::RemoveFriend(CFriend *toremove)
 
 void CFriendListRem::SetFriendSlot(CFriend *Friend, bool new_state)
 {
+	if (!Friend) {
+		return;
+	}
 	CECPacket req(EC_OP_FRIEND);
 
 	CECTag slottag(EC_TAG_FRIEND_FRIENDSLOT, new_state);

@@ -857,13 +857,14 @@ public:
 	/**
 	 * The friend with this identity, or NULL.
 	 *
-	 * Same contract as CFriendList's: a hash matches a hashed friend, and an
-	 * address matches one entered by address. Reads the container the daemon
-	 * has already synced here, so it costs no EC round-trip -- unlike the
-	 * monolithic one it does not adopt a hash onto an address-only friend,
-	 * because the list this build holds is a copy and the daemon owns the file.
+	 * Same contract as CFriendList::LookupFriend(): a hash matches a hashed
+	 * friend, an address matches one entered by address, and the list is left
+	 * untouched. Reads the container the daemon has already synced here, so it
+	 * costs no EC round-trip. There is deliberately no adopting counterpart to
+	 * CFriendList::FindFriend(): the list this build holds is a copy and the
+	 * daemon owns the file.
 	 */
-	CFriend *FindFriend(const CMD4Hash &userhash, uint32 dwIP, uint16 nPort);
+	CFriend *LookupFriend(const CMD4Hash &userhash, uint32 dwIP, uint16 nPort) const;
 
 	//
 	// template

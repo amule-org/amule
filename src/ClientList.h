@@ -87,10 +87,11 @@ public:
 	 * it and only hold its last known address. Creating the object does not
 	 * connect: the request the caller makes next is what opens a connection.
 	 *
-	 * The caller is expected to have established that there is no live client
-	 * already; this always makes a new one.
+	 * Returns the client already held for this peer, matched by hash and
+	 * failing that by address, so repeating an action reuses the object the
+	 * previous one made instead of stacking up unreachable duplicates.
 	 */
-	CClientRef CreateForAddress(uint32 ip, uint16 port, const wxString &name);
+	CClientRef CreateForAddress(const CMD4Hash &hash, uint32 ip, uint16 port, const wxString &name);
 
 	/**
 	 * Removes a client from the  client lists.

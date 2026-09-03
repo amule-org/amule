@@ -44,6 +44,19 @@ public:
 	bool IsAlreadyFriend(uint32 dwLastUsedIP, uint32 nLastUsedPort);
 	void SaveList();
 	void LoadList();
+	/**
+	 * Looks a friend up without altering the list.
+	 *
+	 * Use this whenever the answer only informs a decision (enabling a menu
+	 * entry, say). FindFriend() adopts the hash onto an address-only record
+	 * and saves the file, which is wrong as a side effect of a query.
+	 */
+	CFriend *LookupFriend(const CMD4Hash &userhash, uint32 dwIP, uint16 nPort) const;
+
+	/**
+	 * As LookupFriend(), but a match found by address that carries no hash
+	 * yet adopts the one passed in, and the list is saved.
+	 */
 	CFriend *FindFriend(const CMD4Hash &userhash, uint32 dwIP, uint16 nPort);
 	CFriend *FindFriend(uint32 ecid);
 	void AddFriend(CFriend *toadd, bool notify = true);

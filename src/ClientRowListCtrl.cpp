@@ -126,28 +126,42 @@ void CClientRowListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 	delete menu;
 }
 
-// The menu is built for one peer, so the actions run on that same one.
+// For actions that are meaningful on any number of rows. Both lists are
+// multi-select (CMuleDataViewCtrl forces wxDV_MULTIPLE), and the connected-client
+// paths these replaced acted on the whole selection.
+void CClientRowListCtrl::ForEachSelectedPeer(void (*action)(const PeerIdentity &))
+{
+	for (const PeerIdentity &peer : SelectedPeers()) {
+		action(peer);
+	}
+}
+
+// For actions that only make sense on one row, matching the menu, which is
+// built for the first selected peer.
 void CClientRowListCtrl::ForSelectedPeer(void (*action)(const PeerIdentity &))
 {
 	const std::vector<PeerIdentity> peers = SelectedPeers();
-	if (peers.size() == 1) {
+	if (!peers.empty()) {
 		action(peers.front());
 	}
 }
 
 void CClientRowListCtrl::OnViewFiles(wxCommandEvent &WXUNUSED(event))
 {
-	ForSelectedPeer(PeerActionViewFiles);
+	ForEachSelectedPeer(PeerActionViewFiles);
 }
 
 void CClientRowListCtrl::OnAddFriend(wxCommandEvent &WXUNUSED(event))
 {
-	ForSelectedPeer(PeerActionToggleFriend);
+	ForEachSelectedPeer(PeerActionToggleFriend);
 }
 
 void CClientRowListCtrl::OnSetFriendslot(wxCommandEvent &evt)
 {
-	ClientActionSetFriendSlot(this, SelectedClients(), evt.IsChecked());
+	// Reads the same selection the menu was built from. Going through
+	// SelectedClients() would both act on a different peer than the one the
+	// menu described and drop offline friends, whose slot is settable.
+	PeerActionSetFriendSlot(this, SelectedPeers(), evt.IsChecked());
 }
 
 void CClientRowListCtrl::OnSendMessage(wxCommandEvent &WXUNUSED(event))

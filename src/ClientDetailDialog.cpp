@@ -143,7 +143,10 @@ bool CClientDetailDialog::OnInitDialog()
 					     : kNoValue);
 
 	// Client IP/Port
-	CastChild(ID_DIP, wxStaticText)->SetLabel(CFormat("%s:%i") % m_info.fullIp % m_info.userPort);
+	CastChild(ID_DIP, wxStaticText)
+		->SetLabel(m_info.fullIp.IsEmpty()
+				   ? kNoValue
+				   : wxString(CFormat("%s:%i") % m_info.fullIp % m_info.userPort));
 
 	// Server IP/Port/Name
 	if (m_info.serverIp) {

@@ -148,12 +148,9 @@ void CFriendList::SaveList()
 	}
 }
 
-CFriend *CFriendList::FindFriend(const CMD4Hash &userhash, uint32 dwIP, uint16 nPort)
+CFriend *CFriendList::LookupFriend(const CMD4Hash &userhash, uint32 dwIP, uint16 nPort) const
 {
-
-	for (FriendList::iterator it = m_FriendList.begin(); it != m_FriendList.end(); ++it) {
-
-		CFriend *cur_friend = *it;
+	for (CFriend *cur_friend : m_FriendList) {
 		// to avoid that unwanted clients become a friend, we have to distinguish between friends with
 		// a userhash and of friends which are identified by IP+port only.
 		if (!userhash.IsEmpty() && cur_friend->HasHash()) {
@@ -162,17 +159,23 @@ CFriend *CFriendList::FindFriend(const CMD4Hash &userhash, uint32 dwIP, uint16 n
 				return cur_friend;
 			}
 		} else if (cur_friend->GetIP() == dwIP && cur_friend->GetPort() == nPort) {
-			if (!userhash.IsEmpty() && !cur_friend->HasHash()) {
-				// Friend without hash (probably IP entered through dialog)
-				// -> save the hash
-				cur_friend->SetUserHash(userhash);
-				SaveList();
-			}
 			return cur_friend;
 		}
 	}
 
-	return NULL;
+	return nullptr;
+}
+
+CFriend *CFriendList::FindFriend(const CMD4Hash &userhash, uint32 dwIP, uint16 nPort)
+{
+	CFriend *found = LookupFriend(userhash, dwIP, nPort);
+	// A match can only lack a hash when it was matched on address, so this
+	// is the "friend entered as IP:port, now seen connecting" case.
+	if (found != nullptr && !userhash.IsEmpty() && !found->HasHash()) {
+		found->SetUserHash(userhash);
+		SaveList();
+	}
+	return found;
 }
 
 CFriend *CFriendList::FindFriend(uint32 ecid)
@@ -207,8 +210,10 @@ void CFriendList::RequestSharedFileList(CFriend *cur_friend, uint32 browseSearch
 	if (cur_friend) {
 		CUpDownClient *client = cur_friend->GetLinkedClient().GetClient();
 		if (!client) {
-			CClientRef ref = theApp->clientlist->CreateForAddress(
-				cur_friend->GetIP(), cur_friend->GetPort(), cur_friend->GetName());
+			CClientRef ref = theApp->clientlist->CreateForAddress(cur_friend->GetUserHash(),
+				cur_friend->GetIP(),
+				cur_friend->GetPort(),
+				cur_friend->GetName());
 			cur_friend->LinkClient(ref);
 			client = ref.GetClient();
 		}
@@ -255,8 +260,10 @@ void CFriendList::StartChatSession(CFriend *Friend)
 {
 	if (Friend) {
 		if (!Friend->GetLinkedClient().GetClient()) {
-			Friend->LinkClient(theApp->clientlist->CreateForAddress(
-				Friend->GetIP(), Friend->GetPort(), Friend->GetName()));
+			Friend->LinkClient(theApp->clientlist->CreateForAddress(Friend->GetUserHash(),
+				Friend->GetIP(),
+				Friend->GetPort(),
+				Friend->GetName()));
 		}
 	} else {
 		AddLogLineC(_("CRITICAL - no client on StartChatSession"));

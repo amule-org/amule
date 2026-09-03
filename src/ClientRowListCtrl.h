@@ -90,6 +90,10 @@ protected:
 private:
 	void OnItemActivated(wxDataViewEvent &event);
 	void ShowDetailsForSelection();
+	//! Runs an action on every selected peer.
+	void ForEachSelectedPeer(void (*action)(const PeerIdentity &));
+
+	//! Runs an action on the first selected peer, the one the menu describes.
 	void ForSelectedPeer(void (*action)(const PeerIdentity &));
 	void OnItemRightClicked(wxDataViewEvent &event);
 	void OnViewFiles(wxCommandEvent &event);
