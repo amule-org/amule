@@ -381,12 +381,18 @@ std::string ToJsonStatusEvent(const StatusSnapshot &s, const KadSnapshot &k, boo
 	o << "{"
 	  << "\"ec_connected\":" << (ec_connected ? "true" : "false") << ",\"ed2k\":{"
 	  << "\"state\":\"" << EscJson(s.ed2k_state) << "\""
-	  << ",\"high_id\":" << (s.ed2k_high_id ? "true" : "false") << ",\"user_id\":" << s.ed2k_user_id
-	  << ",\"public_ip\":\"" << EscJson(s.ed2k_public_ip) << "\""
+	  << ",\"high_id\":" << (s.ed2k_high_id ? "true" : "false") << ",\"user_id\":"
+	  << s.ed2k_user_id
+	  // null, not "", for the addresses: the REST row this event promises key
+	  // parity with nulls them, and server_port nulls with its address.
+	  << ",\"public_ip\":"
+	  << (s.ed2k_public_ip.empty() ? std::string("null") : "\"" + EscJson(s.ed2k_public_ip) + "\"")
 	  << ",\"connected_since_at\":" << s.ed2k_connected_since << ",\"server_name\":\""
 	  << EscJson(s.server_name) << "\""
-	  << ",\"server_ip\":\"" << EscJson(s.server_ip) << "\""
-	  << ",\"server_port\":" << s.server_port << ",\"network\":{"
+	  << ",\"server_ip\":"
+	  << (s.server_ip.empty() ? std::string("null") : "\"" + EscJson(s.server_ip) + "\"")
+	  << ",\"server_port\":"
+	  << (s.server_ip.empty() ? std::string("null") : std::to_string(s.server_port)) << ",\"network\":{"
 	  << "\"user_count\":" << JsonNumOrNull(s.has_ed2k_network, s.ed2k_users)
 	  << ",\"file_count\":" << JsonNumOrNull(s.has_ed2k_network, s.ed2k_files) << "}}"
 	  << ",\"kad\":{"

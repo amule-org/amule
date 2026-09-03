@@ -123,7 +123,11 @@ const char *const kIp2CountrySources[] = { "dbip", "maxmind", "custom", nullptr 
 
 const PrefField kSchema[] = {
 	// [general]
-	PREF_BOOL("general", "version_check_enabled", EC_TAG_GENERAL_CHECK_NEW_VERSION, PrefEnc::Presence, false, PrefAccess::ReadWrite, version_check_enabled),
+	// Value, not Presence: the core emits EC_TAG_GENERAL_CHECK_NEW_VERSION
+	// unconditionally as a value tag, so presence-decoding it pinned the
+	// answer to true and a read-modify-write of any other preference
+	// silently re-enabled version checking.
+	PREF_BOOL("general", "version_check_enabled", EC_TAG_GENERAL_CHECK_NEW_VERSION, PrefEnc::Value, false, PrefAccess::ReadWrite, version_check_enabled),
 	PREF_STR("general", "daemon_host_name", EC_TAG_USER_HOST, PrefAccess::ReadOnly, daemon_host_name),
 	PREF_STR("general", "nickname", EC_TAG_USER_NICK, PrefAccess::ReadWrite, nickname),
 	PREF_MD4("general", "user_hash", EC_TAG_USER_HASH, PrefAccess::ReadOnly, user_hash),
@@ -151,7 +155,9 @@ const PrefField kSchema[] = {
 	// 200 that left the daemon listening on 4662.
 	PREF_U16_DOMAIN("connection", "tcp_port", EC_TAG_CONN_TCP_PORT, 1u, 65532u, PrefAccess::ReadWrite, tcp_port),
 	PREF_U16("connection", "udp_port", EC_TAG_CONN_UDP_PORT, 65535u, PrefAccess::ReadWrite, udp_port),
-	PREF_U32("connection", "upload_slot_min_kibibytes_per_second", EC_TAG_CONN_SLOT_ALLOCATION, 65535u, PrefAccess::ReadWrite, upload_slot_min_kibibytes_per_second),
+	// Floor of 1: SetSlotAllocation clamps anything lower up to 1, so
+	// without the bound a 0 answered 200 and read back as 1.
+	PREF_U32_DOMAIN("connection", "upload_slot_min_kibibytes_per_second", EC_TAG_CONN_SLOT_ALLOCATION, 1u, 65535u, 0u, PrefAccess::ReadWrite, upload_slot_min_kibibytes_per_second),
 	PREF_BOOL_INGROUP("connection", "upnp_supported", EC_TAG_GENERAL_UPNP_AVAILABLE, PrefEnc::Value, PrefAccess::ReadOnly, upnp_supported, EC_TAG_PREFS_GENERAL),
 	PREF_BOOL("connection", "upnp_enabled", EC_TAG_CONN_UPNP_ENABLED, PrefEnc::Value, false, PrefAccess::ReadWrite, upnp_enabled),
 	PREF_U16("connection", "upnp_control_point_port", EC_TAG_CONN_UPNP_TCP_PORT, 65535u, PrefAccess::ReadWrite, upnp_control_point_port),

@@ -705,6 +705,23 @@ else
 	echo "    info: no guest pass; /geoip/update admin-gate skipped"
 fi
 
+# --- upload_slot_min_kibibytes_per_second has a floor of 1. --------
+# The core's setter clamps anything lower up to 1, so without a declared
+# minimum a 0 answered 200 and read back as 1 -- exactly the silent
+# daemon-side rewrite the schema bounds exist to turn into a 400.
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d '{"connection":{"upload_slot_min_kibibytes_per_second":0}}' "$HOST/api/v0/preferences"
+_assert_status 400 "PATCH upload_slot_min_kibibytes_per_second=0 -> 400 (below the floor)"
+_assert_json_eq '.error.code' bad_request \
+	'the below-floor slot value carries error.code=bad_request'
+
+# 1 is the floor itself, so it must still be accepted.
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d '{"connection":{"upload_slot_min_kibibytes_per_second":1}}' "$HOST/api/v0/preferences"
+_assert_status 200 "PATCH upload_slot_min_kibibytes_per_second=1 -> 200 (the floor is inclusive)"
+_assert_json_eq '.connection.upload_slot_min_kibibytes_per_second' 1 \
+	'the floor value round-trips unchanged'
+
 # --- Summary. -----------------------------------------------------
 echo
 if [ "$FAIL_COUNT" -eq 0 ]; then
