@@ -67,7 +67,7 @@ export default function Stats() {
         // zeroed) by an amuled that does not report them — then it draws as the
         // single line it used to be.
         const rest = g.name !== "connections" ? [sma(ys, SMA_WINDOW)]
-          : pts.length && pts[0].active_downloads !== undefined
+          : pts.length && pts[0].active_download_count !== undefined
             ? [pts.map((p) => p.active_download_count), pts.map((p) => p.active_upload_count)]
             : [];
         if (alive) setGraphData((d) => ({ ...d, [g.name]: [pts.map((p) => p.at), ys, ...rest] }));
@@ -173,7 +173,7 @@ function fmtValue(v, spec) {
   return s;
 }
 
-// UL:DL ratio from the raw numbers (node.ratio), formatted locale-aware
+// UL:DL ratio from the raw ratio_session / ratio_total numbers, formatted locale-aware
 // instead of pasting the daemon's pre-formatted composite string. Mirrors the
 // desktop GUI's "1 : <session> (1 : <total>)".
 function formatRatio(r) {
@@ -185,8 +185,8 @@ function formatRatio(r) {
 
 // Fill the label template's printf placeholders from values, in order.
 function nodeText(node) {
-  // Ratio node: build from node.ratio when present; else fall back to the
-  // composite string value (legacy daemons emit no ratio object).
+  // Ratio node: build from ratio_session / ratio_total when present; else fall
+  // back to the composite string value (legacy daemons emit no ratio numbers).
   if (node.ratio_session != null) {
     return tNodeLabel(node).replace("%s",
       formatRatio({ session: node.ratio_session, total: node.ratio_total }));

@@ -80,7 +80,7 @@ export const COLS = [
     cell: (c) => c.a4af
       ? html`<span class="a4af-badge" title=${c.a4af_name || "?"}>${t("downloads_peer_a4af")}: ${c.a4af_name || "?"}</span>`
       : c.parts_offered_count == null ? "—"
-      : formatInt(c.parts_offered_count) + (c.parts_total_count ? " / " + formatInt(c.parts_total_count) : "") },
+      : formatInt(c.parts_offered_count) + (c.partsTotal ? " / " + formatInt(c.partsTotal) : "") },
 
   { key: "dl_state", th: "downloads_peer_col_dl_state", width: "120px", sortable: true,
     sortVal: (c) => c.download_state || "", cell: (c) => stateBadge(c.download_state) },
@@ -312,7 +312,7 @@ export function FileClients({ hash, prefsKey, defaultHidden, defaultSort, a4afEc
   for (const c of clients || []) {
     const a4af = a4afSet.has(c.ecid);
     if (!a4af && !inThisFile(c)) continue;
-    rows.push({ ...c, a4af, parts_total_count: partsTotal,
+    rows.push({ ...c, a4af, partsTotal,
                 a4af_name: a4af ? (nameByHash.get(c.download_file_hash) || c.download_file_name || "?") : undefined });
   }
   if (ident !== "all") rows = rows.filter((c) => c.ident_state === ident);
