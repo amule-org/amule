@@ -331,7 +331,14 @@ for bad in "limit=abc" "limit=1000000001" "order=sideways" "sort=nonexistent_fie
 	_assert_status 400 "GET /search?$bad → 400"
 done
 
+# result_count on the list row against total on the results endpoint. Re-read
+# the list first: the four 400-probes above each overwrote CURL_BODY, so this
+# used to parse the last error body, find no .searches, and skip itself with an
+# empty state in the message.
+#
+# Only compared for a finished search: while one is running the two can
 # legitimately differ by a fetch.
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
 LIST_COUNT=$(printf '%s' "$CURL_BODY" \
 	| jq -r "[.searches[] | select(.search_id == $FIRST_SID)][0].result_count")
 LIST_STATE=$(printf '%s' "$CURL_BODY" \

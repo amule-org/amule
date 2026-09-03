@@ -92,11 +92,16 @@ if [ "$RC" = "202" ]; then
 else
 	_fail "shared_reload status" "expected 202, got $RC: $(cat /tmp/p11_shared_reload.json)"
 fi
-# No constant `ok`: the 202 already said the call was accepted.
-if jq -e 'has("ok") | not' /tmp/p11_shared_reload.json >/dev/null 2>&1; then
-	_pass "POST /shared_reload has no constant ok field"
+# The 202 already said the call was accepted, so there is no constant `ok`.
+# A body exists only when amuled had a message; with nothing to report the
+# reply carries none, matching the URL-fetch triggers.
+if [ ! -s /tmp/p11_shared_reload.json ]; then
+	_pass "POST /shared_reload: 202 with no body (amuled reported nothing)"
+elif jq -e '(has("ok") | not) and (.message | type == "string")' \
+	/tmp/p11_shared_reload.json >/dev/null 2>&1; then
+	_pass "POST /shared_reload: 202 body carries amuled's message and no constant ok"
 else
-	_fail "shared_reload body" "$(cat /tmp/p11_shared_reload.json)"
+	_fail "shared_reload body" "expected no body or {message}, got: $(cat /tmp/p11_shared_reload.json)"
 fi
 
 # --- 3. POST /servers_update — body validation. ------------------
