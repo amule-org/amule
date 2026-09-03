@@ -139,10 +139,13 @@ std::vector<std::string> CState::AmuleLog() const
 	return m_amule_log_lines;
 }
 
-std::vector<std::string> CState::AmuleLogFrom(std::size_t first, std::size_t &total) const
+std::vector<std::string> CState::AmuleLogFrom(
+	std::size_t first, std::size_t &total, std::uint64_t *generation) const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
 	total = m_amule_log_lines.size();
+	if (generation)
+		*generation = m_amule_log_generation;
 	if (first >= total)
 		return {};
 	return std::vector<std::string>(
@@ -517,6 +520,7 @@ void CState::ClearAmuleLog()
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	m_amule_log_lines.clear();
+	++m_amule_log_generation;
 }
 
 void CState::WriteServerInfo(ServerInfoLog s)

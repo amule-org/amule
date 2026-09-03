@@ -1146,25 +1146,39 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 	// the tail is new. First tick records the baseline silently — clients GET
 	// /api/v0/logs/amule for the history; this channel is the live tail only.
 	//
-	// A size that shrank means `DELETE /logs/amule` cleared the buffer, and the
-	// only thing this does about it is re-point the counter. Lines appended
-	// between that DELETE and this tick are NOT published, and if the counter
-	// was below the new size the append branch publishes a mid-buffer slice as
-	// though it were a tail. Only the client that issued the DELETE knows to
-	// refetch; other subscribers are not told. Pre-existing, and fixable by
-	// publishing `resync` on the reset edge -- which needs the bus-published
-	// resync to bypass the `?channels=` filter, so it is not this change.
+	// `DELETE /logs/amule` empties the buffer, and the clear-generation is what
+	// says so. A shrunk size was the old signal and it misses the case that
+	// matters: cleared and refilled past the old count between two ticks, the
+	// size only grows, so the append branch would publish a mid-buffer slice
+	// as though it were the tail and never publish what came before it.
+	//
+	// On that edge subscribers get `resync`, not a log event: lines are gone
+	// that this channel promised to deliver, so the honest signal is "your
+	// copy is stale, re-read", which is exactly what resync means. It bypasses
+	// `?channels=`, so a log-only subscriber is told too -- and the HTTP
+	// thread could not have published it from the DELETE handler anyway, the
+	// bus having a single-publisher invariant that only this tick satisfies.
 	//
 	// Size and tail in one read: the history is uncapped, so asking AmuleLog()
 	// for a `.size()` that is unchanged on almost every tick copies all of it
 	// -- and splitting the two would let that DELETE land in between, pairing
-	// a pre-truncation size with an empty tail.
+	// a pre-truncation size with an empty tail. The generation rides along for
+	// the same reason.
 	std::size_t log_size = 0;
-	const auto tail = state.AmuleLogFrom(prev.amule_log_count, log_size);
+	std::uint64_t log_generation = 0;
+	const auto tail = state.AmuleLogFrom(prev.amule_log_count, log_size, &log_generation);
 	if (!prev.amule_log_initialised) {
 		prev.amule_log_count = log_size;
+		prev.amule_log_generation = log_generation;
 		prev.amule_log_initialised = true;
+	} else if (log_generation != prev.amule_log_generation) {
+		bus.Publish("resync", "{\"reason\":\"log_cleared\"}");
+		prev.amule_log_count = log_size;
+		prev.amule_log_generation = log_generation;
 	} else if (log_size < prev.amule_log_count) {
+		// No generation bump, so this is not a clear: the buffer is capped
+		// elsewhere or the daemon replaced it wholesale. Re-point and stay
+		// quiet, as before.
 		prev.amule_log_count = log_size;
 	} else if (!tail.empty()) {
 		std::ostringstream payload;
