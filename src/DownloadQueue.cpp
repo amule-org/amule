@@ -593,6 +593,11 @@ void CDownloadQueue::Process()
 		CheckDiskspace(thePrefs::GetTempDir());
 	}
 
+	// Outside the lock on purpose: this re-enters CEMSocket::OnReceive() for
+	// every socket the bucket suspended last tick, which parses packets and
+	// can reach back into the download queue.
+	CDownloadBandwidthThrottler::Get().WakePaused();
+
 	// Check for new links once per second.
 	if ((curTick - m_nLastED2KLinkCheck) >= 1000) {
 		theApp->AddLinksFromFile();
