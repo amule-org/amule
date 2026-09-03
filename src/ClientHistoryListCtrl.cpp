@@ -297,35 +297,61 @@ const ClientNameCell *CClientHistoryListCtrl::NameCellFor(wxUIntPtr item) const
 	return row != nullptr ? &row->nameCell : nullptr;
 }
 
-std::vector<CClientRef> CClientHistoryListCtrl::SelectedClients() const
+std::vector<PeerIdentity> CClientHistoryListCtrl::SelectedPeers() const
 {
-	// By user hash, not ECID: a history row outlives the daemon process whose
-	// ECIDs would have named the peer, and the hash is the identity the credit
-	// store itself is keyed on. A peer that is not connected resolves to
-	// nothing, which is the honest answer -- there is nobody to act on.
-	std::vector<CClientRef> clients;
+	// Identity comes from the row, so a peer we are not connected to is still
+	// named: the hash, name, address and port the store kept are enough to
+	// friend it, and enough to open a connection if the user asks for one.
+	//
+	// The live client is attached when there is one, matched by user hash
+	// rather than ECID: a history row outlives the daemon process whose ECIDs
+	// would have named the peer, and the hash is what the credit store is
+	// keyed on.
+	std::vector<PeerIdentity> peers;
 	for (wxUIntPtr data : GetSelectedItemData()) {
 		const ClientHistoryRow *row = RowFor(data);
 		if (row == nullptr || row->hash.IsEmpty()) {
 			continue;
 		}
+		PeerIdentity peer;
+		peer.hash = row->hash;
+		peer.name = row->name;
+		peer.ip = row->ip;
+		peer.port = row->port;
+
+		// The half of the details dialog a stored record can answer. The
+		// session half stays absent, which is what hasSession says.
+		peer.detail.userName = row->name;
+		peer.detail.userHash = row->hash;
+		peer.detail.softStr = row->identityKnown ? GetSoftName(row->clientSoft) : wxString();
+		peer.detail.softVerStr = row->version;
+		peer.detail.fullIp = Uint32toStringIP(row->ip);
+		peer.detail.userPort = row->port;
+		peer.detail.obfuscationStatus = row->obfuscation;
+		// Same direction the list's own Total Up / Total Down columns use.
+		peer.detail.uploadedTotal = row->uploaded;
+		peer.detail.downloadedTotal = row->downloaded;
+		peer.detail.hasSession = false;
+		peer.hasDetail = true;
 #ifdef CLIENT_GUI
-		if (theApp->clientlist == nullptr) {
-			continue;
-		}
-		for (const auto &entry : *theApp->clientlist) {
-			CUpDownClient *client = entry->GetClient();
-			if (client != nullptr && client->GetUserHash() == row->hash) {
-				clients.push_back(*entry);
+		if (theApp->clientlist != nullptr) {
+			for (const auto &entry : *theApp->clientlist) {
+				CUpDownClient *client = entry->GetClient();
+				if (client != nullptr && client->GetUserHash() == row->hash) {
+					peer.client = *entry;
+					break;
+				}
 			}
 		}
 #else
 		for (const CClientRef &ref : theApp->clientlist->GetClientsByHash(row->hash)) {
-			clients.push_back(ref);
+			peer.client = ref;
+			break;
 		}
 #endif
+		peers.push_back(std::move(peer));
 	}
-	return clients;
+	return peers;
 }
 
 wxString CClientHistoryListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) const

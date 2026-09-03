@@ -27,7 +27,8 @@
 
 #include <vector>
 
-#include "ClientRef.h" // Needed for CClientRef
+#include "ClientRef.h"    // Needed for CClientRef
+#include "PeerIdentity.h" // Needed for PeerIdentity
 
 class wxMenu;
 class wxWindow;
@@ -51,6 +52,34 @@ class wxWindow;
  * Caller owns the returned menu.
  */
 wxMenu *BuildClientContextMenu(const CClientRef &client);
+
+/**
+ * The same menu for a peer we are not connected to.
+ *
+ * Everything on it works from the stored record: friending and the friend
+ * slot are persistent, and browsing or messaging opens a connection when the
+ * user picks them. Only the friend slot needs the peer to be a friend
+ * already, which is a property of our own list rather than of the connection.
+ */
+wxMenu *BuildPeerContextMenu(const PeerIdentity &peer);
+
+/**
+ * Whether this build can reach a peer it is not already connected to.
+ *
+ * False in amulegui: the daemon owns the clients and EC has no operation for
+ * browsing or chatting to a bare address. The menu greys those entries rather
+ * than offering something that cannot happen.
+ */
+bool PeerConnectionsArePossible();
+
+//! Browse a peer we are not connected to, opening a connection to do it.
+void PeerActionViewFiles(const PeerIdentity &peer);
+
+//! Friend or unfriend a peer from its stored identity. Opens no connection.
+void PeerActionToggleFriend(const PeerIdentity &peer);
+
+//! Message a peer we are not connected to, opening a connection to do it.
+void PeerActionSendMessage(const PeerIdentity &peer);
 
 //! Browse each peer's shared files, reusing an already-open tab per peer.
 void ClientActionViewFiles(const std::vector<CClientRef> &clients);

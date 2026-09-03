@@ -181,32 +181,45 @@ const ClientNameCell *CClientsListCtrl::NameCellFor(wxUIntPtr item) const
 	return row != nullptr ? &row->nameCell : nullptr;
 }
 
-std::vector<CClientRef> CClientsListCtrl::SelectedClients() const
+std::vector<PeerIdentity> CClientsListCtrl::SelectedPeers() const
 {
 	// By ECID: within one daemon process that names exactly this peer. A row is
-	// only ever as current as the last sweep, so a miss means the peer has gone
-	// and there is nothing left to act on.
-	std::vector<CClientRef> clients;
+	// only ever as current as the last sweep, so a miss means the peer has gone.
+	//
+	// Every row here is a peer we are connected to, so identity is taken from
+	// the live client rather than from the row -- there is no case where one is
+	// known and the other is not.
+	std::vector<PeerIdentity> peers;
 	for (wxUIntPtr data : GetSelectedItemData()) {
 		const Row *row = RowFor(data);
 		if (row == nullptr || row->ecid == 0) {
 			continue;
 		}
+		CClientRef found;
 #ifdef CLIENT_GUI
 		// The container already holds a reference; copying it links another.
 		CClientRef *ref = theApp->clientlist->GetByID(row->ecid);
 		if (ref != nullptr && ref->GetClient() != nullptr) {
-			clients.push_back(*ref);
+			found = *ref;
 		}
 #else
 		CUpDownClient *client = theApp->clientlist->FindClientByECID(row->ecid);
 		if (client != nullptr) {
-			CClientRef ref = CCLIENTREF(client, wxT("CClientsListCtrl::SelectedClients"));
-			clients.push_back(std::move(ref));
+			found = CCLIENTREF(client, wxT("CClientsListCtrl::SelectedPeers"));
 		}
 #endif
+		if (!found.IsLinked()) {
+			continue;
+		}
+		PeerIdentity peer;
+		peer.hash = found.GetUserHash();
+		peer.name = found.GetUserName();
+		peer.ip = found.GetIP();
+		peer.port = found.GetUserPort();
+		peer.client = found;
+		peers.push_back(std::move(peer));
 	}
-	return clients;
+	return peers;
 }
 
 wxString CClientsListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) const

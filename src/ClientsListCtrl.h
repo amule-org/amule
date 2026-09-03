@@ -151,7 +151,7 @@ protected:
 		wxUIntPtr data1, wxUIntPtr data2, unsigned column, bool alt, int modifier) const override;
 	const ClientNameCell *NameCellFor(wxUIntPtr item) const override;
 	unsigned NameColumn() const override { return COLUMN_CLIENTS_NAME; }
-	std::vector<CClientRef> SelectedClients() const override;
+	std::vector<PeerIdentity> SelectedPeers() const override;
 
 	/**
 	 * Speeds and transfer totals move on every poll, so a row sorted by one

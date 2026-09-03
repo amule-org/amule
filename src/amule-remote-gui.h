@@ -854,6 +854,17 @@ public:
 	void RequestSharedFileList(CClientRef &client);
 	void SetFriendSlot(CFriend *Friend, bool new_state);
 
+	/**
+	 * The friend with this identity, or NULL.
+	 *
+	 * Same contract as CFriendList's: a hash matches a hashed friend, and an
+	 * address matches one entered by address. Reads the container the daemon
+	 * has already synced here, so it costs no EC round-trip -- unlike the
+	 * monolithic one it does not adopt a hash onto an address-only friend,
+	 * because the list this build holds is a copy and the daemon owns the file.
+	 */
+	CFriend *FindFriend(const CMD4Hash &userhash, uint32 dwIP, uint16 nPort);
+
 	//
 	// template
 	//

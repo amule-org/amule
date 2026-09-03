@@ -99,6 +99,18 @@ CClientList::~CClientList()
 	wxASSERT(m_clientList.empty());
 }
 
+CClientRef CClientList::CreateForAddress(uint32 ip, uint16 port, const wxString &name)
+{
+	CUpDownClient *client = new CUpDownClient(port, ip, 0, 0, nullptr, true, true);
+	// The ctor only records the address to connect to, leaving GetIP() at 0.
+	// Seed it, or anything that reads the peer's IP back -- a friend record
+	// saving itself, a menu deciding whether it can message -- sees 0.0.0.0.
+	client->SetIP(ip);
+	client->SetUserName(name);
+	AddClient(client);
+	return CCLIENTREF(client, wxT("CClientList::CreateForAddress"));
+}
+
 void CClientList::AddClient(CUpDownClient *toadd)
 {
 	// Ensure that only new clients can be added to the list

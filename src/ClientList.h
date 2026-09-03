@@ -80,6 +80,19 @@ public:
 	void AddClient(CUpDownClient *toadd);
 
 	/**
+	 * A client for the peer at this address, added to the list.
+	 *
+	 * For the actions that inherently mean "go talk to this peer" -- browsing
+	 * its shared files, opening a chat -- when we are not already connected to
+	 * it and only hold its last known address. Creating the object does not
+	 * connect: the request the caller makes next is what opens a connection.
+	 *
+	 * The caller is expected to have established that there is no live client
+	 * already; this always makes a new one.
+	 */
+	CClientRef CreateForAddress(uint32 ip, uint16 port, const wxString &name);
+
+	/**
 	 * Removes a client from the  client lists.
 	 *
 	 * @param client The client to be removed.

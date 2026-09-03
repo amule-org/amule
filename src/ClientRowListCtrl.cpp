@@ -62,12 +62,41 @@ void CClientRowListCtrl::GetItemBarFill(wxUIntPtr data, unsigned column, CBarFil
 	out = CBarFillSpec(reinterpret_cast<wxUIntPtr>(cell), 0, {});
 }
 
+std::vector<CClientRef> CClientRowListCtrl::SelectedClients() const
+{
+	std::vector<CClientRef> clients;
+	for (const PeerIdentity &peer : SelectedPeers()) {
+		if (peer.client.IsLinked()) {
+			clients.push_back(peer.client);
+		}
+	}
+	return clients;
+}
+
 void CClientRowListCtrl::OnItemActivated(wxDataViewEvent &event)
 {
 	if (!event.GetItem().IsOk()) {
 		return;
 	}
-	ClientActionShowDetails(this, SelectedClients());
+	ShowDetailsForSelection();
+}
+
+// Opening details is a read-only act: it never creates a client and never
+// opens a connection. A peer we are talking to is snapshotted live, because
+// that knows strictly more; otherwise the row's own record is rendered and
+// the session fields show as absent.
+void CClientRowListCtrl::ShowDetailsForSelection()
+{
+	const std::vector<PeerIdentity> peers = SelectedPeers();
+	if (peers.size() != 1) {
+		return;
+	}
+	const PeerIdentity &peer = peers.front();
+	if (peer.client.IsLinked()) {
+		ClientActionShowDetails(this, { peer.client });
+	} else if (peer.hasDetail) {
+		CClientDetailDialog(this, peer.detail).ShowModal();
+	}
 }
 
 void CClientRowListCtrl::OnItemRightClicked(wxDataViewEvent &event)
@@ -81,29 +110,39 @@ void CClientRowListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 		}
 	}
 
-	// Nothing resolved means the rows name peers we are not connected to, which
-	// every entry on this menu needs. No menu rather than one that cannot act.
-	const std::vector<CClientRef> clients = SelectedClients();
-	if (clients.empty()) {
+	// A peer we are not connected to still gets a menu. Friending and the
+	// friend slot are persistent and need no connection at all; browsing and
+	// messaging open one when the user picks them.
+	const std::vector<PeerIdentity> peers = SelectedPeers();
+	if (peers.empty()) {
 		return;
 	}
 
 	// The builder omits "Swap to this file": it acts on an A4AF source of one
 	// particular download, which is a per-file notion neither of these lists
 	// has.
-	wxMenu *menu = BuildClientContextMenu(clients.front());
+	wxMenu *menu = BuildPeerContextMenu(peers.front());
 	PopupMenu(menu, event.GetPosition());
 	delete menu;
 }
 
+// The menu is built for one peer, so the actions run on that same one.
+void CClientRowListCtrl::ForSelectedPeer(void (*action)(const PeerIdentity &))
+{
+	const std::vector<PeerIdentity> peers = SelectedPeers();
+	if (peers.size() == 1) {
+		action(peers.front());
+	}
+}
+
 void CClientRowListCtrl::OnViewFiles(wxCommandEvent &WXUNUSED(event))
 {
-	ClientActionViewFiles(SelectedClients());
+	ForSelectedPeer(PeerActionViewFiles);
 }
 
 void CClientRowListCtrl::OnAddFriend(wxCommandEvent &WXUNUSED(event))
 {
-	ClientActionToggleFriend(SelectedClients());
+	ForSelectedPeer(PeerActionToggleFriend);
 }
 
 void CClientRowListCtrl::OnSetFriendslot(wxCommandEvent &evt)
@@ -113,11 +152,11 @@ void CClientRowListCtrl::OnSetFriendslot(wxCommandEvent &evt)
 
 void CClientRowListCtrl::OnSendMessage(wxCommandEvent &WXUNUSED(event))
 {
-	ClientActionSendMessage(SelectedClients());
+	ForSelectedPeer(PeerActionSendMessage);
 }
 
 void CClientRowListCtrl::OnViewClientInfo(wxCommandEvent &WXUNUSED(event))
 {
-	ClientActionShowDetails(this, SelectedClients());
+	ShowDetailsForSelection();
 }
 // File_checked_for_headers

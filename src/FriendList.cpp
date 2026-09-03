@@ -207,17 +207,10 @@ void CFriendList::RequestSharedFileList(CFriend *cur_friend, uint32 browseSearch
 	if (cur_friend) {
 		CUpDownClient *client = cur_friend->GetLinkedClient().GetClient();
 		if (!client) {
-			client = new CUpDownClient(
-				cur_friend->GetPort(), cur_friend->GetIP(), 0, 0, 0, true, true);
-			// The client is built from the stored IP+port before it has
-			// connected, so seed its IP explicitly — the ctor only sets the
-			// connect IP, leaving GetIP() at 0. Mirrors StartChatSession;
-			// without it LinkClient would copy that 0 back onto the friend's
-			// stored IP, so a restart would show 0.0.0.0.
-			client->SetIP(cur_friend->GetIP());
-			client->SetUserName(cur_friend->GetName());
-			theApp->clientlist->AddClient(client);
-			cur_friend->LinkClient(CCLIENTREF(client, "CFriendList::RequestSharedFileList"));
+			CClientRef ref = theApp->clientlist->CreateForAddress(
+				cur_friend->GetIP(), cur_friend->GetPort(), cur_friend->GetName());
+			cur_friend->LinkClient(ref);
+			client = ref.GetClient();
 		}
 		// Pin the EC-allocated browse ID before firing the request, so
 		// ProcessSharedFileList files the listing under it -- but only when
@@ -261,13 +254,9 @@ void CFriendList::SetFriendSlot(CFriend *Friend, bool new_state)
 void CFriendList::StartChatSession(CFriend *Friend)
 {
 	if (Friend) {
-		CUpDownClient *client = Friend->GetLinkedClient().GetClient();
-		if (!client) {
-			client = new CUpDownClient(Friend->GetPort(), Friend->GetIP(), 0, 0, 0, true, true);
-			client->SetIP(Friend->GetIP());
-			client->SetUserName(Friend->GetName());
-			theApp->clientlist->AddClient(client);
-			Friend->LinkClient(CCLIENTREF(client, "CFriendList::StartChatSession"));
+		if (!Friend->GetLinkedClient().GetClient()) {
+			Friend->LinkClient(theApp->clientlist->CreateForAddress(
+				Friend->GetIP(), Friend->GetPort(), Friend->GetName()));
 		}
 	} else {
 		AddLogLineC(_("CRITICAL - no client on StartChatSession"));

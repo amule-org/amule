@@ -3489,6 +3489,20 @@ void CFriendListRem::AddFriend(
 	m_conn->SendPacket(&req);
 }
 
+CFriend *CFriendListRem::FindFriend(const CMD4Hash &userhash, uint32 dwIP, uint16 nPort)
+{
+	for (CFriend *cur_friend : m_items) {
+		if (!userhash.IsEmpty() && cur_friend->HasHash()) {
+			if (cur_friend->GetUserHash() == userhash) {
+				return cur_friend;
+			}
+		} else if (cur_friend->GetIP() == dwIP && cur_friend->GetPort() == nPort) {
+			return cur_friend;
+		}
+	}
+	return nullptr;
+}
+
 void CFriendListRem::RemoveFriend(CFriend *toremove)
 {
 	CECPacket req(EC_OP_FRIEND);

@@ -29,6 +29,7 @@
 
 #include "ClientNameCell.h" // Needed for ClientNameCell
 #include "ClientRef.h"      // Needed for CClientRef
+#include "PeerIdentity.h"   // Needed for PeerIdentity
 #include "MuleVirtualDataViewCtrl.h"
 
 /**
@@ -51,6 +52,7 @@
  * only when something is actually done to it, and a row whose peer has since
  * gone simply resolves to nothing.
  */
+
 class CClientRowListCtrl : public CMuleVirtualDataViewCtrl
 {
 public:
@@ -64,12 +66,22 @@ protected:
 	virtual unsigned NameColumn() const = 0;
 
 	/**
-	 * The peers behind the current selection, resolved right now.
+	 * The peers behind the current selection.
 	 *
-	 * Empty is a normal answer, not a failure: a history row may name a peer
-	 * that is not connected, and there is nothing to act on until it is.
+	 * Identity comes from the row, so a peer we are not talking to is still
+	 * named here -- `client` is simply unlinked for it. The two lists key on
+	 * different things (ECID within a process, user hash across restarts),
+	 * which is why finding the live peer stays per-list while everything
+	 * built on top of it is shared.
 	 */
-	virtual std::vector<CClientRef> SelectedClients() const = 0;
+	virtual std::vector<PeerIdentity> SelectedPeers() const = 0;
+
+	/**
+	 * The subset of SelectedPeers() we are actually connected to.
+	 *
+	 * For the actions that need a live peer and cannot make one.
+	 */
+	std::vector<CClientRef> SelectedClients() const;
 
 	void GetItemBarFill(wxUIntPtr data, unsigned column, CBarFillSpec &out) const override;
 
@@ -77,6 +89,8 @@ protected:
 
 private:
 	void OnItemActivated(wxDataViewEvent &event);
+	void ShowDetailsForSelection();
+	void ForSelectedPeer(void (*action)(const PeerIdentity &));
 	void OnItemRightClicked(wxDataViewEvent &event);
 	void OnViewFiles(wxCommandEvent &event);
 	void OnAddFriend(wxCommandEvent &event);
