@@ -11,6 +11,8 @@
 
 #include "DownloadBandwidthThrottler.h"
 
+#include "EMSocket.h" // Needed for CEMSocket::WakeIfPaused
+
 #include <climits>
 
 CDownloadBandwidthThrottler &CDownloadBandwidthThrottler::Get()
@@ -74,6 +76,48 @@ uint32 CDownloadBandwidthThrottler::Reserve(uint32 wantBytes)
 		// CAS failed; `current` was reloaded with the latest value.
 	}
 	return 0;
+}
+
+void CDownloadBandwidthThrottler::PauseUntilRefill(CEMSocket *socket)
+{
+	std::lock_guard<std::mutex> lock(m_pausedLock);
+	m_paused.insert(socket);
+}
+
+void CDownloadBandwidthThrottler::Forget(CEMSocket *socket)
+{
+	std::lock_guard<std::mutex> lock(m_pausedLock);
+	m_paused.erase(socket);
+	// Also while a wake pass is walking it, which is how a socket destroyed
+	// as a side effect of waking another never gets handed out.
+	m_waking.erase(socket);
+}
+
+void CDownloadBandwidthThrottler::WakePaused()
+{
+	{
+		std::lock_guard<std::mutex> lock(m_pausedLock);
+		// Move rather than copy: anything that suspends again during this
+		// pass accumulates in m_paused for the next tick instead of being
+		// retried now against a bucket it has just emptied.
+		m_waking.swap(m_paused);
+	}
+
+	// One at a time, each taken under the lock and woken outside it, because
+	// waking runs the whole receive path and can destroy other sockets.
+	for (;;) {
+		CEMSocket *socket = nullptr;
+		{
+			std::lock_guard<std::mutex> lock(m_pausedLock);
+			if (m_waking.empty()) {
+				return;
+			}
+			const std::set<CEMSocket *>::iterator it = m_waking.begin();
+			socket = *it;
+			m_waking.erase(it);
+		}
+		socket->WakeIfPaused();
+	}
 }
 
 void CDownloadBandwidthThrottler::Refund(uint32 bytes)

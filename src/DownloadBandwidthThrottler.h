@@ -15,6 +15,10 @@
 #include "Types.h"
 #include <atomic>
 #include <cstdint>
+#include <mutex>
+#include <set>
+
+class CEMSocket;
 
 // Global token bucket that enforces thePrefs::GetMaxDownload() as a literal
 // byte/sec cap across all downloading sockets.
@@ -58,11 +62,48 @@ public:
 	// the unused capacity stays available to other peers in the same tick.
 	void Refund(uint32 bytes);
 
+	// A socket that suspended its read because Reserve() came back empty,
+	// and the counterpart for one that goes away while suspended.
+	//
+	// The throttler is what stopped these reads, so it is what has to
+	// restart them. Leaving that to whoever happens to tick the socket means
+	// a socket nobody ticks -- one we are browsing rather than downloading
+	// from -- never reads again: its half-received packet never completes,
+	// and the peer looks like it answered nothing at all.
+	// Registration is on an empty bucket, not on what the socket is doing,
+	// so under a saturated cap this also collects sockets a part file will
+	// wake anyway. Those get a second, cheap wake per tick (WakeIfPaused()
+	// is a bool test when nothing is pending); telling the two apart from
+	// here would mean teaching the throttler about download sources.
+	void PauseUntilRefill(CEMSocket *socket);
+	void Forget(CEMSocket *socket);
+
+	// Restart the reads suspended before this call. Run once per tick after
+	// RefillBudget(), and OUTSIDE any lock the read path can reach: waking
+	// re-enters CEMSocket::OnReceive(), which parses packets and can run
+	// most of the core.
+	//
+	// Only the sockets already waiting when it starts are woken. A socket
+	// that exhausts the refilled bucket suspends again immediately, and
+	// waking it a second time in the same pass would achieve nothing but
+	// spin the main loop until the next refill, which cannot arrive while
+	// that loop is blocked.
+	void WakePaused();
+
 private:
 	CDownloadBandwidthThrottler() = default;
 
 	std::atomic<int64_t> m_bytesAvailable{ 0 };
 	std::atomic<bool> m_unlimited{ true };
+
+	std::mutex m_pausedLock;
+	// Suspended, waiting for the next refill.
+	std::set<CEMSocket *> m_paused;
+	// Being woken by the pass currently running. Held separately so a socket
+	// that suspends again lands in m_paused and waits for the next tick,
+	// while one that is destroyed mid-pass is dropped from here by Forget()
+	// and never handed out.
+	std::set<CEMSocket *> m_waking;
 };
 
 #endif // DOWNLOADBANDWIDTHTHROTTLER_H

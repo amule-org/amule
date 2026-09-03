@@ -448,20 +448,30 @@ void CDownloadQueue::Process()
 	// send src requests to local server
 	ProcessLocalRequests();
 	const uint64 curTick = ::GetTickCount64();
+
+	// Refill the global download bucket for this tick. The previous per-peer
+	// ratio controller (50-200% adaptive against the observed aggregate
+	// datarate) never actually enforced MaxDownload as a literal byte/sec
+	// cap. The throttler is a single shared atomic budget that every
+	// CEMSocket consults before each Read(); fast peers can claim unused
+	// capacity from slow ones within the same tick (demand-aware
+	// redistribution), and the global cap is the only constraint.
+	// MaxDownload=0 (UNLIMITED) sets the throttler to bypass mode.
+	//
+	// Both of these run before the lock, and the wake runs immediately after
+	// the refill, because the part-file walk below reads from every
+	// downloading socket synchronously while holding the lock. Refilling
+	// inside that block and waking after it hands the whole tick's budget to
+	// the peers we are downloading from, and a socket parked mid-packet --
+	// the browse or chat answer this wake exists for -- finds an empty bucket
+	// again every tick and never finishes reading.
+	CDownloadBandwidthThrottler::Get().RefillBudget(thePrefs::GetMaxDownload(), CORE_TIMER_PERIOD);
+	// Outside the lock on purpose: this re-enters CEMSocket::OnReceive(),
+	// which parses packets and can reach back into the download queue.
+	CDownloadBandwidthThrottler::Get().WakePaused();
+
 	{
 		wxMutexLocker lock(m_mutex);
-
-		// Refill the global download bucket for this tick. The previous
-		// per-peer ratio controller (50-200% adaptive against the
-		// observed aggregate datarate) never actually enforced
-		// MaxDownload as a literal byte/sec cap. The throttler is a
-		// single shared atomic budget that every CEMSocket consults
-		// before each Read(); fast peers can claim unused capacity
-		// from slow ones within the same tick (demand-aware
-		// redistribution), and the global cap is the only constraint.
-		// MaxDownload=0 (UNLIMITED) sets the throttler to bypass mode.
-		CDownloadBandwidthThrottler::Get().RefillBudget(
-			thePrefs::GetMaxDownload(), CORE_TIMER_PERIOD);
 
 		m_datarate = 0;
 		m_udcounter++;

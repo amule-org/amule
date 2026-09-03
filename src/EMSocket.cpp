@@ -112,6 +112,7 @@ CEMSocket::~CEMSocket()
 	if (theApp->uploadBandwidthThrottler) {
 		theApp->uploadBandwidthThrottler->RemoveFromAllQueues(this);
 	}
+	CDownloadBandwidthThrottler::Get().Forget(this);
 
 	ClearQueues();
 }
@@ -160,6 +161,7 @@ void CEMSocket::OnClose(int WXUNUSED(nErrorCode))
 	// now that we know no other method will keep adding to the queue
 	// we can remove ourself from the queue
 	theApp->uploadBandwidthThrottler->RemoveFromAllQueues(this);
+	CDownloadBandwidthThrottler::Get().Forget(this);
 
 	ClearQueues();
 }
@@ -222,7 +224,12 @@ void CEMSocket::OnReceive(int nErrorCode)
 				grantedBytes = CDownloadBandwidthThrottler::Get().Reserve(readMax);
 				if (grantedBytes == 0) {
 					// Bucket exhausted; resume on next tick refill.
+					// Register for that wake-up rather than relying on
+					// something else to tick this socket: a socket we
+					// are only browsing belongs to no download, so
+					// nothing else would.
 					pendingOnReceive = true;
+					CDownloadBandwidthThrottler::Get().PauseUntilRefill(this);
 					return;
 				}
 				readMax = grantedBytes;
