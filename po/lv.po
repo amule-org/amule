@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-02 12:15+0200\n"
-"PO-Revision-Date: 2026-09-01 18:34+0000\n"
+"PO-Revision-Date: 2026-09-03 11:13+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: lv\n"
@@ -123,7 +123,7 @@ msgstr ""
 
 #: src/AppImageIntegration.cpp
 msgid "Add aMule to your application menu?"
-msgstr ""
+msgstr "Vai pievienot aMule programmu izvēlnei?"
 
 #: src/AppImageIntegration.cpp
 msgid "Install"
@@ -758,14 +758,12 @@ msgid "Address"
 msgstr "Adrese"
 
 #: src/amuleDlg.cpp
-#, fuzzy
 msgid "Encryption"
-msgstr "Apraksts"
+msgstr "Šifrēšana"
 
 #: src/amuleDlg.cpp
-#, fuzzy
 msgid "aMuleGUI"
-msgstr "aMuleGUI žurnāls"
+msgstr "aMule grafiskā lietotāja saskarne"
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -1024,7 +1022,7 @@ msgstr ""
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "Could not delete the category: %s"
-msgstr ""
+msgstr "Nevarēja izdzēst kategoriju: %s"
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -1055,11 +1053,11 @@ msgstr " (Viltus eMule %#x versija)"
 
 #: src/BaseClient.cpp
 msgid " (Fake eMule)"
-msgstr ""
+msgstr " (Viltus eMule)"
 
 #: src/BaseClient.cpp
 msgid "xMule (Fake eMule)"
-msgstr ""
+msgstr "xMule (Viltus eMule)"
 
 #: src/BaseClient.cpp
 #, c-format
@@ -1152,11 +1150,11 @@ msgstr "Atlasiet mapi, kur saglabāt ienākošās datnes"
 
 #: src/CatDialog.cpp
 msgid "You must specify a name for the category!"
-msgstr ""
+msgstr "Jānorāda kategorijas nosaukums!"
 
 #: src/CatDialog.cpp
 msgid "You must specify a path for the category!"
-msgstr ""
+msgstr "Jānorāda kategorijas mape!"
 
 #: src/CatDialog.cpp
 msgid "Failed to create incoming dir for category. Please specify a valid path!"
@@ -1330,9 +1328,8 @@ msgid "Last seen"
 msgstr ""
 
 #: src/ClientHistoryListCtrl.cpp
-#, fuzzy
 msgid "Sessions"
-msgstr "Versija"
+msgstr "Sesijas"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 #: src/SharedFilePeersListCtrl.cpp
@@ -1353,9 +1350,8 @@ msgid "Total Downloaded"
 msgstr "↓ Kopā lejupielādēts"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
 msgid "Ratio"
-msgstr "Vērtējums"
+msgstr "Datu apmaiņas koeficients"
 
 #: src/ClientHistoryListCtrl.cpp
 #, fuzzy
@@ -1867,7 +1863,7 @@ msgstr ""
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Enter new name for this file:"
-msgstr ""
+msgstr "Ievadiet šīs datnes jauno nosaukumu:"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "File rename"
@@ -1877,7 +1873,7 @@ msgstr ""
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f MiB/s"
-msgstr ""
+msgstr "%.1f MiB/s"
 
 #: src/DownloadListCtrl.cpp
 #, c-format
@@ -1929,11 +1925,11 @@ msgstr[1] ""
 
 #: src/DownloadQueue.cpp
 msgid "Filesystem for Temp directory cannot handle large files."
-msgstr ""
+msgstr "Pagaidu mapes datņsistēma neatbalsta liela izmēra datnes."
 
 #: src/DownloadQueue.cpp
 msgid "Filesystem for Incoming directory cannot handle large files."
-msgstr ""
+msgstr "Ienākošās mapes datņsistēma neatbalsta liela izmēra datnes."
 
 #: src/DownloadQueue.cpp
 #, c-format
@@ -2337,7 +2333,7 @@ msgstr ""
 
 #: src/ExternalConnector.cpp
 msgid "Syntax error!"
-msgstr ""
+msgstr "Sintakses kļūda!"
 
 #: src/ExternalConnector.cpp
 msgid "Error processing command - should never happen! Report bug, please\n"
@@ -2468,7 +2464,7 @@ msgstr ""
 #: src/FileDetailDialog.cpp src/utils/wxCas/src/wxcasframe.cpp
 #, c-format
 msgid "%.2f KiB/s"
-msgstr ""
+msgstr "%.2f KiB/s"
 
 #: src/FileLaunch.cpp
 msgid "File preview"
@@ -2590,7 +2586,7 @@ msgstr "Kademlia"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Standard TCP Port "
-msgstr ""
+msgstr "Standarta TCP ports "
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Extended UDP port (Kad / global search) "
@@ -2655,7 +2651,7 @@ msgstr ""
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Open .emulecollection files with aMule"
-msgstr ""
+msgstr "Atvērt .emulecollection datnes ar aMule"
 
 #: src/FirstRunWizard.cpp
 msgid "Folders (optional)"
@@ -3052,9 +3048,8 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: src/KnownFile.cpp
-#, fuzzy
 msgid "Kad user"
-msgstr "Kad tīkls"
+msgstr "Kad lietotājs"
 
 #: src/KnownFile.cpp
 #, c-format
@@ -3120,7 +3115,7 @@ msgstr ""
 #: src/libs/common/Format.cpp
 #, c-format
 msgid "Unknown error %d"
-msgstr ""
+msgstr "Nezināma kļūda %d"
 
 #: src/libs/common/Format.cpp
 #, c-format
@@ -3337,7 +3332,7 @@ msgstr "Atlasīt visas"
 #: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
 #: src/StatisticsDlg.cpp
 msgid "KiB/s"
-msgstr ""
+msgstr "KiB/s"
 
 #: src/MuleTrayIcon.cpp
 msgid "Unlimited"
@@ -3345,7 +3340,7 @@ msgstr "Bez ierobežojuma"
 
 #: src/MuleTrayIcon.cpp
 msgid "Show aMule"
-msgstr ""
+msgstr "Rādīt aMule"
 
 #: src/MuleTrayIcon.cpp
 msgid "Hide aMule"
@@ -3540,7 +3535,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Add links"
-msgstr ""
+msgstr "Pievienot saites"
 
 #: src/muuli_wdr.cpp
 msgid "Click here to add the eD2k link in the text control to your download queue."
@@ -3624,7 +3619,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
 msgid "Archives"
-msgstr ""
+msgstr "Arhīvi"
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
 msgid "Audio"
@@ -3636,7 +3631,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
 msgid "Pictures"
-msgstr ""
+msgstr "Attēli"
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
 msgid "Programs"
@@ -3648,7 +3643,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
 msgid "Videos"
-msgstr ""
+msgstr "Video"
 
 #: src/muuli_wdr.cpp
 msgid "Extension"
@@ -3664,15 +3659,15 @@ msgstr "Baiti"
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
 msgid "KiB"
-msgstr ""
+msgstr "KiB"
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp src/PrefsUnifiedDlg.cpp
 msgid "MiB"
-msgstr ""
+msgstr "MiB"
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
 msgid "GiB"
-msgstr ""
+msgstr "GiB"
 
 #: src/muuli_wdr.cpp
 msgid "Max Size"
@@ -3849,9 +3844,8 @@ msgid "Complete Sources"
 msgstr ""
 
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Shared since"
-msgstr "Kopīgotās datnes"
+msgstr "Kopīgojas kopš"
 
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
 msgid "Last upload"
@@ -4817,7 +4811,7 @@ msgstr "Parole ir norādīta."
 
 #: src/muuli_wdr.cpp
 msgid "Enable guest access"
-msgstr ""
+msgstr "Iespējot viesa piekļuvi"
 
 #: src/muuli_wdr.cpp
 msgid "Guest sessions may read status and listings but cannot change anything. Turning this off clears the stored guest password."
@@ -5427,7 +5421,7 @@ msgstr[2] "baiti"
 
 #: src/OtherFunctions.cpp
 msgid "TiB"
-msgstr ""
+msgstr "TiB"
 
 #: src/OtherFunctions.cpp
 msgid "k"
@@ -5454,7 +5448,7 @@ msgstr[2] "baiti sekundē"
 
 #: src/OtherFunctions.cpp
 msgid "MiB/s"
-msgstr ""
+msgstr "MiB/s"
 
 #: src/OtherFunctions.cpp
 msgid "secs"
@@ -5490,7 +5484,7 @@ msgstr ""
 
 #: src/OtherFunctions.cpp src/TransferWnd.cpp
 msgid "Video"
-msgstr ""
+msgstr "Video"
 
 #: src/OtherFunctions.cpp src/TransferWnd.cpp
 msgid "Archive"
@@ -6047,7 +6041,7 @@ msgstr "Parole nav norādīta."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Guest access needs a password. Type one in the guest password field, or untick Enable guest access."
-msgstr ""
+msgstr "Viesa piekļuvei nepieciešama parole. Ievadiet to viesa paroles laukā vai neizmantojiet \"Iespējot viesa piekļuvi\"."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6543,12 +6537,11 @@ msgstr "Kodeks"
 
 #: src/SearchListCtrl.cpp
 msgid "Expand all"
-msgstr ""
+msgstr "Izvērst visu"
 
 #: src/SearchListCtrl.cpp
-#, fuzzy
 msgid "Collapse all"
-msgstr "Aizvērt visas cilnes"
+msgstr "Sakļaut visu"
 
 #: src/SearchListCtrl.cpp
 #, c-format
@@ -6584,9 +6577,8 @@ msgid "running"
 msgstr ""
 
 #: src/SearchProgressReport.cpp
-#, fuzzy
 msgid "finished"
-msgstr "Somu"
+msgstr "pabeigts"
 
 #: src/SearchProgressReport.cpp
 msgid "idle"
@@ -7214,17 +7206,17 @@ msgid "Now sharing file: %s"
 msgstr "Parādīt kopīgoto datņu sarakstu."
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Stopped sharing removed file: %s"
-msgstr "Ielādē server.met datni: %s"
+msgstr "Pārtraukta dzēstās datnes kopīgošana: %s"
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Stopped sharing %u file under removed directory: %s"
 msgid_plural "Stopped sharing %u files under removed directory: %s"
-msgstr[0] "Ielādē server.met datni: %s"
-msgstr[1] "Ielādē server.met datni: %s"
-msgstr[2] "Ielādē server.met datni: %s"
+msgstr[0] "Pārtraukta %u datņu kopīgošana noņemtajā mapē: %s"
+msgstr[1] "Pārtraukta %u datnes kopīgošana noņemtajā mapē: %s"
+msgstr[2] "Pārtraukta %u datņu kopīgošana noņemtajā mapē: %s"
 
 #: src/SharedFileList.cpp
 #, c-format
@@ -8570,22 +8562,22 @@ msgstr "Pietrūka atmiņas, skaitļojot eD2k kontrolsummu!"
 #: src/utils/wxCas/src/linuxmon.cpp
 #, c-format
 msgid "%i day(s) %i hour(s) %i min %i s"
-msgstr ""
+msgstr "%i diena(s) %i stunda(s) %i min. %i sek."
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
 msgid "%02uD %02uh %02umin %02us"
-msgstr ""
+msgstr "%02ud. %02ust. %02umin. %02usek."
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
 msgid "%02uh %02umin %02us"
-msgstr ""
+msgstr "%02ust. %02umin. %02usek."
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
 msgid "%02umin %02us"
-msgstr ""
+msgstr "%02umin. %02usek."
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
@@ -8600,22 +8592,22 @@ msgstr "%.0f B"
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
 msgid "%.2f KiB"
-msgstr ""
+msgstr "%.2f KiB"
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
 msgid "%.2f MiB"
-msgstr ""
+msgstr "%.2f MiB"
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
 msgid "%.2f GiB"
-msgstr ""
+msgstr "%.2f GiB"
 
 #: src/utils/wxCas/src/onlinesig.cpp
 #, c-format
 msgid "%.2f TiB"
-msgstr ""
+msgstr "%.2f TiB"
 
 #: src/utils/wxCas/src/wxcas.cpp
 msgid "wxCas, aMule Online Statistics"
@@ -8655,7 +8647,7 @@ msgstr ""
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid "About wxCas"
-msgstr ""
+msgstr "Par wxCas"
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid "Start Auto Refresh"
@@ -8904,11 +8896,11 @@ msgstr ""
 
 #: src/webserver/src/WebInterface.cpp
 msgid "Allow guest access"
-msgstr ""
+msgstr "Atļaut viesa piekļuvi"
 
 #: src/webserver/src/WebInterface.cpp
 msgid "Deny guest access"
-msgstr ""
+msgstr "Liegt viesa piekļuvi"
 
 #: src/webserver/src/WebInterface.cpp
 msgid "Load/save web server settings from/to remote aMule"
