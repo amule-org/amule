@@ -173,12 +173,14 @@ _assert_json_eq '.connected_since_at | type' number  '/kad.connected_since_ate i
 _assert_json_eq '.public_ip | type | . == "string" or . == "null"' true \
 	'/kad.public_ip is a string or null'
 _assert_json_eq '.ip               | type' null    '/kad has no bare top-level ip'
-# 32 lowercase hex while Kad runs, "" while it does not -- gated on .state,
-# which is "disabled" exactly when amuled withholds EC_TAG_KAD_ID.
+# 32 lowercase hex while Kad runs, null while it does not -- gated on .state,
+# which is "disabled" exactly when amuled withholds EC_TAG_KAD_ID. Null, not
+# "": every other field in this object already spells absence that way, and
+# an empty string is not a value a node id can take.
 _assert_json_eq '(.state == "disabled") or (.node_id | test("^[0-9a-f]{32}$"))' \
 	true '/kad.node_id is 32 lowercase hex chars while Kad runs'
-_assert_json_eq '(.state != "disabled") or (.node_id == "")' \
-	true '/kad.node_id is empty while Kad is not running'
+_assert_json_eq '(.state != "disabled") or (.node_id == null)' \
+	true '/kad.node_id is null while Kad is not running'
 # The network rollup and the store counters, both gated on being connected.
 # `nodes` is the sharp one: it is this node's OWN routing-table size, and
 # contacts outlive a disconnect, so it was measured at 2 on a fully stopped Kad

@@ -44,6 +44,7 @@
 #include "StaticFs.h"      // IsDir, ResolveWithinRoot
 #include "SharedContent.h" // /shared/{hash}/content: path resolution, Range, disposition
 #include "PartIndex.h"     // UsablePartIndex / UsableLastDownloadingPart, unit-tested standalone
+#include <cmath>
 #include <cstring>
 #include <map>
 
@@ -3002,8 +3003,14 @@ void WriteDownloadObject(
 			"last_seen_complete_at",
 			f.download.last_seen_complete_at != 0,
 			static_cast<std::int64_t>(f.download.last_seen_complete_at));
-		w.Key("last_received_at");
-		w.ValueInt(static_cast<int64_t>(f.download.last_received_at));
+		// Same rule as the timestamp above: 0 is "no byte has arrived yet",
+		// which is not a 1970 date. It defaults to 0 and is only set when
+		// amuled ships the tag, so a partfile that has received nothing
+		// would otherwise date to the epoch.
+		WriteIntOrNull(w,
+			"last_received_at",
+			f.download.last_received_at != 0,
+			static_cast<std::int64_t>(f.download.last_received_at));
 		w.Key("active_seconds");
 		w.ValueInt(static_cast<int64_t>(f.download.active_seconds));
 		w.Key("available_part_count");
@@ -3265,8 +3272,11 @@ void WriteClientDetailObject(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	WriteIntOrNull(w, "server_port", has_server, static_cast<int64_t>(c.server_port));
 	w.Key("server_name");
 	w.ValueString(wxString::FromUTF8(c.server_name.c_str()));
-	w.Key("kad_port");
-	w.ValueInt(static_cast<int64_t>(c.kad_port));
+	// Nulled on the same condition WriteClientBaseFields nulls ip/port, and
+	// the same one WriteKnownClientObject uses: a client with no recorded
+	// address has no recorded Kad port either, and a raw 0 here would spell
+	// absence differently from the very fields it is paired with.
+	WriteIntOrNull(w, "kad_port", !c.ip.empty(), static_cast<int64_t>(c.kad_port));
 	// Friend status + the credit-system modifier (issue #423). `friend` is
 	// friends-list membership, distinct from the `friend_slot` reserved
 	// upload slot above.
@@ -4155,6 +4165,17 @@ CHttpServer::Response UrlFetchOp(
 	return r;
 }
 
+// JSON has one number type and picojson hands every one of them over as a
+// double, so a body field documented as an integer has to say so itself:
+// without this, `{"min_size_bytes": 2.9}` is accepted and silently truncated
+// to 2. One helper rather than a cast per site: `v != (double)(int)v` cannot
+// judge a byte count above INT_MAX, which is exactly the range the size
+// fields live in.
+inline bool IsIntegralJsonNumber(double v)
+{
+	return std::isfinite(v) && v == std::floor(v);
+}
+
 // MD4 hex string → CMD4Hash. Returns false if the string isn't 32
 // lowercase-or-uppercase hex chars (we tolerate both cases; the
 // route already lowercases what comes off the URL).
@@ -4163,6 +4184,23 @@ bool HashFromHex(const std::string &hex, CMD4Hash &out)
 	if (hex.size() != 32)
 		return false;
 	return out.Decode(wxString::FromAscii(hex.c_str()));
+}
+
+// The {hash} twin of RequireEcidPath: a path hash that is not 32 hex
+// characters is a malformed request, not a missing file. The find-based
+// routes used to skip the format check and fall through to their own 404,
+// so a client could not tell "not a hash" from "valid hash, no such file" --
+// and the split ran through a single route, GET
+// /search/results/{hash}/comments answering 404 where its own POST answered
+// 400. Same reason RequireEcidPath exists: the status, the code and the
+// sentence are contract, not local wording.
+std::unique_ptr<CHttpServer::Response> RequireHashPath(const std::string &hash)
+{
+	CMD4Hash parsed;
+	if (!HashFromHex(hash, parsed)) {
+		return BadRequestPtr("path `{hash}` must be 32 hex characters");
+	}
+	return nullptr;
 }
 
 } // namespace
@@ -4643,6 +4681,9 @@ CHttpServer::Response CApiDispatcher::HandleDownloadDetail(
 	if (!a.ok)
 		return a.rejection;
 
+	if (auto r = RequireHashPath(key))
+		return *r;
+
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
 
@@ -4678,6 +4719,9 @@ CHttpServer::Response CApiDispatcher::HandleSharedDetail(
 	if (!a.ok)
 		return a.rejection;
 
+	if (auto r = RequireHashPath(key))
+		return *r;
+
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
 
@@ -4707,6 +4751,9 @@ CHttpServer::Response CApiDispatcher::HandleDownloadComments(
 	auto a = Authenticate(req);
 	if (!a.ok)
 		return a.rejection;
+
+	if (auto r = RequireHashPath(key))
+		return *r;
 
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
@@ -5234,7 +5281,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(const CHttpServer::Reque
 			const double v = it->second.get<double>();
 			// The integrality test the message already promises: without it
 			// 2.9 was accepted and truncated to 2.
-			if (v < 0 || v > 255 || v != static_cast<double>(static_cast<int>(v))) {
+			if (v < 0 || v > 255 || !IsIntegralJsonNumber(v)) {
 				return ErrorResponse(
 					400, "bad_request", "`category_index` must be in [0, 255]");
 			}
@@ -5427,8 +5474,11 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 	auto a = Authenticate(req);
 	if (!a.ok)
 		return a.rejection;
+
 	if (auto rej = RequireAdmin(a))
 		return *rej;
+	if (auto r = RequireHashPath(key))
+		return *r;
 
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
@@ -5520,8 +5570,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 		const auto it = obj.find("priority");
 		if (it != obj.end()) {
 			if (!it->second.is<std::string>()) {
-				return ErrorResponse(
-					400, "bad_request", "`priority` must be a wire-string enum");
+				return ErrorResponse(400, "bad_request", "`priority` must be a string");
 			}
 			std::uint8_t code = 0;
 			if (!FilePriorityToCode(it->second.get<std::string>(), kPrioDownload, code)) {
@@ -5548,7 +5597,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 			const double v = it->second.get<double>();
 			// The integrality test the message already promises: without it
 			// 2.9 was accepted and truncated to 2.
-			if (v < 0 || v > 255 || v != static_cast<double>(static_cast<int>(v))) {
+			if (v < 0 || v > 255 || !IsIntegralJsonNumber(v)) {
 				return ErrorResponse(
 					400, "bad_request", "`category_index` must be in [0, 255]");
 			}
@@ -5652,8 +5701,11 @@ CHttpServer::Response CApiDispatcher::HandleDownloadDelete(
 	auto a = Authenticate(req);
 	if (!a.ok)
 		return a.rejection;
+
 	if (auto rej = RequireAdmin(a))
 		return *rej;
+	if (auto r = RequireHashPath(key))
+		return *r;
 
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
@@ -6769,8 +6821,9 @@ CHttpServer::Response CApiDispatcher::HandleFriendAdd(const CHttpServer::Request
 					400, "bad_request", "required integer field `port` is missing");
 			}
 			const double d = it->second.get<double>();
-			if (d <= 0 || d > 65535) {
-				return ErrorResponse(400, "bad_request", "`port` must be in 1..65535");
+			if (!IsIntegralJsonNumber(d) || d < 1 || d > 65535) {
+				return ErrorResponse(
+					400, "bad_request", "`port` must be an integer in 1..65535");
 			}
 			port = static_cast<std::uint16_t>(d);
 		}
@@ -7445,12 +7498,13 @@ CHttpServer::Response CApiDispatcher::HandleKad(const CHttpServer::Request &req)
 	// Bare object (Q3 — Kad is a single resource, not a list).
 	w.Key("state");
 	w.ValueString(wxString::FromUTF8(k.state.c_str()));
-	// Our own Kademlia node id, "" while Kad is not running (i.e.
+	// Our own Kademlia node id, null while Kad is not running (i.e.
 	// exactly when `state` is "disabled"). Persisted by the daemon,
 	// so unlike every other identifier for the local node it is
-	// stable across restarts.
-	w.Key("node_id");
-	w.ValueString(wxString::FromUTF8(k.node_id.c_str()));
+	// stable across restarts. Null rather than "": every other field
+	// in this object spells absence that way, and an empty string is
+	// not a value a node id can take.
+	WriteStringOrNull(w, "node_id", !k.node_id.empty(), k.node_id);
 	// Two independent measurements, not a verdict and a refinement.
 	// firewalled_tcp is a vote needing two peers to confirm reachability;
 	// firewalled_udp is a directed test. LAN mode forces both to false.
@@ -9358,11 +9412,14 @@ CHttpServer::Response CApiDispatcher::HandleKadBootstrap(const CHttpServer::Requ
 	{
 		const auto it = obj.find("port");
 		if (it == obj.end() || !it->second.is<double>()) {
-			return ErrorResponse(400, "bad_request", "required numeric field `port` is missing");
+			return ErrorResponse(400, "bad_request", "required integer field `port` is missing");
 		}
 		const double v = it->second.get<double>();
-		if (v < 0 || v > 65535) {
-			return ErrorResponse(400, "bad_request", "`port` must be in [0, 65535]");
+		// Same contract as the `port` on POST /friends: one spelling, one
+		// range. 0 used to be accepted here, which no Kad contact can be
+		// reached on -- the probe was sent and silently went nowhere.
+		if (!IsIntegralJsonNumber(v) || v < 1 || v > 65535) {
+			return ErrorResponse(400, "bad_request", "`port` must be an integer in 1..65535");
 		}
 		port = static_cast<std::uint16_t>(v);
 	}
@@ -9415,8 +9472,11 @@ CHttpServer::Response CApiDispatcher::HandleSharedPatch(
 	auto a = Authenticate(req);
 	if (!a.ok)
 		return a.rejection;
+
 	if (auto rej = RequireAdmin(a))
 		return *rej;
+	if (auto r = RequireHashPath(key))
+		return *r;
 
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
@@ -9439,7 +9499,7 @@ CHttpServer::Response CApiDispatcher::HandleSharedPatch(
 	const auto pit = obj.find("priority");
 	if (pit != obj.end()) {
 		if (!pit->second.is<std::string>()) {
-			return ErrorResponse(400, "bad_request", "`priority` must be a wire-string enum");
+			return ErrorResponse(400, "bad_request", "`priority` must be a string");
 		}
 		std::uint8_t code = 0;
 		if (!FilePriorityToCode(pit->second.get<std::string>(), kPrioShared, code)) {
@@ -9582,8 +9642,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsBulkPatch(const CHttpServer
 		const auto it = obj.find("priority");
 		if (it != obj.end()) {
 			if (!it->second.is<std::string>())
-				return ErrorResponse(
-					400, "bad_request", "`priority` must be a wire-string enum");
+				return ErrorResponse(400, "bad_request", "`priority` must be a string");
 			std::uint8_t code = 0;
 			if (!FilePriorityToCode(it->second.get<std::string>(), kPrioDownload, code))
 				return ErrorResponse(
@@ -9601,7 +9660,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsBulkPatch(const CHttpServer
 			const double v = it->second.get<double>();
 			// The integrality test the message already promises: without it
 			// 2.9 was accepted and truncated to 2.
-			if (v < 0 || v > 255 || v != static_cast<double>(static_cast<int>(v)))
+			if (v < 0 || v > 255 || !IsIntegralJsonNumber(v))
 				return ErrorResponse(
 					400, "bad_request", "`category_index` must be in [0, 255]");
 			ops.push_back({ EC_OP_PARTFILE_SET_CAT,
@@ -9753,7 +9812,7 @@ CHttpServer::Response CApiDispatcher::HandleSharedBulkPatch(const CHttpServer::R
 	if (pit == obj.end())
 		return ErrorResponse(400, "bad_request", "request body must include `priority`");
 	if (!pit->second.is<std::string>())
-		return ErrorResponse(400, "bad_request", "`priority` must be a wire-string enum");
+		return ErrorResponse(400, "bad_request", "`priority` must be a string");
 	std::uint8_t code = 0;
 	if (!FilePriorityToCode(pit->second.get<std::string>(), kPrioShared, code))
 		return ErrorResponse(400, "bad_request", FilePriorityAccepted(kPrioShared).c_str());
@@ -10749,8 +10808,7 @@ CHttpServer::Response ParseCategoryFields(const picojson::object &obj, CategoryF
 		const auto it = obj.find("priority");
 		if (it != obj.end()) {
 			if (!it->second.is<std::string>()) {
-				return ErrorResponse(
-					400, "bad_request", "`priority` must be a wire-string enum");
+				return ErrorResponse(400, "bad_request", "`priority` must be a string");
 			}
 			if (!FilePriorityToCode(it->second.get<std::string>(), kPrioCategory, out.prio)) {
 				return ErrorResponse(
@@ -11250,8 +11308,10 @@ CHttpServer::Response CApiDispatcher::HandleSearchStart(const CHttpServer::Reque
 					"`min_size_bytes` must be a non-negative integer (bytes)");
 			}
 			const double v = it->second.get<double>();
-			if (v < 0)
-				return ErrorResponse(400, "bad_request", "`min_size_bytes` must be >= 0");
+			if (!IsIntegralJsonNumber(v) || v < 0)
+				return ErrorResponse(400,
+					"bad_request",
+					"`min_size_bytes` must be a non-negative integer");
 			min_size = static_cast<std::uint64_t>(v);
 		}
 	}
@@ -11265,8 +11325,10 @@ CHttpServer::Response CApiDispatcher::HandleSearchStart(const CHttpServer::Reque
 					"cap)");
 			}
 			const double v = it->second.get<double>();
-			if (v < 0)
-				return ErrorResponse(400, "bad_request", "`max_size_bytes` must be >= 0");
+			if (!IsIntegralJsonNumber(v) || v < 0)
+				return ErrorResponse(400,
+					"bad_request",
+					"`max_size_bytes` must be a non-negative integer");
 			max_size = static_cast<std::uint64_t>(v);
 		}
 	}
@@ -11279,6 +11341,11 @@ CHttpServer::Response CApiDispatcher::HandleSearchStart(const CHttpServer::Reque
 					"`min_source_count` must be a non-negative integer");
 			}
 			const double v = it->second.get<double>();
+			if (!IsIntegralJsonNumber(v)) {
+				return ErrorResponse(400,
+					"bad_request",
+					"`min_source_count` must be a non-negative integer");
+			}
 			if (v < 0 || v > 4294967295.0) {
 				return ErrorResponse(400, "bad_request", "`min_source_count` out of range");
 			}
@@ -11532,7 +11599,7 @@ CHttpServer::Response CApiDispatcher::HandleSearchDownload(
 			const double v = it->second.get<double>();
 			// The integrality test the message already promises: without it
 			// 2.9 was accepted and truncated to 2.
-			if (v < 0 || v > 255 || v != static_cast<double>(static_cast<int>(v))) {
+			if (v < 0 || v > 255 || !IsIntegralJsonNumber(v)) {
 				return ErrorResponse(
 					400, "bad_request", "`category_index` must be in [0, 255]");
 			}
@@ -11545,6 +11612,10 @@ CHttpServer::Response CApiDispatcher::HandleSearchDownload(
 					400, "bad_request", "`ecid` must be a non-negative integer");
 			}
 			const double v = eit->second.get<double>();
+			if (!IsIntegralJsonNumber(v)) {
+				return ErrorResponse(
+					400, "bad_request", "`ecid` must be a non-negative integer");
+			}
 			if (v < 0 || v > 4294967295.0) {
 				return ErrorResponse(400, "bad_request", "`ecid` out of range");
 			}
@@ -11599,6 +11670,9 @@ CHttpServer::Response CApiDispatcher::HandleSearchComments(
 	auto a = Authenticate(req);
 	if (!a.ok)
 		return a.rejection;
+
+	if (auto r = RequireHashPath(hash))
+		return *r;
 
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
