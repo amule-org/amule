@@ -2541,7 +2541,7 @@ Standalone view of the Kad subtree from `/status`, plus the detail fields the st
   "public_ip": "203.0.113.5",
   "network": { "user_count": 5400000, "file_count": 1400000000, "node_count": 2400 },
   "indexed": { "sources": 12000, "keywords": 8500, "notes": 0, "load_percent": 14 },
-  "buddy": { "status": "connected", "ip": "203.0.113.9", "port": 4672 }
+  "buddy": { "state": "connected", "ip": "203.0.113.9", "port": 4672 }
 }
 ```
 
