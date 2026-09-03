@@ -394,8 +394,18 @@ function AmuleLogPanel() {
       if (!boxRef.current) return;
       for (const line of (v.lines || [])) append(boxRef.current, line);
     });
+    // resync means the tail cursor is worthless -- DELETE /logs/amule emptied
+    // the buffer, from this client or another one -- so re-read rather than
+    // keep appending to what is on screen.
+    let lastResync = store.get("resync");
+    const unsubResync = store.subscribe("resync", (v) => {
+      if (v === lastResync) return;
+      lastResync = v;
+      if (boxRef.current) setText(boxRef.current, "");
+      load();
+    });
     load();
-    return () => unsub();
+    return () => { unsub(); unsubResync(); };
   }, []);
 
   return logBox(clear, save, boxRef);

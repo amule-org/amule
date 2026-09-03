@@ -225,7 +225,8 @@ function openSse() {
   es.addEventListener("resync", () => {
     if (statusActive) refreshStatus();
     for (const k of active) seed(k);
-    // chats.js isn't an `active` resource, so the re-seed above misses it.
+    // chats.js and the log panel aren't `active` resources, so the re-seed
+    // above misses them: one counter both can watch.
     store.set("resync", (store.get("resync") || 0) + 1);
   });
 

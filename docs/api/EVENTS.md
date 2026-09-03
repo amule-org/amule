@@ -250,6 +250,7 @@ data: {"reason":"gap","since_id":<old cursor>,"newest_id":<new cursor>}
 - `"gap"` — events were evicted from the ring before the subscriber read them.
 - `"restart"` — the subscriber's id was past the bus's newest, only possible after a daemon restart.
 - `"idle"` — the daemon stopped diffing because nothing had been subscribed for several ticks, so no collection change is represented on the bus for that period. A cursor from before it cannot be trusted however in-range it looks — and it may well still be in range, because the chat publisher keeps ids moving regardless.
+- `"log_cleared"` — [`DELETE /logs/amule`](REFERENCE.md#delete-apiv0logsamule) emptied the log buffer. The lines a `log_appended` subscriber was tracking no longer exist, and the buffer may already have refilled, so the tail cursor is meaningless: re-read [`GET /logs/amule`](REFERENCE.md#get-apiv0logsamule). Any client can clear the log, so this reaches subscribers that did not issue the DELETE.
 
 On any of them, the client's correct response is:
 
@@ -576,7 +577,7 @@ Emitted when the amuled log buffer appends new lines.
 { "lines": ["2026-06-19 11:00:00: line one", "2026-06-19 11:00:01: line two"] }
 ```
 
-Only the amuled log has a live channel; the server_info buffer has no SSE feed and is fetched by polling [`GET /logs/serverinfo`](REFERENCE.md#get-apiv0logsserverinfo). Multiple lines may be batched into a single event when the buffer landed several lines between refresher ticks. The [Bootstrap example](#bootstrap-snapshot--stream) doesn't pull `/logs/amule` — fetch it in step 2 if your UI shows historical log lines, otherwise treat `log_appended` as a live-only feed.
+Only the amuled log has a live channel; the server_info buffer has no SSE feed and is fetched by polling [`GET /logs/serverinfo`](REFERENCE.md#get-apiv0logsserverinfo). Multiple lines may be batched into a single event when the buffer landed several lines between refresher ticks. The feed is append-only with one exception: [`DELETE /logs/amule`](REFERENCE.md#delete-apiv0logsamule) empties the buffer, and rather than a log event that would leave the cursor pointing into a buffer that no longer exists, every subscriber gets a [`resync`](#resync-frame) with `reason: "log_cleared"` and re-reads. Any client can clear the log, so this can arrive without your having asked for it. The [Bootstrap example](#bootstrap-snapshot--stream) doesn't pull `/logs/amule` — fetch it in step 2 if your UI shows historical log lines, otherwise treat `log_appended` as a live-only feed.
 
 ### `search` channel
 

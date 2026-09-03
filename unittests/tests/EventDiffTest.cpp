@@ -693,6 +693,69 @@ TEST(EventDiff, SearchResultRemovedSilentWhileTheResultRemains)
 	ASSERT_EQUALS(static_cast<size_t>(0), CountEvent(bus, "search_result_removed"));
 }
 
+// DELETE /logs/amule empties the buffer. The old signal was a shrunk size,
+// which misses the case that matters: cleared and refilled past the old count
+// between two ticks, the size only grows, so the append branch published a
+// mid-buffer slice as though it were the tail and never published what came
+// before it. The clear-generation catches both shapes.
+TEST(EventDiff, LogClearPublishesResyncRatherThanAMidBufferSlice)
+{
+	CState state;
+	CEventBus bus;
+	LastSeenState prev;
+
+	state.AppendAmuleLog({ "one\n", "two\n" });
+	EmitDiffsAndUpdate(bus, prev, state); // cold-start baseline, silent
+	ASSERT_EQUALS(static_cast<size_t>(0), CountEvent(bus, "log_appended"));
+
+	// Cleared, then refilled past the old length before the next tick: three
+	// lines where there were two, so the size alone reads as growth.
+	state.ClearAmuleLog();
+	state.AppendAmuleLog({ "A\n", "B\n", "C\n" });
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	ASSERT_EQUALS(static_cast<size_t>(1), CountEvent(bus, "resync"));
+	// No log_appended: publishing "C" alone as the tail is exactly the bug.
+	ASSERT_EQUALS(static_cast<size_t>(0), CountEvent(bus, "log_appended"));
+
+	std::string payload;
+	for (const auto &e : DrainAll(bus))
+		if (e.name == "resync")
+			payload = e.data;
+	ASSERT_EQUALS(std::string("{\"reason\":\"log_cleared\"}"), payload);
+
+	// The baseline moved to the refilled buffer, so the next append is a
+	// clean tail again and no second resync fires.
+	state.AppendAmuleLog({ "D\n" });
+	EmitDiffsAndUpdate(bus, prev, state);
+	ASSERT_EQUALS(static_cast<size_t>(1), CountEvent(bus, "resync"));
+	ASSERT_EQUALS(static_cast<size_t>(1), CountEvent(bus, "log_appended"));
+	for (const auto &e : DrainAll(bus))
+		if (e.name == "log_appended")
+			payload = e.data;
+	ASSERT_TRUE(payload.find("D") != std::string::npos);
+	ASSERT_TRUE(payload.find("C") == std::string::npos);
+}
+
+// A clear that leaves the buffer smaller is the same edge, and must not be
+// mistaken for the old silent-truncation path.
+TEST(EventDiff, LogClearToASmallerBufferAlsoPublishesResync)
+{
+	CState state;
+	CEventBus bus;
+	LastSeenState prev;
+
+	state.AppendAmuleLog({ "one\n", "two\n", "three\n" });
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	state.ClearAmuleLog();
+	state.AppendAmuleLog({ "X\n" });
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	ASSERT_EQUALS(static_cast<size_t>(1), CountEvent(bus, "resync"));
+	ASSERT_EQUALS(static_cast<size_t>(0), CountEvent(bus, "log_appended"));
+}
+
 TEST(EventDiff, SearchResultUpdatedFiresWhenADownloadStateChanges)
 {
 	CState state;

@@ -8295,12 +8295,12 @@ CHttpServer::Response CApiDispatcher::HandleLogAmuleReset(const CHttpServer::Req
 	}
 	delete ec_resp;
 
-	// Drop the in-process mirror. The refresher's append-only path
-	// (AppendAmuleLog) can't shrink the cache, and EmitDiffsAndUpdate treats a
-	// size decrease as a silent truncation (its `log_size <
-	// prev.amule_log_count` branch), so no spurious log_appended event fires on
-	// the next tick -- and, as noted there, no event at all for whatever was
-	// appended before that tick.
+	// Drop the in-process mirror. This also bumps the log's clear-generation,
+	// which is what the next refresher tick reads to publish a `resync` for
+	// every subscriber rather than a log event -- the lines this channel
+	// promised are gone, so "re-read" is the honest signal. Publishing it here
+	// instead is not open to us: the bus has a single-publisher invariant and
+	// this is the HTTP thread.
 	m_state.ClearAmuleLog();
 
 	CHttpServer::Response r;

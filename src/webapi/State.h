@@ -1699,7 +1699,14 @@ public:
 	//! `first` past the end gives an empty tail, which with `total` is how the
 	//! caller sees a truncation. Copies nothing when nothing was appended,
 	//! which the per-tick log diff needs and AmuleLog() cannot do.
-	std::vector<std::string> AmuleLogFrom(std::size_t first, std::size_t &total) const;
+	//! `generation`, when asked for, is read under the same lock as the window
+	//! and is bumped by every ClearAmuleLog(). Size alone cannot detect a
+	//! clear: a buffer cleared and refilled past its old length between two
+	//! ticks looks like growth, and the diff would then publish a mid-buffer
+	//! slice as a tail. Taking it here rather than from a second call is what
+	//! keeps a concurrent DELETE from tearing the pair.
+	std::vector<std::string> AmuleLogFrom(
+		std::size_t first, std::size_t &total, std::uint64_t *generation = nullptr) const;
 	ServerInfoLog ServerInfo() const;
 
 	// Flat list views. Reads the ECID-keyed map under shared_lock and
@@ -2085,6 +2092,7 @@ private:
 	std::vector<ChatSessionSnapshot> m_chats;
 	std::uint32_t m_chat_cursor = 0;
 	std::vector<std::string> m_amule_log_lines;
+	std::uint64_t m_amule_log_generation = 0;
 	ServerInfoLog m_server_info;
 	StatsTreeNode m_stats_tree;
 	StatsGraphs m_graphs;

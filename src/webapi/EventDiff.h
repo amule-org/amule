@@ -72,6 +72,9 @@ struct LastSeenState
 	// event — clients can GET /api/v0/logs/amule for the history.
 	std::size_t amule_log_count = 0;
 	bool amule_log_initialised = false;
+	// Last clear-generation seen. A bump means DELETE /logs/amule emptied the
+	// buffer since the previous tick, which the count alone cannot tell.
+	std::uint64_t amule_log_generation = 0;
 
 	// Per-search event baseline (multi-search). One entry per open search_id,
 	// diffed against that search's state each tick: new result ECIDs →
