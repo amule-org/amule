@@ -221,13 +221,21 @@ void PeerActionSetFriendSlot(wxWindow *parent, const std::vector<PeerIdentity> &
 	if (peers.empty()) {
 		return;
 	}
-	// Resolved from the friend list, not from a live client: the slot is a
-	// property of our own record, so it is settable on a peer that is not
-	// connected -- which is the case this list exists to cover. Taking the
-	// first selected peer matches the menu, which is built for that one.
+	// Resolve the friend the same way the menu decided whether to offer this
+	// entry: through the live client's own linkage when there is one, and
+	// from the stored record otherwise. Resolving it differently is how the
+	// menu ends up describing one peer while the action runs on another.
+	// Either way the slot is a property of our own list, so it is settable
+	// on a peer that is not connected, which is the case this list covers.
 	const PeerIdentity &peer = peers.front();
-	theApp->friendlist->SetFriendSlot(
-		theApp->friendlist->LookupFriend(peer.hash, peer.ip, peer.port), checked);
+	CFriend *known = nullptr;
+	if (peer.client.IsLinked()) {
+		CClientRef &live = const_cast<CClientRef &>(peer.client);
+		known = live.GetFriend();
+	} else {
+		known = theApp->friendlist->LookupFriend(peer.hash, peer.ip, peer.port);
+	}
+	theApp->friendlist->SetFriendSlot(known, checked);
 
 	WarnIfMultipleFriendSlot(parent, peers.size());
 }

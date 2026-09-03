@@ -327,9 +327,12 @@ std::vector<PeerIdentity> CClientHistoryListCtrl::SelectedPeers() const
 		}
 		PeerIdentity peer;
 		peer.hash = row->hash;
-		// The same fallback the Name column uses, so an action started from a
-		// row carries what that row is labelled with rather than nothing.
-		peer.name = DisplayNameFor(*row);
+		// The record's own name, not the Name column's fallback. This one
+		// is written to disk by AddFriend() and set on the live client by
+		// CreateForAddress(), so a placeholder here would persist a hex
+		// hash as somebody's name. Empty is meaningful: CFriend renders it
+		// as "?" until the peer tells us what it is called.
+		peer.name = row->name;
 		peer.ip = row->ip;
 		peer.port = row->port;
 
