@@ -189,13 +189,16 @@ void CFriendListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 		menu->Append(MP_REMOVEFRIEND, _("Remove Friend"));
 		menu->Append(MP_MESSAGE, _("Send &Message"));
 		menu->Append(MP_SHOWLIST, _("View Files"));
+		// No connection gate: the slot is a property of the CFriend
+		// record, not of a live session. CFriendList::SetFriendSlot
+		// persists it through CFriend::SetPersistentFriendSlot and only
+		// additionally pokes the live client when one is linked, and
+		// CFriend::LinkClient applies the stored flag when the friend
+		// reconnects. Granting it in advance to a friend who is offline
+		// is therefore the case it is most useful for, and was the one
+		// case this menu refused.
 		menu->AppendCheckItem(MP_FRIENDSLOT, _("Establish Friend Slot"));
-		if (cur_friend->GetLinkedClient().IsLinked()) {
-			menu->Enable(MP_FRIENDSLOT, true);
-			menu->Check(MP_FRIENDSLOT, cur_friend->HasFriendSlot());
-		} else {
-			menu->Enable(MP_FRIENDSLOT, false);
-		}
+		menu->Check(MP_FRIENDSLOT, cur_friend->HasFriendSlot());
 	}
 
 	PopupMenu(menu, event.GetPosition());
