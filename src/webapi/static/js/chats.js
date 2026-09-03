@@ -155,7 +155,7 @@ async function adopt() {
   catch (e) { noteError(e); return; }
   let added = false;
   for (const s of list) {
-    const cur = convs.get(s.client_address);
+    const cur = convs.get(s.address);
     if (cur) {
       cur.known = true;
       const name = betterName(cur, s.name);
@@ -164,25 +164,25 @@ async function adopt() {
       const cEcid = s.client_ecid || 0, fEcid = s.friend_ecid || 0;
       if (cEcid !== cur.clientEcid) { cur.clientEcid = cEcid; added = true; }
       if (fEcid !== cur.friendEcid) { cur.friendEcid = fEcid; added = true; }
-      if (cur.loaded && s.last_message_id > cur.lastMsgId) loadMessages(s.client_address);
+      if (cur.loaded && s.last_message_id > cur.lastMsgId) loadMessages(s.address);
       continue;
     }
     const conv = newConv({
-      peer: s.client_address, ip: s.ip, port: s.port, name: s.name,
+      peer: s.address, ip: s.ip, port: s.port, name: s.name,
       clientEcid: s.client_ecid || 0, friendEcid: s.friend_ecid || 0,
     });
     conv.known = true;
-    convs.set(s.client_address, conv);
+    convs.set(s.address, conv);
     added = true;
   }
   // Absent = closed elsewhere or evicted by the daemon's cap. Skip local-only
   // ones, not listed yet by definition.
   for (const peer of Array.from(convs.keys())) {
     const conv = convs.get(peer);
-    if (conv && conv.known && !list.some((s) => s.client_address === peer)) { drop(peer, false); added = true; }
+    if (conv && conv.known && !list.some((s) => s.address === peer)) { drop(peer, false); added = true; }
   }
   // The daemon lists most-recently-active first.
-  if (!activePeer && list.length) { setActive(list[0].client_address); return; }
+  if (!activePeer && list.length) { setActive(list[0].address); return; }
   if (added) publishTabs();
 }
 
@@ -236,15 +236,15 @@ function drop(peer, notify) {
 function onMessage(p) {
   if (!p || p === lastMessage) return;
   lastMessage = p;
-  if (!p.client_address || !p.message) return;
-  let conv = convs.get(p.client_address);
+  if (!p.address || !p.message) return;
+  let conv = convs.get(p.address);
   if (!conv) {
     // No "conversation started" event; the first message implies a new one.
     conv = newConv({
-      peer: p.client_address, ip: p.ip, port: p.port, name: p.name,
+      peer: p.address, ip: p.ip, port: p.port, name: p.name,
       clientEcid: p.client_ecid || 0, friendEcid: p.friend_ecid || 0,
     });
-    convs.set(p.client_address, conv);
+    convs.set(p.address, conv);
   } else {
     conv.name = betterName(conv, p.name);
     conv.clientEcid = p.client_ecid || 0;
@@ -254,20 +254,20 @@ function onMessage(p) {
   const seen = conv.messages.has(p.message.id);
   addMessage(conv, p.message);
   // Not unread: our own outbound line, or an id already held (a send's echo).
-  if (!seen && p.message.direction === "in" && (!pageVisible() || p.client_address !== activePeer)) {
+  if (!seen && p.message.direction === "in" && (!pageVisible() || p.address !== activePeer)) {
     conv.unread++;
   }
   // The strip must always have one selected; off-page, don't clear its unread.
-  if (!activePeer) { setActive(p.client_address, pageVisible()); return; }
+  if (!activePeer) { setActive(p.address, pageVisible()); return; }
   publishTabsSoon();
-  publishLogSoon(p.client_address);
+  publishLogSoon(p.address);
 }
 
 function onClosed(p) {
   if (!p || p === lastClosed) return;
   lastClosed = p;
   // Closing is global — any client can do it.
-  if (p.client_address) drop(p.client_address, p.client_address === activePeer);
+  if (p.address) drop(p.address, p.address === activePeer);
 }
 
 function onResync(v) {

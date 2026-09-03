@@ -136,13 +136,13 @@ if [ "$COUNT" -gt 0 ]; then
 		_assert_json_eq '.parts | type' array '/shared/{hash}.parts is array'
 		PARTS_LEN=$(printf '%s' "$CURL_BODY" | jq '.parts | length')
 
-		# --- 3. parts.length == parts_total_count == ceil(size/PARTSIZE). --
-		PART_COUNT=$(printf '%s' "$CURL_BODY" | jq '.parts_total_count')
+		# --- 3. parts.length == total_part_count == ceil(size/PARTSIZE). --
+		PART_COUNT=$(printf '%s' "$CURL_BODY" | jq '.total_part_count')
 		if [ "$PARTS_LEN" = "$PART_COUNT" ]; then
-			_pass "/shared/{hash}.parts.length == parts_total_count ($PARTS_LEN)"
+			_pass "/shared/{hash}.parts.length == total_part_count ($PARTS_LEN)"
 		else
-			_fail "/shared/{hash}.parts.length vs parts_total_count" \
-				"parts_total_count=$PART_COUNT, parts.length=$PARTS_LEN"
+			_fail "/shared/{hash}.parts.length vs total_part_count" \
+				"total_part_count=$PART_COUNT, parts.length=$PARTS_LEN"
 		fi
 		if [ "$FIRST_SIZE" -gt 0 ]; then
 			EXPECTED_PARTS=$(( (FIRST_SIZE + 9728000 - 1) / 9728000 ))

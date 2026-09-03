@@ -104,9 +104,9 @@ export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDele
       <div class="detail-sections">
         <div class="detail-progress">
           <${ProgressBar} percent=${d.progress && d.progress.percent} />
-          ${d.hashed_part_count > 0 && d.parts_total_count ? html`
-            <${PiecesBar} mode="hashing" total=${d.parts_total_count} hashed=${d.hashed_part_count} />
-            <${PiecesLegend} mode="hashing" total=${d.parts_total_count} hashed=${d.hashed_part_count} />`
+          ${d.hashed_part_count > 0 && d.total_part_count ? html`
+            <${PiecesBar} mode="hashing" total=${d.total_part_count} hashed=${d.hashed_part_count} />
+            <${PiecesLegend} mode="hashing" total=${d.total_part_count} hashed=${d.hashed_part_count} />`
           : parts.length ? html`
             <${PiecesBar} parts=${parts} />
             <${PiecesLegend} parts=${parts} />` : null}
@@ -135,7 +135,7 @@ export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDele
           media.codec ? statRow("downloads_detail_media_codec", media.codec, "downloads_detail_tip_media_codec") : null,
         ].filter(Boolean), "downloads_detail_group_media") : null}
         ${Section([
-          statRow("downloads_detail_available_parts", formatInt(d.parts_available_count) + " / " + formatInt(d.parts_total_count), "downloads_detail_tip_available_parts"),
+          statRow("downloads_detail_available_parts", formatInt(d.available_part_count) + " / " + formatInt(d.total_part_count), "downloads_detail_tip_available_parts"),
           statRow("downloads_detail_saved_ich", formatInt(d.ich_recovered_packet_count) + " " + t("downloads_detail_ich_unit"), "downloads_detail_tip_saved_ich"),
           statRow("downloads_detail_lost_corruption", formatBytes(d.lost_to_corruption_bytes), "downloads_detail_tip_lost_corruption"),
           statRow("downloads_detail_gained_compression", formatBytes(d.gained_by_compression_bytes), "downloads_detail_tip_gained_compression"),

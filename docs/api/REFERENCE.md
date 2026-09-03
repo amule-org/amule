@@ -77,9 +77,9 @@ The API is versioned in the path. **`/api/v0/` is the pre-release surface and is
 - [`POST /api/v0/friends/{ecid}/shared_files`](#post-apiv0friendsecidshared_files) — browse a friend's shared files
 - [`POST /api/v0/friends/{ecid}/messages`](#post-apiv0friendsecidmessages) — message a friend, online or offline
 - [`GET /api/v0/chats`](#get-apiv0chats) — list chat conversations
-- [`GET /api/v0/chats/{client_address}/messages`](#get-apiv0chatsclient_addressmessages) — read a conversation's history
-- [`POST /api/v0/chats/{client_address}/messages`](#post-apiv0chatsclient_addressmessages) — send a message to a client address
-- [`DELETE /api/v0/chats/{client_address}`](#delete-apiv0chatsclient_address) — close a conversation
+- [`GET /api/v0/chats/{address}/messages`](#get-apiv0chatsaddressmessages) — read a conversation's history
+- [`POST /api/v0/chats/{address}/messages`](#post-apiv0chatsaddressmessages) — send a message to a client address
+- [`DELETE /api/v0/chats/{address}`](#delete-apiv0chatsaddress) — close a conversation
 - [`POST /api/v0/clients/{ecid}/messages`](#post-apiv0clientsecidmessages) — message a connected client
 
 **Categories**
@@ -362,7 +362,7 @@ The rule now reaches the whole surface rather than just the download and shared 
 
 `media` is the one place this reaches an **object** rather than a scalar, so a client tests `media === null` before reaching into it -- which it had to do regardless, since the object's own fields can be absent.
 
-Five keys stay omitted, because for them absence really is the meaning: `started_at` and `result_count` on [`GET /search`](#get-apiv0search) as described above, `key` on a statistics node (absent from a daemon too old to send it), `ratio` on the statistics ratio node (absent when the daemon reported neither component), and `parts` under [`?include_parts=true`](#get-apiv0downloadshashclients--get-apiv0sharedhashclients) -- there the caller opted in, so the key's absence answers a question they did not ask.
+Five keys stay omitted, because for them absence really is the meaning: `started_at` and `result_count` on [`GET /search`](#get-apiv0search) as described above, `key` on a statistics node (absent from a daemon too old to send it), `ratio_session` / `ratio_total` on the statistics ratio node (each absent when the daemon could not compute it), and `parts` under [`?include_parts=true`](#get-apiv0downloadshashclients--get-apiv0sharedhashclients) -- there the caller opted in, so the key's absence answers a question they did not ask.
 
 Opting out is not one of them. `parts`, `next_requested_part_index` and `downloading_part_index` are all absent from a client row unless `?include_parts=true` was asked for, but that absence is a property of the request, not a fact about the client, so it is not what the null-versus-absent rule above is about. Under the flag the two index keys are *always* present — `null`, never absent, wherever the index does not apply — which is why only `parts` is in the list above.
 
@@ -472,7 +472,7 @@ Every path segment, query parameter and JSON key on this surface follows the rul
 | **R9** | **A writable field accepts the values the same field returns.** Where a write is really a command it belongs in a differently-named key (`action`), not in the read field's name. |
 | **R10** | **Always emit the key.** An unknown value is `null`, never an omitted key and never a `0`/`-1` sentinel. The few deliberate exceptions are enumerated under [Response model](#response-model). |
 | **R11** | **Group by quantity, not by scope.** A sub-object earns its place when it groups *different* quantities (`sources`, `progress`, `media`). One quantity split by time window does not — the window belongs in the key, not in a wrapper. |
-| **R12** | **One word for the remote party: `client`.** `client_address` is not used in a key, a path or an enum value. `source` is not a synonym: a source is a client *in a role with respect to one file*, so it survives only where that relation is what is being described (`sources.total`, `source_origin`). |
+| **R12** | **One word for the remote party: `client`.** `address` is not used in a key, a path or an enum value. `source` is not a synonym: a source is a client *in a role with respect to one file*, so it survives only where that relation is what is being described (`sources.total`, `source_origin`). |
 
 ### Why rates are spelled out
 
@@ -848,7 +848,7 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/downloads"
       "progress": { "percent": 29.85 },
       "kad_comment_lookup_running": false,
       "hashed_part_count": 0,
-      "parts_total_count": 394,
+      "total_part_count": 394,
       "source_ecids": [ 1234, 5678 ]
     }
   ]
@@ -865,7 +865,7 @@ The list shape omits `progress.parts` to keep large libraries compact. Use the d
 
 `kad_comment_lookup_running` is `true` while an on-demand Kad notes lookup is in flight for the file (started by [`POST /downloads/{hash}/comments`](#post-apiv0downloadshashcomments)); it flips back to `false` when the lookup finishes. Because it lives on the download object, a client can watch the `download_updated` SSE event for the start → finish transition instead of polling.
 
-`hashed_part_count` is the number of parts hashed so far by a pass running over the file — a `hashing` status, an [`AICH`](#post-apiv0sharedhashverify) hashset rebuild — and `0` when nothing is hashing. It is a count of completed parts, not the index of the part in flight, so it runs `0` → `parts_total_count`; divide by `parts_total_count` (from the detail endpoint, or `ceil(size / 9728000)`) for a percentage.
+`hashed_part_count` is the number of parts hashed so far by a pass running over the file — a `hashing` status, an [`AICH`](#post-apiv0sharedhashverify) hashset rebuild — and `0` when nothing is hashing. It is a count of completed parts, not the index of the part in flight, so it runs `0` → `total_part_count`; divide by `total_part_count` (from the detail endpoint, or `ceil(size / 9728000)`) for a percentage.
 
 `source_ecids` are the ECIDs of the clients holding this file as an A4AF source — the same array, under the same name, that [`POST /downloads/{hash}/a4af`](#post-apiv0downloadshasha4af) returns, and `[]` when there are none. It is the one thing a per-file client list needs that [`GET /api/v0/clients`](#get-apiv0clients) and the `clients` SSE channel cannot say: A4AF is a relation between a client and a *file*, so it does not live on the client object. With it on the download event, a Clients panel driven by the `downloads` and `clients` channels can shade its A4AF rows from the stream instead of polling [`GET /downloads/{hash}/clients`](#get-apiv0downloadshashclients--get-apiv0sharedhashclients). Note the name is scoped to A4AF, not to sources at large — the count of *all* sources is `sources.total`.
 
@@ -892,8 +892,8 @@ Same envelope as the list item, plus the detail-only fields below (all omitted f
 | `last_seen_complete_at` | int \| null | Unix ts a complete copy was last seen across sources; `null` when no complete copy has ever been seen, or the daemon does not report it. |
 | `last_received_at` | int | Unix ts the partfile last received data. |
 | `active_seconds` | int | Seconds spent actively downloading. |
-| `parts_available_count` | int | Number of parts available across the current sources. |
-| `parts_total_count` | int | Total parts, `ceil(size / 9.28 MiB)`. |
+| `available_part_count` | int | Number of parts available across the current sources. |
+| `total_part_count` | int | Total parts, `ceil(size / 9.28 MiB)`. |
 | `remaining_seconds` | int \| null | ETA in seconds, or `null` when stalled or paused (speed ≈ 0) and there is nothing to compute from. |
 | `lost_to_corruption_bytes` | int | Bytes discarded to corruption. |
 | `gained_by_compression_bytes` | int | Bytes saved by on-the-wire compression. |
@@ -1025,9 +1025,9 @@ Each entry is the [`/clients`](#get-apiv0clients) list object plus five keys:
 
 `role` and `a4af` are orthogonal: a pure A4AF row is `role: "none"`, `a4af: true`, but a client can be parked on another file *and* be pulling this one from us (`role: "uploading_to"`, `a4af: true`).
 
-`parts` is opt-in because it is one boolean per chunk per client — a multi-TiB file is 100k+ entries each. It is exactly `parts_total_count` entries, and it describes the file this row is about: the download bitmap for a `"downloading_from"` row, the upload bitmap for an `"uploading_to"` one. A client the core reports as holding every part comes back all-`true`. A pure A4AF row has no bitmap for this file and omits the key. **`parts` never appears in SSE payloads.**
+`parts` is opt-in because it is one boolean per chunk per client — a multi-TiB file is 100k+ entries each. It is exactly `total_part_count` entries, and it describes the file this row is about: the download bitmap for a `"downloading_from"` row, the upload bitmap for an `"uploading_to"` one. A client the core reports as holding every part comes back all-`true`. A pure A4AF row has no bitmap for this file and omits the key. **`parts` never appears in SSE payloads.**
 
-`next_requested_part_index` and `downloading_part_index` are the two extra states the desktop paints on top of that bitmap — the chunk in flight in amber, the one queued behind it in pale yellow — turning a three-state bar into the desktop's five-state one. Both are `0`-based indices into `parts`, and both ride `include_parts` for the same reason: an index is meaningless without the bitmap it indexes, and a caller that did not ask for `parts` does not know the file's `parts_total_count`. Under the flag both keys are always present, `null` rather than omitted whenever the index does not apply, so one query returns one row shape. `null` covers every such case: the client never reported the value, it reported the `0xffff` "nothing pending" sentinel, the index does not address a chunk of this file, the row is not a source for this file at all (`role: "uploading_to"` or a pure A4AF row, whose indices belong to whatever else that client is downloading), or the row carries no `parts` bitmap for the index to point into. `downloading_part_index` carries one further rule: it is `null` unless the client's `download_state` is `"downloading"`, because the daemon reports a stale `0` for a source that is merely connected or queued — treat a number here as "this chunk is arriving right now", which is what makes it safe to paint, and which is why it is named for the present tense rather than for a previous part. Note that `0` is a real chunk index, never a stand-in for unknown — see [`Unknown values`](#unknown-values). Neither key ever appears in SSE payloads.
+`next_requested_part_index` and `downloading_part_index` are the two extra states the desktop paints on top of that bitmap — the chunk in flight in amber, the one queued behind it in pale yellow — turning a three-state bar into the desktop's five-state one. Both are `0`-based indices into `parts`, and both ride `include_parts` for the same reason: an index is meaningless without the bitmap it indexes, and a caller that did not ask for `parts` does not know the file's `total_part_count`. Under the flag both keys are always present, `null` rather than omitted whenever the index does not apply, so one query returns one row shape. `null` covers every such case: the client never reported the value, it reported the `0xffff` "nothing pending" sentinel, the index does not address a chunk of this file, the row is not a source for this file at all (`role: "uploading_to"` or a pure A4AF row, whose indices belong to whatever else that client is downloading), or the row carries no `parts` bitmap for the index to point into. `downloading_part_index` carries one further rule: it is `null` unless the client's `download_state` is `"downloading"`, because the daemon reports a stale `0` for a source that is merely connected or queued — treat a number here as "this chunk is arriving right now", which is what makes it safe to paint, and which is why it is named for the present tense rather than for a previous part. Note that `0` is a real chunk index, never a stand-in for unknown — see [`Unknown values`](#unknown-values). Neither key ever appears in SSE payloads.
 
 The file's own three-state part view (`complete` / `pending` / `unavailable`) is on [`GET /downloads/{hash}`](#get-apiv0downloadshash); combine it with this bitmap and the two indices above to render the desktop's five-state per-source bar.
 
@@ -1541,7 +1541,7 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/shared"
 
 `priority` is the upload priority — `"very_low"` / `"low"` / `"normal"` / `"high"` / `"release"` — and `priority_auto` is `true` when amuled is deriving that level automatically from the upload queue. This mirrors the `/downloads` shape (base `priority` + separate `priority_auto` flag); on an auto file `priority` reports the current derived level, not the literal string `"auto"`. For a file that is both downloading and shared this upload priority is independent of the download priority reported by [`GET /api/v0/downloads`](#get-apiv0downloads).
 
-`hashed_part_count` is the number of parts hashed so far by a pass running over the file — a [`POST /shared/{hash}/verify`](#post-apiv0sharedhashverify) run, or an AICH hashset rebuild — and `0` when nothing is hashing. It is a count of completed parts, not the index of the part in flight, so it runs `0` → `parts_total_count` (see the detail endpoint, or compute `ceil(size / 9728000)`).
+`hashed_part_count` is the number of parts hashed so far by a pass running over the file — a [`POST /shared/{hash}/verify`](#post-apiv0sharedhashverify) run, or an AICH hashset rebuild — and `0` when nothing is hashing. It is a count of completed parts, not the index of the part in flight, so it runs `0` → `total_part_count` (see the detail endpoint, or compute `ceil(size / 9728000)`).
 
 A file that is both downloading and shared reports its progress here as well: amuled describes such a file as a partfile, so the value is read across from the download side and the two agree. That makes `hashed_part_count` usable from either list without checking which one owns the file.
 
@@ -1570,14 +1570,14 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 | `incomplete` | bool | `true` while the file is still an incomplete partfile, `false` once complete. Always present. A download that has finished but has not been cleared yet reports `false`, since its data already sits in the destination directory. |
 | `sources.complete_min` / `sources.complete_max` | int | The low and high ends of the estimated full-copy source range behind `sources.complete`. Two scalars, not a nested object. |
 | `aich_hash` | string\|null | AICH master hash (hex), or `null` until the hashset exists. |
-| `parts_total_count` | int | Total parts, `ceil(size / 9.28 MiB)`. |
-| `parts` | array | Per-part source availability, `[{ "sources": int }, ...]`, exactly `parts_total_count` entries in file order. **`null`** until the first decode has landed, so "no data yet" and "no sources for any part" stay distinguishable. The key is always present. See below. |
+| `total_part_count` | int | Total parts, `ceil(size / 9.28 MiB)`. |
+| `parts` | array | Per-part source availability, `[{ "sources": int }, ...]`, exactly `total_part_count` entries in file order. **`null`** until the first decode has landed, so "no data yet" and "no sources for any part" stay distinguishable. The key is always present. See below. |
 | `upload_queue_count` | int | Clients waiting on this file's upload queue. |
 | `my_comment` | string | The user's own comment on this file (`""` if none). |
 | `my_rating` | int | The user's own rating, `0`–`5` (`0` = unrated). |
 | `media` | object | Audio/video metadata — see [Media metadata](#media-metadata). **`null`** when the file has no probed metadata; the key is always present. |
 
-`hashed_part_count` comes through from the list item; pair it with `parts_total_count` here for a percentage.
+`hashed_part_count` comes through from the list item; pair it with `total_part_count` here for a percentage.
 
 `parts[].sources` is how many clients currently requesting this file hold that part — an **availability** measure, not a progress one. A shared file is fully local by definition, so a part with `"sources": 0` means no other client has it and you are its only source. Counts saturate at `255`.
 
@@ -2749,7 +2749,8 @@ The UL:DL ratio node (`key: "ul_dl_ratio"`) additionally carries a `ratio` objec
               "label": "Session UL:DL Ratio (Total): %s",
               "label_value": null,
               "values": [ { "type": "string", "value": "1 : 769.34 (1 : 1125.54)", "token": null, "extra": null } ],
-              "ratio": { "session": 769.34, "total": 1125.54 },
+              "ratio_session": 769.34,
+              "ratio_total": 1125.54,
               "children": []
             }
           ]
@@ -2804,8 +2805,8 @@ Time-series points behind the desktop Statistics graphs.
   "interval_seconds": 1,
   "max_points": 1800,
   "points": [
-    { "at": 1781430000, "value": 42, "active_downloads": 7, "active_uploads": 4 },
-    { "at": 1781430001, "value": 44, "active_downloads": 8, "active_uploads": 4 }
+    { "at": 1781430000, "value": 42, "active_download_count": 7, "active_upload_count": 4 },
+    { "at": 1781430001, "value": 44, "active_download_count": 8, "active_upload_count": 4 }
   ],
   "session": {
     "download_bytes": 12400000000,
@@ -2820,7 +2821,7 @@ Each point has `at` (unix seconds) and `value`, spaced by `interval_seconds`. `u
 
 `max_points` is how many points this daemon can answer with before it starts repeating records; `points` is never longer than it. It is not a constant across daemons, so a client that wants the deepest window available should read it rather than assume 1800.
 
-**`connections` only:** each point also carries `active_downloads` (clients being pulled from) and `active_uploads` (clients being pushed to), alongside `value`, which stays the total connection count. Against an amuled that does not report them the two keys are **omitted entirely** rather than sent as `0`, so "not reported" is distinguishable from "nothing was transferring". They are all-or-nothing: either every point in a response has them or none does.
+**`connections` only:** each point also carries `active_download_count` (clients being pulled from) and `active_upload_count` (clients being pushed to), alongside `value`, which stays the total connection count. Against an amuled that does not report them the two keys are **omitted entirely** rather than sent as `0`, so "not reported" is distinguishable from "nothing was transferring". They are all-or-nothing: either every point in a response has them or none does.
 
 **`session`** carries this-session figures so a client doesn't need a separate roundtrip:
 
@@ -3124,7 +3125,7 @@ Clients whose country could not be resolved — GeoIP disabled, unsupported by t
 
 Conversations with clients, backed by the chat session store in `amuled`. The store is shared: a message sent from the desktop GUI, from amulegui or through this API lands in the same transcript, and every client sees the same conversation.
 
-A conversation is keyed on `{client_address}` = `"<ip>:<port>"` (for example `203.0.113.42:4662`). That is the readable form of the internal id the EC wire already uses, it is stable across client reconnects — unlike an ECID — and it needs no identifier of its own. A `{client_address}` that is not four dotted octets plus a port is a `400`.
+A conversation is keyed on `{address}` = `"<ip>:<port>"` (for example `203.0.113.42:4662`). That is the readable form of the internal id the EC wire already uses, it is stable across client reconnects — unlike an ECID — and it needs no identifier of its own. A `{address}` that is not four dotted octets plus a port is a `400`.
 
 The store is **in memory**: an `amuled` restart empties every conversation, exactly as the desktop's own transcript dies with its notebook tab. Retention is bounded at 200 messages per conversation and 50 conversations, evicting the least recently active first.
 
@@ -3144,7 +3145,7 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/chats"
 {
   "chats": [
     {
-      "client_address":            "203.0.113.42:4662",
+      "address":            "203.0.113.42:4662",
       "ip":              "203.0.113.42",
       "port":            4662,
       "name":            "alice",
@@ -3169,7 +3170,7 @@ Served from the refresher snapshot — no EC roundtrip per request. Standard [li
 
 **Errors:** `503 ec_unsupported`, `503 ec_unavailable`.
 
-#### `GET /api/v0/chats/{client_address}/messages`
+#### `GET /api/v0/chats/{address}/messages`
 
 **Auth:** `GUEST`
 
@@ -3177,7 +3178,7 @@ Served from the refresher snapshot — no EC roundtrip per request. Standard [li
 
 ```json
 {
-  "client_address": "203.0.113.42:4662",
+  "address": "203.0.113.42:4662",
   "messages": [
     { "id": 90, "direction": "out", "text": "hi",      "sent_at": 1786652700 },
     { "id": 91, "direction": "in",  "text": "thanks!", "sent_at": 1786652714 }
@@ -3189,9 +3190,9 @@ Served from the refresher snapshot — no EC roundtrip per request. Standard [li
 
 `direction` is `"in"` (from the client) or `"out"` (sent by us — from **any** client: this API, amulegui, or the desktop GUI). `sent_at` is stamped by the core when the message was received or sent, and is `null` only in the reply to a send: `EC_OP_CHAT_SEND` answers with the message id and no timestamp, and the core is the only thing entitled to stamp one. That reply is otherwise the same object shape this endpoint returns, emitted by the same writer, so a client can append it optimistically and reconcile on the next read. `total` counts everything the store holds for this conversation, not the returned window.
 
-**Errors:** `404 not_found` (no such conversation), `400 bad_request` (malformed `{client_address}` or query), `503 ec_unsupported`, `503 ec_unavailable`.
+**Errors:** `404 not_found` (no such conversation), `400 bad_request` (malformed `{address}` or query), `503 ec_unsupported`, `503 ec_unavailable`.
 
-#### `POST /api/v0/chats/{client_address}/messages`
+#### `POST /api/v0/chats/{address}/messages`
 
 **Auth:** `ADMIN`
 
@@ -3203,13 +3204,13 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/
 ```
 
 ```json
-{ "client_address": "203.0.113.42:4662",
+{ "address": "203.0.113.42:4662",
   "message": { "id": 92, "direction": "out", "text": "hello", "sent_at": null } }
 ```
 
-The created message stays in the body because the store-assigned `id` is only readable here. It is the same object shape [`GET /chats/{client_address}/messages`](#get-apiv0chatsclient_addressmessages) returns, emitted by the same writer, with one difference: `sent_at` is **`null`**, because `EC_OP_CHAT_SEND` answers with the message id and no timestamp. Read the timestamp back from [`GET /chats`](#get-apiv0chats) (as `last_message`), from the per-conversation messages endpoint, or from the `chat_message` SSE event.
+The created message stays in the body because the store-assigned `id` is only readable here. It is the same object shape [`GET /chats/{address}/messages`](#get-apiv0chatsaddressmessages) returns, emitted by the same writer, with one difference: `sent_at` is **`null`**, because `EC_OP_CHAT_SEND` answers with the message id and no timestamp. Read the timestamp back from [`GET /chats`](#get-apiv0chats) (as `last_message`), from the per-conversation messages endpoint, or from the `chat_message` SSE event.
 
-The core creates the conversation if it does not exist, so this doubles as "start a chat with this address" — an unknown `{client_address}` is not a `404` here.
+The core creates the conversation if it does not exist, so this doubles as "start a chat with this address" — an unknown `{address}` is not a `404` here.
 
 Returns `202 Accepted`, not `200`: the core acknowledges that it queued the message on the client connection, not that the client received it. An unreachable client is not an error — the desktop behaves the same, optimistically showing `*** Connecting to Client ***`.
 
@@ -3223,7 +3224,7 @@ Message a friend by friend ECID. This is the form that reaches an **offline** fr
 
 **Body:** `{ "text": "hello" }`
 
-**Response:** `202 Accepted` → `{ "client_address": "203.0.113.42:4662", "message": { … } }`, so the caller learns the conversation key to read back.
+**Response:** `202 Accepted` → `{ "address": "203.0.113.42:4662", "message": { … } }`, so the caller learns the conversation key to read back.
 
 **Errors:** `404 not_found` (no friend with that ECID), plus the set above.
 
@@ -3235,7 +3236,7 @@ The client-addressed form, for a caller holding a client row that should not hav
 
 **Errors:** `404 not_found` (no live client with that ECID), plus the set above.
 
-#### `DELETE /api/v0/chats/{client_address}`
+#### `DELETE /api/v0/chats/{address}`
 
 **Auth:** `ADMIN`
 

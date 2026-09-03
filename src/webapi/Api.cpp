@@ -1247,25 +1247,25 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// the longer pattern would otherwise be shadowed.
 	{
 		static const auto chat_messages =
-			web_api_path::ParsePattern("/api/v0/chats/{client_address}/messages");
-		static const auto chat_one = web_api_path::ParsePattern("/api/v0/chats/{client_address}");
+			web_api_path::ParsePattern("/api/v0/chats/{address}/messages");
+		static const auto chat_one = web_api_path::ParsePattern("/api/v0/chats/{address}");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(chat_messages, path_segs, caps)) {
 			if (req.method == "GET" || req.method == "HEAD") {
-				return HandleChatMessages(req, caps["client_address"]);
+				return HandleChatMessages(req, caps["address"]);
 			}
 			if (req.method == "POST") {
-				return HandleChatSend(req, caps["client_address"]);
+				return HandleChatSend(req, caps["address"]);
 			}
-			return MethodNotAllowed("GET, HEAD, POST",
-				"only GET / HEAD / POST on /chats/{client_address}/messages");
+			return MethodNotAllowed(
+				"GET, HEAD, POST", "only GET / HEAD / POST on /chats/{address}/messages");
 		}
 		if (web_api_path::Match(chat_one, path_segs, caps)) {
 			if (req.method == "DELETE") {
-				return HandleChatClose(req, caps["client_address"]);
+				return HandleChatClose(req, caps["address"]);
 			}
-			return MethodNotAllowed("DELETE", "only DELETE on /chats/{client_address}");
+			return MethodNotAllowed("DELETE", "only DELETE on /chats/{address}");
 		}
 	}
 
@@ -2950,9 +2950,9 @@ void WriteDownloadObject(
 	// no total beside it cannot be rendered: fed straight to a progress bar
 	// it shows 3% for three parts of a hundred and 300% for three hundred of
 	// a thousand. Computed, not decoded -- there is no EC tag for it.
-	const std::int64_t parts_total_count = static_cast<std::int64_t>(webapi::PartCountForSize(f.size));
-	w.Key("parts_total_count");
-	w.ValueInt(parts_total_count);
+	const std::int64_t total_part_count = static_cast<std::int64_t>(webapi::PartCountForSize(f.size));
+	w.Key("total_part_count");
+	w.ValueInt(total_part_count);
 	// On the list, not detail-only, so the SSE download event carries it:
 	// A4AF is a client-to-file relation, the one thing a per-file client
 	// list needs that the `clients` channel cannot say. Same spelling as on
@@ -2993,8 +2993,8 @@ void WriteDownloadObject(
 		w.ValueInt(static_cast<int64_t>(f.download.last_received_at));
 		w.Key("active_seconds");
 		w.ValueInt(static_cast<int64_t>(f.download.active_seconds));
-		w.Key("parts_available_count");
-		w.ValueInt(static_cast<int64_t>(f.download.parts_available_count));
+		w.Key("available_part_count");
+		w.ValueInt(static_cast<int64_t>(f.download.available_part_count));
 		WriteIntOrNull(w, "remaining_seconds", has_remaining_seconds, remaining_seconds);
 		w.Key("lost_to_corruption_bytes");
 		w.ValueInt(static_cast<int64_t>(f.download.lost_to_corruption_bytes));
@@ -3386,7 +3386,7 @@ void WriteSharedDetailObject(CJsonWriter &w, const webapi::FileSnapshot &f)
 	// deliberately carry neither, so the SSE event rate is unaffected.
 	w.ValueBool(f.IsIncompletePartfile());
 	WriteStringOrNull(w, "aich_hash", !f.aich_hash.empty(), f.aich_hash);
-	w.Key("parts_total_count");
+	w.Key("total_part_count");
 	w.ValueInt(static_cast<int64_t>(webapi::PartCountForSize(f.size)));
 	WriteSharedAvailabilityParts(w, f);
 	w.Key("upload_queue_count");
@@ -6203,7 +6203,7 @@ void WriteChatMessageObject(CJsonWriter &w, const webapi::ChatMessageSnapshot &m
 void WriteChatObject(CJsonWriter &w, const webapi::ChatSessionSnapshot &s)
 {
 	w.BeginObject();
-	w.Key("client_address");
+	w.Key("address");
 	w.ValueString(wxString::FromUTF8(s.PeerKey().c_str()));
 	w.Key("ip");
 	w.ValueString(wxString::FromUTF8(s.ip.c_str()));
@@ -6426,7 +6426,7 @@ CHttpServer::Response CApiDispatcher::HandleChatMessages(
 
 	std::uint64_t gui_id = 0;
 	if (!ParseChatPeerKey(peer, gui_id)) {
-		return ErrorResponse(400, "bad_request", "path `{client_address}` must be `<ip>:<port>`");
+		return ErrorResponse(400, "bad_request", "path `{address}` must be `<ip>:<port>`");
 	}
 
 	const std::vector<webapi::ChatSessionSnapshot> chats = m_state.Chats();
@@ -6473,7 +6473,7 @@ CHttpServer::Response CApiDispatcher::HandleChatMessages(
 
 	CJsonWriter w;
 	w.BeginObject();
-	w.Key("client_address");
+	w.Key("address");
 	w.ValueString(wxString::FromUTF8(session->PeerKey().c_str()));
 	w.Key("messages");
 	w.BeginArray();
@@ -6551,7 +6551,7 @@ CHttpServer::Response CApiDispatcher::SendChatMessageTo(const CHttpServer::Reque
 	// read back. `sent_at` is null here and only here: EC_OP_CHAT_SEND
 	// answers with the client and message ids and no timestamp, and the core
 	// is the only thing entitled to stamp one.
-	w.Key("client_address");
+	w.Key("address");
 	w.ValueString(wxString::FromUTF8(webapi::ChatPeerKeyFromGuiId(gui_id).c_str()));
 	w.Key("message");
 	webapi::ChatMessageSnapshot sent;
@@ -6580,7 +6580,7 @@ CHttpServer::Response CApiDispatcher::HandleChatSend(const CHttpServer::Request 
 	}
 	std::uint64_t gui_id = 0;
 	if (!ParseChatPeerKey(peer, gui_id)) {
-		return ErrorResponse(400, "bad_request", "path `{client_address}` must be `<ip>:<port>`");
+		return ErrorResponse(400, "bad_request", "path `{address}` must be `<ip>:<port>`");
 	}
 	// No 404 for an unknown peer here: the core creates the session if it does
 	// not exist, so this doubles as "start a chat with this address".
@@ -6637,7 +6637,7 @@ CHttpServer::Response CApiDispatcher::HandleChatClose(
 	}
 	std::uint64_t gui_id = 0;
 	if (!ParseChatPeerKey(peer, gui_id)) {
-		return ErrorResponse(400, "bad_request", "path `{client_address}` must be `<ip>:<port>`");
+		return ErrorResponse(400, "bad_request", "path `{address}` must be `<ip>:<port>`");
 	}
 
 	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_CHAT_CLOSE_SESSION));
@@ -7600,20 +7600,18 @@ void WriteStatsNode(CJsonWriter &w, const webapi::StatsTreeNode &n)
 		WriteStatsValue(w, v);
 	w.EndArray();
 	// Raw numeric UL:DL ratio (download-per-upload), for the ratio node only.
-	// Emitted when the daemon provided at least one component; each field is
-	// present only when computable, so a legacy daemon yields no "ratio" key.
+	// Flat rather than wrapped by window: R11 puts the window in the key, the
+	// way uploaded_bytes_session / _total do everywhere else. Each is emitted
+	// only when computable, so a legacy daemon yields neither key.
 	if (n.has_ratio_session || n.has_ratio_total) {
-		w.Key("ratio");
-		w.BeginObject();
 		if (n.has_ratio_session) {
-			w.Key("session");
+			w.Key("ratio_session");
 			w.ValueDouble(n.ratio_session);
 		}
 		if (n.has_ratio_total) {
-			w.Key("total");
+			w.Key("ratio_total");
 			w.ValueDouble(n.ratio_total);
 		}
-		w.EndObject();
 	}
 	w.Key("children");
 	w.BeginArray();
@@ -7939,9 +7937,9 @@ CHttpServer::Response CApiDispatcher::HandleStatsGraph(
 			g.interval_seconds,
 			width,
 			&g.active_downloads,
-			"active_downloads",
+			"active_download_count",
 			&g.active_uploads,
-			"active_uploads");
+			"active_upload_count");
 	} else {
 		WritePointArray(w, *series, ts, g.interval_seconds, width);
 	}

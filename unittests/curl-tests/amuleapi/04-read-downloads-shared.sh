@@ -160,8 +160,8 @@ if [ "$COUNT" -gt 0 ]; then
 	_assert_json_eq '.progress.percent | type' number \
 		'/downloads/{hash} carries progress.percent'
 	# Part-A detail fields (issue #417) — detail-only, type-tolerant.
-	_assert_json_eq '.parts_total_count | type' number \
-		'/downloads/{hash} carries parts_total_count'
+	_assert_json_eq '.total_part_count | type' number \
+		'/downloads/{hash} carries total_part_count'
 	# null when stalled/paused: nothing to compute an ETA from. It was -1,
 	# which a client had to know meant "unknown".
 	_assert_json_eq '(.remaining_seconds == null or (.remaining_seconds | type) == "number")' true \
@@ -308,14 +308,14 @@ if [ "$COUNT" -gt 0 ]; then
 		_skip "row-shape checks: no peer is connected to the download"
 	fi
 
-	# Opt-in bitmaps are exactly parts_total_count long for a row that has one.
+	# Opt-in bitmaps are exactly total_part_count long for a row that has one.
 	PARTCOUNT=$(curl -s -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH" | jq -r '.progress.parts | length')
 	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH/clients?include_parts=true"
 	_assert_status 200 "GET /downloads/{hash}/clients?include_parts=true → 200"
 	DLBITMAPS=$(printf '%s' "$CURL_BODY" | jq '[.clients[] | select(has("parts"))] | length')
 	if [ "$DLBITMAPS" -gt 0 ]; then
 		_assert_json_eq "[.clients[] | select(has(\"parts\")) | select((.parts | length) != $PARTCOUNT)] | length" \
-			0 "every parts bitmap ($DLBITMAPS of them) is exactly parts_total_count entries"
+			0 "every parts bitmap ($DLBITMAPS of them) is exactly total_part_count entries"
 	else
 		_skip "parts-length check: no row carries a bitmap"
 	fi
@@ -542,15 +542,15 @@ if [ "$SHCOUNT" -gt 0 ]; then
 		'/shared/{hash} carries sources'
 	_assert_json_eq '.aich_hash | type' string \
 		'/shared/{hash} carries aich_hash'
-	_assert_json_eq '.parts_total_count | type' number \
-		'/shared/{hash} carries parts_total_count'
+	_assert_json_eq '.total_part_count | type' number \
+		'/shared/{hash} carries total_part_count'
 	_assert_json_eq '.hashed_part_count | type' number \
 		'/shared/{hash} carries hashed_part_count (#1054)'
 	_assert_json_eq '.my_comment | type' string \
 		'/shared/{hash} carries my_comment'
 	_assert_json_eq '.my_rating | type' number \
 		'/shared/{hash} carries my_rating'
-	SHPARTCOUNT=$(printf '%s' "$CURL_BODY" | jq -r '.parts_total_count')
+	SHPARTCOUNT=$(printf '%s' "$CURL_BODY" | jq -r '.total_part_count')
 
 	# --- 6c. GET /shared/{hash}/clients: the upload-side half of the
 	# per-file client rows (issue #984). Same handler and same row shape as
@@ -623,7 +623,7 @@ if [ "$SHCOUNT" -gt 0 ]; then
 	SHBITMAPS=$(printf '%s' "$CURL_BODY" | jq '[.clients[] | select(has("parts"))] | length')
 	if [ "$SHBITMAPS" -gt 0 ]; then
 		_assert_json_eq "[.clients[] | select(has(\"parts\")) | select((.parts | length) != $SHPARTCOUNT)] | length" \
-			0 "every shared-side parts bitmap ($SHBITMAPS of them) is exactly parts_total_count entries"
+			0 "every shared-side parts bitmap ($SHBITMAPS of them) is exactly total_part_count entries"
 	else
 		_skip "shared-side parts-length check: no row carries a bitmap"
 	fi

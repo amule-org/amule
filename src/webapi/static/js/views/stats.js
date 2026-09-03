@@ -68,7 +68,7 @@ export default function Stats() {
         // single line it used to be.
         const rest = g.name !== "connections" ? [sma(ys, SMA_WINDOW)]
           : pts.length && pts[0].active_downloads !== undefined
-            ? [pts.map((p) => p.active_downloads), pts.map((p) => p.active_uploads)]
+            ? [pts.map((p) => p.active_download_count), pts.map((p) => p.active_upload_count)]
             : [];
         if (alive) setGraphData((d) => ({ ...d, [g.name]: [pts.map((p) => p.at), ys, ...rest] }));
       } catch (_) { /* leave previous data */ }
@@ -187,8 +187,9 @@ function formatRatio(r) {
 function nodeText(node) {
   // Ratio node: build from node.ratio when present; else fall back to the
   // composite string value (legacy daemons emit no ratio object).
-  if (node.ratio && node.ratio.session != null) {
-    return tNodeLabel(node).replace("%s", formatRatio(node.ratio));
+  if (node.ratio_session != null) {
+    return tNodeLabel(node).replace("%s",
+      formatRatio({ session: node.ratio_session, total: node.ratio_total }));
   }
   const values = node.values || [];
   let i = 0;

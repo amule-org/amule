@@ -127,7 +127,7 @@ std::string ToJsonDownloadEvent(const FileSnapshot &f)
 	  << ",\"progress\":{\"percent\":" << JsonDoubleToString(f.download.percent) << "}"
 	  << ",\"kad_comment_lookup_running\":" << (f.download.kad_comment_searching ? "true" : "false")
 	  << ",\"hashed_part_count\":" << f.download.hashed_part_count
-	  << ",\"parts_total_count\":" << webapi::PartCountForSize(f.size) << ",\"source_ecids\":[";
+	  << ",\"total_part_count\":" << webapi::PartCountForSize(f.size) << ",\"source_ecids\":[";
 	bool first_a4af = true;
 	for (const std::uint32_t ecid : f.download.a4af_sources) {
 		if (!first_a4af)
@@ -719,7 +719,7 @@ void EnforceSinglePublisher()
 } // namespace
 
 // One chat message as the `message` object both the SSE payload and
-// GET /chats/{client_address}/messages expose. Written here in the same string-building
+// GET /chats/{address}/messages expose. Written here in the same string-building
 // style as the other event payloads in this file; the REST side renders the
 // identical shape through CJsonWriter.
 std::string ChatMessageJson(const ChatMessageSnapshot &msg)
@@ -739,7 +739,7 @@ void PublishChatEvents(CEventBus &bus,
 	for (const ChatSessionSnapshot &session : new_messages) {
 		const std::string peer = session.PeerKey();
 		for (const ChatMessageSnapshot &msg : session.messages) {
-			std::string payload = "{\"client_address\":\"" + EscJson(peer) + "\",\"ip\":\"" +
+			std::string payload = "{\"address\":\"" + EscJson(peer) + "\",\"ip\":\"" +
 					      EscJson(session.ip) +
 					      "\",\"port\":" + std::to_string(session.port) + ",\"name\":\"" +
 					      EscJson(session.DisplayName()) +
@@ -757,7 +757,7 @@ void PublishChatEvents(CEventBus &bus,
 	}
 	for (std::uint64_t gui_id : closed) {
 		const std::string peer = ChatPeerKeyFromGuiId(gui_id);
-		batch.emplace_back("chat_session_closed", "{\"client_address\":\"" + EscJson(peer) + "\"}");
+		batch.emplace_back("chat_session_closed", "{\"address\":\"" + EscJson(peer) + "\"}");
 	}
 	bus.PublishBatch(batch);
 }

@@ -121,10 +121,10 @@ export function SharedDetail({ hash }) {
         </div>
       ` : html`
       <div class="detail-sections">
-        ${s.hashed_part_count > 0 && s.parts_total_count ? html`
+        ${s.hashed_part_count > 0 && s.total_part_count ? html`
         <div class="detail-progress">
-          <${PiecesBar} mode="hashing" total=${s.parts_total_count} hashed=${s.hashed_part_count} />
-          <${PiecesLegend} mode="hashing" total=${s.parts_total_count} hashed=${s.hashed_part_count} />
+          <${PiecesBar} mode="hashing" total=${s.total_part_count} hashed=${s.hashed_part_count} />
+          <${PiecesLegend} mode="hashing" total=${s.total_part_count} hashed=${s.hashed_part_count} />
         </div>` : s.parts && s.parts.length ? html`
         <div class="detail-progress">
           <${PiecesBar} mode="availability" parts=${s.parts} />
@@ -168,7 +168,7 @@ export function SharedDetail({ hash }) {
         ].filter(Boolean), "downloads_detail_group_media") : null}
         ${IdentityLine({ file: s, copy, titleKey: "downloads_detail_group_identity", extra: [
           statRow("shared_detail_directory", s.directory || "—", "shared_detail_tip_directory"),
-          statRow("shared_detail_parts", formatInt(s.parts_total_count), "shared_detail_tip_parts"),
+          statRow("shared_detail_parts", formatInt(s.total_part_count), "shared_detail_tip_parts"),
         ] })}
       </div>`}
       </div>
