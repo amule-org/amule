@@ -149,7 +149,17 @@ fi
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/ipfilter/reload"
 _assert_status 202 "POST /ipfilter/reload → 202"
-_assert_json_eq '. | has("ok")' false "reload response has no constant ok field"
+# amuled answers this one with no status string, so there is nothing to report
+# and the reply carries no body -- the same shape /ipfilter/update beside it
+# returns, rather than an empty object. When amuled does say something, the
+# body is {"message": "..."} (see the connect routes).
+if [ -z "$CURL_BODY" ]; then
+	_pass "reload with nothing to report returns no body (not an empty object)"
+else
+	_assert_json_eq '. | has("ok")' false "reload response has no constant ok field"
+	_assert_json_eq '. | has("message")' true \
+		"a reload body exists only to carry the daemon's message"
+fi
 
 _curl -X GET -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/ipfilter/reload"
 _assert_status 405 "GET /ipfilter/reload → 405"

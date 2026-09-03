@@ -302,6 +302,16 @@ _assert_status 200 "PATCH combined (action+priority+category_index) → 200"
 _assert_json_eq '.status'   paused 'combined PATCH response status=paused'
 _assert_json_eq '.priority' low    'combined PATCH response priority=low'
 _assert_json_eq '.category_index' 0      'combined PATCH response category_index=0'
+
+# `category_index` says "must be a non-negative integer", so it has to mean it:
+# a fractional value used to pass the is<double>() + range test and be
+# truncated to 2, the one integer field on the surface that enforced what its
+# own message promised being my_rating.
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"category_index":2.9}' "$HOST/api/v0/downloads/$TEST_HASH"
+_assert_status 400 "PATCH category_index=2.9 -> 400 (not truncated to 2)"
+_assert_json_eq '.error.code' bad_request 'fractional category_index carries error.code=bad_request'
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/downloads/$TEST_HASH"
 _assert_json_eq '.status'   paused 'IMMEDIATE GET after combined PATCH status=paused'

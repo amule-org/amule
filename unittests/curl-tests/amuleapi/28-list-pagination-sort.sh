@@ -320,6 +320,26 @@ _curl "${AUTH[@]}" "$HOST/api/v0/categories?sort=index&after=1000000000"
 _assert_status 200 "after= past the last index → 200"
 _assert_json_eq ".categories | length" 0 "after= past the last index returns an empty page"
 
+# --- The sort surface a collection's own row can support. ----------
+# /clients and /shared used to expose three keys each while their twins
+# (/known_clients, /downloads) exposed eight and six. The keys added here are
+# only the ones each row actually emits, per R7: /shared gets the upload-side
+# pair, not /downloads' progress.percent or status, which describe a transfer a
+# shared row does not report -- sorting by an absent column is not a sort.
+for key in uploaded_bytes_total downloaded_bytes_total upload_speed_bytes_per_second download_speed_bytes_per_second; do
+	_curl "${AUTH[@]}" "$HOST/api/v0/clients?sort=$key"
+	_assert_status 200 "GET /clients?sort=$key -> 200"
+done
+for key in uploaded_bytes_total upload_speed_bytes_per_second; do
+	_curl "${AUTH[@]}" "$HOST/api/v0/shared?sort=$key"
+	_assert_status 200 "GET /shared?sort=$key -> 200"
+done
+# The download-only keys stay rejected on /shared: the row has no such column.
+for key in progress.percent status; do
+	_curl "${AUTH[@]}" "$HOST/api/v0/shared?sort=$key"
+	_assert_status 400 "GET /shared?sort=$key -> 400 (not a column of this row)"
+done
+
 # Delete the seeded row (a single row, so no index-renumber concern).
 [ -n "$NEW_IDX" ] && curl -s -X DELETE "${AUTH[@]}" "$HOST/api/v0/categories/$NEW_IDX" > /dev/null 2>&1
 
