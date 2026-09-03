@@ -2214,7 +2214,18 @@ CHttpServer::Response CApiDispatcher::HandleLogin(const CHttpServer::Request &re
 			401, "invalid_credentials", "password does not match any configured role");
 	}
 
-	m_rateLimiter.NoteSuccess(ip);
+	// Deliberately NO NoteSuccess() here. One bucket, keyed by IP, guards
+	// both passwords: VerifyPassword tries admin then guest. Clearing it on
+	// any match lets a guest-credential holder erase the admin-password
+	// failure streak at will -- four wrong admin guesses, one good guest
+	// login, repeat -- so the one control protecting the admin password
+	// never fires. The stamps age out on their own (window_seconds, pruned
+	// by both Check and NoteFailure), which is what keeps a legitimate
+	// user's earlier typos from accumulating.
+	//
+	// The clear in HandleAuthPasswords below is a different case: it is
+	// admin-gated and verifies the current password, so its success is on
+	// the very credential the bucket protects.
 
 	CHttpServer::Response r;
 	r.status = 200;
