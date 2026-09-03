@@ -80,6 +80,13 @@ protected:
 	 */
 	virtual bool PeerForItem(wxUIntPtr data, PeerIdentity &out) const = 0;
 
+	/**
+	 * The peer the context menu was built for, resolved afresh.
+	 *
+	 * False when no menu has been opened or the row has since gone.
+	 */
+	bool MenuPeer(PeerIdentity &out) const;
+
 	//! The peers behind the current selection, in display order.
 	std::vector<PeerIdentity> SelectedPeers() const;
 
@@ -100,14 +107,21 @@ private:
 	bool ConfirmBulkPeerAction(size_t count, const wxString &message);
 
 	/**
-	 * The row the context menu was last built for.
+	 * The row the context menu was last built for, as item data.
 	 *
-	 * Single-row entries act on this rather than re-reading the selection, so
-	 * the entry and the action can never describe different peers. Bulk
+	 * Single-row entries resolve this rather than re-reading the selection,
+	 * so the entry and the action can never describe different peers. Bulk
 	 * entries still use the whole selection, which is what they are for.
+	 *
+	 * Deliberately the row and not a resolved PeerIdentity: that holds an
+	 * owning CClientRef, and a member would keep a disconnected peer's
+	 * CUpDownClient alive for the lifetime of the control, which is exactly
+	 * what this class holds values rather than clients to avoid. Resolving
+	 * again also cannot go stale: a row that has since gone simply fails to
+	 * resolve and the entry does nothing.
 	 */
-	PeerIdentity m_menuPeer;
-	bool m_menuPeerValid = false;
+	wxUIntPtr m_menuItem = 0;
+	bool m_menuItemValid = false;
 
 	void OnItemRightClicked(wxDataViewEvent &event);
 	void OnViewFiles(wxCommandEvent &event);

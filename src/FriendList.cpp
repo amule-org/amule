@@ -42,6 +42,10 @@ CFriendList::CFriendList() {}
 
 CFriendList::~CFriendList()
 {
+	// Whatever happened, the list gets written. A batch left open would make
+	// SaveList() a no-op here, and losing emfriends.met on exit is the one
+	// outcome worth defending against twice.
+	m_batchDepth = 0;
 	SaveList();
 
 	DeleteContents(m_FriendList);
@@ -237,6 +241,15 @@ void CFriendList::RequestSharedFileList(CFriend *cur_friend, uint32 browseSearch
 {
 	if (cur_friend) {
 		CUpDownClient *client = cur_friend->GetLinkedClient().GetClient();
+		if (!client && cur_friend->GetIP() == 0) {
+			// Friended by hash alone, from a record that never carried an
+			// address. There is nowhere to connect to until the peer turns
+			// up and the handshake links it; building a client here would
+			// only produce an attempt on 0.0.0.0.
+			AddLogLineC(CFormat(_("No address known for friend '%s' yet, cannot browse them.")) %
+				    cur_friend->GetName());
+			return;
+		}
 		if (!client) {
 			CClientRef ref = theApp->clientlist->CreateForAddress(cur_friend->GetUserHash(),
 				cur_friend->GetIP(),
@@ -287,6 +300,12 @@ void CFriendList::SetFriendSlot(CFriend *Friend, bool new_state)
 void CFriendList::StartChatSession(CFriend *Friend)
 {
 	if (Friend) {
+		if (!Friend->GetLinkedClient().GetClient() && Friend->GetIP() == 0) {
+			// Same as browsing: no address to open a chat to yet.
+			AddLogLineC(CFormat(_("No address known for friend '%s' yet, cannot message them.")) %
+				    Friend->GetName());
+			return;
+		}
 		if (!Friend->GetLinkedClient().GetClient()) {
 			Friend->LinkClient(theApp->clientlist->CreateForAddress(Friend->GetUserHash(),
 				Friend->GetIP(),

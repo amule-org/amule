@@ -81,6 +81,18 @@ void PromptAndSendChatMessage(const wxString &userName, uint64 userID)
 	}
 }
 
+// Holds the friend list's write open for as long as it is in scope. Works in
+// both builds: CFriendListRem answers the same two calls with no-ops, because
+// the daemon owns the file there.
+class FriendListBatch
+{
+public:
+	FriendListBatch() { theApp->friendlist->BeginBatch(); }
+	~FriendListBatch() { theApp->friendlist->EndBatch(); }
+	FriendListBatch(const FriendListBatch &) = delete;
+	FriendListBatch &operator=(const FriendListBatch &) = delete;
+};
+
 // Only one friend slot exists, so a wider selection loses all but the first.
 void WarnIfMultipleFriendSlot(wxWindow *parent, size_t selected)
 {
@@ -221,11 +233,14 @@ void PeerActionToggleFriends(const std::vector<PeerIdentity> &peers)
 	// One write for the whole run. CFriendList saves after every add and
 	// remove, so without this a large selection rewrites emfriends.met once
 	// per row, on the GUI thread, with the file growing as it goes.
-	theApp->friendlist->BeginBatch();
+	//
+	// Scoped, not a bare pair of calls: a batch left open makes every later
+	// SaveList() a silent no-op, including the one in ~CFriendList(), so a
+	// single escape from this loop would lose the friend list on exit.
+	FriendListBatch batch;
 	for (const PeerIdentity &peer : peers) {
 		PeerActionToggleFriend(peer);
 	}
-	theApp->friendlist->EndBatch();
 }
 
 void PeerActionSetFriendSlot(wxWindow *parent, const PeerIdentity &peer, bool checked, size_t selected)

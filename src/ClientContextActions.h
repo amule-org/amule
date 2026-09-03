@@ -82,13 +82,6 @@ void PeerActionToggleFriend(const PeerIdentity &peer);
 void PeerActionSendMessage(const PeerIdentity &peer);
 
 /**
- * Grant or revoke the friend slot for the first selected peer.
- *
- * Resolves the friend record from the peer's own identity rather than from a
- * live client, so it works for a friend that is currently offline. Warns, as
- * the connected-client path does, when more than one row was selected.
- */
-/**
  * Grant or revoke the friend slot for one peer.
  *
  * Resolves the friend record the same way the menu did, so the entry and the

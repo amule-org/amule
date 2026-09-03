@@ -73,6 +73,11 @@ namespace
 const size_t kBulkPeerActionPrompt = 10;
 } // namespace
 
+bool CClientRowListCtrl::MenuPeer(PeerIdentity &out) const
+{
+	return m_menuItemValid && PeerForItem(m_menuItem, out);
+}
+
 std::vector<PeerIdentity> CClientRowListCtrl::SelectedPeers() const
 {
 	std::vector<PeerIdentity> peers;
@@ -132,15 +137,17 @@ void CClientRowListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 	if (!event.GetItem().IsOk()) {
 		return;
 	}
-	m_menuPeerValid = PeerForItem(ItemAt(GetModelRow(event.GetItem())), m_menuPeer);
-	if (!m_menuPeerValid) {
+	m_menuItem = ItemAt(GetModelRow(event.GetItem()));
+	PeerIdentity peer;
+	m_menuItemValid = PeerForItem(m_menuItem, peer);
+	if (!m_menuItemValid) {
 		return;
 	}
 
 	// The builder omits "Swap to this file": it acts on an A4AF source of one
 	// particular download, which is a per-file notion neither of these lists
 	// has.
-	wxMenu *menu = BuildPeerContextMenu(m_menuPeer);
+	wxMenu *menu = BuildPeerContextMenu(peer);
 	PopupMenu(menu, event.GetPosition());
 	delete menu;
 }
@@ -204,20 +211,22 @@ void CClientRowListCtrl::OnSetFriendslot(wxCommandEvent &evt)
 	// be: the checkbox describes one peer, so the slot has to land on that
 	// one. The count comes from the control rather than from resolving every
 	// selected row, which the warning is all it is needed for.
-	if (!m_menuPeerValid) {
+	PeerIdentity peer;
+	if (!MenuPeer(peer)) {
 		return;
 	}
-	PeerActionSetFriendSlot(this, m_menuPeer, evt.IsChecked(), GetSelectedItemsCount());
+	PeerActionSetFriendSlot(this, peer, evt.IsChecked(), GetSelectedItemsCount());
 }
 
 void CClientRowListCtrl::OnSendMessage(wxCommandEvent &WXUNUSED(event))
 {
 	// Single row only, as the connected-client path has always been, and the
 	// row the menu named rather than a re-resolved selection.
-	if (!m_menuPeerValid || GetSelectedItemsCount() != 1) {
+	PeerIdentity peer;
+	if (GetSelectedItemsCount() != 1 || !MenuPeer(peer)) {
 		return;
 	}
-	PeerActionSendMessage(m_menuPeer);
+	PeerActionSendMessage(peer);
 }
 
 void CClientRowListCtrl::OnViewClientInfo(wxCommandEvent &WXUNUSED(event))

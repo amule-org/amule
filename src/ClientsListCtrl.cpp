@@ -183,6 +183,10 @@ const ClientNameCell *CClientsListCtrl::NameCellFor(wxUIntPtr item) const
 
 bool CClientsListCtrl::PeerForItem(wxUIntPtr data, PeerIdentity &out) const
 {
+	// Start clean: this is an out parameter and the fields below are only
+	// assigned when they are known, so anything left from a previous call
+	// would be read as belonging to this row.
+	out = PeerIdentity();
 	// By ECID: within one daemon process that names exactly this peer. A row is
 	// only ever as current as the last sweep, so a miss means the peer has gone.
 	//

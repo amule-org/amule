@@ -311,6 +311,10 @@ wxString DisplayNameFor(const ClientHistoryRow &row)
 
 bool CClientHistoryListCtrl::PeerForItem(wxUIntPtr data, PeerIdentity &out) const
 {
+	// Start clean: this is an out parameter and the fields below are only
+	// assigned when they are known, so anything left from a previous call
+	// would be read as belonging to this row.
+	out = PeerIdentity();
 	// Identity comes from the row, so a peer we are not connected to is still
 	// named: the hash, name, address and port the store kept are enough to
 	// friend it, and enough to open a connection if the user asks for one.
