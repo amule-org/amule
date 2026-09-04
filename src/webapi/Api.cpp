@@ -3125,6 +3125,9 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	w.Key("upload_queue_score");
 	w.ValueInt(static_cast<int64_t>(c.score));
 	WriteStringOrNull(w, "obfuscation_state", !c.obfuscation_state.empty(), c.obfuscation_state);
+	// Being in this list means the daemon holds a client object, which starts
+	// at the first contact attempt. This says whether a socket is actually up.
+	WriteBoolOrNull(w, "connected", c.has_connected, c.connected);
 	w.Key("friend_slot");
 	w.ValueBool(c.friend_slot);
 	// Promoted out of the detail object (issue #984): the desktop's per-file
@@ -3249,9 +3252,12 @@ void WriteKnownClientObject(CJsonWriter &w, const webapi::KnownClientSnapshot &c
 	const bool has_first_seen = c.first_seen_at != 0;
 	WriteUIntOrNull(w, "first_seen_at", has_first_seen, static_cast<uint64_t>(c.first_seen_at));
 	WriteUIntOrNull(w, "session_count", has_first_seen, static_cast<uint64_t>(c.session_count));
-	// Correlate with /clients by user_hash to reach the live peer.
-	w.Key("online");
-	w.ValueBool(c.online);
+	// Correlate with /clients by user_hash to reach the live peer. The value
+	// is reachability, not presence in that list: the daemon holds a client
+	// object from the first contact ATTEMPT, so a peer it can never reach used
+	// to read "online" here. null when the core predates
+	// EC_TAG_CLIENT_CONNECTED -- unknown, not offline.
+	WriteBoolOrNull(w, "online", c.has_online, c.online);
 	w.EndObject();
 }
 
@@ -6040,8 +6046,11 @@ void WriteFriendObject(CJsonWriter &w, const webapi::FriendSnapshot &f)
 	// spells "no value" as null and never as 0 or -1, and a client joining
 	// naively on the raw value was building GET /clients/0 and taking a 404.
 	WriteIntOrNull(w, "client_ecid", f.client_ecid != 0, static_cast<int64_t>(f.client_ecid));
-	w.Key("online");
-	w.ValueBool(f.client_ecid != 0);
+	// Whether a socket to the peer is actually up, not whether the daemon
+	// holds a client object for it -- which it does from the first contact
+	// ATTEMPT, so this used to call an unroutable peer online. null when the
+	// daemon predates EC_TAG_CLIENT_CONNECTED: unknown, not offline.
+	WriteBoolOrNull(w, "online", f.has_connected, f.connected);
 	w.Key("friend_slot");
 	w.ValueBool(f.friend_slot);
 	w.EndObject();
@@ -6302,8 +6311,8 @@ void WriteChatObject(CJsonWriter &w, const webapi::ChatSessionSnapshot &s)
 	// absence, and /clients/0 is a 404 waiting to happen.
 	WriteIntOrNull(w, "client_ecid", s.client_ecid != 0, static_cast<int64_t>(s.client_ecid));
 	WriteIntOrNull(w, "friend_ecid", s.friend_ecid != 0, static_cast<int64_t>(s.friend_ecid));
-	w.Key("online");
-	w.ValueBool(s.client_ecid != 0);
+	// Same rule as the /friends row: reachability, not object existence.
+	WriteBoolOrNull(w, "online", s.has_connected, s.connected);
 	w.Key("message_count");
 	w.ValueInt(static_cast<int64_t>(s.messages.size()));
 	w.Key("last_message_id");

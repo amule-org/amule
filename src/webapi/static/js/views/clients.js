@@ -51,7 +51,11 @@ export default function ClientsPanel() {
       const live = liveByHash.get(k.user_hash);
       // Borrow the live transfer speeds for a peer that is online now (the
       // credit store has none); offline -> undefined -> "—" in the cell.
-      return { ...k, _live: live, online: !!live,
+      // Reachability, not presence: the daemon holds a client object from the
+      // first contact ATTEMPT, so `!!live` gave an unroutable peer the
+      // "Online now" badge. `connected` is null on a core that does not
+      // report it; render that as offline.
+      return { ...k, _live: live, online: live ? live.connected === true : false,
                download_speed_bytes_per_second: live && live.download_speed_bytes_per_second,
                upload_speed_bytes_per_second: live && live.upload_speed_bytes_per_second };
     });

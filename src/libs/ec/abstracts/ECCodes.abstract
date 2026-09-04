@@ -431,6 +431,13 @@ EC_TAG_CLIENT                             0x0600
 	EC_TAG_CLIENT_IS_FRIEND                   0x062C
 	EC_TAG_CLIENT_SCORE_RATIO                 0x062D
 	EC_TAG_CLIENT_COUNTRY                     0x062E
+# Whether we hold a live socket to this peer right now
+# (CUpDownClient::IsConnected). Every consumer used to infer "online" from a
+# client ECID merely existing, which is true from the moment the daemon starts
+# ATTEMPTING contact -- so an unroutable peer read as online. Carried on the
+# client, and echoed on the friend and chat-session containers, which reference
+# a client by ECID and would otherwise have to guess the same way.
+	EC_TAG_CLIENT_CONNECTED                   0x0632
 
 # Credit-store fields, for the clients history. The rest of a history row
 # reuses the live-client tags above -- a peer's name, address, software and

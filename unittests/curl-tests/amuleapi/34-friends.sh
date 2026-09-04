@@ -283,6 +283,25 @@ FINAL=$(_jq '.total')
 [ "$FINAL" = "$BEFORE" ] && _pass "the list is back to its starting size ($BEFORE)" \
 	|| _fail "cleanup" "expected $BEFORE, got $FINAL"
 
+# --- online is reachability, not "has a live client". ---------------
+#
+# The daemon holds a client object from the first contact ATTEMPT, so a
+# friend it is trying (or failing) to reach has a client_ecid while not
+# being connected. online answers the second question, so the implication
+# runs one way only: online true requires a live peer, but a live peer does
+# not make the friend online.
+_curl "$HOST/api/v0/friends?limit=200"
+if [ "$(_jq '[.friends[] | select((.online | type) as $t | $t != "boolean" and $t != "null")] | length')" = "0" ]; then
+	_pass "every friend online is a boolean or null"
+else
+	_fail "friends online type" "a row has online neither boolean nor null: $CURL_BODY"
+fi
+if [ "$(_jq '[.friends[] | select(.online == true and .client_ecid == null)] | length')" = "0" ]; then
+	_pass "no friend is online without a client_ecid"
+else
+	_fail "friends online" "a row claims online with client_ecid null: $CURL_BODY"
+fi
+
 # --- Summary -------------------------------------------------------
 echo
 echo "34-friends: $((TEST_COUNT-FAIL_COUNT))/$TEST_COUNT assertions passed"

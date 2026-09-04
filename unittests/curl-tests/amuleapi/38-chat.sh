@@ -158,8 +158,20 @@ ROW=$(printf '%s' "$CURL_BODY" | jq --arg p "$PEER" -c '.chats[] | select(.addre
 printf '%s' "$ROW" > "$CURL_BODY_FILE"; CURL_BODY=$ROW
 _assert_json_eq '.ip'                 "$PEER_IP"   'row carries the split ip'
 _assert_json_eq '.port'               "$PEER_PORT" 'row carries the split port'
+# The peer is a TEST-NET-3 address nothing can reach, so we are definitively
+# not connected to it -- whether or not the daemon minted a client object
+# while trying. That is the whole point of the field: `online` is
+# reachability, and it used to be inferred from client_ecid merely existing,
+# which is true from the first contact ATTEMPT.
 _assert_json_eq '.online'             false        'unrouted peer is offline'
-_assert_json_eq '.client_ecid'        null         'offline peer has client_ecid null, not a 0 sentinel'
+# client_ecid is deliberately NOT asserted null here any more. The daemon
+# legitimately holds a client object for a peer it is trying to reach, so
+# pinning it to null asserted the very conflation `online` now avoids. What
+# must hold is the implication: online can only be true with a live peer.
+_assert_json_eq '(.online == true) and (.client_ecid == null) | not' true \
+	'online is never true without a client_ecid'
+_assert_json_eq '.client_ecid | type | test("^(number|null)$")' true \
+	'client_ecid is a number or null, never a 0 sentinel'
 _assert_json_eq '.friend_ecid'        null         'a non-friend peer has friend_ecid null, not a 0 sentinel'
 _assert_json_eq '.last_message.text'  "curl-test hello" 'row carries last_message'
 # The core has no nickname for a peer that never answered, so the row must

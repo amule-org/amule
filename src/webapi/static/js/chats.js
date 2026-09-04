@@ -39,11 +39,11 @@ function betterName(conv, name) {
   return name && name !== fallbackName(conv.ip, conv.port) ? name : conv.name;
 }
 
-function newConv({ peer, ip, port, name = "", clientEcid = 0, friendEcid = 0 }) {
+function newConv({ peer, ip, port, name = "", clientEcid = 0, friendEcid = 0, online = false }) {
   return {
     peer, ip, port,
     name: name || fallbackName(ip, port),
-    clientEcid, friendEcid,
+    clientEcid, friendEcid, online,
     messages: new Map(),
     lastMsgId: 0,
     unread: 0,
@@ -73,7 +73,11 @@ function tabList() {
   return Array.from(convs.values()).map((c) => ({
     peer: c.peer, name: displayName(c),
     clientEcid: c.clientEcid, friendEcid: c.friendEcid,
-    online: c.clientEcid !== 0, unread: c.unread,
+    // Straight from the API. Deriving it from clientEcid, as this did, made
+    // a peer online the moment the daemon started TRYING to reach it -- an
+    // unroutable address included. null means the core did not say; render
+    // that as offline rather than inventing a third dot.
+    online: c.online === true, unread: c.unread,
   }));
 }
 
@@ -164,12 +168,15 @@ async function adopt() {
       const cEcid = s.client_ecid || 0, fEcid = s.friend_ecid || 0;
       if (cEcid !== cur.clientEcid) { cur.clientEcid = cEcid; added = true; }
       if (fEcid !== cur.friendEcid) { cur.friendEcid = fEcid; added = true; }
+      const onl = s.online === true;
+      if (onl !== cur.online) { cur.online = onl; added = true; }
       if (cur.loaded && s.last_message_id > cur.lastMsgId) loadMessages(s.address);
       continue;
     }
     const conv = newConv({
       peer: s.address, ip: s.ip, port: s.port, name: s.name,
       clientEcid: s.client_ecid || 0, friendEcid: s.friend_ecid || 0,
+      online: s.online === true,
     });
     conv.known = true;
     convs.set(s.address, conv);
@@ -243,11 +250,13 @@ function onMessage(p) {
     conv = newConv({
       peer: p.address, ip: p.ip, port: p.port, name: p.name,
       clientEcid: p.client_ecid || 0, friendEcid: p.friend_ecid || 0,
+      online: p.online === true,
     });
     convs.set(p.address, conv);
   } else {
     conv.name = betterName(conv, p.name);
     conv.clientEcid = p.client_ecid || 0;
+    conv.online = p.online === true;
     conv.friendEcid = p.friend_ecid || 0;
   }
   conv.known = true;
