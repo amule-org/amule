@@ -139,5 +139,7 @@ TEST(ECClientCapabilities, DisplayTextMatchesOnBothSidesOfTheProtocol)
 	remote.SetFromWire(received);
 
 	ASSERT_EQUALS(core.GetDisplayText(), remote.GetDisplayText());
-	ASSERT_EQUALS(wxString("IPv6, QUIC NAT-T"), remote.GetDisplayText());
+	// The names are translated, so this is the untranslated msgid -- which is
+	// what a test binary with no catalog loaded renders.
+	ASSERT_EQUALS(wxString("IPv6, NAT traversal (QUIC)"), remote.GetDisplayText());
 }
