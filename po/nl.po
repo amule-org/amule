@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-04 09:46+0200\n"
+"POT-Creation-Date: 2026-09-04 10:18+0200\n"
 "PO-Revision-Date: 2026-09-03 11:07+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
@@ -1255,6 +1255,14 @@ msgid "Send message"
 msgstr "Verstuur bericht"
 
 #: src/ClientContextActions.cpp
+msgid "Send message to user"
+msgstr "Verstuur bericht naar gebruiker"
+
+#: src/ClientContextActions.cpp
+msgid "Message to send:"
+msgstr "Bericht om te versturen:"
+
+#: src/ClientContextActions.cpp
 msgid ""
 "You are not allowed to set more than one friend slot.\n"
 " Only one slot was assigned."
@@ -1262,17 +1270,10 @@ msgstr ""
 "U mag niet meer dan één vriendenslot instellen.\n"
 " Er is slechts één slot toegewezen."
 
-#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+#: src/ClientContextActions.cpp src/ClientRowListCtrl.cpp
+#: src/FriendListCtrl.cpp
 msgid "Multiple selection"
 msgstr "Meerdere selectie"
-
-#: src/ClientContextActions.cpp
-msgid "Send message to user"
-msgstr "Verstuur bericht naar gebruiker"
-
-#: src/ClientContextActions.cpp
-msgid "Message to send:"
-msgstr "Bericht om te versturen:"
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1407,6 +1408,45 @@ msgstr "N/B"
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr "Niet beschikbaar"
+
+#: src/ClientRowListCtrl.cpp
+#, fuzzy, c-format
+msgid "Request the shared files of %u client?"
+msgid_plural "Request the shared files of %u clients?"
+msgstr[0] "Laad gedeelde bestandenlijst opnieuw."
+msgstr[1] "Laad gedeelde bestandenlijst opnieuw."
+
+#: src/ClientRowListCtrl.cpp
+msgid "A connection is opened to each of them."
+msgstr ""
+
+#: src/ClientRowListCtrl.cpp
+#, fuzzy, c-format
+msgid "Could not ask %u selected client for its shared files."
+msgid_plural "Could not ask %u selected clients for their shared files."
+msgstr[0] "Kon %u link niet toevoegen (zie log voor details)."
+msgstr[1] "Kon %u links niet toevoegen (zie log voor details)."
+
+#: src/ClientRowListCtrl.cpp
+#, c-format
+msgid "Add %u client to your friend list?"
+msgid_plural "Add %u clients to your friend list?"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/ClientRowListCtrl.cpp
+#, fuzzy, c-format
+msgid "Remove %u client from your friend list?"
+msgid_plural "Remove %u clients from your friend list?"
+msgstr[0] "Verwijder uit vriendenlijst"
+msgstr[1] "Verwijder uit vriendenlijst"
+
+#: src/ClientRowListCtrl.cpp
+#, c-format
+msgid "Could not add %u selected client to your friend list: no address is known for it."
+msgid_plural "Could not add %u selected clients to your friend list: no address is known for them."
+msgstr[0] ""
+msgstr[1] ""
 
 #: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Files"
@@ -2135,6 +2175,10 @@ msgid "eD2k is disabled in preferences."
 msgstr "eD2K is uitgeschakeld in voorkeuren."
 
 #: src/ExternalConn.cpp
+msgid "No address known for that friend yet."
+msgstr ""
+
+#: src/ExternalConn.cpp
 msgid "Friend not found."
 msgstr "Vriend niet gevonden."
 
@@ -2770,6 +2814,16 @@ msgstr "Kon vriendenlijst-bestand 'emfriends.met' niet lezen!"
 #: src/FriendList.cpp
 msgid "Failed to open friend list file 'emfriends.met' for writing!"
 msgstr "Kon niet schrijven naar vriendenlijst-bestand 'emfriends.met'!"
+
+#: src/FriendList.cpp
+#, c-format
+msgid "No address known for friend '%s' yet, cannot browse them."
+msgstr ""
+
+#: src/FriendList.cpp
+#, c-format
+msgid "No address known for friend '%s' yet, cannot message them."
+msgstr ""
 
 #: src/FriendList.cpp
 msgid "CRITICAL - no client on StartChatSession"

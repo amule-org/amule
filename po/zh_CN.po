@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-04 09:46+0200\n"
+"POT-Creation-Date: 2026-09-04 10:18+0200\n"
 "PO-Revision-Date: 2026-09-03 11:12+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -1256,6 +1256,14 @@ msgid "Send message"
 msgstr "发送消息"
 
 #: src/ClientContextActions.cpp
+msgid "Send message to user"
+msgstr "发送消息给用户"
+
+#: src/ClientContextActions.cpp
+msgid "Message to send:"
+msgstr "发送消息："
+
+#: src/ClientContextActions.cpp
 msgid ""
 "You are not allowed to set more than one friend slot.\n"
 " Only one slot was assigned."
@@ -1263,17 +1271,10 @@ msgstr ""
 "不允许设置超过一个好友通道。\n"
 " 只分配了一个通道。"
 
-#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+#: src/ClientContextActions.cpp src/ClientRowListCtrl.cpp
+#: src/FriendListCtrl.cpp
 msgid "Multiple selection"
 msgstr "多选"
-
-#: src/ClientContextActions.cpp
-msgid "Send message to user"
-msgstr "发送消息给用户"
-
-#: src/ClientContextActions.cpp
-msgid "Message to send:"
-msgstr "发送消息："
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1408,6 +1409,45 @@ msgstr "N/A"
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr "不可用"
+
+#: src/ClientRowListCtrl.cpp
+#, fuzzy, c-format
+msgid "Request the shared files of %u client?"
+msgid_plural "Request the shared files of %u clients?"
+msgstr[0] "重新载入共享文件列表。"
+msgstr[1] "重新载入共享文件列表。"
+
+#: src/ClientRowListCtrl.cpp
+msgid "A connection is opened to each of them."
+msgstr ""
+
+#: src/ClientRowListCtrl.cpp
+#, fuzzy, c-format
+msgid "Could not ask %u selected client for its shared files."
+msgid_plural "Could not ask %u selected clients for their shared files."
+msgstr[0] "无法添加 %u 个链接（详情请查看日志）"
+msgstr[1] "无法添加 %u 个链接（详情请查看日志）"
+
+#: src/ClientRowListCtrl.cpp
+#, c-format
+msgid "Add %u client to your friend list?"
+msgid_plural "Add %u clients to your friend list?"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/ClientRowListCtrl.cpp
+#, fuzzy, c-format
+msgid "Remove %u client from your friend list?"
+msgid_plural "Remove %u clients from your friend list?"
+msgstr[0] "从好友中删除"
+msgstr[1] "从好友中删除"
+
+#: src/ClientRowListCtrl.cpp
+#, c-format
+msgid "Could not add %u selected client to your friend list: no address is known for it."
+msgid_plural "Could not add %u selected clients to your friend list: no address is known for them."
+msgstr[0] ""
+msgstr[1] ""
 
 #: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Files"
@@ -2135,6 +2175,10 @@ msgid "eD2k is disabled in preferences."
 msgstr "eD2k 在首选项中已禁用。"
 
 #: src/ExternalConn.cpp
+msgid "No address known for that friend yet."
+msgstr ""
+
+#: src/ExternalConn.cpp
 msgid "Friend not found."
 msgstr "未找到好友。"
 
@@ -2770,6 +2814,16 @@ msgstr "读取好友列表文件 emfriends.met 失败！"
 #: src/FriendList.cpp
 msgid "Failed to open friend list file 'emfriends.met' for writing!"
 msgstr "写好友列表文件emfriends.met失败！"
+
+#: src/FriendList.cpp
+#, c-format
+msgid "No address known for friend '%s' yet, cannot browse them."
+msgstr ""
+
+#: src/FriendList.cpp
+#, c-format
+msgid "No address known for friend '%s' yet, cannot message them."
+msgstr ""
 
 #: src/FriendList.cpp
 msgid "CRITICAL - no client on StartChatSession"

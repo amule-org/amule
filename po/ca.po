@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-04 09:46+0200\n"
+"POT-Creation-Date: 2026-09-04 10:18+0200\n"
 "PO-Revision-Date: 2026-09-03 11:01+0000\n"
 "Last-Translator: minterior <minterior@gmail.com>\n"
 "Language-Team: Català\n"
@@ -1254,6 +1254,14 @@ msgid "Send message"
 msgstr "Envia un missatge"
 
 #: src/ClientContextActions.cpp
+msgid "Send message to user"
+msgstr "Envia un missatge a l'usuari"
+
+#: src/ClientContextActions.cpp
+msgid "Message to send:"
+msgstr "Missatge a enviar:"
+
+#: src/ClientContextActions.cpp
 #, fuzzy
 msgid ""
 "You are not allowed to set more than one friend slot.\n"
@@ -1262,17 +1270,10 @@ msgstr ""
 "No podeu establir més d'una posició d'amic.\n"
 " Només s'ha assignat una posició."
 
-#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
+#: src/ClientContextActions.cpp src/ClientRowListCtrl.cpp
+#: src/FriendListCtrl.cpp
 msgid "Multiple selection"
 msgstr "Selecció múltiple"
-
-#: src/ClientContextActions.cpp
-msgid "Send message to user"
-msgstr "Envia un missatge a l'usuari"
-
-#: src/ClientContextActions.cpp
-msgid "Message to send:"
-msgstr "Missatge a enviar:"
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1415,6 +1416,45 @@ msgstr "N/D"
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr "No disponible"
+
+#: src/ClientRowListCtrl.cpp
+#, fuzzy, c-format
+msgid "Request the shared files of %u client?"
+msgid_plural "Request the shared files of %u clients?"
+msgstr[0] "Recarrega la llista de fitxers compartits."
+msgstr[1] "Recarrega la llista de fitxers compartits."
+
+#: src/ClientRowListCtrl.cpp
+msgid "A connection is opened to each of them."
+msgstr ""
+
+#: src/ClientRowListCtrl.cpp
+#, c-format
+msgid "Could not ask %u selected client for its shared files."
+msgid_plural "Could not ask %u selected clients for their shared files."
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/ClientRowListCtrl.cpp
+#, c-format
+msgid "Add %u client to your friend list?"
+msgid_plural "Add %u clients to your friend list?"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/ClientRowListCtrl.cpp
+#, fuzzy, c-format
+msgid "Remove %u client from your friend list?"
+msgid_plural "Remove %u clients from your friend list?"
+msgstr[0] "Elimina'l dels amics"
+msgstr[1] "Elimina'l dels amics"
+
+#: src/ClientRowListCtrl.cpp
+#, c-format
+msgid "Could not add %u selected client to your friend list: no address is known for it."
+msgid_plural "Could not add %u selected clients to your friend list: no address is known for them."
+msgstr[0] ""
+msgstr[1] ""
 
 #: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Files"
@@ -2147,6 +2187,10 @@ msgid "eD2k is disabled in preferences."
 msgstr "eD2k és inhabilitada a les preferències."
 
 #: src/ExternalConn.cpp
+msgid "No address known for that friend yet."
+msgstr ""
+
+#: src/ExternalConn.cpp
 #, fuzzy
 msgid "Friend not found."
 msgstr "No s'ha trobat el fitxer."
@@ -2780,6 +2824,16 @@ msgstr "No s'ha pogut obrir el fitxer amb la llista d'amics 'emfriends.met' per 
 #: src/FriendList.cpp
 msgid "Failed to open friend list file 'emfriends.met' for writing!"
 msgstr "No s'ha pogut obrir el fitxer amb la llista d'amics 'emfriends.met' per a escriptura!"
+
+#: src/FriendList.cpp
+#, c-format
+msgid "No address known for friend '%s' yet, cannot browse them."
+msgstr ""
+
+#: src/FriendList.cpp
+#, c-format
+msgid "No address known for friend '%s' yet, cannot message them."
+msgstr ""
 
 #: src/FriendList.cpp
 msgid "CRITICAL - no client on StartChatSession"
