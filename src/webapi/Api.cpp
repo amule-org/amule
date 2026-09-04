@@ -2678,12 +2678,13 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 	// 0 when not connected -- gate on ed2k.state, not on this being nonzero.
 	w.Key("connected_since_at");
 	w.ValueInt(static_cast<int64_t>(s.ed2k_connected_since));
-	w.Key("server_name");
-	w.ValueString(wxString::FromUTF8(s.server_name.c_str()));
-	// Null when not connected, port with address: ed2k.state already says
-	// whether there is a server, so "" here only ever meant "not connected",
-	// and a port on its own describes nothing.
+	// Null when not connected, name and port with the address: ed2k.state
+	// already says whether there is a server, so "" here only ever meant
+	// "not connected", and a port on its own describes nothing. The name was
+	// the odd one out, spelling the same absence as "" beside two nulls in
+	// the object it shares.
 	const bool has_server = !s.server_ip.empty();
+	WriteStringOrNull(w, "server_name", has_server, s.server_name);
 	WriteStringOrNull(w, "server_ip", has_server, s.server_ip);
 	WriteIntOrNull(w, "server_port", has_server, static_cast<int64_t>(s.server_port));
 	// Network rollup, symmetric with kad.network below. Aggregate
@@ -3275,9 +3276,8 @@ void WriteClientDetailObject(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	// that parts_offered_count uses as a real answer.
 	const bool has_server = !c.server_ip.empty();
 	WriteStringOrNull(w, "server_ip", has_server, c.server_ip);
+	WriteStringOrNull(w, "server_name", has_server, c.server_name);
 	WriteIntOrNull(w, "server_port", has_server, static_cast<int64_t>(c.server_port));
-	w.Key("server_name");
-	w.ValueString(wxString::FromUTF8(c.server_name.c_str()));
 	// Nulled on the same condition WriteClientBaseFields nulls ip/port, and
 	// the same one WriteKnownClientObject uses: a client with no recorded
 	// address has no recorded Kad port either, and a raw 0 here would spell

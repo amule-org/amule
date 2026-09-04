@@ -387,8 +387,8 @@ std::string ToJsonStatusEvent(const StatusSnapshot &s, const KadSnapshot &k, boo
 	  // parity with nulls them, and server_port nulls with its address.
 	  << ",\"public_ip\":"
 	  << (s.ed2k_public_ip.empty() ? std::string("null") : "\"" + EscJson(s.ed2k_public_ip) + "\"")
-	  << ",\"connected_since_at\":" << s.ed2k_connected_since << ",\"server_name\":\""
-	  << EscJson(s.server_name) << "\""
+	  << ",\"connected_since_at\":" << s.ed2k_connected_since << ",\"server_name\":"
+	  << (s.server_ip.empty() ? std::string("null") : "\"" + EscJson(s.server_name) + "\"")
 	  << ",\"server_ip\":"
 	  << (s.server_ip.empty() ? std::string("null") : "\"" + EscJson(s.server_ip) + "\"")
 	  << ",\"server_port\":"
