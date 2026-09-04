@@ -74,6 +74,10 @@ protected:
 private:
 	void OnItemActivated(wxDataViewEvent &event);
 
+	//! Open a chat with a friend, reporting the reason when there is no
+	//! address to reach them on yet. Shared by double-click and the menu.
+	void MessageFriend(CFriend *cur_friend);
+
 	// Menu Items
 	void OnShowDetails(wxCommandEvent &event);
 	void OnSendMessage(wxCommandEvent &event);

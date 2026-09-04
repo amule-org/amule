@@ -94,10 +94,23 @@ struct PeerIdentity
 	/**
 	 * Whether a friend record can be stored for this peer.
 	 *
-	 * A friend is reached by address, and CAddFriend refuses to store one
-	 * without a usable ip and port. A record written from here has to meet
-	 * the same bar: an address-less friend keys every chat tab on GUI_ID(0,0)
-	 * and can never be dialled.
+	 * A hash is enough on its own. CFriendList::LookupFriend matches on the
+	 * hash whenever both the query and the record carry one, and
+	 * ProcessHelloTypePacket looks the peer up at every handshake, so a
+	 * hash-only record is recognised the moment the peer reappears:
+	 * CFriend::LinkClient then fills in the address and applies the stored
+	 * friend slot. Until then the record is inert rather than wrong, because
+	 * CanOpenConnection() gates browse and message on having an address.
+	 *
+	 * This matters most for the rows that need it. A credit record carries no
+	 * per-peer metadata until the peer has handshaked once since that
+	 * metadata existed, and ClientsWnd only fills a row's ip and port from
+	 * metadata, so on an established clients.met the address-less rows are
+	 * the older ones -- the ones the Known list exists to surface.
+	 *
+	 * The address requirement belongs to the hash-less record, which is why
+	 * CAddFriend demands ip and port: entered by address, it has no other
+	 * identifier.
 	 *
 	 * For a peer we are connected to the live client is the source of truth,
 	 * not the row. A row only learns an address once the peer has told us its
@@ -106,6 +119,9 @@ struct PeerIdentity
 	 */
 	bool CanBeFriended() const
 	{
+		if (!hash.IsEmpty()) {
+			return true;
+		}
 		return client.IsLinked() ? Addressable(client) : (ip != 0 && port != 0);
 	}
 	bool hasDetail = false;

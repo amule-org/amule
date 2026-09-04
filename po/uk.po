@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-04 11:31+0200\n"
+"POT-Creation-Date: 2026-09-04 12:13+0200\n"
 "PO-Revision-Date: 2026-09-03 11:11+0000\n"
 "Last-Translator: Oleksandr Kovalenko <alx.kovalenko@gmail.com>\n"
 "Language-Team: Ukrainian <translation@linux.org.ua>\n"
@@ -2854,11 +2854,6 @@ msgid "No address known for friend '%s' yet, cannot browse them."
 msgstr ""
 
 #: src/FriendList.cpp
-#, c-format
-msgid "No address known for friend '%s' yet, cannot message them."
-msgstr ""
-
-#: src/FriendList.cpp
 msgid "CRITICAL - no client on StartChatSession"
 msgstr "КРИТИЧНО - немає клієнта на StartChatSession"
 
@@ -2877,6 +2872,11 @@ msgstr "Видалити друга"
 #: src/FriendListCtrl.cpp
 msgid "Send &Message"
 msgstr "Надіслати повідомлення"
+
+#: src/FriendListCtrl.cpp
+#, c-format
+msgid "No address known for friend '%s' yet, cannot message them."
+msgstr ""
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"

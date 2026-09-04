@@ -311,9 +311,8 @@ void CFriendList::StartChatSession(CFriend *Friend)
 			CClientRef ref = theApp->clientlist->CreateForAddress(
 				Friend->GetUserHash(), Friend->GetIP(), Friend->GetPort(), Friend->GetName());
 			if (!ref.IsLinked()) {
-				AddLogLineC(CFormat(_("No address known for friend '%s' yet, cannot message "
-						      "them.")) %
-					    Friend->GetName());
+				// Reported by the caller, which is also the one that knows
+				// whether the chat tab could be opened afterwards.
 				return;
 			}
 			Friend->LinkClient(ref);

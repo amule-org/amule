@@ -74,20 +74,27 @@ CChatWnd::CChatWnd(wxWindow *pParent)
 	friendlistctrl = CastChild(ID_FRIENDLIST, CFriendListCtrl);
 }
 
-void CChatWnd::StartSession(CFriend *friend_client, bool setfocus)
+bool CChatWnd::StartSession(CFriend *friend_client, bool setfocus)
 {
-
-	if (!friend_client->GetName().IsEmpty()) {
-		if (setfocus) {
-			theApp->amuledlg->SetActiveDialog(CamuleDlg::DT_CHAT_WND, this);
-		}
-		chatselector->StartSession(GUI_ID(friend_client->GetIP(), friend_client->GetPort()),
-			friend_client->GetName(),
-			true);
+	// A tab is keyed on GUI_ID(ip, port). A friend can be known by hash alone
+	// -- added from an offline row whose credit record carries no address --
+	// and keying its tab on zero would put every such friend in one tab, under
+	// whichever name opened it first, with nothing sendable from it. Refuse
+	// until a handshake supplies the address.
+	if (friend_client->GetName().IsEmpty() || friend_client->GetIP() == 0 ||
+		friend_client->GetPort() == 0) {
+		return false;
 	}
+
+	if (setfocus) {
+		theApp->amuledlg->SetActiveDialog(CamuleDlg::DT_CHAT_WND, this);
+	}
+	chatselector->StartSession(
+		GUI_ID(friend_client->GetIP(), friend_client->GetPort()), friend_client->GetName(), true);
 
 	// Check to enable the window controls if needed
 	CheckNewButtonsState();
+	return true;
 }
 
 void CChatWnd::OnNMRclickChatTab(wxMouseEvent &evt)
