@@ -384,8 +384,18 @@ export async function copyText(text) {
 // The pieces bar mirrors the aMule GUI download bar, theme-tuned via CSS vars:
 // green (--ok) = have it, blue (--piece-avail-lo -> --piece-avail, faded by
 // source count) = available, red (--bad) = missing (nobody has it).
-// Sources at which an available part reaches full-intensity blue (aMule's
-// gradient saturates around 10 sources: blue = 210 - 22*(sources-1)).
+// Sources at which an available part reaches full-intensity blue. This is
+// partbar::kAvailFull in src/PartBarLegend.h, which is where the desktop GUI's
+// two bars now take the same fade from, so the number has to match: a file that
+// looks fully shared in the GUI must look fully shared here.
+//
+// It used to say the GUI faded "blue = 210 - 22*(sources-1), saturating around
+// 10". Every part of that was wrong. The expression was written into the GREEN
+// channel while blue stayed at 255, and it does not reach zero until the
+// eleventh source, so the GUI and this file disagreed both about which colour
+// they were fading and about where the fade stopped. Both bars read
+// SourceAvailabilityColour() since #1220 and neither computes a shade of its
+// own.
 const AVAIL_FULL = 10;
 
 // Parse a CSS colour ("#rgb", "#rrggbb", or "rgb(...)") to [r,g,b].
@@ -408,8 +418,10 @@ function mix(a, b, f) {
 }
 
 // Blue shade for a part that at least one peer has: fades from
-// --piece-avail-lo to --piece-avail as the source count rises, matching
-// the desktop gradient (blue = 210 - 22*(sources-1), saturating near 10).
+// --piece-avail-lo to --piece-avail as the source count rises. The desktop GUI
+// blends the same two endpoints over the same AVAIL_FULL - 1 steps, and no
+// channel of that blend can land on a half, so Math.round here and integer
+// division there produce the same bytes rather than merely similar ones.
 function availShade(sources, lo, hi) {
   const frac = Math.min(1, Math.max(0, ((sources || 1) - 1) / (AVAIL_FULL - 1)));
   return mix(lo, hi, frac);

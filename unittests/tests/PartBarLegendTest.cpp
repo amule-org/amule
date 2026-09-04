@@ -44,6 +44,11 @@
 // components.js and app.css and compare, because nothing generates one surface
 // from the other and a hand-maintained duplicate rots quietly.
 //
+// The same technique is what covers the two GUI bars against each other. They
+// cannot be linked here either, so they are read as text: what is checked is
+// that both call the one fade and that neither has grown a replacement for it.
+//
+
 // It links no wx and opens no display session, which is the point: this is the
 // half of the feature that a headless CI run can actually check. The drawing
 // (16x16 swatches through a wxMemoryDC, the gradient swatch included) and the
@@ -89,6 +94,50 @@ constexpr BarColour kExpectedOneSource{ 166, 212, 238 };
 constexpr BarColour kExpectedFiveSources{ 113, 181, 225 };
 constexpr BarColour kExpectedNineSources{ 60, 151, 211 };
 constexpr BarColour kExpectedManySources{ 47, 143, 208 };
+
+//! One more sample, one step along the fade, so the table below has a value
+//! between the light endpoint and the halfway point. 166 - 119/9 rounds to
+//! 153, 212 - 69/9 to 204, 238 - 30/9 to 235.
+constexpr BarColour kExpectedTwoSources{ 153, 204, 235 };
+
+//! What a bar cell shows for a part @c sources peers hold, as one table.
+//!
+//! Both GUI call sites -- CSharedFilesCtrl::GetItemBarFill and
+//! CDownloadListCtrl::GetItemBarFill -- reach a colour through the same two
+//! branches: no source is its own state, any other count is a point on the
+//! fade. This is that decision written out once, at the counts worth naming:
+//! the two endpoints, the step either side of them, halfway, and three counts
+//! past saturation.
+struct AvailabilityTableRow
+{
+	unsigned sources;
+	BarColour colour;
+};
+
+constexpr AvailabilityTableRow kAvailabilityTable[] = { { 0, kExpectedZeroSources },
+	{ 1, kExpectedOneSource },
+	{ 2, kExpectedTwoSources },
+	{ 5, kExpectedFiveSources },
+	{ 9, kExpectedNineSources },
+	{ 10, kExpectedManySources },
+	{ 11, kExpectedManySources },
+	{ 1000, kExpectedManySources } };
+
+constexpr std::size_t kAvailabilityTableSize = sizeof(kAvailabilityTable) / sizeof(kAvailabilityTable[0]);
+
+//! The fade takes a source count and nothing else, pinned as a type rather
+//! than as prose.
+//!
+//! This is the whole enforcement mechanism, and it is worth being plain about
+//! why. No test in this tree can watch two renderers and see them agree: both
+//! GetItemBarFill() implementations need wx, an app and a display, and this
+//! suite has none of the three. What can be enforced is that neither call site
+//! is *able* to supply its own endpoints -- adding a lo/hi parameter changes
+//! this signature, which fails to compile here and is something a reviewer
+//! reads in a diff rather than something that slips past in a colour literal.
+using SourceAvailabilityColourSignature = BarColour (*)(unsigned);
+
+constexpr SourceAvailabilityColourSignature kFadeTakesOnlyASourceCount = &SourceAvailabilityColour;
 
 //! The hashing legend's two fills. Written out again rather than reused from
 //! kExpectedPending / kExpectedNextPending above: that the not-yet-hashed flat
@@ -152,6 +201,14 @@ const std::string kWebUiJs =
 	std::string(PARTBAR_STRINGIZE(SRCDIR)) + "/../../src/webapi/static/js/components.js";
 const std::string kWebUiCss = std::string(PARTBAR_STRINGIZE(SRCDIR)) + "/../../src/webapi/static/css/app.css";
 
+//! The two GUI bars that draw source availability. Neither translation unit
+//! links here -- both pull in wx, the app and a display -- so they are read as
+//! text, the same way the Web UI's two files above are.
+const std::string kSharedFilesCtrlSource =
+	std::string(PARTBAR_STRINGIZE(SRCDIR)) + "/../../src/SharedFilesCtrl.cpp";
+const std::string kDownloadListCtrlSource =
+	std::string(PARTBAR_STRINGIZE(SRCDIR)) + "/../../src/DownloadListCtrl.cpp";
+
 //! Whole file as text, or empty if it could not be opened -- which the caller
 //! reports as a failure naming the path, because a pin that silently passes
 //! when it cannot find the other surface is worse than no pin.
@@ -184,6 +241,13 @@ BarColour ColourFromHex(const std::string &hex)
 	return BarColour{ static_cast<std::uint8_t>((packed >> 16) & 0xFF),
 		static_cast<std::uint8_t>((packed >> 8) & 0xFF),
 		static_cast<std::uint8_t>(packed & 0xFF) };
+}
+
+//! Does @p text still compute a fade of its own? The downloads list's retired
+//! ramp, matched loosely enough that reformatting it does not hide it.
+bool HasItsOwnFadeArithmetic(const std::string &text)
+{
+	return std::regex_search(text, std::regex("210\\s*-\\s*\\(?\\s*22\\s*\\*"));
 }
 
 //! Compare channel by channel, so a failure names the channel and the two
@@ -547,6 +611,65 @@ TEST(PartBarLegend, ACastFromTheSharedFilesIdSpaceReachesTheWrongLegend)
 	// The typed call is the one that works.
 	ASSERT_TRUE(BarLegendKind::SharedAvailability ==
 		    LegendForColumn(SharedFilesBarColumn::SourceAvailability, BarMode::Availability));
+}
+
+// --- the two GUI call sites ---------------------------------------------
+
+TEST(PartBarLegend, OneTableAnswersForEitherBar)
+{
+	// The expression both GetItemBarFill() implementations contain, run over
+	// the counts the table names. The literals were worked out by hand and are
+	// not recomputed from the header's arithmetic, so this fails if the fade
+	// moves rather than agreeing with it wherever it went.
+	for (std::size_t i = 0; i < kAvailabilityTableSize; ++i) {
+		const AvailabilityTableRow &row = kAvailabilityTable[i];
+		CONTEXT(wxString::Format("%u sources", row.sources));
+		const BarColour drawn =
+			row.sources == 0 ? AvailabilityPartColour(AvailabilityPartState::ZeroSources, false)
+					 : SourceAvailabilityColour(row.sources);
+		AssertColourEquals(row.colour, drawn);
+	}
+}
+
+TEST(PartBarLegend, NeitherBarKeepsItsOwnFadeArithmetic)
+{
+	// The convergence this change is for, checked where it can actually be
+	// observed: in the text of the two files. Until #1220 the downloads list
+	// computed its own shade -- 210 - 22*(sources-1), assigned to the green
+	// channel through a local misnamed "blue", with the blue channel pinned at
+	// 255 -- and the shared-files list computed a third one. Two constants in a
+	// header do not stop that coming back; a call to the one function is what
+	// does, and this is what notices if either file grows a replacement.
+	//
+	// A grep over a foreign source file is a blunt instrument and worth the
+	// bluntness here: the alternative is nothing at all, because neither
+	// translation unit can be linked into a headless suite. It is blunt in one
+	// direction worth knowing about -- it cannot tell code from prose, so
+	// neither file may write the retired expression out even in a comment.
+	// Both describe it in words instead.
+	const std::string sharedFiles = ReadWholeFile(kSharedFilesCtrlSource);
+	const std::string downloads = ReadWholeFile(kDownloadListCtrlSource);
+	ASSERT_TRUE_M(!sharedFiles.empty() && !downloads.empty(),
+		wxString("Could not read ") + kSharedFilesCtrlSource + " and " + kDownloadListCtrlSource +
+			" -- whether the two bars still share one fade cannot be checked, so it is "
+			"failing rather than passing silently");
+
+	{
+		CONTEXT("the shared-files bar calls the shared fade");
+		ASSERT_TRUE(sharedFiles.find("SourceAvailabilityColour") != std::string::npos);
+	}
+	{
+		CONTEXT("the downloads bar calls the shared fade");
+		ASSERT_TRUE(downloads.find("SourceAvailabilityColour") != std::string::npos);
+	}
+	{
+		CONTEXT("no second fade in the shared-files bar");
+		ASSERT_FALSE(HasItsOwnFadeArithmetic(sharedFiles));
+	}
+	{
+		CONTEXT("no second fade in the downloads bar");
+		ASSERT_FALSE(HasItsOwnFadeArithmetic(downloads));
+	}
 }
 
 // --- the other surface --------------------------------------------------

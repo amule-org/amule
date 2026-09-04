@@ -38,6 +38,7 @@
 #include "GuiEvents.h"        // Needed for CoreNotify_*, Notify_DownloadCtrlDoItemSelectionChanged
 #include "Logger.h"
 #include "MuleBarRenderer.h" // Needed for CBarFillSpec, CBarFillSpan, CMuleBarRenderer
+#include "PartBarLegendUI.h" // Needed for partbar::SourceAvailabilityColour, ToMuleColour
 #include "PartFile.h"        // Needed for CPartFile
 #include "Preferences.h"
 #include "SharedFileList.h" // Needed for CSharedFileList
@@ -997,8 +998,15 @@ void CDownloadListCtrl::GetItemBarFill(wxUIntPtr item, unsigned column, CBarFill
 		for (uint64 i = start; i < end; ++i) {
 			CMuleColour colour;
 			if (i < file->m_SrcpartFrequency.size() && file->m_SrcpartFrequency[i]) {
-				const int blue = 210 - (22 * (file->m_SrcpartFrequency[i] - 1));
-				colour.Set(0, static_cast<uint8_t>(blue < 0 ? 0 : blue), 255);
+				// The same fade the shared-files bar draws. This used to be a
+				// linear ramp of its own, saturating one source later, written
+				// into the green channel through a local called "blue" while
+				// the blue channel stayed at 255 -- so the same file read as
+				// differently shared depending on which list you looked at.
+				// The suite greps this file for that ramp, which is why it is
+				// described here rather than quoted.
+				colour = ToMuleColour(
+					partbar::SourceAvailabilityColour(file->m_SrcpartFrequency[i]));
 			} else {
 				colour = crMissing;
 			}
