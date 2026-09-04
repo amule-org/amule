@@ -1530,10 +1530,30 @@ if [ -n "$UNREACHABLE_ECID" ]; then
 			_fail "browse of an uncontactable peer" \
 				"expected finished within 10s, got $DEAD_STATE"
 		fi
-		_curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-			"$HOST/api/v0/search/$DEAD_SID/results?limit=1"
-		_assert_json_eq '.progress.state' finished \
-			'the results endpoint agrees the dead browse is finished'
+		# Poll this endpoint too, rather than reading it once the moment the
+		# LIST flipped. The two answer from different places: GET /search is
+		# a live EC_OP_SEARCH_LIST roundtrip, so it sees the daemon's state
+		# immediately, while the `progress` block here is served from the
+		# snapshot the refresher tick maintains. Between the daemon ending
+		# the browse and the next tick they legitimately disagree, and
+		# asserting straight after the list flipped raced that window --
+		# reproducibly, on a node with LowID peers, where two consecutive
+		# browses read `list=finished results=running`. It settles within a
+		# tick; what would be a real defect is it never settling.
+		DEAD_RESULT_STATE=""
+		for _ in 1 2 3 4 5 6 7 8 9 10; do
+			_curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+				"$HOST/api/v0/search/$DEAD_SID/results?limit=1"
+			DEAD_RESULT_STATE=$(printf '%s' "$CURL_BODY" | jq -r '.progress.state')
+			[ "$DEAD_RESULT_STATE" = "finished" ] && break
+			sleep 1
+		done
+		if [ "$DEAD_RESULT_STATE" = "finished" ]; then
+			_pass "the results endpoint agrees the dead browse is finished"
+		else
+			_fail "dead browse results progress" \
+				"expected finished within 10s, got $DEAD_RESULT_STATE"
+		fi
 
 		# The in-flight flag was cleared with the terminal mark, so the peer
 		# is still browsable rather than joined to a dead browse for good.

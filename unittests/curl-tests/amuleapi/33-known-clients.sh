@@ -334,8 +334,13 @@ _cross_check_online() {
 		| jq -r '[.known_clients[] | select(.online == true) | .user_hash] | .[]')
 	[ -z "$online_hashes" ] && { echo "__NONE__"; return; }
 	_curl "$HOST/api/v0/clients?limit=1000"
+	# Flattened to one space-separated line: the membership test below is a
+	# `case` glob looking for " $h ", and jq -r emits one hash per LINE, so a
+	# newline-separated list matched nothing and reported every online hash
+	# as missing. It passed only when exactly one hash was connected, which
+	# is what made the failure look intermittent.
 	connected_hashes=$(printf '%s' "$CURL_BODY" \
-		| jq -r '[.clients[] | select(.connected == true) | .user_hash] | .[]')
+		| jq -r '[.clients[] | select(.connected == true) | .user_hash] | .[]' | tr '\n' ' ')
 	for h in $online_hashes; do
 		case " $connected_hashes " in
 		*" $h "*) ;;
@@ -344,26 +349,42 @@ _cross_check_online() {
 	done
 	echo "$missing"
 }
-FIRST_PASS=$(_cross_check_online)
-if [ "$FIRST_PASS" = "__NONE__" ]; then
+# Sample repeatedly and intersect. The two lists come from separate
+# requests, so a peer that disconnects between them is inconsistent for that
+# sample alone and says nothing about the invariant. A hash inconsistent in
+# EVERY sample is not a disconnect in flight, and that is the defect this
+# exists to catch: a record claiming online with no connected peer behind
+# it. The loop exits on the first clean sample, so it costs nothing when the
+# lists agree, which is the normal case.
+PERSISTENT=""
+for i in $(seq 1 8); do
+	SAMPLE=$(_cross_check_online)
+	[ "$SAMPLE" = "__NONE__" ] && { PERSISTENT="__NONE__"; break; }
+	if [ -z "$SAMPLE" ]; then
+		PERSISTENT=""
+		break
+	fi
+	if [ "$i" = "1" ]; then
+		PERSISTENT="$SAMPLE"
+	else
+		KEEP=""
+		for h in $PERSISTENT; do
+			case " $SAMPLE " in
+			*" $h "*) KEEP="$KEEP $h" ;;
+			esac
+		done
+		PERSISTENT="$KEEP"
+		[ -z "$PERSISTENT" ] && break
+	fi
+	sleep 1
+done
+if [ "$PERSISTENT" = "__NONE__" ]; then
 	_skip "no known client is online; cannot cross-check against /clients"
-elif [ -z "$FIRST_PASS" ]; then
+elif [ -z "$PERSISTENT" ]; then
 	_pass "every online known client has a connected /clients counterpart"
 else
-	# Give the tick a moment to settle, then look again.
-	sleep 3
-	SECOND_PASS=$(_cross_check_online)
-	STILL=""
-	for h in $FIRST_PASS; do
-		case " $SECOND_PASS " in
-		*" $h "*) STILL="$STILL $h" ;;
-		esac
-	done
-	if [ -z "$STILL" ]; then
-		_pass "every online known client has a connected /clients counterpart (after a settle)"
-	else
-		_fail "known_clients online" "no connected /clients row for:$STILL (twice)"
-	fi
+	_fail "known_clients online" \
+		"no connected /clients row for:$PERSISTENT (in every one of 8 samples)"
 fi
 
 echo
