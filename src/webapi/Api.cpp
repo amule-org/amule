@@ -2678,12 +2678,13 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 	// 0 when not connected -- gate on ed2k.state, not on this being nonzero.
 	w.Key("connected_since_at");
 	w.ValueInt(static_cast<int64_t>(s.ed2k_connected_since));
-	w.Key("server_name");
-	w.ValueString(wxString::FromUTF8(s.server_name.c_str()));
-	// Null when not connected, port with address: ed2k.state already says
-	// whether there is a server, so "" here only ever meant "not connected",
-	// and a port on its own describes nothing.
+	// Null when not connected, name and port with the address: ed2k.state
+	// already says whether there is a server, so "" here only ever meant
+	// "not connected", and a port on its own describes nothing. The name was
+	// the odd one out, spelling the same absence as "" beside two nulls in
+	// the object it shares.
 	const bool has_server = !s.server_ip.empty();
+	WriteStringOrNull(w, "server_name", has_server, s.server_name);
 	WriteStringOrNull(w, "server_ip", has_server, s.server_ip);
 	WriteIntOrNull(w, "server_port", has_server, static_cast<int64_t>(s.server_port));
 	// Network rollup, symmetric with kad.network below. Aggregate
@@ -3216,10 +3217,11 @@ webapi::KnownClientSnapshot DecodeKnownClient(const CECTag &entry)
 
 // One credit-store record (GET /known_clients).
 //
-// Optional fields are omitted rather than emitted empty: a record written
+// Optional fields are emitted as null rather than omitted: a record written
 // before the daemon kept per-peer metadata genuinely has no name, address or
 // software, and a consumer should be able to tell "not recorded" from "recorded
-// as empty". The hash, the totals and last_seen are always present.
+// as empty" without also having to test whether the key is there at all. The
+// hash, the totals and last_seen_at are always present.
 void WriteKnownClientObject(CJsonWriter &w, const webapi::KnownClientSnapshot &c)
 {
 	w.BeginObject();
@@ -3275,9 +3277,8 @@ void WriteClientDetailObject(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	// that parts_offered_count uses as a real answer.
 	const bool has_server = !c.server_ip.empty();
 	WriteStringOrNull(w, "server_ip", has_server, c.server_ip);
+	WriteStringOrNull(w, "server_name", has_server, c.server_name);
 	WriteIntOrNull(w, "server_port", has_server, static_cast<int64_t>(c.server_port));
-	w.Key("server_name");
-	w.ValueString(wxString::FromUTF8(c.server_name.c_str()));
 	// Nulled on the same condition WriteClientBaseFields nulls ip/port, and
 	// the same one WriteKnownClientObject uses: a client with no recorded
 	// address has no recorded Kad port either, and a raw 0 here would spell
@@ -4457,6 +4458,9 @@ CHttpServer::Response CApiDispatcher::HandleFileClients(
 	auto a = Authenticate(req);
 	if (!a.ok)
 		return a.rejection;
+	if (auto r = RequireHashPath(key))
+		return *r;
+
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
 
@@ -4816,6 +4820,9 @@ CHttpServer::Response CApiDispatcher::HandleDownloadCommentsKadSearch(
 	if (auto r = RequireAdmin(a))
 		return *r;
 
+	if (auto r = RequireHashPath(key))
+		return *r;
+
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
 
@@ -4859,6 +4866,9 @@ CHttpServer::Response CApiDispatcher::HandleDownloadFilenames(
 	auto a = Authenticate(req);
 	if (!a.ok)
 		return a.rejection;
+
+	if (auto r = RequireHashPath(key))
+		return *r;
 
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
@@ -4922,6 +4932,9 @@ CHttpServer::Response CApiDispatcher::HandleDownloadA4afAction(
 		return a.rejection;
 	if (auto rej = RequireAdmin(a))
 		return *rej;
+
+	if (auto r = RequireHashPath(key))
+		return *r;
 
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
@@ -8633,6 +8646,17 @@ bool PrefTakeUint(const picojson::object &o,
 		return false;
 	}
 	const double v = it->second.get<double>();
+	// Reject a fractional value rather than truncating it at the cast below.
+	// Every numeric preference routes through this setter, so without the
+	// check `100.5` was accepted and stored as `100` on all of them, under an
+	// error string that already promised "non-negative integer". The step
+	// modulo further down is not a substitute: it runs on the already-
+	// truncated value, so it tests the floor's alignment and never
+	// integrality, and a field with no step skips it entirely.
+	if (!IsIntegralJsonNumber(v)) {
+		err = std::string(key) + " must be a non-negative integer";
+		return false;
+	}
 	if (v < 0 || v > static_cast<double>(max) || v < static_cast<double>(min)) {
 		// Name the bounds. These domains are narrower than the field's type for
 		// reasons a caller cannot infer -- a uint8 behind a byte count, a clamp
@@ -9882,6 +9906,9 @@ CHttpServer::Response CApiDispatcher::HandleSharedVerify(
 	if (auto rej = RequireAdmin(a))
 		return *rej;
 
+	if (auto r = RequireHashPath(key))
+		return *r;
+
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
 
@@ -10018,6 +10045,9 @@ CHttpServer::Response CApiDispatcher::HandleSharedContent(
 	auto a = Authenticate(req);
 	if (!a.ok)
 		return a.rejection;
+
+	if (auto r = RequireHashPath(key))
+		return *r;
 
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
@@ -10647,6 +10677,9 @@ CHttpServer::Response CApiDispatcher::HandleSharedMediaRefreshOne(
 		return a.rejection;
 	if (auto rej = RequireAdmin(a))
 		return *rej;
+
+	if (auto r = RequireHashPath(key))
+		return *r;
 
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
@@ -11587,7 +11620,10 @@ CHttpServer::Response CApiDispatcher::HandleSearchDownload(
 
 	CMD4Hash file_hash;
 	if (!HashFromHex(needle, file_hash)) {
-		return ErrorResponse(400, "bad_request", "`{hash}` must be a 32-char hex MD4");
+		// Same wording as every other {hash} route. RequireHashPath owns the
+		// message; it is called only here, on the path where it is certain to
+		// return a response, so the hash is not parsed twice in the good case.
+		return *RequireHashPath(needle);
 	}
 
 	// Optional body: {"category_index": uint8, "ecid": uint32}. amulegui's
@@ -11775,7 +11811,10 @@ CHttpServer::Response CApiDispatcher::HandleSearchCommentsKadSearch(
 
 	CMD4Hash file_hash;
 	if (!HashFromHex(needle, file_hash)) {
-		return ErrorResponse(400, "bad_request", "`{hash}` must be a 32-char hex MD4");
+		// Same wording as every other {hash} route. RequireHashPath owns the
+		// message; it is called only here, on the path where it is certain to
+		// return a response, so the hash is not parsed twice in the good case.
+		return *RequireHashPath(needle);
 	}
 
 	// Must be a live search result in some open search (mirrors the download

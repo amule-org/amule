@@ -857,7 +857,7 @@
   "prefs_field_connection_proxy_type": "Proxy type",
   "prefs_field_connection_proxy_host": "Proxy host",
   "prefs_field_connection_proxy_port": "Proxy port",
-  "prefs_field_connection_proxy_auth": "Enable authentication",
+  "prefs_field_connection_proxy_auth_enabled": "Enable authentication",
   "prefs_field_connection_proxy_user": "Proxy user",
   "prefs_field_connection_proxy_password": "Proxy password (leave empty to keep current)",
   "prefs_field_directories_incoming_path": "Incoming folder",

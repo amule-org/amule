@@ -143,7 +143,7 @@ const PrefField kSchema[] = {
 	PREF_U32("connection", "max_upload_kibibytes_per_second", EC_TAG_CONN_MAX_UL, 1000000000u, PrefAccess::ReadWrite, max_upload_kibibytes_per_second),
 	PREF_BOOL("connection", "ed2k_enabled", EC_TAG_NETWORK_ED2K, PrefEnc::Presence, false, PrefAccess::ReadWrite, ed2k_enabled),
 	PREF_BOOL("connection", "kad_enabled", EC_TAG_NETWORK_KADEMLIA, PrefEnc::Presence, false, PrefAccess::ReadWrite, kad_enabled),
-	PREF_BOOL("connection", "proxy_auth", EC_TAG_PROXY_AUTH, PrefEnc::Value, false, PrefAccess::ReadWrite, proxy_auth),
+	PREF_BOOL("connection", "proxy_auth_enabled", EC_TAG_PROXY_AUTH, PrefEnc::Value, false, PrefAccess::ReadWrite, proxy_auth_enabled),
 	PREF_BOOL("connection", "proxy_enabled", EC_TAG_PROXY_ENABLE, PrefEnc::Value, false, PrefAccess::ReadWrite, proxy_enabled),
 	PREF_STR("connection", "proxy_host", EC_TAG_PROXY_HOST, PrefAccess::ReadWrite, proxy_host),
 	PREF_U16("connection", "proxy_port", EC_TAG_PROXY_PORT, 65535u, PrefAccess::ReadWrite, proxy_port),

@@ -550,6 +550,43 @@ TEST(EventDiff, ServerUpdatedFiresOnTcpFlagsChange)
 	ASSERT_TRUE(payload.find("\"unicode\":false") != std::string::npos);
 }
 
+// The peer-version key must be spelled the same on the event bus as in the
+// REST list item. `WriteServerObject` renamed it `version` -> `software_version`
+// and the SSE twin was left behind, so the same value shipped under two names:
+// a client hydrating from GET /servers and then applying server_updated diffs
+// got the version under two keys and could not merge them. Equal() compares
+// s.version either way, so nothing failed loudly -- which is why this is pinned
+// by name rather than left to the shape assertions above.
+TEST(EventDiff, ServerPayloadSpellsTheVersionKeyLikeRest)
+{
+	CState state;
+	CEventBus bus;
+	LastSeenState prev;
+
+	EmitDiffsAndUpdate(bus, prev, state);
+	state.MutateServers([](std::map<std::uint32_t, ServerSnapshot> &cache) {
+		ServerSnapshot s;
+		s.ecid = 7;
+		s.name = "srv";
+		s.version = "17.15";
+		cache.emplace(s.ecid, s);
+	});
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string payload;
+	for (const auto &ev : DrainAll(bus)) {
+		if (ev.name == "server_added") {
+			payload = ev.data;
+		}
+	}
+
+	ASSERT_TRUE(!payload.empty());
+	ASSERT_TRUE(payload.find("\"software_version\":\"17.15\"") != std::string::npos);
+	// And not under the pre-rename spelling. Quoted so it cannot match inside
+	// "software_version" itself.
+	ASSERT_TRUE(payload.find("\"version\":") == std::string::npos);
+}
+
 // The publishing limits move independently of the flags and are likewise
 // carried in the payload rather than requiring a re-GET.
 TEST(EventDiff, ServerUpdatedFiresOnFileLimitChange)

@@ -142,8 +142,13 @@ _assert_json_eq '(.ed2k.public_ip != null) == (.ed2k.high_id and .ed2k.state == 
 # The 0xffffffff "connect in flight" sentinel must never surface.
 _assert_json_eq '.ed2k.user_id != 4294967295' true \
 	'ed2k.user_id never reports the connecting sentinel'
-_assert_json_eq '.ed2k.server_name | type' string \
-	'ed2k.server_name is string'
+# The connected-server triple nulls together. server_name used to be the odd
+# one out, spelling "not connected" as "" beside two nulls in the same object,
+# so it is asserted against server_ip rather than by type alone.
+_assert_json_eq '(.ed2k.server_name == null) == (.ed2k.server_ip == null)' true \
+	'ed2k.server_name is null exactly when server_ip is'
+_assert_json_eq '.ed2k.server_name | type | test("^(string|null)$")' true \
+	'ed2k.server_name is a string or null, never another type'
 
 # kad subtree.
 _assert_json_eq '.kad.state | test("^(connected|connecting|disabled)$")' \

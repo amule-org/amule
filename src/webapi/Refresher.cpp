@@ -2942,7 +2942,7 @@ void ParseConnectionPrefs(const CECTag *conn, PreferencesSnapshot &out)
 		out.proxy_port = static_cast<std::uint16_t>(t->GetInt());
 	}
 	if (const CECTag *t = conn->GetTagByName(EC_TAG_PROXY_AUTH)) {
-		out.proxy_auth = t->GetInt() != 0;
+		out.proxy_auth_enabled = t->GetInt() != 0;
 	}
 	if (const CECTag *t = conn->GetTagByName(EC_TAG_PROXY_USER)) {
 		out.proxy_user = std::string(t->GetStringData().utf8_str());

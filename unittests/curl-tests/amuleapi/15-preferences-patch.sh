@@ -359,7 +359,7 @@ _assert_json_eq '(.connection.proxy_enabled|type)' boolean 'connection.proxy_ena
 _assert_json_eq '(.connection.proxy_type|type)'    string  'connection.proxy_type is an enum string (#655)'
 _assert_json_eq '(.connection.proxy_host|type)'    string  'connection.proxy_host is string'
 _assert_json_eq '(.connection.proxy_port|type)'    number  'connection.proxy_port is numeric'
-_assert_json_eq '(.connection.proxy_auth|type)'    boolean 'connection.proxy_auth is bool'
+_assert_json_eq '(.connection.proxy_auth_enabled|type)'    boolean 'connection.proxy_auth_enabled is bool'
 _assert_json_eq '(.connection.proxy_user|type)'    string  'connection.proxy_user is string'
 # proxy_password must NOT be present on GET (write-only).
 _assert_json_eq '(.connection|has("proxy_password"))' false 'connection.proxy_password absent on GET (write-only)'
@@ -371,7 +371,7 @@ SAVED_PXPORT=$(printf '%s' "$CURL_BODY" | jq -r '.connection.proxy_port')
 
 # Round-trip the readable fields + PATCH the write-only password in one go.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d '{"connection":{"proxy_enabled":true,"proxy_type":"http","proxy_host":"proxy.example","proxy_port":8080,"proxy_auth":true,"proxy_user":"alice","proxy_password":"s3cret"}}' \
+	-d '{"connection":{"proxy_enabled":true,"proxy_type":"http","proxy_host":"proxy.example","proxy_port":8080,"proxy_auth_enabled":true,"proxy_user":"alice","proxy_password":"s3cret"}}' \
 	"$HOST/api/v0/preferences"
 _assert_status 200 "PATCH proxy (incl. write-only password) → 200"
 _assert_json_eq '.connection.proxy_enabled' true 'proxy_enabled=true in response'
@@ -607,6 +607,26 @@ _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-d '{"advanced":{"file_buffer_bytes":20000}}' "$HOST/api/v0/preferences"
 _assert_json_eq '.error.message | contains("multiple of 15000")' true \
 	"file_buffer_bytes 400 names the step in the message"
+
+# A fractional value is refused, not floored. Every numeric preference routes
+# through the same uint setter, so this was open on all of them: the value was
+# truncated at the cast and stored, under an error string that already said
+# "non-negative integer". Two cases, because the step modulo is not a substitute
+# for an integrality check -- it runs on the already-truncated value, so a
+# stepped field whose floor lands on a valid step passed it, and an unstepped
+# field never reaches it at all.
+for CASE in \
+	"advanced max_upload_queue_client_count 100.5 stepped-floor-is-a-valid-step" \
+	"connection tcp_port 4662.5 unstepped-skips-the-modulo" \
+	; do
+	set -- $CASE
+	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+		-H "Content-Type: application/json" \
+		-d "{\"$1\":{\"$2\":$3}}" "$HOST/api/v0/preferences"
+	_assert_status 400 "PATCH $1.$2=$3 -> 400 ($4)"
+	_assert_json_eq '.error.message | contains("non-negative integer")' true \
+		"$1.$2 fractional 400 says non-negative integer"
+done
 
 # accept: the domain's own endpoints, which must round-trip untouched. A bound
 # that rejects its own boundary is the failure mode this half guards.

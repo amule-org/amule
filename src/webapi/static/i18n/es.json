@@ -857,7 +857,7 @@
   "prefs_field_connection_proxy_type": "Tipo de proxy",
   "prefs_field_connection_proxy_host": "Servidor proxy",
   "prefs_field_connection_proxy_port": "Puerto del proxy",
-  "prefs_field_connection_proxy_auth": "Habilitar la autentificación",
+  "prefs_field_connection_proxy_auth_enabled": "Habilitar la autentificación",
   "prefs_field_connection_proxy_user": "Usuario del proxy",
   "prefs_field_connection_proxy_password": "Contraseña del proxy (vacío = mantener actual)",
   "prefs_field_directories_incoming_path": "Carpeta de entrada",
