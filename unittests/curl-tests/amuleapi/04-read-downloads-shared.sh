@@ -691,6 +691,45 @@ _assert_status 404 "unknown hash on /shared/{hash}/clients → 404"
 _curl -X DELETE -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/shared"
 _assert_status 405 "DELETE /api/v0/shared → 405"
 
+# --- 8. Optional client strings are null, never "" (#1290 item 5). The
+# live client objects spelled "unknown" as a raw "" while /known_clients
+# nulled the identical keys, so one peer described by both disagreed with
+# itself. R10: an unknown value is null and never a sentinel.
+#
+# Appended at the end of the phase on purpose: every request below is a
+# read, but a new section in the middle of the file shifts the daemon state
+# the LATER sections were written against.
+_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/clients?limit=1"
+if [ "$(echo "$CURL_BODY" | jq -r '.clients | length')" != "0" ]; then
+	for k in name software software_version reported_os download_file_name \
+		upload_file_name upload_file_hash download_file_hash \
+		obfuscation_state source_origin client_mod_name; do
+		_assert_json_eq ".clients[0] | .$k | type | test(\"^(string|null)\$\")" true \
+			"/clients row: $k is a string or null"
+		_assert_json_eq ".clients[0] | .$k == \"\"" false \
+			"/clients row: $k is never an empty string"
+	done
+	# The states are enum labels, not free text -- the daemon always
+	# answers, and an answer it cannot map is the enum's "unknown" member.
+	for k in upload_state download_state ident_state; do
+		_assert_json_eq ".clients[0] | .$k | type" "string" \
+			"/clients row: $k stays a string, never null"
+	done
+	# Same rule on the detail object, which shares WriteClientBaseFields.
+	ECID=$(echo "$CURL_BODY" | jq -r '.clients[0].ecid')
+	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/clients/$ECID"
+	_assert_status 200 "GET /clients/{ecid} for the null-string check → 200"
+	for k in name software software_version reported_os obfuscation_state \
+		source_origin client_mod_name; do
+		_assert_json_eq ".$k | type | test(\"^(string|null)\$\")" true \
+			"/clients/{ecid}: $k is a string or null"
+		_assert_json_eq ".$k == \"\"" false \
+			"/clients/{ecid}: $k is never an empty string"
+	done
+else
+	_skip "no connected peer, cannot check the client null-string contract"
+fi
+
 # --- Summary. -----------------------------------------------------
 echo
 SKIP_NOTE=""

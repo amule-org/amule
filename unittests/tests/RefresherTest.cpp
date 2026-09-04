@@ -2128,7 +2128,7 @@ TEST(Refresher, ClientAbsentPartStatusLeavesCachedBitmap)
 	ASSERT_TRUE(cache[13].part_status[2]);
 }
 
-TEST(Refresher, ClientVersionUnknownYieldsLocaleIndependentSentinel)
+TEST(Refresher, ClientVersionUnknownIsLeftEmptyRatherThanTranslated)
 {
 	std::map<std::uint32_t, ClientSnapshot> cache;
 	const FileMap no_files;
@@ -2138,7 +2138,13 @@ TEST(Refresher, ClientVersionUnknownYieldsLocaleIndependentSentinel)
 	PutOneClient(resp, 7, static_cast<std::uint32_t>(SO_UNKNOWN), "Desconocido");
 	ApplyGetUpdateToClients(&resp, cache, no_files);
 	ASSERT_TRUE(cache.find(7) != cache.end());
-	ASSERT_EQUALS(std::string("unknown"), cache[7].software_version);
+	// The locale leak is what this test exists to catch: whatever the
+	// representation of "no version", it must not be the daemon's string.
+	ASSERT_TRUE(cache[7].software_version != "Desconocido");
+	// Empty here, null on the wire. Not the "unknown" sentinel it used to
+	// be: software_version is free text, so there is no enum member to fall
+	// back to, and R10 spells an unknown value null.
+	ASSERT_EQUALS(std::string(), cache[7].software_version);
 }
 
 TEST(Refresher, ClientVersionKnownStringPassesThrough)
@@ -2152,7 +2158,7 @@ TEST(Refresher, ClientVersionKnownStringPassesThrough)
 	ASSERT_EQUALS(std::string("aMule 2.3.3"), cache[8].software_version);
 }
 
-TEST(Refresher, ClientKnownButNoVersionStringFallsBackToSentinel)
+TEST(Refresher, ClientKnownButNoVersionStringIsLeftEmpty)
 {
 	std::map<std::uint32_t, ClientSnapshot> cache;
 	const FileMap no_files;
@@ -2161,7 +2167,10 @@ TEST(Refresher, ClientKnownButNoVersionStringFallsBackToSentinel)
 	PutOneClient(resp, 9, static_cast<std::uint32_t>(SO_EMULE), nullptr);
 	ApplyGetUpdateToClients(&resp, cache, no_files);
 	ASSERT_TRUE(cache.find(9) != cache.end());
-	ASSERT_EQUALS(std::string("unknown"), cache[9].software_version);
+	// `software` still identifies the peer as eMule; only the version is
+	// unknown, and it reaches the wire as null.
+	ASSERT_EQUALS(std::string("emule"), cache[9].software);
+	ASSERT_EQUALS(std::string(), cache[9].software_version);
 }
 
 // --- #422: detail-only client fields decode --------------------------

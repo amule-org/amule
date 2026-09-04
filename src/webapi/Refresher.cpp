@@ -859,16 +859,17 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs, bool is_n
 	// translation, so we key off the locale-independent numeric software
 	// code instead of the string: a client the daemon couldn't identify
 	// (SO_UNKNOWN, which is exactly the branch that sets the translated
-	// "Unknown") gets the lowercase "unknown" sentinel, matching the other
-	// enum-like string fields. A known client with an absent/empty version
-	// string falls through to the same sentinel.
+	// "Unknown") never has the string read at all, and is left empty.
+	//
+	// Empty then reaches the wire as null rather than as an "unknown"
+	// sentinel. software_version is free text, not an enum -- unlike
+	// `software`, there is no member to fall back to -- and R10 wants an
+	// unknown value spelled null. It also matches WriteKnownClientObject,
+	// which nulls this key rather than inventing a value for it.
 	if (soft_code != static_cast<std::uint32_t>(SO_UNKNOWN)) {
 		if (const CECTag *t = c->GetTagByName(EC_TAG_CLIENT_SOFT_VER_STR)) {
 			cs.software_version = std::string(t->GetStringData().utf8_str());
 		}
-	}
-	if (cs.software_version.empty()) {
-		cs.software_version = "unknown";
 	}
 	// reported_os is the peer's own self-reported OS string (raw external data,
 	// not gettext-translated by our daemon), so it carries no locale-leak;

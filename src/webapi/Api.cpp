@@ -3064,8 +3064,11 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 {
 	w.Key("ecid");
 	w.ValueInt(static_cast<int64_t>(c.ecid));
-	w.Key("name");
-	w.ValueString(wxString::FromUTF8(c.client_name.c_str()));
+	// Null, not "", for every optional string below: an unknown value is null
+	// per R10, and WriteKnownClientObject already nulls the keys the two
+	// objects share. user_hash and the *_state enums stay unconditional --
+	// see the note above the states.
+	WriteStringOrNull(w, "name", !c.client_name.empty(), c.client_name);
 	w.Key("user_hash");
 	w.ValueString(wxString::FromUTF8(c.user_hash.c_str()));
 	// Nulled together, keyed on the address: a port without one describes
@@ -3076,26 +3079,22 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	WriteIntOrNull(w, "port", has_addr, static_cast<int64_t>(c.port));
 	// ISO 3166-1 alpha-2 (lowercase); null when GeoIP is off/unresolved (#439).
 	WriteStringOrNull(w, "country_code", !c.country_code.empty(), c.country_code);
-	w.Key("software");
-	w.ValueString(wxString::FromUTF8(c.software.c_str()));
-	w.Key("software_version");
-	w.ValueString(wxString::FromUTF8(c.software_version.c_str()));
-	w.Key("reported_os");
-	w.ValueString(wxString::FromUTF8(c.reported_os.c_str()));
+	WriteStringOrNull(w, "software", !c.software.empty(), c.software);
+	WriteStringOrNull(w, "software_version", !c.software_version.empty(), c.software_version);
+	WriteStringOrNull(w, "reported_os", !c.reported_os.empty(), c.reported_os);
+	// The three *_state values are enum labels, not free text: the daemon
+	// always answers, and an answer it does not recognise is the "unknown"
+	// member of the enum. Empty is unreachable, so there is nothing to null.
 	w.Key("upload_state");
 	w.ValueString(wxString::FromUTF8(c.upload_state.c_str()));
 	w.Key("download_state");
 	w.ValueString(wxString::FromUTF8(c.download_state.c_str()));
 	w.Key("ident_state");
 	w.ValueString(wxString::FromUTF8(c.ident_state.c_str()));
-	w.Key("download_file_name");
-	w.ValueString(wxString::FromUTF8(c.download_file_name.c_str()));
-	w.Key("upload_file_name");
-	w.ValueString(wxString::FromUTF8(c.upload_file_name.c_str()));
-	w.Key("upload_file_hash");
-	w.ValueString(wxString::FromUTF8(c.upload_file_hash.c_str()));
-	w.Key("download_file_hash");
-	w.ValueString(wxString::FromUTF8(c.download_file_hash.c_str()));
+	WriteStringOrNull(w, "download_file_name", !c.download_file_name.empty(), c.download_file_name);
+	WriteStringOrNull(w, "upload_file_name", !c.upload_file_name.empty(), c.upload_file_name);
+	WriteStringOrNull(w, "upload_file_hash", !c.upload_file_hash.empty(), c.upload_file_hash);
+	WriteStringOrNull(w, "download_file_hash", !c.download_file_hash.empty(), c.download_file_hash);
 	// R11: flattened out of the old `xfer` wrapper. A sub-object earns its
 	// place by grouping DIFFERENT quantities; this grouped one quantity split
 	// by time window, which belongs in the key. It also meant `xfer` named a
@@ -3125,8 +3124,7 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 		static_cast<int64_t>(c.remote_queue_position));
 	w.Key("upload_queue_score");
 	w.ValueInt(static_cast<int64_t>(c.score));
-	w.Key("obfuscation_state");
-	w.ValueString(wxString::FromUTF8(c.obfuscation_state.c_str()));
+	WriteStringOrNull(w, "obfuscation_state", !c.obfuscation_state.empty(), c.obfuscation_state);
 	w.Key("friend_slot");
 	w.ValueBool(c.friend_slot);
 	// Promoted out of the detail object (issue #984): the desktop's per-file
@@ -3134,8 +3132,7 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	// caller should not have to fetch each peer individually to draw a table.
 	// Anything added here also reaches the SSE payload -- see ToJson AND Equal
 	// in EventDiff.cpp; a field in one but not the other never updates.
-	w.Key("source_origin");
-	w.ValueString(wxString::FromUTF8(c.source_origin.c_str()));
+	WriteStringOrNull(w, "source_origin", !c.source_origin.empty(), c.source_origin);
 	// Gated on the flag the refresher sets when the tag actually arrives.
 	// Emitted unconditionally, a peer that never reported its part map was
 	// indistinguishable from one reporting zero parts -- and zero is a real
@@ -3145,8 +3142,7 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 		"parts_offered_count",
 		c.has_parts_offered_count,
 		static_cast<int64_t>(c.parts_offered_count));
-	w.Key("client_mod_name");
-	w.ValueString(wxString::FromUTF8(c.client_mod_name.c_str()));
+	WriteStringOrNull(w, "client_mod_name", !c.client_mod_name.empty(), c.client_mod_name);
 	// Inverted from the old `view_shared_disabled`: a negated boolean forces
 	// `=== false` at every call site, and R4 wants the positive form.
 	w.Key("shared_files_browsable");

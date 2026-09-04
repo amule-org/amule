@@ -392,12 +392,13 @@ FIRST_CLIENT=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients" | jq -r '.clients[0
 if [ -n "$FIRST_CLIENT" ]; then
 	if curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients" | jq -e '
 		.clients | all(.[];
-			(.upload_file_name | type == "string")
-			and (.download_file_name | type == "string"))' >/dev/null 2>&1; then
-		_pass "/clients list objects carry upload_file_name + download_file_name (strings)"
+			((.upload_file_name | type) as $t | $t == "string" or $t == "null")
+			and ((.download_file_name | type) as $t | $t == "string" or $t == "null"))' \
+		>/dev/null 2>&1; then
+		_pass "/clients list objects carry upload_file_name + download_file_name"
 	else
 		_fail "clients base filename fields" \
-			"a /clients object is missing upload_file_name/download_file_name or it is not a string"
+			"a /clients object is missing upload_file_name/download_file_name or it is neither string nor null"
 	fi
 else
 	_skip "/clients base filename-field check (no peers connected)"
