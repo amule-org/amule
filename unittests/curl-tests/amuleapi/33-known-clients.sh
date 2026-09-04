@@ -178,10 +178,12 @@ if [ "${TOTAL:-0}" -gt 0 ]; then
 		_fail "user_hash" "expected 32 lowercase hex chars, got: ${HASH:-<none>}"
 	fi
 
-	if [ "$(_jq '.known_clients[0].online | type')" = "boolean" ]; then
-		_pass "online is a boolean"
+	# boolean, or null on a daemon that does not report peer connectivity.
+	ONLINE_TYPE=$(_jq '.known_clients[0].online | type')
+	if [ "$ONLINE_TYPE" = "boolean" ] || [ "$ONLINE_TYPE" = "null" ]; then
+		_pass "online is a boolean or null"
 	else
-		_fail "online" "expected boolean, got: $(_jq '.known_clients[0].online | type')"
+		_fail "online" "expected boolean or null, got: $ONLINE_TYPE"
 	fi
 
 	# Optional fields are omitted, never emitted empty: a record written
@@ -310,6 +312,37 @@ for m in POST PUT DELETE PATCH; do
 	_curl -X "$m" "$HOST/api/v0/known_clients"
 	_assert_status 405 "$m /known_clients is rejected"
 done
+
+# --- online means reachable, not "has a live row". -------------------
+#
+# The daemon holds a client object from the first contact ATTEMPT, so a peer
+# it is still trying to reach -- or can never reach -- has a /clients row.
+# online used to be exactly that row's presence, which called such a peer
+# online. It is now the peer's real connection state, so every record that
+# claims online must have a live counterpart that also says connected.
+#
+# Appended at the end: both requests are reads, but a new section in the
+# middle shifts the daemon state the later sections were written against.
+_curl "$HOST/api/v0/known_clients?limit=200"
+ONLINE_HASHES=$(printf '%s' "$CURL_BODY" | jq -r '[.known_clients[] | select(.online == true) | .user_hash] | .[]')
+if [ -z "$ONLINE_HASHES" ]; then
+	_skip "no known client is online; cannot cross-check against /clients"
+else
+	_curl "$HOST/api/v0/clients?limit=500"
+	CONNECTED_HASHES=$(printf '%s' "$CURL_BODY" | jq -r '[.clients[] | select(.connected == true) | .user_hash] | .[]')
+	MISSING=""
+	for h in $ONLINE_HASHES; do
+		case " $CONNECTED_HASHES " in
+		*" $h "*) ;;
+		*) MISSING="$MISSING $h" ;;
+		esac
+	done
+	if [ -z "$MISSING" ]; then
+		_pass "every online known client has a connected /clients counterpart"
+	else
+		_fail "known_clients online" "no connected /clients row for:$MISSING"
+	fi
+fi
 
 echo
 SKIP_NOTE=""

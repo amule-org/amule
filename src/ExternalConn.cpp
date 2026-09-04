@@ -1696,6 +1696,12 @@ CECTag EncodeChatSession(const CChatSessionStore::Session &session, uint32 curso
 	// of its own. Both are omitted when absent rather than sent as 0.
 	if (const CUpDownClient *client = theApp->clientlist->FindClientByIP(session.ip, session.port)) {
 		tag.AddTag(CECTag(EC_TAG_CLIENT, client->ECID()));
+		// Sent whenever the client is, so "we are talking to a peer that is
+		// actually reachable" is answerable without inferring it from the
+		// ECID being present -- which is true from the first contact
+		// ATTEMPT, so a chat opened against an unroutable address read as
+		// online.
+		tag.AddTag(CECTag(EC_TAG_CLIENT_CONNECTED, client->IsConnected()));
 	}
 	if (const CFriend *f = theApp->friendlist->FindFriend(CMD4Hash(), session.ip, session.port)) {
 		tag.AddTag(CECTag(EC_TAG_FRIEND, f->ECID()));

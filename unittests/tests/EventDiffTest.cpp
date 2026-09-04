@@ -1857,3 +1857,96 @@ TEST(EventDiff, ClientEventKeepsTheStateEnumsAsStrings)
 	ASSERT_TRUE(payload.find("\"download_state\":\"downloading\"") != std::string::npos);
 	ASSERT_TRUE(payload.find("\"ident_state\":\"identified\"") != std::string::npos);
 }
+
+// #1290 follow-up. `online` used to be `client_ecid != 0`, which is true from
+// the moment the daemon starts TRYING to reach a peer -- so a friend it can
+// never reach read as online. The field now carries EC_TAG_CLIENT_CONNECTED,
+// and a daemon that never sends it leaves the answer unknown rather than
+// guessing "offline".
+TEST(EventDiff, FriendEventReportsReachabilityNotClientObjectExistence)
+{
+	CState state;
+	state.MutateFriends([](std::map<std::uint32_t, FriendSnapshot> &friends) {
+		FriendSnapshot f;
+		f.ecid = 91;
+		f.name = "linked-but-unreachable";
+		// A live client object exists -- the daemon is trying -- but no
+		// socket is up. The old rule called this online.
+		f.client_ecid = 4242;
+		f.connected = false;
+		f.has_connected = true;
+		friends.emplace(f.ecid, f);
+	});
+
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string payload;
+	for (const auto &e : DrainAll(bus)) {
+		if (e.name == "friend_added")
+			payload = e.data;
+	}
+	ASSERT_TRUE(!payload.empty());
+	ASSERT_TRUE(payload.find("\"online\":false") != std::string::npos);
+	// The live peer is still reported, so a consumer can still join on it.
+	ASSERT_TRUE(payload.find("\"client_ecid\":4242") != std::string::npos);
+}
+
+// A daemon that does not report connectivity leaves it unknown: null, not a
+// guessed false. R10 -- an unknown value is null and never a sentinel.
+TEST(EventDiff, FriendEventNullsOnlineWhenTheDaemonNeverReportedIt)
+{
+	CState state;
+	state.MutateFriends([](std::map<std::uint32_t, FriendSnapshot> &friends) {
+		FriendSnapshot f;
+		f.ecid = 92;
+		f.name = "no-connectivity-tag";
+		f.client_ecid = 77;
+		// has_connected stays false: the tag never arrived.
+		friends.emplace(f.ecid, f);
+	});
+
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string payload;
+	for (const auto &e : DrainAll(bus)) {
+		if (e.name == "friend_added")
+			payload = e.data;
+	}
+	ASSERT_TRUE(!payload.empty());
+	ASSERT_TRUE(payload.find("\"online\":null") != std::string::npos);
+}
+
+// The connected flag has to be in Equal too, or a peer that finishes
+// connecting never fires an update: the ecid does not move on that edge, and
+// the indicator would sit wrong until something else about the peer changed.
+TEST(EventDiff, ClientConnectingFiresAnUpdateEvenThoughTheEcidIsUnchanged)
+{
+	CState state;
+	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &clients) {
+		ClientSnapshot c;
+		c.ecid = 93;
+		c.connected = false;
+		c.has_connected = true;
+		clients.emplace(c.ecid, c);
+	});
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+	DrainAll(bus);
+
+	state.MutateClients(
+		[](std::map<std::uint32_t, ClientSnapshot> &clients) { clients[93].connected = true; });
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string payload;
+	for (const auto &e : DrainAll(bus)) {
+		if (e.name == "client_updated")
+			payload = e.data;
+	}
+	ASSERT_TRUE(!payload.empty());
+	ASSERT_TRUE(payload.find("\"connected\":true") != std::string::npos);
+}

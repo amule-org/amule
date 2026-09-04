@@ -462,6 +462,11 @@ CEC_UpDownClient_Tag::CEC_UpDownClient_Tag(
 	AddDiffTag(this, EC_TAG_CLIENT_UPLOAD_STATE, client->GetUploadState(), valuemap);
 	AddDiffTag(this, EC_TAG_CLIENT_DOWNLOAD_STATE, client->GetDownloadState(), valuemap);
 	AddDiffTag(this, EC_TAG_CLIENT_IDENT_STATE, (uint64)client->GetCurrentIdentState(), valuemap);
+	// Whether a socket to this peer is actually up, as opposed to a client
+	// object merely existing for it. A consumer that inferred "online" from
+	// the ECID alone called a peer online from the moment we started TRYING to
+	// reach it -- including one we can never reach.
+	AddDiffTag(this, EC_TAG_CLIENT_CONNECTED, client->IsConnected(), valuemap);
 	AddDiffTag(this, EC_TAG_CLIENT_EXT_PROTOCOL, client->ExtProtocolAvailable(), valuemap);
 	// These are not needed atm. Keep them for now, maybe columns get reintroduced in client view.
 	// AddTag(CECTag(EC_TAG_CLIENT_WAIT_TIME, client->GetWaitTime()), valuemap);
@@ -651,6 +656,13 @@ CEC_Friend_Tag::CEC_Friend_Tag(const CFriend *Friend, CValueMap *valuemap)
 	AddTag(EC_TAG_FRIEND_PORT, Friend->GetPort(), valuemap);
 	const CClientRef &linkedClient = Friend->GetLinkedClient();
 	AddTag(EC_TAG_FRIEND_CLIENT, linkedClient.IsLinked() ? linkedClient.ECID() : 0, valuemap);
+	// Echoed from the linked client so a consumer does not have to join
+	// against the client list -- and could not join reliably anyway, since a
+	// friend's client need not be in the list the consumer holds. Linked but
+	// not connected is the ordinary case for an offline friend.
+	AddTag(EC_TAG_CLIENT_CONNECTED,
+		linkedClient.IsLinked() && linkedClient.GetClient()->IsConnected(),
+		valuemap);
 	// The slot is settable over EC (EC_TAG_FRIEND_FRIENDSLOT on the request
 	// side) but was never reported back, so every EC client read it as false
 	// -- amulegui's "Establish Friend Slot" check mark could not follow the

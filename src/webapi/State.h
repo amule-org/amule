@@ -348,6 +348,10 @@ struct KnownClientSnapshot
 	//! live client list. Never by ECID: those mean nothing across daemon
 	//! restarts, while the hash is what the credit store is keyed on.
 	bool online = false;
+	//! The daemon answered the reachability question. False means unknown (a
+	//! core that predates EC_TAG_CLIENT_CONNECTED), which is null on the wire
+	//! rather than a guessed "offline".
+	bool has_online = false;
 };
 
 //! amuled substitutes this for the queue position when the peer's queue is
@@ -429,6 +433,14 @@ struct ClientSnapshot
 	std::string obfuscation_state; // "undefined" | "enabled" | "supported" | "not_supported" |
 				       // "disabled" | "unknown"
 	bool friend_slot = false;
+	// Whether a socket to this peer is up right now (EC_TAG_CLIENT_CONNECTED,
+	// from CUpDownClient::IsConnected). A row existing here only means the
+	// daemon holds a client object, which it does from the first contact
+	// ATTEMPT -- so presence in this list is not reachability, and every
+	// consumer that treated it as such called an unroutable peer online.
+	// has_connected false = the daemon never said, which is null on the wire.
+	bool connected = false;
+	bool has_connected = false;
 
 	// --- Extra fields decoded off the INC_UPDATE wire (issue #422) ----
 	// Originally detail-only. Five of them -- source_origin,
@@ -551,6 +563,12 @@ struct FriendSnapshot
 	std::string ip;
 	std::uint16_t port = 0;
 	std::uint32_t client_ecid = 0; // live peer this friend is linked to, 0 = offline
+	// Whether a socket to that peer is actually up. Distinct from client_ecid
+	// being non-zero, which is true from the first contact attempt. has_
+	// companion because a daemon that predates EC_TAG_CLIENT_CONNECTED says
+	// nothing, and unknown is null on the wire rather than a guessed false.
+	bool connected = false;
+	bool has_connected = false;
 	// Reported by cores that serialize EC_TAG_FRIEND_FRIENDSLOT. An older
 	// daemon omits the tag and this stays false, the same way is_friend and
 	// credit_ratio degrade on /clients.
@@ -579,6 +597,8 @@ struct ChatSessionSnapshot
 	std::uint16_t port = 0;
 	std::string name;              //!< peer display name; "" when the core has none
 	std::uint32_t client_ecid = 0; //!< live peer, 0 when offline
+	bool connected = false;        //!< a socket to that peer is actually up
+	bool has_connected = false;    //!< daemon reported it; false = unknown, not offline
 	std::uint32_t friend_ecid = 0; //!< friend entry, 0 when not a friend
 	std::vector<ChatMessageSnapshot> messages;
 

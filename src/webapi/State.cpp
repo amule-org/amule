@@ -740,9 +740,18 @@ void CState::ReconcileKnownClientsLocked()
 		// tick and returns -- an EC hiccup rather than a real reconnect. The
 		// daemon's own figure replaces this at the next fetch, so any drift
 		// lives no longer than the connection to that core.
-		if (!k.online)
+		// Keyed on last tick's PRESENCE set, not on k.online: online now means
+		// "a socket is up", and a peer can be present in the client list for
+		// several ticks before it connects (or without ever connecting).
+		// Counting off that would miss the arrival and then count a session
+		// when the socket came up.
+		if (m_known_online.count(it->second) == 0)
 			k.session_count++;
-		k.online = true;
+		// Reachability, echoed from the live row. A client object exists from
+		// the first contact ATTEMPT, so presence in the list is not the same
+		// question -- an unroutable peer sat here reading "Online now".
+		k.online = c.has_connected && c.connected;
+		k.has_online = c.has_connected;
 		// A peer in front of us was last seen now, not whenever it previously
 		// disconnected. Leaving the stored value would report a peer that is
 		// connected as last seen months ago, and now is what the core writes
@@ -774,7 +783,10 @@ void CState::ReconcileKnownClientsLocked()
 	for (const std::size_t idx : m_known_online) {
 		if (still_online.count(idx) != 0)
 			continue;
+		// Gone from the client list entirely: the daemon holds no object for
+		// it, so it is definitively not connected. Known, not unknown.
 		m_known_clients[idx].online = false;
+		m_known_clients[idx].has_online = true;
 		// Seen until this moment, which is what the core writes to the record
 		// at its own disconnect handling. The stored value is the *previous*
 		// disconnect, so leaving it would show a peer that was here a second

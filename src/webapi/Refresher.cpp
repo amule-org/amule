@@ -901,6 +901,17 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs, bool is_n
 			cs.ident_state = "unknown";
 		}
 	}
+	{
+		// Tag-present is the daemon's answer either way; tag-absent leaves the
+		// cached value alone, the incremental-update rule the rest of this
+		// function follows. has_connected stays false only for a daemon that
+		// never sends it at all, and that reaches the wire as null.
+		bool v = false;
+		if (c->AssignIfExist(EC_TAG_CLIENT_CONNECTED, v)) {
+			cs.connected = v;
+			cs.has_connected = true;
+		}
+	}
 	// REMOTE_FILENAME = the file we are downloading from this peer
 	// (`m_clientFilename` is set from OP_REQFILENAMEANSWER; see
 	// DownloadClient.cpp:350). Live only at INC_UPDATE detail.
@@ -1896,6 +1907,16 @@ static void MergeFriendTag(const CEC_Friend_Tag *ft, FriendSnapshot &f, bool is_
 			f.client_ecid = client;
 	}
 	{
+		// Echoed from the linked client by the daemon. Linked but not
+		// connected is the ordinary case for an offline friend, and is
+		// exactly what client_ecid alone could not express.
+		bool v = false;
+		if (ft->AssignIfExist(EC_TAG_CLIENT_CONNECTED, v)) {
+			f.connected = v;
+			f.has_connected = true;
+		}
+	}
+	{
 		// Absent on daemons that predate the tag being serialized; the
 		// snapshot then keeps its default false.
 		bool slot = false;
@@ -1941,6 +1962,11 @@ void ApplyChatSessions(const CECPacket *resp,
 			session.name = std::string(nameTag->GetStringData().utf8_str());
 		if (const CECTag *clientTag = t->GetTagByName(EC_TAG_CLIENT))
 			session.client_ecid = static_cast<std::uint32_t>(clientTag->GetInt());
+		// Sent alongside EC_TAG_CLIENT whenever there is a live peer at all.
+		if (const CECTag *connTag = t->GetTagByName(EC_TAG_CLIENT_CONNECTED)) {
+			session.connected = connTag->GetInt() != 0;
+			session.has_connected = true;
+		}
 		if (const CECTag *friendTag = t->GetTagByName(EC_TAG_FRIEND))
 			session.friend_ecid = static_cast<std::uint32_t>(friendTag->GetInt());
 

@@ -115,6 +115,21 @@ std::string JsonStrOrNull(bool known, const std::string &v)
 	return known ? "\"" + EscJson(v) + "\"" : std::string("null");
 }
 
+// `null` when the value was never measured, matching WriteIntOrNull /
+// WriteBoolOrNull on the REST side. The two bodies are promised to be
+// byte-identical, so the disconnected fields have to print `null` here too --
+// and the comparators below have to treat null<->value as a change, or the
+// event stops firing on the very edge that flips them.
+std::string JsonNumOrNull(bool known, std::uint64_t v)
+{
+	return known ? std::to_string(v) : std::string("null");
+}
+
+std::string JsonBoolOrNull(bool known, bool v)
+{
+	return known ? std::string(v ? "true" : "false") : std::string("null");
+}
+
 // download_* event payload — mirrors WriteDownloadObject (Api.cpp)
 // at the wire level. Reads the download sub-block of FileSnapshot.
 std::string ToJsonDownloadEvent(const FileSnapshot &f)
@@ -288,7 +303,7 @@ std::string ToJson(const FriendSnapshot &f)
 	  << ",\"ip\":" << (f.ip.empty() ? std::string("null") : "\"" + EscJson(f.ip) + "\"")
 	  << ",\"port\":" << (f.ip.empty() ? std::string("null") : std::to_string(f.port))
 	  << ",\"client_ecid\":" << (f.client_ecid ? std::to_string(f.client_ecid) : std::string("null"))
-	  << ",\"online\":" << (f.client_ecid != 0 ? "true" : "false")
+	  << ",\"online\":" << JsonBoolOrNull(f.has_connected, f.connected)
 	  << ",\"friend_slot\":" << (f.friend_slot ? "true" : "false") << "}";
 	return o.str();
 }
@@ -336,6 +351,7 @@ std::string ToJson(const ClientSnapshot &c)
 								  : std::to_string(c.remote_queue_position))
 	  << ",\"upload_queue_score\":" << c.score
 	  << ",\"obfuscation_state\":" << JsonStrOrNull(!c.obfuscation_state.empty(), c.obfuscation_state)
+	  << ",\"connected\":" << JsonBoolOrNull(c.has_connected, c.connected)
 	  << ",\"friend_slot\":" << (c.friend_slot ? "true" : "false")
 	  << ",\"source_origin\":" << JsonStrOrNull(!c.source_origin.empty(), c.source_origin)
 	  << ",\"parts_offered_count\":"
@@ -368,21 +384,6 @@ std::string ToJson(const ClientSnapshot &c)
 std::string JsonFreeSpace(std::int64_t v)
 {
 	return v < 0 ? std::string("null") : std::to_string(v);
-}
-
-// `null` when the value was never measured, matching WriteIntOrNull /
-// WriteBoolOrNull on the REST side. The two bodies are promised to be
-// byte-identical, so the disconnected fields have to print `null` here too --
-// and the comparators below have to treat null<->value as a change, or the
-// event stops firing on the very edge that flips them.
-std::string JsonNumOrNull(bool known, std::uint64_t v)
-{
-	return known ? std::to_string(v) : std::string("null");
-}
-
-std::string JsonBoolOrNull(bool known, bool v)
-{
-	return known ? std::string(v ? "true" : "false") : std::string("null");
 }
 
 // Mirrors HandleStatus key for key -- EVENTS.md promises this payload is
@@ -537,10 +538,13 @@ bool Equal(const ServerSnapshot &a, const ServerSnapshot &b)
 bool Equal(const FriendSnapshot &a, const FriendSnapshot &b)
 {
 	// client_ecid is part of the identity here on purpose: it going to 0 is
-	// the friend going offline, which is exactly what a subscriber watching
-	// the connected indicator needs to hear about.
+	// the friend losing its live peer, which a subscriber needs to hear about.
+	// connected is compared alongside it, not instead of it: a peer can go
+	// from linked-but-unreachable to connected without the ecid moving, and
+	// that transition IS the connected indicator flipping.
 	return a.name == b.name && a.user_hash == b.user_hash && a.ip == b.ip && a.port == b.port &&
-	       a.client_ecid == b.client_ecid && a.friend_slot == b.friend_slot;
+	       a.client_ecid == b.client_ecid && a.friend_slot == b.friend_slot &&
+	       a.connected == b.connected && a.has_connected == b.has_connected;
 }
 bool Equal(const ClientSnapshot &a, const ClientSnapshot &b)
 {
@@ -560,6 +564,7 @@ bool Equal(const ClientSnapshot &a, const ClientSnapshot &b)
 	       a.upload_queue_position == b.upload_queue_position &&
 	       a.remote_queue_position == b.remote_queue_position && a.score == b.score &&
 	       a.obfuscation_state == b.obfuscation_state && a.friend_slot == b.friend_slot &&
+	       a.connected == b.connected && a.has_connected == b.has_connected &&
 	       a.source_origin == b.source_origin && a.parts_offered_count == b.parts_offered_count &&
 	       // Without the flag, null -> 0 (the part map arriving and reporting
 	       // zero) compares equal and the row never updates.
