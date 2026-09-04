@@ -244,7 +244,7 @@ std::string ToJson(const ServerSnapshot &s)
 	o << "{"
 	  << "\"ecid\":" << s.ecid << ",\"name\":\"" << EscJson(s.name) << "\""
 	  << ",\"description\":\"" << EscJson(s.description) << "\""
-	  << ",\"version\":\"" << EscJson(s.version) << "\""
+	  << ",\"software_version\":\"" << EscJson(s.version) << "\""
 	  << ",\"address\":\"" << EscJson(s.address)
 	  << "\""
 	  // The bare IP beside the "ip:port" form, matching the REST row.

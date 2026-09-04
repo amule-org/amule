@@ -377,7 +377,7 @@ Identical to the REST [`/api/v0/servers`](REFERENCE.md#get-apiv0servers) list-it
   "ecid":        1,
   "name":        "eMule Server",
   "description": "Public server",
-  "version":     "17.15",
+  "software_version": "17.15",
   "address":     "203.0.113.5:4242",
   "ip":          "203.0.113.5",
   "country_code": "de",
