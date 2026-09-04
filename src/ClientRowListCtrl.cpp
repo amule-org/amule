@@ -169,12 +169,7 @@ void CClientRowListCtrl::OnViewFiles(wxCommandEvent &WXUNUSED(event))
 		return;
 	}
 	// Each one opens its own connection and its own browse tab.
-	wxString message = CFormat(wxPLURAL("Request the shared files of %u client?",
-				   "Request the shared files of %u clients?",
-				   count)) %
-			   count;
-	message << wxT("\n\n") << _("A connection is opened to each of them.");
-	if (!ConfirmBulkPeerAction(this, count, message)) {
+	if (!ConfirmBrowseAction(this, count, true)) {
 		return;
 	}
 	const std::vector<PeerIdentity> peers = SelectedPeers();
@@ -209,30 +204,10 @@ void CClientRowListCtrl::OnAddFriend(wxCommandEvent &WXUNUSED(event))
 		return;
 	}
 	const bool addThem = !PeerIsFriend(menuPeer);
-	const wxString message =
-		addThem ? wxString(CFormat(wxPLURAL("Add %u client to your friend list?",
-					   "Add %u clients to your friend list?",
-					   count)) %
-				   count)
-			: wxString(CFormat(wxPLURAL("Remove %u client from your friend list?",
-					   "Remove %u clients from your friend list?",
-					   count)) %
-				   count);
-	if (!ConfirmBulkPeerAction(this, count, message)) {
+	if (!ConfirmFriendAction(this, count, addThem)) {
 		return;
 	}
-	const size_t skipped = PeerActionSetFriends(SelectedPeers(), addThem);
-	if (skipped > 0) {
-		// Pre-metadata credit records carry no address, so a large selection
-		// can contain many. Saying nothing would report a count we did not act
-		// on.
-		AddLogLineC(CFormat(wxPLURAL("Could not add %u selected client to your friend list: "
-					     "no address is known for it.",
-				    "Could not add %u selected clients to your friend list: no address is "
-				    "known for them.",
-				    skipped)) %
-			    skipped);
-	}
+	ReportFriendSkips(PeerActionSetFriends(SelectedPeers(), addThem));
 }
 
 void CClientRowListCtrl::OnSetFriendslot(wxCommandEvent &evt)

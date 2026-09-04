@@ -126,6 +126,20 @@ void ClientActionViewFiles(const std::vector<CClientRef> &clients);
  */
 bool ConfirmBulkPeerAction(wxWindow *parent, size_t count, const wxString &message);
 
+//! Asks before a wide friend action, wording it for the direction taken.
+bool ConfirmFriendAction(wxWindow *parent, size_t count, bool addThem);
+
+//! Says how many rows a friend action left out for having no address.
+void ReportFriendSkips(size_t skipped);
+
+/**
+ * Asks before browsing a wide selection.
+ *
+ * `opensConnections` says whether each peer needs one opened, which is true of
+ * stored rows and not of sources we are already talking to.
+ */
+bool ConfirmBrowseAction(wxWindow *parent, size_t count, bool opensConnections);
+
 /**
  * Friend or unfriend a selection of live clients.
  *

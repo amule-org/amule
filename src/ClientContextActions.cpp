@@ -278,21 +278,51 @@ bool ConfirmBulkPeerAction(wxWindow *parent, size_t count, const wxString &messa
 	return wxMessageBox(message, _("Multiple selection"), wxYES_NO | wxICON_QUESTION, parent) == wxYES;
 }
 
+bool ConfirmFriendAction(wxWindow *parent, size_t count, bool addThem)
+{
+	const wxString message =
+		addThem ? wxString(CFormat(wxPLURAL("Add %u client to your friend list?",
+					   "Add %u clients to your friend list?",
+					   count)) %
+				   count)
+			: wxString(CFormat(wxPLURAL("Remove %u client from your friend list?",
+					   "Remove %u clients from your friend list?",
+					   count)) %
+				   count);
+	return ConfirmBulkPeerAction(parent, count, message);
+}
+
+void ReportFriendSkips(size_t skipped)
+{
+	if (skipped == 0) {
+		return;
+	}
+	AddLogLineC(CFormat(wxPLURAL("Could not add %u selected client to your friend list: no "
+				     "address is known for it.",
+			    "Could not add %u selected clients to your friend list: no address is "
+			    "known for them.",
+			    skipped)) %
+		    skipped);
+}
+
+bool ConfirmBrowseAction(wxWindow *parent, size_t count, bool opensConnections)
+{
+	wxString message = CFormat(wxPLURAL("Request the shared files of %u client?",
+				   "Request the shared files of %u clients?",
+				   count)) %
+			   count;
+	if (opensConnections) {
+		message << wxT("\n\n") << _("A connection is opened to each of them.");
+	}
+	return ConfirmBulkPeerAction(parent, count, message);
+}
+
 void PeerActionSetFriendsForClients(wxWindow *parent, const std::vector<CClientRef> &clients, bool addThem)
 {
 	if (clients.empty()) {
 		return;
 	}
-	const wxString message =
-		addThem ? wxString(CFormat(wxPLURAL("Add %u client to your friend list?",
-					   "Add %u clients to your friend list?",
-					   clients.size())) %
-				   clients.size())
-			: wxString(CFormat(wxPLURAL("Remove %u client from your friend list?",
-					   "Remove %u clients from your friend list?",
-					   clients.size())) %
-				   clients.size());
-	if (!ConfirmBulkPeerAction(parent, clients.size(), message)) {
+	if (!ConfirmFriendAction(parent, clients.size(), addThem)) {
 		return;
 	}
 	// Through the same action the row-backed lists use, so the direction, the
@@ -303,15 +333,7 @@ void PeerActionSetFriendsForClients(wxWindow *parent, const std::vector<CClientR
 	for (const CClientRef &client : clients) {
 		peers.push_back(PeerIdentity::FromClient(client));
 	}
-	const size_t skipped = PeerActionSetFriends(peers, addThem);
-	if (skipped > 0) {
-		AddLogLineC(CFormat(wxPLURAL("Could not add %u selected client to your friend list: no "
-					     "address is known for it.",
-				    "Could not add %u selected clients to your friend list: no address is "
-				    "known for them.",
-				    skipped)) %
-			    skipped);
-	}
+	ReportFriendSkips(PeerActionSetFriends(peers, addThem));
 }
 
 bool PeerIsFriend(const PeerIdentity &peer)

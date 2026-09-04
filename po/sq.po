@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-04 10:53+0200\n"
+"POT-Creation-Date: 2026-09-04 11:12+0200\n"
 "PO-Revision-Date: 2026-09-03 11:10+0000\n"
 "Last-Translator: Fation <dj_barthezz@linuxmail.org lushnja_corps@hotmail.Language-Team:\n"
 "Language: sq\n"
@@ -1280,26 +1280,37 @@ msgstr ""
 msgid "Multiple selection"
 msgstr "Perzgjedhje e shumte"
 
-#: src/ClientContextActions.cpp src/ClientRowListCtrl.cpp
+#: src/ClientContextActions.cpp
 #, c-format
 msgid "Add %u client to your friend list?"
 msgid_plural "Add %u clients to your friend list?"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/ClientContextActions.cpp src/ClientRowListCtrl.cpp
+#: src/ClientContextActions.cpp
 #, fuzzy, c-format
 msgid "Remove %u client from your friend list?"
 msgid_plural "Remove %u clients from your friend list?"
 msgstr[0] "Hiqe nga shoket"
 msgstr[1] "Hiqe nga shoket"
 
-#: src/ClientContextActions.cpp src/ClientRowListCtrl.cpp
+#: src/ClientContextActions.cpp
 #, c-format
 msgid "Could not add %u selected client to your friend list: no address is known for it."
 msgid_plural "Could not add %u selected clients to your friend list: no address is known for them."
 msgstr[0] ""
 msgstr[1] ""
+
+#: src/ClientContextActions.cpp
+#, fuzzy, c-format
+msgid "Request the shared files of %u client?"
+msgid_plural "Request the shared files of %u clients?"
+msgstr[0] "Ringarko listen e faileve te ndara."
+msgstr[1] "Ringarko listen e faileve te ndara."
+
+#: src/ClientContextActions.cpp
+msgid "A connection is opened to each of them."
+msgstr ""
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1444,17 +1455,6 @@ msgstr "N/A"
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr "Nuk eshte aktive"
-
-#: src/ClientRowListCtrl.cpp
-#, fuzzy, c-format
-msgid "Request the shared files of %u client?"
-msgid_plural "Request the shared files of %u clients?"
-msgstr[0] "Ringarko listen e faileve te ndara."
-msgstr[1] "Ringarko listen e faileve te ndara."
-
-#: src/ClientRowListCtrl.cpp
-msgid "A connection is opened to each of them."
-msgstr ""
 
 #: src/ClientRowListCtrl.cpp
 #, c-format
