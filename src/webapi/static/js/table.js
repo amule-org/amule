@@ -261,13 +261,19 @@ export function VirtualTable({
 
   // Striping is keyed off the absolute row index, not :nth-child — a spacer <tr>
   // shifts parity, so app.css disables nth-child striping for .virtual tables.
-  const rowTr = (r, i) => html`
-    <tr key=${rowKey(r)}
+  // The key goes to the click handler too, so a caller that tracks a selected
+  // row never has to derive row identity a second time: the value it stores is
+  // the same one used for reconciliation here and for rowClass below.
+  const rowTr = (r, i) => {
+    const k = rowKey(r);
+    return html`
+    <tr key=${k}
         class=${(onRowClick ? "clickable " : "") + ((start + i) % 2 ? "stripe " : "") + (rowClass ? rowClass(r) : "")}
-        onClick=${onRowClick ? (e) => onRowClick(r, e) : null}
+        onClick=${onRowClick ? (e) => onRowClick(r, e, k) : null}
         style=${{ height: rowHeight + "px" }}>
       ${columns.map((c) => html`<td class=${colClass(c)}>${c.cell(r)}</td>`)}
     </tr>`;
+  };
 
   const spacer = (h) => h > 0
     ? html`<tr class="spacer" style=${{ height: h + "px" }}><td colspan=${ncols}></td></tr>` : null;
