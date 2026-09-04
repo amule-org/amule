@@ -2850,7 +2850,7 @@ msgstr "في اﻻنتظار"
 msgid "Uploading"
 msgstr "الرفع"
 
-#: src/GenericClientListCtrl.cpp src/PeerCapabilities.h
+#: src/GenericClientListCtrl.cpp
 #, fuzzy
 msgid "None"
 msgstr "ﻻ احد"
@@ -4248,7 +4248,7 @@ msgid "Obfuscation"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Vendor capabilities:"
+msgid "Protocol extensions:"
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -6028,6 +6028,26 @@ msgstr ""
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "Extended source exchange"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (uTP)"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "IPv6"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "Buddy info pull"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (QUIC)"
 msgstr ""
 
 #: src/Preferences.cpp

@@ -2890,7 +2890,7 @@ msgstr "在队列中: %u"
 msgid "Uploading"
 msgstr "正在上传"
 
-#: src/GenericClientListCtrl.cpp src/PeerCapabilities.h
+#: src/GenericClientListCtrl.cpp
 msgid "None"
 msgstr "没有"
 
@@ -4265,8 +4265,9 @@ msgid "Obfuscation"
 msgstr "模糊协议"
 
 #: src/muuli_wdr.cpp
-msgid "Vendor capabilities:"
-msgstr ""
+#, fuzzy
+msgid "Protocol extensions:"
+msgstr "模糊协议"
 
 #: src/muuli_wdr.cpp
 msgid "Transfers to client"
@@ -6033,6 +6034,27 @@ msgstr "磁盘空间不足"
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
 msgstr "错误：打开part文件'%s'失败"
+
+#: src/PeerCapabilities.h
+#, fuzzy
+msgid "Extended source exchange"
+msgstr "源交换"
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (uTP)"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "IPv6"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "Buddy info pull"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (QUIC)"
+msgstr ""
 
 #: src/Preferences.cpp
 msgid "no options available"

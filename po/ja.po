@@ -2896,7 +2896,7 @@ msgstr "キューに入っています"
 msgid "Uploading"
 msgstr "アップロード"
 
-#: src/GenericClientListCtrl.cpp src/PeerCapabilities.h
+#: src/GenericClientListCtrl.cpp
 #, fuzzy
 msgid "None"
 msgstr "誰も許可しない"
@@ -4288,8 +4288,9 @@ msgid "Obfuscation"
 msgstr "難読化"
 
 #: src/muuli_wdr.cpp
-msgid "Vendor capabilities:"
-msgstr ""
+#, fuzzy
+msgid "Protocol extensions:"
+msgstr "プロトコルを難読化する"
 
 #: src/muuli_wdr.cpp
 msgid "Transfers to client"
@@ -6079,6 +6080,27 @@ msgstr ""
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
 msgstr "エラー: 部分ファイル '%s' が開けませんでした"
+
+#: src/PeerCapabilities.h
+#, fuzzy
+msgid "Extended source exchange"
+msgstr "ソース交流"
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (uTP)"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "IPv6"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "Buddy info pull"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (QUIC)"
+msgstr ""
 
 #: src/Preferences.cpp
 msgid "no options available"

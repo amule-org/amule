@@ -2907,7 +2907,7 @@ msgstr "Na cola"
 msgid "Uploading"
 msgstr "Xuba"
 
-#: src/GenericClientListCtrl.cpp src/PeerCapabilities.h
+#: src/GenericClientListCtrl.cpp
 #, fuzzy
 msgid "None"
 msgstr "Dengún"
@@ -4308,8 +4308,9 @@ msgid "Obfuscation"
 msgstr "Ofuscación"
 
 #: src/muuli_wdr.cpp
-msgid "Vendor capabilities:"
-msgstr ""
+#, fuzzy
+msgid "Protocol extensions:"
+msgstr "Ofuscación de protocolu"
 
 #: src/muuli_wdr.cpp
 msgid "Transfers to client"
@@ -6106,6 +6107,27 @@ msgstr "Espaciu en discu insuficiente"
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
 msgstr "ERROR: Fallu al abrir ficheru part '%s'"
+
+#: src/PeerCapabilities.h
+#, fuzzy
+msgid "Extended source exchange"
+msgstr "Intercambéu de Fontes"
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (uTP)"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "IPv6"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "Buddy info pull"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (QUIC)"
+msgstr ""
 
 #: src/Preferences.cpp
 msgid "no options available"

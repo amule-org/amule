@@ -2929,7 +2929,7 @@ msgstr "V vrsti: %u"
 msgid "Uploading"
 msgstr "Pošiljanje"
 
-#: src/GenericClientListCtrl.cpp src/PeerCapabilities.h
+#: src/GenericClientListCtrl.cpp
 msgid "None"
 msgstr "Brez"
 
@@ -4344,8 +4344,9 @@ msgid "Obfuscation"
 msgstr "Maskiranje"
 
 #: src/muuli_wdr.cpp
-msgid "Vendor capabilities:"
-msgstr ""
+#, fuzzy
+msgid "Protocol extensions:"
+msgstr "Maskiranje protokola"
 
 #: src/muuli_wdr.cpp
 msgid "Transfers to client"
@@ -6142,6 +6143,27 @@ msgstr "Premalo prostora na disku"
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
 msgstr "NAPAKA: delne datoteke »%s« ni bilo moč odpreti"
+
+#: src/PeerCapabilities.h
+#, fuzzy
+msgid "Extended source exchange"
+msgstr "Izmenjava virov"
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (uTP)"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "IPv6"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "Buddy info pull"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (QUIC)"
+msgstr ""
 
 #: src/Preferences.cpp
 msgid "no options available"

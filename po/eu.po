@@ -2899,7 +2899,7 @@ msgstr "Ilaran: %u"
 msgid "Uploading"
 msgstr "Igotzen"
 
-#: src/GenericClientListCtrl.cpp src/PeerCapabilities.h
+#: src/GenericClientListCtrl.cpp
 msgid "None"
 msgstr "Batez"
 
@@ -4296,8 +4296,9 @@ msgid "Obfuscation"
 msgstr "Nahasmena"
 
 #: src/muuli_wdr.cpp
-msgid "Vendor capabilities:"
-msgstr ""
+#, fuzzy
+msgid "Protocol extensions:"
+msgstr "Protokolo nahastea"
 
 #: src/muuli_wdr.cpp
 msgid "Transfers to client"
@@ -6082,6 +6083,27 @@ msgstr "Disko leku askieza"
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
 msgstr "ERROREA: Huts '%s' zati fitxategia irekitzean"
+
+#: src/PeerCapabilities.h
+#, fuzzy
+msgid "Extended source exchange"
+msgstr "Jatorri trukaketa"
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (uTP)"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "IPv6"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "Buddy info pull"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (QUIC)"
+msgstr ""
 
 #: src/Preferences.cpp
 msgid "no options available"

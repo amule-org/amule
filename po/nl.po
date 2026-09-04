@@ -2890,7 +2890,7 @@ msgstr "In wachtrij: %u"
 msgid "Uploading"
 msgstr "Aan het uploaden"
 
-#: src/GenericClientListCtrl.cpp src/PeerCapabilities.h
+#: src/GenericClientListCtrl.cpp
 msgid "None"
 msgstr "Geen"
 
@@ -4266,8 +4266,9 @@ msgid "Obfuscation"
 msgstr "Maskering"
 
 #: src/muuli_wdr.cpp
-msgid "Vendor capabilities:"
-msgstr ""
+#, fuzzy
+msgid "Protocol extensions:"
+msgstr "Protocol-obfuscatie"
 
 #: src/muuli_wdr.cpp
 msgid "Transfers to client"
@@ -6038,6 +6039,27 @@ msgstr "Onvoldoende schijfruimte"
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
 msgstr "FOUT: Kon deelbestand '%s' niet openen"
+
+#: src/PeerCapabilities.h
+#, fuzzy
+msgid "Extended source exchange"
+msgstr "Bron uitwisseling"
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (uTP)"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "IPv6"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "Buddy info pull"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (QUIC)"
+msgstr ""
 
 #: src/Preferences.cpp
 msgid "no options available"

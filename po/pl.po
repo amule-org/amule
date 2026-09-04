@@ -2913,7 +2913,7 @@ msgstr "W kolejce"
 msgid "Uploading"
 msgstr "Wysyłanie"
 
-#: src/GenericClientListCtrl.cpp src/PeerCapabilities.h
+#: src/GenericClientListCtrl.cpp
 msgid "None"
 msgstr "Brak"
 
@@ -4319,8 +4319,9 @@ msgid "Obfuscation"
 msgstr "Maskowanie"
 
 #: src/muuli_wdr.cpp
-msgid "Vendor capabilities:"
-msgstr ""
+#, fuzzy
+msgid "Protocol extensions:"
+msgstr "Maskowanie protokołu"
 
 #: src/muuli_wdr.cpp
 msgid "Transfers to client"
@@ -6116,6 +6117,27 @@ msgstr "Niewystarczająca ilość przestrzeni dyskowej"
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
 msgstr "BŁĄD: Nie udało się otworzyć pliku części '%s'"
+
+#: src/PeerCapabilities.h
+#, fuzzy
+msgid "Extended source exchange"
+msgstr "Wymiana źródeł"
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (uTP)"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "IPv6"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "Buddy info pull"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (QUIC)"
+msgstr ""
 
 #: src/Preferences.cpp
 msgid "no options available"

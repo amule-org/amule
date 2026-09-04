@@ -2908,7 +2908,7 @@ msgstr "În coadă: %u"
 msgid "Uploading"
 msgstr "Se încarcă"
 
-#: src/GenericClientListCtrl.cpp src/PeerCapabilities.h
+#: src/GenericClientListCtrl.cpp
 msgid "None"
 msgstr "Niciunul"
 
@@ -4314,8 +4314,9 @@ msgid "Obfuscation"
 msgstr "Disimulare"
 
 #: src/muuli_wdr.cpp
-msgid "Vendor capabilities:"
-msgstr ""
+#, fuzzy
+msgid "Protocol extensions:"
+msgstr "Protocol disimulare"
 
 #: src/muuli_wdr.cpp
 msgid "Transfers to client"
@@ -6103,6 +6104,27 @@ msgstr "Spațiu pe disc insuficient"
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
 msgstr "EROARE: A eșuat deschiderea fișierului parțial '%s'"
+
+#: src/PeerCapabilities.h
+#, fuzzy
+msgid "Extended source exchange"
+msgstr "Schimb surse"
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (uTP)"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "IPv6"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "Buddy info pull"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (QUIC)"
+msgstr ""
 
 #: src/Preferences.cpp
 msgid "no options available"
