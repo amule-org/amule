@@ -1811,9 +1811,17 @@ TEST(EventDiff, ClientEventNullsOptionalStringsThatNeverArrived)
 			payload = e.data;
 	}
 	ASSERT_TRUE(!payload.empty());
-	const char *const nulled[] = { "name", "software", "software_version", "reported_os",
-		"download_file_name", "upload_file_name", "upload_file_hash", "download_file_hash",
-		"obfuscation_state", "source_origin", "client_mod_name" };
+	const char *const nulled[] = { "name",
+		"software",
+		"software_version",
+		"reported_os",
+		"download_file_name",
+		"upload_file_name",
+		"upload_file_hash",
+		"download_file_hash",
+		"obfuscation_state",
+		"source_origin",
+		"client_mod_name" };
 	for (const char *key : nulled) {
 		ASSERT_TRUE(payload.find(std::string("\"") + key + "\":null") != std::string::npos);
 		ASSERT_TRUE(payload.find(std::string("\"") + key + "\":\"\"") == std::string::npos);

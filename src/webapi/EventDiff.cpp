@@ -310,7 +310,8 @@ std::string ToJson(const ClientSnapshot &c)
 	  << ",\"port\":" << (c.ip.empty() ? std::string("null") : std::to_string(c.port))
 	  << ",\"software\":" << JsonStrOrNull(!c.software.empty(), c.software)
 	  << ",\"software_version\":" << JsonStrOrNull(!c.software_version.empty(), c.software_version)
-	  << ",\"reported_os\":" << JsonStrOrNull(!c.reported_os.empty(), c.reported_os)
+	  << ",\"reported_os\":"
+	  << JsonStrOrNull(!c.reported_os.empty(), c.reported_os)
 	  // The three *_state values are enum labels, not free text: the daemon
 	  // always answers, and an answer it does not recognise is the "unknown"
 	  // member. Empty is unreachable, so there is nothing to null.
@@ -333,10 +334,10 @@ std::string ToJson(const ClientSnapshot &c)
 	  << ",\"upload_queue_position\":" << c.upload_queue_position << ",\"remote_queue_position\":"
 	  << (c.remote_queue_position == kRemoteQueueFullSentinel ? std::string("null")
 								  : std::to_string(c.remote_queue_position))
-	  << ",\"upload_queue_score\":" << c.score << ",\"obfuscation_state\":"
-	  << JsonStrOrNull(!c.obfuscation_state.empty(), c.obfuscation_state)
-	  << ",\"friend_slot\":" << (c.friend_slot ? "true" : "false") << ",\"source_origin\":"
-	  << JsonStrOrNull(!c.source_origin.empty(), c.source_origin)
+	  << ",\"upload_queue_score\":" << c.score
+	  << ",\"obfuscation_state\":" << JsonStrOrNull(!c.obfuscation_state.empty(), c.obfuscation_state)
+	  << ",\"friend_slot\":" << (c.friend_slot ? "true" : "false")
+	  << ",\"source_origin\":" << JsonStrOrNull(!c.source_origin.empty(), c.source_origin)
 	  << ",\"parts_offered_count\":"
 	  << (c.has_parts_offered_count ? std::to_string(c.parts_offered_count) : std::string("null"))
 	  << ",\"client_mod_name\":" << JsonStrOrNull(!c.client_mod_name.empty(), c.client_mod_name)
@@ -400,9 +401,8 @@ std::string ToJsonStatusEvent(const StatusSnapshot &s, const KadSnapshot &k, boo
 	  // parity with nulls them, and server_port nulls with its address.
 	  << ",\"public_ip\":"
 	  << (s.ed2k_public_ip.empty() ? std::string("null") : "\"" + EscJson(s.ed2k_public_ip) + "\"")
-	  << ",\"connected_since_at\":" << s.ed2k_connected_since << ",\"server_name\":"
-	  << JsonStrOrNull(!s.server_ip.empty(), s.server_name)
-	  << ",\"server_ip\":"
+	  << ",\"connected_since_at\":" << s.ed2k_connected_since
+	  << ",\"server_name\":" << JsonStrOrNull(!s.server_ip.empty(), s.server_name) << ",\"server_ip\":"
 	  << (s.server_ip.empty() ? std::string("null") : "\"" + EscJson(s.server_ip) + "\"")
 	  << ",\"server_port\":"
 	  << (s.server_ip.empty() ? std::string("null") : std::to_string(s.server_port)) << ",\"network\":{"
