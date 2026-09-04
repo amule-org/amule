@@ -240,12 +240,8 @@ void CRemoteConnect::SetCapabilities(bool canZLIB, bool canUTF8numbers, bool can
 	m_canNotify = canNotify;
 }
 
-bool CRemoteConnect::ConnectToCore(const wxString &host,
-	int port,
-	const wxString &WXUNUSED(login),
-	const wxString &pass,
-	const wxString &client,
-	const wxString &version)
+bool CRemoteConnect::ConnectToCore(
+	const wxString &host, int port, const wxString &pass, const wxString &client, const wxString &version)
 {
 	m_connectionPassword = pass;
 	// Both ends hold md5(password) and neither sends it; the salted challenge

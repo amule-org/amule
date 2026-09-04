@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-04 07:50+0200\n"
+"POT-Creation-Date: 2026-09-04 09:46+0200\n"
 "PO-Revision-Date: 2026-09-03 11:13+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -5265,10 +5265,6 @@ msgid "Login to remote amule"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "User name"
-msgstr "Lietotājvārds"
-
-#: src/muuli_wdr.cpp
 msgid "Remember those settings"
 msgstr ""
 
@@ -9117,6 +9113,9 @@ msgstr "Izskatās, ka aMule darbojas. Lūdzu, aizveriet to un vēlreiz palaidiet
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Dzēš lietotāja datus, kas atrodas $APPDATA\\aMule mapē…"
+
+#~ msgid "User name"
+#~ msgstr "Lietotājvārds"
 
 #~ msgid " MB/s"
 #~ msgstr " MB/s"

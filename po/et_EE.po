@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-04 07:50+0200\n"
+"POT-Creation-Date: 2026-09-04 09:46+0200\n"
 "PO-Revision-Date: 2026-09-03 11:03+0000\n"
 "Last-Translator: \n"
 "Language-Team: Estonian <kde-i18n-doc@kde.org>\n"
@@ -5384,10 +5384,6 @@ msgid "Login to remote amule"
 msgstr "Logi sisse eemalasuvasse amuula"
 
 #: src/muuli_wdr.cpp
-msgid "User name"
-msgstr "Kasutaja nimi"
-
-#: src/muuli_wdr.cpp
 msgid "Remember those settings"
 msgstr "Pea need seaded meeles"
 
@@ -9339,6 +9335,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "User name"
+#~ msgstr "Kasutaja nimi"
 
 #~ msgid "Obtained Parts"
 #~ msgstr "Saadud osi"

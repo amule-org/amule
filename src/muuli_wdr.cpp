@@ -3258,11 +3258,6 @@ wxSizer *CoreConnect( wxWindow *parent, bool call_fit, bool set_sizer )
 
     wxFlexGridSizer *item8 = new wxFlexGridSizer( 2, 0, 0 );
 
-    wxStaticText *item9 = new wxStaticText( parent, -1, _("User name"), wxDefaultPosition, wxDefaultSize, 0 );
-    item8->Add( item9, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
-    CMuleTextCtrl *item10 = new CMuleTextCtrl( parent, ID_EC_LOGIN, "amule", wxDefaultPosition, wxSize(200,-1), 0 );
-    item10->Enable( false );
-    item8->Add( item10, wxSizerFlags().Center().Border(wxALL, 5) );
     wxStaticText *item11 = new wxStaticText( parent, -1, _("Password"), wxDefaultPosition, wxDefaultSize, 0 );
     item8->Add( item11, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
     CMuleTextCtrl *item12 = new CMuleTextCtrl( parent, ID_EC_PASSWD, "", wxDefaultPosition, wxSize(200,-1), wxTE_PASSWORD );

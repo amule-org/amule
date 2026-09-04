@@ -61,7 +61,7 @@ class CEConnectDlg : public wxDialog
 	int port;
 
 	wxString pwd_hash;
-	wxString login, passwd;
+	wxString passwd;
 	bool m_save_user_pass;
 	bool m_force_zlib;
 	bool m_encryption;
@@ -76,7 +76,6 @@ public:
 	wxString Host() { return host; }
 	int Port() { return port; }
 
-	wxString Login() { return login; }
 	wxString PassHash();
 	bool SaveUserPass() { return m_save_user_pass; }
 	bool ForceZlib() { return m_force_zlib; }

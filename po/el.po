@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-04 07:50+0200\n"
+"POT-Creation-Date: 2026-09-04 09:46+0200\n"
 "PO-Revision-Date: 2026-09-03 11:02+0000\n"
 "Last-Translator: Dimitris <dgalanak@yahoo.com>\n"
 "Language-Team: Greek\n"
@@ -5411,10 +5411,6 @@ msgid "Login to remote amule"
 msgstr "Σύνδεση σε απομακρυσμένο amule"
 
 #: src/muuli_wdr.cpp
-msgid "User name"
-msgstr "Όνομα χρήστη"
-
-#: src/muuli_wdr.cpp
 msgid "Remember those settings"
 msgstr "Απομνημόνευση αυτών των ρυθμίσεων"
 
@@ -9409,6 +9405,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "User name"
+#~ msgstr "Όνομα χρήστη"
 
 #~ msgid "Obtained Parts"
 #~ msgstr "Κεκτημένα τμήματα"

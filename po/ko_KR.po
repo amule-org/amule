@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-04 07:50+0200\n"
+"POT-Creation-Date: 2026-09-04 09:46+0200\n"
 "PO-Revision-Date: 2026-09-03 11:06+0000\n"
 "Last-Translator: Hyunju Kang <rexington@gmail.com>\n"
 "Language-Team: Korean <hoenny@daum.net>\n"
@@ -5403,10 +5403,6 @@ msgid "Login to remote amule"
 msgstr "원격 어뮬에 로그인"
 
 #: src/muuli_wdr.cpp
-msgid "User name"
-msgstr "사용자이름"
-
-#: src/muuli_wdr.cpp
 msgid "Remember those settings"
 msgstr "설정을 기억"
 
@@ -9389,6 +9385,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "User name"
+#~ msgstr "사용자이름"
 
 #~ msgid "Obtained Parts"
 #~ msgstr "획득한 부분"

@@ -354,9 +354,12 @@ public:
 
 	bool ServerSupportsSearchProgressUnion() const { return m_serverSearchProgressUnion; }
 
+	// No `login`: EC authenticates on the password alone. The parameter
+	// existed since 2005, was declared WXUNUSED in the definition, and the
+	// three callers passed an empty string, a dialog field that was never
+	// filled in, and the literal "foobar" (issue #1266).
 	bool ConnectToCore(const wxString &host,
 		int port,
-		const wxString &login,
 		const wxString &pass,
 		const wxString &client,
 		const wxString &version);
