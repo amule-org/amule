@@ -43,6 +43,7 @@
 // cannot be linked here, but the property that matters is a wire property, not
 // a client one: an unknown tag must consume its own bytes.
 #include <tags/ClientTags.h>
+#include <tags/FileTags.h>
 #include "MemFile.h"
 #include "Tag.h"
 
@@ -271,4 +272,22 @@ TEST(PeerCapabilities, UnknownVendorTagDoesNotDesynchroniseTheStream)
 	// And the stream is fully consumed: no trailing bytes, so nothing
 	// over-consumed either.
 	ASSERT_EQUALS(stream.GetLength(), stream.GetPosition());
+}
+
+// The vendor tag ids and the Kad tag names are wire format shared with eMuleAI,
+// and nothing at runtime notices a wrong one: aMule would write its IPv6
+// address under an id the peer decodes as something else, or under a name the
+// peer never looks up, and the handshake would carry on regardless. So the
+// values are pinned here as literals -- an assertion that reads the same
+// symbol it is checking cannot catch a renumbering or a renamed tag.
+//
+// The reference is eMuleAI's srchybrid/Opcodes.h and its Kad tag names.
+TEST(PeerCapabilities, VendorTagIdsAndKadTagNamesAreExact)
+{
+	ASSERT_EQUALS(0xAA, (int)CT_MOD_MISCOPTIONS);
+	ASSERT_EQUALS(0xAE, (int)CT_MOD_IP_V6);
+	ASSERT_EQUALS(0xAF, (int)CT_MOD_SVR_IP_V6);
+
+	ASSERT_EQUALS(wxString(wxT("ip6")), wxString(TAG_IPV6));
+	ASSERT_EQUALS(wxString(wxT("bi6")), wxString(TAG_SERVINGBUDDYIPV6));
 }
