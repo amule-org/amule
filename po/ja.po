@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-06 14:35+0200\n"
+"POT-Creation-Date: 2026-09-06 23:44+0200\n"
 "PO-Revision-Date: 2026-09-05 10:54+0000\n"
 "Last-Translator: \n"
 "Language-Team: Japanese\n"
@@ -2896,7 +2896,7 @@ msgstr "キューに入っています"
 msgid "Uploading"
 msgstr "アップロード"
 
-#: src/GenericClientListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/PeerCapabilities.h
 #, fuzzy
 msgid "None"
 msgstr "誰も許可しない"
@@ -4286,6 +4286,10 @@ msgstr "サーバ名"
 #: src/muuli_wdr.cpp
 msgid "Obfuscation"
 msgstr "難読化"
+
+#: src/muuli_wdr.cpp
+msgid "Vendor capabilities:"
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Transfers to client"
