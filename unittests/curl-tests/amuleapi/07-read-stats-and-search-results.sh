@@ -113,9 +113,15 @@ _assert_json_eq '[.. | objects | select(has("key")) | .key] as $k
 	| (["ul_dl_ratio","download_data","servers_working"] | all(($k | index(.)) != null))' \
 	true '/stats/tree carries the expected stable keys'
 # Skeleton keys are unique; the dynamic per-client-software rows deliberately
-# share a key by kind (client_version / client_os), so exclude those.
+# share a key by kind, so exclude those. Both the leaves (client_version,
+# client_os) and the containers that group them (client_versions,
+# client_operating_system) repeat: the daemon emits one set per software
+# family, so they collide as soon as two families report a breakdown. Only
+# the leaves were excluded, which held on a node whose peers were all one
+# software and failed the moment a second family appeared.
 _assert_json_eq '[.. | objects | select(has("key")) | .key]
-	| map(select(. != "client_version" and . != "client_os"))
+	| map(select(. != "client_version" and . != "client_os"
+		and . != "client_versions" and . != "client_operating_system"))
 	| (length > 0) and (length == (unique | length))' \
 	true '/stats/tree skeleton keys are present and unique'
 # The ratio node keeps its composite string value for legacy consumers...
