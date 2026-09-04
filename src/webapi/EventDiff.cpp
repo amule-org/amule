@@ -105,6 +105,16 @@ std::string EscJson(const std::string &s)
 // fires `_updated`. If REST or SSE drifts in the future, the doc-
 // alignment check in run-all.sh phase11 should catch it.
 
+// `null` when the string was never populated, matching WriteStringOrNull on
+// the REST side. Takes the same (known, value) shape as JsonNumOrNull below so
+// the three read alike at the call site; an empty string is the usual reason a
+// value is unknown here, but the caller decides, because some fields are keyed
+// on a sibling (server_name on server_ip, ip/port on the address).
+std::string JsonStrOrNull(bool known, const std::string &v)
+{
+	return known ? "\"" + EscJson(v) + "\"" : std::string("null");
+}
+
 // download_* event payload — mirrors WriteDownloadObject (Api.cpp)
 // at the wire level. Reads the download sub-block of FileSnapshot.
 std::string ToJsonDownloadEvent(const FileSnapshot &f)
@@ -287,28 +297,31 @@ std::string ToJson(const ClientSnapshot &c)
 {
 	std::ostringstream o;
 	o << "{"
-	  << "\"ecid\":" << c.ecid << ",\"name\":\"" << EscJson(c.client_name) << "\""
+	  << "\"ecid\":" << c.ecid << ",\"name\":" << JsonStrOrNull(!c.client_name.empty(), c.client_name)
 	  << ",\"user_hash\":\"" << EscJson(c.user_hash)
 	  << "\""
 	  // Same guard as country_code below and as WriteKnownClientObject's
 	  // has_addr, which nulls ip/port/kad_port together.
-	  << ",\"ip\":" << (c.ip.empty() ? std::string("null") : "\"" + EscJson(c.ip) + "\"")
+	  << ",\"ip\":" << JsonStrOrNull(!c.ip.empty(), c.ip)
 	  << ",\"country_code\":"
 	  // null, not "", when the lookup has not resolved -- the REST row this
 	  // event promises key parity with emits null here.
-	  << (c.country_code.empty() ? std::string("null") : "\"" + EscJson(c.country_code) + "\"")
+	  << JsonStrOrNull(!c.country_code.empty(), c.country_code)
 	  << ",\"port\":" << (c.ip.empty() ? std::string("null") : std::to_string(c.port))
-	  << ",\"software\":\"" << EscJson(c.software) << "\""
-	  << ",\"software_version\":\"" << EscJson(c.software_version) << "\""
-	  << ",\"reported_os\":\"" << EscJson(c.reported_os) << "\""
+	  << ",\"software\":" << JsonStrOrNull(!c.software.empty(), c.software)
+	  << ",\"software_version\":" << JsonStrOrNull(!c.software_version.empty(), c.software_version)
+	  << ",\"reported_os\":" << JsonStrOrNull(!c.reported_os.empty(), c.reported_os)
+	  // The three *_state values are enum labels, not free text: the daemon
+	  // always answers, and an answer it does not recognise is the "unknown"
+	  // member. Empty is unreachable, so there is nothing to null.
 	  << ",\"upload_state\":\"" << EscJson(c.upload_state) << "\""
 	  << ",\"download_state\":\"" << EscJson(c.download_state) << "\""
 	  << ",\"ident_state\":\"" << EscJson(c.ident_state) << "\""
-	  << ",\"download_file_name\":\"" << EscJson(c.download_file_name) << "\""
-	  << ",\"upload_file_name\":\"" << EscJson(c.upload_file_name) << "\""
-	  << ",\"upload_file_hash\":\"" << EscJson(c.upload_file_hash) << "\""
-	  << ",\"download_file_hash\":\"" << EscJson(c.download_file_hash)
-	  << "\""
+	  << ",\"download_file_name\":" << JsonStrOrNull(!c.download_file_name.empty(), c.download_file_name)
+	  << ",\"upload_file_name\":" << JsonStrOrNull(!c.upload_file_name.empty(), c.upload_file_name)
+	  << ",\"upload_file_hash\":" << JsonStrOrNull(!c.upload_file_hash.empty(), c.upload_file_hash)
+	  << ",\"download_file_hash\":"
+	  << JsonStrOrNull(!c.download_file_hash.empty(), c.download_file_hash)
 	  // Flattened out of the old `xfer` wrapper (R11), same as the REST row
 	  // this payload promises key parity with.
 	  << ",\"uploaded_bytes_session\":" << c.uploaded_bytes_session
@@ -320,13 +333,13 @@ std::string ToJson(const ClientSnapshot &c)
 	  << ",\"upload_queue_position\":" << c.upload_queue_position << ",\"remote_queue_position\":"
 	  << (c.remote_queue_position == kRemoteQueueFullSentinel ? std::string("null")
 								  : std::to_string(c.remote_queue_position))
-	  << ",\"upload_queue_score\":" << c.score << ",\"obfuscation_state\":\""
-	  << EscJson(c.obfuscation_state) << "\""
-	  << ",\"friend_slot\":" << (c.friend_slot ? "true" : "false") << ",\"source_origin\":\""
-	  << EscJson(c.source_origin) << "\""
+	  << ",\"upload_queue_score\":" << c.score << ",\"obfuscation_state\":"
+	  << JsonStrOrNull(!c.obfuscation_state.empty(), c.obfuscation_state)
+	  << ",\"friend_slot\":" << (c.friend_slot ? "true" : "false") << ",\"source_origin\":"
+	  << JsonStrOrNull(!c.source_origin.empty(), c.source_origin)
 	  << ",\"parts_offered_count\":"
 	  << (c.has_parts_offered_count ? std::to_string(c.parts_offered_count) : std::string("null"))
-	  << ",\"client_mod_name\":\"" << EscJson(c.client_mod_name) << "\""
+	  << ",\"client_mod_name\":" << JsonStrOrNull(!c.client_mod_name.empty(), c.client_mod_name)
 	  << ",\"shared_files_browsable\":" << (c.view_shared_disabled ? "false" : "true");
 	// null, not omitted, matching the REST row: the field only means
 	// something for a peer we are downloading from, and -1 is the
@@ -388,7 +401,7 @@ std::string ToJsonStatusEvent(const StatusSnapshot &s, const KadSnapshot &k, boo
 	  << ",\"public_ip\":"
 	  << (s.ed2k_public_ip.empty() ? std::string("null") : "\"" + EscJson(s.ed2k_public_ip) + "\"")
 	  << ",\"connected_since_at\":" << s.ed2k_connected_since << ",\"server_name\":"
-	  << (s.server_ip.empty() ? std::string("null") : "\"" + EscJson(s.server_name) + "\"")
+	  << JsonStrOrNull(!s.server_ip.empty(), s.server_name)
 	  << ",\"server_ip\":"
 	  << (s.server_ip.empty() ? std::string("null") : "\"" + EscJson(s.server_ip) + "\"")
 	  << ",\"server_port\":"

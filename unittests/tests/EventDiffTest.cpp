@@ -1785,3 +1785,67 @@ TEST(EventDiff, CommentsUpdatedFiresWhenAFileArrivesMidKadLookup)
 	ASSERT_TRUE(payload.find("\"kad_comment_lookup_running\":true") != std::string::npos);
 	ASSERT_TRUE(payload.find("\"total\":0") != std::string::npos);
 }
+
+// #1290 item 5. The live client payload spelled "unknown" as a raw "" for its
+// optional strings while WriteKnownClientObject nulled the very same keys, so
+// one peer described by both objects disagreed with itself. R10 says an unknown
+// value is null and never a sentinel; "" is a sentinel.
+TEST(EventDiff, ClientEventNullsOptionalStringsThatNeverArrived)
+{
+	CState state;
+	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &clients) {
+		ClientSnapshot c;
+		c.ecid = 73;
+		// Every optional string left at its default: a peer we have seen
+		// but that has told us nothing about itself yet.
+		clients.emplace(c.ecid, c);
+	});
+
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string payload;
+	for (const auto &e : DrainAll(bus)) {
+		if (e.name == "client_added")
+			payload = e.data;
+	}
+	ASSERT_TRUE(!payload.empty());
+	const char *const nulled[] = { "name", "software", "software_version", "reported_os",
+		"download_file_name", "upload_file_name", "upload_file_hash", "download_file_hash",
+		"obfuscation_state", "source_origin", "client_mod_name" };
+	for (const char *key : nulled) {
+		ASSERT_TRUE(payload.find(std::string("\"") + key + "\":null") != std::string::npos);
+		ASSERT_TRUE(payload.find(std::string("\"") + key + "\":\"\"") == std::string::npos);
+	}
+}
+
+// The states are enum labels, not free text: the daemon always answers, and an
+// answer outside the enum is the "unknown" member. Nulling them would have
+// invented a third case the wire cannot express.
+TEST(EventDiff, ClientEventKeepsTheStateEnumsAsStrings)
+{
+	CState state;
+	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &clients) {
+		ClientSnapshot c;
+		c.ecid = 74;
+		c.upload_state = "uploading";
+		c.download_state = "downloading";
+		c.ident_state = "identified";
+		clients.emplace(c.ecid, c);
+	});
+
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string payload;
+	for (const auto &e : DrainAll(bus)) {
+		if (e.name == "client_added")
+			payload = e.data;
+	}
+	ASSERT_TRUE(!payload.empty());
+	ASSERT_TRUE(payload.find("\"upload_state\":\"uploading\"") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"download_state\":\"downloading\"") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"ident_state\":\"identified\"") != std::string::npos);
+}
