@@ -62,6 +62,20 @@ enum EModMiscOptions : uint32_t
 //! Bits 0-4 are defined. Bits 5-31 are reserved and travel as zero in both
 //! directions: they are masked out of what a peer sends, so no capability can
 //! be inferred from them, and never set in what aMule sends.
+//!
+//! "Reserved" means reserved to aMule, not unallocated on the wire. The 0xAA
+//! word is not eMuleAI's alone: emule-qt allocates bit 5 in it
+//! (MODMISC_EXTXS_SKIPTAGS, extended source exchange without the tag
+//! preamble) and bit 10 (MODMISC_HTTPCACHE, HTTP cache sourcing). This mask
+//! drops both, so a peer that sets either reaches m_bits with it cleared.
+//!
+//! That is right while aMule acts on neither -- a bit it cannot use is a bit
+//! it must not relay -- and wrong the moment it wants to gate on one, because
+//! a dropped bit reads as absent rather than as unknown, which is a different
+//! claim. Widening this mask is the change that has to happen first: no query
+//! site can recover a bit that was cleared here. A new bit needs an
+//! EModMiscOptions entry, a widened mask, an entry in the display table
+//! below, and the literal position pinned in PeerCapabilitiesTest.
 constexpr uint32_t MOD_MISCOPT_KNOWN_MASK = 0x0000001Fu;
 
 /**
