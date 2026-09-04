@@ -62,6 +62,24 @@ struct PeerIdentity
 	bool CanOpenConnection() const { return client.IsLinked() || (ip != 0 && port != 0); }
 
 	/**
+	 * The peer a live client describes.
+	 *
+	 * Lets a list that holds clients rather than rows reach the same actions,
+	 * so a behaviour written for one path is not written twice for the other.
+	 */
+	static PeerIdentity FromClient(const CClientRef &live)
+	{
+		CClientRef &c = const_cast<CClientRef &>(live);
+		PeerIdentity peer;
+		peer.hash = c.GetUserHash();
+		peer.name = c.GetUserName();
+		peer.ip = c.GetIP();
+		peer.port = c.GetUserPort();
+		peer.client = live;
+		return peer;
+	}
+
+	/**
 	 * Whether a live client carries an address a friend record could use.
 	 *
 	 * The one place that answers this for a client, so the menu that offers

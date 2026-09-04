@@ -82,6 +82,14 @@ public:
 	void RemoveFriend(CFriend *toremove);
 	// browseSearchId != 0 pins an EC-allocated browse ("View Files") search ID on
 	// the friend's client so ProcessSharedFileList files the listing under it.
+	//! What a browse request did, so a caller can tell the reasons apart.
+	enum class BrowseResult
+	{
+		Started,        //!< The request went out under the id given.
+		AlreadyRunning, //!< This peer is mid-browse; join that one instead.
+		Unreachable     //!< No client and no address to build one from.
+	};
+
 	/**
 	 * Asks a friend for its shared files.
 	 *
@@ -90,7 +98,7 @@ public:
 	 * browse id it allocated and has to release it, or the search sits
 	 * pending forever with nothing to terminate it.
 	 */
-	bool RequestSharedFileList(CFriend *cur_friend, uint32 browseSearchId = 0);
+	BrowseResult RequestSharedFileList(CFriend *cur_friend, uint32 browseSearchId = 0);
 
 	void SetFriendSlot(CFriend *Friend, bool new_state);
 	void StartChatSession(CFriend *Friend);

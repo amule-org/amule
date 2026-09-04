@@ -579,7 +579,15 @@ void CGenericClientListCtrl::OnViewFiles(wxCommandEvent &WXUNUSED(event))
 
 void CGenericClientListCtrl::OnAddFriend(wxCommandEvent &WXUNUSED(event))
 {
-	ClientActionToggleFriend(SelectedClients(GetSelectedItemData()));
+	// The direction comes from the row the menu was built for, as it does in
+	// the other lists: toggling each client would remove the friends inside a
+	// selection whose entry read "Add to Friends".
+	ClientCtrlItem_Struct *item = reinterpret_cast<ClientCtrlItem_Struct *>(m_menuItem);
+	if (item == nullptr) {
+		return;
+	}
+	const bool addThem = !PeerIsFriend(PeerIdentity::FromClient(item->GetSource()));
+	PeerActionSetFriendsForClients(this, SelectedClients(GetSelectedItemData()), addThem);
 }
 
 void CGenericClientListCtrl::OnSetFriendslot(wxCommandEvent &evt)

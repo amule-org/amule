@@ -26,6 +26,8 @@
 
 #include <wx/menu.h>
 #include <wx/msgdlg.h>
+
+#include "Logger.h" // Needed for AddLogLineC
 #include <wx/textdlg.h>
 
 #include <common/MenuIDs.h>
@@ -99,6 +101,12 @@ public:
 	FriendListBatch(const FriendListBatch &) = delete;
 	FriendListBatch &operator=(const FriendListBatch &) = delete;
 };
+
+// Above this a bulk action asks before running. One row must never cost a
+// click and a few is plainly deliberate, but Clients -> Known lists every peer
+// we have credit for, so a select-all there is thousands of rows and each one
+// costs an outbound connection or a rewrite of the friend list.
+const size_t kBulkPeerActionPrompt = 10;
 
 // Only one friend slot exists, so a wider selection loses all but the first.
 void WarnIfMultipleFriendSlot(wxWindow *parent, size_t selected)
@@ -262,6 +270,50 @@ CFriend *FriendFor(const PeerIdentity &peer)
 	return theApp->friendlist->LookupFriend(peer.hash, peer.ip, peer.port);
 }
 
+bool ConfirmBulkPeerAction(wxWindow *parent, size_t count, const wxString &message)
+{
+	if (count <= kBulkPeerActionPrompt) {
+		return true;
+	}
+	return wxMessageBox(message, _("Multiple selection"), wxYES_NO | wxICON_QUESTION, parent) == wxYES;
+}
+
+void PeerActionSetFriendsForClients(wxWindow *parent, const std::vector<CClientRef> &clients, bool addThem)
+{
+	if (clients.empty()) {
+		return;
+	}
+	const wxString message =
+		addThem ? wxString(CFormat(wxPLURAL("Add %u client to your friend list?",
+					   "Add %u clients to your friend list?",
+					   clients.size())) %
+				   clients.size())
+			: wxString(CFormat(wxPLURAL("Remove %u client from your friend list?",
+					   "Remove %u clients from your friend list?",
+					   clients.size())) %
+				   clients.size());
+	if (!ConfirmBulkPeerAction(parent, clients.size(), message)) {
+		return;
+	}
+	// Through the same action the row-backed lists use, so the direction, the
+	// address requirement, the single write and the skip reporting are stated
+	// once rather than accumulated twice.
+	std::vector<PeerIdentity> peers;
+	peers.reserve(clients.size());
+	for (const CClientRef &client : clients) {
+		peers.push_back(PeerIdentity::FromClient(client));
+	}
+	const size_t skipped = PeerActionSetFriends(peers, addThem);
+	if (skipped > 0) {
+		AddLogLineC(CFormat(wxPLURAL("Could not add %u selected client to your friend list: no "
+					     "address is known for it.",
+				    "Could not add %u selected clients to your friend list: no address is "
+				    "known for them.",
+				    skipped)) %
+			    skipped);
+	}
+}
+
 bool PeerIsFriend(const PeerIdentity &peer)
 {
 	return FriendFor(peer) != nullptr;
@@ -336,21 +388,6 @@ void ClientActionViewFiles(const std::vector<CClientRef> &clients)
 		if (!(theApp->amuledlg && theApp->amuledlg->m_searchwnd &&
 			    theApp->amuledlg->m_searchwnd->ActivateBrowseTabIfOpen(c.ECID()))) {
 			c.RequestSharedFileList();
-		}
-	}
-}
-
-void ClientActionToggleFriend(const std::vector<CClientRef> &clients)
-{
-	for (const CClientRef &client : clients) {
-		CClientRef &c = const_cast<CClientRef &>(client);
-		// The same resolution the menu labelled itself with. Asking
-		// IsFriend() here instead would add a second record for a friend the
-		// menu had just offered to remove.
-		if (CFriend *known = FriendForClient(c)) {
-			theApp->friendlist->RemoveFriend(known);
-		} else {
-			theApp->friendlist->AddFriend(c);
 		}
 	}
 }

@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-04 10:18+0200\n"
+"POT-Creation-Date: 2026-09-04 10:53+0200\n"
 "PO-Revision-Date: 2026-09-03 11:10+0000\n"
 "Last-Translator: Fation <dj_barthezz@linuxmail.org lushnja_corps@hotmail.Language-Team:\n"
 "Language: sq\n"
@@ -1276,10 +1276,30 @@ msgstr ""
 "Ju nuk lejoheni qe te vendosni me shume se nje slot per shoket.\n"
 " Vetem nje slot i vetem u vendos."
 
-#: src/ClientContextActions.cpp src/ClientRowListCtrl.cpp
-#: src/FriendListCtrl.cpp
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
 msgid "Multiple selection"
 msgstr "Perzgjedhje e shumte"
+
+#: src/ClientContextActions.cpp src/ClientRowListCtrl.cpp
+#, c-format
+msgid "Add %u client to your friend list?"
+msgid_plural "Add %u clients to your friend list?"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/ClientContextActions.cpp src/ClientRowListCtrl.cpp
+#, fuzzy, c-format
+msgid "Remove %u client from your friend list?"
+msgid_plural "Remove %u clients from your friend list?"
+msgstr[0] "Hiqe nga shoket"
+msgstr[1] "Hiqe nga shoket"
+
+#: src/ClientContextActions.cpp src/ClientRowListCtrl.cpp
+#, c-format
+msgid "Could not add %u selected client to your friend list: no address is known for it."
+msgid_plural "Could not add %u selected clients to your friend list: no address is known for them."
+msgstr[0] ""
+msgstr[1] ""
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1440,27 +1460,6 @@ msgstr ""
 #, c-format
 msgid "Could not ask %u selected client for its shared files."
 msgid_plural "Could not ask %u selected clients for their shared files."
-msgstr[0] ""
-msgstr[1] ""
-
-#: src/ClientRowListCtrl.cpp
-#, c-format
-msgid "Add %u client to your friend list?"
-msgid_plural "Add %u clients to your friend list?"
-msgstr[0] ""
-msgstr[1] ""
-
-#: src/ClientRowListCtrl.cpp
-#, fuzzy, c-format
-msgid "Remove %u client from your friend list?"
-msgid_plural "Remove %u clients from your friend list?"
-msgstr[0] "Hiqe nga shoket"
-msgstr[1] "Hiqe nga shoket"
-
-#: src/ClientRowListCtrl.cpp
-#, c-format
-msgid "Could not add %u selected client to your friend list: no address is known for it."
-msgid_plural "Could not add %u selected clients to your friend list: no address is known for them."
 msgstr[0] ""
 msgstr[1] ""
 

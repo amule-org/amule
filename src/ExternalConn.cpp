@@ -2625,17 +2625,34 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request, bool multiSea
 						theApp->searchlist->RegisterBrowseSearch(
 							browseId, Friend->GetName(), subtag->GetInt());
 					}
-					if (theApp->friendlist->RequestSharedFileList(Friend, browseId)) {
+					const CFriendList::BrowseResult asked =
+						theApp->friendlist->RequestSharedFileList(Friend, browseId);
+					if (asked == CFriendList::BrowseResult::Started) {
 						response = BuildBrowseReply(browseId, reftag);
 					} else {
-						// Nothing was asked, so nothing will ever answer or
-						// time out. Release the id registered above, or the
-						// tab it names sits pending for the whole session.
+						// Nothing was asked under this id, so nothing will
+						// answer or time out under it: release it, or the tab
+						// it names sits pending for the whole session.
 						if (browseId) {
 							ReleaseBrowseSearchId(browseId);
 						}
-						response = browseFailure(
-							wxTRANSLATE("No address known for that friend yet."));
+						// The callee resolves its client by hash, which can
+						// find one the check above could not: it looked at the
+						// record's linkage, which is empty for a friend added
+						// by address. Ask again now that linking has happened,
+						// so a browse already running is joined rather than
+						// reported as a missing address.
+						const CClientRef &nowLinked = Friend->GetLinkedClient();
+						const uint32 running = browseInFlightId(
+							nowLinked.IsLinked() ? nowLinked.GetClient()
+									     : nullptr);
+						if (asked == CFriendList::BrowseResult::AlreadyRunning &&
+							running) {
+							response = joinBrowse(running);
+						} else {
+							response = browseFailure(wxTRANSLATE(
+								"No address known for that friend yet."));
+						}
 					}
 				}
 			} else {

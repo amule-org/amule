@@ -237,7 +237,7 @@ void CFriendList::RemoveAllFriendSlots()
 	}
 }
 
-bool CFriendList::RequestSharedFileList(CFriend *cur_friend, uint32 browseSearchId)
+CFriendList::BrowseResult CFriendList::RequestSharedFileList(CFriend *cur_friend, uint32 browseSearchId)
 {
 	if (cur_friend) {
 		CUpDownClient *client = cur_friend->GetLinkedClient().GetClient();
@@ -254,7 +254,7 @@ bool CFriendList::RequestSharedFileList(CFriend *cur_friend, uint32 browseSearch
 				AddLogLineC(CFormat(_("No address known for friend '%s' yet, cannot browse "
 						      "them.")) %
 					    cur_friend->GetName());
-				return false;
+				return BrowseResult::Unreachable;
 			}
 			cur_friend->LinkClient(ref);
 			client = ref.GetClient();
@@ -265,15 +265,15 @@ bool CFriendList::RequestSharedFileList(CFriend *cur_friend, uint32 browseSearch
 		// fresh one every time could not: the caller's id would otherwise
 		// name a browse nothing will ever answer or expire.
 		if (theApp->browsemanager->SearchIdFor(client) != 0) {
-			return false;
+			return BrowseResult::AlreadyRunning;
 		}
 		// Pin the EC-allocated browse ID before firing the request, so
 		// ProcessSharedFileList files the listing under it.
 		client->PinBrowseSearchId(browseSearchId);
 		client->RequestSharedFileList();
-		return true;
+		return BrowseResult::Started;
 	}
-	return false;
+	return BrowseResult::Unreachable;
 }
 
 void CFriendList::SetFriendSlot(CFriend *Friend, bool new_state)

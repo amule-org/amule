@@ -100,15 +100,6 @@ private:
 	//! Renders the details dialog for one peer, live client or stored record.
 	void ShowDetailsFor(const PeerIdentity &peer);
 	/**
-	 * Whether a bulk action over `count` rows should go ahead.
-	 *
-	 * True without asking for a small selection. Larger ones are confirmed,
-	 * because the history list is the whole credit store and the menu was
-	 * built for a single row.
-	 */
-	bool ConfirmBulkPeerAction(size_t count, const wxString &message);
-
-	/**
 	 * The row the context menu was last built for, as item data.
 	 *
 	 * Single-row entries resolve this rather than re-reading the selection,

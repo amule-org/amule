@@ -213,11 +213,7 @@ bool CClientsListCtrl::PeerForItem(wxUIntPtr data, PeerIdentity &out) const
 	if (!found.IsLinked()) {
 		return false;
 	}
-	out.hash = found.GetUserHash();
-	out.name = found.GetUserName();
-	out.ip = found.GetIP();
-	out.port = found.GetUserPort();
-	out.client = found;
+	out = PeerIdentity::FromClient(found);
 	return true;
 }
 

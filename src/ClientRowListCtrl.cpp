@@ -65,15 +65,6 @@ void CClientRowListCtrl::GetItemBarFill(wxUIntPtr data, unsigned column, CBarFil
 	out = CBarFillSpec(reinterpret_cast<wxUIntPtr>(cell), 0, {});
 }
 
-namespace
-{
-// Above this a bulk action asks before running. One row must never cost a
-// click and a few is plainly deliberate, but Clients -> Known lists every peer
-// we have credit for, so a select-all there is thousands of rows and each one
-// costs an outbound connection or a rewrite of the friend list.
-const size_t kBulkPeerActionPrompt = 10;
-} // namespace
-
 bool CClientRowListCtrl::MenuPeer(PeerIdentity &out) const
 {
 	return m_menuItemValid && PeerForItem(m_menuItem, out);
@@ -169,14 +160,6 @@ void CClientRowListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 // runs on all of them, so a large selection says so first. Same shape as the
 // shared-files media refresh: one row never costs a click, and what is about to
 // happen is stated in full.
-bool CClientRowListCtrl::ConfirmBulkPeerAction(size_t count, const wxString &message)
-{
-	if (count <= kBulkPeerActionPrompt) {
-		return true;
-	}
-	return wxMessageBox(message, _("Multiple selection"), wxYES_NO | wxICON_QUESTION, this) == wxYES;
-}
-
 void CClientRowListCtrl::OnViewFiles(wxCommandEvent &WXUNUSED(event))
 {
 	// Counted from the control, not from resolving the rows: resolving is the
@@ -191,7 +174,7 @@ void CClientRowListCtrl::OnViewFiles(wxCommandEvent &WXUNUSED(event))
 				   count)) %
 			   count;
 	message << wxT("\n\n") << _("A connection is opened to each of them.");
-	if (!ConfirmBulkPeerAction(count, message)) {
+	if (!ConfirmBulkPeerAction(this, count, message)) {
 		return;
 	}
 	const std::vector<PeerIdentity> peers = SelectedPeers();
@@ -235,7 +218,7 @@ void CClientRowListCtrl::OnAddFriend(wxCommandEvent &WXUNUSED(event))
 					   "Remove %u clients from your friend list?",
 					   count)) %
 				   count);
-	if (!ConfirmBulkPeerAction(count, message)) {
+	if (!ConfirmBulkPeerAction(this, count, message)) {
 		return;
 	}
 	const size_t skipped = PeerActionSetFriends(SelectedPeers(), addThem);

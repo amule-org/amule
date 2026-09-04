@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-04 10:18+0200\n"
+"POT-Creation-Date: 2026-09-04 10:53+0200\n"
 "PO-Revision-Date: 2026-09-03 11:09+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
@@ -1281,10 +1281,33 @@ msgstr ""
 "Нельзя задать более одного слота для друзей.\n"
 " Назначен только один слот."
 
-#: src/ClientContextActions.cpp src/ClientRowListCtrl.cpp
-#: src/FriendListCtrl.cpp
+#: src/ClientContextActions.cpp src/FriendListCtrl.cpp
 msgid "Multiple selection"
 msgstr "Множественный выбор"
+
+#: src/ClientContextActions.cpp src/ClientRowListCtrl.cpp
+#, c-format
+msgid "Add %u client to your friend list?"
+msgid_plural "Add %u clients to your friend list?"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#: src/ClientContextActions.cpp src/ClientRowListCtrl.cpp
+#, fuzzy, c-format
+msgid "Remove %u client from your friend list?"
+msgid_plural "Remove %u clients from your friend list?"
+msgstr[0] "Удалить из списка друзей"
+msgstr[1] "Удалить из списка друзей"
+msgstr[2] "Удалить из списка друзей"
+
+#: src/ClientContextActions.cpp src/ClientRowListCtrl.cpp
+#, c-format
+msgid "Could not add %u selected client to your friend list: no address is known for it."
+msgid_plural "Could not add %u selected clients to your friend list: no address is known for them."
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1443,30 +1466,6 @@ msgid_plural "Could not ask %u selected clients for their shared files."
 msgstr[0] "Не удалось добавить %u ссылку (подробности в журнале)."
 msgstr[1] "Не удалось добавить %u ссылки (подробности в журнале)."
 msgstr[2] "Не удалось добавить %u ссылок (подробности в журнале)."
-
-#: src/ClientRowListCtrl.cpp
-#, c-format
-msgid "Add %u client to your friend list?"
-msgid_plural "Add %u clients to your friend list?"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
-
-#: src/ClientRowListCtrl.cpp
-#, fuzzy, c-format
-msgid "Remove %u client from your friend list?"
-msgid_plural "Remove %u clients from your friend list?"
-msgstr[0] "Удалить из списка друзей"
-msgstr[1] "Удалить из списка друзей"
-msgstr[2] "Удалить из списка друзей"
-
-#: src/ClientRowListCtrl.cpp
-#, c-format
-msgid "Could not add %u selected client to your friend list: no address is known for it."
-msgid_plural "Could not add %u selected clients to your friend list: no address is known for them."
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
 
 #: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Files"

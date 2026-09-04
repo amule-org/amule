@@ -119,8 +119,20 @@ size_t PeerActionSetFriends(const std::vector<PeerIdentity> &peers, bool addThem
 //! Browse each peer's shared files, reusing an already-open tab per peer.
 void ClientActionViewFiles(const std::vector<CClientRef> &clients);
 
-//! Add each peer to the friend list, or remove it if it is already a friend.
-void ClientActionToggleFriend(const std::vector<CClientRef> &clients);
+/**
+ * Whether a bulk action over `count` rows should go ahead.
+ *
+ * True without asking for a small selection; larger ones are confirmed.
+ */
+bool ConfirmBulkPeerAction(wxWindow *parent, size_t count, const wxString &message);
+
+/**
+ * Friend or unfriend a selection of live clients.
+ *
+ * Confirms, then runs the same action the row-backed lists use, so both paths
+ * share one set of rules instead of accumulating their own.
+ */
+void PeerActionSetFriendsForClients(wxWindow *parent, const std::vector<CClientRef> &clients, bool addThem);
 
 /**
  * Give the first selected peer the friend slot.
