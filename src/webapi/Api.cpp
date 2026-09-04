@@ -8633,6 +8633,17 @@ bool PrefTakeUint(const picojson::object &o,
 		return false;
 	}
 	const double v = it->second.get<double>();
+	// Reject a fractional value rather than truncating it at the cast below.
+	// Every numeric preference routes through this setter, so without the
+	// check `100.5` was accepted and stored as `100` on all of them, under an
+	// error string that already promised "non-negative integer". The step
+	// modulo further down is not a substitute: it runs on the already-
+	// truncated value, so it tests the floor's alignment and never
+	// integrality, and a field with no step skips it entirely.
+	if (!IsIntegralJsonNumber(v)) {
+		err = std::string(key) + " must be a non-negative integer";
+		return false;
+	}
 	if (v < 0 || v > static_cast<double>(max) || v < static_cast<double>(min)) {
 		// Name the bounds. These domains are narrower than the field's type for
 		// reasons a caller cannot infer -- a uint8 behind a byte count, a clamp
