@@ -62,14 +62,34 @@ struct PeerIdentity
 	bool CanOpenConnection() const { return client.IsLinked() || (ip != 0 && port != 0); }
 
 	/**
+	 * Whether a live client carries an address a friend record could use.
+	 *
+	 * The one place that answers this for a client, so the menu that offers
+	 * an action and the action itself cannot read it differently.
+	 */
+	static bool Addressable(const CClientRef &live)
+	{
+		CClientRef &c = const_cast<CClientRef &>(live);
+		return c.GetIP() != 0 && c.GetUserPort() != 0;
+	}
+
+	/**
 	 * Whether a friend record can be stored for this peer.
 	 *
 	 * A friend is reached by address, and CAddFriend refuses to store one
 	 * without a usable ip and port. A record written from here has to meet
 	 * the same bar: an address-less friend keys every chat tab on GUI_ID(0,0)
 	 * and can never be dialled.
+	 *
+	 * For a peer we are connected to the live client is the source of truth,
+	 * not the row. A row only learns an address once the peer has told us its
+	 * name, so a connected peer with an empty nickname has one the row does
+	 * not, and CFriend's client constructor copies it from the client anyway.
 	 */
-	bool CanBeFriended() const { return ip != 0 && port != 0; }
+	bool CanBeFriended() const
+	{
+		return client.IsLinked() ? Addressable(client) : (ip != 0 && port != 0);
+	}
 	bool hasDetail = false;
 };
 

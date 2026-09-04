@@ -259,15 +259,17 @@ bool CFriendList::RequestSharedFileList(CFriend *cur_friend, uint32 browseSearch
 			cur_friend->LinkClient(ref);
 			client = ref.GetClient();
 		}
-		// Pin the EC-allocated browse ID before firing the request, so
-		// ProcessSharedFileList files the listing under it -- but only when
-		// this peer has no browse running. RequestSharedFileList returns
-		// early for one that has, and pinning first would have left the live
-		// browse's ID overwritten: with 0 for a local "View Files", which is
-		// what the rest of its listing would then be filed under.
-		if (theApp->browsemanager->SearchIdFor(client) == 0) {
-			client->PinBrowseSearchId(browseSearchId);
+		// A browse already running for this peer will decline the request
+		// below, so say so rather than reporting a browse that never starts.
+		// Reusing an existing client makes this reachable where building a
+		// fresh one every time could not: the caller's id would otherwise
+		// name a browse nothing will ever answer or expire.
+		if (theApp->browsemanager->SearchIdFor(client) != 0) {
+			return false;
 		}
+		// Pin the EC-allocated browse ID before firing the request, so
+		// ProcessSharedFileList files the listing under it.
+		client->PinBrowseSearchId(browseSearchId);
 		client->RequestSharedFileList();
 		return true;
 	}
