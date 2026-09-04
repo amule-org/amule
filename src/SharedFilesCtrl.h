@@ -356,6 +356,17 @@ private:
 	void OnViewFileDetails(wxCommandEvent &event);
 
 	/**
+	 * Opens the colour legend for the bar column, for the row the menu was
+	 * built from.
+	 *
+	 * That one column draws two unrelated things -- how many sources hold each
+	 * part, and how far a running re-hash has read -- so which legend to open
+	 * is a property of the row, not of the column
+	 * (partbar::LegendForSharedFilesRow).
+	 */
+	void OnShowBarLegend(wxCommandEvent &event);
+
+	/**
 	 * Double-click / Enter on a row also opens the file-details dialog, for
 	 * parity with the downloads list.
 	 */

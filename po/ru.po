@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-02 12:15+0200\n"
+"POT-Creation-Date: 2026-09-04 07:50+0200\n"
 "PO-Revision-Date: 2026-09-03 11:09+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
@@ -2828,46 +2828,10 @@ msgstr ""
 " Был выделен только один слот."
 
 #: src/GenericClientListCtrl.cpp
-msgid "This source does not have the part"
-msgstr "У этого источника нет части"
-
-#: src/GenericClientListCtrl.cpp
-msgid "You and this source both have the part"
-msgstr "Эта часть есть и у вас, и у источника"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Being downloaded from this source now"
-msgstr "Сейчас загружается от этого источника"
-
-#: src/GenericClientListCtrl.cpp
-msgid "The next part that will be asked of this source"
-msgstr "Следующая часть, которая будет запрошена у этого источника"
-
-#: src/GenericClientListCtrl.cpp
-msgid "This source has the part and you still need it"
-msgstr "У источника есть эта часть, и она вам ещё нужна"
-
-#: src/GenericClientListCtrl.cpp
-msgid "This peer already has the part"
-msgstr "У этого пира уже есть эта часть"
-
-#: src/GenericClientListCtrl.cpp
-msgid "This peer does not have the part"
-msgstr "У этого пира нет этой части"
-
-#: src/GenericClientListCtrl.cpp
-msgid "One block per part of the file being downloaded."
-msgstr "Один блок на каждую часть загружаемого файла."
-
-#: src/GenericClientListCtrl.cpp
-msgid "One block per part of the shared file."
-msgstr "По одному блоку на каждую часть публикуемого файла."
-
-#: src/GenericClientListCtrl.cpp
 msgid "Swap to this file"
 msgstr "Переключить на этот файл"
 
-#: src/GenericClientListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Colour legend"
 msgstr "Легенда цветов"
 
@@ -5618,6 +5582,79 @@ msgstr "Текст"
 msgid "Using config dir: %s"
 msgstr "Используем директорию конфигурации: %s"
 
+#: src/PartBarLegendUI.cpp
+msgid "This source does not have the part"
+msgstr "У этого источника нет части"
+
+#: src/PartBarLegendUI.cpp
+msgid "You and this source both have the part"
+msgstr "Эта часть есть и у вас, и у источника"
+
+#: src/PartBarLegendUI.cpp
+msgid "Being downloaded from this source now"
+msgstr "Сейчас загружается от этого источника"
+
+#: src/PartBarLegendUI.cpp
+msgid "The next part that will be asked of this source"
+msgstr "Следующая часть, которая будет запрошена у этого источника"
+
+#: src/PartBarLegendUI.cpp
+msgid "This source has the part and you still need it"
+msgstr "У источника есть эта часть, и она вам ещё нужна"
+
+#: src/PartBarLegendUI.cpp
+msgid "This peer already has the part"
+msgstr "У этого пира уже есть эта часть"
+
+#: src/PartBarLegendUI.cpp
+msgid "This peer does not have the part"
+msgstr "У этого пира нет этой части"
+
+#: src/PartBarLegendUI.cpp
+#, fuzzy
+msgid "No other source has this part"
+msgstr "У этого источника нет части"
+
+#: src/PartBarLegendUI.cpp
+#, fuzzy
+msgid "One other source has this part"
+msgstr "У этого источника нет части"
+
+#: src/PartBarLegendUI.cpp
+#, fuzzy, c-format
+msgid "%u or more other sources have this part"
+msgstr "Эта часть есть и у вас, и у источника"
+
+#: src/PartBarLegendUI.cpp
+msgid "Already read back and hashed"
+msgstr ""
+
+#: src/PartBarLegendUI.cpp
+msgid "Still to be read"
+msgstr ""
+
+#: src/PartBarLegendUI.cpp
+msgid "One block per part of the file being downloaded."
+msgstr "Один блок на каждую часть загружаемого файла."
+
+#: src/PartBarLegendUI.cpp
+msgid "One block per part of the shared file."
+msgstr "По одному блоку на каждую часть публикуемого файла."
+
+#: src/PartBarLegendUI.cpp
+#, fuzzy
+msgid "One block per part of the shared file, coloured by how many other sources have it."
+msgstr "По одному блоку на каждую часть публикуемого файла."
+
+#: src/PartBarLegendUI.cpp
+#, fuzzy
+msgid "One block per part of the shared file, showing how far the re-hash has read."
+msgstr "По одному блоку на каждую часть публикуемого файла."
+
+#: src/PartBarLegendUI.cpp
+msgid "In between, darkening as other sources are added"
+msgstr ""
+
 #: src/PartFileConvert.cpp
 msgid "Waiting for partfile convert thread to die..."
 msgstr "Ожидание завершения нити конвертации файла..."
@@ -7423,8 +7460,9 @@ msgid "Shares File List"
 msgstr "Общ. файлы"
 
 #: src/SharedFilesCtrl.cpp
-msgid "Obtained Parts"
-msgstr "Полученные части"
+#, fuzzy
+msgid "Source Availability"
+msgstr "Доступность"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
@@ -9323,6 +9361,9 @@ msgstr "Похоже, что aMule запущен. Закройте его и п
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Удаление пользовательских данных в $APPDATA\\aMule…"
+
+#~ msgid "Obtained Parts"
+#~ msgstr "Полученные части"
 
 #~ msgid "Available Parts"
 #~ msgstr "Доступные части"
