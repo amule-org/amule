@@ -44,6 +44,13 @@ export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDele
   if (!detail) return html`<div class="detail-panel"><${Placeholder} kind="loading">${t("downloads_detail_loading")}<//></div>`;
 
   const d = detail;
+
+  // A4AF membership changes while the Clients tab is open, but the detail fetch
+  // above only ticks on the Details tab, so `detail` is a snapshot there. The
+  // live row carries source_ecids for exactly this reason -- Api.cpp puts it on
+  // the list object so the SSE event brings it -- and EventDiff compares
+  // a4af_sources, so a change really does emit download_updated.
+  const live = (x) => downloads.find((y) => y.hash === x.hash) || x;
   const src = d.sources || {};
   const media = d.media;
   // Empty when the daemon has sent no chunk map: the bar is skipped entirely
@@ -92,7 +99,7 @@ export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDele
       <div class="detail-body">
       ${tab === "clients" ? html`
         <${FileClients} hash=${d.hash} prefsKey="download_clients" defaultHidden=${DL_HIDDEN}
-                        defaultSort="downloaded" a4afEcids=${d.source_ecids || []}
+                        defaultSort="downloaded" a4afEcids=${live(d).source_ecids || []}
                         partsTotal=${d.total_part_count} files=${downloads} />
       ` : tab === "comments" ? html`
         <${DownloadComments} hash=${d.hash} comment=${d.my_comment} rating=${d.my_rating}
