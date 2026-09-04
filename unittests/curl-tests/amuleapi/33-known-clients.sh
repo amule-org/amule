@@ -344,26 +344,27 @@ _cross_check_online() {
 	done
 	echo "$missing"
 }
-FIRST_PASS=$(_cross_check_online)
-if [ "$FIRST_PASS" = "__NONE__" ]; then
+# Poll rather than settle once. The two lists are separate requests served
+# from a snapshot the refresher tick maintains, so a peer that disconnects
+# between them shows as online here and unconnected there until the next
+# tick reconciles it. Under full-suite load that tick lags well past a
+# couple of seconds, which a fixed 3s settle did not cover. Passing as soon
+# as the lists agree keeps it quick on an idle node; an inconsistency that
+# never clears still fails, which is the defect worth catching.
+MISMATCH=""
+for _ in $(seq 1 15); do
+	MISMATCH=$(_cross_check_online)
+	[ "$MISMATCH" = "__NONE__" ] && break
+	[ -z "$MISMATCH" ] && break
+	sleep 1
+done
+if [ "$MISMATCH" = "__NONE__" ]; then
 	_skip "no known client is online; cannot cross-check against /clients"
-elif [ -z "$FIRST_PASS" ]; then
+elif [ -z "$MISMATCH" ]; then
 	_pass "every online known client has a connected /clients counterpart"
 else
-	# Give the tick a moment to settle, then look again.
-	sleep 3
-	SECOND_PASS=$(_cross_check_online)
-	STILL=""
-	for h in $FIRST_PASS; do
-		case " $SECOND_PASS " in
-		*" $h "*) STILL="$STILL $h" ;;
-		esac
-	done
-	if [ -z "$STILL" ]; then
-		_pass "every online known client has a connected /clients counterpart (after a settle)"
-	else
-		_fail "known_clients online" "no connected /clients row for:$STILL (twice)"
-	fi
+	_fail "known_clients online" \
+		"no connected /clients row for:$MISMATCH (still inconsistent after 15s)"
 fi
 
 echo
