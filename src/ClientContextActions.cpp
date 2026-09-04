@@ -53,9 +53,9 @@ wxMenu *BuildClientContextMenu(const CClientRef &client)
 	// Resolved, not read off the live client: see FriendForClient().
 	CFriend *known = FriendForClient(c);
 	menu->Append(MP_ADDFRIEND, known != nullptr ? _("Remove from friends") : _("Add to Friends"));
-	// Unfriending needs only the record; friending needs an address to store,
-	// and the action asks the same question through PeerIdentity.
-	menu->Enable(MP_ADDFRIEND, known != nullptr || PeerIdentity::Addressable(c));
+	// Unfriending needs only the record; friending needs a hash or an address
+	// to store, and the action asks the same question through PeerIdentity.
+	menu->Enable(MP_ADDFRIEND, known != nullptr || PeerIdentity::FromClient(c).CanBeFriended());
 
 	menu->AppendCheckItem(MP_FRIENDSLOT, _("Establish Friend Slot"));
 	if (known != nullptr) {
