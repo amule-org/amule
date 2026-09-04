@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-04 07:50+0200\n"
+"POT-Creation-Date: 2026-09-04 09:46+0200\n"
 "PO-Revision-Date: 2026-09-03 11:10+0000\n"
 "Last-Translator: raffe <raffe@localhost.se>\n"
 "Language-Team: Swedish <tp-sv@listor.tp-sv.se>\n"
@@ -5382,10 +5382,6 @@ msgid "Login to remote amule"
 msgstr "Logga in på fjärr-amule"
 
 #: src/muuli_wdr.cpp
-msgid "User name"
-msgstr "Användarnamn"
-
-#: src/muuli_wdr.cpp
 msgid "Remember those settings"
 msgstr "Kom ihåg dessa inställningar"
 
@@ -9336,6 +9332,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "User name"
+#~ msgstr "Användarnamn"
 
 #~ msgid "Obtained Parts"
 #~ msgstr "Erhållna delar"

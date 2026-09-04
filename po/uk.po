@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-04 07:50+0200\n"
+"POT-Creation-Date: 2026-09-04 09:46+0200\n"
 "PO-Revision-Date: 2026-09-03 11:11+0000\n"
 "Last-Translator: Oleksandr Kovalenko <alx.kovalenko@gmail.com>\n"
 "Language-Team: Ukrainian <translation@linux.org.ua>\n"
@@ -5424,10 +5424,6 @@ msgid "Login to remote amule"
 msgstr "Вхід до віддаленого aMule"
 
 #: src/muuli_wdr.cpp
-msgid "User name"
-msgstr "Ім'я користувача"
-
-#: src/muuli_wdr.cpp
 msgid "Remember those settings"
 msgstr "Запам'ятати ці налаштування"
 
@@ -9447,6 +9443,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "User name"
+#~ msgstr "Ім'я користувача"
 
 #~ msgid "Obtained Parts"
 #~ msgstr "Отримані частини"

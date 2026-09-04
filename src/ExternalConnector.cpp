@@ -469,8 +469,11 @@ void CaMuleExternalConnector::ConnectAndRun(const wxString &ProgName, const wxSt
 		m_ECClient->SetConnectTimeout(15000);
 
 		// ConnectToCore is blocking since m_ECClient was initialized with NULL
+		// m_port is parsed as a long (the option parser's type) and the EC
+		// client takes an int; the value is range-checked when it is read,
+		// so the cast is a narrowing the compiler should not have to guess at.
 		if (!m_ECClient->ConnectToCore(
-			    m_host, m_port, "foobar", m_password.Encode(), ProgName, ProgVersion)) {
+			    m_host, static_cast<int>(m_port), m_password.Encode(), ProgName, ProgVersion)) {
 			// no connection => close gracefully
 			if (!m_ECClient->GetServerReply().IsEmpty()) {
 				Show(CFormat("%s\n") % m_ECClient->GetServerReply());

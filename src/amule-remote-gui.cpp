@@ -713,12 +713,8 @@ bool CamuleRemoteGuiApp::ShowConnectionDialog()
 		// on the fresh object right here.
 		m_connect->SetForceZlib(dialog->ForceZlib());
 		m_connect->SetCanAEAD(dialog->Encryption());
-		if (m_connect->ConnectToCore(dialog->Host(),
-			    dialog->Port(),
-			    dialog->Login(),
-			    dialog->PassHash(),
-			    "amule-remote",
-			    "0x0001")) {
+		if (m_connect->ConnectToCore(
+			    dialog->Host(), dialog->Port(), dialog->PassHash(), "amule-remote", "0x0001")) {
 			// Sync part succeeded; async OnECConnection will
 			// resolve the auth outcome.
 			return true;
@@ -1086,8 +1082,7 @@ void CamuleRemoteGuiApp::AttemptReconnect()
 	connect_timeout_timer = new wxTimer(this, ID_REMOTE_CONNECT_TIMEOUT_TIMER);
 	connect_timeout_timer->StartOnce(15000);
 
-	if (!m_connect->ConnectToCore(
-		    m_ecHost, m_ecPort, wxEmptyString, m_ecPass, "amule-remote", "0x0001")) {
+	if (!m_connect->ConnectToCore(m_ecHost, m_ecPort, m_ecPass, "amule-remote", "0x0001")) {
 		// Couldn't even initiate the connect — space out the next attempt.
 		AddLogLineCS(_("Reconnect could not start; retrying shortly."));
 		delete connect_timeout_timer;

@@ -584,7 +584,6 @@ wxSizer *PreferencesProxyTab(wxWindow *parent, bool call_fit = TRUE, bool set_si
 
 #define ID_REMOTE_HOST 10301
 #define ID_REMOTE_PORT 10302
-#define ID_EC_LOGIN 10303
 #define ID_EC_PASSWD 10304
 #define ID_EC_SAVE 10305
 #define ID_EC_FORCE_ZLIB 10344
