@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-06 14:35+0200\n"
+"POT-Creation-Date: 2026-09-06 23:44+0200\n"
 "PO-Revision-Date: 2026-09-05 10:47+0000\n"
 "Last-Translator: Werner Mahr <werner@vollstreckernet.de>\n"
 "Language-Team: German <>\n"
@@ -2903,7 +2903,7 @@ msgstr "In Warteschlange: %u"
 msgid "Uploading"
 msgstr "Hochladen"
 
-#: src/GenericClientListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/PeerCapabilities.h
 msgid "None"
 msgstr "Keine"
 
@@ -4291,6 +4291,10 @@ msgstr "Servername"
 #: src/muuli_wdr.cpp
 msgid "Obfuscation"
 msgstr "Verschleierung"
+
+#: src/muuli_wdr.cpp
+msgid "Vendor capabilities:"
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Transfers to client"

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-06 14:35+0200\n"
+"POT-Creation-Date: 2026-09-06 23:44+0200\n"
 "PO-Revision-Date: 2026-09-05 10:59+0000\n"
 "Last-Translator: Angelescu Constantin <titus0818@yahoo.com>\n"
 "Language-Team: English <kde-i18n-doc@kde.org>\n"
@@ -2908,7 +2908,7 @@ msgstr "În coadă: %u"
 msgid "Uploading"
 msgstr "Se încarcă"
 
-#: src/GenericClientListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/PeerCapabilities.h
 msgid "None"
 msgstr "Niciunul"
 
@@ -4312,6 +4312,10 @@ msgstr "Nume server"
 #: src/muuli_wdr.cpp
 msgid "Obfuscation"
 msgstr "Disimulare"
+
+#: src/muuli_wdr.cpp
+msgid "Vendor capabilities:"
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Transfers to client"

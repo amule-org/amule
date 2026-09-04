@@ -24,7 +24,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-06 14:35+0200\n"
+"POT-Creation-Date: 2026-09-06 23:44+0200\n"
 "PO-Revision-Date: 2026-09-05 10:52+0000\n"
 "Last-Translator: Pablo <parodper@gmail.com>\n"
 "Language-Team: http://forum.amule.org/index.php?topic=13883\n"
@@ -2916,7 +2916,7 @@ msgstr "En cola: %u"
 msgid "Uploading"
 msgstr "Enviando"
 
-#: src/GenericClientListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/PeerCapabilities.h
 msgid "None"
 msgstr "Ningún"
 
@@ -4304,6 +4304,10 @@ msgstr "Nome do servidor"
 #: src/muuli_wdr.cpp
 msgid "Obfuscation"
 msgstr "Ofuscación"
+
+#: src/muuli_wdr.cpp
+msgid "Vendor capabilities:"
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Transfers to client"

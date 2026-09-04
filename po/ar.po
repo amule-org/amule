@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-06 14:35+0200\n"
+"POT-Creation-Date: 2026-09-06 23:44+0200\n"
 "PO-Revision-Date: 2026-09-05 10:44+0000\n"
 "Last-Translator: saleh alhathal <hathalsal@hotmail.com>\n"
 "Language-Team: \n"
@@ -2850,7 +2850,7 @@ msgstr "في اﻻنتظار"
 msgid "Uploading"
 msgstr "الرفع"
 
-#: src/GenericClientListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/PeerCapabilities.h
 #, fuzzy
 msgid "None"
 msgstr "ﻻ احد"
@@ -4245,6 +4245,10 @@ msgstr "إسم الخادم"
 
 #: src/muuli_wdr.cpp
 msgid "Obfuscation"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Vendor capabilities:"
 msgstr ""
 
 #: src/muuli_wdr.cpp
