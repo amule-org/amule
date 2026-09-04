@@ -2899,7 +2899,7 @@ msgstr "Jonossa: %u"
 msgid "Uploading"
 msgstr "Lähettää"
 
-#: src/GenericClientListCtrl.cpp src/PeerCapabilities.h
+#: src/GenericClientListCtrl.cpp
 msgid "None"
 msgstr "Ei yhtään"
 
@@ -4296,8 +4296,9 @@ msgid "Obfuscation"
 msgstr "Kätkeminen"
 
 #: src/muuli_wdr.cpp
-msgid "Vendor capabilities:"
-msgstr ""
+#, fuzzy
+msgid "Protocol extensions:"
+msgstr "Protokollan kätkeminen"
 
 #: src/muuli_wdr.cpp
 msgid "Transfers to client"
@@ -6082,6 +6083,27 @@ msgstr "Riittämätön levytila"
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
 msgstr "VIRHE: Ei voida avata osatiedostoa '%s'"
+
+#: src/PeerCapabilities.h
+#, fuzzy
+msgid "Extended source exchange"
+msgstr "Lähdevälitys"
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (uTP)"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "IPv6"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "Buddy info pull"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (QUIC)"
+msgstr ""
 
 #: src/Preferences.cpp
 msgid "no options available"

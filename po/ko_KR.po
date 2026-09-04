@@ -2916,7 +2916,7 @@ msgstr "대기열에"
 msgid "Uploading"
 msgstr "올려주기"
 
-#: src/GenericClientListCtrl.cpp src/PeerCapabilities.h
+#: src/GenericClientListCtrl.cpp
 #, fuzzy
 msgid "None"
 msgstr "아무도"
@@ -4318,8 +4318,9 @@ msgid "Obfuscation"
 msgstr "프로토콜 난독화"
 
 #: src/muuli_wdr.cpp
-msgid "Vendor capabilities:"
-msgstr ""
+#, fuzzy
+msgid "Protocol extensions:"
+msgstr "프로토콜 난독화"
 
 #: src/muuli_wdr.cpp
 msgid "Transfers to client"
@@ -6113,6 +6114,27 @@ msgstr ""
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
+msgstr ""
+
+#: src/PeerCapabilities.h
+#, fuzzy
+msgid "Extended source exchange"
+msgstr "자료 교환"
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (uTP)"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "IPv6"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "Buddy info pull"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (QUIC)"
 msgstr ""
 
 #: src/Preferences.cpp

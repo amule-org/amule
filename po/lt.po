@@ -2929,7 +2929,7 @@ msgstr "Eilėje"
 msgid "Uploading"
 msgstr "Išsiuntimas"
 
-#: src/GenericClientListCtrl.cpp src/PeerCapabilities.h
+#: src/GenericClientListCtrl.cpp
 #, fuzzy
 msgid "None"
 msgstr "Niekas"
@@ -4340,8 +4340,9 @@ msgid "Obfuscation"
 msgstr "Slėpimas"
 
 #: src/muuli_wdr.cpp
-msgid "Vendor capabilities:"
-msgstr ""
+#, fuzzy
+msgid "Protocol extensions:"
+msgstr "Protokolo slėpimas"
 
 #: src/muuli_wdr.cpp
 msgid "Transfers to client"
@@ -6140,6 +6141,27 @@ msgstr "Nepakanka laisvos vietos"
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
 msgstr "KLAIDA: nepavyko atverti dalių failo „%s“"
+
+#: src/PeerCapabilities.h
+#, fuzzy
+msgid "Extended source exchange"
+msgstr "Keičiamasi šaltiniais"
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (uTP)"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "IPv6"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "Buddy info pull"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (QUIC)"
+msgstr ""
 
 #: src/Preferences.cpp
 msgid "no options available"
