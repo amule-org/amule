@@ -305,15 +305,21 @@ void ReportFriendSkips(size_t skipped)
 		    skipped);
 }
 
-bool ConfirmBrowseAction(wxWindow *parent, size_t count, bool opensConnections)
+bool ConfirmBrowseAction(wxWindow *parent, size_t count)
 {
+	// The connection line is stated unconditionally, because whether a browse
+	// dials is a property of each peer rather than of the list asking. A peer
+	// we hold no socket for is contacted: RequestSharedFileList() uses an
+	// existing connection only when IsConnected(), and otherwise calls
+	// TryToContact. Every one of these lists can hold such a peer, queued and
+	// A4AF sources in the per-file lists and stored rows in the history one,
+	// and no caller could answer it anyway: each takes its count before the
+	// selection is resolved, deliberately.
 	wxString message = CFormat(wxPLURAL("Request the shared files of %u client?",
 				   "Request the shared files of %u clients?",
 				   count)) %
 			   count;
-	if (opensConnections) {
-		message << wxT("\n\n") << _("A connection is opened to each of them.");
-	}
+	message << wxT("\n\n") << _("A connection is opened to each of them.");
 	return ConfirmBulkPeerAction(parent, count, message);
 }
 

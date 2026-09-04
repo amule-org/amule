@@ -169,7 +169,7 @@ void CClientRowListCtrl::OnViewFiles(wxCommandEvent &WXUNUSED(event))
 		return;
 	}
 	// Each one opens its own connection and its own browse tab.
-	if (!ConfirmBrowseAction(this, count, true)) {
+	if (!ConfirmBrowseAction(this, count)) {
 		return;
 	}
 	const std::vector<PeerIdentity> peers = SelectedPeers();

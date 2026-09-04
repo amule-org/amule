@@ -578,10 +578,10 @@ void CGenericClientListCtrl::OnViewFiles(wxCommandEvent &WXUNUSED(event))
 	if (clients.empty()) {
 		return;
 	}
-	// One result tab per peer, so a wide selection is worth a question. No
-	// connection is opened for these: every row here is a source we are
-	// already talking to.
-	if (!ConfirmBrowseAction(this, clients.size(), false)) {
+	// One result tab per peer, and a connection to any of them we are not
+	// already talking to: this list holds queued and A4AF sources, which are
+	// peers whose queue we sit in without holding a socket.
+	if (!ConfirmBrowseAction(this, clients.size())) {
 		return;
 	}
 	ClientActionViewFiles(clients);

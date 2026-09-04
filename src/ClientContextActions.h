@@ -135,10 +135,11 @@ void ReportFriendSkips(size_t skipped);
 /**
  * Asks before browsing a wide selection.
  *
- * `opensConnections` says whether each peer needs one opened, which is true of
- * stored rows and not of sources we are already talking to.
+ * Always says a connection is opened to each peer: whether one is depends on
+ * the peer rather than on the list asking, and every list can hold a peer we
+ * hold no socket for.
  */
-bool ConfirmBrowseAction(wxWindow *parent, size_t count, bool opensConnections);
+bool ConfirmBrowseAction(wxWindow *parent, size_t count);
 
 /**
  * Friend or unfriend a selection of live clients.
