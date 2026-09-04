@@ -323,24 +323,46 @@ done
 #
 # Appended at the end: both requests are reads, but a new section in the
 # middle shifts the daemon state the later sections were written against.
-_curl "$HOST/api/v0/known_clients?limit=200"
-ONLINE_HASHES=$(printf '%s' "$CURL_BODY" | jq -r '[.known_clients[] | select(.online == true) | .user_hash] | .[]')
-if [ -z "$ONLINE_HASHES" ]; then
-	_skip "no known client is online; cannot cross-check against /clients"
-else
-	_curl "$HOST/api/v0/clients?limit=500"
-	CONNECTED_HASHES=$(printf '%s' "$CURL_BODY" | jq -r '[.clients[] | select(.connected == true) | .user_hash] | .[]')
-	MISSING=""
-	for h in $ONLINE_HASHES; do
-		case " $CONNECTED_HASHES " in
+# The two lists come from separate requests, so a peer that disconnects
+# between them is a legitimate mismatch rather than a broken invariant.
+# Re-read both and require the SAME hash to still be inconsistent before
+# failing: a real defect persists, a race does not.
+_cross_check_online() {
+	_curl "$HOST/api/v0/known_clients?limit=200"
+	local online_hashes connected_hashes h missing=""
+	online_hashes=$(printf '%s' "$CURL_BODY" \
+		| jq -r '[.known_clients[] | select(.online == true) | .user_hash] | .[]')
+	[ -z "$online_hashes" ] && { echo "__NONE__"; return; }
+	_curl "$HOST/api/v0/clients?limit=1000"
+	connected_hashes=$(printf '%s' "$CURL_BODY" \
+		| jq -r '[.clients[] | select(.connected == true) | .user_hash] | .[]')
+	for h in $online_hashes; do
+		case " $connected_hashes " in
 		*" $h "*) ;;
-		*) MISSING="$MISSING $h" ;;
+		*) missing="$missing $h" ;;
 		esac
 	done
-	if [ -z "$MISSING" ]; then
-		_pass "every online known client has a connected /clients counterpart"
+	echo "$missing"
+}
+FIRST_PASS=$(_cross_check_online)
+if [ "$FIRST_PASS" = "__NONE__" ]; then
+	_skip "no known client is online; cannot cross-check against /clients"
+elif [ -z "$FIRST_PASS" ]; then
+	_pass "every online known client has a connected /clients counterpart"
+else
+	# Give the tick a moment to settle, then look again.
+	sleep 3
+	SECOND_PASS=$(_cross_check_online)
+	STILL=""
+	for h in $FIRST_PASS; do
+		case " $SECOND_PASS " in
+		*" $h "*) STILL="$STILL $h" ;;
+		esac
+	done
+	if [ -z "$STILL" ]; then
+		_pass "every online known client has a connected /clients counterpart (after a settle)"
 	else
-		_fail "known_clients online" "no connected /clients row for:$MISSING"
+		_fail "known_clients online" "no connected /clients row for:$STILL (twice)"
 	fi
 fi
 
