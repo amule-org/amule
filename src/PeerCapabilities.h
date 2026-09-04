@@ -28,7 +28,7 @@
 #include <cstddef>
 #include <cstdint>
 
-#include <wx/intl.h>   // Needed for _()
+#include <wx/intl.h>   // Needed for wxTRANSLATE() and wxGetTranslation()
 #include <wx/string.h> // Needed for wxString
 
 /**
@@ -121,11 +121,24 @@ public:
 	/**
 	 * The capability word as a comma-separated list, for client details.
 	 *
-	 * The capability names are protocol feature names, not prose, so they
-	 * are not translated -- only the empty case is. A peer that sent no
-	 * CT_MOD_MISCOPTIONS tag and one that sent an all-zero word are the
-	 * same state and read the same way, because eMuleAI omits the tag when
-	 * the word is zero, exactly as aMule does.
+	 * Empty when the peer claims nothing, and the caller decides what that
+	 * looks like: the client details dialog hides its row rather than
+	 * printing a word for it. A peer that sent no CT_MOD_MISCOPTIONS tag and
+	 * one that sent an all-zero word are the same state and read the same
+	 * way, because eMuleAI omits the tag when the word is zero, exactly as
+	 * aMule does.
+	 *
+	 * The names are spelled out as prose rather than abbreviated, so they
+	 * are translated like the rest of the dialog. They carry no protocol
+	 * meaning and nothing reads them back: the bit identity is pinned by
+	 * PeerCapabilitiesTest, which asserts each position as a literal word,
+	 * and the pairing of bit to name by the display test. So rewording or
+	 * translating one cannot move a bit.
+	 *
+	 * They are marked with wxTRANSLATE and translated at use rather than
+	 * written as _(), because the table is static: _() in its initialiser
+	 * would translate once, on first call, possibly before the locale is
+	 * loaded, and would never follow a language change afterwards.
 	 *
 	 * Lives here rather than on CUpDownClient because the core client and
 	 * the remote GUI's EC mirror both need it, and two copies of this table
@@ -133,20 +146,18 @@ public:
 	 */
 	wxString GetDisplayText() const
 	{
-		if (IsEmpty()) {
-			return _("None");
-		}
-
+		// One table on purpose: bit and name in the same row, so a bit
+		// cannot be added in one place and forgotten in the other.
 		static const struct
 		{
 			EModMiscOptions bit;
 			const char *name;
 		} names[] = {
-			{ MOD_MISCOPT_EXTENDED_XS, "Extended SX" },
-			{ MOD_MISCOPT_NAT_TRAVERSAL, "uTP NAT-T" },
-			{ MOD_MISCOPT_IPV6, "IPv6" },
-			{ MOD_MISCOPT_SERVING_BUDDY_PULL, "Buddy pull" },
-			{ MOD_MISCOPT_NAT_TRAVERSAL_QUIC, "QUIC NAT-T" },
+			{ MOD_MISCOPT_EXTENDED_XS, wxTRANSLATE("Extended source exchange") },
+			{ MOD_MISCOPT_NAT_TRAVERSAL, wxTRANSLATE("NAT traversal (uTP)") },
+			{ MOD_MISCOPT_IPV6, wxTRANSLATE("IPv6") },
+			{ MOD_MISCOPT_SERVING_BUDDY_PULL, wxTRANSLATE("Buddy info pull") },
+			{ MOD_MISCOPT_NAT_TRAVERSAL_QUIC, wxTRANSLATE("NAT traversal (QUIC)") },
 		};
 
 		wxString text;
@@ -155,7 +166,7 @@ public:
 				if (!text.IsEmpty()) {
 					text += ", ";
 				}
-				text += entry.name;
+				text += wxGetTranslation(entry.name);
 			}
 		}
 		return text;

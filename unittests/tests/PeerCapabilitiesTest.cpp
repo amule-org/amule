@@ -179,6 +179,56 @@ TEST(PeerCapabilities, SetterAndDecoderAgree)
 	ASSERT_TRUE(caps.IsEmpty());
 }
 
+// A peer that claims nothing produces an empty string, not a word. That is
+// the contract the client details dialog hides its row on, so it is pinned
+// here rather than left to the dialog: a version of this that returned
+// "None" would put a permanent, meaningless row in front of nearly every
+// user, and the dialog could not tell that apart from a real claim.
+//
+// Reserved bits go the same way: they are masked off, so a peer setting only
+// bit 7 claims nothing and reads as nothing.
+TEST(PeerCapabilities, ClaimingNothingDisplaysAsEmpty)
+{
+	CPeerCapabilities caps;
+	ASSERT_TRUE(caps.GetDisplayText().IsEmpty());
+
+	caps.SetFromWire(0x00000000u);
+	ASSERT_TRUE(caps.GetDisplayText().IsEmpty());
+
+	caps.SetFromWire(0x00000080u); // reserved bit 7 only
+	ASSERT_TRUE(caps.GetDisplayText().IsEmpty());
+}
+
+// Each bit's name, one bit at a time, so the display table is pinned to the
+// positions rather than to the order it happens to be written in. The names
+// are marked for translation, so these are the msgids -- a test binary loads
+// no catalog, and it is the pairing that matters here, not the wording.
+TEST(PeerCapabilities, EachBitDisplaysItsOwnName)
+{
+	CPeerCapabilities caps;
+
+	caps.SetFromWire(MOD_MISCOPT_EXTENDED_XS);
+	ASSERT_EQUALS(wxString("Extended source exchange"), caps.GetDisplayText());
+
+	caps.SetFromWire(MOD_MISCOPT_NAT_TRAVERSAL);
+	ASSERT_EQUALS(wxString("NAT traversal (uTP)"), caps.GetDisplayText());
+
+	caps.SetFromWire(MOD_MISCOPT_IPV6);
+	ASSERT_EQUALS(wxString("IPv6"), caps.GetDisplayText());
+
+	caps.SetFromWire(MOD_MISCOPT_SERVING_BUDDY_PULL);
+	ASSERT_EQUALS(wxString("Buddy info pull"), caps.GetDisplayText());
+
+	caps.SetFromWire(MOD_MISCOPT_NAT_TRAVERSAL_QUIC);
+	ASSERT_EQUALS(wxString("NAT traversal (QUIC)"), caps.GetDisplayText());
+
+	// All five at once: comma-separated, in table order, no trailing comma.
+	caps.SetFromWire(MOD_MISCOPT_KNOWN_MASK);
+	ASSERT_EQUALS(wxString("Extended source exchange, NAT traversal (uTP), IPv6, "
+			       "Buddy info pull, NAT traversal (QUIC)"),
+		caps.GetDisplayText());
+}
+
 // The "ip6" / "bi6" Kad tags carry a 128-bit address as 32 hex characters,
 // big-endian -- eMuleAI writes them with CUInt128::ToHexString() and reads
 // them back with strmd4(). Anything that is not exactly 32 hex characters is
