@@ -178,11 +178,24 @@ bool CClientDetailDialog::OnInitDialog()
 	}
 	CastChild(IDT_OBFUSCATION, wxStaticText)->SetLabel(buffer);
 
-	// eMuleAI vendor capabilities. What the peer claims, not what this build
-	// can do with it: aMule implements none of these yet, so the line reads as
-	// "this peer would support X if we did".
-	CastChild(IDT_MOD_CAPABILITIES, wxStaticText)
-		->SetLabel(m_info.hasSession ? m_info.modCapabilities : kNoValue);
+	// Protocol extensions the peer claims -- not what this build can do with
+	// them: aMule implements none of these yet, so the line reads as "this
+	// peer would support X if we did".
+	//
+	// Label and value are both hidden when there is nothing to claim, rather
+	// than shown with a placeholder. Almost no peer on the network sets any
+	// of these bits, and a stored row has no hello to read at all, so the
+	// alternative is a row that reads "None" or "-" for nearly every peer,
+	// permanently -- a row that says nothing while taking up the space of one
+	// that does. Hiding both controls leaves no gap: the sizer skips a hidden
+	// pair, and Layout() below reflows what is left.
+	const bool hasCapabilities = m_info.hasSession && !m_info.modCapabilities.IsEmpty();
+	CastChild(IDT_MOD_CAPABILITIES_LABEL, wxStaticText)->Show(hasCapabilities);
+	wxStaticText *capabilities = CastChild(IDT_MOD_CAPABILITIES, wxStaticText);
+	capabilities->Show(hasCapabilities);
+	if (hasCapabilities) {
+		capabilities->SetLabel(m_info.modCapabilities);
+	}
 
 	// Kad
 	if (!m_info.hasSession) {
