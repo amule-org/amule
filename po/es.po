@@ -5575,27 +5575,25 @@ msgid "This peer does not have the part"
 msgstr "Este par no tiene la parte"
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy
 msgid "No other source has this part"
-msgstr "La fuente no tiene la parte"
+msgstr "Ninguna otra fuente tiene esta parte"
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy
 msgid "One other source has this part"
-msgstr "La fuente no tiene la parte"
+msgstr "Otra fuente tiene esta parte"
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "%u or more other sources have this part"
-msgstr "Ambos, tú y esta fuente, tenéis la parte"
+msgstr "Otras %u fuentes o más tienen esta parte"
 
 #: src/PartBarLegendUI.cpp
 msgid "Already read back and hashed"
-msgstr ""
+msgstr "Ya releída y con el hash calculado"
 
 #: src/PartBarLegendUI.cpp
 msgid "Still to be read"
-msgstr ""
+msgstr "Pendiente de leer"
 
 #: src/PartBarLegendUI.cpp
 msgid "One block per part of the file being downloaded."
@@ -5606,18 +5604,16 @@ msgid "One block per part of the shared file."
 msgstr "Un bloque por parte del archivo compartido."
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy
 msgid "One block per part of the shared file, coloured by how many other sources have it."
-msgstr "Un bloque por parte del archivo compartido."
+msgstr "Un bloque por parte del archivo compartido, coloreado según cuántas otras fuentes la tienen."
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy
 msgid "One block per part of the shared file, showing how far the re-hash has read."
-msgstr "Un bloque por parte del archivo compartido."
+msgstr "Un bloque por parte del archivo compartido, que muestra hasta dónde ha leído el recálculo del hash."
 
 #: src/PartBarLegendUI.cpp
 msgid "In between, darkening as other sources are added"
-msgstr ""
+msgstr "Intermedio, oscureciéndose a medida que se añaden otras fuentes"
 
 #: src/PartFileConvert.cpp
 msgid "Waiting for partfile convert thread to die..."
@@ -7397,9 +7393,8 @@ msgid "Shares File List"
 msgstr "Lista de compartidos"
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Source Availability"
-msgstr "Disponibilidad"
+msgstr "Disponibilidad de fuentes"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
