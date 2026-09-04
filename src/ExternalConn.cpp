@@ -2477,6 +2477,12 @@ static_assert(static_cast<int>(BrowseSearch) == EC_SEARCH_BROWSE,
 	"SearchType and EC_SEARCH_TYPE must agree: BrowseSearch");
 
 static uint32 AllocateBrowseSearchId();
+// Undo an AllocateBrowseSearchId() whose browse never started. Drops the
+// results and the registry's own bookkeeping together: RemoveResults() alone
+// leaves the dead id as Current(), so id-less result polls target a freed
+// bucket, and it keeps one of the twenty ring slots until it evicts a live
+// search.
+static void ReleaseBrowseSearchId(uint32 id);
 
 // Reply to a browse request. Multi-search clients get the allocated search ID
 // (and the echoed optimistic ref) so amuleGUI can rekey its tab; legacy clients
@@ -2626,7 +2632,7 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request, bool multiSea
 						// time out. Release the id registered above, or the
 						// tab it names sits pending for the whole session.
 						if (browseId) {
-							theApp->searchlist->RemoveResults(browseId);
+							ReleaseBrowseSearchId(browseId);
 						}
 						response = browseFailure(
 							wxTRANSLATE("No address known for that friend yet."));
@@ -2736,6 +2742,15 @@ CEcSearchRegistry s_ecSearches;
 void RegisterRestoredSearch(uint32 searchID)
 {
 	s_ecSearches.Register(searchID);
+}
+
+static void ReleaseBrowseSearchId(uint32 id)
+{
+	theApp->searchlist->RemoveResults(id);
+	// Guarded like the stop path: only touch the registry for an id it tracks.
+	if (s_ecSearches.Has(id)) {
+		s_ecSearches.Forget(id);
+	}
 }
 
 static uint32 AllocateBrowseSearchId()

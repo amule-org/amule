@@ -30,6 +30,8 @@
 #include "ClientRef.h"    // Needed for CClientRef
 #include "PeerIdentity.h" // Needed for PeerIdentity
 
+class CFriend;
+
 class wxMenu;
 class wxWindow;
 
@@ -73,6 +75,9 @@ wxMenu *BuildPeerContextMenu(const PeerIdentity &peer);
  */
 bool PeerBrowseIsPossible(const PeerIdentity &peer);
 
+//! The friend record for this peer, or nullptr. Live linkage first.
+CFriend *FriendFor(const PeerIdentity &peer);
+
 //! Whether this peer is already on our friend list.
 bool PeerIsFriend(const PeerIdentity &peer);
 
@@ -83,9 +88,6 @@ bool PeerIsFriend(const PeerIdentity &peer);
  * for, and the caller reports what it skipped rather than failing silently.
  */
 bool PeerActionViewFiles(const PeerIdentity &peer);
-
-//! Friend or unfriend a peer from its stored identity. Opens no connection.
-void PeerActionToggleFriend(const PeerIdentity &peer);
 
 //! Message a peer we are not connected to, opening a connection to do it.
 void PeerActionSendMessage(const PeerIdentity &peer);

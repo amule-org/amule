@@ -230,27 +230,23 @@ void PeerActionSendMessage(const PeerIdentity &peer)
 		peer.name.IsEmpty() ? peer.hash.Encode() : peer.name, GUI_ID(peer.ip, peer.port));
 }
 
-void PeerActionToggleFriend(const PeerIdentity &peer)
+CFriend *FriendFor(const PeerIdentity &peer)
 {
+	// Through the live client's own linkage first, then the stored identity.
+	// One step for both paths: implementing this per caller is how the menu
+	// and an action end up disagreeing about whether a peer is a friend.
 	if (peer.client.IsLinked()) {
-		ClientActionToggleFriend({ peer.client });
-		return;
+		CClientRef &live = const_cast<CClientRef &>(peer.client);
+		if (CFriend *linked = live.GetFriend()) {
+			return linked;
+		}
 	}
-	// No connection either way: a friend record is hash, name and last known
-	// address, all of which the row already has.
-	CFriend *known = theApp->friendlist->LookupFriend(peer.hash, peer.ip, peer.port);
-	if (known) {
-		theApp->friendlist->RemoveFriend(known);
-	} else if (peer.CanBeFriended()) {
-		// Without an address there is nothing to dial later, and CAddFriend
-		// refuses to store such a record for the same reason.
-		theApp->friendlist->AddFriend(peer.hash, peer.ip, peer.port, peer.name);
-	}
+	return theApp->friendlist->LookupFriend(peer.hash, peer.ip, peer.port);
 }
 
 bool PeerIsFriend(const PeerIdentity &peer)
 {
-	return theApp->friendlist->LookupFriend(peer.hash, peer.ip, peer.port) != nullptr;
+	return FriendFor(peer) != nullptr;
 }
 
 void PeerActionSetFriends(const std::vector<PeerIdentity> &peers, bool addThem)
@@ -264,13 +260,23 @@ void PeerActionSetFriends(const std::vector<PeerIdentity> &peers, bool addThem)
 	// single escape from this loop would lose the friend list on exit.
 	FriendListBatch batch;
 	for (const PeerIdentity &peer : peers) {
-		CFriend *known = theApp->friendlist->LookupFriend(peer.hash, peer.ip, peer.port);
+		CFriend *known = FriendFor(peer);
 		// One direction for the whole run, taken from the entry the user
 		// picked. Toggling per row means a selection holding both friends and
 		// strangers does the opposite of its own label to half of it, and
 		// removing a friend is the loss of something they curated.
 		if (addThem) {
-			if (known == nullptr && peer.CanBeFriended()) {
+			if (known != nullptr) {
+				continue;
+			}
+			if (peer.client.IsLinked()) {
+				// The client-aware overload, which links the record to the
+				// live client. Storing the address alone leaves the friend
+				// looking offline for the rest of a session we are already
+				// talking through, and leaves its friend slot unsettable,
+				// because that entry is gated on the linkage.
+				theApp->friendlist->AddFriend(peer.client);
+			} else if (peer.CanBeFriended()) {
 				theApp->friendlist->AddFriend(peer.hash, peer.ip, peer.port, peer.name);
 			}
 		} else if (known != nullptr) {
@@ -287,14 +293,7 @@ void PeerActionSetFriendSlot(wxWindow *parent, const PeerIdentity &peer, bool ch
 	// menu ends up describing one peer while the action runs on another.
 	// Either way the slot is a property of our own list, so it is settable
 	// on a peer that is not connected, which is the case this list covers.
-	CFriend *known = nullptr;
-	if (peer.client.IsLinked()) {
-		CClientRef &live = const_cast<CClientRef &>(peer.client);
-		known = live.GetFriend();
-	} else {
-		known = theApp->friendlist->LookupFriend(peer.hash, peer.ip, peer.port);
-	}
-	theApp->friendlist->SetFriendSlot(known, checked);
+	theApp->friendlist->SetFriendSlot(FriendFor(peer), checked);
 
 	WarnIfMultipleFriendSlot(parent, selected);
 }
