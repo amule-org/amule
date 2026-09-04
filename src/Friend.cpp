@@ -59,10 +59,12 @@ CFriend::CFriend(const CMD4Hash &userhash,
 
 CFriend::CFriend(CClientRef client)
 {
-	m_HasFriendSlot = false;
+	// Init() first: it is the only thing that clears m_dwLastSeen and the
+	// last-used address, and LinkClient() copies those across only when the
+	// client carries a real value. Without this they start indeterminate and
+	// get written to emfriends.met on the next save.
+	Init();
 	LinkClient(client);
-
-	m_dwLastChatted = 0;
 }
 
 void CFriend::LinkClient(CClientRef client)

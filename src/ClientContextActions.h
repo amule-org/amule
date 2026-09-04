@@ -110,8 +110,11 @@ void PeerActionSetFriendSlot(wxWindow *parent, const PeerIdentity &peer, bool ch
  * One direction for the whole run rather than a per-row toggle: the menu
  * entry is labelled from a single row, and a selection holding both friends
  * and strangers would otherwise do the opposite of that label to half of it.
+ *
+ * Returns how many were left out for having no address to store, so the
+ * caller can say so rather than reporting a count it did not act on.
  */
-void PeerActionSetFriends(const std::vector<PeerIdentity> &peers, bool addThem);
+size_t PeerActionSetFriends(const std::vector<PeerIdentity> &peers, bool addThem);
 
 //! Browse each peer's shared files, reusing an already-open tab per peer.
 void ClientActionViewFiles(const std::vector<CClientRef> &clients);

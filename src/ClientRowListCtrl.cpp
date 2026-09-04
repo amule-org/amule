@@ -105,6 +105,12 @@ void CClientRowListCtrl::OnItemActivated(wxDataViewEvent &event)
 // the session fields show as absent.
 void CClientRowListCtrl::ShowDetailsForSelection()
 {
+	// Counted first: resolving the selection to discover it holds more than
+	// one row costs a ClientDetailInfo and a client lookup per row, and the
+	// answer is then thrown away.
+	if (GetSelectedItemsCount() != 1) {
+		return;
+	}
 	const std::vector<PeerIdentity> peers = SelectedPeers();
 	if (peers.size() == 1) {
 		ShowDetailsFor(peers.front());
@@ -232,7 +238,18 @@ void CClientRowListCtrl::OnAddFriend(wxCommandEvent &WXUNUSED(event))
 	if (!ConfirmBulkPeerAction(count, message)) {
 		return;
 	}
-	PeerActionSetFriends(SelectedPeers(), addThem);
+	const size_t skipped = PeerActionSetFriends(SelectedPeers(), addThem);
+	if (skipped > 0) {
+		// Pre-metadata credit records carry no address, so a large selection
+		// can contain many. Saying nothing would report a count we did not act
+		// on.
+		AddLogLineC(CFormat(wxPLURAL("Could not add %u selected client to your friend list: "
+					     "no address is known for it.",
+				    "Could not add %u selected clients to your friend list: no address is "
+				    "known for them.",
+				    skipped)) %
+			    skipped);
+	}
 }
 
 void CClientRowListCtrl::OnSetFriendslot(wxCommandEvent &evt)

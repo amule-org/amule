@@ -264,7 +264,7 @@ bool PeerIsFriend(const PeerIdentity &peer)
 	return FriendFor(peer) != nullptr;
 }
 
-void PeerActionSetFriends(const std::vector<PeerIdentity> &peers, bool addThem)
+size_t PeerActionSetFriends(const std::vector<PeerIdentity> &peers, bool addThem)
 {
 	// One write for the whole run. CFriendList saves after every add and
 	// remove, so without this a large selection rewrites emfriends.met once
@@ -273,6 +273,7 @@ void PeerActionSetFriends(const std::vector<PeerIdentity> &peers, bool addThem)
 	// Scoped, not a bare pair of calls: a batch left open makes every later
 	// SaveList() a silent no-op, including the one in ~CFriendList(), so a
 	// single escape from this loop would lose the friend list on exit.
+	size_t skipped = 0;
 	FriendListBatch batch;
 	for (const PeerIdentity &peer : peers) {
 		CFriend *known = FriendFor(peer);
@@ -284,6 +285,13 @@ void PeerActionSetFriends(const std::vector<PeerIdentity> &peers, bool addThem)
 			if (known != nullptr) {
 				continue;
 			}
+			if (!peer.CanBeFriended()) {
+				// A friend is reached by address, and a record without one
+				// can never be dialled. Connected or not, the bar is the
+				// same, and the caller says how many were left out.
+				++skipped;
+				continue;
+			}
 			if (peer.client.IsLinked()) {
 				// The client-aware overload, which links the record to the
 				// live client. Storing the address alone leaves the friend
@@ -291,13 +299,14 @@ void PeerActionSetFriends(const std::vector<PeerIdentity> &peers, bool addThem)
 				// talking through, and leaves its friend slot unsettable,
 				// because that entry is gated on the linkage.
 				theApp->friendlist->AddFriend(peer.client);
-			} else if (peer.CanBeFriended()) {
+			} else {
 				theApp->friendlist->AddFriend(peer.hash, peer.ip, peer.port, peer.name);
 			}
 		} else if (known != nullptr) {
 			theApp->friendlist->RemoveFriend(known);
 		}
 	}
+	return skipped;
 }
 
 void PeerActionSetFriendSlot(wxWindow *parent, const PeerIdentity &peer, bool checked, size_t selected)
