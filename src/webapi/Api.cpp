@@ -4457,6 +4457,9 @@ CHttpServer::Response CApiDispatcher::HandleFileClients(
 	auto a = Authenticate(req);
 	if (!a.ok)
 		return a.rejection;
+	if (auto r = RequireHashPath(key))
+		return *r;
+
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
 
@@ -4816,6 +4819,9 @@ CHttpServer::Response CApiDispatcher::HandleDownloadCommentsKadSearch(
 	if (auto r = RequireAdmin(a))
 		return *r;
 
+	if (auto r = RequireHashPath(key))
+		return *r;
+
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
 
@@ -4859,6 +4865,9 @@ CHttpServer::Response CApiDispatcher::HandleDownloadFilenames(
 	auto a = Authenticate(req);
 	if (!a.ok)
 		return a.rejection;
+
+	if (auto r = RequireHashPath(key))
+		return *r;
 
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
@@ -4922,6 +4931,9 @@ CHttpServer::Response CApiDispatcher::HandleDownloadA4afAction(
 		return a.rejection;
 	if (auto rej = RequireAdmin(a))
 		return *rej;
+
+	if (auto r = RequireHashPath(key))
+		return *r;
 
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
@@ -9893,6 +9905,9 @@ CHttpServer::Response CApiDispatcher::HandleSharedVerify(
 	if (auto rej = RequireAdmin(a))
 		return *rej;
 
+	if (auto r = RequireHashPath(key))
+		return *r;
+
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
 
@@ -10029,6 +10044,9 @@ CHttpServer::Response CApiDispatcher::HandleSharedContent(
 	auto a = Authenticate(req);
 	if (!a.ok)
 		return a.rejection;
+
+	if (auto r = RequireHashPath(key))
+		return *r;
 
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
@@ -10658,6 +10676,9 @@ CHttpServer::Response CApiDispatcher::HandleSharedMediaRefreshOne(
 		return a.rejection;
 	if (auto rej = RequireAdmin(a))
 		return *rej;
+
+	if (auto r = RequireHashPath(key))
+		return *r;
 
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
@@ -11598,7 +11619,10 @@ CHttpServer::Response CApiDispatcher::HandleSearchDownload(
 
 	CMD4Hash file_hash;
 	if (!HashFromHex(needle, file_hash)) {
-		return ErrorResponse(400, "bad_request", "`{hash}` must be a 32-char hex MD4");
+		// Same wording as every other {hash} route. RequireHashPath owns the
+		// message; it is called only here, on the path where it is certain to
+		// return a response, so the hash is not parsed twice in the good case.
+		return *RequireHashPath(needle);
 	}
 
 	// Optional body: {"category_index": uint8, "ecid": uint32}. amulegui's
@@ -11786,7 +11810,10 @@ CHttpServer::Response CApiDispatcher::HandleSearchCommentsKadSearch(
 
 	CMD4Hash file_hash;
 	if (!HashFromHex(needle, file_hash)) {
-		return ErrorResponse(400, "bad_request", "`{hash}` must be a 32-char hex MD4");
+		// Same wording as every other {hash} route. RequireHashPath owns the
+		// message; it is called only here, on the path where it is certain to
+		// return a response, so the hash is not parsed twice in the good case.
+		return *RequireHashPath(needle);
 	}
 
 	// Must be a live search result in some open search (mirrors the download

@@ -141,6 +141,41 @@ _assert_status 400 "GET /search/results/{bad}/comments"
 _curl -X POST -H "$AUTH" "$HOST/api/v0/search/results/$NONHEX_HASH/comments"
 _assert_status 400 "POST /search/results/{bad}/comments (was already 400)"
 
+# The find-based routes: these fell through to their own lookup and answered
+# 404, so a client could not tell "not a hash" from "valid hash, no such file".
+# GET /downloads/{hash}/comments answered 400 while its own POST answered 404,
+# which is the within-route split this contract exists to prevent.
+_curl -H "$AUTH" "$HOST/api/v0/downloads/$NONHEX_HASH/clients"
+_assert_status 400 "GET /downloads/{bad}/clients"
+_curl -H "$AUTH" "$HOST/api/v0/shared/$NONHEX_HASH/clients"
+_assert_status 400 "GET /shared/{bad}/clients"
+_curl -X POST -H "$AUTH" "$HOST/api/v0/downloads/$NONHEX_HASH/comments"
+_assert_status 400 "POST /downloads/{bad}/comments (matches its own GET)"
+_curl -H "$AUTH" "$HOST/api/v0/downloads/$NONHEX_HASH/filenames"
+_assert_status 400 "GET /downloads/{bad}/filenames"
+_curl -X POST -H "$AUTH" -H "Content-Type: application/json" \
+	-d '{"action":"swap"}' "$HOST/api/v0/downloads/$NONHEX_HASH/a4af"
+_assert_status 400 "POST /downloads/{bad}/a4af"
+_curl -H "$AUTH" "$HOST/api/v0/shared/$NONHEX_HASH/content"
+_assert_status 400 "GET /shared/{bad}/content"
+_curl -X POST -H "$AUTH" "$HOST/api/v0/shared/$NONHEX_HASH/media/refresh"
+_assert_status 400 "POST /shared/{bad}/media/refresh"
+_curl -X POST -H "$AUTH" "$HOST/api/v0/shared/$NONHEX_HASH/verify"
+_assert_status 400 "POST /shared/{bad}/verify"
+
+# One message, not three. The two search routes carried their own wording
+# ("must be a 32-char hex MD4"), so a client matching on the message saw the
+# same condition described two ways depending on which route it hit.
+for URL in \
+	"downloads/$NONHEX_HASH" \
+	"downloads/$NONHEX_HASH/clients" \
+	"search/results/$NONHEX_HASH/comments" \
+	; do
+	_curl -H "$AUTH" "$HOST/api/v0/$URL"
+	_assert_json_eq '.error.message' "path \`{hash}\` must be 32 hex characters" \
+		"/$URL states the shared {hash} message"
+done
+
 # --- 2. A well-formed hash that names nothing is still 404. -------
 #
 # The guard must reject the shape, not the lookup. If this ever turns into
