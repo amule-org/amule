@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-02 12:15+0200\n"
+"POT-Creation-Date: 2026-09-04 07:50+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -2718,46 +2718,10 @@ msgid ""
 msgstr ""
 
 #: src/GenericClientListCtrl.cpp
-msgid "This source does not have the part"
-msgstr ""
-
-#: src/GenericClientListCtrl.cpp
-msgid "You and this source both have the part"
-msgstr ""
-
-#: src/GenericClientListCtrl.cpp
-msgid "Being downloaded from this source now"
-msgstr ""
-
-#: src/GenericClientListCtrl.cpp
-msgid "The next part that will be asked of this source"
-msgstr ""
-
-#: src/GenericClientListCtrl.cpp
-msgid "This source has the part and you still need it"
-msgstr ""
-
-#: src/GenericClientListCtrl.cpp
-msgid "This peer already has the part"
-msgstr ""
-
-#: src/GenericClientListCtrl.cpp
-msgid "This peer does not have the part"
-msgstr ""
-
-#: src/GenericClientListCtrl.cpp
-msgid "One block per part of the file being downloaded."
-msgstr ""
-
-#: src/GenericClientListCtrl.cpp
-msgid "One block per part of the shared file."
-msgstr ""
-
-#: src/GenericClientListCtrl.cpp
 msgid "Swap to this file"
 msgstr ""
 
-#: src/GenericClientListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Colour legend"
 msgstr ""
 
@@ -5463,6 +5427,75 @@ msgstr ""
 msgid "Using config dir: %s"
 msgstr ""
 
+#: src/PartBarLegendUI.cpp
+msgid "This source does not have the part"
+msgstr ""
+
+#: src/PartBarLegendUI.cpp
+msgid "You and this source both have the part"
+msgstr ""
+
+#: src/PartBarLegendUI.cpp
+msgid "Being downloaded from this source now"
+msgstr ""
+
+#: src/PartBarLegendUI.cpp
+msgid "The next part that will be asked of this source"
+msgstr ""
+
+#: src/PartBarLegendUI.cpp
+msgid "This source has the part and you still need it"
+msgstr ""
+
+#: src/PartBarLegendUI.cpp
+msgid "This peer already has the part"
+msgstr ""
+
+#: src/PartBarLegendUI.cpp
+msgid "This peer does not have the part"
+msgstr ""
+
+#: src/PartBarLegendUI.cpp
+msgid "No source has this part"
+msgstr ""
+
+#: src/PartBarLegendUI.cpp
+msgid "One source has this part"
+msgstr ""
+
+#: src/PartBarLegendUI.cpp
+#, c-format
+msgid "%u or more sources have this part"
+msgstr ""
+
+#: src/PartBarLegendUI.cpp
+msgid "Already read back and hashed"
+msgstr ""
+
+#: src/PartBarLegendUI.cpp
+msgid "Still to be read"
+msgstr ""
+
+#: src/PartBarLegendUI.cpp
+msgid "One block per part of the file being downloaded."
+msgstr ""
+
+#: src/PartBarLegendUI.cpp
+msgid "One block per part of the shared file."
+msgstr ""
+
+#: src/PartBarLegendUI.cpp
+msgid "One block per part of the shared file, coloured by how many sources have it."
+msgstr ""
+
+#: src/PartBarLegendUI.cpp
+msgid "One block per part of the shared file, showing how far the re-hash has read."
+msgstr ""
+
+#: src/PartBarLegendUI.cpp
+msgid "In between, darkening as sources are added"
+msgstr ""
+
 #: src/PartFileConvert.cpp
 msgid "Waiting for partfile convert thread to die..."
 msgstr ""
@@ -7200,7 +7233,7 @@ msgid "Shares File List"
 msgstr ""
 
 #: src/SharedFilesCtrl.cpp
-msgid "Obtained Parts"
+msgid "Source Availability"
 msgstr ""
 
 #: src/SharedFilesCtrl.cpp

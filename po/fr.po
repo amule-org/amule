@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-02 12:15+0200\n"
+"POT-Creation-Date: 2026-09-04 07:50+0200\n"
 "PO-Revision-Date: 2026-09-03 11:04+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
@@ -2811,46 +2811,10 @@ msgstr ""
 " Seul un slot a été attribué."
 
 #: src/GenericClientListCtrl.cpp
-msgid "This source does not have the part"
-msgstr "Cette source n'a pas la partie"
-
-#: src/GenericClientListCtrl.cpp
-msgid "You and this source both have the part"
-msgstr "Vous et cette source avez tous les deux la partie"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Being downloaded from this source now"
-msgstr "En cours de téléchargement depuis cette source"
-
-#: src/GenericClientListCtrl.cpp
-msgid "The next part that will be asked of this source"
-msgstr "La partie suivante qui sera demandée à cette source"
-
-#: src/GenericClientListCtrl.cpp
-msgid "This source has the part and you still need it"
-msgstr "Cette source a la partie et vous en avez encore besoin"
-
-#: src/GenericClientListCtrl.cpp
-msgid "This peer already has the part"
-msgstr "Ce pair a déjà la partie"
-
-#: src/GenericClientListCtrl.cpp
-msgid "This peer does not have the part"
-msgstr "Ce pair n'a pas la partie"
-
-#: src/GenericClientListCtrl.cpp
-msgid "One block per part of the file being downloaded."
-msgstr "Un bloc par partie du fichier en cours de téléchargement."
-
-#: src/GenericClientListCtrl.cpp
-msgid "One block per part of the shared file."
-msgstr "Un bloc par partie du fichier partagé."
-
-#: src/GenericClientListCtrl.cpp
 msgid "Swap to this file"
 msgstr "Échanger vers ce fichier"
 
-#: src/GenericClientListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Colour legend"
 msgstr "Légende des couleurs"
 
@@ -5577,6 +5541,79 @@ msgstr "Texte"
 msgid "Using config dir: %s"
 msgstr "Utilisation du répertoire de config : %s"
 
+#: src/PartBarLegendUI.cpp
+msgid "This source does not have the part"
+msgstr "Cette source n'a pas la partie"
+
+#: src/PartBarLegendUI.cpp
+msgid "You and this source both have the part"
+msgstr "Vous et cette source avez tous les deux la partie"
+
+#: src/PartBarLegendUI.cpp
+msgid "Being downloaded from this source now"
+msgstr "En cours de téléchargement depuis cette source"
+
+#: src/PartBarLegendUI.cpp
+msgid "The next part that will be asked of this source"
+msgstr "La partie suivante qui sera demandée à cette source"
+
+#: src/PartBarLegendUI.cpp
+msgid "This source has the part and you still need it"
+msgstr "Cette source a la partie et vous en avez encore besoin"
+
+#: src/PartBarLegendUI.cpp
+msgid "This peer already has the part"
+msgstr "Ce pair a déjà la partie"
+
+#: src/PartBarLegendUI.cpp
+msgid "This peer does not have the part"
+msgstr "Ce pair n'a pas la partie"
+
+#: src/PartBarLegendUI.cpp
+#, fuzzy
+msgid "No source has this part"
+msgstr "Cette source n'a pas la partie"
+
+#: src/PartBarLegendUI.cpp
+#, fuzzy
+msgid "One source has this part"
+msgstr "Cette source n'a pas la partie"
+
+#: src/PartBarLegendUI.cpp
+#, fuzzy, c-format
+msgid "%u or more sources have this part"
+msgstr "Vous et cette source avez tous les deux la partie"
+
+#: src/PartBarLegendUI.cpp
+msgid "Already read back and hashed"
+msgstr ""
+
+#: src/PartBarLegendUI.cpp
+msgid "Still to be read"
+msgstr ""
+
+#: src/PartBarLegendUI.cpp
+msgid "One block per part of the file being downloaded."
+msgstr "Un bloc par partie du fichier en cours de téléchargement."
+
+#: src/PartBarLegendUI.cpp
+msgid "One block per part of the shared file."
+msgstr "Un bloc par partie du fichier partagé."
+
+#: src/PartBarLegendUI.cpp
+#, fuzzy
+msgid "One block per part of the shared file, coloured by how many sources have it."
+msgstr "Un bloc par partie du fichier partagé."
+
+#: src/PartBarLegendUI.cpp
+#, fuzzy
+msgid "One block per part of the shared file, showing how far the re-hash has read."
+msgstr "Un bloc par partie du fichier partagé."
+
+#: src/PartBarLegendUI.cpp
+msgid "In between, darkening as sources are added"
+msgstr ""
+
 #: src/PartFileConvert.cpp
 msgid "Waiting for partfile convert thread to die..."
 msgstr "Attente de la mort du processus de conversion du fichier .part…"
@@ -7355,8 +7392,9 @@ msgid "Shares File List"
 msgstr "Partage de la liste des fichiers"
 
 #: src/SharedFilesCtrl.cpp
-msgid "Obtained Parts"
-msgstr "Parties obtenues"
+#, fuzzy
+msgid "Source Availability"
+msgstr "Disponibilité"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
@@ -9243,6 +9281,9 @@ msgstr "aMule semble être en cours d'exécution. Veuillez le fermer et relancer
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Suppression des données d'utilisateur sur $APPDATA\\aMule…"
+
+#~ msgid "Obtained Parts"
+#~ msgstr "Parties obtenues"
 
 #~ msgid "Available Parts"
 #~ msgstr "Parties Disponibles"

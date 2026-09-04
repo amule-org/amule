@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-02 12:15+0200\n"
+"POT-Creation-Date: 2026-09-04 07:50+0200\n"
 "PO-Revision-Date: 2026-09-03 11:11+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -2804,46 +2804,10 @@ msgstr ""
 "Sadece bir slot kuruldu."
 
 #: src/GenericClientListCtrl.cpp
-msgid "This source does not have the part"
-msgstr "Bu kaynakta parça mevcut değil"
-
-#: src/GenericClientListCtrl.cpp
-msgid "You and this source both have the part"
-msgstr "Hem siz hem de bu kaynak parçaya sahipsiniz"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Being downloaded from this source now"
-msgstr "Şu anda bu kaynaktan indiriliyor"
-
-#: src/GenericClientListCtrl.cpp
-msgid "The next part that will be asked of this source"
-msgstr "Bu kaynaktan istenecek gelecek parça"
-
-#: src/GenericClientListCtrl.cpp
-msgid "This source has the part and you still need it"
-msgstr "Bu kaynak parçaya sahip ve sizin hâlâ buna ihtiyacınız var"
-
-#: src/GenericClientListCtrl.cpp
-msgid "This peer already has the part"
-msgstr "Bu eşte zaten parça mevcut"
-
-#: src/GenericClientListCtrl.cpp
-msgid "This peer does not have the part"
-msgstr "Bu eşte parça mevcut değil"
-
-#: src/GenericClientListCtrl.cpp
-msgid "One block per part of the file being downloaded."
-msgstr "İndirilmekte olan dosyanın her bir parçası için bir blok."
-
-#: src/GenericClientListCtrl.cpp
-msgid "One block per part of the shared file."
-msgstr "Paylaşılan dosyanın her bir parçası için bir blok."
-
-#: src/GenericClientListCtrl.cpp
 msgid "Swap to this file"
 msgstr "Bu dosyaya geçir"
 
-#: src/GenericClientListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Colour legend"
 msgstr "Renk açıklaması"
 
@@ -5570,6 +5534,79 @@ msgstr "Belge"
 msgid "Using config dir: %s"
 msgstr "Kullanılan yapılandırma dizini: %s"
 
+#: src/PartBarLegendUI.cpp
+msgid "This source does not have the part"
+msgstr "Bu kaynakta parça mevcut değil"
+
+#: src/PartBarLegendUI.cpp
+msgid "You and this source both have the part"
+msgstr "Hem siz hem de bu kaynak parçaya sahipsiniz"
+
+#: src/PartBarLegendUI.cpp
+msgid "Being downloaded from this source now"
+msgstr "Şu anda bu kaynaktan indiriliyor"
+
+#: src/PartBarLegendUI.cpp
+msgid "The next part that will be asked of this source"
+msgstr "Bu kaynaktan istenecek gelecek parça"
+
+#: src/PartBarLegendUI.cpp
+msgid "This source has the part and you still need it"
+msgstr "Bu kaynak parçaya sahip ve sizin hâlâ buna ihtiyacınız var"
+
+#: src/PartBarLegendUI.cpp
+msgid "This peer already has the part"
+msgstr "Bu eşte zaten parça mevcut"
+
+#: src/PartBarLegendUI.cpp
+msgid "This peer does not have the part"
+msgstr "Bu eşte parça mevcut değil"
+
+#: src/PartBarLegendUI.cpp
+#, fuzzy
+msgid "No source has this part"
+msgstr "Bu kaynakta parça mevcut değil"
+
+#: src/PartBarLegendUI.cpp
+#, fuzzy
+msgid "One source has this part"
+msgstr "Bu kaynakta parça mevcut değil"
+
+#: src/PartBarLegendUI.cpp
+#, fuzzy, c-format
+msgid "%u or more sources have this part"
+msgstr "Hem siz hem de bu kaynak parçaya sahipsiniz"
+
+#: src/PartBarLegendUI.cpp
+msgid "Already read back and hashed"
+msgstr ""
+
+#: src/PartBarLegendUI.cpp
+msgid "Still to be read"
+msgstr ""
+
+#: src/PartBarLegendUI.cpp
+msgid "One block per part of the file being downloaded."
+msgstr "İndirilmekte olan dosyanın her bir parçası için bir blok."
+
+#: src/PartBarLegendUI.cpp
+msgid "One block per part of the shared file."
+msgstr "Paylaşılan dosyanın her bir parçası için bir blok."
+
+#: src/PartBarLegendUI.cpp
+#, fuzzy
+msgid "One block per part of the shared file, coloured by how many sources have it."
+msgstr "Paylaşılan dosyanın her bir parçası için bir blok."
+
+#: src/PartBarLegendUI.cpp
+#, fuzzy
+msgid "One block per part of the shared file, showing how far the re-hash has read."
+msgstr "Paylaşılan dosyanın her bir parçası için bir blok."
+
+#: src/PartBarLegendUI.cpp
+msgid "In between, darkening as sources are added"
+msgstr ""
+
 #: src/PartFileConvert.cpp
 msgid "Waiting for partfile convert thread to die..."
 msgstr "Parçadosyası dönüşümünün bitmesi bekleniyor…"
@@ -7348,8 +7385,9 @@ msgid "Shares File List"
 msgstr "Paylaşılan Dosyalar Listesi"
 
 #: src/SharedFilesCtrl.cpp
-msgid "Obtained Parts"
-msgstr "Alınan Parçalar"
+#, fuzzy
+msgid "Source Availability"
+msgstr "Uygunluk"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
@@ -9236,6 +9274,9 @@ msgstr "aMule çalışmakta gibi görünüyor. Lütfen onu kapatıp kurulum prog
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Kullanıcı verileri $APPDATA\\aMule konumunda kaldırılıyor…"
+
+#~ msgid "Obtained Parts"
+#~ msgstr "Alınan Parçalar"
 
 #~ msgid "Available Parts"
 #~ msgstr "Erişilebilir Parçalar"

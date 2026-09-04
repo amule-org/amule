@@ -157,7 +157,7 @@ CSharedFilesCtrl::CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos,
 	AddTextColumn(_("Accepted Requests"), COLUMN_SHARED_AREQ, "A", 80, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Transferred Data"), COLUMN_SHARED_TRA, "T", 120, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Share Ratio"), COLUMN_SHARED_RTIO, "R", 80, wxALIGN_LEFT, colFlags);
-	AddBarColumn(_("Obtained Parts"), COLUMN_SHARED_PART, "P", 120, colFlags);
+	AddBarColumn(_("Source Availability"), COLUMN_SHARED_PART, "P", 120, colFlags);
 	AddTextColumn(_("Complete Sources"), COLUMN_SHARED_CMPL, "C", 120, wxALIGN_LEFT, colFlags);
 	// FileID (== file hash) was dropped — the hash is on the details modal. The
 	// three new columns reuse existing translations ("Speed", "Shared since",

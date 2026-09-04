@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-02 12:15+0200\n"
+"POT-Creation-Date: 2026-09-04 07:50+0200\n"
 "PO-Revision-Date: 2026-09-03 11:12+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -2808,46 +2808,10 @@ msgstr ""
 " 只能指定一个通道。"
 
 #: src/GenericClientListCtrl.cpp
-msgid "This source does not have the part"
-msgstr "这个源没有该部分"
-
-#: src/GenericClientListCtrl.cpp
-msgid "You and this source both have the part"
-msgstr "你和这个源都有该部分"
-
-#: src/GenericClientListCtrl.cpp
-msgid "Being downloaded from this source now"
-msgstr "正从这个源下载"
-
-#: src/GenericClientListCtrl.cpp
-msgid "The next part that will be asked of this source"
-msgstr "下一个要从这个源请求的部分"
-
-#: src/GenericClientListCtrl.cpp
-msgid "This source has the part and you still need it"
-msgstr "这个源有该部分，你仍需要它"
-
-#: src/GenericClientListCtrl.cpp
-msgid "This peer already has the part"
-msgstr "这个对等方已经有该部分"
-
-#: src/GenericClientListCtrl.cpp
-msgid "This peer does not have the part"
-msgstr "这个对等方没有该部分"
-
-#: src/GenericClientListCtrl.cpp
-msgid "One block per part of the file being downloaded."
-msgstr "正被下载的文件每部分对应一个区块。"
-
-#: src/GenericClientListCtrl.cpp
-msgid "One block per part of the shared file."
-msgstr "共享文件每个部分对应一个区块。"
-
-#: src/GenericClientListCtrl.cpp
 msgid "Swap to this file"
 msgstr "转移到这个文件"
 
-#: src/GenericClientListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Colour legend"
 msgstr "颜色图例"
 
@@ -5574,6 +5538,79 @@ msgstr "文本"
 msgid "Using config dir: %s"
 msgstr "使用配置目录：%s"
 
+#: src/PartBarLegendUI.cpp
+msgid "This source does not have the part"
+msgstr "这个源没有该部分"
+
+#: src/PartBarLegendUI.cpp
+msgid "You and this source both have the part"
+msgstr "你和这个源都有该部分"
+
+#: src/PartBarLegendUI.cpp
+msgid "Being downloaded from this source now"
+msgstr "正从这个源下载"
+
+#: src/PartBarLegendUI.cpp
+msgid "The next part that will be asked of this source"
+msgstr "下一个要从这个源请求的部分"
+
+#: src/PartBarLegendUI.cpp
+msgid "This source has the part and you still need it"
+msgstr "这个源有该部分，你仍需要它"
+
+#: src/PartBarLegendUI.cpp
+msgid "This peer already has the part"
+msgstr "这个对等方已经有该部分"
+
+#: src/PartBarLegendUI.cpp
+msgid "This peer does not have the part"
+msgstr "这个对等方没有该部分"
+
+#: src/PartBarLegendUI.cpp
+#, fuzzy
+msgid "No source has this part"
+msgstr "这个源没有该部分"
+
+#: src/PartBarLegendUI.cpp
+#, fuzzy
+msgid "One source has this part"
+msgstr "这个源没有该部分"
+
+#: src/PartBarLegendUI.cpp
+#, fuzzy, c-format
+msgid "%u or more sources have this part"
+msgstr "你和这个源都有该部分"
+
+#: src/PartBarLegendUI.cpp
+msgid "Already read back and hashed"
+msgstr ""
+
+#: src/PartBarLegendUI.cpp
+msgid "Still to be read"
+msgstr ""
+
+#: src/PartBarLegendUI.cpp
+msgid "One block per part of the file being downloaded."
+msgstr "正被下载的文件每部分对应一个区块。"
+
+#: src/PartBarLegendUI.cpp
+msgid "One block per part of the shared file."
+msgstr "共享文件每个部分对应一个区块。"
+
+#: src/PartBarLegendUI.cpp
+#, fuzzy
+msgid "One block per part of the shared file, coloured by how many sources have it."
+msgstr "共享文件每个部分对应一个区块。"
+
+#: src/PartBarLegendUI.cpp
+#, fuzzy
+msgid "One block per part of the shared file, showing how far the re-hash has read."
+msgstr "共享文件每个部分对应一个区块。"
+
+#: src/PartBarLegendUI.cpp
+msgid "In between, darkening as sources are added"
+msgstr ""
+
 #: src/PartFileConvert.cpp
 msgid "Waiting for partfile convert thread to die..."
 msgstr "等待partfile转换线程结束..."
@@ -7352,8 +7389,9 @@ msgid "Shares File List"
 msgstr "共享文件列表"
 
 #: src/SharedFilesCtrl.cpp
-msgid "Obtained Parts"
-msgstr "已获取的部分"
+#, fuzzy
+msgid "Source Availability"
+msgstr "可用来源数"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
@@ -9237,6 +9275,9 @@ msgstr "aMule 似乎正在运行。请将其关闭并重新运行卸载程序。
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "正在删除 $APPDATA\\aMule 中的用户数据..."
+
+#~ msgid "Obtained Parts"
+#~ msgstr "已获取的部分"
 
 #~ msgid "Available Parts"
 #~ msgstr "可用分块"
