@@ -141,14 +141,18 @@ run_phase() {
 	# amuleapi.conf. Nothing spawns it here, so seed the config file.
 	sed -i'.bak' "s|^Password=.*|Password=$EC_PASSWORD|" /tmp/amuleapi-regtest/amuleapi.conf
 	rm -f /tmp/amuleapi-regtest/amuleapi.conf.bak
-	# 27-static-frontend exercises the static-frontend serve path. It
-	# plants symlinks + an oversized file into StaticRoot during the
+	# 27-static-frontend exercises the static-frontend serve path, and
+	# 40-http-conformance asserts the trailing-slash rule stops at the
+	# API prefix by checking the static root still answers 200 -- which
+	# it cannot do with StaticRoot unset. Both therefore need it wired.
+	#
+	# 27 plants symlinks + an oversized file into StaticRoot during the
 	# run, so the dir has to be writable. The bundled source tree is
 	# read-only in container CI; copy the placeholder out to a /tmp
-	# scratch dir and point StaticRoot at the copy. Other scripts
-	# leave it empty so the install-path discovery chain stays
-	# exercised by 27-static-frontend only.
-	if [ "$script" = "27-static-frontend.sh" ]; then
+	# scratch dir and point StaticRoot at the copy. Every other script
+	# leaves it unset, which is what keeps the install-path discovery
+	# chain exercised: these two pin it, the rest do not.
+	if [ "$script" = "27-static-frontend.sh" ] || [ "$script" = "40-http-conformance.sh" ]; then
 		STATIC_SRC="$ROOT/src/webapi/static"
 		STATIC_DIR=/tmp/amuleapi-static-frontend
 		rm -rf "$STATIC_DIR"
