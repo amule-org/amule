@@ -48,12 +48,16 @@ wxMenu *BuildClientContextMenu(const CClientRef &client)
 
 	wxMenu *menu = new wxMenu(_("Clients"));
 	menu->Append(MP_DETAIL, _("Show &Details"));
-	menu->Append(MP_ADDFRIEND, c.IsFriend() ? _("Remove from friends") : _("Add to Friends"));
+	// Resolved, not read off the live client: see FriendForClient().
+	CFriend *known = FriendForClient(c);
+	menu->Append(MP_ADDFRIEND, known != nullptr ? _("Remove from friends") : _("Add to Friends"));
 
 	menu->AppendCheckItem(MP_FRIENDSLOT, _("Establish Friend Slot"));
-	if (c.IsFriend()) {
+	if (known != nullptr) {
 		menu->Enable(MP_FRIENDSLOT, true);
-		menu->Check(MP_FRIENDSLOT, c.GetFriendSlot());
+		// The record's flag, which is the one the slot action writes and the
+		// one that survives the peer going offline.
+		menu->Check(MP_FRIENDSLOT, known->HasFriendSlot());
 	} else {
 		menu->Enable(MP_FRIENDSLOT, false);
 	}
@@ -119,10 +123,11 @@ wxMenu *BuildPeerContextMenu(const PeerIdentity &peer)
 	// Friendship and the friend slot are ours, not the peer's: both live in
 	// emfriends.met and apply next time it connects.
 	//
-	// LookupFriend(), never FindFriend(): the latter adopts the hash onto an
-	// address-only record and saves the file, and merely opening a menu must
-	// not write to disk.
-	CFriend *known = theApp->friendlist->LookupFriend(peer.hash, peer.ip, peer.port);
+	// FriendFor(), so this agrees with whatever the action will decide.
+	// It reaches LookupFriend() rather than FindFriend(): the latter adopts
+	// the hash onto an address-only record and saves the file, and merely
+	// opening a menu must not write to disk.
+	CFriend *known = FriendFor(peer);
 
 	wxMenu *menu = new wxMenu(_("Clients"));
 	menu->Append(MP_DETAIL, _("Show &Details"));
@@ -191,7 +196,7 @@ bool PeerActionViewFiles(const PeerIdentity &peer)
 #ifdef CLIENT_GUI
 	// A friend can be named on the wire by its ECID even when we are not
 	// connected to it, which is the one handle a stored row can have.
-	if (CFriend *known = theApp->friendlist->LookupFriend(peer.hash, peer.ip, peer.port)) {
+	if (CFriend *known = FriendFor(peer)) {
 		theApp->friendlist->RequestSharedFileList(known);
 		return true;
 	}
@@ -230,16 +235,26 @@ void PeerActionSendMessage(const PeerIdentity &peer)
 		peer.name.IsEmpty() ? peer.hash.Encode() : peer.name, GUI_ID(peer.ip, peer.port));
 }
 
+CFriend *FriendForClient(const CClientRef &client)
+{
+	// Linkage first, then the client's own identity. The linkage alone is not
+	// enough: CFriendList::AddFriend(hash, ip, port, name) stores a record
+	// without calling LinkClient(), so a friend added from the dialog while
+	// its peer is connected is a friend that IsFriend() denies.
+	CClientRef &live = const_cast<CClientRef &>(client);
+	if (CFriend *linked = live.GetFriend()) {
+		return linked;
+	}
+	return theApp->friendlist->LookupFriend(live.GetUserHash(), live.GetIP(), live.GetUserPort());
+}
+
 CFriend *FriendFor(const PeerIdentity &peer)
 {
-	// Through the live client's own linkage first, then the stored identity.
-	// One step for both paths: implementing this per caller is how the menu
-	// and an action end up disagreeing about whether a peer is a friend.
+	// One step for every caller, menu and action alike: deciding this per
+	// caller is how a menu entry and the thing it triggers end up disagreeing
+	// about whether a peer is already a friend, and an "Add" that removes.
 	if (peer.client.IsLinked()) {
-		CClientRef &live = const_cast<CClientRef &>(peer.client);
-		if (CFriend *linked = live.GetFriend()) {
-			return linked;
-		}
+		return FriendForClient(peer.client);
 	}
 	return theApp->friendlist->LookupFriend(peer.hash, peer.ip, peer.port);
 }
@@ -317,8 +332,11 @@ void ClientActionToggleFriend(const std::vector<CClientRef> &clients)
 {
 	for (const CClientRef &client : clients) {
 		CClientRef &c = const_cast<CClientRef &>(client);
-		if (c.IsFriend()) {
-			theApp->friendlist->RemoveFriend(c.GetFriend());
+		// The same resolution the menu labelled itself with. Asking
+		// IsFriend() here instead would add a second record for a friend the
+		// menu had just offered to remove.
+		if (CFriend *known = FriendForClient(c)) {
+			theApp->friendlist->RemoveFriend(known);
 		} else {
 			theApp->friendlist->AddFriend(c);
 		}
@@ -330,8 +348,7 @@ void ClientActionSetFriendSlot(wxWindow *parent, const std::vector<CClientRef> &
 	if (clients.empty()) {
 		return;
 	}
-	CClientRef &first = const_cast<CClientRef &>(clients.front());
-	theApp->friendlist->SetFriendSlot(first.GetFriend(), checked);
+	theApp->friendlist->SetFriendSlot(FriendForClient(clients.front()), checked);
 
 	WarnIfMultipleFriendSlot(parent, clients.size());
 }

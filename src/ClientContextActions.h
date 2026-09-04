@@ -75,6 +75,9 @@ wxMenu *BuildPeerContextMenu(const PeerIdentity &peer);
  */
 bool PeerBrowseIsPossible(const PeerIdentity &peer);
 
+//! The friend record for a live client, or nullptr. Linkage, then identity.
+CFriend *FriendForClient(const CClientRef &client);
+
 //! The friend record for this peer, or nullptr. Live linkage first.
 CFriend *FriendFor(const PeerIdentity &peer);
 
