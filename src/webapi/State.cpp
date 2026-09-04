@@ -718,10 +718,12 @@ void CState::ReconcileKnownClientsLocked()
 			// and counting the session, so this reconstructs what it wrote
 			// rather than inventing anything.
 			//
-			// sessions is left at zero deliberately: the offline-to-online
-			// transition below is what counts it, and this record is about
-			// to make that transition. Setting it here too would count the
-			// same arrival twice.
+			// sessions is left at zero deliberately: the not-connected to
+			// connected transition below is what counts it. That is this
+			// tick if the peer is already connected, and a later one if we
+			// are still reaching it -- which is the point, since the daemon
+			// counts at the hello and not at the attempt. Setting it here
+			// too would count the same session twice.
 			KnownClientSnapshot k;
 			k.user_hash = c.user_hash;
 			k.first_seen_at = now;
@@ -732,26 +734,27 @@ void CState::ReconcileKnownClientsLocked()
 
 		KnownClientSnapshot &k = m_known_clients[it->second];
 		still_online.insert(it->second);
-		// Offline to online is a new session, which is what the daemon counts:
-		// UpdateMeta() bumps it once per client object, at the hello. Counted
-		// on the transition rather than per tick for the same reason.
-		//
-		// It can over-count by one if a peer drops out of the update for a
-		// tick and returns -- an EC hiccup rather than a real reconnect. The
-		// daemon's own figure replaces this at the next fetch, so any drift
-		// lives no longer than the connection to that core.
-		// Keyed on last tick's PRESENCE set, not on k.online: online now means
-		// "a socket is up", and a peer can be present in the client list for
-		// several ticks before it connects (or without ever connecting).
-		// Counting off that would miss the arrival and then count a session
-		// when the socket came up.
-		if (m_known_online.count(it->second) == 0)
-			k.session_count++;
 		// Reachability, echoed from the live row. A client object exists from
 		// the first contact ATTEMPT, so presence in the list is not the same
 		// question -- an unroutable peer sat here reading "Online now".
+		// Read before the assignment: k.online still holds last tick's answer,
+		// which is what the session edge below is measured against.
+		const bool was_connected = k.online;
 		k.online = c.has_connected && c.connected;
 		k.has_online = c.has_connected;
+		// Not-connected to connected is a new session, which is what the
+		// daemon counts: UpdateMeta() bumps it once per client object at the
+		// hello, and a hello needs a connection. This used to fire on the peer
+		// merely APPEARING in the client list, which is earlier than the hello
+		// and also happens for a peer that never connects at all -- so the
+		// count ran ahead of the daemon's, and did so permanently, since the
+		// credit store is read once and never re-read.
+		//
+		// It can still over-count by one if a peer drops out of the update for
+		// a tick and returns -- an EC hiccup rather than a real reconnect --
+		// because the departure sweep below clears online for it.
+		if (!was_connected && k.online)
+			k.session_count++;
 		// A peer in front of us was last seen now, not whenever it previously
 		// disconnected. Leaving the stored value would report a peer that is
 		// connected as last seen months ago, and now is what the core writes
