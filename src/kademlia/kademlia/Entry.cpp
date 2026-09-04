@@ -77,6 +77,23 @@ CEntry *CEntry::Copy() const
 	return entry;
 }
 
+void CEntry::AddTag(CTag *tag, uint32_t dbgSourceIP)
+{
+	// Filter tags which are for sending query results only and should never be stored (or even
+	// worse sent within the taglist). TAG_PUBLISHINFO is one we build when answering a keyword
+	// search, out of our own count of distinct publishers and how much we trust them; stored, a
+	// peer-supplied one travels back out of CKeyEntry::WriteTagListWithPublishInfo() alongside
+	// our genuine value.
+	if (!tag->GetName().Cmp(TAG_PUBLISHINFO)) {
+		AddDebugLogLineN(logKadEntryTracking,
+			CFormat("Filtered result-only tag on storing, source %s") %
+				(dbgSourceIP ? KadIPToString(dbgSourceIP) : wxString(wxT("local"))));
+		delete tag;
+		return;
+	}
+	m_taglist.push_back(tag);
+}
+
 bool CEntry::GetIntTagValue(const wxString &tagname, uint64_t &value, bool includeVirtualTags) const
 {
 	for (TagPtrList::const_iterator it = m_taglist.begin(); it != m_taglist.end(); ++it) {

@@ -178,24 +178,28 @@ void CIndexed::ReadFile()
 												toAdd->m_uIP =
 													tag->GetInt();
 												toAdd->AddTag(
-													tag);
+													tag,
+													0);
 											} else if (
 												!tag->GetName()
 													 .Cmp(TAG_SOURCEPORT)) {
 												toAdd->m_uTCPport =
 													tag->GetInt();
 												toAdd->AddTag(
-													tag);
+													tag,
+													0);
 											} else if (
 												!tag->GetName()
 													 .Cmp(TAG_SOURCEUPORT)) {
 												toAdd->m_uUDPport =
 													tag->GetInt();
 												toAdd->AddTag(
-													tag);
+													tag,
+													0);
 											} else {
 												toAdd->AddTag(
-													tag);
+													tag,
+													0);
 											}
 										}
 										tagList--;
@@ -247,21 +251,21 @@ void CIndexed::ReadFile()
 											    TAG_SOURCEIP)) {
 											toAdd->m_uIP =
 												tag->GetInt();
-											toAdd->AddTag(tag);
+											toAdd->AddTag(tag, 0);
 										} else if (
 											!tag->GetName().Cmp(
 												TAG_SOURCEPORT)) {
 											toAdd->m_uTCPport =
 												tag->GetInt();
-											toAdd->AddTag(tag);
+											toAdd->AddTag(tag, 0);
 										} else if (
 											!tag->GetName().Cmp(
 												TAG_SOURCEUPORT)) {
 											toAdd->m_uUDPport =
 												tag->GetInt();
-											toAdd->AddTag(tag);
+											toAdd->AddTag(tag, 0);
 										} else {
-											toAdd->AddTag(tag);
+											toAdd->AddTag(tag, 0);
 										}
 									}
 									tagList--;

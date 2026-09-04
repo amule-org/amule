@@ -1248,7 +1248,7 @@ void CKademliaUDPListener::Process2PublishKeyRequest(const uint8_t *packetData,
 						delete tag; // tag is no longer stored, but membervar is used
 					} else {
 						// TODO: Filter tags
-						entry->AddTag(tag);
+						entry->AddTag(tag, ip);
 					}
 				}
 				tags--;
@@ -1330,8 +1330,8 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 			if (tag) {
 				if (!tag->GetName().Cmp(TAG_SOURCETYPE)) {
 					if (entry->m_bSource == false) {
-						entry->AddTag(new CTagVarInt(TAG_SOURCEIP, entry->m_uIP));
-						entry->AddTag(tag);
+						entry->AddTag(new CTagVarInt(TAG_SOURCEIP, entry->m_uIP), 0);
+						entry->AddTag(tag, ip);
 						entry->m_bSource = true;
 					} else {
 						// More than one sourcetype tag found.
@@ -1350,7 +1350,7 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 				} else if (!tag->GetName().Cmp(TAG_SOURCEPORT)) {
 					if (entry->m_uTCPport == 0) {
 						entry->m_uTCPport = (uint16_t)tag->GetInt();
-						entry->AddTag(tag);
+						entry->AddTag(tag, ip);
 					} else {
 						// More than one port tag found
 						delete tag;
@@ -1358,7 +1358,7 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 				} else if (!tag->GetName().Cmp(TAG_SOURCEUPORT)) {
 					if (addUDPPortTag && tag->IsInt() && tag->GetInt() != 0) {
 						entry->m_uUDPport = (uint16_t)tag->GetInt();
-						entry->AddTag(tag);
+						entry->AddTag(tag, ip);
 						addUDPPortTag = false;
 					} else {
 						// More than one udp port tag found
@@ -1366,13 +1366,13 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 					}
 				} else {
 					// TODO: Filter tags
-					entry->AddTag(tag);
+					entry->AddTag(tag, ip);
 				}
 			}
 			tags--;
 		}
 		if (addUDPPortTag) {
-			entry->AddTag(new CTagVarInt(TAG_SOURCEUPORT, entry->m_uUDPport));
+			entry->AddTag(new CTagVarInt(TAG_SOURCEUPORT, entry->m_uUDPport), 0);
 		}
 #ifdef __DEBUG__
 		if (!strInfo.IsEmpty()) {
@@ -1532,7 +1532,7 @@ void CKademliaUDPListener::Process2PublishNotesRequest(const uint8_t *packetData
 					delete tag;
 				} else {
 					// TODO: Filter tags
-					entry->AddTag(tag);
+					entry->AddTag(tag, ip);
 				}
 			}
 			tags--;
