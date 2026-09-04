@@ -76,18 +76,23 @@ wxString PeerPartStateLabel(partbar::PeerPartState state)
 	return wxEmptyString;
 }
 
+// "other" is load-bearing. CKnownFile::UpdateAvailablePartsCount() fills
+// m_AvailPartFrequency from the GetUpPartStatus() of remote clients only; our own
+// copy is never counted. On the shared-files list we hold every part by
+// definition, so a red block does not mean the part is gone -- it means no peer
+// we know of has it too.
 wxString AvailabilityPartStateLabel(partbar::AvailabilityPartState state)
 {
 	switch (state) {
 	case partbar::AvailabilityPartState::ZeroSources:
-		return _("No source has this part");
+		return _("No other source has this part");
 	case partbar::AvailabilityPartState::FewSources:
-		return _("One source has this part");
+		return _("One other source has this part");
 	case partbar::AvailabilityPartState::ManySources:
 		// Formatted from kAvailFull rather than spelled out: the number is
 		// where the fade stops darkening, and a label naming a different
 		// one would be wrong in a way no reader could tell from the bar.
-		return wxString::Format(_("%u or more sources have this part"), partbar::kAvailFull);
+		return wxString::Format(_("%u or more other sources have this part"), partbar::kAvailFull);
 	}
 	return wxEmptyString;
 }
@@ -112,7 +117,8 @@ wxString LegendIntro(partbar::BarLegendKind kind)
 	case partbar::BarLegendKind::PeerParts:
 		return _("One block per part of the shared file.");
 	case partbar::BarLegendKind::SharedAvailability:
-		return _("One block per part of the shared file, coloured by how many sources have it.");
+		return _(
+			"One block per part of the shared file, coloured by how many other sources have it.");
 	case partbar::BarLegendKind::SharedHashing:
 		return _("One block per part of the shared file, showing how far the re-hash has read.");
 	case partbar::BarLegendKind::None:
@@ -160,7 +166,7 @@ void FillLegendGrid(wxWindow *dlg, wxSizer *grid, partbar::BarLegendKind kind, b
 		AddSwatchRow(dlg,
 			grid,
 			MakeGradientLegendSwatch(from, to),
-			_("In between, darkening as sources are added"));
+			_("In between, darkening as other sources are added"));
 		return;
 	}
 

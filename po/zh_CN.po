@@ -5568,17 +5568,17 @@ msgstr "这个对等方没有该部分"
 
 #: src/PartBarLegendUI.cpp
 #, fuzzy
-msgid "No source has this part"
+msgid "No other source has this part"
 msgstr "这个源没有该部分"
 
 #: src/PartBarLegendUI.cpp
 #, fuzzy
-msgid "One source has this part"
+msgid "One other source has this part"
 msgstr "这个源没有该部分"
 
 #: src/PartBarLegendUI.cpp
 #, fuzzy, c-format
-msgid "%u or more sources have this part"
+msgid "%u or more other sources have this part"
 msgstr "你和这个源都有该部分"
 
 #: src/PartBarLegendUI.cpp
@@ -5599,7 +5599,7 @@ msgstr "共享文件每个部分对应一个区块。"
 
 #: src/PartBarLegendUI.cpp
 #, fuzzy
-msgid "One block per part of the shared file, coloured by how many sources have it."
+msgid "One block per part of the shared file, coloured by how many other sources have it."
 msgstr "共享文件每个部分对应一个区块。"
 
 #: src/PartBarLegendUI.cpp
@@ -5608,7 +5608,7 @@ msgid "One block per part of the shared file, showing how far the re-hash has re
 msgstr "共享文件每个部分对应一个区块。"
 
 #: src/PartBarLegendUI.cpp
-msgid "In between, darkening as sources are added"
+msgid "In between, darkening as other sources are added"
 msgstr ""
 
 #: src/PartFileConvert.cpp

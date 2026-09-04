@@ -5597,17 +5597,17 @@ msgstr ""
 
 #: src/PartBarLegendUI.cpp
 #, fuzzy
-msgid "No source has this part"
+msgid "No other source has this part"
 msgstr "Tento příkaz by neměl mít parametry."
 
 #: src/PartBarLegendUI.cpp
 #, fuzzy
-msgid "One source has this part"
+msgid "One other source has this part"
 msgstr "Tento příkaz by neměl mít parametry."
 
 #: src/PartBarLegendUI.cpp
 #, fuzzy, c-format
-msgid "%u or more sources have this part"
+msgid "%u or more other sources have this part"
 msgstr "Tento příkaz by neměl mít parametry."
 
 #: src/PartBarLegendUI.cpp
@@ -5629,7 +5629,7 @@ msgstr "Zadejte port serveru."
 
 #: src/PartBarLegendUI.cpp
 #, fuzzy
-msgid "One block per part of the shared file, coloured by how many sources have it."
+msgid "One block per part of the shared file, coloured by how many other sources have it."
 msgstr "Zadejte port serveru."
 
 #: src/PartBarLegendUI.cpp
@@ -5638,7 +5638,7 @@ msgid "One block per part of the shared file, showing how far the re-hash has re
 msgstr "Zadejte port serveru."
 
 #: src/PartBarLegendUI.cpp
-msgid "In between, darkening as sources are added"
+msgid "In between, darkening as other sources are added"
 msgstr ""
 
 #: src/PartFileConvert.cpp

@@ -5531,16 +5531,16 @@ msgid "This peer does not have the part"
 msgstr ""
 
 #: src/PartBarLegendUI.cpp
-msgid "No source has this part"
+msgid "No other source has this part"
 msgstr ""
 
 #: src/PartBarLegendUI.cpp
-msgid "One source has this part"
+msgid "One other source has this part"
 msgstr ""
 
 #: src/PartBarLegendUI.cpp
 #, c-format
-msgid "%u or more sources have this part"
+msgid "%u or more other sources have this part"
 msgstr ""
 
 #: src/PartBarLegendUI.cpp
@@ -5560,7 +5560,7 @@ msgid "One block per part of the shared file."
 msgstr ""
 
 #: src/PartBarLegendUI.cpp
-msgid "One block per part of the shared file, coloured by how many sources have it."
+msgid "One block per part of the shared file, coloured by how many other sources have it."
 msgstr ""
 
 #: src/PartBarLegendUI.cpp
@@ -5568,7 +5568,7 @@ msgid "One block per part of the shared file, showing how far the re-hash has re
 msgstr ""
 
 #: src/PartBarLegendUI.cpp
-msgid "In between, darkening as sources are added"
+msgid "In between, darkening as other sources are added"
 msgstr ""
 
 #: src/PartFileConvert.cpp

@@ -5571,17 +5571,17 @@ msgstr "Ce pair n'a pas la partie"
 
 #: src/PartBarLegendUI.cpp
 #, fuzzy
-msgid "No source has this part"
+msgid "No other source has this part"
 msgstr "Cette source n'a pas la partie"
 
 #: src/PartBarLegendUI.cpp
 #, fuzzy
-msgid "One source has this part"
+msgid "One other source has this part"
 msgstr "Cette source n'a pas la partie"
 
 #: src/PartBarLegendUI.cpp
 #, fuzzy, c-format
-msgid "%u or more sources have this part"
+msgid "%u or more other sources have this part"
 msgstr "Vous et cette source avez tous les deux la partie"
 
 #: src/PartBarLegendUI.cpp
@@ -5602,7 +5602,7 @@ msgstr "Un bloc par partie du fichier partagé."
 
 #: src/PartBarLegendUI.cpp
 #, fuzzy
-msgid "One block per part of the shared file, coloured by how many sources have it."
+msgid "One block per part of the shared file, coloured by how many other sources have it."
 msgstr "Un bloc par partie du fichier partagé."
 
 #: src/PartBarLegendUI.cpp
@@ -5611,7 +5611,7 @@ msgid "One block per part of the shared file, showing how far the re-hash has re
 msgstr "Un bloc par partie du fichier partagé."
 
 #: src/PartBarLegendUI.cpp
-msgid "In between, darkening as sources are added"
+msgid "In between, darkening as other sources are added"
 msgstr ""
 
 #: src/PartFileConvert.cpp
