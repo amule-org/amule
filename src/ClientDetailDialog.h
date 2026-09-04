@@ -66,6 +66,8 @@ struct ClientDetailInfo
 	uint16 serverPort = 0;
 	wxString serverName;
 	uint16 kadPort = 0;
+	//! What the peer claimed in its hello; a stored row has no hello to read.
+	wxString modCapabilities;
 	const CKnownFile *uploadFile = nullptr;
 	uint64 transferredDown = 0;
 	uint64 transferredUp = 0;

@@ -60,6 +60,7 @@ ClientDetailInfo ClientDetailInfoFromClient(const CClientRef &client)
 	info.serverPort = c.GetServerPort();
 	info.serverName = c.GetServerName();
 	info.kadPort = c.GetKadPort();
+	info.modCapabilities = c.GetModCapabilitiesText();
 	info.uploadFile = c.GetUploadFile();
 	info.transferredDown = c.GetTransferredDown();
 	info.transferredUp = c.GetTransferredUp();
@@ -180,7 +181,8 @@ bool CClientDetailDialog::OnInitDialog()
 	// eMuleAI vendor capabilities. What the peer claims, not what this build
 	// can do with it: aMule implements none of these yet, so the line reads as
 	// "this peer would support X if we did".
-	CastChild(IDT_MOD_CAPABILITIES, wxStaticText)->SetLabel(m_client.GetModCapabilitiesText());
+	CastChild(IDT_MOD_CAPABILITIES, wxStaticText)
+		->SetLabel(m_info.hasSession ? m_info.modCapabilities : kNoValue);
 
 	// Kad
 	if (!m_info.hasSession) {
