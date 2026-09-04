@@ -2477,6 +2477,12 @@ static_assert(static_cast<int>(BrowseSearch) == EC_SEARCH_BROWSE,
 	"SearchType and EC_SEARCH_TYPE must agree: BrowseSearch");
 
 static uint32 AllocateBrowseSearchId();
+// Undo an AllocateBrowseSearchId() whose browse never started. Drops the
+// results and the registry's own bookkeeping together: RemoveResults() alone
+// leaves the dead id as Current(), so id-less result polls target a freed
+// bucket, and it keeps one of the twenty ring slots until it evicts a live
+// search.
+static void ReleaseBrowseSearchId(uint32 id);
 
 // Reply to a browse request. Multi-search clients get the allocated search ID
 // (and the echoed optimistic ref) so amuleGUI can rekey its tab; legacy clients
@@ -2619,8 +2625,35 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request, bool multiSea
 						theApp->searchlist->RegisterBrowseSearch(
 							browseId, Friend->GetName(), subtag->GetInt());
 					}
-					theApp->friendlist->RequestSharedFileList(Friend, browseId);
-					response = BuildBrowseReply(browseId, reftag);
+					const CFriendList::BrowseResult asked =
+						theApp->friendlist->RequestSharedFileList(Friend, browseId);
+					if (asked == CFriendList::BrowseResult::Started) {
+						response = BuildBrowseReply(browseId, reftag);
+					} else {
+						// Nothing was asked under this id, so nothing will
+						// answer or time out under it: release it, or the tab
+						// it names sits pending for the whole session.
+						if (browseId) {
+							ReleaseBrowseSearchId(browseId);
+						}
+						// The callee resolves its client by hash, which can
+						// find one the check above could not: it looked at the
+						// record's linkage, which is empty for a friend added
+						// by address. Ask again now that linking has happened,
+						// so a browse already running is joined rather than
+						// reported as a missing address.
+						const CClientRef &nowLinked = Friend->GetLinkedClient();
+						const uint32 running = browseInFlightId(
+							nowLinked.IsLinked() ? nowLinked.GetClient()
+									     : nullptr);
+						if (asked == CFriendList::BrowseResult::AlreadyRunning &&
+							running) {
+							response = joinBrowse(running);
+						} else {
+							response = browseFailure(wxTRANSLATE(
+								"No address known for that friend yet."));
+						}
+					}
 				}
 			} else {
 				response = browseFailure(wxTRANSLATE("Friend not found."));
@@ -2726,6 +2759,15 @@ CEcSearchRegistry s_ecSearches;
 void RegisterRestoredSearch(uint32 searchID)
 {
 	s_ecSearches.Register(searchID);
+}
+
+static void ReleaseBrowseSearchId(uint32 id)
+{
+	theApp->searchlist->RemoveResults(id);
+	// Guarded like the stop path: only touch the registry for an id it tracks.
+	if (s_ecSearches.Has(id)) {
+		s_ecSearches.Forget(id);
+	}
 }
 
 static uint32 AllocateBrowseSearchId()

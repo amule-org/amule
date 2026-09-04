@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-04 09:46+0200\n"
+"POT-Creation-Date: 2026-09-04 12:13+0200\n"
 "PO-Revision-Date: 2026-09-03 11:01+0000\n"
 "Last-Translator: astur <malditoastur@gmail.com>\n"
 "Language-Team: Language ast <malditoastur@gmail.com>\n"
@@ -1256,6 +1256,14 @@ msgid "Send message"
 msgstr "Unviar mensax"
 
 #: src/ClientContextActions.cpp
+msgid "Send message to user"
+msgstr "Unviar mensax al usuariu"
+
+#: src/ClientContextActions.cpp
+msgid "Message to send:"
+msgstr "Mensax a unviar:"
+
+#: src/ClientContextActions.cpp
 #, fuzzy
 msgid ""
 "You are not allowed to set more than one friend slot.\n"
@@ -1269,12 +1277,36 @@ msgid "Multiple selection"
 msgstr "Seleición múltiple"
 
 #: src/ClientContextActions.cpp
-msgid "Send message to user"
-msgstr "Unviar mensax al usuariu"
+#, c-format
+msgid "Add %u client to your friend list?"
+msgid_plural "Add %u clients to your friend list?"
+msgstr[0] ""
+msgstr[1] ""
 
 #: src/ClientContextActions.cpp
-msgid "Message to send:"
-msgstr "Mensax a unviar:"
+#, fuzzy, c-format
+msgid "Remove %u client from your friend list?"
+msgid_plural "Remove %u clients from your friend list?"
+msgstr[0] "Desaniciar de collacios"
+msgstr[1] "Desaniciar de collacios"
+
+#: src/ClientContextActions.cpp
+#, c-format
+msgid "Could not add %u selected client to your friend list: no address is known for it."
+msgid_plural "Could not add %u selected clients to your friend list: no address is known for them."
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/ClientContextActions.cpp
+#, fuzzy, c-format
+msgid "Request the shared files of %u client?"
+msgid_plural "Request the shared files of %u clients?"
+msgstr[0] "Recargar llista de ficheros compartíos."
+msgstr[1] "Recargar llista de ficheros compartíos."
+
+#: src/ClientContextActions.cpp
+msgid "A connection is opened to each of them."
+msgstr ""
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1419,6 +1451,13 @@ msgstr "N/A"
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr "Non disponible"
+
+#: src/ClientRowListCtrl.cpp
+#, c-format
+msgid "Could not ask %u selected client for its shared files."
+msgid_plural "Could not ask %u selected clients for their shared files."
+msgstr[0] ""
+msgstr[1] ""
 
 #: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Files"
@@ -2154,6 +2193,10 @@ msgid "eD2k is disabled in preferences."
 msgstr "eD2k ta desabilitáu nes preferencies"
 
 #: src/ExternalConn.cpp
+msgid "No address known for that friend yet."
+msgstr ""
+
+#: src/ExternalConn.cpp
 #, fuzzy
 msgid "Friend not found."
 msgstr "Ficheru non alcontráu"
@@ -2789,6 +2832,11 @@ msgid "Failed to open friend list file 'emfriends.met' for writing!"
 msgstr "¡ Nun pudo abrise'l ficheru de collacios 'emfriends.met' pa la so escritura !"
 
 #: src/FriendList.cpp
+#, c-format
+msgid "No address known for friend '%s' yet, cannot browse them."
+msgstr ""
+
+#: src/FriendList.cpp
 msgid "CRITICAL - no client on StartChatSession"
 msgstr "CRITICU - ensin veceru en sesión charra d'aniciu"
 
@@ -2807,6 +2855,11 @@ msgstr "Desaniciar collaciu"
 #: src/FriendListCtrl.cpp
 msgid "Send &Message"
 msgstr "Unviar &Mensax"
+
+#: src/FriendListCtrl.cpp
+#, c-format
+msgid "No address known for friend '%s' yet, cannot message them."
+msgstr ""
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"

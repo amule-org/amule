@@ -59,10 +59,12 @@ CFriend::CFriend(const CMD4Hash &userhash,
 
 CFriend::CFriend(CClientRef client)
 {
-	m_HasFriendSlot = false;
+	// Init() first: it is the only thing that clears m_dwLastSeen and the
+	// last-used address, and LinkClient() copies those across only when the
+	// client carries a real value. Without this they start indeterminate and
+	// get written to emfriends.met on the next save.
+	Init();
 	LinkClient(client);
-
-	m_dwLastChatted = 0;
 }
 
 void CFriend::LinkClient(CClientRef client)
@@ -74,11 +76,30 @@ void CFriend::LinkClient(CClientRef client)
 		if (m_LinkedClient.IsLinked()) { // What, is already linked?
 			UnLinkClient(false);
 		}
+		// The client may already belong to another record: reusing an
+		// existing client rather than always building a fresh one makes that
+		// reachable. Tell that record to let go, or it keeps a live reference
+		// and shows its friend as permanently connected.
+		CFriend *other = client.GetFriend();
+		if (other != nullptr && other != this) {
+			// Notified: that record is losing its client and its row has to
+			// stop showing it as connected, which is the visible half of the
+			// problem this exists to fix.
+			other->UnLinkClient();
+		}
 		m_LinkedClient = client;
 		m_LinkedClient.SetFriend(this);
 		// Apply the persistent friend-slot flag to the live client. This
 		// is the path that restores the slot when a friend reconnects
 		// after a disconnect (or after a daemon restart).
+		//
+		// A client built from a stored address has not handshaked yet, so
+		// this can briefly grant the slot to whoever holds that address if
+		// it has since been recycled. Deferring until the hash is known is
+		// not the fix: this is the only pass that runs, because the
+		// handshake re-links the same client object and takes the branch
+		// above instead. ProcessHelloTypePacket revokes the slot when the
+		// hash does not match the record, which closes that window.
 		if (m_HasFriendSlot) {
 			m_LinkedClient.SetFriendSlot(true);
 		}

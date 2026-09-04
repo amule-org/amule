@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-04 09:46+0200\n"
+"POT-Creation-Date: 2026-09-04 12:13+0200\n"
 "PO-Revision-Date: 2026-09-03 11:10+0000\n"
 "Last-Translator: Jure Repinc <jlp@holodeck1.com>\n"
 "Language-Team: Slovenian\n"
@@ -1264,6 +1264,14 @@ msgid "Send message"
 msgstr "Pošlji sporočilo"
 
 #: src/ClientContextActions.cpp
+msgid "Send message to user"
+msgstr "Pošlji uporabniku sporočilo"
+
+#: src/ClientContextActions.cpp
+msgid "Message to send:"
+msgstr "Sporočilo:"
+
+#: src/ClientContextActions.cpp
 #, fuzzy
 msgid ""
 "You are not allowed to set more than one friend slot.\n"
@@ -1277,12 +1285,44 @@ msgid "Multiple selection"
 msgstr "Izbira večih"
 
 #: src/ClientContextActions.cpp
-msgid "Send message to user"
-msgstr "Pošlji uporabniku sporočilo"
+#, c-format
+msgid "Add %u client to your friend list?"
+msgid_plural "Add %u clients to your friend list?"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+msgstr[3] ""
 
 #: src/ClientContextActions.cpp
-msgid "Message to send:"
-msgstr "Sporočilo:"
+#, fuzzy, c-format
+msgid "Remove %u client from your friend list?"
+msgid_plural "Remove %u clients from your friend list?"
+msgstr[0] "Odstrani s seznama prijateljev"
+msgstr[1] "Odstrani s seznama prijateljev"
+msgstr[2] "Odstrani s seznama prijateljev"
+msgstr[3] "Odstrani s seznama prijateljev"
+
+#: src/ClientContextActions.cpp
+#, c-format
+msgid "Could not add %u selected client to your friend list: no address is known for it."
+msgid_plural "Could not add %u selected clients to your friend list: no address is known for them."
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+msgstr[3] ""
+
+#: src/ClientContextActions.cpp
+#, fuzzy, c-format
+msgid "Request the shared files of %u client?"
+msgid_plural "Request the shared files of %u clients?"
+msgstr[0] "Ponovno naloži seznam deljenih datotek."
+msgstr[1] "Ponovno naloži seznam deljenih datotek."
+msgstr[2] "Ponovno naloži seznam deljenih datotek."
+msgstr[3] "Ponovno naloži seznam deljenih datotek."
+
+#: src/ClientContextActions.cpp
+msgid "A connection is opened to each of them."
+msgstr ""
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1429,6 +1469,15 @@ msgstr "Ni na voljo"
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr "Ni na voljo"
+
+#: src/ClientRowListCtrl.cpp
+#, c-format
+msgid "Could not ask %u selected client for its shared files."
+msgid_plural "Could not ask %u selected clients for their shared files."
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+msgstr[3] ""
 
 #: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Files"
@@ -2168,6 +2217,10 @@ msgid "eD2k is disabled in preferences."
 msgstr "eD2k je onemogočen v nastavitvah."
 
 #: src/ExternalConn.cpp
+msgid "No address known for that friend yet."
+msgstr ""
+
+#: src/ExternalConn.cpp
 #, fuzzy
 msgid "Friend not found."
 msgstr "Datoteke ni mogoče najti."
@@ -2803,6 +2856,11 @@ msgid "Failed to open friend list file 'emfriends.met' for writing!"
 msgstr "Datoteke s seznamom prijateljev »emfriends.met« ni bilo moč odpreti za pisanje."
 
 #: src/FriendList.cpp
+#, c-format
+msgid "No address known for friend '%s' yet, cannot browse them."
+msgstr ""
+
+#: src/FriendList.cpp
 msgid "CRITICAL - no client on StartChatSession"
 msgstr "KRITIČNO – ni odjemalca za StartChatSession"
 
@@ -2821,6 +2879,11 @@ msgstr "Odstrani prijatelja"
 #: src/FriendListCtrl.cpp
 msgid "Send &Message"
 msgstr "Pošlji &sporočilo"
+
+#: src/FriendListCtrl.cpp
+#, c-format
+msgid "No address known for friend '%s' yet, cannot message them."
+msgstr ""
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"

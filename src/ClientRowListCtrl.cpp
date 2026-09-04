@@ -25,10 +25,13 @@
 #include "ClientRowListCtrl.h" // Interface declarations
 
 #include <wx/menu.h>
+#include <wx/msgdlg.h>
 
+#include <common/Format.h> // Needed for CFormat
 #include <common/MenuIDs.h>
 
 #include "ClientContextActions.h" // Needed for BuildClientContextMenu, ClientAction*
+#include "Logger.h"               // Needed for AddLogLineC
 #include "MuleBarRenderer.h"      // Needed for CBarFillSpec
 
 wxBEGIN_EVENT_TABLE(CClientRowListCtrl, CMuleVirtualDataViewCtrl)
@@ -62,12 +65,56 @@ void CClientRowListCtrl::GetItemBarFill(wxUIntPtr data, unsigned column, CBarFil
 	out = CBarFillSpec(reinterpret_cast<wxUIntPtr>(cell), 0, {});
 }
 
+bool CClientRowListCtrl::MenuPeer(PeerIdentity &out) const
+{
+	return m_menuItemValid && PeerForItem(m_menuItem, out);
+}
+
+std::vector<PeerIdentity> CClientRowListCtrl::SelectedPeers() const
+{
+	std::vector<PeerIdentity> peers;
+	for (wxUIntPtr data : GetSelectedItemData()) {
+		PeerIdentity peer;
+		if (PeerForItem(data, peer)) {
+			peers.push_back(std::move(peer));
+		}
+	}
+	return peers;
+}
+
 void CClientRowListCtrl::OnItemActivated(wxDataViewEvent &event)
 {
 	if (!event.GetItem().IsOk()) {
 		return;
 	}
-	ClientActionShowDetails(this, SelectedClients());
+	ShowDetailsForSelection();
+}
+
+// Opening details is a read-only act: it never creates a client and never
+// opens a connection. A peer we are talking to is snapshotted live, because
+// that knows strictly more; otherwise the row's own record is rendered and
+// the session fields show as absent.
+void CClientRowListCtrl::ShowDetailsForSelection()
+{
+	// Counted first: resolving the selection to discover it holds more than
+	// one row costs a ClientDetailInfo and a client lookup per row, and the
+	// answer is then thrown away.
+	if (GetSelectedItemsCount() != 1) {
+		return;
+	}
+	const std::vector<PeerIdentity> peers = SelectedPeers();
+	if (peers.size() == 1) {
+		ShowDetailsFor(peers.front());
+	}
+}
+
+void CClientRowListCtrl::ShowDetailsFor(const PeerIdentity &peer)
+{
+	if (peer.client.IsLinked()) {
+		ClientActionShowDetails(this, { peer.client });
+	} else if (peer.hasDetail) {
+		CClientDetailDialog(this, peer.detail).ShowModal();
+	}
 }
 
 void CClientRowListCtrl::OnItemRightClicked(wxDataViewEvent &event)
@@ -81,43 +128,119 @@ void CClientRowListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 		}
 	}
 
-	// Nothing resolved means the rows name peers we are not connected to, which
-	// every entry on this menu needs. No menu rather than one that cannot act.
-	const std::vector<CClientRef> clients = SelectedClients();
-	if (clients.empty()) {
+	// A peer we are not connected to still gets a menu. Friending and the
+	// friend slot are persistent and need no connection at all; browsing and
+	// messaging open one when the user picks them.
+	//
+	// Only the row under the cursor is resolved. The menu describes that one,
+	// and building the whole selection to read its first entry would resolve
+	// every other selected row for nothing.
+	if (!event.GetItem().IsOk()) {
+		return;
+	}
+	m_menuItem = ItemAt(GetModelRow(event.GetItem()));
+	PeerIdentity peer;
+	m_menuItemValid = PeerForItem(m_menuItem, peer);
+	if (!m_menuItemValid) {
 		return;
 	}
 
 	// The builder omits "Swap to this file": it acts on an A4AF source of one
 	// particular download, which is a per-file notion neither of these lists
 	// has.
-	wxMenu *menu = BuildClientContextMenu(clients.front());
+	wxMenu *menu = BuildPeerContextMenu(peer);
 	PopupMenu(menu, event.GetPosition());
 	delete menu;
 }
 
+// Both lists are multi-select (CMuleDataViewCtrl forces wxDV_MULTIPLE) and the
+// connected-client paths act on the whole selection, so these do too. But the
+// history list is the entire credit store rather than the handful of peers we
+// happen to be talking to, and the menu is built for one row while the action
+// runs on all of them, so a large selection says so first. Same shape as the
+// shared-files media refresh: one row never costs a click, and what is about to
+// happen is stated in full.
 void CClientRowListCtrl::OnViewFiles(wxCommandEvent &WXUNUSED(event))
 {
-	ClientActionViewFiles(SelectedClients());
+	// Counted from the control, not from resolving the rows: resolving is the
+	// cost the prompt exists to guard against, so it cannot come first.
+	const size_t count = GetSelectedItemsCount();
+	if (count == 0) {
+		return;
+	}
+	// Each one opens its own connection and its own browse tab.
+	if (!ConfirmBrowseAction(this, count)) {
+		return;
+	}
+	const std::vector<PeerIdentity> peers = SelectedPeers();
+	size_t skipped = 0;
+	for (const PeerIdentity &peer : peers) {
+		if (!PeerActionViewFiles(peer)) {
+			++skipped;
+		}
+	}
+	if (skipped > 0) {
+		// A mixed selection can contain peers this build cannot address.
+		// Saying so beats a browse that quietly covers only some of them.
+		AddLogLineC(CFormat(wxPLURAL("Could not ask %u selected client for its shared files.",
+				    "Could not ask %u selected clients for their shared files.",
+				    skipped)) %
+			    skipped);
+	}
 }
 
 void CClientRowListCtrl::OnAddFriend(wxCommandEvent &WXUNUSED(event))
 {
-	ClientActionToggleFriend(SelectedClients());
+	const size_t count = GetSelectedItemsCount();
+	if (count == 0) {
+		return;
+	}
+	// The direction comes from the entry the user picked, so what happens
+	// matches what it said. Toggling each row would remove the friends inside
+	// a selection whose menu read "Add to Friends", and below the prompt
+	// threshold that would happen without a word.
+	PeerIdentity menuPeer;
+	if (!MenuPeer(menuPeer)) {
+		return;
+	}
+	const bool addThem = !PeerIsFriend(menuPeer);
+	if (!ConfirmFriendAction(this, count, addThem)) {
+		return;
+	}
+	ReportFriendSkips(PeerActionSetFriends(SelectedPeers(), addThem));
 }
 
 void CClientRowListCtrl::OnSetFriendslot(wxCommandEvent &evt)
 {
-	ClientActionSetFriendSlot(this, SelectedClients(), evt.IsChecked());
+	// The row the menu was built for, not whatever the selection happens to
+	// be: the checkbox describes one peer, so the slot has to land on that
+	// one. The count comes from the control rather than from resolving every
+	// selected row, which the warning is all it is needed for.
+	PeerIdentity peer;
+	if (!MenuPeer(peer)) {
+		return;
+	}
+	PeerActionSetFriendSlot(this, peer, evt.IsChecked(), GetSelectedItemsCount());
 }
 
 void CClientRowListCtrl::OnSendMessage(wxCommandEvent &WXUNUSED(event))
 {
-	ClientActionSendMessage(SelectedClients());
+	// Single row only, as the connected-client path has always been, and the
+	// row the menu named rather than a re-resolved selection.
+	PeerIdentity peer;
+	if (!MenuPeer(peer)) {
+		return;
+	}
+	PeerActionSendMessage(peer);
 }
 
 void CClientRowListCtrl::OnViewClientInfo(wxCommandEvent &WXUNUSED(event))
 {
-	ClientActionShowDetails(this, SelectedClients());
+	// The row the menu described, not the selection: a menu entry that is
+	// offered has to do something when it is picked.
+	PeerIdentity peer;
+	if (MenuPeer(peer)) {
+		ShowDetailsFor(peer);
+	}
 }
 // File_checked_for_headers

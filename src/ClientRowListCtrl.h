@@ -28,7 +28,7 @@
 #include <vector>
 
 #include "ClientNameCell.h" // Needed for ClientNameCell
-#include "ClientRef.h"      // Needed for CClientRef
+#include "PeerIdentity.h"   // Needed for PeerIdentity
 #include "MuleVirtualDataViewCtrl.h"
 
 /**
@@ -49,7 +49,7 @@
  * Rows hold values, never clients. A CClientRef would be owning, so a list
  * holding one would keep every peer it ever showed alive; the peer is resolved
  * only when something is actually done to it, and a row whose peer has since
- * gone simply resolves to nothing.
+ * gone still names it well enough to act on from the record alone.
  */
 class CClientRowListCtrl : public CMuleVirtualDataViewCtrl
 {
@@ -64,12 +64,31 @@ protected:
 	virtual unsigned NameColumn() const = 0;
 
 	/**
-	 * The peers behind the current selection, resolved right now.
+	 * The peer behind one row, or false when the row names none usable.
 	 *
-	 * Empty is a normal answer, not a failure: a history row may name a peer
-	 * that is not connected, and there is nothing to act on until it is.
+	 * Identity comes from the row, so a peer we are not talking to is still
+	 * named here -- `client` is simply unlinked for it. The two lists key on
+	 * different things (ECID within a process, user hash across restarts),
+	 * which is why resolving one row stays per-list while everything built
+	 * on top of it is shared.
+	 *
+	 * Per row rather than per selection so the context menu, which describes
+	 * a single row, can resolve just that one. Resolving the whole selection
+	 * to read its first entry costs a full ClientDetailInfo and a client
+	 * lookup for every other selected row, which is the entire credit store
+	 * after a select-all.
 	 */
-	virtual std::vector<CClientRef> SelectedClients() const = 0;
+	virtual bool PeerForItem(wxUIntPtr data, PeerIdentity &out) const = 0;
+
+	/**
+	 * The peer the context menu was built for, resolved afresh.
+	 *
+	 * False when no menu has been opened or the row has since gone.
+	 */
+	bool MenuPeer(PeerIdentity &out) const;
+
+	//! The peers behind the current selection, in display order.
+	std::vector<PeerIdentity> SelectedPeers() const;
 
 	void GetItemBarFill(wxUIntPtr data, unsigned column, CBarFillSpec &out) const override;
 
@@ -77,6 +96,26 @@ protected:
 
 private:
 	void OnItemActivated(wxDataViewEvent &event);
+	void ShowDetailsForSelection();
+	//! Renders the details dialog for one peer, live client or stored record.
+	void ShowDetailsFor(const PeerIdentity &peer);
+	/**
+	 * The row the context menu was last built for, as item data.
+	 *
+	 * Single-row entries resolve this rather than re-reading the selection,
+	 * so the entry and the action can never describe different peers. Bulk
+	 * entries still use the whole selection, which is what they are for.
+	 *
+	 * Deliberately the row and not a resolved PeerIdentity: that holds an
+	 * owning CClientRef, and a member would keep a disconnected peer's
+	 * CUpDownClient alive for the lifetime of the control, which is exactly
+	 * what this class holds values rather than clients to avoid. Resolving
+	 * again also cannot go stale: a row that has since gone simply fails to
+	 * resolve and the entry does nothing.
+	 */
+	wxUIntPtr m_menuItem = 0;
+	bool m_menuItemValid = false;
+
 	void OnItemRightClicked(wxDataViewEvent &event);
 	void OnViewFiles(wxCommandEvent &event);
 	void OnAddFriend(wxCommandEvent &event);

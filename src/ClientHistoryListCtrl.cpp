@@ -297,35 +297,79 @@ const ClientNameCell *CClientHistoryListCtrl::NameCellFor(wxUIntPtr item) const
 	return row != nullptr ? &row->nameCell : nullptr;
 }
 
-std::vector<CClientRef> CClientHistoryListCtrl::SelectedClients() const
+namespace
 {
-	// By user hash, not ECID: a history row outlives the daemon process whose
-	// ECIDs would have named the peer, and the hash is the identity the credit
-	// store itself is keyed on. A peer that is not connected resolves to
-	// nothing, which is the honest answer -- there is nobody to act on.
-	std::vector<CClientRef> clients;
-	for (wxUIntPtr data : GetSelectedItemData()) {
-		const ClientHistoryRow *row = RowFor(data);
-		if (row == nullptr || row->hash.IsEmpty()) {
-			continue;
-		}
+
+// Without metadata the hash is all we know a peer by, which is still more
+// useful than an empty cell.
+wxString DisplayNameFor(const ClientHistoryRow &row)
+{
+	return row.name.IsEmpty() ? row.hash.Encode() : row.name;
+}
+
+} // namespace
+
+bool CClientHistoryListCtrl::PeerForItem(wxUIntPtr data, PeerIdentity &out) const
+{
+	// Start clean: this is an out parameter and the fields below are only
+	// assigned when they are known, so anything left from a previous call
+	// would be read as belonging to this row.
+	out = PeerIdentity();
+	// Identity comes from the row, so a peer we are not connected to is still
+	// named: the hash, name, address and port the store kept are enough to
+	// friend it, and enough to open a connection if the user asks for one.
+	//
+	// The live client is attached when there is one, matched by user hash
+	// rather than ECID: a history row outlives the daemon process whose ECIDs
+	// would have named the peer, and the hash is what the credit store is
+	// keyed on.
+	const ClientHistoryRow *row = RowFor(data);
+	if (row == nullptr || row->hash.IsEmpty()) {
+		return false;
+	}
+	out.hash = row->hash;
+	// The record's own name, not the Name column's fallback. This one is
+	// written to disk by AddFriend() and set on the live client by
+	// CreateForAddress(), so a placeholder here would persist a hex hash as
+	// somebody's name. Empty is meaningful: CFriend renders it as "?" until
+	// the peer tells us what it is called.
+	out.name = row->name;
+	out.ip = row->ip;
+	out.port = row->port;
+
+	// The half of the details dialog a stored record can answer. The session
+	// half stays absent, which is what hasSession says.
+	out.detail.userName = row->name;
+	out.detail.userHash = row->hash;
+	out.detail.softStr = row->identityKnown ? GetSoftName(row->clientSoft) : wxString();
+	out.detail.softVerStr = row->version;
+	// Left empty when unknown, so the dialog says so rather than rendering a
+	// literal 0.0.0.0.
+	out.detail.fullIp = row->ip ? Uint32toStringIP(row->ip) : wxString();
+	out.detail.userPort = row->port;
+	out.detail.obfuscationStatus = row->obfuscation;
+	// Same direction the list's own Total Up / Total Down columns use.
+	out.detail.uploadedTotal = row->uploaded;
+	out.detail.downloadedTotal = row->downloaded;
+	out.detail.hasSession = false;
+	out.hasDetail = true;
 #ifdef CLIENT_GUI
-		if (theApp->clientlist == nullptr) {
-			continue;
-		}
+	if (theApp->clientlist != nullptr) {
 		for (const auto &entry : *theApp->clientlist) {
 			CUpDownClient *client = entry->GetClient();
 			if (client != nullptr && client->GetUserHash() == row->hash) {
-				clients.push_back(*entry);
+				out.client = *entry;
+				break;
 			}
 		}
-#else
-		for (const CClientRef &ref : theApp->clientlist->GetClientsByHash(row->hash)) {
-			clients.push_back(ref);
-		}
-#endif
 	}
-	return clients;
+#else
+	for (const CClientRef &ref : theApp->clientlist->GetClientsByHash(row->hash)) {
+		out.client = ref;
+		break;
+	}
+#endif
+	return true;
 }
 
 wxString CClientHistoryListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) const
@@ -337,9 +381,7 @@ wxString CClientHistoryListCtrl::GetItemColumnText(wxUIntPtr item, unsigned colu
 
 	switch (column) {
 	case COLUMN_HISTORY_NAME:
-		// Without metadata the hash is all we know it by, which is still
-		// more useful than an empty cell.
-		return row->name.IsEmpty() ? row->hash.Encode() : row->name;
+		return DisplayNameFor(*row);
 
 	case COLUMN_HISTORY_SOFTWARE:
 		return row->identityKnown ? GetSoftName(row->clientSoft) : wxString();

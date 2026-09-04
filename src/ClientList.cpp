@@ -99,6 +99,75 @@ CClientList::~CClientList()
 	wxASSERT(m_clientList.empty());
 }
 
+CUpDownClient *CClientList::FindReusableClient(const CMD4Hash &hash, uint32 ip, uint16 port)
+{
+	// Every client at this address, not just the first. FindClientByIP()
+	// stops at the first port match, which may be an unrelated client holding
+	// an address our peer used to have; rejecting that one without looking
+	// further would allocate a new object on every call.
+	std::pair<IDMap::iterator, IDMap::iterator> range = m_ipList.equal_range(ip);
+	for (; range.first != range.second; ++range.first) {
+		CUpDownClient *cur_client = range.first->second.GetClient();
+		if (cur_client->GetUserPort() != port) {
+			continue;
+		}
+		// Unidentified is a candidate: it is either this peer before its
+		// handshake, or a placeholder an earlier call made for it. An
+		// identified one is only this peer if the hashes agree.
+		if (cur_client->GetUserHash().IsEmpty() || cur_client->GetUserHash() == hash) {
+			return cur_client;
+		}
+	}
+	return nullptr;
+}
+
+CClientRef CClientList::CreateForAddress(const CMD4Hash &hash, uint32 ip, uint16 port, const wxString &name)
+{
+	// Reuse the client we already hold for this peer, so a repeated action
+	// does not stack up objects that no later lookup matches.
+	CUpDownClient *client = nullptr;
+	if (!hash.IsEmpty()) {
+		const SourceList byHash = GetClientsByHash(hash);
+		if (!byHash.empty()) {
+			client = byHash.front().GetClient();
+		}
+	}
+	if (client == nullptr) {
+		// An address alone identifies a peer only while nothing contradicts
+		// it. A stored address goes stale, and handing an unrelated client
+		// to CFriend::LinkClient() copies the stranger's hash into the
+		// friend record and saves it, losing the friend for good.
+		client = FindReusableClient(hash, ip, port);
+	}
+	if (client != nullptr) {
+		return CCLIENTREF(client, wxT("CClientList::CreateForAddress"));
+	}
+
+	if (ip == 0 || port == 0) {
+		// Nothing held for this peer and nowhere to dial: an invented client
+		// would only ever target 0.0.0.0, and AddClient() will not index a
+		// zero address, so the next lookup would miss it and make another.
+		// Callers ask IsLinked() rather than assuming they got one.
+		return CClientRef();
+	}
+
+	client = new CUpDownClient(port, ip, 0, 0, nullptr, true, true);
+	// The ctor only records the address to connect to, leaving GetIP() at 0.
+	// Seed it, or anything that reads the peer's IP back -- a friend record
+	// saving itself, a menu deciding whether it can message -- sees 0.0.0.0.
+	client->SetIP(ip);
+	client->SetUserName(name);
+	// The hash is deliberately NOT seeded. This client has never connected,
+	// so it carries no credits and reports zero for every lifetime total,
+	// while a hash is exactly what makes the Clients page treat it as a peer
+	// whose totals are known: it would publish those zeroes over the stored
+	// Total Up / Down of the row that asked for it, and mark that row online.
+	// The handshake sets the real hash when the peer answers, and the lookup
+	// above finds this object again in the meantime.
+	AddClient(client);
+	return CCLIENTREF(client, wxT("CClientList::CreateForAddress"));
+}
+
 void CClientList::AddClient(CUpDownClient *toadd)
 {
 	// Ensure that only new clients can be added to the list
@@ -821,6 +890,11 @@ bool CClientList::IsDeadSource(const CUpDownClient *client)
 
 bool CClientList::SendChatMessage(uint64 client_id, const wxString &message)
 {
+	if (client_id == 0) {
+		// Names no peer: every such message would allocate another client
+		// aimed at 0.0.0.0, since a zero address is never indexed.
+		return false;
+	}
 	CUpDownClient *client = FindClientByIP(IP_FROM_GUI_ID(client_id), PORT_FROM_GUI_ID(client_id));
 	AddDebugLogLineN(logClient, "Trying to Send Message.");
 	if (client) {
@@ -831,9 +905,19 @@ bool CClientList::SendChatMessage(uint64 client_id, const wxString &message)
 				"Creating") %
 				client_id % Uint32toStringIP(IP_FROM_GUI_ID(client_id)) %
 				PORT_FROM_GUI_ID(client_id));
-		client = new CUpDownClient(
-			PORT_FROM_GUI_ID(client_id), IP_FROM_GUI_ID(client_id), 0, 0, NULL, true, true);
-		AddClient(client);
+		// Through CreateForAddress(), which seeds GetIP() and reuses any
+		// client we already hold for this peer. Constructing one here
+		// directly leaves GetIP() at 0, so AddClient() keeps it out of the
+		// address index and the lookup above misses it next time: one
+		// unreachable client for every message sent. Both builds arrive
+		// here, amulegui by way of EC_OP_CHAT_SEND, so this is the place
+		// to get it right rather than at either call site.
+		CClientRef ref = CreateForAddress(
+			CMD4Hash(), IP_FROM_GUI_ID(client_id), PORT_FROM_GUI_ID(client_id), wxEmptyString);
+		if (!ref.IsLinked()) {
+			return false;
+		}
+		client = ref.GetClient();
 	}
 	// Record before sending, and record regardless of the result: a false
 	// return from CUpDownClient::SendChatMessage means "queued while

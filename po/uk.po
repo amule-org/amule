@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-04 09:46+0200\n"
+"POT-Creation-Date: 2026-09-04 12:13+0200\n"
 "PO-Revision-Date: 2026-09-03 11:11+0000\n"
 "Last-Translator: Oleksandr Kovalenko <alx.kovalenko@gmail.com>\n"
 "Language-Team: Ukrainian <translation@linux.org.ua>\n"
@@ -1258,6 +1258,14 @@ msgid "Send message"
 msgstr "Надіслати повідомлення"
 
 #: src/ClientContextActions.cpp
+msgid "Send message to user"
+msgstr "Надіслати повідомлення користувачу"
+
+#: src/ClientContextActions.cpp
+msgid "Message to send:"
+msgstr "Повідомлення:"
+
+#: src/ClientContextActions.cpp
 #, fuzzy
 msgid ""
 "You are not allowed to set more than one friend slot.\n"
@@ -1271,12 +1279,40 @@ msgid "Multiple selection"
 msgstr "Численний вибір"
 
 #: src/ClientContextActions.cpp
-msgid "Send message to user"
-msgstr "Надіслати повідомлення користувачу"
+#, c-format
+msgid "Add %u client to your friend list?"
+msgid_plural "Add %u clients to your friend list?"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
 
 #: src/ClientContextActions.cpp
-msgid "Message to send:"
-msgstr "Повідомлення:"
+#, fuzzy, c-format
+msgid "Remove %u client from your friend list?"
+msgid_plural "Remove %u clients from your friend list?"
+msgstr[0] "Видалити з друзів"
+msgstr[1] "Видалити з друзів"
+msgstr[2] "Видалити з друзів"
+
+#: src/ClientContextActions.cpp
+#, c-format
+msgid "Could not add %u selected client to your friend list: no address is known for it."
+msgid_plural "Could not add %u selected clients to your friend list: no address is known for them."
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#: src/ClientContextActions.cpp
+#, fuzzy, c-format
+msgid "Request the shared files of %u client?"
+msgid_plural "Request the shared files of %u clients?"
+msgstr[0] "Перезавантажується перелік спільних файлів."
+msgstr[1] "Перезавантажується перелік спільних файлів."
+msgstr[2] "Перезавантажується перелік спільних файлів."
+
+#: src/ClientContextActions.cpp
+msgid "A connection is opened to each of them."
+msgstr ""
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1423,6 +1459,14 @@ msgstr "недоступні"
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr "Недоступно"
+
+#: src/ClientRowListCtrl.cpp
+#, c-format
+msgid "Could not ask %u selected client for its shared files."
+msgid_plural "Could not ask %u selected clients for their shared files."
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
 
 #: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Files"
@@ -2167,6 +2211,10 @@ msgid "eD2k is disabled in preferences."
 msgstr "eD2k вимкнена у налаштуваннях"
 
 #: src/ExternalConn.cpp
+msgid "No address known for that friend yet."
+msgstr ""
+
+#: src/ExternalConn.cpp
 #, fuzzy
 msgid "Friend not found."
 msgstr "Файл не знайдено."
@@ -2801,6 +2849,11 @@ msgid "Failed to open friend list file 'emfriends.met' for writing!"
 msgstr "Неможливо відкрити перелік друзів 'emfriends.met' для запису!"
 
 #: src/FriendList.cpp
+#, c-format
+msgid "No address known for friend '%s' yet, cannot browse them."
+msgstr ""
+
+#: src/FriendList.cpp
 msgid "CRITICAL - no client on StartChatSession"
 msgstr "КРИТИЧНО - немає клієнта на StartChatSession"
 
@@ -2819,6 +2872,11 @@ msgstr "Видалити друга"
 #: src/FriendListCtrl.cpp
 msgid "Send &Message"
 msgstr "Надіслати повідомлення"
+
+#: src/FriendListCtrl.cpp
+#, c-format
+msgid "No address known for friend '%s' yet, cannot message them."
+msgstr ""
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"

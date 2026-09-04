@@ -26,6 +26,8 @@
 
 #include <wx/menu.h>
 #include <wx/msgdlg.h>
+
+#include "Logger.h" // Needed for AddLogLineC
 #include <wx/textdlg.h>
 
 #include <common/MenuIDs.h>
@@ -34,6 +36,8 @@
 #include "amuleDlg.h"           // Needed for CamuleDlg
 #include "ChatWnd.h"            // Needed for CChatWnd::SendMessage
 #include "ClientDetailDialog.h" // Needed for CClientDetailDialog
+#include "ClientList.h"         // Needed for CClientList::CreateForAddress
+#include "Friend.h"             // Needed for CFriend
 #include "FriendList.h"         // Needed for CFriendList
 #include "OtherFunctions.h"     // Needed for GUI_ID
 #include "SearchDlg.h"          // Needed for CSearchDlg::ActivateBrowseTabIfOpen
@@ -46,12 +50,19 @@ wxMenu *BuildClientContextMenu(const CClientRef &client)
 
 	wxMenu *menu = new wxMenu(_("Clients"));
 	menu->Append(MP_DETAIL, _("Show &Details"));
-	menu->Append(MP_ADDFRIEND, c.IsFriend() ? _("Remove from friends") : _("Add to Friends"));
+	// Resolved, not read off the live client: see FriendForClient().
+	CFriend *known = FriendForClient(c);
+	menu->Append(MP_ADDFRIEND, known != nullptr ? _("Remove from friends") : _("Add to Friends"));
+	// Unfriending needs only the record; friending needs a hash or an address
+	// to store, and the action asks the same question through PeerIdentity.
+	menu->Enable(MP_ADDFRIEND, known != nullptr || PeerIdentity::FromClient(c).CanBeFriended());
 
 	menu->AppendCheckItem(MP_FRIENDSLOT, _("Establish Friend Slot"));
-	if (c.IsFriend()) {
+	if (known != nullptr) {
 		menu->Enable(MP_FRIENDSLOT, true);
-		menu->Check(MP_FRIENDSLOT, c.GetFriendSlot());
+		// The record's flag, which is the one the slot action writes and the
+		// one that survives the peer going offline.
+		menu->Check(MP_FRIENDSLOT, known->HasFriendSlot());
 	} else {
 		menu->Enable(MP_FRIENDSLOT, false);
 	}
@@ -64,6 +75,334 @@ wxMenu *BuildClientContextMenu(const CClientRef &client)
 	menu->Enable(MP_SHOWLIST, !c.HasDisabledSharedFiles());
 
 	return menu;
+}
+
+namespace
+{
+
+// Asks for the message and hands it to the chat window. Shared so the live and
+// stored-row paths cannot drift: all either has is a display name and a GUI_ID.
+void PromptAndSendChatMessage(const wxString &userName, uint64 userID)
+{
+	const wxString message = ::wxGetTextFromUser(_("Send message to user"), _("Message to send:"));
+	if (!message.IsEmpty()) {
+		theApp->amuledlg->m_chatwnd->SendMessage(message, userName, userID);
+	}
+}
+
+// Holds the friend list's write open for as long as it is in scope. Works in
+// both builds: CFriendListRem answers the same two calls with no-ops, because
+// the daemon owns the file there.
+class FriendListBatch
+{
+public:
+	FriendListBatch() { theApp->friendlist->BeginBatch(); }
+	~FriendListBatch() { theApp->friendlist->EndBatch(); }
+	FriendListBatch(const FriendListBatch &) = delete;
+	FriendListBatch &operator=(const FriendListBatch &) = delete;
+};
+
+// Above this a bulk action asks before running. One row must never cost a
+// click and a few is plainly deliberate, but Clients -> Known lists every peer
+// we have credit for, so a select-all there is thousands of rows and each one
+// costs an outbound connection or a rewrite of the friend list.
+const size_t kBulkPeerActionPrompt = 10;
+
+// Only one friend slot exists, so a wider selection loses all but the first.
+void WarnIfMultipleFriendSlot(wxWindow *parent, size_t selected)
+{
+	if (selected > 1) {
+		wxMessageBox(_("You are not allowed to set more than one friend slot.\n Only one slot was "
+			       "assigned."),
+			_("Multiple selection"),
+			wxOK | wxICON_ERROR,
+			parent);
+	}
+}
+
+} // namespace
+
+wxMenu *BuildPeerContextMenu(const PeerIdentity &peer)
+{
+	// A peer we are connected to knows strictly more about itself than the
+	// stored record does, so defer to the existing builder whenever there is
+	// one rather than keeping two versions of these rules.
+	if (peer.client.IsLinked()) {
+		return BuildClientContextMenu(peer.client);
+	}
+
+	// Friendship and the friend slot are ours, not the peer's: both live in
+	// emfriends.met and apply next time it connects.
+	//
+	// FriendFor(), so this agrees with whatever the action will decide.
+	// It reaches LookupFriend() rather than FindFriend(): the latter adopts
+	// the hash onto an address-only record and saves the file, and merely
+	// opening a menu must not write to disk.
+	CFriend *known = FriendFor(peer);
+
+	wxMenu *menu = new wxMenu(_("Clients"));
+	menu->Append(MP_DETAIL, _("Show &Details"));
+	menu->Append(MP_ADDFRIEND, known ? _("Remove from friends") : _("Add to Friends"));
+
+	menu->AppendCheckItem(MP_FRIENDSLOT, _("Establish Friend Slot"));
+	if (known) {
+		menu->Enable(MP_FRIENDSLOT, true);
+		menu->Check(MP_FRIENDSLOT, known->HasFriendSlot());
+	} else {
+		menu->Enable(MP_FRIENDSLOT, false);
+	}
+
+	menu->Append(MP_SHOWLIST, _("View Files"));
+	menu->Append(MP_SENDMESSAGE, _("Send message"));
+
+	// Both open a connection, so both need somewhere to open it to. Whether
+	// the peer forbids browsing is live state we do not have, and an unknown
+	// is not a refusal, so View Files stays offered on that count.
+	//
+	// Only browsing is out of amulegui's reach, because EC names a browse
+	// target by ECID and this peer has no daemon-side object. Chat addresses
+	// by GUI_ID, which is the address itself, so it works in both builds.
+	// Friending is unaffected either way: it is a property of our own list.
+	// Unfriending only needs the record we already have; friending needs an
+	// address to store, and both connection entries need somewhere to dial.
+	menu->Enable(MP_ADDFRIEND, known != nullptr || peer.CanBeFriended());
+	menu->Enable(MP_SENDMESSAGE, peer.CanOpenConnection());
+	menu->Enable(MP_SHOWLIST, peer.CanOpenConnection() && PeerBrowseIsPossible(peer));
+
+	return menu;
+}
+
+// Whether this build can browse a peer it is not already connected to.
+//
+// Monolithic aMule owns its client list and can make one from an address.
+// amulegui cannot: EC names a browse target by ECID, and a peer that is
+// neither connected nor a friend has no daemon-side object to have one.
+//
+// Chat is deliberately NOT covered by this. EC_OP_CHAT_SEND takes a bare
+// GUI_ID, which is built from the address alone, so messaging a peer we only
+// hold an address for works in both builds.
+bool PeerBrowseIsPossible(const PeerIdentity &peer)
+{
+#ifndef CLIENT_GUI
+	(void)peer;
+	return true;
+#else
+	// EC names a browse target by ECID. A peer we are connected to has one as
+	// a client, and a friend has one as a friend record, and CFriendListRem
+	// already browses both. Only a peer that is neither has no daemon-side
+	// object to name, which is the case this cannot reach.
+	return peer.client.IsLinked() || PeerIsFriend(peer);
+#endif
+}
+
+bool PeerActionViewFiles(const PeerIdentity &peer)
+{
+	if (peer.client.IsLinked()) {
+		ClientActionViewFiles({ peer.client });
+		return true;
+	}
+	if (!peer.CanOpenConnection()) {
+		return false;
+	}
+#ifdef CLIENT_GUI
+	// A friend can be named on the wire by its ECID even when we are not
+	// connected to it, which is the one handle a stored row can have.
+	if (CFriend *known = FriendFor(peer)) {
+		theApp->friendlist->RequestSharedFileList(known);
+		return true;
+	}
+	// Otherwise there is nothing to name it with, so say so rather than
+	// leaving the caller to assume the browse was asked for.
+	return false;
+#else
+	// Only now is a client made and a connection opened: the user asked to
+	// browse, which cannot be answered from the stored record. Passing the
+	// hash lets the call reuse the client it made last time instead of
+	// stacking up a new one per click.
+	ClientActionViewFiles(
+		{ theApp->clientlist->CreateForAddress(peer.hash, peer.ip, peer.port, peer.name) });
+	return true;
+#endif
+}
+
+void PeerActionSendMessage(const PeerIdentity &peer)
+{
+	if (peer.client.IsLinked()) {
+		ClientActionSendMessage({ peer.client });
+		return;
+	}
+	if (!peer.CanOpenConnection()) {
+		return;
+	}
+	// The address is the whole target: monolithic looks the client up by it,
+	// and amulegui sends the GUI_ID over EC for the daemon to resolve. Either
+	// way CClientList::SendChatMessage() makes the client if there is none,
+	// so there is nothing to pre-create here.
+	//
+	// The hash stands in for a missing name here, and only here: this label
+	// titles the chat tab and is not stored anywhere, unlike the name that
+	// goes into a friend record.
+	PromptAndSendChatMessage(
+		peer.name.IsEmpty() ? peer.hash.Encode() : peer.name, GUI_ID(peer.ip, peer.port));
+}
+
+CFriend *FriendForClient(const CClientRef &client)
+{
+	// Linkage first, then the client's own identity. The linkage alone is not
+	// enough: CFriendList::AddFriend(hash, ip, port, name) stores a record
+	// without calling LinkClient(), so a friend added from the dialog while
+	// its peer is connected is a friend that IsFriend() denies.
+	CClientRef &live = const_cast<CClientRef &>(client);
+	if (CFriend *linked = live.GetFriend()) {
+		return linked;
+	}
+	return theApp->friendlist->LookupFriend(live.GetUserHash(), live.GetIP(), live.GetUserPort());
+}
+
+CFriend *FriendFor(const PeerIdentity &peer)
+{
+	// One step for every caller, menu and action alike: deciding this per
+	// caller is how a menu entry and the thing it triggers end up disagreeing
+	// about whether a peer is already a friend, and an "Add" that removes.
+	if (peer.client.IsLinked()) {
+		return FriendForClient(peer.client);
+	}
+	return theApp->friendlist->LookupFriend(peer.hash, peer.ip, peer.port);
+}
+
+bool ConfirmBulkPeerAction(wxWindow *parent, size_t count, const wxString &message)
+{
+	if (count <= kBulkPeerActionPrompt) {
+		return true;
+	}
+	return wxMessageBox(message, _("Multiple selection"), wxYES_NO | wxICON_QUESTION, parent) == wxYES;
+}
+
+bool ConfirmFriendAction(wxWindow *parent, size_t count, bool addThem)
+{
+	const wxString message =
+		addThem ? wxString(CFormat(wxPLURAL("Add %u client to your friend list?",
+					   "Add %u clients to your friend list?",
+					   count)) %
+				   count)
+			: wxString(CFormat(wxPLURAL("Remove %u client from your friend list?",
+					   "Remove %u clients from your friend list?",
+					   count)) %
+				   count);
+	return ConfirmBulkPeerAction(parent, count, message);
+}
+
+void ReportFriendSkips(size_t skipped)
+{
+	if (skipped == 0) {
+		return;
+	}
+	AddLogLineC(CFormat(wxPLURAL("Could not add %u selected client to your friend list: no "
+				     "address is known for it.",
+			    "Could not add %u selected clients to your friend list: no address is "
+			    "known for them.",
+			    skipped)) %
+		    skipped);
+}
+
+bool ConfirmBrowseAction(wxWindow *parent, size_t count)
+{
+	// The connection line is stated unconditionally, because whether a browse
+	// dials is a property of each peer rather than of the list asking. A peer
+	// we hold no socket for is contacted: RequestSharedFileList() uses an
+	// existing connection only when IsConnected(), and otherwise calls
+	// TryToContact. Every one of these lists can hold such a peer, queued and
+	// A4AF sources in the per-file lists and stored rows in the history one,
+	// and no caller could answer it anyway: each takes its count before the
+	// selection is resolved, deliberately.
+	wxString message = CFormat(wxPLURAL("Request the shared files of %u client?",
+				   "Request the shared files of %u clients?",
+				   count)) %
+			   count;
+	message << wxT("\n\n") << _("A connection is opened to each of them.");
+	return ConfirmBulkPeerAction(parent, count, message);
+}
+
+void PeerActionSetFriendsForClients(wxWindow *parent, const std::vector<CClientRef> &clients, bool addThem)
+{
+	if (clients.empty()) {
+		return;
+	}
+	if (!ConfirmFriendAction(parent, clients.size(), addThem)) {
+		return;
+	}
+	// Through the same action the row-backed lists use, so the direction, the
+	// address requirement, the single write and the skip reporting are stated
+	// once rather than accumulated twice.
+	std::vector<PeerIdentity> peers;
+	peers.reserve(clients.size());
+	for (const CClientRef &client : clients) {
+		peers.push_back(PeerIdentity::FromClient(client));
+	}
+	ReportFriendSkips(PeerActionSetFriends(peers, addThem));
+}
+
+bool PeerIsFriend(const PeerIdentity &peer)
+{
+	return FriendFor(peer) != nullptr;
+}
+
+size_t PeerActionSetFriends(const std::vector<PeerIdentity> &peers, bool addThem)
+{
+	// One write for the whole run. CFriendList saves after every add and
+	// remove, so without this a large selection rewrites emfriends.met once
+	// per row, on the GUI thread, with the file growing as it goes.
+	//
+	// Scoped, not a bare pair of calls: a batch left open makes every later
+	// SaveList() a silent no-op, including the one in ~CFriendList(), so a
+	// single escape from this loop would lose the friend list on exit.
+	size_t skipped = 0;
+	FriendListBatch batch;
+	for (const PeerIdentity &peer : peers) {
+		CFriend *known = FriendFor(peer);
+		// One direction for the whole run, taken from the entry the user
+		// picked. Toggling per row means a selection holding both friends and
+		// strangers does the opposite of its own label to half of it, and
+		// removing a friend is the loss of something they curated.
+		if (addThem) {
+			if (known != nullptr) {
+				continue;
+			}
+			if (!peer.CanBeFriended()) {
+				// A friend is reached by address, and a record without one
+				// can never be dialled. Connected or not, the bar is the
+				// same, and the caller says how many were left out.
+				++skipped;
+				continue;
+			}
+			if (peer.client.IsLinked()) {
+				// The client-aware overload, which links the record to the
+				// live client. Storing the address alone leaves the friend
+				// looking offline for the rest of a session we are already
+				// talking through, and leaves its friend slot unsettable,
+				// because that entry is gated on the linkage.
+				theApp->friendlist->AddFriend(peer.client);
+			} else {
+				theApp->friendlist->AddFriend(peer.hash, peer.ip, peer.port, peer.name);
+			}
+		} else if (known != nullptr) {
+			theApp->friendlist->RemoveFriend(known);
+		}
+	}
+	return skipped;
+}
+
+void PeerActionSetFriendSlot(wxWindow *parent, const PeerIdentity &peer, bool checked, size_t selected)
+{
+	// Resolve the friend the same way the menu decided whether to offer this
+	// entry: through the live client's own linkage when there is one, and
+	// from the stored record otherwise. Resolving it differently is how the
+	// menu ends up describing one peer while the action runs on another.
+	// Either way the slot is a property of our own list, so it is settable
+	// on a peer that is not connected, which is the case this list covers.
+	theApp->friendlist->SetFriendSlot(FriendFor(peer), checked);
+
+	WarnIfMultipleFriendSlot(parent, selected);
 }
 
 void ClientActionViewFiles(const std::vector<CClientRef> &clients)
@@ -81,33 +420,14 @@ void ClientActionViewFiles(const std::vector<CClientRef> &clients)
 	}
 }
 
-void ClientActionToggleFriend(const std::vector<CClientRef> &clients)
-{
-	for (const CClientRef &client : clients) {
-		CClientRef &c = const_cast<CClientRef &>(client);
-		if (c.IsFriend()) {
-			theApp->friendlist->RemoveFriend(c.GetFriend());
-		} else {
-			theApp->friendlist->AddFriend(c);
-		}
-	}
-}
-
 void ClientActionSetFriendSlot(wxWindow *parent, const std::vector<CClientRef> &clients, bool checked)
 {
 	if (clients.empty()) {
 		return;
 	}
-	CClientRef &first = const_cast<CClientRef &>(clients.front());
-	theApp->friendlist->SetFriendSlot(first.GetFriend(), checked);
+	theApp->friendlist->SetFriendSlot(FriendForClient(clients.front()), checked);
 
-	if (clients.size() > 1) {
-		wxMessageBox(_("You are not allowed to set more than one friend slot.\n Only one slot was "
-			       "assigned."),
-			_("Multiple selection"),
-			wxOK | wxICON_ERROR,
-			parent);
-	}
+	WarnIfMultipleFriendSlot(parent, clients.size());
 }
 
 void ClientActionSendMessage(const std::vector<CClientRef> &clients)
@@ -122,10 +442,7 @@ void ClientActionSendMessage(const std::vector<CClientRef> &clients)
 	const wxString userName = source.GetUserName();
 	const uint64 userID = GUI_ID(source.GetIP(), source.GetUserPort());
 
-	const wxString message = ::wxGetTextFromUser(_("Send message to user"), _("Message to send:"));
-	if (!message.IsEmpty()) {
-		theApp->amuledlg->m_chatwnd->SendMessage(message, userName, userID);
-	}
+	PromptAndSendChatMessage(userName, userID);
 }
 
 void ClientActionShowDetails(wxWindow *parent, const std::vector<CClientRef> &clients)

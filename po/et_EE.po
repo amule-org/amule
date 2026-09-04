@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-04 09:46+0200\n"
+"POT-Creation-Date: 2026-09-04 12:13+0200\n"
 "PO-Revision-Date: 2026-09-03 11:03+0000\n"
 "Last-Translator: \n"
 "Language-Team: Estonian <kde-i18n-doc@kde.org>\n"
@@ -1254,6 +1254,14 @@ msgid "Send message"
 msgstr "Saada teade"
 
 #: src/ClientContextActions.cpp
+msgid "Send message to user"
+msgstr "Saada kasutajale teade"
+
+#: src/ClientContextActions.cpp
+msgid "Message to send:"
+msgstr "Saadetav teade:"
+
+#: src/ClientContextActions.cpp
 #, fuzzy
 msgid ""
 "You are not allowed to set more than one friend slot.\n"
@@ -1267,12 +1275,36 @@ msgid "Multiple selection"
 msgstr "Vali mitu"
 
 #: src/ClientContextActions.cpp
-msgid "Send message to user"
-msgstr "Saada kasutajale teade"
+#, c-format
+msgid "Add %u client to your friend list?"
+msgid_plural "Add %u clients to your friend list?"
+msgstr[0] ""
+msgstr[1] ""
 
 #: src/ClientContextActions.cpp
-msgid "Message to send:"
-msgstr "Saadetav teade:"
+#, fuzzy, c-format
+msgid "Remove %u client from your friend list?"
+msgid_plural "Remove %u clients from your friend list?"
+msgstr[0] "Eemalda sõpradest"
+msgstr[1] "Eemalda sõpradest"
+
+#: src/ClientContextActions.cpp
+#, c-format
+msgid "Could not add %u selected client to your friend list: no address is known for it."
+msgid_plural "Could not add %u selected clients to your friend list: no address is known for them."
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/ClientContextActions.cpp
+#, fuzzy, c-format
+msgid "Request the shared files of %u client?"
+msgid_plural "Request the shared files of %u clients?"
+msgstr[0] "Jagatud failide loetelu taaslaadimine."
+msgstr[1] "Jagatud failide loetelu taaslaadimine."
+
+#: src/ClientContextActions.cpp
+msgid "A connection is opened to each of them."
+msgstr ""
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1415,6 +1447,13 @@ msgstr "N/A"
 #: src/ClientRef.cpp
 msgid "Not Available"
 msgstr "Info Puudub"
+
+#: src/ClientRowListCtrl.cpp
+#, c-format
+msgid "Could not ask %u selected client for its shared files."
+msgid_plural "Could not ask %u selected clients for their shared files."
+msgstr[0] ""
+msgstr[1] ""
 
 #: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Files"
@@ -2147,6 +2186,10 @@ msgid "eD2k is disabled in preferences."
 msgstr "eD2k on seadetes väljalülitatud."
 
 #: src/ExternalConn.cpp
+msgid "No address known for that friend yet."
+msgstr ""
+
+#: src/ExternalConn.cpp
 #, fuzzy
 msgid "Friend not found."
 msgstr "Faili ei leitud."
@@ -2782,6 +2825,11 @@ msgid "Failed to open friend list file 'emfriends.met' for writing!"
 msgstr "Sõprade faili 'emfriends.met' avamine kirjutamiseks ebaõnnestus!"
 
 #: src/FriendList.cpp
+#, c-format
+msgid "No address known for friend '%s' yet, cannot browse them."
+msgstr ""
+
+#: src/FriendList.cpp
 msgid "CRITICAL - no client on StartChatSession"
 msgstr "KRIITILINE - StartChatSession puudub klient"
 
@@ -2800,6 +2848,11 @@ msgstr "Eemalda sõber"
 #: src/FriendListCtrl.cpp
 msgid "Send &Message"
 msgstr "Saada sõnu&m"
+
+#: src/FriendListCtrl.cpp
+#, c-format
+msgid "No address known for friend '%s' yet, cannot message them."
+msgstr ""
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"

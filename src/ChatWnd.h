@@ -41,7 +41,13 @@ public:
 	CChatWnd(wxWindow *pParent = NULL);
 	~CChatWnd() {};
 
-	void StartSession(CFriend *friend_client, bool setfocus = true);
+	/**
+	 * Open (or raise) the chat tab for a friend.
+	 *
+	 * False when there is no address to key the tab on, so the caller can say
+	 * why nothing happened.
+	 */
+	bool StartSession(CFriend *friend_client, bool setfocus = true);
 
 	void UpdateFriend(CFriend *toupdate);
 	void RemoveFriend(CFriend *todel);

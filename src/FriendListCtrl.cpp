@@ -40,6 +40,7 @@
 #include "muuli_wdr.h"
 #include "SafeFile.h"
 #include "FriendList.h" // Needed for the friends list
+#include "Logger.h"     // Needed for AddLogLineC
 
 wxBEGIN_EVENT_TABLE(CFriendListCtrl, CMuleVirtualDataViewCtrl)
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(wxID_ANY, CFriendListCtrl::OnItemRightClicked)
@@ -158,7 +159,7 @@ void CFriendListCtrl::OnItemActivated(wxDataViewEvent &event)
 		return;
 	}
 
-	theApp->amuledlg->m_chatwnd->StartSession(reinterpret_cast<CFriend *>(selected.front()));
+	MessageFriend(reinterpret_cast<CFriend *>(selected.front()));
 }
 
 void CFriendListCtrl::OnItemRightClicked(wxDataViewEvent &event)
@@ -205,15 +206,29 @@ void CFriendListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 	delete menu;
 }
 
+void CFriendListCtrl::MessageFriend(CFriend *cur_friend)
+{
+	if (cur_friend == nullptr) {
+		return;
+	}
+// #warning CORE/GUI!
+#ifndef CLIENT_GUI
+	// Resolve the peer before opening the tab, not after. This finds a client
+	// we already hold for the friend's hash even when the record carries no
+	// address, and CFriend::LinkClient then writes that address back to the
+	// record -- which is what the tab is keyed on.
+	theApp->friendlist->StartChatSession(cur_friend);
+#endif
+	if (!theApp->amuledlg->m_chatwnd->StartSession(cur_friend)) {
+		AddLogLineC(CFormat(_("No address known for friend '%s' yet, cannot message them.")) %
+			    cur_friend->GetName());
+	}
+}
+
 void CFriendListCtrl::OnSendMessage(wxCommandEvent &WXUNUSED(event))
 {
 	for (wxUIntPtr data : GetSelectedItemData()) {
-		CFriend *cur_friend = reinterpret_cast<CFriend *>(data);
-		theApp->amuledlg->m_chatwnd->StartSession(cur_friend);
-// #warning CORE/GUI!
-#ifndef CLIENT_GUI
-		theApp->friendlist->StartChatSession(cur_friend);
-#endif
+		MessageFriend(reinterpret_cast<CFriend *>(data));
 	}
 }
 

@@ -850,9 +850,27 @@ public:
 	void AddFriend(
 		const CMD4Hash &userhash, uint32 lastUsedIP, uint32 lastUsedPort, const wxString &name);
 	void RemoveFriend(CFriend *toremove);
+
+	// The same batch API CFriendList exposes, so shared GUI code can bracket
+	// a bulk operation without knowing which build it is in. Nothing to defer
+	// here: the daemon owns emfriends.met and each change is one EC packet.
+	void BeginBatch() {}
+	void EndBatch() {}
 	void RequestSharedFileList(CFriend *Friend);
 	void RequestSharedFileList(CClientRef &client);
 	void SetFriendSlot(CFriend *Friend, bool new_state);
+
+	/**
+	 * The friend with this identity, or NULL.
+	 *
+	 * Same contract as CFriendList::LookupFriend(): a hash matches a hashed
+	 * friend, an address matches one entered by address, and the list is left
+	 * untouched. Reads the container the daemon has already synced here, so it
+	 * costs no EC round-trip. There is deliberately no adopting counterpart to
+	 * CFriendList::FindFriend(): the list this build holds is a copy and the
+	 * daemon owns the file.
+	 */
+	CFriend *LookupFriend(const CMD4Hash &userhash, uint32 dwIP, uint16 nPort) const;
 
 	//
 	// template

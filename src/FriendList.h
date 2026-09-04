@@ -42,8 +42,33 @@ public:
 	~CFriendList();
 
 	bool IsAlreadyFriend(uint32 dwLastUsedIP, uint32 nLastUsedPort);
+	/**
+	 * Writes emfriends.met, unless a batch is open.
+	 *
+	 * Every add and remove saves, so a bulk operation over a large selection
+	 * rewrites the whole file once per friend, on the GUI thread, with the
+	 * file growing as it goes. Opening a batch defers the write to the end of
+	 * it, which is transparent to every existing caller.
+	 */
 	void SaveList();
+
+	//! Defer SaveList() until the matching EndBatch(). Nestable.
+	void BeginBatch();
+	void EndBatch();
 	void LoadList();
+	/**
+	 * Looks a friend up without altering the list.
+	 *
+	 * Use this whenever the answer only informs a decision (enabling a menu
+	 * entry, say). FindFriend() adopts the hash onto an address-only record
+	 * and saves the file, which is wrong as a side effect of a query.
+	 */
+	CFriend *LookupFriend(const CMD4Hash &userhash, uint32 dwIP, uint16 nPort) const;
+
+	/**
+	 * As LookupFriend(), but a match found by address that carries no hash
+	 * yet adopts the one passed in, and the list is saved.
+	 */
 	CFriend *FindFriend(const CMD4Hash &userhash, uint32 dwIP, uint16 nPort);
 	CFriend *FindFriend(uint32 ecid);
 	void AddFriend(CFriend *toadd, bool notify = true);
@@ -57,7 +82,23 @@ public:
 	void RemoveFriend(CFriend *toremove);
 	// browseSearchId != 0 pins an EC-allocated browse ("View Files") search ID on
 	// the friend's client so ProcessSharedFileList files the listing under it.
-	void RequestSharedFileList(CFriend *Friend, uint32 browseSearchId = 0);
+	//! What a browse request did, so a caller can tell the reasons apart.
+	enum class BrowseResult
+	{
+		Started,        //!< The request went out under the id given.
+		AlreadyRunning, //!< This peer is mid-browse; join that one instead.
+		Unreachable     //!< No client and no address to build one from.
+	};
+
+	/**
+	 * Asks a friend for its shared files.
+	 *
+	 * False when there is nobody to ask: no client is held for the friend and
+	 * its record carries no address to build one from. The caller owns any
+	 * browse id it allocated and has to release it, or the search sits
+	 * pending forever with nothing to terminate it.
+	 */
+	BrowseResult RequestSharedFileList(CFriend *cur_friend, uint32 browseSearchId = 0);
 
 	void SetFriendSlot(CFriend *Friend, bool new_state);
 	void StartChatSession(CFriend *Friend);
@@ -88,6 +129,10 @@ public:
 	const_iterator end() const { return const_iterator(m_FriendList.end()); }
 
 private:
+	//! Nesting depth of BeginBatch()/EndBatch(), and whether one was skipped.
+	unsigned m_batchDepth = 0;
+	bool m_savePending = false;
+
 	FriendList m_FriendList;
 };
 

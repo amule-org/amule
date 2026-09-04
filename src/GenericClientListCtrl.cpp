@@ -574,12 +574,33 @@ std::vector<CClientRef> SelectedClients(const std::vector<wxUIntPtr> &selected)
 
 void CGenericClientListCtrl::OnViewFiles(wxCommandEvent &WXUNUSED(event))
 {
-	ClientActionViewFiles(SelectedClients(GetSelectedItemData()));
+	const std::vector<CClientRef> clients = SelectedClients(GetSelectedItemData());
+	if (clients.empty()) {
+		return;
+	}
+	// One result tab per peer, and a connection to any of them we are not
+	// already talking to: this list holds queued and A4AF sources, which are
+	// peers whose queue we sit in without holding a socket.
+	if (!ConfirmBrowseAction(this, clients.size())) {
+		return;
+	}
+	ClientActionViewFiles(clients);
 }
 
 void CGenericClientListCtrl::OnAddFriend(wxCommandEvent &WXUNUSED(event))
 {
-	ClientActionToggleFriend(SelectedClients(GetSelectedItemData()));
+	// The direction comes from the first selected client, which is the row the
+	// menu was built for. Read from the live selection rather than the pointer
+	// stashed at popup time: PopupMenu() runs a nested event loop, a source
+	// removal during it deletes the ClientCtrlItem_Struct, and nothing clears
+	// that pointer. The selection cannot go stale the same way, because the
+	// control maintains it.
+	const std::vector<CClientRef> clients = SelectedClients(GetSelectedItemData());
+	if (clients.empty()) {
+		return;
+	}
+	const bool addThem = !PeerIsFriend(PeerIdentity::FromClient(clients.front()));
+	PeerActionSetFriendsForClients(this, clients, addThem);
 }
 
 void CGenericClientListCtrl::OnSetFriendslot(wxCommandEvent &evt)

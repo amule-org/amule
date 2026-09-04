@@ -3489,6 +3489,21 @@ void CFriendListRem::AddFriend(
 	m_conn->SendPacket(&req);
 }
 
+CFriend *CFriendListRem::LookupFriend(const CMD4Hash &userhash, uint32 dwIP, uint16 nPort) const
+{
+	for (CFriend *cur_friend : m_items) {
+		if (!userhash.IsEmpty() && cur_friend->HasHash()) {
+			if (cur_friend->GetUserHash() == userhash) {
+				return cur_friend;
+			}
+		} else if (dwIP != 0 && cur_friend->GetIP() == dwIP && cur_friend->GetPort() == nPort) {
+			// A zero address is the absence of one, not a value to match on.
+			return cur_friend;
+		}
+	}
+	return nullptr;
+}
+
 void CFriendListRem::RemoveFriend(CFriend *toremove)
 {
 	CECPacket req(EC_OP_FRIEND);
@@ -3502,6 +3517,9 @@ void CFriendListRem::RemoveFriend(CFriend *toremove)
 
 void CFriendListRem::SetFriendSlot(CFriend *Friend, bool new_state)
 {
+	if (!Friend) {
+		return;
+	}
 	CECPacket req(EC_OP_FRIEND);
 
 	CECTag slottag(EC_TAG_FRIEND_FRIENDSLOT, new_state);
