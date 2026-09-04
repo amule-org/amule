@@ -111,7 +111,10 @@ if [ "$CCOUNT" -gt 0 ]; then
 	_assert_json_eq '.clients[0].upload_state | type'   string   '/clients[0].upload_state is string'
 	_assert_json_eq '.clients[0].download_state | type' string   '/clients[0].download_state is string'
 	_assert_json_eq '.clients[0].ident_state | type'    string   '/clients[0].ident_state is string'
-	_assert_json_eq '.clients[0].software | type'       string   '/clients[0].software is string'
+	# software is null when the daemon never reported the tag (#1290 item 5),
+	# so pin the type to the pair rather than to string alone.
+	_assert_json_eq '.clients[0].software | type | test("^(string|null)$")' true \
+		'/clients[0].software is a string or null'
 	# #439 peer country: always-present ISO 3166-1 alpha-2 string,
 	# empty when GeoIP is off/unresolved (never absent/null).
 	# Nullable since the R10 pass: null means GeoIP is off or the lookup has

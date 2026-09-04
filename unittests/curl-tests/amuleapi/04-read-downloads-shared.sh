@@ -712,7 +712,7 @@ if [ "$(echo "$CURL_BODY" | jq -r '.clients | length')" != "0" ]; then
 	# The states are enum labels, not free text -- the daemon always
 	# answers, and an answer it cannot map is the enum's "unknown" member.
 	for k in upload_state download_state ident_state; do
-		_assert_json_eq ".clients[0] | .$k | type" '"string"' \
+		_assert_json_eq ".clients[0] | .$k | type" "string" \
 			"/clients row: $k stays a string, never null"
 	done
 	# Same rule on the detail object, which shares WriteClientBaseFields.
