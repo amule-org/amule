@@ -217,9 +217,9 @@ const TABS = [
       { key: "proxy_type", type: "select", int: true, options: PROXY_TYPES, sub: true, gatedBy: "proxy_enabled" },
       { key: "proxy_host", type: "text", sub: true, gatedBy: "proxy_enabled" },
       { key: "proxy_port", type: "int", min: 0, max: 65535, sub: true, gatedBy: "proxy_enabled" },
-      { key: "proxy_auth", type: "bool", sub: true, gatedBy: "proxy_enabled" },
-      { key: "proxy_user", type: "text", sub: 2, gatedBy: ["proxy_enabled", "proxy_auth"] },
-      { key: "proxy_password", type: "password", sub: 2, gatedBy: ["proxy_enabled", "proxy_auth"] },
+      { key: "proxy_auth_enabled", type: "bool", sub: true, gatedBy: "proxy_enabled" },
+      { key: "proxy_user", type: "text", sub: 2, gatedBy: ["proxy_enabled", "proxy_auth_enabled"] },
+      { key: "proxy_password", type: "password", sub: 2, gatedBy: ["proxy_enabled", "proxy_auth_enabled"] },
     ] },
   ] },
   { id: "message_filter", labelKey: "prefs_message_filter", cat: "message_filter", groups: [

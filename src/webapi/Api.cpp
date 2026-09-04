@@ -3217,10 +3217,11 @@ webapi::KnownClientSnapshot DecodeKnownClient(const CECTag &entry)
 
 // One credit-store record (GET /known_clients).
 //
-// Optional fields are omitted rather than emitted empty: a record written
+// Optional fields are emitted as null rather than omitted: a record written
 // before the daemon kept per-peer metadata genuinely has no name, address or
 // software, and a consumer should be able to tell "not recorded" from "recorded
-// as empty". The hash, the totals and last_seen are always present.
+// as empty" without also having to test whether the key is there at all. The
+// hash, the totals and last_seen_at are always present.
 void WriteKnownClientObject(CJsonWriter &w, const webapi::KnownClientSnapshot &c)
 {
 	w.BeginObject();

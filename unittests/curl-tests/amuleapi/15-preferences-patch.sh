@@ -359,7 +359,7 @@ _assert_json_eq '(.connection.proxy_enabled|type)' boolean 'connection.proxy_ena
 _assert_json_eq '(.connection.proxy_type|type)'    string  'connection.proxy_type is an enum string (#655)'
 _assert_json_eq '(.connection.proxy_host|type)'    string  'connection.proxy_host is string'
 _assert_json_eq '(.connection.proxy_port|type)'    number  'connection.proxy_port is numeric'
-_assert_json_eq '(.connection.proxy_auth|type)'    boolean 'connection.proxy_auth is bool'
+_assert_json_eq '(.connection.proxy_auth_enabled|type)'    boolean 'connection.proxy_auth_enabled is bool'
 _assert_json_eq '(.connection.proxy_user|type)'    string  'connection.proxy_user is string'
 # proxy_password must NOT be present on GET (write-only).
 _assert_json_eq '(.connection|has("proxy_password"))' false 'connection.proxy_password absent on GET (write-only)'
@@ -371,7 +371,7 @@ SAVED_PXPORT=$(printf '%s' "$CURL_BODY" | jq -r '.connection.proxy_port')
 
 # Round-trip the readable fields + PATCH the write-only password in one go.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d '{"connection":{"proxy_enabled":true,"proxy_type":"http","proxy_host":"proxy.example","proxy_port":8080,"proxy_auth":true,"proxy_user":"alice","proxy_password":"s3cret"}}' \
+	-d '{"connection":{"proxy_enabled":true,"proxy_type":"http","proxy_host":"proxy.example","proxy_port":8080,"proxy_auth_enabled":true,"proxy_user":"alice","proxy_password":"s3cret"}}' \
 	"$HOST/api/v0/preferences"
 _assert_status 200 "PATCH proxy (incl. write-only password) → 200"
 _assert_json_eq '.connection.proxy_enabled' true 'proxy_enabled=true in response'

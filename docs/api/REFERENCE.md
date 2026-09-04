@@ -2288,7 +2288,7 @@ Returns every preference category amuled carries over EC. The `general` and `con
     "proxy_type": "socks5",
     "proxy_host": "",
     "proxy_port": 1080,
-    "proxy_auth": false,
+    "proxy_auth_enabled": false,
     "proxy_user": "",
     "upnp_supported": true,
     "upnp_enabled": false,
@@ -2375,7 +2375,7 @@ Booleans are plain JSON `true`/`false` regardless of how amuled encodes them on 
 
 `connection.upnp_enabled` toggles UPnP router forwarding of the daemon's P2P ports — the ports themselves are `connection.tcp_port` (ed2k TCP) and `connection.udp_port` (ed2k/Kad UDP). `connection.upnp_control_point_port` is a separate optional knob: the fixed local port the UPnP control point (libupnp) binds to for the router's callbacks, `0` meaning auto-assign — **not** a forwarded port. `connection.upnp_supported` is **read-only** — the daemon advertises whether it was built with UPnP (`false` on a core built `-DENABLE_UPNP=OFF`, where `upnp_enabled` has no effect); it is ignored if sent on PATCH. (Web-server and EC-port UPnP are intentionally not exposed — amuleweb is deprecated and the EC port is not a P2P port.)
 
-The `connection.proxy_*` fields configure the proxy the **daemon** routes its P2P and HTTP traffic through. `proxy_type` is one of `"socks5"` / `"socks4"` / `"http"` / `"socks4a"` — any other value is a `400`. It is the empty string when the daemon has no proxy type configured at all (the core's `PROXY_NONE`), a state that cannot be set back through this API; use `proxy_enabled: false` to turn the proxy off. `proxy_auth` toggles username/password authentication. `proxy_password` is **write-only** — accepted on PATCH but never returned on GET (same as the `remote_controls` passwords); PATCH the other proxy fields without it to leave the stored password unchanged.
+The `connection.proxy_*` fields configure the proxy the **daemon** routes its P2P and HTTP traffic through. `proxy_type` is one of `"socks5"` / `"socks4"` / `"http"` / `"socks4a"` — any other value is a `400`. It is the empty string when the daemon has no proxy type configured at all (the core's `PROXY_NONE`), a state that cannot be set back through this API; use `proxy_enabled: false` to turn the proxy off. `proxy_auth_enabled` toggles username/password authentication. `proxy_password` is **write-only** — accepted on PATCH but never returned on GET (same as the `remote_controls` passwords); PATCH the other proxy fields without it to leave the stored password unchanged.
 
 **Errors:** `503 ec_unavailable`.
 

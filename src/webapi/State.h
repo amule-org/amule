@@ -1173,7 +1173,7 @@ struct PreferencesSnapshot
 	std::string proxy_type;
 	std::string proxy_host;
 	std::uint16_t proxy_port = 0;
-	bool proxy_auth = false;
+	bool proxy_auth_enabled = false;
 	std::string proxy_user;
 	// UPnP. upnp_enabled toggles router forwarding of the P2P ports (which
 	// are tcp_port / udp_port themselves); upnp_control_point_port is the UPnP control
