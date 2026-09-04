@@ -1259,7 +1259,7 @@ wxSizer *clientDetails( wxWindow *parent, bool call_fit, bool set_sizer )
     wxStaticText *item26 = new wxStaticText( parent, IDT_KAD, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item26->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     item10->Add( item26, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
-    wxStaticText *item26a = new wxStaticText( parent, -1, _("Vendor capabilities:"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item26a = new wxStaticText( parent, IDT_MOD_CAPABILITIES_LABEL, _("Protocol extensions:"), wxDefaultPosition, wxDefaultSize, 0 );
     item10->Add( item26a, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
     wxStaticText *item26b = new wxStaticText( parent, IDT_MOD_CAPABILITIES, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item26b->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
