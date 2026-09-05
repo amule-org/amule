@@ -1190,6 +1190,7 @@ target_include_directories (PublicIPv6CorroborationTest
 
 target_link_libraries (PublicIPv6CorroborationTest
 	muleunit
+	mulecommon
 )
 
 # OP_UDPRESERVEDPROT2 frame demultiplexing: the type byte, the payload window
