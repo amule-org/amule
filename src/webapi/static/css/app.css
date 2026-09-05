@@ -26,7 +26,7 @@
   /* download pieces bar: available-but-not-downloaded parts (aMule's blue).
      The graph fades --piece-avail-lo (few sources) -> --piece-avail (many)
      to show availability, like the desktop GUI's blue gradient. */
-  --piece-avail: #2f8fd0;
+  --piece-avail: #0d3b66;
   --piece-avail-lo: #a6d4ee;
   --sel: rgba(22, 100, 192, .2);
   --stripe: rgba(0, 0, 0, .025);

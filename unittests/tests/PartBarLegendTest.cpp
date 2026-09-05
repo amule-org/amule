@@ -91,14 +91,14 @@ constexpr BarColour kExpectedNextPending{ 255, 255, 100 };
 //! agree with a wrong one.
 constexpr BarColour kExpectedZeroSources{ 255, 0, 0 };
 constexpr BarColour kExpectedOneSource{ 166, 212, 238 };
-constexpr BarColour kExpectedFiveSources{ 113, 181, 225 };
-constexpr BarColour kExpectedNineSources{ 60, 151, 211 };
-constexpr BarColour kExpectedManySources{ 47, 143, 208 };
+constexpr BarColour kExpectedFiveSources{ 98, 144, 178 };
+constexpr BarColour kExpectedNineSources{ 30, 76, 117 };
+constexpr BarColour kExpectedManySources{ 13, 59, 102 };
 
 //! One more sample, one step along the fade, so the table below has a value
-//! between the light endpoint and the halfway point. 166 - 119/9 rounds to
-//! 153, 212 - 69/9 to 204, 238 - 30/9 to 235.
-constexpr BarColour kExpectedTwoSources{ 153, 204, 235 };
+//! between the light endpoint and the halfway point. 166 - 153/9 rounds to
+//! 149, 212 - 153/9 to 195, 238 - 136/9 to 223.
+constexpr BarColour kExpectedTwoSources{ 149, 195, 223 };
 
 //! What a bar cell shows for a part @c sources peers hold, as one table.
 //!
