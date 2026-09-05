@@ -50,7 +50,7 @@ DECLARE_SIMPLE(ECClientCapabilities)
 // header it checks.
 TEST(ECClientCapabilities, TagCodeIsExact)
 {
-	ASSERT_EQUALS(0x0632, (int)EC_TAG_CLIENT_MOD_CAPABILITIES);
+	ASSERT_EQUALS(0x0633, (int)EC_TAG_CLIENT_MOD_CAPABILITIES);
 }
 
 // The core emits CPeerCapabilities::KnownBits() and an EC client reads it back
