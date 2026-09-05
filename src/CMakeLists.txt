@@ -866,6 +866,7 @@ if (NEED_LIB_MULEAPPCORE)
 		# another machine), and muleappcore is exactly the amule+amuled
 		# pair. Keeping it out of amulegui also keeps Crypto++ out of it.
 		AmuleApiCredentials.cpp
+		kademlia/kademlia/AICHHashList.cpp
 		kademlia/kademlia/Entry.cpp
 		kademlia/kademlia/Indexed.cpp
 		kademlia/kademlia/SearchManager.cpp

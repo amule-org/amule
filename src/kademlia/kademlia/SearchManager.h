@@ -81,7 +81,11 @@ public:
 
 	static void ProcessResponse(
 		const CUInt128 &target, uint32_t fromIP, uint16_t fromPort, ContactList *results);
-	static void ProcessResult(const CUInt128 &target, const CUInt128 &answer, TagPtrList *info);
+	static void ProcessResult(const CUInt128 &target,
+		const CUInt128 &answer,
+		TagPtrList *info,
+		uint32_t fromIP,
+		uint16_t fromPort);
 	static void ProcessPublishResult(const CUInt128 &target, const uint8_t load, const bool loadResponse);
 
 	static void GetWords(const wxString &str, WordList *words, bool allowDuplicates = false);

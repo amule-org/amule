@@ -88,7 +88,9 @@ public:
 	void SetFileName(const wxString &fileName) noexcept { m_fileName = fileName; }
 
 	void AddFileID(const CUInt128 &id) { m_fileIDs.push_back(id); }
-	void PreparePacketForTags(CMemFile *packet, CKnownFile *file);
+	// `targetKadVersion` is the advertised Kad version of the node we are
+	// about to publish to; tags introduced after its version are omitted.
+	void PreparePacketForTags(CMemFile *packet, CKnownFile *file, uint8_t targetKadVersion);
 	bool Stopping() const noexcept { return m_stopping; }
 
 	uint32_t GetNodeLoad() const noexcept
@@ -166,9 +168,10 @@ public:
 private:
 	void Go();
 	void ProcessResponse(uint32 fromIP, uint16 fromPort, ContactList *results);
-	void ProcessResult(const CUInt128 &answer, TagPtrList *info);
+	void ProcessResult(const CUInt128 &answer, TagPtrList *info, uint32_t fromIP, uint16_t fromPort);
 	void ProcessResultFile(const CUInt128 &answer, TagPtrList *info);
-	void ProcessResultKeyword(const CUInt128 &answer, TagPtrList *info);
+	void ProcessResultKeyword(
+		const CUInt128 &answer, TagPtrList *info, uint32_t fromIP, uint16_t fromPort);
 	void ProcessResultNotes(const CUInt128 &answer, TagPtrList *info);
 	void JumpStart();
 	void SendFindValue(CContact *contact, bool reaskMore = false);

@@ -44,9 +44,11 @@ there client on the eMule forum..
 #include <protocol/kad/Client2Client/UDP.h>
 #include <protocol/kad/Constants.h>
 #include <protocol/kad2/Client2Client/UDP.h>
+#include <protocol/kad2/Constants.h> // Needed for KADEMLIA_VERSION9_50a
 #include <tags/FileTags.h>
 
 #include "Defines.h"
+#include "AICHHashList.h"
 #include "UDPFirewallTester.h"
 #include "../routing/RoutingZone.h"
 #include "../routing/Contact.h"
@@ -56,6 +58,7 @@ there client on the eMule forum..
 #include "../../SharedFileList.h"
 #include "../../DownloadQueue.h"
 #include "../../PartFile.h"
+#include "../../SHAHashSet.h" // Needed for CAICHHash on Kad keyword storage
 #include "../../SearchList.h"
 #include "../../MemFile.h"
 #include "../../ClientList.h"
@@ -67,6 +70,13 @@ there client on the eMule forum..
 ////////////////////////////////////////
 using namespace Kademlia;
 ////////////////////////////////////////
+
+// CKadAICHHashList is written against a plain 20-byte array so that the codec
+// pinning TAG_KADAICHHASHPUB / TAG_KADAICHHASHRESULT stays testable without
+// SHAHashSet.cpp behind it. This is where the two definitions of "AICH root
+// hash size" meet, so this is where they are held together.
+static_assert(
+	Kademlia::KAD_AICH_HASH_SIZE == HASHSIZE, "Kad AICH hash size must match the AICH root hash size");
 
 CSearch::CSearch()
 {
@@ -825,7 +835,7 @@ void CSearch::StorePacket()
 					count--;
 					packetCount++;
 					packetdata.WriteUInt128(id);
-					PreparePacketForTags(&packetdata, pFile);
+					PreparePacketForTags(&packetdata, pFile, from->GetVersion());
 				}
 				++itListFileID;
 			}
@@ -1025,7 +1035,7 @@ void CSearch::StorePacket()
 	}
 }
 
-void CSearch::ProcessResult(const CUInt128 &answer, TagPtrList *info)
+void CSearch::ProcessResult(const CUInt128 &answer, TagPtrList *info, uint32_t fromIP, uint16_t fromPort)
 {
 	wxString type = "Unknown";
 	switch (m_type) {
@@ -1035,7 +1045,7 @@ void CSearch::ProcessResult(const CUInt128 &answer, TagPtrList *info)
 		break;
 	case KEYWORD:
 		type = "Keyword";
-		ProcessResultKeyword(answer, info);
+		ProcessResultKeyword(answer, info, fromIP, fromPort);
 		break;
 	case NOTES:
 		type = "Notes";
@@ -1184,8 +1194,33 @@ void CSearch::ProcessResultNotes(const CUInt128 &answer, TagPtrList *info)
 	}
 }
 
-void CSearch::ProcessResultKeyword(const CUInt128 &answer, TagPtrList *info)
+void CSearch::ProcessResultKeyword(
+	const CUInt128 &answer, TagPtrList *info, uint32_t fromIP, uint16_t fromPort)
 {
+#ifdef ENABLE_KAD_PROTOCOL_10
+	// Find the contact that answered, so that version-gated result tags can
+	// be checked against the version it advertised.  A tag a peer cannot
+	// possibly have generated is a tag it is relaying on someone else's
+	// behalf, and the whole point of the publisher-side filtering is that we
+	// do not take those at face value.
+	uint8_t fromKadVersion = 0;
+	for (ContactMap::const_iterator it = m_tried.begin(); it != m_tried.end(); ++it) {
+		const CContact *tmpContact = it->second;
+		if ((tmpContact->GetIPAddress() == fromIP) && (tmpContact->GetUDPPort() == fromPort)) {
+			fromKadVersion = tmpContact->GetVersion();
+			break;
+		}
+	}
+	if (fromKadVersion == 0) {
+		AddDebugLogLineN(logKadSearch,
+			"Unable to find the answering contact in ProcessResultKeyword - " +
+				KadIPPortToString(fromIP, fromPort));
+	}
+#else
+	(void)fromIP;
+	(void)fromPort;
+#endif
+
 	// Process a keyword that we received.
 	// Set of data we can use for a keyword result.
 	wxString name;
@@ -1200,6 +1235,9 @@ void CSearch::ProcessResultKeyword(const CUInt128 &answer, TagPtrList *info)
 	uint32_t bitrate = 0;
 	uint32_t availability = 0;
 	uint32_t publishInfo = 0;
+#ifdef ENABLE_KAD_PROTOCOL_10
+	std::vector<CKadAICHHashList::SResultHash> aichHashes;
+#endif
 	// Flag that is set if we want this keyword
 	bool bFileName = false;
 	bool bFileSize = false;
@@ -1254,6 +1292,32 @@ void CSearch::ProcessResultKeyword(const CUInt128 &answer, TagPtrList *info)
 					"trustvalue") %
 					differentNames % publishersKnown % ((double)trustValue / 100.0));
 #endif
+#ifdef ENABLE_KAD_PROTOCOL_10
+		} else if (tag->GetName() == TAG_KADAICHHASHRESULT) {
+			// AICH hashes on keyword storage arrived with Kad protocol
+			// version 0x09.  A sender below that cannot have produced
+			// this tag itself, so it is filtered rather than trusted.
+			//
+			// Gated with the rest: with the switch off we never publish
+			// an AICH hash, so acting on one a peer reports would be a
+			// behaviour upstream does not have.
+			if (CKadAICHHashList::PeerSupportsAICHKeywordStorage(fromKadVersion) &&
+				tag->IsBsob()) {
+				if (!CKadAICHHashList::DecodeResultTag(
+					    tag->GetBsob(), tag->GetBsobSize(), aichHashes)) {
+					AddDebugLogLineN(logKadSearch,
+						"ProcessResultKeyword: corrupt or invalid "
+						"TAG_KADAICHHASHRESULT received from " +
+							KadIPPortToString(fromIP, fromPort));
+				}
+			} else {
+				AddDebugLogLineN(logKadSearch,
+					CFormat("ProcessResultKeyword: received special publish tag "
+						"(TAG_KADAICHHASHRESULT) from a node (version %u, %s) "
+						"which is not aware of it, filtering") %
+						fromKadVersion % KadIPPortToString(fromIP, fromPort));
+			}
+#endif
 		}
 	}
 
@@ -1296,6 +1360,18 @@ void CSearch::ProcessResultKeyword(const CUInt128 &answer, TagPtrList *info)
 	if (availability) {
 		taglist.push_back(new CTagVarInt(TAG_SOURCES, availability));
 	}
+#ifdef ENABLE_KAD_PROTOCOL_10
+	// Carry the AICH root hash the most publishers agreed on into the search
+	// result, under the same tag name (FT_AICH_HASH) that an ed2k result and
+	// the part-file metadata use.  Competing hashes for one file id mean at
+	// least one publisher is lying, so only the majority hash is kept.
+	const CKadAICHHashList::SResultHash *bestAICHHash = CKadAICHHashList::GetMostPopular(aichHashes);
+	if (bestAICHHash != nullptr) {
+		CAICHHash hash;
+		memcpy(hash.GetRawHash(), bestAICHHash->m_hash.data(), CAICHHash::GetHashSize());
+		taglist.push_back(new CTagString(TAG_AICHHASH, hash.GetString()));
+	}
+#endif
 
 	m_answers++;
 	theApp->searchlist->KademliaSearchKeyword(
@@ -1482,7 +1558,7 @@ bool CSearch::RequestMoreResults()
 }
 
 // TODO: Redundant metadata checks
-void CSearch::PreparePacketForTags(CMemFile *bio, CKnownFile *file)
+void CSearch::PreparePacketForTags(CMemFile *bio, CKnownFile *file, uint8_t targetKadVersion)
 {
 	// We're going to publish a keyword, set up the tag list
 	TagPtrList taglist;
@@ -1493,6 +1569,25 @@ void CSearch::PreparePacketForTags(CMemFile *bio, CKnownFile *file)
 			taglist.push_back(new CTagString(TAG_FILENAME, file->GetFileName().GetPrintable()));
 			taglist.push_back(new CTagVarInt(TAG_FILESIZE, file->GetFileSize()));
 			taglist.push_back(new CTagVarInt(TAG_SOURCES, file->m_nCompleteSourcesCount));
+
+#ifdef ENABLE_KAD_PROTOCOL_10
+			// AICH root hash, added to keyword storage by Kad protocol
+			// version 0x09.  A node at 0x08 has no handling for this tag,
+			// so it is omitted for it: the entry it stores simply carries
+			// no AICH hash, and it stays usable for search and routing.
+			//
+			// Gated: this is a tag on an outgoing packet, so it is the
+			// clearest thing in this change that is not inert.
+			if (CKadAICHHashList::PeerSupportsAICHKeywordStorage(targetKadVersion) &&
+				file->HasProperAICHHashSet()) {
+				const CAICHHash &aichHash = file->GetAICHHashset()->GetMasterHash();
+				taglist.push_back(new CTagBsob(TAG_KADAICHHASHPUB,
+					aichHash.GetRawHash(),
+					(uint8_t)CAICHHash::GetHashSize()));
+			}
+#else
+			(void)targetKadVersion;
+#endif
 
 			// eD2K file type (Audio, Video, ...)
 			// NOTE: Archives and CD-Images are published with file type "Pro"

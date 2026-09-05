@@ -189,6 +189,31 @@ target_link_libraries (CUInt128Test
 	muleunit
 )
 
+# The AICH-hash carriage Kad protocol version 0x09 added to keyword storage.
+# CKadAICHHashList is deliberately written against a plain 20-byte array rather
+# than CAICHHash, so the codec that pins TAG_KADAICHHASHRESULT's byte layout can
+# be tested without dragging in SHAHashSet.cpp and the whole file machinery
+# behind it.
+add_executable (KadAICHHashListTest
+	KadAICHHashListTest.cpp
+	${CMAKE_SOURCE_DIR}/src/kademlia/kademlia/AICHHashList.cpp
+)
+
+add_test (NAME KadAICHHashListTest
+	COMMAND KadAICHHashListTest
+)
+
+target_include_directories (KadAICHHashListTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+
+target_link_libraries (KadAICHHashListTest
+	muleunit
+	mulecommon
+)
+
 add_executable (FileDataIOTest
 	FileDataIOTest.cpp
 	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
