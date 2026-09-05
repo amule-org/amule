@@ -682,9 +682,11 @@ public:
 	//! Only meaningful while HasModIPv6() is true.
 	const uint8_t *GetModIPv6() const { return m_modIPv6; }
 	bool HasModIPv6() const { return m_hasModIPv6; }
-	//! The peer's server IPv6 address from CT_MOD_SVR_IP_V6.
-	const uint8_t *GetModServerIPv6() const { return m_modServerIPv6; }
-	bool HasModServerIPv6() const { return m_hasModServerIPv6; }
+	//! The peer's serving buddy's IPv6 address from
+	//! CT_EMULE_SERVINGBUDDYIPV6, big-endian, 16 bytes. Only meaningful
+	//! while HasServingBuddyIPv6() is true.
+	const uint8_t *GetServingBuddyIPv6() const { return m_servingBuddyIPv6; }
+	bool HasServingBuddyIPv6() const { return m_hasServingBuddyIPv6; }
 	// Kad added by me
 	bool SendBuddyPing();
 
@@ -1006,9 +1008,9 @@ private:
 	/* eMuleAI vendor capabilities, parsed from the CT_MOD_* hello tags */
 	CPeerCapabilities m_modCapabilities;
 	uint8_t m_modIPv6[16];
-	uint8_t m_modServerIPv6[16];
+	uint8_t m_servingBuddyIPv6[16];
 	bool m_hasModIPv6;
-	bool m_hasModServerIPv6;
+	bool m_hasServingBuddyIPv6;
 
 	uint64 m_dwLastBuddyPingPongTime;
 	uint64_t m_dwDirectCallbackTimeout;

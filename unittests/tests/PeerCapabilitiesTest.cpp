@@ -334,9 +334,9 @@ TEST(PeerCapabilities, UnknownVendorTagDoesNotDesynchroniseTheStream)
 // The reference is eMuleAI's srchybrid/Opcodes.h and its Kad tag names.
 TEST(PeerCapabilities, VendorTagIdsAndKadTagNamesAreExact)
 {
+	ASSERT_EQUALS(0xA0, (int)CT_EMULE_SERVINGBUDDYIPV6);
 	ASSERT_EQUALS(0xAA, (int)CT_MOD_MISCOPTIONS);
 	ASSERT_EQUALS(0xAE, (int)CT_MOD_IP_V6);
-	ASSERT_EQUALS(0xAF, (int)CT_MOD_SVR_IP_V6);
 
 	ASSERT_EQUALS(wxString(wxT("ip6")), wxString(TAG_IPV6));
 	ASSERT_EQUALS(wxString(wxT("bi6")), wxString(TAG_SERVINGBUDDYIPV6));

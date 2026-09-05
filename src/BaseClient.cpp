@@ -352,9 +352,9 @@ void CUpDownClient::ClearHelloProperties()
 	m_byKadVersion = 0;
 	m_modCapabilities.Reset();
 	m_hasModIPv6 = false;
-	m_hasModServerIPv6 = false;
+	m_hasServingBuddyIPv6 = false;
 	memset(m_modIPv6, 0, sizeof(m_modIPv6));
-	memset(m_modServerIPv6, 0, sizeof(m_modServerIPv6));
+	memset(m_servingBuddyIPv6, 0, sizeof(m_servingBuddyIPv6));
 	m_fRequestsCryptLayer = 0;
 	m_fSupportsCryptLayer = 0;
 	m_fRequiresCryptLayer = 0;
@@ -680,10 +680,15 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 			}
 			break;
 
-		case CT_MOD_SVR_IP_V6:
+		case CT_EMULE_SERVINGBUDDYIPV6:
+			// 16 bytes, big-endian: the v6 counterpart of
+			// CT_EMULE_BUDDYIP above. aMule has no IPv6 stack yet, so
+			// like CT_MOD_IP_V6 this is stored for the dual-stack change
+			// and otherwise unused. Without it the buddy's v6 address
+			// arrives over Kad ("bi6") and is dropped in the hello.
 			if (temptag.IsHash()) {
-				md4cpy(m_modServerIPv6, temptag.GetHash().GetHash());
-				m_hasModServerIPv6 = true;
+				md4cpy(m_servingBuddyIPv6, temptag.GetHash().GetHash());
+				m_hasServingBuddyIPv6 = true;
 			}
 			break;
 
