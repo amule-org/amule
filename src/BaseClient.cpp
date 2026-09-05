@@ -58,6 +58,7 @@
 #include "MemFile.h"           // Needed for CMemFile
 #include "Packet.h"            // Needed for CPacket
 #include "Friend.h"            // Needed for CFriend
+#include "PublicIPv6Corroboration.h"
 #include "ClientVersionString.h"
 #include "ClientList.h"       // Needed for CClientList
 #include "ChatSessionStore.h" // Needed for CChatSessionStore
@@ -689,6 +690,25 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 			if (temptag.IsHash()) {
 				md4cpy(m_servingBuddyIPv6, temptag.GetHash().GetHash());
 				m_hasServingBuddyIPv6 = true;
+			}
+			break;
+
+		case CT_MOD_YOUR_IP:
+			// The address this peer says it saw us arrive from. Only the
+			// hash form is read: eMuleAI also accepts an integer form and
+			// sets its own public IPv4 from it, which lets a single
+			// unverified peer decide what this client believes its own
+			// address to be. emule-qt ignores the integer form, and this
+			// follows emule-qt.
+			//
+			// Even the hash form is not believed on one peer's word. It
+			// goes to a tracker that needs several distinct *observed*
+			// addresses to agree, keyed on where the packet actually came
+			// from rather than on the peer's self-declared user hash --
+			// a hash costs nothing to invent, a routable address does
+			// not. Nothing consumes the result yet; recognition only.
+			if (temptag.IsHash()) {
+				ObservedPublicIPv6().AddClaim(GetConnectIP(), temptag.GetHash().GetHash());
 			}
 			break;
 
