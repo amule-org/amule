@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-05 12:01+0200\n"
-"PO-Revision-Date: 2026-09-03 11:11+0000\n"
+"PO-Revision-Date: 2026-09-05 11:02+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
 "Language: tr\n"
@@ -1266,33 +1266,33 @@ msgstr "Çoklu seçim"
 #, c-format
 msgid "Add %u client to your friend list?"
 msgid_plural "Add %u clients to your friend list?"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Arkadaş listenize %u istemci eklensin mi?"
+msgstr[1] "Arkadaş listenize %u istemci eklensin mi?"
 
 #: src/ClientContextActions.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Remove %u client from your friend list?"
 msgid_plural "Remove %u clients from your friend list?"
-msgstr[0] "Arkadaşlardan Çıkar"
-msgstr[1] "Arkadaşlardan Çıkar"
+msgstr[0] "%u istemci arkadaş listenizden çıkarılsın mı?"
+msgstr[1] "%u istemci arkadaş listenizden çıkarılsın mı?"
 
 #: src/ClientContextActions.cpp
 #, c-format
 msgid "Could not add %u selected client to your friend list: no address is known for it."
 msgid_plural "Could not add %u selected clients to your friend list: no address is known for them."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%u seçili istemci arkadaş listenize eklenemedi: onun için hiçbir adres bilinmiyor."
+msgstr[1] "%u seçili istemci arkadaş listenize eklenemedi: onlar için hiçbir adres bilinmiyor."
 
 #: src/ClientContextActions.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Request the shared files of %u client?"
 msgid_plural "Request the shared files of %u clients?"
-msgstr[0] "Paylaşılmış dosya listesini yeniden yükler."
-msgstr[1] "Paylaşılmış dosya listesini yeniden yükler."
+msgstr[0] "%u istemciden paylaşılan dosyalar talep edilsin mi?"
+msgstr[1] "%u istemciden paylaşılan dosyalar talep edilsin mi?"
 
 #: src/ClientContextActions.cpp
 msgid "A connection is opened to each of them."
-msgstr ""
+msgstr "Her biri için bir bağlantı açılmıştır."
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1422,11 +1422,11 @@ msgid "Not Available"
 msgstr "Uygun değil"
 
 #: src/ClientRowListCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not ask %u selected client for its shared files."
 msgid_plural "Could not ask %u selected clients for their shared files."
-msgstr[0] "%u bağlantı eklenemedi (teferruatlar için kütüğe bakın)."
-msgstr[1] "%u bağlantı eklenemedi (teferruatlar için kütüğe bakın)."
+msgstr[0] "%u seçili istemciden paylaşılan dosyaları talep edilemedi."
+msgstr[1] "%u seçili istemciden paylaşılan dosyaları talep edilemedi."
 
 #: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Files"
@@ -2138,7 +2138,7 @@ msgstr "eD2k ayarlarda devre dışı bırakılmış."
 
 #: src/ExternalConn.cpp
 msgid "No address known for that friend yet."
-msgstr ""
+msgstr "Bu arkadaş için henüz hiçbir adres bilinmiyor."
 
 #: src/ExternalConn.cpp
 msgid "Friend not found."
@@ -2777,7 +2777,7 @@ msgstr "Arkadaş listesi 'emfriends.met' dosyasına yazılamıyor!"
 #: src/FriendList.cpp
 #, c-format
 msgid "No address known for friend '%s' yet, cannot browse them."
-msgstr ""
+msgstr "'%s' arkadaşı için henüz hiçbir adres bilinmiyor, ona göz atamazsınız."
 
 #: src/FriendList.cpp
 msgid "CRITICAL - no client on StartChatSession"
@@ -2802,7 +2802,7 @@ msgstr "&İleti Gönder"
 #: src/FriendListCtrl.cpp
 #, c-format
 msgid "No address known for friend '%s' yet, cannot message them."
-msgstr ""
+msgstr "'%s' arkadaşı için henüz hiçbir adres bilinmiyor, ona mesaj gönderemezsiniz."
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"
@@ -5535,27 +5535,25 @@ msgid "This peer does not have the part"
 msgstr "Bu eşte parça mevcut değil"
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy
 msgid "No other source has this part"
-msgstr "Bu kaynakta parça mevcut değil"
+msgstr "Başka hiçbir kaynakta bu parça mevcut değil"
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy
 msgid "One other source has this part"
-msgstr "Bu kaynakta parça mevcut değil"
+msgstr "Bir başka kaynakta bu parça mevcut"
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "%u or more other sources have this part"
-msgstr "Hem siz hem de bu kaynak parçaya sahipsiniz"
+msgstr "%u veya daha fazla kaynakta bu parça mevcut"
 
 #: src/PartBarLegendUI.cpp
 msgid "Already read back and hashed"
-msgstr ""
+msgstr "Zaten geri okundu ve karma değeri hesaplandı"
 
 #: src/PartBarLegendUI.cpp
 msgid "Still to be read"
-msgstr ""
+msgstr "Hâlâ okunacak"
 
 #: src/PartBarLegendUI.cpp
 msgid "One block per part of the file being downloaded."
@@ -5566,18 +5564,16 @@ msgid "One block per part of the shared file."
 msgstr "Paylaşılan dosyanın her bir parçası için bir blok."
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy
 msgid "One block per part of the shared file, coloured by how many other sources have it."
-msgstr "Paylaşılan dosyanın her bir parçası için bir blok."
+msgstr "Paylaşılan dosyanın her bir parçası için bir blok, kaç başka kaynağın ona sahip olduğuna göre renklendirilir."
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy
 msgid "One block per part of the shared file, showing how far the re-hash has read."
-msgstr "Paylaşılan dosyanın her bir parçası için bir blok."
+msgstr "Paylaşılan dosyanın her bir parçası için bir blok, tekrar karma değeri hesaplamasının ne kadar okuduğunu gösterir."
 
 #: src/PartBarLegendUI.cpp
 msgid "In between, darkening as other sources are added"
-msgstr ""
+msgstr "Bu arada başka kaynaklar eklendikçe koyulaşır"
 
 #: src/PartFileConvert.cpp
 msgid "Waiting for partfile convert thread to die..."
@@ -7344,9 +7340,8 @@ msgid "Shares File List"
 msgstr "Paylaşılan Dosyalar Listesi"
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Source Availability"
-msgstr "Uygunluk"
+msgstr "Kaynak Mevcudiyeti"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"

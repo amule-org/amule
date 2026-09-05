@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-05 12:01+0200\n"
-"PO-Revision-Date: 2026-09-03 11:02+0000\n"
+"PO-Revision-Date: 2026-09-05 10:47+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
 "Language: cs\n"
@@ -3923,9 +3923,8 @@ msgid "Length"
 msgstr ""
 
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp
-#, fuzzy
 msgid "Bitrate"
-msgstr "Nehodnocené"
+msgstr "Datový tok"
 
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp
 msgid "Codec"
@@ -6490,20 +6489,20 @@ msgstr[1] "Velikost zásobníku souborů: %d bajty"
 msgstr[2] "Velikost zásobníku souborů: %d bajtů"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Upload Queue Size: %d client"
 msgid_plural "Upload Queue Size: %d clients"
-msgstr[0] "Velikost fronty pro odesílání: %d klientů"
-msgstr[1] "Velikost fronty pro odesílání: %d klientů"
-msgstr[2] ""
+msgstr[0] "Velikost fronty odesílání: %d klient"
+msgstr[1] "Velikost fronty odesílání: %d klienti"
+msgstr[2] "Velikost fronty odesílání: %d klientů"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Server connection refresh interval: %d minute"
 msgid_plural "Server connection refresh interval: %d minutes"
-msgstr[0] "Interval pro obnovení připojení k serveru: %d minut"
-msgstr[1] "Interval pro obnovení připojení k serveru: %d minut"
-msgstr[2] ""
+msgstr[0] "Interval obnovování připojení k serveru: %d minuta"
+msgstr[1] "Interval obnovování připojení k serveru: %d minuty"
+msgstr[2] "Interval obnovování připojení k serveru: %d minut"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Server connection refresh interval: Disabled"
@@ -6514,9 +6513,9 @@ msgid "disabled"
 msgstr "zakázáno"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Execute command on '%s' event"
-msgstr "Spustí příkaz při událost `%s'"
+msgstr "Spustit příkaz při události '%s'"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Enable command execution on core"
@@ -6548,20 +6547,19 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Sharing them recursively will publish every file underneath on the eD2k/Kad networks. Do you really want to do this?"
-msgstr ""
+msgstr "Jejich rekurzivní sdílení zveřejní všechny soubory pod nimi v sítích eD2k/Kad. Opravdu to chcete udělat?"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Confirm shared folders"
 msgstr "Potvrdit sdílené složky"
 
 #: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp src/SharedFilesReloadProgress.cpp
-#, fuzzy
 msgid "Reloading shared files..."
-msgstr "Znovu načíst vaše sdílené soubory"
+msgstr "Opětovné načítání sdílených souborů..."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Scanning for subdirectories..."
-msgstr ""
+msgstr "Prohledávám podadresáře..."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Updating shared folders"
@@ -6570,7 +6568,7 @@ msgstr "Aktualizace sdílených složek"
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Scanned %u directories..."
-msgstr ""
+msgstr "Prohledáno %u adresářů..."
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -6603,12 +6601,11 @@ msgstr "Varování při vyhledávání"
 
 #: src/SearchDlg.cpp
 msgid "It's impossible to search when both eD2k and Kademlia are disabled."
-msgstr ""
+msgstr "Vyhledávání není možné, pokud jsou zakázány eD2k i Kademlia."
 
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
-#, fuzzy
 msgid "Search error"
-msgstr "Vyhledávání"
+msgstr "Chyba vyhledávání"
 
 #: src/SearchDlg.cpp
 msgid ""
@@ -6657,7 +6654,7 @@ msgstr "Nelze vyhledávat na eD2k, když nejste připojen"
 
 #: src/SearchList.cpp
 msgid "No keyword for Kad search - aborting"
-msgstr ""
+msgstr "Žádné klíčové slovo pro Kad hledání - přerušuji"
 
 #: src/SearchList.cpp
 msgid "Unexpected error while attempting Kad search: "
@@ -6669,11 +6666,11 @@ msgstr ""
 
 #: src/SearchList.cpp
 msgid "Kad search: requested wider results from one more peer."
-msgstr ""
+msgstr "Hledání Kad: vyžádány rozšířené výsledky od dalšího uzlu."
 
 #: src/SearchList.cpp
 msgid "Kad search: no peer left to reask for more results (cap reached or no responses yet)."
-msgstr ""
+msgstr "Kad hledání: nezůstal žádný peer, kterého by bylo možné znovu požádat o další výsledky (dosažen limit nebo zatím žádné odpovědi)."
 
 #: src/SearchList.cpp
 #, fuzzy, c-format
@@ -6694,9 +6691,9 @@ msgid "Collapse all"
 msgstr "Zavřít všechny taby"
 
 #: src/SearchListCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Get %s for this file"
-msgstr "Přidat volitelné URL pro tento soubor"
+msgstr "Získat %s pro tento soubor"
 
 #: src/SearchListCtrl.cpp
 msgid "Search related files (eD2k, local server)"
@@ -6708,7 +6705,7 @@ msgstr "Zkopírovat eD2k odkaz do schránky"
 
 #: src/SearchListCtrl.cpp src/ServerListCtrl.cpp
 msgid "Copy eD2k links to clipboard"
-msgstr ""
+msgstr "Kopírovat eD2k odkazy do schránky"
 
 #: src/SearchListCtrl.cpp
 #, fuzzy

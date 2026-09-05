@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-05 12:01+0200\n"
-"PO-Revision-Date: 2026-09-03 11:09+0000\n"
+"PO-Revision-Date: 2026-09-05 11:00+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
 "Language: ru\n"
@@ -1280,37 +1280,37 @@ msgstr "Множественный выбор"
 #, c-format
 msgid "Add %u client to your friend list?"
 msgid_plural "Add %u clients to your friend list?"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Добавить %u клиента в список друзей?"
+msgstr[1] "Добавить %u клиентов в список друзей?"
+msgstr[2] "Добавить %u клиентов в список друзей?"
 
 #: src/ClientContextActions.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Remove %u client from your friend list?"
 msgid_plural "Remove %u clients from your friend list?"
-msgstr[0] "Удалить из списка друзей"
-msgstr[1] "Удалить из списка друзей"
-msgstr[2] "Удалить из списка друзей"
+msgstr[0] "Удалить %u клиента из списка друзей?"
+msgstr[1] "Удалить %u клиентов из списка друзей?"
+msgstr[2] "Удалить %u клиентов из списка друзей?"
 
 #: src/ClientContextActions.cpp
 #, c-format
 msgid "Could not add %u selected client to your friend list: no address is known for it."
 msgid_plural "Could not add %u selected clients to your friend list: no address is known for them."
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Не удалось добавить %u выбранного клиента в список друзей: его адрес неизвестен."
+msgstr[1] "Не удалось добавить %u выбранных клиентов в список друзей: их адреса неизвестны."
+msgstr[2] "Не удалось добавить %u выбранных клиентов в список друзей: их адреса неизвестны."
 
 #: src/ClientContextActions.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Request the shared files of %u client?"
 msgid_plural "Request the shared files of %u clients?"
-msgstr[0] "Переподгрузить список публикуемых файлов."
-msgstr[1] "Переподгрузить список публикуемых файлов."
-msgstr[2] "Переподгрузить список публикуемых файлов."
+msgstr[0] "Запросить список общих файлов у %u клиента?"
+msgstr[1] "Запросить список общих файлов у %u клиентов?"
+msgstr[2] "Запросить список общих файлов у %u клиентов?"
 
 #: src/ClientContextActions.cpp
 msgid "A connection is opened to each of them."
-msgstr ""
+msgstr "Соединение открыто с каждым из них."
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1444,12 +1444,12 @@ msgid "Not Available"
 msgstr "Не доступно"
 
 #: src/ClientRowListCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not ask %u selected client for its shared files."
 msgid_plural "Could not ask %u selected clients for their shared files."
-msgstr[0] "Не удалось добавить %u ссылку (подробности в журнале)."
-msgstr[1] "Не удалось добавить %u ссылки (подробности в журнале)."
-msgstr[2] "Не удалось добавить %u ссылок (подробности в журнале)."
+msgstr[0] "Не удалось запросить список общих файлов у %u выбранного клиента."
+msgstr[1] "Не удалось запросить список общих файлов у %u выбранных клиентов."
+msgstr[2] "Не удалось запросить список общих файлов у %u выбранных клиентов."
 
 #: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Files"
@@ -2166,7 +2166,7 @@ msgstr "Сеть eD2k отключена в настройках."
 
 #: src/ExternalConn.cpp
 msgid "No address known for that friend yet."
-msgstr ""
+msgstr "Адрес этого друга пока неизвестен."
 
 #: src/ExternalConn.cpp
 msgid "Friend not found."
@@ -2806,7 +2806,7 @@ msgstr "Не удалось открыть файл списка друзей «
 #: src/FriendList.cpp
 #, c-format
 msgid "No address known for friend '%s' yet, cannot browse them."
-msgstr ""
+msgstr "Адрес друга «%s» пока неизвестен, невозможно просмотреть его файлы."
 
 #: src/FriendList.cpp
 msgid "CRITICAL - no client on StartChatSession"
@@ -2831,7 +2831,7 @@ msgstr "Послать &сообщение"
 #: src/FriendListCtrl.cpp
 #, c-format
 msgid "No address known for friend '%s' yet, cannot message them."
-msgstr ""
+msgstr "Адрес друга «%s» пока неизвестен, невозможно отправить ему сообщение."
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"
@@ -5588,27 +5588,25 @@ msgid "This peer does not have the part"
 msgstr "У этого пира нет этой части"
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy
 msgid "No other source has this part"
-msgstr "У этого источника нет части"
+msgstr "Ни у одного другого источника нет этой части"
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy
 msgid "One other source has this part"
-msgstr "У этого источника нет части"
+msgstr "У одного другого источника есть эта часть"
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "%u or more other sources have this part"
-msgstr "Эта часть есть и у вас, и у источника"
+msgstr "У %u или более других источников есть эта часть"
 
 #: src/PartBarLegendUI.cpp
 msgid "Already read back and hashed"
-msgstr ""
+msgstr "Уже прочитано и захэшировано"
 
 #: src/PartBarLegendUI.cpp
 msgid "Still to be read"
-msgstr ""
+msgstr "Ожидает чтения"
 
 #: src/PartBarLegendUI.cpp
 msgid "One block per part of the file being downloaded."
@@ -5619,18 +5617,16 @@ msgid "One block per part of the shared file."
 msgstr "По одному блоку на каждую часть публикуемого файла."
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy
 msgid "One block per part of the shared file, coloured by how many other sources have it."
-msgstr "По одному блоку на каждую часть публикуемого файла."
+msgstr "Один блок на каждую часть публикуемого файла, цвет показывает, у скольких других источников есть эта часть."
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy
 msgid "One block per part of the shared file, showing how far the re-hash has read."
-msgstr "По одному блоку на каждую часть публикуемого файла."
+msgstr "Один блок на каждую часть публикуемого файла, показывает, как далеко продвинулось перехеширование."
 
 #: src/PartBarLegendUI.cpp
 msgid "In between, darkening as other sources are added"
-msgstr ""
+msgstr "Промежуточное состояние, темнеет по мере добавления других источников"
 
 #: src/PartFileConvert.cpp
 msgid "Waiting for partfile convert thread to die..."
@@ -7424,9 +7420,8 @@ msgid "Shares File List"
 msgstr "Общ. файлы"
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Source Availability"
-msgstr "Доступность"
+msgstr "Доступность у источников"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
