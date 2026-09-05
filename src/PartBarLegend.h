@@ -120,12 +120,17 @@ constexpr BarColour kZeroSources{ 255, 0, 0 };
 //! or the same file looks differently shared in the GUI and in a browser.
 constexpr unsigned kAvailFull = 10;
 
-//! The endpoints of the fade: one source, and kAvailFull or more. Taken from
-//! the Web UI's --piece-avail-lo / --piece-avail (src/webapi/static/css/
-//! app.css:29-30), which is the pair that survives; the GUI's former
-//! (0,210,255) -> (0,0,255) does not.
+//! The endpoints of the fade: one source, and kAvailFull or more. Shared with
+//! the Web UI's light theme as --piece-avail-lo / --piece-avail (src/webapi/
+//! static/css/app.css:29-30); the test reads them from there, so the two
+//! surfaces cannot drift.
+//!
+//! The dark end is deeper than the pair adopted in #1282. That pair travelled
+//! about a third less than the ramp it replaced and compressed the middle of
+//! the scale, so neighbouring source counts were hard to tell apart at a
+//! glance -- the one thing the bar exists to show. The light end is unchanged.
 constexpr BarColour kAvailFew{ 166, 212, 238 };
-constexpr BarColour kAvailMany{ 47, 143, 208 };
+constexpr BarColour kAvailMany{ 13, 59, 102 };
 
 //! Steps between the two endpoints, so kAvailFull is stated once.
 constexpr int kAvailFadeSteps = static_cast<int>(kAvailFull) - 1;
