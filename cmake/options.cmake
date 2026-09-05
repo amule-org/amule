@@ -284,3 +284,29 @@ endif()
 # package manager want OFF, so the distro's package manager owns updates.
 # Standalone / portable / AppImage builds and Windows/macOS want ON.
 option (ENABLE_VERSION_CHECK "compile in the in-app new-version check (startup notification + About 'Check for updates'); OFF for OS-package builds" ON)
+
+# Master switch for the local Kad node-protection heuristics: the adaptive
+# request-timeout estimate (CFastKad) and the Kad identity protections
+# (CSafeKad).
+#
+# Deliberately NOT part of ENABLE_KAD_PROTOCOL_10, and deliberately not named
+# after a protocol version. Neither class defines a tag, an opcode or a packet
+# field: they consume what the Kad protocol already carries and decide only
+# what we do locally -- whether to admit a contact, whether to believe an
+# answer, how long to wait before treating a request as stalled. A peer cannot
+# observe whether we run them and has nothing to implement in response, so
+# gating them behind a protocol-version switch would imply a wire contract that
+# does not exist.
+#
+# OFF by default, and OFF means inert: every call site is compiled out and the
+# two classes are left out of the build entirely, so a default build is the
+# upstream one. Their unit tests compile the two sources directly and run
+# either way, so nothing is gated out of test coverage.
+#
+# A plain compile definition rather than a config.h entry, so it is visible in
+# the Kad headers that never see config.h.
+option (ENABLE_KAD_NODE_PROTECTION "enable the local Kad node-protection heuristics: adaptive request timeouts and Kad identity protections (no wire-protocol change)" OFF)
+
+if (ENABLE_KAD_NODE_PROTECTION)
+	add_compile_definitions (ENABLE_KAD_NODE_PROTECTION)
+endif()

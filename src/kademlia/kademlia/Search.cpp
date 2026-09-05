@@ -48,6 +48,10 @@ there client on the eMule forum..
 
 #include "Defines.h"
 #include "UDPFirewallTester.h"
+#ifdef ENABLE_KAD_NODE_PROTECTION
+#include "../net/FastKad.h"
+#include "../net/SafeKad.h"
+#endif
 #include "../routing/RoutingZone.h"
 #include "../routing/Contact.h"
 #include "../net/KademliaUDPListener.h"
@@ -62,6 +66,10 @@ there client on the eMule forum..
 #include "../../updownclient.h"
 #include "../../Logger.h"
 #include "../../Preferences.h"
+#ifdef ENABLE_KAD_NODE_PROTECTION
+#include "../../GetTickCount.h"     // Needed for GetTickCount64
+#include "../../NetworkFunctions.h" // Needed for KadIPPortToString
+#endif
 #include "../../GuiEvents.h"
 
 ////////////////////////////////////////
@@ -80,6 +88,9 @@ CSearch::CSearch()
 	m_totalLoad = 0;
 	m_totalLoadResponses = 0;
 	m_lastResponse = m_created;
+#ifdef ENABLE_KAD_NODE_PROTECTION
+	m_lastResponseTick = ::GetTickCount64();
+#endif
 	m_searchTermsData = NULL;
 	m_searchTermsDataSize = 0;
 	m_nodeSpecialSearchRequester = NULL;
@@ -277,7 +288,42 @@ void CSearch::PrepareToStop() noexcept
 
 void CSearch::JumpStart()
 {
-	// If we had a response within the last 3 seconds, no need to jumpstart the search.
+#ifdef ENABLE_KAD_NODE_PROTECTION
+	// How long to wait on an outstanding request before treating the search
+	// as stalled.  Derived from the response times we have actually observed
+	// (CFastKad) rather than fixed at 3 seconds: on a fast link the old
+	// constant wasted seconds on nodes that were never going to answer, and
+	// on a congested one it abandoned nodes that answered just too late.
+	//
+	// Background store operations keep the old fixed 3 seconds.  They are not
+	// latency-sensitive -- nobody is waiting on a publish -- and holding them
+	// to a tight adaptive deadline would only add republish traffic.
+	const uint32_t maxPending = (m_type == STOREFILE || m_type == STOREKEYWORD || m_type == STORENOTES)
+					    ? SEC2MS(3)
+					    : fastKad.GetEstMaxResponseTime();
+
+	const uint64_t nowTick = ::GetTickCount64();
+
+	// Stop waiting on requests that have passed the ceiling, and remember
+	// those addresses as problematic so the next search does not queue behind
+	// the same dead nodes.
+	for (PendingRequestMap::iterator it = m_pendingRequests.begin(); it != m_pendingRequests.end();) {
+		if (nowTick - it->second.m_sentTick < maxPending) {
+			++it;
+			continue;
+		}
+		safeKad.TrackProblematicNode(it->second.m_ip, it->second.m_port, time(NULL));
+		m_pendingRequests.erase(it++);
+	}
+
+	// If we had a response within the derived ceiling, no need to jumpstart.
+	if (m_lastResponseTick + maxPending > nowTick) {
+		return;
+	}
+#else
+	// Gate off: the fixed 3-second ceiling, at the second granularity it has
+	// always had, so the moment a jumpstart goes out is unchanged.
+	//
 	// Cast m_lastResponse to time_t before adding so the addition happens in
 	// time_t, not in uint32_t -- the latter would wrap near the 2106 32-bit
 	// time boundary and reorder the comparison silently.  Eighty years out,
@@ -285,6 +331,7 @@ void CSearch::JumpStart()
 	if ((time_t)m_lastResponse + SEC(3) > time(NULL)) {
 		return;
 	}
+#endif
 
 	// If we ran out of contacts, stop search.
 	if (m_possible.empty()) {
@@ -359,6 +406,9 @@ void CSearch::ProcessResponse(uint32_t fromIP, uint16_t fromPort, ContactList *r
 	}
 
 	m_lastResponse = time(NULL);
+#ifdef ENABLE_KAD_NODE_PROTECTION
+	m_lastResponseTick = ::GetTickCount64();
+#endif
 
 	// Find contact that is responding.
 	CUInt128 fromDistance(0u);
@@ -371,6 +421,44 @@ void CSearch::ProcessResponse(uint32_t fromIP, uint16_t fromPort, ContactList *r
 			break;
 		}
 	}
+
+#ifdef ENABLE_KAD_NODE_PROTECTION
+	if (fromContact != nullptr) {
+		// The answer closes out its pending record: leaving satisfied
+		// entries in the map would only make the timeout sweep in
+		// JumpStart walk dead weight.
+		PendingRequestMap::iterator pending = m_pendingRequests.find(fromContact->GetClientID());
+		if (pending != m_pendingRequests.end()) {
+			// A useful answer: feed its round-trip time to the shared
+			// estimator so the next timeout reflects the network we are
+			// actually on.
+			const uint64_t nowTick = ::GetTickCount64();
+			fastKad.AddResponseTime(
+				fromIP, (uint32_t)(nowTick - pending->second.m_sentTick), nowTick);
+			m_pendingRequests.erase(pending);
+		}
+
+		// The contact may have gone bad since we sent the request. This
+		// is the point at which we know the node stands behind this
+		// identity, so it is the right place to check it -- and
+		// onlyOneNodePerIP is off here because the contact is already in
+		// our routing table and a second port on the address is the
+		// routing table's problem, not this answer's.
+		if (safeKad.IsBadNode(fromIP,
+			    fromPort,
+			    fromContact->GetClientID(),
+			    fromContact->GetVersion(),
+			    true,
+			    false,
+			    time(NULL))) {
+			AddDebugLogLineN(logKadSearch,
+				"Ignoring search response from a node judged bad by the Kad identity "
+				"protections: " +
+					KadIPPortToString(fromIP, fromPort));
+			return;
+		}
+	}
+#endif
 
 	// Make sure the node is not sending more results than we requested, which is not only a protocol
 	// violation but most likely a malicious answer.  When fromContact is in m_requestedMoreNodes we asked
@@ -1405,6 +1493,16 @@ void CSearch::SendFindValue(CContact *contact, bool reaskMore)
 				DebugSend(Kad2Req, contact->GetIPAddress(), contact->GetUDPPort());
 				break;
 			}
+#endif
+#ifdef ENABLE_KAD_NODE_PROTECTION
+			// Start the clock on this request. The answer's round-trip
+			// time feeds the shared response-time estimator, and
+			// JumpStart uses the same record to notice a request that
+			// has gone past the estimated ceiling.
+			sPendingRequest pending = {
+				::GetTickCount64(), contact->GetIPAddress(), contact->GetUDPPort()
+			};
+			m_pendingRequests[contact->GetClientID()] = pending;
 #endif
 		} else {
 			wxFAIL;
