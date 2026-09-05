@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-04 12:13+0200\n"
+"POT-Creation-Date: 2026-09-05 12:01+0200\n"
 "PO-Revision-Date: 2026-09-03 11:02+0000\n"
 "Last-Translator: Dimitris <dgalanak@yahoo.com>\n"
 "Language-Team: Greek\n"
@@ -391,8 +391,7 @@ msgstr "διακομιστής ιστού τρέχει με αριθμό διε�
 msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
 msgstr "Ζητήσατε να τρέχετε τον διακομιστή ιστού κατά την εκκίνηση, αλλά το εκτελέσιμο αρχείο amuleweb δεν βρέθηκε. Παρακαλώ εγκαταστήστε το πακέτο που περιέχει τον διακομιστή ιστού του aMule, ή μεταφράστε το aMule χρησιμοποιώντας την παράμετρο --enable-webserver"
 
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
 msgid "ERROR"
 msgstr "ΣΦΑΛΜΑ"
 
@@ -681,8 +680,7 @@ msgstr "Δίκτυα"
 msgid "Searches"
 msgstr "Αναζητήσεις"
 
-#: src/amuleDlg.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/Statistics.cpp
+#: src/amuleDlg.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/Statistics.cpp
 msgid "Downloads"
 msgstr "Κατεβασμένα"
 
@@ -766,9 +764,7 @@ msgstr "Kad: Εκτός"
 msgid "Core"
 msgstr ""
 
-#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp src/Statistics.cpp
+#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
 msgid "Version"
 msgstr "Έκδοση"
 
@@ -1072,11 +1068,7 @@ msgstr ""
 msgid "The remote core sent inconsistent data for \"%s\" (part status %d, expected %d). The file list may be showing the wrong information; reconnect to clear it."
 msgstr ""
 
-#: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp
-#: src/FileDetailDialog.cpp src/GenericClientListCtrl.cpp src/HTTPDownload.cpp
-#: src/KnownFile.cpp src/MuleTrayIcon.cpp src/PartFile.cpp src/Server.cpp
-#: src/Statistics.cpp
+#: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp src/FileDetailDialog.cpp src/GenericClientListCtrl.cpp src/HTTPDownload.cpp src/KnownFile.cpp src/MuleTrayIcon.cpp src/PartFile.cpp src/Server.cpp src/Statistics.cpp
 msgid "Unknown"
 msgstr "Άγνωστο"
 
@@ -1174,8 +1166,7 @@ msgstr "Σφάλμα κατά το αποθήκευση του αρχείου kn
 msgid "Enter Captcha"
 msgstr ""
 
-#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
-#: src/TransferWnd.cpp
+#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp src/TransferWnd.cpp
 msgid "Category"
 msgstr "Κατηγορία"
 
@@ -1339,13 +1330,11 @@ msgstr "Δεν βρέθηκε το αρχείο 'cryptkey.dat' και γι αυ�
 msgid "Client Details"
 msgstr "Πληροφορίες πελάτη"
 
-#: src/ClientDetailDialog.cpp src/ServerWnd.cpp
-#: src/utils/wxCas/src/onlinesig.cpp
+#: src/ClientDetailDialog.cpp src/ServerWnd.cpp src/utils/wxCas/src/onlinesig.cpp
 msgid "LowID"
 msgstr "Κακή ποιότητα σύνδεσης (LowID)"
 
-#: src/ClientDetailDialog.cpp src/ServerWnd.cpp
-#: src/utils/wxCas/src/onlinesig.cpp
+#: src/ClientDetailDialog.cpp src/ServerWnd.cpp src/utils/wxCas/src/onlinesig.cpp
 msgid "HighID"
 msgstr "Καλή ποιότητα σύνδεσης (HighID)"
 
@@ -1361,8 +1350,7 @@ msgstr "Υποστηρίζεται"
 msgid "Not supported"
 msgstr "Δεν υποστηρίζεται"
 
-#: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp
-#: src/TextClient.cpp
+#: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp src/TextClient.cpp
 msgid "Connected"
 msgstr "Συνδεδεμένο"
 
@@ -1370,28 +1358,24 @@ msgstr "Συνδεδεμένο"
 msgid "Disconnected"
 msgstr "Αποσυνδεδεμένο"
 
-#: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp
-#: src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f KiB/s"
 msgstr ""
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/muuli_wdr.cpp
 msgid "Name"
-msgstr "Όνομα:"
+msgstr "Όνομα"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 msgid "Software"
 msgstr ""
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/muuli_wdr.cpp
 msgid "IP Address"
-msgstr "Διεύθυνση IP :"
+msgstr "Διεύθυνση IP"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Origin"
 msgstr ""
 
@@ -1409,14 +1393,12 @@ msgstr "Τελευταία λήψη"
 msgid "Sessions"
 msgstr "Έκδοση"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
 #, fuzzy
 msgid "Upload Speed"
 msgstr "Ταχύτητα ανεβάσματος"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
 #, fuzzy
 msgid "Download Speed"
 msgstr "Ταχύτητα κατεβάσματος"
@@ -1472,13 +1454,11 @@ msgstr[1] ""
 msgid "Files"
 msgstr "Αρχεία"
 
-#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Uploaded"
 msgstr "Ανέβηκε"
 
-#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Downloaded"
 msgstr "Έχει κατεβεί"
 
@@ -1565,12 +1545,11 @@ msgstr "Ο χρήστης %s (%u) αρνήθηκε πρόσβαση στη λί�
 msgid "File Comments"
 msgstr "Σχόλια αρχείου"
 
-#: src/CommentDialogLst.cpp src/FriendListCtrl.cpp
+#: src/CommentDialogLst.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp
 msgid "Username"
 msgstr "Όνομα Χρήστη"
 
-#: src/CommentDialogLst.cpp src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp
-#: src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/CommentDialogLst.cpp src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "File Name"
 msgstr "Όνομα αρχείου"
 
@@ -1578,7 +1557,7 @@ msgstr "Όνομα αρχείου"
 msgid "Rating"
 msgstr "Αξιολόγηση"
 
-#: src/CommentDialogLst.cpp
+#: src/CommentDialogLst.cpp src/muuli_wdr.cpp
 msgid "Comment"
 msgstr "Σχόλιο"
 
@@ -1631,18 +1610,15 @@ msgstr "Αυτόματη [Υψηλή]"
 msgid "Very low"
 msgstr "Πολύ χαμηλή"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "Χαμηλή"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "Κανονική"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "Υψηλή"
 
@@ -1666,13 +1642,11 @@ msgstr "Σύνδεση μέσω διακομιστή"
 msgid "Queue Full"
 msgstr "Ουρά γεμάτη"
 
-#: src/DataToText.cpp src/GenericClientListCtrl.cpp src/KnownFile.cpp
-#: src/muuli_wdr.cpp
+#: src/DataToText.cpp src/GenericClientListCtrl.cpp src/KnownFile.cpp src/muuli_wdr.cpp
 msgid "On Queue"
 msgstr "Εν αναμονή"
 
-#: src/DataToText.cpp src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp
-#: src/PartFile.cpp src/TransferWnd.cpp
+#: src/DataToText.cpp src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
 msgid "Downloading"
 msgstr "Κατεβαίνει"
 
@@ -1732,8 +1706,7 @@ msgstr "Τοπικός διακομιστής"
 msgid "Remote Server"
 msgstr "Απομακρυσμένος διακομιστής"
 
-#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp
-#: src/TextClient.cpp
+#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp src/TextClient.cpp
 msgid "Kad"
 msgstr "Kad"
 
@@ -1757,8 +1730,7 @@ msgstr "Πηγαίος σπόρος"
 msgid "Search Result"
 msgstr "Αποτέλεσμα Αναζήτησης"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
-#: src/TransferWnd.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
 msgid "Completed"
 msgstr "Ολοκληρώθηκαν"
 
@@ -1811,8 +1783,7 @@ msgstr ""
 msgid "Part"
 msgstr "Μέρος"
 
-#: src/DownloadListCtrl.cpp src/PartFileConvertDlg.cpp src/SearchListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/PartFileConvertDlg.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Size"
 msgstr "Μέγεθος"
 
@@ -1820,8 +1791,7 @@ msgstr "Μέγεθος"
 msgid "Transferred"
 msgstr "Μεταφέρθηκαν"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
-#: src/SourceListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp src/SourceListCtrl.cpp
 msgid "Speed"
 msgstr "Ταχύτητα"
 
@@ -1829,13 +1799,11 @@ msgstr "Ταχύτητα"
 msgid "Progress"
 msgstr "Πρόοδος"
 
-#: src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/PartFile.cpp
-#: src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
 msgid "Sources"
 msgstr "Αρ. πηγών"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Priority"
 msgstr "Προτεραιότητα"
 
@@ -1859,9 +1827,7 @@ msgstr "Τελευταία λήψη"
 msgid "Auto"
 msgstr "Αυτόματη"
 
-#: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/TransferWnd.cpp
-#: src/utils/wxCas/src/wxcasprefs.cpp
+#: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/TransferWnd.cpp src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Cancel"
 msgstr "Ακύρωση"
 
@@ -1962,8 +1928,7 @@ msgstr "Δώστε νέο όνομα γι αυτό το αρχείο:"
 msgid "File rename"
 msgstr "Μετονομασία αρχείου"
 
-#: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f MiB/s"
 msgstr ""
@@ -2772,13 +2737,11 @@ msgstr ""
 msgid "Start aMule automatically when I log in"
 msgstr ""
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
-#: packaging/windows/installer_strings.c
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Register aMule for ed2k:// links"
 msgstr ""
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
-#: packaging/windows/installer_strings.c
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Register aMule for magnet: links"
 msgstr ""
 
@@ -2804,8 +2767,7 @@ msgstr ""
 msgid "Destination folder for downloads"
 msgstr "Κατάλογος για τα εισερχόμενα"
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
-#: src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Browse"
 msgstr "Επιλογή"
 
@@ -3252,18 +3214,15 @@ msgstr "Ολοκληρώνεται"
 msgid "Complete"
 msgstr "Ολοκληρωμένο"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
-#: src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
 msgid "Paused"
 msgstr "Σταματημένο"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
-#: src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
 msgid "Erroneous"
 msgstr "Εσφαλμένο"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
-#: src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
 msgid "Waiting"
 msgstr "Εν αναμονή"
 
@@ -3429,8 +3388,7 @@ msgstr "Κλείσιμο"
 msgid "Cut"
 msgstr "Αποκοπή"
 
-#: src/MuleTextCtrl.cpp src/PartFileConvert.cpp src/ServerWnd.cpp
-#: src/utils/aLinkCreator/src/alcframe.cpp
+#: src/MuleTextCtrl.cpp src/PartFileConvert.cpp src/ServerWnd.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Copy"
 msgstr "Αντιγραφή"
 
@@ -3438,8 +3396,7 @@ msgstr "Αντιγραφή"
 msgid "Paste"
 msgstr "Επικόλληση"
 
-#: src/MuleTextCtrl.cpp src/muuli_wdr.cpp
-#: src/utils/aLinkCreator/src/alcframe.cpp
+#: src/MuleTextCtrl.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Clear"
 msgstr "Καθαρισμός"
 
@@ -3447,8 +3404,7 @@ msgstr "Καθαρισμός"
 msgid "Select All"
 msgstr "Επιλογή όλων"
 
-#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
-#: src/StatisticsDlg.cpp
+#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp src/StatisticsDlg.cpp
 msgid "KiB/s"
 msgstr ""
 
@@ -3712,10 +3668,6 @@ msgstr "Διακομιστές συνδεδεμένοι αυτή τη στιγμ
 msgid "Search"
 msgstr "Αναζήτηση"
 
-#: src/muuli_wdr.cpp
-msgid "Name:"
-msgstr "Όνομα:"
-
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Type"
 msgstr "Τύπος"
@@ -3805,8 +3757,8 @@ msgid "Availability"
 msgstr "Διαθεσιμότητα"
 
 #: src/muuli_wdr.cpp
-msgid "Filter:"
-msgstr "Φίλτρο:"
+msgid "Filter"
+msgstr "Φίλτρο"
 
 #: src/muuli_wdr.cpp
 msgid "Invert Result"
@@ -3864,6 +3816,10 @@ msgid "Clears completed downloads"
 msgstr "Καθάρισμα των ολοκληρωμένων κατεβασμάτων"
 
 #: src/muuli_wdr.cpp
+msgid "Filter:"
+msgstr "Φίλτρο:"
+
+#: src/muuli_wdr.cpp
 #, fuzzy
 msgid "File sources:"
 msgstr "Ολοκλήρωση πηγών"
@@ -3873,80 +3829,76 @@ msgid "General"
 msgstr "Γενικά"
 
 #: src/muuli_wdr.cpp
-msgid "Full Name :"
-msgstr "Πλήρες Όνομα :"
+msgid "Full Name"
+msgstr "Πλήρες Όνομα"
 
 #: src/muuli_wdr.cpp
-msgid "met-File :"
-msgstr "Αρχείο met:"
+msgid "met-File"
+msgstr "Αρχείο met"
 
 #: src/muuli_wdr.cpp
-msgid "Hash :"
-msgstr "Κατακερματισμός :"
+msgid "Hash"
+msgstr "Κατακερματισμός"
 
 #: src/muuli_wdr.cpp
-msgid "Filesize :"
-msgstr "Μέγεθος αρχείου :"
+msgid "Filesize"
+msgstr "Μέγεθος αρχείου"
 
 #: src/muuli_wdr.cpp src/Statistics.cpp
 msgid "Transfer"
 msgstr "Μεταφορά"
 
 #: src/muuli_wdr.cpp
-msgid "Partfilestatus :"
-msgstr "Κατάσταση ημιτελούς αρχείου:"
+msgid "Partfilestatus"
+msgstr "Κατάσταση ημιτελούς αρχείου"
 
 #: src/muuli_wdr.cpp
-msgid "Last seen complete :"
-msgstr "Τελευταία φορά που εμφανίστηκε ολόκληρο :"
+msgid "Last seen complete"
+msgstr "Τελευταία φορά που εμφανίστηκε ολόκληρο"
 
 #: src/muuli_wdr.cpp
-msgid "Found Sources :"
-msgstr "Βρέθηκαν πηγές :"
+msgid "Found Sources"
+msgstr "Βρέθηκαν πηγές"
 
 #: src/muuli_wdr.cpp
-msgid "Transferring Sources :"
-msgstr "Ενεργές πηγές :"
+msgid "Transferring Sources"
+msgstr "Ενεργές πηγές"
 
 #: src/muuli_wdr.cpp
-msgid "Filepart-Count :"
-msgstr "Απαρίθμηση τμημάτων αρχείου:"
+msgid "Filepart-Count"
+msgstr "Απαρίθμηση τμημάτων αρχείου"
 
 #: src/muuli_wdr.cpp
-msgid "Available :"
-msgstr "Διαθέσιμα:"
+msgid "Available"
+msgstr "Διαθέσιμα"
 
 #: src/muuli_wdr.cpp
-msgid "Datarate :"
-msgstr "Ρυθμός ροής δεδομένων :"
+msgid "Datarate"
+msgstr "Ρυθμός ροής δεδομένων"
 
 #: src/muuli_wdr.cpp
-msgid "Download Active Time: "
-msgstr "Ενεργός χρόνος κατεβάσματος:"
+msgid "Download Active Time"
+msgstr "Ενεργός χρόνος κατεβάσματος"
 
 #: src/muuli_wdr.cpp
-msgid "Transferred :"
-msgstr "Μεταφέρθηκαν :"
-
-#: src/muuli_wdr.cpp
-msgid "Completed Size :"
-msgstr "Ολοκληρωμένος όγκος :"
+msgid "Completed Size"
+msgstr "Ολοκληρωμένος όγκος"
 
 #: src/muuli_wdr.cpp
 msgid "Intelligent Corruption Handling"
 msgstr "Έξυπνη διαχείριση φθοράς (Ε.Δ.Φ.):"
 
 #: src/muuli_wdr.cpp
-msgid "Lost to corruption :"
-msgstr "Χάθηκε λόγο φθοράς :"
+msgid "Lost to corruption"
+msgstr "Χάθηκε λόγο φθοράς"
 
 #: src/muuli_wdr.cpp
-msgid "Gained by compression :"
-msgstr "Κέρδος σε μέγεθος λόγω συμπίεσης :"
+msgid "Gained by compression"
+msgstr "Κέρδος σε μέγεθος λόγω συμπίεσης"
 
 #: src/muuli_wdr.cpp
-msgid "Packages saved by I.C.H. :"
-msgstr "Πακέτα που σώθηκαν από την Ε.Δ.Φ. :"
+msgid "Packages saved by I.C.H."
+msgstr "Πακέτα που σώθηκαν από την Ε.Δ.Φ."
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -3988,30 +3940,30 @@ msgstr ", Ανέβασμα: "
 msgid "Media Info"
 msgstr "Πληροφορίες Kad"
 
-#: src/muuli_wdr.cpp
-msgid "Length :"
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Length"
 msgstr ""
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
 #, fuzzy
-msgid "Bitrate :"
+msgid "Bitrate"
 msgstr "Μη αποτιμημένο"
 
-#: src/muuli_wdr.cpp
-msgid "Codec :"
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Codec"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Artist :"
+msgid "Artist"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Album :"
+msgid "Album"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Title :"
-msgstr "Τίτλος:"
+msgid "Title"
+msgstr "Τίτλος"
 
 #: src/muuli_wdr.cpp
 msgid "File Names"
@@ -4098,25 +4050,17 @@ msgstr "Άγνωστο μέγεθος"
 msgid "Required Information"
 msgstr "Απαιτούμενες πληροφορίες"
 
-#: src/muuli_wdr.cpp
-msgid "IP Address :"
-msgstr "Διεύθυνση IP :"
-
-#: src/muuli_wdr.cpp
-msgid "Port :"
-msgstr "Θύρα :"
+#: src/muuli_wdr.cpp src/ServerListCtrl.cpp
+msgid "Port"
+msgstr "Θύρα"
 
 #: src/muuli_wdr.cpp
 msgid "Additional Information"
 msgstr "Πρόσθετες πληροφορίες"
 
 #: src/muuli_wdr.cpp
-msgid "Username :"
-msgstr "Όνομα χρήστη :"
-
-#: src/muuli_wdr.cpp
-msgid "Userhash :"
-msgstr "Τεμάχιο χρήστη :"
+msgid "Userhash"
+msgstr "Τεμάχιο χρήστη"
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Add"
@@ -4151,97 +4095,81 @@ msgid "Statistics Tree"
 msgstr "Δέντρο στατιστικών"
 
 #: src/muuli_wdr.cpp
-msgid "Username:"
-msgstr "Όνομα χρήστη:"
+msgid "Client software"
+msgstr "Λογισμικό πελάτη"
 
 #: src/muuli_wdr.cpp
-msgid "Userhash:"
-msgstr "Τεμάχιο χρήστη:"
+msgid "Client version"
+msgstr "Αριθμός έκδοσης πελάτη"
 
 #: src/muuli_wdr.cpp
-msgid "Client software:"
-msgstr "Λογισμικό πελάτη:"
+msgid "User ID"
+msgstr "Αριθμός Χρήστη"
 
 #: src/muuli_wdr.cpp
-msgid "Client version:"
-msgstr "Αριθμός έκδοσης πελάτη:"
-
-#: src/muuli_wdr.cpp src/ServerWnd.cpp
-msgid "IP address:"
-msgstr "Διεύθυνση IP:"
+msgid "Server IP"
+msgstr "Διεύθυνση διακομιστή"
 
 #: src/muuli_wdr.cpp
-msgid "User ID:"
-msgstr "Αριθμός Χρήστη:"
+msgid "Server name"
+msgstr "Όνομα διακομιστή"
 
 #: src/muuli_wdr.cpp
-msgid "Server IP:"
-msgstr "Διεύθυνση διακομιστή:"
-
-#: src/muuli_wdr.cpp
-msgid "Server name:"
-msgstr "Όνομα διακομιστή:"
-
-#: src/muuli_wdr.cpp
-msgid "Obfuscation:"
-msgstr "Συσκότιση:"
-
-#: src/muuli_wdr.cpp
-msgid "Kad:"
-msgstr "Kad:"
+msgid "Obfuscation"
+msgstr "Συσκότιση"
 
 #: src/muuli_wdr.cpp
 msgid "Transfers to client"
 msgstr "Μεταφορές προς τον πελάτη"
 
 #: src/muuli_wdr.cpp
-msgid "Current request:"
-msgstr "Τρέχουσα αίτηση:"
+msgid "Current request"
+msgstr "Τρέχουσα αίτηση"
 
 #: src/muuli_wdr.cpp
-msgid "Average upload rate:"
-msgstr "Μέσος ρυθμός ανεβάσματος:"
+msgid "Average upload rate"
+msgstr "Μέσος ρυθμός ανεβάσματος"
 
 #: src/muuli_wdr.cpp
-msgid "Average download rate:"
-msgstr "Μέσος ρυθμός κατεβάσματος:"
+msgid "Average download rate"
+msgstr "Μέσος ρυθμός κατεβάσματος"
 
 #: src/muuli_wdr.cpp
-msgid "Uploaded (session):"
-msgstr "Ανέβηκαν (συνεδρία):"
+msgid "Uploaded (session)"
+msgstr "Ανέβηκαν (συνεδρία)"
 
 #: src/muuli_wdr.cpp
-msgid "Downloaded (session):"
-msgstr "Κατέβηκαν (συνεδρία):"
+msgid "Downloaded (session)"
+msgstr "Κατέβηκαν (συνεδρία)"
 
 #: src/muuli_wdr.cpp
-msgid "Uploaded (total):"
-msgstr "Ανέβηκαν (συνολικά):"
+msgid "Uploaded (total)"
+msgstr "Ανέβηκαν (συνολικά)"
 
 #: src/muuli_wdr.cpp
-msgid "Downloaded (total):"
-msgstr "Κατέβηκαν (συνολικά):"
+msgid "Downloaded (total)"
+msgstr "Κατέβηκαν (συνολικά)"
 
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Σκορ"
 
 #: src/muuli_wdr.cpp
-msgid "DL/UP modifier:"
-msgstr "Τροποποιητής Ανεβοκατεβάσματος:"
+msgid "DL/UP modifier"
+msgstr "Τροποποιητής Ανεβοκατεβάσματος"
 
 #: src/muuli_wdr.cpp
-msgid "Secure ident:"
-msgstr "Ασφαλής ταυτότητα:"
+msgid "Secure ident"
+msgstr "Ασφαλής ταυτότητα"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Queue rank:"
+msgid "Queue rank"
 msgstr "Εν αναμονή"
 
 #: src/muuli_wdr.cpp
-msgid "Queue score:"
-msgstr "Βαθμολογία αναμονής:"
+msgid "Queue score"
+msgstr "Βαθμολογία αναμονής"
 
 #: src/muuli_wdr.cpp
 msgid "Nick"
@@ -5037,16 +4965,12 @@ msgid "Reset any changes made to the preferences."
 msgstr "Επαναφορά κάθε αλλαγής που έγινε στις προτιμήσεις."
 
 #: src/muuli_wdr.cpp
-msgid "Comment :"
-msgstr "Σχόλιο:"
+msgid "Incoming Dir"
+msgstr "Κατάλογος εισερχομένων"
 
 #: src/muuli_wdr.cpp
-msgid "Incoming Dir :"
-msgstr "Κατάλογος εισερχομένων :"
-
-#: src/muuli_wdr.cpp
-msgid "Change priority for new assigned files :"
-msgstr "Αλλαγή προτεραιότητας για τα νέα προσδιορισμένα αρχεία :"
+msgid "Change priority for new assigned files"
+msgstr "Αλλαγή προτεραιότητας για τα νέα προσδιορισμένα αρχεία"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -5054,8 +4978,8 @@ msgid "Don't change"
 msgstr "Να μην αλλάξει"
 
 #: src/muuli_wdr.cpp
-msgid "Select color for this Category (currently selected) :"
-msgstr "Επιλογή χρώματος για τη συγκεκριμένη κατηγορία (τρέχουσα επιλογή) :"
+msgid "Select color for this Category (currently selected)"
+msgstr "Επιλογή χρώματος για τη συγκεκριμένη κατηγορία (τρέχουσα επιλογή)"
 
 #: src/muuli_wdr.cpp
 msgid "Click this button to reset the log."
@@ -5140,10 +5064,6 @@ msgstr ""
 #, fuzzy
 msgid "Enter the IP of the node here, using the x.x.x.x format."
 msgstr "Γράψτε την IP του διακομιστή εδώ, σε μορφή x.x.x.x"
-
-#: src/muuli_wdr.cpp
-msgid "Port:"
-msgstr "Θύρα:"
 
 #: src/muuli_wdr.cpp
 msgid "Use Secure User Identification"
@@ -5412,20 +5332,20 @@ msgid "Enable/disable proxy support"
 msgstr "Ενεργοποίηση/Απενεργοποίηση υποστήριξης διακομιστή μεσολάβησης"
 
 #: src/muuli_wdr.cpp
-msgid "Proxy type:"
+msgid "Proxy type"
 msgstr "Τύπος διαμεσολάβησης"
 
 #: src/muuli_wdr.cpp
-msgid "Proxy host:"
-msgstr "Διεύθυνση διακομιστή μεσολάβησης:"
+msgid "Proxy host"
+msgstr "Διεύθυνση διακομιστή μεσολάβησης"
 
 #: src/muuli_wdr.cpp
 msgid "The proxy host name"
 msgstr "Όνομα του διακομιστή μεσολάβησης"
 
 #: src/muuli_wdr.cpp
-msgid "Proxy port:"
-msgstr "Θύρα διακομιστή μεσολάβησης:"
+msgid "Proxy port"
+msgstr "Θύρα διακομιστή μεσολάβησης"
 
 #: src/muuli_wdr.cpp
 msgid "The proxy port"
@@ -5440,16 +5360,8 @@ msgid "Enable/disable username/password authentication"
 msgstr "Ενεργοποίηση/Απενεργοποίηση πιστοποίησης ονόματος χρήστη/κωδικού"
 
 #: src/muuli_wdr.cpp
-msgid "Username: "
-msgstr "Όνομα χρήστη:"
-
-#: src/muuli_wdr.cpp
 msgid "The username to use to connect to the proxy"
 msgstr "Το όνομα χρήστη για τη σύνδεση με τον μεσολαβητή"
-
-#: src/muuli_wdr.cpp
-msgid "Password:"
-msgstr "Κωδικός:"
 
 #: src/muuli_wdr.cpp
 msgid "The password to use to connect to the proxy"
@@ -5631,6 +5543,15 @@ msgstr "ώρες"
 #: src/OtherFunctions.cpp
 msgid "days"
 msgstr "μέρες"
+
+#. TRANSLATORS:
+#. Punctuation for a "label: value" pair. %s is the already-translated
+#. label. Place the colon as your language requires -- e.g. "%s :" with a
+#. space in French, "%s:" without one in Russian and English.
+#: src/OtherFunctions.cpp
+#, c-format
+msgid "%s:"
+msgstr ""
 
 #: src/OtherFunctions.cpp
 msgid "all"
@@ -6680,8 +6601,7 @@ msgstr ""
 msgid "Confirm shared folders"
 msgstr "Κοινόχρηστα αρχεία"
 
-#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
-#: src/SharedFilesReloadProgress.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp src/SharedFilesReloadProgress.cpp
 #, fuzzy
 msgid "Reloading shared files..."
 msgstr "Επαναφόρτωση των κοινόχρηστων αρχείων"
@@ -6813,19 +6733,6 @@ msgstr ""
 #: src/SearchListCtrl.cpp
 msgid "FileID"
 msgstr "Τιμή ταυτότητας αρχείου"
-
-#: src/SearchListCtrl.cpp
-msgid "Length"
-msgstr ""
-
-#: src/SearchListCtrl.cpp
-#, fuzzy
-msgid "Bitrate"
-msgstr "Μη αποτιμημένο"
-
-#: src/SearchListCtrl.cpp
-msgid "Codec"
-msgstr ""
 
 #: src/SearchListCtrl.cpp
 msgid "Expand all"
@@ -7113,10 +7020,6 @@ msgstr "Ο τοπικός διακομιστής είναι φιλτραρισμ
 #: src/ServerListCtrl.cpp
 msgid "Server Name"
 msgstr "Όνομα διακομιστή"
-
-#: src/ServerListCtrl.cpp
-msgid "Port"
-msgstr "Θύρα"
 
 #: src/ServerListCtrl.cpp
 msgid "Description"
@@ -7414,6 +7317,10 @@ msgstr "Συνδεδεμένος στον φιλαράκο"
 #, fuzzy, c-format
 msgid "Connected to buddy at %s"
 msgstr "Συνδεδεμένος στον φιλαράκο"
+
+#: src/ServerWnd.cpp
+msgid "IP address:"
+msgstr "Διεύθυνση IP:"
 
 #: src/ServerWnd.cpp
 #, fuzzy

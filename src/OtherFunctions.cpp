@@ -117,6 +117,15 @@ wxString CastSecondsToHM(uint32 count, uint16 msecs)
 	}
 }
 
+wxString LabelWithColon(const wxString &label)
+{
+	/* TRANSLATORS:
+	   Punctuation for a "label: value" pair. %s is the already-translated
+	   label. Place the colon as your language requires -- e.g. "%s :" with a
+	   space in French, "%s:" without one in Russian and English. */
+	return CFormat(_("%s:")) % label;
+}
+
 wxString FormatLocalDateTime(const wxDateTime &when)
 {
 	// %x %X: both halves come from LC_TIME, so a locale that writes the day

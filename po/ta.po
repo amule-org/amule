@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-04 12:13+0200\n"
+"POT-Creation-Date: 2026-09-05 12:01+0200\n"
 "PO-Revision-Date: 2026-09-03 11:13+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -1321,7 +1321,7 @@ msgstr ""
 msgid "%.1f KiB/s"
 msgstr ""
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/muuli_wdr.cpp
 msgid "Name"
 msgstr ""
 
@@ -1329,7 +1329,7 @@ msgstr ""
 msgid "Software"
 msgstr ""
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/muuli_wdr.cpp
 msgid "IP Address"
 msgstr ""
 
@@ -1497,7 +1497,7 @@ msgstr "பயனர் %s (%u பகிரப்பட்ட கோப்பக
 msgid "File Comments"
 msgstr ""
 
-#: src/CommentDialogLst.cpp src/FriendListCtrl.cpp
+#: src/CommentDialogLst.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp
 msgid "Username"
 msgstr ""
 
@@ -1510,7 +1510,7 @@ msgstr ""
 msgid "Rating"
 msgstr ""
 
-#: src/CommentDialogLst.cpp
+#: src/CommentDialogLst.cpp src/muuli_wdr.cpp
 msgid "Comment"
 msgstr ""
 
@@ -3579,10 +3579,6 @@ msgstr ""
 msgid "Search"
 msgstr ""
 
-#: src/muuli_wdr.cpp
-msgid "Name:"
-msgstr ""
-
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Type"
 msgstr ""
@@ -3672,7 +3668,7 @@ msgid "Availability"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Filter:"
+msgid "Filter"
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -3728,6 +3724,10 @@ msgid "Clears completed downloads"
 msgstr ""
 
 #: src/muuli_wdr.cpp
+msgid "Filter:"
+msgstr ""
+
+#: src/muuli_wdr.cpp
 msgid "File sources:"
 msgstr ""
 
@@ -3736,19 +3736,19 @@ msgid "General"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Full Name :"
+msgid "Full Name"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "met-File :"
+msgid "met-File"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Hash :"
+msgid "Hash"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Filesize :"
+msgid "Filesize"
 msgstr ""
 
 #: src/muuli_wdr.cpp src/Statistics.cpp
@@ -3756,43 +3756,39 @@ msgid "Transfer"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Partfilestatus :"
+msgid "Partfilestatus"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Last seen complete :"
+msgid "Last seen complete"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Found Sources :"
+msgid "Found Sources"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Transferring Sources :"
+msgid "Transferring Sources"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Filepart-Count :"
+msgid "Filepart-Count"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Available :"
+msgid "Available"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Datarate :"
+msgid "Datarate"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Download Active Time: "
+msgid "Download Active Time"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Transferred :"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Completed Size :"
+msgid "Completed Size"
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -3800,15 +3796,15 @@ msgid "Intelligent Corruption Handling"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Lost to corruption :"
+msgid "Lost to corruption"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Gained by compression :"
+msgid "Gained by compression"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Packages saved by I.C.H. :"
+msgid "Packages saved by I.C.H."
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -3847,28 +3843,28 @@ msgstr ""
 msgid "Media Info"
 msgstr ""
 
-#: src/muuli_wdr.cpp
-msgid "Length :"
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Length"
+msgstr ""
+
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Bitrate"
+msgstr ""
+
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Codec"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Bitrate :"
+msgid "Artist"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Codec :"
+msgid "Album"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Artist :"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Album :"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Title :"
+msgid "Title"
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -3953,12 +3949,8 @@ msgstr ""
 msgid "Required Information"
 msgstr ""
 
-#: src/muuli_wdr.cpp
-msgid "IP Address :"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Port :"
+#: src/muuli_wdr.cpp src/ServerListCtrl.cpp
+msgid "Port"
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -3966,11 +3958,7 @@ msgid "Additional Information"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Username :"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Userhash :"
+msgid "Userhash"
 msgstr ""
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
@@ -4006,43 +3994,27 @@ msgid "Statistics Tree"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Username:"
+msgid "Client software"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Userhash:"
+msgid "Client version"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Client software:"
+msgid "User ID"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Client version:"
-msgstr ""
-
-#: src/muuli_wdr.cpp src/ServerWnd.cpp
-msgid "IP address:"
+msgid "Server IP"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "User ID:"
+msgid "Server name"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Server IP:"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Server name:"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Obfuscation:"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Kad:"
+msgid "Obfuscation"
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -4050,31 +4022,31 @@ msgid "Transfers to client"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Current request:"
+msgid "Current request"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Average upload rate:"
+msgid "Average upload rate"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Average download rate:"
+msgid "Average download rate"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Uploaded (session):"
+msgid "Uploaded (session)"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Downloaded (session):"
+msgid "Downloaded (session)"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Uploaded (total):"
+msgid "Uploaded (total)"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Downloaded (total):"
+msgid "Downloaded (total)"
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -4082,19 +4054,19 @@ msgid "Scores"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "DL/UP modifier:"
+msgid "DL/UP modifier"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Secure ident:"
+msgid "Secure ident"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Queue rank:"
+msgid "Queue rank"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Queue score:"
+msgid "Queue score"
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -4872,15 +4844,11 @@ msgid "Reset any changes made to the preferences."
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Comment :"
+msgid "Incoming Dir"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Incoming Dir :"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Change priority for new assigned files :"
+msgid "Change priority for new assigned files"
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -4888,7 +4856,7 @@ msgid "Don't change"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Select color for this Category (currently selected) :"
+msgid "Select color for this Category (currently selected)"
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -4969,10 +4937,6 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Enter the IP of the node here, using the x.x.x.x format."
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Port:"
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -5237,11 +5201,11 @@ msgid "Enable/disable proxy support"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Proxy type:"
+msgid "Proxy type"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Proxy host:"
+msgid "Proxy host"
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -5249,7 +5213,7 @@ msgid "The proxy host name"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Proxy port:"
+msgid "Proxy port"
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -5265,15 +5229,7 @@ msgid "Enable/disable username/password authentication"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Username: "
-msgstr ""
-
-#: src/muuli_wdr.cpp
 msgid "The username to use to connect to the proxy"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Password:"
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -5446,6 +5402,15 @@ msgstr ""
 
 #: src/OtherFunctions.cpp
 msgid "days"
+msgstr ""
+
+#. TRANSLATORS:
+#. Punctuation for a "label: value" pair. %s is the already-translated
+#. label. Place the colon as your language requires -- e.g. "%s :" with a
+#. space in French, "%s:" without one in Russian and English.
+#: src/OtherFunctions.cpp
+#, c-format
+msgid "%s:"
 msgstr ""
 
 #: src/OtherFunctions.cpp
@@ -6569,18 +6534,6 @@ msgid "FileID"
 msgstr ""
 
 #: src/SearchListCtrl.cpp
-msgid "Length"
-msgstr ""
-
-#: src/SearchListCtrl.cpp
-msgid "Bitrate"
-msgstr ""
-
-#: src/SearchListCtrl.cpp
-msgid "Codec"
-msgstr ""
-
-#: src/SearchListCtrl.cpp
 msgid "Expand all"
 msgstr ""
 
@@ -6855,10 +6808,6 @@ msgstr ""
 
 #: src/ServerListCtrl.cpp
 msgid "Server Name"
-msgstr ""
-
-#: src/ServerListCtrl.cpp
-msgid "Port"
 msgstr ""
 
 #: src/ServerListCtrl.cpp
@@ -7145,6 +7094,10 @@ msgstr ""
 #: src/ServerWnd.cpp
 #, c-format
 msgid "Connected to buddy at %s"
+msgstr ""
+
+#: src/ServerWnd.cpp
+msgid "IP address:"
 msgstr ""
 
 #: src/ServerWnd.cpp
