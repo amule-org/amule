@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-04 12:13+0200\n"
+"POT-Creation-Date: 2026-09-05 12:01+0200\n"
 "PO-Revision-Date: 2026-09-03 11:05+0000\n"
 "Last-Translator: Peace Kramer <kpeace1@gmail.com>\n"
 "Language-Team: Hebrew\n"
@@ -382,8 +382,7 @@ msgstr ""
 msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
 msgstr ""
 
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
 msgid "ERROR"
 msgstr ""
 
@@ -663,8 +662,7 @@ msgstr "רשתות"
 msgid "Searches"
 msgstr "חיפושים"
 
-#: src/amuleDlg.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/Statistics.cpp
+#: src/amuleDlg.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/Statistics.cpp
 msgid "Downloads"
 msgstr "הורדות"
 
@@ -748,9 +746,7 @@ msgstr "קאד: מכובה"
 msgid "Core"
 msgstr ""
 
-#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp src/Statistics.cpp
+#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
 msgid "Version"
 msgstr "גירסא"
 
@@ -1053,11 +1049,7 @@ msgstr ""
 msgid "The remote core sent inconsistent data for \"%s\" (part status %d, expected %d). The file list may be showing the wrong information; reconnect to clear it."
 msgstr ""
 
-#: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp
-#: src/FileDetailDialog.cpp src/GenericClientListCtrl.cpp src/HTTPDownload.cpp
-#: src/KnownFile.cpp src/MuleTrayIcon.cpp src/PartFile.cpp src/Server.cpp
-#: src/Statistics.cpp
+#: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp src/FileDetailDialog.cpp src/GenericClientListCtrl.cpp src/HTTPDownload.cpp src/KnownFile.cpp src/MuleTrayIcon.cpp src/PartFile.cpp src/Server.cpp src/Statistics.cpp
 msgid "Unknown"
 msgstr "לא ידוע"
 
@@ -1155,8 +1147,7 @@ msgstr "שגיאה במהלך שמירת הקובץ known.met: %s"
 msgid "Enter Captcha"
 msgstr ""
 
-#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
-#: src/TransferWnd.cpp
+#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp src/TransferWnd.cpp
 msgid "Category"
 msgstr "קטיגוריה"
 
@@ -1320,13 +1311,11 @@ msgstr ""
 msgid "Client Details"
 msgstr ""
 
-#: src/ClientDetailDialog.cpp src/ServerWnd.cpp
-#: src/utils/wxCas/src/onlinesig.cpp
+#: src/ClientDetailDialog.cpp src/ServerWnd.cpp src/utils/wxCas/src/onlinesig.cpp
 msgid "LowID"
 msgstr "מ\"ז נמוך (LowID)"
 
-#: src/ClientDetailDialog.cpp src/ServerWnd.cpp
-#: src/utils/wxCas/src/onlinesig.cpp
+#: src/ClientDetailDialog.cpp src/ServerWnd.cpp src/utils/wxCas/src/onlinesig.cpp
 msgid "HighID"
 msgstr "מ\"ז גבוה (HighID)"
 
@@ -1342,8 +1331,7 @@ msgstr ""
 msgid "Not supported"
 msgstr ""
 
-#: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp
-#: src/TextClient.cpp
+#: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp src/TextClient.cpp
 msgid "Connected"
 msgstr "מחובר"
 
@@ -1351,28 +1339,24 @@ msgstr "מחובר"
 msgid "Disconnected"
 msgstr "מנותק"
 
-#: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp
-#: src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f KiB/s"
 msgstr ""
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/muuli_wdr.cpp
 msgid "Name"
-msgstr "שם:"
+msgstr "שם"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 msgid "Software"
 msgstr ""
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/muuli_wdr.cpp
 msgid "IP Address"
-msgstr "כתובת IP :"
+msgstr "כתובת IP"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Origin"
 msgstr ""
 
@@ -1390,14 +1374,12 @@ msgstr "פעם אחרונה שנתקבל"
 msgid "Sessions"
 msgstr "גירסא"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
 #, fuzzy
 msgid "Upload Speed"
 msgstr "מהירות-העלאה"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
 #, fuzzy
 msgid "Download Speed"
 msgstr "מהירות הורדה"
@@ -1453,13 +1435,11 @@ msgstr[1] ""
 msgid "Files"
 msgstr "קבצים"
 
-#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Uploaded"
 msgstr ""
 
-#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Downloaded"
 msgstr ""
 
@@ -1546,12 +1526,11 @@ msgstr "משתמש %s (%u) שלל גישה לרשימת הקבצים/תקיות 
 msgid "File Comments"
 msgstr "הערות על הקובץ"
 
-#: src/CommentDialogLst.cpp src/FriendListCtrl.cpp
+#: src/CommentDialogLst.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp
 msgid "Username"
 msgstr "שם משתמש"
 
-#: src/CommentDialogLst.cpp src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp
-#: src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/CommentDialogLst.cpp src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "File Name"
 msgstr "שם קובץ"
 
@@ -1559,7 +1538,7 @@ msgstr "שם קובץ"
 msgid "Rating"
 msgstr "דרוג"
 
-#: src/CommentDialogLst.cpp
+#: src/CommentDialogLst.cpp src/muuli_wdr.cpp
 msgid "Comment"
 msgstr "הערה"
 
@@ -1612,18 +1591,15 @@ msgstr "אוטומטי [גבוה]"
 msgid "Very low"
 msgstr "מאוד נמוך"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "נמוך"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "רגיל"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "גבוה"
 
@@ -1647,13 +1623,11 @@ msgstr "מתחבר דרך השרת"
 msgid "Queue Full"
 msgstr "התור מלא"
 
-#: src/DataToText.cpp src/GenericClientListCtrl.cpp src/KnownFile.cpp
-#: src/muuli_wdr.cpp
+#: src/DataToText.cpp src/GenericClientListCtrl.cpp src/KnownFile.cpp src/muuli_wdr.cpp
 msgid "On Queue"
 msgstr "על התור"
 
-#: src/DataToText.cpp src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp
-#: src/PartFile.cpp src/TransferWnd.cpp
+#: src/DataToText.cpp src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
 msgid "Downloading"
 msgstr "מוריד מהרשת"
 
@@ -1713,8 +1687,7 @@ msgstr "שרת מקומי"
 msgid "Remote Server"
 msgstr "שרת מרוחק"
 
-#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp
-#: src/TextClient.cpp
+#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp src/TextClient.cpp
 msgid "Kad"
 msgstr "קאד"
 
@@ -1738,8 +1711,7 @@ msgstr "מזריעי מקורות"
 msgid "Search Result"
 msgstr ""
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
-#: src/TransferWnd.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
 msgid "Completed"
 msgstr "הסתיים"
 
@@ -1792,8 +1764,7 @@ msgstr ""
 msgid "Part"
 msgstr ""
 
-#: src/DownloadListCtrl.cpp src/PartFileConvertDlg.cpp src/SearchListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/PartFileConvertDlg.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Size"
 msgstr "גודל"
 
@@ -1801,8 +1772,7 @@ msgstr "גודל"
 msgid "Transferred"
 msgstr "הועברו"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
-#: src/SourceListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp src/SourceListCtrl.cpp
 msgid "Speed"
 msgstr "מהירות"
 
@@ -1810,13 +1780,11 @@ msgstr "מהירות"
 msgid "Progress"
 msgstr "התקדמות"
 
-#: src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/PartFile.cpp
-#: src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
 msgid "Sources"
 msgstr "מקורות"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Priority"
 msgstr "עדיפות"
 
@@ -1840,9 +1808,7 @@ msgstr "פעם אחרונה שנתקבל"
 msgid "Auto"
 msgstr "אוטמטי"
 
-#: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/TransferWnd.cpp
-#: src/utils/wxCas/src/wxcasprefs.cpp
+#: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/TransferWnd.cpp src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Cancel"
 msgstr "ביטול"
 
@@ -1941,8 +1907,7 @@ msgstr "הכנס שם חדש עבור קובץ זה"
 msgid "File rename"
 msgstr "שינוי שם לקובץ"
 
-#: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f MiB/s"
 msgstr ""
@@ -2727,13 +2692,11 @@ msgstr ""
 msgid "Start aMule automatically when I log in"
 msgstr ""
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
-#: packaging/windows/installer_strings.c
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Register aMule for ed2k:// links"
 msgstr ""
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
-#: packaging/windows/installer_strings.c
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Register aMule for magnet: links"
 msgstr ""
 
@@ -2759,8 +2722,7 @@ msgstr ""
 msgid "Destination folder for downloads"
 msgstr ""
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
-#: src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Browse"
 msgstr "דפדף"
 
@@ -3207,18 +3169,15 @@ msgstr "מסיים"
 msgid "Complete"
 msgstr "סיים"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
-#: src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
 msgid "Paused"
 msgstr "הושהה"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
-#: src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
 msgid "Erroneous"
 msgstr "שגוי"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
-#: src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
 msgid "Waiting"
 msgstr "ממתין"
 
@@ -3384,8 +3343,7 @@ msgstr "סגור"
 msgid "Cut"
 msgstr "גזור"
 
-#: src/MuleTextCtrl.cpp src/PartFileConvert.cpp src/ServerWnd.cpp
-#: src/utils/aLinkCreator/src/alcframe.cpp
+#: src/MuleTextCtrl.cpp src/PartFileConvert.cpp src/ServerWnd.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Copy"
 msgstr "העתק"
 
@@ -3393,8 +3351,7 @@ msgstr "העתק"
 msgid "Paste"
 msgstr "הדבק"
 
-#: src/MuleTextCtrl.cpp src/muuli_wdr.cpp
-#: src/utils/aLinkCreator/src/alcframe.cpp
+#: src/MuleTextCtrl.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Clear"
 msgstr "נקה"
 
@@ -3402,8 +3359,7 @@ msgstr "נקה"
 msgid "Select All"
 msgstr "בחר הכל"
 
-#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
-#: src/StatisticsDlg.cpp
+#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp src/StatisticsDlg.cpp
 msgid "KiB/s"
 msgstr ""
 
@@ -3666,10 +3622,6 @@ msgstr "שרת מחובר נוכחי."
 msgid "Search"
 msgstr "חיפוש"
 
-#: src/muuli_wdr.cpp
-msgid "Name:"
-msgstr "שם:"
-
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Type"
 msgstr "סוג/טיפוס"
@@ -3759,8 +3711,8 @@ msgid "Availability"
 msgstr "זמינות"
 
 #: src/muuli_wdr.cpp
-msgid "Filter:"
-msgstr "מסנן:"
+msgid "Filter"
+msgstr "מסנן"
 
 #: src/muuli_wdr.cpp
 msgid "Invert Result"
@@ -3818,6 +3770,10 @@ msgid "Clears completed downloads"
 msgstr "מנקה הורדות שהושלמו"
 
 #: src/muuli_wdr.cpp
+msgid "Filter:"
+msgstr "מסנן:"
+
+#: src/muuli_wdr.cpp
 #, fuzzy
 msgid "File sources:"
 msgstr "מקורות שנמצאו :"
@@ -3827,80 +3783,76 @@ msgid "General"
 msgstr "כללי"
 
 #: src/muuli_wdr.cpp
-msgid "Full Name :"
-msgstr "שם מלא :"
+msgid "Full Name"
+msgstr "שם מלא"
 
 #: src/muuli_wdr.cpp
-msgid "met-File :"
-msgstr "קובץ-met :"
+msgid "met-File"
+msgstr "קובץ-met"
 
 #: src/muuli_wdr.cpp
-msgid "Hash :"
-msgstr "גיבוב :"
+msgid "Hash"
+msgstr "גיבוב"
 
 #: src/muuli_wdr.cpp
-msgid "Filesize :"
-msgstr "גודל קובץ :"
+msgid "Filesize"
+msgstr "גודל קובץ"
 
 #: src/muuli_wdr.cpp src/Statistics.cpp
 msgid "Transfer"
 msgstr "מעביר"
 
 #: src/muuli_wdr.cpp
-msgid "Partfilestatus :"
-msgstr "מצב קובץ-חלקים :"
+msgid "Partfilestatus"
+msgstr "מצב קובץ-חלקים"
 
 #: src/muuli_wdr.cpp
-msgid "Last seen complete :"
-msgstr "נראה שלם בפעם האחרונה :"
+msgid "Last seen complete"
+msgstr "נראה שלם בפעם האחרונה"
 
 #: src/muuli_wdr.cpp
-msgid "Found Sources :"
-msgstr "מקורות שנמצאו :"
+msgid "Found Sources"
+msgstr "מקורות שנמצאו"
 
 #: src/muuli_wdr.cpp
-msgid "Transferring Sources :"
-msgstr "מעביר מקורות :"
+msgid "Transferring Sources"
+msgstr "מעביר מקורות"
 
 #: src/muuli_wdr.cpp
-msgid "Filepart-Count :"
-msgstr "ספירת קובץ-חלקים :"
+msgid "Filepart-Count"
+msgstr "ספירת קובץ-חלקים"
 
 #: src/muuli_wdr.cpp
-msgid "Available :"
-msgstr "זמין :"
+msgid "Available"
+msgstr "זמין"
 
 #: src/muuli_wdr.cpp
-msgid "Datarate :"
-msgstr "קצב מידע :"
+msgid "Datarate"
+msgstr "קצב מידע"
 
 #: src/muuli_wdr.cpp
-msgid "Download Active Time: "
-msgstr "זמן הורדה פעיל: "
+msgid "Download Active Time"
+msgstr "זמן הורדה פעיל"
 
 #: src/muuli_wdr.cpp
-msgid "Transferred :"
-msgstr "הועבר :"
-
-#: src/muuli_wdr.cpp
-msgid "Completed Size :"
-msgstr "כמות שהושלמה :"
+msgid "Completed Size"
+msgstr "כמות שהושלמה"
 
 #: src/muuli_wdr.cpp
 msgid "Intelligent Corruption Handling"
 msgstr "תפעול מתוחכם של פגמים"
 
 #: src/muuli_wdr.cpp
-msgid "Lost to corruption :"
-msgstr "אבד עקב פגם :"
+msgid "Lost to corruption"
+msgstr "אבד עקב פגם"
 
 #: src/muuli_wdr.cpp
-msgid "Gained by compression :"
-msgstr "רווח באמצעות כיווץ :"
+msgid "Gained by compression"
+msgstr "רווח באמצעות כיווץ"
 
 #: src/muuli_wdr.cpp
-msgid "Packages saved by I.C.H. :"
-msgstr "חבילות שנשמרו ע\"י I.C.H.·:"
+msgid "Packages saved by I.C.H."
+msgstr "חבילות שנשמרו ע\"י I.C.H.·"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -3941,29 +3893,29 @@ msgstr ", הועלה: "
 msgid "Media Info"
 msgstr ""
 
-#: src/muuli_wdr.cpp
-msgid "Length :"
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Length"
 msgstr ""
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
 #, fuzzy
-msgid "Bitrate :"
+msgid "Bitrate"
 msgstr "לא מדורג"
 
-#: src/muuli_wdr.cpp
-msgid "Codec :"
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Codec"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Artist :"
+msgid "Artist"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Album :"
+msgid "Album"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Title :"
+msgid "Title"
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -4049,25 +4001,17 @@ msgstr "גודל לא ידוע"
 msgid "Required Information"
 msgstr "נדרש מידע"
 
-#: src/muuli_wdr.cpp
-msgid "IP Address :"
-msgstr "כתובת IP :"
-
-#: src/muuli_wdr.cpp
-msgid "Port :"
-msgstr "מבואה :"
+#: src/muuli_wdr.cpp src/ServerListCtrl.cpp
+msgid "Port"
+msgstr "מבואה"
 
 #: src/muuli_wdr.cpp
 msgid "Additional Information"
 msgstr "מידע נוסף"
 
 #: src/muuli_wdr.cpp
-msgid "Username :"
-msgstr "שם משתמש :"
-
-#: src/muuli_wdr.cpp
-msgid "Userhash :"
-msgstr "גיבוב משתשמ :"
+msgid "Userhash"
+msgstr "גיבוב משתשמ"
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Add"
@@ -4102,43 +4046,27 @@ msgid "Statistics Tree"
 msgstr "עץ סטטיסטיקה"
 
 #: src/muuli_wdr.cpp
-msgid "Username:"
-msgstr "שם משתמש:"
+msgid "Client software"
+msgstr "תוכנת לקוח"
 
 #: src/muuli_wdr.cpp
-msgid "Userhash:"
-msgstr "גיבוב קובץ:"
+msgid "Client version"
+msgstr "גרסת לקוח"
 
 #: src/muuli_wdr.cpp
-msgid "Client software:"
-msgstr "תוכנת לקוח:"
+msgid "User ID"
+msgstr "מ\"ז משתמש"
 
 #: src/muuli_wdr.cpp
-msgid "Client version:"
-msgstr "גרסת לקוח:"
-
-#: src/muuli_wdr.cpp src/ServerWnd.cpp
-msgid "IP address:"
-msgstr "כתובת IP:"
+msgid "Server IP"
+msgstr "כתובת IP של השרת"
 
 #: src/muuli_wdr.cpp
-msgid "User ID:"
-msgstr "מ\"ז משתמש:"
+msgid "Server name"
+msgstr "שם שרת"
 
 #: src/muuli_wdr.cpp
-msgid "Server IP:"
-msgstr "כתובת IP של השרת:"
-
-#: src/muuli_wdr.cpp
-msgid "Server name:"
-msgstr "שם שרת:"
-
-#: src/muuli_wdr.cpp
-msgid "Obfuscation:"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Kad:"
+msgid "Obfuscation"
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -4146,53 +4074,55 @@ msgid "Transfers to client"
 msgstr "העברות ללקוח"
 
 #: src/muuli_wdr.cpp
-msgid "Current request:"
-msgstr "בקשה נוכחית:"
+msgid "Current request"
+msgstr "בקשה נוכחית"
 
 #: src/muuli_wdr.cpp
-msgid "Average upload rate:"
-msgstr "קצב העלאה ממוצע:"
+msgid "Average upload rate"
+msgstr "קצב העלאה ממוצע"
 
 #: src/muuli_wdr.cpp
-msgid "Average download rate:"
-msgstr "קצב הורדה ממוצע:"
+msgid "Average download rate"
+msgstr "קצב הורדה ממוצע"
 
 #: src/muuli_wdr.cpp
-msgid "Uploaded (session):"
-msgstr "הועלה (הרצה נוכחית):"
+msgid "Uploaded (session)"
+msgstr "הועלה (הרצה נוכחית)"
 
 #: src/muuli_wdr.cpp
-msgid "Downloaded (session):"
-msgstr "ירד (הרצה נוכחית):"
+msgid "Downloaded (session)"
+msgstr "ירד (הרצה נוכחית)"
 
 #: src/muuli_wdr.cpp
-msgid "Uploaded (total):"
-msgstr "הועלה (סה\"כ):"
+msgid "Uploaded (total)"
+msgstr "הועלה (סה\"כ)"
 
 #: src/muuli_wdr.cpp
-msgid "Downloaded (total):"
-msgstr "ירד (סה\"כ):"
+msgid "Downloaded (total)"
+msgstr "ירד (סה\"כ)"
 
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "ציונים"
 
 #: src/muuli_wdr.cpp
-msgid "DL/UP modifier:"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Secure ident:"
+msgid "DL/UP modifier"
 msgstr ""
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Queue rank:"
+msgid "Secure ident"
+msgstr "אבטחה"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Queue rank"
 msgstr "נכנס לתור"
 
 #: src/muuli_wdr.cpp
-msgid "Queue score:"
-msgstr ""
+#, fuzzy
+msgid "Queue score"
+msgstr "נכנס לתור"
 
 #: src/muuli_wdr.cpp
 msgid "Nick"
@@ -4979,15 +4909,12 @@ msgid "Reset any changes made to the preferences."
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Comment :"
-msgstr ""
+#, fuzzy
+msgid "Incoming Dir"
+msgstr "קבצים נכנסים"
 
 #: src/muuli_wdr.cpp
-msgid "Incoming Dir :"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Change priority for new assigned files :"
+msgid "Change priority for new assigned files"
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -4996,7 +4923,7 @@ msgid "Don't change"
 msgstr "- מבואת UDP שונתה \n"
 
 #: src/muuli_wdr.cpp
-msgid "Select color for this Category (currently selected) :"
+msgid "Select color for this Category (currently selected)"
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -5078,10 +5005,6 @@ msgstr "קבצים זמניים"
 
 #: src/muuli_wdr.cpp
 msgid "Enter the IP of the node here, using the x.x.x.x format."
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Port:"
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -5349,20 +5272,23 @@ msgid "Enable/disable proxy support"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Proxy type:"
-msgstr ""
+#, fuzzy
+msgid "Proxy type"
+msgstr "פרוקסי"
 
 #: src/muuli_wdr.cpp
-msgid "Proxy host:"
-msgstr ""
+#, fuzzy
+msgid "Proxy host"
+msgstr "פרוקסי"
 
 #: src/muuli_wdr.cpp
 msgid "The proxy host name"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Proxy port:"
-msgstr ""
+#, fuzzy
+msgid "Proxy port"
+msgstr "פרוקסי"
 
 #: src/muuli_wdr.cpp
 msgid "The proxy port"
@@ -5377,15 +5303,7 @@ msgid "Enable/disable username/password authentication"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Username: "
-msgstr ""
-
-#: src/muuli_wdr.cpp
 msgid "The username to use to connect to the proxy"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Password:"
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -5569,6 +5487,15 @@ msgstr "שעות"
 #: src/OtherFunctions.cpp
 msgid "days"
 msgstr "ימים"
+
+#. TRANSLATORS:
+#. Punctuation for a "label: value" pair. %s is the already-translated
+#. label. Place the colon as your language requires -- e.g. "%s :" with a
+#. space in French, "%s:" without one in Russian and English.
+#: src/OtherFunctions.cpp
+#, c-format
+msgid "%s:"
+msgstr ""
 
 #: src/OtherFunctions.cpp
 msgid "all"
@@ -6602,8 +6529,7 @@ msgstr ""
 msgid "Confirm shared folders"
 msgstr "טען מחדש את הקבצים המשותפים שלך"
 
-#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
-#: src/SharedFilesReloadProgress.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp src/SharedFilesReloadProgress.cpp
 #, fuzzy
 msgid "Reloading shared files..."
 msgstr "טען מחדש את הקבצים המשותפים שלך"
@@ -6734,19 +6660,6 @@ msgstr ""
 #: src/SearchListCtrl.cpp
 msgid "FileID"
 msgstr "מ\"ז של קובץ"
-
-#: src/SearchListCtrl.cpp
-msgid "Length"
-msgstr ""
-
-#: src/SearchListCtrl.cpp
-#, fuzzy
-msgid "Bitrate"
-msgstr "לא מדורג"
-
-#: src/SearchListCtrl.cpp
-msgid "Codec"
-msgstr ""
 
 #: src/SearchListCtrl.cpp
 msgid "Expand all"
@@ -7031,10 +6944,6 @@ msgstr ""
 #: src/ServerListCtrl.cpp
 msgid "Server Name"
 msgstr "שם שרת"
-
-#: src/ServerListCtrl.cpp
-msgid "Port"
-msgstr "מבואה"
 
 #: src/ServerListCtrl.cpp
 msgid "Description"
@@ -7332,6 +7241,10 @@ msgstr "מחובר לחבר"
 #, fuzzy, c-format
 msgid "Connected to buddy at %s"
 msgstr "מחובר לחבר"
+
+#: src/ServerWnd.cpp
+msgid "IP address:"
+msgstr "כתובת IP:"
 
 #: src/ServerWnd.cpp
 #, fuzzy

@@ -232,6 +232,20 @@ wxString CastSecondsToHM(uint32 seconds, uint16 msecs = 0);
  * survives being pasted into a bug report by someone in another locale, all
  * of which matter more there than looking familiar does.
  */
+/**
+ * Punctuation for a "label: value" pair, applied to an already-translated
+ * label.
+ *
+ * Where the colon sits is a property of the language, not of the layout:
+ * Russian typography forbids a space before it, French requires one. Building
+ * the string in C++ ("label" + ": ") puts that choice out of a translator's
+ * reach, which is what amule-org/amule#1294 reported. Routing it through one
+ * catalog entry settles the convention for every label at once, and lets the
+ * bare label stay shared with the list columns and menus that already
+ * translate it -- rather than each dialog minting a colon-suffixed twin.
+ */
+wxString LabelWithColon(const wxString &label);
+
 wxString FormatLocalDateTime(const wxDateTime &when);
 // Date-only form of the above, for a column too narrow to carry both.
 wxString FormatLocalDate(const wxDateTime &when);

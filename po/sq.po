@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-04 12:13+0200\n"
+"POT-Creation-Date: 2026-09-05 12:01+0200\n"
 "PO-Revision-Date: 2026-09-03 11:10+0000\n"
 "Last-Translator: Fation <dj_barthezz@linuxmail.org lushnja_corps@hotmail.Language-Team:\n"
 "Language: sq\n"
@@ -387,8 +387,7 @@ msgstr ""
 msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
 msgstr ""
 
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
 msgid "ERROR"
 msgstr ""
 
@@ -676,8 +675,7 @@ msgstr "Rrjetet"
 msgid "Searches"
 msgstr "Kerkimet"
 
-#: src/amuleDlg.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/Statistics.cpp
+#: src/amuleDlg.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/Statistics.cpp
 msgid "Downloads"
 msgstr "Shkarkime"
 
@@ -761,9 +759,7 @@ msgstr "Kad: Fikur"
 msgid "Core"
 msgstr ""
 
-#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp src/Statistics.cpp
+#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
 msgid "Version"
 msgstr "Versioni"
 
@@ -1067,11 +1063,7 @@ msgstr ""
 msgid "The remote core sent inconsistent data for \"%s\" (part status %d, expected %d). The file list may be showing the wrong information; reconnect to clear it."
 msgstr ""
 
-#: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp
-#: src/FileDetailDialog.cpp src/GenericClientListCtrl.cpp src/HTTPDownload.cpp
-#: src/KnownFile.cpp src/MuleTrayIcon.cpp src/PartFile.cpp src/Server.cpp
-#: src/Statistics.cpp
+#: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp src/FileDetailDialog.cpp src/GenericClientListCtrl.cpp src/HTTPDownload.cpp src/KnownFile.cpp src/MuleTrayIcon.cpp src/PartFile.cpp src/Server.cpp src/Statistics.cpp
 msgid "Unknown"
 msgstr "E panjohur"
 
@@ -1169,8 +1161,7 @@ msgstr "Gabim duke shpetuar failin known.met: %s"
 msgid "Enter Captcha"
 msgstr ""
 
-#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
-#: src/TransferWnd.cpp
+#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp src/TransferWnd.cpp
 msgid "Category"
 msgstr "Kategori"
 
@@ -1334,13 +1325,11 @@ msgstr "NUk u gjet faili cryptkey.dat,duke e krijuar."
 msgid "Client Details"
 msgstr "Detajet e klientit"
 
-#: src/ClientDetailDialog.cpp src/ServerWnd.cpp
-#: src/utils/wxCas/src/onlinesig.cpp
+#: src/ClientDetailDialog.cpp src/ServerWnd.cpp src/utils/wxCas/src/onlinesig.cpp
 msgid "LowID"
 msgstr "ID i ulet"
 
-#: src/ClientDetailDialog.cpp src/ServerWnd.cpp
-#: src/utils/wxCas/src/onlinesig.cpp
+#: src/ClientDetailDialog.cpp src/ServerWnd.cpp src/utils/wxCas/src/onlinesig.cpp
 msgid "HighID"
 msgstr "ID i larte"
 
@@ -1356,8 +1345,7 @@ msgstr ""
 msgid "Not supported"
 msgstr ""
 
-#: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp
-#: src/TextClient.cpp
+#: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp src/TextClient.cpp
 msgid "Connected"
 msgstr "I lidhur"
 
@@ -1365,28 +1353,24 @@ msgstr "I lidhur"
 msgid "Disconnected"
 msgstr "I shkeputur"
 
-#: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp
-#: src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f KiB/s"
 msgstr ""
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/muuli_wdr.cpp
 msgid "Name"
-msgstr "Emri:"
+msgstr "Emri"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 msgid "Software"
 msgstr ""
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/muuli_wdr.cpp
 msgid "IP Address"
-msgstr "Adresa IP :"
+msgstr "Adresa IP"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Origin"
 msgstr ""
 
@@ -1404,14 +1388,12 @@ msgstr "Marrja e fundit"
 msgid "Sessions"
 msgstr "Versioni"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
 #, fuzzy
 msgid "Upload Speed"
 msgstr "Shpejtesia-Ngarkimit"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
 #, fuzzy
 msgid "Download Speed"
 msgstr "Shpejtesia-Shkarkimit"
@@ -1467,13 +1449,11 @@ msgstr[1] ""
 msgid "Files"
 msgstr "Failet"
 
-#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Uploaded"
 msgstr ""
 
-#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Downloaded"
 msgstr ""
 
@@ -1560,12 +1540,11 @@ msgstr "Perdoruesi %s (%u) nuk lejoi hyrjen ne listen e kartelave/faileve te nda
 msgid "File Comments"
 msgstr "Komentet e faileve"
 
-#: src/CommentDialogLst.cpp src/FriendListCtrl.cpp
+#: src/CommentDialogLst.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp
 msgid "Username"
 msgstr "Emri i perdorimit"
 
-#: src/CommentDialogLst.cpp src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp
-#: src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/CommentDialogLst.cpp src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "File Name"
 msgstr "Emri i failit"
 
@@ -1573,7 +1552,7 @@ msgstr "Emri i failit"
 msgid "Rating"
 msgstr "Vleresimi"
 
-#: src/CommentDialogLst.cpp
+#: src/CommentDialogLst.cpp src/muuli_wdr.cpp
 msgid "Comment"
 msgstr "Komenti"
 
@@ -1626,18 +1605,15 @@ msgstr "Automatike [Larte]"
 msgid "Very low"
 msgstr "Shume ngadale"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "Ngadale"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "Normale"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "E larte"
 
@@ -1661,13 +1637,11 @@ msgstr "Lidhje nepermjet serverit"
 msgid "Queue Full"
 msgstr "Radha ne pritje eshte plote"
 
-#: src/DataToText.cpp src/GenericClientListCtrl.cpp src/KnownFile.cpp
-#: src/muuli_wdr.cpp
+#: src/DataToText.cpp src/GenericClientListCtrl.cpp src/KnownFile.cpp src/muuli_wdr.cpp
 msgid "On Queue"
 msgstr "Ne radhe"
 
-#: src/DataToText.cpp src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp
-#: src/PartFile.cpp src/TransferWnd.cpp
+#: src/DataToText.cpp src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
 msgid "Downloading"
 msgstr "Duke shkarkuar"
 
@@ -1727,8 +1701,7 @@ msgstr "Server Lokal"
 msgid "Remote Server"
 msgstr "Server i larget"
 
-#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp
-#: src/TextClient.cpp
+#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp src/TextClient.cpp
 msgid "Kad"
 msgstr "Kad"
 
@@ -1752,8 +1725,7 @@ msgstr "Burime te shpetuara"
 msgid "Search Result"
 msgstr ""
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
-#: src/TransferWnd.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
 msgid "Completed"
 msgstr "Te kompletuara"
 
@@ -1806,8 +1778,7 @@ msgstr ""
 msgid "Part"
 msgstr ""
 
-#: src/DownloadListCtrl.cpp src/PartFileConvertDlg.cpp src/SearchListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/PartFileConvertDlg.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Size"
 msgstr "Madhesia"
 
@@ -1815,8 +1786,7 @@ msgstr "Madhesia"
 msgid "Transferred"
 msgstr "Te transferuara"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
-#: src/SourceListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp src/SourceListCtrl.cpp
 msgid "Speed"
 msgstr "Shpejtesia"
 
@@ -1824,13 +1794,11 @@ msgstr "Shpejtesia"
 msgid "Progress"
 msgstr "Avancimi"
 
-#: src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/PartFile.cpp
-#: src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
 msgid "Sources"
 msgstr "Burime"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Priority"
 msgstr "Perparesia"
 
@@ -1854,9 +1822,7 @@ msgstr "Marrja e fundit"
 msgid "Auto"
 msgstr "Automatike"
 
-#: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/TransferWnd.cpp
-#: src/utils/wxCas/src/wxcasprefs.cpp
+#: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/TransferWnd.cpp src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Cancel"
 msgstr "Fshij"
 
@@ -1955,8 +1921,7 @@ msgstr "Futni nje emer te ti per kete fail:"
 msgid "File rename"
 msgstr "Riemertim i failit"
 
-#: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f MiB/s"
 msgstr ""
@@ -2765,13 +2730,11 @@ msgstr ""
 msgid "Start aMule automatically when I log in"
 msgstr ""
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
-#: packaging/windows/installer_strings.c
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Register aMule for ed2k:// links"
 msgstr ""
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
-#: packaging/windows/installer_strings.c
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Register aMule for magnet: links"
 msgstr ""
 
@@ -2797,8 +2760,7 @@ msgstr ""
 msgid "Destination folder for downloads"
 msgstr ""
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
-#: src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Browse"
 msgstr "Shfleto"
 
@@ -3245,18 +3207,15 @@ msgstr "Duke perfunduar"
 msgid "Complete"
 msgstr "E kompletuar"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
-#: src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
 msgid "Paused"
 msgstr "Ne pritje"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
-#: src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
 msgid "Erroneous"
 msgstr "E gabuar"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
-#: src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
 msgid "Waiting"
 msgstr "Duke pritur"
 
@@ -3422,8 +3381,7 @@ msgstr "Mbylle"
 msgid "Cut"
 msgstr "Ndaj"
 
-#: src/MuleTextCtrl.cpp src/PartFileConvert.cpp src/ServerWnd.cpp
-#: src/utils/aLinkCreator/src/alcframe.cpp
+#: src/MuleTextCtrl.cpp src/PartFileConvert.cpp src/ServerWnd.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Copy"
 msgstr "Kopjo"
 
@@ -3431,8 +3389,7 @@ msgstr "Kopjo"
 msgid "Paste"
 msgstr "Ngjit"
 
-#: src/MuleTextCtrl.cpp src/muuli_wdr.cpp
-#: src/utils/aLinkCreator/src/alcframe.cpp
+#: src/MuleTextCtrl.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Clear"
 msgstr "Pastro"
 
@@ -3440,8 +3397,7 @@ msgstr "Pastro"
 msgid "Select All"
 msgstr "Zgjidhi te gjitha"
 
-#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
-#: src/StatisticsDlg.cpp
+#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp src/StatisticsDlg.cpp
 msgid "KiB/s"
 msgstr ""
 
@@ -3704,10 +3660,6 @@ msgstr "Serveri aktualisht i lidhur."
 msgid "Search"
 msgstr "Kerko"
 
-#: src/muuli_wdr.cpp
-msgid "Name:"
-msgstr "Emri:"
-
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Type"
 msgstr "Tipi"
@@ -3797,8 +3749,8 @@ msgid "Availability"
 msgstr "Te disponueshem"
 
 #: src/muuli_wdr.cpp
-msgid "Filter:"
-msgstr "Filteri:"
+msgid "Filter"
+msgstr "Filteri"
 
 #: src/muuli_wdr.cpp
 msgid "Invert Result"
@@ -3856,6 +3808,10 @@ msgid "Clears completed downloads"
 msgstr "Pastro shkarkimet e perfunduara"
 
 #: src/muuli_wdr.cpp
+msgid "Filter:"
+msgstr "Filteri:"
+
+#: src/muuli_wdr.cpp
 #, fuzzy
 msgid "File sources:"
 msgstr "Burime te gjetura :"
@@ -3865,80 +3821,76 @@ msgid "General"
 msgstr "Te pergjithshme"
 
 #: src/muuli_wdr.cpp
-msgid "Full Name :"
-msgstr "Emri i plote :"
+msgid "Full Name"
+msgstr "Emri i plote"
 
 #: src/muuli_wdr.cpp
-msgid "met-File :"
-msgstr "Faili-met :"
+msgid "met-File"
+msgstr "Faili-met"
 
 #: src/muuli_wdr.cpp
-msgid "Hash :"
-msgstr "Hash :"
+msgid "Hash"
+msgstr "Hash"
 
 #: src/muuli_wdr.cpp
-msgid "Filesize :"
-msgstr "Madhesia e failit :"
+msgid "Filesize"
+msgstr "Madhesia e failit"
 
 #: src/muuli_wdr.cpp src/Statistics.cpp
 msgid "Transfer"
 msgstr "Transferimi"
 
 #: src/muuli_wdr.cpp
-msgid "Partfilestatus :"
-msgstr "Gjendja e pjeseve te failit :"
+msgid "Partfilestatus"
+msgstr "Gjendja e pjeseve te failit"
 
 #: src/muuli_wdr.cpp
-msgid "Last seen complete :"
-msgstr "Hera e fundit qe u pa i perfunduar :"
+msgid "Last seen complete"
+msgstr "Hera e fundit qe u pa i perfunduar"
 
 #: src/muuli_wdr.cpp
-msgid "Found Sources :"
-msgstr "Burime te gjetura :"
+msgid "Found Sources"
+msgstr "Burime te gjetura"
 
 #: src/muuli_wdr.cpp
-msgid "Transferring Sources :"
-msgstr "Burime ne transferim :"
+msgid "Transferring Sources"
+msgstr "Burime ne transferim"
 
 #: src/muuli_wdr.cpp
-msgid "Filepart-Count :"
-msgstr "Numerimi i pjeseve te failit :"
+msgid "Filepart-Count"
+msgstr "Numerimi i pjeseve te failit"
 
 #: src/muuli_wdr.cpp
-msgid "Available :"
-msgstr "Te disponueshem :"
+msgid "Available"
+msgstr "Te disponueshem"
 
 #: src/muuli_wdr.cpp
-msgid "Datarate :"
-msgstr "Shpejtesia :"
+msgid "Datarate"
+msgstr "Shpejtesia"
 
 #: src/muuli_wdr.cpp
-msgid "Download Active Time: "
-msgstr "Koha Aktive e Shkarkimit : "
+msgid "Download Active Time"
+msgstr "Koha Aktive e Shkarkimit"
 
 #: src/muuli_wdr.cpp
-msgid "Transferred :"
-msgstr "Te transferuara :"
-
-#: src/muuli_wdr.cpp
-msgid "Completed Size :"
-msgstr "Te kompletuara :"
+msgid "Completed Size"
+msgstr "Te kompletuara"
 
 #: src/muuli_wdr.cpp
 msgid "Intelligent Corruption Handling"
 msgstr "Intelligent Corruption Handling"
 
 #: src/muuli_wdr.cpp
-msgid "Lost to corruption :"
-msgstr "Humbje per pjese te prishura :"
+msgid "Lost to corruption"
+msgstr "Humbje per pjese te prishura"
 
 #: src/muuli_wdr.cpp
-msgid "Gained by compression :"
-msgstr "Fitimi nga kompresimi :"
+msgid "Gained by compression"
+msgstr "Fitimi nga kompresimi"
 
 #: src/muuli_wdr.cpp
-msgid "Packages saved by I.C.H. :"
-msgstr "Paketa te rekuperuara nga I.C.H. :"
+msgid "Packages saved by I.C.H."
+msgstr "Paketa te rekuperuara nga I.C.H."
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -3980,30 +3932,30 @@ msgstr ", Ngarkimi: "
 msgid "Media Info"
 msgstr "Informacioni i Kad"
 
-#: src/muuli_wdr.cpp
-msgid "Length :"
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Length"
 msgstr ""
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
 #, fuzzy
-msgid "Bitrate :"
+msgid "Bitrate"
 msgstr "E pavotuar"
 
-#: src/muuli_wdr.cpp
-msgid "Codec :"
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Codec"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Artist :"
+msgid "Artist"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Album :"
+msgid "Album"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Title :"
-msgstr "Titulli :"
+msgid "Title"
+msgstr "Titulli"
 
 #: src/muuli_wdr.cpp
 msgid "File Names"
@@ -4088,25 +4040,17 @@ msgstr "Madhesi e panjohur"
 msgid "Required Information"
 msgstr "Informacion i Kerkuar"
 
-#: src/muuli_wdr.cpp
-msgid "IP Address :"
-msgstr "Adresa IP :"
-
-#: src/muuli_wdr.cpp
-msgid "Port :"
-msgstr "Porta :"
+#: src/muuli_wdr.cpp src/ServerListCtrl.cpp
+msgid "Port"
+msgstr "Porta"
 
 #: src/muuli_wdr.cpp
 msgid "Additional Information"
 msgstr "Informacion i Shtuar"
 
 #: src/muuli_wdr.cpp
-msgid "Username :"
-msgstr "Emri i Perdoruesit :"
-
-#: src/muuli_wdr.cpp
-msgid "Userhash :"
-msgstr "Userhash :"
+msgid "Userhash"
+msgstr "Userhash"
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Add"
@@ -4141,97 +4085,82 @@ msgid "Statistics Tree"
 msgstr "Pema e statistikave"
 
 #: src/muuli_wdr.cpp
-msgid "Username:"
-msgstr "Emri i perdoruesit:"
+msgid "Client software"
+msgstr "Software i klientit"
 
 #: src/muuli_wdr.cpp
-msgid "Userhash:"
-msgstr "Userhash:"
+msgid "Client version"
+msgstr "Versioni i klientit"
 
 #: src/muuli_wdr.cpp
-msgid "Client software:"
-msgstr "Software i klientit:"
+msgid "User ID"
+msgstr "ID-ja e Perdoruesit"
 
 #: src/muuli_wdr.cpp
-msgid "Client version:"
-msgstr "Versioni i klientit:"
-
-#: src/muuli_wdr.cpp src/ServerWnd.cpp
-msgid "IP address:"
-msgstr "Adresa IP:"
+msgid "Server IP"
+msgstr "IP-ja e Serverit"
 
 #: src/muuli_wdr.cpp
-msgid "User ID:"
-msgstr "ID-ja e Perdoruesit:"
+msgid "Server name"
+msgstr "Emri i Serverit"
 
 #: src/muuli_wdr.cpp
-msgid "Server IP:"
-msgstr "IP-ja e Serverit:"
-
-#: src/muuli_wdr.cpp
-msgid "Server name:"
-msgstr "Emri i Serverit:"
-
-#: src/muuli_wdr.cpp
-msgid "Obfuscation:"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Kad:"
-msgstr ""
+#, fuzzy
+msgid "Obfuscation"
+msgstr "Protokolli i Turbullimit"
 
 #: src/muuli_wdr.cpp
 msgid "Transfers to client"
 msgstr "Transferime tek klienti"
 
 #: src/muuli_wdr.cpp
-msgid "Current request:"
-msgstr "Kerkesa aktuale:"
+msgid "Current request"
+msgstr "Kerkesa aktuale"
 
 #: src/muuli_wdr.cpp
-msgid "Average upload rate:"
-msgstr "Shpejtesia mesatare e ngarkimeve:"
+msgid "Average upload rate"
+msgstr "Shpejtesia mesatare e ngarkimeve"
 
 #: src/muuli_wdr.cpp
-msgid "Average download rate:"
-msgstr "Shpejtesia mesatare e shkarkimeve:"
+msgid "Average download rate"
+msgstr "Shpejtesia mesatare e shkarkimeve"
 
 #: src/muuli_wdr.cpp
-msgid "Uploaded (session):"
-msgstr "Te ngarkuara (sesione):"
+msgid "Uploaded (session)"
+msgstr "Te ngarkuara (sesione)"
 
 #: src/muuli_wdr.cpp
-msgid "Downloaded (session):"
-msgstr "Te shkarkuara (sesione):"
+msgid "Downloaded (session)"
+msgstr "Te shkarkuara (sesione)"
 
 #: src/muuli_wdr.cpp
-msgid "Uploaded (total):"
-msgstr "Ngarkimet (total):"
+msgid "Uploaded (total)"
+msgstr "Ngarkimet (total)"
 
 #: src/muuli_wdr.cpp
-msgid "Downloaded (total):"
-msgstr "Shkarkimet (total):"
+msgid "Downloaded (total)"
+msgstr "Shkarkimet (total)"
 
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Piket"
 
 #: src/muuli_wdr.cpp
-msgid "DL/UP modifier:"
-msgstr "Modifikuesi DL/UP:"
+msgid "DL/UP modifier"
+msgstr "Modifikuesi DL/UP"
 
 #: src/muuli_wdr.cpp
-msgid "Secure ident:"
-msgstr "Identifikim i sigurte:"
+msgid "Secure ident"
+msgstr "Identifikim i sigurte"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Queue rank:"
+msgid "Queue rank"
 msgstr "Ne radhe"
 
 #: src/muuli_wdr.cpp
-msgid "Queue score:"
-msgstr "Piket e pritjes:"
+msgid "Queue score"
+msgstr "Piket e pritjes"
 
 #: src/muuli_wdr.cpp
 msgid "Nick"
@@ -5023,16 +4952,12 @@ msgid "Reset any changes made to the preferences."
 msgstr "Rikthe ne gjendjen e meparshme ndryshimet te bera tek Preferencat."
 
 #: src/muuli_wdr.cpp
-msgid "Comment :"
-msgstr "Komente :"
+msgid "Incoming Dir"
+msgstr "Direktoria e Hyrjeve"
 
 #: src/muuli_wdr.cpp
-msgid "Incoming Dir :"
-msgstr "Direktoria e Hyrjeve :"
-
-#: src/muuli_wdr.cpp
-msgid "Change priority for new assigned files :"
-msgstr "Nderro perparesine per failet e reja te caktuara :"
+msgid "Change priority for new assigned files"
+msgstr "Nderro perparesine per failet e reja te caktuara"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -5040,8 +4965,8 @@ msgid "Don't change"
 msgstr "Mos nderro"
 
 #: src/muuli_wdr.cpp
-msgid "Select color for this Category (currently selected) :"
-msgstr "Zgjidh ngjyren per kete kategori (e zgjedhur aktualisht) :"
+msgid "Select color for this Category (currently selected)"
+msgstr "Zgjidh ngjyren per kete kategori (e zgjedhur aktualisht)"
 
 #: src/muuli_wdr.cpp
 msgid "Click this button to reset the log."
@@ -5126,10 +5051,6 @@ msgstr ""
 #, fuzzy
 msgid "Enter the IP of the node here, using the x.x.x.x format."
 msgstr "Futni IP-ne e serverit ketu. duke perdorur formatin x.x.x.x."
-
-#: src/muuli_wdr.cpp
-msgid "Port:"
-msgstr "Porta:"
 
 #: src/muuli_wdr.cpp
 msgid "Use Secure User Identification"
@@ -5398,11 +5319,11 @@ msgid "Enable/disable proxy support"
 msgstr "Aktivizo/C'aktivizo mbeshtetjen e Proksit(Proxy)"
 
 #: src/muuli_wdr.cpp
-msgid "Proxy type:"
-msgstr "Lloji i Proksit(Proxy):"
+msgid "Proxy type"
+msgstr "Lloji i Proksit(Proxy)"
 
 #: src/muuli_wdr.cpp
-msgid "Proxy host:"
+msgid "Proxy host"
 msgstr "Hosti i Proksit(Proxy)"
 
 #: src/muuli_wdr.cpp
@@ -5410,8 +5331,8 @@ msgid "The proxy host name"
 msgstr "Host Name i Proksit(Proxy)"
 
 #: src/muuli_wdr.cpp
-msgid "Proxy port:"
-msgstr "Porta e Proksit:"
+msgid "Proxy port"
+msgstr "Porta e Proksit"
 
 #: src/muuli_wdr.cpp
 msgid "The proxy port"
@@ -5426,16 +5347,8 @@ msgid "Enable/disable username/password authentication"
 msgstr "Aktivizo/C'aktivizo emri i perdoruesit/njohja e fjalekalimit"
 
 #: src/muuli_wdr.cpp
-msgid "Username: "
-msgstr ""
-
-#: src/muuli_wdr.cpp
 msgid "The username to use to connect to the proxy"
 msgstr "Emri i perdorimit qe do perdoret per tu lidhur tek Proksi(Proxy)"
-
-#: src/muuli_wdr.cpp
-msgid "Password:"
-msgstr "Fjalekalimi:"
 
 #: src/muuli_wdr.cpp
 msgid "The password to use to connect to the proxy"
@@ -5617,6 +5530,15 @@ msgstr "ore"
 #: src/OtherFunctions.cpp
 msgid "days"
 msgstr "dite"
+
+#. TRANSLATORS:
+#. Punctuation for a "label: value" pair. %s is the already-translated
+#. label. Place the colon as your language requires -- e.g. "%s :" with a
+#. space in French, "%s:" without one in Russian and English.
+#: src/OtherFunctions.cpp
+#, c-format
+msgid "%s:"
+msgstr ""
 
 #: src/OtherFunctions.cpp
 msgid "all"
@@ -6663,8 +6585,7 @@ msgstr ""
 msgid "Confirm shared folders"
 msgstr "Ringarko failet e ndara"
 
-#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
-#: src/SharedFilesReloadProgress.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp src/SharedFilesReloadProgress.cpp
 #, fuzzy
 msgid "Reloading shared files..."
 msgstr "Ringarko failet e ndara"
@@ -6796,19 +6717,6 @@ msgstr ""
 #: src/SearchListCtrl.cpp
 msgid "FileID"
 msgstr "FailiID"
-
-#: src/SearchListCtrl.cpp
-msgid "Length"
-msgstr ""
-
-#: src/SearchListCtrl.cpp
-#, fuzzy
-msgid "Bitrate"
-msgstr "E pavotuar"
-
-#: src/SearchListCtrl.cpp
-msgid "Codec"
-msgstr ""
 
 #: src/SearchListCtrl.cpp
 msgid "Expand all"
@@ -7095,10 +7003,6 @@ msgstr "Serverat lokale jane te filtruara nga IPFilters, duke u rilidhur ne nje 
 #: src/ServerListCtrl.cpp
 msgid "Server Name"
 msgstr "Emri i serverit"
-
-#: src/ServerListCtrl.cpp
-msgid "Port"
-msgstr "Porta"
 
 #: src/ServerListCtrl.cpp
 msgid "Description"
@@ -7396,6 +7300,10 @@ msgstr "I lidhur me shokun"
 #, fuzzy, c-format
 msgid "Connected to buddy at %s"
 msgstr "I lidhur me shokun"
+
+#: src/ServerWnd.cpp
+msgid "IP address:"
+msgstr "Adresa IP:"
 
 #: src/ServerWnd.cpp
 #, fuzzy

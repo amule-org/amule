@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-04 12:13+0200\n"
+"POT-Creation-Date: 2026-09-05 12:01+0200\n"
 "PO-Revision-Date: 2026-09-03 11:02+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
@@ -387,8 +387,7 @@ msgstr "webserver běží s PID %d"
 msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
 msgstr "Požádali jste o spuštění webového serveru po startu, avšak binární soubor amuleweb nelze spustit. Nainstalujte balíček obsahující webový server aMule, nebo sestavte aMule ze zdrojového kódu pomocí přepínače -DBUILD_WEBSERVER=YES a pak jej nainstalujte."
 
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
 msgid "ERROR"
 msgstr "CHYBA"
 
@@ -674,8 +673,7 @@ msgstr "Sítě"
 msgid "Searches"
 msgstr "Vyhledávání"
 
-#: src/amuleDlg.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/Statistics.cpp
+#: src/amuleDlg.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/Statistics.cpp
 msgid "Downloads"
 msgstr "Stahování"
 
@@ -763,9 +761,7 @@ msgstr "Kad: vypnut"
 msgid "Core"
 msgstr ""
 
-#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp src/Statistics.cpp
+#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
 msgid "Version"
 msgstr "Verze"
 
@@ -1064,11 +1060,7 @@ msgstr "Nejde vytvořit adresář '%s' pro kategorii '%s', zachovávám adresá�
 msgid "The remote core sent inconsistent data for \"%s\" (part status %d, expected %d). The file list may be showing the wrong information; reconnect to clear it."
 msgstr "Vzdálené jádro odeslalo nekonzistentní data pro \"%s\" (částečný stav %d, očekáváno %d). Seznam souborů může zobrazovat nesprávné informace; opět se připojte pro vyčištění."
 
-#: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp
-#: src/FileDetailDialog.cpp src/GenericClientListCtrl.cpp src/HTTPDownload.cpp
-#: src/KnownFile.cpp src/MuleTrayIcon.cpp src/PartFile.cpp src/Server.cpp
-#: src/Statistics.cpp
+#: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp src/FileDetailDialog.cpp src/GenericClientListCtrl.cpp src/HTTPDownload.cpp src/KnownFile.cpp src/MuleTrayIcon.cpp src/PartFile.cpp src/Server.cpp src/Statistics.cpp
 msgid "Unknown"
 msgstr "Neznámý"
 
@@ -1167,8 +1159,7 @@ msgstr "Chyba při ukládání souboru %s: %s"
 msgid "Enter Captcha"
 msgstr "Vložte captchu"
 
-#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
-#: src/TransferWnd.cpp
+#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp src/TransferWnd.cpp
 msgid "Category"
 msgstr "Kategorie"
 
@@ -1337,13 +1328,11 @@ msgstr "Soubor 'cryptkey.dat' nenalezen, vytvářím."
 msgid "Client Details"
 msgstr "Podrobnosti klienta"
 
-#: src/ClientDetailDialog.cpp src/ServerWnd.cpp
-#: src/utils/wxCas/src/onlinesig.cpp
+#: src/ClientDetailDialog.cpp src/ServerWnd.cpp src/utils/wxCas/src/onlinesig.cpp
 msgid "LowID"
 msgstr "LowID"
 
-#: src/ClientDetailDialog.cpp src/ServerWnd.cpp
-#: src/utils/wxCas/src/onlinesig.cpp
+#: src/ClientDetailDialog.cpp src/ServerWnd.cpp src/utils/wxCas/src/onlinesig.cpp
 msgid "HighID"
 msgstr "HighID"
 
@@ -1359,8 +1348,7 @@ msgstr "Podporováno"
 msgid "Not supported"
 msgstr "Nepodporováno"
 
-#: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp
-#: src/TextClient.cpp
+#: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp src/TextClient.cpp
 msgid "Connected"
 msgstr "Připojen"
 
@@ -1368,13 +1356,12 @@ msgstr "Připojen"
 msgid "Disconnected"
 msgstr "Odpojeno"
 
-#: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp
-#: src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f KiB/s"
 msgstr ""
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/muuli_wdr.cpp
 msgid "Name"
 msgstr "Název"
 
@@ -1382,12 +1369,11 @@ msgstr "Název"
 msgid "Software"
 msgstr "Software"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/muuli_wdr.cpp
 msgid "IP Address"
 msgstr "IP adresa"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Origin"
 msgstr "Původ"
 
@@ -1403,13 +1389,11 @@ msgstr "Naposledy viděn"
 msgid "Sessions"
 msgstr "Sezení"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
 msgid "Upload Speed"
 msgstr "Rychlost odesílání"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
 msgid "Download Speed"
 msgstr "Rychlost stahování"
 
@@ -1461,13 +1445,11 @@ msgstr[2] "Nešlo přidat %u odkazů (podrobnosti viz log)."
 msgid "Files"
 msgstr "Soubory"
 
-#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Uploaded"
 msgstr "Odesláno"
 
-#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Downloaded"
 msgstr "Staženo"
 
@@ -1551,12 +1533,11 @@ msgstr "Uživatel %s (%u) odmítl přístup k seznamu sdílených adresářů/so
 msgid "File Comments"
 msgstr "Komentáře k souboru"
 
-#: src/CommentDialogLst.cpp src/FriendListCtrl.cpp
+#: src/CommentDialogLst.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp
 msgid "Username"
 msgstr "Jméno"
 
-#: src/CommentDialogLst.cpp src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp
-#: src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/CommentDialogLst.cpp src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "File Name"
 msgstr "Název souboru"
 
@@ -1564,7 +1545,7 @@ msgstr "Název souboru"
 msgid "Rating"
 msgstr "Hodnocení"
 
-#: src/CommentDialogLst.cpp
+#: src/CommentDialogLst.cpp src/muuli_wdr.cpp
 msgid "Comment"
 msgstr "Komentář"
 
@@ -1618,18 +1599,15 @@ msgstr "Auto [Vy]"
 msgid "Very low"
 msgstr "Velmi nízká"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "Nízká"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "Normální"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "Vysoká"
 
@@ -1653,13 +1631,11 @@ msgstr "Připojuji se přes server"
 msgid "Queue Full"
 msgstr "Plná fronta"
 
-#: src/DataToText.cpp src/GenericClientListCtrl.cpp src/KnownFile.cpp
-#: src/muuli_wdr.cpp
+#: src/DataToText.cpp src/GenericClientListCtrl.cpp src/KnownFile.cpp src/muuli_wdr.cpp
 msgid "On Queue"
 msgstr "Ve frontě"
 
-#: src/DataToText.cpp src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp
-#: src/PartFile.cpp src/TransferWnd.cpp
+#: src/DataToText.cpp src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
 msgid "Downloading"
 msgstr "Stahuji"
 
@@ -1719,8 +1695,7 @@ msgstr "Lokální server"
 msgid "Remote Server"
 msgstr "Vzdálený server"
 
-#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp
-#: src/TextClient.cpp
+#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp src/TextClient.cpp
 msgid "Kad"
 msgstr "Kad"
 
@@ -1744,8 +1719,7 @@ msgstr "Zdrojové seedy"
 msgid "Search Result"
 msgstr "Výsledek hledání"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
-#: src/TransferWnd.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
 msgid "Completed"
 msgstr "Dokončeno"
 
@@ -1797,8 +1771,7 @@ msgstr "Nelze provézt úpravu v rekurzivním sdílení"
 msgid "Part"
 msgstr "Část"
 
-#: src/DownloadListCtrl.cpp src/PartFileConvertDlg.cpp src/SearchListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/PartFileConvertDlg.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Size"
 msgstr "Velikost"
 
@@ -1806,8 +1779,7 @@ msgstr "Velikost"
 msgid "Transferred"
 msgstr "Přeneseno"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
-#: src/SourceListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp src/SourceListCtrl.cpp
 msgid "Speed"
 msgstr "Rychlost"
 
@@ -1815,13 +1787,11 @@ msgstr "Rychlost"
 msgid "Progress"
 msgstr "Průběh"
 
-#: src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/PartFile.cpp
-#: src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
 msgid "Sources"
 msgstr "Zdroje"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Priority"
 msgstr "Priorita"
 
@@ -1845,9 +1815,7 @@ msgstr "Poslední příjem"
 msgid "Auto"
 msgstr "Auto"
 
-#: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/TransferWnd.cpp
-#: src/utils/wxCas/src/wxcasprefs.cpp
+#: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/TransferWnd.cpp src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Cancel"
 msgstr "Zrušit"
 
@@ -1948,8 +1916,7 @@ msgstr "Zadejte nový název pro tento soubor:"
 msgid "File rename"
 msgstr "Přejmenování souboru"
 
-#: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f MiB/s"
 msgstr ""
@@ -2759,13 +2726,11 @@ msgstr ""
 msgid "Start aMule automatically when I log in"
 msgstr "Spustit aMule automaticky po přihlášení"
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
-#: packaging/windows/installer_strings.c
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Register aMule for ed2k:// links"
 msgstr "Zaregistrovat aMule pro odkazy ed2k://"
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
-#: packaging/windows/installer_strings.c
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Register aMule for magnet: links"
 msgstr "Zaregistrovat aMule pro odkazy magnet:"
 
@@ -2793,8 +2758,7 @@ msgstr ""
 msgid "Destination folder for downloads"
 msgstr "Cílová složka pro stahování"
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
-#: src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Browse"
 msgstr "Procházet"
 
@@ -3243,18 +3207,15 @@ msgstr "Dokončování"
 msgid "Complete"
 msgstr "Dokončeno"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
-#: src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
 msgid "Paused"
 msgstr "Pozastaveno"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
-#: src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
 msgid "Erroneous"
 msgstr "Poškozený"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
-#: src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
 msgid "Waiting"
 msgstr "Čekám"
 
@@ -3421,8 +3382,7 @@ msgstr "Zavřít"
 msgid "Cut"
 msgstr "Vyjmout"
 
-#: src/MuleTextCtrl.cpp src/PartFileConvert.cpp src/ServerWnd.cpp
-#: src/utils/aLinkCreator/src/alcframe.cpp
+#: src/MuleTextCtrl.cpp src/PartFileConvert.cpp src/ServerWnd.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Copy"
 msgstr "Kopírovat"
 
@@ -3430,8 +3390,7 @@ msgstr "Kopírovat"
 msgid "Paste"
 msgstr "Vložit"
 
-#: src/MuleTextCtrl.cpp src/muuli_wdr.cpp
-#: src/utils/aLinkCreator/src/alcframe.cpp
+#: src/MuleTextCtrl.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Clear"
 msgstr "Vyčistit"
 
@@ -3439,8 +3398,7 @@ msgstr "Vyčistit"
 msgid "Select All"
 msgstr "Označit vše"
 
-#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
-#: src/StatisticsDlg.cpp
+#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp src/StatisticsDlg.cpp
 msgid "KiB/s"
 msgstr ""
 
@@ -3695,10 +3653,6 @@ msgstr "Aktuální připojený server."
 msgid "Search"
 msgstr "Vyhledávání"
 
-#: src/muuli_wdr.cpp
-msgid "Name:"
-msgstr "Název:"
-
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Type"
 msgstr "Typ"
@@ -3788,8 +3742,8 @@ msgid "Availability"
 msgstr "Dostupnost"
 
 #: src/muuli_wdr.cpp
-msgid "Filter:"
-msgstr "Filtr:"
+msgid "Filter"
+msgstr "Filtr"
 
 #: src/muuli_wdr.cpp
 msgid "Invert Result"
@@ -3844,6 +3798,10 @@ msgid "Clears completed downloads"
 msgstr "Vyčistí dokončená stahování"
 
 #: src/muuli_wdr.cpp
+msgid "Filter:"
+msgstr "Filtr:"
+
+#: src/muuli_wdr.cpp
 msgid "File sources:"
 msgstr "Zdroje souboru:"
 
@@ -3852,80 +3810,77 @@ msgid "General"
 msgstr "Hlavní"
 
 #: src/muuli_wdr.cpp
-msgid "Full Name :"
-msgstr "Celá název:"
+msgid "Full Name"
+msgstr "Celá název"
 
 #: src/muuli_wdr.cpp
-msgid "met-File :"
-msgstr "Soubor .met:"
+msgid "met-File"
+msgstr "Soubor .met"
 
 #: src/muuli_wdr.cpp
-msgid "Hash :"
-msgstr "Hash:"
+msgid "Hash"
+msgstr "Hash"
 
 #: src/muuli_wdr.cpp
-msgid "Filesize :"
-msgstr "Velikost:"
+msgid "Filesize"
+msgstr "Velikost"
 
 #: src/muuli_wdr.cpp src/Statistics.cpp
 msgid "Transfer"
 msgstr "Přenos"
 
 #: src/muuli_wdr.cpp
-msgid "Partfilestatus :"
-msgstr "Stav souboru part :"
+msgid "Partfilestatus"
+msgstr "Stav souboru part"
 
 #: src/muuli_wdr.cpp
-msgid "Last seen complete :"
-msgstr "Naposledy spatřen kompletní:"
+msgid "Last seen complete"
+msgstr "Naposledy spatřen kompletní"
 
 #: src/muuli_wdr.cpp
-msgid "Found Sources :"
-msgstr "Nalezené zdroje:"
+msgid "Found Sources"
+msgstr "Nalezené zdroje"
 
 #: src/muuli_wdr.cpp
-msgid "Transferring Sources :"
-msgstr "Přenášející zdroje :"
+msgid "Transferring Sources"
+msgstr "Přenášející zdroje"
 
 #: src/muuli_wdr.cpp
-msgid "Filepart-Count :"
+msgid "Filepart-Count"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Available :"
-msgstr "Dostupný:"
+msgid "Available"
+msgstr "Dostupný"
 
 #: src/muuli_wdr.cpp
-msgid "Datarate :"
-msgstr ""
+#, fuzzy
+msgid "Datarate"
+msgstr "Nehodnocené"
 
 #: src/muuli_wdr.cpp
-msgid "Download Active Time: "
-msgstr "Doba stahování:"
+msgid "Download Active Time"
+msgstr "Doba stahování"
 
 #: src/muuli_wdr.cpp
-msgid "Transferred :"
-msgstr "Přeneseno:"
-
-#: src/muuli_wdr.cpp
-msgid "Completed Size :"
-msgstr "Dokončeno:"
+msgid "Completed Size"
+msgstr "Dokončeno"
 
 #: src/muuli_wdr.cpp
 msgid "Intelligent Corruption Handling"
 msgstr "Chytré zacházení s poškozenými částmi"
 
 #: src/muuli_wdr.cpp
-msgid "Lost to corruption :"
-msgstr "Ztraceno poškozením:"
+msgid "Lost to corruption"
+msgstr "Ztraceno poškozením"
 
 #: src/muuli_wdr.cpp
-msgid "Gained by compression :"
-msgstr "Získáno kompresí:"
+msgid "Gained by compression"
+msgstr "Získáno kompresí"
 
 #: src/muuli_wdr.cpp
-msgid "Packages saved by I.C.H. :"
-msgstr "Balíčků zachráněných pomocí I.C.H.:"
+msgid "Packages saved by I.C.H."
+msgstr "Balíčků zachráněných pomocí I.C.H."
 
 #: src/muuli_wdr.cpp
 msgid "Sharing"
@@ -3963,29 +3918,30 @@ msgstr "Poslední odeslání"
 msgid "Media Info"
 msgstr "Media Info"
 
-#: src/muuli_wdr.cpp
-msgid "Length :"
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Length"
+msgstr ""
+
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+#, fuzzy
+msgid "Bitrate"
+msgstr "Nehodnocené"
+
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Codec"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Bitrate :"
-msgstr "Datový tok :"
+msgid "Artist"
+msgstr "Umělec"
 
 #: src/muuli_wdr.cpp
-msgid "Codec :"
+msgid "Album"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Artist :"
-msgstr "Umělec :"
-
-#: src/muuli_wdr.cpp
-msgid "Album :"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Title :"
-msgstr "Titulek:"
+msgid "Title"
+msgstr "Titulek"
 
 #: src/muuli_wdr.cpp
 msgid "File Names"
@@ -4071,25 +4027,17 @@ msgstr "Neznámá velikost"
 msgid "Required Information"
 msgstr "Nezbytné informace"
 
-#: src/muuli_wdr.cpp
-msgid "IP Address :"
-msgstr "IP adresa :"
-
-#: src/muuli_wdr.cpp
-msgid "Port :"
-msgstr "Port :"
+#: src/muuli_wdr.cpp src/ServerListCtrl.cpp
+msgid "Port"
+msgstr "Port"
 
 #: src/muuli_wdr.cpp
 msgid "Additional Information"
 msgstr "Dodatečné informace"
 
 #: src/muuli_wdr.cpp
-msgid "Username :"
-msgstr "Uživatelské jméno:"
-
-#: src/muuli_wdr.cpp
-msgid "Userhash :"
-msgstr "Hash uživatele :"
+msgid "Userhash"
+msgstr "Hash uživatele"
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Add"
@@ -4124,96 +4072,82 @@ msgid "Statistics Tree"
 msgstr "Strom statistik"
 
 #: src/muuli_wdr.cpp
-msgid "Username:"
-msgstr "Jméno:"
+msgid "Client software"
+msgstr "Software klienta"
 
 #: src/muuli_wdr.cpp
-msgid "Userhash:"
-msgstr "Hash uživatele:"
+msgid "Client version"
+msgstr "Verze klienta"
 
 #: src/muuli_wdr.cpp
-msgid "Client software:"
-msgstr "Software klienta:"
+msgid "User ID"
+msgstr "ID uživ."
 
 #: src/muuli_wdr.cpp
-msgid "Client version:"
-msgstr "Verze klienta:"
-
-#: src/muuli_wdr.cpp src/ServerWnd.cpp
-msgid "IP address:"
-msgstr "IP adresa:"
+msgid "Server IP"
+msgstr "IP serveru"
 
 #: src/muuli_wdr.cpp
-msgid "User ID:"
-msgstr "ID uživ.:"
+msgid "Server name"
+msgstr "Název serveru"
 
 #: src/muuli_wdr.cpp
-msgid "Server IP:"
-msgstr "IP serveru:"
-
-#: src/muuli_wdr.cpp
-msgid "Server name:"
-msgstr "Název serveru:"
-
-#: src/muuli_wdr.cpp
-msgid "Obfuscation:"
-msgstr "Zamaskování:"
-
-#: src/muuli_wdr.cpp
-msgid "Kad:"
-msgstr "Kad:"
+msgid "Obfuscation"
+msgstr "Zamaskování"
 
 #: src/muuli_wdr.cpp
 msgid "Transfers to client"
 msgstr "Přenosy ke klientovi"
 
 #: src/muuli_wdr.cpp
-msgid "Current request:"
-msgstr ""
+#, fuzzy
+msgid "Current request"
+msgstr "Bylo vyžádáno odhlášení\n"
 
 #: src/muuli_wdr.cpp
-msgid "Average upload rate:"
-msgstr "Průmerná rychlost odesílání:"
+msgid "Average upload rate"
+msgstr "Průmerná rychlost odesílání"
 
 #: src/muuli_wdr.cpp
-msgid "Average download rate:"
-msgstr "Průměrná rychlost stahování:"
+msgid "Average download rate"
+msgstr "Průměrná rychlost stahování"
 
 #: src/muuli_wdr.cpp
-msgid "Uploaded (session):"
-msgstr "Odesláno (sezení):"
+msgid "Uploaded (session)"
+msgstr "Odesláno (sezení)"
 
 #: src/muuli_wdr.cpp
-msgid "Downloaded (session):"
-msgstr "Staženo (sezení):"
+msgid "Downloaded (session)"
+msgstr "Staženo (sezení)"
 
 #: src/muuli_wdr.cpp
-msgid "Uploaded (total):"
-msgstr "Odesláno (celkem):"
+msgid "Uploaded (total)"
+msgstr "Odesláno (celkem)"
 
 #: src/muuli_wdr.cpp
-msgid "Downloaded (total):"
-msgstr "Staženo (celkem):"
+msgid "Downloaded (total)"
+msgstr "Staženo (celkem)"
 
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Skóre"
 
 #: src/muuli_wdr.cpp
-msgid "DL/UP modifier:"
-msgstr "DL/UP poměr:"
+msgid "DL/UP modifier"
+msgstr "DL/UP poměr"
 
 #: src/muuli_wdr.cpp
-msgid "Secure ident:"
-msgstr ""
+#, fuzzy
+msgid "Secure ident"
+msgstr "Bezpečnost"
 
 #: src/muuli_wdr.cpp
-msgid "Queue rank:"
-msgstr "Pořadí ve frontě:"
+msgid "Queue rank"
+msgstr "Pořadí ve frontě"
 
 #: src/muuli_wdr.cpp
-msgid "Queue score:"
-msgstr "Skóre fronty:"
+msgid "Queue score"
+msgstr "Skóre fronty"
 
 #: src/muuli_wdr.cpp
 msgid "Nick"
@@ -4995,16 +4929,12 @@ msgid "Reset any changes made to the preferences."
 msgstr "Resetovat jakékoli změny v nastavení."
 
 #: src/muuli_wdr.cpp
-msgid "Comment :"
-msgstr "Komentář:"
+msgid "Incoming Dir"
+msgstr "Příchozí adresář"
 
 #: src/muuli_wdr.cpp
-msgid "Incoming Dir :"
-msgstr "Příchozí adresář:"
-
-#: src/muuli_wdr.cpp
-msgid "Change priority for new assigned files :"
-msgstr "Změnit prioritu pro nově přiřazené soubory:"
+msgid "Change priority for new assigned files"
+msgstr "Změnit prioritu pro nově přiřazené soubory"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -5012,8 +4942,8 @@ msgid "Don't change"
 msgstr "Neměnit"
 
 #: src/muuli_wdr.cpp
-msgid "Select color for this Category (currently selected) :"
-msgstr "Barva pro tuto kategorii:"
+msgid "Select color for this Category (currently selected)"
+msgstr "Barva pro tuto kategorii"
 
 #: src/muuli_wdr.cpp
 msgid "Click this button to reset the log."
@@ -5094,10 +5024,6 @@ msgstr "Zavedení prostřednictvím uzlu: IP"
 #: src/muuli_wdr.cpp
 msgid "Enter the IP of the node here, using the x.x.x.x format."
 msgstr "Zadejte sem IP adresu uzlu ve formátu x.x.x.x."
-
-#: src/muuli_wdr.cpp
-msgid "Port:"
-msgstr "Port:"
 
 #: src/muuli_wdr.cpp
 msgid "Use Secure User Identification"
@@ -5374,20 +5300,20 @@ msgid "Enable/disable proxy support"
 msgstr "Povolí/zakáže proxy"
 
 #: src/muuli_wdr.cpp
-msgid "Proxy type:"
-msgstr "Typ proxy:"
+msgid "Proxy type"
+msgstr "Typ proxy"
 
 #: src/muuli_wdr.cpp
-msgid "Proxy host:"
-msgstr "Hostitel proxy:"
+msgid "Proxy host"
+msgstr "Hostitel proxy"
 
 #: src/muuli_wdr.cpp
 msgid "The proxy host name"
 msgstr "Název hostitele proxy"
 
 #: src/muuli_wdr.cpp
-msgid "Proxy port:"
-msgstr "Port proxy:"
+msgid "Proxy port"
+msgstr "Port proxy"
 
 #: src/muuli_wdr.cpp
 msgid "The proxy port"
@@ -5402,16 +5328,8 @@ msgid "Enable/disable username/password authentication"
 msgstr "Povolí/zakáže autentizaci (uživatelské jméno a heslo)"
 
 #: src/muuli_wdr.cpp
-msgid "Username: "
-msgstr "Uživatelské jméno: "
-
-#: src/muuli_wdr.cpp
 msgid "The username to use to connect to the proxy"
 msgstr "Uživatelské jméno, které se použije pro přihlášení k proxy"
-
-#: src/muuli_wdr.cpp
-msgid "Password:"
-msgstr "Heslo:"
 
 #: src/muuli_wdr.cpp
 msgid "The password to use to connect to the proxy"
@@ -5586,6 +5504,15 @@ msgstr "hod."
 #: src/OtherFunctions.cpp
 msgid "days"
 msgstr "dní"
+
+#. TRANSLATORS:
+#. Punctuation for a "label: value" pair. %s is the already-translated
+#. label. Place the colon as your language requires -- e.g. "%s :" with a
+#. space in French, "%s:" without one in Russian and English.
+#: src/OtherFunctions.cpp
+#, c-format
+msgid "%s:"
+msgstr ""
 
 #: src/OtherFunctions.cpp
 msgid "all"
@@ -6627,8 +6554,7 @@ msgstr ""
 msgid "Confirm shared folders"
 msgstr "Potvrdit sdílené složky"
 
-#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
-#: src/SharedFilesReloadProgress.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp src/SharedFilesReloadProgress.cpp
 #, fuzzy
 msgid "Reloading shared files..."
 msgstr "Znovu načíst vaše sdílené soubory"
@@ -6757,19 +6683,6 @@ msgstr "Selhala aktualizace GeoIP.dat"
 #: src/SearchListCtrl.cpp
 msgid "FileID"
 msgstr "ID souboru"
-
-#: src/SearchListCtrl.cpp
-msgid "Length"
-msgstr ""
-
-#: src/SearchListCtrl.cpp
-#, fuzzy
-msgid "Bitrate"
-msgstr "Nehodnocené"
-
-#: src/SearchListCtrl.cpp
-msgid "Codec"
-msgstr ""
 
 #: src/SearchListCtrl.cpp
 msgid "Expand all"
@@ -7057,10 +6970,6 @@ msgstr ""
 #: src/ServerListCtrl.cpp
 msgid "Server Name"
 msgstr "Název serveru"
-
-#: src/ServerListCtrl.cpp
-msgid "Port"
-msgstr "Port"
 
 #: src/ServerListCtrl.cpp
 msgid "Description"
@@ -7359,6 +7268,10 @@ msgstr "Připojuji se ke kamarádovi"
 #, c-format
 msgid "Connected to buddy at %s"
 msgstr "Připojen ke kamarádovi na %s"
+
+#: src/ServerWnd.cpp
+msgid "IP address:"
+msgstr "IP adresa:"
 
 #: src/ServerWnd.cpp
 msgid "Indexed sources:"

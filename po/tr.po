@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-04 12:13+0200\n"
+"POT-Creation-Date: 2026-09-05 12:01+0200\n"
 "PO-Revision-Date: 2026-09-03 11:11+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -385,8 +385,7 @@ msgstr "web sunucusu pid %d üzerinde çalışıyor"
 msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
 msgstr "Web sunucusunun başlangıçta çalışmasını istediniz, fakat amuleweb ikilisi çalıştırılamıyor. Lütfen aMule web sunucusunu içeren paketi yükleyin veya aMule' yi -DBUILD_WEBSERVER=YES seçeneği ile derleyin ve kurun."
 
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
 msgid "ERROR"
 msgstr "HATA"
 
@@ -672,8 +671,7 @@ msgstr "Ağlar"
 msgid "Searches"
 msgstr "Aramalar"
 
-#: src/amuleDlg.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/Statistics.cpp
+#: src/amuleDlg.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/Statistics.cpp
 msgid "Downloads"
 msgstr "İndirmeler"
 
@@ -761,9 +759,7 @@ msgstr "Kad: Kapalı"
 msgid "Core"
 msgstr "Çekirdek"
 
-#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp src/Statistics.cpp
+#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
 msgid "Version"
 msgstr "Sürüm"
 
@@ -1060,11 +1056,7 @@ msgstr "'%s' dizini '%s' sınıfı için oluşturulamadı. '%s' dizini kullanıl
 msgid "The remote core sent inconsistent data for \"%s\" (part status %d, expected %d). The file list may be showing the wrong information; reconnect to clear it."
 msgstr "Uzaktaki çekirdek \"%s\" için tutarsız veri gönderdi (kısmi durum %d, beklenilen %d). Dosya listesi yanlış bilgi gösteriyor olabilir, bunu düzeltmek için tekrar bağlanın."
 
-#: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp
-#: src/FileDetailDialog.cpp src/GenericClientListCtrl.cpp src/HTTPDownload.cpp
-#: src/KnownFile.cpp src/MuleTrayIcon.cpp src/PartFile.cpp src/Server.cpp
-#: src/Statistics.cpp
+#: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp src/FileDetailDialog.cpp src/GenericClientListCtrl.cpp src/HTTPDownload.cpp src/KnownFile.cpp src/MuleTrayIcon.cpp src/PartFile.cpp src/Server.cpp src/Statistics.cpp
 msgid "Unknown"
 msgstr "Bilinmiyor"
 
@@ -1161,8 +1153,7 @@ msgstr "%s dosyası kaydedilirken hata: %s"
 msgid "Enter Captcha"
 msgstr "Captcha Gir"
 
-#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
-#: src/TransferWnd.cpp
+#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp src/TransferWnd.cpp
 msgid "Category"
 msgstr "Sınıf"
 
@@ -1325,13 +1316,11 @@ msgstr "'cryptkey.dat' dosyası bulunamadı. Oluşturuluyor…"
 msgid "Client Details"
 msgstr "Kullanıcı Ayrıntıları"
 
-#: src/ClientDetailDialog.cpp src/ServerWnd.cpp
-#: src/utils/wxCas/src/onlinesig.cpp
+#: src/ClientDetailDialog.cpp src/ServerWnd.cpp src/utils/wxCas/src/onlinesig.cpp
 msgid "LowID"
 msgstr "DüşükID"
 
-#: src/ClientDetailDialog.cpp src/ServerWnd.cpp
-#: src/utils/wxCas/src/onlinesig.cpp
+#: src/ClientDetailDialog.cpp src/ServerWnd.cpp src/utils/wxCas/src/onlinesig.cpp
 msgid "HighID"
 msgstr "YüksekID"
 
@@ -1347,8 +1336,7 @@ msgstr "Destekleniyor"
 msgid "Not supported"
 msgstr "Desteklenmiyor"
 
-#: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp
-#: src/TextClient.cpp
+#: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp src/TextClient.cpp
 msgid "Connected"
 msgstr "Bağlandı"
 
@@ -1356,13 +1344,12 @@ msgstr "Bağlandı"
 msgid "Disconnected"
 msgstr "Bağlantı kesildi"
 
-#: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp
-#: src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f KiB/s"
 msgstr "%.1f KiB/s"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/muuli_wdr.cpp
 msgid "Name"
 msgstr "Ad"
 
@@ -1370,12 +1357,11 @@ msgstr "Ad"
 msgid "Software"
 msgstr "Yazılım"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/muuli_wdr.cpp
 msgid "IP Address"
 msgstr "IP Adresi"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Origin"
 msgstr "Köken"
 
@@ -1391,13 +1377,11 @@ msgstr "Son Görülme"
 msgid "Sessions"
 msgstr "Oturumlar"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
 msgid "Upload Speed"
 msgstr "Gönderme Hızı"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
 msgid "Download Speed"
 msgstr "İndirme Hızı"
 
@@ -1448,13 +1432,11 @@ msgstr[1] "%u bağlantı eklenemedi (teferruatlar için kütüğe bakın)."
 msgid "Files"
 msgstr "Dosyalar"
 
-#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Uploaded"
 msgstr "Gönderilen"
 
-#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Downloaded"
 msgstr "İndirildi"
 
@@ -1538,12 +1520,11 @@ msgstr "Kullanıcı %s (%u)nın paylaşılmış dizin/dosyalara erişimi reddedi
 msgid "File Comments"
 msgstr "Dosya Yorumları"
 
-#: src/CommentDialogLst.cpp src/FriendListCtrl.cpp
+#: src/CommentDialogLst.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp
 msgid "Username"
 msgstr "Kullanıcı Adı"
 
-#: src/CommentDialogLst.cpp src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp
-#: src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/CommentDialogLst.cpp src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "File Name"
 msgstr "Dosya Adı"
 
@@ -1551,7 +1532,7 @@ msgstr "Dosya Adı"
 msgid "Rating"
 msgstr "Puanlama"
 
-#: src/CommentDialogLst.cpp
+#: src/CommentDialogLst.cpp src/muuli_wdr.cpp
 msgid "Comment"
 msgstr "Yorum"
 
@@ -1604,18 +1585,15 @@ msgstr "Oto (Yük)"
 msgid "Very low"
 msgstr "Çok düşük"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "Düşük"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "Normal"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "Yüksek"
 
@@ -1639,13 +1617,11 @@ msgstr "Sunucu yoluyla bağlanıyor"
 msgid "Queue Full"
 msgstr "Sıra dolu"
 
-#: src/DataToText.cpp src/GenericClientListCtrl.cpp src/KnownFile.cpp
-#: src/muuli_wdr.cpp
+#: src/DataToText.cpp src/GenericClientListCtrl.cpp src/KnownFile.cpp src/muuli_wdr.cpp
 msgid "On Queue"
 msgstr "Sırada"
 
-#: src/DataToText.cpp src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp
-#: src/PartFile.cpp src/TransferWnd.cpp
+#: src/DataToText.cpp src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
 msgid "Downloading"
 msgstr "Aktarılıyor"
 
@@ -1705,8 +1681,7 @@ msgstr "Sunucu"
 msgid "Remote Server"
 msgstr "Uzak Sunucu"
 
-#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp
-#: src/TextClient.cpp
+#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp src/TextClient.cpp
 msgid "Kad"
 msgstr "Kad"
 
@@ -1730,8 +1705,7 @@ msgstr "Kaynak Girdileri"
 msgid "Search Result"
 msgstr "Arama Sonucu"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
-#: src/TransferWnd.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
 msgid "Completed"
 msgstr "Tamamlandı"
 
@@ -1783,8 +1757,7 @@ msgstr "Özyinelemeli bir paylaşım dahilinde değişim yapılamaz"
 msgid "Part"
 msgstr "Parça"
 
-#: src/DownloadListCtrl.cpp src/PartFileConvertDlg.cpp src/SearchListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/PartFileConvertDlg.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Size"
 msgstr "Boyut"
 
@@ -1792,8 +1765,7 @@ msgstr "Boyut"
 msgid "Transferred"
 msgstr "Aktarıldı"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
-#: src/SourceListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp src/SourceListCtrl.cpp
 msgid "Speed"
 msgstr "Hız"
 
@@ -1801,13 +1773,11 @@ msgstr "Hız"
 msgid "Progress"
 msgstr "İşlem"
 
-#: src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/PartFile.cpp
-#: src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
 msgid "Sources"
 msgstr "Kaynaklar"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Priority"
 msgstr "Öncelik"
 
@@ -1831,9 +1801,7 @@ msgstr "Son Alım"
 msgid "Auto"
 msgstr "Otomatik"
 
-#: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/TransferWnd.cpp
-#: src/utils/wxCas/src/wxcasprefs.cpp
+#: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/TransferWnd.cpp src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Cancel"
 msgstr "İptal"
 
@@ -1934,8 +1902,7 @@ msgstr "Bu dosya için yeni bir isim girin:"
 msgid "File rename"
 msgstr "Dosya yeniden adlandır"
 
-#: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f MiB/s"
 msgstr "%.1f MiB/s"
@@ -2738,13 +2705,11 @@ msgstr ""
 msgid "Start aMule automatically when I log in"
 msgstr "aMule'ü oturum açtığımda otomatik olarak başlat"
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
-#: packaging/windows/installer_strings.c
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Register aMule for ed2k:// links"
 msgstr "aMule'ü ed2k:// bağlantıları için kaydet"
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
-#: packaging/windows/installer_strings.c
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Register aMule for magnet: links"
 msgstr "aMule'ü magnet: bağlantıları için kaydet"
 
@@ -2772,8 +2737,7 @@ msgstr ""
 msgid "Destination folder for downloads"
 msgstr "İndirmeler için hedef dizin"
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
-#: src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Browse"
 msgstr "Göz at"
 
@@ -3217,18 +3181,15 @@ msgstr "Tamamlanıyor"
 msgid "Complete"
 msgstr "Tamamlandı"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
-#: src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
 msgid "Paused"
 msgstr "Duraklatıldı"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
-#: src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
 msgid "Erroneous"
 msgstr "Hatalı"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
-#: src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
 msgid "Waiting"
 msgstr "Bekliyor"
 
@@ -3390,8 +3351,7 @@ msgstr "Kapat"
 msgid "Cut"
 msgstr "Kes"
 
-#: src/MuleTextCtrl.cpp src/PartFileConvert.cpp src/ServerWnd.cpp
-#: src/utils/aLinkCreator/src/alcframe.cpp
+#: src/MuleTextCtrl.cpp src/PartFileConvert.cpp src/ServerWnd.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Copy"
 msgstr "Kopyala"
 
@@ -3399,8 +3359,7 @@ msgstr "Kopyala"
 msgid "Paste"
 msgstr "Yapıştır"
 
-#: src/MuleTextCtrl.cpp src/muuli_wdr.cpp
-#: src/utils/aLinkCreator/src/alcframe.cpp
+#: src/MuleTextCtrl.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Clear"
 msgstr "Temizle"
 
@@ -3408,8 +3367,7 @@ msgstr "Temizle"
 msgid "Select All"
 msgstr "Tümünü Seç"
 
-#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
-#: src/StatisticsDlg.cpp
+#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp src/StatisticsDlg.cpp
 msgid "KiB/s"
 msgstr "KiB/s"
 
@@ -3664,10 +3622,6 @@ msgstr "Şu an bağlanılan sunucu."
 msgid "Search"
 msgstr "Ara"
 
-#: src/muuli_wdr.cpp
-msgid "Name:"
-msgstr "Ad:"
-
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Type"
 msgstr "Tür"
@@ -3757,8 +3711,8 @@ msgid "Availability"
 msgstr "Uygunluk"
 
 #: src/muuli_wdr.cpp
-msgid "Filter:"
-msgstr "Süz:"
+msgid "Filter"
+msgstr "Süz"
 
 #: src/muuli_wdr.cpp
 msgid "Invert Result"
@@ -3813,6 +3767,10 @@ msgid "Clears completed downloads"
 msgstr "Tamamlanan aktarımları temizler."
 
 #: src/muuli_wdr.cpp
+msgid "Filter:"
+msgstr "Süz:"
+
+#: src/muuli_wdr.cpp
 msgid "File sources:"
 msgstr "Dosya kaynakları:"
 
@@ -3821,80 +3779,76 @@ msgid "General"
 msgstr "Genel"
 
 #: src/muuli_wdr.cpp
-msgid "Full Name :"
-msgstr "Tam Ad :"
+msgid "Full Name"
+msgstr "Tam Ad"
 
 #: src/muuli_wdr.cpp
-msgid "met-File :"
-msgstr "met-Dosyası :"
+msgid "met-File"
+msgstr "met-Dosyası"
 
 #: src/muuli_wdr.cpp
-msgid "Hash :"
-msgstr "Adresleme:"
+msgid "Hash"
+msgstr "Adresleme"
 
 #: src/muuli_wdr.cpp
-msgid "Filesize :"
-msgstr "Dosya Boyutu :"
+msgid "Filesize"
+msgstr "Dosya Boyutu"
 
 #: src/muuli_wdr.cpp src/Statistics.cpp
 msgid "Transfer"
 msgstr "Aktarım"
 
 #: src/muuli_wdr.cpp
-msgid "Partfilestatus :"
-msgstr "Parça Dosya Durumu :"
+msgid "Partfilestatus"
+msgstr "Parça Dosya Durumu"
 
 #: src/muuli_wdr.cpp
-msgid "Last seen complete :"
-msgstr "Son Görülen Tamamlama :"
+msgid "Last seen complete"
+msgstr "Son Görülen Tamamlama"
 
 #: src/muuli_wdr.cpp
-msgid "Found Sources :"
-msgstr "Bulunan Kaynaklar:"
+msgid "Found Sources"
+msgstr "Bulunan Kaynaklar"
 
 #: src/muuli_wdr.cpp
-msgid "Transferring Sources :"
-msgstr "Aktarılan Kaynaklar:"
+msgid "Transferring Sources"
+msgstr "Aktarılan Kaynaklar"
 
 #: src/muuli_wdr.cpp
-msgid "Filepart-Count :"
-msgstr "Dosya Parçası-Sayısı:"
+msgid "Filepart-Count"
+msgstr "Dosya Parçası-Sayısı"
 
 #: src/muuli_wdr.cpp
-msgid "Available :"
-msgstr "Uygun:"
+msgid "Available"
+msgstr "Uygun"
 
 #: src/muuli_wdr.cpp
-msgid "Datarate :"
-msgstr "Veri Oranı:"
+msgid "Datarate"
+msgstr "Veri Oranı"
 
 #: src/muuli_wdr.cpp
-msgid "Download Active Time: "
-msgstr "Aktarım Süresi: "
+msgid "Download Active Time"
+msgstr "Aktarım Süresi"
 
 #: src/muuli_wdr.cpp
-msgid "Transferred :"
-msgstr "Aktarılan:"
-
-#: src/muuli_wdr.cpp
-msgid "Completed Size :"
-msgstr "Tamamlanmış Boyut:"
+msgid "Completed Size"
+msgstr "Tamamlanmış Boyut"
 
 #: src/muuli_wdr.cpp
 msgid "Intelligent Corruption Handling"
 msgstr "Akıllı Bozulma Yakalayıcısı"
 
 #: src/muuli_wdr.cpp
-msgid "Lost to corruption :"
-msgstr "Bozulma ile kaybedilen:"
+msgid "Lost to corruption"
+msgstr "Bozulma ile kaybedilen"
 
 #: src/muuli_wdr.cpp
-msgid "Gained by compression :"
-msgstr "Sıkıştırma ile kazanılan:"
+msgid "Gained by compression"
+msgstr "Sıkıştırma ile kazanılan"
 
 #: src/muuli_wdr.cpp
-msgid "Packages saved by I.C.H. :"
-msgstr "I.C.H ile kurtarılan paketler :"
+msgid "Packages saved by I.C.H."
+msgstr "I.C.H ile kurtarılan paketler"
 
 #: src/muuli_wdr.cpp
 msgid "Sharing"
@@ -3932,29 +3886,29 @@ msgstr "Son gönderme"
 msgid "Media Info"
 msgstr "Ortam Bilgileri"
 
-#: src/muuli_wdr.cpp
-msgid "Length :"
-msgstr "Süre:"
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Length"
+msgstr "Süre"
+
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Bitrate"
+msgstr "Akış hızı"
+
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Codec"
+msgstr "Kodlama"
 
 #: src/muuli_wdr.cpp
-msgid "Bitrate :"
-msgstr "Akış hızı:"
+msgid "Artist"
+msgstr "Sanatçı"
 
 #: src/muuli_wdr.cpp
-msgid "Codec :"
-msgstr "Kodlama:"
+msgid "Album"
+msgstr "Albüm"
 
 #: src/muuli_wdr.cpp
-msgid "Artist :"
-msgstr "Sanatçı:"
-
-#: src/muuli_wdr.cpp
-msgid "Album :"
-msgstr "Albüm:"
-
-#: src/muuli_wdr.cpp
-msgid "Title :"
-msgstr "Başlık :"
+msgid "Title"
+msgstr "Başlık"
 
 #: src/muuli_wdr.cpp
 msgid "File Names"
@@ -4040,25 +3994,17 @@ msgstr "Boyut bilinmiyor"
 msgid "Required Information"
 msgstr "Gerekli Bilgiler"
 
-#: src/muuli_wdr.cpp
-msgid "IP Address :"
-msgstr "IP Adresi:"
-
-#: src/muuli_wdr.cpp
-msgid "Port :"
-msgstr "Port:"
+#: src/muuli_wdr.cpp src/ServerListCtrl.cpp
+msgid "Port"
+msgstr "Port"
 
 #: src/muuli_wdr.cpp
 msgid "Additional Information"
 msgstr "Ek Bilgi"
 
 #: src/muuli_wdr.cpp
-msgid "Username :"
-msgstr "Kullanıcı Adı :"
-
-#: src/muuli_wdr.cpp
-msgid "Userhash :"
-msgstr "Kullanıcı Adreslemesi :"
+msgid "Userhash"
+msgstr "Kullanıcı Adreslemesi"
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Add"
@@ -4093,96 +4039,80 @@ msgid "Statistics Tree"
 msgstr "İstatistik Ağacı"
 
 #: src/muuli_wdr.cpp
-msgid "Username:"
-msgstr "Kullanıcı Adı:"
+msgid "Client software"
+msgstr "Yazılım"
 
 #: src/muuli_wdr.cpp
-msgid "Userhash:"
-msgstr "Kullanıcı Adreslemesi:"
+msgid "Client version"
+msgstr "Yazılım Sürümü"
 
 #: src/muuli_wdr.cpp
-msgid "Client software:"
-msgstr "Yazılım:"
+msgid "User ID"
+msgstr "Kullanıcı ID"
 
 #: src/muuli_wdr.cpp
-msgid "Client version:"
-msgstr "Yazılım Sürümü:"
-
-#: src/muuli_wdr.cpp src/ServerWnd.cpp
-msgid "IP address:"
-msgstr "IP :"
+msgid "Server IP"
+msgstr "Sunucu IP"
 
 #: src/muuli_wdr.cpp
-msgid "User ID:"
-msgstr "Kullanıcı ID:"
+msgid "Server name"
+msgstr "Sunucu"
 
 #: src/muuli_wdr.cpp
-msgid "Server IP:"
-msgstr "Sunucu IP:"
-
-#: src/muuli_wdr.cpp
-msgid "Server name:"
-msgstr "Sunucu:"
-
-#: src/muuli_wdr.cpp
-msgid "Obfuscation:"
-msgstr "Gizleme:"
-
-#: src/muuli_wdr.cpp
-msgid "Kad:"
-msgstr "Kademlia:"
+msgid "Obfuscation"
+msgstr "Gizleme"
 
 #: src/muuli_wdr.cpp
 msgid "Transfers to client"
 msgstr "Yapılan aktarımlar"
 
 #: src/muuli_wdr.cpp
-msgid "Current request:"
-msgstr "Şimdiki İstek:"
+msgid "Current request"
+msgstr "Şimdiki İstek"
 
 #: src/muuli_wdr.cpp
-msgid "Average upload rate:"
-msgstr "Ortalama gönderim oranı:"
+msgid "Average upload rate"
+msgstr "Ortalama gönderim oranı"
 
 #: src/muuli_wdr.cpp
-msgid "Average download rate:"
-msgstr "Ortalama aktarım oranı:"
+msgid "Average download rate"
+msgstr "Ortalama aktarım oranı"
 
 #: src/muuli_wdr.cpp
-msgid "Uploaded (session):"
-msgstr "Gönderilen (oturum):"
+msgid "Uploaded (session)"
+msgstr "Gönderilen (oturum)"
 
 #: src/muuli_wdr.cpp
-msgid "Downloaded (session):"
-msgstr "İndirilen (oturum):"
+msgid "Downloaded (session)"
+msgstr "İndirilen (oturum)"
 
 #: src/muuli_wdr.cpp
-msgid "Uploaded (total):"
-msgstr "Gönderilen (toplam):"
+msgid "Uploaded (total)"
+msgstr "Gönderilen (toplam)"
 
 #: src/muuli_wdr.cpp
-msgid "Downloaded (total):"
-msgstr "İndirilen (toplam):"
+msgid "Downloaded (total)"
+msgstr "İndirilen (toplam)"
 
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Skor"
 
 #: src/muuli_wdr.cpp
-msgid "DL/UP modifier:"
-msgstr "İND./GÖN. niteleyici:"
+msgid "DL/UP modifier"
+msgstr "İND./GÖN. niteleyici"
 
 #: src/muuli_wdr.cpp
-msgid "Secure ident:"
-msgstr "Güvenli Kimlik:"
+msgid "Secure ident"
+msgstr "Güvenli Kimlik"
 
 #: src/muuli_wdr.cpp
-msgid "Queue rank:"
-msgstr "Kuyruk sırası:"
+msgid "Queue rank"
+msgstr "Kuyruk sırası"
 
 #: src/muuli_wdr.cpp
-msgid "Queue score:"
-msgstr "Sıra skoru:"
+msgid "Queue score"
+msgstr "Sıra skoru"
 
 #: src/muuli_wdr.cpp
 msgid "Nick"
@@ -4961,24 +4891,20 @@ msgid "Reset any changes made to the preferences."
 msgstr "Ayarlarda yapılan değişiklikleri sil."
 
 #: src/muuli_wdr.cpp
-msgid "Comment :"
-msgstr "Yorum:"
+msgid "Incoming Dir"
+msgstr "Gelen Dosyalar Dizini"
 
 #: src/muuli_wdr.cpp
-msgid "Incoming Dir :"
-msgstr "Gelen Dosyalar Dizini :"
-
-#: src/muuli_wdr.cpp
-msgid "Change priority for new assigned files :"
-msgstr "Yeni eklenen dosyalar için öncelikleri değiştir:"
+msgid "Change priority for new assigned files"
+msgstr "Yeni eklenen dosyalar için öncelikleri değiştir"
 
 #: src/muuli_wdr.cpp
 msgid "Don't change"
 msgstr "Değiştirme"
 
 #: src/muuli_wdr.cpp
-msgid "Select color for this Category (currently selected) :"
-msgstr "Bu sınıf için renk seçiniz (varsayılan) :"
+msgid "Select color for this Category (currently selected)"
+msgstr "Bu sınıf için renk seçiniz (varsayılan)"
 
 #: src/muuli_wdr.cpp
 msgid "Click this button to reset the log."
@@ -5059,10 +4985,6 @@ msgstr "Düğüm:IP unsurundan ön yükleme yap"
 #: src/muuli_wdr.cpp
 msgid "Enter the IP of the node here, using the x.x.x.x format."
 msgstr "Düğümün IP adresini x.x.x.x biçiminde buraya giriniz."
-
-#: src/muuli_wdr.cpp
-msgid "Port:"
-msgstr "Port:"
 
 #: src/muuli_wdr.cpp
 msgid "Use Secure User Identification"
@@ -5339,20 +5261,20 @@ msgid "Enable/disable proxy support"
 msgstr "Vekil sunucu desteğini etkinleştir/devre dışı bırak"
 
 #: src/muuli_wdr.cpp
-msgid "Proxy type:"
-msgstr "Vekil sunucu Türü:"
+msgid "Proxy type"
+msgstr "Vekil sunucu Türü"
 
 #: src/muuli_wdr.cpp
-msgid "Proxy host:"
-msgstr "Vekil sunucu makine:"
+msgid "Proxy host"
+msgstr "Vekil sunucu makine"
 
 #: src/muuli_wdr.cpp
 msgid "The proxy host name"
 msgstr "Vekil sunucu makine adı"
 
 #: src/muuli_wdr.cpp
-msgid "Proxy port:"
-msgstr "Vekil sunucu Portu:"
+msgid "Proxy port"
+msgstr "Vekil sunucu Portu"
 
 #: src/muuli_wdr.cpp
 msgid "The proxy port"
@@ -5367,16 +5289,8 @@ msgid "Enable/disable username/password authentication"
 msgstr "Kullanıcı adı/şifre yetkilendirmeyi etkinleştir/devre dışı bırak."
 
 #: src/muuli_wdr.cpp
-msgid "Username: "
-msgstr "Kullanıcı adı: "
-
-#: src/muuli_wdr.cpp
 msgid "The username to use to connect to the proxy"
 msgstr "Vekil sunucuya bağlanmak için gerekli kullanıcı adı"
-
-#: src/muuli_wdr.cpp
-msgid "Password:"
-msgstr "Şifre:"
 
 #: src/muuli_wdr.cpp
 msgid "The password to use to connect to the proxy"
@@ -5549,6 +5463,15 @@ msgstr "saat"
 #: src/OtherFunctions.cpp
 msgid "days"
 msgstr "gün"
+
+#. TRANSLATORS:
+#. Punctuation for a "label: value" pair. %s is the already-translated
+#. label. Place the colon as your language requires -- e.g. "%s :" with a
+#. space in French, "%s:" without one in Russian and English.
+#: src/OtherFunctions.cpp
+#, c-format
+msgid "%s:"
+msgstr ""
 
 #: src/OtherFunctions.cpp
 msgid "all"
@@ -6579,8 +6502,7 @@ msgstr "Bunları yinelemeli olarak paylaşmanız, kapsadıkları her dosyayı eD
 msgid "Confirm shared folders"
 msgstr "Paylaşılan dizinleri teyit et"
 
-#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
-#: src/SharedFilesReloadProgress.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp src/SharedFilesReloadProgress.cpp
 msgid "Reloading shared files..."
 msgstr "Paylaşılan dosyalar yeniden yükleniyor…"
 
@@ -6709,18 +6631,6 @@ msgstr "Hata %u: %s\n"
 #: src/SearchListCtrl.cpp
 msgid "FileID"
 msgstr "Dosya Adresi"
-
-#: src/SearchListCtrl.cpp
-msgid "Length"
-msgstr "Süre"
-
-#: src/SearchListCtrl.cpp
-msgid "Bitrate"
-msgstr "Akış hızı"
-
-#: src/SearchListCtrl.cpp
-msgid "Codec"
-msgstr "Kodlama"
 
 #: src/SearchListCtrl.cpp
 msgid "Expand all"
@@ -6998,10 +6908,6 @@ msgstr "Yerel sunucu IP Süzgeci tarafından engellendi, başka bir sunucuya ba�
 #: src/ServerListCtrl.cpp
 msgid "Server Name"
 msgstr "Sunucu Adı"
-
-#: src/ServerListCtrl.cpp
-msgid "Port"
-msgstr "Port"
 
 #: src/ServerListCtrl.cpp
 msgid "Description"
@@ -7288,6 +7194,10 @@ msgstr "Eşe Bağlanıyor"
 #, c-format
 msgid "Connected to buddy at %s"
 msgstr "Eşe %s üzerinde bağlandı"
+
+#: src/ServerWnd.cpp
+msgid "IP address:"
+msgstr "IP :"
 
 #: src/ServerWnd.cpp
 msgid "Indexed sources:"

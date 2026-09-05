@@ -38,6 +38,7 @@
 #include "muuli_wdr.h"
 
 #include "amuleDlg.h" // Needed for CLIENT_SKIN_SIZE (clientImages' artIds static_assert)
+#include "OtherFunctions.h" // Needed for LabelWithColon
 
 #include <wx/artprov.h> // Needed for the "amule:" art ids (status bar + transfer window icons)
 #include <wx/intl.h>
@@ -232,7 +233,7 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
 
     wxBoxSizer *item3 = new wxBoxSizer( wxHORIZONTAL );
 
-    wxStaticText *item4 = new wxStaticText( parent, -1, _("Name:"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item4 = new wxStaticText( parent, -1, LabelWithColon( _("Name") ), wxDefaultPosition, wxDefaultSize, 0 );
     item3->Add( item4, wxSizerFlags().Center().Border(wxALL, 5) );
     wxComboBox *item5 = new wxComboBox( parent, IDC_SEARCHNAME, "", wxDefaultPosition, wxSize(80,-1), 0, nullptr, wxTE_PROCESS_ENTER );
     item3->Add( item5, wxSizerFlags(1).Center().Border(wxALL, 5) );
@@ -341,7 +342,7 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     s_filter_sizer = item34;
 
     item34->Add( 10, 10, wxSizerFlags(1).Center().Border(wxALL, 5) );
-    wxStaticText *item35 = new wxStaticText( parent, -1, _("Filter:"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item35 = new wxStaticText( parent, -1, LabelWithColon( _("Filter") ), wxDefaultPosition, wxDefaultSize, 0 );
     item34->Add( item35, wxSizerFlags().Center().Border(wxALL, 5) );
     wxTextCtrl *item36 = new wxTextCtrl( parent, ID_FILTER_TEXT, "", wxDefaultPosition, wxSize(220,-1), wxTE_PROCESS_ENTER );
     item34->Add( item36, wxSizerFlags().Center().Border(wxALL, 5) );
@@ -593,14 +594,22 @@ namespace
 // fileDetails(), so the relocated download rows and the Sharing box stay
 // visually consistent with the hand-written rows.
 //
-// `appendColon` tacks a literal " :" onto the label at display time. The
-// Sharing rows use it so they can reuse existing bare translations (e.g.
-// "Requests") and still read "Requests :" without minting new catalog strings.
+// `appendColon` renders the label as "label:" at display time. The Sharing
+// rows use it so they can reuse existing bare translations (e.g. "Requests")
+// instead of minting a second, colon-suffixed catalog string for each.
+//
+// The punctuation goes through the catalog rather than being concatenated in
+// C++, because where the colon sits is a property of the language, not of the
+// layout: Russian typography forbids the space this used to hard-code, while
+// French requires it (amule-org/amule#1294). One format string lets a
+// translator settle the convention for every row at once, and keeps the reuse
+// that motivated the flag.
 void AddFileDetailRow(
     wxWindow *rowParent, wxSizer *grid, const wxString &label, int valueId, bool appendColon = false )
 {
     wxBoxSizer *row = new wxBoxSizer( wxHORIZONTAL );
-    row->Add( new wxStaticText( rowParent, -1, appendColon ? label + wxT(" :") : label,
+    const wxString labelText = appendColon ? LabelWithColon( label ) : label;
+    row->Add( new wxStaticText( rowParent, -1, labelText,
                   wxDefaultPosition, wxDefaultSize, 0 ),
         wxSizerFlags().Expand().CenterVertical() );
     wxStaticText *val = new wxStaticText( rowParent, valueId, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -621,7 +630,7 @@ wxSizer *fileDetails( wxWindow *parent, bool call_fit, bool set_sizer )
 
     wxBoxSizer *item3 = new wxBoxSizer( wxHORIZONTAL );
 
-    wxStaticText *item4 = new wxStaticText( parent, -1, _("Full Name :"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item4 = new wxStaticText( parent, -1, LabelWithColon( _("Full Name") ), wxDefaultPosition, wxDefaultSize, 0 );
     item3->Add( item4, wxSizerFlags().Expand().CenterVertical() );
 
     wxStaticText *item5 = new wxStaticText( parent, IDC_FNAME, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -630,7 +639,7 @@ wxSizer *fileDetails( wxWindow *parent, bool call_fit, bool set_sizer )
     item1->Add( item3, wxSizerFlags().Expand().CenterVertical() );
     wxBoxSizer *item6 = new wxBoxSizer( wxHORIZONTAL );
 
-    wxStaticText *item7 = new wxStaticText( parent, -1, _("met-File :"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item7 = new wxStaticText( parent, -1, LabelWithColon( _("met-File") ), wxDefaultPosition, wxDefaultSize, 0 );
     item6->Add( item7, wxSizerFlags().Expand().CenterVertical() );
     wxStaticText *item8 = new wxStaticText( parent, IDC_METFILE, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item8->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
@@ -638,7 +647,7 @@ wxSizer *fileDetails( wxWindow *parent, bool call_fit, bool set_sizer )
     item1->Add( item6, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 0) );
     wxBoxSizer *item9 = new wxBoxSizer( wxHORIZONTAL );
 
-    wxStaticText *item10 = new wxStaticText( parent, -1, _("Hash :"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item10 = new wxStaticText( parent, -1, LabelWithColon( _("Hash") ), wxDefaultPosition, wxDefaultSize, 0 );
     item9->Add( item10, wxSizerFlags().Expand().CenterVertical() );
     wxStaticText *item11 = new wxStaticText( parent, IDC_FHASH, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item11->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
@@ -650,7 +659,7 @@ wxSizer *fileDetails( wxWindow *parent, bool call_fit, bool set_sizer )
 
     wxBoxSizer *item13 = new wxBoxSizer( wxHORIZONTAL );
 
-    wxStaticText *item14 = new wxStaticText( parent, -1, _("Filesize :"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item14 = new wxStaticText( parent, -1, LabelWithColon( _("Filesize") ), wxDefaultPosition, wxDefaultSize, 0 );
     item13->Add( item14, wxSizerFlags().Expand().CenterVertical() );
     wxStaticText *item15 = new wxStaticText( parent, IDC_FSIZE, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item15->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
@@ -676,19 +685,19 @@ wxSizer *fileDetails( wxWindow *parent, bool call_fit, bool set_sizer )
 
     // Partfile status + last seen complete (download-only; relocated here from
     // the General box).
-    AddFileDetailRow( dlPanel, item24, _("Partfilestatus :"), IDC_PFSTATUS );
-    AddFileDetailRow( dlPanel, item24, _("Last seen complete :"), IDC_LASTSEENCOMPL );
-    AddFileDetailRow( dlPanel, item24, _("Found Sources :"), IDC_SOURCECOUNT );
-    AddFileDetailRow( dlPanel, item24, _("Transferring Sources :"), IDC_SOURCECOUNT2 );
-    AddFileDetailRow( dlPanel, item24, _("Filepart-Count :"), IDC_PARTCOUNT );
-    AddFileDetailRow( dlPanel, item24, _("Available :"), IDC_PARTAVAILABLE );
-    AddFileDetailRow( dlPanel, item24, _("Datarate :"), IDC_DATARATE );
-    AddFileDetailRow( dlPanel, item24, _("Download Active Time: "), IDC_DLACTIVETIME );
-    AddFileDetailRow( dlPanel, item24, _("Transferred :"), IDC_TRANSFERRED );
+    AddFileDetailRow( dlPanel, item24, _("Partfilestatus"), IDC_PFSTATUS, true );
+    AddFileDetailRow( dlPanel, item24, _("Last seen complete"), IDC_LASTSEENCOMPL, true );
+    AddFileDetailRow( dlPanel, item24, _("Found Sources"), IDC_SOURCECOUNT, true );
+    AddFileDetailRow( dlPanel, item24, _("Transferring Sources"), IDC_SOURCECOUNT2, true );
+    AddFileDetailRow( dlPanel, item24, _("Filepart-Count"), IDC_PARTCOUNT, true );
+    AddFileDetailRow( dlPanel, item24, _("Available"), IDC_PARTAVAILABLE, true );
+    AddFileDetailRow( dlPanel, item24, _("Datarate"), IDC_DATARATE, true );
+    AddFileDetailRow( dlPanel, item24, _("Download Active Time"), IDC_DLACTIVETIME, true );
+    AddFileDetailRow( dlPanel, item24, _("Transferred"), IDC_TRANSFERRED, true );
 
     // Completed Size keeps its composite "value / (percent)" display.
     wxBoxSizer *item46 = new wxBoxSizer( wxHORIZONTAL );
-    item46->Add( new wxStaticText( dlPanel, -1, _("Completed Size :"), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().Expand().CenterVertical() );
+    item46->Add( new wxStaticText( dlPanel, -1, LabelWithColon( _("Completed Size") ), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().Expand().CenterVertical() );
     wxBoxSizer *item48 = new wxBoxSizer( wxHORIZONTAL );
     wxStaticText *item49 = new wxStaticText( dlPanel, IDC_COMPLSIZE, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item49->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
@@ -709,9 +718,9 @@ wxSizer *fileDetails( wxWindow *parent, bool call_fit, bool set_sizer )
     wxFlexGridSizer *item55 = new wxFlexGridSizer( 2, 0, 0 );
     item55->AddGrowableCol( 0 );
     item55->AddGrowableCol( 1 );
-    AddFileDetailRow( dlPanel, item55, _("Lost to corruption :"), IDC_FD_STATS1 );
-    AddFileDetailRow( dlPanel, item55, _("Gained by compression :"), IDC_FD_STATS2 );
-    AddFileDetailRow( dlPanel, item55, _("Packages saved by I.C.H. :"), IDC_FD_STATS3 );
+    AddFileDetailRow( dlPanel, item55, _("Lost to corruption"), IDC_FD_STATS1, true );
+    AddFileDetailRow( dlPanel, item55, _("Gained by compression"), IDC_FD_STATS2, true );
+    AddFileDetailRow( dlPanel, item55, _("Packages saved by I.C.H."), IDC_FD_STATS3, true );
     item53->Add( item55, wxSizerFlags().Expand().CenterVertical() );
     dlPanelSizer->Add( item53, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
 
@@ -728,8 +737,9 @@ wxSizer *fileDetails( wxWindow *parent, bool call_fit, bool set_sizer )
     wxFlexGridSizer *shGrid = new wxFlexGridSizer( 2, 0, 0 );
     shGrid->AddGrowableCol( 0 );
     shGrid->AddGrowableCol( 1 );
-    // Labels reuse existing bare translations; " :" is appended at display time
-    // (appendColon) so no new catalog strings are needed for the reused ones.
+    // Labels reuse existing bare translations; the colon is applied at display
+    // time through the localizable "%s :" format (appendColon), so no new
+    // catalog string is needed per row and the punctuation stays translatable.
     AddFileDetailRow( shPanel, shGrid, _("Requests"), IDC_FD_SHARE_REQ, true );
     AddFileDetailRow( shPanel, shGrid, _("Accepted Requests"), IDC_FD_SHARE_ACC, true );
     AddFileDetailRow( shPanel, shGrid, _("Transferred Data"), IDC_FD_SHARE_XFER, true );
@@ -758,42 +768,42 @@ wxSizer *fileDetails( wxWindow *parent, bool call_fit, bool set_sizer )
     mediaGrid->AddGrowableCol( 1 );
 
     wxBoxSizer *mLenRow = new wxBoxSizer( wxHORIZONTAL );
-    mLenRow->Add( new wxStaticText( parent, -1, _("Length :"), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().Expand().CenterVertical() );
+    mLenRow->Add( new wxStaticText( parent, -1, LabelWithColon( _("Length") ), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().Expand().CenterVertical() );
     wxStaticText *mLenVal = new wxStaticText( parent, IDC_FD_MEDIA_LENGTH, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     mLenVal->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     mLenRow->Add( mLenVal, wxSizerFlags().Center().Border(wxLEFT, 5) );
     mediaGrid->Add( mLenRow, wxSizerFlags().Expand().CenterVertical() );
 
     wxBoxSizer *mBrRow = new wxBoxSizer( wxHORIZONTAL );
-    mBrRow->Add( new wxStaticText( parent, -1, _("Bitrate :"), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().Expand().CenterVertical().Border(wxLEFT, 5) );
+    mBrRow->Add( new wxStaticText( parent, -1, LabelWithColon( _("Bitrate") ), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().Expand().CenterVertical().Border(wxLEFT, 5) );
     wxStaticText *mBrVal = new wxStaticText( parent, IDC_FD_MEDIA_BITRATE, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     mBrVal->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     mBrRow->Add( mBrVal, wxSizerFlags().Center().Border(wxLEFT, 5) );
     mediaGrid->Add( mBrRow, wxSizerFlags().Expand().CenterVertical() );
 
     wxBoxSizer *mCodecRow = new wxBoxSizer( wxHORIZONTAL );
-    mCodecRow->Add( new wxStaticText( parent, -1, _("Codec :"), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().Expand().CenterVertical() );
+    mCodecRow->Add( new wxStaticText( parent, -1, LabelWithColon( _("Codec") ), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().Expand().CenterVertical() );
     wxStaticText *mCodecVal = new wxStaticText( parent, IDC_FD_MEDIA_CODEC, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     mCodecVal->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     mCodecRow->Add( mCodecVal, wxSizerFlags().Center().Border(wxLEFT, 5) );
     mediaGrid->Add( mCodecRow, wxSizerFlags().Expand().CenterVertical() );
 
     wxBoxSizer *mArtistRow = new wxBoxSizer( wxHORIZONTAL );
-    mArtistRow->Add( new wxStaticText( parent, -1, _("Artist :"), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().Expand().CenterVertical().Border(wxLEFT, 5) );
+    mArtistRow->Add( new wxStaticText( parent, -1, LabelWithColon( _("Artist") ), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().Expand().CenterVertical().Border(wxLEFT, 5) );
     wxStaticText *mArtistVal = new wxStaticText( parent, IDC_FD_MEDIA_ARTIST, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     mArtistVal->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     mArtistRow->Add( mArtistVal, wxSizerFlags().Center().Border(wxLEFT, 5) );
     mediaGrid->Add( mArtistRow, wxSizerFlags().Expand().CenterVertical() );
 
     wxBoxSizer *mAlbumRow = new wxBoxSizer( wxHORIZONTAL );
-    mAlbumRow->Add( new wxStaticText( parent, -1, _("Album :"), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().Expand().CenterVertical() );
+    mAlbumRow->Add( new wxStaticText( parent, -1, LabelWithColon( _("Album") ), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().Expand().CenterVertical() );
     wxStaticText *mAlbumVal = new wxStaticText( parent, IDC_FD_MEDIA_ALBUM, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     mAlbumVal->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     mAlbumRow->Add( mAlbumVal, wxSizerFlags().Center().Border(wxLEFT, 5) );
     mediaGrid->Add( mAlbumRow, wxSizerFlags().Expand().CenterVertical() );
 
     wxBoxSizer *mTitleRow = new wxBoxSizer( wxHORIZONTAL );
-    mTitleRow->Add( new wxStaticText( parent, -1, _("Title :"), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().Expand().CenterVertical().Border(wxLEFT, 5) );
+    mTitleRow->Add( new wxStaticText( parent, -1, LabelWithColon( _("Title") ), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().Expand().CenterVertical().Border(wxLEFT, 5) );
     wxStaticText *mTitleVal = new wxStaticText( parent, IDC_FD_MEDIA_TITLE, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     mTitleVal->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     mTitleRow->Add( mTitleVal, wxSizerFlags().Center().Border(wxLEFT, 5) );
@@ -976,11 +986,11 @@ wxSizer *addFriendDlg( wxWindow *parent, bool call_fit, bool set_sizer )
 
     wxFlexGridSizer *item3 = new wxFlexGridSizer( 2, 0, 0 );
 
-    wxStaticText *item4 = new wxStaticText( parent, -1, _("IP Address :"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item4 = new wxStaticText( parent, -1, LabelWithColon( _("IP Address") ), wxDefaultPosition, wxDefaultSize, 0 );
     item3->Add( item4, wxSizerFlags().CenterVertical().Border(wxRIGHT|wxBOTTOM, 5) );
     CMuleTextCtrl *item5 = new CMuleTextCtrl( parent, ID_IPADDRESS, "", wxDefaultPosition, wxSize(150,-1), 0 );
     item3->Add( item5, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
-    wxStaticText *item6 = new wxStaticText( parent, -1, _("Port :"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item6 = new wxStaticText( parent, -1, LabelWithColon( _("Port") ), wxDefaultPosition, wxDefaultSize, 0 );
     item3->Add( item6, wxSizerFlags().CenterVertical().Border(wxRIGHT|wxTOP, 5) );
     CMuleTextCtrl *item7 = new CMuleTextCtrl( parent, ID_IPORT, "", wxDefaultPosition, wxSize(80,-1), 0 );
     item3->Add( item7, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxTOP, 5) );
@@ -991,11 +1001,11 @@ wxSizer *addFriendDlg( wxWindow *parent, bool call_fit, bool set_sizer )
 
     wxFlexGridSizer *item10 = new wxFlexGridSizer( 2, 0, 0 );
 
-    wxStaticText *item11 = new wxStaticText( parent, -1, _("Username :"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item11 = new wxStaticText( parent, -1, LabelWithColon( _("Username") ), wxDefaultPosition, wxDefaultSize, 0 );
     item10->Add( item11, wxSizerFlags().CenterVertical().Border(wxRIGHT|wxBOTTOM, 5) );
     CMuleTextCtrl *item12 = new CMuleTextCtrl( parent, ID_USERNAME, "", wxDefaultPosition, wxSize(250,-1), 0 );
     item10->Add( item12, wxSizerFlags().CenterVertical().Border(wxLEFT|wxBOTTOM, 5) );
-    wxStaticText *item13 = new wxStaticText( parent, -1, _("Userhash :"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item13 = new wxStaticText( parent, -1, LabelWithColon( _("Userhash") ), wxDefaultPosition, wxDefaultSize, 0 );
     item10->Add( item13, wxSizerFlags().CenterVertical().Border(wxRIGHT|wxBOTTOM, 5) );
     CMuleTextCtrl *item14 = new CMuleTextCtrl( parent, ID_USERHASH, "", wxDefaultPosition, wxSize(250,-1), 0 );
     item10->Add( item14, wxSizerFlags().CenterVertical().Border(wxLEFT|wxBOTTOM, 5) );
@@ -1180,9 +1190,9 @@ wxSizer *clientDetails( wxWindow *parent, bool call_fit, bool set_sizer )
 
     wxBoxSizer *item4 = new wxBoxSizer( wxVERTICAL );
 
-    wxStaticText *item5 = new wxStaticText( parent, -1, _("Username:"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item5 = new wxStaticText( parent, -1, LabelWithColon( _("Username") ), wxDefaultPosition, wxDefaultSize, 0 );
     item4->Add( item5, wxSizerFlags().Expand().Border(wxALL, 5) );
-    wxStaticText *item6 = new wxStaticText( parent, -1, _("Userhash:"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item6 = new wxStaticText( parent, -1, LabelWithColon( _("Userhash") ), wxDefaultPosition, wxDefaultSize, 0 );
     item4->Add( item6, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
     item3->Add( item4, wxSizerFlags().Center() );
 
@@ -1201,50 +1211,50 @@ wxSizer *clientDetails( wxWindow *parent, bool call_fit, bool set_sizer )
     item10->AddGrowableCol( 1 );
     item10->AddGrowableCol( 4 );
 
-    wxStaticText *item11 = new wxStaticText( parent, -1, _("Client software:"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item11 = new wxStaticText( parent, -1, LabelWithColon( _("Client software") ), wxDefaultPosition, wxDefaultSize, 0 );
     item10->Add( item11, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
     wxStaticText *item12 = new wxStaticText( parent, ID_DSOFT, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item12->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     item10->Add( item12, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
     item10->Add( 20, 20, 0, wxALIGN_CENTER, 5 );
 
-    wxStaticText *item13 = new wxStaticText( parent, -1, _("Client version:"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item13 = new wxStaticText( parent, -1, LabelWithColon( _("Client version") ), wxDefaultPosition, wxDefaultSize, 0 );
     item10->Add( item13, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
     wxStaticText *item14 = new wxStaticText( parent, ID_DVERSION, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item14->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     item10->Add( item14, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
-    wxStaticText *item15 = new wxStaticText( parent, -1, _("IP address:"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item15 = new wxStaticText( parent, -1, LabelWithColon( _("IP Address") ), wxDefaultPosition, wxDefaultSize, 0 );
     item10->Add( item15, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
     wxStaticText *item16 = new wxStaticText( parent, ID_DIP, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item16->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     item10->Add( item16, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
     item10->Add( 20, 20, 0, wxALIGN_CENTER, 5 );
 
-    wxStaticText *item17 = new wxStaticText( parent, -1, _("User ID:"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item17 = new wxStaticText( parent, -1, LabelWithColon( _("User ID") ), wxDefaultPosition, wxDefaultSize, 0 );
     item10->Add( item17, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
     wxStaticText *item18 = new wxStaticText( parent, ID_DID, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item18->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     item10->Add( item18, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
-    wxStaticText *item19 = new wxStaticText( parent, -1, _("Server IP:"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item19 = new wxStaticText( parent, -1, LabelWithColon( _("Server IP") ), wxDefaultPosition, wxDefaultSize, 0 );
     item10->Add( item19, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
     wxStaticText *item20 = new wxStaticText( parent, ID_DSIP, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item20->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     item10->Add( item20, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
     item10->Add( 20, 20, 0, wxALIGN_CENTER, 5 );
 
-    wxStaticText *item21 = new wxStaticText( parent, -1, _("Server name:"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item21 = new wxStaticText( parent, -1, LabelWithColon( _("Server name") ), wxDefaultPosition, wxDefaultSize, 0 );
     item10->Add( item21, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
     wxStaticText *item22 = new wxStaticText( parent, ID_DSNAME, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item22->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     item10->Add( item22, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
-    wxStaticText *item23 = new wxStaticText( parent, -1, _("Obfuscation:"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item23 = new wxStaticText( parent, -1, LabelWithColon( _("Obfuscation") ), wxDefaultPosition, wxDefaultSize, 0 );
     item10->Add( item23, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
     wxStaticText *item24 = new wxStaticText( parent, IDT_OBFUSCATION, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item24->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     item10->Add( item24, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
     item10->Add( 20, 20, 0, wxALIGN_CENTER, 5 );
 
-    wxStaticText *item25 = new wxStaticText( parent, -1, _("Kad:"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item25 = new wxStaticText( parent, -1, LabelWithColon( _("Kad") ), wxDefaultPosition, wxDefaultSize, 0 );
     item10->Add( item25, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
     wxStaticText *item26 = new wxStaticText( parent, IDT_KAD, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item26->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
@@ -1256,7 +1266,7 @@ wxSizer *clientDetails( wxWindow *parent, bool call_fit, bool set_sizer )
 
     wxBoxSizer *item29 = new wxBoxSizer( wxHORIZONTAL );
 
-    wxStaticText *item30 = new wxStaticText( parent, -1, _("Current request:"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item30 = new wxStaticText( parent, -1, LabelWithColon( _("Current request") ), wxDefaultPosition, wxDefaultSize, 0 );
     item29->Add( item30, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
     wxStaticText *item31 = new wxStaticText( parent, ID_DDOWNLOADING, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item31->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
@@ -1266,38 +1276,38 @@ wxSizer *clientDetails( wxWindow *parent, bool call_fit, bool set_sizer )
     item32->AddGrowableCol( 1 );
     item32->AddGrowableCol( 4 );
 
-    wxStaticText *item33 = new wxStaticText( parent, -1, _("Average upload rate:"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item33 = new wxStaticText( parent, -1, LabelWithColon( _("Average upload rate") ), wxDefaultPosition, wxDefaultSize, 0 );
     item32->Add( item33, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
     wxStaticText *item34 = new wxStaticText( parent, ID_DAVDR, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item34->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     item32->Add( item34, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
     item32->Add( 20, 20, 0, wxALIGN_CENTER, 5 );
 
-    wxStaticText *item35 = new wxStaticText( parent, -1, _("Average download rate:"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item35 = new wxStaticText( parent, -1, LabelWithColon( _("Average download rate") ), wxDefaultPosition, wxDefaultSize, 0 );
     item32->Add( item35, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
     wxStaticText *item36 = new wxStaticText( parent, ID_DAVUR, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item36->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     item32->Add( item36, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
-    wxStaticText *item37 = new wxStaticText( parent, -1, _("Uploaded (session):"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item37 = new wxStaticText( parent, -1, LabelWithColon( _("Uploaded (session)") ), wxDefaultPosition, wxDefaultSize, 0 );
     item32->Add( item37, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
     wxStaticText *item38 = new wxStaticText( parent, ID_DDOWN, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item38->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     item32->Add( item38, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
     item32->Add( 20, 20, 0, wxALIGN_CENTER, 5 );
 
-    wxStaticText *item39 = new wxStaticText( parent, -1, _("Downloaded (session):"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item39 = new wxStaticText( parent, -1, LabelWithColon( _("Downloaded (session)") ), wxDefaultPosition, wxDefaultSize, 0 );
     item32->Add( item39, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
     wxStaticText *item40 = new wxStaticText( parent, ID_DDUP, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item40->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     item32->Add( item40, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
-    wxStaticText *item41 = new wxStaticText( parent, -1, _("Uploaded (total):"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item41 = new wxStaticText( parent, -1, LabelWithColon( _("Uploaded (total)") ), wxDefaultPosition, wxDefaultSize, 0 );
     item32->Add( item41, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
     wxStaticText *item42 = new wxStaticText( parent, ID_DDOWNTOTAL, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item42->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     item32->Add( item42, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
     item32->Add( 20, 20, 0, wxALIGN_CENTER, 5 );
 
-    wxStaticText *item43 = new wxStaticText( parent, -1, _("Downloaded (total):"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item43 = new wxStaticText( parent, -1, LabelWithColon( _("Downloaded (total)") ), wxDefaultPosition, wxDefaultSize, 0 );
     item32->Add( item43, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
     wxStaticText *item44 = new wxStaticText( parent, ID_DUPTOTAL, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item44->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
@@ -1311,26 +1321,26 @@ wxSizer *clientDetails( wxWindow *parent, bool call_fit, bool set_sizer )
     item47->AddGrowableCol( 1 );
     item47->AddGrowableCol( 4 );
 
-    wxStaticText *item48 = new wxStaticText( parent, -1, _("DL/UP modifier:"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item48 = new wxStaticText( parent, -1, LabelWithColon( _("DL/UP modifier") ), wxDefaultPosition, wxDefaultSize, 0 );
     item47->Add( item48, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
     wxStaticText *item49 = new wxStaticText( parent, ID_DRATIO, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item49->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     item47->Add( item49, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
     item47->Add( 20, 20, 0, wxALIGN_CENTER, 5 );
 
-    wxStaticText *item50 = new wxStaticText( parent, -1, _("Secure ident:"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item50 = new wxStaticText( parent, -1, LabelWithColon( _("Secure ident") ), wxDefaultPosition, wxDefaultSize, 0 );
     item47->Add( item50, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
     wxStaticText *item51 = new wxStaticText( parent, IDC_CDIDENT, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item51->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     item47->Add( item51, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
-    wxStaticText *item52 = new wxStaticText( parent, -1, _("Queue rank:"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item52 = new wxStaticText( parent, -1, LabelWithColon( _("Queue rank") ), wxDefaultPosition, wxDefaultSize, 0 );
     item47->Add( item52, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
     wxStaticText *item53 = new wxStaticText( parent, ID_QUEUERANK, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item53->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     item47->Add( item53, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
     item47->Add( 20, 20, 0, wxALIGN_CENTER, 5 );
 
-    wxStaticText *item54 = new wxStaticText( parent, -1, _("Queue score:"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item54 = new wxStaticText( parent, -1, LabelWithColon( _("Queue score") ), wxDefaultPosition, wxDefaultSize, 0 );
     item47->Add( item54, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
     wxStaticText *item55 = new wxStaticText( parent, ID_DSCORE, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item55->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
@@ -1954,7 +1964,7 @@ wxSizer *PreferencesPathMappingTab( wxWindow *parent, bool call_fit, bool set_si
     itemBoxSizer->Add( itemList, wxSizerFlags(1).Expand().CenterVertical() );
 
     wxBoxSizer *itemRemoteRow = new wxBoxSizer( wxHORIZONTAL );
-    wxStaticText *itemRemoteLabel = new wxStaticText( parent, -1, _("Remote prefix") + ":", wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *itemRemoteLabel = new wxStaticText( parent, -1, LabelWithColon( _("Remote prefix") ), wxDefaultPosition, wxDefaultSize, 0 );
     itemRemoteRow->Add( itemRemoteLabel, wxSizerFlags().CenterVertical().Border(wxRIGHT, 4) );
     CMuleTextCtrl *itemRemote = new CMuleTextCtrl( parent, IDC_PATHMAP_REMOTE, "", wxDefaultPosition, wxSize(80,-1), 0 );
     itemRemote->SetToolTip(_("A path prefix as the core reports it, e.g. /home/user/downloads/incoming"));
@@ -1962,7 +1972,7 @@ wxSizer *PreferencesPathMappingTab( wxWindow *parent, bool call_fit, bool set_si
     itemBoxSizer->Add( itemRemoteRow, wxSizerFlags().Expand().Border(wxTOP, 4) );
 
     wxBoxSizer *itemLocalRow = new wxBoxSizer( wxHORIZONTAL );
-    wxStaticText *itemLocalLabel = new wxStaticText( parent, -1, _("Local prefix") + ":", wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *itemLocalLabel = new wxStaticText( parent, -1, LabelWithColon( _("Local prefix") ), wxDefaultPosition, wxDefaultSize, 0 );
     itemLocalRow->Add( itemLocalLabel, wxSizerFlags().CenterVertical().Border(wxRIGHT, 4) );
     CMuleTextCtrl *itemLocal = new CMuleTextCtrl( parent, IDC_PATHMAP_LOCAL, "", wxDefaultPosition, wxSize(80,-1), 0 );
     itemLocal->SetToolTip(_("Where that same folder is reachable from this computer, e.g. a mounted network share"));
@@ -2473,21 +2483,21 @@ wxSizer *CategoriesEditWindow( wxWindow *parent, bool call_fit, bool set_sizer )
 
     wxBoxSizer *item3 = new wxBoxSizer( wxHORIZONTAL );
 
-    wxStaticText *item4 = new wxStaticText( parent, -1, _("Title :"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item4 = new wxStaticText( parent, -1, LabelWithColon( _("Title") ), wxDefaultPosition, wxDefaultSize, 0 );
     item3->Add( item4, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
     CMuleTextCtrl *item5 = new CMuleTextCtrl( parent, IDC_TITLE, "", wxDefaultPosition, wxDefaultSize, 0 );
     item3->Add( item5, wxSizerFlags(1).Expand().CenterHorizontal().Border(wxRIGHT, 5) );
     item1->Add( item3, wxSizerFlags().Expand().CenterVertical().Border(wxTOP|wxBOTTOM, 5) );
     wxBoxSizer *item6 = new wxBoxSizer( wxHORIZONTAL );
 
-    wxStaticText *item7 = new wxStaticText( parent, -1, _("Comment :"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item7 = new wxStaticText( parent, -1, LabelWithColon( _("Comment") ), wxDefaultPosition, wxDefaultSize, 0 );
     item6->Add( item7, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
     CMuleTextCtrl *item8 = new CMuleTextCtrl( parent, IDC_COMMENT, "", wxDefaultPosition, wxDefaultSize, 0 );
     item6->Add( item8, wxSizerFlags(1).Expand().CenterHorizontal().Border(wxRIGHT, 5) );
     item1->Add( item6, wxSizerFlags().Expand().CenterVertical().Border(wxBOTTOM, 5) );
     wxBoxSizer *item9 = new wxBoxSizer( wxHORIZONTAL );
 
-    wxStaticText *item10 = new wxStaticText( parent, -1, _("Incoming Dir :"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item10 = new wxStaticText( parent, -1, LabelWithColon( _("Incoming Dir") ), wxDefaultPosition, wxDefaultSize, 0 );
     item9->Add( item10, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
     CMuleTextCtrl *item11 = new CMuleTextCtrl( parent, IDC_INCOMING, "", wxDefaultPosition, wxDefaultSize, 0 );
     item9->Add( item11, wxSizerFlags(1).Expand().CenterHorizontal() );
@@ -2496,7 +2506,7 @@ wxSizer *CategoriesEditWindow( wxWindow *parent, bool call_fit, bool set_sizer )
     item1->Add( item9, wxSizerFlags().Expand().CenterVertical().Border(wxBOTTOM, 5) );
     wxFlexGridSizer *item13 = new wxFlexGridSizer( 2, 0, 0 );
 
-    wxStaticText *item14 = new wxStaticText( parent, -1, _("Change priority for new assigned files :"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item14 = new wxStaticText( parent, -1, LabelWithColon( _("Change priority for new assigned files") ), wxDefaultPosition, wxDefaultSize, 0 );
     item13->Add( item14, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT, 5) );
     wxString strs15[] = 
     {
@@ -2512,7 +2522,7 @@ wxSizer *CategoriesEditWindow( wxWindow *parent, bool call_fit, bool set_sizer )
     wxFlexGridSizer *item16 = new wxFlexGridSizer( 3, 0, 0 );
     item16->AddGrowableCol( 2 );
 
-    wxStaticText *item17 = new wxStaticText( parent, -1, _("Select color for this Category (currently selected) :"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item17 = new wxStaticText( parent, -1, LabelWithColon( _("Select color for this Category (currently selected)") ), wxDefaultPosition, wxDefaultSize, 0 );
     item16->Add( item17, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT, 5) );
     wxStaticBox *item19 = new wxStaticBox( parent, -1, "" );
     wxStaticBoxSizer *item18 = new wxStaticBoxSizer( item19, wxVERTICAL );
@@ -2830,7 +2840,7 @@ item9->SetName("kadScope");
     CMuleTextCtrl *item26 = new CMuleTextCtrl( parent, ID_NODE_IP, "", wxDefaultPosition, wxDefaultSize, 0 );
     item26->SetToolTip( _("Enter the IP of the node here, using the x.x.x.x format.") );
     item24->Add( item26, wxSizerFlags(1).Center().Border(wxLEFT|wxRIGHT, 5) );
-    wxStaticText *item34 = new wxStaticText( parent, -1, _("Port:"), wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE );
+    wxStaticText *item34 = new wxStaticText( parent, -1, LabelWithColon( _("Port") ), wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE );
     item24->Add( item34, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
     CMuleTextCtrl *item35 = new CMuleTextCtrl( parent, ID_NODE_PORT, "", wxDefaultPosition, wxSize(80,-1), 0 );
     item24->Add( item35, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
@@ -3192,7 +3202,7 @@ wxSizer *PreferencesProxyTab( wxWindow *parent, bool call_fit, bool set_sizer )
     item8->SetToolTip( _("Enable/disable proxy support") );
     item2->Add( item8, wxSizerFlags().CenterVertical().Border(wxALL, 0) );
     item2->Add( 20, 20, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
-    wxStaticText *item9 = new wxStaticText( parent, -1, _("Proxy type:"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item9 = new wxStaticText( parent, -1, LabelWithColon( _("Proxy type") ), wxDefaultPosition, wxDefaultSize, 0 );
     item2->Add( item9, wxSizerFlags().CenterVertical().Border(wxLEFT, 20) );
     wxString strs10[] =
     {
@@ -3203,12 +3213,12 @@ wxSizer *PreferencesProxyTab( wxWindow *parent, bool call_fit, bool set_sizer )
     };
     wxChoice *item10 = new wxChoice( parent, ID_PROXY_TYPE, wxDefaultPosition, wxSize(100,-1), 4, strs10, 0 );
     item2->Add( item10, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxTOP, 5) );
-    wxStaticText *item11 = new wxStaticText( parent, -1, _("Proxy host:"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item11 = new wxStaticText( parent, -1, LabelWithColon( _("Proxy host") ), wxDefaultPosition, wxDefaultSize, 0 );
     item2->Add( item11, wxSizerFlags().CenterVertical().Border(wxLEFT, 20) );
     wxTextCtrl *item12 = new wxTextCtrl( parent, ID_PROXY_NAME, "", wxDefaultPosition, wxDefaultSize, 0 );
     item12->SetToolTip( _("The proxy host name") );
     item2->Add( item12, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxTOP, 5) );
-    wxStaticText *item13 = new wxStaticText( parent, -1, _("Proxy port:"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item13 = new wxStaticText( parent, -1, LabelWithColon( _("Proxy port") ), wxDefaultPosition, wxDefaultSize, 0 );
     item2->Add( item13, wxSizerFlags().CenterVertical().Border(wxLEFT, 20) );
     wxTextCtrl *item14 = new wxTextCtrl( parent, ID_PROXY_PORT, "", wxDefaultPosition, wxSize(80,-1), 0 );
     item14->SetToolTip( _("The proxy port") );
@@ -3217,12 +3227,12 @@ wxSizer *PreferencesProxyTab( wxWindow *parent, bool call_fit, bool set_sizer )
     item3->SetToolTip( _("Enable/disable username/password authentication") );
     item2->Add( item3, wxSizerFlags().CenterVertical().Border(wxALL, 0) );
     item2->Add( 20, 20, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
-    wxStaticText *item4 = new wxStaticText( parent, -1, _("Username: "), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item4 = new wxStaticText( parent, -1, LabelWithColon( _("Username") ), wxDefaultPosition, wxDefaultSize, 0 );
     item2->Add( item4, wxSizerFlags().CenterVertical().Border(wxLEFT, 20) );
     wxTextCtrl *item5 = new wxTextCtrl( parent, ID_PROXY_USER, "", wxDefaultPosition, wxSize(80,-1), 0 );
     item5->SetToolTip( _("The username to use to connect to the proxy") );
     item2->Add( item5, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 0) );
-    wxStaticText *item6 = new wxStaticText( parent, -1, _("Password:"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item6 = new wxStaticText( parent, -1, LabelWithColon( _("Password") ), wxDefaultPosition, wxDefaultSize, 0 );
     item2->Add( item6, wxSizerFlags().CenterVertical().Border(wxLEFT, 20) );
     wxTextCtrl *item7 = new wxTextCtrl( parent, ID_PROXY_PASSWORD, "", wxDefaultPosition, wxSize(80,-1), wxTE_PASSWORD );
     item7->SetToolTip( _("The password to use to connect to the proxy") );

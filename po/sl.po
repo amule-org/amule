@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-04 12:13+0200\n"
+"POT-Creation-Date: 2026-09-05 12:01+0200\n"
 "PO-Revision-Date: 2026-09-03 11:10+0000\n"
 "Last-Translator: Jure Repinc <jlp@holodeck1.com>\n"
 "Language-Team: Slovenian\n"
@@ -390,8 +390,7 @@ msgstr "spletni strežnik teče s PID %d"
 msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
 msgstr "Zahtevali ste zagon spletnega strežnika ob zagonu programa, a programa amuleweb ni moč zagnati. Namestite paket, ki vsebuje spletni strežnik aMule, ali pa prevedite aMule z možnostjo »--enable-webserver« in ga znova namestite z »make install«."
 
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
 msgid "ERROR"
 msgstr "NAPAKA"
 
@@ -682,8 +681,7 @@ msgstr "Omrežja"
 msgid "Searches"
 msgstr "Iskanja"
 
-#: src/amuleDlg.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/Statistics.cpp
+#: src/amuleDlg.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/Statistics.cpp
 msgid "Downloads"
 msgstr "Prejemanja"
 
@@ -767,9 +765,7 @@ msgstr "Kad: izklopljen"
 msgid "Core"
 msgstr ""
 
-#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp src/Statistics.cpp
+#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
 msgid "Version"
 msgstr "Različica"
 
@@ -1068,11 +1064,7 @@ msgstr "Ni moč ustvariti mape »%s« za kategorijo »%s«, obdržana bo mapa »
 msgid "The remote core sent inconsistent data for \"%s\" (part status %d, expected %d). The file list may be showing the wrong information; reconnect to clear it."
 msgstr ""
 
-#: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp
-#: src/FileDetailDialog.cpp src/GenericClientListCtrl.cpp src/HTTPDownload.cpp
-#: src/KnownFile.cpp src/MuleTrayIcon.cpp src/PartFile.cpp src/Server.cpp
-#: src/Statistics.cpp
+#: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp src/FileDetailDialog.cpp src/GenericClientListCtrl.cpp src/HTTPDownload.cpp src/KnownFile.cpp src/MuleTrayIcon.cpp src/PartFile.cpp src/Server.cpp src/Statistics.cpp
 msgid "Unknown"
 msgstr "Neznano"
 
@@ -1173,8 +1165,7 @@ msgstr "Napaka med shranjevanjem datoteke %s: %s"
 msgid "Enter Captcha"
 msgstr "Vnesite besedilo s slike"
 
-#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
-#: src/TransferWnd.cpp
+#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp src/TransferWnd.cpp
 msgid "Category"
 msgstr "Kategorija"
 
@@ -1350,13 +1341,11 @@ msgstr "Datoteka »cryptkey.dat« ne obstaja. Ustvarjanje."
 msgid "Client Details"
 msgstr "Podrobnosti o odjemalcu"
 
-#: src/ClientDetailDialog.cpp src/ServerWnd.cpp
-#: src/utils/wxCas/src/onlinesig.cpp
+#: src/ClientDetailDialog.cpp src/ServerWnd.cpp src/utils/wxCas/src/onlinesig.cpp
 msgid "LowID"
 msgstr "Nizek ID"
 
-#: src/ClientDetailDialog.cpp src/ServerWnd.cpp
-#: src/utils/wxCas/src/onlinesig.cpp
+#: src/ClientDetailDialog.cpp src/ServerWnd.cpp src/utils/wxCas/src/onlinesig.cpp
 msgid "HighID"
 msgstr "Visok ID"
 
@@ -1372,8 +1361,7 @@ msgstr "Podprto"
 msgid "Not supported"
 msgstr "Ni podprto"
 
-#: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp
-#: src/TextClient.cpp
+#: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp src/TextClient.cpp
 msgid "Connected"
 msgstr "Povezano"
 
@@ -1381,28 +1369,24 @@ msgstr "Povezano"
 msgid "Disconnected"
 msgstr "Ni povezave"
 
-#: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp
-#: src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f KiB/s"
 msgstr ""
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/muuli_wdr.cpp
 msgid "Name"
-msgstr "Ime:"
+msgstr "Ime"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 msgid "Software"
 msgstr ""
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/muuli_wdr.cpp
 msgid "IP Address"
-msgstr "Naslov IP:"
+msgstr "Naslov IP"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Origin"
 msgstr "Izvor"
 
@@ -1420,13 +1404,11 @@ msgstr "Zadnji sprejem"
 msgid "Sessions"
 msgstr "Različica"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
 msgid "Upload Speed"
 msgstr "Hitrost pošiljanja"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
 msgid "Download Speed"
 msgstr "Hitrost prejemanja"
 
@@ -1483,13 +1465,11 @@ msgstr[3] ""
 msgid "Files"
 msgstr "Datoteke"
 
-#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
-#: src/SourceListCtrl.cpp
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Uploaded"
 msgstr "Poslano"
 
-#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
-#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Downloaded"
 msgstr "Prejeto"
 
@@ -1576,12 +1556,11 @@ msgstr "Uporabnik %s (%u) je zavrnil dostop do seznama deljenih datotek/map"
 msgid "File Comments"
 msgstr "Komentarji o datoteki"
 
-#: src/CommentDialogLst.cpp src/FriendListCtrl.cpp
+#: src/CommentDialogLst.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp
 msgid "Username"
 msgstr "Uporabniško ime"
 
-#: src/CommentDialogLst.cpp src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp
-#: src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/CommentDialogLst.cpp src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "File Name"
 msgstr "Ime datoteke"
 
@@ -1589,7 +1568,7 @@ msgstr "Ime datoteke"
 msgid "Rating"
 msgstr "Ocena"
 
-#: src/CommentDialogLst.cpp
+#: src/CommentDialogLst.cpp src/muuli_wdr.cpp
 msgid "Comment"
 msgstr "Komentar"
 
@@ -1645,18 +1624,15 @@ msgstr "Samod. [Vi]"
 msgid "Very low"
 msgstr "Zelo nizka"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "Nizka"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "Običajna"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "Visoka"
 
@@ -1680,13 +1656,11 @@ msgstr "Povezovanje preko strežnika"
 msgid "Queue Full"
 msgstr "Vrsta polna"
 
-#: src/DataToText.cpp src/GenericClientListCtrl.cpp src/KnownFile.cpp
-#: src/muuli_wdr.cpp
+#: src/DataToText.cpp src/GenericClientListCtrl.cpp src/KnownFile.cpp src/muuli_wdr.cpp
 msgid "On Queue"
 msgstr "V vrsti"
 
-#: src/DataToText.cpp src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp
-#: src/PartFile.cpp src/TransferWnd.cpp
+#: src/DataToText.cpp src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
 msgid "Downloading"
 msgstr "Prejemanje"
 
@@ -1746,8 +1720,7 @@ msgstr "Krajevni strežnik"
 msgid "Remote Server"
 msgstr "Oddaljni strežnik"
 
-#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp
-#: src/TextClient.cpp
+#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp src/TextClient.cpp
 msgid "Kad"
 msgstr "Kad"
 
@@ -1771,8 +1744,7 @@ msgstr "Izvorna semena"
 msgid "Search Result"
 msgstr "Rezultat iskanja"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
-#: src/TransferWnd.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
 msgid "Completed"
 msgstr "Zaključeno"
 
@@ -1825,8 +1797,7 @@ msgstr ""
 msgid "Part"
 msgstr "Del"
 
-#: src/DownloadListCtrl.cpp src/PartFileConvertDlg.cpp src/SearchListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/PartFileConvertDlg.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Size"
 msgstr "Velikost"
 
@@ -1834,8 +1805,7 @@ msgstr "Velikost"
 msgid "Transferred"
 msgstr "Preneseno"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
-#: src/SourceListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp src/SourceListCtrl.cpp
 msgid "Speed"
 msgstr "Hitrost"
 
@@ -1843,13 +1813,11 @@ msgstr "Hitrost"
 msgid "Progress"
 msgstr "Napredek"
 
-#: src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/PartFile.cpp
-#: src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
 msgid "Sources"
 msgstr "Viri"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Priority"
 msgstr "Prednost"
 
@@ -1873,9 +1841,7 @@ msgstr "Zadnji sprejem"
 msgid "Auto"
 msgstr "Samod."
 
-#: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/TransferWnd.cpp
-#: src/utils/wxCas/src/wxcasprefs.cpp
+#: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/TransferWnd.cpp src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Cancel"
 msgstr "Prekliči"
 
@@ -1976,8 +1942,7 @@ msgstr "Vnesite novo ime za to datoteko:"
 msgid "File rename"
 msgstr "Preimenuj datoteko"
 
-#: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f MiB/s"
 msgstr ""
@@ -2787,13 +2752,11 @@ msgstr ""
 msgid "Start aMule automatically when I log in"
 msgstr ""
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
-#: packaging/windows/installer_strings.c
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Register aMule for ed2k:// links"
 msgstr ""
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
-#: packaging/windows/installer_strings.c
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Register aMule for magnet: links"
 msgstr ""
 
@@ -2819,8 +2782,7 @@ msgstr ""
 msgid "Destination folder for downloads"
 msgstr "Ciljna mapa za prejeto"
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
-#: src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Browse"
 msgstr "Brskanje"
 
@@ -3273,18 +3235,15 @@ msgstr "Zaključevanje"
 msgid "Complete"
 msgstr "Zaključeno"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
-#: src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
 msgid "Paused"
 msgstr "Prekinjeno"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
-#: src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
 msgid "Erroneous"
 msgstr "Vsebuje napake"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
-#: src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
 msgid "Waiting"
 msgstr "Na čakanju"
 
@@ -3456,8 +3415,7 @@ msgstr "Zapri"
 msgid "Cut"
 msgstr "Izreži"
 
-#: src/MuleTextCtrl.cpp src/PartFileConvert.cpp src/ServerWnd.cpp
-#: src/utils/aLinkCreator/src/alcframe.cpp
+#: src/MuleTextCtrl.cpp src/PartFileConvert.cpp src/ServerWnd.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Copy"
 msgstr "Skopiraj"
 
@@ -3465,8 +3423,7 @@ msgstr "Skopiraj"
 msgid "Paste"
 msgstr "Prilepi"
 
-#: src/MuleTextCtrl.cpp src/muuli_wdr.cpp
-#: src/utils/aLinkCreator/src/alcframe.cpp
+#: src/MuleTextCtrl.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Clear"
 msgstr "Počisti"
 
@@ -3474,8 +3431,7 @@ msgstr "Počisti"
 msgid "Select All"
 msgstr "Izberi vse"
 
-#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
-#: src/StatisticsDlg.cpp
+#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp src/StatisticsDlg.cpp
 msgid "KiB/s"
 msgstr ""
 
@@ -3739,10 +3695,6 @@ msgstr "Trenutno povezan strežnik."
 msgid "Search"
 msgstr "Iskanje"
 
-#: src/muuli_wdr.cpp
-msgid "Name:"
-msgstr "Ime:"
-
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Type"
 msgstr "Vrsta"
@@ -3832,8 +3784,8 @@ msgid "Availability"
 msgstr "Razpoložljivost"
 
 #: src/muuli_wdr.cpp
-msgid "Filter:"
-msgstr "Filter:"
+msgid "Filter"
+msgstr "Filter"
 
 #: src/muuli_wdr.cpp
 msgid "Invert Result"
@@ -3891,6 +3843,10 @@ msgid "Clears completed downloads"
 msgstr "Počisti zaključena prejemanja"
 
 #: src/muuli_wdr.cpp
+msgid "Filter:"
+msgstr "Filter:"
+
+#: src/muuli_wdr.cpp
 msgid "File sources:"
 msgstr "Viri datoteke:"
 
@@ -3899,80 +3855,76 @@ msgid "General"
 msgstr "Splošno"
 
 #: src/muuli_wdr.cpp
-msgid "Full Name :"
-msgstr "Polno Ime:"
+msgid "Full Name"
+msgstr "Polno Ime"
 
 #: src/muuli_wdr.cpp
-msgid "met-File :"
-msgstr "Datoteka met:"
+msgid "met-File"
+msgstr "Datoteka met"
 
 #: src/muuli_wdr.cpp
-msgid "Hash :"
-msgstr "Koda:"
+msgid "Hash"
+msgstr "Koda"
 
 #: src/muuli_wdr.cpp
-msgid "Filesize :"
-msgstr "Velikost datoteke:"
+msgid "Filesize"
+msgstr "Velikost datoteke"
 
 #: src/muuli_wdr.cpp src/Statistics.cpp
 msgid "Transfer"
 msgstr "Prenos"
 
 #: src/muuli_wdr.cpp
-msgid "Partfilestatus :"
-msgstr "Stanje delne datoteke:"
+msgid "Partfilestatus"
+msgstr "Stanje delne datoteke"
 
 #: src/muuli_wdr.cpp
-msgid "Last seen complete :"
-msgstr "Nazadnje videno celotno:"
+msgid "Last seen complete"
+msgstr "Nazadnje videno celotno"
 
 #: src/muuli_wdr.cpp
-msgid "Found Sources :"
-msgstr "Najdenih virov:"
+msgid "Found Sources"
+msgstr "Najdenih virov"
 
 #: src/muuli_wdr.cpp
-msgid "Transferring Sources :"
-msgstr "Prenašajoči viri:"
+msgid "Transferring Sources"
+msgstr "Prenašajoči viri"
 
 #: src/muuli_wdr.cpp
-msgid "Filepart-Count :"
-msgstr "Število delov:"
+msgid "Filepart-Count"
+msgstr "Število delov"
 
 #: src/muuli_wdr.cpp
-msgid "Available :"
-msgstr "Razpoložljivih:"
+msgid "Available"
+msgstr "Razpoložljivih"
 
 #: src/muuli_wdr.cpp
-msgid "Datarate :"
-msgstr "Podatkovna hitrost:"
+msgid "Datarate"
+msgstr "Podatkovna hitrost"
 
 #: src/muuli_wdr.cpp
-msgid "Download Active Time: "
-msgstr "Čas dejavnega prejemanja: "
+msgid "Download Active Time"
+msgstr "Čas dejavnega prejemanja"
 
 #: src/muuli_wdr.cpp
-msgid "Transferred :"
-msgstr "Preneseno:"
-
-#: src/muuli_wdr.cpp
-msgid "Completed Size :"
-msgstr "Zaključeno:"
+msgid "Completed Size"
+msgstr "Zaključeno"
 
 #: src/muuli_wdr.cpp
 msgid "Intelligent Corruption Handling"
 msgstr "Inteligentno rokovanje s poškodbami"
 
 #: src/muuli_wdr.cpp
-msgid "Lost to corruption :"
-msgstr "Izguba zaradi poškodb:"
+msgid "Lost to corruption"
+msgstr "Izguba zaradi poškodb"
 
 #: src/muuli_wdr.cpp
-msgid "Gained by compression :"
-msgstr "Pridobitev zaradi stiskanja:"
+msgid "Gained by compression"
+msgstr "Pridobitev zaradi stiskanja"
 
 #: src/muuli_wdr.cpp
-msgid "Packages saved by I.C.H. :"
-msgstr "Paketi rešeni z I.R.P.:"
+msgid "Packages saved by I.C.H."
+msgstr "Paketi rešeni z I.R.P."
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -4014,30 +3966,30 @@ msgstr ", poslanega: "
 msgid "Media Info"
 msgstr "Podatki o Kad"
 
-#: src/muuli_wdr.cpp
-msgid "Length :"
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Length"
 msgstr ""
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
 #, fuzzy
-msgid "Bitrate :"
+msgid "Bitrate"
 msgstr "Ni ocenjena"
 
-#: src/muuli_wdr.cpp
-msgid "Codec :"
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+msgid "Codec"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Artist :"
+msgid "Artist"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Album :"
+msgid "Album"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Title :"
-msgstr "Naslov:"
+msgid "Title"
+msgstr "Naslov"
 
 #: src/muuli_wdr.cpp
 msgid "File Names"
@@ -4124,25 +4076,17 @@ msgstr "Neznana velikost"
 msgid "Required Information"
 msgstr "Zahtevani podatki"
 
-#: src/muuli_wdr.cpp
-msgid "IP Address :"
-msgstr "Naslov IP:"
-
-#: src/muuli_wdr.cpp
-msgid "Port :"
-msgstr "Vrata:"
+#: src/muuli_wdr.cpp src/ServerListCtrl.cpp
+msgid "Port"
+msgstr "Vrata"
 
 #: src/muuli_wdr.cpp
 msgid "Additional Information"
 msgstr "Dodatni podatki"
 
 #: src/muuli_wdr.cpp
-msgid "Username :"
-msgstr "Uporabniško ime:"
-
-#: src/muuli_wdr.cpp
-msgid "Userhash :"
-msgstr "Koda uporabnika:"
+msgid "Userhash"
+msgstr "Koda uporabnika"
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Add"
@@ -4177,96 +4121,80 @@ msgid "Statistics Tree"
 msgstr "Statistično drevo"
 
 #: src/muuli_wdr.cpp
-msgid "Username:"
-msgstr "Uporabniško ime:"
+msgid "Client software"
+msgstr "Program odjemalca"
 
 #: src/muuli_wdr.cpp
-msgid "Userhash:"
-msgstr "Koda uporabnika:"
+msgid "Client version"
+msgstr "Različica odjemalca"
 
 #: src/muuli_wdr.cpp
-msgid "Client software:"
-msgstr "Program odjemalca:"
+msgid "User ID"
+msgstr "ID uporabnika"
 
 #: src/muuli_wdr.cpp
-msgid "Client version:"
-msgstr "Različica odjemalca:"
-
-#: src/muuli_wdr.cpp src/ServerWnd.cpp
-msgid "IP address:"
-msgstr "Naslov IP:"
+msgid "Server IP"
+msgstr "IP strežnika"
 
 #: src/muuli_wdr.cpp
-msgid "User ID:"
-msgstr "ID uporabnika:"
+msgid "Server name"
+msgstr "Ime strežnika"
 
 #: src/muuli_wdr.cpp
-msgid "Server IP:"
-msgstr "IP strežnika:"
-
-#: src/muuli_wdr.cpp
-msgid "Server name:"
-msgstr "Ime strežnika:"
-
-#: src/muuli_wdr.cpp
-msgid "Obfuscation:"
-msgstr "Maskiranje:"
-
-#: src/muuli_wdr.cpp
-msgid "Kad:"
-msgstr "Kad:"
+msgid "Obfuscation"
+msgstr "Maskiranje"
 
 #: src/muuli_wdr.cpp
 msgid "Transfers to client"
 msgstr "Prenosi do uporabnika"
 
 #: src/muuli_wdr.cpp
-msgid "Current request:"
-msgstr "Trenutna zahteva:"
+msgid "Current request"
+msgstr "Trenutna zahteva"
 
 #: src/muuli_wdr.cpp
-msgid "Average upload rate:"
-msgstr "Povprečna hitrost pošiljanja:"
+msgid "Average upload rate"
+msgstr "Povprečna hitrost pošiljanja"
 
 #: src/muuli_wdr.cpp
-msgid "Average download rate:"
-msgstr "Povprečna hitrost prejemanja:"
+msgid "Average download rate"
+msgstr "Povprečna hitrost prejemanja"
 
 #: src/muuli_wdr.cpp
-msgid "Uploaded (session):"
-msgstr "Poslano (seja):"
+msgid "Uploaded (session)"
+msgstr "Poslano (seja)"
 
 #: src/muuli_wdr.cpp
-msgid "Downloaded (session):"
-msgstr "Prejeto (seja):"
+msgid "Downloaded (session)"
+msgstr "Prejeto (seja)"
 
 #: src/muuli_wdr.cpp
-msgid "Uploaded (total):"
-msgstr "Poslano (skupno):"
+msgid "Uploaded (total)"
+msgstr "Poslano (skupno)"
 
 #: src/muuli_wdr.cpp
-msgid "Downloaded (total):"
-msgstr "Prejeto (skupno):"
+msgid "Downloaded (total)"
+msgstr "Prejeto (skupno)"
 
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Točke"
 
 #: src/muuli_wdr.cpp
-msgid "DL/UP modifier:"
-msgstr "Količnik dol/gor:"
+msgid "DL/UP modifier"
+msgstr "Količnik dol/gor"
 
 #: src/muuli_wdr.cpp
-msgid "Secure ident:"
-msgstr "Varna identifikacija:"
+msgid "Secure ident"
+msgstr "Varna identifikacija"
 
 #: src/muuli_wdr.cpp
-msgid "Queue rank:"
-msgstr "Položaj v vrsti:"
+msgid "Queue rank"
+msgstr "Položaj v vrsti"
 
 #: src/muuli_wdr.cpp
-msgid "Queue score:"
-msgstr "Točke v vrsti:"
+msgid "Queue score"
+msgstr "Točke v vrsti"
 
 #: src/muuli_wdr.cpp
 msgid "Nick"
@@ -5062,24 +4990,20 @@ msgid "Reset any changes made to the preferences."
 msgstr "Razveljavi vse spremembe v nastavitvah."
 
 #: src/muuli_wdr.cpp
-msgid "Comment :"
-msgstr "Komentar:"
+msgid "Incoming Dir"
+msgstr "Mapa za prejeto"
 
 #: src/muuli_wdr.cpp
-msgid "Incoming Dir :"
-msgstr "Mapa za prejeto:"
-
-#: src/muuli_wdr.cpp
-msgid "Change priority for new assigned files :"
-msgstr "Spremeni prednost novo dodeljenim datotekam:"
+msgid "Change priority for new assigned files"
+msgstr "Spremeni prednost novo dodeljenim datotekam"
 
 #: src/muuli_wdr.cpp
 msgid "Don't change"
 msgstr "Ne spremeni"
 
 #: src/muuli_wdr.cpp
-msgid "Select color for this Category (currently selected) :"
-msgstr "Izberite barvo za to kategorijo (trenutno izbrano):"
+msgid "Select color for this Category (currently selected)"
+msgstr "Izberite barvo za to kategorijo (trenutno izbrano)"
 
 #: src/muuli_wdr.cpp
 msgid "Click this button to reset the log."
@@ -5164,10 +5088,6 @@ msgstr ""
 #, fuzzy
 msgid "Enter the IP of the node here, using the x.x.x.x format."
 msgstr "Sem vnesite IP strežnika v formatu x.x.x.x."
-
-#: src/muuli_wdr.cpp
-msgid "Port:"
-msgstr "Vrata:"
 
 #: src/muuli_wdr.cpp
 msgid "Use Secure User Identification"
@@ -5436,20 +5356,20 @@ msgid "Enable/disable proxy support"
 msgstr "Omogoči/onemogoči podporo za posrednika"
 
 #: src/muuli_wdr.cpp
-msgid "Proxy type:"
-msgstr "Vrsta posrednika:"
+msgid "Proxy type"
+msgstr "Vrsta posrednika"
 
 #: src/muuli_wdr.cpp
-msgid "Proxy host:"
-msgstr "Gostitelj posrednika:"
+msgid "Proxy host"
+msgstr "Gostitelj posrednika"
 
 #: src/muuli_wdr.cpp
 msgid "The proxy host name"
 msgstr "Ime gostitelja posredniškega strežnika"
 
 #: src/muuli_wdr.cpp
-msgid "Proxy port:"
-msgstr "Vrata posrednika:"
+msgid "Proxy port"
+msgstr "Vrata posrednika"
 
 #: src/muuli_wdr.cpp
 msgid "The proxy port"
@@ -5464,16 +5384,8 @@ msgid "Enable/disable username/password authentication"
 msgstr "Omogoči/onemogoči overjanje z uporabniškim imenom/geslom"
 
 #: src/muuli_wdr.cpp
-msgid "Username: "
-msgstr "Uporabniško ime: "
-
-#: src/muuli_wdr.cpp
 msgid "The username to use to connect to the proxy"
 msgstr "Uporabniško ime za povezavo s posrednikom"
-
-#: src/muuli_wdr.cpp
-msgid "Password:"
-msgstr "Geslo:"
 
 #: src/muuli_wdr.cpp
 msgid "The password to use to connect to the proxy"
@@ -5652,6 +5564,15 @@ msgstr "ur"
 #: src/OtherFunctions.cpp
 msgid "days"
 msgstr "dni"
+
+#. TRANSLATORS:
+#. Punctuation for a "label: value" pair. %s is the already-translated
+#. label. Place the colon as your language requires -- e.g. "%s :" with a
+#. space in French, "%s:" without one in Russian and English.
+#: src/OtherFunctions.cpp
+#, c-format
+msgid "%s:"
+msgstr ""
 
 #: src/OtherFunctions.cpp
 msgid "all"
@@ -6712,8 +6633,7 @@ msgstr ""
 msgid "Confirm shared folders"
 msgstr "Deljene mape"
 
-#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
-#: src/SharedFilesReloadProgress.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp src/SharedFilesReloadProgress.cpp
 #, fuzzy
 msgid "Reloading shared files..."
 msgstr "Ponovno naloži deljene datoteke"
@@ -6845,19 +6765,6 @@ msgstr "Napaka pri posodabljanju GeoIP.dat"
 #: src/SearchListCtrl.cpp
 msgid "FileID"
 msgstr "ID datoteke"
-
-#: src/SearchListCtrl.cpp
-msgid "Length"
-msgstr ""
-
-#: src/SearchListCtrl.cpp
-#, fuzzy
-msgid "Bitrate"
-msgstr "Ni ocenjena"
-
-#: src/SearchListCtrl.cpp
-msgid "Codec"
-msgstr ""
 
 #: src/SearchListCtrl.cpp
 msgid "Expand all"
@@ -7148,10 +7055,6 @@ msgstr "IP Filter je filtriral krajevni strežnik. Povezovanje z drugim strežni
 #: src/ServerListCtrl.cpp
 msgid "Server Name"
 msgstr "Ime strežnika"
-
-#: src/ServerListCtrl.cpp
-msgid "Port"
-msgstr "Vrata"
 
 #: src/ServerListCtrl.cpp
 msgid "Description"
@@ -7448,6 +7351,10 @@ msgstr "Povezovanje s kolegom"
 #, c-format
 msgid "Connected to buddy at %s"
 msgstr "Povezano s kolegom na %s"
+
+#: src/ServerWnd.cpp
+msgid "IP address:"
+msgstr "Naslov IP:"
 
 #: src/ServerWnd.cpp
 msgid "Indexed sources:"
