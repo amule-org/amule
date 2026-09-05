@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-05 12:01+0200\n"
-"PO-Revision-Date: 2026-09-03 11:04+0000\n"
+"PO-Revision-Date: 2026-09-05 10:51+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
 "Language: fr\n"
@@ -1273,33 +1273,33 @@ msgstr "Sélection multiple"
 #, c-format
 msgid "Add %u client to your friend list?"
 msgid_plural "Add %u clients to your friend list?"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Ajouter %u client à votre liste d'amis ?"
+msgstr[1] "Ajouter %u clients à votre liste d'amis ?"
 
 #: src/ClientContextActions.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Remove %u client from your friend list?"
 msgid_plural "Remove %u clients from your friend list?"
-msgstr[0] "Supprimer des amis"
-msgstr[1] "Supprimer des amis"
+msgstr[0] "Supprimer %u client de votre liste d'amis ?"
+msgstr[1] "Supprimer %u clients de votre liste d'amis ?"
 
 #: src/ClientContextActions.cpp
 #, c-format
 msgid "Could not add %u selected client to your friend list: no address is known for it."
 msgid_plural "Could not add %u selected clients to your friend list: no address is known for them."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Échec de l'ajout de %u client sélectionné à votre liste d'amis : aucune adresse n'est connue pour celui-ci."
+msgstr[1] "Échec de l'ajout de %u clients sélectionnés à votre liste d'amis : aucune adresse n'est connue pour ceux-ci."
 
 #: src/ClientContextActions.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Request the shared files of %u client?"
 msgid_plural "Request the shared files of %u clients?"
-msgstr[0] "Recharge la liste des fichiers partagés."
-msgstr[1] "Recharge la liste des fichiers partagés."
+msgstr[0] "Demander les fichiers partagés de %u client ?"
+msgstr[1] "Demander les fichiers partagés de %u clients ?"
 
 #: src/ClientContextActions.cpp
 msgid "A connection is opened to each of them."
-msgstr ""
+msgstr "Une connexion est ouverte vers chacun d'entre eux."
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1429,11 +1429,11 @@ msgid "Not Available"
 msgstr "Non disponible"
 
 #: src/ClientRowListCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not ask %u selected client for its shared files."
 msgid_plural "Could not ask %u selected clients for their shared files."
-msgstr[0] "Impossible d'ajouter %u lien (cf. le journal pour les détails)."
-msgstr[1] "Impossible d'ajouter %u liens (cf. le journal pour les détails)."
+msgstr[0] "Impossible de demander à %u client sélectionné ses fichiers partagés."
+msgstr[1] "Impossible de demander à %u clients sélectionnés leurs fichiers partagés."
 
 #: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Files"
@@ -2145,7 +2145,7 @@ msgstr "eD2k est désactivé dans les préférences."
 
 #: src/ExternalConn.cpp
 msgid "No address known for that friend yet."
-msgstr ""
+msgstr "Aucune adresse n'est encore connue pour cet ami."
 
 #: src/ExternalConn.cpp
 msgid "Friend not found."
@@ -2784,7 +2784,7 @@ msgstr "Échec de l'ouverture du fichier de la liste d'amis 'emfriends.met' pour
 #: src/FriendList.cpp
 #, c-format
 msgid "No address known for friend '%s' yet, cannot browse them."
-msgstr ""
+msgstr "Aucune adresse n'est encore connue pour l'ami « %s », impossible de les parcourir."
 
 #: src/FriendList.cpp
 msgid "CRITICAL - no client on StartChatSession"
@@ -2809,7 +2809,7 @@ msgstr "Envoyer un &Message"
 #: src/FriendListCtrl.cpp
 #, c-format
 msgid "No address known for friend '%s' yet, cannot message them."
-msgstr ""
+msgstr "Aucune adresse n'est encore connue pour l'ami « %s », impossible de lui envoyer un message."
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"
@@ -5542,27 +5542,25 @@ msgid "This peer does not have the part"
 msgstr "Ce pair n'a pas la partie"
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy
 msgid "No other source has this part"
-msgstr "Cette source n'a pas la partie"
+msgstr "Aucune autre source n'a cette partie"
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy
 msgid "One other source has this part"
-msgstr "Cette source n'a pas la partie"
+msgstr "Une autre source a cette partie"
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "%u or more other sources have this part"
-msgstr "Vous et cette source avez tous les deux la partie"
+msgstr "%u ou davantage d'autres sources ont cette partie"
 
 #: src/PartBarLegendUI.cpp
 msgid "Already read back and hashed"
-msgstr ""
+msgstr "Déjà relu et hachage effectué"
 
 #: src/PartBarLegendUI.cpp
 msgid "Still to be read"
-msgstr ""
+msgstr "Doit encore être lu"
 
 #: src/PartBarLegendUI.cpp
 msgid "One block per part of the file being downloaded."
@@ -5573,18 +5571,16 @@ msgid "One block per part of the shared file."
 msgstr "Un bloc par partie du fichier partagé."
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy
 msgid "One block per part of the shared file, coloured by how many other sources have it."
-msgstr "Un bloc par partie du fichier partagé."
+msgstr "Un bloc par partie du fichier partagé, coloré en fonction du nombre de sources qui le possèdent."
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy
 msgid "One block per part of the shared file, showing how far the re-hash has read."
-msgstr "Un bloc par partie du fichier partagé."
+msgstr "Un bloc par partie du fichier partagé, affichant jusqu'où le hachage à nouveau a lu."
 
 #: src/PartBarLegendUI.cpp
 msgid "In between, darkening as other sources are added"
-msgstr ""
+msgstr "Entre-temps, cela s'assombrit à mesure que d'autres sources sont ajoutées"
 
 #: src/PartFileConvert.cpp
 msgid "Waiting for partfile convert thread to die..."
@@ -7351,9 +7347,8 @@ msgid "Shares File List"
 msgstr "Partage de la liste des fichiers"
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Source Availability"
-msgstr "Disponibilité"
+msgstr "Disponibilité des sources"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"

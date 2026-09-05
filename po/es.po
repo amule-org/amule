@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-05 12:01+0200\n"
-"PO-Revision-Date: 2026-09-03 11:03+0000\n"
+"PO-Revision-Date: 2026-09-05 10:49+0000\n"
 "Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
 "Language: es\n"
@@ -1274,33 +1274,33 @@ msgstr "Selección múltiple"
 #, c-format
 msgid "Add %u client to your friend list?"
 msgid_plural "Add %u clients to your friend list?"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "¿Añadir %u cliente a la lista de amigos?"
+msgstr[1] "¿Añadir %u clientes a la lista de amigos?"
 
 #: src/ClientContextActions.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Remove %u client from your friend list?"
 msgid_plural "Remove %u clients from your friend list?"
-msgstr[0] "Borrar de Amigos"
-msgstr[1] "Borrar de Amigos"
+msgstr[0] "¿Quitar %u cliente de la lista de amigos?"
+msgstr[1] "¿Quitar %u clientes de la lista de amigos?"
 
 #: src/ClientContextActions.cpp
 #, c-format
 msgid "Could not add %u selected client to your friend list: no address is known for it."
 msgid_plural "Could not add %u selected clients to your friend list: no address is known for them."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "No se pudo añadir %u cliente seleccionado a la lista de amigos: no se conoce ninguna dirección para él."
+msgstr[1] "No se pudieron añadir %u clientes seleccionados a la lista de amigos: no se conoce ninguna dirección para ellos."
 
 #: src/ClientContextActions.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Request the shared files of %u client?"
 msgid_plural "Request the shared files of %u clients?"
-msgstr[0] "Recargar la lista de archivos compartidos."
-msgstr[1] "Recargar la lista de archivos compartidos."
+msgstr[0] "¿Solicitar los archivos compartidos de %u cliente?"
+msgstr[1] "¿Solicitar los archivos compartidos de %u clientes?"
 
 #: src/ClientContextActions.cpp
 msgid "A connection is opened to each of them."
-msgstr ""
+msgstr "Se abre una conexión con cada uno de ellos."
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1430,11 +1430,11 @@ msgid "Not Available"
 msgstr "No disponible"
 
 #: src/ClientRowListCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not ask %u selected client for its shared files."
 msgid_plural "Could not ask %u selected clients for their shared files."
-msgstr[0] "No se pudo añadir el enlace %u (consulte el registro para más detalles)."
-msgstr[1] "No se pudieron añadir los enlaces %u (consulte el registro para más detalles)."
+msgstr[0] "No se pudo solicitar a %u cliente seleccionado sus archivos compartidos."
+msgstr[1] "No se pudo solicitar a %u clientes seleccionados sus archivos compartidos."
 
 #: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Files"
@@ -2146,7 +2146,7 @@ msgstr "eD2k está deshabilitado en las preferencias."
 
 #: src/ExternalConn.cpp
 msgid "No address known for that friend yet."
-msgstr ""
+msgstr "Todavía no se conoce la dirección de ese amigo."
 
 #: src/ExternalConn.cpp
 msgid "Friend not found."
@@ -2785,7 +2785,7 @@ msgstr "¡Error al abrir el archivo de amigos 'emfriends.met' para escritura!"
 #: src/FriendList.cpp
 #, c-format
 msgid "No address known for friend '%s' yet, cannot browse them."
-msgstr ""
+msgstr "Todavía no se conoce la dirección del amigo '%s', no se puede explorar."
 
 #: src/FriendList.cpp
 msgid "CRITICAL - no client on StartChatSession"
@@ -2810,7 +2810,7 @@ msgstr "Enviar un &mensaje"
 #: src/FriendListCtrl.cpp
 #, c-format
 msgid "No address known for friend '%s' yet, cannot message them."
-msgstr ""
+msgstr "Todavía no se conoce la dirección del amigo '%s', no se le puede enviar un mensaje."
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"
@@ -5561,7 +5561,7 @@ msgstr "Otras %u fuentes o más tienen esta parte"
 
 #: src/PartBarLegendUI.cpp
 msgid "Already read back and hashed"
-msgstr "Ya releída y con el hash calculado"
+msgstr "Ya releído y calculado el hash"
 
 #: src/PartBarLegendUI.cpp
 msgid "Still to be read"

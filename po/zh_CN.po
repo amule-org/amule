@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-05 12:01+0200\n"
-"PO-Revision-Date: 2026-09-03 11:12+0000\n"
+"PO-Revision-Date: 2026-09-05 11:03+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -1270,33 +1270,33 @@ msgstr "多选"
 #, c-format
 msgid "Add %u client to your friend list?"
 msgid_plural "Add %u clients to your friend list?"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "添加 %u 个客户端到好友列表？"
+msgstr[1] "添加 %u 个客户端到好友列表？"
 
 #: src/ClientContextActions.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Remove %u client from your friend list?"
 msgid_plural "Remove %u clients from your friend list?"
-msgstr[0] "从好友中删除"
-msgstr[1] "从好友中删除"
+msgstr[0] "要从你的好友列表中删除 %u 个客户端吗？"
+msgstr[1] "要从你的好友列表中删除 %u 个客户端吗？"
 
 #: src/ClientContextActions.cpp
 #, c-format
 msgid "Could not add %u selected client to your friend list: no address is known for it."
 msgid_plural "Could not add %u selected clients to your friend list: no address is known for them."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "无法添加 %u 个选中客户端到好友列表：不知道它们的地址。"
+msgstr[1] "无法添加 %u 个选中客户端到好友列表：不知道它们的地址。"
 
 #: src/ClientContextActions.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Request the shared files of %u client?"
 msgid_plural "Request the shared files of %u clients?"
-msgstr[0] "重新载入共享文件列表。"
-msgstr[1] "重新载入共享文件列表。"
+msgstr[0] "请求 %u 个客户端的共享文件吗？"
+msgstr[1] "请求 %u 个客户端的共享文件吗？"
 
 #: src/ClientContextActions.cpp
 msgid "A connection is opened to each of them."
-msgstr ""
+msgstr "对它们中的每个打开了一个连接。"
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1426,11 +1426,11 @@ msgid "Not Available"
 msgstr "不可用"
 
 #: src/ClientRowListCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not ask %u selected client for its shared files."
 msgid_plural "Could not ask %u selected clients for their shared files."
-msgstr[0] "无法添加 %u 个链接（详情请查看日志）"
-msgstr[1] "无法添加 %u 个链接（详情请查看日志）"
+msgstr[0] "无法请求 %u 个所选客户端的共享文件。"
+msgstr[1] "无法请求 %u 个所选客户端的共享文件。"
 
 #: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Files"
@@ -2142,7 +2142,7 @@ msgstr "eD2k 在首选项中已禁用。"
 
 #: src/ExternalConn.cpp
 msgid "No address known for that friend yet."
-msgstr ""
+msgstr "还不知道那个好友的地址。"
 
 #: src/ExternalConn.cpp
 msgid "Friend not found."
@@ -2781,7 +2781,7 @@ msgstr "写好友列表文件emfriends.met失败！"
 #: src/FriendList.cpp
 #, c-format
 msgid "No address known for friend '%s' yet, cannot browse them."
-msgstr ""
+msgstr "还不知道好友“%s”的地址，无法浏览。"
 
 #: src/FriendList.cpp
 msgid "CRITICAL - no client on StartChatSession"
@@ -2806,7 +2806,7 @@ msgstr "发送消息 (&M)"
 #: src/FriendListCtrl.cpp
 #, c-format
 msgid "No address known for friend '%s' yet, cannot message them."
-msgstr ""
+msgstr "还不知道好友“%s”的地址，无法发消息。"
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"
@@ -5539,27 +5539,25 @@ msgid "This peer does not have the part"
 msgstr "这个对等方没有该部分"
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy
 msgid "No other source has this part"
-msgstr "这个源没有该部分"
+msgstr "没有其他源有该部分"
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy
 msgid "One other source has this part"
-msgstr "这个源没有该部分"
+msgstr "另一个源有该部分"
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "%u or more other sources have this part"
-msgstr "你和这个源都有该部分"
+msgstr "另 %u 个源或更多的源有该部分"
 
 #: src/PartBarLegendUI.cpp
 msgid "Already read back and hashed"
-msgstr ""
+msgstr "已回读并哈希"
 
 #: src/PartBarLegendUI.cpp
 msgid "Still to be read"
-msgstr ""
+msgstr "仍待读取"
 
 #: src/PartBarLegendUI.cpp
 msgid "One block per part of the file being downloaded."
@@ -5570,18 +5568,16 @@ msgid "One block per part of the shared file."
 msgstr "共享文件每个部分对应一个区块。"
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy
 msgid "One block per part of the shared file, coloured by how many other sources have it."
-msgstr "共享文件每个部分对应一个区块。"
+msgstr "共享文件每部分对应一个区块，按另有多少个源有这个部分着色。"
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy
 msgid "One block per part of the shared file, showing how far the re-hash has read."
-msgstr "共享文件每个部分对应一个区块。"
+msgstr "共享文件每部分对应一个区块，显示 re-hash 读取进度。"
 
 #: src/PartBarLegendUI.cpp
 msgid "In between, darkening as other sources are added"
-msgstr ""
+msgstr "其间，添加其他源时颜色变暗"
 
 #: src/PartFileConvert.cpp
 msgid "Waiting for partfile convert thread to die..."
@@ -7348,9 +7344,8 @@ msgid "Shares File List"
 msgstr "共享文件列表"
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Source Availability"
-msgstr "可用来源数"
+msgstr "来源可用性"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
