@@ -166,6 +166,50 @@ jobs:
       - name: run tests
         run: ctest ${{ env.ctest_flags }}
 
+  # The gate-off build is what every other job already covers, because
+  # ENABLE_KAD_PROTOCOL_10 defaults to OFF. This job is the other half: one
+  # Linux build with the switch ON, so the code behind it cannot rot
+  # unnoticed. Deliberately a separate job at a single build type rather than
+  # an extra matrix dimension -- doubling every OS job would cost far more
+  # than it tells us, since the switch changes no platform-dependent code.
+  build_cmake_ubuntu_kad_protocol_10:
+    name: Build CMake Ubuntu (Release, ENABLE_KAD_PROTOCOL_10)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: restore ccache
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ runner.os }}-kad10-ccache-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
+          restore-keys: ${{ runner.os }}-kad10-ccache-
+      - name: install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ env.cmake_ubuntu_deps }}
+      - name: create build system
+        run: |
+          cmake \
+            -DCMAKE_BUILD_TYPE=Release \
+            ${{ env.cmake_common_config_flags }} \
+            ${{ env.cmake_ubuntu_config_flags }} \
+            -DENABLE_KAD_PROTOCOL_10=YES
+      - name: zero ccache stats
+        run: ccache --zero-stats
+      - name: make
+        run: cmake --build build
+      - name: save ccache
+        uses: actions/cache/save@v6
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ runner.os }}-kad10-ccache-${{ github.run_id }}
+      - name: ccache stats
+        if: always()
+        run: ccache --show-stats
+      - name: run tests
+        run: ctest ${{ env.ctest_flags }}
+
   build_cmake_macos:
     name: Build CMake MacOS (${{ matrix.build_type }})
     runs-on: macos-latest
