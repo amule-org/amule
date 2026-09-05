@@ -1268,6 +1268,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
       "upload_queue_score": 150,
       "obfuscation_state": "enabled",
       "connected": true,
+      "protocol_extensions": 0,
       "friend_slot": false,
       "source_origin": "kad",
       "parts_offered_count": 42,
@@ -1303,6 +1304,10 @@ The last five were originally detail-only and were promoted onto this row (and o
 Every one of them falls back to `"unknown"` for a code the daemon does not map, so a client can treat `"unknown"` as its default branch and never has to handle an unexpected token. Three of them are also nullable on the live client objects: `software`, `obfuscation_state` and `source_origin` are `null` when the daemon never reported the field at all, which is a different thing from reporting a code we could not map. `upload_state`, `download_state` and `ident_state` are never `null` — the daemon always answers those. Note the two distinct sentinels on `obfuscation_state`: `"undefined"` is *the client has not told us yet*, `"unknown"` is *the daemon received a code it does not recognise*. The authoritative mappings are the `Client*Name()` / `SourceOriginName()` functions in `src/webapi/Refresher.cpp`.
 
 `connected` says whether a socket to this peer is up right now. A row existing in this list does not answer that: the daemon holds a client object from the first contact attempt, so a peer it is still trying to reach - or can never reach - appears here with `connected: false`. It is `null` on a daemon that does not report peer connectivity. The `online` fields on [`GET /friends`](#get-apiv0friends), [`GET /chats`](#get-apiv0chats) and [`GET /known_clients`](#get-apiv0known_clients) are the same fact reached by their own keys.
+
+`protocol_extensions` is the peer's eMuleAI vendor capability word, taken verbatim from `EC_TAG_CLIENT_MOD_CAPABILITIES` — the same value the desktop GUI renders as its *Protocol extensions* row. It is a bitfield, not one of the enumerated tokens above, because a peer claims any combination of the bits rather than one state: `0x01` extended source exchange, `0x02` uTP NAT traversal, `0x04` IPv6, `0x08` serving-buddy pull, `0x10` QUIC NAT traversal. The daemon has already cleared every bit it does not define, so a bit set here is one aMule names; a bit aMule does not name reads as absent, not as unknown. `0` means the peer claimed nothing, which is what nearly every peer on the network does — a peer that sent no capability tag and one that sent an all-zero word are the same state on the wire and report the same here.
+
+It says what the *peer* supports, never what this daemon does: aMule implements none of these extensions yet and advertises none of them back, so the field is recognition only. The bit meanings are wire format shared with eMuleAI and are defined in `src/PeerCapabilities.h`.
 
 `country_code` is the client's ISO 3166-1 alpha-2 country code (lowercase, e.g. `"de"`), resolved server-side from the client IP by the daemon's GeoIP database. It is `null` when GeoIP is disabled or unsupported by the build, or when the IP does not resolve — render the flag and localized country name client-side from the code. The flag image is served by [`GET /flags/{code}.png`](#get-flagscodepng); the localized name has no endpoint because the browser already has it (`Intl.DisplayNames` with `{ type: "region" }`).
 
@@ -1351,6 +1356,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
   "upload_queue_score": 150,
   "obfuscation_state": "enabled",
   "connected": true,
+  "protocol_extensions": 0,
   "friend_slot": false,
   "ed2k_user_id": 3232238090,
   "high_id": true,

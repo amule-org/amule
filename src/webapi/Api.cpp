@@ -3128,6 +3128,14 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	// Being in this list means the daemon holds a client object, which starts
 	// at the first contact attempt. This says whether a socket is actually up.
 	WriteBoolOrNull(w, "connected", c.has_connected, c.connected);
+	// The peer's eMuleAI vendor capability word, the same one the remote GUI
+	// reads off EC_TAG_CLIENT_MOD_CAPABILITIES. A bitfield rather than the
+	// token this surface prefers because it is not an enumeration: a peer
+	// claims any combination of the bits, so there is no one value to name.
+	// The bit meanings are in src/PeerCapabilities.h; 0 means the peer
+	// claimed nothing, which is what nearly every peer on the network does.
+	w.Key("protocol_extensions");
+	w.ValueUInt(static_cast<uint64_t>(c.protocol_extensions));
 	w.Key("friend_slot");
 	w.ValueBool(c.friend_slot);
 	// Promoted out of the detail object (issue #984): the desktop's per-file
