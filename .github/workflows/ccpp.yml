@@ -178,12 +178,12 @@ jobs:
   # second hand-written near-copy of this job was the alternative.
   #
   # `flags` rather than a bare name so an entry can set more than one, which
-  # is what an `all` entry needs: enabling every switch at once is what a user
+  # is what the `all` entry needs: enabling every switch at once is what a user
   # who wants the features actually builds, and no per-switch job covers the
-  # combination. There is only one switch here, so `all` would be a duplicate
-  # job today; it belongs in the change that adds the second.
+  # combination. `all` asks for the set through ENABLE_ALL_EXPERIMENTAL rather
+  # than naming switches, so it keeps covering the combination as more arrive.
   build_cmake_ubuntu_experimental:
-    name: Build CMake Ubuntu (Release, ${{ matrix.name }})
+    name: Build CMake Ubuntu Experimental (Release, ${{ matrix.name }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -191,6 +191,10 @@ jobs:
         include:
           - name: ENABLE_KAD_PROTOCOL_10
             flags: -DENABLE_KAD_PROTOCOL_10=YES
+          - name: ENABLE_KAD_NODE_PROTECTION
+            flags: -DENABLE_KAD_NODE_PROTECTION=YES
+          - name: all
+            flags: -DENABLE_ALL_EXPERIMENTAL=YES
     steps:
       - uses: actions/checkout@v7
       - name: restore ccache
