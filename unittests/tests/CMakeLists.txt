@@ -1094,6 +1094,29 @@ target_link_libraries (PeerCapabilitiesTest
 	muleunit
 )
 
+# CT_MOD_YOUR_IP corroboration: how many unrelated peers have to agree before
+# aMule believes a stranger's opinion of its own public address, and what
+# "unrelated" is keyed on. eMuleAI believes the first peer that answers; this
+# follows emule-qt and does not. Header-only for the same reason as
+# PeerCapabilities: CUpDownClient reaches theApp.
+add_executable (PublicIPv6CorroborationTest
+	PublicIPv6CorroborationTest.cpp
+)
+
+add_test (NAME PublicIPv6CorroborationTest
+	COMMAND PublicIPv6CorroborationTest
+)
+
+target_include_directories (PublicIPv6CorroborationTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+
+target_link_libraries (PublicIPv6CorroborationTest
+	muleunit
+)
+
 # OP_UDPRESERVEDPROT2 frame demultiplexing: the type byte, the payload window
 # handed to each handler, the unknown-type drop, and the log throttle that
 # keeps an unknown-frame flood from becoming a log flood. Same reason for the

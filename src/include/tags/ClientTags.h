@@ -44,6 +44,10 @@ enum client_tags
 	// counterpart of the "bi6" Kad tag.
 	CT_EMULE_SERVINGBUDDYIPV6 = 0xA0,
 	CT_MOD_MISCOPTIONS = 0xAA, // <uint32> capability bitfield
+	// <hash> the address the peer observed this client arriving from, 16
+	// bytes. Only the hash form is read; see src/PublicIPv6Corroboration.h
+	// for why, and for why one peer saying it is not enough.
+	CT_MOD_YOUR_IP = 0xAD,
 	CT_MOD_IP_V6 = 0xAE, // <hash> client IPv6 address, 16 bytes
 	// 0xAF is deliberately not named here. eMuleAI defines it, but nothing in
 	// its tree writes it and its hello path never reads it as an address: the
