@@ -265,6 +265,7 @@ PHASES=(
 	40-http-conformance.sh
 	41-shared-content.sh
 	42-path-and-body-contracts.sh
+	43-client-protocol-extensions.sh
 )
 
 # Override list from the command line if given.
