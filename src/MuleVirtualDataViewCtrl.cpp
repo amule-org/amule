@@ -368,6 +368,22 @@ void CMuleVirtualDataViewCtrl::RemoveItemDataBatch(const std::vector<wxUIntPtr> 
 void CMuleVirtualDataViewCtrl::FinishBulkLoad()
 {
 	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
+	// The row the user is looking at, remembered by its data. Reset() below
+	// says the model was replaced, and every backend answers that by dropping
+	// the view to the top -- so a list that rebuilds whenever a row joins it
+	// scrolled itself home under anyone reading further down (the clients
+	// lists do this on each arrival or departure).
+	long firstRow = 0;
+	long lastRow = 0;
+	wxUIntPtr anchor = GetVisibleRowRange(firstRow, lastRow) ? ItemAt(firstRow) : 0;
+	if (!anchor) {
+		// The rebuild cleared the list first, so the live query has nothing to
+		// answer with and ClearItemData()'s note is the only record of where
+		// the user was.
+		anchor = m_bulkAnchor;
+	}
+	m_bulkAnchor = 0;
+
 	SortItems();
 
 	// Reset() here, unlike SortList(): AppendItemData() adds rows without
@@ -377,6 +393,40 @@ void CMuleVirtualDataViewCtrl::FinishBulkLoad()
 	m_virtualModel->Reset(static_cast<unsigned>(m_items.size()));
 
 	SetSelectedItemData(selected);
+	ScrollDataToTop(anchor);
+}
+
+void CMuleVirtualDataViewCtrl::ScrollDataToTop(wxUIntPtr data)
+{
+	if (!data) {
+		return;
+	}
+	const long row = RowOfData(data);
+	if (row < 0) {
+		return;
+	}
+	// Reset() left the view at the top, so a row that sorted to the top is
+	// already where it belongs. This is the common case on a list nobody has
+	// scrolled, and it costs no scrolling at all.
+	if (row == 0) {
+		return;
+	}
+
+	// Two calls, because EnsureVisible() scrolls the shortest distance that
+	// makes its target visible. The view is at the top after Reset(), so
+	// asking for the anchor alone would stop as soon as it appeared at the
+	// BOTTOM edge. Bringing the last row of the anchor's page into view first
+	// scrolls past it, and the second call then comes back up to it, which
+	// leaves the anchor on the top line where it was.
+	const int perPage = GetCountPerPage();
+	if (perPage > 1 && !m_items.empty()) {
+		const long last = static_cast<long>(m_items.size()) - 1;
+		const long bottom = std::min(row + perPage - 1, last);
+		if (bottom > row) {
+			EnsureVisible(m_virtualModel->GetItem(static_cast<unsigned>(bottom)));
+		}
+	}
+	EnsureVisible(m_virtualModel->GetItem(static_cast<unsigned>(row)));
 }
 
 void CMuleVirtualDataViewCtrl::RemoveItemData(wxUIntPtr data)
@@ -451,6 +501,18 @@ void CMuleVirtualDataViewCtrl::RefreshItemData(wxUIntPtr data)
 
 void CMuleVirtualDataViewCtrl::ClearItemData()
 {
+	// Remembered before the rows go, for the clear-then-refill rebuild the
+	// clients list does on every arrival and departure: by the time
+	// FinishBulkLoad() runs, the control has been told it holds nothing and
+	// cannot say what was on top. Harmless for a clear that is really a clear
+	// -- the data will not be in the list afterwards, and restoring skips
+	// anything it cannot find.
+	long firstRow = 0;
+	long lastRow = 0;
+	if (GetVisibleRowRange(firstRow, lastRow)) {
+		m_bulkAnchor = ItemAt(firstRow);
+	}
+
 	m_items.clear();
 	m_rowOf.clear();
 	m_virtualModel->Reset(0);

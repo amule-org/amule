@@ -77,7 +77,8 @@ public:
 	 * loop, so the row would otherwise not appear until the menu closed.
 	 */
 	void AppendItemDataNow(wxUIntPtr data);
-	//! Sorts and refreshes once, after a run of AppendItemData().
+	//! Sorts and refreshes once, after a run of AppendItemData(). Keeps the
+	//! row the user was looking at at the top of the viewport.
 	void FinishBulkLoad();
 	//! Drops the row, keeping the selection on the items that remain.
 	void RemoveItemData(wxUIntPtr data);
@@ -125,6 +126,16 @@ public:
 	 */
 	bool IsItemDataSelected(wxUIntPtr data) const;
 	wxUIntPtr ItemAt(long row) const;
+	/**
+	 * Scroll so that @p data sits at the top of the viewport again.
+	 *
+	 * Anchored to the row's data rather than to a wxDataViewItem: in a virtual
+	 * list an item is a row number, which names a different row once a sort has
+	 * moved things, so it cannot survive the rebuild. Does nothing for 0 or for
+	 * data no longer in the list, which is what a row that has since gone away
+	 * should do.
+	 */
+	void ScrollDataToTop(wxUIntPtr data);
 	long ItemDataCount() const { return static_cast<long>(m_items.size()); }
 
 	/**
@@ -271,6 +282,9 @@ private:
 	//! The rows, in display order. The single source of truth for ordering.
 	std::vector<wxUIntPtr> m_items;
 	std::unordered_map<wxUIntPtr, long> m_rowOf;
+	//! Top row remembered across a ClearItemData() + refill + FinishBulkLoad()
+	//! rebuild, which is the only sequence where the control cannot be asked.
+	wxUIntPtr m_bulkAnchor = 0;
 
 	wxDECLARE_EVENT_TABLE();
 };
