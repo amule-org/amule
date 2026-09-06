@@ -59,6 +59,9 @@ there client on the eMule forum..
 #include "../kademlia/SearchManager.h"
 #include "../kademlia/UDPFirewallTester.h"
 #include "../net/KademliaUDPListener.h"
+#ifdef ENABLE_KAD_NODE_PROTECTION
+#include "../net/SafeKad.h"
+#endif
 #include "../utils/KadUDPKey.h"
 #include "../../amule.h"
 #include "../../CFile.h"
@@ -485,6 +488,25 @@ bool CRoutingZone::AddUnfiltered(const CUInt128 &id,
 	bool fromHello)
 {
 	if (id != me) {
+#ifdef ENABLE_KAD_NODE_PROTECTION
+		// Kad identity protections. This is the routing table's front door,
+		// so it is where an address that rotates Kad IDs faster than once
+		// an hour, or one banned for having done so, has to be turned away.
+		//
+		// onlyOneNodePerIP is deliberately off: CRoutingBin already caps
+		// the routing table at MAX_CONTACTS_IP (1) Kad ID per address plus
+		// MAX_CONTACTS_SUBNET (10) per /24, and duplicating that here would
+		// add a second, weaker copy of a rule the bin already enforces
+		// better. CSafeKad's own per-IP rule exists for callers outside the
+		// routing table.
+		if (safeKad.IsBadNode(ip, port, id, version, ipVerified, false, time(NULL))) {
+			AddDebugLogLineN(logKadRouting,
+				"Ignored kad contact (IP=" + KadIPPortToString(ip, port) +
+					") - rejected by the Kad identity protections");
+			return false;
+		}
+#endif
+
 		CContact *contact = new CContact(id, ip, port, tport, version, key, ipVerified);
 		if (fromHello) {
 			contact->SetReceivedHelloPacket();
@@ -905,6 +927,28 @@ void CRoutingZone::OnSmallTimer()
 	m_bin->GetEntries(&entries);
 	for (ContactList::iterator it = entries.begin(); it != entries.end(); ++it) {
 		c = *it;
+#ifdef ENABLE_KAD_NODE_PROTECTION
+		// A banned address is swept out of the table, not merely refused
+		// re-entry. Without this the ban only applies to contacts we have
+		// yet to learn, and one already sitting in the table keeps being
+		// asked -- which is the node the ban was about. Folded into the
+		// dead-entry pass rather than given a sweep of its own, because
+		// this loop already walks every entry once a minute and already
+		// owns the InUse() rule that keeps a contact alive while a search
+		// holds it.
+		//
+		// Safe only because escalation now requires a verified identity:
+		// while an unverified flip could ban, this removal would have let
+		// two fabricated mentions evict an honest contact rather than
+		// merely block its return.
+		if (safeKad.IsBanned(c->GetIPAddress(), now)) {
+			if (!c->InUse()) {
+				m_bin->RemoveContact(c);
+				delete c;
+			}
+			continue;
+		}
+#endif
 		if (c->GetType() == 4) {
 			if ((c->GetExpireTime() > 0) && (c->GetExpireTime() <= now)) {
 				if (!c->InUse()) {
@@ -1037,6 +1081,13 @@ bool CRoutingZone::VerifyContact(const CUInt128 &id, uint32_t ip)
 		} else {
 			contact->SetIPVerified(true);
 		}
+#ifdef ENABLE_KAD_NODE_PROTECTION
+		// The three-way handshake has just proved that this address stands
+		// behind this Kad ID. Recording it verified is what makes a later
+		// unverified claim of a different ID for the same address
+		// rejectable rather than merely rate-limited.
+		safeKad.TrackNode(ip, contact->GetUDPPort(), id, true, time(NULL));
+#endif
 		return true;
 	}
 }

@@ -189,6 +189,56 @@ target_link_libraries (CUInt128Test
 	muleunit
 )
 
+# The adaptive Kad response-time ceiling. CFastKad takes "now" as a parameter
+# rather than reading a clock, which is what lets the cold start, a known series
+# of samples, the eviction rule and the window bound all be pinned without
+# waiting. Compiled and run regardless of ENABLE_KAD_NODE_PROTECTION: the class
+# is self-contained, so gating the suite would only cost coverage.
+add_executable (FastKadTest
+	FastKadTest.cpp
+	${CMAKE_SOURCE_DIR}/src/kademlia/net/FastKad.cpp
+)
+
+add_test (NAME FastKadTest
+	COMMAND FastKadTest
+)
+
+target_include_directories (FastKadTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+
+target_link_libraries (FastKadTest
+	muleunit
+	mulecommon
+)
+
+# The Kad identity protections: the one-hour identity-change interval, the
+# problematic list, the per-address ban and the bounds on all three tables.
+# Same reasoning as FastKad -- every entry point takes the time, so a four-hour
+# ban expiry is a single call rather than an untestable wait.
+add_executable (SafeKadTest
+	SafeKadTest.cpp
+	${CMAKE_SOURCE_DIR}/src/kademlia/net/SafeKad.cpp
+	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
+)
+
+add_test (NAME SafeKadTest
+	COMMAND SafeKadTest
+)
+
+target_include_directories (SafeKadTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+
+target_link_libraries (SafeKadTest
+	muleunit
+	mulecommon
+)
+
 add_executable (FileDataIOTest
 	FileDataIOTest.cpp
 	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
