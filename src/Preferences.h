@@ -213,12 +213,6 @@ private:
 	bool m_changed;
 };
 
-class Cfg_Lang_Base
-{
-public:
-	virtual void UpdateChoice(int pos);
-};
-
 const int cntStatColors = 15;
 
 //! This typedef is a shortcut similar to the theApp shortcut, but uses :: instead of .
@@ -287,7 +281,6 @@ public:
 	static void SetDeadServer(bool val) { s_deadserver = val; }
 	static const wxString &GetUserNick() { return s_nick; }
 	static void SetUserNick(const wxString &nick) { s_nick = nick; }
-	static Cfg_Lang_Base *GetCfgLang() { return s_cfgLang; }
 
 	static const wxString &GetAddress() { return s_Addr; }
 	static void SetAddress(const wxString &val) { s_Addr = val; }
@@ -1027,8 +1020,6 @@ protected:
 	static wxString s_nick;
 
 	static CMD4Hash s_userhash;
-
-	static Cfg_Lang_Base *s_cfgLang;
 
 	////////////// CONNECTION
 	static uint32 s_maxupload;

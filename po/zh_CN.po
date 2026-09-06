@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-05 12:01+0200\n"
+"POT-Creation-Date: 2026-09-06 14:35+0200\n"
 "PO-Revision-Date: 2026-09-05 11:03+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -389,7 +389,8 @@ msgstr "web 服务器正在运行，pid 为 %d"
 msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
 msgstr "您要求启动时运行 Web 服务器，但 amuleweb 程序无法运行， 请先安装包含 amule web 服务器的 aMule 包，或者使用 -DBUILD_WEBSERVER=YES 选项从源码构建 aMule 并安装它。"
 
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
+#: src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
 msgid "ERROR"
 msgstr "错误"
 
@@ -675,7 +676,8 @@ msgstr "网络"
 msgid "Searches"
 msgstr "搜索"
 
-#: src/amuleDlg.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/Statistics.cpp
+#: src/amuleDlg.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/Statistics.cpp
 msgid "Downloads"
 msgstr "下载"
 
@@ -763,7 +765,9 @@ msgstr "Kad: 关闭"
 msgid "Core"
 msgstr "核心"
 
-#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp src/Statistics.cpp
 msgid "Version"
 msgstr "版本"
 
@@ -1060,7 +1064,11 @@ msgstr "无法创建 “%s” 目录用于 “%s” 分类，保留 “%s” 目
 msgid "The remote core sent inconsistent data for \"%s\" (part status %d, expected %d). The file list may be showing the wrong information; reconnect to clear it."
 msgstr "远程核心发送了不一致的 \"%s\" 数据（part 状态 %d，预期 %d）。 文件列表可能显示错误信息；重连清除它。"
 
-#: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp src/FileDetailDialog.cpp src/GenericClientListCtrl.cpp src/HTTPDownload.cpp src/KnownFile.cpp src/MuleTrayIcon.cpp src/PartFile.cpp src/Server.cpp src/Statistics.cpp
+#: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp
+#: src/FileDetailDialog.cpp src/GenericClientListCtrl.cpp src/HTTPDownload.cpp
+#: src/KnownFile.cpp src/MuleTrayIcon.cpp src/PartFile.cpp src/Server.cpp
+#: src/Statistics.cpp
 msgid "Unknown"
 msgstr "未知"
 
@@ -1157,7 +1165,8 @@ msgstr "保存 %s 文件时发生错误：%s"
 msgid "Enter Captcha"
 msgstr "输入验证码"
 
-#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp src/TransferWnd.cpp
+#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
+#: src/TransferWnd.cpp
 msgid "Category"
 msgstr "分类"
 
@@ -1320,11 +1329,13 @@ msgstr "文件 'crytkey.dat' 未找到，正在创建。"
 msgid "Client Details"
 msgstr "客户端详细信息"
 
-#: src/ClientDetailDialog.cpp src/ServerWnd.cpp src/utils/wxCas/src/onlinesig.cpp
+#: src/ClientDetailDialog.cpp src/ServerWnd.cpp
+#: src/utils/wxCas/src/onlinesig.cpp
 msgid "LowID"
 msgstr "Low ID"
 
-#: src/ClientDetailDialog.cpp src/ServerWnd.cpp src/utils/wxCas/src/onlinesig.cpp
+#: src/ClientDetailDialog.cpp src/ServerWnd.cpp
+#: src/utils/wxCas/src/onlinesig.cpp
 msgid "HighID"
 msgstr "High ID"
 
@@ -1340,7 +1351,8 @@ msgstr "已支持"
 msgid "Not supported"
 msgstr "不支持"
 
-#: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp src/TextClient.cpp
+#: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp
+#: src/TextClient.cpp
 msgid "Connected"
 msgstr "已连接"
 
@@ -1348,7 +1360,8 @@ msgstr "已连接"
 msgid "Disconnected"
 msgstr "断开连接"
 
-#: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f KiB/s"
 msgstr "%.1f KiB/s"
@@ -1365,7 +1378,8 @@ msgstr "软件"
 msgid "IP Address"
 msgstr "IP 地址"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Origin"
 msgstr "来源"
 
@@ -1381,11 +1395,13 @@ msgstr "上次看到"
 msgid "Sessions"
 msgstr "会话"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
 msgid "Upload Speed"
 msgstr "上传速度"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
 msgid "Download Speed"
 msgstr "下载速度"
 
@@ -1436,11 +1452,13 @@ msgstr[1] "无法请求 %u 个所选客户端的共享文件。"
 msgid "Files"
 msgstr "文件"
 
-#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp
 msgid "Uploaded"
 msgstr "已上传"
 
-#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Downloaded"
 msgstr "已下载"
 
@@ -1528,7 +1546,8 @@ msgstr "文件评论"
 msgid "Username"
 msgstr "用户名"
 
-#: src/CommentDialogLst.cpp src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/CommentDialogLst.cpp src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp
+#: src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "File Name"
 msgstr "文件名"
 
@@ -1589,15 +1608,18 @@ msgstr "自动 [高]"
 msgid "Very low"
 msgstr "极低"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "低"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "普通"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "高"
 
@@ -1621,11 +1643,13 @@ msgstr "通过服务器连接中"
 msgid "Queue Full"
 msgstr "队列已满"
 
-#: src/DataToText.cpp src/GenericClientListCtrl.cpp src/KnownFile.cpp src/muuli_wdr.cpp
+#: src/DataToText.cpp src/GenericClientListCtrl.cpp src/KnownFile.cpp
+#: src/muuli_wdr.cpp
 msgid "On Queue"
 msgstr "正在排队"
 
-#: src/DataToText.cpp src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
+#: src/DataToText.cpp src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp
+#: src/PartFile.cpp src/TransferWnd.cpp
 msgid "Downloading"
 msgstr "正在下载"
 
@@ -1685,7 +1709,8 @@ msgstr "本地服务器"
 msgid "Remote Server"
 msgstr "远程服务器"
 
-#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp src/TextClient.cpp
+#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp
+#: src/TextClient.cpp
 msgid "Kad"
 msgstr "Kad"
 
@@ -1709,7 +1734,8 @@ msgstr "资源种子"
 msgid "Search Result"
 msgstr "搜索结果"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
+#: src/TransferWnd.cpp
 msgid "Completed"
 msgstr "已完成"
 
@@ -1761,7 +1787,8 @@ msgstr "无法在递归共享中修改"
 msgid "Part"
 msgstr "块"
 
-#: src/DownloadListCtrl.cpp src/PartFileConvertDlg.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/PartFileConvertDlg.cpp src/SearchListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Size"
 msgstr "大小"
 
@@ -1769,7 +1796,8 @@ msgstr "大小"
 msgid "Transferred"
 msgstr "已传输"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp src/SourceListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+#: src/SourceListCtrl.cpp
 msgid "Speed"
 msgstr "速度"
 
@@ -1777,11 +1805,13 @@ msgstr "速度"
 msgid "Progress"
 msgstr "进度"
 
-#: src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/PartFile.cpp
+#: src/SearchListCtrl.cpp
 msgid "Sources"
 msgstr "源"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Priority"
 msgstr "优先级"
 
@@ -1805,7 +1835,9 @@ msgstr "最后一次下载"
 msgid "Auto"
 msgstr "自动"
 
-#: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/TransferWnd.cpp src/utils/wxCas/src/wxcasprefs.cpp
+#: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp
+#: src/ServerListCtrl.cpp src/TransferWnd.cpp
+#: src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Cancel"
 msgstr "取消"
 
@@ -1906,7 +1938,8 @@ msgstr "请输入新文件名:"
 msgid "File rename"
 msgstr "重命名文件"
 
-#: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f MiB/s"
 msgstr "%.1f MiB/s"
@@ -2709,11 +2742,13 @@ msgstr ""
 msgid "Start aMule automatically when I log in"
 msgstr "登录时自动启动 aMule"
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp packaging/windows/installer_strings.c
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
+#: packaging/windows/installer_strings.c
 msgid "Register aMule for ed2k:// links"
 msgstr "将 aMule 注册为打开 ed2k:// 链接的应用"
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp packaging/windows/installer_strings.c
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
+#: packaging/windows/installer_strings.c
 msgid "Register aMule for magnet: links"
 msgstr "将 aMule 注册为打开 magnet: 链接的应用"
 
@@ -2741,7 +2776,8 @@ msgstr ""
 msgid "Destination folder for downloads"
 msgstr "存放下载文件的文件夹"
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
+#: src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Browse"
 msgstr "浏览"
 
@@ -3163,6 +3199,162 @@ msgstr "在已知文件列表载入条目失败，文件可能损坏"
 msgid "Invalid entry in known file list, file may be corrupt: "
 msgstr "已知文件列表包含非法条目，文件可能损坏："
 
+#: src/LanguageList.cpp
+msgid "System default"
+msgstr "系统默认"
+
+#: src/LanguageList.cpp
+msgid "Albanian"
+msgstr "阿尔巴尼亚语"
+
+#: src/LanguageList.cpp
+msgid "Arabic"
+msgstr "阿拉伯语"
+
+#: src/LanguageList.cpp
+msgid "Asturian"
+msgstr "澳大利亚"
+
+#: src/LanguageList.cpp
+msgid "Basque"
+msgstr "巴斯克语"
+
+#: src/LanguageList.cpp
+msgid "Bulgarian"
+msgstr "保加利亚语"
+
+#: src/LanguageList.cpp
+msgid "Catalan"
+msgstr "加泰罗尼亚语"
+
+#: src/LanguageList.cpp
+msgid "Chinese (Simplified)"
+msgstr "简体中文"
+
+#: src/LanguageList.cpp
+msgid "Chinese (Traditional)"
+msgstr "繁体中文"
+
+#: src/LanguageList.cpp
+msgid "Croatian"
+msgstr "克罗的亚语"
+
+#: src/LanguageList.cpp
+msgid "Czech"
+msgstr "捷克语"
+
+#: src/LanguageList.cpp
+msgid "Danish"
+msgstr "丹麦语"
+
+#: src/LanguageList.cpp
+msgid "Dutch"
+msgstr "荷兰语"
+
+#: src/LanguageList.cpp
+msgid "English (U.K.)"
+msgstr "英语（英国）"
+
+#: src/LanguageList.cpp
+msgid "English (U.S.)"
+msgstr "英语（美国）"
+
+#: src/LanguageList.cpp
+msgid "Estonian"
+msgstr "爱斯托尼亚语"
+
+#: src/LanguageList.cpp
+msgid "Finnish"
+msgstr "芬兰语"
+
+#: src/LanguageList.cpp
+msgid "French"
+msgstr "法语"
+
+#: src/LanguageList.cpp
+msgid "Galician"
+msgstr "加利西亚语"
+
+#: src/LanguageList.cpp
+msgid "German"
+msgstr "德语"
+
+#: src/LanguageList.cpp
+msgid "Greek"
+msgstr "希腊语"
+
+#: src/LanguageList.cpp
+msgid "Hebrew"
+msgstr "希伯来语"
+
+#: src/LanguageList.cpp
+msgid "Hungarian"
+msgstr "匈牙利语"
+
+#: src/LanguageList.cpp
+msgid "Italian"
+msgstr "意大利语"
+
+#: src/LanguageList.cpp
+msgid "Japanese"
+msgstr "日语"
+
+#: src/LanguageList.cpp
+msgid "Korean"
+msgstr "韩语"
+
+#: src/LanguageList.cpp
+msgid "Latvian"
+msgstr "拉脱维亚语"
+
+#: src/LanguageList.cpp
+msgid "Lithuanian"
+msgstr "立陶宛语"
+
+#: src/LanguageList.cpp
+msgid "Norwegian (Nynorsk)"
+msgstr "新挪威语"
+
+#: src/LanguageList.cpp
+msgid "Polish"
+msgstr "芬兰语"
+
+#: src/LanguageList.cpp
+msgid "Portuguese"
+msgstr "葡萄牙语"
+
+#: src/LanguageList.cpp
+msgid "Portuguese (Brazilian)"
+msgstr "葡萄牙语（巴西）"
+
+#: src/LanguageList.cpp
+msgid "Romanian"
+msgstr "罗马尼亚语"
+
+#: src/LanguageList.cpp
+msgid "Russian"
+msgstr "俄语"
+
+#: src/LanguageList.cpp
+msgid "Slovenian"
+msgstr "斯洛文尼亚语"
+
+#: src/LanguageList.cpp
+msgid "Spanish"
+msgstr "西班牙语"
+
+#: src/LanguageList.cpp
+msgid "Swedish"
+msgstr "瑞典语"
+
+#: src/LanguageList.cpp
+msgid "Turkish"
+msgstr "土耳其语"
+
+#: src/LanguageList.cpp
+msgid "Ukrainian"
+msgstr "乌克兰"
+
 #: src/libs/common/Format.cpp
 #, c-format
 msgid "Unknown error %d"
@@ -3185,15 +3377,18 @@ msgstr "即将完成"
 msgid "Complete"
 msgstr "已完成"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
+#: src/TransferWnd.cpp
 msgid "Paused"
 msgstr "已暂停"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
+#: src/TransferWnd.cpp
 msgid "Erroneous"
 msgstr "已出错"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
+#: src/TransferWnd.cpp
 msgid "Waiting"
 msgstr "等待中"
 
@@ -3355,7 +3550,8 @@ msgstr "关闭"
 msgid "Cut"
 msgstr "剪切"
 
-#: src/MuleTextCtrl.cpp src/PartFileConvert.cpp src/ServerWnd.cpp src/utils/aLinkCreator/src/alcframe.cpp
+#: src/MuleTextCtrl.cpp src/PartFileConvert.cpp src/ServerWnd.cpp
+#: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Copy"
 msgstr "复制"
 
@@ -3363,7 +3559,8 @@ msgstr "复制"
 msgid "Paste"
 msgstr "粘贴"
 
-#: src/MuleTextCtrl.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
+#: src/MuleTextCtrl.cpp src/muuli_wdr.cpp
+#: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Clear"
 msgstr "清除"
 
@@ -3371,7 +3568,8 @@ msgstr "清除"
 msgid "Select All"
 msgstr "全选"
 
-#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp src/StatisticsDlg.cpp
+#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
+#: src/StatisticsDlg.cpp
 msgid "KiB/s"
 msgstr "KiB/s"
 
@@ -5833,174 +6031,6 @@ msgid "ERROR: Failed to open partfile '%s'"
 msgstr "错误：打开part文件'%s'失败"
 
 #: src/Preferences.cpp
-msgid "System default"
-msgstr "系统默认"
-
-#: src/Preferences.cpp
-msgid "Albanian"
-msgstr "阿尔巴尼亚语"
-
-#: src/Preferences.cpp
-msgid "Arabic"
-msgstr "阿拉伯语"
-
-#: src/Preferences.cpp
-msgid "Asturian"
-msgstr "澳大利亚"
-
-#: src/Preferences.cpp
-msgid "Basque"
-msgstr "巴斯克语"
-
-#: src/Preferences.cpp
-msgid "Bulgarian"
-msgstr "保加利亚语"
-
-#: src/Preferences.cpp
-msgid "Catalan"
-msgstr "加泰罗尼亚语"
-
-#: src/Preferences.cpp
-msgid "Chinese (Simplified)"
-msgstr "简体中文"
-
-#: src/Preferences.cpp
-msgid "Chinese (Traditional)"
-msgstr "繁体中文"
-
-#: src/Preferences.cpp
-msgid "Croatian"
-msgstr "克罗的亚语"
-
-#: src/Preferences.cpp
-msgid "Czech"
-msgstr "捷克语"
-
-#: src/Preferences.cpp
-msgid "Danish"
-msgstr "丹麦语"
-
-#: src/Preferences.cpp
-msgid "Dutch"
-msgstr "荷兰语"
-
-#: src/Preferences.cpp
-msgid "English (U.K.)"
-msgstr "英语（英国）"
-
-#: src/Preferences.cpp
-msgid "English (U.S.)"
-msgstr "英语（美国）"
-
-#: src/Preferences.cpp
-msgid "Estonian"
-msgstr "爱斯托尼亚语"
-
-#: src/Preferences.cpp
-msgid "Finnish"
-msgstr "芬兰语"
-
-#: src/Preferences.cpp
-msgid "French"
-msgstr "法语"
-
-#: src/Preferences.cpp
-msgid "Galician"
-msgstr "加利西亚语"
-
-#: src/Preferences.cpp
-msgid "German"
-msgstr "德语"
-
-#: src/Preferences.cpp
-msgid "Greek"
-msgstr "希腊语"
-
-#: src/Preferences.cpp
-msgid "Hebrew"
-msgstr "希伯来语"
-
-#: src/Preferences.cpp
-msgid "Hungarian"
-msgstr "匈牙利语"
-
-#: src/Preferences.cpp
-msgid "Italian"
-msgstr "意大利语"
-
-#: src/Preferences.cpp
-msgid "Japanese"
-msgstr "日语"
-
-#: src/Preferences.cpp
-msgid "Korean"
-msgstr "韩语"
-
-#: src/Preferences.cpp
-msgid "Latvian"
-msgstr "拉脱维亚语"
-
-#: src/Preferences.cpp
-msgid "Lithuanian"
-msgstr "立陶宛语"
-
-#: src/Preferences.cpp
-msgid "Norwegian (Nynorsk)"
-msgstr "新挪威语"
-
-#: src/Preferences.cpp
-msgid "Polish"
-msgstr "芬兰语"
-
-#: src/Preferences.cpp
-msgid "Portuguese"
-msgstr "葡萄牙语"
-
-#: src/Preferences.cpp
-msgid "Portuguese (Brazilian)"
-msgstr "葡萄牙语（巴西）"
-
-#: src/Preferences.cpp
-msgid "Romanian"
-msgstr "罗马尼亚语"
-
-#: src/Preferences.cpp
-msgid "Russian"
-msgstr "俄语"
-
-#: src/Preferences.cpp
-msgid "Slovenian"
-msgstr "斯洛文尼亚语"
-
-#: src/Preferences.cpp
-msgid "Spanish"
-msgstr "西班牙语"
-
-#: src/Preferences.cpp
-msgid "Swedish"
-msgstr "瑞典语"
-
-#: src/Preferences.cpp
-msgid "Turkish"
-msgstr "土耳其语"
-
-#: src/Preferences.cpp
-msgid "Ukrainian"
-msgstr "乌克兰"
-
-#: src/Preferences.cpp
-msgid "Change Language"
-msgstr "更改语言"
-
-#: src/Preferences.cpp
-msgid "There are no translations installed for aMule"
-msgstr "没有为 aMule 安装语言文件"
-
-#: src/Preferences.cpp
-msgid "No languages available"
-msgstr "语言文件不可用"
-
-#: src/Preferences.cpp
 msgid "no options available"
 msgstr "选项不可用"
 
@@ -6502,7 +6532,8 @@ msgstr "递归共享会将每个子文件发布到 eD2k/Kad 网络上。您确�
 msgid "Confirm shared folders"
 msgstr "确认共享的文件夹"
 
-#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp src/SharedFilesReloadProgress.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+#: src/SharedFilesReloadProgress.cpp
 msgid "Reloading shared files..."
 msgstr "正重新加载共享文件..."
 
@@ -9229,6 +9260,15 @@ msgstr "aMule 似乎正在运行。请将其关闭并重新运行卸载程序。
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "正在删除 $APPDATA\\aMule 中的用户数据..."
+
+#~ msgid "Change Language"
+#~ msgstr "更改语言"
+
+#~ msgid "There are no translations installed for aMule"
+#~ msgstr "没有为 aMule 安装语言文件"
+
+#~ msgid "No languages available"
+#~ msgstr "语言文件不可用"
 
 #~ msgid "User name"
 #~ msgstr "用户名"

@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-05 12:01+0200\n"
+"POT-Creation-Date: 2026-09-06 14:35+0200\n"
 "PO-Revision-Date: 2026-09-05 10:49+0000\n"
 "Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
@@ -393,7 +393,8 @@ msgstr "servidor web corriendo con pid: %d"
 msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
 msgstr "Ha solicitado ejecutar el servidor web al inicio pero no se puede ejecutar el binario amuleweb. Por favor, instale el paquete que contiene el servidor web de aMule, o compile aMule desde el código fuente con -DBUILD_WEBSERVER=YES e instálelo."
 
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
+#: src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
 msgid "ERROR"
 msgstr "ERROR"
 
@@ -679,7 +680,8 @@ msgstr "Redes"
 msgid "Searches"
 msgstr "Búsquedas"
 
-#: src/amuleDlg.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/Statistics.cpp
+#: src/amuleDlg.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/Statistics.cpp
 msgid "Downloads"
 msgstr "Descargas"
 
@@ -767,7 +769,9 @@ msgstr "Kad: apagado"
 msgid "Core"
 msgstr "Núcleo"
 
-#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp src/Statistics.cpp
 msgid "Version"
 msgstr "Versión"
 
@@ -1064,7 +1068,11 @@ msgstr "No se puede crear el directorio '%s' para la categoría '%s', se mantien
 msgid "The remote core sent inconsistent data for \"%s\" (part status %d, expected %d). The file list may be showing the wrong information; reconnect to clear it."
 msgstr "El núcleo remoto envió datos inconsistentes para \"%s\" (Estado de la parte %d, esperado %d). La lista de archivos puede estar mostrando la información incorrecta; volver a conectarse para limpiarla."
 
-#: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp src/FileDetailDialog.cpp src/GenericClientListCtrl.cpp src/HTTPDownload.cpp src/KnownFile.cpp src/MuleTrayIcon.cpp src/PartFile.cpp src/Server.cpp src/Statistics.cpp
+#: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp
+#: src/FileDetailDialog.cpp src/GenericClientListCtrl.cpp src/HTTPDownload.cpp
+#: src/KnownFile.cpp src/MuleTrayIcon.cpp src/PartFile.cpp src/Server.cpp
+#: src/Statistics.cpp
 msgid "Unknown"
 msgstr "Desconocido"
 
@@ -1161,7 +1169,8 @@ msgstr "Error guardando el archivo %s: %s"
 msgid "Enter Captcha"
 msgstr "Introduzca el \"captcha\""
 
-#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp src/TransferWnd.cpp
+#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
+#: src/TransferWnd.cpp
 msgid "Category"
 msgstr "Categoría"
 
@@ -1324,11 +1333,13 @@ msgstr "No se ha encontrado el archivo 'cryptkey.dat', se crea."
 msgid "Client Details"
 msgstr "Detalles del cliente"
 
-#: src/ClientDetailDialog.cpp src/ServerWnd.cpp src/utils/wxCas/src/onlinesig.cpp
+#: src/ClientDetailDialog.cpp src/ServerWnd.cpp
+#: src/utils/wxCas/src/onlinesig.cpp
 msgid "LowID"
 msgstr "Id Baja"
 
-#: src/ClientDetailDialog.cpp src/ServerWnd.cpp src/utils/wxCas/src/onlinesig.cpp
+#: src/ClientDetailDialog.cpp src/ServerWnd.cpp
+#: src/utils/wxCas/src/onlinesig.cpp
 msgid "HighID"
 msgstr "Id Alta"
 
@@ -1344,7 +1355,8 @@ msgstr "Soportada"
 msgid "Not supported"
 msgstr "No soportada"
 
-#: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp src/TextClient.cpp
+#: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp
+#: src/TextClient.cpp
 msgid "Connected"
 msgstr "Conectado"
 
@@ -1352,7 +1364,8 @@ msgstr "Conectado"
 msgid "Disconnected"
 msgstr "Desconectado"
 
-#: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f KiB/s"
 msgstr "%.1f KiB/s"
@@ -1369,7 +1382,8 @@ msgstr "Software"
 msgid "IP Address"
 msgstr "Dirección IP"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Origin"
 msgstr "Origen"
 
@@ -1385,11 +1399,13 @@ msgstr "Visto por última vez"
 msgid "Sessions"
 msgstr "Sesiones"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
 msgid "Upload Speed"
 msgstr "Velocidad de subida"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
 msgid "Download Speed"
 msgstr "Velocidad de descarga"
 
@@ -1440,11 +1456,13 @@ msgstr[1] "No se pudo solicitar a %u clientes seleccionados sus archivos compart
 msgid "Files"
 msgstr "Archivos"
 
-#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp
 msgid "Uploaded"
 msgstr "Subido"
 
-#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Downloaded"
 msgstr "Descargado"
 
@@ -1532,7 +1550,8 @@ msgstr "Comentarios del archivo"
 msgid "Username"
 msgstr "Nombre de usuario"
 
-#: src/CommentDialogLst.cpp src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/CommentDialogLst.cpp src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp
+#: src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "File Name"
 msgstr "Nombre del archivo"
 
@@ -1593,15 +1612,18 @@ msgstr "Automática [Al]"
 msgid "Very low"
 msgstr "Muy baja"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "Baja"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "Normal"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "Alta"
 
@@ -1625,11 +1647,13 @@ msgstr "Conectando vía servidor"
 msgid "Queue Full"
 msgstr "Cola llena"
 
-#: src/DataToText.cpp src/GenericClientListCtrl.cpp src/KnownFile.cpp src/muuli_wdr.cpp
+#: src/DataToText.cpp src/GenericClientListCtrl.cpp src/KnownFile.cpp
+#: src/muuli_wdr.cpp
 msgid "On Queue"
 msgstr "En cola"
 
-#: src/DataToText.cpp src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
+#: src/DataToText.cpp src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp
+#: src/PartFile.cpp src/TransferWnd.cpp
 msgid "Downloading"
 msgstr "Descargando"
 
@@ -1689,7 +1713,8 @@ msgstr "Servidor local"
 msgid "Remote Server"
 msgstr "Servidor remoto"
 
-#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp src/TextClient.cpp
+#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp
+#: src/TextClient.cpp
 msgid "Kad"
 msgstr "Kad"
 
@@ -1713,7 +1738,8 @@ msgstr "Semillas fuente"
 msgid "Search Result"
 msgstr "Resultado de la búsqueda"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
+#: src/TransferWnd.cpp
 msgid "Completed"
 msgstr "Completado"
 
@@ -1765,7 +1791,8 @@ msgstr "No se puede modificar dentro de una compartición recursiva"
 msgid "Part"
 msgstr "Parte"
 
-#: src/DownloadListCtrl.cpp src/PartFileConvertDlg.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/PartFileConvertDlg.cpp src/SearchListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Size"
 msgstr "Tamaño"
 
@@ -1773,7 +1800,8 @@ msgstr "Tamaño"
 msgid "Transferred"
 msgstr "Transferido"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp src/SourceListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+#: src/SourceListCtrl.cpp
 msgid "Speed"
 msgstr "Velocidad"
 
@@ -1781,11 +1809,13 @@ msgstr "Velocidad"
 msgid "Progress"
 msgstr "Progreso"
 
-#: src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/PartFile.cpp
+#: src/SearchListCtrl.cpp
 msgid "Sources"
 msgstr "Fuentes"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Priority"
 msgstr "Prioridad"
 
@@ -1809,7 +1839,9 @@ msgstr "Última recepción"
 msgid "Auto"
 msgstr "Automática"
 
-#: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/TransferWnd.cpp src/utils/wxCas/src/wxcasprefs.cpp
+#: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp
+#: src/ServerListCtrl.cpp src/TransferWnd.cpp
+#: src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Cancel"
 msgstr "Cancelar"
 
@@ -1910,7 +1942,8 @@ msgstr "Introduzca el nuevo nombre para el archivo:"
 msgid "File rename"
 msgstr "Renombrar el archivo"
 
-#: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f MiB/s"
 msgstr "%.1f MiB/s"
@@ -2713,11 +2746,13 @@ msgstr ""
 msgid "Start aMule automatically when I log in"
 msgstr "Iniciar aMule automáticamente al iniciar sesión"
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp packaging/windows/installer_strings.c
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
+#: packaging/windows/installer_strings.c
 msgid "Register aMule for ed2k:// links"
 msgstr "Registrar aMule para los enlaces ed2k://"
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp packaging/windows/installer_strings.c
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
+#: packaging/windows/installer_strings.c
 msgid "Register aMule for magnet: links"
 msgstr "Registrar aMule para los enlaces magnet:"
 
@@ -2745,7 +2780,8 @@ msgstr ""
 msgid "Destination folder for downloads"
 msgstr "Carpeta de destino para las descargas"
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
+#: src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Browse"
 msgstr "Examinar"
 
@@ -3167,6 +3203,162 @@ msgstr "Error al cargar una entrada de la lista de archivos conocidos, el archiv
 msgid "Invalid entry in known file list, file may be corrupt: "
 msgstr "Entrada inválida en lista de archivos conocidos, el archivo debe de estar dañado: "
 
+#: src/LanguageList.cpp
+msgid "System default"
+msgstr "Por defecto"
+
+#: src/LanguageList.cpp
+msgid "Albanian"
+msgstr "Albanés"
+
+#: src/LanguageList.cpp
+msgid "Arabic"
+msgstr "Árabe"
+
+#: src/LanguageList.cpp
+msgid "Asturian"
+msgstr "Asturiano"
+
+#: src/LanguageList.cpp
+msgid "Basque"
+msgstr "Euskera"
+
+#: src/LanguageList.cpp
+msgid "Bulgarian"
+msgstr "Búlgaro"
+
+#: src/LanguageList.cpp
+msgid "Catalan"
+msgstr "Catalán"
+
+#: src/LanguageList.cpp
+msgid "Chinese (Simplified)"
+msgstr "Chino (simplificado)"
+
+#: src/LanguageList.cpp
+msgid "Chinese (Traditional)"
+msgstr "Chino (tradicional)"
+
+#: src/LanguageList.cpp
+msgid "Croatian"
+msgstr "Croata"
+
+#: src/LanguageList.cpp
+msgid "Czech"
+msgstr "Checo"
+
+#: src/LanguageList.cpp
+msgid "Danish"
+msgstr "Danés"
+
+#: src/LanguageList.cpp
+msgid "Dutch"
+msgstr "Holandés"
+
+#: src/LanguageList.cpp
+msgid "English (U.K.)"
+msgstr "Inglés (Reino Unido)"
+
+#: src/LanguageList.cpp
+msgid "English (U.S.)"
+msgstr "Inglés (EE.UU.)"
+
+#: src/LanguageList.cpp
+msgid "Estonian"
+msgstr "Estonio"
+
+#: src/LanguageList.cpp
+msgid "Finnish"
+msgstr "Finés"
+
+#: src/LanguageList.cpp
+msgid "French"
+msgstr "Francés"
+
+#: src/LanguageList.cpp
+msgid "Galician"
+msgstr "Gallego"
+
+#: src/LanguageList.cpp
+msgid "German"
+msgstr "Alemán"
+
+#: src/LanguageList.cpp
+msgid "Greek"
+msgstr "Griego"
+
+#: src/LanguageList.cpp
+msgid "Hebrew"
+msgstr "Hebreo"
+
+#: src/LanguageList.cpp
+msgid "Hungarian"
+msgstr "Húngaro"
+
+#: src/LanguageList.cpp
+msgid "Italian"
+msgstr "Italiano"
+
+#: src/LanguageList.cpp
+msgid "Japanese"
+msgstr "Japonés"
+
+#: src/LanguageList.cpp
+msgid "Korean"
+msgstr "Coreano"
+
+#: src/LanguageList.cpp
+msgid "Latvian"
+msgstr "Letón"
+
+#: src/LanguageList.cpp
+msgid "Lithuanian"
+msgstr "Lituano"
+
+#: src/LanguageList.cpp
+msgid "Norwegian (Nynorsk)"
+msgstr "Noruego (Nynorsk)"
+
+#: src/LanguageList.cpp
+msgid "Polish"
+msgstr "Polaco"
+
+#: src/LanguageList.cpp
+msgid "Portuguese"
+msgstr "Portugués"
+
+#: src/LanguageList.cpp
+msgid "Portuguese (Brazilian)"
+msgstr "Portugués (brasileño)"
+
+#: src/LanguageList.cpp
+msgid "Romanian"
+msgstr "Rumano"
+
+#: src/LanguageList.cpp
+msgid "Russian"
+msgstr "Ruso"
+
+#: src/LanguageList.cpp
+msgid "Slovenian"
+msgstr "Esloveno"
+
+#: src/LanguageList.cpp
+msgid "Spanish"
+msgstr "Español"
+
+#: src/LanguageList.cpp
+msgid "Swedish"
+msgstr "Sueco"
+
+#: src/LanguageList.cpp
+msgid "Turkish"
+msgstr "Turco"
+
+#: src/LanguageList.cpp
+msgid "Ukrainian"
+msgstr "Ucraniano"
+
 #: src/libs/common/Format.cpp
 #, c-format
 msgid "Unknown error %d"
@@ -3189,15 +3381,18 @@ msgstr "Completando"
 msgid "Complete"
 msgstr "Completado"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
+#: src/TransferWnd.cpp
 msgid "Paused"
 msgstr "Pausado"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
+#: src/TransferWnd.cpp
 msgid "Erroneous"
 msgstr "Erróneo"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
+#: src/TransferWnd.cpp
 msgid "Waiting"
 msgstr "Esperando"
 
@@ -3359,7 +3554,8 @@ msgstr "Cerrar"
 msgid "Cut"
 msgstr "Cortar"
 
-#: src/MuleTextCtrl.cpp src/PartFileConvert.cpp src/ServerWnd.cpp src/utils/aLinkCreator/src/alcframe.cpp
+#: src/MuleTextCtrl.cpp src/PartFileConvert.cpp src/ServerWnd.cpp
+#: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Copy"
 msgstr "Copiar"
 
@@ -3367,7 +3563,8 @@ msgstr "Copiar"
 msgid "Paste"
 msgstr "Pegar"
 
-#: src/MuleTextCtrl.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
+#: src/MuleTextCtrl.cpp src/muuli_wdr.cpp
+#: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Clear"
 msgstr "Limpiar"
 
@@ -3375,7 +3572,8 @@ msgstr "Limpiar"
 msgid "Select All"
 msgstr "Seleccionar todo"
 
-#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp src/StatisticsDlg.cpp
+#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
+#: src/StatisticsDlg.cpp
 msgid "KiB/s"
 msgstr "KiB/s"
 
@@ -5841,174 +6039,6 @@ msgid "ERROR: Failed to open partfile '%s'"
 msgstr "ERROR: no se ha podido abrir el archivo de partes '%s'"
 
 #: src/Preferences.cpp
-msgid "System default"
-msgstr "Por defecto"
-
-#: src/Preferences.cpp
-msgid "Albanian"
-msgstr "Albanés"
-
-#: src/Preferences.cpp
-msgid "Arabic"
-msgstr "Árabe"
-
-#: src/Preferences.cpp
-msgid "Asturian"
-msgstr "Asturiano"
-
-#: src/Preferences.cpp
-msgid "Basque"
-msgstr "Euskera"
-
-#: src/Preferences.cpp
-msgid "Bulgarian"
-msgstr "Búlgaro"
-
-#: src/Preferences.cpp
-msgid "Catalan"
-msgstr "Catalán"
-
-#: src/Preferences.cpp
-msgid "Chinese (Simplified)"
-msgstr "Chino (simplificado)"
-
-#: src/Preferences.cpp
-msgid "Chinese (Traditional)"
-msgstr "Chino (tradicional)"
-
-#: src/Preferences.cpp
-msgid "Croatian"
-msgstr "Croata"
-
-#: src/Preferences.cpp
-msgid "Czech"
-msgstr "Checo"
-
-#: src/Preferences.cpp
-msgid "Danish"
-msgstr "Danés"
-
-#: src/Preferences.cpp
-msgid "Dutch"
-msgstr "Holandés"
-
-#: src/Preferences.cpp
-msgid "English (U.K.)"
-msgstr "Inglés (Reino Unido)"
-
-#: src/Preferences.cpp
-msgid "English (U.S.)"
-msgstr "Inglés (EE.UU.)"
-
-#: src/Preferences.cpp
-msgid "Estonian"
-msgstr "Estonio"
-
-#: src/Preferences.cpp
-msgid "Finnish"
-msgstr "Finés"
-
-#: src/Preferences.cpp
-msgid "French"
-msgstr "Francés"
-
-#: src/Preferences.cpp
-msgid "Galician"
-msgstr "Gallego"
-
-#: src/Preferences.cpp
-msgid "German"
-msgstr "Alemán"
-
-#: src/Preferences.cpp
-msgid "Greek"
-msgstr "Griego"
-
-#: src/Preferences.cpp
-msgid "Hebrew"
-msgstr "Hebreo"
-
-#: src/Preferences.cpp
-msgid "Hungarian"
-msgstr "Húngaro"
-
-#: src/Preferences.cpp
-msgid "Italian"
-msgstr "Italiano"
-
-#: src/Preferences.cpp
-msgid "Japanese"
-msgstr "Japonés"
-
-#: src/Preferences.cpp
-msgid "Korean"
-msgstr "Coreano"
-
-#: src/Preferences.cpp
-msgid "Latvian"
-msgstr "Letón"
-
-#: src/Preferences.cpp
-msgid "Lithuanian"
-msgstr "Lituano"
-
-#: src/Preferences.cpp
-msgid "Norwegian (Nynorsk)"
-msgstr "Noruego (Nynorsk)"
-
-#: src/Preferences.cpp
-msgid "Polish"
-msgstr "Polaco"
-
-#: src/Preferences.cpp
-msgid "Portuguese"
-msgstr "Portugués"
-
-#: src/Preferences.cpp
-msgid "Portuguese (Brazilian)"
-msgstr "Portugués (brasileño)"
-
-#: src/Preferences.cpp
-msgid "Romanian"
-msgstr "Rumano"
-
-#: src/Preferences.cpp
-msgid "Russian"
-msgstr "Ruso"
-
-#: src/Preferences.cpp
-msgid "Slovenian"
-msgstr "Esloveno"
-
-#: src/Preferences.cpp
-msgid "Spanish"
-msgstr "Español"
-
-#: src/Preferences.cpp
-msgid "Swedish"
-msgstr "Sueco"
-
-#: src/Preferences.cpp
-msgid "Turkish"
-msgstr "Turco"
-
-#: src/Preferences.cpp
-msgid "Ukrainian"
-msgstr "Ucraniano"
-
-#: src/Preferences.cpp
-msgid "Change Language"
-msgstr "Cambiar el idioma"
-
-#: src/Preferences.cpp
-msgid "There are no translations installed for aMule"
-msgstr "No hay traducciones instaladas para aMule"
-
-#: src/Preferences.cpp
-msgid "No languages available"
-msgstr "No hay idiomas disponibles"
-
-#: src/Preferences.cpp
 msgid "no options available"
 msgstr "no hay opciones disponibles"
 
@@ -6510,7 +6540,8 @@ msgstr "Compartirlas recursivamente publicará todos los archivos en las redes e
 msgid "Confirm shared folders"
 msgstr "Confirmar carpetas compartidas"
 
-#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp src/SharedFilesReloadProgress.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+#: src/SharedFilesReloadProgress.cpp
 msgid "Reloading shared files..."
 msgstr "Recargando los archivos compartidos..."
 
@@ -9240,6 +9271,15 @@ msgstr "aMule parece estar en ejecución. Por favor, ciérrelo y vuelva a ejecut
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Eliminando los datos de usuario en $APPDATA\\aMule..."
+
+#~ msgid "Change Language"
+#~ msgstr "Cambiar el idioma"
+
+#~ msgid "There are no translations installed for aMule"
+#~ msgstr "No hay traducciones instaladas para aMule"
+
+#~ msgid "No languages available"
+#~ msgstr "No hay idiomas disponibles"
 
 #~ msgid "User name"
 #~ msgstr "Nombre de usuario"

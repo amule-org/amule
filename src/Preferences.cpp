@@ -37,7 +37,6 @@
 #include <wx/stdpaths.h>
 #include <wx/stopwatch.h>
 #include <wx/tokenzr.h>
-#include <wx/utils.h> // Needed for wxBusyCursor
 
 #include "amule.h"
 #include "FileArea.h" // Needed to push MMapEnabled into CFileArea
@@ -55,10 +54,13 @@
 #include "UserEvents.h"
 
 #ifndef AMULE_DAEMON
+#include <wx/translation.h> // Needed for wxTranslations
 #include <wx/valgen.h>
+#include "LanguageList.h"
 #include "muuli_wdr.h"
 #include "StatisticsDlg.h"
 #include "MuleColour.h"
+#include <vector> // Needed for the language picker's entry list
 #endif
 
 #ifndef CLIENT_GUI
@@ -91,7 +93,6 @@ CProxyData CPreferences::s_ProxyData;
 
 /* The rest, organize it! */
 wxString CPreferences::s_nick;
-Cfg_Lang_Base *CPreferences::s_cfgLang;
 uint32 CPreferences::s_maxupload;
 uint32 CPreferences::s_maxdownload;
 uint32 CPreferences::s_slotallocation;
@@ -688,114 +689,15 @@ private:
 	long int m_default;
 };
 
-typedef struct
-{
-	int id;
-	bool available;
-	wxString displayname;
-	wxString name;
-} LangInfo;
-
-/**
- * The languages aMule has translation for.
- *
- * Add new languages here.
- * Then activate the test code in Cfg_Lang::UpdateChoice below!
- */
-static LangInfo aMuleLanguages[] = {
-	{ wxLANGUAGE_DEFAULT, true, "", wxTRANSLATE("System default") },
-	{ wxLANGUAGE_ALBANIAN, false, "", wxTRANSLATE("Albanian") },
-	{ wxLANGUAGE_ARABIC, false, "", wxTRANSLATE("Arabic") },
-	{ wxLANGUAGE_ASTURIAN, false, "", wxTRANSLATE("Asturian") },
-	{ wxLANGUAGE_BASQUE, false, "", wxTRANSLATE("Basque") },
-	{ wxLANGUAGE_BULGARIAN, false, "", wxTRANSLATE("Bulgarian") },
-	{ wxLANGUAGE_CATALAN, false, "", wxTRANSLATE("Catalan") },
-	{ wxLANGUAGE_CHINESE_SIMPLIFIED, false, "", wxTRANSLATE("Chinese (Simplified)") },
-	{ wxLANGUAGE_CHINESE_TRADITIONAL, false, "", wxTRANSLATE("Chinese (Traditional)") },
-	{ wxLANGUAGE_CROATIAN, false, "", wxTRANSLATE("Croatian") },
-	{ wxLANGUAGE_CZECH, false, "", wxTRANSLATE("Czech") },
-	{ wxLANGUAGE_DANISH, false, "", wxTRANSLATE("Danish") },
-	{ wxLANGUAGE_DUTCH, false, "", wxTRANSLATE("Dutch") },
-	{ wxLANGUAGE_ENGLISH_UK, false, "", wxTRANSLATE("English (U.K.)") },
-	{ wxLANGUAGE_ENGLISH_US, false, "", wxTRANSLATE("English (U.S.)") },
-	{ wxLANGUAGE_ESTONIAN, false, "", wxTRANSLATE("Estonian") },
-	{ wxLANGUAGE_FINNISH, false, "", wxTRANSLATE("Finnish") },
-	{ wxLANGUAGE_FRENCH, false, "", wxTRANSLATE("French") },
-	{ wxLANGUAGE_GALICIAN, false, "", wxTRANSLATE("Galician") },
-	{ wxLANGUAGE_GERMAN, false, "", wxTRANSLATE("German") },
-	{ wxLANGUAGE_GREEK, false, "", wxTRANSLATE("Greek") },
-	{ wxLANGUAGE_HEBREW, false, "", wxTRANSLATE("Hebrew") },
-	{ wxLANGUAGE_HUNGARIAN, false, "", wxTRANSLATE("Hungarian") },
-	{ wxLANGUAGE_ITALIAN, false, "", wxTRANSLATE("Italian") },
-	{ wxLANGUAGE_JAPANESE, false, "", wxTRANSLATE("Japanese") },
-	{ wxLANGUAGE_KOREAN, false, "", wxTRANSLATE("Korean") },
-	{ wxLANGUAGE_LATVIAN, false, "", wxTRANSLATE("Latvian") },
-	{ wxLANGUAGE_LITHUANIAN, false, "", wxTRANSLATE("Lithuanian") },
-	{ wxLANGUAGE_NORWEGIAN_NYNORSK, false, "", wxTRANSLATE("Norwegian (Nynorsk)") },
-	{ wxLANGUAGE_POLISH, false, "", wxTRANSLATE("Polish") },
-	{ wxLANGUAGE_PORTUGUESE, false, "", wxTRANSLATE("Portuguese") },
-	{ wxLANGUAGE_PORTUGUESE_BRAZILIAN, false, "", wxTRANSLATE("Portuguese (Brazilian)") },
-	{ wxLANGUAGE_ROMANIAN, false, "", wxTRANSLATE("Romanian") },
-	{ wxLANGUAGE_RUSSIAN, false, "", wxTRANSLATE("Russian") },
-	{ wxLANGUAGE_SLOVENIAN, false, "", wxTRANSLATE("Slovenian") },
-	{ wxLANGUAGE_SPANISH, false, "", wxTRANSLATE("Spanish") },
-	{ wxLANGUAGE_SWEDISH, false, "", wxTRANSLATE("Swedish") },
-	{ wxLANGUAGE_TURKISH, false, "", wxTRANSLATE("Turkish") },
-	{ wxLANGUAGE_UKRAINIAN, false, "", wxTRANSLATE("Ukrainian") },
-};
-
 typedef Cfg_Int<int> Cfg_PureInt;
 
-// Returns true if aMule's translation catalog (PACKAGE.mo) exists on
-// disk for the given wxWidgets language id, using the same lookup
-// prefixes that InitLocale() registers. Used as an additional gate
-// in the language-picker probe below: the standard wxLocale::IsAvailable
-// / locale_to_check.IsOk() path depends on glibc-locale data being
-// present for each candidate language, which is *not* the case inside
-// Flatpak sandboxes — the GNOME runtime ships only the user's preferred
-// locale, so every other language fails the probe even when our .mo
-// files are reachable. Treating "catalog file is on disk" as also-OK
-// makes the picker show every language we actually ship a translation
-// for, regardless of sandbox glibc state.
-static bool HasAMuleCatalogForLanguage(int wxLanguageId)
-{
-	const wxLanguageInfo *info = wxLocale::GetLanguageInfo(wxLanguageId);
-	if (!info) {
-		return false;
-	}
-	const wxString canonical = info->CanonicalName;
-	if (canonical.IsEmpty()) {
-		return false;
-	}
-
-	// Same prefixes as InitLocale (OtherFunctions.cpp) — keep in sync.
-	wxArrayString prefixes;
-#if defined(__WXMAC__) || defined(__WINDOWS__)
-	prefixes.Add(JoinPaths(wxStandardPaths::Get().GetResourcesDir(), "locale"));
-#elif defined(__WXGTK__) || defined(__UNIX__)
-	prefixes.Add(JoinPaths(JoinPaths(wxStandardPaths::Get().GetInstallPrefix(), "share"), "locale"));
-#endif
-
-	const wxString catalog = wxString(PACKAGE) + ".mo";
-	for (size_t i = 0; i < prefixes.GetCount(); ++i) {
-		const wxString candidate =
-			JoinPaths(JoinPaths(JoinPaths(prefixes[i], canonical), "LC_MESSAGES"), catalog);
-		if (wxFileExists(candidate)) {
-			return true;
-		}
-	}
-	return false;
-}
-
-class Cfg_Lang : public Cfg_PureInt, public Cfg_Lang_Base
+class Cfg_Lang : public Cfg_PureInt
 {
 public:
 	// cppcheck-suppress uninitMemberVar m_selection, m_langSelector
 	Cfg_Lang()
 	: Cfg_PureInt("", m_selection, 0)
 	{
-		m_languagesReady = false;
-		m_changePos = 0;
 	}
 
 	virtual void LoadFromFile(wxConfigBase *WXUNUSED(cfg)) {}
@@ -803,148 +705,77 @@ public:
 
 	virtual bool TransferFromWindow()
 	{
-		if (!m_languagesReady) {
-			return true; // nothing changed, no problem
+		if (!Cfg_PureInt::TransferFromWindow()) {
+			return false;
 		}
 
-		if (Cfg_PureInt::TransferFromWindow()) {
-			// find wx ID of selected language
-			int i = 0;
-			while (m_selection > 0) {
-				i++;
-				if (aMuleLanguages[i].available) {
-					m_selection--;
-				}
-			}
-			int id = aMuleLanguages[i].id;
-
-			// save language selection
-			thePrefs::SetLanguageID(wxLang2Str(id));
-
-			return true;
+		if (m_selection >= 0 && m_selection < static_cast<int>(m_shown.size())) {
+			thePrefs::SetLanguageID(wxLang2Str(m_shown[m_selection]->wxId));
 		}
 
-		return false;
+		return true;
 	}
 
 	virtual bool TransferToWindow()
 	{
 		m_langSelector = dynamic_cast<wxChoice *>(m_widget); // doesn't work in ctor!
-		if (m_languagesReady) {
-			FillChoice();
-		} else {
-			int wxId = StrLang2wx(thePrefs::GetLanguageID());
-			m_langSelector->Clear();
-			m_selection = 0;
-			for (uint32 i = 0; i < itemsof(aMuleLanguages); i++) {
-				if (aMuleLanguages[i].id == wxId) {
-					m_langSelector->Append(
-						wxString(wxGetTranslation(aMuleLanguages[i].name)) + " [" +
-						aMuleLanguages[i].name + "]");
-					break;
-				}
-			}
-			m_langSelector->Append(_("Change Language"));
-			m_changePos = m_langSelector->GetCount() - 1;
-		}
+		FillChoice();
 
 		return Cfg_PureInt::TransferToWindow();
-	}
-
-	virtual void UpdateChoice(int pos)
-	{
-		if (!m_languagesReady && pos == m_changePos) {
-			// Find available languages and translate them.
-			// This is only done when the user selects "Change Language"
-			// Language is changed rarely, and the go-through-all locales takes a considerable
-			// time when the settings dialog is opened for the first time.
-			wxBusyCursor busyCursor;
-			aMuleLanguages[0].displayname = wxGetTranslation(aMuleLanguages[0].name);
-
-			// This suppresses error-messages about invalid locales
-			for (unsigned int i = 1; i < itemsof(aMuleLanguages); ++i) {
-				// Outer gate: glibc-locale-data path OR aMule .mo catalog on
-				// disk. The catalog path is required for Flatpak sandboxes
-				// where the GNOME runtime ships only the user's preferred
-				// glibc locale, so wxLocale::IsAvailable returns false for
-				// every other language despite the .mo being present.
-				const bool hasCatalog = HasAMuleCatalogForLanguage(aMuleLanguages[i].id);
-				if ((aMuleLanguages[i].id > wxLANGUAGE_USER_DEFINED) ||
-					wxLocale::IsAvailable(aMuleLanguages[i].id) || hasCatalog) {
-					wxLogNull logTarget;
-					wxLocale locale_to_check;
-					InitLocale(locale_to_check, aMuleLanguages[i].id);
-					// English (U.S.) is the source language for the .pot catalog,
-					// so it is always available even though no en_US.mo is shipped.
-					const bool isSourceLanguage =
-						aMuleLanguages[i].id == wxLANGUAGE_ENGLISH_US;
-					// Inner gate: same Flatpak rationale — InitLocale() can
-					// fail with IsOk()==false when glibc lacks the locale
-					// data for the candidate, but our .mo is still on disk
-					// and will be applied correctly when the user actually
-					// switches to this language. Accept `hasCatalog` here as
-					// well so those entries surface in the picker.
-					if ((locale_to_check.IsOk() && (locale_to_check.IsLoaded(PACKAGE) ||
-									       isSourceLanguage)) ||
-						hasCatalog) {
-						aMuleLanguages[i].displayname =
-							wxString(wxGetTranslation(aMuleLanguages[i].name)) +
-							" [" + aMuleLanguages[i].name + "]";
-						aMuleLanguages[i].available = true;
-#if 0
-						// Check for language problems
-						// Activate this code temporarily after messing with the languages!
-						int wxid = StrLang2wx(wxLang2Str(aMuleLanguages[i].id));
-						if (wxid != aMuleLanguages[i].id) {
-							AddDebugLogLineN(logGeneral, CFormat("Language problem for %s : aMule id %d != wx id %d")
-								% aMuleLanguages[i].name % aMuleLanguages[i].id % wxid);
-						}
-#endif
-					}
-				}
-			}
-			// Restore original locale
-			wxLocale tmpLocale;
-			InitLocale(tmpLocale, theApp->m_locale.GetLanguage());
-			FillChoice();
-			if (m_langSelector->GetCount() == 1) {
-				wxMessageBox(_("There are no translations installed for aMule"),
-					_("No languages available"),
-					wxICON_INFORMATION | wxOK);
-			}
-			m_langSelector->SetSelection(m_selection);
-			m_languagesReady = true;
-		}
 	}
 
 protected:
 	int m_selection;
 
 private:
+	/**
+	 * Rebuilds the picker from the catalogs that are actually installed.
+	 *
+	 * wxTranslations walks the catalog directories in wx's own search path instead
+	 * of constructing a path per language, so asking it what is installed costs one
+	 * directory listing. The picker used to construct a wxLocale for every language
+	 * instead, which is why it hid behind a "Change Language" entry and only did the
+	 * work once the user asked for it.
+	 */
 	void FillChoice()
 	{
-		int wxId = StrLang2wx(thePrefs::GetLanguageID());
+		wxArrayString installed;
+		if (wxTranslations *translations = wxTranslations::Get()) {
+			installed = translations->GetAvailableTranslations(PACKAGE);
+		}
+
+		const int current = FindLanguageEntry(thePrefs::GetLanguageID());
+
+		std::size_t count = 0;
+		const SLanguageEntry *languages = GetLanguageList(count);
+
+		m_shown.clear();
 		m_langSelector->Clear();
-		// Add all available languages and find the index of the selected language.
-		for (unsigned int i = 0, j = 0; i < itemsof(aMuleLanguages); i++) {
-			if (aMuleLanguages[i].available) {
-				m_langSelector->Append(aMuleLanguages[i].displayname);
-				if (aMuleLanguages[i].id == wxId) {
-					m_selection = j;
-				}
-				j++;
+		m_selection = 0;
+		for (std::size_t i = 0; i < count; ++i) {
+			if (!IsLanguageAvailable(languages[i], installed)) {
+				continue;
 			}
+
+			wxString label = wxGetTranslation(languages[i].name);
+			if (*languages[i].catalog) {
+				label += " [" + wxString(languages[i].name) + "]";
+			}
+			m_langSelector->Append(label);
+
+			if (current == static_cast<int>(i)) {
+				m_selection = static_cast<int>(m_shown.size());
+			}
+			m_shown.push_back(&languages[i]);
 		}
 	}
 
-	bool m_languagesReady; // true: all translations calculated
-	int m_changePos;
+	//! The entries currently in the widget, in widget order.
+	std::vector<const SLanguageEntry *> m_shown;
 	wxChoice *m_langSelector;
 };
 
 #endif /* ! AMULE_DAEMON */
-
-void Cfg_Lang_Base::UpdateChoice(int) {} // dummy
 
 class Cfg_Skin : public Cfg_Str
 {
@@ -1285,9 +1116,7 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	 **/
 	NewCfgItem(IDC_NICK, (new Cfg_Str("/eMule/Nick", s_nick, "https://amule-org.github.io")));
 #ifndef AMULE_DAEMON
-	Cfg_Lang *cfgLang = new Cfg_Lang();
-	s_cfgLang = cfgLang;
-	NewCfgItem(IDC_LANGUAGE, cfgLang);
+	NewCfgItem(IDC_LANGUAGE, (new Cfg_Lang()));
 #endif
 
 /**
