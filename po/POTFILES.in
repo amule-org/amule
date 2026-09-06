@@ -69,6 +69,7 @@ src/PartBarLegendUI.cpp
 src/PartFileConvert.cpp
 src/PartFileConvertDlg.cpp
 src/PartFile.cpp
+src/PeerCapabilities.h
 src/Preferences.cpp
 src/PrefsUnifiedDlg.cpp
 src/SearchDlg.cpp

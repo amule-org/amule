@@ -33,6 +33,32 @@ enum client_tags
 	CT_PORT = 0x0F,
 	CT_VERSION = 0x11,
 	CT_SERVER_FLAGS = 0x20, // currently only used to inform a server about supported features
+
+	// eMuleAI vendor tags. The 0xA? range is unclaimed by the major mods,
+	// which is why the reference implementation took it. Bit meanings for
+	// CT_MOD_MISCOPTIONS live in src/PeerCapabilities.h -- they are wire
+	// format and a wrong bit position has no runtime signal.
+	//
+	// <hash> the peer's serving buddy's IPv6 address, 16 bytes. The v6
+	// counterpart of CT_EMULE_BUDDYIP (0xFC) below, and the hello-side
+	// counterpart of the "bi6" Kad tag.
+	CT_EMULE_SERVINGBUDDYIPV6 = 0xA0,
+	CT_MOD_MISCOPTIONS = 0xAA, // <uint32> capability bitfield
+	// <hash> the address the peer observed this client arriving from, 16
+	// bytes. Only the hash form is read; see src/PublicIPv6Corroboration.h
+	// for why, and for why one peer saying it is not enough.
+	CT_MOD_YOUR_IP = 0xAD,
+	CT_MOD_IP_V6 = 0xAE, // <hash> client IPv6 address, 16 bytes
+	// 0xAF is deliberately not named here. eMuleAI defines it, but nothing in
+	// its tree writes it and its hello path never reads it as an address: the
+	// one case that mentions it sits in the reserved-for-future-releases block
+	// and only flags the sender as running an unofficial build. emule-qt gives
+	// the same id a server->client meaning (the server's own public IPv6),
+	// which aMule would be recording from a peer. Reading it as either would
+	// state something the wire does not say, so it falls through to the
+	// unknown-vendor-tag log in BaseClient.cpp like any other 0xA? id aMule
+	// does not handle.
+
 	CT_EMULECOMPAT_OPTIONS = 0xEF,
 	CT_EMULE_RESERVED1 = 0xF0,
 	CT_EMULE_RESERVED2 = 0xF1,

@@ -622,6 +622,10 @@ public:
 	{
 		return AssignIfExist(EC_TAG_CLIENT_OBFUSCATION_STATUS, target);
 	}
+	bool ModCapabilities(uint32 &target) const
+	{
+		return AssignIfExist(EC_TAG_CLIENT_MOD_CAPABILITIES, target);
+	}
 	bool HasExtendedProtocol(bool *target = 0) const
 	{
 		return AssignIfExist(EC_TAG_CLIENT_EXT_PROTOCOL, target);

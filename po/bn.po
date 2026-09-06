@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-06 14:35+0200\n"
+"POT-Creation-Date: 2026-09-06 23:44+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -4174,6 +4174,10 @@ msgid "Obfuscation"
 msgstr ""
 
 #: src/muuli_wdr.cpp
+msgid "Protocol extensions:"
+msgstr ""
+
+#: src/muuli_wdr.cpp
 msgid "Transfers to client"
 msgstr ""
 
@@ -5920,6 +5924,26 @@ msgstr ""
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "Extended source exchange"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (uTP)"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "IPv6"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "Buddy info pull"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (QUIC)"
 msgstr ""
 
 #: src/Preferences.cpp

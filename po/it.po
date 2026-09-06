@@ -19,7 +19,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-06 14:35+0200\n"
+"POT-Creation-Date: 2026-09-06 23:44+0200\n"
 "PO-Revision-Date: 2026-09-05 10:54+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
@@ -4275,6 +4275,11 @@ msgid "Obfuscation"
 msgstr "Offuscamento"
 
 #: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Protocol extensions:"
+msgstr "Offuscamento del protocollo"
+
+#: src/muuli_wdr.cpp
 msgid "Transfers to client"
 msgstr "Trasferimenti al client"
 
@@ -6039,6 +6044,27 @@ msgstr "Spazio su disco insufficiente"
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
 msgstr "ERRORE: Apertura del file Part fallita '%s'"
+
+#: src/PeerCapabilities.h
+#, fuzzy
+msgid "Extended source exchange"
+msgstr "Scambio fonti"
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (uTP)"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "IPv6"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "Buddy info pull"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (QUIC)"
+msgstr ""
 
 #: src/Preferences.cpp
 msgid "no options available"

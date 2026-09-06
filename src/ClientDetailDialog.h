@@ -66,6 +66,10 @@ struct ClientDetailInfo
 	uint16 serverPort = 0;
 	wxString serverName;
 	uint16 kadPort = 0;
+	//! Protocol extensions the peer claimed in its hello; a stored row has no
+	//! hello to read. Empty when it claimed none, which is the common case
+	//! and hides the row rather than filling it with a placeholder.
+	wxString modCapabilities;
 	const CKnownFile *uploadFile = nullptr;
 	uint64 transferredDown = 0;
 	uint64 transferredUp = 0;

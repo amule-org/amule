@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-06 14:35+0200\n"
+"POT-Creation-Date: 2026-09-06 23:44+0200\n"
 "PO-Revision-Date: 2026-09-05 10:56+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
@@ -4266,6 +4266,11 @@ msgid "Obfuscation"
 msgstr "Maskering"
 
 #: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Protocol extensions:"
+msgstr "Protocol-obfuscatie"
+
+#: src/muuli_wdr.cpp
 msgid "Transfers to client"
 msgstr "Overdrachten naar client"
 
@@ -6034,6 +6039,27 @@ msgstr "Onvoldoende schijfruimte"
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
 msgstr "FOUT: Kon deelbestand '%s' niet openen"
+
+#: src/PeerCapabilities.h
+#, fuzzy
+msgid "Extended source exchange"
+msgstr "Bron uitwisseling"
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (uTP)"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "IPv6"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "Buddy info pull"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (QUIC)"
+msgstr ""
 
 #: src/Preferences.cpp
 msgid "no options available"

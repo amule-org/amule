@@ -1030,6 +1030,15 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs, bool is_n
 		}
 	}
 	{
+		// Taken as delivered. The daemon already dropped the bits it does
+		// not know (CPeerCapabilities::SetFromWire), and re-masking here
+		// would put a second copy of that mask in the tree, free to drift
+		// from the one that actually saw the handshake.
+		std::uint32_t v = cs.protocol_extensions;
+		if (c->AssignIfExist(EC_TAG_CLIENT_MOD_CAPABILITIES, v))
+			cs.protocol_extensions = v;
+	}
+	{
 		bool v = false;
 		if (c->AssignIfExist(EC_TAG_CLIENT_FRIEND_SLOT, v))
 			cs.friend_slot = v;

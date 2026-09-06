@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-06 14:35+0200\n"
+"POT-Creation-Date: 2026-09-06 23:44+0200\n"
 "PO-Revision-Date: 2026-09-05 11:03+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -4265,6 +4265,11 @@ msgid "Obfuscation"
 msgstr "模糊协议"
 
 #: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Protocol extensions:"
+msgstr "模糊协议"
+
+#: src/muuli_wdr.cpp
 msgid "Transfers to client"
 msgstr "到客户端的传输"
 
@@ -6029,6 +6034,27 @@ msgstr "磁盘空间不足"
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
 msgstr "错误：打开part文件'%s'失败"
+
+#: src/PeerCapabilities.h
+#, fuzzy
+msgid "Extended source exchange"
+msgstr "源交换"
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (uTP)"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "IPv6"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "Buddy info pull"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "NAT traversal (QUIC)"
+msgstr ""
 
 #: src/Preferences.cpp
 msgid "no options available"

@@ -1016,6 +1016,13 @@ endif()
 IF (NEED_LIB_MULESOCKET)
 	add_library (mulesocket STATIC
 		LibSocket.cpp
+		# The one interface enumeration in the tree. Here rather than in
+		# muleappcommon because LibSocketAsio.cpp resolves a bind-to-interface
+		# name through it and mulesocket does not link muleappcommon, while
+		# every target that links muleappcommon links mulesocket too - so this
+		# is the placement that reaches amuled, amule, amulegui and the
+		# preferences dialog with a single copy.
+		NetworkInterfaces.cpp
 	)
 
 	target_compile_definitions (mulesocket
@@ -1034,8 +1041,9 @@ IF (NEED_LIB_MULESOCKET)
 		PUBLIC wxWidgets::BASE
 	)
 	if (WIN32)
-		# GetAdaptersAddresses() in LibSocketAsio.cpp resolves a Windows
-		# adapter FriendlyName to its interface index for bind-to-interface.
+		# GetAdaptersAddresses() in NetworkInterfaces.cpp enumerates the
+		# adapters that LibSocketAsio.cpp resolves a Windows FriendlyName
+		# against for bind-to-interface.
 		# PUBLIC (not PRIVATE): mulesocket is a static lib, so the dependency
 		# must propagate to every consumer that links it (including the
 		# NetworkFunctionsTest unit-test exe), not just to mulesocket itself.
