@@ -42,7 +42,7 @@
 #include <algorithm> // Needed for std::min - Boost up to 1.54 fails to compile with MSVC 2013 otherwise
 #include <atomic>
 #include <chrono>
-#include <vector> // GetAdaptersAddresses buffer (Windows interface resolution)
+#include <vector>
 
 #ifndef _WIN32
 #include <poll.h> // Bounded readability wait for the sync-read no-progress timeout
@@ -83,7 +83,8 @@
 #include "GuiEvents.h"
 #include "amuleIPV4Address.h"
 #include "MuleUDPSocket.h"
-#include "OtherFunctions.h" // DeleteContents
+#include "NetworkInterfaces.h" // DetectNetworkInterfaces (bind-to-interface resolution)
+#include "OtherFunctions.h"    // DeleteContents
 #include "ScopedPtr.h"
 #include <common/Macros.h>
 
@@ -91,7 +92,6 @@
 // SIO_KEEPALIVE_VALS + struct tcp_keepalive for SetTcpKeepalive.
 // winsock2.h is already brought in transitively by boost::asio.
 #include <mstcpip.h>
-#include <iphlpapi.h> // GetAdaptersAddresses (friendly-name -> interface index)
 // IP_UNICAST_IF / IPV6_UNICAST_IF are Vista+; define them if the SDK target
 // (see _WIN32_WINNT above) predates their headers. Values are ABI-stable.
 #ifndef IP_UNICAST_IF
@@ -203,25 +203,14 @@ static inline void SetTcpKeepalive(Handle native, int idleSec, int intervalSec, 
 // on Windows — it expects the adapter's GUID-style name, not the friendly one,
 // so the enumerated dropdown value is resolved here instead. Returns 0 if not
 // found (the caller then tries a bare numeric index).
+//
+// The friendly name comes out of the same enumeration the preferences dialog
+// filled the dropdown from, so a name that was offered there resolves here.
 static unsigned int ResolveWindowsInterfaceIndex(const wxString &friendlyName)
 {
-	ULONG size = 15000;
-	std::vector<uint8_t> buf(size);
-	const ULONG flags = GAA_FLAG_SKIP_UNICAST | GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST |
-			    GAA_FLAG_SKIP_DNS_SERVER;
-	PIP_ADAPTER_ADDRESSES aa = reinterpret_cast<PIP_ADAPTER_ADDRESSES>(&buf[0]);
-	ULONG ret = ::GetAdaptersAddresses(AF_UNSPEC, flags, NULL, aa, &size);
-	if (ret == ERROR_BUFFER_OVERFLOW) {
-		buf.resize(size);
-		aa = reinterpret_cast<PIP_ADAPTER_ADDRESSES>(&buf[0]);
-		ret = ::GetAdaptersAddresses(AF_UNSPEC, flags, NULL, aa, &size);
-	}
-	if (ret != NO_ERROR) {
-		return 0;
-	}
-	for (PIP_ADAPTER_ADDRESSES p = aa; p != NULL; p = p->Next) {
-		if (p->FriendlyName != NULL && friendlyName == wxString(p->FriendlyName)) {
-			return p->IfIndex ? p->IfIndex : p->Ipv6IfIndex;
+	for (const NetworkInterface &iface : DetectNetworkInterfaces()) {
+		if (iface.name == friendlyName) {
+			return iface.index;
 		}
 	}
 	return 0;

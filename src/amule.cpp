@@ -78,15 +78,18 @@
 #include "HTTPDownload.h"         // Needed for CHTTPDownloadThread
 #include "InternalEvents.h"       // Needed for CMuleInternalEvent
 #include "IPFilter.h"             // Needed for CIPFilter
+#include "GetTickCount.h"         // Needed for GetTickCount64
 #include "KnownFileList.h"        // Needed for CKnownFileList
 #include "LibSocket.h"            // Needed for SetSocketBindInterface
 #include "ListenSocket.h"         // Needed for CListenSocket
 #include "Logger.h"               // Needed for CLogger // Do_not_auto_remove
 #include "MagnetURI.h"            // Needed for CMagnetURI
+#include "NetworkInterfaces.h"    // Needed for DetectNetworkInterfaces
 #include "OtherFunctions.h"
 #include "PartFile.h"                   // Needed for CPartFile
 #include "PlatformSpecific.h"           // Needed for PlatformSpecific::AllowSleepMode();
 #include "Preferences.h"                // Needed for CPreferences
+#include "PublicIPv6Corroboration.h"    // Needed for ObservedPublicIPv6
 #include "SearchList.h"                 // Needed for CSearchList
 #include "Server.h"                     // Needed for GetListName
 #include "ServerList.h"                 // Needed for CServerList
@@ -1607,7 +1610,25 @@ bool CamuleApp::ReinitializeNetwork(wxString *msg)
 	StartUPnP();
 #endif
 
+	// Sockets have just been (re)created, so the interface list this machine
+	// presents is as current as it will ever be. Publishing it here also covers
+	// the reinitialisation path, where a changed bind address or a first-run
+	// wizard can leave us on a different interface entirely.
+	RefreshLocalPublicIPv6Addresses();
+
 	return ok;
+}
+
+void RefreshLocalPublicIPv6Addresses()
+{
+	std::vector<CPublicIPv6Corroboration::Address> local;
+	for (const NetworkInterface &iface : DetectNetworkInterfaces()) {
+		local.insert(local.end(), iface.ipv6.begin(), iface.ipv6.end());
+	}
+	// Publishing the set is only half of it: the same call re-validates an
+	// already adopted reflection against the addresses we still hold, which is
+	// how a prefix renumber gets noticed at all.
+	ObservedPublicIPv6().SetLocalAddresses(local, ::GetTickCount64());
 }
 
 #ifdef ENABLE_UPNP
@@ -1946,7 +1967,7 @@ void CamuleApp::OnTCPTimer(CTimerEvent &WXUNUSED(evt))
 void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 {
 	// Former TimerProc section
-	static uint64 msPrev1, msPrev5, msPrevSave, msPrevHist, msPrevOS, msPrevKnownMet;
+	static uint64 msPrev1, msPrev5, msPrevSave, msPrevHist, msPrevOS, msPrevKnownMet, msPrevIfaces;
 	uint64 msCur = theStats::GetUptimeMillis();
 	TheTime = msCur / 1000;
 
@@ -2073,6 +2094,15 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 	if (msCur - msPrev5 > 5000) { // every 5 seconds
 		msPrev5 = msCur;
 		listensocket->Process();
+	}
+
+	// Roughly every five minutes. An interface walk is too expensive to do per
+	// peer claim and too rare to leave to startup: between the two, this is
+	// what notices a prefix renumber or a privacy-address rotation on a session
+	// that never reconnects to a server.
+	if (msCur - msPrevIfaces >= 5 * 60 * 1000) {
+		msPrevIfaces = msCur;
+		RefreshLocalPublicIPv6Addresses();
 	}
 
 	if (msCur - msPrevSave >= 60000) {

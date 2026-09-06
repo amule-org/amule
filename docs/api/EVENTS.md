@@ -508,7 +508,7 @@ Identical to the REST [`/api/v0/clients`](REFERENCE.md#get-apiv0clients) list-it
   "upload_queue_score":                  150,
   "obfuscation_state":     "enabled",
   "connected":            true,
-  "protocol_extensions":    0,
+  "protocol_extensions":    [],
   "friend_slot":            false,
   "part_progress_percent":  75.0
 }

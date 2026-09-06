@@ -27,6 +27,8 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
+#include <vector>
 
 #include <wx/intl.h>   // Needed for wxTRANSLATE() and wxGetTranslation()
 #include <wx/string.h> // Needed for wxString
@@ -148,20 +150,8 @@ public:
 	{
 		// One table on purpose: bit and name in the same row, so a bit
 		// cannot be added in one place and forgotten in the other.
-		static const struct
-		{
-			EModMiscOptions bit;
-			const char *name;
-		} names[] = {
-			{ MOD_MISCOPT_EXTENDED_XS, wxTRANSLATE("Extended source exchange") },
-			{ MOD_MISCOPT_NAT_TRAVERSAL, wxTRANSLATE("NAT traversal (uTP)") },
-			{ MOD_MISCOPT_IPV6, wxTRANSLATE("IPv6") },
-			{ MOD_MISCOPT_SERVING_BUDDY_PULL, wxTRANSLATE("Buddy info pull") },
-			{ MOD_MISCOPT_NAT_TRAVERSAL_QUIC, wxTRANSLATE("NAT traversal (QUIC)") },
-		};
-
 		wxString text;
-		for (const auto &entry : names) {
+		for (const auto &entry : Table()) {
 			if (Has(entry.bit)) {
 				if (!text.IsEmpty()) {
 					text += ", ";
@@ -170,6 +160,64 @@ public:
 			}
 		}
 		return text;
+	}
+
+	/**
+	 * The same bits as stable API tokens, in bit order.
+	 *
+	 * The /api/v0 surface spells every other multi-state field as an
+	 * enumerated token, and an integer there would make each consumer carry
+	 * its own copy of the table below -- reimplemented in JS for the Web UI
+	 * and again in every third-party client, each free to drift from this
+	 * file. A peer claims any combination of the bits rather than one state,
+	 * which is why this is a list rather than a single token.
+	 *
+	 * Unlike the display text these are not translated and never change:
+	 * they are wire vocabulary, and a consumer matches them literally.
+	 */
+	std::vector<std::string> GetApiTokens() const
+	{
+		std::vector<std::string> tokens;
+		for (const auto &entry : Table()) {
+			if (Has(entry.bit)) {
+				tokens.push_back(entry.token);
+			}
+		}
+		return tokens;
+	}
+
+	//! Bit, display name and API token in one row.
+	struct SCapabilityName
+	{
+		EModMiscOptions bit;
+		const char *name;
+		const char *token;
+	};
+
+	/**
+	 * One table on purpose, and now carrying three things rather than two:
+	 * a bit cannot be added to the enum and then forgotten in the display
+	 * row, the API row, or either separately. A second table keyed on the
+	 * same enum is exactly the drift this arrangement exists to prevent.
+	 */
+	static const std::vector<SCapabilityName> &Table()
+	{
+		static const std::vector<SCapabilityName> names = {
+			{ MOD_MISCOPT_EXTENDED_XS,
+				wxTRANSLATE("Extended source exchange"),
+				"extended_source_exchange" },
+			{ MOD_MISCOPT_NAT_TRAVERSAL,
+				wxTRANSLATE("NAT traversal (uTP)"),
+				"nat_traversal_utp" },
+			{ MOD_MISCOPT_IPV6, wxTRANSLATE("IPv6"), "ipv6" },
+			{ MOD_MISCOPT_SERVING_BUDDY_PULL,
+				wxTRANSLATE("Buddy info pull"),
+				"serving_buddy_pull" },
+			{ MOD_MISCOPT_NAT_TRAVERSAL_QUIC,
+				wxTRANSLATE("NAT traversal (QUIC)"),
+				"nat_traversal_quic" },
+		};
+		return names;
 	}
 
 private:

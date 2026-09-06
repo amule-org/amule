@@ -702,13 +702,17 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 			// follows emule-qt.
 			//
 			// Even the hash form is not believed on one peer's word. It
-			// goes to a tracker that needs several distinct *observed*
-			// addresses to agree, keyed on where the packet actually came
-			// from rather than on the peer's self-declared user hash --
-			// a hash costs nothing to invent, a routable address does
-			// not. Nothing consumes the result yet; recognition only.
+			// goes to a tracker that first checks the value is an address
+			// this machine actually holds -- so peers can never make us
+			// adopt a foreign one, only disambiguate between our own -- and
+			// then requires several distinct *observed* addresses to agree
+			// within a time window, keyed on where the packet actually came
+			// from rather than on the peer's self-declared user hash: a hash
+			// costs nothing to invent, a routable address does not. Nothing
+			// consumes the result yet; recognition only.
 			if (temptag.IsHash()) {
-				ObservedPublicIPv6().AddClaim(GetConnectIP(), temptag.GetHash().GetHash());
+				ObservedPublicIPv6().AddClaim(
+					GetConnectIP(), temptag.GetHash().GetHash(), ::GetTickCount64());
 			}
 			break;
 
