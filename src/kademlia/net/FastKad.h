@@ -58,6 +58,21 @@ namespace Kademlia
 //
 // All time values are in milliseconds and "now" is always passed in, which is
 // what lets the estimator be tested without waiting on a real clock.
+//
+// Two places where this deliberately does not match eMuleAI, so that the next
+// person holding the two side by side reads them as decisions rather than as
+// transcription slips:
+//
+//  - eMuleAI accumulates `missing * CLOCKS_PER_SEC` into its sum of squares,
+//    which adds a raw time to a sum of squared times: the units do not agree,
+//    and the unfilled-slot term is then far too small to hold the estimate up.
+//    Here the squared deviation is added, so an unfilled slot biases the
+//    variance the way the comment above says it does. emule-qt reached the
+//    same correction independently.
+//  - eMuleAI reads the clock with clock(), which on POSIX is CPU time, not
+//    wall time: a mostly-idle client barely advances it, so response times
+//    measured against it are far too short. Passing the tick in avoids the
+//    question entirely, and is what makes the estimator testable.
 class CFastKad
 {
 public:
