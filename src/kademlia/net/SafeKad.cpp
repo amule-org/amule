@@ -82,8 +82,16 @@ bool CSafeKad::TrackNode(uint32_t ip, uint16_t port, const CUInt128 &id, bool id
 			// address problematic, and escalate to a ban if it was
 			// problematic already -- one rejected change is a
 			// plausible accident, two inside 300 s is not.
+			//
+			// idVerified gates the escalation, not the refusal. The
+			// rotation is refused either way, but only a peer that has
+			// proved which port it listens on can be banned for it:
+			// otherwise two fabricated mentions of an honest node ban
+			// it, which is the attack the verification exists to stop.
 			accepted = false;
-			Escalate(ip, port, now);
+			if (idVerified) {
+				Escalate(ip, port, now);
+			}
 		} else {
 			tracked.m_lastID = id;
 			tracked.m_lastIDChange = now;
@@ -269,18 +277,24 @@ bool CSafeKad::IsBadNode(uint32_t ip,
 		// port it listens on, so an unverified identity change from one
 		// is refused outright rather than rate-limited.
 		if ((it->second.m_idVerified || kadVersion < MIN_PORT_VERIFIABLE_VERSION) && !idVerified) {
-			// Refusing alone costs the sender nothing, so a rotation
-			// inside the one-hour interval still climbs the ladder:
-			// otherwise a sybil that always arrives unverified against
-			// a verified entry could retry the same rotation forever
-			// for free, which is exactly what the ladder exists to
-			// stop. Past the interval the change is not rotation, only
-			// unverifiable, and a legacy client that reinstalled once
-			// is not worth a four-hour ban. Escalate() may ban and so
-			// invalidate `it`; nothing reads it after this.
-			if (now - it->second.m_lastIDChange < MIN_ID_CHANGE_INTERVAL) {
-				Escalate(ip, port, now);
-			}
+			// Refused, and deliberately not escalated. This branch's own
+			// condition ends in !idVerified, so everything reaching it is
+			// an unverified claim -- and an unverified claim is exactly
+			// what a third party can fabricate about somebody else.
+			// ProcessKademlia2Response() calls AddUnfiltered() with
+			// verified hardcoded to false, and the peer answering our
+			// request picks the (IP, port, ID) triples it lists, so
+			// banning here would let one peer get an honest node banned
+			// by mentioning it twice. m_lastIDChange is stamped when an
+			// entry is created, so the sub-hour window covers every
+			// freshly-learned contact rather than only ones that really
+			// did just change ID.
+			//
+			// Both references decline for this reason; emule-qt states
+			// it outright: the ban requires verification by design, and
+			// unverified flips are recorded but never banned. Refusing
+			// still costs the sender its rotation, which is the part
+			// that has to hold.
 			return true;
 		}
 		// TrackNode applies the one-hour interval and the escalation.

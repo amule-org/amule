@@ -304,45 +304,55 @@ TEST(SafeKad, ClearEmptiesEveryTable)
 }
 
 // An unverified identity change against a verified tracked entry is refused
-// outright rather than rate-limited, which is stricter than the spec asks for.
-// It must still escalate: a refusal that costs the sender nothing lets a sybil
-// retry the same rotation for as long as it likes, which is precisely what the
-// problematic-then-banned ladder exists to stop.
-TEST(SafeKad, AnUnverifiedIdentityChangeAgainstAVerifiedEntryEscalates)
+// outright rather than rate-limited -- and refused without escalating.
+//
+// The refusal is what protects the entry: the identity we verified is still
+// the one we hold, and the claim gets nothing. Escalating on top of it would
+// be the mistake, because nothing about an unverified claim ties it to the
+// address it names. A peer answering one of our Kad requests picks the
+// (IP, port, ID) triples it lists, so the ladder would climb on somebody
+// else's say-so and ban the node that did nothing.
+TEST(SafeKad, AnUnverifiedIdentityChangeAgainstAVerifiedEntryIsRefusedNotEscalated)
 {
 	CSafeKad safe;
 	ASSERT_TRUE(safe.TrackNode(IP_A, PORT_A, Id(1), true, T0));
 
-	// First attempt, well inside the one-hour interval: refused, and the
-	// address is now on the problematic list.
+	// Refused, and nothing recorded against the address.
 	ASSERT_TRUE(safe.IsBadNode(IP_A, PORT_A, Id(2), KADEMLIA_VERSION, false, false, T0 + 10));
-	ASSERT_TRUE(safe.IsProblematic(IP_A, PORT_A, T0 + 10));
+	ASSERT_FALSE(safe.IsProblematic(IP_A, PORT_A, T0 + 10));
 	ASSERT_FALSE(safe.IsBanned(IP_A, T0 + 10));
 
-	// Retrying costs it the address: a second attempt while problematic bans.
+	// Retrying earns no more than the first attempt did. Free for the
+	// sender, and that is the accepted cost: an unverified claim can waste
+	// our time, but it must not be able to spend somebody else's reputation.
 	ASSERT_TRUE(safe.IsBadNode(IP_A, PORT_A, Id(3), KADEMLIA_VERSION, false, false, T0 + 20));
-	ASSERT_TRUE(safe.IsBanned(IP_A, T0 + 20));
-	// A banned address stops being tracked; there is nothing left to weigh.
-	ASSERT_EQUALS(0u, (unsigned)safe.GetTrackedNodeCount());
+	ASSERT_FALSE(safe.IsBanned(IP_A, T0 + 20));
 
-	// And the ban covers the address, not just the rotation: even the
-	// identity we had verified is refused for as long as it lasts.
-	ASSERT_TRUE(safe.IsBadNode(IP_A, PORT_A, Id(1), KADEMLIA_VERSION, true, false, T0 + 30));
+	// The entry survives intact, and the identity we verified still works.
+	ASSERT_EQUALS(1u, (unsigned)safe.GetTrackedNodeCount());
+	ASSERT_FALSE(safe.IsBadNode(IP_A, PORT_A, Id(1), KADEMLIA_VERSION, true, false, T0 + 30));
 }
 
-// The same ladder for a pre-0x08 node, where it is the version rather than the
-// verification state of the tracked entry that refuses the change.
-TEST(SafeKad, AnUnverifiedPreVersion8IdentityChangeEscalates)
+// The same refusal for a pre-0x08 node, where it is the version rather than
+// the verification state of the tracked entry that refuses the change. Such a
+// node can never verify, so it can never be escalated either -- it keeps the
+// refusal and loses nothing else.
+TEST(SafeKad, AnUnverifiedPreVersion8IdentityChangeIsRefusedNotEscalated)
 {
 	CSafeKad safe;
 	ASSERT_TRUE(safe.TrackNode(IP_A, PORT_A, Id(1), false, T0));
 
+	// Refused, both times, and never escalated. A pre-0x08 node cannot prove
+	// which port it listens on, so nothing it says about its identity is
+	// verified -- and an unverified claim is the one a third party can
+	// fabricate. Refusing costs the sender its rotation; banning would let
+	// anyone spoofing this address get the honest node behind it banned.
 	ASSERT_TRUE(safe.IsBadNode(IP_A, PORT_A, Id(2), 0x07, false, false, T0 + 10));
-	ASSERT_TRUE(safe.IsProblematic(IP_A, PORT_A, T0 + 10));
+	ASSERT_FALSE(safe.IsProblematic(IP_A, PORT_A, T0 + 10));
 	ASSERT_FALSE(safe.IsBanned(IP_A, T0 + 10));
 
 	ASSERT_TRUE(safe.IsBadNode(IP_A, PORT_A, Id(3), 0x07, false, false, T0 + 20));
-	ASSERT_TRUE(safe.IsBanned(IP_A, T0 + 20));
+	ASSERT_FALSE(safe.IsBanned(IP_A, T0 + 20));
 }
 
 // One rejected rotation is one step up the ladder, never two. Both refusal
@@ -363,11 +373,58 @@ TEST(SafeKad, OneRejectedRotationEscalatesExactlyOneStep)
 
 	CSafeKad other;
 	ASSERT_FALSE(other.IsBadNode(IP_B, PORT_A, Id(1), KADEMLIA_VERSION, true, false, T0));
-	// Unverified, so this takes the outright refusal instead.
+	// Unverified, so this takes the outright refusal -- which refuses without
+	// escalating, and so leaves no problematic entry at all.
 	ASSERT_TRUE(other.IsBadNode(IP_B, PORT_A, Id(2), KADEMLIA_VERSION, false, false, T0 + 10));
-	ASSERT_TRUE(other.IsProblematic(IP_B, PORT_A, T0 + 10));
+	ASSERT_FALSE(other.IsProblematic(IP_B, PORT_A, T0 + 10));
 	ASSERT_FALSE(other.IsBanned(IP_B, T0 + 10));
-	ASSERT_EQUALS(1u, (unsigned)other.GetProblematicNodeCount());
+	ASSERT_EQUALS(0u, (unsigned)other.GetProblematicNodeCount());
+}
+
+// The attack the verification requirement exists to stop, written out as a
+// test because the code reads reasonable without it.
+//
+// ProcessKademlia2Response() calls AddUnfiltered() with verified hardcoded to
+// false, and the peer answering our request chooses the (IP, port, ID) triples
+// it lists. m_lastIDChange is stamped when an entry is created, so every
+// freshly-learned contact sits inside the sub-hour window. Two fabricated
+// mentions of an honest node would therefore have marked it problematic and
+// then banned it for four hours, without that node ever sending us anything.
+TEST(SafeKad, FabricatedUnverifiedMentionsCannotBanAnHonestNode)
+{
+	CSafeKad safe;
+
+	// An honest node we have just learned about, exactly as a response
+	// listing it would: unverified, and stamped now.
+	ASSERT_FALSE(safe.IsBadNode(IP_A, PORT_A, Id(1), KADEMLIA_VERSION, false, false, T0));
+
+	// A hostile peer names the same address twice with identities it made
+	// up, well inside the rotation window.
+	ASSERT_TRUE(safe.IsBadNode(IP_A, PORT_A, Id(2), KADEMLIA_VERSION, false, false, T0 + 5));
+	ASSERT_TRUE(safe.IsBadNode(IP_A, PORT_A, Id(3), KADEMLIA_VERSION, false, false, T0 + 10));
+
+	// Neither mention counted for anything.
+	ASSERT_FALSE(safe.IsBanned(IP_A, T0 + 10));
+	ASSERT_FALSE(safe.IsProblematic(IP_A, PORT_A, T0 + 10));
+
+	// And the honest node is still usable under the identity we hold.
+	ASSERT_FALSE(safe.IsBadNode(IP_A, PORT_A, Id(1), KADEMLIA_VERSION, false, false, T0 + 15));
+}
+
+// The other half: a peer that has proved which port it listens on and then
+// cycles identities faster than once an hour is escalated exactly as before.
+// Requiring verification narrows who can be banned, not what a ban is for.
+TEST(SafeKad, AVerifiedRotationStillEscalatesToABan)
+{
+	CSafeKad safe;
+	ASSERT_FALSE(safe.IsBadNode(IP_A, PORT_A, Id(1), KADEMLIA_VERSION, true, false, T0));
+
+	ASSERT_TRUE(safe.IsBadNode(IP_A, PORT_A, Id(2), KADEMLIA_VERSION, true, false, T0 + 10));
+	ASSERT_TRUE(safe.IsProblematic(IP_A, PORT_A, T0 + 10));
+	ASSERT_FALSE(safe.IsBanned(IP_A, T0 + 10));
+
+	ASSERT_TRUE(safe.IsBadNode(IP_A, PORT_A, Id(3), KADEMLIA_VERSION, true, false, T0 + 20));
+	ASSERT_TRUE(safe.IsBanned(IP_A, T0 + 20));
 }
 
 // A change refused only because it could not be verified, long past the

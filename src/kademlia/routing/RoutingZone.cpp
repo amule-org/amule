@@ -927,6 +927,28 @@ void CRoutingZone::OnSmallTimer()
 	m_bin->GetEntries(&entries);
 	for (ContactList::iterator it = entries.begin(); it != entries.end(); ++it) {
 		c = *it;
+#ifdef ENABLE_KAD_NODE_PROTECTION
+		// A banned address is swept out of the table, not merely refused
+		// re-entry. Without this the ban only applies to contacts we have
+		// yet to learn, and one already sitting in the table keeps being
+		// asked -- which is the node the ban was about. Folded into the
+		// dead-entry pass rather than given a sweep of its own, because
+		// this loop already walks every entry once a minute and already
+		// owns the InUse() rule that keeps a contact alive while a search
+		// holds it.
+		//
+		// Safe only because escalation now requires a verified identity:
+		// while an unverified flip could ban, this removal would have let
+		// two fabricated mentions evict an honest contact rather than
+		// merely block its return.
+		if (safeKad.IsBanned(c->GetIPAddress(), now)) {
+			if (!c->InUse()) {
+				m_bin->RemoveContact(c);
+				delete c;
+			}
+			continue;
+		}
+#endif
 		if (c->GetType() == 4) {
 			if ((c->GetExpireTime() > 0) && (c->GetExpireTime() <= now)) {
 				if (!c->InUse()) {
