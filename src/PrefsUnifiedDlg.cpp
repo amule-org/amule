@@ -312,8 +312,6 @@ wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg, wxDialog)
 
 	EVT_LIST_ITEM_SELECTED(IDC_EVENTLIST, PrefsUnifiedDlg::OnUserEventSelected)
 
-	EVT_CHOICE(IDC_LANGUAGE, PrefsUnifiedDlg::OnLanguageChoice)
-
 	EVT_CLOSE(PrefsUnifiedDlg::OnClose)
 
 wxEND_EVENT_TABLE()
@@ -2753,11 +2751,6 @@ void PrefsUnifiedDlg::OnUserEventSelected(wxListEvent &event)
 	IDC_PREFS_EVENTS_PAGE->Layout();
 
 	event.Skip();
-}
-
-void PrefsUnifiedDlg::OnLanguageChoice(wxCommandEvent &evt)
-{
-	thePrefs::GetCfgLang()->UpdateChoice(evt.GetSelection());
 }
 
 void PrefsUnifiedDlg::CreateEventPanels(const int idx, const wxString &vars, wxWindow *parent)

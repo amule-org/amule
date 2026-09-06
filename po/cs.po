@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-05 12:01+0200\n"
+"POT-Creation-Date: 2026-09-06 14:35+0200\n"
 "PO-Revision-Date: 2026-09-05 10:47+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
@@ -387,7 +387,8 @@ msgstr "webserver běží s PID %d"
 msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
 msgstr "Požádali jste o spuštění webového serveru po startu, avšak binární soubor amuleweb nelze spustit. Nainstalujte balíček obsahující webový server aMule, nebo sestavte aMule ze zdrojového kódu pomocí přepínače -DBUILD_WEBSERVER=YES a pak jej nainstalujte."
 
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
+#: src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
 msgid "ERROR"
 msgstr "CHYBA"
 
@@ -673,7 +674,8 @@ msgstr "Sítě"
 msgid "Searches"
 msgstr "Vyhledávání"
 
-#: src/amuleDlg.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/Statistics.cpp
+#: src/amuleDlg.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/Statistics.cpp
 msgid "Downloads"
 msgstr "Stahování"
 
@@ -761,7 +763,9 @@ msgstr "Kad: vypnut"
 msgid "Core"
 msgstr ""
 
-#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp src/Statistics.cpp
 msgid "Version"
 msgstr "Verze"
 
@@ -1060,7 +1064,11 @@ msgstr "Nejde vytvořit adresář '%s' pro kategorii '%s', zachovávám adresá�
 msgid "The remote core sent inconsistent data for \"%s\" (part status %d, expected %d). The file list may be showing the wrong information; reconnect to clear it."
 msgstr "Vzdálené jádro odeslalo nekonzistentní data pro \"%s\" (částečný stav %d, očekáváno %d). Seznam souborů může zobrazovat nesprávné informace; opět se připojte pro vyčištění."
 
-#: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp src/FileDetailDialog.cpp src/GenericClientListCtrl.cpp src/HTTPDownload.cpp src/KnownFile.cpp src/MuleTrayIcon.cpp src/PartFile.cpp src/Server.cpp src/Statistics.cpp
+#: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp
+#: src/FileDetailDialog.cpp src/GenericClientListCtrl.cpp src/HTTPDownload.cpp
+#: src/KnownFile.cpp src/MuleTrayIcon.cpp src/PartFile.cpp src/Server.cpp
+#: src/Statistics.cpp
 msgid "Unknown"
 msgstr "Neznámý"
 
@@ -1159,7 +1167,8 @@ msgstr "Chyba při ukládání souboru %s: %s"
 msgid "Enter Captcha"
 msgstr "Vložte captchu"
 
-#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp src/TransferWnd.cpp
+#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
+#: src/TransferWnd.cpp
 msgid "Category"
 msgstr "Kategorie"
 
@@ -1328,11 +1337,13 @@ msgstr "Soubor 'cryptkey.dat' nenalezen, vytvářím."
 msgid "Client Details"
 msgstr "Podrobnosti klienta"
 
-#: src/ClientDetailDialog.cpp src/ServerWnd.cpp src/utils/wxCas/src/onlinesig.cpp
+#: src/ClientDetailDialog.cpp src/ServerWnd.cpp
+#: src/utils/wxCas/src/onlinesig.cpp
 msgid "LowID"
 msgstr "LowID"
 
-#: src/ClientDetailDialog.cpp src/ServerWnd.cpp src/utils/wxCas/src/onlinesig.cpp
+#: src/ClientDetailDialog.cpp src/ServerWnd.cpp
+#: src/utils/wxCas/src/onlinesig.cpp
 msgid "HighID"
 msgstr "HighID"
 
@@ -1348,7 +1359,8 @@ msgstr "Podporováno"
 msgid "Not supported"
 msgstr "Nepodporováno"
 
-#: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp src/TextClient.cpp
+#: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp
+#: src/TextClient.cpp
 msgid "Connected"
 msgstr "Připojen"
 
@@ -1356,7 +1368,8 @@ msgstr "Připojen"
 msgid "Disconnected"
 msgstr "Odpojeno"
 
-#: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f KiB/s"
 msgstr ""
@@ -1373,7 +1386,8 @@ msgstr "Software"
 msgid "IP Address"
 msgstr "IP adresa"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Origin"
 msgstr "Původ"
 
@@ -1389,11 +1403,13 @@ msgstr "Naposledy viděn"
 msgid "Sessions"
 msgstr "Sezení"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
 msgid "Upload Speed"
 msgstr "Rychlost odesílání"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
 msgid "Download Speed"
 msgstr "Rychlost stahování"
 
@@ -1445,11 +1461,13 @@ msgstr[2] "Nešlo přidat %u odkazů (podrobnosti viz log)."
 msgid "Files"
 msgstr "Soubory"
 
-#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp
 msgid "Uploaded"
 msgstr "Odesláno"
 
-#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Downloaded"
 msgstr "Staženo"
 
@@ -1537,7 +1555,8 @@ msgstr "Komentáře k souboru"
 msgid "Username"
 msgstr "Jméno"
 
-#: src/CommentDialogLst.cpp src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/CommentDialogLst.cpp src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp
+#: src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "File Name"
 msgstr "Název souboru"
 
@@ -1599,15 +1618,18 @@ msgstr "Auto [Vy]"
 msgid "Very low"
 msgstr "Velmi nízká"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "Nízká"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "Normální"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "Vysoká"
 
@@ -1631,11 +1653,13 @@ msgstr "Připojuji se přes server"
 msgid "Queue Full"
 msgstr "Plná fronta"
 
-#: src/DataToText.cpp src/GenericClientListCtrl.cpp src/KnownFile.cpp src/muuli_wdr.cpp
+#: src/DataToText.cpp src/GenericClientListCtrl.cpp src/KnownFile.cpp
+#: src/muuli_wdr.cpp
 msgid "On Queue"
 msgstr "Ve frontě"
 
-#: src/DataToText.cpp src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
+#: src/DataToText.cpp src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp
+#: src/PartFile.cpp src/TransferWnd.cpp
 msgid "Downloading"
 msgstr "Stahuji"
 
@@ -1695,7 +1719,8 @@ msgstr "Lokální server"
 msgid "Remote Server"
 msgstr "Vzdálený server"
 
-#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp src/TextClient.cpp
+#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp
+#: src/TextClient.cpp
 msgid "Kad"
 msgstr "Kad"
 
@@ -1719,7 +1744,8 @@ msgstr "Zdrojové seedy"
 msgid "Search Result"
 msgstr "Výsledek hledání"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
+#: src/TransferWnd.cpp
 msgid "Completed"
 msgstr "Dokončeno"
 
@@ -1771,7 +1797,8 @@ msgstr "Nelze provézt úpravu v rekurzivním sdílení"
 msgid "Part"
 msgstr "Část"
 
-#: src/DownloadListCtrl.cpp src/PartFileConvertDlg.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/PartFileConvertDlg.cpp src/SearchListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Size"
 msgstr "Velikost"
 
@@ -1779,7 +1806,8 @@ msgstr "Velikost"
 msgid "Transferred"
 msgstr "Přeneseno"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp src/SourceListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+#: src/SourceListCtrl.cpp
 msgid "Speed"
 msgstr "Rychlost"
 
@@ -1787,11 +1815,13 @@ msgstr "Rychlost"
 msgid "Progress"
 msgstr "Průběh"
 
-#: src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/PartFile.cpp
+#: src/SearchListCtrl.cpp
 msgid "Sources"
 msgstr "Zdroje"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Priority"
 msgstr "Priorita"
 
@@ -1815,7 +1845,9 @@ msgstr "Poslední příjem"
 msgid "Auto"
 msgstr "Auto"
 
-#: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/TransferWnd.cpp src/utils/wxCas/src/wxcasprefs.cpp
+#: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp
+#: src/ServerListCtrl.cpp src/TransferWnd.cpp
+#: src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Cancel"
 msgstr "Zrušit"
 
@@ -1916,7 +1948,8 @@ msgstr "Zadejte nový název pro tento soubor:"
 msgid "File rename"
 msgstr "Přejmenování souboru"
 
-#: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f MiB/s"
 msgstr ""
@@ -2726,11 +2759,13 @@ msgstr ""
 msgid "Start aMule automatically when I log in"
 msgstr "Spustit aMule automaticky po přihlášení"
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp packaging/windows/installer_strings.c
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
+#: packaging/windows/installer_strings.c
 msgid "Register aMule for ed2k:// links"
 msgstr "Zaregistrovat aMule pro odkazy ed2k://"
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp packaging/windows/installer_strings.c
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
+#: packaging/windows/installer_strings.c
 msgid "Register aMule for magnet: links"
 msgstr "Zaregistrovat aMule pro odkazy magnet:"
 
@@ -2758,7 +2793,8 @@ msgstr ""
 msgid "Destination folder for downloads"
 msgstr "Cílová složka pro stahování"
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
+#: src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Browse"
 msgstr "Procházet"
 
@@ -3185,6 +3221,162 @@ msgstr "Nepodařilo se načíst záznam v seznamu známých souborů, soubor mů
 msgid "Invalid entry in known file list, file may be corrupt: "
 msgstr "Neplatný záznam v seznamu známých souborů, soubor může být poškozen: "
 
+#: src/LanguageList.cpp
+msgid "System default"
+msgstr "Výchozí pro systém"
+
+#: src/LanguageList.cpp
+msgid "Albanian"
+msgstr "Albánština"
+
+#: src/LanguageList.cpp
+msgid "Arabic"
+msgstr "Arabský"
+
+#: src/LanguageList.cpp
+msgid "Asturian"
+msgstr ""
+
+#: src/LanguageList.cpp
+msgid "Basque"
+msgstr "Baskičtina"
+
+#: src/LanguageList.cpp
+msgid "Bulgarian"
+msgstr "Bulharský"
+
+#: src/LanguageList.cpp
+msgid "Catalan"
+msgstr "Katalánština"
+
+#: src/LanguageList.cpp
+msgid "Chinese (Simplified)"
+msgstr "Čínština (zjednodušená)"
+
+#: src/LanguageList.cpp
+msgid "Chinese (Traditional)"
+msgstr "Čínština (tradiční)"
+
+#: src/LanguageList.cpp
+msgid "Croatian"
+msgstr "Chorvatština"
+
+#: src/LanguageList.cpp
+msgid "Czech"
+msgstr "Česky"
+
+#: src/LanguageList.cpp
+msgid "Danish"
+msgstr "Dánština"
+
+#: src/LanguageList.cpp
+msgid "Dutch"
+msgstr "Nizozemština"
+
+#: src/LanguageList.cpp
+msgid "English (U.K.)"
+msgstr "Angličtina (britská)"
+
+#: src/LanguageList.cpp
+msgid "English (U.S.)"
+msgstr "Angličtina (USA)"
+
+#: src/LanguageList.cpp
+msgid "Estonian"
+msgstr "Estonština"
+
+#: src/LanguageList.cpp
+msgid "Finnish"
+msgstr "Finština"
+
+#: src/LanguageList.cpp
+msgid "French"
+msgstr "Francouzština"
+
+#: src/LanguageList.cpp
+msgid "Galician"
+msgstr "Galicijština"
+
+#: src/LanguageList.cpp
+msgid "German"
+msgstr "Němčina"
+
+#: src/LanguageList.cpp
+msgid "Greek"
+msgstr "Řečtina"
+
+#: src/LanguageList.cpp
+msgid "Hebrew"
+msgstr "Hebrejština"
+
+#: src/LanguageList.cpp
+msgid "Hungarian"
+msgstr "Maďarština"
+
+#: src/LanguageList.cpp
+msgid "Italian"
+msgstr "Italština"
+
+#: src/LanguageList.cpp
+msgid "Japanese"
+msgstr "Japonština"
+
+#: src/LanguageList.cpp
+msgid "Korean"
+msgstr "Korejština"
+
+#: src/LanguageList.cpp
+msgid "Latvian"
+msgstr ""
+
+#: src/LanguageList.cpp
+msgid "Lithuanian"
+msgstr "Litevština"
+
+#: src/LanguageList.cpp
+msgid "Norwegian (Nynorsk)"
+msgstr "Norština"
+
+#: src/LanguageList.cpp
+msgid "Polish"
+msgstr "Polština"
+
+#: src/LanguageList.cpp
+msgid "Portuguese"
+msgstr "Portugalština"
+
+#: src/LanguageList.cpp
+msgid "Portuguese (Brazilian)"
+msgstr "Portugalština (brazilská)"
+
+#: src/LanguageList.cpp
+msgid "Romanian"
+msgstr "Rumunština"
+
+#: src/LanguageList.cpp
+msgid "Russian"
+msgstr "Ruština"
+
+#: src/LanguageList.cpp
+msgid "Slovenian"
+msgstr "Slovinština"
+
+#: src/LanguageList.cpp
+msgid "Spanish"
+msgstr "Španělština"
+
+#: src/LanguageList.cpp
+msgid "Swedish"
+msgstr "Švédština"
+
+#: src/LanguageList.cpp
+msgid "Turkish"
+msgstr "Turečtina"
+
+#: src/LanguageList.cpp
+msgid "Ukrainian"
+msgstr "Ukrajinština"
+
 #: src/libs/common/Format.cpp
 #, c-format
 msgid "Unknown error %d"
@@ -3207,15 +3399,18 @@ msgstr "Dokončování"
 msgid "Complete"
 msgstr "Dokončeno"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
+#: src/TransferWnd.cpp
 msgid "Paused"
 msgstr "Pozastaveno"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
+#: src/TransferWnd.cpp
 msgid "Erroneous"
 msgstr "Poškozený"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
+#: src/TransferWnd.cpp
 msgid "Waiting"
 msgstr "Čekám"
 
@@ -3382,7 +3577,8 @@ msgstr "Zavřít"
 msgid "Cut"
 msgstr "Vyjmout"
 
-#: src/MuleTextCtrl.cpp src/PartFileConvert.cpp src/ServerWnd.cpp src/utils/aLinkCreator/src/alcframe.cpp
+#: src/MuleTextCtrl.cpp src/PartFileConvert.cpp src/ServerWnd.cpp
+#: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Copy"
 msgstr "Kopírovat"
 
@@ -3390,7 +3586,8 @@ msgstr "Kopírovat"
 msgid "Paste"
 msgstr "Vložit"
 
-#: src/MuleTextCtrl.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
+#: src/MuleTextCtrl.cpp src/muuli_wdr.cpp
+#: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Clear"
 msgstr "Vyčistit"
 
@@ -3398,7 +3595,8 @@ msgstr "Vyčistit"
 msgid "Select All"
 msgstr "Označit vše"
 
-#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp src/StatisticsDlg.cpp
+#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
+#: src/StatisticsDlg.cpp
 msgid "KiB/s"
 msgstr ""
 
@@ -5877,174 +6075,6 @@ msgid "ERROR: Failed to open partfile '%s'"
 msgstr "CHYBA: Nepodařilo se otevřít soubor part '%s'"
 
 #: src/Preferences.cpp
-msgid "System default"
-msgstr "Výchozí pro systém"
-
-#: src/Preferences.cpp
-msgid "Albanian"
-msgstr "Albánština"
-
-#: src/Preferences.cpp
-msgid "Arabic"
-msgstr "Arabský"
-
-#: src/Preferences.cpp
-msgid "Asturian"
-msgstr ""
-
-#: src/Preferences.cpp
-msgid "Basque"
-msgstr "Baskičtina"
-
-#: src/Preferences.cpp
-msgid "Bulgarian"
-msgstr "Bulharský"
-
-#: src/Preferences.cpp
-msgid "Catalan"
-msgstr "Katalánština"
-
-#: src/Preferences.cpp
-msgid "Chinese (Simplified)"
-msgstr "Čínština (zjednodušená)"
-
-#: src/Preferences.cpp
-msgid "Chinese (Traditional)"
-msgstr "Čínština (tradiční)"
-
-#: src/Preferences.cpp
-msgid "Croatian"
-msgstr "Chorvatština"
-
-#: src/Preferences.cpp
-msgid "Czech"
-msgstr "Česky"
-
-#: src/Preferences.cpp
-msgid "Danish"
-msgstr "Dánština"
-
-#: src/Preferences.cpp
-msgid "Dutch"
-msgstr "Nizozemština"
-
-#: src/Preferences.cpp
-msgid "English (U.K.)"
-msgstr "Angličtina (britská)"
-
-#: src/Preferences.cpp
-msgid "English (U.S.)"
-msgstr "Angličtina (USA)"
-
-#: src/Preferences.cpp
-msgid "Estonian"
-msgstr "Estonština"
-
-#: src/Preferences.cpp
-msgid "Finnish"
-msgstr "Finština"
-
-#: src/Preferences.cpp
-msgid "French"
-msgstr "Francouzština"
-
-#: src/Preferences.cpp
-msgid "Galician"
-msgstr "Galicijština"
-
-#: src/Preferences.cpp
-msgid "German"
-msgstr "Němčina"
-
-#: src/Preferences.cpp
-msgid "Greek"
-msgstr "Řečtina"
-
-#: src/Preferences.cpp
-msgid "Hebrew"
-msgstr "Hebrejština"
-
-#: src/Preferences.cpp
-msgid "Hungarian"
-msgstr "Maďarština"
-
-#: src/Preferences.cpp
-msgid "Italian"
-msgstr "Italština"
-
-#: src/Preferences.cpp
-msgid "Japanese"
-msgstr "Japonština"
-
-#: src/Preferences.cpp
-msgid "Korean"
-msgstr "Korejština"
-
-#: src/Preferences.cpp
-msgid "Latvian"
-msgstr ""
-
-#: src/Preferences.cpp
-msgid "Lithuanian"
-msgstr "Litevština"
-
-#: src/Preferences.cpp
-msgid "Norwegian (Nynorsk)"
-msgstr "Norština"
-
-#: src/Preferences.cpp
-msgid "Polish"
-msgstr "Polština"
-
-#: src/Preferences.cpp
-msgid "Portuguese"
-msgstr "Portugalština"
-
-#: src/Preferences.cpp
-msgid "Portuguese (Brazilian)"
-msgstr "Portugalština (brazilská)"
-
-#: src/Preferences.cpp
-msgid "Romanian"
-msgstr "Rumunština"
-
-#: src/Preferences.cpp
-msgid "Russian"
-msgstr "Ruština"
-
-#: src/Preferences.cpp
-msgid "Slovenian"
-msgstr "Slovinština"
-
-#: src/Preferences.cpp
-msgid "Spanish"
-msgstr "Španělština"
-
-#: src/Preferences.cpp
-msgid "Swedish"
-msgstr "Švédština"
-
-#: src/Preferences.cpp
-msgid "Turkish"
-msgstr "Turečtina"
-
-#: src/Preferences.cpp
-msgid "Ukrainian"
-msgstr "Ukrajinština"
-
-#: src/Preferences.cpp
-msgid "Change Language"
-msgstr "Změnit jazyk"
-
-#: src/Preferences.cpp
-msgid "There are no translations installed for aMule"
-msgstr ""
-
-#: src/Preferences.cpp
-msgid "No languages available"
-msgstr "Nejsou k dispozici žádné jazyky"
-
-#: src/Preferences.cpp
 msgid "no options available"
 msgstr "není dostupné žádné nastavení"
 
@@ -6553,7 +6583,8 @@ msgstr "Jejich rekurzivní sdílení zveřejní všechny soubory pod nimi v sít
 msgid "Confirm shared folders"
 msgstr "Potvrdit sdílené složky"
 
-#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp src/SharedFilesReloadProgress.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+#: src/SharedFilesReloadProgress.cpp
 msgid "Reloading shared files..."
 msgstr "Opětovné načítání sdílených souborů..."
 
@@ -9280,6 +9311,12 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "Change Language"
+#~ msgstr "Změnit jazyk"
+
+#~ msgid "No languages available"
+#~ msgstr "Nejsou k dispozici žádné jazyky"
 
 #~ msgid "User name"
 #~ msgstr "Uživatelské jméno"

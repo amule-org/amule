@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-05 12:01+0200\n"
+"POT-Creation-Date: 2026-09-06 14:35+0200\n"
 "PO-Revision-Date: 2026-09-05 11:02+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -385,7 +385,8 @@ msgstr "web sunucusu pid %d üzerinde çalışıyor"
 msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
 msgstr "Web sunucusunun başlangıçta çalışmasını istediniz, fakat amuleweb ikilisi çalıştırılamıyor. Lütfen aMule web sunucusunu içeren paketi yükleyin veya aMule' yi -DBUILD_WEBSERVER=YES seçeneği ile derleyin ve kurun."
 
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
+#: src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
 msgid "ERROR"
 msgstr "HATA"
 
@@ -671,7 +672,8 @@ msgstr "Ağlar"
 msgid "Searches"
 msgstr "Aramalar"
 
-#: src/amuleDlg.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/Statistics.cpp
+#: src/amuleDlg.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/Statistics.cpp
 msgid "Downloads"
 msgstr "İndirmeler"
 
@@ -759,7 +761,9 @@ msgstr "Kad: Kapalı"
 msgid "Core"
 msgstr "Çekirdek"
 
-#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp src/Statistics.cpp
 msgid "Version"
 msgstr "Sürüm"
 
@@ -1056,7 +1060,11 @@ msgstr "'%s' dizini '%s' sınıfı için oluşturulamadı. '%s' dizini kullanıl
 msgid "The remote core sent inconsistent data for \"%s\" (part status %d, expected %d). The file list may be showing the wrong information; reconnect to clear it."
 msgstr "Uzaktaki çekirdek \"%s\" için tutarsız veri gönderdi (kısmi durum %d, beklenilen %d). Dosya listesi yanlış bilgi gösteriyor olabilir, bunu düzeltmek için tekrar bağlanın."
 
-#: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp src/FileDetailDialog.cpp src/GenericClientListCtrl.cpp src/HTTPDownload.cpp src/KnownFile.cpp src/MuleTrayIcon.cpp src/PartFile.cpp src/Server.cpp src/Statistics.cpp
+#: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp
+#: src/FileDetailDialog.cpp src/GenericClientListCtrl.cpp src/HTTPDownload.cpp
+#: src/KnownFile.cpp src/MuleTrayIcon.cpp src/PartFile.cpp src/Server.cpp
+#: src/Statistics.cpp
 msgid "Unknown"
 msgstr "Bilinmiyor"
 
@@ -1153,7 +1161,8 @@ msgstr "%s dosyası kaydedilirken hata: %s"
 msgid "Enter Captcha"
 msgstr "Captcha Gir"
 
-#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp src/TransferWnd.cpp
+#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
+#: src/TransferWnd.cpp
 msgid "Category"
 msgstr "Sınıf"
 
@@ -1316,11 +1325,13 @@ msgstr "'cryptkey.dat' dosyası bulunamadı. Oluşturuluyor…"
 msgid "Client Details"
 msgstr "Kullanıcı Ayrıntıları"
 
-#: src/ClientDetailDialog.cpp src/ServerWnd.cpp src/utils/wxCas/src/onlinesig.cpp
+#: src/ClientDetailDialog.cpp src/ServerWnd.cpp
+#: src/utils/wxCas/src/onlinesig.cpp
 msgid "LowID"
 msgstr "DüşükID"
 
-#: src/ClientDetailDialog.cpp src/ServerWnd.cpp src/utils/wxCas/src/onlinesig.cpp
+#: src/ClientDetailDialog.cpp src/ServerWnd.cpp
+#: src/utils/wxCas/src/onlinesig.cpp
 msgid "HighID"
 msgstr "YüksekID"
 
@@ -1336,7 +1347,8 @@ msgstr "Destekleniyor"
 msgid "Not supported"
 msgstr "Desteklenmiyor"
 
-#: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp src/TextClient.cpp
+#: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp
+#: src/TextClient.cpp
 msgid "Connected"
 msgstr "Bağlandı"
 
@@ -1344,7 +1356,8 @@ msgstr "Bağlandı"
 msgid "Disconnected"
 msgstr "Bağlantı kesildi"
 
-#: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f KiB/s"
 msgstr "%.1f KiB/s"
@@ -1361,7 +1374,8 @@ msgstr "Yazılım"
 msgid "IP Address"
 msgstr "IP Adresi"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Origin"
 msgstr "Köken"
 
@@ -1377,11 +1391,13 @@ msgstr "Son Görülme"
 msgid "Sessions"
 msgstr "Oturumlar"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
 msgid "Upload Speed"
 msgstr "Gönderme Hızı"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
 msgid "Download Speed"
 msgstr "İndirme Hızı"
 
@@ -1432,11 +1448,13 @@ msgstr[1] "%u seçili istemciden paylaşılan dosyaları talep edilemedi."
 msgid "Files"
 msgstr "Dosyalar"
 
-#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp
 msgid "Uploaded"
 msgstr "Gönderilen"
 
-#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Downloaded"
 msgstr "İndirildi"
 
@@ -1524,7 +1542,8 @@ msgstr "Dosya Yorumları"
 msgid "Username"
 msgstr "Kullanıcı Adı"
 
-#: src/CommentDialogLst.cpp src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/CommentDialogLst.cpp src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp
+#: src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "File Name"
 msgstr "Dosya Adı"
 
@@ -1585,15 +1604,18 @@ msgstr "Oto (Yük)"
 msgid "Very low"
 msgstr "Çok düşük"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "Düşük"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "Normal"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "Yüksek"
 
@@ -1617,11 +1639,13 @@ msgstr "Sunucu yoluyla bağlanıyor"
 msgid "Queue Full"
 msgstr "Sıra dolu"
 
-#: src/DataToText.cpp src/GenericClientListCtrl.cpp src/KnownFile.cpp src/muuli_wdr.cpp
+#: src/DataToText.cpp src/GenericClientListCtrl.cpp src/KnownFile.cpp
+#: src/muuli_wdr.cpp
 msgid "On Queue"
 msgstr "Sırada"
 
-#: src/DataToText.cpp src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
+#: src/DataToText.cpp src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp
+#: src/PartFile.cpp src/TransferWnd.cpp
 msgid "Downloading"
 msgstr "Aktarılıyor"
 
@@ -1681,7 +1705,8 @@ msgstr "Sunucu"
 msgid "Remote Server"
 msgstr "Uzak Sunucu"
 
-#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp src/TextClient.cpp
+#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp
+#: src/TextClient.cpp
 msgid "Kad"
 msgstr "Kad"
 
@@ -1705,7 +1730,8 @@ msgstr "Kaynak Girdileri"
 msgid "Search Result"
 msgstr "Arama Sonucu"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
+#: src/TransferWnd.cpp
 msgid "Completed"
 msgstr "Tamamlandı"
 
@@ -1757,7 +1783,8 @@ msgstr "Özyinelemeli bir paylaşım dahilinde değişim yapılamaz"
 msgid "Part"
 msgstr "Parça"
 
-#: src/DownloadListCtrl.cpp src/PartFileConvertDlg.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/PartFileConvertDlg.cpp src/SearchListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Size"
 msgstr "Boyut"
 
@@ -1765,7 +1792,8 @@ msgstr "Boyut"
 msgid "Transferred"
 msgstr "Aktarıldı"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp src/SourceListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+#: src/SourceListCtrl.cpp
 msgid "Speed"
 msgstr "Hız"
 
@@ -1773,11 +1801,13 @@ msgstr "Hız"
 msgid "Progress"
 msgstr "İşlem"
 
-#: src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/PartFile.cpp
+#: src/SearchListCtrl.cpp
 msgid "Sources"
 msgstr "Kaynaklar"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Priority"
 msgstr "Öncelik"
 
@@ -1801,7 +1831,9 @@ msgstr "Son Alım"
 msgid "Auto"
 msgstr "Otomatik"
 
-#: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/TransferWnd.cpp src/utils/wxCas/src/wxcasprefs.cpp
+#: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp
+#: src/ServerListCtrl.cpp src/TransferWnd.cpp
+#: src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Cancel"
 msgstr "İptal"
 
@@ -1902,7 +1934,8 @@ msgstr "Bu dosya için yeni bir isim girin:"
 msgid "File rename"
 msgstr "Dosya yeniden adlandır"
 
-#: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f MiB/s"
 msgstr "%.1f MiB/s"
@@ -2705,11 +2738,13 @@ msgstr ""
 msgid "Start aMule automatically when I log in"
 msgstr "aMule'ü oturum açtığımda otomatik olarak başlat"
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp packaging/windows/installer_strings.c
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
+#: packaging/windows/installer_strings.c
 msgid "Register aMule for ed2k:// links"
 msgstr "aMule'ü ed2k:// bağlantıları için kaydet"
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp packaging/windows/installer_strings.c
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
+#: packaging/windows/installer_strings.c
 msgid "Register aMule for magnet: links"
 msgstr "aMule'ü magnet: bağlantıları için kaydet"
 
@@ -2737,7 +2772,8 @@ msgstr ""
 msgid "Destination folder for downloads"
 msgstr "İndirmeler için hedef dizin"
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
+#: src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Browse"
 msgstr "Göz at"
 
@@ -3159,6 +3195,162 @@ msgstr "Bilinen dosyalar listesinden girdi yüklenemedi. Dosya bozuk olabilir"
 msgid "Invalid entry in known file list, file may be corrupt: "
 msgstr "Bilinen dosyalar listesinde geçersiz girdi bulundu. Dosya bozuk olabilir: "
 
+#: src/LanguageList.cpp
+msgid "System default"
+msgstr "Sistem öntanımlısı"
+
+#: src/LanguageList.cpp
+msgid "Albanian"
+msgstr "Arnavutça"
+
+#: src/LanguageList.cpp
+msgid "Arabic"
+msgstr "Arapça"
+
+#: src/LanguageList.cpp
+msgid "Asturian"
+msgstr "Asturyasça"
+
+#: src/LanguageList.cpp
+msgid "Basque"
+msgstr "Baskça"
+
+#: src/LanguageList.cpp
+msgid "Bulgarian"
+msgstr "Bulgarca"
+
+#: src/LanguageList.cpp
+msgid "Catalan"
+msgstr "Katalanca"
+
+#: src/LanguageList.cpp
+msgid "Chinese (Simplified)"
+msgstr "Çince (Basitleştirilmiş)"
+
+#: src/LanguageList.cpp
+msgid "Chinese (Traditional)"
+msgstr "Çince (Geleneksel)"
+
+#: src/LanguageList.cpp
+msgid "Croatian"
+msgstr "Hırvatça"
+
+#: src/LanguageList.cpp
+msgid "Czech"
+msgstr "Çekçe"
+
+#: src/LanguageList.cpp
+msgid "Danish"
+msgstr "Danca"
+
+#: src/LanguageList.cpp
+msgid "Dutch"
+msgstr "Felemenkçe"
+
+#: src/LanguageList.cpp
+msgid "English (U.K.)"
+msgstr "İngilizce (U.K)"
+
+#: src/LanguageList.cpp
+msgid "English (U.S.)"
+msgstr "İngilizce (ABD)"
+
+#: src/LanguageList.cpp
+msgid "Estonian"
+msgstr "Estonca"
+
+#: src/LanguageList.cpp
+msgid "Finnish"
+msgstr "Fince"
+
+#: src/LanguageList.cpp
+msgid "French"
+msgstr "Fransızca"
+
+#: src/LanguageList.cpp
+msgid "Galician"
+msgstr "Galce"
+
+#: src/LanguageList.cpp
+msgid "German"
+msgstr "Almanca"
+
+#: src/LanguageList.cpp
+msgid "Greek"
+msgstr "Yunanca"
+
+#: src/LanguageList.cpp
+msgid "Hebrew"
+msgstr "İbranice"
+
+#: src/LanguageList.cpp
+msgid "Hungarian"
+msgstr "Macarca"
+
+#: src/LanguageList.cpp
+msgid "Italian"
+msgstr "İtalyanca"
+
+#: src/LanguageList.cpp
+msgid "Japanese"
+msgstr "Japonca"
+
+#: src/LanguageList.cpp
+msgid "Korean"
+msgstr "Korece"
+
+#: src/LanguageList.cpp
+msgid "Latvian"
+msgstr "Letonca"
+
+#: src/LanguageList.cpp
+msgid "Lithuanian"
+msgstr "Litvanyaca"
+
+#: src/LanguageList.cpp
+msgid "Norwegian (Nynorsk)"
+msgstr "Norveççe (Nynorsk)"
+
+#: src/LanguageList.cpp
+msgid "Polish"
+msgstr "Lehçe"
+
+#: src/LanguageList.cpp
+msgid "Portuguese"
+msgstr "Portekizce"
+
+#: src/LanguageList.cpp
+msgid "Portuguese (Brazilian)"
+msgstr "Portekizce (Brezilya)"
+
+#: src/LanguageList.cpp
+msgid "Romanian"
+msgstr "Rumence"
+
+#: src/LanguageList.cpp
+msgid "Russian"
+msgstr "Rusça"
+
+#: src/LanguageList.cpp
+msgid "Slovenian"
+msgstr "Slovence"
+
+#: src/LanguageList.cpp
+msgid "Spanish"
+msgstr "İspanyolca"
+
+#: src/LanguageList.cpp
+msgid "Swedish"
+msgstr "İsveççe"
+
+#: src/LanguageList.cpp
+msgid "Turkish"
+msgstr "Türkçe"
+
+#: src/LanguageList.cpp
+msgid "Ukrainian"
+msgstr "Ukraynaca"
+
 #: src/libs/common/Format.cpp
 #, c-format
 msgid "Unknown error %d"
@@ -3181,15 +3373,18 @@ msgstr "Tamamlanıyor"
 msgid "Complete"
 msgstr "Tamamlandı"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
+#: src/TransferWnd.cpp
 msgid "Paused"
 msgstr "Duraklatıldı"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
+#: src/TransferWnd.cpp
 msgid "Erroneous"
 msgstr "Hatalı"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
+#: src/TransferWnd.cpp
 msgid "Waiting"
 msgstr "Bekliyor"
 
@@ -3351,7 +3546,8 @@ msgstr "Kapat"
 msgid "Cut"
 msgstr "Kes"
 
-#: src/MuleTextCtrl.cpp src/PartFileConvert.cpp src/ServerWnd.cpp src/utils/aLinkCreator/src/alcframe.cpp
+#: src/MuleTextCtrl.cpp src/PartFileConvert.cpp src/ServerWnd.cpp
+#: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Copy"
 msgstr "Kopyala"
 
@@ -3359,7 +3555,8 @@ msgstr "Kopyala"
 msgid "Paste"
 msgstr "Yapıştır"
 
-#: src/MuleTextCtrl.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
+#: src/MuleTextCtrl.cpp src/muuli_wdr.cpp
+#: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Clear"
 msgstr "Temizle"
 
@@ -3367,7 +3564,8 @@ msgstr "Temizle"
 msgid "Select All"
 msgstr "Tümünü Seç"
 
-#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp src/StatisticsDlg.cpp
+#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
+#: src/StatisticsDlg.cpp
 msgid "KiB/s"
 msgstr "KiB/s"
 
@@ -5829,174 +6027,6 @@ msgid "ERROR: Failed to open partfile '%s'"
 msgstr "HATA: Parça dosyası '%s' açılamıyor"
 
 #: src/Preferences.cpp
-msgid "System default"
-msgstr "Sistem öntanımlısı"
-
-#: src/Preferences.cpp
-msgid "Albanian"
-msgstr "Arnavutça"
-
-#: src/Preferences.cpp
-msgid "Arabic"
-msgstr "Arapça"
-
-#: src/Preferences.cpp
-msgid "Asturian"
-msgstr "Asturyasça"
-
-#: src/Preferences.cpp
-msgid "Basque"
-msgstr "Baskça"
-
-#: src/Preferences.cpp
-msgid "Bulgarian"
-msgstr "Bulgarca"
-
-#: src/Preferences.cpp
-msgid "Catalan"
-msgstr "Katalanca"
-
-#: src/Preferences.cpp
-msgid "Chinese (Simplified)"
-msgstr "Çince (Basitleştirilmiş)"
-
-#: src/Preferences.cpp
-msgid "Chinese (Traditional)"
-msgstr "Çince (Geleneksel)"
-
-#: src/Preferences.cpp
-msgid "Croatian"
-msgstr "Hırvatça"
-
-#: src/Preferences.cpp
-msgid "Czech"
-msgstr "Çekçe"
-
-#: src/Preferences.cpp
-msgid "Danish"
-msgstr "Danca"
-
-#: src/Preferences.cpp
-msgid "Dutch"
-msgstr "Felemenkçe"
-
-#: src/Preferences.cpp
-msgid "English (U.K.)"
-msgstr "İngilizce (U.K)"
-
-#: src/Preferences.cpp
-msgid "English (U.S.)"
-msgstr "İngilizce (ABD)"
-
-#: src/Preferences.cpp
-msgid "Estonian"
-msgstr "Estonca"
-
-#: src/Preferences.cpp
-msgid "Finnish"
-msgstr "Fince"
-
-#: src/Preferences.cpp
-msgid "French"
-msgstr "Fransızca"
-
-#: src/Preferences.cpp
-msgid "Galician"
-msgstr "Galce"
-
-#: src/Preferences.cpp
-msgid "German"
-msgstr "Almanca"
-
-#: src/Preferences.cpp
-msgid "Greek"
-msgstr "Yunanca"
-
-#: src/Preferences.cpp
-msgid "Hebrew"
-msgstr "İbranice"
-
-#: src/Preferences.cpp
-msgid "Hungarian"
-msgstr "Macarca"
-
-#: src/Preferences.cpp
-msgid "Italian"
-msgstr "İtalyanca"
-
-#: src/Preferences.cpp
-msgid "Japanese"
-msgstr "Japonca"
-
-#: src/Preferences.cpp
-msgid "Korean"
-msgstr "Korece"
-
-#: src/Preferences.cpp
-msgid "Latvian"
-msgstr "Letonca"
-
-#: src/Preferences.cpp
-msgid "Lithuanian"
-msgstr "Litvanyaca"
-
-#: src/Preferences.cpp
-msgid "Norwegian (Nynorsk)"
-msgstr "Norveççe (Nynorsk)"
-
-#: src/Preferences.cpp
-msgid "Polish"
-msgstr "Lehçe"
-
-#: src/Preferences.cpp
-msgid "Portuguese"
-msgstr "Portekizce"
-
-#: src/Preferences.cpp
-msgid "Portuguese (Brazilian)"
-msgstr "Portekizce (Brezilya)"
-
-#: src/Preferences.cpp
-msgid "Romanian"
-msgstr "Rumence"
-
-#: src/Preferences.cpp
-msgid "Russian"
-msgstr "Rusça"
-
-#: src/Preferences.cpp
-msgid "Slovenian"
-msgstr "Slovence"
-
-#: src/Preferences.cpp
-msgid "Spanish"
-msgstr "İspanyolca"
-
-#: src/Preferences.cpp
-msgid "Swedish"
-msgstr "İsveççe"
-
-#: src/Preferences.cpp
-msgid "Turkish"
-msgstr "Türkçe"
-
-#: src/Preferences.cpp
-msgid "Ukrainian"
-msgstr "Ukraynaca"
-
-#: src/Preferences.cpp
-msgid "Change Language"
-msgstr "Dili Değiştirin"
-
-#: src/Preferences.cpp
-msgid "There are no translations installed for aMule"
-msgstr "aMule tercümeleri kurulu değildir"
-
-#: src/Preferences.cpp
-msgid "No languages available"
-msgstr "Diller mevcut değil"
-
-#: src/Preferences.cpp
 msgid "no options available"
 msgstr "mevcut seçenek yok"
 
@@ -6498,7 +6528,8 @@ msgstr "Bunları yinelemeli olarak paylaşmanız, kapsadıkları her dosyayı eD
 msgid "Confirm shared folders"
 msgstr "Paylaşılan dizinleri teyit et"
 
-#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp src/SharedFilesReloadProgress.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+#: src/SharedFilesReloadProgress.cpp
 msgid "Reloading shared files..."
 msgstr "Paylaşılan dosyalar yeniden yükleniyor…"
 
@@ -9228,6 +9259,15 @@ msgstr "aMule çalışmakta gibi görünüyor. Lütfen onu kapatıp kurulum prog
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Kullanıcı verileri $APPDATA\\aMule konumunda kaldırılıyor…"
+
+#~ msgid "Change Language"
+#~ msgstr "Dili Değiştirin"
+
+#~ msgid "There are no translations installed for aMule"
+#~ msgstr "aMule tercümeleri kurulu değildir"
+
+#~ msgid "No languages available"
+#~ msgstr "Diller mevcut değil"
 
 #~ msgid "User name"
 #~ msgstr "Kullanıcı adı"

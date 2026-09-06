@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-05 12:01+0200\n"
+"POT-Creation-Date: 2026-09-06 14:35+0200\n"
 "PO-Revision-Date: 2026-09-05 10:56+0000\n"
 "Last-Translator: Hallvor Brunstad <Hallvor_1976@yahoo.com>\n"
 "Language-Team: <i18n-nn@lister.ping.uio.no>\n"
@@ -389,7 +389,8 @@ msgstr "vevtenar køyrer på pid %d"
 msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
 msgstr "Du freista å køyre vevtenar ved oppstart, men binærfila amuleweb kan ikkje køyrast. Installer pakken som inneheld vevtenaren til aMule, eller kompiler aMule med --enable-webserver og køyr make install"
 
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
+#: src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
 msgid "ERROR"
 msgstr "FEIL"
 
@@ -678,7 +679,8 @@ msgstr "Nettverk"
 msgid "Searches"
 msgstr "Søk"
 
-#: src/amuleDlg.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/Statistics.cpp
+#: src/amuleDlg.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/Statistics.cpp
 msgid "Downloads"
 msgstr "Nedlastingar"
 
@@ -762,7 +764,9 @@ msgstr "Kad: Av"
 msgid "Core"
 msgstr ""
 
-#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp src/Statistics.cpp
 msgid "Version"
 msgstr "Utgåve"
 
@@ -1066,7 +1070,11 @@ msgstr ""
 msgid "The remote core sent inconsistent data for \"%s\" (part status %d, expected %d). The file list may be showing the wrong information; reconnect to clear it."
 msgstr ""
 
-#: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp src/FileDetailDialog.cpp src/GenericClientListCtrl.cpp src/HTTPDownload.cpp src/KnownFile.cpp src/MuleTrayIcon.cpp src/PartFile.cpp src/Server.cpp src/Statistics.cpp
+#: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp
+#: src/FileDetailDialog.cpp src/GenericClientListCtrl.cpp src/HTTPDownload.cpp
+#: src/KnownFile.cpp src/MuleTrayIcon.cpp src/PartFile.cpp src/Server.cpp
+#: src/Statistics.cpp
 msgid "Unknown"
 msgstr "Ukjend"
 
@@ -1164,7 +1172,8 @@ msgstr "Feil under lagring av known.met fila: %s"
 msgid "Enter Captcha"
 msgstr ""
 
-#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp src/TransferWnd.cpp
+#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
+#: src/TransferWnd.cpp
 msgid "Category"
 msgstr "Kategori"
 
@@ -1328,11 +1337,13 @@ msgstr "Inga 'cryptkey.dat' fil funne - opprettar."
 msgid "Client Details"
 msgstr "Klientdetaljar"
 
-#: src/ClientDetailDialog.cpp src/ServerWnd.cpp src/utils/wxCas/src/onlinesig.cpp
+#: src/ClientDetailDialog.cpp src/ServerWnd.cpp
+#: src/utils/wxCas/src/onlinesig.cpp
 msgid "LowID"
 msgstr "LågID"
 
-#: src/ClientDetailDialog.cpp src/ServerWnd.cpp src/utils/wxCas/src/onlinesig.cpp
+#: src/ClientDetailDialog.cpp src/ServerWnd.cpp
+#: src/utils/wxCas/src/onlinesig.cpp
 msgid "HighID"
 msgstr "HøgID"
 
@@ -1348,7 +1359,8 @@ msgstr "Støtta"
 msgid "Not supported"
 msgstr "Ikkje støtta"
 
-#: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp src/TextClient.cpp
+#: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp
+#: src/TextClient.cpp
 msgid "Connected"
 msgstr "Tilkopla"
 
@@ -1356,7 +1368,8 @@ msgstr "Tilkopla"
 msgid "Disconnected"
 msgstr "Fråkopla"
 
-#: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f KiB/s"
 msgstr ""
@@ -1373,7 +1386,8 @@ msgstr ""
 msgid "IP Address"
 msgstr "IP-adresse"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Origin"
 msgstr ""
 
@@ -1391,12 +1405,14 @@ msgstr "Sist motteke"
 msgid "Sessions"
 msgstr "Utgåve"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
 #, fuzzy
 msgid "Upload Speed"
 msgstr "Opplastingsfart"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
 #, fuzzy
 msgid "Download Speed"
 msgstr "Nedlastingsfart"
@@ -1452,11 +1468,13 @@ msgstr[1] ""
 msgid "Files"
 msgstr "Filer"
 
-#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp
 msgid "Uploaded"
 msgstr "Lasta opp"
 
-#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Downloaded"
 msgstr "Lasta ned"
 
@@ -1547,7 +1565,8 @@ msgstr "Filkommentarar"
 msgid "Username"
 msgstr "Brukarnamn"
 
-#: src/CommentDialogLst.cpp src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/CommentDialogLst.cpp src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp
+#: src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "File Name"
 msgstr "Filnamn"
 
@@ -1608,15 +1627,18 @@ msgstr "Auto·[Hø]"
 msgid "Very low"
 msgstr "Svært låg"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "Låg"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "Vanleg"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "Høg"
 
@@ -1640,11 +1662,13 @@ msgstr "Koplar til gjennom tenar"
 msgid "Queue Full"
 msgstr "Kø full"
 
-#: src/DataToText.cpp src/GenericClientListCtrl.cpp src/KnownFile.cpp src/muuli_wdr.cpp
+#: src/DataToText.cpp src/GenericClientListCtrl.cpp src/KnownFile.cpp
+#: src/muuli_wdr.cpp
 msgid "On Queue"
 msgstr "I kø"
 
-#: src/DataToText.cpp src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
+#: src/DataToText.cpp src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp
+#: src/PartFile.cpp src/TransferWnd.cpp
 msgid "Downloading"
 msgstr "Lastar ned"
 
@@ -1704,7 +1728,8 @@ msgstr "Lokal tenar"
 msgid "Remote Server"
 msgstr "Fjern tenar"
 
-#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp src/TextClient.cpp
+#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp
+#: src/TextClient.cpp
 msgid "Kad"
 msgstr "Kad"
 
@@ -1728,7 +1753,8 @@ msgstr "Kjeldefrø"
 msgid "Search Result"
 msgstr ""
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
+#: src/TransferWnd.cpp
 msgid "Completed"
 msgstr "Ferdig"
 
@@ -1781,7 +1807,8 @@ msgstr ""
 msgid "Part"
 msgstr ""
 
-#: src/DownloadListCtrl.cpp src/PartFileConvertDlg.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/PartFileConvertDlg.cpp src/SearchListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Size"
 msgstr "Storleik"
 
@@ -1789,7 +1816,8 @@ msgstr "Storleik"
 msgid "Transferred"
 msgstr "Overført"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp src/SourceListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+#: src/SourceListCtrl.cpp
 msgid "Speed"
 msgstr "Fart"
 
@@ -1797,11 +1825,13 @@ msgstr "Fart"
 msgid "Progress"
 msgstr "Framdrift"
 
-#: src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/PartFile.cpp
+#: src/SearchListCtrl.cpp
 msgid "Sources"
 msgstr "Kjelder"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Priority"
 msgstr "Prioritet"
 
@@ -1825,7 +1855,9 @@ msgstr "Sist motteke"
 msgid "Auto"
 msgstr "Automatisk"
 
-#: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/TransferWnd.cpp src/utils/wxCas/src/wxcasprefs.cpp
+#: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp
+#: src/ServerListCtrl.cpp src/TransferWnd.cpp
+#: src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Cancel"
 msgstr "Avbryt"
 
@@ -1926,7 +1958,8 @@ msgstr "Skriv nytt namn på denne fila:"
 msgid "File rename"
 msgstr "Døyp om fil"
 
-#: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f MiB/s"
 msgstr ""
@@ -2736,11 +2769,13 @@ msgstr ""
 msgid "Start aMule automatically when I log in"
 msgstr ""
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp packaging/windows/installer_strings.c
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
+#: packaging/windows/installer_strings.c
 msgid "Register aMule for ed2k:// links"
 msgstr ""
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp packaging/windows/installer_strings.c
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
+#: packaging/windows/installer_strings.c
 msgid "Register aMule for magnet: links"
 msgstr ""
 
@@ -2766,7 +2801,8 @@ msgstr ""
 msgid "Destination folder for downloads"
 msgstr ""
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
+#: src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Browse"
 msgstr "Bla"
 
@@ -3191,6 +3227,165 @@ msgstr ""
 msgid "Invalid entry in known file list, file may be corrupt: "
 msgstr ""
 
+#: src/LanguageList.cpp
+msgid "System default"
+msgstr "Standardinnstillingar"
+
+#: src/LanguageList.cpp
+msgid "Albanian"
+msgstr "Albansk"
+
+#: src/LanguageList.cpp
+msgid "Arabic"
+msgstr "Arabisk"
+
+#: src/LanguageList.cpp
+#, fuzzy
+msgid "Asturian"
+msgstr "Estisk"
+
+#: src/LanguageList.cpp
+msgid "Basque"
+msgstr "Baskisk"
+
+#: src/LanguageList.cpp
+msgid "Bulgarian"
+msgstr "Bulgarsk"
+
+#: src/LanguageList.cpp
+msgid "Catalan"
+msgstr "Katalansk"
+
+#: src/LanguageList.cpp
+msgid "Chinese (Simplified)"
+msgstr "Kinesisk (forenkla)"
+
+#: src/LanguageList.cpp
+msgid "Chinese (Traditional)"
+msgstr "Kinesisk (tradisjonell)"
+
+#: src/LanguageList.cpp
+msgid "Croatian"
+msgstr "Kroatisk"
+
+#: src/LanguageList.cpp
+msgid "Czech"
+msgstr "Tsjekkisk"
+
+#: src/LanguageList.cpp
+msgid "Danish"
+msgstr "Dansk"
+
+#: src/LanguageList.cpp
+msgid "Dutch"
+msgstr "Nederlansk"
+
+#: src/LanguageList.cpp
+msgid "English (U.K.)"
+msgstr "Engelsk (U.K.)"
+
+#: src/LanguageList.cpp
+#, fuzzy
+msgid "English (U.S.)"
+msgstr "Engelsk (U.K.)"
+
+#: src/LanguageList.cpp
+msgid "Estonian"
+msgstr "Estisk"
+
+#: src/LanguageList.cpp
+msgid "Finnish"
+msgstr "Finsk"
+
+#: src/LanguageList.cpp
+msgid "French"
+msgstr "Fransk"
+
+#: src/LanguageList.cpp
+msgid "Galician"
+msgstr "Galisisk"
+
+#: src/LanguageList.cpp
+msgid "German"
+msgstr "Tysk"
+
+#: src/LanguageList.cpp
+msgid "Greek"
+msgstr "Gresk"
+
+#: src/LanguageList.cpp
+msgid "Hebrew"
+msgstr "Hebraisk"
+
+#: src/LanguageList.cpp
+msgid "Hungarian"
+msgstr "Ungarsk"
+
+#: src/LanguageList.cpp
+msgid "Italian"
+msgstr "Italiensk"
+
+#: src/LanguageList.cpp
+msgid "Japanese"
+msgstr "Japansk"
+
+#: src/LanguageList.cpp
+msgid "Korean"
+msgstr "Koreansk"
+
+#: src/LanguageList.cpp
+msgid "Latvian"
+msgstr ""
+
+#: src/LanguageList.cpp
+msgid "Lithuanian"
+msgstr "Litauisk"
+
+#: src/LanguageList.cpp
+msgid "Norwegian (Nynorsk)"
+msgstr "Norsk (Nynorsk)"
+
+#: src/LanguageList.cpp
+msgid "Polish"
+msgstr "Polsk"
+
+#: src/LanguageList.cpp
+msgid "Portuguese"
+msgstr "Portugisisk"
+
+#: src/LanguageList.cpp
+msgid "Portuguese (Brazilian)"
+msgstr "Portugisisk (Brasil)"
+
+#: src/LanguageList.cpp
+#, fuzzy
+msgid "Romanian"
+msgstr "Albansk"
+
+#: src/LanguageList.cpp
+msgid "Russian"
+msgstr "Russisk"
+
+#: src/LanguageList.cpp
+msgid "Slovenian"
+msgstr "Slovensk"
+
+#: src/LanguageList.cpp
+msgid "Spanish"
+msgstr "Spansk"
+
+#: src/LanguageList.cpp
+msgid "Swedish"
+msgstr "Svensk"
+
+#: src/LanguageList.cpp
+msgid "Turkish"
+msgstr "Tyrkisk"
+
+#: src/LanguageList.cpp
+msgid "Ukrainian"
+msgstr ""
+
 #: src/libs/common/Format.cpp
 #, fuzzy, c-format
 msgid "Unknown error %d"
@@ -3213,15 +3408,18 @@ msgstr "Ferdigstiller"
 msgid "Complete"
 msgstr "Ferdig"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
+#: src/TransferWnd.cpp
 msgid "Paused"
 msgstr "Pausa"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
+#: src/TransferWnd.cpp
 msgid "Erroneous"
 msgstr "Feilaktig"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
+#: src/TransferWnd.cpp
 msgid "Waiting"
 msgstr "Ventar"
 
@@ -3387,7 +3585,8 @@ msgstr "Stengje"
 msgid "Cut"
 msgstr "Klipp ut"
 
-#: src/MuleTextCtrl.cpp src/PartFileConvert.cpp src/ServerWnd.cpp src/utils/aLinkCreator/src/alcframe.cpp
+#: src/MuleTextCtrl.cpp src/PartFileConvert.cpp src/ServerWnd.cpp
+#: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Copy"
 msgstr "Kopiér"
 
@@ -3395,7 +3594,8 @@ msgstr "Kopiér"
 msgid "Paste"
 msgstr "Lim inn"
 
-#: src/MuleTextCtrl.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
+#: src/MuleTextCtrl.cpp src/muuli_wdr.cpp
+#: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Clear"
 msgstr "Frigjer plass"
 
@@ -3403,7 +3603,8 @@ msgstr "Frigjer plass"
 msgid "Select All"
 msgstr "Vél alle"
 
-#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp src/StatisticsDlg.cpp
+#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
+#: src/StatisticsDlg.cpp
 msgid "KiB/s"
 msgstr ""
 
@@ -5910,179 +6111,6 @@ msgid "ERROR: Failed to open partfile '%s'"
 msgstr "Feil: Greidde ikkje opne delfila '%s'"
 
 #: src/Preferences.cpp
-msgid "System default"
-msgstr "Standardinnstillingar"
-
-#: src/Preferences.cpp
-msgid "Albanian"
-msgstr "Albansk"
-
-#: src/Preferences.cpp
-msgid "Arabic"
-msgstr "Arabisk"
-
-#: src/Preferences.cpp
-#, fuzzy
-msgid "Asturian"
-msgstr "Estisk"
-
-#: src/Preferences.cpp
-msgid "Basque"
-msgstr "Baskisk"
-
-#: src/Preferences.cpp
-msgid "Bulgarian"
-msgstr "Bulgarsk"
-
-#: src/Preferences.cpp
-msgid "Catalan"
-msgstr "Katalansk"
-
-#: src/Preferences.cpp
-msgid "Chinese (Simplified)"
-msgstr "Kinesisk (forenkla)"
-
-#: src/Preferences.cpp
-msgid "Chinese (Traditional)"
-msgstr "Kinesisk (tradisjonell)"
-
-#: src/Preferences.cpp
-msgid "Croatian"
-msgstr "Kroatisk"
-
-#: src/Preferences.cpp
-msgid "Czech"
-msgstr "Tsjekkisk"
-
-#: src/Preferences.cpp
-msgid "Danish"
-msgstr "Dansk"
-
-#: src/Preferences.cpp
-msgid "Dutch"
-msgstr "Nederlansk"
-
-#: src/Preferences.cpp
-msgid "English (U.K.)"
-msgstr "Engelsk (U.K.)"
-
-#: src/Preferences.cpp
-#, fuzzy
-msgid "English (U.S.)"
-msgstr "Engelsk (U.K.)"
-
-#: src/Preferences.cpp
-msgid "Estonian"
-msgstr "Estisk"
-
-#: src/Preferences.cpp
-msgid "Finnish"
-msgstr "Finsk"
-
-#: src/Preferences.cpp
-msgid "French"
-msgstr "Fransk"
-
-#: src/Preferences.cpp
-msgid "Galician"
-msgstr "Galisisk"
-
-#: src/Preferences.cpp
-msgid "German"
-msgstr "Tysk"
-
-#: src/Preferences.cpp
-msgid "Greek"
-msgstr "Gresk"
-
-#: src/Preferences.cpp
-msgid "Hebrew"
-msgstr "Hebraisk"
-
-#: src/Preferences.cpp
-msgid "Hungarian"
-msgstr "Ungarsk"
-
-#: src/Preferences.cpp
-msgid "Italian"
-msgstr "Italiensk"
-
-#: src/Preferences.cpp
-msgid "Japanese"
-msgstr "Japansk"
-
-#: src/Preferences.cpp
-msgid "Korean"
-msgstr "Koreansk"
-
-#: src/Preferences.cpp
-msgid "Latvian"
-msgstr ""
-
-#: src/Preferences.cpp
-msgid "Lithuanian"
-msgstr "Litauisk"
-
-#: src/Preferences.cpp
-msgid "Norwegian (Nynorsk)"
-msgstr "Norsk (Nynorsk)"
-
-#: src/Preferences.cpp
-msgid "Polish"
-msgstr "Polsk"
-
-#: src/Preferences.cpp
-msgid "Portuguese"
-msgstr "Portugisisk"
-
-#: src/Preferences.cpp
-msgid "Portuguese (Brazilian)"
-msgstr "Portugisisk (Brasil)"
-
-#: src/Preferences.cpp
-#, fuzzy
-msgid "Romanian"
-msgstr "Albansk"
-
-#: src/Preferences.cpp
-msgid "Russian"
-msgstr "Russisk"
-
-#: src/Preferences.cpp
-msgid "Slovenian"
-msgstr "Slovensk"
-
-#: src/Preferences.cpp
-msgid "Spanish"
-msgstr "Spansk"
-
-#: src/Preferences.cpp
-msgid "Swedish"
-msgstr "Svensk"
-
-#: src/Preferences.cpp
-msgid "Turkish"
-msgstr "Tyrkisk"
-
-#: src/Preferences.cpp
-msgid "Ukrainian"
-msgstr ""
-
-#: src/Preferences.cpp
-#, fuzzy
-msgid "Change Language"
-msgstr "Språk"
-
-#: src/Preferences.cpp
-msgid "There are no translations installed for aMule"
-msgstr ""
-
-#: src/Preferences.cpp
-#, fuzzy
-msgid "No languages available"
-msgstr "Ikkje tilgjengeleg"
-
-#: src/Preferences.cpp
 msgid "no options available"
 msgstr ""
 
@@ -6594,7 +6622,8 @@ msgstr ""
 msgid "Confirm shared folders"
 msgstr "Lastar inn att delte filer"
 
-#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp src/SharedFilesReloadProgress.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+#: src/SharedFilesReloadProgress.cpp
 #, fuzzy
 msgid "Reloading shared files..."
 msgstr "Lastar inn att delte filer"
@@ -9355,6 +9384,14 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy
+#~ msgid "Change Language"
+#~ msgstr "Språk"
+
+#, fuzzy
+#~ msgid "No languages available"
+#~ msgstr "Ikkje tilgjengeleg"
 
 #~ msgid "User name"
 #~ msgstr "Brukarnamn"

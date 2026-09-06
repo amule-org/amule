@@ -764,6 +764,10 @@ if (NEED_LIB_MULEAPPCOMMON)
 		ED2KLink.cpp
 		Friend.cpp
 		GapList.cpp
+		# Here rather than in COMMON_SOURCES: nothing in the language table
+		# varies with the per-target defines, so amule, amuled and amulegui
+		# share one object instead of each compiling their own.
+		LanguageList.cpp
 		MagnetURI.cpp
 		MemFile.cpp
 		# Lives here rather than in muleappgui because InitCommon expands

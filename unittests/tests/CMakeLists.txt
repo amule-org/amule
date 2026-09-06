@@ -481,6 +481,33 @@ target_link_libraries (OtherFunctionsTest
 	CRYPTOPP::CRYPTOPP
 )
 
+add_executable (LanguageListTest
+	LanguageListTest.cpp
+	${CMAKE_SOURCE_DIR}/src/LanguageList.cpp
+	${CMAKE_SOURCE_DIR}/src/OtherFunctions.cpp
+)
+
+add_test (NAME LanguageListTest
+	COMMAND LanguageListTest
+)
+
+# The list names po/ basenames, so the test needs the catalogs to check against.
+target_compile_definitions (LanguageListTest
+	PRIVATE "PO_SRCDIR=${CMAKE_SOURCE_DIR}/po"
+)
+
+target_include_directories (LanguageListTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+
+target_link_libraries (LanguageListTest
+	muleunit
+	mulecommon
+	CRYPTOPP::CRYPTOPP
+)
+
 
 # libwebcommon — JWT / JSON writer / route patterns. `webcommon` PUBLIC-links
 # wxWidgets::BASE and CRYPTOPP::CRYPTOPP and exposes its own headers through

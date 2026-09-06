@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-05 12:01+0200\n"
+"POT-Creation-Date: 2026-09-06 14:35+0200\n"
 "PO-Revision-Date: 2026-09-05 11:02+0000\n"
 "Last-Translator: Oleksandr Kovalenko <alx.kovalenko@gmail.com>\n"
 "Language-Team: Ukrainian <translation@linux.org.ua>\n"
@@ -387,7 +387,8 @@ msgstr "Веб-сервер запущений з %d"
 msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
 msgstr "Ви встановили запуск веб-сервера під час завантаження, але amuleweb не може бути запущено. Будь ласка, встановіть пакунок, що містить веб-сервер aMule, зберіть aMule з --enable-webserver та виконайте make install"
 
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
+#: src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
 msgid "ERROR"
 msgstr "ПОМИЛКА"
 
@@ -675,7 +676,8 @@ msgstr "Мережі"
 msgid "Searches"
 msgstr "Пошук"
 
-#: src/amuleDlg.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/Statistics.cpp
+#: src/amuleDlg.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/Statistics.cpp
 msgid "Downloads"
 msgstr "Звантаження"
 
@@ -759,7 +761,9 @@ msgstr "Kad: вимкнена"
 msgid "Core"
 msgstr ""
 
-#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+#: src/amuleDlg.cpp src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp src/Statistics.cpp
 msgid "Version"
 msgstr "Версія"
 
@@ -1059,7 +1063,11 @@ msgstr ""
 msgid "The remote core sent inconsistent data for \"%s\" (part status %d, expected %d). The file list may be showing the wrong information; reconnect to clear it."
 msgstr ""
 
-#: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp src/FileDetailDialog.cpp src/GenericClientListCtrl.cpp src/HTTPDownload.cpp src/KnownFile.cpp src/MuleTrayIcon.cpp src/PartFile.cpp src/Server.cpp src/Statistics.cpp
+#: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp
+#: src/FileDetailDialog.cpp src/GenericClientListCtrl.cpp src/HTTPDownload.cpp
+#: src/KnownFile.cpp src/MuleTrayIcon.cpp src/PartFile.cpp src/Server.cpp
+#: src/Statistics.cpp
 msgid "Unknown"
 msgstr "Невідомо"
 
@@ -1159,7 +1167,8 @@ msgstr "Помилка під час збереження файлу known.met: 
 msgid "Enter Captcha"
 msgstr ""
 
-#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp src/TransferWnd.cpp
+#: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
+#: src/TransferWnd.cpp
 msgid "Category"
 msgstr "Категорія"
 
@@ -1329,11 +1338,13 @@ msgstr "Не знайдено 'cryptkey.dat', створюємо."
 msgid "Client Details"
 msgstr "Подробиці клієнта"
 
-#: src/ClientDetailDialog.cpp src/ServerWnd.cpp src/utils/wxCas/src/onlinesig.cpp
+#: src/ClientDetailDialog.cpp src/ServerWnd.cpp
+#: src/utils/wxCas/src/onlinesig.cpp
 msgid "LowID"
 msgstr "LowID"
 
-#: src/ClientDetailDialog.cpp src/ServerWnd.cpp src/utils/wxCas/src/onlinesig.cpp
+#: src/ClientDetailDialog.cpp src/ServerWnd.cpp
+#: src/utils/wxCas/src/onlinesig.cpp
 msgid "HighID"
 msgstr "HighID"
 
@@ -1349,7 +1360,8 @@ msgstr "Підтримується"
 msgid "Not supported"
 msgstr "Не підтримується"
 
-#: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp src/TextClient.cpp
+#: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp
+#: src/TextClient.cpp
 msgid "Connected"
 msgstr "З'єднано"
 
@@ -1357,7 +1369,8 @@ msgstr "З'єднано"
 msgid "Disconnected"
 msgstr "Від'єднана"
 
-#: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f KiB/s"
 msgstr ""
@@ -1374,7 +1387,8 @@ msgstr ""
 msgid "IP Address"
 msgstr "IP-адреса"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Origin"
 msgstr ""
 
@@ -1392,12 +1406,14 @@ msgstr "Останнє отримання"
 msgid "Sessions"
 msgstr "Версія"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
 #, fuzzy
 msgid "Upload Speed"
 msgstr "Швидкість вивантаження"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/SharedFilePeersListCtrl.cpp
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp
 #, fuzzy
 msgid "Download Speed"
 msgstr "Швидкість звантаження"
@@ -1454,11 +1470,13 @@ msgstr[2] ""
 msgid "Files"
 msgstr "Файли"
 
-#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
+#: src/SourceListCtrl.cpp
 msgid "Uploaded"
 msgstr "Вивантажено"
 
-#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
+#: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Downloaded"
 msgstr "Звантажені"
 
@@ -1549,7 +1567,8 @@ msgstr "Коментарі файлу"
 msgid "Username"
 msgstr "Ім'я користувача"
 
-#: src/CommentDialogLst.cpp src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/CommentDialogLst.cpp src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp
+#: src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "File Name"
 msgstr "Назва файлу"
 
@@ -1615,15 +1634,18 @@ msgstr "Авто [висока]"
 msgid "Very low"
 msgstr "Дуже низька"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "Низька"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "Звичайна"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "Висока"
 
@@ -1647,11 +1669,13 @@ msgstr "З'єднується через сервер"
 msgid "Queue Full"
 msgstr "Черга заповнена"
 
-#: src/DataToText.cpp src/GenericClientListCtrl.cpp src/KnownFile.cpp src/muuli_wdr.cpp
+#: src/DataToText.cpp src/GenericClientListCtrl.cpp src/KnownFile.cpp
+#: src/muuli_wdr.cpp
 msgid "On Queue"
 msgstr "В черзі"
 
-#: src/DataToText.cpp src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
+#: src/DataToText.cpp src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp
+#: src/PartFile.cpp src/TransferWnd.cpp
 msgid "Downloading"
 msgstr "Звантажується"
 
@@ -1712,7 +1736,8 @@ msgstr "Місцевий сервер"
 msgid "Remote Server"
 msgstr "Віддалений сервер"
 
-#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp src/TextClient.cpp
+#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp
+#: src/TextClient.cpp
 msgid "Kad"
 msgstr "Kad"
 
@@ -1736,7 +1761,8 @@ msgstr "Поширювачі джерел"
 msgid "Search Result"
 msgstr "Здобутки пошуку"
 
-#: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
+#: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
+#: src/TransferWnd.cpp
 msgid "Completed"
 msgstr "Завершених"
 
@@ -1789,7 +1815,8 @@ msgstr ""
 msgid "Part"
 msgstr "Частина"
 
-#: src/DownloadListCtrl.cpp src/PartFileConvertDlg.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/PartFileConvertDlg.cpp src/SearchListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Size"
 msgstr "Розмір"
 
@@ -1797,7 +1824,8 @@ msgstr "Розмір"
 msgid "Transferred"
 msgstr "Переданих"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp src/SourceListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+#: src/SourceListCtrl.cpp
 msgid "Speed"
 msgstr "Швидкість"
 
@@ -1805,11 +1833,13 @@ msgstr "Швидкість"
 msgid "Progress"
 msgstr "Перебіг"
 
-#: src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/PartFile.cpp
+#: src/SearchListCtrl.cpp
 msgid "Sources"
 msgstr "Джерела"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Priority"
 msgstr "Перевага"
 
@@ -1833,7 +1863,9 @@ msgstr "Останнє отримання"
 msgid "Auto"
 msgstr "Автоматично"
 
-#: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp src/ServerListCtrl.cpp src/TransferWnd.cpp src/utils/wxCas/src/wxcasprefs.cpp
+#: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp
+#: src/ServerListCtrl.cpp src/TransferWnd.cpp
+#: src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Cancel"
 msgstr "Скасувати"
 
@@ -1934,7 +1966,8 @@ msgstr "Введіть нову назву для цього файлу:"
 msgid "File rename"
 msgstr "Змінити назву файлу"
 
-#: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/GenericClientListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "%.1f MiB/s"
 msgstr ""
@@ -2745,11 +2778,13 @@ msgstr ""
 msgid "Start aMule automatically when I log in"
 msgstr ""
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp packaging/windows/installer_strings.c
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
+#: packaging/windows/installer_strings.c
 msgid "Register aMule for ed2k:// links"
 msgstr ""
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp packaging/windows/installer_strings.c
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
+#: packaging/windows/installer_strings.c
 msgid "Register aMule for magnet: links"
 msgstr ""
 
@@ -2775,7 +2810,8 @@ msgstr ""
 msgid "Destination folder for downloads"
 msgstr "Тека призначення для звантажень"
 
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
+#: src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Browse"
 msgstr "Переглянути"
 
@@ -3205,6 +3241,165 @@ msgstr ""
 msgid "Invalid entry in known file list, file may be corrupt: "
 msgstr ""
 
+#: src/LanguageList.cpp
+msgid "System default"
+msgstr "Мова системи"
+
+#: src/LanguageList.cpp
+msgid "Albanian"
+msgstr "Албанська"
+
+#: src/LanguageList.cpp
+msgid "Arabic"
+msgstr "Арабська"
+
+#: src/LanguageList.cpp
+#, fuzzy
+msgid "Asturian"
+msgstr "Естонська"
+
+#: src/LanguageList.cpp
+msgid "Basque"
+msgstr "Баскська"
+
+#: src/LanguageList.cpp
+msgid "Bulgarian"
+msgstr "Болгарська"
+
+#: src/LanguageList.cpp
+msgid "Catalan"
+msgstr "Каталонська"
+
+#: src/LanguageList.cpp
+msgid "Chinese (Simplified)"
+msgstr "Китайська (спрощена)"
+
+#: src/LanguageList.cpp
+msgid "Chinese (Traditional)"
+msgstr "Китайська (традиційна)"
+
+#: src/LanguageList.cpp
+msgid "Croatian"
+msgstr "Хорватська"
+
+#: src/LanguageList.cpp
+msgid "Czech"
+msgstr "Чеська"
+
+#: src/LanguageList.cpp
+msgid "Danish"
+msgstr "Данська"
+
+#: src/LanguageList.cpp
+msgid "Dutch"
+msgstr "Нідерландська"
+
+#: src/LanguageList.cpp
+msgid "English (U.K.)"
+msgstr "Англійська (Великобританія)"
+
+#: src/LanguageList.cpp
+#, fuzzy
+msgid "English (U.S.)"
+msgstr "Англійська (Великобританія)"
+
+#: src/LanguageList.cpp
+msgid "Estonian"
+msgstr "Естонська"
+
+#: src/LanguageList.cpp
+msgid "Finnish"
+msgstr "Фінська"
+
+#: src/LanguageList.cpp
+msgid "French"
+msgstr "Французька"
+
+#: src/LanguageList.cpp
+msgid "Galician"
+msgstr "Галісійська"
+
+#: src/LanguageList.cpp
+msgid "German"
+msgstr "Німецька"
+
+#: src/LanguageList.cpp
+msgid "Greek"
+msgstr "Грецька"
+
+#: src/LanguageList.cpp
+msgid "Hebrew"
+msgstr "Іврит"
+
+#: src/LanguageList.cpp
+msgid "Hungarian"
+msgstr "Угорська"
+
+#: src/LanguageList.cpp
+msgid "Italian"
+msgstr "Італійська"
+
+#: src/LanguageList.cpp
+msgid "Japanese"
+msgstr "Японська"
+
+#: src/LanguageList.cpp
+msgid "Korean"
+msgstr "Корейська"
+
+#: src/LanguageList.cpp
+msgid "Latvian"
+msgstr ""
+
+#: src/LanguageList.cpp
+msgid "Lithuanian"
+msgstr "Литовська"
+
+#: src/LanguageList.cpp
+msgid "Norwegian (Nynorsk)"
+msgstr "Норвезька (Нюнорск)"
+
+#: src/LanguageList.cpp
+msgid "Polish"
+msgstr "Польська"
+
+#: src/LanguageList.cpp
+msgid "Portuguese"
+msgstr "Португальська"
+
+#: src/LanguageList.cpp
+msgid "Portuguese (Brazilian)"
+msgstr "Португальська (Бразилія)"
+
+#: src/LanguageList.cpp
+#, fuzzy
+msgid "Romanian"
+msgstr "Албанська"
+
+#: src/LanguageList.cpp
+msgid "Russian"
+msgstr "Російська"
+
+#: src/LanguageList.cpp
+msgid "Slovenian"
+msgstr "Словенська"
+
+#: src/LanguageList.cpp
+msgid "Spanish"
+msgstr "Іспанська"
+
+#: src/LanguageList.cpp
+msgid "Swedish"
+msgstr "Шведська"
+
+#: src/LanguageList.cpp
+msgid "Turkish"
+msgstr "Турецька"
+
+#: src/LanguageList.cpp
+msgid "Ukrainian"
+msgstr "Українська"
+
 #: src/libs/common/Format.cpp
 #, fuzzy, c-format
 msgid "Unknown error %d"
@@ -3227,16 +3422,19 @@ msgstr "Завершується"
 msgid "Complete"
 msgstr "Завершений"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
+#: src/TransferWnd.cpp
 msgid "Paused"
 msgstr "Призупинений"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
+#: src/TransferWnd.cpp
 msgid "Erroneous"
 msgstr "Помилковий"
 
 # файл
-#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp src/TransferWnd.cpp
+#: src/libs/ec/cpp/ECSpecialTags.cpp src/OtherFunctions.cpp src/PartFile.cpp
+#: src/TransferWnd.cpp
 msgid "Waiting"
 msgstr "Очікує"
 
@@ -3406,7 +3604,8 @@ msgstr "Закрити"
 msgid "Cut"
 msgstr "Вирізати"
 
-#: src/MuleTextCtrl.cpp src/PartFileConvert.cpp src/ServerWnd.cpp src/utils/aLinkCreator/src/alcframe.cpp
+#: src/MuleTextCtrl.cpp src/PartFileConvert.cpp src/ServerWnd.cpp
+#: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Copy"
 msgstr "Скопіювати"
 
@@ -3414,7 +3613,8 @@ msgstr "Скопіювати"
 msgid "Paste"
 msgstr "Вставити"
 
-#: src/MuleTextCtrl.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
+#: src/MuleTextCtrl.cpp src/muuli_wdr.cpp
+#: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Clear"
 msgstr "Очистити"
 
@@ -3422,7 +3622,8 @@ msgstr "Очистити"
 msgid "Select All"
 msgstr "Вибрати всі"
 
-#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp src/StatisticsDlg.cpp
+#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
+#: src/StatisticsDlg.cpp
 msgid "KiB/s"
 msgstr ""
 
@@ -5937,179 +6138,6 @@ msgid "ERROR: Failed to open partfile '%s'"
 msgstr "ПОМИЛКА: не вдалося відкрити частковий файл '%s'"
 
 #: src/Preferences.cpp
-msgid "System default"
-msgstr "Мова системи"
-
-#: src/Preferences.cpp
-msgid "Albanian"
-msgstr "Албанська"
-
-#: src/Preferences.cpp
-msgid "Arabic"
-msgstr "Арабська"
-
-#: src/Preferences.cpp
-#, fuzzy
-msgid "Asturian"
-msgstr "Естонська"
-
-#: src/Preferences.cpp
-msgid "Basque"
-msgstr "Баскська"
-
-#: src/Preferences.cpp
-msgid "Bulgarian"
-msgstr "Болгарська"
-
-#: src/Preferences.cpp
-msgid "Catalan"
-msgstr "Каталонська"
-
-#: src/Preferences.cpp
-msgid "Chinese (Simplified)"
-msgstr "Китайська (спрощена)"
-
-#: src/Preferences.cpp
-msgid "Chinese (Traditional)"
-msgstr "Китайська (традиційна)"
-
-#: src/Preferences.cpp
-msgid "Croatian"
-msgstr "Хорватська"
-
-#: src/Preferences.cpp
-msgid "Czech"
-msgstr "Чеська"
-
-#: src/Preferences.cpp
-msgid "Danish"
-msgstr "Данська"
-
-#: src/Preferences.cpp
-msgid "Dutch"
-msgstr "Нідерландська"
-
-#: src/Preferences.cpp
-msgid "English (U.K.)"
-msgstr "Англійська (Великобританія)"
-
-#: src/Preferences.cpp
-#, fuzzy
-msgid "English (U.S.)"
-msgstr "Англійська (Великобританія)"
-
-#: src/Preferences.cpp
-msgid "Estonian"
-msgstr "Естонська"
-
-#: src/Preferences.cpp
-msgid "Finnish"
-msgstr "Фінська"
-
-#: src/Preferences.cpp
-msgid "French"
-msgstr "Французька"
-
-#: src/Preferences.cpp
-msgid "Galician"
-msgstr "Галісійська"
-
-#: src/Preferences.cpp
-msgid "German"
-msgstr "Німецька"
-
-#: src/Preferences.cpp
-msgid "Greek"
-msgstr "Грецька"
-
-#: src/Preferences.cpp
-msgid "Hebrew"
-msgstr "Іврит"
-
-#: src/Preferences.cpp
-msgid "Hungarian"
-msgstr "Угорська"
-
-#: src/Preferences.cpp
-msgid "Italian"
-msgstr "Італійська"
-
-#: src/Preferences.cpp
-msgid "Japanese"
-msgstr "Японська"
-
-#: src/Preferences.cpp
-msgid "Korean"
-msgstr "Корейська"
-
-#: src/Preferences.cpp
-msgid "Latvian"
-msgstr ""
-
-#: src/Preferences.cpp
-msgid "Lithuanian"
-msgstr "Литовська"
-
-#: src/Preferences.cpp
-msgid "Norwegian (Nynorsk)"
-msgstr "Норвезька (Нюнорск)"
-
-#: src/Preferences.cpp
-msgid "Polish"
-msgstr "Польська"
-
-#: src/Preferences.cpp
-msgid "Portuguese"
-msgstr "Португальська"
-
-#: src/Preferences.cpp
-msgid "Portuguese (Brazilian)"
-msgstr "Португальська (Бразилія)"
-
-#: src/Preferences.cpp
-#, fuzzy
-msgid "Romanian"
-msgstr "Албанська"
-
-#: src/Preferences.cpp
-msgid "Russian"
-msgstr "Російська"
-
-#: src/Preferences.cpp
-msgid "Slovenian"
-msgstr "Словенська"
-
-#: src/Preferences.cpp
-msgid "Spanish"
-msgstr "Іспанська"
-
-#: src/Preferences.cpp
-msgid "Swedish"
-msgstr "Шведська"
-
-#: src/Preferences.cpp
-msgid "Turkish"
-msgstr "Турецька"
-
-#: src/Preferences.cpp
-msgid "Ukrainian"
-msgstr "Українська"
-
-#: src/Preferences.cpp
-#, fuzzy
-msgid "Change Language"
-msgstr "Мова: "
-
-#: src/Preferences.cpp
-msgid "There are no translations installed for aMule"
-msgstr ""
-
-#: src/Preferences.cpp
-#, fuzzy
-msgid "No languages available"
-msgstr "Недоступний"
-
-#: src/Preferences.cpp
 msgid "no options available"
 msgstr "немає наявних опцій"
 
@@ -6629,7 +6657,8 @@ msgstr ""
 msgid "Confirm shared folders"
 msgstr "Спільні теки"
 
-#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp src/SharedFilesReloadProgress.cpp
+#: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+#: src/SharedFilesReloadProgress.cpp
 #, fuzzy
 msgid "Reloading shared files..."
 msgstr "Перезавантажити ваші спільні файли"
@@ -9408,6 +9437,14 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy
+#~ msgid "Change Language"
+#~ msgstr "Мова: "
+
+#, fuzzy
+#~ msgid "No languages available"
+#~ msgstr "Недоступний"
 
 #~ msgid "User name"
 #~ msgstr "Ім'я користувача"
