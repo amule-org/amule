@@ -122,7 +122,18 @@
 #define TAG_PERMISSIONS wxT("\x16")
 #define TAG_QTIME wxT("\x16")
 #define TAG_PARTS wxT("\x17")
-#define TAG_PUBLISHINFO wxT("\x33")    // <uint32>
+#define TAG_PUBLISHINFO wxT("\x33") // <uint32>
+// AICH hashes on Kad keyword storage, introduced by Kad protocol version 0x09.
+// Both are gated on the peer's advertised Kad version (KADEMLIA_VERSION9_50a):
+// the publish tag is only sent to peers at 0x09 or above, and the result tag is
+// only honoured from senders at 0x09 or above.
+#define TAG_KADAICHHASHPUB wxT("\x36")    // <AICH Hash> (BSOB, 20 bytes)
+#define TAG_KADAICHHASHRESULT wxT("\x37") // <Count 1>{<Publishers 1><AICH Hash 20>} Count (BSOB)
+// Not a Kad wire tag: the AICH root hash a Kad search result agreed on, handed
+// from the Kad layer to CSearchList in the same in-process tag list the other
+// result metadata travels in.  It shares FT_AICH_HASH's id (0x27) so a search
+// result carries its AICH hash under the same tag name as everywhere else.
+#define TAG_AICHHASH wxT("\x27")       // <string> (base32)
 #define TAG_MEDIA_ARTIST wxT("\xD0")   // <string>
 #define TAG_MEDIA_ALBUM wxT("\xD1")    // <string>
 #define TAG_MEDIA_TITLE wxT("\xD2")    // <string>

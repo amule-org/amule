@@ -103,7 +103,10 @@ void CIndexed::ReadFile()
 		CFile k_file;
 		if (CPath::FileExists(m_kfilename) && k_file.Open(m_kfilename, CFile::read)) {
 			uint32_t version = k_file.ReadUInt32();
-			if (version < 4) {
+			// Version 4 added the AICH hash block and the per-publisher hash
+			// index that Kad protocol version 0x09 keyword storage needs;
+			// version 3 files still load, just without any AICH hash.
+			if (version < 5) {
 				time_t savetime = k_file.ReadUInt32();
 				if (savetime > time(NULL)) {
 					CUInt128 id = k_file.ReadUInt128();
@@ -125,7 +128,8 @@ void CIndexed::ReadFile()
 										k_file.ReadUInt32();
 									if (version >= 3) {
 										toAdd->ReadPublishTrackingDataFromFile(
-											&k_file);
+											&k_file,
+											version >= 4);
 									}
 									uint32_t tagList = k_file.ReadUInt8();
 									while (tagList) {
@@ -376,7 +380,17 @@ CIndexed::~CIndexed()
 
 		CFile k_file;
 		if (k_file.Open(m_kfilename, CFile::write)) {
-			k_file.WriteUInt32(3); // version
+			// Version 4 carries the AICH block and the per-publisher hash
+			// index; gated with the writer in
+			// CKeyEntry::WritePublishTrackingDataToFile, so a gate-off
+			// build writes the version-3 file upstream writes. Reading
+			// both is unconditional, so switching the gate either way
+			// never invalidates an existing keyword index.
+#ifdef ENABLE_KAD_PROTOCOL_10
+			k_file.WriteUInt32(4); // version, see the note in ReadFile()
+#else
+			k_file.WriteUInt32(3); // version, see the note in ReadFile()
+#endif
 			k_file.WriteUInt32(now + KADEMLIAREPUBLISHTIMEK);
 			k_file.WriteUInt128(Kademlia::CKademlia::GetPrefs()->GetKadID());
 

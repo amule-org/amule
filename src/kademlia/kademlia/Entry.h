@@ -39,6 +39,7 @@ there client on the eMule forum..
 #ifndef __KAD_ENTRY_H__
 #define __KAD_ENTRY_H__
 
+#include "AICHHashList.h"
 #include "../utils/UInt128.h"
 #include "../../Tag.h"
 #include <time.h>
@@ -115,6 +116,10 @@ protected:
 	{
 		uint32_t m_ip;
 		time_t m_lastPublish;
+		// Index into m_aichHashes of the AICH root hash this publisher
+		// reported, or CKadAICHHashList::INVALID_INDEX when it reported
+		// none (a pre-0x09 publisher always reports none).
+		uint16_t m_aichHashIdx;
 	};
 
 public:
@@ -129,7 +134,18 @@ public:
 	void CleanUpTrackedPublishers();
 	double GetTrustValue();
 	void WritePublishTrackingDataToFile(CFileDataIO *data);
-	void ReadPublishTrackingDataFromFile(CFileDataIO *data);
+	// `includesAICH` reflects the on-disk keyword-index version: files
+	// written before the AICH-carrying version 4 have no hash block and no
+	// per-publisher hash index.
+	void ReadPublishTrackingDataFromFile(CFileDataIO *data, bool includesAICH);
+
+	// Records the AICH root hash a publisher sent in TAG_KADAICHHASHPUB.
+	// Only meaningful on a freshly parsed entry, before
+	// MergeIPsAndFilenames() folds it into the stored entry: that is where
+	// the hash gets attached to this publisher and the popularity counts of
+	// the merged list are maintained.
+	void SetPublishedAICHHash(const CKadAICHHash &hash);
+	uint16_t GetAICHHashCount() const { return m_aichHashes.GetSlotCount(); }
 	void DirtyDeletePublishData();
 	void WriteTagListWithPublishInfo(CFileDataIO *data);
 	static void ResetGlobalTrackingMap() { s_globalPublishIPs.clear(); }
@@ -143,6 +159,9 @@ protected:
 
 	uint64_t m_lastTrustValueCalc;
 	double m_trustValue;
+	// The AICH root hashes reported for this entry, with one popularity
+	// count per hash.  Empty for entries that only pre-0x09 peers published.
+	CKadAICHHashList m_aichHashes;
 	PublishingIPList *m_publishingIPs;
 	static GlobalPublishIPMap
 		s_globalPublishIPs; // tracks count of publishings for each 255.255.255.0/24 subnet

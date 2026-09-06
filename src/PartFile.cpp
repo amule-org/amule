@@ -310,6 +310,34 @@ CPartFile::CPartFile(CSearchFile *searchresult)
 			}
 		}
 
+		if (pTag.GetNameID() == FT_AICH_HASH && pTag.IsStr()) {
+			// The AICH root hash a search result carried, from an ed2k server
+			// or from Kad. Set as the master hash rather than stored as a
+			// tag: the tag copies above all end at m_taglist, and nothing
+			// reads an AICH hash back out of there. This is the whole point
+			// of carrying the hash on a result -- a download that starts
+			// already knowing its root hash never has to collect one from a
+			// pool of peers before it can recover a corrupt part.
+			//
+			// AICH_VERIFIED matches the .part.met path above and the ed2k
+			// link path in DownloadQueue.cpp: in all three the hash arrived
+			// with something that vouches for it, rather than from an
+			// individual peer answering a request.
+			CAICHHash hash;
+			if (hash.DecodeBase32(pTag.GetStr()) == CAICHHash::GetHashSize()) {
+				m_pAICHHashSet->SetMasterHash(hash, AICH_VERIFIED);
+				MarkECChanged();
+				AddDebugLogLineN(logPartFile,
+					"CPartFile::CPartFile(CSearchFile*): took master AICH hash "
+					"from the search result");
+				bTagAdded = true;
+			} else {
+				AddDebugLogLineN(logPartFile,
+					"CPartFile::CPartFile(CSearchFile*): undecodable AICH hash on "
+					"the search result, ignored");
+			}
+		}
+
 		if (!bTagAdded) {
 			AddDebugLogLineN(logPartFile,
 				"CPartFile::CPartFile(CSearchFile*): ignored tag " + pTag.GetFullInfo());
