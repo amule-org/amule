@@ -166,23 +166,39 @@ jobs:
       - name: run tests
         run: ctest ${{ env.ctest_flags }}
 
-  # The gate-off build is what every other job already covers, because
-  # ENABLE_KAD_PROTOCOL_10 defaults to OFF. This job is the other half: one
-  # Linux build with the switch ON, so the code behind it cannot rot
-  # unnoticed. Deliberately a separate job at a single build type rather than
-  # an extra matrix dimension -- doubling every OS job would cost far more
-  # than it tells us, since the switch changes no platform-dependent code.
-  build_cmake_ubuntu_kad_protocol_10:
-    name: Build CMake Ubuntu (Release, ENABLE_KAD_PROTOCOL_10)
+  # The gate-off build is what every other job already covers, because every
+  # experimental switch defaults to OFF. This job is the other half: one Linux
+  # build per switch with it ON, so the code behind it cannot rot unnoticed.
+  #
+  # A matrix over the switches rather than one job apiece. Deliberately not an
+  # extra dimension on the OS jobs -- doubling every one of those would cost
+  # far more than it tells us, since these switches change no
+  # platform-dependent code. Adding a switch is one entry here, which is the
+  # point: NAT traversal, uTP, QUIC and IPv6 are all still to come, and a
+  # second hand-written near-copy of this job was the alternative.
+  #
+  # `flags` rather than a bare name so an entry can set more than one, which
+  # is what an `all` entry needs: enabling every switch at once is what a user
+  # who wants the features actually builds, and no per-switch job covers the
+  # combination. There is only one switch here, so `all` would be a duplicate
+  # job today; it belongs in the change that adds the second.
+  build_cmake_ubuntu_experimental:
+    name: Build CMake Ubuntu (Release, ${{ matrix.name }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ENABLE_KAD_PROTOCOL_10
+            flags: -DENABLE_KAD_PROTOCOL_10=YES
     steps:
       - uses: actions/checkout@v7
       - name: restore ccache
         uses: actions/cache/restore@v6
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ runner.os }}-kad10-ccache-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
-          restore-keys: ${{ runner.os }}-kad10-ccache-
+          key: ${{ runner.os }}-${{ matrix.name }}-ccache-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
+          restore-keys: ${{ runner.os }}-${{ matrix.name }}-ccache-
       - name: install deps
         run: |
           sudo apt-get update
@@ -193,7 +209,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             ${{ env.cmake_common_config_flags }} \
             ${{ env.cmake_ubuntu_config_flags }} \
-            -DENABLE_KAD_PROTOCOL_10=YES
+            ${{ matrix.flags }}
       - name: zero ccache stats
         run: ccache --zero-stats
       - name: make
@@ -203,7 +219,7 @@ jobs:
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ runner.os }}-kad10-ccache-${{ github.run_id }}
+          key: ${{ runner.os }}-${{ matrix.name }}-ccache-${{ github.run_id }}
       - name: ccache stats
         if: always()
         run: ccache --show-stats

@@ -122,7 +122,16 @@ public:
 
 	// The hash the most publishers agreed on, or NULL for an empty list.
 	// Ties resolve to the first entry, which is the order the sender chose.
-	static const SResultHash *GetMostPopular(const std::vector<SResultHash> &hashes);
+	// The hash to trust out of a result's set, or nullptr for "none of
+	// them". Both of eMule 0.70b's rules are refusals: more than one distinct
+	// hash means at least one publisher is lying and AICH is ignored for the
+	// result, and a lone hash still has to come from at least a third of the
+	// publishers known for the file. @p publishersKnown is the middle byte of
+	// TAG_PUBLISHINFO. The destination is SetMasterHash(..., AICH_VERIFIED),
+	// which has no room for a hash that is merely ahead on a count the
+	// publisher itself supplies.
+	static const SResultHash *SelectTrusted(
+		const std::vector<SResultHash> &hashes, uint32_t publishersKnown);
 
 	// Whether a peer advertising `peerKadVersion` handles AICH hashes on
 	// keyword storage.  Both directions consult this: TAG_KADAICHHASHPUB is

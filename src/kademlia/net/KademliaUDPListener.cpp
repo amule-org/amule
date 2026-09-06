@@ -1285,19 +1285,6 @@ void CKademliaUDPListener::Process2PublishKeyRequest(const uint8_t *packetData,
 									KadIPToString(ip));
 						}
 						delete tag; // tag is no longer stored, but membervar is used
-					} else if (!tag->GetName().Cmp(TAG_KADAICHHASHRESULT)) {
-						// A tag we generate ourselves when answering a
-						// search.  A publisher has no business sending
-						// it: storing it would let it dictate the AICH
-						// publisher counts we then relay to searchers as
-						// our own assessment.  Gated because with the
-						// switch off we never emit this tag, so storing
-						// an unknown one is upstream's behaviour.
-						AddDebugLogLineN(logClientKadUDP,
-							"Received result-only tag on publishing, "
-							"filtered, source " +
-								KadIPToString(ip));
-						delete tag;
 #endif
 					} else {
 						// TODO: Filter tags

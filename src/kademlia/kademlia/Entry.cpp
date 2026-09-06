@@ -84,7 +84,23 @@ void CEntry::AddTag(CTag *tag, uint32_t dbgSourceIP)
 	// search, out of our own count of distinct publishers and how much we trust them; stored, a
 	// peer-supplied one travels back out of CKeyEntry::WriteTagListWithPublishInfo() alongside
 	// our genuine value.
-	if (!tag->GetName().Cmp(TAG_PUBLISHINFO)) {
+	//
+	// TAG_KADAICHHASHRESULT is the same shape of tag and belongs in the same
+	// branch: we build it when answering a keyword search, out of the AICH
+	// hashes publishers gave us and how many gave each one. A stored
+	// peer-supplied one leaves by the same route and reads as our own
+	// assessment. Deliberately ungated: the guard's value is that it is one
+	// unconditional branch covering every caller, and filtering a tag this
+	// build never emits costs nothing. It also covers the three storing paths
+	// a handler-side filter does not -- source and notes publishing, and
+	// CIndexed::ReadFile(), which rebuilds every entry from key_index.dat
+	// with its raw taglist, so a node poisoned before this fix would reload
+	// the tag on restart and keep serving it.
+	//
+	// TAG_KADAICHHASHPUB is not here: that one is consumed into a member
+	// rather than filtered, which is the split 0.70b, 0.72a, eMuleAI and
+	// emule-qt all use.
+	if (!tag->GetName().Cmp(TAG_PUBLISHINFO) || !tag->GetName().Cmp(TAG_KADAICHHASHRESULT)) {
 		AddDebugLogLineN(logKadEntryTracking,
 			CFormat("Filtered result-only tag on storing, source %s") %
 				(dbgSourceIP ? KadIPToString(dbgSourceIP) : wxString(wxT("local"))));

@@ -224,7 +224,11 @@ TEST(KadAICHHashList, DecodeResultTagIgnoresTrailingGarbage)
 	ASSERT_EQUALS(3u, (unsigned)decoded[0].m_popularity);
 }
 
-TEST(KadAICHHashList, GetMostPopularPicksTheHighestPublisherCount)
+// eMule 0.70b refuses to pick between competing hashes rather than crowning
+// the most popular one. The distinction is the whole test: the popularity
+// figure is supplied by the publishers themselves, so in a contested set the
+// liar also controls the number that would decide the vote.
+TEST(KadAICHHashList, CompetingHashesAreAllRefused)
 {
 	std::vector<CKadAICHHashList::SResultHash> decoded;
 	CKadAICHHashList::SResultHash a = { 2, MakeHash(1) };
@@ -234,13 +238,47 @@ TEST(KadAICHHashList, GetMostPopularPicksTheHighestPublisherCount)
 	decoded.push_back(b);
 	decoded.push_back(c);
 
-	const CKadAICHHashList::SResultHash *best = CKadAICHHashList::GetMostPopular(decoded);
+	// 9 out of 10 publishers would pass the ratio comfortably if it were
+	// reached. It is not: more than one hash ends the question.
+	ASSERT_TRUE(CKadAICHHashList::SelectTrusted(decoded, 10) == NULL);
+
+	// Two is already more than one.
+	decoded.pop_back();
+	decoded.pop_back();
+	CKadAICHHashList::SResultHash d = { 1, MakeHash(4) };
+	decoded.push_back(d);
+	ASSERT_TRUE(CKadAICHHashList::SelectTrusted(decoded, 10) == NULL);
+}
+
+// A lone hash is necessary but not sufficient: it still has to come from at
+// least a third of the publishers known for the file.
+TEST(KadAICHHashList, ALoneHashStillNeedsAThirdOfThePublishers)
+{
+	std::vector<CKadAICHHashList::SResultHash> decoded;
+	CKadAICHHashList::SResultHash only = { 4, MakeHash(1) };
+	decoded.push_back(only);
+
+	// 12 / 4 == 3: exactly at the boundary, and accepted.
+	const CKadAICHHashList::SResultHash *best = CKadAICHHashList::SelectTrusted(decoded, 12);
 	ASSERT_TRUE(best != NULL);
-	ASSERT_EQUALS(9u, (unsigned)best->m_popularity);
-	ASSERT_TRUE(best->m_hash == MakeHash(2));
+	ASSERT_TRUE(best->m_hash == MakeHash(1));
+
+	// 13 / 4 == 3 by integer division, so the boundary is where upstream's
+	// own arithmetic puts it rather than where exact division would.
+	ASSERT_TRUE(CKadAICHHashList::SelectTrusted(decoded, 13) != NULL);
+
+	// 16 / 4 == 4: four publishers for every one that names this hash.
+	ASSERT_TRUE(CKadAICHHashList::SelectTrusted(decoded, 16) == NULL);
+
+	// No publisher count is not a passing ratio. Upstream's arithmetic would
+	// let this through, since 0 divided by anything is 0, but a missing
+	// TAG_PUBLISHINFO means there is no count to be a third of -- and
+	// accepting it would make the least corroborated result the easiest to
+	// get accepted.
+	ASSERT_TRUE(CKadAICHHashList::SelectTrusted(decoded, 0) == NULL);
 
 	decoded.clear();
-	ASSERT_TRUE(CKadAICHHashList::GetMostPopular(decoded) == NULL);
+	ASSERT_TRUE(CKadAICHHashList::SelectTrusted(decoded, 10) == NULL);
 }
 
 // Task 1.5: mixed-version publish and search. Both the publish gate

@@ -161,15 +161,43 @@ bool CKadAICHHashList::PeerSupportsAICHKeywordStorage(uint8_t peerKadVersion)
 	return peerKadVersion >= KADEMLIA_VERSION9_50a;
 }
 
-const CKadAICHHashList::SResultHash *CKadAICHHashList::GetMostPopular(const std::vector<SResultHash> &hashes)
+const CKadAICHHashList::SResultHash *CKadAICHHashList::SelectTrusted(
+	const std::vector<SResultHash> &hashes, uint32_t publishersKnown)
 {
-	const SResultHash *best = nullptr;
-	for (const SResultHash &hash : hashes) {
-		if (best == nullptr || hash.m_popularity > best->m_popularity) {
-			best = &hash;
-		}
+	// Two rules, both eMule 0.70b's at SearchList.cpp:795-805, and both
+	// refusals rather than choices.
+	//
+	// Competing hashes for one file id mean at least one publisher is lying.
+	// Taking the most popular of them looks like the obvious answer and is
+	// the wrong one: popularity here is a count a peer reports about itself,
+	// so whoever is lying also controls the number that would decide the
+	// vote. Upstream ignores AICH for such a result entirely, and the
+	// destination being SetMasterHash(hash, AICH_VERIFIED) is why -- there is
+	// no "probably right" state to put a contested hash into.
+	if (hashes.size() != 1) {
+		return nullptr;
 	}
-	return best;
+
+	// One hash still is not enough on its own. A single publisher out of many
+	// is not agreement, it is one peer we happen to have asked, so the hash
+	// must come from at least a third of the publishers known for this file.
+	// Written as a ratio to match upstream's own arithmetic rather than
+	// restating it as a multiplication.
+	//
+	// publishersKnown == 0 is refused rather than allowed through. Upstream's
+	// ratio would pass it -- 0 / anything is 0 -- but that is an artefact of
+	// the arithmetic, not a decision: it means TAG_PUBLISHINFO was absent or
+	// zero, so there is no publisher count to be a third of. Accepting there
+	// would make a result with no corroboration at all the easiest one to get
+	// accepted, which inverts the rule.
+	const uint8_t popularity = hashes[0].m_popularity;
+	if (popularity == 0 || publishersKnown == 0) {
+		return nullptr;
+	}
+	if (publishersKnown / popularity > 3) {
+		return nullptr;
+	}
+	return &hashes[0];
 }
 
 } // namespace Kademlia
