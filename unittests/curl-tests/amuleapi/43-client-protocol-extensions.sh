@@ -14,16 +14,19 @@
 #   * `protocol_extensions` is present on the /clients list row, on the
 #     /clients/{ecid} detail object, and in the client_* SSE payloads, so
 #     the three views of one peer do not disagree,
-#   * it is a number, not a token: the field is a bitfield and a peer claims
-#     any combination of the bits, so there is no single value to name,
-#   * only bits the daemon defines can appear. The daemon masks the word
-#     with MOD_MISCOPT_KNOWN_MASK (0x1F) before it reaches EC, so a value
-#     outside that mask means either the mask moved or something re-derived
-#     the word downstream — which is the failure this field is most likely
-#     to have, and the one nothing else would notice,
-#   * the key is always present, never omitted: 0 is a real answer here (the
-#     peer claimed nothing, which nearly every peer does) and a caller must
-#     not have to tell it from a missing key.
+#   * it is an array of tokens, not the bitfield the word arrives in: a
+#     caller must not have to carry its own copy of aMule's bit meanings,
+#     and a list rather than one token because a peer claims any
+#     combination of them,
+#   * every token is one the daemon defines. The daemon masks the word with
+#     MOD_MISCOPT_KNOWN_MASK (0x1F) before it reaches EC, so a token outside
+#     the known set means either the mask moved, the table in
+#     src/PeerCapabilities.h grew a row the serialiser does not know, or
+#     something re-derived the word downstream — which is the failure this
+#     field is most likely to have, and the one nothing else would notice,
+#   * the key is always present, never omitted: [] is a real answer here
+#     (the peer claimed nothing, which nearly every peer does) and a caller
+#     must not have to tell it from a missing key.
 #
 # Note on an empty peer list: a fresh regtest daemon may be connected to no
 # peers, so the per-row assertions skip themselves rather than fail. Run
@@ -40,10 +43,6 @@ set -o pipefail
 
 HOST=${HOST:-localhost:4713}
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
-
-# Every bit the daemon defines: MOD_MISCOPT_KNOWN_MASK in
-# src/PeerCapabilities.h. Anything outside it must never reach the wire.
-KNOWN_MASK=31
 
 FAIL_COUNT=0
 TEST_COUNT=0
@@ -79,25 +78,40 @@ _assert_status() {
 
 _jq() { echo "$CURL_BODY" | jq -r "$1" 2>/dev/null; }
 
+# The tokens the table in src/PeerCapabilities.h defines, in bit order. A row
+# added there without a matching entry here fails the membership check below,
+# which is the point: the two must not drift.
+KNOWN_TOKENS="extended_source_exchange nat_traversal_utp ipv6 serving_buddy_pull nat_traversal_quic"
+
 # The two properties every appearance of the field has to hold, wherever it
-# came from: it is a number, and it carries no bit the daemon does not define.
+# came from: it is an array, and every token in it is one the daemon defines.
 _assert_word() {
 	local where=$1 type=$2 value=$3
 
-	if [ "$type" = "number" ]; then
-		_pass "$where: protocol_extensions is a number, not a token"
+	if [ "$type" = "array" ]; then
+		_pass "$where: protocol_extensions is an array of tokens"
 	else
-		_fail "$where" "expected a number, got type '$type'"
+		_fail "$where" "expected an array, got type '$type'"
 		return
 	fi
 
-	if [ "$((value & ~KNOWN_MASK))" -eq 0 ]; then
-		_pass "$where: only defined bits are set (word=$value, mask=$KNOWN_MASK)"
+	local unknown=""
+	local token
+	for token in $(echo "$value" | jq -r '.[]' 2>/dev/null); do
+		case " $KNOWN_TOKENS " in
+			*" $token "*) ;;
+			*) unknown="$unknown $token" ;;
+		esac
+	done
+
+	if [ -z "$unknown" ]; then
+		_pass "$where: only defined tokens appear (tokens=$value)"
 	else
 		_fail "$where" \
-			"word $value carries a bit outside MOD_MISCOPT_KNOWN_MASK ($KNOWN_MASK)" \
-			"the daemon masks in CPeerCapabilities::SetFromWire; a bit here means" \
-			"the mask moved or the word was re-derived downstream"
+			"unknown token(s):$unknown" \
+			"the daemon masks in CPeerCapabilities::SetFromWire and names bits in" \
+			"CPeerCapabilities::Table(); a token here means the mask moved, the" \
+			"table grew a row this test does not know, or the word was re-derived"
 	fi
 }
 

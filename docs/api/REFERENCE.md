@@ -1268,7 +1268,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
       "upload_queue_score": 150,
       "obfuscation_state": "enabled",
       "connected": true,
-      "protocol_extensions": 0,
+      "protocol_extensions": [],
       "friend_slot": false,
       "source_origin": "kad",
       "parts_offered_count": 42,
@@ -1305,7 +1305,7 @@ Every one of them falls back to `"unknown"` for a code the daemon does not map, 
 
 `connected` says whether a socket to this peer is up right now. A row existing in this list does not answer that: the daemon holds a client object from the first contact attempt, so a peer it is still trying to reach - or can never reach - appears here with `connected: false`. It is `null` on a daemon that does not report peer connectivity. The `online` fields on [`GET /friends`](#get-apiv0friends), [`GET /chats`](#get-apiv0chats) and [`GET /known_clients`](#get-apiv0known_clients) are the same fact reached by their own keys.
 
-`protocol_extensions` is the peer's eMuleAI vendor capability word, taken verbatim from `EC_TAG_CLIENT_MOD_CAPABILITIES` — the same value the desktop GUI renders as its *Protocol extensions* row. It is a bitfield, not one of the enumerated tokens above, because a peer claims any combination of the bits rather than one state: `0x01` extended source exchange, `0x02` uTP NAT traversal, `0x04` IPv6, `0x08` serving-buddy pull, `0x10` QUIC NAT traversal. The daemon has already cleared every bit it does not define, so a bit set here is one aMule names; a bit aMule does not name reads as absent, not as unknown. `0` means the peer claimed nothing, which is what nearly every peer on the network does — a peer that sent no capability tag and one that sent an all-zero word are the same state on the wire and report the same here.
+`protocol_extensions` is the set of protocol extensions the peer claimed in its handshake, as stable tokens: `extended_source_exchange`, `nat_traversal_utp`, `ipv6`, `serving_buddy_pull`, `nat_traversal_quic`. A list rather than one token because a peer claims any combination of them, and tokens rather than the `EC_TAG_CLIENT_MOD_CAPABILITIES` bitfield they arrive in so no consumer has to carry its own copy of aMule's bit meanings. The order is stable. The daemon has already dropped every extension it does not define, so a token here is one aMule names, and an extension aMule does not name is absent rather than unknown. `[]` means the peer claimed nothing, which is what nearly every peer on the network does — a peer that sent no capability tag and one that sent an all-zero word are the same state on the wire and report the same here. The desktop GUI renders the same set as its *Protocol extensions* row.
 
 It says what the *peer* supports, never what this daemon does: aMule implements none of these extensions yet and advertises none of them back, so the field is recognition only. The bit meanings are wire format shared with eMuleAI and are defined in `src/PeerCapabilities.h`.
 
@@ -1356,7 +1356,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
   "upload_queue_score": 150,
   "obfuscation_state": "enabled",
   "connected": true,
-  "protocol_extensions": 0,
+  "protocol_extensions": [],
   "friend_slot": false,
   "ed2k_user_id": 3232238090,
   "high_id": true,
