@@ -80,7 +80,8 @@ public:
 	bool GetIntTagValue(const wxString &tagname, uint64_t &value, bool includeVirtualTags = true) const;
 	wxString GetStrTagValue(const wxString &tagname) const;
 
-	void AddTag(CTag *tag) { m_taglist.push_back(tag); }
+	// dbgSourceIP is the peer the tag came from, or 0 when we generated it ourselves.
+	void AddTag(CTag *tag, uint32_t dbgSourceIP);
 	uint32_t GetTagCount() const
 	{
 		return m_taglist.size() + ((m_uSize != 0) ? 1 : 0) + (GetCommonFileName().IsEmpty() ? 0 : 1);
