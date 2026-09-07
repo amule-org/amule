@@ -111,7 +111,7 @@ std::vector<std::pair<Ipv6Bytes, unsigned int>> ReadIfInet6Flags()
 			bytes[i] = static_cast<std::uint8_t>(value);
 		}
 		if (parsed) {
-			result.push_back(std::make_pair(bytes, flags));
+			result.emplace_back(bytes, flags);
 		}
 	}
 

@@ -180,7 +180,7 @@ public:
 		std::vector<std::string> tokens;
 		for (const auto &entry : Table()) {
 			if (Has(entry.bit)) {
-				tokens.push_back(entry.token);
+				tokens.emplace_back(entry.token);
 			}
 		}
 		return tokens;
