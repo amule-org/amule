@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-06 23:44+0200\n"
+"POT-Creation-Date: 2026-09-07 16:21+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -4174,7 +4174,7 @@ msgid "Obfuscation"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Protocol extensions:"
+msgid "Protocol extensions"
 msgstr ""
 
 #: src/muuli_wdr.cpp
