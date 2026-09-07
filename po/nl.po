@@ -13,7 +13,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-07 16:21+0200\n"
-"PO-Revision-Date: 2026-09-05 10:56+0000\n"
+"PO-Revision-Date: 2026-09-07 14:51+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
 "Language: nl\n"
@@ -1282,11 +1282,11 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: src/ClientContextActions.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Remove %u client from your friend list?"
 msgid_plural "Remove %u clients from your friend list?"
-msgstr[0] "Verwijder uit vriendenlijst"
-msgstr[1] "Verwijder uit vriendenlijst"
+msgstr[0] "Verwijder %u client uit uw viendenlijst?"
+msgstr[1] "Verwijder %u clients uit uw vriendenlijst?"
 
 #: src/ClientContextActions.cpp
 #, c-format
@@ -1296,11 +1296,11 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: src/ClientContextActions.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Request the shared files of %u client?"
 msgid_plural "Request the shared files of %u clients?"
-msgstr[0] "Laad gedeelde bestandenlijst opnieuw."
-msgstr[1] "Laad gedeelde bestandenlijst opnieuw."
+msgstr[0] "Vraag de gedeelde bestanden van %u client aan?"
+msgstr[1] "Vraag de gedeelde bestanden van %u clients aan?"
 
 #: src/ClientContextActions.cpp
 msgid "A connection is opened to each of them."
@@ -1824,7 +1824,7 @@ msgstr "Overgebleven tijd"
 
 #: src/DownloadListCtrl.cpp
 msgid "Last Seen Complete"
-msgstr "Laatst compleet gezien"
+msgstr "Laatst Compleet Gezien"
 
 #: src/DownloadListCtrl.cpp
 msgid "Last Reception"
@@ -3983,7 +3983,7 @@ msgstr "Algemeen"
 
 #: src/muuli_wdr.cpp
 msgid "Full Name"
-msgstr "Volledige naam"
+msgstr "Volledige Naam"
 
 #: src/muuli_wdr.cpp
 msgid "met-File"

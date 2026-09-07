@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-07 16:21+0200\n"
-"PO-Revision-Date: 2026-09-05 11:03+0000\n"
+"PO-Revision-Date: 2026-09-07 14:55+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -4026,7 +4026,7 @@ msgstr "可用"
 
 #: src/muuli_wdr.cpp
 msgid "Datarate"
-msgstr "数据率"
+msgstr "数据速率"
 
 #: src/muuli_wdr.cpp
 msgid "Download Active Time"
@@ -4050,11 +4050,11 @@ msgstr "压缩效益"
 
 #: src/muuli_wdr.cpp
 msgid "Packages saved by I.C.H."
-msgstr "由 I.C.H. 挽救的数据包"
+msgstr "由 I.C.H. 挽救的数据包."
 
 #: src/muuli_wdr.cpp
 msgid "Sharing"
-msgstr "共享:"
+msgstr "正在分享"
 
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
 msgid "Requests"
@@ -4315,7 +4315,7 @@ msgstr "安全身份认证"
 
 #: src/muuli_wdr.cpp
 msgid "Queue rank"
-msgstr "队列等级"
+msgstr "等候队伍排名"
 
 #: src/muuli_wdr.cpp
 msgid "Queue score"
@@ -5678,7 +5678,7 @@ msgstr "日"
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "%s:"
-msgstr ""
+msgstr "%s:"
 
 #: src/OtherFunctions.cpp
 msgid "all"
@@ -6036,13 +6036,12 @@ msgid "ERROR: Failed to open partfile '%s'"
 msgstr "错误：打开part文件'%s'失败"
 
 #: src/PeerCapabilities.h
-#, fuzzy
 msgid "Extended source exchange"
-msgstr "源交换"
+msgstr "扩展源交换"
 
 #: src/PeerCapabilities.h
 msgid "NAT traversal (uTP)"
-msgstr ""
+msgstr "NAT穿透（uTP）"
 
 #: src/PeerCapabilities.h
 msgid "IPv6"
@@ -6054,7 +6053,7 @@ msgstr ""
 
 #: src/PeerCapabilities.h
 msgid "NAT traversal (QUIC)"
-msgstr ""
+msgstr "NAT 穿透（QUIC）"
 
 #: src/Preferences.cpp
 msgid "no options available"
