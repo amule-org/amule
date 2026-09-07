@@ -270,11 +270,11 @@ TEST(KadAICHHashList, ALoneHashStillNeedsAThirdOfThePublishers)
 	// 16 / 4 == 4: four publishers for every one that names this hash.
 	ASSERT_TRUE(CKadAICHHashList::SelectTrusted(decoded, 16) == NULL);
 
-	// No publisher count is not a passing ratio. Upstream's arithmetic would
-	// let this through, since 0 divided by anything is 0, but a missing
-	// TAG_PUBLISHINFO means there is no count to be a third of -- and
-	// accepting it would make the least corroborated result the easiest to
-	// get accepted.
+	// No publisher count is not a passing ratio. The ratio alone would let it
+	// through, 0 divided by anything being 0, which is why upstream guards
+	// byPublishers > 0 separately and so do we: a missing TAG_PUBLISHINFO
+	// means there is no count to be a third of, and accepting it would make
+	// the least corroborated result the easiest to get accepted.
 	ASSERT_TRUE(CKadAICHHashList::SelectTrusted(decoded, 0) == NULL);
 
 	decoded.clear();

@@ -184,12 +184,12 @@ const CKadAICHHashList::SResultHash *CKadAICHHashList::SelectTrusted(
 	// Written as a ratio to match upstream's own arithmetic rather than
 	// restating it as a multiplication.
 	//
-	// publishersKnown == 0 is refused rather than allowed through. Upstream's
-	// ratio would pass it -- 0 / anything is 0 -- but that is an artefact of
-	// the arithmetic, not a decision: it means TAG_PUBLISHINFO was absent or
-	// zero, so there is no publisher count to be a third of. Accepting there
-	// would make a result with no corroboration at all the easiest one to get
-	// accepted, which inverts the rule.
+	// publishersKnown == 0 is refused, which upstream guards explicitly too:
+	// its condition is byPublishers > 0 && popularity > 0 && the ratio. Worth
+	// stating because the ratio alone would pass it, 0 / anything being 0. A
+	// zero count means TAG_PUBLISHINFO was absent or zero, so there is no
+	// publisher count to be a third of, and accepting there would make a
+	// result with no corroboration at all the easiest one to get accepted.
 	const uint8_t popularity = hashes[0].m_popularity;
 	if (popularity == 0 || publishersKnown == 0) {
 		return nullptr;
