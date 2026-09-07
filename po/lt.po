@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-06 23:44+0200\n"
+"POT-Creation-Date: 2026-09-07 16:21+0200\n"
 "PO-Revision-Date: 2026-09-05 10:55+0000\n"
 "Last-Translator: Dovydas Sankauskas <laisve@gmail.com>\n"
 "Language-Team: Lithuanian <komp_lt@konf.lt>\n"
@@ -4341,7 +4341,7 @@ msgstr "Slėpimas"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Protocol extensions:"
+msgid "Protocol extensions"
 msgstr "Protokolo slėpimas"
 
 #: src/muuli_wdr.cpp
