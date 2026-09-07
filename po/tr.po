@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-07 16:21+0200\n"
-"PO-Revision-Date: 2026-09-05 11:02+0000\n"
+"PO-Revision-Date: 2026-09-07 14:54+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
 "Language: tr\n"
@@ -3986,7 +3986,7 @@ msgstr "met-Dosyası"
 
 #: src/muuli_wdr.cpp
 msgid "Hash"
-msgstr "Adresleme"
+msgstr "Karma Değer"
 
 #: src/muuli_wdr.cpp
 msgid "Filesize"
@@ -4002,7 +4002,7 @@ msgstr "Parça Dosya Durumu"
 
 #: src/muuli_wdr.cpp
 msgid "Last seen complete"
-msgstr "Son Görülen Tamamlama"
+msgstr "Son Tam Görülme"
 
 #: src/muuli_wdr.cpp
 msgid "Found Sources"
@@ -4010,7 +4010,7 @@ msgstr "Bulunan Kaynaklar"
 
 #: src/muuli_wdr.cpp
 msgid "Transferring Sources"
-msgstr "Aktarılan Kaynaklar"
+msgstr "Aktarma Yapan Kaynaklar"
 
 #: src/muuli_wdr.cpp
 msgid "Filepart-Count"
@@ -4018,15 +4018,15 @@ msgstr "Dosya Parçası-Sayısı"
 
 #: src/muuli_wdr.cpp
 msgid "Available"
-msgstr "Uygun"
+msgstr "Mevcut"
 
 #: src/muuli_wdr.cpp
 msgid "Datarate"
-msgstr "Veri Oranı"
+msgstr "Veri Hızı"
 
 #: src/muuli_wdr.cpp
 msgid "Download Active Time"
-msgstr "Aktarım Süresi"
+msgstr "Etkin İndirme Süresi"
 
 #: src/muuli_wdr.cpp
 msgid "Completed Size"
@@ -4202,7 +4202,7 @@ msgstr "Ek Bilgi"
 
 #: src/muuli_wdr.cpp
 msgid "Userhash"
-msgstr "Kullanıcı Adreslemesi"
+msgstr "Kullanıcı Karma Değeri"
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Add"
@@ -4238,11 +4238,11 @@ msgstr "İstatistik Ağacı"
 
 #: src/muuli_wdr.cpp
 msgid "Client software"
-msgstr "Yazılım"
+msgstr "İstemci yazılımı"
 
 #: src/muuli_wdr.cpp
 msgid "Client version"
-msgstr "Yazılım Sürümü"
+msgstr "İstemci sürümü"
 
 #: src/muuli_wdr.cpp
 msgid "User ID"
@@ -4254,7 +4254,7 @@ msgstr "Sunucu IP"
 
 #: src/muuli_wdr.cpp
 msgid "Server name"
-msgstr "Sunucu"
+msgstr "Sunucu ismi"
 
 #: src/muuli_wdr.cpp
 msgid "Obfuscation"
@@ -4271,15 +4271,15 @@ msgstr "Yapılan aktarımlar"
 
 #: src/muuli_wdr.cpp
 msgid "Current request"
-msgstr "Şimdiki İstek"
+msgstr "Şimdiki istek"
 
 #: src/muuli_wdr.cpp
 msgid "Average upload rate"
-msgstr "Ortalama gönderim oranı"
+msgstr "Ortalama gönderim hızı"
 
 #: src/muuli_wdr.cpp
 msgid "Average download rate"
-msgstr "Ortalama aktarım oranı"
+msgstr "Ortalama indirme hızı"
 
 #: src/muuli_wdr.cpp
 msgid "Uploaded (session)"
@@ -4307,7 +4307,7 @@ msgstr "İND./GÖN. niteleyici"
 
 #: src/muuli_wdr.cpp
 msgid "Secure ident"
-msgstr "Güvenli Kimlik"
+msgstr "Güvenli kimlik"
 
 #: src/muuli_wdr.cpp
 msgid "Queue rank"
@@ -5099,7 +5099,7 @@ msgstr "Gelen Dosyalar Dizini"
 
 #: src/muuli_wdr.cpp
 msgid "Change priority for new assigned files"
-msgstr "Yeni eklenen dosyalar için öncelikleri değiştir"
+msgstr "Yeni atanan dosyalar için öncelikleri değiştir"
 
 #: src/muuli_wdr.cpp
 msgid "Don't change"
@@ -5107,7 +5107,7 @@ msgstr "Değiştirme"
 
 #: src/muuli_wdr.cpp
 msgid "Select color for this Category (currently selected)"
-msgstr "Bu sınıf için renk seçiniz (varsayılan)"
+msgstr "Bu Kategori (güncel olarak seçili) için renk seç"
 
 #: src/muuli_wdr.cpp
 msgid "Click this button to reset the log."
@@ -5465,11 +5465,11 @@ msgstr "Vekil sunucu desteğini etkinleştir/devre dışı bırak"
 
 #: src/muuli_wdr.cpp
 msgid "Proxy type"
-msgstr "Vekil sunucu Türü"
+msgstr "Vekil sunucu türü"
 
 #: src/muuli_wdr.cpp
 msgid "Proxy host"
-msgstr "Vekil sunucu makine"
+msgstr "Vekil sunucu makinesi"
 
 #: src/muuli_wdr.cpp
 msgid "The proxy host name"
@@ -5477,7 +5477,7 @@ msgstr "Vekil sunucu makine adı"
 
 #: src/muuli_wdr.cpp
 msgid "Proxy port"
-msgstr "Vekil sunucu Portu"
+msgstr "Vekil sunucu bağlantı noktası"
 
 #: src/muuli_wdr.cpp
 msgid "The proxy port"
@@ -5674,7 +5674,7 @@ msgstr "gün"
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "%s:"
-msgstr ""
+msgstr "%s:"
 
 #: src/OtherFunctions.cpp
 msgid "all"
@@ -6032,25 +6032,24 @@ msgid "ERROR: Failed to open partfile '%s'"
 msgstr "HATA: Parça dosyası '%s' açılamıyor"
 
 #: src/PeerCapabilities.h
-#, fuzzy
 msgid "Extended source exchange"
-msgstr "Kaynak Değişimi"
+msgstr "Genişletilmiş kaynak değişimi"
 
 #: src/PeerCapabilities.h
 msgid "NAT traversal (uTP)"
-msgstr ""
+msgstr "NAT geçişi (uTP)"
 
 #: src/PeerCapabilities.h
 msgid "IPv6"
-msgstr ""
+msgstr "IPv6"
 
 #: src/PeerCapabilities.h
 msgid "Buddy info pull"
-msgstr ""
+msgstr "Eş bilgileri alımı"
 
 #: src/PeerCapabilities.h
 msgid "NAT traversal (QUIC)"
-msgstr ""
+msgstr "NAT geçişi (QUIC)"
 
 #: src/Preferences.cpp
 msgid "no options available"

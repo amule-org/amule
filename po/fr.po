@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-07 16:21+0200\n"
-"PO-Revision-Date: 2026-09-05 10:51+0000\n"
+"PO-Revision-Date: 2026-09-07 14:48+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
 "Language: fr\n"
@@ -3917,7 +3917,7 @@ msgstr "Disponibilité"
 
 #: src/muuli_wdr.cpp
 msgid "Filter"
-msgstr "Filtre"
+msgstr "Filtrer"
 
 #: src/muuli_wdr.cpp
 msgid "Invert Result"
@@ -4005,7 +4005,7 @@ msgstr "Transfert"
 
 #: src/muuli_wdr.cpp
 msgid "Partfilestatus"
-msgstr "Statut du fichier .part"
+msgstr "État du fichier .part"
 
 #: src/muuli_wdr.cpp
 msgid "Last seen complete"
@@ -4037,7 +4037,7 @@ msgstr "Temps de téléchargement actif"
 
 #: src/muuli_wdr.cpp
 msgid "Completed Size"
-msgstr "Taille reçue"
+msgstr "Taille une fois terminée"
 
 #: src/muuli_wdr.cpp
 msgid "Intelligent Corruption Handling"
@@ -4049,7 +4049,7 @@ msgstr "Perdus par corruption"
 
 #: src/muuli_wdr.cpp
 msgid "Gained by compression"
-msgstr "Gagné avec la compression"
+msgstr "Gagnés avec la compression"
 
 #: src/muuli_wdr.cpp
 msgid "Packages saved by I.C.H."
@@ -4310,7 +4310,7 @@ msgstr "Scores"
 
 #: src/muuli_wdr.cpp
 msgid "DL/UP modifier"
-msgstr "Modificateur R/E"
+msgstr "Modificateur R/É"
 
 #: src/muuli_wdr.cpp
 msgid "Secure ident"
@@ -4322,7 +4322,7 @@ msgstr "Rang dans la file d'attente"
 
 #: src/muuli_wdr.cpp
 msgid "Queue score"
-msgstr "Score de la file d'attente"
+msgstr "Score de file d'attente"
 
 #: src/muuli_wdr.cpp
 msgid "Nick"
@@ -5102,11 +5102,11 @@ msgstr "Annule tous les changements effectués dans les Préférences."
 
 #: src/muuli_wdr.cpp
 msgid "Incoming Dir"
-msgstr "Répertoire entrant"
+msgstr "Répertoire de téléchargement"
 
 #: src/muuli_wdr.cpp
 msgid "Change priority for new assigned files"
-msgstr "Changer la priorité des nouveaux fichiers assignés"
+msgstr "Modifier la priorité des nouveaux fichiers assignés"
 
 #: src/muuli_wdr.cpp
 msgid "Don't change"
@@ -5472,11 +5472,11 @@ msgstr "Active/Désactive le support proxy"
 
 #: src/muuli_wdr.cpp
 msgid "Proxy type"
-msgstr "Type de proxy"
+msgstr "Type de serveur mandataire"
 
 #: src/muuli_wdr.cpp
 msgid "Proxy host"
-msgstr "Hôte du proxy"
+msgstr "Hôte du serveur mandataire"
 
 #: src/muuli_wdr.cpp
 msgid "The proxy host name"
@@ -5484,7 +5484,7 @@ msgstr "Nom de l'hôte du proxy"
 
 #: src/muuli_wdr.cpp
 msgid "Proxy port"
-msgstr "Port du proxy"
+msgstr "Port du serveur mandataire"
 
 #: src/muuli_wdr.cpp
 msgid "The proxy port"
@@ -5681,7 +5681,7 @@ msgstr "jours"
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "%s:"
-msgstr ""
+msgstr "%s :"
 
 #: src/OtherFunctions.cpp
 msgid "all"
@@ -6039,25 +6039,24 @@ msgid "ERROR: Failed to open partfile '%s'"
 msgstr "ERREUR : Impossible d'ouvrir fichier .part : '%s'"
 
 #: src/PeerCapabilities.h
-#, fuzzy
 msgid "Extended source exchange"
-msgstr "Échange de Sources"
+msgstr "Échange de sources étendue"
 
 #: src/PeerCapabilities.h
 msgid "NAT traversal (uTP)"
-msgstr ""
+msgstr "Traversée de NAT (uTP)"
 
 #: src/PeerCapabilities.h
 msgid "IPv6"
-msgstr ""
+msgstr "IPv6"
 
 #: src/PeerCapabilities.h
 msgid "Buddy info pull"
-msgstr ""
+msgstr "Récupération d'informations sur le pote"
 
 #: src/PeerCapabilities.h
 msgid "NAT traversal (QUIC)"
-msgstr ""
+msgstr "Traversée de NAT (QUIC)"
 
 #: src/Preferences.cpp
 msgid "no options available"

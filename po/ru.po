@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-07 16:21+0200\n"
-"PO-Revision-Date: 2026-09-05 11:00+0000\n"
+"PO-Revision-Date: 2026-09-07 14:53+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
 "Language: ru\n"
@@ -81,7 +81,7 @@ msgstr "Документация:"
 
 #: src/AboutDialog.cpp
 msgid "Issues:"
-msgstr "Задачи:"
+msgstr "Проблемы:"
 
 #: src/AboutDialog.cpp
 msgid "Click to check for a newer version."
@@ -4352,7 +4352,7 @@ msgstr "Баланс приёма/отдачи"
 
 #: src/muuli_wdr.cpp
 msgid "Secure ident"
-msgstr "Безопасная идентификация"
+msgstr "Безопасное опознавание"
 
 #: src/muuli_wdr.cpp
 msgid "Queue rank"
@@ -5727,7 +5727,7 @@ msgstr "д"
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "%s:"
-msgstr ""
+msgstr "%s:"
 
 #: src/OtherFunctions.cpp
 msgid "all"
@@ -5813,7 +5813,7 @@ msgstr "Ожидает чтения"
 
 #: src/PartBarLegendUI.cpp
 msgid "One block per part of the file being downloaded."
-msgstr "Один блок на каждую часть загружаемого файла."
+msgstr "По одному блоку на каждую часть загружаемого файла."
 
 #: src/PartBarLegendUI.cpp
 msgid "One block per part of the shared file."
@@ -5821,11 +5821,11 @@ msgstr "По одному блоку на каждую часть публику
 
 #: src/PartBarLegendUI.cpp
 msgid "One block per part of the shared file, coloured by how many other sources have it."
-msgstr "Один блок на каждую часть публикуемого файла, цвет показывает, у скольких других источников есть эта часть."
+msgstr "По одному блоку на каждую часть публикуемого файла; цвет показывает, у скольких других источников есть эта часть."
 
 #: src/PartBarLegendUI.cpp
 msgid "One block per part of the shared file, showing how far the re-hash has read."
-msgstr "Один блок на каждую часть публикуемого файла, показывает, как далеко продвинулось перехеширование."
+msgstr "По одному блоку на каждую часть публикуемого файла; показывает, как далеко продвинулось перехеширование."
 
 #: src/PartBarLegendUI.cpp
 msgid "In between, darkening as other sources are added"
@@ -6311,7 +6311,7 @@ msgstr "Не удалось сохранить пароль amuleapi: %s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Language changed.\n"
-msgstr "- Язык сменился.\n"
+msgstr "- Смена языка.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Temp folder changed.\n"
