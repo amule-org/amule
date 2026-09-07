@@ -26,7 +26,8 @@
 #ifndef CLIENTLIST_H
 #define CLIENTLIST_H
 
-#include "DeadSourceList.h" // Needed for CDeadSourceList
+#include "DeadSourceList.h"
+#include "BanRecord.h" // Needed for CBanRecord // Needed for CDeadSourceList
 #include "ClientRef.h"
 
 #include <deque>
@@ -192,9 +193,6 @@ public:
 	 *
 	 */
 	CUpDownClient *FindClientByECID(uint32 ecid) const;
-
-	//! The list-type used to store clients IPs and ban time information
-	typedef std::map<uint32, uint64> ClientMap;
 
 	/**
 	 * Adds a client to the list of tracked clients.
@@ -407,7 +405,10 @@ private:
 	IDMap m_clientList;
 
 	//! This is the map of banned clients.
-	ClientMap m_bannedList;
+	// The banned addresses, and the pairing rule for theStats' banned count:
+	// every operation reports whether the set actually changed, and the counter
+	// follows that answer rather than the call. See src/BanRecord.h.
+	CBanRecord m_bannedList;
 	//! This variable is used to keep track of the last time the banned-list was pruned.
 	uint64 m_dwLastBannCleanUp;
 

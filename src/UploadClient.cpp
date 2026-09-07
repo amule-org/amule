@@ -664,6 +664,17 @@ void CUpDownClient::Ban()
 		"Client '" + GetUserName() +
 			"' seems to be an aggressive client and is banned from the uploadqueue");
 
+	// The upload state is set whether or not the record took the address, and
+	// the two are deliberately independent rather than out of step. US_BANNED
+	// governs this client object and needs nothing to identify it, so an
+	// aggressive peer we have no address for still loses its slot. The record
+	// governs an address so the ban outlives the object and survives a
+	// reconnection -- and with no address there is nothing to remember it by.
+	//
+	// The visible consequence is that IsBanned() reads false for such a peer
+	// while its state is US_BANNED, so it is never un-banned through the
+	// record. That is the right way round: we cannot recognise it if it comes
+	// back, so we must not claim to.
 	SetUploadState(US_BANNED);
 
 	Notify_SharedCtrlRefreshClient(ECID(), UNAVAILABLE_SOURCE);
