@@ -338,6 +338,12 @@ add_executable (NetworkFunctionsTest
 	NetworkFunctionsTest.cpp
 	${CMAKE_SOURCE_DIR}/src/NetworkFunctions.cpp
 	${CMAKE_SOURCE_DIR}/src/LibSocket.cpp
+	# LibSocket.cpp includes LibSocketAsio.cpp, which resolves a Windows
+	# adapter friendly name to an interface index through
+	# DetectNetworkInterfaces(). That definition lives in the mulesocket
+	# library this test does not link, so the translation unit has to be
+	# compiled in here or the Windows link fails on the undefined symbol.
+	${CMAKE_SOURCE_DIR}/src/NetworkInterfaces.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )

@@ -1046,8 +1046,8 @@ IF (NEED_LIB_MULESOCKET)
 		# adapters that LibSocketAsio.cpp resolves a Windows FriendlyName
 		# against for bind-to-interface.
 		# PUBLIC (not PRIVATE): mulesocket is a static lib, so the dependency
-		# must propagate to every consumer that links it (including the
-		# NetworkFunctionsTest unit-test exe), not just to mulesocket itself.
+		# must propagate to every consumer that links it, not just to
+		# mulesocket itself.
 		target_link_libraries (mulesocket PUBLIC iphlpapi)
 	endif()
 endif()
