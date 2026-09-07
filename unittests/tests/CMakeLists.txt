@@ -197,6 +197,40 @@ target_link_libraries (BanRecordTest
 	mulecommon
 )
 
+# The internal address type: byte order in the signature, absence distinct
+# from 0.0.0.0, explicit failure instead of truncation, and a total order so
+# the type can be a map key. The type stores its own sixteen octets and a
+# family tag rather than an asio address, which is what keeps this target
+# free of the app and the daemon -- only NetworkAddress.cpp below still
+# compiles Boost.Asio.
+add_executable (NetworkAddressTest
+	NetworkAddressTest.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+	# CNetworkAddress::FromString/ToString live in NetworkAddress.cpp: they are
+	# the only part of the type that still compiles Boost.Asio, and keeping them
+	# out of the header is what stops asio reaching most of src/. Every target
+	# that touches an address therefore has to link this TU -- the type is no
+	# longer header-only.
+	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
+)
+
+add_test (NAME NetworkAddressTest
+	COMMAND NetworkAddressTest
+)
+
+target_include_directories (NetworkAddressTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+	PRIVATE ${Boost_INCLUDE_DIR}
+)
+
+target_link_libraries (NetworkAddressTest
+	muleunit
+	${Boost_LIBRARIES}
+)
+
 add_executable (CUInt128Test
 	CUInt128Test.cpp
 	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp

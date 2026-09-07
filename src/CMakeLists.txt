@@ -1017,6 +1017,19 @@ endif()
 IF (NEED_LIB_MULESOCKET)
 	add_library (mulesocket STATIC
 		LibSocket.cpp
+		# The two text operations of CNetworkAddress (parse and format) are the
+		# only ones that still compile Boost.Asio, so the type is not
+		# header-only and every target touching an address has to link this TU.
+		#
+		# It lives here rather than in muleappcommon for two reasons, both about
+		# where asio already is. mulesocket is the last static library on every
+		# executable's link line, so a one-pass linker resolves these symbols
+		# for muleappcommon and mulecommon too -- putting them in muleappcommon
+		# instead breaks amulegui, which is scanned before mulesocket. And
+		# mulesocket already links ${Boost_LIBRARIES}, which on mingw-w64 is
+		# ws2_32;mswsock -- exactly what asio's winsock_init needs, and what
+		# targets that merely include NetworkAddress.h must not require.
+		NetworkAddress.cpp
 		# The one interface enumeration in the tree. Here rather than in
 		# muleappcommon because LibSocketAsio.cpp resolves a bind-to-interface
 		# name through it and mulesocket does not link muleappcommon, while
