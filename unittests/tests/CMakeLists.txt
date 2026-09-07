@@ -204,6 +204,16 @@ add_test (NAME KadAICHHashListTest
 )
 
 target_include_directories (KadAICHHashListTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+
+target_link_libraries (KadAICHHashListTest
+	muleunit
+	mulecommon
+)
+
 # The adaptive Kad response-time ceiling. CFastKad takes "now" as a parameter
 # rather than reading a clock, which is what lets the cold start, a known series
 # of samples, the eviction rule and the window bound all be pinned without
@@ -224,7 +234,6 @@ target_include_directories (FastKadTest
 	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
 )
 
-target_link_libraries (KadAICHHashListTest
 target_link_libraries (FastKadTest
 	muleunit
 	mulecommon

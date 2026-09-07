@@ -350,6 +350,12 @@ foreach (experimental_option IN LISTS AMULE_EXPERIMENTAL_OPTIONS)
 	# Nothing here writes the cache, so enabling the set for one configure
 	# does not leave the individual switches ON for later ones.
 	if (${experimental_option} OR ENABLE_ALL_EXPERIMENTAL)
+		# The variable is set as well as the definition added, because a
+		# switch may gate more than preprocessor state: ENABLE_KAD_NODE_PROTECTION
+		# also selects source files in cmake/source-vars.cmake, and an if()
+		# there has to see it. Directory scope, so it reaches the
+		# subdirectories included after this and still never touches the cache.
+		set (${experimental_option} ON)
 		add_compile_definitions (${experimental_option})
 	endif()
 endforeach()

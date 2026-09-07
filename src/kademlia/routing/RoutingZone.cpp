@@ -493,13 +493,23 @@ bool CRoutingZone::AddUnfiltered(const CUInt128 &id,
 		// so it is where an address that rotates Kad IDs faster than once
 		// an hour, or one banned for having done so, has to be turned away.
 		//
+		// No upstream counterpart: eMuleAI and emule-qt each call IsBadNode()
+		// in exactly one place, the search answer, and neither gates routing
+		// table admission with it. This is ours, and it is the reason the
+		// switch must not default to ON without evidence: the table deciding
+		// who may enter is what Kad health rests on, and a heuristic that is
+		// even slightly too eager fails quietly, as a node that gradually
+		// stops finding peers with nothing in the log to say why. Measure
+		// routing table size and contact churn against a control node before
+		// changing the default.
+		//
 		// onlyOneNodePerIP is deliberately off: CRoutingBin already caps
 		// the routing table at MAX_CONTACTS_IP (1) Kad ID per address plus
 		// MAX_CONTACTS_SUBNET (10) per /24, and duplicating that here would
 		// add a second, weaker copy of a rule the bin already enforces
 		// better. CSafeKad's own per-IP rule exists for callers outside the
 		// routing table.
-		if (safeKad.IsBadNode(ip, port, id, version, ipVerified, false, time(NULL))) {
+		if (safeKad.IsBadNode(ip, port, id, version, ipVerified, false, time(nullptr))) {
 			AddDebugLogLineN(logKadRouting,
 				"Ignored kad contact (IP=" + KadIPPortToString(ip, port) +
 					") - rejected by the Kad identity protections");
@@ -1086,7 +1096,7 @@ bool CRoutingZone::VerifyContact(const CUInt128 &id, uint32_t ip)
 		// behind this Kad ID. Recording it verified is what makes a later
 		// unverified claim of a different ID for the same address
 		// rejectable rather than merely rate-limited.
-		safeKad.TrackNode(ip, contact->GetUDPPort(), id, true, time(NULL));
+		safeKad.TrackNode(ip, contact->GetUDPPort(), id, true, time(nullptr));
 #endif
 		return true;
 	}

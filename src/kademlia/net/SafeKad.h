@@ -154,6 +154,41 @@ private:
 // Every table is bounded and evicts by last-reference age, so sustained inbound
 // traffic costs a fixed amount of memory. All entry points take `now` so that
 // the whole ladder is testable without waiting on a real clock.
+// Seven places where this deliberately does not match eMuleAI, listed so the
+// next person holding the two side by side reads them as decisions rather than
+// as transcription slips. emule-qt agrees with eMuleAI on all seven.
+//
+//  - eMuleAI bans on the FIRST verified sub-hour identity change; the ladder
+//    above needs two inside 300 s. Bans are per address while tracking is per
+//    (address, port), so under CGNAT a carrier reusing one external port for
+//    different subscribers makes a single tracked entry legitimately see
+//    different Kad IDs, and eMuleAI's rule would take out every aMule user
+//    behind that address for four hours on the first sighting.
+//  - eMuleAI gates banning on a user preference, IsBanBadKadNodes(). The
+//    compile switch stands in for it while this is experimental; a runtime
+//    equivalent is a precondition for ever defaulting the switch ON.
+//  - TrackNode() returns whether it accepted, and IsBadNode() refuses on a
+//    rejected rotation. eMuleAI's TrackNode() is void and IsBadNode() answers
+//    IsBanned() alone, so upstream ACCEPTS the first rejected rotation and only
+//    refuses once a ban lands. Refusing immediately is what makes a rotation
+//    cost the sender its rotation, which is the half that has to hold given the
+//    slower ladder above.
+//  - A full table evicts its oldest entry; eMuleAI returns without acting once
+//    the tracked table reaches 10000 or the ban table 1000, so a flood that
+//    fills the table lets every later abuser through, which inverts the
+//    protection exactly when it is needed.
+//  - BanAddress() drops the banned address's tracked ports. eMuleAI leaves them
+//    behind, where they are unreachable state for an address nothing may talk
+//    to.
+//  - The verified flag is also upgraded on a matching-ID sighting in
+//    IsBadNode(); eMuleAI upgrades it only inside TrackNode(). It moves in one
+//    direction only, and the one caller that hardcodes verified=false is
+//    AddUnfiltered(), so a peer cannot drive the upgrade for somebody else.
+//  - The last-reference time is not refreshed on the refused path. eMuleAI
+//    refreshes on every lookup, which lets an attacker's own traffic decide
+//    which entries survive age-based eviction; here such an entry ages out
+//    instead. The trade is real in both directions: forgetting a rotator also
+//    gives it a clean slate.
 class CSafeKad
 {
 public:

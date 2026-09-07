@@ -322,7 +322,7 @@ void CSearch::JumpStart()
 			++it;
 			continue;
 		}
-		safeKad.TrackProblematicNode(it->second.m_ip, it->second.m_port, time(NULL));
+		safeKad.TrackProblematicNode(it->second.m_ip, it->second.m_port, time(nullptr));
 		m_pendingRequests.erase(it++);
 	}
 
@@ -460,7 +460,7 @@ void CSearch::ProcessResponse(uint32_t fromIP, uint16_t fromPort, ContactList *r
 			    fromContact->GetVersion(),
 			    true,
 			    false,
-			    time(NULL))) {
+			    time(nullptr))) {
 			AddDebugLogLineN(logKadSearch,
 				"Ignoring search response from a node judged bad by the Kad identity "
 				"protections: " +
