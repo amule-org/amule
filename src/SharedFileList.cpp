@@ -607,32 +607,32 @@ CSharedFileList::AddPathResult CSharedFileList::AddPathToShares(
 {
 	CPath fullPath = directory.JoinPaths(fname);
 
-	if (!fullPath.FileExists()) {
-		AddDebugLogLineN(logKnownFiles,
-			CFormat("Shared file does not exist (possibly a broken link): %s") % fullPath);
-		return kAddPathSkipped;
-	}
-
-	AddDebugLogLineN(logKnownFiles, CFormat("Found shared file: %s") % fullPath);
-
-	// User-configured name exclusion. Checked before the stat calls below
-	// so excluded files cost only a name match. Applies identically to the
-	// bulk walk and the incremental watcher path.
+	// User-configured name exclusion. Checked before touching the filesystem
+	// so an excluded file costs a name match and nothing else. Applies
+	// identically to the bulk walk and the incremental watcher path.
 	if (thePrefs::IsShareExcluded(fname.GetPrintable())) {
 		AddDebugLogLineN(logKnownFiles, CFormat("Excluded from shares by filter: %s") % fullPath);
 		return kAddPathExcluded;
 	}
 
-	time_t fdate = CPath::GetModificationTime(fullPath);
-	sint64 fsize = fullPath.GetFileSize();
-
-	// This will also catch files with too strict permissions.
-	if ((fdate == (time_t)-1) || (fsize == wxInvalidOffset)) {
+	// One stat for all three answers. Asking separately -- exists, then
+	// modification time, then size -- costs four filesystem round-trips per
+	// file, and the size query opens the file to measure it. Multiplied by
+	// the share, that was the larger half of a cold-cache startup walk.
+	//
+	// A false here is every reason the three separate checks used to report
+	// individually: a broken symlink, something that is not a regular file,
+	// or permissions too strict to stat.
+	time_t fdate;
+	sint64 fsize;
+	if (!fullPath.GetFileStat(fdate, fsize)) {
 		AddDebugLogLineN(logKnownFiles,
-			CFormat("Failed to retrieve modification time or size for '%s', skipping.") %
+			CFormat("Not a readable regular file (broken link, or permissions), skipping: %s") %
 				fullPath);
 		return kAddPathSkipped;
 	}
+
+	AddDebugLogLineN(logKnownFiles, CFormat("Found shared file: %s") % fullPath);
 
 	if (fsize == 0) {
 		AddDebugLogLineN(logKnownFiles, CFormat("Skip zero size file '%s'") % fullPath);

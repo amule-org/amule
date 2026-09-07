@@ -120,6 +120,20 @@ public:
 	sint64 GetFileSize() const;
 
 	/**
+	 * Existence, modification time and size from a single stat().
+	 *
+	 * Returns false when the path is not an existing regular file, which
+	 * covers the cases the callers used to test separately: a broken
+	 * symlink, a directory, and permissions too strict to stat.
+	 *
+	 * FileExists() + GetModificationTime() + GetFileSize() answer the same
+	 * question in four filesystem round-trips, one of which opens the file
+	 * (GetFileSize() below). The share scan asks it once per shared file,
+	 * where that difference is most of the walk on a cold cache.
+	 */
+	bool GetFileStat(time_t &mtime, sint64 &size) const;
+
+	/**
 	 * Compares under the assumption that both objects are dirs, even if
 	 * one or the other lacks a terminal directory-separator. However, an
 	 * empty CPath object will not be considered equal to a path to the root.

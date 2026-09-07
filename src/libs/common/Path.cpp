@@ -33,6 +33,10 @@
 #include <wx/filename.h>
 #include <algorithm> // Needed for std::min
 
+#ifndef __WINDOWS__
+#include <sys/stat.h> // Needed for ::stat in GetFileStat
+#endif
+
 // Windows has case-insensitive paths, so we use a
 // case-insensitive cmp for that platform. TODO:
 // Perhaps it would be better to simply lowercase
@@ -236,6 +240,23 @@ static bool IsSameAs(const wxString &a, const wxString &b)
 		return PATHCMP(a.c_str(), b.c_str()) == 0;
 	}
 
+	// Identical strings normalise identically, so both calls below are known
+	// to agree before either runs.
+	if (a == b) {
+		return true;
+	}
+
+	// An empty path names no file, so it can only equal another empty path --
+	// which the comparison above already answered. Falling through instead
+	// would hand "" to NormalizedKey(), and that is not merely slow: an empty
+	// path is not absolute, so it normalises to the process working directory
+	// and compares equal to whichever directory aMule happens to be sitting
+	// in. A CKnownFile loaded from known.met has no directory until the share
+	// scan stamps one, so this is every known file on every scan.
+	if (a.empty() || b.empty()) {
+		return false;
+	}
+
 	return NormalizedKey(a) == NormalizedKey(b);
 }
 
@@ -417,6 +438,44 @@ sint64 CPath::GetFileSize() const
 	}
 
 	return wxInvalidOffset;
+}
+
+bool CPath::GetFileStat(time_t &mtime, sint64 &size) const
+{
+#ifdef __WINDOWS__
+	// No single-call equivalent worth the #ifdef here: wxWidgets already
+	// routes both queries through the same GetFileAttributesEx, so the
+	// separate calls cost what one would.
+	const time_t fileDate = CPath::GetModificationTime(*this);
+	const sint64 fileSize = GetFileSize();
+	if ((fileDate == (time_t)-1) || (fileSize == wxInvalidOffset)) {
+		return false;
+	}
+	mtime = fileDate;
+	size = fileSize;
+	return true;
+#else
+	const wxCharBuffer path = m_filesystem.mb_str(wxConvFile);
+	if (!path.data()) {
+		return false;
+	}
+
+	struct stat st;
+	if (::stat(path.data(), &st) != 0) {
+		return false;
+	}
+
+	// Same predicate wxFileExists() applies, kept explicit because this is
+	// what makes the single stat a drop-in for the FileExists() the callers
+	// no longer make: a directory or a broken link must still fail.
+	if (!S_ISREG(st.st_mode)) {
+		return false;
+	}
+
+	mtime = st.st_mtime;
+	size = (sint64)st.st_size;
+	return true;
+#endif
 }
 
 wxString CPath::GetDirKey() const
