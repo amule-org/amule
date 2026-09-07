@@ -583,16 +583,12 @@ void CClientList::Process()
 	if (m_dwLastBannCleanUp + BAN_CLEANUP_TIME < cur_tick) {
 		m_dwLastBannCleanUp = cur_tick;
 
-		ClientMap::iterator it = m_bannedList.begin();
-		while (it != m_bannedList.end()) {
-			if (it->second + CLIENTBANTIME < cur_tick) {
-				ClientMap::iterator tmp = it++;
-
-				m_bannedList.erase(tmp);
-				theStats::RemoveBannedClient();
-			} else {
-				++it;
-			}
+		// One decrement per entry the sweep actually dropped. The record
+		// counts them because it is the only thing that knows which were
+		// lapsed.
+		const std::size_t dropped = m_bannedList.DropLapsed(cur_tick);
+		for (std::size_t i = 0; i < dropped; ++i) {
+			theStats::RemoveBannedClient();
 		}
 	}
 
@@ -808,28 +804,35 @@ void CClientList::Process()
 
 void CClientList::AddBannedClient(uint32 dwIP)
 {
-	m_bannedList[dwIP] = ::GetTickCount64();
-	theStats::AddBannedClient();
+	// Counted only when the address was not already banned. Ban() overwrote
+	// the tick on an address already present and counted it again, and
+	// CUpDownClient::SetSpammer(true) calls Ban() with no IsBanned() check --
+	// so a client banned for aggressiveness and later flagged as a spammer
+	// counted twice for one banned address, while UnBan() gave back one.
+	if (m_bannedList.Ban(dwIP, ::GetTickCount64())) {
+		theStats::AddBannedClient();
+	}
 }
 
 bool CClientList::IsBannedClient(uint32 dwIP)
 {
-	ClientMap::iterator it = m_bannedList.find(dwIP);
-
-	if (it != m_bannedList.end()) {
-		if (it->second + CLIENTBANTIME > ::GetTickCount64()) {
-			return true;
-		} else {
-			RemoveBannedClient(dwIP);
-		}
+	// A lapsed ban is dropped inside the lookup, so the decrement has to
+	// follow what the lookup did rather than the answer it gave.
+	bool dropped = false;
+	const bool banned = m_bannedList.IsBanned(dwIP, ::GetTickCount64(), &dropped);
+	if (dropped) {
+		theStats::RemoveBannedClient();
 	}
-	return false;
+	return banned;
 }
 
 void CClientList::RemoveBannedClient(uint32 dwIP)
 {
-	m_bannedList.erase(dwIP);
-	theStats::RemoveBannedClient();
+	// The mirror of the add path: erase() removed nothing when the address
+	// was not banned, and the count followed the call anyway.
+	if (m_bannedList.Unban(dwIP)) {
+		theStats::RemoveBannedClient();
+	}
 }
 
 void CClientList::FilterQueues()
