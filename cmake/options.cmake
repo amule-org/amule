@@ -301,6 +301,28 @@ option (ENABLE_VERSION_CHECK "compile in the in-app new-version check (startup n
 # pulled in by headers that never see config.h.
 option (ENABLE_KAD_PROTOCOL_10 "advertise Kademlia protocol 0x0a and enable the AICH hashes on keyword storage that Kad 0x09 introduced" OFF)
 
+# Master switch for the local Kad node-protection heuristics: the adaptive
+# request-timeout estimate (CFastKad) and the Kad identity protections
+# (CSafeKad).
+#
+# Deliberately NOT part of ENABLE_KAD_PROTOCOL_10, and deliberately not named
+# after a protocol version. Neither class defines a tag, an opcode or a packet
+# field: they consume what the Kad protocol already carries and decide only
+# what we do locally -- whether to admit a contact, whether to believe an
+# answer, how long to wait before treating a request as stalled. A peer cannot
+# observe whether we run them and has nothing to implement in response, so
+# gating them behind a protocol-version switch would imply a wire contract that
+# does not exist.
+#
+# OFF by default, and OFF means inert: every call site is compiled out and the
+# two classes are left out of the build entirely, so a default build is the
+# upstream one. Their unit tests compile the two sources directly and run
+# either way, so nothing is gated out of test coverage.
+#
+# A plain compile definition rather than a config.h entry, so it is visible in
+# the Kad headers that never see config.h.
+option (ENABLE_KAD_NODE_PROTECTION "enable the local Kad node-protection heuristics: adaptive request timeouts and Kad identity protections (no wire-protocol change)" OFF)
+
 # Every experimental switch, named once. A switch belongs here as well as in its
 # own option() above, and that is the only bookkeeping adding one costs: the
 # loop below defines it, and ENABLE_ALL_EXPERIMENTAL turns the whole set on, so
@@ -313,6 +335,7 @@ option (ENABLE_KAD_PROTOCOL_10 "advertise Kademlia protocol 0x0a and enable the 
 # ordinary build options rather than unfinished features.
 set (AMULE_EXPERIMENTAL_OPTIONS
 	ENABLE_KAD_PROTOCOL_10
+	ENABLE_KAD_NODE_PROTECTION
 )
 
 option (ENABLE_ALL_EXPERIMENTAL "turn on every switch in AMULE_EXPERIMENTAL_OPTIONS at once" OFF)
@@ -327,6 +350,12 @@ foreach (experimental_option IN LISTS AMULE_EXPERIMENTAL_OPTIONS)
 	# Nothing here writes the cache, so enabling the set for one configure
 	# does not leave the individual switches ON for later ones.
 	if (${experimental_option} OR ENABLE_ALL_EXPERIMENTAL)
+		# The variable is set as well as the definition added, because a
+		# switch may gate more than preprocessor state: ENABLE_KAD_NODE_PROTECTION
+		# also selects source files in cmake/source-vars.cmake, and an if()
+		# there has to see it. Directory scope, so it reaches the
+		# subdirectories included after this and still never touches the cache.
+		set (${experimental_option} ON)
 		add_compile_definitions (${experimental_option})
 	endif()
 endforeach()
