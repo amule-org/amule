@@ -248,7 +248,15 @@ jobs:
           key: clang-tidy-ccache-${{ github.run_id }}
       - name: clang-tidy Tier-2 on changed lines
         run: |
-          git diff -U0 "${{ steps.base.outputs.sha }}"...HEAD -- 'src/**' \
+          # src/extern is vendored: src/extern/.clang-tidy exempts it with
+          # Checks: '-*', but -config-file below overrides per-directory
+          # discovery entirely, so that exemption has no effect in this job
+          # (it does work in Tier-1, which uses discovery). Excluded here
+          # rather than filtered out of the output, so the checks are not run
+          # only to be discarded. Without this, vendoring a dependency lands a
+          # gate demanding edits to third-party sources that the provenance
+          # notes say not to touch.
+          git diff -U0 "${{ steps.base.outputs.sha }}"...HEAD -- 'src/**' ':(exclude)src/extern/**' \
             | clang-tidy-diff-${LLVM_VERSION}.py \
                 -clang-tidy-binary clang-tidy-${LLVM_VERSION} \
                 -p1 -path build -config-file .clang-tidy-new-code -quiet 2>&1 \
