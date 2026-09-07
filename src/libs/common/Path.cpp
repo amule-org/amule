@@ -443,9 +443,23 @@ sint64 CPath::GetFileSize() const
 bool CPath::GetFileStat(time_t &mtime, sint64 &size) const
 {
 #ifdef __WINDOWS__
-	// No single-call equivalent worth the #ifdef here: wxWidgets already
-	// routes both queries through the same GetFileAttributesEx, so the
-	// separate calls cost what one would.
+	// Windows keeps the three separate wx calls, in the order the callers
+	// used to make them. That order is load-bearing rather than habit:
+	// wxFileName::GetTimes() reports a failure through wxLogSysError(), so
+	// asking it about a path that does not exist -- a broken shortcut, or a
+	// file that vanished mid-scan -- puts a system-error line in the user's
+	// log. FileExists() is what kept that quiet, so it stays in front.
+	//
+	// No saving here, then; this platform gets only the path-comparison fix
+	// that comes with it. Collapsing these into one GetFileAttributesEx()
+	// would work, but its FILETIME would have to convert to exactly the
+	// time_t wxFileModificationTime() returns today: known.met matches on the
+	// stored modification time, so a conversion that differs by so much as a
+	// second re-hashes every shared file on the user's next start.
+	if (!FileExists()) {
+		return false;
+	}
+
 	const time_t fileDate = CPath::GetModificationTime(*this);
 	const sint64 fileSize = GetFileSize();
 	if ((fileDate == (time_t)-1) || (fileSize == wxInvalidOffset)) {
