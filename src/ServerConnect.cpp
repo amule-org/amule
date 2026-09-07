@@ -44,8 +44,9 @@
 #include "Preferences.h"     // Needed for CPreferences
 #include "Statistics.h"      // Needed for theStats
 #include "Logger.h"
-#include "GuiEvents.h" // Needed for Notify_*
-#include "IPFilter.h"  // Needed for theApp->ipfilter->IsReady()
+#include "GuiEvents.h"               // Needed for Notify_*
+#include "IPFilter.h"                // Needed for theApp->ipfilter->IsReady()
+#include "PublicIPv6Corroboration.h" // Needed for RefreshLocalPublicIPv6Addresses
 #include <common/Format.h>
 
 // #define DEBUG_CLIENT_PROTOCOL
@@ -235,6 +236,14 @@ void CServerConnect::ConnectionEstablished(CServerSocket *sender)
 	if (sender->GetConnectionState() == CS_WAITFORLOGIN) {
 		AddLogLineN(CFormat(_("Connected to %s (%s:%i)")) % sender->cur_server->GetListName() %
 			    sender->cur_server->GetFullIP() % sender->cur_server->GetPort());
+
+		// A new server connection is the moment our outward-facing address is
+		// most likely to have just changed -- a reconnect after a link came
+		// back up lands here. Peers reached through this connection will start
+		// telling us what address they see, and their claims are only ever
+		// believed against the set published here, so it has to be current
+		// before the first hello arrives.
+		RefreshLocalPublicIPv6Addresses();
 
 		// send loginpacket
 		CServer *update = theApp->serverlist->GetServerByAddress(

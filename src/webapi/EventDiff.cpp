@@ -22,6 +22,7 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 //
 
+#include "../PeerCapabilities.h" // Needed for CPeerCapabilities::GetApiTokens
 #include "EventDiff.h"
 
 #include "EventBus.h"
@@ -123,6 +124,31 @@ std::string JsonStrOrNull(bool known, const std::string &v)
 std::string JsonNumOrNull(bool known, std::uint64_t v)
 {
 	return known ? std::to_string(v) : std::string("null");
+}
+
+// The protocol extensions as the API's token array, from the same table the
+// daemon and the desktop GUI read (src/PeerCapabilities.h). Rendered here
+// rather than stored on the row so there is one definition of the mapping:
+// a second copy in this file would be free to drift from the one bit that
+// actually arrived on the wire.
+//
+// Empty array, not null: the peer claimed nothing, which is a known answer
+// rather than a missing one, and it is what nearly every peer produces.
+std::string JsonProtocolExtensions(std::uint32_t bits)
+{
+	CPeerCapabilities caps;
+	caps.SetFromWire(bits);
+	std::string out = "[";
+	bool first = true;
+	for (const std::string &token : caps.GetApiTokens()) {
+		if (!first) {
+			out += ",";
+		}
+		first = false;
+		out += "\"" + token + "\"";
+	}
+	out += "]";
+	return out;
 }
 
 std::string JsonBoolOrNull(bool known, bool v)
@@ -352,6 +378,7 @@ std::string ToJson(const ClientSnapshot &c)
 	  << ",\"upload_queue_score\":" << c.score
 	  << ",\"obfuscation_state\":" << JsonStrOrNull(!c.obfuscation_state.empty(), c.obfuscation_state)
 	  << ",\"connected\":" << JsonBoolOrNull(c.has_connected, c.connected)
+	  << ",\"protocol_extensions\":" << JsonProtocolExtensions(c.protocol_extensions)
 	  << ",\"friend_slot\":" << (c.friend_slot ? "true" : "false")
 	  << ",\"source_origin\":" << JsonStrOrNull(!c.source_origin.empty(), c.source_origin)
 	  << ",\"parts_offered_count\":"
@@ -563,9 +590,10 @@ bool Equal(const ClientSnapshot &a, const ClientSnapshot &b)
 	       a.download_speed_bytes_per_second == b.download_speed_bytes_per_second &&
 	       a.upload_queue_position == b.upload_queue_position &&
 	       a.remote_queue_position == b.remote_queue_position && a.score == b.score &&
-	       a.obfuscation_state == b.obfuscation_state && a.friend_slot == b.friend_slot &&
-	       a.connected == b.connected && a.has_connected == b.has_connected &&
-	       a.source_origin == b.source_origin && a.parts_offered_count == b.parts_offered_count &&
+	       a.obfuscation_state == b.obfuscation_state && a.protocol_extensions == b.protocol_extensions &&
+	       a.friend_slot == b.friend_slot && a.connected == b.connected &&
+	       a.has_connected == b.has_connected && a.source_origin == b.source_origin &&
+	       a.parts_offered_count == b.parts_offered_count &&
 	       // Without the flag, null -> 0 (the part map arriving and reporting
 	       // zero) compares equal and the row never updates.
 	       a.has_parts_offered_count == b.has_parts_offered_count &&

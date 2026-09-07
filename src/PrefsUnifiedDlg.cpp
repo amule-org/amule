@@ -49,16 +49,7 @@
 // Network-interface enumeration for the "Bind to interface" and "Bind to IP"
 // drop-downs.
 #include <vector>
-#ifdef __WINDOWS__
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <iphlpapi.h>
-#else
-#include <sys/types.h>
-#include <ifaddrs.h>
-#include <net/if.h>
-#include <arpa/inet.h> // inet_ntop
-#endif
+#include "NetworkInterfaces.h"
 
 #include "AmuleApiCredentials.h"
 #include "amule.h" // Needed for theApp
@@ -95,102 +86,6 @@
 #include "Statistics.h"
 #include "UserEvents.h"
 #include "PlatformSpecific.h" // Needed for PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE
-
-namespace
-{
-// One network interface as the preferences dialog needs it: the name that goes
-// into the "bind to interface" preference, plus the IPv4 addresses currently
-// assigned to it for the "bind to IP" drop-down. Both come out of a single
-// enumeration because the platform APIs hand back name and address together.
-struct NetworkInterface
-{
-	wxString name;
-	wxArrayString ipv4;
-};
-
-// Enumerate this machine's usable network interfaces. The names are exactly
-// what gets stored in the preference and later resolved to an index in
-// LibSocketAsio.cpp: POSIX interface names (en0, eth0, tun0) and, on Windows,
-// adapter friendly names (Ethernet, Wi-Fi). Loopback is skipped; callers that
-// want 127.0.0.1 offer it unconditionally rather than only when the loopback
-// interface happens to enumerate. Only IPv4 addresses are collected, because
-// aMule's sockets are IPv4 (see the isV6 note in LibSocketAsio.cpp). Both
-// controls stay editable, so an interface or address that is down right now --
-// a VPN tunnel, a laptop on a different network -- can still be typed in.
-std::vector<NetworkInterface> DetectNetworkInterfaces()
-{
-	std::vector<NetworkInterface> result;
-
-	// Find the entry for @a name, appending one if this is the first time we
-	// have seen it. Needed because the POSIX enumeration lists one node per
-	// address family, so a dual-stack interface appears more than once.
-	auto entryFor = [&result](const wxString &name) -> NetworkInterface & {
-		for (NetworkInterface &iface : result) {
-			if (iface.name == name) {
-				return iface;
-			}
-		}
-		result.emplace_back();
-		result.back().name = name;
-		return result.back();
-	};
-
-#ifdef __WINDOWS__
-	ULONG size = 15000;
-	std::vector<uint8_t> buf(size);
-	// Unicast addresses are deliberately NOT skipped here: they are what
-	// fills the "bind to IP" drop-down.
-	const ULONG flags = GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_DNS_SERVER;
-	PIP_ADAPTER_ADDRESSES aa = reinterpret_cast<PIP_ADAPTER_ADDRESSES>(&buf[0]);
-	ULONG ret = ::GetAdaptersAddresses(AF_UNSPEC, flags, nullptr, aa, &size);
-	if (ret == ERROR_BUFFER_OVERFLOW) {
-		buf.resize(size);
-		aa = reinterpret_cast<PIP_ADAPTER_ADDRESSES>(&buf[0]);
-		ret = ::GetAdaptersAddresses(AF_UNSPEC, flags, nullptr, aa, &size);
-	}
-	if (ret == NO_ERROR) {
-		for (PIP_ADAPTER_ADDRESSES p = aa; p != nullptr; p = p->Next) {
-			if (p->IfType == IF_TYPE_SOFTWARE_LOOPBACK || p->FriendlyName == nullptr) {
-				continue;
-			}
-			NetworkInterface &iface = entryFor(wxString(p->FriendlyName));
-			for (PIP_ADAPTER_UNICAST_ADDRESS ua = p->FirstUnicastAddress; ua != nullptr;
-				ua = ua->Next) {
-				const sockaddr *sa = ua->Address.lpSockaddr;
-				if (sa == nullptr || sa->sa_family != AF_INET) {
-					continue;
-				}
-				char text[INET_ADDRSTRLEN] = { 0 };
-				const sockaddr_in *sin = reinterpret_cast<const sockaddr_in *>(sa);
-				if (::inet_ntop(AF_INET, &sin->sin_addr, text, sizeof(text)) != nullptr) {
-					iface.ipv4.Add(wxString::FromUTF8(text));
-				}
-			}
-		}
-	}
-#else
-	struct ifaddrs *ifaces = nullptr;
-	if (getifaddrs(&ifaces) == 0) {
-		for (struct ifaddrs *p = ifaces; p != nullptr; p = p->ifa_next) {
-			if (p->ifa_name == nullptr || (p->ifa_flags & IFF_LOOPBACK)) {
-				continue;
-			}
-			NetworkInterface &iface = entryFor(wxString::FromUTF8(p->ifa_name));
-			if (p->ifa_addr == nullptr || p->ifa_addr->sa_family != AF_INET) {
-				continue;
-			}
-			char text[INET_ADDRSTRLEN] = { 0 };
-			const sockaddr_in *sin = reinterpret_cast<const sockaddr_in *>(p->ifa_addr);
-			if (::inet_ntop(AF_INET, &sin->sin_addr, text, sizeof(text)) != nullptr) {
-				iface.ipv4.Add(wxString::FromUTF8(text));
-			}
-		}
-		freeifaddrs(ifaces);
-	}
-#endif
-	return result;
-}
-} // namespace
 
 #ifdef CLIENT_GUI
 namespace

@@ -624,3 +624,30 @@ from the session's absence in the next `EC_OP_CHAT_SESSIONS` reply.
 > gigabit connections. EC clients reading these tags should use
 > `GetInt()` (which handles any integer width); clients sending them
 > should encode them as 32-bit values.
+
+### Peer vendor capabilities (`EC_TAG_CLIENT_MOD_CAPABILITIES = 0x0632`)
+
+| Tag                              | Code     | Type     | Description |
+| -------------------------------- | -------- | -------- | ----------- |
+| `EC_TAG_CLIENT_MOD_CAPABILITIES` | `0x0632` | `uint32` | Peer's eMuleAI vendor capability bitfield |
+
+A child of `EC_TAG_CLIENT`, carrying what the peer advertised in the
+eD2k handshake tag `CT_MOD_MISCOPTIONS` (`0xAA`):
+
+| Bit | Meaning |
+| --- | ------- |
+| 0 | Extended source exchange |
+| 1 | Legacy uTP NAT traversal |
+| 2 | IPv6 |
+| 3 | Serving-buddy pull |
+| 4 | QUIC NAT traversal |
+
+Bits 5 and above are reserved. The core masks them off before sending,
+so an EC client never has to know which bits are defined — a set bit it
+does not recognise cannot reach it.
+
+The tag is additive and follows the usual convention: a reply without it
+means an older daemon, which is a **third state**, distinct from a peer
+that advertised no capabilities (word `0`). aMule itself advertises
+nothing here yet — it implements none of the five features — so the tag
+describes the peer only.

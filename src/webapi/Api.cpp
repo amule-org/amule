@@ -36,6 +36,7 @@
 #include "ConstantTime.h"
 #include "Etag.h"
 #include "JsonWriter.h"
+#include "../PeerCapabilities.h" // Needed for CPeerCapabilities::GetApiTokens
 
 #include <mutex> // serialises the shared-directory read-modify-write
 #include "Jwt.h"
@@ -3128,6 +3129,27 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	// Being in this list means the daemon holds a client object, which starts
 	// at the first contact attempt. This says whether a socket is actually up.
 	WriteBoolOrNull(w, "connected", c.has_connected, c.connected);
+	// The protocol extensions the peer claimed, as tokens rather than as the
+	// EC_TAG_CLIENT_MOD_CAPABILITIES word they arrived in. An integer here
+	// would make every consumer carry its own copy of the bit table -- the
+	// Web UI in JS, and each third-party client again -- with nothing keeping
+	// those copies in step with src/PeerCapabilities.h, which is the only
+	// place the bits are actually defined. A list rather than one token
+	// because a peer claims any combination of them.
+	//
+	// An empty array is what nearly every peer on the network produces: it
+	// claimed nothing. A peer that sent no capability tag at all and one that
+	// sent an all-zero word are the same state on the wire and the same here.
+	w.Key("protocol_extensions");
+	w.BeginArray();
+	{
+		CPeerCapabilities caps;
+		caps.SetFromWire(c.protocol_extensions);
+		for (const std::string &token : caps.GetApiTokens()) {
+			w.ValueString(token.c_str());
+		}
+	}
+	w.EndArray();
 	w.Key("friend_slot");
 	w.ValueBool(c.friend_slot);
 	// Promoted out of the detail object (issue #984): the desktop's per-file

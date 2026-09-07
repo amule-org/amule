@@ -432,6 +432,15 @@ struct ClientSnapshot
 	// Complete set, see ClientObfuscationName() in Refresher.cpp:
 	std::string obfuscation_state; // "undefined" | "enabled" | "supported" | "not_supported" |
 				       // "disabled" | "unknown"
+	//! EC_TAG_CLIENT_MOD_CAPABILITIES: the peer's eMuleAI vendor capability
+	//! word, already limited to the bits aMule knows by
+	//! CPeerCapabilities::SetFromWire() in the daemon. Held as the word the
+	//! daemon sent, not re-masked here: a second mask in this process would
+	//! be free to disagree with the daemon's, and the surface would then
+	//! report something no client ever claimed. Bit meanings live in
+	//! src/PeerCapabilities.h. 0 for a peer that claims nothing and for one
+	//! that sent no capability tag -- the same state, as on the wire.
+	std::uint32_t protocol_extensions = 0;
 	bool friend_slot = false;
 	// Whether a socket to this peer is up right now (EC_TAG_CLIENT_CONNECTED,
 	// from CUpDownClient::IsConnected). A row existing here only means the
