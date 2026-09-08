@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-08 15:40+0200\n"
-"PO-Revision-Date: 2026-09-08 10:59+0000\n"
+"PO-Revision-Date: 2026-09-08 15:34+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
 "Language: cs\n"
@@ -6765,9 +6765,8 @@ msgid "Copy eD2k links to clipboard"
 msgstr "Kopírovat eD2k odkazy do schránky"
 
 #: src/SearchListCtrl.cpp
-#, fuzzy
 msgid "You are not currently connected to a server supporting the Related Files search function"
-msgstr "Snažíte se smazat server, na který jste právě připojen(a). Nejprve se prosím odpojte."
+msgstr "Momentálně nejste připojeni k serveru, který podporuje vyhledávání souvisejících souborů"
 
 #: src/SearchListCtrl.cpp
 msgid "Canceled"
@@ -6803,17 +6802,16 @@ msgstr ""
 
 #: src/SearchProgressReport.cpp src/TextClient.cpp
 msgid "Search expired or unknown ID. Start a new search.\n"
-msgstr ""
+msgstr "Hledání vypršelo a nebo je ID neznámé. Zahajte nové hledání.\n"
 
 #: src/SearchProgressReport.cpp
 #, c-format
 msgid "Search progress: %u %% \n"
-msgstr ""
+msgstr "Průběh hledání: %u %% \n"
 
 #: src/SearchProgressReport.cpp
-#, fuzzy
 msgid "Search progress not available"
-msgstr "Zobrazit procenta průběhu"
+msgstr "Průběh hledání není k dispozici"
 
 #: src/SearchProgressReport.cpp
 msgid "No search to report on.\n"
@@ -6840,9 +6838,9 @@ msgstr "Selhalo připojení ke všem serverům na seznamu. Zkouším znovu."
 #, c-format
 msgid "Automatic connection to server will retry in %d second"
 msgid_plural "Automatic connection to server will retry in %d seconds"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Automatické připojení k serveru bude zopakováno za %d sekundu"
+msgstr[1] "Automatické připojení k serveru bude zopakováno za %d sekundy"
+msgstr[2] "Automatické připojení k serveru bude zopakováno za %d sekund"
 
 #: src/ServerConnect.cpp
 msgid "eD2k network disabled on preferences, not connecting."
@@ -6850,7 +6848,7 @@ msgstr "Síť eD2k je zakázána v nastavení, nepřipojuji se."
 
 #: src/ServerConnect.cpp
 msgid "No valid servers to which to connect found in server list"
-msgstr ""
+msgstr "V seznamu serverů nebyly nalezeny žádné platné servery, ke kterým by bylo možné se připojit"
 
 #: src/ServerConnect.cpp
 #, c-format
@@ -6888,7 +6886,7 @@ msgstr "Připojování k %s (%s:%i) selhalo."
 
 #: src/ServerConnect.cpp
 msgid "ERROR: Socket invalid at timeout check"
-msgstr ""
+msgstr "CHYBA: Socket neplatný při kontrole časového limitu"
 
 #: src/ServerConnect.cpp
 #, c-format
@@ -6897,7 +6895,7 @@ msgstr "Pokusu o připojení k %s (%s:%i) vypršel čas."
 
 #: src/ServerConnect.cpp
 msgid "Received late result of DNS lookup, discarding."
-msgstr ""
+msgstr "Přijat pozdní výsledek DNS vyhledávání, zahazuji."
 
 #: src/ServerList.cpp
 #, c-format
@@ -6940,12 +6938,11 @@ msgstr[2] ""
 
 #: src/ServerList.cpp
 msgid "Error: the file 'server.met' is corrupted: "
-msgstr ""
+msgstr "Chyba: soubor 'server.met' je poškozen: "
 
 #: src/ServerList.cpp
-#, fuzzy
 msgid "IO error while reading 'server.met': "
-msgstr "I/O chyba při čtení souboru known.met: %s"
+msgstr "Chyba I/O při čtení souboru 'server.met': "
 
 #: src/ServerList.cpp
 #, c-format
@@ -6990,13 +6987,13 @@ msgid "Invalid URL"
 msgstr "Neplatná URL"
 
 #: src/ServerList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Finished downloading the server list from %s"
-msgstr "Stahování seznamu serverů z %s selhalo"
+msgstr "Stahování seznamu serverů z %s dokončeno"
 
 #: src/ServerList.cpp
 msgid "No server list address entry in 'addresses.dat' found. Please paste a valid server list address into this file in order to auto-update your server list"
-msgstr ""
+msgstr "V souboru 'addresses.dat' nebyla nalezena žádná adresa seznamu serverů. Vložte prosím platnou adresu seznamu serverů do tohoto souboru, aby byl váš seznam serverů automaticky aktualizován"
 
 #: src/ServerList.cpp
 #, c-format
@@ -7006,7 +7003,7 @@ msgstr "Stáhnout seznam serverů z %s"
 #: src/ServerList.cpp
 #, c-format
 msgid "WARNING: invalid URL specified for auto-updating of servers: %s"
-msgstr ""
+msgstr "VAROVÁNÍ: pro automatickou aktualizaci serverů byla zadána neplatná URL adresa: %s"
 
 #: src/ServerList.cpp
 msgid "No valid server.met auto-download url on addresses.dat"
