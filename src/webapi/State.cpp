@@ -53,8 +53,8 @@ std::uint16_t SharedHashingProgress(const FileSnapshot &f)
 // Completeness of the file we download FROM this peer: parts the peer has over
 // that file's part count. Only the download link carries a meaningful
 // denominator -- a peer that merely downloads from us has no percent. Left at
-// its < 0 sentinel when not computable, which is how the writers know to omit
-// the field.
+// its < 0 sentinel when not computable, which is how the writers know to emit
+// the field as null. The sentinel never reaches the wire.
 void ComputePartProgressPercent(const CState &state, ClientSnapshot &cli)
 {
 	if (!cli.has_parts_offered_count || cli.download_file_hash.empty()) {
@@ -678,7 +678,7 @@ void CState::SetKnownClients(std::vector<KnownClientSnapshot> &&rows)
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	m_known_clients = std::move(rows);
 	m_known_of_hash.clear();
-	m_known_online.clear();
+	m_known_connected.clear();
 	for (std::size_t i = 0; i < m_known_clients.size(); ++i)
 		m_known_of_hash[m_known_clients[i].user_hash] = i;
 	m_known_loaded = true;
@@ -737,11 +737,11 @@ void CState::ReconcileKnownClientsLocked()
 		// Reachability, echoed from the live row. A client object exists from
 		// the first contact ATTEMPT, so presence in the list is not the same
 		// question -- an unroutable peer sat here reading "Online now".
-		// Read before the assignment: k.online still holds last tick's answer,
+		// Read before the assignment: k.connected still holds last tick's answer,
 		// which is what the session edge below is measured against.
-		const bool was_connected = k.online;
-		k.online = c.has_connected && c.connected;
-		k.has_online = c.has_connected;
+		const bool was_connected = k.connected;
+		k.connected = c.has_connected && c.connected;
+		k.has_connected = c.has_connected;
 		// Not-connected to connected is a new session, which is what the
 		// daemon counts: UpdateMeta() bumps it once per client object at the
 		// hello, and a hello needs a connection. This used to fire on the peer
@@ -752,8 +752,8 @@ void CState::ReconcileKnownClientsLocked()
 		//
 		// It can still over-count by one if a peer drops out of the update for
 		// a tick and returns -- an EC hiccup rather than a real reconnect --
-		// because the departure sweep below clears online for it.
-		if (!was_connected && k.online)
+		// because the departure sweep below clears connected for it.
+		if (!was_connected && k.connected)
 			k.session_count++;
 		// A peer in front of us was last seen now, not whenever it previously
 		// disconnected. Leaving the stored value would report a peer that is
@@ -780,23 +780,23 @@ void CState::ReconcileKnownClientsLocked()
 		}
 	}
 
-	// Whoever was online last tick and is not in this one has gone. Found
-	// through the online set, so this costs the number of departures rather
+	// Whoever was connected last tick and is not in this one has gone. Found
+	// through the connected set, so this costs the number of departures rather
 	// than a walk of the store.
-	for (const std::size_t idx : m_known_online) {
+	for (const std::size_t idx : m_known_connected) {
 		if (still_online.count(idx) != 0)
 			continue;
 		// Gone from the client list entirely: the daemon holds no object for
 		// it, so it is definitively not connected. Known, not unknown.
-		m_known_clients[idx].online = false;
-		m_known_clients[idx].has_online = true;
+		m_known_clients[idx].connected = false;
+		m_known_clients[idx].has_connected = true;
 		// Seen until this moment, which is what the core writes to the record
 		// at its own disconnect handling. The stored value is the *previous*
 		// disconnect, so leaving it would show a peer that was here a second
 		// ago as last seen months back.
 		m_known_clients[idx].last_seen_at = now;
 	}
-	m_known_online.swap(still_online);
+	m_known_connected.swap(still_online);
 }
 
 bool CState::FindDownload(const std::string &hash_hex, FileSnapshot &out) const

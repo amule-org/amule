@@ -317,7 +317,7 @@ Rows added or removed *during* a sweep are not missed: both emit an SSE event, s
 | `GET /known_clients`  | **`user_hash`** (id), `name`, `software`, `first_seen_at`, `last_seen_at`, `session_count`, `uploaded_bytes_total`, `downloaded_bytes_total` |
 | `GET /shared`         | **`hash`** (id), `name`, `size_bytes`, `uploaded_bytes_total`, `upload_speed_bytes_per_second` |
 | `GET /servers`        | **`ecid`** (id), `name`, `user_count`, `ping_ms`, `file_count` |
-| `GET /friends`        | **`ecid`** (id), `name`, `online` |
+| `GET /friends`        | **`ecid`** (id), `name`, `connected` |
 | `GET /chats`          | **`client_ecid`** (id), `last_message_at`, `name` |
 | `GET /search/{id}/results` | **`hash`** (id), `name`, `size_bytes`, `sources.total`, `rating`, `directory` |
 | `GET /search`         | **`search_id`** (id), `query`, `started_at`, `result_count` |
@@ -360,7 +360,7 @@ A key is **omitted** only where absence itself is the meaning: something the dae
 
 So: `null` means "no value", an absent key means "not reported", and neither is ever spelled `0` or `-1`.
 
-The rule now reaches the whole surface rather than just the download and shared objects. Keys that used to disappear and are `null` instead: `name`, `ip`, `port`, `kad_port`, `country_code`, `software`, `software_version`, `source_origin`, `obfuscation_state`, `first_seen_at` and `session_count` on [`GET /known_clients`](#get-apiv0known_clients); `part_progress_percent` and `parts_offered_count` on the client rows and the `client_*` events; `client_ecid` on [`GET /search`](#get-apiv0search), [`GET /friends`](#get-apiv0friends) and the `friend_*` events; `last_message` on [`GET /chats`](#get-apiv0chats); `token`, `label_value` and `extra` on the statistics tree; and `media` everywhere it appears. The same pass reached the remaining address fields: `port` on [`GET /friends`](#get-apiv0friends) and the `friend_*` events, `ed2k.public_ip` and `ed2k.server_ip` on [`GET /status`](#get-apiv0status), and `public_ip` on [`GET /kad`](#get-apiv0kad); and `server_ip` / `server_port` on [`GET /clients/{ecid}`](#get-apiv0clientsecid), which used `""` for the same "unknown" its own snapshot field documents. Completing that sweep: `ip` and `port` on [`GET /clients`](#get-apiv0clients) and the client detail row, which the `client_*` events already nulled, and `ed2k.server_port` on [`GET /status`](#get-apiv0status), which stayed a bare `0` beside its own nulled `server_ip`. The `status_changed` event nulls `ed2k.public_ip`, `ed2k.server_ip` and `ed2k.server_port` to match the REST row. Continuing it: `kad_port` on [`GET /api/v0/clients/{ecid}`](#get-apiv0clientsecid), which stayed a raw `0` beside the `ip`/`port` it is nulled with everywhere else; `last_received_at` on [`GET /api/v0/downloads/{hash}`](#get-apiv0downloadshash), which read as 1970 for a partfile that had received nothing; and `node_id` on [`GET /api/v0/kad`](#get-apiv0kad), the last `""` sentinel in an object whose every other field already answered `null`. And closing the connected-server triple: `server_name` on [`GET /status`](#get-apiv0status) and [`GET /clients/{ecid}`](#get-apiv0clientsecid), which stayed a raw `""` beside the `server_ip` and `server_port` it is nulled with, so one object spelled "not on a server" two ways. `status_changed` nulls it too. Finishing the client objects themselves: `name`, `software`, `software_version`, `reported_os`, `download_file_name`, `upload_file_name`, `upload_file_hash`, `download_file_hash`, `obfuscation_state`, `source_origin` and `client_mod_name` on [`GET /clients`](#get-apiv0clients), the client detail row and the `client_*` events, which spelled "unknown" as a raw `""` while [`GET /known_clients`](#get-apiv0known_clients) already nulled the same keys, so one peer described by both objects disagreed with itself. And the reachability fields: `online` on [`GET /friends`](#get-apiv0friends), [`GET /chats`](#get-apiv0chats) and [`GET /known_clients`](#get-apiv0known_clients), plus the new `connected` on the client objects, are `null` on a daemon that does not report peer connectivity - unknown, rather than a guessed "offline".
+The rule now reaches the whole surface rather than just the download and shared objects. Keys that used to disappear and are `null` instead: `name`, `ip`, `port`, `kad_port`, `country_code`, `software`, `software_version`, `source_origin`, `obfuscation_state`, `first_seen_at` and `session_count` on [`GET /known_clients`](#get-apiv0known_clients); `part_progress_percent` and `parts_offered_count` on the client rows and the `client_*` events; `client_ecid` on [`GET /search`](#get-apiv0search), [`GET /friends`](#get-apiv0friends) and the `friend_*` events; `last_message` on [`GET /chats`](#get-apiv0chats); `token`, `label_value` and `extra` on the statistics tree; and `media` everywhere it appears. The same pass reached the remaining address fields: `port` on [`GET /friends`](#get-apiv0friends) and the `friend_*` events, `ed2k.public_ip` and `ed2k.server_ip` on [`GET /status`](#get-apiv0status), and `public_ip` on [`GET /kad`](#get-apiv0kad); and `server_ip` / `server_port` on [`GET /clients/{ecid}`](#get-apiv0clientsecid), which used `""` for the same "unknown" its own snapshot field documents. Completing that sweep: `ip` and `port` on [`GET /clients`](#get-apiv0clients) and the client detail row, which the `client_*` events already nulled, and `ed2k.server_port` on [`GET /status`](#get-apiv0status), which stayed a bare `0` beside its own nulled `server_ip`. The `status_changed` event nulls `ed2k.public_ip`, `ed2k.server_ip` and `ed2k.server_port` to match the REST row. Continuing it: `kad_port` on [`GET /api/v0/clients/{ecid}`](#get-apiv0clientsecid), which stayed a raw `0` beside the `ip`/`port` it is nulled with everywhere else; `last_received_at` on [`GET /api/v0/downloads/{hash}`](#get-apiv0downloadshash), which read as 1970 for a partfile that had received nothing; and `node_id` on [`GET /api/v0/kad`](#get-apiv0kad), the last `""` sentinel in an object whose every other field already answered `null`. And closing the connected-server triple: `server_name` on [`GET /status`](#get-apiv0status) and [`GET /clients/{ecid}`](#get-apiv0clientsecid), which stayed a raw `""` beside the `server_ip` and `server_port` it is nulled with, so one object spelled "not on a server" two ways. `status_changed` nulls it too. Finishing the client objects themselves: `name`, `software`, `software_version`, `reported_os`, `download_file_name`, `upload_file_name`, `upload_file_hash`, `download_file_hash`, `obfuscation_state`, `source_origin` and `client_mod_name` on [`GET /clients`](#get-apiv0clients), the client detail row and the `client_*` events, which spelled "unknown" as a raw `""` while [`GET /known_clients`](#get-apiv0known_clients) already nulled the same keys, so one peer described by both objects disagreed with itself. And the reachability field: `connected` on [`GET /friends`](#get-apiv0friends), [`GET /chats`](#get-apiv0chats), [`GET /known_clients`](#get-apiv0known_clients) and the client objects, is `null` on a daemon that does not report peer connectivity - unknown, rather than a guessed "offline". One quantity, one key on every resource that carries it (R6).
 
 `media` is the one place this reaches an **object** rather than a scalar, so a client tests `media === null` before reaching into it -- which it had to do regardless, since the object's own fields can be absent.
 
@@ -467,7 +467,7 @@ Every path segment, query parameter and JSON key on this surface follows the rul
 | **R1** | `snake_case` for every path segment, query parameter and JSON key. |
 | **R2** | **Units live in the name, spelled out.** `_bytes`, `_bytes_per_second`, `_seconds`, `_minutes`, `_ms`, `_percent` (always 0-100). A bare number is only acceptable for a dimensionless count. See the note below on why rates are spelled out rather than abbreviated. |
 | **R3** | **Timestamps are integer unix seconds and end in `_at`.** One representation, not two: no parallel ISO-8601 twin. Formatting is a client concern. |
-| **R4** | **Booleans carry no `is_`/`has_`/`can_` prefix.** A boolean already reads as a predicate: an adjective or past participle (`online`, `incomplete`, `recursive`), or an `_enabled`/`_supported` suffix on a stateful noun. A boolean is never a field holding a count, a bare command-verb that reads as an imperative, or a reserved word. |
+| **R4** | **Booleans carry no `is_`/`has_`/`can_` prefix.** A boolean already reads as a predicate: an adjective or past participle (`connected`, `incomplete`, `recursive`), or an `_enabled`/`_supported` suffix on a stateful noun. A boolean is never a field holding a count, a bare command-verb that reads as an imperative, or a reserved word. |
 | **R5** | **Counts end in `_count`** — except inside an object that already names the thing being counted, where the parent carries it (`sources.total`, `sources.transferring`). The pagination envelope keeps `total` for "matching items before the window". |
 | **R6** | **One concept, one key, everywhere.** The same quantity does not get one name on one resource and another on the next. |
 | **R7** | **A `sort` value *is* the response key it orders by**, spelled identically, dotted for nested keys (`sort=sources.total`). No stripped suffixes and no per-endpoint mapping table. |
@@ -1303,7 +1303,7 @@ The last five were originally detail-only and were promoted onto this row (and o
 
 Every one of them falls back to `"unknown"` for a code the daemon does not map, so a client can treat `"unknown"` as its default branch and never has to handle an unexpected token. Three of them are also nullable on the live client objects: `software`, `obfuscation_state` and `source_origin` are `null` when the daemon never reported the field at all, which is a different thing from reporting a code we could not map. `upload_state`, `download_state` and `ident_state` are never `null` — the daemon always answers those. Note the two distinct sentinels on `obfuscation_state`: `"undefined"` is *the client has not told us yet*, `"unknown"` is *the daemon received a code it does not recognise*. The authoritative mappings are the `Client*Name()` / `SourceOriginName()` functions in `src/webapi/Refresher.cpp`.
 
-`connected` says whether a socket to this peer is up right now. A row existing in this list does not answer that: the daemon holds a client object from the first contact attempt, so a peer it is still trying to reach - or can never reach - appears here with `connected: false`. It is `null` on a daemon that does not report peer connectivity. The `online` fields on [`GET /friends`](#get-apiv0friends), [`GET /chats`](#get-apiv0chats) and [`GET /known_clients`](#get-apiv0known_clients) are the same fact reached by their own keys.
+`connected` says whether a socket to this peer is up right now. A row existing in this list does not answer that: the daemon holds a client object from the first contact attempt, so a peer it is still trying to reach - or can never reach - appears here with `connected: false`. It is `null` on a daemon that does not report peer connectivity. [`GET /friends`](#get-apiv0friends), [`GET /chats`](#get-apiv0chats) and [`GET /known_clients`](#get-apiv0known_clients) carry the same fact under the same key, so joining any of them against this list does not meet it under a second name.
 
 `protocol_extensions` is the set of protocol extensions the peer claimed in its handshake, as stable tokens: `extended_source_exchange`, `nat_traversal_utp`, `ipv6`, `serving_buddy_pull`, `nat_traversal_quic`. A list rather than one token because a peer claims any combination of them, and tokens rather than the `EC_TAG_CLIENT_MOD_CAPABILITIES` bitfield they arrive in so no consumer has to carry its own copy of aMule's bit meanings. The order is stable. The daemon has already dropped every extension it does not define, so a token here is one aMule names, and an extension aMule does not name is absent rather than unknown. `[]` means the peer claimed nothing, which is what nearly every peer on the network does — a peer that sent no capability tag and one that sent an all-zero word are the same state on the wire and report the same here. The desktop GUI renders the same set as its *Protocol extensions* row.
 
@@ -1439,7 +1439,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 
 Lists every client the daemon has ever exchanged data with, from its credit store.
 
-Distinct from [`GET /clients`](#get-apiv0clients), which lists the clients connected **right now**. The two differ in identity as well as content: a live client is keyed by `ecid`, which is meaningful only within one daemon process, while a known client is keyed by `user_hash` and survives daemon restarts. Correlate the two on `user_hash`; the `online` field says whether we are actually connected to that peer at this moment.
+Distinct from [`GET /clients`](#get-apiv0clients), which lists the clients connected **right now**. The two differ in identity as well as content: a live client is keyed by `ecid`, which is meaningful only within one daemon process, while a known client is keyed by `user_hash` and survives daemon restarts. Correlate the two on `user_hash`; the `connected` field, the same key the live rows carry, says whether we are actually connected to that peer at this moment.
 
 Standard [list envelope](#list-pagination-and-sorting) under the `known_clients` key, with `limit` / `offset` / `sort` / `order`.
 
@@ -1467,7 +1467,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
       "last_seen_at": 1786652714,
       "first_seen_at": 1786652714,
       "session_count": 1,
-      "online": false
+      "connected": false
     }
   ],
   "total": 392, "offset": 0, "limit": 2
@@ -1486,16 +1486,16 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 | `uploaded_bytes_total`, `downloaded_bytes_total` | Lifetime bytes, from the credit record. Always present. |
 | `last_seen_at` | Unix seconds. Always present. For a client that is connected this is *now* — it is being seen — so the connected records are the most recent in the store under `sort=last_seen_at&order=desc`. A client that left during the current tick carries the same timestamp and ties with them; ties keep a stable order across requests. |
 | `first_seen_at`, `session_count` | `null` together, and non-null only for a record the daemon holds metadata for. |
-| `online` | Whether a connection to this peer is up right now, correlated by `user_hash`. `null` when the daemon does not report peer connectivity. Not the same as having a row in [`GET /clients`](#get-apiv0clients): the daemon holds a client object from the first contact attempt, including for a peer it never reaches. |
+| `connected` | Whether a connection to this peer is up right now, correlated by `user_hash`. Same key and same quantity as on [`GET /clients`](#get-apiv0clients), so a join by `user_hash` does not meet it under a second name. `null` when the daemon does not report peer connectivity. Not the same as having a row in [`GET /clients`](#get-apiv0clients): the daemon holds a client object from the first contact attempt, including for a peer it never reaches. |
 
 **Optional fields are `null`, never omitted and never emitted empty.** Every key above is written through `Write*OrNull`, so the shape of a row does not change with what the daemon knows: a record written before the daemon kept per-client metadata carries the hash, the totals and `last_seen_at` as values and the rest as `null`, which is how a consumer tells "never recorded" from "recorded as empty". On a long-lived node most records are of that kind. This follows the surface-wide rule in [Unknown values](#unknown-values); `GET /search` is the documented exception where absence itself is the meaning.
 
 The store is read from the daemon **once**, on the first request, and maintained from there: every refresher tick folds the connected clients back in, so later requests never touch EC at all. That is sound rather than a shortcut — a record whose client is not connected cannot change, since credit totals only move during a transfer and `last_seen_at` is written at disconnect. What the maintenance covers:
 
 - a client that connects is added, with `first_seen_at` and `session_count` set to what the daemon recorded when it said hello;
-- a connected client's `online`, `uploaded_bytes_total` and `downloaded_bytes_total` track the live client state;
+- a connected client's `connected`, `uploaded_bytes_total` and `downloaded_bytes_total` track the live client state;
 - a bare record gains its name, address, software and origin once its client identifies;
-- a connected client's `last_seen_at` is now, and a client that leaves has `online` cleared with `last_seen_at` stamped at the moment it went.
+- a connected client's `last_seen_at` is now, and a client that leaves has `connected` cleared with `last_seen_at` stamped at the moment it went.
 
 The cost is one EC roundtrip per amuleapi process, and the store stays resident from first use.
 
@@ -2090,7 +2090,7 @@ The friends list amuled persists to `emfriends.met`. The daemon ships the whole 
       "ip": "203.0.113.42",
       "port": 4662,
       "client_ecid": 4382,
-      "online": true,
+      "connected": true,
       "friend_slot": false
     }
   ],
@@ -2100,7 +2100,7 @@ The friends list amuled persists to `emfriends.met`. The daemon ships the whole 
 }
 ```
 
-`client_ecid` is the live client this friend is currently linked to, joinable against [`GET /api/v0/clients`](#get-apiv0clients), and `null` when no client object is held for the friend. `online` is a different question and answers it directly: whether a connection to the peer is up. A friend can have a `client_ecid` and be `false` here, which is the ordinary state for one the daemon is trying, or failing, to reach. `null` means the daemon does not report peer connectivity. `user_hash` is `""` for a friend added by address only; `ip` and `port` are `null` for a zero address, and the `friend_*` events emit the same nulls.
+`client_ecid` is the live client this friend is currently linked to, joinable against [`GET /api/v0/clients`](#get-apiv0clients), and `null` when no client object is held for the friend. `connected` is a different question and answers it directly: whether a connection to the peer is up. A friend can have a `client_ecid` and be `false` here, which is the ordinary state for one the daemon is trying, or failing, to reach. `null` means the daemon does not report peer connectivity. `user_hash` is `""` for a friend added by address only; `ip` and `port` are `null` for a zero address, and the `friend_*` events emit the same nulls.
 
 `friend_slot` reads `false` against a daemon predating the tag that carries it, the same way `friend` and `credit_ratio` degrade on `/clients`.
 
@@ -3178,7 +3178,7 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/chats"
       "name":            "alice",
       "client_ecid":     4382,
       "friend_ecid":     12,
-      "online":          true,
+      "connected":       true,
       "message_count":   14,
       "last_message_id":     91,
       "last_message_at": 1786652714,
@@ -3189,7 +3189,7 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/chats"
 }
 ```
 
-`name` falls back to `"IP: <ip> Port: <port>"` when the core has no nickname for the client, matching what the desktop shows; the same string appears in the SSE payload. `client_ecid` is `null` when the client is offline and `friend_ecid` is `null` when the client is not a friend — join either against [`GET /clients`](#get-apiv0clients) and [`GET /friends`](#get-apiv0friends). `online` says whether a connection to the peer is actually up, which is not the same as `client_ecid` being non-null: the daemon holds a client object from the first contact attempt, so a conversation opened against an unreachable address has an ecid and is not online. `null` means the daemon does not report peer connectivity.
+`name` falls back to `"IP: <ip> Port: <port>"` when the core has no nickname for the client, matching what the desktop shows; the same string appears in the SSE payload. `client_ecid` is `null` when the client is offline and `friend_ecid` is `null` when the client is not a friend — join either against [`GET /clients`](#get-apiv0clients) and [`GET /friends`](#get-apiv0friends). `connected` says whether a connection to the peer is actually up, which is not the same as `client_ecid` being non-null: the daemon holds a client object from the first contact attempt, so a conversation opened against an unreachable address has an ecid and is not online. `null` means the daemon does not report peer connectivity.
 
 `last_message` is `null` for a conversation that holds none; the key is always present. The full transcript is deliberately **not** on the list: 50 conversations at 200 messages each would be 10 000 objects per read. Use the messages endpoint below.
 

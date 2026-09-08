@@ -1871,7 +1871,7 @@ TEST(EventDiff, FriendEventReportsReachabilityNotClientObjectExistence)
 		f.ecid = 91;
 		f.name = "linked-but-unreachable";
 		// A live client object exists -- the daemon is trying -- but no
-		// socket is up. The old rule called this online.
+		// socket is up. The old rule called this connected.
 		f.client_ecid = 4242;
 		f.connected = false;
 		f.has_connected = true;
@@ -1888,14 +1888,17 @@ TEST(EventDiff, FriendEventReportsReachabilityNotClientObjectExistence)
 			payload = e.data;
 	}
 	ASSERT_TRUE(!payload.empty());
-	ASSERT_TRUE(payload.find("\"online\":false") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"connected\":false") != std::string::npos);
+	// The retired spelling must be gone, not shadowed (R6: one key for the
+	// quantity /clients, /known_clients and /chats also carry).
+	ASSERT_TRUE(payload.find("\"online\"") == std::string::npos);
 	// The live peer is still reported, so a consumer can still join on it.
 	ASSERT_TRUE(payload.find("\"client_ecid\":4242") != std::string::npos);
 }
 
 // A daemon that does not report connectivity leaves it unknown: null, not a
 // guessed false. R10 -- an unknown value is null and never a sentinel.
-TEST(EventDiff, FriendEventNullsOnlineWhenTheDaemonNeverReportedIt)
+TEST(EventDiff, FriendEventNullsConnectedWhenTheDaemonNeverReportedIt)
 {
 	CState state;
 	state.MutateFriends([](std::map<std::uint32_t, FriendSnapshot> &friends) {
@@ -1917,7 +1920,8 @@ TEST(EventDiff, FriendEventNullsOnlineWhenTheDaemonNeverReportedIt)
 			payload = e.data;
 	}
 	ASSERT_TRUE(!payload.empty());
-	ASSERT_TRUE(payload.find("\"online\":null") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"connected\":null") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"online\"") == std::string::npos);
 }
 
 // The connected flag has to be in Equal too, or a peer that finishes
