@@ -105,13 +105,13 @@ wxBEGIN_EVENT_TABLE(CSplashScreen, wxFrame)
 	EVT_TIMER(wxID_ANY, CSplashScreen::OnCloseTimer)
 wxEND_EVENT_TABLE()
 
-CSplashScreen::CSplashScreen()
-: wxFrame(nullptr,
+CSplashScreen::CSplashScreen(wxWindow *parent)
+: wxFrame(parent,
 	  wxID_ANY,
 	  wxEmptyString,
 	  wxDefaultPosition,
 	  wxDefaultSize,
-	  wxFRAME_NO_TASKBAR | wxSTAY_ON_TOP | wxBORDER_NONE)
+	  wxFRAME_NO_TASKBAR | wxBORDER_NONE)
 , m_percent(0)
 , m_shownAt(0)
 , m_lastPaint(0)
@@ -122,7 +122,10 @@ CSplashScreen::CSplashScreen()
 	SetClientSize(FromDIP(wxSize(kSplashWidth, kSplashHeight)));
 	SetBackgroundStyle(wxBG_STYLE_PAINT);
 	RenderBackdrop();
-	Centre();
+	// Explicitly on the screen rather than on the parent: with a parent set,
+	// Centre() would centre on a main window that is not on screen yet, and
+	// its saved geometry can put the splash anywhere or off-screen entirely.
+	CentreOnScreen();
 }
 
 bool CSplashScreen::Show(bool show)

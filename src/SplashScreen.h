@@ -45,7 +45,12 @@
 class CSplashScreen : public wxFrame
 {
 public:
-	CSplashScreen();
+	// Parented to the main window, so the window manager keeps it above
+	// aMule and nothing else. It used to be a parentless wxSTAY_ON_TOP
+	// frame, which is a desktop-global level: it covered every other
+	// application, and since it also has no taskbar button there was
+	// nothing to raise over it or dismiss it with.
+	explicit CSplashScreen(wxWindow *parent);
 
 	// Update the phase text and the bar. Cheap to call often: repainting is
 	// rate-limited internally, so callers can report every file scanned
