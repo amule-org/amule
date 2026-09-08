@@ -43,8 +43,13 @@ void CSafeKad::Clear()
 	m_lastCleanup = 0;
 }
 
-bool CSafeKad::TrackNode(uint32_t ip, uint16_t port, const CUInt128 &id, bool idVerified, time_t now)
+bool CSafeKad::TrackNode(
+	uint32_t ip, uint16_t port, const CUInt128 &id, bool idVerified, time_t now, bool *newlyBanned)
 {
+	if (newlyBanned) {
+		*newlyBanned = false;
+	}
+
 	if (IsBanned(ip, now)) {
 		return false;
 	}
@@ -90,7 +95,10 @@ bool CSafeKad::TrackNode(uint32_t ip, uint16_t port, const CUInt128 &id, bool id
 			// it, which is the attack the verification exists to stop.
 			accepted = false;
 			if (idVerified) {
-				Escalate(ip, port, now);
+				const bool banned = Escalate(ip, port, now);
+				if (newlyBanned) {
+					*newlyBanned = banned;
+				}
 			}
 		} else {
 			tracked.m_lastID = id;
@@ -114,13 +122,14 @@ bool CSafeKad::TrackNode(uint32_t ip, uint16_t port, const CUInt128 &id, bool id
 	return accepted;
 }
 
-void CSafeKad::Escalate(uint32_t ip, uint16_t port, time_t now)
+bool CSafeKad::Escalate(uint32_t ip, uint16_t port, time_t now)
 {
 	if (IsProblematic(ip, port, now)) {
-		BanAddress(ip, now);
-	} else {
-		TrackProblematicNode(ip, port, now);
+		return BanAddress(ip, now);
 	}
+
+	TrackProblematicNode(ip, port, now);
+	return false;
 }
 
 void CSafeKad::TrackProblematicNode(uint32_t ip, uint16_t port, time_t now)
@@ -145,11 +154,14 @@ void CSafeKad::TrackProblematicNode(uint32_t ip, uint16_t port, time_t now)
 	m_problematicNodes.Set(address, problematic);
 }
 
-void CSafeKad::BanAddress(uint32_t ip, time_t now)
+bool CSafeKad::BanAddress(uint32_t ip, time_t now)
 {
 	Cleanup(now);
 
 	CKadAgedMap<uint32_t, sBanned>::iterator it = m_bannedAddresses.Find(ip);
+	// Read before the Set() below overwrites it: a repeat ban refreshes the
+	// entry rather than adding one, and the caller is counting addresses.
+	const bool isNew = (it == m_bannedAddresses.End());
 	sBanned banned;
 	if (it == m_bannedAddresses.End() && m_bannedAddresses.Size() >= MAX_BANNED_ADDRESSES) {
 		// A thousand simultaneously banned addresses means something much
@@ -165,6 +177,8 @@ void CSafeKad::BanAddress(uint32_t ip, time_t now)
 	// problematic entries have been superseded by the stronger measure.
 	// The ban covers the address, so every port on it goes.
 	DropAllPortsOf(ip);
+
+	return isNew;
 }
 
 void CSafeKad::DropAllPortsOf(uint32_t ip)

@@ -1096,7 +1096,18 @@ bool CRoutingZone::VerifyContact(const CUInt128 &id, uint32_t ip)
 		// behind this Kad ID. Recording it verified is what makes a later
 		// unverified claim of a different ID for the same address
 		// rejectable rather than merely rate-limited.
-		safeKad.TrackNode(ip, contact->GetUDPPort(), id, true, time(nullptr));
+		bool newlyBanned = false;
+		safeKad.TrackNode(ip, contact->GetUDPPort(), id, true, time(nullptr), &newlyBanned);
+		if (newlyBanned) {
+			// The one event in this subsystem worth a line without debug
+			// logging on: a ban is why a peer stops appearing, and until
+			// now it left no trace anywhere. Logged here rather than in
+			// CSafeKad because that class links against nothing.
+			AddDebugLogLineN(logKadNodeTracking,
+				CFormat("Kad: banned %s after a second rejected identity change; "
+					"%u address(es) now banned") %
+					KadIPToString(ip) % (unsigned)safeKad.GetBannedAddressCount());
+		}
 #endif
 		return true;
 	}

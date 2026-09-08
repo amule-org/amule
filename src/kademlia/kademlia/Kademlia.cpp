@@ -46,6 +46,7 @@ there client on the eMule forum..
 #ifdef ENABLE_KAD_NODE_PROTECTION
 #include "../net/FastKad.h"
 #include "../net/SafeKad.h"
+#include "../../Statistics.h" // Needed for theStats::SetKadBannedAddresses
 #endif
 #include "../routing/RoutingZone.h"
 #include "../utils/KadUDPKey.h"
@@ -284,6 +285,14 @@ void CKademlia::Process()
 		CSearchManager::JumpStart();
 		m_nextSearchJumpStart = SEARCH_JUMPSTART + now;
 	}
+
+#ifdef ENABLE_KAD_NODE_PROTECTION
+	// Published as a gauge rather than counted at the ban: these bans lapse
+	// inside an aged map, and entries are also evicted when it is full, so
+	// there is no event to hang a decrement on. Reading the record on the
+	// timer cannot drift from it.
+	theStats::SetKadBannedAddresses((uint32)safeKad.GetBannedAddressCount());
+#endif
 
 	// Try to consolidate any zones that are close to empty.
 	if (m_consolidate <= now) {

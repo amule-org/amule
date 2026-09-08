@@ -427,6 +427,75 @@ TEST(SafeKad, AVerifiedRotationStillEscalatesToABan)
 	ASSERT_TRUE(safe.IsBanned(IP_A, T0 + 20));
 }
 
+// The reporting the integration layer logs and counts from. A ban that is
+// merely refreshed must not read as a new one, or the figure counts calls
+// rather than addresses -- the drift CBanRecord was extracted to stop on the
+// client-side ban list.
+TEST(SafeKad, BanAddressReportsOnlyTheFirstBanOfAnAddress)
+{
+	CSafeKad safe;
+	ASSERT_TRUE(safe.BanAddress(IP_A, T0));
+	ASSERT_FALSE(safe.BanAddress(IP_A, T0 + 1));
+	ASSERT_EQUALS(1u, (unsigned)safe.GetBannedAddressCount());
+
+	// A different address is a new ban again.
+	ASSERT_TRUE(safe.BanAddress(IP_B, T0 + 2));
+	ASSERT_EQUALS(2u, (unsigned)safe.GetBannedAddressCount());
+}
+
+// A ban that has lapsed and is imposed again is a new ban: the address left
+// the set in between, so counting it again is what keeps the figure equal to
+// the size of the set.
+TEST(SafeKad, ALapsedBanReimposedReportsAsNew)
+{
+	CSafeKad safe;
+	ASSERT_TRUE(safe.BanAddress(IP_A, T0));
+
+	const time_t afterExpiry = T0 + CSafeKad::MAX_BAN_TIME + 1;
+	ASSERT_FALSE(safe.IsBanned(IP_A, afterExpiry));
+	ASSERT_TRUE(safe.BanAddress(IP_A, afterExpiry));
+}
+
+// TrackNode's out-param is how the ban reaches a caller that can log it.
+// It must stay false on every path that does not ban, including the refusals.
+TEST(SafeKad, TrackNodeReportsANewBanOnlyWhenItEscalatesToOne)
+{
+	CSafeKad safe;
+	bool banned = true; // deliberately wrong, so a missed write shows
+
+	ASSERT_TRUE(safe.TrackNode(IP_A, PORT_A, Id(1), true, T0, &banned));
+	ASSERT_FALSE(banned);
+
+	// First rapid rotation: refused, marked problematic, not yet banned.
+	banned = true;
+	ASSERT_FALSE(safe.TrackNode(IP_A, PORT_A, Id(2), true, T0 + 10, &banned));
+	ASSERT_FALSE(banned);
+
+	// Second: the escalation lands, and this is the event worth reporting.
+	ASSERT_FALSE(safe.TrackNode(IP_A, PORT_A, Id(3), true, T0 + 20, &banned));
+	ASSERT_TRUE(banned);
+
+	// Already banned, so a further attempt reports nothing new.
+	banned = true;
+	ASSERT_FALSE(safe.TrackNode(IP_A, PORT_A, Id(4), true, T0 + 30, &banned));
+	ASSERT_FALSE(banned);
+}
+
+// An unverified claim is refused without escalating, so it must not report a
+// ban either -- this is the path that would let fabricated mentions ban an
+// honest node if the report were wired to the refusal instead of the ban.
+TEST(SafeKad, TrackNodeReportsNoBanForARefusalThatDoesNotEscalate)
+{
+	CSafeKad safe;
+	bool banned = true;
+	ASSERT_TRUE(safe.TrackNode(IP_A, PORT_A, Id(1), true, T0, &banned));
+
+	banned = true;
+	ASSERT_FALSE(safe.TrackNode(IP_A, PORT_A, Id(2), false, T0 + 10, &banned));
+	ASSERT_FALSE(banned);
+	ASSERT_FALSE(safe.IsBanned(IP_A, T0 + 10));
+}
+
 // A change refused only because it could not be verified, long past the
 // interval, is not rapid rotation and must not escalate: a legacy client that
 // legitimately reinstalled once a year is not a sybil, and banning it for four

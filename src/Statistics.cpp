@@ -199,6 +199,9 @@ CStatTreeItemNativeCounter *CStatistics::s_hasSocket;
 #endif
 CStatTreeItemNativeCounter *CStatistics::s_filtered;
 CStatTreeItemNativeCounter *CStatistics::s_banned;
+#ifdef ENABLE_KAD_NODE_PROTECTION
+CStatTreeItemNativeCounter *CStatistics::s_kadBanned;
+#endif
 
 // Servers
 CStatTreeItemSimple *CStatistics::s_workingServers;
@@ -934,6 +937,14 @@ void CStatistics::InitStatsTree()
 		s_clients->AddChild(new CStatTreeItemNativeCounter(wxTRANSLATE("Filtered: %s")), 2));
 	s_banned = static_cast<CStatTreeItemNativeCounter *>(
 		s_clients->AddChild(new CStatTreeItemNativeCounter(wxTRANSLATE("Banned: %s")), 1));
+#ifdef ENABLE_KAD_NODE_PROTECTION
+	// Only when the protection that fills it is compiled in. Adding the row
+	// unconditionally would show every user a figure that is structurally
+	// always zero, which reads as "nothing is being banned" rather than
+	// "nothing here can ban".
+	s_kadBanned = static_cast<CStatTreeItemNativeCounter *>(s_clients->AddChild(
+		new CStatTreeItemNativeCounter(wxTRANSLATE("Kad banned addresses: %s")), 1));
+#endif
 	s_clients->AddChild(
 		(new CStatTreeItemTotalClients(wxTRANSLATE("Total: %i Known: %i"), s_clients, s_unknown))
 			->SetKey("clients_total"),
@@ -1011,6 +1022,9 @@ void CStatistics::InitStatsTree()
 	s_unknown->SetKey("clients_unknown");
 	s_filtered->SetKey("clients_filtered");
 	s_banned->SetKey("clients_banned");
+#ifdef ENABLE_KAD_NODE_PROTECTION
+	s_kadBanned->SetKey("clients_kad_banned");
+#endif
 	s_workingServers->SetKey("servers_working");
 	s_failedServers->SetKey("servers_failed");
 	s_totalServers->SetKey("servers_total");
