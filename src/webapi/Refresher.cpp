@@ -173,7 +173,7 @@ const char *KadStateString(const CEC_ConnState_Tag *conn)
 }
 
 // As above, but an unset address formats as empty rather than "0.0.0.0".
-// The peer and server fields use 0 for "not known" and omit the key on it,
+// The peer and server fields use 0 for "not known" and emit the key as null on it,
 // whereas the Kad fields report the quad verbatim — which is the only
 // difference there has ever been between these two, and the reason the
 // distinction is a wrapper rather than a second formatter.

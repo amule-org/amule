@@ -334,7 +334,10 @@ wxString CServerListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) con
 		return server->IsStaticMember() ? _("Yes") : _("No");
 
 	case COLUMN_SERVER_VERSION:
-		return server->GetVersion();
+		// The placeholder lives here rather than in CServer, so it is
+		// translated in the locale of whoever is reading the column and
+		// never reaches server.met, EC or the API as data.
+		return server->GetVersion().IsEmpty() ? _("Unknown") : server->GetVersion();
 
 	// Rendered in both binaries: the flags are streamed over EC, so the remote
 	// GUI has the same data behind these columns.
