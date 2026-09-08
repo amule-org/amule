@@ -244,7 +244,10 @@ function ChatPane({ reg, active, isGuest }) {
 
 const two = (n) => (n < 10 ? "0" + n : String(n));
 // From the message's own core timestamp, not the wall clock the wx GUI stamps.
+// An unstamped message (sent_at null, or the legacy 0) has no time to show:
+// render a dash rather than a false 1970.
 function hhmmss(ts) {
+  if (!ts) return "—";
   const d = new Date(ts * 1000);
   return two(d.getHours()) + ":" + two(d.getMinutes()) + ":" + two(d.getSeconds());
 }
