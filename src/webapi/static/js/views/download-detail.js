@@ -8,7 +8,7 @@
 import { api } from "../api.js";
 import { store } from "../store.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
-import { ProgressBar, Placeholder, PiecesBar, PiecesLegend, toast, confirmDialog, Section, statRow, IdentityLine, copyText, Tabs, CommentEditor, CommentsList, RenameForm, PRIORITIES, prioValue, prioLabel } from "../components.js";
+import { ProgressBar, Placeholder, PiecesBar, PiecesLegend, toast, confirmDialog, Section, statRow, IdentityLine, copyText, Tabs, CommentEditor, CommentsList, RenameForm, DownloadLink, PRIORITIES, prioValue, prioLabel } from "../components.js";
 import { formatBytes, formatSpeed, formatDuration, formatInt, formatPercent, formatTimestamp } from "../format.js";
 import { Icon } from "../icons.js";
 import { FileClients, HIDDEN_EVERYWHERE } from "./client-table.js";
@@ -172,7 +172,9 @@ export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDele
 function DetailActions({ d, isGuest, categories, onPatch, onDelete, onClear }) {
   const inactive = d.status === "paused" || d.status === "stopped";
   const canStop = d.status !== "stopped" && d.status !== "completed" && d.status !== "completing";
-  // Completed rejects DELETE (409 download_completed): offer Clear.
+  // Completed rejects DELETE (409 download_completed): offer Clear. `done` also
+  // gates the download link — only a completed file is in Incoming (shared), so
+  // only then does its hash resolve under shared/{hash}/content.
   const done = d.status === "completed";
 
   const clear = async () => {
@@ -192,6 +194,7 @@ function DetailActions({ d, isGuest, categories, onPatch, onDelete, onClear }) {
           <${Icon} name="stop" /> ${t("downloads_stop")}
         </button>` : null}
       ${done ? html`
+        <${DownloadLink} hash=${d.hash} tipKey="downloads_download_tip" />
         <button class="btn btn-sm admin-only" type="button" onClick=${clear}>
           <${Icon} name="cancel" /> ${t("downloads_clear_this")}
         </button>` : html`

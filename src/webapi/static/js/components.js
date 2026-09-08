@@ -5,7 +5,7 @@
 import { html, render, useState, useEffect, useRef } from "./dom.js";
 import { formatPercent } from "./format.js";
 import { t, tn, terr, getLang } from "./i18n.js";
-import { api } from "./api.js";
+import { api, apiUrl } from "./api.js";
 import { Icon } from "./icons.js";
 
 // --- presentational components -----------------------------------------
@@ -25,6 +25,31 @@ export function ProgressBar({ percent }) {
 // Inline status/label pill.
 export function Badge({ kind = "", title, children }) {
   return html`<span class=${"badge " + kind} title=${title}>${children}</span>`;
+}
+
+// "Save this file to your device", shared by the shared-file detail panel and a
+// finished download's panel (a completed download lives in Incoming, which is
+// shared, so the same hash resolves under shared/{hash}/content).
+//
+// A plain <a href>, never a fetch(): the endpoint answers Content-Disposition:
+// attachment, so the navigation hands the bytes to the browser's own downloader
+// — the page stays mounted and a large file never buffers into JS memory. The
+// HttpOnly session cookie authenticates the navigation, so no token in the URL.
+//
+// A partfile (incomplete) renders as a disabled button: an anchor cannot be
+// disabled, and the endpoint would answer 409 for it anyway.
+export function DownloadLink({ hash, incomplete, tipKey = "shared_download_tip" }) {
+  if (incomplete) {
+    return html`
+      <button class="btn btn-sm" type="button" disabled title=${t("shared_download_tip_partfile")}>
+        <${Icon} name="download" /> ${t("shared_download")}
+      </button>`;
+  }
+  // No `download` attr: the server sets the sanitised filename via Content-Disposition.
+  return html`
+    <a class="btn btn-sm" href=${apiUrl("shared/" + hash + "/content")} title=${t(tipKey)}>
+      <${Icon} name="download" /> ${t("shared_download")}
+    </a>`;
 }
 
 // Empty / loading / error placeholder for view bodies.
