@@ -347,11 +347,15 @@ struct KnownClientSnapshot
 	//! This peer is connected right now, correlated by user hash against the
 	//! live client list. Never by ECID: those mean nothing across daemon
 	//! restarts, while the hash is what the credit store is keyed on.
-	bool online = false;
+	//!
+	//! Named for the same quantity the live rows carry, and spelled the same
+	//! on the wire: this is EC_TAG_CLIENT_CONNECTED reaching a persisted row
+	//! by correlation rather than a second concept (R6).
+	bool connected = false;
 	//! The daemon answered the reachability question. False means unknown (a
 	//! core that predates EC_TAG_CLIENT_CONNECTED), which is null on the wire
 	//! rather than a guessed "offline".
-	bool has_online = false;
+	bool has_connected = false;
 };
 
 //! amuled substitutes this for the queue position when the peer's queue is
@@ -2111,9 +2115,9 @@ private:
 	// peer a second row.
 	std::map<std::string, std::size_t> m_known_of_hash;
 	bool m_known_loaded = false;
-	//! Rows currently flagged online, so a peer that left is found without
+	//! Rows currently flagged connected, so a peer that left is found without
 	//! walking the store.
-	std::set<std::size_t> m_known_online;
+	std::set<std::size_t> m_known_connected;
 	//! MUST be called with m_mu held for writing.
 	void ReconcileKnownClientsLocked();
 	std::map<std::uint32_t, ServerSnapshot> m_servers;

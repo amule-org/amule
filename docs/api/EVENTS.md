@@ -328,7 +328,7 @@ Downloads only, but it rides the `comments` channel, not `downloads` -- `?channe
 
 #### `shared_added` / `shared_updated`
 
-Identical to the REST [`/api/v0/shared`](REFERENCE.md#get-apiv0shared) list-item shape. `_updated` fires on any field-level change including `priority`, `priority_auto`, `uploaded_bytes_session`, `uploaded_bytes_total`, `requests.*`, `accepts.*` and `hashed_part_count` — clients see live upload counters (and priority changes, and a running hash) without polling.
+Identical to the REST [`/api/v0/shared`](REFERENCE.md#get-apiv0shared) list-item shape. `_updated` fires on any field-level change including `priority`, `priority_auto`, `uploaded_bytes_session`, `uploaded_bytes_total`, `request_count_*`, `accepted_request_count_*` and `hashed_part_count` — clients see live upload counters (and priority changes, and a running hash) without polling.
 
 ```json
 {
@@ -424,7 +424,7 @@ Identical to the REST [`/api/v0/friends`](REFERENCE.md#get-apiv0friends) list-it
   "ip":           "203.0.113.42",
   "port":         4662,
   "client_ecid":  4382,
-  "online":       true,
+  "connected":    true,
   "friend_slot":  false
 }
 ```

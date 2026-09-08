@@ -17,7 +17,7 @@
 #   * every `sort` key the endpoint advertises is accepted and an
 #     unknown one is a 400,
 #   * each record carries the fields that are always recorded (user_hash,
-#     the totals, last_seen_at, online) and omits — rather than empties —
+#     the totals, last_seen_at, connected) and omits — rather than empties —
 #     the ones a pre-metadata record has no value for,
 #   * `user_hash` is a 32-char lowercase MD4, so it correlates with
 #     /clients `user_hash` directly,
@@ -163,7 +163,7 @@ _assert_status 200 "sort=last_seen_at&order=desc is accepted"
 if [ "${TOTAL:-0}" -gt 0 ]; then
 	_curl "$HOST/api/v0/known_clients?limit=1"
 
-	for k in user_hash uploaded_bytes_total downloaded_bytes_total last_seen_at online; do
+	for k in user_hash uploaded_bytes_total downloaded_bytes_total last_seen_at connected; do
 		if [ "$(_jq ".known_clients[0] | has(\"$k\")")" = "true" ]; then
 			_pass "record always carries $k"
 		else
@@ -179,11 +179,18 @@ if [ "${TOTAL:-0}" -gt 0 ]; then
 	fi
 
 	# boolean, or null on a daemon that does not report peer connectivity.
-	ONLINE_TYPE=$(_jq '.known_clients[0].online | type')
-	if [ "$ONLINE_TYPE" = "boolean" ] || [ "$ONLINE_TYPE" = "null" ]; then
-		_pass "online is a boolean or null"
+	# The pre-rename spelling must be absent, not merely shadowed: a client
+	# reading `online` would silently see undefined rather than a boolean.
+	if [ "$(_jq '.known_clients[0].online | type')" = "null" ]; then
+		_pass "known_clients no longer emits the old online key"
 	else
-		_fail "online" "expected boolean or null, got: $ONLINE_TYPE"
+		_fail "known_clients online" "the retired key is still present"
+	fi
+	ONLINE_TYPE=$(_jq '.known_clients[0].connected | type')
+	if [ "$ONLINE_TYPE" = "boolean" ] || [ "$ONLINE_TYPE" = "null" ]; then
+		_pass "connected is a boolean or null"
+	else
+		_fail "connected" "expected boolean or null, got: $ONLINE_TYPE"
 	fi
 
 	# Optional fields are omitted, never emitted empty: a record written
@@ -220,7 +227,7 @@ fi
 # large store contains no online records at all, and the check would skip
 # itself forever while looking like it had run.
 _curl "$HOST/api/v0/known_clients?sort=last_seen_at&order=desc&limit=500"
-ACTIVE_HASH=$(_jq '[.known_clients[] | select(.online)][0].user_hash')
+ACTIVE_HASH=$(_jq '[.known_clients[] | select(.connected)][0].user_hash')
 if [ -n "$ACTIVE_HASH" ] && [ "$ACTIVE_HASH" != "null" ]; then
 	BEFORE=$(_jq "[.known_clients[] | select(.user_hash == \"$ACTIVE_HASH\")][0]
 		| .downloaded_bytes_total + .uploaded_bytes_total")
@@ -277,11 +284,11 @@ if [ -n "$LIVE_HASHES" ]; then
 	fi
 
 	# And they are flagged as connected, not merely present.
-	ONLINE_N=$(_jq '[.known_clients[] | select(.online)] | length')
+	ONLINE_N=$(_jq '[.known_clients[] | select(.connected)] | length')
 	if [ "${ONLINE_N:-0}" -gt 0 ]; then
-		_pass "connected peers are flagged online ($ONLINE_N)"
+		_pass "connected peers are flagged connected ($ONLINE_N)"
 	else
-		_fail "online flag" "no record is flagged online while peers are connected"
+		_fail "connected flag" "no record is flagged connected while peers are connected"
 	fi
 elif [ "${LIVE_TOTAL:-0}" -gt 0 ]; then
 	# Connected, but nothing to look up: every peer is still on the
@@ -331,7 +338,7 @@ _cross_check_online() {
 	_curl "$HOST/api/v0/known_clients?limit=200"
 	local online_hashes connected_hashes h missing=""
 	online_hashes=$(printf '%s' "$CURL_BODY" \
-		| jq -r '[.known_clients[] | select(.online == true) | .user_hash] | .[]')
+		| jq -r '[.known_clients[] | select(.connected == true) | .user_hash] | .[]')
 	[ -z "$online_hashes" ] && { echo "__NONE__"; return; }
 	_curl "$HOST/api/v0/clients?limit=1000"
 	# Flattened to one space-separated line: the membership test below is a
@@ -379,11 +386,11 @@ for i in $(seq 1 8); do
 	sleep 1
 done
 if [ "$PERSISTENT" = "__NONE__" ]; then
-	_skip "no known client is online; cannot cross-check against /clients"
+	_skip "no known client is connected; cannot cross-check against /clients"
 elif [ -z "$PERSISTENT" ]; then
-	_pass "every online known client has a connected /clients counterpart"
+	_pass "every connected known client has a connected /clients counterpart"
 else
-	_fail "known_clients online" \
+	_fail "known_clients connected" \
 		"no connected /clients row for:$PERSISTENT (in every one of 8 samples)"
 fi
 

@@ -17,7 +17,7 @@
 #   * both advertised sort keys are accepted and an unknown one is a 400,
 #   * a friend added by address round-trips: the POST is a bodyless 202
 #     (EC's FRIEND op never returns the record it made) and the friend
-#     then appears in the list with the address given, `online` false
+#     then appears in the list with the address given, `connected` false
 #     while nothing is linked,
 #   * `user_hash` is either empty or a 32-char lowercase MD4, so it
 #     correlates with /clients `user_hash` directly,
@@ -133,7 +133,7 @@ for bad in "limit=abc" "limit=-1" "offset=-1" "order=sideways"; do
 	_assert_status 400 "GET /friends?$bad is rejected"
 done
 
-for key in name online; do
+for key in name connected; do
 	_curl "$HOST/api/v0/friends?sort=$key&order=desc"
 	_assert_status 200 "sort=$key is accepted"
 done
@@ -175,9 +175,9 @@ NEW=$(echo "$CURL_BODY" | jq -r --argjson e "$NEW_ECID" \
 	&& _pass "ip round-trips" || _fail "ip" "got $(echo "$NEW" | jq -r .ip)"
 [ "$(echo "$NEW" | jq -r .port)" = "$TEST_PORT" ] \
 	&& _pass "port round-trips" || _fail "port" "got $(echo "$NEW" | jq -r .port)"
-[ "$(echo "$NEW" | jq -r .online)" = "false" ] \
+[ "$(echo "$NEW" | jq -r .connected)" = "false" ] \
 	&& _pass "a friend with no linked peer is offline" \
-	|| _fail "online" "expected false, got $(echo "$NEW" | jq -r .online)"
+	|| _fail "connected" "expected false, got $(echo "$NEW" | jq -r .connected)"
 # ...and reports that as null, not as the 0 sentinel it used to send. 0 is not
 # how this surface spells "no value" anywhere else, and a client joining
 # naively on the raw number was building GET /clients/0 and taking a 404.
@@ -291,15 +291,15 @@ FINAL=$(_jq '.total')
 # runs one way only: online true requires a live peer, but a live peer does
 # not make the friend online.
 _curl "$HOST/api/v0/friends?limit=200"
-if [ "$(_jq '[.friends[] | select((.online | type) as $t | $t != "boolean" and $t != "null")] | length')" = "0" ]; then
-	_pass "every friend online is a boolean or null"
+if [ "$(_jq '[.friends[] | select((.connected | type) as $t | $t != "boolean" and $t != "null")] | length')" = "0" ]; then
+	_pass "every friend connected is a boolean or null"
 else
-	_fail "friends online type" "a row has online neither boolean nor null: $CURL_BODY"
+	_fail "friends connected type" "a row has connected neither boolean nor null: $CURL_BODY"
 fi
-if [ "$(_jq '[.friends[] | select(.online == true and .client_ecid == null)] | length')" = "0" ]; then
-	_pass "no friend is online without a client_ecid"
+if [ "$(_jq '[.friends[] | select(.connected == true and .client_ecid == null)] | length')" = "0" ]; then
+	_pass "no friend is connected without a client_ecid"
 else
-	_fail "friends online" "a row claims online with client_ecid null: $CURL_BODY"
+	_fail "friends connected" "a row claims connected with client_ecid null: $CURL_BODY"
 fi
 
 # --- Summary -------------------------------------------------------

@@ -168,7 +168,7 @@ async function adopt() {
       const cEcid = s.client_ecid || 0, fEcid = s.friend_ecid || 0;
       if (cEcid !== cur.clientEcid) { cur.clientEcid = cEcid; added = true; }
       if (fEcid !== cur.friendEcid) { cur.friendEcid = fEcid; added = true; }
-      const onl = s.online === true;
+      const onl = s.connected === true;
       if (onl !== cur.online) { cur.online = onl; added = true; }
       if (cur.loaded && s.last_message_id > cur.lastMsgId) loadMessages(s.address);
       continue;
@@ -176,7 +176,7 @@ async function adopt() {
     const conv = newConv({
       peer: s.address, ip: s.ip, port: s.port, name: s.name,
       clientEcid: s.client_ecid || 0, friendEcid: s.friend_ecid || 0,
-      online: s.online === true,
+      online: s.connected === true,
     });
     conv.known = true;
     convs.set(s.address, conv);
@@ -250,13 +250,17 @@ function onMessage(p) {
     conv = newConv({
       peer: p.address, ip: p.ip, port: p.port, name: p.name,
       clientEcid: p.client_ecid || 0, friendEcid: p.friend_ecid || 0,
-      online: p.online === true,
+      // No reachability here: chat_message carries address/ip/port/name/
+      // client_ecid/friend_ecid/message and nothing else. Defaults to false
+      // until GET /chats or a friend_updated says otherwise.
     });
     convs.set(p.address, conv);
   } else {
     conv.name = betterName(conv, p.name);
     conv.clientEcid = p.client_ecid || 0;
-    conv.online = p.online === true;
+    // Deliberately not touching conv.online: the event carries no reachability
+    // field, so `p.online === true` was always false and a message arriving
+    // from a peer we knew to be up marked it offline.
     conv.friendEcid = p.friend_ecid || 0;
   }
   conv.known = true;

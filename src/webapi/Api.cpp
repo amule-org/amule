@@ -3295,9 +3295,14 @@ void WriteKnownClientObject(CJsonWriter &w, const webapi::KnownClientSnapshot &c
 	// Correlate with /clients by user_hash to reach the live peer. The value
 	// is reachability, not presence in that list: the daemon holds a client
 	// object from the first contact ATTEMPT, so a peer it can never reach used
-	// to read "online" here. null when the core predates
+	// to read as reachable here. null when the core predates
 	// EC_TAG_CLIENT_CONNECTED -- unknown, not offline.
-	WriteBoolOrNull(w, "online", c.has_online, c.online);
+	//
+	// `connected`, the same key the live rows carry: this is the same
+	// EC_TAG_CLIENT_CONNECTED bit reaching a persisted row by correlation, and
+	// a client joining the two by user_hash should not meet it under a second
+	// name on the far side of the join (R6).
+	WriteBoolOrNull(w, "connected", c.has_connected, c.connected);
 	w.EndObject();
 }
 
@@ -6086,15 +6091,15 @@ void WriteFriendObject(CJsonWriter &w, const webapi::FriendSnapshot &f)
 	WriteIntOrNull(w, "port", !f.ip.empty(), static_cast<int64_t>(f.port));
 	// The live peer this friend is linked to, joinable against /clients. null
 	// when the friend is not connected, which is the common case and which
-	// `online` also reports. Deliberately not the 0 it used to be: the surface
+	// `connected` also reports. Deliberately not the 0 it used to be: the surface
 	// spells "no value" as null and never as 0 or -1, and a client joining
 	// naively on the raw value was building GET /clients/0 and taking a 404.
 	WriteIntOrNull(w, "client_ecid", f.client_ecid != 0, static_cast<int64_t>(f.client_ecid));
 	// Whether a socket to the peer is actually up, not whether the daemon
 	// holds a client object for it -- which it does from the first contact
-	// ATTEMPT, so this used to call an unroutable peer online. null when the
+	// ATTEMPT, so this used to call an unroutable peer reachable. null when the
 	// daemon predates EC_TAG_CLIENT_CONNECTED: unknown, not offline.
-	WriteBoolOrNull(w, "online", f.has_connected, f.connected);
+	WriteBoolOrNull(w, "connected", f.has_connected, f.connected);
 	w.Key("friend_slot");
 	w.ValueBool(f.friend_slot);
 	w.EndObject();
@@ -6356,7 +6361,7 @@ void WriteChatObject(CJsonWriter &w, const webapi::ChatSessionSnapshot &s)
 	WriteIntOrNull(w, "client_ecid", s.client_ecid != 0, static_cast<int64_t>(s.client_ecid));
 	WriteIntOrNull(w, "friend_ecid", s.friend_ecid != 0, static_cast<int64_t>(s.friend_ecid));
 	// Same rule as the /friends row: reachability, not object existence.
-	WriteBoolOrNull(w, "online", s.has_connected, s.connected);
+	WriteBoolOrNull(w, "connected", s.has_connected, s.connected);
 	w.Key("message_count");
 	w.ValueInt(static_cast<int64_t>(s.messages.size()));
 	w.Key("last_message_id");
@@ -6815,7 +6820,7 @@ CHttpServer::Response CApiDispatcher::HandleFriends(const CHttpServer::Request &
 		// cares about, not the order a UI table does.
 		{ "ecid", SORT_BY(ecid), ANCHOR_ON_NUM(ecid) },
 		{ "name", SORT_BY(name) },
-		{ "online",
+		{ "connected",
 			[](const webapi::FriendSnapshot &a, const webapi::FriendSnapshot &b) {
 				return (a.client_ecid != 0) < (b.client_ecid != 0);
 			} },
@@ -7696,7 +7701,7 @@ void WriteStatsValue(CJsonWriter &w, const webapi::StatsTreeValue &v)
 	}
 	// Additive, locale-independent token for well-known sentinel values
 	// ("never"/"not_available"); the English "value" above is kept so old
-	// clients keep working. Omitted when the value is not a sentinel.
+	// clients keep working.
 	// `token`, not `enum`: `enum` is a reserved word in C++, C#, Java, Rust,
 	// PHP and Swift, so a generated client cannot name a field after the key.
 	// null when the value is not a sentinel -- there is no token, which is a

@@ -80,16 +80,16 @@ function FriendsPane({ friends, isGuest, activePeer, onAdd }) {
     // A real <button>, not an <li> click handler, for keyboard/a11y.
     return html`
       <li class=${"friend-row" + (peer && peer === activePeer ? " active" : "")} key=${f.ecid}>
-        <button type="button" class=${"friend-open" + (f.online ? " online" : "")} disabled=${!peer}
-                title=${f.name + (peer ? " — " + peer : "") + " · " + (f.online ? t("messages_online") : t("messages_offline"))}
+        <button type="button" class=${"friend-open" + (f.connected ? " online" : "")} disabled=${!peer}
+                title=${f.name + (peer ? " — " + peer : "") + " · " + (f.connected ? t("messages_online") : t("messages_offline"))}
                 onClick=${() => chats.open({ peer, ip: f.ip, port: f.port, name: f.name, friendEcid: f.ecid, clientEcid: f.client_ecid || 0 })}>
-          <span class=${"friend-dot" + (f.online ? " online" : "")}></span>
+          <span class=${"friend-dot" + (f.connected ? " online" : "")}></span>
           <span class="friend-name">${f.name}</span>
         </button>
         ${isGuest ? null : html`
           <span class="row-actions admin-only">
             <button class=${"btn btn-icon btn-sm" + (f.friend_slot ? " active" : "")}
-                    title=${t("messages_friend_slot")} disabled=${!f.online}
+                    title=${t("messages_friend_slot")} disabled=${!f.connected}
                     onClick=${() => toggleSlot(f)}><${Icon} name="star" /></button>
             <button class="btn btn-icon btn-sm" title=${t("messages_view_files")}
                     onClick=${() => viewFiles(f)}><${Icon} name="search" /></button>

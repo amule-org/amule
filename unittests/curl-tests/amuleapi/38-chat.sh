@@ -163,13 +163,13 @@ _assert_json_eq '.port'               "$PEER_PORT" 'row carries the split port'
 # while trying. That is the whole point of the field: `online` is
 # reachability, and it used to be inferred from client_ecid merely existing,
 # which is true from the first contact ATTEMPT.
-_assert_json_eq '.online'             false        'unrouted peer is offline'
+_assert_json_eq '.connected'          false        'unrouted peer is offline'
 # client_ecid is deliberately NOT asserted null here any more. The daemon
 # legitimately holds a client object for a peer it is trying to reach, so
 # pinning it to null asserted the very conflation `online` now avoids. What
 # must hold is the implication: online can only be true with a live peer.
-_assert_json_eq '(.online == true) and (.client_ecid == null) | not' true \
-	'online is never true without a client_ecid'
+_assert_json_eq '(.connected == true) and (.client_ecid == null) | not' true \
+	'connected is never true without a client_ecid'
 _assert_json_eq '.client_ecid | type | test("^(number|null)$")' true \
 	'client_ecid is a number or null, never a 0 sentinel'
 _assert_json_eq '.friend_ecid'        null         'a non-friend peer has friend_ecid null, not a 0 sentinel'

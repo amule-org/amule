@@ -329,7 +329,7 @@ std::string ToJson(const FriendSnapshot &f)
 	  << ",\"ip\":" << (f.ip.empty() ? std::string("null") : "\"" + EscJson(f.ip) + "\"")
 	  << ",\"port\":" << (f.ip.empty() ? std::string("null") : std::to_string(f.port))
 	  << ",\"client_ecid\":" << (f.client_ecid ? std::to_string(f.client_ecid) : std::string("null"))
-	  << ",\"online\":" << JsonBoolOrNull(f.has_connected, f.connected)
+	  << ",\"connected\":" << JsonBoolOrNull(f.has_connected, f.connected)
 	  << ",\"friend_slot\":" << (f.friend_slot ? "true" : "false") << "}";
 	return o.str();
 }
