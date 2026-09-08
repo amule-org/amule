@@ -26,8 +26,6 @@ const TAB_HIDDEN = {
 };
 const TAB_SORT = { active: "downloaded", downloading: "downloaded", uploading: "uploaded", known: "downloaded" };
 
-const rowKey = (c) => c.ecid != null ? c.ecid : c.user_hash;
-
 export default function ClientsPanel() {
   const raw = useClients(); // undefined until the first snapshot lands
   const clients = raw || [];
@@ -74,11 +72,12 @@ export default function ClientsPanel() {
     { key: "known", label: t("clients_tab_known"), badge: knownRaw ? knownRaw.length : null },
   ];
 
-  const onRowClick = (c, e) => {
+  // `key` comes from the table, which owns row identity (ecid, or user_hash on
+  // the Known tab where there is none). We only carry it back as selectedKey.
+  const onRowClick = (c, e, key) => {
     // A click on the row-actions buttons (View files / Send message) must not
     // also toggle the detail panel.
     if (e && e.target && e.target.closest(".row-actions")) return;
-    const key = rowKey(c);
     // A known row that is online resolves to its live ecid for the full detail;
     // offline, only the stored credit-store fields are available.
     const next = isKnown
