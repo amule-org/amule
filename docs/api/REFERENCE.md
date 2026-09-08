@@ -507,10 +507,10 @@ Curl examples use `$HOST` for `127.0.0.1:4713` and `$TOKEN` for a previously-iss
 **Auth:** `NONE`. A probe has to work before anyone holds a token.
 
 ```json
-{ "status": "ok", "ec_connected": true, "snapshot": true }
+{ "status": "ok", "ec_connected": true, "snapshot_ready": true }
 ```
 
-**Liveness, not readiness.** The status is `200` whenever the HTTP server is answering, so a container, systemd or load-balancer probe never restarts a healthy process just because `amuled` went away. Readiness is in the body instead: `ec_connected` is the live EC link and `snapshot` is whether the first refresher tick has landed. A caller that wants readiness keys on those two fields; a caller that wants liveness keys on the status code.
+**Liveness, not readiness.** The status is `200` whenever the HTTP server is answering, so a container, systemd or load-balancer probe never restarts a healthy process just because `amuled` went away. Readiness is in the body instead: `ec_connected` is the live EC link and `snapshot_ready` is whether the first refresher tick has landed. A caller that wants readiness keys on those two fields; a caller that wants liveness keys on the status code.
 
 The handler touches no EC. amuleapi serialises EC through one worker, so a probe that waited on the daemon could block behind an unrelated slow mutation and time out, reporting the service as down when it is merely busy.
 
@@ -904,7 +904,7 @@ Same envelope as the list item, plus the detail-only fields below (all omitted f
 | `gained_by_compression_bytes` | int | Bytes saved by on-the-wire compression. |
 | `ich_recovered_packet_count` | int | Packets recovered by **I.C.H.** (Intelligent Corruption Handling), the recovery pass aMule's own UI names. Packets, not bytes -- unlike its two byte-valued neighbours above. |
 | `aich_hash` | string\|null | AICH master hash (hex), or `null` until the hashset exists. |
-| `part_file_name` | string | The partfile's `.part` control-file basename (e.g. `001.part`). `""` once the download has completed (status `completed`, before `clear_completed`). |
+| `part_file_name` | string | The partfile's `.part` control-file basename (e.g. `001.part`). **Omitted entirely** once the download has completed (status `completed`, before `clear_completed`): a completed file structurally has no partfile, so the key is absent rather than `null`. Branch on key existence, or read `status`. |
 | `directory` | string | Directory the file lives in on disk — the Temp directory while downloading, the destination directory once completed. |
 | `upload_queue_count` | int | Clients waiting on this file's upload queue. |
 | `my_comment` | string | The user's own comment on this file (`""` if none). Named apart from `comments[].comment`, which are *other clients'*. |
@@ -1939,6 +1939,8 @@ Send a bare priority level to pin it (the file's `priority_auto` becomes `false`
 }
 ```
 
+`software_version` is the server software version string the server reported, or `null` when it has reported none - the same spelling `/clients` and `/known_clients` use for an unknown version. `name` and `description` are *not* nulled: an empty description is a real value a server can advertise, and a server with no name is rendered by its address.
+
 `country_code` is the ISO 3166-1 alpha-2 code (lowercase, e.g. `"de"`) of the server host, resolved server-side from the server IP by the daemon's GeoIP database — same semantics as the client `country_code` on `/clients`, `null` when unresolved, and the same artwork route, [`GET /flags/{code}.png`](#get-flagscodepng).
 
 `file_count` is how many files the server indexes. `soft_file_limit` and `hard_file_limit` are something else entirely: the per-user publishing limits the server advertises. Below the soft limit a client may publish every file it shares, between soft and hard only its rarest, above the hard limit nothing. Both arrive only once the server has answered a UDP status request, so **`0` means "not reported yet", not "the limit is zero"** — render it blank rather than as a number, the way the desktop's Soft Files / Hard Files columns do. `user_count`, `max_user_count` and `file_count` share that sentinel.
@@ -2316,8 +2318,8 @@ Returns every preference category amuled carries over EC. The `general` and `con
   },
   "files": {
     "ich_enabled": true, "trust_unverified_aich_hashes": false,
-    "add_new_downloads_paused": false, "new_downloads_auto_priority": false,
-    "new_shared_files_auto_priority": false,
+    "add_new_downloads_paused": false, "new_downloads_auto_priority_enabled": false,
+    "new_shared_files_auto_priority_enabled": false,
     "prioritize_first_last_chunks": false, "on_finished_start_next_paused": false,
     "on_finished_start_next_in_same_category": false,
     "save_sources_for_rare_files": true, "preallocate_full_file_size": false,
@@ -2337,7 +2339,7 @@ Returns every preference category amuled carries over EC. The `general` and `con
   "security": {
     "shared_files_visibility": "everybody",
     "ipfilter_clients_enabled": true, "ipfilter_servers_enabled": true,
-    "ipfilter_auto_update": false, "ipfilter_update_url": "",
+    "ipfilter_auto_update_enabled": false, "ipfilter_update_url": "",
     "ipfilter_min_access_level": 127, "ipfilter_include_lan_ips": true,
     "secure_identification_enabled": true,
     "protocol_obfuscation_enabled": true, "obfuscation_requested": true, "obfuscation_required": false,
@@ -2366,7 +2368,7 @@ Returns every preference category amuled carries over EC. The `general` and `con
   "kad": { "update_url": "http://upd.emule-security.org/nodes.dat" },
   "geoip": {
     "supported": true, "enabled": true, "source": "dbip",
-    "custom_update_url": "", "maxmind_license": "", "auto_update": true,
+    "custom_update_url": "", "maxmind_license": "", "auto_update_enabled": true,
     "loaded_source": "dbip", "db_path": "/home/me/.aMule/GeoIP/dbip.mmdb",
     "db_loaded": true, "download_in_progress": false, "last_update_status": "ok"
   }
@@ -2416,7 +2418,7 @@ Body shape mirrors the GET; every sub-object and every field is optional, and fi
 
 amuleapi's own `admin` and `guest` passwords are **not** settable here; `remote_controls.amuleapi.password`, `.guest_password` and `.guest_enabled` are rejected with `400 bad_request`. Use [`PATCH /auth/passwords`](#patch-apiv0authpasswords), which writes the credential file this daemon actually reads, requires the current password, and is rate-limited. A field here would instead travel over EC to whichever aMule this amuleapi is attached to and land in that host's config directory.
 
-**`geoip`** accepts `enabled`, `source` (`"dbip"` / `"maxmind"` / `"custom"` — any other value is a `400`), `custom_update_url`, `maxmind_license`, and `auto_update`. `supported` and the read-only status fields (`loaded_source`, `db_path`, `db_loaded`, `download_in_progress`, `last_update_status`) are ignored if sent.
+**`geoip`** accepts `enabled`, `source` (`"dbip"` / `"maxmind"` / `"custom"` — any other value is a `400`), `custom_update_url`, `maxmind_license`, and `auto_update_enabled`. `supported` and the read-only status fields (`loaded_source`, `db_path`, `db_loaded`, `download_in_progress`, `last_update_status`) are ignored if sent.
 
 Downloading a database **now** is [`POST /geoip/update`](#post-apiv0geoipupdate), not a field here: it is an action, not a setting. Sending `geoip.update_now` in this body is a `400` naming that endpoint.
 
@@ -2625,7 +2627,7 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
   "http://$HOST/api/v0/ipfilter/update"
 ```
 
-An explicit URL is **persisted** into the `security.ipfilter_update_url` preference, so a subsequent `GET /preferences` reflects it and the next startup auto-update (`security.ipfilter_auto_update`) uses it — the same side effect [`POST /api/v0/servers_update`](#post-apiv0servers_update) and [`POST /api/v0/kad/update`](#post-apiv0kadupdate) have.
+An explicit URL is **persisted** into the `security.ipfilter_update_url` preference, so a subsequent `GET /preferences` reflects it and the next startup auto-update (`security.ipfilter_auto_update_enabled`) uses it — the same side effect [`POST /api/v0/servers_update`](#post-apiv0servers_update) and [`POST /api/v0/kad/update`](#post-apiv0kadupdate) have.
 
 **Response:** `202 Accepted`, no body. Where the request named a URL it already knows which one ran; where it omitted one, `security.ipfilter_update_url` on [`GET /preferences`](#get-apiv0preferences) is the answer, and the paragraph above is why reading it there is the honest version -- the snapshot this handler resolves from is the same one that endpoint serves.
 

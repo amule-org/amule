@@ -117,7 +117,7 @@ struct FileSnapshot
 	// `has_media` is therefore DERIVED from the fields below rather than being
 	// something amuled sent: latching it on any tag arriving would report
 	// media on a file whose every field has since been cleared. It gates the
-	// `media` object on the detail endpoints -- omitted entirely when false.
+	// `media` object on the detail endpoints -- emitted as null when false.
 	bool has_media = false;
 	struct Media
 	{
@@ -252,9 +252,9 @@ struct FileSnapshot
 		// Parts" bar, decoded by the refresher from
 		// EC_TAG_PARTFILE_PART_STATUS on the EC_TAG_KNOWNFILE tag.
 		// Sized to ceil(size / PARTSIZE) once a decode has landed and
-		// empty until then, which the detail endpoint reports by
-		// omitting `parts` entirely -- "no data yet" and "no sources
-		// for any part" stay distinguishable.
+		// empty until then, which the detail endpoint reports as
+		// `parts: null` -- "no data yet" and "no sources for any part"
+		// stay distinguishable.
 		//
 		// A shared *partfile* never populates this: amuled emits it as
 		// EC_TAG_PARTFILE only (one encoder per ECID), so its vector
@@ -936,7 +936,7 @@ struct SearchResult
 	// file-side flag above it is DERIVED from the field values rather than
 	// from which tags arrived -- a hit carrying an FT_MEDIA_* tag whose value
 	// is empty reads as no media, which is what the daemon means by sending
-	// one. Omitted entirely when false (most remote results).
+	// one. Emitted as null when false (most remote results).
 	bool has_media = false;
 	struct Media
 	{
@@ -1049,7 +1049,7 @@ std::uint16_t SharedHashingProgress(const FileSnapshot &f);
 // Fill in ClientSnapshot::part_progress_percent, which is derived rather
 // than refreshed: it needs the part count of the file this peer is a source
 // for, which lives in a different snapshot. Left at its < 0 sentinel when
-// not computable, which is how the writers know to omit the field.
+// not computable, which is how the writers know to emit the field as null.
 //
 // Shared rather than owned by the REST layer because the SSE client payload
 // has to carry the same value: EVENTS.md promises an `_updated` subscriber
@@ -1238,8 +1238,8 @@ struct PreferencesSnapshot
 		bool ich_enabled = false;
 		bool trust_unverified_aich_hashes = false;
 		bool add_new_downloads_paused = false;
-		bool new_downloads_auto_priority = false;
-		bool new_shared_files_auto_priority = false;
+		bool new_downloads_auto_priority_enabled = false;
+		bool new_shared_files_auto_priority_enabled = false;
 		bool prioritize_first_last_chunks = false;
 		bool on_finished_start_next_paused = false;
 		bool on_finished_start_next_in_same_category = false;
@@ -1296,7 +1296,7 @@ struct PreferencesSnapshot
 		std::string shared_files_visibility = "everybody";
 		bool ipfilter_clients_enabled = false;
 		bool ipfilter_servers_enabled = false;
-		bool ipfilter_auto_update = false;
+		bool ipfilter_auto_update_enabled = false;
 		std::string ipfilter_update_url;
 		std::uint32_t ipfilter_min_access_level = 0;
 		bool ipfilter_include_lan_ips = false;
@@ -1394,7 +1394,7 @@ struct PreferencesSnapshot
 		std::string source; // "dbip" / "maxmind" / "custom"
 		std::string custom_update_url;
 		std::string maxmind_license;
-		bool auto_update = false;
+		bool auto_update_enabled = false;
 		std::string loaded_source;
 		std::string db_path;
 		bool db_loaded = false;

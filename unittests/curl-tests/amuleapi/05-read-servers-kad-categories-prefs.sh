@@ -95,6 +95,12 @@ if [ "$COUNT" -gt 0 ]; then
 	echo "  --- /servers has $COUNT entry/entries; per-item shape ---"
 	_assert_json_eq '.servers[0].name     | type' string  '/servers[0].name is string'
 	_assert_json_eq '.servers[0].address  | type' string  '/servers[0].address is string'
+	# string or null, never "": a server that reported no version is unknown,
+	# the same spelling /clients and /known_clients use for the same key.
+	_assert_json_eq '(.servers[0].software_version == null or (.servers[0].software_version | type) == "string")' \
+		true '/servers[0].software_version is a string or null'
+	_assert_json_eq '.servers[0].software_version != ""' \
+		true '/servers[0].software_version is never the empty-string sentinel'
 	# Added beside `address`: every client had to re-parse the ip:port form.
 	_assert_json_eq '.servers[0].ip       | type' string  '/servers[0].ip is string'
 	_assert_json_eq '.servers[0] as $s | ($s.address | startswith($s.ip))' true \
@@ -262,6 +268,18 @@ _assert_json_eq '.files.endgame_mode_enabled        | type' boolean '/preference
 _assert_json_eq '.security.can_see_shares      | type' null    '/preferences.security.can_see_shares removed (#655)'
 _assert_json_eq '.files.endgame                | type' null    '/preferences.files.endgame removed (#655)'
 
+# The four stateful-noun booleans the _enabled sweep missed: `auto_update` and
+# `auto_priority` are modes, not imperative verbs, so they read as states and
+# take the suffix their object-mates already carry.
+_assert_json_eq '.files.new_downloads_auto_priority_enabled    | type' boolean '/preferences.files.new_downloads_auto_priority_enabled is boolean'
+_assert_json_eq '.files.new_shared_files_auto_priority_enabled | type' boolean '/preferences.files.new_shared_files_auto_priority_enabled is boolean'
+_assert_json_eq '.security.ipfilter_auto_update_enabled        | type' boolean '/preferences.security.ipfilter_auto_update_enabled is boolean'
+# Old names must be gone, not merely shadowed by the new ones.
+_assert_json_eq '.files.new_downloads_auto_priority    | type' null '/preferences.files.new_downloads_auto_priority removed'
+_assert_json_eq '.files.new_shared_files_auto_priority | type' null '/preferences.files.new_shared_files_auto_priority removed'
+_assert_json_eq '.security.ipfilter_auto_update        | type' null '/preferences.security.ipfilter_auto_update removed'
+_assert_json_eq '.geoip.auto_update                    | type' null '/preferences.geoip.auto_update removed'
+
 # message_filter show-in-log + comment filter, wired over EC (#596).
 _assert_json_eq '.message_filter.log_filtered_messages      | type' boolean '/preferences.message_filter.log_filtered_messages is boolean (#596)'
 _assert_json_eq '.message_filter.filter_comments  | type' boolean '/preferences.message_filter.filter_comments is boolean (#596)'
@@ -276,7 +294,7 @@ _assert_json_eq '.geoip.source | test("^(dbip|maxmind|custom)$")' \
 	true '/preferences.geoip.source is a known enum value'
 _assert_json_eq '.geoip.custom_update_url      | type' string  '/preferences.geoip.custom_update_url is string'
 _assert_json_eq '.geoip.maxmind_license | type' string  '/preferences.geoip.maxmind_license is string'
-_assert_json_eq '.geoip.auto_update     | type' boolean '/preferences.geoip.auto_update is boolean'
+_assert_json_eq '.geoip.auto_update_enabled | type' boolean '/preferences.geoip.auto_update_enabled is boolean'
 _assert_json_eq '.geoip.loaded_source   | type' string  '/preferences.geoip.loaded_source is string'
 _assert_json_eq '.geoip.db_path         | type' string  '/preferences.geoip.db_path is string'
 _assert_json_eq '.geoip.db_loaded       | type' boolean '/preferences.geoip.db_loaded is boolean'

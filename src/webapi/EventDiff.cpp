@@ -295,8 +295,8 @@ std::string ToJson(const ServerSnapshot &s)
 	o << "{"
 	  << "\"ecid\":" << s.ecid << ",\"name\":\"" << EscJson(s.name) << "\""
 	  << ",\"description\":\"" << EscJson(s.description) << "\""
-	  << ",\"software_version\":\"" << EscJson(s.version) << "\""
-	  << ",\"address\":\"" << EscJson(s.address)
+	  << ",\"software_version\":" << JsonStrOrNull(!s.version.empty(), s.version) << ",\"address\":\""
+	  << EscJson(s.address)
 	  << "\""
 	  // The bare IP beside the "ip:port" form, matching the REST row.
 	  << ",\"ip\":\"" << EscJson(s.address.substr(0, s.address.rfind(':'))) << "\""
@@ -768,10 +768,19 @@ void EnforceSinglePublisher()
 // GET /chats/{address}/messages expose. Written here in the same string-building
 // style as the other event payloads in this file; the REST side renders the
 // identical shape through CJsonWriter.
+//
+// `sent_at` nulls on 0 the way WriteIntOrNull does on the REST side. Nothing
+// the core reports today is unstamped -- CChatSessionStore::Append stamps
+// every message it stores, and the history reply carries the tag
+// unconditionally -- so this is the two writers agreeing on a shape rather
+// than a value that flips in the field. It is written down because the
+// snapshot field defaults to 0 and the two serializers are promised to be
+// byte-identical: a core that ever omits the tag must not make them diverge.
 std::string ChatMessageJson(const ChatMessageSnapshot &msg)
 {
 	return "{\"id\":" + std::to_string(msg.id) + ",\"direction\":\"" + (msg.outgoing ? "out" : "in") +
-	       "\",\"text\":\"" + EscJson(msg.text) + "\",\"sent_at\":" + std::to_string(msg.timestamp) + "}";
+	       "\",\"text\":\"" + EscJson(msg.text) + "\",\"sent_at\":" +
+	       (msg.timestamp != 0 ? std::to_string(msg.timestamp) : std::string("null")) + "}";
 }
 
 void PublishChatEvents(CEventBus &bus,

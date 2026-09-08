@@ -184,8 +184,8 @@ const PrefField kSchema[] = {
 	PREF_U32("files", "min_free_space_mebibytes", EC_TAG_FILES_MIN_FREE_SPACE, 0xFFFFFFFFu, PrefAccess::ReadWrite, files.min_free_space_mebibytes),
 	PREF_BOOL_GATED("files", "mmap_enabled", EC_TAG_FILES_MMAP_ENABLED, PrefEnc::Presence, false, PrefAccess::ReadWrite, files.mmap_enabled, "mmap_supported"),
 	PREF_BOOL("files", "mmap_supported", EC_TAG_FILES_MMAP_SUPPORTED, PrefEnc::Presence, false, PrefAccess::ReadOnly, files.mmap_supported),
-	PREF_BOOL("files", "new_downloads_auto_priority", EC_TAG_FILES_NEW_AUTO_DL_PRIO, PrefEnc::Presence, false, PrefAccess::ReadWrite, files.new_downloads_auto_priority),
-	PREF_BOOL("files", "new_shared_files_auto_priority", EC_TAG_FILES_NEW_AUTO_UL_PRIO, PrefEnc::Presence, false, PrefAccess::ReadWrite, files.new_shared_files_auto_priority),
+	PREF_BOOL("files", "new_downloads_auto_priority_enabled", EC_TAG_FILES_NEW_AUTO_DL_PRIO, PrefEnc::Presence, false, PrefAccess::ReadWrite, files.new_downloads_auto_priority_enabled),
+	PREF_BOOL("files", "new_shared_files_auto_priority_enabled", EC_TAG_FILES_NEW_AUTO_UL_PRIO, PrefEnc::Presence, false, PrefAccess::ReadWrite, files.new_shared_files_auto_priority_enabled),
 	PREF_BOOL("files", "preallocate_full_file_size", EC_TAG_FILES_ALLOC_FULL_SIZE, PrefEnc::Presence, false, PrefAccess::ReadWrite, files.preallocate_full_file_size),
 	PREF_BOOL("files", "prioritize_first_last_chunks", EC_TAG_FILES_PREVIEW_PRIO, PrefEnc::Presence, false, PrefAccess::ReadWrite, files.prioritize_first_last_chunks),
 	PREF_BOOL("files", "save_sources_for_rare_files", EC_TAG_FILES_SAVE_SOURCES, PrefEnc::Presence, false, PrefAccess::ReadWrite, files.save_sources_for_rare_files),
@@ -208,7 +208,7 @@ const PrefField kSchema[] = {
 	PREF_BOOL("servers", "server_priority_system_enabled", EC_TAG_SERVERS_USE_SCORE_SYSTEM, PrefEnc::Presence, false, PrefAccess::ReadWrite, servers.server_priority_system_enabled),
 
 	// [security]
-	PREF_BOOL("security", "ipfilter_auto_update", EC_TAG_IPFILTER_AUTO_UPDATE, PrefEnc::Presence, false, PrefAccess::ReadWrite, security.ipfilter_auto_update),
+	PREF_BOOL("security", "ipfilter_auto_update_enabled", EC_TAG_IPFILTER_AUTO_UPDATE, PrefEnc::Presence, false, PrefAccess::ReadWrite, security.ipfilter_auto_update_enabled),
 	PREF_U32("security", "ipfilter_min_access_level", EC_TAG_IPFILTER_LEVEL, 255u, PrefAccess::ReadWrite, security.ipfilter_min_access_level),
 	PREF_BOOL("security", "ipfilter_clients_enabled", EC_TAG_IPFILTER_CLIENTS, PrefEnc::Presence, false, PrefAccess::ReadWrite, security.ipfilter_clients_enabled),
 	PREF_BOOL("security", "ipfilter_include_lan_ips", EC_TAG_IPFILTER_FILTER_LAN, PrefEnc::Presence, false, PrefAccess::ReadWrite, security.ipfilter_include_lan_ips),
@@ -289,7 +289,7 @@ const PrefField kSchema[] = {
 	PREF_STR("kad", "update_url", EC_TAG_KADEMLIA_UPDATE_URL, PrefAccess::ReadWrite, kad.update_url),
 
 	// [geoip] (EC group: IP2COUNTRY)
-	PREF_BOOL("geoip", "auto_update", EC_TAG_IP2COUNTRY_AUTO_UPDATE, PrefEnc::Value, false, PrefAccess::ReadWrite, geoip.auto_update),
+	PREF_BOOL("geoip", "auto_update_enabled", EC_TAG_IP2COUNTRY_AUTO_UPDATE, PrefEnc::Value, false, PrefAccess::ReadWrite, geoip.auto_update_enabled),
 	PREF_STR("geoip", "custom_update_url", EC_TAG_IP2COUNTRY_CUSTOM_URL, PrefAccess::ReadWrite, geoip.custom_update_url),
 	PREF_BOOL("geoip", "db_loaded", EC_TAG_IP2COUNTRY_DB_LOADED, PrefEnc::Value, false, PrefAccess::ReadOnly, geoip.db_loaded),
 	PREF_STR("geoip", "db_path", EC_TAG_IP2COUNTRY_DB_PATH, PrefAccess::ReadOnly, geoip.db_path),

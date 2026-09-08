@@ -141,7 +141,7 @@ const TABS = [
   { id: "files", labelKey: "prefs_files", cat: "files", groups: [
     { legendKey: "prefs_group_downloads", fields: [
       { key: "add_new_downloads_paused", type: "bool" },
-      { key: "new_downloads_auto_priority", type: "bool" },
+      { key: "new_downloads_auto_priority_enabled", type: "bool" },
       { key: "prioritize_first_last_chunks", type: "bool" },
       { key: "on_finished_start_next_paused", type: "bool" },
       { key: "on_finished_start_next_in_same_category", type: "bool", sub: true, gatedBy: "on_finished_start_next_paused" },
@@ -154,7 +154,7 @@ const TABS = [
       { key: "save_sources_for_rare_files", type: "bool" },
     ] },
     { legendKey: "prefs_group_uploads", fields: [
-      { key: "new_shared_files_auto_priority", type: "bool" },
+      { key: "new_shared_files_auto_priority_enabled", type: "bool" },
     ] },
     { legendKey: "prefs_group_ich", fields: [
       { key: "ich_enabled", type: "bool" },
@@ -186,7 +186,7 @@ const TABS = [
         action: { path: "ipfilter/update", body: "url",
                   titleKey: "prefs_action_ipfilter_update",
                   toastKey: "prefs_action_ipfilter_update_toast" } },
-      { key: "ipfilter_auto_update", type: "bool" },
+      { key: "ipfilter_auto_update_enabled", type: "bool" },
       { key: "ipfilter_min_access_level", type: "int", min: 0, max: 255 },
       { key: "ipfilter_include_lan_ips", type: "bool" },
       { key: "reject_spoofed_source_ips", type: "bool" },
@@ -201,7 +201,7 @@ const TABS = [
       { key: "source", type: "select", options: GEOIP_SOURCES, sub: true, gatedBy: ["supported", "enabled"] },
       { key: "custom_update_url", type: "text", sub: 2, gatedBy: ["supported", "enabled"], gatedByEq: { key: "source", value: "custom" } },
       { key: "maxmind_license", type: "text", sub: 2, gatedBy: ["supported", "enabled"], gatedByEq: { key: "source", value: "maxmind" } },
-      { key: "auto_update", type: "bool", sub: true, gatedBy: ["supported", "enabled"] },
+      { key: "auto_update_enabled", type: "bool", sub: true, gatedBy: ["supported", "enabled"] },
     ] },
     { legendKey: "prefs_group_geoip_status", fields: [
       { key: "update_now", type: "button", gatedBy: ["supported", "enabled"],

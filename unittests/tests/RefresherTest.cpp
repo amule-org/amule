@@ -2355,7 +2355,7 @@ TEST(Refresher, PreferencesExtendedCategoriesDecode)
 	ASSERT_EQUALS(std::string("maxmind"), p.geoip.source); // uint8 1 -> "maxmind"
 	ASSERT_EQUALS(std::string("http://geo"), p.geoip.custom_update_url);
 	ASSERT_EQUALS(std::string("LICKEY"), p.geoip.maxmind_license);
-	ASSERT_TRUE(!p.geoip.auto_update); // absent -> false
+	ASSERT_TRUE(!p.geoip.auto_update_enabled); // absent -> false
 	ASSERT_TRUE(p.geoip.db_loaded);
 	ASSERT_EQUALS(std::string("maxmind"), p.geoip.loaded_source);
 	ASSERT_TRUE(!p.geoip.download_in_progress); // absent -> false

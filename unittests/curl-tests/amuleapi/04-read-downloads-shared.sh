@@ -177,8 +177,14 @@ if [ "$COUNT" -gt 0 ]; then
 		'/downloads/{hash} aich_hash is a string or null, never ""'
 	_assert_json_eq '.aich_hash != ""' true \
 		'/downloads/{hash} aich_hash never uses the empty-string sentinel'
-	_assert_json_eq '.part_file_name | type' string \
-		'/downloads/{hash} carries part_file_name'
+	# Present while the file is still a partfile, and the key is OMITTED once
+	# the download completes -- a completed file structurally has no partfile,
+	# which is the absent-key case rather than the null of "not reported". It
+	# used to be a manufactured "" a client had to read as "completed".
+	_assert_json_eq 'if .status == "completed" then (has("part_file_name") | not) else (.part_file_name | type) == "string" end' \
+		true '/downloads/{hash} carries part_file_name unless completed, where the key is absent'
+	_assert_json_eq '.part_file_name != ""' true \
+		'/downloads/{hash} part_file_name never uses the empty-string sentinel'
 	_assert_json_eq '.directory | type' string \
 		'/downloads/{hash} carries directory (#417)'
 	_assert_json_eq '.upload_queue_count | type' number \
