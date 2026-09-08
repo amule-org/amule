@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-07 16:21+0200\n"
-"PO-Revision-Date: 2026-09-07 14:55+0000\n"
+"PO-Revision-Date: 2026-09-08 11:16+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -4265,9 +4265,8 @@ msgid "Obfuscation"
 msgstr "模糊协议"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Protocol extensions"
-msgstr "模糊协议"
+msgstr "协议扩展"
 
 #: src/muuli_wdr.cpp
 msgid "Transfers to client"
@@ -6049,7 +6048,7 @@ msgstr ""
 
 #: src/PeerCapabilities.h
 msgid "Buddy info pull"
-msgstr ""
+msgstr "好友信息拉取"
 
 #: src/PeerCapabilities.h
 msgid "NAT traversal (QUIC)"
