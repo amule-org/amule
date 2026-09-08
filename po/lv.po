@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-07 16:21+0200\n"
-"PO-Revision-Date: 2026-09-07 14:57+0000\n"
+"PO-Revision-Date: 2026-09-08 11:18+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: lv\n"
@@ -1252,12 +1252,12 @@ msgstr[1] ""
 msgstr[2] ""
 
 #: src/ClientContextActions.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Remove %u client from your friend list?"
 msgid_plural "Remove %u clients from your friend list?"
-msgstr[0] "Noņemt no draugu saraksta"
-msgstr[1] "Noņemt no draugu saraksta"
-msgstr[2] "Noņemt no draugu saraksta"
+msgstr[0] "Vai noņemt %u dalībniekus no draugu saraksta?"
+msgstr[1] "Vai noņemt %u dalībnieku no draugu saraksta?"
+msgstr[2] "Vai noņemt %u dalībniekus no draugu saraksta?"
 
 #: src/ClientContextActions.cpp
 #, c-format
@@ -2232,9 +2232,8 @@ msgid "Could not save the amuleapi password: %s"
 msgstr ""
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "No such category."
-msgstr "Šāda ziņojumapmaiņas sesija nepastāv"
+msgstr "Šāda kategorija nepastāv."
 
 #: src/ExternalConn.cpp
 msgid "Malformed category request."
@@ -3797,7 +3796,7 @@ msgstr "Arhīvi"
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
 msgid "Audio"
-msgstr ""
+msgstr "Audio"
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
 msgid "CD-Images"
@@ -3874,9 +3873,8 @@ msgid "Start"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Extend"
-msgstr "Paplašinājums"
+msgstr "Izvērst"
 
 #: src/muuli_wdr.cpp
 msgid "Ask already-responded Kad peers to widen the search. Each click queries the next-closest peer for more contacts (KADEMLIA_FIND_VALUE_MORE), surfacing additional file matches that the search's initial alpha frontier missed."
@@ -4193,11 +4191,11 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Client software"
-msgstr "Klienta programma"
+msgstr "Klientprogramma"
 
 #: src/muuli_wdr.cpp
 msgid "Client version"
-msgstr "Klienta programmas versija"
+msgstr "Klientprogrammas versija"
 
 #: src/muuli_wdr.cpp
 msgid "User ID"
@@ -5416,7 +5414,7 @@ msgstr "Starpniekservera tips"
 
 #: src/muuli_wdr.cpp
 msgid "Proxy host"
-msgstr "Starpniekserveris"
+msgstr "Starpniekservera resursdators"
 
 #: src/muuli_wdr.cpp
 msgid "The proxy host name"
@@ -6550,7 +6548,7 @@ msgstr ""
 
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
 msgid "Main"
-msgstr ""
+msgstr "Galvenā"
 
 #: src/SearchList.cpp
 #, c-format
@@ -7269,9 +7267,9 @@ msgstr[1] ""
 msgstr[2] ""
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Now sharing file: %s"
-msgstr "Parādīt kopīgoto datņu sarakstu."
+msgstr "Pašlaik kopīgo datni: %s"
 
 #: src/SharedFileList.cpp
 #, c-format

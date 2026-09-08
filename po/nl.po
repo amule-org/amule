@@ -13,7 +13,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-07 16:21+0200\n"
-"PO-Revision-Date: 2026-09-07 14:51+0000\n"
+"PO-Revision-Date: 2026-09-08 11:11+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
 "Language: nl\n"
@@ -1278,8 +1278,8 @@ msgstr "Meerdere selectie"
 #, c-format
 msgid "Add %u client to your friend list?"
 msgid_plural "Add %u clients to your friend list?"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Voeg %u client toe aan uw veiendenlijst?"
+msgstr[1] "Voeg %u clients toe aan uw vriendenlijst?"
 
 #: src/ClientContextActions.cpp
 #, c-format
@@ -1292,8 +1292,8 @@ msgstr[1] "Verwijder %u clients uit uw vriendenlijst?"
 #, c-format
 msgid "Could not add %u selected client to your friend list: no address is known for it."
 msgid_plural "Could not add %u selected clients to your friend list: no address is known for them."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Kon %u geselecteerde client niet toevoegen aan uw vriendenlijst: er is geen adres voor bekend."
+msgstr[1] "Kon %u geselecteerde clients niet toevoegen aan uw vriendenlijst: er zijn geen adressen voor bekend."
 
 #: src/ClientContextActions.cpp
 #, c-format
@@ -1304,7 +1304,7 @@ msgstr[1] "Vraag de gedeelde bestanden van %u clients aan?"
 
 #: src/ClientContextActions.cpp
 msgid "A connection is opened to each of them."
-msgstr ""
+msgstr "Daarvan is op elke een verbinding geopend."
 
 #: src/ClientCreditsList.cpp
 #, c-format
@@ -1441,11 +1441,11 @@ msgid "Not Available"
 msgstr "Niet beschikbaar"
 
 #: src/ClientRowListCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not ask %u selected client for its shared files."
 msgid_plural "Could not ask %u selected clients for their shared files."
-msgstr[0] "Kon %u link niet toevoegen (zie log voor details)."
-msgstr[1] "Kon %u links niet toevoegen (zie log voor details)."
+msgstr[0] "Kon %u geselecteerde client niet bevragen om hun gedeelde bestanden."
+msgstr[1] "Kon %u geselecteerde clients niet bevragen om hun gedeelde bestanden."
 
 #: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Files"
@@ -2175,7 +2175,7 @@ msgstr "eD2K is uitgeschakeld in voorkeuren."
 
 #: src/ExternalConn.cpp
 msgid "No address known for that friend yet."
-msgstr ""
+msgstr "Nog geen adres bekend voor die vriend."
 
 #: src/ExternalConn.cpp
 msgid "Friend not found."
@@ -2817,7 +2817,7 @@ msgstr "Kon niet schrijven naar vriendenlijst-bestand 'emfriends.met'!"
 #: src/FriendList.cpp
 #, c-format
 msgid "No address known for friend '%s' yet, cannot browse them."
-msgstr ""
+msgstr "Geen adres bekend voor vriend '%s', kan er niet door bladeren."
 
 #: src/FriendList.cpp
 msgid "CRITICAL - no client on StartChatSession"
@@ -2842,7 +2842,7 @@ msgstr "Verstuur &Message"
 #: src/FriendListCtrl.cpp
 #, c-format
 msgid "No address known for friend '%s' yet, cannot message them."
-msgstr ""
+msgstr "Geen adres bekend voor vriend '%s', kan ze niet berichten."
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"
@@ -4011,15 +4011,15 @@ msgstr "Laatst compleet gezien"
 
 #: src/muuli_wdr.cpp
 msgid "Found Sources"
-msgstr "Gevonden bronnen"
+msgstr "Gevonden Bronnen"
 
 #: src/muuli_wdr.cpp
 msgid "Transferring Sources"
-msgstr "Bronnen overdragen"
+msgstr "Bronnen Overdragen"
 
 #: src/muuli_wdr.cpp
 msgid "Filepart-Count"
-msgstr "Bestandsdeel-teller"
+msgstr "Bestandsdeel-Teller"
 
 #: src/muuli_wdr.cpp
 msgid "Available"
@@ -4027,15 +4027,15 @@ msgstr "Beschikbaar"
 
 #: src/muuli_wdr.cpp
 msgid "Datarate"
-msgstr "Datasnelheid"
+msgstr "Gegevenssnelheid"
 
 #: src/muuli_wdr.cpp
 msgid "Download Active Time"
-msgstr "Actieve downloadtijd"
+msgstr "Actieve Downloadtijd"
 
 #: src/muuli_wdr.cpp
 msgid "Completed Size"
-msgstr "Volledige grootte"
+msgstr "Voltooide Grootte"
 
 #: src/muuli_wdr.cpp
 msgid "Intelligent Corruption Handling"
@@ -4047,7 +4047,7 @@ msgstr "Verloren door beschadiging"
 
 #: src/muuli_wdr.cpp
 msgid "Gained by compression"
-msgstr "Gewonnen door compressie"
+msgstr "Gewonnen door comprimering"
 
 #: src/muuli_wdr.cpp
 msgid "Packages saved by I.C.H."
@@ -4243,11 +4243,11 @@ msgstr "Statistiekenboom"
 
 #: src/muuli_wdr.cpp
 msgid "Client software"
-msgstr "Client software"
+msgstr "Client-software"
 
 #: src/muuli_wdr.cpp
 msgid "Client version"
-msgstr "Client versie"
+msgstr "Clientversie"
 
 #: src/muuli_wdr.cpp
 msgid "User ID"
@@ -4259,16 +4259,15 @@ msgstr "Server-IP"
 
 #: src/muuli_wdr.cpp
 msgid "Server name"
-msgstr "Server-naam"
+msgstr "Servernaam"
 
 #: src/muuli_wdr.cpp
 msgid "Obfuscation"
-msgstr "Maskering"
+msgstr "Verduistering"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Protocol extensions"
-msgstr "Protocol-obfuscatie"
+msgstr "Protocoluitbreidingen"
 
 #: src/muuli_wdr.cpp
 msgid "Transfers to client"
@@ -4288,7 +4287,7 @@ msgstr "Gemiddelde downloadsnelheid"
 
 #: src/muuli_wdr.cpp
 msgid "Uploaded (session)"
-msgstr "Geupload (sessie)"
+msgstr "Geüpload (sessie)"
 
 #: src/muuli_wdr.cpp
 msgid "Downloaded (session)"
@@ -4296,7 +4295,7 @@ msgstr "Gedownload (sessie)"
 
 #: src/muuli_wdr.cpp
 msgid "Uploaded (total)"
-msgstr "Geupload (totaal)"
+msgstr "Geüpload (totaal)"
 
 #: src/muuli_wdr.cpp
 msgid "Downloaded (total)"
@@ -4308,7 +4307,7 @@ msgstr "Scores"
 
 #: src/muuli_wdr.cpp
 msgid "DL/UP modifier"
-msgstr "DL/UP-verhouding"
+msgstr "DL/UP modificator"
 
 #: src/muuli_wdr.cpp
 msgid "Secure ident"
@@ -4316,11 +4315,11 @@ msgstr "Veilige identiteit"
 
 #: src/muuli_wdr.cpp
 msgid "Queue rank"
-msgstr "Wachtrij positie"
+msgstr "Wachtrijpositie"
 
 #: src/muuli_wdr.cpp
 msgid "Queue score"
-msgstr "Wachtrij score"
+msgstr "Wachtrijscore"
 
 #: src/muuli_wdr.cpp
 msgid "Nick"
@@ -4892,7 +4891,7 @@ msgstr "MMAP gebruiken: memory-mapped bestandstoegang (lager geheugengebruik)"
 
 #: src/muuli_wdr.cpp
 msgid "Maps part files into memory instead of buffering them on the heap, lowering the process memory footprint. May reduce download speed on some disks; best for memory-constrained or upload-heavy hosts."
-msgstr "Koppelt partbestanden aan het geheugen in plaats van ze te bufferen op de heap, wat de geheugenvoetafdruk van het proces verlaagt. Kan de downloadsnelheid op sommige schijven verlagen; het beste voor hosts met beperkt geheugen of veel uploadverkeer."
+msgstr "Koppelt deelbestanden aan het geheugen in plaats van ze te bufferen op de heap, wat de geheugenvoetafdruk van het proces verlaagt. Kan de downloadsnelheid op sommige schijven verlagen; het beste voor hosts met beperkt geheugen of veel uploadverkeer."
 
 #: src/muuli_wdr.cpp
 msgid "Upload Queue Size: 5000 clients"
@@ -5100,11 +5099,11 @@ msgstr "Maak veranderingen aan de voorkeuren ongedaan."
 
 #: src/muuli_wdr.cpp
 msgid "Incoming Dir"
-msgstr "Binnenkomende map"
+msgstr "Binnenkomende Map"
 
 #: src/muuli_wdr.cpp
 msgid "Change priority for new assigned files"
-msgstr "Verander prioriteit voor nieuw toegevoegde bestanden"
+msgstr "Verander prioriteit voor nieuw toegewezen bestanden"
 
 #: src/muuli_wdr.cpp
 msgid "Don't change"
@@ -5112,7 +5111,7 @@ msgstr "Niet veranderen"
 
 #: src/muuli_wdr.cpp
 msgid "Select color for this Category (currently selected)"
-msgstr "Selecteer kleur voor deze categorie (nu geselecteerd)"
+msgstr "Selecteer kleur voor deze Categorie (nu geselecteerd)"
 
 #: src/muuli_wdr.cpp
 msgid "Click this button to reset the log."
@@ -5470,11 +5469,11 @@ msgstr "Schakel proxy ondersteuning in/uit"
 
 #: src/muuli_wdr.cpp
 msgid "Proxy type"
-msgstr "Proxy-type"
+msgstr "Proxytype"
 
 #: src/muuli_wdr.cpp
 msgid "Proxy host"
-msgstr "Proxy-host"
+msgstr "Proxyhost"
 
 #: src/muuli_wdr.cpp
 msgid "The proxy host name"
@@ -5482,7 +5481,7 @@ msgstr "De proxy hostnaam"
 
 #: src/muuli_wdr.cpp
 msgid "Proxy port"
-msgstr "Proxy-poort"
+msgstr "Proxypoort"
 
 #: src/muuli_wdr.cpp
 msgid "The proxy port"
@@ -5679,7 +5678,7 @@ msgstr "dagen"
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "%s:"
-msgstr ""
+msgstr "%s:"
 
 #: src/OtherFunctions.cpp
 msgid "all"
@@ -5716,11 +5715,11 @@ msgstr "Gebruikte configdir: %s"
 
 #: src/PartBarLegendUI.cpp
 msgid "This source does not have the part"
-msgstr "Deze bron heeft het onderdeel niet"
+msgstr "Deze bron heeft het deel niet"
 
 #: src/PartBarLegendUI.cpp
 msgid "You and this source both have the part"
-msgstr "U en deze bron hebben het onderdeel allebei"
+msgstr "U en deze bron hebben het deel allebei"
 
 #: src/PartBarLegendUI.cpp
 msgid "Being downloaded from this source now"
@@ -5728,64 +5727,60 @@ msgstr "Wordt nu vanuit deze bron gedownload"
 
 #: src/PartBarLegendUI.cpp
 msgid "The next part that will be asked of this source"
-msgstr "Het volgende onderdeel dat van deze bron gevraagd zal worden"
+msgstr "Het volgende deel dat van deze bron gevraagd zal worden"
 
 #: src/PartBarLegendUI.cpp
 msgid "This source has the part and you still need it"
-msgstr "Deze bron heeft het onderdeel en u heeft het nog nodig"
+msgstr "Deze bron heeft het deel en u heeft het nog nodig"
 
 #: src/PartBarLegendUI.cpp
 msgid "This peer already has the part"
-msgstr "Deze peer heeft het onderdeel al"
+msgstr "Deze peer heeft het deel al"
 
 #: src/PartBarLegendUI.cpp
 msgid "This peer does not have the part"
-msgstr "Deze peer heeft het onderdeel niet"
+msgstr "Deze peer heeft het deel niet"
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy
 msgid "No other source has this part"
-msgstr "Deze bron heeft het onderdeel niet"
+msgstr "Geen andere bronnen hebben dit deel"
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy
 msgid "One other source has this part"
-msgstr "Deze bron heeft het onderdeel niet"
+msgstr "Één andere bron heeft dit deel"
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "%u or more other sources have this part"
-msgstr "U en deze bron hebben het onderdeel allebei"
+msgstr "%u of meer andere bronnen hebben dit deel"
 
 #: src/PartBarLegendUI.cpp
 msgid "Already read back and hashed"
-msgstr ""
+msgstr "Al teruggelezen en gehashed"
 
 #: src/PartBarLegendUI.cpp
 msgid "Still to be read"
-msgstr ""
+msgstr "Nog te lezen"
 
 #: src/PartBarLegendUI.cpp
 msgid "One block per part of the file being downloaded."
-msgstr "Één blok per onderdeel van het bestand dat wordt gedownload."
+msgstr "Één blok per deel van het bestand dat wordt gedownload."
 
 #: src/PartBarLegendUI.cpp
 msgid "One block per part of the shared file."
-msgstr "Één blok per onderdeel van het gedeelde bestand."
+msgstr "Één blok per deel van het gedeelde bestand."
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy
 msgid "One block per part of the shared file, coloured by how many other sources have it."
-msgstr "Één blok per onderdeel van het gedeelde bestand."
+msgstr "Één blok per deel van het gedeelde bestand, gekleurd op basis van hoeveel bronnen het hebben."
 
 #: src/PartBarLegendUI.cpp
-#, fuzzy
 msgid "One block per part of the shared file, showing how far the re-hash has read."
-msgstr "Één blok per onderdeel van het gedeelde bestand."
+msgstr "Één blok per deel van het gedeelde bestand, tonend hoe ver de re-hash gelezen heeft."
 
 #: src/PartBarLegendUI.cpp
 msgid "In between, darkening as other sources are added"
-msgstr ""
+msgstr "Er tussenin, wordt donkerder als andere bronnen worden toegevoegd"
 
 #: src/PartFileConvert.cpp
 msgid "Waiting for partfile convert thread to die..."
@@ -6041,25 +6036,24 @@ msgid "ERROR: Failed to open partfile '%s'"
 msgstr "FOUT: Kon deelbestand '%s' niet openen"
 
 #: src/PeerCapabilities.h
-#, fuzzy
 msgid "Extended source exchange"
-msgstr "Bron uitwisseling"
+msgstr "Uitgebreide bronuitwisseling"
 
 #: src/PeerCapabilities.h
 msgid "NAT traversal (uTP)"
-msgstr ""
+msgstr "NAT traversal (uTP)"
 
 #: src/PeerCapabilities.h
 msgid "IPv6"
-msgstr ""
+msgstr "IPv6"
 
 #: src/PeerCapabilities.h
 msgid "Buddy info pull"
-msgstr ""
+msgstr "Buddygegevensopvraag"
 
 #: src/PeerCapabilities.h
 msgid "NAT traversal (QUIC)"
-msgstr ""
+msgstr "NAT traversal (QUIC)"
 
 #: src/Preferences.cpp
 msgid "no options available"
@@ -7387,7 +7381,7 @@ msgstr "Gebruikersnaam"
 
 #: src/SharedFilePeersListCtrl.cpp
 msgid "Parts on Peer"
-msgstr "Onderdelen op Peer"
+msgstr "Delen op Peer"
 
 #: src/SharedFilePeersListCtrl.cpp
 msgid "Upload Status"
@@ -7406,9 +7400,8 @@ msgid "Shares File List"
 msgstr "Deelt bestandenlijst"
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Source Availability"
-msgstr "Beschikbaarheid"
+msgstr "Bronbeschikbaarheid"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
@@ -7584,7 +7577,7 @@ msgstr "Gedeelde bestanden opnieuw laden: %u bestanden gescand"
 
 #: src/SourceListCtrl.cpp
 msgid "Part Status"
-msgstr "Onderdeelstatus"
+msgstr "Deelstatus"
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"

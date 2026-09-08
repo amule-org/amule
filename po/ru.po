@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-07 16:21+0200\n"
-"PO-Revision-Date: 2026-09-07 14:53+0000\n"
+"PO-Revision-Date: 2026-09-08 11:13+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
 "Language: ru\n"
@@ -488,8 +488,8 @@ msgid ""
 "The folder for Online Signature files you specified is INVALID!\n"
 " OnlineSignature will be DISABLED until you fix it on preferences."
 msgstr ""
-"Указан неверный каталог для файлов онлайн-подписей!\n"
-"Онлайн-подписи будут отключены, пока вы не исправите это в настройках."
+"Указан НЕВЕРНЫЙ каталог для файлов сетевых подписей!\n"
+"Сетевые подписи будут ОТКЛЮЧЕНЫ, пока вы не исправите это в настройках."
 
 #: src/amule.cpp
 msgid "Server hostname notified"
@@ -3762,11 +3762,11 @@ msgstr "Не подключён"
 
 #: src/MuleTrayIcon.cpp
 msgid "Online Signature: Enabled"
-msgstr "Онлайн-подпись: Включена"
+msgstr "Сетевая подпись: включена"
 
 #: src/MuleTrayIcon.cpp
 msgid "Online Signature: Disabled"
-msgstr "Онлайн-подпись: Выключена"
+msgstr "Сетевая подпись: отключена"
 
 #: src/MuleTrayIcon.cpp src/Statistics.cpp
 #, c-format
@@ -4306,9 +4306,8 @@ msgid "Obfuscation"
 msgstr "Маскировка"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Protocol extensions"
-msgstr "Маскировка протокола"
+msgstr "Расширения протокола"
 
 #: src/muuli_wdr.cpp
 msgid "Transfers to client"
@@ -4352,7 +4351,7 @@ msgstr "Баланс приёма/отдачи"
 
 #: src/muuli_wdr.cpp
 msgid "Secure ident"
-msgstr "Безопасное опознавание"
+msgstr "Безопасный ИД"
 
 #: src/muuli_wdr.cpp
 msgid "Queue rank"
@@ -4929,7 +4928,7 @@ msgstr "Размер буфера файла: 240000 байт"
 
 #: src/muuli_wdr.cpp
 msgid "Use MMAP: memory-mapped file access (lower memory use)"
-msgstr "Применять MMAP: доступ к файлам с отображением в память (экономия памяти)"
+msgstr "Включить MMAP: доступ с отображением файлов в память (экономит память)"
 
 #: src/muuli_wdr.cpp
 msgid "Maps part files into memory instead of buffering them on the heap, lowering the process memory footprint. May reduce download speed on some disks; best for memory-constrained or upload-heavy hosts."
@@ -5358,11 +5357,11 @@ msgstr "Если локальный файл ipfilter.dat не найден, р�
 
 #: src/muuli_wdr.cpp
 msgid "Enable Online-Signature"
-msgstr "Включить онлайн-подпись"
+msgstr "Включить сетевую подпись"
 
 #: src/muuli_wdr.cpp
 msgid "Enables the writing of the OS file, which can be used by external apps to create signatures and the like."
-msgstr "Включает запись файла онлайн-подписи, который может использоваться другими приложениями для создания подписей."
+msgstr "Включает запись файла сетевой подписи, который может использоваться другими приложениями для создания подписей."
 
 #: src/muuli_wdr.cpp
 msgid "Update Frequency (Secs):"
@@ -5370,15 +5369,15 @@ msgstr "Период обновления (в секундах):"
 
 #: src/muuli_wdr.cpp
 msgid "Change the frequency (in seconds) of Online Signature updates."
-msgstr "Изменить частоту обновления для онлайн-подписи в секундах."
+msgstr "Изменить частоту обновления в секундах для сетевой подписи."
 
 #: src/muuli_wdr.cpp
 msgid "Save online signature file in: "
-msgstr "Сохранять файл онлайн-подписи в: "
+msgstr "Сохранять файл сетевой подписи в: "
 
 #: src/muuli_wdr.cpp
 msgid "Click here to select the directory containing the the Online Signature files."
-msgstr "Нажмите здесь, чтобы выбрать каталог, содержащий файлы онлайн-подписей."
+msgstr "Нажмите здесь, чтобы выбрать каталог, содержащий файлы сетевых подписей."
 
 #: src/muuli_wdr.cpp
 msgid "Show country flags for clients"
@@ -5488,7 +5487,7 @@ msgstr "Фильтровать сообщения от неизвестных к
 
 #: src/muuli_wdr.cpp
 msgid "Filter messages containing (use ',' as separator):"
-msgstr "Фильтровать сообщения по содержанию (разделять «,»):"
+msgstr "Фильтровать сообщения по содержимому (разделять «,»):"
 
 #: src/muuli_wdr.cpp
 msgid "add here the words amule should filter and block messages including it"
@@ -6090,25 +6089,24 @@ msgid "ERROR: Failed to open partfile '%s'"
 msgstr "ОШИБКА: не удалось открыть частично закаченный '%s'"
 
 #: src/PeerCapabilities.h
-#, fuzzy
 msgid "Extended source exchange"
-msgstr "Обмен источниками"
+msgstr "Расширенный обмен источниками"
 
 #: src/PeerCapabilities.h
 msgid "NAT traversal (uTP)"
-msgstr ""
+msgstr "Обход NAT (uTP)"
 
 #: src/PeerCapabilities.h
 msgid "IPv6"
-msgstr ""
+msgstr "IPv6"
 
 #: src/PeerCapabilities.h
 msgid "Buddy info pull"
-msgstr ""
+msgstr "Запрос информации о друге"
 
 #: src/PeerCapabilities.h
 msgid "NAT traversal (QUIC)"
-msgstr ""
+msgstr "Обход NAT (QUIC)"
 
 #: src/Preferences.cpp
 msgid "no options available"
@@ -6169,7 +6167,7 @@ msgstr "Удалённое управление"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Online Signature"
-msgstr "Онлайн-подпись"
+msgstr "Сетевая подпись"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Advanced"
@@ -6210,12 +6208,12 @@ msgid ""
 "aMule will run fine without adjusting any of\n"
 "these settings."
 msgstr ""
-"Не изменяйте следующие настройки, если\n"
-"не уверены в том, что вы делаете, в противном\n"
-"случае может случиться непоправимое.\n"
+"Не меняйте следующие настройки,\n"
+"если не уверены в своих действиях,\n"
+"иначе вы можете ухудшить работу.\n"
 "\n"
-"aMule будет превосходно работать\n"
-"и без изменения вами этих настроек."
+"aMule будет прекрасно работать\n"
+"и без изменения этих настроек."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -6580,7 +6578,7 @@ msgstr "выключена"
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Execute command on '%s' event"
-msgstr "Выполнить команду при событии '%s'"
+msgstr "Выполнить команду при событии «%s»"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Enable command execution on core"
@@ -6593,11 +6591,11 @@ msgstr "Команда ядра:"
 # никто ни в жизни не поймет переведенную аббревиатуру
 #: src/PrefsUnifiedDlg.cpp
 msgid "Enable command execution on GUI"
-msgstr "Включить выполнение команд в GUI"
+msgstr "Включить выполнение команд в графическом интерфейсе"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "GUI command:"
-msgstr "Команда GUI:"
+msgstr "Команда граф. интерфейса:"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The following variables will be replaced:"
@@ -8613,7 +8611,7 @@ msgstr "Приостановка отдачи файла: %s"
 #: src/UserEvents.cpp
 #, c-format
 msgid "Failed to execute command `%s' on `%s' event."
-msgstr "Не удалось выполнить команду `%s' при событии `%s'."
+msgstr "Не удалось выполнить команду «%s» при событии «%s»."
 
 #: src/UserEvents.h
 msgid "Download completed"
@@ -8951,7 +8949,7 @@ msgstr "Сохранить картинку со статистикой"
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid "aMule Online Statistics"
-msgstr "Онлайн-статистика"
+msgstr "Сетевая статистика aMule"
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid ""
