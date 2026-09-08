@@ -689,15 +689,28 @@ TEST(CMemFile, SetLength)
 /////////////////////////////////////////////////////////////////////
 // CFile specific tests
 
-const CPath testFile = CPath("TestFile.dat");
+// Function-local rather than file-scope. CPath's constructor reaches
+// wxConvFileName through filename2char(), and wxWidgets sets that pointer in
+// its own static initialisation, in another translation unit. A shared wx runs
+// every one of its initialisers at load time, before the executable's, so a
+// file-scope CPath was safe there; a statically linked wx leaves the order
+// across translation units unspecified, and the constructor could dereference
+// a null pointer before main() ever ran (#1315). Constructed on first use
+// instead, which is after IMPLEMENT_APP_CONSOLE's main() has brought wx up.
+static const CPath &TestFile()
+{
+	static const CPath path("TestFile.dat");
+	return path;
+}
+
 const unsigned testMode = 0600;
 
 DECLARE(CFile);
 void setUp()
 {
 	// Ensure that the testfile doesn't exist
-	if (testFile.FileExists()) {
-		if (!CPath::RemoveFile(testFile)) {
+	if (TestFile().FileExists()) {
+		if (!CPath::RemoveFile(TestFile())) {
 			MULE_VALIDATE_STATE(false, "Failed to remove temporary file.");
 		}
 	}
@@ -705,8 +718,8 @@ void setUp()
 
 void tearDown()
 {
-	if (testFile.FileExists()) {
-		CPath::RemoveFile(testFile);
+	if (TestFile().FileExists()) {
+		CPath::RemoveFile(TestFile());
 	}
 }
 END_DECLARE;
@@ -733,17 +746,17 @@ TEST(CFile, Constructor)
 	// Create test file
 	{
 		CFile file;
-		ASSERT_TRUE(file.Create(testFile, false, testMode));
-		ASSERT_EQUALS(testFile, file.GetFilePath());
+		ASSERT_TRUE(file.Create(TestFile(), false, testMode));
+		ASSERT_EQUALS(TestFile(), file.GetFilePath());
 		file.WriteUInt32(1);
 	}
 
 	{
-		CFile file(testFile, CFile::read);
+		CFile file(TestFile(), CFile::read);
 
 		ASSERT_TRUE(file.IsOpened());
 		ASSERT_TRUE(file.fd() != CFile::fd_invalid);
-		ASSERT_EQUALS(testFile, file.GetFilePath());
+		ASSERT_EQUALS(TestFile(), file.GetFilePath());
 		ASSERT_EQUALS(4u, file.GetLength());
 		ASSERT_EQUALS(1u, file.ReadUInt32());
 
@@ -751,11 +764,11 @@ TEST(CFile, Constructor)
 	}
 
 	{
-		CFile file(testFile, CFile::write);
+		CFile file(TestFile(), CFile::write);
 
 		ASSERT_TRUE(file.IsOpened());
 		ASSERT_TRUE(file.fd() != CFile::fd_invalid);
-		ASSERT_EQUALS(testFile, file.GetFilePath());
+		ASSERT_EQUALS(TestFile(), file.GetFilePath());
 		ASSERT_EQUALS(0u, file.GetPosition());
 		ASSERT_EQUALS(0u, file.GetLength());
 		file.WriteUInt32(1);
@@ -765,11 +778,11 @@ TEST(CFile, Constructor)
 	}
 
 	{
-		CFile file(testFile, CFile::read_write);
+		CFile file(TestFile(), CFile::read_write);
 
 		ASSERT_TRUE(file.IsOpened());
 		ASSERT_TRUE(file.fd() != CFile::fd_invalid);
-		ASSERT_EQUALS(testFile, file.GetFilePath());
+		ASSERT_EQUALS(TestFile(), file.GetFilePath());
 		ASSERT_EQUALS(4u, file.GetLength());
 		ASSERT_EQUALS(0u, file.GetPosition());
 		ASSERT_EQUALS(1u, file.ReadUInt32());
@@ -780,7 +793,7 @@ TEST(CFile, Constructor)
 	}
 
 	{
-		CFile file(testFile, CFile::write_append);
+		CFile file(TestFile(), CFile::write_append);
 
 		ASSERT_TRUE(file.IsOpened());
 		ASSERT_TRUE(file.fd() != CFile::fd_invalid);
@@ -791,7 +804,7 @@ TEST(CFile, Constructor)
 		ASSERT_RAISES(CIOFailureException, file.ReadUInt8());
 
 		ASSERT_TRUE(file.Close());
-		ASSERT_TRUE(file.Open(testFile, CFile::read));
+		ASSERT_TRUE(file.Open(TestFile(), CFile::read));
 
 		ASSERT_EQUALS(2u, file.ReadUInt32());
 		ASSERT_EQUALS(1u, file.ReadUInt32());
@@ -800,7 +813,7 @@ TEST(CFile, Constructor)
 
 TEST(CFile, Create)
 {
-	ASSERT_FALSE(testFile.FileExists());
+	ASSERT_FALSE(TestFile().FileExists());
 
 	// Check creation of new file, when none exists, with/without overwrite
 	for (size_t i = 0; i < 2; ++i) {
@@ -809,40 +822,40 @@ TEST(CFile, Create)
 		CFile file;
 		ASSERT_TRUE(!file.IsOpened());
 		ASSERT_TRUE(file.fd() == CFile::fd_invalid);
-		ASSERT_TRUE(file.Create(testFile, overwrite, testMode));
+		ASSERT_TRUE(file.Create(TestFile(), overwrite, testMode));
 		ASSERT_TRUE(file.IsOpened());
 		ASSERT_TRUE(file.fd() != CFile::fd_invalid);
-		ASSERT_EQUALS(testFile, file.GetFilePath());
+		ASSERT_EQUALS(TestFile(), file.GetFilePath());
 		ASSERT_TRUE(file.Close());
 		ASSERT_TRUE(file.fd() == CFile::fd_invalid);
 		ASSERT_TRUE(!file.IsOpened());
 
-		ASSERT_TRUE(wxFile::Access(testFile.GetRaw(), wxFile::read));
-		ASSERT_TRUE(wxFile::Access(testFile.GetRaw(), wxFile::write));
+		ASSERT_TRUE(wxFile::Access(TestFile().GetRaw(), wxFile::read));
+		ASSERT_TRUE(wxFile::Access(TestFile().GetRaw(), wxFile::write));
 
-		ASSERT_TRUE(wxRemoveFile(testFile.GetRaw()));
+		ASSERT_TRUE(wxRemoveFile(TestFile().GetRaw()));
 	}
 
 	// Create testfile, with a bit of contents
 	{
 		CFile file;
-		ASSERT_TRUE(file.Create(testFile, false, testMode));
-		ASSERT_EQUALS(testFile, file.GetFilePath());
+		ASSERT_TRUE(file.Create(TestFile(), false, testMode));
+		ASSERT_EQUALS(TestFile(), file.GetFilePath());
 		file.WriteUInt32(1);
 	}
 
 	// Check that overwrite = false works as expected
 	{
 		CFile file;
-		ASSERT_FALSE(file.Create(testFile, false, testMode));
+		ASSERT_FALSE(file.Create(TestFile(), false, testMode));
 		ASSERT_TRUE(file.fd() == CFile::fd_invalid);
 		ASSERT_TRUE(!file.IsOpened());
 
 		// Open and check contents
-		ASSERT_TRUE(file.Open(testFile, CFile::read));
+		ASSERT_TRUE(file.Open(TestFile(), CFile::read));
 		ASSERT_TRUE(file.IsOpened());
 		ASSERT_TRUE(file.fd() != CFile::fd_invalid);
-		ASSERT_EQUALS(testFile, file.GetFilePath());
+		ASSERT_EQUALS(TestFile(), file.GetFilePath());
 		ASSERT_EQUALS(4u, file.GetLength());
 		ASSERT_EQUALS(1u, file.ReadUInt32());
 		ASSERT_TRUE(file.Close());
@@ -853,23 +866,23 @@ TEST(CFile, Create)
 	// Check that overwrite = true works as expected
 	{
 		CFile file;
-		ASSERT_TRUE(file.Create(testFile, true, testMode));
+		ASSERT_TRUE(file.Create(TestFile(), true, testMode));
 		ASSERT_TRUE(file.IsOpened());
 		ASSERT_TRUE(file.fd() != CFile::fd_invalid);
-		ASSERT_EQUALS(testFile, file.GetFilePath());
+		ASSERT_EQUALS(TestFile(), file.GetFilePath());
 		ASSERT_EQUALS(0u, file.GetLength());
 		ASSERT_TRUE(file.Close());
 		ASSERT_TRUE(file.fd() == CFile::fd_invalid);
 		ASSERT_TRUE(!file.IsOpened());
 	}
 
-	ASSERT_TRUE(wxFile::Access(testFile.GetRaw(), wxFile::read));
-	ASSERT_TRUE(wxFile::Access(testFile.GetRaw(), wxFile::write));
+	ASSERT_TRUE(wxFile::Access(TestFile().GetRaw(), wxFile::read));
+	ASSERT_TRUE(wxFile::Access(TestFile().GetRaw(), wxFile::write));
 }
 
 TEST(CFile, SetLength)
 {
-	CFile file(testFile, CFile::write);
+	CFile file(TestFile(), CFile::write);
 
 	ASSERT_EQUALS(0u, file.GetLength());
 	file.SetLength(1024);
@@ -883,12 +896,12 @@ TEST(CFile, SetLength)
 TEST(CFile, GetAvailable)
 {
 	{
-		CFile file(testFile, CFile::write);
+		CFile file(TestFile(), CFile::write);
 
 		writePredefData(&file);
 	}
 
-	CFile file(testFile, CFile::read);
+	CFile file(TestFile(), CFile::read);
 
 	const uint64 length = file.GetLength();
 	while (!file.Eof()) {
