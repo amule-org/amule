@@ -930,7 +930,7 @@ bool CamuleApp::OnInit()
 	// enough that the main window -- already created by InitGui -- never gets
 	// painted. Shown here rather than earlier so it does not outlive a failed
 	// GUI init.
-	CSplashScreen *splash = new CSplashScreen();
+	CSplashScreen *splash = new CSplashScreen(theApp->amuledlg);
 	m_splash = splash;
 	splash->Show();
 
