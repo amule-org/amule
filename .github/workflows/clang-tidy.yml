@@ -24,10 +24,22 @@ on:
       - '.clang-tidy-new-code'
       - '.github/workflows/clang-tidy.yml'
 
-# A push to a PR branch fires both `push` and `pull_request`; cancel superseded
-# runs so we don't analyze the same ref twice concurrently.
+# Supersede an older run only when a newer push makes it pointless, which means
+# within one branch or one PR. The default branch is the exception: every commit
+# on master is its own thing to gate, and merges land minutes apart while Tier-1
+# takes ten. A group shared by all of master therefore had each merge cancel the
+# run of the merge before it, so that commit was never gated and never wrote the
+# ccache/ctcache that only master runs save -- leaving the next run colder too.
+#
+# Keying master runs on the commit gives each its own group, so nothing cancels
+# them and bursts of merges analyze in parallel. Turning cancellation off for
+# master instead would not do: GitHub keeps at most one pending run per group,
+# so a third merge would still discard the second.
+#
+# The two events do not share a group and never did: a PR branch push fires
+# `push` at refs/heads/<branch> and `pull_request` at refs/pull/<n>/merge.
 concurrency:
-  group: clang-tidy-${{ github.workflow }}-${{ github.ref }}
+  group: clang-tidy-${{ github.workflow }}-${{ github.ref }}-${{ github.ref == 'refs/heads/master' && github.sha || '' }}
   cancel-in-progress: true
 
 permissions:
