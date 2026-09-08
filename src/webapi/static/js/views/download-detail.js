@@ -172,11 +172,9 @@ export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDele
 function DetailActions({ d, isGuest, categories, onPatch, onDelete, onClear }) {
   const inactive = d.status === "paused" || d.status === "stopped";
   const canStop = d.status !== "stopped" && d.status !== "completed" && d.status !== "completing";
-  // Completed rejects DELETE (409 download_completed): offer Clear.
-  // `done` also gates the download-to-device link: only a completed file has
-  // been moved into Incoming, which is shared, so only then does this same hash
-  // resolve under shared/{hash}/content. Anything earlier is still a partfile
-  // and the endpoint has nothing servable for it.
+  // Completed rejects DELETE (409 download_completed): offer Clear. `done` also
+  // gates the download link — only a completed file is in Incoming (shared), so
+  // only then does its hash resolve under shared/{hash}/content.
   const done = d.status === "completed";
 
   const clear = async () => {

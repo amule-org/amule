@@ -13,10 +13,9 @@ import { t } from "./i18n.js";
 
 const BASE = window.location.pathname.replace(/\/?$/, "/") + "api/v0";
 
-// Root-relative URL for an /api/v0 path, for the one case that must NOT go
-// through fetch(): a browser navigation to a streaming endpoint. The session
-// cookie is HttpOnly and same-origin, so the navigation carries it — no token
-// in the URL. Shares BASE, so the subpath derivation lives in one place.
+// Root-relative URL for an /api/v0 path, for the one case that must not go
+// through fetch(): a browser navigation, which carries the HttpOnly session
+// cookie by itself — no token in the URL. Shares BASE with the fetch client.
 export function apiUrl(path) {
   return BASE + "/" + path.replace(/^\//, "");
 }
