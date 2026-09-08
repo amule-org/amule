@@ -1065,7 +1065,12 @@ bool CamuleApp::OnInit()
 	// spends it.
 	const int scanBandEnd = (sharedEstimate > 0) ? kScanBandEnd : tempBandEnd;
 	splash->SetProgress(_("Loading shared files"), tempBandEnd, true);
+	// Kept for the log line below: the scan reports its running count to the
+	// splash but had no way to report the final one, so the estimate was
+	// printed with nothing to compare it against.
+	size_t sharedScanned = 0;
 	sharedfiles->Reload([&](size_t scanned) {
+		sharedScanned = scanned;
 		int percent = tempBandEnd;
 		if (sharedEstimate > 0) {
 			// Clamped below the band end: an estimate that undershoots must
@@ -1082,11 +1087,17 @@ bool CamuleApp::OnInit()
 	// Normal level, not debug: these are the numbers the phase weighting
 	// above is meant to be tuned from, and a measurement that needs verbose
 	// logging turned on first is one nobody will report back.
+	// Both phases report count then duration, and the estimate says what it
+	// estimates. It is a file count taken from known.met, but it used to be
+	// printed as a bare number straight after a millisecond figure, which
+	// reads as an estimated duration -- and without the count the scan
+	// actually reached there was nothing to compare it to, so the one thing
+	// the number exists for could not be judged from the line carrying it.
 	AddLogLineN(CFormat(LOG_DIAGNOSTIC("Startup phases: network %lld ms, %u part files %lld ms, shared "
-					   "scan ") "%lld ms (estimate was %u)") %
+					   "scan %u files ") "%lld ms (estimated %u files)") %
 		    (networkDoneAt - splashPhaseStart).GetValue() % partFilesLoaded %
-		    (tempDoneAt - networkDoneAt).GetValue() % (sharedDoneAt - tempDoneAt).GetValue() %
-		    sharedEstimate);
+		    (tempDoneAt - networkDoneAt).GetValue() % sharedScanned %
+		    (sharedDoneAt - tempDoneAt).GetValue() % sharedEstimate);
 
 	// The scan has everything it is going to have: the files it recognised are
 	// listed, and the ones it did not are now queued for hashing. That drain is
