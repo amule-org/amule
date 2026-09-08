@@ -210,6 +210,7 @@ b { font-weight: 600; }
 }
 .spacer { flex: 1 1 auto; }
 .toolbar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.shared-dirs-add { margin-top: 10px; }
 .server-toolbars { --srv-field: 190px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
 .server-toolbars .input-sm { width: var(--srv-field); max-width: 100%; }
 

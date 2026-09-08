@@ -18,6 +18,7 @@ import { api } from "../api.js";
 import { html, useState, useEffect } from "../dom.js";
 import { Placeholder, toast, Tabs } from "../components.js";
 import { Icon } from "../icons.js";
+import { SharedDirectories } from "./shared-dirs.js";
 import { t, terr } from "../i18n.js";
 
 // Field types: text (default), int, bool, select, password, textarea.
@@ -99,8 +100,11 @@ const TABS = [
   { id: "directories", labelKey: "prefs_directories", cat: "directories", groups: [
     { legendKey: "prefs_group_incoming", fields: [{ key: "incoming_path", type: "text" }] },
     { legendKey: "prefs_group_temp", fields: [{ key: "temp_path", type: "text" }] },
-    { legendKey: "prefs_group_shared", fields: [
-      { key: "shared_paths", type: "textarea" },
+    // Share roots are edited through /share_directories, not PATCH /preferences
+    // (the old `shared_paths` textarea lost the recursive flag and got
+    // reverted): a fields-less group whose panel the `after` hook renders.
+    { legendKey: "prefs_group_shared", after: "shared_directories", fields: [] },
+    { legendKey: "prefs_group_shared_options", fields: [
       { key: "share_hidden", type: "bool" },
       { key: "rescan_on_startup", type: "bool" },
       { key: "follow_symlinks", type: "bool" },
@@ -586,6 +590,8 @@ export default function Preferences({ isGuest }) {
               <div class="form-grid">${grp.fields.map((f) => buildField(catOf(tab, f), f))}</div>
               ${grp.after === "amuleapi_credentials"
                 ? html`<${AmuleApiCredentials} isGuest=${isGuest} />` : null}
+              ${grp.after === "shared_directories"
+                ? html`<${SharedDirectories} isGuest=${isGuest} />` : null}
             </fieldset>`)}
         </div>
         ${isGuest
