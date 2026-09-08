@@ -435,12 +435,12 @@ TEST(NetworkAddress, GloballyRoutableIPv6RejectsEveryUnreachableRange)
 	ASSERT_FALSE(CNetworkAddress::FromString("2001::").IsGloballyRoutableIPv6());
 	ASSERT_FALSE(CNetworkAddress::FromString("2001::ffff:ffff:ffff:ffff").IsGloballyRoutableIPv6());
 	ASSERT_TRUE(CNetworkAddress::FromString("2000:ffff:ffff:ffff:ffff:ffff:ffff:ffff")
-			.IsGloballyRoutableIPv6());
+			    .IsGloballyRoutableIPv6());
 	ASSERT_FALSE(CNetworkAddress::FromString("2002::").IsGloballyRoutableIPv6());
 	ASSERT_FALSE(CNetworkAddress::FromString("2002:ffff:ffff:ffff:ffff:ffff:ffff:ffff")
-			.IsGloballyRoutableIPv6());
+			     .IsGloballyRoutableIPv6());
 	ASSERT_TRUE(CNetworkAddress::FromString("2001:ffff:ffff:ffff:ffff:ffff:ffff:ffff")
-			.IsGloballyRoutableIPv6());
+			    .IsGloballyRoutableIPv6());
 	ASSERT_TRUE(CNetworkAddress::FromString("2003::").IsGloballyRoutableIPv6());
 
 	// fc00::/7, unique-local. Both halves: fc00::/8 and fd00::/8.
@@ -576,7 +576,7 @@ TEST(NetworkAddress, AsioBridgeRoundTripsWithoutLosingAnything)
 		NetworkAddressAsio::FromAsioAddress(boost::asio::ip::make_address("192.0.2.1")).ToWxString());
 	std::uint32_t hostOrder = 0;
 	ASSERT_TRUE(NetworkAddressAsio::FromAsioAddress(boost::asio::ip::make_address("192.0.2.1"))
-			.ToIPv4HostOrder(hostOrder));
+			    .ToIPv4HostOrder(hostOrder));
 	ASSERT_EQUALS(TEST_IP_HOST_ORDER, hostOrder);
 
 	// A scope id is part of the address's identity, so it crosses too. Without
@@ -594,7 +594,7 @@ TEST(NetworkAddress, AsioBridgeRoundTripsWithoutLosingAnything)
 	ASSERT_TRUE(
 		NetworkAddressAsio::FromAsioAddress(boost::asio::ip::make_address("0.0.0.0")).IsPresent());
 	ASSERT_TRUE(NetworkAddressAsio::FromAsioAddress(boost::asio::ip::make_address("0.0.0.0"))
-			.IsUnspecified());
+			    .IsUnspecified());
 }
 
 // File_checked_for_headers
