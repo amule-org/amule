@@ -31,6 +31,8 @@
 #include <cstring>
 #include <string>
 
+#include <wx/string.h>
+
 /**
  * The internal, family-agnostic address type.
  *
@@ -485,6 +487,9 @@ public:
 		if (a == 192 && b == 0 && plain.m_octets[2] == 2) {
 			return false; // 192.0.2.0/24, TEST-NET-1 documentation (RFC 5737).
 		}
+		if (a == 192 && b == 88 && plain.m_octets[2] == 99) {
+			return false; // 192.88.99.0/24, IPv6 relay anycast (RFC 3068).
+		}
 		if (a == 192 && b == 168) {
 			return false; // 192.168.0.0/16, private (RFC 1918).
 		}
@@ -522,6 +527,12 @@ public:
 		// library did and pins them to this file's stated rule.
 		if (IsLoopbackIPv6()) {
 			return false;
+		}
+		if (m_octets[0] == 0x20 && m_octets[1] == 0x01 && m_octets[2] == 0 && m_octets[3] == 0) {
+			return false; // 2001::/32, Teredo.
+		}
+		if (m_octets[0] == 0x20 && m_octets[1] == 0x02) {
+			return false; // 2002::/16, 6to4.
 		}
 		if (m_octets[0] == 0xFF) {
 			return false; // ff00::/8, multicast.
@@ -594,6 +605,8 @@ public:
 	 * RFC 4291 canonical form is a library's job, not this header's.
 	 */
 	std::string ToString() const;
+
+	wxString ToWxString() const;
 
 	// Comparison. See the class comment for the single rule these implement.
 	//

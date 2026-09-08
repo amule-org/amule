@@ -53,8 +53,8 @@ TEST(NetworkAddress, ByteOrderIsInTheSignature)
 	const CNetworkAddress fromNetwork = CNetworkAddress::FromIPv4NetworkOrder(TEST_IP_ED2K_ORDER);
 
 	// Both name the same address, reached through the convention each caller has.
-	ASSERT_EQUALS(wxString("192.0.2.1"), wxString(fromHost.ToString()));
-	ASSERT_EQUALS(wxString("192.0.2.1"), wxString(fromNetwork.ToString()));
+	ASSERT_EQUALS(wxString("192.0.2.1"), fromHost.ToWxString());
+	ASSERT_EQUALS(wxString("192.0.2.1"), fromNetwork.ToWxString());
 	ASSERT_TRUE(fromHost == fromNetwork);
 
 	// And they round-trip back into the convention that is asked for, not into
@@ -75,8 +75,20 @@ TEST(NetworkAddress, ByteOrderIsInTheSignature)
 	// Feeding a value in the wrong convention cannot be a silent no-op: it
 	// yields a different, visibly wrong address. Nothing stops a caller doing
 	// that, but nothing hides it either.
-	ASSERT_EQUALS(wxString("1.2.0.192"),
-		wxString(CNetworkAddress::FromIPv4HostOrder(TEST_IP_ED2K_ORDER).ToString()));
+	ASSERT_EQUALS(
+		wxString("1.2.0.192"), CNetworkAddress::FromIPv4HostOrder(TEST_IP_ED2K_ORDER).ToWxString());
+}
+
+TEST(NetworkAddress, TextualFormsPreserveUtf8)
+{
+	const CNetworkAddress ipv4 = CNetworkAddress::FromString("1.2.3.4");
+	const CNetworkAddress ipv6 = CNetworkAddress::FromString("2001:db8::1");
+	const CNetworkAddress absent = CNetworkAddress::Absent();
+
+	ASSERT_EQUALS(wxString("1.2.3.4"), ipv4.ToWxString());
+	ASSERT_EQUALS(wxString("2001:db8::1"), ipv6.ToWxString());
+	ASSERT_EQUALS(wxString("<absent>"), absent.ToWxString());
+	ASSERT_EQUALS(std::string("1.2.3.4"), ipv4.ToString());
 }
 
 TEST(NetworkAddress, MappedAndNativeAreDistinct)
@@ -156,11 +168,11 @@ TEST(NetworkAddress, AbsenceIsNotTheAllZeroAddress)
 	ASSERT_TRUE(zero.IsPresent());
 	ASSERT_TRUE(zero.IsUnspecified());
 	ASSERT_TRUE(zero.IsIPv4());
-	ASSERT_EQUALS(wxString("0.0.0.0"), wxString(zero.ToString()));
+	ASSERT_EQUALS(wxString("0.0.0.0"), zero.ToWxString());
 
 	// The whole point: these two are different values.
 	ASSERT_TRUE(absent != zero);
-	ASSERT_EQUALS(wxString("<absent>"), wxString(absent.ToString()));
+	ASSERT_EQUALS(wxString("<absent>"), absent.ToWxString());
 
 	// 0.0.0.0 narrows to zero; an absent address refuses to narrow at all, and
 	// again leaves the caller's variable untouched.
@@ -233,11 +245,11 @@ TEST(NetworkAddress, OrderingIsTotalAndUsableAsAKey)
 	// The order is the one documented, in order.
 	std::set<CNetworkAddress>::const_iterator it = keys.begin();
 	ASSERT_TRUE((it++)->IsAbsent());
-	ASSERT_EQUALS(wxString("0.0.0.0"), wxString((it++)->ToString()));
-	ASSERT_EQUALS(wxString("10.0.0.1"), wxString((it++)->ToString()));
-	ASSERT_EQUALS(wxString("192.0.2.1"), wxString((it++)->ToString()));
+	ASSERT_EQUALS(wxString("0.0.0.0"), (it++)->ToWxString());
+	ASSERT_EQUALS(wxString("10.0.0.1"), (it++)->ToWxString());
+	ASSERT_EQUALS(wxString("192.0.2.1"), (it++)->ToWxString());
 	ASSERT_TRUE((it++)->IsIPv4Mapped());
-	ASSERT_EQUALS(wxString("2001:db8::1"), wxString((it++)->ToString()));
+	ASSERT_EQUALS(wxString("2001:db8::1"), (it++)->ToWxString());
 	ASSERT_TRUE(it == keys.end());
 
 	// Lookup by an equal address built the other way round still hits.
@@ -257,35 +269,28 @@ TEST(NetworkAddress, TruncatedToPrefixClearsHostBits)
 	// implementation computes it -- a symmetric off-by-one in a shift would
 	// cancel out and pass.
 	ASSERT_EQUALS(wxString("192.0.2.0"),
-		wxString(CNetworkAddress::FromString("192.0.2.130").TruncatedToPrefix(24).ToString()));
+		CNetworkAddress::FromString("192.0.2.130").TruncatedToPrefix(24).ToWxString());
 	ASSERT_EQUALS(wxString("192.0.0.0"),
-		wxString(CNetworkAddress::FromString("192.0.2.130").TruncatedToPrefix(16).ToString()));
+		CNetworkAddress::FromString("192.0.2.130").TruncatedToPrefix(16).ToWxString());
 	ASSERT_EQUALS(wxString("0.0.0.0"),
-		wxString(CNetworkAddress::FromString("192.0.2.130").TruncatedToPrefix(0).ToString()));
+		CNetworkAddress::FromString("192.0.2.130").TruncatedToPrefix(0).ToWxString());
 	// A prefix at or beyond the family width is the address itself, not an
 	// undefined shift.
 	ASSERT_EQUALS(wxString("192.0.2.130"),
-		wxString(CNetworkAddress::FromString("192.0.2.130").TruncatedToPrefix(32).ToString()));
+		CNetworkAddress::FromString("192.0.2.130").TruncatedToPrefix(32).ToWxString());
 	ASSERT_EQUALS(wxString("192.0.2.130"),
-		wxString(CNetworkAddress::FromString("192.0.2.130").TruncatedToPrefix(128).ToString()));
+		CNetworkAddress::FromString("192.0.2.130").TruncatedToPrefix(128).ToWxString());
 
 	// IPv6, including a prefix that ends mid-byte -- /60 keeps the high nibble
 	// of the eighth byte and clears the low one.
 	ASSERT_EQUALS(wxString("2001:db8:1::"),
-		wxString(CNetworkAddress::FromString("2001:db8:1:2:3:4:5:6")
-				 .TruncatedToPrefix(48)
-				 .ToString()));
+		CNetworkAddress::FromString("2001:db8:1:2:3:4:5:6").TruncatedToPrefix(48).ToWxString());
 	ASSERT_EQUALS(wxString("2001:db8:1:f0::"),
-		wxString(CNetworkAddress::FromString("2001:db8:1:f2:3:4:5:6")
-				 .TruncatedToPrefix(60)
-				 .ToString()));
+		CNetworkAddress::FromString("2001:db8:1:f2:3:4:5:6").TruncatedToPrefix(60).ToWxString());
 	ASSERT_EQUALS(wxString("2001:db8:1:2::"),
-		wxString(CNetworkAddress::FromString("2001:db8:1:2:3:4:5:6")
-				 .TruncatedToPrefix(64)
-				 .ToString()));
+		CNetworkAddress::FromString("2001:db8:1:2:3:4:5:6").TruncatedToPrefix(64).ToWxString());
 	ASSERT_EQUALS(wxString("::"),
-		wxString(
-			CNetworkAddress::FromString("2001:db8:1:2:3:4:5:6").TruncatedToPrefix(0).ToString()));
+		CNetworkAddress::FromString("2001:db8:1:2:3:4:5:6").TruncatedToPrefix(0).ToWxString());
 	ASSERT_TRUE(CNetworkAddress::FromString("2001:db8:1:2:3:4:5:6").TruncatedToPrefix(128) ==
 		    CNetworkAddress::FromString("2001:db8:1:2:3:4:5:6"));
 
@@ -357,13 +362,15 @@ TEST(NetworkAddress, GloballyRoutableIPv4RejectsEveryUnroutableRange)
 	ASSERT_TRUE(CNetworkAddress::FromString("172.15.255.255").IsGloballyRoutableIPv4());
 	ASSERT_TRUE(CNetworkAddress::FromString("172.32.0.0").IsGloballyRoutableIPv4());
 
-	// 192.0.0.0/24 protocol assignments, 192.0.2.0/24 TEST-NET-1, and
-	// 192.168.0.0/16 private -- three separate rules under one first octet,
-	// so 192.0.1.0 in between them stays routable.
+	// The /24 exclusions under 192.0/16, and private 192.168/16.
 	ASSERT_FALSE(CNetworkAddress::FromString("192.0.0.1").IsGloballyRoutableIPv4());
 	ASSERT_FALSE(CNetworkAddress::FromString("192.0.2.1").IsGloballyRoutableIPv4());
+	ASSERT_FALSE(CNetworkAddress::FromString("192.88.99.0").IsGloballyRoutableIPv4());
+	ASSERT_FALSE(CNetworkAddress::FromString("192.88.99.255").IsGloballyRoutableIPv4());
 	ASSERT_FALSE(CNetworkAddress::FromString("192.168.1.1").IsGloballyRoutableIPv4());
 	ASSERT_TRUE(CNetworkAddress::FromString("192.0.1.1").IsGloballyRoutableIPv4());
+	ASSERT_TRUE(CNetworkAddress::FromString("192.88.98.255").IsGloballyRoutableIPv4());
+	ASSERT_TRUE(CNetworkAddress::FromString("192.88.100.0").IsGloballyRoutableIPv4());
 	ASSERT_TRUE(CNetworkAddress::FromString("192.167.1.1").IsGloballyRoutableIPv4());
 	ASSERT_TRUE(CNetworkAddress::FromString("192.169.1.1").IsGloballyRoutableIPv4());
 
@@ -424,6 +431,18 @@ TEST(NetworkAddress, GloballyRoutableIPv6RejectsEveryUnreachableRange)
 	ASSERT_FALSE(CNetworkAddress::FromString("fec0::1").IsGloballyRoutableIPv6());
 	ASSERT_FALSE(CNetworkAddress::FromString("feff:ffff::1").IsGloballyRoutableIPv6());
 
+	// Teredo 2001::/32 and 6to4 2002::/16.
+	ASSERT_FALSE(CNetworkAddress::FromString("2001::").IsGloballyRoutableIPv6());
+	ASSERT_FALSE(CNetworkAddress::FromString("2001::ffff:ffff:ffff:ffff").IsGloballyRoutableIPv6());
+	ASSERT_TRUE(CNetworkAddress::FromString("2000:ffff:ffff:ffff:ffff:ffff:ffff:ffff")
+			.IsGloballyRoutableIPv6());
+	ASSERT_FALSE(CNetworkAddress::FromString("2002::").IsGloballyRoutableIPv6());
+	ASSERT_FALSE(CNetworkAddress::FromString("2002:ffff:ffff:ffff:ffff:ffff:ffff:ffff")
+			.IsGloballyRoutableIPv6());
+	ASSERT_TRUE(CNetworkAddress::FromString("2001:ffff:ffff:ffff:ffff:ffff:ffff:ffff")
+			.IsGloballyRoutableIPv6());
+	ASSERT_TRUE(CNetworkAddress::FromString("2003::").IsGloballyRoutableIPv6());
+
 	// fc00::/7, unique-local. Both halves: fc00::/8 and fd00::/8.
 	ASSERT_FALSE(CNetworkAddress::FromString("fc00::1").IsGloballyRoutableIPv6());
 	ASSERT_FALSE(CNetworkAddress::FromString("fd12:3456::1").IsGloballyRoutableIPv6());
@@ -475,7 +494,7 @@ TEST(NetworkAddress, OctetsAreWireOrderAndLeaveTheIPv4TailZero)
 	ASSERT_TRUE(CNetworkAddress::AnyIPv6().IsPresent());
 	ASSERT_TRUE(CNetworkAddress::AnyIPv6().IsIPv6());
 	ASSERT_TRUE(CNetworkAddress::AnyIPv6().IsUnspecified());
-	ASSERT_EQUALS(wxString("::"), wxString(CNetworkAddress::AnyIPv6().ToString()));
+	ASSERT_EQUALS(wxString("::"), CNetworkAddress::AnyIPv6().ToWxString());
 	const std::uint8_t allZero[16] = { 0 };
 	ASSERT_TRUE(CNetworkAddress::FromIPv6Bytes(allZero).IsAbsent());
 	ASSERT_TRUE(CNetworkAddress::AnyIPv6() != CNetworkAddress::Absent());
@@ -548,17 +567,16 @@ TEST(NetworkAddress, AsioBridgeRoundTripsWithoutLosingAnything)
 		ASSERT_TRUE(roundTripped == address);
 		// Not just equal -- the same text, so a family or octet swap that
 		// happened to compare equal would still be caught.
-		ASSERT_EQUALS(wxString(address.ToString()), wxString(roundTripped.ToString()));
+		ASSERT_EQUALS(address.ToWxString(), roundTripped.ToWxString());
 	}
 
 	// The 32-bit conventions survive the crossing: asio's to_uint() is host
 	// order, which is the convention FromIPv4HostOrder() names.
 	ASSERT_EQUALS(wxString("192.0.2.1"),
-		wxString(NetworkAddressAsio::FromAsioAddress(boost::asio::ip::make_address("192.0.2.1"))
-				 .ToString()));
+		NetworkAddressAsio::FromAsioAddress(boost::asio::ip::make_address("192.0.2.1")).ToWxString());
 	std::uint32_t hostOrder = 0;
 	ASSERT_TRUE(NetworkAddressAsio::FromAsioAddress(boost::asio::ip::make_address("192.0.2.1"))
-			    .ToIPv4HostOrder(hostOrder));
+			.ToIPv4HostOrder(hostOrder));
 	ASSERT_EQUALS(TEST_IP_HOST_ORDER, hostOrder);
 
 	// A scope id is part of the address's identity, so it crosses too. Without
@@ -576,7 +594,7 @@ TEST(NetworkAddress, AsioBridgeRoundTripsWithoutLosingAnything)
 	ASSERT_TRUE(
 		NetworkAddressAsio::FromAsioAddress(boost::asio::ip::make_address("0.0.0.0")).IsPresent());
 	ASSERT_TRUE(NetworkAddressAsio::FromAsioAddress(boost::asio::ip::make_address("0.0.0.0"))
-			    .IsUnspecified());
+			.IsUnspecified());
 }
 
 // File_checked_for_headers

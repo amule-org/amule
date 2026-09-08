@@ -61,6 +61,11 @@ std::string CNetworkAddress::ToString() const
 	return NetworkAddressAsio::ToAsioAddress(*this).to_string();
 }
 
+wxString CNetworkAddress::ToWxString() const
+{
+	return wxString::FromUTF8(ToString().c_str());
+}
+
 namespace NetworkAddressAsio
 {
 

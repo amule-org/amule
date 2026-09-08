@@ -27,24 +27,7 @@
 
 #include "NetworkAddress.h"
 
-// Boost.Asio's socket headers redeclare constexpr static members out of line
-// and give several classes a user-provided destructor alongside an implicit
-// copy constructor. Both are deprecated in C++17 and both are diagnosed by
-// Clang, so with the -Werror=deprecated gate in src/CMakeLists.txt they fail
-// the build -- in third-party code this tree does not own. Same pragma-wrap
-// convention as CryptoPP_Inc.h and the wx wraps from #341, and the same
-// reason: the headers are discovered without -isystem, so the gate reaches
-// them. Kept to exactly these two diagnostics rather than a blanket
-// -Wno-deprecated, so a genuine deprecation in aMule's own code still fails.
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
-#pragma clang diagnostic ignored "-Wdeprecated-redundant-constexpr-static-def"
-#endif
 #include <boost/asio/ip/address.hpp>
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
 
 /**
  * The one bridge between CNetworkAddress and Boost.Asio.
