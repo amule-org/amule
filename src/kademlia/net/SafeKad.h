@@ -230,7 +230,17 @@ public:
 	// MIN_ID_CHANGE_INTERVAL marks the address problematic (and bans it if
 	// it was problematic already) and leaves the tracked ID untouched.
 	// Returns false if the identity change was rejected.
-	bool TrackNode(uint32_t ip, uint16_t port, const CUInt128 &id, bool idVerified, time_t now);
+	//
+	// `newlyBanned`, when given, reports whether the rejection escalated as
+	// far as a ban that was not already in force. This class deliberately
+	// links against nothing, so it cannot log or count the event itself --
+	// it says what it did and the caller decides what that is worth.
+	bool TrackNode(uint32_t ip,
+		uint16_t port,
+		const CUInt128 &id,
+		bool idVerified,
+		time_t now,
+		bool *newlyBanned = nullptr);
 
 	// Marks an address as having misbehaved (a timeout, an inconsistent
 	// answer, a rejected identity change).
@@ -239,7 +249,12 @@ public:
 	// Bans an address for MAX_BAN_TIME. Use only where the address is
 	// demonstrably at fault: a node can be *reported* bad by a third party,
 	// and acting on that would make this a remote-controlled blocklist.
-	void BanAddress(uint32_t ip, time_t now);
+	//
+	// Returns true only when the address was not banned already. A repeat
+	// refreshes the existing ban and returns false, so a caller counting
+	// bans counts addresses rather than calls -- the drift CBanRecord was
+	// extracted to stop on the client-side list.
+	bool BanAddress(uint32_t ip, time_t now);
 
 	// The one call the Kad packet paths need: true when this contact must
 	// not be used or inserted into the routing table.
@@ -290,7 +305,9 @@ private:
 	// problematic the first time, banned if the address was problematic
 	// already. Both refusal paths share this so that one rejection is
 	// always exactly one step.
-	void Escalate(uint32_t ip, uint16_t port, time_t now);
+	// Returns true when the step ended in a ban that was not already in
+	// force, so TrackNode can pass that up to its caller.
+	bool Escalate(uint32_t ip, uint16_t port, time_t now);
 	// True when this address already has a tracked node on another port.
 	bool HasOtherTrackedPort(uint32_t ip, uint16_t port);
 	// Forgets every tracked and problematic entry for `ip`, on every port.

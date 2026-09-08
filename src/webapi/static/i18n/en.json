@@ -593,6 +593,7 @@
   "stats_tree_clients_unknown": "Unknown: %s",
   "stats_tree_clients_filtered": "Filtered: %s",
   "stats_tree_clients_banned": "Banned: %s",
+  "stats_tree_clients_kad_banned": "Kad banned addresses: %s",
   "stats_tree_servers": "Servers",
   "stats_tree_servers_working": "Working Servers: %i",
   "stats_tree_servers_failed": "Failed Servers: %i",

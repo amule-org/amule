@@ -107,6 +107,8 @@ enum DebugType
 	logKadPacketTracking,
 	//! Warnings/Errors related to Kad entry tracking.
 	logKadEntryTracking,
+	//! Kad node tracking: identity rotation, problematic nodes and bans.
+	logKadNodeTracking,
 	//! Full log of external connection packets
 	logEC,
 	//! Warnings/Errors related to HTTP traffic

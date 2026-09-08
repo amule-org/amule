@@ -413,6 +413,23 @@ public:
 	static void AddBannedClient() { ++(*s_banned); }
 	static void RemoveBannedClient() { --(*s_banned); }
 
+	/**
+	 * Addresses Kad is currently refusing to talk to (CSafeKad).
+	 *
+	 * Set rather than incremented, because these bans lapse inside an aged
+	 * map with no event to hang a decrement on: the count is read back from
+	 * the record on the Kad timer. That also makes it immune to the
+	 * add/remove drift that CBanRecord had to be extracted to fix.
+	 *
+	 * Kept apart from the banned-client figure above on purpose. That one
+	 * counts CClientList bans, which block TCP connections; this one covers
+	 * Kad addresses only, and conflating them would report a peer as barred
+	 * from uploads when it is merely unwelcome in the routing table.
+	 */
+#ifdef ENABLE_KAD_NODE_PROTECTION
+	static void SetKadBannedAddresses(uint32 value) { s_kadBanned->SetValue(value); }
+#endif
+
 	// Servers
 	static void AddServer() { ++(*s_totalServers); }
 	static void DeleteServer()
@@ -624,6 +641,9 @@ private:
 #endif
 	static CStatTreeItemNativeCounter *s_filtered;
 	static CStatTreeItemNativeCounter *s_banned;
+#ifdef ENABLE_KAD_NODE_PROTECTION
+	static CStatTreeItemNativeCounter *s_kadBanned;
+#endif
 
 	// Servers
 	static CStatTreeItemSimple *s_workingServers;
