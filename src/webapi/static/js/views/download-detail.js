@@ -44,6 +44,10 @@ export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDele
   if (!detail) return html`<div class="detail-panel"><${Placeholder} kind="loading">${t("downloads_detail_loading")}<//></div>`;
 
   const d = detail;
+
+  // Off the Details tab `d` is a frozen snapshot (liveTick is 0); read the
+  // fields that move while the panel is open from the SSE-fed store row instead.
+  const live = downloads.find((x) => x.hash === d.hash) || d;
   const src = d.sources || {};
   const media = d.media;
   // Empty when the daemon has sent no chunk map: the bar is skipped entirely
@@ -92,11 +96,11 @@ export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDele
       <div class="detail-body">
       ${tab === "clients" ? html`
         <${FileClients} hash=${d.hash} prefsKey="download_clients" defaultHidden=${DL_HIDDEN}
-                        defaultSort="downloaded" a4afEcids=${d.source_ecids || []}
+                        defaultSort="downloaded" a4afEcids=${live.source_ecids || []}
                         partsTotal=${d.total_part_count} files=${downloads} />
       ` : tab === "comments" ? html`
         <${DownloadComments} hash=${d.hash} comment=${d.my_comment} rating=${d.my_rating}
-                             running=${!!(downloads.find((x) => x.hash === d.hash) || {}).kad_comment_lookup_running}
+                             running=${!!live.kad_comment_lookup_running}
                              parts=${parts} />
       ` : tab === "filename" ? html`
         <${DownloadFilenames} hash=${d.hash} name=${d.name}
