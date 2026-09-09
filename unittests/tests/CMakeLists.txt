@@ -231,6 +231,39 @@ target_link_libraries (NetworkAddressTest
 	${Boost_LIBRARIES}
 )
 
+# Peer identity: what makes two peers the same peer once a peer can be IPv6, how
+# much of an IPv6 address a rate limit counts against, and how far an inbound
+# datagram can be routed. All decision logic over CNetworkAddress, so it is
+# testable without an app -- which is why it lives in a header of its own rather
+# than inside CClientList.
+add_executable (PeerAddressingTest
+	PeerAddressingTest.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+	# CNetworkAddress::FromString/ToString live in NetworkAddress.cpp: they are
+	# the only part of the type that still compiles Boost.Asio, and keeping them
+	# out of the header is what stops asio reaching most of src/. Every target
+	# whose include closure touches NetworkAddress.h therefore has to link this
+	# TU -- the type is no longer header-only.
+	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
+)
+
+add_test (NAME PeerAddressingTest
+	COMMAND PeerAddressingTest
+)
+
+target_include_directories (PeerAddressingTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+	PRIVATE ${Boost_INCLUDE_DIR}
+)
+
+target_link_libraries (PeerAddressingTest
+	muleunit
+	${Boost_LIBRARIES}
+)
+
 add_executable (CUInt128Test
 	CUInt128Test.cpp
 	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
