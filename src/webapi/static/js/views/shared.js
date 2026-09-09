@@ -9,7 +9,7 @@ import { data } from "../events.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
 import { checkCell, listPlaceholder, toast, confirmDialog } from "../components.js";
 import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker } from "../table.js";
-import { formatBytes, formatFreeSpace, formatInt, formatSpeed, formatTimestamp, twin } from "../format.js";
+import { formatBytes, formatDuration, formatFreeSpace, formatInt, formatSpeed, formatTimestamp, twin } from "../format.js";
 import { t, tn, terr } from "../i18n.js";
 import { SharedDetail } from "./shared-detail.js";
 import { SplitDetail } from "./split-detail.js";
@@ -18,6 +18,12 @@ const PRIORITIES = ["auto", "very_low", "low", "normal", "high", "release"]
   .map((v) => [v, t("shared_prio_" + v)]);
 
 const STATUS_FILTERS = [["all", t("shared_status_all")], ["uploading", t("shared_status_uploading")]];
+
+// Columns the picker offers but the list does not lead with. The timestamps are
+// rarely what a share is scanned for; the media columns are only filled for
+// files ffprobe has been run over, so on a share that has never been probed
+// they would be three empty columns for everyone.
+const DEFAULT_HIDDEN = ["last_upload", "shared_since", "media_length", "media_bitrate", "media_codec"];
 
 export default function Shared({ isGuest }) {
   // undefined until the first snapshot lands, [] once the share is known
@@ -28,7 +34,7 @@ export default function Shared({ isGuest }) {
   const disk = (useStore("status") || {}).disk || {};
   const [selection, setSelection] = useState(() => new Set());
   const { sortKey, sortDir, hidden, widths, toggleSort, toggleCol, setWidth, resetPrefs } =
-    useTablePrefs("shared", { sortKey: "name", sortDir: 1, hidden: ["last_upload", "shared_since"] });
+    useTablePrefs("shared", { sortKey: "name", sortDir: 1, hidden: DEFAULT_HIDDEN });
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterText, setFilterText] = useState("");
   const [verifying, setVerifying] = useState(false);
@@ -166,6 +172,18 @@ export default function Shared({ isGuest }) {
       sortVal: (s) => s.last_upload_at || 0, cell: (s) => formatTimestamp(s.last_upload_at) },
     { key: "shared_since", label: t("shared_shared_since"), width: "160px", sortable: true,
       sortVal: (s) => s.shared_since_at || 0, cell: (s) => formatTimestamp(s.shared_since_at) },
+    // Media metadata, same source and wording as the detail panel's Media
+    // section. `media` is null on the API when nothing has been probed, so
+    // every accessor goes through it defensively.
+    { key: "media_length", label: t("downloads_detail_media_length"), num: true, width: "90px", sortable: true,
+      sortVal: (s) => (s.media && s.media.duration_seconds) || 0,
+      cell: (s) => (s.media && s.media.duration_seconds) ? formatDuration(s.media.duration_seconds) : "" },
+    { key: "media_bitrate", label: t("downloads_detail_media_bitrate"), num: true, width: "100px", sortable: true,
+      sortVal: (s) => (s.media && s.media.bitrate_kilobits_per_second) || 0,
+      cell: (s) => (s.media && s.media.bitrate_kilobits_per_second) ? formatInt(s.media.bitrate_kilobits_per_second) : "" },
+    { key: "media_codec", label: t("downloads_detail_media_codec"), width: "100px", sortable: true,
+      sortVal: (s) => (s.media && s.media.codec) || "",
+      cell: (s) => (s.media && s.media.codec) || "" },
     { key: "priority", label: t("shared_priority"), width: "160px", sortable: true,
       sortVal: (s) => s.priority || "", cell: (s) => isGuest
         ? prioLabel(s)
