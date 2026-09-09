@@ -33,6 +33,44 @@
 
 #include <wx/string.h>
 
+namespace NetworkAddressPolicy
+{
+struct IPv6ExcludedPrefix
+{
+	std::array<std::uint8_t, 16> bytes;
+	unsigned bits;
+	const char *name;
+};
+
+constexpr IPv6ExcludedPrefix kIPv6ExcludedPrefixes[] = { { {}, 128, "Unspecified" },
+	{ { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 128, "Loopback" },
+	{ { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff }, 96, "IPv4-mapped" },
+	{ { 0x00, 0x64, 0xff, 0x9b }, 96, "Well-known NAT64" },
+	{ { 0x00, 0x64, 0xff, 0x9b, 0x00, 0x01 }, 48, "Local-use NAT64" },
+	{ { 0x01, 0x00 }, 64, "Discard-only" },
+	{ { 0x20, 0x01 }, 32, "Teredo" },
+	{ { 0x20, 0x01, 0x00, 0x20 }, 28, "ORCHIDv2" },
+	{ { 0x20, 0x01, 0x0d, 0xb8 }, 32, "Documentation" },
+	{ { 0x20, 0x02 }, 16, "6to4" },
+	{ { 0x5f, 0x00 }, 16, "Segment routing SIDs" },
+	{ { 0xfc }, 7, "Unique-local" },
+	{ { 0xfe, 0x80 }, 10, "Link-local" },
+	{ { 0xfe, 0xc0 }, 10, "Deprecated site-local" },
+	{ { 0xff }, 8, "Multicast" } };
+
+inline bool MatchesPrefix(
+	const std::array<std::uint8_t, 16> &address, const IPv6ExcludedPrefix &prefix) noexcept
+{
+	for (unsigned bit = 0; bit < prefix.bits; ++bit) {
+		const unsigned mask = 0x80u >> (bit % 8);
+		if ((address[bit / 8] & mask) != (prefix.bytes[bit / 8] & mask)) {
+			return false;
+		}
+	}
+	return true;
+}
+} // namespace NetworkAddressPolicy
+
 /**
  * The internal, family-agnostic address type.
  *
@@ -518,38 +556,15 @@ public:
 	 */
 	bool IsGloballyRoutableIPv6() const noexcept
 	{
-		if (!IsIPv6() || IsIPv4Mapped() || IsUnspecified()) {
+		if (!IsIPv6()) {
 			return false;
 		}
-		// The prefixes, all from RFC 4291 except fc00::/7 (RFC 4193). These
-		// were asio's address_v6 predicates until this header dropped asio;
-		// each is one prefix test, so restating them costs less than the
-		// library did and pins them to this file's stated rule.
-		if (IsLoopbackIPv6()) {
-			return false;
-		}
-		if (m_octets[0] == 0x20 && m_octets[1] == 0x01 && m_octets[2] == 0 && m_octets[3] == 0) {
-			return false; // 2001::/32, Teredo.
-		}
-		if (m_octets[0] == 0x20 && m_octets[1] == 0x02) {
-			return false; // 2002::/16, 6to4.
-		}
-		if (m_octets[0] == 0xFF) {
-			return false; // ff00::/8, multicast.
-		}
-		if (m_octets[0] == 0xFE) {
-			const std::uint8_t top = static_cast<std::uint8_t>(m_octets[1] & 0xC0);
-			if (top == 0x80) {
-				return false; // fe80::/10, link-local.
-			}
-			if (top == 0xC0) {
-				return false; // fec0::/10, the deprecated site-local range.
+		for (const auto &prefix : NetworkAddressPolicy::kIPv6ExcludedPrefixes) {
+			if (NetworkAddressPolicy::MatchesPrefix(m_octets, prefix)) {
+				return false;
 			}
 		}
-		// fc00::/7, unique-local. asio's is_site_local() only ever covered the
-		// deprecated fec0::/10 above, so this was tested here rather than
-		// assumed even when asio was in use.
-		return (m_octets[0] & 0xFE) != 0xFC;
+		return true;
 	}
 
 	/**
@@ -670,17 +685,6 @@ private:
 	std::uint32_t EmbeddedIPv4HostOrder() const noexcept
 	{
 		return PackOctets(m_octets[12], m_octets[13], m_octets[14], m_octets[15]);
-	}
-
-	/** @c ::1 -- fifteen zero octets then a one. */
-	bool IsLoopbackIPv6() const noexcept
-	{
-		for (int i = 0; i < 15; ++i) {
-			if (m_octets[i] != 0) {
-				return false;
-			}
-		}
-		return m_octets[15] == 1;
 	}
 
 	/**

@@ -32,20 +32,17 @@
 /**
  * What identifies a peer, once a peer can be IPv6.
  *
- * aMule identified a peer by a 32-bit address, so an inbound IPv6 peer was
- * accepted by the socket and then dropped: `CClientList` had nothing to index
- * it under, and the ed2k UDP handlers had nothing to look it up by. The
- * decisions that widening needs are collected here, away from the app classes
- * that carry them out, so each one is a value function with a test rather than a
- * condition buried in a 3000-line file.
+ * These value policies prepare peer-address widening without changing production
+ * call sites. Socket-ingress normalization belongs to the later call-sites PR;
+ * local unmapping here defensively handles both native and mapped IPv4.
  *
  * Three separate questions live here, and they deliberately give different
  * answers for the same address:
  *
  *  - **Identity.** Two peers are the same peer iff they have the same index
- *    key. Aggregating distinct hosts here would merge them -- the failure this
- *    tree has already had once, when an absent address was banned as the key
- *    0.0.0.0 and every client with an unknown address read back as banned.
+ *    key. Aggregating distinct hosts here would merge them. Keeping absence
+ *    separate from 0.0.0.0 is a prevention/hardening invariant, not a claim
+ *    that #1314 shipped an unknown-address ban bug.
  *  - **Rate limiting.** A budget is per *subscriber*, which under IPv6 is not
  *    per address. Aggregating is the point here, and the amount of aggregation
  *    is a decision, not a detail.
@@ -125,16 +122,13 @@ inline bool HasEd2kWireForm(const CNetworkAddress &address) noexcept
  */
 inline bool SupportsEd2kUdpObfuscation(const CNetworkAddress &address) noexcept
 {
-	// Same test as HasEd2kWireForm() and deliberately a separate name: these
-	// are two different protocol facts that happen to have the same boundary,
-	// and a caller that means one should not read as meaning the other.
-	return HasEd2kWireForm(address);
+	return address.IsIPv4() || address.IsIPv4Mapped();
 }
 
 /** How far an inbound datagram from a given peer can be routed. */
 enum class EUdpRoute
 {
-	//! Not a usable peer address: absent, or the unspecified address.
+	//! Not a usable endpoint: absent/unspecified address, or zero port.
 	Reject,
 	//! Full service. Everything ed2k and Kad can do for a 32-bit peer.
 	Ed2kAndKad,
@@ -142,22 +136,26 @@ enum class EUdpRoute
 	Ed2kOnly
 };
 
+/** A UDP peer's address and advertised or observed UDP port. */
+struct UdpEndpoint
+{
+	CNetworkAddress address;
+	std::uint16_t port = 0;
+};
+
 /**
- * Classifies an inbound datagram's peer address.
+ * Classifies an inbound datagram's endpoint for future call sites.
  *
- * The @c Ed2kOnly case is the one this change adds. Before it, a native IPv6
- * datagram was dropped at the socket with a logged reason, because the handlers
- * below identified a peer by a 32-bit address. They no longer do, so the
- * datagram is now handled -- except by Kad, whose @c uint32 interface is a
- * documented conversion boundary (see the amule-address-widening design) and is
- * not widened here.
+ * This value policy is not wired into production handlers yet. Kad retains its
+ * IPv4 conversion boundary; native IPv6 can only select the ed2k route.
  *
  * Reject does not distinguish absent from unspecified: the caller holds the
  * address and can say which in its log, exactly as CMuleUDPSocket already does.
  */
-inline EUdpRoute ClassifyUdpPeer(const CNetworkAddress &address) noexcept
+inline EUdpRoute ClassifyUdpPeer(const UdpEndpoint &endpoint) noexcept
 {
-	if (address.IsAbsent() || address.IsUnspecified()) {
+	const CNetworkAddress address = endpoint.address.Unmapped();
+	if (endpoint.port == 0 || address.IsAbsent() || address.IsUnspecified()) {
 		return EUdpRoute::Reject;
 	}
 	return SupportsEd2kUdpObfuscation(address) ? EUdpRoute::Ed2kAndKad : EUdpRoute::Ed2kOnly;
@@ -165,7 +163,7 @@ inline EUdpRoute ClassifyUdpPeer(const CNetworkAddress &address) noexcept
 
 /**
  * Whether a client's advertised UDP port names it as the sender of a datagram
- * that arrived from @p sourcePort.
+ * that arrived from @p source, comparing both the address and UDP port.
  *
  * A peer advertises two ports and they are not the same number: the ed2k TCP
  * port it accepts connections on, and the UDP port it accepts datagrams on. A
@@ -184,12 +182,11 @@ inline EUdpRoute ClassifyUdpPeer(const CNetworkAddress &address) noexcept
  * closed instead, which costs nothing: a peer that advertised no UDP port could
  * not have been matched by an exact comparison either.
  */
-inline bool MatchesUdpSourcePort(std::uint16_t advertisedPort, std::uint16_t sourcePort) noexcept
+inline bool MatchesUdpSource(const UdpEndpoint &advertised, const UdpEndpoint &source) noexcept
 {
-	if (advertisedPort == 0 || sourcePort == 0) {
-		return false;
-	}
-	return advertisedPort == sourcePort;
+	return ClassifyUdpPeer(advertised) != EUdpRoute::Reject &&
+	       ClassifyUdpPeer(source) != EUdpRoute::Reject && advertised.port == source.port &&
+	       advertised.address.Unmapped() == source.address.Unmapped();
 }
 
 /**
@@ -199,6 +196,9 @@ inline bool MatchesUdpSourcePort(std::uint16_t advertisedPort, std::uint16_t sou
  * is the smallest unit that behaves like "one customer". Larger aggregation
  * (/56, /48) would put unrelated subscribers of one provider in a single
  * bucket, where one of them could exhaust the budget for the others.
+ * The eMuleQt /128 alternative is consciously rejected: rotating addresses
+ * within a delegated /64 would evade per-host accounting. This /64 policy is
+ * accounting only, never identity, index, ban or routing policy.
  */
 constexpr unsigned kIPv6RateLimitPrefixBits = 64;
 

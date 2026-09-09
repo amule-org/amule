@@ -29,11 +29,9 @@
 // under. Widening that identity has three failure modes worth pinning, and only
 // one of them is about IPv6:
 //
-//   1. Merging two peers that are not the same peer. The exact bug this guards
-//      against already happened once in this tree: the banned-client list
-//      accepted an absent address, banned it as the key 0.0.0.0, and every
-//      client with an unknown address then read back as banned. Any new
-//      address-keyed container can recreate it.
+//   1. Merging two peers that are not the same peer. Keeping absence separate
+//      from 0.0.0.0 is prevention/hardening, not a bug observed in #1314.
+//      Any new address-keyed container must preserve this invariant.
 //   2. Silently changing IPv4 behaviour. The characterisation half of this file
 //      records what an IPv4 peer's identity does today, at the value level the
 //      unit tests can reach, so a regression in the widening is loud.
@@ -71,9 +69,8 @@ TEST(PeerAddressing, AbsentIsNeverIndexable)
 
 TEST(PeerAddressing, AbsentAndAllZeroAreDifferentKeys)
 {
-	// This is the regression that already shipped once, in a different map. An
-	// index keyed on the address type must not let the two share a bucket, and
-	// the "absent" one must not have a bucket at all.
+	// Prevention invariant: absence must not share an address bucket or acquire
+	// a bucket of its own.
 	std::multimap<CNetworkAddress, int> index;
 
 	const CNetworkAddress absent = CNetworkAddress::Absent();
@@ -191,24 +188,35 @@ TEST(PeerAddressing, NativeIPv6HasNoThirtyTwoBitForm)
 
 TEST(PeerAddressing, DatagramRoutingTable)
 {
-	// No address at all, or one this build cannot parse: nothing to route to.
-	ASSERT_TRUE(ClassifyUdpPeer(CNetworkAddress::Absent()) == EUdpRoute::Reject);
-
-	// A peer claiming the unspecified address. Rejected, and distinguishable
-	// from the absent case at the call site so the log can say which.
-	ASSERT_TRUE(ClassifyUdpPeer(CNetworkAddress::FromString("0.0.0.0")) == EUdpRoute::Reject);
-	ASSERT_TRUE(ClassifyUdpPeer(CNetworkAddress::FromString("::")) == EUdpRoute::Reject);
-
-	// IPv4, and the mapped spelling of IPv4: everything is reachable.
-	ASSERT_TRUE(ClassifyUdpPeer(CNetworkAddress::FromString("192.0.2.1")) == EUdpRoute::Ed2kAndKad);
-	ASSERT_TRUE(
-		ClassifyUdpPeer(CNetworkAddress::FromString("::ffff:192.0.2.1")) == EUdpRoute::Ed2kAndKad);
-
-	// Native IPv6: the ed2k handlers can identify this peer now, Kad cannot.
-	// Kad's 32-bit interface is a documented boundary, not an oversight, so the
-	// route says so instead of narrowing and hoping.
-	ASSERT_TRUE(ClassifyUdpPeer(CNetworkAddress::FromString("2001:db8::1")) == EUdpRoute::Ed2kOnly);
-	ASSERT_TRUE(ClassifyUdpPeer(CNetworkAddress::FromString("fe80::1")) == EUdpRoute::Ed2kOnly);
+	const struct
+	{
+		const char *address;
+		std::uint16_t port;
+		EUdpRoute expected;
+	} cases[] = { { "", 4672, EUdpRoute::Reject },
+		{ "0.0.0.0", 4672, EUdpRoute::Reject },
+		{ "::", 4672, EUdpRoute::Reject },
+		{ "0:0:0:0:0:0:0:0", 4672, EUdpRoute::Reject },
+		{ "::0.0.0.0", 4672, EUdpRoute::Reject },
+		{ "::ffff:0.0.0.0", 4672, EUdpRoute::Reject },
+		{ "::ffff:0:0", 4672, EUdpRoute::Reject },
+		{ "0:0:0:0:0:ffff:0:0", 4672, EUdpRoute::Reject },
+		{ "::%1", 4672, EUdpRoute::Reject },
+		{ "::ffff:0.0.0.0%1", 4672, EUdpRoute::Reject },
+		{ "192.0.2.1", 0, EUdpRoute::Reject },
+		{ "::ffff:192.0.2.1", 0, EUdpRoute::Reject },
+		{ "2606:4700::1111", 0, EUdpRoute::Reject },
+		{ "192.0.2.1", 4672, EUdpRoute::Ed2kAndKad },
+		{ "::ffff:192.0.2.1", 65535, EUdpRoute::Ed2kAndKad },
+		{ "2606:4700::1111", 4672, EUdpRoute::Ed2kOnly },
+		{ "fe80::1", 4672, EUdpRoute::Ed2kOnly } };
+	for (const auto &entry : cases) {
+		const auto address = CNetworkAddress::FromString(entry.address);
+		if (entry.address[0] != '\0') {
+			ASSERT_TRUE(address.IsPresent());
+		}
+		ASSERT_TRUE(ClassifyUdpPeer({ address, entry.port }) == entry.expected);
+	}
 }
 
 TEST(PeerAddressing, Ed2kUdpObfuscationNeedsAThirtyTwoBitPeer)
@@ -286,7 +294,8 @@ TEST(PeerAddressing, GlobalIPv6PeerIsDirectlyReachable)
 	// peer has no ed2k ID at all, so the ID says nothing about it, and a
 	// globally routable IPv6 address is exactly the case where a callback is
 	// neither needed nor possible.
-	ASSERT_TRUE(IsDirectlyReachable(CNetworkAddress::FromString("2001:db8::1")));
+	ASSERT_TRUE(IsDirectlyReachable(CNetworkAddress::FromString("2606:4700::1111")));
+	ASSERT_FALSE(IsDirectlyReachable(CNetworkAddress::FromString("2001:db8::1")));
 
 	// Addresses aMule cannot dial from here, so they prove nothing about
 	// reachability and must not suppress the callback path.
@@ -390,9 +399,10 @@ TEST(PeerAddressing, UnknownUDPPortIdentifiesNobody)
 	// is also zero -- and behind a carrier NAT one address is many peers, so
 	// the match would name an arbitrary one of them. The rendezvous relay
 	// vouches for whoever this lookup returns, so the unknown side has to lose.
-	ASSERT_FALSE(MatchesUdpSourcePort(0, 0));
-	ASSERT_FALSE(MatchesUdpSourcePort(0, 4672));
-	ASSERT_FALSE(MatchesUdpSourcePort(4672, 0));
+	const auto address = CNetworkAddress::FromString("192.0.2.1");
+	ASSERT_FALSE(MatchesUdpSource({ address, 0 }, { address, 0 }));
+	ASSERT_FALSE(MatchesUdpSource({ address, 0 }, { address, 4672 }));
+	ASSERT_FALSE(MatchesUdpSource({ address, 4672 }, { address, 0 }));
 }
 
 TEST(PeerAddressing, AdvertisedUDPPortMatchesOnlyItself)
@@ -401,9 +411,25 @@ TEST(PeerAddressing, AdvertisedUDPPortMatchesOnlyItself)
 	// a peer advertised for UDP is not the ed2k TCP port it also advertised,
 	// so a lookup that compares the wrong one of the two answers "unknown peer"
 	// for every real peer while looking like it works.
-	ASSERT_TRUE(MatchesUdpSourcePort(4672, 4672));
-	ASSERT_FALSE(MatchesUdpSourcePort(4672, 4662));
-	ASSERT_TRUE(MatchesUdpSourcePort(65535, 65535));
+	const auto address = CNetworkAddress::FromString("192.0.2.1");
+	const auto mapped = CNetworkAddress::FromString("::ffff:192.0.2.1");
+	const auto other = CNetworkAddress::FromString("192.0.2.2");
+	ASSERT_TRUE(MatchesUdpSource({ address, 4672 }, { address, 4672 }));
+	ASSERT_FALSE(MatchesUdpSource({ address, 4672 }, { address, 4662 }));
+	ASSERT_TRUE(MatchesUdpSource({ address, 65535 }, { address, 65535 }));
+	ASSERT_TRUE(MatchesUdpSource({ address, 4672 }, { mapped, 4672 }));
+	ASSERT_TRUE(MatchesUdpSource({ mapped, 4672 }, { address, 4672 }));
+	ASSERT_FALSE(MatchesUdpSource({ address, 4672 }, { other, 4672 }));
+	ASSERT_FALSE(MatchesUdpSource({ CNetworkAddress::Absent(), 4672 }, { address, 4672 }));
+	for (const char *text : { "", "0.0.0.0", "::", "::ffff:0.0.0.0" }) {
+		const auto invalid = CNetworkAddress::FromString(text);
+		ASSERT_FALSE(MatchesUdpSource({ invalid, 4672 }, { invalid, 4672 }));
+	}
+	const auto v6 = CNetworkAddress::FromString("2606:4700::1111");
+	ASSERT_TRUE(MatchesUdpSource({ v6, 4672 }, { v6, 4672 }));
+	ASSERT_FALSE(MatchesUdpSource({ v6, 4672 }, { address, 4672 }));
+	ASSERT_FALSE(MatchesUdpSource({ CNetworkAddress::FromString("fe80::1%1"), 4672 },
+		{ CNetworkAddress::FromString("fe80::1%2"), 4672 }));
 }
 
 // File_checked_for_headers

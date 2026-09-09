@@ -405,9 +405,72 @@ TEST(NetworkAddress, GloballyRoutableIPv4RejectsEveryUnroutableRange)
 // connect attempt on the far side.
 TEST(NetworkAddress, GloballyRoutableIPv6RejectsEveryUnreachableRange)
 {
-	// Routable: a documentation prefix (2001:db8::/32) is a global unicast
-	// address as far as the address itself can say.
-	ASSERT_TRUE(CNetworkAddress::FromString("2001:db8::1").IsGloballyRoutableIPv6());
+	ASSERT_FALSE(CNetworkAddress::FromString("2001:db8::1").IsGloballyRoutableIPv6());
+	for (const auto &prefix : NetworkAddressPolicy::kIPv6ExcludedPrefixes) {
+		ASSERT_TRUE(prefix.name[0] != '\0');
+		ASSERT_TRUE(prefix.bits > 0 && prefix.bits <= 128);
+		const auto first = CNetworkAddress::IPv6FromOctets(prefix.bytes);
+		auto lastBytes = prefix.bytes;
+		for (unsigned bit = prefix.bits; bit < 128; ++bit) {
+			lastBytes[bit / 8] |= static_cast<std::uint8_t>(0x80u >> (bit % 8));
+		}
+		ASSERT_FALSE(first.IsGloballyRoutableIPv6());
+		ASSERT_FALSE(CNetworkAddress::IPv6FromOctets(lastBytes).IsGloballyRoutableIPv6());
+		ASSERT_TRUE(NetworkAddressPolicy::MatchesPrefix(first.GetOctets(), prefix));
+		ASSERT_TRUE(NetworkAddressPolicy::MatchesPrefix(lastBytes, prefix));
+		// Flip each prefix bit: none may be ignored, including partial bytes.
+		for (unsigned bit = 0; bit < prefix.bits; ++bit) {
+			auto outside = prefix.bytes;
+			outside[bit / 8] ^= static_cast<std::uint8_t>(0x80u >> (bit % 8));
+			ASSERT_FALSE(NetworkAddressPolicy::MatchesPrefix(outside, prefix));
+		}
+	}
+	// Literal bounds are independent of the production exclusion table: removing
+	// an entry or changing its prefix length must not change these expectations.
+	const struct
+	{
+		const char *before;
+		const char *first;
+		const char *last;
+		const char *after;
+	} excludedRanges[] = {
+		// 64:ff9b::/96
+		{ "64:ff9a:ffff:ffff:ffff:ffff:ffff:ffff",
+			"64:ff9b::",
+			"64:ff9b::ffff:ffff",
+			"64:ff9b::1:0:0" },
+		// 64:ff9b:1::/48
+		{ "64:ff9b:0:ffff:ffff:ffff:ffff:ffff",
+			"64:ff9b:1::",
+			"64:ff9b:1:ffff:ffff:ffff:ffff:ffff",
+			"64:ff9b:2::" },
+		// 100::/64
+		{ "ff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+			"100::",
+			"100::ffff:ffff:ffff:ffff",
+			"100:0:0:1::" },
+		// 2001:20::/28
+		{ "2001:1f:ffff:ffff:ffff:ffff:ffff:ffff",
+			"2001:20::",
+			"2001:2f:ffff:ffff:ffff:ffff:ffff:ffff",
+			"2001:30::" },
+		// 2001:db8::/32
+		{ "2001:db7:ffff:ffff:ffff:ffff:ffff:ffff",
+			"2001:db8::",
+			"2001:db8:ffff:ffff:ffff:ffff:ffff:ffff",
+			"2001:db9::" },
+		// 5f00::/16
+		{ "5eff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+			"5f00::",
+			"5f00:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+			"5f01::" },
+	};
+	for (const auto &range : excludedRanges) {
+		ASSERT_TRUE(CNetworkAddress::FromString(range.before).IsGloballyRoutableIPv6());
+		ASSERT_FALSE(CNetworkAddress::FromString(range.first).IsGloballyRoutableIPv6());
+		ASSERT_FALSE(CNetworkAddress::FromString(range.last).IsGloballyRoutableIPv6());
+		ASSERT_TRUE(CNetworkAddress::FromString(range.after).IsGloballyRoutableIPv6());
+	}
 	ASSERT_TRUE(CNetworkAddress::FromString("2606:4700::1111").IsGloballyRoutableIPv6());
 
 	// Not an IPv6 address at all.
