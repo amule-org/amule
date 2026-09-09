@@ -164,6 +164,9 @@ public:
 		COL_LENGTH,
 		COL_BITRATE,
 		COL_CODEC,
+		COL_ARTIST,
+		COL_ALBUM,
+		COL_TITLE,
 		COL_DIRECTORY,
 		//! Always empty. macOS sizes the trailing column to the leftover
 		//! space, collapsing it to nothing once the columns are wider than

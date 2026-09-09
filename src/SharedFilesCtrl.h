@@ -49,9 +49,12 @@
 #define COLUMN_SHARED_MEDIA_LENGTH 14
 #define COLUMN_SHARED_MEDIA_BITRATE 15
 #define COLUMN_SHARED_MEDIA_CODEC 16
+#define COLUMN_SHARED_MEDIA_ARTIST 17
+#define COLUMN_SHARED_MEDIA_ALBUM 18
+#define COLUMN_SHARED_MEDIA_TITLE 19
 //! Always empty. Absorbs the macOS trailing-column sizing; see
 //! CMuleDataViewCtrl::AppendSpacerColumn().
-#define COLUMN_SHARED_SPACER 17
+#define COLUMN_SHARED_SPACER 20
 
 class CSharedFileList;
 class CKnownFile;
