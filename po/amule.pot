@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-08 15:40+0200\n"
+"POT-Creation-Date: 2026-09-09 11:05+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1855,6 +1855,11 @@ msgstr ""
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Copy feedback to clipboard"
+msgstr ""
+
+#: src/DownloadListCtrl.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#, c-format
+msgid "Get %s for this file"
 msgstr ""
 
 #: src/DownloadListCtrl.cpp
@@ -6552,11 +6557,6 @@ msgstr ""
 
 #: src/SearchListCtrl.cpp
 msgid "Collapse all"
-msgstr ""
-
-#: src/SearchListCtrl.cpp
-#, c-format
-msgid "Get %s for this file"
 msgstr ""
 
 #: src/SearchListCtrl.cpp

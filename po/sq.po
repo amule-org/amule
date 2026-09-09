@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-08 15:40+0200\n"
+"POT-Creation-Date: 2026-09-09 11:05+0200\n"
 "PO-Revision-Date: 2026-09-08 15:43+0000\n"
 "Last-Translator: Fation <dj_barthezz@linuxmail.org lushnja_corps@hotmail.Language-Team:\n"
 "Language: sq\n"
@@ -1917,6 +1917,11 @@ msgstr ""
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Copy feedback to clipboard"
 msgstr "Kopjo feedback ne shenimet"
+
+#: src/DownloadListCtrl.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Get %s for this file"
+msgstr "Shtoni URLs opsionale per kete fail"
 
 #: src/DownloadListCtrl.cpp
 msgid "unassign"
@@ -6781,11 +6786,6 @@ msgstr ""
 #, fuzzy
 msgid "Collapse all"
 msgstr "Mbylli te gjitha tabelat"
-
-#: src/SearchListCtrl.cpp
-#, fuzzy, c-format
-msgid "Get %s for this file"
-msgstr "Shtoni URLs opsionale per kete fail"
 
 #: src/SearchListCtrl.cpp
 msgid "Search related files (eD2k, local server)"
