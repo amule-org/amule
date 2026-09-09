@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-09 11:05+0200\n"
-"PO-Revision-Date: 2026-09-08 15:34+0000\n"
+"PO-Revision-Date: 2026-09-09 10:32+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
 "Language: cs\n"
@@ -7016,7 +7016,7 @@ msgstr "Stahování seznamu serverů z %s selhalo"
 
 #: src/ServerList.cpp
 msgid "Local server is filtered by the IPFilters, reconnecting to a different server!"
-msgstr ""
+msgstr "Místní server je filtrován IP filtry, připojuji se k jinému serveru!"
 
 #: src/ServerListCtrl.cpp
 msgid "Server Name"
@@ -7129,14 +7129,12 @@ msgid "Are you sure that you wish to delete all servers?"
 msgstr "Opravdu si přejete smazat všechny servery?"
 
 #: src/ServerListCtrl.cpp
-#, fuzzy
 msgid "Are you sure that you wish to delete the selected server?"
-msgstr "Opravdu si přejete smazat vybrané servery?"
+msgstr "Opravdu chcete smazat vybraný server?"
 
 #: src/ServerListCtrl.cpp
-#, fuzzy
 msgid "Are you sure that you wish to delete the selected servers?"
-msgstr "Opravdu si přejete smazat vybrané servery?"
+msgstr "Opravdu chcete smazat vybrané servery?"
 
 #: src/ServerSocket.cpp
 #, c-format
@@ -7151,7 +7149,7 @@ msgstr ""
 #: src/ServerSocket.cpp
 #, c-format
 msgid "Server %s (%s) rejected our login (no client ID assigned). Disconnecting."
-msgstr ""
+msgstr "Server %s (%s) odmítl naše přihlášení (nebylo přiděleno ID klienta). Odpojuji se."
 
 #: src/ServerSocket.cpp
 #, c-format
@@ -7160,7 +7158,7 @@ msgstr "Nové ID klienta je %u"
 
 #: src/ServerSocket.cpp
 msgid "WARNING: You have received Low-ID!"
-msgstr ""
+msgstr "VAROVÁNÍ: Obdrželi jste Low-ID!"
 
 #: src/ServerSocket.cpp
 msgid "\tMost likely this is because you're behind a firewall or router."
@@ -7172,7 +7170,7 @@ msgstr "\tPro více informací prosím běžte na https://amule-org.github.io/do
 
 #: src/ServerSocket.cpp
 msgid "Unknown server info received! - too short"
-msgstr ""
+msgstr "Přijaty neznámé informace o serveru! - příliš krátké"
 
 #: src/ServerSocket.cpp
 #, c-format
@@ -7203,7 +7201,7 @@ msgstr "Došlo k neznámé chybě při zpracovávání paketu od serveru: %s"
 #: src/ServerSocket.cpp
 #, c-format
 msgid "Cannot create DNS solving thread for connecting to %s"
-msgstr ""
+msgstr "Nelze vytvořit vlákno pro řešení DNS pro připojení k %s"
 
 #: src/ServerSocket.cpp
 #, c-format
@@ -7222,20 +7220,19 @@ msgstr "Připojování k %s (%s - %s:%i) %s"
 #: src/ServerSocket.cpp
 #, c-format
 msgid "Could not solve dns for server %s: Unable to connect!"
-msgstr ""
+msgstr "Nepodařilo se vyřešit DNS pro server %s: Nelze se připojit!"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "aMuleGUI Log"
-msgstr "Log aMule"
+msgstr "Log aMuleGUI"
 
 #: src/ServerWnd.cpp
 msgid "Server not added: No IP or hostname specified."
-msgstr ""
+msgstr "Server nepřidán: Nebyla zadána žádná IP adresa ani název hostitele."
 
 #: src/ServerWnd.cpp
 msgid "Server not added: Invalid server-port specified."
-msgstr ""
+msgstr "Server nepřidán: Byl zadán neplatný port serveru."
 
 #: src/ServerWnd.cpp
 msgid "eD2k Status:"
@@ -7246,32 +7243,28 @@ msgid "ID"
 msgstr "ID"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Connection Type:"
-msgstr "Stav připojení:"
+msgstr "Typ připojení:"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Connected since:"
-msgstr "Připojen"
+msgstr "Připojeno od:"
 
 #: src/ServerWnd.cpp
 msgid "Kademlia Status:"
 msgstr "Stav Kademlia:"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Running in LAN mode"
-msgstr "Běží na %s"
+msgstr "Běží v režimu LAN"
 
 #: src/ServerWnd.cpp
 msgid "Running"
 msgstr "Běží"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Kademlia client ID:"
-msgstr "Stav Kademlia:"
+msgstr "ID klienta sítě Kademlia:"
 
 #: src/ServerWnd.cpp
 msgid "Status:"
@@ -7338,7 +7331,7 @@ msgstr ""
 
 #: src/ServerWnd.cpp
 msgid "Indexed load:"
-msgstr ""
+msgstr "Indexovaná zátěž:"
 
 #: src/ServerWnd.cpp
 msgid "Average Users:"
@@ -7372,7 +7365,7 @@ msgstr ""
 #: src/SharedFileList.cpp
 #, c-format
 msgid "Adding file %s to shares"
-msgstr ""
+msgstr "Přidávám soubor %s do sdílených"
 
 #: src/SharedFileList.cpp
 #, c-format
@@ -7386,14 +7379,14 @@ msgstr[2] ""
 #, c-format
 msgid "Excluded %i file from sharing by filter"
 msgid_plural "Excluded %i files from sharing by filter"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Filtr vyloučil %i soubor ze sdílení"
+msgstr[1] "Filtr vyloučil %i soubory ze sdílení"
+msgstr[2] "Filtr vyloučil %i souborů ze sdílení"
 
 #: src/SharedFileList.cpp
 #, c-format
 msgid "ERROR: Attempted to share %s"
-msgstr ""
+msgstr "CHYBA: Pokus o sdílení %s"
 
 #: src/SharedFileList.cpp
 #, c-format
@@ -7403,7 +7396,7 @@ msgstr "Sdílený adresář nenalezen, přeskakuji: %s"
 #: src/SharedFileList.cpp
 #, c-format
 msgid "No shareable files found in directory: %s"
-msgstr ""
+msgstr "Ve složce nebyly nalezeny žádné soubory ke sdílení: %s"
 
 #: src/SharedFileList.cpp
 #, fuzzy
@@ -7470,14 +7463,12 @@ msgid "Download Status"
 msgstr "Průběh stahování"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-#, fuzzy
 msgid "Local File Name"
-msgstr "Název souboru"
+msgstr "Místní název souboru"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-#, fuzzy
 msgid "Shares File List"
-msgstr "Sdílené soubory"
+msgstr "Seznam sdílených souborů"
 
 #: src/SharedFilesCtrl.cpp
 #, fuzzy
@@ -7514,7 +7505,7 @@ msgstr ""
 
 #: src/SharedFilesCtrl.cpp
 msgid "Add files in collection to transfer list"
-msgstr ""
+msgstr "Přidat soubory kolekce do seznamu přenosů"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Copy magnet &URI to clipboard"
