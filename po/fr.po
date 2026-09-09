@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-09 11:05+0200\n"
-"PO-Revision-Date: 2026-09-08 15:37+0000\n"
+"PO-Revision-Date: 2026-09-09 10:52+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
 "Language: fr\n"
@@ -7742,7 +7742,7 @@ msgstr "Banni : %s"
 #: src/Statistics.cpp
 #, c-format
 msgid "Kad banned addresses: %s"
-msgstr ""
+msgstr "Adresses Kad bannies : %s"
 
 #: src/Statistics.cpp
 #, c-format
