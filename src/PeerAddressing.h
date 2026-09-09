@@ -41,10 +41,12 @@
  *
  *  - **Identity.** Two peers are the same peer iff they have the same index
  *    key. Aggregating distinct hosts here would merge them. Keeping absence
- *    separate from 0.0.0.0 matters because the two were the same zero before:
- *    a client constructed without a socket carries address 0, and until #1314
- *    added a guard, banning one inserted key 0 and made every addressless
- *    client read back as banned. See CBanRecord::Ban().
+ *    separate from 0.0.0.0 is hardening, not a fix for an observed bug: a
+ *    client constructed without a socket carries address 0, so an entry under
+ *    that key would read back as banned for every such client -- but no path
+ *    is known to insert it, since every Ban() call site reaches an
+ *    address-bearing client. #1314 guards the write side; see
+ *    CBanRecord::Ban().
  *  - **Rate limiting.** A budget is per *subscriber*, which under IPv6 is not
  *    per address. Aggregating is the point here, and the amount of aggregation
  *    is a decision, not a detail.
