@@ -417,10 +417,13 @@ void CSharedFileList::FindSharedFiles(const ReloadYieldCb &yieldCb, bool &aborte
 		m_listGeneration.fetch_add(1, std::memory_order_relaxed);
 	}
 
-	// All part files are automatically shared.
-	for (uint32 i = 0; i < theApp->downloadqueue->GetFileCount(); ++i) {
-		CPartFile *file = theApp->downloadqueue->GetFileByIndex(i);
-
+	// All part files are automatically shared. Walked as a snapshot: the
+	// queue's count and index accessors take its mutex separately, so an
+	// index valid at the test can be out of range at the fetch, where the
+	// fetch returns NULL.
+	std::vector<CPartFile *> queued;
+	theApp->downloadqueue->CopyFileList(queued);
+	for (CPartFile *file : queued) {
 		if (file->GetStatus(true) == PS_READY) {
 			AddLogLineNS(
 				CFormat(_("Adding file %s to shares")) % file->GetFullName().GetPrintable());

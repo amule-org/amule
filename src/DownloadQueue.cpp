@@ -219,15 +219,19 @@ void CDownloadQueue::SetUDPServer(CServer *server)
 
 void CDownloadQueue::SaveSourceSeeds()
 {
-	for (uint16 i = 0; i < GetFileCount(); i++) {
-		GetFileByIndex(i)->SaveSourceSeeds();
+	std::vector<CPartFile *> files;
+	CopyFileList(files);
+	for (CPartFile *file : files) {
+		file->SaveSourceSeeds();
 	}
 }
 
 void CDownloadQueue::LoadSourceSeeds()
 {
-	for (uint16 i = 0; i < GetFileCount(); i++) {
-		GetFileByIndex(i)->LoadSourceSeeds();
+	std::vector<CPartFile *> files;
+	CopyFileList(files);
+	for (CPartFile *file : files) {
+		file->LoadSourceSeeds();
 	}
 }
 
@@ -843,9 +847,14 @@ bool CDownloadQueue::RemoveSource(CUpDownClient *toremove, bool WXUNUSED(updatew
 	bool removed = false;
 	toremove->DeleteAllFileRequests();
 
-	for (uint16 i = 0; i < GetFileCount(); i++) {
-		CPartFile *cur_file = GetFileByIndex(i);
-
+	// Over a snapshot rather than index-and-count: GetFileCount() and
+	// GetFileByIndex() take m_mutex separately, so the pair is not atomic and
+	// an index valid at the test can be out of range at the fetch -- where
+	// GetFileByIndex() returns NULL and this loop dereferenced it. One lock
+	// for the whole walk also costs less than two per file.
+	std::vector<CPartFile *> files;
+	CopyFileList(files);
+	for (CPartFile *cur_file : files) {
 		// Remove from source-list
 		if (cur_file->DelSource(toremove)) {
 
@@ -1246,9 +1255,9 @@ void CDownloadQueue::ResetCatParts(uint8 cat)
 
 void CDownloadQueue::SetCatPrio(uint8 cat, uint8 newprio)
 {
-	for (uint16 i = 0; i < GetFileCount(); i++) {
-		CPartFile *file = GetFileByIndex(i);
-
+	std::vector<CPartFile *> files;
+	CopyFileList(files);
+	for (CPartFile *file : files) {
 		if (!cat || file->GetCategory() == cat) {
 			if (newprio == PR_AUTO) {
 				file->SetAutoDownPriority(true);
