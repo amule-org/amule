@@ -365,6 +365,7 @@ private:
 	 * (partbar::LegendForSharedFilesRow).
 	 */
 	void OnShowBarLegend(wxCommandEvent &event);
+	void OnRazorStatsCheck(wxCommandEvent &event);
 
 	/**
 	 * Double-click / Enter on a row also opens the file-details dialog, for

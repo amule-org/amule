@@ -279,6 +279,7 @@ private:
 	void OnViewFileComments(wxCommandEvent &event);
 	void OnPreviewFile(wxCommandEvent &event);
 	void OnShowInFolder(wxCommandEvent &event);
+	void OnRazorStatsCheck(wxCommandEvent &event);
 
 	/**
 	 * The item the context menu was built for, by identity rather than row.
