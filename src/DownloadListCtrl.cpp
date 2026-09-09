@@ -972,6 +972,34 @@ bool CDownloadListCtrl::GetItemIcon(wxUIntPtr item, unsigned column, wxIcon &ico
 	return true;
 }
 
+bool CDownloadListCtrl::GetItemAttr(wxUIntPtr item, unsigned WXUNUSED(column), wxDataViewItemAttr &attr) const
+{
+	const CPartFile *file = reinterpret_cast<const CPartFile *>(item);
+
+	// Category 0 is "all"; a file in it has no category of its own to take a
+	// colour from, which is the test the pre-wxDataView code used too.
+	const uint8 cat = file->GetCategory();
+	if (!cat) {
+		return false;
+	}
+
+	// A category keeps colour 0 until the user picks one (Preferences writes
+	// "Color" as 0 for a new one), so 0 means unset rather than black. The old
+	// code painted those rows black because it predates the dark themes, where
+	// black on a dark list is unreadable.
+	const uint32 colour = theApp->glob_prefs->GetCatColor(cat);
+	if (!colour) {
+		return false;
+	}
+
+	// Selected rows keep the system highlight colour: wx overrides a custom
+	// foreground while a row is selected -- in common/datavcmn.cpp for the
+	// generic renderers, and explicitly in the macOS backend -- for the same
+	// readability reason the old OnDrawItem() skipped highlighted rows.
+	attr.SetColour(CMuleColour(colour));
+	return true;
+}
+
 void CDownloadListCtrl::GetItemBarFill(wxUIntPtr item, unsigned column, CBarFillSpec &out) const
 {
 	if (column != COLUMN_DL_PROGRESS || !thePrefs::ShowProgBar()) {
