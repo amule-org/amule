@@ -303,6 +303,22 @@ void CSearchListModel::GetValue(wxVariant &variant, const wxDataViewItem &item, 
 		break;
 	}
 
+	// Artist / album / title ride in on the same result tags as the three
+	// above -- CSearchFile keeps every tag it does not consume itself -- and
+	// are published by both the ed2k offer and Kad. Shown verbatim: unlike
+	// codec there is no vocabulary to normalise.
+	case COL_ARTIST:
+		variant = file->GetStrTagValue(FT_MEDIA_ARTIST);
+		break;
+
+	case COL_ALBUM:
+		variant = file->GetStrTagValue(FT_MEDIA_ALBUM);
+		break;
+
+	case COL_TITLE:
+		variant = file->GetStrTagValue(FT_MEDIA_TITLE);
+		break;
+
 	case COL_DIRECTORY:
 		variant = file->GetDirectory();
 		break;

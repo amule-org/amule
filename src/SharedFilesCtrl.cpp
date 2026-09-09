@@ -174,6 +174,9 @@ CSharedFilesCtrl::CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos,
 	AddTextColumn(_("Length"), COLUMN_SHARED_MEDIA_LENGTH, "l", 80, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Bitrate"), COLUMN_SHARED_MEDIA_BITRATE, "b", 80, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Codec"), COLUMN_SHARED_MEDIA_CODEC, "c", 80, wxALIGN_LEFT, colFlags);
+	AddTextColumn(_("Artist"), COLUMN_SHARED_MEDIA_ARTIST, "a", 120, wxALIGN_LEFT, colFlags);
+	AddTextColumn(_("Album"), COLUMN_SHARED_MEDIA_ALBUM, "m", 120, wxALIGN_LEFT, colFlags);
+	AddTextColumn(_("Title"), COLUMN_SHARED_MEDIA_TITLE, "i", 140, wxALIGN_LEFT, colFlags);
 
 	AppendSpacerColumn(COLUMN_SHARED_SPACER);
 
@@ -193,6 +196,9 @@ CSharedFilesCtrl::CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos,
 	SetColumnHidden(COLUMN_SHARED_MEDIA_LENGTH, true, 0);
 	SetColumnHidden(COLUMN_SHARED_MEDIA_BITRATE, true, 0);
 	SetColumnHidden(COLUMN_SHARED_MEDIA_CODEC, true, 0);
+	SetColumnHidden(COLUMN_SHARED_MEDIA_ARTIST, true, 0);
+	SetColumnHidden(COLUMN_SHARED_MEDIA_ALBUM, true, 0);
+	SetColumnHidden(COLUMN_SHARED_MEDIA_TITLE, true, 0);
 
 	m_columnStore.SetTableName("Shared");
 	LoadColumnSettings();
@@ -701,6 +707,16 @@ wxString CSharedFilesCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) co
 		const wxString &codec = file->GetStrTagValue(FT_MEDIA_CODEC);
 		return codec.IsEmpty() ? wxString() : FormatMediaCodec(codec);
 	}
+
+	// Shown verbatim: unlike codec there is no vocabulary to normalise.
+	case COLUMN_SHARED_MEDIA_ARTIST:
+		return file->GetStrTagValue(FT_MEDIA_ARTIST);
+
+	case COLUMN_SHARED_MEDIA_ALBUM:
+		return file->GetStrTagValue(FT_MEDIA_ALBUM);
+
+	case COLUMN_SHARED_MEDIA_TITLE:
+		return file->GetStrTagValue(FT_MEDIA_TITLE);
 
 	default:
 		return wxEmptyString;
@@ -1214,6 +1230,20 @@ namespace
 {
 // Empty (never probed) sorts last whichever way the column is sorted, so the
 // rows that do have a value stay together at the top.
+int CompareMediaStr(const wxString &a, const wxString &b, int modifier)
+{
+	if (a.IsEmpty() && b.IsEmpty()) {
+		return 0;
+	}
+	if (a.IsEmpty()) {
+		return 1;
+	}
+	if (b.IsEmpty()) {
+		return -1;
+	}
+	return modifier * a.CmpNoCase(b);
+}
+
 int CompareMediaInt(uint32 v1, uint32 v2, int modifier)
 {
 	if (!v1 && !v2) {
@@ -1326,20 +1356,22 @@ int CSharedFilesCtrl::CompareItemData(
 			file2->GetIntTagValue(FT_MEDIA_BITRATE),
 			mod);
 
-	case COLUMN_SHARED_MEDIA_CODEC: {
-		const wxString c1 = FormatMediaCodec(file1->GetStrTagValue(FT_MEDIA_CODEC));
-		const wxString c2 = FormatMediaCodec(file2->GetStrTagValue(FT_MEDIA_CODEC));
-		if (c1.IsEmpty() && c2.IsEmpty()) {
-			return 0;
-		}
-		if (c1.IsEmpty()) {
-			return 1;
-		}
-		if (c2.IsEmpty()) {
-			return -1;
-		}
-		return mod * c1.CmpNoCase(c2);
-	}
+	case COLUMN_SHARED_MEDIA_CODEC:
+		return CompareMediaStr(FormatMediaCodec(file1->GetStrTagValue(FT_MEDIA_CODEC)),
+			FormatMediaCodec(file2->GetStrTagValue(FT_MEDIA_CODEC)),
+			mod);
+
+	case COLUMN_SHARED_MEDIA_ARTIST:
+		return CompareMediaStr(
+			file1->GetStrTagValue(FT_MEDIA_ARTIST), file2->GetStrTagValue(FT_MEDIA_ARTIST), mod);
+
+	case COLUMN_SHARED_MEDIA_ALBUM:
+		return CompareMediaStr(
+			file1->GetStrTagValue(FT_MEDIA_ALBUM), file2->GetStrTagValue(FT_MEDIA_ALBUM), mod);
+
+	case COLUMN_SHARED_MEDIA_TITLE:
+		return CompareMediaStr(
+			file1->GetStrTagValue(FT_MEDIA_TITLE), file2->GetStrTagValue(FT_MEDIA_TITLE), mod);
 
 	default:
 		return 0;

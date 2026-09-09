@@ -143,8 +143,8 @@ function ResultsPane({ tab, categories }) {
   const browse = tab.kind === "browse";
   const { sortKey, sortDir, hidden, widths, toggleSort, toggleCol, setWidth, resetPrefs } =
     useTablePrefs(browse ? "search-browse" : "search", browse
-      ? { sortKey: "directory", sortDir: 1, hidden: ["sources", "rating", "status", "length", "bitrate_kilobits_per_second", "codec"] }
-      : { sortKey: "sources", sortDir: -1, hidden: ["directory", "length", "bitrate_kilobits_per_second", "codec"] });
+      ? { sortKey: "directory", sortDir: 1, hidden: ["sources", "rating", "status", "length", "bitrate_kilobits_per_second", "codec", "artist", "album", "media_title"] }
+      : { sortKey: "sources", sortDir: -1, hidden: ["directory", "length", "bitrate_kilobits_per_second", "codec", "artist", "album", "media_title"] });
 
   // Selection, filters and per-row choices belong to the TAB, not to this
   // component: switching tabs and coming back must restore them.
@@ -285,6 +285,12 @@ function ResultsPane({ tab, categories }) {
       cell: (r) => (r.media && r.media.bitrate_kilobits_per_second) ? formatInt(r.media.bitrate_kilobits_per_second) : "" },
     { key: "codec", label: t("downloads_detail_media_codec"), width: "90px", sortable: true,
       sortVal: (r) => (r.media && r.media.codec) || "", cell: (r) => (r.media && r.media.codec) || "" },
+    { key: "artist", label: t("downloads_detail_media_artist"), width: "130px", sortable: true,
+      sortVal: (r) => (r.media && r.media.artist) || "", cell: (r) => (r.media && r.media.artist) || "" },
+    { key: "album", label: t("downloads_detail_media_album"), width: "130px", sortable: true,
+      sortVal: (r) => (r.media && r.media.album) || "", cell: (r) => (r.media && r.media.album) || "" },
+    { key: "media_title", label: t("downloads_detail_media_title"), width: "150px", sortable: true,
+      sortVal: (r) => (r.media && r.media.title) || "", cell: (r) => (r.media && r.media.title) || "" },
     { key: "actions", label: t("search_actions"), cls: "row-actions", width: "220px",
       cell: (r) => html`
         <span class="admin-only">

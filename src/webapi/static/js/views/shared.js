@@ -19,11 +19,8 @@ const PRIORITIES = ["auto", "very_low", "low", "normal", "high", "release"]
 
 const STATUS_FILTERS = [["all", t("shared_status_all")], ["uploading", t("shared_status_uploading")]];
 
-// Columns the picker offers but the list does not lead with. The timestamps are
-// rarely what a share is scanned for; the media columns are only filled for
-// files ffprobe has been run over, so on a share that has never been probed
-// they would be three empty columns for everyone.
-const DEFAULT_HIDDEN = ["last_upload", "shared_since", "media_length", "media_bitrate", "media_codec"];
+const DEFAULT_HIDDEN = ["last_upload", "shared_since", "media_length", "media_bitrate", "media_codec",
+  "media_artist", "media_album", "media_title"];
 
 export default function Shared({ isGuest }) {
   // undefined until the first snapshot lands, [] once the share is known
@@ -172,9 +169,6 @@ export default function Shared({ isGuest }) {
       sortVal: (s) => s.last_upload_at || 0, cell: (s) => formatTimestamp(s.last_upload_at) },
     { key: "shared_since", label: t("shared_shared_since"), width: "160px", sortable: true,
       sortVal: (s) => s.shared_since_at || 0, cell: (s) => formatTimestamp(s.shared_since_at) },
-    // Media metadata, same source and wording as the detail panel's Media
-    // section. `media` is null on the API when nothing has been probed, so
-    // every accessor goes through it defensively.
     { key: "media_length", label: t("downloads_detail_media_length"), num: true, width: "90px", sortable: true,
       sortVal: (s) => (s.media && s.media.duration_seconds) || 0,
       cell: (s) => (s.media && s.media.duration_seconds) ? formatDuration(s.media.duration_seconds) : "" },
@@ -184,6 +178,15 @@ export default function Shared({ isGuest }) {
     { key: "media_codec", label: t("downloads_detail_media_codec"), width: "100px", sortable: true,
       sortVal: (s) => (s.media && s.media.codec) || "",
       cell: (s) => (s.media && s.media.codec) || "" },
+    { key: "media_artist", label: t("downloads_detail_media_artist"), width: "130px", sortable: true,
+      sortVal: (s) => (s.media && s.media.artist) || "",
+      cell: (s) => (s.media && s.media.artist) || "" },
+    { key: "media_album", label: t("downloads_detail_media_album"), width: "130px", sortable: true,
+      sortVal: (s) => (s.media && s.media.album) || "",
+      cell: (s) => (s.media && s.media.album) || "" },
+    { key: "media_title", label: t("downloads_detail_media_title"), width: "150px", sortable: true,
+      sortVal: (s) => (s.media && s.media.title) || "",
+      cell: (s) => (s.media && s.media.title) || "" },
     { key: "priority", label: t("shared_priority"), width: "160px", sortable: true,
       sortVal: (s) => s.priority || "", cell: (s) => isGuest
         ? prioLabel(s)

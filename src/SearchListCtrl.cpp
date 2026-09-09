@@ -164,6 +164,27 @@ CSearchListCtrl::CSearchListCtrl(
 		80,
 		wxALIGN_LEFT,
 		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
+	// Visible like the three media columns above rather than hidden like the
+	// shared-files list's: a search result is read once, and a user hunting a
+	// track by artist wants the answer without opening the column picker.
+	AddTextColumn(_("Artist"),
+		CSearchListModel::COL_ARTIST,
+		"a",
+		120,
+		wxALIGN_LEFT,
+		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
+	AddTextColumn(_("Album"),
+		CSearchListModel::COL_ALBUM,
+		"b",
+		120,
+		wxALIGN_LEFT,
+		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
+	AddTextColumn(_("Title"),
+		CSearchListModel::COL_TITLE,
+		"t",
+		140,
+		wxALIGN_LEFT,
+		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 	// Directories is almost always empty (only populated when the result
 	// came from a "view shared files" request, rare in practice), so put
 	// it at the end with the other usually-empty columns.
@@ -417,6 +438,26 @@ int CSearchListCtrl::GetSelectedItemCount() const
 	return static_cast<int>(GetSelectedFiles().size());
 }
 
+namespace
+{
+// Media tag columns sort empty last whichever way the column is sorted, so the
+// results that carry the tag stay together rather than being buried under the
+// ones that do not. Shared by all four of them.
+int CompareMediaStr(const wxString &a, const wxString &b, int modifier)
+{
+	if (a.IsEmpty() && b.IsEmpty()) {
+		return 0;
+	}
+	if (a.IsEmpty()) {
+		return 1;
+	}
+	if (b.IsEmpty()) {
+		return -1;
+	}
+	return modifier * CmpAny(a, b);
+}
+} // namespace
+
 int CSearchListCtrl::CompareFilesByColumn(
 	const CSearchFile *f1, const CSearchFile *f2, unsigned column, bool alt, int modifier) const
 {
@@ -510,17 +551,20 @@ int CSearchListCtrl::CompareFilesByColumn(
 	case CSearchListModel::COL_CODEC: {
 		const wxString c1 = FormatMediaCodec(f1->GetStrTagValue(FT_MEDIA_CODEC));
 		const wxString c2 = FormatMediaCodec(f2->GetStrTagValue(FT_MEDIA_CODEC));
-		if (c1.IsEmpty() && c2.IsEmpty()) {
-			return 0;
-		}
-		if (c1.IsEmpty()) {
-			return 1;
-		}
-		if (c2.IsEmpty()) {
-			return -1;
-		}
-		return modifier * CmpAny(c1, c2);
+		return CompareMediaStr(c1, c2, modifier);
 	}
+
+	case CSearchListModel::COL_ARTIST:
+		return CompareMediaStr(
+			f1->GetStrTagValue(FT_MEDIA_ARTIST), f2->GetStrTagValue(FT_MEDIA_ARTIST), modifier);
+
+	case CSearchListModel::COL_ALBUM:
+		return CompareMediaStr(
+			f1->GetStrTagValue(FT_MEDIA_ALBUM), f2->GetStrTagValue(FT_MEDIA_ALBUM), modifier);
+
+	case CSearchListModel::COL_TITLE:
+		return CompareMediaStr(
+			f1->GetStrTagValue(FT_MEDIA_TITLE), f2->GetStrTagValue(FT_MEDIA_TITLE), modifier);
 	}
 
 	return 0;
