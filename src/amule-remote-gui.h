@@ -1014,6 +1014,29 @@ class CamuleRemoteGuiApp : public wxApp, public CamuleGuiBase, public CamuleAppC
 	// no visible window while TCP SYN silently times out over minutes.
 	wxTimer *connect_timeout_timer;
 
+	// --- Statistics-tree poll cadence ---
+	// The tree is fetched on a timer of its own (thePrefs::GetStatsInterval(),
+	// 30 s by default) rather than on every poll, because it is the one EC
+	// request here that is a full snapshot instead of a delta.
+	//
+	// m_statsTreePolled says whether that has happened yet *on this
+	// connection*. Without it the elapsed-time test alone is false on the
+	// first tick -- nothing has elapsed yet -- so a freshly started
+	// amulegui showed an empty Statistics tree for a whole interval, and a
+	// reconnect kept showing the previous daemon's tree for the remainder
+	// of one. ResetStatsTreePoll() clears it wherever a connection begins.
+	bool m_statsTreePolled = false;
+	uint32 m_msPrevStatsTree = 0;
+
+	// Called wherever a connection begins, so the next poll fetches the tree
+	// straight away instead of waiting out an interval that measures time
+	// spent on a connection that is no longer the current one.
+	void ResetStatsTreePoll()
+	{
+		m_statsTreePolled = false;
+		m_msPrevStatsTree = 0;
+	}
+
 	// --- Reconnect-after-loss (issue #444) ---
 	// When the EC connection drops after startup (e.g. the machine slept),
 	// amulegui no longer exits: it freezes the UI behind a modal dialog and

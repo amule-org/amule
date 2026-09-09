@@ -334,7 +334,6 @@ void CamuleRemoteGuiApp::OnAssertFailure(
 void CamuleRemoteGuiApp::OnPollTimer(wxTimerEvent &)
 {
 	static int request_step = 0;
-	static uint32 msPrevStats = 0;
 
 	// Reply watchdog. EC has no application-level keepalive, and the daemon
 	// always answers, so requests outstanding with nothing coming back means
@@ -449,10 +448,24 @@ void CamuleRemoteGuiApp::OnPollTimer(wxTimerEvent &)
 		// points for graph."); the tree request honors
 		// thePrefs::GetStatsInterval().
 		{
-			int sStatsUpdate = thePrefs::GetStatsInterval();
-			uint32 msCur = theStats::GetUptimeMillis();
-			if ((sStatsUpdate > 0) && ((int)(msCur - msPrevStats) > sStatsUpdate * 1000)) {
-				msPrevStats = msCur;
+			const uint32 sStatsUpdate = thePrefs::GetStatsInterval();
+			const uint32 msCur = theStats::GetUptimeMillis();
+			// Unsigned throughout on purpose. The subtraction is modular, so
+			// it yields the true elapsed time even across the point where a
+			// 32-bit millisecond counter wraps. Casting it to int, as this
+			// did, threw that away: a difference above INT_MAX reads as
+			// negative and the comparison is false, so the tree would stop
+			// refreshing rather than refresh late.
+			//
+			// The elapsed test also cannot be the whole condition: on the
+			// first poll of a connection nothing has elapsed, so it is false
+			// and the tree stays empty for a full interval (30 s by default)
+			// before its first fetch. m_statsTreePolled makes that first
+			// fetch unconditional; the interval governs every one after it.
+			const bool dueByInterval = (msCur - m_msPrevStatsTree) > sStatsUpdate * 1000;
+			if ((sStatsUpdate > 0) && (!m_statsTreePolled || dueByInterval)) {
+				m_statsTreePolled = true;
+				m_msPrevStatsTree = msCur;
 				stattree->DoRequery();
 			}
 			statgraphs->DoRequery();
@@ -1020,6 +1033,10 @@ void CamuleRemoteGuiApp::FinishReconnect(int result)
 			// so scroll and selection survive.
 			knownfiles->ArmReconnectReconcile();
 		}
+		// The tree on screen belongs to the connection that just ended;
+		// fetch a fresh one on the next poll rather than after an interval
+		// measured against the old one.
+		ResetStatsTreePoll();
 		if (poll_timer) {
 			poll_timer->Start(EC_POLL_INTERVAL_MS);
 		}
@@ -1225,6 +1242,7 @@ void CamuleRemoteGuiApp::Startup()
 	knownfiles->DoRequery(EC_OP_GET_UPDATE, EC_TAG_KNOWNFILE);
 
 	// Start the Poll Timer
+	ResetStatsTreePoll();
 	poll_timer->Start(EC_POLL_INTERVAL_MS);
 	amuledlg->StartGuiTimer();
 
