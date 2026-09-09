@@ -154,7 +154,7 @@ struct UdpEndpoint
  */
 inline EUdpRoute ClassifyUdpPeer(const UdpEndpoint &endpoint) noexcept
 {
-	const CNetworkAddress address = endpoint.address.Unmapped();
+	const CNetworkAddress address = IndexKey(endpoint.address);
 	if (endpoint.port == 0 || address.IsAbsent() || address.IsUnspecified()) {
 		return EUdpRoute::Reject;
 	}
@@ -186,7 +186,7 @@ inline bool MatchesUdpSource(const UdpEndpoint &advertised, const UdpEndpoint &s
 {
 	return ClassifyUdpPeer(advertised) != EUdpRoute::Reject &&
 	       ClassifyUdpPeer(source) != EUdpRoute::Reject && advertised.port == source.port &&
-	       advertised.address.Unmapped() == source.address.Unmapped();
+	       IndexKey(advertised.address) == IndexKey(source.address);
 }
 
 /**
