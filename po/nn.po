@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-08 15:40+0200\n"
+"POT-Creation-Date: 2026-09-09 11:05+0200\n"
 "PO-Revision-Date: 2026-09-08 15:40+0000\n"
 "Last-Translator: Hallvor Brunstad <Hallvor_1976@yahoo.com>\n"
 "Language-Team: <i18n-nn@lister.ping.uio.no>\n"
@@ -1920,6 +1920,11 @@ msgstr "Kopier eD2k &lenka til utklippstavla"
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Copy feedback to clipboard"
 msgstr "Kopiér tilbakemelding til utklippstavla"
+
+#: src/DownloadListCtrl.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Get %s for this file"
+msgstr "Legg til valfrie URL`ar for denne fila"
 
 #: src/DownloadListCtrl.cpp
 msgid "unassign"
@@ -6790,11 +6795,6 @@ msgstr ""
 #, fuzzy
 msgid "Collapse all"
 msgstr "Stengje alle faneblad"
-
-#: src/SearchListCtrl.cpp
-#, fuzzy, c-format
-msgid "Get %s for this file"
-msgstr "Legg til valfrie URL`ar for denne fila"
 
 #: src/SearchListCtrl.cpp
 msgid "Search related files (eD2k, local server)"

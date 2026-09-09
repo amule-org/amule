@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-08 15:40+0200\n"
+"POT-Creation-Date: 2026-09-09 11:05+0200\n"
 "PO-Revision-Date: 2026-09-08 15:39+0000\n"
 "Last-Translator: \n"
 "Language-Team: Japanese\n"
@@ -1905,6 +1905,11 @@ msgstr ""
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Copy feedback to clipboard"
 msgstr "フィードバックをクリップボードにコピーする"
+
+#: src/DownloadListCtrl.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Get %s for this file"
+msgstr "このファイルにオプショナルURLを追加する"
 
 #: src/DownloadListCtrl.cpp
 msgid "unassign"
@@ -6746,11 +6751,6 @@ msgstr ""
 #, fuzzy
 msgid "Collapse all"
 msgstr "全てのタブを閉める"
-
-#: src/SearchListCtrl.cpp
-#, fuzzy, c-format
-msgid "Get %s for this file"
-msgstr "このファイルにオプショナルURLを追加する"
 
 #: src/SearchListCtrl.cpp
 msgid "Search related files (eD2k, local server)"

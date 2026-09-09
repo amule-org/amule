@@ -24,7 +24,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-08 15:40+0200\n"
+"POT-Creation-Date: 2026-09-09 11:05+0200\n"
 "PO-Revision-Date: 2026-09-08 15:37+0000\n"
 "Last-Translator: Pablo <parodper@gmail.com>\n"
 "Language-Team: http://forum.amule.org/index.php?topic=13883\n"
@@ -1930,6 +1930,11 @@ msgstr "Copiar &ligazón eD2k ao portapapeis"
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Copy feedback to clipboard"
 msgstr "Copiar comentarios ao portapapeis"
+
+#: src/DownloadListCtrl.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#, c-format
+msgid "Get %s for this file"
+msgstr "Obter %s para este ficheiro"
 
 #: src/DownloadListCtrl.cpp
 msgid "unassign"
@@ -6769,11 +6774,6 @@ msgstr ""
 #, fuzzy
 msgid "Collapse all"
 msgstr "Pechar todas as lapelas"
-
-#: src/SearchListCtrl.cpp
-#, c-format
-msgid "Get %s for this file"
-msgstr "Obter %s para este ficheiro"
 
 #: src/SearchListCtrl.cpp
 msgid "Search related files (eD2k, local server)"

@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-08 15:40+0200\n"
+"POT-Creation-Date: 2026-09-09 11:05+0200\n"
 "PO-Revision-Date: 2026-09-08 15:44+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -1900,6 +1900,11 @@ msgstr "复制 eD2k 链接到剪贴板 (&L)"
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Copy feedback to clipboard"
 msgstr "复制反馈信息到剪贴板"
+
+#: src/DownloadListCtrl.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#, c-format
+msgid "Get %s for this file"
+msgstr "获取此文件的 %s"
 
 #: src/DownloadListCtrl.cpp
 msgid "unassign"
@@ -6694,11 +6699,6 @@ msgstr "全部展开"
 #: src/SearchListCtrl.cpp
 msgid "Collapse all"
 msgstr "折叠所有"
-
-#: src/SearchListCtrl.cpp
-#, c-format
-msgid "Get %s for this file"
-msgstr "获取此文件的 %s"
 
 #: src/SearchListCtrl.cpp
 msgid "Search related files (eD2k, local server)"

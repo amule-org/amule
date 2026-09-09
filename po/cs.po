@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-08 15:40+0200\n"
+"POT-Creation-Date: 2026-09-09 11:05+0200\n"
 "PO-Revision-Date: 2026-09-08 15:34+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
@@ -1910,6 +1910,11 @@ msgstr "Zkopírovat eD2k &odkaz do schránky"
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Copy feedback to clipboard"
 msgstr "Uložit odezvu do schránky"
+
+#: src/DownloadListCtrl.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#, c-format
+msgid "Get %s for this file"
+msgstr "Získat %s pro tento soubor"
 
 #: src/DownloadListCtrl.cpp
 msgid "unassign"
@@ -6746,11 +6751,6 @@ msgstr ""
 #, fuzzy
 msgid "Collapse all"
 msgstr "Zavřít všechny taby"
-
-#: src/SearchListCtrl.cpp
-#, c-format
-msgid "Get %s for this file"
-msgstr "Získat %s pro tento soubor"
 
 #: src/SearchListCtrl.cpp
 msgid "Search related files (eD2k, local server)"

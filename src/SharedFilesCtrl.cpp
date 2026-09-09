@@ -119,6 +119,7 @@ wxBEGIN_EVENT_TABLE(CSharedFilesCtrl, CMuleVirtualDataViewCtrl)
 	EVT_MENU(MP_EXPORTCOLLECTION, CSharedFilesCtrl::OnExportCollection)
 	EVT_MENU(MP_GETMAGNETLINK, CSharedFilesCtrl::OnCreateURI)
 	EVT_MENU(MP_GETED2KLINK, CSharedFilesCtrl::OnCreateURI)
+	EVT_MENU(MP_RAZORSTATS, CSharedFilesCtrl::OnRazorStatsCheck)
 	EVT_MENU(MP_GETSOURCEED2KLINK, CSharedFilesCtrl::OnCreateURI)
 	EVT_MENU(MP_GETCRYPTSOURCEDED2KLINK, CSharedFilesCtrl::OnCreateURI)
 	EVT_MENU(MP_GETHOSTNAMESOURCEED2KLINK, CSharedFilesCtrl::OnCreateURI)
@@ -260,6 +261,17 @@ void CSharedFilesCtrl::OnItemRightClicked(wxDataViewEvent &event)
 		m_menu->Append(MP_GETAICHED2KLINKSRC, _("Copy eD2k link to clipboard (&AICH info + Source)"));
 		m_menu->Append(MP_WS, _("Copy feedback to clipboard"));
 		m_menu->AppendSeparator();
+
+		// Same entry the search list offers, on the same gate. Every row here
+		// has a hash, partfiles included: a shared partfile is listed under the
+		// completed file's hash. Hidden, not greyed, when no stats server is
+		// configured, because an empty preference means the feature is off
+		// rather than unavailable for this row.
+		const wxString &statsServer = thePrefs::GetStatsServerName();
+		if (!statsServer.IsEmpty()) {
+			m_menu->Append(MP_RAZORSTATS, CFormat(_("Get %s for this file")) % statsServer);
+			m_menu->AppendSeparator();
+		}
 		m_menu->Append(MP_EXPORTCOLLECTION, _("Export selected files to an emulecollection"));
 
 		// The bar column is the only cell in this list whose colours need
@@ -370,6 +382,18 @@ void CSharedFilesCtrl::ShowFileDetailDialog(long focused)
 		files.push_back(FileAtRow(i));
 	}
 	CFileDetailDialog(this, files, index).ShowModal();
+}
+
+void CSharedFilesCtrl::OnRazorStatsCheck(wxCommandEvent &WXUNUSED(event))
+{
+	// Bound re-checked, for the reason OnOpenFile gives: PopupMenu runs a
+	// nested event loop, so the shared-dir watcher can drop the row while the
+	// menu is open.
+	if (m_menuItem == 0 || !HasItemData(m_menuItem)) {
+		return;
+	}
+	const CKnownFile *file = reinterpret_cast<CKnownFile *>(m_menuItem);
+	theApp->amuledlg->LaunchUrl(thePrefs::GetStatsServerURL() + file->GetFileHash().Encode());
 }
 
 void CSharedFilesCtrl::OnShowBarLegend(wxCommandEvent &WXUNUSED(event))

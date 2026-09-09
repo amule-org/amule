@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-08 15:40+0200\n"
+"POT-Creation-Date: 2026-09-09 11:05+0200\n"
 "PO-Revision-Date: 2026-09-08 15:40+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
@@ -1899,6 +1899,11 @@ msgstr "Kopieer eD2k &link naar klembord"
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Copy feedback to clipboard"
 msgstr "Kopieer feedback naar klembord"
+
+#: src/DownloadListCtrl.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#, c-format
+msgid "Get %s for this file"
+msgstr "Verkrijg %s voor dit bestand"
 
 #: src/DownloadListCtrl.cpp
 msgid "unassign"
@@ -6695,11 +6700,6 @@ msgstr "Vouw alles uit"
 #: src/SearchListCtrl.cpp
 msgid "Collapse all"
 msgstr "Vouw alles in"
-
-#: src/SearchListCtrl.cpp
-#, c-format
-msgid "Get %s for this file"
-msgstr "Verkrijg %s voor dit bestand"
 
 #: src/SearchListCtrl.cpp
 msgid "Search related files (eD2k, local server)"

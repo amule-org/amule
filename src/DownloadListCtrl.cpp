@@ -180,6 +180,7 @@ wxBEGIN_EVENT_TABLE(CDownloadListCtrl, CMuleVirtualDataViewCtrl)
 
 	EVT_MENU(MP_GETMAGNETLINK, CDownloadListCtrl::OnGetLink)
 	EVT_MENU(MP_GETED2KLINK, CDownloadListCtrl::OnGetLink)
+	EVT_MENU(MP_RAZORSTATS, CDownloadListCtrl::OnRazorStatsCheck)
 
 	EVT_MENU(MP_METINFO, CDownloadListCtrl::OnViewFileInfo)
 	EVT_MENU(MP_VIEW, CDownloadListCtrl::OnPreviewFile)
@@ -486,6 +487,18 @@ void CDownloadListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 	m_menu->Append(MP_WS, _("Copy feedback to clipboard"));
 	m_menu->AppendSeparator();
 
+	// Same entry the search list offers, on the same gate: a partfile's hash is
+	// the completed file's and is known from the link, so the lookup works
+	// before a single byte has arrived -- which is when sources and history are
+	// worth checking. Hidden, not greyed, when no stats server is configured,
+	// because an empty preference means the feature is off rather than
+	// unavailable for this row.
+	const wxString &statsServer = thePrefs::GetStatsServerName();
+	if (!statsServer.IsEmpty()) {
+		m_menu->Append(MP_RAZORSTATS, CFormat(_("Get %s for this file")) % statsServer);
+		m_menu->AppendSeparator();
+	}
+
 	wxMenu *cats = new wxMenu(_("Category"));
 	if (theApp->glob_prefs->GetCatCount() > 1) {
 		for (uint32 i = 0; i < theApp->glob_prefs->GetCatCount(); i++) {
@@ -740,6 +753,17 @@ void CDownloadListCtrl::OnShowInFolder(wxCommandEvent &WXUNUSED(event))
 	if (m_menuItem != 0 && HasItemData(m_menuItem)) {
 		FileLaunch::Reveal(reinterpret_cast<CPartFile *>(m_menuItem), this);
 	}
+}
+
+void CDownloadListCtrl::OnRazorStatsCheck(wxCommandEvent &WXUNUSED(event))
+{
+	// Bound re-checked for the reason OnShowInFolder gives: PopupMenu runs a
+	// nested event loop, so the queue can drop the row while the menu is open.
+	if (m_menuItem == 0 || !HasItemData(m_menuItem)) {
+		return;
+	}
+	const CPartFile *file = reinterpret_cast<CPartFile *>(m_menuItem);
+	theApp->amuledlg->LaunchUrl(thePrefs::GetStatsServerURL() + file->GetFileHash().Encode());
 }
 
 void CDownloadListCtrl::OnItemActivated(wxDataViewEvent &event)

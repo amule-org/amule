@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-08 15:40+0200\n"
+"POT-Creation-Date: 2026-09-09 11:05+0200\n"
 "PO-Revision-Date: 2026-09-08 15:33+0000\n"
 "Last-Translator: astur <malditoastur@gmail.com>\n"
 "Language-Team: Language ast <malditoastur@gmail.com>\n"
@@ -1914,6 +1914,11 @@ msgstr "Copiar l'en&llaz eD2k al cartafueyos."
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Copy feedback to clipboard"
 msgstr "Copiar rempuesta al cartafueyos"
+
+#: src/DownloadListCtrl.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Get %s for this file"
+msgstr "Amestar URLs opcionales pa esti ficheru"
 
 #: src/DownloadListCtrl.cpp
 msgid "unassign"
@@ -6785,11 +6790,6 @@ msgstr ""
 #, fuzzy
 msgid "Collapse all"
 msgstr "Zarrar toles llingüetes"
-
-#: src/SearchListCtrl.cpp
-#, fuzzy, c-format
-msgid "Get %s for this file"
-msgstr "Amestar URLs opcionales pa esti ficheru"
 
 #: src/SearchListCtrl.cpp
 msgid "Search related files (eD2k, local server)"
