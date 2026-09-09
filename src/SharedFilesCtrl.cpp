@@ -51,7 +51,8 @@
 #include "DownloadQueue.h"    // Needed for CDownloadQueue
 #include "TransferWnd.h"      // Needed for CTransferWnd
 #include "Logger.h"           // Needed for AddLogLine
-#include "OtherFunctions.h"   // Needed for FormatLocalDateTime, IsMediaProbeCandidate
+#include "OtherFunctions.h"   // Needed for FormatLocalDateTime, CastSecondsToHM, FormatMediaCodec
+#include <tags/FileTags.h>    // Needed for FT_MEDIA_LENGTH / _BITRATE / _CODEC
 
 namespace
 {
@@ -167,6 +168,12 @@ CSharedFilesCtrl::CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos,
 	AddTextColumn(_("Shared since"), COLUMN_SHARED_SINCE, "H", 130, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Last upload"), COLUMN_SHARED_LASTUP, "L", 130, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Directory Path"), COLUMN_SHARED_PATH, "D", 430, wxALIGN_LEFT, colFlags);
+	// Media metadata, the same FT_MEDIA_* tags and wording the search list
+	// uses. Keys are lowercase because "L" and "C" are already taken above by
+	// Last upload and Complete Sources, and the store is case-sensitive.
+	AddTextColumn(_("Length"), COLUMN_SHARED_MEDIA_LENGTH, "l", 80, wxALIGN_LEFT, colFlags);
+	AddTextColumn(_("Bitrate"), COLUMN_SHARED_MEDIA_BITRATE, "b", 80, wxALIGN_LEFT, colFlags);
+	AddTextColumn(_("Codec"), COLUMN_SHARED_MEDIA_CODEC, "c", 80, wxALIGN_LEFT, colFlags);
 
 	AppendSpacerColumn(COLUMN_SHARED_SPACER);
 
@@ -175,6 +182,17 @@ CSharedFilesCtrl::CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos,
 	// Default sort is by name, ascending; LoadColumnSettings() replaces it
 	// when the config has something saved.
 	ApplySorting(COLUMN_SHARED_NAME, 0);
+
+	// The media columns are only filled for files ffprobe has been run over,
+	// so a share that has never been probed would gain three empty columns
+	// for everyone. Listed in the header menu, hidden until asked for --
+	// widths above are what they get when enabled, which is why they are not
+	// registered as zero-width. Set before LoadColumnSettings() so anything
+	// the user saved wins, the same ordering CServerListCtrl uses for its
+	// wire-flag columns.
+	SetColumnHidden(COLUMN_SHARED_MEDIA_LENGTH, true, 0);
+	SetColumnHidden(COLUMN_SHARED_MEDIA_BITRATE, true, 0);
+	SetColumnHidden(COLUMN_SHARED_MEDIA_CODEC, true, 0);
 
 	m_columnStore.SetTableName("Shared");
 	LoadColumnSettings();
@@ -666,6 +684,23 @@ wxString CSharedFilesCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) co
 		// destination once completed (EC_TAG_KNOWNFILE_PATH in
 		// the remote GUI).
 		return file->GetFilePath().GetPrintable();
+
+	// Media tags, rendered exactly as the search list renders them so the
+	// same file reads the same in both. Empty when never probed.
+	case COLUMN_SHARED_MEDIA_LENGTH: {
+		uint32 lenSec = file->GetIntTagValue(FT_MEDIA_LENGTH);
+		return lenSec ? CastSecondsToHM(lenSec) : wxString();
+	}
+
+	case COLUMN_SHARED_MEDIA_BITRATE: {
+		uint32 bitrate = file->GetIntTagValue(FT_MEDIA_BITRATE);
+		return bitrate ? wxString(CFormat(wxT("%u kbps")) % bitrate) : wxString();
+	}
+
+	case COLUMN_SHARED_MEDIA_CODEC: {
+		const wxString &codec = file->GetStrTagValue(FT_MEDIA_CODEC);
+		return codec.IsEmpty() ? wxString() : FormatMediaCodec(codec);
+	}
 
 	default:
 		return wxEmptyString;
@@ -1175,6 +1210,25 @@ void CSharedFilesCtrl::OnEditComment(wxCommandEvent &WXUNUSED(event))
 	}
 }
 
+namespace
+{
+// Empty (never probed) sorts last whichever way the column is sorted, so the
+// rows that do have a value stay together at the top.
+int CompareMediaInt(uint32 v1, uint32 v2, int modifier)
+{
+	if (!v1 && !v2) {
+		return 0;
+	}
+	if (!v1) {
+		return 1;
+	}
+	if (!v2) {
+		return -1;
+	}
+	return modifier * CmpAny(v1, v2);
+}
+} // namespace
+
 int CSharedFilesCtrl::CompareItemData(
 	wxUIntPtr data1, wxUIntPtr data2, unsigned column, bool alt, int modifier) const
 {
@@ -1259,6 +1313,33 @@ int CSharedFilesCtrl::CompareItemData(
 	// Directory path asc (status-agnostic: the Temp dir for a partfile)
 	case COLUMN_SHARED_PATH:
 		return mod * CmpAny(file1->GetFilePath(), file2->GetFilePath());
+
+	// Media tags. Unprobed files sort last in both directions rather than
+	// counting as zero, which would bury the probed rows under them on an
+	// ascending sort -- the same rule the search list applies.
+	case COLUMN_SHARED_MEDIA_LENGTH:
+		return CompareMediaInt(
+			file1->GetIntTagValue(FT_MEDIA_LENGTH), file2->GetIntTagValue(FT_MEDIA_LENGTH), mod);
+
+	case COLUMN_SHARED_MEDIA_BITRATE:
+		return CompareMediaInt(file1->GetIntTagValue(FT_MEDIA_BITRATE),
+			file2->GetIntTagValue(FT_MEDIA_BITRATE),
+			mod);
+
+	case COLUMN_SHARED_MEDIA_CODEC: {
+		const wxString c1 = FormatMediaCodec(file1->GetStrTagValue(FT_MEDIA_CODEC));
+		const wxString c2 = FormatMediaCodec(file2->GetStrTagValue(FT_MEDIA_CODEC));
+		if (c1.IsEmpty() && c2.IsEmpty()) {
+			return 0;
+		}
+		if (c1.IsEmpty()) {
+			return 1;
+		}
+		if (c2.IsEmpty()) {
+			return -1;
+		}
+		return mod * c1.CmpNoCase(c2);
+	}
 
 	default:
 		return 0;

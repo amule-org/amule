@@ -43,9 +43,15 @@
 #define COLUMN_SHARED_SINCE 11
 #define COLUMN_SHARED_LASTUP 12
 #define COLUMN_SHARED_PATH 13
+//! Media metadata from FT_MEDIA_*, the same tags the search list shows.
+//! Populated only for files ffprobe has been run over, so these start
+//! hidden; see the SetColumnHidden() calls in the constructor.
+#define COLUMN_SHARED_MEDIA_LENGTH 14
+#define COLUMN_SHARED_MEDIA_BITRATE 15
+#define COLUMN_SHARED_MEDIA_CODEC 16
 //! Always empty. Absorbs the macOS trailing-column sizing; see
 //! CMuleDataViewCtrl::AppendSpacerColumn().
-#define COLUMN_SHARED_SPACER 14
+#define COLUMN_SHARED_SPACER 17
 
 class CSharedFileList;
 class CKnownFile;
