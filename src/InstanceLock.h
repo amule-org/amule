@@ -67,11 +67,34 @@ public:
 	// twice on the same object is safe. This is what
 	// CamuleAppCommon::RefreshSingleInstanceChecker() relies on after
 	// daemon fork().
-	Result Acquire(const wxString &filename, const wxString &dir);
+	// `selfKind` is recorded in the lock file beside the pid: "amule",
+	// "amuled" or "amulegui". amuled shares muleLock with the monolithic
+	// GUI, so a second launch that finds the lock held has to know whether
+	// the holder has a window to raise. A daemon has none, and a raise
+	// request posted to one is the same silence as no message at all.
+	Result Acquire(const wxString &filename, const wxString &dir, const wxString &selfKind);
 
 	// Release the lock and unlink the on-disk file. Also called from
 	// the destructor.
 	void Release();
+
+	// The pid recorded inside the lock file, read when Acquire() returned
+	// LOCK_HELD, or 0 when there was none to read. Diagnostic only: the
+	// kernel owns the truth about who holds the lock, and this is used
+	// solely to decide what to TELL the user, never to decide the lock.
+	//
+	// A live pid means an aMule is there to be raised. A dead one means the
+	// holder is not the aMule that wrote the file, which is the case that
+	// used to exit without a word.
+	int HolderPid() const { return m_holderPid; }
+
+	// What the holder recorded itself as, empty when the file predates this
+	// or was written by something that is not aMule. Empty means "assume it
+	// can be raised", which is the behaviour that shipped before.
+	const wxString &HolderKind() const { return m_holderKind; }
+
+	// Path of the lock file Acquire() last worked on, for the message.
+	const wxString &Path() const { return m_path; }
 
 private:
 #ifdef __WINDOWS__
@@ -79,8 +102,12 @@ private:
 	bool m_anotherRunning;
 #else
 	int m_fd;
-	wxString m_path;
 #endif
+	// Shared by both implementations: the descriptive file beside the lock,
+	// and what the last Acquire() read out of it.
+	wxString m_path;
+	int m_holderPid;
+	wxString m_holderKind;
 };
 
 #endif // INSTANCELOCK_H

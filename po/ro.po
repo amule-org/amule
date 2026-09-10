@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-09 11:05+0200\n"
+"POT-Creation-Date: 2026-09-10 11:11+0200\n"
 "PO-Revision-Date: 2026-09-10 07:52+0000\n"
 "Last-Translator: Angelescu Constantin <titus0818@yahoo.com>\n"
 "Language-Team: English <kde-i18n-doc@kde.org>\n"
@@ -200,6 +200,29 @@ msgstr "A eșuat deschiderea fișierului legătură eD2k."
 #: src/amuleAppCommon.cpp
 msgid "WARNING: You can't add yourself as a source for an eD2k link while having a lowid."
 msgstr "ATENȚIE: Nu vă puteți adăuga ca sursă pentru o legătură eD2k cât timp aveți lowid."
+
+#: src/amuleAppCommon.cpp
+#, c-format
+msgid ""
+"Another program is holding aMule's lock file:\n"
+"\n"
+"%s\n"
+"\n"
+"That is not a running copy of aMule, so there is nothing to bring to the front. Close the other program, or delete the lock file while aMule is not running."
+msgstr ""
+
+#: src/amuleAppCommon.cpp
+#, c-format
+msgid ""
+"The aMule daemon (amuled) is already running as process %d and is using this configuration.\n"
+"\n"
+"It has no window to bring to the front. Connect to it with amuleGUI, or stop the daemon before starting aMule."
+msgstr ""
+
+#: src/amuleAppCommon.cpp
+#, fuzzy
+msgid "aMule cannot start"
+msgstr "dialogul aMule distrus"
 
 #: src/amuleAppCommon.cpp
 #, c-format
@@ -4140,28 +4163,28 @@ msgstr ", Încărcat: "
 msgid "Media Info"
 msgstr "Informație Kad"
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Length"
 msgstr ""
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 #, fuzzy
 msgid "Bitrate"
 msgstr "Nu este apreciat"
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Codec"
 msgstr ""
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Artist"
 msgstr ""
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Album"
 msgstr ""
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Title"
 msgstr "Titlu"
 
