@@ -29,10 +29,11 @@
 
 #include <boost/optional.hpp>
 
-// See NetworkAddressAsio.h for why this wrap is here and why it is scoped to
-// exactly these two diagnostics. ip/tcp.hpp is the heavier of the two asio
-// headers this tree includes: it reaches boost/asio/execution/*.hpp, which is
-// where the redundant constexpr static definitions live.
+// Reviewer measurement with AppleClang 21 and Boost 1.92: without both
+// suppressions, ip/tcp.hpp produces 29 errors under -Werror=deprecated:
+// 27 redundant constexpr static definitions and 2 deprecated copies with a
+// user-provided destructor. Each suppression is independently necessary;
+// restrict both to this Boost include.
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
@@ -44,15 +45,11 @@
 #endif
 
 /**
- * The half of AddressFamilyPolicy whose answers are Boost.Asio values.
+ * Socket-specific address-family policy and Boost.Asio values.
  *
- * Split out of AddressFamilyPolicy.h so that the 93 translation units which
- * only need to know *whether* a family is permitted stop compiling asio's
- * socket headers to find out; the reasoning is spelled out at the bottom of
- * that file. Include this only from a TU that actually opens a socket or
- * resolves a name -- today that is LibSocketAsio.cpp and the tests that pin
- * these decisions. Including it from a public header puts asio back into the
- * closure of most of src/, which is what this split undoes.
+ * Keeping this separate avoids compiling Asio socket headers in consumers that
+ * only need family predicates. Include it only where socket protocols or name
+ * resolution are needed.
  */
 namespace AddressFamilyPolicy
 {
@@ -76,25 +73,31 @@ inline boost::optional<boost::asio::ip::tcp> TcpProtocolForTarget(const CNetwork
 	return boost::asio::ip::tcp::v6();
 }
 
+/** An explicit lookup-family restriction; Any means unrestricted, not refusal. */
+enum class ResolverFamily
+{
+	Any,
+	IPv4Only,
+	IPv6Only
+};
+
 /**
- * The protocol to restrict a name lookup to.
+ * The family restriction for a name lookup.
  *
- * getaddrinfo() with an unrestricted family answers with AAAA records on any
- * host, whether or not it has IPv6 connectivity, so the query has to state the
- * family it wants. Under a dual-stack configuration there is nothing to state
- * and the caller should query unrestricted, hence the empty result.
+ * Dual stack requests an unrestricted lookup. A single-family configuration
+ * restricts results to that family; DNS results do not establish connectivity.
  */
-inline boost::optional<boost::asio::ip::tcp> TcpResolverProtocol() noexcept
+inline ResolverFamily TcpResolverProtocol() noexcept
 {
 	switch (Configured()) {
 	case Families::IPv4Only:
-		return boost::asio::ip::tcp::v4();
+		return ResolverFamily::IPv4Only;
 	case Families::IPv6Only:
-		return boost::asio::ip::tcp::v6();
+		return ResolverFamily::IPv6Only;
 	case Families::DualStack:
-		break;
+		return ResolverFamily::Any;
 	}
-	return boost::none;
+	return ResolverFamily::IPv4Only;
 }
 
 /** The IPv4 wildcard, @c 0.0.0.0. */
@@ -116,15 +119,10 @@ inline boost::asio::ip::address AnyIPv6Address() noexcept
  * The wildcard "any address of this machine" for a caller that has not said
  * which family it wants.
  *
- * This stays the IPv4 wildcard whenever IPv4 is permitted, dual stack included,
- * and that is deliberate. The callers are the ones that bind a single socket
- * and are not part of the ed2k dual-stack work: the external-connection
- * listener and the web server. Handing them @c :: because the ed2k listener now
- * wants both families would silently move the daemon's control channel onto
- * another family -- a change to what an EC client must dial, made as a side
- * effect. A caller that genuinely wants both families says so by asking for
- * AnyIPv6Address() and clearing @c IPV6_V6ONLY, which is what the ed2k
- * listeners do; see DualStackListeners.h.
+ * Prefer the IPv4 wildcard whenever IPv4 is permitted, including dual stack,
+ * to avoid implicitly moving a single-socket service to another family.
+ * Accepting both families on an IPv6 socket requires explicitly choosing
+ * AnyIPv6Address() and clearing @c IPV6_V6ONLY.
  */
 inline boost::asio::ip::address AnyAddress() noexcept
 {
