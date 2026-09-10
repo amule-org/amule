@@ -85,7 +85,14 @@ void CClientUDPSocket::TickUtp()
 void CClientUDPSocket::SendUtpDatagram(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port)
 {
 	wxASSERT(wxIsMainThread());
-	QueueUtpDatagram<CPacket>(*this, payload, length, ip, port);
+	const auto *peer = theApp->clientlist->FindClientByIP(ip, port);
+	QueueUtpDatagram<CPacket>(*this,
+		payload,
+		length,
+		ip,
+		port,
+		peer != NULL && peer->ShouldReceiveCryptUDPPackets(),
+		peer != NULL ? peer->GetUserHash().GetHash() : NULL);
 }
 #endif
 

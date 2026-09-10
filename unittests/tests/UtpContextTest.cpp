@@ -79,14 +79,20 @@ private:
 class Sink : public IUtpDatagramSink
 {
 public:
-	std::vector<uint8_t> wire;
+	std::vector<uint8_t> wire, peerHash, sentHash;
 	uint32_t ip = 0;
 	uint16_t port = 0;
 	bool encrypted = true, kad = true, hasHash = true;
 	uint32_t key = 1;
 	void SendUtpDatagram(const uint8_t *data, size_t len, uint32_t address, uint16_t service) override
 	{
-		QueueUtpDatagram<CPacket>(*this, data, len, address, service);
+		QueueUtpDatagram<CPacket>(*this,
+			data,
+			len,
+			address,
+			service,
+			!peerHash.empty(),
+			peerHash.empty() ? nullptr : peerHash.data());
 	}
 	void SendPacket(CPacket *raw,
 		uint32_t address,
@@ -106,6 +112,10 @@ public:
 		encrypted = encrypt;
 		kad = isKad;
 		hasHash = hash != nullptr;
+		sentHash.clear();
+		if (hash) {
+			sentHash.assign(hash, hash + 16);
+		}
 		key = verifyKey;
 	}
 };
@@ -145,7 +155,7 @@ TEST(UtpContext, OtherTypesNeverReachLibrary)
 	ASSERT_EQUALS(0, state.receives);
 }
 
-TEST(UtpContext, LibrarySendUsesLiteralPlaintextEnvelope)
+TEST(UtpContext, LibrarySendIsPlaintextWhenNoPeerKnown)
 {
 	State state;
 	Sink sink;
@@ -167,6 +177,45 @@ TEST(UtpContext, LibrarySendUsesLiteralPlaintextEnvelope)
 	ASSERT_EQUALS(0u, sink.key);
 }
 
+TEST(UtpContext, LibrarySendIsEncryptedWithHashWhenPeerKnown)
+{
+	State state;
+	Sink sink;
+	sink.peerHash = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+	CUtpContext context(std::make_unique<FakeLibrary>(state), sink);
+	ASSERT_TRUE(context.Configure());
+	const uint8_t payload[] = { 0x41, 0x00, 0xFF, 0xB2 };
+	state.sink->SendUtpDatagram(payload, sizeof(payload), 0x04030201, 65535);
+	ASSERT_EQUALS(6, (int)sink.wire.size());
+	ASSERT_EQUALS(0xB2, (int)sink.wire[0]);
+	ASSERT_EQUALS(0x00, (int)sink.wire[1]);
+	for (size_t i = 0; i < sizeof(payload); ++i) {
+		ASSERT_EQUALS((int)payload[i], (int)sink.wire[i + 2]);
+	}
+	ASSERT_EQUALS(0x04030201u, sink.ip);
+	ASSERT_EQUALS(65535, (int)sink.port);
+	ASSERT_TRUE(sink.encrypted);
+	ASSERT_TRUE(sink.hasHash);
+	ASSERT_TRUE(sink.sentHash == sink.peerHash);
+	ASSERT_FALSE(sink.kad);
+	ASSERT_EQUALS(0u, sink.key);
+}
+
+TEST(UtpContext, ProcessingIssuesDeferredAcksWithoutTick)
+{
+	State state;
+	Sink sink;
+	CUtpContext context(std::make_unique<FakeLibrary>(state), sink);
+	const uint8_t payload[] = { 0x41 };
+	ASSERT_TRUE(context.ProcessDatagram(payload, sizeof(payload), 1, 2));
+	ASSERT_EQUALS(1, state.acks);
+	ASSERT_EQUALS(0, state.timeouts);
+	state.claimed = false;
+	ASSERT_FALSE(context.ProcessDatagram(payload, sizeof(payload), 1, 2));
+	ASSERT_EQUALS(2, state.acks);
+	ASSERT_EQUALS(0, state.timeouts);
+}
+
 TEST(UtpContext, TickAndCloseAbandonStateUntilNextDatagram)
 {
 	State state;
@@ -179,7 +228,7 @@ TEST(UtpContext, TickAndCloseAbandonStateUntilNextDatagram)
 		const uint8_t payload[] = { 0x41 };
 		ASSERT_TRUE(context.ProcessDatagram(payload, sizeof(payload), 1, 2));
 		context.Tick();
-		ASSERT_EQUALS(1, state.acks);
+		ASSERT_EQUALS(2, state.acks);
 		ASSERT_EQUALS(1, state.timeouts);
 		context.Destroy(); // The operation used by CClientUDPSocket::Close.
 		ASSERT_EQUALS(1, state.destroys);
@@ -187,7 +236,7 @@ TEST(UtpContext, TickAndCloseAbandonStateUntilNextDatagram)
 		context.Destroy();
 		context.Tick();
 		ASSERT_EQUALS(1, state.destroys);
-		ASSERT_EQUALS(1, state.acks);
+		ASSERT_EQUALS(2, state.acks);
 		ASSERT_EQUALS(1, state.timeouts);
 		ASSERT_TRUE(context.ProcessDatagram(payload, sizeof(payload), 3, 4));
 		ASSERT_EQUALS(2, state.creates);

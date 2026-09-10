@@ -85,7 +85,12 @@ public:
 	}
 	bool ProcessDatagram(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port) override
 	{
-		return Configure() && m_library->ProcessDatagram(payload, length, ip, port);
+		if (!Configure()) {
+			return false;
+		}
+		const bool claimed = m_library->ProcessDatagram(payload, length, ip, port);
+		m_library->IssueDeferredAcks();
+		return claimed;
 	}
 	void Tick() override
 	{
@@ -109,9 +114,14 @@ inline bool ProcessUtpFrame(
 }
 
 // Keep CPacket's application types out of the libutp translation unit.
-// The real socket and fake queue exercise this same plaintext send path.
 template <typename Packet, typename Socket>
-void QueueUtpDatagram(Socket &socket, const uint8_t *payload, size_t length, uint32_t ip, uint16_t port)
+void QueueUtpDatagram(Socket &socket,
+	const uint8_t *payload,
+	size_t length,
+	uint32_t ip,
+	uint16_t port,
+	bool encrypt,
+	const uint8_t *hash)
 {
 	// Maximum IPv4 UDP payload, less the aMule envelope.
 	if (length > 65507 - 2 || (length != 0 && payload == nullptr)) {
@@ -122,7 +132,7 @@ void QueueUtpDatagram(Socket &socket, const uint8_t *payload, size_t length, uin
 	if (length != 0) {
 		packet->CopyToDataBuffer(0, payload, static_cast<unsigned int>(length));
 	}
-	socket.SendPacket(packet.release(), ip, port, false, nullptr, false, 0);
+	socket.SendPacket(packet.release(), ip, port, encrypt, hash, false, 0);
 }
 
 #endif // UTP_CONTEXT_H
