@@ -2033,9 +2033,11 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 	recurse = true;
 
 #ifdef AMULE_UTP_TRANSPORT
-	if (clientudp) {
-		clientudp->TickUtp();
-	}
+	// Unguarded like the queues below: ReinitializeNetwork() always constructs
+	// clientudp, disabled UDP included -- it simply leaves it unopened. A null
+	// check here would also tell the static analyser that the Kad recovery's
+	// clientudp->Close() further down can be reached with a null pointer.
+	clientudp->TickUtp();
 #endif
 
 	uploadqueue->Process();
