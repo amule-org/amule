@@ -35,3 +35,25 @@ jobs:
         with:
           clang-format-version: '18'
           check-path: 'unittests'
+      - name: Check warning-suppression blocks are balanced
+        run: |
+          # WarningsPush_*.h and WarningsPop.h wrap third-party includes, and
+          # clang's diagnostic stack needs one pop per push. The headers carry
+          # no include guard on purpose, so a second include really does push
+          # again -- guarding them would silently unbalance the stack instead.
+          #
+          # An unbalanced block fails silently and in the worst direction: the
+          # suppression stays open to the end of the translation unit, so our
+          # own code stops being diagnosed and nothing says so.
+          status=0
+          while IFS= read -r f; do
+            push=$(grep -c 'include ".*WarningsPush_' "$f" || true)
+            pop=$(grep -c 'include ".*WarningsPop\.h"' "$f" || true)
+            if [ "$push" -ne "$pop" ]; then
+              echo "::error file=$f::$push WarningsPush_* include(s) but $pop WarningsPop.h"
+              status=1
+            fi
+          done < <(grep -rl 'WarningsPush_\|WarningsPop\.h' src unittests \
+                     --include='*.h' --include='*.cpp' \
+                   | grep -v '^src/Warnings')
+          exit $status
