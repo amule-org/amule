@@ -126,19 +126,19 @@ inline bool ProcessUtpFrame(
 //
 // Taken as a bool rather than a sockaddr so this stays free of socket headers
 // and testable without one; the adapter does the sa_family comparison.
-constexpr unsigned kUtpEnvelopeBytes = 2;
+constexpr std::uint64_t kUtpEnvelopeBytes = 2;
 
 constexpr std::uint64_t UtpUdpMtu(bool isIPv6)
 {
 	// IPv4:   1500 ethernet - 20 IPv4 - 8 UDP - 24 GRE - 8 PPPoE - 2 MPPE - 36 fudge.
 	// Teredo: 1280 - 40 IPv6 - 8 UDP.
-	return (isIPv6 ? 1232u : 1402u) - kUtpEnvelopeBytes;
+	return (isIPv6 ? UINT64_C(1232) : UINT64_C(1402)) - kUtpEnvelopeBytes;
 }
 
 constexpr std::uint64_t UtpUdpOverhead(bool isIPv6)
 {
 	// IPv4: 20 + 8. Teredo: that, plus 40 IPv6 + 8 UDP again.
-	return (isIPv6 ? 76u : 28u) + kUtpEnvelopeBytes;
+	return (isIPv6 ? UINT64_C(76) : UINT64_C(28)) + kUtpEnvelopeBytes;
 }
 
 // Keep CPacket's application types out of the libutp translation unit.

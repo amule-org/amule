@@ -91,8 +91,8 @@ void CClientUDPSocket::SendUtpDatagram(const uint8_t *payload, size_t length, ui
 		length,
 		ip,
 		port,
-		peer != NULL && peer->ShouldReceiveCryptUDPPackets(),
-		peer != NULL ? peer->GetUserHash().GetHash() : NULL);
+		peer != nullptr && peer->ShouldReceiveCryptUDPPackets(),
+		peer != nullptr ? peer->GetUserHash().GetHash() : nullptr);
 }
 #endif
 
