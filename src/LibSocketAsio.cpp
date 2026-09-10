@@ -48,22 +48,11 @@
 #include <poll.h> // Bounded readability wait for the sync-read no-progress timeout
 #endif
 
-// Boost 1.92's asio declares several exception types with a user-provided
-// destructor and no matching copy constructor, which is the P0806 deprecation
-// -Wdeprecated-copy-with-user-provided-dtor reports. The build promotes it to
-// an error, so from that release on this header set fails the compile on its
-// own. Suppressed only across these includes, exactly as CryptoPP_Inc.h does
-// for the same warning: nothing about our own translation unit is affected.
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
-#endif
+#include "WarningsPush_Asio.h"
 #include <boost/asio.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/version.hpp>
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
+#include "WarningsPop.h"
 
 //
 // Do away with building Boost.System, adding lib paths...

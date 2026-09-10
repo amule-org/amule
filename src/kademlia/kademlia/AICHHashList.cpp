@@ -85,10 +85,7 @@ const CKadAICHHash &CKadAICHHashList::GetHashAt(uint16_t index) const
 
 std::vector<uint16_t> CKadAICHHashList::BuildCompactionMap() const
 {
-	// uint16_t(...) rather than INVALID_INDEX: the fill constructor takes a
-	// const reference, which would ODR-use the member and need an
-	// out-of-line definition -- ill-formed for a constexpr member in C++17.
-	std::vector<uint16_t> map(m_hashes.size(), uint16_t(INVALID_INDEX));
+	std::vector<uint16_t> map(m_hashes.size(), INVALID_INDEX);
 	uint16_t next = 0;
 	for (size_t i = 0; i < m_hashes.size(); ++i) {
 		if (m_popularity[i] > 0) {

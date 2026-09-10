@@ -28,18 +28,10 @@
 #include <wx/math.h> // Needed for cos, M_PI
 #include <string>    // Do_not_auto_remove (g++-4.0.1)
 
-// CryptoPP::AutoSeededRandomPool, for the session-token CSPRNG. See
-// CryptoPP_Inc.h for pragma rationale.
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
-#pragma clang diagnostic ignored "-Wdeprecated-copy-with-user-provided-copy"
-#pragma clang diagnostic ignored "-Wdeprecated-dynamic-exception-spec"
-#endif
+// CryptoPP::AutoSeededRandomPool, for the session-token CSPRNG.
+#include "../../WarningsPush_CryptoPP.h"
 #include <cryptopp/osrng.h>
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
+#include "../../WarningsPop.h"
 
 #include <wx/datetime.h>
 

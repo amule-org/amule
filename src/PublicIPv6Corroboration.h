@@ -209,11 +209,8 @@ public:
 		Candidate *candidate = Find(value);
 		if (candidate == nullptr) {
 			// emplace_back() rather than push_back(Candidate()), which
-			// clang-tidy flags. Its return value is not used: it only
-			// returns a reference from C++17, and the unit-test targets
-			// take clang's default of C++14.
-			m_candidates.emplace_back();
-			candidate = &m_candidates.back();
+			// clang-tidy flags. It returns a reference from C++17.
+			candidate = &m_candidates.emplace_back();
 			candidate->value = value;
 		}
 

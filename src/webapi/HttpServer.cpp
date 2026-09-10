@@ -30,13 +30,7 @@
 
 #include <wx/string.h>
 
-// See the note in LibSocketAsio.cpp: Boost 1.92's asio trips
-// -Wdeprecated-copy-with-user-provided-dtor, which this build treats as an
-// error. Suppressed across the includes only.
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
-#endif
+#include "../WarningsPush_Asio.h"
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/post.hpp>
@@ -51,9 +45,7 @@
 // the lines above do, and reaching them first from an unguarded include would
 // resurrect the -Wdeprecated-copy-with-user-provided-dtor error.
 #include "RangeFileBody.h"
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
+#include "../WarningsPop.h"
 
 // strncasecmp lives in <strings.h> on POSIX (glibc also exposes it via
 // <string.h>, but musl/BSDs don't), and MSVC spells it _strnicmp. The same
@@ -310,9 +302,7 @@ bool GzipOnce(const std::string &in, std::string &out)
 	// to resize once and slice.
 	const uLong bound = deflateBound(&zs, static_cast<uLong>(in.size()));
 	out.resize(bound);
-	// std::string::data() is const-qualified pre-C++17; `&out[0]` is
-	// non-const in every standard we build against.
-	zs.next_out = reinterpret_cast<Bytef *>(&out[0]);
+	zs.next_out = reinterpret_cast<Bytef *>(out.data());
 	zs.avail_out = static_cast<uInt>(bound);
 	const int rc = deflate(&zs, Z_FINISH);
 	if (rc != Z_STREAM_END) {

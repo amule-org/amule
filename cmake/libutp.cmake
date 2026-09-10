@@ -40,12 +40,11 @@ if (NOT TARGET libutp)
 		"in ${AMULE_LIBUTP_DIR} is not the pinned upstream revision.")
 endif()
 
-# Upstream sets the language standard only for a standalone build, and aMule
-# sets CMAKE_CXX_STANDARD nowhere, so vendored the library would compile with no
-# -std at all -- its C++17 if-init statements surviving only as a compiler
-# extension. Upstream marks the standard REQUIRED when standalone, so C++17 is
-# its requirement rather than its preference; this states it for the one target
-# instead of imposing it on aMule.
+# Upstream sets the language standard only for a standalone build, deferring to
+# the parent otherwise. aMule now pins C++17 tree-wide, so this would inherit
+# the right standard anyway; it stays because upstream marks the standard
+# REQUIRED when standalone, making C++17 its requirement rather than ours to
+# lend. If the tree-wide pin ever moves, this target must not move with it.
 set_target_properties (libutp PROPERTIES
 	CXX_STANDARD 17
 	CXX_STANDARD_REQUIRED ON)

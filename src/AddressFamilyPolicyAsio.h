@@ -29,20 +29,9 @@
 
 #include <boost/optional.hpp>
 
-// Reviewer measurement with AppleClang 21 and Boost 1.92: without both
-// suppressions, ip/tcp.hpp produces 29 errors under -Werror=deprecated:
-// 27 redundant constexpr static definitions and 2 deprecated copies with a
-// user-provided destructor. Each suppression is independently necessary;
-// restrict both to this Boost include.
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
-#pragma clang diagnostic ignored "-Wdeprecated-redundant-constexpr-static-def"
-#endif
+#include "WarningsPush_Asio.h"
 #include <boost/asio/ip/tcp.hpp>
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
+#include "WarningsPop.h"
 
 /**
  * Socket-specific address-family policy and Boost.Asio values.
