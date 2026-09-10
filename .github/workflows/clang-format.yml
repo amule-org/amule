@@ -30,11 +30,6 @@ jobs:
         with:
           clang-format-version: '18'
           check-path: 'src'
-          # src/extern holds vendored third-party code, kept byte-identical to
-          # a pinned upstream commit and carrying a no-local-patches rule (see
-          # src/extern/libutp/AMULE_PROVENANCE.md). Reformatting it to satisfy
-          # this check would break that guarantee, so it is excluded instead.
-          exclude-regex: '^src/extern/'
       - name: Check unittests/
         uses: jidicula/clang-format-action@v4.18.0
         with:
