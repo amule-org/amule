@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-09 11:05+0200\n"
+"POT-Creation-Date: 2026-09-10 11:11+0200\n"
 "PO-Revision-Date: 2026-09-10 07:54+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -203,6 +203,29 @@ msgstr "ED2KBağlantı dosyası açılamadı."
 #: src/amuleAppCommon.cpp
 msgid "WARNING: You can't add yourself as a source for an eD2k link while having a lowid."
 msgstr "UYARI: DüşükID olduğunuz sürece kendinizi bir kaynak olarak eD2k bağlantılarına ekleyemezsiniz."
+
+#: src/amuleAppCommon.cpp
+#, c-format
+msgid ""
+"Another program is holding aMule's lock file:\n"
+"\n"
+"%s\n"
+"\n"
+"That is not a running copy of aMule, so there is nothing to bring to the front. Close the other program, or delete the lock file while aMule is not running."
+msgstr ""
+
+#: src/amuleAppCommon.cpp
+#, c-format
+msgid ""
+"The aMule daemon (amuled) is already running as process %d and is using this configuration.\n"
+"\n"
+"It has no window to bring to the front. Connect to it with amuleGUI, or stop the daemon before starting aMule."
+msgstr ""
+
+#: src/amuleAppCommon.cpp
+#, fuzzy
+msgid "aMule cannot start"
+msgstr "aMule kuruldu"
 
 #: src/amuleAppCommon.cpp
 #, c-format
@@ -4089,27 +4112,27 @@ msgstr "Son gönderme"
 msgid "Media Info"
 msgstr "Ortam Bilgileri"
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Length"
 msgstr "Süre"
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Bitrate"
 msgstr "Akış hızı"
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Codec"
 msgstr "Kodlama"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Artist"
 msgstr "Sanatçı"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Album"
 msgstr "Albüm"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Title"
 msgstr "Başlık"
 

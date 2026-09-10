@@ -211,7 +211,11 @@ void CamuleAppCommon::RefreshSingleInstanceChecker()
 	// working single-instance detection too.
 	delete m_singleInstance;
 	m_singleInstance = new InstanceLock();
-	m_singleInstance->Acquire("muleLock", thePrefs::GetConfigDir());
+	// Same self-description as the first acquire: the fork is the daemon, and
+	// the file it rewrites is the one a later GUI launch will read.
+	m_singleInstance->Acquire("muleLock",
+		thePrefs::GetConfigDir(),
+		IsDaemon() ? "amuled" : (IsRemoteGui() ? "amulegui" : "amule"));
 }
 
 void CamuleAppCommon::ReleaseSingleInstance()
@@ -742,10 +746,16 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 
 	m_singleInstance = new InstanceLock();
 	wxString lockfile = IsRemoteGui() ? "muleLockRGUI" : "muleLock";
-	InstanceLock::Result lockResult = m_singleInstance->Acquire(lockfile, thePrefs::GetConfigDir());
+	// Recorded in the lock file so a later launch knows whether the holder
+	// has a window. amuled shares muleLock with the monolithic GUI, and only
+	// one of the two can be brought to the front.
+	const wxString selfKind = IsDaemon() ? "amuled" : (IsRemoteGui() ? "amulegui" : "amule");
+	InstanceLock::Result lockResult =
+		m_singleInstance->Acquire(lockfile, thePrefs::GetConfigDir(), selfKind);
 	if (lockResult == InstanceLock::LOCK_HELD) {
-		AddLogLineCS(
-			CFormat(LOG_PRELOCALE("There is an instance of %s already running")) % m_appName);
+		// Neutral: something holds it. WHAT holds it is decided below, and
+		// saying "an instance is already running" before that check meant
+		// the log asserted it and then contradicted itself two lines later.
 		AddLogLineNS(
 			CFormat(LOG_PRELOCALE("(lock file: %s%s)")) % thePrefs::GetConfigDir() % lockfile);
 		if (linksPassed) {
@@ -757,6 +767,67 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 				return false;
 			}
 		}
+
+		// The lock is held, but by what? Two holders have nothing to raise,
+		// and both used to end the launch in silence.
+		//
+		// On POSIX any process can take a write lock on the file, so a
+		// backup or indexing agent doing so is indistinguishable from here;
+		// the pid aMule records tells them apart, because a foreign holder
+		// never refreshes it. On Windows that case cannot arise: only aMule
+		// creates the named mutex, and the OS releases it when its owner
+		// dies, so a held mutex is already proof of a live aMule.
+		//
+		// What both share is amuled, which uses the same lock as the
+		// monolithic GUI -- only amulegui gets one of its own. A daemon has
+		// no window, so the raise below was always a no-op the user could
+		// not see (#1351).
+		//
+		// Deliberately conservative: anything not established counts as
+		// raisable, so the only new dialog is one we are sure about. A lock
+		// record with no kind line was written by an older aMule and keeps
+		// the old behaviour exactly.
+		const int holder = m_singleInstance->HolderPid();
+		const wxString holderKind = m_singleInstance->HolderKind();
+#ifdef __WINDOWS__
+		const bool holderAlive = true;
+#else
+		// EPERM means the pid exists under another user, which is alive.
+		const bool holderAlive = (holder <= 0) || (kill(holder, 0) == 0) || (errno == EPERM);
+#endif
+		const bool holderRaisable = holderKind != "amuled";
+		if (!holderAlive || !holderRaisable) {
+			const wxString lockPath = m_singleInstance->Path();
+			wxString msg;
+			if (!holderAlive) {
+				AddLogLineCS(CFormat(LOG_PRELOCALE(
+						     "Lock file %s is held by another program, not "
+						     "by a running aMule (recorded pid %d is gone).")) %
+					     lockPath % holder);
+				msg = CFormat(_("Another program is holding aMule's lock file:\n\n%s\n\nThat "
+						"is not a running copy of aMule, so there is nothing to "
+						"bring to the front. Close the other program, or delete "
+						"the lock file while aMule is not running.")) %
+				      lockPath;
+			} else {
+				AddLogLineCS(CFormat(LOG_PRELOCALE("The aMule daemon (pid %d) holds %s; it "
+								   "has no window to raise.")) %
+					     holder % lockPath);
+				msg = CFormat(_("The aMule daemon (amuled) is already running as process %d "
+						"and is using this configuration.\n\nIt has no window to "
+						"bring to the front. Connect to it with amuleGUI, or stop "
+						"the daemon before starting aMule.")) %
+				      holder;
+			}
+			theApp->ShowAlert(msg, _("aMule cannot start"), wxOK | wxICON_ERROR);
+			// No raise request: nothing is going to act on it, and the line
+			// would sit in ED2KLinks until some later start consumed it and
+			// raised itself for no reason.
+			return false;
+		}
+
+		AddLogLineCS(
+			CFormat(LOG_PRELOCALE("There is an instance of %s already running")) % m_appName);
 
 		// This is very tricky. The most secure way to communicate is via ED2K links file
 		//

@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-09 11:05+0200\n"
+"POT-Creation-Date: 2026-09-10 11:11+0200\n"
 "PO-Revision-Date: 2026-09-10 07:55+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -207,6 +207,29 @@ msgstr "打开 ED2K 链接文件失败。"
 #: src/amuleAppCommon.cpp
 msgid "WARNING: You can't add yourself as a source for an eD2k link while having a lowid."
 msgstr "警告：在 Low ID 的情况下，你不能添加自己作为 ed2k 链接的源。"
+
+#: src/amuleAppCommon.cpp
+#, c-format
+msgid ""
+"Another program is holding aMule's lock file:\n"
+"\n"
+"%s\n"
+"\n"
+"That is not a running copy of aMule, so there is nothing to bring to the front. Close the other program, or delete the lock file while aMule is not running."
+msgstr ""
+
+#: src/amuleAppCommon.cpp
+#, c-format
+msgid ""
+"The aMule daemon (amuled) is already running as process %d and is using this configuration.\n"
+"\n"
+"It has no window to bring to the front. Connect to it with amuleGUI, or stop the daemon before starting aMule."
+msgstr ""
+
+#: src/amuleAppCommon.cpp
+#, fuzzy
+msgid "aMule cannot start"
+msgstr "aMule 已安装"
 
 #: src/amuleAppCommon.cpp
 #, c-format
@@ -4093,27 +4116,27 @@ msgstr "最后上传"
 msgid "Media Info"
 msgstr "媒体信息"
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Length"
 msgstr "长度"
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Bitrate"
 msgstr "比特率"
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Codec"
 msgstr "编解码器"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Artist"
 msgstr "艺术家"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Album"
 msgstr "专辑"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Title"
 msgstr "标题"
 
