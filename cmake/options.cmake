@@ -278,14 +278,15 @@ endif()
 
 # Builds the vendored libutp and nothing else. It does not enable a transport,
 # a protocol byte or any behaviour a peer can observe: no aMule source links
-# Utp::Utp yet, so an ENABLE_UTP=YES build and a default one produce the same
+# Utp::Utp yet, so an ENABLE_UTP=YES build and a default one ship the same
 # binaries. The switch exists so the uTP work can arrive as reviewable pieces
 # rather than as a transport and its dependency in one diff.
 #
-# Deliberately not in AMULE_EXPERIMENTAL_OPTIONS: that list adds a compile
-# definition of the same name, and a definition no source reads would say a
-# feature is on when none is. The uTP transport switch belongs there when there
-# is a transport to gate.
+# In AMULE_EXPERIMENTAL_OPTIONS below, which is what gets the 5,000-odd vendored
+# lines compiled by the CI jobs that ask for the whole set. The compile
+# definition that membership adds is read by nothing today; that is a smaller
+# problem than a snapshot no job compiles, and it stops being inert when the
+# transport arrives.
 #
 # ON requires CMake 3.12 -- see cmake/libutp.cmake.
 option (ENABLE_UTP "build the vendored libutp (dependency only; enables no uTP behaviour yet)" OFF)
@@ -350,6 +351,7 @@ option (ENABLE_KAD_NODE_PROTECTION "enable the local Kad node-protection heurist
 set (AMULE_EXPERIMENTAL_OPTIONS
 	ENABLE_KAD_PROTOCOL_10
 	ENABLE_KAD_NODE_PROTECTION
+	ENABLE_UTP
 )
 
 option (ENABLE_ALL_EXPERIMENTAL "turn on every switch in AMULE_EXPERIMENTAL_OPTIONS at once" OFF)
