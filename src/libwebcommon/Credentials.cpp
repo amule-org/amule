@@ -27,21 +27,11 @@
 #include "AtomicFile.h"
 #include "ConstantTime.h"
 
-// cryptopp headers pull in deprecated implicit copy ctors + throw()
-// specs (P0806 + C++17). Same wrap as Jwt.cpp; see CryptoPP_Inc.h for
-// the full rationale.
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
-#pragma clang diagnostic ignored "-Wdeprecated-copy-with-user-provided-copy"
-#pragma clang diagnostic ignored "-Wdeprecated-dynamic-exception-spec"
-#endif
+#include "../WarningsPush_CryptoPP.h"
 #include <cryptopp/osrng.h>
 #include <cryptopp/pwdbased.h>
 #include <cryptopp/sha.h>
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
+#include "../WarningsPop.h"
 
 #include <cctype>
 #include <cstdio>

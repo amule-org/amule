@@ -47,12 +47,7 @@
 // Clang builds today; the pragma is scoped to Clang-known sub-flags
 // only for that reason. Local to cryptopp includes; nothing else on
 // the translation unit is affected.
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
-#pragma clang diagnostic ignored "-Wdeprecated-copy-with-user-provided-copy"
-#pragma clang diagnostic ignored "-Wdeprecated-dynamic-exception-spec"
-#endif
+#include "WarningsPush_CryptoPP.h"
 
 #include CRYPTO_HEADER(config.h)
 #include CRYPTO_HEADER(md4.h)
@@ -86,8 +81,6 @@
 #include CRYPTO_HEADER(cpu.h)
 #endif
 
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
+#include "WarningsPop.h"
 
 #endif /* CRYPTOPP_INC_H */
