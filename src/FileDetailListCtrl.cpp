@@ -34,7 +34,7 @@ wxBEGIN_EVENT_TABLE(CFileDetailListCtrl, CMuleVirtualDataViewCtrl)
 	EVT_DATAVIEW_SELECTION_CHANGED(wxID_ANY, CFileDetailListCtrl::OnSelectionChanged)
 wxEND_EVENT_TABLE()
 
-CFileDetailListCtrl::CFileDetailListCtrl(wxWindow *&parent, int id, const wxPoint &pos, wxSize siz, int flags)
+CFileDetailListCtrl::CFileDetailListCtrl(wxWindow *parent, int id, const wxPoint &pos, wxSize siz, int flags)
 : CMuleVirtualDataViewCtrl(parent, id, pos, siz, flags)
 {
 	const int columnFlags = wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE;
