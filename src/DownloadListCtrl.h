@@ -210,6 +210,15 @@ protected:
 	/// Rating/comment smiley on the File Name column, nothing elsewhere.
 	bool GetItemIcon(wxUIntPtr item, unsigned column, wxIcon &icon) const override;
 
+	/**
+	 * Paints a row in its category's colour, the behaviour the pre-wxDataView
+	 * list had in OnDrawItem() and the port dropped (issue #1346).
+	 *
+	 * Whole row rather than one column, so `column` is unused: the old code
+	 * set the DC foreground once before its column loop.
+	 */
+	bool GetItemAttr(wxUIntPtr item, unsigned column, wxDataViewItemAttr &attr) const override;
+
 	/// Chunk/gap-bar spans for the Progress column.
 	void GetItemBarFill(wxUIntPtr item, unsigned column, CBarFillSpec &out) const override;
 
