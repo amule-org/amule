@@ -167,9 +167,13 @@ jobs:
           CTCACHE_CLANG_TIDY: clang-tidy-${{ env.LLVM_VERSION }}
         run: |
           # Analyze every src/ translation unit except the generated lexers
-          # and parsers, which are not ours to lint.
+          # and parsers, and the vendored subtree, none of which are ours to
+          # lint. src/extern/.clang-tidy already disables every check there,
+          # so analysing those TUs only ever produced an empty report at full
+          # cost -- and each one is a permanent ctcache miss on first sight.
           mapfile -t files < <(jq -r '.[].file' build/compile_commands.json \
             | grep -E '/src/' \
+            | grep -vE '/src/extern/' \
             | grep -vE '/(Scanner|Parser|IPFilterScanner)\.cpp$' \
             | sort -u)
           echo "Analyzing ${#files[@]} translation units"
