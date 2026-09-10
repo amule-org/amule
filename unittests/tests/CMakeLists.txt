@@ -1,3 +1,27 @@
+# The buffering between libutp and the eD2k stack: the would-block contract
+# CEMSocket depends on, and the close that must happen exactly once. Header-only
+# and free of libutp, so it is compiled and run in every build rather than only
+# where ENABLE_UTP is on -- the contract is the same either way.
+add_executable (UtpStreamTest
+	UtpStreamTest.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+)
+
+add_test (NAME UtpStreamTest
+	COMMAND UtpStreamTest
+)
+
+target_include_directories (UtpStreamTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+
+target_link_libraries (UtpStreamTest
+	muleunit
+)
+
 if (ENABLE_UTP)
 	add_executable (UtpContextTest
 		UtpContextTest.cpp
