@@ -27,7 +27,8 @@
 
 #include "UtpTransportFailure.h"
 
-#include <cstring>
+#include <cstddef>
+#include <cstdint>
 #include <deque>
 #include <vector>
 
@@ -47,10 +48,18 @@
 class CUtpStream
 {
 public:
-	//! Default bound on unsent bytes. One eD2k block plus headroom.
-	static const size_t kDefaultWriteBound = 256 * 1024;
+	/**
+	 * Default bound on unsent bytes. One eD2k block plus headroom.
+	 *
+	 * A function rather than a static const member because under C++14 the
+	 * latter still needs an out-of-line definition the moment anything
+	 * odr-uses it -- binding it to a reference, which std::min() does -- and
+	 * the failure is a link error in the caller's translation unit rather
+	 * than anything visible here.
+	 */
+	static constexpr size_t DefaultWriteBound() { return 256 * 1024; }
 
-	explicit CUtpStream(size_t writeBound = kDefaultWriteBound)
+	explicit CUtpStream(size_t writeBound = DefaultWriteBound())
 	: m_writeBound(writeBound)
 	{
 	}
