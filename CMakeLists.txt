@@ -17,6 +17,21 @@ set (DEFAULT_BUILD_TYPE "Release")
 set (RECONF_COMMAND ${CMAKE_COMMAND})
 set (CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Pin the language standard rather than inheriting each compiler's default.
+#
+# Unpinned, the tree compiled as C++17 on Ubuntu (gcc 15, clang 21) and mingw
+# clang 22, and as C++14 on AppleClang 21 -- so the same source was a different
+# language depending on who built it. That is not a theoretical hazard: a
+# `static constexpr` member is implicitly inline from C++17 and needs an
+# out-of-line definition before it, so code that links on Linux fails on macOS
+# with an undefined symbol in the caller's translation unit rather than
+# anything visible at the declaration.
+#
+# 17 rather than 14 because three of the four toolchains already default to it,
+# it is nine years old, and pinning 14 would move three platforms backwards.
+set (CMAKE_CXX_STANDARD 17)
+set (CMAKE_CXX_STANDARD_REQUIRED ON)
+
 # Set the possible values of build type for cmake-gui
 if (CMAKE_CONFIGURATION_TYPES)
 	set (CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE

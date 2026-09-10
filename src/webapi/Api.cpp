@@ -7289,9 +7289,8 @@ struct IpPortSelector
 // tag -- that can be a hostname OR a synthetic display string ("Eserver
 // No.1"), so a DELETE by address could match a colliding label and remove
 // the wrong row. An exact IP + port has no such ambiguity.
-// boost::optional, not std::optional: the tree builds as C++14 and this file
-// already uses the boost form (PreflightEvents), so it is the house spelling
-// as well as the available one.
+// boost::optional, not std::optional: this file already uses the boost form
+// (PreflightEvents), so it is the house spelling here.
 boost::optional<IpPortSelector> ParseIpPortSelector(const std::string &ip_port)
 {
 	const auto colon = ip_port.rfind(':');

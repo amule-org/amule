@@ -57,6 +57,10 @@
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
+// asio's execution headers define constexpr statics out of line, which C++17
+// makes redundant and deprecates. Only reachable now that the standard is
+// pinned: under the old C++14 default those definitions were still required.
+#pragma clang diagnostic ignored "-Wdeprecated-redundant-constexpr-static-def"
 #endif
 #include <boost/asio.hpp>
 #include <boost/asio/steady_timer.hpp>

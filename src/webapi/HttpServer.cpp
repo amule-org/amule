@@ -31,11 +31,13 @@
 #include <wx/string.h>
 
 // See the note in LibSocketAsio.cpp: Boost 1.92's asio trips
-// -Wdeprecated-copy-with-user-provided-dtor, which this build treats as an
-// error. Suppressed across the includes only.
+// -Wdeprecated-copy-with-user-provided-dtor, and its execution headers define
+// constexpr statics out of line, which C++17 makes redundant and deprecates.
+// This build treats both as errors. Suppressed across the includes only.
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
+#pragma clang diagnostic ignored "-Wdeprecated-redundant-constexpr-static-def"
 #endif
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -310,9 +312,7 @@ bool GzipOnce(const std::string &in, std::string &out)
 	// to resize once and slice.
 	const uLong bound = deflateBound(&zs, static_cast<uLong>(in.size()));
 	out.resize(bound);
-	// std::string::data() is const-qualified pre-C++17; `&out[0]` is
-	// non-const in every standard we build against.
-	zs.next_out = reinterpret_cast<Bytef *>(&out[0]);
+	zs.next_out = reinterpret_cast<Bytef *>(out.data());
 	zs.avail_out = static_cast<uInt>(bound);
 	const int rc = deflate(&zs, Z_FINISH);
 	if (rc != Z_STREAM_END) {
