@@ -54,6 +54,10 @@ if (BUILD_MONOLITHIC OR BUILD_DAEMON)
 		ThreadTasks.cpp
 	)
 
+	if (ENABLE_UTP)
+		list (APPEND CORE_SOURCES UtpLibraryAdapter.cpp)
+	endif()
+
 	# Only compiled in when the switch is on. Every call site is behind the
 	# same guard, so with the switch off these two would be dead weight in
 	# the binary; the unit tests compile them directly, so gating them here

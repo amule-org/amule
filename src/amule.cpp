@@ -2032,6 +2032,12 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 	}
 	recurse = true;
 
+#ifdef AMULE_UTP_TRANSPORT
+	if (clientudp) {
+		clientudp->TickUtp();
+	}
+#endif
+
 	uploadqueue->Process();
 	downloadqueue->Process();
 	// theApp->clientcredits->Process();

@@ -29,16 +29,32 @@
 #include "MuleUDPSocket.h"
 #include "ReservedProtocolFrames.h" // Needed for CUnknownFrameLogThrottle
 
+#ifdef AMULE_UTP_TRANSPORT
+#include "UtpContext.h"
+#endif
+
 class CClientUDPSocket : public CMuleUDPSocket
+#ifdef AMULE_UTP_TRANSPORT
+,
+			 private IUtpDatagramSink
+#endif
 {
 public:
 	CClientUDPSocket(const amuleIPV4Address &address, const CProxyData *ProxyData = NULL);
+#ifdef AMULE_UTP_TRANSPORT
+	void Close() override;
+	void TickUtp();
+#endif
 
 protected:
-	void OnReceive(int errorCode);
+	void OnReceive(int errorCode) override;
 
 private:
-	void OnPacketReceived(uint32 ip, uint16 port, uint8_t *buffer, size_t length);
+#ifdef AMULE_UTP_TRANSPORT
+	void SendUtpDatagram(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port) override;
+	CUtpContext m_utp;
+#endif
+	void OnPacketReceived(uint32 ip, uint16 port, uint8_t *buffer, size_t length) override;
 	void ProcessPacket(uint8_t *packet, int16 size, int8 opcode, uint32 host, uint16 port);
 
 	/**

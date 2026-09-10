@@ -85,7 +85,7 @@ public:
 	 * The socket can be reopened by calling Open. Closing a
 	 * already closed socket is an illegal operation.
 	 */
-	void Close();
+	virtual void Close();
 
 	/** This function is called by aMule when the socket may send. */
 	virtual void OnSend(int errorCode);

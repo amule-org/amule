@@ -1,3 +1,22 @@
+if (ENABLE_UTP)
+	add_executable (UtpContextTest
+		UtpContextTest.cpp
+		${CMAKE_SOURCE_DIR}/src/Packet.cpp
+		${CMAKE_SOURCE_DIR}/src/Tag.cpp
+		${CMAKE_SOURCE_DIR}/src/MemFile.cpp
+		${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
+		${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+		${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+	)
+	target_include_directories (UtpContextTest PRIVATE
+		${CMAKE_BINARY_DIR}
+		${CMAKE_SOURCE_DIR}/src
+		${CMAKE_SOURCE_DIR}/src/include
+	)
+	target_link_libraries (UtpContextTest muleunit ZLIB::ZLIB)
+	add_test (NAME UtpContextTest COMMAND UtpContextTest)
+endif()
+
 add_executable (CTagTest
 	CTagTest.cpp
 	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp

@@ -276,20 +276,10 @@ if (NEED_LIB_MULEAPPCOMMON OR BUILD_WEBSERVER)
 	option (ENABLE_UPNP "enable UPnP support in aMule" ON)
 endif()
 
-# Builds the vendored libutp and nothing else. It does not enable a transport,
-# a protocol byte or any behaviour a peer can observe: no aMule source links
-# Utp::Utp yet, so an ENABLE_UTP=YES build and a default one ship the same
-# binaries. The switch exists so the uTP work can arrive as reviewable pieces
-# rather than as a transport and its dependency in one diff.
-#
-# In AMULE_EXPERIMENTAL_OPTIONS below, which is what gets the 5,000-odd vendored
-# lines compiled by the CI jobs that ask for the whole set. The compile
-# definition that membership adds is read by nothing today; that is a smaller
-# problem than a snapshot no job compiles, and it stops being inert when the
-# transport arrives.
-#
-# ON requires CMake 3.12 -- see cmake/libutp.cmake.
-option (ENABLE_UTP "build the vendored libutp (dependency only; enables no uTP behaviour yet)" OFF)
+# Experimental IPv4 uTP datagram framing in amule/amuled only. No stream
+# acceptance, dialing, or capability advertisement. Requires CMake 3.12;
+# see cmake/libutp.cmake.
+option (ENABLE_UTP "enable experimental uTP datagram framing (no stream transport)" OFF)
 
 # Master switch for the in-app "check for a new aMule version" feature: the
 # startup notification, the "Check for new version at startup" preference, and
