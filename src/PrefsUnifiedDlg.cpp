@@ -2657,7 +2657,7 @@ void PrefsUnifiedDlg::CreateEventPanels(const int idx, const wxString &vars, wxW
 				CUserEvents::GetDisplayName(static_cast<enum CUserEvents::EventType>(idx))));
 	wxStaticBoxSizer *item7 = new wxStaticBoxSizer(item8, wxVERTICAL);
 
-	wxCheckBox *item9 = new wxCheckBox(parent,
+	wxCheckBox *item9 = new wxCheckBox(item8,
 		USEREVENTS_FIRST_ID + idx * USEREVENTS_IDS_PER_EVENT + 1,
 		_("Enable command execution on core"),
 		wxDefaultPosition,
@@ -2671,10 +2671,10 @@ void PrefsUnifiedDlg::CreateEventPanels(const int idx, const wxString &vars, wxW
 	item10->Add(20, 20, wxSizerFlags().Center());
 
 	wxStaticText *item11 =
-		new wxStaticText(parent, -1, _("Core command:"), wxDefaultPosition, wxDefaultSize, 0);
+		new wxStaticText(item8, -1, _("Core command:"), wxDefaultPosition, wxDefaultSize, 0);
 	item10->Add(item11, wxSizerFlags().Center().Border(wxALL, 5));
 
-	wxTextCtrl *item12 = new wxTextCtrl(parent,
+	wxTextCtrl *item12 = new wxTextCtrl(item8,
 		USEREVENTS_FIRST_ID + idx * USEREVENTS_IDS_PER_EVENT + 2,
 		"",
 		wxDefaultPosition,
@@ -2685,7 +2685,7 @@ void PrefsUnifiedDlg::CreateEventPanels(const int idx, const wxString &vars, wxW
 
 	item7->Add(item10, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 0));
 
-	wxCheckBox *item14 = new wxCheckBox(parent,
+	wxCheckBox *item14 = new wxCheckBox(item8,
 		USEREVENTS_FIRST_ID + idx * USEREVENTS_IDS_PER_EVENT + 3,
 		_("Enable command execution on GUI"),
 		wxDefaultPosition,
@@ -2699,10 +2699,10 @@ void PrefsUnifiedDlg::CreateEventPanels(const int idx, const wxString &vars, wxW
 	item15->Add(20, 20, wxSizerFlags().Center());
 
 	wxStaticText *item16 =
-		new wxStaticText(parent, -1, _("GUI command:"), wxDefaultPosition, wxDefaultSize, 0);
+		new wxStaticText(item8, -1, _("GUI command:"), wxDefaultPosition, wxDefaultSize, 0);
 	item15->Add(item16, wxSizerFlags().Center().Border(wxALL, 5));
 
-	wxTextCtrl *item17 = new wxTextCtrl(parent,
+	wxTextCtrl *item17 = new wxTextCtrl(item8,
 		USEREVENTS_FIRST_ID + idx * USEREVENTS_IDS_PER_EVENT + 4,
 		"",
 		wxDefaultPosition,
@@ -2713,7 +2713,7 @@ void PrefsUnifiedDlg::CreateEventPanels(const int idx, const wxString &vars, wxW
 
 	item7->Add(item15, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 0));
 
-	wxStaticText *item13 = new wxStaticText(parent,
+	wxStaticText *item13 = new wxStaticText(item8,
 		-1,
 		_("The following variables will be replaced:") + vars,
 		wxDefaultPosition,

@@ -39,7 +39,9 @@ class SourcenameItem;
 class CFileDetailListCtrl : public CMuleVirtualDataViewCtrl
 {
 public:
-	CFileDetailListCtrl(wxWindow *&parent, int id, const wxPoint &pos, wxSize siz, int flags);
+	// The parent is taken by value: it is only forwarded to the base, and a
+	// `wxWindow *&` cannot bind to the wxStaticBox this control now lives in.
+	CFileDetailListCtrl(wxWindow *parent, int id, const wxPoint &pos, wxSize siz, int flags);
 
 	void AddSource(SourcenameItem *item);
 	void RefreshSource(SourcenameItem *item);
