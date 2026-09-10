@@ -47,9 +47,14 @@
 /**
  * Socket-specific address-family policy and Boost.Asio values.
  *
- * Keeping this separate avoids compiling Asio socket headers in consumers that
- * only need family predicates. Include it only where socket protocols or name
- * resolution are needed.
+ * Split from AddressFamilyPolicy.h so that a translation unit which only needs
+ * to know @b whether a family is permitted does not compile asio's socket
+ * headers to find out. Unlike asio's ip/address.hpp, ip/tcp.hpp reaches the
+ * boost/asio/execution headers, which do not survive this tree's
+ * -Werror=deprecated gate unmodified -- see the measurement above the include.
+ * Include this only from a TU that opens a socket or resolves a name;
+ * including it from a public header puts asio back into the closure of most of
+ * src/, which is what the split undoes.
  */
 namespace AddressFamilyPolicy
 {
@@ -87,7 +92,7 @@ enum class ResolverFamily
  * Dual stack requests an unrestricted lookup. A single-family configuration
  * restricts results to that family; DNS results do not establish connectivity.
  */
-inline ResolverFamily TcpResolverProtocol() noexcept
+inline ResolverFamily ResolverFamilyForLookup() noexcept
 {
 	switch (Configured()) {
 	case Families::IPv4Only:

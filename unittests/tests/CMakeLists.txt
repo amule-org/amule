@@ -264,6 +264,33 @@ target_link_libraries (PeerAddressingTest
 	${Boost_LIBRARIES}
 )
 
+# Address families: which families sockets are opened in, and the refusal that
+# never falls back to the other family. Header-only policy over CNetworkAddress,
+# so it is testable without an app; NetworkAddress.cpp is linked for
+# FromString/ToString exactly as the two suites above do.
+add_executable (AddressFamilyPolicyTest
+	AddressFamilyPolicyTest.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
+)
+
+add_test (NAME AddressFamilyPolicyTest
+	COMMAND AddressFamilyPolicyTest
+)
+
+target_include_directories (AddressFamilyPolicyTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+	PRIVATE ${Boost_INCLUDE_DIR}
+)
+
+target_link_libraries (AddressFamilyPolicyTest
+	muleunit
+	${Boost_LIBRARIES}
+)
+
 add_executable (CUInt128Test
 	CUInt128Test.cpp
 	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp

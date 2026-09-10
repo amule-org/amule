@@ -106,9 +106,12 @@ inline bool Permits(const CNetworkAddress &target) noexcept
 }
 
 /*
- * Socket protocols, resolver-family selection, and wildcard addresses live in
- * AddressFamilyPolicyAsio.h. Keeping the socket-specific API separate avoids
- * pulling Boost.Asio's executor machinery into consumers of family predicates.
+ * Socket protocols, resolver-family selection and wildcard addresses live in
+ * AddressFamilyPolicyAsio.h, because their return types are Boost.Asio values
+ * and naming those here would pull asio's executor machinery into every TU
+ * that only wants to ask which family is permitted. What stays here needs no
+ * library: Configured(), the two Permits predicates and Families are the
+ * decision itself.
  */
 
 } // namespace AddressFamilyPolicy
