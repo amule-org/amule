@@ -7,7 +7,7 @@ following packages:
 
 | Package   | Minimum version | Notes                             |
 | --------- | --------------- | --------------------------------- |
-| CMake     | 3.10            |                                   |
+| CMake     | 3.10            | 3.12 with `-DENABLE_UTP=YES`      |
 | zlib      | 1.2.3           |                                   |
 | wxWidgets | 3.2.0           | 3.2 branch or newer               |
 | Crypto++  | 8.1             | classic or cryptopp-modern        |

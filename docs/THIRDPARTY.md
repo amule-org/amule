@@ -62,3 +62,40 @@ The framework is statically linked into every test binary but is NOT
 linked into shipped daemon binaries (`amule`, `amuled`, `amulegui`,
 `amuleweb`, `amuleapi`), so the LGPL relinking clause does not constrain
 end-user binary distribution.
+
+## libutp
+
+Micro Transport Protocol (uTP) library, vendored for the forthcoming uTP
+transport. License: MIT.
+
+Upstream: <https://github.com/transmission/libutp> — version 3.4, pinned at
+commit `490874c44a2ecf914404b0a20e043c9755fff47b`, vendored verbatim at
+[`src/extern/libutp/`](../src/extern/libutp/). Full license text in
+[`src/extern/libutp/LICENSE`](../src/extern/libutp/LICENSE); the pin, the list
+of vendored files and how to verify them against upstream are recorded in
+[`src/extern/libutp/AMULE_PROVENANCE.md`](../src/extern/libutp/AMULE_PROVENANCE.md).
+
+> Copyright (c) 2010-2013 BitTorrent, Inc.
+>
+> Permission is hereby granted, free of charge, to any person obtaining a copy
+> of this software and associated documentation files (the "Software"), to deal
+> in the Software without restriction, including without limitation the rights
+> to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+> copies of the Software, and to permit persons to whom the Software is
+> furnished to do so, subject to the following conditions:
+>
+> The above copyright notice and this permission notice shall be included in
+> all copies or substantial portions of the Software.
+>
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+> AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+> LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+> OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+> THE SOFTWARE.
+
+The snapshot carries no local patches. It is built only with
+`-DENABLE_UTP=YES`, which is OFF by default, and no aMule target links it yet —
+so a default build neither compiles nor ships it, and this notice applies only
+to binaries built with that switch on.
