@@ -89,14 +89,13 @@ private:
 		sink->SendUtpDatagram(args->buf, args->len, ip, ntohs(address->sin_port));
 		return 0;
 	}
-	static uint64 GetUdpMtu(utp_callback_arguments *)
+	static uint64 GetUdpMtu(utp_callback_arguments *args)
 	{
-		// Vendored libutp's conservative IPv4 UDP MTU (1402), less the aMule envelope.
-		return 1402 - 2;
+		return UtpUdpMtu(args->address->sa_family == AF_INET6);
 	}
-	static uint64 GetUdpOverhead(utp_callback_arguments *)
+	static uint64 GetUdpOverhead(utp_callback_arguments *args)
 	{
-		return 20 + 8 + 2; // IPv4 + UDP + aMule envelope.
+		return UtpUdpOverhead(args->address->sa_family == AF_INET6);
 	}
 	utp_context *m_context = nullptr;
 };

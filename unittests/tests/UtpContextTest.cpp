@@ -284,4 +284,22 @@ TEST(UtpContext, FailedCreationDropsWithoutMaintenance)
 	ASSERT_EQUALS(0, state.acks);
 	ASSERT_EQUALS(0, state.timeouts);
 }
+TEST(UtpContext, UdpSizingKeepsTheFamilyAwarenessLibutpHad)
+{
+	// libutp's own defaults branch on the address family; overriding them for the
+	// two-byte envelope must not flatten that, or an IPv6 peer gets IPv4 numbers
+	// and libutp sizes packets 20 bytes too large.
+	ASSERT_EQUALS(1400ull, UtpUdpMtu(false));
+	ASSERT_EQUALS(1230ull, UtpUdpMtu(true));
+	ASSERT_EQUALS(30ull, UtpUdpOverhead(false));
+	ASSERT_EQUALS(78ull, UtpUdpOverhead(true));
+
+	// The envelope is what the override exists for: each is libutp's own
+	// constant moved by exactly two bytes, in the direction that leaves room.
+	ASSERT_EQUALS(1402ull - kUtpEnvelopeBytes, UtpUdpMtu(false));
+	ASSERT_EQUALS(1232ull - kUtpEnvelopeBytes, UtpUdpMtu(true));
+	ASSERT_EQUALS(28ull + kUtpEnvelopeBytes, UtpUdpOverhead(false));
+	ASSERT_EQUALS(76ull + kUtpEnvelopeBytes, UtpUdpOverhead(true));
+}
+
 // File_checked_for_headers
