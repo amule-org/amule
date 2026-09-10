@@ -1,0 +1,9 @@
+# Vendored third-party subtree - kept byte-identical to a pinned upstream
+# commit, so it must not be reformatted to this project's style. Reformatting
+# would break the no-local-patches rule its provenance file states and turn
+# every pin bump into a merge conflict.
+#
+# The companion .clang-tidy disables the lint gate here for the same reason.
+
+DisableFormat: true
+SortIncludes: Never

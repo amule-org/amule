@@ -89,6 +89,10 @@ if (ENABLE_UPNP)
 	include (cmake/upnp.cmake)
 endif()
 
+if (ENABLE_UTP)
+	include (cmake/libutp.cmake)
+endif()
+
 if (NEED_GLIB_CHECK)
 	include (cmake/glib21.cmake)
 endif()
