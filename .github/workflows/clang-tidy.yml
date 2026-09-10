@@ -167,13 +167,17 @@ jobs:
           CTCACHE_CLANG_TIDY: clang-tidy-${{ env.LLVM_VERSION }}
         run: |
           # Analyze every src/ translation unit except the generated lexers
-          # and parsers, and the vendored subtree, none of which are ours to
-          # lint. src/extern/.clang-tidy already disables every check there,
-          # so analysing those TUs only ever produced an empty report at full
-          # cost -- and each one is a permanent ctcache miss on first sight.
+          # and parsers, and the two subtrees that carry a Checks: '-*'
+          # .clang-tidy of their own: src/extern and src/webserver/src.
+          #
+          # Feeding those to clang-tidy only ever produced "Error: no checks
+          # enabled" and a usage dump, at the full cost of parsing the TU, and
+          # each is a permanent ctcache miss because a digest is only stored
+          # for a TU that emits nothing. If a third subtree is ever excluded
+          # the same way, add it here too.
           mapfile -t files < <(jq -r '.[].file' build/compile_commands.json \
             | grep -E '/src/' \
-            | grep -vE '/src/extern/' \
+            | grep -vE '/src/(extern|webserver/src)/' \
             | grep -vE '/(Scanner|Parser|IPFilterScanner)\.cpp$' \
             | sort -u)
           echo "Analyzing ${#files[@]} translation units"
