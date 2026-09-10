@@ -49,6 +49,9 @@
 #include "kademlia/utils/KadUDPKey.h"
 #include <zlib.h>
 #include "EncryptedDatagramSocket.h"
+#ifdef AMULE_UTP_TRANSPORT
+#include "UtpLibraryAdapter.h"
+#endif
 
 //
 // CClientUDPSocket -- Extended eMule UDP socket
@@ -56,11 +59,42 @@
 
 CClientUDPSocket::CClientUDPSocket(const amuleIPV4Address &address, const CProxyData *ProxyData)
 : CMuleUDPSocket("Client UDP-Socket", ID_CLIENTUDPSOCKET_EVENT, address, ProxyData)
+#ifdef AMULE_UTP_TRANSPORT
+, m_utp(CreateUtpLibrary(), *this)
+#endif
 {
 	if (!thePrefs::IsUDPDisabled()) {
 		Open();
 	}
 }
+
+#ifdef AMULE_UTP_TRANSPORT
+void CClientUDPSocket::Close()
+{
+	wxASSERT(wxIsMainThread());
+	m_utp.Destroy();
+	CMuleUDPSocket::Close();
+}
+
+void CClientUDPSocket::TickUtp()
+{
+	wxASSERT(wxIsMainThread());
+	m_utp.Tick();
+}
+
+void CClientUDPSocket::SendUtpDatagram(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port)
+{
+	wxASSERT(wxIsMainThread());
+	const auto *peer = theApp->clientlist->FindClientByIP(ip, port);
+	QueueUtpDatagram<CPacket>(*this,
+		payload,
+		length,
+		ip,
+		port,
+		peer != nullptr && peer->ShouldReceiveCryptUDPPackets(),
+		peer != nullptr ? peer->GetUserHash().GetHash() : nullptr);
+}
+#endif
 
 void CClientUDPSocket::OnReceive(int errorCode)
 {
@@ -201,16 +235,30 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 		break;
 	}
 
-	// The five registered types. Every one of them belongs to a transport
-	// this build does not have, so each is dropped here rather than in a
-	// shared fallthrough: the change that ships a transport replaces its own
-	// case and nothing else, and until then a peer's NAT-T attempt is a
-	// recognised frame aMule cannot serve rather than malformed traffic.
+	// The registered types. Each is dropped in its own case rather than in a
+	// shared fallthrough, so that the change which ships a transport replaces
+	// its own case and nothing else -- which is what the uTP case below now is.
+	// The other four still belong to transports this build does not have, and a
+	// peer's attempt at one of them is a recognised frame aMule cannot serve
+	// rather than malformed traffic.
 	switch (classified.type) {
 	case OP_NATT_FRAME_UTP:
+#ifdef AMULE_UTP_TRANSPORT
+		wxASSERT(wxIsMainThread());
+		if (ProcessUtpFrame(m_utp, classified, ip, port)) {
+			return;
+		}
+		// Reached only when libutp has seen the datagram and disclaimed it:
+		// it belongs to no connection it holds. A different reason from the
+		// types below, so it does not borrow their message.
+		AddDebugLogLineN(logClientUDP,
+			CFormat("Dropping uTP frame from %s:%u: not for any open uTP connection") %
+				Uint32toStringIP(ip) % port);
+#else
 		AddDebugLogLineN(logClientUDP,
 			CFormat("Ignoring uTP NAT-T frame from %s:%u: no uTP transport in this build") %
 				Uint32toStringIP(ip) % port);
+#endif
 		break;
 
 	case OP_NATT_FRAME_QUIC:

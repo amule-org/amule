@@ -253,6 +253,11 @@ if (BUILD_DAEMON)
 		)
 	endif()
 
+	if (ENABLE_UTP)
+		target_link_libraries (amuled PRIVATE Utp::Utp)
+		target_compile_definitions (amuled PRIVATE AMULE_UTP_TRANSPORT)
+	endif()
+
 	target_compile_definitions (amuled
 		PRIVATE AMULE_DAEMON
 		PRIVATE wxUSE_GUI=0
@@ -363,6 +368,11 @@ if (BUILD_MONOLITHIC)
 		target_sources (amule
 			PRIVATE ${CMAKE_BINARY_DIR}/version.rc ${CMAKE_SOURCE_DIR}/amule.rc
 		)
+	endif()
+
+	if (ENABLE_UTP)
+		target_link_libraries (amule PRIVATE Utp::Utp)
+		target_compile_definitions (amule PRIVATE AMULE_UTP_TRANSPORT)
 	endif()
 
 	target_link_libraries (amule
