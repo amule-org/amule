@@ -3085,13 +3085,21 @@ void CamuleApp::ShowConnectionState(bool forceUpdate)
 			}
 		}
 
-		if (changed_flags & CONNECTED_KAD_NOT) {
-			// cppcheck-suppress duplicateBranch
-			if (state & CONNECTED_KAD_NOT) {
-				AddLogLineC(_("Kad started."));
-			} else {
-				AddLogLineC(_("Kad stopped."));
-			}
+		// Kad's three flags together mean "running"; CONNECTED_KAD_NOT alone
+		// means "running, but no contact yet". Keying these two messages on
+		// that single flag mislabelled both edges of it: finishing the
+		// bootstrap clears it and printed "Kad stopped.", losing contact sets
+		// it and printed "Kad started." A bug reporter read the first as a
+		// start/stop flap on startup and built a diagnosis on it, when the
+		// daemon was only connecting (amule-org/amule#1369). What this pair
+		// is about is whether Kad is running, so test that; the block below
+		// reports the connected edge on its own.
+		const uint8 kad_running_flags =
+			CONNECTED_KAD_NOT | CONNECTED_KAD_OK | CONNECTED_KAD_FIREWALLED;
+		const bool kad_was_running = (old_state & kad_running_flags) != 0;
+		const bool kad_is_running = (state & kad_running_flags) != 0;
+		if (kad_was_running != kad_is_running) {
+			AddLogLineC(kad_is_running ? _("Kad started.") : _("Kad stopped."));
 		}
 
 		if (changed_flags & (CONNECTED_KAD_OK | CONNECTED_KAD_FIREWALLED)) {
