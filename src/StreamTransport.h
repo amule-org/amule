@@ -79,12 +79,12 @@ public:
 	 * Zero unless the stream actually failed. Never set for a would-block.
 	 *
 	 * Only its truthiness is defined: the value is opaque and carries no
-	 * meaning a caller may act on. It shares its name and type with the
-	 * wx-backed `CLibSocket::LastError()`, so the trap this warns about is a
-	 * call site reaching for a `wxSOCKET_*` comparison and matching by
-	 * coincidence. Implementations keep their values outside that range so
-	 * such a comparison cannot accidentally succeed; ask the transport for
-	 * the reason instead.
+	 * meaning a caller may act on. It shares its name and type with
+	 * `CLibSocket::LastError()`, which returns a boost error_code value, so
+	 * the trap this warns about is a call site comparing against an errno or
+	 * WinSock constant and matching by coincidence. Implementations keep
+	 * their values outside those ranges so such a comparison cannot
+	 * accidentally succeed; ask the transport for the reason instead.
 	 */
 	virtual int LastError() const = 0;
 

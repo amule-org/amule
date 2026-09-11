@@ -149,14 +149,21 @@ TEST(UtpStream, ReadBoundIsReportedRatherThanEnforced)
 	ASSERT_FALSE(stream.ReadBufferAboveBound());
 }
 
-TEST(UtpStream, ErrorValuesCannotBeMistakenForWxSocketErrors)
+TEST(UtpStream, ErrorValuesCannotBeMistakenForSocketErrors)
 {
-	// LastError() stands in for the wx-backed CLibSocket::LastError() under the
-	// same name and type, so a call site reaching for wxSOCKET_INVOP (1) or
-	// wxSOCKET_IOERR (2) must not match one of ours by coincidence.
-	CUtpStream reset;
-	reset.OnFailure(EUtpTransportFailure::Reset);
-	ASSERT_TRUE(reset.LastError() > 6);
+	// LastError() stands in for CLibSocket::LastError() under the same name and
+	// type, and that one returns a boost error_code value: errno on POSIX,
+	// WinSock codes (10000-11999) on Windows. Every failure of ours has to sit
+	// clear of both, or a call site comparing against a constant matches by
+	// coincidence.
+	const EUtpTransportFailure failures[] = {
+		EUtpTransportFailure::Refused, EUtpTransportFailure::TimedOut, EUtpTransportFailure::Reset
+	};
+	for (size_t i = 0; i < sizeof(failures) / sizeof(failures[0]); ++i) {
+		CUtpStream stream;
+		stream.OnFailure(failures[i]);
+		ASSERT_TRUE(stream.LastError() > 11999);
+	}
 }
 
 TEST(UtpStream, WriteBoundBlocksWithoutFailing)
@@ -185,14 +192,76 @@ TEST(UtpStream, PartialWriteTakesWhatFits)
 	ASSERT_EQUALS(10u, stream.Write(payload.data(), 16));
 	ASSERT_TRUE(stream.BlocksWrite());
 
-	const std::vector<uint8_t> queued = stream.TakeQueuedBytes();
+	const std::vector<uint8_t> queued = stream.PeekQueuedBytes();
 	ASSERT_EQUALS(10u, (unsigned)queued.size());
 	for (size_t i = 0; i < queued.size(); ++i) {
 		ASSERT_EQUALS((int)payload[i], (int)queued[i]);
 	}
+	// Looking is not taking: the queue is still full until libutp says what
+	// it accepted, so the writer stays blocked.
+	ASSERT_TRUE(stream.BlocksWrite());
+	ASSERT_EQUALS(10u, (unsigned)stream.WriteBufferSize());
+
 	// Draining the queue is what unblocks the writer.
+	stream.ConsumeQueuedBytes(queued.size());
 	ASSERT_FALSE(stream.BlocksWrite());
 	ASSERT_EQUALS(0u, (unsigned)stream.WriteBufferSize());
+}
+
+TEST(UtpStream, RefusedBytesStayQueued)
+{
+	CUtpStream stream(64);
+	const std::vector<uint8_t> payload = Pattern(40, 11);
+	ASSERT_EQUALS(40u, stream.Write(payload.data(), 40));
+
+	// utp_write() takes what the congestion window allows and reports it. The
+	// refused tail has to stay here: if the queue emptied, the caller would
+	// have to hold those bytes somewhere WriteBufferSize() cannot see and
+	// m_writeBound does not bound, which is the growth the bound prevents.
+	stream.ConsumeQueuedBytes(15);
+	ASSERT_EQUALS(25u, (unsigned)stream.WriteBufferSize());
+
+	const std::vector<uint8_t> left = stream.PeekQueuedBytes();
+	ASSERT_EQUALS(25u, (unsigned)left.size());
+	for (size_t i = 0; i < left.size(); ++i) {
+		ASSERT_EQUALS((int)payload[15 + i], (int)left[i]);
+	}
+
+	// And the queue keeps taking new bytes behind them, in order.
+	const std::vector<uint8_t> more = Pattern(4, 200);
+	ASSERT_EQUALS(4u, stream.Write(more.data(), 4));
+	const std::vector<uint8_t> all = stream.PeekQueuedBytes();
+	ASSERT_EQUALS(29u, (unsigned)all.size());
+	ASSERT_EQUALS((int)more[0], (int)all[25]);
+}
+
+TEST(UtpStream, ConsumingMoreThanIsQueuedIsHarmless)
+{
+	// libutp reports what it took, so accepted should never exceed the queue.
+	// Clamping keeps a wrong count from erasing past the end.
+	CUtpStream stream(64);
+	const std::vector<uint8_t> payload = Pattern(8, 21);
+	ASSERT_EQUALS(8u, stream.Write(payload.data(), 8));
+
+	stream.ConsumeQueuedBytes(4096);
+	ASSERT_EQUALS(0u, (unsigned)stream.WriteBufferSize());
+	ASSERT_FALSE(stream.BlocksWrite());
+}
+
+TEST(UtpStream, ConsumingUnblocksOnlyWhenItDropsBelowTheBound)
+{
+	CUtpStream stream(16);
+	const std::vector<uint8_t> payload = Pattern(16, 31);
+	ASSERT_EQUALS(16u, stream.Write(payload.data(), 16));
+	ASSERT_TRUE(stream.BlocksWrite());
+
+	// libutp took nothing, so nothing changed and the writer stays blocked.
+	stream.ConsumeQueuedBytes(0);
+	ASSERT_TRUE(stream.BlocksWrite());
+	ASSERT_EQUALS(16u, (unsigned)stream.WriteBufferSize());
+
+	stream.ConsumeQueuedBytes(1);
+	ASSERT_FALSE(stream.BlocksWrite());
 }
 
 TEST(UtpStream, WritableReopensAWindowOnlyWhenThereIsRoom)
@@ -207,7 +276,7 @@ TEST(UtpStream, WritableReopensAWindowOnlyWhenThereIsRoom)
 	stream.OnWritable();
 	ASSERT_TRUE(stream.BlocksWrite());
 
-	stream.TakeQueuedBytes();
+	stream.ConsumeQueuedBytes(stream.WriteBufferSize());
 	stream.OnWritable();
 	ASSERT_FALSE(stream.BlocksWrite());
 }
@@ -280,6 +349,23 @@ TEST(UtpStream, ReadingAnEndedStreamReportsTheEndRatherThanBlocking)
 	// 0 bytes and no block: no more bytes are coming, as opposed to not yet.
 	ASSERT_EQUALS(0u, stream.Read(out, sizeof(out)));
 	ASSERT_FALSE(stream.BlocksRead());
+}
+
+TEST(UtpStream, ACleanEndIsNotOkAndIsNotAWouldBlock)
+{
+	CUtpStream stream;
+	const std::vector<uint8_t> payload = Pattern(4, 41);
+	ASSERT_TRUE(stream.IsOk());
+
+	stream.OnFailure(EUtpTransportFailure::Eof);
+
+	// EOF ends the stream without failing it, so Write() refuses while both
+	// BlocksWrite() and LastError() stay 0 -- the pair a would-block sets.
+	// IsOk() is what tells the two apart.
+	ASSERT_EQUALS(0u, stream.Write(payload.data(), 4));
+	ASSERT_FALSE(stream.BlocksWrite());
+	ASSERT_EQUALS(0, stream.LastError());
+	ASSERT_FALSE(stream.IsOk());
 }
 
 TEST(UtpStream, BufferedBytesSurviveTheEnd)

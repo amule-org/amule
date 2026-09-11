@@ -170,13 +170,29 @@ public:
 
 	size_t WriteBufferSize() const { return m_writeBuffer.size(); }
 
-	//! Hands the queued bytes to the caller that will pass them to libutp.
-	std::vector<uint8_t> TakeQueuedBytes()
+	//! The queued bytes, for the caller that will offer them to libutp.
+	std::vector<uint8_t> PeekQueuedBytes() const
 	{
-		std::vector<uint8_t> bytes(m_writeBuffer.begin(), m_writeBuffer.end());
-		m_writeBuffer.clear();
-		m_blocksWrite = false;
-		return bytes;
+		return std::vector<uint8_t>(m_writeBuffer.begin(), m_writeBuffer.end());
+	}
+
+	/**
+	 * Drops the bytes libutp accepted and keeps the rest queued.
+	 *
+	 * utp_write() returns how much it took, which is less than it was offered
+	 * as soon as the congestion window is full and zero while the socket is
+	 * not connected. Handing the whole queue out and clearing it would leave
+	 * the caller holding the refused tail with nowhere to put it back, so it
+	 * would need a second queue that WriteBufferSize() cannot see and
+	 * m_writeBound does not bound. Peek, offer, then consume what was taken.
+	 */
+	void ConsumeQueuedBytes(size_t accepted)
+	{
+		const size_t queued = m_writeBuffer.size();
+		const size_t drop = accepted < queued ? accepted : queued;
+		m_writeBuffer.erase(m_writeBuffer.begin(),
+			m_writeBuffer.begin() + static_cast<std::deque<uint8_t>::difference_type>(drop));
+		m_blocksWrite = m_writeBuffer.size() >= m_writeBound;
 	}
 
 	//! The peer's window opened again.
@@ -203,14 +219,26 @@ public:
 	bool IsTerminal() const { return IsUtpTerminal(m_failure); }
 
 	/**
+	 * Whether the stream is still usable, as IStreamTransport::IsOk() means it.
+	 *
+	 * A clean EOF ends the stream without failing it, so Write() refuses with
+	 * 0 while BlocksWrite() and LastError() are both still 0. Those two alone
+	 * describe a would-block, which this is not, so the difference has to be
+	 * askable rather than inferred from the pair.
+	 */
+	bool IsOk() const { return !IsTerminal(); }
+
+	/**
 	 * Nonzero only for a real failure. EOF and destroying are ends, not errors.
 	 *
-	 * The value is opaque: only its truthiness is defined. It is offset past
-	 * the wxSocketError range on purpose, because this stands in for the
-	 * wx-backed CLibSocket::LastError() under the same name and type, and a
-	 * call site reaching for `== wxSOCKET_INVOP` would otherwise match by
-	 * coincidence -- wrong, and silent. Callers wanting the reason ask
-	 * Failure().
+	 * The value is opaque: only its truthiness is defined. It is offset out of
+	 * the way on purpose, because this stands in for CLibSocket::LastError()
+	 * under the same name and type and a call site comparing against a known
+	 * constant would otherwise match by coincidence -- wrong, and silent.
+	 * CLibSocket::LastError() returns a boost error_code value (see
+	 * m_ErrorCode in LibSocketAsio.cpp), so the range to clear is errno on
+	 * POSIX and the WinSock codes on Windows, not wxSocketError. Callers
+	 * wanting the reason ask Failure().
 	 */
 	int LastError() const
 	{
@@ -225,7 +253,8 @@ public:
 	bool CloseTaken() const { return m_close.Taken(); }
 
 private:
-	//! Past every wxSocketError, so a stray comparison against one cannot match.
+	//! Above errno, the WinSock range (10000-11999) and wxSocketError alike,
+	//! so a stray comparison against any of them cannot match.
 	static constexpr int kErrorBase = 0x7500;
 
 	std::deque<uint8_t> m_readBuffer;
