@@ -47,14 +47,14 @@ typedef std::array<uint8_t, KAD_AICH_HASH_SIZE> CKadAICHHash;
 // The AICH root hashes reported for one indexed keyword entry, each with the
 // number of publishers that reported it.
 //
-// Kad protocol version 0x09 added AICH hashes to keyword storage.  A publisher
-// at 0x09 or above sends its file's AICH root hash in TAG_KADAICHHASHPUB
-// ("\x36", BSOB of KAD_AICH_HASH_SIZE bytes) inside KADEMLIA2_PUBLISH_KEY_REQ;
-// the indexing node accumulates those hashes per entry and reports them back in
-// TAG_KADAICHHASHRESULT ("\x37", BSOB) on KADEMLIA2_SEARCH_RES.  The publisher
-// count is the interesting part: an honest file has exactly one AICH hash, so
-// several competing hashes -- or one hash with a single publisher against a
-// popular file -- is the signal a searcher wants.
+// Kad protocol version 0x09 added AICH hashes to keyword storage: a publisher at
+// 0x09 or above sends its file's AICH root hash in TAG_KADAICHHASHPUB (BSOB of
+// KAD_AICH_HASH_SIZE bytes) inside KADEMLIA2_PUBLISH_KEY_REQ, and the indexing
+// node accumulates those per entry and reports them in TAG_KADAICHHASHRESULT on
+// KADEMLIA2_SEARCH_RES. The publisher count is the interesting part: an honest
+// file has exactly one AICH hash, so several competing hashes -- or one hash
+// with a single publisher against a popular file -- is the signal a searcher
+// wants.
 //
 // Slots are never removed once created, because publishers hold their hash by
 // index; DropReferenceAt() only decrements the popularity counter, and

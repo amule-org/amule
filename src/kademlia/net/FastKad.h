@@ -40,39 +40,33 @@ namespace Kademlia
 // fixed constant.
 //
 // A fixed timeout is wrong in both directions: on a fast link it wastes seconds
-// waiting for a node that was never going to answer, and on a slow or congested
-// one it discards contacts that would have answered just after the deadline.
-// This keeps a bounded window of the most recent per-address response times and
-// estimates the ceiling as mean + 2 standard deviations (about the 95th
-// percentile of a normal distribution), plus a small margin.
+// waiting for a node that was never going to answer, and on a slow one it
+// discards contacts that would have answered just after the deadline. This keeps
+// a bounded window of the most recent per-address response times and estimates
+// the ceiling as mean + 2 standard deviations, plus a small margin.
 //
 // Two deliberate biases keep a cold or lucky window from producing an
 // aggressively short timeout:
 //
-//  - The mean and variance are always divided by the *full* window size, with
-//    every unfilled slot counted as the default response time. A handful of
-//    fast samples therefore cannot pull the estimate far below the default;
-//    it takes a full window of fast samples to earn a short timeout.
-//  - Entries younger than MIN_EVICTION_AGE_MS are never evicted to make room,
-//    so a burst of new addresses cannot churn the whole window at once.
+//  - The mean and variance are always divided by the FULL window size, with
+//    every unfilled slot counted as the default response time, so it takes a
+//    full window of fast samples to earn a short timeout.
+//  - Entries younger than MIN_EVICTION_AGE_MS are never evicted to make room, so
+//    a burst of new addresses cannot churn the whole window at once.
 //
 // All time values are in milliseconds and "now" is always passed in, which is
 // what lets the estimator be tested without waiting on a real clock.
 //
-// Two places where this deliberately does not match eMuleAI, so that the next
-// person holding the two side by side reads them as decisions rather than as
-// transcription slips:
+// Two deliberate divergences from eMuleAI:
 //
 //  - eMuleAI accumulates `missing * CLOCKS_PER_SEC` into its sum of squares,
-//    which adds a raw time to a sum of squared times: the units do not agree,
-//    and the unfilled-slot term is then far too small to hold the estimate up.
-//    Here the squared deviation is added, so an unfilled slot biases the
-//    variance the way the comment above says it does. emule-qt reached the
-//    same correction independently.
-//  - eMuleAI reads the clock with clock(), which on POSIX is CPU time, not
-//    wall time: a mostly-idle client barely advances it, so response times
+//    adding a raw time to a sum of squared times: the units do not agree, and
+//    the unfilled-slot term is then far too small to hold the estimate up. Here
+//    the squared deviation is added. emule-qt reached the same correction.
+//  - eMuleAI reads the clock with clock(), which on POSIX is CPU time, not wall
+//    time, so a mostly-idle client barely advances it and response times
 //    measured against it are far too short. Passing the tick in avoids the
-//    question entirely, and is what makes the estimator testable.
+//    question and is what makes the estimator testable.
 class CFastKad
 {
 public:

@@ -94,13 +94,11 @@ void CUDPFirewallTester::SetUDPFWCheckResult(
 				m_lastSucceededTime + SEC2MS(10) > ::GetTickCount64() &&
 				incomingPort == CKademlia::GetPrefs()->GetInternKadPort() &&
 				CKademlia::GetPrefs()->GetUseExternKadPort()) {
-				// our test finished already in the last 10 seconds with being open because we
-				// received a proper result packet before however we now receive another
-				// answer packet on our incoming port (which is not unusual as both
-				// resultpackets are sent nearly at the same time and UDP doesn't cares if the
-				// order stays), while the one before was received on our extern port Because
-				// a proper forwarded intern port is more reliable to stay open than an extern
-				// port set by the NAT, we prefer intern ports and change the setting.
+				// Our test already finished in the last 10 seconds as open, but another
+				// answer packet has now arrived on our incoming port -- not unusual,
+				// since both result packets are sent at nearly the same time and UDP
+				// does not preserve order. A properly forwarded intern port is more
+				// reliable than an extern port set by the NAT, so prefer it.
 				CKademlia::GetPrefs()->SetUseExternKadPort(false);
 				AddDebugLogLineN(logKadUdpFwTester,
 					CFormat("Corrected UDP firewall result: Using open internal (%u) "
@@ -133,14 +131,11 @@ void CUDPFirewallTester::SetUDPFWCheckResult(
 	}
 
 	if (m_fwChecksRunningUDP == 0) {
-		// A response arrived for a check we no longer believe to be
-		// running. Most commonly this is a late UDP packet that
-		// straddles a Kad restart (system suspend/resume, see #384),
-		// where ReCheckFirewallUDP zeroed the counter while the
-		// previous test's responses were still in flight. Dropping
-		// the response avoids mutating m_firewalledUDP /
-		// m_fwChecksFinishedUDP based on stale state — the new test
-		// cycle will produce its own results.
+		// A response arrived for a check we no longer believe to be running, most
+		// commonly a late UDP packet straddling a Kad restart (#384), where
+		// ReCheckFirewallUDP zeroed the counter while the previous test's responses
+		// were still in flight. Dropping it avoids mutating m_firewalledUDP /
+		// m_fwChecksFinishedUDP from stale state.
 		AddDebugLogLineN(logKadUdpFwTester,
 			wxString::Format("Ignoring late UDP FW result from %s",
 				(const char *)KadIPToString(fromIP).mb_str()));

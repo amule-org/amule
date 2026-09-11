@@ -65,7 +65,6 @@ SearchMap CSearchManager::m_searches;
 
 bool CSearchManager::IsSearching(uint32_t searchID) noexcept
 {
-	// Check if this searchID is within the searches
 	for (SearchMap::const_iterator it = m_searches.begin(); it != m_searches.end(); ++it) {
 		if (it->second->GetSearchID() == searchID) {
 			return true;
@@ -104,15 +103,12 @@ bool CSearchManager::IsKadSearch(uint32_t searchID)
 {
 	for (SearchMap::const_iterator it = m_searches.begin(); it != m_searches.end(); ++it) {
 		// Skip searches that were never given an id. Their m_searchID is the
-		// constructor's 0xFFFFFFFF, which is also the single bucket every EC
-		// client predating multi-search reuses for all of its searches -- so
-		// without this an ordinary node lookup, buddy lookup or UDP firewall
-		// check answers "yes, that is a running Kad search" for a legacy
-		// client's ed2k search. The whole per-id lifecycle then follows: the
-		// search is reported as kind Kad, RUNNING, and its percent comes from
-		// the Kad time-ramp (pinned at 99) until the unrelated internal search
-		// happens to end. Only PrepareFindKeywords and PrepareLookup assign an
-		// id; the three FindNode* paths do not.
+		// constructor's 0xFFFFFFFF, which is also the single bucket every EC client
+		// predating multi-search reuses for all of its searches -- so without this an
+		// ordinary node lookup, buddy lookup or UDP firewall check answers "yes, that
+		// is a running Kad search" for a legacy client's ed2k search, and the whole
+		// per-id lifecycle follows from there. Only PrepareFindKeywords and
+		// PrepareLookup assign an id.
 		if (!it->second->HasSearchID()) {
 			continue;
 		}
@@ -125,17 +121,15 @@ bool CSearchManager::IsKadSearch(uint32_t searchID)
 
 void CSearchManager::StopSearch(uint32_t searchID, bool delayDelete)
 {
-	// Stop a specific searchID
 	for (SearchMap::iterator it = m_searches.begin(); it != m_searches.end(); ++it) {
 		if (it->second->GetSearchID() == searchID) {
 			// Do not delete as we want to get a chance for late packets to be processed.
 			if (delayDelete) {
 				it->second->PrepareToStop();
 			} else {
-				// Delete this search now.
-				// If this method is changed to continue looping, take care of the iterator as
-				// we will already be pointing to the next entry and the for-loop could cause
-				// you to iterate past the end.
+				// Delete this search now. If this method is changed to continue
+				// looping, take care of the iterator: it already points at the next
+				// entry, so the for-loop could iterate past the end.
 				delete it->second;
 				m_searches.erase(it++);
 			}
@@ -146,13 +140,11 @@ void CSearchManager::StopSearch(uint32_t searchID, bool delayDelete)
 
 void CSearchManager::StopAllSearches()
 {
-	// Stop and delete all searches.
 	DeleteContents(m_searches);
 }
 
 bool CSearchManager::StartSearch(CSearch *search)
 {
-	// A search object was created, now try to start the search.
 	if (AlreadySearchingFor(search->GetTarget())) {
 		// There was already a search in progress with this target.
 		delete search;

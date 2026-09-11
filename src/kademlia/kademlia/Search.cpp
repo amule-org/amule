@@ -106,7 +106,6 @@ CSearch::CSearch()
 	m_searchTermsDataSize = 0;
 	m_nodeSpecialSearchRequester = NULL;
 	m_closestDistantFound = 0;
-	// m_requestedMoreNodes default-constructs empty
 }
 
 CSearch::~CSearch()
@@ -131,14 +130,11 @@ CSearch::~CSearch()
 	}
 
 	if (m_nodeSpecialSearchRequester != NULL) {
-		// inform requester that our search failed
 		m_nodeSpecialSearchRequester->KadSearchIPByNodeIDResult(KCSR_NOTFOUND, 0, 0);
 	}
 
-	// Check if a source search is currently being done.
 	CPartFile *temp = theApp->downloadqueue->GetFileByKadFileSearchID(GetSearchID());
 
-	// Reset the searchID if a source search is currently being done.
 	if (temp) {
 		temp->SetKadFileSearchID(0);
 	}
@@ -150,12 +146,9 @@ CSearch::~CSearch()
 		m_target.ToByteArray(fileid);
 		const CMD4Hash fileHash(fileid);
 		// Clear the running flag on EVERY local object that shares this hash. The
-		// lookup may have been triggered from a search result while the same file
-		// is also downloading/shared (two objects, one hash), and the flag was
-		// set on whichever one the user used. Clearing only the first match left
-		// the other stuck reporting "a note lookup is already running", so it
-		// could never be searched again — hence two independent `if`s, not an
-		// `else if`.
+		// lookup may have been triggered from a search result while the same file is
+		// also downloading or shared (two objects, one hash), and the flag was set on
+		// whichever one the user used -- so two independent `if`s, not an `else if`.
 		CKnownFile *knownFile = theApp->sharedfiles->GetFileByID(fileHash);
 		if (!knownFile) {
 			knownFile = theApp->downloadqueue->GetFileByID(fileHash);
@@ -168,11 +161,10 @@ CSearch::~CSearch()
 			// skips an unchanged partfile).
 			knownFile->MarkECChanged();
 		}
-		// Clear the flag on EVERY search result sharing this hash, not just the
-		// first: the same file can be shown in several open searches at once
-		// (one CSearchFile each), and all were marked running when the lookup
-		// started. Search files carry no EC change-generation, so the cleared
-		// flag simply rides the next periodic search-results poll.
+		// Clear the flag on EVERY search result sharing this hash: the same file can
+		// be shown in several open searches at once, and all were marked running.
+		// Search files carry no EC change-generation, so the cleared flag rides the
+		// next periodic search-results poll.
 		std::vector<CSearchFile *> searchFiles;
 		theApp->searchlist->GetAllSearchFilesByID(fileHash, searchFiles);
 		for (CSearchFile *searchFile : searchFiles) {
@@ -180,12 +172,10 @@ CSearch::~CSearch()
 		}
 	}
 
-	// Decrease the use count for any contacts that are in our contact list.
 	for (ContactMap::iterator it = m_inUse.begin(); it != m_inUse.end(); ++it) {
 		it->second->DecUse();
 	}
 
-	// Delete any temp contacts...
 	for (ContactList::const_iterator it = m_delete.begin(); it != m_delete.end(); ++it) {
 		if (!(*it)->InUse()) {
 			delete *it;
@@ -222,24 +212,18 @@ void CSearch::Go()
 	}
 
 	if (!m_possible.empty()) {
-		// Lets keep our contact list entries in mind to dec the inUse flag.
 		for (ContactMap::iterator it = m_possible.begin(); it != m_possible.end(); ++it) {
 			m_inUse[it->first] = it->second;
 		}
 
 		wxASSERT(m_possible.size() == m_inUse.size());
 
-		// Take top ALPHA_QUERY to start search with.
 		int count = m_type == NODE ? 1 : min(ALPHA_QUERY, (int)m_possible.size());
 
-		// Send initial packets to start the search.
 		ContactMap::iterator it = m_possible.begin();
 		for (int i = 0; i < count; i++) {
 			CContact *c = it->second;
-			// Move to tried
 			m_tried[it->first] = c;
-			// Send the KadID so other side can check if I think it has the right KadID.
-			// Send request
 			SendFindValue(c);
 			++it;
 		}
@@ -249,12 +233,10 @@ void CSearch::Go()
 // If we allow about a 15 sec delay before deleting, we won't miss a lot of delayed returning packets.
 void CSearch::PrepareToStop() noexcept
 {
-	// Check if already stopping.
 	if (m_stopping) {
 		return;
 	}
 
-	// Set basetime by search type.
 	uint32_t baseTime = 0;
 	switch (m_type) {
 	case NODE:
@@ -300,15 +282,14 @@ void CSearch::PrepareToStop() noexcept
 void CSearch::JumpStart()
 {
 #ifdef ENABLE_KAD_NODE_PROTECTION
-	// How long to wait on an outstanding request before treating the search
-	// as stalled.  Derived from the response times we have actually observed
-	// (CFastKad) rather than fixed at 3 seconds: on a fast link the old
-	// constant wasted seconds on nodes that were never going to answer, and
-	// on a congested one it abandoned nodes that answered just too late.
+	// How long to wait on an outstanding request before treating the search as
+	// stalled. Derived from the response times actually observed (CFastKad) rather
+	// than fixed at 3 seconds: on a fast link the old constant wasted seconds on
+	// nodes that were never going to answer, and on a congested one it abandoned
+	// nodes that answered just too late.
 	//
-	// Background store operations keep the old fixed 3 seconds.  They are not
-	// latency-sensitive -- nobody is waiting on a publish -- and holding them
-	// to a tight adaptive deadline would only add republish traffic.
+	// Background store operations keep the fixed 3 seconds: nobody is waiting on a
+	// publish, and a tight deadline would only add republish traffic.
 	const uint32_t maxPending = (m_type == STOREFILE || m_type == STOREKEYWORD || m_type == STORENOTES)
 					    ? SEC2MS(3)
 					    : fastKad.GetEstMaxResponseTime();
@@ -332,19 +313,15 @@ void CSearch::JumpStart()
 		return;
 	}
 #else
-	// Gate off: the fixed 3-second ceiling, at the second granularity it has
-	// always had, so the moment a jumpstart goes out is unchanged.
-	//
-	// Cast m_lastResponse to time_t before adding so the addition happens in
-	// time_t, not in uint32_t -- the latter would wrap near the 2106 32-bit
-	// time boundary and reorder the comparison silently.  Eighty years out,
-	// but cheap to write correctly.
+	// Gate off: the fixed 3-second ceiling at its usual second granularity, so the
+	// moment a jumpstart goes out is unchanged. m_lastResponse is cast to time_t
+	// before the addition, which in uint32_t would wrap near the 2106 boundary and
+	// silently reorder the comparison.
 	if ((time_t)m_lastResponse + SEC(3) > time(NULL)) {
 		return;
 	}
 #endif
 
-	// If we ran out of contacts, stop search.
 	if (m_possible.empty()) {
 		PrepareToStop();
 		return;
@@ -381,24 +358,16 @@ void CSearch::JumpStart()
 		}
 	}
 
-	// Search for contacts that can be used to jumpstart a stalled search.
 	while (!m_possible.empty()) {
-		// Get a contact closest to our target.
 		CContact *c = m_possible.begin()->second;
 
-		// Have we already tried to contact this node.
 		if (m_tried.count(m_possible.begin()->first) > 0) {
-			// Did we get a response from this node, if so, try to store or get info.
 			if (m_responded.count(m_possible.begin()->first) > 0) {
 				StorePacket();
 			}
-			// Remove from possible list.
 			m_possible.erase(m_possible.begin());
 		} else {
-			// Add to tried list.
 			m_tried[m_possible.begin()->first] = c;
-			// Send the KadID so other side can check if I think it has the right KadID.
-			// Send request
 			SendFindValue(c);
 			break;
 		}
@@ -411,7 +380,6 @@ void CSearch::ProcessResponse(uint32_t fromIP, uint16_t fromPort, ContactList *r
 		logKadSearch, "Processing search response from " + KadIPPortToString(fromIP, fromPort));
 
 	ContactList::iterator response;
-	// Remember the contacts to be deleted when finished
 	for (response = results->begin(); response != results->end(); ++response) {
 		m_delete.push_back(*response);
 	}
@@ -421,7 +389,6 @@ void CSearch::ProcessResponse(uint32_t fromIP, uint16_t fromPort, ContactList *r
 	m_lastResponseTick = ::GetTickCount64();
 #endif
 
-	// Find contact that is responding.
 	CUInt128 fromDistance(0u);
 	CContact *fromContact = NULL;
 	for (ContactMap::const_iterator it = m_tried.begin(); it != m_tried.end(); ++it) {
@@ -449,12 +416,10 @@ void CSearch::ProcessResponse(uint32_t fromIP, uint16_t fromPort, ContactList *r
 			m_pendingRequests.erase(pending);
 		}
 
-		// The contact may have gone bad since we sent the request. This
-		// is the point at which we know the node stands behind this
-		// identity, so it is the right place to check it -- and
-		// onlyOneNodePerIP is off here because the contact is already in
-		// our routing table and a second port on the address is the
-		// routing table's problem, not this answer's.
+		// The contact may have gone bad since we sent the request, and this is the
+		// point at which we know the node stands behind this identity.
+		// onlyOneNodePerIP is off here because the contact is already in our routing
+		// table, so a second port on the address is that table's problem.
 		if (safeKad.IsBadNode(fromIP,
 			    fromPort,
 			    fromContact->GetClientID(),
@@ -492,9 +457,7 @@ void CSearch::ProcessResponse(uint32_t fromIP, uint16_t fromPort, ContactList *r
 	// Not interested in responses for FIND_NODE, will be added to contacts by udp listener
 	if (m_type == NODE) {
 		AddDebugLogLineN(logKadSearch, "Node type search result, discarding.");
-		// Note that we got an answer.
 		m_answers++;
-		// We clear the possible list to force the search to stop.
 		m_possible.clear();
 		return;
 	}
@@ -506,18 +469,14 @@ void CSearch::ProcessResponse(uint32_t fromIP, uint16_t fromPort, ContactList *r
 		// A node is not allowed to answer with contacts to itself
 		receivedIPs[fromIP] = 1;
 		receivedSubnets[fromIP & 0xFFFFFF00] = 1;
-		// Loop through their responses
 		for (ContactList::iterator it = results->begin(); it != results->end(); ++it) {
-			// Get next result
 			CContact *c = *it;
-			// calc distance this result is to the target
 			CUInt128 distance(c->GetClientID() ^ m_target);
 
 			if (distance < fromDistance) {
 				providedCloserContacts = true;
 			}
 
-			// Ignore this contact if already known or tried it.
 			if (m_possible.count(distance) > 0) {
 				AddDebugLogLineN(
 					logKadSearch, "Search result from already known client: ignore");
@@ -562,12 +521,9 @@ void CSearch::ProcessResponse(uint32_t fromIP, uint16_t fromPort, ContactList *r
 				receivedSubnets[c->GetIPAddress() & 0xFFFFFF00] = 1;
 			}
 
-			// Add to possible
 			m_possible[distance] = c;
 
-			// Verify if the result is closer to the target than the one we just checked.
 			if (distance < fromDistance) {
-				// The top ALPHA_QUERY of results are used to determine if we send a request.
 				bool top = false;
 				if (m_best.size() < ALPHA_QUERY) {
 					top = true;
@@ -576,7 +532,6 @@ void CSearch::ProcessResponse(uint32_t fromIP, uint16_t fromPort, ContactList *r
 					ContactMap::iterator worst = m_best.end();
 					--worst;
 					if (distance < worst->first) {
-						// Prevent having more than ALPHA_QUERY within the Best list.
 						m_best.erase(worst);
 						m_best[distance] = c;
 						top = true;
@@ -584,20 +539,14 @@ void CSearch::ProcessResponse(uint32_t fromIP, uint16_t fromPort, ContactList *r
 				}
 
 				if (top) {
-					// We determined this contact is a candidate for a request.
-					// Add to tried
 					m_tried[distance] = c;
-					// Send the KadID so other side can check if I think it has the right
-					// KadID. Send request
 					SendFindValue(c);
 				}
 			}
 		}
 
-		// Add to list of people who responded.
 		m_responded[fromDistance] = providedCloserContacts;
 
-		// Complete node search, just increment the counter.
 		if (m_type == NODECOMPLETE || m_type == NODESPECIAL) {
 			AddDebugLogLineN(logKadSearch,
 				wxString("Search result type: Node") +
@@ -611,7 +560,6 @@ void CSearch::StorePacket()
 {
 	wxASSERT(!m_possible.empty());
 
-	// This method is currently only called by jumpstart so only use best possible.
 	ContactMap::const_iterator possible = m_possible.begin();
 	CUInt128 fromDistance(possible->first);
 	CContact *from = possible->second;
@@ -620,20 +568,17 @@ void CSearch::StorePacket()
 		m_closestDistantFound = fromDistance;
 	}
 
-	// Make sure this is a valid node to store.
 	if (fromDistance.Get32BitChunk(0) > SEARCHTOLERANCE &&
 		!::IsLanIP(wxUINT32_SWAP_ALWAYS(from->GetIPAddress()))) {
 		return;
 	}
 
-	// What kind of search are we doing?
 	switch (m_type) {
 	case FILE: {
 		AddDebugLogLineN(logKadSearch, "Search request type: File");
 		CMemFile searchTerms;
 		searchTerms.WriteUInt128(m_target);
 		if (from->GetVersion() >= 3) {
-			// Find file we are storing info about.
 			uint8_t fileid[16];
 			m_target.ToByteArray(fileid);
 			CKnownFile *file = theApp->downloadqueue->GetFileByID(CMD4Hash(fileid));
@@ -731,7 +676,6 @@ void CSearch::StorePacket()
 	}
 	case NOTES: {
 		AddDebugLogLineN(logKadSearch, "Search request type: Notes");
-		// Write complete packet.
 		CMemFile searchTerms;
 		searchTerms.WriteUInt128(m_target);
 		if (from->GetVersion() >= 3) {
@@ -796,7 +740,6 @@ void CSearch::StorePacket()
 			break;
 		}
 
-		// Find the file we are trying to store as a source to.
 		uint8_t fileid[16];
 		m_target.ToByteArray(fileid);
 		CKnownFile *file = theApp->sharedfiles->GetFileByID(CMD4Hash(fileid));
@@ -804,17 +747,12 @@ void CSearch::StorePacket()
 			// We store this mostly for GUI reasons.
 			m_fileName = file->GetFileName().GetPrintable();
 
-			// Get our clientID for the packet.
 			CUInt128 id(CKademlia::GetPrefs()->GetClientHash());
 			TagPtrList taglist;
 
-			// We can use type for different types of sources.
-			// 1 HighID sources..
-			// 2 cannot be used as older clients will not work.
-			// 3 Firewalled Kad Source.
-			// 4 >4GB file HighID Source.
-			// 5 >4GB file Firewalled Kad source.
-			// 6 Firewalled source with Direct Callback (supports >4GB)
+			// Source types: 1 HighID, 3 firewalled Kad, 4 >4GB HighID, 5 >4GB
+			// firewalled Kad, 6 firewalled with direct callback (supports >4GB).
+			// 2 cannot be used, as older clients will not work with it.
 
 			bool directCallback = false;
 			if (theApp->IsFirewalled()) {
@@ -881,10 +819,8 @@ void CSearch::StorePacket()
 			taglist.push_back(
 				new CTagInt8(TAG_ENCRYPTION, CPrefs::GetMyConnectOptions(true, true)));
 
-			// Send packet
 			CKademlia::GetUDPListener()->SendPublishSourcePacket(*from, m_target, id, taglist);
 			m_totalRequestAnswers++;
-			// Delete all tags.
 			deleteTagPtrListEntries(&taglist);
 		} else {
 			PrepareToStop();
@@ -929,13 +865,11 @@ void CSearch::StorePacket()
 				++itListFileID;
 			}
 
-			// Correct file count.
 			uint64_t current_pos = packetdata.GetPosition();
 			packetdata.Seek(16);
 			packetdata.WriteUInt16(packetCount);
 			packetdata.Seek(current_pos);
 
-			// Send packet
 			if (from->GetVersion() >= 6) {
 				DebugSend(Kad2PublishKeyReq, from->GetIPAddress(), from->GetUDPPort());
 				CUInt128 clientID = from->GetClientID();
@@ -963,19 +897,15 @@ void CSearch::StorePacket()
 	}
 	case STORENOTES: {
 		AddDebugLogLineN(logKadSearch, "Search request type: StoreNotes");
-		// Find file we are storing info about.
 		uint8_t fileid[16];
 		m_target.ToByteArray(fileid);
 		CKnownFile *file = theApp->sharedfiles->GetFileByID(CMD4Hash(fileid));
 
 		if (file) {
 			CMemFile packetdata(1024 * 2);
-			// Send the hash of the file we're storing info about.
 			packetdata.WriteUInt128(m_target);
-			// Send our ID with the info.
 			packetdata.WriteUInt128(CKademlia::GetPrefs()->GetKadID());
 
-			// Create our taglist.
 			TagPtrList taglist;
 			taglist.push_back(new CTagString(TAG_FILENAME, file->GetFileName().GetPrintable()));
 			if (file->GetFileRating() != 0) {
@@ -989,7 +919,6 @@ void CSearch::StorePacket()
 			}
 			packetdata.WriteTagPtrList(taglist);
 
-			// Send packet
 			if (from->GetVersion() >= 6) {
 				DebugSend(Kad2PublishNotesReq, from->GetIPAddress(), from->GetUDPPort());
 				CUInt128 clientID = from->GetClientID();
@@ -1012,7 +941,6 @@ void CSearch::StorePacket()
 				wxFAIL;
 			}
 			m_totalRequestAnswers++;
-			// Delete all tags.
 			deleteTagPtrListEntries(&taglist);
 		} else {
 			PrepareToStop();
@@ -1032,9 +960,7 @@ void CSearch::StorePacket()
 		// Send the ID we used to find our buddy. Used for checks later and allows users to callback
 		// someone if they change buddies.
 		packetdata.WriteUInt128(m_target);
-		// Send client hash so they can do a callback.
 		packetdata.WriteUInt128(CKademlia::GetPrefs()->GetClientHash());
-		// Send client port so they can do a callback.
 		packetdata.WriteUInt16(thePrefs::GetPort());
 
 		DebugSend(KadFindBuddyReq, from->GetIPAddress(), from->GetUDPPort());
@@ -1068,7 +994,6 @@ void CSearch::StorePacket()
 		}
 
 		CMemFile packetdata(34);
-		// This is the ID that the person we want to contact used to find a buddy.
 		packetdata.WriteUInt128(m_target);
 		if (m_fileIDs.size() != 1) {
 			throw wxString("Kademlia.CSearch.processResponse: m_fileIDs.size() != 1");
@@ -1076,9 +1001,7 @@ void CSearch::StorePacket()
 		// Currently, we limit the type of callbacks for sources. We must know a file this person has
 		// for it to work.
 		packetdata.WriteUInt128(m_fileIDs.front());
-		// Send our port so the callback works.
 		packetdata.WriteUInt16(thePrefs::GetPort());
-		// Send packet
 		DebugSend(KadCallbackReq, from->GetIPAddress(), from->GetUDPPort());
 		if (from->GetVersion() >= 6) {
 			CUInt128 clientID = from->GetClientID();
@@ -1405,13 +1328,11 @@ void CSearch::ProcessResultKeyword(
 #endif
 #ifdef ENABLE_KAD_PROTOCOL_10
 		} else if (tag->GetName() == TAG_KADAICHHASHRESULT) {
-			// AICH hashes on keyword storage arrived with Kad protocol
-			// version 0x09.  A sender below that cannot have produced
-			// this tag itself, so it is filtered rather than trusted.
-			//
-			// Gated with the rest: with the switch off we never publish
-			// an AICH hash, so acting on one a peer reports would be a
-			// behaviour upstream does not have.
+			// AICH hashes on keyword storage arrived with Kad protocol version
+			// 0x09, so a sender below that cannot have produced this tag itself
+			// and it is filtered rather than trusted. Gated with the rest: with
+			// the switch off we never publish an AICH hash, so acting on one a
+			// peer reports would be behaviour upstream does not have.
 			if (CKadAICHHashList::PeerSupportsAICHKeywordStorage(fromKadVersion) &&
 				tag->IsBsob()) {
 				if (!CKadAICHHashList::DecodeResultTag(
@@ -1454,11 +1375,10 @@ void CSearch::ProcessResultKeyword(
 	if (!title.IsEmpty()) {
 		taglist.push_back(new CTagString(TAG_MEDIA_TITLE, title));
 	}
-	// The codec was read off the wire and then never mentioned again -- the
-	// local it filled occurred exactly twice in this file, the declaration and
-	// the assignment -- so every Kad result showed an empty Codec column and
-	// the value never reached a download started from it. Being a wxString,
-	// the dead store was not something -Wunused-but-set-variable could flag.
+	// The codec was read off the wire and then never mentioned again, so every Kad
+	// result showed an empty Codec column and the value never reached a download
+	// started from it. Being a wxString, the dead store was not something
+	// -Wunused-but-set-variable could flag.
 	if (!codec.IsEmpty()) {
 		taglist.push_back(new CTagString(TAG_MEDIA_CODEC, codec));
 	}
@@ -1491,29 +1411,25 @@ void CSearch::ProcessResultKeyword(
 	theApp->searchlist->KademliaSearchKeyword(
 		m_searchID, &answer, name, size, type, publishInfo, taglist);
 
-	// Free tags memory
 	deleteTagPtrListEntries(&taglist);
 }
 
 void CSearch::SendFindValue(CContact *contact, bool reaskMore)
 {
-	// Found a node that we think has contacts closer to our target.
 	try {
 		if (m_stopping) {
 			return;
 		}
 
 		CMemFile packetdata(33);
-		// The number of returned contacts is based on the type of search.
 		uint8_t contactCount = GetRequestContactCount();
 
 		if (reaskMore) {
-			// Either the JumpStart dead-nodes-fallback or
-			// CSearch::RequestMoreResults() asked us to send the wider
-			// KADEMLIA_FIND_VALUE_MORE variant to this contact.  Track
-			// the contact's ClientID so ProcessResponse's "more results
-			// than requested" check accepts the larger response, and so
-			// RequestMoreResults() won't reask the same peer twice.
+			// Either the JumpStart dead-nodes fallback or RequestMoreResults() asked
+			// us to send the wider KADEMLIA_FIND_VALUE_MORE variant to this contact.
+			// Tracking its ClientID makes ProcessResponse's "more results than
+			// requested" check accept the larger response, and stops
+			// RequestMoreResults() reasking the same peer twice.
 			wxASSERT(contactCount == KADEMLIA_FIND_VALUE);
 			m_requestedMoreNodes.insert(contact->GetClientID());
 			contactCount = KADEMLIA_FIND_VALUE_MORE;
@@ -1525,9 +1441,7 @@ void CSearch::SendFindValue(CContact *contact, bool reaskMore)
 			return;
 		}
 
-		// Put the target we want into the packet.
 		packetdata.WriteUInt128(m_target);
-		// Add the ID of the contact we're contacting for sanity checks on the other end.
 		packetdata.WriteUInt128(contact->GetClientID());
 		if (contact->GetVersion() >= 2) {
 			if (contact->GetVersion() >= 6) {
@@ -1631,18 +1545,14 @@ bool CSearch::CanReaskMore() const
 
 bool CSearch::RequestMoreResults()
 {
-	// Walk m_responded (sorted by distance to target) for the closest
-	// peer we have not yet asked for KADEMLIA_FIND_VALUE_MORE, and
-	// dispatch the wider variant to it.  Each reask returns up to 11
-	// closer contacts (vs the default 2), which the existing
-	// ProcessResponse cascade then queries with FIND_VALUE — surfacing
-	// additional file matches from one extra ring of the routing-table
-	// neighbourhood.
+	// Walk m_responded (sorted by distance to target) for the closest peer not yet
+	// asked for KADEMLIA_FIND_VALUE_MORE, and dispatch the wider variant to it.
+	// Each reask returns up to 11 closer contacts instead of 2, which the
+	// ProcessResponse cascade then queries -- surfacing more file matches from one
+	// extra ring of the routing-table neighbourhood.
 	//
-	// Bounded by KADEMLIA_FIND_VALUE_MORE_REASKS to limit per-search
-	// network impact: past 4 reasks the local neighbourhood for a
-	// given keyword is typically exhausted and additional reasks are
-	// wasted UDP traffic.
+	// Bounded by KADEMLIA_FIND_VALUE_MORE_REASKS: past 4 reasks the local
+	// neighbourhood for a keyword is typically exhausted.
 
 	if (m_stopping) {
 		return false;
@@ -1684,24 +1594,19 @@ bool CSearch::RequestMoreResults()
 // TODO: Redundant metadata checks
 void CSearch::PreparePacketForTags(CMemFile *bio, CKnownFile *file, uint8_t targetKadVersion)
 {
-	// We're going to publish a keyword, set up the tag list
 	TagPtrList taglist;
 
 	try {
 		if (file && bio) {
-			// Name, Size
 			taglist.push_back(new CTagString(TAG_FILENAME, file->GetFileName().GetPrintable()));
 			taglist.push_back(new CTagVarInt(TAG_FILESIZE, file->GetFileSize()));
 			taglist.push_back(new CTagVarInt(TAG_SOURCES, file->m_nCompleteSourcesCount));
 
 #ifdef ENABLE_KAD_PROTOCOL_10
-			// AICH root hash, added to keyword storage by Kad protocol
-			// version 0x09.  A node at 0x08 has no handling for this tag,
-			// so it is omitted for it: the entry it stores simply carries
-			// no AICH hash, and it stays usable for search and routing.
-			//
-			// Gated: this is a tag on an outgoing packet, so it is the
-			// clearest thing in this change that is not inert.
+			// AICH root hash, added to keyword storage by Kad protocol version
+			// 0x09. A node at 0x08 has no handling for this tag, so it is omitted
+			// for it: the entry it stores simply carries no AICH hash and stays
+			// usable for search and routing.
 			if (CKadAICHHashList::PeerSupportsAICHKeywordStorage(targetKadVersion) &&
 				file->HasProperAICHHashSet()) {
 				const CAICHHash &aichHash = file->GetAICHHashset()->GetMasterHash();
@@ -1723,21 +1628,18 @@ void CSearch::PreparePacketForTags(CMemFile *bio, CKnownFile *file, uint8_t targ
 
 			// Additional meta data (Artist, Album, Codec, Length, ...).
 			//
-			// This used to claim it sends only VERIFIED metadata. It does not,
-			// and did not before either: a download inherits its source's tags
-			// as a during-download preview, and GetMetaDataVer() answers "has
-			// any FT_MEDIA_* tag", not "was locally probed". So a partfile
-			// republishes what its search result advertised until its own
-			// completion probe corrects it. Distinguishing the two needs a
-			// locally-probed flag on the file, which is a design change rather
-			// than a comment fix -- left for its own issue.
+			// NOT only verified metadata, despite what this used to claim: a download
+			// inherits its source's tags as a during-download preview, and
+			// GetMetaDataVer() answers "has any FT_MEDIA_* tag", not "was locally
+			// probed". So a partfile republishes what its search result advertised
+			// until its own completion probe corrects it. Telling the two apart needs
+			// a locally-probed flag on the file.
 			if (file->GetMetaDataVer() > 0) {
 				// Looked up by id ALONE, not by (id, type). The old exact
-				// `GetTag(id, TAGTYPE_UINT32)` was safe only while everything
-				// reaching a CKnownFile locally happened to be a CTagInt32;
-				// now that a download can inherit a narrower integer from a
-				// Kad hit, it would silently stop publishing the moment such a
-				// tag was stored.
+				// GetTag(id, TAGTYPE_UINT32) was safe only while everything reaching a
+				// CKnownFile locally happened to be a CTagInt32; now that a download
+				// can inherit a narrower integer from a Kad hit, it would silently
+				// stop publishing the moment such a tag was stored.
 				static const uint8_t _aMetaTags[] = { FT_MEDIA_ARTIST,
 					FT_MEDIA_ALBUM,
 					FT_MEDIA_TITLE,

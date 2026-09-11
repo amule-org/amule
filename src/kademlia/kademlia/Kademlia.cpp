@@ -99,34 +99,24 @@ void CKademlia::Start(CPrefs *prefs)
 
 	AddDebugLogLineN(logKadMain, "Starting Kademlia");
 
-	// Init jump start timer.
 	m_nextSearchJumpStart = time(NULL);
-	// Force a FindNodeComplete within the first 3 minutes.
 	m_nextSelfLookup = time(NULL) + MIN2S(3);
-	// Init status timer.
 	m_statusUpdate = time(NULL);
-	// Init big timer for Zones
 	m_bigTimer = time(NULL);
 	// First Firewall check is done on connect, init next check.
 	m_nextFirewallCheck = time(NULL) + (HR2S(1));
 	// Find a buddy after the first 5mins of starting the client.
 	// We wait just in case it takes a bit for the client to determine firewall status..
 	m_nextFindBuddy = time(NULL) + (MIN2S(5));
-	// Init contact consolidate timer;
 	m_consolidate = time(NULL) + (MIN2S(45));
-	// Look up our extern port
 	m_externPortLookup = time(NULL);
-	// Init bootstrap time.
 	m_bootstrap = 0;
-	// Init our random seed.
 	srand((uint32_t)time(NULL));
-	// Create our Kad objects.
 	instance = new CKademlia();
 	instance->m_prefs = prefs;
 	instance->m_indexed = new CIndexed();
 	instance->m_routingZone = new CRoutingZone();
 	instance->m_udpListener = new CKademliaUDPListener();
-	// Mark Kad as running state.
 	m_running = true;
 }
 
@@ -139,16 +129,12 @@ void CKademlia::Stop()
 
 	AddDebugLogLineN(logKadMain, "Stopping Kademlia");
 
-	// Mark Kad as being in the stop state to make sure nothing else is used.
 	m_running = false;
 
-	// Reset Firewallstate
 	CUDPFirewallTester::Reset();
 
-	// Remove all active searches.
 	CSearchManager::StopAllSearches();
 
-	// Delete all Kad Objects.
 	delete instance->m_udpListener;
 	instance->m_udpListener = NULL;
 
@@ -169,7 +155,6 @@ void CKademlia::Stop()
 	}
 	s_bootstrapList.clear();
 
-	// Make sure all zones are removed.
 	m_events.clear();
 
 #ifdef ENABLE_KAD_NODE_PROTECTION
@@ -180,8 +165,6 @@ void CKademlia::Stop()
 	safeKad.Clear();
 	fastKad.Clear();
 #endif
-
-	//	theApp->ShowConnectionState();
 }
 
 void CKademlia::Process()
@@ -294,7 +277,6 @@ void CKademlia::Process()
 	theStats::SetKadBannedAddresses((uint32)safeKad.GetBannedAddressCount());
 #endif
 
-	// Try to consolidate any zones that are close to empty.
 	if (m_consolidate <= now) {
 		uint32_t mergedCount = instance->m_routingZone->Consolidate();
 		if (mergedCount) {
@@ -303,7 +285,6 @@ void CKademlia::Process()
 		m_consolidate = MIN2S(45) + now;
 	}
 
-	// Update user count only if changed.
 	if (updateUserFile) {
 		if (maxUsers != instance->m_prefs->GetKademliaUsers()) {
 			instance->m_prefs->SetKademliaUsers(maxUsers);
@@ -385,7 +366,6 @@ bool CKademlia::FindNodeIDByIP(CKadClientSearcher& requester, uint32_t ip, uint1
 {
 	wxCHECK(IsRunning() && instance && GetUDPListener() && GetRoutingZone(), false);
 
-	// first search our known contacts if we can deliver a result without asking, otherwise forward the request
 	CContact* contact;
 	if ((contact = GetRoutingZone()->GetContact(wxUINT32_SWAP_ALWAYS(ip), tcpPort, true)) != NULL) {
 		uint8_t nodeID[16];
