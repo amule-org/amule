@@ -288,8 +288,8 @@ bool CLogTee::Install(const std::string &logPath, std::size_t maxBytes)
 	m_pipeErrRead = perr[0];
 
 	// On a TTY stdout was line-buffered; once fd 1 is a pipe libc switches it to
-	// full (block) buffering, which would delay console + file output until 4-8
-	// KB accumulate. Force line buffering back. stderr stays unbuffered.
+	// full buffering, which would delay console and file output until 4-8 KB
+	// accumulate. Force line buffering back; stderr stays unbuffered.
 	std::setvbuf(stdout, nullptr, _IOLBF, 0);
 	std::setvbuf(stderr, nullptr, _IONBF, 0);
 

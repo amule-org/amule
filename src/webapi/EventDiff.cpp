@@ -97,43 +97,33 @@ std::string EscJson(const std::string &s)
 	return out;
 }
 
-// Each ToJson emits the SAME shape as the corresponding REST list-item
-// writer in Api.cpp (WriteDownloadObject / WriteSharedObject /
-// WriteServerObject / WriteClientObject / HandleStatus). The contract
-// is "an SSE _added/_updated event carries the full resource — clients
-// don't need to re-GET to see the moved counters". The matching Equal
-// functions below compare every field included here so any movement
-// fires `_updated`. If REST or SSE drifts in the future, the doc-
-// alignment check in run-all.sh phase11 should catch it.
+// Each ToJson emits the SAME shape as the corresponding REST list-item writer
+// in Api.cpp. The contract is "an SSE _added/_updated event carries the full
+// resource -- clients do not need to re-GET to see the moved counters". The
+// matching Equal functions below compare every field included here, so any
+// movement fires `_updated`.
 
-// `null` when the string was never populated, matching WriteStringOrNull on
-// the REST side. Takes the same (known, value) shape as JsonNumOrNull below so
-// the three read alike at the call site; an empty string is the usual reason a
-// value is unknown here, but the caller decides, because some fields are keyed
-// on a sibling (server_name on server_ip, ip/port on the address).
+// `null` when the string was never populated, matching WriteStringOrNull on the
+// REST side. Takes the same (known, value) shape as JsonNumOrNull below; the
+// caller decides what "known" means, since some fields key on a sibling.
 std::string JsonStrOrNull(bool known, const std::string &v)
 {
 	return known ? "\"" + EscJson(v) + "\"" : std::string("null");
 }
 
 // `null` when the value was never measured, matching WriteIntOrNull /
-// WriteBoolOrNull on the REST side. The two bodies are promised to be
-// byte-identical, so the disconnected fields have to print `null` here too --
-// and the comparators below have to treat null<->value as a change, or the
-// event stops firing on the very edge that flips them.
+// WriteBoolOrNull on the REST side. The comparators below have to treat
+// null<->value as a change, or the event stops firing on the edge that flips it.
 std::string JsonNumOrNull(bool known, std::uint64_t v)
 {
 	return known ? std::to_string(v) : std::string("null");
 }
 
 // The protocol extensions as the API's token array, from the same table the
-// daemon and the desktop GUI read (src/PeerCapabilities.h). Rendered here
-// rather than stored on the row so there is one definition of the mapping:
-// a second copy in this file would be free to drift from the one bit that
-// actually arrived on the wire.
+// daemon and the desktop GUI read (src/PeerCapabilities.h). Rendered here rather
+// than stored on the row so there is one definition of the mapping.
 //
-// Empty array, not null: the peer claimed nothing, which is a known answer
-// rather than a missing one, and it is what nearly every peer produces.
+// Empty array, not null: the peer claimed nothing, which is a known answer.
 std::string JsonProtocolExtensions(std::uint32_t bits)
 {
 	CPeerCapabilities caps;
@@ -190,17 +180,13 @@ std::string ToJsonDownloadEvent(const FileSnapshot &f)
 	return o.str();
 }
 
-// comments_updated event payload — the GET /downloads/{hash}/comments body
-// plus `hash`. Covers both retrieved Kad notes and comments reported by
-// connected ed2k sources (they share source_comments).
+// comments_updated event payload -- the GET /downloads/{hash}/comments body plus
+// `hash`. Covers both retrieved Kad notes and comments reported by connected
+// ed2k sources (they share source_comments).
 //
-// A strict superset of the endpoint, deliberately: the event needs `hash`
-// because nothing else in the frame identifies the file, and it needs
-// `kad_comment_lookup_running` because that flag is exactly what a client
-// wants while a POST /downloads/{hash}/comments lookup is in flight. It used
-// to carry the first and not the second, so a client that followed the docs
-// and fed the event into the view it built from the endpoint silently lost
-// the in-flight indicator.
+// A strict superset of the endpoint, deliberately: nothing else in the frame
+// identifies the file, and `kad_comment_lookup_running` is exactly what a
+// client wants while a POST lookup is in flight.
 std::string ToJsonCommentsEvent(const FileSnapshot &f)
 {
 	std::ostringstream o;
@@ -233,9 +219,8 @@ std::string ToJsonSharedEvent(const FileSnapshot &f)
 	  << ",\"priority_auto\":"
 	  << (f.shared.priority_auto ? "true" : "false")
 	  // Nested to match the REST row: a stated exception to R11, so that
-	  // `sources.complete` is one access path across every endpoint that has
-	  // the concept. The list shape carries `complete` only; the range is
-	  // detail-only and does not ride the event.
+	  // `sources.complete` is one access path across every endpoint that has the
+	  // concept. The range is detail-only and does not ride the event.
 	  << ",\"sources\":{\"complete\":" << f.shared.complete_sources
 	  << "}"
 	  // Flattened (R11), same as the REST row this promises key parity with.
@@ -249,12 +234,8 @@ std::string ToJsonSharedEvent(const FileSnapshot &f)
 	  << ",\"uploading_client_count\":"
 	  << f.shared.uploading_client_count
 	  // Unix seconds, null when unknown -- never uploaded, or a known.met entry
-	  // that predates the field. 0 reads as 1970 rather than "no idea", and the
-	  // REST row this event promises key parity with has always sent null here
-	  // (WriteIntOrNull in the shared list writer). A subscriber that hydrates
-	  // from REST and live-updates from this saw its null flip to 0 on the
-	  // first tick the file changed. Never-uploaded is the common case, so this
-	  // was the routine reading, not an edge one.
+	  // that predates the field. 0 reads as 1970 rather than "no idea", and a
+	  // subscriber that hydrates from REST would see its null flip to 0.
 	  << ",\"last_upload_at\":";
 	if (f.shared.last_upload != 0)
 		o << f.shared.last_upload;
@@ -267,12 +248,9 @@ std::string ToJsonSharedEvent(const FileSnapshot &f)
 		o << "null";
 	o << ",\"hashed_part_count\":" << SharedHashingProgress(f);
 	// Media metadata rides the event because a metadata re-extraction is
-	// otherwise invisible to a subscriber: the refresh endpoints answer 202
-	// with no result, so this is how a client learns a probe landed. Six
-	// small scalars, unlike the per-part arrays the list endpoints omit.
-	//
-	// null rather than absent when the file has none, matching the REST row
-	// this event promises key parity with -- a subscriber diffing the two
+	// otherwise invisible to a subscriber: the refresh endpoints answer 202 with
+	// no result, so this is how a client learns a probe landed. null rather than
+	// absent when the file has none, since a subscriber diffing REST against SSE
 	// must not find a key on one side only.
 	o << ",\"media\":";
 	if (f.has_media) {
@@ -321,11 +299,9 @@ std::string ToJson(const FriendSnapshot &f)
 	  << "\"ecid\":" << f.ecid << ",\"name\":\"" << EscJson(f.name) << "\""
 	  << ",\"user_hash\":\"" << EscJson(f.user_hash)
 	  << "\""
-	  // null, not "" / 0, when the daemon has not reported an address: the
-	  // REST row this event promises key parity with emits null for both
-	  // (WriteFriendObject), and a subscriber hydrating from GET /friends
-	  // would otherwise see ip flip null -> "" on the first tick that
-	  // touches the row, with no real change behind it.
+	  // null, not "" / 0, when the daemon has not reported an address: a
+	  // subscriber hydrating from GET /friends would otherwise see ip flip
+	  // null -> "" on the first tick that touches the row, with no real change.
 	  << ",\"ip\":" << (f.ip.empty() ? std::string("null") : "\"" + EscJson(f.ip) + "\"")
 	  << ",\"port\":" << (f.ip.empty() ? std::string("null") : std::to_string(f.port))
 	  << ",\"client_ecid\":" << (f.client_ecid ? std::to_string(f.client_ecid) : std::string("null"))
@@ -345,17 +321,15 @@ std::string ToJson(const ClientSnapshot &c)
 	  // has_addr, which nulls ip/port/kad_port together.
 	  << ",\"ip\":" << JsonStrOrNull(!c.ip.empty(), c.ip)
 	  << ",\"country_code\":"
-	  // null, not "", when the lookup has not resolved -- the REST row this
-	  // event promises key parity with emits null here.
+	  // null, not "", when the lookup has not resolved.
 	  << JsonStrOrNull(!c.country_code.empty(), c.country_code)
 	  << ",\"port\":" << (c.ip.empty() ? std::string("null") : std::to_string(c.port))
 	  << ",\"software\":" << JsonStrOrNull(!c.software.empty(), c.software)
 	  << ",\"software_version\":" << JsonStrOrNull(!c.software_version.empty(), c.software_version)
 	  << ",\"reported_os\":"
 	  << JsonStrOrNull(!c.reported_os.empty(), c.reported_os)
-	  // The three *_state values are enum labels, not free text: the daemon
-	  // always answers, and an answer it does not recognise is the "unknown"
-	  // member. Empty is unreachable, so there is nothing to null.
+	  // The three *_state values are enum labels, not free text: the daemon always
+	  // answers, and an unrecognised answer is the "unknown" member.
 	  << ",\"upload_state\":\"" << EscJson(c.upload_state) << "\""
 	  << ",\"download_state\":\"" << EscJson(c.download_state) << "\""
 	  << ",\"ident_state\":\"" << EscJson(c.ident_state) << "\""
@@ -364,8 +338,7 @@ std::string ToJson(const ClientSnapshot &c)
 	  << ",\"upload_file_hash\":" << JsonStrOrNull(!c.upload_file_hash.empty(), c.upload_file_hash)
 	  << ",\"download_file_hash\":"
 	  << JsonStrOrNull(!c.download_file_hash.empty(), c.download_file_hash)
-	  // Flattened out of the old `xfer` wrapper (R11), same as the REST row
-	  // this payload promises key parity with.
+	  // Flattened out of the old `xfer` wrapper (R11).
 	  << ",\"uploaded_bytes_session\":" << c.uploaded_bytes_session
 	  << ",\"downloaded_bytes_session\":" << c.downloaded_bytes_session
 	  << ",\"uploaded_bytes_total\":" << c.uploaded_bytes_total
@@ -385,13 +358,11 @@ std::string ToJson(const ClientSnapshot &c)
 	  << (c.has_parts_offered_count ? std::to_string(c.parts_offered_count) : std::string("null"))
 	  << ",\"client_mod_name\":" << JsonStrOrNull(!c.client_mod_name.empty(), c.client_mod_name)
 	  << ",\"shared_files_browsable\":" << (c.view_shared_disabled ? "false" : "true");
-	// null, not omitted, matching the REST row: the field only means
-	// something for a peer we are downloading from, and -1 is the
-	// in-process sentinel that must never reach the wire. Formatted
-	// through the shared writer rather than `<<`: the stream default is 6
-	// significant digits (so SSE read 33.3333 where REST read
-	// 33.333333333333336) and it honours LC_NUMERIC, which on an it/de/fr
-	// locale would emit a comma and break the frame's JSON outright.
+	// null, not omitted: the field only means something for a peer we are
+	// downloading from, and -1 is the in-process sentinel that must never reach
+	// the wire. Formatted through the shared writer rather than `<<`: the stream
+	// default is 6 significant digits and it honours LC_NUMERIC, which on an
+	// it/de/fr locale would emit a comma and break the frame's JSON outright.
 	o << ",\"part_progress_percent\":"
 	  << (c.part_progress_percent >= 0.0 ? JsonDoubleToString(c.part_progress_percent)
 					     : std::string("null"));
@@ -399,24 +370,20 @@ std::string ToJson(const ClientSnapshot &c)
 	return o.str();
 }
 
-// Status event payload mirrors the REST /status envelope nesting
-// (ed2k.*, kad.* including the kad.network rollup, speeds.*, queue.*,
-// plus the top-level ec_connected flag). Takes a triple because the
-// REST nesting groups data from StatusSnapshot AND KadSnapshot AND
-// the dashboard's ec_connected bit — all three are read in one
-// shared_lock by state.Dashboard() at the call site.
-// A free-space figure renders as a JSON number, or as null when the daemon
-// has none (-1). Kept beside the REST handler's identical rule so the SSE
-// payload and the REST body cannot drift apart.
+// A free-space figure renders as a JSON number, or as null when the daemon has
+// none (-1). Kept beside the REST handler's identical rule so the SSE payload
+// and the REST body cannot drift apart.
 std::string JsonFreeSpace(std::int64_t v)
 {
 	return v < 0 ? std::string("null") : std::to_string(v);
 }
 
 // Mirrors HandleStatus key for key -- EVENTS.md promises this payload is
-// identical to the REST /status envelope, and 22-sse-diff-emission.sh asserts
-// it. Both connected_since_at values are 0 while not connected, same rule as
-// there: gate on state rather than trusting a 0 timestamp.
+// identical to the REST /status envelope, and 22-sse-diff-emission.sh asserts it.
+// Takes a triple because that nesting groups data from StatusSnapshot AND
+// KadSnapshot AND the dashboard's ec_connected bit, all three read in one
+// shared_lock by state.Dashboard() at the call site. Both connected_since_at
+// values are 0 while not connected: gate on state, not on the timestamp.
 std::string ToJsonStatusEvent(const StatusSnapshot &s, const KadSnapshot &k, bool ec_connected)
 {
 	std::ostringstream o;
@@ -425,8 +392,7 @@ std::string ToJsonStatusEvent(const StatusSnapshot &s, const KadSnapshot &k, boo
 	  << "\"state\":\"" << EscJson(s.ed2k_state) << "\""
 	  << ",\"high_id\":" << (s.ed2k_high_id ? "true" : "false") << ",\"user_id\":"
 	  << s.ed2k_user_id
-	  // null, not "", for the addresses: the REST row this event promises key
-	  // parity with nulls them, and server_port nulls with its address.
+	  // null, not "", for the addresses; server_port nulls with its address.
 	  << ",\"public_ip\":"
 	  << (s.ed2k_public_ip.empty() ? std::string("null") : "\"" + EscJson(s.ed2k_public_ip) + "\"")
 	  << ",\"connected_since_at\":" << s.ed2k_connected_since
@@ -460,23 +426,15 @@ std::string ToJsonStatusEvent(const StatusSnapshot &s, const KadSnapshot &k, boo
 	return o.str();
 }
 
-// Coarse equality — every field. For we treat any change as
-// "_updated" (emit the full new snapshot). v0.2 could introduce
-// per-field deltas if a real consumer reports wanting them.
-// Equal compares every field that ToJson emits. Any movement fires
-// `_updated`. Field sets here are the same as the matching ToJson
-// above; if one drifts from the other clients will see stale
-// values until the next ROW-level field changes.
-// download_* / shared_* event diffs compare the FIELDS THAT THE
-// CORRESPONDING ToJson emits, not the full FileSnapshot. The download
-// side ignores shared.* and is_shared, the shared side ignores
-// download.* and is_downloading — a tick that flips one role doesn't
-// fire the other role's _updated.
+// Equal compares every field the matching ToJson emits, and any movement fires
+// `_updated` with the full new snapshot. If one set drifts from the other,
+// clients see stale values until the next field that IS compared changes.
 //
-// ecid is in both JSON shapes; if amuled gets restarted while
-// amuleapi keeps running, the same hash will surface with a fresh
-// ECID, and clients keyed on ECID need the _updated to invalidate
-// their cached id.
+// The download side ignores shared.* and is_shared, the shared side ignores
+// download.* and is_downloading, so a tick that flips one role does not fire
+// the other role's _updated. ecid is in both shapes: an amuled restart under a
+// running amuleapi resurfaces the same hash with a fresh ECID, and clients
+// keyed on ECID need the _updated to invalidate their cached id.
 bool EqualDownload(const FileSnapshot &a, const FileSnapshot &b)
 {
 	return a.ecid == b.ecid && a.hash == b.hash && a.name == b.name && a.ed2k_link == b.ed2k_link &&
@@ -494,9 +452,8 @@ bool EqualDownload(const FileSnapshot &a, const FileSnapshot &b)
 	       a.download.percent == b.download.percent &&
 	       a.download.kad_comment_searching == b.download.kad_comment_searching &&
 	       a.download.hashed_part_count == b.download.hashed_part_count &&
-	       // The membership, not the `sources_a4af` count beside it: a swap
-	       // moves one client out and another in, so the count never budges
-	       // and comparing it would publish nothing.
+	       // The membership, not the `sources_a4af` count beside it: a swap moves
+	       // one client out and another in, so the count never budges.
 	       a.download.a4af_sources == b.download.a4af_sources;
 }
 
@@ -504,11 +461,9 @@ bool EqualDownload(const FileSnapshot &a, const FileSnapshot &b)
 // change drives the separate comments_updated event, not download_updated).
 bool EqualComments(const FileSnapshot &a, const FileSnapshot &b)
 {
-	// The in-flight flag is part of the payload, so it has to be part of
-	// the comparison: without it the true->false edge at the end of a Kad
-	// lookup fires no event at all, and a `?channels=comments` subscriber
-	// is left with its spinner stuck on. Every field the event emits must
-	// be compared here or the event cannot announce it changing.
+	// The in-flight flag is part of the payload, so it has to be part of the
+	// comparison: without it the true->false edge at the end of a Kad lookup
+	// fires no event, and a `?channels=comments` subscriber keeps its spinner.
 	if (a.download.kad_comment_searching != b.download.kad_comment_searching)
 		return false;
 	const auto &ca = a.download.source_comments;
@@ -539,18 +494,15 @@ bool EqualShared(const FileSnapshot &a, const FileSnapshot &b)
 	       a.shared.last_upload == b.shared.last_upload &&
 	       a.shared.shared_since == b.shared.shared_since &&
 	       // Media metadata, so a re-extraction emits shared_updated at all.
-	       // Without these a file whose metadata just changed compares EQUAL
-	       // and the refresh is invisible to every subscriber -- which is the
-	       // only progress signal the 202-returning refresh endpoints have.
-	       // These change once per probe, not per tick, so they cost nothing
-	       // in event volume.
+	       // Without these a file whose metadata just changed compares EQUAL and
+	       // the refresh is invisible -- the only progress signal the 202-returning
+	       // refresh endpoints have. These change once per probe, not per tick.
 	       a.has_media == b.has_media && a.media.duration_seconds == b.media.duration_seconds &&
 	       a.media.bitrate_kilobits_per_second == b.media.bitrate_kilobits_per_second &&
 	       a.media.codec == b.media.codec && a.media.artist == b.media.artist &&
 	       a.media.album == b.media.album && a.media.title == b.media.title &&
-	       // Through the accessor, not the raw field: a shared download's
-	       // progress lives on the download side, and comparing the raw
-	       // field would hold every tick of it back from shared_updated.
+	       // Through the accessor, not the raw field: a shared download's progress
+	       // lives on the download side, which the raw field would hold back.
 	       SharedHashingProgress(a) == SharedHashingProgress(b);
 }
 bool Equal(const ServerSnapshot &a, const ServerSnapshot &b)
@@ -564,11 +516,9 @@ bool Equal(const ServerSnapshot &a, const ServerSnapshot &b)
 }
 bool Equal(const FriendSnapshot &a, const FriendSnapshot &b)
 {
-	// client_ecid is part of the identity here on purpose: it going to 0 is
-	// the friend losing its live peer, which a subscriber needs to hear about.
-	// connected is compared alongside it, not instead of it: a peer can go
-	// from linked-but-unreachable to connected without the ecid moving, and
-	// that transition IS the connected indicator flipping.
+	// client_ecid is part of the identity here on purpose: it going to 0 is the
+	// friend losing its live peer. connected is compared alongside it, not
+	// instead: a peer can go from linked-but-unreachable to connected unmoved.
 	return a.name == b.name && a.user_hash == b.user_hash && a.ip == b.ip && a.port == b.port &&
 	       a.client_ecid == b.client_ecid && a.friend_slot == b.friend_slot &&
 	       a.connected == b.connected && a.has_connected == b.has_connected;
@@ -598,11 +548,10 @@ bool Equal(const ClientSnapshot &a, const ClientSnapshot &b)
 	       // zero) compares equal and the row never updates.
 	       a.has_parts_offered_count == b.has_parts_offered_count &&
 	       a.client_mod_name == b.client_mod_name && a.view_shared_disabled == b.view_shared_disabled &&
-	       // Derived from parts_offered_count and the linked file's part count,
-	       // so it normally moves only when a compared field does. The case
-	       // that needs it in its own right is the file going away: the
-	       // percent drops back to its sentinel while every other field
-	       // holds, and without this the payload would change with no event.
+	       // Derived from parts_offered_count and the linked file's part count, so
+	       // it normally moves only when a compared field does. The case that needs
+	       // it in its own right is the file going away: the percent drops back to
+	       // its sentinel while every other field holds.
 	       a.part_progress_percent == b.part_progress_percent;
 }
 bool Equal(const StatusSnapshot &a, const StatusSnapshot &b)
@@ -621,18 +570,16 @@ bool Equal(const StatusSnapshot &a, const StatusSnapshot &b)
 	       a.temp_free_bytes == b.temp_free_bytes && a.incoming_free_bytes == b.incoming_free_bytes &&
 	       a.ul_queue_len == b.ul_queue_len && a.total_src_count == b.total_src_count &&
 	       // The has_ flags are part of the comparison, not just the values: a
-	       // disconnect flips these to null while the underlying ints keep
-	       // their last reading, so comparing the ints alone would miss the
-	       // edge and the event would stop firing exactly when it matters.
+	       // disconnect flips these to null while the underlying ints keep their
+	       // last reading, so comparing the ints alone would miss the edge.
 	       a.has_ed2k_network == b.has_ed2k_network && a.ed2k_users == b.ed2k_users &&
 	       a.ed2k_files == b.ed2k_files && a.has_kad_firewalled_tcp == b.has_kad_firewalled_tcp;
 }
 bool Equal(const KadSnapshot &a, const KadSnapshot &b)
 {
-	// This is the SEPARATE gate for the kad half of status_changed -- the
-	// status comparator above does not cover these. has_network is compared
-	// first because it is the field that changes on a connect/disconnect edge
-	// while users/files/nodes keep their last values underneath.
+	// The SEPARATE gate for the kad half of status_changed -- the status
+	// comparator above does not cover these. has_network is compared first
+	// because it is what changes on a connect/disconnect edge.
 	return a.has_network == b.has_network && a.users == b.users && a.files == b.files &&
 	       a.nodes == b.nodes;
 }
@@ -642,13 +589,9 @@ bool Equal(const KadSnapshot &a, const KadSnapshot &b)
 //  - `<base>_added`   for keys in new missing from old (full ToJson)
 //  - `<base>_updated` for shared keys whose values differ (full ToJson)
 //
-// `removed_id_payload_fn` formats the identity-only `_removed` payload
-// — `{"hash": "..."}` for hash-keyed (downloads, shared) or
-// `{"ecid": N}` for ECID-keyed (servers, clients).
-//
-// Coalesced into one PublishBatch (one lock acquisition, one
-// notify_all) so a cold-start diff on a 5K-download library doesn't
-// fire 5K notify_all cycles inside the refresher loop.
+// Coalesced into one PublishBatch (one lock acquisition, one notify_all) so a
+// cold-start diff on a 5K-download library does not fire 5K notify_all cycles
+// inside the refresher loop.
 template <class Map, class IdentityFn>
 void DiffMap(CEventBus &bus,
 	const std::string &base,
@@ -677,26 +620,21 @@ void DiffMap(CEventBus &bus,
 	bus.PublishBatch(batch);
 }
 
-// For hash-keyed file events emit removed payloads as
-// `{"hash":"..."}` so consumers can drop the cache entry without
-// needing the old object.
+// Hash-keyed file events emit removed payloads as `{"hash":"..."}` so consumers
+// can drop the cache entry without needing the old object.
 std::string RemovedHashPayload(const std::string &hash)
 {
 	return "{\"hash\":\"" + EscJson(hash) + "\"}";
 }
 
-// Every ECID-keyed collection identifies a removed entry the same way, now
-// that each object names its own handle `ecid` (issue #976): one shape, one
-// function, rather than a per-type overload that only differed in the key it
-// spelled.
+// Every ECID-keyed collection identifies a removed entry the same way, now that
+// each object names its own handle `ecid`.
 template <class Snapshot> std::string RemovedEcidPayload(const Snapshot &item)
 {
 	// The per-type overloads this replaced could only be called with an
-	// ECID-keyed snapshot; an unconstrained template accepts anything with
-	// an `.ecid` member, and FileSnapshot has one (State.h) while its
-	// collections are hash-keyed and their consumers expect {"hash":...}.
-	// Wiring one through DiffMap would otherwise compile and emit the wrong
-	// shape at runtime.
+	// ECID-keyed snapshot; an unconstrained template accepts anything with an
+	// `.ecid` member, and FileSnapshot has one while its collections are
+	// hash-keyed. Wiring one through DiffMap would compile and emit the wrong shape.
 	static_assert(!std::is_same<Snapshot, FileSnapshot>::value,
 		"file collections are hash-keyed -- use RemovedHashPayload");
 	std::ostringstream o;
@@ -704,11 +642,9 @@ template <class Snapshot> std::string RemovedEcidPayload(const Snapshot &item)
 	return o.str();
 }
 
-// Build an ECID-keyed map from the vector view that CState exposes.
-// The cache's internal layout is std::map<ECID, Snapshot>; the public
-// accessor returns std::vector<Snapshot>. For diffing we want
-// random-access-by-ECID, so we lift it back into a map. Cheap — O(N)
-// with N typically <1000 per substruct.
+// Build an ECID-keyed map from the vector view CState exposes. The cache's
+// internal layout is std::map<ECID, Snapshot> but the accessor returns a vector,
+// and diffing wants random access by ECID. O(N), N typically <1000.
 template <class Snap> std::map<std::uint32_t, Snap> ByEcid(const std::vector<Snap> &v)
 {
 	std::map<std::uint32_t, Snap> m;
@@ -722,14 +658,11 @@ template <class Snap> std::map<std::uint32_t, Snap> ByEcid(const std::vector<Sna
 namespace
 {
 
-// Single-writer invariant: only the wxApp refresher tick mutates
-// LastSeenState + publishes diffs. Anything else (a future inline-
-// refresh-then-publish, a debug recompute, etc.) is a silent
-// concurrency bug — events get duplicated/dropped depending on
-// which order the threads landed. Capture the first caller's
-// thread id and abort hard on any subsequent caller from a
-// different thread. Hard-abort (not assert) so the check survives
-// -DNDEBUG and ships in every Release / RelWithDebInfo binary.
+// Single-writer invariant: only the wxApp refresher tick mutates LastSeenState
+// and publishes diffs. Anything else is a silent concurrency bug -- events get
+// duplicated or dropped depending on which order the threads landed. Capture
+// the first caller's thread id and abort hard on any later caller from another
+// thread; hard-abort, not assert, so the check survives -DNDEBUG.
 std::atomic<std::thread::id> g_publisher_thread;
 
 void EnforceSinglePublisher()
@@ -750,11 +683,8 @@ void EnforceSinglePublisher()
 // Every file event resolves its payload through `prev.files` after the locked
 // walk, which holds only because nothing erases from that map in between: the
 // `gone` sweep runs after the batch is built, and `gone` is disjoint from
-// everything the walk recorded. Unreachable today -- but a dropped event is
-// invisible, and a lost `shared_removed` leaves a ghost row on every client
-// until something else happens to touch that file. Hard-abort for the same
-// reason EnforceSinglePublisher does: the check has to survive -DNDEBUG,
-// because that is where the ordering will actually get broken.
+// everything the walk recorded. Unreachable today, but a dropped event is
+// invisible and a lost `shared_removed` leaves a ghost row on every client.
 [[noreturn]] void AbortOnMissingBaseline(const char *event_name, std::uint32_t ecid)
 {
 	std::cerr << "amuleapi: file diff lost the baseline entry for ECID " << ecid << " while building "
@@ -765,17 +695,13 @@ void EnforceSinglePublisher()
 } // namespace
 
 // One chat message as the `message` object both the SSE payload and
-// GET /chats/{address}/messages expose. Written here in the same string-building
-// style as the other event payloads in this file; the REST side renders the
-// identical shape through CJsonWriter.
+// GET /chats/{address}/messages expose. The REST side renders the identical
+// shape through CJsonWriter.
 //
-// `sent_at` nulls on 0 the way WriteIntOrNull does on the REST side. Nothing
-// the core reports today is unstamped -- CChatSessionStore::Append stamps
-// every message it stores, and the history reply carries the tag
-// unconditionally -- so this is the two writers agreeing on a shape rather
-// than a value that flips in the field. It is written down because the
-// snapshot field defaults to 0 and the two serializers are promised to be
-// byte-identical: a core that ever omits the tag must not make them diverge.
+// `sent_at` nulls on 0 the way WriteIntOrNull does. Nothing the core reports
+// today is unstamped, so this is the two writers agreeing on a shape rather
+// than a value that flips in the field -- but the snapshot field defaults to 0,
+// and a core that ever omits the tag must not make them diverge.
 std::string ChatMessageJson(const ChatMessageSnapshot &msg)
 {
 	return "{\"id\":" + std::to_string(msg.id) + ",\"direction\":\"" + (msg.outgoing ? "out" : "in") +
@@ -820,60 +746,46 @@ void PublishChatEvents(CEventBus &bus,
 void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state)
 {
 	EnforceSinglePublisher();
-	// Snapshot the current state under its read locks. Each accessor takes the
-	// shared_timed_mutex shared, copies, and returns. Files are the exception,
+	// Snapshot the current state under its read locks. Files are the exception,
 	// walked in place further down: the diff needs the unified map, not a
-	// role-filtered view of it, so it can see a file that flipped is_shared
-	// false→true on an existing ECID and fire `shared_added` for it even though
-	// the entry was there all along.
+	// role-filtered view, so it can see a file that flipped is_shared false->true
+	// on an existing ECID and fire `shared_added` for it.
 	auto new_servers = ByEcid(state.Servers());
 	auto new_friends = ByEcid(state.Friends());
 	auto new_clients = ByEcid(state.Clients());
-	// part_progress_percent is derived, not refreshed: it needs the part count
-	// of the file the peer is a source for, which lives in a different
-	// snapshot, so the refresher leaves it at its sentinel and the REST
-	// handlers fill it in per request. Do the same here, or the event would
-	// be the one payload a subscriber has to re-GET to complete -- the exact
-	// thing EVENTS.md promises it never has to. Computed on the copies before
-	// both the Equal() comparison and the serialiser see them, so the
-	// baseline and the payload always agree.
+	// part_progress_percent is derived, not refreshed: it needs the part count of
+	// the file the peer is a source for, which lives in a different snapshot, so
+	// the refresher leaves it at its sentinel and the REST handlers fill it in
+	// per request. Do the same here, or the event becomes the one payload a
+	// subscriber has to re-GET to complete. Computed before Equal() and the
+	// serialiser see the copies, so baseline and payload always agree.
 	for (auto &kv : new_clients) {
 		ComputePartProgressPercent(state, kv.second);
 	}
-	// Read the full dashboard for status_changed — the event payload
-	// mirrors the REST /status nested envelope which pulls from
-	// StatusSnapshot + KadSnapshot + ec_connected. Dashboard() takes
-	// the State lock once for all three, so the rollup is coherent
-	// (kad.network can't be from tick N+1 while ed2k.* is from tick
-	// N).
+	// Read the full dashboard for status_changed -- the payload mirrors the REST
+	// /status nested envelope, which pulls from StatusSnapshot + KadSnapshot +
+	// ec_connected. Dashboard() takes the State lock once for all three, so
+	// kad.network cannot be from tick N+1 while ed2k.* is from tick N.
 	auto new_dashboard = state.Dashboard();
 	const StatusSnapshot &new_status = new_dashboard.status;
 	const KadSnapshot &new_kad = new_dashboard.kad;
 	const bool new_ec = new_dashboard.ec_connected;
 
-	// Files: role-flag-aware diff, run against the live map rather than a copy
-	// of it. download_* fires on is_downloading transitions, shared_* on
-	// is_shared transitions, and a single tick can fire both for the same file
-	// (a partfile becoming shared while its download side also moved).
+	// Files: role-flag-aware diff, run against the live map rather than a copy.
+	// download_* fires on is_downloading transitions, shared_* on is_shared, and
+	// a single tick can fire both for the same file.
 	//
 	// prev.files is a comparison baseline, not a mirror: an entry is rewritten
-	// exactly when a predicate below reports a difference, so the fields those
-	// predicates read stay fresh and others may lag. A new predicate has to go
-	// into the write-back condition too, not only the emit condition.
+	// exactly when a predicate below reports a difference, so a new predicate has
+	// to go into the write-back condition too, not only the emit condition.
 	{
-		// Decided under the read lock, serialised after it. The payloads are
-		// the full snapshot shape, so a cold-start tick or a shared-files
-		// reload builds one per file; doing that inside the lock would queue
-		// the refresher's own writer and every reader behind it, which is the
-		// cost this change exists to remove. What the walk records instead is
-		// the event and its subject: a hash for a removal, an ECID for
-		// everything else, resolved against `prev.files` once the lock is
-		// released -- the write-back below leaves that entry equal to the live
-		// one, so it is the same object the payload would have been built from.
-		// Removals name their subject by ECID for the same reason: copying the
-		// hash out would put one string allocation per removed file back under
-		// the lock, and `prev.files` still holds the entry -- the `gone` erase
-		// is deferred until the batch is built.
+		// Decided under the read lock, serialised after it. The payloads are the
+		// full snapshot shape, so a cold-start tick or a shared-files reload builds
+		// one per file; doing that inside the lock would queue the refresher's own
+		// writer and every reader behind it. What the walk records instead is the
+		// event and its subject -- a hash for a removal, an ECID for everything
+		// else -- resolved against `prev.files` once the lock is released, which
+		// the write-back below leaves equal to the live entry.
 		enum class Change
 		{
 			DownloadAdded,
@@ -916,14 +828,10 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 				if (now.is_downloading) {
 					if (!was_downloading) {
 						changed.emplace_back(Change::DownloadAdded, entry.first);
-						// The flag counts as comment state, exactly as
-						// it does in EqualComments. Gating on the list
-						// alone means a download first seen with a Kad
-						// lookup already in flight never announces the
-						// lookup at all -- the mirror of the edge where
-						// a finished lookup never announced its end,
-						// leaving the same indicator wrong in the
-						// opposite direction.
+						// The flag counts as comment state, exactly as it does in
+						// EqualComments. Gating on the list alone means a download
+						// first seen with a Kad lookup already in flight never
+						// announces the lookup at all.
 						if (!now.download.source_comments.empty() ||
 							now.download.kad_comment_searching) {
 							changed.emplace_back(
@@ -935,8 +843,8 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 								Change::DownloadUpdated, entry.first);
 							moved = true;
 						}
-						// Independent of download_updated: fires for Kad notes AND
-						// comments reported by connected sources (issue #434 / #419).
+						// Independent of download_updated: Kad notes AND source
+						// comments.
 						if (!EqualComments(it->second, now)) {
 							changed.emplace_back(
 								Change::CommentsUpdated, entry.first);
@@ -1013,12 +921,10 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 		return RemovedEcidPayload(f);
 	});
 
-	// /status: one event when anything in the dashboard envelope
-	// changes (StatusSnapshot fields OR Kad network rollup OR
-	// ec_connected). Cold start is its own branch, gated on
-	// `status_initialised`: it publishes exactly one status_changed and
-	// seeds the baseline, so the comparison below never runs against an
-	// empty prev and mistakes every field for a change.
+	// /status: one event when anything in the dashboard envelope changes
+	// (StatusSnapshot fields OR Kad network rollup OR ec_connected). Cold start
+	// is its own branch, gated on `status_initialised`, so the comparison below
+	// never runs against an empty prev and mistakes every field for a change.
 	if (!prev.status_initialised) {
 		bus.Publish("status_changed", ToJsonStatusEvent(new_status, new_kad, new_ec));
 		prev.status_initialised = true;
@@ -1036,15 +942,11 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 	prev.ec_connected = new_ec;
 
 	// The stable-but-mutable field set for `search_result_updated`. A hit's
-	// identity fields (hash, name, size, type, directory, media, children)
-	// never change for a given ECID, and its source counts churn every tick
-	// while the search runs -- where `search_progress` is already the re-read
-	// cue. What is left is the set that can change AFTER a search finishes,
-	// when no other signal exists: download state (`status` /
-	// `already_downloaded`), and the Kad-notes cluster (`comments[]`, the
-	// in-flight flag, and `rating`, which aggregates from the comments).
-	// Comparing only these keeps the search channel quiet on a running
-	// search instead of firing per-result frames on source-count churn.
+	// identity fields never change for a given ECID, and its source counts churn
+	// every tick while the search runs -- where `search_progress` is already the
+	// re-read cue. What is left is the set that can change AFTER a search
+	// finishes, when no other signal exists: download state, and the Kad-notes
+	// cluster. Comparing only these keeps the channel quiet on a running search.
 	const auto result_mutated = [](const SearchResult &a, const SearchResult &b) {
 		if (a.status != b.status || a.already_downloaded != b.already_downloaded ||
 			a.rating != b.rating || a.kad_comment_searching != b.kad_comment_searching ||
@@ -1060,17 +962,12 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 		return false;
 	};
 
-	// Search events. `search_result_added` per new ECID in the results
-	// map; `search_result_updated` when one of a held result's
-	// stable-but-mutable fields changes (see result_mutated above);
-	// `search_progress` on any percent change while running and on
-	// the running→finished edge. The finished frame (state="finished",
-	// percent=100) is just the terminal search_progress — there is no
-	// separate search_finished event. The refresher's state machine
-	// (AdvanceSearchProgress) drives both — POST /search seeds the active
-	// flag; subsequent ticks either grow the results map, advance the
-	// percent, or flip complete. First tick after MarkSearchStarted
-	// bootstraps the baseline so we don't double-emit on first observation.
+	// Search events. `search_result_added` per new ECID; `search_result_updated`
+	// when one of a held result's stable-but-mutable fields changes;
+	// `search_progress` on any percent change while running and on the
+	// running->finished edge. The finished frame (state="finished", percent=100)
+	// IS that terminal search_progress -- there is no separate search_finished.
+	// The first tick after MarkSearchStarted bootstraps the baseline.
 	{
 		// Multi-search: diff every open search independently, keyed by
 		// search_id, and stamp that id on each event so subscribers demux.
@@ -1079,12 +976,10 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 			const auto search_now = ByEcid(state.Search(sid));
 			const auto progress_now = state.SearchProgress(sid);
 
-			// Cold start (first tick ever): baseline every pre-existing
-			// search silently so history isn't replayed as events. A
-			// search that appears LATER has no prev entry, so its
-			// generation (0) differs from the live one — the progress
-			// edge below fires its initial "running" frame, and its
-			// results stream in as ordinary additions.
+			// Cold start (first tick ever): baseline every pre-existing search
+			// silently so history is not replayed as events. A search that appears
+			// LATER has no prev entry, so its generation (0) differs from the live
+			// one and the progress edge below fires its initial "running" frame.
 			if (!prev.search_initialised) {
 				auto &b = prev.searches[sid];
 				b.results = search_now;
@@ -1095,15 +990,11 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 			}
 
 			auto &pstate = prev.searches[sid];
-			// Results do leave an attached search: the union merge erases an
-			// ECID the daemon stopped reporting, and RebuildFoldedResults drops
-			// a row that has since been folded into a parent's
-			// alternate_names[]. Emitted before the additions below, the order
-			// DiffMap uses, and identity-only like every other _removed.
-			//
-			// Without this the row stays on every subscriber's screen for the
-			// life of the search: a finished one publishes no further
-			// search_progress, so nothing even hints that a re-read is due.
+			// Results do leave an attached search: the union merge erases an ECID the
+			// daemon stopped reporting, and RebuildFoldedResults drops a row folded
+			// into a parent. Without this the row stays on every subscriber's screen
+			// for the life of the search: a finished one publishes no further
+			// search_progress, so nothing hints that a re-read is due.
 			for (const auto &kv : pstate.results) {
 				if (search_now.find(kv.first) != search_now.end())
 					continue;
@@ -1118,24 +1009,14 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 				const bool is_new = pit == pstate.results.end();
 				if (!is_new && !result_mutated(pit->second, kv.second))
 					continue;
-				// `search_id` routes the event to a tab/view; every
-				// field after it comes from the same writer
-				// GET /search/{id}/results uses, which is what makes
-				// the documented "byte-for-byte identical to a
-				// results-list entry" promise hold by construction
-				// rather than by review.
+				// `search_id` routes the event to a tab/view; every field after it
+				// comes from the same writer GET /search/{id}/results uses, which
+				// is what makes the documented "byte-for-byte identical to a
+				// results-list entry" promise hold by construction.
 				//
-				// `search_result_updated` carries the identical payload
-				// under its own name, rather than re-firing _added with
-				// upsert semantics: a consumer that only handles _added
-				// keeps exactly the behaviour it had, and one that wants
-				// live rows opts in by handling the new event. It is the
-				// close of the one window where a client could not know:
-				// a finished search stops emitting search_progress, yet a
-				// hit downloaded from it flips status / already_downloaded, and
-				// a Kad notes lookup lands comments / rating after the
-				// fact. (Those fields are polled at all because the union
-				// keeps finished searches in the per-tick poll set.)
+				// `search_result_updated` carries the identical payload under its
+				// own name rather than re-firing _added with upsert semantics, so a
+				// consumer that only handles _added keeps the behaviour it had.
 				CJsonWriter w;
 				w.BeginObject();
 				w.Key("search_id");
@@ -1145,13 +1026,11 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 				bus.Publish(is_new ? "search_result_added" : "search_result_updated",
 					w.TakeBuffer());
 			}
-			// search_progress: a percent change while running, the
-			// running→finished edge (complete false→true), or a
-			// generation bump (new POST /search, or the first observation
-			// of this search_id). The generation trigger catches
-			// back-to-back searches whose whole lifecycle fits inside one
-			// refresher tick — the percent+complete comparison would see
-			// 100→100 / true→true and emit nothing.
+			// search_progress: a percent change while running, the running->finished
+			// edge, or a generation bump (new POST /search, or first observation of
+			// this search_id). The generation trigger catches back-to-back searches
+			// whose whole lifecycle fits inside one refresher tick -- the
+			// percent+complete comparison would see 100->100 / true->true.
 			const bool generation_bumped = progress_now.generation != pstate.generation;
 			const bool finished_edge = progress_now.complete && !pstate.complete;
 			const bool percent_moved = progress_now.percent != pstate.percent;
@@ -1176,15 +1055,13 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 		}
 		prev.search_initialised = true;
 		// Prune baselines for searches that vanished (closed / EC reset) so
-		// prev.searches can't grow without bound, and tell subscribers.
-		// Without the event a consumer holding one tab per search only finds
-		// out on its next read, and with SSE live it may never read again.
+		// prev.searches cannot grow without bound, and tell subscribers --
+		// without the event a consumer holding one tab per search only finds out
+		// on its next read, and with SSE live it may never read again.
 		//
-		// This fires only when the SLOT is gone -- DELETE /search/{id}, the
-		// slot cap evicting an old finished search, or an EC reset. A search
-		// the daemon evicted from its own ring is retired as finished and
-		// kept locally for late reads, so that case is a terminal
-		// search_progress above, never a search_closed.
+		// This fires only when the SLOT is gone. A search the daemon evicted from
+		// its own ring is retired as finished and kept locally for late reads,
+		// so that case is a terminal search_progress above, never a search_closed.
 		for (auto it = prev.searches.begin(); it != prev.searches.end();) {
 			if (std::find(ids.begin(), ids.end(), it->first) == ids.end()) {
 				std::ostringstream payload;
@@ -1198,27 +1075,22 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 	}
 
 	// log_appended. The refresher only ever appends, so a size that grew means
-	// the tail is new. First tick records the baseline silently — clients GET
-	// /api/v0/logs/amule for the history; this channel is the live tail only.
+	// the tail is new. First tick records the baseline silently -- clients GET
+	// /logs/amule for the history; this channel is the live tail only.
 	//
 	// `DELETE /logs/amule` empties the buffer, and the clear-generation is what
 	// says so. A shrunk size was the old signal and it misses the case that
 	// matters: cleared and refilled past the old count between two ticks, the
-	// size only grows, so the append branch would publish a mid-buffer slice
-	// as though it were the tail and never publish what came before it.
+	// size only grows, so the append branch would publish a mid-buffer slice.
 	//
-	// On that edge subscribers get `resync`, not a log event: lines are gone
-	// that this channel promised to deliver, so the honest signal is "your
-	// copy is stale, re-read", which is exactly what resync means. It bypasses
-	// `?channels=`, so a log-only subscriber is told too -- and the HTTP
-	// thread could not have published it from the DELETE handler anyway, the
-	// bus having a single-publisher invariant that only this tick satisfies.
+	// On that edge subscribers get `resync`, which bypasses `?channels=` so a
+	// log-only subscriber is told too -- and which the HTTP thread could not
+	// have published from the DELETE handler anyway, the bus having a
+	// single-publisher invariant only this tick satisfies.
 	//
-	// Size and tail in one read: the history is uncapped, so asking AmuleLog()
-	// for a `.size()` that is unchanged on almost every tick copies all of it
-	// -- and splitting the two would let that DELETE land in between, pairing
-	// a pre-truncation size with an empty tail. The generation rides along for
-	// the same reason.
+	// Size and tail come from one read: the history is uncapped, so asking
+	// AmuleLog() for a `.size()` that is unchanged on almost every tick copies
+	// all of it -- and splitting the two would let that DELETE land in between.
 	std::size_t log_size = 0;
 	std::uint64_t log_generation = 0;
 	const auto tail = state.AmuleLogFrom(prev.amule_log_count, log_size, &log_generation);
@@ -1232,8 +1104,7 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 		prev.amule_log_generation = log_generation;
 	} else if (log_size < prev.amule_log_count) {
 		// No generation bump, so this is not a clear: the buffer is capped
-		// elsewhere or the daemon replaced it wholesale. Re-point and stay
-		// quiet, as before.
+		// elsewhere or the daemon replaced it wholesale. Re-point and stay quiet.
 		prev.amule_log_count = log_size;
 	} else if (!tail.empty()) {
 		std::ostringstream payload;

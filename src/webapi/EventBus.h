@@ -54,31 +54,24 @@ struct Event
 	std::string data; // JSON payload (typed per `name`)
 };
 
-// In-memory SSE event bus. One instance per amuleapi process; the
-// refresher publishes events as cache deltas surface and SSE
-// sessions drain them.
+// In-memory SSE event bus. One instance per amuleapi process; the refresher
+// publishes events as cache deltas surface and SSE sessions drain them.
 //
-// **Concurrency:** all public methods are safe for any thread. The
-// refresher publishes from the wxApp thread (during a tick);
-// streaming-handler threads drain. Internal lock is a regular
-// std::mutex — drain operations only hold it long enough to
-// copy out the events they want, never across a wire write.
+// All public methods are safe for any thread. The refresher publishes from the
+// wxApp thread during a tick; streaming-handler threads drain. The internal
+// lock is a plain std::mutex -- drains hold it only long enough to copy the
+// events out, never across a wire write.
 //
-// **Capacity:** runtime-configured ring (see `[Streaming]/
-// EventBusRingCapacity` in amuleapi.conf; default 16 384). When the
-// buffer fills, the oldest event is dropped and clients whose
-// Last-Event-ID fell off the ring get a typed `resync` instead of a
-// partial replay. The default is sized for a cold-start tick on a
-// heavy node (5K downloads + 5K shared can publish ~10K `*_added`
-// in a single tick before any subscriber has had a chance to
-// drain); worst-case memory ≈ capacity × ~1 KB JSON payload, so
-// 16 384 ≈ 16 MB.
+// Runtime-configured ring (`[Streaming]/EventBusRingCapacity`, default 16 384).
+// When the buffer fills the oldest event is dropped, and a client whose
+// Last-Event-ID fell off the ring gets a typed `resync` instead of a partial
+// replay. The default is sized for a cold-start tick on a heavy node; worst-case
+// memory is roughly capacity x ~1 KB of JSON payload.
 class CEventBus
 {
 public:
-	// Compile-time floor + default. Capacity is settable at
-	// construction; values below kMinCapacity are clamped up to the
-	// floor. Floor exists so an operator can't accidentally
+	// Compile-time floor + default. Capacity is settable at construction and
+	// values below kMinCapacity are clamped up, so an operator cannot
 	// effectively disable SSE replay by setting capacity=1.
 	static constexpr std::size_t kDefaultCapacity = 16384;
 	static constexpr std::size_t kMinCapacity = 16;
@@ -97,14 +90,11 @@ public:
 	// is full.
 	void Publish(const std::string &name, const std::string &data);
 
-	// Batch-publish. One lock acquisition + one notify_all for the
-	// whole batch, vs N of each from per-event Publish loops. Used
-	// by the cold-start tick where a 5K-download library emits one
-	// `_added` per item — the per-item Publish was holding the
-	// refresher loop for tens of milliseconds (every notify_all
-	// goes through cv->mutex wake/sleep cycles on every drainer).
-	// Each (name, data) pair is treated identically to a Publish
-	// call: monotonic id assignment, evict-oldest if the ring fills.
+	// Batch-publish: one lock acquisition and one notify_all for the whole
+	// batch, against N of each from a per-event Publish loop. Used by the
+	// cold-start tick where a 5K-download library emits one `_added` per item,
+	// which was holding the refresher loop for tens of milliseconds. Each pair
+	// is treated exactly as a Publish call.
 	void PublishBatch(const std::vector<std::pair<std::string, std::string>> &events);
 
 	// Drain every event with `id > since_id` into `out`. Returns
@@ -114,28 +104,23 @@ public:
 	std::uint64_t Drain(
 		std::uint64_t since_id, std::chrono::milliseconds timeout, std::vector<Event> &out);
 
-	// The id of the bus's oldest currently-stored event, or 0 if the
-	// bus is empty. Used by the Last-Event-ID reconnect path: if
-	// `Last-Event-ID < OldestId()` the client missed events that
-	// have already been evicted and should be sent `resync` instead
-	// of an empty replay.
+	// The id of the bus's oldest currently-stored event, or 0 if empty. Used by
+	// the Last-Event-ID reconnect path: below this the client missed events that
+	// have already been evicted and should be sent `resync`.
 	std::uint64_t OldestId() const;
 
-	// The id of the most recently published event, or 0 if nothing
-	// has been published yet. The reconnect path uses this to
-	// compute "did I miss anything".
+	// The id of the most recently published event, or 0 if nothing has been
+	// published. The reconnect path uses this to compute "did I miss anything".
 	std::uint64_t NewestId() const;
 
 	// Reset the bus. Wakes any blocked drainers. Used by tests; not
 	// called from production code.
 	void ResetForTest();
 
-	// Atomically wake every blocked Drain caller and mark the bus as
-	// "shutting down". Subsequent Drain calls return immediately
-	// (with an empty out vector). Used by the shutdown path:
-	// detached SSE worker threads sit inside Drain() blocked on the
-	// 15 s heartbeat; without this they'd hold references to the
-	// dispatcher across its destruction → UAF. Latches once; idempotent.
+	// Atomically wake every blocked Drain caller and mark the bus as shutting
+	// down; later Drain calls return immediately. Detached SSE worker threads sit
+	// inside Drain() blocked on the heartbeat, and without this they would hold
+	// references to the dispatcher across its destruction. Latches once.
 	void Shutdown();
 
 	// True if Shutdown() has been called. SSE worker loops poll this
@@ -144,18 +129,17 @@ public:
 
 	// --- Subscriber accounting ---------------------------------------
 	//
-	// A tick's diff means snapshotting every collection and comparing it with
-	// the previous tick, which on a large library is most of the refresher's
-	// work. Once nothing has been subscribed for a few ticks there is nobody to
-	// send the result to, so the refresher skips it and records that
-	// (MarkSuspended). Nothing is lost -- subscribers read the same state over
-	// REST -- but no collection change is represented on the bus for that
-	// period, and a client reconnecting with a Last-Event-ID cannot tell: its
-	// cursor can even still be in range, since the chat publisher runs outside
-	// this gate and keeps ids moving. The tick that resumes publishes a
-	// `resync` for that, after re-baselining, so a client re-GETs against a
-	// baseline that is already current -- emitting it at connect instead would
-	// leave a tick's worth of changes in neither the GET nor an event.
+	// A tick's diff means snapshotting every collection and comparing it with the
+	// previous tick, which on a large library is most of the refresher's work.
+	// Once nothing has been subscribed for a few ticks there is nobody to send
+	// the result to, so the refresher skips it and records that (MarkSuspended).
+	//
+	// Nothing is lost -- subscribers read the same state over REST -- but no
+	// collection change is represented on the bus for that period, and a client
+	// reconnecting with a Last-Event-ID cannot tell: its cursor can even still be
+	// in range, since the chat publisher runs outside this gate. The tick that
+	// resumes publishes a `resync` AFTER re-baselining, so the client re-GETs
+	// against a baseline that is already current.
 
 	// RAII registration for one SSE session.
 	class Subscription

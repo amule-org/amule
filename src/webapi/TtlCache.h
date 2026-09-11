@@ -62,28 +62,23 @@ template <class T> class CTtlCache
 public:
 	using clock_t = std::chrono::steady_clock;
 
-	// Returns a copy of the freshest value. If the cache is fresh,
-	// returns immediately under a brief lock. If stale-or-unset:
-	// one caller becomes the "inflight" worker (drops the lock,
-	// runs fetch, re-takes the lock, stores, broadcasts);
-	// concurrent callers wait on the condvar until inflight clears
-	// and then read the stored value.
+	// Returns a copy of the freshest value. On a hit, immediately under a brief
+	// lock. On a miss, one caller becomes the "inflight" worker (drops the lock,
+	// runs fetch, re-takes it, stores, broadcasts) while concurrent callers wait
+	// on the condvar and then read the stored value.
 	template <class Fetcher> T GetOrFetch(std::chrono::milliseconds ttl, Fetcher fetch)
 	{
 		return GetOrFetch(ttl, fetch, [](const T &) { return true; });
 	}
 
-	// As above, plus a validity predicate on the cached value. A fresh
-	// entry that fails it counts as a miss and is refetched.
+	// As above, plus a validity predicate on the cached value: a fresh entry that
+	// fails it counts as a miss and is refetched.
 	//
-	// This is for endpoints whose EC request is parameterised by the
-	// caller: the cache is unkeyed, so an entry fetched at one parameter
-	// must not be served to a request asking for another. Storing the
-	// parameter inside the cached value and rejecting a mismatch keeps
-	// the single-entry cache -- a caller with a fixed parameter (every
-	// real one) still pays one round trip per TTL, while callers
-	// alternating parameters each pay their own. The alternative, a map
-	// keyed by a caller-supplied value, is unbounded by construction.
+	// This is for endpoints whose EC request is parameterised by the caller: the
+	// cache is unkeyed, so an entry fetched at one parameter must not be served
+	// to a request asking for another. Storing the parameter inside the cached
+	// value keeps the single-entry cache; a map keyed by a caller-supplied value
+	// would be unbounded by construction.
 	template <class Fetcher, class Validator>
 	T GetOrFetch(std::chrono::milliseconds ttl, Fetcher fetch, Validator is_valid)
 	{
@@ -95,18 +90,15 @@ public:
 				return m_value;
 			}
 			if (m_inflight) {
-				// Another caller is doing the EC roundtrip. Wait
-				// for them to finish, then re-check freshness in
-				// case yet another fetch is needed (e.g. the
-				// inflight result raced our TTL clamp because
-				// fetch was slow).
+				// Another caller is doing the EC roundtrip. Wait for them to finish,
+				// then re-check freshness in case yet another fetch is needed -- the
+				// inflight result can race our TTL clamp when fetch was slow.
 				m_cv.wait(lk, [this] { return !m_inflight; });
 				continue;
 			}
-			// We're the inflight worker. Claim the slot, drop the
-			// lock, do the fetch unguarded so peers can park on
-			// the condvar without our long EC call serialising
-			// them on the cache mutex.
+			// We are the inflight worker. Claim the slot, drop the lock, and fetch
+			// unguarded so peers can park on the condvar rather than serialising on
+			// the cache mutex behind our long EC call.
 			m_inflight = true;
 			lk.unlock();
 			T fetched;
@@ -129,10 +121,9 @@ public:
 				m_inflight = false;
 			}
 			m_cv.notify_all();
-			// Re-acquire to read the value under the lock so
-			// the contract (returned T is a stable copy of the
-			// just-stored snapshot) holds in the face of a racing
-			// Invalidate.
+			// Re-acquire to read the value under the lock, so the contract (the
+			// returned T is a stable copy of the just-stored snapshot) holds in the
+			// face of a racing Invalidate.
 			std::lock_guard<std::mutex> g(m_mu);
 			return m_value;
 		}

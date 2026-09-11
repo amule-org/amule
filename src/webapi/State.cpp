@@ -52,19 +52,17 @@ std::uint16_t SharedHashingProgress(const FileSnapshot &f)
 
 // Completeness of the file we download FROM this peer: parts the peer has over
 // that file's part count. Only the download link carries a meaningful
-// denominator -- a peer that merely downloads from us has no percent. Left at
-// its < 0 sentinel when not computable, which is how the writers know to emit
-// the field as null. The sentinel never reaches the wire.
+// denominator. Left at its < 0 sentinel when not computable, which never
+// reaches the wire -- the writers emit the field as null instead.
 void ComputePartProgressPercent(const CState &state, ClientSnapshot &cli)
 {
 	if (!cli.has_parts_offered_count || cli.download_file_hash.empty()) {
 		return;
 	}
-	// DownloadPartCount, not FindDownload: this runs once per source per
-	// tick on the SSE path and once per row on two REST paths, and the part
-	// count is the only thing wanted. FindDownload would deep-copy the whole
-	// FileSnapshot each time, repeating the identical copy for every source
-	// of the same file.
+	// DownloadPartCount, not FindDownload: this runs once per source per tick on
+	// the SSE path and once per row on two REST paths, and the part count is the
+	// only thing wanted. FindDownload would deep-copy the whole FileSnapshot
+	// each time, repeating the identical copy for every source of the same file.
 	const std::uint64_t part_count = state.DownloadPartCount(cli.download_file_hash);
 	if (part_count == 0) {
 		return;
@@ -107,11 +105,9 @@ KadSnapshot CState::Kad() const
 
 CState::DashboardSnapshot CState::Dashboard() const
 {
-	// Single shared_lock acquisition: callers of /api/v0/status get
-	// a coherent (status, kad, snapshot_at, ec_connected) tuple
-	// instead of the four-separate-lock dance, which can interleave
-	// with a refresher tick and make `kad.network` describe a
-	// different tick than `ed2k.*` / `speeds.*`.
+	// Single shared_lock acquisition: callers of /api/v0/status get a coherent
+	// (status, kad, snapshot_at, ec_connected) tuple instead of a four-lock
+	// dance that can interleave with a refresher tick.
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
 	DashboardSnapshot out;
 	out.status = m_status;
@@ -316,11 +312,9 @@ void CState::MarkSearchStarted(std::uint32_t search_id, const std::string &kind,
 	// the daemon allocates fresh ids) keeps it climbing so EventDiff still fires.
 	const auto next_generation = slot.progress.generation + 1;
 	// Both maps, and the ECID index that points at them. `raw` is the merge
-	// target the union applies diffed tags to, so a stale entry left here
-	// would have the previous search's fields show through wherever the new
-	// one's tag happens not to carry that field -- and RebuildFoldedResults
-	// would then put the ghost straight back into `results`, however many
-	// times that gets cleared.
+	// target the union applies diffed tags to, so a stale entry left here would
+	// have the previous search's fields show through -- and RebuildFoldedResults
+	// would put the ghost straight back into `results`.
 	for (const auto &entry : slot.raw)
 		m_resultOwner.erase(entry.first);
 	slot.raw.clear();
@@ -346,36 +340,27 @@ void CState::MarkSearchDiscovered(std::uint32_t search_id,
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	auto known = m_searches.find(search_id);
 	if (known != m_searches.end()) {
-		// Already known (self-started, or discovered on an earlier
-		// cache-miss check): leave its accumulated results/progress
-		// alone. Re-seeding here would stomp whatever
-		// WriteSearchProgress/ApplySearchUnion already recorded for it
-		// this session. The query is the one exception — a slot seeded
-		// before the daemon reported a name has an empty one, and
-		// filling it in loses nothing.
+		// Already known (self-started, or discovered on an earlier cache-miss
+		// check): leave its accumulated results/progress alone, or this would
+		// stomp whatever the session already recorded. The query is the one
+		// exception -- a slot seeded before the daemon reported a name has none.
 		if (known->second.query.empty())
 			known->second.query = query;
 		return;
 	}
 	SearchSlot &slot = m_searches[search_id];
 	slot.seq = ++m_search_seq;
-	// The daemon's own lifecycle state for this search, not an assumption.
-	// A finished search seeded as active reads as running until the next
-	// tick corrects it, and POST /search/{id}/more gates on exactly that.
-	// `started_at` stays 0: this session did not start it, and the daemon
-	// ships no timestamp to borrow.
+	// The daemon's own lifecycle state for this search, not an assumption. A
+	// finished search seeded as active reads as running until the next tick
+	// corrects it, and POST /search/{id}/more gates on exactly that.
 	slot.progress.active = active;
 	slot.progress.complete = complete;
 	// Seeded here or never. A slot discovered as finished is not in
-	// ActiveSearchIds(), so the tick never polls it and WriteSearchProgress
-	// is never called for it -- the percent would sit at its 0 default for
-	// the life of the slot, contradicting the "finished" state in the very
-	// same envelope.
-	//
-	// Prefer the daemon's own number when the listing carried one. Without it
-	// (an older daemon) derive: 100 for a finished search, true by
-	// definition; 0 for a running one, which IS polled and is corrected
-	// within a tick, where inventing a number would flash a wrong one.
+	// ActiveSearchIds(), so the tick never polls it and WriteSearchProgress is
+	// never called -- the percent would sit at its 0 default for the life of the
+	// slot, contradicting the "finished" state in the same envelope. Prefer the
+	// daemon's own number; without it, derive 100 for a finished search and 0
+	// for a running one, which is corrected within a tick.
 	slot.progress.percent =
 		reported_percent >= 0 ? static_cast<std::uint32_t>(reported_percent) : (complete ? 100u : 0u);
 	slot.progress.kind = kind;
@@ -407,11 +392,10 @@ std::vector<std::uint32_t> CState::SearchesNeedingResync() const
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
 	std::vector<std::pair<std::uint64_t, std::uint32_t>> pending;
 	for (const auto &kv : m_searches) {
-		// Same exemption the flag's writer applies, and for the same reason:
-		// a slot detached after it was flagged has had its search dropped by
-		// the daemon, so a full re-read would only come back expired. Asking
-		// anyway costs a roundtrip per slot, and a replace-mode apply against
-		// a detached slot would clear the results the detach exists to keep.
+		// Same exemption the flag's writer applies: a slot detached after it was
+		// flagged has had its search dropped by the daemon, so a full re-read would
+		// come back expired -- and a replace-mode apply would clear the results the
+		// detach exists to keep.
 		if (kv.second.needs_resync && !kv.second.detached)
 			pending.emplace_back(kv.second.seq, kv.first);
 	}
@@ -443,9 +427,8 @@ void CState::EvictSurplusSearchSlotsLocked(std::uint32_t exempt_id)
 			// Never the slot the caller is in the middle of seeding.
 			if (exempt_id != 0 && it->first == exempt_id)
 				continue;
-			// A detached slot always outranks an attached one, however much
-			// younger: the daemon no longer holds it, so evicting it drops
-			// nothing that could still be re-read.
+			// A detached slot always outranks an attached one, however much younger:
+			// the daemon no longer holds it, so evicting it drops nothing re-readable.
 			if (victim == m_searches.end() || (it->second.detached && !victim->second.detached) ||
 				(it->second.detached == victim->second.detached &&
 					it->second.seq < victim->second.seq)) {
@@ -484,10 +467,9 @@ void CState::CloseSearch(std::uint32_t search_id)
 	const auto it = m_searches.find(search_id);
 	if (it == m_searches.end())
 		return;
-	// The index mirrors this slot's result map, so it has to lose the same
-	// ECIDs in the same locked step. Walking the slot's own results is what
-	// keeps that exact: erasing by value over the whole index would be O(n)
-	// in every search rather than this one.
+	// The index mirrors this slot's result map, so it loses the same ECIDs in the
+	// same locked step. Walking the slot's own results is what keeps that exact:
+	// erasing by value over the whole index would be O(n) in every search.
 	for (const auto &kv : it->second.raw)
 		m_resultOwner.erase(kv.first);
 	m_searches.erase(it);
@@ -508,9 +490,8 @@ void CState::WriteGraphs(StatsGraphs g)
 void CState::AppendAmuleLog(std::vector<std::string> new_lines)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
-	// No cap — see State.h comment above the `m_amule_log_lines`
-	// declaration. Operators can truncate via DELETE /logs/amule
-	// .
+	// No cap -- see the `m_amule_log_lines` declaration in State.h. Operators
+	// truncate via DELETE /logs/amule.
 	m_amule_log_lines.insert(m_amule_log_lines.end(),
 		std::make_move_iterator(new_lines.begin()),
 		std::make_move_iterator(new_lines.end()));
@@ -603,18 +584,14 @@ std::string IPv4ToDotted(std::uint32_t ip_lsb_first)
 bool MemoizableTarget(const std::string &target)
 {
 	const std::string path = target.substr(0, target.find('?'));
-	// OPT-IN, and deliberately so. This was an exclusion list, and an
-	// exclusion list has to be right about every route that exists now and
-	// every route anyone adds later -- it was wrong four separate times,
-	// each for a different reason. Inverting it makes the failure mode
-	// "we hash a body we did not have to", which costs microseconds,
-	// instead of "we serve a 304 for content that changed".
+	// OPT-IN, and deliberately so. This was an exclusion list, and an exclusion
+	// list has to be right about every route that exists now and every route
+	// anyone adds later. Inverting it makes the failure mode "we hash a body we
+	// did not have to", which costs microseconds, instead of "we serve a 304 for
+	// content that changed".
 	//
-	// Only the two collections the memo was built for are listed. They are
-	// the multi-MB bodies where skipping an MD5 is worth anything; every
-	// other target hashes per request and is immune by construction.
-	// Before adding one, it must be BOTH governed by the refresher
-	// snapshot AND identical for every caller -- see State.h.
+	// Before adding a target it must be BOTH governed by the refresher snapshot
+	// AND identical for every caller -- see State.h.
 	return path == "/api/v0/downloads" || path == "/api/v0/shared";
 }
 
@@ -702,28 +679,21 @@ void CState::ReconcileKnownClientsLocked()
 
 	for (const auto &kv : m_clients) {
 		const ClientSnapshot &c = kv.second;
-		// An all-zero hash is not an identity: it is what a peer that has not
-		// sent its hash yet reports, and every such peer would otherwise
-		// collapse into one fabricated record -- sharing a session count and
-		// a first-seen between unrelated clients. The daemon never writes one
-		// either; it creates a credit record from the hash in the hello. They
-		// get a row of their own once they identify.
+		// An all-zero hash is not an identity: it is what a peer that has not sent
+		// its hash yet reports, and every such peer would otherwise collapse into
+		// one fabricated record, sharing a session count and a first-seen between
+		// unrelated clients. They get a row of their own once they identify.
 		if (c.user_hash.empty() || c.user_hash.find_first_not_of('0') == std::string::npos)
 			continue;
 
 		auto it = m_known_of_hash.find(c.user_hash);
 		if (it == m_known_of_hash.end()) {
-			// A peer met since the store was read. The daemon wrote its
-			// credit record when the peer said hello, stamping first-seen
-			// and counting the session, so this reconstructs what it wrote
-			// rather than inventing anything.
+			// A peer met since the store was read. The daemon wrote its credit record
+			// when the peer said hello, so this reconstructs what it wrote.
 			//
-			// sessions is left at zero deliberately: the not-connected to
-			// connected transition below is what counts it. That is this
-			// tick if the peer is already connected, and a later one if we
-			// are still reaching it -- which is the point, since the daemon
-			// counts at the hello and not at the attempt. Setting it here
-			// too would count the same session twice.
+			// sessions is left at zero deliberately: the not-connected to connected
+			// transition below is what counts it, matching the daemon counting at the
+			// hello and not at the attempt. Setting it here would double-count.
 			KnownClientSnapshot k;
 			k.user_hash = c.user_hash;
 			k.first_seen_at = now;
@@ -734,39 +704,31 @@ void CState::ReconcileKnownClientsLocked()
 
 		KnownClientSnapshot &k = m_known_clients[it->second];
 		still_online.insert(it->second);
-		// Reachability, echoed from the live row. A client object exists from
-		// the first contact ATTEMPT, so presence in the list is not the same
-		// question -- an unroutable peer sat here reading "Online now".
+		// Reachability, echoed from the live row. A client object exists from the
+		// first contact ATTEMPT, so presence in the list is not the same question.
 		// Read before the assignment: k.connected still holds last tick's answer,
 		// which is what the session edge below is measured against.
 		const bool was_connected = k.connected;
 		k.connected = c.has_connected && c.connected;
 		k.has_connected = c.has_connected;
-		// Not-connected to connected is a new session, which is what the
-		// daemon counts: UpdateMeta() bumps it once per client object at the
-		// hello, and a hello needs a connection. This used to fire on the peer
-		// merely APPEARING in the client list, which is earlier than the hello
-		// and also happens for a peer that never connects at all -- so the
-		// count ran ahead of the daemon's, and did so permanently, since the
-		// credit store is read once and never re-read.
-		//
-		// It can still over-count by one if a peer drops out of the update for
-		// a tick and returns -- an EC hiccup rather than a real reconnect --
-		// because the departure sweep below clears connected for it.
+		// Not-connected to connected is a new session, which is what the daemon
+		// counts: UpdateMeta() bumps it once per client object at the hello, and a
+		// hello needs a connection. This used to fire on the peer merely APPEARING
+		// in the client list, which is earlier and also happens for a peer that
+		// never connects -- so the count ran ahead of the daemon's, permanently.
+		// It can still over-count by one if a peer drops out of the update for a
+		// tick and returns, because the departure sweep clears connected for it.
 		if (!was_connected && k.connected)
 			k.session_count++;
 		// A peer in front of us was last seen now, not whenever it previously
-		// disconnected. Leaving the stored value would report a peer that is
-		// connected as last seen months ago, and now is what the core writes
-		// to the record at its own disconnect handling anyway.
+		// disconnected -- and now is what the core writes to the record at its own
+		// disconnect handling anyway.
 		k.last_seen_at = now;
 		k.uploaded_bytes_total = c.uploaded_bytes_total;
 		k.downloaded_bytes_total = c.downloaded_bytes_total;
-		// Identity, when the peer in front of us knows more than the record.
-		// A record only gains a name once the core writes its metadata, so a
-		// peer we have never finished a session with is otherwise nameless.
-		// Guarded on the live name being known: a peer mid-handshake has none
-		// and must not blank a stored one.
+		// Identity, when the peer in front of us knows more than the record. A
+		// record only gains a name once the core writes its metadata. Guarded on
+		// the live name being known: a peer mid-handshake must not blank a stored one.
 		if (!c.client_name.empty()) {
 			k.client_name = c.client_name;
 			k.ip = c.ip;
@@ -790,10 +752,9 @@ void CState::ReconcileKnownClientsLocked()
 		// it, so it is definitively not connected. Known, not unknown.
 		m_known_clients[idx].connected = false;
 		m_known_clients[idx].has_connected = true;
-		// Seen until this moment, which is what the core writes to the record
-		// at its own disconnect handling. The stored value is the *previous*
-		// disconnect, so leaving it would show a peer that was here a second
-		// ago as last seen months back.
+		// Seen until this moment, which is what the core writes at its own
+		// disconnect handling. The stored value is the *previous* disconnect, so
+		// leaving it would show a peer that was here a second ago as months old.
 		m_known_clients[idx].last_seen_at = now;
 	}
 	m_known_connected.swap(still_online);
@@ -864,22 +825,19 @@ bool CState::FindSharedByEcid(std::uint32_t ecid, FileSnapshot &out) const
 	return true;
 }
 
-// MutateDownloads + MutateShared both lock + hand out m_files. Both
-// walkers operate on the same unified map (and the same lock acquisition,
-// when chained from a single tick); the callback decides which role
-// flag to set or clear. The FileMap wrapper keeps its hash→ECID index
-// in sync as the walker emplaces / erases, so there's no rebuild pass
-// at the end of the mutate window.
+// MutateDownloads + MutateShared both lock and hand out m_files. Both walkers
+// operate on the same unified map, and the callback decides which role flag to
+// set or clear. The FileMap wrapper keeps its hash->ECID index in sync as the
+// walker emplaces / erases, so there is no rebuild pass at the end.
 void CState::MutateDownloads(const std::function<void(FileMap &)> &fn)
 {
 	const ReentryGuard guard(this);
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	fn(m_files);
-	// Bumped by the writer, not by its callers. The ETag memo keys on this,
-	// and every previous attempt to advance it from the outside missed a
-	// path: first the inline refreshes that mutating handlers run, then a
-	// tick that failed partway after already writing. A writer cannot
-	// forget to say that it wrote.
+	// Bumped by the writer, not by its callers. The ETag memo keys on this, and
+	// every previous attempt to advance it from the outside missed a path: first
+	// the inline refreshes mutating handlers run, then a tick that failed partway
+	// after already writing. A writer cannot forget to say that it wrote.
 	++m_snapshot_rev;
 }
 
@@ -894,9 +852,8 @@ void CState::MutateShared(const std::function<void(FileMap &)> &fn)
 
 void CState::MutateClients(const std::function<void(std::map<std::uint32_t, ClientSnapshot> &)> &fn)
 {
-	// Forwards rather than repeating the guard-plus-lock body: the two differ
-	// only in what they hand the callback. Still exactly one acquisition, so
-	// a caller that does not need the files pays nothing for the convenience.
+	// Forwards rather than repeating the guard-plus-lock body: the two differ only
+	// in what they hand the callback, and this is still exactly one acquisition.
 	MutateClientsWithFiles(
 		[&fn](std::map<std::uint32_t, ClientSnapshot> &clients, const FileMap &) { fn(clients); });
 }
@@ -912,37 +869,31 @@ void CState::MutateClientsWithFiles(
 void CState::ResetLists()
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
-	// A wholesale wipe on a failed tick is as much a body change as any
-	// mutation, and it runs on the failure path -- exactly where the key
-	// used to freeze while the bodies moved underneath it.
+	// A wholesale wipe on a failed tick is as much a body change as any mutation,
+	// and it runs on the failure path -- exactly where the key used to freeze.
 	++m_snapshot_rev;
 	m_files.clear();
 	m_clients.clear();
 	m_servers.clear();
 	m_categories.clear();
 	// Search slots and the ECID->search_id index that mirrors them are
-	// deliberately NOT cleared, for the same reason as the credit store
-	// below and then some. This runs when a tick failed against a socket
-	// that is still up -- an actual dropped connection sets
-	// g_shutdownRequested via HandleEcConnectionLost() and this loop exits
-	// instead -- so the daemon's per-connection search registry is very much
-	// alive, along with its record of which results it has already sent us
-	// and the valuemap it diffs against. Wiping our side of that would not
-	// resync anything: results the daemon considers delivered are elided from
-	// then on, so every search would come back permanently short by whatever
-	// it held at the moment one tick returned null. The collections above are
-	// safe to wipe precisely because their EC_DETAIL_UPDATE streams resend in
+	// deliberately NOT cleared. This runs when a tick failed against a socket
+	// that is still up -- an actual dropped connection sets g_shutdownRequested
+	// via HandleEcConnectionLost() and this loop exits instead -- so the daemon's
+	// per-connection search registry is very much alive, along with its record of
+	// which results it has already sent us. Wiping our side would not resync
+	// anything: results the daemon considers delivered are elided from then on,
+	// so every search would come back permanently short. The collections above
+	// are safe to wipe precisely because their EC_DETAIL_UPDATE streams resend in
 	// full; this one does not.
 	//
-	// The credit store is dropped for the same reason -- refetching the whole
-	// thing after one null tick is the cost this endpoint exists to avoid. It
-	// cannot go stale across a daemon restart either: amuleapi shuts down the
-	// moment the socket drops, so the process never attaches to a second
-	// core.
-	// Logs + stats_tree + graphs survive EC reconnects on purpose —
-	// operator can see "EC disconnected at HH:MM" alongside earlier
-	// graph traffic; stats_tree's counters are amuled-uptime not
-	// amuleapi-tick scoped.
+	// The credit store is kept for the same reason -- refetching the whole thing
+	// after one null tick is the cost that endpoint exists to avoid, and it
+	// cannot go stale across a daemon restart, since amuleapi shuts down the
+	// moment the socket drops.
+	//
+	// Logs + stats_tree + graphs survive EC reconnects on purpose: the operator
+	// can see "EC disconnected at HH:MM" alongside earlier graph traffic.
 }
 
 void CState::BumpSnapshotRevision()
@@ -962,31 +913,24 @@ void CState::MarkTickSuccess()
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	m_has_first_snapshot = true;
 	m_ec_connected = true;
-	// `m_snapshot_at` is stamped at tick-END (here), not tick-start.
-	// Clients reading `snapshot_at` therefore see "the wall-clock
-	// moment the daemon finished assembling this snapshot", with the
-	// tick's own duration as the implicit skew (typically 50-200 ms,
-	// up to multi-second under EC-mutex contention). For coarse
-	// freshness checks ("is this stale by more than 5 s?") that's
-	// fine; if a future caller wants sub-second precision, document
-	// the skew or stamp both tick_started_at and tick_ended_at.
+	// `m_snapshot_at` is stamped at tick-END, not tick-start, so `snapshot_at` is
+	// the wall-clock moment the daemon finished assembling the snapshot, with the
+	// tick's own duration as the implicit skew (typically 50-200 ms, more under
+	// EC-mutex contention). Fine for coarse freshness checks, not sub-second ones.
 	m_snapshot_at = std::time(nullptr);
 }
 
 void CState::MarkTickFailure()
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
-	// Deliberately preserve m_snapshot_at — clients see stale
-	// `snapshot_at` next to `ec_connected=false`, so they can tell
-	// how stale the cache is. Resetting it to `now` would lie.
+	// Deliberately preserve m_snapshot_at: clients see a stale `snapshot_at` next
+	// to `ec_connected=false` and can tell how stale the cache is. Resetting it
+	// to `now` would lie.
 	//
-	// Tick-atomicity: on failure CState may hold partial mutations
-	// from earlier in the tick. The "tick = transaction" model is
-	// atomic for events (EmitDiffsForEventBus is skipped on failure,
-	// next-tick diff is against the prior-success baseline in
-	// LastSeenState) but NOT atomic for state — no rollback. CState
-	// is a best-effort cache for /status freshness; LastSeenState
-	// is the authoritative event baseline.
+	// On failure CState may hold partial mutations from earlier in the tick. The
+	// "tick = transaction" model is atomic for events but NOT for state -- there
+	// is no rollback. CState is a best-effort cache; LastSeenState is the
+	// authoritative event baseline.
 	m_ec_connected = false;
 }
 

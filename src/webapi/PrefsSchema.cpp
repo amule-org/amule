@@ -42,9 +42,8 @@ const char *const kIp2CountrySources[] = { "dbip", "maxmind", "custom", nullptr 
 // Everything from here to the matching `clang-format on` is a data table, not
 // code, and is kept one row per field so it reads as a specification.
 // ColumnLimit is 110 and the longest row is ~184 characters, so the formatter
-// would otherwise break every row across seven lines -- which costs the
-// property this table exists for: renaming or adding a preference stays a
-// one-line diff a reviewer can take in at a glance.
+// would break every row across seven lines -- costing the property this table
+// exists for: adding a preference stays a one-line diff.
 //
 // clang-format off
 
@@ -82,8 +81,7 @@ const char *const kIp2CountrySources[] = { "dbip", "maxmind", "custom", nullptr 
 
 // Numeric rows whose real domain is narrower than their type. `minv`/`maxv` are
 // both inclusive and both rejected with a 400; `stepv` is the granularity the
-// core stores at, 0 when the row is not quantised. See the notes on
-// PrefField::min and ::step for why this is declared rather than clamped.
+// core stores at, 0 when the row is not quantised.
 #define PREF_U32_DOMAIN(cat, key, tag, minv, maxv, stepv, acc, memb) \
 	{cat, key, tag, PrefType::Uint32, PrefEnc::Value, false, acc, maxv, nullptr, nullptr, \
 		PREF_MEMBER(memb, std::uint32_t), 0, 0, minv, stepv}
@@ -124,9 +122,8 @@ const char *const kIp2CountrySources[] = { "dbip", "maxmind", "custom", nullptr 
 const PrefField kSchema[] = {
 	// [general]
 	// Value, not Presence: the core emits EC_TAG_GENERAL_CHECK_NEW_VERSION
-	// unconditionally as a value tag, so presence-decoding it pinned the
-	// answer to true and a read-modify-write of any other preference
-	// silently re-enabled version checking.
+	// unconditionally as a value tag, so presence-decoding it pinned the answer
+	// to true and a read-modify-write of any other preference re-enabled it.
 	PREF_BOOL("general", "version_check_enabled", EC_TAG_GENERAL_CHECK_NEW_VERSION, PrefEnc::Value, false, PrefAccess::ReadWrite, version_check_enabled),
 	PREF_STR("general", "daemon_host_name", EC_TAG_USER_HOST, PrefAccess::ReadOnly, daemon_host_name),
 	PREF_STR("general", "nickname", EC_TAG_USER_NICK, PrefAccess::ReadWrite, nickname),
@@ -261,10 +258,9 @@ const PrefField kSchema[] = {
 	// [online_signature]
 	PREF_STR("online_signature", "directory", EC_TAG_ONLINESIG_DIRECTORY, PrefAccess::ReadWrite, online_signature.directory),
 	PREF_BOOL("online_signature", "enabled", EC_TAG_ONLINESIG_ENABLED, PrefEnc::Presence, false, PrefAccess::ReadWrite, online_signature.enabled),
-	// 65535, not the uint32 ceiling: CPreferences::SetOSUpdate takes a uint16
-	// (Preferences.h), so anything larger wraps on the way in -- 86400 (daily)
-	// became 20864 and the PATCH still reported success. Capping here turns a
-	// silent rewrite into the 400 every other numeric preference answers.
+	// 65535, not the uint32 ceiling: CPreferences::SetOSUpdate takes a uint16, so
+	// anything larger wraps on the way in -- 86400 (daily) became 20864 and the
+	// PATCH still reported success.
 	PREF_U32("online_signature", "update_frequency_seconds", EC_TAG_ONLINESIG_UPDATE, 65535u, PrefAccess::ReadWrite, online_signature.update_frequency_seconds),
 
 	// [advanced] (EC group: CORETWEAKS)
@@ -300,9 +296,9 @@ const PrefField kSchema[] = {
 	PREF_STR("geoip", "maxmind_license", EC_TAG_IP2COUNTRY_MAXMIND_LICENSE, PrefAccess::ReadWrite, geoip.maxmind_license),
 	PREF_ENUM("geoip", "source", EC_TAG_IP2COUNTRY_SOURCE, kIp2CountrySources, PrefAccess::ReadWrite, geoip.source),
 	PREF_BOOL("geoip", "supported", EC_TAG_IP2COUNTRY_SUPPORTED, PrefEnc::Value, false, PrefAccess::ReadOnly, geoip.supported),
-	// `update_now` was a write-only boolean here; it is POST /geoip/update
-	// now (#1189), an action rather than a setting. The row stays as a
-	// Rejected one so a client still sending it is told where it went.
+	// `update_now` was a write-only boolean here; it is POST /geoip/update now,
+	// an action rather than a setting. The row stays Rejected so a client still
+	// sending it is told where it went.
 	PREF_REJECT("geoip", "update_now"),
 };
 
@@ -318,9 +314,8 @@ const PrefCategory kCategories[] = {
 	{"remote_controls.webserver", EC_TAG_PREFS_REMOTECTRL},
 	{"remote_controls.amuleapi", EC_TAG_PREFS_REMOTECTRL},
 	{"online_signature", EC_TAG_PREFS_ONLINESIG},
-	// `advanced`, not `core_tweaks`: there is no such amule.conf section,
-	// "core" means nothing to an API consumer, verbose_logging is not a
-	// tweak, and the desktop tab holding these settings is called Advanced.
+	// `advanced`, not `core_tweaks`: there is no such amule.conf section, "core"
+	// means nothing to an API consumer, and the desktop tab is called Advanced.
 	{"advanced", EC_TAG_PREFS_CORETWEAKS},
 	// Everything else in the API says kad.
 	{"kad", EC_TAG_PREFS_KADEMLIA},

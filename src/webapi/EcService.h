@@ -65,9 +65,8 @@ namespace webapi
 class CEcService
 {
 public:
-	// Runs one EC roundtrip (send request, block for reply); returns the
-	// reply packet (caller-owned) or nullptr on EC failure. Bound to
-	// CaMuleExternalConnector::SendRecvMsg_v2.
+	// Runs one EC roundtrip (send request, block for reply); returns the reply
+	// packet (caller-owned) or nullptr on EC failure.
 	using Roundtrip = std::function<const CECPacket *(const CECPacket *)>;
 
 	explicit CEcService(std::size_t max_depth = 8)
@@ -107,9 +106,9 @@ public:
 		return fut;
 	}
 
-	// Stop the worker. Idempotent. Fulfils any queued (not-yet-started)
-	// jobs with nullptr so their callers unblock, then joins — bounded by
-	// the EC read timeout if a roundtrip is in flight.
+	// Stop the worker. Idempotent. Fulfils any queued (not-yet-started) jobs with
+	// nullptr so their callers unblock, then joins -- bounded by the EC read
+	// timeout if a roundtrip is in flight.
 	void Stop()
 	{
 		{

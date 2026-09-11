@@ -50,19 +50,14 @@
 namespace webapi
 {
 
-// Server-side bearer-token revocation list. JWTs are stateless by
-// design; for /auth/logout to actually invalidate a token, the server
-// has to remember "this jti is dead until the JWT's exp".
+// Server-side bearer-token revocation list. JWTs are stateless by design; for
+// /auth/logout to actually invalidate a token, the server has to remember
+// "this jti is dead until the JWT's exp".
 //
-// Memory cost: one entry per logged-out-but-still-unexpired token.
-// `jti` is 22 base64url chars (~24 bytes once the std::string SSO
-// boundary kicks in) + the exp timestamp + map overhead — call it
-// ~64 bytes per revoked token. Bounded by max-concurrent-users ×
-// 24 h (the JWT lifetime).
-//
-// GC: lazy on Revoke() — sweeps entries whose exp has already
-// passed. Cheap (~O(log n) lookup per sweep) and amortizes the work
-// across calls instead of needing a periodic timer.
+// One entry per logged-out-but-still-unexpired token, roughly 64 bytes each,
+// bounded by max-concurrent-users x the 24 h JWT lifetime. GC is lazy on
+// Revoke(), sweeping entries whose exp has already passed, which amortizes the
+// work across calls instead of needing a periodic timer.
 class CRevocationSet
 {
 public:
@@ -80,16 +75,14 @@ private:
 	mutable std::map<std::string, std::time_t> m_revoked;
 };
 
-// The per-IP failure rate limiter now lives in mulecommon, shared with the
-// External Connection password exchange, which needs the same protection but
-// cannot link the webapi library. Re-exported here so existing
-// `webapi::CRateLimiter` uses keep resolving.
+// The per-IP failure rate limiter lives in mulecommon, shared with the External
+// Connection password exchange, which needs the same protection but cannot link
+// the webapi library. Re-exported here so `webapi::CRateLimiter` still resolves.
 using ::CRateLimiter;
 
-// HTTP `Authorization: Bearer <jwt>` extractor. Returns the empty
-// string if the header is absent, doesn't start with `Bearer `, or
-// has no value past the space. Case-insensitive scheme compare
-// per RFC 6750 §2.1.
+// HTTP `Authorization: Bearer <jwt>` extractor. Returns the empty string if the
+// header is absent, does not start with `Bearer `, or has no value past the
+// space. Case-insensitive scheme compare per RFC 6750 2.1.
 std::string ExtractBearerToken(const std::string &authorization_header);
 
 // Extracts `<cookie_name>=<value>` from a Cookie header. Returns the
