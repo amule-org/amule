@@ -171,16 +171,13 @@ bool CSearchFile::WriteToFile(CFileDataIO *file) const
 {
 	file->WriteHash(m_abyFileHash);
 
-	// Fixed tags: filename, size, sources, complete-sources, and rating if
-	// ever set. Anything else already riding in m_taglist (e.g. Kad-relayed
-	// extras AddTagUnique kept) is appended after, same shape as
-	// CKnownFile::WriteToFile. Unlike CKnownFile's on-the-wire pairing of a
-	// FT_FILESIZE_HI tag alongside a 32-bit FT_FILESIZE (a server-wire
-	// idiom, see KnownFile.cpp:1327 -- two 32-bit tags used INSTEAD OF a
-	// 64-bit one, never alongside it), this format always writes the size
-	// as a single 64-bit-capable tag: CTagIntSized already stores the whole
-	// value, so a size-hi tag here would be additive rather than
-	// complementary on read.
+	// Fixed tags: filename, size, sources, complete-sources, and rating if ever set.
+	// Anything else already in m_taglist is appended after, the same shape as
+	// CKnownFile::WriteToFile. Unlike CKnownFile's on-the-wire pairing of an
+	// FT_FILESIZE_HI tag alongside a 32-bit FT_FILESIZE -- a server-wire idiom where
+	// the two are used INSTEAD OF a 64-bit tag -- this format always writes the size
+	// as a single 64-bit-capable tag, so a size-hi tag here would be additive rather
+	// than complementary on read.
 	uint32 tagcount = 4;
 	if (m_iUserRating != 0) {
 		tagcount++;
@@ -290,12 +287,10 @@ CSearchFile *CSearchFile::LoadFromFile(CFileDataIO *file, bool allowChildren)
 	uint16 childcount = file->ReadUInt16();
 	if (childcount > 0 && !allowChildren) {
 		// A real result tree is two levels deep at most -- parent plus
-		// alternative-filename children, never grandchildren (the same
-		// invariant AddChild() enforces at runtime: "A child cannot have
-		// children of its own"). A child record claiming children of its
-		// own is malformed; without this check a crafted/corrupt file
-		// nesting one child per level recurses unbounded and overflows
-		// the stack before any other validation gets a chance to run.
+		// alternative-filename children, the same invariant AddChild() enforces at
+		// runtime. A child record claiming children of its own is malformed, and
+		// without this check a crafted file nesting one child per level recurses
+		// unbounded and overflows the stack before any other validation runs.
 		return nullptr;
 	}
 	for (uint16 i = 0; i != childcount; ++i) {
@@ -303,18 +298,16 @@ CSearchFile *CSearchFile::LoadFromFile(CFileDataIO *file, bool allowChildren)
 		if (!child) {
 			return nullptr;
 		}
-		// Not AddChild(): that method also does live-search duplicate
-		// merging (matching filenames get combined, see above), which
-		// doesn't apply to restoring an already-finalized tree -- every
-		// child here was already distinct when written.
+		// Not AddChild(): that also does live-search duplicate merging, which does
+		// not apply to restoring an already-finalized tree where every child was
+		// distinct when written.
 		child->m_parent = result.get();
 		result->m_children.push_back(child);
 	}
 
-	// m_downloadStatus is deliberately left at its NEW default here --
-	// recomputing it needs theApp->downloadqueue/knownfiles/canceledfiles,
-	// which is the caller's job (see the header comment on LoadFromFile)
-	// so this stays a pure parser callable before those singletons exist.
+	// m_downloadStatus is deliberately left at its NEW default: recomputing it needs
+	// theApp->downloadqueue/knownfiles/canceledfiles, which is the caller's job, so
+	// this stays a pure parser callable before those singletons exist.
 	return result.release();
 }
 

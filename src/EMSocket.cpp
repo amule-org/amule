@@ -175,7 +175,6 @@ void CEMSocket::OnReceive(int nErrorCode)
 		}
 	}
 
-	// Check current connection state
 	if (byConnected == ES_DISCONNECTED) {
 		return;
 	} else {
@@ -206,16 +205,12 @@ void CEMSocket::OnReceive(int nErrorCode)
 			readMax = CPacket::GetPacketSizeFromHeader(pendingHeader) - pendingPacketSize;
 		}
 
-		// Reserve from the global download budget only when we actually
-		// intend to read something. readMax can legitimately be 0 here
-		// for empty-payload packets (some ED2K control packets carry no
-		// payload past the header) -- the do-while iteration still has
-		// to fall through to the packet-processing block below to
-		// finalise the packet, so don't let Reserve(0) -> 0 -> early
-		// return short-circuit that path. Sockets that opt out of the
-		// download throttler via IsDownloadThrottled() (server control
-		// sockets) skip the reservation entirely and read whatever's
-		// available; their traffic doesn't count against the cap.
+		// Reserve from the global download budget only when we actually intend to
+		// read something. readMax can legitimately be 0 here for empty-payload
+		// packets, and the do-while iteration still has to fall through to the
+		// packet-processing block below, so Reserve(0) must not short-circuit that
+		// path. Sockets that opt out via IsDownloadThrottled() (server control
+		// sockets) skip the reservation and do not count against the cap.
 		const bool throttled = IsDownloadThrottled();
 		uint32 grantedBytes = 0;
 		ret = 0;
@@ -223,11 +218,10 @@ void CEMSocket::OnReceive(int nErrorCode)
 			if (throttled) {
 				grantedBytes = CDownloadBandwidthThrottler::Get().Reserve(readMax);
 				if (grantedBytes == 0) {
-					// Bucket exhausted; resume on next tick refill.
-					// Register for that wake-up rather than relying on
-					// something else to tick this socket: a socket we
-					// are only browsing belongs to no download, so
-					// nothing else would.
+					// Bucket exhausted; resume on the next tick refill. Register
+					// for that wake-up rather than relying on something else to
+					// tick this socket: a socket we are only browsing belongs to
+					// no download, so nothing else would.
 					pendingOnReceive = true;
 					CDownloadBandwidthThrottler::Get().PauseUntilRefill(this);
 					return;
@@ -284,7 +278,6 @@ void CEMSocket::OnReceive(int nErrorCode)
 					return;
 				}
 
-				// Process packet
 				PacketReceived(packet.get());
 			}
 		} else {
@@ -296,10 +289,9 @@ void CEMSocket::OnReceive(int nErrorCode)
 void CEMSocket::WakeIfPaused()
 {
 	if (pendingOnReceive) {
-		// Re-enter the read loop. OnReceive() will consult the global
-		// CDownloadBandwidthThrottler for fresh budget; if the bucket
-		// is still empty, pendingOnReceive stays set and we'll retry
-		// next tick.
+		// Re-enter the read loop. OnReceive() consults the global
+		// CDownloadBandwidthThrottler for fresh budget; if the bucket is still
+		// empty, pendingOnReceive stays set and we retry next tick.
 		OnReceive(0);
 	}
 }
@@ -327,11 +319,9 @@ void CEMSocket::WakeIfPaused()
  */
 void CEMSocket::SendPacket(CPacket *packet, bool delpacket, bool controlpacket, uint32 actualPayloadSize)
 {
-	// printf("* SendPacket called on socket %p\n", this);
 	std::lock_guard<std::mutex> lock(m_sendLocker);
 
 	if (byConnected == ES_DISCONNECTED) {
-		// printf("* Disconnected, drop packet\n");
 		if (delpacket) {
 			delete packet;
 		}
@@ -341,13 +331,11 @@ void CEMSocket::SendPacket(CPacket *packet, bool delpacket, bool controlpacket, 
 		}
 
 		if (controlpacket) {
-			// printf("* Adding a control packet\n");
 			m_control_queue.push_back(packet);
 
 			// queue up for controlpacket
 			theApp->uploadBandwidthThrottler->QueueForSendingControlPacket(this, HasSent());
 		} else {
-			// printf("* Adding a normal packet to the queue\n");
 			bool first = !((sendbuffer && !m_currentPacket_is_controlpacket) ||
 				       !m_standard_queue.empty());
 			StandardPacketQueueEntry queueEntry = { actualPayloadSize, packet };
@@ -402,10 +390,10 @@ uint64 CEMSocket::GetSentPayloadSinceLastCallAndReset()
 	return sentBytes;
 }
 
-// Non-resetting peek at bytes sent since the last GetSentPayloadSinceLastCallAndReset() call.
-// Used by the disk I/O thread to get a fresh view of sent bytes without consuming the counter
-// that SendBlockData() drains every CORE_TIMER_PERIOD ms.
-// Lock order: must not be called while m_sendLocker is already held by the caller.
+// Non-resetting peek at bytes sent since the last
+// GetSentPayloadSinceLastCallAndReset(). Used by the disk I/O thread for a fresh
+// view without consuming the counter SendBlockData() drains every
+// CORE_TIMER_PERIOD. Must not be called with m_sendLocker already held.
 uint64 CEMSocket::PeekSentPayload()
 {
 	std::lock_guard<std::mutex> lock(m_sendLocker);
@@ -464,14 +452,10 @@ SocketSentBytes CEMSocket::Send(
 {
 	std::lock_guard<std::mutex> lock(m_sendLocker);
 
-	// printf("* Attempt to send a packet on socket %p\n", this);
-
 	if (byConnected == ES_DISCONNECTED) {
-		// printf("* Disconnected socket %p\n", this);
 		SocketSentBytes returnVal = { false, 0, 0 };
 		return returnVal;
 	} else if (m_bBusy && onlyAllowedToSendControlPacket) {
-		// printf("* Busy socket %p\n", this);
 		SocketSentBytes returnVal = { true, 0, 0 };
 		return returnVal;
 	}
@@ -482,8 +466,6 @@ SocketSentBytes CEMSocket::Send(
 
 	if (byConnected == ES_CONNECTED && IsEncryptionLayerReady() &&
 		(!m_bBusy || onlyAllowedToSendControlPacket)) {
-
-		// printf("* Internal attemptto send on %p\n", this);
 
 		if (minFragSize < 1) {
 			minFragSize = 1;
@@ -532,13 +514,11 @@ SocketSentBytes CEMSocket::Send(
 			if (sendbuffer == NULL) {
 				CPacket *curPacket = NULL;
 				if (!m_control_queue.empty()) {
-					// There's a control packet to send
 					m_currentPacket_is_controlpacket = true;
 					curPacket = m_control_queue.front();
 					m_control_queue.pop_front();
 				} else if (!m_standard_queue
 						    .empty() /*&& onlyAllowedToSendControlPacket == false*/) {
-					// There's a standard packet to send
 					m_currentPacket_is_controlpacket = false;
 					StandardPacketQueueEntry queueEntry = m_standard_queue.front();
 					m_standard_queue.pop_front();
@@ -633,13 +613,11 @@ SocketSentBytes CEMSocket::Send(
 
 				uint32 result = CEncryptedStreamSocket::Write(sendbuffer + sent, tosend);
 
-				// Advance 'sent' before checking BlocksWrite().  BlocksWrite()
-				// reflects "any async_write currently in flight", not "did
-				// this Write() succeed".  A previous iteration's pending
-				// write may still be in flight when the current Write()
-				// succeeds, so BlocksWrite() returns true even though we
-				// just dispatched more data.  Advancing first prevents
-				// 'sent' from lagging and the same bytes being re-sent.
+				// Advance 'sent' before checking BlocksWrite(), which reflects "any
+				// async_write currently in flight" rather than "did this Write()
+				// succeed": a previous iteration's pending write may still be in
+				// flight when the current one succeeds, so advancing first keeps
+				// 'sent' from lagging and the same bytes from being re-sent.
 				if (result > 0) {
 					m_hasSent = true;
 					sent += result;
@@ -693,15 +671,11 @@ SocketSentBytes CEMSocket::Send(
 
 	if (onlyAllowedToSendControlPacket &&
 		(!m_control_queue.empty() || (sendbuffer != NULL && m_currentPacket_is_controlpacket))) {
-		// enter control packet send queue
-		// we might enter control packet queue several times for the same package,
-		// but that costs very little overhead. Less overhead than trying to make sure
-		// that we only enter the queue once.
-		// printf("* Requeueing control packet on %p\n", this);
+		// Enter the control packet send queue. We might enter it several times for
+		// the same package, but that costs less overhead than ensuring we enter it
+		// only once.
 		theApp->uploadBandwidthThrottler->QueueForSendingControlPacket(this, HasSent());
 	}
-
-	// printf("* Finishing send debug on %p\n",this);
 
 	SocketSentBytes returnVal = {
 		!anErrorHasOccured, sentStandardPacketBytesThisCall, sentControlPacketBytesThisCall

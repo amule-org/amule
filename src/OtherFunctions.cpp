@@ -52,12 +52,11 @@
 #include <wx/utils.h>
 #endif
 
-// Formats a filesize in bytes to make it suitable for displaying
+// Formats a filesize in bytes to make it suitable for displaying.
 //
-// IEC units, because the arithmetic below is binary: every step divides by
-// 1024, so a figure labelled "GB" was really gibibytes and read about 7%
-// high against anything measuring in powers of 1000 (issue #930). Only the
-// label changed -- no displayed size moved.
+// IEC units, because the arithmetic below is binary: every step divides by 1024,
+// so a figure labelled "GB" was really gibibytes and read about 7% high against
+// anything measuring in powers of 1000 (issue #930).
 wxString CastItoXBytes(uint64 count)
 {
 
@@ -128,10 +127,9 @@ wxString LabelWithColon(const wxString &label)
 
 wxString FormatLocalDateTime(const wxDateTime &when)
 {
-	// %x %X: both halves come from LC_TIME, so a locale that writes the day
-	// first, or separates with dots, or wants a 12-hour clock, gets what it
-	// writes -- and every timestamp in the interface agrees, because they
-	// all arrive here.
+	// %x %X: both halves come from LC_TIME, so a locale that writes the day first,
+	// or separates with dots, or wants a 12-hour clock, gets what it writes -- and
+	// every timestamp in the interface agrees, because they all arrive here.
 	return when.Format("%x %X");
 }
 
@@ -140,10 +138,9 @@ wxString FormatLocalDate(const wxDateTime &when)
 	return when.Format("%x");
 }
 
-// Codec FOURCC -> human-readable name. Mapping inspired by eMule AI's
-// MediaInfo.cpp (GPL v2+). Implementation rewritten for wx + a small
-// initial set; extend as needed. Unknown / unrecognised codec IDs
-// pass through unchanged so something useful still shows in the UI.
+// Codec FOURCC -> human-readable name, inspired by eMule AI's MediaInfo.cpp
+// (GPL v2+). Unknown codec IDs pass through unchanged so something useful still
+// shows in the UI.
 wxString FormatMediaCodec(const wxString &raw)
 {
 	if (raw.IsEmpty()) {
@@ -285,8 +282,6 @@ wxString GetFiletypeDesc(FileType type, bool translated)
 	}
 }
 
-// Returns the Typename, examining the extension of the given filename
-
 wxString GetFiletypeByName(const CPath &filename, bool translated)
 {
 	return GetFiletypeDesc(GetFiletype(filename), translated);
@@ -382,14 +377,7 @@ static wxChar base16Lookup[BASE16_LOOKUP_MAX][2] = { { '0', 0x0 },
 	{ 'E', 0xE },
 	{ 'F', 0xF } };
 
-// Returns a BASE16 encoded byte array
-//
-// [In]
-//   buffer: Pointer to byte array
-//   bufLen: Length of buffer array
-//
-// [Return]
-//   wxString object with BASE16 encoded byte array
+// Returns a BASE16 encoded byte array.
 wxString EncodeBase16(const unsigned char *buffer, unsigned int bufLen)
 {
 	wxString Base16Buff;
@@ -402,14 +390,7 @@ wxString EncodeBase16(const unsigned char *buffer, unsigned int bufLen)
 	return Base16Buff;
 }
 
-// Decodes a BASE16 string into a byte array
-//
-// [In]
-//   base16Buffer: String containing BASE16
-//   base16BufLen: Length BASE16 coded string's length
-//
-// [Out]
-//   buffer: byte array containing decoded string
+// Decodes a BASE16 string into `buffer`.
 unsigned int DecodeBase16(const wxString &base16Buffer, unsigned int base16BufLen, uint8_t *buffer)
 {
 	if (base16BufLen & 1) {
@@ -432,14 +413,7 @@ unsigned int DecodeBase16(const wxString &base16Buffer, unsigned int base16BufLe
 	return ret;
 }
 
-// Returns a BASE32 encoded byte array
-//
-// [In]
-//   buffer: Pointer to byte array
-//   bufLen: Length of buffer array
-//
-// [Return]
-//   wxString object with BASE32 encoded byte array
+// Returns a BASE32 encoded byte array.
 wxString EncodeBase32(const unsigned char *buffer, unsigned int bufLen)
 {
 	wxString Base32Buff;
@@ -469,16 +443,7 @@ wxString EncodeBase32(const unsigned char *buffer, unsigned int bufLen)
 	return Base32Buff;
 }
 
-// Decodes a BASE32 string into a byte array
-//
-// [In]
-//   base32Buffer: String containing BASE32
-//   base32BufLen: Length BASE32 coded string's length
-//
-// [Out]
-//   buffer: byte array containing decoded string
-// [Return]
-//   nDecodeLen:
+// Decodes a BASE32 string into `buffer`, returning the decoded length.
 unsigned int DecodeBase32(const wxString &base32Buffer, unsigned int base32BufLen, unsigned char *buffer)
 {
 	size_t nInputLen = base32Buffer.Length();
@@ -1411,7 +1376,6 @@ wxString DumpMemToStr(const void *buff, int n, const wxString &msg, bool ok)
 	int lines = (n + 15) / 16;
 
 	wxString result;
-	// Allocate aproximetly what is needed
 	result.Alloc((lines + 1) * 80);
 	if (!msg.IsEmpty()) {
 		result += msg + " - ok=" + (ok ? "true, " : "false, ");
@@ -1419,10 +1383,8 @@ wxString DumpMemToStr(const void *buff, int n, const wxString &msg, bool ok)
 
 	result += CFormat("%d bytes\n") % n;
 	for (int i = 0; i < lines; ++i) {
-		// Show address
 		result += CFormat("%08x  ") % (i * 16);
 
-		// Show two columns of hex-values
 		for (int j = 0; j < 2; ++j) {
 			for (int k = 0; k < 8; ++k) {
 				int pos = 16 * i + 8 * j + k;
@@ -1436,7 +1398,6 @@ wxString DumpMemToStr(const void *buff, int n, const wxString &msg, bool ok)
 			result += " ";
 		}
 		result += "|";
-		// Show a column of ascii-values
 		for (int k = 0; k < 16; ++k) {
 			int pos = 16 * i + k;
 
@@ -1483,9 +1444,9 @@ CVersionCompareResult CompareLatestReleaseVersion(const wxString &json)
 {
 	CVersionCompareResult result;
 
-	// Extract the `tag_name` string. /releases/latest excludes pre-releases,
-	// so the tag names a stable release. A regex on the one well-known field
-	// is robust against whitespace / field order without a full JSON parser.
+	// Extract the `tag_name` string. /releases/latest excludes pre-releases, so the
+	// tag names a stable release, and a regex on the one well-known field is robust
+	// against whitespace and field order without a full JSON parser.
 	wxRegEx tagRe(wxT("\"tag_name\"[[:space:]]*:[[:space:]]*\"([^\"]+)\""));
 	if (!tagRe.IsValid() || !tagRe.Matches(json)) {
 		return result; // ParseError
@@ -1580,36 +1541,25 @@ void InitLocale(wxLocale &locale, int language)
 	locale.Init(language, wxLOCALE_LOAD_DEFAULT);
 
 #if defined(__WXMAC__) || defined(__WINDOWS__)
-	// On macOS, GetDataDir() returns <bundle>/Contents/SharedSupport, while
-	// .mo catalogs live under <bundle>/Contents/Resources alongside the
-	// other bundle resources -- which is what GetResourcesDir() returns.
-	// On Windows both methods return the directory containing the .exe,
-	// so this is equivalent there.
+	// On macOS, GetDataDir() returns <bundle>/Contents/SharedSupport while the .mo
+	// catalogs live under <bundle>/Contents/Resources, which is what
+	// GetResourcesDir() returns. On Windows both return the .exe's directory.
 	locale.AddCatalogLookupPathPrefix(JoinPaths(wxStandardPaths::Get().GetResourcesDir(), "locale"));
 #elif defined(__WXGTK__) || defined(__UNIX__)
-	// On Linux/*BSD, .mo catalogs are installed under
+	// On Linux/*BSD the .mo catalogs are installed under
 	//   ${CMAKE_INSTALL_PREFIX}/share/locale/<lang>/LC_MESSAGES/amule.mo
-	// (see po/CMakeLists.txt -- DESTINATION ${CMAKE_INSTALL_LOCALEDIR}).
+	// while libintl's default lookup path is baked in at wxGTK's build time. For a
+	// system install that builds the binary and wxGTK against the same prefix the
+	// two match and translations work unaided.
 	//
-	// libintl's default lookup path is baked in at wxGTK's build time.
-	// For system installs that build the binary and wxGTK against the
-	// same prefix (typical Debian/Fedora/Arch packages), the default
-	// path matches and translations work without explicit help.
+	// In a Flatpak they do not: the bundle installs under prefix=/app while the
+	// wxGTK in the GNOME runtime was built against prefix=/usr, so libintl looks
+	// under /usr/share/locale and our catalogs sit untouched at /app/share/locale --
+	// every gettext() lookup misses and the UI runs in English regardless of LANG.
 	//
-	// In a Flatpak however, the bundle installs under prefix=/app while
-	// the wxGTK shipped inside the GNOME runtime was built against
-	// prefix=/usr -- so libintl looks for amule.mo under /usr/share/locale,
-	// and our catalogs sit at /app/share/locale, untouched. Net result:
-	// every gettext() lookup misses and the UI runs in English regardless
-	// of LANG. See amule-org/amule#18 (DaRkViVi verified the path
-	// mismatch on Fedora 44: ls /app/share/locale shows it/, ls
-	// /usr/share/locale/it/LC_MESSAGES/amule.mo is missing).
-	//
-	// Explicitly registering ${install_prefix}/share/locale as a wxLocale
-	// lookup prefix makes the binary self-sufficient: it tells libintl to
-	// also look under its own runtime install prefix, which matches the
-	// install path on Flatpak and is a harmless no-op on system installs
-	// (libintl already finds the catalog under /usr/share/locale).
+	// Registering ${install_prefix}/share/locale as a wxLocale lookup prefix makes
+	// the binary self-sufficient: it matches the Flatpak install path and is a
+	// harmless no-op on system installs.
 	locale.AddCatalogLookupPathPrefix(
 		JoinPaths(JoinPaths(wxStandardPaths::Get().GetInstallPrefix(), "share"), "locale"));
 #endif
@@ -1626,17 +1576,10 @@ int StrLang2wx(const wxString &language)
 		const wxLanguageInfo *lng = wxLocale::FindLanguageInfo(lang);
 		if (lng) {
 			int langID = lng->Language;
-			// Traditional Chinese: original Chinese, used in Taiwan, Hong Kong and Macau.
-			// Simplified Chinese: simplified Chinese characters used in Mainland China since
-			// 1950s, and in some other places such as Singapore and Malaysia.
-			//
-			// Chinese (Traditional) contains zh_TW, zh_HK and zh_MO (but there are differences in
-			// some words). Because of most Traditional Chinese user are in Taiwan, zh_TW becomes
-			// the representation of Traditional Chinese. Chinese (Simplified) contains zh_CN,
-			// zh_SG and zh_MY. In the same reason, zh_CN becomes the representation of Simplified
-			// Chinese.
-			//
-			// wx maps "Traditional Chinese" to "Chinese" however. This must me corrected:
+			// Traditional Chinese (zh_TW, zh_HK, zh_MO) is represented by zh_TW, and
+			// Simplified Chinese (zh_CN, zh_SG, zh_MY) by zh_CN, in both cases because
+			// most users are there. wx maps "Traditional Chinese" to plain "Chinese",
+			// which has to be corrected:
 			if (langID == wxLANGUAGE_CHINESE) {
 				langID = wxLANGUAGE_CHINESE_TRADITIONAL;
 			}

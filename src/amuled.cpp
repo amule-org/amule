@@ -117,15 +117,14 @@ IMPLEMENT_APP_NO_MAIN(CamuleDaemonApp)
 
 #ifndef __WINDOWS__
 // amuled's `-f`/`--full-daemon` must daemonize BEFORE wxEntry() initialises
-// wxWidgets. On macOS wxWidgets links the Cocoa core, which spins up framework
-// threads during app init; forking *after* that and then calling into ObjC from
-// the child -- the FSEvents run-loop pump, the version-check HTTP fetch, Kad
-// startup -- trips the ObjC fork-safety guard and aborts (or spins at 100% CPU).
-// Forking first lets Cocoa initialise fresh in the child and sidesteps the whole
-// fork-after-init hazard class; it's harmless on Linux/*BSD. Everything then
-// runs in the child, so the partfile/UBT worker threads constructed during
+// wxWidgets. On macOS wx links the Cocoa core, which spins up framework threads
+// during app init; forking AFTER that and then calling into ObjC from the child
+// -- the FSEvents run-loop pump, the version-check HTTP fetch, Kad startup --
+// trips the ObjC fork-safety guard and aborts or spins at 100% CPU. Forking first
+// lets Cocoa initialise fresh in the child, and is harmless on Linux/*BSD.
+// Everything then runs in the child, so the worker threads constructed during
 // OnInit() land in the daemon instead of being orphaned by a mid-init fork
-// (the reason that fork used to sit inside OnInit -- #849). Windows never forks.
+// (#849). Windows never forks.
 static bool AmuledWantsDaemonFork(int argc, char **argv)
 {
 	for (int i = 1; i < argc; ++i) {
@@ -146,18 +145,18 @@ static void AmuledDaemonizeEarly()
 	fprintf(stdout, "amuled: forking to background - see you\n");
 	fflush(stdout);
 
-	// Detach stdio to /dev/null and fork; the original process exits so the
-	// shell returns, and the child -- session leader after setsid() -- carries
-	// on into wxEntry(). The pid file is written later from InitGui() (now
-	// running in this child) with getpid().
+	// Detach stdio to /dev/null and fork; the original process exits so the shell
+	// returns, and the child -- session leader after setsid() -- carries on into
+	// wxEntry(). The pid file is written later from InitGui(), now running in this
+	// child, with getpid().
 	for (int i_fd = 0; i_fd < 3; ++i_fd) {
 		close(i_fd);
 	}
 	int fd = open("/dev/null", O_RDWR);
 	if (fd >= 0) {
-		// fd is 0 (lowest free after the closes); dup twice to reopen
-		// stdout(1) and stderr(2) on /dev/null. (Empty bodies: the dup
-		// return is intentionally ignored -- silences -Wunused-result.)
+		// fd is 0, the lowest free after the closes, so dup twice to reopen
+		// stdout(1) and stderr(2) on /dev/null. The empty bodies ignore the dup
+		// return deliberately, silencing -Wunused-result.
 		if (dup(fd)) {
 		}
 		if (dup(fd)) {
@@ -195,7 +194,6 @@ static BOOL CtrlHandler(DWORD fdwCtrlType)
 	case CTRL_C_EVENT:
 	case CTRL_CLOSE_EVENT:
 	case CTRL_BREAK_EVENT:
-		// handle these
 		AddDebugLogLineN(logStandard, "Received break event, exit main loop");
 		theApp->ExitMainLoop();
 		return TRUE;
@@ -203,7 +201,6 @@ static BOOL CtrlHandler(DWORD fdwCtrlType)
 	case CTRL_LOGOFF_EVENT:
 	case CTRL_SHUTDOWN_EVENT:
 	default:
-		// don't handle these
 		return FALSE;
 		break;
 	}
@@ -261,10 +258,8 @@ int CamuleDaemonApp::InitGui(bool, wxString &)
 	// drop the pid file with our own (post-setsid) pid.
 	theLogger.SetEnabledStdoutLog(false);
 	if (!m_PidFile.IsEmpty()) {
-		//
-		// Create a Pid file with the Pid of the daemon, so any daemon-manager
-		// can easily manage the process
-		//
+		// A pid file with the daemon's pid, so any daemon-manager can manage the
+		// process.
 		wxString temp = CFormat("%d\n") % (int)getpid();
 		wxFFile ff(m_PidFile, "w");
 		if (!ff.Error()) {
@@ -313,13 +308,11 @@ bool CamuleDaemonApp::Initialize(int &argc_, wxChar **argv_)
 	}
 
 #ifdef __WXOSX__
-	// macOS reports "Mac OS Roman" from GetSystemEncodingName() regardless
-	// of the user's locale, but HFS+/APFS file names are always UTF-8.
-	// Encoding with Mac Roman turns e.g. U+00AA into the single byte 0xAA,
-	// which the kernel rejects as invalid UTF-8 (EILSEQ) when the completed
-	// file is opened, leaving non-ASCII downloads stuck in PS_ERROR. The GUI
-	// is unaffected because it keeps wx's default (UTF-8) file-name
-	// converter; force UTF-8 here to match it.
+	// macOS reports "Mac OS Roman" from GetSystemEncodingName() regardless of the
+	// user's locale, but HFS+/APFS file names are always UTF-8. Encoding with Mac
+	// Roman turns U+00AA into the single byte 0xAA, which the kernel rejects as
+	// invalid UTF-8 when the completed file is opened, leaving non-ASCII downloads
+	// stuck in PS_ERROR. The GUI keeps wx's UTF-8 converter; force UTF-8 to match.
 	encName = "UTF-8";
 #endif
 

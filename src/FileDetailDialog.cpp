@@ -38,7 +38,6 @@
 
 #define ID_MY_TIMER 1652
 
-// IMPLEMENT_DYNAMIC(CFileDetailDialog, CDialog)
 wxBEGIN_EVENT_TABLE(CFileDetailDialog, wxDialog)
 	EVT_BUTTON(ID_CLOSEWNDFD, CFileDetailDialog::OnClosewnd)
 	EVT_BUTTON(IDC_BUTTONSTRIP, CFileDetailDialog::OnBnClickedButtonStrip)
@@ -55,11 +54,10 @@ wxEND_EVENT_TABLE()
 
 namespace
 {
-// Registry of open CFileDetailDialog instances. See CCommentDialog.cpp
-// for the rationale — the broadcast handler in GuiEvents.cpp iterates
-// this on every CKnownFile destruction. UAF would otherwise fire from
-// the 5-second update-timer's deref of m_file (issue #755, same family
-// as #748).
+// Registry of open CFileDetailDialog instances; see CCommentDialog.cpp for the
+// rationale. The broadcast handler in GuiEvents.cpp iterates this on every
+// CKnownFile destruction, since a UAF would otherwise fire from the 5-second
+// update timer's deref of m_file (issue #755).
 std::set<CFileDetailDialog *> &OpenInstances()
 {
 	static std::set<CFileDetailDialog *> instances;
@@ -92,12 +90,10 @@ CFileDetailDialog::~CFileDetailDialog()
 {
 	OpenInstances().erase(this);
 	m_timer.Stop();
-	// Drop the rows before freeing what they point at. The list control is a
-	// child window and so outlives this body, and the base states the rule
-	// plainly: it has to be told before the caller frees the item data.
-	// Nothing can currently paint or sort in between -- both call sites are
-	// stack temporaries, so destruction is synchronous -- but that is a
-	// property of wx's teardown rather than something this code should rest on.
+	// Drop the rows before freeing what they point at: the list control is a child
+	// window and so outlives this body, and the base has to be told before the
+	// caller frees the item data. Nothing can currently paint or sort in between,
+	// but that is a property of wx's teardown rather than something to rest on.
 	if (CFileDetailListCtrl *list = CastChild(IDC_LISTCTRLFILENAMES, CFileDetailListCtrl)) {
 		list->ClearSources();
 	}
@@ -109,13 +105,10 @@ CFileDetailDialog::~CFileDetailDialog()
 void CFileDetailDialog::DropReferencesTo(const CKnownFile *file)
 {
 	for (CFileDetailDialog *d : OpenInstances()) {
-		// Strip the file from m_files first so Next/Prev navigation
-		// doesn't re-select it. m_files is a reference to the
-		// caller's vector (CDownloadListCtrl's stack-allocated list
-		// of selected files), so erasing here mutates the caller's
-		// state too — that's fine; the caller holds it only for the
-		// duration of the modal dialog and the dialog is what owns
-		// the visible UI sourcing from it.
+		// Strip the file from m_files first, so Next/Prev navigation does not
+		// re-select it. m_files is a reference to the caller's vector, so erasing
+		// here mutates the caller's state too -- fine, since the caller holds it only
+		// for the duration of the modal dialog.
 		for (std::vector<CKnownFile *>::iterator it = d->m_files.begin(); it != d->m_files.end();
 			/* manual ++ */) {
 			if (*it == file) {
@@ -133,9 +126,8 @@ void CFileDetailDialog::DropReferencesTo(const CKnownFile *file)
 				++it;
 			}
 		}
-		// Dismiss if the active file vanished. Stop the update
-		// timer first so the next tick doesn't try to deref
-		// m_file before EndModal unwinds.
+		// Dismiss if the active file vanished. Stop the update timer first so the
+		// next tick cannot deref m_file before EndModal unwinds.
 		if (d->m_file == file) {
 			d->m_file = NULL;
 			d->m_timer.Stop();
@@ -159,10 +151,9 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 	wxString bufferS;
 
 	// A file is "downloading" only while it is an incomplete partfile.
-	// CPartFile::IsPartFile() already returns false once complete (the object
-	// itself may linger as a CPartFile until the next restart), so this is the
-	// authoritative test — not the concrete type. Works in amulegui too, where
-	// the proxy CPartFile overrides IsPartFile() identically.
+	// CPartFile::IsPartFile() already returns false once complete, even though the
+	// object may linger as a CPartFile until the next restart, so it is the
+	// authoritative test rather than the concrete type. Works in amulegui too.
 	CPartFile *part = m_file->IsPartFile() ? static_cast<CPartFile *>(m_file) : nullptr;
 
 	// --- Common fields (present on every CKnownFile) ---
@@ -253,16 +244,14 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 	}
 	CastChild(IDC_FD_SHARE_LASTUP, wxControl)->SetLabel(bufferS);
 
-	// Media Info (issue #418): populate from FT_MEDIA_* when the file has
-	// probed metadata; the labels stay at their "N/A" default otherwise.
-	// Works identically in the monolithic and remote (amulegui) builds —
-	// the remote proxy stores the same FT_MEDIA_* tags off EC.
-	// Per field, NOT gated on GetMetaDataVer(): that predicate answers "has
-	// this been probed", and a file can be probed and still have no duration
-	// (a raw elementary stream, a truncated capture). Filling every label on
-	// the aggregate would show Length 0:00 and Bitrate 0 kbps for such a file,
-	// where the truthful answer is the N/A default. A displayed zero is a
-	// claim; absence is not.
+	// Media Info (issue #418): populated from FT_MEDIA_* when the file has probed
+	// metadata, with the labels left at their "N/A" default otherwise. Identical in
+	// the monolithic and remote builds, the remote proxy storing the same tags.
+	//
+	// Per field, NOT gated on GetMetaDataVer(): that predicate answers "has this
+	// been probed", and a probed file can still have no duration. Filling every
+	// label on the aggregate would show Length 0:00 and Bitrate 0 kbps where the
+	// truthful answer is N/A.
 	if (uint32 len = m_file->GetIntTagValue(FT_MEDIA_LENGTH)) {
 		CastChild(IDC_FD_MEDIA_LENGTH, wxControl)->SetLabel(CastSecondsToHM(len));
 	}
@@ -286,10 +275,9 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 		}
 	}
 
-	// --- Section visibility, driven by the file's own state (not by which list
-	//     opened the dialog). Download rows show only for an in-progress
-	//     partfile; sharing rows show for any file that actually shares data
-	//     (every completed file, or a partfile with at least one complete part). ---
+	// Section visibility, driven by the file's own state rather than by which list
+	// opened the dialog: download rows show only for an in-progress partfile,
+	// sharing rows for any file that actually shares data.
 	bool showDownload = (part != nullptr);
 	bool showSharing = (part == nullptr) || (part->GetCompletedSize() > 0);
 	bool relayout = false;
@@ -309,10 +297,10 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 	}
 
 	setEnableForApplyButton();
-	// "Show all comments" opens the ratings/comments dialog for this file —
-	// works for a shared file as well as an in-progress download, since a Kad
-	// notes lookup only needs the file's hash+size. Enable it whenever there are
-	// comments already or Kad is connected (so it can still be queried) (#434).
+	// "Show all comments" opens the ratings/comments dialog, which works for a
+	// shared file as well as an in-progress download since a Kad notes lookup only
+	// needs the file's hash and size. Enabled whenever there are comments already
+	// or Kad is connected (#434).
 	FileRatingList list;
 	m_file->GetRatingAndComments(list);
 	CastChild(IDC_CMTBT, wxControl)->Enable(!list.empty() || theApp->IsConnectedKad());
@@ -326,10 +314,9 @@ void CFileDetailDialog::FillSourcenameList()
 {
 	CFileDetailListCtrl *pmyListCtrl = CastChild(IDC_LISTCTRLFILENAMES, CFileDetailListCtrl);
 
-	// The source-name list is a download-only view (how sources name the file).
-	// A plain shared file has none, so clear any rows a prior file left behind
-	// (Next/Prev) — freeing their item data — and bail before the partfile-only
-	// source accessors below.
+	// The source-name list is a download-only view of how sources name the file. A
+	// plain shared file has none, so clear any rows a prior file left behind,
+	// freeing their item data, and bail before the partfile-only accessors below.
 	CPartFile *part = m_file->IsPartFile() ? static_cast<CPartFile *>(m_file) : nullptr;
 	if (!part) {
 		// Rows first, then the objects they point at -- same rule as the
@@ -342,13 +329,11 @@ void CFileDetailDialog::FillSourcenameList()
 		return;
 	}
 
-	// reset
 	for (const auto &entry : m_sourcenames) {
 		entry.second->count = 0;
 	}
 	bool inserted = false;
 
-	// update
 #ifdef CLIENT_GUI
 	const SourcenameItemMap &sources = part->GetSourcenameItemMap();
 	for (SourcenameItemMap::const_iterator it = sources.begin(); it != sources.end(); ++it) {
@@ -396,21 +381,16 @@ void CFileDetailDialog::FillSourcenameList()
 		}
 	}
 
-	// Counts are zeroed above and then rewritten in place, so while this runs
-	// the list is not ordered by the column it is sorted on -- and AddSource()
-	// places a new row with a binary search, which needs that ordering to
-	// hold. So an insertion leaves rows in arbitrary positions and has to be
-	// repaired here, exactly as the pre-port code did.
+	// Counts are zeroed above and rewritten in place, so while this runs the list
+	// is not ordered by the column it is sorted on -- and AddSource() places a new
+	// row with a binary search, which needs that ordering. An insertion therefore
+	// leaves rows in arbitrary positions and has to be repaired here.
 	//
-	// Only on insertion, though. A count that merely changed is what the
-	// live-sort preference governs: RefreshSource() re-sorts when it is on,
-	// and when it is off the row is meant to stay where it is rather than move
-	// under the user. Sorting unconditionally would quietly override that
-	// setting for this list.
+	// Only on insertion: a count that merely changed is what the live-sort
+	// preference governs, and sorting unconditionally would override that setting.
 	if (inserted) {
 		pmyListCtrl->SortList();
 	}
-	// no need to call Layout() here, it's called in UpdateData()
 }
 
 void CFileDetailDialog::OnBnClickedShowComment(wxCommandEvent &WXUNUSED(evt))
@@ -571,13 +551,9 @@ void CFileDetailDialog::OnBnClickedButtonStrip(wxCommandEvent &WXUNUSED(evt))
 	filename.Replace("_", " ");
 	filename.Replace("%20", " ");
 
-	// Some additional formatting
 	filename.Replace("hYPNOTiC", "");
 	filename.MakeLower();
 	filename.Replace("xxx", "XXX");
-	//	filename.Replace("xdmnx", "");
-	//	filename.Replace("pmp", "");
-	//	filename.Replace("dws", "");
 	filename.Replace("www pornreactor com", "");
 	filename.Replace("sharereactor", "");
 	filename.Replace("found via www filedonkey com", "");

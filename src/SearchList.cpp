@@ -93,22 +93,10 @@ void ParsedSearchExpression(const CSearchExpr *pexpr)
 		}
 	}
 
-	// this limit (+ the additional operators which will be added later) has to match the limit in
-	// 'CreateSearchExpressionTree'
-	//	+1 Type (Audio, Video)
-	//	+1 MinSize
-	//	+1 MaxSize
-	//	+1 Avail
-	//	+1 Extension
-	//	+1 Complete sources
-	//	+1 Codec
-	//	+1 Bitrate
-	//	+1 Length
-	//	+1 Title
-	//	+1 Album
-	//	+1 Artist
-	// ---------------
-	//  12
+	// This limit (plus the operators added later) has to match the limit in
+	// CreateSearchExpressionTree: one each for Type, MinSize, MaxSize, Avail,
+	// Extension, Complete sources, Codec, Bitrate, Length, Title, Album and
+	// Artist -- 12 in total.
 	if (iOpAnd + iOpOr + iOpNot > 10) {
 		yyerror("Search expression is too complex");
 	}
@@ -117,12 +105,12 @@ void ParsedSearchExpression(const CSearchExpr *pexpr)
 
 	// optimize search expression, if no OR nor NOT specified
 	if (iOpAnd > 0 && iOpOr == 0 && iOpNot == 0) {
-		// figure out if we can use a better keyword than the one the user selected
-		// for example most user will search like this "The oxymoronaccelerator 2", which would ask
-		// the node which indexes "the" This causes higher traffic for such nodes and makes them a
-		// viable target to attackers, while the kad result should be the same or even better if we
-		// ask the node which indexes the rare keyword "oxymoronaccelerator", so we try to rearrange
-		// keywords and generally assume that the longer keywords are rarer
+		// Figure out if we can use a better keyword than the one the user
+		// selected: most users search like "The oxymoronaccelerator 2", which
+		// would ask the node indexing "the" -- higher traffic for such nodes and
+		// a viable target for attackers. Asking the node that indexes the rare
+		// keyword gives the same or better results, so keywords are rearranged on
+		// the assumption that longer keywords are rarer.
 		if (/*thePrefs::GetRearrangeKadSearchKeywords() &&*/ !s_strCurKadKeyword.IsEmpty()) {
 			for (unsigned int i = 0; i < pexpr->m_aExpr.GetCount(); i++) {
 				if (pexpr->m_aExpr[i] != SEARCHOPTOK_AND) {
@@ -314,13 +302,11 @@ void CSearchList::RemoveResults(wxUIntPtr searchID)
 	Kademlia::CSearchManager::StopSearch(searchID, true);
 
 	// Tell the GUI before the CSearchFile objects below are deleted: in a
-	// monolithic build CSearchListCtrl's model holds them as raw pointers
-	// (each row's wxDataViewItem ID is the CSearchFile*) and nothing else
-	// removes those rows, so a tab left open on this search would fault on
-	// the next repaint, sort, scroll or click. Also the local counterpart
-	// of amuleGUI's
-	// EC_TAG_SEARCH_EXPIRED-driven close, so "the search is gone" closes its
-	// tab through one path in both builds (got3nks, PR #680 review).
+	// monolithic build CSearchListCtrl's model holds them as raw pointers -- each
+	// row's wxDataViewItem ID is the CSearchFile* -- and nothing else removes
+	// those rows, so a tab left open on this search would fault on the next
+	// repaint, sort, scroll or click. Also the local counterpart of amuleGUI's
+	// EC_TAG_SEARCH_EXPIRED-driven close.
 	if (!m_shuttingDown) {
 		Notify_Search_Removed(searchID);
 	}
@@ -368,10 +354,10 @@ void CSearchList::StoreSearches() const
 	for (const auto &kv : m_searchStrings) {
 		// Browses are deliberately not persisted. They are a snapshot of one
 		// peer's share taken while that peer was connected, so restoring one
-		// resurrects a listing for someone who is very likely gone -- and a
-		// large share would spend the MAX_STORED_SEARCHES budget that exists
-		// for the user's own searches. They are in m_searchStrings only so
-		// the search list can report them by peer name while they are live.
+		// resurrects a listing for someone very likely gone -- and a large share
+		// would spend the MAX_STORED_SEARCHES budget that exists for the user's
+		// own searches. They are in m_searchStrings only so the search list can
+		// report them by peer name while they are live.
 		std::map<uint32_t, SearchType>::const_iterator kind = m_searchKinds.find(kv.first);
 		if (kind != m_searchKinds.end() && kind->second == BrowseSearch) {
 			continue;
@@ -401,10 +387,9 @@ void CSearchList::StoreSearches() const
 		}
 
 		file.WriteUInt32(id);
-		// m_searchStrings/m_searchKinds/m_searchStartTimes are written and
-		// erased together (StartNewSearch/RemoveResults), so ids is drawn
-		// from m_searchStrings, and matches this instance and the sort
-		// comparator above, this can't miss -- .at() throughout says so.
+		// m_searchStrings / m_searchKinds / m_searchStartTimes are written and
+		// erased together, so `ids` drawn from m_searchStrings cannot miss --
+		// which is what .at() throughout says.
 		file.WriteString(m_searchStrings.at(id), utf8strRaw);
 		file.WriteUInt8(static_cast<uint8>(m_searchKinds.at(id)));
 		file.WriteUInt64(static_cast<uint64>(m_searchStartTimes.at(id)));
@@ -415,9 +400,9 @@ void CSearchList::StoreSearches() const
 		}
 	}
 
-	// write_safe writes to a .new sibling; only Close() performs the rename
-	// onto the real filename (CFile.h). Without this call the .new file is
-	// left orphaned and StoredSearches.met itself is never updated.
+	// write_safe writes to a .new sibling; only Close() performs the rename onto
+	// the real filename. Without this call the .new file is left orphaned and
+	// StoredSearches.met itself is never updated.
 	file.Close();
 }
 
@@ -542,24 +527,20 @@ std::vector<uint32_t> CSearchList::LoadSearches()
 		m_searchKinds[entry.id] = entry.kind;
 		m_searchStartTimes[entry.id] = entry.startTime;
 
-		// Reserve the id so the first new search of the same kind this
-		// session can't be handed it -- both counters restart every launch,
-		// so without this a restored search collides with the next one
-		// started. Partitioned on the id's own high bit rather than the
-		// persisted `kind` byte: bit 31 is intrinsic to which counter owns
-		// the value, while `kind` is a separate field from the same record
-		// that could disagree with it if the file were corrupt. The one id
-		// that bit is wrong about is the legacy sentinel, handled first.
+		// Reserve the id so the first new search of the same kind this session
+		// cannot be handed it -- both counters restart every launch, so without
+		// this a restored search collides with the next one started. Partitioned
+		// on the id's own high bit rather than the persisted `kind` byte: bit 31
+		// is intrinsic to which counter owns the value, while `kind` is a separate
+		// field that could disagree with it if the file were corrupt.
 		if (entry.id == 0xffffffff) {
-			// The legacy single-search bucket comes from neither counter:
-			// every EC client predating multi-search reuses this one id for
-			// all of its searches, so there is no allocation to advance past.
-			// It has to be excluded explicitly because the bit-31 test below
-			// would hand an ed2k search to the Kad counter -- and since this
-			// is the largest uint32 there is, ReserveSearchId would pin
-			// m_nextID at its maximum and the next Kad allocation
-			// (++m_nextID | SEARCH_ID_KAD_MASK) would wrap to the FIRST Kad
-			// id, which is the collision this reservation exists to prevent.
+			// The legacy single-search bucket comes from neither counter: every EC
+			// client predating multi-search reuses this one id for all its searches,
+			// so there is no allocation to advance past. It has to be excluded
+			// explicitly because the bit-31 test below would hand an ed2k search to
+			// the Kad counter -- and since this is the largest uint32 there is,
+			// ReserveSearchId would pin m_nextID at its maximum and the next Kad
+			// allocation would wrap to the FIRST Kad id.
 		} else if (entry.id & 0x80000000) {
 			Kademlia::CSearchManager::ReserveSearchId(entry.id);
 		} else {
@@ -641,34 +622,27 @@ wxString CSearchList::StartNewSearch(uint32 *searchID, SearchType type, CSearchP
 	}
 
 	// The scalar m_searchType / m_currentSearch are the anchor for the single
-	// in-flight ed2k (local/global) search: its results arrive asynchronously
-	// for several seconds and are attributed via these scalars (see
-	// ProcessSearchAnswer / LocalSearchEnd). A Kad search started ALONGSIDE an
-	// in-flight ed2k search has its own per-ID machinery (results carry the Kad
-	// search ID explicitly; lifecycle is IsKadSearch/m_finishedKadSearches) and
-	// needs neither scalar — so it must not repoint them, or the ed2k search's
-	// late hits get dropped (wrong type) or misfiled (wrong bucket). Preserve
-	// the ed2k anchor in exactly that case; every other start updates it as
-	// before (a new ed2k search first finalizes the old one via
-	// StopInFlightEd2kSearch, and a lone Kad search has no ed2k in flight).
+	// in-flight ed2k (local/global) search: its results arrive asynchronously for
+	// several seconds and are attributed via these scalars. A Kad search started
+	// ALONGSIDE an in-flight ed2k search has its own per-ID machinery and needs
+	// neither scalar -- so it must not repoint them, or the ed2k search's late
+	// hits get dropped (wrong type) or misfiled (wrong bucket). Every other
+	// start updates the anchor as before.
 	const bool preserveEd2kAnchor = (type == KadSearch) && m_searchInProgress;
 	if (!preserveEd2kAnchor) {
 		m_searchType = type;
 	}
 	m_searchStart = time(NULL);
 
-	// EC clients reuse the sentinel `0xffffffff` for every search regardless
-	// of network type. `Get_EC_Response_Search` -> `RemoveResults(0xffffffff)`
-	// already soft-stops the previous Kad search via `PrepareToStop()` so it
-	// can drain in-flight packets, but those late `KademliaSearchKeyword(
-	// 0xffffffff, ...)` callbacks would then land in the *new* search's
-	// `m_results[0xffffffff]` bucket -- the Kad results contaminate an ed2k
-	// (or vice-versa) result list whenever an EC client switches search type
-	// without restarting the daemon. Hard-delete the previous Kad search
-	// before either a Kad `PrepareFindKeywords` or an ed2k server packet
-	// starts feeding the shared bucket. Native-GUI searches allocate
-	// distinct top/bottom-half IDs (`3008ada0f`) so `*searchID != 0xffffffff`
-	// for them and they are unaffected.
+	// EC clients reuse the sentinel 0xffffffff for every search regardless of
+	// network type. Get_EC_Response_Search -> RemoveResults(0xffffffff) already
+	// soft-stops the previous Kad search via PrepareToStop() so it can drain
+	// in-flight packets, but those late KademliaSearchKeyword callbacks would
+	// then land in the *new* search's bucket -- Kad results contaminating an
+	// ed2k result list, or the reverse, whenever an EC client switches search
+	// type without restarting the daemon. Hard-delete the previous Kad search
+	// first. Native-GUI searches allocate distinct top/bottom-half IDs, so they
+	// never take this branch.
 	if (*searchID == 0xffffffff) {
 		Kademlia::CSearchManager::StopSearch(0xffffffff, false);
 	}
@@ -681,10 +655,9 @@ wxString CSearchList::StartNewSearch(uint32 *searchID, SearchType type, CSearchP
 				params.strKeyword, data->GetLength(), data->GetRawBuffer(), *searchID);
 
 			*searchID = search->GetSearchID();
-			// Don't repoint the ed2k result-attribution scalar when a Kad
-			// search runs alongside an in-flight ed2k search (see the
-			// preserveEd2kAnchor note above); the Kad search is tracked by its
-			// own ID regardless.
+			// Do not repoint the ed2k result-attribution scalar when a Kad search
+			// runs alongside an in-flight ed2k search (see preserveEd2kAnchor above);
+			// the Kad search is tracked by its own ID regardless.
 			if (!preserveEd2kAnchor) {
 				m_currentSearch = *searchID;
 			}
@@ -732,13 +705,11 @@ wxString CSearchList::StartNewSearch(uint32 *searchID, SearchType type, CSearchP
 	m_searchStrings[static_cast<uint32_t>(*searchID)] = params.searchString;
 
 	// Tell the GUI a search now exists. Every producer funnels through here --
-	// the monolithic dialog and the EC_OP_SEARCH_START handler alike -- so
-	// this one call covers a search started by any client. The monolithic
-	// GUI's own searches already have a tab by this point and are filtered
-	// out on the handler side; what this adds is the tab for a search some
-	// *other* client started, the last direction of the reachability work
-	// amulegui and amuleapi already had over EC_OP_SEARCH_LIST
-	// (amule-org/amule#703).
+	// the monolithic dialog and the EC_OP_SEARCH_START handler alike -- so this
+	// one call covers a search started by any client. The monolithic GUI's own
+	// searches already have a tab by this point and are filtered out on the
+	// handler side; what this adds is the tab for a search some OTHER client
+	// started.
 	Notify_Search_Added(
 		static_cast<wxUIntPtr>(*searchID), params.searchString, static_cast<uint32>(type));
 
@@ -800,12 +771,11 @@ uint32 CSearchList::GetSearchProgress() const
 		return 0xffff;
 
 	case GlobalSearch:
-		// The sweep is not armed until the connected server answers the local
-		// part (OP_SEARCHRESULT -> LocalSearchEnd) and the first timer tick
-		// attaches the observer. Until then m_serverQueue is detached and empty,
-		// so GetRemaining() is a stale 0 that would read as 100% ("done") the
-		// instant a search starts. IsActive() is true only during the actual
-		// sweep, so report 0 (just-started) before it begins.
+		// The sweep is not armed until the connected server answers the local part
+		// and the first timer tick attaches the observer. Until then m_serverQueue
+		// is detached and empty, so GetRemaining() is a stale 0 that would read as
+		// 100% ("done") the instant a search starts. IsActive() is true only during
+		// the actual sweep, so report 0 before it begins.
 		if (!m_serverQueue.IsActive()) {
 			return 0;
 		}
@@ -880,13 +850,11 @@ uint8 CSearchList::GetSearchLifecyclePercent() const
 void CSearchList::OnGlobalSearchTimer(CTimerEvent &WXUNUSED(evt))
 {
 	if (m_awaitingServerAnswer && m_searchInProgress) {
-		// The one-shot armed at StartNewSearch: the connected server never
-		// sent OP_SEARCHRESULT, so neither kind of ed2k search has anything
-		// left that would end it. Terminalize through the finalizer the kind
-		// already has rather than leave it reporting RUNNING for good.
-		//
-		// Tested before the packet check below, which a local search would
-		// otherwise fall into: it has no search packet.
+		// The one-shot armed at StartNewSearch: the connected server never sent
+		// OP_SEARCHRESULT, so neither kind of ed2k search has anything left that
+		// would end it. Terminalize through the finalizer the kind already has,
+		// rather than leave it reporting RUNNING for good. Tested before the packet
+		// check below, which a local search would otherwise fall into.
 		AddLogLineN(_("Search timed out: the server did not answer."));
 		if (m_searchType == GlobalSearch) {
 			FinalizeGlobalSearch();
@@ -999,25 +967,22 @@ void CSearchList::ProcessSharedFileList(const uint8_t *in_packet,
 	// wire-safe search ID by now -- pinned by the EC handler for a remote one,
 	// allocated by RequestSharedFileList for a local one -- so the union and
 	// per-ID polls and the LRU ring can all address these results.
+	//
 	// A local browse used to key its results on the client pointer, which no
-	// remote client can address -- it is this process's memory, so the browse
-	// was invisible to amulegui, amuleweb and amuleapi while an EC-initiated
-	// one (which is handed a real id) showed up everywhere, including in this
-	// GUI. Give it the same kind of id so the two directions match. It is also
-	// safer: a pointer is reused once the client is freed, so two browses of
+	// remote client can address, so the browse was invisible to amulegui,
+	// amuleweb and amuleapi while an EC-initiated one showed up everywhere. A
+	// pointer is also reused once the client is freed, so two browses of
 	// different peers could collide on one key.
 	//
 	// Allocated once and pinned on the client, not per packet -- a browse
 	// arrives in several -- and registered so it is listed like any other
-	// search, with its kind and peer, which is what lets a remote GUI rebuild
-	// it as a browse tab rather than a nameless search.
-	// Whether this browse was asked for here. Read before the id is assigned
+	// search, with its kind and peer, which is what lets a remote GUI rebuild it
+	// as a browse tab.
+	//
+	// Whether this browse was asked for HERE is read before the id is assigned
 	// below, because that assignment is what makes a local browse look like an
 	// EC one afterwards. An EC-initiated browse belongs to another client, so
-	// revealing it would pull this user's panel and selection away for
-	// something they never asked for -- the same rule the discovered-search
-	// path follows. Gated with its use: there is no tab to reveal in a
-	// daemon build, and an unread value there is a dead store.
+	// revealing it would pull this user's panel and selection away.
 #ifndef AMULE_DAEMON
 	const bool ecInitiated = sender->IsBrowseEcInitiated();
 #endif
@@ -1057,19 +1022,18 @@ void CSearchList::ProcessSharedFileList(const uint8_t *in_packet,
 	}
 }
 
-// Symmetric counterpart to PR #36's Kad hard-stop on EC search-start.
-// Late ed2k server replies (TCP Local responses here, UDP Global responses
-// in ProcessUDPSearchAnswer below) keep arriving for seconds after the
-// search request is sent. When an EC client switches search type (ed2k ->
-// Kad) those late results would land in `m_results[m_currentSearch]` --
-// with the EC sentinel `0xffffffff` pinned across all EC searches, that
-// bucket is now the new Kad search's bucket, producing ed2k contamination
-// of a Kad result list. Drop late ed2k replies when the active search
-// type is no longer ed2k. Native-GUI parallel searches keep
-// `m_currentSearch` at bottom-half IDs and a Kad tab updates m_searchType
-// to KadSearch -- this gate makes late ed2k packets stop misrouting to
-// the Kad tab's bucket (a pre-existing GUI side bug that nobody noticed
-// because cross-protocol hits in a Kad tab look like noise).
+// Symmetric counterpart to the Kad hard-stop on EC search-start. Late ed2k
+// server replies -- TCP Local responses here, UDP Global responses in
+// ProcessUDPSearchAnswer below -- keep arriving for seconds after the search
+// request is sent. When an EC client switches search type (ed2k -> Kad) those
+// late results would land in `m_results[m_currentSearch]`, and with the EC
+// sentinel pinned across all EC searches that bucket is now the new Kad
+// search's, producing ed2k contamination of a Kad result list.
+//
+// Native-GUI parallel searches keep m_currentSearch at bottom-half IDs and a
+// Kad tab updates m_searchType, so this gate also stops late ed2k packets
+// misrouting to the Kad tab's bucket -- a pre-existing GUI-side bug that went
+// unnoticed because cross-protocol hits in a Kad tab look like noise.
 static inline bool IsActiveSearchTypeEd2k(SearchType t)
 {
 	return t == LocalSearch || t == GlobalSearch;
@@ -1085,9 +1049,7 @@ bool CSearchList::CanFileServerAnswer() const
 	//
 	// An explicit stop is what does not: it hands m_currentSearch back to the
 	// sentinel the EC handler pins across all its searches, and filing server
-	// hits there contaminates the bucket StartNewSearch takes care to keep
-	// clean. Test that, rather than m_searchInProgress, so nothing is dropped
-	// that had somewhere to go.
+	// hits there contaminates the bucket StartNewSearch keeps clean.
 	return IsActiveSearchTypeEd2k(m_searchType) && m_currentSearch != wxUIntPtr(-1);
 }
 
@@ -1161,15 +1123,13 @@ bool CSearchList::AddToList(CSearchFile *toadd, bool clientResponse)
 			// memory (got3nks, PR #796 review). Infer survival from whether
 			// the child count actually grew.
 			const bool survived = item->GetChildren().size() > childrenBefore;
-			// Structural change (leaf-or-nothing -> container, or a new row
-			// under an existing container) needs its own notification --
-			// Search_Update_Sources only signals that the parent's values
-			// changed, via wxDataViewModel::ItemChanged(), which some
-			// wxDataViewCtrl backends (GTK, MSW) don't treat as reason to
-			// re-check IsContainer()/re-fetch children, so the child never
-			// becomes reachable there. Native NSOutlineView survives the
-			// omission by re-querying IsContainer() on every draw, which
-			// masked this on macOS.
+			// Structural change -- leaf-or-nothing to container, or a new row under
+			// an existing container -- needs its own notification.
+			// Search_Update_Sources only signals that the parent's values changed,
+			// via wxDataViewModel::ItemChanged(), which some wxDataViewCtrl backends
+			// (GTK, MSW) do not treat as reason to re-check IsContainer() or re-fetch
+			// children, so the child never becomes reachable there. Native
+			// NSOutlineView re-queries IsContainer() on every draw, which masked it.
 			if (survived) {
 				Notify_Search_Add_Result(toadd);
 			}
@@ -1222,10 +1182,8 @@ void CSearchList::GetAllSearchFilesByID(const CMD4Hash &hash, std::vector<CSearc
 {
 	// Unlike GetSearchFileByID (first match only), collect EVERY result object
 	// that shares this hash. The same file can appear in more than one open
-	// search (an EC client such as amulegui runs several at once), and each
-	// search keeps its own CSearchFile with its own note list. On-demand Kad
-	// notes and the running flag must reach all of them, or only the first tab
-	// would show the comments.
+	// search, and each keeps its own CSearchFile with its own note list.
+	// On-demand Kad notes and the running flag must reach all of them.
 	for (const auto &entry : AllResults()) {
 		for (CSearchFile *sf : entry.second) {
 			if (sf->GetFileHash() == hash) {

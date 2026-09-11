@@ -241,10 +241,9 @@ wxRect COScopeCtrl::ComputePlotRect(wxDC &dc) const
 	const int pad = FromDIP(4);
 	const int lineHeight = dc.GetCharHeight();
 
-	// The left gutter has to hold whichever of the three y axis labels is
-	// widest. The old code assumed 6 pixels per character and reserved room
-	// for seven of them, which was too much at small values and too little
-	// once the axis went into five digits.
+	// The left gutter has to hold whichever of the three y axis labels is widest.
+	// The old code assumed 6 pixels per character and reserved room for seven,
+	// which was too much at small values and too little past five digits.
 	int gutter = std::max(dc.GetTextExtent(GetYMaxLabel()).x, dc.GetTextExtent(GetYMinLabel()).x);
 	if (!m_strYUnits.IsEmpty()) {
 		gutter = std::max(gutter, dc.GetTextExtent(m_strYUnits).x);
@@ -347,12 +346,11 @@ void COScopeCtrl::DrawCurves(wxDC &dc, wxGraphicsContext *gc, const wxRect &rect
 			area.AddLineToPoint(xAt(cntFilled - 1), rectPlot.GetBottom());
 			area.CloseSubpath();
 
-			// Anchor the gradient to the curve's own peak, not to the top
-			// of the plot. Anchoring it to the plot would tie the shading's
-			// opacity to how much of the y range the graph happens to be
-			// using: the Kad graph grows its range to fit, so its curve
-			// rides near the top and shades fine, but a transfer rate well
-			// under the configured maximum sits low in the plot, where a
+			// Anchor the gradient to the curve's own peak, not to the top of the
+			// plot: that would tie the shading's opacity to how much of the y range
+			// the graph happens to be using. The Kad graph grows its range to fit,
+			// so its curve rides near the top and shades fine, while a transfer rate
+			// well under the configured maximum sits low in the plot, where a
 			// plot-anchored gradient has already faded to nothing.
 			double yPeak = rectPlot.GetBottom();
 			for (unsigned i = 0; i < cntFilled; ++i) {
@@ -415,14 +413,14 @@ void COScopeCtrl::DrawCurves(wxDC &dc, wxGraphicsContext *gc, const wxRect &rect
 
 wxString COScopeCtrl::FormatValue(float value) const
 {
-	// The rate graphs hand their readout to CastItoSpeed so it picks the
-	// unit, the way every other speed in the GUI is shown -- a hover on a
-	// fast download reads "2.13 MiB/s" rather than "2179.4 KiB/s". It wants
-	// bytes per second; the graphs plot KiB/s.
+	// The rate graphs hand their readout to CastItoSpeed so it picks the unit, the
+	// way every other speed in the GUI is shown -- a hover on a fast download reads
+	// "2.13 MiB/s" rather than "2179.4 KiB/s". It wants bytes per second; the
+	// graphs plot KiB/s.
 	//
-	// Keyed on the graph rather than on m_strYUnits because those units
-	// are _("KiB/s"), i.e. translated: comparing against the literal would
-	// quietly stop matching in every locale but English.
+	// Keyed on the graph rather than on m_strYUnits, because those units are
+	// _("KiB/s"): comparing against the literal would stop matching in every locale
+	// but English.
 	if (graph_type == GRAPH_DOWN || graph_type == GRAPH_UP) {
 		return CastItoSpeed((uint32)(value * 1024.0f));
 	}
@@ -440,14 +438,10 @@ bool COScopeCtrl::IsShaded() const
 		return false;
 	}
 
-	// On the rate graphs and the Kad graph the three trends are three
-	// views of one quantity -- its current value, its running average and
-	// its session average -- so shading the current one states that
-	// quantity's magnitude. The connections graph instead plots three
-	// unrelated counts (active uploads, connections, active downloads);
-	// there is no primary among them to shade, and singling one out would
-	// only be invisible today because the counts sit low against the
-	// axis range.
+	// On the rate graphs and the Kad graph the three trends are three views of one
+	// quantity -- current value, running average, session average -- so shading the
+	// current one states that quantity's magnitude. The connections graph instead
+	// plots three unrelated counts, with no primary among them to shade.
 	return graph_type != GRAPH_CONN;
 }
 
@@ -483,15 +477,15 @@ void COScopeCtrl::OnPaint(wxPaintEvent &WXUNUSED(evt))
 		return;
 	}
 
-	// Everything drawn straight onto the wxDC has to be done before the
-	// graphics context is created from it: the two share one surface and
-	// only the most recently created of them may write to it.
+	// Everything drawn straight onto the wxDC has to be done before the graphics
+	// context is created from it: the two share one surface, and only the most
+	// recently created of them may write to it.
 	DrawGrid(dc, rectPlot);
 
 #if wxUSE_GRAPHICS_CONTEXT
-	// Created here rather than inside DrawCurves because wxGraphicsContext
-	// has no overload taking the wxDC base class, and this is the last
-	// place that still knows which kind of paint DC we are holding.
+	// Created here rather than inside DrawCurves because wxGraphicsContext has no
+	// overload taking the wxDC base class, and this is the last place that knows
+	// which kind of paint DC we hold.
 	std::unique_ptr<wxGraphicsContext> gc(wxGraphicsContext::Create(dc));
 	DrawCurves(dc, gc.get(), rectPlot);
 #else
@@ -537,10 +531,9 @@ void COScopeCtrl::DrawHover(wxGraphicsContext *gc,
 		gc->DrawEllipse(x - markerRadius, y - markerRadius, markerRadius * 2, markerRadius * 2);
 	}
 
-	// Readout. The header is how far back in time this sample is, in the
-	// same units the x axis label under the graph uses. Deliberately not
-	// the word "Current" for the newest sample: one of the trends is
-	// already called that.
+	// Readout. The header is how far back in time this sample is, in the same units
+	// as the x axis label. Deliberately not the word "Current" for the newest
+	// sample: one of the trends is already called that.
 	const uint32 sAgo = (uint32)iSample * (uint32)std::floor(m_sLastPeriod + 0.5);
 	const wxString strHeader = CFormat("-%s") % CastSecondsToHM(sAgo);
 
@@ -628,9 +621,9 @@ void COScopeCtrl::OnMouseLeave(wxMouseEvent &evt)
 
 void COScopeCtrl::OnSize(wxSizeEvent &WXUNUSED(evt))
 {
-	// The plot is laid out from the client size on every paint, so a resize
-	// only has to invalidate the whole control -- a partial repaint would
-	// leave the old axis labels behind.
+	// The plot is laid out from the client size on every paint, so a resize only
+	// has to invalidate the whole control -- a partial repaint would leave the old
+	// axis labels behind.
 	Refresh(false);
 }
 

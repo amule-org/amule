@@ -144,14 +144,12 @@ static const std::string WAN_IP_Connection("urn:schemas-upnp-org:service:WANIPCo
 static const std::string WAN_PPP_Connection("urn:schemas-upnp-org:service:WANPPPConnection:1");
 } // namespace Service
 
-// Decide whether an SSDP NT/ST is something amule actually wants to learn
-// about. The whitelist is the IGW family plus upnp:rootdevice (which is
-// opaque from SSDP alone -- the description.xml has to be fetched to
-// classify it). Anything else (media renderers, mesh APs, smart speakers,
-// ...) gets dropped before amule attempts to download description.xml,
-// which keeps the libupnp ThreadPool queue from filling on busy LANs and
-// stops spurious "Error retrieving device description" log lines for
-// devices we have no use for.
+// Decide whether an SSDP NT/ST is something amule wants to learn about. The
+// whitelist is the IGW family plus upnp:rootdevice, which is opaque from SSDP
+// alone (description.xml has to be fetched to classify it). Anything else is
+// dropped before that fetch, which keeps the libupnp ThreadPool queue from
+// filling on busy LANs and stops spurious "Error retrieving device description"
+// lines for devices we have no use for.
 static bool IsWANRelatedDeviceType(const std::string &type)
 {
 	if (type.empty()) {
@@ -182,17 +180,14 @@ static bool IsWANRelatedDeviceType(const std::string &type)
 	return false;
 }
 
-// Case-insensitive match of a device/service type URN against a
-// fully-versioned reference URN, ignoring the trailing ":<version>"
-// component. IGD:2 gateways advertise their embedded devices and services
-// with a ":2" suffix (e.g. "urn:schemas-upnp-org:service:WANIPConnection:2"),
-// so classifying by an exact ":1" string would skip them even though
-// libupnp's version-tolerant M-SEARCH still reaches the device. We keep the
-// fully-versioned constants — they double as the M-SEARCH target, which must
-// carry a version — and strip the tail only for classification, prefix-
-// matching on the reference through its final ':'. The trailing ':' is
-// retained in the prefix so "WANIPConnection:" cannot match, e.g.,
-// "WANIPConnectionFoo:1".
+// Case-insensitive match of a device/service type URN against a fully-versioned
+// reference URN, ignoring the trailing ":<version>". IGD:2 gateways advertise
+// their embedded devices and services with a ":2" suffix, so classifying by an
+// exact ":1" string would skip them even though libupnp's version-tolerant
+// M-SEARCH still reaches the device. The fully-versioned constants stay (they
+// double as the M-SEARCH target, which must carry a version) and the tail is
+// stripped only for classification. The reference's final ':' is kept in the
+// prefix so "WANIPConnection:" cannot match "WANIPConnectionFoo:1".
 static bool TypeMatchesIgnoringVersion(const std::string &type, const std::string &reference)
 {
 	std::string::size_type lastColon = reference.find_last_of(':');
@@ -519,21 +514,16 @@ CUPnPService::CUPnPService(
 	    m_serviceType == UPnP::Service::Layer3_Forwarding) {
 #endif
 #if 0
-//#warning Delete this code on release.
 		if (!upnpControlPoint.WanServiceDetected()) {
 			// This condition can be used to suspend the parse
 			// of the XML tree.
 #endif
-		// #warning Delete this code when m_WanService is no longer used.
 		const_cast<CUPnPControlPoint &>(upnpControlPoint).SetWanService(this);
-		// Log it
 		msg.str("");
 		msg << "WAN Service Detected: '" << m_serviceType << "'.";
 		AddDebugLogLineN(logUPnP, msg);
-		// Subscribe
 		const_cast<CUPnPControlPoint &>(upnpControlPoint).Subscribe(*this);
 #if 0
-//#warning Delete this code on release.
 		} else {
 			msg.str("");
 			msg << "WAN service detected again: '" <<
@@ -562,7 +552,6 @@ bool CUPnPService::Execute(
 		return false;
 	}
 	std::ostringstream msgAction("Sending action ");
-	// Check for correct action name
 	ActionList::const_iterator itAction = m_SCPD->GetActionList().find(ActionName);
 	if (itAction == m_SCPD->GetActionList().end()) {
 		msg << "Invalid action name '" << ActionName << "' for service '" << GetServiceType() << "'.";
@@ -571,7 +560,6 @@ bool CUPnPService::Execute(
 	}
 	msgAction << ActionName << "(";
 	bool firstTime = true;
-	// Check for correct Argument/Value pairs
 	const CUPnPAction &action = *(itAction->second);
 	for (unsigned int i = 0; i < ArgValue.size(); ++i) {
 		ArgumentList::const_iterator itArg = action.GetArgumentList().find(ArgValue[i].GetArgument());
@@ -626,7 +614,6 @@ bool CUPnPService::Execute(
 	}
 	msgAction << ")";
 	AddDebugLogLineN(logUPnP, msgAction);
-	// Everything is ok, make the action
 	IXML_Document *ActionDoc = NULL;
 	if (!ArgValue.empty()) {
 		for (unsigned int i = 0; i < ArgValue.size(); ++i) {
@@ -649,7 +636,6 @@ bool CUPnPService::Execute(
 		}
 	}
 #if 0
-	// Send the action asynchronously
 	UpnpSendActionAsync(
 		m_UPnPControlPoint.GetUPnPClientHandle(),
 		GetAbsControlURL().c_str(),
@@ -660,7 +646,6 @@ bool CUPnPService::Execute(
 	return true;
 #endif
 
-	// Send the action synchronously
 	IXML_Document *RespDoc = NULL;
 	int ret = UpnpSendAction(m_UPnPControlPoint.GetUPnPClientHandle(),
 		GetAbsControlURL().c_str(),
@@ -676,10 +661,8 @@ bool CUPnPService::Execute(
 	}
 	IXML::Document::Free(ActionDoc);
 
-	// Check the response document
 	UPnP::ProcessActionResponse(RespDoc, action.GetName());
 
-	// Free the response document
 	IXML::Document::Free(RespDoc);
 
 	return true;
@@ -774,9 +757,7 @@ CUPnPControlPoint::CUPnPControlPoint(unsigned short udpPort)
 , m_IGWDeviceDetected(false)
 , m_WanService(NULL)
 {
-	// Pointer to self
 	s_CtrlPoint = this;
-	// Null string at first
 	std::ostringstream msg;
 
 	// Declare those here to avoid
@@ -785,7 +766,6 @@ CUPnPControlPoint::CUPnPControlPoint(unsigned short udpPort)
 	unsigned short port;
 	char *ipAddress;
 
-	// Start UPnP
 	int ret;
 	ret = UpnpInit2(0, udpPort);
 	if (ret != UPNP_E_SUCCESS) {
@@ -798,16 +778,14 @@ CUPnPControlPoint::CUPnPControlPoint(unsigned short udpPort)
 	AddDebugLogLineN(logUPnP, msg);
 	msg.str("");
 
-	// Raise the SDK's incoming content-length ceiling above libupnp's
-	// 16 KB default (DEFAULT_SOAP_CONTENT_LENGTH). Some gateways serve an
-	// SCPD/description XML slightly larger than that, which makes the
-	// blocking UpnpDownloadXmlDoc in Subscribe() fail with
-	// UPNP_E_OUTOF_BOUNDS ("Error getting SCPD Document") — the service
-	// never registers, so no port mapping happens and the user is stuck on
-	// a LowID (observed on ZTE and Sagemcom routers). 1 MB clears any real
-	// router descriptor while still bounding what a hostile LAN device can
-	// push into a blocking fetch. Must run after UpnpInit2 succeeds: the
-	// call is a no-op (UPNP_E_FINISH) until the SDK is initialised.
+	// Raise the SDK's incoming content-length ceiling above libupnp's 16 KB
+	// default. Some gateways serve an SCPD/description XML slightly larger than
+	// that, which makes the blocking UpnpDownloadXmlDoc in Subscribe() fail with
+	// UPNP_E_OUTOF_BOUNDS -- the service never registers, no port mapping happens,
+	// and the user is stuck on a LowID (seen on ZTE and Sagemcom routers). 1 MB
+	// clears any real router descriptor while still bounding what a hostile LAN
+	// device can push into a blocking fetch. Must run after UpnpInit2 succeeds:
+	// the call is a no-op until the SDK is initialised.
 	ret = UpnpSetMaxContentLength(1024 * 1024);
 	if (ret != UPNP_E_SUCCESS) {
 		msg << "warning(UpnpSetMaxContentLength): could not raise content-length limit, error code "
@@ -825,21 +803,16 @@ CUPnPControlPoint::CUPnPControlPoint(unsigned short udpPort)
 	}
 
 	// Search for the InternetGatewayDevice specifically rather than
-	// upnp:rootdevice. Searching rootdevice makes *every* UPnP speaker on
-	// the LAN answer the M-SEARCH, and our SEARCH_RESULT handler then
-	// fetches description.xml from each one synchronously on a libupnp
-	// worker thread. On a busy LAN (or one with a slow/unreachable device)
-	// that saturates libupnp's mini-server thread pool, so incoming SSDP
-	// packets back up until ThreadPoolAdd hits its cap and starts dropping
-	// jobs ("libupnp ThreadPoolAdd too many jobs"). Targeting the IGW type
-	// means only gateways answer, which is all we need for port mapping;
-	// any gateway that appears later is still caught via its periodic
-	// IGW-typed ADVERTISEMENT_ALIVE announcement, and downstream registration
-	// already filters non-IGW devices out (search for UPnP::Device::IGW below).
+	// upnp:rootdevice. Searching rootdevice makes every UPnP speaker on the LAN
+	// answer the M-SEARCH, and our SEARCH_RESULT handler then fetches
+	// description.xml from each one synchronously on a libupnp worker thread; on a
+	// busy LAN that saturates the mini-server thread pool until ThreadPoolAdd hits
+	// its cap and drops jobs. Targeting the IGW type means only gateways answer,
+	// which is all port mapping needs, and a gateway that appears later is still
+	// caught by its periodic IGW-typed ADVERTISEMENT_ALIVE.
 	//
-	// We must not search more than once, because each search produces its
-	// own UPNP_DISCOVERY_SEARCH_TIMEOUT event, and we might end with
-	// problems on the mutex.
+	// We must not search more than once: each search produces its own
+	// UPNP_DISCOVERY_SEARCH_TIMEOUT event, and two would race on the mutex.
 	ret = UpnpSearchAsync(m_UPnPClientHandle, 3, UPnP::Device::IGW.c_str(), nullptr);
 	if (ret != UPNP_E_SUCCESS) {
 		msg << "error(UpnpSearchAsync): Error sending search request: ";
@@ -848,7 +821,6 @@ CUPnPControlPoint::CUPnPControlPoint(unsigned short udpPort)
 
 	// Wait for the UPnP initialization to complete.
 	{
-		// Lock the search timeout mutex
 		m_WaitForSearchTimeoutMutex.Lock();
 
 		// Lock it again, so that we block. Unlocking will only happen
@@ -858,7 +830,6 @@ CUPnPControlPoint::CUPnPControlPoint(unsigned short udpPort)
 	}
 	return;
 
-	// Error processing
 error:
 	UpnpFinish();
 	msg << ret << ": " << UpnpGetErrorMessage(ret) << ".";
@@ -870,8 +841,6 @@ CUPnPControlPoint::~CUPnPControlPoint()
 	for (RootDeviceMap::iterator it = m_RootDeviceMap.begin(); it != m_RootDeviceMap.end(); ++it) {
 		delete it->second;
 	}
-	// Remove all first
-	// RemoveAll();
 	UpnpUnRegisterClient(m_UPnPClientHandle);
 	UpnpFinish();
 }
@@ -890,20 +859,15 @@ bool CUPnPControlPoint::AddPortMappings(std::vector<CUPnPPortMapping> &upnpPortM
 	int n = upnpPortMapping.size();
 	bool ok = false;
 
-	// Check the number of port mappings before
 	std::istringstream PortMappingNumberOfEntries(
 		m_WanService->GetStateVariable("PortMappingNumberOfEntries"));
 	unsigned long oldNumberOfEntries;
 	PortMappingNumberOfEntries >> oldNumberOfEntries;
 
-	// Add the enabled port mappings
 	for (int i = 0; i < n; ++i) {
 		if (upnpPortMapping[i].getEnabled() == "1") {
-			// Add the mapping to the control point
-			// active mappings list
 			m_ActivePortMappingsMap[upnpPortMapping[i].getKey()] = upnpPortMapping[i];
 
-			// Add the port mapping
 			PrivateAddPortMapping(upnpPortMapping[i]);
 		}
 	}
@@ -921,7 +885,6 @@ bool CUPnPControlPoint::AddPortMappings(std::vector<CUPnPPortMapping> &upnpPortM
 	m_WanService->GetStateVariable("PortMappingNumberOfEntries");
 	m_WanService->GetStateVariable("PortMappingLeaseDuration");
 
-	// Just for testing
 	std::vector<CUPnPArgumentValue> argval;
 	argval.resize(0);
 	m_WanService->Execute("GetStatusInfo", argval);
@@ -938,14 +901,12 @@ bool CUPnPControlPoint::AddPortMappings(std::vector<CUPnPPortMapping> &upnpPortM
 	m_WanService->GetStateVariable("PortMappingDescription");
 #endif
 
-	// Debug only
 	msg.str("");
 	msg << "CUPnPControlPoint::AddPortMappings: "
 	       "m_ActivePortMappingsMap.size() == "
 	    << m_ActivePortMappingsMap.size();
 	AddDebugLogLineN(logUPnP, msg);
 
-	// Not very good, must find a better test
 	PortMappingNumberOfEntries.str(m_WanService->GetStateVariable("PortMappingNumberOfEntries"));
 	unsigned long newNumberOfEntries;
 	PortMappingNumberOfEntries >> newNumberOfEntries;
@@ -962,20 +923,16 @@ void CUPnPControlPoint::RefreshPortMappings()
 		PrivateAddPortMapping(it->second);
 	}
 
-	// For testing
 	m_WanService->GetStateVariable("PortMappingNumberOfEntries");
 }
 
 bool CUPnPControlPoint::PrivateAddPortMapping(CUPnPPortMapping &upnpPortMapping)
 {
-	// Get an IP address. The UPnP server one must do.
 	std::string ipAddress(UpnpGetServerIpAddress());
 
-	// Start building the action
 	std::string actionName("AddPortMapping");
 	std::vector<CUPnPArgumentValue> argval(8);
 
-	// Action parameters
 	argval[0].SetArgument("NewRemoteHost");
 	argval[0].SetValue("");
 	argval[1].SetArgument("NewExternalPort");
@@ -993,7 +950,6 @@ bool CUPnPControlPoint::PrivateAddPortMapping(CUPnPPortMapping &upnpPortMapping)
 	argval[7].SetArgument("NewLeaseDuration");
 	argval[7].SetValue("0");
 
-	// Execute
 	bool ret = true;
 	for (ServiceMap::iterator it = m_ServiceMap.begin(); it != m_ServiceMap.end(); ++it) {
 		ret &= it->second->Execute(actionName, argval);
@@ -1016,17 +972,13 @@ bool CUPnPControlPoint::DeletePortMappings(std::vector<CUPnPPortMapping> &upnpPo
 	int n = upnpPortMapping.size();
 	bool ok = false;
 
-	// Check the number of port mappings before
 	std::istringstream PortMappingNumberOfEntries(
 		m_WanService->GetStateVariable("PortMappingNumberOfEntries"));
 	unsigned long oldNumberOfEntries;
 	PortMappingNumberOfEntries >> oldNumberOfEntries;
 
-	// Delete the enabled port mappings
 	for (int i = 0; i < n; ++i) {
 		if (upnpPortMapping[i].getEnabled() == "1") {
-			// Delete the mapping from the control point
-			// active mappings list
 			PortMappingMap::iterator it =
 				m_ActivePortMappingsMap.find(upnpPortMapping[i].getKey());
 			if (it != m_ActivePortMappingsMap.end()) {
@@ -1039,19 +991,16 @@ bool CUPnPControlPoint::DeletePortMappings(std::vector<CUPnPPortMapping> &upnpPo
 				AddDebugLogLineC(logUPnP, msg);
 			}
 
-			// Delete the port mapping
 			PrivateDeletePortMapping(upnpPortMapping[i]);
 		}
 	}
 
-	// Debug only
 	msg.str("");
 	msg << "CUPnPControlPoint::DeletePortMappings: "
 	       "m_ActivePortMappingsMap.size() == "
 	    << m_ActivePortMappingsMap.size();
 	AddDebugLogLineN(logUPnP, msg);
 
-	// Not very good, must find a better test
 	PortMappingNumberOfEntries.str(m_WanService->GetStateVariable("PortMappingNumberOfEntries"));
 	unsigned long newNumberOfEntries;
 	PortMappingNumberOfEntries >> newNumberOfEntries;
@@ -1062,11 +1011,9 @@ bool CUPnPControlPoint::DeletePortMappings(std::vector<CUPnPPortMapping> &upnpPo
 
 bool CUPnPControlPoint::PrivateDeletePortMapping(CUPnPPortMapping &upnpPortMapping)
 {
-	// Start building the action
 	std::string actionName("DeletePortMapping");
 	std::vector<CUPnPArgumentValue> argval(3);
 
-	// Action parameters
 	argval[0].SetArgument("NewRemoteHost");
 	argval[0].SetValue("");
 	argval[1].SetArgument("NewExternalPort");
@@ -1074,7 +1021,6 @@ bool CUPnPControlPoint::PrivateDeletePortMapping(CUPnPPortMapping &upnpPortMappi
 	argval[2].SetArgument("NewProtocol");
 	argval[2].SetValue(upnpPortMapping.getProtocol());
 
-	// Execute
 	bool ret = true;
 	for (ServiceMap::iterator it = m_ServiceMap.begin(); it != m_ServiceMap.end(); ++it) {
 		ret &= it->second->Execute(actionName, argval);
@@ -1083,7 +1029,6 @@ bool CUPnPControlPoint::PrivateDeletePortMapping(CUPnPPortMapping &upnpPortMappi
 	return ret;
 }
 
-// This function is static
 #if UPNP_VERSION >= 11800
 int CUPnPControlPoint::Callback(Upnp_EventType_e EventType, void *Event, void * /*Cookie*/)
 #elif UPNP_VERSION >= 11430
@@ -1098,20 +1043,17 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 {
 	std::ostringstream msg;
 	std::ostringstream msg2;
-	// Somehow, this is unreliable. UPNP_DISCOVERY_ADVERTISEMENT_ALIVE events
-	// happen with a wrong cookie and... boom!
-	// CUPnPControlPoint *upnpCP = static_cast<CUPnPControlPoint *>(Cookie);
+	// Somehow, this is unreliable: UPNP_DISCOVERY_ADVERTISEMENT_ALIVE events
+	// happen with a wrong cookie, so the cookie cannot be trusted here.
 	CUPnPControlPoint *upnpCP = CUPnPControlPoint::s_CtrlPoint;
 
-	// fprintf(stderr, "Callback: %d, Cookie: %p\n", EventType, Cookie);
 	switch (EventType) {
 	case UPNP_DISCOVERY_ADVERTISEMENT_ALIVE: {
-		// Drop unsolicited NOTIFY announcements whose NT isn't a device
-		// or service we care about. Without this filter amule fetches
-		// description.xml from every UPnP speaker, media renderer, mesh
-		// AP, etc. on the LAN -- which both burns libupnp's ThreadPool
-		// budget and produces "Error retrieving device description" log
-		// noise for devices whose endpoints amule has no business poking.
+		// Drop unsolicited NOTIFY announcements whose NT is not a device or
+		// service we care about. Without this filter amule fetches
+		// description.xml from every UPnP speaker on the LAN, which burns
+		// libupnp's ThreadPool budget and produces "Error retrieving device
+		// description" noise for endpoints amule has no business poking.
 #if UPNP_VERSION >= 10800
 		UpnpDiscovery *d_filter_event = (UpnpDiscovery *)Event;
 		const char *deviceType = UpnpDiscovery_get_DeviceType_cstr(d_filter_event);
@@ -1122,16 +1064,13 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 		if (!UPnP::IsWANRelatedDeviceType(deviceType ? deviceType : "")) {
 			break;
 		}
-		// fprintf(stderr, "Callback: UPNP_DISCOVERY_ADVERTISEMENT_ALIVE\n");
 		msg << "error(UPNP_DISCOVERY_ADVERTISEMENT_ALIVE): ";
 		msg2 << "UPNP_DISCOVERY_ADVERTISEMENT_ALIVE: ";
 		goto upnpDiscovery;
 	}
 	case UPNP_DISCOVERY_SEARCH_RESULT: {
-		// fprintf(stderr, "Callback: UPNP_DISCOVERY_SEARCH_RESULT\n");
 		msg << "error(UPNP_DISCOVERY_SEARCH_RESULT): ";
 		msg2 << "UPNP_DISCOVERY_SEARCH_RESULT: ";
-		// UPnP Discovery
 	upnpDiscovery:
 #if UPNP_VERSION >= 10800
 		UpnpDiscovery *d_event = (UpnpDiscovery *)Event;
@@ -1155,13 +1094,11 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 #else
 		const char *location = d_event->Location;
 #endif
-		// Passive ALIVE announcements arrive in dense bursts (one per
-		// service class, every few seconds per device). When the
-		// announcing device's HTTP server is unreachable each fetch
-		// blocks a libupnp worker thread for the full TCP-connect
-		// timeout. Suppress repeat fetches against a recently-failed
-		// URL on ALIVE only -- SEARCH_RESULT is an active poll
-		// initiated by us and bypasses the cache.
+		// Passive ALIVE announcements arrive in dense bursts (one per service
+		// class, every few seconds per device), and when the announcing device's
+		// HTTP server is unreachable each fetch blocks a libupnp worker for the
+		// full TCP-connect timeout. Suppress repeat fetches against a
+		// recently-failed URL on ALIVE only: SEARCH_RESULT is our own active poll.
 		if (EventType == UPNP_DISCOVERY_ADVERTISEMENT_ALIVE &&
 			upnpCP->ShouldSkipAdvertisementFetch(location ? location : "")) {
 			break;
@@ -1182,23 +1119,16 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 			AddDebugLogLineN(logUPnP, msg2);
 		}
 		if (doc) {
-			// Get the root node
 			IXML_Element *root = IXML::Document::GetRootElement(doc);
-			// Extract the URLBase
 			const std::string urlBase = IXML::Element::GetChildValueByTag(root, "URLBase");
-			// Get the root device
 			IXML_Element *rootDevice = IXML::Element::GetFirstChildByTag(root, "device");
-			// Extract the deviceType
 			std::string devType(IXML::Element::GetChildValueByTag(rootDevice, "deviceType"));
 			// Only add device if it is an InternetGatewayDevice
 			// (any version — IGD:2 advertises its root as ":2").
 			if (UPnP::TypeMatchesIgnoringVersion(devType, UPnP::Device::IGW)) {
-				// This condition can be used to auto-detect
-				// the UPnP device we are interested in.
-				// Obs.: Don't block the entry here on this
-				// condition! There may be more than one device,
-				// and the first that enters may not be the one
-				// we are interested in!
+				// Do not block entry on this condition: there may be more
+				// than one device, and the first to arrive may not be the
+				// one we want.
 				upnpCP->SetIGWDeviceDetected(true);
 				// Log it if not UPNP_DISCOVERY_ADVERTISEMENT_ALIVE,
 				// we don't want to spam our logs.
@@ -1206,7 +1136,6 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 					msg.str("Internet Gateway Device Detected.");
 					AddDebugLogLineC(logUPnP, msg);
 				}
-				// Add the root device to our list
 #if UPNP_VERSION >= 10800
 				int expires = UpnpDiscovery_get_Expires(d_event);
 				upnpCP->AddRootDevice(rootDevice, urlBase, location, expires);
@@ -1215,25 +1144,21 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 					rootDevice, urlBase, d_event->Location, d_event->Expires);
 #endif
 			}
-			// Free the XML doc tree
 			IXML::Document::Free(doc);
 		}
 		break;
 	}
 	case UPNP_DISCOVERY_SEARCH_TIMEOUT: {
-		// fprintf(stderr, "Callback: UPNP_DISCOVERY_SEARCH_TIMEOUT\n");
-		//  Search timeout
+		// Search timeout
 		msg << "UPNP_DISCOVERY_SEARCH_TIMEOUT.";
 		AddDebugLogLineN(logUPnP, msg);
 
-		// Unlock the search timeout mutex
 		upnpCP->m_WaitForSearchTimeoutMutex.Unlock();
 
 		break;
 	}
 	case UPNP_DISCOVERY_ADVERTISEMENT_BYEBYE: {
-		// fprintf(stderr, "Callback: UPNP_DISCOVERY_ADVERTISEMENT_BYEBYE\n");
-		//  UPnP Device Removed
+		// UPnP Device Removed
 #if UPNP_VERSION >= 10800
 		UpnpDiscovery *dab_event = (UpnpDiscovery *)Event;
 		int errCode = UpnpDiscovery_get_ErrCode(dab_event);
@@ -1277,8 +1202,7 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 		break;
 	}
 	case UPNP_EVENT_RECEIVED: {
-		// fprintf(stderr, "Callback: UPNP_EVENT_RECEIVED\n");
-		//  Event received
+		// Event received
 #if UPNP_VERSION >= 10800
 		UpnpEvent *e_event = (UpnpEvent *)Event;
 		int eventKey = UpnpEvent_get_EventKey(e_event);
@@ -1297,15 +1221,12 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 		break;
 	}
 	case UPNP_EVENT_SUBSCRIBE_COMPLETE:
-		// fprintf(stderr, "Callback: UPNP_EVENT_SUBSCRIBE_COMPLETE\n");
 		msg << "error(UPNP_EVENT_SUBSCRIBE_COMPLETE): ";
 		goto upnpEventRenewalComplete;
 	case UPNP_EVENT_UNSUBSCRIBE_COMPLETE:
-		// fprintf(stderr, "Callback: UPNP_EVENT_UNSUBSCRIBE_COMPLETE\n");
 		msg << "error(UPNP_EVENT_UNSUBSCRIBE_COMPLETE): ";
 		goto upnpEventRenewalComplete;
 	case UPNP_EVENT_RENEWAL_COMPLETE: {
-		// fprintf(stderr, "Callback: UPNP_EVENT_RENEWAL_COMPLETE\n");
 		msg << "error(UPNP_EVENT_RENEWAL_COMPLETE): ";
 	upnpEventRenewalComplete:
 #if UPNP_VERSION >= 10800
@@ -1343,12 +1264,10 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 		break;
 	}
 	case UPNP_EVENT_AUTORENEWAL_FAILED:
-		// fprintf(stderr, "Callback: UPNP_EVENT_AUTORENEWAL_FAILED\n");
 		msg << "error(UPNP_EVENT_AUTORENEWAL_FAILED): ";
 		msg2 << "UPNP_EVENT_AUTORENEWAL_FAILED: ";
 		goto upnpEventSubscriptionExpired;
 	case UPNP_EVENT_SUBSCRIPTION_EXPIRED: {
-		// fprintf(stderr, "Callback: UPNP_EVENT_SUBSCRIPTION_EXPIRED\n");
 		msg << "error(UPNP_EVENT_SUBSCRIPTION_EXPIRED): ";
 		msg2 << "UPNP_EVENT_SUBSCRIPTION_EXPIRED: ";
 	upnpEventSubscriptionExpired:
@@ -1413,8 +1332,7 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 		break;
 	}
 	case UPNP_CONTROL_ACTION_COMPLETE: {
-		// fprintf(stderr, "Callback: UPNP_CONTROL_ACTION_COMPLETE\n");
-		//  This is here if we choose to do this asynchronously
+		// This is here if we choose to do this asynchronously
 #if UPNP_VERSION >= 10800
 		UpnpActionComplete *a_event = (UpnpActionComplete *)Event;
 		int errCode = UpnpActionComplete_get_ErrCode(a_event);
@@ -1435,7 +1353,6 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 				a_event->ActionResult);
 #endif
 		} else {
-			// Check the response document
 			UPnP::ProcessActionResponse(
 #if UPNP_VERSION >= 10800
 				actionResult,
@@ -1450,7 +1367,6 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 		break;
 	}
 	case UPNP_CONTROL_GET_VAR_COMPLETE: {
-		// fprintf(stderr, "Callback: UPNP_CONTROL_GET_VAR_COMPLETE\n");
 		msg << "error(UPNP_CONTROL_GET_VAR_COMPLETE): ";
 #if UPNP_VERSION >= 10800
 		UpnpStateVarComplete *sv_event = (UpnpStateVarComplete *)Event;
@@ -1493,28 +1409,23 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 	}
 	// ignore these cases, since this is not a device
 	case UPNP_CONTROL_GET_VAR_REQUEST:
-		// fprintf(stderr, "Callback: UPNP_CONTROL_GET_VAR_REQUEST\n");
 		msg << "error(UPNP_CONTROL_GET_VAR_REQUEST): ";
 		goto eventSubscriptionRequest;
 	case UPNP_CONTROL_ACTION_REQUEST:
-		// fprintf(stderr, "Callback: UPNP_CONTROL_ACTION_REQUEST\n");
 		msg << "error(UPNP_CONTROL_ACTION_REQUEST): ";
 		goto eventSubscriptionRequest;
 	case UPNP_EVENT_SUBSCRIPTION_REQUEST:
-		// fprintf(stderr, "Callback: UPNP_EVENT_SUBSCRIPTION_REQUEST\n");
 		msg << "error(UPNP_EVENT_SUBSCRIPTION_REQUEST): ";
 	eventSubscriptionRequest:
 		msg << "This is not a UPnP Device, this is a UPnP Control Point, event ignored.";
 		AddDebugLogLineC(logUPnP, msg);
 		break;
 	default:
-		// Hum, this is not good, we forgot to handle something...
 		fprintf(stderr, "Callback: default... Unknown event:'%d', not good.\n", EventType);
 		msg << "error(UPnP::Callback): Event not handled:'" << EventType << "'.";
 		fprintf(stderr, "%s\n", msg.str().c_str());
 		AddDebugLogLineC(logUPnP, msg);
 		// Better not throw in the callback. Who would catch it?
-		// throw CUPnPException(msg);
 		break;
 	}
 
@@ -1546,22 +1457,17 @@ void CUPnPControlPoint::OnEventReceived(
 void CUPnPControlPoint::AddRootDevice(
 	IXML_Element *rootDevice, const std::string &urlBase, const char *location, int expires)
 {
-	// Lock the Root Device List
 	CUPnPMutexLocker lock(m_RootDeviceListMutex);
 
-	// Root node's URLBase
 	const std::string &OriginalURLBase(urlBase);
 	std::string FixedURLBase(OriginalURLBase.empty() ? location : OriginalURLBase);
 
-	// Get the UDN (Unique Device Name)
 	std::string UDN(IXML::Element::GetChildValueByTag(rootDevice, "UDN"));
 	RootDeviceMap::iterator it = m_RootDeviceMap.find(UDN);
 	bool alreadyAdded = it != m_RootDeviceMap.end();
 	if (alreadyAdded) {
-		// Just set the expires field
 		it->second->SetExpires(expires);
 	} else {
-		// Add a new root device to the root device list
 		CUPnPRootDevice *upnpRootDevice = new CUPnPRootDevice(
 			*this, rootDevice, OriginalURLBase, FixedURLBase, location, expires);
 		m_RootDeviceMap[upnpRootDevice->GetUDN()] = upnpRootDevice;
@@ -1570,10 +1476,8 @@ void CUPnPControlPoint::AddRootDevice(
 
 void CUPnPControlPoint::RemoveRootDevice(const char *udn)
 {
-	// Lock the Root Device List
 	CUPnPMutexLocker lock(m_RootDeviceListMutex);
 
-	// Remove
 	std::string UDN(udn);
 	RootDeviceMap::iterator it = m_RootDeviceMap.find(UDN);
 	if (it != m_RootDeviceMap.end()) {
@@ -1601,17 +1505,14 @@ bool CUPnPControlPoint::ShouldSkipAdvertisementFetch(const std::string &location
 void CUPnPControlPoint::RecordAdvertisementFetchResult(const std::string &location, bool /*success*/)
 {
 	CUPnPMutexLocker lock(m_failedFetchCacheMutex);
-	// Rate-limit successes the same way we rate-limit failures. The old
-	// erase-on-success path re-issued a blocking UpnpDownloadXmlDoc on
-	// every subsequent ALIVE announcement for the already-classified
-	// location; those announcements arrive in dense, repeating bursts
-	// (one per service class every few seconds per device), so on a busy
-	// LAN they alone can keep libupnp's mini-server thread pool saturated.
-	// Recording the attempt time regardless of outcome bounds ALIVE-driven
-	// downloads to one per location per FAILED_FETCH_TTL_SECS. Nothing is
-	// lost because a gateway found on the first fetch is already
-	// registered; later ALIVEs only refresh the expiry, which the TTL
-	// (5 min) comfortably covers.
+	// Rate-limit successes the same way as failures. Erasing on success re-issued
+	// a blocking UpnpDownloadXmlDoc on every subsequent ALIVE announcement for an
+	// already-classified location, and those arrive in dense repeating bursts, so
+	// on a busy LAN they alone can keep libupnp's thread pool saturated. Recording
+	// the attempt time regardless of outcome bounds ALIVE-driven downloads to one
+	// per location per FAILED_FETCH_TTL_SECS, and nothing is lost: a gateway found
+	// on the first fetch is already registered, and later ALIVEs only refresh the
+	// expiry, which the TTL covers.
 	m_failedFetchCache[location] = time(nullptr);
 }
 
@@ -1622,7 +1523,6 @@ void CUPnPControlPoint::Subscribe(CUPnPService &service)
 	IXML_Document *scpdDoc = NULL;
 	int errcode = UpnpDownloadXmlDoc(service.GetAbsSCPDURL().c_str(), &scpdDoc);
 	if (errcode == UPNP_E_SUCCESS) {
-		// Get the root node of this service (the SCPD Document)
 		IXML_Element *scpdRoot = IXML::Document::GetRootElement(scpdDoc);
 		CUPnPSCPD *scpd = new CUPnPSCPD(*this, scpdRoot, service.GetAbsSCPDURL());
 		service.SetSCPD(scpd);
@@ -1657,7 +1557,6 @@ void CUPnPControlPoint::Subscribe(CUPnPService &service)
 
 	return;
 
-	// Error processing
 error:
 	AddDebugLogLineN(logUPnP, msg);
 }

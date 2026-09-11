@@ -77,35 +77,32 @@
  * both run on the main thread.
  */
 
-//! How many distinct observed source addresses have to agree on the same
-//! value before it is believed.
+//! How many distinct observed source addresses have to agree on a value before
+//! it is believed.
 //!
 //! Two would be wrong: two source addresses is one dual-homed host, one host
-//! that reconnected from a new lease, or one attacker holding a second
-//! socket -- none of which is a second opinion. Three is the smallest count
-//! that forces a claimant to hold addresses it does not control alone, and it
-//! is still reachable in an ordinary session, where a handful of vendor peers
-//! connect over its lifetime.
+//! that reconnected from a new lease, or one attacker holding a second socket --
+//! none of which is a second opinion. Three is the smallest count that forces a
+//! claimant to hold addresses it does not control alone, and is still reachable
+//! in an ordinary session.
 //!
 //! It is a floor, not a proof: three addresses under one operator still agree
-//! with each other. That is what the locally-assigned filter is for -- three
-//! colluding peers can still only steer us between addresses we hold.
+//! with each other. That is what the locally-assigned filter is for -- colluding
+//! peers can still only steer us between addresses we hold.
 constexpr std::size_t PUBLIC_IPV6_CORROBORATION_THRESHOLD = 3;
 
 //! How long one observer's claim keeps counting.
 //!
-//! Without a window, "three distinct peers agree" means "three peers said so
-//! at some point since the process started", so a laptop that moved to another
-//! network hours ago still carries the votes that elected the address it had
-//! there, and no amount of fresh disagreement can unseat them. Votes that age
-//! out are what makes re-election possible at all.
+//! Without a window, "three distinct peers agree" means "three peers said so at
+//! some point since the process started", so a laptop that moved networks hours
+//! ago still carries the votes that elected the address it had there, and no
+//! amount of fresh disagreement can unseat them.
 //!
-//! Thirty minutes because hellos from distinct peers arrive sporadically --
-//! minutes apart on a quiet client -- so a window of a few minutes would
-//! expire the first vote before the third arrived and the quorum would never
-//! form. It is an upper bound on how long a stale address can survive
-//! unchallenged, and the interface refresh already covers the case where the
-//! address simply went away.
+//! Thirty minutes because hellos from distinct peers arrive sporadically, minutes
+//! apart on a quiet client, so a window of a few minutes would expire the first
+//! vote before the third arrived and the quorum would never form. It bounds how
+//! long a stale address can survive unchallenged; the interface refresh covers
+//! the case where the address simply went away.
 constexpr std::uint64_t PUBLIC_IPV6_CORROBORATION_WINDOW_MS = 30ull * 60ull * 1000ull;
 
 class CPublicIPv6Corroboration
@@ -194,15 +191,13 @@ public:
 		}
 
 		const Address value = ToAddress(claimed);
-		// Both checks, not just the second: the locally-assigned set is
-		// already filtered to global unicast, but the address family test is
-		// the invariant this class promises and it must not depend on how a
-		// caller happened to populate that set.
+		// Both checks, not just the second: the locally-assigned set is already
+		// filtered to global unicast, but the address family test is the invariant
+		// this class promises and must not depend on how a caller populated that set.
 		if (!IsGlobalUnicast(value) || !IsLocallyAssigned(value)) {
-			// Deliberately no state whatsoever for a rejected value. A
-			// rejection that allocated something would let a peer spend our
-			// memory on values it invented, which is exactly what the filter
-			// exists to prevent.
+			// Deliberately no state whatsoever for a rejected value: a rejection that
+			// allocated something would let a peer spend our memory on values it
+			// invented.
 			return IsCorroborated();
 		}
 
@@ -325,12 +320,10 @@ private:
 			Candidate fresh;
 			fresh.value = candidate.value;
 			for (const auto &observer : candidate.observers) {
-				// A tick count that appears to move backwards expires the
-				// vote rather than keeping it. The tick source is uptime and
-				// does not go backwards, so this is a defence against a
-				// caller mixing clocks -- and holding a vote we cannot date
-				// is the one outcome worth avoiding, while re-gathering one
-				// costs nothing but time.
+				// A tick count that appears to move backwards expires the vote rather
+				// than keeping it. The tick source is uptime and does not go backwards,
+				// so this defends against a caller mixing clocks: holding a vote we
+				// cannot date is the outcome worth avoiding.
 				if (nowMs >= observer.lastSeenMs &&
 					nowMs - observer.lastSeenMs <= PUBLIC_IPV6_CORROBORATION_WINDOW_MS) {
 					fresh.observers.push_back(observer);
@@ -394,14 +387,12 @@ private:
 
 	//! The addresses assigned to a local interface, global unicast only.
 	//!
-	//! There is no cap on this or on the candidate list, and there deliberately
-	//! is none. An earlier revision capped the number of tracked values because
-	//! the input was attacker-chosen; with the filter in front, a candidate can
-	//! only ever be one of the addresses in this set, which this machine's own
-	//! interfaces bound -- a handful, even with privacy addresses rotating. A
-	//! cap would now buy nothing and cost something real: occupying a slot
-	//! costs one claim while corroborating a value costs three, so refusing
-	//! entries past a limit would make permanent denial the cheaper attack.
+	//! There is deliberately no cap on this or on the candidate list. An earlier
+	//! revision capped the tracked values because the input was attacker-chosen;
+	//! with the filter in front, a candidate can only be one of the addresses this
+	//! machine's own interfaces bound. A cap would now cost something real:
+	//! occupying a slot costs one claim while corroborating a value costs three, so
+	//! refusing entries past a limit would make permanent denial the cheaper attack.
 	std::vector<Address> m_local;
 
 	std::vector<Candidate> m_candidates;

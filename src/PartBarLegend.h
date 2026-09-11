@@ -29,28 +29,24 @@
 // source-availability one in the shared-files list -- and the legends the row
 // context menu opens to explain them.
 //
-// The point of this header is that there is exactly one copy of each colour.
-// A legend that restated the palette -- in words, or in swatches filled from a
-// second set of constants -- would be free to drift away from the pixels it
-// claims to explain, and nothing would fail when it did. Here the renderer
-// (CGenericClientListCtrl::GetItemBarFill) and the legend both read
-// SourcePartColour()/PeerPartColour(), so a colour can only change for both at
-// once.
+// The point of this header is that there is exactly one copy of each colour. A
+// legend that restated the palette, in words or in swatches filled from a second
+// set of constants, would be free to drift away from the pixels it claims to
+// explain, and nothing would fail when it did. Here the renderer and the legend
+// both read SourcePartColour()/PeerPartColour(), so a colour can only change for
+// both at once.
 //
 // "One copy of each colour" is a rule about definitions, not about values. Two
 // constants may hold the same RGB when they mean different things and never
-// appear in the same legend -- kNextPending and kFlatHashPending do -- and
-// collapsing them would tie a shared-files bar to a client-list cue for no
-// reason. So the no-two-rows-alike invariant is scoped PER LEGEND: within one
-// legend a repeated colour is a distinction the reader cannot see, which is a
-// real defect; across two legends it is a coincidence.
+// appear in the same legend -- kNextPending and kFlatHashPending do -- so the
+// no-two-rows-alike invariant is scoped PER LEGEND: within one legend a repeated
+// colour is a distinction the reader cannot see; across two it is a coincidence.
 //
 // It pulls in nothing but <cstddef>/<cstdint>, ClientListColumns.h and
-// PartBarSpans.h -- itself wx-free -- so the part of the feature worth checking
-// -- which states a legend lists, in which order, in which colour, and which
-// legend a column gets -- is reachable from a unit test with no wx, no app and
-// no display session. Same rationale as webapi/PartIndex.h. What is left
-// needing a display is the drawing itself.
+// PartBarSpans.h -- itself wx-free -- so what a legend lists, in which order, in
+// which colour, and which legend a column gets is all reachable from a unit test
+// with no wx, no app and no display session. What is left needing a display is
+// the drawing itself.
 
 #include <cstddef>
 #include <cstdint>
@@ -105,9 +101,8 @@ constexpr BarColour kFlatAvailable{ 0, 0, 0 };
 
 // The part of a shared file not yet re-hashed, drawn flat. Byte-identical to
 // kNextPending and deliberately a separate constant: one is a request cue in a
-// client list, the other is unread bytes of a local file, and the only thing
-// they have in common is the shade someone picked. Merging them would mean a
-// change to either bar silently moved the other.
+// client list, the other is unread bytes of a local file, and merging them would
+// mean a change to either bar silently moved the other.
 constexpr BarColour kFlatHashPending{ 255, 255, 100 };
 
 // The shared-files availability bar. A part no source holds is its own state,
@@ -121,14 +116,12 @@ constexpr BarColour kZeroSources{ 255, 0, 0 };
 constexpr unsigned kAvailFull = 10;
 
 //! The endpoints of the fade: one source, and kAvailFull or more. Shared with
-//! the Web UI's light theme as --piece-avail-lo / --piece-avail (src/webapi/
-//! static/css/app.css:29-30); the test reads them from there, so the two
-//! surfaces cannot drift.
+//! the Web UI's light theme as --piece-avail-lo / --piece-avail, which the test
+//! reads from there, so the two surfaces cannot drift.
 //!
-//! The dark end is deeper than the pair adopted in #1282. That pair travelled
-//! about a third less than the ramp it replaced and compressed the middle of
-//! the scale, so neighbouring source counts were hard to tell apart at a
-//! glance -- the one thing the bar exists to show. The light end is unchanged.
+//! The dark end is deeper than the pair adopted in #1282, which travelled about
+//! a third less than the ramp it replaced and compressed the middle of the
+//! scale, making neighbouring source counts hard to tell apart.
 constexpr BarColour kAvailFew{ 166, 212, 238 };
 constexpr BarColour kAvailMany{ 13, 59, 102 };
 

@@ -263,10 +263,9 @@ PrefsPage pages[] = { { wxTRANSLATE("General"), PreferencesGeneralTab, 13, "pref
 	{ wxTRANSLATE("Interface"), PreferencesGuiTweaksTab, 19, "prefs_interface" },
 #ifdef GEOIP_GUI
 	// Inserted between Interface and Statistics so the GeoIP / country-flag
-	// settings sit next to the related display option (the master
-	// IDC_SHOW_COUNTRY_FLAGS checkbox lives in this new tab too). Hidden
-	// from the page list when ENABLE_IP2COUNTRY is off so users who built
-	// without libmaxminddb don't see a panel that can't function.
+	// settings sit next to the related display option. Hidden from the page list
+	// when ENABLE_IP2COUNTRY is off, so users who built without libmaxminddb do
+	// not see a panel that cannot function.
 	{ wxTRANSLATE("IP2Country"), PreferencesIP2CountryTab, 13, "prefs_ip2country" },
 #endif
 	{ wxTRANSLATE("Statistics"), PreferencesStatisticsTab, 10, "prefs_statistics" },
@@ -304,15 +303,12 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	m_PrefsIcons = CastChild(ID_PREFSLISTCTRL, wxDataViewListCtrl);
 	const int kPrefsIconW = 16;
 	const int kPrefsIconH = 16;
-	// Room for the gap after the icon and the cell's left/right padding.
-	// On macOS this is only the width the list is built with, since the
-	// measurement below replaces it -- but it has to be generous, because
-	// what that measurement reports is bounded by the room the control
-	// already has: ask from a column pinned to a tight estimate and the
-	// answer comes back tight, whatever the cells actually need. On GTK
-	// and MSW no measurement follows, so this is the width itself: enough
-	// for the cell's own padding, plus room after the longest label so it
-	// does not sit against the edge of the list.
+	// Room for the gap after the icon and the cell's left/right padding. On macOS
+	// this is only the width the list is built with, since the measurement below
+	// replaces it -- but it has to be generous, because what that measurement
+	// reports is bounded by the room the control already has: ask from a column
+	// pinned to a tight estimate and the answer comes back tight. On GTK and MSW
+	// no measurement follows, so this is the width itself.
 #ifdef __WXMAC__
 	const int kCellPadding = 48;
 #else
@@ -320,11 +316,10 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 #endif
 
 	// The page art only exists at one (16x16) size. Wrap each icon in a
-	// wxBitmapBundle with a smooth 2x upscale so DPI-aware builds render
-	// it at the correct logical size on hi-DPI screens instead of a tiny
-	// 16-physical-pixel square (same treatment as the main toolbar). The
-	// mask is turned into an alpha channel first because high-quality
-	// scaling needs it.
+	// wxBitmapBundle with a smooth 2x upscale so DPI-aware builds render it at
+	// the correct logical size on hi-DPI screens instead of a tiny
+	// 16-physical-pixel square. The mask is turned into an alpha channel first
+	// because high-quality scaling needs it.
 	auto makeIcon = [&](const wxBitmap &src) -> wxBitmapBundle {
 		wxImage img = src.ConvertToImage();
 		if (!img.HasAlpha()) {
@@ -334,12 +329,10 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 		return wxBitmapBundle::FromBitmaps(wxBitmap(img), wxBitmap(img2x));
 	};
 
-	// Single icon+text column. Width is computed below from the actual
-	// label text once every page's title is known -- wxDataViewColumn's
-	// own auto-size timing isn't reliably immediate across native
-	// (GTK/macOS) vs generic (MSW) backends, so this measures text
-	// extents directly instead of trusting the platform to have sized
-	// the column correctly before the dialog first lays out.
+	// Single icon+text column. Width is computed below from the actual label text
+	// once every page's title is known -- wxDataViewColumn's own auto-size timing
+	// is not reliably immediate across native (GTK/macOS) vs generic (MSW)
+	// backends, so this measures text extents directly.
 	wxDataViewColumn *iconTextCol = m_PrefsIcons->AppendIconTextColumn(
 		"", wxDATAVIEW_CELL_INERT, wxCOL_WIDTH_DEFAULT, wxALIGN_LEFT, 0);
 
@@ -351,9 +344,8 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	int maxLabelWidth = 0;
 	for (unsigned int i = 0; i < itemsof(pages); ++i) {
 		// Page icons ship as SVG twins through CamuleArtProvider
-		// ("amule:prefs_<name>"), rasterized by wx at whatever size and
-		// DPI the list asks for. The legacy raster art below stays as
-		// the fallback for icons without an embedded entry.
+		// ("amule:prefs_<name>"), rasterized by wx at whatever size and DPI the
+		// list asks for. The legacy raster art below stays as the fallback.
 		wxBitmapBundle art =
 			wxArtProvider::GetBitmapBundle(CamuleArtProvider::MakeId(pages[i].m_artName),
 				wxART_LIST,
@@ -379,33 +371,30 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 		const wxString label = wxGetTranslation(pages[i].m_title);
 		maxLabelWidth = std::max(maxLabelWidth, m_PrefsIcons->GetTextExtent(label).GetWidth());
 
-		// Add each page to the page-list. Item data is this page's stable
-		// pages[] index (never reordered -- only which pages are visible
-		// changes), not the row's live position, so OnPrefsPageChange can
-		// always identify the selected page correctly even after the
-		// server / IP2Country row has been hidden and re-shown.
+		// Add each page to the page list. Item data is this page's stable pages[]
+		// index -- never reordered, only which pages are visible changes -- not the
+		// row's live position, so OnPrefsPageChange can always identify the
+		// selected page even after a row has been hidden and re-shown.
 		wxVector<wxVariant> values;
 		values.push_back(wxVariant(wxDataViewIconText(label, m_pageIcons[i])));
 		m_PrefsIcons->AppendItem(values, (wxUIntPtr)i);
 	}
 
 #ifdef __WXMAC__
-	// macOS 11 made the inset row style the default: it pads both ends of
-	// every row -- the same padding that draws a selected row as a rounded
-	// pill inside its cell rather than filling it -- and that padding comes
-	// out of the space the label is drawn in.
+	// macOS 11 made the inset row style the default: it pads both ends of every
+	// row -- the same padding that draws a selected row as a rounded pill inside
+	// its cell rather than filling it -- and that padding comes out of the space
+	// the label is drawn in.
 	mac_set_table_view_flush(m_PrefsIcons->GetHandle());
 #endif
 
-	// Set list-width so that there aren't any scrollers. What the cell needs
-	// beyond the label text -- the icon, the gap after it and the cell's own
-	// padding -- is the renderer's business, and only one of the three ports
-	// will say what it comes to: wxOSX answers wxCOL_WIDTH_AUTOSIZE with the
-	// width its cells want, while wxGTK and the generic implementation answer
-	// with the column's current allocation, which is the width the control
-	// was handed, echoed back. So the estimate here is what MSW and GTK get,
-	// and OnShowMeasureSidebar() replaces it on macOS once the control has
-	// been laid out and can be asked.
+	// Set the list width so there are no scrollers. What the cell needs beyond the
+	// label text -- the icon, the gap after it, the cell's own padding -- is the
+	// renderer's business, and only one of the three ports will say what it comes
+	// to: wxOSX answers wxCOL_WIDTH_AUTOSIZE with the width its cells want, while
+	// wxGTK and the generic implementation echo back the column's current
+	// allocation. So this estimate is what MSW and GTK get, and
+	// OnShowMeasureSidebar() replaces it on macOS once the control is laid out.
 	m_sidebarColumn = iconTextCol;
 	SetSidebarWidth(maxLabelWidth + FromDIP(kPrefsIconW + kCellPadding));
 #ifdef __WXMAC__
@@ -433,13 +422,10 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 #if defined(CLIENT_GUI)
 			// Remote GUI: this checkbox toggles the *daemon's* version-check
 			// preference, so its visibility follows the connected daemon's
-			// capability, NOT amulegui's own build. An amulegui compiled
-			// without ENABLE_VERSION_CHECK still shows it against a capable
-			// daemon — it is only a remote editor of the daemon's pref. The
-			// capability arrives via the EC tag on prefs-apply: a 3.1+ daemon
-			// built without ENABLE_VERSION_CHECK reports false (hide); a
-			// pre-3.1 daemon omits the tag and is treated as capable (show),
-			// since it still supports the preference.
+			// capability, NOT amulegui's own build. The capability arrives via the EC
+			// tag on prefs-apply: a 3.1+ daemon built without ENABLE_VERSION_CHECK
+			// reports false (hide); a pre-3.1 daemon omits the tag and is treated as
+			// capable (show), since it still supports the preference.
 			if (!thePrefs::GetVersionCheckAvailable()) {
 				if (wxWindow *vc = FindWindow(IDC_NEWVERSION)) {
 					vc->Hide();
@@ -458,23 +444,16 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 			CastChild(IDC_PREVIEW_NOTE, wxStaticText)
 				->SetLabel(_("The following variables will be substituted:\n    %PARTFILE - "
 					     "full path to the file\n    %PARTNAME - file name only"));
-			// Tray-icon checkboxes (IDC_ENABLETRAYICON,
-			// IDC_MINTRAY) are visible on every platform now,
-			// including macOS. wxTaskBarIcon → NSStatusItem on
-			// Mac, NOTIFYICONDATA on Windows, GtkStatusIcon /
-			// libayatana SNI on Linux. macOS users who prefer
-			// the menu-bar status-item pattern (Spotify / Slack
-			// / Discord style) can opt in.
+			// Tray-icon checkboxes are visible on every platform now, including
+			// macOS: wxTaskBarIcon maps to NSStatusItem on Mac, NOTIFYICONDATA on
+			// Windows, GtkStatusIcon / libayatana SNI on Linux.
 #if defined(__WXGTK__) && !defined(WITH_LIBAYATANA_APPINDICATOR)
-			// On Linux without libayatana-appindicator3 the only
-			// backend wxTaskBarIcon can fall back to is the legacy
-			// GtkStatusIcon API, which GNOME Shell dropped in 3.26
-			// and wlroots-based compositors never implemented — the
-			// tray icon is silently invisible. Disable the option
-			// so users don't enable a feature that does nothing.
-			// (CamuleApp::OnInit force-clears UseTrayIcon at startup
-			// for the same reason, so dependent options cascade off
-			// even before the user opens this panel.)
+			// On Linux without libayatana-appindicator3 the only backend
+			// wxTaskBarIcon can fall back to is the legacy GtkStatusIcon API, which
+			// GNOME Shell dropped in 3.26 and wlroots-based compositors never
+			// implemented -- the tray icon is silently invisible. Disable the option
+			// so users do not enable a feature that does nothing. CamuleApp::OnInit
+			// force-clears UseTrayIcon at startup for the same reason.
 			FindWindow(IDC_ENABLETRAYICON)->Enable(false);
 			FindWindow(IDC_ENABLETRAYICON)
 				->SetToolTip(_("Tray icon support requires libayatana-appindicator3 at "
@@ -482,15 +461,12 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 #endif
 
 #ifdef __WXGTK__
-			// xdg-shell intentionally doesn't deliver iconified-state
-			// notifications to clients, so the system minimize button
-			// on Wayland cannot trigger our hide-to-tray path. Same
-			// gap is documented across qBittorrent / Telegram /
-			// KeePassXC / Slack — none of them have a fix either.
-			// Grey out the option with a tooltip so the user
-			// understands why; the runtime sanity check in
-			// CamuleApp::OnInit keeps DoMinToTray() returning false
-			// regardless of the saved value.
+			// xdg-shell intentionally does not deliver iconified-state notifications
+			// to clients, so the system minimize button on Wayland cannot trigger our
+			// hide-to-tray path -- the same gap qBittorrent, Telegram, KeePassXC and
+			// Slack all have. Grey out the option with a tooltip so the user
+			// understands why; the runtime sanity check in CamuleApp::OnInit keeps
+			// DoMinToTray() returning false regardless of the saved value.
 			if (CamuleAppCommon::IsWaylandSession()) {
 				FindWindow(IDC_MINTRAY)
 					->SetToolTip(_("Not available on Wayland: the protocol does not "
@@ -590,9 +566,9 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 
 #ifdef CLIENT_GUI
 	// The shared-file exclusion preview counts against the core's in-memory
-	// shared list, which the remote GUI has no local access to (its handler
-	// is compiled out too). Remove the button and its info label here; the
-	// pattern/regex fields still work and sync to amuled over EC.
+	// shared list, which the remote GUI has no local access to. Remove the button
+	// and its info label here; the pattern/regex fields still work and sync to
+	// amuled over EC.
 	if (wxWindow *previewBtn = FindWindow(IDC_EXCLUDE_SHARE_PREVIEW)) {
 		previewBtn->Show(false);
 	}
@@ -602,8 +578,8 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 #endif
 
 #if !defined(__WINDOWS__) && !defined(CLIENT_GUI)
-	// Monolithic non-Windows: this build is its own core and the setting is
-	// a no-op on POSIX, so hide it. Still registered, so the value keeps
+	// Monolithic non-Windows: this build is its own core and the setting is a
+	// no-op on POSIX, so hide it. Still registered, so the value keeps
 	// round-tripping through the config and EC.
 	if (wxWindow *sparse = FindWindow(IDC_CREATEFILESSPARSE)) {
 		sparse->Show(false);
@@ -618,9 +594,8 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 
 #ifdef CLIENT_GUI
 	// amulegui: drop the IP2Country page from the menu when the connected core
-	// has no GeoIP support — a 3.1+ core built without ENABLE_IP2COUNTRY, or a
-	// pre-3.1 core that doesn't know the capability at all (both leave
-	// IsGeoIPSupported() false, see CPreferencesRem::LoadRemote). Mirrors how
+	// has no GeoIP support -- a 3.1+ core built without ENABLE_IP2COUNTRY, or a
+	// pre-3.1 core that does not know the capability at all. Mirrors how
 	// monolithic amule omits the page at compile time. Must run before
 	// EnableServerTab, which may delete the earlier server tab and shift this
 	// index; the page widget stays built but becomes unreachable.
@@ -640,11 +615,10 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	m_choiceColor = CastChild(IDC_COLORSELECTOR, wxChoice);
 
 	// Fill the "Bind to interface" and EC "listening interface" drop-downs with
-	// what this machine actually has. Done before the Cfg->widget transfer
-	// below so the stored value (which may name an interface or address that is
-	// currently down) is preserved as typed text. In CLIENT_GUI these controls
-	// are plain wxTextCtrls (the daemon's interfaces are not this machine's),
-	// so there is nothing to enumerate.
+	// what this machine actually has. Done before the Cfg->widget transfer below
+	// so the stored value -- which may name an interface that is currently down
+	// -- is preserved as typed text. In CLIENT_GUI these are plain wxTextCtrls,
+	// since the daemon's interfaces are not this machine's.
 #ifndef CLIENT_GUI
 	// One enumeration feeds all three controls.
 	const std::vector<NetworkInterface> detectedInterfaces = DetectNetworkInterfaces();
@@ -663,8 +637,7 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	// The EC listen address. 127.0.0.1 leads because it is both the default and
 	// the safe answer, and 0.0.0.0 is spelled out so that opening the external
 	// connection to every network is a deliberate choice rather than the side
-	// effect of an empty field. This machine's own addresses follow, so binding
-	// to just the LAN does not require looking one up.
+	// effect of an empty field. This machine's own addresses follow.
 	if (wxComboBox *ecAddrBox = CastChild(IDC_EXT_CONN_IP, wxComboBox)) {
 		ecAddrBox->Append("127.0.0.1");
 		ecAddrBox->Append("0.0.0.0");
@@ -700,10 +673,9 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 void PrefsUnifiedDlg::EnableServerTab(bool enable)
 {
 	if (enable && !m_ServerTabVisible) {
-		// turn server widget on. Item data is the page's stable pages[]
-		// index (see the constructor), not m_ServerWidget directly --
-		// OnPrefsPageChange looks the widget up from m_pageWidgets by
-		// that index, same as every other row.
+		// Turn the server widget on. Item data is the page's stable pages[] index
+		// (see the constructor), not m_ServerWidget directly -- OnPrefsPageChange
+		// looks the widget up from m_pageWidgets by that index.
 		wxVector<wxVariant> values;
 		values.push_back(wxVariant(wxDataViewIconText(
 			wxGetTranslation(pages[m_IndexServerTab].m_title), m_pageIcons[m_IndexServerTab])));
@@ -747,18 +719,17 @@ bool PrefsUnifiedDlg::TransferToWindow()
 		mmapBox->Show(thePrefs::GetMMapSupported());
 	}
 
-	// Load the user's intent (explicit non-recursive vs marked-recursive
-	// roots) into the tree control's two maps. shareddir_list itself
-	// is the runtime expansion -- not useful as UI state since it
-	// includes auto-discovered subdirs that shouldn't render as
-	// user-selected.
+	// Load the user's intent (explicit non-recursive vs marked-recursive roots)
+	// into the tree control's two maps. shareddir_list itself is the runtime
+	// expansion, which includes auto-discovered subdirs that should not render
+	// as user-selected.
 #ifdef CLIENT_GUI
 	// Remote GUI: no tree to seed. Show whatever roots we already hold and ask
 	// the core for a fresh copy; the reply repaints us via
 	// RefreshSharedDirsIfOpen. Until it lands the editor's controls stay
-	// disabled, because an edit made before it arrives is an edit against a
-	// list we have not seen -- see m_sharedDirsLoaded. Cleared here rather
-	// than at close: the dialog is created once and reused for every open.
+	// disabled, because an edit made before it arrives is an edit against a list
+	// we have not seen. Cleared here rather than at close: the dialog is created
+	// once and reused for every open.
 	m_sharedDirsLoaded = false;
 	PopulateSharedDirsList();
 	static_cast<CPreferencesRem *>(theApp->glob_prefs)->LoadSharedDirsRemote();
@@ -771,24 +742,19 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	m_ShareSelector->SetRecursiveSharedDirectories(&theApp->glob_prefs->shareddir_recursive_list);
 #endif
 
-	// Autostart checkbox: state lives in the OS, never aMule.conf, so
-	// read live each time the dialog opens. The thePrefs Cfg machinery
-	// above doesn't know about it.
+	// Autostart checkbox: state lives in the OS, never aMule.conf, so read live
+	// each time the dialog opens. The thePrefs Cfg machinery does not know it.
 	wxCheckBox *autostartCb = static_cast<wxCheckBox *>(FindWindow(IDC_AUTOSTART_LOGIN));
 	if (autostartCb) {
 		autostartCb->SetValue(AutostartManager::IsEnabled());
 	}
 
-	// URL-scheme handler checkboxes: same live-OS-state model.
-	// On macOS, LaunchServices has no "clear default handler" call
-	// (see ProtocolHandlerManager.cpp:BackendRemove), so Disable is a
-	// no-op — toggling an already-checked box off doesn't change
-	// anything the user can observe. Rather than expose a dead
-	// control, hide the checkbox once aMule is the current handler:
-	// the user opted in, we're the handler, there's nothing further
-	// for them to do here. If they later switch away via macOS'
-	// native "Change All…" chooser, the checkbox reappears on next
-	// Preferences open with the "off" state, and they can opt back in.
+	// URL-scheme handler checkboxes: same live-OS-state model. On macOS,
+	// LaunchServices has no "clear default handler" call, so Disable is a no-op
+	// -- toggling an already-checked box off changes nothing the user can
+	// observe. Rather than expose a dead control, hide the checkbox once aMule
+	// is the current handler. If they later switch away via macOS' native
+	// "Change All..." chooser, the checkbox reappears on the next open.
 	wxCheckBox *ed2kCb = static_cast<wxCheckBox *>(FindWindow(IDC_PROTOCOL_ED2K));
 	if (ed2kCb) {
 		bool enabled = ProtocolHandlerManager::IsEnabled(HandlerTarget::Ed2kScheme);
@@ -818,11 +784,10 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	}
 
 #ifdef GEOIP_GUI
-	// Sync the GeoIP source dropdown to the persisted source; the
-	// Cfg_ system above handles the credential / URL / auto-update
-	// fields, but the dropdown is driven through a custom handler so
-	// hide/show of the source sub-panels stays consistent. Also
-	// refresh the status block from the live CIP2Country state.
+	// Sync the GeoIP source dropdown to the persisted source. The Cfg_ system
+	// above handles the credential / URL / auto-update fields, but the dropdown
+	// is driven through a custom handler so hide/show of the source sub-panels
+	// stays consistent. Also refresh the status block from the live state.
 	wxChoice *geoipSource = CastChild(IDC_GEOIP_SOURCE, wxChoice);
 	if (geoipSource) {
 		geoipSource->SetSelection(static_cast<int>(thePrefs::GetGeoIPSource()));
@@ -830,9 +795,8 @@ bool PrefsUnifiedDlg::TransferToWindow()
 		UpdateGeoIPStatus();
 		UpdateGeoIPControlsEnabled();
 	}
-	// Snapshot the source + credential values that aren't tracked
-	// by the Cfg system, so OnOk can tell whether anything
-	// download-affecting changed during the dialog session.
+	// Snapshot the source + credential values that are not tracked by the Cfg
+	// system, so OnOk can tell whether anything download-affecting changed.
 	m_GeoIPSourceAtOpen = static_cast<int>(thePrefs::GetGeoIPSource());
 	m_GeoIPMaxMindLicenseAtOpen = thePrefs::GetGeoIPMaxMindLicense();
 	m_GeoIPCustomUrlAtOpen = thePrefs::GetGeoIPCustomUrl();
@@ -872,15 +836,14 @@ bool PrefsUnifiedDlg::TransferToWindow()
 
 	// amuleapi's stored password is salted and stretched, so unlike the web
 	// server's it cannot be loaded back into the field. The field is a
-	// write-only request ("set it to this") and empty means "leave it
-	// alone", which needs saying somewhere the user actually looks --
-	// otherwise an empty box reads as "no password configured".
+	// write-only request ("set it to this") and empty means "leave it alone",
+	// which needs saying somewhere the user looks -- otherwise an empty box
+	// reads as "no password configured".
 	SetCredentialStateLabel(IDC_AMULEAPI_PASSWD_STATE, thePrefs::GetAmuleApiAdminIsSet());
 
-	// Guest access is on exactly when a guest password is stored, so the
-	// checkbox already implies this. Spelled out anyway: an empty field
-	// beside a ticked box reads as "nothing configured" unless you happen
-	// to know that invariant.
+	// Guest access is on exactly when a guest password is stored, so the checkbox
+	// already implies this. Spelled out anyway: an empty field beside a ticked
+	// box reads as "nothing configured" unless you know that invariant.
 	m_amuleApiGuestWasSet = thePrefs::GetAmuleApiGuestIsEnabled();
 	SetCredentialStateLabel(IDC_AMULEAPI_GUEST_PASSWD_STATE, m_amuleApiGuestWasSet);
 
@@ -895,11 +858,10 @@ bool PrefsUnifiedDlg::TransferToWindow()
 		FindWindow(IDC_MEDIAMETA_FFPROBEDETECT)->Enable(mmOn);
 	}
 
-	// The tray icon is the only recovery surface for a window hidden
-	// via the close button: on Linux/Windows the option needs the tray
-	// to bring the window back, and on macOS the matching code path
-	// (NSApplicationActivationPolicyAccessory) drops the Dock icon
-	// while hidden, so the tray is also the only way back there.
+	// The tray icon is the only recovery surface for a window hidden via the
+	// close button: on Linux/Windows the option needs the tray to bring the
+	// window back, and on macOS the matching code path drops the Dock icon while
+	// hidden, so the tray is also the only way back there.
 	FindWindow(IDC_MACHIDEONCLOSE)->Enable(thePrefs::UseTrayIcon());
 
 #ifdef __WXGTK__
@@ -932,22 +894,17 @@ bool PrefsUnifiedDlg::TransferToWindow()
 		FindWindow(IDC_SELTEMPDIR)->Enable(false);
 	}
 
-	// Hide preferences that are persisted only to amulegui's local
-	// remote.conf but never sent to amuled via EC_OP_SET_PREFERENCES
-	// (i.e. not packed by CEC_Prefs_Packet at all). The widget would
-	// otherwise show amulegui's stale local default -- not amuled's
-	// real value -- and editing it would silently affect nothing on
-	// the daemon side. Same gap holds whether amulegui is on a
-	// loopback or remote connection: amuled never reads remote.conf,
-	// so the control is dead in both cases. Hide unconditionally for
-	// CLIENT_GUI. Proxy settings (ID_PROXY_*) are *not* in this list.
-	// They are packed by CEC_Prefs_Packet (EC_TAG_PROXY_*), so the remote
-	// GUI configures the daemon's proxy -- amuled routes its P2P and HTTP
-	// (server list, nodes.dat, GeoIP, version check) through it. amulegui
-	// also uses the value locally for its own version-check HTTP (the
-	// shared curl session in CVersionCheck). GeoIP, by contrast, is
-	// daemon-only -- amulegui has no local resolver, country codes arrive
-	// over EC -- so this control is meaningful either way.
+	// Hide preferences that are persisted only to amulegui's local remote.conf
+	// but never sent to amuled via EC_OP_SET_PREFERENCES -- i.e. not packed by
+	// CEC_Prefs_Packet at all. The widget would otherwise show amulegui's stale
+	// local default rather than amuled's real value, and editing it would
+	// silently affect nothing on the daemon side, on a loopback connection as
+	// much as a remote one.
+	//
+	// Proxy settings (ID_PROXY_*) are NOT in this list: they are packed by
+	// CEC_Prefs_Packet, so the remote GUI configures the daemon's proxy, and
+	// amulegui also uses the value locally for its own version-check HTTP.
+	// GeoIP, by contrast, is daemon-only -- amulegui has no local resolver.
 	const int amuledOnlyPrefs[] = {
 		// Web-server UPnP (amuleweb is deprecated) and EC-port UPnP (the EC
 		// port is not a P2P port) stay hidden; only the P2P-router UPnP is
@@ -989,13 +946,10 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	::SendCheckBoxEvent(this, IDC_ENFORCE_PO_INCOMING);
 
 #ifndef GEOIP_GUI
-	// The country-flags checkbox + the rest of the IP2Country controls
-	// only live in the dedicated PreferencesIP2CountryTab, which is
-	// `#ifdef GEOIP_GUI`-gated in the pages[] table. With
-	// libmaxminddb missing, neither the tab nor any of its widgets
-	// exists, so there's nothing to disable here -- the *.NewCfgItem
-	// bindings below are gated the same way, and SetGeoIPEnabled stays
-	// at its default false.
+	// The country-flags checkbox and the rest of the IP2Country controls only
+	// live in the dedicated PreferencesIP2CountryTab, which is `#ifdef
+	// GEOIP_GUI`-gated in the pages[] table. With libmaxminddb missing, neither
+	// the tab nor any of its widgets exists, so there is nothing to disable here.
 #endif
 
 #ifdef __GIT__
@@ -1015,8 +969,8 @@ bool PrefsUnifiedDlg::TransferToWindow()
 #ifdef CLIENT_GUI
 	// Gate the P2P-router UPnP controls on the daemon's advertised capability
 	// (EC_TAG_GENERAL_UPNP_AVAILABLE), not amulegui's own ENABLE_UPNP -- the
-	// daemon is what forwards. Do NOT clobber the pref when unavailable (the
-	// value belongs to the daemon). Web-server + EC-port UPnP are hidden.
+	// daemon is what forwards. Do NOT clobber the pref when unavailable: the
+	// value belongs to the daemon.
 	if (thePrefs::GetUPnPAvailable()) {
 		FindWindow(IDC_UPNPTCPPORT)->Enable(thePrefs::GetUPnPEnabled());
 		FindWindow(IDC_UPNPTCPPORTTEXT)->Enable(thePrefs::GetUPnPEnabled());
@@ -1075,10 +1029,10 @@ bool PrefsUnifiedDlg::TransferFromWindow()
 	}
 
 	// shareddir_list is committed separately from OnOk (see
-	// CommitSharedDirsWithProgress) so that recursive-share expansion
-	// can run on a worker thread with a progress dialog and a cancel
-	// button. Doing it eagerly here would re-introduce the multi-
-	// minute UI freeze that issue #592 hit on /home-sized roots.
+	// CommitSharedDirsWithProgress) so that recursive-share expansion can run on
+	// a worker thread with a progress dialog and a cancel button. Doing it
+	// eagerly here would re-introduce the multi-minute UI freeze on
+	// /home-sized roots.
 
 	for (int i = 0; i < cntStatColors; i++) {
 		if (thePrefs::s_colors[i] != thePrefs::s_colors_ref[i]) {
@@ -1110,7 +1064,7 @@ bool PrefsUnifiedDlg::TransferFromWindow()
 	// Parity with monolithic's auto-download-on-OK: if the GeoIP source or the
 	// active source's credential changed since the panel opened, ask the daemon
 	// to re-download from the new source by piggy-backing a one-shot UPDATE_NOW
-	// on the prefs packet. Commit the credential fields to the statics first —
+	// on the prefs packet. Commit the credential fields to the statics first --
 	// SendToRemote serialises from there, not from the live widgets.
 	thePrefs::SetGeoIPMaxMindLicense(CastChild(IDC_GEOIP_MAXMIND_LIC, wxTextCtrl)->GetValue());
 	thePrefs::SetGeoIPCustomUrl(CastChild(IDC_GEOIP_CUSTOM_URL, wxTextCtrl)->GetValue());
@@ -1159,26 +1113,22 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 {
 	TransferFromWindow();
 
-	// Commit the share list with the recursive-expand-on-worker-
-	// thread path. Done after TransferFromWindow (so other prefs
-	// are already populated in glob_prefs) but before Save() so a
-	// successful commit ends up in shareddir.dat alongside the rest.
-	// If the user cancels at the confirm or the progress dialog,
-	// bail out of OnOk *before* anything is persisted — so the prefs
-	// dialog stays open and the user can adjust their selection
-	// without losing the rest of their pending pref changes.
+	// Commit the share list with the recursive-expand-on-worker-thread path.
+	// After TransferFromWindow, so other prefs are already in glob_prefs, but
+	// before Save() so a successful commit ends up in shareddir.dat alongside
+	// the rest. If the user cancels at the confirm or the progress dialog, bail
+	// out of OnOk *before* anything is persisted, so the dialog stays open and
+	// the rest of their pending changes are not lost.
 	const SharedDirsCommitResult shareResult = CommitSharedDirsWithProgress();
 	if (shareResult == SharedDirsCommitResult::CancelledByUser) {
 		return;
 	}
 	const bool sharedDirsCommitted = (shareResult == SharedDirsCommitResult::Committed);
 
-	// Guest access ticked, nothing typed, nothing stored: "keep the
-	// current password" has nothing to keep. Caught here, before anything
-	// is persisted, so the dialog stays open on the offending field --
-	// same early return the shared-dirs cancel above uses. Reporting it
-	// after the save would leave the user reading an error about a dialog
-	// that had already closed.
+	// Guest access ticked, nothing typed, nothing stored: "keep the current
+	// password" has nothing to keep. Caught here, before anything is persisted,
+	// so the dialog stays open on the offending field -- reporting it after the
+	// save would leave the user reading an error about a closed dialog.
 	if (thePrefs::GetAmuleApiGuestIsEnabled() && thePrefs::GetAmuleApiGuestPass().IsEmpty() &&
 		!m_amuleApiGuestWasSet) {
 		wxMessageBox(_("Guest access needs a password. Type one in the guest password "
@@ -1195,10 +1145,9 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 	// Same for external connections: enabled with no password is not a
 	// configuration aMule can act on. This used to report the problem and then
 	// quietly clear the checkbox on the way out, so the dialog closed with the
-	// user's intent discarded and the message already dismissed. Keep the
-	// dialog open on the password field instead, so the answer to the message
-	// is one field away. Wording unchanged so existing translations still
-	// apply.
+	// user's intent discarded and the message already dismissed. Keep the dialog
+	// open on the password field instead. Wording unchanged so existing
+	// translations still apply.
 	if (thePrefs::AcceptExternalConnections() && thePrefs::ECPassword().IsEmpty()) {
 		wxMessageBox(_("You have enabled external connections but have not specified a "
 			       "password.\nExternal connections cannot be enabled unless a valid "
@@ -1250,13 +1199,12 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 		restart_needed_msg += _("- Protocol obfuscation support changed.\n");
 	}
 
-	// HTTP side-channels (version check, GeoIP, server.met, nodes.dat) go
-	// through a wxWebSession that is handed its proxy once, when it is created:
-	// wx's WinHTTP backend refuses a proxy change after the session has made
-	// its first request. See CreateAmuleWebRequest(). P2P proxying is not
-	// affected -- that runs through CProxySocket and picks the new settings up
-	// immediately -- which is why the message names HTTP specifically rather
-	// than claiming the whole setting is inert until restart.
+	// HTTP side-channels (version check, GeoIP, server.met, nodes.dat) go through
+	// a wxWebSession that is handed its proxy once, when it is created: wx's
+	// WinHTTP backend refuses a proxy change after the session's first request.
+	// P2P proxying is not affected -- that runs through CProxySocket and picks
+	// the new settings up immediately -- which is why the message names HTTP
+	// specifically rather than claiming the whole setting is inert.
 	if (CfgChanged(ID_PROXY_ENABLE_PROXY) || CfgChanged(ID_PROXY_TYPE) || CfgChanged(ID_PROXY_NAME) ||
 		CfgChanged(ID_PROXY_PORT) || CfgChanged(ID_PROXY_ENABLE_PASSWORD) ||
 		CfgChanged(ID_PROXY_USER) || CfgChanged(ID_PROXY_PASSWORD)) {
@@ -1264,14 +1212,12 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 		restart_needed_msg += _("- Proxy settings changed (needed for HTTP transfers).\n");
 	}
 
-	// amuleapi is launched once at startup with its bind address and port,
-	// so a change to either takes effect only after aMule relaunches it.
-	// Passwords are deliberately not in this list: amuleapi re-reads
-	// amuleapi-passwords on every login, so a password change is live.
-	// Skip the prompt when external connections won't be usable, so we don't
-	// tell the user to restart for a service that will not run. In practice
-	// that means "off": enabled-without-a-password never reaches here, having
-	// returned above with the dialog still open.
+	// amuleapi is launched once at startup with its bind address and port, so a
+	// change to either takes effect only after aMule relaunches it. Passwords are
+	// deliberately not in this list: amuleapi re-reads amuleapi-passwords on
+	// every login, so a password change is live. Skip the prompt when external
+	// connections will not be usable, so we do not tell the user to restart for
+	// a service that will not run.
 	const bool ecUsable = thePrefs::AcceptExternalConnections() && !thePrefs::ECPassword().IsEmpty();
 	if (ecUsable && (CfgChanged(IDC_ENABLE_AMULEAPI) || CfgChanged(IDC_AMULEAPI_PORT) ||
 				CfgChanged(IDC_AMULEAPI_BIND))) {
@@ -1294,14 +1240,13 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 
 #ifndef CLIENT_GUI
 	// The web server and amuleapi are EC clients of the core; without external
-	// connections they can never connect. OnCheckBoxChange already warns
-	// live and reverts the toggles, so this is a silent backstop that keeps the
-	// saved prefs consistent for a config loaded in a mismatched state.
+	// connections they can never connect. OnCheckBoxChange already warns live and
+	// reverts the toggles, so this is a silent backstop that keeps the saved
+	// prefs consistent for a config loaded in a mismatched state.
 	//
-	// amulegui (CLIENT_GUI) is itself a connected EC client, so external
-	// connections are necessarily enabled on the daemon; the local
-	// AcceptExternalConnections pref only mirrors amulegui's own remote.conf and
-	// never the daemon's real state, so this backstop must not run there.
+	// amulegui is itself a connected EC client, so external connections are
+	// necessarily enabled on the daemon; its local AcceptExternalConnections
+	// pref only mirrors remote.conf, so this backstop must not run there.
 	if ((thePrefs::GetWSIsEnabled() || thePrefs::GetAmuleApiIsEnabled()) &&
 		!thePrefs::AcceptExternalConnections()) {
 		thePrefs::SetWSIsEnabled(false);
@@ -1333,16 +1278,12 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 		}
 	}
 #else
-	// A remote GUI has no credential file of its own — the daemon has
-	// already been handed the request by Save() and does the storing. Two
-	// things still have to happen here that the daemon cannot do for us:
-	//
-	// drop the pending digest, so it is not re-sent on every later save
-	// and does not sit in memory for the rest of the session; and
-	//
-	// remember that a password now exists, so reopening this dialog says
-	// so instead of "No password set" until the next preferences fetch
-	// happens to refresh the mirror.
+	// A remote GUI has no credential file of its own -- the daemon has already
+	// been handed the request by Save() and does the storing. Two things still
+	// have to happen here that the daemon cannot do for us: drop the pending
+	// digest, so it is not re-sent on every later save and does not sit in
+	// memory for the rest of the session; and remember that a password now
+	// exists, so reopening this dialog says so instead of "No password set".
 	if (!thePrefs::GetAmuleApiPass().IsEmpty()) {
 		thePrefs::SetAmuleApiAdminIsSet(true);
 		thePrefs::SetAmuleApiPass(wxEmptyString);
@@ -1369,13 +1310,12 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 		restart_needed_msg += _("- ED2K network enabled.\n");
 	}
 
-	// CommitSharedDirsWithProgress already ran Reload (with progress
-	// + cancel) when shareddir_list itself changed. We only need to
-	// trigger a fresh Reload here for the other paths IDC_INCFILES /
-	// IDC_TEMPFILES affect.
-	// The three settings below each need a re-walk, and a single OK can change
-	// all three -- which used to mean up to three full walks back to back, each
-	// freezing the dialog. Collect the need and do one walk at the end instead.
+	// CommitSharedDirsWithProgress already ran Reload (with progress and cancel)
+	// when shareddir_list itself changed; this only triggers a fresh Reload for
+	// the other paths IDC_INCFILES / IDC_TEMPFILES affect. The three settings
+	// below each need a re-walk, and a single OK can change all three -- which
+	// used to mean up to three full walks back to back. Collect the need and do
+	// one walk at the end instead.
 	bool needsSharedReload = false;
 
 	if (!sharedDirsCommitted && (CfgChanged(IDC_INCFILES) || CfgChanged(IDC_TEMPFILES))) {
@@ -1422,20 +1362,17 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 	// One walk for whichever of the three settings changed. Progress-and-yield
 	// rather than a bare Reload(): the walk costs roughly a stat per shared
 	// file, so on a large or network-mounted tree it runs for seconds to
-	// minutes, and without a yield callback CSharedFileList pumps nothing at
-	// all -- the window greys out as "not responding" with no indication why.
+	// minutes, and without a yield callback CSharedFileList pumps nothing at all
+	// -- the window greys out as "not responding" with no indication why.
 	//
-	// Pumping here is safe: wxProgressDialog's yield is restricted to UI
-	// events, so it cannot dispatch the queued socket events that carry EC
-	// requests, and no client can be answered from the transiently-empty
-	// share map the walk builds through. Same reason CommitSharedDirsWithProgress
-	// above can do this.
+	// Pumping here is safe: wxProgressDialog's yield is restricted to UI events,
+	// so it cannot dispatch the queued socket events that carry EC requests, and
+	// no client can be answered from the transiently-empty share map.
 	//
 	// No cancel button, for the same reason as the shared-files Reload button:
 	// FindSharedFiles clears the map before walking, so an abort would leave a
 	// partial share list with nothing to restore. CommitSharedDirsWithProgress
-	// can offer one only because it keeps the previous directory list to
-	// re-walk against.
+	// can offer one only because it keeps the previous directory list.
 	if (needsSharedReload) {
 		ReloadSharedFilesWithProgress(this);
 	}
@@ -1534,18 +1471,15 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 	}
 
 #if defined(ENABLE_IP2COUNTRY) && !defined(CLIENT_GUI)
-	// Auto-download on OK when the user changed anything that affects
-	// *which* file should be on disk. Without this, switching source
-	// DB-IP→MaxMind (or pasting a new license) leaves the old file
-	// loaded until the user remembers to click Update now. We skip
-	// the download if:
-	//   * IP2Country is disabled (the file is irrelevant), or
-	//   * the user just toggled the master enable on — EnableIP2Country
-	//     above already handles missing-file → Update() in that case.
-	// Triggered as a manual update so the user sees a popup if their
-	// new credentials are bad, rather than a silent log line.
-	// Monolithic only: amulegui has no local resolver — its OK send
-	// (SendToRemote) carries the new settings and the daemon re-downloads.
+	// Auto-download on OK when the user changed anything that affects *which*
+	// file should be on disk. Without this, switching source DB-IP -> MaxMind,
+	// or pasting a new license, leaves the old file loaded until the user
+	// remembers to click Update now. Skipped when IP2Country is disabled, or
+	// when the user just toggled the master enable on -- EnableIP2Country above
+	// already handles missing-file -> Update() in that case. Triggered as a
+	// manual update so bad credentials pop up rather than a silent log line.
+	// Monolithic only: amulegui's OK send carries the new settings and the
+	// daemon re-downloads.
 	if (thePrefs::IsGeoIPEnabled() && !CfgChanged(IDC_SHOW_COUNTRY_FLAGS) && theApp->amuledlg &&
 		theApp->GetIP2Country()) {
 		const bool sourceChanged =
@@ -1626,11 +1560,10 @@ void PrefsUnifiedDlg::OnCancel(wxCommandEvent &WXUNUSED(event))
 
 void PrefsUnifiedDlg::OnAutostartToggle(wxCommandEvent &event)
 {
-	// Apply immediately. The OS is the source of truth — we don't
-	// persist intent in aMule.conf, so there's no Apply-on-OK step
-	// for this widget. If the write fails (e.g. read-only LaunchAgent
-	// dir on a sandboxed macOS install), roll the checkbox back so
-	// the UI reflects reality.
+	// Apply immediately. The OS is the source of truth -- intent is not persisted
+	// in aMule.conf, so there is no Apply-on-OK step for this widget. If the
+	// write fails (a read-only LaunchAgent dir on a sandboxed macOS install,
+	// say), roll the checkbox back so the UI reflects reality.
 	bool wanted = event.IsChecked();
 	bool ok = wanted ? AutostartManager::Enable() : AutostartManager::Disable();
 	if (!ok) {
@@ -1649,12 +1582,10 @@ void PrefsUnifiedDlg::OnAutostartToggle(wxCommandEvent &event)
 
 void PrefsUnifiedDlg::HandleProtocolToggle(HandlerTarget scheme, int checkboxId, bool wanted)
 {
-	// Same live-OS-state semantics as the autostart toggle above,
-	// with one extra gate: before Enable overwrites a pre-existing
-	// third-party handler, confirm with the user. Disable never
-	// touches a non-aMule handler (Manager contract).
-	// One dialog title for both kinds of registration, worded for the one
-	// being toggled.
+	// Same live-OS-state semantics as the autostart toggle above, with one extra
+	// gate: before Enable overwrites a pre-existing third-party handler, confirm
+	// with the user. Disable never touches a non-aMule handler. One dialog title
+	// for both kinds of registration, worded for the one being toggled.
 	const bool isFileType = (scheme == HandlerTarget::CollectionFile);
 	const wxString dialogTitle = isFileType ? _("Register file type") : _("Register URL handler");
 
@@ -1762,15 +1693,13 @@ void PrefsUnifiedDlg::OnCheckBoxChange(wxCommandEvent &event)
 		FindWindow(IDC_WEBUPNPTCPPORTTEXT)->Enable(value);
 		break;
 
-	// The web server and amuleapi are EC clients of the core: they can only
-	// run when external connections are enabled. Warn live and refuse the
-	// invalid combination instead of waiting for OK.
+	// The web server and amuleapi are EC clients of the core: they can only run
+	// when external connections are enabled. Warn live and refuse the invalid
+	// combination instead of waiting for OK.
 	//
-	// amulegui (CLIENT_GUI) is itself a connected EC client, so external
-	// connections are necessarily enabled on the daemon and the precondition is
-	// always met. The IDC_EXT_CONN_ACCEPT checkbox is hidden there and only
-	// mirrors amulegui's local remote.conf, so reading it would wrongly block
-	// the toggle -- skip the EC guard and keep just the deprecation nudge.
+	// amulegui is itself a connected EC client, so the precondition is always
+	// met. The IDC_EXT_CONN_ACCEPT checkbox is hidden there and only mirrors
+	// remote.conf, so reading it would wrongly block the toggle.
 	case IDC_ENABLE_WEB:
 	case IDC_ENABLE_AMULEAPI:
 #ifndef CLIENT_GUI
@@ -2078,13 +2007,12 @@ void PrefsUnifiedDlg::OnButtonBrowseApplication(wxCommandEvent &event)
 	wxString str = wxFileSelector(title, "", "", "", wildcard, 0, this);
 
 #ifdef __WXMAC__
-	// wxCocoa quirk: the modal NSOpenPanel steals key-window status;
-	// when it dismisses (Open OR Cancel), Cocoa returns focus + Z-order
-	// to whichever aMule window was active before Preferences opened,
-	// not to Preferences itself. IsShown() still returns true and no
-	// wxEVT_CLOSE_WINDOW fires — the dialog is alive but ordered
-	// behind the main window, which visibly reads as "Preferences
-	// closed after Browse click". Raise() restores its Z-order.
+	// wxCocoa quirk: the modal NSOpenPanel steals key-window status; when it
+	// dismisses (Open OR Cancel), Cocoa returns focus and Z-order to whichever
+	// aMule window was active before Preferences opened, not to Preferences
+	// itself. IsShown() still returns true and no wxEVT_CLOSE_WINDOW fires -- the
+	// dialog is alive but ordered behind the main window, which reads as
+	// "Preferences closed after Browse click". Raise() restores its Z-order.
 	Raise();
 #endif
 
@@ -2096,17 +2024,14 @@ void PrefsUnifiedDlg::OnButtonBrowseApplication(wxCommandEvent &event)
 
 void PrefsUnifiedDlg::OnButtonMediaMetaDetect(wxCommandEvent &WXUNUSED(evt))
 {
-	// Kick MediaProbe's autodetect and populate the path field with
-	// whatever it finds. Empty result -> tell the user politely; a
-	// path in-hand is the more useful common case so we don't try
-	// to also validate the binary here (Browse... covers that).
+	// Kick MediaProbe's autodetect and populate the path field with whatever it
+	// finds. An empty result tells the user politely; a path in hand is the more
+	// useful common case, so the binary is not also validated here.
 	//
-	// redetect=true: the point of pressing this is to notice an ffmpeg
-	// installed since aMule started, so the cached answer will not do.
-	// Going through DetectedPath() rather than AutoDetectPath() also
-	// refreshes the cache the probe worker reads, so the button and the
-	// extraction agree about what this machine has. Monolithic only --
-	// amulegui hides the button (see amuledOnlyPrefs[] above), because
+	// redetect=true: the point of pressing this is to notice an ffmpeg installed
+	// since aMule started, so the cached answer will not do. Going through
+	// DetectedPath() rather than AutoDetectPath() also refreshes the cache the
+	// probe worker reads. Monolithic only -- amulegui hides the button, because
 	// detection here would search the GUI's filesystem, not the daemon's.
 	const wxString path = MediaProbe::DetectedPath(/*redetect=*/true);
 	if (path.IsEmpty()) {
@@ -2131,8 +2056,8 @@ void PrefsUnifiedDlg::OnButtonTweaksReset(wxCommandEvent &WXUNUSED(evt))
 
 	// Walk the currently shown page's controls and reset each one that is bound
 	// to a preference. Only the widgets are updated; the change is committed on
-	// OK and discarded on Cancel. The button is shown only on the Advanced page
-	// (see OnPrefsPageChange), so m_CurrentPanel is that page.
+	// OK and discarded on Cancel. The button is shown only on the Advanced page,
+	// so m_CurrentPanel is that page.
 	if (!m_CurrentPanel) {
 		return;
 	}

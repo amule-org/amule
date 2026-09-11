@@ -53,16 +53,14 @@ wxEND_EVENT_TABLE()
 // only the former is virtual in the generic backend (MSW). An index-list model
 // gets a real wxDataViewTreeNode per row hanging off a root branch, and each
 // branch caches the sort order it was last sorted under. Marking our columns
-// sortable to get the header caret sets the window's sort order without wx
-// ever sorting anything -- the list owns its own order -- so the branch cache
-// and the window disagree, and the next RowChanged() trips
-// "m_branchData->sortOrder == window->GetSortOrder()" in PutChildInSortOrder()
-// (datavgen.cpp, present in 3.2 and 3.3 alike). A virtual list model has no
-// tree nodes at all, so the code that asserts is never reached.
+// sortable to get the header caret sets the window's sort order without wx ever
+// sorting anything -- the list owns its own order -- so the branch cache and the
+// window disagree, and the next RowChanged() trips the sortOrder assert in
+// PutChildInSortOrder() (datavgen.cpp, 3.2 and 3.3 alike). A virtual list model
+// has no tree nodes, so that code is never reached.
 //
-// On macOS this is a no-op: wx typedefs wxDataViewVirtualListModel to
-// wxDataViewIndexListModel there ("better than nothing", dataview.h), which is
-// also why the assert has only ever been seen on Windows.
+// A no-op on macOS, where wx typedefs wxDataViewVirtualListModel to
+// wxDataViewIndexListModel -- which is why the assert is Windows-only.
 class CMuleVirtualDataViewCtrl::VirtualModel : public wxDataViewVirtualListModel
 {
 public:
@@ -243,10 +241,9 @@ int CMuleVirtualDataViewCtrl::CompareItemsFull(wxUIntPtr data1, wxUIntPtr data2)
 
 long CMuleVirtualDataViewCtrl::InsertPos(wxUIntPtr data) const
 {
-	// With no sort chain every comparison is equal, and lower_bound would
-	// answer begin() -- putting every arrival at the front, so the list fills
-	// in reverse. CMuleListCtrl::GetInsertPos() appends when it has no sorter;
-	// match it, so an unsorted list is at least in arrival order.
+	// With no sort chain every comparison is equal and lower_bound answers
+	// begin(), putting every arrival at the front so the list fills in reverse.
+	// CMuleListCtrl::GetInsertPos() appends when it has no sorter; match it.
 	if (m_sort_orders.empty()) {
 		return static_cast<long>(m_items.size());
 	}
@@ -294,11 +291,10 @@ void CMuleVirtualDataViewCtrl::AddItemData(wxUIntPtr data)
 	const long pos = InsertPos(data);
 
 	// Selection is re-resolved rather than kept: a wxDataViewItem from a
-	// row-addressed model would silently point at a different row once
-	// everything below the insertion shifts down. Rows above the insertion
-	// don't move, and an empty selection has nothing to preserve, so both
-	// cases skip the round-trip -- it is O(selection) and this path runs per
-	// arriving item.
+	// row-addressed model would silently point at a different row once everything
+	// below the insertion shifts down. Rows above it do not move, and an empty
+	// selection has nothing to preserve, so both skip the round-trip -- it is
+	// O(selection) and this path runs per arriving item.
 	const bool shifts = (static_cast<size_t>(pos) < m_items.size());
 	const std::vector<wxUIntPtr> selected =
 		(shifts && HasSelection()) ? GetSelectedItemData() : std::vector<wxUIntPtr>();
@@ -368,11 +364,10 @@ void CMuleVirtualDataViewCtrl::RemoveItemDataBatch(const std::vector<wxUIntPtr> 
 void CMuleVirtualDataViewCtrl::FinishBulkLoad()
 {
 	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
-	// The row the user is looking at, remembered by its data. Reset() below
-	// says the model was replaced, and every backend answers that by dropping
-	// the view to the top -- so a list that rebuilds whenever a row joins it
-	// scrolled itself home under anyone reading further down (the clients
-	// lists do this on each arrival or departure).
+	// The row the user is looking at, remembered by its data. Reset() below says
+	// the model was replaced, and every backend answers that by dropping the view
+	// to the top -- so a list that rebuilds whenever a row joins it scrolled itself
+	// home under anyone reading further down.
 	long firstRow = 0;
 	long lastRow = 0;
 	wxUIntPtr anchor = GetVisibleRowRange(firstRow, lastRow) ? ItemAt(firstRow) : 0;
@@ -386,10 +381,10 @@ void CMuleVirtualDataViewCtrl::FinishBulkLoad()
 
 	SortItems();
 
-	// Reset() here, unlike SortList(): AppendItemData() adds rows without
-	// telling the control -- that is what makes a bulk load cheap -- so this
-	// is the only notification that the rows exist at all. A repaint would
-	// draw a list the control still believes is the length it was before.
+	// Reset() here, unlike SortList(): AppendItemData() adds rows without telling
+	// the control, which is what makes a bulk load cheap, so this is the only
+	// notification that the rows exist. A repaint would draw a list the control
+	// still believes is its former length.
 	m_virtualModel->Reset(static_cast<unsigned>(m_items.size()));
 
 	SetSelectedItemData(selected);
@@ -405,19 +400,17 @@ void CMuleVirtualDataViewCtrl::ScrollDataToTop(wxUIntPtr data)
 	if (row < 0) {
 		return;
 	}
-	// Reset() left the view at the top, so a row that sorted to the top is
-	// already where it belongs. This is the common case on a list nobody has
-	// scrolled, and it costs no scrolling at all.
+	// Reset() left the view at the top, so a row that sorted there is already where
+	// it belongs -- the common case on a list nobody has scrolled.
 	if (row == 0) {
 		return;
 	}
 
-	// Two calls, because EnsureVisible() scrolls the shortest distance that
-	// makes its target visible. The view is at the top after Reset(), so
-	// asking for the anchor alone would stop as soon as it appeared at the
-	// BOTTOM edge. Bringing the last row of the anchor's page into view first
-	// scrolls past it, and the second call then comes back up to it, which
-	// leaves the anchor on the top line where it was.
+	// Two calls, because EnsureVisible() scrolls the shortest distance that makes
+	// its target visible. The view is at the top after Reset(), so asking for the
+	// anchor alone would stop as soon as it appeared at the BOTTOM edge. Bringing
+	// the last row of the anchor's page into view scrolls past it, and the second
+	// call comes back up, leaving the anchor on the top line.
 	const int perPage = GetCountPerPage();
 	if (perPage > 1 && !m_items.empty()) {
 		const long last = static_cast<long>(m_items.size()) - 1;
@@ -456,31 +449,21 @@ void CMuleVirtualDataViewCtrl::RefreshItemData(wxUIntPtr data)
 		return;
 	}
 
-	// Only rows the user can actually see are worth telling the control
-	// about. Values are pulled per cell as they are drawn, so a row that is
-	// off screen -- or in a list on a panel that isn't showing -- renders
-	// current data the moment it is scrolled or switched into view, with no
-	// notification needed. wxDataViewCtrl reaches the same conclusion, but
-	// only at the very end of wxDataViewMainWindow::DoItemChanged(): before
-	// it intersects the row against the client rect it invalidates every
-	// column's cached best width (a clear + resize of a per-column vector)
-	// and constructs and dispatches a wxEVT_DATAVIEW_ITEM_VALUE_CHANGED,
-	// which no aMule handler is listening for. Measured on a reporter's
-	// 11,000-row download list, that unconditional prologue cost ~20us per
-	// row and ~300ms of every one-second poll -- and it was charged for the
-	// list on all four panels he wasn't looking at as well as the one he
-	// was (issue #867).
+	// Only rows the user can see are worth telling the control about: values are
+	// pulled per cell as they are drawn, so a row that is off screen -- or in a
+	// list on a panel that is not showing -- renders current data the moment it is
+	// scrolled into view. wxDataViewCtrl reaches the same conclusion, but only at
+	// the very end of wxDataViewMainWindow::DoItemChanged(): before intersecting
+	// the row against the client rect it invalidates every column's cached best
+	// width and dispatches a wxEVT_DATAVIEW_ITEM_VALUE_CHANGED nothing listens for.
+	// Measured on an 11,000-row download list, that prologue cost ~20us per row and
+	// ~300 ms of every one-second poll, charged for the lists on all four panels
+	// (issue #867). The vendored generic wxListCtrl tested the visible range first
+	// and returned; this restores that ordering.
 	//
-	// The pre-wxDataViewCtrl lists did not have this problem because the
-	// vendored generic wxListCtrl ordered it the other way round:
-	// wxListMainWindow::RefreshLine() tested the visible range first and
-	// returned, so an off-screen row cost two integer comparisons. This
-	// restores that ordering.
-	//
-	// Skipping the notification for a row that really is visible would
-	// leave a stale cell on screen, so both unknowns resolve towards
-	// refreshing: a backend that cannot report its viewport, and the
-	// partially visible row below the last fully visible one.
+	// Skipping the notification for a row that really is visible would leave a
+	// stale cell on screen, so both unknowns resolve towards refreshing: a backend
+	// that cannot report its viewport, and the partially visible last row.
 	long firstRow = 0;
 	long lastRow = 0;
 	const bool offScreen = !IsShownOnScreen() || (GetVisibleRowRange(firstRow, lastRow) &&
@@ -489,10 +472,9 @@ void CMuleVirtualDataViewCtrl::RefreshItemData(wxUIntPtr data)
 		m_virtualModel->RowChanged(static_cast<unsigned>(row));
 	}
 
-	// The value that just changed may be the one the list is sorted by, in
-	// which case the row has to move. Scheduled rather than done here: an
-	// update burst refreshes many rows, and re-sorting on each would be
-	// quadratic. Gated by the same preference CMuleVirtualListCtrl checks.
+	// The value that changed may be the one the list is sorted by, in which case
+	// the row has to move. Scheduled rather than done here: an update burst
+	// refreshes many rows, and re-sorting on each would be quadratic.
 	if (thePrefs::LiveListSort() && IsLiveSortColumn()) {
 		m_resortPending = true;
 		ScheduleResort();
@@ -501,12 +483,11 @@ void CMuleVirtualDataViewCtrl::RefreshItemData(wxUIntPtr data)
 
 void CMuleVirtualDataViewCtrl::ClearItemData()
 {
-	// Remembered before the rows go, for the clear-then-refill rebuild the
-	// clients list does on every arrival and departure: by the time
-	// FinishBulkLoad() runs, the control has been told it holds nothing and
-	// cannot say what was on top. Harmless for a clear that is really a clear
-	// -- the data will not be in the list afterwards, and restoring skips
-	// anything it cannot find.
+	// Remembered before the rows go, for the clear-then-refill rebuild the clients
+	// list does on every arrival and departure: by the time FinishBulkLoad() runs,
+	// the control has been told it holds nothing and cannot say what was on top.
+	// Harmless for a clear that is really a clear, since restoring skips anything
+	// it cannot find.
 	long firstRow = 0;
 	long lastRow = 0;
 	if (GetVisibleRowRange(firstRow, lastRow)) {
@@ -530,40 +511,34 @@ void CMuleVirtualDataViewCtrl::SortList()
 {
 	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
 
-	// The cursor is addressed by row, like the selection, and unlike the
-	// selection nothing else puts it back. Reset() used to invalidate it
-	// along with the rest of the view; a repaint leaves it pointing at
-	// whatever item has since moved into that row -- so the next arrow key
-	// steps from the wrong place, a shifted page key extends from the wrong
-	// anchor, and the focus ring can come to rest on an unselected row.
+	// The cursor is addressed by row, like the selection, and unlike the selection
+	// nothing else puts it back. A repaint leaves it pointing at whatever item has
+	// since moved into that row, so the next arrow key steps from the wrong place,
+	// a shifted page key extends from the wrong anchor, and the focus ring can rest
+	// on an unselected row.
 	const wxDataViewItem currentItem = GetCurrentItem();
 	const wxUIntPtr currentData =
 		currentItem.IsOk() ? ItemAt(static_cast<long>(m_virtualModel->GetRow(currentItem))) : 0;
 
 	SortItems();
 
-	// Repaint, rather than Reset(). A sort reorders rows; it does not replace
-	// them, and the count is the same on both sides of the std::sort above.
-	// Reset() says the model was replaced, which makes every backend rebuild
-	// its view from scratch -- and a rebuilt view starts at the top, so an
-	// auto-sort while the user was reading further down threw them back to
-	// row 0, horizontally as well. Nothing needs telling: rows are addressed
-	// by index and their values are pulled per cell as they are drawn, so the
-	// cells simply render the new order.
+	// Repaint, rather than Reset(). A sort reorders rows, it does not replace them,
+	// and the count is the same on both sides of the std::sort above. Reset() says
+	// the model was replaced, which makes every backend rebuild its view from
+	// scratch -- and a rebuilt view starts at the top, so an auto-sort threw a user
+	// reading further down back to row 0. Nothing needs telling: rows are addressed
+	// by index and their values are pulled per cell as they are drawn.
 	Refresh();
 
 	// The control's selection is a set of rows, and the rows now mean
 	// different items, so it is re-applied from the item data either way.
 	SetSelectedItemData(selected);
 
-	// Only while the row it lands on is already on screen. Measured on GTK
-	// with wx 3.3.3: SetCurrentItem() to a visible row leaves the viewport
-	// alone, but to one off screen it clamps the view onto the cursor -- and
-	// with no row ever clicked the cursor sits at row 0, so restoring it
-	// after a sort dragged the list back to the top, which is the very thing
-	// this function exists to stop. A cursor the user cannot see is one they
-	// are not about to arrow from; a cursor they can see is the one that has
-	// to be right.
+	// Only while the row it lands on is already on screen. Measured on GTK with wx
+	// 3.3.3: SetCurrentItem() to a visible row leaves the viewport alone, but to one
+	// off screen it clamps the view onto the cursor -- and with no row ever clicked
+	// the cursor sits at row 0, so restoring it after a sort dragged the list back
+	// to the top, the very thing this function exists to stop.
 	if (currentData != 0) {
 		const long row = RowOfData(currentData);
 		long firstRow = 0;
@@ -651,18 +626,16 @@ void CMuleVirtualDataViewCtrl::MaybeResortNow()
 		m_resortPending = false;
 		return;
 	}
-	// Nobody is looking at this list, so sorting it now buys nothing. The
-	// remote GUI keeps every list fed from the same poll whether or not its
-	// panel is on screen, so without this a single reply re-sorts the
-	// downloads, shared-files, sources and peers lists in full, once or twice
-	// a second, of which at most one is visible. Measured on a 1228-row
-	// shared list: 156 sorts in a 150-poll session, 143 of them while hidden.
+	// Nobody is looking at this list, so sorting it now buys nothing. The remote
+	// GUI keeps every list fed from the same poll whether or not its panel is on
+	// screen, so without this a single reply re-sorts the downloads, shared-files,
+	// sources and peers lists in full, once or twice a second, of which at most one
+	// is visible. Measured on a 1228-row shared list: 156 sorts in a 150-poll
+	// session, 143 of them while hidden.
 	//
-	// The work is deferred rather than dropped -- m_resortPending stays set,
-	// so the next update after the panel comes back sorts it. The poll that
-	// marks rows dirty runs continuously while connected, so that is within a
-	// poll interval of becoming visible, and a list only has a sort pending
-	// at all because something changed in it.
+	// Deferred rather than dropped: m_resortPending stays set, so the next update
+	// after the panel comes back sorts it, and the poll that marks rows dirty runs
+	// continuously while connected.
 	if (!IsShownOnScreen()) {
 		return;
 	}
@@ -704,22 +677,18 @@ void CMuleVirtualDataViewCtrl::OnArrowKey(wxKeyEvent &evt)
 	}
 
 	// Swallowed. Left and right belong to the tree control: they expand and
-	// collapse, and a flat list has nothing to expand. Handed to the native
-	// control they do something worse than nothing here -- on macOS the name
-	// column repaints without each row's value being re-supplied, so every
-	// row draws the last row's text until something forces a full repaint.
+	// collapse, and a flat list has nothing to expand. Handed to the native control
+	// they do something worse than nothing here -- on macOS the name column
+	// repaints without each row's value being re-supplied, so every row draws the
+	// last row's text until something forces a full repaint.
 	//
-	// Scrolling sideways would be the useful alternative and is not
-	// available: the only portable lever is EnsureVisible(item, column),
-	// which needs to know which columns are off screen, and GetItemRect()
-	// reports a column's position in the full layout rather than in the
-	// viewport -- the same coordinates before and after a scroll. So the
-	// target cannot be worked out, and a first attempt behaved accordingly:
-	// right moved once and then stopped, left never fired at all because the
-	// x it compares against never goes negative. Doing it properly means
-	// reading the native scroll position per platform, which belongs in its
-	// own change rather than in a repaint fix.
+	// Scrolling sideways would be the useful alternative and is not available: the
+	// only portable lever is EnsureVisible(item, column), which needs to know which
+	// columns are off screen, and GetItemRect() reports a column's position in the
+	// full layout rather than in the viewport -- the same coordinates before and
+	// after a scroll. Doing it properly means reading the native scroll position
+	// per platform.
 	//
-	// Deliberately not on CMuleDataViewCtrl: the search list is a real tree
-	// where these keys expand and collapse result variants.
+	// Deliberately not on CMuleDataViewCtrl: the search list is a real tree where
+	// these keys expand and collapse result variants.
 }

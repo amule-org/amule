@@ -75,11 +75,9 @@ public:
 	CHashingTask(const CKnownFile *toAICHHash);
 
 protected:
-	//! Specifies which hashes should be calculated when the task is executed.
-	//! EH_MD4 and EH_AICH are bit flags; the combined value is named
-	//! explicitly so a bitwise OR cast doesn't produce a value outside
-	//! the enum's valid range (caught by
-	//! clang-analyzer-optin.core.EnumCastOutOfRange in the cpp ctor).
+	//! Which hashes to calculate when the task runs. EH_MD4 and EH_AICH are bit
+	//! flags; the combined value is named explicitly so a bitwise OR cast cannot
+	//! produce a value outside the enum's valid range.
 	enum EHashes
 	{
 		EH_AICH = 1,
@@ -87,10 +85,8 @@ protected:
 		EH_MD4_AND_AICH = EH_MD4 | EH_AICH
 	};
 
-	//! @see CThreadTask::OnLastTask
 	virtual void OnLastTask();
 
-	//! @see CThreadTask::Entry
 	virtual void Entry();
 
 	/**
@@ -121,10 +117,9 @@ private:
 	void SetHashingProgress(uint16 part);
 };
 
-// Media metadata probing (#140/#280) runs on the dedicated
-// CMediaProbeThread, not the shared CThreadScheduler, so a slow/hung
-// ffprobe can't stall completions. Results still arrive via the
-// CMediaProbeEvent below. See MediaProbeThread.h.
+// Media metadata probing (#140/#280) runs on the dedicated CMediaProbeThread,
+// not the shared CThreadScheduler, so a slow or hung ffprobe cannot stall
+// completions. Results still arrive via the CMediaProbeEvent below.
 
 /**
  * This task synchronizes the AICH hashlist.

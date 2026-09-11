@@ -48,25 +48,22 @@ public:
 	// set list of explicitly-shared directories
 	void SetSharedDirectories(PathList *list);
 
-	// Recursive-share intents: roots the user wants to share together
-	// with every descendant. The actual descendant enumeration is now
-	// deferred to the PrefsUnifiedDlg apply path (formerly happened
-	// synchronously inside OnRButtonDown and froze the UI on large
-	// trees like /home).
+	// Recursive-share intents: roots the user wants to share along with every
+	// descendant. The descendant enumeration is deferred to the PrefsUnifiedDlg
+	// apply path, having once run synchronously inside OnRButtonDown and frozen the
+	// UI on large trees.
 	void GetRecursiveSharedDirectories(PathList *list);
 	void SetRecursiveSharedDirectories(PathList *list);
 
 	// User made any changes to list?
 	bool HasChanged;
 
-	//! Re-create an already-built tree from the current shared roots. Needed
-	//! when those roots change underneath us: UpdateSharedDirectories only
-	//! re-marks the root's immediate children, so anything already expanded
-	//! would keep the marks it was built with and show stale state. Rebuilds
-	//! straight away rather than deferring to the next Init(), because the
-	//! dialog can reopen directly on the Directories page, where no page-change
-	//! event fires and a deferred rebuild would leave the tree empty. A tree
-	//! that was never built is left alone, so first use stays lazy.
+	//! Re-create an already-built tree from the current shared roots. Needed when
+	//! those change underneath us: UpdateSharedDirectories only re-marks the root's
+	//! immediate children, so anything already expanded would keep the marks it was
+	//! built with. Rebuilds straight away rather than deferring to the next Init(),
+	//! because the dialog can reopen directly on the Directories page where no
+	//! page-change event fires. A tree that was never built is left alone.
 	void Rebuild();
 
 	//! True when the tree was painted from roots other than these, i.e. the
@@ -75,13 +72,10 @@ public:
 	//! backing maps alone leaves already-expanded nodes showing old state.
 	bool NeedsRepaintFor(const PathList &explicitDirs, const PathList &recursiveDirs) const;
 
-	// initialize control
 	void Init();
 
 private:
-	// add a new item
 	void AddChildItem(wxTreeItemId hBranch, const CPath &item);
-	// add subdirectory items
 	void AddSubdirectories(wxTreeItemId hBranch, const CPath &path);
 	// returns true if folder has at least one subdirectory
 	bool HasSubdirectories(const CPath &path);
@@ -91,7 +85,6 @@ private:
 	void CheckChanged(wxTreeItemId hItem, bool bChecked, bool recursed);
 	// returns true if a subdirectory of strDir is shared
 	bool HasSharedSubdirectory(const CPath &path);
-	// set shared directories according to list
 	void UpdateSharedDirectories();
 	// when sharing a directory, make all parent directories red
 	void UpdateParentItems(wxTreeItemId hChild, bool add);
@@ -110,12 +103,10 @@ private:
 	bool IsInsideRecursiveShare(const CPath &path);
 	void AddRecursiveShare(const CPath &path);
 	void DelRecursiveShare(const CPath &path);
-	// Sweep all m_lstShared entries that are descendants of `root`.
-	// Used by OnRButtonDown's unshare path so that a recursive share
-	// whose flat descendants survived from a previous Prefs session
-	// (loaded from shareddir.dat) is fully removed by right-clicking
-	// the root again — without forcing the tree to expand every
-	// subdir in the UI just to find them.
+	// Sweep all m_lstShared entries that are descendants of `root`. Used by
+	// OnRButtonDown's unshare path, so a recursive share whose flat descendants
+	// survived from a previous Prefs session is fully removed by right-clicking the
+	// root again, without expanding every subdir in the UI to find them.
 	void DelSharesUnder(const CPath &root);
 
 	void OnItemExpanding(wxTreeEvent &evt);
@@ -142,15 +133,11 @@ private:
 
 	wxTreeItemId m_root;
 
-	// Font used to render recursive-share roots. Bold-italic, so the
-	// user can distinguish "this is the recursive root" from "this
-	// is a plain explicit share" or "this is a descendant covered by
-	// a recursive expansion" -- all three would otherwise look
-	// identical (plain bold). Constructed lazily on first paint via
-	// MakeRecursiveFont because the tree control's default font
-	// isn't fully resolved until after the ctor runs (on macOS
-	// especially, GetFont() inside the ctor returns a default-system
-	// font that's later overridden by the layout pass).
+	// Font used to render recursive-share roots. Bold-italic, so "this is the
+	// recursive root" is distinguishable from a plain explicit share and from a
+	// descendant covered by a recursive expansion -- all three would otherwise look
+	// identical. Constructed lazily on first paint, because the tree control's
+	// default font is not fully resolved until after the ctor runs.
 	wxFont GetRecursiveFont();
 	// Toggle the italic-bold marker on a single tree item. Called
 	// from AddChildItem on initial render and from the right-click

@@ -135,16 +135,14 @@ InstanceLock::Result InstanceLock::Acquire(
 	}
 	m_anotherRunning = m_wxImpl->IsAnotherRunning();
 
-	// The mutex answers "is another instance running" but says nothing about
-	// WHICH: amuled shares this name with the monolithic GUI, and only one of
-	// them has a window to raise. wxSingleInstanceChecker keeps no file, so
-	// the same two facts POSIX writes into the lock file are written beside
-	// the mutex here, for the same reason and in the same format.
+	// The mutex answers "is another instance running" but says nothing about WHICH:
+	// amuled shares this name with the monolithic GUI, and only one of them has a
+	// window to raise. wxSingleInstanceChecker keeps no file, so the two facts POSIX
+	// writes into the lock file are written beside the mutex here.
 	//
-	// No liveness check is needed on this side: the OS releases a named mutex
-	// when its owner dies, so a held mutex is proof of a live holder, and a
-	// file left behind by a crash is overwritten by the next acquire -- which
-	// by definition is the process that just won the mutex.
+	// No liveness check is needed on this side: the OS releases a named mutex when
+	// its owner dies, so a held mutex proves a live holder, and a file left by a
+	// crash is overwritten by the next acquire.
 	if (m_anotherRunning) {
 		ReadHolderFile(m_path, m_holderPid, m_holderKind);
 		return LOCK_HELD;
@@ -168,10 +166,10 @@ void InstanceLock::Release()
 InstanceLock::Result InstanceLock::Acquire(
 	const wxString &filename, const wxString &dir, const wxString &selfKind)
 {
-	// Idempotent-caller contract (see header). Drop any existing fd first
-	// without unlinking - the file will be replaced on the open() below;
-	// unlink()-ing here would create a race window during which no lock
-	// file exists on disk, and a concurrent third instance could slip in.
+	// Idempotent-caller contract (see header). Drop any existing fd first without
+	// unlinking -- the file is replaced by the open() below, and unlinking here
+	// would leave a window with no lock file on disk for a third instance to slip
+	// through.
 	if (m_fd != -1) {
 		(void)close(m_fd);
 		m_fd = -1;
@@ -186,9 +184,8 @@ InstanceLock::Result InstanceLock::Acquire(
 		return LOCK_ERROR;
 	}
 
-	// Defense against a planted lock file with wrong owner (matches
-	// wxSingleInstanceChecker's paranoia). If someone dropped a
-	// world-writable muleLock into ~/.aMule/ we don't want to touch it.
+	// Defense against a planted lock file with the wrong owner: a world-writable
+	// muleLock dropped into ~/.aMule/ is not one to touch.
 	struct stat st;
 	if (fstat(m_fd, &st) == 0 && st.st_uid != getuid()) {
 		(void)close(m_fd);

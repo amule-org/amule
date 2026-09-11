@@ -227,9 +227,8 @@ bool CFile::Open(const CPath &fileName, OpenMode mode, int accessMode)
 	m_safeWrite = false;
 	m_filePath = fileName;
 	m_writeBufferPending = 0;
-	// Buffer writes for any mode that can actually write. Read-only
-	// stays unbuffered so a misuse (like writing to a read-opened
-	// file) still fails immediately at the doWrite call site,
+	// Buffer writes for any mode that can actually write. Read-only stays
+	// unbuffered so a misuse still fails immediately at the doWrite call site,
 	// preserving FileDataIOTest's CFile.Constructor contract.
 	m_canBuffer = (mode != read);
 
@@ -348,9 +347,9 @@ sint64 CFile::doRead(void *buffer, size_t count) const
 
 	size_t totalRead = 0;
 	while (totalRead < count) {
-		// m_mutex is this CFile's own lock guarding its buffer/fd; holding it
-		// across the blocking read is intended -- it serialises access to this
-		// single file object, not a shared global section.
+		// m_mutex is this CFile's own lock guarding its buffer and fd; holding it
+		// across the blocking read is intended, since it serialises access to this
+		// one file object rather than a shared global section.
 		// NOLINTNEXTLINE(clang-analyzer-unix.BlockInCriticalSection)
 		int current = ::read(m_fd, (char *)buffer + totalRead, count - totalRead);
 
@@ -396,13 +395,9 @@ sint64 CFile::doWrite(const void *buffer, size_t nCount)
 
 	std::lock_guard<std::recursive_mutex> lock(m_mutex);
 
-	// Read-only files: the kernel will reject the write with EBADF;
-	// surface that immediately by going direct, the same way the
-	// pre-buffering version did.
-	//
-	// Single payload that doesn't fit in the buffer at all also goes
-	// direct — no point splitting into 64 KB chunks just to copy
-	// through the buffer first. Drain pending bytes (if any) so
+	// Read-only files: the kernel rejects the write with EBADF, so go direct and
+	// surface that immediately, as the pre-buffering version did. A single payload
+	// too large for the buffer also goes direct, draining pending bytes first so
 	// ordering is preserved.
 	if (!m_canBuffer || nCount >= kWriteBufferSize) {
 		DrainWriteBuffer();
@@ -425,9 +420,8 @@ sint64 CFile::doWrite(const void *buffer, size_t nCount)
 		DrainWriteBuffer();
 	}
 
-	// Lazy-allocate on first buffered write: a CFile that's opened
-	// write-capable but never written to (e.g. construct-then-close
-	// on an early error path) shouldn't pay for the buffer.
+	// Lazy-allocate on first buffered write: a CFile opened write-capable but never
+	// written to should not pay for the buffer.
 	if (!m_writeBuffer) {
 		m_writeBuffer.reset(new char[kWriteBufferSize]);
 	}
@@ -447,10 +441,9 @@ sint64 CFile::doSeek(sint64 offset) const
 
 	std::lock_guard<std::recursive_mutex> lock(m_mutex);
 
-	// Pending bytes belong at the pre-seek position; flush before
-	// changing the fd's offset so writes don't end up in the wrong
-	// place. (CSafeFile / known.met save uses Seek() to back-patch
-	// the header after writing the body, so this matters in practice.)
+	// Pending bytes belong at the pre-seek position, so flush before changing the
+	// fd's offset. CSafeFile / the known.met save Seek()s back to patch the header
+	// after writing the body, so this matters in practice.
 	DrainWriteBuffer();
 
 	sint64 result = SEEK_FD(m_fd, offset, SEEK_SET);
@@ -503,10 +496,9 @@ uint64 CFile::GetLength() const
 
 uint64 CFile::GetAvailable() const
 {
-	// Lock around both calls so length/position are taken atomically;
-	// otherwise a concurrent write could land between and skew the
-	// reported "available" count. Recursive so the inner GetLength /
-	// GetPosition calls (which lock again) don't deadlock.
+	// Lock around both calls so length and position are taken atomically, or a
+	// concurrent write could land between them and skew the reported "available"
+	// count. Recursive, so the inner GetLength / GetPosition calls do not deadlock.
 	std::lock_guard<std::recursive_mutex> lock(m_mutex);
 
 	const uint64 length = GetLength();

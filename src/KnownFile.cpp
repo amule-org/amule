@@ -142,26 +142,21 @@ std::atomic<uint64> CKnownFile::s_globalEcGen{ 0 };
 
 uint32 CKnownFile::GetMetaDataVer() const
 {
-	// Derived from tag presence, no separate m_uMetaDataVer field.
+	// Derived from tag presence, with no separate m_uMetaDataVer field.
 	//
 	// ANY FT_MEDIA_* tag counts, not FT_MEDIA_LENGTH alone. The premise the
 	// length-only test rested on -- that a successful probe always yields a
 	// duration -- is false: MediaProbe succeeds on a duration OR a codec, so a
-	// file ffprobe can identify but not time (a raw elementary stream, a
-	// truncated capture) gets a codec and no length. That put the four
-	// consumers of this predicate in disagreement: the ed2k publisher, which
-	// checks each tag individually, advertised the codec to every peer, while
-	// Kad, EC and the file-detail dialog all reported the file as having no
-	// metadata at all. The same tag was good enough for strangers and not for
-	// the person who owns the file.
+	// file ffprobe can identify but not time gets a codec and no length. That put
+	// the four consumers of this predicate in disagreement: the ed2k publisher
+	// checks each tag individually and advertised the codec to every peer, while
+	// Kad, EC and the file-detail dialog all reported no metadata at all. It also
+	// drives the "already probed" gate in CSharedFileList, so those files were
+	// re-probed on every startup, forever.
 	//
-	// It also drives the "already probed" gate in CSharedFileList, so those
-	// files used to be re-probed on every single startup, forever, for a
-	// result that was already known and would be discarded again.
-	// One pass over m_taglist rather than six Get*TagValue calls, each of
-	// which scans it end to end. This runs per file per EC update, and the
-	// worst case is the common one: a non-media file matches nothing, so all
-	// six scans would run to completion every time.
+	// One pass over m_taglist rather than six Get*TagValue calls, each of which
+	// scans it end to end: this runs per file per EC update, and the worst case
+	// is the common one -- a non-media file matches nothing.
 	for (const CTag &tag : m_taglist) {
 		switch (tag.GetNameID()) {
 		case FT_MEDIA_LENGTH:
@@ -348,17 +343,15 @@ void CAbstractFile::AddTagUnique(const CTag &rTag)
 
 bool CAbstractFile::RemoveTag(uint8 tagname)
 {
-	// Matches on the numeric id alone, unlike AddTagUnique's (id, type) pair:
-	// the caller wants the field gone whatever width or encoding it was stored
-	// with, and a media tag inherited from a search result can legitimately
-	// arrive as a narrower integer type than the one a local probe writes.
+	// Matches on the numeric id alone, unlike AddTagUnique's (id, type) pair: the
+	// caller wants the field gone whatever width or encoding it was stored with,
+	// and a media tag inherited from a search result can legitimately arrive as a
+	// narrower integer type than a local probe writes.
 	//
-	// Erases EVERY match, not just the first. AddTagUnique replaces only when
-	// the type matches too, so two tags with one id and different types can
-	// legitimately coexist; stopping at the first would leave the other behind
-	// and quietly break the promise this comment makes. No current writer
-	// produces that pair -- they all normalise to CTagInt32 / CTagString --
-	// but "clear this field" should not depend on that staying true.
+	// Erases EVERY match, not just the first. AddTagUnique replaces only when the
+	// type matches too, so two tags with one id and different types can
+	// legitimately coexist. No current writer produces that pair, but "clear
+	// this field" should not depend on that staying true.
 	const size_t before = m_taglist.size();
 	m_taglist.erase(std::remove_if(m_taglist.begin(),
 				m_taglist.end(),
@@ -450,12 +443,11 @@ CKnownFile::CKnownFile(const CSearchFile &searchFile)
 
 void CKnownFile::Init()
 {
-	// Stamp the EC generation immediately so any newly-constructed file
-	// (search-result import, partfile creation, hashed-and-added shared
-	// file) is naturally `> 0` from every existing connection's
-	// `m_lastEcGenSeen` perspective. Without this, the first INC_UPDATE
-	// cycle within the 60 s backstop window after a file is added would
-	// skip it because its default-zero gen looked unchanged.
+	// Stamp the EC generation immediately so any newly-constructed file is
+	// naturally `> 0` from every existing connection's `m_lastEcGenSeen`
+	// perspective. Without this, the first INC_UPDATE cycle within the 60 s
+	// backstop window after a file is added would skip it, its default-zero gen
+	// looking unchanged.
 	MarkECChanged();
 
 	m_showSources = false;
@@ -476,13 +468,11 @@ void CKnownFile::Init()
 	m_lastDateChanged = 0;
 	m_lastUploadDatetime = 0;
 	m_dateShared = 0;
-	// Sentinel "unknown": LoadFromFile fills this in from FT_LASTSEEN
-	// when present, else falls back to the file's own mtime
-	// (m_lastDateChanged) for migration -- so a known.met that
-	// predates this tag gets a useful aging signal on first save
-	// after upgrade rather than every record looking "fresh now"
-	// for the next TTL window. Fresh hashes (CHashingTask) bump
-	// this in CKnownFileList::Append's "newly added" branch.
+	// Sentinel "unknown": LoadFromFile fills this in from FT_LASTSEEN when
+	// present, else falls back to the file's own mtime for migration -- so a
+	// known.met that predates this tag gets a useful aging signal on the first
+	// save after upgrade rather than every record looking "fresh now" for the
+	// next TTL window. Fresh hashes bump this in CKnownFileList::Append.
 	m_lastSeen = 0;
 	m_bAutoUpPriority = thePrefs::GetNewAutoUp();
 	m_iUpPriority = (m_bAutoUpPriority) ? PR_HIGH : PR_NORMAL;
@@ -500,54 +490,18 @@ void CKnownFile::SetFileSize(uint64 nFileSize)
 	m_pAICHHashSet->SetFileSize(nFileSize);
 #endif
 
-	// Examples of parthashs, hashsets and filehashs for different filesizes
-	// according the ed2k protocol
-	//----------------------------------------------------------------------
+	// Parthashs, hashsets and filehashs for different filesizes, per the ed2k
+	// protocol. The point of the table is the boundary rule: a file whose size is
+	// an exact multiple of PARTSIZE carries one extra part hash, and that last
+	// one is always the MD4 of nothing --
+	// 31D6CFE0D16AE931B73C59D7E0C089C0, the *special part hash*.
 	//
-	// File size: 3 bytes
-	// File hash: 2D55E87D0E21F49B9AD25F98531F3724
-	// Nr. hashs: 0
-	//
-	//
-	// File size: 1*PARTSIZE
-	// File hash: A72CA8DF7F07154E217C236C89C17619
-	// Nr. hashs: 2
-	// Hash[  0]: 4891ED2E5C9C49F442145A3A5F608299
-	// Hash[  1]: 31D6CFE0D16AE931B73C59D7E0C089C0	*special part hash*
-	//
-	//
-	// File size: 1*PARTSIZE + 1 byte
-	// File hash: 2F620AE9D462CBB6A59FE8401D2B3D23
-	// Nr. hashs: 2
-	// Hash[  0]: 121795F0BEDE02DDC7C5426D0995F53F
-	// Hash[  1]: C329E527945B8FE75B3C5E8826755747
-	//
-	//
-	// File size: 2*PARTSIZE
-	// File hash: A54C5E562D5E03CA7D77961EB9A745A4
-	// Nr. hashs: 3
-	// Hash[  0]: B3F5CE2A06BF403BFB9BFFF68BDDC4D9
-	// Hash[  1]: 509AA30C9EA8FC136B1159DF2F35B8A9
-	// Hash[  2]: 31D6CFE0D16AE931B73C59D7E0C089C0	*special part hash*
-	//
-	//
-	// File size: 3*PARTSIZE
-	// File hash: 5E249B96F9A46A18FC2489B005BF2667
-	// Nr. hashs: 4
-	// Hash[  0]: 5319896A2ECAD43BF17E2E3575278E72
-	// Hash[  1]: D86EF157D5E49C5ED502EDC15BB5F82B
-	// Hash[  2]: 10F2D5B1FCB95C0840519C58D708480F
-	// Hash[  3]: 31D6CFE0D16AE931B73C59D7E0C089C0	*special part hash*
-	//
-	//
-	// File size: 3*PARTSIZE + 1 byte
-	// File hash: 797ED552F34380CAFF8C958207E40355
-	// Nr. hashs: 4
-	// Hash[  0]: FC7FD02CCD6987DCF1421F4C0AF94FB8
-	// Hash[  1]: 2FE466AF8A7C06DA3365317B75A5ACFE
-	// Hash[  2]: 873D3BF52629F7C1527C6E8E473C1C30
-	// Hash[  3]: BCE50BEE7877BB07BB6FDA56BFE142FB
-	//
+	//   3 bytes            -> 0 hashes
+	//   1*PARTSIZE         -> 2 hashes, second is the special one
+	//   1*PARTSIZE + 1     -> 2 hashes, both real
+	//   2*PARTSIZE         -> 3 hashes, third is the special one
+	//   3*PARTSIZE         -> 4 hashes, fourth is the special one
+	//   3*PARTSIZE + 1     -> 4 hashes, all real
 
 	// File size       Data parts      ED2K parts      ED2K part hashs
 	// ---------------------------------------------------------------
@@ -872,12 +826,10 @@ bool CKnownFile::LoadFromFile(const CFileDataIO *file)
 	bool ret2 = LoadHashsetFromFile(file, false);
 	bool ret3 = LoadTagsFromFile(file);
 	UpdatePartsInfo();
-	// Migration: a known.met written before FT_LASTSEEN was added
-	// leaves m_lastSeen at its Init() sentinel of 0. Fall back to
-	// the file's stored mtime as a proxy for "last known to be on
-	// disk at this name/date/size" -- accurate enough to drive the
-	// TTL prune on first save after upgrade rather than waiting a
-	// TTL window for all records to look "fresh now".
+	// Migration: a known.met written before FT_LASTSEEN was added leaves
+	// m_lastSeen at its Init() sentinel of 0. Fall back to the file's stored
+	// mtime as a proxy, accurate enough to drive the TTL prune on the first save
+	// after upgrade rather than waiting a TTL window for every record.
 	if (m_lastSeen == 0) {
 		m_lastSeen = (uint32)m_lastDateChanged;
 	}
@@ -907,15 +859,11 @@ bool CKnownFile::WriteToFile(CFileDataIO *file)
 	if (HasProperAICHHashSet()) {
 		tagcount++;
 	}
-	// Float meta tags are currently not written. All older eMule versions < 0.28a have
-	// a bug in the meta tag reading+writing code. To achieve maximum backward
-	// compatibility for met files with older eMule versions we just don't write float
-	// tags. This is OK, because we (eMule) do not use float tags. The only float tags
-	// we may have to handle is the '# Sent' tag from the Hybrid, which is pretty
-	// useless but may be received from us via the servers.
-	//
-	// The code for writing the float tags SHOULD BE ENABLED in SOME MONTHS (after most
-	// people are using the newer eMule versions which do not write broken float tags).
+	// Float meta tags are currently not written: all eMule versions < 0.28a have a
+	// bug in the meta-tag reading and writing code, and skipping them gives
+	// maximum backward compatibility. This costs nothing, because aMule does not
+	// use float tags -- the only one it may have to handle is the Hybrid's
+	// '# Sent' tag, which is useless but may arrive via the servers.
 	for (size_t j = 0; j < m_taglist.size(); ++j) {
 		if (m_taglist[j].IsInt() || m_taglist[j].IsStr()) {
 			++tagcount;

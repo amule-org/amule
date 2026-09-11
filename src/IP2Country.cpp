@@ -49,11 +49,9 @@ CIP2Country::CIP2Country(const wxString &configDir)
 	m_DataBaseName = "geoip.mmdb";
 	m_DataBasePath = configDir + m_DataBaseName;
 
-	// One-shot migration: the v2.x file lived at GeoLite2-Country.mmdb.
-	// If that legacy file exists and the new canonical geoip.mmdb does
-	// not, move it across so an upgrading user doesn't lose flag display
-	// silently. If both exist (e.g. they followed the new docs while
-	// keeping the old file around) leave each alone.
+	// One-shot migration: the v2.x file lived at GeoLite2-Country.mmdb. If that
+	// exists and the canonical geoip.mmdb does not, move it across so an upgrading
+	// user does not silently lose flag display; if both exist, leave each alone.
 	const wxString legacyPath = configDir + "GeoLite2-Country.mmdb";
 	if (CPath::FileExists(legacyPath) && !CPath::FileExists(m_DataBasePath)) {
 		if (wxRenameFile(legacyPath, m_DataBasePath)) {
@@ -80,11 +78,11 @@ void CIP2Country::Enable()
 
 	m_db->Open(m_DataBasePath);
 
-	// The Update() above is only reached when the file is *missing*, so a
-	// geoip.mmdb that exists but will not open (corrupt, or a legacy libGeoIP
-	// .dat) blocks its own replacement. Discard it and the next start takes the
-	// missing-file path. No Update() from here: DownloadFinished() calls
-	// Enable(), so retrying an unreadable file would loop forever.
+	// The Update() above is only reached when the file is MISSING, so a geoip.mmdb
+	// that exists but will not open (corrupt, or a legacy libGeoIP .dat) blocks its
+	// own replacement. Discard it and the next start takes the missing-file path.
+	// No Update() from here: DownloadFinished() calls Enable(), so retrying an
+	// unreadable file would loop forever.
 	if (!m_db->IsOpen()) {
 		AddLogLineC(CFormat(_("%s is not a readable MaxMindDB file - discarding it. "
 				      "A fresh copy will be downloaded on the next start, or now via "
@@ -94,12 +92,10 @@ void CIP2Country::Enable()
 		return;
 	}
 
-	// One-shot backfill: files written by builds older than the
-	// source-aware prefs have no LoadedSource recorded, which would
-	// leave the prefs status line attribution-less. Best-effort guess:
-	// attribute the existing file to the currently configured source
-	// so the status line shows *something* meaningful. The user can
-	// always click "Update now" to overwrite with the real source.
+	// One-shot backfill: files written by builds older than the source-aware prefs
+	// have no LoadedSource recorded, leaving the prefs status line without
+	// attribution. Best-effort guess: attribute the existing file to the configured
+	// source, which "Update now" overwrites with the real one.
 	if (thePrefs::GetGeoIPLoadedSource().IsEmpty()) {
 		thePrefs::SetGeoIPLoadedSource(thePrefs::GetGeoIPSource());
 	}
@@ -146,9 +142,9 @@ void CIP2Country::StartDownload(int monthOffset)
 	AddLogLineN(CFormat(_("Download new %s from %s")) % m_DataBaseName % url);
 	m_downloading = true;
 	// showDialog = m_showProgress: shown for a local monolithic "Update now",
-	// suppressed for a remote (amulegui/EC) trigger — EC carries no progress and
-	// on a monolithic-app-as-backend it would pop on the core (#440). No-op on a
-	// headless daemon. checkDownloadNewer stays true (honour If-Modified).
+	// suppressed for a remote trigger, where EC carries no progress and on a
+	// monolithic-app-as-backend the dialog would pop on the core. checkDownloadNewer
+	// stays true, honouring If-Modified.
 	CHTTPDownloadThread *downloader = new CHTTPDownloadThread(
 		url, m_DataBasePath + ".download", m_DataBasePath, HTTP_GeoIP, m_showProgress, true);
 	downloader->Create();
@@ -165,9 +161,8 @@ void CIP2Country::Disable()
 
 void CIP2Country::DownloadFinished(uint32 result)
 {
-	// Snapshot + clear the manual flag up front so any early return
-	// below doesn't leave it set for the next StartDownload (e.g. a
-	// subsequent auto-update would inherit the popup behaviour).
+	// Snapshot and clear the manual flag up front, so an early return below cannot
+	// leave it set for the next StartDownload.
 	const bool manual = m_ManualUpdate;
 	m_ManualUpdate = false;
 	// The download finished; the DB-IP early-month retry below re-arms this.
@@ -175,10 +170,8 @@ void CIP2Country::DownloadFinished(uint32 result)
 
 	if (result == HTTP_Success) {
 		Disable();
-		// download succeeded. Switch over to new database.
 		wxString newDat = m_DataBasePath + ".download";
 
-		// Try to unpack the file, might be an archive
 		wxScopedCharBuffer dataBaseName = m_DataBaseName.utf8_str();
 		const char *geoip_files[] = { dataBaseName, NULL };
 

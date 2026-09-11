@@ -95,11 +95,10 @@ bool CMuleCollection::OpenBuffer(const char *data, size_t len)
 		return false;
 	}
 
-	// Skip a UTF-8 byte-order mark. Text collections are hand-made lists of
-	// links, and a Windows editor saves them with a BOM by default; without
-	// this the first link fails its "starts with ed2k://|file|" check and a
-	// single-entry collection looks empty. A binary collection never starts
-	// with one, so this only ever affects the text form.
+	// Skip a UTF-8 byte-order mark. Text collections are hand-made lists of links,
+	// and a Windows editor saves them with a BOM by default; without this the first
+	// link fails its "starts with ed2k://|file|" check and a single-entry collection
+	// looks empty. A binary collection never starts with one.
 	if (len >= 3 && static_cast<unsigned char>(data[0]) == 0xEF &&
 		static_cast<unsigned char>(data[1]) == 0xBB && static_cast<unsigned char>(data[2]) == 0xBF) {
 		data += 3;
@@ -112,16 +111,14 @@ bool CMuleCollection::OpenBuffer(const char *data, size_t len)
 	const std::string buffer(data, len);
 	std::istringstream infile(buffer, std::ios::in | std::ios::binary);
 
-	// The two formats are told apart by the leading four bytes and only one
-	// parser ever runs. A binary collection starts with a version of 1 or 2;
-	// a text one starts with "ed2k://", which as a little-endian uint32 is
-	// 0x6b326465 and so can never be mistaken for a version.
+	// The two formats are told apart by the leading four bytes and only one parser
+	// ever runs: a binary collection starts with a version of 1 or 2, a text one
+	// with "ed2k://", which as a little-endian uint32 is 0x6b326465.
 	//
-	// Never try the text parser as a fallback for a binary file. The text
-	// parser scans for anything that looks like a link, so a hostile
-	// collection could smuggle one inside a filename field, have the binary
-	// parser correctly reject the entry, and still see it harvested from the
-	// raw bytes on the second pass.
+	// Never try the text parser as a fallback for a binary file. It scans for
+	// anything that looks like a link, so a hostile collection could smuggle one
+	// inside a filename field, have the binary parser correctly reject the entry,
+	// and still see it harvested from the raw bytes on the second pass.
 	std::vector<std::string> parsed;
 	const bool isBinary = (len >= sizeof(uint32_t)) && (LooksLikeBinary(data));
 

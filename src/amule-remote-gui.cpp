@@ -138,13 +138,11 @@ void CEConnectDlg::OnOK(wxCommandEvent &evt)
 wxDEFINE_EVENT(wxEVT_EC_INIT_DONE, wxEvent);
 
 // ----------------------------------------------------------------------
-// Reconnect-after-loss dialog (issue #444). Shown modally while amulegui
-// re-establishes a dropped EC connection: modal so the main window is
-// frozen (the user must not act on stale data or queue EC commands at a
-// dead socket), while the retry timer + socket events still pump in the
-// modal loop. The wxID_CANCEL "Abort and exit" button ends the modal
-// with wxID_CANCEL; a successful reconnect ends it with wxID_OK from
-// CamuleRemoteGuiApp::OnECConnection.
+// Reconnect-after-loss dialog. Shown modally while amulegui re-establishes a
+// dropped EC connection: modal so the main window is frozen (the user must not
+// act on stale data or queue EC commands at a dead socket), while the retry
+// timer and socket events still pump in the modal loop. The wxID_CANCEL button
+// ends the modal with wxID_CANCEL; a successful reconnect ends it with wxID_OK.
 // ----------------------------------------------------------------------
 class CReconnectDialog : public wxDialog
 {
@@ -218,28 +216,25 @@ int CamuleRemoteGuiApp::OnExit()
 
 	wxSocketBase::Shutdown(); // needed because we also called Initialize() manually
 
-	// Mirror CamuleApp::OnExit (#141): drain the pending-delete queue (where
+	// Mirror CamuleApp::OnExit: drain the pending-delete queue (where
 	// CamuleDlg::OnClose -> ShutDown parked amuledlg->Destroy()) so the frame's
 	// lazily-scheduled destructor runs, then tear down wxConfig to flush it.
 	// Otherwise the red-X + confirm path reaches here with the destroy still
-	// queued and anything that chain persists is lost (CMD+Q happens to drain
-	// naturally). The _Exit(0) below skips wx's own cleanup that normally does
-	// both, so we do it by hand here. Column widths and sort orders no longer
-	// depend on this: CMuleDataViewCtrl writes those eagerly.
+	// queued and anything that chain persists is lost. The _Exit(0) below skips
+	// wx's own cleanup that normally does both.
 	DeletePendingObjects();
 	delete wxConfigBase::Set(nullptr);
 
-	// Skip wx's static-destructor / module cleanup, exactly as the monolithic
-	// app does in CamuleGuiApp::OnExit (amule.cpp). wx's WebRequestModule
-	// teardown destroys the platform wxWebSession, whose dtor dereferences
-	// already-freed state and raise(SIGABRT)s on quit (amule-org/amule#18,
-	// PR #159). amulegui links wxWebRequest too, so it hits the identical
-	// crash. By this point our own cleanup (timer, sockets) has run; _Exit
-	// bypasses atexit + static destructors so the buggy wx dtor never runs.
-	// Remove once the upstream wx fix lands in a release we depend on.
+	// Skip wx's static-destructor / module cleanup, exactly as the monolithic app
+	// does in CamuleGuiApp::OnExit. wx's WebRequestModule teardown destroys the
+	// platform wxWebSession, whose dtor dereferences already-freed state and
+	// raise(SIGABRT)s on quit. amulegui links wxWebRequest too, so it hits the
+	// identical crash. By this point our own cleanup has run; _Exit bypasses
+	// atexit and static destructors so the buggy wx dtor never runs. Remove once
+	// the upstream wx fix lands in a release we depend on.
 	//
-	// _Exit also skips ~CamuleAppCommon, which would release the
-	// single-instance lock; drop it here so muleLockRGUI is unlinked.
+	// _Exit also skips ~CamuleAppCommon, which would release the single-instance
+	// lock; drop it here so muleLockRGUI is unlinked.
 	ReleaseSingleInstance();
 	std::_Exit(0);
 
@@ -258,8 +253,7 @@ void CamuleRemoteGuiApp::OnEndSession(wxCloseEvent &evt)
 {
 	// The Dock-Quit path can bypass OnExit, so run ShutDown (unless OnClose
 	// already did -- it nulls amuledlg) and then OnExit explicitly, so the
-	// list-control destructors + wxConfig flush run and column widths / sort
-	// orders persist. Mirrors CamuleGuiApp::OnEndSession (amule-gui.cpp).
+	// list-control destructors and wxConfig flush run and column widths persist.
 	if (amuledlg) {
 		ShutDown(evt);
 	}
@@ -270,11 +264,10 @@ void CamuleRemoteGuiApp::OnEndSession(wxCloseEvent &evt)
 #ifdef __WXMAC__
 void CamuleRemoteGuiApp::MacReopenApp()
 {
-	// Dock-icon click (and re-launch from Finder / Launchpad) while no
-	// window is visible. wxApp's default handler only de-iconizes; a frame
-	// hidden with Show(false) -- the close-button HideOnClose path and the
-	// minimize-to-tray path both end there -- is not a candidate, so
-	// without this amulegui simply never came back. Mirrors CamuleGuiApp.
+	// Dock-icon click (and re-launch from Finder / Launchpad) while no window is
+	// visible. wxApp's default handler only de-iconizes; a frame hidden with
+	// Show(false) -- both the close-button HideOnClose path and minimize-to-tray
+	// end there -- is not a candidate, so without this amulegui never came back.
 	if (amuledlg) {
 		amuledlg->RestoreMainWindow();
 	}
@@ -294,11 +287,9 @@ void CamuleRemoteGuiApp::MacOpenURL(const wxString &url)
 #endif
 
 #if wxUSE_ON_FATAL_EXCEPTION
-// Gracefully handle fatal exceptions and print backtrace if possible.
-// Mirrors CamuleApp::OnFatalException (amule.cpp) -- without this
-// override amulegui crashes produce no symbolicated amule frames,
-// which makes diagnosing GTK-callback-into-stale-widget bugs like
-// #692 a guessing game.
+// Gracefully handle fatal exceptions and print a backtrace if possible. Without
+// this override amulegui crashes produce no symbolicated amule frames, which
+// makes diagnosing GTK-callback-into-stale-widget bugs a guessing game.
 void CamuleRemoteGuiApp::OnFatalException()
 {
 	/* Print the backtrace */
@@ -323,9 +314,9 @@ void CamuleRemoteGuiApp::OnFatalException()
 void CamuleRemoteGuiApp::OnAssertFailure(
 	const wxChar *file, int line, const wxChar *func, const wxChar *cond, const wxChar *msg)
 {
-	// Unlike CamuleApp there is no app-state gate here: the remote GUI has
-	// no equivalent of IsRunning(), and its window is either up or the
-	// assert came from a thread that cannot show a dialog anyway.
+	// Unlike CamuleApp there is no app-state gate here: the remote GUI has no
+	// equivalent of IsRunning(), and its window is either up or the assert came
+	// from a thread that cannot show a dialog anyway.
 	if (ReportAssertFailure(file, line, func, cond, msg, wxThread::IsMain())) {
 		wxApp::OnAssertFailure(file, line, func, cond, msg);
 	}
@@ -335,28 +326,23 @@ void CamuleRemoteGuiApp::OnPollTimer(wxTimerEvent &)
 {
 	static int request_step = 0;
 
-	// Reply watchdog. EC has no application-level keepalive, and the daemon
-	// always answers, so requests outstanding with nothing coming back means
-	// the transport has gone quiet -- an SSH tunnel with no ServerAliveInterval,
-	// a NAT dropping an idle mapping, a proxy that stopped relaying. None of
-	// those close the socket: it stays ESTABLISHED with every queue empty and
-	// no error is ever raised, so neither OnLost nor OnError fires.
+	// Reply watchdog. EC has no application-level keepalive, and the daemon always
+	// answers, so requests outstanding with nothing coming back means the
+	// transport has gone quiet -- an SSH tunnel with no ServerAliveInterval, a
+	// NAT dropping an idle mapping, a proxy that stopped relaying. None of those
+	// close the socket: it stays ESTABLISHED with every queue empty and no error
+	// is raised, so neither OnLost nor OnError fires.
 	//
 	// Without this the failure is permanent AND silent. Once m_req_count passes
 	// m_req_fifo_thr the early-return below fires on every tick, so the client
 	// stops sending too -- and recovery would need a reply, which needs a
-	// request. The back-pressure brake becomes a deadlock the client can never
-	// leave, with a frozen UI and no message.
-	//
-	// Gated on the fifo rather than on the threshold so it trips on the real
-	// symptom (nothing answering) rather than waiting for the queue to fill.
+	// request. Gated on the fifo rather than on the threshold so it trips on the
+	// real symptom rather than waiting for the queue to fill.
 	if (m_connect->GetReqFifoSize() > 0 &&
 		m_connect->MillisecondsSinceLastReply() > EC_REPLY_TIMEOUT_MS) {
 		// Untranslated and debug-level on purpose: the user-facing messaging
-		// already comes from the path this drops into -- OnLost posts
-		// "Connection failure" and BeginReconnect announces the retry, both
-		// long since translated. Adding a new msgid here would have bought
-		// translators work for something nobody but a developer reads.
+		// already comes from the path this drops into -- OnLost posts "Connection
+		// failure" and BeginReconnect announces the retry, both long translated.
 		AddDebugLogLineN(logEC,
 			CFormat(wxT("EC reply watchdog: no reply for %u ms with %u requests "
 				    "pending -- treating the connection as dead")) %
@@ -384,13 +370,10 @@ void CamuleRemoteGuiApp::OnPollTimer(wxTimerEvent &)
 			amuledlg->m_serverwnd->IsShown()) {
 			// update downloads, shared files and servers
 			knownfiles->DoRequery(EC_OP_GET_UPDATE, EC_TAG_KNOWNFILE);
-			// Server-message log mirror: pull the cumulative
-			// server_msg buffer while the Network tab is up so the
-			// "Server Info" sub-panel reaches feature parity with
-			// the monolithic build. ed2k server messages are bursty
-			// (one-off on connect, the occasional ID-change notice,
-			// disconnect) so the natural cadence of the page step is
-			// plenty.
+			// Server-message log mirror: pull the cumulative server_msg buffer
+			// while the Network tab is up so the "Server Info" sub-panel reaches
+			// parity with the monolithic build. ed2k server messages are bursty, so
+			// the natural cadence of the page step is plenty.
 			if (amuledlg->m_serverwnd->IsShown()) {
 				CECPacket srvinfo_req(EC_OP_GET_SERVERINFO);
 				m_connect->SendRequest(&m_serverinfo_handler, &srvinfo_req);
@@ -399,69 +382,52 @@ void CamuleRemoteGuiApp::OnPollTimer(wxTimerEvent &)
 			// update both downloads and shared files
 			knownfiles->DoRequery(EC_OP_GET_UPDATE, EC_TAG_KNOWNFILE);
 		} else if (amuledlg->m_clientswnd->IsShown()) {
-			// Same request, for the peers rather than the files: the
-			// EC_TAG_CLIENT tags the clients list lives on ride along
-			// in this reply (CKnownFilesRem::ProcessUpdate) and are
-			// sent by nothing else. Without this the page shows
-			// whatever the peers looked like when the user left the
-			// last tab that did ask, and never moves again.
+			// Same request, for the peers rather than the files: the EC_TAG_CLIENT
+			// tags the clients list lives on ride along in this reply and are sent by
+			// nothing else. Without this the page shows whatever the peers looked
+			// like when the user left the last tab that did ask.
 			knownfiles->DoRequery(EC_OP_GET_UPDATE, EC_TAG_KNOWNFILE);
 		} else if (amuledlg->m_searchwnd->IsShown()) {
-			// Reachability fix (#641): ask what searches the daemon
-			// currently holds -- independent of m_curr_search, which only
-			// ever reflects a search THIS client itself started -- so a
-			// search opened by another client, or one day restored from
-			// disk, gets a tab created here (CSearchListRem::HandlePacket).
-			// Search entries are near-static (id/name/kind barely change),
-			// so unlike the results union poll below this isn't asked every
-			// tick: once on (re)connect, and again only when a result turns
-			// up bearing a search ID with no tab yet (CreateItem sets
-			// m_needSearchListRequery) -- the daemon-side registry this
-			// reads never changes without a result also arriving for it.
-			// RequestSearchList (not DoRequery) on purpose: HandlePacket's
+			// Ask what searches the daemon currently holds -- independent of
+			// m_curr_search, which only ever reflects a search THIS client started --
+			// so a search opened by another client gets a tab created here.
+			//
+			// Search entries are near-static, so unlike the results union poll below
+			// this is not asked every tick: once on (re)connect, and again only when
+			// a result turns up bearing a search ID with no tab yet.
+			//
+			// RequestSearchList, not DoRequery, on purpose: HandlePacket's
 			// EC_OP_SEARCH_LIST branch never reaches the base class's
-			// STATUS_REQ_SENT -> IDLE transition, so going through
-			// DoRequery would wedge this container's request state machine
-			// forever and silently drop every later EC_OP_SEARCH_RESULTS
-			// poll (got3nks, PR #680 review).
+			// STATUS_REQ_SENT -> IDLE transition, so DoRequery would wedge this
+			// container's request state machine and silently drop every later poll.
 			if (searchlist->m_needSearchListRequery) {
 				searchlist->RequestSearchList();
 				searchlist->m_needSearchListRequery = false;
 			}
-			// The union poll below already returns every active search's
-			// results regardless of m_curr_search (Get_EC_Response_Search_
-			// Results_Union iterates the daemon's own registry) -- the old
-			// m_curr_search-only gate just meant a client that never
-			// started a search of its own never asked at all, even once a
-			// tab existed for one it learned about above.
+			// The union poll below already returns every active search's results
+			// regardless of m_curr_search -- the old gate just meant a client that
+			// never started a search of its own never asked at all, even once a tab
+			// existed for one it learned about above.
 			searchlist->DoRequery(EC_OP_SEARCH_RESULTS, EC_TAG_SEARCHFILE);
 		}
-		// Stats polling is always on, even when the Statistics dialog
-		// isn't the active tab. statgraphs->HandlePacket() also feeds
-		// the Kad node-count graph on the Network -> Kad sub-tab via
-		// m_kademliawnd->UpdateGraph(); gating on m_statisticswnd left
-		// the Kad graph empty whenever the user wasn't sitting on
-		// Statistics, and produced a visible gap in the Statistics
-		// graph itself across any tab switch. Both requests are cheap
-		// deltas: the graph sends m_lastTimestamp and the daemon
-		// returns only points newer than that (or EC_OP_FAILED "No
-		// points for graph."); the tree request honors
-		// thePrefs::GetStatsInterval().
+		// Stats polling is always on, even when the Statistics dialog is not the
+		// active tab. statgraphs->HandlePacket() also feeds the Kad node-count
+		// graph on the Network -> Kad sub-tab, so gating on m_statisticswnd left
+		// that graph empty whenever the user was elsewhere. Both requests are
+		// cheap deltas: the graph sends m_lastTimestamp and the daemon returns
+		// only newer points; the tree request honours GetStatsInterval().
 		{
 			const uint32 sStatsUpdate = thePrefs::GetStatsInterval();
 			const uint32 msCur = theStats::GetUptimeMillis();
-			// Unsigned throughout on purpose. The subtraction is modular, so
-			// it yields the true elapsed time even across the point where a
-			// 32-bit millisecond counter wraps. Casting it to int, as this
-			// did, threw that away: a difference above INT_MAX reads as
-			// negative and the comparison is false, so the tree would stop
-			// refreshing rather than refresh late.
+			// Unsigned throughout on purpose. The subtraction is modular, so it
+			// yields the true elapsed time even across the point where a 32-bit
+			// millisecond counter wraps. Casting it to int threw that away: a
+			// difference above INT_MAX reads as negative, so the tree stopped
+			// refreshing rather than refreshing late.
 			//
-			// The elapsed test also cannot be the whole condition: on the
-			// first poll of a connection nothing has elapsed, so it is false
-			// and the tree stays empty for a full interval (30 s by default)
-			// before its first fetch. m_statsTreePolled makes that first
-			// fetch unconditional; the interval governs every one after it.
+			// The elapsed test cannot be the whole condition either: on the first
+			// poll nothing has elapsed, so the tree would stay empty for a full
+			// interval. m_statsTreePolled makes that first fetch unconditional.
 			const bool dueByInterval = (msCur - m_msPrevStatsTree) > sStatsUpdate * 1000;
 			if ((sStatsUpdate > 0) && (!m_statsTreePolled || dueByInterval)) {
 				m_statsTreePolled = true;
@@ -470,14 +436,12 @@ void CamuleRemoteGuiApp::OnPollTimer(wxTimerEvent &)
 			}
 			statgraphs->DoRequery();
 		}
-		// Chat sessions + every message newer than our cursor, in one
-		// roundtrip. Poll unconditionally — like stats above, and unlike
-		// the per-tab data — so a message that arrives while the user is
-		// on another tab still triggers the new-message blink. Cheap: an
-		// idle daemon answers with the session list and no message
-		// children. Gated on the capability; a daemon that never echoes
-		// EC_TAG_CAN_CHAT does not know these opcodes, and sending one
-		// asserts on the daemon before it can answer EC_OP_FAILED.
+		// Chat sessions plus every message newer than our cursor, in one
+		// roundtrip. Polled unconditionally -- like stats above, unlike the
+		// per-tab data -- so a message arriving while the user is on another tab
+		// still triggers the new-message blink; an idle daemon answers with the
+		// session list and no message children. Gated on the capability: a daemon
+		// that never echoes EC_TAG_CAN_CHAT asserts on these opcodes.
 		if (m_connect->ServerSupportsChatSessions()) {
 			CECPacket chat_req(EC_OP_GET_CHAT_SESSIONS);
 			if (m_chatmsg_handler.Cursor()) {
@@ -504,17 +468,16 @@ void CamuleRemoteGuiApp::OnPollTimer(wxTimerEvent &)
 
 void CamuleRemoteGuiApp::OnFinishedHTTPDownload(CMuleInternalEvent &WXUNUSED(event))
 {
-	// amulegui has no local GeoIP resolver — country codes arrive over EC from
-	// the daemon (#439 / #440) — so it never starts a GeoIP download and there
-	// is nothing to finish here.
+	// amulegui has no local GeoIP resolver -- country codes arrive over EC from
+	// the daemon -- so it never starts a GeoIP download.
 }
 
 void CamuleRemoteGuiApp::ShutDown(wxCloseEvent &WXUNUSED(evt))
 {
 	// A modal dialog (comments/ratings, file details, ...) runs its own event
-	// loop, and an EC drop is dispatched from whichever loop is current — so a
-	// shutdown can start with one of those dialogs still on the stack. Unwind
-	// to the outer loop first; Quit() resumes the teardown from there.
+	// loop, and an EC drop is dispatched from whichever loop is current -- so a
+	// shutdown can start with one of those dialogs still on the stack. Unwind to
+	// the outer loop first; Quit() resumes the teardown from there.
 	if (DeferShutDownToOuterLoop([this] { Quit(); })) {
 		return;
 	}
@@ -567,30 +530,23 @@ bool CamuleRemoteGuiApp::OnInit()
 	StartTickTimer();
 	amuledlg = NULL;
 	connect_timeout_timer = NULL;
-	// ShutDown() unconditionally deletes these, but Startup() — where they
-	// are allocated — only runs after a successful EC connect. Null them so
-	// a connect-timeout teardown doesn't delete an indeterminate pointer.
+	// ShutDown() unconditionally deletes these, but Startup() -- where they are
+	// allocated -- only runs after a successful EC connect. Null them so a
+	// connect-timeout teardown does not delete an indeterminate pointer.
 	stattree = NULL;
 	m_allUploadingKnownFile = NULL;
 
 #if defined(__WXGTK__) && !defined(__APPLE__)
-	// Set the GTK program name to the canonical app id. On Wayland,
-	// GTK derives wl_app_id (xdg_toplevel.set_app_id) from
-	// g_get_prgname(); compositors match wl_app_id against the
-	// .desktop filename to bind windows to launcher icons. Without
-	// this the binding falls back to argv[0], which differs across
-	// packaging formats (AppImage's argv[0] is "aMuleGUI", distro
-	// installs use "amulegui", Flatpak renames the .desktop entirely).
-	// On X11 the same value also feeds into WM_CLASS, matching
-	// StartupWMClass=org.amule.aMule.gui in the .desktop file. Must run
-	// before any GTK window is created — same fix the monolithic amule
-	// has in CamuleApp::OnInit; amulegui shipped without it, so on
-	// GNOME / wlroots the taskbar icon never bound to the launcher
-	// and showed the generic fallback. (#562 follow-up.)
-	// Skipped on macOS even under wxGTK (MacPorts): no Wayland or
-	// .desktop binding exists, and app identity is set via Info.plist
-	// in the .app bundle. Dropping the call lets that build skip the
-	// glib2 dep entirely (#641).
+	// Set the GTK program name to the canonical app id. On Wayland, GTK derives
+	// wl_app_id from g_get_prgname(), and compositors match wl_app_id against
+	// the .desktop filename to bind windows to launcher icons. Without this the
+	// binding falls back to argv[0], which differs across packaging formats. On
+	// X11 the same value feeds WM_CLASS, matching StartupWMClass in the
+	// .desktop file. Must run before any GTK window is created.
+	//
+	// Skipped on macOS even under wxGTK: no Wayland or .desktop binding exists,
+	// and app identity is set via Info.plist. Dropping the call lets that build
+	// skip the glib2 dependency entirely.
 	g_set_prgname("org.amule.aMule.gui");
 #endif
 
@@ -599,9 +555,9 @@ bool CamuleRemoteGuiApp::OnInit()
 	// the providers down at app exit.
 	wxArtProvider::Push(new CamuleArtProvider());
 
-	// Must happen before any window exists; the connect dialog below is the
-	// first one amulegui creates. Without this amulegui stayed light on
-	// Windows while the monolithic amule, which has always asked, went dark.
+	// Must happen before any window exists; the connect dialog below is the first
+	// one amulegui creates. Without this amulegui stayed light on Windows while
+	// the monolithic amule, which has always asked, went dark.
 	FollowSystemAppearance();
 
 	// Get theApp
@@ -634,12 +590,12 @@ bool CamuleRemoteGuiApp::OnInit()
 	wxConfig::Get()->Read("/EC/ZLIB", &enableZLIB, 1);
 	m_connect->SetCapabilities(enableZLIB != 0, true, false); // ZLIB, UTF8 numbers, notification
 	// amulegui addresses searches by daemon-allocated ID (per-tab, several at
-	// once); advertise the multi-search capability. An old daemon won't echo
-	// it and amulegui stays single-search (ServerSupportsMultiSearch()).
+	// once); advertise the multi-search capability. An old daemon will not echo
+	// it and amulegui stays single-search.
 	m_connect->SetCanMultiSearch(true);
-	// amulegui shows incoming friend/chat messages read-only; ask the daemon
-	// to relay them (polled via EC_OP_GET_CHAT_MESSAGES). An old daemon won't
-	// echo the capability and amulegui simply never polls (ServerSupportsChatSessions()).
+	// amulegui shows incoming friend/chat messages read-only; ask the daemon to
+	// relay them. An old daemon will not echo the capability and amulegui simply
+	// never polls.
 	m_connect->SetCanChatSessions(true);
 	// The ForceZLIB override is read from the connection dialog
 	// (see ShowConnectionDialog) so the user's checkbox choice in this
@@ -649,19 +605,16 @@ bool CamuleRemoteGuiApp::OnInit()
 	InitLocale(m_locale, StrLang2wx(thePrefs::GetLanguageID()));
 
 	if (ShowConnectionDialog()) {
-		// The watchdog timer is armed inside ShowConnectionDialog right
-		// before each ConnectToCore call — the retry loop re-arms it on
-		// every attempt, so OnInit doesn't need to touch it here.
+		// The watchdog timer is armed inside ShowConnectionDialog right before
+		// each ConnectToCore call -- the retry loop re-arms it on every attempt.
 		AddLogLineNS(_("Going to event loop..."));
 		return true;
 	}
 
-	// User cancelled (or ShowConnectionDialog failed before reaching the
-	// connect step). Tear down the partial init so the Asio thread pool,
-	// poll timer and remote-connect socket don't leak — wx will never
-	// call ShutDown() / OnExit() because the main loop isn't entered when
-	// OnInit() returns false, so we have to unwind manually here. Without
-	// this, wx reports "4 threads were not terminated by the application".
+	// User cancelled, or ShowConnectionDialog failed before reaching the connect
+	// step. Tear down the partial init so the Asio thread pool, poll timer and
+	// remote-connect socket do not leak: wx never calls ShutDown() / OnExit()
+	// because the main loop is not entered when OnInit() returns false.
 	if (m_AsioService) {
 		m_AsioService->Stop();
 		delete m_AsioService;
@@ -685,11 +638,9 @@ bool CamuleRemoteGuiApp::CryptoAvailable() const
 
 bool CamuleRemoteGuiApp::ShowConnectionDialog()
 {
-	// The dialog is kept alive across retry attempts so the values the
-	// user typed (host / port / password / Force-ZLIB) survive a wrong
-	// guess — they only need to fix the field that was wrong instead of
-	// re-typing everything. Destroyed in Startup() on success or below
-	// when the user cancels.
+	// The dialog is kept alive across retry attempts so the values the user typed
+	// survive a wrong guess -- they only need to fix the field that was wrong.
+	// Destroyed in Startup() on success, or below when the user cancels.
 	if (!dialog) {
 		dialog = new CEConnectDlg;
 	}
@@ -708,22 +659,19 @@ bool CamuleRemoteGuiApp::ShowConnectionDialog()
 		}
 
 		AddLogLineNS(_("Connecting..."));
-		// Watchdog on the EC connect. When the host is unreachable the
-		// TCP SYN can silently time out over several minutes while the
-		// main loop is running with no visible window, which the OS
-		// reports as "not responding". Fire a shorter timeout so we
-		// can show an error and re-prompt instead. Re-armed on every
-		// retry attempt so the user gets the same 15s budget each time.
+		// Watchdog on the EC connect. When the host is unreachable the TCP SYN can
+		// silently time out over several minutes while the main loop runs with no
+		// visible window, which the OS reports as "not responding". Fire a shorter
+		// timeout instead, re-armed on every retry so each gets the same budget.
 		delete connect_timeout_timer;
 		connect_timeout_timer = new wxTimer(this, ID_REMOTE_CONNECT_TIMEOUT_TIMER);
 		connect_timeout_timer->StartOnce(15000);
 
 		// Apply the dialog's checkbox states to the EC client before each
-		// ConnectToCore attempt (re-applied per retry so the user can
-		// toggle them between attempts if they need to). ResetEcConnect()
-		// recreates m_connect on a failed handshake and deliberately does
-		// not re-apply these two: the dialog owns them and sets them again
-		// on the fresh object right here.
+		// ConnectToCore attempt, re-applied per retry so the user can toggle them
+		// between attempts. ResetEcConnect() recreates m_connect on a failed
+		// handshake and deliberately does not re-apply these two: the dialog owns
+		// them and sets them again on the fresh object right here.
 		m_connect->SetForceZlib(dialog->ForceZlib());
 		m_connect->SetCanAEAD(dialog->Encryption());
 		if (m_connect->ConnectToCore(
@@ -733,10 +681,9 @@ bool CamuleRemoteGuiApp::ShowConnectionDialog()
 			return true;
 		}
 
-		// Sync failure (DNS / immediate connect-refused). The async
-		// path won't fire — cancel the watchdog ourselves, show the
-		// error, recreate the EC client so its half-baked socket
-		// state is gone, and loop back to the dialog.
+		// Sync failure (DNS / immediate connect-refused). The async path will not
+		// fire -- cancel the watchdog ourselves, show the error, recreate the EC
+		// client so its half-baked socket state is gone, and loop back.
 		connect_timeout_timer->Stop();
 		delete connect_timeout_timer;
 		connect_timeout_timer = NULL;
@@ -749,12 +696,11 @@ bool CamuleRemoteGuiApp::ShowConnectionDialog()
 
 void CamuleRemoteGuiApp::ResetEcConnect()
 {
-	// Tear down the busted EC client and recreate a fresh one. The
-	// CRemoteConnect's socket / auth state isn't safe to reuse after
-	// a failed handshake. glob_prefs holds a reference to m_connect
-	// so it's reborn alongside. Both objects are only fully wired
-	// into the rest of the app by Startup(), which doesn't run until
-	// a successful connect — recreating them here is safe.
+	// Tear down the busted EC client and recreate a fresh one: the
+	// CRemoteConnect's socket / auth state is not safe to reuse after a failed
+	// handshake. glob_prefs holds a reference to m_connect so it is reborn
+	// alongside. Both are only fully wired in by Startup(), which does not run
+	// until a successful connect, so recreating them here is safe.
 	delete glob_prefs;
 	glob_prefs = NULL;
 	if (m_connect) {
@@ -804,13 +750,10 @@ void CamuleRemoteGuiApp::OnECConnection(wxEvent &event)
 		// dialog stays up with the attempt count and an Abort button.
 		ScheduleNextReconnect();
 	} else if (dialog) {
-		// Connect failed during the initial attempt or a previous
-		// retry (dialog is still alive — it's only destroyed in
-		// Startup() after a successful connect). Show the error,
-		// reset the EC client, and reopen the dialog with the
-		// previous values still in place so the user can fix the
-		// wrong field and try again. If the user cancels the retry,
-		// then we shut down.
+		// Connect failed during the initial attempt or a previous retry -- the
+		// dialog is still alive, it is only destroyed in Startup() after success.
+		// Show the error, reset the EC client, and reopen the dialog with the
+		// previous values in place. If the user cancels the retry, shut down.
 		wxMessageBox((CFormat(_("Connection Failed. Unable to connect to %s:%d\n")) % dialog->Host() %
 				     dialog->Port()) +
 				     reply,
@@ -822,9 +765,9 @@ void CamuleRemoteGuiApp::OnECConnection(wxEvent &event)
 			Quit();
 		}
 	} else {
-		// Connection lost after startup (e.g. the machine slept and the
-		// EC socket dropped). Don't quit — freeze the UI and reconnect in
-		// the background until we're back or the user aborts (issue #444).
+		// Connection lost after startup (the machine slept and the EC socket
+		// dropped, say). Do not quit -- freeze the UI and reconnect in the
+		// background until we are back or the user aborts.
 		BeginReconnect();
 	}
 }
@@ -835,9 +778,9 @@ void CamuleRemoteGuiApp::OnConnectTimeout(wxTimerEvent &)
 	connect_timeout_timer = NULL;
 
 	if (m_reconnecting) {
-		// This reconnect attempt hung (host unreachable, SYN black-holed).
-		// Treat it as a failed attempt and space out the next one; the
-		// modal reconnect dialog stays up with its Abort button (#444).
+		// This reconnect attempt hung (host unreachable, SYN black-holed). Treat it
+		// as a failed attempt and space out the next one; the modal reconnect
+		// dialog stays up with its Abort button.
 		AddLogLineCS(_("Reconnect attempt timed out; retrying."));
 		ScheduleNextReconnect();
 		return;
@@ -890,19 +833,17 @@ void CamuleRemoteGuiApp::BeginReconnect()
 	AttemptReconnect();
 
 	// The dialog earns its intrusion by explaining a frozen window. With the
-	// window minimised or hidden to tray there is nothing on screen to
-	// explain, and a modal appearing over whatever the user is actually doing
-	// is worse than silence (issue #806). Retry quietly instead; the log still
-	// carries every attempt, and OnMainWindowRestored() puts the dialog up if
-	// the user comes back while this is still going.
+	// window minimised or hidden to tray there is nothing on screen to explain,
+	// and a modal appearing over whatever the user is actually doing is worse
+	// than silence. Retry quietly instead; the log still carries every attempt,
+	// and OnMainWindowRestored() puts the dialog up if the user comes back.
 	//
 	// "Visible" has to mean both halves: minimized to Dock/taskbar keeps
 	// IsShown() true with nothing on screen, and hidden to tray leaves the
-	// iconized bit clear while the frame is gone. CamuleDlg tracks the
-	// iconized half from wxIconizeEvent rather than wxFrame::IsIconized(),
-	// which lies on wxGTK mid-transition. Compositors that never report
-	// iconize at all (Wayland xdg-shell has no such notification) keep the
-	// old behaviour for the minimize case.
+	// iconized bit clear while the frame is gone. CamuleDlg tracks the iconized
+	// half from wxIconizeEvent rather than wxFrame::IsIconized(), which lies on
+	// wxGTK mid-transition. Compositors that never report iconize at all keep
+	// the old behaviour for the minimize case.
 	if (amuledlg && !amuledlg->IsVisibleToUser()) {
 		return;
 	}
@@ -917,18 +858,17 @@ void CamuleRemoteGuiApp::ShowReconnectDialog()
 	}
 
 	m_reconnectDlg = new CReconnectDialog(amuledlg, CFormat(wxT("%s:%d")) % m_ecHost % m_ecPort);
-	// The retry loop has been running without us, so open on what it is
-	// actually doing rather than on "attempt 1": mid-countdown after a failed
-	// attempt, or in the middle of one.
+	// The retry loop has been running without us, so open on what it is actually
+	// doing rather than on "attempt 1": mid-countdown after a failed attempt, or
+	// in the middle of one.
 	if (m_reconnectCountdown > 0) {
 		m_reconnectDlg->SetCountdown(m_reconnectCountdown);
 	} else {
 		m_reconnectDlg->SetAttempt(m_reconnectAttempt);
 	}
 
-	// Run it modally: the retry timer and OnECConnection pump inside
-	// ShowModal(). A success calls EndModal(wxID_OK); the Abort button ends it
-	// with wxID_CANCEL.
+	// Run it modally: the retry timer and OnECConnection pump inside ShowModal().
+	// A success calls EndModal(wxID_OK); the Abort button ends it with wxID_CANCEL.
 	const int result = m_reconnectDlg->ShowModal();
 	m_reconnectDlg->Destroy();
 	m_reconnectDlg = nullptr;
@@ -972,20 +912,17 @@ void CamuleRemoteGuiApp::FinishReconnect(int result)
 		// the version rather than leaving the pre-drop one on screen.
 		UpdateCoreVersionIndicator();
 
-		// Everything we hold is keyed by ECID, and an ECID only means
-		// something within one daemon process: CECID hands them out from a
-		// counter that restarts with the process, so a restarted daemon
-		// reissues the same numbers in whatever order it loads files this
-		// time. Reconciling in place across that pairs our objects with
-		// whatever now happens to share their number.
+		// Everything we hold is keyed by ECID, and an ECID only means something
+		// within one daemon process: CECID hands them out from a counter that
+		// restarts with the process, so a restarted daemon reissues the same
+		// numbers in whatever order it loads files this time. Reconciling in place
+		// across that pairs our objects with whatever now shares their number.
 		//
-		// EC_TAG_SESSION_ID says which process we're talking to. Same value
-		// means the socket dropped but the daemon lived (a sleeping laptop,
-		// a dead tunnel), so the in-place reconcile below is right and keeps
-		// scroll and selection. Anything else -- a different value, or none
-		// at all because the daemon predates the tag -- means we cannot
-		// trust a single ID we hold, and starting over is the only correct
-		// answer even though it costs the user their scroll position.
+		// EC_TAG_SESSION_ID says which process we are talking to. The same value
+		// means the socket dropped but the daemon lived, so the in-place reconcile
+		// below is right and keeps scroll and selection. Anything else -- a
+		// different value, or none at all -- means we cannot trust a single ID we
+		// hold, and starting over is the only correct answer.
 		const uint64 sessionId = m_connect ? m_connect->GetServerSessionId() : 0;
 		const bool sameSession = sessionId != 0 && sessionId == m_ecSessionId;
 		m_ecSessionId = sessionId;
@@ -1005,21 +942,16 @@ void CamuleRemoteGuiApp::FinishReconnect(int result)
 				friendlist->ResetForNewSession();
 			}
 			if (searchlist) {
-				// Searches survive a restart -- amuled persists them and
-				// re-registers each restored one, so the daemon hands the
-				// same results back under their original search ids. What
-				// does NOT survive is the per-result ECID: the counter
-				// restarts with the process, so every restored result
-				// arrives as an id this client has never seen and is added
+				// Searches survive a restart -- amuled persists them and re-registers
+				// each restored one, so the daemon hands the same results back under
+				// their original search ids. What does NOT survive is the per-result
+				// ECID: the counter restarts with the process, so every restored
+				// result arrives as an id this client has never seen and is added
 				// alongside the copy it already holds.
 				//
-				// Nothing reaps the stale copy on its own. The search list
-				// deletes only on an explicit EC_TAG_FILE_REMOVED tombstone
-				// (it opted out of the base class's absence sweep so an idle
-				// search costs no traffic), and a daemon that has just
-				// started never emits a tombstone for an ECID it never knew
-				// about. Both copies therefore stay -- issue #1101, where
-				// every result appears twice after a restart.
+				// Nothing reaps the stale copy on its own: the search list deletes only
+				// on an explicit EC_TAG_FILE_REMOVED tombstone, and a daemon that has
+				// just started never emits one for an ECID it never knew about.
 				searchlist->ResetForNewSession();
 				if (amuledlg && amuledlg->m_searchwnd) {
 					// Frees every result, so the tabs must drop their rows
@@ -1028,14 +960,13 @@ void CamuleRemoteGuiApp::FinishReconnect(int result)
 				}
 			}
 		} else if (knownfiles) {
-			// Same daemon: the next full poll reconciles every list against
-			// the fresh snapshot in place (update / add / prune) — no wipe,
-			// so scroll and selection survive.
+			// Same daemon: the next full poll reconciles every list against the fresh
+			// snapshot in place (update / add / prune), so scroll and selection survive.
 			knownfiles->ArmReconnectReconcile();
 		}
-		// The tree on screen belongs to the connection that just ended;
-		// fetch a fresh one on the next poll rather than after an interval
-		// measured against the old one.
+		// The tree on screen belongs to the connection that just ended; fetch a
+		// fresh one on the next poll rather than after an interval measured
+		// against the old one.
 		ResetStatsTreePoll();
 		if (poll_timer) {
 			poll_timer->Start(EC_POLL_INTERVAL_MS);
@@ -1056,9 +987,9 @@ void CamuleRemoteGuiApp::OnMainWindowRestored()
 		return;
 	}
 	// Not straight from here: this runs inside the iconize event handler, and
-	// ShowReconnectDialog() ends in either a nested modal loop or Quit(). Let
-	// the handler return first (#738 is what tearing the main window down from
-	// a nested loop costs).
+	// ShowReconnectDialog() ends in either a nested modal loop or Quit(). Let the
+	// handler return first -- tearing the main window down from a nested loop is
+	// what a crash there costs.
 	CallAfter(&CamuleRemoteGuiApp::ShowReconnectDialog);
 }
 
@@ -1073,28 +1004,26 @@ void CamuleRemoteGuiApp::AttemptReconnect()
 		     m_ecPort);
 
 	// Reset ALL layers of the reused connection: the pending-request FIFO
-	// (orphaned handlers from requests the dropped socket left unanswered
-	// would otherwise mis-pair with the new session's replies — a stats reply
-	// routed to the file-list handler wipes the download / shared lists, #444),
-	// the EC packet-reassembly state (a stale mid-packet read left over from
-	// the drop would otherwise misparse the new session's first bytes and the
-	// login would fail) and a fresh asio socket on the SAME CRemoteConnect
-	// object (keeps every remote container's m_conn pointer valid). Locally
-	// chosen capability flags persist deliberately -- SetCapabilities is not
-	// called again here, and what this end can do has not changed -- so
-	// ConnectToCore re-runs the login handshake as on first connect. Flags
-	// agreed with the previous daemon are a different matter: the next one may
-	// not support them, so they are dropped here rather than inside
-	// ResetProtocolState, which other CECSocket users share.
+	// (orphaned handlers from requests the dropped socket left unanswered would
+	// otherwise mis-pair with the new session's replies -- a stats reply routed
+	// to the file-list handler wipes the download and shared lists), the EC
+	// packet-reassembly state (a stale mid-packet read would misparse the new
+	// session's first bytes and the login would fail), and a fresh asio socket
+	// on the SAME CRemoteConnect object, which keeps every remote container's
+	// m_conn pointer valid.
+	//
+	// Locally chosen capability flags persist deliberately -- what this end can
+	// do has not changed. Flags agreed with the previous daemon are a different
+	// matter: the next one may not support them, so they are dropped here
+	// rather than inside ResetProtocolState, which other CECSocket users share.
 	m_connect->DiscardRequestQueue();
 	m_connect->ResetProtocolState();
 	m_connect->ClearPeerNegotiatedFlags();
 	m_connect->ResetForReconnect();
 
 	// Per-attempt watchdog so an attempt that hangs (host unreachable, SYN
-	// black-holed) doesn't stall the retry loop; OnConnectTimeout treats a
-	// fire as a failed attempt. Cancelled by OnECConnection when the attempt
-	// resolves either way.
+	// black-holed) does not stall the retry loop; OnConnectTimeout treats a fire
+	// as a failed attempt. Cancelled by OnECConnection when it resolves.
 	delete connect_timeout_timer;
 	connect_timeout_timer = new wxTimer(this, ID_REMOTE_CONNECT_TIMEOUT_TIMER);
 	connect_timeout_timer->StartOnce(15000);
@@ -1112,8 +1041,8 @@ void CamuleRemoteGuiApp::AttemptReconnect()
 void CamuleRemoteGuiApp::ScheduleNextReconnect()
 {
 	// Drop any pending per-attempt watchdog, then count down 5 s to the next
-	// attempt via a repeating 1 s tick that updates the dialog, so the user
-	// sees when the retry will fire and an unreachable daemon isn't hammered.
+	// attempt via a repeating 1 s tick that updates the dialog, so the user sees
+	// when the retry will fire and an unreachable daemon is not hammered.
 	delete connect_timeout_timer;
 	connect_timeout_timer = nullptr;
 	m_reconnectCountdown = 5;
@@ -1152,19 +1081,16 @@ void CamuleRemoteGuiApp::OnNotifyEvent(CMuleGUIEvent &evt)
 	//
 	// DoNotify() drives what the GUI displays. Its handlers read
 	// theApp->amuledlg->m_transferwnd and friends without checking the dialog
-	// itself, so one delivered after the window is gone dereferences null
-	// (EXC_BAD_ACCESS at 0x3c0 -- m_transferwnd's offset in CamuleDlg).
-	// amulegui destroys its dialog whenever the EC link drops, a remote core
-	// restart being the everyday way that happens, and the pending-event
-	// queue is not drained first. HandleNotification() already declines to
-	// run one of these inline when there is no window; this is the same test
-	// for the queued half.
+	// itself, so one delivered after the window is gone dereferences null.
+	// amulegui destroys its dialog whenever the EC link drops -- a remote core
+	// restart being the everyday way that happens -- and the pending-event
+	// queue is not drained first. HandleNotification() already declines to run
+	// one of these inline when there is no window; this is the queued half.
 	//
-	// DoNotifyAlways() is how the socket layer reaches the main thread
-	// (CoreNotify_LibSocketConnect and friends, posted from asio callbacks).
-	// Those must run whatever the GUI is doing -- amulegui has no main window
-	// until an EC connection has been made, so dropping them means the
-	// connection never completes and every attempt ends at the 15 s watchdog.
+	// DoNotifyAlways() is how the socket layer reaches the main thread. Those
+	// must run whatever the GUI is doing -- amulegui has no main window until
+	// an EC connection has been made, so dropping them means the connection
+	// never completes and every attempt ends at the watchdog.
 	if (evt.IsAlways() || amuledlg) {
 		evt.Notify();
 	}
@@ -1185,16 +1111,14 @@ void CamuleRemoteGuiApp::Startup()
 	m_ecHost = dialog->Host();
 	m_ecPort = dialog->Port();
 	m_ecPass = dialog->PassHash();
-	// Baseline for the reconnect comparison: which daemon process this
-	// first connection reached. Stays 0 against a daemon that doesn't send
-	// EC_TAG_SESSION_ID, which makes every later reconnect take the
-	// start-over path.
+	// Baseline for the reconnect comparison: which daemon process this first
+	// connection reached. Stays 0 against a daemon that does not send
+	// EC_TAG_SESSION_ID, which makes every later reconnect take the start-over
+	// path.
 	//
 	// Not null-guarded, deliberately: Startup() only runs on a successful
-	// connect and the lines below dereference m_connect unconditionally, so
-	// a guard here would protect nothing while claiming the pointer is
-	// optional -- which is also how the static analyser reads it, and it
-	// then reports the dereference below as reachable with null.
+	// connect and the lines below dereference m_connect unconditionally, so a
+	// guard here would protect nothing while claiming the pointer is optional.
 	m_ecSessionId = m_connect->GetServerSessionId();
 
 	dialog->Destroy();
@@ -1222,12 +1146,10 @@ void CamuleRemoteGuiApp::Startup()
 	m_allUploadingKnownFile = new CKnownFile;
 
 	// Must run before InitGui() below: the CamuleDlg constructor reads
-	// UseTrayIcon() to decide whether to create the tray icon at all, so a
-	// guard applied after it would leave the icon built for a backend that
-	// cannot show it. Nothing here waits on the EC connection -- these are
-	// amulegui's own local preferences, not packed by CEC_Prefs_Packet and
-	// with no category in the EC_PREFS_* mask -- so OnInit() would have
-	// worked equally well; this sits next to the call it has to precede.
+	// UseTrayIcon() to decide whether to create the tray icon at all, so a guard
+	// applied after it would leave the icon built for a backend that cannot show
+	// it. Nothing here waits on the EC connection -- these are amulegui's own
+	// local preferences -- so OnInit() would have worked equally well.
 	SanitiseTrayPreferences();
 
 	// Create main dialog
@@ -1246,14 +1168,13 @@ void CamuleRemoteGuiApp::Startup()
 	poll_timer->Start(EC_POLL_INTERVAL_MS);
 	amuledlg->StartGuiTimer();
 
-	// Drain any pre-connect URL queued by ProtocolHandler_QueueSchemeLink
-	// (cold-launch: click → wrote ED2KLinks → user then connects). Saves
-	// a ~1 s wait for OnPollTimer to notice the file. No-op if empty.
+	// Drain any pre-connect URL queued by ProtocolHandler_QueueSchemeLink (cold
+	// launch: click wrote ED2KLinks, the user then connects). Saves a ~1 s wait
+	// for OnPollTimer to notice the file. No-op if empty.
 	AddLinksFromFile();
 
-	// amulegui does no local GeoIP resolution: the daemon resolves country
-	// codes and sends them over EC (#439 / #440), and amulegui only renders the
-	// flags. GeoIP settings are managed against the daemon, not locally.
+	// amulegui does no local GeoIP resolution: the daemon resolves country codes
+	// and sends them over EC, and amulegui only renders the flags.
 }
 
 int CamuleRemoteGuiApp::ShowAlert(wxString msg, wxString title, int flags)
@@ -1320,21 +1241,19 @@ wxString CamuleRemoteGuiApp::GetServerLog(bool reset)
 
 void CamuleRemoteGuiApp::AddServerMessageLine(wxString &msg)
 {
-	// Drives the same CamuleDlg::AddServerMessageLine the monolithic
-	// build calls -- ID_SERVERINFO text ctrl + 500-char truncation +
-	// auto-scroll. Cumulative-log diffing happens in
-	// CServerInfoHandlerRem::HandlePacket; by the time we land here
-	// `msg` is a single new line, ready to append.
+	// Drives the same CamuleDlg::AddServerMessageLine the monolithic build calls
+	// -- ID_SERVERINFO text ctrl, 500-char truncation, auto-scroll.
+	// Cumulative-log diffing happens in CServerInfoHandlerRem::HandlePacket; by
+	// the time we land here `msg` is a single new line, ready to append.
 	amuledlg->AddServerMessageLine(msg);
 }
 
 void CServerInfoHandlerRem::HandlePacket(const CECPacket *packet)
 {
-	// amuled answers EC_OP_GET_SERVERINFO with one EC_TAG_STRING
-	// carrying the full cumulative server_msg buffer. Diff against
-	// what we've already shown so the text ctrl receives only new
-	// lines (preserves scroll position and avoids re-rendering tens
-	// of KB on every poll).
+	// amuled answers EC_OP_GET_SERVERINFO with one EC_TAG_STRING carrying the
+	// full cumulative server_msg buffer. Diff against what we have already shown
+	// so the text ctrl receives only new lines, preserving scroll position and
+	// avoiding a re-render of tens of KB on every poll.
 	const CECTag *tag = packet->GetFirstTagSafe();
 	if (!tag || !tag->IsString()) {
 		return;
@@ -1345,15 +1264,13 @@ void CServerInfoHandlerRem::HandlePacket(const CECPacket *packet)
 	if (fullLog.StartsWith(m_seenSoFar)) {
 		delta = fullLog.Mid(m_seenSoFar.length());
 	} else {
-		// amuled was restarted, or someone else issued a clear, so the
-		// remote cumulative buffer is shorter or unrelated. Wipe the
-		// local view and start fresh from the current snapshot.
-		// Guarded like every other view call reached from an EC reply: a
-		// reply can land while amulegui has no dialog -- it is destroyed
-		// whenever the link drops and rebuilt by Startup() after the next
-		// connect, and replies already in flight are not drained. The
-		// bookkeeping around these calls still has to run, so only the call
-		// into the view is skipped.
+		// amuled was restarted, or someone else issued a clear, so the remote
+		// cumulative buffer is shorter or unrelated. Wipe the local view and
+		// start fresh from the current snapshot.
+		//
+		// Guarded like every other view call reached from an EC reply: a reply can
+		// land while amulegui has no dialog. The bookkeeping around these calls
+		// still has to run, so only the call into the view is skipped.
 		if (theApp->amuledlg) {
 			theApp->amuledlg->ResetLog(ID_SERVERINFO);
 		}
@@ -1380,10 +1297,10 @@ void CChatMsgHandlerRem::HandlePacket(const CECPacket *packet)
 	}
 	CChatWnd *chatwnd = theApp->amuledlg->m_chatwnd;
 
-	// First reply of a connection backfills history rather than announcing
-	// it: replay must not light the Messages toolbar button up for messages
-	// the user already read on another client. Only what arrives after we
-	// have a cursor is genuinely new.
+	// First reply of a connection backfills history rather than announcing it:
+	// replay must not light the Messages toolbar button up for messages the user
+	// already read on another client. Only what arrives after we have a cursor
+	// is genuinely new.
 	const bool backfill = (m_cursor == 0);
 
 	std::set<uint64> present;
@@ -1402,10 +1319,9 @@ void CChatMsgHandlerRem::HandlePacket(const CECPacket *packet)
 			name = ChatPeerFallbackName(gui_id);
 		}
 
-		// Open the tab even when the session has no new messages: that is
-		// how a session started before we connected becomes visible at all.
-		// Unfocused, so a session appearing on its own cannot steal the
-		// selection from whatever the user is doing.
+		// Open the tab even when the session has no new messages: that is how a
+		// session started before we connected becomes visible at all. Unfocused,
+		// so a session appearing on its own cannot steal the selection.
 		chatwnd->StartSessionByID(gui_id, name);
 
 		for (const CECTag &msgTag : sessionTag) {
@@ -1420,9 +1336,9 @@ void CChatMsgHandlerRem::HandlePacket(const CECPacket *packet)
 	}
 
 	// A session we are tracking that is absent from the reply was closed by
-	// another client (or evicted). Drop the tab without sending a close of
-	// our own — the core has already forgotten it. Snapshot first: closing a
-	// tab mutates the set being iterated.
+	// another client, or evicted. Drop the tab without sending a close of our
+	// own -- the core has already forgotten it. Snapshot first: closing a tab
+	// mutates the set being iterated.
 	const std::set<uint64> tracked = m_sessions;
 	for (uint64 gui_id : tracked) {
 		if (!present.count(gui_id)) {
@@ -1541,9 +1457,7 @@ CPreferencesRem::CPreferencesRem(CRemoteConnect *conn)
 {
 	m_conn = conn;
 
-	//
-	// Settings queried from remote side
-	//
+	// Settings queried from the remote side
 	m_exchange_send_selected_prefs = EC_PREFS_GENERAL | EC_PREFS_CONNECTIONS | EC_PREFS_MESSAGEFILTER |
 					 EC_PREFS_ONLINESIG | EC_PREFS_SERVERS | EC_PREFS_FILES |
 					 EC_PREFS_DIRECTORIES | EC_PREFS_SECURITY | EC_PREFS_CORETWEAKS |
@@ -1582,14 +1496,12 @@ bool CPreferencesRem::LoadRemote()
 {
 #ifdef GEOIP_GUI
 	// Assume the core has NO GeoIP support until it says otherwise. A 3.1+ core
-	// built with ENABLE_IP2COUNTRY answers with EC_TAG_IP2COUNTRY_SUPPORTED (see
-	// CEC_Prefs_Packet::Apply); a pre-3.1 core (e.g. 3.0.1) omits the whole
-	// category, so leaving this default false correctly hides the IP2Country
-	// page rather than offering settings the core can't honour.
+	// built with ENABLE_IP2COUNTRY answers with EC_TAG_IP2COUNTRY_SUPPORTED; a
+	// pre-3.1 core omits the whole category, so leaving this false correctly
+	// hides the IP2Country page rather than offering settings it cannot honour.
 	thePrefs::SetGeoIPSupported(false);
 #endif
-	//
-	// override local settings with remote
+	// Override local settings with remote
 	CECPacket req(EC_OP_GET_PREFERENCES, EC_DETAIL_UPDATE);
 
 	// bring categories too
@@ -1608,9 +1520,9 @@ void CPreferencesRem::SendToRemote()
 
 // Reply handler for the shared-directory ops. Deliberately separate from
 // CPreferencesRem::HandlePacket, which static_casts every packet it is given to
-// CEC_Prefs_Packet — routing a non-prefs reply through it would be undefined
+// CEC_Prefs_Packet -- routing a non-prefs reply through it would be undefined
 // behaviour. Results are stored on glob_prefs rather than on the Preferences
-// dialog, so a reply that arrives after the user closed the dialog is harmless.
+// dialog, so a reply arriving after the user closed the dialog is harmless.
 class CSharedDirsHandler : public CECPacketHandlerBase
 {
 	void HandlePacket(const CECPacket *packet) override;
@@ -1657,9 +1569,9 @@ void CSharedDirsHandler::HandlePacket(const CECPacket *packet)
 		if (!rejected.IsEmpty()) {
 			const wxString msg =
 				CFormat(_("The core rejected these shared folders:%s")) % rejected;
-			// Deferred: a modal opened straight from a packet handler spins a
-			// nested event loop that re-enters the EC socket and corrupts its
-			// receive state (see CAddLinkHandler).
+			// Deferred: a modal opened straight from a packet handler spins a nested
+			// event loop that re-enters the EC socket and corrupts its receive state
+			// (see CAddLinkHandler).
 			wxTheApp->CallAfter([msg]() { wxMessageBox(msg, _("ERROR"), wxOK | wxICON_ERROR); });
 		}
 	}
@@ -1692,13 +1604,10 @@ void CPreferencesRem::SendSharedDirsToRemote()
 	m_conn->SendRequest(new CSharedDirsHandler(), &req);
 }
 
-// Surfaces the EC_OP_FAILED reply from amuled's EC_OP_ADD_LINK handler
-// to the user. CDownQueueRem::AddLink used to drop the reply on the
-// floor (fire-and-forget SendPacket), so a malformed ed2k link -- e.g.
-// the original #310 reproducer `ed2k::3D366ED505B977FC61C9A6EE01E96329`
-// -- silently did nothing. amuled does the right thing now (logs
-// "Unknown protocol of link" and returns EC_OP_FAILED + EC_TAG_STRING),
-// but the GUI side has to actually show the message.
+// Surfaces the EC_OP_FAILED reply from amuled's EC_OP_ADD_LINK handler to the
+// user. CDownQueueRem::AddLink used to drop the reply on the floor, so a
+// malformed ed2k link silently did nothing. amuled logs "Unknown protocol of
+// link" and returns EC_OP_FAILED + EC_TAG_STRING; the GUI side has to show it.
 class CAddLinkHandler : public CECPacketHandlerBase
 {
 	virtual void HandlePacket(const CECPacket *packet);
@@ -1707,22 +1616,19 @@ class CAddLinkHandler : public CECPacketHandlerBase
 void CAddLinkHandler::HandlePacket(const CECPacket *packet)
 {
 	if (packet->GetOpCode() == EC_OP_FAILED) {
-		// Daemon-side EC_OP_ADD_LINK always tags the failure response
-		// with an EC_TAG_STRING explaining what went wrong. Reuse that
-		// string as the fallback too (it's already in the i18n catalog
-		// at po/amule.pot:1783, so no new string needs adding here).
+		// Daemon-side EC_OP_ADD_LINK always tags the failure response with an
+		// EC_TAG_STRING explaining what went wrong. Reuse that string as the
+		// fallback too, since it is already in the i18n catalog.
 		const CECTag *tag = packet->GetFirstTagSafe();
 		wxString msg = (tag && tag->IsString())
 				       ? wxGetTranslation(tag->GetStringData())
 				       : wxGetTranslation(wxTRANSLATE("Invalid link or already on list."));
-		// Defer the modal off the OnPacketReceived call stack: wxMessageBox
-		// spins a nested wx event loop, which dispatches CoreNotify_LibSocket*
-		// events that re-enter CECSocket::OnInput on the same socket and
-		// clobber its rx state (m_curr_rx_data / m_bytes_needed / m_in_header).
-		// Under heavy notification load — a batched-link add against a
-		// big shareset — the corrupted parse trips a protocol-error
-		// CloseSocket, which is the desync amuled logs as "External
-		// connection closed" right after the AddLink batch (#757 part 1).
+		// Defer the modal off the OnPacketReceived call stack: wxMessageBox spins
+		// a nested wx event loop, which dispatches CoreNotify_LibSocket* events
+		// that re-enter CECSocket::OnInput on the same socket and clobber its rx
+		// state. Under heavy notification load the corrupted parse trips a
+		// protocol-error CloseSocket, which amuled logs as "External connection
+		// closed" right after the AddLink batch.
 		wxTheApp->CallAfter([msg]() { wxMessageBox(msg, _("ERROR"), wxOK | wxICON_ERROR); });
 	}
 	delete this;
@@ -1850,9 +1756,7 @@ bool CPreferencesRem::RequestRemoveCat(size_t cat)
 	return false;
 }
 
-//
 // Container implementation
-//
 CServerConnectRem::CServerConnectRem(CRemoteConnect *conn)
 {
 	m_CurrServer = 0;
@@ -2070,11 +1974,10 @@ void CServerListRem::ProcessItemUpdate(const CEC_Server_Tag *tag, CServer *serve
 	tag->GetMaxUsers(&server->maxusers);
 	tag->GetSoftFiles(&server->softfiles);
 	tag->GetHardFiles(&server->hardfiles);
-	// Read through the pointer, as the fields above do. The valuemap builder
-	// omits a tag whose value has not changed since the last update, and the
-	// return form yields 0 for an absent tag -- so assigning it would wipe the
-	// value on every update that did not resend it. AssignIfExist() leaves the
-	// current value alone instead.
+	// Read through the pointer, as the fields above do. The valuemap builder omits
+	// a tag whose value has not changed since the last update, and the return
+	// form yields 0 for an absent tag -- so assigning it would wipe the value on
+	// every update that did not resend it. AssignIfExist() leaves it alone.
 	uint32 tcpFlags = server->GetTCPFlags();
 	uint32 udpFlags = server->GetUDPFlags();
 	tag->GetTCPFlags(&tcpFlags);
@@ -2171,14 +2074,14 @@ unsigned CSharedFilesRem::RefreshMediaMetadata(const std::vector<CMD4Hash> &hash
 	}
 	// ONE packet carrying every hash. One request per file would push the
 	// selection through m_req_fifo a packet at a time, and OnPollTimer stops
-	// updating the GUI while that fifo is full -- on a large selection the
-	// window would go quiet for as long as it took to drain.
+	// updating the GUI while that fifo is full -- on a large selection the window
+	// would go quiet for as long as it took to drain.
 	CECPacket request(EC_OP_REFRESH_MEDIA_METADATA);
 	for (const CMD4Hash &hash : hashes) {
-		// A FRESH tag per hash, deliberately. CECTag::AddTag swaps the
-		// argument's contents into the child list and leaves the original
-		// empty, so adding the same tag object twice appends one real child
-		// and one blank -- silently sending fewer hashes than intended.
+		// A FRESH tag per hash, deliberately. CECTag::AddTag swaps the argument's
+		// contents into the child list and leaves the original empty, so adding the
+		// same tag object twice appends one real child and one blank -- silently
+		// sending fewer hashes than intended.
 		request.AddTag(CECTag(EC_TAG_KNOWNFILE, hash));
 	}
 	m_conn->SendPacket(&request);
@@ -2193,9 +2096,9 @@ bool CSharedFilesRem::RefreshMediaMetadata(const CMD4Hash &hash)
 	request.AddTag(CECTag(EC_TAG_KNOWNFILE, hash));
 	m_conn->SendPacket(&request);
 	// Sent, not probed. A daemon that predates the opcode answers EC_OP_FAILED
-	// and the reply is dropped here as it is for every other fire-and-forget
-	// request on this class; the user sees nothing happen, which is the same
-	// outcome as the action not existing.
+	// and the reply is dropped here as for every other fire-and-forget request
+	// on this class; the user sees nothing happen, which is the same outcome as
+	// the action not existing.
 	return true;
 }
 
@@ -2211,8 +2114,8 @@ void CSharedFilesRem::SetFileCommentRating(CKnownFile *file, const wxString &new
 
 void CSharedFilesRem::SearchKadNotes(CAbstractFile *file)
 {
-	// The daemon owns Kad; ask it to run the on-demand NOTES lookup for this
-	// file (a download, a shared file, or a search result — the request is keyed
+	// The daemon owns Kad; ask it to run the on-demand NOTES lookup for this file
+	// (a download, a shared file, or a search result -- the request is keyed
 	// purely by hash). Retrieved notes flow back through the comments channel.
 	CECPacket request(EC_OP_SHARED_FILE_SEARCH_KAD_NOTES);
 	request.AddTag(CECTag(EC_TAG_KNOWNFILE, file->GetFileHash()));
@@ -2231,12 +2134,10 @@ void CSharedFilesRem::CopyFileList(std::vector<CKnownFile *> &out_list) const
 void CKnownFilesRem::DeleteItem(CKnownFile *file)
 {
 	uint32 id = file->ECID();
-	// Broadcast to every subscriber that holds a raw CKnownFile* to
-	// this object — CUpDownClient::m_uploadingfile / m_reqfile (the
-	// #748 crash flow), CGenericClientListCtrl::m_knownfiles (#755),
-	// and the open-dialog registry. Subscribers strip their refs
-	// using pointer-value comparison only. See
-	// MuleNotify::KnownFileBeingDestroyed (GuiEvents.cpp).
+	// Broadcast to every subscriber that holds a raw CKnownFile* to this object --
+	// CUpDownClient::m_uploadingfile / m_reqfile, CGenericClientListCtrl's own
+	// list, and the open-dialog registry. Subscribers strip their refs using
+	// pointer-value comparison only.
 	Notify_KnownFileBeingDestroyed(file);
 
 	if (theApp->sharedfiles->count(id)) {
@@ -2257,12 +2158,10 @@ void CKnownFilesRem::DeleteItem(CKnownFile *file)
 
 void CUpDownClientListRem::DropReferencesTo(const CKnownFile *file)
 {
-	// Null out CUpDownClient::m_uploadingfile / m_reqfile on every
-	// client still pointing at `file`. Called by
-	// MuleNotify::KnownFileBeingDestroyed (the broadcast handler in
-	// GuiEvents.cpp) which is itself fired from CKnownFilesRem::
-	// DeleteItem above before the file is freed. Pointer-value
-	// comparison only — `file` may already be freed by the time
+	// Null out CUpDownClient::m_uploadingfile / m_reqfile on every client still
+	// pointing at `file`. Called by MuleNotify::KnownFileBeingDestroyed, itself
+	// fired from CKnownFilesRem::DeleteItem above before the file is freed.
+	// Pointer-value comparison only -- `file` may already be freed by the time
 	// this runs on the main thread.
 	for (iterator it = begin(); it != end(); ++it) {
 		CUpDownClient *client = (*it)->GetClient();
@@ -2292,14 +2191,12 @@ namespace
 //
 // A zero / empty value is the daemon saying the field is GONE, not a value
 // worth storing -- it only sends one for a field it previously sent a real
-// value for (see AddMediaTagsPresent). Storing it would leave the dialog
-// showing 0:00 or a blank Artist where N/A is the honest answer.
+// value for. Storing it would leave the dialog showing 0:00 or a blank Artist
+// where N/A is the honest answer.
 //
 // Shared by the known-file walker and the search-result one because the daemon
 // emits these from ONE place for both: CEC_SharedFile_Tag's base ctor, which
-// CEC_SearchFile_Tag derives from. Two copies of this loop would drift the
-// moment a seventh field appeared, and the search half is only being written
-// now because the first copy was missing there entirely.
+// CEC_SearchFile_Tag derives from.
 void DecodeMediaTags(const CECTag *tag, CAbstractFile *file)
 {
 	static const struct
@@ -2347,37 +2244,32 @@ void CKnownFilesRem::ProcessItemUpdate(const CEC_SharedFile_Tag *tag, CKnownFile
 		const uint8 *data =
 			file->m_partStatus.Decode((uint8 *)parttag->GetTagData(), parttag->GetTagDataLen());
 		// The two bounds come from different places and are not guaranteed to
-		// agree: the buffer is as long as the decoder made it from what the
-		// wire carried, while GetPartCount() is this object's own, derived
-		// from the size it currently believes the file to be. They match for
-		// as long as an ECID keeps meaning the same file -- which a daemon
-		// restart ends, because CECID hands IDs out from a counter that starts
-		// again with the process while amulegui deliberately keeps its objects
-		// across a reconnect. An ID that comes back naming a different file
-		// then pairs a short buffer with a long part count, and this loop
-		// reads off the end of the heap allocation.
+		// agree: the buffer is as long as the decoder made it from what the wire
+		// carried, while GetPartCount() is this object's own, derived from the
+		// size it currently believes the file to be. They match for as long as an
+		// ECID keeps meaning the same file -- which a daemon restart ends, because
+		// CECID hands IDs out from a counter that starts again with the process
+		// while amulegui deliberately keeps its objects across a reconnect. An ID
+		// that comes back naming a different file then pairs a short buffer with a
+		// long part count, and this loop reads off the end of the allocation.
 		//
-		// Copy what actually arrived and clear the rest, rather than trusting
-		// either bound alone: leaving the tail would show the previous file's
+		// Copy what actually arrived and clear the rest rather than trusting
+		// either bound: leaving the tail would show the previous file's
 		// availability under the new one's name.
 		const int arrived = file->m_partStatus.Size();
 		const int parts = file->GetPartCount();
 		const int copied = std::min(arrived, parts);
 		if (arrived != parts && !m_loggedPartStatusMismatch) {
-			// Says the tag and the object disagree about which file this
-			// is. The reconnect path is supposed to make that impossible
-			// by discarding everything keyed by ECID when the daemon
-			// changes underneath us, so this firing means that went
-			// wrong. Critical rather than debug: clamping the copy leaves
-			// no other trace, the rest of this update goes on applying the
-			// same mismatched tag to the same object, and what the user
-			// ends up looking at is a row describing the wrong file --
-			// which they can act on, and would otherwise have no reason to
-			// suspect.
+			// Says the tag and the object disagree about which file this is. The
+			// reconnect path is supposed to make that impossible by discarding
+			// everything keyed by ECID when the daemon changes underneath us, so
+			// this firing means that went wrong. Critical rather than debug:
+			// clamping the copy leaves no other trace, the rest of this update goes
+			// on applying the same mismatched tag, and what the user ends up
+			// looking at is a row describing the wrong file.
 			//
-			// Once per session, not once per file: if the ECID space has
-			// gone bad it has gone bad for everything, and this sits in a
-			// loop that runs over the whole library on every poll.
+			// Once per session, not once per file: if the ECID space has gone bad it
+			// has gone bad for everything, and this loop runs over the whole library.
 			m_loggedPartStatusMismatch = true;
 			AddLogLineC(CFormat(_("The remote core sent inconsistent data for \"%s\" "
 					      "(part status %d, expected %d). The file list may be "
@@ -2429,10 +2321,10 @@ void CKnownFilesRem::ProcessItemUpdate(const CEC_SharedFile_Tag *tag, CKnownFile
 
 	tag->GetOnQueue(&file->m_queuedCount);
 
-	// Live upload activity (issue #466): the daemon summarises these from its
+	// Live upload activity: the daemon summarises these from its
 	// m_ClientUploadList and ships them every update tick. Decoded into the EC
-	// mirror members so GetUploadDatarate()/GetTransferringClientCount() work
-	// in amulegui (e.g. the file-details Sharing box).
+	// mirror members so GetUploadDatarate() / GetTransferringClientCount() work
+	// in amulegui.
 	tag->GetUploadSpeed(&file->m_uploadDatarateEC);
 	tag->GetUploadingCount(&file->m_transferringClientCountEC);
 	// Share timestamps ride only in the full-detail section, not every tick, so
@@ -2451,11 +2343,10 @@ void CKnownFilesRem::ProcessItemUpdate(const CEC_SharedFile_Tag *tag, CKnownFile
 	tag->GetComment(file->m_strComment);
 	tag->GetRating(file->m_iRating);
 
-	// Community ratings/comments + the on-demand Kad-notes running flag. The
+	// Community ratings/comments plus the on-demand Kad-notes running flag. The
 	// daemon serializes these on the CEC_SharedFile_Tag base, so this one decode
-	// serves both shared files and downloads (it runs for every known file
-	// before the partfile-specific pass). The container is present only when it
-	// changed (valuemap-suppressed), so an absent tag keeps the prior list.
+	// serves both shared files and downloads. The container is present only when
+	// it changed, so an absent tag keeps the prior list.
 	const CECTag *commenttag = tag->GetTagByName(EC_TAG_PARTFILE_COMMENTS);
 	if (commenttag) {
 		file->ClearFileRatingList();
@@ -2481,12 +2372,10 @@ void CKnownFilesRem::ProcessItemUpdate(const CEC_SharedFile_Tag *tag, CKnownFile
 	}
 
 	// Media metadata rides the SHARED-FILE base tag, so it is decoded here for
-	// every known file rather than inside the partfile branch below. It used
-	// to live there, which meant a COMPLETED shared file -- the only kind the
-	// completion re-probe produces -- had all six tags dropped on the floor,
-	// and the File Details dialog showed N/A for anything not currently
-	// downloading. The same mistake the comments/ratings decode already
-	// avoids for the same reason.
+	// every known file rather than inside the partfile branch below. It used to
+	// live there, which meant a COMPLETED shared file -- the only kind the
+	// completion re-probe produces -- had all six tags dropped on the floor, and
+	// the File Details dialog showed N/A for anything not downloading.
 	DecodeMediaTags(tag, file);
 
 	if (file->IsPartFile()) {
@@ -2511,15 +2400,13 @@ void CKnownFilesRem::ArmReconnectReconcile()
 {
 	m_reconnectReconcile = true;
 
-	// A reconnect opens a fresh EC session. The daemon keeps its RLE gap/part/
-	// req-status encoders per connection (CFileEncoderMap in ExternalConn.cpp),
-	// so the new session's encoders restart from an empty baseline. Our reused
-	// CKnownFile / CPartFile objects still carry the previous session's
-	// *decoder* state; left alone, the first differential status update would
-	// XOR the daemon's from-empty diff against that stale buffer and paint
-	// garbage — all-red download progress bars and wrong shared-file
-	// availability shading (issue #444). Reset every decoder now so both ends
-	// share the same empty baseline before the first post-reconnect update.
+	// A reconnect opens a fresh EC session. The daemon keeps its RLE
+	// gap/part/req-status encoders per connection, so the new session's encoders
+	// restart from an empty baseline. Our reused CKnownFile / CPartFile objects
+	// still carry the previous session's *decoder* state; left alone, the first
+	// differential status update would XOR the daemon's from-empty diff against
+	// that stale buffer and paint garbage -- all-red progress bars and wrong
+	// shared-file availability shading.
 	for (CKnownFile *file : *this) {
 		file->m_partStatus.ResetEncoder();
 		if (file->IsPartFile()) {
@@ -2549,41 +2436,34 @@ void CKnownFilesRem::ProcessUpdate(const CECTag *reply, CECPacket *, int)
 	transferred = 0;
 	accepted = 0;
 
-	// The first poll after a reconnect re-processes the whole (potentially
-	// 10k+) library in one go (update-in-place + add + prune) — that is the
-	// reconcile case (issue #444), which drives the one-shot absence-prune
-	// below. The cold-boot m_initialUpdate path has its own batching
-	// (ShowFileList) and never overlaps — m_initialUpdate is false whenever
-	// reconcile is true.
+	// The first poll after a reconnect re-processes the whole (potentially 10k+)
+	// library in one go -- update-in-place, add, prune -- which is the reconcile
+	// case that drives the one-shot absence-prune below. The cold-boot
+	// m_initialUpdate path has its own batching and never overlaps.
 	const bool reconcile = m_reconnectReconcile;
 
 	// Batch the download list on every steady-state poll, not just a reconnect
 	// resync: an ordinary poll can surface a whole burst of freshly-added
-	// downloads at once (e.g. a hundred search results dropped into a large
-	// queue), and CDownloadListCtrl::AddFile() re-sorts the entire list on
-	// every insert. On a 10k queue that is O(n^2 log n) and freezes the GUI for
-	// seconds (issue #615). BeginBatchUpdate() suppresses the per-item sort;
-	// the single SortList() runs once at the end, and only if we actually added
-	// a file (downloadListGrew) — a pure in-place stat poll stays sort-free.
-	// The cold-boot m_initialUpdate path has its own batching (ShowFileList),
-	// so leave it alone to avoid a redundant second sort. Captured now because
-	// ProcessItemUpdate/AddFile below and the final prune all touch the ctrl.
+	// downloads at once, and CDownloadListCtrl::AddFile() re-sorts the entire
+	// list on every insert -- O(n^2 log n) on a 10k queue, which freezes the
+	// GUI for seconds. BeginBatchUpdate() suppresses the per-item sort; the
+	// single SortList() runs once at the end, and only if a file was actually
+	// added, so a pure in-place stat poll stays sort-free.
+	//
 	// The dialog is part of the condition: these Begin/End pairs and the
-	// per-item calls between them are view work, and an EC reply can arrive
-	// with no dialog at all (destroyed on link loss, rebuilt by Startup()).
+	// per-item calls between them are view work, and an EC reply can arrive with
+	// no dialog at all.
 	const bool batchDownloadList = !m_initialUpdate && theApp->amuledlg != nullptr;
 	bool downloadListGrew = false;
 	if (batchDownloadList) {
 		theApp->amuledlg->m_transferwnd->downloadlistctrl->BeginBatchUpdate();
 	}
 
-	// Same reasoning for the shared-files list: a steady-state poll can surface
-	// a burst of freshly-shared files (many downloads completing, or a shared
-	// folder added/rescanned daemon-side), and ShowFile() -> AddItemData()
-	// rebuilds the whole virtual-list row index on every insert -- O(n) each,
-	// O(n^2) on a large share. Batch every non-initial poll and sort once at the
-	// end, only if the poll actually added a file (sharedListGrew). Reconnect
-	// reconcile is one such non-initial poll, so it is covered too.
+	// Same reasoning for the shared-files list: a steady-state poll can surface a
+	// burst of freshly-shared files, and ShowFile() -> AddItemData() rebuilds the
+	// whole virtual-list row index on every insert -- O(n) each, O(n^2) on a
+	// large share. Batch every non-initial poll and sort once at the end, only
+	// if the poll actually added a file.
 	const bool batchSharedList = !m_initialUpdate && theApp->amuledlg != nullptr;
 	bool sharedListGrew = false;
 	if (batchSharedList) {
@@ -2593,14 +2473,12 @@ void CKnownFilesRem::ProcessUpdate(const CECTag *reply, CECPacket *, int)
 	// full snapshot: keep the one-shot armed instead of pruning (see #444).
 	bool deferReconcile = false;
 
-	// Partial-update protocol negotiated at auth time (see
-	// CRemoteConnect::ServerSupportsPartialUpdate). When true, the server
-	// only sends tags for files that actually changed and signals
-	// deletions explicitly via top-level `EC_TAG_FILE_REMOVED` markers —
-	// the bulk "anything missing == deleted" loop below would silently
-	// wipe most of the library every cycle (#713). When false (old
-	// server), the server emits alive-marker tags for unchanged files
-	// so the bulk-deletion path stays correct.
+	// Partial-update protocol negotiated at auth time. When true, the server only
+	// sends tags for files that actually changed and signals deletions explicitly
+	// via top-level EC_TAG_FILE_REMOVED markers -- the bulk "anything missing ==
+	// deleted" loop below would silently wipe most of the library every cycle.
+	// When false, the server emits alive-marker tags for unchanged files so the
+	// bulk-deletion path stays correct.
 	const bool partial_update = m_conn->ServerSupportsPartialUpdate();
 
 	std::set<uint32> core_files;
@@ -2615,22 +2493,20 @@ void CKnownFilesRem::ProcessUpdate(const CECTag *reply, CECPacket *, int)
 		} else if (tagname == EC_TAG_FRIEND) {
 			theApp->friendlist->ProcessUpdate(curTag, NULL, EC_TAG_FRIEND);
 		} else if (tagname == EC_TAG_FILE_REMOVED) {
-			// Explicit deletion marker from a partial-update-capable
-			// server. Buffered and processed in one pass below so we
-			// only iterate the live list when there's actually
-			// something to remove. Outside the partial-update path
-			// the server never emits this tag.
+			// Explicit deletion marker from a partial-update-capable server.
+			// Buffered and processed in one pass below so the live list is only
+			// iterated when there is something to remove. Outside the partial-update
+			// path the server never emits this tag.
 			removed_files.insert(curTag->GetInt());
 		} else if (tagname == EC_TAG_KNOWNFILE || tagname == EC_TAG_PARTFILE) {
 			const CEC_SharedFile_Tag *tag = static_cast<const CEC_SharedFile_Tag *>(curTag);
 			uint32 id = tag->ID();
 			bool isNew = true;
 			if (!m_initialUpdate) {
-				// Collect the full ID set whenever we mean to prune by
-				// absence below: a legacy server always (it emits alive
-				// markers for every file), or once right after a reconnect
-				// (m_reconnectReconcile — the fresh session sends a full
-				// snapshot we reconcile against).
+				// Collect the full ID set whenever we mean to prune by absence below:
+				// a legacy server always (it emits alive markers for every file), or
+				// once right after a reconnect, where the fresh session sends a full
+				// snapshot to reconcile against.
 				if (!partial_update || m_reconnectReconcile) {
 					core_files.insert(id);
 				}
@@ -2644,16 +2520,12 @@ void CKnownFilesRem::ProcessUpdate(const CECTag *reply, CECPacket *, int)
 				}
 			}
 			if (isNew) {
-				// An alive-marker tag carries only the ECID with no
-				// child tags; it's the compat-mode "this file still
-				// exists" signal and is only meaningful for files we
-				// already know. If we receive one for an ID we've never
-				// seen (race during bulk Reload, server diff baseline
-				// briefly out of step, etc.), constructing
-				// CKnownFile(tag) on an empty tag yields a ghost entry
-				// with no name and zero size (#808). Skip the marker
-				// and rely on a subsequent full-tag update to introduce
-				// the file.
+				// An alive-marker tag carries only the ECID with no child tags; it is
+				// the compat-mode "this file still exists" signal and is only meaningful
+				// for files we already know. For an ID never seen -- a race during bulk
+				// Reload, a server diff baseline briefly out of step -- constructing
+				// CKnownFile(tag) on an empty tag yields a ghost entry with no name and
+				// zero size. Skip the marker and rely on a later full-tag update.
 				if (!tag->HasChildTags()) {
 					AddDebugLogLineN(logEC,
 						CFormat(wxT("EC: alive-marker for unknown file ID %u; "
@@ -2661,25 +2533,16 @@ void CKnownFilesRem::ProcessUpdate(const CECTag *reply, CECPacket *, int)
 							id);
 					continue;
 				}
-				// Second variant of the same #808 ghost-entry pattern.
-				// CEC_SharedFile_Tag runs each metadata field through
-				// a per-connection CValueMap (ECSpecialTags.h) which
-				// suppresses tags whose value hasn't changed since the
-				// last cached send.  On an EC_DETAIL_INC_UPDATE for a
-				// file ID we've never seen, the server may already
-				// have cached + suppressed EC_TAG_PARTFILE_HASH /
-				// _NAME / _SIZE_FULL, in which case the tag has plenty
-				// of statistical child tags (request count, accepts,
-				// transferred, AICH masterhash, priority...) but no
-				// identifying metadata.  CKnownFile(tag) would then
-				// read empty hash + 0 size via GetTagByNameSafe and
-				// produce the same 0-byte unnamed ghost entry that the
-				// HasChildTags() guard above is shaped against -- with
-				// children but no identity.  Detect by the absence of
-				// the file hash (the canonical identity tag) and skip
-				// the same way; the next full-state poll picks the
-				// file up correctly once the server-side cache
-				// invalidation puts it back on the wire.
+				// Second variant of the same ghost-entry pattern. CEC_SharedFile_Tag
+				// runs each metadata field through a per-connection CValueMap, which
+				// suppresses tags whose value has not changed since the last cached
+				// send. On an EC_DETAIL_INC_UPDATE for a file ID we have never seen,
+				// the server may already have cached and suppressed
+				// EC_TAG_PARTFILE_HASH / _NAME / _SIZE_FULL, so the tag has plenty of
+				// statistical children but no identifying metadata -- and
+				// CKnownFile(tag) would produce the same 0-byte unnamed ghost the
+				// HasChildTags() guard above is shaped against. Detect by the absence
+				// of the file hash and skip the same way.
 				if (tag->GetTagByName(EC_TAG_PARTFILE_HASH) == NULL) {
 					AddDebugLogLineN(logEC,
 						CFormat(wxT(
@@ -2694,9 +2557,9 @@ void CKnownFilesRem::ProcessUpdate(const CECTag *reply, CECPacket *, int)
 						new CPartFile(static_cast<const CEC_PartFile_Tag *>(tag));
 					ProcessItemUpdate(tag, file);
 					(*theApp->downloadqueue)[id] = file;
-					// On the initial full sync, defer the per-item show +
-					// sort; the whole list is shown and sorted once below
-					// via ShowFileList() (issue #414 — O(n^2) otherwise).
+					// On the initial full sync, defer the per-item show + sort; the whole
+					// list is shown and sorted once below via ShowFileList(), which is
+					// O(n^2) otherwise.
 					if (theApp->amuledlg) {
 						theApp->amuledlg->m_transferwnd->downloadlistctrl->AddFile(
 							file, /*deferView=*/m_initialUpdate);
@@ -2739,23 +2602,21 @@ void CKnownFilesRem::ProcessUpdate(const CECTag *reply, CECPacket *, int)
 			}
 		}
 	} else if (reconcile && core_files.empty() && GetCount() != 0) {
-		// Defensive guard (#444): the first poll after a reconnect should
-		// carry the full library snapshot. If it came back with no file tags
-		// at all while we still hold a populated list, that reply is not a
-		// trustworthy baseline — pruning by absence here would wipe every
-		// download and shared file. Skip the prune and leave the one-shot
-		// armed so the next poll reconciles against a real snapshot instead.
+		// Defensive guard: the first poll after a reconnect should carry the full
+		// library snapshot. If it came back with no file tags at all while we
+		// still hold a populated list, that reply is not a trustworthy baseline
+		// -- pruning by absence here would wipe every download and shared file.
+		// Skip the prune and leave the one-shot armed for the next poll.
 		AddDebugLogLineN(logEC,
 			wxT("EC: post-reconnect reconcile reply carried no files; "
 			    "deferring the absence-prune to the next poll."));
 		deferReconcile = true;
 	} else {
 		// Legacy server (alive-marker protocol), OR the first poll after a
-		// reconnect (m_reconnectReconcile): anything missing from the
-		// response is deleted. On reconnect the fresh partial-update server
-		// sends a full snapshot but never re-emits FILE_REMOVED for files
-		// deleted while we were disconnected, so this one-shot prune against
-		// the full ID set is how those stale entries get cleared.
+		// reconnect: anything missing from the response is deleted. On reconnect
+		// the fresh partial-update server sends a full snapshot but never
+		// re-emits FILE_REMOVED for files deleted while we were disconnected, so
+		// this one-shot prune is how those stale entries get cleared.
 		for (iterator it = begin(); it != end();) {
 			iterator it2 = it++;
 			if (!core_files.count(GetItemID(*it2))) {
@@ -2765,16 +2626,14 @@ void CKnownFilesRem::ProcessUpdate(const CECTag *reply, CECPacket *, int)
 		}
 	}
 	if (batchDownloadList) {
-		// Sort once if the poll added a file (or on a reconnect resync, where
-		// the whole list was reconciled); otherwise the order is unchanged and
-		// EndBatchUpdate() just Thaws without a needless re-sort.
+		// Sort once if the poll added a file, or on a reconnect resync where the
+		// whole list was reconciled; otherwise EndBatchUpdate() just Thaws.
 		theApp->amuledlg->m_transferwnd->downloadlistctrl->EndBatchUpdate(
 			reconcile || downloadListGrew);
 	}
 	if (batchSharedList) {
-		// Sort once if the poll added a shared file (or on a reconnect resync,
-		// where the whole list was reconciled); otherwise the order is
-		// unchanged and EndBatchUpdate() just Thaws without a needless re-sort.
+		// Sort once if the poll added a shared file, or on a reconnect resync
+		// where the whole list was reconciled; otherwise EndBatchUpdate() Thaws.
 		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->EndBatchUpdate(
 			reconcile || sharedListGrew);
 	}
@@ -2965,10 +2824,10 @@ void CUpDownClientListRem::ProcessItemUpdate(const CEC_UpDownClient_Tag *tag, CC
 	tag->UserID(&client->m_nUserIDHybrid);
 	tag->ClientName(&client->m_Username);
 #ifdef GEOIP_GUI
-	// Peer country from the daemon's GeoIP (#439). Check tag *presence*, not
-	// its value: a present-but-empty tag is an authoritative "unknown" and
-	// must still mark the code as core-provided so the client list doesn't
-	// try a (non-existent) local fallback.
+	// Peer country from the daemon's GeoIP. Check tag *presence*, not its value:
+	// a present-but-empty tag is an authoritative "unknown" and must still mark
+	// the code as core-provided, so the client list does not try a
+	// (non-existent) local fallback.
 	if (tag->GetTagByName(EC_TAG_CLIENT_COUNTRY)) {
 		client->SetCountryCode(tag->Country());
 	}
@@ -3169,9 +3028,9 @@ bool CDownQueueRem::AddLink(const wxString &link, uint8 cat)
 	link_tag.AddTag(CECTag(EC_TAG_PARTFILE_CAT, cat));
 	req.AddTag(link_tag);
 
-	// SendRequest registers the handler; on EC_OP_FAILED the GUI shows
-	// the wxMessageBox set up in CAddLinkHandler. Previously this was
-	// fire-and-forget and silently dropped errors (#310 follow-up).
+	// SendRequest registers the handler; on EC_OP_FAILED the GUI shows the
+	// wxMessageBox set up in CAddLinkHandler. This used to be fire-and-forget
+	// and silently dropped errors.
 	m_conn->SendRequest(new CAddLinkHandler, &req);
 	return true;
 }
@@ -3179,9 +3038,9 @@ bool CDownQueueRem::AddLink(const wxString &link, uint8 cat)
 void CDownQueueRem::AddLinks(const wxArrayString &links, uint8 cat)
 {
 	// Pack the whole batch into one EC_OP_ADD_LINK packet. The daemon-side
-	// handler (PR #551) already iterates over every child tag and emits a
-	// single aggregated response, so CAddLinkHandler fires once for the
-	// whole batch — no client-side N popups for N invalid links.
+	// handler already iterates over every child tag and emits a single
+	// aggregated response, so CAddLinkHandler fires once for the whole batch --
+	// no client-side N popups for N invalid links.
 	if (links.IsEmpty()) {
 		return;
 	}
@@ -3207,9 +3066,7 @@ void CDownQueueRem::ResetCatParts(int cat)
 
 void CKnownFilesRem::ProcessItemUpdatePartfile(const CEC_PartFile_Tag *tag, CPartFile *file)
 {
-	//
-	// update status
-	//
+	// Update status
 	tag->Speed(&file->m_kbpsDown);
 	file->kBpsDown = file->m_kbpsDown / 1024.0;
 
@@ -3247,9 +3104,7 @@ void CKnownFilesRem::ProcessItemUpdatePartfile(const CEC_PartFile_Tag *tag, CPar
 
 	file->percentcompleted = (100.0 * file->GetCompletedSize()) / file->GetFileSize();
 
-	//
 	// Copy part/gap status
-	//
 	const CECTag *gaptag = tag->GetTagByName(EC_TAG_PARTFILE_GAP_STATUS);
 	const CECTag *parttag = tag->GetTagByName(EC_TAG_PARTFILE_PART_STATUS);
 	const CECTag *reqtag = tag->GetTagByName(EC_TAG_PARTFILE_REQ_STATUS);
@@ -3310,9 +3165,9 @@ void CKnownFilesRem::ProcessItemUpdatePartfile(const CEC_PartFile_Tag *tag, CPar
 		}
 	}
 
-	// Comments/ratings + the Kad-notes running flag are decoded once for every
-	// known file in CKnownFilesRem::ProcessItemUpdate (they ride the shared-file
-	// base tag now), so there is nothing partfile-specific to do here.
+	// Comments/ratings and the Kad-notes running flag are decoded once for every
+	// known file in CKnownFilesRem::ProcessItemUpdate, so there is nothing
+	// partfile-specific to do here.
 
 	// Update A4AF sources
 	ListOfUInts32 &clientIDs = file->GetA4AFClientIDs();
@@ -3465,8 +3320,7 @@ void CFriendListRem::ProcessItemUpdate(const CEC_Friend_Tag *tag, CFriend *Frien
 	tag->Port(Friend->m_nLastUsedPort);
 	// Read the slot back rather than leaving it at its constructor false: the
 	// context menu's check mark is drawn from it, so without this it never
-	// showed which friend actually holds the slot -- not even right after
-	// this GUI set it.
+	// showed which friend actually holds the slot.
 	bool friendSlot = false;
 	if (tag->FriendSlot(friendSlot)) {
 		Friend->SetPersistentFriendSlot(friendSlot);
@@ -3559,10 +3413,9 @@ void CFriendListRem::SetFriendSlot(CFriend *Friend, bool new_state)
 // "View Files" (browse) over EC. On a multi-search daemon, open an optimistic
 // browse tab and correlate it via EC_TAG_SEARCH_REF: the daemon allocates the
 // browse's search id, echoes the ref, and CSearchListRem::HandlePacket rekeys
-// the tab (and starts polling its progress) exactly like a search START reply.
-// On a legacy daemon (no multi-search) fall back to the old fire-and-forget
-// request with no tab — the daemon can't surface browse results over EC there,
-// so opening a tab would just leave a phantom empty page. Behaviour unchanged.
+// the tab exactly like a search START reply. On a legacy daemon fall back to
+// the old fire-and-forget request with no tab -- the daemon cannot surface
+// browse results over EC there, so a tab would just be a phantom empty page.
 static void SendBrowseRequest(
 	CRemoteConnect *conn, CECEmptyTag &sharedtag, uint32 peerEcid, const wxString &peerName)
 {
@@ -3629,10 +3482,9 @@ wxString CSearchListRem::StartNewSearch(
 
 	if (m_conn->ServerSupportsMultiSearch()) {
 		// Multi-search: the daemon allocates the real search ID. Send the
-		// optimistic local tab ID as a correlation token (EC_TAG_SEARCH_REF);
-		// the daemon echoes it alongside the allocated EC_TAG_SEARCH_ID, and
-		// HandlePacket remaps the tab. Sent via SendRequest so the reply is
-		// routed back to this handler.
+		// optimistic local tab ID as a correlation token; the daemon echoes it
+		// alongside the allocated EC_TAG_SEARCH_ID and HandlePacket remaps the
+		// tab. Sent via SendRequest so the reply routes back to this handler.
 		search_req.AddTag(CECTag(EC_TAG_SEARCH_REF, *nSearchID));
 		m_conn->SendRequest(this, &search_req);
 		// See m_pendingSearchStarts's declaration: closes the window where an
@@ -3648,8 +3500,8 @@ wxString CSearchListRem::StartNewSearch(
 	// Legacy single-search wipes the one result set on the daemon at each new
 	// search, so flush the container to match. Multi-search must NOT flush: the
 	// container holds every open search's results, and clearing its item hash
-	// (without clearing the displayed rows) makes the next poll re-create every
-	// result — producing ghost rows (INC_UPDATE) or duplicate rows (FULL).
+	// without clearing the displayed rows makes the next poll re-create every
+	// result -- ghost rows under INC_UPDATE, duplicates under FULL.
 	if (!m_conn->ServerSupportsMultiSearch()) {
 		Flush();
 	}
@@ -3659,13 +3511,12 @@ wxString CSearchListRem::StartNewSearch(
 
 void CSearchListRem::StopSearch(bool globalOnly)
 {
-	// globalOnly is the new-search path (OnBnClickedStart): monolithic uses it
-	// to reset only the single in-flight ed2k slot while sparing running Kad
-	// searches. In multi-search each search is independent and the daemon
-	// finalizes any in-flight ed2k search itself, so starting a new search must
-	// NOT stop the previous one — otherwise a second Kad search cancels the
-	// first. On a legacy single-search daemon, fall through (the daemon replaces
-	// the one search anyway). globalOnly == false is the explicit Stop button.
+	// globalOnly is the new-search path: monolithic uses it to reset only the
+	// single in-flight ed2k slot while sparing running Kad searches. In
+	// multi-search each search is independent and the daemon finalizes any
+	// in-flight ed2k search itself, so starting a new search must NOT stop the
+	// previous one -- otherwise a second Kad search cancels the first. On a
+	// legacy daemon, fall through. globalOnly == false is the explicit Stop.
 	if (globalOnly && m_conn->ServerSupportsMultiSearch()) {
 		return;
 	}
@@ -3686,12 +3537,10 @@ void CSearchListRem::StopSearchById(wxUIntPtr searchID, bool andClose)
 			// Tab closed: stop tracking this search's lifecycle.
 			m_activeSearches.erase((uint32)searchID);
 			m_kadActive.erase((uint32)searchID);
-			// Also the backstop for a START whose reply never attributed
-			// itself (EC_OP_FAILED carries no ID -- see HandlePacket's
-			// EC_OP_FAILED branch): closing the tab the failed start left
-			// behind clears its entry, so the discovery deferral can't be
-			// held open for the rest of the session. A no-op for the normal
-			// case, where RemapSearch already erased it.
+			// Also the backstop for a START whose reply never attributed itself (an
+			// EC_OP_FAILED carries no ID): closing the tab the failed start left
+			// behind clears its entry, so the discovery deferral cannot be held
+			// open for the rest of the session. A no-op in the normal case.
 			m_pendingSearchStarts.erase((uint32)searchID);
 		}
 	}
@@ -3701,9 +3550,9 @@ void CSearchListRem::StopSearchById(wxUIntPtr searchID, bool andClose)
 
 bool CSearchListRem::IsKadSearch(uint32_t searchID) const
 {
-	// The "More" button applies only to a *running* Kad search (it greys out
-	// once the search completes). The flag is set from each search's per-id
-	// kind + lifecycle state in HandlePacket.
+	// The "More" button applies only to a *running* Kad search -- it greys out
+	// once the search completes. The flag is set from each search's per-id kind
+	// and lifecycle state in HandlePacket.
 	std::map<uint32, bool>::const_iterator it = m_kadActive.find(searchID);
 	return it != m_kadActive.end() && it->second;
 }
@@ -3715,14 +3564,13 @@ bool CSearchListRem::RequestMoreResults(uint32_t searchID)
 	}
 	// Ask the daemon to widen this Kad search (KADEMLIA_FIND_VALUE_MORE).
 	// SendRequest, not SendPacket: the daemon answers with EC_OP_MISC_DATA
-	// carrying EC_TAG_SEARCH_MORE_REASKABLE, and HandlePacket below greys the
-	// button for that search when it says the reasking is over for good. This
-	// used to be fire-and-forget and returned an optimistic true, so a user
-	// could press "More" repeatedly against a daemon that was doing nothing.
+	// carrying EC_TAG_SEARCH_MORE_REASKABLE, and HandlePacket greys the button
+	// for that search when the reasking is over for good. This used to be
+	// fire-and-forget with an optimistic true, so a user could press "More"
+	// repeatedly against a daemon that was doing nothing.
 	//
 	// Still returns true here: the verdict arrives asynchronously, and this
-	// return only says the request went out. The greying happens in the reply
-	// handler.
+	// return only says the request went out.
 	CECPacket req(EC_OP_SEARCH_REQUEST_MORE);
 	if (m_conn->ServerSupportsMultiSearch()) {
 		req.AddTag(CECTag(EC_TAG_SEARCH_ID, (uint32)searchID));
@@ -3734,20 +3582,17 @@ bool CSearchListRem::RequestMoreResults(uint32_t searchID)
 void CSearchListRem::RemapSearch(uint32 localID, uint32 daemonID)
 {
 	// Closes this ID's m_pendingSearchStarts window regardless of whether the
-	// local and daemon ids happen to match (the early return below is only
-	// about whether a rekey is needed, not whether the START round trip this
-	// tracks has completed). Keyed by ID, so a *browse* remap -- which also
-	// lands here, via BuildBrowseReply's own EC_OP_STRINGS -- erases nothing
-	// and can no longer lift the deferral for someone else's in-flight
-	// search start (got3nks, PR #680 review).
+	// local and daemon ids happen to match -- the early return below is only
+	// about whether a rekey is needed, not whether the START round trip has
+	// completed. Keyed by ID, so a *browse* remap, which also lands here, erases
+	// nothing and cannot lift the deferral for someone else's in-flight start.
 	m_pendingSearchStarts.erase(localID);
 	if (localID == daemonID) {
 		return;
 	}
-	// Rekey the optimistic tab (created with the local ID) to the daemon's
-	// ID so the union-poll results (tagged with the daemon ID) route to it.
-	// The START reply arrives well before any network results, so no result
-	// is misrouted in the interim.
+	// Rekey the optimistic tab (created with the local ID) to the daemon's ID so
+	// the union-poll results, tagged with the daemon ID, route to it. The START
+	// reply arrives well before any network results, so nothing is misrouted.
 	if (theApp->amuledlg && theApp->amuledlg->m_searchwnd) {
 		theApp->amuledlg->m_searchwnd->RekeySearch(localID, daemonID);
 	}
@@ -3758,12 +3603,11 @@ void CSearchListRem::RemapSearch(uint32 localID, uint32 daemonID)
 
 void CSearchListRem::RequestSearchList()
 {
-	// Capability-gated: a daemon predating #680 has no case for
-	// EC_OP_SEARCH_LIST, so the request would land in ProcessRequest2's
-	// unknown-opcode branch, which logs "invalid opcode received: 0x60" and
-	// trips a wxFAIL on the daemon. Sending nothing degrades to the pre-#680
-	// behaviour -- only searches this client started itself are listed -- which
-	// is exactly what such a daemon can support anyway.
+	// Capability-gated: an older daemon has no case for EC_OP_SEARCH_LIST, so the
+	// request would land in ProcessRequest2's unknown-opcode branch, which logs
+	// "invalid opcode received" and trips a wxFAIL on the daemon. Sending nothing
+	// degrades to listing only searches this client started, which is exactly
+	// what such a daemon can support anyway.
 	if (!m_conn->ServerSupportsSearchList()) {
 		return;
 	}
@@ -3816,9 +3660,9 @@ void CSearchListRem::ProcessUpdate(const CECTag *reply, CECPacket *full_req, int
 
 void CSearchListRem::ApplySearchProgress(const CECTag *src)
 {
-	// Per-search progress: STATUS is the first tag; EC_TAG_SEARCH_ID is
-	// echoed so we can update this specific tab's lifecycle. An expired
-	// search (evicted on the daemon) reports done so its "!" clears.
+	// Per-search progress: STATUS is the first tag; EC_TAG_SEARCH_ID is echoed so
+	// we can update this specific tab's lifecycle. An expired search, evicted on
+	// the daemon, reports done so its "!" clears.
 	const CECTag *idTag = src->GetTagByName(EC_TAG_SEARCH_ID);
 	const CECTag *browseTag = src->GetTagByName(EC_TAG_SEARCH_BROWSE_STATUS);
 	if (idTag && theApp->amuledlg && theApp->amuledlg->m_searchwnd) {
@@ -3836,31 +3680,24 @@ void CSearchListRem::ApplySearchProgress(const CECTag *src)
 		} else {
 			const bool expired = src->GetTagByName(EC_TAG_SEARCH_EXPIRED) != nullptr;
 			if (expired) {
-				// The daemon has discarded this search -- a deliberate
-				// close from another client, or LRU eviction -- so
-				// its tab here can only mislead: mapping this to the
-				// plain "finished" status (0xfffe) would make it
-				// indistinguishable from a search that ended
-				// normally, and "Download" on one of its results
-				// would silently do nothing (the daemon's m_results
-				// no longer has the hash). Close the tab locally
-				// instead -- CloseSearchTab does not send
-				// EC_OP_SEARCH_STOP, since the daemon already
-				// doesn't know this id (got3nks, PR #680 review).
-				// CSearchListRem::RemoveResults (called from there)
-				// also erases m_kadActive for this id.
+				// The daemon has discarded this search -- a deliberate close from
+				// another client, or LRU eviction -- so its tab here can only mislead:
+				// mapping this to the plain "finished" status would make it
+				// indistinguishable from a search that ended normally, and "Download"
+				// on one of its results would silently do nothing, since the daemon's
+				// m_results no longer has the hash. Close the tab locally instead --
+				// CloseSearchTab does not send EC_OP_SEARCH_STOP, since the daemon
+				// already does not know this id.
 				const uint32 sid = (uint32)idTag->GetInt();
 				m_activeSearches.erase(sid);
 				if (theApp->amuledlg && theApp->amuledlg->m_searchwnd) {
 					theApp->amuledlg->m_searchwnd->CloseSearchTab(sid);
 				}
 			} else {
-				// Cache whether this tab is a *running* Kad search so
-				// IsKadSearch can gate the "More" button — enabled
-				// only while the search runs, disabled once it
-				// completes (the progress lifecycle is the gate; no
-				// extra status). Update before the progress call,
-				// which refreshes that button for the visible tab.
+				// Cache whether this tab is a *running* Kad search so IsKadSearch can
+				// gate the "More" button -- enabled only while the search runs. Updated
+				// before the progress call, which refreshes that button for the
+				// visible tab.
 				const CECTag *kindTag = src->GetTagByName(EC_TAG_SEARCH_LIFECYCLE_KIND);
 				const CECTag *stateTag = src->GetTagByName(EC_TAG_SEARCH_LIFECYCLE_STATE);
 				if (kindTag && stateTag) {
@@ -3877,25 +3714,20 @@ void CSearchListRem::ApplySearchProgress(const CECTag *src)
 
 void CSearchListRem::HandlePacket(const CECPacket *packet)
 {
-	// Reply to EC_OP_SEARCH_REQUEST_MORE. Claimed by the TAG, not by the
-	// opcode alone: EC_OP_MISC_DATA is a generic envelope (search stop and
-	// GET_CONNSTATE use it too), and consuming every packet carrying that
-	// opcode would silently swallow any future request that both answers
-	// MISC_DATA and routes its handler here. Only a packet that actually
-	// carries the reaskable bit is ours; anything else falls through.
+	// Reply to EC_OP_SEARCH_REQUEST_MORE. Claimed by the TAG, not by the opcode
+	// alone: EC_OP_MISC_DATA is a generic envelope (search stop and
+	// GET_CONNSTATE use it too), and consuming every packet with that opcode
+	// would silently swallow any future request routed here.
 	//
-	// The tag is absent on a daemon older than it, which means "unknown",
-	// never "exhausted" -- so that case falls through too and keeps the
-	// previous optimistic behaviour. Present and false is terminal for this
-	// search: its reask budget is spent, or it is inside the stopping window
-	// Kad enters 20 s before a keyword search ends.
+	// The tag is absent on a daemon older than it, which means "unknown", never
+	// "exhausted" -- so that case falls through and keeps the previous
+	// optimistic behaviour. Present and false is terminal for this search.
 	//
-	// The id has to come off the packet rather than from the selected tab.
-	// The EC FIFO pairs replies to requests positionally, with no request id
-	// on the wire, so with two "More" presses in flight on different tabs the
-	// arrival order is the only thing distinguishing them -- and the user may
-	// have switched tabs meanwhile. The daemon echoes EC_TAG_SEARCH_ID for
-	// exactly this.
+	// The id has to come off the packet rather than from the selected tab. The
+	// EC FIFO pairs replies to requests positionally, with no request id on the
+	// wire, so with two "More" presses in flight on different tabs the arrival
+	// order is the only thing distinguishing them -- and the user may have
+	// switched tabs meanwhile.
 	if (const CECTag *reaskable = packet->GetTagByName(EC_TAG_SEARCH_MORE_REASKABLE)) {
 		const CECTag *idTag = packet->GetTagByName(EC_TAG_SEARCH_ID);
 		if (idTag && reaskable->GetInt() == 0 && theApp->amuledlg && theApp->amuledlg->m_searchwnd) {
@@ -3918,12 +3750,11 @@ void CSearchListRem::HandlePacket(const CECPacket *packet)
 					reported.insert((uint32)entry.GetInt());
 					ApplySearchProgress(&entry);
 				}
-				// The union carries no EC_TAG_SEARCH_EXPIRED: it reports the
-				// daemon's whole set, so a tab whose id is missing from it is
-				// one the daemon no longer has -- closed from another client,
-				// or evicted by the LRU. Same verdict the per-id poll reaches
-				// via the explicit tag, and it lands on the same cycle rather
-				// than whenever that particular id next gets polled.
+				// The union carries no EC_TAG_SEARCH_EXPIRED: it reports the daemon's
+				// whole set, so a tab whose id is missing from it is one the daemon no
+				// longer has -- closed from another client, or evicted by the LRU. Same
+				// verdict the per-id poll reaches via the explicit tag, and on the same
+				// cycle rather than whenever that id next gets polled.
 				//
 				// Snapshot first: CloseSearchTab erases from m_activeSearches.
 				const std::set<uint32> tracked = m_activeSearches;
@@ -3952,28 +3783,23 @@ void CSearchListRem::HandlePacket(const CECPacket *packet)
 			RemapSearch(refTag->GetInt(), idTag->GetInt());
 		}
 	} else if (packet->GetOpCode() == EC_OP_FAILED) {
-		// A rejected EC_OP_SEARCH_START or browse (EC_OP_FRIEND, via
-		// SendBrowseRequest -- both route their replies here). Both send
-		// EC_TAG_SEARCH_REF, the optimistic tab id, and the daemon now echoes
-		// it on the failure paths too, so the verdict is attributable: without
-		// it, StartNewSearch's unconditional "" return means OnBnClickedStart
-		// already took its success branch and created a tab, leaving a phantom
-		// tab plus an id stuck in m_pendingSearchStarts -- which disables
-		// discovery and costs an EC_OP_SEARCH_LIST round trip every tick until
-		// the user happens to close exactly that tab (got3nks, PR #680 review).
+		// A rejected EC_OP_SEARCH_START or browse -- both route their replies
+		// here. Both send EC_TAG_SEARCH_REF, the optimistic tab id, and the
+		// daemon echoes it on the failure paths too, so the verdict is
+		// attributable: without it, StartNewSearch's unconditional "" return
+		// means OnBnClickedStart already took its success branch and created a
+		// tab, leaving a phantom tab plus an id stuck in m_pendingSearchStarts.
 		//
 		// The branch also has to exist at all: without it an EC_OP_FAILED falls
 		// through to CRemoteContainer::HandlePacket, which hits wxFAIL in IDLE
-		// and, if a DoRequery happened to be outstanding, consumes that reply's
-		// state instead.
+		// and, if a DoRequery happened to be outstanding, consumes that reply.
 		if (const CECTag *refTag = packet->GetTagByName(EC_TAG_SEARCH_REF)) {
 			const uint32 localID = static_cast<uint32>(refTag->GetInt());
 			m_pendingSearchStarts.erase(localID);
-			// Report it and undo the optimistic tab/button state, through the
-			// same path the monolithic build uses for a rejected start. The
-			// daemon sends the reason as EC_TAG_STRING (a wxTRANSLATE'd
-			// literal, so translate it here like CAddLinkHandler does);
-			// without this the user clicks Search and nothing at all happens.
+			// Report it and undo the optimistic tab/button state, through the same
+			// path the monolithic build uses for a rejected start. The daemon sends
+			// the reason as EC_TAG_STRING (a wxTRANSLATE'd literal, so translate it
+			// here); without this the user clicks Search and nothing happens.
 			if (theApp->amuledlg && theApp->amuledlg->m_searchwnd) {
 				const CECTag *msgTag = packet->GetTagByName(EC_TAG_STRING);
 				const wxString reason = (msgTag && msgTag->IsString())
@@ -3986,24 +3812,18 @@ void CSearchListRem::HandlePacket(const CECPacket *packet)
 			// discovery branch), never by an optimistic one.
 		}
 	} else if (packet->GetOpCode() == EC_OP_SEARCH_LIST) {
-		// Reachability fix (#641): one entry per search the daemon currently
-		// holds, so a search this client never started locally -- one
-		// already open in another amulegui session, or restored from disk
-		// once persistence lands -- gets a tab here instead of silently
-		// having its results dropped by AddResult/UpdateResult (neither
-		// looks up a tab that doesn't exist yet). Skips any ID that already
-		// has a tab (a search this client itself started) rather than
-		// recreating it.
+		// One entry per search the daemon currently holds, so a search this
+		// client never started locally -- one already open in another amulegui
+		// session -- gets a tab here instead of silently having its results
+		// dropped by AddResult/UpdateResult, neither of which looks up a tab
+		// that does not exist yet. Skips any ID that already has a tab.
 		//
-		// Deferred whole, rather than per-id, while m_pendingSearchStarts
-		// is non-empty: this reply's ids reflect the daemon's state at send
-		// time, which can already include a search THIS client just
-		// started but hasn't been told the id of yet (see that member's
-		// declaration) -- and the ids in it are the client's *optimistic*
-		// ones, which by construction never match the daemon ids here, so
-		// there is nothing to match per-entry against. Re-arming for the
-		// next tick costs one extra poll, not correctness, since the set
-		// only stays non-empty for one EC round trip.
+		// Deferred whole, rather than per-id, while m_pendingSearchStarts is
+		// non-empty: this reply's ids reflect the daemon's state at send time,
+		// which can already include a search THIS client just started but has
+		// not been told the id of yet -- and the ids in that set are the
+		// client's *optimistic* ones, which never match the daemon ids here.
+		// Re-arming for the next tick costs one extra poll, not correctness.
 		if (!m_pendingSearchStarts.empty()) {
 			m_needSearchListRequery = true;
 		} else if (theApp->amuledlg && theApp->amuledlg->m_searchwnd) {
@@ -4013,35 +3833,30 @@ void CSearchListRem::HandlePacket(const CECPacket *packet)
 					continue;
 				}
 				const CECTag *nameTag = entry.GetTagByName(EC_TAG_SEARCH_NAME);
-				// "(0)" matches CSearchDlg::CreateNewTab's own callers (e.g.
-				// SearchDlg.cpp:1017) -- no leading "!" even for a Kad search:
-				// that marker is a live indicator normal callers seed only
-				// because they know at creation time they just started a Kad
-				// search, and it is only ever cleared (KadSearchEnd), never
-				// set, by the progress path below. Making this tab first-class
-				// in m_activeSearches is what lets that live path take over
-				// from here -- the "!" appears on the next progress poll if
-				// this is in fact a running Kad search, same as any other tab.
-				// Unselected: this tab appears on its own, driven by another
-				// client, so it must not pull the selection away from whatever
-				// the local user is looking at -- possibly mid-typing in the
-				// search box (got3nks, amule-org/amule#703).
-				// A browse the daemon is serving for someone else, or one
-				// still running from before this GUI attached, arrives here
-				// like any other search -- it shares the id space. Rebuild it
-				// as a browse tab rather than a search tab, which is what the
-				// kind is reported for. Daemons predating EC_SEARCH_BROWSE
-				// never send it, so the test simply fails there and the tab is
-				// built the way it always was.
+				// "(0)" matches CSearchDlg::CreateNewTab's own callers -- no leading
+				// "!" even for a Kad search: that marker is a live indicator normal
+				// callers seed only because they know at creation time they just
+				// started a Kad search, and it is only ever cleared, never set, by
+				// the progress path below. Making this tab first-class in
+				// m_activeSearches is what lets that live path take over.
+				//
+				// Unselected: this tab appears on its own, driven by another client,
+				// so it must not pull the selection away from whatever the local user
+				// is looking at -- possibly mid-typing in the search box.
+				//
+				// A browse the daemon is serving for someone else arrives here like
+				// any other search, since it shares the id space. Rebuild it as a
+				// browse tab rather than a search tab, which is what the kind is
+				// reported for. Daemons predating EC_SEARCH_BROWSE never send it, so
+				// the test simply fails there.
 				const CECTag *kindTag = entry.GetTagByName(EC_TAG_SEARCH_LIFECYCLE_KIND);
 				const CECTag *peerTag = entry.GetTagByName(EC_TAG_CLIENT);
 				const uint32 peerEcid = peerTag ? static_cast<uint32>(peerTag->GetInt()) : 0;
-				// Only with a real peer: EnsureBrowseTab keys on the ecid and
-				// an ecid of 0 is not "unknown peer", it is what every
-				// ordinary search tab carries -- GetBrowseList(0) would match
-				// the first of those and repoint it at this browse. A daemon
-				// that reports the kind without the peer therefore falls
-				// through to the plain tab, which is what it built before.
+				// Only with a real peer: EnsureBrowseTab keys on the ecid and an ecid of
+				// 0 is not "unknown peer", it is what every ordinary search tab carries
+				// -- GetBrowseList(0) would match the first of those and repoint it at
+				// this browse. A daemon that reports the kind without the peer falls
+				// through to the plain tab.
 				if (kindTag && kindTag->GetInt() == BrowseSearch && peerEcid) {
 					theApp->amuledlg->m_searchwnd->EnsureBrowseTab(peerEcid,
 						nameTag ? nameTag->GetStringData() : wxString(),
@@ -4053,21 +3868,16 @@ void CSearchListRem::HandlePacket(const CECPacket *packet)
 						sid,
 						false);
 				}
-				// Reachability fix (#641): without this, a discovered tab never
-				// gets polled for progress at all (Phase1Done only loops over
-				// m_activeSearches), so its hit count, progress bar and "!"
-				// marker would stay frozen forever -- exactly like a search
-				// this client started itself once RemapSearch runs.
+				// Without this, a discovered tab never gets polled for progress at all
+				// (Phase1Done only loops over m_activeSearches), so its hit count,
+				// progress bar and "!" marker would stay frozen forever.
 				m_activeSearches.insert(sid);
-				// Backfill (got3nks, PR #680 review): a result for this sid may
-				// already have arrived and been dropped by CreateItem (no tab
-				// existed yet to AddResult into), and the daemon's
-				// EC_DETAIL_INC_UPDATE diffing never re-sends an
-				// already-delivered result -- so without this, that result is
-				// lost permanently rather than merely delayed. The container
-				// (m_items) still holds it: CreateItem always keeps every
-				// CSearchFile it builds, tab or no tab. Walk it now, once, for
-				// this newly-discovered sid -- no extra EC traffic.
+				// Backfill: a result for this sid may already have arrived and been
+				// dropped by CreateItem, no tab existing yet to AddResult into, and the
+				// daemon's INC_UPDATE diffing never re-sends an already-delivered
+				// result -- so without this it is lost permanently rather than merely
+				// delayed. The container still holds it: CreateItem always keeps every
+				// CSearchFile it builds, tab or no tab.
 				for (CSearchFile *file : m_items) {
 					if (file->GetSearchID() == sid) {
 						theApp->amuledlg->m_searchwnd->AddResult(file);
@@ -4141,23 +3951,20 @@ CSearchFile *CSearchListRem::CreateItem(const CEC_SearchFile_Tag *tag)
 	CSearchFile *file = new CSearchFile(tag);
 	ProcessItemUpdate(tag, file);
 
-	// Reachability fix (#641): a result bearing a search ID with no tab
-	// is exactly the symptom EC_OP_SEARCH_LIST exists to fix -- ask for
-	// the list again on the next poll so a tab gets created for it
-	// (CSearchListRem::HandlePacket's EC_OP_SEARCH_LIST branch) instead
-	// of polling that op every tick regardless of whether anything new
-	// showed up.
+	// A result bearing a search ID with no tab is exactly the symptom
+	// EC_OP_SEARCH_LIST exists to fix -- ask for the list again on the next poll
+	// so a tab gets created for it, instead of polling that op every tick
+	// regardless of whether anything new showed up.
 	if (file->m_searchID != 0 && !theApp->amuledlg->m_searchwnd->GetSearchList(file->m_searchID)) {
 		m_needSearchListRequery = true;
 	}
 
 	// A result whose tag names a parent this client has not built yet cannot be
 	// grouped: the constructor's lookup came back empty, so it stays parentless
-	// and is indexed as a top-level row that nothing ever re-parents. The
-	// daemon emits a parent before its children, so this should not happen --
-	// log it rather than assert, since the trigger would be the wire order
-	// rather than a bug on this side, and losing the result would be worse than
-	// showing it ungrouped.
+	// and is indexed as a top-level row that nothing ever re-parents. The daemon
+	// emits a parent before its children, so this should not happen -- log it
+	// rather than assert, since the trigger would be the wire order rather than
+	// a bug on this side, and losing the result would be worse.
 	if (tag->ParentID() != 0 && file->GetParent() == nullptr) {
 		AddDebugLogLineN(logSearch,
 			CFormat("Search result %u names parent %u, which has not arrived; "
@@ -4165,10 +3972,10 @@ CSearchFile *CSearchListRem::CreateItem(const CEC_SearchFile_Tag *tag)
 				file->ECID() % tag->ParentID());
 	}
 
-	// Make the result visible to the GUI: the search model builds its rows
-	// from GetSearchResults(), so a result that is not indexed here shows up
-	// nowhere, however correctly it arrived over EC. Grouped children are
-	// dropped by IndexResult() itself, which is where that rule lives.
+	// Make the result visible to the GUI: the search model builds its rows from
+	// GetSearchResults(), so a result that is not indexed here shows up nowhere,
+	// however correctly it arrived over EC. Grouped children are dropped by
+	// IndexResult() itself, which is where that rule lives.
 	IndexResult(file);
 
 	theApp->amuledlg->m_searchwnd->AddResult(file);
@@ -4218,11 +4025,9 @@ void CSearchListRem::ProcessItemUpdate(const CEC_SearchFile_Tag *tag, CSearchFil
 
 	// The daemon has always sent these for search results -- CEC_SearchFile_Tag
 	// derives from CEC_SharedFile_Tag, whose base ctor emits them -- and this
-	// walker never read them back. So amulegui showed an empty Length /
-	// Bitrate / Codec for every hit while the monolithic client filled those
-	// columns in from the same server reply. CreateItem calls this immediately
-	// after constructing, so a result is decoded on arrival as well as on
-	// update.
+	// walker never read them back, so amulegui showed an empty Length / Bitrate
+	// / Codec for every hit while the monolithic client filled those columns in
+	// from the same server reply.
 	DecodeMediaTags(tag, file);
 
 	if (file->m_sourceCount != sourceCount || file->m_completeSourceCount != completeSourceCount ||
@@ -4239,15 +4044,12 @@ bool CSearchListRem::Phase1Done(const CECPacket *WXUNUSED(reply))
 	// nothing, and an unconditional union request would turn that into a
 	// roundtrip every cycle.
 	if (m_conn->ServerSupportsSearchProgressUnion() && !m_activeSearches.empty()) {
-		// One request covers every open tab: the daemon answers with one
-		// child per search. Costs a single round trip no matter how many are
-		// open, where the per-id path below sends one each -- and kept sending
-		// them for searches that had long finished, since a tab only leaves
-		// m_activeSearches when it is closed.
-		//
-		// The ids ride along so the daemon keeps bumping exactly the searches
-		// this client still has open in its LRU, as the per-id poll did. An id
-		// missing from the reply is one the daemon no longer holds.
+		// One request covers every open tab: the daemon answers with one child per
+		// search. Costs a single round trip no matter how many are open, where the
+		// per-id path below sends one each -- and kept sending them for searches
+		// that had long finished, since a tab only leaves m_activeSearches when it
+		// is closed. The ids ride along so the daemon keeps bumping exactly the
+		// searches this client still has open in its LRU.
 		CECPacket progress_req(EC_OP_SEARCH_PROGRESS);
 		for (uint32 id : m_activeSearches) {
 			progress_req.AddTag(CECTag(EC_TAG_SEARCH_ID, id));
@@ -4273,9 +4075,9 @@ bool CSearchListRem::Phase1Done(const CECPacket *WXUNUSED(reply))
 
 void CSearchListRem::RemoveResults(wxUIntPtr nSearchID)
 {
-	// The index only borrows: the CRemoteContainer owns these results and
-	// frees them through DeleteItem(), so dropping the index is all that is
-	// needed here -- deleting would double-free.
+	// The index only borrows: the CRemoteContainer owns these results and frees
+	// them through DeleteItem(), so dropping the index is all that is needed --
+	// deleting would double-free.
 	DropResultIndex(nSearchID);
 	m_kadActive.erase((uint32)nSearchID);
 }
@@ -4315,10 +4117,8 @@ wxString CAICHHash::GetString() const
 	return EncodeBase32(m_abyBuffer, HASHSIZE);
 }
 
-//
-// Those functions are virtual. So even they don't get called they must
-// be defined so linker will be happy
-//
+// These functions are virtual, so even though they are never called they must
+// be defined for the linker.
 CPacket *CKnownFile::CreateSrcInfoPacket(
 	const CUpDownClient *, uint8 /*byRequestedVersion*/, uint16 /*nRequestedOptions*/)
 {
@@ -4407,15 +4207,14 @@ void CStatTreeRem::HandlePacket(const CECPacket *p)
 
 namespace
 {
-// See the comment in DoRequery: the daemon's newest history range holds
-// this many records at its finest spacing, so this is how much it can
-// serve before the answers stop lining up with the scale we asked for.
-// Tracks CStatistics::GetPointsPerRange() and has to be raised with it.
+// See the comment in DoRequery: the daemon's newest history range holds this
+// many records at its finest spacing, so this is how much it can serve before
+// the answers stop lining up with the scale we asked for. Tracks
+// CStatistics::GetPointsPerRange() and has to be raised with it.
 //
-// Against an older daemon, whose ranges are shallower, a request this
-// deep runs off the end of the resolution it was asked for and the far
-// left of the first backfill is drawn time-compressed. It corrects
-// itself as live points replace the backfilled ones.
+// Against an older daemon, whose ranges are shallower, a request this deep runs
+// off the end of the resolution it asked for and the far left of the first
+// backfill is drawn time-compressed. It corrects itself as live points arrive.
 const uint16 kMaxHistoryPoints = 1800;
 
 } // namespace
@@ -4428,43 +4227,35 @@ void CStatGraphRem::DoRequery()
 	// response only carries points the GUI hasn't drawn yet.
 	// (GetHistoryForWeb is amuleweb's near-identical twin, not this path.)
 	request.AddTag(CECTag(EC_TAG_STATSGRAPH_LAST, m_lastTimestamp));
-	// Seconds between points. This has to be the same step the graphs are
-	// going to plot at -- COScopeCtrl gets it from the "Update delay"
-	// preference via CStatisticsDlg::SetUpdatePeriod, and asks
-	// CStatistics::GetHistory for points that far apart. Requesting a
-	// fixed 1 s here (which is what this used to do) meant amulegui
-	// honoured the preference when drawing and ignored it when fetching,
-	// so the graphs only ever had the daemon's 1-second range behind them
-	// however far back the user had asked to see. Monolithic amule has no
-	// equivalent step because it reads the same history directly.
+	// Seconds between points. This has to be the same step the graphs are going
+	// to plot at -- COScopeCtrl gets it from the "Update delay" preference and
+	// asks CStatistics::GetHistory for points that far apart. Requesting a fixed
+	// 1 s here meant amulegui honoured the preference when drawing and ignored
+	// it when fetching, so the graphs only ever had the daemon's 1-second range
+	// behind them however far back the user had asked to see.
 	const uint16 nScale = std::max<uint16>(thePrefs::GetTrafficOMeterInterval(), 1);
 	if ((double)nScale != m_sScale) {
-		// The ring keeps one record per requested interval, so what is in
-		// it is only meaningful at the scale it was fetched at: replotting
-		// 8 s records on a 3 s axis would place them at the wrong times.
-		// Drop it and let it refill at the new resolution. Deliberately
-		// without resetting m_lastTimestamp -- asking for a fresh backfill
-		// here would race the reply still in the air from the previous
-		// scale, whose points would then be timestamped with this one.
+		// The ring keeps one record per requested interval, so what is in it is
+		// only meaningful at the scale it was fetched at: replotting 8 s records
+		// on a 3 s axis would place them at the wrong times. Drop it and let it
+		// refill. Deliberately without resetting m_lastTimestamp -- asking for a
+		// fresh backfill here would race the reply still in the air from the
+		// previous scale, whose points would then be timestamped with this one.
 		theApp->m_statistics->ClearHistory();
 		m_sScale = (double)nScale;
 	}
 	request.AddTag(CECTag(EC_TAG_STATSGRAPH_SCALE, nScale));
-	// Upper bound on points per reply. In the steady state the daemon
-	// only sends what is newer than the timestamp above, i.e. one point
-	// per poll, so this bites in exactly two cases: the first poll after
-	// connecting, where m_lastTimestamp is still 0 and the daemon serves
-	// its whole history, and catching up after a stall or a reconnect.
-	// Both then arrive in a single round-trip and the graphs open with
-	// history behind them instead of filling in over the next minutes.
+	// Upper bound on points per reply. In the steady state the daemon only sends
+	// what is newer than the timestamp above, i.e. one point per poll, so this
+	// bites in exactly two cases: the first poll after connecting, where
+	// m_lastTimestamp is still 0 and the daemon serves its whole history, and
+	// catching up after a stall or a reconnect. Both then arrive in a single
+	// round trip and the graphs open with history behind them.
 	//
-	// The value is the depth of the daemon's 1-second history range:
-	// CStatistics allocates GetPointsPerRange() records per range and
-	// keeps only the newest range at 1 s spacing (the ones behind it go
-	// to 2 s, 4 s, ...). Asking for more would return records that are
-	// not 1 s apart while HandlePacket reconstructs their timestamps
-	// assuming they are, which stretches the left of the plot rather
-	// than showing more of the past.
+	// The value is the depth of the daemon's 1-second history range. Asking for
+	// more would return records that are not 1 s apart while HandlePacket
+	// reconstructs their timestamps assuming they are, which stretches the left
+	// of the plot rather than showing more of the past.
 	request.AddTag(CECTag(EC_TAG_STATSGRAPH_WIDTH, std::min(kMaxHistoryPoints, m_nDaemonDepth)));
 	m_conn->SendRequest(this, &request);
 }
@@ -4483,12 +4274,11 @@ void CStatGraphRem::HandlePacket(const CECPacket *p)
 	}
 	m_lastTimestamp = tsTag->GetDoubleData();
 
-	// How many points this daemon can answer with before it starts
-	// repeating a record. Absent from daemons predating the tag, which is
-	// exactly the case the conservative default covers. Learning that it
-	// can serve more than we asked for is worth a one-off refetch: the
-	// ring only accepts points newer than what it holds, so the deeper
-	// history would never arrive otherwise.
+	// How many points this daemon can answer with before it starts repeating a
+	// record. Absent from daemons predating the tag, which is exactly the case
+	// the conservative default covers. Learning that it can serve more than we
+	// asked for is worth a one-off refetch: the ring only accepts points newer
+	// than what it holds, so the deeper history would never arrive otherwise.
 	const CECTag *depthTag = p->GetTagByName(EC_TAG_STATSGRAPH_DEPTH);
 	if (depthTag) {
 		const uint16 nDepth = std::max<uint16>((uint16)depthTag->GetInt(), 1);
@@ -4508,10 +4298,10 @@ void CStatGraphRem::HandlePacket(const CECPacket *p)
 	size_t dataLen = dataTag->GetTagDataLen();
 	size_t numPoints = dataLen / (4 * sizeof(uint32));
 
-	// EC_TAG_STATSGRAPH_DATA_CONN (new tag, optional) carries the matching
-	// N x (cntUploads, cntDownloads) uint32 pairs so the Connections scope
-	// can show monolithic amule's 3-line breakdown. Absent when talking to
-	// a pre-extension daemon — fall back to flat 0 lines for those slots.
+	// EC_TAG_STATSGRAPH_DATA_CONN (optional) carries the matching N x
+	// (cntUploads, cntDownloads) uint32 pairs so the Connections scope can show
+	// monolithic amule's 3-line breakdown. Absent against a pre-extension
+	// daemon -- fall back to flat 0 lines for those slots.
 	const CECTag *connTag = p->GetTagByName(EC_TAG_STATSGRAPH_DATA_CONN);
 	const uint8_t *connRaw = NULL;
 	size_t connPoints = 0;
@@ -4520,9 +4310,8 @@ void CStatGraphRem::HandlePacket(const CECPacket *p)
 		connPoints = connTag->GetTagDataLen() / (2 * sizeof(uint32));
 	}
 
-	// Session totals — let amulegui compute the same
-	// kBytesReceived / sTimestamp session average monolithic plots.
-	// Absent on old daemons; fall back to 0 (Session line stays flat).
+	// Session totals -- let amulegui compute the same kBytesReceived /
+	// sTimestamp session average monolithic plots. Absent on old daemons.
 	const CECTag *sesDlTag = p->GetTagByName(EC_TAG_STATSGRAPH_SESSION_DL);
 	const CECTag *sesUlTag = p->GetTagByName(EC_TAG_STATSGRAPH_SESSION_UL);
 	const CECTag *sesKadTag = p->GetTagByName(EC_TAG_STATSGRAPH_SESSION_KAD);
@@ -4537,35 +4326,31 @@ void CStatGraphRem::HandlePacket(const CECPacket *p)
 
 	// Cumulative session counters for each point in the reply.
 	//
-	// ComputeAverages derives the session-average trend as
-	// kBytesReceived / sTimestamp, so it needs the cumulative figure as
-	// it stood at each point, while the daemon sends only the newest.
-	// The rest are reconstructed from the per-point rates this same reply
-	// carries -- a rectangle-rule integral, so it carries a few percent
-	// of error against a spiky signal.
+	// ComputeAverages derives the session-average trend as kBytesReceived /
+	// sTimestamp, so it needs the cumulative figure as it stood at each point,
+	// while the daemon sends only the newest. The rest are reconstructed from
+	// the per-point rates this same reply carries -- a rectangle-rule integral,
+	// so it carries a few percent of error against a spiky signal.
 	//
-	// Which direction to integrate matters, because that error is divided
-	// by the point's timestamp. Going backwards from the newest puts it
-	// at the oldest point, and when a reply reaches back near the start of
-	// the daemon's session that divisor is a few seconds: a 3% error on
-	// several GB then reads as tens of MB/s where the truth is nearly
-	// zero, and past the session start the divisor goes negative and the
-	// trend flips sign entirely.
+	// Which direction to integrate matters, because that error is divided by the
+	// point's timestamp. Going backwards from the newest puts it at the oldest
+	// point, and when a reply reaches back near the start of the daemon's
+	// session that divisor is a few seconds: a 3% error on several GB reads as
+	// tens of MB/s where the truth is nearly zero, and past the session start
+	// the divisor goes negative and the trend flips sign.
 	//
 	// So pick the end that is known exactly. If the reply spans the whole
-	// session the oldest point's total is zero by definition, and
-	// integrating forward from there leaves the error at the newest
-	// point, where it is divided by the full session length. Otherwise
-	// every timestamp in the window is large and backwards from the
-	// daemon's own newest figure is both exact where it starts and
-	// harmless where it ends.
+	// session the oldest point's total is zero by definition, and integrating
+	// forward leaves the error at the newest point, divided by the full session
+	// length. Otherwise every timestamp in the window is large and backwards
+	// from the daemon's own newest figure is exact where it starts.
 	std::vector<double> aKBytesDl(numPoints, 0.0);
 	std::vector<double> aKBytesUl(numPoints, 0.0);
 	std::vector<double> aKadTotal(numPoints, 0.0);
-	// Within one sample of zero means the oldest point IS the session's
-	// first sample -- the daemon answers with what it has, so a reply that
-	// reaches the start stops there rather than running past it. Testing
-	// for a timestamp at or below zero would almost never fire.
+	// Within one sample of zero means the oldest point IS the session's first
+	// sample -- the daemon answers with what it has, so a reply that reaches the
+	// start stops there rather than running past it. Testing for a timestamp at
+	// or below zero would almost never fire.
 	const double oldestTs = m_lastTimestamp - (double)(numPoints - 1) * m_sScale;
 	const bool spansSessionStart = oldestTs <= m_sScale;
 	{
@@ -4627,16 +4412,14 @@ void CStatGraphRem::HandlePacket(const CECPacket *p)
 		GraphUpdateInfo update;
 		update.timestamp = m_lastTimestamp;
 		// Slot layout matches CStatistics::GetPointsForUpdate:
-		//   downloads/uploads/kadnodes — [0] session avg, [1] running avg, [2] current.
-		//   connections — [0] cntUploads, [1] cntConnections, [2] cntDownloads.
-		// Only timestamp and kadnodes[2] are read now that the graphs draw
-		// from the history rather than from the point handed to them; the
-		// rest is filled to keep the struct's contract with the monolithic
-		// producer. In particular the running-average slots are left at
-		// their per-point value: the trend the graphs actually plot is
-		// rebuilt by CStatistics::ComputeAverages, which sizes its window
-		// from the sample step and so stays right whatever scale we asked
-		// the daemon for.
+		//   downloads/uploads/kadnodes -- [0] session avg, [1] running avg, [2] current.
+		//   connections -- [0] cntUploads, [1] cntConnections, [2] cntDownloads.
+		// Only timestamp and kadnodes[2] are read now that the graphs draw from the
+		// history rather than from the point handed to them; the rest is filled to
+		// keep the struct's contract with the monolithic producer. The
+		// running-average slots stay at their per-point value: the trend the graphs
+		// plot is rebuilt by CStatistics::ComputeAverages, which sizes its window
+		// from the sample step.
 		update.downloads[0] = sessionDl;
 		update.downloads[1] = dl_kbps;
 		update.downloads[2] = dl_kbps;
@@ -4654,31 +4437,24 @@ void CStatGraphRem::HandlePacket(const CECPacket *p)
 			m_peakConnections = conn;
 		}
 
-		// Mirror the decoded point into the client-side history ring
-		// so COScopeCtrl (which draws straight from the history, and is
-		// shared with monolithic) can replay across tab switches and
-		// auto-rescale wipes without another daemon round-trip. This has
-		// to happen before the graphs are told about the sample, which is
-		// also the order the monolithic build sees: there,
-		// CStatistics::GetPointsForUpdate reads the record back out of
-		// the history to build update. Field mapping mirrors
-		// GetPointsForUpdate so the same GetHistory + ComputeAverages
-		// code paths read it back correctly:
-		//   kBytes{Received,Sent} / kadNodesTotal are stored as
-		//   (session rate * timestamp) so ComputeAverages's
-		//   "kValueRun / sTimestamp" recovers the session-avg trend.
-		// Per-point timestamps are reconstructed from the batch by
-		// stepping back from m_lastTimestamp at 1 s spacing (matches
-		// the scale we request in DoRequery).
+		// Mirror the decoded point into the client-side history ring so
+		// COScopeCtrl -- which draws straight from the history, and is shared with
+		// monolithic -- can replay across tab switches and auto-rescale wipes
+		// without another daemon round trip. This has to happen before the graphs
+		// are told about the sample, which is also the order the monolithic build
+		// sees. Field mapping mirrors GetPointsForUpdate so the same GetHistory +
+		// ComputeAverages paths read it back correctly: kBytes{Received,Sent} /
+		// kadNodesTotal are stored as (session rate * timestamp), so
+		// "kValueRun / sTimestamp" recovers the session-avg trend. Per-point
+		// timestamps are reconstructed by stepping back from m_lastTimestamp.
 		const double pointTs = m_lastTimestamp - (double)(numPoints - 1 - i) * m_sScale;
 
-		// A reply can reach back past the moment the daemon's session
-		// began -- its history list is preallocated, so it answers with
-		// as many points as were asked for even when fewer exist. Those
-		// points reconstruct to a timestamp at or before zero, and
-		// ComputeAverages divides by it: at zero the session average is
-		// undefined and below it the whole trend changes sign. Drop them
-		// rather than store a value that cannot be drawn honestly.
+		// A reply can reach back past the moment the daemon's session began -- its
+		// history list is preallocated, so it answers with as many points as were
+		// asked for even when fewer exist. Those points reconstruct to a timestamp
+		// at or below zero, and ComputeAverages divides by it: at zero the session
+		// average is undefined and below it the whole trend changes sign. Drop
+		// them rather than store a value that cannot be drawn honestly.
 		if (pointTs <= 0.0) {
 			continue;
 		}
@@ -4704,9 +4480,7 @@ void CStatGraphRem::HandlePacket(const CECPacket *p)
 
 CamuleRemoteGuiApp *theApp;
 
-//
-// since gui is not linked with amule.cpp - define events here
-//
+// The GUI is not linked with amule.cpp, so define the events here.
 wxDEFINE_EVENT(wxEVT_CORE_FINISHED_HTTP_DOWNLOAD, wxEvent);
 wxDEFINE_EVENT(wxEVT_CORE_SOURCE_DNS_DONE, wxEvent);
 wxDEFINE_EVENT(wxEVT_CORE_UDP_DNS_DONE, wxEvent);

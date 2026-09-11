@@ -397,26 +397,13 @@ CTag *CFileDataIO::ReadTag(bool bOptACP) const
 		name = ReadString(false);
 
 		switch (type) {
-		// NOTE: This tag data type is accepted and stored only to give us the possibility to upgrade
-		// the net in some months.
-		//
-		// And still.. it doesn't work this way without breaking backward compatibility. To properly
-		// do this without messing up the network the following would have to be done:
-		//	 -	those tag types have to be ignored by any client, otherwise those tags would
-		// also be sent (and 		that's really the problem)
-		//
-		//	 -	ignoring means, each client has to read and right throw away those tags, so
-		// those tags get 		get never stored in any tag list which might be sent by that
-		// client to some other client.
-		//
-		//	 -	all calling functions have to be changed to deal with the 'nr. of tags'
-		// attribute (which was 		already parsed) correctly.. just ignoring those tags
-		// here is not enough, any taglists have to 		be built with the knowledge that the
-		// 'nr. of tags' attribute may get decreased during the tag 		reading..
-		//
-		// If those new tags would just be stored and sent to remote clients, any malicious or just
-		// bugged client could let send a lot of nodes "corrupted" packets...
-		//
+		// This tag data type is accepted and stored only to leave room for a
+		// future upgrade of the net, and even that does not work without breaking
+		// backward compatibility: doing it properly would mean every client
+		// reading and discarding these tags rather than storing them, so they are
+		// never re-sent, and every caller handling a 'nr. of tags' attribute that
+		// shrinks during the read. Storing and forwarding them instead would let a
+		// malicious or buggy client have nodes send corrupted packets.
 		case TAGTYPE_HASH16: {
 			retVal = new CTagHash(name, ReadHash());
 			break;
@@ -446,10 +433,8 @@ CTag *CFileDataIO::ReadTag(bool bOptACP) const
 			retVal = new CTagFloat(name, ReadFloat());
 			break;
 
-		// NOTE: This tag data type is accepted and stored only to give us the possibility to upgrade
-		// the net in some months.
-		//
-		// And still.. it doesn't work this way without breaking backward compatibility
+		// Same as TAGTYPE_HASH16 above: accepted and stored only to leave room for
+		// a future upgrade, which cannot happen without breaking compatibility.
 		case TAGTYPE_BSOB: {
 			uint8 size = 0;
 			CScopedArray<unsigned char> value(ReadBsob(&size));
@@ -466,19 +451,16 @@ CTag *CFileDataIO::ReadTag(bool bOptACP) const
 				       EscapeForLog(name));
 		}
 	} catch (const CMuleException &e) {
-		// Debug, not standard: this says only what went wrong, never which
-		// file or packet it went wrong in, and it is rethrown for a caller
-		// that does know. A truncated tag off the network therefore put a
-		// bare "SafeIO::EOF: Attempt to read past end of file." in the
-		// daemon log with nothing around it, while the line naming the peer
-		// and opcode sat at debug level and was compiled out (issue #961).
+		// Debug, not standard: this says only what went wrong, never which file or
+		// packet, and it is rethrown for a caller that does know. A truncated tag
+		// off the network therefore put a bare "SafeIO::EOF" in the daemon log with
+		// nothing around it, while the line naming the peer and opcode sat at debug
+		// level and was compiled out (issue #961).
 		//
-		// Every caller reports the failure itself: CIndexed::ReadFile and
-		// ~CIndexed through AddDebugLogLineC, which survives a release
-		// build, and fileview on cerr. The Kad UDP handlers report through
-		// CClientUDPSocket's AddDebugLogLineN, so a malformed packet is now
-		// silent in release -- which is the right answer for a packet that
-		// was dropped and cost nothing.
+		// Every caller reports the failure itself: CIndexed through
+		// AddDebugLogLineC, fileview on cerr, and the Kad UDP handlers through
+		// CClientUDPSocket -- so a malformed packet is silent in release, which is
+		// right for one that was dropped and cost nothing.
 		AddDebugLogLineN(logGeneral, e.what());
 		delete retVal;
 		throw;

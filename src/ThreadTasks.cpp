@@ -50,7 +50,6 @@ const uint8_t g_emptyMD4Hash[16] = {
 // CHashingTask
 
 CHashingTask::CHashingTask(const CPath &path, const CPath &filename, const CPartFile *part)
-// GetPrintable is used to improve the readability of the log.
 : CThreadTask("Hashing", path.JoinPaths(filename).GetPrintable(), (part ? ETP_High : ETP_Normal))
 , m_path(path)
 , m_filename(filename)
@@ -68,7 +67,6 @@ CHashingTask::CHashingTask(const CPath &path, const CPath &filename, const CPart
 }
 
 CHashingTask::CHashingTask(const CKnownFile *toAICHHash)
-// GetPrintable is used to improve the readability of the log.
 : CThreadTask("AICH Hashing",
 	  toAICHHash->GetFilePath().JoinPaths(toAICHHash->GetFileName()).GetPrintable(),
 	  ETP_Low)
@@ -123,24 +121,18 @@ void CHashingTask::Entry()
 	knownfile->m_AvailPartFrequency.insert(
 		knownfile->m_AvailPartFrequency.begin(), knownfile->GetPartCount(), 0);
 
-	// Info level, not debug: AddDebugLogLineN compiles to nothing outside a
-	// debug build, so in the binaries users actually run there was no record
-	// at all that the client was reading every byte of a file (issue #968).
-	// Emitted here rather than where the task was queued, because tasks run
-	// serially on CThreadScheduler long after the directory walk that queued
-	// them -- a queue-time line would not say what is happening now. It sits
-	// after the open/length/size guards above, so a file that is skipped never
-	// claims to have been hashed.
+	// Info level, not debug: AddDebugLogLineN compiles to nothing outside a debug
+	// build, so the binaries users run had no record that the client was reading
+	// every byte of a file (issue #968). Emitted here rather than where the task was
+	// queued, because tasks run serially on CThreadScheduler long after the
+	// directory walk, and after the guards above, so a skipped file never claims to
+	// have been hashed. The full path, not m_filename: the same basename can exist
+	// in several shared directories.
 	//
-	// The full path, not m_filename: the same basename can exist in several
-	// shared directories, and "which file is it chewing on" is the question
-	// this line exists to answer.
-	// m_owner is set only when the task belongs to a partfile -- completion
-	// hashing of a finished download, or a corrupt-part re-hash. Those are
-	// real disk work and worth a line, but the path being read is an internal
-	// temp name like Temp/003.part, which means nothing to a user and does not
-	// match anything they can see in the UI. Report the download's own name
-	// instead, and say which kind of work it is.
+	// m_owner is set only for a partfile -- completion hashing or a corrupt-part
+	// re-hash. Those are real disk work, but the path being read is an internal temp
+	// name like Temp/003.part, so report the download's own name and which kind of
+	// work it is instead.
 	const bool ownedByPartfile = (m_owner != nullptr);
 	if ((m_toHash & EH_MD4) && (m_toHash & EH_AICH)) {
 		knownfile->GetAICHHashset()->FreeHashSet();
@@ -161,10 +153,9 @@ void CHashingTask::Entry()
 	} else if ((m_toHash & EH_AICH)) {
 		knownfile->GetAICHHashset()->FreeHashSet();
 		// Distinct wording: this fires for files discovered long ago whose AICH
-		// master hash is missing from known2_64.met, so calling it "hashing"
-		// would wrongly suggest the file was just found. After a known2_64.met
-		// loss this re-reads the entire library, which is exactly the silent
-		// multi-hour case worth a line.
+		// master hash is missing from known2_64.met, so "hashing" would wrongly
+		// suggest the file was just found. After a known2_64.met loss it re-reads the
+		// entire library, which is the silent multi-hour case worth a line.
 		AddLogLineN(CFormat(_("Rebuilding AICH hashset for file: %s")) % fullPath);
 		AddDebugLogLineN(
 			logHasher, CFormat("Starting to create AICH hash for file: %s") % m_filename);
@@ -173,7 +164,6 @@ void CHashingTask::Entry()
 			0, (CFormat("No hashes requested for file, skipping: %s") % m_filename).GetString());
 	}
 
-	// This loops creates the part-hashes, loop-de-loop.
 	try {
 		for (uint16 part = 0; part < knownfile->GetPartCount() && !TestDestroy(); part++) {
 			SetHashingProgress(part + 1);
@@ -208,7 +198,6 @@ void CHashingTask::Entry()
 		}
 	}
 
-	// Did we create a AICH hashset?
 	if ((m_toHash & EH_AICH) && !TestDestroy()) {
 		CAICHHashSet *AICHHashSet = knownfile->GetAICHHashset();
 
@@ -255,7 +244,6 @@ bool CHashingTask::CreateNextPartHash(CFileAutoClose &file, uint16 part, CKnownF
 	CMD4Hash *md4Hash = ((toHash & EH_MD4) ? &hash : NULL);
 	CAICHHashTree *aichHash = NULL;
 
-	// Setup for AICH hashing
 	if (toHash & EH_AICH) {
 		aichHash = owner->GetAICHHashset()->m_pHashTree.FindHash(offset, partLength);
 	}
@@ -263,13 +251,11 @@ bool CHashingTask::CreateNextPartHash(CFileAutoClose &file, uint16 part, CKnownF
 	owner->CreateHashFromFile(file, offset, partLength, md4Hash, aichHash);
 
 	if (toHash & EH_MD4) {
-		// Store the md4 hash
 		owner->m_hashlist.push_back(hash);
 
-		// This is because of the ed2k implementation for parts. A 2 * PARTSIZE
-		// file i.e. will have 3 parts (see CKnownFile::SetFileSize for comments).
-		// So we have to create the hash for the 0-size data, which will be the default
-		// md4 hash for null data: 31D6CFE0D16AE931B73C59D7E0C089C0
+		// The ed2k part implementation means a 2 * PARTSIZE file has 3 parts (see
+		// CKnownFile::SetFileSize), so a hash has to be created for the 0-size data:
+		// the default md4 hash for null data, 31D6CFE0D16AE931B73C59D7E0C089C0.
 		if ((partLength == PARTSIZE) && file.Eof()) {
 			owner->m_hashlist.push_back(CMD4Hash(g_emptyMD4Hash));
 		}
@@ -285,11 +271,10 @@ void CHashingTask::OnLastTask()
 		// explicitly save the list of hashed files here.
 		theApp->knownfiles->Save();
 
-		// Make sure the AICH-hashes are up to date. No orphan-prune here: this
-		// runs right after hashing (including a just-completed download) and
-		// races the main-thread SafeAddKFile that registers those files, so
-		// pruning could delete a hashset we just wrote. Only the startup sync
-		// prunes -- see CAICHSyncTask's ctor doc.
+		// Make sure the AICH hashes are up to date. No orphan-prune here: this runs
+		// right after hashing and races the main-thread SafeAddKFile that registers
+		// those files, so pruning could delete a hashset we just wrote. Only the
+		// startup sync prunes.
 		CThreadScheduler::AddTask(new CAICHSyncTask());
 	}
 }
@@ -309,24 +294,18 @@ void CAICHSyncTask::Entry()
 
 	AddDebugLogLineN(logAICHThread, "Synchronization thread started.");
 
-	// We collect all masterhashs which we find in the known2.met and store them in a list
 	std::list<CAICHHash> hashlist;
 	const CPath fullpath = CPath(thePrefs::GetConfigDir() + KNOWN2_MET_FILENAME);
 
-	// Snapshot of AICH master hashes still referenced by a known.met
-	// record. Used to drop orphans (entries whose owning known.met
-	// record was TTL-evicted by CKnownFileList::PruneDuplicates) from
-	// known2_64.met during the read walk. Empty set disables the prune
-	// (defensive: never wipe everything before knownfiles is loaded).
+	// Snapshot of AICH master hashes still referenced by a known.met record, used
+	// to drop orphans (entries whose owning record was TTL-evicted by
+	// PruneDuplicates) during the read walk. An empty set disables the prune, so
+	// nothing is ever wiped before knownfiles is loaded.
 	//
-	// Only the startup sync collects it: a post-hashing sync (scheduled by
-	// CHashingTask::OnLastTask) runs on a worker thread that can outrun the
-	// main-thread CamuleApp::OnFinishedHashing -> CKnownFileList::SafeAddKFile
-	// that registers the file it just hashed. That file's freshly-written
-	// hashset would then be absent from liveRoots and pruned as an orphan,
-	// leaving a newly completed download unable to load its AICH set until the
-	// next restart re-hashes it. Leaving liveRoots empty keeps the prune off on
-	// those runs; startup only prunes once the known-file list is authoritative.
+	// Only the startup sync collects it: a post-hashing sync runs on a worker thread
+	// that can outrun the main-thread SafeAddKFile registering the file it just
+	// hashed, whose freshly-written hashset would then be absent from liveRoots and
+	// pruned as an orphan.
 	std::unordered_set<CAICHHash> liveRoots;
 	if (m_pruneOrphans && theApp->knownfiles) {
 		theApp->knownfiles->CollectLiveAICHRoots(liveRoots);
@@ -353,11 +332,9 @@ void CAICHSyncTask::Entry()
 			return;
 		}
 
-		// Rewrite target. CFile::write_safe writes to "<name>.new" and
-		// renames on Close(); a partial rewrite leaves the original
-		// known2_64.met untouched, so a crash mid-prune doesn't lose
-		// data. Only opened when we actually have a live-roots set to
-		// filter against.
+		// Rewrite target. CFile::write_safe writes to "<name>.new" and renames on
+		// Close(), so a crash mid-prune leaves the original known2_64.met untouched.
+		// Opened only when there is a live-roots set to filter against.
 		const bool prune = !liveRoots.empty();
 		CFile rewriteFile;
 		bool rewriteOk = false;
@@ -387,7 +364,6 @@ void CAICHSyncTask::Entry()
 
 			uint64 nExistingSize = file.GetLength();
 			while (file.GetPosition() < nExistingSize) {
-				// Read the next hash
 				CAICHHash rootHash(&file);
 
 				uint32 nHashCount = file.ReadUInt32();
@@ -407,11 +383,9 @@ void CAICHSyncTask::Entry()
 					if (keep) {
 						rootHash.Write(&rewriteFile);
 						rewriteFile.WriteUInt32(nHashCount);
-						// Stream the hashset bytes through a small
-						// fixed buffer rather than slurping into RAM:
-						// large files can have many MB of leaf+tree
-						// SHA-1s and we don't want one entry to
-						// dictate the working set.
+						// Stream the hashset bytes through a small fixed
+						// buffer rather than slurping into RAM: large files can
+						// have many MB of leaf+tree SHA-1s.
 						uint8_t buf[64 * 1024];
 						uint64 remaining = hashsetBytes;
 						while (remaining > 0) {
@@ -430,9 +404,7 @@ void CAICHSyncTask::Entry()
 						++droppedCount;
 					}
 				} else {
-					// No rewrite in progress (prune disabled or
-					// rewrite file failed to open): just skip the
-					// hashset bytes as before.
+					// No rewrite in progress, so just skip the hashset bytes.
 					nLastVerifiedPos = file.Seek(
 						static_cast<wxFileOffset>(hashsetBytes), wxFromCurrent);
 				}
@@ -445,11 +417,10 @@ void CAICHSyncTask::Entry()
 			// Drop the SaveHashSet dedup cache: some of its entries
 			// may have just been truncated off the end of the file.
 			CAICHHashSet::InvalidateRootHashCache();
-			// Don't finalise the rewrite when the source was
-			// corrupt -- the partial .new file would replace the
-			// just-truncated source with something different. Abort
-			// the rewrite explicitly so its destructor doesn't end
-			// up renaming a stale .new over the recovered file.
+			// Do not finalise the rewrite when the source was corrupt: the
+			// partial .new file would replace the just-truncated source with
+			// something different. Abort explicitly so its destructor cannot
+			// rename a stale .new over the recovered file.
 			if (rewriteOk) {
 				rewriteFile.Close();
 				CPath::RemoveFile(CPath(fullpath.GetRaw() + wxT(".new")));
@@ -471,10 +442,9 @@ void CAICHSyncTask::Entry()
 				AddDebugLogLineN(logAICHThread,
 					CFormat("known2_64.met orphan prune: dropped %u, kept %u") %
 						(unsigned)droppedCount % (unsigned)keptCount);
-				// The dedup cache mirrored the old file. Drop it so
-				// the next SaveHashSet rebuilds against the rewritten
-				// known2_64.met instead of insisting hashes we just
-				// pruned are still "present".
+				// The dedup cache mirrored the old file. Drop it so the next
+				// SaveHashSet rebuilds against the rewritten known2_64.met rather
+				// than insisting pruned hashes are still present.
 				CAICHHashSet::InvalidateRootHashCache();
 			}
 		}
@@ -668,10 +638,9 @@ void CVerifyLocalDataTask::Entry()
 		return;
 	}
 
-	// We don't use directly the AICHHashSet from the knownFile, it is not thread-safe:
-	// While we are checking AICH hashes here, a peer could send us an OP_AICHREQUEST on the same
-	// file which will call LoadHashSet() and FreeHashSet() on the same working set...
-	// Create our own working copy here
+	// Not the knownFile's own AICHHashSet, which is not thread-safe: while we check
+	// AICH hashes here, a peer could send an OP_AICHREQUEST for the same file and
+	// call LoadHashSet()/FreeHashSet() on the same working set.
 	CKnownFile storedFile;
 	storedFile.SetFileSize(fileSize);
 	storedFile.GetAICHHashset()->SetMasterHash(aichRootHash, aichStatus);
@@ -738,9 +707,8 @@ void CVerifyLocalDataTask::Entry()
 					m_corruptedAICH.emplace_back(part, corruptedAICHinThisPart);
 			}
 
-			// For files smaller than PARTSIZE, GetPartHash is empty, and the MD4 of the part
-			// is the same as the MD4 of the file, no ID=MD4(concatenation of parts' MD4) is done
-			// Check comment in CKnownFile::SetFileSize() for further info
+			// For files smaller than PARTSIZE, GetPartHash is empty and the MD4 of the
+			// part is the MD4 of the file; see CKnownFile::SetFileSize().
 			if (storedMD4Hashes.empty()) {
 				if (md4Hash != m_fileID)
 					m_corruptedMD4.push_back(part);
@@ -765,7 +733,6 @@ void CVerifyLocalDataTask::Entry()
 // CCompletionTask
 
 CCompletionTask::CCompletionTask(const CPartFile *file)
-// GetPrintable is used to improve the readability of the log.
 : CThreadTask("Completing", file->GetFullName().GetPrintable(), ETP_High)
 , m_filename(file->GetFileName())
 , m_metPath(file->GetFullName())
@@ -798,7 +765,6 @@ void CCompletionTask::Entry()
 
 	CPath dstName = m_filename.Cleanup(true, !PlatformSpecific::CanFSHandleSpecialChars(targetPath));
 
-	// Avoid empty filenames ...
 	if (!dstName.IsOk()) {
 		dstName = CPath("Unknown");
 	}
@@ -837,7 +803,6 @@ void CCompletionTask::Entry()
 		}
 	}
 
-	// Removes the various other data-files
 	const char *otherMetExt[] = { "", PARTMET_BAK_EXT, ".seeds", NULL };
 	for (size_t i = 0; otherMetExt[i]; ++i) {
 		CPath toRemove = m_metPath.AppendExt(otherMetExt[i]);
@@ -855,7 +820,6 @@ void CCompletionTask::Entry()
 
 void CCompletionTask::OnExit()
 {
-	// Notify the app that the completion has finished for this file.
 	CCompletionEvent evt(m_error, m_owner, m_newName);
 
 	wxQueueEvent(wxTheApp, (evt).Clone());
@@ -887,7 +851,6 @@ void CCompletionTask::OnExit()
 #include <errno.h>
 
 CAllocateFileTask::CAllocateFileTask(CPartFile *file, bool pause)
-// GetPrintable is used to improve the readability of the log.
 : CThreadTask("Allocating", file->GetFullName().RemoveExt().GetPrintable(), ETP_High)
 , m_file(file)
 , m_pause(pause)
@@ -930,7 +893,6 @@ void CAllocateFileTask::Entry()
 		m_result = errno;
 	}
 #else
-	// Use kernel level routines if possible
 #ifdef HAVE_FALLOCATE
 	m_result = fallocate(file.fd(), 0, 0, m_file->GetFileSize());
 #elif defined HAVE_SYS_FALLOCATE
@@ -939,7 +901,6 @@ void CAllocateFileTask::Entry()
 		m_result = errno;
 	}
 #elif defined HAVE_POSIX_FALLOCATE
-	// otherwise use glibc implementation, if available
 	m_result = posix_fallocate(file.fd(), 0, m_file->GetFileSize());
 #endif
 
@@ -976,7 +937,6 @@ void CAllocateFileTask::Entry()
 
 void CAllocateFileTask::OnExit()
 {
-	// Notify the app that the preallocation has finished for this file.
 	CAllocFinishedEvent evt(m_file, m_pause, m_result);
 
 	wxQueueEvent(wxTheApp, (evt).Clone());
@@ -996,9 +956,9 @@ CMediaProbeEvent::CMediaProbeEvent(
 , m_succeeded(succeeded)
 , m_markUnprobeable(markUnprobeable)
 {
-	// Deep-copy every string: this event is built on the probe worker and
-	// consumed on the main thread, and wxString is refcounted, so handing the
-	// buffer over shared would race the worker's own copy going out of scope.
+	// Deep-copy every string: this event is built on the probe worker and consumed
+	// on the main thread, and wxString is refcounted, so handing the buffer over
+	// shared would race the worker's own copy going out of scope.
 	m_info.length_seconds = info.length_seconds;
 	m_info.bitrate_kbps = info.bitrate_kbps;
 	m_info.codec = wxString(info.codec.c_str(), info.codec.length());

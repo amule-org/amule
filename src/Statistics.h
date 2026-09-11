@@ -168,14 +168,12 @@ protected:
 	std::deque<uint32> m_byte_history;
 	std::deque<uint64> m_tick_history;
 	uint32_t m_timespan;
-	// Sum of every sample currently inside the window. Wide because the
-	// sum is not a byte count: with count_average the samples are rates,
-	// and the graphs' running average holds a 5 minute window of them --
-	// 100 samples at the default 3 s spacing, which passes 2^32 once the
-	// mean rate reaches about 41 MB/s. Past that it wrapped, the
-	// subtraction below drove it further under, and the trend collapsed
-	// to nothing and climbed back over a full window. The individual
-	// samples in m_byte_history are fine at 32 bits; only their sum is not.
+	// Sum of every sample currently inside the window. Wide because the sum is not
+	// a byte count: with count_average the samples are rates, and the graphs' running
+	// average holds a 5 minute window of them -- 100 samples at the default 3 s
+	// spacing, which passes 2^32 once the mean rate reaches about 41 MB/s. Past that
+	// it wrapped and the trend collapsed. The samples themselves are fine at 32
+	// bits; only their sum is not.
 	uint64_t m_total;
 	double m_rate;
 	double m_max_rate;
@@ -277,11 +275,10 @@ public:
 
 	void RecordHistory();
 	unsigned GetHistoryForWeb(unsigned cntPoints, double sStep, double *sStart, uint32 **graphData);
-	// EC_OP_STATSGRAPHS variant that also fills per-point active-up /
-	// active-down counters and the latest session totals, so amulegui
-	// can render the same 3-line Connections scope and true
-	// kBytesReceived/sTimestamp session average as monolithic amule.
-	// connData is freshly new[]'d on success (caller owns / deletes).
+	// EC_OP_STATSGRAPHS variant that also fills per-point active-up / active-down
+	// counters and the latest session totals, so amulegui can render the same
+	// 3-line Connections scope and true session average as monolithic amule.
+	// connData is freshly new[]'d on success and owned by the caller.
 	unsigned GetHistoryForGui(unsigned cntPoints,
 		double sStep,
 		double *sStart,
@@ -533,21 +530,18 @@ public:
 
 	void SetAverageMinutes(uint8 minutes) { average_minutes = minutes; }
 
-	// Records held per resolution range. The list is nHistRanges of these,
-	// each range at twice the spacing of the one before, so this sets both
-	// how far back the graphs can reach and how much of that reach is at
-	// fine resolution: at a 3 s update delay the two finest ranges are the
-	// ones a graph can plot from, giving 3 x this many seconds of history.
+	// Records held per resolution range. The list is nHistRanges of these, each
+	// range at twice the spacing of the one before, so this sets both how far back
+	// the graphs can reach and how much of that reach is at fine resolution: at a
+	// 3 s update delay the two finest ranges are the ones a graph can plot from.
 	//
-	// Was (1280 / 2) - 80 = 560, once derived from a GUI width. That put
-	// the finest usable reach at 28 minutes, which a remote GUI could
-	// exhaust in a window barely wider than half a screen. At 64 bytes a
-	// record the whole list costs 7 x this x 64 bytes -- 787 KB here,
-	// against 245 KB at the old value.
+	// Was (1280 / 2) - 80 = 560, once derived from a GUI width, which put the finest
+	// usable reach at 28 minutes -- exhaustible by a remote GUI in a window barely
+	// wider than half a screen. At 64 bytes a record the whole list costs
+	// 7 x this x 64 bytes, so 787 KB here against 245 KB at the old value.
 	//
-	// Public because it is reported to remote GUIs over EC: a client that
-	// asked for more points than a range holds would be answered with the
-	// same record repeated, and would have no way to tell.
+	// Public because it is reported to remote GUIs over EC: a client asking for more
+	// points than a range holds would be answered with the same record repeated.
 	static int GetPointsPerRange() { return 1800; }
 
 private:
@@ -592,7 +586,6 @@ private:
 
 	/* Tree-related vars */
 
-	// the tree
 	static CStatTreeItemBase *s_statTree;
 
 	// Uptime
@@ -634,8 +627,6 @@ private:
 	// Clients
 	static CStatTreeItemHiddenCounter *s_clients;
 	static CStatTreeItemCounter *s_unknown;
-	// static	CStatTreeItem			s_lowID;
-	// static	CStatTreeItem			s_secIdentOnOff;
 #ifdef __DEBUG__
 	static CStatTreeItemNativeCounter *s_hasSocket;
 #endif
@@ -726,10 +717,10 @@ private:
 	static uint64 s_statData[sdTotalItems];
 	uint8 average_minutes;
 
-	// History ring for the Statistics + Network->Kad graphs. Filled by
-	// CStatGraphRem::HandlePacket (one HR per decoded point) so the
-	// shared COScopeCtrl::PlotHistory path can replay across tab
-	// switches and auto-rescale events without a daemon round-trip.
+	// History ring for the Statistics and Network->Kad graphs. Filled by
+	// CStatGraphRem::HandlePacket, one HR per decoded point, so the shared
+	// COScopeCtrl::PlotHistory path can replay across tab switches and auto-rescale
+	// events without a daemon round-trip.
 	std::list<HR> listHR;
 	typedef std::list<HR>::iterator listPOS;
 	typedef std::list<HR>::reverse_iterator listRPOS;
@@ -752,25 +743,21 @@ public:
 		const std::vector<float *> &ppf,
 		StatsGraphType which_graph);
 
-	// CLIENT_GUI-only producer (no analogue on monolithic, where
-	// RecordHistory() does the equivalent push from local counters).
-	// Appends one HR record to listHR and caps the ring at
-	// kHistoryCap so memory stays bounded across long sessions.
-	// minSpacing is the seconds-per-point the graphs are drawing at, and
-	// records closer together than that are dropped: keeping finer data
-	// than is ever plotted just spends the ring on points no axis asks for.
+	// CLIENT_GUI-only producer, with no analogue on monolithic, where
+	// RecordHistory() does the equivalent push from local counters. Appends one HR
+	// record to listHR and caps the ring at kHistoryCap. minSpacing is the
+	// seconds-per-point the graphs are drawing at, and records closer together than
+	// that are dropped: finer data than is ever plotted just spends the ring.
 	void AddHistoryRecord(const HR &hr, double minSpacing);
 	// Drops everything. Used when the sample spacing changes, which
 	// invalidates the resolution the stored points were kept at.
 	void ClearHistory() { listHR.clear(); }
-	// Records, not seconds. One is kept per plotted point, so the useful
-	// way to read this is as a plot width: a graph draws one point per
-	// pixel, and cannot show more than this many however wide its window
-	// is. The span that covers depends on the "Update delay" preference
-	// the points were fetched at -- 3 h at a 1 s delay, a day at 8 s --
-	// but the pixel bound is the same either way, which is what matters
-	// because the Kad graph spans the whole window. At 64 bytes a record
-	// the whole ring is about 225 KB.
+	// Records, not seconds. One is kept per plotted point, so the useful way to read
+	// this is as a plot width: a graph draws one point per pixel and cannot show
+	// more than this many however wide its window. The span that covers depends on
+	// the "Update delay" preference the points were fetched at -- 3 h at 1 s, a day
+	// at 8 s -- but the pixel bound is the same either way. At 64 bytes a record the
+	// ring is about 225 KB.
 	static const size_t kHistoryCap = 3600;
 
 	static uint64 GetUptimeMillis();
@@ -789,12 +776,11 @@ public:
 
 	static uint32 GetSharedFileCount() { return s_statData[sdSharedFileCount]; }
 
-	// Free space on the daemon's filesystems, as it reported them. The
-	// figures are necessarily the core's view: the machine running the GUI
-	// may not have those directories at all, and where it does have them
-	// mounted it can see a different size, quota or share. Stored as the
-	// unsigned slot the array is made of; FREE_SPACE_UNKNOWN survives the
-	// round trip because it is the all-ones pattern either way.
+	// Free space on the daemon's filesystems, as it reported them. Necessarily the
+	// core's view: the machine running the GUI may not have those directories at
+	// all, and where it does it can see a different size, quota or share. Stored as
+	// the unsigned slot the array is made of; FREE_SPACE_UNKNOWN survives the round
+	// trip, being the all-ones pattern either way.
 	static sint64 GetTempFreeSpace() { return (sint64)s_statData[sdTempFreeSpace]; }
 	static sint64 GetIncomingFreeSpace() { return (sint64)s_statData[sdIncomingFreeSpace]; }
 

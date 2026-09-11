@@ -42,13 +42,9 @@
  */
 template <typename VALUE, typename KEYTYPE> struct CRangeMapHelper
 {
-	//! Typedef specifying the type to use when a non-const pointer is expected.
 	typedef VALUE *ValuePtr;
-	//! Typedef specifying the type to use when a non-const referenecs is expected.
 	typedef VALUE &ValueRef;
-	//! Typedef specifying the type to use when a const referenecs is expected.
 	typedef const VALUE &ConstValueRef;
-	//! Typedef specifying the type to use when a const pointer is expected.
 	typedef const VALUE *ConstValuePtr;
 
 	//! Used internally by CRangeMap to specify the end of a range.
@@ -56,7 +52,6 @@ template <typename VALUE, typename KEYTYPE> struct CRangeMapHelper
 	//! Contains the value of a given range.
 	VALUE second;
 
-	//! Compares the user-values of this range with another.
 	bool operator==(const CRangeMapHelper<VALUE, KEYTYPE> &o) const { return second == o.second; }
 };
 
@@ -108,14 +103,12 @@ template <typename VALUE, typename KEYTYPE = uint64> class CRangeMap
 private:
 	//! The map uses the start-key as key and the User-value and end-key pair as value
 	typedef std::map<KEYTYPE, HELPER> RangeMap;
-	//! Shortcut for the pair used by the RangeMap.
 	typedef std::pair<KEYTYPE, HELPER> RangePair;
 
 	//! Typedefs used to distinguish between our custom iterator and the real ones.
 	typedef typename RangeMap::iterator RangeIterator;
 	typedef typename RangeMap::const_iterator ConstRangeIterator;
 
-	//! The raw map of range values.
 	RangeMap m_ranges;
 
 	/**
@@ -137,10 +130,8 @@ private:
 		{
 		}
 
-		//! Equality operator
 		bool operator==(const iterator_base &other) const { return m_it == other.m_it; }
 
-		//! Non-equality operator
 		bool operator!=(const iterator_base &other) const { return m_it != other.m_it; }
 
 		//! Returns the starting point of the range
@@ -149,7 +140,6 @@ private:
 		//! Returns the end-point of the range
 		KEYTYPE keyEnd() const { return m_it->second.first; }
 
-		//! Prefix increment.
 		iterator_base &operator++()
 		{
 			++m_it;
@@ -157,10 +147,8 @@ private:
 			return *this;
 		}
 
-		//! Postfix increment.
 		iterator_base operator++(int) { return iterator_base(m_it++); }
 
-		//!  Prefix decrement.
 		iterator_base &operator--()
 		{
 			--m_it;
@@ -168,17 +156,13 @@ private:
 			return *this;
 		}
 
-		//! Postfix decrement.
 		iterator_base operator--(int) { return iterator_base(m_it--); }
 
-		//! Deference operator, returning the user-specified value.
 		ReturnTypeRef operator*() const { return m_it->second.second; }
 
-		//! Member access operator, returning the user-specified value.
 		ReturnTypePtr operator->() const { return &m_it->second.second; }
 
 	protected:
-		//! The raw iterator
 		RealIterator m_it;
 	};
 
@@ -191,10 +175,8 @@ public:
 	typedef iterator_base<RangeIterator, ValueRef, ValuePtr> iterator;
 	typedef iterator_base<ConstRangeIterator, ConstValueRef, ConstValuePtr> const_iterator;
 
-	//! The type used to specify size, ie size().
 	typedef typename RangeMap::size_type size_type;
 
-	//! The type of user-data saved with each range.
 	typedef VALUE value_type;
 
 	/**
@@ -232,12 +214,10 @@ public:
 	 */
 	bool operator==(const CRangeMap<VALUE, KEYTYPE> &other) const
 	{
-		// Check if we are comparing with ourselves
 		if (this == &other) {
 			return true;
 		}
 
-		// Check size, must be the same
 		if (size() != other.size()) {
 			return false;
 		}
@@ -316,12 +296,9 @@ public:
 			// Thus: key < it->first, but (--it)->first <= key
 			RangeIterator it = m_ranges.upper_bound(key);
 
-			// Our target range must come before the one we found; does it exist?
 			if (it != m_ranges.begin()) {
-				// Go back to the last range which starts at or before key
 				--it;
 
-				// Check if this range covers the key
 				if (key <= it->second.first) {
 					return it;
 				}
@@ -335,7 +312,6 @@ public:
 	{
 		// Create default initialized entry, which ensures that all fields are initialized.
 		HELPER entry = HELPER();
-		// Need to set the 'end' field.
 		entry.first = endPos;
 
 		// Insert without merging, which forces the creation of an entry that

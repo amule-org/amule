@@ -70,9 +70,9 @@ CSharedFilesWnd::CSharedFilesWnd(wxWindow *pParent)
 	wxASSERT(peerslistctrl);
 
 	// Render the initial "Total size: 0 bytes" for an empty share.
-	// CSharedFilesCtrl::ShowFilesCount() can't do it yet: it reaches the label
-	// through theApp->amuledlg->m_sharedfileswnd, which isn't assigned until
-	// this constructor returns. The widget lives under this window.
+	// CSharedFilesCtrl::ShowFilesCount() cannot do it yet: it reaches the label
+	// through theApp->amuledlg->m_sharedfileswnd, which is not assigned until this
+	// constructor returns.
 	if (wxStaticText *totalSize = CastChild("sharedFilesTotalSize", wxStaticText)) {
 		totalSize->SetLabel(CFormat(_("Total size of Shared Files: %s")) % CastItoXBytes(0));
 	}
@@ -83,11 +83,9 @@ CSharedFilesWnd::CSharedFilesWnd(wxWindow *pParent)
 
 	wxConfigBase *config = wxConfigBase::Get();
 
-	// Check if the clientlist is hidden
 	bool show = true;
 	config->Read("/GUI/SharedWnd/ShowClientList", &show, true);
 	peerslistctrl->SetShowing(show);
-	// Load the last used splitter position
 	m_splitter = config->Read("/GUI/SharedWnd/Splitter", 463l);
 	m_clientShow = (EClientShow)config->Read("/GUI/SharedWnd/ClientShowMode", ClientShowAll);
 	SetClientShowMode(m_clientShow);
@@ -126,18 +124,14 @@ CSharedFilesWnd::~CSharedFilesWnd()
 		wxConfigBase *config = wxConfigBase::Get();
 
 		if (!peerslistctrl->GetShowing()) {
-			// Save the splitter position
 			config->Write("/GUI/SharedWnd/Splitter", m_splitter);
 
-			// Save the visible status of the list
 			config->Write("/GUI/SharedWnd/ShowClientList", false);
 		} else {
 			wxSplitterWindow *splitter = CastChild("sharedsplitterWnd", wxSplitterWindow);
 
-			// Save the splitter position
 			config->Write("/GUI/SharedWnd/Splitter", splitter->GetSashPosition());
 
-			// Save the visible status of the list
 			config->Write("/GUI/SharedWnd/ShowClientList", true);
 		}
 		config->Write("/GUI/SharedWnd/ClientShowMode", (int)m_clientShow);
@@ -150,12 +144,10 @@ CSharedFilesWnd::~CSharedFilesWnd()
 // part and only depends on the selection in ClientShowSelected mode.
 void CSharedFilesWnd::UpdateSelectionStats()
 {
-	// Bars fill with this session's share of the file's all-time activity
-	// (session / all-time -- the same two numbers as each label). Both come
-	// from the per-file EC counters, so it is reliable in the remote GUI --
-	// unlike a library-wide "total", which can't be gotten cheaply here -- and
-	// the per-mille scale keeps TB-scale byte counts inside the gauge's int
-	// range (raw bytes, even /1024, overflow it and blank the bar).
+	// Bars fill with this session's share of the file's all-time activity -- the
+	// same two numbers as each label. Both come from the per-file EC counters, so it
+	// is reliable in the remote GUI, and the per-mille scale keeps TB-scale byte
+	// counts inside the gauge's int range, which raw bytes overflow.
 	m_bar_requests->SetRange(1000);
 	m_bar_accepted->SetRange(1000);
 	m_bar_transfer->SetRange(1000);
@@ -202,17 +194,14 @@ void CSharedFilesWnd::UpdateSelectionStats()
 		uint64 pm = (uint64)1000 * sess / all;
 		return (int)(pm > 1000 ? 1000 : pm);
 	};
-	// Requests
 	m_bar_requests->SetValue(sharePerMille(session_requests, all_requests));
 	wxString labelReq = CFormat("%d / %d") % session_requests % all_requests;
 	CastChild(IDC_SREQUESTED, wxStaticText)->SetLabel(labelReq);
 
-	// Accepted requests
 	m_bar_accepted->SetValue(sharePerMille(session_accepted, all_accepted));
 	wxString labelAcc = CFormat("%d / %d") % session_accepted % all_accepted;
 	CastChild(IDC_SACCEPTED, wxStaticText)->SetLabel(labelAcc);
 
-	// Transferred
 	m_bar_transfer->SetValue(sharePerMille(session_transferred, all_transferred));
 	wxString labelTrans = CastItoXBytes(session_transferred) + " / " + CastItoXBytes(all_transferred);
 	CastChild(IDC_STRANSFERRED, wxStaticText)->SetLabel(labelTrans);
@@ -245,10 +234,10 @@ void CSharedFilesWnd::SelectionUpdated()
 		// ShowSources() requires the file vector sorted (see CGenericClientListCtrl).
 		std::sort(fileVector.begin(), fileVector.end());
 	} else {
-		// The GenericClientListCtrl is designed to show clients associated with a KnownFile.
-		// So the uploadqueue carries a special known file with all ongoing uploads in its
-		// upload list. This is a hack, but easier than trying to bend the class into a shape
-		// it was not intended for to show all clients currently uploading.
+		// CGenericClientListCtrl shows clients associated with a KnownFile, so the
+		// uploadqueue carries a special known file holding all ongoing uploads in its
+		// upload list. A hack, but easier than bending the class into a shape it was
+		// not intended for.
 #ifdef CLIENT_GUI
 		fileVector.push_back(theApp->m_allUploadingKnownFile);
 #else

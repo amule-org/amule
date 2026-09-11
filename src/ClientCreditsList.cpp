@@ -83,9 +83,8 @@ const char kMetaMagic[8] = { 'A', 'M', 'U', 'L', 'E', 'M', 'D', '1' };
 const uint8 kMetaVersion = 1;
 //! Names are attacker-supplied; cap what we store rather than what we read.
 //! Counted in characters, because that is what wxString::Left() takes -- a
-//! multi-byte name can therefore occupy more than this many bytes on disk,
-//! which the uint16 length field has ample room for. The cap is storage
-//! sanity, not a bound the format depends on.
+//! multi-byte name can occupy more bytes on disk, which the uint16 length field
+//! has ample room for. Storage sanity, not a bound the format depends on.
 const size_t kMetaMaxNameChars = 64;
 } // namespace
 
@@ -112,7 +111,6 @@ void CClientCreditsList::LoadList()
 
 		bool bCreateBackup = TRUE;
 		if (bakFileName.FileExists()) {
-			// Ok, the backup exist, get the size
 			CFile hBakFile(bakFileName);
 			if (hBakFile.GetLength() > file.GetLength()) {
 				// the size of the backup was larger then the
@@ -135,7 +133,6 @@ void CClientCreditsList::LoadList()
 				AddDebugLogLineC(
 					logCredits, CFormat("Could not create backup file '%s'") % fileName);
 			}
-			// reopen file
 			if (!file.Open(fileName, CFile::read)) {
 				AddDebugLogLineC(logCredits, "Failed to load creditfile");
 				return;
@@ -204,11 +201,10 @@ void CClientCreditsList::LoadList()
 
 void CClientCreditsList::LoadMetaTrailer(CFile &file)
 {
-	// Optional by construction: a file written by any older build simply ends
-	// after the last record. Everything here is best-effort -- the credits are
-	// already loaded and must survive whatever this finds, so a trailer that is
-	// absent, truncated or unrecognised is dropped rather than treated as a
-	// corrupt file.
+	// Optional by construction: a file written by any older build simply ends after
+	// the last record. Everything here is best-effort -- the credits are already
+	// loaded and must survive whatever this finds, so a trailer that is absent,
+	// truncated or unrecognised is dropped rather than treated as corruption.
 	try {
 		const uint64 remaining = file.GetLength() - file.GetPosition();
 		if (remaining < sizeof(kMetaMagic) + 1 + 4) {
@@ -284,7 +280,6 @@ void CClientCreditsList::SaveList()
 			uint32 count = 0;
 
 			file.WriteUInt8(CREDITFILE_VERSION);
-			// Temporary place-holder for number of structs
 			file.WriteUInt32(0);
 
 			ClientMap::iterator it = m_mapClients.begin();
@@ -307,7 +302,6 @@ void CClientCreditsList::SaveList()
 				}
 			}
 
-			// Write the actual number of structs
 			file.Seek(1);
 			file.WriteUInt32(count);
 
@@ -364,12 +358,11 @@ void CClientCreditsList::SaveMetaTrailer(CFile &file)
 			file.WriteUInt8(meta.clientSoft);
 			file.WriteUInt8(meta.sourceFrom);
 			file.WriteUInt8(meta.obfuscation);
-			// Two length bytes because CFileDataIO supports 0, 2 or 4 and
-			// rejects anything else -- a 1-byte prefix throws
-			// "Invalid length for string-length field" from inside the
-			// write, which the handler below would then swallow, leaving a
-			// trailer truncated mid-entry. The cap is enforced here, not by
-			// the field width.
+			// Two length bytes because CFileDataIO supports 0, 2 or 4 and rejects
+			// anything else: a 1-byte prefix throws "Invalid length for
+			// string-length field" from inside the write, which the handler below
+			// would swallow, leaving a trailer truncated mid-entry. The cap is
+			// enforced here, not by the field width.
 			file.WriteString(meta.name.Left(kMetaMaxNameChars), utf8strRaw, sizeof(uint16));
 		}
 	} catch (const CIOFailureException &e) {
@@ -426,11 +419,7 @@ bool CClientCreditsList::CreateKeyPair()
 		privkey.DEREncode(*privkeysink);
 		privkeysink->MessageEnd();
 
-		// Do not delete these pointers or it will blow in your face.
-		// cryptopp semantics is giving ownership of these objects.
-		//
-		// delete privkeysink;
-		// delete fileSink;
+		// Do not delete these pointers: cryptopp takes ownership of them.
 
 		AddDebugLogLineN(logCredits, "Created new RSA keypair");
 	} catch (const CryptoPP::Exception &e) {
@@ -454,7 +443,6 @@ void CClientCreditsList::InitalizeCrypting()
 	}
 
 	try {
-		// check if keyfile is there
 		if (wxFileExists(thePrefs::GetConfigDir() + CRYPTKEY_FILENAME)) {
 			off_t keySize = CPath::GetFileSize(thePrefs::GetConfigDir() + CRYPTKEY_FILENAME);
 
@@ -471,12 +459,10 @@ void CClientCreditsList::InitalizeCrypting()
 			CreateKeyPair();
 		}
 
-		// load private key
 		CryptoPP::FileSource filesource(filename2char(thePrefs::GetConfigDir() + CRYPTKEY_FILENAME),
 			true,
 			new CryptoPP::Base64Decoder);
 		m_pSignkey = new CryptoPP::RSASSA_PKCS1v15_SHA_Signer(filesource);
-		// calculate and store public key
 		CryptoPP::RSASSA_PKCS1v15_SHA_Verifier pubkey(
 			*static_cast<CryptoPP::RSASSA_PKCS1v15_SHA_Signer *>(m_pSignkey));
 		CryptoPP::ArraySink asink(m_abyMyPublicKey, 80);
@@ -506,7 +492,6 @@ uint8 CClientCreditsList::CreateSignature(CClientCredits *pTarget,
 	if (signer == NULL)
 		signer = static_cast<CryptoPP::RSASSA_PKCS1v15_SHA_Signer *>(m_pSignkey);
 
-	// create a signature of the public key from pTarget
 	wxASSERT(pTarget);
 	wxASSERT(pachOutput);
 
@@ -629,7 +614,6 @@ bool CClientCreditsList::CryptoAvailable() const
 #ifdef _DEBUG
 bool CClientCreditsList::Debug_CheckCrypting()
 {
-	// create random key
 	CryptoPP::AutoSeededX917RNG<CryptoPP::DES_EDE3> rng;
 
 	CryptoPP::RSASSA_PKCS1v15_SHA_Signer priv(rng, 384);
@@ -646,7 +630,6 @@ bool CClientCreditsList::Debug_CheckCrypting()
 	CClientCredits newcredits(newcstruct);
 	newcredits.SetSecureIdent(m_abyMyPublicKey, m_nMyPublicKeyLen);
 	newcredits.m_dwCryptRndChallengeFrom = challenge;
-	// create signature with fake priv key
 	uint8_t pachSignature[200];
 	memset(pachSignature, 0, 200);
 	uint8 sigsize = CreateSignature(&newcredits, pachSignature, 200, 0, false, &priv);
@@ -656,10 +639,8 @@ bool CClientCreditsList::Debug_CheckCrypting()
 	CClientCredits newcredits2(newcstruct2);
 	newcredits2.m_dwCryptRndChallengeFor = challenge;
 
-	// if you uncomment one of the following lines the check has to fail
-	// abyPublicKey[5] = 34;
-	// m_abyMyPublicKey[5] = 22;
-	// pachSignature[5] = 232;
+	// Uncommenting any of abyPublicKey[5] = 34, m_abyMyPublicKey[5] = 22 or
+	// pachSignature[5] = 232 makes the check below fail, as it should.
 
 	newcredits2.SetSecureIdent(abyPublicKey, PublicKeyLen);
 

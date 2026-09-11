@@ -48,11 +48,10 @@ constexpr int kSplashWidth = 440;
 constexpr int kSplashHeight = 340;
 constexpr int kLogoSize = 128;
 
-// Gradient, matching the artwork the splash replaces: an ellipse centred on
-// the panel, falling off linearly from a lifted grey to black. The radius is
+// Gradient, matching the artwork the splash replaces: an ellipse centred on the
+// panel, falling off linearly from a lifted grey to black. The radius is
 // normalised per axis, so the ellipse follows the panel's shape rather than
-// being circular, and it reaches black past the corners (which sit at
-// r = sqrt(2) ~ 1.41) rather than exactly at them.
+// being circular, and reaches black past the corners rather than exactly at them.
 constexpr int kCentreR = 79;
 constexpr int kCentreG = 79;
 constexpr int kCentreB = 82;
@@ -60,10 +59,9 @@ constexpr double kBlackAtRadius = 1.39;
 
 // Repaint at most this often while the caller reports progress. Time-based
 // rather than every-N-items: the shared-file scan runs at wildly different
-// speeds depending on whether the files are local or on network storage, so
-// a count-based rule is either too coarse or too costly depending on the
-// share. At 10 Hz the bar looks continuous and the cost stays negligible
-// against work measured in seconds.
+// speeds depending on whether the files are local or on network storage, so a
+// count-based rule is either too coarse or too costly. At 10 Hz the bar looks
+// continuous and the cost stays negligible.
 constexpr long kRepaintIntervalMs = 100;
 
 // Minimum time on screen. A startup that beats this would otherwise show
@@ -167,10 +165,9 @@ void CSplashScreen::RenderBackdrop()
 		y += logo.GetHeight() + FromDIP(12);
 	}
 
-	// Application name and running version. The version-number macros rather
-	// than GetMuleVersion(): that one deliberately describes the build for
-	// debugging -- toolkit, Boost, snapshot revision -- which is a paragraph,
-	// not a title.
+	// Application name and running version. The version-number macros rather than
+	// GetMuleVersion(), which deliberately describes the build for debugging --
+	// toolkit, Boost, snapshot revision -- and is a paragraph, not a title.
 	wxFont title = GetFont();
 	title.SetPointSize(title.GetPointSize() + 6);
 	title.SetWeight(wxFONTWEIGHT_BOLD);
@@ -235,18 +232,14 @@ void CSplashScreen::SetProgress(const wxString &status, int percent, bool immedi
 
 	Refresh(false);
 
-	// The event loop has to run for the invalidation to reach the screen:
-	// under GTK3, Update() cannot force a synchronous repaint the way it
-	// does elsewhere -- drawing is driven by the frame clock, which only
-	// ticks from the loop. Without this the bar simply does not move, which
-	// is the whole point of showing it.
+	// The event loop has to run for the invalidation to reach the screen: under
+	// GTK3, Update() cannot force a synchronous repaint the way it does elsewhere,
+	// since drawing is driven by the frame clock, which only ticks from the loop.
 	//
-	// wxSafeYield rather than wxYield: it disables every other top-level
-	// window for the duration, so input that arrives while the application
-	// is still half-built is discarded rather than dispatched into
-	// subsystems that do not exist yet. The rate limit above bounds what
-	// this costs; Finish() logs the total so it can be checked rather than
-	// assumed.
+	// wxSafeYield rather than wxYield: it disables every other top-level window for
+	// the duration, so input arriving while the application is half-built is
+	// discarded rather than dispatched into subsystems that do not exist yet. The
+	// rate limit above bounds what this costs.
 	wxSafeYield(this, true);
 
 	m_updateMicros += (wxGetUTCTimeMillis() - now);
@@ -256,15 +249,13 @@ void CSplashScreen::Finish()
 {
 	const wxLongLong visibleMs = wxGetUTCTimeMillis() - m_shownAt;
 
-	// Debug level: this is the splash's own overhead against the work it
-	// reports on, which matters when tuning the phase weighting but is noise
-	// in a user's log. The phase timings themselves are logged normally,
-	// since those are what a "startup is slow" report needs.
+	// Debug level: this is the splash's own overhead against the work it reports
+	// on, which matters when tuning the phase weighting but is noise in a user's
+	// log. The phase timings themselves are logged normally.
 	//
-	// logGeneral, not logStandard: the latter is the -1 sentinel meaning "not
-	// a debug category" that AddLogLineN passes, so a debug line asking
-	// whether it is enabled sends it through CLogger::IsEnabled, whose index
-	// check rejects anything below zero and hits wxFAIL.
+	// logGeneral, not logStandard: the latter is the -1 sentinel meaning "not a
+	// debug category", so a debug line asking whether it is enabled reaches
+	// CLogger::IsEnabled, whose index check rejects anything below zero.
 	AddDebugLogLineN(logGeneral,
 		CFormat("Splash: %u repaints costing %lld ms, %lld ms taken from startup, "
 			"over %lld ms on screen") %

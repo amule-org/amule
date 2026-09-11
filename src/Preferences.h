@@ -229,47 +229,34 @@ public:
 
 	void Save();
 	void SaveCats();
-	// Read shareddir-explicit.dat, shareddir-recursive.dat, and
-	// shareddir.dat from disk; recompute shareddir_list as the union
-	// of the explicit list and the recursive expansion; reconcile any
-	// drift from external writers (e.g. a Docker entrypoint script
-	// that edits shareddir.dat directly and then calls Reload via
-	// EC); rewrite shareddir.dat as the new union. Safe to call from
-	// startup, the EC ReloadSharedFiles command, the UI Reload
-	// button, and the watcher's debounced reload.
+	// Read the three shared-dir files, recompute shareddir_list as the union of
+	// the explicit list and the recursive expansion, reconcile drift from external
+	// writers (a Docker entrypoint editing shareddir.dat directly, then calling
+	// Reload over EC) and rewrite shareddir.dat as the new union.
 	void ReloadSharedFolders();
-	// Persist all three shared-dir files: shareddir-explicit.dat,
-	// shareddir-recursive.dat (the two canonical sources of truth)
-	// and shareddir.dat (regenerated as the union, for backwards
-	// compatibility with older binaries and scripts that read it).
-	// Called by CSharedDirWatcher after it auto-appends a
-	// newly-created subdirectory so the change survives a restart
-	// without forcing a full preferences.dat write.
+	// Persist all three shared-dir files: the two canonical sources of truth plus
+	// shareddir.dat, regenerated as the union for older binaries and scripts that
+	// read it. Called by CSharedDirWatcher after it auto-appends a new subdir, so
+	// the change survives a restart without a full preferences.dat write.
 	void SaveSharedFolders();
-	// True iff `path` is in shareddir_recursive_list or is a
-	// descendant of an entry there. Used by the watcher to decide
-	// whether auto-add of a new subdir / cold-discovered subdir is
-	// authorised: non-recursive share roots do NOT auto-collect new
-	// subdirs, recursive roots do.
+	// True iff `path` is in shareddir_recursive_list or descends from an entry
+	// there. The watcher gates auto-add on this: non-recursive share roots do not
+	// collect new subdirs, recursive ones do.
 	bool IsRecursiveAncestor(const CPath &path) const;
 
 	static const wxString &GetConfigDir() { return s_configDir; }
 	static void SetConfigDir(const wxString &dir) { s_configDir = dir; }
 
-	// True when this process started without an existing
-	// preferences.dat, i.e. a fresh install / first launch. Captured
-	// once in the CPreferences constructor (before the file is
-	// created) so the first-run setup wizard can be shown exactly
-	// once. Always false in the remote GUI, which has no local config.
+	// True when this process started without an existing preferences.dat.
+	// Captured in the constructor, before the file is created, so the first-run
+	// wizard shows exactly once. Always false in the remote GUI.
 	static bool IsFirstRun() { return s_firstRun; }
 
-	// True once the first-run setup wizard has actually been completed
-	// (the user pressed Finish). Unlike IsFirstRun(), which is merely
-	// inferred from the absence of preferences.dat, this is an explicit
-	// persisted flag (/eMule/FirstRunWizardDone, written in
-	// FirstRunWizard::Apply): it distinguishes a completed run from a
-	// cancelled one and lets the wizard be re-triggered simply by
-	// clearing the flag. Always false in the remote GUI.
+	// True once the first-run wizard was actually completed (the user pressed
+	// Finish). Unlike IsFirstRun(), which is only inferred from a missing
+	// preferences.dat, this is a persisted flag (/eMule/FirstRunWizardDone), so it
+	// separates a completed run from a cancelled one and re-triggers the wizard
+	// when cleared. Always false in the remote GUI.
 	static bool IsFirstRunWizardDone() { return s_firstRunWizardDone; }
 	static void SetFirstRunWizardDone(bool val) { s_firstRunWizardDone = val; }
 
@@ -343,9 +330,9 @@ public:
 
 	static uint32 GetMaxDownload() { return s_maxdownload; }
 	static uint16 GetMaxConnections() { return s_maxconnections; }
-	// OS-aware ceiling for the connection count (accounts for the
-	// half-open-connection limit on legacy Windows). Used as the default
-	// MaxConnections and to clamp the first-run wizard's derived limits.
+	// OS-aware ceiling for the connection count (the half-open-connection limit
+	// on legacy Windows). Default MaxConnections, and the clamp on the wizard's
+	// derived limits.
 	static int32 GetRecommendedMaxConnections();
 	static uint16 GetMaxSourcePerFile() { return s_maxsourceperfile; }
 	static uint16 GetMaxSourcePerFileSoft()
@@ -450,43 +437,33 @@ public:
 	static void SetSlotAllocation(uint32 in) { s_slotallocation = (in >= 1) ? in : 1; };
 
 	typedef std::vector<CPath> PathList;
-	// The effective set of shared directories at runtime, computed at
-	// load time as `shareddir_explicit_list ∪ expand(shareddir_recursive_list)`.
-	// Persisted as the union to shareddir.dat for backwards compatibility
-	// with older binaries and external scripts that read/write that file.
-	// Live consumers (share scan, watcher) treat this as authoritative.
+	// The effective set of shared directories at runtime, computed at load time
+	// as the explicit list plus the expansion of the recursive one. Persisted as
+	// the union to shareddir.dat for older binaries and external scripts; live
+	// consumers treat it as authoritative.
 	PathList shareddir_list;
 
-	// User-explicit non-recursive share roots. Each entry shares only
-	// the files directly under it -- subdirectories are NOT followed.
-	// New subdirs created at runtime under an explicit-only root are
-	// NOT auto-shared (CSharedDirWatcher::RegisterNewSubdirectory
-	// gates on "ancestor is recursive"). Persisted to
-	// shareddir-explicit.dat. Migration: a pre-existing shareddir.dat
-	// with no shareddir-recursive.dat is loaded entirely into this
-	// list, which preserves the user's existing path set without
-	// silently upgrading anything to recursive (safer default).
+	// User-explicit non-recursive share roots: only the files directly under each
+	// entry are shared, and new subdirs created at runtime are NOT auto-shared
+	// (CSharedDirWatcher::RegisterNewSubdirectory gates on "ancestor is
+	// recursive"). A pre-existing shareddir.dat with no shareddir-recursive.dat
+	// migrates entirely into this list, so nothing is silently made recursive.
 	PathList shareddir_explicit_list;
 
-	// User-explicit recursive share roots. Each entry contributes
-	// itself AND every descendant directory to shareddir_list at
-	// load time (cold expansion). New subdirs created at runtime
-	// under a recursive root are auto-added by the watcher's HOT
-	// path. Persisted to shareddir-recursive.dat -- a separate file
-	// so older binaries that read shareddir.dat see the already-
-	// expanded union and behave correctly, while round-tripping
-	// shareddir.dat through an older binary preserves the recursive
-	// intent in this file.
+	// User-explicit recursive share roots: each contributes itself and every
+	// descendant directory to shareddir_list at load time, and new subdirs are
+	// auto-added by the watcher. Kept in a file of its own so older binaries see
+	// the already-expanded union in shareddir.dat, while round-tripping that file
+	// through an older binary still preserves the recursive intent here.
 	PathList shareddir_recursive_list;
 
 	wxArrayString addresses_list;
 
 	// A user-configured remote->local path-prefix substitution, for amuleGUI
-	// (CLIENT_GUI) against a daemon on a different machine whose filesystem is
-	// otherwise reachable (a Samba/NFS mount, say). remotePrefix is an opaque
-	// string in the daemon's own OS path syntax -- never wrapped in CPath,
-	// which has no notion of a second machine's separator convention.
-	// localPrefix is a real path on this machine, so it *is* a CPath.
+	// against a daemon on another machine whose filesystem is otherwise reachable.
+	// remotePrefix is an opaque string in the daemon's own path syntax -- never a
+	// CPath, which has no notion of a second machine's separator convention.
+	// localPrefix is a real path here, so it is a CPath.
 	struct PathMapping
 	{
 		wxString remotePrefix;
@@ -534,11 +511,10 @@ public:
 	static void SetUPnPWebServerEnabled(bool val) { s_UPnPWebServerEnabled = val; }
 	static uint16 GetUPnPTCPPort() { return s_UPnPTCPPort; }
 	static void SetUPnPTCPPort(uint16 val) { s_UPnPTCPPort = val; }
-	// Runtime capability (not persisted): whether the connected daemon is
-	// built with UPnP (ENABLE_UPNP), advertised over EC. amulegui greys the
-	// P2P-UPnP controls when the core can't forward. Set from the EC prefs
-	// apply; false by default so a pre-3.1 daemon (which never sends the tag)
-	// keeps the controls disabled instead of showing a dead toggle.
+	// Runtime capability (not persisted): whether the connected daemon is built
+	// with UPnP, advertised over EC. False by default, so a pre-3.1 daemon (which
+	// never sends the tag) keeps the P2P-UPnP controls greyed rather than showing
+	// a dead toggle.
 	static bool GetUPnPAvailable() { return s_UPnPAvailable; }
 	static void SetUPnPAvailable(bool val) { s_UPnPAvailable = val; }
 	static bool IsManualHighPrio() { return s_bmanualhighprio; }
@@ -595,31 +571,28 @@ public:
 	static const wxString &GetAmuleApiBindAddress() { return s_sAmuleApiBindAddress; }
 	static void SetAmuleApiBindAddress(const wxString &addr) { s_sAmuleApiBindAddress = addr; }
 	// amuleapi's credentials are NOT stored here. They live in
-	// amuleapi-passwords, salted and stretched, which amuleapi, amuled and
-	// monolithic aMule all read and write through webcommon/Credentials.h.
-	// See AmuleApiCredentials.h.
+	// amuleapi-passwords, salted and stretched, read and written through
+	// webcommon/Credentials.h; see AmuleApiCredentials.h.
 	//
-	// The two password fields below are pending *requests* rather than
-	// stored values: an MD5 hex digest the user just typed, waiting to be
-	// hashed into the credential file, and empty the rest of the time.
-	// Empty therefore means "leave the stored password alone", which is
-	// what lets an EC client change the port without also having to know
-	// (and resend) a password it can never read back.
+	// The two password fields below are pending *requests*: an MD5 hex digest the
+	// user just typed, waiting to be hashed into the credential file, and empty
+	// the rest of the time. Empty therefore means "leave the stored password
+	// alone", which is what lets an EC client change the port without resending a
+	// password it can never read back.
 	static const wxString &GetAmuleApiPass() { return s_sAmuleApiPassword; }
 	static void SetAmuleApiPass(const wxString &pass) { s_sAmuleApiPassword = pass; }
 	static const wxString &GetAmuleApiGuestPass() { return s_sAmuleApiGuestPassword; }
 	static void SetAmuleApiGuestPass(const wxString &pass) { s_sAmuleApiGuestPassword = pass; }
 
-	// Guest access is on exactly when a guest credential is stored, so
-	// this is a mirror of the credential file rather than a preference of
-	// its own — turning it off is what clears the stored guest password.
+	// Guest access is on exactly when a guest credential is stored, so this
+	// mirrors the credential file rather than being a preference of its own:
+	// turning it off is what clears the stored guest password.
 	static bool GetAmuleApiGuestIsEnabled() { return s_bAmuleApiGuestEnabled; }
 	static void SetAmuleApiGuestIsEnabled(bool enable) { s_bAmuleApiGuestEnabled = enable; }
 
-	// Whether an admin credential is stored. Display only — there is no
-	// setter over EC, because the digest itself can never be read back out
-	// of the credential file. On amulegui this is whatever the daemon
-	// reported; on monolithic aMule it is read from the file directly.
+	// Whether an admin credential is stored. Display only -- there is no setter
+	// over EC, because the digest can never be read back out of the credential
+	// file. On amulegui this is whatever the daemon reported.
 	static bool GetAmuleApiAdminIsSet() { return s_bAmuleApiAdminIsSet; }
 	static void SetAmuleApiAdminIsSet(bool isSet) { s_bAmuleApiAdminIsSet = isSet; }
 	static const wxString &GetAmuleApiPath() { return s_sAmuleApiPath; }
@@ -706,11 +679,10 @@ public:
 	static bool GetMMapEnabled() { return s_mmapEnabled; }
 	static void SetMMapEnabled(bool val) { s_mmapEnabled = val; }
 
-	// Runtime capability: is mmap compiled into the core we drive? On the
-	// monolithic/daemon this mirrors the local MMAP_SUPPORTED; on the remote
-	// GUI it is what the daemon advertised over EC (EC_TAG_FILES_MMAP_SUPPORTED
-	// presence). Not persisted. The prefs dialog shows the mmap checkbox and EC
-	// ships the value only when this is true.
+	// Runtime capability: is mmap compiled into the core we drive? Mirrors the
+	// local MMAP_SUPPORTED on the monolithic/daemon; on the remote GUI it is what
+	// the daemon advertised over EC. The mmap checkbox and the EC value are both
+	// gated on it.
 	static bool GetMMapSupported() { return s_mmapSupported; }
 	static void SetMMapSupported(bool val) { s_mmapSupported = val; }
 
@@ -788,16 +760,14 @@ public:
 	static bool ShareHiddenFiles() { return s_ShareHiddenFiles; }
 	static void SetShareHiddenFiles(bool val) { s_ShareHiddenFiles = val; }
 
-	// Automatic rescan of shared directories via wxFileSystemWatcher.
-	// On by default; when disabled, the user must hit "Reload shared
-	// files" manually after adding files to a share.
+	// Automatic rescan of shared directories via wxFileSystemWatcher. When
+	// disabled, the user must hit "Reload shared files" manually.
 	static bool AutoRescanSharedDirs() { return s_AutoRescanSharedDirs; }
 	static void SetAutoRescanSharedDirs(bool val) { s_AutoRescanSharedDirs = val; }
 
-	// Whether shared-folder walks should descend into symbolic links.
-	// Default true to preserve historical behaviour; turning it off
-	// passes wxDIR_NO_FOLLOW to the iterator so symlinked files and
-	// directories are skipped entirely.
+	// Whether shared-folder walks descend into symbolic links. Default true for
+	// historical behaviour; off passes wxDIR_NO_FOLLOW to the iterator, skipping
+	// symlinked files and directories entirely.
 	static bool FollowSymlinksInShares() { return s_FollowSymlinksInShares; }
 	static void SetFollowSymlinksInShares(bool val) { s_FollowSymlinksInShares = val; }
 
@@ -819,10 +789,10 @@ public:
 	{
 		return s_ShareExcludeFilter.Matches(fileName);
 	}
-	// Count how many names in the list would be excluded by a candidate
-	// (pattern, useRegex) -- used by the Directories panel's live preview,
-	// which tests the typed-but-unsaved pattern without touching the live
-	// filter. Returns wxNOT_FOUND if the regex does not compile.
+	// How many names in the list a candidate (pattern, useRegex) would exclude --
+	// for the Directories panel's live preview, which tests a typed-but-unsaved
+	// pattern without touching the live filter. wxNOT_FOUND if the regex does not
+	// compile.
 	static int PreviewExcludeCount(
 		const wxString &patterns, bool useRegex, const wxArrayString &fileNames);
 
@@ -830,18 +800,15 @@ public:
 
 	static bool GetCheckNewVersion() { return s_NewVersionCheck; }
 	static void SetCheckNewVersion(bool val) { s_NewVersionCheck = val; }
-	// Runtime-only (not persisted): whether the connected daemon can actually
-	// perform version checks (advertised via EC_TAG_GENERAL_VERSION_CHECK_AVAILABLE).
-	// Set from the EC prefs-apply; the remote GUI reads it to hide the
-	// "check for new version" checkbox against a daemon that can't check.
+	// Runtime-only (not persisted): whether the connected daemon can perform
+	// version checks. The remote GUI reads it to hide the "check for new version"
+	// checkbox against a daemon that cannot.
 	static bool GetVersionCheckAvailable() { return s_versionCheckAvailable; }
 	static void SetVersionCheckAvailable(bool val) { s_versionCheckAvailable = val; }
 
-	// Media metadata (issue #140) — probe local shared files with
-	// ffprobe so we advertise Length / Bitrate / Codec to peers.
-	// The path is empty unless the user pins one, and empty means
-	// auto-detect, not off: MediaProbe::DetectedPath() resolves it
-	// per process when the first file is probed.
+	// Media metadata (issue #140): probe local shared files with ffprobe so we
+	// advertise Length / Bitrate / Codec to peers. An empty path means
+	// auto-detect, not off -- MediaProbe::DetectedPath() resolves it per process.
 	static bool GetMediaMetadataEnabled() { return s_MediaMetadataEnabled; }
 	static void SetMediaMetadataEnabled(bool val) { s_MediaMetadataEnabled = val; }
 	static const wxString &GetMediaMetadataFFProbePath() { return s_MediaMetadataFFProbePath; }
@@ -892,10 +859,9 @@ public:
 
 	// GeoIP / IP2Country
 	//
-	// Source selector — choose which provider supplies the .mmdb. Values
-	// are persisted as strings ("dbip", "maxmind", "custom") so the config
-	// file stays human-readable across releases. See Preferences.cpp for
-	// the legacy GeoLiteCountryUpdateUrl → custom migration.
+	// Which provider supplies the .mmdb. Persisted as strings ("dbip",
+	// "maxmind", "custom") so the config file stays readable across releases; see
+	// Preferences.cpp for the legacy GeoLiteCountryUpdateUrl -> custom migration.
 	enum GeoIPSource
 	{
 		GeoIPSourceDBIP = 0,
@@ -907,14 +873,12 @@ public:
 	static void SetGeoIPEnabled(bool v) { s_GeoIPEnabled = v; }
 	static GeoIPSource GetGeoIPSource();
 	static void SetGeoIPSource(GeoIPSource v);
-	// "Source of the currently-loaded geoip.mmdb" — distinct from
-	// GetGeoIPSource() which is the *next-download* selector. Updated
-	// by CIP2Country::DownloadFinished on success so the status line
-	// can correctly attribute a loaded DB even after the user flips
-	// the dropdown to a different source they haven't yet downloaded
-	// from. Empty string ("") means the file was hand-installed by the
-	// user (or migrated from the legacy GeoLite2-Country.mmdb path), in
-	// which case the status line shows "Loaded" with no attribution.
+	// Source of the currently-loaded geoip.mmdb, as distinct from
+	// GetGeoIPSource(), which selects the NEXT download. Updated by
+	// CIP2Country::DownloadFinished so the status line still attributes a loaded
+	// DB after the user flips the dropdown to a source they have not downloaded
+	// from. Empty means hand-installed (or migrated from the legacy path), and the
+	// status line then shows "Loaded" with no attribution.
 	static const wxString &GetGeoIPLoadedSource() { return s_GeoIPLoadedSource; }
 	static void SetGeoIPLoadedSource(GeoIPSource v);
 	static const wxString &GetGeoIPMaxMindLicense() { return s_GeoIPMaxMindLicense; }
@@ -923,15 +887,13 @@ public:
 	static void SetGeoIPCustomUrl(const wxString &v) { s_GeoIPCustomUrl = v; }
 	static bool IsGeoIPAutoUpdate() { return s_GeoIPAutoUpdate; }
 	static void SetGeoIPAutoUpdate(bool v) { s_GeoIPAutoUpdate = v; }
-	// Runtime capability (not persisted): does the *core* have GeoIP compiled
-	// in? Always true for monolithic amule; set from EC_TAG_IP2COUNTRY_SUPPORTED
-	// on amulegui so its GeoIP prefs panel can disable itself against a
-	// GeoIP-less daemon (#440 remote config). Defaults true.
+	// Runtime capability (not persisted): does the *core* have GeoIP compiled in?
+	// Always true for monolithic amule; on amulegui it comes from
+	// EC_TAG_IP2COUNTRY_SUPPORTED, so the GeoIP panel can disable itself.
 	static bool IsGeoIPSupported() { return s_GeoIPSupported; }
 	static void SetGeoIPSupported(bool v) { s_GeoIPSupported = v; }
-	// Live GeoIP status mirrored from the daemon over EC (#440), for amulegui's
-	// prefs panel. Runtime-only, not persisted. Monolithic amule reads the live
-	// resolver directly and ignores these.
+	// Live GeoIP status mirrored from the daemon over EC, for amulegui's prefs
+	// panel. Monolithic amule reads the live resolver and ignores these.
 	static bool IsGeoIPStatusLoaded() { return s_GeoIPStatusLoaded; }
 	static void SetGeoIPStatusLoaded(bool v) { s_GeoIPStatusLoaded = v; }
 	static bool IsGeoIPStatusDownloading() { return s_GeoIPStatusDownloading; }
@@ -941,31 +903,25 @@ public:
 	static const wxString &GetGeoIPStatusLoadedSource() { return s_GeoIPStatusLoadedSource; }
 	static void SetGeoIPStatusLoadedSource(const wxString &v) { s_GeoIPStatusLoadedSource = v; }
 
-	// Transient "Update now" trigger. amulegui's prefs panel sets this before
-	// its SendToRemote() so the outgoing prefs packet carries an UPDATE_NOW
-	// tag, asking the daemon to refresh its GeoIP DB (the amulegui side has no
-	// local resolver). Runtime-only; cleared after the send. The daemon never
-	// sets it, so its own outbound prefs serialization never emits the tag.
+	// Transient "Update now" trigger: amulegui's prefs panel sets it before
+	// SendToRemote() so the outgoing packet carries an UPDATE_NOW tag, asking the
+	// daemon to refresh its GeoIP DB. Cleared after the send, and never set by the
+	// daemon, whose own outbound serialization therefore never emits the tag.
 	static bool IsGeoIPUpdateRequested() { return s_GeoIPUpdateRequested; }
 	static void SetGeoIPUpdateRequested(bool v) { s_GeoIPUpdateRequested = v; }
 
-	// Computes the resolved download URL from the selected source: DB-IP
-	// gets a month substituted into the template; MaxMind has credentials
-	// inserted at the URL-userinfo position; Custom is the stored URL
-	// verbatim. Returns empty if the selected source has not been
-	// configured (e.g. MaxMind with empty credentials, Custom with empty
-	// URL).
+	// Resolved download URL for the selected source: DB-IP gets a month
+	// substituted into the template, MaxMind has credentials inserted at the
+	// URL-userinfo position, Custom is the stored URL verbatim. Empty if the
+	// source is not configured.
 	//
-	// monthOffset (DB-IP only) shifts the templated month — 0 = current,
-	// -1 = previous, etc. DB-IP often publishes the new month's file a
-	// few days late, so the IP2Country update path retries with -1 on a
-	// download failure to ride out the early-of-month gap. Ignored by
-	// MaxMind and Custom (their URLs aren't month-templated).
+	// monthOffset (DB-IP only) shifts the templated month. DB-IP often publishes
+	// the new month's file a few days late, so the update path retries with -1 to
+	// ride out the early-of-month gap.
 	static wxString GetGeoIPResolvedDownloadUrl(int monthOffset = 0);
 
-	// Legacy: the v2.x single-URL setting. Kept only for the one-shot
-	// migration in CPreferences::LoadPreferences(). Do not use in new
-	// code; query GetGeoIPResolvedDownloadUrl() instead.
+	// Legacy v2.x single-URL setting, kept only for the one-shot migration in
+	// LoadPreferences(). Query GetGeoIPResolvedDownloadUrl() instead.
 	static const wxString &GetGeoIPUpdateUrl() { return s_GeoIPUpdateUrl; }
 
 	// Stats server
@@ -998,14 +954,10 @@ private:
 	void LoadPreferences();
 	void SavePreferences();
 
-	// GUI-local only: never read from or written to over EC, unlike
-	// LoadCats()/SaveCats() (daemon-owned, EC-refreshed) or
-	// LoadSharedDirsRemote()/SendSharedDirsToRemote() (daemon round-trip).
-	// Group-per-row shape mirrors SaveCats()'s /Cat#i pattern, but these
-	// read/write wxConfigBase::Get() directly rather than going through
-	// LoadAllItems()/SaveAllItems()'s Cfg_Base walk, which is what
-	// CEC_Prefs_Packet draws from -- kept separate is what keeps path
-	// mappings out of any EC exchange.
+	// GUI-local only: never read from or written to over EC, unlike LoadCats()/
+	// SaveCats() or LoadSharedDirsRemote()/SendSharedDirsToRemote(). These go
+	// straight to wxConfigBase::Get() rather than through the Cfg_Base walk that
+	// CEC_Prefs_Packet draws from, which is what keeps path mappings off EC.
 	void LoadPathMappings();
 	void SavePathMappings();
 
@@ -1095,8 +1047,8 @@ protected:
 	static bool s_startMinimized;
 	static uint16 s_MaxConperFive;
 	// Source-search tuning (see the matching accessors). Reask intervals are
-	// stored in minutes (uint64, like s_dwServerKeepAliveTimeoutMins) so the
-	// getters can widen to milliseconds without narrowing.
+	// stored in minutes so the getters can widen to milliseconds without
+	// narrowing.
 	static uint16 s_kadMaxSourceSearches;
 	static uint64 s_kadSourceReaskMins;
 	static uint64 s_sourceReaskMins;

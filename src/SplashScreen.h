@@ -31,45 +31,40 @@
 
 // Startup splash for the monolithic GUI.
 //
-// Exists because startup is slow and silent: the main window is created
-// before the shared-file scan runs, but the scan holds the main thread, so
-// nothing paints until it finishes. On a large share -- worse still on
-// network storage, where every file costs a round trip instead of a page
-// cache hit -- that is a long stretch with no sign the application is alive.
-// Under Flatpak it is also long enough for xdg-desktop-portal's background
-// monitor to conclude the app has no window and kill it.
+// Exists because startup is slow and silent: the main window is created before
+// the shared-file scan runs, but the scan holds the main thread, so nothing
+// paints until it finishes. On a large share -- worse on network storage, where
+// every file costs a round trip -- that is a long stretch with no sign the
+// application is alive, and under Flatpak long enough for xdg-desktop-portal's
+// background monitor to conclude the app has no window and kill it.
 //
 // Everything is drawn by hand rather than assembled from child controls: the
-// background is a dark gradient and native widgets on top of it would follow
+// background is a dark gradient, and native widgets on top of it would follow
 // the desktop theme instead, giving a light-on-dark gauge on most systems.
 class CSplashScreen : public wxFrame
 {
 public:
-	// Parented to the main window, so the window manager keeps it above
-	// aMule and nothing else. It used to be a parentless wxSTAY_ON_TOP
-	// frame, which is a desktop-global level: it covered every other
-	// application, and since it also has no taskbar button there was
-	// nothing to raise over it or dismiss it with.
+	// Parented to the main window, so the window manager keeps it above aMule and
+	// nothing else. As a parentless wxSTAY_ON_TOP frame it sat at a desktop-global
+	// level, covering every other application with no taskbar button to raise over
+	// it or dismiss it with.
 	explicit CSplashScreen(wxWindow *parent);
 
 	// Update the phase text and the bar. Cheap to call often: repainting is
-	// rate-limited internally, so callers can report every file scanned
-	// without deciding for themselves how much is too much.
+	// rate-limited internally, so callers can report every file scanned.
 	//
-	// Set @a immediate when the update marks a change of phase rather than
-	// progress within one, to paint it without waiting out the rate limit.
-	// It cannot be inferred from the text changing: the per-item updates
-	// carry a running count, so their text changes every single time.
+	// Set @a immediate when the update marks a change of phase rather than progress
+	// within one, to paint it without waiting out the rate limit. It cannot be
+	// inferred from the text changing, since the per-item updates carry a running
+	// count and so change their text every time.
 	void SetProgress(const wxString &status, int percent, bool immediate = false);
 
-	// Close, honouring the minimum on-screen time. A fast startup would
-	// otherwise flash the splash for a few frames, which reads as a glitch
-	// rather than as the application starting.
+	// Close, honouring the minimum on-screen time: a fast startup would otherwise
+	// flash the splash for a few frames, which reads as a glitch.
 	//
-	// Never blocks: when the floor has not been reached it schedules the
-	// close and returns. Sleeping here would freeze the main thread for up
-	// to that floor, which is the very symptom the splash exists to explain
-	// -- and on a fast startup it would do so for no reason at all.
+	// Never blocks -- when the floor has not been reached it schedules the close and
+	// returns. Sleeping here would freeze the main thread, the very symptom the
+	// splash exists to explain.
 	void Finish();
 
 	// Stamps the clock the minimum-display floor is measured from, so that

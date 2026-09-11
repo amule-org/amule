@@ -158,11 +158,9 @@ wxEND_EVENT_TABLE()
 // (hide-to-tray on close, or start minimized) maps no window, and
 // xdg-desktop-portal's background monitor then kills it unless the "background"
 // permission was granted. aMule never asked for it, so on backends that default
-// to deny (KDE) the app was killed on close (amule-org/amule#535). Requesting it
-// registers aMule as a legitimate background app, so the permission is granted
-// (or, on KDE, prompted once and remembered). Native, non-sandboxed builds are
-// not background-monitored -- hence the FLATPAK_ID gate -- and this is a no-op
-// wherever there is no Background portal (the call just fails silently).
+// to deny (KDE) the app was killed on close. Requesting it registers aMule as a
+// legitimate background app. Native builds are not background-monitored -- hence
+// the FLATPAK_ID gate -- and this is a no-op wherever there is no portal.
 static void RequestFlatpakBackgroundPermission()
 {
 	if (g_getenv("FLATPAK_ID") == nullptr) {
@@ -187,9 +185,8 @@ static void RequestFlatpakBackgroundPermission()
 	g_variant_builder_add(&options, "{sv}", "autostart", g_variant_new_boolean(FALSE));
 
 	// Fire-and-forget: the portal grants (or on KDE prompts once) and records the
-	// permission for next launch. We don't need the returned request handle, and
-	// must not block the GUI waiting on a possible prompt -- the shared GTK main
-	// loop flushes this async call.
+	// permission for next launch. The returned request handle is not needed, and
+	// the GUI must not block waiting on a possible prompt.
 	g_dbus_connection_call(conn,
 		"org.freedesktop.portal.Desktop",
 		"/org/freedesktop/portal/desktop",
@@ -294,13 +291,11 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 	// size the .ico already carries.
 	SetIcons(wxIconBundle("aMule", wxGetInstance()));
 #else
-	// Elsewhere the icon comes from CamuleArtProvider. A bundle, and a
-	// set of sizes rather than one: GetIcon() resolves through
-	// CreateBitmap(), which decodes the embedded PNG and nothing else, so
-	// the window manager got a single 32px raster to scale for the
-	// taskbar, the alt-tab switcher and the window frame alike. The
-	// bundle path consults the icon's SVG twin, so each size below is
-	// rendered rather than resampled.
+	// Elsewhere the icon comes from CamuleArtProvider. A bundle, and a set of
+	// sizes rather than one: GetIcon() resolves through CreateBitmap(), which
+	// decodes the embedded PNG and nothing else, so the window manager got a
+	// single 32px raster to scale for the taskbar, the alt-tab switcher and the
+	// window frame alike. The bundle path consults the icon's SVG twin instead.
 	wxIconBundle icons;
 	const wxBitmapBundle logo = wxArtProvider::GetBitmapBundle("amule:amule");
 	for (const int side : { 16, 24, 32, 48, 64, 128, 256 }) {
@@ -408,22 +403,20 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 		CreateSystray();
 	}
 
-	// Deferred on the monolithic build, where the startup splash is up and
-	// the work it reports on -- part-file load, shared-file scan, hashing --
-	// runs on this thread. A window shown now would sit there taking clicks
-	// it cannot answer, and the first of those would raise it over the splash
-	// that was explaining the wait. CamuleApp closes the splash and calls
-	// this. amulegui has no such wait: its startup is an EC round trip.
+	// Deferred on the monolithic build, where the startup splash is up and the
+	// work it reports on -- part-file load, shared-file scan, hashing -- runs on
+	// this thread. A window shown now would sit there taking clicks it cannot
+	// answer, and the first of those would raise it over the splash that was
+	// explaining the wait. amulegui has no such wait.
 #ifdef CLIENT_GUI
 	ShowStartupWindow();
 #endif
 
 #if defined(ENABLE_VERSION_CHECK) && defined(CLIENT_GUI)
-	// amulegui only: defer the "is a newer aMule available?" check until the
-	// event loop is running (past the heavy startup I/O), then check and maybe
-	// pop up. The monolithic app drives this from the shared core engine
-	// (CamuleApp::StartVersionCheck -> Notify_VersionCheckResult) instead, so
-	// there is a single fetch that also feeds the EC version state.
+	// amulegui only: defer the "is a newer aMule available?" check until the event
+	// loop is running, past the heavy startup I/O. The monolithic app drives this
+	// from the shared core engine instead, so there is a single fetch that also
+	// feeds the EC version state.
 	CallAfter(&CamuleDlg::StartupVersionCheck);
 #endif
 
@@ -439,16 +432,13 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 	// Set shortcut keys
 #ifdef __WXMAC__
 	// Alt+<letter> tab-switch shortcuts, exposed as real NSMenuItem key
-	// equivalents rather than wxAcceleratorEntry entries: on wxOSX
-	// (tested with wxWidgets 3.3.3 / macOS 26) an accelerator-table
-	// entry fires its wxEVT_MENU exactly once per click-to-refocus --
-	// the *first* Alt+<letter> after the window (re)gains key status
-	// switches tabs as expected, but every subsequent press is silently
-	// swallowed by Cocoa's key-equivalent dispatch until the user
-	// clicks something in the window again. Real menu key equivalents
-	// are dispatched by the OS itself and don't share that bug -- and
-	// as a bonus, VoiceOver can navigate an actual menu directly, which
-	// the (currently VoiceOver-invisible, see #180) toolbar can't offer.
+	// equivalents rather than wxAcceleratorEntry entries: on wxOSX an
+	// accelerator-table entry fires its wxEVT_MENU exactly once per
+	// click-to-refocus -- the FIRST Alt+<letter> after the window regains key
+	// status switches tabs, but every subsequent press is silently swallowed by
+	// Cocoa's key-equivalent dispatch until the user clicks in the window again.
+	// Real menu key equivalents are dispatched by the OS itself, and VoiceOver
+	// can navigate an actual menu directly.
 	wxAcceleratorEntry entries[] = { wxAcceleratorEntry(wxACCEL_CTRL, 'Q', wxID_EXIT) };
 	SetAcceleratorTable(wxAcceleratorTable(itemsof(entries), entries));
 
@@ -491,10 +481,10 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 
 	wxASSERT(networks_notebook->GetPageCount() == 2);
 
-	// Capture the network-conditional log tabs by the control each hosts, not
-	// by index -- amulegui's tab layout differs from the monolithic build, and
-	// an index-based scheme silently dropped Kad Info when the "aMuleGUI Log"
-	// tab was added. DoNetworkRearrange() shows/hides these by identity.
+	// Capture the network-conditional log tabs by the control each hosts, not by
+	// index -- amulegui's tab layout differs from the monolithic build, and an
+	// index-based scheme silently dropped Kad Info when the "aMuleGUI Log" tab
+	// was added. DoNetworkRearrange() shows/hides these by identity.
 	m_logServerInfo = CaptureLogPage(logs_notebook, ID_SERVERINFO);
 	m_logED2KInfo = CaptureLogPage(logs_notebook, ID_ED2KINFO);
 	m_logKadInfo = CaptureLogPage(logs_notebook, ID_KADINFO);
@@ -517,16 +507,12 @@ void CamuleDlg::ShowStartupWindow()
 	Show(true);
 
 	// Workaround for wxMSW: Create_Toolbar() (and the Realize() inside
-	// Apply_Toolbar_Skin) runs before the frame is mapped at its final
-	// on-screen size. wxMSW's native toolbar control measures whether labels
-	// fit at *that* moment to pick its display mode (icon-only vs
-	// icon-with-label-below); with long-string locales (it_IT, fr_FR, ...) on
-	// amulegui (one fewer button than the monolithic GUI, so a slightly
-	// different total width) the initial measurement decides icon-only and
-	// never recovers when the frame later resizes to the saved/maximized
-	// geometry, leaving the labels clipped. Re-realize the toolbar after
-	// Show(true) so the mode is picked against the actual on-screen frame
-	// width.
+	// Apply_Toolbar_Skin) runs before the frame is mapped at its final on-screen
+	// size. wxMSW's native toolbar measures whether labels fit at *that* moment
+	// to pick its display mode, so with long-string locales the initial
+	// measurement decides icon-only and never recovers when the frame later
+	// resizes to the saved geometry, leaving the labels clipped. Re-realize the
+	// toolbar after Show(true), against the actual on-screen frame width.
 	if (m_wndToolbar) {
 		m_wndToolbar->Realize();
 	}
@@ -625,26 +611,21 @@ void CamuleDlg::CreateSystray()
 void CamuleDlg::RemoveSystray()
 {
 	// Deleted on the next idle rather than here. "Exit" on the tray menu is
-	// handled by the tray icon itself (see MuleTrayIcon.cpp's event table),
-	// and wxTaskBarIcon::PopupMenu() pushes the icon as its own window's
-	// event handler for the duration of the menu's nested event loop, popping
-	// it again only after the menu returns (msw/taskbar.cpp). Shutting down
-	// from that item therefore reaches here with the icon still pushed and
-	// its window procedure on the stack, so deleting it now destroys the
-	// window while the handler is attached -- which asserts in
-	// ~wxWindowBase(), and is undefined behaviour whether or not assertions
-	// are compiled in.
+	// handled by the tray icon itself, and wxTaskBarIcon::PopupMenu() pushes the
+	// icon as its own window's event handler for the duration of the menu's
+	// nested event loop, popping it again only after the menu returns. Shutting
+	// down from that item therefore reaches here with the icon still pushed and
+	// its window procedure on the stack, so deleting it now destroys the window
+	// while the handler is attached -- which asserts in ~wxWindowBase(), and is
+	// undefined behaviour whether or not assertions are compiled in.
 	//
-	// ScheduleForDestruction() would be the obvious tool but takes a
-	// wxObject*, and under WITH_LIBAYATANA_APPINDICATOR CMuleTrayIcon has no
-	// base class at all. CallAfter() on the dialog works in both builds.
+	// ScheduleForDestruction() would be the obvious tool but takes a wxObject*,
+	// and under WITH_LIBAYATANA_APPINDICATOR CMuleTrayIcon has no base class at
+	// all. CallAfter() on the dialog works in both builds.
 	//
-	// Clearing the member first keeps this idempotent, and the recreate path
-	// (unticking then reticking the tray-icon preference) is unaffected: each
-	// click is a separate event, so the pending deletion has run by the time
-	// CreateSystray() looks. On the shutdown path the queued call may never
-	// run at all if the main loop stops first -- the process is exiting, and
-	// the icon goes with it.
+	// Clearing the member first keeps this idempotent, and the recreate path is
+	// unaffected: each click is a separate event, so the pending deletion has run
+	// by the time CreateSystray() looks.
 	CMuleTrayIcon *icon = m_wndTaskbarNotifier;
 	m_wndTaskbarNotifier = NULL;
 	if (icon) {
@@ -654,12 +635,10 @@ void CamuleDlg::RemoveSystray()
 
 void CamuleDlg::UpdateFreeSpaceLabels()
 {
-	// Only the panel actually on screen: nobody can read a label on a panel
-	// that is behind another one or in a window hidden to the tray, and the
-	// Downloads refresh walks the whole queue to decide whether to warn.
-	// The figures themselves are free to read -- a CFreeSpaceThread sample
-	// published into an atomic -- so this skips pointless work, not a
-	// blocking call.
+	// Only the panel actually on screen: nobody can read a label on a panel that
+	// is behind another one or in a window hidden to the tray, and the Downloads
+	// refresh walks the whole queue to decide whether to warn. The figures
+	// themselves are free to read, so this skips pointless work, not a block.
 	if (!IsVisibleToUser()) {
 		return;
 	}
@@ -696,9 +675,8 @@ bool SetLabelIfChanged(wxStaticText *label, const wxString &text)
 // with the main content area, so laying the parent out re-flowed everything
 // under it -- on the main window that includes the search page and its results
 // notebook -- to make room for a few characters of text. On wxMSW that
-// invalidation erases the notebook whenever no page covers it, which is the
-// flicker reported in issue #1037. The containing sizer is the bar alone,
-// which is the only thing that ever has to move.
+// invalidation erases the notebook whenever no page covers it. The containing
+// sizer is the bar alone, which is the only thing that ever has to move.
 void RelayoutLabelStrip(wxWindow *label)
 {
 	if (wxSizer *strip = label->GetContainingSizer()) {
@@ -729,10 +707,9 @@ void CamuleDlg::SetFreeSpaceLabel(
 		return;
 	}
 
-	// Nothing to say rather than something wrong: the figure is missing
-	// when the directory could not be queried at all -- it doesn't exist,
-	// or its mount (commonly a NAS for the temp or incoming directory) is
-	// unreachable. Printing "0 bytes" there would read as a full disk.
+	// Nothing to say rather than something wrong: the figure is missing when the
+	// directory could not be queried at all -- it does not exist, or its mount
+	// (commonly a NAS) is unreachable. "0 bytes" would read as a full disk.
 	if (freeSpace == FREE_SPACE_UNKNOWN) {
 		// The separator exists only to join this figure to the field
 		// before it, so it goes when the figure does -- otherwise the
@@ -756,12 +733,10 @@ void CamuleDlg::SetFreeSpaceLabel(
 		label->Refresh();
 	}
 
-	// The separator sits in its own label and is never recoloured: a
-	// wxStaticText colours all or nothing, so a separator sharing this label
-	// turned red along with the figure whenever the warning fired. It is
-	// layout, not language, so it stays out of the catalog either way and
-	// translators are given the figure alone -- and the gaps around it are
-	// sizer border, so the bar carries no whitespace of its own.
+	// The separator sits in its own label and is never recoloured: a wxStaticText
+	// colours all or nothing, so a separator sharing this label turned red along
+	// with the figure whenever the warning fired. It is layout, not language, so
+	// it stays out of the catalog -- and the gaps around it are sizer border.
 	bool relayout = SetLabelIfChanged(separatorLabel, "|");
 	if (separatorLabel && !separatorLabel->IsShown()) {
 		separatorLabel->Show(true);
@@ -777,51 +752,44 @@ void CamuleDlg::SetFreeSpaceLabel(
 void CamuleDlg::RestoreMainWindow()
 {
 #ifdef __WXMAC__
-	// Restore the regular Dock icon before the window comes back. It has
-	// to happen first: activating a Dock-less (accessory) application
-	// gives no visible focus change, so the window would return behind
-	// whatever the user is looking at.
+	// Restore the regular Dock icon before the window comes back. It has to
+	// happen first: activating a Dock-less (accessory) application gives no
+	// visible focus change, so the window would return behind whatever the user
+	// is looking at.
 	mac_set_accessory_mode(false);
 #endif
-	// Restoring is a decision, not something to infer from events: this is
-	// the one place that knows the user asked for the window back, so the
-	// logical flag is cleared here rather than left to OnShow/OnMinimize.
+	// Restoring is a decision, not something to infer from events: this is the
+	// one place that knows the user asked for the window back, so the logical
+	// flag is cleared here rather than left to OnShow/OnMinimize.
 	//
-	// Those events do not arrive on the path that matters. On Windows, a
-	// window that is hidden *and* iconized -- which is what minimize-to-tray
-	// leaves behind -- gets neither wxEVT_SHOW nor wxEVT_ICONIZE from the
-	// sequence below: Iconize(false) restores and shows it, so the Show(true)
-	// after it sees an already-shown window and never reaches ShowWindow(),
-	// so no WM_SHOWWINDOW and no wxShowEvent. The flag then stays set for the
-	// rest of the session and IsVisibleToUser() never becomes true again,
-	// which stops the free-space refresh, keeps the tray toggle stuck on
-	// "restore", and leaves amulegui reconnecting quietly (#941, #817).
-	// Restoring a window that was only hidden does fire wxEVT_SHOW, which is
-	// why this looked intermittent.
+	// Those events do not arrive on the path that matters. On Windows, a window
+	// that is hidden *and* iconized -- what minimize-to-tray leaves behind --
+	// gets neither wxEVT_SHOW nor wxEVT_ICONIZE from the sequence below:
+	// Iconize(false) restores and shows it, so the Show(true) after it sees an
+	// already-shown window and never reaches ShowWindow(). The flag then stays
+	// set for the rest of the session and IsVisibleToUser() never becomes true
+	// again, which stops the free-space refresh and keeps the tray toggle stuck
+	// on "restore". Restoring a window that was only hidden does fire
+	// wxEVT_SHOW, which is why this looked intermittent.
 	m_iconized_logical = false;
 
 #ifdef CLIENT_GUI
-	// Same reasoning one step further: a reconnect that has been retrying
-	// quietly behind a tray-hidden window now has a window to explain itself
-	// in. OnMainWindowRestored() is otherwise reached only from OnShow() and
-	// OnMinimize(), i.e. from the two events the paragraph above explains do
-	// not arrive on this path -- so on Windows the dialog never appeared for
-	// a user who came back mid-outage, which is what issue #942 reports.
-	// Cheap to call unconditionally: it returns immediately unless a
-	// reconnect is running without a dialog, and defers the dialog itself to
-	// CallAfter, so the platforms that do deliver wxEVT_SHOW just no-op the
-	// second call.
+	// Same reasoning one step further: a reconnect that has been retrying quietly
+	// behind a tray-hidden window now has a window to explain itself in.
+	// OnMainWindowRestored() is otherwise reached only from OnShow() and
+	// OnMinimize(), i.e. from the two events that do not arrive on this path --
+	// so on Windows the dialog never appeared for a user who came back
+	// mid-outage. Cheap to call unconditionally: it returns immediately unless a
+	// reconnect is running without a dialog.
 	theApp->OnMainWindowRestored();
 #endif
 
-	// Clear the iconized bit on every platform — the window might be
-	// hidden (Show(false) via HideOnClose / minimize-to-tray) or just
-	// iconized to the OS Dock/taskbar; in either case the user wants a
-	// normal restored frame. Without this, Show(true) on a still-iconized
-	// window would leave it as a taskbar entry / Dock thumbnail without
-	// un-minimizing. Iconize(false) is idempotent on a non-iconized
-	// window — don't gate on IsIconized(), because wxGTK can report a
-	// stale value during the tray-restore transition.
+	// Clear the iconized bit on every platform -- the window might be hidden
+	// (Show(false) via HideOnClose / minimize-to-tray) or just iconized to the OS
+	// Dock/taskbar; in either case the user wants a normal restored frame.
+	// Without this, Show(true) on a still-iconized window would leave it as a
+	// taskbar entry without un-minimizing. Iconize(false) is idempotent, so do
+	// not gate on IsIconized(): wxGTK can report a stale value mid-transition.
 	Iconize(false);
 	Show(true);
 	Raise();
@@ -830,11 +798,10 @@ void CamuleDlg::RestoreMainWindow()
 void CamuleDlg::HideToTray()
 {
 #ifdef __WXMAC__
-	// Drop NSApp's activation policy to Accessory before hiding — that
-	// removes the Dock icon (and any in-flight miniaturize-to-Dock
-	// target), so hiding doesn't leave a Dock thumbnail behind. The tray
-	// icon stays as the only recovery surface; RestoreMainWindow() restores
-	// both the Dock icon and the window.
+	// Drop NSApp's activation policy to Accessory before hiding -- that removes
+	// the Dock icon, and any in-flight miniaturize-to-Dock target, so hiding does
+	// not leave a Dock thumbnail behind. The tray icon stays as the only recovery
+	// surface; RestoreMainWindow() restores both.
 	mac_set_accessory_mode(true);
 #endif
 	Show(false);
@@ -848,12 +815,10 @@ void CamuleDlg::OnToolBarButton(wxCommandEvent &ev)
 	if (m_is_safe_state) {
 
 		// Leaving the search page hides the handler again, since without
-		// GetFED2KLH() it belongs to that page only. Re-clicking the search
-		// button while already on the page used to toggle the handler
-		// instead -- a 2005 shortcut that no other toolbar button has, that
-		// nothing advertises, and that did nothing at all once
-		// "show in every window" was enabled. Clicking the page you are
-		// already on now simply stays put (amule-org/amule#1041).
+		// GetFED2KLH() it belongs to that page only. Re-clicking the search button
+		// while already on the page used to toggle the handler instead -- a 2005
+		// shortcut that no other toolbar button has, that nothing advertises, and
+		// that did nothing at all once "show in every window" was enabled.
 		if (lastbutton == ID_BUTTONSEARCH && !thePrefs::GetFED2KLH() &&
 			ev.GetId() != ID_BUTTONSEARCH) {
 			ShowED2KLinksHandler(false);
@@ -909,10 +874,9 @@ void CamuleDlg::OnToolBarButton(wxCommandEvent &ev)
 
 		// A physical click auto-toggles the clicked wxITEM_CHECK tool, so
 		// historically this only had to untoggle the *previous* one. An
-		// accelerator or menu event (Alt+<letter>, the macOS Navigate menu)
-		// doesn't click anything, so the new tab's tool never lit up that
-		// way -- leaving no toolbar button active until the next mouse
-		// click (amule-org/amule#642 review). Toggle both ends explicitly.
+		// accelerator or menu event does not click anything, so the new tab's tool
+		// never lit up that way -- leaving no toolbar button active until the next
+		// mouse click. Toggle both ends explicitly.
 		if (lastbutton != ev.GetId()) {
 			m_wndToolbar->ToggleTool(lastbutton, false);
 		}
@@ -939,11 +903,11 @@ void CamuleDlg::OnPrefButton(wxCommandEvent &WXUNUSED(ev))
 		}
 
 		m_prefsDialog->TransferToWindow();
-		// The dialog is built once and reused, so the shared-folders editor
-		// would otherwise keep the roots it captured the first time this was
-		// opened — stale as soon as anything else changes them (a remote GUI
-		// over EC, for one). Re-seed it per session; it declines while the
-		// user has edits pending so this can never discard them.
+		// The dialog is built once and reused, so the shared-folders editor would
+		// otherwise keep the roots it captured the first time this was opened --
+		// stale as soon as anything else changes them, a remote GUI over EC for
+		// one. Re-seed it per session; it declines while the user has edits
+		// pending so this can never discard them.
 		m_prefsDialog->PrepareSharedDirsForSession();
 		m_prefsDialog->Show(true);
 		m_prefsDialog->Raise();
@@ -1220,22 +1184,17 @@ void CamuleDlg::AddServerMessageLine(wxString &message)
 
 void CamuleDlg::ShowConnectionState()
 {
-	// Wipe the Server Info text ctrl on any transition that leaves it
-	// showing messages from a server we're no longer talking to:
-	//   1) connected -> disconnected
-	//   2) connected to A -> connected to B (server switch)
-	// The data side (amuled's server_msg, shared with the monolithic
-	// build) is wiped in the matching block inside
-	// CamuleApp::ShowConnectionState; here we only ResetLog the text
-	// ctrl. We deliberately don't touch the amulegui side's
-	// CServerInfoHandlerRem::m_seenSoFar snapshot: if we cleared it
-	// locally and amuled's cleanup hadn't landed yet, the next poll
-	// would replay the stale buffer through the "fullLog starts with
-	// empty seenSoFar" path. Leaving the snapshot alone lets
-	// HandlePacket's existing StartsWith-vs-else logic handle the
-	// transition naturally -- once amuled's server_msg shortens
-	// after its own clear, the prefix mismatches and the else branch
-	// resets the local view properly.
+	// Wipe the Server Info text ctrl on any transition that leaves it showing
+	// messages from a server we are no longer talking to: connected ->
+	// disconnected, or connected to A -> connected to B.
+	//
+	// The data side (amuled's server_msg) is wiped in the matching block inside
+	// CamuleApp::ShowConnectionState; here we only ResetLog the text ctrl. The
+	// amulegui side's CServerInfoHandlerRem::m_seenSoFar snapshot is
+	// deliberately left alone: clearing it locally while amuled's cleanup had
+	// not landed yet would make the next poll replay the stale buffer through
+	// the "fullLog starts with empty seenSoFar" path. Leaving it lets
+	// HandlePacket's StartsWith-vs-else logic handle the transition naturally.
 	static bool s_wasConnectedED2K = false;
 	static CServer *s_lastConnectedServer = NULL;
 	bool nowConnectedED2K = theApp->IsConnectedED2K();
@@ -1258,9 +1217,7 @@ void CamuleDlg::ShowConnectionState()
 	m_serverwnd->UpdateED2KConnectButton();
 	m_kademliawnd->UpdateConnectButton();
 
-	////////////////////////////////////////////////////////////
 	// Determine the status of the networks
-	//
 	enum ED2KState
 	{
 		ED2KOff = 0,
@@ -1371,13 +1328,11 @@ void CamuleDlg::ShowConnectionState()
 		}
 
 		// GetBitmapFor() hands back the art-provider-cached bundle's own
-		// (copy-on-write) bitmap, and a wxMemoryDC draws into that shared
-		// pixel buffer without unsharing it. Compositing the overlays
-		// straight onto it would stamp the arrows into the cached base, so
-		// they would accumulate on every later state change (and poison the
-		// base for any other consumer of the bundle). Draw into a private
-		// deep copy instead. The overlays are fetched the same way, so they
-		// share baseIcon's scale factor and line up during compositing.
+		// (copy-on-write) bitmap, and a wxMemoryDC draws into that shared pixel
+		// buffer without unsharing it. Compositing the overlays straight onto it
+		// would stamp the arrows into the cached base, so they would accumulate on
+		// every later state change. Draw into a private deep copy instead; the
+		// overlays are fetched the same way, so they share baseIcon's scale factor.
 		wxBitmap statusIcon(baseIcon.ConvertToImage(), -1, baseIcon.GetScaleFactor());
 
 		{
@@ -1399,8 +1354,7 @@ void CamuleDlg::ShowConnectionState()
 		// pixel size already matches the window DPI. Setting it on the static
 		// bitmap as-is renders the globe DPI-scale times larger than the sibling
 		// status icons, which are bundle-backed and size themselves in logical
-		// units. Stamp the window's scale factor on the composite so its logical
-		// size matches theirs (a no-op at 100% DPI).
+		// units. Stamp the window's scale factor on the composite instead.
 		statusIcon.SetScaleFactor(connBitmap->GetDPIScaleFactor());
 
 		connBitmap->SetBitmap(statusIcon);
@@ -1468,8 +1422,7 @@ void CamuleDlg::OnCoreVersionClicked(wxMouseEvent &WXUNUSED(event))
 	// stock glyphs are template symbols that take the system label colour, so
 	// they render grey and ignore a tint, and tinting is not portable either --
 	// GTK's error icon is already a red disc with a white cross, which a blanket
-	// recolour would flatten. These two are a matched pair from one set, so the
-	// states differ only in colour.
+	// recolour would flatten. These two are a matched pair from one set.
 	ShowInfoGridDialog(
 		this,
 		_("Version"),
@@ -1603,18 +1556,16 @@ void CamuleDlg::DlgShutDown()
 
 void CamuleDlg::OnClose(wxCloseEvent &evt)
 {
-	// Gated on the tray icon because on Linux and Windows it is the only
-	// way back once the frame is hidden. Deliberately a plain Show(false)
-	// rather than HideToTray(): on macOS the Dock icon stays, which is
-	// what the close button is supposed to leave behind there, and the
-	// Dock-reopen handler (CamuleGuiApp / CamuleRemoteGuiApp
-	// ::MacReopenApp) brings the window back from it.
+	// Gated on the tray icon because on Linux and Windows it is the only way back
+	// once the frame is hidden. Deliberately a plain Show(false) rather than
+	// HideToTray(): on macOS the Dock icon stays, which is what the close button
+	// is supposed to leave behind there, and the Dock-reopen handler brings the
+	// window back from it.
 	bool hideOnClose = thePrefs::HideOnClose() && thePrefs::UseTrayIcon();
-	// Quit menus (Cmd+Q, Dock right-click → Quit, tray-icon Exit) all
-	// either pass force=true to Close() (CanVeto()==false) or set the
-	// app's IsQuitting() flag from OnQueryEndSession. Either signal
-	// bypasses the hide-on-close branch so HideOnClose only governs
-	// the red close-button gesture itself.
+	// Quit menus (Cmd+Q, Dock right-click Quit, tray-icon Exit) all either pass
+	// force=true to Close() or set the app's IsQuitting() flag from
+	// OnQueryEndSession. Either signal bypasses the hide-on-close branch, so
+	// HideOnClose only governs the red close-button gesture itself.
 	if (hideOnClose && evt.CanVeto() && !theApp->IsQuitting()) {
 		Show(false);
 		evt.Veto();
@@ -1792,13 +1743,11 @@ void CamuleDlg::OnShow(wxShowEvent &evt)
 #endif
 	}
 #ifdef WITH_LIBAYATANA_APPINDICATOR
-	// SNI tray menus are static between rebuilds, so the
-	// "Show aMule"/"Hide aMule" entry's label can drift out of sync
-	// when the window is hidden via paths that don't go through
-	// CMuleTrayIcon::DoShowHide (close-button HideOnClose,
-	// minimize-to-tray, programmatic Show(false) via the tray
-	// menu's hide-and-restore). Re-tracking visibility here keeps
-	// the menu honest across every entry point.
+	// SNI tray menus are static between rebuilds, so the "Show aMule"/"Hide
+	// aMule" entry's label can drift out of sync when the window is hidden via
+	// paths that do not go through CMuleTrayIcon::DoShowHide (close-button
+	// HideOnClose, minimize-to-tray, a programmatic Show(false)). Re-tracking
+	// visibility here keeps the menu honest across every entry point.
 	if (m_wndTaskbarNotifier) {
 		m_wndTaskbarNotifier->RebuildMenu();
 	}
@@ -1808,19 +1757,16 @@ void CamuleDlg::OnShow(wxShowEvent &evt)
 
 void CamuleDlg::OnMinimize(wxIconizeEvent &evt)
 {
-	// Snapshot the iconize state straight from the event — wxFrame's
-	// IsIconized() is unreliable on wxGTK during the minimize-button
-	// transition, so consumers that need to know if the window is
-	// iconized (tray menu label, DoShowHide branch decision) read
-	// IsTrayLogicallyIconized() instead.
+	// Snapshot the iconize state straight from the event -- wxFrame's
+	// IsIconized() is unreliable on wxGTK during the minimize-button transition,
+	// so consumers that need to know read IsTrayLogicallyIconized() instead.
 	m_iconized_logical = evt.IsIconized();
 
 #ifdef CLIENT_GUI
-	// Coming back from the taskbar/Dock with a reconnect running quietly
-	// behind the window: now that there is a frozen window to explain, put the
-	// dialog up (issue #806). OnShow covers the same for the tray paths, which
-	// hide the frame without ever iconizing it. theApp is the remote-GUI app
-	// here -- this file is compiled per target, not shared via muleappgui.
+	// Coming back from the taskbar/Dock with a reconnect running quietly behind
+	// the window: now that there is a frozen window to explain, put the dialog
+	// up. OnShow covers the same for the tray paths, which hide the frame
+	// without ever iconizing it.
 	if (IsVisibleToUser()) {
 		theApp->OnMainWindowRestored();
 	}
@@ -1905,12 +1851,10 @@ void CamuleDlg::OnGUITimer(wxTimerEvent &WXUNUSED(evt))
 		m_kademliawnd->UpdateNodeCount(CStatistics::GetKadNodes());
 
 #if defined(ENABLE_VERSION_CHECK) && defined(CLIENT_GUI)
-		// amulegui periodic re-check (daily). amulegui is not a CamuleApp, so
-		// it has no core engine; it re-runs its own CVersionCheck. Fires
-		// immediately the first time the preference is enabled at runtime
-		// (m_lastGuiVersionCheck == 0). StartupVersionCheck() is a no-op while
-		// a check is already in flight. The monolithic app drives its periodic
-		// check from CamuleApp::OnCoreTimer instead.
+		// amulegui periodic re-check (daily). amulegui is not a CamuleApp, so it
+		// has no core engine and re-runs its own CVersionCheck. Fires immediately
+		// the first time the preference is enabled at runtime.
+		// StartupVersionCheck() is a no-op while a check is already in flight.
 		if (thePrefs::GetCheckNewVersion() &&
 			(m_lastGuiVersionCheck == 0 ||
 				time(nullptr) - m_lastGuiVersionCheck >= 24 * 60 * 60)) {
@@ -1922,13 +1866,11 @@ void CamuleDlg::OnGUITimer(wxTimerEvent &WXUNUSED(evt))
 	if (msCur - msPrev1 > 1000) { // every second
 		msPrev1 = msCur;
 
-		// The clients page shows live speeds and transfer totals, so it wants
-		// a per-second refresh -- and no more. This timer fires at 10 Hz, so
-		// outside this block the whole sweep ran ten times a second: every
-		// peer the core knows re-read, both panes rebuilt and the known-client
-		// store reconciled, for a display that changes once a second at most
-		// (issue #920). Only while the page is on screen: off-screen the
-		// repaint would draw nothing.
+		// The clients page shows live speeds and transfer totals, so it wants a
+		// per-second refresh -- and no more. This timer fires at 10 Hz, so outside
+		// this block the whole sweep ran ten times a second: every peer the core
+		// knows re-read, both panes rebuilt and the known-client store
+		// reconciled, for a display that changes once a second at most.
 		if (m_clientswnd && m_activewnd == static_cast<wxWindow *>(m_clientswnd)) {
 			m_clientswnd->UpdateAll();
 		}
@@ -1943,10 +1885,9 @@ void CamuleDlg::OnGUITimer(wxTimerEvent &WXUNUSED(evt))
 		}
 #ifndef CLIENT_GUI
 		// Animate the search progress bar for the visible tab while the search
-		// window is up. This is the periodic tick the cosmetic Kad ramp needs
-		// (a Kad search has no per-result notify to drive it) and refreshes a
-		// running ed2k percent too. amulegui drives the same bar from its EC
-		// progress poll instead, so it is excluded here.
+		// window is up. This is the periodic tick the cosmetic Kad ramp needs -- a
+		// Kad search has no per-result notify to drive it -- and refreshes a
+		// running ed2k percent too. amulegui drives the same bar from EC instead.
 		if (m_searchwnd && m_searchwnd->IsShown()) {
 			m_searchwnd->RefreshVisibleTabProgress();
 		}
@@ -2013,12 +1954,11 @@ bool CamuleDlg::Check_and_Init_Skin()
 
 	wxStandardPathsBase &spb(wxStandardPaths::Get());
 #ifdef __WINDOWS__
-	// Windows portable layout: amule.exe lives in bin\ and installable
-	// data (skins, ...) in ..\share\amule\.  wx returns the exe directory
-	// for both GetPluginsDir() and GetDataDir() on Windows, so relocate
-	// to the FHS-style path the installer actually populates.  Has to
-	// match the Preferences enumeration above (Preferences.cpp::TransferToWindow)
-	// or the dropdown would offer a skin we can't load.  (#783)
+	// Windows portable layout: amule.exe lives in bin\ and installable data
+	// (skins, ...) in ..\share\amule\. wx returns the exe directory for both
+	// GetPluginsDir() and GetDataDir() on Windows, so relocate to the FHS-style
+	// path the installer actually populates. Has to match the Preferences
+	// enumeration, or the dropdown would offer a skin we cannot load.
 	wxString dataDir(JoinPaths(JoinPaths(spb.GetDataDir(), ".."), "share"));
 	dataDir = JoinPaths(dataDir, "amule");
 #elif defined(__WXMAC__)
@@ -2079,27 +2019,22 @@ void CamuleDlg::Add_Skin_Icon(const wxString &iconName, const wxBitmap &stdIcon,
 	} else if (iconName.StartsWith("Toolbar_")) {
 		if (!useSkins) {
 			// The built-in toolbar art ships as an SVG twin through
-			// CamuleArtProvider ("amule:toolbar_<name>"), which wx
-			// rasterizes at whatever size/DPI the toolbar asks for.
-			// An active skin keeps full control: its PNG takes the
-			// raster path below instead.
-			// Fold "Toolbar_Foo" to the "toolbar_foo" art id.
-			// CCtypeAsciiScope pins LC_CTYPE to "C" so wxString::Lower()
-			// stays ASCII-correct: in a Turkic locale it would otherwise
-			// map 'I' to the dotless 'ı' and "Toolbar_Import" would no
-			// longer match the embedded id (same helper the GeoIP flag
-			// lookup uses).
+			// CamuleArtProvider ("amule:toolbar_<name>"), which wx rasterizes at
+			// whatever size/DPI the toolbar asks for. An active skin keeps full
+			// control: its PNG takes the raster path below instead.
+			//
+			// CCtypeAsciiScope pins LC_CTYPE to "C" so wxString::Lower() stays
+			// ASCII-correct when folding "Toolbar_Foo" to the art id: in a Turkic
+			// locale it would map 'I' to the dotless 'i'.
 			CCtypeAsciiScope asciiCtype;
 			wxBitmapBundle art = wxArtProvider::GetBitmapBundle(
 				CamuleArtProvider::MakeId(iconName.Lower()), wxART_TOOLBAR, wxSize(32, 32));
 			if (!art.IsOk()) {
-				// Every built-in toolbar icon ships embedded in
-				// icon_data.c, generated from the same src/icons/
-				// sources CamuleArtProvider reads -- this can only
-				// fail with a broken build, not a reachable runtime
-				// condition. Fall back to a generic stock icon rather
-				// than shipping a bespoke raster twin of each toolbar
-				// asset just for an error path that can't happen.
+				// Every built-in toolbar icon ships embedded in icon_data.c, generated
+				// from the same src/icons/ sources CamuleArtProvider reads -- this can
+				// only fail with a broken build, not a reachable runtime condition.
+				// Fall back to a generic stock icon rather than shipping a bespoke
+				// raster twin of each toolbar asset for an error path that cannot happen.
 				AddLogLineN(LOG_DIAGNOSTIC("Warning: Could not load built-in icon for ") +
 					    iconName);
 				art = wxArtProvider::GetBitmapBundle(

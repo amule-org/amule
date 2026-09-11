@@ -146,19 +146,12 @@ public:
 	void Clear();
 
 public:
-	//! Whether proxy is enabled or not.
 	bool m_proxyEnable;
-	//! The type of the proxy server.
 	CProxyType m_proxyType;
-	//! The proxy host name or IP address.
 	wxString m_proxyHostName;
-	//! The proxy port number.
 	unsigned short m_proxyPort;
-	//! Whether authentication should be performed.
 	bool m_enablePassword;
-	//! The user name to authenticate to the server.
 	wxString m_userName;
-	//! The password to authenticate to the server.
 	wxString m_password;
 };
 

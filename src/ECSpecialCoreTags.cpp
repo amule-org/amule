@@ -96,18 +96,17 @@ CEC_Server_Tag::CEC_Server_Tag(const CServer *server, EC_DETAIL_LEVEL detail_lev
 			AddTag(CECTag(EC_TAG_SERVER_FILES, tmpInt));
 		}
 		// Per-user publishing limits (issue #840). Sent from both server-tag
-		// builders: this detail-level one carries the initial list, the valuemap
-		// one below carries updates, and a tag added to only one of them leaves
-		// the remote GUI's column permanently blank.
+		// builders -- this one carries the initial list, the valuemap one below
+		// carries updates -- since a tag in only one leaves the remote GUI's column
+		// permanently blank.
 		if ((tmpInt = server->GetSoftFiles()) != 0) {
 			AddTag(CECTag(EC_TAG_SERVER_FILES_SOFT, tmpInt));
 		}
 		if ((tmpInt = server->GetHardFiles()) != 0) {
 			AddTag(CECTag(EC_TAG_SERVER_FILES_HARD, tmpInt));
 		}
-		// Wire capability flags. Diagnostics, and hidden by default in release
-		// builds, but the remote GUI offers the same columns as the monolithic
-		// app so it needs the same data behind them.
+		// Wire capability flags: diagnostics, hidden by default in release builds,
+		// but the remote GUI offers the same columns as the monolithic app.
 		if ((tmpInt = server->GetTCPFlags()) != 0) {
 			AddTag(CECTag(EC_TAG_SERVER_TCP_FLAGS, tmpInt));
 		}
@@ -182,12 +181,9 @@ CEC_ConnState_Tag::CEC_ConnState_Tag(EC_DETAIL_LEVEL detail_level)
 			}
 		}
 		AddTag(CECTag(EC_TAG_ED2K_ID, theApp->GetED2KID()));
-		// GetTicks() (a possibly-64-bit time_t) truncated to uint32 --
-		// fine until 2106, matching EC_TAG_ED2K_ID's own uint32 id
-		// space this tag already sits next to. Only sent while actually
-		// connected, so amulegui/amuleapi never have to distinguish
-		// "never connected" from "connected at the unix epoch"
-		// (amule-org/amule#174).
+		// GetTicks() truncated to uint32 -- fine until 2106, and matching the uint32
+		// id space of EC_TAG_ED2K_ID next to it. Sent only while connected, so no
+		// consumer has to tell "never connected" from "connected at the epoch".
 		if (theApp->GetED2KConnectedSince().IsValid()) {
 			AddTag(CECTag(EC_TAG_ED2K_CONNECTED_SINCE,
 				(uint32)theApp->GetED2KConnectedSince().GetTicks()));
@@ -266,26 +262,21 @@ namespace
 // NOT gated on GetMetaDataVer(): that predicate answers "has this file been
 // probed", and using it to mean "all six fields are present" sends
 // MEDIA_LENGTH=0 and MEDIA_BITRATE=0 for a file that probed to a codec and no
-// duration -- a raw elementary stream, a truncated capture. Downstream that
-// renders as Length 0:00 / Bitrate 0 kbps and reports has_media alongside
-// length_s: 0, where the honest answer is N/A. A displayed zero is a claim;
-// absence is not.
+// duration -- a raw elementary stream, a truncated capture -- which renders as
+// Length 0:00 / Bitrate 0 kbps where the honest answer is N/A. A displayed zero
+// is a claim; absence is not.
 //
-// Shared by the shared-file and search-result tag builders, which had
-// diverged: the search one already emitted per field, the shared one gated
-// all six on the aggregate.
+// Shared by the shared-file and search-result tag builders, which had diverged.
 void AddMediaTagsPresent(CECTag &target, const CAbstractFile *file, CValueMap *valuemap)
 {
-	// Present -> send the value. Absent, but we sent one before -> send an
-	// explicit zero / empty so the remote drops it. Absent and never sent ->
-	// send nothing, so a field that never had a value is reported as absent
-	// rather than as a zero.
+	// Present -> send the value. Absent but sent before -> send an explicit zero /
+	// empty so the remote drops it. Absent and never sent -> send nothing, so a
+	// field that never had a value is reported as absent rather than as a zero.
 	//
-	// The middle case is not optional. A tag that is simply not offered reads
-	// as UNCHANGED to a CValueMap peer, and both receivers are add-only, so
-	// omitting a CLEARED field would leave amulegui and the web UI serving the
-	// stale value -- including an unverified one inherited from a search
-	// result, which is exactly what the completion re-probe exists to correct.
+	// The middle case is not optional: a tag that is not offered reads as UNCHANGED
+	// to a CValueMap peer, and both receivers are add-only, so omitting a CLEARED
+	// field leaves the stale value in place -- including one inherited from a
+	// search result, which is what the completion re-probe exists to correct.
 	const auto emitInt = [&](ec_tagname_t ecId, uint32 value) {
 		if (value) {
 			target.AddTag(CECTag(ecId, value), valuemap);
@@ -342,9 +333,8 @@ CEC_SharedFile_Tag::CEC_SharedFile_Tag(
 	}
 	AddTag(EC_TAG_KNOWNFILE_ON_QUEUE, file->GetQueuedCount(), valuemap);
 
-	// Live upload activity (issue #466). Emitted before the UPDATE
-	// early-return so they refresh every tick like the download-side
-	// speed/source counts. The speed + uploading count are computed from
+	// Live upload activity (issue #466), emitted before the UPDATE early-return so
+	// they refresh every tick like the download-side counts. Computed from
 	// m_ClientUploadList (core-only); amulegui receives them over EC.
 #ifndef CLIENT_GUI
 	AddTag(EC_TAG_KNOWNFILE_UPLOAD_SPEED, file->GetUploadDatarate(), valuemap);
@@ -352,13 +342,11 @@ CEC_SharedFile_Tag::CEC_SharedFile_Tag(
 #endif
 	AddTag(EC_TAG_KNOWNFILE_LAST_UPLOAD, (uint32)file->GetLastUpload(), valuemap);
 
-	// Community ratings/comments + the on-demand Kad-notes running flag, shared
-	// by downloads AND shared files via the virtual GetRatingAndComments (a
-	// partfile prepends its connected-source comments; a plain shared file
-	// carries just its Kad notes). Emitted before the UPDATE early-return so the
-	// flag's start -> finish and notes streaming in are visible on every poll;
-	// the valuemap suppresses unchanged values, so idle files cost nothing after
-	// the first send.
+	// Community ratings/comments plus the on-demand Kad-notes running flag, shared
+	// by downloads and shared files via the virtual GetRatingAndComments. Emitted
+	// before the UPDATE early-return so the flag's start -> finish and notes
+	// streaming in are visible on every poll; the valuemap suppresses unchanged
+	// values, so idle files cost nothing after the first send.
 	CECEmptyTag sc(EC_TAG_PARTFILE_COMMENTS);
 	FileRatingList list;
 	file->GetRatingAndComments(list);
@@ -384,11 +372,10 @@ CEC_SharedFile_Tag::CEC_SharedFile_Tag(
 		file->IsPartFile() ? static_cast<const CPartFile *>(file)->GetCachedPartMetBasename()
 				   : file->GetFilePath().GetPrintable(),
 		valuemap);
-	// The on-disk directory, always — the Temp dir for a partfile, the
-	// destination dir once completed. Unlike _FILENAME (which doubles as
-	// the ".part" basename for partfiles), this never changes meaning
-	// across the completed transition, so the REST API can expose an
-	// unambiguous `path` on /downloads and /shared (issue #417).
+	// The on-disk directory, always -- the Temp dir for a partfile, the destination
+	// dir once completed. Unlike _FILENAME, which doubles as the ".part" basename,
+	// this never changes meaning across the completed transition, so the REST API
+	// can expose an unambiguous `path` (issue #417).
 	AddTag(EC_TAG_KNOWNFILE_PATH, file->GetFilePath().GetPrintable(), valuemap);
 
 	// When the file was completed / first shared (issue #466). Static once
@@ -397,10 +384,9 @@ CEC_SharedFile_Tag::CEC_SharedFile_Tag(
 
 	AddTag(EC_TAG_PARTFILE_SIZE_FULL, file->GetFileSize(), valuemap);
 
-	// Cached path: ed2k:// link construction is the single hottest item on
-	// the EC dispatch chain for big shared-file libraries (#713 profile).
-	// The cache holds the rare-changing base form; the dynamic source
-	// suffix is appended live.
+	// Cached: ed2k:// link construction is the single hottest item on the EC
+	// dispatch chain for big shared-file libraries (#713). The cache holds the
+	// rare-changing base form; the dynamic source suffix is appended live.
 	AddTag(EC_TAG_PARTFILE_ED2K_LINK,
 		file->GetED2kLinkForEC(theApp->IsConnectedED2K() && !theApp->serverconnect->IsLowID()),
 		valuemap);
@@ -408,10 +394,9 @@ CEC_SharedFile_Tag::CEC_SharedFile_Tag(
 	AddTag(EC_TAG_KNOWNFILE_COMMENT, file->GetFileComment(), valuemap);
 	AddTag(EC_TAG_KNOWNFILE_RATING, file->GetFileRating(), valuemap);
 
-	// Audio/video media metadata (issue #418). Emitted per FIELD -- see
-	// AddMediaTagsPresent for why the aggregate GetMetaDataVer() gate it used
-	// to sit behind was wrong. Emitted by this shared base ctor, so both
-	// /shared and /downloads (partfiles) carry it with no per-role code.
+	// Audio/video media metadata (issue #418), emitted per FIELD -- see
+	// AddMediaTagsPresent for why the aggregate GetMetaDataVer() gate was wrong.
+	// From this shared base ctor, so /shared and /downloads both carry it.
 	AddMediaTagsPresent(*this, file, valuemap);
 }
 
@@ -429,15 +414,15 @@ CEC_UpDownClient_Tag::CEC_UpDownClient_Tag(
 	AddDiffTag(this, EC_TAG_CLIENT_USER_IP, client->GetIP(), valuemap);
 	AddDiffTag(this, EC_TAG_CLIENT_USER_PORT, client->GetUserPort(), valuemap);
 #ifdef ENABLE_IP2COUNTRY
-	// Peer country ISO code resolved core-side (#439). Emitted whenever GeoIP
-	// is enabled + supported — even empty for an IP that doesn't resolve — so
-	// a frontend can treat tag-present as authoritative (possibly "unknown")
-	// and tag-absent as "no daemon GeoIP".
+	// Peer country ISO code resolved core-side (#439). Emitted whenever GeoIP is
+	// enabled and supported, even empty for an IP that does not resolve, so a
+	// frontend can read tag-present as authoritative and tag-absent as "no daemon
+	// GeoIP".
 	if (theApp->GetIP2Country() && theApp->GetIP2Country()->IsEnabled()) {
-		// Numeric-IP overload: memoised, and it skips formatting the IP into
-		// a string on the hit path. This runs for every peer on every EC
-		// poll, and a peer's country cannot change while its IP does not.
-		// It returns a const reference, which AddDiffTag takes without a copy.
+		// Numeric-IP overload: memoised, and it skips formatting the IP into a
+		// string on the hit path. This runs for every peer on every EC poll, and a
+		// peer's country cannot change while its IP does not. Returns a const
+		// reference, which AddDiffTag takes without a copy.
 		AddDiffTag(this,
 			EC_TAG_CLIENT_COUNTRY,
 			theApp->GetIP2Country()->GetCountryCode(client->GetFullIPNumeric()),
@@ -462,18 +447,13 @@ CEC_UpDownClient_Tag::CEC_UpDownClient_Tag(
 	AddDiffTag(this, EC_TAG_CLIENT_UPLOAD_STATE, client->GetUploadState(), valuemap);
 	AddDiffTag(this, EC_TAG_CLIENT_DOWNLOAD_STATE, client->GetDownloadState(), valuemap);
 	AddDiffTag(this, EC_TAG_CLIENT_IDENT_STATE, (uint64)client->GetCurrentIdentState(), valuemap);
-	// Whether a socket to this peer is actually up, as opposed to a client
-	// object merely existing for it. A consumer that inferred "online" from
-	// the ECID alone called a peer online from the moment we started TRYING to
-	// reach it -- including one we can never reach.
+	// Whether a socket to this peer is actually up, as opposed to a client object
+	// merely existing for it. A consumer inferring "online" from the ECID alone
+	// called a peer online from the moment we started TRYING to reach it.
 	AddDiffTag(this, EC_TAG_CLIENT_CONNECTED, client->IsConnected(), valuemap);
 	AddDiffTag(this, EC_TAG_CLIENT_EXT_PROTOCOL, client->ExtProtocolAvailable(), valuemap);
-	// These are not needed atm. Keep them for now, maybe columns get reintroduced in client view.
-	// AddTag(CECTag(EC_TAG_CLIENT_WAIT_TIME, client->GetWaitTime()), valuemap);
-	// AddTag(CECTag(EC_TAG_CLIENT_XFER_TIME, client->GetUpStartTimeDelay()), valuemap);
-	// AddTag(CECTag(EC_TAG_CLIENT_QUEUE_TIME, (uint64)(::GetTickCount() - client->GetWaitStartTime())),
-	// valuemap); AddTag(CECTag(EC_TAG_CLIENT_LAST_TIME, (uint64)(::GetTickCount() -
-	// client->GetLastUpRequest())), valuemap);
+	// Not needed at the moment; kept in case the columns return to the client view.
+	// EC_TAG_CLIENT_WAIT_TIME, _XFER_TIME, _QUEUE_TIME and _LAST_TIME.
 	AddDiffTag(this, EC_TAG_CLIENT_WAITING_POSITION, client->GetUploadQueueWaitingPosition(), valuemap);
 	AddDiffTag(this,
 		EC_TAG_CLIENT_REMOTE_QUEUE_RANK,
@@ -549,10 +529,10 @@ CEC_SearchFile_Tag::CEC_SearchFile_Tag(
 	const CSearchFile *file, EC_DETAIL_LEVEL detail_level, CValueMap *valuemap, uint32 searchID)
 : CECTag(EC_TAG_SEARCHFILE, file->ECID())
 {
-	// Multi-search union poll (amulegui): the owning search's ID so the client
-	// routes this result to the right tab. Emitted unconditionally (no
-	// valuemap, before the UPDATE early-return) so a result object (re)created
-	// on any poll can always be attributed. 0 => omitted (legacy / non-union).
+	// Multi-search union poll (amulegui): the owning search's ID, so the client
+	// routes this result to the right tab. Emitted unconditionally (no valuemap,
+	// before the UPDATE early-return) so a result object recreated on any poll can
+	// always be attributed. 0 means omitted.
 	if (searchID) {
 		AddTag(CECTag(EC_TAG_SEARCH_ID, searchID));
 	}
@@ -561,49 +541,39 @@ CEC_SearchFile_Tag::CEC_SearchFile_Tag(
 	AddTag(CECTag(EC_TAG_PARTFILE_STATUS, (uint32)file->GetDownloadStatus()), valuemap);
 
 	// On-demand Kad community ratings/comments for this result, reusing the
-	// partfile tags (CSearchFile borrows EC_TAG_PARTFILE_* above). Emitted before
-	// the UPDATE early-return so the flag's start -> finish and the notes
-	// streaming in are visible on every poll.
+	// partfile tags. Emitted before the UPDATE early-return so the flag's start ->
+	// finish and the notes streaming in are visible on every poll.
 	//
-	// Deliberately WITHOUT the valuemap: unlike a download, a search result has
-	// no EC change-generation and its reply builder
-	// (Get_EC_Response_Search_Results) never resets the per-connection valuemap
-	// when amulegui (re)creates the result object. Diffing here would send the
-	// comments container exactly once per ECID for the connection's lifetime, so
-	// a result object created before the notes arrived — the common case, since
-	// the user opens the dialog on an existing result — would be deduped out and
-	// the comments dialog would stay empty. Sending them raw keeps delivery
-	// reliable; the block is gated on the built list so idle results cost nothing
-	// and an empty container never clears the remote list.
+	// Deliberately WITHOUT the valuemap: unlike a download, a search result has no
+	// EC change-generation, and Get_EC_Response_Search_Results never resets the
+	// per-connection valuemap when amulegui recreates the result object. Diffing
+	// would send the comments container once per ECID for the connection's
+	// lifetime, so a result created before the notes arrived -- the common case --
+	// would be deduped out and the dialog would stay empty. The block is gated on
+	// the built list, so idle results cost nothing.
 	FileRatingList list;
 	file->GetRatingAndComments(list);
-	// Always emitted, and through the valuemap -- the same shape the download
-	// side has always used for this tag (CEC_PartFile_Tag above).
+	// Always emitted, and through the valuemap -- the same shape the download side
+	// uses for this tag.
 	//
-	// It used to be emitted only while the lookup was running or had notes to
-	// show, so "finished, found nothing" was signalled by the tag going away.
-	// That cannot survive the incremental union: a result whose only change is
-	// a tag no longer being built produces a tag with no children, which
-	// Get_EC_Response_Search_Results_Union drops as unchanged. The transition
-	// was therefore invisible to every incremental client -- amulegui latched
-	// the flag on, and so did amuleapi -- and only a full re-read cleared it.
-	//
-	// Through the valuemap the 1 -> 0 transition is itself a child tag, so the
-	// result is not elided and every client sees the lookup end. A steady
-	// state still costs nothing: unchanged, it is diffed away as before.
+	// It used to be emitted only while the lookup was running or had notes, so
+	// "finished, found nothing" was signalled by the tag going away. That cannot
+	// survive the incremental union: a result whose only change is a tag no longer
+	// being built produces a childless tag, which the union drops as unchanged, so
+	// the transition was invisible to every incremental client. Through the
+	// valuemap the 1 -> 0 transition is itself a child tag, and a steady state
+	// still costs nothing.
 	AddTag(EC_TAG_PARTFILE_KAD_COMMENT_SEARCHING,
 		(uint64)(file->IsKadCommentSearchRunning() ? 1 : 0),
 		valuemap);
 	// The container itself stays gated on there being notes, and stays off the
-	// valuemap: an empty one must never be sent, because a client reads its
-	// absence as "no notes" rather than as "unchanged".
+	// valuemap: an empty one must never be sent, because a client reads its absence
+	// as "no notes" rather than as "unchanged".
 	//
-	// One consequence worth naming, since it looks like a bug from the other
-	// end: a result that HAS notes is never elided by the multi-search union.
-	// The union skips a result whose tag came out childless, and this
-	// container is a child that off-valuemap means it is re-emitted on every
-	// poll, unchanged or not. That is the correct trade -- the alternative
-	// silently drops notes -- and it is bounded by how few results carry any.
+	// One consequence, since it looks like a bug from the other end: a result that
+	// HAS notes is never elided by the multi-search union, because off-valuemap
+	// this child is re-emitted on every poll. That is the correct trade -- the
+	// alternative silently drops notes -- and few results carry any.
 	if (!list.empty()) {
 		CECEmptyTag sc(EC_TAG_PARTFILE_COMMENTS);
 		for (FileRatingList::const_iterator it = list.begin(); it != list.end(); ++it) {
@@ -628,8 +598,7 @@ CEC_SearchFile_Tag::CEC_SearchFile_Tag(
 	}
 	// Browse ("View Files") source info: the peer this listing came from and the
 	// shared folder the file lives in. Set only on results filed from a peer's
-	// shared-file list (CSearchList::ProcessSharedFileList), so ordinary
-	// server/Kad hits — which never set these — emit nothing here.
+	// shared-file list, so ordinary server/Kad hits emit nothing here.
 	if (file->GetClientID()) {
 		AddTag(CECTag(EC_TAG_SEARCHFILE_CLIENT_ID, file->GetClientID()), valuemap);
 		AddTag(CECTag(EC_TAG_SEARCHFILE_CLIENT_PORT, file->GetClientPort()), valuemap);
@@ -640,10 +609,9 @@ CEC_SearchFile_Tag::CEC_SearchFile_Tag(
 	if (file->HasRating()) {
 		AddTag(CECTag(EC_TAG_KNOWNFILE_RATING, (uint8)file->UserRating()), valuemap);
 	}
-	// Media metadata (issue #430). A hit carries FT_MEDIA_* tags only when
-	// the file is known/probed locally; emit each EC_TAG_KNOWNFILE_MEDIA_*
-	// (defined by issue #418) only when its value is present, so results
-	// without media cost nothing.
+	// Media metadata (issue #430). A hit carries FT_MEDIA_* tags only when the file
+	// is known or probed locally, so each EC_TAG_KNOWNFILE_MEDIA_* is emitted only
+	// when its value is present and results without media cost nothing.
 	AddMediaTagsPresent(*this, file, valuemap);
 }
 
@@ -659,17 +627,15 @@ CEC_Friend_Tag::CEC_Friend_Tag(const CFriend *Friend, CValueMap *valuemap)
 	AddTag(EC_TAG_FRIEND_PORT, Friend->GetPort(), valuemap);
 	const CClientRef &linkedClient = Friend->GetLinkedClient();
 	AddTag(EC_TAG_FRIEND_CLIENT, linkedClient.IsLinked() ? linkedClient.ECID() : 0, valuemap);
-	// Echoed from the linked client so a consumer does not have to join
-	// against the client list -- and could not join reliably anyway, since a
-	// friend's client need not be in the list the consumer holds. Linked but
-	// not connected is the ordinary case for an offline friend.
+	// Echoed from the linked client so a consumer does not have to join against the
+	// client list -- and could not join reliably anyway, since a friend's client
+	// need not be in the list the consumer holds.
 	AddTag(EC_TAG_CLIENT_CONNECTED,
 		linkedClient.IsLinked() && linkedClient.GetClient()->IsConnected(),
 		valuemap);
-	// The slot is settable over EC (EC_TAG_FRIEND_FRIENDSLOT on the request
-	// side) but was never reported back, so every EC client read it as false
-	// -- amulegui's "Establish Friend Slot" check mark could not follow the
-	// state it had just set. Same tag id in both directions.
+	// The slot is settable over EC but was never reported back, so every EC client
+	// read it as false and amulegui's "Establish Friend Slot" check mark could not
+	// follow the state it had just set. Same tag id in both directions.
 	AddTag(EC_TAG_FRIEND_FRIENDSLOT, Friend->HasFriendSlot(), valuemap);
 }
 

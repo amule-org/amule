@@ -143,35 +143,31 @@ public:
 	const CTag *GetTag(uint8 tagname, uint8 tagtype) const;
 	void AddTagUnique(const CTag &pTag);
 	// Drop the tag with this numeric id, if present. The counterpart to
-	// AddTagUnique: without it a re-probe can only add or replace, never
-	// clear, so a field the probe no longer finds keeps whatever value was
-	// there -- including one inherited unverified from a search result.
-	// Returns true if a tag was removed.
+	// AddTagUnique: without it a re-probe can only add or replace, never clear, so
+	// a field the probe no longer finds keeps whatever value was there, including
+	// one inherited unverified from a search result.
 	bool RemoveTag(uint8 tagname);
 	const ArrayOfCTag &GetTags() const { return m_taglist; }
 	void AddNote(Kademlia::CEntry *pEntry);
 	const CKadEntryPtrList &getNotes() const { return m_kadNotes; }
 
-	// Append the community ratings/comments retrieved on demand from Kad (one
-	// entry per responding node, stored by CSearch::ProcessResultNotes ->
-	// AddNote) to `list`. Shared by downloads and search results; the source-
-	// client half of a download's comments is added separately by CPartFile.
-	// Core-only: on amulegui the notes ride the EC channel as a prebuilt list.
+	// Append the community ratings/comments retrieved on demand from Kad (one entry
+	// per responding node) to `list`. Shared by downloads and search results; the
+	// source-client half of a download's comments is added by CPartFile. Core-only:
+	// on amulegui the notes ride the EC channel as a prebuilt list.
 	void GetKadNotesComments(FileRatingList &list) const;
 
-	// Collect the ratings/comments to display for this file. On the daemon the
-	// base version returns just the Kad notes (correct for a search result or a
-	// shared file), and CPartFile overrides it to prepend its connected-source
-	// comments. On amulegui every file type returns the same EC-streamed cache
-	// (m_FileRatingList) via the base, so no per-class override is needed there.
+	// Collect the ratings/comments to display for this file. On the daemon the base
+	// version returns just the Kad notes, and CPartFile overrides it to prepend its
+	// connected-source comments. On amulegui every file type returns the same
+	// EC-streamed cache through the base.
 	virtual void GetRatingAndComments(FileRatingList &list) const;
 
 #ifdef CLIENT_GUI
 	// amulegui cache of the ratings/comments the daemon streams over EC. One
-	// implementation for downloads, shared files and search results — the
-	// remote containers (CKnownFilesRem / CSearchListRem) fill it from the
-	// EC_TAG_PARTFILE_COMMENTS container, and the base GetRatingAndComments
-	// above hands it back.
+	// implementation for downloads, shared files and search results: the remote
+	// containers fill it from the EC_TAG_PARTFILE_COMMENTS container, and the base
+	// GetRatingAndComments hands it back.
 	const FileRatingList &GetFileRatingList() const { return m_FileRatingList; }
 	void ClearFileRatingList() { m_FileRatingList.clear(); }
 	void AddFileRatingList(const wxString &u, const wxString &f, sint16 r, const wxString &c)
@@ -180,12 +176,11 @@ public:
 	}
 #endif
 
-	// Start an on-demand Kad NOTES lookup to retrieve community ratings/comments
-	// for this file. Works for any file the daemon can size locally: the shared
-	// list, the download queue, or the current search results (the request
-	// builder reads the file size from there). Returns false if Kad is
-	// unavailable, a lookup is already running, or the file is not eligible. On
-	// amulegui this is a no-op stub — the GUI triggers it over EC.
+	// Start an on-demand Kad NOTES lookup for this file's community
+	// ratings/comments. Works for any file the daemon can size locally: the shared
+	// list, the download queue, or the current search results. False if Kad is
+	// unavailable, a lookup is already running, or the file is not eligible. A
+	// no-op stub on amulegui, which triggers it over EC.
 	bool RequestKadNoteSearch();
 
 	// True while an on-demand Kad NOTES lookup for this file's comments/ratings
@@ -378,12 +373,10 @@ public:
 	bool PublishSrc();
 	bool PublishNotes();
 
-	// Nonzero when this file has verified media metadata attached
-	// (probed by MediaProbe at share-add time). Derived from tag
-	// presence — a nonzero FT_MEDIA_LENGTH is the only source of
-	// this tag in aMule, so its presence is the "we've probed and
-	// have data worth publishing" signal that Kad's publisher gates
-	// on (Search.cpp:1422). No separate m_uMetaDataVer field needed.
+	// Nonzero when this file has verified media metadata attached, probed by
+	// MediaProbe at share-add time. Derived from tag presence: a nonzero
+	// FT_MEDIA_LENGTH is the only source of this tag in aMule, so its presence is
+	// the "probed, with data worth publishing" signal Kad's publisher gates on.
 	uint32 GetMetaDataVer() const;
 
 	// file sharing
@@ -431,21 +424,17 @@ public:
 
 	time_t m_lastDateChanged;
 
-	// Live upload activity (issue #466), persisted in known.met so it
-	// survives restarts. m_lastUploadDatetime is stamped whenever data is
-	// sent for this file (CFileStatistic::AddTransferred); m_dateShared is
-	// stamped once when the file is completed or first shared. 0 = unknown.
+	// Live upload activity (issue #466), persisted in known.met so it survives
+	// restarts. m_lastUploadDatetime is stamped whenever data is sent for this file;
+	// m_dateShared once, when the file is completed or first shared. 0 = unknown.
 	time_t m_lastUploadDatetime;
 	time_t m_dateShared;
 
-	// "Last time aMule saw this exact (name, date, size) match a real
-	// file." Refreshed by CKnownFileList::FindKnownFile and the
-	// "already on the list" branch in Append. Persisted via
-	// FT_LASTSEEN. Drives the TTL prune in CKnownFileList::Save --
-	// records whose lastSeen is older than the TTL window are dropped
-	// (both live and duplicate-list entries), capping known.met
-	// growth at a function of *recently active* unique hashes
-	// rather than lifetime-of-the-profile uniques.
+	// "Last time aMule saw this exact (name, date, size) match a real file."
+	// Refreshed by CKnownFileList::FindKnownFile and the "already on the list"
+	// branch in Append, persisted via FT_LASTSEEN. Drives the TTL prune in
+	// CKnownFileList::Save, capping known.met growth at a function of RECENTLY
+	// ACTIVE unique hashes rather than lifetime-of-the-profile ones.
 	uint32 GetLastSeen() const { return m_lastSeen; }
 	void SetLastSeen(uint32 t) { m_lastSeen = t; }
 

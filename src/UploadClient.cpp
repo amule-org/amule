@@ -53,16 +53,14 @@
 void CUpDownClient::SetUploadState(uint8 eNewState)
 {
 	if (eNewState != m_nUploadState) {
-		// Entering or leaving US_UPLOADING changes this file's live
-		// upload speed and uploading-client count (issue #466). Mark it
-		// EC-dirty so the delta protocol re-sends those tags — otherwise
-		// a file that just stopped uploading keeps a stale non-zero speed
-		// in remote clients until some other change happens to touch it.
+		// Entering or leaving US_UPLOADING changes this file's live upload speed
+		// and uploading-client count (issue #466). Mark it EC-dirty so the delta
+		// protocol re-sends those tags, or a file that just stopped uploading keeps
+		// a stale non-zero speed in remote clients.
 		if ((m_nUploadState == US_UPLOADING || eNewState == US_UPLOADING) && m_uploadingfile) {
 			m_uploadingfile->MarkECChanged();
 		}
 		if (m_nUploadState == US_UPLOADING) {
-			// Reset upload data rate computation
 			m_nUpDatarate = 0;
 			m_nSumForAvgUpDataRate = 0;
 			m_AvarageUDR_list.clear();
@@ -154,31 +152,24 @@ uint32 CUpDownClient::CalculateScoreInternal()
 	return (uint32)fBaseValue;
 }
 
-// Checks if it is next requested block from another chunk of the actual file or from another file
-//
-// [Returns]
-//   true : Next requested block is from another different chunk or file than last downloaded block
-//   false: Next requested block is from same chunk that last downloaded block
+// True when the next requested block is from a different chunk or file than the
+// last downloaded block. [Tarod 12/22/2002]
 bool CUpDownClient::IsDifferentPartBlock() const // [Tarod 12/22/2002]
 {
 	bool different_part = false;
 
-	// Check if we have good lists and proceed to check for different chunks
 	if ((!m_BlockRequests_queue.empty()) && !m_DoneBlocks_list.empty()) {
 		Requested_Block_Struct *last_done_block = NULL;
 		Requested_Block_Struct *next_requested_block = NULL;
 		uint64 last_done_part = 0xffffffff;
 		uint64 next_requested_part = 0xffffffff;
 
-		// Get last block and next pending
 		last_done_block = m_DoneBlocks_list.front();
 		next_requested_block = m_BlockRequests_queue.front();
 
-		// Calculate corresponding parts to blocks
 		last_done_part = last_done_block->StartOffset / PARTSIZE;
 		next_requested_part = next_requested_block->StartOffset / PARTSIZE;
 
-		// Test is we are asking same file and same part
 		if (last_done_part != next_requested_part) {
 			different_part = true;
 			AddDebugLogLineN(logClient, "Session ended due to new chunk.");
@@ -247,10 +238,9 @@ void CUpDownClient::ProcessExtendedInfo(const CMemFile *data, CKnownFile *tempre
 		}
 
 		if (GetExtendedRequestsVersion() > 1) {
-			// Still guarded, because this is where the count is read off the
-			// wire. The recompute it used to gate has moved below: the peer's
-			// self-reported total staying put says nothing about its part
-			// bitmap, which may well have changed in the same message.
+			// Still guarded, because this is where the count is read off the wire.
+			// The recompute it used to gate has moved below: the peer's self-reported
+			// total staying put says nothing about its part bitmap.
 			SetUpCompleteSourcesCount(data->ReadUInt16());
 		}
 	}
@@ -258,13 +248,12 @@ void CUpDownClient::ProcessExtendedInfo(const CMemFile *data, CKnownFile *tempre
 	m_uploadingfile->UpdateUpPartsFrequency(this, true); // Increment
 	// Unconditional now, where it used to be gated on the peer's self-reported
 	// complete-source total having changed -- which says nothing about its part
-	// bitmap, so the frequency vector could move without the count following
-	// (issue #1050). UpdatePartsInfo() is throttled to one real recompute a
-	// minute per file, so the extra calls cost a comparison.
+	// bitmap, so the frequency vector could move without the count following (issue
+	// #1050). UpdatePartsInfo() is throttled to one real recompute a minute per
+	// file, so the extra calls cost a comparison.
 	//
 	// On tempreqfile, as before: the UDP/v3 callers pass a reqfile that is not
-	// necessarily this client's m_uploadingfile, and this change is about when
-	// the recompute happens, not which file it runs on.
+	// necessarily this client's m_uploadingfile.
 	tempreqfile->UpdatePartsInfo();
 
 	Notify_SharedCtrlRefreshClient(ECID(), AVAILABLE_SOURCE);
@@ -277,22 +266,19 @@ void CUpDownClient::SetUploadFileID(CKnownFile *newreqfile)
 	} else if (m_uploadingfile) {
 		m_uploadingfile->RemoveUploadingClient(this);
 		m_uploadingfile->UpdateUpPartsFrequency(this, false); // Decrement
-		// The decrement side never recomputed, so the count was a high-water
-		// mark that only ever rose (issue #1050). This one call covers both the
-		// peer disconnecting (Safe_Delete -> SetUploadFileID(NULL)) and the peer
-		// switching to a different file.
+		// The decrement side never recomputed, so the count was a high-water mark
+		// that only ever rose (issue #1050). This one call covers both the peer
+		// disconnecting and the peer switching to a different file.
 		m_uploadingfile->UpdatePartsInfo();
 	}
 
 	if (newreqfile) {
-		// This is a new file! update info
 		newreqfile->AddUploadingClient(this);
 
 		if (m_requpfileid != newreqfile->GetFileHash()) {
 			m_requpfileid = newreqfile->GetFileHash();
 			m_upPartStatus.setsize(newreqfile->GetPartCount(), 0);
 		} else {
-			// this is the same file we already had assigned. Only update data.
 			newreqfile->UpdateUpPartsFrequency(this, true); // Increment
 			newreqfile->UpdatePartsInfo();
 		}
@@ -301,7 +287,6 @@ void CUpDownClient::SetUploadFileID(CKnownFile *newreqfile)
 	} else {
 		m_upPartStatus.clear();
 		m_nUpCompleteSourcesCount = 0;
-		// This clears m_uploadingfile and m_requpfileid
 		ClearUploadFileID();
 	}
 }
@@ -449,17 +434,11 @@ uint32 CUpDownClient::SendBlockData()
 
 	if (m_socket) {
 		CEMSocket *s = m_socket;
-		//		uint32 uUpStatsPort = GetUserPort();
 
-		// Extended statistics information based on which client software and which port we sent this
-		// data to... This also updates the grand total for sent bytes, etc.  And where this data came
-		// from.
+		// Extended statistics based on which client software and port we sent this
+		// data to, which also updates the grand totals.
 		sentBytesCompleteFile = s->GetSentBytesCompleteFileSinceLastCallAndReset();
 		sentBytesPartFile = s->GetSentBytesPartFileSinceLastCallAndReset();
-		//		thePrefs.Add2SessionTransferData(GetClientSoft(), uUpStatsPort, false, true,
-		// sentBytesCompleteFile, (IsFriend() && GetFriendSlot()));
-		//		thePrefs.Add2SessionTransferData(GetClientSoft(), uUpStatsPort, true, true,
-		// sentBytesPartFile, (IsFriend() && GetFriendSlot()));
 
 		m_nTransferredUp += sentBytesCompleteFile + sentBytesPartFile;
 		credits->AddUploaded(
@@ -468,9 +447,9 @@ uint32 CUpDownClient::SendBlockData()
 		sentBytesPayload = s->GetSentPayloadSinceLastCallAndReset();
 		m_nCurQueueSessionPayloadUp += sentBytesPayload;
 
-		// Wake the disk I/O thread so it can re-check its buffer condition with the
-		// freshly updated m_nCurQueueSessionPayloadUp. Without this, the thread might
-		// wait up to its WaitTimeout (100ms) before noticing curPayload advanced.
+		// Wake the disk I/O thread so it re-checks its buffer condition against the
+		// freshly updated m_nCurQueueSessionPayloadUp, rather than waiting out its
+		// 100 ms timeout before noticing curPayload advanced.
 		if (sentBytesPayload > 0 && theApp->uploadDiskIOThread) {
 			theApp->uploadDiskIOThread->SocketNeedsMoreData();
 		}
@@ -483,22 +462,19 @@ uint32 CUpDownClient::SendBlockData()
 
 	if (sentBytesCompleteFile + sentBytesPartFile > 0 || m_AvarageUDR_list.empty() ||
 		(curTick - m_AvarageUDR_list.back().timestamp) > 1 * 1000) {
-		// Store how much data we've transferred this round,
-		// to be able to calculate average speed later
-		// keep sum of all values in list up to date
+		// Store how much data was transferred this round, to calculate the average
+		// speed later, keeping the running sum up to date.
 		TransferredData newitem = { (uint32)(sentBytesCompleteFile + sentBytesPartFile), curTick };
 		m_AvarageUDR_list.push_back(newitem);
 		m_nSumForAvgUpDataRate += sentBytesCompleteFile + sentBytesPartFile;
 	}
 
-	// remove to old values in list
 	while ((!m_AvarageUDR_list.empty()) && (curTick - m_AvarageUDR_list.front().timestamp) > 10 * 1000) {
 		// keep sum of all values in list up to date
 		m_nSumForAvgUpDataRate -= m_AvarageUDR_list.front().datalen;
 		m_AvarageUDR_list.pop_front();
 	}
 
-	// Calculate average speed for this slot
 	if ((!m_AvarageUDR_list.empty()) && (curTick - m_AvarageUDR_list.front().timestamp) > 0 &&
 		GetUpStartTimeDelay() > 2 * 1000) {
 		m_nUpDatarate = ((uint64)m_nSumForAvgUpDataRate * 1000) /
@@ -508,7 +484,6 @@ uint32 CUpDownClient::SendBlockData()
 		m_nUpDatarate = 0; //-1;
 	}
 
-	// Check if it's time to update the display.
 	m_cSendblock++;
 	if (m_cSendblock == 30) {
 		m_cSendblock = 0;
@@ -522,12 +497,10 @@ void CUpDownClient::SendOutOfPartReqsAndAddToWaitingQueue()
 {
 	// Kry - this is actually taken from eMule, but makes a lot of sense ;)
 
-	// OP_OUTOFPARTREQS will tell the downloading client to go back to OnQueue..
-	// The main reason for this is that if we put the client back on queue and it goes
-	// back to the upload before the socket times out... We get a situation where the
-	// downloader thinks it already sent the requested blocks and the uploader thinks
-	// the downloader didn't send any request blocks. Then the connection times out..
-	// I did some tests with eDonkey also and it seems to work well with them also..
+	// OP_OUTOFPARTREQS tells the downloading client to go back to OnQueue. Without
+	// it, a client put back on queue that returns before the socket times out
+	// leaves the downloader thinking it already sent the requested blocks while the
+	// uploader thinks it sent none, and the connection times out.
 
 	// Send this immediately, don't queue.
 	CPacket *pPacket = new CPacket(OP_OUTOFPARTREQS, 0, OP_EDONKEYPROT);
@@ -664,17 +637,16 @@ void CUpDownClient::Ban()
 		"Client '" + GetUserName() +
 			"' seems to be an aggressive client and is banned from the uploadqueue");
 
-	// The upload state is set whether or not the record took the address, and
-	// the two are deliberately independent rather than out of step. US_BANNED
-	// governs this client object and needs nothing to identify it, so an
-	// aggressive peer we have no address for still loses its slot. The record
-	// governs an address so the ban outlives the object and survives a
-	// reconnection -- and with no address there is nothing to remember it by.
+	// The upload state is set whether or not the record took the address, and the
+	// two are deliberately independent. US_BANNED governs this client object and
+	// needs nothing to identify it, so an aggressive peer we have no address for
+	// still loses its slot; the record governs an ADDRESS, so the ban outlives the
+	// object and survives a reconnection, and with no address there is nothing to
+	// remember it by.
 	//
-	// The visible consequence is that IsBanned() reads false for such a peer
-	// while its state is US_BANNED, so it is never un-banned through the
-	// record. That is the right way round: we cannot recognise it if it comes
-	// back, so we must not claim to.
+	// The visible consequence is that IsBanned() reads false for such a peer while
+	// its state is US_BANNED, so it is never un-banned through the record. That is
+	// the right way round: we cannot recognise it if it comes back.
 	SetUploadState(US_BANNED);
 
 	Notify_SharedCtrlRefreshClient(ECID(), UNAVAILABLE_SOURCE);
@@ -689,13 +661,11 @@ void CUpDownClient::CheckForAggressive()
 {
 	uint64 cur_time = ::GetTickCount64();
 
-	// First call, initialize
 	if (!m_LastFileRequest) {
 		m_LastFileRequest = cur_time;
 		return;
 	}
 
-	// Is this an aggressive request?
 	if ((cur_time - m_LastFileRequest) < MIN_REQUESTTIME) {
 		m_Aggressiveness += 3;
 
@@ -718,7 +688,6 @@ void CUpDownClient::CheckForAggressive()
 
 void CUpDownClient::SetUploadFileID(const CMD4Hash &new_id)
 {
-	// Update the uploading file found
 	CKnownFile *uploadingfile = theApp->sharedfiles->GetFileByID(new_id);
 	if (!uploadingfile) {
 		// Can this really happen?

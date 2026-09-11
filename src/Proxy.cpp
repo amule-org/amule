@@ -145,15 +145,6 @@ bool CProxyStateMachine::Start(const amuleIPV4Address &peerAddress, CLibSocket *
 {
 	m_proxyClientSocket = proxyClientSocket;
 	m_peerAddress = new amuleIPV4Address(peerAddress);
-	// try {
-	//	const wxIPV4address &peer = dynamic_cast<const wxIPV4address &>(peerAddress);
-	//	m_peerAddress = new amuleIPV4Address(peer);
-	// } catch (const std::bad_cast& WXUNUSED(e)) {
-	//	// Should process other types of wxIPAddress before quitting
-	//	AddDebugLogLineN(logProxy, "(1)bad_cast exception!");
-	//	wxFAIL;
-	//	return false;
-	// }
 
 	// To run the state machine, return and just let the events start to happen.
 	return true;
@@ -579,7 +570,6 @@ void CSocks5StateMachine::process_process_authentication_method(bool entry)
 
 void CSocks5StateMachine::process_send_authentication_gssapi(bool)
 {
-	// TODO or not TODO? That is the question...
 	m_ok = false;
 }
 
@@ -683,7 +673,6 @@ void CSocks5StateMachine::process_process_command_reply(bool entry)
 		// Process the server's reply
 		m_ok = m_ok && m_buffer[0] == SOCKS5_VERSION && m_buffer[1] == SOCKS5_REPLY_SUCCEED;
 		if (m_ok) {
-			// Read BND.ADDR
 			unsigned int portOffset = 0;
 			switch (addressType) {
 			case SOCKS5_ATYP_IPV4_ADDRESS: {
@@ -706,18 +695,13 @@ void CSocks5StateMachine::process_process_command_reply(bool entry)
 			}
 			case SOCKS5_ATYP_IPV6_ADDRESS: {
 				portOffset = 20;
-				// TODO
-				// IPV6 not yet implemented in wx
-				// m_proxyBoundAddress.Hostname(Uint128toStringIP(
-				//	*((uint128 *)(m_buffer+addrOffset)) ));
-				// m_proxyBoundAddress = &m_proxyBoundAddressIPV6;
+				// TODO: IPv6 is not yet implemented in wx.
 				m_ok = false;
 				break;
 			}
 			}
 			// Set the packet length at last
 			m_packetLength = portOffset + 2;
-			// Read BND.PORT
 			m_proxyBoundAddress->Service(ENDIAN_NTOHS(RawPeekUInt16(m_buffer + portOffset)));
 		}
 	}
@@ -900,11 +884,9 @@ void CSocks4StateMachine::process_process_command_reply(bool entry)
 		// Process the server's reply
 		m_ok = m_ok && m_buffer[0] == SOCKS4_REPLY_CODE && m_buffer[1] == SOCKS4_REPLY_GRANTED;
 		if (m_ok) {
-			// Read BND.PORT
 			const unsigned int portOffset = 2;
 			m_ok = m_proxyBoundAddressIPV4.Service(
 				ENDIAN_NTOHS(RawPeekUInt16(m_buffer + portOffset)));
-			// Read BND.ADDR
 			const unsigned int addrOffset = 4;
 			m_ok = m_ok && m_proxyBoundAddressIPV4.Hostname(PeekUInt32(m_buffer + addrOffset));
 			m_proxyBoundAddress = &m_proxyBoundAddressIPV4;
@@ -1287,8 +1269,6 @@ uint32 CDatagramSocketProxy::RecvFrom(amuleIPV4Address &addr, void *buf, uint32 
 				break;
 			}
 			memcpy(buf, bufUDP + offset, nBytes);
-			// Uncomment here to see the buffer contents on console
-			// DumpMem(bufUDP, wxDatagramSocket::LastCount(), "RecvFrom", 3);
 
 			/* Only delete buffer if it was dynamically created */
 			if (bufUDP != m_proxyTCPSocket.GetBuffer()) {
@@ -1318,11 +1298,10 @@ uint32 CDatagramSocketProxy::SendTo(const amuleIPV4Address &addr, const void *bu
 	if (m_proxyTCPSocket.GetUseProxy()) {
 		if (m_udpSocketOk) {
 			// Mirror RecvFrom's dynamic-buffer fallback: the fixed
-			// PROXY_BUFFER_SIZE (5120) m_buffer can't hold the 10-byte
-			// SOCKS5 UDP request header plus a payload larger than
-			// PROXY_BUFFER_SIZE - PROXY_UDP_OVERHEAD_IPV4 (5110 B).
-			// Without this the memcpy below ran past the end of
-			// m_buffer for any oversized outbound datagram (#881).
+			// PROXY_BUFFER_SIZE m_buffer cannot hold the 10-byte SOCKS5 UDP
+			// request header plus a payload larger than
+			// PROXY_BUFFER_SIZE - PROXY_UDP_OVERHEAD_IPV4, so the memcpy below
+			// ran past the end of m_buffer for any oversized datagram (#881).
 			char *bufUDP = NULL;
 			if (nBytes + PROXY_UDP_OVERHEAD_IPV4 > PROXY_BUFFER_SIZE) {
 				bufUDP = new char[nBytes + PROXY_UDP_OVERHEAD_IPV4];
@@ -1338,8 +1317,6 @@ uint32 CDatagramSocketProxy::SendTo(const amuleIPV4Address &addr, const void *bu
 			memcpy(bufUDP + PROXY_UDP_OVERHEAD_IPV4, buf, nBytes);
 			nBytes += PROXY_UDP_OVERHEAD_IPV4;
 			sent = CLibUDPSocket::SendTo(m_proxyTCPSocket.GetProxyBoundAddress(), bufUDP, nBytes);
-			// Uncomment here to see the buffer contents on console
-			// DumpMem(bufUDP, nBytes, "SendTo", 3);
 
 			/* Only delete buffer if it was dynamically created */
 			if (bufUDP != m_proxyTCPSocket.GetBuffer()) {

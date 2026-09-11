@@ -89,18 +89,15 @@ void *CPartFileHashThread::Entry()
 
 	AddDebugLogLineN(logPartFile, wxT("Hash thread: started"));
 
-	// Loop until EndThread() clears m_bRun, then drain one final batch
-	// before returning. Dropping a queued job would skip its
-	// --m_pendingHashes (the only decrement), and ~CPartFile blocks on
-	// `while (m_pendingHashes > 0)` with no other decrementer — so a
-	// dropped job hangs shutdown. Draining also means the part is
-	// actually hashed rather than left unverified (its m_aChangedPart
-	// entry was already cleared at enqueue, so the sync-hash fallback
-	// won't catch it). Mirrors CPartFileWriteThread.
+	// Loop until EndThread() clears m_bRun, then drain one final batch before
+	// returning. Dropping a queued job would skip its --m_pendingHashes, the only
+	// decrement, and ~CPartFile blocks on `while (m_pendingHashes > 0)` -- so a
+	// dropped job hangs shutdown. Draining also means the part is actually hashed
+	// rather than left unverified, its m_aChangedPart entry having been cleared at
+	// enqueue. Mirrors CPartFileWriteThread.
 	for (;;) {
-		// Move queued jobs to a local work list under the lock.
-		// Mirrors CPartFileWriteThread's pattern: minimise lock hold
-		// time so the main thread can keep enqueueing.
+		// Move queued jobs to a local work list under the lock, minimising hold time
+		// so the main thread can keep enqueueing.
 		std::list<HashJob> workList;
 		bool keepRunning;
 		{
@@ -121,19 +118,15 @@ void *CPartFileHashThread::Entry()
 		for (std::list<HashJob>::iterator it = workList.begin(); it != workList.end(); ++it) {
 			const uint64 startTick = GetTickCount64();
 
-			// CPartFile::m_pendingHashes was incremented before enqueue
-			// and is the gate that ~CPartFile waits on, so the file
-			// pointer is guaranteed valid here.
+			// CPartFile::m_pendingHashes was incremented before enqueue and is the
+			// gate ~CPartFile waits on, so the file pointer is valid here.
 			//
 			// Lock m_hpartfileMutex against CPartFileWriteThread: with
-			// ENABLE_MMAP=OFF, HashSinglePart's CFileArea::ReadAt does
-			// Seek+Read on the same fd that the write thread does
-			// Seek+Write on for FlushAt; concurrent execution races
-			// on the fd's file position. The quiescent guard at
-			// enqueue time only gates dispatch — it does not prevent
-			// writes from resuming while the hash thread is still
-			// chewing through a backlog (e.g. user pause → drain →
-			// resume mid-drain). See CPartFile::m_hpartfileMutex.
+			// ENABLE_MMAP=OFF, HashSinglePart's CFileArea::ReadAt does Seek+Read on
+			// the same fd the write thread does Seek+Write on, and the two race on
+			// the file position. The quiescent guard at enqueue time only gates
+			// dispatch; it does not stop writes resuming while the hash thread is
+			// still working through a backlog.
 			bool ok;
 			{
 				std::lock_guard<std::mutex> lock(it->pFile->m_hpartfileMutex);

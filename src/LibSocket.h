@@ -88,11 +88,11 @@ public:
 	void Close();
 	void Destroy();
 
-	// Swap in a fresh asio socket impl on this same wrapper so the socket
-	// can be re-connected after a loss WITHOUT recreating the CLibSocket
-	// (and therefore without invalidating any pointer the app still holds
-	// to us — the remote GUI pins its CRemoteConnect in every container).
-	// The outgoing impl is detached race-safely first (see LinkSocketImpl).
+	// Swap in a fresh asio socket impl on this same wrapper, so the socket can be
+	// re-connected after a loss WITHOUT recreating the CLibSocket -- and therefore
+	// without invalidating any pointer the app still holds to us, the remote GUI
+	// pinning its CRemoteConnect in every container. The outgoing impl is detached
+	// race-safely first (see LinkSocketImpl).
 	void ResetForReconnect();
 
 	// Get last error, 0 == no error
@@ -128,35 +128,28 @@ public:
 	wxString GetPeer();
 	uint32 GetPeerInt();
 
-	// Turn on TCP keepalive with per-socket timings so a half-open
-	// connection (peer gone, FIN/RST lost or never sent) gets torn
-	// down at the TCP layer instead of sitting idle forever. Used by
-	// the EC sockets on both ends — see CECMuleSocket / CECServerSocket.
-	// Idle seconds before the kernel starts probing, the interval
-	// between probes, and how many probes before declaring the peer
-	// dead.  Effective only on POSIX (TCP_KEEPIDLE / TCP_KEEPINTVL /
-	// TCP_KEEPCNT) and Windows (SIO_KEEPALIVE_VALS; only idle +
-	// interval are settable, count uses the system default). No-op if
-	// the underlying socket is not open.
+	// Turn on TCP keepalive with per-socket timings, so a half-open connection
+	// (peer gone, FIN/RST lost or never sent) is torn down at the TCP layer instead
+	// of sitting idle forever. Used by the EC sockets on both ends. Effective only
+	// on POSIX (TCP_KEEPIDLE / TCP_KEEPINTVL / TCP_KEEPCNT) and Windows
+	// (SIO_KEEPALIVE_VALS, where only idle and interval are settable). No-op if the
+	// underlying socket is not open.
 	void EnableTcpKeepalive(int idleSec, int probeIntervalSec, int probeCount);
 
-	// Turn off Nagle. Used by the EC sockets on both ends, where a
-	// packet's trailing small write would otherwise wait out the peer's
-	// delayed-ACK timer — see CECMuleSocket::ApplyEcSocketOptions. No-op
-	// if the underlying socket is not open.
+	// Turn off Nagle. Used by the EC sockets on both ends, where a packet's
+	// trailing small write would otherwise wait out the peer's delayed-ACK timer.
+	// No-op if the underlying socket is not open.
 	void EnableTcpNoDelay();
 
 	// Handlers
 	virtual void OnConnect(int) {}
 	virtual void OnSend(int) {}
 	virtual void OnReceive(int) {}
-	// Int argument is unused — exists to give the CLibSocket-layer
-	// hook a different signature from CECSocket::OnLost(), so a class
-	// that multi-inherits from both (CECMuleSocket) can override the
-	// CLibSocket-side hook unambiguously and forward to the EC-layer
-	// OnLost().  Without that disambiguation, the Asio reactor's
-	// EOF-on-read dispatch lands on the empty CLibSocket::OnLost{}
-	// instead of CRemoteConnect / CECServerSocket overrides.
+	// The int argument is unused: it exists to give the CLibSocket-layer hook a
+	// different signature from CECSocket::OnLost(), so a class multi-inheriting
+	// from both (CECMuleSocket) can override this one unambiguously and forward.
+	// Without that, the Asio reactor's EOF-on-read dispatch lands on the empty
+	// CLibSocket::OnLost{} instead of the real overrides.
 	virtual void OnLost(int) {}
 	virtual void OnProxyEvent(int) {}
 
@@ -287,11 +280,10 @@ enum BindInterfaceStatus
 // rather than leaving traffic silently unbound.
 BindInterfaceStatus TestSocketBindInterface(const wxString &iface);
 
-// Bind an already-open raw socket to the given interface, reusing the exact
-// same per-platform logic as aMule's own sockets. For non-asio sockets such as
-// libcurl's HTTP socket (via CURLOPT_SOCKOPTFUNCTION). The fd is passed as
-// uintptr_t so a Windows SOCKET survives without truncation. Returns true if
-// bound (or nothing to do), false if the bind failed.
+// Bind an already-open raw socket to the given interface, reusing the exact same
+// per-platform logic as aMule's own sockets -- for non-asio sockets such as
+// libcurl's (via CURLOPT_SOCKOPTFUNCTION). The fd is passed as uintptr_t so a
+// Windows SOCKET survives without truncation.
 bool BindRawSocketToInterface(uintptr_t fd, const wxString &iface);
 
 #endif /* __LIBSOCKET_H__ */

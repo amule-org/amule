@@ -30,7 +30,7 @@
 #include "Logger.h"
 #include <common/Format.h> // Needed for CFormat
 
-// eMule ref: CPartFileWriteThread::CPartFileWriteThread() — line 41
+// eMule ref: CPartFileWriteThread::CPartFileWriteThread()
 CPartFileWriteThread::CPartFileWriteThread()
 : wxThread(wxTHREAD_JOINABLE)
 , m_condition(m_mutex)
@@ -49,7 +49,7 @@ CPartFileWriteThread::~CPartFileWriteThread()
 	// EndThread() must have been called before destruction.
 }
 
-// eMule ref: CPartFileWriteThread::EndThread() — line 62
+// eMule ref: CPartFileWriteThread::EndThread()
 void CPartFileWriteThread::EndThread()
 {
 	{
@@ -61,8 +61,8 @@ void CPartFileWriteThread::EndThread()
 	Wait();
 }
 
-// eMule ref: CPartFileWriteThread::WakeUpCall() — line 230
 // Called by the main thread to queue a write item.
+// eMule ref: CPartFileWriteThread::WakeUpCall()
 void CPartFileWriteThread::QueueWrite(CPartFile *pFile, PartFileBufferedData *pBuffer)
 {
 	wxMutexLocker lock(m_mutex);
@@ -73,19 +73,14 @@ void CPartFileWriteThread::QueueWrite(CPartFile *pFile, PartFileBufferedData *pB
 
 void CPartFileWriteThread::DropReferencesTo(const CKnownFile *file)
 {
-	// Pointer-value strip of any pending write item whose pFile
-	// matches `file`. Called from MuleNotify::KnownFileBeingDestroyed
-	// before CPartFile is freed by CPartFile::Delete() — without this
-	// the write loop would deref the dangling pFile on the next tick.
+	// Pointer-value strip of any pending write item whose pFile matches `file`.
+	// Called from MuleNotify::KnownFileBeingDestroyed before CPartFile is freed, or
+	// the write loop would deref the dangling pFile on the next tick. CPartFile
+	// inherits from CKnownFile at the same address, so the cast never derefs.
 	//
-	// CPartFile inherits from CKnownFile (single inheritance, same
-	// address); the cast in the compare is no-deref.
-	//
-	// We do NOT delete pBuffer here. PartFileBufferedData ownership
-	// stays with CPartFile::m_BufferedData_list; QueueWrite() only
-	// added a reference here. `~CPartFile` (via DeleteContents on
-	// m_BufferedData_list, PartFile.cpp:334) frees the buffer; if
-	// we also deleted it, that would double-free.
+	// pBuffer is NOT deleted here: ownership stays with
+	// CPartFile::m_BufferedData_list, which ~CPartFile frees, so deleting it here
+	// too would double-free.
 	wxMutexLocker lock(m_mutex);
 	for (std::list<ToWrite>::iterator it = m_flushList.begin(); it != m_flushList.end();
 		/* manual ++ */) {
@@ -97,25 +92,21 @@ void CPartFileWriteThread::DropReferencesTo(const CKnownFile *file)
 	}
 }
 
-// eMule ref: CPartFileWriteThread::RunInternal() — line 69
-// Replaces IOCP + overlapped WriteFile with synchronous CFileArea::FlushAt().
-// The thread is dedicated to writes, so blocking on disk I/O is acceptable —
-// the key win is that the main thread no longer stalls.
+// Replaces eMule's IOCP + overlapped WriteFile with synchronous
+// CFileArea::FlushAt(). The thread is dedicated to writes, so blocking on disk
+// I/O is fine -- the win is that the main thread no longer stalls.
 void *CPartFileWriteThread::Entry()
 {
 	m_bRun = true;
 
-	// Loop until EndThread() clears m_bRun, then drain one final batch
-	// before returning. A shutdown signal must never drop queued writes:
-	// WriteToBuffer FillGap()s each range at queue time and the gaplist is
-	// persisted, so a dropped write would leave the .met claiming bytes
-	// that never reached disk — a silently corrupt part on the next
-	// launch. Each swapped batch is therefore drained in full, and the
-	// exit check happens only after that batch is on disk.
+	// Loop until EndThread() clears m_bRun, then drain one final batch before
+	// returning. A shutdown signal must never drop queued writes: WriteToBuffer
+	// FillGap()s each range at queue time and the gaplist is persisted, so a dropped
+	// write would leave the .met claiming bytes that never reached disk -- a
+	// silently corrupt part on the next launch.
 	for (;;) {
-		// Move queued items to a local work list under the lock.
-		// This minimises lock hold time — main thread can keep queueing
-		// while we process the local list.
+		// Move queued items to a local work list under the lock, so the main thread
+		// can keep queueing while we process it.
 		std::list<ToWrite> workList;
 		bool keepRunning;
 		{
@@ -138,25 +129,19 @@ void *CPartFileWriteThread::Entry()
 			PartFileBufferedData *pBuffer = it->pBuffer;
 			uint32 lenData = (uint32)(pBuffer->end - pBuffer->start + 1);
 
-			// Synchronous write via CFileArea (replaces eMule's overlapped WriteFile).
-			// CFileArea::FlushAt() writes the buffered data at the given offset.
+			// Synchronous write via CFileArea::FlushAt(), which writes the buffered
+			// data at the given offset.
 			//
-			// Lock m_hpartfileMutex against CPartFileHashThread (see
-			// CPartFile::m_hpartfileMutex): with ENABLE_MMAP=OFF the
-			// underlying CFileAutoClose::WriteAt does Seek+Write on the
-			// shared fd, and HashSinglePart on the hash thread does
-			// Seek+Read on the same fd; the two race on file position
-			// without the lock.
+			// Lock m_hpartfileMutex against CPartFileHashThread: with ENABLE_MMAP=OFF
+			// the underlying CFileAutoClose::WriteAt does Seek+Write on the shared fd
+			// while HashSinglePart does Seek+Read on the same one, and the two race on
+			// the file position without it.
 			//
-			// FlushAt can also throw CIOFailureException on a disk-full /
-			// EIO / permission failure.  Catching it here keeps the
-			// worker thread alive: an unhandled exception in Entry()
-			// propagates through wxThreadInternal::PthreadStart() to
-			// wxApp::OnUnhandledException(), which std::set_terminate's
-			// MuleDebug aborts the process.  On caught failure we mark
-			// the buffered item PB_ERROR so the main thread can retry on
-			// the next FlushBuffer (where CheckFreeDiskSpace will pause
-			// the file if disk is genuinely exhausted).
+			// FlushAt can throw CIOFailureException on a disk-full, EIO or permission
+			// failure. Catching it keeps the worker alive: an unhandled exception in
+			// Entry() reaches wxApp::OnUnhandledException(), whose terminate handler
+			// aborts the process. On failure the item is marked PB_ERROR so the main
+			// thread retries on the next FlushBuffer.
 			bool writeOk = true;
 			try {
 				std::lock_guard<std::mutex> lock(it->pFile->m_hpartfileMutex);
@@ -174,12 +159,10 @@ void *CPartFileWriteThread::Entry()
 			// so main thread can check m_iWrites at any time.
 			--it->pFile->m_iWrites;
 
-			// Mark buffer as written / errored so the main thread can harvest
-			// it.  PB_ERROR is handled in FlushBuffer Phase 2 (resets to
-			// PB_READY for retry; if the disk is genuinely full the next
-			// FlushBuffer's CheckFreeDiskSpace pauses the file before the
-			// retry loops).
-			// eMule ref: WriteCompletionRoutine — line 182
+			// Mark the buffer written or errored so the main thread can harvest it.
+			// PB_ERROR is handled in FlushBuffer Phase 2, which resets it to PB_READY
+			// for retry -- and if the disk is genuinely full, CheckFreeDiskSpace pauses
+			// the file before the retry loops.
 			pBuffer->flushed = writeOk ? PB_WRITTEN : PB_ERROR;
 		}
 

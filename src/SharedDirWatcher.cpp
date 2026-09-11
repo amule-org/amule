@@ -105,22 +105,20 @@ CSharedDirWatcher::CSharedDirWatcher(CSharedFileList *parent)
 CSharedDirWatcher::~CSharedDirWatcher()
 {
 	StopTimers();
-	// Synchronous here, unlike Disable(): a CallAfter queued on a handler that
-	// is being destroyed is purged along with it, so a deferred delete would
-	// simply never run -- leaking the watcher along with its inotify fd and
-	// the event loop source wx registered for it.
+	// Synchronous here, unlike Disable(): a CallAfter queued on a handler that is
+	// being destroyed is purged along with it, so a deferred delete would never
+	// run -- leaking the watcher along with its inotify fd and the event loop
+	// source wx registered for it.
 	//
-	// This can run from inside a dispatch, so it is not a dispatch-free spot:
-	// the macOS daemon build calls OnExit() straight out of OnCoreTimer
-	// (amule.cpp:1955). It is safe there for reasons that do not generalise --
-	// macOS watches through FSEvents/CFRunLoop rather than a wxFDIOHandler, so
-	// there is no epoll source to dangle, and the call is followed by
-	// _exit(0). Treat it as that exception rather than as a guarantee.
+	// This can run from inside a dispatch: the macOS daemon build calls OnExit()
+	// straight out of OnCoreTimer. It is safe there for reasons that do not
+	// generalise -- macOS watches through FSEvents/CFRunLoop rather than a
+	// wxFDIOHandler, so there is no epoll source to dangle, and the call is
+	// followed by _exit(0). Treat it as that exception, not as a guarantee.
 	//
 	// Detach before the delete, for the reason spelled out in Disable():
 	// ~wxFileSystemWatcherBase runs RemoveAll(), which can emit a synchronous
-	// wxFSW_EVENT_WARNING -- here that would run OnFileSystemEvent() against
-	// the object under destruction.
+	// wxFSW_EVENT_WARNING against the object under destruction.
 	if (m_watcher) {
 		m_watcher->SetOwner(nullptr);
 	}
@@ -134,21 +132,17 @@ void CSharedDirWatcher::Enable()
 		return;
 	}
 
-	// wx 3.2.x's inotify backend hard-requires an active wx event loop
-	// when wxFileSystemWatcher's ctor runs — Init() checks
-	// wxEventLoopBase::GetActive() and silently leaves m_service null
-	// when there isn't one, after which every Add() returns false. The
-	// daemon's CamuleApp::OnInit() runs before the event loop starts, so
-	// the first Enable() call from there must be deferred. (FSEvents on
-	// macOS and ReadDirectoryChangesW on Windows don't have this gate;
-	// deferring is still safe there.) Subsequent calls from the prefs
-	// dialog or EC apply path already run inside an active loop, so they
-	// take the immediate branch.
+	// wx 3.2.x's inotify backend hard-requires an active wx event loop when
+	// wxFileSystemWatcher's ctor runs -- Init() checks
+	// wxEventLoopBase::GetActive() and silently leaves m_service null when there
+	// is none, after which every Add() returns false. The daemon's OnInit() runs
+	// before the event loop starts, so the first Enable() call from there must
+	// be deferred. Later calls from the prefs dialog or the EC apply path
+	// already run inside an active loop and take the immediate branch.
 	if (!wxEventLoopBase::GetActive()) {
-		// Queue on `this` (a wxEvtHandler) rather than the app, so that
-		// if Disable()/~CSharedDirWatcher() runs before the loop drains,
-		// wx purges the pending event with the handler instead of firing
-		// it against a dead object.
+		// Queue on `this` (a wxEvtHandler) rather than the app, so that if
+		// Disable() or the destructor runs before the loop drains, wx purges the
+		// pending event with the handler instead of firing it against a dead object.
 		CallAfter(&CSharedDirWatcher::Enable);
 		return;
 	}
@@ -208,32 +202,22 @@ void CSharedDirWatcher::Disable()
 		return;
 	}
 	// Detach now, destroy from the pending-event queue. ~wxFileSystemWatcher
-	// frees the wxFDIOEventLoopSourceHandler wx registered for its inotify fd
-	// (fswatcher_inotify.cpp: Init() adds the source, Close() deletes it), and
-	// wxEpollDispatcher::Dispatch walks a stack snapshot of the ready events
+	// frees the wxFDIOEventLoopSourceHandler wx registered for its inotify fd,
+	// and wxEpollDispatcher::Dispatch walks a stack snapshot of the ready events
 	// without re-checking a handler -- so freeing one from inside that loop
 	// leaves it calling OnReadWaiting() on freed memory the moment the same
 	// batch reaches this fd.
 	//
 	// No caller reaches here from inside that loop today: Disable() comes from
-	// the destructor, from the prefs dialog, from the guarded call in
-	// CamuleApp::OnInit, and from CEC_Prefs_Packet::Apply(), which the EC layer
-	// reaches through a queued wx event -- the pending-event phase that
-	// wxEventLoopManual::ProcessEvents drains *before* calling Dispatch. But
-	// fs-watcher events themselves are delivered from inside the loop
-	// (fswatcher_inotify.cpp SendEvent() does a synchronous ProcessEvent from
-	// the inotify source's OnReadWaiting), so one caller reached from
-	// OnFileSystemEvent would make this fatal. Deferring costs nothing and
-	// removes the question.
+	// the destructor, the prefs dialog, the guarded call in CamuleApp::OnInit,
+	// and CEC_Prefs_Packet::Apply(), which the EC layer reaches through a queued
+	// wx event -- the phase drained BEFORE Dispatch. But fs-watcher events
+	// themselves are delivered from inside the loop, so one caller reached from
+	// OnFileSystemEvent would make this fatal. Deferring costs nothing.
 	//
-	// Drop the owner as part of the detach: a detached watcher outlives the
-	// call, and SetOwner(nullptr) points its owner back at itself, where
-	// nothing is bound. Without that, everything it still emits before the
-	// reap lands on us -- the deltas the backend had already queued, and the
-	// wxFSW_EVENT_WARNING wxFSWatcherImplUnix::DoRemove() sends synchronously
-	// from RemoveAll() when inotify_rm_watch loses the race wx documents. That
-	// warning reads as a backend drop, so OnFileSystemEvent() would clear
-	// m_pendingEvents and force a full RequestReload() re-walk for nothing.
+	// Drop the owner as part of the detach: a detached watcher outlives the call,
+	// and SetOwner(nullptr) points its owner back at itself, where nothing is
+	// bound, so everything it still emits goes nowhere.
 	m_watcher->SetOwner(nullptr);
 	m_pendingDelete.push_back(m_watcher);
 	m_watcher = NULL;
@@ -252,14 +236,11 @@ void CSharedDirWatcher::Refresh()
 	// the typical list size (low hundreds at most).
 	m_watcher->RemoveAll();
 	RegisterAllPaths();
-	// Cold-discovery is one-shot at Enable() only. Re-running it from
-	// Refresh() risks adding duplicate entries when a runtime
-	// RegisterNewSubdirectory wrote a path in one canonical form
-	// (e.g. macOS-resolved "/private/tmp/...") while the disk walk
-	// later produces the unresolved form ("/tmp/...") -- both go in
-	// as distinct strings. Startup is the only moment we genuinely
-	// have to walk to catch up; runtime new-dirs are covered by
-	// RegisterNewSubdirectory from OnFileSystemEvent.
+	// Cold-discovery is one-shot at Enable() only. Re-running it from Refresh()
+	// risks adding duplicate entries when a runtime RegisterNewSubdirectory wrote
+	// a path in one canonical form (a macOS-resolved "/private/tmp/...") while
+	// the disk walk later produces the unresolved form -- both go in as distinct
+	// strings. Startup is the only moment a walk is genuinely needed.
 }
 
 void CSharedDirWatcher::RegisterAllPaths()

@@ -137,21 +137,17 @@ CamuleAppCommon::~CamuleAppCommon()
 #ifdef __WXGTK__
 bool CamuleAppCommon::IsWaylandSession()
 {
-	// Explicit GDK_BACKEND=x11 forces the app onto XWayland - OS
-	// minimize events come through reliably, so treat it as X11.
-	// This is the documented user workaround for "I want MinToTray
-	// on Wayland": launch with `GDK_BACKEND=x11 amule`. Same trick
-	// Discord users adopt to get their tray icon back on Wayland.
+	// Explicit GDK_BACKEND=x11 forces the app onto XWayland, where OS minimize
+	// events come through reliably, so treat it as X11. This is the documented
+	// user workaround for "I want MinToTray on Wayland".
 	if (const char *gb = getenv("GDK_BACKEND")) {
 		if (strncmp(gb, "x11", 3) == 0) {
 			return false;
 		}
 	}
-	// WAYLAND_DISPLAY is set by Wayland servers to the socket name
-	// (e.g. "wayland-0") for any client running under that session.
-	// XDG_SESSION_TYPE is the systemd-logind hint and is also set
-	// to "wayland" on every common distro. Either non-empty match
-	// is treated as a Wayland session.
+	// WAYLAND_DISPLAY is set by Wayland servers to the socket name for any client
+	// in that session; XDG_SESSION_TYPE is the systemd-logind hint, also set to
+	// "wayland" on every common distro. Either non-empty match counts.
 	if (const char *wd = getenv("WAYLAND_DISPLAY")) {
 		if (wd[0] != '\0') {
 			return true;
@@ -169,24 +165,19 @@ bool CamuleAppCommon::IsWaylandSession()
 void CamuleAppCommon::SanitiseTrayPreferences()
 {
 #if defined(__WXGTK__) && !defined(WITH_LIBAYATANA_APPINDICATOR)
-	// On Linux without libayatana-appindicator3 the tray icon falls
-	// back to the legacy GtkStatusIcon backend, which GNOME Shell
-	// dropped in 3.26 and wlroots-based compositors never picked up
-	// — the icon is silently invisible. Force the pref off so users
-	// don't end up with the window hidden via HideOnClose and no
-	// surface to bring it back. The sanity check below will then
-	// cascade MinToTray off as well.
+	// On Linux without libayatana-appindicator3 the tray icon falls back to the
+	// legacy GtkStatusIcon backend, which GNOME Shell dropped in 3.26 and wlroots
+	// compositors never picked up -- the icon is silently invisible. Force the pref
+	// off so users do not end up with the window hidden via HideOnClose and no
+	// surface to bring it back; the sanity check below cascades MinToTray off too.
 	thePrefs::SetUseTrayIcon(false);
 #endif
 
 #ifdef __WXGTK__
-	// xdg-shell intentionally doesn't deliver iconified-state
-	// notifications to clients, so on Wayland the system minimize
-	// button cannot trigger our Show(false) hide-to-tray path.
-	// The same gap is documented in qBittorrent #17265, Telegram
-	// #2123, KeePassXC #6502 and others. Force MinToTray off when
-	// running under a Wayland session so the option doesn't appear
-	// to "do nothing" — the prefs panel also greys the checkbox.
+	// xdg-shell intentionally does not deliver iconified-state notifications to
+	// clients, so on Wayland the system minimize button cannot trigger our
+	// Show(false) hide-to-tray path. Force MinToTray off there so the option does
+	// not appear to do nothing; the prefs panel also greys the checkbox.
 	if (IsWaylandSession()) {
 		thePrefs::SetMinToTray(false);
 	}
@@ -201,14 +192,11 @@ void CamuleAppCommon::SanitiseTrayPreferences()
 
 void CamuleAppCommon::RefreshSingleInstanceChecker()
 {
-	// Reacquire after daemonization fork(). POSIX advisory locks are
-	// owned by the parent process, not inherited by the child, so the
-	// forked daemon needs to relock the same file. Historically this
-	// path was disabled on __WXMAC__ + AMULE_DAEMON because linking
-	// wxSingleInstanceChecker into a wxAppConsole (headless) binary
-	// pulled in Cocoa framework symbols. InstanceLock has no wx-GUI
-	// dependencies on POSIX (fcntl only), so amuled/Mac now has
-	// working single-instance detection too.
+	// Reacquire after the daemonization fork(). POSIX advisory locks are owned by
+	// the parent process and not inherited, so the forked daemon must relock the
+	// same file. This path used to be disabled on __WXMAC__ + AMULE_DAEMON because
+	// wxSingleInstanceChecker pulled Cocoa symbols into a headless binary;
+	// InstanceLock is fcntl-only on POSIX, so amuled/Mac now works too.
 	delete m_singleInstance;
 	m_singleInstance = new InstanceLock();
 	// Same self-description as the first acquire: the fork is the daemon, and
@@ -220,9 +208,9 @@ void CamuleAppCommon::RefreshSingleInstanceChecker()
 
 void CamuleAppCommon::ReleaseSingleInstance()
 {
-	// ~InstanceLock() -> Release() unlinks the lock file and drops the
-	// fcntl lock. Needed because OnExit() terminates via std::_Exit(),
-	// which skips ~CamuleAppCommon and so would leave the file behind.
+	// ~InstanceLock() -> Release() unlinks the lock file and drops the fcntl lock.
+	// OnExit() terminates via std::_Exit(), which skips ~CamuleAppCommon and would
+	// otherwise leave the file behind.
 	delete m_singleInstance;
 	m_singleInstance = nullptr;
 }
@@ -235,8 +223,8 @@ bool CamuleAppCommon::DeferShutDownToOuterLoop(const std::function<void()> &retr
 	}
 
 	// Exit() only asks the loop to stop, so the frames between here and the
-	// ShowModal() that started it still have to unwind before the teardown
-	// can safely run -- hence the retry rather than falling through.
+	// ShowModal() that started it still have to unwind before teardown can safely
+	// run -- hence the retry rather than falling through.
 	active->Exit();
 
 	if (!m_deferredShutDown) {
@@ -275,16 +263,14 @@ void CamuleAppCommon::AddLinksFromFile()
 		return;
 	}
 
-	// Attempt to lock the ED2KLinks file.
 	CFileLock lock((const char *)unicode2char(fullPath));
 
 	wxTextFile file(fullPath);
 	if (file.Open()) {
-		// Group the links by category and hand each group to AddLinks() in
-		// one call. A collection expands to hundreds of lines, and the
-		// per-link AddLink() path costs one EC round trip - and potentially
-		// one error dialog - per link on the remote GUI. Order within a
-		// category is preserved; categories run in first-seen order.
+		// Group the links by category and hand each group to AddLinks() in one
+		// call: a collection expands to hundreds of lines, and the per-link path
+		// costs one EC round trip (and possibly one error dialog) each on the
+		// remote GUI. Order within a category is preserved.
 		std::vector<std::pair<uint8, wxArrayString>> batches;
 
 		for (unsigned int i = 0; i < file.GetLineCount(); i++) {
@@ -328,11 +314,9 @@ void CamuleAppCommon::AddLinksFromFile()
 		AddLogLineNS(_("Failed to open ED2KLinks file."));
 	}
 
-	// Delete the file.
 	wxRemoveFile(thePrefs::GetConfigDir() + "ED2KLinks");
 }
 
-// Returns a magnet ed2k URI
 wxString CamuleAppCommon::CreateMagnetLink(const CAbstractFile *f)
 {
 	CMagnetURI uri;
@@ -352,7 +336,6 @@ wxString CamuleAppCommon::CreateMagnetLink(const CAbstractFile *f)
 	return uri.GetLink();
 }
 
-// Returns a ed2k file URL
 wxString CamuleAppCommon::CreateED2kLink(
 	const CAbstractFile *f, bool add_source, bool use_hostname, bool add_cryptoptions, bool add_AICH)
 {
@@ -361,7 +344,6 @@ wxString CamuleAppCommon::CreateED2kLink(
 	wxString strURL = CFormat("ed2k://|file|%s|%i|%s|") % f->GetFileName().Cleanup(false) %
 			  f->GetFileSize() % f->GetFileHash().Encode();
 
-	// Append the AICH info
 	if (add_AICH) {
 		const CKnownFile *kf = dynamic_cast<const CKnownFile *>(f);
 		if (kf && kf->HasProperAICHHashSet()) {
@@ -372,7 +354,6 @@ wxString CamuleAppCommon::CreateED2kLink(
 	strURL << "/";
 
 	if (add_source && theApp->IsConnected() && !theApp->IsFirewalled()) {
-		// Create the first part of the URL
 		strURL << "|sources,";
 		if (use_hostname) {
 			strURL << thePrefs::GetYourHostname();
@@ -420,34 +401,27 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 		OSType = "Unknown";
 	}
 
-	// Parse cmdline arguments.
 	wxCmdLineParser cmdline(argc, argv);
 
-	// Handle these arguments.
 	cmdline.AddSwitch("v", "version", "Displays the current version number.");
 	cmdline.AddSwitch("h", "help", "Displays this information.");
 	cmdline.AddOption("c", "config-dir", "read config from <dir> instead of home");
-	// One-shot autostart toggle. Called by the Windows installer's
-	// Components-page checkbox and by the Preferences UI; lives in
-	// AutostartManager so the OS-specific store (Windows registry,
-	// macOS LaunchAgent, Linux XDG .desktop) is hidden from callers.
+	// One-shot autostart toggle, called by the Windows installer's Components page
+	// and by the Preferences UI. Lives in AutostartManager so the OS-specific
+	// store stays hidden from callers.
 	cmdline.AddOption("",
 		"configure-autostart",
 		"Enable or disable starting this binary on user login (on|off), then exit.");
-	// One-shot ed2k:// + magnet: URL-scheme handler toggle. Called by
-	// the Windows installer's Components-page checkboxes and by the
-	// Preferences UI / first-run wizard; lives in ProtocolHandlerManager
-	// so the OS-specific store (Windows registry, Linux mimeapps.list,
-	// macOS LaunchServices) is hidden from callers.
+	// One-shot ed2k:// + magnet: URL-scheme handler toggle, called by the Windows
+	// installer's Components page and by the Preferences UI / first-run wizard.
+	// Lives in ProtocolHandlerManager for the same reason.
 	cmdline.AddOption("",
 		"configure-protocols",
 		"Register/unregister aMule as the default handler for URL schemes, then exit. "
 		"Values: on|off (both schemes) or ed2k:on|ed2k:off|magnet:on|magnet:off "
 		"(per-scheme). The Windows installer invokes the per-scheme form.");
-	// Same one-shot shape as the two above. Called by the Windows
-	// installer's Components-page checkbox and by the Preferences UI /
-	// first-run wizard; also the way a portable or self-built copy can
-	// register itself without an installer.
+	// Same one-shot shape as the two above; also how a portable or self-built copy
+	// registers itself without an installer.
 	cmdline.AddOption("",
 		"configure-file-assoc",
 		"Register/unregister aMule as the handler for .emulecollection files, then exit. "
@@ -490,7 +464,6 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 	cmdline.AddSwitch("i", "enable-stdin", "Do not disable stdin.");
 #endif
 
-	// Allow passing of links to the app
 	cmdline.AddOption("t", "category", "Set category for passed ED2K links.", wxCMD_LINE_VAL_NUMBER);
 	cmdline.AddParam(
 		"ED2K link", wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL | wxCMD_LINE_PARAM_MULTIPLE);
@@ -531,21 +504,18 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 				"configure-autostart expects 'on' or 'off' (got '%s')\n",
 				(const char *)unicode2char(autostart_arg));
 		}
-		// Exit either way - this flag is a one-shot toggle, not a
-		// "run aMule WITH autostart enabled" combo. (Caller can chain:
-		// `amule --configure-autostart on && amule`.)
-		// Return-false here propagates to OnInit returning false, which
-		// makes wxApp terminate cleanly with exit code 0/1 per `ok`.
-		// Using exit() directly would skip wx destructors.
+		// Exit either way: this flag is a one-shot toggle, not a "run aMule WITH
+		// autostart enabled" combo. Returning false propagates to OnInit, so wxApp
+		// terminates cleanly with exit code 0/1 per `ok`; exit() would skip the wx
+		// destructors.
 		return false;
 	}
 
 	wxString protocols_arg;
 	if (cmdline.Found("configure-protocols", &protocols_arg)) {
 		protocols_arg.MakeLower();
-		// Parse both the legacy bare on|off (applies to both schemes)
-		// and the per-scheme ed2k:on|ed2k:off|magnet:on|magnet:off form
-		// the Windows installer's two SecProto* sections now use.
+		// Both the legacy bare on|off (applying to both schemes) and the
+		// per-scheme ed2k:on|magnet:off form the Windows installer now uses.
 		bool doEd2k = false, doMagnet = false;
 		bool wantEnable = false;
 		bool parsed = true;
@@ -620,7 +590,6 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 
 	wxString configdir;
 	if (cmdline.Found("config-dir", &configdir)) {
-		// Make an absolute path from the config dir
 		wxFileName fn(configdir);
 		fn.MakeAbsolute();
 		configdir = fn.GetFullPath();
@@ -632,15 +601,12 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 		thePrefs::SetConfigDir(/*OtherFunctions::*/ GetConfigDir(m_configFile));
 	}
 
-	// Backtracing works in MSW.
-	// Problem is just that the backtraces are useless, because apparently the context gets lost
-	// in the try/catch somewhere.
-	// So leave it out.
+	// Left out on MSW: backtraces there are useless, because the context is
+	// apparently lost somewhere in the try/catch.
 #ifndef __WINDOWS__
 	m_disableFatal = cmdline.Found("disable-fatal");
 #if wxUSE_ON_FATAL_EXCEPTION
 	if (!m_disableFatal) {
-		// catch fatal exceptions
 		wxHandleFatalExceptions(true);
 	}
 #endif
@@ -650,7 +616,6 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 #ifdef AMULE_DAEMON
 	enable_daemon_fork = cmdline.Found("full-daemon");
 	if (cmdline.Found("pid-file", &m_PidFile)) {
-		// Remove any existing PidFile
 		if (wxFileExists(m_PidFile))
 			wxRemoveFile(m_PidFile);
 	}
@@ -712,10 +677,9 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 			for (size_t i = 0; i < linksPassed; i++) {
 				const wxString param = cmdline.GetParam(i);
 
-				// A .emulecollection argument stands for every link
-				// inside it. This is what makes a double-click in a
-				// file manager work on Linux and Windows, where the
-				// path arrives as an ordinary argument.
+				// A .emulecollection argument stands for every link inside
+				// it, which is what makes a file-manager double-click work
+				// where the path arrives as an ordinary argument.
 				wxArrayString expanded;
 				const CollectionExpansion expansion =
 					ExpandPassedCollection(param, expanded, cat);
@@ -746,16 +710,16 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 
 	m_singleInstance = new InstanceLock();
 	wxString lockfile = IsRemoteGui() ? "muleLockRGUI" : "muleLock";
-	// Recorded in the lock file so a later launch knows whether the holder
-	// has a window. amuled shares muleLock with the monolithic GUI, and only
-	// one of the two can be brought to the front.
+	// Recorded in the lock file so a later launch knows whether the holder has a
+	// window: amuled shares muleLock with the monolithic GUI, and only one of the
+	// two can be brought to the front.
 	const wxString selfKind = IsDaemon() ? "amuled" : (IsRemoteGui() ? "amulegui" : "amule");
 	InstanceLock::Result lockResult =
 		m_singleInstance->Acquire(lockfile, thePrefs::GetConfigDir(), selfKind);
 	if (lockResult == InstanceLock::LOCK_HELD) {
-		// Neutral: something holds it. WHAT holds it is decided below, and
-		// saying "an instance is already running" before that check meant
-		// the log asserted it and then contradicted itself two lines later.
+		// Neutral: something holds it, and WHAT holds it is decided below. Saying
+		// "an instance is already running" here meant the log asserted it and then
+		// contradicted itself two lines later.
 		AddLogLineNS(
 			CFormat(LOG_PRELOCALE("(lock file: %s%s)")) % thePrefs::GetConfigDir() % lockfile);
 		if (linksPassed) {
@@ -768,25 +732,20 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 			}
 		}
 
-		// The lock is held, but by what? Two holders have nothing to raise,
-		// and both used to end the launch in silence.
+		// The lock is held, but by what? Two holders have nothing to raise, and
+		// both used to end the launch in silence.
 		//
-		// On POSIX any process can take a write lock on the file, so a
-		// backup or indexing agent doing so is indistinguishable from here;
-		// the pid aMule records tells them apart, because a foreign holder
-		// never refreshes it. On Windows that case cannot arise: only aMule
-		// creates the named mutex, and the OS releases it when its owner
-		// dies, so a held mutex is already proof of a live aMule.
+		// On POSIX any process can take a write lock on the file, so a backup or
+		// indexing agent is indistinguishable from here; the pid aMule records
+		// tells them apart, because a foreign holder never refreshes it. On Windows
+		// that cannot arise: only aMule creates the named mutex, and the OS releases
+		// it when its owner dies. What both share is amuled, which uses the same
+		// lock as the monolithic GUI and has no window, so the raise below was
+		// always a no-op the user could not see.
 		//
-		// What both share is amuled, which uses the same lock as the
-		// monolithic GUI -- only amulegui gets one of its own. A daemon has
-		// no window, so the raise below was always a no-op the user could
-		// not see (#1351).
-		//
-		// Deliberately conservative: anything not established counts as
-		// raisable, so the only new dialog is one we are sure about. A lock
-		// record with no kind line was written by an older aMule and keeps
-		// the old behaviour exactly.
+		// Deliberately conservative: anything not established counts as raisable, so
+		// the only new dialog is one we are sure about, and a lock record with no
+		// kind line (written by an older aMule) keeps the old behaviour exactly.
 		const int holder = m_singleInstance->HolderPid();
 		const wxString holderKind = m_singleInstance->HolderKind();
 #ifdef __WINDOWS__
@@ -820,21 +779,19 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 				      holder;
 			}
 			theApp->ShowAlert(msg, _("aMule cannot start"), wxOK | wxICON_ERROR);
-			// No raise request: nothing is going to act on it, and the line
-			// would sit in ED2KLinks until some later start consumed it and
-			// raised itself for no reason.
+			// No raise request: nothing would act on it, and the line would sit in
+			// ED2KLinks until some later start consumed it and raised itself.
 			return false;
 		}
 
 		AddLogLineCS(
 			CFormat(LOG_PRELOCALE("There is an instance of %s already running")) % m_appName);
 
-		// This is very tricky. The most secure way to communicate is via ED2K links file
+		// The ED2K links file is the most secure way to communicate this.
 		//
-		// Raise the window even when we did hand links over. It matters most
-		// for a file-manager double-click on a collection: the links land in
-		// the running instance either way, but without this the user gets no
-		// visible response at all and assumes nothing happened.
+		// Raise the window even when links were handed over. It matters most for a
+		// file-manager double-click on a collection: the links land in the running
+		// instance either way, but without this there is no visible response.
 		wxTextFile ed2kFile(thePrefs::GetConfigDir() + "ED2KLinks");
 		if (!ed2kFile.Exists()) {
 			ed2kFile.Create();
@@ -860,57 +817,46 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 	}
 
 #ifndef __WINDOWS__
-	// Close standard-input
 	if (!cmdline.Found("enable-stdin")) {
-		// The full daemon will close all std file-descriptors by itself,
-		// so closing it here would lead to the closing on the first open
-		// file, which is the logfile opened below
+		// The full daemon closes all std file-descriptors itself, so closing here
+		// would instead close the first open file, which is the logfile below.
 		if (!enable_daemon_fork) {
 			close(0);
 		}
 	}
 #endif
 
-	// Create the CFG file we shall use and set the config object as the
-	// global cfg file. CamuleFileConfig is a wxFileConfig subclass that
-	// wraps every entry / group lookup in an LC_CTYPE="C" scope so the
-	// case-insensitive sorted-array binary searches are locale-
-	// deterministic. The initial parse below also has to run under
-	// LC_CTYPE="C" so the in-memory sort order matches what subsequent
-	// Read / Write calls will use - otherwise a session that runs under
-	// a non-C locale silently accumulates duplicate key=value lines in
-	// amule.conf (#852).
+	// Create the CFG file and set it as the global config. CamuleFileConfig wraps
+	// every entry / group lookup in an LC_CTYPE="C" scope so the case-insensitive
+	// sorted-array binary searches are locale-deterministic. The initial parse
+	// below must run under the same scope so the in-memory sort order matches what
+	// later Read / Write calls use -- otherwise a session under a non-C locale
+	// silently accumulates duplicate key=value lines in amule.conf.
 	{
 		CCtypeAsciiScope scope;
 		wxConfig::Set(new CamuleFileConfig("", "", thePrefs::GetConfigDir() + m_configFile));
 	}
 
-	// The config holds the EC password, which is the credential itself rather
-	// than a verifier -- anything that can read this file can drive the daemon.
-	// It is created with whatever the umask allows, which on Debian and Ubuntu
-	// defaults to group-writable. Tighten it here rather than at creation so
-	// configs that already exist are covered too. The .bak is a full copy and
-	// needs the same treatment.
+	// The config holds the EC password, which is the credential itself rather than
+	// a verifier -- anything that can read this file can drive the daemon. It is
+	// created with whatever the umask allows, group-writable by default on Debian
+	// and Ubuntu. Tightened here rather than at creation so existing configs are
+	// covered too; the .bak is a full copy and needs the same.
 	if (RestrictToOwner(CPath(thePrefs::GetConfigDir() + m_configFile))) {
 		AddLogLineN(CFormat(_("Restricted permissions on %s to owner-only.")) % m_configFile);
 	}
 	RestrictToOwner(CPath(thePrefs::GetConfigDir() + m_configFile + ".bak"));
 
-	// Make a backup of the log file
 	CPath logfileName = CPath(thePrefs::GetConfigDir() + m_logFile);
 	if (logfileName.FileExists()) {
 		CPath::BackupFile(logfileName, ".bak");
 	}
 
-	// Open the log file
 	if (!theLogger.OpenLogfile(logfileName.GetRaw())) {
-		// use std err as last resolt to indicate problem
 		fputs("ERROR: unable to open log file\n", stderr);
-		// failure to open log is serious problem
 		return false;
 	}
 
-	// Load Preferences
 	CPreferences::BuildItemList(thePrefs::GetConfigDir());
 	CPreferences::LoadAllItems(wxConfigBase::Get());
 
@@ -924,18 +870,14 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 	}
 #endif
 
-	// If an autostart entry exists pointing at a stale path (user
-	// moved the AppImage / .app / install dir since they enabled the
-	// toggle), silently rewrite it to the current canonical path so
-	// the next login launches the right binary. No-op if no entry
-	// exists - disabling autostart is always a deliberate choice we
-	// don't second-guess.
+	// An autostart entry pointing at a stale path (the AppImage / .app / install
+	// dir moved since the toggle was enabled) is silently rewritten to the current
+	// canonical path. No-op when no entry exists: disabling autostart is a
+	// deliberate choice.
 	AutostartManager::SelfHealOnStartup();
 
-	// Same idea for the URL-scheme handler registration: if we're the
-	// current handler for ed2k:/magnet: but the registered path drifted
-	// (user moved the AppImage / .app / install dir), rewrite it. No-op
-	// if we aren't the current handler for a given scheme.
+	// Same for the URL-scheme handler registration: rewrite a drifted path where
+	// we are the current handler, no-op where we are not.
 	ProtocolHandlerManager::SelfHealOnStartup();
 
 	return true;
@@ -1000,17 +942,15 @@ CamuleAppCommon::CollectionExpansion CamuleAppCommon::ExpandPassedCollection(
 
 	unsigned skipped = 0;
 	for (size_t i = 0; i < collection.size(); ++i) {
-		// eMule stores collection strings as UTF-8. Fall back to raw
-		// bytes rather than dropping the entry, since FromUTF8 yields
-		// an empty string on invalid input.
+		// eMule stores collection strings as UTF-8. Fall back to raw bytes rather
+		// than dropping the entry, since FromUTF8 yields empty on invalid input.
 		wxString link = wxString::FromUTF8(collection[i].c_str());
 		if (link.IsEmpty()) {
 			link = wxString::From8BitData(collection[i].c_str());
 		}
 
-		// Route through CheckPassedLink so a collection link gets the
-		// same validation, canonicalisation and category suffix as one
-		// typed on the command line.
+		// Route through CheckPassedLink so a collection link gets the same
+		// validation, canonicalisation and category suffix as a command-line one.
 		wxString checked;
 		if (CheckPassedLink(link, checked, cat)) {
 			out.Add(checked);
@@ -1090,7 +1030,6 @@ bool CamuleAppCommon::CheckMuleDirectory(
 		msg << CFormat("Could not create the %s directory at '%s'.") % desc % directory;
 	}
 
-	// Attempt to use fallback directory.
 	const CPath fallback(alternative);
 	if (fallback.IsOk() && (directory != fallback)) {
 		msg << "\nAttempting to use default directory at location \n'" << alternative << "'.";

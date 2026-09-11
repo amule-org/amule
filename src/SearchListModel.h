@@ -84,11 +84,10 @@ public:
 	 */
 	unsigned GetContentGeneration() const noexcept { return m_contentGeneration; }
 
-	//! Forces the next flush to be a full Cleared(). Group formation needs
-	//! one: making an existing result a container leaves the control's tree
-	//! inconsistent on GTK/MSW under any incremental notification (got3nks,
-	//! PR #796 review, after ItemChanged() and delete+re-add both failed to
-	//! make those backends re-derive container-ness).
+	//! Forces the next flush to be a full Cleared(). Group formation needs one:
+	//! making an existing result a container leaves the control's tree inconsistent
+	//! on GTK/MSW under any incremental notification -- ItemChanged() and
+	//! delete+re-add both failed to make those backends re-derive container-ness.
 	void MarkDirty()
 	{
 		m_pendingReset = true;
@@ -150,8 +149,7 @@ public:
 	}
 
 	//! Column indices, matching the wxDataViewColumn order set up by
-	//! CSearchListCtrl -- shared with CSearchListCtrl::SortProc-equivalent
-	//! Compare() logic below.
+	//! CSearchListCtrl and shared with the Compare() logic below.
 	enum Column
 	{
 		COL_NAME = 0,

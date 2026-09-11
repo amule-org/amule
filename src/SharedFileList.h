@@ -61,12 +61,10 @@ public:
 	CSharedFileList(CKnownFileList *in_filelist);
 	~CSharedFileList();
 
-	// Yield/cancel hook for chunked reloads. Invoked periodically
-	// during the directory walk with the running count of files
-	// scanned so far. Returning false aborts the reload promptly and
-	// leaves whatever was added in place (partial commit). null is a
-	// no-op — kept that way for daemon-side and EC-triggered callers
-	// that don't have a UI to drive.
+	// Yield/cancel hook for chunked reloads, invoked periodically during the
+	// directory walk with the running count of files scanned. Returning false
+	// aborts the reload promptly and leaves whatever was added in place. null is a
+	// no-op, for daemon-side and EC-triggered callers with no UI to drive.
 	using ReloadYieldCb = std::function<bool(size_t /*filesScanned*/)>;
 
 	void Reload();
@@ -74,27 +72,27 @@ public:
 	// walk completed normally, false if `yieldCb` requested abort.
 	bool Reload(ReloadYieldCb yieldCb);
 
-	// Ask for a full shared-files reload to run from the next Process()
-	// tick instead of inline in the caller. Callers that sit on the core
-	// event loop -- every EC request handler, and the directory watcher's
-	// dropped-events fallback -- use this so they can answer immediately
-	// rather than blocking for the whole walk. On a large or network-
-	// mounted share tree that walk is seconds to minutes, and because
-	// amuleapi's EC lane is a single serialised worker, a blocking reload
-	// there stalls the refresher and turns unrelated endpoints into 503s.
+	// Ask for a full shared-files reload to run from the next Process() tick
+	// instead of inline in the caller. Callers that sit on the core event loop --
+	// every EC request handler, and the directory watcher's dropped-events
+	// fallback -- use this so they can answer immediately rather than blocking for
+	// the whole walk. On a large or network-mounted share tree that walk takes
+	// seconds to minutes, and since amuleapi's EC lane is a single serialised
+	// worker, a blocking reload there stalls the refresher and turns unrelated
+	// endpoints into 503s.
 	//
 	// Repeat requests before the tick coalesce into one walk, and a request
 	// arriving mid-walk keeps the flag set so it runs afterwards instead of
 	// nesting.
 	//
-	// A plain bool is deliberate: every setter and the reader run on the
-	// core event loop. If a caller off that thread ever needs this, that
-	// caller is the thing to fix -- do not make this atomic.
+	// A plain bool is deliberate: every setter and the reader run on the core
+	// event loop. A caller off that thread is the thing to fix -- do not make this
+	// atomic.
 	void RequestReload() { m_reloadLatch.Request(); }
 
-	// True when a RequestReload() is outstanding. GUI callers use this to run
-	// the owed walk themselves behind a progress dialog rather than letting it
-	// land silently on a Process() tick -- see ReloadSharedFilesWithProgress().
+	// True when a RequestReload() is outstanding. GUI callers use this to run the
+	// owed walk themselves behind a progress dialog rather than letting it land
+	// silently on a Process() tick.
 	bool IsReloadPending() const { return m_reloadLatch.IsPending(); }
 	void SafeAddKFile(CKnownFile *toadd, bool bOnlyAdd = false);
 	void RemoveFile(CKnownFile *toremove);
@@ -147,20 +145,17 @@ public:
 	bool RenameFile(CKnownFile *pFile, const CPath &newName);
 	void VerifyLocalData(const CKnownFile *file) const;
 
-	// Re-extract media metadata for every shared file, whether or not it has
-	// any already. Returns how many probes were queued.
+	// Re-extract media metadata for every shared file, whether or not it has any
+	// already. Returns how many probes were queued.
 	//
-	// This is the only way to correct a file whose metadata is wrong rather
-	// than missing: the scheduler skips anything that already carries a media
-	// tag, so a value stored by an older build -- a cover-art codec, or a
-	// preview inherited from a search result before the local probe could
-	// overwrite it -- is otherwise permanent short of deleting known.met,
-	// which would also discard the ed2k part hashes and every per-file
+	// This is the only way to correct a file whose metadata is wrong rather than
+	// missing: the scheduler skips anything that already carries a media tag, so a
+	// value stored by an older build is otherwise permanent short of deleting
+	// known.met, which would also discard the ed2k part hashes and every per-file
 	// statistic.
 	//
-	// Asynchronous: the work is queued on the media-probe worker and this
-	// returns immediately. Nothing else about a file is touched -- it is not
-	// re-hashed, its hash does not change, and it never leaves the share.
+	// Asynchronous: the work is queued on the media-probe worker. Nothing else
+	// about a file is touched -- it is not re-hashed and never leaves the share.
 	unsigned RefreshAllMediaMetadata();
 
 	// The single-file form, addressed by hash. Returns false when no shared
@@ -168,11 +163,10 @@ public:
 	// extension, or an incomplete download.
 	bool RefreshMediaMetadata(const CMD4Hash &hash);
 
-	// The batched form the GUI uses. Returns how many probes were queued.
-	// Exists so amulegui can send ONE EC request for a selection rather than
-	// one per file: its request fifo stalls the GUI's own polling past about
-	// twenty in flight, and a "select all, refresh" would otherwise put one
-	// packet per shared file into the socket in a tight loop.
+	// The batched form the GUI uses; returns how many probes were queued. Exists
+	// so amulegui can send ONE EC request for a selection: its request fifo stalls
+	// the GUI's own polling past about twenty in flight, and a "select all,
+	// refresh" would otherwise put one packet per shared file into the socket.
 	unsigned RefreshMediaMetadata(const std::vector<CMD4Hash> &hashes);
 
 	/**
@@ -213,26 +207,23 @@ public:
 	 */
 	void EnableDirectoryWatcher(bool enable);
 
-	// Incremental-rescan entry points used by CSharedDirWatcher to apply
-	// a single fs-watcher event without re-walking every shared dir.
-	// fullPath is the raw filesystem path of the affected entry.
+	// Incremental-rescan entry points used by CSharedDirWatcher to apply a single
+	// fs-watcher event without re-walking every shared dir. fullPath is the raw
+	// filesystem path of the affected entry.
 	//
-	// NotifyPathAdded queues a hashing task for an unknown file, no-ops
-	// if the file is already shared. NotifyPathRemoved looks the path up
-	// in m_pathIndex and detaches the matching CKnownFile from the
-	// shared list. NotifyPathModified treats a content-change as
-	// remove-then-add when mtime/size have shifted (otherwise no-op).
+	// NotifyPathAdded queues a hashing task for an unknown file and no-ops if the
+	// file is already shared. NotifyPathRemoved looks the path up in m_pathIndex
+	// and detaches the matching CKnownFile. NotifyPathModified treats a
+	// content-change as remove-then-add when mtime/size have shifted.
 	//
-	// All three are safe to call from the wxFileSystemWatcher event
-	// thread (i.e. wx's main thread on every supported backend), and
-	// take list_mut internally via AddFile/RemoveFile.
+	// All three are safe to call from the wxFileSystemWatcher event thread (wx's
+	// main thread on every supported backend) and take list_mut internally.
+	//
 	// bulkScan: the caller is walking a whole directory tree (the watcher's
-	// new-subdirectory race scan), not reacting to a single filesystem event.
-	// In that mode an already-known file is counted rather than announced
-	// individually -- moving a large known tree into a recursive share would
-	// otherwise emit one info line per file, thousands of them, in a single
-	// debounce flush on the core event loop. Removal already summarises, so
-	// this also keeps the two directions symmetric.
+	// new-subdirectory race scan) rather than reacting to a single event. In that
+	// mode an already-known file is counted rather than announced individually --
+	// moving a large known tree into a recursive share would otherwise emit
+	// thousands of info lines in one debounce flush on the core event loop.
 	void NotifyPathAdded(const wxString &fullPath, bool bulkScan = false);
 	void NotifyPathRemoved(const wxString &fullPath);
 	void NotifyPathModified(const wxString &fullPath);
@@ -247,70 +238,59 @@ private:
 
 	bool AddFile(CKnownFile *pFile);
 
-	// Re-key m_pathIndex for an already-shared file whose on-disk path
-	// changed since it was first added. A partfile shared while
-	// downloading is keyed under the Temp dir (or "" before SetFilePath
-	// ran); on completion it moves to Incoming with SetFilePath(), but
-	// AddFile only writes m_pathIndex on a fresh insert, so the re-add
-	// leaves the index pointing at the stale path. Drops any keys
-	// pointing at `file` and installs its current
-	// GetFilePath().JoinPaths(GetFileName()) key, so the dir-watcher can
-	// resolve a later DELETE of the completed file. Takes list_mut.
+	// Re-key m_pathIndex for an already-shared file whose on-disk path changed
+	// since it was added. A partfile shared while downloading is keyed under the
+	// Temp dir (or "" before SetFilePath ran) and moves to Incoming on completion,
+	// but AddFile only writes m_pathIndex on a fresh insert, so the re-add leaves
+	// the index pointing at the stale path. Drops any keys pointing at `file` and
+	// installs its current one, so the dir-watcher can resolve a later DELETE.
+	// Takes list_mut.
 	void RefreshPathIndex(CKnownFile *file);
 
-	// #140 — invoked by AddFile once list_mut is held. Kicks off a
-	// CMediaProbeTask when the preference is enabled and the file
-	// looks like media (audio / video by ED2K file type) and hasn't
-	// been probed yet. Returns silently if any gate fails.
+	// Invoked by AddFile once list_mut is held. Kicks off a CMediaProbeTask when
+	// the preference is enabled, the file looks like media by ED2K file type, and
+	// it has not been probed yet; returns silently if any gate fails.
 	//
 	// The mode says WHICH gates to bypass, because the two callers that bypass
 	// anything need different ones and a single "force" flag conflated them:
 	//
-	//  * Normal   -- both gates apply. Startup rescans probe each file at most
-	//                once and never touch an in-progress download.
-	//  * Completion -- both bypassed. The authoritative local probe must
-	//                overwrite metadata inherited from the search result, and
-	//                a just-completed download is STILL a CPartFile object, so
-	//                the partfile guard has to be lifted too. Safe only
-	//                because this fires exactly when the file has finished.
-	//  * Refresh  -- the metadata gate is bypassed, the partfile guard is NOT.
-	//                A whole-share walk must not inherit Completion's licence:
-	//                a genuinely incomplete download is in the shared list and
-	//                has no complete file to read.
+	//  * Normal     -- both gates apply.
+	//  * Completion -- both bypassed. The authoritative local probe must overwrite
+	//                  metadata inherited from the search result, and a
+	//                  just-completed download is STILL a CPartFile, so the
+	//                  partfile guard has to lift too. Safe only because this
+	//                  fires exactly when the file has finished.
+	//  * Refresh    -- the metadata gate is bypassed, the partfile guard is not: a
+	//                  genuinely incomplete download is in the shared list and has
+	//                  no complete file to read.
 	enum class MediaProbeMode
 	{
 		Normal,
 		Completion,
 		Refresh,
 	};
-	// Returns true when a probe was actually enqueued, so a caller can report
-	// what it did. Do NOT try to infer that from the worker's pending count:
+	// Returns true when a probe was actually enqueued, so a caller can report what
+	// it did. Do NOT infer that from the worker's pending count:
 	// CMediaProbeThread::Entry swaps the whole job list out as soon as it is
-	// signalled, so against an idle worker the count is back to zero before
-	// the caller can look and every enqueue reads as a no-op.
+	// signalled, so against an idle worker every enqueue reads as a no-op.
 	//
-	// `bulk` says whether this probe belongs to a mass operation (a share
-	// scan, a whole-share refresh) rather than to one file the user is
-	// looking at. It decides only logging verbosity, and it is passed rather
-	// than inferred downstream: the worker cannot tell, because it drains
-	// whatever happens to be queued when it wakes.
+	// `bulk` says whether this probe belongs to a mass operation rather than to
+	// one file the user is looking at. It decides logging verbosity only, and is
+	// passed rather than inferred downstream: the worker cannot tell, because it
+	// drains whatever happens to be queued when it wakes.
 	bool MaybeScheduleMediaProbe(
 		CKnownFile *pFile, MediaProbeMode mode = MediaProbeMode::Normal, bool bulk = false);
 
-	// Per-path attach: stat fname under directory, look it up in
-	// known.met, and either AddFile() the existing CKnownFile or push
-	// a CHashingTask onto hashTasks. Shared between the bulk-Reload
-	// directory walk and the per-event watcher dispatch so the two
-	// paths agree on what counts as shareable.
+	// Per-path attach: stat fname under directory, look it up in known.met, and
+	// either AddFile() the existing CKnownFile or push a CHashingTask onto
+	// hashTasks. Shared between the bulk-Reload walk and the per-event watcher
+	// dispatch so the two agree on what counts as shareable.
 	//
-	// notifyGuiOnKnownAdd: the bulk-Reload path repaints the whole
-	// shared-files view with Notify_SharedFilesShowFileList() once the
-	// walk finishes, so it leaves this false. The incremental watcher
-	// path has no such follow-up, so it passes true to get a per-file
-	// Notify_SharedFilesShowFile() when a known file is freshly attached
-	// (otherwise a re-shared file -- e.g. a rename in Incoming to a name
-	// already in known.met -- updates the core share set but never
-	// reaches the GUI view).
+	// notifyGuiOnKnownAdd: the bulk-Reload path repaints the whole view once the
+	// walk finishes, so it leaves this false. The incremental watcher path has no
+	// such follow-up and passes true, or a re-shared file (a rename in Incoming to
+	// a name already in known.met) would update the core share set but never reach
+	// the GUI view.
 	enum AddPathResult
 	{
 		//! Broken link, zero size, stat failed.
@@ -319,18 +299,17 @@ private:
 		kAddPathExcluded,
 		//! Matched a CKnownFile and was newly attached.
 		kAddPathKnown,
-		// Matched a CKnownFile that was *already* in the share set, so the add
-		// was declined -- the same content reachable from a second shared
-		// directory. (Not a repeated watcher event: NotifyPathAdded returns on
-		// an index hit before it ever reaches AddPathToShares.) Split out from
-		// kAddPathKnown because callers that announce a file becoming shared
-		// must not claim a share that did not happen.
+		// Matched a CKnownFile ALREADY in the share set, so the add was declined:
+		// the same content reachable from a second shared directory. (Not a
+		// repeated watcher event -- NotifyPathAdded returns on an index hit before
+		// reaching AddPathToShares.) Split out from kAddPathKnown so callers
+		// announcing a file becoming shared do not claim a share that did not
+		// happen.
 		//
-		// The file's path is left exactly as it was, which is load-bearing
-		// rather than incidental: AddFile writes m_pathIndex only on a fresh
-		// insert, so stamping the second directory onto the file would leave
-		// GetFilePath() disagreeing with the key it is indexed under, and
-		// nothing reconciles the two (issue #1017).
+		// The file's path is left exactly as it was, which is load-bearing:
+		// AddFile writes m_pathIndex only on a fresh insert, so stamping the
+		// second directory onto the file would leave GetFilePath() disagreeing
+		// with the key it is indexed under, and nothing reconciles the two.
 		kAddPathAlreadyShared,
 		//! Unknown file; a CHashingTask was pushed.
 		kAddPathQueued
@@ -339,9 +318,8 @@ private:
 		const CPath &fname,
 		TaskList &hashTasks,
 		bool notifyGuiOnKnownAdd = false);
-	// scanned/aborted are in/out: the caller passes a running count
-	// and a flag that the dir walker flips on abort. Lets a single
-	// counter span all paths in one Reload() pass.
+	// scanned/aborted are in/out: the caller passes a running count and a flag the
+	// dir walker flips on abort, so one counter spans every path in a Reload().
 	unsigned AddFilesFromDirectory(const CPath &directory,
 		TaskList &hashTasks,
 		const ReloadYieldCb &yieldCb,
@@ -352,21 +330,18 @@ private:
 	// Atomic: RemoveFile() reads it off the upload worker thread (issue #1028).
 	std::atomic<bool> reloading;
 	// Set by RequestReload(), drained by Process(). The rules it enforces --
-	// coalescing, a mid-walk request belonging to the next walk, and an
-	// aborted walk giving its request back -- live in the latch so they can be
-	// tested without a CSharedFileList. See RequestReload().
+	// coalescing, a mid-walk request belonging to the next walk, an aborted walk
+	// giving its request back -- live in the latch so they can be tested without a
+	// CSharedFileList.
 	CSharedFilesReloadLatch m_reloadLatch;
 
-	// New files discovered since the last Process() tick, counted at the one
-	// place discovery is actually decided (AddPathToShares' queued branch) so
-	// every route is covered without plumbing: the bulk walk, the watcher's
-	// create and rename handling, a newly appeared shared subdirectory, and
-	// the modify-treated-as-add path. Flushed once per tick, which coalesces
-	// a batch of files into a single line instead of one per file.
+	// New files discovered since the last Process() tick, counted at the one place
+	// discovery is decided (AddPathToShares' queued branch) so every route is
+	// covered without plumbing. Flushed once per tick, which coalesces a batch of
+	// files into a single line.
 	//
-	// A plain unsigned is enough: every increment and the flush run on the
-	// main thread (the bulk walk, the filesystem-watcher event handler and
-	// the core timer are all the main thread).
+	// A plain unsigned is enough: every increment and the flush run on the main
+	// thread.
 	unsigned m_discoveredNewFiles = 0;
 
 	//! Already-known files attached during a bulk subdirectory scan, summarised
@@ -407,25 +382,21 @@ private:
 	// gains or loses an entry; atomic so it can be read without the lock.
 	std::atomic<uint64> m_listGeneration{ 0 };
 	// Secondary index keyed by full path so the watcher can resolve a
-	// DELETE/RENAME event to its CKnownFile* in O(1) without walking
-	// m_Files_map. Maintained alongside m_Files_map in AddFile() and
-	// RemoveFile(); both insertion and erase happen under list_mut so
-	// the two stay consistent. Key is the file's current
-	// GetFilePath().JoinPaths(GetFileName()) raw string.
+	// DELETE/RENAME event to its CKnownFile* in O(1) without walking m_Files_map.
+	// Maintained alongside it in AddFile() and RemoveFile(), both under list_mut.
+	// Key is the file's current GetFilePath().JoinPaths(GetFileName()) raw string.
 	//
-	// The invariant is "if and only if": an entry exists for a path exactly
-	// when a file currently in m_Files_map lives there. NotifyPathAdded,
-	// NotifyPathModified and NotifyDirRemoved all read a hit as proof the
-	// file is already shared, so an entry that outlives its file makes the
-	// watcher silently refuse to share that path -- it returns before its
-	// first log statement, so nothing is reported at any level.
+	// The invariant is "if and only if": an entry exists for a path exactly when a
+	// file currently in m_Files_map lives there. NotifyPathAdded,
+	// NotifyPathModified and NotifyDirRemoved all read a hit as proof the file is
+	// already shared, so an entry that outlives its file makes the watcher
+	// silently refuse to share that path -- it returns before its first log
+	// statement, so nothing is reported at any level.
 	//
 	// This is why FindSharedFiles clears it in the same locked scope as
-	// m_Files_map rather than leaving it to accumulate: the keys a reload
-	// cannot heal are exactly the ones whose files the walk no longer finds
-	// (issue #1028). Both containers are therefore empty from that clear
-	// until the walk refills them, and neither may be observed in between --
-	// one rule covering the two, not two rules that can drift apart.
+	// m_Files_map: the keys a reload cannot heal are exactly the ones whose files
+	// the walk no longer finds (issue #1028). Both containers are empty from that
+	// clear until the walk refills them, and neither may be observed in between.
 	std::unordered_map<wxString, CKnownFile *> m_pathIndex;
 	mutable wxMutex list_mut;
 
@@ -467,9 +438,9 @@ private:
 	uint32 m_lastPublishKadSrc;
 	uint32 m_lastPublishKadNotes;
 
-	// Fs-watcher for auto-rescan of shared dirs. Owned here; created
-	// lazily on EnableDirectoryWatcher(true). Forward-declared in this
-	// header to keep wx/fswatcher.h out of public includes.
+	// Fs-watcher for auto-rescan of shared dirs. Owned here, created lazily on
+	// EnableDirectoryWatcher(true), forward-declared to keep wx/fswatcher.h out of
+	// public includes.
 	CSharedDirWatcher *m_dirWatcher;
 };
 

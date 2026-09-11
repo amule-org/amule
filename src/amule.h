@@ -41,11 +41,10 @@
 #include "config.h" // Needed for ENABLE_UPNP
 
 // GeoIP country DISPLAY + remote-config capability, as opposed to the resolver.
-// True for a resolver-owning build (ENABLE_IP2COUNTRY, needs libmaxminddb) OR
-// any remote GUI (amulegui / CLIENT_GUI, which receives country codes over EC
-// and links no library). Use GEOIP_GUI to gate flag rendering, the country
-// columns and the IP2Country preferences page; keep ENABLE_IP2COUNTRY for the
-// resolver itself (CIP2Country) and the monolithic local IP→code lookup.
+// True for a resolver-owning build (ENABLE_IP2COUNTRY, needs libmaxminddb) or
+// any remote GUI (amulegui, which receives country codes over EC and links no
+// library). Gate flag rendering, the country columns and the IP2Country prefs
+// page on GEOIP_GUI; keep ENABLE_IP2COUNTRY for the resolver itself.
 #if defined(ENABLE_IP2COUNTRY) || defined(CLIENT_GUI)
 #define GEOIP_GUI 1
 #endif
@@ -125,10 +124,9 @@ class CUInt128;
 #define CORE_TIMER_PERIOD 100
 #endif
 
-// How long the amuleapi EC token file may sit on disk before the core
-// removes it whether or not the child read it. Long enough to cover a
-// slow exec on a loaded machine, short enough that a secret is not
-// left at rest for anything a person would notice.
+// How long the amuleapi EC token file may sit on disk before the core removes
+// it whether or not the child read it: long enough for a slow exec on a loaded
+// machine, short enough that a secret is not left at rest.
 #define EC_TOKEN_FILE_TTL_MS 10000
 
 #define CONNECTED_ED2K (1 << 0)
@@ -158,9 +156,9 @@ public:
 		kNotACollection,
 		// The path named a collection and its links were emitted.
 		kCollectionExpanded,
-		// The path named a collection we could not read. Already
-		// logged, and deliberately not retried as a link - doing so
-		// would emit a second, misleading "invalid eD2k link" error.
+		// The path named a collection we could not read. Already logged, and
+		// deliberately not retried as a link -- that would emit a second,
+		// misleading "invalid eD2k link" error.
 		kCollectionFailed
 	};
 
@@ -232,10 +230,10 @@ protected:
 		bool dialogUsable);
 
 	void RefreshSingleInstanceChecker();
-	// Drop the single-instance lock (and unlink its file). OnExit() calls
+	// Drop the single-instance lock and unlink its file. OnExit() calls
 	// std::_Exit() to dodge the wxWebSession teardown crash, which bypasses
-	// ~CamuleAppCommon — so this must be called explicitly before the exit,
-	// or the muleLock / muleLockRGUI file lingers between runs.
+	// ~CamuleAppCommon, so this must run explicitly before the exit or the
+	// muleLock / muleLockRGUI file lingers between runs.
 	void ReleaseSingleInstance();
 
 	/**
@@ -281,21 +279,19 @@ public:
 	CamuleAppCommon();
 	~CamuleAppCommon();
 
-	// GeoIP country resolver (headless: DB + download + ISO-code lookup).
-	// The resolver lives on CamuleApp (amuled + monolithic amule); amulegui
-	// has none and receives country codes over EC, so the base returns
-	// nullptr. This lets shared model code (CServer / CUpDownClient::
-	// GetCountryCode) resolve locally where a resolver exists and use the
-	// EC-provided value where it doesn't.
+	// GeoIP country resolver (DB + download + ISO-code lookup). It lives on
+	// CamuleApp (amuled + monolithic); amulegui has none and receives country
+	// codes over EC, so the base returns nullptr. Shared model code can then
+	// resolve locally where a resolver exists and use the EC value where it does
+	// not.
 	virtual class CIP2Country *GetIP2Country() { return nullptr; }
 
-	// Apply the current GeoIP preference at runtime (creating the resolver on
-	// first enable, disabling it when turned off). No-op on amulegui, which has
-	// no local resolver and configures the daemon's GeoIP over EC. startup=true
-	// (OnInit / a local enable toggle) also kicks the auto-update refresh; it is
-	// false on a remote prefs-apply so an amulegui OK doesn't trigger a download
-	// on every save — an explicit "Update now" (EC_TAG_IP2COUNTRY_UPDATE_NOW)
-	// carries that intent instead (otherwise both fire → duplicate download).
+	// Apply the current GeoIP preference at runtime, creating the resolver on
+	// first enable and disabling it when turned off. No-op on amulegui, which
+	// configures the daemon's GeoIP over EC. startup=true also kicks the
+	// auto-update refresh; it is false on a remote prefs-apply so an amulegui OK
+	// does not download on every save -- an explicit "Update now" carries that
+	// intent, and firing both would duplicate the download.
 	virtual void EnableIP2Country(bool startup) {}
 
 	void AddLinksFromFile();
@@ -306,7 +302,6 @@ public:
 		bool use_hostname = false,
 		bool add_cryptoptions = false,
 		bool add_AICH = false);
-	// Who am I ?
 #ifdef AMULE_DAEMON
 	bool IsDaemon() const { return true; }
 #else
@@ -323,12 +318,10 @@ public:
 	const wxString GetFullMuleVersion() const;
 
 #ifdef __WXGTK__
-	// True when the process is running under a Wayland session (any
-	// distro, any compositor). xdg-shell intentionally doesn't deliver
-	// iconify-state notifications to clients, so several tray-icon
-	// features that rely on detecting "user just minimized the
-	// window" cannot work there - the call sites use this flag to
-	// disable / grey out the relevant prefs and skip the broken paths.
+	// True when the process runs under a Wayland session. xdg-shell intentionally
+	// does not deliver iconify-state notifications to clients, so tray-icon
+	// features that rely on detecting "user just minimized the window" cannot work
+	// there; call sites use this to grey out the relevant prefs.
 	static bool IsWaylandSession();
 #endif
 
@@ -346,13 +339,11 @@ public:
 	 */
 	static void SanitiseTrayPreferences();
 
-	// Set when a quit was requested out-of-band of the main-window
-	// close button (Cmd+Q, Dock right-click → Quit, tray-icon Exit).
-	// CamuleDlg::OnClose checks this so HideOnClose only hides the
-	// window for the actual red close-button gesture and never blocks
-	// an explicit quit request. Lives on the common base so both the
-	// monolithic CamuleApp and the remote-GUI CamuleRemoteGuiApp
-	// expose the same accessors.
+	// Set when a quit was requested out-of-band of the main-window close button
+	// (Cmd+Q, Dock right-click Quit, tray-icon Exit). CamuleDlg::OnClose checks it
+	// so HideOnClose only hides the window for the actual close-button gesture and
+	// never blocks an explicit quit. On the common base so both CamuleApp and
+	// CamuleRemoteGuiApp expose the same accessors.
 	bool IsQuitting() const { return m_isQuitting; }
 	void SetQuitting() { m_isQuitting = true; }
 	void ResetQuitting() { m_isQuitting = false; }
@@ -383,12 +374,11 @@ public:
 	bool ReinitializeNetwork(wxString *msg);
 
 	// The core owns the GeoIP resolver (created in OnInit, guarded by
-	// ENABLE_IP2COUNTRY + thePrefs::IsGeoIPEnabled). Serves the daemon
-	// (serialising the country EC tag) and monolithic amule (local display).
+	// ENABLE_IP2COUNTRY + thePrefs::IsGeoIPEnabled), serving the daemon's country
+	// EC tag and monolithic amule's local display.
 	CIP2Country *GetIP2Country() override { return m_IP2Country; }
 	void EnableIP2Country(bool startup) override;
 
-	// derived classes may override those
 	virtual int InitGui(bool geometry_enable, wxString &geometry_string);
 
 	/**
@@ -405,20 +395,15 @@ public:
 
 	virtual int ShowAlert(wxString msg, wxString title, int flags) = 0;
 
-	// Barry - To find out if app is running or shutting/shut down
 	bool IsRunning() const { return (m_app_state == APP_STATE_RUNNING); }
 	bool IsOnShutDown() const { return (m_app_state == APP_STATE_SHUTTINGDOWN); }
 
 	// Check ED2K and Kademlia state
 	bool IsFirewalled() const;
-	// Are we connected to at least one network?
 	bool IsConnected() const;
-	// Connection to ED2K
 	bool IsConnectedED2K() const;
 
-	// What about Kad? Is it running?
 	bool IsKadRunning() const;
-	// Connection to Kad
 	bool IsConnectedKad() const;
 	// Check Kad state (TCP)
 	bool IsFirewalledKad() const;
@@ -439,18 +424,15 @@ public:
 	uint8 GetBuddyStatus() const;
 	uint32 GetBuddyIP() const;
 	uint32 GetBuddyPort() const;
-	// Kad ID
 	const Kademlia::CUInt128 &GetKadID() const;
 
 	// Check if we should callback this client
 	bool CanDoCallback(uint32 clientServerIP, uint16 clientServerPort);
 
-	// Misc functions
 	void OnlineSig(bool zero = false);
 	void Localize_mule();
 	void Trigger_New_version(wxString newMule);
 
-	// shakraw - new EC code using wxSocketBase
 	ExternalConn *ECServerHandler;
 
 	// return current (valid) public IP or 0 if unknown
@@ -461,7 +443,6 @@ public:
 	uint32 GetED2KID() const;
 	uint32 GetID() const;
 
-	// Other parts of the interface and such
 	CPreferences *glob_prefs;
 	CDownloadQueue *downloadqueue;
 	CUploadQueue *uploadqueue;
@@ -482,9 +463,8 @@ public:
 	CBrowseManager *browsemanager;
 	CClientCreditsList *clientcredits;
 	CFriendList *friendlist;
-	// The core's chat transcript, shared by the local GUI and every EC
-	// client so all three see one conversation rather than three private
-	// ones. In-memory; emptied by a restart.
+	// The core's chat transcript, shared by the local GUI and every EC client so
+	// all three see one conversation. In-memory; emptied by a restart.
 	CChatSessionStore *chatsessions;
 	CClientUDPSocket *clientudp;
 	CStatistics *m_statistics;
@@ -495,9 +475,8 @@ public:
 #ifdef ENABLE_UPNP
 	CUPnPControlPoint *m_upnp;
 	std::vector<CUPnPPortMapping> m_upnpMappings;
-	// Build the port mappings from the current preferences and start the
-	// UPnP control point. Safe to call more than once: it is a no-op when
-	// UPnP is disabled or already running.
+	// Build the port mappings from the current preferences and start the UPnP
+	// control point. A no-op when UPnP is disabled or already running.
 	void StartUPnP();
 #endif
 	wxLocale m_locale;
@@ -522,11 +501,9 @@ public:
 	void ShowConnectionState(bool forceUpdate = false);
 
 	// Wall-clock timestamp of the most recent ed2k/Kad connect, set by
-	// ShowConnectionState() on the false->true transition it already
-	// detects. Invalid (wxDateTime::IsValid() == false) while
-	// disconnected. Feeds the "Connected since" row in the desktop
-	// ED2K/Kad Info panes (CServerWnd::UpdateED2KInfo/UpdateKadInfo) --
-	// not wired over EC, so amulegui doesn't show it (amule-org/amule#174).
+	// ShowConnectionState() on the false->true transition it already detects, and
+	// invalid while disconnected. Feeds the "Connected since" row in the desktop
+	// ED2K/Kad Info panes; not wired over EC, so amulegui does not show it.
 	const wxDateTime &GetED2KConnectedSince() const { return m_ed2kConnectedSince; }
 	const wxDateTime &GetKadConnectedSince() const { return m_kadConnectedSince; }
 
@@ -571,39 +548,36 @@ protected:
 	void OnFinishedAICHHashing(CHashingEvent &evt);
 
 #if !defined(CLIENT_GUI) && !defined(AMULE_DAEMON)
-	// Monolithic only: the daemon has no window to put a splash on, and
-	// amulegui is a separate process that does not run this startup at all.
+	// Monolithic only: the daemon has no window to put a splash on, and amulegui
+	// is a separate process that does not run this startup at all.
 	//
-	// Startup splash, kept alive past OnInit because the slowest part of a
-	// first run is the hashing of everything the scan found unknown, and
-	// that drains asynchronously long after OnInit has returned. Null once
-	// the window is up and the splash has closed -- which is now the end of
-	// the scan, not the end of hashing (#853).
+	// The splash is kept alive past OnInit because the slowest part of a first run
+	// is hashing everything the scan found unknown, which drains asynchronously.
+	// Null once the window is up and the splash has closed -- the end of the scan,
+	// not the end of hashing (#853).
 	CSplashScreen *m_splash = nullptr;
-	// Drives the hashing drain: refreshes the count on the shared-files label
-	// and sorts the rows that arrived since the last tick. Polled rather than
-	// driven from the completion handlers: the worker clears its current task
-	// after the completion event has been posted, so a handler-driven update
-	// can see the last task still pending and then never run again, leaving
-	// the batch open for good. Polling also covers tasks that finish without
-	// reaching a handler here, such as an aborted one.
+	// Drives the hashing drain: refreshes the count on the shared-files label and
+	// sorts the rows that arrived since the last tick. Polled rather than driven
+	// from the completion handlers, because the worker clears its current task
+	// after posting the completion event, so a handler-driven update can see the
+	// last task still pending and then never run again. Polling also covers tasks
+	// that finish without reaching a handler, such as an aborted one.
 	wxTimer m_splashPollTimer;
 
 	// One tick of the drain: label, sort, and finish when the queue empties.
 	void UpdateStartupHashProgress();
 	void OnSplashPollTimer(wxTimerEvent &evt);
-	// Ends the download list's batch, sorts and thaws the shared list, shows
-	// the main window and closes the splash. Called when the scan finishes,
-	// with hashing still running behind it.
+	// Ends the download list's batch, sorts and thaws the shared list, shows the
+	// main window and closes the splash. Called when the scan finishes, with
+	// hashing still running behind it.
 	void ShowMainWindowAfterScan();
 	// Ends the shared list's batch with its final sort and stops the poll
 	// timer. Safe to call when nothing needed hashing.
 	void FinishStartupHashing();
 #endif // monolithic only
 
-	// #140 - CMediaProbeTask marshals results back here so we can
-	// attach FT_MEDIA_* tags on the main thread (the worker never
-	// touches CKnownFile state).
+	// CMediaProbeTask marshals results back here so FT_MEDIA_* tags are attached
+	// on the main thread -- the worker never touches CKnownFile state.
 	void OnMediaProbeFinished(CMediaProbeEvent &evt);
 	void OnFinishedCompletion(CCompletionEvent &evt);
 	void OnFinishedAllocation(CAllocFinishedEvent &evt);
@@ -616,10 +590,9 @@ protected:
 	APPState m_app_state;
 
 	// Media-probe tag writes coalesce into one known.met save: every
-	// OnMediaProbeFinished stamps this (uptime ms), and OnCoreTimer flushes a
-	// single Save() once probing has been idle for 30 s -- avoids the O(N^2)
-	// full-file rewrite when the whole library is probed at startup (#616).
-	// 0 = nothing pending.
+	// OnMediaProbeFinished stamps this (uptime ms) and OnCoreTimer flushes a single
+	// Save() once probing has been idle for 30 s, avoiding the O(N^2) full-file
+	// rewrite when the whole library is probed at startup. 0 = nothing pending.
 	uint64 m_mediaTagsDirtiedMs = 0;
 
 	// Headless GeoIP resolver, owned by the core (created in OnInit under
@@ -631,35 +604,27 @@ protected:
 
 	uint32 m_dwPublicIP;
 
-	// PID type: `int` is wide enough for any OS pid we run on -- POSIX
-	// pid_t is typically `int`, and Windows process IDs are 32-bit
-	// DWORDs but always fit in a positive int. `long` was wrong on
-	// LLP64 only by happy accident (long is also 32-bit there), but
-	// using `int` makes the intent explicit and avoids %ld for what
-	// is really an int-sized value.
+	// PID type: `int` is wide enough for any OS pid we run on -- POSIX pid_t is
+	// typically int, and Windows process IDs are 32-bit DWORDs that always fit in
+	// a positive int. `long` was right on LLP64 only by accident.
 	int webserver_pid;
 	int amuleapi_pid;
 
-	// Ephemeral EC credential for the amuleapi we spawn. Generated fresh
-	// every start, handed over through a 0600 file in the config dir that
-	// the child deletes as soon as it has read it, and accepted by the EC
-	// server alongside the configured password for the rest of this run.
+	// Ephemeral EC credential for the amuleapi we spawn. Generated fresh every
+	// start, handed over through a 0600 file in the config dir that the child
+	// deletes as soon as it has read it, and accepted by the EC server alongside
+	// the configured password for the rest of this run.
 	//
-	// The point is that amuleapi never needs the value in amule.conf. That
-	// stored value IS the credential -- the challenge hashes it directly --
-	// so a compromised network-facing daemon holding it would hold something
-	// equivalent to the user's EC password. This holds a secret that dies
-	// with the process instead.
-	//
-	// Empty when we did not spawn amuleapi, in which case no token is
-	// accepted at all.
+	// The point is that amuleapi never needs the value in amule.conf. That stored
+	// value IS the credential -- the challenge hashes it directly -- so a
+	// compromised network-facing daemon holding it would hold the equivalent of
+	// the user's EC password. Empty when we did not spawn amuleapi, in which case
+	// no token is accepted at all.
 	wxString m_ecToken;
 
-	// Uptime-ms deadline after which the token file is removed whether or
-	// not the child read it. Without it a child that dies before reading
-	// leaves a live secret at rest, and "no token on disk after startup"
-	// stops being true. Same stamp-and-sweep shape as m_mediaTagsDirtiedMs.
-	// 0 = nothing pending.
+	// Uptime-ms deadline after which the token file is removed whether or not the
+	// child read it: a child that dies before reading would otherwise leave a live
+	// secret at rest. 0 = nothing pending.
 	uint64 m_ecTokenFileExpiryMs = 0;
 
 	wxString server_msg;
@@ -682,11 +647,10 @@ public:
 	// can show how stale the result is (checks are startup-only).
 	time_t GetVersionCheckTimestamp() const { return m_versionCheckTimestamp; }
 
-	// Kick off an async GitHub /releases/latest fetch; CheckNewVersion()
-	// stores the outcome when it completes. Reused by OnInit (startup) and
-	// the EC_OP_VERSION_CHECK trigger. Returns false when throttled (a
-	// check ran within the cooldown window) so the trigger caller can
-	// report "try again later" instead of hammering GitHub's rate limit.
+	// Kick off an async GitHub /releases/latest fetch; CheckNewVersion() stores
+	// the outcome. Used by OnInit and the EC_OP_VERSION_CHECK trigger. Returns
+	// false when throttled, so the trigger caller can report "try again later"
+	// rather than hammering GitHub's rate limit.
 	bool StartVersionCheck();
 #endif
 
@@ -726,9 +690,8 @@ public:
 	CamuleDlg *amuledlg;
 
 #ifdef GEOIP_GUI
-	// Country flag images (ISO code -> wxImage), shared by the monolithic
-	// and remote GUIs. The country *code* comes from the core resolver
-	// (monolithic) or the EC tag (amulegui); this turns it into a flag.
+	// Country flag images (ISO code -> wxImage), shared by the monolithic and
+	// remote GUIs; the code itself comes from the core resolver or the EC tag.
 	// Held by pointer so the core header stays free of <wx/image.h>.
 	CCountryFlags *GetCountryFlags() { return m_countryFlags; }
 #endif
@@ -784,11 +747,9 @@ class CamuleGuiApp : public CamuleApp, public CamuleGuiBase
 	void OnQueryEndSession(wxCloseEvent &evt);
 
 #ifdef __WXMAC__
-	// Restore the main window when the user clicks the Dock icon
-	// while no aMule windows are visible. Default wxApp::MacReopenApp
-	// behaviour is to do nothing when the frame is hidden, so a
-	// window hidden via the close button (HideOnClose pref) stays
-	// permanently hidden - the app appears stuck.
+	// Restore the main window when the user clicks the Dock icon while no aMule
+	// windows are visible. wxApp::MacReopenApp does nothing when the frame is
+	// hidden, so a window hidden via HideOnClose would stay hidden for good.
 	virtual void MacReopenApp();
 
 	// Finder "Open With" / double-click on a .emulecollection, and Dock
@@ -796,12 +757,11 @@ class CamuleGuiApp : public CamuleApp, public CamuleGuiBase
 	// the config dir is always set by the time we run.
 	virtual void MacOpenFiles(const wxArrayString &fileNames);
 
-	// ed2k:// and magnet: clicks. A safety net, not the usual path: in
-	// practice the kAEGetURL handler in ProtocolHandlerManager_mac.mm
-	// receives these. wxNSAppController registers for the same event in
-	// applicationWillFinishLaunching, and -setEventHandler: replaces per
-	// (class, id), so which one is live is a question of load order we
-	// don't control. Whichever wins, the URL is queued exactly once.
+	// ed2k:// and magnet: clicks. A safety net, not the usual path: in practice
+	// the kAEGetURL handler in ProtocolHandlerManager_mac.mm receives these.
+	// wxNSAppController registers for the same event and -setEventHandler:
+	// replaces per (class, id), so which one is live depends on load order; either
+	// way the URL is queued exactly once.
 	virtual void MacOpenURL(const wxString &url);
 #endif
 
@@ -837,12 +797,10 @@ private:
 	int OnExit();
 
 	virtual int InitGui(bool geometry_enable, wxString &geometry_string);
-	// The GTK wxApps sets its file name conversion properly
-	// in wxApp::Initialize(), while wxAppConsole::Initialize()
-	// does not, leaving wxConvFileName being set to wxConvLibc. File
-	// name conversion should be set otherwise amuled will abort to
-	// handle non-ASCII file names which monolithic amule can handle.
-	// This function are overridden to perform this.
+	// wxApp::Initialize() sets the file name conversion properly, but
+	// wxAppConsole::Initialize() leaves wxConvFileName as wxConvLibc, on which
+	// amuled aborts for the non-ASCII file names monolithic amule handles. This
+	// override sets it.
 	virtual bool Initialize(int &argc_, wxChar **argv_);
 
 public:

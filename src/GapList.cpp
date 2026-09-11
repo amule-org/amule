@@ -62,8 +62,6 @@ void CGapList::AddGap(uint64 gapstart, uint64 gapend)
 		return;
 	}
 
-	//	AddDebugLogLineN(logPartFile, CFormat("  AddGap: %5d - %5d") % gapstart % gapend);
-
 	// mark involved part(s) as incomplete
 	uint16 partlast = gapend / PARTSIZE;
 	for (uint16 part = gapstart / PARTSIZE; part <= partlast; part++) {
@@ -128,8 +126,6 @@ void CGapList::FillGap(uint64 partstart, uint64 partend)
 	if (!ArgCheck(partstart, partend)) {
 		return;
 	}
-
-	//	AddDebugLogLineN(logPartFile, CFormat("  FillGap: %5d - %5d") % partstart % partend);
 
 	// mark involved part(s) to be reexamined for completeness
 	uint16 partlast = partend / PARTSIZE;

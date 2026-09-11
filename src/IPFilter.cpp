@@ -125,9 +125,8 @@ private:
 
 		uint8 accessLevel = thePrefs::GetIPFilterLevel();
 		uint32 size = m_result.size();
-		// Reserve a little more so we don't have to resize the vector later.
-		// (Map ranges can exist that have to be stored in several parts.)
-		// Extra memory will be freed in the end.
+		// Reserve a little more so the vector does not have to resize later: a map
+		// range can need storing in several parts. The extra is freed at the end.
 		m_rangeIPs.reserve(size + 1000);
 		m_rangeLengths.reserve(size + 1000);
 		if (m_storeDescriptions) {
@@ -135,14 +134,11 @@ private:
 		}
 		for (IPMap::iterator it = m_result.begin(); it != m_result.end(); ++it) {
 			if (it->AccessLevel < accessLevel) {
-				// Calculate range "length"
-				// (which is included-end - start and thus length - 1)
-				// Encoding:
-				// 0      - 0x7fff	same
-				// 0x8000 - 0xffff	0xfff	- 0x07ffffff
-				// that means: remove msb, shift left by 12 bit, add 0xfff
-				// so it can cover 8 consecutive class A nets
-				// larger ranges (or theoretical ranges with uneven ends) have to be split
+				// Range "length" is included-end - start, so length - 1. Encoded as
+				// 0 - 0x7fff for itself, and 0x8000 - 0xffff for 0xfff - 0x07ffffff:
+				// remove the msb, shift left 12 bits, add 0xfff, which covers 8
+				// consecutive class A nets. Larger ranges, and theoretical ones with
+				// uneven ends, have to be split.
 				uint32 startIP = it.keyStart();
 				uint32 realLength = it.keyEnd() - it.keyStart() + 1;
 #ifdef __DEBUG__
@@ -186,9 +182,8 @@ private:
 				}
 			}
 		}
-		// Numbers are probably different:
-		// - ranges from map that are not blocked because of their level are not added to the table
-		// - some ranges from the map have to be split for the table
+		// The numbers usually differ: ranges not blocked because of their level are
+		// not added to the table, and some map ranges have to be split for it.
 		AddDebugLogLineN(logIPFilter,
 			CFormat("Ranges in map: %d  blocked ranges in table: %d") % size % m_rangeIPs.size());
 
@@ -275,10 +270,9 @@ private:
 			return 0;
 		}
 
-		// An empty file is a valid "no ranges" list (e.g. a user who cleared it,
-		// or an auto-update that has not populated it yet). Treat it as 0 ranges
-		// instead of letting the format detector below report "unknown format"
-		// on a 0-byte file (issue #580).
+		// An empty file is a valid "no ranges" list -- a user who cleared it, or an
+		// auto-update that has not populated it yet -- so treat it as 0 ranges rather
+		// than letting the format detector report "unknown format" (issue #580).
 		if (path.GetFileSize() == 0) {
 			return 0;
 		}
@@ -288,8 +282,6 @@ private:
 #endif
 
 		const char *ipfilter_files[] = { "ipfilter.dat", "guardian.p2p", "guarding.p2p", NULL };
-
-		// Try to unpack the file, might be an archive
 
 		if (UnpackArchive(path, ipfilter_files).second != EFT_Text) {
 			AddLogLineC(CFormat(_("Failed to load ipfilter.dat file '%s', unknown format "
@@ -357,7 +349,6 @@ wxEND_EVENT_TABLE()
  */
 static bool CreateDummyFile(const wxString &filename, const wxString &text)
 {
-	// Create template files
 	if (!wxFileExists(filename)) {
 		CTextFile file;
 
@@ -480,17 +471,15 @@ void CIPFilter::Update(const wxString &strURL)
 {
 	if (!strURL.IsEmpty()) {
 		m_URL = strURL;
-		// "Update from this URL" and "remember this URL" are one action for
-		// the other two list downloads: the EC handlers for the ed2k server
-		// list and for the Kad node list both store their URL before starting
-		// the download. This one belongs here rather than in the EC handler
-		// because this function is the single funnel for every caller -- the
-		// EC op, the Preferences "Update now" button and the startup
-		// auto-update. Without it a URL used for a manual update is forgotten
-		// and the next auto-update silently falls back to the old one.
+		// "Update from this URL" and "remember this URL" are one action, as they
+		// already are for the ed2k server list and the Kad node list. It belongs here
+		// rather than in the EC handler because this function is the single funnel
+		// for every caller -- the EC op, the Preferences "Update now" button and the
+		// startup auto-update. Without it a URL used for a manual update is forgotten
+		// and the next auto-update falls back to the old one.
 		//
 		// Assign from m_URL, not strURL: the auto-update path hands us
-		// thePrefs::IPFilterURL() itself, so this would be a self-assignment.
+		// thePrefs::IPFilterURL() itself, so that would be a self-assignment.
 		thePrefs::SetIPFilterURL(m_URL);
 
 		wxString filename = thePrefs::GetConfigDir() + "ipfilter.download";
@@ -507,7 +496,6 @@ void CIPFilter::DownloadFinished(uint32 result)
 {
 	wxString datName = "ipfilter.dat";
 	if (result == HTTP_Success) {
-		// download succeeded. proceed with ipfilter loading
 		wxString newDat = thePrefs::GetConfigDir() + "ipfilter.download";
 		wxString oldDat = thePrefs::GetConfigDir() + datName;
 
@@ -529,7 +517,6 @@ void CIPFilter::DownloadFinished(uint32 result)
 	}
 
 	if (result == HTTP_Success) {
-		// Reload both ipfilter files on success
 		Reload();
 	}
 }
@@ -554,13 +541,11 @@ void CIPFilter::OnIPFilterEvent(CIPFilterEvent &evt)
 	if (thePrefs::IsFilteringServers()) {
 		theApp->serverlist->FilterServers();
 	}
-	// Now start networks we didn't start earlier
 	StartPendingNetworks();
 	theApp->ShowConnectionState(true); // refresh connection status
 	if (thePrefs::GetSrcSeedsOn()) {
 		theApp->downloadqueue->LoadSourceSeeds();
 	}
-	// Trigger filter update if configured
 	if (m_updateAfterLoading) {
 		m_updateAfterLoading = false;
 		Update(thePrefs::IPFilterURL());

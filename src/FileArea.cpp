@@ -41,22 +41,22 @@
 
 #include <atomic> // std::atomic<bool> for the cross-thread MMapEnabled toggle
 
-// MMAP_SUPPORTED is set by cmake (glib21.cmake) only when the whole mmap
-// file-I/O path is available on this platform: mmap / munmap / sysconf /
-// _SC_PAGESIZE / sigaction all present.  It gates the code below, the
-// preferences checkbox and the EC tag.  Whether mmap is actually *used* is the
-// runtime MMapEnabled preference (s_mmapEnabled), which defaults to off.
+// MMAP_SUPPORTED is set by cmake only when the whole mmap file-I/O path is
+// available on this platform (mmap / munmap / sysconf / _SC_PAGESIZE /
+// sigaction). It gates the code below, the preferences checkbox and the EC tag;
+// whether mmap is actually USED is the runtime MMapEnabled preference, which
+// defaults to off.
 
-// Runtime switch for the mmap path (the MMapEnabled preference). Written from
-// the main thread when the preference changes, read from the block-receive and
-// upload-I/O threads at ReadAt()/StartWriteAt() time. A plain atomic bool is
-// sufficient: the decision is captured per CFileArea in m_mmap_buffer, so a
-// concurrent flip only changes the mode of *subsequent* operations.
+// Runtime switch for the mmap path. Written from the main thread when the
+// preference changes, read from the block-receive and upload-I/O threads at
+// ReadAt()/StartWriteAt() time. A plain atomic bool suffices: the decision is
+// captured per CFileArea in m_mmap_buffer, so a concurrent flip only changes the
+// mode of SUBSEQUENT operations.
 //
-// The store uses release / the loads use acquire so that the SIGSEGV/SIGBUS
-// handler installed inside SetMMapEnabled(true) (below, once the handler class
-// is declared) is guaranteed visible to any I/O thread that observes the flag
-// as enabled -- i.e. the handler is always up before the first faultable map.
+// The store uses release and the loads acquire, so the SIGSEGV/SIGBUS handler
+// installed inside SetMMapEnabled(true) is guaranteed visible to any I/O thread
+// that observes the flag as enabled -- the handler is always up before the first
+// faultable map.
 static std::atomic<bool> s_mmapEnabled{ false };
 
 bool CFileArea::GetMMapEnabled()
@@ -166,11 +166,8 @@ void CFileAreaSigHandler::Init()
 	if (initialized)
 		return;
 
-	// Set our new signal handler.
-	// Note that we safe old handlers (probably wx ones) in order
-	// to be able to call them if signal not handled as desired.
-	// These handler will be removed by wx code when wx will restore
-	// old ones
+	// Save the old handlers (probably wx's) so they can be called when a signal is
+	// not handled as desired here. wx removes these when it restores its own.
 	struct sigaction sa;
 	memset(&sa, 0, sizeof(sa));
 	sigemptyset(&sa.sa_mask);
@@ -209,14 +206,12 @@ void CFileAreaSigHandler::Remove(CFileArea &area)
 
 void CFileArea::SetMMapEnabled(bool enabled)
 {
-	// Install the SIGSEGV/SIGBUS recovery handler once, when mmap is first
-	// turned on, rather than per read/write (which would take a mutex on every
-	// block). Off builds -- and runs that never enable mmap -- never touch the
-	// signal-handler chain, keeping them clear of sanitizers/debuggers/crash
-	// reporters. CFileAreaSigHandler::Init() is idempotent and a no-op where
-	// MMAP_SUPPORTED is not defined. The install happens-before the release
-	// store, so any I/O thread that later sees the flag set (acquire) is
-	// guaranteed the handler is already in place.
+	// Install the SIGSEGV/SIGBUS recovery handler once, when mmap is first turned
+	// on, rather than per read/write, which would take a mutex on every block. Off
+	// builds -- and runs that never enable mmap -- never touch the signal-handler
+	// chain, keeping them clear of sanitizers and crash reporters. Init() is
+	// idempotent, and a no-op without MMAP_SUPPORTED. The install happens-before
+	// the release store, so a thread that later sees the flag set has the handler.
 	if (enabled) {
 		CFileAreaSigHandler::Init();
 	}
@@ -231,11 +226,6 @@ CFileArea::CFileArea()
 , m_file(NULL)
 , m_error(false)
 {
-	// The SIGSEGV/SIGBUS recovery handler is installed lazily, at the first
-	// actual mmap() (see ReadAt/StartWriteAt), rather than here. That keeps
-	// builds running with MMapEnabled=off (the default) from ever touching the
-	// signal-handler chain, so they don't collide with sanitizers, debuggers
-	// or crash reporters.
 }
 
 CFileArea::~CFileArea()
