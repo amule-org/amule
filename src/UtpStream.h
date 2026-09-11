@@ -49,19 +49,30 @@
 class CUtpStream
 {
 public:
-	/**
-	 * Default bound on unsent bytes. One eD2k block plus headroom.
-	 *
-	 * A function rather than a static const member because under C++14 the
-	 * latter still needs an out-of-line definition the moment anything
-	 * odr-uses it -- binding it to a reference, which std::min() does -- and
-	 * the failure is a link error in the caller's translation unit rather
-	 * than anything visible here.
-	 */
-	static constexpr size_t DefaultWriteBound() { return 256 * 1024; }
+	//! Default bound on unsent bytes. One eD2k block plus headroom.
+	static constexpr size_t kDefaultWriteBound = 256 * 1024;
 
-	explicit CUtpStream(size_t writeBound = DefaultWriteBound())
+	/**
+	 * Default bound on buffered received bytes.
+	 *
+	 * @b Not a cap that drops bytes: libutp can deliver more than this in one
+	 * callback and received data is never discarded, because a byte thrown
+	 * away here is a hole in a file the peer already paid to send. It is the
+	 * number UTP_GET_READ_BUFFER_SIZE reports, which is how libutp decides to
+	 * stop advertising receive window -- so the bound is applied by the peer
+	 * slowing down, one round trip later, rather than by this class refusing
+	 * anything.
+	 *
+	 * Inert until the acceptor wires that callback. It is decided here so the
+	 * acceptor inherits a value rather than inventing one, and so both
+	 * directions are bounded: an unbounded read buffer is how a peer that
+	 * sends faster than the application reads grows memory without limit.
+	 */
+	static constexpr size_t kDefaultReadBound = 64 * 1024;
+
+	explicit CUtpStream(size_t writeBound = kDefaultWriteBound, size_t readBound = kDefaultReadBound)
 	: m_writeBound(writeBound)
+	, m_readBound(readBound)
 	{
 	}
 
@@ -114,6 +125,12 @@ public:
 
 	//! What libutp's read-buffer-size callback should report.
 	size_t ReadBufferSize() const { return m_readBuffer.size(); }
+
+	//! The occupancy above which libutp should stop advertising window.
+	size_t ReadBound() const { return m_readBound; }
+
+	//! Whether the reader is behind far enough to want the peer to slow down.
+	bool ReadBufferAboveBound() const { return m_readBuffer.size() >= m_readBound; }
 
 	//! True once per drain, for the caller that owns the libutp notification.
 	bool ConsumeReadDrainedEdge()
@@ -185,8 +202,20 @@ public:
 	EUtpTransportFailure Failure() const { return m_failure; }
 	bool IsTerminal() const { return IsUtpTerminal(m_failure); }
 
-	//! Nonzero only for a real failure. EOF and destroying are ends, not errors.
-	int LastError() const { return IsUtpFailure(m_failure) ? static_cast<int>(m_failure) : 0; }
+	/**
+	 * Nonzero only for a real failure. EOF and destroying are ends, not errors.
+	 *
+	 * The value is opaque: only its truthiness is defined. It is offset past
+	 * the wxSocketError range on purpose, because this stands in for the
+	 * wx-backed CLibSocket::LastError() under the same name and type, and a
+	 * call site reaching for `== wxSOCKET_INVOP` would otherwise match by
+	 * coincidence -- wrong, and silent. Callers wanting the reason ask
+	 * Failure().
+	 */
+	int LastError() const
+	{
+		return IsUtpFailure(m_failure) ? kErrorBase + static_cast<int>(m_failure) : 0;
+	}
 
 	bool BlocksRead() const { return m_blocksRead; }
 	bool BlocksWrite() const { return m_blocksWrite; }
@@ -196,9 +225,13 @@ public:
 	bool CloseTaken() const { return m_close.Taken(); }
 
 private:
+	//! Past every wxSocketError, so a stray comparison against one cannot match.
+	static constexpr int kErrorBase = 0x7500;
+
 	std::deque<uint8_t> m_readBuffer;
 	std::deque<uint8_t> m_writeBuffer;
 	size_t m_writeBound;
+	size_t m_readBound;
 	bool m_blocksRead = false;
 	bool m_blocksWrite = false;
 	bool m_readDrainedDue = false;

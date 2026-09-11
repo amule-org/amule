@@ -118,6 +118,47 @@ TEST(UtpStream, ReadDrainedIsDueExactlyOncePerDrain)
 	ASSERT_TRUE(stream.ConsumeReadDrainedEdge());
 }
 
+TEST(UtpStream, ReadBoundIsReportedRatherThanEnforced)
+{
+	// libutp can deliver more than the bound in one callback, and a byte
+	// dropped here is a hole in a file the peer already paid to send. So the
+	// bound is what UTP_GET_READ_BUFFER_SIZE reports -- the peer stops a round
+	// trip later -- not something this class refuses.
+	CUtpStream stream(CUtpStream::kDefaultWriteBound, 8);
+	const std::vector<uint8_t> first = Pattern(20);
+	const std::vector<uint8_t> second = Pattern(12, 200);
+
+	stream.OnPayload(first.data(), first.size());
+	ASSERT_TRUE(stream.ReadBufferAboveBound());
+	ASSERT_EQUALS(8u, (unsigned)stream.ReadBound());
+
+	// The delivery that matters: already past the bound, and it must still be
+	// kept in full. Refusing here is the byte-dropping this bound must not do.
+	stream.OnPayload(second.data(), second.size());
+	ASSERT_EQUALS(32u, (unsigned)stream.ReadBufferSize());
+	ASSERT_EQUALS(0, stream.LastError());
+
+	uint8_t out[32] = { 0 };
+	ASSERT_EQUALS(32u, stream.Read(out, sizeof(out)));
+	for (size_t i = 0; i < first.size(); ++i) {
+		ASSERT_EQUALS((int)first[i], (int)out[i]);
+	}
+	for (size_t i = 0; i < second.size(); ++i) {
+		ASSERT_EQUALS((int)second[i], (int)out[first.size() + i]);
+	}
+	ASSERT_FALSE(stream.ReadBufferAboveBound());
+}
+
+TEST(UtpStream, ErrorValuesCannotBeMistakenForWxSocketErrors)
+{
+	// LastError() stands in for the wx-backed CLibSocket::LastError() under the
+	// same name and type, so a call site reaching for wxSOCKET_INVOP (1) or
+	// wxSOCKET_IOERR (2) must not match one of ours by coincidence.
+	CUtpStream reset;
+	reset.OnFailure(EUtpTransportFailure::Reset);
+	ASSERT_TRUE(reset.LastError() > 6);
+}
+
 TEST(UtpStream, WriteBoundBlocksWithoutFailing)
 {
 	CUtpStream stream(64);

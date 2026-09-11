@@ -25,6 +25,8 @@
 #ifndef STREAMTRANSPORT_H
 #define STREAMTRANSPORT_H
 
+#include "NetworkAddress.h"
+
 #include <cstddef>
 #include <cstdint>
 
@@ -73,11 +75,31 @@ public:
 	virtual bool BlocksRead() const = 0;
 	virtual bool BlocksWrite() const = 0;
 
-	//! 0 unless the stream actually failed. Never set for a would-block.
+	/**
+	 * Zero unless the stream actually failed. Never set for a would-block.
+	 *
+	 * Only its truthiness is defined: the value is opaque and carries no
+	 * meaning a caller may act on. It shares its name and type with the
+	 * wx-backed `CLibSocket::LastError()`, so the trap this warns about is a
+	 * call site reaching for a `wxSOCKET_*` comparison and matching by
+	 * coincidence. Implementations keep their values outside that range so
+	 * such a comparison cannot accidentally succeed; ask the transport for
+	 * the reason instead.
+	 */
 	virtual int LastError() const = 0;
 
-	//! Peer address in aMule's host-order-agnostic 32-bit form, and its port.
-	virtual uint32_t GetPeerAddress() const = 0;
+	/**
+	 * The peer's address, full width.
+	 *
+	 * Deliberately not the 32-bit form `CLibSocket::GetPeerInt()` returns,
+	 * even though mirroring it would make substitution simpler: this series
+	 * exists because a peer's identity does not fit in 32 bits, and a new
+	 * interface that narrows by construction would put back exactly what
+	 * NetworkAddress.h was added to remove. A call site that genuinely needs
+	 * the eD2k wire form narrows with ToIPv4NetworkOrder() and handles the
+	 * failure, which is the point of that API.
+	 */
+	virtual CNetworkAddress GetPeerAddress() const = 0;
 	virtual uint16_t GetPeerPort() const = 0;
 };
 
