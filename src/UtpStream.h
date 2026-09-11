@@ -27,6 +27,7 @@
 
 #include "UtpTransportFailure.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <deque>
@@ -95,11 +96,11 @@ public:
 			return 0;
 		}
 		const size_t taken = available < length ? available : length;
-		uint8_t *out = static_cast<uint8_t *>(buffer);
-		for (size_t i = 0; i < taken; ++i) {
-			out[i] = m_readBuffer[i];
-		}
-		m_readBuffer.erase(m_readBuffer.begin(), m_readBuffer.begin() + taken);
+		const auto consumed = static_cast<std::deque<uint8_t>::difference_type>(taken);
+		std::copy(m_readBuffer.begin(),
+			m_readBuffer.begin() + consumed,
+			static_cast<uint8_t *>(buffer));
+		m_readBuffer.erase(m_readBuffer.begin(), m_readBuffer.begin() + consumed);
 		m_blocksRead = false;
 		if (m_readBuffer.empty()) {
 			// libutp stops delivering while the application is behind, and
