@@ -139,13 +139,11 @@ public:
 		CreateTagT<CUInt128>(tagname, value, m_map_uint128, parent);
 	}
 
-	// String literals must not reach the bool overload. `const char*` -> bool is
-	// a standard conversion and beats the user-defined one to wxString, so
-	// without these a literal would emit a BOOL tag through the value map and a
-	// STRING tag through the plain CECTag path (which has both pointer
-	// constructors) -- the same call site producing a different wire type on an
-	// incremental update than on a full request. No current caller passes one;
-	// these exist so that none ever can.
+	// String literals must not reach the bool overload. `const char*` -> bool is a
+	// standard conversion and beats the user-defined one to wxString, so without
+	// these a literal would emit a BOOL tag through the value map and a STRING tag
+	// through the plain CECTag path -- the same call site producing a different
+	// wire type on an incremental update than on a full request.
 	void CreateTag(ec_tagname_t tagname, const char *value, CECTag *parent)
 	{
 		CreateTag(tagname, wxString(value), parent);
@@ -196,32 +194,22 @@ public:
 	// True when a value for this tag has already been transmitted on this
 	// connection. Used to decide whether a field that is now ABSENT needs an
 	// explicit "it is gone" frame: a tag that is simply not offered reads as
-	// UNCHANGED on the remote side, because AddTag above transmits only on a
-	// difference and every receiver is add-only. Without this, clearing a
-	// field leaves the peer serving the stale value for the life of the
-	// connection.
+	// UNCHANGED on the remote side, since AddTag transmits only on a difference and
+	// every receiver is add-only.
 	bool HasTag(ec_tagname_t tagname) const { return m_map_tag.count(tagname) != 0; }
 };
 
 // Add `value` under `tagname` to `parent`, letting the value map decide whether
 // it changed -- and constructing the CECTag only if it did.
 //
-// The difference from `parent->AddTag(CECTag(tagname, value), valuemap)` is
-// where the work happens. That form builds the tag first (calling the getter,
-// copying the string, allocating the tag) and only then asks the map whether it
-// was needed, discarding it if not; it also caches whole CECTag objects. This
-// form compares the raw value against a typed cache and builds nothing when it
-// is unchanged. On the client list -- rebuilt in full on every EC poll, where
-// most fields of most peers are static -- that is the difference between
-// paying for every field of every peer and paying only for what moved.
-//
-// `valuemap` may be NULL: callers that are not doing an incremental update pass
-// nothing, and then every tag is emitted unconditionally.
-//
-// A given tagname must be written through ONE of the two forms consistently.
-// They keep separate caches (typed maps here, `m_map_tag` there), so mixing
-// them for the same tag means neither sees the other's last value and a change
-// can be suppressed -- a field that silently stops updating in the GUI.
+// The difference from `parent->AddTag(CECTag(tagname, value), valuemap)` is where
+// the work happens. That form builds the tag first -- calling the getter, copying
+// the string, allocating -- and only then asks the map whether it was needed,
+// discarding it if not; it also caches whole CECTag objects. This form compares
+// the raw value against a typed cache and builds nothing when it is unchanged.
+// On the client list, rebuilt in full on every EC poll where most fields of most
+// peers are static, that is the difference between paying for every field of
+// every peer and paying only for what moved.
 template <typename T>
 inline void AddDiffTag(CECTag *parent, ec_tagname_t tagname, const T &value, CValueMap *valuemap)
 {

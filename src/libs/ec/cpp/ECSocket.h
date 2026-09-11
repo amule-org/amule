@@ -70,12 +70,10 @@ class CECSocket
 {
 	friend class CECPacket;
 	friend class CECTag;
-	// CECMemSocket is a CECSocket subclass that captures all I/O into
-	// an in-memory vector. To finish a serialization round it needs to
-	// reach the FlushBuffers / m_output_queue drain machinery that the
-	// real-socket path normally accesses via the friend declarations
-	// above. Granting it friendship avoids weakening the visibility of
-	// those primitives for everyone else.
+	// CECMemSocket is a CECSocket subclass that captures all I/O into an in-memory
+	// vector. To finish a serialization round it needs the FlushBuffers /
+	// m_output_queue drain machinery the real-socket path reaches via the friend
+	// declarations above; friendship here avoids weakening those for everyone else.
 	friend class CECMemSocket;
 
 private:
@@ -109,14 +107,13 @@ private:
 
 	// --- transport encryption -------------------------------------------
 	//
-	// Keys are derived once the handshake has both nonces and the chosen
-	// cipher. `m_crypt_ready` says the keys exist; `m_crypt_enabled` says to
-	// actually seal outgoing packets. They are separate because the packet
-	// that completes the handshake must still go out in clear: the client
-	// sends EC_OP_AUTH_PASSWD unencrypted and only then switches on, which
-	// `m_crypt_enable_after_write` expresses. Incoming packets are decided
-	// per packet by EC_FLAG_ENCRYPTED, not by these, so a plaintext
-	// EC_OP_AUTH_FAIL still parses after we have armed.
+	// Keys are derived once the handshake has both nonces and the chosen cipher.
+	// m_crypt_ready says the keys exist; m_crypt_enabled says to actually seal
+	// outgoing packets. They are separate because the packet that completes the
+	// handshake must still go out in clear -- the client sends EC_OP_AUTH_PASSWD
+	// unencrypted and only then switches on, which m_crypt_enable_after_write
+	// expresses. Incoming packets are decided per packet by EC_FLAG_ENCRYPTED, so a
+	// plaintext EC_OP_AUTH_FAIL still parses after we have armed.
 	ECCrypt::Session m_crypt;
 	bool m_crypt_ready;
 	bool m_crypt_enabled;

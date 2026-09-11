@@ -376,14 +376,11 @@ bool CECTag::AddTag(const CECTag &tag, CValueMap *valuemap)
 	if (valuemap) {
 		return valuemap->AddTag(tag, this);
 	}
-	// The historical 65535 children-per-tag wire-format ceiling was
-	// lifted by the sentinel-extended count format in WriteChildren /
-	// ReadChildren; this writer-side guard is no longer needed and
-	// was silently dropping every tag past the 65535th — preventing
-	// EC_OP_SHARED_FILES responses from carrying libraries with more
-	// than 65535 shared files (#199).
+	// The historical 65535 children-per-tag wire-format ceiling was lifted by the
+	// sentinel-extended count format in WriteChildren / ReadChildren. The old
+	// writer-side guard silently dropped every tag past the 65535th, so an
+	// EC_OP_SHARED_FILES response could not carry a larger library (#199).
 
-	// First add an empty tag.
 	m_tagList.push_back(CECEmptyTag());
 	// Then exchange the data. The original tag will be destroyed right after this call anyway.
 	// UGLY - GCC allows a reference to an in place constructed object only to be passed as const.
@@ -514,14 +511,12 @@ bool CECTag::ReadChildren(CECSocket &socket)
 	}
 	uint32 tmp_tagCount;
 	if (useLargeCount && tmp_tagCount16 == 0xFFFF) {
-		// Sentinel-extended children count — see WriteChildren. Only
-		// honoured when the peer advertised EC_TAG_CAN_LARGE_TAG_COUNT
-		// in the auth handshake (mirrored into m_rx_flags via the
-		// per-packet flag). Old peers that don't know about this
-		// extension can still legitimately emit count == 0xFFFF as
-		// the literal uint16 count for 65535 children, so without
-		// the negotiated flag we MUST treat 0xFFFF as the count and
-		// not consume any follow-up bytes.
+		// Sentinel-extended children count -- see WriteChildren. Only honoured
+		// when the peer advertised EC_TAG_CAN_LARGE_TAG_COUNT in the auth
+		// handshake. Old peers that do not know the extension can still
+		// legitimately emit count == 0xFFFF as the literal uint16 count for 65535
+		// children, so without the negotiated flag 0xFFFF MUST be treated as the
+		// count with no follow-up bytes consumed.
 		uint32 tmp_tagCount32;
 		if (!socket.ReadNumber(&tmp_tagCount32, sizeof(uint32))) {
 			return false;
