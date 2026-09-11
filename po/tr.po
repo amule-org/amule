@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-10 11:11+0200\n"
-"PO-Revision-Date: 2026-09-10 11:15+0000\n"
+"PO-Revision-Date: 2026-09-11 13:14+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
 "Language: tr\n"
@@ -213,6 +213,11 @@ msgid ""
 "\n"
 "That is not a running copy of aMule, so there is nothing to bring to the front. Close the other program, or delete the lock file while aMule is not running."
 msgstr ""
+"Başka bir program aMule kilit dosyasına sahiptir:\n"
+"\n"
+"%s\n"
+"\n"
+"Bu, çalışmakta olan bir aMule örneklemesi değildir, yani ön plana getirilecek hiçbir şey yoktur. Diğer programı kapatın veya kilit dosyasını aMule çalışmazken silin."
 
 #: src/amuleAppCommon.cpp
 #, c-format
@@ -221,11 +226,13 @@ msgid ""
 "\n"
 "It has no window to bring to the front. Connect to it with amuleGUI, or stop the daemon before starting aMule."
 msgstr ""
+"aMule daemon'u (amuled) zaten %d süreci olarak çalışmaktadır ve bu yapılandırmayı kullanmaktadır.\n"
+"\n"
+"Ön plana getirilecek hiçbir penceresi yoktur. Ona amuleGUI ile bağlanın veya daemon'u aMule'ü başlatmadan önce durdurun."
 
 #: src/amuleAppCommon.cpp
-#, fuzzy
 msgid "aMule cannot start"
-msgstr "aMule kuruldu"
+msgstr "aMule başlatılamaz"
 
 #: src/amuleAppCommon.cpp
 #, c-format

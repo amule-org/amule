@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-10 11:11+0200\n"
-"PO-Revision-Date: 2026-09-10 11:14+0000\n"
+"PO-Revision-Date: 2026-09-11 13:14+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
 "Language: ru\n"
@@ -220,6 +220,11 @@ msgid ""
 "\n"
 "That is not a running copy of aMule, so there is nothing to bring to the front. Close the other program, or delete the lock file while aMule is not running."
 msgstr ""
+"Другая программа удерживает файл блокировки aMule:\n"
+"\n"
+"%s\n"
+"\n"
+"Это не запущенная копия aMule, поэтому выводить на передний план нечего. Закройте ту программу или удалите файл блокировки, пока aMule не запущен."
 
 #: src/amuleAppCommon.cpp
 #, c-format
@@ -228,11 +233,13 @@ msgid ""
 "\n"
 "It has no window to bring to the front. Connect to it with amuleGUI, or stop the daemon before starting aMule."
 msgstr ""
+"Демон aMule (amuled) уже запущен как процесс %d и использует эту конфигурацию.\n"
+"\n"
+"У него нет окна, которое можно вывести на передний план. Подключитесь к нему через amuleGUI или остановите демон перед запуском aMule."
 
 #: src/amuleAppCommon.cpp
-#, fuzzy
 msgid "aMule cannot start"
-msgstr "aMule установлен"
+msgstr "aMule не может запуститься"
 
 #: src/amuleAppCommon.cpp
 #, c-format

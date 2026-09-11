@@ -13,7 +13,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-10 11:11+0200\n"
-"PO-Revision-Date: 2026-09-10 11:11+0000\n"
+"PO-Revision-Date: 2026-09-11 13:14+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
 "Language: nl\n"
@@ -216,6 +216,11 @@ msgid ""
 "\n"
 "That is not a running copy of aMule, so there is nothing to bring to the front. Close the other program, or delete the lock file while aMule is not running."
 msgstr ""
+"Een ander programma gebruikt aMule's vergrendelingsbestand:\n"
+"\n"
+"%s\n"
+"\n"
+"Dat is geen lopende kopie van aMule dus er is verder niets om naar voren te brengen. Sluit het andere programma of verwijder het vergrendelingsbestand terwijl aMule niet wordt uitgevoerd."
 
 #: src/amuleAppCommon.cpp
 #, c-format
@@ -224,11 +229,13 @@ msgid ""
 "\n"
 "It has no window to bring to the front. Connect to it with amuleGUI, or stop the daemon before starting aMule."
 msgstr ""
+"De aMule daemon (amuled) wordt al uitgevoerd als proces %d en gebruikt deze instellingen.\n"
+"\n"
+"Het heeft geen venster om naar voren te brengen. Verbindt het met amuleGUI of stop de daemon voor u aMule start."
 
 #: src/amuleAppCommon.cpp
-#, fuzzy
 msgid "aMule cannot start"
-msgstr "aMule geïnstalleerd"
+msgstr "aMule kan niet starten"
 
 #: src/amuleAppCommon.cpp
 #, c-format

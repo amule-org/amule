@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-10 11:11+0200\n"
-"PO-Revision-Date: 2026-09-10 11:16+0000\n"
+"PO-Revision-Date: 2026-09-11 13:14+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -217,6 +217,11 @@ msgid ""
 "\n"
 "That is not a running copy of aMule, so there is nothing to bring to the front. Close the other program, or delete the lock file while aMule is not running."
 msgstr ""
+"另一个程序扣住了 aMule 的锁定文件：\n"
+"\n"
+"%s\n"
+"\n"
+"这不是 aMule 的运行副本, 因此没有可以带到前台的东西。关闭其他应用，或在 aMule 未运行时删除该锁定文件。"
 
 #: src/amuleAppCommon.cpp
 #, c-format
@@ -225,11 +230,13 @@ msgid ""
 "\n"
 "It has no window to bring to the front. Connect to it with amuleGUI, or stop the daemon before starting aMule."
 msgstr ""
+"aMule 守护进程 (amuled) 已经在作为 %d 进程运行并在使用此配置。\n"
+"\n"
+"它没有可以带到前台的窗口。用 amuleGUI 连接它，或在启动 amule 前停止该守护进程。"
 
 #: src/amuleAppCommon.cpp
-#, fuzzy
 msgid "aMule cannot start"
-msgstr "aMule 已安装"
+msgstr "aMule 无法启动"
 
 #: src/amuleAppCommon.cpp
 #, c-format

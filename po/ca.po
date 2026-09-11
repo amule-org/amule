@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-10 11:11+0200\n"
-"PO-Revision-Date: 2026-09-10 11:04+0000\n"
+"PO-Revision-Date: 2026-09-11 13:13+0000\n"
 "Last-Translator: minterior <minterior@gmail.com>\n"
 "Language-Team: Català\n"
 "Language: ca\n"
@@ -216,6 +216,11 @@ msgid ""
 "\n"
 "That is not a running copy of aMule, so there is nothing to bring to the front. Close the other program, or delete the lock file while aMule is not running."
 msgstr ""
+"Un altre programa està retenint el fitxer de blocatge de l'aMule:\n"
+"\n"
+"%s\n"
+"\n"
+"No és una còpia de l'aMule en execució, per tant no hi ha res per portar al davant. Tanqueu l'altre programa o elimineu el fitxer de blocatge mentre l'aMule no s'estigui executant."
 
 #: src/amuleAppCommon.cpp
 #, c-format
@@ -224,11 +229,13 @@ msgid ""
 "\n"
 "It has no window to bring to the front. Connect to it with amuleGUI, or stop the daemon before starting aMule."
 msgstr ""
+"El dimoni de l'aMule (amuled) ja s'està executant com a procés %d i està fent servir aquesta configuració.\n"
+"\n"
+"No té cap finestra per portar al davant. Connecteu-vos-hi amb l'amuleGUI, o atureu el dimoni abans d'iniciar l'aMule."
 
 #: src/amuleAppCommon.cpp
-#, fuzzy
 msgid "aMule cannot start"
-msgstr "S'ha instal·lat l'aMule"
+msgstr "L'aMule no es pot iniciar"
 
 #: src/amuleAppCommon.cpp
 #, c-format
@@ -7761,7 +7768,7 @@ msgstr "Expulsat: %s"
 #: src/Statistics.cpp
 #, c-format
 msgid "Kad banned addresses: %s"
-msgstr ""
+msgstr "Adreces expulsades de Kad: %s"
 
 #: src/Statistics.cpp
 #, c-format
