@@ -129,8 +129,10 @@ TEST(UtpStream, ReadBoundIsReportedRatherThanEnforced)
 	const std::vector<uint8_t> second = Pattern(12, 200);
 
 	stream.OnPayload(first.data(), first.size());
-	ASSERT_TRUE(stream.ReadBufferAboveBound());
 	ASSERT_EQUALS(8u, (unsigned)stream.ReadBound());
+	// Past the bound, and reported as such: this count is what libutp
+	// subtracts from opt_rcvbuf to decide how much window to advertise.
+	ASSERT_EQUALS(20u, (unsigned)stream.ReadBufferSize());
 
 	// The delivery that matters: already past the bound, and it must still be
 	// kept in full. Refusing here is the byte-dropping this bound must not do.
@@ -146,7 +148,7 @@ TEST(UtpStream, ReadBoundIsReportedRatherThanEnforced)
 	for (size_t i = 0; i < second.size(); ++i) {
 		ASSERT_EQUALS((int)second[i], (int)out[first.size() + i]);
 	}
-	ASSERT_FALSE(stream.ReadBufferAboveBound());
+	ASSERT_EQUALS(0u, (unsigned)stream.ReadBufferSize());
 }
 
 TEST(UtpStream, ErrorValuesCannotBeMistakenForSocketErrors)

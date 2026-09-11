@@ -126,11 +126,17 @@ public:
 	//! What libutp's read-buffer-size callback should report.
 	size_t ReadBufferSize() const { return m_readBuffer.size(); }
 
-	//! The occupancy above which libutp should stop advertising window.
+	/**
+	 * The value the acceptor passes to utp_setsockopt(UTP_RCVBUF).
+	 *
+	 * libutp applies the bound itself: get_rcv_window() advertises
+	 * opt_rcvbuf minus what ReadBufferSize() reports, so a reader that falls
+	 * behind shrinks the window to zero and the peer stops. Nothing here
+	 * compares the two, because a predicate over them would only be useful
+	 * for refusing a payload, and refusing one drops bytes the peer already
+	 * paid to send.
+	 */
 	size_t ReadBound() const { return m_readBound; }
-
-	//! Whether the reader is behind far enough to want the peer to slow down.
-	bool ReadBufferAboveBound() const { return m_readBuffer.size() >= m_readBound; }
 
 	//! True once per drain, for the caller that owns the libutp notification.
 	bool ConsumeReadDrainedEdge()
