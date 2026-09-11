@@ -198,13 +198,11 @@ bool CamulewebApp::GetTemplateDir(const wxString &templateName, wxString &templa
 
 	dir = wxStandardPaths::Get().GetResourcesDir(); // Returns 'aMule' when we use 'amule' elsewhere
 #if defined(__WINDOWS__)
-	// Windows portable / installed layout puts amule.exe (and
-	// amuleweb.exe) in bin\ and installable data (webserver
-	// templates, skins, ...) in ..\share\amule\. wxStandardPaths
-	// returns the exe directory on Windows, so relocate up one
-	// level and into the FHS-style share/amule/ tree the installer
-	// actually populates. Mirrors the same adjustment Preferences.cpp
-	// applies for the skins lookup (#783). (#828)
+	// The Windows portable / installed layout puts amule.exe and amuleweb.exe in
+	// bin\ and installable data in ..\share\amule\. wxStandardPaths returns the exe
+	// directory there, so relocate up one level and into the FHS-style share/amule/
+	// tree the installer populates -- the same adjustment Preferences.cpp makes for
+	// the skins lookup (#783, #828).
 	dir = JoinPaths(JoinPaths(dir, ".."), "share");
 	dir = JoinPaths(dir, "amule");
 #elif !defined(__WXMAC__)
@@ -313,12 +311,10 @@ bool CamulewebApp::OnCmdLineParsed(wxCmdLineParser &parser)
 		m_KeepQuiet = true;
 		m_LoadSettingsFromAmule = true;
 
-		// m_configDir is normally set by CaMuleExternalConnector::
-		// OnCmdLineParsed, which this early-return branch skips. Leaving
-		// it empty made GetTemplateDir look for "webserver" relative to
-		// the CWD, so the per-user template dir (<config>/webserver/) was
-		// never found when amuleweb was spawned by the aMule GUI. Derive
-		// it from the config file we were handed instead.
+		// m_configDir is normally set by CaMuleExternalConnector::OnCmdLineParsed,
+		// which this early-return branch skips. Left empty, GetTemplateDir looked for
+		// "webserver" relative to the CWD, so the per-user template dir was never
+		// found when amuleweb was spawned by the aMule GUI.
 		m_configDir = wxFileName(aMuleConfigFile).GetPathWithSep();
 
 		if (!(m_TemplateOk = GetTemplateDir(m_TemplateName, m_TemplateDir))) {

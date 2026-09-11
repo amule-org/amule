@@ -169,7 +169,6 @@ PHP_EXP_NODE *make_func_param(PHP_EXP_NODE *list, PHP_EXP_NODE *var_exp_node, ch
 
 	param->si_var = var_exp_node->var_si_node;
 	param->si_var->type = PHP_SCOPE_PARAM;
-	// printf("mark %p->%p as param\n", param->si_var, param->si_var->var);
 
 	param->var = param->si_var->var;
 
@@ -423,8 +422,6 @@ void func_scope_init(PHP_FUNC_PARAM_DEF *params,
 	for (PHP_SCOPE_TABLE_TYPE::iterator i = curr_scope_map->begin(); i != curr_scope_map->end(); ++i) {
 		if ((i->second->type == PHP_SCOPE_VAR) || (i->second->type == PHP_SCOPE_PARAM)) {
 			if (!(i->second->var->flags & PHP_VARFLAG_STATIC)) {
-				// printf("Saving %s = %p->%p\n", i->first.c_str(), i->second,
-				// i->second->var);
 				saved_vars[i->first] = i->second->var;
 			}
 		}
@@ -445,7 +442,6 @@ void func_scope_init(PHP_FUNC_PARAM_DEF *params,
 			} else {
 				call_params[i] = make_var_node();
 				call_params[i]->ref_count = 1;
-				// printf("alloc var for callparam %d -> %p\n", i, call_params[i]);
 				php_expr_eval(
 					(PHP_EXP_NODE *)curr_arg_val->value.ptr_val, &call_params[i]->value);
 			}
@@ -459,8 +455,6 @@ void func_scope_init(PHP_FUNC_PARAM_DEF *params,
 	//
 	// Step 3: assign new values to call parameters
 	for (int i = 0; i < param_count; i++) {
-		// printf("assign new param si=%p var=%p -> %p\n", params[i].si_var, params[i].si_var->var,
-		// call_params[i]);
 		params[i].si_var->var = call_params[i];
 	}
 
@@ -470,11 +464,7 @@ void func_scope_init(PHP_FUNC_PARAM_DEF *params,
 		if (!((i->second->type == PHP_SCOPE_PARAM) || (i->second->type == PHP_SCOPE_VAR))) {
 			continue;
 		}
-		// printf("in scope: %p %s [ %s ] with flags %02x\n", i->second, i->second->type ==
-		// PHP_SCOPE_PARAM ? "param" : "var", 	i->first.c_str(), i->second->var->flags);
 		if (!(i->second->var->flags & PHP_VARFLAG_STATIC) && (i->second->type != PHP_SCOPE_PARAM)) {
-			// printf("alloc new for %s [ %p->%p ]\n", i->first.c_str(), i->second,
-			// i->second->var);
 			i->second->var = make_var_node();
 			i->second->var->ref_count = 1;
 		}
@@ -503,7 +493,6 @@ static void func_scope_copy_back(PHP_FUNC_PARAM_DEF *params,
 	for (int i = 0; i < param_count; i++) {
 		PHP_VAR_NODE *curr_arg_val = array_get_by_int_key(arg_array, i);
 		if (!((curr_arg_val->flags & PHP_VARFLAG_BYREF) || params[i].byref)) {
-			// printf("Delete param %d %p->%p\n", i, params[i].si_var, params[i].si_var->var);
 			call_params[call_param_2free_count++] = params[i].si_var->var;
 		}
 		params[i].si_var->var = params[i].var;
@@ -513,8 +502,6 @@ static void func_scope_copy_back(PHP_FUNC_PARAM_DEF *params,
 	for (PHP_SCOPE_TABLE_TYPE::iterator i = curr_scope_map->begin(); i != curr_scope_map->end(); ++i) {
 		if ((i->second->type == PHP_SCOPE_VAR) || (i->second->type == PHP_SCOPE_PARAM)) {
 			if (!(i->second->var->flags & PHP_VARFLAG_STATIC)) {
-				// printf("Restoring %s = %p->%p\n", i->first.c_str(), i->second,
-				// i->second->var); assert(saved_vars[i->first]);
 				if (i->second->type == PHP_SCOPE_VAR) {
 					value_value_free(&i->second->var->value);
 					delete i->second->var;
@@ -565,7 +552,6 @@ void delete_scope_table(PHP_SCOPE_TABLE scope)
 		case PHP_SCOPE_PARAM:
 			// break;
 		case PHP_SCOPE_VAR: {
-			// printf("removing %s\n", i->first.c_str());
 			PHP_VAR_NODE *var = i->second->var;
 			var_node_free(var);
 		} break;
