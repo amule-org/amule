@@ -45,11 +45,9 @@
 #include "wxcascte.h"
 #include "wxcaspix.h"
 
-// Constructor
 WxCasFrame::WxCasFrame(const wxString &title)
 : wxFrame((wxFrame *)NULL, -1, title, wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE)
 {
-	// Give it an icon
 #ifdef __WINDOWS__
 	wxIcon icon("wxcas");
 #else
@@ -58,7 +56,6 @@ WxCasFrame::WxCasFrame(const wxString &title)
 #endif
 	SetIcon(icon);
 
-	// Prefs
 	wxConfigBase *prefs = wxConfigBase::Get();
 
 	m_maxLineCount = 0;
@@ -69,7 +66,6 @@ WxCasFrame::WxCasFrame(const wxString &title)
 	wxDateTime absoluteMaxDlDate(
 		(time_t)(prefs->Read(WxCasCte::ABSOLUTE_MAX_DL_DATE_KEY, (long)(time(NULL)))));
 
-	// Add Online Sig file
 	m_aMuleSig = new OnLineSig(
 		wxFileName(prefs->Read(WxCasCte::AMULESIG_PATH_KEY, WxCasCte::DEFAULT_AMULESIG_PATH),
 			WxCasCte::AMULESIG_FILENAME),
@@ -86,20 +82,15 @@ WxCasFrame::WxCasFrame(const wxString &title)
 	m_sysMonitor = new LinuxMon();
 #endif
 
-	// Status Bar
 	CreateStatusBar();
 	SetStatusText(_("Welcome!"));
 
-	// Frame Vertical sizer
 	m_frameVBox = new wxBoxSizer(wxVERTICAL);
 
-	// Add Main panel to frame (needed by win32 for padding sub panels)
 	m_mainPanel = new wxPanel(this, -1);
 
-	// Main Panel Vertical Sizer
 	m_mainPanelVBox = new wxBoxSizer(wxVERTICAL);
 
-	// Main Panel static line
 	m_staticLine = new wxStaticLine(m_mainPanel, -1);
 
 #ifdef __WINDOWS__
@@ -107,20 +98,16 @@ WxCasFrame::WxCasFrame(const wxString &title)
 	m_BottomStaticLine = new wxStaticLine(m_mainPanel, -1);
 #endif
 
-	// Statistics Static Vertical Box Sizer
 	m_sigPanelSBox = new wxStaticBox(m_mainPanel, -1, _("aMule"));
 	m_sigPanelSBoxSizer = new wxStaticBoxSizer(m_sigPanelSBox, wxVERTICAL);
 
-	// Hit Static Horizontal Box Sizer
 	m_hitPanelSBox = new wxStaticBox(m_mainPanel, -1, _("Maximum DL rate since wxCas is running"));
 	m_hitPanelSBoxSizer = new wxStaticBoxSizer(m_hitPanelSBox, wxHORIZONTAL);
 
-	// Hit Static Horizontal Box Sizer
 	m_absHitPanelSBox =
 		new wxStaticBox(m_mainPanel, -1, _("Absolute Maximum DL rate during wxCas previous runs"));
 	m_absHitPanelSBoxSizer = new wxStaticBoxSizer(m_absHitPanelSBox, wxHORIZONTAL);
 
-	// Statistic labels
 	m_statLine_1 = new wxStaticText(m_mainPanel, -1, MakeStatLine_1());
 	m_statLine_2 = new wxStaticText(m_mainPanel, -1, MakeStatLine_2());
 	m_statLine_3 = new wxStaticText(m_mainPanel, -1, MakeStatLine_3());
@@ -137,7 +124,6 @@ WxCasFrame::WxCasFrame(const wxString &title)
 
 #ifdef __LINUX__ // System monitoring on Linux
 
-	// Monitoring Static Vertical Box Sizer
 	m_monPanelSBox = new wxStaticBox(m_mainPanel, -1, _("System"));
 	m_monPanelSBoxSizer = new wxStaticBoxSizer(m_monPanelSBox, wxVERTICAL);
 
@@ -145,7 +131,6 @@ WxCasFrame::WxCasFrame(const wxString &title)
 	m_sysLine_2 = new wxStaticText(m_mainPanel, -1, MakeSysLine_2());
 #endif
 
-	// Statistic Panel Layout
 	m_sigPanelSBoxSizer->Add(m_statLine_1, wxSizerFlags().Expand().Center().Border(wxALL, 5));
 	m_sigPanelSBoxSizer->Add(m_statLine_2, wxSizerFlags().Expand().Center().Border(wxALL, 5));
 	m_sigPanelSBoxSizer->Add(m_statLine_3, wxSizerFlags().Expand().Center().Border(wxALL, 5));
@@ -166,7 +151,6 @@ WxCasFrame::WxCasFrame(const wxString &title)
 	m_monPanelSBoxSizer->Add(m_sysLine_2, wxSizerFlags().Expand().Center().Border(wxALL, 5));
 #endif
 
-	// Main panel Layout
 	m_mainPanelVBox->Add(m_staticLine, wxSizerFlags().Expand().Center().Border(wxALL, 0));
 
 	m_mainPanelVBox->Add(m_sigPanelSBoxSizer, wxSizerFlags().Expand().Center().Border(wxALL, 10));
@@ -185,7 +169,6 @@ WxCasFrame::WxCasFrame(const wxString &title)
 	m_mainPanelVBox->Add(m_BottomStaticLine, wxSizerFlags().Expand().Center().Border(wxALL, 0));
 #endif
 
-	// Toolbar Pixmaps
 	m_toolBarBitmaps[0] = WxCasPix::getPixmap("refresh");
 	m_toolBarBitmaps[1] = WxCasPix::getPixmap("save");
 	m_toolBarBitmaps[2] = WxCasPix::getPixmap("print");
@@ -193,7 +176,6 @@ WxCasFrame::WxCasFrame(const wxString &title)
 	m_toolBarBitmaps[4] = WxCasPix::getPixmap("stop");
 	m_toolBarBitmaps[5] = WxCasPix::getPixmap("prefs");
 
-	// Constructing toolbar
 	m_toolbar = new wxToolBar(this, -1, wxDefaultPosition, wxDefaultSize, wxTB_HORIZONTAL | wxTB_FLAT);
 
 	m_toolbar->SetToolBitmapSize(wxSize(32, 32));
@@ -217,27 +199,22 @@ WxCasFrame::WxCasFrame(const wxString &title)
 
 	SetToolBar(m_toolbar);
 
-	// Panel Layout
 	m_mainPanel->SetAutoLayout(true);
 	m_mainPanel->SetSizer(m_mainPanelVBox);
 
-	// Frame Layout
 	m_frameVBox->Add(m_mainPanel, wxSizerFlags(1).Expand().Border(wxALL, 0));
 	SetAutoLayout(TRUE);
 	SetSizerAndFit(m_frameVBox);
 
-	// Add refresh timer
 	m_refresh_timer = new wxTimer(this, ID_REFRESH_TIMER);
 	m_refresh_timer->Start(
 		1000 * prefs->Read(WxCasCte::REFRESH_RATE_KEY, WxCasCte::DEFAULT_REFRESH_RATE)); // s to ms
 
-	// Add FTP update timer
 	m_ftp_update_timer = new wxTimer(this, ID_FTP_UPDATE_TIMER);
 	m_ftp_update_timer->Start(60000 * prefs->Read(WxCasCte::FTP_UPDATE_RATE_KEY,
 						  WxCasCte::DEFAULT_FTP_UPDATE_RATE)); // min to ms
 }
 
-// Destructor
 WxCasFrame::~WxCasFrame()
 {
 	delete m_aMuleSig;
@@ -248,7 +225,6 @@ WxCasFrame::~WxCasFrame()
 #endif
 }
 
-// Events table
 wxBEGIN_EVENT_TABLE(WxCasFrame, wxFrame)
 	EVT_TOOL(ID_BAR_REFRESH, WxCasFrame::OnBarRefresh)
 	EVT_TOOL(ID_BAR_SAVE, WxCasFrame::OnBarSave)
@@ -261,7 +237,6 @@ wxBEGIN_EVENT_TABLE(WxCasFrame, wxFrame)
 	EVT_BUTTON(ID_ABS_HIT_BUTTON, WxCasFrame::OnAbsHitButton)
 wxEND_EVENT_TABLE()
 
-// Get Stat Bitmap
 wxImage *WxCasFrame::GetStatImage() const
 {
 	wxBitmap statBitmap = WxCasPix::getPixmap("stat");
@@ -292,7 +267,6 @@ wxImage *WxCasFrame::GetStatImage() const
 	return (statImage);
 }
 
-// Refresh button
 void WxCasFrame::OnBarRefresh(wxCommandEvent &WXUNUSED(event))
 {
 	if (m_refresh_timer->IsRunning()) {
@@ -324,7 +298,6 @@ void WxCasFrame::OnBarRefresh(wxCommandEvent &WXUNUSED(event))
 	}
 }
 
-// Save button
 void WxCasFrame::OnBarSave(wxCommandEvent &WXUNUSED(event))
 {
 	wxImage *statImage = GetStatImage();
@@ -363,7 +336,6 @@ void WxCasFrame::OnBarSave(wxCommandEvent &WXUNUSED(event))
 	delete statImage;
 }
 
-// Print button
 void WxCasFrame::OnBarPrint(wxCommandEvent &WXUNUSED(event))
 {
 	wxPrinter printer;
@@ -378,14 +350,12 @@ void WxCasFrame::OnBarPrint(wxCommandEvent &WXUNUSED(event))
 	}
 }
 
-// Prefs button
 void WxCasFrame::OnBarPrefs(wxCommandEvent &WXUNUSED(event))
 {
 	WxCasPrefs dlg(this);
 	dlg.ShowModal();
 }
 
-// About button
 void WxCasFrame::OnBarAbout(wxCommandEvent &WXUNUSED(event))
 {
 	wxMessageBox(_("wxCas, aMule OnLine Signature Statistics\n\n(c) 2004 ThePolish "
@@ -395,15 +365,12 @@ void WxCasFrame::OnBarAbout(wxCommandEvent &WXUNUSED(event))
 		wxOK | wxCENTRE | wxICON_INFORMATION);
 }
 
-// Refresh timer
 void WxCasFrame::OnRefreshTimer(wxTimerEvent &WXUNUSED(event))
 {
-	// Prefs
 	wxConfigBase *prefs = wxConfigBase::Get();
 
 	UpdateAll();
 
-	// Generate stat image if asked in config
 	if (prefs->Read(WxCasCte::ENABLE_AUTOSTATIMG_KEY, WxCasCte::DEFAULT_AUTOSTATIMG_ISENABLED)) {
 		wxImage *statImage = GetStatImage();
 
@@ -420,29 +387,24 @@ void WxCasFrame::OnRefreshTimer(wxTimerEvent &WXUNUSED(event))
 	}
 }
 
-// Ftp update timer
 void WxCasFrame::OnFtpUpdateTimer(wxTimerEvent &WXUNUSED(event))
 {
-	// Prefs
 	wxConfigBase *prefs = wxConfigBase::Get();
 
 	// Image must be autogenerated to be uploaded
 	if (prefs->Read(WxCasCte::ENABLE_AUTOSTATIMG_KEY, WxCasCte::DEFAULT_AUTOSTATIMG_ISENABLED) &&
 		prefs->Read(WxCasCte::ENABLE_FTP_UPDATE_KEY, WxCasCte::DEFAULT_FTP_UPDATE_ISENABLED)) {
-		// Get image file
 		wxFileName fileName(
 			prefs->Read(WxCasCte::AUTOSTATIMG_DIR_KEY, WxCasCte::DEFAULT_AUTOSTATIMG_PATH),
 			WxCasCte::AMULESIG_IMG_NAME,
 			prefs->Read(WxCasCte::AUTOSTATIMG_TYPE_KEY, WxCasCte::DEFAULT_AUTOSTATIMG_TYPE)
 				.Lower());
 
-		// If img doenst exist, return
 		if (!fileName.FileExists(fileName.GetFullPath())) {
 			wxLogError("Image file " + fileName.GetFullPath() + " doesn't exist");
 			return;
 		}
 
-		// Connect to ftp
 		wxFTP ftp;
 
 		ftp.SetUser(prefs->Read(WxCasCte::FTP_USER_KEY, WxCasCte::DEFAULT_FTP_USER));
@@ -454,7 +416,6 @@ void WxCasFrame::OnFtpUpdateTimer(wxTimerEvent &WXUNUSED(event))
 			return;
 		}
 
-		// Chdir
 		if (!ftp.ChDir(prefs->Read(WxCasCte::FTP_PATH_KEY, WxCasCte::DEFAULT_FTP_PATH))) {
 			wxLogError("Cannot chdir to " +
 				   prefs->Read(WxCasCte::FTP_PATH_KEY, WxCasCte::DEFAULT_FTP_PATH));
@@ -462,7 +423,6 @@ void WxCasFrame::OnFtpUpdateTimer(wxTimerEvent &WXUNUSED(event))
 			return;
 		}
 
-		// Upload image
 		ftp.SetBinary();
 		wxFileInputStream in(fileName.GetFullPath());
 		if (in.Ok()) {
@@ -477,19 +437,16 @@ void WxCasFrame::OnFtpUpdateTimer(wxTimerEvent &WXUNUSED(event))
 			wxLogError("Cannot open file stream to read image file");
 		}
 
-		// Close connexion
 		ftp.Close();
 	}
 }
 
-// Reset wxcas session hit
 void WxCasFrame::OnHitButton(wxCommandEvent &WXUNUSED(event))
 {
 	m_aMuleSig->ResetSessionMaxDL();
 	UpdateStatsPanel();
 }
 
-// Reset wxcas absolute hit
 void WxCasFrame::OnAbsHitButton(wxCommandEvent &WXUNUSED(event))
 {
 	m_aMuleSig->ResetAbsoluteMaxDL();

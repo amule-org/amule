@@ -71,42 +71,31 @@ private:
 	unsigned int PullCount(unsigned int *runtime, const unsigned int count);
 
 public:
-	/// Constructor
 	OnLineSig(const wxFileName &file,
 		const double absoluteMaxDL = 0.0,
 		const wxDateTime absoluteMaxDlDate = wxDateTime::Now());
 
-	/// Destructor
 	~OnLineSig();
 
-	/// Set amulesig.dat file name and path
 	void SetAmuleSig(const wxFileName &file);
 
-	/// Refresh stored information
 	void Refresh();
 
-	/// Return TRUE if aMule is running
 	int GetAmuleState() const;
 
-	/// Return kad stat
 	int GetKadState() const;
 
-	/// Get server name
 	wxString GetServerName() const;
 
-	/// Get server IP
 	wxString GetServerIP() const;
 
-	/// Get server Port
 	wxString GetServerPort() const;
 
 	/// Get server connexion ID: H or L
 	wxString GetConnexionID() const;
 
-	/// Get Upload rate
 	wxString GetULRate() const;
 
-	/// Get Download rate
 	wxString GetDLRate() const;
 
 	/// Get number of clients in queue

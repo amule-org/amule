@@ -31,7 +31,6 @@
 
 #include "ed2khash.h"
 
-/// Constructor
 Ed2kHash::Ed2kHash()
 : MD4()
 {
@@ -40,7 +39,6 @@ Ed2kHash::Ed2kHash()
 	m_fileSize = 0;
 }
 
-/// Destructor
 Ed2kHash::~Ed2kHash() {}
 
 /// Set Ed2k hash from a file

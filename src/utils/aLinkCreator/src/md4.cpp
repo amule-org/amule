@@ -76,7 +76,6 @@ void MD4::MD4Update(struct MD4Context *ctx, unsigned char const *buf, size_t len
 {
 	uint32_t t;
 
-	// Update bitcount
 	t = ctx->bits[0];
 	if ((ctx->bits[0] = t + ((uint32_t)len << 3)) < t)
 		ctx->bits[1]++; // Carry from low to high
@@ -84,7 +83,6 @@ void MD4::MD4Update(struct MD4Context *ctx, unsigned char const *buf, size_t len
 
 	t = (t >> 3) & 0x3f; // Bytes already in shsInfo->data
 
-	// Handle any leading odd-sized chunks
 	if (t) {
 		unsigned char *p = (unsigned char *)ctx->in + t;
 
@@ -100,7 +98,6 @@ void MD4::MD4Update(struct MD4Context *ctx, unsigned char const *buf, size_t len
 		len -= t;
 	}
 
-	// Process data in 64-byte chunks
 	while (len >= 64) {
 		memcpy(ctx->in, buf, 64);
 		byteReverse(ctx->in, 16);
@@ -109,7 +106,6 @@ void MD4::MD4Update(struct MD4Context *ctx, unsigned char const *buf, size_t len
 		len -= 64;
 	}
 
-	// Handle any remaining bytes of data.
 	memcpy(ctx->in, buf, len);
 }
 
@@ -120,7 +116,6 @@ void MD4::MD4Final(struct MD4Context *ctx, unsigned char *digest)
 	unsigned int count;
 	unsigned char *p;
 
-	// Compute number of bytes mod 64
 	count = (ctx->bits[0] >> 3) & 0x3F;
 
 	// Set the first char of padding to 0x80.
@@ -128,7 +123,6 @@ void MD4::MD4Final(struct MD4Context *ctx, unsigned char *digest)
 	p = ctx->in + count;
 	*p++ = 0x80;
 
-	// Bytes of padding needed to make 64 bytes
 	count = 64 - 1 - count;
 
 	// Pad out to 56 mod 64
