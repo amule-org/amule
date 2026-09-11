@@ -95,12 +95,10 @@ CECLoginPacket::CECLoginPacket(const wxString &client,
 	// from CECTag::WriteChildren (#199). Always advertised by new
 	// clients; old servers ignore the unknown tag.
 	AddTag(CECEmptyTag(EC_TAG_CAN_LARGE_TAG_COUNT));
-	// Client implements the partial-update INC_UPDATE protocol — server
-	// may skip unchanged files and signal deletions explicitly via
-	// `EC_TAG_FILE_REMOVED` instead of relying on absence-implies-
-	// deletion. Always advertised by new clients; old servers ignore
-	// the unknown tag and the server falls back to emitting alive-
-	// marker tags for unchanged files (still backward-compatible).
+	// Client implements the partial-update INC_UPDATE protocol, so the server may
+	// skip unchanged files and signal deletions explicitly via EC_TAG_FILE_REMOVED
+	// rather than relying on absence-implies-deletion. Always advertised; old
+	// servers ignore the unknown tag and fall back to alive-marker tags.
 	AddTag(CECEmptyTag(EC_TAG_CAN_PARTIAL_UPDATE));
 	// Client applies the same skip-unchanged / explicit-removal rule to the
 	// multi-search results union. Advertised separately from
@@ -112,21 +110,16 @@ CECLoginPacket::CECLoginPacket(const wxString &client,
 	// over EC (EC_OP_GET/SET_SHARED_DIRS). Always advertised; old daemons
 	// ignore the unknown tag and simply never echo it back.
 	AddTag(CECEmptyTag(EC_TAG_CAN_SHAREDDIRS_CONFIG));
-	// Client can enumerate the daemon's searches with EC_OP_SEARCH_LIST, so it
-	// sees searches it did not start itself (restored from disk, or begun by
-	// another EC client). Always advertised; old daemons ignore the unknown tag
-	// and never echo it, which is what keeps the client from sending an opcode
-	// they would reject -- a pre-#680 daemon logs "invalid opcode received:
-	// 0x60" and trips an assert on it.
+	// Client can enumerate the daemon's searches with EC_OP_SEARCH_LIST, so it sees
+	// searches it did not start itself. Always advertised; old daemons ignore the
+	// unknown tag and never echo it, which is what keeps the client from sending an
+	// opcode they would reject -- a pre-#680 daemon asserts on it.
 	AddTag(CECEmptyTag(EC_TAG_CAN_SEARCH_LIST));
-	// Client tells the server "we believe transit between us is fast
-	// (loopback / LAN), so skip per-packet ZLIB up to the receiver
-	// gate". The server honours this hint at WritePacket time; see
-	// ECSocket.cpp `m_isLocalPeer`. The decision lives on the client
-	// because only the client knows the IP it dialed — server-side
-	// peer-IP inspection would misclassify e.g. WireGuard tunnel
-	// endpoints as "local" when the underlying transit is anything but.
-	// Old servers ignore the unknown tag and fall back to always-zlib.
+	// Client tells the server "we believe transit between us is fast (loopback /
+	// LAN), so skip per-packet ZLIB up to the receiver gate"; the server honours it
+	// at WritePacket time. The decision lives on the client because only the client
+	// knows the IP it dialed -- server-side peer-IP inspection would misclassify a
+	// WireGuard tunnel endpoint as local. Old servers ignore the tag.
 	if (preferNoZlib)
 		AddTag(CECEmptyTag(EC_TAG_PREFER_NO_ZLIB));
 	// Client implements the multi-search protocol — addresses EC searches
@@ -136,12 +129,10 @@ CECLoginPacket::CECLoginPacket(const wxString &client,
 	if (canMultiSearch)
 		AddTag(CECEmptyTag(EC_TAG_CAN_MULTI_SEARCH));
 	// Client polls every open search's progress with ONE id-less
-	// EC_OP_SEARCH_PROGRESS instead of one request per search. Strictly an
-	// extension of multi-search, so it is only advertised alongside it: an
-	// id-less progress request from a single-search client keeps its legacy
-	// "the current search" meaning, which is what amulecmd's `search progress`
-	// with no argument relies on. Old daemons ignore the unknown tag and never
-	// echo it, and the client then falls back to polling per id.
+	// EC_OP_SEARCH_PROGRESS instead of one request per search. An extension of
+	// multi-search, so only advertised alongside it: an id-less progress request
+	// from a single-search client keeps its legacy "the current search" meaning,
+	// which amulecmd's argument-less `search progress` relies on.
 	if (canMultiSearch)
 		AddTag(CECEmptyTag(EC_TAG_CAN_SEARCH_PROGRESS_UNION));
 	// Client wants incoming peer chat messages relayed over EC (amulegui
@@ -280,14 +271,12 @@ bool CRemoteConnect::ConnectToCore(
 	}
 	addr.Service(port);
 
-	// Compute the prefer-no-ZLIB hint after host resolution: if we
-	// dialed a loopback / RFC1918 LAN / RFC3927 link-local IP, the
-	// transit is fast and per-packet ZLIB is pure overhead. Skip the
-	// check entirely if the user opted out of ZLIB via /EC/ZLIB=0
-	// (capability isn't advertised so the hint is moot) or set
-	// `/EC/ForceZLIB=1` / `--force-zlib` to handle e.g. a WireGuard
-	// tunnel endpoint that resolves to an RFC1918 IP but whose
-	// underlying transit is slow Internet.
+	// Compute the prefer-no-ZLIB hint after host resolution: a loopback, RFC1918
+	// LAN or RFC3927 link-local IP means fast transit, where per-packet ZLIB is
+	// pure overhead. Skipped entirely if the user opted out of ZLIB (the capability
+	// is not advertised, so the hint is moot) or set ForceZLIB, for a WireGuard
+	// endpoint that resolves to an RFC1918 IP over slow transit.
+	//
 	// One fresh nonce per connection attempt: reusing it across attempts would
 	// reuse a key, and a retry after a dropped socket is a new session.
 	m_aeadClientNonce.clear();
@@ -422,15 +411,13 @@ uint64 CRemoteConnect::MillisecondsSinceLastReply() const
 void CRemoteConnect::OnLost()
 {
 	if (m_notifier) {
-		// A dial is still pending: the async connect hasn't completed, so
-		// EC_CONNECT_SENT hasn't advanced to EC_REQ_SENT yet. A LibSocketLost
-		// arriving now is not the death of this dial — it's a stale event that
-		// was already queued for the *previous* connection before the socket
-		// impl was swapped (CLibSocket::ResetForReconnect). It still targets
-		// this reused wrapper, but IsDestroying() now sees the fresh impl, so
-		// it slips through. Swallowing it stops that stale lost from aborting
-		// an in-flight reconnect; a genuinely failed dial is caught instead by
-		// amulegui's connect-timeout watchdog (CamuleRemoteGuiApp::OnConnectTimeout).
+		// A dial is still pending: the async connect has not completed, so
+		// EC_CONNECT_SENT has not advanced to EC_REQ_SENT. A LibSocketLost arriving
+		// now is not the death of this dial but a stale event queued for the PREVIOUS
+		// connection before the socket impl was swapped. It still targets this reused
+		// wrapper, and IsDestroying() now sees the fresh impl, so it slips through.
+		// Swallowing it stops a stale lost aborting an in-flight reconnect; a genuinely
+		// failed dial is caught by amulegui's connect-timeout watchdog.
 		if (m_ec_state == EC_CONNECT_SENT) {
 			return;
 		}
@@ -440,21 +427,16 @@ void CRemoteConnect::OnLost()
 		m_notifier->AddPendingEvent(event);
 		return;
 	}
-	// Headless EC clients (amulecmd, amuleweb) construct CRemoteConnect
-	// with NULL m_notifier. Continuing to run would mean serving stale
-	// data in amuleweb (HTTP requests still return the template shell
-	// without live amuled data, no error visible to the user) or
-	// sitting at the amulecmd prompt with a dead socket. Failing fast
-	// is the right semantic — supervisor (systemd unit / docker /
-	// shell loop) is the recovery layer and decides whether to restart.
+	// Headless EC clients (amulecmd, amuleweb) construct CRemoteConnect with NULL
+	// m_notifier. Continuing would mean amuleweb serving the template shell with no
+	// live data and no visible error, or amulecmd sitting at a prompt with a dead
+	// socket. Failing fast is right: the supervisor is the recovery layer.
 	fprintf(stderr, "%s\n", (const char *)unicode2char(_("External Connection lost - exiting.")));
 	fflush(stderr);
 	if (s_connectionLostHandler) {
-		// A client (amuleapi) opted into a graceful shutdown: hand off to it
-		// and return, so the orderly teardown runs on the client's own thread
-		// instead of racing static destructors from this asio callback. The
-		// client is responsible for actually stopping (it requests its normal
-		// shutdown path, e.g. flipping the main-loop's shutdown flag).
+		// A client (amuleapi) opted into a graceful shutdown: hand off to it and
+		// return, so the orderly teardown runs on the client's own thread instead of
+		// racing static destructors from this asio callback.
 		s_connectionLostHandler();
 		return;
 	}
@@ -496,11 +478,10 @@ void CRemoteConnect::SetupAEADFromSalt(const CECPacket *reply)
 		return;
 	}
 
-	// Validate the received lengths here, at the point of receipt, the way the
-	// daemon validates the client's. X25519Agree and Session::Init would reject
-	// a wrong length downstream too, but checking locally keeps the "every field
-	// the transcript concatenates is fixed-length" invariant obvious rather than
-	// resting on a distant guard.
+	// Validate the received lengths at the point of receipt, as the daemon does for
+	// the client's. X25519Agree and Session::Init would reject a wrong length
+	// downstream too, but checking locally keeps the "every field the transcript
+	// concatenates is fixed-length" invariant obvious.
 	if (serverNonceTag->GetTagDataLen() != ECCrypt::NONCE_TAG_LEN ||
 		serverPubTag->GetTagDataLen() != ECCrypt::X25519_KEY_LEN) {
 		AddDebugLogLineN(logEC, "AEAD: daemon nonce or public key has a bad length");
@@ -644,12 +625,10 @@ void CRemoteConnect::SendPacket(const CECPacket *request)
 
 void CRemoteConnect::DiscardRequestQueue()
 {
-	// The core never replies to requests that were on the air when the
-	// socket died, so their handlers would linger and every reply on the
-	// reconnected session would pop the wrong (stale) handler off the FIFO.
-	// Rewind each orphaned handler's request state so it re-requests, then
-	// clear the queue and the in-flight counter (see header for the #444
-	// wiped-list symptom this prevents).
+	// The core never replies to requests that were on the air when the socket died,
+	// so their handlers would linger and every reply on the reconnected session
+	// would pop the wrong one off the FIFO. Rewind each orphaned handler's request
+	// state so it re-requests, then clear the queue and the in-flight counter.
 	for (CECPacketHandlerBase *handler : m_req_fifo) {
 		if (handler) {
 			handler->AbortPendingRequest();
@@ -682,14 +661,12 @@ bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply)
 				// overwrites m_connectionPassword.
 				SetupAEADFromSalt(reply);
 				if (m_canAEAD && !m_aeadNegotiated) {
-					// Encryption is required unless the user opted out.
-					// m_canAEAD is that opt-out: with it off we never offer,
-					// so this branch cannot be reached and a clear session is
-					// only ever the user's explicit choice. The core did not
-					// negotiate encryption, and we cannot tell an older aMule
-					// without encryption support from an on-path attacker who
-					// stripped the offer, so we refuse rather than send the
-					// credential and every later command in clear.
+					// Encryption is required unless the user opted out, and m_canAEAD is
+					// that opt-out -- with it off we never offer, so this branch cannot
+					// be reached and a clear session is only ever an explicit choice. The
+					// core did not negotiate encryption, and an older aMule without
+					// support cannot be told from an on-path attacker who stripped the
+					// offer, so refuse rather than send the credential in clear.
 					m_server_reply =
 						m_aeadOffered.empty()
 							? _("Could not set up connection encryption. "
@@ -717,12 +694,11 @@ bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply)
 				CloseSocket();
 			}
 		} else if ((m_ec_state == EC_PASSWD_SENT) && (reply->GetOpCode() == EC_OP_AUTH_OK)) {
-			// The daemon must prove it holds the credential too, over this
-			// exact handshake. Until this passes we know only that we are
-			// talking to something that completed a key exchange -- which a
-			// relay can also do, twice. Checked before anything in the reply is
-			// believed, and fatal rather than a downgrade: a session that
-			// reaches here without a valid tag is one being relayed.
+			// The daemon must prove it holds the credential too, over this exact
+			// handshake: until this passes we know only that we are talking to
+			// something that completed a key exchange, which a relay can also do,
+			// twice. Checked before anything in the reply is believed, and fatal
+			// rather than a downgrade.
 			if (m_aeadNegotiated && !VerifyServerConfirm(reply)) {
 				m_server_reply = _("External Connection: the daemon failed to prove it "
 						   "knows the password. Connection closed.");
@@ -740,25 +716,20 @@ bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply)
 			} else {
 				m_server_reply = _("Succeeded! Connection established.");
 			}
-			// Mirror server's negotiated capabilities into m_my_flags so
-			// outgoing per-packet flags include them (auto-stripped by
-			// `flags &= m_my_flags` in CECSocket::WritePacket otherwise).
-			// EC_TAG_CAN_LARGE_TAG_COUNT only appears in AUTH_OK from
-			// new daemons (#199); old daemons just don't echo the tag,
-			// and the sentinel wire format stays disabled in both
-			// directions for the duration of this connection.
+			// Mirror the server's negotiated capabilities into m_my_flags, or outgoing
+			// per-packet flags lose them to `flags &= m_my_flags` in
+			// CECSocket::WritePacket. EC_TAG_CAN_LARGE_TAG_COUNT only appears in
+			// AUTH_OK from new daemons (#199); old ones do not echo it and the
+			// sentinel wire format stays disabled in both directions.
 			if (reply->GetTagByName(EC_TAG_CAN_LARGE_TAG_COUNT)) {
 				m_my_flags |= EC_FLAG_LARGE_TAG_COUNT;
 			}
 			// Server confirms it speaks the partial-update protocol:
-			// `Get_EC_Response_GetUpdate` may now omit unchanged files
-			// and emit explicit `EC_TAG_FILE_REMOVED` markers, and our
-			// INC_UPDATE handler must skip the bulk
-			// "missing-from-response == deleted" loop. Old daemons
-			// (#727 pre-fix or earlier) don't echo this tag and the
-			// client stays on the legacy bulk-deletion path, which
-			// the new server keeps compatible by emitting alive-marker
-			// tags for unchanged files (#713).
+			// Get_EC_Response_GetUpdate may now omit unchanged files and emit explicit
+			// EC_TAG_FILE_REMOVED markers, and our INC_UPDATE handler must skip the
+			// bulk "missing-from-response == deleted" loop. Old daemons do not echo
+			// this tag and the client stays on the legacy path, which the new server
+			// keeps compatible with alive-marker tags for unchanged files (#713).
 			if (reply->GetTagByName(EC_TAG_CAN_PARTIAL_UPDATE)) {
 				m_serverPartialUpdate = true;
 			}
@@ -768,10 +739,9 @@ bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply)
 			if (const CECTag *sessionTag = reply->GetTagByName(EC_TAG_SESSION_ID)) {
 				m_serverSessionId = sessionTag->GetInt();
 			}
-			// Server confirms it knows EC_OP_GET_CLIENT_HISTORY. No echo
-			// means the Known-clients tab stays empty rather than the
-			// request being tried and failing: on a debug daemon the
-			// unknown opcode asserts rather than answering EC_OP_FAILED.
+			// Server confirms it knows EC_OP_GET_CLIENT_HISTORY. No echo means the
+			// Known-clients tab stays empty rather than the request being tried and
+			// failing: on a debug daemon the unknown opcode asserts.
 			if (reply->GetTagByName(EC_TAG_CAN_CLIENT_HISTORY)) {
 				m_serverClientHistory = true;
 			}

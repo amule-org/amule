@@ -261,17 +261,14 @@ public:
 
 	// --- streaming, in place -------------------------------------------
 	//
-	// The EC write path builds a packet as a list of CQueuedData chunks and
-	// only then back-patches the length, so the whole packet is already in
-	// memory before anything reaches the socket. These let the chunks be
-	// sealed where they lie and the tag appended, instead of flattening the
-	// body into a second buffer -- which would double peak memory on exactly
-	// the huge responses the 256 MB receive gate exists for.
-	//
-	// Total length need not be known in advance, which matters because with
-	// ZLIB the compressed size is only known once deflate has finished.
-	//
-	// Begin/Final bracket one packet and advance that direction's counter.
+	// The EC write path builds a packet as a list of CQueuedData chunks and only
+	// then back-patches the length, so the whole packet is already in memory before
+	// anything reaches the socket. These let the chunks be sealed where they lie
+	// and the tag appended, instead of flattening the body into a second buffer,
+	// which would double peak memory on exactly the huge responses the 256 MB
+	// receive gate exists for. The total length need not be known in advance, which
+	// matters because with ZLIB the compressed size is only known once deflate has
+	// finished. Begin/Final bracket one packet and advance that direction's counter.
 
 	bool SealBegin();
 	bool SealUpdate(uint8_t *data, size_t len);

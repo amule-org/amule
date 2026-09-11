@@ -294,25 +294,21 @@ CECSocket::~CECSocket()
 }
 
 // Deliberately not part of ResetProtocolState. m_my_flags mixes two kinds of
-// state: capabilities this end simply has, and capabilities agreed with the
-// peer. Only a caller that knows it is facing a *different* peer may drop the
-// second kind, and only that caller knows it -- CECMemSocket, for one, sets
-// EC_FLAG_LARGE_TAG_COUNT in its constructor as a local property of the wire
-// format it caches, and clearing it there would corrupt the cache.
-//
-// Today the sole caller is amulegui's reconnect path, which reuses one
-// CRemoteConnect across sessions.
+// state: capabilities this end simply has, and capabilities agreed with the peer.
+// Only a caller that knows it is facing a DIFFERENT peer may drop the second
+// kind -- CECMemSocket, for one, sets EC_FLAG_LARGE_TAG_COUNT in its constructor
+// as a local property of the wire format it caches, and clearing it there would
+// corrupt the cache. Today the sole caller is amulegui's reconnect path.
 void CECSocket::ClearPeerNegotiatedFlags()
 {
-	// EC_FLAG_LARGE_TAG_COUNT is the only bit here whose value comes from the
-	// peer: it is set when the daemon echoes EC_TAG_CAN_LARGE_TAG_COUNT in
-	// AUTH_OK. Left set across a reconnect, a client that negotiated it with
-	// one daemon keeps sending the extended tag-count format to one that never
-	// advertised it, and that does not fail cleanly -- the receiver reads a
-	// differently-sized count field and misparses everything after it.
+	// EC_FLAG_LARGE_TAG_COUNT is the only bit here whose value comes from the peer:
+	// it is set when the daemon echoes EC_TAG_CAN_LARGE_TAG_COUNT in AUTH_OK. Left
+	// set across a reconnect, a client that negotiated it with one daemon keeps
+	// sending the extended tag-count format to one that never advertised it, and
+	// the receiver then misparses everything after the count field.
 	//
 	// EC_FLAG_ZLIB and EC_FLAG_UTF8_NUMBERS are chosen locally, through
-	// SetCapabilities, which the reconnect path does not call again. They stay.
+	// SetCapabilities, which the reconnect path does not call again.
 	m_my_flags &= ~(uint32_t)EC_FLAG_LARGE_TAG_COUNT;
 }
 
@@ -547,14 +543,10 @@ void CECSocket::OnOutput()
 				OnError();
 				return;
 			}
-			// Now it's just a blocked socket.
 			if (m_use_events) {
-				// Event driven logic: return, OnOutput() will be called again later
 				return;
 			}
-			// Synchronous call: wait (for max 10 secs)
 			if (!WaitSocketWrite(10, 0)) {
-				// Still not through ?
 				if (WouldBlock()) {
 					// WouldBlock() is only EAGAIN or EWOULD_BLOCK,
 					// and those shouldn't create an infinite wait.
@@ -567,20 +559,14 @@ void CECSocket::OnOutput()
 				}
 			}
 		} else if (written == 0) {
-			// CAsioSocketImpl::Write returns 0 with no SocketError
-			// set when a previous async send is still in flight
-			// (m_sendBuffer != null) -- pure backpressure, not a
-			// real error.  Treat as "would block": yield to the
-			// event loop so the asio HandleSend callback can clear
-			// m_sendBuffer and re-fire OnOutput via
-			// CoreNotify_LibSocketSend.  Without this, the loop
-			// re-reads the same queue head and re-calls Write(),
-			// pegging the main thread at 100% CPU until asio
-			// catches up.  Large EC replies (e.g. status response
-			// after a batch ed2k-link add) hit this hard because
-			// they're chopped into many asio-sized chunks and the
-			// main thread can't service other wx events during
-			// the spin.
+			// CAsioSocketImpl::Write returns 0 with no SocketError set when a
+			// previous async send is still in flight -- pure backpressure, not an
+			// error. Treat it as "would block": yield to the event loop so the asio
+			// HandleSend callback can clear m_sendBuffer and re-fire OnOutput.
+			// Without this the loop re-reads the same queue head and re-calls
+			// Write(), pegging the main thread at 100% CPU until asio catches up.
+			// Large EC replies hit this hard, being chopped into many asio-sized
+			// chunks while the main thread cannot service other wx events.
 			if (m_use_events) {
 				return;
 			}
@@ -703,12 +689,10 @@ bool CECSocket::ReadHeader()
 	m_curr_rx_data->Read(&m_curr_packet_len, 4);
 	m_curr_packet_len = ENDIAN_NTOHL(m_curr_packet_len);
 	m_bytes_needed = m_curr_packet_len;
-	// Sanity bound on the announced packet size. Pre-auth stays at the
-	// historical 16 MB cap — limits the damage a malicious peer can do
-	// with a single bogus header before we know who they are. Post-auth
-	// raises to 256 MB so big uncompressed responses (e.g. show shared
-	// on a 90 k-file library against a local-peer client that skipped
-	// ZLIB negotiation, see #713 / #728) don't trip the gate.
+	// Sanity bound on the announced packet size. Pre-auth stays at the historical
+	// 16 MB cap, limiting the damage a malicious peer can do with one bogus header
+	// before we know who they are. Post-auth raises to 256 MB so big uncompressed
+	// responses do not trip the gate (#713 / #728).
 	const size_t max_packet_bytes = IsAuthorized() ? (size_t)256 * 1024 * 1024 : (size_t)16 * 1024 * 1024;
 	if (m_bytes_needed > max_packet_bytes) {
 		AddDebugLogLineN(logEC, CFormat("ReadHeader: packet too big: %d") % m_bytes_needed);
@@ -845,7 +829,6 @@ bool CECSocket::ReadBuffer(void *buffer, size_t len)
 		}
 		return true;
 	} else {
-		// using uncompressed buffered i/o
 		size_t read = ReadBufferFromSocket(buffer, len);
 		if (read == len) {
 			return true;
@@ -872,7 +855,6 @@ bool CECSocket::WriteBuffer(const void *buffer, size_t len)
 				m_z.avail_in += remain_in;
 				len -= remain_in;
 				rd_ptr += remain_in;
-				// buffer is full, calling zlib
 				do {
 					m_z.next_out = &m_out_ptr[0];
 					m_z.avail_out = EC_SOCKET_BUFFER_SIZE;
@@ -885,14 +867,12 @@ bool CECSocket::WriteBuffer(const void *buffer, size_t len)
 					WriteBufferToSocket(
 						&m_out_ptr[0], EC_SOCKET_BUFFER_SIZE - m_z.avail_out);
 				} while (m_z.avail_out == 0);
-				// all input should be used by now
 				wxASSERT(m_z.avail_in == 0);
 				m_z.next_in = &m_in_ptr[0];
 			}
 		} while (len);
 		return true;
 	} else {
-		// using uncompressed buffered i/o
 		WriteBufferToSocket(buffer, len);
 		return true;
 	}
@@ -900,14 +880,11 @@ bool CECSocket::WriteBuffer(const void *buffer, size_t len)
 
 // Block size for a packet whose serialised body is this long: the whole thing
 // when it fits, EC_SOCKET_TX_CHUNK_MAX when it does not. Capped on purpose -- a
-// packet may legitimately be hundreds of MB (an uncompressed `show shared` on a
-// large library, see ReadHeader's post-auth gate) and one contiguous block that
-// big would be copied again by the send path. Floored at EC_SOCKET_BUFFER_SIZE
-// so no packet gets smaller blocks than it used to, which also keeps room in
-// the first block for the 8-byte header SealOutputQueue leaves in clear.
-// Guessing low is harmless: WriteBufferToSocket spills into a fresh block of
-// the same size, the pre-existing path -- so ZLIB shrinking the body below
-// bodyLen just leaves the last block short.
+// packet may legitimately be hundreds of MB, and one contiguous block that big
+// would be copied again by the send path. Floored at EC_SOCKET_BUFFER_SIZE so no
+// packet gets smaller blocks than it used to, which also keeps room in the first
+// block for the 8-byte header SealOutputQueue leaves in clear. Guessing low is
+// harmless: WriteBufferToSocket spills into a fresh block of the same size.
 size_t CECSocket::TxChunkSize(uint32 bodyLen)
 {
 	const size_t want = (size_t)bodyLen + EC_HEADER_SIZE;
@@ -917,11 +894,10 @@ size_t CECSocket::TxChunkSize(uint32 bodyLen)
 }
 
 // Adopt that size for the packet about to be written. Both call sites are
-// reached with an empty block -- the previous packet ended in FlushBuffers,
-// which pushed its remainder, and every early return is ahead of the first
-// write -- so swapping it drops nothing. Asserted rather than left implicit
-// because a future `return` slipped between the writes and FlushBuffers would
-// silently discard a partial packet here.
+// reached with an empty block -- the previous packet ended in FlushBuffers, and
+// every early return is ahead of the first write -- so swapping drops nothing.
+// Asserted rather than left implicit, because a future `return` slipped between
+// the writes and FlushBuffers would silently discard a partial packet.
 void CECSocket::SizeTxChunks(uint32 bodyLen)
 {
 	wxASSERT(m_curr_tx_data->GetDataLength() == 0);
