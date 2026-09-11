@@ -116,31 +116,26 @@ public:
 		m_nodeSpecialSearchRequester = requester;
 	}
 
-	// User-triggered widening of the Kad result set.  Walks m_responded for
-	// the closest contact we have not already reasked, and sends it
-	// SendFindValue with reaskMore=true (i.e. KADEMLIA_FIND_VALUE_MORE on
-	// the wire instead of KADEMLIA_FIND_VALUE — peers return up to 11
-	// closer contacts instead of 2).  Subsequent FIND_VALUE queries against
-	// those contacts surface additional file matches that the search's
-	// initial alpha=ALPHA_QUERY frontier missed.  Bounded internally by
-	// m_requestedMoreNodes.size() < KADEMLIA_FIND_VALUE_MORE_REASKS to
-	// limit per-search network impact.  Returns true if a reask was
-	// dispatched, false if no eligible candidate remains.
+	// User-triggered widening of the Kad result set. Walks m_responded for the
+	// closest contact not already reasked and sends it SendFindValue with
+	// reaskMore=true, so peers return up to 11 closer contacts instead of 2.
+	// Subsequent FIND_VALUE queries against those contacts surface matches the
+	// search's initial alpha=ALPHA_QUERY frontier missed. Bounded internally by
+	// KADEMLIA_FIND_VALUE_MORE_REASKS.
 	bool RequestMoreResults();
 
 	// Whether this search could still be widened by a future reask, ignoring
 	// whether one is dispatchable right now.
 	//
-	// The distinction is the point. RequestMoreResults() returns false both
-	// when the search is finished with reasking for good (it is stopping, or
-	// the reask budget is spent) and when it simply has no un-reasked peer to
-	// send to *yet* -- and those want opposite answers from a UI. The first
-	// is terminal, so the "More" control should go away; the second clears as
-	// soon as another peer responds, so the control must stay.
+	// The distinction is the point: RequestMoreResults() returns false both when
+	// the search is finished with reasking for good and when it simply has no
+	// un-reasked peer to send to YET, and those want opposite answers from a UI.
+	// The first is terminal, so the "More" control should go away; the second
+	// clears as soon as another peer responds.
 	//
-	// Callers pair the two as `fired || CanReaskMore()`. The `fired ||` is
-	// not optional: the reask that consumes the last of the budget really
-	// happens, and this predicate is already false by the time it returns.
+	// Callers pair the two as `fired || CanReaskMore()`, and the `fired ||` is not
+	// optional: the reask that consumes the last of the budget really happens, and
+	// this predicate is already false by the time it returns.
 	bool CanReaskMore() const;
 
 	enum

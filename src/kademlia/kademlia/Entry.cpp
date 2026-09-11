@@ -79,27 +79,22 @@ CEntry *CEntry::Copy() const
 
 void CEntry::AddTag(CTag *tag, uint32_t dbgSourceIP)
 {
-	// Filter tags which are for sending query results only and should never be stored (or even
-	// worse sent within the taglist). TAG_PUBLISHINFO is one we build when answering a keyword
-	// search, out of our own count of distinct publishers and how much we trust them; stored, a
-	// peer-supplied one travels back out of CKeyEntry::WriteTagListWithPublishInfo() alongside
-	// our genuine value.
+	// Filter tags that exist for sending query results only and should never be
+	// stored, let alone sent within the taglist. TAG_PUBLISHINFO is one we build
+	// when answering a keyword search, out of our own count of distinct publishers
+	// and how much we trust them; stored, a peer-supplied one travels back out of
+	// CKeyEntry::WriteTagListWithPublishInfo() alongside our genuine value.
 	//
-	// TAG_KADAICHHASHRESULT is the same shape of tag and belongs in the same
-	// branch: we build it when answering a keyword search, out of the AICH
-	// hashes publishers gave us and how many gave each one. A stored
-	// peer-supplied one leaves by the same route and reads as our own
-	// assessment. Deliberately ungated: the guard's value is that it is one
-	// unconditional branch covering every caller, and filtering a tag this
-	// build never emits costs nothing. It also covers the three storing paths
-	// a handler-side filter does not -- source and notes publishing, and
-	// CIndexed::ReadFile(), which rebuilds every entry from key_index.dat
-	// with its raw taglist, so a node poisoned before this fix would reload
-	// the tag on restart and keep serving it.
+	// TAG_KADAICHHASHRESULT is the same shape of tag and belongs in the same branch.
+	// Deliberately ungated: the guard's value is that it is one unconditional
+	// branch covering every caller, and filtering a tag this build never emits costs
+	// nothing. It also covers the three storing paths a handler-side filter does not
+	// -- source and notes publishing, and CIndexed::ReadFile(), which rebuilds every
+	// entry from key_index.dat with its raw taglist, so a node poisoned before this
+	// fix would reload the tag on restart and keep serving it.
 	//
-	// TAG_KADAICHHASHPUB is not here: that one is consumed into a member
-	// rather than filtered, which is the split 0.70b, 0.72a, eMuleAI and
-	// emule-qt all use.
+	// TAG_KADAICHHASHPUB is not here: that one is consumed into a member rather than
+	// filtered, which is the split 0.70b, 0.72a, eMuleAI and emule-qt all use.
 	if (!tag->GetName().Cmp(TAG_PUBLISHINFO) || !tag->GetName().Cmp(TAG_KADAICHHASHRESULT)) {
 		AddDebugLogLineN(logKadEntryTracking,
 			CFormat("Filtered result-only tag on storing, source %s") %
@@ -142,11 +137,10 @@ wxString CEntry::GetStrTagValue(const wxString &tagname) const
 
 void CEntry::SetFileName(const wxString &name)
 {
-	// Empty filenames are protocol garbage -- a peer publishing a Kad note
-	// or keyword with an empty FT_FILENAME tag should never end up in
-	// m_filenames at all.  Without this guard the empty entry takes the
-	// popularity slot, GetCommonFileName returns "" and trips its own
-	// !empty-or-list-empty invariant on the next call (issue #674).
+	// Empty filenames are protocol garbage: a peer publishing a Kad note or keyword
+	// with an empty FT_FILENAME tag should never reach m_filenames. Without this
+	// guard the empty entry takes the popularity slot, GetCommonFileName returns ""
+	// and trips its own invariant on the next call (issue #674).
 	if (name.IsEmpty()) {
 		return;
 	}
@@ -160,29 +154,18 @@ void CEntry::SetFileName(const wxString &name)
 
 wxString CEntry::GetCommonFileName() const
 {
-	// Return the filename most publishers agreed on (by popularity
-	// index).  The index isn't the actual count of publishers — just
-	// a relative number for comparing entries — so the choice is
-	// approximate.
+	// Return the filename most publishers agreed on, by popularity index. The index
+	// is not the actual count of publishers, just a relative number for comparing
+	// entries, so the choice is approximate.
 	//
-	// Seed the running max from the first entry (rather than 0) so
-	// that an all-zero m_filenames still yields a non-empty result.
-	// Our own code never produces a popularity-0 entry -- SetFileName
-	// creates at 1 and the merge path only ever increments -- but two
-	// paths we don't control can land one in m_filenames anyway:
-	// (a) a remote publisher could send a popularity-0 entry over the
-	// wire (no validation on ReadUInt32), and (b) on-disk data from
-	// any node that ran an older build doing popularity decay can
-	// load back at 0 here.  The previous "highest > 0"-style loop
-	// would then leave the result iterator at end() and return an
-	// empty string -- silently dropping TAG_FILENAME from search
-	// responses (Entry.h GetTagCount), making SearchTermsMatch
-	// return false for every term, and tripping the
-	// GetCommonFileName().IsEmpty() reject path in
-	// CIndexed::AddKeyword.  Picking the first entry as a
-	// deterministic fallback preserves the protocol invariant
-	// "non-empty m_filenames yields a non-empty common name" without
-	// changing behaviour for any case where a real winner exists.
+	// The running max is seeded from the first entry rather than 0, so an all-zero
+	// m_filenames still yields a non-empty result. Our own code never produces a
+	// popularity-0 entry, but two paths we do not control can: a remote publisher
+	// sending one over the wire (ReadUInt32 does not validate), and on-disk data
+	// from a node that ran an older build doing popularity decay. A "highest > 0"
+	// loop would then leave the result iterator at end() and return an empty string,
+	// silently dropping TAG_FILENAME from search responses, making SearchTermsMatch
+	// false for every term and tripping the reject path in CIndexed::AddKeyword.
 	if (m_filenames.empty()) {
 		return wxString("");
 	}
@@ -200,7 +183,6 @@ wxString CEntry::GetCommonFileName() const
 
 void CEntry::WriteTagListInc(CFileDataIO *data, uint32_t increaseTagNumber)
 {
-	// write taglist and add name + size tag
 	wxCHECK_RET(data != NULL, "data must not be NULL");
 
 	uint32_t count =
@@ -246,7 +228,6 @@ CKeyEntry::~CKeyEntry()
 
 bool CKeyEntry::SearchTermsMatch(const SSearchTerm *searchTerm) const
 {
-	// boolean operators
 	if (searchTerm->type == SSearchTerm::AND) {
 		return SearchTermsMatch(searchTerm->left) && SearchTermsMatch(searchTerm->right);
 	}
@@ -422,11 +403,11 @@ void CKeyEntry::AdjustGlobalPublishTracking(uint32_t ip, bool increase, const wx
 
 void CKeyEntry::MergeIPsAndFilenames(CKeyEntry *fromEntry)
 {
-	// this is called when replacing a stored entry with a refreshed one.
-	// we want to take over the tracked IPs and the different filenames from the old entry, the rest is
-	// still "overwritten" with the refreshed values. This might be not perfect for the taglist in some
-	// cases, but we can't afford to store hundreds of taglists to figure out the best one like we do for
-	// the filenames now
+	// Called when replacing a stored entry with a refreshed one: the tracked IPs and
+	// the different filenames are taken over from the old entry, and the rest is
+	// overwritten with the refreshed values. Not perfect for the taglist in some
+	// cases, but storing hundreds of taglists to pick the best one -- as is done for
+	// the filenames -- is not affordable.
 	if (m_publishingIPs !=
 		NULL) { // This instance needs to be a new entry, otherwise we don't want/need to merge
 		wxASSERT(fromEntry == NULL);
@@ -447,16 +428,12 @@ void CKeyEntry::MergeIPsAndFilenames(CKeyEntry *fromEntry)
 	bool refresh = false;
 	if (fromEntry == NULL || fromEntry->m_publishingIPs == NULL) {
 		wxASSERT(fromEntry == NULL);
-		// if called with NULL, this is a complete new entry and we need to initialize our lists
 		if (m_publishingIPs == NULL) {
 			m_publishingIPs = new PublishingIPList();
 		}
-		// update the global track map below
 	} else {
-		// take over the AICH hashes the stored entry accumulated
 		m_aichHashes = fromEntry->m_aichHashes;
 
-		// merge the tracked IPs, add this one if not already on the list
 		m_publishingIPs = fromEntry->m_publishingIPs;
 		fromEntry->m_publishingIPs = NULL;
 		bool fastRefresh = false;
@@ -505,11 +482,9 @@ void CKeyEntry::MergeIPsAndFilenames(CKeyEntry *fromEntry)
 			}
 		}
 
-		// copy over trust value, in case we don't want to recalculate
 		m_trustValue = fromEntry->m_trustValue;
 		m_lastTrustValueCalc = fromEntry->m_lastTrustValueCalc;
 
-		// copy over the different names, if they are different the one we have right now
 		wxASSERT(m_filenames.size() ==
 			 1); // we should have only one name here, since it's the entry from one single source
 		sFileNameEntry currentName = { "", 0 };
@@ -518,25 +493,18 @@ void CKeyEntry::MergeIPsAndFilenames(CKeyEntry *fromEntry)
 			m_filenames.pop_front();
 		}
 
-		// Cap m_filenames so a single CKeyEntry can't accumulate
-		// unbounded filename variants. A popular file collects one
-		// sFileNameEntry per distinct publisher-chosen name (renames,
-		// language variants, mirror prefixes, trailing-paren copies,
-		// case differences); without a cap the list grows monotonically
-		// for the lifetime of the entry, which on a long-running
-		// shareset shows up as a steady ~MB/hour RSS climb in amuled.
-		// 100 matches the m_publishingIPs cap below and is comfortably
-		// above the count of variants any honest publisher set produces
-		// for a single hash — GetCommonFileName already picks the
-		// highest-popularity entry, so the cap is shaped to keep
-		// popularity-ordered survivors.
+		// Cap m_filenames so a single CKeyEntry cannot accumulate unbounded filename
+		// variants. A popular file collects one sFileNameEntry per distinct
+		// publisher-chosen name -- renames, language variants, mirror prefixes, case
+		// differences -- and without a cap the list grows monotonically for the
+		// lifetime of the entry, showing up as a steady ~MB/hour RSS climb in amuled.
+		// 100 matches the m_publishingIPs cap below and is comfortably above any
+		// honest publisher set.
 		const size_t MAX_FILENAMES = 100;
 
-		// Compare-and-skip insertion (per irwir's review of #314): if
-		// we're already at the cap, only accept the new entry when its
-		// popularity beats the weakest survivor — otherwise drop it on
-		// the floor instead of pushing then immediately re-evicting.
-		// O(N) per insert via std::min_element; no global sort needed.
+		// Compare-and-skip insertion: at the cap, a new entry is only accepted when
+		// its popularity beats the weakest survivor, rather than pushing and then
+		// immediately re-evicting. O(N) per insert via std::min_element.
 		auto pushBounded = [&](const sFileNameEntry &candidate) {
 			if (m_filenames.size() < MAX_FILENAMES) {
 				m_filenames.push_back(candidate);
@@ -559,10 +527,8 @@ void CKeyEntry::MergeIPsAndFilenames(CKeyEntry *fromEntry)
 			it != fromEntry->m_filenames.end();
 			++it) {
 			sFileNameEntry nameToCopy = *it;
-			// Defence-in-depth: even though SetFileName now rejects empty
-			// names, an older on-disk Kad index could still hold one from
-			// before that guard landed.  Drop it here too rather than
-			// propagating into our m_filenames.
+			// Defence-in-depth: SetFileName now rejects empty names, but an older
+			// on-disk Kad index could still hold one from before that guard landed.
 			if (nameToCopy.m_filename.IsEmpty()) {
 				continue;
 			}
@@ -584,7 +550,6 @@ void CKeyEntry::MergeIPsAndFilenames(CKeyEntry *fromEntry)
 		}
 	}
 
-	// if this was a refresh done, otherwise update the global track map
 	if (!refresh) {
 		wxASSERT(m_uIP != 0);
 		uint16_t aichHashIdx = hasNewAICHHash ? m_aichHashes.AddReference(newAICHHash)
@@ -592,7 +557,6 @@ void CKeyEntry::MergeIPsAndFilenames(CKeyEntry *fromEntry)
 		sPublishingIP add = { m_uIP, time(nullptr), aichHashIdx };
 		m_publishingIPs->push_back(add);
 
-		// add the publisher to the tacking list
 		AdjustGlobalPublishTracking(m_uIP, true, "new publisher");
 
 		// we keep track of max 100 IPs, in order to avoid too much time for
@@ -604,7 +568,6 @@ void CKeyEntry::MergeIPsAndFilenames(CKeyEntry *fromEntry)
 			AdjustGlobalPublishTracking(curEntry.m_ip, false, "more than 100 publishers purge");
 		}
 
-		// since we added a new publisher, we want to (re)calculate the trust value for this entry
 		ReCalculateTrustValue();
 	}
 	AddDebugLogLineN(logKadEntryTracking,
@@ -617,24 +580,20 @@ void CKeyEntry::MergeIPsAndFilenames(CKeyEntry *fromEntry)
 void CKeyEntry::ReCalculateTrustValue()
 {
 #define PUBLISHPOINTSSPERSUBNET 10.0
-	// The trustvalue is supposed to be an indicator how trustworthy/important (or spammy) this entry is
-	// and lies between 0 and ~10000, but mostly we say everything below 1 is bad, everything above 1 is
-	// good. It is calculated by looking at how many different IPs/24 have published this entry and how
-	// many entries each of those IPs have. Each IP/24 has x (say 3) points. This means if one IP
-	// publishes 3 different entries without any other IP publishing those entries, each of those entries
-	// will have 3 / 3 = 1 Trustvalue. That's fine. If it publishes 6 alone, each entry has 3 / 6 = 0.5
-	// trustvalue - not so good However if there is another publisher for entry 5, which only publishes
-	// this entry then we have 3/6 + 3/1 = 3.5 trustvalue for this entry
+	// The trust value indicates how trustworthy or spammy this entry is. It lies
+	// between 0 and ~10000, but the useful reading is that below 1 is bad and above
+	// 1 is good. It comes from how many different IPs/24 published this entry and
+	// how many entries each of those IPs has: each IP/24 has 3 points, so one IP
+	// publishing 3 entries alone gives each 3/3 = 1, publishing 6 gives each 0.5,
+	// and a second publisher of one of them raises that one to 3/6 + 3/1 = 3.5.
 	//
-	// What's the point? With this rating we try to avoid getting spammed with entries for a given keyword
-	// by a small IP range, which blends out all other entries for this keyword do to its amount as well
-	// as giving an indicator for the searcher. So if we are the node to index "Knoppix", and someone from
-	// 1 IP publishes 500 times "knoppix casino 500% bonus.txt", all those entries will have a trustvalue
-	// of 0.006 and we make sure that on search requests for knoppix, those entries are only returned
-	// after all entries with a trustvalue > 1 were sent (if there is still space).
+	// The point is to avoid being spammed for a given keyword by a small IP range,
+	// which would otherwise blot out every other entry. If we index "Knoppix" and
+	// one IP publishes 500 variants of "knoppix casino 500% bonus.txt", those score
+	// 0.006 and are only returned after everything above 1.
 	//
-	// Its important to note that entry with < 1 do NOT get ignored or singled out, this only comes into
-	// play if we have 300 more results for a search request rating > 1
+	// Entries below 1 are NOT ignored or singled out; the rating only comes into
+	// play once there are more results for a request than there is space for.
 	wxCHECK_RET(m_publishingIPs != NULL, "No publishing IPs?");
 
 	m_lastTrustValueCalc = ::GetTickCount64();
@@ -675,7 +634,6 @@ void CKeyEntry::CleanUpTrackedPublishers()
 
 	time_t now = time(NULL);
 	while (!m_publishingIPs->empty()) {
-		// entries are ordered, older ones first
 		sPublishingIP curEntry = m_publishingIPs->front();
 		if (now - curEntry.m_lastPublish > KADEMLIAREPUBLISHTIMEK) {
 			AdjustGlobalPublishTracking(curEntry.m_ip, false, "cleanup");

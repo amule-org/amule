@@ -149,8 +149,8 @@ void CIndexed::ReadFile()
 												if (tag->IsBsob() &&
 													(tag->GetBsobSize() ==
 														8)) {
-													// We've
-													// previously
+													// Older
+													// builds
 													// wrongly
 													// saved
 													// BSOB
@@ -158,17 +158,13 @@ void CIndexed::ReadFile()
 													// to
 													// key_index.dat,
 													// so
-													// we'll
+													// those
 													// have
 													// to
-													// handle
-													// those
+													// be
+													// handled
 													// here
-													// as
-													// well.
-													// Too
-													// bad
-													// ...
+													// too.
 													toAdd->m_uSize = PeekUInt64(
 														tag->GetBsob());
 												} else {
