@@ -37,10 +37,9 @@ CChatSessionStore::Session &CChatSessionStore::Touch(uint64 gui_id, const wxStri
 		if (it->gui_id != gui_id) {
 			continue;
 		}
-		// Only overwrite the name when the caller actually has one. An
-		// outbound message carries none, and a peer that has not sent its
-		// nick yet reports empty -- neither should erase a name we already
-		// learnt from an earlier inbound message.
+		// Only overwrite the name when the caller actually has one. An outbound message
+		// carries none, and a peer that has not sent its nick yet reports empty -- neither
+		// should erase a name we already learnt from an earlier inbound message.
 		if (!name.IsEmpty()) {
 			it->name = name;
 		}
@@ -123,10 +122,9 @@ std::vector<const CChatSessionStore::Session *> CChatSessionStore::Sessions() co
 
 void CChatSessionStore::EvictSessionsIfNeeded()
 {
-	// Least recently active first, i.e. from the back. Note this drops a
-	// conversation whole rather than trimming it: a client tracking that
-	// GUI_ID sees it vanish from the session list and closes its tab, which
-	// is the same rule a session closed by another client follows.
+	// Least recently active first, i.e. from the back. Note this drops a conversation whole
+	// rather than trimming it: a client tracking that GUI_ID sees it vanish from the session
+	// list and closes its tab, the same rule a session closed by another client follows.
 	while (m_sessions.size() > MAX_SESSIONS) {
 		m_sessions.pop_back();
 	}

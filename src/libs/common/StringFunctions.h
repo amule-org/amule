@@ -36,38 +36,20 @@ enum EUtf8Str
 	utf8strRaw
 };
 
-/****************************************************/
-/******************* Inlines ************************/
-/****************************************************/
-
 /**
- * Functions to perform Unicode <-> (char *) and UTF-8 conversion
+ * Unicode <-> (char *) and UTF-8 conversion.
  *
- * Please, DO NOT store pointers returned by unicode2char(), because they
- * get free'ed as soon as the return value of cWX2MB gets out of scope.
- * If you need to store a pointer, use a buffer of type wxCharBuffer:
- * and then cast it to a char pointer, e.g.:
+ * Do NOT store pointers returned by unicode2char(): they are freed as soon as
+ * cWX2MB's return value goes out of scope. Hold a wxCharBuffer instead, which
+ * frees on scope exit:
  *
- * const wxCharBuffer buf(unicode2char(aWxString));
+ *   const wxCharBuffer buf(unicode2char(aWxString));
+ *   printf("%s", (const char *)buf);
  *
- * --- Now you can freely use buf as if it were a (const char *) ---
+ * The cast is needed because varargs do not apply the implicit conversion.
  *
- * puts(buf);
- * printf("%s", (const char *)buf);
- *
- * The cast in printf is necessary because variable number of parameter
- * functions have no type for these parameters, so the automatic casting
- * of wxCharBuffer to (const char *) is not performed.
- *
- * --- don't worry about memory allocation, memory will be       ---
- * --- free'ed when buf gets out of scope, i.e., upon return     ---
- *
- * wxWCharBuffer, wxCharBuffer are always the appropriate return type,
- * either (wxChar *) or (wxWCharBuffer)
- *
- * Use the simplified names Unicode2CharBuf and Char2UnicodeBuf, and
- * do not declare these names const or the compiler will complain about
- * a double const.
+ * Use Unicode2CharBuf / Char2UnicodeBuf, and do not declare them const or the
+ * compiler complains about a double const.
  */
 typedef const wxCharBuffer Unicode2CharBuf;
 typedef const wxWCharBuffer Char2UnicodeBuf;
@@ -122,24 +104,18 @@ inline Char2UnicodeBuf char2filename(const char *x)
 	return wxConvFileName->cMB2WC(x);
 }
 
-//
 // Replaces "&" with "&&" in 'in' for use with text-labels
-//
 inline wxString MakeStringEscaped(wxString in)
 {
 	in.Replace("&", "&&");
 	return in;
 }
 
+// Render a string suitable for one log line.
 //
-// Render a string suitable for inclusion in a single log line.
-//
-// Control characters (< 0x20) and DEL (0x7f) become \xHH escapes so a
-// hostile or malformed input can't break log line framing or inject
-// fake log entries into a downstream collector. Printable ASCII and
-// any character >= 0x80 (UTF-8 continuation bytes / wide Unicode)
-// pass through untouched.
-//
+// Control characters (< 0x20) and DEL become \xHH escapes, so hostile input
+// cannot break log framing or inject entries into a downstream collector.
+// Printable ASCII and anything >= 0x80 passes through untouched.
 inline wxString EscapeForLog(const wxString &in)
 {
 	wxString out;
@@ -177,9 +153,8 @@ inline char *nstrdup(const char *src)
 	return res;
 }
 
-// Replacements for atoi and atol that removes the need for converting
-// a string to normal chars with unicode2char. The value returned is the
-// value represented in the string or 0 if the conversion failed.
+// atoi/atol without converting through unicode2char. Returns the value in
+// the string, or 0 if conversion failed.
 inline long StrToLong(const wxString &str)
 {
 	long value = 0;
@@ -235,104 +210,69 @@ inline size_t GetRawSize(const wxString &rstr, EUtf8Str eEncode)
 	return RealLen;
 }
 
-/****************************************************/
-/***************** Non-inlines **********************/
-/****************************************************/
-
 // Makes sIn suitable for inclusion in an URL, by escaping all chars that could cause trouble.
 wxString URLEncode(const wxString &sIn);
 
 /**
- * Converts a hexadecimal number to a char.
+ * Converts a hexadecimal number of at most 2 digits to a char.
  *
- * @param hex The hex-number, must be at most 2 digits long.
- * @return The resulting char or \0 if conversion failed.
+ * @return The char, or \0 if conversion failed.
  */
 wxChar HexToDec(const wxString &hex);
 
 /**
- * This function converts all valid HTML escape-codes to their corresponding chars.
- *
- * @param str The string to unescape.
- * @return The unescaped version of the input string.
+ * Converts all valid HTML escape-codes to their corresponding chars.
  */
 wxString UnescapeHTML(const wxString &str);
 
 /**
  * Restores the '|' delimiters of an eD2k link that were percent-encoded.
  *
- * Chromium refuses to hand over an ed2k:// URL containing literal '|' at all
- * (it navigates to about:blank#blocked), so sites publish the encoded spelling
- * instead, and that is what ends up on the clipboard. Only the delimiters are
- * touched: a filename keeps whatever escapes it arrived with, and
- * CED2KFileLink runs UnescapeHTML() over it once the link tokenizes.
- *
- * @param link The link as the user supplied it.
- * @return The same link with %7C / %7c restored to '|'.
+ * Chromium refuses to hand over an ed2k:// URL containing a literal '|' at all,
+ * so sites publish the encoded spelling and that is what reaches the clipboard.
+ * Only the delimiters are touched: a filename keeps whatever escapes it arrived
+ * with, and CED2KFileLink unescapes it once the link tokenizes.
  */
 wxString RestoreEncodedPipes(const wxString &link);
 
 /**
- * Ensures that the url pass is valid by escaping various chars.
+ * Escapes the chars needed to make the url valid.
  */
 wxString validateURI(const wxString &url);
 
 /**
- * Compares two strings, while taking numerals into consideration.
+ * Compares two strings, taking numerals into consideration.
  *
- * @return Returns -1 if a < b, 1 if a > b and 0 if a = b
+ * Splits both into fields on whitespace and non-alphanumerics, converts
+ * numerals to integers, then compares field by field, so "a (2)" sorts before
+ * "a (10)". Floats become two fields; negative numbers are not handled.
  *
- * This function basically splits the two strings into a number of
- * fields, deliniated by whitespace, non-alphanumerical chars. The
- * numerals are then converted to integers, and the fields are
- * compared. This allows strings such as "a (2)" and "a (10)" to
- * be properly sorted for displaying.
- *
- * Currently does not handle floats (they are treated as to separate
- * fields, nor negative numbers.
+ * @return -1 if a < b, 1 if a > b, 0 if equal.
  */
 int FuzzyStrCmp(const wxString &a, const wxString &b);
 
 /**
- * As with FuzzyStrCmp, but case insensitive.
+ * As FuzzyStrCmp, but case insensitive.
  */
 int FuzzyStrCaseCmp(const wxString &a, const wxString &b);
 
-/**
- * This class provides a simple and fast tokenizer.
- */
 class CSimpleTokenizer
 {
 public:
-	/**
-	 * @param str The string to tokenize.
-	 * @param delim The delimiter used to split the string.
-	 */
 	CSimpleTokenizer(const wxString &str, wxChar delim);
 
 	/**
-	 * Returns the next part of the string separated by the
-	 * given delimiter. When the entire string has been
-	 * tokenized, an empty string is returned. Note that
-	 * empty tokens are also returned.
+	 * The next part of the string, empty once fully tokenized. Empty tokens
+	 * are returned too.
 	 */
 	wxString next();
 
 	/**
-	 * Returns the remaining part of the string.
-	 *
-	 * The remaining part is defined as being the part after
-	 * the last encountered token, or an empty string if the
-	 * entire string has been tokenized.
-	 *
-	 * If next() has yet to be called, the entire string will
-	 * be returned.
+	 * The part after the last token, or empty once fully tokenized. Before the
+	 * first next() call, the whole string.
 	 */
 	wxString remaining() const;
 
-	/**
-	 * Returns the number of tokens encountered so far.
-	 */
 	size_t tokenCount() const;
 
 private:

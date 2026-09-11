@@ -39,11 +39,9 @@
 #endif
 
 /**
- * This class is a modified version of the wxFile class.
- *
- * In addition to implementing the CFileDataIO interface,
- * it offers improved support for UTF8 filenames and 64b
- * file-IO on both windows and unix-like systems.
+ * A modified version of wxFile. Besides implementing the CFileDataIO interface, it
+ * offers better support for UTF8 filenames and 64-bit file IO on both Windows and
+ * unix-like systems.
  *
  * @see wxFile
  */
@@ -70,23 +68,16 @@ public:
 		write_safe
 	};
 
-	/**
-	 * Creates a closed file.
-	 */
+	/** Creates a closed file. */
 	CFile();
 
 	/**
-	 * Constructor, calls Open on the specified file.
-	 *
-	 * To check if the file was successfully opened, a
-	 * call to IsOpened() is required.
+	 * Calls Open on the specified file. Check IsOpened() to see whether it succeeded.
 	 */
 	CFile(const CPath &path, OpenMode mode = read);
 	CFile(const wxString &path, OpenMode mode = read);
 
-	/**
-	 * Destructor, closes the file if opened.
-	 */
+	/** Closes the file if opened. */
 	virtual ~CFile();
 
 	/**
@@ -94,38 +85,30 @@ public:
 	 *
 	 * @param path The full or relative path to the file.
 	 * @param mode The opening mode.
-	 * @param accessMode The permissions in case a new file is created.
-	 * @return True if the file was opened, false otherwise.
+	 * @param accessMode The permissions in case a new file is created. Defaults to
+	 * whatever CPreferences::GetFilePermissions gives.
+	 * @return True if the file was opened.
 	 *
-	 * Calling Open with the openmodes 'write' or 'write_append' will
-	 * create the specified file if it does not already exist.
-	 *
-	 * Calling Open with the openmode 'write_safe' will append ".new"
-	 * to the file name and otherwise work like 'write'.
-	 * On close it will be renamed to the original name.
-	 * Close() has to be called manually - destruct won't rename the file!
-	 *
-	 * If an accessMode is not explicitly specified, the accessmode
-	 * specified via CPreferences::GetFilePermissions will be used.
+	 * The 'write' and 'write_append' modes create the file if it does not exist.
+	 * 'write_safe' appends ".new" to the file name and otherwise behaves like 'write',
+	 * renaming to the original name on close -- Close() has to be called by hand, the
+	 * destructor does not rename.
 	 */
 	bool Open(const CPath &path, OpenMode mode = read, int accessMode = wxS_DEFAULT);
 	bool Open(const wxString &path, OpenMode mode = read, int accessMode = wxS_DEFAULT);
 
 	/**
-	 * Reopens a file which was opened and closed before.
+	 * Reopens a file which was opened and closed before, under the filename last
+	 * opened. Throws on failure.
 	 *
 	 * @param mode The opening mode.
-	 *
-	 * The filename used for last open is used again.
-	 * No return value - function throws on failure.
 	 */
 	void Reopen(OpenMode mode);
 
 	/**
-	 * Calling Create is equivalent of calling open with OpenMode 'write'.
+	 * Equivalent to Open with OpenMode 'write'.
 	 *
-	 * @param overwrite Specifies if the target file should be overwritten,
-	 *                  in case that it already exists.
+	 * @param overwrite Whether an existing target file should be overwritten.
 	 *
 	 * @see CFile::Open
 	 */
@@ -135,81 +118,52 @@ public:
 	/**
 	 * Copies a file, streaming through a large buffer.
 	 *
-	 * Used for data-file copies that can cross filesystems (e.g. the
-	 * Temp -> Incoming move on download completion, when a rename fails
-	 * because the two directories live on different mounts). Unlike
-	 * wxCopyFile's hard-coded 4 KiB buffer, this streams through a 1 MiB
-	 * buffer, which is what lets cross-filesystem copies over NFS / sshfs
-	 * reach line speed. See amule-org/amule#11.
+	 * Used for data-file copies that can cross filesystems (e.g. the Temp -> Incoming
+	 * move on download completion, when a rename fails because the two directories live
+	 * on different mounts). Unlike wxCopyFile's hard-coded 4 KiB buffer, this streams
+	 * through a 1 MiB buffer, which is what lets cross-filesystem copies over NFS /
+	 * sshfs reach line speed. See amule-org/amule#11.
 	 *
 	 * The silly name (vs. CopyFile) avoids the CopyFile #define set on MSW.
 	 *
 	 * @param overwrite If false and the destination exists, fails.
-	 * @return true on success. On failure the (partial) destination is
-	 *         removed so a failed copy never leaves a corrupt file behind.
+	 * @return true on success. On failure the partial destination is removed, so a
+	 * failed copy never leaves a corrupt file behind.
 	 */
 	static bool CloneFile(const CPath &src, const CPath &dst, bool overwrite = false);
 
-	/**
-	 * Closes the file.
-	 *
-	 * Note that calling Close on an closed file
-	 * is an illegal operation.
-	 */
+	/** Closes the file. Calling it on a closed file is illegal. */
 	bool Close();
 
 	/**
-	 * Returns the file descriptor associated with the file.
-	 *
-	 * Note that direct manipulation of the descriptor should
-	 * be avoided! That's what this class is for.
+	 * Returns the file descriptor. Manipulating it directly should be avoided -- that
+	 * is what this class is for.
 	 */
 	int fd() const;
 
-	/**
-	 * Flushes data not yet written.
-	 *
-	 * Note that calling Flush on an closed file
-	 * is an illegal operation.
-	 */
+	/** Flushes data not yet written. Calling it on a closed file is illegal. */
 	bool Flush();
 
 	/**
-	 * @see CSafeFileIO::GetLength
-	 *
-	 * Note that calling GetLength on a closed file
-	 * is an illegal operation.
+	 * @see CSafeFileIO::GetLength. Calling it on a closed file is illegal.
 	 */
 	virtual uint64 GetLength() const;
 
-	/**
-	 * Resizes the file to the specified length.
-	 */
+	/** Resizes the file to the specified length. */
 	bool SetLength(uint64 newLength);
 
 	/**
-	 * @see CSafeFileIO::GetPosition
-	 *
-	 * Note that calling GetPosition on a closed file
-	 * is an illegal operation.
+	 * @see CSafeFileIO::GetPosition. Calling it on a closed file is illegal.
 	 */
 	virtual uint64 GetPosition() const;
 
-	/**
-	 * Returns the current available bytes to read on the file before EOF
-	 *
-	 */
+	/** Returns the bytes still available to read on the file before EOF. */
 	virtual uint64 GetAvailable() const;
 
-	/**
-	 * Returns the path of the currently opened file.
-	 *
-	 */
+	/** Returns the path of the currently opened file. */
 	const CPath &GetFilePath() const;
 
-	/**
-	 * Returns true if the file is opened, false otherwise.
-	 */
+	/** Returns true if the file is opened. */
 	bool IsOpened() const;
 
 protected:
@@ -228,9 +182,8 @@ private:
 	//@}
 
 	//! Flush any data in the userspace write buffer to the kernel. A no-op when the
-	//! buffer is empty. Called from any path that needs the on-disk state to
-	//! reflect preceding writes: Close, Flush, doSeek, doRead, GetPosition,
-	//! GetLength.
+	//! buffer is empty. Called from any path that needs the on-disk state to reflect
+	//! preceding writes: Close, Flush, doSeek, doRead, GetPosition, GetLength.
 	void DrainWriteBuffer() const;
 
 	//! File descriptor or 'fd_invalid' if not opened
@@ -242,20 +195,19 @@ private:
 	//! Are we using safe write mode?
 	bool m_safeWrite;
 
-	//! Userspace write buffer. CFile::doWrite was a thin wrapper over ::write(), so
-	//! every CFileDataIO::WriteTag call and its small writes underneath round-tripped
-	//! through the kernel: CKnownFileList::Save() with hundreds of thousands of
-	//! files emitted ~26k write() syscalls per second and stalled shutdown for
-	//! minutes (#562). Buffering into 64 KB chunks collapses millions of syscalls
-	//! into a few thousand. The members are mutable so the const-qualified read /
-	//! seek / position / length paths can drain transparently.
+	//! Userspace write buffer. CFile::doWrite was a thin wrapper over ::write(), so every
+	//! CFileDataIO::WriteTag call and its small writes underneath round-tripped through
+	//! the kernel: CKnownFileList::Save() with hundreds of thousands of files emitted
+	//! ~26k write() syscalls per second and stalled shutdown for minutes (#562).
+	//! Buffering into 64 KB chunks collapses millions of syscalls into a few thousand.
+	//! The members are mutable so the const-qualified read / seek / position / length
+	//! paths can drain transparently.
 	//!
 	//! Heap-allocated lazily rather than embedded as a fixed array, because CFile is
-	//! regularly stack-allocated inside worker-thread call chains. musl's default
-	//! pthread stack is 128 KiB, and two embedded 64 KiB buffers consume the whole
-	//! stack, so the next stack-using call crosses the guard page and SIGSEGVs. The
-	//! unique_ptr brings sizeof(CFile) back to ~32 bytes and pays the 64 KiB only on
-	//! first write, leaving read-only opens free.
+	//! regularly stack-allocated inside worker-thread call chains. musl's default pthread
+	//! stack is 128 KiB, and two embedded 64 KiB buffers consume the whole stack, so the
+	//! next stack-using call crosses the guard page and SIGSEGVs. The unique_ptr brings
+	//! sizeof(CFile) back to ~32 bytes and pays the 64 KiB only on first write.
 	enum
 	{
 		kWriteBufferSize = 64 * 1024
@@ -264,33 +216,29 @@ private:
 	mutable size_t m_writeBufferPending;
 
 	//! True when the file was opened in a write-capable mode and buffering is safe.
-	//! Read-only files bypass the buffer, so a stray write() through doWrite still
-	//! fails immediately at the call site, preserving CFileDataIO's error contract.
+	//! Read-only files bypass the buffer, so a stray write() through doWrite still fails
+	//! immediately at the call site, preserving CFileDataIO's error contract.
 	bool m_canBuffer;
 
-	//! Serializes access to the userspace write buffer and fd state. Without it,
-	//! paths that drain the buffer (Close, Flush, doSeek, doRead, GetPosition,
-	//! GetLength, SetLength) race against concurrent doWrite/drain calls: two
-	//! threads both pass the `pending != 0` check before either resets pending to 0,
-	//! and since ::write advances the fd offset atomically per call, the same N
-	//! bytes land at fd_pos AND fd_pos + N.
+	//! Serializes access to the userspace write buffer and fd state. Without it, paths
+	//! that drain the buffer (Close, Flush, doSeek, doRead, GetPosition, GetLength,
+	//! SetLength) race against concurrent doWrite/drain calls: two threads both pass the
+	//! `pending != 0` check before either resets pending to 0, and since ::write advances
+	//! the fd offset atomically per call, the same N bytes land at fd_pos AND fd_pos + N.
 	//!
 	//! Hit in production on CPartFile::m_hpartfile: FlushBuffer calls
-	//! GetLength()/SetLength() and GetNeededSpace() calls GetLength(), all from the
-	//! main thread without taking m_hpartfileMutex. Before #562 that was safe, since
-	//! GetLength was just fstat; afterwards it drains the buffer, racing
-	//! CPartFileWriteThread's FlushAt. Manifests as 1-3 corrupt blocks per part,
-	//! with AICH recovering ~98% of each.
+	//! GetLength()/SetLength() and GetNeededSpace() calls GetLength(), all from the main
+	//! thread without taking m_hpartfileMutex. Before #562 that was safe, since GetLength
+	//! was just fstat; afterwards it drains the buffer, racing CPartFileWriteThread's
+	//! FlushAt. Manifests as 1-3 corrupt blocks per part, with AICH recovering ~98%.
 	//!
-	//! Recursive so Open() -> Close() does not deadlock, and cheap against the ~1 us
-	//! floor of the I/O syscalls it serializes. Mutable because the const-qualified
-	//! methods need to lock it.
+	//! Recursive so Open() -> Close() does not deadlock, and cheap against the ~1 us floor
+	//! of the I/O syscalls it serializes. Mutable because the const-qualified methods need
+	//! to lock it.
 	mutable std::recursive_mutex m_mutex;
 };
 
-/**
- * This exception is thrown by CFile if a seek or tell fails.
- */
+/** Thrown by CFile when a seek or tell fails. */
 struct CSeekFailureException : public CIOFailureException
 {
 	CSeekFailureException(const wxString &desc);

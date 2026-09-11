@@ -30,23 +30,21 @@
 
 using namespace muleunit;
 
-// m_my_flags mixes two kinds of capability bit, and the difference decides
-// which ones a reconnect may drop:
+// m_my_flags mixes two kinds of capability bit, and the difference decides which ones a reconnect
+// may drop:
 //
-//   - chosen locally (EC_FLAG_ZLIB, EC_FLAG_UTF8_NUMBERS), from preferences
-//     via SetCapabilities, which the reconnect path does not call again;
-//   - agreed with the peer (EC_FLAG_LARGE_TAG_COUNT), set only when the daemon
-//     echoes EC_TAG_CAN_LARGE_TAG_COUNT in AUTH_OK.
+//   - chosen locally (EC_FLAG_ZLIB, EC_FLAG_UTF8_NUMBERS), from preferences via SetCapabilities,
+// which the reconnect path does not call again;
+//   - agreed with the peer (EC_FLAG_LARGE_TAG_COUNT), set only when the daemon echoes
+// EC_TAG_CAN_LARGE_TAG_COUNT in AUTH_OK.
 //
-// Getting either half wrong is silent. Left set across a reconnect, the
-// negotiated bit makes the client keep sending the extended tag-count format
-// to a daemon that never advertised it, and the receiver misparses every tag
-// after the count. Clearing too much instead disables compression for the rest
-// of the session -- no error either way, just a broken or slow list.
+// Getting either half wrong is silent. Left set across a reconnect, the negotiated bit makes the
+// client keep sending the extended tag-count format to a daemon that never advertised it, and the
+// receiver misparses every tag after the count. Clearing too much instead disables compression for
+// the rest of the session -- no error either way, just a broken or slow list.
 //
-// The transition is pure state, so it needs no daemon: CECMemSocket is a
-// concrete in-tree CECSocket whose constructor already sets both
-// EC_FLAG_UTF8_NUMBERS and EC_FLAG_LARGE_TAG_COUNT.
+// The transition is pure state, so it needs no daemon: CECMemSocket is a concrete in-tree CECSocket
+// whose constructor already sets both EC_FLAG_UTF8_NUMBERS and EC_FLAG_LARGE_TAG_COUNT.
 
 namespace
 {
@@ -95,10 +93,9 @@ TEST(ECSocketFlags, ClearPeerNegotiatedKeepsVersionBit)
 	ASSERT_EQUALS(versionBit, socket.Flags() & 0x60);
 }
 
-// The clear lives outside ResetProtocolState on purpose. CECMemSocket sets
-// EC_FLAG_LARGE_TAG_COUNT as a local property of the wire format it caches,
-// not as something a peer agreed to, so a reset that dropped it would silently
-// downgrade the cache to the short tag-count format.
+// The clear lives outside ResetProtocolState on purpose. CECMemSocket sets EC_FLAG_LARGE_TAG_COUNT
+// as a local property of the wire format it caches, not as something a peer agreed to, so a reset
+// that dropped it would silently downgrade the cache to the short tag-count format.
 TEST(ECSocketFlags, ResetProtocolStateLeavesCapabilitiesAlone)
 {
 	CFlagProbe socket;
@@ -110,12 +107,11 @@ TEST(ECSocketFlags, ResetProtocolStateLeavesCapabilitiesAlone)
 	ASSERT_EQUALS(before, socket.Flags());
 }
 
-// The tx block size decides how many send() calls a packet costs, but it also
-// has two hard constraints that are easy to break while "simplifying" the
-// arithmetic: the first block has to leave room for the 8-byte header that
-// SealOutputQueue keeps in clear, and the cap has to hold, because a packet may
-// legitimately be hundreds of megabytes and a block that size would be copied
-// again by the send path.
+// The tx block size decides how many send() calls a packet costs, but it also has two hard
+// constraints that are easy to break while "simplifying" the arithmetic: the first block has to
+// leave room for the 8-byte header SealOutputQueue keeps in clear, and the cap has to hold, because
+// a packet may legitimately be hundreds of megabytes and a block that size would be copied again by
+// the send path.
 namespace
 {
 
@@ -133,9 +129,8 @@ const size_t kHeader = 8;
 
 TEST(ECSocketFlags, TxChunkSizeNeverDropsBelowTheHeaderFloor)
 {
-	// A body smaller than the floor still gets the floor, so the header always
-	// fits and no packet gets smaller blocks than before the size became
-	// per-packet.
+	// A body smaller than the floor still gets the floor, so the header always fits and no
+	// packet gets smaller blocks than before the size became per-packet.
 	ASSERT_EQUALS(kFloor, CTxChunkProbe::TxChunkSize(0));
 	ASSERT_EQUALS(kFloor, CTxChunkProbe::TxChunkSize(1));
 	ASSERT_EQUALS(kFloor, CTxChunkProbe::TxChunkSize(kFloor - kHeader));

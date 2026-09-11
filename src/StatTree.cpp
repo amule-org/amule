@@ -165,9 +165,7 @@ void CStatTreeItemBase::GetNextVisibleChild(StatTreeItemIterator &it)
 		++it;
 }
 
-//
 // Anything below is only for core.
-//
 
 bool CStatTreeItemBase::ValueSort(const CStatTreeItemBase *a, const CStatTreeItemBase *b)
 {
@@ -354,17 +352,12 @@ template void CStatTreeItemNativeCounter::AddECValues(CECTag *tag) const;
 
 /* CStatTreeItemUlDlCounter */
 
-// The display format is "<session> (<all-time-cumulative>)" where
-// the session value is m_value and the cumulative is what
-// m_totalfunc() returns. Both values are kept in sync by
-// CStatistics::AddSentBytes / AddReceivedBytes, which adds the same
-// byte count to both the session counter (m_value) and the saved
-// cumulative (m_totalfunc()'s underlying s_totalSent / s_totalReceived).
-// So m_totalfunc() already includes m_value -- adding m_value again
-// double-counts the session bytes in the cumulative slot, which is
-// the user-visible #301: live UI shows "session bytes counted twice"
-// and the post-restart figure drops by exactly one session-worth.
-// Use m_totalfunc() directly for the cumulative slot.
+// The display format is "<session> (<all-time-cumulative>)", the session value being m_value and
+// the cumulative what m_totalfunc() returns. CStatistics::AddSentBytes / AddReceivedBytes keeps the
+// two in sync, adding the same byte count to the session counter and to the saved cumulative. So
+// m_totalfunc() already includes m_value, and adding m_value again double-counts the session bytes
+// -- the user-visible #301, where the live UI counts session bytes twice and the post-restart
+// figure drops by exactly one session. Use m_totalfunc() directly for the cumulative slot.
 #ifndef AMULE_DAEMON
 wxString CStatTreeItemUlDlCounter::GetDisplayString() const
 {
@@ -568,9 +561,8 @@ wxString CStatTreeItemRatio::GetString(bool cLocale) const
 	if (m_totalfunc1 && m_totalfunc2) {
 		double t1 = static_cast<double>(m_totalfunc1()) + v1;
 		double t2 = static_cast<double>(m_totalfunc2()) + v2;
-		// Guard against fresh-install / zero-history cases. Without
-		// this, t1/t2 or t2/t1 divides by zero and the UI surfaces
-		// "(1 : nan)" or "(1 : inf)".
+		// Guard against fresh-install / zero-history cases. Without it, t1/t2 or t2/t1
+		// divides by zero and the UI shows "(1 : nan)" or "(1 : inf)".
 		if (t1 > 0 && t2 > 0) {
 			ret += (t2 < t1) ? wxT(" (") + num(t1 / t2) + wxT(" : 1)")
 					 : wxT(" (1 : ") + num(t2 / t1) + wxT(")");
@@ -589,27 +581,25 @@ wxString CStatTreeItemRatio::GetDisplayString() const
 
 void CStatTreeItemRatio::AddECValues(CECTag *tag) const
 {
-	// API contract: English text, C-locale numbers. GetString(false) formats via
-	// CFormat (honours LC_NUMERIC) and translates "Not available" at the daemon
-	// locale, so the wire value uses GetString(true) instead. The GUI path
-	// (GetDisplayString -> GetString()) is unaffected.
+	// API contract: English text, C-locale numbers. GetString(false) formats via CFormat
+	// (honouring LC_NUMERIC) and translates "Not available" at the daemon locale, so the wire
+	// value uses GetString(true) instead. The GUI path (GetDisplayString -> GetString()) is
+	// unaffected.
 	const double v1 = static_cast<double>(m_counter1->GetValue());
 	const double v2 = static_cast<double>(m_counter2->GetValue());
 	CECTag value(EC_TAG_STAT_NODE_VALUE, GetString(true));
 	value.AddTag(CECTag(EC_TAG_STAT_VALUE_TYPE, (uint8)EC_VALUE_STRING));
-	// Same guard as GetString(): with no session ratio the value is the
-	// "Not available" sentinel -- tag it with a locale-independent token.
-	// The English string above stays for GUI/legacy consumers (which ignore
-	// this sub-tag); API clients prefer the token.
+	// Same guard as GetString(): with no session ratio the value is the "Not available"
+	// sentinel, so tag it with a locale-independent token. The English string above stays for
+	// GUI/legacy consumers, which ignore this sub-tag.
 	if (!(v1 > 0 && v2 > 0)) {
 		value.AddTag(CECTag(EC_TAG_STAT_VALUE_ENUM, wxString(wxT("not_available"))));
 	}
 	tag->AddTag(value);
 
-	// Raw numeric ratios (download-per-upload, i.e. received/sent) so API
-	// clients don't have to parse the composite string above. Distinct tag
-	// names, so the display formatter and legacy consumers ignore them.
-	// Same guards as GetString(): only emitted when both sides are > 0.
+	// Raw numeric ratios (download-per-upload, i.e. received/sent) so API clients need not
+	// parse the composite string above. Distinct tag names, so the display formatter and legacy
+	// consumers ignore them. Same guards as GetString(): only emitted when both sides are > 0.
 	if (v1 > 0 && v2 > 0) {
 		tag->AddTag(CECTag(EC_TAG_STAT_NODE_RATIO, v2 / v1));
 	}
@@ -661,9 +651,8 @@ void CStatTreeItemMaxConnLimitReached::AddECValues(CECTag *tag) const
 	}
 	CECTag value(EC_TAG_STAT_NODE_VALUE, result);
 	value.AddTag(CECTag(EC_TAG_STAT_VALUE_TYPE, (uint8)EC_VALUE_STRING));
-	// Additive, locale-independent token for the sentinel; the English
-	// display string above stays for GUI/legacy consumers (which ignore
-	// this sub-tag), API clients prefer the token.
+	// Additive, locale-independent token for the sentinel. The English display string above
+	// stays for GUI/legacy consumers, which ignore this sub-tag.
 	if (never) {
 		value.AddTag(CECTag(EC_TAG_STAT_VALUE_ENUM, wxString(wxT("never"))));
 	}

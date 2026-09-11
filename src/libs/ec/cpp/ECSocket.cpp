@@ -38,11 +38,10 @@ using namespace std;
 
 #define EC_COMPRESSION_LEVEL Z_DEFAULT_COMPRESSION
 #define EC_MAX_UNCOMPRESSED 1024
-// Largest packet we'll send uncompressed to a local peer (loopback /
-// RFC1918 LAN / RFC3927 link-local) regardless of ZLIB negotiation.
-// Above this threshold we fall back to ZLIB so the wire size stays
-// inside ReadHeader's 256 MB post-auth packet gate even for very
-// large responses (e.g. show shared on a 90 k+ shared-file library).
+// Largest packet we send uncompressed to a local peer (loopback / RFC1918 LAN /
+// RFC3927 link-local) regardless of ZLIB negotiation. Above it we fall back to
+// ZLIB so the wire size stays inside ReadHeader's 256 MB post-auth gate even for
+// very large responses (show shared on a 90 k+ file library).
 static const uint32 kLocalPeerZlibBypassMax = 256 * 1024 * 1024;
 
 #ifndef __GNUC__
@@ -54,15 +53,9 @@ int utf8_mbtowc(wchar_t *p, const unsigned char *s, int n) __attribute__((__visi
 int utf8_wctomb(unsigned char *s, wchar_t wc, int maxlen) __attribute__((__visibility__("internal")));
 int utf8_mb_remain(char c) __attribute__((__pure__));
 
-/*----------=> Import from the Linux kernel <=----------*/
-/*
- * linux/fs/nls_base.c
- */
+/*----------=> Import from the Linux kernel: linux/fs/nls_base.c <=----------*/
 
-/*
- * Sample implementation from Unicode home page.
- * http://www.stonehand.com/unicode/standard/fss-utf.html
- */
+/* Sample implementation from http://www.stonehand.com/unicode/standard/fss-utf.html */
 struct utf8_table
 {
 	int cmask;
@@ -257,9 +250,7 @@ size_t CQueuedData::GetUnreadDataLength() const
 	return m_wr_ptr - m_rd_ptr;
 }
 
-//
 // CECSocket API - User interface functions
-//
 
 CECSocket::CECSocket(bool use_events)
 : m_use_events(use_events)
@@ -293,22 +284,20 @@ CECSocket::~CECSocket()
 	}
 }
 
-// Deliberately not part of ResetProtocolState. m_my_flags mixes two kinds of
-// state: capabilities this end simply has, and capabilities agreed with the peer.
-// Only a caller that knows it is facing a DIFFERENT peer may drop the second
-// kind -- CECMemSocket, for one, sets EC_FLAG_LARGE_TAG_COUNT in its constructor
-// as a local property of the wire format it caches, and clearing it there would
-// corrupt the cache. Today the sole caller is amulegui's reconnect path.
+// Deliberately not part of ResetProtocolState. m_my_flags mixes capabilities this
+// end simply has with capabilities agreed with the peer, and only a caller that
+// knows it faces a DIFFERENT peer may drop the second kind -- CECMemSocket sets
+// EC_FLAG_LARGE_TAG_COUNT in its constructor as a local property of the wire
+// format it caches, and clearing it there would corrupt the cache.
 void CECSocket::ClearPeerNegotiatedFlags()
 {
 	// EC_FLAG_LARGE_TAG_COUNT is the only bit here whose value comes from the peer:
 	// it is set when the daemon echoes EC_TAG_CAN_LARGE_TAG_COUNT in AUTH_OK. Left
 	// set across a reconnect, a client that negotiated it with one daemon keeps
-	// sending the extended tag-count format to one that never advertised it, and
-	// the receiver then misparses everything after the count field.
-	//
-	// EC_FLAG_ZLIB and EC_FLAG_UTF8_NUMBERS are chosen locally, through
-	// SetCapabilities, which the reconnect path does not call again.
+	// sending the extended tag-count format to one that never advertised it, and the
+	// receiver misparses everything after the count field. EC_FLAG_ZLIB and
+	// EC_FLAG_UTF8_NUMBERS are chosen locally, through SetCapabilities, which the
+	// reconnect path does not call again.
 	m_my_flags &= ~(uint32_t)EC_FLAG_LARGE_TAG_COUNT;
 }
 
@@ -321,10 +310,9 @@ void CECSocket::ResetProtocolState()
 		m_output_queue.pop_front();
 		delete data;
 	}
-	// Rewind the RX/TX packet-reassembly state machine to the ctor's
-	// "expecting a fresh EC_HEADER_SIZE header" state (see the ctor).
-	// CSmartPtr is aMule's own smart pointer, not std::unique_ptr, so
-	// make_unique doesn't apply; .reset(new ...) mirrors the ctor init.
+	// Rewind the RX/TX packet-reassembly state machine to the ctor's "expecting a
+	// fresh EC_HEADER_SIZE header" state. CSmartPtr is aMule's own smart pointer, not
+	// std::unique_ptr, so make_unique does not apply.
 	// NOLINTNEXTLINE(modernize-make-unique)
 	m_curr_rx_data.reset(new CQueuedData(EC_SOCKET_BUFFER_SIZE));
 	// NOLINTNEXTLINE(modernize-make-unique)
@@ -361,9 +349,8 @@ bool CECSocket::SealOutputQueue(std::list<CQueuedData *>::iterator outputStart)
 		unsigned char *data = (*it)->GetDataPtr();
 		size_t len = (*it)->GetDataLength();
 		if (first) {
-			// The first chunk starts with the 8-byte header, which stays in
-			// clear -- the receiver needs the flags and length to know a
-			// sealed body is coming and how much of it to read.
+			// The first chunk starts with the 8-byte header, which stays in clear:
+			// the receiver needs the flags and length to size the sealed body.
 			if (len < EC_HEADER_SIZE) {
 				return false;
 			}
@@ -483,9 +470,7 @@ void CECSocket::OnError()
 
 void CECSocket::OnLost() {}
 
-//
 // Event handlers
-//
 void CECSocket::OnConnect() {}
 
 void CECSocket::OnInput()
@@ -548,9 +533,8 @@ void CECSocket::OnOutput()
 			}
 			if (!WaitSocketWrite(10, 0)) {
 				if (WouldBlock()) {
-					// WouldBlock() is only EAGAIN or EWOULD_BLOCK,
-					// and those shouldn't create an infinite wait.
-					// So give it another chance.
+					// WouldBlock() is only EAGAIN or EWOULDBLOCK, neither of
+					// which should create an infinite wait.
 					continue;
 				} else {
 					AddDebugLogLineN(logEC, "OnOutput: socket error in sync wait");
@@ -559,14 +543,12 @@ void CECSocket::OnOutput()
 				}
 			}
 		} else if (written == 0) {
-			// CAsioSocketImpl::Write returns 0 with no SocketError set when a
-			// previous async send is still in flight -- pure backpressure, not an
-			// error. Treat it as "would block": yield to the event loop so the asio
-			// HandleSend callback can clear m_sendBuffer and re-fire OnOutput.
-			// Without this the loop re-reads the same queue head and re-calls
-			// Write(), pegging the main thread at 100% CPU until asio catches up.
-			// Large EC replies hit this hard, being chopped into many asio-sized
-			// chunks while the main thread cannot service other wx events.
+			// CAsioSocketImpl::Write returns 0 with no SocketError set when a previous
+			// async send is still in flight -- backpressure, not an error. Treat it as
+			// "would block": yield to the event loop so the asio HandleSend callback can
+			// clear m_sendBuffer and re-fire OnOutput. Without this the loop re-reads the
+			// same queue head and re-calls Write(), pegging the main thread at 100% CPU
+			// until asio catches up.
 			if (m_use_events) {
 				return;
 			}
@@ -580,10 +562,7 @@ void CECSocket::OnOutput()
 			}
 		}
 	}
-	//
-	// All outstanding data sent to socket
-	// (used for push clients)
-	//
+	// All outstanding data sent to socket (used for push clients)
 	WriteDoneAndQueueEmpty();
 }
 
@@ -592,9 +571,7 @@ bool CECSocket::DataPending()
 	return !m_output_queue.empty();
 }
 
-//
 // Socket I/O
-//
 
 size_t CECSocket::ReadBufferFromSocket(void *buffer, size_t required_len)
 {
@@ -623,8 +600,7 @@ void CECSocket::WriteBufferToSocket(const void *buffer, size_t len)
 			wr_ptr += curr_free;
 			const size_t chunk = m_curr_tx_data->GetLength();
 			m_output_queue.push_back(m_curr_tx_data.release());
-			// CSmartPtr is std::auto_ptr without HAVE_UNIQUE_PTR, where
-			// make_unique does not exist.
+			// CSmartPtr is std::auto_ptr without HAVE_UNIQUE_PTR.
 			// NOLINTNEXTLINE(modernize-make-unique)
 			m_curr_tx_data.reset(new CQueuedData(chunk));
 		} else {
@@ -634,9 +610,7 @@ void CECSocket::WriteBufferToSocket(const void *buffer, size_t len)
 	}
 }
 
-//
 // ZLib "error handler"
-//
 
 static void ShowZError(int zerror, z_streamp strm)
 {
@@ -689,10 +663,9 @@ bool CECSocket::ReadHeader()
 	m_curr_rx_data->Read(&m_curr_packet_len, 4);
 	m_curr_packet_len = ENDIAN_NTOHL(m_curr_packet_len);
 	m_bytes_needed = m_curr_packet_len;
-	// Sanity bound on the announced packet size. Pre-auth stays at the historical
-	// 16 MB cap, limiting the damage a malicious peer can do with one bogus header
-	// before we know who they are. Post-auth raises to 256 MB so big uncompressed
-	// responses do not trip the gate (#713 / #728).
+	// Sanity bound on the announced packet size. Pre-auth keeps the historical 16 MB
+	// cap, limiting what one bogus header from an unknown peer can do; post-auth
+	// raises it to 256 MB for big uncompressed responses (#713 / #728).
 	const size_t max_packet_bytes = IsAuthorized() ? (size_t)256 * 1024 * 1024 : (size_t)16 * 1024 * 1024;
 	if (m_bytes_needed > max_packet_bytes) {
 		AddDebugLogLineN(logEC, CFormat("ReadHeader: packet too big: %d") % m_bytes_needed);
@@ -706,10 +679,9 @@ bool CECSocket::ReadHeader()
 	if (currLength < m_bytes_needed
 		// b) way too large (free data again after receiving huge packets)
 		|| m_bytes_needed + EC_SOCKET_BUFFER_SIZE * 10 < currLength) {
-		// Client socket: IsAuthorized() is always true
-		// Server socket: do not allow growing of internal buffers before successful login.
-		// Otherwise sending a simple header with bogus length of 16MB-1 will crash an embedded
-		// client with memory exhaustion.
+		// Client sockets are always authorized. On a server socket, do not grow internal
+		// buffers before a successful login: a bogus 16MB-1 length would otherwise
+		// exhaust an embedded client's memory.
 		if (!IsAuthorized()) {
 			AddDebugLogLineN(logEC,
 				CFormat("ReadHeader: resize (%d -> %d) on non autorized socket") %
@@ -878,11 +850,10 @@ bool CECSocket::WriteBuffer(const void *buffer, size_t len)
 	}
 }
 
-// Block size for a packet whose serialised body is this long: the whole thing
-// when it fits, EC_SOCKET_TX_CHUNK_MAX when it does not. Capped on purpose -- a
-// packet may legitimately be hundreds of MB, and one contiguous block that big
-// would be copied again by the send path. Floored at EC_SOCKET_BUFFER_SIZE so no
-// packet gets smaller blocks than it used to, which also keeps room in the first
+// Block size for a packet whose serialised body is this long: the whole thing when
+// it fits, EC_SOCKET_TX_CHUNK_MAX when it does not. Capped because a packet may be
+// hundreds of MB, and one contiguous block that big would be copied again by the
+// send path. Floored at EC_SOCKET_BUFFER_SIZE, which also keeps room in the first
 // block for the 8-byte header SealOutputQueue leaves in clear. Guessing low is
 // harmless: WriteBufferToSocket spills into a fresh block of the same size.
 size_t CECSocket::TxChunkSize(uint32 bodyLen)
@@ -893,18 +864,16 @@ size_t CECSocket::TxChunkSize(uint32 bodyLen)
 	return want < EC_SOCKET_TX_CHUNK_MAX ? want : EC_SOCKET_TX_CHUNK_MAX;
 }
 
-// Adopt that size for the packet about to be written. Both call sites are
-// reached with an empty block -- the previous packet ended in FlushBuffers, and
-// every early return is ahead of the first write -- so swapping drops nothing.
-// Asserted rather than left implicit, because a future `return` slipped between
-// the writes and FlushBuffers would silently discard a partial packet.
+// Adopt that size for the packet about to be written. Both call sites are reached
+// with an empty block, so swapping drops nothing: the previous packet ended in
+// FlushBuffers and every early return is ahead of the first write. Asserted so a
+// future `return` between the writes and FlushBuffers cannot discard a partial one.
 void CECSocket::SizeTxChunks(uint32 bodyLen)
 {
 	wxASSERT(m_curr_tx_data->GetDataLength() == 0);
 	const size_t chunk = TxChunkSize(bodyLen);
 	if (m_curr_tx_data->GetLength() != chunk) {
-		// CSmartPtr is std::auto_ptr without HAVE_UNIQUE_PTR, where
-		// make_unique does not exist.
+		// CSmartPtr is std::auto_ptr without HAVE_UNIQUE_PTR.
 		// NOLINTNEXTLINE(modernize-make-unique)
 		m_curr_tx_data.reset(new CQueuedData(chunk));
 	}
@@ -928,17 +897,14 @@ bool CECSocket::FlushBuffers()
 	if (m_curr_tx_data->GetDataLength()) {
 		const size_t chunk = m_curr_tx_data->GetLength();
 		m_output_queue.push_back(m_curr_tx_data.release());
-		// CSmartPtr is std::auto_ptr without HAVE_UNIQUE_PTR, where
-		// make_unique does not exist.
+		// CSmartPtr is std::auto_ptr without HAVE_UNIQUE_PTR.
 		// NOLINTNEXTLINE(modernize-make-unique)
 		m_curr_tx_data.reset(new CQueuedData(chunk));
 	}
 	return true;
 }
 
-//
 // Packet I/O
-//
 
 uint32 CECSocket::WritePacket(const CECPacket *packet)
 {
@@ -955,15 +921,12 @@ uint32 CECSocket::WritePacket(const CECPacket *packet)
 
 	uint32_t flags = 0x20;
 
-	// ZLIB decision is per-packet. On a local peer (loopback / RFC1918
-	// LAN / RFC3927 link-local) the bandwidth saved by deflate is
-	// irrelevant — we'd just be paying compress/decompress CPU on both
-	// ends. Skip ZLIB for those connections up to the
-	// kLocalPeerZlibBypassMax cap; above the cap, fall back to ZLIB
-	// so the wire size stays under ReadHeader's 256 MB post-auth
-	// receiver gate. ZLIB still requires both the per-connection
-	// negotiation (`m_my_flags & EC_FLAG_ZLIB`) and a packet larger
-	// than EC_MAX_UNCOMPRESSED.
+	// ZLIB decision is per-packet. On a local peer (loopback / RFC1918 LAN / RFC3927
+	// link-local) the bandwidth deflate saves is irrelevant and we would pay
+	// compress/decompress CPU on both ends, so skip ZLIB up to the
+	// kLocalPeerZlibBypassMax cap; above it, fall back to ZLIB so the wire size stays
+	// under ReadHeader's 256 MB post-auth gate. ZLIB still needs the per-connection
+	// negotiation and a packet larger than EC_MAX_UNCOMPRESSED.
 	const uint32 packet_logical_len = packet->GetPacketLength();
 	const bool local_bypass_zlib = m_isLocalPeer && packet_logical_len <= kLocalPeerZlibBypassMax;
 	if (packet_logical_len > EC_MAX_UNCOMPRESSED && ((m_my_flags & EC_FLAG_ZLIB) > 0) &&
@@ -973,17 +936,15 @@ uint32 CECSocket::WritePacket(const CECPacket *packet)
 		flags |= EC_FLAG_UTF8_NUMBERS;
 	}
 
-	// Always advertise large-tag-count support per packet; the
-	// `flags &= m_my_flags` strips it back out if the peer didn't
-	// advertise EC_TAG_CAN_LARGE_TAG_COUNT in the auth handshake.
-	// Both sides must have the bit in m_my_flags (i.e. negotiated)
-	// before WriteChildren / ReadChildren take the sentinel branch.
+	// Always advertise large-tag-count support per packet; `flags &= m_my_flags`
+	// strips it back out if the peer did not advertise EC_TAG_CAN_LARGE_TAG_COUNT in
+	// the auth handshake. Both sides must have the bit before WriteChildren /
+	// ReadChildren take the sentinel branch.
 	flags |= EC_FLAG_LARGE_TAG_COUNT;
 
 	flags &= m_my_flags;
-	// After the mask, not before: EC_FLAG_ENCRYPTED is a property of this
-	// connection's state rather than a capability the peer advertised, and
-	// m_my_flags would strip it.
+	// After the mask, not before: EC_FLAG_ENCRYPTED is connection state rather than a
+	// capability the peer advertised, and m_my_flags would strip it.
 	if (m_crypt_enabled) {
 		flags |= EC_FLAG_ENCRYPTED;
 	}
@@ -1004,8 +965,7 @@ uint32 CECSocket::WritePacket(const CECPacket *packet)
 	}
 
 	// Size this packet's blocks before the first byte goes in, from the length
-	// already computed above -- GetPacketLength() walks the whole tag tree, so
-	// it is not something to ask for twice.
+	// computed above -- GetPacketLength() walks the whole tag tree.
 	SizeTxChunks(packet_logical_len);
 
 	uint32_t tmp_flags = ENDIAN_HTONL(flags);
@@ -1027,10 +987,9 @@ uint32 CECSocket::WritePacket(const CECPacket *packet)
 		outputStart = m_output_queue.begin();
 	}
 
-	// Seal the body where it lies, then append the tag as its own chunk. This
-	// runs after FlushBuffers (so ZLIB has already produced its bytes: the
-	// order is serialise -> deflate -> seal) and before the length is summed
-	// below, so the patched length covers ciphertext plus tag.
+	// Seal the body where it lies, then append the tag as its own chunk. After
+	// FlushBuffers (serialise -> deflate -> seal) and before the length is summed, so
+	// the patched length covers ciphertext plus tag.
 	if (flags & EC_FLAG_ENCRYPTED) {
 		if (!SealOutputQueue(outputStart)) {
 			AddDebugLogLineN(logEC, "WritePacket: sealing failed");
@@ -1075,9 +1034,8 @@ void CECSocket::SendCachedBodyResponse(
 		++outputStart;
 	}
 
-	// Sum the pre-serialized body length. Used both for the local-ZLIB-
-	// bypass decision and as a budget hint — the actual on-wire length
-	// is computed from the queue after FlushBuffers below.
+	// Sum the pre-serialized body length: the ZLIB-bypass decision and a budget hint.
+	// The on-wire length comes from the queue after FlushBuffers below.
 	uint32 body_bytes = 0;
 	for (size_t i = 0; i < blobs.size(); ++i) {
 		if (blobs[i]) {
@@ -1085,11 +1043,10 @@ void CECSocket::SendCachedBodyResponse(
 		}
 	}
 
-	// Same flag-byte logic as WritePacket. Cached blobs were
-	// serialized assuming UTF-8 numbers + LARGE_TAG_COUNT, so both
-	// bits must end up in the wire flag; we OR them in unconditionally
-	// and then mask against m_my_flags — callers should only invoke
-	// this method on connections that negotiated both capabilities.
+	// Same flag-byte logic as WritePacket. Cached blobs were serialized assuming UTF-8
+	// numbers + LARGE_TAG_COUNT, so both bits must end up in the wire flag; they are
+	// OR'd in unconditionally and then masked against m_my_flags, so callers must only
+	// use this on connections that negotiated both.
 	uint32_t flags = 0x20;
 	const bool local_bypass_zlib = m_isLocalPeer && body_bytes <= kLocalPeerZlibBypassMax;
 	if (body_bytes > EC_MAX_UNCOMPRESSED && ((m_my_flags & EC_FLAG_ZLIB) > 0) && !local_bypass_zlib) {
@@ -1098,9 +1055,8 @@ void CECSocket::SendCachedBodyResponse(
 	flags |= EC_FLAG_UTF8_NUMBERS;
 	flags |= EC_FLAG_LARGE_TAG_COUNT;
 	flags &= m_my_flags;
-	// After the mask, not before: EC_FLAG_ENCRYPTED is a property of this
-	// connection's state rather than a capability the peer advertised, and
-	// m_my_flags would strip it.
+	// After the mask, not before: EC_FLAG_ENCRYPTED is connection state rather than a
+	// capability the peer advertised, and m_my_flags would strip it.
 	if (m_crypt_enabled) {
 		flags |= EC_FLAG_ENCRYPTED;
 	}
@@ -1119,9 +1075,8 @@ void CECSocket::SendCachedBodyResponse(
 		}
 	}
 
-	// Size this packet's blocks before the first byte goes in, from the blob
-	// total summed above. The bodies are already serialised here, so this is
-	// the exact wire length before ZLIB, not an estimate.
+	// Size this packet's blocks before the first byte goes in, from the blob total
+	// above. The bodies are already serialised, so this is the exact pre-ZLIB length.
 	SizeTxChunks(body_bytes);
 
 	uint32_t tmp_flags = ENDIAN_HTONL(flags);
@@ -1135,10 +1090,9 @@ void CECSocket::SendCachedBodyResponse(
 	// applied consistent with the rest of the body.
 	WriteNumber(&opcode, sizeof(uint8_t));
 
-	// Children count framing mirrors CECTag::WriteChildren: under
-	// LARGE_TAG_COUNT use the sentinel-extended format for counts at
-	// or above 0xFFFF; otherwise emit uint16 directly (with the
-	// 0xFFFE cap that the spec uses for backward-compat).
+	// Children count framing mirrors CECTag::WriteChildren: under LARGE_TAG_COUNT the
+	// sentinel-extended format for counts at or above 0xFFFF, otherwise a uint16 with
+	// the spec's 0xFFFE backward-compat cap.
 	const size_t count = blobs.size();
 	const bool useLargeCount = (flags & EC_FLAG_LARGE_TAG_COUNT) != 0;
 	const size_t writeCount = useLargeCount ? count : std::min(count, (size_t)0xFFFE);
@@ -1152,8 +1106,7 @@ void CECSocket::SendCachedBodyResponse(
 		WriteNumber(&tmp16, sizeof(tmp16));
 	}
 
-	// Per-file blobs are already wire-format byte streams (one full
-	// child tag each). Feed them through WriteBuffer in one call —
+	// Per-file blobs are already wire-format byte streams (one full child tag each).
 	// WriteBuffer handles deflate when EC_FLAG_ZLIB is set in m_tx_flags.
 	size_t emitted = 0;
 	for (size_t i = 0; i < count && emitted < writeCount; ++i) {
@@ -1171,18 +1124,16 @@ void CECSocket::SendCachedBodyResponse(
 		outputStart = m_output_queue.begin();
 	}
 
-	// Seal the body, exactly as WritePacket does and for the same reasons:
-	// after FlushBuffers so ZLIB has already produced its bytes (serialise ->
-	// deflate -> seal), and before the length is summed below so the patched
-	// length covers ciphertext plus tag.
+	// Seal the body, exactly as WritePacket does and for the same reasons: after
+	// FlushBuffers so ZLIB has produced its bytes (serialise -> deflate -> seal), and
+	// before the length is summed so the patched length covers ciphertext plus tag.
 	//
-	// Without this the flag byte above still advertises EC_FLAG_ENCRYPTED --
-	// it is OR'd in from m_crypt_enabled after the m_my_flags mask, because
-	// it is connection state rather than a negotiated capability -- while the
-	// body goes out as plaintext. The peer then tries to verify an AEAD tag
-	// that was never written, fails, and drops the connection through the one
-	// path in ReadPacket that logs only at debug level, so the disconnect is
-	// silent at both ends.
+	// Without this the flag byte above still advertises EC_FLAG_ENCRYPTED -- OR'd in
+	// from m_crypt_enabled after the m_my_flags mask, being connection state rather
+	// than a negotiated capability -- while the body goes out as plaintext. The peer
+	// then fails to verify a tag that was never written and drops the connection
+	// through the one path in ReadPacket that logs only at debug level, so the
+	// disconnect is silent at both ends.
 	if (flags & EC_FLAG_ENCRYPTED) {
 		if (!SealOutputQueue(outputStart)) {
 			AddDebugLogLineN(logEC, "SendCachedBodyResponse: sealing failed");
@@ -1222,14 +1173,13 @@ bool CECSocket::OpenReceivedBody()
 		!m_crypt.OpenFinal(data + bodyLen)) {
 		return false;
 	}
-	// Hide the tag from the parser: everything downstream expects the body to
-	// end where the plaintext ends.
+	// Hide the tag from the parser: everything downstream expects the body to end
+	// where the plaintext ends.
 	//
-	// Deliberately no Rewind() here. Rewind() moves the *write* pointer back
-	// to the start as well, which would leave the buffer logically empty and
-	// hand the parser a zero-length body. The read pointer is already at the
-	// start at this point -- ReadHeader rewound, and filling the body only
-	// advanced the write pointer.
+	// Deliberately no Rewind() here. Rewind() moves the *write* pointer back to the
+	// start as well, which would leave the buffer logically empty and hand the parser
+	// a zero-length body. The read pointer is already at the start -- ReadHeader
+	// rewound, and filling the body only advanced the write pointer.
 	m_curr_rx_data->TruncateBy(ECCrypt::AEAD_TAG_LEN);
 	return true;
 }
@@ -1257,17 +1207,15 @@ const CECPacket *CECSocket::ReadPacket()
 			return nullptr;
 		}
 		if (!OpenReceivedBody()) {
-			// A failed tag is the tamper signal, and it is not recoverable:
-			// the stream is no longer trustworthy.
+			// A failed tag is the tamper signal, and it is not recoverable: the
+			// stream is no longer trustworthy.
 			//
 			// Reported unconditionally, on stderr. This is one of four ways
-			// ReadPacket can drop a connection and was the only silent one,
-			// which is backwards: the other three are protocol or zlib
-			// errors, while this one fires on tampering or on a peer that
-			// flags a packet as sealed without sealing it. A connection that
-			// dies leaving nothing in the log at either end is close to
-			// undiagnosable. One line per dropped connection, not per
-			// packet: the drop happens immediately below.
+			// ReadPacket can drop a connection and was the only silent one, which
+			// is backwards: the other three are protocol or zlib errors, while this
+			// one fires on tampering or on a peer that flags a packet as sealed
+			// without sealing it. One line per dropped connection, not per packet:
+			// the drop happens immediately below.
 			AddDebugLogLineN(logEC, "ReadPacket: authentication failed, dropping connection");
 			fprintf(stderr,
 				"amule: EC packet failed authentication (flagged encrypted but the tag "

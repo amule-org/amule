@@ -76,11 +76,10 @@ CChatWnd::CChatWnd(wxWindow *pParent)
 
 bool CChatWnd::StartSession(CFriend *friend_client, bool setfocus)
 {
-	// A tab is keyed on GUI_ID(ip, port). A friend can be known by hash alone
-	// -- added from an offline row whose credit record carries no address --
-	// and keying its tab on zero would put every such friend in one tab, under
-	// whichever name opened it first, with nothing sendable from it. Refuse
-	// until a handshake supplies the address.
+	// A tab is keyed on GUI_ID(ip, port). A friend can be known by hash alone -- added from an
+	// offline row whose credit record carries no address -- and keying its tab on zero would
+	// put every such friend in one tab, under whichever name opened it first, with nothing
+	// sendable from it. Refuse until a handshake supplies the address.
 	if (friend_client->GetName().IsEmpty() || friend_client->GetIP() == 0 ||
 		friend_client->GetPort() == 0) {
 		return false;
@@ -269,9 +268,8 @@ void CChatWnd::EndSession(uint64 id)
 
 void CChatWnd::StartSessionByID(uint64 gui_id, const wxString &name)
 {
-	// show=false: a session can appear on its own, opened by another client
-	// or by a peer messaging us, and must not pull the selection away from
-	// whatever the local user is doing.
+	// show=false: a session can appear on its own, opened by another client or by a peer
+	// messaging us, and must not pull the selection away from whatever the local user is doing.
 	chatselector->StartSession(gui_id, name, false);
 	CheckNewButtonsState();
 }
@@ -280,9 +278,9 @@ void CChatWnd::AppendStoredMessage(
 	uint64 gui_id, const wxString &name, const wxString &text, bool outgoing, bool blink)
 {
 	chatselector->AppendStoredMessage(gui_id, name, text, outgoing);
-	// `blink` is false while replaying history on connect: a reconnect must
-	// not light the Messages button up for messages the user already read on
-	// another client. Only arrivals past the connect-time cursor blink.
+	// `blink` is false while replaying history on connect: a reconnect must not light the
+	// Messages button up for messages the user already read on another client. Only arrivals
+	// past the connect-time cursor blink.
 	if (blink && !theApp->amuledlg->IsDialogVisible(CamuleDlg::DT_CHAT_WND)) {
 		theApp->amuledlg->SetMessageBlink(true);
 	}
@@ -291,9 +289,9 @@ void CChatWnd::AppendStoredMessage(
 
 void CChatWnd::EndSessionFromCore(uint64 gui_id)
 {
-	// The core has already forgotten this session, so the tab must go without
-	// originating a close of its own. The guard keeps OnChatClosing from
-	// sending one when this DeletePage fires the page-closing event.
+	// The core has already forgotten this session, so the tab must go without originating a
+	// close of its own. The guard keeps OnChatClosing from sending one when this DeletePage
+	// fires the page-closing event.
 	CScopedFlag closingGuard(m_inChatClosing);
 	chatselector->EndSession(gui_id);
 	CheckNewButtonsState();

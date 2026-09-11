@@ -341,10 +341,9 @@ void PlatformSpecific::PreventSleepMode()
 		SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
 		m_preventingSleepMode = true;
 
-// IOPMAssertionCreate has been introduced in Leopard (10.5) but deprecated starting from Snow Leopard(10.6)
-// For more details see:
-// - http://developer.apple.com/library/mac/#qa/qa1340/_index.html
-// - http://www.cimgf.com/2009/10/14/the-journey-to-disabling-sleep-with-iokit/
+// IOPMAssertionCreate arrived in Leopard (10.5) but is deprecated from Snow Leopard (10.6). See
+// http://developer.apple.com/library/mac/#qa/qa1340/_index.html and
+// http://www.cimgf.com/2009/10/14/the-journey-to-disabling-sleep-with-iokit/
 #elif defined(__WXMAC__) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 1060 // 10.6 only
 		CFStringRef reasonForActivity = CFSTR("aMule is transferring files");
 		IOReturn success = IOPMAssertionCreateWithName(kIOPMAssertionTypePreventUserIdleSystemSleep,

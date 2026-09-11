@@ -48,9 +48,9 @@
 
 #include <wx/dcclient.h> // Needed for wxClientDC
 
-// One fixed size for everything in the control's small image list. Set by the
-// 16x16 header sort arrows; the bundled country flags are 16x11 and get padded
-// onto a transparent cell of this size (see FlagImage).
+// One fixed size for everything in the control's small image list. Set by the 16x16 header sort
+// arrows; the bundled country flags are 16x11 and get padded onto a transparent cell of this size
+// (see FlagImage).
 static const int LIST_IMAGE_SIZE = 16;
 
 wxBEGIN_EVENT_TABLE(CServerListCtrl, CMuleVirtualDataViewCtrl)
@@ -104,14 +104,13 @@ CServerListCtrl::CServerListCtrl(wxWindow *parent,
 	AddTextColumn(_("Soft Files"), COLUMN_SERVER_SOFTFILES, "s", 85, wxALIGN_LEFT, flags);
 	AddTextColumn(_("Hard Files"), COLUMN_SERVER_HARDFILES, "h", 85, wxALIGN_LEFT, flags);
 
-	// Same columns in both binaries: diagnostics, hidden by default in release
-	// builds (below), and the flags are streamed over EC so the remote GUI has
-	// the data behind them.
+	// Same columns in both binaries: diagnostics, hidden by default in release builds (below),
+	// and the flags are streamed over EC so the remote GUI has the data behind them.
 	AddTextColumn(_("TCP Flags"), COLUMN_SERVER_TCPFLAGS, "t", 80, wxALIGN_LEFT, flags);
 	AddTextColumn(_("UDP Flags"), COLUMN_SERVER_UDPFLAGS, "u", 80, wxALIGN_LEFT, flags);
-	// Per-user publishing limits the server advertises: how many of a user's
-	// shared files it will index. Both arrive with the periodic UDP status
-	// reply, the same one that fills Users and Files.
+	// Per-user publishing limits the server advertises: how many of a user's shared files it
+	// will index. Both arrive with the periodic UDP status reply, the same one that fills Users
+	// and Files.
 
 	// Absorbs the macOS trailing-column sizing; the model answers any column
 	// past the real ones with an empty value.
@@ -123,9 +122,8 @@ CServerListCtrl::CServerListCtrl(wxWindow *parent,
 	ApplySorting(COLUMN_SERVER_NAME, 0);
 
 #ifndef __DEBUG__
-	// Wire-flag columns are diagnostics: listed in the header menu so they can be
-	// switched on, hidden by default. Set before the settings are loaded, so
-	// anything the user saved wins.
+	// Wire-flag columns are diagnostics: listed in the header menu so they can be switched on,
+	// hidden by default. Set before the settings are loaded, so anything the user saved wins.
 	SetColumnHidden(COLUMN_SERVER_TCPFLAGS, true, 0);
 	SetColumnHidden(COLUMN_SERVER_UDPFLAGS, true, 0);
 #endif
@@ -166,10 +164,10 @@ void CServerListCtrl::RemoveServer(CServer *server)
 
 void CServerListCtrl::RemoveAllServers(bool selectedOnly)
 {
-	// Collect first, delete second: the rows are a view onto the model, so removing
-	// one renumbers every row below it -- and the confirmations below run a nested
-	// event loop, during which the list can be updated underneath a row index but
-	// never underneath a server pointer.
+	// Collect first, delete second: the rows are a view onto the model, so removing one
+	// renumbers every row below it -- and the confirmations below run a nested event loop,
+	// during which the list can be updated underneath a row index but never underneath a server
+	// pointer.
 	std::vector<CServer *> candidates;
 	if (selectedOnly) {
 		for (wxUIntPtr data : GetSelectedItemData()) {
@@ -212,10 +210,10 @@ void CServerListCtrl::RemoveAllServers(bool selectedOnly)
 			theApp->serverlist->SetStaticServer(server, false);
 		}
 
-		// Drop the row before asking for the removal, not as a result of it:
-		// amulegui's CServerListRem::RemoveServer() only sends an EC command, so the
-		// row would otherwise linger until the core's next update. In the monolithic
-		// build the resulting Notify_ServerRemove() finds the row already gone.
+		// Drop the row before asking for the removal, not as a result of it: amulegui's
+		// CServerListRem::RemoveServer() only sends an EC command, so the row would
+		// otherwise linger until the core's next update. In the monolithic build the
+		// resulting Notify_ServerRemove() finds the row already gone.
 		RemoveServer(server);
 		theApp->serverlist->RemoveServer(server);
 	}
@@ -231,9 +229,9 @@ void CServerListCtrl::RefreshServer(CServer *server)
 
 	const wxUIntPtr ptr = reinterpret_cast<wxUIntPtr>(server);
 	if (HasItemData(ptr)) {
-		// The cells are rendered from the server on demand, so a refresh is
-		// just a repaint -- plus, when sorted by a column whose value just
-		// changed, the re-sort the base class coalesces for us.
+		// The cells are rendered from the server on demand, so a refresh is just a repaint
+		// -- plus, when sorted by a column whose value just changed, the re-sort the base
+		// class coalesces for us.
 		RefreshItemData(ptr);
 	} else {
 		AddItemData(ptr);
@@ -266,12 +264,11 @@ wxString CServerListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) con
 		if (!server->GetPing()) {
 			return wxEmptyString;
 		}
-		// GetPing() is already milliseconds (a GetTickCount64() delta), and
-		// milliseconds is how latency is written everywhere else, including our own
-		// REST API's "ping_ms". It used to go through CastSecondsToHM(), whose
-		// sub-minute branch prints "0.203 secs" (issue #823). The unit is translated
-		// because it is not written "ms" everywhere, and the number is kept out of
-		// the catalog entry.
+		// GetPing() is already milliseconds (a GetTickCount64() delta), and milliseconds is
+		// how latency is written everywhere else, including our own REST API's "ping_ms".
+		// It used to go through CastSecondsToHM(), whose sub-minute branch prints "0.203
+		// secs" (issue #823). The unit is translated because it is not written "ms"
+		// everywhere, and the number is kept out of the catalog entry.
 		return CFormat("%u %s") % server->GetPing() % _("ms");
 
 	case COLUMN_SERVER_USERS:
@@ -280,9 +277,9 @@ wxString CServerListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) con
 		}
 		return CFormat("%u") % server->GetUsers();
 
-	// Zero means "the server never told us", not "the limit is zero": these only
-	// arrive once a UDP status reply has come back, so a freshly added or UDP-silent
-	// server has nothing to show and stays blank, as Users and Files do.
+	// Zero means "the server never told us", not "the limit is zero": these only arrive once a
+	// UDP status reply has come back, so a freshly added or UDP-silent server has nothing to
+	// show and stays blank, as Users and Files do.
 	case COLUMN_SERVER_SOFTFILES:
 		if (!server->GetSoftFiles()) {
 			return wxEmptyString;
@@ -326,9 +323,9 @@ wxString CServerListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) con
 		return server->IsStaticMember() ? _("Yes") : _("No");
 
 	case COLUMN_SERVER_VERSION:
-		// The placeholder lives here rather than in CServer, so it is
-		// translated in the locale of whoever is reading the column and
-		// never reaches server.met, EC or the API as data.
+		// The placeholder lives here rather than in CServer, so it is translated in the
+		// locale of whoever is reading the column and never reaches server.met, EC or the
+		// API as data.
 		return server->GetVersion().IsEmpty() ? _("Unknown") : server->GetVersion();
 
 	// Rendered in both binaries: the flags are streamed over EC, so the remote
@@ -393,13 +390,12 @@ wxString CServerListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) con
 	}
 }
 
-// Gated with its only caller: this reaches theApp->GetCountryFlags(), which only
-// exists under GEOIP_GUI, so compiling it unconditionally broke the monolithic
-// build at -DENABLE_IP2COUNTRY=NO.
+// Gated with its only caller: this reaches theApp->GetCountryFlags(), which only exists under
+// GEOIP_GUI, so compiling it unconditionally broke the monolithic build at -DENABLE_IP2COUNTRY=NO.
 //
-// Only the definition is gated, not the declaration: GEOIP_GUI is #defined in
-// amule.h, which this file includes but ServerListCtrl.h does not, so gating it
-// there would compile the declaration out from under this definition.
+// Only the definition is gated, not the declaration: GEOIP_GUI is #defined in amule.h, which this
+// file includes but ServerListCtrl.h does not, so gating it there would compile the declaration out
+// from under this definition.
 #ifdef GEOIP_GUI
 const wxIcon &CServerListCtrl::FlagIcon(const wxString &code) const
 {
@@ -507,21 +503,21 @@ void CServerListCtrl::ShowServerCount()
 void CServerListCtrl::FitColumnsToContent()
 {
 	// Only size a profile that has no widths of its own. Both callers run after
-	// LoadColumnSettings() has restored whatever was saved, so fitting
-	// unconditionally would overwrite a width the user had dragged.
+	// LoadColumnSettings() has restored whatever was saved, so fitting unconditionally would
+	// overwrite a width the user had dragged.
 	if (HasPersistedColumnWidths()) {
 		return;
 	}
 
-	// Upper bound for the Description column: descriptions can be very
-	// long (full forum URLs etc.), so cap it rather than let one row blow
-	// the column out. The other columns hold short, bounded values.
+	// Upper bound for the Description column: descriptions can be very long (full forum URLs),
+	// so cap it rather than let one row blow the column out. The other columns hold short,
+	// bounded values.
 	const int descMaxWidth = 300;
 
-	// Content is measured against the model rather than asked of the control:
-	// wxDataViewCtrl has no portable "size this column to its contents", and on a
-	// list that renders cells on demand there is nothing native to measure. The
-	// margins reproduce what the old wxLIST_AUTOSIZE produced.
+	// Content is measured against the model rather than asked of the control: wxDataViewCtrl
+	// has no portable "size this column to its contents", and on a list that renders cells on
+	// demand there is nothing native to measure. The margins reproduce what the old
+	// wxLIST_AUTOSIZE produced.
 	const int autosizeMargin = 10;
 	const int imageMargin = 5;
 	const int flagWidth = 16;

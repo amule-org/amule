@@ -299,10 +299,10 @@ TEST(CPath, IsSameDir)
 
 TEST(CPath, GetDirKeyMatchesIsSameDir)
 {
-	// CSharedFileList groups directories by GetDirKey() instead of comparing
-	// every pair with IsSameDir() (issue #898). That is only valid while the
-	// two agree, so assert the equivalence directly rather than the key's
-	// contents, which are platform-dependent by design.
+	// CSharedFileList groups directories by GetDirKey() instead of comparing every pair with
+	// IsSameDir() (issue #898). That is only valid while the two agree, so assert the
+	// equivalence directly rather than the key's contents, which are platform-dependent by
+	// design.
 	const wxString paths[] = {
 		"/root",
 		"/root/",
@@ -314,10 +314,9 @@ TEST(CPath, GetDirKeyMatchesIsSameDir)
 		"/home/./amule",
 		"/home/amule/../amule",
 		"/home/other/../amule",
-		// Case variants: the same directory on Windows, different ones
-		// elsewhere. Asserting the equivalence rather than the key's value
-		// means this covers both without a platform #ifdef -- and it is the
-		// case where a hand-rolled key would diverge from IsSameDir(),
+		// Case variants: the same directory on Windows, different ones elsewhere. Asserting
+		// the equivalence rather than the key's value covers both without a platform #ifdef
+		// -- and it is the case where a hand-rolled key would diverge from IsSameDir(),
 		// because the folding lives inside wxPATH_NORM_CASE.
 		"/Home/AMule",
 		"/HOME/AMULE/",
@@ -336,9 +335,8 @@ TEST(CPath, GetDirKeyMatchesIsSameDir)
 
 TEST(CPath, GetDirKeyGroupsEqualDirs)
 {
-	// The property the grouping actually relies on: paths the old pairwise
-	// walk would have put together produce one key, and different
-	// directories produce different ones.
+	// The property the grouping actually relies on: paths the old pairwise walk would have put
+	// together produce one key, and different directories produce different ones.
 	ASSERT_EQUALS(Norm("/root").GetDirKey(), Norm("/root/").GetDirKey());
 	ASSERT_EQUALS(Norm("/home/amule").GetDirKey(), Norm("/home/amule/").GetDirKey());
 	ASSERT_EQUALS(Norm("/home/amule").GetDirKey(), Norm("/home/./amule").GetDirKey());
@@ -350,10 +348,9 @@ TEST(CPath, GetDirKeyGroupsEqualDirs)
 
 TEST(CPath, IsSameAsUnchangedByKeyExtraction)
 {
-	// NormalizedKey() was lifted out of IsSameAs() (issue #898). Both of the
-	// branches it kept are asserted here so the extraction cannot quietly
-	// change either: bare filenames still compare through PATHCMP, and
-	// anything with a separator still normalises both sides.
+	// NormalizedKey() was lifted out of IsSameAs() (issue #898). Both branches it kept are
+	// asserted here so the extraction cannot quietly change either: bare filenames still
+	// compare through PATHCMP, and anything with a separator still normalises both sides.
 	ASSERT_TRUE(CPath("foobar.tgz") == CPath("foobar.tgz"));
 	ASSERT_TRUE(CPath("foobar.tgz") != CPath("barfoo.tar"));
 
@@ -469,14 +466,13 @@ TEST(CPath, TruncatePath)
 
 TEST(CPath, UnivRoundTrip)
 {
-	// ToUniv()/FromUniv() stores the filesystem bytes verbatim and is the one
-	// representation guaranteed to reproduce the path. The display form is
-	// not: on macOS wxConvFileName normalises to NFD, so GetPrintable() hands
-	// back a different byte sequence for the same characters, and a CPath
-	// rebuilt from it is a different path to any filesystem that compares
-	// bytes -- a Linux daemon's, or an SMB/NFS mount. Anything carrying a
-	// path through another medium (a config file, a list control's cells)
-	// therefore has to move this pair around rather than what it displayed.
+	// ToUniv()/FromUniv() stores the filesystem bytes verbatim and is the one representation
+	// guaranteed to reproduce the path. The display form is not: on macOS wxConvFileName
+	// normalises to NFD, so GetPrintable() hands back a different byte sequence for the same
+	// characters, and a CPath rebuilt from it is a different path to any filesystem that
+	// compares bytes -- a Linux daemon's, or an SMB/NFS mount. Anything carrying a path through
+	// another medium (a config file, a list control's cells) therefore has to move this pair
+	// around rather than what it displayed.
 	const wxString inputs[] = {
 		"/tmp/plain",
 		// Precomposed U+00F6, which is what NFD decomposes.

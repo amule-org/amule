@@ -91,10 +91,9 @@ public:
 
 		CastChild(IDC_DOWNLOADSIZE, wxStaticText)->SetLabel(label.GetString());
 
-		// Only touch the gauge when we know the total. Without a known total
-		// we leave the gauge at its previous (valid) state — better than
-		// risking m_gaugePos > m_rangeMax, which trips an assertion in
-		// wxGauge::DoSetGauge on wxGTK (./src/gtk/gauge.cpp:90).
+		// Only touch the gauge when we know the total. Without one we leave the gauge at
+		// its previous valid state -- better than risking m_gaugePos > m_rangeMax, which
+		// trips an assertion in wxGauge::DoSetGauge on wxGTK (./src/gtk/gauge.cpp:90).
 		if (safeTotal > 0) {
 			if (safeTotal != m_progressbar->GetRange()) {
 				m_progressbar->SetRange(safeTotal);
@@ -107,10 +106,9 @@ public:
 	}
 
 private:
-	// Unlink from the request owner and cancel it. Fire-and-forget: the owner
-	// self-destroys when wxWebRequest reports State_Cancelled on the main loop.
-	// Deleting it here, with a request in flight, would leave the wxWebRequest
-	// backend calling into a dead sink.
+	// Unlink from the request owner and cancel it. Fire-and-forget: the owner self-destroys
+	// when wxWebRequest reports State_Cancelled on the main loop. Deleting it here, with a
+	// request in flight, would leave the wxWebRequest backend calling into a dead sink.
 	void StopDownload()
 	{
 		if (m_owner) {
@@ -131,9 +129,9 @@ private:
 
 	void OnShutdown(CMuleInternalEvent &WXUNUSED(evt))
 	{
-		// The thread is about to self-destroy — drop our raw pointer now
-		// so our own dtor (which runs later via wxPendingDelete) does not
-		// touch a freed CHTTPDownloadThread via StopDownload().
+		// The thread is about to self-destroy -- drop our raw pointer now so our own dtor,
+		// which runs later via wxPendingDelete, does not touch a freed CHTTPDownloadThread
+		// via StopDownload().
 		m_owner = NULL;
 		Show(false);
 		Destroy();
@@ -158,14 +156,13 @@ wxDEFINE_EVENT(wxEVT_HTTP_SHUTDOWN, wxEvent);
 
 // Apply the current proxy prefs to the given wxWebSession.
 //
-// wxWebProxy / wxWebSession::SetProxy are wx 3.3+ only. On wx 3.2 there is no
-// programmatic way to set a proxy on wxWebRequest, so we rely on the backend
-// defaults: libcurl honours http_proxy / https_proxy / all_proxy. That leaves wx
-// 3.2 users no worse off than the legacy wxHTTP::SetProxyMode(bool) path, which
-// only toggled a boolean and never consumed the host / port / auth fields.
+// wxWebProxy / wxWebSession::SetProxy are wx 3.3+ only. On wx 3.2 there is no programmatic way to
+// set a proxy on wxWebRequest, so we rely on the backend defaults: libcurl honours http_proxy /
+// https_proxy / all_proxy. That leaves wx 3.2 users no worse off than the legacy
+// wxHTTP::SetProxyMode(bool) path, which only toggled a boolean and never consumed the host / port
+// / auth fields.
 //
-// SOCKS proxies are skipped even where SetProxy is available: wx 3.3's
-// wxWebProxy is HTTP-only.
+// SOCKS proxies are skipped even where SetProxy is available: wx 3.3's wxWebProxy is HTTP-only.
 static void ApplyProxyToSession(wxWebSession &session)
 {
 #if wxCHECK_VERSION(3, 3, 0)
@@ -193,43 +190,42 @@ static void ApplyProxyToSession(wxWebSession &session)
 #endif
 }
 
-// HTTP-on-curl is what lets us bind egress to an interface (via the sockopt hook
-// below). Selected on Linux and macOS but deliberately NOT on Windows:
+// HTTP-on-curl is what lets us bind egress to an interface (via the sockopt hook below). Selected
+// on Linux and macOS but deliberately NOT on Windows:
 //
 //   Linux  : curl is already the default backend.
-//   macOS  : the default is the native URLSession backend, whose handle is not a
-//            CURL*, so curl is requested explicitly to get a bindable handle.
-//   Windows: the wxMSW libcurl backend is broken -- a forced curl request never
-//            progresses and hangs. WinHTTP works but has no interface-bind API,
-//            so HTTP stays on WinHTTP there and is not bound.
+//   macOS  : the default is the native URLSession backend, whose handle is not a CURL*, so curl is
+//            requested explicitly to get a bindable handle.
+//   Windows: the wxMSW libcurl backend is broken -- a forced curl request never progresses and
+//            hangs. WinHTTP works but has no interface-bind API, so HTTP stays on WinHTTP there
+//            and is not bound.
 //
-// P2P traffic is bound on all platforms regardless; only the Windows HTTP
-// side-channels are left unbound.
+// P2P traffic is bound on all platforms regardless; only the Windows HTTP side-channels are left
+// unbound.
 #if wxUSE_WEBREQUEST_CURL && !defined(__WINDOWS__)
 #define AMULE_HTTP_CURL_BIND 1
 #endif
 
-// Returns the session aMule HTTP should use, and reports through `isCurlBackend`
-// whether it is libcurl-backed. The caller may only treat
-// wxWebRequest::GetNativeHandle() as a CURL* when curl actually served the
-// request: wxUSE_WEBREQUEST_CURL says only that curl is AVAILABLE, not that it
-// BACKS the default session. On macOS that default is NSURLSession, whose native
-// handle is an NSURLSessionTask*, and calling curl_easy_setopt() on it corrupts
-// the Obj-C object and crashes on startup (#601).
+// Returns the session aMule HTTP should use, and reports through `isCurlBackend` whether it is
+// libcurl-backed. The caller may only treat wxWebRequest::GetNativeHandle() as a CURL* when curl
+// actually served the request: wxUSE_WEBREQUEST_CURL says only that curl is AVAILABLE, not that it
+// BACKS the default session. On macOS that default is NSURLSession, whose native handle is an
+// NSURLSessionTask*, and calling curl_easy_setopt() on it corrupts the Obj-C object and crashes on
+// startup (#601).
 static wxWebSession &GetAmuleWebSession(bool &isCurlBackend)
 {
 	isCurlBackend = false;
 #ifdef AMULE_HTTP_CURL_BIND
-	// Switch to the curl backend only when an interface is actually bound -- curl
-	// is just the means to make HTTP bindable. Forcing it otherwise would change
-	// the HTTP stack for users who do not use this feature, including macOS's
-	// native URLSession with its own TLS and proxy handling.
+	// Switch to the curl backend only when an interface is actually bound -- curl is just the
+	// means to make HTTP bindable. Forcing it otherwise would change the HTTP stack for users
+	// who do not use this feature, including macOS's native URLSession with its own TLS and
+	// proxy handling.
 	if (!thePrefs::GetNetworkInterface().IsEmpty() &&
 		wxWebSession::IsBackendAvailable(wxWebSessionBackendCURL)) {
-		// Proxy applied here, at construction, and never again -- see the note on
-		// the default session below. Function-local statics are initialised once and
-		// thread-safely, which matters because requests are created from
-		// CHTTPDownloadThread as well as the main thread.
+		// Proxy applied here, at construction, and never again -- see the note on the
+		// default session below. Function-local statics are initialised once and thread-
+		// safely, which matters because requests are created from CHTTPDownloadThread as
+		// well as the main thread.
 		static wxWebSession curlSession = [] {
 			wxWebSession session = wxWebSession::New(wxWebSessionBackendCURL);
 			ApplyProxyToSession(session);
@@ -240,22 +236,22 @@ static wxWebSession &GetAmuleWebSession(bool &isCurlBackend)
 			return curlSession;
 		}
 	}
-	// Default session. AMULE_HTTP_CURL_BIND already excludes Windows (WinHTTP),
-	// so the default backend here is curl on Linux/*nix but NSURLSession on
-	// macOS — only the former hands back a CURL* from GetNativeHandle().
+	// Default session. AMULE_HTTP_CURL_BIND already excludes Windows (WinHTTP), so the default
+	// backend here is curl on Linux and other *nix but NSURLSession on macOS -- only the former
+	// hands back a CURL* from GetNativeHandle().
 #ifndef __WXOSX__
 	isCurlBackend = true;
 #endif
 #endif
-	// Once per session, not once per request. WinHTTP builds its session handle on
-	// the first request and wx asserts if SetProxy() is called after that:
+	// Once per session, not once per request. WinHTTP builds its session handle on the first request
+	// and wx asserts if SetProxy() is called after that:
 	//
 	//   webrequest_winhttp.cpp:SetProxy: assert '!m_handle' failed.
 	//
-	// aMule makes several HTTP requests per session, so applying the proxy on each
-	// one meant every request after the first raised a modal assert during startup.
-	// The cost is that a proxy preference change takes effect on the next run
-	// rather than the next request, which is all the WinHTTP backend allows anyway.
+	// aMule makes several HTTP requests per session, so applying the proxy on each one meant every
+	// request after the first raised a modal assert during startup. The cost is that a proxy
+	// preference change takes effect on the next run rather than the next request, which is all the
+	// WinHTTP backend allows anyway.
 	static const bool defaultSessionProxyApplied = [] {
 		ApplyProxyToSession(wxWebSession::GetDefault());
 		return true;
@@ -266,10 +262,9 @@ static wxWebSession &GetAmuleWebSession(bool &isCurlBackend)
 }
 
 #if defined(AMULE_HAVE_LIBCURL) && defined(AMULE_HTTP_CURL_BIND)
-// libcurl invokes this on the freshly-created socket, before connect(). Bind
-// it to the configured interface using aMule's own per-platform logic (the
-// same SO_BINDTODEVICE / IP_BOUND_IF path the P2P sockets use), so HTTP can't
-// leak past a bound interface. See amule-org/amule#173.
+// libcurl invokes this on the freshly-created socket, before connect(). Bind it to the configured
+// interface using aMule's own per-platform logic (the same SO_BINDTODEVICE / IP_BOUND_IF path the
+// P2P sockets use), so HTTP cannot leak past a bound interface. See amule-org/amule#173.
 extern "C" int amuleHttpSockoptCallback(void *, curl_socket_t curlfd, curlsocktype)
 {
 	const wxString &iface = thePrefs::GetNetworkInterface();
@@ -280,12 +275,11 @@ extern "C" int amuleHttpSockoptCallback(void *, curl_socket_t curlfd, curlsockty
 }
 #endif
 
-// Tune the libcurl handle backing an HTTP request: CURLOPT_NOSIGNAL so the
-// synchronous-resolver fallback does not raise SIGALRM in this multi-threaded
-// process, CURLOPT_CONNECTTIMEOUT_MS so the connect phase gives up after 30 s
-// instead of the full OS resolver timeout, and CURLOPT_SOCKOPTFUNCTION to bind
-// egress when an interface is configured. Only call this when curl actually
-// backs the request (see GetAmuleWebSession).
+// Tune the libcurl handle backing an HTTP request: CURLOPT_NOSIGNAL so the synchronous-resolver
+// fallback does not raise SIGALRM in this multi-threaded process, CURLOPT_CONNECTTIMEOUT_MS so the
+// connect phase gives up after 30 s instead of the full OS resolver timeout, and
+// CURLOPT_SOCKOPTFUNCTION to bind egress when an interface is configured. Only call this when curl
+// actually backs the request (see GetAmuleWebSession).
 static void CustomizeCurlRequest(wxWebRequest &request)
 {
 #if defined(AMULE_HAVE_LIBCURL) && defined(AMULE_HTTP_CURL_BIND)
@@ -293,11 +287,11 @@ static void CustomizeCurlRequest(wxWebRequest &request)
 		curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
 		curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, 30000L);
 		// Stall guard: abort a transfer that averages under 1 byte/s for 60 s once
-		// connected. CURLOPT_CONNECTTIMEOUT only covers the connect phase, so without
-		// this a server that accepts the connection and then stops sending leaves a
-		// pending request forever -- which matters most for the unattended periodic
-		// version check. A total CURLOPT_TIMEOUT is avoided on purpose so large but
-		// legitimately slow downloads are not capped.
+		// connected. CURLOPT_CONNECTTIMEOUT only covers the connect phase, so without this
+		// a server that accepts the connection and then stops sending leaves a pending
+		// request forever -- which matters most for the unattended periodic version check.
+		// A total CURLOPT_TIMEOUT is avoided on purpose so large but legitimately slow
+		// downloads are not capped.
 		curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, 1L);
 		curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, 60L);
 		if (!thePrefs::GetNetworkInterface().IsEmpty()) {
@@ -309,9 +303,8 @@ static void CustomizeCurlRequest(wxWebRequest &request)
 #endif
 }
 
-// Single entry point for all aMule HTTP: curl-backed session + proxy +
-// interface bind, so every HTTP channel is consistent and honours the
-// bind-to-interface preference.
+// Single entry point for all aMule HTTP: curl-backed session, proxy and interface bind, so every
+// HTTP channel is consistent and honours the bind-to-interface preference.
 wxWebRequest CreateAmuleWebRequest(wxEvtHandler *handler, const wxString &url)
 {
 	bool isCurlBackend = false;
@@ -373,10 +366,9 @@ CHTTPDownloadThread::CHTTPDownloadThread(const wxString &url,
 		return;
 	}
 
-	// Curl-backed session + proxy + interface bind, all in one place. The
-	// threaded-resolver caveat still applies: the CONNECTTIMEOUT set inside bounds
-	// the visible delay before Failed fires, but not the cleanup-time pthread_join
-	// on libcurl's threaded resolver.
+	// Curl-backed session, proxy and interface bind, all in one place. The threaded-resolver
+	// caveat still applies: the CONNECTTIMEOUT set inside bounds the visible delay before
+	// Failed fires, but not the cleanup-time pthread_join on libcurl's threaded resolver.
 	m_request = CreateAmuleWebRequest(this, m_url);
 	if (!m_request.IsOk()) {
 		AddLogLineC(CFormat(_("Failed to create HTTP request for %s")) % m_url);
@@ -384,11 +376,10 @@ CHTTPDownloadThread::CHTTPDownloadThread(const wxString &url,
 		return;
 	}
 
-	// Storage_File: wx streams the response body to an internal temp file and hands
-	// us the path on completion, which we then rename to m_tempfile. Redirects
-	// (including HTTP to HTTPS) are followed transparently, so the legacy recursive
-	// GetInputStream() redirect handler is gone -- the actual fix for the upstream
-	// startup crash.
+	// Storage_File: wx streams the response body to an internal temp file and hands us the path
+	// on completion, which we then rename to m_tempfile. Redirects, including HTTP to HTTPS,
+	// are followed transparently, so the legacy recursive GetInputStream() redirect handler is
+	// gone -- the actual fix for the upstream startup crash.
 	m_request.SetStorage(wxWebRequest::Storage_File);
 
 	if (m_lastmodified.IsValid()) {
@@ -422,10 +413,10 @@ void CHTTPDownloadThread::OnStateEvent(wxWebRequestEvent &evt)
 		// Periodic progress notification during the download.
 		if (m_companion) {
 #ifndef AMULE_DAEMON
-			// GetBytesExpectedToReceive() returns wxInvalidOffset (-1) when the
-			// server omits Content-Length, and forwarding -1 reaches
-			// wxGauge::SetRange(-1), which flips m_rangeMax invalid and asserts on the
-			// next repaint. Clamp to 0 so the dialog treats it as "unknown".
+			// GetBytesExpectedToReceive() returns wxInvalidOffset (-1) when the server
+			// omits Content-Length, and forwarding -1 reaches wxGauge::SetRange(-1),
+			// which flips m_rangeMax invalid and asserts on the next repaint. Clamp to
+			// 0 so the dialog treats it as "unknown".
 			wxFileOffset expected = m_request.GetBytesExpectedToReceive();
 			CMuleInternalEvent prog(wxEVT_HTTP_PROGRESS);
 			prog.SetInt((int)m_request.GetBytesReceived());
@@ -444,13 +435,13 @@ void CHTTPDownloadThread::OnStateEvent(wxWebRequestEvent &evt)
 		AddDebugLogLineN(logHTTP, CFormat("HTTP response %d for %s") % m_response % m_url);
 
 		if (m_response == 304) {
-			// Not Modified — nothing to write.
+			// Not Modified -- nothing to write.
 			AddDebugLogLineN(logHTTP, "Skipped download because requested file is not newer.");
 			FinishAndDestroy(HTTP_Skipped);
 		} else if (m_response >= 200 && m_response < 300) {
-			// Success. wx wrote the body to its own temp file; move it to the
-			// caller-supplied m_tempfile. A plain rename may fail across filesystems, so
-			// fall back to copy + delete.
+			// Success. wx wrote the body to its own temp file; move it to the caller-
+			// supplied m_tempfile. A plain rename may fail across filesystems, so fall
+			// back to copy + delete.
 			const wxString wxTmp = response.GetDataFile();
 			if (wxTmp.IsEmpty() || !wxFileExists(wxTmp)) {
 				AddLogLineC(CFormat(_("HTTP download: empty response body for %s")) % m_url);
@@ -542,9 +533,9 @@ void CHTTPDownloadThread::FinishAndDestroy(int result)
 
 	AddDebugLogLineN(logHTTP, "HTTP download ended");
 
-	// Schedule our own destruction after the current event returns to
-	// the main loop. Must not be `delete this` — wxWebRequest may still
-	// be unwinding state after handing us the terminal event.
+	// Schedule our own destruction after the current event returns to the main loop. Must not
+	// be `delete this` -- wxWebRequest may still be unwinding state after handing us the
+	// terminal event.
 	CallAfter([this] { delete this; });
 }
 
@@ -556,9 +547,8 @@ void CHTTPDownloadThread::DetachCompanion()
 void CHTTPDownloadThread::Stop()
 {
 	if (m_request.IsOk() && !m_finishPosted) {
-		// Fire-and-forget: wxWebRequest will schedule a State_Cancelled
-		// event on the main loop. Our OnStateEvent will run
-		// FinishAndDestroy at that point.
+		// Fire-and-forget: wxWebRequest will schedule a State_Cancelled event on the main
+		// loop, and our OnStateEvent will run FinishAndDestroy then.
 		m_request.Cancel();
 	} else if (!m_finishPosted) {
 		// Request never got off the ground (e.g. invalid URL, or Stop()

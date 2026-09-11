@@ -32,20 +32,14 @@ namespace PlatformSpecific
 {
 
 /**
- * Create sparse file.
- *
- * This function will create the named file sparse if possible.
- *
- * @param name The file to be created (sparse if possible).
- * @param size The desired size of the file.
- * @return true, if creating the file succeeded, false otherwise.
+ * Creates @a name, sparse if the platform allows it, of @a size bytes. Returns whether the file was
+ * created.
  */
 bool CreateSparseFile(const CPath &name, uint64_t size);
 
 /**
- * Returns the max number of connections the current OS can handle.
- *
- * Currently anything but windows will return the default value (-1);
+ * The max number of connections the current OS can handle. Anything but Windows returns the default
+ * value (-1).
  */
 #ifdef __WINDOWS__
 int GetMaxConnections();
@@ -57,7 +51,7 @@ inline int GetMaxConnections()
 #endif
 
 /**
- * File system types returned by GetFilesystemType
+ * File system types returned by GetFilesystemType.
  */
 enum EFSType
 {
@@ -70,27 +64,15 @@ enum EFSType
 };
 
 /**
- * Find out the filesystem type of the given path.
- *
- * @param path The path for which the filesystem type should be checked.
- * @return The filesystem type of the given path.
- *
- * This function returns fsOther on unknown or network file systems (because the
- * real filesystem type cannot be determined).
+ * The filesystem type of @a path, or fsOther for an unknown or network file system, whose real type
+ * cannot be determined.
  */
 EFSType GetFilesystemType(const CPath &path);
 
 /**
- * Checks if the filesystem can handle special chars.
- *
- * @param path The path for which the file system should be checked.
- * @return true if the underlying filesystem can handle special chars.
- *
- * This function checks if the file system of the given path can handle
- * special chars e.g. ':' in file names. This function will always return
- * false on MSW, since Windows cannot handle those characters on any file system.
- *
- * Based on http://en.wikipedia.org/wiki/Comparison_of_file_systems
+ * True if the filesystem at @a path can handle special chars such as ':' in file names. Always
+ * false on MSW, since Windows cannot handle those characters on any file system. Based on
+ * http://en.wikipedia.org/wiki/Comparison_of_file_systems
  */
 #ifdef __WINDOWS__
 inline bool CanFSHandleSpecialChars(const CPath &WXUNUSED(path))
@@ -113,15 +95,8 @@ inline bool CanFSHandleSpecialChars(const CPath &path)
 #endif
 
 /**
- * Check if the filesystem can handle large files.
- *
- * @param path The path for which the filesystem should be checked.
- * @return true if the underlying filesystem can handle large files.
- *
- * This function checks if the file system of the given path can handle
- * large files (>4GB).
- *
- * Based on http://en.wikipedia.org/wiki/Comparison_of_file_systems
+ * True if the filesystem at @a path can handle large files (>4GB). Based on
+ * http://en.wikipedia.org/wiki/Comparison_of_file_systems
  */
 inline bool CanFSHandleLargeFiles(const CPath &path)
 {
@@ -137,8 +112,7 @@ inline bool CanFSHandleLargeFiles(const CPath &path)
 }
 
 /**
- * Disable / enable computer's energy saving "standby" mode.
- *
+ * Disable or enable the computer's energy-saving "standby" mode.
  */
 #if defined __WINDOWS__ || defined __WXMAC__
 #define PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE 1

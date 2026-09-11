@@ -33,12 +33,10 @@ IMPLEMENT_APP(alc)
 
 bool alc::OnInit()
 {
-	// Match amule (CamuleGuiBase, amule-gui.cpp): wxWidgets 3.2 added
-	// strict assertions for redundant sizer-flag combinations
-	// (e.g. Expand() + Center()), which the alc UI uses pervasively
-	// and which become fatal on distros that ship a build asserting on
-	// them (#693, Fedora 43 / wx 3.2.8). Disable the checks here until
-	// the flag uses are cleaned up.
+	// Match amule (CamuleGuiBase, amule-gui.cpp): wxWidgets 3.2 added strict assertions for
+	// redundant sizer-flag combinations such as Expand() + Center(), which the alc UI uses
+	// pervasively and which become fatal on distros shipping a build that asserts on them
+	// (#693, Fedora 43 / wx 3.2.8). Disable the checks until the flag uses are cleaned up.
 	wxSizerFlags::DisableConsistencyChecks();
 
 	// Used to tell alc to use aMule catalog

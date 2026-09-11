@@ -33,24 +33,17 @@
 class CUpDownClient;
 
 /**
- * This class keeps track of "invalid" sources.
+ * Tracks "invalid" sources.
  *
- * A dead source is a source that has been evaluated as being useles
- * which can be due to several reasons, such as not responding to
- * queries. This list then allows for those sources to be ignored
- * for an set amount of time in order to avoid the overhead of
- * trying to connect to them.
- *
- * This is important, since these sources would be removed and readded
- * repeatedly, causing extra overhead with no gain.
+ * A dead source is one evaluated as useless, for instance because it does not answer queries.
+ * Listing it lets it be ignored for a set time, avoiding the overhead of trying to connect -- which
+ * matters, since such sources would otherwise be removed and re-added repeatedly for no gain.
  */
 class CDeadSourceList
 {
 public:
 	/**
-	 * Constructor.
-	 *
-	 * @param isGlobal Specifies if the list is global or not, used for debugging.
+	 * @param isGlobal Whether the list is global; used for debugging.
 	 */
 	CDeadSourceList(bool isGlobal = false);
 
@@ -60,40 +53,34 @@ public:
 	void AddDeadSource(const CUpDownClient *client);
 
 	/**
-	 * Returns true if the client object is a dead source.
+	 * True if the client object is a dead source.
 	 */
 	bool IsDeadSource(const CUpDownClient *client);
 
 	/**
-	 * Returns the number of sources.
+	 * The number of sources.
 	 */
 	uint32 GetDeadSourcesCount() const;
 
 private:
 	/**
-	 * Removes too old entries from the list.
+	 * Removes entries that are too old.
 	 */
 	void CleanUp();
 
 	/**
-	 * Record of dead source.
+	 * Record of a dead source.
 	 */
 	class CDeadSource
 	{
 	public:
 		/**
-		 * Constructor.
-		 *
-		 * @param ID The IP/ID of the recorded client.
+		 * @param ID The IP/ID of the recorded client. Must be specified.
 		 * @param Port The TCP port of the recorded client.
-		 * @param ServerIP The ip of the connected server.
-		 * @param KadPort The Kad port used by the client.
-		 *
-		 * Notes:
-		 *  * ID must be specified.
-		 *  * Either KadPort or Port must be specified.
-		 *  * For lowid sources, ServerIP must be specified.
-		 *
+		 * @param ServerIP The IP of the connected server. Must be specified for lowid
+		 * sources.
+		 * @param KadPort The Kad port used by the client. Either this or @a Port must be
+		 * specified.
 		 */
 		CDeadSource(uint32 ID, uint16 Port, uint32 ServerIP, uint16 KadPort);
 
@@ -103,12 +90,12 @@ private:
 		bool operator==(const CDeadSource &other) const;
 
 		/**
-		 * Sets the timestamp for the time where this entry will expire.
+		 * Sets the timestamp at which this entry expires.
 		 */
 		void SetTimeout(uint64 t);
 
 		/**
-		 * Returns the timestamp of this entry.
+		 * The timestamp of this entry.
 		 */
 		uint64 GetTimeout() const;
 

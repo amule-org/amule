@@ -170,9 +170,8 @@ CFile::CFile(const wxString &fileName, OpenMode mode)
 CFile::~CFile()
 {
 	if (IsOpened()) {
-		// If the writing gets aborted, dtor is still called.
-		// In this case do NOT replace the original file with the
-		// probably broken new one!
+		// The dtor still runs if the writing was aborted. Do NOT replace the original file
+		// with the probably broken new one.
 		m_safeWrite = false;
 		Close();
 	}
@@ -227,9 +226,9 @@ bool CFile::Open(const CPath &fileName, OpenMode mode, int accessMode)
 	m_safeWrite = false;
 	m_filePath = fileName;
 	m_writeBufferPending = 0;
-	// Buffer writes for any mode that can actually write. Read-only stays
-	// unbuffered so a misuse still fails immediately at the doWrite call site,
-	// preserving FileDataIOTest's CFile.Constructor contract.
+	// Buffer writes for any mode that can actually write. Read-only stays unbuffered so a
+	// misuse still fails immediately at the doWrite call site, preserving FileDataIOTest's
+	// CFile.Constructor contract.
 	m_canBuffer = (mode != read);
 
 #ifdef __linux__
@@ -298,7 +297,7 @@ bool CFile::Close()
 
 	std::lock_guard<std::recursive_mutex> lock(m_mutex);
 
-	// Flush userspace write buffer to the fd before closing — otherwise
+	// Flush userspace write buffer to the fd before closing -- otherwise
 	// any pending bytes from doWrite() would be silently dropped.
 	DrainWriteBuffer();
 
@@ -340,16 +339,15 @@ sint64 CFile::doRead(void *buffer, size_t count) const
 
 	std::lock_guard<std::recursive_mutex> lock(m_mutex);
 
-	// Read-after-write (or interleaved read/write on a read_write file)
-	// must see preceding writes. For pure-read files the buffer is
-	// always empty so this is a single branch.
+	// Read-after-write (or interleaved read/write on a read_write file) must see preceding
+	// writes. For pure-read files the buffer is always empty, so this is a single branch.
 	DrainWriteBuffer();
 
 	size_t totalRead = 0;
 	while (totalRead < count) {
-		// m_mutex is this CFile's own lock guarding its buffer and fd; holding it
-		// across the blocking read is intended, since it serialises access to this
-		// one file object rather than a shared global section.
+		// m_mutex is this CFile's own lock guarding its buffer and fd; holding it across the
+		// blocking read is intended, since it serialises access to this one file object rather
+		// than a shared global section.
 		// NOLINTNEXTLINE(clang-analyzer-unix.BlockInCriticalSection)
 		int current = ::read(m_fd, (char *)buffer + totalRead, count - totalRead);
 
@@ -357,9 +355,8 @@ sint64 CFile::doRead(void *buffer, size_t count) const
 			// Read error, nothing we can do other than abort.
 			throw CIOFailureException(wxString("Error reading from file: ") + wxSysErrorMsg());
 		} else if ((totalRead + current < count) && Eof()) {
-			// We may fail to read the specified count in a couple
-			// of situations: EOF and interrupts. The check for EOF
-			// is needed to avoid inf. loops.
+			// A short read happens on EOF and on interrupts. The EOF check avoids an
+			// infinite loop.
 			break;
 		}
 
@@ -395,10 +392,9 @@ sint64 CFile::doWrite(const void *buffer, size_t nCount)
 
 	std::lock_guard<std::recursive_mutex> lock(m_mutex);
 
-	// Read-only files: the kernel rejects the write with EBADF, so go direct and
-	// surface that immediately, as the pre-buffering version did. A single payload
-	// too large for the buffer also goes direct, draining pending bytes first so
-	// ordering is preserved.
+	// Read-only files: the kernel rejects the write with EBADF, so go direct and surface that
+	// immediately, as the pre-buffering version did. A single payload too large for the buffer
+	// also goes direct, draining pending bytes first so ordering is preserved.
 	if (!m_canBuffer || nCount >= kWriteBufferSize) {
 		DrainWriteBuffer();
 		if (nCount == 0) {
@@ -441,9 +437,9 @@ sint64 CFile::doSeek(sint64 offset) const
 
 	std::lock_guard<std::recursive_mutex> lock(m_mutex);
 
-	// Pending bytes belong at the pre-seek position, so flush before changing the
-	// fd's offset. CSafeFile / the known.met save Seek()s back to patch the header
-	// after writing the body, so this matters in practice.
+	// Pending bytes belong at the pre-seek position, so flush before changing the fd's offset.
+	// CSafeFile / the known.met save Seek() back to patch the header after writing the body, so
+	// this matters in practice.
 	DrainWriteBuffer();
 
 	sint64 result = SEEK_FD(m_fd, offset, SEEK_SET);
@@ -482,7 +478,7 @@ uint64 CFile::GetLength() const
 
 	std::lock_guard<std::recursive_mutex> lock(m_mutex);
 
-	// fstat reads inode metadata, not buffered bytes — drain so the
+	// fstat reads inode metadata, not buffered bytes -- drain so the
 	// reported size reflects pending buffered writes.
 	DrainWriteBuffer();
 
@@ -496,9 +492,9 @@ uint64 CFile::GetLength() const
 
 uint64 CFile::GetAvailable() const
 {
-	// Lock around both calls so length and position are taken atomically, or a
-	// concurrent write could land between them and skew the reported "available"
-	// count. Recursive, so the inner GetLength / GetPosition calls do not deadlock.
+	// Lock around both calls so length and position are taken atomically, or a concurrent write
+	// could land between them and skew the reported "available" count. Recursive, so the inner
+	// GetLength / GetPosition calls do not deadlock.
 	std::lock_guard<std::recursive_mutex> lock(m_mutex);
 
 	const uint64 length = GetLength();
@@ -519,9 +515,9 @@ bool CFile::SetLength(uint64 new_len)
 
 	std::lock_guard<std::recursive_mutex> lock(m_mutex);
 
-	// ftruncate / chsize operate on the kernel-side size; drain the
-	// userspace buffer first so any pending bytes are part of the
-	// length-resolution decision (e.g. extend-then-write patterns).
+	// ftruncate / chsize operate on the kernel-side size; drain the userspace buffer first so
+	// pending bytes are part of the length-resolution decision (e.g. extend-then-write
+	// patterns).
 	DrainWriteBuffer();
 
 #ifdef __WINDOWS__
@@ -557,12 +553,10 @@ bool CFile::CloneFile(const CPath &src, const CPath &dst, bool overwrite)
 		return false;
 	}
 
-	// Stream through a 1 MiB heap buffer. The previous implementation
-	// (wxCopyFile) used a hard-coded 4 KiB buffer, which throttled
-	// cross-filesystem copies over NFS / sshfs to a fraction of line speed
-	// (amule-org/amule#11). Heap-allocated, not a stack array: CopyFile can
-	// run on the completion worker thread, where musl caps the stack at
-	// 128 KiB.
+	// Stream through a 1 MiB heap buffer. The previous implementation (wxCopyFile) used a hard-
+	// coded 4 KiB buffer, which throttled cross-filesystem copies over NFS / sshfs to a
+	// fraction of line speed (amule-org/amule#11). Heap-allocated, not a stack array: CopyFile
+	// can run on the completion worker thread, where musl caps the stack at 128 KiB.
 	const size_t bufferSize = 1u << 20;
 	std::vector<char> buffer(bufferSize);
 
@@ -575,9 +569,9 @@ bool CFile::CloneFile(const CPath &src, const CPath &dst, bool overwrite)
 			out.Write(buffer.data(), chunk);
 			remaining -= chunk;
 		}
-		// Close (not just rely on the destructor): flushes the trailing
-		// sub-buffer write and surfaces any deferred error, e.g. an ENOSPC
-		// that only shows up when the write buffer drains.
+		// Close rather than rely on the destructor: it flushes the trailing sub-buffer
+		// write and surfaces any deferred error, e.g. an ENOSPC that only shows up when the
+		// write buffer drains.
 		if (!out.Close()) {
 			CPath::RemoveFile(dst);
 			return false;
@@ -585,9 +579,8 @@ bool CFile::CloneFile(const CPath &src, const CPath &dst, bool overwrite)
 	} catch (const CSafeIOException &e) {
 		AddDebugLogLineC(
 			logCFile, CFormat(wxT("Failed to copy %s to %s: %s")) % src % dst % e.what());
-		// Close before unlinking: Windows can't remove an open file. Close
-		// may itself throw while draining, so guard it — we're already on
-		// the failure path.
+		// Close before unlinking: Windows cannot remove an open file. Close may itself
+		// throw while draining, so guard it -- we are already on the failure path.
 		try {
 			if (out.IsOpened()) {
 				out.Close();

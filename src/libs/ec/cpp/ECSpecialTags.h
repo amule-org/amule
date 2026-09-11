@@ -36,13 +36,10 @@
 #include <map>
 
 /*
- * Specific tags for specific requests
+ * Specific tags for specific requests.
  *
- * \note EC remote end does not need to create these packets,
- * only using the getter functions.
- *
- * Regarding this, those classes are removed from remote build,
- * that have only a constructor.
+ * The remote end only uses the getters, so classes that are nothing but a
+ * constructor are left out of the remote build.
  */
 
 class CServer;
@@ -53,15 +50,13 @@ class CUpDownClient;
 class CFriend;
 
 /*
- * EC tags encoder. Idea: if for an object <X>, client <Z> tag <Y> have value equal to previous
- * request, skip this tag.
+ * EC tag encoder: skip a tag whose value is unchanged since the last request
+ * for the same object and client.
  */
 
 class CValueMap
 {
-	/*
-	 * Tag -> LastValue map. Hold last value that transmitted to remote side
-	 */
+	// Tag -> last value transmitted to the remote side.
 	std::map<ec_tagname_t, uint8> m_map_uint8;
 	std::map<ec_tagname_t, uint16> m_map_uint16;
 	std::map<ec_tagname_t, uint32> m_map_uint32;
@@ -76,10 +71,9 @@ class CValueMap
 	template <class T>
 	void CreateTagT(ec_tagname_t tagname, const T &value, std::map<ec_tagname_t, T> &map, CECTag *parent)
 	{
-		// One probe, not two. The unchanged path is the common one -- it is the
-		// reason this function exists -- and count()+operator[] walked the tree
-		// twice for it, plus a third time to assign on a change. lower_bound
-		// doubles as the insertion hint on a miss.
+		// One probe, not two. The unchanged path is the common one, and
+		// count()+operator[] walked the tree twice for it, plus a third to assign
+		// on a change. lower_bound doubles as the insertion hint on a miss.
 		const typename std::map<ec_tagname_t, T>::iterator it = map.lower_bound(tagname);
 		if (it != map.end() && it->first == tagname) {
 			if (it->second != value) {
@@ -141,9 +135,8 @@ public:
 
 	// String literals must not reach the bool overload. `const char*` -> bool is a
 	// standard conversion and beats the user-defined one to wxString, so without
-	// these a literal would emit a BOOL tag through the value map and a STRING tag
-	// through the plain CECTag path -- the same call site producing a different
-	// wire type on an incremental update than on a full request.
+	// these the same call site would emit a BOOL tag on an incremental update and
+	// a STRING tag on a full request.
 	void CreateTag(ec_tagname_t tagname, const char *value, CECTag *parent)
 	{
 		CreateTag(tagname, wxString(value), parent);
@@ -156,10 +149,9 @@ public:
 	}
 #endif
 
-	// bool has its own CECTag constructor, so it needs its own overload here
-	// too -- without it a bool argument is ambiguous across the integer
-	// overloads, and picking one of those by cast would change the tag's wire
-	// type and break every client that reads it.
+	// bool has its own CECTag constructor, so it needs its own overload: without
+	// it a bool is ambiguous across the integer overloads, and casting to one
+	// would change the wire type and break every client that reads it.
 	void CreateTag(ec_tagname_t tagname, bool value, CECTag *parent)
 	{
 		CreateTagT<bool>(tagname, value, m_map_bool, parent);
@@ -191,25 +183,22 @@ public:
 
 	void ForgetTag(ec_tagname_t tagname) { m_map_tag.erase(tagname); }
 
-	// True when a value for this tag has already been transmitted on this
-	// connection. Used to decide whether a field that is now ABSENT needs an
-	// explicit "it is gone" frame: a tag that is simply not offered reads as
-	// UNCHANGED on the remote side, since AddTag transmits only on a difference and
-	// every receiver is add-only.
+	// True when a value for this tag has already gone out on this connection.
+	// Decides whether a now-absent field needs an explicit "it is gone" frame: an
+	// unoffered tag reads as UNCHANGED, since AddTag transmits only on a
+	// difference and every receiver is add-only.
 	bool HasTag(ec_tagname_t tagname) const { return m_map_tag.count(tagname) != 0; }
 };
 
 // Add `value` under `tagname` to `parent`, letting the value map decide whether
-// it changed -- and constructing the CECTag only if it did.
+// it changed, and constructing the CECTag only if it did.
 //
-// The difference from `parent->AddTag(CECTag(tagname, value), valuemap)` is where
-// the work happens. That form builds the tag first -- calling the getter, copying
-// the string, allocating -- and only then asks the map whether it was needed,
-// discarding it if not; it also caches whole CECTag objects. This form compares
-// the raw value against a typed cache and builds nothing when it is unchanged.
-// On the client list, rebuilt in full on every EC poll where most fields of most
-// peers are static, that is the difference between paying for every field of
-// every peer and paying only for what moved.
+// Unlike `parent->AddTag(CECTag(tagname, value), valuemap)`, which builds the
+// tag first -- getter, string copy, allocation -- and only then asks whether it
+// was needed. This compares the raw value against a typed cache and builds
+// nothing when unchanged. On the client list, rebuilt on every poll with most
+// fields static, that is the difference between paying for every field of every
+// peer and paying only for what moved.
 template <typename T>
 inline void AddDiffTag(CECTag *parent, ec_tagname_t tagname, const T &value, CValueMap *valuemap)
 {
@@ -260,10 +249,10 @@ public:
 	{
 		return AssignIfExist(EC_TAG_SERVER_VERSION, target);
 	}
-	// Server host country ISO 3166-1 alpha-2 code (lowercase), resolved
-	// core-side (#440). Empty for an unresolved IP; the tag is absent when the
-	// daemon has no GeoIP. Check tag presence (GetTagByName) to tell the two
-	// apart, since AssignIfExist returns empty for both.
+	// Server host country, ISO 3166-1 alpha-2 lowercase, resolved core-side
+	// (#440). Empty for an unresolved IP; absent when the daemon has no GeoIP.
+	// Check tag presence to tell them apart, since AssignIfExist returns empty
+	// for both.
 	wxString Country(wxString *target = nullptr) const
 	{
 		return AssignIfExist(EC_TAG_SERVER_COUNTRY, target);
@@ -317,11 +306,9 @@ public:
 	bool IsKadRunning() const { return (GetInt() & 0x10) != 0; }
 	bool GetKadID(CUInt128 &target) const { return AssignIfExist(EC_TAG_KAD_ID, target); }
 
-	// Unix timestamp of the most recent connect, mirroring
-	// CamuleApp::GetED2KConnectedSince()/GetKadConnectedSince()
-	// (amule-org/amule#174). Only present while connected -- absent (0)
-	// while disconnected, so callers should gate on IsConnectedED2K()/
-	// IsConnectedKademlia() rather than trust a 0 timestamp alone.
+	// Unix timestamp of the most recent connect (amule-org/amule#174). Present
+	// only while connected, so gate on IsConnectedED2K()/IsConnectedKademlia()
+	// rather than trusting a 0 timestamp.
 	bool GetED2KConnectedSince(uint32 &target) const
 	{
 		return AssignIfExist(EC_TAG_ED2K_CONNECTED_SINCE, target);
@@ -350,9 +337,8 @@ public:
 	bool FileName(wxString &target) const { return AssignIfExist(EC_TAG_PARTFILE_NAME, target); }
 	wxString FilePath() const { return GetTagByNameSafe(EC_TAG_KNOWNFILE_FILENAME)->GetStringData(); }
 	bool FilePath(wxString &target) const { return AssignIfExist(EC_TAG_KNOWNFILE_FILENAME, target); }
-	// The on-disk directory, status-agnostic (the Temp dir for a partfile, the
-	// destination once completed). Unlike FilePath()/_FILENAME — which carries
-	// the .part basename for partfiles — this always means "the folder".
+	// The on-disk directory, status-agnostic: Temp for a partfile, the
+	// destination once complete. Unlike FilePath(), this always means the folder.
 	bool DirectoryPath(wxString &target) const { return AssignIfExist(EC_TAG_KNOWNFILE_PATH, target); }
 	uint64 SizeFull() const { return GetTagByNameSafe(EC_TAG_PARTFILE_SIZE_FULL)->GetInt(); }
 	wxString FileEd2kLink() const { return GetTagByNameSafe(EC_TAG_PARTFILE_ED2K_LINK)->GetStringData(); }
@@ -408,9 +394,8 @@ public:
 		return AssignIfExist(EC_TAG_KNOWNFILE_HASHED_PART_COUNT, target);
 	}
 
-	// Live upload activity + share timestamps (issue #466). The daemon emits
-	// these; amulegui has no m_ClientUploadList to compute them from, so it
-	// relies on these getters to carry the values across EC.
+	// Live upload activity and share timestamps (issue #466). amulegui has no
+	// m_ClientUploadList to compute them from, so the daemon sends them.
 	uint32 GetUploadSpeed(uint32 *target = nullptr) const
 	{
 		return AssignIfExist(EC_TAG_KNOWNFILE_UPLOAD_SPEED, target);
@@ -661,7 +646,7 @@ public:
 	uint32 ID() const { return GetInt(); }
 	uint32 ParentID() const { return GetTagByNameSafe(EC_TAG_SEARCH_PARENT)->GetInt(); }
 	// Multi-search: the owning search's ID, present only in the daemon's
-	// union-poll reply (amulegui). 0 when absent (legacy single-search) —
+	// union-poll reply (amulegui). 0 when absent (legacy single-search) --
 	// callers fall back to the single current-search ID.
 	uint32 SearchID() const { return GetTagByNameSafe(EC_TAG_SEARCH_ID)->GetInt(); }
 

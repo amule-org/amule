@@ -56,7 +56,7 @@
 #endif
 
 #if defined(__WXGTK__) && !defined(__APPLE__)
-#include <glib.h> // g_set_prgname() — wl_app_id / WM_CLASS binding
+#include <glib.h> // g_set_prgname() -- wl_app_id / WM_CLASS binding
 #endif
 
 #include <common/EventIDs.h>        // Needed for ID_SPLASH_POLL_TIMER
@@ -120,7 +120,7 @@
 #include <wx/sysopt.h> // Do_not_auto_remove
 #endif
 
-// Core GeoIP resolver — headless, now compiled into the daemon too (#439/#440),
+// Core GeoIP resolver -- headless, now compiled into the daemon too (#439/#440),
 // so its header must be visible outside the GUI-only include block below.
 #include "IP2Country.h"
 
@@ -135,9 +135,8 @@
 #include "PrefsUnifiedDlg.h" // For NotifyIP2CountryUpdateFailedIfOpen (GUI popup)
 #include "FirstRunWizard.h"  // Needed for the first-run setup wizard (GUI-only)
 
-// The splash is monolithic-only: amulegui has no local shared-file scan or
-// part-file load to wait on -- its startup cost is an EC round trip -- and
-// the daemon has no GUI at all.
+// The splash is monolithic-only: amulegui has no local shared-file scan or part-file
+// load to wait on -- its startup cost is an EC round trip -- and the daemon has no GUI.
 #ifndef CLIENT_GUI
 #define AMULE_SHOW_SPLASH 1
 #include "SplashScreen.h"
@@ -148,10 +147,10 @@
 #include "DownloadListCtrl.h" // Needed for Begin/EndBatchUpdate
 #include "SharedFilesCtrl.h"  // Needed for Begin/EndBatchUpdate
 
-// The task type CHashingTask registers itself under. The splash counts only
-// these: the scheduler queue is shared, and the IP-filter load sits on it too,
-// so an unfiltered count would report "hashing" work that is nothing of the
-// sort -- and would keep the splash up waiting for it.
+// The task type CHashingTask registers itself under. The splash counts only these: the
+// scheduler queue is shared, and the IP-filter load sits on it too, so an unfiltered
+// count would report "hashing" work that is nothing of the sort -- and would keep the
+// splash up waiting for it.
 static const wxString kSplashHashTaskType = "Hashing";
 #endif
 #endif
@@ -211,10 +210,9 @@ void OnShutdownSignal(int /* sig */)
 
 	g_shutdownSignal = true;
 
-	// The actual shutdown trigger is driven from OnCoreTimer (normal
-	// context) since calling ExitMainLoop() from signal context isn't
-	// async-signal-safe and silently no-ops on macOS's wxAppConsole
-	// event loop.
+	// The actual shutdown trigger is driven from OnCoreTimer (normal context) since
+	// calling ExitMainLoop() from signal context is not async-signal-safe and silently
+	// no-ops on macOS's wxAppConsole event loop.
 }
 
 CamuleApp::CamuleApp()
@@ -301,11 +299,11 @@ void CamuleApp::EnableIP2Country(bool startup)
 #endif
 		}
 		m_IP2Country->Enable();
-		// Auto-update refresh from the selected source so the user sees current
-		// data without opening Preferences. Fires only at startup or a local
-		// enable toggle -- NOT on every remote prefs-apply, which would download
-		// on each amulegui OK and, alongside an explicit "Update now", double the
-		// request. First-run / missing-file is handled inside Enable() regardless.
+		// Auto-update refresh from the selected source so the user sees current data
+		// without opening Preferences. Fires only at startup or a local enable toggle --
+		// NOT on every remote prefs-apply, which would download on each amulegui OK and,
+		// alongside an explicit "Update now", double the request. First-run / missing-file
+		// is handled inside Enable() regardless.
 		if (startup && thePrefs::IsGeoIPAutoUpdate() && m_IP2Country->IsEnabled()) {
 			m_IP2Country->Update();
 		}
@@ -319,10 +317,10 @@ void CamuleApp::EnableIP2Country(bool) {}
 
 int CamuleApp::OnExit()
 {
-	// Guard against double-entry: on macOS the EVT_END_SESSION handler calls
-	// OnExit() explicitly, so the destructor chain runs before Cocoa terminates
-	// the process, and wxEntry may also call it on event-loop teardown. Without
-	// the guard the queues would be double-freed.
+	// Guard against double-entry: on macOS the EVT_END_SESSION handler calls OnExit()
+	// explicitly, so the destructor chain runs before Cocoa terminates the process, and
+	// wxEntry may also call it on event-loop teardown. Without the guard the queues would
+	// be double-freed.
 	static bool s_exitDone = false;
 	if (s_exitDone) {
 		return 0;
@@ -333,18 +331,17 @@ int CamuleApp::OnExit()
 		AddLogLineNS(_("Now, exiting main app..."));
 	}
 
-	// Flush wx's pending-delete queue before tearing down wxConfig:
-	// CamuleGuiApp::ShutDown calls amuledlg->Destroy(), which is lazy. On the
-	// CMD+Q path the event loop drains that queue naturally before OnExit runs;
-	// on the macOS Dock right-click -> Quit path CamuleGuiApp::OnEndSession
-	// reaches OnExit directly, so without an explicit drain here the CamuleDlg
-	// destructor chain never runs against a live wxConfig, and whatever it
+	// Flush wx's pending-delete queue before tearing down wxConfig: CamuleGuiApp::ShutDown
+	// calls amuledlg->Destroy(), which is lazy. On the CMD+Q path the event loop drains
+	// that queue naturally before OnExit runs; on the macOS Dock right-click -> Quit path
+	// CamuleGuiApp::OnEndSession reaches OnExit directly, so without an explicit drain here
+	// the CamuleDlg destructor chain never runs against a live wxConfig, and whatever it
 	// still persists from there is silently lost.
 	DeletePendingObjects();
 
-	// From the wxConfigBase docs: this object must be deleted, usually in
-	// wxApp::OnExit, or wxWidgets leaks it -- Get() creates one on demand when
-	// none is current, unless DontCreateOnDemand() was called.
+	// From the wxConfigBase docs: this object must be deleted, usually in wxApp::OnExit,
+	// or wxWidgets leaks it -- Get() creates one on demand when none is current, unless
+	// DontCreateOnDemand() was called.
 	delete wxConfigBase::Set((wxConfigBase *)NULL);
 
 	// Save credits
@@ -383,10 +380,9 @@ int CamuleApp::OnExit()
 	delete serverlist;
 	serverlist = NULL;
 
-	// Persist search results for the next startup, while downloadqueue /
-	// knownfiles / canceledfiles -- needed to recompute download status on the
-	// next load -- and searchlist itself are all still alive. Must run before
-	// the delete below.
+	// Persist search results for the next startup, while downloadqueue / knownfiles /
+	// canceledfiles -- needed to recompute download status on the next load -- and
+	// searchlist itself are all still alive. Must run before the delete below.
 	if (searchlist) {
 		searchlist->StoreSearches();
 	}
@@ -422,20 +418,19 @@ int CamuleApp::OnExit()
 	delete canceledfiles;
 	canceledfiles = NULL;
 
-	// Immediately before clientlist, and after everything that destroys clients
-	// on its way out -- serverconnect, listensocket, clientudp. Each of those
-	// reaps peers through CClientList::RemoveClient, which asks the manager to
-	// let go of any browse of them; deleting it earlier left that call reaching
-	// through a dangling pointer whenever a peer socket was still open at exit.
+	// Immediately before clientlist, and after everything that destroys clients on its way
+	// out -- serverconnect, listensocket, clientudp. Each of those reaps peers through
+	// CClientList::RemoveClient, which asks the manager to let go of any browse of them;
+	// deleting it earlier left that call reaching through a dangling pointer whenever a
+	// peer socket was still open at exit.
 	delete browsemanager;
 	browsemanager = nullptr;
 
 	delete clientlist;
 	clientlist = NULL;
 
-	// Stop upload disk I/O thread before deleting uploadqueue — the thread
-	// iterates uploadqueue->GetUploadingList() and will crash if it runs
-	// after uploadqueue is freed.
+	// Stop the upload disk I/O thread before deleting uploadqueue -- the thread iterates
+	// uploadqueue->GetUploadingList() and will crash if it runs after uploadqueue is freed.
 	if (uploadDiskIOThread) {
 		uploadDiskIOThread->EndThread();
 		delete uploadDiskIOThread;
@@ -445,18 +440,18 @@ int CamuleApp::OnExit()
 	delete uploadqueue;
 	uploadqueue = NULL;
 
-	// Stop the media-probe worker: it's independent of the download
-	// pipeline, so tear it down early. Queued probes are dropped; any
-	// in-flight ffprobe is bounded by MediaProbe's timeout.
+	// Stop the media-probe worker: it is independent of the download pipeline, so tear it
+	// down early. Queued probes are dropped; any in-flight ffprobe is bounded by
+	// MediaProbe's timeout.
 	if (mediaProbeThread) {
 		mediaProbeThread->EndThread();
 		delete mediaProbeThread;
 		mediaProbeThread = nullptr;
 	}
 
-	// Same for the free-space worker, and for the same reason it exists: stopping
-	// it here means nothing later in this teardown can be held up by a probe
-	// waiting on an unresponsive mount. It reads no preferences of its own.
+	// Same for the free-space worker, and for the same reason it exists: stopping it here
+	// means nothing later in this teardown can be held up by a probe waiting on an
+	// unresponsive mount. It reads no preferences of its own.
 	if (freeSpaceThread) {
 		freeSpaceThread->EndThread();
 		delete freeSpaceThread;
@@ -471,7 +466,7 @@ int CamuleApp::OnExit()
 		partFileHashThread = NULL;
 	}
 
-	// Stop write thread before deleting downloadqueue — must drain pending writes.
+	// Stop write thread before deleting downloadqueue -- must drain pending writes.
 	if (partFileWriteThread) {
 		partFileWriteThread->EndThread();
 		delete partFileWriteThread;
@@ -499,7 +494,7 @@ int CamuleApp::OnExit()
 	glob_prefs = NULL;
 	CPreferences::EraseItemList();
 
-	// Shut down disk I/O thread before throttler — eMule ref: emule.cpp shutdown order
+	// Shut down disk I/O thread before throttler -- eMule ref: emule.cpp shutdown order
 	if (uploadDiskIOThread) {
 		uploadDiskIOThread->EndThread();
 		delete uploadDiskIOThread;
@@ -532,23 +527,22 @@ int CamuleApp::OnExit()
 
 	StopTickTimer();
 
-	// wxWebSession's destructor is unsafe to run at wx module cleanup time on
-	// every platform we ship:
+	// wxWebSession's destructor is unsafe to run at wx module cleanup time on every
+	// platform we ship:
 	//
-	//   macOS (wxWebSessionURLSession, wx 3.3.2): releases the NSURLSession and
-	//     its delegate separately without first calling -invalidateAndCancel.
-	//     NSURLSession retains the delegate strongly, so the session's dealloc
-	//     already drops the delegate ref; wx's subsequent release hits a freed
-	//     object and aborts with "pointer being freed was not allocated".
+	//   macOS (wxWebSessionURLSession, wx 3.3.2): releases the NSURLSession and its
+	//     delegate separately without first calling -invalidateAndCancel. NSURLSession
+	//     retains the delegate strongly, so the session's dealloc already drops the
+	//     delegate ref; wx's subsequent release hits a freed object and aborts with
+	//     "pointer being freed was not allocated".
 	//
-	//   Linux (wxWebSessionCURL, wx 3.2.6): the dtor calls curl_multi_cleanup,
-	//     which invokes the registered socket callback to drop tracked sockets.
-	//     That callback dereferences session state the dtor's earlier steps have
-	//     already torn down; a wxASSERT fires and the fatal-signal handler
-	//     raise(SIGABRT)s.
+	//   Linux (wxWebSessionCURL, wx 3.2.6): the dtor calls curl_multi_cleanup, which
+	//     invokes the registered socket callback to drop tracked sockets. That callback
+	//     dereferences session state the dtor's earlier steps have already torn down; a
+	//     wxASSERT fires and the fatal-signal handler raise(SIGABRT)s.
 	//
-	//   Windows (wxWebSessionWinHTTP): not observed to crash, but the same class
-	//     of cleanup-time race is plausible.
+	//   Windows (wxWebSessionWinHTTP): not observed to crash, but the same class of
+	//     cleanup-time race is plausible.
 	ReleaseSingleInstance();
 	std::_Exit(0);
 
@@ -562,11 +556,10 @@ int CamuleApp::InitGui(bool, wxString &)
 }
 
 // Probe server.met for actual server entries rather than mere existence.
-// ~CServerList() calls SaveServerMet() unconditionally whenever eD2k is
-// enabled, so a cancelled first run with zero servers still leaves a
-// valid-but-empty file (header 0xE0 + a uint32 count of 0). Checking the count,
-// not just the file, is what keeps the bootstrap page from re-offering the
-// download after such a run.
+// ~CServerList() calls SaveServerMet() unconditionally whenever eD2k is enabled, so a
+// cancelled first run with zero servers still leaves a valid-but-empty file (header
+// 0xE0 + a uint32 count of 0). Checking the count, not just the file, is what keeps the
+// bootstrap page from re-offering the download after such a run.
 static bool ServerMetHasServers(const wxString &path)
 {
 	if (!wxFileExists(path)) {
@@ -597,16 +590,15 @@ bool CamuleApp::OnInit()
 #endif
 
 #if defined(__WXGTK__) && !defined(__APPLE__)
-	// Set the GTK program name to the canonical app id. On Wayland, GTK derives
-	// wl_app_id from g_get_prgname(), and compositors match wl_app_id against the
-	// .desktop filename to bind windows to launcher icons. Without this the
-	// binding falls back to argv[0], which differs across packaging formats. On
-	// X11 the same value feeds WM_CLASS, matching StartupWMClass in the .desktop
-	// file. Must run before any GTK window is created.
+	// Set the GTK program name to the canonical app id. On Wayland, GTK derives wl_app_id
+	// from g_get_prgname(), and compositors match wl_app_id against the .desktop filename
+	// to bind windows to launcher icons. Without this the binding falls back to argv[0],
+	// which differs across packaging formats. On X11 the same value feeds WM_CLASS,
+	// matching StartupWMClass in the .desktop file. Must run before any GTK window is
+	// created.
 	//
-	// Skipped on macOS even under wxGTK: no Wayland or .desktop binding exists,
-	// and app identity is set via Info.plist. Dropping the call lets that build
-	// skip the glib2 dependency entirely.
+	// Skipped on macOS even under wxGTK: no Wayland or .desktop binding exists, and app
+	// identity is set via Info.plist. Dropping the call lets that build skip glib2.
 	g_set_prgname("org.amule.aMule");
 #endif
 
@@ -632,12 +624,11 @@ bool CamuleApp::OnInit()
 #endif
 
 #ifdef __WINDOWS__
-	// wxWebRequest is backed by libcurl on MSYS2 builds, and MSYS2 libcurl is
-	// compiled with `--with-ca-bundle=` pointing at an absolute MSYS2 path that
-	// does not exist on end-user machines, so HTTPS -- and any HTTP->HTTPS
-	// redirect -- fails with "libcurl error 77". CMake's install step ships a
-	// ca-bundle.crt next to the .exe; point CURL_CA_BUNDLE at it unless the user
-	// set one explicitly.
+	// wxWebRequest is backed by libcurl on MSYS2 builds, and MSYS2 libcurl is compiled with
+	// `--with-ca-bundle=` pointing at an absolute MSYS2 path that does not exist on end-user
+	// machines, so HTTPS -- and any HTTP->HTTPS redirect -- fails with "libcurl error 77".
+	// CMake's install step ships a ca-bundle.crt next to the .exe; point CURL_CA_BUNDLE at
+	// it unless the user set one explicitly.
 	{
 		wxString existing;
 		if (!wxGetEnv("CURL_CA_BUNDLE", &existing) || existing.IsEmpty()) {
@@ -659,21 +650,20 @@ bool CamuleApp::OnInit()
 
 	glob_prefs = new CPreferences();
 
-	// Push the bind-to-interface preference into the socket library before any
-	// socket is opened -- mulesocket cannot read CPreferences itself. It is a
-	// security-relevant choice (VPN-leak prevention), so make the outcome
-	// visible: confirm the bind when it applies, and warn loudly when it does
-	// not, or traffic silently stays on the default route.
+	// Push the bind-to-interface preference into the socket library before any socket is
+	// opened -- mulesocket cannot read CPreferences itself. It is a security-relevant
+	// choice (VPN-leak prevention), so make the outcome visible: confirm the bind when it
+	// applies, and warn loudly when it does not, or traffic silently stays on the default
+	// route.
 	const wxString &bindInterface = thePrefs::GetNetworkInterface();
 	SetSocketBindInterface(bindInterface);
 	switch (TestSocketBindInterface(bindInterface)) {
 	case BindIface_Empty:
-		break; // no interface configured — nothing to report
+		break; // no interface configured -- nothing to report
 	case BindIface_OK:
 #ifdef __WINDOWS__
-		// On Windows only the ed2k/Kad sockets are bound; aMule's HTTP uses the
-		// WinHTTP backend, which has no interface-bind API -- so say so rather
-		// than overclaim.
+		// On Windows only the ed2k/Kad sockets are bound; aMule's HTTP uses the WinHTTP
+		// backend, which has no interface-bind API -- so say so rather than overclaim.
 		AddLogLineN(CFormat(_("Binding aMule's peer-to-peer traffic to interface: %s "
 				      "(HTTP updates use the default route)")) %
 			    bindInterface);
@@ -702,9 +692,8 @@ bool CamuleApp::OnInit()
 		break;
 	}
 
-	// The temp / incoming directories are validated and created further
-	// down, after the first-run wizard has had a chance to point them
-	// somewhere else.
+	// The temp / incoming directories are validated and created further down, after the
+	// first-run wizard has had a chance to point them somewhere else.
 
 	// Initialize wx sockets (needed for http download in background with Asio sockets)
 	wxSocketBase::Initialize();
@@ -795,22 +784,22 @@ bool CamuleApp::OnInit()
 		vfile.Close();
 	}
 
-	// First launch: run the guided setup wizard before the network stack comes
-	// up, so the chosen ports, enabled networks and UPnP setting take effect
-	// when ReinitializeNetwork() runs below. The wizard applies and saves every
-	// preference it collects; it only hands back which bootstrap files to fetch.
+	// First launch: run the guided setup wizard before the network stack comes up, so the
+	// chosen ports, enabled networks and UPnP setting take effect when
+	// ReinitializeNetwork() runs below. The wizard applies and saves every preference it
+	// collects; it only hands back which bootstrap files to fetch.
 #ifndef AMULE_DAEMON
 	bool firstRunWizardShown = false;
 	bool wizardWantsServerMet = false;
 	bool wizardWantsNodesDat = false;
-	// Gate on the explicit "wizard completed" flag rather than the
-	// inferred first-run flag: a cancelled wizard leaves the flag unset,
-	// so it reappears next launch until the user actually finishes it.
+	// Gate on the explicit "wizard completed" flag rather than the inferred first-run flag:
+	// a cancelled wizard leaves the flag unset, so it reappears next launch until the user
+	// actually finishes it.
 	if (!thePrefs::IsFirstRunWizardDone()) {
-		// Only offer a bootstrap download when the corresponding data is actually
-		// missing: the wizard can reappear after a cancelled run, and by then the
-		// user may already have populated server.met -- probed for real entries,
-		// since a cancelled run leaves an empty one -- or nodes.dat.
+		// Only offer a bootstrap download when the corresponding data is actually missing:
+		// the wizard can reappear after a cancelled run, and by then the user may already
+		// have populated server.met -- probed for real entries, since a cancelled run leaves
+		// an empty one -- or nodes.dat.
 		const bool needServerMet = thePrefs::GetNetworkED2K() &&
 					   !ServerMetHasServers(thePrefs::GetConfigDir() + "server.met");
 		const bool needNodesDat = thePrefs::GetNetworkKademlia() &&
@@ -856,12 +845,12 @@ bool CamuleApp::OnInit()
 	downloadqueue = new CDownloadQueue();
 	uploadqueue = new CUploadQueue();
 
-	// partFileWriteThread / partFileHashThread are constructed AFTER InitGui()
-	// further down: both spawn a wxThread in their ctor, and the amuled `-f` fork
-	// only carries the calling thread to the child. Constructing them pre-fork
-	// would leave the C++ objects alive in the daemon child with their POSIX
-	// threads gone, so FlushBuffer's PB_PENDING items would never drain and the
-	// `.part` file would stay at 0 bytes while the network side received chunks.
+	// partFileWriteThread / partFileHashThread are constructed AFTER InitGui() further
+	// down: both spawn a wxThread in their ctor, and the amuled `-f` fork only carries the
+	// calling thread to the child. Constructing them pre-fork would leave the C++ objects
+	// alive in the daemon child with their POSIX threads gone, so FlushBuffer's PB_PENDING
+	// items would never drain and the `.part` file would stay at 0 bytes while the network
+	// side received chunks.
 	ipfilter = new CIPFilter();
 
 	// Creates all needed listening sockets
@@ -871,29 +860,28 @@ bool CamuleApp::OnInit()
 		AddLogLineNS(msg);
 	}
 
-	// The GitHub version check and the server.met auto-update used to fire from
-	// here, before the partfile load and shared-file scan below. On busy setups
-	// the wxWebSession worker then competes with the saturated main thread for
-	// CPU, libcurl's state machine advances less, and DNS resolution can time
-	// out. Both now fire after sharedfiles->Reload() returns.
+	// The GitHub version check and the server.met auto-update used to fire from here,
+	// before the partfile load and shared-file scan below. On busy setups the wxWebSession
+	// worker then competes with the saturated main thread for CPU, libcurl's state machine
+	// advances less, and DNS resolution can time out. Both now fire after
+	// sharedfiles->Reload() returns.
 
 	// Create main dialog, or fork to background (daemon).
 	InitGui(m_geometryEnabled, m_geometryString);
 
 #ifdef AMULE_SHOW_SPLASH
-	// Up before the heavy local I/O below, which holds the main thread long
-	// enough that the main window -- already created by InitGui -- never gets
-	// painted. Shown here rather than earlier so it does not outlive a failed
-	// GUI init.
+	// Up before the heavy local I/O below, which holds the main thread long enough that the
+	// main window -- already created by InitGui -- never gets painted. Shown here rather
+	// than earlier so it does not outlive a failed GUI init.
 	CSplashScreen *splash = new CSplashScreen(theApp->amuledlg);
 	m_splash = splash;
 	splash->Show();
 
-	// Both list controls are batched for the whole startup: part-file loading
-	// fills the download list and the scan plus hashing fill the shared list, and
-	// each individually-sorted insert rebuilds the row index, so a burst of
-	// thousands is quadratic. BeginBatchUpdate turns those into appends plus one
-	// sort at the end, held until the hash queue drains.
+	// Both list controls are batched for the whole startup: part-file loading fills the
+	// download list and the scan plus hashing fill the shared list, and each
+	// individually-sorted insert rebuilds the row index, so a burst of thousands is
+	// quadratic. BeginBatchUpdate turns those into appends plus one sort at the end, held
+	// until the hash queue drains.
 	if (theApp->amuledlg && theApp->amuledlg->m_transferwnd &&
 		theApp->amuledlg->m_transferwnd->downloadlistctrl) {
 		theApp->amuledlg->m_transferwnd->downloadlistctrl->BeginBatchUpdate();
@@ -902,9 +890,9 @@ bool CamuleApp::OnInit()
 		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl) {
 		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->BeginBatchUpdate();
 	}
-	// One pump so the window is mapped and painted before the phases start;
-	// from here on SetProgress repaints without running the event loop, so a
-	// half-initialised application cannot be clicked into.
+	// One pump so the window is mapped and painted before the phases start; from here on
+	// SetProgress repaints without running the event loop, so a half-initialised
+	// application cannot be clicked into.
 	wxYield();
 	const wxLongLong splashPhaseStart = wxGetUTCTimeMillis();
 #endif
@@ -917,57 +905,53 @@ bool CamuleApp::OnInit()
 	}
 #endif
 
-	// Has to be created after the call to InitGui, as fork
-	// (when using posix threads) only replicates the mainthread,
-	// and the UBT constructor creates a thread.
+	// Has to be created after the call to InitGui: fork (when using posix threads) only
+	// replicates the main thread, and the UBT constructor creates a thread.
 	uploadBandwidthThrottler = new UploadBandwidthThrottler();
 
-	// Start disk I/O thread — must be after uploadBandwidthThrottler.
+	// Start disk I/O thread -- must be after uploadBandwidthThrottler.
 	// eMule ref: emule.cpp:748
 	uploadDiskIOThread = new CUploadDiskIOThread();
 
-	// Download disk-write and hashing threads. Same constraint as the upload disk
-	// I/O thread above: each ctor calls wxThread::Run(), and amuled's `-f` fork
-	// only carries the calling thread to the child. Constructing them post-fork
-	// ensures the spawned POSIX threads belong to the child and actually drain
-	// the PartFileBufferedData queue.
+	// Download disk-write and hashing threads. Same constraint as the upload disk I/O
+	// thread above: each ctor calls wxThread::Run(), and amuled's `-f` fork only carries
+	// the calling thread to the child. Constructing them post-fork ensures the spawned
+	// POSIX threads belong to the child and actually drain the PartFileBufferedData queue.
 	partFileWriteThread = new CPartFileWriteThread();
 	partFileHashThread = new CPartFileHashThread();
 	// Dedicated worker for ffprobe metadata, isolated from the shared
 	// CThreadScheduler so a slow or hung probe can never stall completions.
 	mediaProbeThread = new CMediaProbeThread();
-	// Dedicated worker for the free-space probe, isolated for the same reason:
-	// statvfs() blocks on the directory, and temp or incoming is commonly a
-	// network mount. Given its paths straight away so the panels have a figure
-	// without waiting for the first core tick.
+	// Dedicated worker for the free-space probe, isolated for the same reason: statvfs()
+	// blocks on the directory, and temp or incoming is commonly a network mount. Given its
+	// paths straight away so the panels have a figure without waiting for the first core
+	// tick.
 	freeSpaceThread = new CFreeSpaceThread();
 	freeSpaceThread->SetPaths(thePrefs::GetTempDir(), thePrefs::GetIncomingDir());
 
 	m_AsioService = new CAsioService;
 
-	// Start performing background tasks. This starts loading the IP filter right
-	// away; the log is confusing, because background log entries only print once
-	// the foreground goes idle, which is after the partfiles have loaded.
+	// Start performing background tasks. This starts loading the IP filter right away; the
+	// log is confusing, because background log entries only print once the foreground goes
+	// idle, which is after the partfiles have loaded.
 	CThreadScheduler::Start();
 
 	// These must be initialized after the gui is loaded.
 #ifdef AMULE_SHOW_SPLASH
-	// Bands per phase, sized from the timings this block logs. Measured on a
-	// 10 000-file share: network setup came to 10 ms and 400 part files to
-	// 130 ms, against 6010 ms of scanning, so the early phases get almost
-	// nothing -- an even split would leave the bar parked at a third for the
-	// whole visible wait. The shared scan has no total until it finishes, and
-	// counting first would walk the tree twice; known.met is last session's view
-	// of the same tree, so it is the best estimate available.
+	// Bands per phase, sized from the timings this block logs. Measured on a 10 000-file
+	// share: network setup came to 10 ms and 400 part files to 130 ms, against 6010 ms of
+	// scanning, so the early phases get almost nothing -- an even split would leave the bar
+	// parked at a third for the whole visible wait. The shared scan has no total until it
+	// finishes, and counting first would walk the tree twice; known.met is last session's
+	// view of the same tree, so it is the best estimate available.
 	const size_t sharedEstimate = knownfiles ? knownfiles->GetKnownFileCount() : 0;
 
-	// Weight the temp band by cost rather than by item count. On the same share
-	// with 400 part files: 130 ms to load them against 6010 ms to scan 10 000
-	// files, i.e. 0.33 ms each against 0.60 ms -- a part file is actually the
-	// cheaper item, since loading one reads its .met and only stats the .part.
-	// Two rather than one leaves room for the populated ones a real Temp
-	// directory holds. Capped well short of half the bar: the scan is the phase
-	// that usually runs long, and it must keep room to show it.
+	// Weight the temp band by cost rather than by item count. On the same share with 400
+	// part files: 130 ms to load them against 6010 ms to scan 10 000 files, i.e. 0.33 ms
+	// each against 0.60 ms -- a part file is actually the cheaper item, since loading one
+	// reads its .met and only stats the .part. Two rather than one leaves room for the
+	// populated ones a real Temp directory holds. Capped well short of half the bar: the
+	// scan is the phase that usually runs long, and it must keep room to show it.
 	constexpr int kPartFileWeight = 2;
 	constexpr int kNetworkBandEnd = 2;
 	constexpr int kTempBandMaxEnd = 40;
@@ -982,9 +966,9 @@ bool CamuleApp::OnInit()
 #ifdef AMULE_SHOW_SPLASH
 	const wxLongLong networkDoneAt = wxGetUTCTimeMillis();
 	splash->SetProgress(_("Loading temp files"), kNetworkBandEnd, true);
-	// Part-file totals are exact: LoadMetFiles enumerates the directory into
-	// a vector before loading any of them, so the band end can be sized
-	// against the shared estimate on the first callback.
+	// Part-file totals are exact: LoadMetFiles enumerates the directory into a vector
+	// before loading any of them, so the band end can be sized against the shared estimate
+	// on the first callback.
 	size_t partFilesLoaded = 0;
 	int tempBandEnd = kNetworkBandEnd;
 	downloadqueue->LoadMetFiles(thePrefs::GetTempDir(), [&](size_t loaded, size_t total) {
@@ -1002,15 +986,15 @@ bool CamuleApp::OnInit()
 	});
 	const wxLongLong tempDoneAt = wxGetUTCTimeMillis();
 
-	// With no known.met -- a first run -- there is no estimate, so the bar holds
-	// at the band start and the count in the status text carries the information
-	// instead. That is also the run where everything found needs hashing, so the
-	// held-back band is not wasted: the hashing phase below spends it.
+	// With no known.met -- a first run -- there is no estimate, so the bar holds at the band
+	// start and the count in the status text carries the information instead. That is also
+	// the run where everything found needs hashing, so the held-back band is not wasted:
+	// the hashing phase below spends it.
 	const int scanBandEnd = (sharedEstimate > 0) ? kScanBandEnd : tempBandEnd;
 	splash->SetProgress(_("Loading shared files"), tempBandEnd, true);
-	// Kept for the log line below: the scan reports its running count to the
-	// splash but had no way to report the final one, so the estimate was printed
-	// with nothing to compare it against.
+	// Kept for the log line below: the scan reports its running count to the splash but had
+	// no way to report the final one, so the estimate was printed with nothing to compare
+	// it against.
 	size_t sharedScanned = 0;
 	sharedfiles->Reload([&](size_t scanned) {
 		sharedScanned = scanned;
@@ -1027,24 +1011,23 @@ bool CamuleApp::OnInit()
 	});
 	const wxLongLong sharedDoneAt = wxGetUTCTimeMillis();
 
-	// Normal level, not debug: these are the numbers the phase weighting above
-	// is meant to be tuned from, and a measurement that needs verbose logging
-	// turned on first is one nobody will report back. Both phases report count
-	// then duration, and the estimate says what it estimates -- it is a file
-	// count from known.met, and printing it as a bare number after a millisecond
-	// figure read as an estimated duration.
+	// Normal level, not debug: these are the numbers the phase weighting above is meant to
+	// be tuned from, and a measurement that needs verbose logging turned on first is one
+	// nobody will report back. Both phases report count then duration, and the estimate
+	// says what it estimates -- it is a file count from known.met, and printing it as a
+	// bare number after a millisecond figure read as an estimated duration.
 	AddLogLineN(CFormat(LOG_DIAGNOSTIC("Startup phases: network %lld ms, %u part files %lld ms, shared "
 					   "scan %u files ") "%lld ms (estimated %u files)") %
 		    (networkDoneAt - splashPhaseStart).GetValue() % partFilesLoaded %
 		    (tempDoneAt - networkDoneAt).GetValue() % sharedScanned %
 		    (sharedDoneAt - tempDoneAt).GetValue() % sharedEstimate);
 
-	// The scan has everything it is going to have: the files it recognised are
-	// listed, and the ones it did not are now queued for hashing. That drain is
-	// the slowest part of a first run by a wide margin -- hashing cost scales
-	// with bytes, not files -- and it used to hold the splash up with it, so a
-	// large share of new files left the application unreachable. The window goes
-	// up here instead, and the drain finishes behind it.
+	// The scan has everything it is going to have: the files it recognised are listed, and
+	// the ones it did not are now queued for hashing. That drain is the slowest part of a
+	// first run by a wide margin -- hashing cost scales with bytes, not files -- and it
+	// used to hold the splash up with it, so a large share of new files left the
+	// application unreachable. The window goes up here instead, and the drain finishes
+	// behind it.
 	splash->SetProgress(_("Starting up"), 100, true);
 	ShowMainWindowAfterScan();
 
@@ -1052,9 +1035,9 @@ bool CamuleApp::OnInit()
 	if (pendingHashes == 0) {
 		FinishStartupHashing();
 	} else {
-		// Each completion appends its row (the batch is still open, so that
-		// stays O(1)) and the tick below sorts them into place, keeping the
-		// list ordered without paying a row-index rebuild per file.
+		// Each completion appends its row (the batch is still open, so that stays O(1)) and
+		// the tick below sorts them into place, keeping the list ordered without paying a
+		// row-index rebuild per file.
 		UpdateStartupHashProgress();
 		if (theApp->amuledlg && theApp->amuledlg->m_sharedfileswnd &&
 			theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl) {
@@ -1073,46 +1056,43 @@ bool CamuleApp::OnInit()
 	sharedfiles->Reload();
 #endif
 
-	// Restore search results saved on a previous clean shutdown
-	// (StoredSearches.met). Registering each restored search with the EC
-	// multi-search registry makes it reachable via EC_OP_SEARCH_LIST for any
-	// client that connects later.
+	// Restore search results saved on a previous clean shutdown (StoredSearches.met).
+	// Registering each restored search with the EC multi-search registry makes it reachable
+	// via EC_OP_SEARCH_LIST for any client that connects later.
 	//
-	// Deliberately *after* LoadMetFiles() and sharedfiles->Reload(), not merely
-	// after those objects are constructed. LoadSearches() recomputes each
-	// restored result's download status through SetDownloadStatus(), which asks
-	// three lists whether they know the hash. knownfiles and canceledfiles load
-	// in their own constructors, but CDownloadQueue's constructor only makes an
-	// empty queue and it is LoadMetFiles() that fills it -- so running the
-	// restore first meant every result asked an empty download queue and came
-	// back NEW instead of QUEUED. Nothing corrected it afterwards either:
-	// LoadMetFiles() appends to m_filelist directly rather than through
-	// AddDownload(), so UpdateSearchFileByHash() never fires.
+	// Deliberately *after* LoadMetFiles() and sharedfiles->Reload(), not merely after those
+	// objects are constructed. LoadSearches() recomputes each restored result's download
+	// status through SetDownloadStatus(), which asks three lists whether they know the
+	// hash. knownfiles and canceledfiles load in their own constructors, but
+	// CDownloadQueue's constructor only makes an empty queue and it is LoadMetFiles() that
+	// fills it -- so running the restore first meant every result asked an empty download
+	// queue and came back NEW instead of QUEUED. Nothing corrected it afterwards either:
+	// LoadMetFiles() appends to m_filelist directly rather than through AddDownload(), so
+	// UpdateSearchFileByHash() never fires.
 	for (uint32_t restoredId : searchlist->LoadSearches()) {
 		RegisterRestoredSearch(restoredId);
 	}
-	// The monolithic search tabs are built from what the loop above just
-	// restored, so they follow it rather than sitting in InitGui() where the
-	// list is still empty. No-op on the daemon.
+	// The monolithic search tabs are built from what the loop above just restored, so they
+	// follow it rather than sitting in InitGui() where the list is still empty. No-op on
+	// the daemon.
 	RestoreSearchTabs();
 
-	// Source seeds need two things: the part files they belong to, loaded just
-	// above, and a filter to check the seeded IPs against, which the
-	// load-finished handler waits for before running this same load. When the
-	// filter wins that race the handler runs first and iterates an empty queue,
-	// dropping every seed, so run it again here. Re-adding a source already in
-	// the queue is a no-op, so the overlap is harmless.
+	// Source seeds need two things: the part files they belong to, loaded just above, and a
+	// filter to check the seeded IPs against, which the load-finished handler waits for
+	// before running this same load. When the filter wins that race the handler runs first
+	// and iterates an empty queue, dropping every seed, so run it again here. Re-adding a
+	// source already in the queue is a no-op, so the overlap is harmless.
 	if (thePrefs::GetSrcSeedsOn() && ipfilter->IsReady()) {
 		downloadqueue->LoadSourceSeeds();
 	}
 
 	// Fire the deferred startup HTTP downloads now that the heavy local
-	// I/O is done — see the comment in OnInit() further up.
+	// I/O is done -- see the comment in OnInit() further up.
 #ifdef ENABLE_VERSION_CHECK
-	// Both the daemon and the monolithic app run the core version check: it
-	// updates the internal state relayed over EC and, on the monolithic, drives
-	// the GUI popup. amulegui is not a CamuleApp and runs its own CVersionCheck.
-	// The About dialog's "Check for updates" button stays on CVersionCheck.
+	// Both the daemon and the monolithic app run the core version check: it updates the
+	// internal state relayed over EC and, on the monolithic, drives the GUI popup. amulegui
+	// is not a CamuleApp and runs its own CVersionCheck. The About dialog's "Check for
+	// updates" button stays on CVersionCheck.
 	if (thePrefs::GetCheckNewVersion()) {
 		StartVersionCheck();
 	}
@@ -1121,9 +1101,9 @@ bool CamuleApp::OnInit()
 		serverlist->StartAutoUpdate();
 	}
 
-	// Start the fs-watcher after the initial scan so directories exist in
-	// shareddir_list before Add() runs. The watcher is cheap when no events fire;
-	// gating it on the user pref keeps inotify watches off the books.
+	// Start the fs-watcher after the initial scan so directories exist in shareddir_list
+	// before Add() runs. The watcher is cheap when no events fire; gating it on the user
+	// pref keeps inotify watches off the books.
 	if (thePrefs::AutoRescanSharedDirs()) {
 		sharedfiles->EnableDirectoryWatcher(true);
 	}
@@ -1137,13 +1117,13 @@ bool CamuleApp::OnInit()
 	// The user can start pressing buttons like mad if he feels like it.
 	m_app_state = APP_STATE_RUNNING;
 
-	// The listen socket has been bound since ReinitializeNetwork(), so a peer --
-	// typically one that had us in its source list moments ago -- can have
-	// connected while the rest of this ran. CListenSocket::OnAccept() declines
-	// those, because until the line above there was no loaded client list to hand
-	// them to, and declining leaves the connection sitting unread. Take it now:
-	// it re-arms the acceptor, which otherwise would not happen until the first
-	// core timer tick, well after we have asked a server for a HighID.
+	// The listen socket has been bound since ReinitializeNetwork(), so a peer -- typically
+	// one that had us in its source list moments ago -- can have connected while the rest
+	// of this ran. CListenSocket::OnAccept() declines those, because until the line above
+	// there was no loaded client list to hand them to, and declining leaves the connection
+	// sitting unread. Take it now: it re-arms the acceptor, which otherwise would not
+	// happen until the first core timer tick, well after we have asked a server for a
+	// HighID.
 	if (listensocket) {
 		listensocket->Process();
 	}
@@ -1151,10 +1131,9 @@ bool CamuleApp::OnInit()
 	{
 #ifndef AMULE_DAEMON
 		if (firstRunWizardShown) {
-			// The first-run wizard already collected the user's
-			// bootstrap choices (and UPnP / port settings, which were
-			// applied before ReinitializeNetwork ran). Act on them now
-			// that the server list and sockets exist.
+			// The first-run wizard already collected the user's bootstrap choices (and
+			// UPnP / port settings, which were applied before ReinitializeNetwork ran).
+			// Act on them now that the server list and sockets exist.
 			if (wizardWantsServerMet) {
 				serverlist->UpdateServerMetFromURL(thePrefs::GetEd2kServersUrl());
 			}
@@ -1168,10 +1147,10 @@ bool CamuleApp::OnInit()
 						  !wxFileExists(thePrefs::GetConfigDir() + "nodes.dat");
 
 			if (needServerMet || needNodesDat) {
-				// Returning user who is missing a bootstrap file (e.g.
-				// just enabled a network): offer to fetch what's gone.
-				// UPnP / ports live in Preferences for these users, so
-				// this dialog stays focused on the missing files.
+				// Returning user who is missing a bootstrap file (e.g. just enabled a
+				// network): offer to fetch what is gone. UPnP / ports live in
+				// Preferences for these users, so this dialog stays focused on the
+				// missing files.
 				wxDialog dlg(static_cast<wxWindow *>(theApp->amuledlg),
 					wxID_ANY,
 					_("Network bootstrap"));
@@ -1239,23 +1218,23 @@ bool CamuleApp::OnInit()
 		if (thePrefs::GetNetworkKademlia()) {
 			ipfilter->StartKADWhenReady();
 		}
-		// It may equally have finished already: it loads on a worker thread, and
-		// the splash pumps the event loop while the local I/O above runs, so a
-		// fast filter is dispatched long before this point and nothing would
-		// start the networks afterwards. No-op while it is still loading.
+		// It may equally have finished already: it loads on a worker thread, and the splash
+		// pumps the event loop while the local I/O above runs, so a fast filter is dispatched
+		// long before this point and nothing would start the networks afterwards. No-op while
+		// it is still loading.
 		ipfilter->StartPendingNetworks();
 	}
 
-	// Enable GeoIP. The resolver is headless and core-owned so the daemon
-	// resolves country codes for the EC tag exactly as monolithic amule does for
-	// local display. The flag *images* are a GUI concern layered on top.
+	// Enable GeoIP. The resolver is headless and core-owned so the daemon resolves country
+	// codes for the EC tag exactly as monolithic amule does for local display. The flag
+	// *images* are a GUI concern layered on top.
 	EnableIP2Country(true); // startup: allow the auto-update refresh
 
 	// Run webserver?
 	if (thePrefs::GetWSIsEnabled()) {
 		wxString aMuleConfigFile = thePrefs::GetConfigDir() + m_configFile;
-		// Not a const&: the __WXMAC__ block below reassigns this. clang-tidy runs
-		// on Linux where that block is #ifdef'd out, so it can't see the write.
+		// Not a const&: the __WXMAC__ block below reassigns this. clang-tidy runs on Linux
+		// where that block is #ifdef'd out, so it cannot see the write.
 		// NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
 		wxString amulewebPath = thePrefs::GetWSPath();
 
@@ -1292,11 +1271,10 @@ bool CamuleApp::OnInit()
 			AddLogLineC(CFormat(_("web server running on pid %d")) % webserver_pid);
 		} else {
 			delete p;
-			// Defer the modal until after OnInit returns. During OnInit the main
-			// window is not yet visible on Windows, so a modal ShowAlert spawns
-			// invisible and blocks the message loop waiting on input that cannot
-			// be given -- aMule then boots into an unresponsive white window with
-			// only the error ding audible.
+			// Defer the modal until after OnInit returns. During OnInit the main window is
+			// not yet visible on Windows, so a modal ShowAlert spawns invisible and blocks
+			// the message loop waiting on input that cannot be given -- aMule then boots
+			// into an unresponsive white window with only the error ding audible.
 			CallAfter([this]() {
 				ShowAlert(_("You requested to run web server on startup, "
 					    "but the amuleweb binary cannot be run. Please "
@@ -1309,15 +1287,15 @@ bool CamuleApp::OnInit()
 		}
 	}
 
-	// Read amuleapi-passwords so the preferences know what is actually
-	// configured before the dialog can be opened, and before the bind-vs-
-	// password warning below has to reason about it.
+	// Read amuleapi-passwords so the preferences know what is actually configured before
+	// the dialog can be opened, and before the bind-vs-password warning below has to reason
+	// about it.
 	AmuleApiCredentials::RefreshState();
 
 	// Run amuleapi?
 	if (thePrefs::GetAmuleApiIsEnabled()) {
-		// Not a const&: the __WXMAC__ block below reassigns this. clang-tidy runs
-		// on Linux where that block is #ifdef'd out, so it can't see the write.
+		// Not a const&: the __WXMAC__ block below reassigns this. clang-tidy runs on Linux
+		// where that block is #ifdef'd out, so it cannot see the write.
 		// NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
 		wxString amuleapiPath = thePrefs::GetAmuleApiPath();
 
@@ -1339,17 +1317,16 @@ bool CamuleApp::OnInit()
 		}
 #endif
 
-		// Hand the child an ephemeral EC credential instead of letting it read
-		// the password-equivalent value out of amule.conf. Written 0600 into the
-		// config dir the child is about to be pointed at, under the one name both
-		// sides derive from webcommon; the child deletes it the moment it has
-		// read it, and OnCoreTimer removes it regardless once the deadline
-		// expires. The path is deliberately NOT on the command line: argv is
-		// world-readable via ps.
+		// Hand the child an ephemeral EC credential instead of letting it read the
+		// password-equivalent value out of amule.conf. Written 0600 into the config dir the
+		// child is about to be pointed at, under the one name both sides derive from
+		// webcommon; the child deletes it the moment it has read it, and OnCoreTimer removes
+		// it regardless once the deadline expires. The path is deliberately NOT on the
+		// command line: argv is world-readable via ps.
 		//
-		// A failure here is not fatal -- amuleapi still has its own configured EC
-		// password -- but it is worth saying, because that fallback is the
-		// credential we are trying to stop using.
+		// A failure here is not fatal -- amuleapi still has its own configured EC password --
+		// but it is worth saying, because that fallback is the credential we are trying to
+		// stop using.
 		m_ecToken = wxString::FromUTF8(webcommon::GenerateEcToken().c_str());
 		const std::string tokenPath =
 			webcommon::EcTokenFilePath(std::string(thePrefs::GetConfigDir().utf8_str()));
@@ -1362,12 +1339,12 @@ bool CamuleApp::OnInit()
 			m_ecToken.Clear();
 		}
 
-		// No --amule-config-file here, unlike amuleweb above: amuleapi takes the
-		// ephemeral token written just now instead of reading the hashed EC
-		// password out of amule.conf. It finds the token through the config dir
-		// passed below, which is also where its admin and guest credentials live.
-		// The HTTP bind address and port are passed explicitly; a non-loopback
-		// bind requires an admin password or amuleapi refuses to start.
+		// No --amule-config-file here, unlike amuleweb above: amuleapi takes the ephemeral
+		// token written just now instead of reading the hashed EC password out of amule.conf.
+		// It finds the token through the config dir passed below, which is also where its
+		// admin and guest credentials live. The HTTP bind address and port are passed
+		// explicitly; a non-loopback bind requires an admin password or amuleapi refuses to
+		// start.
 		wxString cmd = QUOTE + amuleapiPath +
 			       QUOTE " " QUOTE "--config-dir=" + thePrefs::GetConfigDir() +
 			       QUOTE " " QUOTE "--bind=" + thePrefs::GetAmuleApiBindAddress() + QUOTE +
@@ -1454,16 +1431,15 @@ bool CamuleApp::ReinitializeNetwork(wxString *msg)
 	// TODO: read this from configuration file
 	amuleIPV4Address myaddr[4];
 
-	// Create the External Connections socket (default 4712), ready to handle
-	// connections from apps like amulecmd.
+	// Create the External Connections socket (default 4712), ready to handle connections
+	// from apps like amulecmd.
 	//
-	// An empty address means "any", which is a deliberate choice the user can
-	// make. A configured address that will not resolve is a different case and
-	// must not fall through to the same place: binding every interface because
-	// the requested one happens to be down would silently expose full control of
-	// the daemon to networks the user thought they had excluded. Interface IPs
-	// come and go, so this is reachable in normal use -- fall back to loopback
-	// instead, where EC keeps working locally and nothing is exposed.
+	// An empty address means "any", which is a deliberate choice the user can make. A
+	// configured address that will not resolve is a different case and must not fall
+	// through to the same place: binding every interface because the requested one happens
+	// to be down would silently expose full control of the daemon to networks the user
+	// thought they had excluded. Interface IPs come and go, so this is reachable in normal
+	// use -- fall back to loopback instead, where EC keeps working locally.
 	if (thePrefs::GetECAddress().IsEmpty()) {
 		myaddr[0].AnyAddress();
 	} else if (!myaddr[0].Hostname(thePrefs::GetECAddress())) {
@@ -1491,10 +1467,8 @@ bool CamuleApp::ReinitializeNetwork(wxString *msg)
 	*msg << CFormat("*** Server UDP socket (TCP+3) at %s:%u\n") % ip %
 			((unsigned int)thePrefs::GetPort() + 3u);
 
-	// Create the ListenSocket (aMule TCP socket).
-	// Used for Client Port / Connections from other clients,
-	// Client to Client Source Exchange.
-	// Default is 4662.
+	// Create the ListenSocket (aMule TCP socket), used for the client port, connections
+	// from other clients and client-to-client source exchange. Default is 4662.
 	myaddr[2] = myaddr[1];
 	myaddr[2].Service(thePrefs::GetPort());
 	listensocket = new CListenSocket(myaddr[2]);
@@ -1516,10 +1490,8 @@ bool CamuleApp::ReinitializeNetwork(wxString *msg)
 		ShowAlert(err, _("ERROR"), wxOK | wxICON_ERROR);
 	}
 
-	// Create the UDP socket.
-	// Used for extended eMule protocol, Queue Rating, File Reask Ping.
-	// Also used for Kademlia.
-	// Default is port 4672.
+	// Create the UDP socket, used for the extended eMule protocol (queue rating, file reask
+	// ping) and for Kademlia. Default is port 4672.
 	myaddr[3] = myaddr[1];
 	myaddr[3].Service(thePrefs::GetUDPPort());
 	clientudp = new CClientUDPSocket(myaddr[3], thePrefs::GetProxyData());
@@ -1534,10 +1506,10 @@ bool CamuleApp::ReinitializeNetwork(wxString *msg)
 	StartUPnP();
 #endif
 
-	// Sockets have just been (re)created, so the interface list this machine
-	// presents is as current as it will ever be. Publishing it here also covers
-	// the reinitialisation path, where a changed bind address or a first-run
-	// wizard can leave us on a different interface entirely.
+	// Sockets have just been (re)created, so the interface list this machine presents is as
+	// current as it will ever be. Publishing it here also covers the reinitialisation path,
+	// where a changed bind address or a first-run wizard can leave us on a different
+	// interface entirely.
 	RefreshLocalPublicIPv6Addresses();
 
 	return ok;
@@ -1549,25 +1521,25 @@ void RefreshLocalPublicIPv6Addresses()
 	for (const NetworkInterface &iface : DetectNetworkInterfaces()) {
 		local.insert(local.end(), iface.ipv6.begin(), iface.ipv6.end());
 	}
-	// Publishing the set is only half of it: the same call re-validates an
-	// already adopted reflection against the addresses we still hold, which is
-	// how a prefix renumber gets noticed at all.
+	// Publishing the set is only half of it: the same call re-validates an already adopted
+	// reflection against the addresses we still hold, which is how a prefix renumber gets
+	// noticed at all.
 	ObservedPublicIPv6().SetLocalAddresses(local, ::GetTickCount64());
 }
 
 #ifdef ENABLE_UPNP
 void CamuleApp::StartUPnP()
 {
-	// Nothing to do when UPnP is disabled, and we must never create a second
-	// control point if one already exists -- e.g. the first-run bootstrap dialog
-	// enabling UPnP after ReinitializeNetwork() ran.
+	// Nothing to do when UPnP is disabled, and we must never create a second control point
+	// if one already exists -- e.g. the first-run bootstrap dialog enabling UPnP after
+	// ReinitializeNetwork() ran.
 	if (!thePrefs::GetUPnPEnabled() || m_upnp) {
 		return;
 	}
 
-	// The mapped ports come straight from the preferences rather than the
-	// listening sockets, so this can run independently of
-	// ReinitializeNetwork() (which owns the local myaddr[] array).
+	// The mapped ports come straight from the preferences rather than the listening
+	// sockets, so this can run independently of ReinitializeNetwork() (which owns the local
+	// myaddr[] array).
 	try {
 		m_upnpMappings[0] = CUPnPPortMapping(thePrefs::ECPort(),
 			"TCP",
@@ -1599,10 +1571,9 @@ void CamuleApp::StartUPnP()
 }
 #endif
 
-/* Original implementation by Bouc7 of the eMule Project.
-   aMule Signature idea was designed by BigBob and implemented
-   by Un-Thesis, with design inputs and suggestions from bothie.
-*/
+/* Original implementation by Bouc7 of the eMule Project. aMule Signature idea was
+   designed by BigBob and implemented by Un-Thesis, with design inputs and suggestions
+   from bothie. */
 void CamuleApp::OnlineSig(bool zero /* reset stats (used on shutdown) */)
 {
 	// Do not do anything if online signature is disabled in Preferences
@@ -1850,10 +1821,10 @@ void CamuleApp::SetOSFiles(const wxString &new_path)
 void CamuleApp::OnAssertFailure(
 	const wxChar *file, int line, const wxChar *func, const wxChar *cond, const wxChar *msg)
 {
-	// The log copy, the backtrace and --disable-fatal are the same for every app
-	// and live in CamuleAppCommon; only the base to fall through to is ours.
-	// IsRunning() gates the dialog because wxWidgets cannot show one before the
-	// app is up or once it is tearing down.
+	// The log copy, the backtrace and --disable-fatal are the same for every app and live
+	// in CamuleAppCommon; only the base to fall through to is ours. IsRunning() gates the
+	// dialog because wxWidgets cannot show one before the app is up or once it is tearing
+	// down.
 	if (ReportAssertFailure(file, line, func, cond, msg, wxThread::IsMain() && IsRunning())) {
 		AMULE_APP_BASE::OnAssertFailure(file, line, func, cond, msg);
 	}
@@ -1899,17 +1870,16 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 		return;
 	}
 
-	// Check if we should terminate the app. OnShutdownSignal only sets
-	// the flag; the actual exit trigger runs from here (normal context)
-	// every CORE_TIMER_PERIOD ms.
+	// Check if we should terminate the app. OnShutdownSignal only sets the flag; the actual
+	// exit trigger runs from here (normal context) every CORE_TIMER_PERIOD ms.
 	if (g_shutdownSignal) {
 #ifdef AMULE_DAEMON
 #if defined(__APPLE__)
-		// wxBase 3.3.2's wxAppConsole event loop on macOS does not honour
-		// ExitMainLoop without a top-level window driving the close. Run OnExit()
-		// directly here for a clean shutdown of all subsystems, then _exit() to
-		// terminate before wx's own static destructors hit the NSURLSession
-		// cleanup crash also handled in OnExit's __APPLE__ block.
+		// wxBase 3.3.2's wxAppConsole event loop on macOS does not honour ExitMainLoop
+		// without a top-level window driving the close. Run OnExit() directly here for a
+		// clean shutdown of all subsystems, then _exit() to terminate before wx's own static
+		// destructors hit the NSURLSession cleanup crash also handled in OnExit's __APPLE__
+		// block.
 		static bool s_alreadyExiting = false;
 		if (!s_alreadyExiting) {
 			s_alreadyExiting = true;
@@ -1931,11 +1901,11 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 #endif
 	}
 
-	// There is a theoretical chance that the core time function can recurse: if
-	// an event function gets blocked on a mutex (communicating with the
-	// UploadBandwidthThrottler) wx spawns a new event loop and processes more
-	// events, so under high CPU load a new core timer event could be generated
-	// before the last one finished. Detect that and return early.
+	// There is a theoretical chance that the core time function can recurse: if an event
+	// function gets blocked on a mutex (communicating with the UploadBandwidthThrottler) wx
+	// spawns a new event loop and processes more events, so under high CPU load a new core
+	// timer event could be generated before the last one finished. Detect that and return
+	// early.
 	static bool recurse = false;
 	if (recurse) {
 		return;
@@ -1943,10 +1913,10 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 	recurse = true;
 
 #ifdef AMULE_UTP_TRANSPORT
-	// Unguarded like the queues below: ReinitializeNetwork() always constructs
-	// clientudp, disabled UDP included -- it simply leaves it unopened. A null
-	// check here would also tell the static analyser that the Kad recovery's
-	// clientudp->Close() further down can be reached with a null pointer.
+	// Unguarded like the queues below: ReinitializeNetwork() always constructs clientudp,
+	// disabled UDP included -- it simply leaves it unopened. A null check here would also
+	// tell the static analyser that the Kad recovery's clientudp->Close() further down can
+	// be reached with a null pointer.
 	clientudp->TickUtp();
 #endif
 
@@ -1956,10 +1926,10 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 	theStats::CalculateRates();
 
 	if (msCur - msPrevHist > 1000) {
-		// Unlike the other loop counters in this function this one will sometimes
-		// produce two calls in quick succession, if there was a gap of more than
-		// one second between calls to TimerProc. That is intentional: the history
-		// list then keeps an average of one node per second.
+		// Unlike the other loop counters in this function this one will sometimes produce
+		// two calls in quick succession, if there was a gap of more than one second between
+		// calls to TimerProc. That is intentional: the history list then keeps an average of
+		// one node per second.
 		msPrevHist += 1000;
 
 		m_statistics->RecordHistory();
@@ -1968,10 +1938,10 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 	if (msCur - msPrev1 > 1000) { // approximately every second
 		msPrev1 = msCur;
 
-		// Keep the free-space worker's directories current. The paths can change
-		// under the preferences dialog, and the worker must not read thePrefs
-		// itself -- no worker in the tree does, and a wxString read concurrently
-		// with an assignment is a race whatever the value.
+		// Keep the free-space worker's directories current. The paths can change under the
+		// preferences dialog, and the worker must not read thePrefs itself -- no worker in
+		// the tree does, and a wxString read concurrently with an assignment is a race
+		// whatever the value.
 		if (freeSpaceThread) {
 			freeSpaceThread->SetPaths(thePrefs::GetTempDir(), thePrefs::GetIncomingDir());
 		}
@@ -2002,11 +1972,11 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 		listensocket->UpdateConnectionsStatus();
 
 #ifdef ENABLE_VERSION_CHECK
-		// Periodic re-check: once per day, so a long-running amuled or monolithic
-		// amule keeps its version state fresh instead of only checking at startup.
-		// Fires immediately the first time the preference is enabled at runtime.
-		// StartVersionCheck() self-stamps and skips the fetch within its own
-		// cooldown, so re-entry here is harmless.
+		// Periodic re-check: once per day, so a long-running amuled or monolithic amule
+		// keeps its version state fresh instead of only checking at startup. Fires
+		// immediately the first time the preference is enabled at runtime.
+		// StartVersionCheck() self-stamps and skips the fetch within its own cooldown, so
+		// re-entry here is harmless.
 		if (thePrefs::GetCheckNewVersion()) {
 			const time_t nowSec = time(nullptr);
 			if (m_versionCheckLastAttempt == 0 ||
@@ -2022,10 +1992,10 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 		listensocket->Process();
 	}
 
-	// Roughly every five minutes. An interface walk is too expensive to do per
-	// peer claim and too rare to leave to startup: between the two, this is what
-	// notices a prefix renumber or a privacy-address rotation on a session that
-	// never reconnects to a server.
+	// Roughly every five minutes. An interface walk is too expensive to do per peer claim
+	// and too rare to leave to startup: between the two, this is what notices a prefix
+	// renumber or a privacy-address rotation on a session that never reconnects to a
+	// server.
 	if (msCur - msPrevIfaces >= 5 * 60 * 1000) {
 		msPrevIfaces = msCur;
 		RefreshLocalPublicIPv6Addresses();
@@ -2049,20 +2019,19 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 	}
 
 	// Coalesced flush of media-probe tag updates: OnMediaProbeFinished bumps
-	// m_mediaTagsDirtiedMs on every probe instead of saving inline; save once
-	// here when probing has been idle for 30 s. Resets the periodic timer above
-	// so known.met is not rewritten twice in quick succession.
+	// m_mediaTagsDirtiedMs on every probe instead of saving inline; save once here when
+	// probing has been idle for 30 s. Resets the periodic timer above so known.met is not
+	// rewritten twice in quick succession.
 	if (m_mediaTagsDirtiedMs && msCur - m_mediaTagsDirtiedMs >= 30000) {
 		knownfiles->Save();
 		m_mediaTagsDirtiedMs = 0;
 		msPrevKnownMet = msCur;
 	}
 
-	// Backstop for the amuleapi EC token file. The child unlinks it as soon as it
-	// has read it, so in the normal case this finds nothing to do -- it exists
-	// for the child that never got that far, so a live secret cannot be left at
-	// rest by a crash or a failed exec. The in-memory token stays valid either
-	// way; only the file is transient.
+	// Backstop for the amuleapi EC token file. The child unlinks it as soon as it has read
+	// it, so in the normal case this finds nothing to do -- it exists for the child that
+	// never got that far, so a live secret cannot be left at rest by a crash or a failed
+	// exec. The in-memory token stays valid either way; only the file is transient.
 	if (m_ecTokenFileExpiryMs && msCur >= m_ecTokenFileExpiryMs) {
 		m_ecTokenFileExpiryMs = 0;
 		const wxString tokenPath = wxString::FromUTF8(
@@ -2089,19 +2058,19 @@ void CamuleApp::OnSplashPollTimer(wxTimerEvent &WXUNUSED(evt))
 
 void CamuleApp::UpdateStartupHashProgress()
 {
-	// What the scheduler reports is what remains, so the completed count is
-	// derived rather than tracked -- one fewer thing to keep in step with a
-	// queue that other subsystems also feed.
+	// What the scheduler reports is what remains, so the completed count is derived rather
+	// than tracked -- one fewer thing to keep in step with a queue that other subsystems
+	// also feed.
 	const size_t remaining = CThreadScheduler::GetPendingCount(kSplashHashTaskType);
 
 	CSharedFilesCtrl *sharedList = (theApp->amuledlg && theApp->amuledlg->m_sharedfileswnd)
 					       ? theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl
 					       : nullptr;
 	if (sharedList) {
-		// The count moves every tick; the order only moves when a hash finished
-		// and appended a row. Hashing cost tracks bytes, so a large file is
-		// minutes of nothing followed by one append -- sorting per tick
-		// regardless would rebuild the row index once a second for no reordering.
+		// The count moves every tick; the order only moves when a hash finished and appended
+		// a row. Hashing cost tracks bytes, so a large file is minutes of nothing followed by
+		// one append -- sorting per tick regardless would rebuild the row index once a second
+		// for no reordering.
 		sharedList->SetHashingCount(remaining);
 		sharedList->SortIfRowsAppended();
 	}
@@ -2120,16 +2089,16 @@ void CamuleApp::ShowMainWindowAfterScan()
 		theApp->amuledlg->m_transferwnd->downloadlistctrl->EndBatchUpdate();
 	}
 
-	// The shared list is not finished -- hashing still has files to hand it -- so
-	// its batch stays open and only the freeze ends. Sorting what the scan found
-	// means the list is ordered from the moment it is visible, and rows arriving
-	// later are appended and sorted by the poll tick.
+	// The shared list is not finished -- hashing still has files to hand it -- so its batch
+	// stays open and only the freeze ends. Sorting what the scan found means the list is
+	// ordered from the moment it is visible, and rows arriving later are appended and
+	// sorted by the poll tick.
 	if (theApp->amuledlg && theApp->amuledlg->m_sharedfileswnd &&
 		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl) {
-		// Sort-if-dirty rather than an unconditional sort: the scan's files
-		// arrived as appends and set the flag, and the first drain tick runs
-		// moments from here -- sorting outright would leave the flag set and have
-		// that tick repeat the largest sort of the whole startup.
+		// Sort-if-dirty rather than an unconditional sort: the scan's files arrived as
+		// appends and set the flag, and the first drain tick runs moments from here --
+		// sorting outright would leave the flag set and have that tick repeat the largest
+		// sort of the whole startup.
 		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->SortIfRowsAppended();
 		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->ThawForDisplay();
 	}
@@ -2155,12 +2124,11 @@ void CamuleApp::FinishStartupHashing()
 		// batch below closes with the model already knowing every row.
 		sharedList->SetStartupDrainMode(false);
 		sharedList->SetHashingCount(0);
-		// Ends the batch opened before the scan, without its sort: whatever was
-		// appended has just been sorted, either by the tick that brought the count
-		// to zero or, when nothing needed hashing, at the end of the scan.
-		// Nothing can append in between -- both run synchronously in one handler.
-		// The thaw inside is skipped too: ShowMainWindowAfterScan() ended the
-		// freeze already.
+		// Ends the batch opened before the scan, without its sort: whatever was appended has
+		// just been sorted, either by the tick that brought the count to zero or, when
+		// nothing needed hashing, at the end of the scan. Nothing can append in between --
+		// both run synchronously in one handler. The thaw inside is skipped too:
+		// ShowMainWindowAfterScan() ended the freeze already.
 		sharedList->EndBatchUpdate(false);
 	}
 }
@@ -2184,12 +2152,11 @@ void CamuleApp::OnFinishedHashing(CHashingEvent &evt)
 	} else {
 		static uint64 bytecount = 0;
 
-		// CHashingTask runs against a stable file descriptor, so the hash completes
-		// even if the file is renamed or unlinked mid-hash. Re-check the path at
-		// completion: if the file is no longer where we hashed it from -- moved
-		// out of the watched tree, deleted, or renamed to a different final path
-		// -- drop the result. Surfacing it would leave a shared-list entry under a
-		// filename that does not exist on disk, which peers cannot fetch from.
+		// CHashingTask runs against a stable file descriptor, so the hash completes even if
+		// the file is renamed or unlinked mid-hash. Re-check the path at completion: if the
+		// file is no longer where we hashed it from -- moved out of the watched tree,
+		// deleted, or renamed to a different final path -- drop the result. Surfacing it
+		// would leave a shared-list entry under a filename that does not exist on disk.
 		const CPath hashedFullPath = result->GetFilePath().JoinPaths(result->GetFileName());
 		if (!hashedFullPath.FileExists()) {
 			AddDebugLogLineN(logKnownFiles,
@@ -2227,9 +2194,9 @@ void CamuleApp::OnPartFileHashResult(CPartFileHashResultEvent &evt)
 		return;
 	}
 
-	// Look up the file by hash. If it was removed from the download
-	// queue between enqueue and dispatch (cancelled, completed early)
-	// the lookup returns NULL and we drop the event safely.
+	// Look up the file by hash. If it was removed from the download queue between enqueue
+	// and dispatch (cancelled, completed early) the lookup returns NULL and we drop the
+	// event safely.
 	CPartFile *file = downloadqueue->GetFileByID(evt.FileHash());
 	if (!file) {
 		AddDebugLogLineN(logPartFile,
@@ -2248,11 +2215,10 @@ void CamuleApp::OnFinishedAICHHashing(CHashingEvent &evt)
 	CKnownFile *owner = const_cast<CKnownFile *>(evt.GetOwner());
 	CScopedPtr<CKnownFile> result(evt.GetResult());
 
-	// Validate the owner is still alive -- AICH hashing of a multi-GB file can
-	// run for many seconds, during which the CKnownFile may have been
-	// TTL-evicted from PruneDuplicates or destroyed via CPartFile::Delete.
-	// Without this check the swap below would deref freed memory. Same
-	// defensive pattern as OnFinishedHashing above.
+	// Validate the owner is still alive -- AICH hashing of a multi-GB file can run for many
+	// seconds, during which the CKnownFile may have been TTL-evicted from PruneDuplicates
+	// or destroyed via CPartFile::Delete. Without this check the swap below would deref
+	// freed memory. Same defensive pattern as OnFinishedHashing above.
 	if (!owner || (!knownfiles->IsKnownFile(owner) && !downloadqueue->IsPartFile(owner))) {
 		AddDebugLogLineN(logKnownFiles,
 			"OnFinishedAICHHashing: owner CKnownFile was destroyed "
@@ -2278,19 +2244,17 @@ void CamuleApp::OnFinishedAICHHashing(CHashingEvent &evt)
 
 void CamuleApp::OnMediaProbeFinished(CMediaProbeEvent &evt)
 {
-	// The task ran off-main; the file may have been unshared while
-	// we were probing. Re-resolve the hash instead of holding a
-	// CKnownFile* across the boundary.
+	// The task ran off-main; the file may have been unshared while we were probing.
+	// Re-resolve the hash instead of holding a CKnownFile* across the boundary.
 	CKnownFile *file = theApp->knownfiles->FindKnownFileByID(evt.GetHash());
-	// The shared list can hold a DIFFERENT object for the same hash than the
-	// known-file map does -- that is what happens when the same content is
-	// shared at more than one path, which on a media library is common. The
-	// probe is scheduled off the shared-list entry and its gate reads that
-	// entry, but the result was only ever applied to the known-file map's, so
-	// the shared entry stayed bare, still looked unprobed, and was re-queued on
-	// every reload and restart -- succeeding every time, which is why it showed
-	// up as a repeating probe with no failures. Both objects are updated now;
-	// usually they ARE the same object and the second update is skipped.
+	// The shared list can hold a DIFFERENT object for the same hash than the known-file map
+	// does -- that is what happens when the same content is shared at more than one path,
+	// which on a media library is common. The probe is scheduled off the shared-list entry
+	// and its gate reads that entry, but the result was only ever applied to the known-file
+	// map's, so the shared entry stayed bare, still looked unprobed, and was re-queued on
+	// every reload and restart -- succeeding every time, which is why it showed up as a
+	// repeating probe with no failures. Both objects are updated now; usually they ARE the
+	// same object and the second update is skipped.
 	CKnownFile *sharedFile =
 		theApp->sharedfiles ? theApp->sharedfiles->GetFileByID(evt.GetHash()) : nullptr;
 	if (sharedFile == file) {
@@ -2301,25 +2265,25 @@ void CamuleApp::OnMediaProbeFinished(CMediaProbeEvent &evt)
 		sharedFile = nullptr;
 	}
 	if (!file) {
-		// The probe ran and its result is being thrown away. That is expected when
-		// the file was unshared mid-probe, but it is also the shape a silently
-		// dropped result would have -- and a dropped result means the file keeps
-		// no metadata and no marker, so it is re-probed on every reload forever.
+		// The probe ran and its result is being thrown away. That is expected when the file
+		// was unshared mid-probe, but it is also the shape a silently dropped result would
+		// have -- and a dropped result means the file keeps no metadata and no marker, so it
+		// is re-probed on every reload forever.
 		AddLogLineN(CFormat(_("Media metadata: probed file is no longer known, result discarded "
 				      "(%s)")) %
 			    evt.GetHash().Encode());
 		return;
 	}
 
-	// A probe that produced nothing still has to leave a trace, or the gate that
-	// skips already-probed files cannot tell it from a file never tried and
-	// re-queues it on every reload and restart. The existing media tags are left
-	// alone: a probe that failed has established nothing about the file.
+	// A probe that produced nothing still has to leave a trace, or the gate that skips
+	// already-probed files cannot tell it from a file never tried and re-queues it on every
+	// reload and restart. The existing media tags are left alone: a probe that failed has
+	// established nothing about the file.
 	if (!evt.Succeeded()) {
-		// Only a verdict about the file is recorded. A missing or broken ffprobe,
-		// a timeout, or a file that vanished between queue and probe says nothing
-		// about the file itself, and marking on those would mean one mistyped
-		// ffprobe path brands every media file in the library.
+		// Only a verdict about the file is recorded. A missing or broken ffprobe, a timeout,
+		// or a file that vanished between queue and probe says nothing about the file itself,
+		// and marking on those would mean one mistyped ffprobe path brands every media file
+		// in the library.
 		if (evt.MarkUnprobeable()) {
 			file->AddTagUnique(CTagInt32(FT_MEDIA_PROBE_FAILED, 1));
 			if (sharedFile) {
@@ -2330,33 +2294,30 @@ void CamuleApp::OnMediaProbeFinished(CMediaProbeEvent &evt)
 		return;
 	}
 
-	// A successful probe is AUTHORITATIVE for every media field: what it found
-	// is attached, and what it did NOT find is removed. The alternative to a
-	// value the probe could not determine is not "no tag" -- it is whatever
-	// was there before, which for a completed download is the unverified
-	// preview inherited from the search result. Leaving that in place made
-	// aMule republish a peer's numbers to ed2k and Kad as its own, which is
+	// A successful probe is AUTHORITATIVE for every media field: what it found is attached,
+	// and what it did NOT find is removed. The alternative to a value the probe could not
+	// determine is not "no tag" -- it is whatever was there before, which for a completed
+	// download is the unverified preview inherited from the search result. Leaving that in
+	// place made aMule republish a peer's numbers to ed2k and Kad as its own, which is
 	// exactly what the completion re-probe exists to prevent.
 	//
-	// This runs only when Probe() returned true; a failed probe never reaches
-	// here, so an unreadable file keeps its preview rather than being wiped.
+	// This runs only when Probe() returned true; a failed probe never reaches here, so an
+	// unreadable file keeps its preview rather than being wiped.
 	//
-	// KNOWN LIMITATION: this corrects a file only when a probe actually runs
-	// for it, and the two callers are the initial share-add and the completion
-	// re-probe. Anything already carrying media tags is skipped by the
-	// scheduler's gate, so no later start re-probes it. Two populations are
-	// therefore left uncorrected, and neither is only about inherited
-	// previews:
+	// KNOWN LIMITATION: this corrects a file only when a probe actually runs for it, and
+	// the two callers are the initial share-add and the completion re-probe. Anything
+	// already carrying media tags is skipped by the scheduler's gate, so no later start
+	// re-probes it. Two populations are therefore left uncorrected, and neither is only
+	// about inherited previews:
 	//
-	//  - a download that COMPLETED BEFORE this change keeps whatever its
-	//    search result advertised;
-	//  - a file probed by an earlier build keeps what THAT probe stored --
-	//    including a cover-art codec, since such a file also carries a real
-	//    length and so looks probed to every version of the gate.
+	//  - a download that COMPLETED BEFORE this change keeps whatever its search result
+	//    advertised;
+	//  - a file probed by an earlier build keeps what THAT probe stored -- including a
+	//    cover-art codec, since such a file also carries a real length and so looks probed
+	//    to every version of the gate.
 	//
-	// There is deliberately no migration for either: correcting them needs an
-	// explicit user-triggered re-extraction, which is what issue #1079 is
-	// for.
+	// There is deliberately no migration for either: correcting them needs an explicit
+	// user-triggered re-extraction, which is what issue #1079 is for.
 	const MediaInfo &info = evt.GetInfo();
 	const auto setOrClearInt = [&](uint8 id, uint32 value) {
 		for (CKnownFile *target : { file, sharedFile }) {
@@ -2394,7 +2355,7 @@ void CamuleApp::OnMediaProbeFinished(CMediaProbeEvent &evt)
 	if (sharedFile) {
 		sharedFile->RemoveTag(FT_MEDIA_PROBE_FAILED);
 	}
-	// Traced under logMediaProbe — the "metadata actually landed"
+	// Traced under logMediaProbe -- the "metadata actually landed"
 	// confirmation, logged once per file when tags are attached.
 	AddDebugLogLineN(logMediaProbe,
 		CFormat(wxT("Media metadata: %s -> length=%us bitrate=%ukbps codec=%s artist=%s album=%s "
@@ -2404,19 +2365,19 @@ void CamuleApp::OnMediaProbeFinished(CMediaProbeEvent &evt)
 	// EC exports the tag list; the remote GUI + web UI need to see
 	// the new values on next refresher tick.
 	file->MarkECChanged();
-	// The shared-list object is the one EC serves: CFileEncoderMap builds its
-	// encoders from CopyFileList(shares) keyed by ECID, so leaving it unmarked
-	// means Get_EC_Response_GetUpdate takes its unchanged shortcut and every
-	// remote client keeps showing the file bare.
+	// The shared-list object is the one EC serves: CFileEncoderMap builds its encoders from
+	// CopyFileList(shares) keyed by ECID, so leaving it unmarked means
+	// Get_EC_Response_GetUpdate takes its unchanged shortcut and every remote client keeps
+	// showing the file bare.
 	if (sharedFile) {
 		sharedFile->MarkECChanged();
 	}
 	// Coalesce the known.met save instead of rewriting the whole file per probe.
-	// CKnownFileList::Save rewrites every known file, so a per-probe save is
-	// O(files) each time -- O(N^2) when the whole library is probed at startup,
-	// which pegged a core and could re-enter Save mid-write. Bump the
-	// last-change stamp on every probe; OnCoreTimer flushes a single Save once
-	// probing has been idle for 30 s. The 30-min periodic save is the backstop.
+	// CKnownFileList::Save rewrites every known file, so a per-probe save is O(files) each
+	// time -- O(N^2) when the whole library is probed at startup, which pegged a core and
+	// could re-enter Save mid-write. Bump the last-change stamp on every probe; OnCoreTimer
+	// flushes a single Save once probing has been idle for 30 s. The 30-min periodic save
+	// is the backstop.
 	m_mediaTagsDirtiedMs = theStats::GetUptimeMillis();
 }
 
@@ -2424,9 +2385,9 @@ void CamuleApp::OnFinishedCompletion(CCompletionEvent &evt)
 {
 	CPartFile *completed = const_cast<CPartFile *>(evt.GetOwner());
 	wxCHECK_RET(completed, "Completion event sent for unspecified file");
-	// wxASSERT_MSG is a no-op in Release; the deref below would UAF
-	// silently if the partfile was cancelled while the completion
-	// worker was running. Convert to a real validate-before-deref.
+	// wxASSERT_MSG is a no-op in Release; the deref below would UAF silently if the
+	// partfile was cancelled while the completion worker was running. Convert to a real
+	// validate-before-deref.
 	if (!downloadqueue->IsPartFile(completed)) {
 		AddDebugLogLineN(logPartFile,
 			"OnFinishedCompletion: completed CPartFile was destroyed "
@@ -2447,9 +2408,9 @@ void CamuleApp::OnFinishedAllocation(CAllocFinishedEvent &evt)
 {
 	CPartFile *file = evt.GetFile();
 	wxCHECK_RET(file, "Allocation finished event sent for unspecified file");
-	// Preallocation can take 10+ seconds on slow disks. If the user cancels the
-	// download mid-preallocation, the CPartFile is freed before this completion
-	// event reaches the main thread -- and wxASSERT would be a no-op in Release.
+	// Preallocation can take 10+ seconds on slow disks. If the user cancels the download
+	// mid-preallocation, the CPartFile is freed before this completion event reaches the
+	// main thread -- and wxASSERT would be a no-op in Release.
 	if (!downloadqueue->IsPartFile(file)) {
 		AddDebugLogLineN(logPartFile,
 			"OnFinishedAllocation: partfile was destroyed while "
@@ -2479,10 +2440,10 @@ void CamuleApp::OnNotifyEvent(CMuleGUIEvent &evt)
 #ifdef AMULE_DAEMON
 	evt.Notify();
 #else
-	// IsAlways() covers the socket-layer notifications, which have to run whether
-	// or not there is a window. The monolithic app builds its dialog before
-	// networking starts, so this is far less exposed than amulegui, but the
-	// window is gone again during shutdown while sockets are still closing.
+	// IsAlways() covers the socket-layer notifications, which have to run whether or not
+	// there is a window. The monolithic app builds its dialog before networking starts, so
+	// this is far less exposed than amulegui, but the window is gone again during shutdown
+	// while sockets are still closing.
 	if (evt.IsAlways() || theApp->amuledlg) {
 		evt.Notify();
 	}
@@ -2695,9 +2656,9 @@ void CamuleApp::OnFinishedHTTPDownload(CMuleInternalEvent &event)
 		break;
 #ifdef ENABLE_IP2COUNTRY
 	case HTTP_GeoIP:
-		// Core resolver handles the swap-in of the freshly downloaded DB
-		// (daemon + monolithic). GetIP2Country() is NULL on amulegui, which
-		// has no local resolver — it never starts a GeoIP download.
+		// Core resolver handles the swap-in of the freshly downloaded DB (daemon +
+		// monolithic). GetIP2Country() is NULL on amulegui, which has no local resolver --
+		// it never starts a GeoIP download.
 		if (theApp->GetIP2Country()) {
 			theApp->GetIP2Country()->DownloadFinished(event.GetExtraInt64());
 		}
@@ -2717,10 +2678,9 @@ void CamuleApp::OnFinishedHTTPDownload(CMuleInternalEvent &event)
 #ifdef ENABLE_VERSION_CHECK
 bool CamuleApp::StartVersionCheck()
 {
-	// Throttle against GitHub's unauthenticated rate limit (60 req/hr):
-	// skip triggers arriving within the cooldown of the last attempt. The
-	// startup call is the first attempt (m_versionCheckLastAttempt == 0) so
-	// it always runs.
+	// Throttle against GitHub's unauthenticated rate limit (60 req/hr): skip triggers
+	// arriving within the cooldown of the last attempt. The startup call is the first
+	// attempt (m_versionCheckLastAttempt == 0) so it always runs.
 	const time_t kMinInterval = 60; // seconds
 	const time_t now = time(nullptr);
 	if (m_versionCheckLastAttempt != 0 && now - m_versionCheckLastAttempt < kMinInterval) {
@@ -2728,10 +2688,10 @@ bool CamuleApp::StartVersionCheck()
 	}
 	m_versionCheckLastAttempt = now;
 
-	// The GitHub Releases "latest" endpoint returns JSON describing the most
-	// recent non-prerelease, non-draft Release. CheckNewVersion() parses the
-	// tag_name on completion. Fire-and-forget through the download thread so no
-	// dialog pops up. Reused by OnInit and the EC_OP_VERSION_CHECK trigger.
+	// The GitHub Releases "latest" endpoint returns JSON describing the most recent
+	// non-prerelease, non-draft Release. CheckNewVersion() parses the tag_name on
+	// completion. Fire-and-forget through the download thread so no dialog pops up. Reused
+	// by OnInit and the EC_OP_VERSION_CHECK trigger.
 	CHTTPDownloadThread *version_check =
 		new CHTTPDownloadThread("https://api.github.com/repos/amule-org/amule/releases/latest",
 			thePrefs::GetConfigDir() + "last_version_check",
@@ -2756,21 +2716,18 @@ void CamuleApp::CheckNewVersion(uint32 result)
 		} else if (!file.GetLineCount()) {
 			AddLogLineC(_("Corrupted version check file"));
 		} else {
-			// The downloaded file is the GitHub Releases /latest JSON
-			// response.  Concatenate all lines so the regex below
-			// matches across the pretty-printed payload.
+			// The downloaded file is the GitHub Releases /latest JSON response. Concatenate
+			// all lines so the regex below matches across the pretty-printed payload.
 			wxString jsonContent;
 			for (size_t i = 0; i < file.GetLineCount(); ++i) {
 				jsonContent += file.GetLine(i);
 			}
 
-			// Shared parse + compare (OtherFunctions.cpp:
-			// CompareLatestReleaseVersion) — the same logic the GUI
-			// check (CVersionCheck) and amuleapi use. Folds the
-			// former regex/strip/tokenize block into one call; the
-			// ParseError branch covers every "corrupt input" case the
-			// inline code returned on (bad regex, empty tag, non-numeric
-			// component).
+			// Shared parse + compare (OtherFunctions.cpp: CompareLatestReleaseVersion) -- the
+			// same logic the GUI check (CVersionCheck) and amuleapi use. Folds the former
+			// regex/strip/tokenize block into one call; the ParseError branch covers every
+			// "corrupt input" case the inline code returned on (bad regex, empty tag,
+			// non-numeric component).
 			const CVersionCompareResult vc = CompareLatestReleaseVersion(jsonContent);
 			if (vc.state == CVersionCompareResult::ParseError) {
 				AddLogLineC(_("Corrupted version check file"));
@@ -2779,17 +2736,17 @@ void CamuleApp::CheckNewVersion(uint32 result)
 				return;
 			}
 
-			// Persist the outcome so it can be relayed over EC to
-			// amuleapi (the /version "update" object) and read by the
-			// UIs. Set on any successful parse (up-to-date or outdated).
+			// Persist the outcome so it can be relayed over EC to amuleapi (the /version
+			// "update" object) and read by the UIs. Set on any successful parse (up-to-date or
+			// outdated).
 			m_versionCheckLatest = vc.latest;
 			m_versionCheckOutdated = (vc.state == CVersionCompareResult::Outdated);
 			m_versionCheckDone = true;
 			m_versionCheckTimestamp = time(nullptr);
 
-			// Drive the monolithic GUI's "new version" popup from the shared
-			// engine (no-op on the daemon; amulegui runs its own check). This
-			// is why the monolithic no longer needs a separate CVersionCheck.
+			// Drive the monolithic GUI's "new version" popup from the shared engine (no-op on
+			// the daemon; amulegui runs its own check). This is why the monolithic no longer
+			// needs a separate CVersionCheck.
 			Notify_VersionCheckResult(m_versionCheckLatest, m_versionCheckOutdated);
 
 			AddDebugLogLineN(logGeneral,
@@ -2940,9 +2897,9 @@ bool CamuleApp::CanDoCallback(uint32 clientServerIP, uint16 clientServerPort)
 							theApp->serverconnect->GetCurrentServer()->GetIP() &&
 						clientServerPort == theApp->serverconnect->GetCurrentServer()
 									    ->GetPort()) {
-						// Both Connected - Server lowID, Kad Open - Client on same
-						// server We prevent a callback to the server as this breaks
-						// the protocol and will get you banned.
+						// Both connected, server LowID, Kad open, client on the same
+						// server. Prevent a callback to the server: it breaks the
+						// protocol and gets you banned.
 						return false;
 					} else {
 						// Both Connected - Server lowID, Kad Open - Client on remote
@@ -3030,16 +2987,13 @@ void CamuleApp::ShowConnectionState(bool forceUpdate)
 		}
 	}
 
-	// Wipe the cumulative server-message buffer when the connected
-	// ed2k server changes (either disconnected, or switched A -> B).
-	// Without this the Server Info tab keeps showing messages from the
-	// server we just left. We do the data clear here so amulegui sees
-	// the cleared buffer on its next EC_OP_GET_SERVERINFO poll without
-	// any extra round trip — the existing else branch in
-	// CServerInfoHandlerRem::HandlePacket resets the local view when
-	// fullLog shortens. The on-screen text ctrl in monolithic builds
-	// is cleared from CamuleDlg::ShowConnectionState's matching
-	// detection.
+	// Wipe the cumulative server-message buffer when the connected ed2k server changes
+	// (either disconnected, or switched A -> B). Without this the Server Info tab keeps
+	// showing messages from the server we just left. The data clear happens here so
+	// amulegui sees the cleared buffer on its next EC_OP_GET_SERVERINFO poll without any
+	// extra round trip -- the existing else branch in CServerInfoHandlerRem::HandlePacket
+	// resets the local view when fullLog shortens. The on-screen text ctrl in monolithic
+	// builds is cleared from CamuleDlg::ShowConnectionState's matching detection.
 	static CServer *s_lastConnectedServer = NULL;
 	CServer *nowConnectedServer =
 		(state & CONNECTED_ED2K) ? theApp->serverconnect->GetCurrentServer() : NULL;
@@ -3051,7 +3005,7 @@ void CamuleApp::ShowConnectionState(bool forceUpdate)
 	if (nowConnectedServer) {
 		s_lastConnectedServer = nowConnectedServer;
 	} else if (!(state & CONNECTED_ED2K)) {
-		// Truly disconnected — drop the cached pointer so a reconnect
+		// Truly disconnected -- drop the cached pointer so a reconnect
 		// to the same server doesn't spuriously clear next time.
 		s_lastConnectedServer = NULL;
 	}
@@ -3085,15 +3039,11 @@ void CamuleApp::ShowConnectionState(bool forceUpdate)
 			}
 		}
 
-		// Kad's three flags together mean "running"; CONNECTED_KAD_NOT alone
-		// means "running, but no contact yet". Keying these two messages on
-		// that single flag mislabelled both edges of it: finishing the
-		// bootstrap clears it and printed "Kad stopped.", losing contact sets
-		// it and printed "Kad started." A bug reporter read the first as a
-		// start/stop flap on startup and built a diagnosis on it, when the
-		// daemon was only connecting (amule-org/amule#1369). What this pair
-		// is about is whether Kad is running, so test that; the block below
-		// reports the connected edge on its own.
+		// Kad's three flags together mean "running"; CONNECTED_KAD_NOT alone means "running, but no
+		// contact yet". Keying these two messages on that single flag mislabelled both its edges:
+		// finishing the bootstrap clears it and printed "Kad stopped.", losing contact sets it and
+		// printed "Kad started." (amule-org/amule#1369). This pair is about whether Kad is running,
+		// so test that; the block below reports the connected edge on its own.
 		const uint8 kad_running_flags =
 			CONNECTED_KAD_NOT | CONNECTED_KAD_OK | CONNECTED_KAD_FIREWALLED;
 		const bool kad_was_running = (old_state & kad_running_flags) != 0;
@@ -3157,11 +3107,10 @@ void CamuleApp::StopKad()
 	// Stop Kad if it's running
 	if (Kademlia::CKademlia::IsRunning()) {
 		Kademlia::CKademlia::Stop();
-		// Refresh the status-bar Kad indicator immediately; the
-		// symmetric BootstrapKad() path already does this after
-		// Start(). Without it the "Disconnect Kad" button in
-		// KadDlg leaves a stale "Connected to Kad" indicator
-		// until the next periodic refresh in the main timer.
+		// Refresh the status-bar Kad indicator immediately; the symmetric BootstrapKad()
+		// path already does this after Start(). Without it the "Disconnect Kad" button in
+		// KadDlg leaves a stale "Connected to Kad" indicator until the next periodic refresh
+		// in the main timer.
 		ShowConnectionState();
 	}
 }

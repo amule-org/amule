@@ -67,15 +67,14 @@
 
 typedef std::deque<CKnownFile *> KnownFileArray;
 
-// m_pathIndex key canonicalization. macOS hands the same filename to different
-// subsystems in different Unicode normalization forms: known.met / download
-// names arrive decomposed (NFD) while FSEvents can report the very same path
-// composed (NFC), and a file's CREATE and DELETE events may even disagree. A
-// plain map keyed on the raw path string therefore misses when the lookup form
-// differs from the stored form, so a completed download with an accented name
-// (e.g. "corazón") never auto-unshares on delete. Fold every key to NFC so all
-// variants of one name collapse to a single entry. Off macOS filenames are
-// opaque byte strings with no OS-level normalization, so this is identity.
+// m_pathIndex key canonicalization. macOS hands the same filename to different subsystems
+// in different Unicode normalization forms: known.met / download names arrive decomposed
+// (NFD) while FSEvents can report the very same path composed (NFC), and a file's CREATE
+// and DELETE events may even disagree. A plain map keyed on the raw path string therefore
+// misses when the lookup form differs from the stored form, so a completed download with
+// an accented name never auto-unshares on delete. Fold every key to NFC so all variants
+// of one name collapse to a single entry. Off macOS filenames are opaque byte strings
+// with no OS-level normalization, so this is identity.
 static wxString NormalizePathKey(const wxString &path)
 {
 #ifdef __APPLE__
@@ -204,18 +203,18 @@ public:
 	}
 
 protected:
-	// The list is the canonical container — its insertion order is
-	// load-bearing for GetNextKeyword()'s round-robin publish cursor
-	// (m_posNextKeyword), so we cannot replace it with a map.
+	// The list is the canonical container -- its insertion order is load-bearing for
+	// GetNextKeyword()'s round-robin publish cursor (m_posNextKeyword), so it cannot be
+	// replaced with a map.
 	typedef std::list<CPublishKeyword *> CKeyWordList;
 	CKeyWordList m_lstKeywords;
 	CKeyWordList::iterator m_posNextKeyword;
 	uint32 m_tNextPublishKeywordTime;
 
-	// Secondary index: keyword string -> position in m_lstKeywords. Lets
-	// FindKeyword() do an O(log N) lookup instead of a linear scan, collapsing
-	// AddKeywords()'s hot path on large shared sets from O(N^2) to O(N log N).
-	// std::list iterators are stable across other inserts/erases.
+	// Secondary index: keyword string -> position in m_lstKeywords. Lets FindKeyword() do an
+	// O(log N) lookup instead of a linear scan, collapsing AddKeywords()'s hot path on large
+	// shared sets from O(N^2) to O(N log N). std::list iterators are stable across other
+	// inserts/erases.
 	std::map<wxString, CKeyWordList::iterator> m_keywordIndex;
 
 	CPublishKeyword *FindKeyword(const wxString &rstrKeyword, CKeyWordList::iterator *ppos = NULL);
@@ -395,18 +394,16 @@ void CSharedFileList::FindSharedFiles(const ReloadYieldCb &yieldCb, bool &aborte
 	{
 		wxMutexLocker lock(list_mut);
 		m_Files_map.clear();
-		// The index goes with the map it mirrors. AddFile writes a key only on a
-		// fresh insert and RemoveFile erases only the one key it recomputes, so
-		// any path this walk does not re-add -- a file deleted while its root was
-		// unshared, a DELETE lost to a watcher backend overflow, a remote deletion
-		// on a network share -- would keep an entry that makes NotifyPathAdded
-		// treat the path as already shared and silently refuse to share it again,
-		// with nothing logged at any level.
+		// The index goes with the map it mirrors. AddFile writes a key only on a fresh insert
+		// and RemoveFile erases only the one key it recomputes, so any path this walk does not
+		// re-add -- a file deleted while its root was unshared, a DELETE lost to a watcher
+		// backend overflow, a remote deletion on a network share -- would keep an entry that
+		// makes NotifyPathAdded treat the path as already shared and silently refuse to share it
+		// again, with nothing logged at any level.
 		//
-		// Same locked scope on purpose: this puts the index under the invariant
-		// the map already has -- neither may be observed between here and the end
-		// of the walk, which is the rule that already forbids pumping the event
-		// loop during a walk.
+		// Same locked scope on purpose: this puts the index under the invariant the map already
+		// has -- neither may be observed between here and the end of the walk, which is the rule
+		// that already forbids pumping the event loop during a walk.
 		m_pathIndex.clear();
 		m_listGeneration.fetch_add(1, std::memory_order_relaxed);
 	}
@@ -461,19 +458,18 @@ void CSharedFileList::FindSharedFiles(const ReloadYieldCb &yieldCb, bool &aborte
 	// Accepted tasks only, matching what the old "%i unknown" suffix counted.
 	m_discoveredNewFiles += addedFiles;
 
-	// One unconditional summary. The new-file count used to ride along as a
-	// suffix here, in one of two mutually exclusive variants, and only for this
-	// route -- the watcher reported nothing at all. It now has its own line,
-	// emitted from Process() for both routes, so this says one thing.
+	// One unconditional summary. The new-file count used to ride along as a suffix here, in
+	// one of two mutually exclusive variants, and only for this route -- the watcher reported
+	// nothing at all. It now has its own line, emitted from Process() for both routes.
 	AddLogLineN(
 		CFormat(wxPLURAL("Found %i known shared file", "Found %i known shared files", GetCount())) %
 		GetCount());
 
 	if (addedFiles == 0) {
-		// Make sure the AICH hashes are up to date. This is the startup sync run
-		// once the shared/known list is authoritative, so it opts into the
-		// orphan-prune (drop known2_64.met entries no longer owned by any known
-		// file). Post-hashing syncs deliberately do not prune -- see CAICHSyncTask.
+		// Make sure the AICH hashes are up to date. This is the startup sync run once the
+		// shared/known list is authoritative, so it opts into the orphan-prune (drop
+		// known2_64.met entries no longer owned by any known file). Post-hashing syncs
+		// deliberately do not prune -- see CAICHSyncTask.
 		CThreadScheduler::AddTask(new CAICHSyncTask(true));
 	}
 
@@ -504,10 +500,8 @@ unsigned CSharedFileList::AddFilesFromDirectory(const CPath &directory,
 	size_t &excluded,
 	bool &aborted)
 {
-	// Do not allow these folders to be shared:
-	//  - The .aMule folder
-	//  - The Temp folder
-	//  - The users home-dir
+	// Do not allow these folders to be shared: the .aMule folder, the Temp folder, and the
+	// user's home dir.
 	if (CheckDirectory(wxGetHomeDir(), directory)) {
 		return 0;
 	} else if (CheckDirectory(thePrefs::GetConfigDir(), directory)) {
@@ -533,9 +527,9 @@ unsigned CSharedFileList::AddFilesFromDirectory(const CPath &directory,
 	unsigned knownFiles = 0;
 	unsigned addedFiles = 0;
 
-	// Yield to the caller every kYieldEvery files so the UI stays responsive on
-	// big shared trees. 256 balances progress-bar responsiveness (~4 updates/s
-	// on a 1 ms-per-file machine) against the overhead of the callback itself.
+	// Yield to the caller every kYieldEvery files so the UI stays responsive on big shared
+	// trees. 256 balances progress-bar responsiveness (~4 updates/s on a 1 ms-per-file
+	// machine) against the overhead of the callback itself.
 	constexpr size_t kYieldEvery = 256;
 
 	CDirIterator SharedDir(directory);
@@ -576,35 +570,32 @@ unsigned CSharedFileList::AddFilesFromDirectory(const CPath &directory,
 	return addedFiles;
 }
 
-// Per-path attach. Three outcomes:
-//   kAddPathSkipped -- broken link, zero size, stat failed; do nothing.
-//   kAddPathKnown   -- matched a CKnownFile in known.met and was either newly
-//                      attached to the shared list or already there.
-//   kAddPathQueued  -- unknown file; a CHashingTask was pushed into hashTasks.
-//                      The shared-list attach happens later, when the hashing
-//                      thread finishes and calls SafeAddKFile().
+// Per-path attach. Three outcomes: kAddPathSkipped -- broken link, zero size, stat
+// failed; do nothing. kAddPathKnown -- matched a CKnownFile in known.met and was either
+// newly attached to the shared list or already there. kAddPathQueued -- unknown file; a
+// CHashingTask was pushed into hashTasks, and the shared-list attach happens later, when
+// the hashing thread finishes and calls SafeAddKFile().
 //
-// Shared between the bulk directory walk and the incremental watcher path so
-// the two agree on shareability rules.
+// Shared between the bulk directory walk and the incremental watcher path so the two
+// agree on shareability rules.
 CSharedFileList::AddPathResult CSharedFileList::AddPathToShares(
 	const CPath &directory, const CPath &fname, TaskList &hashTasks, bool notifyGuiOnKnownAdd)
 {
 	CPath fullPath = directory.JoinPaths(fname);
 
-	// User-configured name exclusion. Checked before touching the filesystem
-	// so an excluded file costs a name match and nothing else. Applies
-	// identically to the bulk walk and the incremental watcher path.
+	// User-configured name exclusion. Checked before touching the filesystem so an excluded
+	// file costs a name match and nothing else. Applies identically to the bulk walk and the
+	// incremental watcher path.
 	if (thePrefs::IsShareExcluded(fname.GetPrintable())) {
 		AddDebugLogLineN(logKnownFiles, CFormat("Excluded from shares by filter: %s") % fullPath);
 		return kAddPathExcluded;
 	}
 
-	// One stat for all three answers. Asking separately -- exists, then
-	// modification time, then size -- costs four filesystem round trips per
-	// file, and the size query opens the file to measure it. Multiplied by the
-	// share, that was the larger half of a cold-cache startup walk. A false here
-	// covers all three: a broken symlink, a non-regular file, or permissions too
-	// strict to stat.
+	// One stat for all three answers. Asking separately -- exists, then modification time,
+	// then size -- costs four filesystem round trips per file, and the size query opens the
+	// file to measure it. Multiplied by the share, that was the larger half of a cold-cache
+	// startup walk. A false here covers all three: a broken symlink, a non-regular file, or
+	// permissions too strict to stat.
 	time_t fdate;
 	sint64 fsize;
 	if (!fullPath.GetFileStat(fdate, fsize)) {
@@ -624,15 +615,15 @@ CSharedFileList::AddPathResult CSharedFileList::AddPathToShares(
 	CKnownFile *toadd = filelist->FindKnownFile(fname, fdate, fsize);
 	if (toadd) {
 		// Ask before stamping. SetFilePath is not a plain assignment -- it calls
-		// MarkECChanged(), which hands the file a new EC generation and so pushes
-		// it into the next INC_UPDATE. Stamping and then rolling back on a decline
-		// did that twice for a net-zero path change, sending every
-		// duplicate-content file to every EC client as "changed" on each reload.
+		// MarkECChanged(), which hands the file a new EC generation and so pushes it into the
+		// next INC_UPDATE. Stamping and then rolling back on a decline did that twice for a
+		// net-zero path change, sending every duplicate-content file to every EC client as
+		// "changed" on each reload.
 		//
-		// The obvious guard -- stamp only when the path differs -- would not have
-		// helped: a decline with previousPath == directory is close to
-		// unreachable, since the watcher route returns on an index hit before
-		// reaching here and the bulk walk visits each root once.
+		// The obvious guard -- stamp only when the path differs -- would not have helped: a
+		// decline with previousPath == directory is close to unreachable, since the watcher
+		// route returns on an index hit before reaching here and the bulk walk visits each root
+		// once.
 		{
 			wxMutexLocker lock(list_mut);
 			if (m_Files_map.find(toadd->GetFileHash()) != m_Files_map.end()) {
@@ -642,46 +633,44 @@ CSharedFileList::AddPathResult CSharedFileList::AddPathToShares(
 			}
 		}
 
-		// Set the path BEFORE AddFile so the path index that AddFile maintains keys
-		// off the file's current GetFilePath() rather than whatever stale path was
-		// stamped on the CKnownFile by a previous shared-list membership.
+		// Set the path BEFORE AddFile so the path index that AddFile maintains keys off the
+		// file's current GetFilePath() rather than whatever stale path was stamped on the
+		// CKnownFile by a previous shared-list membership.
 		//
-		// The rollback below still stands as the fallback for the check-then-insert
-		// race: the membership test above drops the lock before AddFile retakes
-		// it, so a hashing task completing in between can still make AddFile decline.
+		// The rollback below still stands as the fallback for the check-then-insert race: the
+		// membership test above drops the lock before AddFile retakes it, so a hashing task
+		// completing in between can still make AddFile decline.
 		const CPath previousPath = toadd->GetFilePath();
 		toadd->SetFilePath(directory);
 		if (AddFile(toadd)) {
 			AddDebugLogLineN(logKnownFiles, CFormat("Added known file '%s' to shares") % fname);
-			// This record matched a file we just saw on disk and it now owns the
-			// hash in the shared list. Give it the hash in the known-file map too:
-			// that map keeps whichever known.met entry loaded last, which for
-			// duplicated content can be a different record -- and if that record's
-			// own copy has been deleted, every hash-keyed lookup resolves to a path
-			// that cannot be opened. Called outside AddFile's lock on purpose:
-			// nothing may enter knownfiles while holding the shared-list lock.
+			// This record matched a file we just saw on disk and it now owns the hash in the
+			// shared list. Give it the hash in the known-file map too: that map keeps whichever
+			// known.met entry loaded last, which for duplicated content can be a different
+			// record -- and if that record's own copy has been deleted, every hash-keyed lookup
+			// resolves to a path that cannot be opened. Called outside AddFile's lock on
+			// purpose: nothing may enter knownfiles while holding the shared-list lock.
 			filelist->PromoteToCanonical(toadd);
-			// The bulk-Reload caller repaints the whole view once its walk finishes;
-			// the incremental watcher caller has no such follow-up, so tell the GUI
-			// about this freshly-shared file directly.
+			// The bulk-Reload caller repaints the whole view once its walk finishes; the
+			// incremental watcher caller has no such follow-up, so tell the GUI about this
+			// freshly-shared file directly.
 			if (notifyGuiOnKnownAdd) {
 				Notify_SharedFilesShowFile(toadd);
 			}
 		} else {
-			// The share set already holds this content, indexed under the path it was
-			// first found at. Put the file back on that path: the stamp above would
-			// otherwise leave GetFilePath() disagreeing with the index key, and
-			// nothing reconciles them. That skew is not cosmetic -- RemoveFile
-			// erases by a key it recomputes from GetFilePath(), so the erase
-			// silently misses and leaks the real entry, after which NotifyPathAdded
-			// short-circuits on the leaked key and the file can never be shared
-			// again without a restart. The upload worker also opens GetFilePath(),
-			// so it would read the copy the index does not know about.
+			// The share set already holds this content, indexed under the path it was first
+			// found at. Put the file back on that path: the stamp above would otherwise leave
+			// GetFilePath() disagreeing with the index key, and nothing reconciles them. That
+			// skew is not cosmetic -- RemoveFile erases by a key it recomputes from
+			// GetFilePath(), so the erase silently misses and leaks the real entry, after which
+			// NotifyPathAdded short-circuits on the leaked key and the file can never be shared
+			// again without a restart. The upload worker also opens GetFilePath(), so it would
+			// read the copy the index does not know about.
 			//
-			// First copy found wins and stays authoritative, which is stable across
-			// reloads. Re-keying the index to the new path would make "last
-			// directory walked wins" the semantics, so which physical copy serves
-			// uploads would depend on the sort order of the shared roots.
+			// First copy found wins and stays authoritative, which is stable across reloads.
+			// Re-keying the index to the new path would make "last directory walked wins" the
+			// semantics, so which physical copy serves uploads would depend on the sort order of
+			// the shared roots.
 			toadd->SetFilePath(previousPath);
 			AddDebugLogLineN(logKnownFiles, CFormat("File already shared, skipping: %s") % fname);
 			return kAddPathAlreadyShared;
@@ -693,10 +682,9 @@ CSharedFileList::AddPathResult CSharedFileList::AddPathToShares(
 	AddDebugLogLineN(logKnownFiles, CFormat("Hashing new unknown shared file '%s'") % fname);
 
 	hashTasks.push_back(new CHashingTask(directory, fname));
-	// Not counted here. CThreadScheduler::DoAddTask dedups on (type, desc) and
-	// silently drops a task already queued, so a re-walk while hashing is still
-	// pending constructs the same tasks again -- counting at construction would
-	// report those files as discovered twice.
+	// Not counted here. CThreadScheduler::DoAddTask dedups on (type, desc) and silently drops
+	// a task already queued, so a re-walk while hashing is still pending constructs the same
+	// tasks again -- counting at construction would report those files as discovered twice.
 	return kAddPathQueued;
 }
 
@@ -712,25 +700,24 @@ bool CSharedFileList::AddFile(CKnownFile *pFile)
 		/* Keywords to publish on Kad */
 		m_keywords->AddKeywords(pFile);
 		theStats::AddSharedFile(pFile->GetFileSize());
-		// Mirror into the path index so the watcher's per-event dispatch can
-		// resolve DELETE / MODIFY events to the CKnownFile* in O(1). An empty key
-		// (a CPartFile whose SetFilePath has not run yet) is harmless: it lives in
-		// m_pathIndex under "" until SafeAddKFile attaches the real path. Stale
-		// entries from a previous shared-list membership are overwritten here.
+		// Mirror into the path index so the watcher's per-event dispatch can resolve DELETE /
+		// MODIFY events to the CKnownFile* in O(1). An empty key (a CPartFile whose SetFilePath
+		// has not run yet) is harmless: it lives in m_pathIndex under "" until SafeAddKFile
+		// attaches the real path. Stale entries from a previous shared-list membership are
+		// overwritten here.
 		const wxString key =
 			NormalizePathKey(pFile->GetFilePath().JoinPaths(pFile->GetFileName()).GetRaw());
 		m_pathIndex[key] = pFile;
-		// Two ways this is a mass operation rather than one file the user is
-		// watching. `reloading` covers the share walk itself; the hashing queue
-		// covers what the walk leaves behind, since files it discovered are hashed
-		// asynchronously and only reach here when their task finishes -- so a
-		// first import of a large library would print one line per file with
-		// `reloading` alone.
+		// Two ways this is a mass operation rather than one file the user is watching.
+		// `reloading` covers the share walk itself; the hashing queue covers what the walk
+		// leaves behind, since files it discovered are hashed asynchronously and only reach here
+		// when their task finishes -- so a first import of a large library would print one line
+		// per file with `reloading` alone.
 		//
-		// `> 1`, not `> 0`: GetPendingCount counts the running task too, so a
-		// single dropped-in file reads as 1 while it is being hashed. Misjudging
-		// the last file of an import as singular costs one extra line; misjudging
-		// a single file as bulk would lose the only feedback it ever produces.
+		// `> 1`, not `> 0`: GetPendingCount counts the running task too, so a single dropped-in
+		// file reads as 1 while it is being hashed. Misjudging the last file of an import as
+		// singular costs one extra line; misjudging a single file as bulk would lose the only
+		// feedback it ever produces.
 		const bool massOperation = reloading || CThreadScheduler::GetPendingCount(wxT("Hashing")) > 1;
 		MaybeScheduleMediaProbe(pFile, MediaProbeMode::Normal, massOperation);
 		return true;
@@ -740,64 +727,59 @@ bool CSharedFileList::AddFile(CKnownFile *pFile)
 
 bool CSharedFileList::MaybeScheduleMediaProbe(CKnownFile *pFile, MediaProbeMode mode, bool bulk)
 {
-	// Callers must keep pFile alive for the duration of this call. AddFile holds
-	// list_mut, which does that; the refresh walk instead snapshots the pointers
-	// under the lock and schedules outside it, which is safe because both
-	// callers run on the main thread and only the main thread removes a file
-	// from the list. It is that single-thread property doing the work, not the
-	// mutex.
+	// Callers must keep pFile alive for the duration of this call. AddFile holds list_mut,
+	// which does that; the refresh walk instead snapshots the pointers under the lock and
+	// schedules outside it, which is safe because both callers run on the main thread and
+	// only the main thread removes a file from the list. It is that single-thread property
+	// doing the work, not the mutex.
 	//
-	// Probes local shared audio / video files with ffprobe to populate the six
-	// FT_MEDIA_* fields. Cost-limited three ways: only for files whose ED2K
-	// file-type is audio / video (a cheap extension filter -- a .zip renamed to
-	// .mp4 gets scheduled and ffprobe fails fast, but this skips the mass of
-	// docs / archives / images in a typical share tree), only when the file has
-	// no media metadata yet, and only one task at a time at ETP_Low so hashing
-	// and completion never starve. An empty ffprobe path is NOT "off": it means
+	// Probes local shared audio / video files with ffprobe to populate the six FT_MEDIA_*
+	// fields. Cost-limited three ways: only for files whose ED2K file-type is audio / video
+	// (a cheap extension filter -- a .zip renamed to .mp4 gets scheduled and ffprobe fails
+	// fast, but this skips the mass of docs / archives / images in a typical share tree),
+	// only when the file has no media metadata yet, and only one task at a time at ETP_Low
+	// so hashing and completion never starve. An empty ffprobe path is NOT "off": it means
 	// auto-detect.
 	if (!thePrefs::GetMediaMetadataEnabled()) {
 		return false;
 	}
-	// An empty preference is not "off" -- it means "whatever this machine has",
-	// which is what every place that documents the setting promises. The worker
-	// resolves it through MediaProbe::DetectedPath() and drops the job if that
-	// finds nothing; doing it there keeps the detection subprocess off this
-	// thread and pays for it once per process rather than once per file.
+	// An empty preference is not "off" -- it means "whatever this machine has", which is what
+	// every place that documents the setting promises. The worker resolves it through
+	// MediaProbe::DetectedPath() and drops the job if that finds nothing; doing it there keeps
+	// the detection subprocess off this thread and pays for it once per process rather than
+	// once per file.
 	const wxString &ffprobePath = thePrefs::GetMediaMetadataFFProbePath();
-	// Shared with the GUI's menu-enable test (IsMediaProbeCandidate, in
-	// OtherFunctions): the view must not offer an action the scheduler will
-	// silently drop, which is what two copies of this rule would eventually
-	// produce.
+	// Shared with the GUI's menu-enable test (IsMediaProbeCandidate, in OtherFunctions): the
+	// view must not offer an action the scheduler will silently drop, which is what two copies
+	// of this rule would eventually produce.
 	if (!IsMediaProbeCandidate(pFile->GetFileName())) {
 		return false;
 	}
-	// Never probe an in-progress download. A partfile is shared while
-	// transferring, so this fires from AddFile() during the download; there is
-	// no complete file to read yet, and its metadata is derived exactly once, on
-	// completion, which re-enters here with bForceReprobe set.
+	// Never probe an in-progress download. A partfile is shared while transferring, so this
+	// fires from AddFile() during the download; there is no complete file to read yet, and its
+	// metadata is derived exactly once, on completion, which re-enters here with
+	// bForceReprobe set.
 	//
-	// Only Completion lifts this, and only because a just-completed download is
-	// still a CPartFile object while its bytes are already all on disk. A
-	// Refresh walk MUST NOT inherit that licence.
+	// Only Completion lifts this, and only because a just-completed download is still a
+	// CPartFile object while its bytes are already all on disk. A Refresh walk MUST NOT
+	// inherit that licence.
 	if (mode != MediaProbeMode::Completion && pFile->IsPartFile()) {
 		AddDebugLogLineN(logMediaProbe,
 			CFormat(wxT("MediaProbe: skip (incomplete download) %s")) % pFile->GetFileName());
 		return false;
 	}
-	// GetMetaDataVer(), not a second FT_MEDIA_LENGTH test: one definition of
-	// "this file has been probed", shared with the publishers and the UI. The
-	// length-only form here never considered a codec-only file probed, so
-	// every startup re-ran ffprobe on all of them.
+	// GetMetaDataVer(), not a second FT_MEDIA_LENGTH test: one definition of "this file has
+	// been probed", shared with the publishers and the UI. The length-only form here never
+	// considered a codec-only file probed, so every startup re-ran ffprobe on all of them.
 	if (mode == MediaProbeMode::Normal && pFile->GetMetaDataVer() > 0) {
 		AddDebugLogLineN(logMediaProbe,
 			CFormat(wxT("MediaProbe: skip (already has metadata) %s")) % pFile->GetFileName());
 		return false;
 	}
-	// A file ffprobe already tried and could not read is not re-tried on the
-	// normal path. Nothing about it has changed since the last attempt, so a
-	// share reload would spawn ffprobe on every broken file in the library,
-	// every time, to fail identically. Refresh deliberately ignores this --
-	// that is the whole point of an explicit re-extraction.
+	// A file ffprobe already tried and could not read is not re-tried on the normal path.
+	// Nothing about it has changed since the last attempt, so a share reload would spawn
+	// ffprobe on every broken file in the library, every time, to fail identically. Refresh
+	// deliberately ignores this -- that is the whole point of an explicit re-extraction.
 	if (mode == MediaProbeMode::Normal && pFile->GetIntTagValue(FT_MEDIA_PROBE_FAILED)) {
 		AddDebugLogLineN(logMediaProbe,
 			CFormat(wxT("MediaProbe: skip (previous probe found nothing) %s")) %
@@ -805,20 +787,20 @@ bool CSharedFileList::MaybeScheduleMediaProbe(CKnownFile *pFile, MediaProbeMode 
 		return false;
 	}
 	const CPath fullPath = pFile->GetFilePath().JoinPaths(pFile->GetFileName());
-	// Only probe a file that is actually on disk at this resolved path -- a
-	// stale known.met record can outlive its deleted file.
+	// Only probe a file that is actually on disk at this resolved path -- a stale known.met
+	// record can outlive its deleted file.
 	//
-	// Skipped for Refresh, which walks the WHOLE share from an EC handler on the
-	// main thread: one stat per file is cheap, N of them synchronously before
-	// the reply goes out is not. Nothing is lost by deferring it -- Probe stats
-	// the path again on the worker and logs the file as vanished. The cost is
-	// that `queued` counts a file that has since been deleted, which is honest:
-	// it says how many were accepted for probing, not how many produced metadata.
+	// Skipped for Refresh, which walks the WHOLE share from an EC handler on the main thread:
+	// one stat per file is cheap, N of them synchronously before the reply goes out is not.
+	// Nothing is lost by deferring it -- Probe stats the path again on the worker and logs the
+	// file as vanished. The cost is that `queued` counts a file that has since been deleted,
+	// which is honest: it says how many were accepted for probing, not how many produced
+	// metadata.
 	if (mode != MediaProbeMode::Refresh && !fullPath.FileExists()) {
 		return false;
 	}
 	// #280: run on the dedicated media-probe worker, NOT the shared
-	// CThreadScheduler — a slow/hung ffprobe there wedges completions.
+	// CThreadScheduler -- a slow/hung ffprobe there wedges completions.
 	if (theApp->mediaProbeThread) {
 		AddDebugLogLineN(logMediaProbe,
 			CFormat(wxT("MediaProbe: queueing %s (ffprobe=%s)")) % pFile->GetFileName() %
@@ -833,11 +815,11 @@ bool CSharedFileList::MaybeScheduleMediaProbe(CKnownFile *pFile, MediaProbeMode 
 	return false;
 }
 
-// A user-triggered refresh must never decline in silence. The scheduler's own
-// "feature is off" check is a debug line, which compiles out of release builds,
-// so a refresh with media metadata disabled did exactly nothing and said
-// nothing -- the GUI greys its entry out for this now, but an older GUI, a
-// script driving EC, or the REST endpoint can still ask.
+// A user-triggered refresh must never decline in silence. The scheduler's own "feature is
+// off" check is a debug line, which compiles out of release builds, so a refresh with
+// media metadata disabled did exactly nothing and said nothing -- the GUI greys its entry
+// out for this now, but an older GUI, a script driving EC, or the REST endpoint can still
+// ask.
 static bool MediaRefreshAvailable()
 {
 	if (thePrefs::GetMediaMetadataEnabled()) {
@@ -853,9 +835,9 @@ unsigned CSharedFileList::RefreshAllMediaMetadata()
 	if (!MediaRefreshAvailable()) {
 		return 0;
 	}
-	// Snapshot under the lock, schedule outside it. Holding list_mut across a
-	// whole library's worth of scheduling would block every reader, including
-	// the EC handlers this is invoked from.
+	// Snapshot under the lock, schedule outside it. Holding list_mut across a whole library's
+	// worth of scheduling would block every reader, including the EC handlers this is invoked
+	// from.
 	std::vector<CKnownFile *> files;
 	{
 		wxMutexLocker lock(list_mut);
@@ -886,9 +868,9 @@ unsigned CSharedFileList::RefreshMediaMetadata(const std::vector<CMD4Hash> &hash
 	unsigned queued = 0;
 	for (const CMD4Hash &hash : hashes) {
 		CKnownFile *file = GetFileByID(hash);
-		// bulk: a selection of many files is one user action and reports one
-		// summary, the same as a whole-share refresh. A selection of one is a
-		// single file the user is looking at, and keeps its per-file line.
+		// bulk: a selection of many files is one user action and reports one summary, the same
+		// as a whole-share refresh. A selection of one is a single file the user is looking at,
+		// and keeps its per-file line.
 		if (file && MaybeScheduleMediaProbe(file, MediaProbeMode::Refresh, hashes.size() > 1)) {
 			++queued;
 		}
@@ -912,15 +894,14 @@ void CSharedFileList::SafeAddKFile(CKnownFile *toadd, bool bOnlyAdd)
 	if (AddFile(toadd)) {
 		Notify_SharedFilesShowFile(toadd);
 	} else {
-		// AddFile failed because some CKnownFile under this hash is already in
-		// m_Files_map. Two possibilities: the exact same pointer was re-added, in
-		// which case this is a no-op; or CKnownFileList::Append fired the
-		// rename-during-hash branch (same hash, same size, different name), which
-		// demoted the prior CKnownFile to m_duplicateFileList and installed
-		// `toadd` as canonical. The shared-files view still points at the demoted
-		// pointer, whose filename no longer matches disk and which the
-		// duplicate-list prune may delete later. Detach the stale entry and
-		// install the live one so the view mirrors knownfiles.
+		// AddFile failed because some CKnownFile under this hash is already in m_Files_map. Two
+		// possibilities: the exact same pointer was re-added, in which case this is a no-op; or
+		// CKnownFileList::Append fired the rename-during-hash branch (same hash, same size,
+		// different name), which demoted the prior CKnownFile to m_duplicateFileList and
+		// installed `toadd` as canonical. The shared-files view still points at the demoted
+		// pointer, whose filename no longer matches disk and which the duplicate-list prune may
+		// delete later. Detach the stale entry and install the live one so the view mirrors
+		// knownfiles.
 		CKnownFile *stale = NULL;
 		bool alreadyCanonical = false;
 		{
@@ -945,19 +926,18 @@ void CSharedFileList::SafeAddKFile(CKnownFile *toadd, bool bOnlyAdd)
 				Notify_SharedFilesShowFile(toadd);
 			}
 		} else if (alreadyCanonical) {
-			// Same pointer, already the canonical shared entry, but its path may have
-			// moved since it was first shared: a partfile downloaded this session was
-			// keyed under the Temp dir and has just been re-added from
-			// CompleteFileEnded() with SetFilePath(Incoming). AddFile()'s insert
-			// no-ops here, so the index still points at the stale Temp path.
+			// Same pointer, already the canonical shared entry, but its path may have moved
+			// since it was first shared: a partfile downloaded this session was keyed under the
+			// Temp dir and has just been re-added from CompleteFileEnded() with
+			// SetFilePath(Incoming). AddFile()'s insert no-ops here, so the index still points
+			// at the stale Temp path.
 			RefreshPathIndex(toadd);
-			// A download just completed. Because the file was shared as a partfile,
-			// its hash was already in the map, so AddFile()'s insert -- which is
-			// what normally schedules the media probe -- no-op'd above, and a media
-			// download would otherwise only get its FT_MEDIA_* tags on the next
-			// startup rescan. QueueProbe() only enqueues, so this cannot stall the
-			// completion. Completion mode bypasses BOTH gates -- the file is still a
-			// CPartFile object at this point -- so the authoritative local probe
+			// A download just completed. Because the file was shared as a partfile, its hash was
+			// already in the map, so AddFile()'s insert -- which is what normally schedules the
+			// media probe -- no-op'd above, and a media download would otherwise only get its
+			// FT_MEDIA_* tags on the next startup rescan. QueueProbe() only enqueues, so this
+			// cannot stall the completion. Completion mode bypasses BOTH gates -- the file is
+			// still a CPartFile object at this point -- so the authoritative local probe
 			// overwrites any metadata inherited from the search result.
 			MaybeScheduleMediaProbe(toadd, MediaProbeMode::Completion);
 		}
@@ -977,10 +957,10 @@ void CSharedFileList::RefreshPathIndex(CKnownFile *file)
 	}
 	wxMutexLocker lock(list_mut);
 	const wxString key = NormalizePathKey(file->GetFilePath().JoinPaths(file->GetFileName()).GetRaw());
-	// Drop any stale keys pointing at this file (the pre-completion Temp/<name>
-	// entry, or the "" placeholder from a not-yet-pathed CPartFile) so the index
-	// maps only its current on-disk location. O(shared files), but only runs on
-	// the rare re-add of an already-shared file.
+	// Drop any stale keys pointing at this file (the pre-completion Temp/<name> entry, or the
+	// "" placeholder from a not-yet-pathed CPartFile) so the index maps only its current
+	// on-disk location. O(shared files), but only runs on the rare re-add of an
+	// already-shared file.
 	bool rekeyed = false;
 	for (std::unordered_map<wxString, CKnownFile *>::iterator it = m_pathIndex.begin();
 		it != m_pathIndex.end();) {
@@ -993,12 +973,11 @@ void CSharedFileList::RefreshPathIndex(CKnownFile *file)
 	}
 	m_pathIndex[key] = file;
 	if (rekeyed) {
-		// The file moved without entering or leaving m_Files_map, so nothing else
-		// bumps the generation for it: AddFile()'s insert no-ops on a hash that is
-		// already shared. Anything caching a view of where files live has to be
-		// told, or it keeps serving the old location -- the directory grouping in
-		// GetSharedFilesByDirectory() would leave a completed download filed under
-		// Temp until some unrelated add or remove invalidated it.
+		// The file moved without entering or leaving m_Files_map, so nothing else bumps the
+		// generation for it: AddFile()'s insert no-ops on a hash that is already shared. Anything
+		// caching a view of where files live has to be told, or it keeps serving the old location
+		// -- the directory grouping in GetSharedFilesByDirectory() would leave a completed
+		// download filed under Temp until some unrelated add or remove invalidated it.
 		m_listGeneration.fetch_add(1, std::memory_order_relaxed);
 		AddDebugLogLineN(
 			logKnownFiles, CFormat("Path index re-keyed to '%s' (file moved/completed)") % key);
@@ -1014,26 +993,25 @@ void CSharedFileList::RemoveFile(CKnownFile *toremove)
 		m_listGeneration.fetch_add(1, std::memory_order_relaxed);
 		theStats::RemoveSharedFile(toremove->GetFileSize());
 	}
-	// Same path key we wrote into the index in AddFile(). erase() is a no-op if
-	// the entry is not present.
+	// Same path key we wrote into the index in AddFile(). erase() is a no-op if the entry is
+	// not present.
 	//
-	// The premise -- that the key recomputed here is the key AddFile wrote --
-	// holds only while GetFilePath() still matches what was indexed. When it
-	// does not, this erase silently misses and leaves the real entry behind,
-	// which then makes the file permanently unshareable because NotifyPathAdded
-	// short-circuits on it. That is invisible without the diagnostic below.
+	// The premise -- that the key recomputed here is the key AddFile wrote -- holds only while
+	// GetFilePath() still matches what was indexed. When it does not, this erase silently
+	// misses and leaves the real entry behind, which then makes the file permanently
+	// unshareable because NotifyPathAdded short-circuits on it. That is invisible without the
+	// diagnostic below.
 	const wxString key =
 		NormalizePathKey(toremove->GetFilePath().JoinPaths(toremove->GetFileName()).GetRaw());
 	const size_t erasedFromIndex = m_pathIndex.erase(key);
-	// `reloading` suppresses the check for the duration of a walk. The index is
-	// cleared at the start of one and refilled as the walk proceeds, so a removal
-	// that lands mid-walk -- CUploadDiskIOThread calls RemoveFile from a worker
-	// thread -- legitimately finds nothing to erase, and the hardening would cry
-	// wolf on every such removal.
+	// `reloading` suppresses the check for the duration of a walk. The index is cleared at the
+	// start of one and refilled as the walk proceeds, so a removal that lands mid-walk --
+	// CUploadDiskIOThread calls RemoveFile from a worker thread -- legitimately finds nothing
+	// to erase, and the hardening would cry wolf on every such removal.
 	if (erasedFromIndex == 0 && !m_pathIndex.empty() && !reloading) {
-		// Not fatal on its own -- the older-snapshot case above is legitimate
-		// -- but it is the signature of a desynchronised index, so say so
-		// rather than leaking an entry in silence.
+		// Not fatal on its own -- the older-snapshot case above is legitimate -- but it is the
+		// signature of a desynchronised index, so say so rather than leaking an entry in
+		// silence.
 		AddDebugLogLineC(logKnownFiles,
 			CFormat("Path index: no entry under '%s' to erase for a file being removed from "
 				"shares; the index may be out of step with the file's path") %
@@ -1043,10 +1021,9 @@ void CSharedFileList::RemoveFile(CKnownFile *toremove)
 	m_keywords->RemoveKeywords(toremove);
 }
 
-// Incremental rescan entry points used by CSharedDirWatcher. These exist so
-// the watcher can apply a single fs-watcher event without firing the bulk
-// Reload() path, which on a 100 k+ file shareset blocks the GUI for minutes
-// per event.
+// Incremental rescan entry points used by CSharedDirWatcher. These exist so the watcher
+// can apply a single fs-watcher event without firing the bulk Reload() path, which on a
+// 100 k+ file shareset blocks the GUI for minutes per event.
 
 void CSharedFileList::NotifyPathAdded(const wxString &fullPath, bool bulkScan)
 {
@@ -1054,11 +1031,10 @@ void CSharedFileList::NotifyPathAdded(const wxString &fullPath, bool bulkScan)
 		return;
 	}
 
-	// Already shared? CPartFile::CompleteFile() and SafeAddKFile() are the
-	// canonical add paths for completed downloads -- by the time the watcher's
-	// CREATE event fires for a freshly-renamed file in Incoming, the CKnownFile
-	// is usually already in m_Files_map and the path index. Scoped lock so
-	// list_mut is dropped before any filesystem work.
+	// Already shared? CPartFile::CompleteFile() and SafeAddKFile() are the canonical add paths
+	// for completed downloads -- by the time the watcher's CREATE event fires for a
+	// freshly-renamed file in Incoming, the CKnownFile is usually already in m_Files_map and
+	// the path index. Scoped lock so list_mut is dropped before any filesystem work.
 	{
 		wxMutexLocker existsCheck(list_mut);
 		if (m_pathIndex.find(NormalizePathKey(fullPath)) != m_pathIndex.end()) {
@@ -1079,9 +1055,8 @@ void CSharedFileList::NotifyPathAdded(const wxString &fullPath, bool bulkScan)
 	TaskList hashTasks;
 	switch (AddPathToShares(directory, fname, hashTasks, /*notifyGuiOnKnownAdd=*/true)) {
 	case kAddPathQueued:
-		// Hand the new hashing task to the scheduler. The thread
-		// will call SafeAddKFile() when it finishes, which is
-		// what publishes the file to peers + the GUI.
+		// Hand the new hashing task to the scheduler. The thread calls SafeAddKFile() when it
+		// finishes, which is what publishes the file to peers and the GUI.
 		for (TaskList::iterator it = hashTasks.begin(); it != hashTasks.end(); ++it) {
 			if (CThreadScheduler::AddTask(*it)) {
 				++m_discoveredNewFiles;
@@ -1089,15 +1064,14 @@ void CSharedFileList::NotifyPathAdded(const wxString &fullPath, bool bulkScan)
 		}
 		break;
 	case kAddPathKnown:
-		// A file already in known.met, moved or renamed into a shared directory:
-		// nothing is hashed and nothing is probed, so without this the file would
-		// silently become shared and be published to peers with no info-level
-		// record at all.
+		// A file already in known.met, moved or renamed into a shared directory: nothing is
+		// hashed and nothing is probed, so without this the file would silently become shared
+		// and be published to peers with no info-level record at all.
 		//
-		// Deliberately here and not inside AddPathToShares, which the bulk walk
-		// also calls: there the already-known case is the overwhelming majority
-		// of entries. The watcher path is different in kind -- it is an event, it
-		// fires at unpredictable times, and no summary line covers it.
+		// Deliberately here and not inside AddPathToShares, which the bulk walk also calls:
+		// there the already-known case is the overwhelming majority of entries. The watcher path
+		// is different in kind -- it is an event, it fires at unpredictable times, and no summary
+		// line covers it.
 		if (bulkScan) {
 			// One line per file would be thousands during a tree walk; the
 			// tick prints a single summary instead.
@@ -1109,9 +1083,8 @@ void CSharedFileList::NotifyPathAdded(const wxString &fullPath, bool bulkScan)
 	case kAddPathAlreadyShared:
 	case kAddPathExcluded:
 	case kAddPathSkipped:
-		// AddPathToShares already wrote a debug log line; no
-		// further action needed. Already-shared in particular must not
-		// announce a share that did not happen.
+		// AddPathToShares already wrote a debug log line; no further action needed.
+		// Already-shared in particular must not announce a share that did not happen.
 		break;
 	}
 }
@@ -1122,9 +1095,8 @@ void CSharedFileList::NotifyPathRemoved(const wxString &fullPath)
 		return;
 	}
 
-	// RemoveFile re-acquires list_mut itself, so we hold list_mut
-	// only long enough to resolve the path → CKnownFile* lookup and
-	// then drop it before calling RemoveFile.
+	// RemoveFile re-acquires list_mut itself, so we hold list_mut only long enough to resolve
+	// the path -> CKnownFile* lookup and then drop it before calling RemoveFile.
 	CKnownFile *file = NULL;
 	{
 		wxMutexLocker lock(list_mut);
@@ -1175,16 +1147,15 @@ void CSharedFileList::NotifyDirRemoved(const wxString &dirPath)
 		return;
 	}
 
-	// One summary line, not one per file: a removed subtree can hold thousands of
-	// files and the count is already in hand.
+	// One summary line, not one per file: a removed subtree can hold thousands of files and
+	// the count is already in hand.
 	//
-	// The count is what this call actually detached, which on some backends is
-	// only part of the subtree. macOS FSEvents delivers per-file DELETEs racing
-	// the directory DELETE, so NotifyPathRemoved above already detached some
-	// files individually and only the remainder is left for this sweep. Every
-	// file is still logged exactly once and none is double-counted, so the
-	// accounting is right even though the shape is not the single tidy line it
-	// is on a backend that coalesces the subtree into one event.
+	// The count is what this call actually detached, which on some backends is only part of
+	// the subtree. macOS FSEvents delivers per-file DELETEs racing the directory DELETE, so
+	// NotifyPathRemoved above already detached some files individually and only the remainder
+	// is left for this sweep. Every file is still logged exactly once and none is
+	// double-counted, so the accounting is right even though the shape is not the single tidy
+	// line it is on a backend that coalesces the subtree into one event.
 	AddLogLineN(CFormat(wxPLURAL("Stopped sharing %u file under removed directory: %s",
 			    "Stopped sharing %u files under removed directory: %s",
 			    static_cast<unsigned>(victims.size()))) %
@@ -1203,18 +1174,16 @@ void CSharedFileList::NotifyPathModified(const wxString &fullPath)
 		return;
 	}
 
-	// MODIFY events fire on metadata touches (utime, chmod, etc.) as
-	// well as on content writes. Only a size/mtime delta warrants
-	// re-hashing. Look up the file in the path index and compare its
-	// known mtime/size against what's on disk.
+	// MODIFY events fire on metadata touches (utime, chmod, etc.) as well as on content
+	// writes. Only a size/mtime delta warrants re-hashing. Look up the file in the path index
+	// and compare its known mtime/size against what is on disk.
 	CKnownFile *file = NULL;
 	{
 		wxMutexLocker lock(list_mut);
 		auto it = m_pathIndex.find(NormalizePathKey(fullPath));
 		if (it == m_pathIndex.end()) {
-			// Path appeared via MODIFY but wasn't already shared
-			// — treat as add. List_mut is dropped at scope exit
-			// before NotifyPathAdded re-acquires it.
+			// Path appeared via MODIFY but was not already shared -- treat as add. list_mut is
+			// dropped at scope exit before NotifyPathAdded re-acquires it.
 			file = NULL;
 		} else {
 			file = it->second;
@@ -1238,7 +1207,7 @@ void CSharedFileList::NotifyPathModified(const wxString &fullPath)
 	}
 
 	if (fdiskDate == file->GetLastChangeDatetime() && fdiskSize == (sint64)file->GetFileSize()) {
-		// Same size, same mtime — content unchanged. Drop the event.
+		// Same size, same mtime -- content unchanged. Drop the event.
 		return;
 	}
 
@@ -1262,45 +1231,41 @@ bool CSharedFileList::Reload(ReloadYieldCb yieldCb)
 	// deltaHF - removed the old ugly button and changed the code to use the new small one
 	// Kry - bah, let's use a var.
 	if (reloading) {
-		// Already running. The walk in flight started before this caller's roots or
-		// filters were in place, so it cannot be the fresh scan they asked for --
-		// leave a request standing so the next tick runs one. Without this a
-		// caller that commits new shared roots and reads the return as success
-		// persists them and never walks them. Surfaced to the caller as a
+		// Already running. The walk in flight started before this caller's roots or filters were
+		// in place, so it cannot be the fresh scan they asked for -- leave a request standing so
+		// the next tick runs one. Without this a caller that commits new shared roots and reads
+		// the return as success persists them and never walks them. Surfaced to the caller as a
 		// non-abort, non-complete state.
 		m_reloadLatch.Request();
 		return true;
 	}
 
-	// Take any outstanding RequestReload() with us: this walk is the one that
-	// satisfies it, so a GUI caller can run it (with progress) right after
-	// something requested one without Process() running a second, redundant walk
-	// a tick later. Anything requested from here on belongs to the next walk,
-	// and an abort below hands this request back rather than swallowing it.
+	// Take any outstanding RequestReload() with us: this walk is the one that satisfies it, so
+	// a GUI caller can run it (with progress) right after something requested one without
+	// Process() running a second, redundant walk a tick later. Anything requested from here on
+	// belongs to the next walk, and an abort below hands this request back rather than
+	// swallowing it.
 	const bool servingRequest = m_reloadLatch.BeginWalk();
 
-	// Info, not debug: now that EC callers get an immediate reply instead of
-	// blocking until the walk ends, the log is how they observe it starting. The
-	// end-of-walk summary is already an info line, so the two form a pair.
+	// Info, not debug: now that EC callers get an immediate reply instead of blocking until
+	// the walk ends, the log is how they observe it starting. The end-of-walk summary is
+	// already an info line, so the two form a pair.
 	AddLogLineN(_("Reloading shared files..."));
 	reloading = true;
 	Notify_SharedFilesRemoveAllItems();
 
 	/* All Kad keywords must be removed.
 	 *
-	 * m_keywords has no internal locking; CSharedFileList::list_mut is
-	 * the outer lock for both m_Files_map and m_keywords (every other
-	 * AddFile / RemoveFile call takes it around m_keywords operations).
-	 * Without the lock here we race CUploadDiskIOThread, which calls
-	 * theApp->sharedfiles->RemoveFile(srcfile) from a worker thread when
-	 * a previously-shared file disappears under it (e.g. user renaming
-	 * a file in Incoming with shared-dir watching enabled, issue #685).
-	 * The worker holds list_mut while it mutates m_keywords via
-	 * RemoveKeywords; concurrent unlocked iteration over m_lstKeywords /
-	 * m_keywordIndex here invalidates iterators / uses freed
-	 * CPublishKeyword*.  Lock only around the keyword ops, NOT around
-	 * FindSharedFiles -- that walks the filesystem and would block the
-	 * worker pool for seconds at a time. */
+	 * m_keywords has no internal locking; CSharedFileList::list_mut is the outer lock for
+	 * both m_Files_map and m_keywords (every other AddFile / RemoveFile call takes it
+	 * around m_keywords operations). Without the lock here we race CUploadDiskIOThread,
+	 * which calls theApp->sharedfiles->RemoveFile(srcfile) from a worker thread when a
+	 * previously-shared file disappears under it (e.g. the user renaming a file in
+	 * Incoming with shared-dir watching enabled, issue #685). The worker holds list_mut
+	 * while it mutates m_keywords via RemoveKeywords; concurrent unlocked iteration over
+	 * m_lstKeywords / m_keywordIndex here invalidates iterators / uses freed
+	 * CPublishKeyword*. Lock only around the keyword ops, NOT around FindSharedFiles --
+	 * that walks the filesystem and would block the worker pool for seconds at a time. */
 	{
 		wxMutexLocker lock(list_mut);
 		m_keywords->RemoveAllKeywordReferences();
@@ -1308,10 +1273,9 @@ bool CSharedFileList::Reload(ReloadYieldCb yieldCb)
 
 	/* Public identifiers must be erased as they might be invalid now */
 	{
-		// Under list_mut: IsShared() builds m_sharedDirKeys through a const method
-		// and takes the lock to do it, so this side has to take it too. The
-		// public-name map and its index are cleared in the same scope so the pair
-		// cannot be seen half-emptied.
+		// Under list_mut: IsShared() builds m_sharedDirKeys through a const method and takes the
+		// lock to do it, so this side has to take it too. The public-name map and its index are
+		// cleared in the same scope so the pair cannot be seen half-emptied.
 		wxMutexLocker lock(list_mut);
 		m_PublicSharedDirNames.clear();
 		m_publicNameByDirKey.clear();
@@ -1336,11 +1300,11 @@ bool CSharedFileList::Reload(ReloadYieldCb yieldCb)
 		m_dirWatcher->Refresh();
 	}
 
-	// Tell KnownFileList that a full scan has now run -- this gates the
-	// duplicate-list cap-prune in Save(), so the prune never fires while the pin
-	// set is unpopulated, which would drop records the scan was about to pin.
-	// Only on non-aborted scans: a cancelled mid-scan leaves the pin set
-	// partial, and satisfies no request, so the request is handed back.
+	// Tell KnownFileList that a full scan has now run -- this gates the duplicate-list
+	// cap-prune in Save(), so the prune never fires while the pin set is unpopulated, which
+	// would drop records the scan was about to pin. Only on non-aborted scans: a cancelled
+	// mid-scan leaves the pin set partial, and satisfies no request, so the request is handed
+	// back.
 	m_reloadLatch.EndWalk(servingRequest, aborted);
 
 	if (!aborted && filelist) {
@@ -1412,9 +1376,9 @@ void CSharedFileList::GetSharedFilesByDirectory(const wxString &directory, CKnow
 {
 	wxMutexLocker lock(list_mut);
 
-	// Answered from the grouping rather than by walking every shared file: a
-	// browsing peer asks one directory at a time, and the walk made that
-	// O(directories x files) IsSameDir() calls, each normalising both paths.
+	// Answered from the grouping rather than by walking every shared file: a browsing peer
+	// asks one directory at a time, and the walk made that O(directories x files) IsSameDir()
+	// calls, each normalising both paths.
 	const uint64 generation = m_listGeneration.load(std::memory_order_relaxed);
 	if (!m_dirGroupsBuilt || m_dirGroupsAt != generation) {
 		m_dirGroups.clear();
@@ -1440,11 +1404,10 @@ void CSharedFileList::ClearED2KPublishInfo()
 	CKnownFile *cur_file;
 	m_lastPublishED2KFlag = true;
 	wxMutexLocker lock(list_mut);
-	// Suppress per-row GUI updates while we walk every shared file.
-	// SetPublishedED2K() notifies the SharedFilesCtrl, which does an O(N)
-	// FindItem per call; without this, a 100k-file shared list makes every
-	// server disconnect freeze the main thread for minutes. SetPublishedED2K()
-	// is also a no-op when the value did not change.
+	// Suppress per-row GUI updates while we walk every shared file. SetPublishedED2K()
+	// notifies the SharedFilesCtrl, which does an O(N) FindItem per call; without this, a
+	// 100k-file shared list makes every server disconnect freeze the main thread for minutes.
+	// SetPublishedED2K() is also a no-op when the value did not change.
 	Notify_SharedFilesBeginBulkUpdate();
 	for (CKnownFileMap::iterator pos = m_Files_map.begin(); pos != m_Files_map.end(); ++pos) {
 		cur_file = pos->second;
@@ -1541,12 +1504,11 @@ void CSharedFileList::SendListToServer()
 
 	CMemFile files;
 
-	// Files-sent count is patched in after the loop. The final number cannot be
-	// written up front because the loop body filters out >4GB files when the
-	// server does not advertise SRV_TCPFLG_LARGEFILES, and how many made it
-	// into the packet is only known once the loop has run. Hard-coding `limit`
-	// made the header claim N files while the body carried N-K, and a legacy
-	// non-LF server sees a short read against the count.
+	// Files-sent count is patched in after the loop. The final number cannot be written up
+	// front because the loop body filters out >4GB files when the server does not advertise
+	// SRV_TCPFLG_LARGEFILES, and how many made it into the packet is only known once the loop
+	// has run. Hard-coding `limit` made the header claim N files while the body carried N-K,
+	// and a legacy non-LF server sees a short read against the count.
 	files.WriteUInt32(0);
 
 	uint32 count = 0;
@@ -1561,10 +1523,9 @@ void CSharedFileList::SendListToServer()
 		file->SetPublishedED2K(true);
 	}
 
-	// Nothing to publish to this server -- e.g. every unpublished file in our
-	// prefix is >4GB and the server does not advertise SRV_TCPFLG_LARGEFILES.
-	// Sending an OP_OFFERFILES with count=0 would just be ~28 bytes of TCP
-	// overhead per republish tick.
+	// Nothing to publish to this server -- e.g. every unpublished file in our prefix is >4GB
+	// and the server does not advertise SRV_TCPFLG_LARGEFILES. Sending an OP_OFFERFILES with
+	// count=0 would just be ~28 bytes of TCP overhead per republish tick.
 	if (count == 0) {
 		return;
 	}
@@ -1574,11 +1535,11 @@ void CSharedFileList::SendListToServer()
 	files.WriteUInt32(count);
 
 	CPacket *packet = new CPacket(files, OP_EDONKEYPROT, OP_OFFERFILES);
-	// Compress the packet: this kind of data is highly compressible (per file, an
-	// MD4 plus at least three string meta tags and one integer one), the minimum
-	// per published file is ~100 bytes, and this is called rarely -- once on
-	// connecting to a server and when a file becomes shareable. If the
-	// compressed size is still >= the original, the uncompressed packet is sent.
+	// Compress the packet: this kind of data is highly compressible (per file, an MD4 plus at
+	// least three string meta tags and one integer one), the minimum per published file is
+	// ~100 bytes, and this is called rarely -- once on connecting to a server and when a file
+	// becomes shareable. If the compressed size is still >= the original, the uncompressed
+	// packet is sent.
 	if (server->GetTCPFlags() & SRV_TCPFLG_COMPRESSION) {
 		packet->PackPacket();
 	}
@@ -1589,18 +1550,18 @@ void CSharedFileList::SendListToServer()
 
 void CSharedFileList::Process()
 {
-	// Deferred reloads requested by callers on the core event loop (EC handlers,
-	// the watcher's dropped-events fallback) run here rather than inline in the
-	// caller. The `reloading` check means a request that arrives mid-walk stays
-	// pending and runs on a later tick instead of re-entering.
+	// Deferred reloads requested by callers on the core event loop (EC handlers, the watcher's
+	// dropped-events fallback) run here rather than inline in the caller. The `reloading`
+	// check means a request that arrives mid-walk stays pending and runs on a later tick
+	// instead of re-entering.
 	if (m_reloadLatch.ShouldStartFromTick(reloading)) {
 		Reload();
 	}
 
-	// Flushed after the drain above, so that when a reload runs on this tick its
-	// count is printed immediately after its own "Found N known shared files"
-	// summary rather than arriving a second later, detached from it. Only when
-	// non-zero: a pass that discovered nothing says nothing.
+	// Flushed after the drain above, so that when a reload runs on this tick its count is
+	// printed immediately after its own "Found N known shared files" summary rather than
+	// arriving a second later, detached from it. Only when non-zero: a pass that discovered
+	// nothing says nothing.
 	if (m_attachedKnownFiles) {
 		AddLogLineN(CFormat(wxPLURAL("Now sharing %u file found in a new shared directory",
 				    "Now sharing %u files found in new shared directories",
@@ -1639,12 +1600,12 @@ void CSharedFileList::Publish()
 
 		if (Kademlia::CKademlia::GetTotalStoreKey() < KADEMLIATOTALSTOREKEY) {
 
-			// list_mut serialises CPublishKeywordList access against
-			// CUploadDiskIOThread's RemoveFile -> RemoveKeywords path, which mutates
-			// pPubKw->references and ref counts from a worker thread. Without the
-			// lock the cursor advance and the GetReferences() iteration below race
-			// with that path. Kad's StartSearch / Go / GetClosestTo / SendFindValue
-			// do not re-enter list_mut, so the lock can be held across the Kad call.
+			// list_mut serialises CPublishKeywordList access against CUploadDiskIOThread's
+			// RemoveFile -> RemoveKeywords path, which mutates pPubKw->references and ref counts
+			// from a worker thread. Without the lock the cursor advance and the GetReferences()
+			// iteration below race with that path. Kad's StartSearch / Go / GetClosestTo /
+			// SendFindValue do not re-enter list_mut, so the lock can be held across the Kad
+			// call.
 			wxMutexLocker lock(list_mut);
 
 			// We are not at the max simultaneous keyword publishes
@@ -1669,10 +1630,9 @@ void CSharedFileList::Publish()
 								false,
 								pPubKw->GetKadID());
 						if (pSearch) {
-							// pSearch was created. Which means no search was
-							// already being done with this HashID. This also
-							// means that it was checked to see if network load
-							// wasn't a factor.
+							// pSearch was created, so no search was already
+							// being done with this HashID -- which also means
+							// network load was checked.
 
 							// This sets the filename into the search object so we
 							// can show it in the gui.
@@ -1685,10 +1645,10 @@ void CSharedFileList::Publish()
 							uint32 count = 0;
 							for (unsigned int f = 0; f < aFiles.size(); ++f) {
 
-								// Only publish complete files as someone else
+								// Only publish complete files: someone else
 								// should have the full file to publish these
-								// keywords. As a side effect, this may help
-								// reduce people finding incomplete files in
+								// keywords. As a side effect this may help
+								// reduce people finding incomplete files on
 								// the network.
 								if (!aFiles[f]->IsPartFile()) {
 									count++;
@@ -1697,9 +1657,9 @@ void CSharedFileList::Publish()
 											->GetFileHash()
 											.GetHash()));
 									if (count > 150) {
-										// We only publish up to 150
-										// files per keyword publish
-										// then rotate the list.
+										// Publish up to 150 files per
+										// keyword publish, then
+										// rotate the list.
 										pPubKw->RotateReferences(f);
 										break;
 									}
@@ -1813,9 +1773,7 @@ bool CSharedFileList::RenameFile(CKnownFile *file, const CPath &newName)
 		CPath newPath = file->GetFilePath().JoinPaths(newName);
 
 		if (CPath::RenameFile(oldPath, newPath)) {
-			// Must create a copy of the word list because:
-			// 1) it will be reset on SetFileName()
-			// 2) we will want to edit it
+			// Copy the word list, because it is reset on SetFileName() and we want to edit it.
 			Kademlia::WordList oldwords = file->GetKadKeywords();
 			file->SetFileName(newName);
 			theApp->knownfiles->Save();
@@ -1873,14 +1831,13 @@ wxString CSharedFileList::GetPublicSharedDirName(const CPath &dir)
 		wxFAIL;
 		return "";
 	}
-	// Check if the public name for the directory is cached in our map. Keyed
-	// rather than walked: this runs once per shared directory while answering a
-	// browse, and comparing every entry with IsSameDir() made it
-	// O(directories^2).
+	// Check if the public name for the directory is cached in our map. Keyed rather than
+	// walked: this runs once per shared directory while answering a browse, and comparing
+	// every entry with IsSameDir() made it O(directories^2).
 	//
-	// Under list_mut, like the write further down and like IsShared(). Held for
-	// the lookup alone -- not across the IsShared() calls above and below,
-	// which take the same non-recursive mutex themselves.
+	// Under list_mut, like the write further down and like IsShared(). Held for the lookup
+	// alone -- not across the IsShared() calls above and below, which take the same
+	// non-recursive mutex themselves.
 	{
 		wxMutexLocker lock(list_mut);
 		const std::map<wxString, wxString>::const_iterator cached =
@@ -1920,12 +1877,11 @@ wxString CSharedFileList::GetPublicSharedDirName(const CPath &dir)
 		wxASSERT(strDirectoryTmp.Length() == 2);
 		strPublicName = strDirectoryTmp;
 	}
-	// we have the name, make sure it is unique by appending an index if
-	// necessary. Under list_mut for the same reason as the lookup above, and
-	// covering both maps together so the pair is never left half-written --
-	// which is what the clear in Reload() is holding the lock against. Safe
-	// to take here: every IsShared() call, which takes the same mutex, is
-	// behind us.
+	// Now that we have the name, make it unique by appending an index if necessary. Under
+	// list_mut for the same reason as the lookup above, and covering both maps together so
+	// the pair is never left half-written -- which is what the clear in Reload() is holding
+	// the lock against. Safe to take here: every IsShared() call, which takes the same mutex,
+	// is behind us.
 	wxMutexLocker lock(list_mut);
 	if (m_PublicSharedDirNames.find(strPublicName) != m_PublicSharedDirNames.end()) {
 		wxString strUniquePublicName;
@@ -1942,11 +1898,10 @@ wxString CSharedFileList::GetPublicSharedDirName(const CPath &dir)
 					std::pair<wxString, CPath>(strUniquePublicName, dir));
 				return strUniquePublicName;
 			}
-			// This is from eMule and it checks if there are more than 200 shared folders with the
-			// same public name. The condition can be true if many shared subfolders with the same
-			// name exist in folders that are not shared. So they get the names of each shared
-			// subfolders concatenated. But those might all be the same! It's here for safety
-			// reasons so we should not run out of memory.
+			// From eMule: checks whether more than 200 shared folders share the same public name.
+			// That can happen when many shared subfolders with the same name live in folders that
+			// are not themselves shared, so their names get concatenated -- and those might all
+			// be the same. Here for safety, so we do not run out of memory.
 			else if (iPos > 200) // Only 200 identical names are indexed.
 			{
 				wxASSERT(false);
@@ -1966,21 +1921,18 @@ wxString CSharedFileList::GetPublicSharedDirName(const CPath &dir)
 bool CSharedFileList::IsShared(const CPath &path) const
 {
 	if (path.IsDir(CPath::exists)) {
-		// Under list_mut like every other cache on this class. The lazily
-		// built set below is written through a const method, so without it a
-		// caller on another thread would be writing a std::set while Reload()
-		// cleared it. Today both callers sit in GetPublicSharedDirName() on
-		// the main thread and Reload() runs there too, but nothing states
-		// that, and this class carries a mutex precisely because the
-		// assumption is not general. Neither call site holds the lock, so
-		// there is nothing to deadlock against.
+		// Under list_mut like every other cache on this class. The lazily built set below is
+		// written through a const method, so without it a caller on another thread would be
+		// writing a std::set while Reload() cleared it. Today both callers sit in
+		// GetPublicSharedDirName() on the main thread and Reload() runs there too, but nothing
+		// states that, and this class carries a mutex precisely because the assumption is not
+		// general. Neither call site holds the lock, so there is nothing to deadlock against.
 		wxMutexLocker lock(list_mut);
 
-		// Both lists below were walked with IsSameDir(), which normalises
-		// both paths, and GetPublicSharedDirName() calls this once per shared
-		// directory while answering a browse -- O(directories^2), and the
-		// other half of the 53 s freeze in issue #898. Keyed instead, built
-		// once and dropped in Reload() where the set can change.
+		// Both lists below were walked with IsSameDir(), which normalises both paths, and
+		// GetPublicSharedDirName() calls this once per shared directory while answering a browse
+		// -- O(directories^2), and the other half of the 53 s freeze in issue #898. Keyed
+		// instead, built once and dropped in Reload() where the set can change.
 		if (!m_sharedDirKeysBuilt) {
 			const unsigned folderCount = theApp->glob_prefs->shareddir_list.size();
 			for (unsigned i = 0; i < folderCount; ++i) {
@@ -2003,12 +1955,11 @@ bool CSharedFileList::IsShared(const CPath &path) const
 
 void CSharedFileList::CheckAICHHashes(const std::list<CAICHHash> &hashes)
 {
-	// Index the master-hash list up front: the inner check is otherwise a
-	// linear std::find over `hashes` for every shared file, making the whole
-	// loop O(N*M). On sharesets of 100 k+ files (issue #745) that walk holds
-	// `list_mut` long enough to freeze the GUI for minutes. An unordered_set
-	// keyed on CAICHHash (std::hash specialisation in SHAHashSet.h) makes
-	// each lookup O(1) average and drops the total to O(N + M).
+	// Index the master-hash list up front: the inner check is otherwise a linear std::find
+	// over `hashes` for every shared file, making the whole loop O(N*M). On sharesets of 100
+	// k+ files (issue #745) that walk holds `list_mut` long enough to freeze the GUI for
+	// minutes. An unordered_set keyed on CAICHHash (std::hash specialisation in SHAHashSet.h)
+	// makes each lookup O(1) average and drops the total to O(N + M).
 	const std::unordered_set<CAICHHash> hashIndex(hashes.begin(), hashes.end());
 
 	wxMutexLocker locker(list_mut);

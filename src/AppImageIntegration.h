@@ -30,21 +30,19 @@
 namespace AppImageIntegration
 {
 
-// Whether we're running from inside an AppImage AND the user hasn't yet
-// installed launcher integration AND hasn't opted out via prefs. When true,
-// the GUI app should call PromptAndInstall() once the main frame is realised.
+// Whether we are running from inside an AppImage AND the user has not yet installed launcher
+// integration AND has not opted out via prefs. When true, the GUI app should call
+// PromptAndInstall() once the main frame is realised.
 bool ShouldPrompt();
 
-// Show a wxRichMessageDialog asking whether to install
-// ~/.local/share/applications + ~/.local/share/icons entries pointing at the
-// running AppImage. The dialog includes a "Don't ask again" checkbox.
+// Show a wxRichMessageDialog asking whether to install ~/.local/share/applications +
+// ~/.local/share/icons entries pointing at the running AppImage. The dialog includes a "Don't ask
+// again" checkbox.
 //
-// On Yes: copies the bundled .desktop and hicolor icons into the user's home,
-// rewrites Exec= to point at $APPIMAGE, and runs update-desktop-database /
-// gtk-update-icon-cache best-effort.
-// On No: nothing this run; the prompt fires again on next launch.
-// "Don't ask again" checked: sets the prefs flag so we never prompt again,
-// regardless of which button was clicked.
+// On Yes: copies the bundled .desktop and hicolor icons into the user's home, rewrites Exec= to
+// point at $APPIMAGE, and runs update-desktop-database / gtk-update-icon-cache best-effort. On No:
+// nothing this run, and the prompt fires again on next launch. "Don't ask again" checked sets the
+// prefs flag so we never prompt again, whichever button was clicked.
 void PromptAndInstall(wxWindow *parent);
 
 } // namespace AppImageIntegration

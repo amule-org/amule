@@ -40,10 +40,9 @@ namespace webapi
 namespace
 {
 
-// Thin platform layer over the descriptor primitives: POSIX on one side, the
-// Windows CRT _-prefixed equivalents on the other. Windows lacks poll() on pipe
-// descriptors, which is why the tee uses one blocking-read thread per stream
-// rather than a single poll() loop.
+// Thin platform layer over the descriptor primitives: POSIX on one side, the Windows CRT _-prefixed
+// equivalents on the other. Windows lacks poll() on pipe descriptors, which is why the tee uses one
+// blocking-read thread per stream rather than a single poll() loop.
 #ifdef _WIN32
 int OsPipe(int fds[2])
 {
@@ -148,9 +147,7 @@ void WriteAll(int fd, const char *buf, std::size_t n)
 
 } // namespace
 
-// ---------------------------------------------------------------------------
 // CRotatingLog  (portable C stdio)
-// ---------------------------------------------------------------------------
 
 CRotatingLog::~CRotatingLog()
 {
@@ -229,9 +226,7 @@ int CRotatingLog::Fd() const
 #endif
 }
 
-// ---------------------------------------------------------------------------
 // CLogTee
-// ---------------------------------------------------------------------------
 
 CLogTee::~CLogTee()
 {
@@ -287,9 +282,9 @@ bool CLogTee::Install(const std::string &logPath, std::size_t maxBytes)
 	m_pipeOutRead = pout[0];
 	m_pipeErrRead = perr[0];
 
-	// On a TTY stdout was line-buffered; once fd 1 is a pipe libc switches it to
-	// full buffering, which would delay console and file output until 4-8 KB
-	// accumulate. Force line buffering back; stderr stays unbuffered.
+	// On a TTY stdout was line-buffered; once fd 1 is a pipe libc switches it to full
+	// buffering, which would delay console and file output until 4-8 KB accumulate. Force line
+	// buffering back; stderr stays unbuffered.
 	std::setvbuf(stdout, nullptr, _IOLBF, 0);
 	std::setvbuf(stderr, nullptr, _IONBF, 0);
 

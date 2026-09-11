@@ -33,28 +33,24 @@
 
 #include "Credentials.h"
 
-// amuleapi's three on-disk config files (in the user's amule config
-// dir; independent of remote.conf):
+// amuleapi's three on-disk config files, in the user's amule config dir, independent of
+// remote.conf:
 //
-//   amuleapi.conf         INI — HTTP bind + port + EC connection
-//                         params + auth tunables
-//   amuleapi-jwt-secret   raw hex (64 chars + \n) — HMAC-SHA-256 key
-//   amuleapi-passwords    two-line text — admin=<record> / guest=<record>
+//   amuleapi.conf         INI -- HTTP bind + port + EC connection params + auth tunables
+//   amuleapi-jwt-secret   raw hex (64 chars + \n) -- HMAC-SHA-256 key
+//   amuleapi-passwords    two-line text -- admin=<record> / guest=<record>
 //
-// The credential records are owned by webcommon/Credentials.h, not by
-// this class: amuled and monolithic aMule write the same file when a
-// password is changed from amulegui or the preferences dialog, so the
-// format has exactly one implementation and the three cannot drift.
+// The credential records are owned by webcommon/Credentials.h, not by this class: amuled and
+// monolithic aMule write the same file when a password is changed from amulegui or the preferences
+// dialog, so the format has exactly one implementation and the three cannot drift.
 //
-// `amuleapi-jwt-secret` is auto-generated with 32 random bytes on
-// first run. `amuleapi-passwords` may be empty (daemon refuses
-// /auth/login until at least one role is set via
-// `amuleapi --set-admin-pass=...`, from amulegui, or over REST).
-// `amuleapi.conf` is created from defaults if missing.
+// `amuleapi-jwt-secret` is auto-generated with 32 random bytes on first run. `amuleapi-passwords`
+// may be empty, in which case the daemon refuses /auth/login until at least one role is set via
+// `amuleapi --set-admin-pass=...`, from amulegui, or over REST. `amuleapi.conf` is created from
+// defaults if missing.
 //
-// POSIX: both secret files must be 0600; looser bits → daemon
-// refuses to start with an actionable error. Windows has no
-// equivalent enforcement (QUICKSTART covers ACL mitigation).
+// POSIX: both secret files must be 0600; looser bits make the daemon refuse to start with an
+// actionable error. Windows has no equivalent enforcement (QUICKSTART covers ACL mitigation).
 
 class CAmuleApiConfig
 {
@@ -65,10 +61,10 @@ public:
 		unsigned port = 4713;
 		bool allow_cors = false;
 		std::vector<std::string> cors_origin_allowlist;
-		// Filesystem root of a bundled web frontend. Empty (default) = API-only
-		// deployment, so non-/api/ paths return 404. Non-empty = the daemon serves
-		// GET/HEAD for paths outside /api/ from here, with an index.html SPA
-		// fallback for extension-less misses.
+		// Filesystem root of a bundled web frontend. Empty (the default) means an API-only
+		// deployment, so non-/api/ paths return 404. Non-empty means the daemon serves
+		// GET/HEAD for paths outside /api/ from here, with an index.html SPA fallback for
+		// extension-less misses.
 		std::string static_root;
 	};
 
@@ -87,10 +83,10 @@ public:
 		unsigned login_failure_window_seconds = 60;
 		unsigned login_failure_threshold = 5;
 		unsigned login_lockout_seconds = 300;
-		// The generic 401 limiter, counting every rejected token on any
-		// authenticated route rather than password failures on /auth/login. It was
-		// hard-coded while the three above were documented knobs, so an operator
-		// could not loosen the one a browser tab left open overnight actually trips.
+		// The generic 401 limiter, counting every rejected token on any authenticated route
+		// rather than password failures on /auth/login. It was hard-coded while the three
+		// above were documented knobs, so an operator could not loosen the one a browser
+		// tab left open overnight actually trips.
 		unsigned token_failure_window_seconds = 60;
 		unsigned token_failure_threshold = 30;
 		unsigned token_lockout_seconds = 300;
@@ -98,25 +94,25 @@ public:
 
 	struct Streaming
 	{
-		// SSE ring capacity. Sized for a cold-start tick on a busy node (5K
-		// downloads + 5K shared can publish ~10K `*_added` in one tick before any
-		// subscriber drains). Values below CEventBus::kMinCapacity are clamped up
-		// at the bus level. Memory is roughly capacity x ~1 KB of JSON payload.
+		// SSE ring capacity. Sized for a cold-start tick on a busy node (5K downloads plus
+		// 5K shared can publish ~10K `*_added` in one tick before any subscriber drains).
+		// Values below CEventBus::kMinCapacity are clamped up at the bus level. Memory is
+		// roughly capacity x ~1 KB of JSON payload.
 		unsigned event_bus_ring_capacity = 16384;
 
-		// Concurrent file-backed responses allowed on `GET /shared/{hash}/content`;
-		// over it the transport answers 503 + Retry-After. Six suits one mechanical
-		// disk shared with the hasher and the ed2k uploader, but it is a GLOBAL
-		// budget: behind a reverse proxy every client arrives from one address, so
-		// there is no per-user fairness in it. Each slot pins a file descriptor and
-		// a 64 KiB buffer for as long as the peer takes to drain, so a four-digit
-		// value would trade away the RSS ceiling the streaming path exists to hold.
+		// Concurrent file-backed responses allowed on `GET /shared/{hash}/content`; over it
+		// the transport answers 503 plus Retry-After. Six suits one mechanical disk shared
+		// with the hasher and the ed2k uploader, but it is a GLOBAL budget: behind a
+		// reverse proxy every client arrives from one address, so there is no per-user
+		// fairness in it. Each slot pins a file descriptor and a 64 KiB buffer for as long
+		// as the peer takes to drain, so a four-digit value would trade away the RSS
+		// ceiling the streaming path exists to hold.
 		unsigned max_concurrent_file_responses = 6;
 	};
 
-	// Bring everything into memory from `config_dir`. Returns false on a missing
-	// required field, a mode-bit failure, or malformed INI, leaving the
-	// human-readable reason in LastError().
+	// Bring everything into memory from `config_dir`. Returns false on a missing required
+	// field, a mode-bit failure, or malformed INI, leaving the human-readable reason in
+	// LastError().
 	bool Load(const wxString &config_dir);
 
 	const wxString &ConfigDir() const { return m_configDir; }
@@ -129,11 +125,10 @@ public:
 	// hex file). May be reloaded from disk via Load(...).
 	const std::vector<unsigned char> &JwtSecret() const { return m_jwtSecret; }
 
-	// Stored credential records for the two roles, in whatever form
-	// amuleapi-passwords holds them (a PHC string normally, a bare MD5 for a
-	// config predating the KDF). Empty when the role is unset. These are NOT
-	// digests to compare an input against -- use VerifyPassword for that, which
-	// also brings the file-freshness check with it.
+	// Stored credential records for the two roles, in whatever form amuleapi-passwords holds
+	// them: a PHC string normally, a bare MD5 for a config predating the KDF. Empty when the
+	// role is unset. These are NOT digests to compare an input against -- use VerifyPassword
+	// for that, which also brings the file-freshness check with it.
 	const std::string &AdminCredential() const { return m_credentials.admin; }
 	const std::string &GuestCredential() const { return m_credentials.guest; }
 
@@ -151,17 +146,16 @@ public:
 
 	// Verifies an MD5 hex digest against both roles, admin first.
 	//
-	// Not const, for two reasons. It re-reads amuleapi-passwords first, so a
-	// password set by amuled or by aMule's preferences dialog takes effect
-	// without restarting amuleapi -- which also means HasAnyCredential() is up
-	// to date immediately after this call and stale before it. And a record that
-	// verified but predates the current KDF parameters is rewritten at the
-	// current cost, so the upgrade needs no operator step.
+	// Not const, for two reasons. It re-reads amuleapi-passwords first, so a password set by
+	// amuled or by aMule's preferences dialog takes effect without restarting amuleapi -- which
+	// also means HasAnyCredential() is up to date immediately after this call and stale before
+	// it. And a record that verified but predates the current KDF parameters is rewritten at
+	// the current cost, so the upgrade needs no operator step.
 	MatchedRole VerifyPassword(const std::string &md5_hex);
 
-	// Sets or clears one role and persists it, leaving the other as it stands on
-	// disk. `md5_hex` empty clears the role -- that is how the guest role is
-	// disabled. False with LastError() set on a malformed digest or write failure.
+	// Sets or clears one role and persists it, leaving the other as it stands on disk.
+	// `md5_hex` empty clears the role -- that is how the guest role is disabled. False with
+	// LastError() set on a malformed digest or write failure.
 	bool SetPassword(webcommon::CredentialRole role, const std::string &md5_hex);
 
 	// Modification time of amuleapi-passwords, or 0 when there is no file. Used
@@ -170,14 +164,13 @@ public:
 
 	const std::string &LastError() const { return m_lastError; }
 
-	// Re-reads amuleapi-passwords, keeping the current values if the read fails
-	// so a transient error cannot lock everyone out.
+	// Re-reads amuleapi-passwords, keeping the current values if the read fails so a transient
+	// error cannot lock everyone out.
 	//
-	// Unconditional rather than gated on a stat: mtime is second-granularity on
-	// every platform here, and two writes inside one second produce records of
-	// identical length, so a timestamp-plus-size check would miss a rotation
-	// *permanently*. The file is under 4 KB and this runs once per login
-	// attempt, behind the rate limiter and in front of a PBKDF2.
+	// Unconditional rather than gated on a stat: mtime is second-granularity on every platform
+	// here, and two writes inside one second produce records of identical length, so a
+	// timestamp-plus-size check would miss a rotation *permanently*. The file is under 4 KB and
+	// this runs once per login attempt, behind the rate limiter and in front of a PBKDF2.
 	void ReloadCredentials();
 
 private:
@@ -185,9 +178,9 @@ private:
 	// Load()'s first-run path -- callers get the secret via JwtSecret().
 	bool WriteJwtSecretFile(const wxString &config_dir, const std::vector<unsigned char> &secret_32);
 
-	// Rewrites one role's record at the current KDF cost without moving the
-	// file's modification time -- an upgrade is not a password change, and only
-	// a password change should end sessions.
+	// Rewrites one role's record at the current KDF cost without moving the file's modification
+	// time -- an upgrade is not a password change, and only a password change should end
+	// sessions.
 	void RehashInPlace(webcommon::CredentialRole role, const std::string &md5_hex);
 
 	bool LoadAmuleapiConf(const wxString &path);

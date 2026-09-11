@@ -45,17 +45,12 @@ enum ETaskPriority
 };
 
 /**
- * This class mananges scheduling of background tasks.
+ * Manages the scheduling of background tasks.
  *
- * Currently it is assumed that all tasks are IO intensive,
- * so that only a single task is allowed to proceed at any
- * one time. All threads are run in lowest priority mode.
+ * All tasks are assumed to be IO intensive, so only one runs at a time, and every thread runs at
+ * lowest priority. Tasks are sorted by priority (see ETaskPriority) and age.
  *
- * Tasks are sorted by priority (see ETaskPriority) and age.
- *
- * Note that the scheduler starts in suspended mode, in
- * which tasks are queued but not executed. Call Start()
- * to begin execution of the tasks.
+ * The scheduler starts suspended, queueing tasks without executing them; call Start() to begin.
  */
 class CThreadScheduler
 {
@@ -64,24 +59,18 @@ public:
 	static void Start();
 
 	/**
-	 * Terminates task execution and frees the scheduler object.
-	 *
-	 * Tasks added after this are discarded.
+	 * Terminates task execution and frees the scheduler object. Tasks added afterwards are
+	 * discarded.
 	 */
 	static void Terminate();
 
 	/**
-	 * Adds a new task to the queue, returning true if the task was queued.
+	 * Adds a new task to the queue, taking ownership of it, and returns true if it was queued.
 	 *
-	 * Before the task is queued, it is checked against the
-	 * existing tasks based on type and description. If an
-	 * matching task already exists, this task-object is
-	 * discarded. The task is also discarded if the scheduler
-	 * has been terminated. If 'overwrite' is true, any
-	 * existing duplicate task is dropped, and if already
-	 * running, terminated.
-	 *
-	 * Note: This function takes ownership of the task.
+	 * Before queueing, the task is checked against the existing ones by type and description; a
+	 * matching task already present discards this object. It is also discarded if the scheduler
+	 * has been terminated. With `overwrite`, any existing duplicate is dropped, and terminated
+	 * if already running.
 	 *
 	 * @see Start
 	 * @see Terminate
@@ -89,19 +78,17 @@ public:
 	static bool AddTask(CThreadTask *task, bool overwrite = false);
 
 	/**
-	 * Returns the number of tasks still to be completed: those waiting on
-	 * the queue, plus the one being executed, if any.
+	 * The number of tasks still to be completed: those waiting on the queue, plus the one being
+	 * executed.
 	 *
-	 * For progress reporting, so a caller that has queued a batch can tell
-	 * how much of it is left without tracking completions itself. This is a
-	 * snapshot taken under the scheduler's lock; the worker may have moved
-	 * on by the time it is read, so treat it as a lower bound on the work
-	 * remaining rather than an exact figure.
+	 * For progress reporting, so a caller that has queued a batch can tell how much of it is
+	 * left without tracking completions itself. This is a snapshot taken under the scheduler's
+	 * lock; the worker may have moved on by the time it is read, so treat it as a lower bound
+	 * rather than an exact figure.
 	 *
-	 * @param type Count only tasks of this type, as passed to the
-	 *             CThreadTask constructor. Empty counts every task. Callers
-	 *             reporting on a batch of their own want the filter: the
-	 *             queue is shared, and other subsystems add to it.
+	 * @param type Count only tasks of this type, as passed to the CThreadTask constructor;
+	 * empty counts every task. Callers reporting on a batch of their own want the filter: the
+	 * queue is shared, and other subsystems add to it.
 	 */
 	static size_t GetPendingCount(const wxString &type = wxEmptyString);
 
@@ -145,25 +132,20 @@ private:
 };
 
 /**
- * Base-class of all threaded tasks.
+ * Base class of all threaded tasks.
  *
- * This class acts as a pseudo-thread, and is transparently
- * executed on a worker thread by the CThreadScheduler
- * class.
- *
- * Note that the task type should be an unique description
- * of the task type, as it is used to detect completion of
- * all tasks of a given type and in duplicate detection
- * with the description. The description should be unique
- * for the given task, such that duplicates can be discovered.
+ * Acts as a pseudo-thread, transparently executed on a worker thread by CThreadScheduler. The task
+ * type should be a unique description of the KIND of task, since it is used to detect completion of
+ * all tasks of a given type and, with the description, to find duplicates. The description should
+ * be unique for the given task.
  */
 class CThreadTask
 {
 public:
 	/**
-	 * @param type Should be a name constant among tasks of the type (hashing, completion, etc).
-	 * @param desc Should be an unique description for this task, for detecting duplicates.
-	 * @param priority Decides how soon the task will be carried out.
+	 * @param type A name constant among tasks of this kind (hashing, completion, ...).
+	 * @param desc A unique description for this task, for detecting duplicates.
+	 * @param priority Decides how soon the task is carried out.
 	 */
 	CThreadTask(const wxString &type, const wxString &desc, ETaskPriority priority = ETP_Normal);
 

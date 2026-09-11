@@ -30,49 +30,43 @@ class wxString;
 /**
  * aMule's side of amuleapi's admin/guest credentials.
  *
- * The credentials live in one file, amuleapi-passwords, in the aMule config
- * dir. amuleapi reads it; amuleapi, amuled and monolithic aMule all write
- * it. The format and the hashing belong to webcommon/Credentials.h so the
- * three cannot drift apart — this header is only the glue that connects
- * that store to aMule's preferences.
+ * The credentials live in one file, amuleapi-passwords, in the aMule config dir. amuleapi reads it;
+ * amuleapi, amuled and monolithic aMule all write it. The format and the hashing belong to
+ * webcommon/Credentials.h so the three cannot drift apart -- this header is only the glue between
+ * that store and aMule's preferences.
  *
- * Not compiled into amulegui: a remote GUI has no local credential file,
- * and its config dir belongs to a different machine. amulegui asks the
- * daemon to make the change over EC instead, and the daemon lands here.
+ * Not compiled into amulegui: a remote GUI has no local credential file, and its config dir belongs
+ * to another machine. amulegui asks the daemon to make the change over EC, and the daemon lands
+ * here.
  */
 namespace AmuleApiCredentials
 {
 
 /**
- * Writes whatever the preferences are currently asking for into
- * amuleapi-passwords, then refreshes the state mirrors.
+ * Writes whatever the preferences are currently asking for into amuleapi-passwords, then refreshes
+ * the state mirrors.
  *
  * The two password preferences are pending requests, not stored values:
  *
  *  - a non-empty admin digest sets the admin password;
- *  - guest disabled clears the guest credential, which is what turns guest
- *    access off;
+ *  - guest disabled clears the guest credential, which is what turns guest access off;
  *  - guest enabled with a non-empty digest sets the guest password;
- *  - guest enabled with an empty digest leaves the stored guest password
- *    alone, so an EC client can change the port without having to resend a
- *    password it can never read back.
+ *  - guest enabled with an empty digest leaves the stored guest password alone, so an EC client can
+ *    change the port without resending a password it can never read back.
  *
- * Each applied digest is cleared from the preferences afterwards, so the
- * request is not replayed on the next save.
+ * Each applied digest is cleared from the preferences afterwards, so the request is not replayed on
+ * the next save.
  *
- * Returns false and fills `error` if the file could not be written.
- * Preferences that were applied before the failure stay applied — each
- * role is written separately, and a half-applied change is better left
- * visible than silently rolled back to a password the user thinks they
- * replaced.
+ * Returns false and fills `error` if the file could not be written. Preferences applied before the
+ * failure stay applied -- each role is written separately, and a half-applied change is better left
+ * visible than silently rolled back to a password the user thinks they replaced.
  */
 bool ApplyPrefs(wxString &error);
 
 /**
- * Reads amuleapi-passwords and updates the "admin is set" / "guest is
- * enabled" preference mirrors from it. Called at startup and after every
- * change, so the preferences dialog shows what is actually stored rather
- * than what was last typed.
+ * Reads amuleapi-passwords and updates the "admin is set" / "guest is enabled" preference mirrors
+ * from it. Called at startup and after every change, so the preferences dialog shows what is
+ * actually stored rather than what was last typed.
  */
 void RefreshState();
 

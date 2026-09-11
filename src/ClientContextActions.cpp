@@ -90,9 +90,8 @@ void PromptAndSendChatMessage(const wxString &userName, uint64 userID)
 	}
 }
 
-// Holds the friend list's write open for as long as it is in scope. Works in
-// both builds: CFriendListRem answers the same two calls with no-ops, because
-// the daemon owns the file there.
+// Holds the friend list's write open for as long as it is in scope. Works in both builds:
+// CFriendListRem answers the same two calls with no-ops, because the daemon owns the file there.
 class FriendListBatch
 {
 public:
@@ -102,10 +101,9 @@ public:
 	FriendListBatch &operator=(const FriendListBatch &) = delete;
 };
 
-// Above this a bulk action asks before running. One row must never cost a click
-// and a few is plainly deliberate, but Clients -> Known lists every peer we have
-// credit for, so a select-all there is thousands of rows, each costing an
-// outbound connection or a rewrite of the friend list.
+// Above this a bulk action asks before running. One row must never cost a click and a few is
+// plainly deliberate, but Clients -> Known lists every peer we have credit for, so a select-all
+// there is thousands of rows, each costing an outbound connection or a rewrite of the friend list.
 const size_t kBulkPeerActionPrompt = 10;
 
 // Only one friend slot exists, so a wider selection loses all but the first.
@@ -124,18 +122,17 @@ void WarnIfMultipleFriendSlot(wxWindow *parent, size_t selected)
 
 wxMenu *BuildPeerContextMenu(const PeerIdentity &peer)
 {
-	// A peer we are connected to knows strictly more about itself than the
-	// stored record does, so defer to the existing builder whenever there is
-	// one rather than keeping two versions of these rules.
+	// A peer we are connected to knows strictly more about itself than the stored record does,
+	// so defer to the existing builder whenever there is one rather than keeping two versions
+	// of these rules.
 	if (peer.client.IsLinked()) {
 		return BuildClientContextMenu(peer.client);
 	}
 
-	// Friendship and the friend slot are ours, not the peer's: both live in
-	// emfriends.met and apply next time it connects. FriendFor() reaches
-	// LookupFriend() rather than FindFriend(), which would adopt the hash onto an
-	// address-only record and save the file -- opening a menu must not write to
-	// disk.
+	// Friendship and the friend slot are ours, not the peer's: both live in emfriends.met and
+	// apply next time it connects. FriendFor() reaches LookupFriend() rather than FindFriend(),
+	// which would adopt the hash onto an address-only record and save the file -- opening a
+	// menu must not write to disk.
 	CFriend *known = FriendFor(peer);
 
 	wxMenu *menu = new wxMenu(_("Clients"));
@@ -153,14 +150,13 @@ wxMenu *BuildPeerContextMenu(const PeerIdentity &peer)
 	menu->Append(MP_SHOWLIST, _("View Files"));
 	menu->Append(MP_SENDMESSAGE, _("Send message"));
 
-	// Both open a connection, so both need somewhere to open it to. Whether the
-	// peer forbids browsing is live state we do not have, and an unknown is not a
-	// refusal, so View Files stays offered on that count.
+	// Both open a connection, so both need somewhere to open it to. Whether the peer forbids
+	// browsing is live state we do not have, and an unknown is not a refusal, so View Files
+	// stays offered on that count.
 	//
-	// Only browsing is out of amulegui's reach, because EC names a browse target by
-	// ECID and this peer has no daemon-side object; chat addresses by GUI_ID, which
-	// is the address itself. Unfriending needs only the record we have, friending
-	// needs an address to store.
+	// Only browsing is out of amulegui's reach, because EC names a browse target by ECID and
+	// this peer has no daemon-side object; chat addresses by GUI_ID, which is the address
+	// itself. Unfriending needs only the record we have, friending needs an address to store.
 	menu->Enable(MP_ADDFRIEND, known != nullptr || peer.CanBeFriended());
 	menu->Enable(MP_SENDMESSAGE, peer.CanOpenConnection());
 	menu->Enable(MP_SHOWLIST, peer.CanOpenConnection() && PeerBrowseIsPossible(peer));
@@ -170,21 +166,21 @@ wxMenu *BuildPeerContextMenu(const PeerIdentity &peer)
 
 // Whether this build can browse a peer it is not already connected to.
 //
-// Monolithic aMule owns its client list and can make one from an address;
-// amulegui cannot, since EC names a browse target by ECID and a peer that is
-// neither connected nor a friend has no daemon-side object to have one.
+// Monolithic aMule owns its client list and can make one from an address; amulegui cannot, since EC
+// names a browse target by ECID and a peer that is neither connected nor a friend has no daemon-
+// side object to have one.
 //
-// Chat is deliberately NOT covered: EC_OP_CHAT_SEND takes a bare GUI_ID, built
-// from the address alone, so it works in both builds.
+// Chat is deliberately NOT covered: EC_OP_CHAT_SEND takes a bare GUI_ID, built from the address
+// alone, so it works in both builds.
 bool PeerBrowseIsPossible(const PeerIdentity &peer)
 {
 #ifndef CLIENT_GUI
 	(void)peer;
 	return true;
 #else
-	// EC names a browse target by ECID. A connected peer has one as a client and a
-	// friend has one as a friend record, both of which CFriendListRem already
-	// browses; only a peer that is neither has nothing to name.
+	// EC names a browse target by ECID. A connected peer has one as a client and a friend has
+	// one as a friend record, both of which CFriendListRem already browses; only a peer that is
+	// neither has nothing to name.
 	return peer.client.IsLinked() || PeerIsFriend(peer);
 #endif
 }
@@ -209,9 +205,9 @@ bool PeerActionViewFiles(const PeerIdentity &peer)
 	// leaving the caller to assume the browse was asked for.
 	return false;
 #else
-	// Only now is a client made and a connection opened: the user asked to browse,
-	// which cannot be answered from the stored record. Passing the hash lets the
-	// call reuse the client it made last time instead of stacking up a new one.
+	// Only now is a client made and a connection opened: the user asked to browse, which cannot
+	// be answered from the stored record. Passing the hash lets the call reuse the client it
+	// made last time instead of stacking up a new one.
 	ClientActionViewFiles(
 		{ theApp->clientlist->CreateForAddress(peer.hash, peer.ip, peer.port, peer.name) });
 	return true;
@@ -227,22 +223,22 @@ void PeerActionSendMessage(const PeerIdentity &peer)
 	if (!peer.CanOpenConnection()) {
 		return;
 	}
-	// The address is the whole target: monolithic looks the client up by it, and
-	// amulegui sends the GUI_ID over EC for the daemon to resolve. Either way
-	// CClientList::SendChatMessage() makes the client if there is none.
+	// The address is the whole target: monolithic looks the client up by it, and amulegui sends
+	// the GUI_ID over EC for the daemon to resolve. Either way CClientList::SendChatMessage()
+	// makes the client if there is none.
 	//
-	// The hash stands in for a missing name here, and only here: this label titles
-	// the chat tab and is not stored anywhere.
+	// The hash stands in for a missing name here, and only here: this label titles the chat tab
+	// and is not stored anywhere.
 	PromptAndSendChatMessage(
 		peer.name.IsEmpty() ? peer.hash.Encode() : peer.name, GUI_ID(peer.ip, peer.port));
 }
 
 CFriend *FriendForClient(const CClientRef &client)
 {
-	// Linkage first, then the client's own identity. The linkage alone is not
-	// enough: CFriendList::AddFriend(hash, ip, port, name) stores a record without
-	// calling LinkClient(), so a friend added from the dialog while its peer is
-	// connected is a friend that IsFriend() denies.
+	// Linkage first, then the client's own identity. The linkage alone is not enough:
+	// CFriendList::AddFriend(hash, ip, port, name) stores a record without calling
+	// LinkClient(), so a friend added from the dialog while its peer is connected is a friend
+	// that IsFriend() denies.
 	CClientRef &live = const_cast<CClientRef &>(client);
 	if (CFriend *linked = live.GetFriend()) {
 		return linked;
@@ -252,9 +248,9 @@ CFriend *FriendForClient(const CClientRef &client)
 
 CFriend *FriendFor(const PeerIdentity &peer)
 {
-	// One step for every caller, menu and action alike: deciding this per caller is
-	// how a menu entry and the thing it triggers end up disagreeing about whether a
-	// peer is already a friend, and an "Add" that removes.
+	// One step for every caller, menu and action alike: deciding this per caller is how a menu
+	// entry and the thing it triggers end up disagreeing about whether a peer is already a
+	// friend, and an "Add" that removes.
 	if (peer.client.IsLinked()) {
 		return FriendForClient(peer.client);
 	}
@@ -298,12 +294,11 @@ void ReportFriendSkips(size_t skipped)
 
 bool ConfirmBrowseAction(wxWindow *parent, size_t count)
 {
-	// The connection line is stated unconditionally, because whether a browse dials
-	// is a property of each peer rather than of the list asking. A peer we hold no
-	// socket for is contacted: RequestSharedFileList() uses an existing connection
-	// only when IsConnected(), and otherwise calls TryToContact. Every one of these
-	// lists can hold such a peer, and no caller could answer it anyway -- each takes
-	// its count before the selection is resolved.
+	// The connection line is stated unconditionally, because whether a browse dials is a
+	// property of each peer rather than of the list asking. A peer we hold no socket for is
+	// contacted: RequestSharedFileList() uses an existing connection only when IsConnected(),
+	// and otherwise calls TryToContact. Every one of these lists can hold such a peer, and no
+	// caller could answer it anyway -- each takes its count before the selection is resolved.
 	wxString message = CFormat(wxPLURAL("Request the shared files of %u client?",
 				   "Request the shared files of %u clients?",
 				   count)) %
@@ -320,9 +315,9 @@ void PeerActionSetFriendsForClients(wxWindow *parent, const std::vector<CClientR
 	if (!ConfirmFriendAction(parent, clients.size(), addThem)) {
 		return;
 	}
-	// Through the same action the row-backed lists use, so the direction, the
-	// address requirement, the single write and the skip reporting are stated
-	// once rather than accumulated twice.
+	// Through the same action the row-backed lists use, so the direction, the address
+	// requirement, the single write and the skip reporting are stated once rather than
+	// accumulated twice.
 	std::vector<PeerIdentity> peers;
 	peers.reserve(clients.size());
 	for (const CClientRef &client : clients) {
@@ -338,28 +333,28 @@ bool PeerIsFriend(const PeerIdentity &peer)
 
 size_t PeerActionSetFriends(const std::vector<PeerIdentity> &peers, bool addThem)
 {
-	// One write for the whole run. CFriendList saves after every add and remove, so
-	// without this a large selection rewrites emfriends.met once per row, on the GUI
-	// thread, with the file growing as it goes.
+	// One write for the whole run. CFriendList saves after every add and remove, so without
+	// this a large selection rewrites emfriends.met once per row, on the GUI thread, with the
+	// file growing as it goes.
 	//
-	// Scoped, not a bare pair of calls: a batch left open makes every later
-	// SaveList() a silent no-op, the one in ~CFriendList() included.
+	// Scoped, not a bare pair of calls: a batch left open makes every later SaveList() a silent
+	// no-op, the one in ~CFriendList() included.
 	size_t skipped = 0;
 	FriendListBatch batch;
 	for (const PeerIdentity &peer : peers) {
 		CFriend *known = FriendFor(peer);
-		// One direction for the whole run, taken from the entry the user picked.
-		// Toggling per row means a selection holding both friends and strangers does
-		// the opposite of its own label to half of it, and removing a friend is the
-		// loss of something they curated.
+		// One direction for the whole run, taken from the entry the user picked. Toggling
+		// per row means a selection holding both friends and strangers does the opposite of
+		// its own label to half of it, and removing a friend is the loss of something they
+		// curated.
 		if (addThem) {
 			if (known != nullptr) {
 				continue;
 			}
 			if (!peer.CanBeFriended()) {
-				// A friend is reached by address, and a record without one
-				// can never be dialled. Connected or not, the bar is the
-				// same, and the caller says how many were left out.
+				// A friend is reached by address, and a record without one can
+				// never be dialled. Connected or not, the bar is the same, and the
+				// caller says how many were left out.
 				++skipped;
 				continue;
 			}
@@ -367,7 +362,8 @@ size_t PeerActionSetFriends(const std::vector<PeerIdentity> &peers, bool addThem
 				// The client-aware overload, which links the record to the live
 				// client. Storing the address alone leaves the friend looking
 				// offline for the rest of a session we are already talking through,
-				// and its friend slot unsettable, that entry being gated on linkage.
+				// and its friend slot unsettable, that entry being gated on
+				// linkage.
 				theApp->friendlist->AddFriend(peer.client);
 			} else {
 				theApp->friendlist->AddFriend(peer.hash, peer.ip, peer.port, peer.name);
@@ -381,11 +377,11 @@ size_t PeerActionSetFriends(const std::vector<PeerIdentity> &peers, bool addThem
 
 void PeerActionSetFriendSlot(wxWindow *parent, const PeerIdentity &peer, bool checked, size_t selected)
 {
-	// Resolve the friend the same way the menu decided whether to offer this entry:
-	// through the live client's linkage when there is one, and from the stored
-	// record otherwise. Resolving it differently is how the menu ends up describing
-	// one peer while the action runs on another. Either way the slot is a property
-	// of our own list, so it is settable on a peer that is not connected.
+	// Resolve the friend the same way the menu decided whether to offer this entry: through the
+	// live client's linkage when there is one, and from the stored record otherwise. Resolving
+	// it differently is how the menu ends up describing one peer while the action runs on
+	// another. Either way the slot is a property of our own list, so it is settable on a peer
+	// that is not connected.
 	theApp->friendlist->SetFriendSlot(FriendFor(peer), checked);
 
 	WarnIfMultipleFriendSlot(parent, selected);
@@ -393,9 +389,9 @@ void PeerActionSetFriendSlot(wxWindow *parent, const PeerIdentity &peer, bool ch
 
 void ClientActionViewFiles(const std::vector<CClientRef> &clients)
 {
-	// Browse each selected peer, opening one result tab per peer. If a peer's
-	// listing is already open in the Search panel, switch to that tab rather than
-	// re-requesting, which would duplicate the results in it.
+	// Browse each selected peer, opening one result tab per peer. If a peer's listing is
+	// already open in the Search panel, switch to that tab rather than re-requesting, which
+	// would duplicate the results in it.
 	for (const CClientRef &client : clients) {
 		CClientRef &c = const_cast<CClientRef &>(client);
 		if (!(theApp->amuledlg && theApp->amuledlg->m_searchwnd &&

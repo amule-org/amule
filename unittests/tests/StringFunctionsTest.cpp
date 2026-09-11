@@ -175,11 +175,10 @@ TEST(StringFunctions, UnescapeHTMLPlainAscii)
 	ASSERT_EQUALS("50% off", UnescapeHTML("50%%20off"));
 }
 
-// Regression: the escapes were located by byte offset in a UTF-8 buffer but
-// read by character offset out of the wxString, so one multi-byte character
-// desynchronised the two and every following escape decoded from the wrong
-// place -- injecting stray bytes (a newline, here) and leaving the real
-// escapes untouched. An eD2k link whose filename had an accent came out of
+// Regression: the escapes were located by byte offset in a UTF-8 buffer but read by character
+// offset out of the wxString, so one multi-byte character desynchronised the two and every
+// following escape decoded from the wrong place -- injecting stray bytes (a newline, here) and
+// leaving the real escapes untouched. An eD2k link whose filename had an accent came out of
 // CED2KFileLink split in half.
 TEST(StringFunctions, UnescapeHTMLAfterNonAsciiCharacter)
 {
@@ -197,9 +196,8 @@ TEST(StringFunctions, UnescapeHTMLKeepsNonAsciiWithoutEscapes)
 	ASSERT_EQUALS(name, UnescapeHTML(name));
 }
 
-// A '%' whose next two bytes are not hex digits at all -- here the start of a
-// UTF-8 sequence -- has to survive as a literal, without tripping a debug
-// assertion on the way.
+// A '%' whose next two bytes are not hex digits at all -- here the start of a UTF-8 sequence -- has
+// to survive as a literal, without tripping a debug assertion on the way.
 TEST(StringFunctions, UnescapeHTMLPercentBeforeNonAscii)
 {
 	const wxString name = wxString::FromUTF8("100%\xC3\xA9.mkv");
@@ -207,9 +205,9 @@ TEST(StringFunctions, UnescapeHTMLPercentBeforeNonAscii)
 	ASSERT_EQUALS(name, UnescapeHTML(name));
 }
 
-// Issue #873: Chromium refuses to open an ed2k:// URL holding literal '|', so
-// links are published and copied with the delimiters percent-encoded, and
-// CED2KLink::CreateLinkFromUrl retries through this helper.
+// Issue #873: Chromium refuses to open an ed2k:// URL holding a literal '|', so links are published
+// and copied with the delimiters percent-encoded, and CED2KLink::CreateLinkFromUrl retries through
+// this helper.
 TEST(StringFunctions, RestoreEncodedPipesHandlesBothCases)
 {
 	ASSERT_EQUALS(wxString("ed2k://|file|a.iso|1|H|/"),
@@ -224,9 +222,9 @@ TEST(StringFunctions, RestoreEncodedPipesHandlesMixedSpellings)
 	ASSERT_EQUALS(wxString("a|b|c"), RestoreEncodedPipes("a%7Cb|c"));
 }
 
-// Only the delimiters are its business: every other escape belongs to the
-// filename, which UnescapeHTML decodes later, and decoding it here would
-// double-decode a name containing a literal '%'.
+// Only the delimiters are its business: every other escape belongs to the filename, which
+// UnescapeHTML decodes later, and decoding it here would double-decode a name containing a literal
+// '%'.
 TEST(StringFunctions, RestoreEncodedPipesLeavesOtherEscapesAlone)
 {
 	ASSERT_EQUALS(wxString("a|b%20c%2F"), RestoreEncodedPipes("a%7Cb%20c%2F"));

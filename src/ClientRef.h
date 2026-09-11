@@ -26,13 +26,9 @@
 #ifndef CLIENTREF_H
 #define CLIENTREF_H
 
-//
-// Clients are stored in many places. To prevent problems when a client gets deleted
-// and later a pointer to a deleted client is referenced, clients are now stored in
-// this class only. It uses reference counting in the client which deletes the client only
-// after the last reference has been unlinked.
-// Also the class is used as abstraction layer for the CUpDownClient class.
-//
+// Clients are stored in many places. To stop a pointer to a deleted client being referenced
+// later, clients are now stored only in this class, which reference-counts and deletes the client
+// after the last reference is unlinked. It also serves as an abstraction layer for CUpDownClient.
 
 #include <list>
 #include <set>
@@ -75,9 +71,9 @@ public:
 	~CClientRef() { Unlink(); }
 	CClientRef &operator=(const CClientRef &ref)
 	{
-		// Self-assignment would be a use-after-free: Link() Unlinks the current
-		// client first, and if this holds the last reference that deletes it,
-		// leaving ref.m_client dangling before it is re-Linked.
+		// Self-assignment would be a use-after-free: Link() Unlinks the current client
+		// first, and if this holds the last reference that deletes it, leaving ref.m_client
+		// dangling before it is re-Linked.
 		if (this == &ref) {
 			return *this;
 		}

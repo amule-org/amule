@@ -66,9 +66,7 @@ bool CTextFile::IsOpened() const
 
 bool CTextFile::Eof() const
 {
-	// This is needed because feof will crash if the
-	// underlying FILE pointer is NULL, as is the
-	// case when the file is closed.
+	// feof crashes when the underlying FILE pointer is NULL, as it is when the file is closed.
 	return m_file.IsOpened() ? m_file.Eof() : true;
 }
 
@@ -165,9 +163,8 @@ bool CTextFile::WriteLine(const wxString &line, const wxMBConv &conv)
 	// Ensures that use of newlines/carriage-returns matches the OS
 	wxString result = wxTextBuffer::Translate(line);
 
-	// Only add line-breaks between lines, as otherwise the number of
-	// lines would grow as the result of the addition of an empty line,
-	// at the end of the file.
+	// Only add line breaks between lines: otherwise adding an empty line at the end of the file
+	// would grow the line count.
 	if (m_file.Tell() > 0) {
 		result = wxTextBuffer::GetEOL() + result;
 	}

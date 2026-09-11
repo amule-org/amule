@@ -42,9 +42,8 @@ CFriendList::CFriendList() {}
 
 CFriendList::~CFriendList()
 {
-	// Whatever happened, the list gets written. A batch left open would make
-	// SaveList() a no-op here, and losing emfriends.met on exit is the one
-	// outcome worth defending against twice.
+	// Whatever happened, the list gets written. A batch left open would make SaveList() a no-op
+	// here, and losing emfriends.met on exit is the one outcome worth defending against twice.
 	m_batchDepth = 0;
 	SaveList();
 
@@ -186,11 +185,10 @@ CFriend *CFriendList::LookupFriend(const CMD4Hash &userhash, uint32 dwIP, uint16
 				return cur_friend;
 			}
 		} else if (dwIP != 0 && cur_friend->GetIP() == dwIP && cur_friend->GetPort() == nPort) {
-			// A zero address is the absence of one, not a value to match on.
-			// Friends can be added from a record that never carried an IP, and
-			// without this every such record answers to the same query: a
-			// client would link to whichever was stored first and inherit its
-			// persistent friend slot.
+			// A zero address is the absence of one, not a value to match on. Friends
+			// can be added from a record that never carried an IP, and without this
+			// every such record answers to the same query: a client would link to
+			// whichever was stored first and inherit its persistent friend slot.
 			return cur_friend;
 		}
 	}
@@ -242,10 +240,9 @@ CFriendList::BrowseResult CFriendList::RequestSharedFileList(CFriend *cur_friend
 	if (cur_friend) {
 		CUpDownClient *client = cur_friend->GetLinkedClient().GetClient();
 		if (!client) {
-			// Asked before deciding there is nothing to reach: this finds a
-			// client already held for the hash even when the record carries
-			// no address, and answers empty only when there is genuinely
-			// neither.
+			// Asked before deciding there is nothing to reach: this finds a client
+			// already held for the hash even when the record carries no address, and
+			// answers empty only when there is genuinely neither.
 			CClientRef ref = theApp->clientlist->CreateForAddress(cur_friend->GetUserHash(),
 				cur_friend->GetIP(),
 				cur_friend->GetPort(),
@@ -259,11 +256,10 @@ CFriendList::BrowseResult CFriendList::RequestSharedFileList(CFriend *cur_friend
 			cur_friend->LinkClient(ref);
 			client = ref.GetClient();
 		}
-		// A browse already running for this peer will decline the request
-		// below, so say so rather than reporting a browse that never starts.
-		// Reusing an existing client makes this reachable where building a
-		// fresh one every time could not: the caller's id would otherwise
-		// name a browse nothing will ever answer or expire.
+		// A browse already running for this peer will decline the request below, so say so
+		// rather than reporting a browse that never starts. Reusing an existing client
+		// makes this reachable where building a fresh one every time could not: the
+		// caller's id would otherwise name a browse nothing will ever answer or expire.
 		if (theApp->browsemanager->SearchIdFor(client) != 0) {
 			return BrowseResult::AlreadyRunning;
 		}
@@ -281,9 +277,9 @@ void CFriendList::SetFriendSlot(CFriend *Friend, bool new_state)
 	if (!Friend) {
 		return;
 	}
-	// Persist the flag on the friend record so it survives the friend
-	// going offline (the live CUpDownClient::m_bFriendSlot is per-session
-	// state that dies with the client object on disconnect).
+	// Persist the flag on the friend record so it survives the friend going offline: the live
+	// CUpDownClient::m_bFriendSlot is per-session state that dies with the client object on
+	// disconnect.
 	Friend->SetPersistentFriendSlot(new_state);
 	if (new_state) {
 		// Only one friend can hold the slot at a time. Clear any other

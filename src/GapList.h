@@ -30,9 +30,7 @@
 class CGapList
 {
 private:
-	// The internal gap list:
-	// Each gap is stored as a map entry.
-	// The first (key) is the end, the second (value) the start.
+	// The internal gap list. Each gap is a map entry: the key is the end, the value the start.
 	typedef std::map<uint64, uint64> ListType;
 	typedef ListType::iterator iterator;
 	ListType m_gaplist;

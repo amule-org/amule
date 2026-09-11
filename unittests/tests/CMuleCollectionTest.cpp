@@ -36,9 +36,9 @@ using namespace muleunit;
 
 DECLARE_SIMPLE(MuleCollection)
 
-// Collection files arrive from a file manager, so every test here feeds
-// CMuleCollection something it did not write. Most cases are malformed and
-// awkward to keep on disk, which is why they go through OpenBuffer.
+// Collection files arrive from a file manager, so every test here feeds CMuleCollection something
+// it did not write. Most cases are malformed and awkward to keep on disk, which is why they go
+// through OpenBuffer.
 
 namespace
 {
@@ -60,8 +60,8 @@ void PutU32(std::string &s, uint32_t v)
 }
 
 /**
- * Builds a binary collection holding exactly one entry, in the tag order
- * eMule writes: FT_FILEHASH, FT_FILESIZE, FT_FILENAME.
+ * Builds a binary collection holding exactly one entry, in the tag order eMule writes: FT_FILEHASH,
+ * FT_FILESIZE, FT_FILENAME.
  */
 std::string MakeBinaryCollection(const std::string &fileName, uint32_t fileSize, bool withHash = true)
 {
@@ -131,9 +131,8 @@ TEST(MuleCollection, TextCollectionSurvivesBlankLines)
 	ASSERT_EQUALS(std::string(VALID_LINK), collection[0]);
 }
 
-// Text collections are hand-made link lists, and a Windows editor writes a
-// UTF-8 BOM by default; it used to leave the first link failing its prefix
-// check, so a single-entry collection looked empty.
+// Text collections are hand-made link lists, and a Windows editor writes a UTF-8 BOM by default; it
+// used to leave the first link failing its prefix check, so a single-entry collection looked empty.
 TEST(MuleCollection, TextCollectionSkipsUtf8Bom)
 {
 	CMuleCollection collection;

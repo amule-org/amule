@@ -33,11 +33,9 @@
 namespace
 {
 /**
- * How stale a published figure may get.
- *
- * A display interval, not a cost budget: the panels report a disk filling
- * up over minutes, so ten seconds is finer than anyone can act on, and the
- * probe no longer runs anywhere that would notice a slower one.
+ * How stale a published figure may get. A display interval, not a cost budget: the panels report a
+ * disk filling up over minutes, so ten seconds is finer than anyone can act on, and the probe no
+ * longer runs anywhere that would notice a slower one.
  */
 const uint64 kSampleIntervalMs = 10000;
 
@@ -64,10 +62,10 @@ void CFreeSpaceThread::EndThread()
 		m_bRun = false;
 		m_condition.Signal();
 	}
-	// Returns as soon as the worker finishes the probe it is in, if any.
-	// A probe blocked on an unreachable mount holds the join for as long
-	// as that mount takes to fail -- the alternative, detaching, would
-	// leave a thread writing into statics the app is tearing down.
+	// Returns as soon as the worker finishes the probe it is in, if any. A probe blocked on an
+	// unreachable mount holds the join for as long as that mount takes to fail -- the
+	// alternative, detaching, would leave a thread writing into statics the app is tearing
+	// down.
 	Wait();
 }
 
@@ -83,10 +81,9 @@ sint64 CFreeSpaceThread::Sample(const CPath &path)
 	if (!path.IsOk()) {
 		return FREE_SPACE_UNKNOWN;
 	}
-	// wxInvalidOffset means the path could not be queried at all: it does
-	// not exist, or its mount is unreachable. Kept distinct from a real
-	// zero, which is a full disk and exactly what the Downloads panel
-	// warns about.
+	// wxInvalidOffset means the path could not be queried at all: it does not exist, or its
+	// mount is unreachable. Kept distinct from a real zero, which is a full disk and exactly
+	// what the Downloads panel warns about.
 	const sint64 free = CPath::GetFreeSpaceAt(path);
 	return (free == wxInvalidOffset) ? FREE_SPACE_UNKNOWN : free;
 }
@@ -116,9 +113,8 @@ void *CFreeSpaceThread::Entry()
 			incomingDir = m_incomingDir;
 		}
 
-		// Timed separately so a slow incoming directory cannot hold temp
-		// back, and probed outside the lock so SetPaths() never waits on
-		// a filesystem.
+		// Timed separately so a slow incoming directory cannot hold temp back, and probed
+		// outside the lock so SetPaths() never waits on a filesystem.
 		const uint64 now = GetTickCount64();
 		if (lastTemp == 0 || now - lastTemp >= kSampleIntervalMs) {
 			lastTemp = now;

@@ -54,16 +54,14 @@ enum Protocols
 
 // OP_UDPRESERVEDPROT2 frame types.
 //
-// 0xB2 is the one UDP protocol byte that is not followed by an eD2k opcode:
-// the next byte selects a frame type and the rest is that frame's payload.
-// These are the types eMuleAI defines, and they are a separate namespace from
-// Protocols above -- OP_NATT_FRAME_UTP and OP_MLDONKEYPROT are both 0x00 and
-// mean unrelated things at different offsets.
+// 0xB2 is the one UDP protocol byte not followed by an eD2k opcode: the next byte selects a frame
+// type and the rest is that frame's payload. These are the types eMuleAI defines, and they are a
+// separate namespace from Protocols above -- OP_NATT_FRAME_UTP and OP_MLDONKEYPROT are both 0x00
+// and mean unrelated things at different offsets.
 //
-// aMule implements none of the transports behind them yet; it recognises them
-// so an eMuleAI peer's NAT traversal traffic is dropped as a known frame it
-// cannot serve rather than treated as malformed traffic. See
-// src/ReservedProtocolFrames.h.
+// aMule implements none of the transports behind them yet; it recognises them so an eMuleAI peer's
+// NAT traversal traffic is dropped as a known frame it cannot serve rather than treated as
+// malformed. See src/ReservedProtocolFrames.h.
 enum ReservedProt2FrameTypes
 {
 	//! Legacy uTP NAT-T frame.

@@ -43,39 +43,34 @@
 namespace
 {
 /**
- * Whether arrivals may be reported to the control one at a time.
+ * Whether arrivals may be reported to the control one at a time. Only on macOS, and only with no
+ * filter in force.
  *
- * Only on macOS, and only with no filter in force.
+ * The filter half is about correctness: m_filterKnown makes a row's visibility a live function of
+ * its download status, so a value change can require a row to appear or disappear, which only
+ * re-evaluating the tree catches.
  *
- * The filter half is about correctness: m_filterKnown makes a row's
- * visibility a live function of its download status, so a value change can
- * require a row to appear or disappear, which only re-evaluating the tree
- * catches.
- *
- * The platform half is about wx. Its GTK backend keeps its own mirror of the
- * model's tree, and feeding this model's arrivals into it a notification at
- * a time corrupts GtkTreeView's red-black tree outright --
+ * The platform half is about wx. Its GTK backend keeps its own mirror of the model's tree, and
+ * feeding this model's arrivals into it a notification at a time corrupts GtkTreeView's red-black
+ * tree outright --
  *
  *   gtkrbtree.c:471:_gtk_rbtree_insert_after:
  *     assertion failed: (_gtk_rbtree_is_nil (tree->root))
  *
- * -- which aborts the application. That was first seen for ItemAdded() under
- * a newly formed group; confining the incremental path to top-level
- * additions and value changes did not avoid it, as the same abort came back
- * from the root batch. PR #796 had already found that neither ItemChanged()
- * nor a delete-and-re-add made GTK or MSW re-derive container-ness, and
- * settled on Cleared() for that reason; two aborts from two different
- * notifications say the constraint is broader than container-ness, so this
- * stops trying to find the subset GTK tolerates.
+ * -- which aborts the application. That was first seen for ItemAdded() under a newly formed group;
+ * confining the incremental path to top-level additions and value changes did not avoid it, as the
+ * same abort came back from the root batch. PR #796 had already found that neither ItemChanged()
+ * nor a delete-and-re-add made GTK or MSW re-derive container-ness, and settled on Cleared() for
+ * that reason; two aborts from two different notifications say the constraint is broader than
+ * container-ness, so this stops trying to find the subset GTK tolerates.
  *
- * Native NSOutlineView keeps no such structure -- it re-queries the model as
- * it draws, which is what masked the original #796 defect -- so it takes the
- * incremental path happily, and that is where the scroll position was being
- * lost on every burst of results.
+ * Native NSOutlineView keeps no such structure -- it re-queries the model as it draws, which is
+ * what masked the original #796 defect -- so it takes the incremental path happily, and that is
+ * where the scroll position was being lost on every burst of results.
  *
- * MSW is grouped with GTK deliberately: its generic implementation has tree
- * bookkeeping of its own, it was never the platform this was tested on, and
- * keeping today's behaviour there costs nothing but a repaint.
+ * MSW is grouped with GTK deliberately: its generic implementation has tree bookkeeping of its own,
+ * it was never the platform this was tested on, and keeping today's behaviour there costs nothing
+ * but a repaint.
  */
 bool IncrementalNotificationsUsable(const CSearchListCtrl *owner)
 {
@@ -111,8 +106,8 @@ void CSearchListModel::DropReferencesTo(CSearchFile *file)
 			std::remove(model->m_pendingChanged.begin(), model->m_pendingChanged.end(), file),
 			model->m_pendingChanged.end());
 		// A derived model may be holding this pointer in a cache of its own
-		// (CBrowseListModel files results under their folder), and this is
-		// the only signal it gets that the result has died.
+		// (CBrowseListModel files results under their folder), and this is the only signal
+		// it gets that the result has died.
 		++model->m_contentGeneration;
 	}
 }
@@ -168,16 +163,14 @@ bool CSearchListModel::FlushPending()
 		return false;
 	}
 
-	// Nothing here can be dangling: DropReferencesTo() removes a result the
-	// moment it is destroyed. Duplicates can be, and are: SetDownloadStatus()
-	// notifies every child of the parent it updated, so one arrival into a
-	// 50-variant group queues 51 entries and a busy idle window multiplies
-	// that. The control is handed each row once.
+	// Nothing here can be dangling: DropReferencesTo() removes a result the moment it is
+	// destroyed. Duplicates can be, and are: SetDownloadStatus() notifies every child of the
+	// parent it updated, so one arrival into a 50-variant group queues 51 entries and a busy
+	// idle window multiplies that. The control is handed each row once.
 	std::unordered_set<const CSearchFile *> seen;
 
-	// Additions are reported per parent, since wx takes one parent for a
-	// whole batch: top-level results under the root, grouped ones under the
-	// result they joined.
+	// Additions are reported per parent, since wx takes one parent for a whole batch: top-level
+	// results under the root, grouped ones under the result they joined.
 	wxDataViewItemArray addedRoots;
 	std::unordered_map<CSearchFile *, wxDataViewItemArray> addedChildren;
 	for (CSearchFile *file : m_pendingAdded) {
@@ -201,9 +194,9 @@ bool CSearchListModel::FlushPending()
 	}
 	DropPending();
 
-	// Incremental, so the control keeps its scroll position, its selection
-	// and its expanded rows -- which Cleared() destroys, and which used to
-	// go on every burst of arriving results.
+	// Incremental, so the control keeps its scroll position, its selection and its expanded
+	// rows -- which Cleared() destroys, and which used to go on every burst of arriving
+	// results.
 	if (!addedRoots.IsEmpty()) {
 		ItemsAdded(wxDataViewItem(), addedRoots);
 	}
@@ -303,10 +296,9 @@ void CSearchListModel::GetValue(wxVariant &variant, const wxDataViewItem &item, 
 		break;
 	}
 
-	// Artist / album / title ride in on the same result tags as the three
-	// above -- CSearchFile keeps every tag it does not consume itself -- and
-	// are published by both the ed2k offer and Kad. Shown verbatim: unlike
-	// codec there is no vocabulary to normalise.
+	// Artist / album / title ride in on the same result tags as the three above -- CSearchFile
+	// keeps every tag it does not consume itself -- and are published by both the ed2k offer
+	// and Kad. Shown verbatim: unlike codec there is no vocabulary to normalise.
 	case COL_ARTIST:
 		variant = file->GetStrTagValue(FT_MEDIA_ARTIST);
 		break;
@@ -341,10 +333,9 @@ bool CSearchListModel::GetAttr(
 {
 	CSearchFile *file = ToFile(item);
 
-	// Same theme-aware state palette as the old
-	// CSearchListCtrl::UpdateItemColor -- see MuleColour.h's
-	// IsListBackgroundDark() for why the widget's own background is used
-	// rather than wxSystemSettings::GetAppearance().IsDark() alone.
+	// Same theme-aware state palette as the old CSearchListCtrl::UpdateItemColor -- see
+	// MuleColour.h's IsListBackgroundDark() for why the widget's own background is used rather
+	// than wxSystemSettings::GetAppearance().IsDark() alone.
 	const bool isDark = IsListBackgroundDark(m_owner);
 	wxColour colour = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT);
 
@@ -384,10 +375,9 @@ bool CSearchListModel::IsContainer(const wxDataViewItem &item) const
 	if (!item.IsOk()) {
 		return true; // invisible root
 	}
-	// Must agree with GetChildren(), which only yields children that pass
-	// the filter: answering "has children" here for a group whose variants
-	// are all filtered out draws an expander that opens onto nothing
-	// (got3nks, PR #796 review).
+	// Must agree with GetChildren(), which only yields children that pass the filter: answering
+	// "has children" here for a group whose variants are all filtered out draws an expander
+	// that opens onto nothing (got3nks, PR #796 review).
 	const CSearchFile *file = ToFile(item);
 	const CSearchResultList &kids = file->GetChildren();
 	for (const CSearchFile *kid : kids) {
@@ -438,10 +428,9 @@ int CSearchListModel::Compare(const wxDataViewItem &item1,
 	unsigned int WXUNUSED(column),
 	bool WXUNUSED(ascending)) const
 {
-	// The requested (column, ascending) pair reflects only the primary
-	// native header click; the full multi-column tie-break chain (set up
-	// by earlier clicks on other columns) is tracked on the control itself
-	// and applied here regardless of what native state triggered this
-	// particular resort -- see CSearchListCtrl::CompareFiles.
+	// The requested (column, ascending) pair reflects only the primary native header click; the
+	// full multi-column tie-break chain, set up by earlier clicks on other columns, is tracked
+	// on the control itself and applied here whatever native state triggered this particular
+	// resort -- see CSearchListCtrl::CompareFiles.
 	return m_owner->CompareFiles(ToFile(item1), ToFile(item2));
 }

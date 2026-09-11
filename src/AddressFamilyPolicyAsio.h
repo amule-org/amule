@@ -36,14 +36,13 @@
 /**
  * Socket-specific address-family policy and Boost.Asio values.
  *
- * Split from AddressFamilyPolicy.h so that a translation unit which only needs
- * to know @b whether a family is permitted does not compile asio's socket
- * headers to find out. Unlike asio's ip/address.hpp, ip/tcp.hpp reaches the
- * boost/asio/execution headers, which do not survive this tree's
- * -Werror=deprecated gate unmodified -- see the measurement above the include.
- * Include this only from a TU that opens a socket or resolves a name;
- * including it from a public header puts asio back into the closure of most of
- * src/, which is what the split undoes.
+ * Split from AddressFamilyPolicy.h so that a translation unit which only needs to know @b whether a
+ * family is permitted does not compile asio's socket headers to find out. Unlike asio's
+ * ip/address.hpp, ip/tcp.hpp reaches the boost/asio/execution headers, which do not survive this
+ * tree's -Werror=deprecated gate unmodified -- see the measurement above the include.
+ *
+ * Include this only from a TU that opens a socket or resolves a name; including it from a public
+ * header puts asio back into the closure of most of src/, which is what the split undoes.
  */
 namespace AddressFamilyPolicy
 {
@@ -51,10 +50,9 @@ namespace AddressFamilyPolicy
 /**
  * The TCP protocol a socket towards @a target must be opened in.
  *
- * @return The protocol, or no value when @a target is absent or its family is
- *         not permitted by the configuration. There is no fallback: opening a
- *         v4 socket for a v6 target is how a truncated address turns into a
- *         connection to the wrong host.
+ * @return The protocol, or no value when @a target is absent or its family is not permitted by the
+ *         configuration. There is no fallback: opening a v4 socket for a v6 target is how a
+ *         truncated address turns into a connection to the wrong host.
  */
 inline boost::optional<boost::asio::ip::tcp> TcpProtocolForTarget(const CNetworkAddress &target) noexcept
 {
@@ -76,10 +74,8 @@ enum class ResolverFamily
 };
 
 /**
- * The family restriction for a name lookup.
- *
- * Dual stack requests an unrestricted lookup. A single-family configuration
- * restricts results to that family; DNS results do not establish connectivity.
+ * The family restriction for a name lookup. Dual stack requests an unrestricted lookup. A single-
+ * family configuration restricts results to that family; DNS results do not establish connectivity.
  */
 inline ResolverFamily ResolverFamilyForLookup() noexcept
 {
@@ -101,8 +97,8 @@ inline boost::asio::ip::address AnyIPv4Address() noexcept
 }
 
 /**
- * The IPv6 wildcard, @c ::. With @c IPV6_V6ONLY off it also accepts IPv4 peers,
- * which arrive in IPv4-mapped form.
+ * The IPv6 wildcard, @c ::. With @c IPV6_V6ONLY off it also accepts IPv4 peers, which arrive in
+ * IPv4-mapped form.
  */
 inline boost::asio::ip::address AnyIPv6Address() noexcept
 {
@@ -110,13 +106,11 @@ inline boost::asio::ip::address AnyIPv6Address() noexcept
 }
 
 /**
- * The wildcard "any address of this machine" for a caller that has not said
- * which family it wants.
+ * The wildcard "any address of this machine" for a caller that has not said which family it wants.
  *
- * Prefer the IPv4 wildcard whenever IPv4 is permitted, including dual stack,
- * to avoid implicitly moving a single-socket service to another family.
- * Accepting both families on an IPv6 socket requires explicitly choosing
- * AnyIPv6Address() and clearing @c IPV6_V6ONLY.
+ * Prefer the IPv4 wildcard whenever IPv4 is permitted, including dual stack, so a single-socket
+ * service is not implicitly moved to another family. Accepting both families on an IPv6 socket
+ * requires explicitly choosing AnyIPv6Address() and clearing @c IPV6_V6ONLY.
  */
 inline boost::asio::ip::address AnyAddress() noexcept
 {

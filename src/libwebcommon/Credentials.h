@@ -30,69 +30,57 @@
 namespace webcommon
 {
 
-// amuleapi's admin/guest credentials: how they are hashed and how the
-// amuleapi-passwords file is read and written.
+// amuleapi's admin/guest credentials: how they are hashed and how the amuleapi-passwords file is
+// read and written.
 //
-// This lives in webcommon rather than in amuleapi because three processes
-// need to agree on the format: amuleapi itself, amuled (applying a change
-// pushed from amulegui over EC), and monolithic amule (applying a change
-// made in its own preferences dialog). Exactly one implementation of the
+// This lives in webcommon rather than in amuleapi because three processes need to agree on the
+// format: amuleapi itself, amuled (applying a change pushed from amulegui over EC), and monolithic
+// amule (applying a change made in its own preferences dialog). Exactly one implementation of the
 // format, so the three can never drift apart.
 //
-// What is stored
-// --------------
-// A PHC-style string, self-describing so the parameters can change later
-// without another format break:
+// What is stored: a PHC-style string, self-describing so the parameters can change later without
+// another format break:
 //
 //     pbkdf2-sha256$<iterations>$<salt-hex>$<hash-hex>
 //
-// The input to the KDF is the *MD5 hex* of the password, not the password
-// itself. That is deliberate: aMule's preferences dialog hashes with MD5
-// before the value goes over EC, and EC sessions are not encrypted, so
-// asking for the plaintext would put a new secret on the wire to gain
-// nothing. Pre-hashing client-side leaves the wire exactly as it is today
-// while the stored form stops being an unsalted digest that a rainbow
-// table resolves instantly.
+// The input to the KDF is the *MD5 hex* of the password, not the password itself. That is
+// deliberate: aMule's preferences dialog hashes with MD5 before the value goes over EC, and EC
+// sessions are not encrypted, so asking for the plaintext would put a new secret on the wire to
+// gain nothing. Pre-hashing client-side leaves the wire exactly as it is today while the stored
+// form stops being an unsalted digest that a rainbow table resolves instantly.
 //
-// Legacy
-// ------
-// Early builds stored a bare 32-character MD5 hex digest. amuleapi has not
-// shipped, so there is no installed base, but developer configs exist:
-// those lines still verify, and Verify() reports that the record wants
-// rewriting so the caller can transparently upgrade it.
+// Legacy: early builds stored a bare 32-character MD5 hex digest. amuleapi has not shipped, so
+// there is no installed base, but developer configs exist -- those lines still verify, and
+// Verify() reports that the record wants rewriting so the caller can transparently upgrade it.
 
 // Hashes an MD5 hex digest into a new PHC-style record with a fresh
 // random salt. Returns an empty string if `md5_hex` is not 32 hex chars.
 std::string HashMd5Hex(const std::string &md5_hex);
 
-// Constant-time verification of `md5_hex` against a stored record, in
-// either the PHC or the legacy bare-MD5 form. `needs_rehash` (optional) is
-// set when the record verified but is not in the current format, so the
-// caller can rewrite it after a successful login.
+// Constant-time verification of `md5_hex` against a stored record, in either the PHC or the legacy
+// bare-MD5 form. `needs_rehash` (optional) is set when the record verified but is not in the
+// current format, so the caller can rewrite it after a successful login.
 bool VerifyMd5Hex(const std::string &md5_hex, const std::string &stored, bool *needs_rehash = nullptr);
 
 // True when `stored` is a bare 32-char MD5 hex digest rather than a PHC
 // record. Exposed for tests and for the upgrade path.
 bool IsLegacyMd5Record(const std::string &stored);
 
-// The two credentials as they live in amuleapi-passwords. An empty string
-// means "not set": for `guest` that is what disables the guest role, and
-// for `admin` it is the unclaimed first-run state.
+// The two credentials as they live in amuleapi-passwords. An empty string means "not set": for
+// `guest` that disables the guest role, and for `admin` it is the unclaimed first-run state.
 struct Credentials
 {
 	std::string admin;
 	std::string guest;
 };
 
-// Reads/writes `<config_dir>/amuleapi-passwords`. Write is crash-safe
-// (temp file, fsync, rename) and leaves the file mode at 0600; a partial
-// write can therefore never destroy the only credentials the daemon has.
-// Both return false and set `error` on failure. Load() treats a missing
-// file as an empty set rather than an error, which is the first-run
-// state, but fails on an unknown key or on a record that could never
-// verify. That is deliberately loud: a record which silently never
-// verifies is indistinguishable from a wrong password, and leaves the
-// operator with nothing to debug.
+// Reads and writes `<config_dir>/amuleapi-passwords`. Write is crash-safe (temp file, fsync,
+// rename) and leaves the file mode at 0600, so a partial write can never destroy the only
+// credentials the daemon has. Both return false and set `error` on failure. Load() treats a missing
+// file as an empty set rather than an error, which is the first-run state, but fails on an unknown
+// key or on a record that could never verify. That is deliberately loud: a record which silently
+// never verifies is indistinguishable from a wrong password, and leaves the operator with nothing
+// to debug.
 bool LoadCredentialsFile(const std::string &config_dir, Credentials &out, std::string &error);
 bool SaveCredentialsFile(const std::string &config_dir, const Credentials &in, std::string &error);
 
@@ -103,52 +91,46 @@ enum CredentialRole
 	kGuestCredential
 };
 
-// Sets one role and leaves the other alone. The file is re-read
-// immediately before the write, so a change another process made to the
-// *other* role since this one loaded is preserved rather than reverted —
-// the amuleapi CLI, the REST endpoint and the EC apply path all change
-// exactly one role at a time, and all three go through here. An empty
-// `record` clears the role (which is how the guest role is disabled).
+// Sets one role and leaves the other alone. The file is re-read immediately before the write, so a
+// change another process made to the *other* role since this one loaded is preserved rather than
+// reverted -- the amuleapi CLI, the REST endpoint and the EC apply path all change exactly one role
+// at a time, and all three go through here. An empty `record` clears the role, which is how the
+// guest role is disabled.
 bool UpdateCredentialFile(
 	const std::string &config_dir, CredentialRole role, const std::string &record, std::string &error);
 
-// A requested change, in the form every entry point expresses one: aMule's
-// preferences dialog, amulegui's the same dialog over EC, the amuleapi CLI
-// and the amuleapi REST endpoint. They differ only in how the request
-// arrives, so the rules for interpreting it live here once.
+// A requested change, in the form every entry point expresses one: aMule's preferences dialog,
+// amulegui's the same dialog over EC, the amuleapi CLI and the amuleapi REST endpoint. They differ
+// only in how the request arrives, so the rules for interpreting it live here once.
 struct CredentialChange
 {
-	// MD5 hex of the new admin password, or empty to leave the stored one
-	// alone. There is deliberately no way to clear it: a client that
-	// simply forgot to include the field would otherwise lock a
-	// non-loopback deployment out of its own API.
+	// MD5 hex of the new admin password, or empty to leave the stored one alone. There is
+	// deliberately no way to clear it: a client that simply forgot to include the field would
+	// otherwise lock a non-loopback deployment out of its own API.
 	std::string admin_md5;
 
-	// False clears the guest credential — that IS how guest access is
+	// False clears the guest credential -- that IS how guest access is
 	// turned off, since guest is enabled exactly when a record exists.
 	bool guest_enabled = false;
 
-	// MD5 hex of the new guest password. Empty with `guest_enabled` set
-	// leaves the stored guest password alone, so a client changing an
-	// unrelated setting need not resend a password it can never read.
+	// MD5 hex of the new guest password. Empty with `guest_enabled` set leaves the stored guest
+	// password alone, so a client changing an unrelated setting need not resend a password it
+	// can never read.
 	std::string guest_md5;
 };
 
-// Applies `change` to `<config_dir>/amuleapi-passwords`, reading the
-// current records first so a role the change does not mention keeps
-// whatever is stored.
+// Applies `change` to `<config_dir>/amuleapi-passwords`, reading the current records first so a
+// role the change does not mention keeps whatever is stored.
 //
-// Writes nothing when the result matches what is already there. Callers
-// invoke this on every preferences save, credential-related or not, and
-// the file's modification time is load-bearing: it is what marks a
-// rotation, and a rotation ends every session older than it.
+// Writes nothing when the result matches what is already there. Callers invoke this on every
+// preferences save, credential-related or not, and the file's modification time is load-bearing: it
+// is what marks a rotation, and a rotation ends every session older than it.
 bool ApplyCredentialChange(const std::string &config_dir, const CredentialChange &change, std::string &error);
 
-// Turns a requested password into the record to store: hashes `md5_hex`,
-// or yields an empty record for an empty input, which clears the role.
-// Returns false (leaving `record` untouched) if the input is neither empty
-// nor a 32-char MD5 hex digest, so a half-pasted line can never be stored
-// as a password.
+// Turns a requested password into the record to store: hashes `md5_hex`, or yields an empty record
+// for an empty input, which clears the role. Returns false, leaving `record` untouched, if the
+// input is neither empty nor a 32-char MD5 hex digest, so a half-pasted line can never be stored as
+// a password.
 bool MakeRecord(const std::string &md5_hex, std::string &record);
 
 // The full path Load/Save operate on. Exposed so the tests can assert the
@@ -157,45 +139,39 @@ std::string CredentialsFilePath(const std::string &config_dir);
 
 // The short-lived EC token amuled hands to the amuleapi it spawns.
 //
-// Defined here, and only here, because both ends have to agree on it with
-// nothing carrying the location between them: amuled writes it, and the
-// amuleapi it spawns looks for it in the same config dir it was handed. A
-// second literal in the other binary would be a silent failure waiting to
-// happen -- the child would simply find nothing and fall back to its
-// configured password, with the daemon none the wiser.
+// Defined here, and only here, because both ends have to agree on it with nothing carrying the
+// location between them: amuled writes it, and the amuleapi it spawns looks for it in the same
+// config dir it was handed. A second literal in the other binary would be a silent failure waiting
+// to happen -- the child would simply find nothing and fall back to its configured password, with
+// the daemon none the wiser.
 //
-// Deliberately not passed on the command line: argv is world-readable via
-// ps, so a path there would tell every local user exactly where to look
-// during the window the file exists.
+// Deliberately not passed on the command line: argv is world-readable via ps, so a path there would
+// tell every local user exactly where to look during the window the file exists.
 std::string EcTokenFilePath(const std::string &config_dir);
 
 // A fresh EC token: 16 random bytes as 32 lowercase hex characters.
 //
-// The width is not arbitrary. EC's challenge-response hashes the stored
-// credential as a 32-char MD5 hex digest, so a token of exactly that shape
-// drops into the existing exchange with no protocol change -- the daemon
-// simply knows a second secret. 128 bits is also well beyond guessing for
+// The width is not arbitrary. EC's challenge-response hashes the stored credential as a 32-char MD5
+// hex digest, so a token of exactly that shape drops into the existing exchange with no protocol
+// change -- the daemon simply knows a second secret. 128 bits is also well beyond guessing for
 // something that lives for one daemon run.
 //
-// Drawn from a CSPRNG (the same one that salts credential records), not
-// from the general-purpose RNG the rest of the app uses for jitter and
-// IDs.
+// Drawn from a CSPRNG (the same one that salts credential records), not from the general-purpose
+// RNG the rest of the app uses for jitter and IDs.
 std::string GenerateEcToken();
 
 // Reads the token at `path` into `out` and removes the file.
 //
-// The file is unlinked whether or not it parsed, because a file that is
-// not a valid token is still something we do not want left behind, and
-// because the caller has no better moment to do it: a retry re-uses the
-// value already in memory.
+// The file is unlinked whether or not it parsed, because a file that is not a valid token is still
+// something we do not want left behind, and because the caller has no better moment to do it: a
+// retry re-uses the value already in memory.
 //
-// Returns true only for exactly 32 lowercase-able hex characters, ignoring
-// surrounding whitespace. Anything else -- truncated, empty, padded with
-// junk -- is rejected rather than passed on, so a half-written or tampered
-// file cannot become the credential a connection is attempted with.
+// Returns true only for exactly 32 lowercase-able hex characters, ignoring surrounding whitespace.
+// Anything else -- truncated, empty, padded with junk -- is rejected rather than passed on, so a
+// half-written or tampered file cannot become the credential a connection is attempted with.
 //
-// Returns false (leaving `out` untouched) when the file does not exist,
-// which is the ordinary case for a manually started amuleapi.
+// Returns false, leaving `out` untouched, when the file does not exist, which is the ordinary case
+// for a manually started amuleapi.
 bool ReadAndConsumeEcToken(const std::string &path, std::string &out);
 
 } // namespace webcommon

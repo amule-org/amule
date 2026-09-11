@@ -156,9 +156,7 @@ uint64 CFileDataIO::ReadUInt64() const
 	return ENDIAN_SWAP_64(value);
 }
 
-// UInt128 values are stored a little weird way...
-// Four little-endian 32-bit numbers, stored in
-// big-endian order
+// UInt128 values are stored oddly: four little-endian 32-bit numbers in big-endian order.
 CUInt128 CFileDataIO::ReadUInt128() const
 {
 	CUInt128 value;
@@ -225,9 +223,8 @@ wxString CFileDataIO::ReadString(bool bOptUTF8, uint8 SizeLen, bool SafeRead) co
 
 wxString CFileDataIO::ReadOnlyString(bool bOptUTF8, uint16 raw_len) const
 {
-	// We only need to set the the NULL terminator, since we know that
-	// reads will either succeed or throw an exception, in which case
-	// we wont be returning anything
+	// Only the NULL terminator needs setting: a read either succeeds or throws, and on a throw
+	// nothing is returned.
 	std::vector<char> val_array(raw_len + 1);
 	val_array[raw_len] = 0;
 
@@ -279,9 +276,7 @@ void CFileDataIO::WriteUInt64(uint64 value)
 	Write(&value, sizeof(uint64));
 }
 
-// UInt128 values are stored a little weird way...
-// Four little-endian 32-bit numbers, stored in
-// big-endian order
+// UInt128 values are stored oddly: four little-endian 32-bit numbers in big-endian order.
 void CFileDataIO::WriteUInt128(const Kademlia::CUInt128 &value)
 {
 	for (int i = 0; i < 4; i++) {
@@ -346,10 +341,8 @@ void CFileDataIO::WriteStringCore(const char *s, EUtf8Str eEncode, uint8 SizeLen
 		break;
 
 	case sizeof(uint16):
-		// We must not allow too long strings to be written,
-		// as this would allow for a buggy clients to "poison"
-		// us, by sending ISO8859-1 strings that expand to a
-		// greater than 16b length when converted as UTF-8.
+		// Overlong strings must not be written, or a buggy client could "poison" us by
+		// sending ISO8859-1 strings that expand past 16 bits when converted to UTF-8.
 		if (real_length > 0xFFFF) {
 			AddDebugLogLineN(logCFile,
 				CFormat(wxT(
@@ -397,13 +390,12 @@ CTag *CFileDataIO::ReadTag(bool bOptACP) const
 		name = ReadString(false);
 
 		switch (type) {
-		// This tag data type is accepted and stored only to leave room for a
-		// future upgrade of the net, and even that does not work without breaking
-		// backward compatibility: doing it properly would mean every client
-		// reading and discarding these tags rather than storing them, so they are
-		// never re-sent, and every caller handling a 'nr. of tags' attribute that
-		// shrinks during the read. Storing and forwarding them instead would let a
-		// malicious or buggy client have nodes send corrupted packets.
+		// This tag data type is accepted and stored only to leave room for a future upgrade
+		// of the net, and even that does not work without breaking backward compatibility:
+		// doing it properly would mean every client reading and discarding these tags
+		// rather than storing them, so they are never re-sent, and every caller handling a
+		// 'nr. of tags' attribute that shrinks during the read. Storing and forwarding them
+		// instead would let a malicious or buggy client have nodes send corrupted packets.
 		case TAGTYPE_HASH16: {
 			retVal = new CTagHash(name, ReadHash());
 			break;
@@ -444,23 +436,23 @@ CTag *CFileDataIO::ReadTag(bool bOptACP) const
 		}
 
 		default:
-			// name comes from arbitrary network bytes -- escape control
-			// chars before logging so a malformed / malicious tag can't
-			// inject newlines and corrupt downstream log collectors (#266).
+			// name comes from arbitrary network bytes -- escape control chars before
+			// logging, so a malformed or malicious tag cannot inject newlines and
+			// corrupt downstream log collectors (#266).
 			throw wxString(CFormat("Invalid Kad tag type; type=0x%02x name=%s\n") % type %
 				       EscapeForLog(name));
 		}
 	} catch (const CMuleException &e) {
-		// Debug, not standard: this says only what went wrong, never which file or
-		// packet, and it is rethrown for a caller that does know. A truncated tag
-		// off the network therefore put a bare "SafeIO::EOF" in the daemon log with
-		// nothing around it, while the line naming the peer and opcode sat at debug
-		// level and was compiled out (issue #961).
+		// Debug, not standard: this says only what went wrong, never which file or packet,
+		// and it is rethrown for a caller that does know. A truncated tag off the network
+		// therefore put a bare "SafeIO::EOF" in the daemon log with nothing around it,
+		// while the line naming the peer and opcode sat at debug level and was compiled out
+		// (issue #961).
 		//
-		// Every caller reports the failure itself: CIndexed through
-		// AddDebugLogLineC, fileview on cerr, and the Kad UDP handlers through
-		// CClientUDPSocket -- so a malformed packet is silent in release, which is
-		// right for one that was dropped and cost nothing.
+		// Every caller reports the failure itself: CIndexed through AddDebugLogLineC,
+		// fileview on cerr, and the Kad UDP handlers through CClientUDPSocket -- so a
+		// malformed packet is silent in release, which is right for one that was dropped
+		// and cost nothing.
 		AddDebugLogLineN(logGeneral, e.what());
 		delete retVal;
 		throw;

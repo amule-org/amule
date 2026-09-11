@@ -36,9 +36,8 @@ class wxCommandEvent;
 class CAbstractFile;
 
 /**
- * This dialog is used to display file-comments received from other clients, or
- * community ratings/comments fetched from Kad — for a download, a shared file,
- * or a search result.
+ * Displays file comments received from other clients, or community ratings/comments fetched from
+ * Kad, for a download, a shared file or a search result.
  */
 class CCommentDialogLst : public wxDialog
 {
@@ -47,19 +46,17 @@ public:
 	~CCommentDialogLst();
 
 	/**
-	 * Sorter function for the wxListCtrl used to contain the lists. sortData
-	 * packs the 0-based column in its magnitude and the direction in its
-	 * sign (see OnColumnClick) -- plain wxListCtrl has no built-in notion
-	 * of "current sort column/direction" the way CMuleListCtrl did.
+	 * Sorter for the wxListCtrl holding the lists. sortData packs the 0-based column in its
+	 * magnitude and the direction in its sign (see OnColumnClick) -- plain wxListCtrl has no
+	 * built-in notion of "current sort column/direction" the way CMuleListCtrl did.
 	 */
 	static int wxCALLBACK SortProc(wxIntPtr item1, wxIntPtr item2, wxIntPtr sortData);
 
 	/**
-	 * Drop every reference to `file` from any open instance of this dialog
-	 * before it is destroyed. Pointer-value comparison only — `file` may
-	 * already be freed. Wired via MuleNotify::KnownFileBeingDestroyed (for
-	 * downloads/shared files) and MuleNotify::SearchFileBeingDestroyed (for
-	 * search results) in GuiEvents.cpp.
+	 * Drop every reference to `file` from any open instance of this dialog before it is
+	 * destroyed. Pointer-value comparison only -- `file` may already be freed. Wired via
+	 * MuleNotify::KnownFileBeingDestroyed (downloads and shared files) and
+	 * MuleNotify::SearchFileBeingDestroyed (search results) in GuiEvents.cpp.
 	 */
 	static void DropReferencesTo(const CAbstractFile *file);
 
@@ -72,19 +69,18 @@ private:
 	//! once the daemon reports the search finished.
 	void OnKadRefreshTimer(wxTimerEvent &evt);
 
-	//! Click-to-sort on a column header: toggles direction on the same
-	//! column, otherwise switches to that column ascending. Reimplements,
-	//! for this one dialog, the sort-toggle behaviour CMuleListCtrl used
-	//! to provide for free.
+	//! Click-to-sort on a column header: toggles direction on the same column, otherwise
+	//! switches to that column ascending. Reimplements, for this one dialog, the sort-toggle
+	//! behaviour CMuleListCtrl used to provide for free.
 	void OnColumnClick(wxListEvent &evt);
 
 	/**
-	 * Updates the contents of the comments/ratings list.
+	 * Updates the comments/ratings list.
 	 */
 	void UpdateList();
 
 	/**
-	 * Clears the contents of the comments/ratings list.
+	 * Clears the comments/ratings list.
 	 */
 	void ClearList();
 

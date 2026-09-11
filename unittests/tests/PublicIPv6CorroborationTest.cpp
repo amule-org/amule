@@ -22,26 +22,23 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-// CT_MOD_YOUR_IP (0xAD) carries a peer's opinion of our own public address.
-// eMuleAI believes the first peer that offers one; emule-qt does not, and
-// neither does this.
+// CT_MOD_YOUR_IP (0xAD) carries a peer's opinion of our own public address. eMuleAI believes the
+// first peer that offers one; emule-qt does not, and neither does this.
 //
 // Two separate rules are under test, and they carry different weight:
 //
-//  - Peers are unauthenticated, so a claim for an address this machine does
-//    not hold must never be believed no matter how many peers repeat it. That
-//    is the security control, and it is what bounds the damage to "picks the
-//    wrong one of our own addresses".
-//  - Among addresses we do hold, one voice is never enough, one host cannot be
-//    several voices by repeating itself, and a voice goes quiet after a while.
+//  - Peers are unauthenticated, so a claim for an address this machine does not hold must never be
+// believed however many peers repeat it. That is the security control, and it bounds the damage to
+// "picks the wrong one of our own addresses".
+//  - Among addresses we do hold, one voice is never enough, one host cannot be several voices by
+// repeating itself, and a voice goes quiet after a while.
 //
-// The rules have no runtime signal if they are wrong. A client that accepts a
-// bad address for itself does not fail -- it goes on working, publishing an
-// address nobody can reach, so the tests have to state the rule rather than
-// wait for a symptom.
+// The rules have no runtime signal if they are wrong. A client that accepts a bad address for
+// itself does not fail -- it goes on working, publishing an address nobody can reach -- so the
+// tests have to state the rule rather than wait for a symptom.
 //
-// CUpDownClient reaches theApp and cannot be linked into a unit test, so the
-// tracker lives in a header of its own, like CPeerCapabilities.
+// CUpDownClient reaches theApp and cannot be linked into a unit test, so the tracker lives in a
+// header of its own, like CPeerCapabilities.
 
 #include <muleunit/test.h>
 
@@ -59,10 +56,10 @@ namespace
 
 typedef CPublicIPv6Corroboration::Address Address;
 
-// 2001:db8::<last>, the documentation prefix -- global unicast, so it passes
-// the address-family gate and only the locally-assigned gate is under test.
-// The last byte is the only thing that varies, so two addresses differ in a
-// single byte -- the case a byte-wise comparison is most likely to get wrong.
+// 2001:db8::<last>, the documentation prefix -- global unicast, so it passes the address-family
+// gate and only the locally-assigned gate is under test. The last byte is the only thing that
+// varies, so two addresses differ in a single byte, the case a byte-wise comparison is most likely
+// to get wrong.
 Address MakeAddress(uint8_t last)
 {
 	Address address = {};
@@ -111,26 +108,23 @@ const uint64_t START_MS = 5000;
 
 } // namespace
 
-// The threshold is a policy decision, not an implementation detail: raising or
-// lowering it changes how much a stranger's word is worth. Pinned as a literal
-// so the change has to be deliberate.
+// The threshold is a policy decision, not an implementation detail: raising or lowering it changes
+// how much a stranger's word is worth. Pinned as a literal so the change has to be deliberate.
 TEST(PublicIPv6Corroboration, ThresholdIsThreeDistinctObservers)
 {
 	ASSERT_EQUALS(3u, (unsigned)PUBLIC_IPV6_CORROBORATION_THRESHOLD);
 }
 
-// Same for the window: it is the upper bound on how long a claim nobody
-// repeats keeps counting, and shortening or lengthening it changes how long a
-// stale address can survive.
+// Same for the window: it is the upper bound on how long a claim nobody repeats keeps counting, and
+// shortening or lengthening it changes how long a stale address can survive.
 TEST(PublicIPv6Corroboration, WindowIsThirtyMinutes)
 {
 	ASSERT_EQUALS((uint64_t)(30 * 60 * 1000), (uint64_t)PUBLIC_IPV6_CORROBORATION_WINDOW_MS);
 }
 
-// The security control. A quorum -- more than the threshold, from distinct
-// observers, all agreeing -- must still not make us adopt an address this
-// machine does not hold. Corroboration disambiguates between our own
-// addresses; it does not confer ownership of somebody else's.
+// The security control. A quorum -- more than the threshold, from distinct observers, all agreeing
+// -- must still not make us adopt an address this machine does not hold. Corroboration
+// disambiguates between our own addresses; it does not confer ownership of somebody else's.
 TEST(PublicIPv6Corroboration, AQuorumCannotAdoptAnAddressWeDoNotHold)
 {
 	CPublicIPv6Corroboration tracker;
@@ -146,9 +140,8 @@ TEST(PublicIPv6Corroboration, AQuorumCannotAdoptAnAddressWeDoNotHold)
 	ASSERT_TRUE(tracker.CorroboratedAddress() == nullptr);
 }
 
-// A rejected claim must cost nothing to hold. If it allocated a candidate, a
-// peer could spend our memory on values it invented at one claim each, which
-// is the whole reason the filter comes first.
+// A rejected claim must cost nothing to hold. If it allocated a candidate, a peer could spend our
+// memory on values it invented at one claim each, which is the whole reason the filter comes first.
 TEST(PublicIPv6Corroboration, ARejectedClaimLeavesNoTrace)
 {
 	CPublicIPv6Corroboration tracker;
@@ -167,9 +160,9 @@ TEST(PublicIPv6Corroboration, ARejectedClaimLeavesNoTrace)
 	ASSERT_FALSE(tracker.IsCorroborated());
 }
 
-// Nothing outside 2000::/3 could be an address the outside world saw us arrive
-// from, so none of it is a legitimate reflection -- not even if the same bytes
-// somehow turned up in the locally-assigned list.
+// Nothing outside 2000::/3 could be an address the outside world saw us arrive from, so none of it
+// is a legitimate reflection -- not even if the same bytes somehow turned up in the locally-
+// assigned list.
 TEST(PublicIPv6Corroboration, AddressesOutsideGlobalUnicastAreRejected)
 {
 	const Address unspecified = MakePrefixed(0x00, 0x00);
@@ -190,9 +183,8 @@ TEST(PublicIPv6Corroboration, AddressesOutsideGlobalUnicastAreRejected)
 		ASSERT_FALSE(CPublicIPv6Corroboration::IsGlobalUnicast(value));
 
 		CPublicIPv6Corroboration tracker;
-		// Handed in as "local" on purpose: the address-family gate is an
-		// invariant of the tracker, not a side effect of how the caller
-		// happened to fill that set.
+		// Handed in as "local" on purpose: the address-family gate is an invariant of the
+		// tracker, not a side effect of how the caller happened to fill that set.
 		tracker.SetLocalAddresses(Held(value), START_MS);
 		for (unsigned i = 0; i < PUBLIC_IPV6_CORROBORATION_THRESHOLD; ++i) {
 			tracker.AddClaim(MakeObserver((uint8_t)(i + 1)), value.data(), START_MS);
@@ -202,9 +194,8 @@ TEST(PublicIPv6Corroboration, AddressesOutsideGlobalUnicastAreRejected)
 	}
 }
 
-// Before the interface list has been published there is nothing to check a
-// claim against, and the safe reading of "I do not know which addresses I
-// hold" is "believe nobody".
+// Before the interface list has been published there is nothing to check a claim against, and the
+// safe reading of "I do not know which addresses I hold" is "believe nobody".
 TEST(PublicIPv6Corroboration, WithNoPublishedInterfacesNothingIsBelieved)
 {
 	CPublicIPv6Corroboration tracker;
@@ -294,9 +285,9 @@ TEST(PublicIPv6Corroboration, DisagreeingPeersDoNotPoolIntoAQuorum)
 	ASSERT_EQUALS((unsigned)PUBLIC_IPV6_CORROBORATION_THRESHOLD, (unsigned)tracker.CandidateCount());
 }
 
-// A seated value is not unseated by a minority. Both addresses here are ours,
-// so the loser is not a threat -- but flipping between them on every packet
-// would be a different address published every few seconds.
+// A seated value is not unseated by a minority. Both addresses here are ours, so the loser is not a
+// threat -- but flipping between them on every packet would be a different address published every
+// few seconds.
 TEST(PublicIPv6Corroboration, AMinorityClaimDoesNotUnseatAQuorum)
 {
 	CPublicIPv6Corroboration tracker;
@@ -338,9 +329,9 @@ TEST(PublicIPv6Corroboration, NullClaimsAreIgnored)
 	ASSERT_EQUALS(0u, (unsigned)tracker.DistinctObserversFor(nullptr));
 }
 
-// The filter is what bounds the table: a candidate can only ever be one of the
-// addresses this machine holds, so a peer flooding invented values cannot make
-// the table grow at all -- which is why there is no cap on it any more.
+// The filter is what bounds the table: a candidate can only ever be one of the addresses this
+// machine holds, so a peer flooding invented values cannot make the table grow at all -- which is
+// why there is no cap on it any more.
 TEST(PublicIPv6Corroboration, TheCandidateSetIsBoundedByOurOwnAddresses)
 {
 	CPublicIPv6Corroboration tracker;
@@ -357,9 +348,8 @@ TEST(PublicIPv6Corroboration, TheCandidateSetIsBoundedByOurOwnAddresses)
 	ASSERT_EQUALS(2u, (unsigned)tracker.LocalAddressCount());
 }
 
-// A vote nobody has repeated within the window is not current evidence. This
-// is the difference between "three peers agree" and "three peers said so at
-// some point since the daemon started".
+// A vote nobody has repeated within the window is not current evidence. This is the difference
+// between "three peers agree" and "three peers said so at some point since the daemon started".
 TEST(PublicIPv6Corroboration, VotesOlderThanTheWindowStopCounting)
 {
 	CPublicIPv6Corroboration tracker;
@@ -396,10 +386,9 @@ TEST(PublicIPv6Corroboration, AnAdoptedValueLapsesWhenItsVotesAgeOut)
 	ASSERT_TRUE(tracker.CorroboratedAddress() == nullptr);
 }
 
-// A peer that is still connected and still saying the same thing keeps its
-// vote. Without this the window would date every vote from the first hello, so
-// a stable client whose peers never stopped agreeing would still lose its
-// quorum once, on the clock, for no reason.
+// A peer that is still connected and still saying the same thing keeps its vote. Without this the
+// window would date every vote from the first hello, so a stable client whose peers never stopped
+// agreeing would still lose its quorum once, on the clock, for no reason.
 TEST(PublicIPv6Corroboration, ARepeatingObserverKeepsItsVoteAlive)
 {
 	CPublicIPv6Corroboration tracker;
@@ -427,9 +416,8 @@ TEST(PublicIPv6Corroboration, ARepeatingObserverKeepsItsVoteAlive)
 		(unsigned)tracker.DistinctObserversFor(claimed.data()));
 }
 
-// The half of the refresh that makes the cache safe: an address that left the
-// interface takes its corroboration with it. Without this a reflection
-// outlives the prefix it came from.
+// The half of the refresh that makes the cache safe: an address that left the interface takes its
+// corroboration with it. Without this a reflection outlives the prefix it came from.
 TEST(PublicIPv6Corroboration, ARenumberDropsTheAdoptedAddress)
 {
 	CPublicIPv6Corroboration tracker;
@@ -449,9 +437,9 @@ TEST(PublicIPv6Corroboration, ARenumberDropsTheAdoptedAddress)
 	ASSERT_EQUALS(0u, (unsigned)tracker.DistinctObserversFor(oldPrefix.data()));
 }
 
-// After the old value loses its seat, the next value to hold a quorum takes
-// it. A tracker that could only ever elect once would be stuck on the first
-// address it saw for the life of the process.
+// After the old value loses its seat, the next value to hold a quorum takes it. A tracker that
+// could only ever elect once would be stuck on the first address it saw for the life of the
+// process.
 TEST(PublicIPv6Corroboration, AnotherAddressIsElectedAfterTheFirstLosesItsSeat)
 {
 	CPublicIPv6Corroboration tracker;
@@ -474,9 +462,8 @@ TEST(PublicIPv6Corroboration, AnotherAddressIsElectedAfterTheFirstLosesItsSeat)
 	ASSERT_EQUALS(0, std::memcmp(tracker.CorroboratedAddress(), newPrefix.data(), newPrefix.size()));
 }
 
-// Reset drops what peers said. It deliberately does not drop the interface
-// list: that comes from this machine, and clearing it would leave the filter
-// wide open until the next refresh.
+// Reset drops what peers said. It deliberately does not drop the interface list: that comes from
+// this machine, and clearing it would leave the filter wide open until the next refresh.
 TEST(PublicIPv6Corroboration, ResetForgetsClaimsButKeepsOurOwnAddresses)
 {
 	CPublicIPv6Corroboration tracker;

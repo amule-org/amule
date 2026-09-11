@@ -100,7 +100,7 @@ TEST(State, MarkTickFailurePreservesSnapshotAt)
 
 	s.MarkTickFailure();
 	ASSERT_FALSE(s.EcConnected());
-	// HasFirstSnapshot stays true — we have stale data, but data nonetheless.
+	// HasFirstSnapshot stays true -- we have stale data, but data nonetheless.
 	ASSERT_TRUE(s.HasFirstSnapshot());
 	ASSERT_EQUALS(first_snapshot_at, s.SnapshotAt());
 }
@@ -152,10 +152,10 @@ TEST(State, WriteStatusRoundtrip)
 
 TEST(State, FileMapEmplaceFilesTheSnapshotUnderItsKey)
 {
-	// The clients walker resolves an amuled ECID with find() and then reads
-	// the snapshot it gets back, so the key and FileSnapshot::ecid have to
-	// agree. emplace() makes them agree instead of trusting the caller: a
-	// snapshot carrying the wrong id would otherwise break /clients silently.
+	// The clients walker resolves an amuled ECID with find() and then reads the snapshot it
+	// gets back, so the key and FileSnapshot::ecid have to agree. emplace() makes them agree
+	// instead of trusting the caller: a snapshot carrying the wrong id would break /clients
+	// silently.
 	CState s;
 	s.MutateDownloads([](FileMap &cache) {
 		FileSnapshot f;
@@ -203,9 +203,9 @@ TEST(State, MutateDownloadsRoundtripAndFind)
 		cache.emplace(b.ecid, b);
 	});
 
-	// Both entries should be present in the vector view. Order is
-	// unordered_map-bucket-defined (FileMap drops std::map's ECID
-	// ordering), so look entries up by ECID instead of position.
+	// Both entries should be present in the vector view. Order is unordered_map-bucket-defined,
+	// FileMap dropping std::map's ECID ordering, so look entries up by ECID rather than
+	// position.
 	const auto out = Downloads(s);
 	ASSERT_EQUALS(static_cast<size_t>(2), out.size());
 	std::string foo_name, bar_name;
@@ -229,17 +229,15 @@ TEST(State, MutateDownloadsRoundtripAndFind)
 	ASSERT_FALSE(s.FindDownload("0000000000000000000000000000000c", miss));
 }
 
-// #1161 -- a part file and its shared copy are two amuled objects with two
-// ECIDs and one hash. aMule keeps them apart because it has a list per role
-// (CKnownFileList and CSharedFileList are both hash-keyed and de-duplicate on
-// insert); amuleapi merges the roles into one map, so both land here.
+// #1161 -- a part file and its shared copy are two amuled objects with two ECIDs and one hash.
+// aMule keeps them apart because it has a list per role (CKnownFileList and CSharedFileList are
+// both hash-keyed and de-duplicate on insert); amuleapi merges the roles into one map, so both land
+// here.
 //
-// Whichever is emplaced last used to win the single hash->ECID slot, and the
-// other became unreachable: FindDownload() resolved the hash to the shared
-// entry, saw is_downloading == false and reported "no download with that
-// hash" for a download that was in the map and being refreshed the whole time
-// (#1157). Order must not decide the answer -- each role resolves to its own
-// entry.
+// Whichever was emplaced last used to win the single hash->ECID slot, and the other became
+// unreachable: FindDownload() resolved the hash to the shared entry, saw is_downloading == false
+// and reported "no download with that hash" for a download that was in the map and being refreshed
+// the whole time (#1157). Order must not decide the answer -- each role resolves to its own entry.
 TEST(State, AHashSharedByADownloadAndAShareResolvesToBoth)
 {
 	const std::string kHash = "abcd1234abcd1234abcd1234abcd1234";
@@ -252,9 +250,9 @@ TEST(State, AHashSharedByADownloadAndAShareResolvesToBoth)
 		dl.is_downloading = true;
 		cache.emplace(dl.ecid, dl);
 
-		// The completed copy, obtained elsewhere and dropped into a
-		// shared folder: same content, so the same hash, but a
-		// different amuled object and therefore a different ECID.
+		// The completed copy, obtained elsewhere and dropped into a shared folder: same
+		// content, so the same hash, but a different amuled object and therefore a
+		// different ECID.
 		FileSnapshot sh;
 		sh.ecid = 22;
 		sh.hash = kHash;
@@ -303,10 +301,9 @@ TEST(State, ASharedFirstHashStillResolvesTheDownload)
 	ASSERT_EQUALS(static_cast<std::uint32_t>(22), sh.ecid);
 }
 
-// Erasing one role must not take the other's lookup down with it. This is the
-// half users hit as "deleting the shared file did not help": erasing the
-// shared entry cleared the one index row, so the download stopped resolving
-// too.
+// Erasing one role must not take the other's lookup down with it. This is the half users hit as
+// "deleting the shared file did not help": erasing the shared entry cleared the one index row, so
+// the download stopped resolving too.
 TEST(State, ErasingTheShareLeavesTheDownloadResolvable)
 {
 	const std::string kHash = "feed9999feed9999feed9999feed9999";
@@ -339,11 +336,10 @@ TEST(State, ErasingTheShareLeavesTheDownloadResolvable)
 }
 
 // The share slot changes owner. aMule keeps same-hash variants on
-// CKnownFileList::m_duplicateFileList, and Append() promotes one of them to
-// the live record (m_knownFileMap[hash] = Record) when the previous owner is
-// displaced or its file disappears -- so the ECID behind a hash's share is not
-// stable even though the hash is. Both orderings, because a tick can deliver
-// the arrival and the departure either way round.
+// CKnownFileList::m_duplicateFileList, and Append() promotes one of them to the live record
+// (m_knownFileMap[hash] = Record) when the previous owner is displaced or its file disappears -- so
+// the ECID behind a hash's share is not stable even though the hash is. Both orderings, because a
+// tick can deliver the arrival and the departure either way round.
 TEST(State, ShareHandoverToANewEcidKeepsTheHashResolvable)
 {
 	const std::string kHash = "0a0a11110a0a11110a0a11110a0a1111";
@@ -400,9 +396,8 @@ TEST(State, ShareHandoverSurvivesTheReplacementArrivingFirst)
 	ASSERT_EQUALS(static_cast<std::uint32_t>(33), sh.ecid);
 }
 
-// The refresher clears a role rather than erasing the entry when a file stops
-// being shared but is still known. The index has to follow that too, and must
-// not take the other role down with it.
+// The refresher clears a role rather than erasing the entry when a file stops being shared but is
+// still known. The index has to follow that too, and must not take the other role down with it.
 TEST(State, ClearingOneRoleLeavesTheOtherResolvable)
 {
 	const std::string kHash = "0c0c33330c0c33330c0c33330c0c3333";
@@ -428,10 +423,10 @@ TEST(State, ClearingOneRoleLeavesTheOtherResolvable)
 	ASSERT_EQUALS(static_cast<std::uint32_t>(44), d.ecid);
 	FileSnapshot gone;
 	ASSERT_FALSE(s.FindShared(kHash, gone));
-	// Asserted against the index itself, not only through FindShared(): the
-	// resolvers re-check the role after resolving, so a stale row degrades to
-	// "not found" and a test that only went through them would pass with the
-	// row still there. This is the one that actually watches the index.
+	// Asserted against the index itself, not only through FindShared(): the resolvers re-check
+	// the role after resolving, so a stale row degrades to "not found" and a test going only
+	// through them would pass with the row still there. This is the one that actually watches
+	// the index.
 	s.WithFiles([&](const FileMap &files) {
 		std::uint32_t ecid = 0;
 		ASSERT_FALSE(files.FindSharedEcidByHash(kHash, ecid));
@@ -440,10 +435,10 @@ TEST(State, ClearingOneRoleLeavesTheOtherResolvable)
 	});
 }
 
-// A hash can arrive after the insert: a partfile frame with HASH suppressed
-// files the entry with an empty hash, and a later knownfile frame carries it.
-// SetHash() exists so that late arrival still reaches the index -- assigning
-// the field through the iterator would leave the entry unreachable by hash.
+// A hash can arrive after the insert: a partfile frame with HASH suppressed files the entry with an
+// empty hash, and a later knownfile frame carries it. SetHash() exists so that late arrival still
+// reaches the index -- assigning the field through the iterator would leave the entry unreachable
+// by hash.
 TEST(State, AHashLearnedAfterTheInsertStillResolves)
 {
 	const std::string kHash = "0d0d44440d0d44440d0d44440d0d4444";
@@ -466,12 +461,11 @@ TEST(State, AHashLearnedAfterTheInsertStillResolves)
 
 TEST(State, MutateDownloadsDecodedRleFieldsRoundtrip)
 {
-	// `decoded_gaps` + `decoded_part_sources` are populated by the
-	// refresher's stateful RLE decoder pass. CState just
-	// stores and surfaces them; this test pins that the per-part
-	// arrays survive the MutateDownloads → Downloads()/FindDownload
-	// roundtrip with element-level fidelity. Regression would manifest
-	// as `progress.parts` being empty or wrong-sized on the wire.
+	// `decoded_gaps` + `decoded_part_sources` are populated by the refresher's stateful RLE
+	// decoder pass. CState just stores and surfaces them; this pins that the per-part arrays
+	// survive the MutateDownloads -> Downloads()/FindDownload roundtrip with element-level
+	// fidelity. A regression would show as `progress.parts` being empty or wrong-sized on the
+	// wire.
 	CState s;
 	s.MutateDownloads([](FileMap &cache) {
 		FileSnapshot a;
@@ -480,9 +474,8 @@ TEST(State, MutateDownloadsDecodedRleFieldsRoundtrip)
 		a.name = "with-rle.iso";
 		a.size = 9728000ull * 3; // exactly 3 parts
 		a.is_downloading = true;
-		// One gap covering byte ranges 100..200 and 9728000..9800000:
-		// the first lies entirely in part 0, the second entirely in
-		// part 1.
+		// One gap covering byte ranges 100..200 and 9728000..9800000: the first lies
+		// entirely in part 0, the second entirely in part 1.
 		a.download.decoded_gaps = { 100ull, 200ull, 9728000ull, 9800000ull };
 		// Three parts with source counts [5, 0, 7].
 		a.download.decoded_part_sources = { 5, 0, 7 };
@@ -510,10 +503,9 @@ TEST(State, MutateDownloadsDecodedRleFieldsRoundtrip)
 	ASSERT_EQUALS(static_cast<std::uint16_t>(7), via_find.download.decoded_part_sources[2]);
 }
 
-// FileSnapshot::IsIncompletePartfile() decides two things: whether
-// /shared/{hash} reports `incomplete`, and whether "verify local data" is
-// rejected as unsupported. Both want "genuinely still a partfile", which is
-// not the same question as "is in the download queue".
+// FileSnapshot::IsIncompletePartfile() decides two things: whether /shared/{hash} reports
+// `incomplete`, and whether "verify local data" is rejected as unsupported. Both want "genuinely
+// still a partfile", which is not the same question as "is in the download queue".
 TEST(State, IncompletePartfileIsFalseForAPureShare)
 {
 	FileSnapshot f;
@@ -533,11 +525,10 @@ TEST(State, IncompletePartfileIsTrueWhileDownloading)
 	ASSERT_TRUE(f.IsIncompletePartfile());
 }
 
-// The case the flag exists for: a finished download stays in the queue, with
-// is_downloading still set, until the user clears it -- but by then it is a
-// knownfile whose data is in the destination directory. Reporting it as an
-// incomplete partfile would be wrong, and would also reject a legitimate
-// verify target.
+// The case the flag exists for: a finished download stays in the queue, with is_downloading still
+// set, until the user clears it -- but by then it is a knownfile whose data is in the destination
+// directory. Reporting it as an incomplete partfile would be wrong, and would also reject a
+// legitimate verify target.
 TEST(State, IncompletePartfileIsFalseForCompletedButNotCleared)
 {
 	FileSnapshot f;
@@ -546,10 +537,9 @@ TEST(State, IncompletePartfileIsFalseForCompletedButNotCleared)
 	ASSERT_FALSE(f.IsIncompletePartfile());
 }
 
-// A paused or stopped partfile is still an incomplete partfile: pausing
-// changes whether it transfers, not whether its data is whole. Same for every
-// other non-completed state the wire exposes, including "completing" -- the
-// data lives in the temp directory until that move finishes.
+// A paused or stopped partfile is still an incomplete partfile: pausing changes whether it
+// transfers, not whether its data is whole. Same for every other non-completed state the wire
+// exposes, including "completing" -- the data lives in the temp directory until that move finishes.
 TEST(State, IncompletePartfileIsTrueForEveryNonCompletedStatus)
 {
 	static const char *const kIncompleteStates[] = { "downloading",
@@ -570,9 +560,8 @@ TEST(State, IncompletePartfileIsTrueForEveryNonCompletedStatus)
 	}
 }
 
-// Only the exact wire string counts. The check is against "completed", not a
-// prefix or a substring, so the neighbouring "completing" state must not be
-// swept in with it.
+// Only the exact wire string counts. The check is against "completed", not a prefix or a substring,
+// so the neighbouring "completing" state must not be swept in with it.
 TEST(State, IncompletePartfileDistinguishesCompletingFromCompleted)
 {
 	FileSnapshot completing;
@@ -599,9 +588,8 @@ TEST(State, IncompletePartfileRequiresBeingInTheDownloadQueue)
 TEST(State, MutateClientsAndSharedRoundtrip)
 {
 	CState s;
-	// m_clients is the unified peer cache (all upload_state
-	// values). /clients endpoint surfaces the full set; consumers
-	// filter by role on their side.
+	// m_clients is the unified peer cache, all upload_state values. The /clients endpoint
+	// surfaces the full set; consumers filter by role on their side.
 	s.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &cache) {
 		ClientSnapshot c;
 		c.ecid = 10;
@@ -702,9 +690,8 @@ TEST(State, WriteServersRoundtripAndOrder)
 		cache.emplace(b.ecid, b);
 	});
 
-	// std::map iterates ECID-ascending — the Servers() vector view
-	// inherits that ordering so the wire response is stable across
-	// refresher ticks.
+	// std::map iterates ECID-ascending, and the Servers() vector view inherits that ordering,
+	// so the wire response is stable across refresher ticks.
 	const auto out = s.Servers();
 	ASSERT_EQUALS(static_cast<size_t>(2), out.size());
 	ASSERT_EQUALS(std::string("first-by-ecid"), out[0].name);
@@ -713,9 +700,9 @@ TEST(State, WriteServersRoundtripAndOrder)
 
 TEST(State, AmuleLogFromReportsTotalAndSlicesTheTail)
 {
-	// The per-tick log diff reads the size and the tail in one lock, so both
-	// halves of that are contract: `total` is always the current line count,
-	// and the returned slice starts at `first`.
+	// The per-tick log diff reads the size and the tail in one lock, so both halves are
+	// contract: `total` is always the current line count, and the returned slice starts at
+	// `first`.
 	CState s;
 	std::size_t total = 0;
 
@@ -745,9 +732,9 @@ TEST(State, AmuleLogFromReportsTotalAndSlicesTheTail)
 	ASSERT_EQUALS(static_cast<size_t>(0), s.AmuleLogFrom(3, total).size());
 	ASSERT_EQUALS(static_cast<size_t>(3), total);
 
-	// first > total: past the end truncates to empty rather than reading out
-	// of range. This is the shape the caller sees after a reset shrank the
-	// buffer below the counter it was holding.
+	// first > total: past the end truncates to empty rather than reading out of range. This is
+	// the shape the caller sees after a reset shrank the buffer below the counter it was
+	// holding.
 	total = 0;
 	ASSERT_EQUALS(static_cast<size_t>(0), s.AmuleLogFrom(99, total).size());
 	ASSERT_EQUALS(static_cast<size_t>(3), total);
@@ -755,10 +742,9 @@ TEST(State, AmuleLogFromReportsTotalAndSlicesTheTail)
 
 TEST(State, AmuleLogFromAfterAResetReportsTheShrunkTotal)
 {
-	// ClearAmuleLog is the one path that shrinks the buffer. A caller still
-	// holding the pre-reset count must get an empty slice and the new, smaller
-	// total -- that pairing is what tells the log diff a truncation happened
-	// rather than an append.
+	// ClearAmuleLog is the one path that shrinks the buffer. A caller still holding the pre-
+	// reset count must get an empty slice and the new, smaller total -- that pairing is what
+	// tells the log diff a truncation happened rather than an append.
 	CState s;
 	s.AppendAmuleLog({ "one", "two", "three", "four" });
 	std::size_t total = 0;
@@ -781,11 +767,10 @@ TEST(State, AmuleLogFromAfterAResetReportsTheShrunkTotal)
 
 TEST(State, AppendAmuleLogUncappedHistory)
 {
-	// Per-operator preference: amule log history is uncapped. Pushing
-	// thousands of lines must NOT trigger any trimming — operators
-	// rely on the full record being available for triage. A future
-	// `DELETE /logs/amule` mutation is the only intentional truncation
-	// path; until that lands, history grows monotonically.
+	// Per-operator preference: amule log history is uncapped. Pushing thousands of lines must
+	// NOT trigger any trimming -- operators rely on the full record for triage. A future
+	// `DELETE /logs/amule` mutation is the only intentional truncation path; until that lands,
+	// history grows monotonically.
 	CState s;
 	{
 		std::vector<std::string> first_batch;
@@ -822,9 +807,8 @@ TEST(State, WriteServerInfoRoundtrip)
 	const auto out = s.ServerInfo();
 	ASSERT_EQUALS(in.text, out.text);
 
-	// Overwrite semantics: a second write replaces (it doesn't
-	// append) — ServerInfoLog is amuled's full-snapshot text, not
-	// an incremental cursor.
+	// Overwrite semantics: a second write replaces rather than appends -- ServerInfoLog is
+	// amuled's full-snapshot text, not an incremental cursor.
 	ServerInfoLog replacement;
 	replacement.text = "totally different\n";
 	s.WriteServerInfo(replacement);
@@ -895,10 +879,9 @@ TEST(State, WriteGraphsRoundtripAllSeries)
 	ASSERT_EQUALS(3600.0, out.session_duration_seconds);
 }
 
-// An amuled predating EC_TAG_STATSGRAPH_DATA_CONN sends the first blob and
-// not the second. The two extra series must come back empty rather than
-// zero-filled: the handler keys "omit the JSON fields" off exactly that, so
-// a consumer can tell "not reported" from "nothing was transferring".
+// An amuled predating EC_TAG_STATSGRAPH_DATA_CONN sends the first blob and not the second. The two
+// extra series must come back empty rather than zero-filled: the handler keys "omit the JSON
+// fields" off exactly that, so a consumer can tell "not reported" from "nothing was transferring".
 TEST(State, WriteGraphsWithoutConnBlobLeavesExtraSeriesEmpty)
 {
 	CState s;
@@ -976,7 +959,7 @@ TEST(State, MultiSearchSlotsAreIndependentAndAddressable)
 		cache.emplace(r.ecid, r);
 	});
 
-	// Each id addresses only its own results — no cross-contamination, and
+	// Each id addresses only its own results -- no cross-contamination, and
 	// no implicit target that could make an unaddressed read mean either.
 	ASSERT_EQUALS(static_cast<size_t>(1), s.Search(10).size());
 	ASSERT_EQUALS(std::string("in-ten.iso"), s.Search(10).at(0).name);
@@ -991,7 +974,7 @@ TEST(State, MultiSearchSlotsAreIndependentAndAddressable)
 	ASSERT_EQUALS(std::string("ten"), s.SearchQuery(10));
 	ASSERT_EQUALS(std::string("twenty"), s.SearchQuery(20));
 
-	// Freeing one search leaves the other completely alone — the property
+	// Freeing one search leaves the other completely alone -- the property
 	// that makes DELETE /search/{id} safe to issue from one tab.
 	s.CloseSearch(20);
 	ASSERT_FALSE(s.HasSearch(20));
@@ -1003,19 +986,18 @@ TEST(State, MultiSearchSlotsAreIndependentAndAddressable)
 
 TEST(State, SearchStartedAtStampsOnlyOurOwnSearches)
 {
-	// GET /search has no recency signal of its own: the daemon returns its
-	// searches id-ascending and ships no timestamp, and id order is not
-	// recency because Kad ids carry a high-bit mask and always sort above
-	// ed2k ones. `started_at` is what a client ranks by instead -- and it
-	// exists only for searches THIS session started.
+	// GET /search has no recency signal of its own: the daemon returns its searches id-
+	// ascending and ships no timestamp, and id order is not recency because Kad ids carry a
+	// high-bit mask and always sort above ed2k ones. `started_at` is what a client ranks by
+	// instead -- and it exists only for searches THIS session started.
 	CState s;
 	s.MarkSearchStarted(5, "global", "ubuntu");
 	const std::time_t ours = s.SearchStartedAt(5);
 	ASSERT_TRUE(ours != 0);
 
-	// A search another client started, adopted through discovery, has no
-	// start time we could know. 0 means "unknown", which is why the REST
-	// layer omits the key rather than emitting a 1970 timestamp.
+	// A search another client started, adopted through discovery, has no start time we could
+	// know. 0 means "unknown", which is why the REST layer omits the key rather than emitting a
+	// 1970 timestamp.
 	s.MarkSearchDiscovered(2147483651u, "kad", "debian", /*active=*/true, /*complete=*/false);
 	ASSERT_TRUE(s.HasSearch(2147483651u));
 	ASSERT_EQUALS(static_cast<std::time_t>(0), s.SearchStartedAt(2147483651u));
@@ -1027,10 +1009,9 @@ TEST(State, SearchStartedAtStampsOnlyOurOwnSearches)
 
 TEST(State, DiscoveredSearchKeepsTheDaemonsLifecycleState)
 {
-	// Discovery used to seed every adopted search as active regardless of
-	// what the daemon said. POST /search/{id}/more gates on exactly that,
-	// so a FINISHED search adopted this way was accepted and answered 202
-	// for a request amuled turns into a no-op.
+	// Discovery used to seed every adopted search as active regardless of what the daemon said.
+	// POST /search/{id}/more gates on exactly that, so a FINISHED search adopted this way was
+	// accepted and answered 202 for a request amuled turns into a no-op.
 	CState s;
 	s.MarkSearchDiscovered(42, "kad", "debian", /*active=*/false, /*complete=*/true);
 	const auto finished = s.SearchProgress(42);
@@ -1044,19 +1025,19 @@ TEST(State, DiscoveredSearchKeepsTheDaemonsLifecycleState)
 	ASSERT_TRUE(running.active);
 	ASSERT_TRUE(!running.complete);
 
-	// A slot seeded inactive is not polled by the tick, so the read paths
-	// have to be able to refresh it on demand -- otherwise adopting a
-	// finished search would show an empty result list forever.
+	// A slot seeded inactive is not polled by the tick, so the read paths have to be able to
+	// refresh it on demand -- otherwise adopting a finished search would show an empty result
+	// list forever.
 	ASSERT_TRUE(s.ClaimSearchRefresh(42, std::chrono::milliseconds(1000)));
 	ASSERT_FALSE(s.ClaimSearchRefresh(43, std::chrono::milliseconds(1000)));
 }
 
 TEST(State, DiscoveredFinishedSearchReportsFullPercent)
 {
-	// A slot discovered as finished is never polled -- it is not in
-	// ActiveSearchIds() -- so the percent has to be seeded at discovery or it
-	// stays 0 for the life of the slot, contradicting the "finished" state
-	// carried in the same envelope. A finished search is 100 by definition.
+	// A slot discovered as finished is never polled -- it is not in ActiveSearchIds() -- so the
+	// percent has to be seeded at discovery or it stays 0 for the life of the slot,
+	// contradicting the "finished" state carried in the same envelope. A finished search is 100
+	// by definition.
 	CState s;
 	s.MarkSearchDiscovered(2147483660u, "kad", "harry", /*active=*/false, /*complete=*/true);
 	const auto finished = s.SearchProgress(2147483660u);
@@ -1066,9 +1047,9 @@ TEST(State, DiscoveredFinishedSearchReportsFullPercent)
 
 TEST(State, DiscoveredRunningSearchKeepsZeroPercentAndIsPolled)
 {
-	// The running case must not be faked to 100: it is in ActiveSearchIds(),
-	// so the very next tick overwrites the percent with the daemon's real
-	// one. Seeding anything but 0 here would flash a wrong number for a tick.
+	// The running case must not be faked to 100: it is in ActiveSearchIds(), so the very next
+	// tick overwrites the percent with the daemon's real one. Seeding anything but 0 here would
+	// flash a wrong number for a tick.
 	CState s;
 	s.MarkSearchDiscovered(44, "kad", "ubuntu", /*active=*/true, /*complete=*/false);
 	const auto running = s.SearchProgress(44);
@@ -1081,10 +1062,9 @@ TEST(State, DiscoveredRunningSearchKeepsZeroPercentAndIsPolled)
 
 TEST(State, DiscoveredSearchPrefersTheDaemonsReportedPercent)
 {
-	// Once the daemon reports a percent on its listing, that number wins over
-	// the one derived from the lifecycle state -- which is the whole point of
-	// carrying it: a running search adopted mid-ramp shows its real progress
-	// from first sight instead of 0 until the next tick.
+	// Once the daemon reports a percent on its listing, that number wins over the one derived
+	// from the lifecycle state -- the whole point of carrying it: a running search adopted mid-
+	// ramp shows its real progress from first sight instead of 0 until the next tick.
 	CState s;
 	s.MarkSearchDiscovered(50, "kad", "ubuntu", /*active=*/true, /*complete=*/false, 62);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(62), s.SearchProgress(50).percent);
@@ -1096,9 +1076,8 @@ TEST(State, DiscoveredSearchPrefersTheDaemonsReportedPercent)
 
 TEST(State, DiscoveredSearchFallsBackWhenTheDaemonReportsNoPercent)
 {
-	// -1 is "the listing carried no percent", i.e. a daemon older than the
-	// tag. The derived fallback has to survive: finished is 100, running is 0
-	// and gets corrected by the tick.
+	// -1 is "the listing carried no percent", i.e. a daemon older than the tag. The derived
+	// fallback has to survive: finished is 100, running is 0 and gets corrected by the tick.
 	CState s;
 	s.MarkSearchDiscovered(52, "kad", "harry", /*active=*/false, /*complete=*/true, -1);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(100), s.SearchProgress(52).percent);
@@ -1109,12 +1088,13 @@ TEST(State, DiscoveredSearchFallsBackWhenTheDaemonReportsNoPercent)
 
 TEST(State, DiscoveryDoesNotStompAnAlreadyKnownSearchsPercent)
 {
-	// Re-discovery of a slot this session already tracks must leave its
-	// accumulated progress alone; only the query is filled in. Seeding the
-	// percent must not have opened a path that overwrites a real one.
-	// The slot has to exist first: WriteSearchProgress only updates a slot
-	// that is already there, so seeding it needs MarkSearchStarted (this
-	// session started the search) before the progress write.
+	// Re-discovery of a slot this session already tracks must leave its accumulated progress
+	// alone; only the query is filled in. Seeding the percent must not have opened a path that
+	// overwrites a real one.
+	//
+	// The slot has to exist first: WriteSearchProgress only updates a slot that is already
+	// there, so seeding it needs MarkSearchStarted -- this session started the search -- before
+	// the progress write.
 	CState s;
 	s.MarkSearchStarted(45, "kad", "ubuntu");
 	SearchProgressSnapshot p;
@@ -1132,10 +1112,9 @@ TEST(State, DiscoveryDoesNotStompAnAlreadyKnownSearchsPercent)
 
 TEST(State, SearchRefreshIsClaimedOncePerTtlAndOnlyWhenIdle)
 {
-	// The read paths refresh a FINISHED search on demand, because the tick
-	// only polls active ones. ClaimSearchRefresh is what stops that from
-	// turning every GET into an EC roundtrip, and what keeps two concurrent
-	// readers of the same search to one roundtrip between them.
+	// The read paths refresh a FINISHED search on demand, because the tick only polls active
+	// ones. ClaimSearchRefresh is what stops that turning every GET into an EC roundtrip, and
+	// what keeps two concurrent readers of the same search to one roundtrip between them.
 	CState s;
 	const auto kTtl = std::chrono::milliseconds(1000);
 
@@ -1164,11 +1143,10 @@ TEST(State, SearchRefreshIsClaimedOncePerTtlAndOnlyWhenIdle)
 
 TEST(State, BrowseRidesSearchMachinery)
 {
-	// A "View Files" browse (POST /clients/{ecid}/shared_files) is filed
-	// under a search_id with kind "browse" and its files land in the same
-	// per-slot result cache as a query search — the refresher, /search/results
-	// and the SSE search channel all treat it identically. Lock that in: the
-	// browse kind is preserved per-slot and its results address only its own id.
+	// A "View Files" browse (POST /clients/{ecid}/shared_files) is filed under a search_id with
+	// kind "browse" and its files land in the same per-slot result cache as a query search --
+	// the refresher, /search/results and the SSE search channel all treat it identically. Lock
+	// that in: the browse kind is preserved per-slot and its results address only its own id.
 	CState s;
 	s.MarkSearchStarted(17, "browse", "SomePeerNick");
 	s.MutateSearch(17, [](std::map<std::uint32_t, SearchResult> &cache) {
@@ -1188,9 +1166,8 @@ TEST(State, BrowseRidesSearchMachinery)
 
 TEST(State, ResetListsLeavesLogsAlone)
 {
-	// Logs survive an EC reconnect on purpose — the operator can see
-	// "EC disconnected at HH:MM" alongside earlier traffic. ResetLists
-	// must not nuke either log buffer.
+	// Logs survive an EC reconnect on purpose -- the operator can see "EC disconnected at
+	// HH:MM" alongside earlier traffic. ResetLists must not nuke either log buffer.
 	CState s;
 	s.AppendAmuleLog({ "persistent line" });
 	s.WriteServerInfo({ "persistent server info" });
@@ -1239,12 +1216,11 @@ TEST(State, ResetListsClearsAll)
 	ASSERT_EQUALS(static_cast<size_t>(0), Shared(s).size());
 }
 
-// The callback accessors run caller code while holding m_mu, which is not
-// recursive. These pin the two halves of that contract that can be checked
-// without deadlocking the test: a nested call on a DIFFERENT instance is a
-// different mutex and must stay legal, and the guard must unwind so a second
-// sequential call still works. Re-entering the SAME instance aborts by
-// design, so it is not exercised here -- see CState::ReentryGuard.
+// The callback accessors run caller code while holding m_mu, which is not recursive. These pin the
+// two halves of that contract that can be checked without deadlocking the test: a nested call on a
+// DIFFERENT instance is a different mutex and must stay legal, and the guard must unwind so a
+// second sequential call still works. Re-entering the SAME instance aborts by design, so it is not
+// exercised here -- see CState::ReentryGuard.
 TEST(State, CallbackOnADifferentStateInstanceIsAllowed)
 {
 	CState a;
@@ -1293,13 +1269,11 @@ TEST(State, CallbackGuardUnwindsSoLaterCallsStillWork)
 
 TEST(State, ConcurrentReadersDontTearSnapshot)
 {
-	// Spin up 4 readers + 1 writer for 100ms. The writer churns
-	// distinct snapshot values; readers verify they always observe
-	// a *self-consistent* snapshot (the four numeric fields below
-	// are written under one unique_lock, so a shared_lock reader
-	// must see them all from the same generation). A teared read
-	// would manifest as a mismatched (download_bytes_per_second, upload_bytes_per_second)
-	// pair, which we then assert against.
+	// Spin up 4 readers + 1 writer for 100ms. The writer churns distinct snapshot values;
+	// readers verify they always observe a *self-consistent* snapshot -- the four numeric
+	// fields below are written under one unique_lock, so a shared_lock reader must see them all
+	// from the same generation. A torn read would show as a mismatched
+	// (download_bytes_per_second, upload_bytes_per_second) pair, which we then assert against.
 
 	CState s;
 	std::atomic<bool> stop{ false };
@@ -1325,8 +1299,8 @@ TEST(State, ConcurrentReadersDontTearSnapshot)
 			while (!stop.load()) {
 				StatusSnapshot r = s.Status();
 				observed.fetch_add(1);
-				// Invariants enforced by the writer's single
-				// unique_lock acquisition: upload_bytes_per_second == 2 *
+				// Invariants enforced by the writer's single unique_lock
+				// acquisition: upload_bytes_per_second == 2 *
 				// download_bytes_per_second; ul_queue_len == total_src_count.
 				if (r.upload_bytes_per_second != 2 * r.download_bytes_per_second)
 					torn.fetch_add(1);
@@ -1342,39 +1316,28 @@ TEST(State, ConcurrentReadersDontTearSnapshot)
 	for (auto &t : readers)
 		t.join();
 
-	// Sanity: the loop actually exercised the contention path. A bar
-	// of `> 0` passes with a single observation, which a debug build
-	// or an over-loaded CI runner could plausibly produce — leaving
-	// the tear-detection harness inactive while the test still
-	// reports green. Require a meaningful number of reads instead;
-	// even a slow runner does ~10K reads per shared_lock-protected
-	// field in 100ms (single uncontended read is sub-microsecond),
-	// and torn-read detection needs many reads to catch the
-	// boundary anyway.
+	// Sanity: the loop actually exercised the contention path. A bar of `> 0` passes with a
+	// single observation, which a debug build or an over-loaded CI runner could plausibly
+	// produce -- leaving the tear-detection harness inactive while the test still reports
+	// green. Require a meaningful number of reads instead; even a slow runner does ~10K reads
+	// per shared_lock-protected field in 100ms, a single uncontended read being sub-
+	// microsecond, and torn-read detection needs many reads to catch the boundary anyway.
 	ASSERT_TRUE(observed.load() > 1000);
 	// And no read saw a torn snapshot.
 	ASSERT_EQUALS(0, torn.load());
 }
 
-// --- MemoizableTarget -----------------------------------------------
-//
-// The response-ETag memo is keyed on (target, snapshot revision). Eligibility
-// is opt-in: this used to be an exclusion list and it was wrong four separate
-// times -- a bare collection the prefixes never matched, a live EC roundtrip
-// nobody listed, a per-principal document, and a key that froze while bodies
-// moved. Inverting it makes an oversight cost a wasted hash instead of a 304
-// for changed content.
+// MemoizableTarget. The response-ETag memo is keyed on (target, snapshot revision). Eligibility is
+// opt-in: this used to be an exclusion list and it was wrong four separate times -- a bare
+// collection the prefixes never matched, a live EC roundtrip nobody listed, a per-principal
+// document, and a key that froze while bodies moved. Inverting it makes an oversight cost a wasted
+// hash instead of a 304 for changed content.
 
-// The two collections the memo exists for: the multi-MB bodies where skipping
-// an MD5 is worth anything.
-// --- MemoUsable / ShouldStampEtag -----------------------------------
-//
-// Both guard something a sequential test cannot observe: MemoUsable's second
-// condition guards a write landing while a handler serializes, and
-// ShouldStampEtag's `handler_set_etag` guards the dispatcher stamping over a
-// validator a handler already owns. Deleting either used to leave the whole
-// suite green, which is the same as having no guard at all -- these tests
-// exist to go red when that happens.
+// MemoUsable / ShouldStampEtag. Both guard something a sequential test cannot observe: MemoUsable's
+// second condition guards a write landing while a handler serializes, and ShouldStampEtag's
+// `handler_set_etag` guards the dispatcher stamping over a validator a handler already owns.
+// Deleting either used to leave the whole suite green, which is the same as having no guard at all
+// -- these tests exist to go red when that happens.
 
 // The revision moving across the handler is what disqualifies the response:
 // the body belongs to rev_before while the key would claim rev_after.
@@ -1396,24 +1359,22 @@ TEST(State, MemoUsableNeedsBothConditions)
 	ASSERT_TRUE(!MemoUsable("/api/v0/auth/session", 5, 5));
 	ASSERT_TRUE(!MemoUsable("/api/v0/status", 5, 5));
 	ASSERT_TRUE(!MemoUsable("/api/v0/auth/session", 5, 6));
-	// Revision 0 is the pre-first-tick value; eligibility does not depend
-	// on the number, only on it holding still. The caller separately
-	// refuses to serve a memo entry stamped 0.
+	// Revision 0 is the pre-first-tick value; eligibility does not depend on the number, only
+	// on it holding still. The caller separately refuses to serve a memo entry stamped 0.
 	ASSERT_TRUE(MemoUsable("/api/v0/downloads", 0, 0));
 }
 
-// A handler that computed its own ETag owns it. Stamping over the top is what
-// gave the static path two validators for one resource, since it clears the
-// body for HEAD and only the GET reached the hashing branch.
+// A handler that computed its own ETag owns it. Stamping over the top is what gave the static path
+// two validators for one resource, since it clears the body for HEAD and only the GET reached the
+// hashing branch.
 TEST(State, ShouldStampEtagLeavesAHandlerValidatorAlone)
 {
 	ASSERT_TRUE(ShouldStampEtag(true, false, 200, false));
 	ASSERT_TRUE(!ShouldStampEtag(true, true, 200, false));
 }
 
-// The other three terms: unsafe methods carry post-mutation state the client
-// always wants delivered, non-200s are not worth a validator, and an empty
-// body has nothing to hash.
+// The other three terms: unsafe methods carry post-mutation state the client always wants
+// delivered, non-200s are not worth a validator, and an empty body has nothing to hash.
 TEST(State, ShouldStampEtagOnlyForSafe200sWithABody)
 {
 	ASSERT_TRUE(!ShouldStampEtag(false, false, 200, false));
@@ -1422,6 +1383,8 @@ TEST(State, ShouldStampEtagOnlyForSafe200sWithABody)
 	ASSERT_TRUE(!ShouldStampEtag(true, false, 200, true));
 }
 
+// The two collections the memo exists for: the multi-MB bodies where skipping an MD5 is worth
+// anything.
 TEST(State, MemoizableTargetCoversTheTwoBigCollections)
 {
 	ASSERT_TRUE(MemoizableTarget("/api/v0/downloads"));
@@ -1431,10 +1394,9 @@ TEST(State, MemoizableTargetCoversTheTwoBigCollections)
 	ASSERT_TRUE(MemoizableTarget("/api/v0/shared?sort=name&order=desc"));
 }
 
-// Everything else hashes per request. Each of these was a live bug at some
-// point in this PR's history, and under an opt-in rule none of them can
-// recur: the self-refreshing ones, the live-EC ones, and the per-principal
-// one are all simply absent from the eligible set.
+// Everything else hashes per request. Each of these was a live bug at some point in this PR's
+// history, and under an opt-in rule none can recur: the self-refreshing ones, the live-EC ones and
+// the per-principal one are all simply absent from the eligible set.
 TEST(State, MemoizableTargetExcludesEverythingElse)
 {
 	// own TTL caches / append-only mirror / refresh-on-read
@@ -1455,11 +1417,10 @@ TEST(State, MemoizableTargetExcludesEverythingElse)
 	ASSERT_TRUE(!MemoizableTarget("/api/v0/servers"));
 }
 
-// A sub-resource of an eligible collection is NOT itself eligible: it is a
-// different body, so an "everything under /downloads" or "everything under
-// /shared" rule would sweep back in exactly what the opt-in set leaves out.
-// (/share_directories used to be listed here as /shared/directories; it is no
-// longer under /shared at all, and the excluded-set test above covers it.)
+// A sub-resource of an eligible collection is NOT itself eligible: it is a different body, so an
+// "everything under /downloads" or "everything under /shared" rule would sweep back in exactly what
+// the opt-in set leaves out. (/share_directories used to be listed here as /shared/directories; it
+// is no longer under /shared at all, and the excluded-set test above covers it.)
 TEST(State, MemoizableTargetDoesNotExtendToSubResources)
 {
 	ASSERT_TRUE(!MemoizableTarget("/api/v0/downloads/8b54a3c2"));
@@ -1470,14 +1431,11 @@ TEST(State, MemoizableTargetDoesNotExtendToSubResources)
 	ASSERT_TRUE(!MemoizableTarget("/api/v0/sharedfiles"));
 }
 
-// --- Snapshot revision ----------------------------------------------
-//
-// The ETag memo is keyed on this, not on snapshot_at. snapshot_at cannot
-// serve: it counts whole seconds, so two refreshes inside one second are
-// indistinguishable, and it is stamped only by the background loop, so the
-// inline refreshes that mutating handlers run never moved it. A mutation
-// therefore changed a body while the key stood still, and the next
-// conditional GET was answered 304 for content that had just changed.
+// Snapshot revision. The ETag memo is keyed on this, not on snapshot_at. snapshot_at cannot serve:
+// it counts whole seconds, so two refreshes inside one second are indistinguishable, and it is
+// stamped only by the background loop, so the inline refreshes mutating handlers run never moved
+// it. A mutation therefore changed a body while the key stood still, and the next conditional GET
+// was answered 304 for content that had just changed.
 TEST(State, SnapshotRevisionAdvancesOnEveryBump)
 {
 	CState state;
@@ -1504,11 +1462,10 @@ TEST(State, SnapshotRevisionSeparatesTwoBumpsInOneSecond)
 	}
 }
 
-// Every writer of a memoized body advances the key, and it is the WRITER
-// that does it rather than its callers. That is the whole point: the key was
-// advanced from the outside three times and missed a path each time -- the
-// inline refreshes mutating handlers run, and then a tick that failed partway
-// after it had already written. A writer cannot forget that it wrote.
+// Every writer of a memoized body advances the key, and it is the WRITER that does it rather than
+// its callers. That is the whole point: the key was advanced from the outside three times and
+// missed a path each time -- the inline refreshes mutating handlers run, and then a tick that
+// failed partway after it had already written. A writer cannot forget that it wrote.
 TEST(State, MutatingDownloadsAdvancesTheRevision)
 {
 	CState state;
@@ -1531,10 +1488,9 @@ TEST(State, MutatingSharedAdvancesTheRevision)
 	ASSERT_TRUE(state.SnapshotRevision() != before);
 }
 
-// The failure path specifically. A tick that dies partway still calls
-// ResetLists on the way back, and that wipe is as much a body change as any
-// mutation -- it is where the key used to freeze while the bodies moved, so
-// a whole EC outage was served 304 against the pre-failure validator.
+// The failure path specifically. A tick that dies partway still calls ResetLists on the way back,
+// and that wipe is as much a body change as any mutation -- it is where the key used to freeze
+// while the bodies moved, so a whole EC outage was served 304 against the pre-failure validator.
 TEST(State, ResetListsAdvancesTheRevision)
 {
 	CState state;
@@ -1549,15 +1505,15 @@ TEST(State, ResetListsAdvancesTheRevision)
 	ASSERT_TRUE(state.SnapshotRevision() != before);
 }
 
-// MarkTickSuccess stamps the timestamp; it deliberately does NOT advance the
-// revision, because RefresherTick owns that and the background loop calls
-// both. Pinning it so a future edit does not quietly double-count.
-// ResetLists fires when the PREVIOUS tick returned null against a socket that
-// is still up -- an actual dropped connection shuts amuleapi down instead. The
-// daemon's search registry is therefore alive, along with its record of what it
-// has already sent us, and the multi-search union has no resync opcode. Wiping
-// our side would leave every search permanently short by whatever it held when
-// one tick happened to fail.
+// MarkTickSuccess stamps the timestamp; it deliberately does NOT advance the revision, because
+// RefresherTick owns that and the background loop calls both. Pinned so a future edit does not
+// quietly double-count.
+//
+// ResetLists fires when the PREVIOUS tick returned null against a socket that is still up -- an
+// actual dropped connection shuts amuleapi down instead. The daemon's search registry is therefore
+// alive, along with its record of what it has already sent us, and the multi-search union has no
+// resync opcode. Wiping our side would leave every search permanently short by whatever it held
+// when one tick happened to fail.
 TEST(State, ResetListsKeepsSearchSlots)
 {
 	CState state;
@@ -1577,9 +1533,9 @@ TEST(State, ResetListsKeepsSearchSlots)
 	ASSERT_EQUALS(static_cast<size_t>(1), state.Search(42).size());
 }
 
-// A restarted search must not show the previous one's hits through the gaps in
-// a diffed tag. `results` alone is not enough: `raw` is what the union merges
-// into, and RebuildFoldedResults would put any survivor straight back.
+// A restarted search must not show the previous one's hits through the gaps in a diffed tag.
+// `results` alone is not enough: `raw` is what the union merges into, and RebuildFoldedResults
+// would put any survivor straight back.
 TEST(State, MarkSearchStartedClearsTheRawResultsAndTheIndex)
 {
 	CState state;
@@ -1603,11 +1559,10 @@ TEST(State, MarkSearchStartedClearsTheRawResultsAndTheIndex)
 	});
 }
 
-// The union poll is gated on there being a slot the daemon could still speak
-// for. A detached slot is not one: its search is gone core-side, so polling on
-// its behalf is a roundtrip a second that can never return anything. Without
-// this, a user who runs one search and never deletes it keeps amuleapi polling
-// forever once the daemon's ring drops it.
+// The union poll is gated on there being a slot the daemon could still speak for. A detached slot
+// is not one: its search is gone core-side, so polling on its behalf is a roundtrip a second that
+// can never return anything. Without this, a user who runs one search and never deletes it keeps
+// amuleapi polling forever once the daemon's ring drops it.
 TEST(State, DetachedSlotsDoNotKeepTheUnionPollAlive)
 {
 	CState state;
@@ -1623,10 +1578,9 @@ TEST(State, DetachedSlotsDoNotKeepTheUnionPollAlive)
 	ASSERT_TRUE(!state.AttachedSearchIds().empty());
 }
 
-// Slots are capped, or a long-lived process watching a busy GUI accumulates one
-// result map per search forever. Active searches are never the victim, and a
-// detached one -- the daemon no longer holds it, so nothing is lost -- outranks
-// an attached one however much younger.
+// Slots are capped, or a long-lived process watching a busy GUI accumulates one result map per
+// search forever. Active searches are never the victim, and a detached one -- the daemon no longer
+// holds it, so nothing is lost -- outranks an attached one however much younger.
 TEST(State, SurplusSearchSlotsAreEvictedDetachedFirst)
 {
 	CState state;
@@ -1649,10 +1603,10 @@ TEST(State, SurplusSearchSlotsAreEvictedDetachedFirst)
 
 TEST(State, EvictionNeverTakesTheSlotBeingSeeded)
 {
-	// Eviction runs straight after the insert. With every other slot active
-	// -- never a victim -- the slot just created is the only eligible one, so
-	// without an exemption the seed evicts itself and the caller then applies
-	// a full re-read to a slot that is no longer there.
+	// Eviction runs straight after the insert. With every other slot active -- never a victim
+	// -- the slot just created is the only eligible one, so without an exemption the seed
+	// evicts itself and the caller then applies a full re-read to a slot that is no longer
+	// there.
 	CState state;
 	for (std::uint32_t sid = 100; sid < 100 + 64; ++sid) {
 		SearchProgressSnapshot running;
@@ -1669,11 +1623,10 @@ TEST(State, EvictionNeverTakesTheSlotBeingSeeded)
 
 TEST(State, AttachedSearchIdsKeepsFinishedSlotsAndDropsDetachedOnes)
 {
-	// The tick polls THIS set for expiry. A finished search has to stay in it:
-	// it is the one the daemon's ring drops first, and the eviction tombstones
-	// its results, so a slot not detached by then has them erased -- which is
-	// exactly what detaching exists to prevent. A detached slot drops out
-	// because the daemon already has nothing to say about it.
+	// The tick polls THIS set for expiry. A finished search has to stay in it: it is the one
+	// the daemon's ring drops first, and the eviction tombstones its results, so a slot not
+	// detached by then has them erased -- exactly what detaching exists to prevent. A detached
+	// slot drops out because the daemon already has nothing to say about it.
 	CState state;
 	state.MarkSearchStarted(1, "global", "running");
 	SearchProgressSnapshot running;
@@ -1687,10 +1640,9 @@ TEST(State, AttachedSearchIdsKeepsFinishedSlotsAndDropsDetachedOnes)
 	done.percent = 100;
 	state.WriteSearchProgress(2, done);
 
-	// Detached exactly the way the tick does it: the expiry branch detaches
-	// AND writes the terminal snapshot, so a detached slot is never left
-	// marked active. Detaching alone would be a state the product never
-	// produces, and asserting against it would prove nothing.
+	// Detached exactly the way the tick does it: the expiry branch detaches AND writes the
+	// terminal snapshot, so a detached slot is never left marked active. Detaching alone would
+	// be a state the product never produces, and asserting against it would prove nothing.
 	state.MarkSearchStarted(3, "global", "gone");
 	state.DetachSearch(3);
 	SearchProgressSnapshot retired;
@@ -1713,9 +1665,9 @@ TEST(State, AttachedSearchIdsKeepsFinishedSlotsAndDropsDetachedOnes)
 
 TEST(State, AFailedUnionFlagsEveryLiveSlotForResync)
 {
-	// The daemon commits its differential state while building a reply, so a
-	// reply we never applied is gone rather than repeated. Every slot it could
-	// have covered has to be re-seeded in full.
+	// The daemon commits its differential state while building a reply, so a reply we never
+	// applied is gone rather than repeated. Every slot it could have covered has to be re-
+	// seeded in full.
 	CState state;
 	state.MarkSearchStarted(1, "global", "alpha");
 	state.MarkSearchStarted(2, "kad", "beta");
@@ -1734,14 +1686,12 @@ TEST(State, AFailedUnionFlagsEveryLiveSlotForResync)
 
 TEST(State, ADetachedSlotDropsOutOfTheResyncList)
 {
-	// MarkAllSearchesNeedResync skips detached slots; the drain has to apply
-	// the same rule, because a slot can be flagged first and detached later.
-	// That is the ordinary sequence: the union fails and flags every live
-	// slot, then the next tick's retirement loop detaches the ones the daemon
-	// has expired -- before the resync loop runs. Left in, each costs a
-	// roundtrip that can only come back expired, and a replace-mode apply
-	// against a detached slot clears the last-known results the detach exists
-	// to preserve.
+	// MarkAllSearchesNeedResync skips detached slots; the drain has to apply the same rule,
+	// because a slot can be flagged first and detached later. That is the ordinary sequence:
+	// the union fails and flags every live slot, then the next tick's retirement loop detaches
+	// the ones the daemon has expired -- before the resync loop runs. Left in, each costs a
+	// roundtrip that can only come back expired, and a replace-mode apply against a detached
+	// slot clears the last-known results the detach exists to preserve.
 	CState state;
 	state.MarkSearchStarted(11, "global", "alpha");
 	state.MarkSearchStarted(12, "global", "beta");

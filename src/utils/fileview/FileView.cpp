@@ -67,9 +67,8 @@ public:
 		bool /*toGUI*/);
 };
 
-// Out-of-line definitions: SafeFile.cpp's Debug-build AddDebugLogLine*
-// macros expand to references against these symbols, and an inline body
-// in the class wouldn't emit one.
+// Out-of-line definitions: SafeFile.cpp's Debug-build AddDebugLogLine* macros expand to references
+// against these symbols, and an inline body in the class would not emit one.
 bool CLogger::IsEnabled(DebugType /*type*/) const
 {
 	return false;
@@ -92,10 +91,9 @@ IMPLEMENT_APP(CFileView);
 
 void CFileView::OnInitCmdLine(wxCmdLineParser &parser)
 {
-	// Pull LC_CTYPE etc. from the environment so unicode2char() emits
-	// real UTF-8 instead of mangling non-ASCII filenames under the
-	// default "C" locale (see #203). CFileView has no OnInit override,
-	// so this is the earliest hook wxApp calls after construction.
+	// Pull LC_CTYPE etc. from the environment so unicode2char() emits real UTF-8 instead of
+	// mangling non-ASCII filenames under the default "C" locale (see #203). CFileView has no
+	// OnInit override, so this is the earliest hook wxApp calls after construction.
 	aMuleInitLocale();
 
 	parser.AddSwitch("h", "help", "Show help", wxCMD_LINE_OPTION_HELP);

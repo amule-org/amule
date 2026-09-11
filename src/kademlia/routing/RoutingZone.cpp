@@ -39,13 +39,9 @@ there client on the eMule forum..
 */
 
 /**
- * The *Zone* is just a node in a binary tree of *Zone*s.
- * Each zone is either an internal node or a leaf node.
- * Internal nodes have "bin == null" and "subZones[i] != null",
- * leaf nodes have "subZones[i] == null" and "bin != null".
- *
- * All key unique id's are relative to the center (self), which
- * is considered to be 000..000
+ * A *Zone* is a node in a binary tree of *Zone*s, either internal or a leaf. Internal nodes have
+ * "bin == null" and "subZones[i] != null"; leaf nodes have "subZones[i] == null" and
+ * "bin != null". All key unique ids are relative to the center (self), taken as 000..000.
  */
 #include "RoutingZone.h"
 
@@ -140,9 +136,8 @@ void CRoutingZone::ReadFile(const wxString &specialNodesdat)
 		CFile file;
 		if (CPath::FileExists(specialNodesdat.IsEmpty() ? m_filename : specialNodesdat) &&
 			file.Open(m_filename, CFile::read)) {
-			// Get how many contacts in the saved list.
-			// NOTE: Older clients put the number of contacts here...
-			//       Newer clients always have 0 here to prevent older clients from reading it.
+			// How many contacts are in the saved list. Older clients put the count
+			// here; newer ones always write 0, to stop older clients reading it.
 			uint32_t numContacts = file.ReadUInt32();
 			uint32_t fileVersion = 0;
 			if (numContacts == 0) {
@@ -243,13 +238,12 @@ void CRoutingZone::ReadFile(const wxString &specialNodesdat)
 
 void CRoutingZone::ReadBootstrapNodesDat(CFileDataIO &file)
 {
-	// Bootstrap versions of nodes.dat are in the style of version 1 nodes.dats, but
-	// contain 500-1000 contacts instead of 50, and those contacts are not added to
-	// the routing table -- they are only sent Bootstrap packets. On a list with a
-	// high ratio of dead nodes that bootstraps faster, and it avoids the DDOS that
-	// shipping a normal nodes.dat would cause, where everyone adds the same 50 nodes
-	// to their routing table. Here we ask one of the 1000 contacts, until one is
-	// alive.
+	// Bootstrap versions of nodes.dat are in the style of version 1 nodes.dats, but hold
+	// 500-1000 contacts instead of 50, and those contacts are not added to the routing table --
+	// they are only sent Bootstrap packets. On a list with a high ratio of dead nodes that
+	// bootstraps faster, and it avoids the DDOS that shipping a normal nodes.dat would cause,
+	// where everyone adds the same 50 nodes to their routing table. Here we ask one of the 1000
+	// contacts, until one is alive.
 	if (!CKademlia::s_bootstrapList.empty()) {
 		wxFAIL;
 		return;
@@ -269,9 +263,9 @@ void CRoutingZone::ReadBootstrapNodesDat(CFileDataIO &file)
 					!(udpPort == 53 && contactVersion <= 5) &&
 					(contactVersion > 1)) // only kad2 nodes
 				{
-					// The 50 nodes closest to our own ID: that provides randomness
-					// between different users and gives a good chance of bootstrapping
-					// with close nodes, which is a nice start for our routing table.
+					// The 50 nodes closest to our own ID: that gives randomness
+					// between users and a good chance of bootstrapping with
+					// close nodes.
 					CUInt128 distance = me;
 					distance ^= id;
 					validContacts++;
@@ -469,17 +463,17 @@ bool CRoutingZone::AddUnfiltered(const CUInt128 &id,
 {
 	if (id != me) {
 #ifdef ENABLE_KAD_NODE_PROTECTION
-		// Kad identity protections. This is the routing table's front door, so it is
-		// where an address that rotates Kad IDs faster than once an hour, or one
-		// banned for having done so, has to be turned away.
+		// Kad identity protections. This is the routing table's front door, so it is where
+		// an address that rotates Kad IDs faster than once an hour, or one banned for
+		// having done so, has to be turned away.
 		//
-		// No upstream counterpart: eMuleAI and emule-qt each call IsBadNode() in
-		// exactly one place, the search answer, and neither gates routing table
-		// admission with it. That is why the switch must not default to ON without
-		// evidence: the table deciding who may enter is what Kad health rests on, and
-		// a heuristic even slightly too eager fails quietly, as a node that gradually
-		// stops finding peers. Measure routing table size and contact churn against a
-		// control node before changing the default.
+		// No upstream counterpart: eMuleAI and emule-qt each call IsBadNode() in exactly
+		// one place, the search answer, and neither gates routing table admission with it.
+		// That is why the switch must not default to ON without evidence: the table
+		// deciding who may enter is what Kad health rests on, and a heuristic even slightly
+		// too eager fails quietly, as a node that gradually stops finding peers. Measure
+		// routing table size and contact churn against a control node before changing the
+		// default.
 		//
 		// onlyOneNodePerIP is deliberately off: CRoutingBin already caps the table at
 		// MAX_CONTACTS_IP Kad ID per address plus MAX_CONTACTS_SUBNET per /24, and
@@ -520,10 +514,11 @@ bool CRoutingZone::Add(CContact *contact, bool &update, bool &outIpVerified)
 					contactUpdate->GetUDPKey().GetKeyValue(theApp->GetPublicIP(false)) !=
 						contact->GetUDPKey().GetKeyValue(
 							theApp->GetPublicIP(false))) {
-					// If the existing contact has a UDPSender-Key -- which every >= 0.49a
-					// client should, unless our IP changed recently -- demand that it
-					// matches the key from the packet wanting to update it, so this is
-					// not a try at hijacking the entry.
+					// If the existing contact has a UDPSender-Key -- which
+					// every >= 0.49a client should, unless our IP changed
+					// recently -- demand that it matches the key from the
+					// packet wanting to update it, so this is not a hijack
+					// attempt.
 					AddDebugLogLineN(logKadRouting,
 						"Sender (" + KadIPToString(contact->GetIPAddress()) +
 							") tried to update contact entry but failed to "
@@ -539,11 +534,11 @@ bool CRoutingZone::Add(CContact *contact, bool &update, bool &outIpVerified)
 				} else if (contactUpdate->GetVersion() >= 1 &&
 					   contactUpdate->GetVersion() < 6 &&
 					   contactUpdate->GetReceivedHelloPacket()) {
-					// Legacy kad2 contacts may only update their RefreshTimer, so an
-					// attacker cannot hijack or corrupt them. kad1 contacts have no such
-					// restriction, as they might turn out to be kad2 later on; the only
-					// other exception is not having received a HELLO from this client
-					// yet.
+					// Legacy kad2 contacts may only update their RefreshTimer,
+					// so an attacker cannot hijack or corrupt them. kad1
+					// contacts have no such restriction, as they might turn out
+					// to be kad2 later on; the only other exception is not
+					// having received a HELLO from this client yet.
 					if (contactUpdate->GetIPAddress() == contact->GetIPAddress() &&
 						contactUpdate->GetTCPPort() == contact->GetTCPPort() &&
 						contactUpdate->GetVersion() == contact->GetVersion() &&
@@ -600,9 +595,9 @@ bool CRoutingZone::Add(CContact *contact, bool &update, bool &outIpVerified)
 								contact->GetVersion());
 					}
 #endif
-					// All other nodes (Kad1, Kad2 > 0.49a with UDPKey checked or not set,
-					// first hello updates) are allowed to do full updates do not let Kad1
-					// responses overwrite Kad2 ones
+					// All other nodes (Kad1, Kad2 > 0.49a with UDPKey checked
+					// or not set, first hello updates) may do full updates. Do
+					// not let Kad1 responses overwrite Kad2 ones.
 					if (m_bin->ChangeContactIPAddress(
 						    contactUpdate, contact->GetIPAddress()) &&
 						contact->GetVersion() >= contactUpdate->GetVersion()) {
@@ -839,9 +834,8 @@ bool CRoutingZone::OnBigTimer() const
 	return false;
 }
 
-// This is used when we find a leaf and want to know what this sample looks like.
-// We fall back two levels and take a sample to try to minimize any areas of the
-// tree that will give very bad results.
+// Used when we find a leaf and want to know what this sample looks like. We fall back two levels
+// and take a sample, to minimize areas of the tree that would give very bad results.
 uint32_t CRoutingZone::EstimateCount() const
 {
 	if (!IsLeaf()) {
@@ -856,15 +850,12 @@ uint32_t CRoutingZone::EstimateCount() const
 
 	float modify = ((float)curZone->GetNumContacts()) / (float)(K * 2);
 
-	// First calculate users assuming the tree is full.
-	// Modify count by bin size.
-	// Modify count by how full the tree is.
+	// First calculate users assuming the tree is full, then modify the count by bin size and by
+	// how full the tree actually is.
 
-	// LowIDModififier
-	// Modify count by assuming 20% of the users are firewalled and can't be a contact for < 0.49b nodes
-	// Modify count by actual statistics of Firewalled ratio for >= 0.49b if we are not firewalled ourself
-	// Modify count by 40% for >= 0.49b if we are firewalled ourself (the actual Firewalled count at this
-	// date on kad is 35-55%)
+	// LowIDModififier. Assume 20% of users are firewalled and cannot be a contact for < 0.49b
+	// nodes; for >= 0.49b use the actual firewalled ratio when we are not firewalled ourselves,
+	// or 40% when we are (the real figure on Kad is 35-55%).
 	const float firewalledModifyOld = 1.20f;
 	float firewalledModifyNew = 0;
 	if (CUDPFirewallTester::IsFirewalledUDP(true)) {
@@ -905,19 +896,16 @@ void CRoutingZone::OnSmallTimer()
 	for (ContactList::iterator it = entries.begin(); it != entries.end(); ++it) {
 		c = *it;
 #ifdef ENABLE_KAD_NODE_PROTECTION
-		// A banned address is swept out of the table, not merely refused
-		// re-entry. Without this the ban only applies to contacts we have
-		// yet to learn, and one already sitting in the table keeps being
-		// asked -- which is the node the ban was about. Folded into the
-		// dead-entry pass rather than given a sweep of its own, because
-		// this loop already walks every entry once a minute and already
-		// owns the InUse() rule that keeps a contact alive while a search
-		// holds it.
+		// A banned address is swept out of the table, not merely refused re-entry. Without
+		// this the ban only applies to contacts we have yet to learn, and one already
+		// sitting in the table keeps being asked -- which is the node the ban was about.
+		// Folded into the dead-entry pass rather than given a sweep of its own, because
+		// this loop already walks every entry once a minute and already owns the InUse()
+		// rule that keeps a contact alive while a search holds it.
 		//
-		// Safe only because escalation now requires a verified identity:
-		// while an unverified flip could ban, this removal would have let
-		// two fabricated mentions evict an honest contact rather than
-		// merely block its return.
+		// Safe only because escalation now requires a verified identity: while an
+		// unverified flip could ban, this removal would have let two fabricated mentions
+		// evict an honest contact rather than merely block its return.
 		if (safeKad.IsBanned(c->GetIPAddress(), now)) {
 			if (!c->InUse()) {
 				m_bin->RemoveContact(c);
@@ -961,15 +949,14 @@ void CRoutingZone::OnSmallTimer()
 				&clientID,
 				false);
 			if (c->GetVersion() >= 8) {
-				// FIXME:
-				// This is a bit of a work around for statistic values. Normally we only count
-				// values from incoming HELLO_REQs for the firewalled statistics in order to
-				// get numbers from nodes which have us on their routing table, however if we
-				// send a HELLO due to the timer, the remote node won't send a HELLO_REQ
-				// itself anymore (but a HELLO_RES which we don't count), so count those
-				// statistics here. This isn't really accurate, but it should do fair enough.
-				// Maybe improve it later for example by putting a flag into the contact and
-				// make the answer count
+				// FIXME: a work-around for statistic values. Normally we only count
+				// values from incoming HELLO_REQs for the firewalled statistics, to
+				// get numbers from nodes which have us in their routing table; but
+				// if we send a HELLO on the timer, the remote node sends no
+				// HELLO_REQ of its own (only a HELLO_RES, which we do not count),
+				// so count those statistics here. Not really accurate, but fair
+				// enough. Could be improved later, for example by flagging the
+				// contact and counting the answer.
 				CKademlia::GetPrefs()->StatsIncUDPFirewalledNodes(false);
 				CKademlia::GetPrefs()->StatsIncTCPFirewalledNodes(false);
 			}
@@ -1059,17 +1046,16 @@ bool CRoutingZone::VerifyContact(const CUInt128 &id, uint32_t ip)
 			contact->SetIPVerified(true);
 		}
 #ifdef ENABLE_KAD_NODE_PROTECTION
-		// The three-way handshake has just proved that this address stands
-		// behind this Kad ID. Recording it verified is what makes a later
-		// unverified claim of a different ID for the same address
-		// rejectable rather than merely rate-limited.
+		// The three-way handshake has just proved that this address stands behind this Kad
+		// ID. Recording it verified is what makes a later unverified claim of a different
+		// ID for the same address rejectable rather than merely rate-limited.
 		bool newlyBanned = false;
 		safeKad.TrackNode(ip, contact->GetUDPPort(), id, true, time(nullptr), &newlyBanned);
 		if (newlyBanned) {
-			// The one event in this subsystem worth a line without debug
-			// logging on: a ban is why a peer stops appearing, and until
-			// now it left no trace anywhere. Logged here rather than in
-			// CSafeKad because that class links against nothing.
+			// The one event in this subsystem worth a line without debug logging on: a
+			// ban is why a peer stops appearing, and until now it left no trace
+			// anywhere. Logged here rather than in CSafeKad because that class links
+			// against nothing.
 			AddDebugLogLineN(logKadNodeTracking,
 				CFormat("Kad: banned %s after a second rejected identity change; "
 					"%u address(es) now banned") %
@@ -1092,9 +1078,9 @@ void CRoutingZone::SetAllContactsVerified()
 
 bool CRoutingZone::IsAcceptableContact(const CContact *toCheck) const
 {
-	// Check if we know a contact with the same ID or IP but notmatching IP/ID and other limitations,
-	// similar checks like when adding a node to the table except allowing duplicates we use this to check
-	// KADEMLIA_RES routing answers on searches
+	// Check whether we know a contact with the same ID or IP but a non-matching IP/ID, and the
+	// other limitations -- similar checks to adding a node to the table, except duplicates are
+	// allowed. Used to check KADEMLIA_RES routing answers on searches.
 	if (toCheck->GetVersion() <= 1) {
 		// No Kad1 contacts allowed
 		return false;

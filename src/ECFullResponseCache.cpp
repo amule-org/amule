@@ -50,10 +50,9 @@ std::vector<std::shared_ptr<const std::vector<unsigned char>>> CECFullResponseCa
 		}
 	}
 
-	// Build stale / missing entries outside the lock. Tag construction
-	// + serialization is the slow part — holding the cache mutex
-	// through it would serialise every concurrent reader on the first
-	// thread's rebuild.
+	// Build stale or missing entries outside the lock. Tag construction and serialization is
+	// the slow part -- holding the cache mutex through it would serialise every concurrent
+	// reader on the first thread's rebuild.
 	for (size_t i = 0; i < to_build.size(); ++i) {
 		const size_t idx = to_build[i];
 		const FileRef &ref = files[idx];
@@ -62,10 +61,9 @@ std::vector<std::shared_ptr<const std::vector<unsigned char>>> CECFullResponseCa
 		std::shared_ptr<const std::vector<unsigned char>> bytes(
 			new std::vector<unsigned char>(CECMemSocket::SerializeTag(*tag)));
 
-		// Re-lock briefly to install. Two concurrent rebuilds for the
-		// same file are tolerated: each produces a logically
-		// equivalent blob, the last writer wins, both callers' result
-		// vectors point at a valid blob via the shared_ptr they
+		// Re-lock briefly to install. Two concurrent rebuilds for the same file are
+		// tolerated: each produces a logically equivalent blob, the last writer wins, and
+		// both callers' result vectors point at a valid blob via the shared_ptr they
 		// already took out.
 		{
 			std::lock_guard<std::mutex> lk(m_mutex);

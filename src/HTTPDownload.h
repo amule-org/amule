@@ -35,11 +35,10 @@
 
 class wxWebRequestEvent;
 
-// Create an HTTP request through aMule's shared path: a curl-backed
-// wxWebSession (uniform across platforms), the current proxy pref applied, and
-// egress bound to the configured network interface when one is set. Used by
-// every HTTP channel (this downloader + the version check) so they behave
-// consistently and honour bind-to-interface (amule-org/amule#173).
+// Create an HTTP request through aMule's shared path: a curl-backed wxWebSession (uniform across
+// platforms), the current proxy pref applied, and egress bound to the configured network interface
+// when one is set. Used by every HTTP channel (this downloader and the version check) so they
+// behave consistently and honour bind-to-interface (amule-org/amule#173).
 wxWebRequest CreateAmuleWebRequest(wxEvtHandler *handler, const wxString &url);
 
 enum HTTPDownloadResult
@@ -49,29 +48,25 @@ enum HTTPDownloadResult
 	HTTP_Skipped
 };
 
+// Startup HTTP downloader (version check, server.met, nodes.dat, ipfilter, GeoIP). Historically a
+// wxThread running wxHTTP on a worker thread, which raced wxEpollDispatcher during redirect /
+// teardown (see upstream PR #455).
 //
-// Startup HTTP downloader (version check, server.met, nodes.dat, ipfilter,
-// GeoIP). Historically a wxThread running wxHTTP on a worker thread, which
-// raced wxEpollDispatcher during redirect / teardown (see upstream PR #455).
+// This implementation is event-driven on the main thread: owns a wxWebRequest, binds
+// wxEVT_WEBREQUEST_STATE, and self-destroys (via wxPendingDelete) after Completed / Failed /
+// Cancelled. No thread, no nested event loops, no modal dialogs -- so no reentrancy surface.
 //
-// This implementation is event-driven on the main thread: owns a
-// wxWebRequest, binds wxEVT_WEBREQUEST_STATE, and self-destroys (via
-// wxPendingDelete) after Completed / Failed / Cancelled. No thread, no
-// nested event loops, no modal dialogs — so no reentrancy surface.
-//
-// The legacy Create() / Run() / Stop() / Entry() / OnExit() names are kept
-// as thin stubs so the six existing call sites (new + Create + Run) do not
-// need to change. Once wx 3.3's wxWebRequestSync is a reasonable floor on
-// distro defaults, this whole class could be replaced with a synchronous
-// call on a worker thread with no wxSocket involvement — at that point the
-// stubs can be made real and this header collapsed.
-//
+// The legacy Create() / Run() / Stop() / Entry() / OnExit() names are kept as thin stubs so the six
+// existing call sites do not need to change. Once wx 3.3's wxWebRequestSync is a reasonable floor
+// on distro defaults, this class could be replaced with a synchronous call on a worker thread with
+// no wxSocket involvement, and the stubs made real.
 class CHTTPDownloadThread : public wxEvtHandler
 {
 public:
-	/** Note: wxChar* was historically used here to dodge thread-unsafe
-	 *  wxString refcounting; no longer strictly required on the main
-	 *  thread, but kept for API compatibility. */
+	/**
+	 * wxChar* was historically used here to dodge thread-unsafe wxString refcounting; no longer
+	 * strictly required on the main thread, but kept for API compatibility.
+	 */
 	CHTTPDownloadThread(const wxString &url,
 		const wxString &filename,
 		const wxString &oldfilename,
@@ -81,17 +76,16 @@ public:
 
 	static void StopAll();
 
-	// Legacy wxThread-style entry points retained as stubs for the six
-	// existing call sites. The request is already started from the ctor
-	// on the main thread, so Create()/Run() have nothing to do.
+	// Legacy wxThread-style entry points retained as stubs for the six existing call sites. The
+	// request is already started from the ctor on the main thread, so Create()/Run() have
+	// nothing to do.
 	bool Create() { return true; }
 	void Run() { /* request started in ctor */ }
 	void Stop(); // fire-and-forget cancel; terminal event follows
 	void OnExit() { /* no-op: we self-destroy on terminal state */ }
 
-	// Called by the companion dialog before it tears itself down, so that
-	// subsequent terminal-state cleanup does not post events to a dead
-	// handler.
+	// Called by the companion dialog before it tears itself down, so later terminal-state
+	// cleanup does not post events to a dead handler.
 	void DetachCompanion();
 
 private:

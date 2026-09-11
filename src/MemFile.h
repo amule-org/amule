@@ -29,19 +29,13 @@
 #include "SafeFile.h" // Needed for CFileDataIO
 
 /**
- * CMemFile handles virtual files stored in memory.
+ * Virtual files stored in memory.
  *
- * This class allows for manipulation of binary data in memory such
- * as data sent over networks. Using this class rather than writing
- * the stream onto a struct confers the following advantages:
- *  - Contents may be read dynamically in case of various versions
- *    of the same packet.
- *  - Endian correction is handled transparently. When reading and
- *    writing values, CMemFile converts to and from little-endian,
- *    so that no explicit endian conversions are necessary.
- *  - Strings of dynamic length can be read.
- *
- * Most of these advantages also hold for writing packets.
+ * Allows binary data in memory, such as data sent over networks, to be manipulated. Over writing
+ * the stream onto a struct it gains: contents that can be read dynamically for various versions of
+ * the same packet, transparent endian correction (CMemFile converts to and from little-endian, so
+ * no explicit conversions are needed), and strings of dynamic length. Most of that holds for
+ * writing packets too.
  *
  * @see CFileDataIO
  */
@@ -51,19 +45,10 @@ public:
 	/**
 	 * Creates a dynamic file object.
 	 *
-	 * @param growthRate The growth-rate of the buffer.
-	 *
-	 * The growth-rate specified by how much the buffer-size will
-	 * be increased when the memfile runs out of space. Normally
-	 * this means that the amount of re-allocations is cut down
-	 * at the expense of slightly higher mem-usage.
-	 *
-	 * If the size of the entire file to be written is known
-	 * in advance, one can avoid needless re-allocations by
-	 * specifying the exact length as the growth-rate.
-	 *
-	 * If the growth-rate is set to zero, the memfile will allocate
-	 * exactly the needed amount of memory and no more when resizing.
+	 * @param growthRate How much the buffer grows by when the memfile runs out of space. A
+	 * larger value cuts down reallocations at the cost of slightly higher memory use. If the
+	 * size of the whole file is known in advance, pass it as the growth rate to avoid needless
+	 * reallocations. Zero makes the memfile allocate exactly the amount needed and no more.
 	 */
 	CMemFile(unsigned int growthRate = 1024);
 
@@ -73,19 +58,10 @@ public:
 	 * @param buffer A pre-existing buffer.
 	 * @param bufferSize The size of the buffer.
 	 *
-	 * A buffer attached to a memfile is assumed to already contain
-	 * data and therefore the file-size is set to match the size of
-	 * of the buffer.
-	 *
-	 * Note that while it is valid to resize the buffer to a length
-	 * between zero and 'bufferSize', it is not valid to resize it
-	 * to a length greater than the length specified in the
-	 * constructor. This also holds for writes that would increase
-	 * the length.
-	 *
-	 * The buffer is _not_ freed by CMemFile upon destruction.
-	 *
-	 * If the buffer is a const uint8*, the memfile is read-only.
+	 * The buffer is assumed to already contain data, so the file size is set to match its size.
+	 * Resizing to a length between zero and 'bufferSize' is valid; resizing past it, or writing
+	 * past it, is not. The buffer is _not_ freed by CMemFile on destruction. A const uint8*
+	 * buffer makes the memfile read-only.
 	 */
 	CMemFile(uint8 *buffer, size_t bufferSize);
 	CMemFile(const uint8 *buffer, size_t bufferSize);
@@ -100,16 +76,9 @@ public:
 	virtual uint64 GetLength() const;
 
 	/**
-	 * Changes the length of the file, possibly resizing the buffer.
-	 *
-	 * @param newLen The new length of the file.
-	 *
-	 * If the current position is greater than the new length, it
-	 * will be set to the end of the file.
-	 *
-	 * Note that changing the length of a file with an attached buffer
-	 * to a value greater than the actual buffer size is an illegal
-	 * operation.
+	 * Changes the length of the file, possibly resizing the buffer. If the current position is
+	 * past @a newLen, it is moved to the end of the file. Growing a file with an attached
+	 * buffer past the buffer's actual size is illegal.
 	 */
 	virtual void SetLength(size_t newLen);
 
@@ -119,7 +88,7 @@ public:
 	virtual void Reset() const { doSeek(0); }
 
 	/**
-	 * Returns the bytes available to read before EOF
+	 * Bytes available to read before EOF.
 	 */
 	virtual sint64 GetAvailable() const { return GetLength() - GetPosition(); }
 

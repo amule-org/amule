@@ -30,16 +30,14 @@
 #include "MD4Hash.h"   // Needed for CMD4Hash
 #include <wx/thread.h> // Needed for wxMutex
 
-// Experimental extended upload queue population
+// Experimental extended upload queue population.
 //
-// When a client is set up from scratch (no shares, all downloads empty)
-// it takes a while after completion of the first downloaded chunks until
-// uploads start. Problem is, upload queue is empty, because clients that
-// find nothing to download don't stay queued.
+// A client set up from scratch (no shares, all downloads empty) takes a while after its first
+// chunks complete before uploads start: the upload queue is empty, because clients that find
+// nothing to download do not stay queued.
 //
-// Set this to 1 for faster finding of upload slots in this case.
-// aMule will then try to contact its sources for uploading if the
-// upload queue is empty.
+// Set this to 1 for faster finding of upload slots in that case. aMule then tries to contact its
+// sources for uploading when the upload queue is empty.
 #define EXTENDED_UPLOADQUEUE 0
 
 class CUpDownClient;
@@ -62,7 +60,7 @@ public:
 	const CClientRefList &GetWaitingList() const { return m_waitinglist; }
 	const CClientRefList &GetUploadingList() const { return m_uploadinglist; }
 
-	// Thread-safe access for disk I/O thread — caller must hold the returned lock for the duration of
+	// Thread-safe access for disk I/O thread -- caller must hold the returned lock for the duration of
 	// iteration
 	wxMutex &GetUploadingListLock() { return m_uploadingListMutex; }
 

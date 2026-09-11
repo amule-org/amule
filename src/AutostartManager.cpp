@@ -47,25 +47,24 @@
 // Defined in the platform-specific section near the bottom of this file.
 namespace
 {
-// Reads the autostart entry's target path from the OS store.
-// Returns wxEmptyString when the entry doesn't exist OR can't be
-// parsed. Doesn't validate the path against the filesystem.
+// Reads the autostart entry's target path from the OS store. Empty when the entry does not exist or
+// cannot be parsed. Does not validate the path against the filesystem.
 wxString BackendReadTargetPath();
 
 // Writes/overwrites the autostart entry to point at `executable`.
 // Returns true on success.
 bool BackendWrite(const wxString &executable);
 
-// Removes the autostart entry. Idempotent — returns true if the
+// Removes the autostart entry. Idempotent -- returns true if the
 // entry didn't exist either.
 bool BackendRemove();
 } // namespace
 
 wxString AutostartManager::GetCanonicalExecutablePath()
 {
-	// wxStandardPaths::GetExecutablePath() wraps the OS native call; on POSIX we
-	// then resolve intermediate symlinks via realpath(), so AppImage / .app bundle
-	// moves are detected correctly.
+	// wxStandardPaths::GetExecutablePath() wraps the OS native call; on POSIX we then resolve
+	// intermediate symlinks via realpath(), so AppImage / .app bundle moves are detected
+	// correctly.
 	wxString raw = wxStandardPaths::Get().GetExecutablePath();
 
 #ifndef __WXMSW__
@@ -109,7 +108,7 @@ void AutostartManager::SelfHealOnStartup()
 {
 	wxString registered = BackendReadTargetPath();
 	if (registered.empty()) {
-		// No entry — user chose not to autostart, or never enabled it.
+		// No entry -- user chose not to autostart, or never enabled it.
 		// Don't second-guess.
 		return;
 	}
@@ -143,9 +142,9 @@ namespace
 
 #if defined(__WXMSW__)
 
-// Windows: per-user "Run on login" registry key. HKCU rather than HKLM, so
-// autostart is a per-user choice on shared machines and toggling never needs
-// elevation. The same key Task Manager's Startup tab reads.
+// Windows: per-user "Run on login" registry key. HKCU rather than HKLM, so autostart is a per-user
+// choice on shared machines and toggling never needs elevation. The same key Task Manager's Startup
+// tab reads.
 static const wchar_t *RUN_KEY = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
 static const wchar_t *RUN_VALUE_NAME = L"aMule";
 
@@ -177,9 +176,9 @@ wxString BackendReadTargetPath()
 
 	wxString raw(buf.data());
 
-	// Windows stores Run entries either bare or quoted with an argument tail, so
-	// strip surrounding quotes and discard any arguments -- the path comparison in
-	// SelfHealOnStartup matches the unadorned canonical path.
+	// Windows stores Run entries either bare or quoted with an argument tail, so strip
+	// surrounding quotes and discard any arguments -- the path comparison in SelfHealOnStartup
+	// matches the unadorned canonical path.
 	if (!raw.empty() && raw[0] == wxT('"')) {
 		size_t closing = raw.find(wxT('"'), 1);
 		if (closing != wxString::npos) {
@@ -229,9 +228,9 @@ bool BackendRemove()
 
 #elif defined(__WXMAC__) || defined(__WXOSX__)
 
-// macOS: per-user LaunchAgent. The registered command is
-// `/usr/bin/open -a <aMule.app>` rather than the bare Mach-O, which sidesteps
-// Gatekeeper / quarantine warnings when launchd activates us at login.
+// macOS: per-user LaunchAgent. The registered command is `/usr/bin/open -a <aMule.app>` rather than
+// the bare Mach-O, which sidesteps Gatekeeper / quarantine warnings when launchd activates us at
+// login.
 static const wxString PLIST_LABEL = wxT("org.amule.amule");
 
 static wxString PlistPath()
@@ -254,9 +253,9 @@ wxString BackendReadTargetPath()
 	f.ReadAll(&content, wxConvUTF8);
 	f.Close();
 
-	// The ProgramArguments array written below is /usr/bin/open, -a, then the
-	// .app path, so the third <string> is the registered target. Plist XML is
-	// simple enough that regex extraction beats a full parser dependency.
+	// The ProgramArguments array written below is /usr/bin/open, -a, then the .app path, so the
+	// third <string> is the registered target. Plist XML is simple enough that regex extraction
+	// beats a full parser dependency.
 	wxRegEx re(wxT("<string>([^<]+)</string>"), wxRE_ADVANCED);
 	if (!re.IsValid()) {
 		return wxEmptyString;
@@ -336,10 +335,10 @@ bool BackendRemove()
 
 #else // assumed Linux / *BSD with XDG-compliant desktop env
 
-// Linux: XDG Autostart spec. $XDG_CONFIG_HOME (falling back to ~/.config) is
-// where the DE's "Startup Applications" GUI looks, so users can see and toggle
-// the entry without a terminal -- systemd user units do not show up there.
-// https://specifications.freedesktop.org/autostart-spec/latest/
+// Linux: XDG Autostart spec. $XDG_CONFIG_HOME (falling back to ~/.config) is where the DE's
+// "Startup Applications" GUI looks, so users can see and toggle the entry without a terminal --
+// systemd user units do not show up there. https://specifications.freedesktop.org/autostart-
+// spec/latest/
 
 static wxString XdgAutostartDir()
 {
@@ -370,9 +369,9 @@ wxString BackendReadTargetPath()
 	f.ReadAll(&content, wxConvUTF8);
 	f.Close();
 
-	// Parse the Exec= line. .desktop syntax allows field-code expansion (%U, %f)
-	// after the executable; the path is always the first whitespace-delimited
-	// token, and may be double-quoted for paths containing spaces.
+	// Parse the Exec= line. .desktop syntax allows field-code expansion (%U, %f) after the
+	// executable; the path is always the first whitespace-delimited token, and may be double-
+	// quoted for paths containing spaces.
 	wxStringTokenizer lines(content, wxT("\n"));
 	while (lines.HasMoreTokens()) {
 		wxString line = lines.GetNextToken().Trim(false).Trim(true);
@@ -413,9 +412,9 @@ bool BackendWrite(const wxString &executable)
 	// survive the .desktop Exec= parser's tokenisation.
 	wxString quotedExec = wxT("\"") + executable + wxT("\"");
 
-	// Standard XDG Autostart fields. X-GNOME-Autostart-enabled is widely recognised
-	// even outside GNOME and makes the entry toggleable from the DE settings GUI
-	// without us rewriting the file.
+	// Standard XDG Autostart fields. X-GNOME-Autostart-enabled is widely recognised even
+	// outside GNOME and makes the entry toggleable from the DE settings GUI without us
+	// rewriting the file.
 	wxString content;
 	content << wxT("[Desktop Entry]\n");
 	content << wxT("Type=Application\n");

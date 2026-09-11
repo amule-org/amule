@@ -139,9 +139,9 @@ void CStatisticsDlg::ApplyGraphSlot(wxWindow *panel, COScopeCtrl *scope, const G
 
 void CStatisticsDlg::ApplyStatsColor(int index)
 {
-	// Colours 2..10 drive one trend each of the three graphs on this panel,
-	// three per graph. Colour 11 is the systray speed bar and 12..14 belong
-	// to the Kad graph; both are applied by their own owners.
+	// Colours 2..10 drive one trend each of the three graphs on this panel, three per graph.
+	// Colour 11 is the systray speed bar and 12..14 belong to the Kad graph; both are applied
+	// by their own owners.
 	static const GraphColorSlot aSlot[] = { { 2, 2, IDC_C0, wxTRANSLATE("Current") },
 		{ 3, 1, IDC_C0_3, wxTRANSLATE("Running average") },
 		{ 4, 0, IDC_C0_2, wxTRANSLATE("Session average") },
@@ -170,9 +170,9 @@ void CStatisticsDlg::ApplyStatsColor(int index)
 void CStatisticsDlg::UpdateStatGraphs(const uint32 peakconnections, const GraphUpdateInfo &update)
 {
 
-	// The sample itself reaches the graphs through the statistics history,
-	// which already holds it by the time we get here; update only carries
-	// what this panel needs for its own labels and ranges.
+	// The sample itself reaches the graphs through the statistics history, which already holds
+	// it by the time we get here; update only carries what this panel needs for its own labels
+	// and ranges.
 	static unsigned nScalePrev = 1;
 	unsigned nScale = (unsigned)std::ceil((float)peakconnections / pscopeConn->GetUpperLimit());
 	if (nScale != nScalePrev) {

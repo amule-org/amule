@@ -95,14 +95,9 @@ enum
 	MP_REFRESHMEDIAMETA,
 
 	/* Razor 1a - Modif by MikaelB
-	     Opcodes for :
-	      - Drop No Needed Sources now
-	      - Drop Full Queue Sources now
-	      - Drop High Queue Rating Sources now
-	      - Clean Up Sources now ( drop NNS, FQS and HQRS )
-	      - Swap every A4AF to this file now
-	      - Swap every A4AF to this file ( AUTO )
-	      - Swap every A4AF to any other file now   */
+	     Opcodes for dropping no-needed / full-queue / high-queue-rating sources now, cleaning
+	     up sources (all three at once), and swapping every A4AF to this file now, to this file
+	     automatically, or to any other file now. */
 	MP_DROP_NO_NEEDED_SOURCES,
 	MP_DROP_FULL_QUEUE_SOURCES,
 	MP_DROP_HIGH_QUEUE_RATING_SOURCES,
@@ -132,10 +127,10 @@ enum
 	MP_LISTCOL_13,
 	MP_LISTCOL_14,
 	MP_LISTCOL_15,
-	// The header show/hide menu offers one entry per column, so this range has
-	// to be at least as long as the longest list. The server list reached 16
-	// columns and the 16th was silently dropped from the menu; the spares are
-	// headroom so the next column added does not repeat that.
+	// The header show/hide menu offers one entry per column, so this range has to be at least
+	// as long as the longest list. The server list reached 16 columns and the 16th was silently
+	// dropped from the menu; the spares are headroom so the next column added does not repeat
+	// that.
 	MP_LISTCOL_16,
 	MP_LISTCOL_17,
 	MP_LISTCOL_18,

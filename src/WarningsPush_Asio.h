@@ -22,22 +22,20 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-// Silences the deprecation diagnostics Boost.Asio's headers trip, across the
-// includes that follow and nothing else. Close with WarningsPop.h.
+// Silences the deprecation diagnostics Boost.Asio's headers trip, across the includes that follow
+// and nothing else. Close with WarningsPop.h.
 //
-// Asio gives several exception types a user-provided destructor alongside an
-// implicit copy constructor, and its execution headers define constexpr
-// statics out of line, which C++17 makes redundant. Both are deprecated and
-// the -Werror=deprecated gate reaches them. Named exactly rather than a
-// blanket suppression, for the reason in WarningsPush_CryptoPP.h.
+// Asio gives several exception types a user-provided destructor alongside an implicit copy
+// constructor, and its execution headers define constexpr statics out of line, which C++17 makes
+// redundant. Both are deprecated and the -Werror=deprecated gate reaches them. Named exactly rather
+// than a blanket suppression, for the reason in WarningsPush_CryptoPP.h.
 //
-// Measured with AppleClang 21 and Boost 1.92: without both suppressions
-// ip/tcp.hpp produces 29 errors under -Werror=deprecated, 27 redundant
-// constexpr static definitions and 2 deprecated copies with a user-provided
-// destructor. Each suppression is independently necessary.
+// Measured with AppleClang 21 and Boost 1.92: without both suppressions ip/tcp.hpp produces 29
+// errors under -Werror=deprecated, 27 redundant constexpr static definitions and 2 deprecated
+// copies with a user-provided destructor. Each suppression is independently necessary.
 //
-// Only the wider closures need this: <boost/asio/ip/address.hpp> alone trips
-// neither, measured at zero, which is why NetworkAddressAsio.h has no wrap.
+// Only the wider closures need this: <boost/asio/ip/address.hpp> alone trips neither, measured at
+// zero, which is why NetworkAddressAsio.h has no wrap.
 //
 // Deliberately unguarded: see WarningsPop.h.
 

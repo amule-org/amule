@@ -53,10 +53,8 @@ typedef signed __int64 int64_t;
 #define ULONGLONG(x) x##ui64
 #endif
 
-// These are _MSC_VER defines used in eMule. They should
-// not be used in aMule, instead, use this table to
-// find the type to use in order to get the desired
-// effect.
+// eMule uses these _MSC_VER defines. Do not use them in aMule; use this table to find the type
+// that gives the same effect.
 //////////////////////////////////////////////////
 // Name              // Type To Use In Amule    //
 //////////////////////////////////////////////////
@@ -90,9 +88,8 @@ typedef signed __int64 int64_t;
 // POINT             // wxPoint                 //
 //////////////////////////////////////////////////
 
-/*
- * Backwards compatibility with emule.
- * Note that the int* types are indeed unsigned.
+/**
+ * Backwards compatibility with emule. Note that the int* types are indeed unsigned.
  */
 typedef uint8_t int8;
 typedef uint8_t uint8;
@@ -125,10 +122,7 @@ typedef std::vector<uint64> ArrayOfUInts64;
 typedef std::list<uint32> ListOfUInts32;
 
 /* This is the Evil Void String For Returning On Const References From Hell */
-// IT MEANS I WANT TO USE IT EVERYWHERE. DO NOT MOVE IT.
-// THE FACT SOMETHING IS USED IN JUST ONE PLACE DOESN'T MEAN IT HAS
-// TO BE MOVED TO THAT PLACE. I MIGHT NEED IT ELSEWHERE LATER.
-//
+// KEEP IT HERE. Being used in one place today does not mean it belongs there.
 
 #ifndef USE_STD_STRING
 static const wxString EmptyString = "";

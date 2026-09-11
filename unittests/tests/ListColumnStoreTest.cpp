@@ -22,16 +22,14 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-// CListColumnStore maps a column's id to its persistence key and default width.
-// The key is the on-disk config format (TableWidths*/TableOrdering*), so the id
-// a caller registers has to be the id it can look the column back up by -- if
-// the store were to renumber stored ids, a saved width would come back attached
-// to a different column, silently.
+// CListColumnStore maps a column's id to its persistence key and default width. The key is the on-
+// disk config format (TableWidths*/TableOrdering*), so the id a caller registers has to be the id
+// it can look the column back up by -- if the store renumbered stored ids, a saved width would come
+// back attached to a different column, silently.
 //
-// These tests pin that the registry is a plain sorted insert. Registering out of
-// order is the case that matters: it never happens in the app today, because
-// every list registers its columns in ascending order, which is exactly why a
-// renumbering bug in this path could sit here unnoticed.
+// These tests pin that the registry is a plain sorted insert. Registering out of order is the case
+// that matters: it never happens in the app today, because every list registers its columns in
+// ascending order, which is exactly why a renumbering bug in this path could sit here unnoticed.
 
 #include <muleunit/test.h>
 
@@ -43,13 +41,13 @@ DECLARE_SIMPLE(CListColumnStore)
 
 TEST(CListColumnStore, RegistrationOutOfOrderKeepsEveryColumnAddressable)
 {
-	// The middle insert: 1 lands between columns already registered, which is
-	// the shape a renumbering insert would corrupt -- moving 2 and 3 out from
-	// under the callers that still ask for them by those ids.
+	// The middle insert: 1 lands between columns already registered, the shape a renumbering
+	// insert would corrupt -- moving 2 and 3 out from under the callers that still ask for them
+	// by those ids.
 	//
-	// Two entries have to follow the insertion point for that to be visible.
-	// With only one, an off-by-one in such a loop skips the single displaced
-	// entry and the damage lands somewhere unobservable instead.
+	// Two entries have to follow the insertion point for that to be visible. With only one, an
+	// off-by-one in such a loop skips the single displaced entry and the damage lands somewhere
+	// unobservable instead.
 	CListColumnStore store;
 	store.RegisterColumn(0, 250, "N");
 	store.RegisterColumn(2, 100, "Z");

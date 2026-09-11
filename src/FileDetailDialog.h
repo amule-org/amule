@@ -43,19 +43,17 @@ class wxDataViewEvent;
 class CFileDetailDialog : public wxDialog
 {
 public:
-	// `files` may hold plain shared CKnownFiles, in-progress CPartFiles, or a
-	// mix (a partfile is also a shared file). Which rows the dialog shows is
-	// decided per file from its state, not from which list opened it.
+	// `files` may hold plain shared CKnownFiles, in-progress CPartFiles, or a mix (a partfile
+	// is also a shared file). Which rows the dialog shows is decided per file from its state,
+	// not from which list opened it.
 	CFileDetailDialog(wxWindow *parent, std::vector<CKnownFile *> &files, int index);
 	virtual ~CFileDetailDialog();
 
 	/**
-	 * Drop every reference to `file` from any open instance of this
-	 * dialog before the underlying CPartFile is destroyed. Stops the
-	 * update-timer's deref of `m_file`, walks `m_files` to scrub
-	 * matching entries, and dismisses the dialog if its currently
-	 * active file is the destroyed one. Pointer-value comparison
-	 * only — `file` may already be freed. Wired via
+	 * Drop every reference to `file` from any open instance of this dialog before the
+	 * underlying CPartFile is destroyed. Stops the update timer's deref of `m_file`, walks
+	 * `m_files` to scrub matching entries, and dismisses the dialog if its active file is the
+	 * destroyed one. Pointer-value comparison only -- `file` may already be freed. Wired via
 	 * MuleNotify::KnownFileBeingDestroyed (GuiEvents.cpp).
 	 */
 	static void DropReferencesTo(const CKnownFile *file);
@@ -72,10 +70,10 @@ private:
 	wxTimer m_timer;
 	bool m_filenameChanged;
 
-	//! Source-name rows for the currently displayed partfile, keyed by name
-	//! so FillSourcenameList() can find-or-create by identity across ticks
-	//! instead of searching the list widget. Owns the SourcenameItem objects
-	//! handed to CFileDetailListCtrl as item data.
+	//! Source-name rows for the currently displayed partfile, keyed by name so
+	//! FillSourcenameList() can find-or-create by identity across ticks instead of searching
+	//! the list widget. Owns the SourcenameItem objects handed to CFileDetailListCtrl as item
+	//! data.
 	std::map<wxString, SourcenameItem *> m_sourcenames;
 
 	void OnClosewnd(wxCommandEvent &evt);

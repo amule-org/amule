@@ -43,9 +43,8 @@
 #define COLUMN_SHARED_SINCE 11
 #define COLUMN_SHARED_LASTUP 12
 #define COLUMN_SHARED_PATH 13
-//! Media metadata from FT_MEDIA_*, the same tags the search list shows.
-//! Populated only for files ffprobe has been run over, so these start
-//! hidden; see the SetColumnHidden() calls in the constructor.
+//! Media metadata from FT_MEDIA_*, as the search list shows. Only files ffprobe has run over have
+//! them, so these columns start hidden (see SetColumnHidden() in the constructor).
 #define COLUMN_SHARED_MEDIA_LENGTH 14
 #define COLUMN_SHARED_MEDIA_BITRATE 15
 #define COLUMN_SHARED_MEDIA_CODEC 16
@@ -61,152 +60,101 @@ class CKnownFile;
 class wxMenu;
 class wxStaticText;
 
-/**
- * This class represents the widget used to list shared files.
- */
+/// The widget that lists shared files.
 class CSharedFilesCtrl : public CMuleVirtualDataViewCtrl
 {
 public:
-	/**
-	 * Constructor.
-	 *
-	 * @see CMuleVirtualDataViewCtrl::CMuleVirtualDataViewCtrl
-	 */
 	CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos, wxSize size, int flags);
 
-	/**
-	 * Destructor.
-	 */
 	~CSharedFilesCtrl();
 
 	/** Reloads the list of shared files. */
 	void ShowFileList();
 
-	/**
-	 * Sets the live text filter. Only files whose name contains @a text
-	 * (case-insensitive) are shown; an empty string clears the filter. Purely
-	 * GUI-side, so it works the same in the monolithic app and amulegui.
-	 */
-	// SetFilterText() is inherited from CMuleVirtualDataViewCtrl; the rebuild
-	// it triggers is RebuildFilteredView() below.
+	// SetFilterText() is inherited from CMuleVirtualDataViewCtrl: only files whose name
+	// contains the text (case-insensitive) are shown, and an empty string clears the filter.
+	// The rebuild it triggers is RebuildFilteredView() below.
 
 	/** Empties the list (virtual-mode: clears the model + row index). */
 	void ClearList();
 
-	// Bracket a reconnect resync (issue #444) so the list repaints once
-	// (Freeze) and sorts once at the end rather than per updated/added row.
 	/**
-	 * While the startup hash drain runs, hold back the per-row model
-	 * notification and the files-count label.
+	 * While the startup hash drain runs, hold back the per-row model notification and the
+	 * files-count label.
 	 *
-	 * Each finished hash arrives as its own queued event, and
-	 * ProcessPendingEvents() runs the whole queue in one pass -- so with
-	 * thousands of them the main thread never returns to the run loop and the
-	 * window, already created by then, cannot paint. Per row the two costs are
-	 * wx's Cocoa Add(), which issues a full NSOutlineView reloadData, and
-	 * ShowFilesCount(), which searches the window hierarchy by name. Deferred,
-	 * both happen once per drain tick instead of once per file.
+	 * Each finished hash arrives as its own queued event, and ProcessPendingEvents() runs the
+	 * whole queue in one pass -- so with thousands of them the main thread never returns to the
+	 * run loop and the window, already created, cannot paint. Per row the two costs are wx's
+	 * Cocoa Add(), which issues a full NSOutlineView reloadData, and ShowFilesCount(), which
+	 * searches the window hierarchy by name. Deferred, both happen once per drain tick instead
+	 * of once per file.
 	 *
-	 * Only for that drain: the tick flushes with FinishBulkLoad(), whose
-	 * Reset() rebuilds the view and drops the scroll position. That is
-	 * unobjectionable while the list is being populated for the first time and
-	 * would not be during amulegui's steady-state poll, which shares the same
-	 * batch machinery.
+	 * Only for that drain: the tick flushes with FinishBulkLoad(), whose Reset() rebuilds the
+	 * view and drops the scroll position. That is fine while the list is first being populated
+	 * and would not be during amulegui's steady-state poll, which shares the same batch
+	 * machinery.
 	 */
 	void SetStartupDrainMode(bool on);
 
+	// Bracket a reconnect resync (issue #444) so the list repaints once (Freeze) and sorts once
+	// at the end rather than per updated/added row.
 	void BeginBatchUpdate();
 	void EndBatchUpdate(bool doSort = true);
 
 	/**
 	 * Ends the repaint freeze without ending the batch.
 	 *
-	 * Startup keeps appending long after the window is worth showing: the
-	 * shared-file scan finishes in seconds, but the files it queued for
-	 * hashing arrive over the following minutes, and each has to stay an
-	 * O(1) append rather than a sorted insert (#853). Thawing separately
-	 * lets those rows be seen as they land while the batch runs on.
+	 * Startup keeps appending long after the window is worth showing: the scan finishes in
+	 * seconds, but the files it queued for hashing arrive over the following minutes, and each
+	 * has to stay an O(1) append rather than a sorted insert (#853). Thawing separately lets
+	 * those rows be seen as they land while the batch runs on.
 	 */
 	void ThawForDisplay();
 
-	/**
-	 * Number of files still queued for hashing, shown next to the count.
-	 *
-	 * Zero clears it. Only startup sets this, and only until its hash queue
-	 * drains.
-	 */
+	/// Number of files still queued for hashing, shown next to the count. Zero clears it. Only
+	/// startup sets it, and only until its hash queue drains.
 	void SetHashingCount(size_t remaining);
 
 	/**
 	 * Sorts only if rows have been appended since the last call.
 	 *
-	 * Startup polls on a timer, but rows arrive on hash completions, and
-	 * hashing cost tracks bytes -- one large file is a single append after
-	 * minutes of nothing. Sorting per tick regardless would be a full
-	 * std::sort plus a row-index rebuild and a model reset, once a second,
-	 * for no reordering (#853).
+	 * Startup polls on a timer, but rows arrive on hash completions, and hashing cost tracks
+	 * bytes -- one large file is a single append after minutes of nothing. Sorting per tick
+	 * regardless would be a full std::sort plus a row-index rebuild and a model reset, once a
+	 * second, for no reordering (#853).
 	 */
 	void SortIfRowsAppended();
 
-	/**
-	 * Adds the specified file to the list, updating filecount and more.
-	 *
-	 * @param file The new file to be shown.
-	 *
-	 * Note that the item is inserted in sorted order.
-	 */
+	/// Adds @a file to the list in sorted order, updating the file count.
 	void ShowFile(CKnownFile *file);
 
-	/**
-	 * Removes a file from the list.
-	 *
-	 * @param toremove The file to be removed.
-	 */
+	/// Removes @a toremove from the list.
 	void RemoveFile(CKnownFile *toremove);
 
-	/**
-	 * Updates a file on the list.
-	 *
-	 * @param toupdate The file to be updated.
-	 */
+	/// Updates @a toupdate on the list.
 	void UpdateItem(CKnownFile *toupdate);
 
-	/**
-	 * Begin a bulk update. While in this mode, UpdateItem() is a no-op
-	 * and the per-row FindItem/RefreshItem cost is skipped. EndBulkUpdate()
-	 * issues a single full Refresh() to repaint every row at once. Used by
-	 * CSharedFileList::ClearED2KPublishInfo to convert what was an O(N²)
-	 * GUI cascade (per-file SetPublishedED2K() -> notify -> linear-scan
-	 * UpdateItem) into O(N) bookkeeping plus one full repaint.
-	 */
+	/// Begin a bulk update: UpdateItem() becomes a no-op and the per-row FindItem/RefreshItem
+	/// cost is skipped, while EndBulkUpdate() issues one full Refresh(). Turns
+	/// CSharedFileList::ClearED2KPublishInfo's O(N^2) GUI cascade (per-file SetPublishedED2K()
+	/// -> notify -> linear-scan UpdateItem) into O(N) bookkeeping plus one repaint.
 	void BeginBulkUpdate();
 	void EndBulkUpdate();
 
-	/**
-	 * Updates the number of shared files displayed above the list.
-	 */
+	/// Updates the number of shared files displayed above the list.
 	void ShowFilesCount();
 
-	/**
-	 * Refreshes the "Free space:" label from the core's figure for the
-	 * filesystem finished downloads land on.
-	 *
-	 * Informational only, with no threshold: nothing here stops when the
-	 * disk fills, and this panel has no category selector to scope a
-	 * comparison to -- so it reports the default category's incoming
-	 * directory. Driven by the GUI timer, like the Downloads panel's.
-	 */
+	/// Refreshes the "Free space:" label from the core's figure for the filesystem finished
+	/// downloads land on. Informational only, with no threshold: nothing here stops when the
+	/// disk fills, and this panel has no category selector to scope a comparison to, so it
+	/// reports the default category's incoming directory. Driven by the GUI timer, like the
+	/// Downloads panel's.
 	void UpdateFreeSpace();
 
-	/**
-	 * Redraws the "Total size of Shared Files:" label.
-	 *
-	 * Also driven by the GUI timer, because unlike the total itself the
-	 * completed figure beside it moves while nothing about the list changes:
-	 * part files gain bytes as they download. Sets the label only when the
-	 * text actually differs, since this runs once a second for as long as
-	 * the panel is up.
-	 */
+	/// Redraws the "Total size of Shared Files:" label. Also driven by the GUI timer, because
+	/// unlike the total itself the completed figure beside it moves while nothing about the
+	/// list changes: part files gain bytes as they download. Sets the label only when the text
+	/// differs, since this runs once a second while the panel is up.
 	void UpdateTotalSize();
 
 	/** Map a (virtual) row index to its file, or NULL if out of range. */
@@ -236,32 +184,17 @@ protected:
 	int CompareItemData(
 		wxUIntPtr data1, wxUIntPtr data2, unsigned column, bool alt, int modifier) const override;
 
-	/**
-	 * Function that specifies which columns have alternate sorting.
-	 *
-	 * @see CMuleDataViewCtrl::AltSortAllowed
-	 */
+	/// Which columns have alternate sorting. @see CMuleDataViewCtrl::AltSortAllowed
 	bool AltSortAllowed(unsigned column) const override;
 
-	//! True if @a file passes the current text filter (name substring match).
-	/**
-	 * @see CMuleVirtualDataViewCtrl::RebuildFilteredView
-	 */
+	/// @see CMuleVirtualDataViewCtrl::RebuildFilteredView
 	void RebuildFilteredView() override;
 
 private:
-	/**
-	 * Adds the specified file to the list.
-	 *
-	 * If 'batch' is true, the item will be inserted last,
-	 * and the files-count will not be updated, nor is
-	 * the list checked for dupes.
-	 */
+	/// Adds @a file to the list. With @a batch, it is appended last, the file count is not
+	/// updated, and the list is not checked for duplicates.
 	void DoShowFile(CKnownFile *file, bool batch);
 
-	/**
-	 * Event-handler for right-clicks on the list-items.
-	 */
 	void OnItemRightClicked(wxDataViewEvent &event);
 
 	void OnGetFeedback(wxCommandEvent &event);
@@ -271,113 +204,73 @@ private:
 	/**
 	 * The item the context menu was built for, by identity rather than row.
 	 *
-	 * The menu's enabled state is decided from this item, so the handlers act
-	 * on it. A row index would not survive the menu being open: PopupMenu runs
-	 * a nested event loop, so timers and EC updates keep mutating the list, and
-	 * removing a row *above* this one shifts every index below it -- the click
-	 * would then act on the neighbouring file. HasItemData() re-checks that the
-	 * item is still present before it is used.
+	 * The menu's enabled state is decided from this item, so the handlers act on it. A row
+	 * index would not survive the menu being open: PopupMenu runs a nested event loop, so
+	 * timers and EC updates keep mutating the list, and removing a row *above* this one shifts
+	 * every index below it -- the click would act on the neighbouring file. HasItemData() re-
+	 * checks that the item is still present before it is used.
 	 */
 	wxUIntPtr m_menuItem = 0;
 
-	/**
-	 * Event-handler for the Set Priority menu items.
-	 */
 	void OnSetPriority(wxCommandEvent &event);
 
-	/**
-	 * Event-handler for the Auto-Priority menu item.
-	 */
 	void OnSetPriorityAuto(wxCommandEvent &event);
 
-	/**
-	 * Event-handler for the Create ED2K/Magnet URI items.
-	 */
 	void OnCreateURI(wxCommandEvent &event);
 
-	/**
-	 * Event-handler for the "Export selected files" menu item: writes the
-	 * selected files' eD2k links to an .emulecollection text collection.
-	 */
+	/// "Export selected files": writes the selected files' eD2k links to an .emulecollection
+	/// text collection.
 	void OnExportCollection(wxCommandEvent &WXUNUSED(evt));
 
-	/**
-	 * The link for one file, in the flavour the given menu id asks for.
-	 * Anything other than the ids the URI menu items use yields the plain
-	 * eD2k link.
-	 */
+	/// The link for one file, in the flavour @a menuId asks for. Any other id yields the plain
+	/// eD2k link.
 	wxString LinkForFile(const CKnownFile *file, int menuId) const;
 
-	/**
-	 * Every selected row's link, one per line, with a trailing newline.
-	 *
-	 * One walk of the selection serves the clipboard items and the collection
-	 * export alike; @a menuId picks the flavour, as in LinkForFile().
-	 */
+	/// Every selected row's link, one per line, with a trailing newline. One walk serves the
+	/// clipboard items and the collection export alike; @a menuId picks the flavour, as in
+	/// LinkForFile().
 	wxString SelectedLinks(int menuId) const;
 
-	/**
-	 * Event-handler for the Edit Comment menu item.
-	 */
 	void OnEditComment(wxCommandEvent &event);
 
-	/**
-	 * Event-handler for the Rename menu item.
-	 */
 	void OnRename(wxCommandEvent &event);
 	void OnRefreshMediaMetadata(wxCommandEvent &event);
 
-	//! The current selection split by whether a media re-extraction can act on
-	//! it. Shared by the menu's enable rule and the handler so the two cannot
-	//! disagree about what the action would do.
+	//! The current selection split by whether a media re-extraction can act on it. Shared by
+	//! the menu's enable rule and the handler so the two cannot disagree.
 	struct MediaRefreshSelection
 	{
-		// Hashes, not CKnownFile pointers. The confirmation dialog runs a nested
-		// event loop, and in amulegui the EC poll timer keeps running inside it --
-		// CKnownFilesRem::DeleteItem ends in `delete file` for anything the daemon
-		// stops listing, so a pointer collected before the dialog can dangle after
-		// it. A hash cannot, and a file that went away simply fails to resolve.
+		// Hashes, not CKnownFile pointers: the confirmation dialog runs a nested event
+		// loop, and in amulegui the EC poll timer keeps running inside it --
+		// CKnownFilesRem::DeleteItem ends in `delete file` for anything the daemon stops
+		// listing, so a pointer collected before the dialog can dangle. A hash cannot.
 		std::vector<CMD4Hash> eligible;
 		unsigned incomplete = 0; //!< in-progress downloads, nothing complete to read
 		unsigned notMedia = 0;   //!< not audio or video
 	};
 	MediaRefreshSelection PartitionForMediaRefresh() const;
 
-	/**
-	 * Checks for renaming via F2.
-	 */
+	/// Checks for renaming via F2.
 	bool OnListKey(wxKeyEvent &event) override;
 
-	/**
-	 * Adds links in a collection to transfers
-	 */
+	/// Adds the links in a collection to transfers.
 	void OnAddCollection(wxCommandEvent &WXUNUSED(evt));
 
 	void OnVerifyLocalData(wxCommandEvent &WXUNUSED(evt));
 
-	/**
-	 * Opens the file-details dialog for the selected shared file. Reuses the
-	 * download list's CFileDetailDialog, which shows the sharing-side rows and
-	 * hides the download-only ones based on each file's state.
-	 */
+	/// Opens the file-details dialog for the selected shared file. Reuses the download list's
+	/// CFileDetailDialog, whose sections follow each file's state.
 	void OnViewFileDetails(wxCommandEvent &event);
 
-	/**
-	 * Opens the colour legend for the bar column, for the row the menu was
-	 * built from.
-	 *
-	 * That one column draws two unrelated things -- how many sources hold each
-	 * part, and how far a running re-hash has read -- so which legend to open
-	 * is a property of the row, not of the column
-	 * (partbar::LegendForSharedFilesRow).
-	 */
+	/// Opens the colour legend for the bar column, for the row the menu was built from. That
+	/// column draws two unrelated things -- how many sources hold each part, and how far a
+	/// running re-hash has read -- so which legend to open is a property of the row
+	/// (partbar::LegendForSharedFilesRow).
 	void OnShowBarLegend(wxCommandEvent &event);
 	void OnRazorStatsCheck(wxCommandEvent &event);
 
-	/**
-	 * Double-click / Enter on a row also opens the file-details dialog, for
-	 * parity with the downloads list.
-	 */
+	/// Double-click / Enter on a row also opens the file-details dialog, for parity with the
+	/// downloads list.
 	void OnItemActivated(wxDataViewEvent &event);
 
 	/** Shared helper: open CFileDetailDialog anchored on the clicked row. */
@@ -394,9 +287,9 @@ private:
 	//! the row without sorting; EndBatchUpdate() does the single SortList().
 	bool m_batchUpdate;
 
-	//! Whether the batch's Freeze() is still outstanding. Tracked separately
-	//! from m_batchUpdate because ThawForDisplay() ends one without the
-	//! other, and wx counts Freeze/Thaw -- an unbalanced Thaw() asserts.
+	//! Whether the batch's Freeze() is still outstanding. Tracked apart from m_batchUpdate
+	//! because ThawForDisplay() ends one without the other, and wx counts Freeze/Thaw -- an
+	//! unbalanced Thaw() asserts.
 	bool m_batchFrozen;
 
 	//! Files still queued for hashing, appended to the count label while
@@ -412,16 +305,13 @@ private:
 	uint64 m_shownSize;
 
 	/**
-	 * Bytes the displayed part files have yet to obtain.
+	 * Bytes the displayed part files have yet to obtain. m_shownSize sums the Size column, and
+	 * that column shows a part file's final size, not what is on disk yet; subtracting this
+	 * gives the figure the total is shown next to (issue #927).
 	 *
-	 * m_shownSize is the sum of the Size column, and that column shows a part
-	 * file's final size, not what is on disk yet. Subtracting this gives the
-	 * figure the total is shown next to (issue #927).
-	 *
-	 * Walks the download queue and asks the row index whether each part file
-	 * is displayed, rather than walking the displayed files and asking each
-	 * whether it is a part file: there are at most as many part files as
-	 * there are downloads, against a share that can hold tens of thousands.
+	 * Walks the download queue asking the row index whether each part file is displayed, rather
+	 * than the reverse: there are at most as many part files as downloads, against a share that
+	 * can hold tens of thousands.
 	 */
 	uint64 ShownIncompleteBytes() const;
 

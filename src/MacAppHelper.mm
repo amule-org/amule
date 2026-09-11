@@ -47,11 +47,9 @@ extern "C" void mac_set_accessory_mode(bool accessory)
 		          : NSApplicationActivationPolicyRegular];
 
 	if (!accessory) {
-		// Restoring from Accessory: switching policy gives us a
-		// Dock icon back but doesn't make the app active, so any
-		// subsequent Show(true)/Raise() lands behind whichever app
-		// currently holds focus. Activate explicitly so our window
-		// comes to the foreground.
+		// Restoring from Accessory: switching policy gives us a Dock icon back but does not
+		// make the app active, so any later Show(true)/Raise() lands behind whichever app
+		// currently holds focus. Activate explicitly so our window comes to the foreground.
 		[NSApp activateIgnoringOtherApps:YES];
 	}
 }

@@ -59,9 +59,8 @@ void CClientRowListCtrl::GetItemBarFill(wxUIntPtr data, unsigned column, CBarFil
 	if (cell == nullptr) {
 		return;
 	}
-	// The renderer needs the snapshot, not spans. Safe to hand out its address:
-	// the rows are only ever replaced wholesale, on the main thread, between
-	// paints.
+	// The renderer needs the snapshot, not spans. Safe to hand out its address: the rows are
+	// only ever replaced wholesale, on the main thread, between paints.
 	out = CBarFillSpec(reinterpret_cast<wxUIntPtr>(cell), 0, {});
 }
 
@@ -90,14 +89,13 @@ void CClientRowListCtrl::OnItemActivated(wxDataViewEvent &event)
 	ShowDetailsForSelection();
 }
 
-// Opening details is a read-only act: it never creates a client and never opens
-// a connection. A peer we are talking to is snapshotted live, since that knows
-// strictly more; otherwise the row's own record is rendered.
+// Opening details is a read-only act: it never creates a client and never opens a connection. A
+// peer we are talking to is snapshotted live, since that knows strictly more; otherwise the row's
+// own record is rendered.
 void CClientRowListCtrl::ShowDetailsForSelection()
 {
-	// Counted first: resolving the selection to discover it holds more than
-	// one row costs a ClientDetailInfo and a client lookup per row, and the
-	// answer is then thrown away.
+	// Counted first: resolving the selection to discover it holds more than one row costs a
+	// ClientDetailInfo and a client lookup per row, and the answer is then thrown away.
 	if (GetSelectedItemsCount() != 1) {
 		return;
 	}
@@ -127,11 +125,11 @@ void CClientRowListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 		}
 	}
 
-	// A peer we are not connected to still gets a menu: friending and the friend
-	// slot are persistent and need no connection, while browsing and messaging open
-	// one when the user picks them. Only the row under the cursor is resolved --
-	// the menu describes that one, and building the whole selection to read its
-	// first entry would resolve every other row for nothing.
+	// A peer we are not connected to still gets a menu: friending and the friend slot are
+	// persistent and need no connection, while browsing and messaging open one when the user
+	// picks them. Only the row under the cursor is resolved -- the menu describes that one, and
+	// building the whole selection to read its first entry would resolve every other row for
+	// nothing.
 	if (!event.GetItem().IsOk()) {
 		return;
 	}
@@ -142,19 +140,17 @@ void CClientRowListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 		return;
 	}
 
-	// The builder omits "Swap to this file": it acts on an A4AF source of one
-	// particular download, which is a per-file notion neither of these lists
-	// has.
+	// The builder omits "Swap to this file": it acts on an A4AF source of one particular
+	// download, a per-file notion neither of these lists has.
 	wxMenu *menu = BuildPeerContextMenu(peer);
 	PopupMenu(menu, event.GetPosition());
 	delete menu;
 }
 
-// Both lists are multi-select and the connected-client paths act on the whole
-// selection, so these do too. But the history list is the entire credit store
-// rather than the handful of peers we happen to be talking to, and the menu is
-// built for one row while the action runs on all of them, so a large selection
-// says so first.
+// Both lists are multi-select and the connected-client paths act on the whole selection, so these
+// do too. But the history list is the entire credit store rather than the handful of peers we
+// happen to be talking to, and the menu is built for one row while the action runs on all of them,
+// so a large selection says so first.
 void CClientRowListCtrl::OnViewFiles(wxCommandEvent &WXUNUSED(event))
 {
 	// Counted from the control, not from resolving the rows: resolving is the
@@ -190,10 +186,9 @@ void CClientRowListCtrl::OnAddFriend(wxCommandEvent &WXUNUSED(event))
 	if (count == 0) {
 		return;
 	}
-	// The direction comes from the entry the user picked, so what happens
-	// matches what it said. Toggling each row would remove the friends inside
-	// a selection whose menu read "Add to Friends", and below the prompt
-	// threshold that would happen without a word.
+	// The direction comes from the entry the user picked, so what happens matches what it said.
+	// Toggling each row would remove the friends inside a selection whose menu read "Add to
+	// Friends", and below the prompt threshold that would happen without a word.
 	PeerIdentity menuPeer;
 	if (!MenuPeer(menuPeer)) {
 		return;
@@ -207,10 +202,9 @@ void CClientRowListCtrl::OnAddFriend(wxCommandEvent &WXUNUSED(event))
 
 void CClientRowListCtrl::OnSetFriendslot(wxCommandEvent &evt)
 {
-	// The row the menu was built for, not whatever the selection happens to
-	// be: the checkbox describes one peer, so the slot has to land on that
-	// one. The count comes from the control rather than from resolving every
-	// selected row, which the warning is all it is needed for.
+	// The row the menu was built for, not whatever the selection happens to be: the checkbox
+	// describes one peer, so the slot has to land on that one. The count comes from the control
+	// rather than from resolving every selected row, which is all the warning needs.
 	PeerIdentity peer;
 	if (!MenuPeer(peer)) {
 		return;

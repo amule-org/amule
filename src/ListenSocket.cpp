@@ -34,14 +34,10 @@
 #include "amule.h"           // Needed for theApp
 #include "ServerConnect.h"   // Needed for CServerConnect
 
-//-----------------------------------------------------------------------------
 // CListenSocket
-//-----------------------------------------------------------------------------
 //
-// This is the socket that listens to incoming connections in aMule's TCP port
-// As soon as a connection is detected, it creates a new socket of type
-// CClientTCPSocket to handle (accept) the connection.
-//
+// The socket listening for incoming connections on aMule's TCP port. On detecting a connection it
+// creates a CClientTCPSocket to accept and handle it.
 
 CListenSocket::CListenSocket(amuleIPV4Address &addr, const CProxyData *ProxyData)
 : // wxSOCKET_NOWAIT    - means non-blocking i/o
@@ -84,9 +80,8 @@ CListenSocket::~CListenSocket()
 void CListenSocket::OnAccept()
 {
 	m_pending = theApp->IsRunning(); // just do nothing if we are shutting down
-	// If the client is still at maxconnections,
-	// this will allow it to go above it ...
-	// But if you don't, you will get a lowID on all servers.
+	// If the client is still at maxconnections this allows it to go above the limit -- but
+	// without that, you get a lowID on all servers.
 	while (m_pending && (theApp->serverconnect->IsConnecting() || !TooManySockets())) {
 		if (!SocketAvailable()) {
 			m_pending = false;
@@ -128,14 +123,12 @@ void CListenSocket::Process()
 		}
 	}
 
-	// SocketAvailable() as well as m_pending: the socket layer arms one
-	// async accept at a time and only re-arms it from AcceptWith(), so a
-	// connection it accepted but we then declined to take -- OnAccept()
-	// bails out when the app is not running yet -- leaves the acceptor
-	// idle with m_pending clear. Nothing would ever call AcceptWith()
-	// again and the listen socket would stay deaf for the rest of the
-	// session, with the kernel still completing handshakes into a backlog
-	// no one reads. Taking it here re-arms the acceptor.
+	// SocketAvailable() as well as m_pending: the socket layer arms one async accept at a time
+	// and only re-arms it from AcceptWith(), so a connection it accepted but we then declined
+	// to take -- OnAccept() bails out when the app is not running yet -- leaves the acceptor
+	// idle with m_pending clear. Nothing would ever call AcceptWith() again and the listen
+	// socket would stay deaf for the rest of the session, with the kernel still completing
+	// handshakes into a backlog no one reads. Taking it here re-arms the acceptor.
 	if (m_pending || SocketAvailable()) {
 		OnAccept();
 	}
@@ -177,9 +170,8 @@ void CListenSocket::RemoveSocket(CClientTCPSocket *todel)
 
 void CListenSocket::KillAllSockets()
 {
-	// 0.42e reviewed - they use delete, but our safer is Destroy...
-	// But I bet it would be better to call Safe_Delete on the socket.
-	// Update: no... Safe_Delete MARKS for deletion. We need to delete it.
+	// 0.42e reviewed -- they use delete, but Destroy is safer. Not Safe_Delete: that only MARKS
+	// for deletion, and we need to delete it.
 	for (SocketSet::iterator it = socket_list.begin(); it != socket_list.end();) {
 		CClientTCPSocket *cur_socket = *it++;
 		if (cur_socket->GetClient()) {

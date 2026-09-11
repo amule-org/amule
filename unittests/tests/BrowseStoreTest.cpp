@@ -58,9 +58,8 @@ TEST(BrowseStore, StartTracksTheBrowseAndAnswersForThePeer)
 
 TEST(BrowseStore, ASecondBrowseOfTheSamePeerIsRefused)
 {
-	// This is the rule the EC handler's "join the browse already in flight"
-	// rests on: there is one exchange with a peer, so a second record could
-	// only ever describe the same one.
+	// This is the rule the EC handler's "join the browse already in flight" rests on: there is
+	// one exchange with a peer, so a second record could only ever describe the same one.
 	Store s;
 	ASSERT_TRUE(s.Start(ALICE, kSidA, 1000).started);
 	ASSERT_FALSE(s.Start(ALICE, kSidB, 1000).started);
@@ -106,10 +105,9 @@ TEST(BrowseStore, AFinishedBrowseNoLongerAnswersAsThePeersLiveOne)
 
 TEST(BrowseStore, ATerminalRecordOutlivesItsClient)
 {
-	// Erasing the record when the browse ended was a real regression: every
-	// consumer asks the store what state a search is in, so a dropped record
-	// sends the listing back to guessing from whether results were retained --
-	// which reports a failed browse as idle, forever.
+	// Erasing the record when the browse ended was a real regression: every consumer asks the
+	// store what state a search is in, so a dropped record sends the listing back to guessing
+	// from whether results were retained -- which reports a failed browse as idle, forever.
 	Store s;
 	s.Start(ALICE, kSidA, 1000);
 	ASSERT_TRUE(s.Fail(ALICE).effect == Effect::AnnounceFailure);
@@ -130,9 +128,9 @@ TEST(BrowseStore, ATerminalRecordOutlivesItsClient)
 
 TEST(BrowseStore, ADisconnectAfterSuccessIsNotReportedAsAFailure)
 {
-	// The ordinary end of a successful browse: the peer sends its last
-	// directory and drops the connection, and the disconnect path asks for a
-	// failure without knowing the browse just succeeded.
+	// The ordinary end of a successful browse: the peer sends its last directory and drops the
+	// connection, and the disconnect path asks for a failure without knowing the browse just
+	// succeeded.
 	Store s;
 	s.Start(ALICE, kSidA, 1000);
 	s.OnDirectoryList(ALICE, 1, 1000);
@@ -288,12 +286,11 @@ TEST(BrowseStore, UnknownSearchIdsAnswerSafely)
 
 TEST(BrowseStore, ForgettingAnEndedBrowseStillNamesItForRelease)
 {
-	// Both halves of this were already tested apart -- that Forget releases
-	// the peer, and that a finished browse no longer answers as the peer's
-	// live one. Composed, the release came back with no browse attached to it,
-	// so the owner had nothing to release and kept the peer allocated until
-	// the user closed the tab. Most peers are in this state by the time they
-	// go away: the listing arrives, then the connection closes.
+	// Both halves of this were already tested apart -- that Forget releases the peer, and that
+	// a finished browse no longer answers as the peer's live one. Composed, the release came
+	// back with no browse attached to it, so the owner had nothing to release and kept the peer
+	// allocated until the user closed the tab. Most peers are in this state by the time they go
+	// away: the listing arrives, then the connection closes.
 	Store s;
 	s.Start(ALICE, kSidA, 1000);
 	s.OnListingReceived(ALICE, 1000); // flat browse: finished
@@ -308,9 +305,8 @@ TEST(BrowseStore, ForgettingAnEndedBrowseStillNamesItForRelease)
 
 TEST(BrowseStore, EveryOutcomeCarriesTheBrowseItHappenedTo)
 {
-	// Nothing may report an effect without saying which browse it belongs to;
-	// an owner acting on the pair cannot then act on the wrong one, or on
-	// none.
+	// Nothing may report an effect without saying which browse it belongs to; an owner acting
+	// on the pair cannot then act on the wrong one, or on none.
 	Store s;
 	s.Start(ALICE, kSidA, 1000);
 	ASSERT_EQUALS(kSidA, s.OnDirectoryList(ALICE, 1, 1000).searchId);
@@ -326,10 +322,9 @@ TEST(BrowseStore, EveryOutcomeCarriesTheBrowseItHappenedTo)
 
 TEST(BrowseStore, APeerIsBrowsableAgainAsSoonAsItsBrowseEnds)
 {
-	// Start refused while a terminal record still held the peer, but
-	// SearchIdFor said the peer had no browse -- so the caller's own check
-	// passed and the start it made was silently rejected. The two now agree:
-	// only a RUNNING browse blocks a new one.
+	// Start refused while a terminal record still held the peer, but SearchIdFor said the peer
+	// had no browse -- so the caller's own check passed and the start it made was silently
+	// rejected. The two now agree: only a RUNNING browse blocks a new one.
 	Store s;
 	s.Start(ALICE, kSidA, 1000);
 	s.Fail(ALICE);
@@ -346,9 +341,9 @@ TEST(BrowseStore, APeerIsBrowsableAgainAsSoonAsItsBrowseEnds)
 
 TEST(BrowseStore, ARebrowseDisplacesThePeerFromItsOldRecord)
 {
-	// Re-browsing before the old record was released left two records naming
-	// one peer, and a lookup by peer answered with whichever the map ordered
-	// first -- the stale one, since ids ascend.
+	// Re-browsing before the old record was released left two records naming one peer, and a
+	// lookup by peer answered with whichever the map ordered first -- the stale one, since ids
+	// ascend.
 	Store s;
 	s.Start(ALICE, kSidA, 1000);
 	s.Fail(ALICE);
@@ -388,12 +383,11 @@ TEST(BrowseStore, AnIdAlreadyInUseIsRefused)
 
 TEST(BrowseStore, ReusingAnIdIsRefusedEvenForTheSamePeer)
 {
-	// The ID guard is unconditional, so a peer re-browsed under the ID its own
-	// last browse still holds is turned away -- it must Remove() that one
-	// first. No caller does this: both routes allocate a fresh ID, and closing
-	// a tab frees the old record. Pinned because that safety lives entirely in
-	// the callers, and a store this permissive-looking invites the assumption
-	// that it does not.
+	// The ID guard is unconditional, so a peer re-browsed under the ID its own last browse
+	// still holds is turned away -- it must Remove() that one first. No caller does this: both
+	// routes allocate a fresh ID, and closing a tab frees the old record. Pinned because that
+	// safety lives entirely in the callers, and a store this permissive-looking invites the
+	// assumption that it does not.
 	Store s;
 	s.Start(ALICE, kSidA, 1000);
 	s.Fail(ALICE);
@@ -408,9 +402,9 @@ TEST(BrowseStore, ReusingAnIdIsRefusedEvenForTheSamePeer)
 
 TEST(BrowseStore, TheDirectoryListIsAcceptedExactlyOnce)
 {
-	// A peer replaying OP_ASKSHAREDDIRSANS would otherwise have every
-	// directory re-requested and the silence deadline pushed back on each
-	// resend, keeping its browse alive for as long as it kept sending.
+	// A peer replaying OP_ASKSHAREDDIRSANS would otherwise have every directory re-requested
+	// and the silence deadline pushed back on each resend, keeping its browse alive for as long
+	// as it kept sending.
 	Store s;
 	s.Start(ALICE, kSidA, 1000);
 	ASSERT_TRUE(s.AwaitingDirectoryList(ALICE));
@@ -433,19 +427,17 @@ TEST(BrowseStore, ATerminalOrAbsentBrowseIsNotAwaitingAnything)
 
 TEST(BrowseStore, ADirectoryBrowseAsksOnlyUntilThePeerAnswers)
 {
-	// ConnectionEstablished gates the OP_ASKSHAREDDIRS it sends on this, and
-	// it runs on every reconnect. A browsed peer that is also a download
-	// source reconnects often, so a predicate true for the whole browse put
-	// an unrequested ask on the wire each time.
+	// ConnectionEstablished gates the OP_ASKSHAREDDIRS it sends on this, and it runs on every
+	// reconnect. A browsed peer that is also a download source reconnects often, so a predicate
+	// true for the whole browse put an unrequested ask on the wire each time.
 	//
-	// This is the DIRECTORY form; the flat one has no such round and is
-	// covered separately below.
+	// This is the DIRECTORY form; the flat one has no such round and is covered separately
+	// below.
 	Store s;
 	s.Start(ALICE, kSidA, 1000);
 	ASSERT_TRUE(s.AwaitingDirectoryList(ALICE));
-	// Still true across a reconnect before the peer has answered -- the first
-	// ask may never have arrived, which is what the old counter-based guard
-	// allowed for too.
+	// Still true across a reconnect before the peer has answered -- the first ask may never
+	// have arrived, which is what the old counter-based guard allowed for too.
 	s.Touch(ALICE, 2000);
 	ASSERT_TRUE(s.AwaitingDirectoryList(ALICE));
 	// ...and false from the moment it has.
@@ -455,10 +447,10 @@ TEST(BrowseStore, ADirectoryBrowseAsksOnlyUntilThePeerAnswers)
 
 TEST(BrowseStore, AFlatBrowseStaysAskableUntilItsOneAnswerArrives)
 {
-	// The flat form has no directory round, so the window stays open for the
-	// whole browse: a reconnect before the peer answers re-asks, which is what
-	// the counter-based guard did too and is wanted -- the first ask may never
-	// have arrived. It closes on the single answer, which also completes it.
+	// The flat form has no directory round, so the window stays open for the whole browse: a
+	// reconnect before the peer answers re-asks, which is what the counter-based guard did too
+	// and is wanted -- the first ask may never have arrived. It closes on the single answer,
+	// which also completes it.
 	Store s;
 	s.Start(ALICE, kSidA, 1000);
 	ASSERT_TRUE(s.AwaitingDirectoryList(ALICE));

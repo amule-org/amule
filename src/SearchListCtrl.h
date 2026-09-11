@@ -44,217 +44,138 @@ class CSearchFile;
 class CSearchListModel;
 
 /**
- * This class is used to display search results.
+ * Displays search results.
  *
- * Results added to the list are colored according to the number of sources
- * and other parameters (see CSearchListModel::GetAttr).
+ * Rows are coloured by source count and other parameters (see CSearchListModel::GetAttr). Call
+ * ShowResults() first to display the results of a given id; only then do AddResult() and
+ * UpdateResult() work.
  *
- * To display results, first use the ShowResults function, which will display
- * all current results with the specified id and afterwards you can use the
- * AddResult function to add new results or the UpdateResult function to update
- * already present results. Please note that it is not possible to add results
- * with the AddResult function before calling ShowResults.
- *
- * Backed by a wxDataViewCtrl (native tree control) rather than a wxListCtrl,
- * for screen-reader accessibility (#180). Parent/child grouping (same file
- * from multiple sources/variants) is exposed via CSearchListModel's native
- * tree interface -- CSearchFile::GetParent()/GetChildren() drives it
- * directly, and expand/collapse state is owned by the control itself
- * (IsExpanded()), unlike the old hand-drawn tree which faked it with
- * CSearchFile::ShowChildren()/SetShowChildren() plus manual row insertion.
+ * Backed by a wxDataViewCtrl (native tree control) rather than a wxListCtrl, for screen-reader
+ * accessibility (#180). Parent/child grouping (same file from several sources) is exposed through
+ * CSearchListModel's native tree interface, driven straight from
+ * CSearchFile::GetParent()/GetChildren(); expand/collapse state belongs to the control
+ * (IsExpanded()), unlike the old hand-drawn tree that faked it with CSearchFile::ShowChildren()
+ * plus manual row insertion.
  */
 class CSearchListCtrl : public CMuleDataViewCtrl
 {
 public:
-	/**
-	 * Constructor.
-	 */
 	CSearchListCtrl(wxWindow *parent,
 		wxWindowID winid = -1,
 		const wxPoint &pos = wxDefaultPosition,
 		const wxSize &size = wxDefaultSize,
 		const wxString &name = "searchlistctrl");
 
-	/**
-	 * Destructor.
-	 */
 	virtual ~CSearchListCtrl();
 
-	/**
-	 * Adds the specified file to the list.
-	 *
-	 * @param toshow The new result to be shown.
-	 *
-	 * Please note that no duplicates checking is done, so the pointer should
-	 * point to a new file in order to avoid problems.
-	 */
+	/// Adds @a toshow to the list. No duplicate checking, so it must be a new result.
 	void AddResult(CSearchFile *toshow);
 
-	/**
-	 * Updates the specified source.
-	 *
-	 * @param toupdate The search result to be updated.
-	 */
+	/// Updates @a toupdate in the list.
 	void UpdateResult(CSearchFile *toupdate);
 
-	/**
-	 * Clears the list and inserts all results with the specified Id instead.
-	 *
-	 * @param ResultsId The ID of the results or Zero to simply reset the list.
-	 */
+	/// Clears the list and shows the results with ID @a ResultsId; zero just resets it.
 	void ShowResults(wxUIntPtr ResultsId);
 
-	/**
-	 * Returns the current Search Id.
-	 */
 	wxUIntPtr GetSearchId() const { return m_nResultsID; }
 
-	/**
-	 * Re-key this control's search ID. Used by the multi-search remote GUI to
-	 * remap an optimistically-created tab from its local ID to the
-	 * daemon-allocated one once the START reply arrives.
-	 */
+	/// Re-key this control's search ID: the multi-search remote GUI remaps an optimistically-
+	/// created tab from its local ID to the daemon-allocated one once the START reply arrives.
 	void SetSearchId(wxUIntPtr id) { m_nResultsID = id; }
 
-	/**
-	 * "View Files" (browse) tabs are keyed by the browsed peer's ECID (stable
-	 * across a re-browse and across a search-ID rekey), so a second browse of
-	 * the same peer refreshes this tab instead of opening a duplicate. 0 for an
-	 * ordinary search tab.
-	 */
+	/// "View Files" (browse) tabs are keyed by the browsed peer's ECID, stable across a re-
+	/// browse and across a search-ID rekey, so a second browse of the same peer refreshes this
+	/// tab instead of opening a duplicate. 0 for an ordinary search tab.
 	uint32 GetBrowseEcid() const { return m_browseEcid; }
 	/**
-	 * Marks this tab as browsing @a ecid, and swaps in the model that groups
-	 * results by the folders the peer reported.
+	 * Marks this tab as browsing @a ecid, and swaps in the model that groups results by the
+	 * folders the peer reported.
 	 *
-	 * The model is chosen here rather than in the constructor because that is
-	 * where the answer first exists: CSearchDlg::EnsureBrowseTab creates an
-	 * ordinary tab and only then tells it who it is browsing. The tab has no
-	 * results yet at that point, so there is nothing to migrate.
-	 *
-	 * Defined in the .cpp: the swap needs CBrowseListModel to be complete.
+	 * The model is chosen here, not in the constructor, because that is where the answer first
+	 * exists: CSearchDlg::EnsureBrowseTab creates an ordinary tab and only then says who it is
+	 * browsing, with no results yet to migrate. Defined in the .cpp: the swap needs
+	 * CBrowseListModel to be complete.
 	 */
 	void SetBrowseEcid(uint32 ecid);
 	bool IsBrowse() const { return m_browseEcid != 0; }
 
-	// Peer display name and lifecycle (EBrowseStatus) for a browse tab. Held on
-	// the control so CSearchDlg::UpdateHitCount can recompose the tab label
-	// ("<peer> (N…)" while receiving, "(N)" done, "(failed)") on every result
-	// or status change without re-parsing the label text.
+	// Peer display name and lifecycle (EBrowseStatus) for a browse tab. Held here so
+	// CSearchDlg::UpdateHitCount can recompose the tab label ("<peer> (N...)" receiving, "(N)"
+	// done, "(failed)") on any result or status change without re-parsing it.
 	const wxString &GetBrowseName() const { return m_browseName; }
 	void SetBrowseName(const wxString &name) { m_browseName = name; }
 	uint32 GetBrowseStatus() const { return m_browseStatus; }
-	/**
-	 * Records the browse state, and starts the rebuild throttle over when a
-	 * browse begins; defined in the .cpp so this header need not pull in
-	 * updownclient.h for the status values. See OnIdleHook().
-	 */
+	/// Records the browse state, and restarts the rebuild throttle when a browse begins. In the
+	/// .cpp so this header need not pull in updownclient.h. See OnIdleHook().
 	void SetBrowseStatus(uint32 status);
 
-	/**
-	 * Sets the filter which decides which results should be shown.
-	 *
-	 * @param regExp A regular expression targeting the filenames.
-	 * @param invert If true, invert the results of the filter-test.
-	 * @param filterKnown Should files that are queued or known be filtered out.
-	 *
-	 * An invalid regExp will result in all results being displayed.
-	 */
+	/// Sets the filter deciding which results are shown: @a regExp against the filename (an
+	/// invalid one shows everything), @a invert to reverse the test, @a filterKnown to drop
+	/// files that are queued or already known.
 	void SetFilter(const wxString &regExp, bool invert, bool filterKnown);
 
-	/**
-	 * Toggles the use of filtering on and off.
-	 */
+	/// Toggles filtering on and off.
 	void EnableFiltering(bool enabled);
 
-	/**
-	 * Returns the number of items hidden due to filtering.
-	 */
+	/// Number of items hidden by the filter.
 	size_t GetHiddenItemCount() const;
 
-	/**
-	 * Returns the number of results currently shown: one per top-level hit
-	 * that passes the filter, whatever is expanded.
-	 */
+	/// Number of results shown: one per top-level hit that passes the filter.
 	size_t GetItemCount() const;
 
 	/**
-	 * The selected result, or NULL if nothing is selected -- or if what is
-	 * selected is not a result at all.
+	 * The selected result, or NULL if nothing is selected -- or if what is selected is not a
+	 * result at all.
 	 *
-	 * Every item in this control is a wxDataViewItem holding a bare pointer,
-	 * and ToFile() turns one back into a CSearchFile with an unchecked cast.
-	 * In a browse tab the tree also holds folder nodes, which are not
-	 * results, and a handler that casts one anyway reads whatever is at that
-	 * address. These two accessors ask the model (IsFolder) first, so the
-	 * question is answered in one place rather than at every call site.
+	 * Every item here is a wxDataViewItem holding a bare pointer, and ToFile() turns one back
+	 * into a CSearchFile with an unchecked cast. A browse tab's tree also holds folder nodes,
+	 * and a handler that casts one anyway reads whatever is at that address. These two
+	 * accessors ask the model (IsFolder) first, so the question is answered in one place.
 	 */
 	CSearchFile *GetFocusedFile() const;
 
-	/**
-	 * Every selected item that is a result, skipping any that are not.
-	 * @see GetFocusedFile
-	 */
+	/// Every selected item that is a result, skipping any that are not.
+	/// @see GetFocusedFile
 	std::vector<CSearchFile *> GetSelectedFiles() const;
 
-	/**
-	 * Returns the number of currently selected rows.
-	 */
+	/// Number of selected rows.
 	int GetSelectedItemCount() const;
 
-	/**
-	 * Attempts to download all selected items.
-	 *
-	 * @param category The target category, or -1 to use the drop-down selection.
-	 */
+	/// Downloads every selected item into @a category, or into the drop-down's selection if -1.
 	void DownloadSelected(int category = -1);
 
 	static wxString DetermineStatusPrintable(CSearchFile *toshow);
 
-	/**
-	 * True if `file` currently passes this list's own filter test (own
-	 * filename/known-status match -- does NOT consider children). Used by
-	 * CSearchListModel to decide whether a row (or, for a parent, at least
-	 * one of its children) should be exposed in the tree.
-	 */
+	/// True if @a file passes this list's own filter test -- its own filename and known status,
+	/// NOT its children. CSearchListModel uses it to decide whether a row, or for a parent at
+	/// least one child, belongs in the tree.
 	bool PassesFilter(const CSearchFile *file) const;
 
 	/**
-	 * Whether a filter is in force, i.e. whether a row's visibility is a
-	 * live function of its values rather than a constant.
+	 * Whether a filter is in force, i.e. whether a row's visibility is a live function of its
+	 * values rather than a constant.
 	 *
-	 * CSearchListModel asks before deciding how to report a change. With no
-	 * filter every result is shown, so an arriving one is purely an addition
-	 * and an updated one keeps its row; with a filter, an update can make a
-	 * row have to appear or disappear (m_filterKnown drops a result the
-	 * moment its download status stops being NEW), which only a full
-	 * re-evaluation of the tree catches.
+	 * CSearchListModel asks before deciding how to report a change. With no filter every result
+	 * is shown, so an arrival is purely an addition and an update keeps its row; with a filter,
+	 * an update can make a row appear or disappear (m_filterKnown drops a result the moment its
+	 * download status stops being NEW), which only a full re-evaluation of the tree catches.
 	 */
 	bool HasActiveFilter() const { return m_filterEnabled && m_filter.IsValid(); }
 
-	/**
-	 * True if `file` should be exposed as a tree row: it passes the filter
-	 * itself, or (for a parent) at least one of its children does -- in
-	 * which case the parent is still shown as a container, regardless of
-	 * whether it's currently expanded (expand state is a pure display
-	 * concern now, owned by the control, so it no longer gates filtering
-	 * the way CSearchFile::ShowChildren() used to).
-	 */
+	/// True if @a file belongs in the tree: it passes the filter itself, or for a parent at
+	/// least one child does, in which case the parent is shown as a container whether or not it
+	/// is expanded -- expand state is display-only and owned by the control, unlike the old
+	/// CSearchFile::ShowChildren().
 	bool ShouldShow(const CSearchFile *file) const;
 
-	/**
-	 * Full multi-column comparison of two results, walking this list's sort
-	 * chain (primary column first, falling back to secondary/tertiary
-	 * columns set by earlier clicks) exactly as CMuleListCtrl's generic
-	 * chain-walking used to. Used by CSearchListModel::Compare().
-	 */
+	/// Full multi-column comparison, walking this list's sort chain (primary column first, then
+	/// the secondary/tertiary columns set by earlier clicks). Used by
+	/// CSearchListModel::Compare().
 	int CompareFiles(const CSearchFile *f1, const CSearchFile *f2) const;
 
 protected:
-	//! Single-column comparison (no chain, no direction), mirroring the old
-	//! CSearchListCtrl::SortProc switch minus the parent-recursion hack
-	//! (wxDataViewModel::Compare() is only ever asked to order true
-	//! siblings, so grouping is handled by the tree structure itself).
+	//! Single-column comparison, no chain and no direction. wxDataViewModel::Compare() is only
+	//! ever asked to order true siblings, so grouping needs no parent recursion.
 	int CompareFilesByColumn(
 		const CSearchFile *f1, const CSearchFile *f2, unsigned column, bool alt, int modifier) const;
 
@@ -272,33 +193,18 @@ protected:
 	void OnColumnWidthsChanged() override;
 	void OnSortingChanged() override;
 
-	/**
-	 * Returns true if the filename is filtered (i.e. passes the filter and
-	 * should be shown) -- see PassesFilter(), the public wrapper used by
-	 * the model.
-	 */
+	/// True if the filename passes the filter and the row should be shown. @see PassesFilter(),
+	/// the public wrapper the model uses.
 	bool IsFiltered(const CSearchFile *file) const;
 
 	/**
-	 * Helper function which syncs two lists.
-	 *
-	 * @param src The source list.
-	 * @param dst The list to be synced with the source list.
-	 *
-	 * This function synchronises the following settings of two lists:
-	 *  - Sort column
-	 *  - Sort direction
-	 *  - Column widths
-	 *
-	 * If either sort column or direction is changed, then the dst list will
-	 * be resorted. This function is used to ensure that all results list act
-	 * as one, while still allowing individual selection.
+	 * Syncs @a dst's sort column, sort direction and column widths from @a src, resorting @a
+	 * dst if the sort changed. Keeps every results list acting as one while still allowing
+	 * individual selection.
 	 */
 	static void SyncLists(CSearchListCtrl *src, CSearchListCtrl *dst);
 
-	/**
-	 * Helper function which syncs all other lists against the specified one.
-	 */
+	/// Syncs every other list against @a src.
 	static void SyncOtherLists(CSearchListCtrl *src);
 
 	//! This list contains pointers to all current instances of CSearchListCtrl.
@@ -310,9 +216,8 @@ protected:
 	//! ECID of the browsed peer for a "View Files" tab, or 0 for a search tab.
 	uint32 m_browseEcid;
 
-	//! The folder the context menu was opened on, if it was opened on one.
-	//! A right-click does not select the row on every platform, so the
-	//! handlers cannot ask for the selection when they run.
+	//! The folder the context menu was opened on, if any. A right-click does not select the row
+	//! on every platform, so the handlers cannot ask for the selection.
 	wxDataViewItem m_contextFolder;
 	//! Peer display name and lifecycle (EBrowseStatus) for a browse tab.
 	wxString m_browseName;
@@ -332,29 +237,23 @@ protected:
 	bool m_filterEnabled;
 
 	/**
-	 * Results the user queued from this list, exempted from "Hide Known
-	 * Files" until the filter is applied again.
+	 * Results the user queued from this list, exempt from "Hide Known Files" until the filter
+	 * is applied again.
 	 *
-	 * Queueing a result makes it known, and every result update resets the
-	 * whole model (see CSearchListModel::MarkDirty), so a plain status test
-	 * re-runs immediately and the row vanishes from under the click that
-	 * queued it -- before the colour confirming the download was added is
-	 * ever visible, and leaving nothing on screen to say which results were
-	 * taken (#756). Keeping them listed here holds those rows in place, in
-	 * their queued colour, until SetFilter() or ShowResults() clears the set.
+	 * Queueing a result makes it known, and every result update resets the whole model (see
+	 * CSearchListModel::MarkDirty), so a plain status test re-runs immediately and the row
+	 * vanishes from under the click that queued it -- before the colour confirming the download
+	 * is ever visible, and leaving nothing on screen to say which results were taken (#756).
+	 * Listing them here holds those rows in place, in their queued colour, until SetFilter() or
+	 * ShowResults() clears the set.
 	 *
-	 * Deliberately keyed on the user's action rather than on when a result
-	 * became known: in amulegui every result is constructed NEW and learns
-	 * its real status from a later poll (CSearchListRem::ProcessItemUpdate),
-	 * so "was it known when it arrived" is not a question the remote GUI can
-	 * answer, and hiding already-known results has to stay a live test there.
+	 * Keyed on the user's action rather than on when a result became known: in amulegui every
+	 * result is constructed NEW and learns its real status from a later poll
+	 * (CSearchListRem::ProcessItemUpdate), so "was it known when it arrived" is not a question
+	 * the remote GUI can answer.
 	 */
 	std::set<CMD4Hash> m_userQueued;
 
-	//! Last-seen column widths, used to detect a user drag-resize (there is
-	//! no portable wxDataViewCtrl "column resized" event to hook directly)
-	//! so it can be propagated to the other open search tabs, same as the
-	//! old EVT_LIST_COL_END_DRAG-driven sync.
 	void OnIdle(wxIdleEvent &event);
 
 	CSearchListModel *m_model;
@@ -373,28 +272,12 @@ protected:
 	void OnCollapseAll(wxCommandEvent &event);
 
 	/**
-	 * Expands or collapses @a item and everything under it.
-	 *
-	 * Only folders are containers worth walking here; a grouped result's
-	 * children are alternative sources, and opening those wholesale is not
-	 * what "expand all" on a folder means.
+	 * Expands or collapses @a item and everything under it. Only folders are containers worth
+	 * walking; a grouped result's children are alternative sources, and opening those wholesale
+	 * is not what "expand all" on a folder means.
 	 */
 	void SetSubtreeExpanded(const wxDataViewItem &item, bool expand);
 	void OnPopupDownload(wxCommandEvent &event);
-
-	/**
-	 * Header right-click: the column show/hide menu every other list gets
-	 * from CMuleListCtrl::OnColumnRClick(). Hiding calls SetHidden() and
-	 * records it in m_columnHidden; the persisted form stays a width of
-	 * zero, which CListColumnStore already understands.
-	 */
-
-	//! Keeps the group expander on the leftmost visible column.
-
-	/**
-	 * Columns the user owns, excluding the macOS spacer, which must stay
-	 * out of the header menu, the persisted widths and the cross-tab sync.
-	 */
 
 public:
 

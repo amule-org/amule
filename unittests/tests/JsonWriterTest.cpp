@@ -187,9 +187,8 @@ TEST(JsonWriter, SupplementaryPlaneAsSurrogatePair)
 
 TEST(JsonWriter, BmpNonAsciiEmittedAsUtf8)
 {
-	// Non-control BMP codepoints need no JSON escape and are emitted as the
-	// UTF-8 the buffer holds -- byte for byte what went in, since the input
-	// was built from the same UTF-8.
+	// Non-control BMP codepoints need no JSON escape and are emitted as the UTF-8 the buffer
+	// holds -- byte for byte what went in, the input having been built from the same UTF-8.
 	const char cyrillic[] = "\xD0\xBF\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82"; // "привет"
 	CJsonWriter w;
 	w.ValueString(wxString::FromUTF8(cyrillic));
@@ -212,9 +211,8 @@ TEST(JsonWriter, KeyEscaping)
 
 TEST(JsonWriter, ValueRawFragment)
 {
-	// A pre-formatted JSON fragment is appended verbatim. Caller is
-	// responsible for ensuring it's valid JSON; the writer only tracks
-	// whether a comma is needed before/after.
+	// A pre-formatted JSON fragment is appended verbatim. The caller must ensure it is valid
+	// JSON; the writer only tracks whether a comma is needed before or after.
 	CJsonWriter w;
 	w.BeginObject();
 	w.Key("pre");
@@ -248,18 +246,16 @@ TEST(JsonWriter, LargeString)
 	const wxString big(wxT('x'), 50000);
 	CJsonWriter w;
 	w.ValueString(big);
-	// Compared as bytes. Building the expectation as a wxString would convert
-	// the buffer back with the locale codec on the way into ASSERT_EQUALS,
-	// which is the conversion the writer exists to avoid -- and it would pass
-	// here regardless, the payload being pure ASCII.
+	// Compared as bytes. Building the expectation as a wxString would convert the buffer back
+	// with the locale codec on the way into ASSERT_EQUALS -- the conversion the writer exists
+	// to avoid -- and it would pass here regardless, the payload being pure ASCII.
 	ASSERT_EQUALS(std::string("\"") + std::string(50000, 'x') + "\"", w.GetBuffer());
 }
 
 TEST(JsonWriter, TakeBufferLeavesTheWriterReusable)
 {
-	// EndArray() leaves a comma pending for the next sibling, so a writer that
-	// kept that state across a take would open its next document with a stray
-	// separator.
+	// EndArray() leaves a comma pending for the next sibling, so a writer that kept that state
+	// across a take would open its next document with a stray separator.
 	CJsonWriter w;
 	w.BeginArray();
 	w.ValueInt(1);
@@ -287,14 +283,13 @@ TEST(JsonWriter, TakeBufferLeavesACallerOwnedBufferAlone)
 	ASSERT_EQUALS(std::string("{\"x\":1}"), shared);
 }
 
-// JsonDoubleToString is the one formatting both the REST writer and the SSE
-// payload builders go through. It exists because `ostream << double` differs
-// from it in two ways that matter on the wire.
+// JsonDoubleToString is the one formatting both the REST writer and the SSE payload builders go
+// through. It exists because `ostream << double` differs from it in two ways that matter on the
+// wire.
 TEST(JsonWriter, DoubleToStringIsRoundTrippableNotSixDigits)
 {
-	// The stream default is 6 significant digits, which turns 1-of-3 parts
-	// into "33.3333" -- a different number from the one REST reports for the
-	// same value.
+	// The stream default is 6 significant digits, which turns 1-of-3 parts into "33.3333" -- a
+	// different number from the one REST reports for the same value.
 	const double third = 100.0 / 3.0;
 	ASSERT_EQUALS(std::string("33.333333333333336"), JsonDoubleToString(third));
 	// Whole values stay short; %.17g does not pad.
@@ -305,10 +300,9 @@ TEST(JsonWriter, DoubleToStringIsRoundTrippableNotSixDigits)
 
 TEST(JsonWriter, DoubleToStringUsesACLocaleDecimalPoint)
 {
-	// snprintf and ostream both honour LC_NUMERIC, which amuleapi inherits
-	// from --locale. A comma separator would make the frame invalid JSON, so
-	// the formatter normalises it. Skipped where the locale is unavailable,
-	// which is normal in a minimal container.
+	// snprintf and ostream both honour LC_NUMERIC, which amuleapi inherits from --locale. A
+	// comma separator would make the frame invalid JSON, so the formatter normalises it.
+	// Skipped where the locale is unavailable, which is normal in a minimal container.
 	const char *prev = std::setlocale(LC_NUMERIC, nullptr);
 	const std::string saved = prev ? prev : "C";
 	if (std::setlocale(LC_NUMERIC, "de_DE.UTF-8") == nullptr &&

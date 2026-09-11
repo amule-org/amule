@@ -35,30 +35,25 @@
 #define MULEVERSION_RETURN_RESULT return ver;
 
 /**
- * Version of Boost aMule is compiled with.
- *
- * Defined in LibSocketAsio.cpp.
+ * Version of Boost aMule is compiled with. Defined in LibSocketAsio.cpp.
  */
 extern wxString MuleBoostVersion;
 
 /**
  * The build's version in the short form exchanged over EC and shown in the UI.
  *
- * `VERSION` alone is not enough to identify a development build: on any
- * untagged build it is the literal string "GIT", so every snapshot reports the
- * same value and two different revisions look identical. The revision lives in
- * GITDATE, which CMake sets from `git describe`.
+ * `VERSION` alone cannot identify a development build: on any untagged build it is the literal
+ * string "GIT", so every snapshot reports the same value and two revisions look identical. The
+ * revision lives in GITDATE, which CMake sets from `git describe`.
  *
- * On a tagged release CMake unsets GITDATE (config.h.cm renders `#undef
- * GITDATE`), so this returns exactly VERSION -- e.g. "3.0.1" -- and the
- * appended part compiles away entirely. Only development builds gain the
- * suffix, e.g. "GIT rev. 3.0.1-773-g500293ba3".
+ * On a tagged release CMake unsets GITDATE (config.h.cm renders `#undef GITDATE`), so this returns
+ * exactly VERSION -- e.g. "3.0.1" -- and the appended part compiles away. Only development builds
+ * gain the suffix, e.g. "GIT rev. 3.0.1-773-g500293ba3".
  *
- * Deliberately shorter than GetMuleVersion(): that one describes the whole
- * build for debugging (wx toolkit, Boost, debug flag) and is far too long for
- * a status-bar field or a protocol tag. Both the core that reports this over
- * EC and the client that compares it against its own build call this, so the
- * two can never disagree about how the string is spelled.
+ * Deliberately shorter than GetMuleVersion(): that one describes the whole build for debugging (wx
+ * toolkit, Boost, debug flag) and is far too long for a status-bar field or a protocol tag. Both
+ * the core that reports this over EC and the client that compares it against its own build call
+ * this, so the two can never disagree.
  */
 inline wxString GetShortMuleVersion()
 {
@@ -70,13 +65,10 @@ inline wxString GetShortMuleVersion()
 }
 
 /**
- * Returns a description of the version of aMule being used.
+ * A description of the aMule version in use, including wx information.
  *
- * @return A detailed description of the aMule version, including wx information.
- *
- * Use this rather than just using the VERSION or CURRENT_VERSION_LONG
- * constants, when displaying information to the user. The purpose is to
- * help with debugging.
+ * Prefer this to the VERSION or CURRENT_VERSION_LONG constants when showing information to the
+ * user: it is meant to help with debugging.
  */
 inline wxString GetMuleVersion()
 {

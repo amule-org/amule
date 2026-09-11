@@ -70,9 +70,8 @@ void CGapList::AddGap(uint64 gapstart, uint64 gapend)
 	// total gap size has to be recalculated
 	m_totalGapSizeValid = false;
 
-	// find a place to start:
-	// first gap which ends >= our gap start - 1
-	// (-1 so we can join adjacent gaps)
+	// Find a place to start: the first gap ending >= our gap start - 1, the -1 so adjacent gaps
+	// can be joined.
 	iterator it = m_gaplist.lower_bound(gapstart > 0 ? gapstart - 1 : 0);
 	while (it != m_gaplist.end()) {
 		iterator it2 = it++;
@@ -148,9 +147,9 @@ void CGapList::FillGap(uint64 partstart, uint64 partend)
 				// our part fills this gap completely
 				m_gaplist.erase(it2);
 			} else if (curGapStart <= partend) {
-				// lower part of this gap is in the part - shrink gap:
-				//   (this is the most common case: curGapStart == partstart && curGapEnd >
-				//   partend)
+				// The lower part of this gap is in the part, so shrink the gap.
+				// This is the most common case: curGapStart == partstart &&
+				// curGapEnd > partend.
 				it2->second = partend + 1;
 				// end of our part was in the gap: we're done
 				break;
@@ -161,9 +160,9 @@ void CGapList::FillGap(uint64 partstart, uint64 partend)
 		} else {
 			// curGapStart < partstart
 			if (curGapEnd > partend) {
-				// our part is completely enclosed by the gap
-				// cut it in two, leaving our part out:
-				// shrink the gap so it becomes the second gap
+				// Our part is completely enclosed by the gap. Cut it in two,
+				// leaving our part out: shrink the gap so it becomes the second
+				// gap.
 				it2->second = partend + 1;
 				// insert new first gap
 				iterator it3(it2);
@@ -278,10 +277,9 @@ bool CGapList::IsComplete(uint64 gapstart, uint64 gapend) const
 
 bool CGapList::IsComplete(uint16 part)
 {
-	// There is a bug in the ED2K protocol:
-	// For files of size n * PARTSIZE one part too much is transmitted in the availability bitfield.
-	// Allow completion detection of this dummy part, and always report it as complete
-	// (so it doesn't get asked for).
+	// There is a bug in the ED2K protocol: for files of size n * PARTSIZE one part too many is
+	// transmitted in the availability bitfield. Allow completion detection of this dummy part,
+	// and always report it as complete so it does not get asked for.
 	if (part == m_iPartCount && m_sizeLastPart == PARTSIZE) {
 		return true;
 	}

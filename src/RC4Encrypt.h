@@ -58,9 +58,9 @@ public:
 	// Sets the encryption key
 	void SetKey(const MD5Sum &keyhash, bool bSkipDiscard = false);
 
-	// RC4 encrypts the internal buffer. Marks it as encrypted, any other further call
-	// to add data, as Append(), must assert if the inner data is encrypted.
-	// Make sure to check SetKey has been called!
+	// RC4 encrypts the internal buffer and marks it encrypted; any further call adding data,
+	// such as Append(), must assert if the inner data is encrypted. Make sure SetKey has been
+	// called.
 	void Encrypt();
 
 	// RC4 encrypts an external buffer with the current key.

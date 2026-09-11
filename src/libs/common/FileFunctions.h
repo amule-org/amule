@@ -48,10 +48,9 @@ public:
 	CDirIterator(const CPath &dir);
 	~CDirIterator();
 
-	// extraFlags is OR'd into the wxDir search flags on top of `type`,
-	// so callers that need wxDIR_NO_FOLLOW (or any other wx flag) can
-	// pass it through without this common library knowing about
-	// application-level preferences.
+	// extraFlags is OR'd into the wxDir search flags on top of `type`, so a caller needing
+	// wxDIR_NO_FOLLOW (or any other wx flag) can pass it through without this common library
+	// knowing about application-level preferences.
 	CPath GetFirstFile(FileType type, const wxString &mask = "", int extraFlags = 0);
 	CPath GetNextFile();
 
@@ -81,34 +80,32 @@ typedef std::pair<bool, EFileType> UnpackResult;
  * Unpacks a single file from an archive, replacing the archive.
  *
  * @param file The archive.
- * @param files An array of filenames (terminated by a NULL entry) which should be unpacked.
- * @return The first value is true if the archive was unpacked, the second is the resulting filetype.
+ * @param files Filenames to unpack, terminated by a NULL entry.
+ * @return True if the archive was unpacked, plus the resulting filetype.
  *
- * If the file specified is not an archive, it will be left unchanged and
- * the file-type returned. If it is a GZip archive, the archive will be
- * unpacked and the new file will replace the archive. If the archive is a
- * Zip archive, the first file found matching any in the files array (case-
- * insensitive) will be unpacked and overwrite the archive.
+ * A file that is not an archive is left unchanged and its type returned. A GZip archive is unpacked
+ * and replaced by the new file. In a Zip archive the first file matching any in @a files (case-
+ * insensitively) is unpacked over the archive.
  */
 UnpackResult UnpackArchive(const CPath &file, const char *files[]);
 
 /**
  * Restrict @a file to owner read/write (0600) if it is currently looser.
  *
- * For config files holding credentials. aMule's own configs are created with
- * whatever the umask allows -- 0644 on macOS, and 0664 under the 0002 umask
- * Debian and Ubuntu ship, which leaves the file group-*writable*.
+ * For config files holding credentials. aMule's own configs are created with whatever the umask
+ * allows -- 0644 on macOS, and 0664 under the 0002 umask Debian and Ubuntu ship, which leaves the
+ * file group-*writable*.
  *
- * Called at startup rather than at creation so existing installs are fixed on
- * the first run of a version that does this, not just new ones. Safe to repeat:
- * it stats first and only acts when something needs tightening. wxFileConfig
- * replaces the file on save but carries the mode across, so one call holds.
+ * Called at startup rather than at creation so existing installs are fixed on the first run of a
+ * version that does this, not just new ones. Safe to repeat: it stats first and only acts when
+ * something needs tightening. wxFileConfig replaces the file on save but carries the mode across,
+ * so one call holds.
  *
- * No-op on Windows, which has no POSIX mode bits; there the file is protected
- * by the profile directory's ACL, the same compromise Credentials.cpp makes.
+ * No-op on Windows, which has no POSIX mode bits; there the file is protected by the profile
+ * directory's ACL, the same compromise Credentials.cpp makes.
  *
- * @return true only when permissions were actually tightened, so the caller can
- *         say so once; this library sits below the logger.
+ * @return true only when permissions were actually tightened, so the caller can say so once; this
+ *         library sits below the logger.
  */
 bool RestrictToOwner(const CPath &file);
 

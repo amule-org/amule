@@ -38,12 +38,11 @@ bool CBrowseManager::Start(CUpDownClient *client, std::uint32_t searchId, std::u
 	if (result.started) {
 		m_clients[searchId].Link(client CLIENT_DEBUGSTRING("CBrowseManager::Start"));
 	}
-	// Only now release whatever this peer was attached to before, so the
-	// reference map never holds two entries for one peer. Deliberately after
-	// the link: CClientRef::Unlink deletes at a refcount of zero, so releasing
-	// first would free `client` here if this map ever held the last reference.
-	// It does not today -- clientlist keeps one for any browsable peer -- but
-	// that is another class's invariant, and this order does not need it.
+	// Only now release whatever this peer was attached to before, so the reference map never
+	// holds two entries for one peer. Deliberately after the link: CClientRef::Unlink deletes
+	// at a refcount of zero, so releasing first would free `client` here if this map ever held
+	// the last reference. It does not today -- clientlist keeps one for any browsable peer --
+	// but that is another class's invariant, and this order does not need it.
 	Perform(result.displaced);
 	return result.started;
 }
@@ -92,9 +91,9 @@ void CBrowseManager::Process(std::uint64_t now)
 
 void CBrowseManager::Perform(const browse::Outcome &outcome)
 {
-	// The ID travels with the effect, so there is no way for the two to
-	// disagree -- which is how a release went missing when the manager looked
-	// the ID up separately and the lookup excluded terminal browses.
+	// The ID travels with the effect, so there is no way for the two to disagree -- which is
+	// how a release went missing when the manager looked the ID up separately and the lookup
+	// excluded terminal browses.
 	switch (outcome.effect) {
 	case browse::Effect::Nothing:
 		break;
@@ -120,9 +119,9 @@ void CBrowseManager::Perform(const browse::Outcome &outcome)
 
 void CBrowseManager::Announce(std::uint32_t searchId)
 {
-	// The GUI's tab marker, and nothing else: every other consumer -- the EC
-	// progress reply, the EC search listing, the monolithic bar -- reads this
-	// manager rather than holding a copy to be kept in step.
+	// The GUI's tab marker, and nothing else: every other consumer -- the EC progress reply,
+	// the EC search listing, the monolithic bar -- reads this manager rather than holding a
+	// copy to be kept in step.
 	Notify_Browse_Status(static_cast<std::uint64_t>(searchId),
 		m_store.StateOf(searchId) == browse::State::Finished ? BROWSE_FINISHED : BROWSE_FAILED);
 }

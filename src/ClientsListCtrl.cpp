@@ -43,11 +43,10 @@ namespace
 /**
  * Renders the Name column.
  *
- * Same extension point the per-file client lists use (see
- * CGenericClientListCtrl's renderer of the same name): CMuleBarRenderer is
- * borrowed for its identity-carrying CBarFillSpec, not to draw a bar. The
- * identity here is the row's own snapshot rather than a client, since that is
- * what this list holds, and the drawing is DrawClientNameCell() either way.
+ * Same extension point the per-file client lists use (see CGenericClientListCtrl's renderer of the
+ * same name): CMuleBarRenderer is borrowed for its identity-carrying CBarFillSpec, not to draw a
+ * bar. The identity here is the row's own snapshot rather than a client, since that is what this
+ * list holds, and the drawing is DrawClientNameCell() either way.
  */
 class CClientsNameRenderer : public CMuleBarRenderer
 {
@@ -122,11 +121,10 @@ void CClientsListCtrl::SetClients(std::vector<Row> &&rows)
 	rows.erase(std::remove_if(rows.begin(), rows.end(), [](const Row &row) { return row.ecid == 0; }),
 		rows.end());
 
-	// The common case by far: the same peers as last second, with new numbers.
-	// Overwrite the rows where they sit and refresh them. Rebuilding the model
-	// instead -- which is all this used to do -- discards the scroll position
-	// every time the poll lands, so a list a person is reading jumps back to
-	// the top once a second.
+	// The common case by far: the same peers as last second, with new numbers. Overwrite the
+	// rows where they sit and refresh them. Rebuilding the model instead -- which is all this
+	// used to do -- discards the scroll position every time the poll lands, so a list a person
+	// is reading jumps back to the top once a second.
 	if (rows.size() == m_rows.size()) {
 		std::unordered_map<uint32, const Row *> incoming;
 		incoming.reserve(rows.size());
@@ -141,14 +139,13 @@ void CClientsListCtrl::SetClients(std::vector<Row> &&rows)
 			}
 		}
 		if (sameSet) {
-			// Only the rows that actually moved. Refreshing all of them cost a
-			// repaint per visible row on every tick even when nothing had
-			// changed, which on a page that never sits still is most of the
-			// work it was doing (issue #920).
+			// Only the rows that actually moved. Refreshing all of them cost a repaint
+			// per visible row on every tick even when nothing had changed, which on a
+			// page that never sits still is most of the work it was doing (issue #920).
 			//
-			// Per row rather than a blanket Refresh() so the control's own
-			// viewport gate applies -- off-screen rows cost nothing -- and so a
-			// live sort column still gets the chance to reorder.
+			// Per row rather than a blanket Refresh() so the control's own viewport
+			// gate applies -- off-screen rows cost nothing -- and so a live sort column
+			// still gets the chance to reorder.
 			for (Row &row : m_rows) {
 				const Row &fresh = *incoming[row.ecid];
 				if (row == fresh) {
@@ -161,9 +158,9 @@ void CClientsListCtrl::SetClients(std::vector<Row> &&rows)
 		}
 	}
 
-	// A peer arrived or left, so the row set itself changed and the model has
-	// to be rebuilt. The selection is carried across by ECID and therefore
-	// still names the same peers afterwards, whatever order the sweep produced.
+	// A peer arrived or left, so the row set changed and the model has to be rebuilt. The
+	// selection is carried across by ECID and therefore still names the same peers afterwards,
+	// whatever order the sweep produced.
 	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
 	ClearItemData();
 	m_rows = std::move(rows);
@@ -183,16 +180,14 @@ const ClientNameCell *CClientsListCtrl::NameCellFor(wxUIntPtr item) const
 
 bool CClientsListCtrl::PeerForItem(wxUIntPtr data, PeerIdentity &out) const
 {
-	// Start clean: this is an out parameter and the fields below are only
-	// assigned when they are known, so anything left from a previous call
-	// would be read as belonging to this row.
+	// Start clean: this is an out parameter and the fields below are only assigned when they
+	// are known, so anything left from a previous call would be read as belonging to this row.
 	out = PeerIdentity();
-	// By ECID: within one daemon process that names exactly this peer. A row is
-	// only ever as current as the last sweep, so a miss means the peer has gone.
+	// By ECID: within one daemon process that names exactly this peer. A row is only ever as
+	// current as the last sweep, so a miss means the peer has gone.
 	//
-	// Every row here is a peer we are connected to, so identity is taken from
-	// the live client rather than from the row -- there is no case where one is
-	// known and the other is not.
+	// Every row here is a peer we are connected to, so identity is taken from the live client
+	// rather than from the row -- there is no case where one is known and the other is not.
 	const Row *row = RowFor(data);
 	if (row == nullptr || row->ecid == 0) {
 		return false;
@@ -241,9 +236,9 @@ wxString CClientsListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) co
 		return CFormat(wxT("%s:%u")) % Uint32toStringIP(row->ip) % row->port;
 
 	case COLUMN_CLIENTS_ORIGIN:
-		// OriginToText() hands back the wxTRANSLATE() marker, which is only an
-		// extraction hint -- the lookup has to happen here, the way the download
-		// list's source column already does it.
+		// OriginToText() hands back the wxTRANSLATE() marker, which is only an extraction
+		// hint -- the lookup has to happen here, the way the download list's source column
+		// already does it.
 		return wxGetTranslation(OriginToText(row->sourceFrom));
 
 	case COLUMN_CLIENTS_FILES:

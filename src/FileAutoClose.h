@@ -29,11 +29,8 @@
 #include "CFile.h" // Needed for CFile
 
 /**
- * This class encapsulates the CFile class.
- *
- * It allows to close the used file handle and reopen
- * it on usage to minimize the number of used file handles.
- *
+ * Wraps CFile so the file handle can be closed and reopened on use, keeping the number of open
+ * handles down.
  */
 class CFileAutoClose
 {
@@ -44,113 +41,76 @@ public:
 	CFileAutoClose();
 
 	/**
-	 * Constructor, calls Open on the specified file.
-	 *
-	 * To check if the file was successfully opened, a
-	 * call to IsOpened() is required.
+	 * Calls Open on the specified file. Check IsOpened() to see whether it succeeded.
 	 */
 	CFileAutoClose(const CPath &path, CFile::OpenMode mode = CFile::read);
 
 	/**
-	 * Request auto closing of the file handle.
-	 *
-	 * @param now true: close immediately  false: close when timeout has expired
-	 * @return True if the file has been (or has already been) autoclosed.
+	 * Request auto closing of the file handle. @a now true closes immediately, false closes
+	 * when the timeout expires. True if the file has been, or already was, autoclosed.
 	 */
 	bool Release(bool now = false);
 
 	/**
-	 * Opens a file.
-	 *
-	 * @param path The full or relative path to the file.
-	 * @param mode The opening mode (see CFile).
-	 * @return True if the file was opened, false otherwise.
+	 * Opens the file at @a path in @a mode (see CFile). True if it was opened.
 	 */
 	bool Open(const CPath &path, CFile::OpenMode mode = CFile::read);
 
 	/**
-	 * Calling Create is equivalent of calling open with OpenMode 'write'.
-	 *
-	 * @param overwrite Specifies if the target file should be overwritten,
-	 *                  in case that it already exists.
-	 *
-	 * @see CFile::Open
+	 * Equivalent to Open with OpenMode 'write'. @a overwrite says whether an existing target
+	 * file should be overwritten. @see CFile::Open
 	 */
 	bool Create(const CPath &path, bool overwrite = false);
 
 	/**
-	 * Closes the file.
-	 *
-	 * Note that calling Close on an closed file
-	 * is an illegal operation.
+	 * Closes the file. Calling this on a closed file is illegal.
 	 */
 	bool Close();
 
 	/**
-	 * @see CSafeFileIO::GetLength
-	 *
-	 * Note that calling GetLength on a closed file
-	 * is an illegal operation.
+	 * @see CSafeFileIO::GetLength. Calling this on a closed file is illegal.
 	 */
 	uint64 GetLength() const;
 
 	/**
 	 * Resizes the file to the specified length.
-	 *
 	 */
 	bool SetLength(uint64 newLength);
 
 	/**
-	 * Returns the path of the currently opened file.
-	 *
+	 * The path of the currently opened file.
 	 */
 	const CPath &GetFilePath() const;
 
 	/**
-	 * Returns true if the file is opened, false otherwise.
+	 * True if the file is opened.
 	 */
 	bool IsOpened() const;
 
 	/**
-	 * Reads 'count' bytes into 'buffer'.
-	 *
-	 * @param buffer The target buffer.
-	 * @param offset The seek address in the file.
-	 * @param count The number of bytes to read.
-	 *
-	 * See CFileDataIO::Read
+	 * Reads @a count bytes into @a buffer from @a offset in the file. See CFileDataIO::Read.
 	 */
 	void ReadAt(void *buffer, uint64 offset, size_t count);
 
 	/**
-	 * Write 'count' bytes from 'buffer' into the file.
-	 *
-	 * @param buffer The source-data buffer.
-	 * @param offset The seek address in the file.
-	 * @param count The number of bytes to write.
-	 *
-	 * See CFileDataIO::Write
+	 * Writes @a count bytes from @a buffer at @a offset in the file. See CFileDataIO::Write.
 	 */
 	void WriteAt(const void *buffer, uint64 offset, size_t count);
 
 	/**
-	 * Returns true when the file-position is past or at the end of the file.
+	 * True when the file position is at or past the end of the file.
 	 */
 	bool Eof();
 
 	/**
-	 * Returns the file descriptor associated with the file.
-	 *
-	 * This breaks the purpose of this class of course.
-	 * Therefore the AutoClose mechanism is disabled when fd() is called.
-	 * It's required for FileArea's mmap stuff.
-	 * Currently FileArea objects are shortlived enough for this not being
-	 * a problem anyway, but that might change in the future.
+	 * The file descriptor associated with the file. This defeats the purpose of the class, so
+	 * AutoClose is disabled once fd() is called. Required for FileArea's mmap. FileArea objects
+	 * are currently short-lived enough for that not to matter, but that might change.
 	 */
 	int fd();
 
 	/**
-	 * Reenables AutoClose disabled by fd() before.
+	 * Re-enables AutoClose after a previous fd() disabled it.
 	 */
 	void Unlock();
 
@@ -162,7 +122,7 @@ private:
 	//@}
 
 	/**
-	 * Check if file was autoclosed, and reopen if needed.
+	 * Check whether the file was autoclosed, and reopen it if needed.
 	 */
 	void Reopen();
 

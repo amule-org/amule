@@ -58,13 +58,12 @@ public:
 	/**
 	 * Every peer we have ever exchanged data with, for the clients history.
 	 *
-	 * A snapshot rather than access to the map: the caller wants to sort and
-	 * display it, and handing out iterators into the live store would make
-	 * every future change to how credits are held a change to its callers as
-	 * well. Copying is affordable because this is read once when the page is
-	 * opened, not per refresh -- on a five-month-old node the store holds
-	 * around forty thousand records, and nothing about them changes between
-	 * one poll and the next.
+	 * A snapshot rather than access to the map: the caller wants to sort and display it, and
+	 * handing out iterators into the live store would make every future change to how credits
+	 * are held a change to its callers as well. Copying is affordable because this is read once
+	 * when the page is opened, not per refresh -- on a five-month-old node the store holds
+	 * around forty thousand records, and nothing about them changes between one poll and the
+	 * next.
 	 */
 	void GetAllCredits(std::vector<CClientCredits *> &result) const;
 

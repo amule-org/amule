@@ -33,38 +33,26 @@
 class CIPFilterEvent;
 
 /**
- * This class represents a list of IPs that should not be accepted
- * as valid connection destinations nor sources. It provides an
- * interface to query whether or not a specific IP is filtered.
+ * A list of IPs that must not be accepted as connection destinations or sources, with an interface
+ * to ask whether a given IP is filtered.
  *
- * Currently this class can handle IPRange files in the Peer-Guardian
- * format and the AntiP2P format, read from either text files or text
- * files compressed with the zip compression format.
- *
- * This class is thread-safe.
+ * Handles IPRange files in the Peer-Guardian and AntiP2P formats, read from plain text files or
+ * from text files zip-compressed. Thread-safe.
  */
 class CIPFilter : public wxEvtHandler
 {
 public:
-	/**
-	 * Constructor.
-	 */
 	CIPFilter();
 
 	/**
-	 * Checks if a IP is filtered with the current list and AccessLevel.
-	 *
-	 * @param IP2test The IP-Address to test for.
-	 * @param isServer Whether this IP belongs to a server or a client. Needed for statistical purposes
-	 * only.
-	 * @return True if it is filtered, false otherwise.
-	 *
-	 * Note: IP2Test must be in anti-host order (BE on LE platform, LE on BE platform).
+	 * True if @a IP2test is filtered by the current list and access level. @a isServer says
+	 * whether the IP belongs to a server or a client, for statistics only. @a IP2test must be
+	 * in anti-host order (BE on an LE platform, LE on a BE one).
 	 */
 	bool IsFiltered(uint32 IP2test, bool isServer = false);
 
 	/**
-	 * Returns the number of banned ranges.
+	 * The number of banned ranges.
 	 */
 	uint32 BanCount() const;
 
@@ -74,39 +62,33 @@ public:
 	void Reload();
 
 	/**
-	 * Starts a download of the ipfilter-list at the specified URL.
-	 *
-	 * @param A valid URL.
-	 *
-	 * Once the file has been downloaded, the ipfilter.dat file
-	 * will be replaced with the new file and Reload will be called.
+	 * Starts a download of the ipfilter list at @a strURL. Once it has downloaded, ipfilter.dat
+	 * is replaced with the new file and Reload is called.
 	 */
 	void Update(const wxString &strURL);
 
 	/**
-	 * This function is called when a download is completed.
+	 * Called when a download completes.
 	 */
 	void DownloadFinished(uint32 result);
 
 	/**
-	 * True once initial startup has finished (stays true while reloading later).
+	 * True once initial startup has finished; stays true while reloading later.
 	 */
 	bool IsReady() const { return m_ready; }
 
 	/**
-	 * These functions are called to tell the filter to start networks once it
-	 * has finished loading.
+	 * Tells the filter to start these networks once it has finished loading.
 	 */
 	void StartKADWhenReady() { m_startKADWhenReady = true; }
 	void ConnectToAnyServerWhenReady() { m_connectToAnyServerWhenReady = true; }
 
 	/**
-	 * Starts whichever networks the two flags above requested, and clears them.
-	 *
-	 * Called from the load-finished handler, and again once the flags have been
-	 * set during startup: loading runs on a worker thread, so it can finish -- and
-	 * its event be dispatched -- before the caller gets round to asking for a
-	 * network. Doing nothing when no flag is set makes the second call harmless.
+	 * Starts whichever networks the two flags above requested, and clears them. Called from the
+	 * load-finished handler, and again once the flags have been set during startup: loading
+	 * runs on a worker thread, so it can finish -- and its event be dispatched -- before the
+	 * caller gets round to asking for a network. Doing nothing when no flag is set makes the
+	 * second call harmless.
 	 */
 	void StartPendingNetworks();
 

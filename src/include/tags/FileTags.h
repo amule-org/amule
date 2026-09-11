@@ -52,10 +52,9 @@
 #define FT_DL_PREVIEW 0x25
 #define FT_KADLASTPUBLISHNOTES 0x26 // <uint32>
 #define FT_AICH_HASH 0x27
-// Per-record "last seen alive" timestamp written by aMule's KnownFileList
-// so the dedup-list cap/TTL can drop entries whose file hasn't existed
-// for the user-configured window. aMule-internal; eMule and older
-// aMule binaries ignore unknown tags on load.
+// Per-record "last seen alive" timestamp written by aMule's KnownFileList, so the dedup-list
+// cap/TTL can drop entries whose file has not existed for the user-configured window. aMule-
+// internal; eMule and older aMule binaries ignore unknown tags on load.
 #define FT_LASTSEEN 0x28 // <uint32>
 #define FT_COMPLETE_SOURCES \
 	0x30 // nr. of sources which share a
@@ -77,21 +76,18 @@
 #define FT_MEDIA_LENGTH 0xD3    // <uint32> !!!
 #define FT_MEDIA_BITRATE 0xD4   // <uint32>
 #define FT_MEDIA_CODEC 0xD5     // <string>
-// Set when ffprobe ran on this file and produced nothing usable -- a broken
-// or truncated container, an unreadable file, a binary that errored out.
-// Without it such a file is indistinguishable from one never probed, so the
-// "already probed" gate re-queues it on every share reload and every restart,
-// forever, to fail again the same way (issue #1116).
+// Set when ffprobe ran on this file and produced nothing usable -- a broken or truncated container,
+// an unreadable file, a binary that errored out. Without it such a file is indistinguishable from
+// one never probed, so the "already probed" gate re-queues it on every share reload and every
+// restart, forever, to fail the same way (issue #1116).
 //
-// aMule-internal, like FT_LASTSEEN: it is stored in known.met and is NOT
-// published -- the ed2k and Kad publishers build their tag lists by explicit
-// allow-list, so a peer never sees it. Deliberately NOT counted by
-// GetMetaDataVer(): "we tried and failed" is not metadata, and a file
-// carrying only this must still read as having none.
+// aMule-internal, like FT_LASTSEEN: stored in known.met and NOT published -- the ed2k and Kad
+// publishers build their tag lists by explicit allow-list, so a peer never sees it. Deliberately
+// NOT counted by GetMetaDataVer(): "we tried and failed" is not metadata, and a file carrying only
+// this must still read as having none.
 //
-// A media refresh (issue #1079) ignores it and clears it on success, so the
-// marker is a default, never a life sentence: fix the file or install a
-// working ffprobe, ask for a refresh, and it is retried.
+// A media refresh (issue #1079) ignores it and clears it on success, so the marker is a default,
+// never a life sentence.
 #define FT_MEDIA_PROBE_FAILED 0x57 // <uint32> aMule-internal, see above
 #define FT_FILERATING 0xF7         // <uint8>
 
@@ -123,16 +119,15 @@
 #define TAG_QTIME wxT("\x16")
 #define TAG_PARTS wxT("\x17")
 #define TAG_PUBLISHINFO wxT("\x33") // <uint32>
-// AICH hashes on Kad keyword storage, introduced by Kad protocol version 0x09.
-// Both are gated on the peer's advertised Kad version (KADEMLIA_VERSION9_50a):
-// the publish tag is only sent to peers at 0x09 or above, and the result tag is
-// only honoured from senders at 0x09 or above.
+// AICH hashes on Kad keyword storage, introduced by Kad protocol version 0x09. Both are gated on
+// the peer's advertised Kad version (KADEMLIA_VERSION9_50a): the publish tag only goes to peers at
+// 0x09 or above, and the result tag is only honoured from senders at 0x09 or above.
 #define TAG_KADAICHHASHPUB wxT("\x36")    // <AICH Hash> (BSOB, 20 bytes)
 #define TAG_KADAICHHASHRESULT wxT("\x37") // <Count 1>{<Publishers 1><AICH Hash 20>} Count (BSOB)
-// Not a Kad wire tag: the AICH root hash a Kad search result agreed on, handed
-// from the Kad layer to CSearchList in the same in-process tag list the other
-// result metadata travels in.  It shares FT_AICH_HASH's id (0x27) so a search
-// result carries its AICH hash under the same tag name as everywhere else.
+// Not a Kad wire tag: the AICH root hash a Kad search result agreed on, handed from the Kad layer
+// to CSearchList in the same in-process tag list the other result metadata travels in. It shares
+// FT_AICH_HASH's id (0x27) so a search result carries its AICH hash under the same tag name as
+// everywhere else.
 #define TAG_AICHHASH wxT("\x27")       // <string> (base32)
 #define TAG_MEDIA_ARTIST wxT("\xD0")   // <string>
 #define TAG_MEDIA_ALBUM wxT("\xD1")    // <string>
@@ -152,11 +147,10 @@
 #define TAG_SOURCEIP wxT("\xFE")       // <uint32>
 #define TAG_SOURCETYPE wxT("\xFF")     // <uint8>
 
-// eMuleAI vendor tags in Kad source publish/search results. Multi-character
-// names, deliberately: the single-byte space above is full. Both carry a
-// 128-bit address as exactly 32 hexadecimal characters, most significant byte
-// first -- see DecodeIPv6HexTag() in src/PeerCapabilities.h. aMule reads them
-// but cannot yet route to an IPv6 source, so it records and drops.
+// eMuleAI vendor tags in Kad source publish/search results. Multi-character names, deliberately:
+// the single-byte space above is full. Both carry a 128-bit address as exactly 32 hexadecimal
+// characters, most significant byte first -- see DecodeIPv6HexTag() in src/PeerCapabilities.h.
+// aMule reads them but cannot yet route to an IPv6 source, so it records and drops.
 #define TAG_IPV6 wxT("ip6")             // <string> unfirewalled IPv6
 #define TAG_SERVINGBUDDYIPV6 wxT("bi6") // <string> serving buddy IPv6
 

@@ -22,19 +22,16 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-// The only translation unit in the ed2k core that compiles Boost.Asio for the
-// sake of an address.
+// The only translation unit in the ed2k core that compiles Boost.Asio for the sake of an address.
 //
-// CNetworkAddress stores its own octets so that the 155 TUs which merely pass
-// an address around no longer pull asio's include closure (and, on Windows, no
-// longer need ws2_32 to link) -- the full argument is in NetworkAddress.h. But
-// two of its operations are text handling, and text handling is where a
-// hand-rolled implementation goes wrong quietly: RFC 4291 zero compression has
-// a canonical form with real rules (longest run, leftmost on a tie, never a
-// single group), IPv4-mapped addresses print with a dotted-quad tail, and a
-// literal may carry a %scope suffix. Restating that here would be a parser and
-// a formatter to maintain, so both stay asio's job and pay for themselves in
-// this one file.
+// CNetworkAddress stores its own octets so that the 155 TUs merely passing an address around no
+// longer pull asio's include closure (and, on Windows, no longer need ws2_32 to link) -- the full
+// argument is in NetworkAddress.h. But two of its operations are text handling, and text handling
+// is where a hand-rolled implementation goes wrong quietly: RFC 4291 zero compression has a
+// canonical form with real rules (longest run, leftmost on a tie, never a single group),
+// IPv4-mapped addresses print with a dotted-quad tail, and a literal may carry a %scope suffix.
+// Restating that here would be a parser and a formatter to maintain, so both stay asio's job and
+// pay for themselves in this one file.
 
 #include "NetworkAddressAsio.h"
 
@@ -73,19 +70,18 @@ boost::asio::ip::address ToAsioAddress(const CNetworkAddress &address)
 {
 	if (address.IsIPv4()) {
 		const CNetworkAddress::Octets &octets = address.GetOctets();
-		// asio's address_v4 takes its four octets in the same wire order
-		// CNetworkAddress stores them in, so this is a copy and not a swap --
-		// neither of the two 32-bit conventions is involved.
+		// asio's address_v4 takes its four octets in the same wire order CNetworkAddress
+		// stores them in, so this is a copy and not a swap -- neither of the two 32-bit
+		// conventions is involved.
 		const boost::asio::ip::address_v4::bytes_type v4Bytes = {
 			{ octets[0], octets[1], octets[2], octets[3] }
 		};
 		return boost::asio::ip::address(boost::asio::ip::address_v4(v4Bytes));
 	}
-	// An absent address reaches here only as a broken precondition, and asio
-	// has no value for it: the caller was told to test IsPresent() first. Give
-	// it :: rather than 0.0.0.0 so that a caller which ignored that contract
-	// gets an address of the family it asked about instead of silently binding
-	// the IPv4 wildcard.
+	// An absent address reaches here only as a broken precondition, and asio has no value for
+	// it: the caller was told to test IsPresent() first. Give it :: rather than 0.0.0.0 so that
+	// a caller which ignored that contract gets an address of the family it asked about instead
+	// of silently binding the IPv4 wildcard.
 	boost::asio::ip::address_v6::bytes_type v6Bytes;
 	const CNetworkAddress::Octets &octets = address.GetOctets();
 	for (std::size_t i = 0; i < v6Bytes.size(); ++i) {
@@ -107,9 +103,9 @@ CNetworkAddress FromAsioAddress(const boost::asio::ip::address &address)
 	for (std::size_t i = 0; i < octets.size(); ++i) {
 		octets[i] = v6Bytes[i];
 	}
-	// IPv6FromOctets() rather than FromIPv6Bytes(): :: is a legitimate asio
-	// address (it is the wildcard every dual-stack listener binds), and the
-	// all-zero-means-absent rule belongs to the wire-tag edge, not here.
+	// IPv6FromOctets() rather than FromIPv6Bytes(): :: is a legitimate asio address (it is the
+	// wildcard every dual-stack listener binds), and the all-zero-means-absent rule belongs to
+	// the wire-tag edge, not here.
 	return CNetworkAddress::IPv6FromOctets(octets, v6.scope_id());
 }
 

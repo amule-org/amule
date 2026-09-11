@@ -40,14 +40,11 @@
 #include "PartFile.h" // for SourcenameItemMap
 
 /**
- * Registers a search restored from StoredSearches.met (CSearchList::
- * LoadSearches(), issue #641 Phase 3) with the EC multi-search registry, so
- * EC_OP_SEARCH_LIST/the INC_UPDATE union poll surface it to a freshly
- * connecting amuleGUI/amuleapi client exactly as they would a live search.
- * The registry (s_ecSearches) is file-local to ExternalConn.cpp, hence this
- * thin exported wrapper around its existing Register(id) -- which already
- * takes an existing ID rather than allocating one, so no new registry logic
- * is needed here.
+ * Registers a search restored from StoredSearches.met (CSearchList::LoadSearches(), issue #641
+ * Phase 3) with the EC multi-search registry, so EC_OP_SEARCH_LIST and the INC_UPDATE union poll
+ * surface it to a freshly connecting amuleGUI/amuleapi client exactly as they would a live search.
+ * The registry (s_ecSearches) is file-local to ExternalConn.cpp, hence this thin exported wrapper
+ * around its existing Register(id), which already takes an existing ID rather than allocating one.
  */
 void RegisterRestoredSearch(uint32 searchID);
 
@@ -82,10 +79,9 @@ class CObjTagMap
 public:
 	CValueMap &GetValueMap(uint32 ECID) { return m_obj_map[ECID]; }
 
-	// Drop the per-ECID field cache. Called when an encoder for this ECID
-	// is freshly (re-)created so the next EC_DETAIL_INC_UPDATE emits every
-	// identifying field (hash / name / size) instead of suppressing them
-	// against a stale cache the peer no longer holds.
+	// Drop the per-ECID field cache. Called when an encoder for this ECID is freshly
+	// (re-)created, so the next EC_DETAIL_INC_UPDATE emits every identifying field (hash / name
+	// / size) instead of suppressing them against a stale cache the peer no longer holds.
 	void EraseValueMap(uint32 ECID) { m_obj_map.erase(ECID); }
 
 	size_t size() { return m_obj_map.size(); }
@@ -98,9 +94,9 @@ class ExternalConn;
 class CExternalConnListener : public CLibSocketServer
 {
 public:
-	// Defined in ExternalConn.cpp: the EC listener binds to its own
-	// interface (thePrefs::GetECNetworkInterface(), empty = any), decoupled
-	// from the global P2P interface pin — see issue #330.
+	// Defined in ExternalConn.cpp: the EC listener binds to its own interface
+	// (thePrefs::GetECNetworkInterface(), empty = any), decoupled from the global P2P interface
+	// pin -- see issue #330.
 	CExternalConnListener(const amuleIPV4Address &adr, int flags, ExternalConn *conn);
 	void OnAccept();
 
@@ -126,14 +122,12 @@ public:
 	void KillAllSockets();
 	void ResetAllLogs();
 
-	// Brute-force protection for the password exchange, shared by every
-	// connection. It lives here rather than on CECServerSocket because a
-	// socket dies with its connection: per-socket buckets would reset on
-	// every reconnect, which is exactly what an attacker does between
-	// guesses. Not keyed on whether the listener is bound locally --
-	// an SSH tunnel makes a remote attacker arrive from 127.0.0.1, so
-	// "local means trusted" would exempt the very setup people adopt for
-	// safety.
+	// Brute-force protection for the password exchange, shared by every connection. It lives
+	// here rather than on CECServerSocket because a socket dies with its connection: per-socket
+	// buckets would reset on every reconnect, which is exactly what an attacker does between
+	// guesses. Not keyed on whether the listener is bound locally -- an SSH tunnel makes a
+	// remote attacker arrive from 127.0.0.1, so "local means trusted" would exempt the very
+	// setup people adopt for safety.
 	CRateLimiter &AuthRateLimiter() { return m_authRateLimiter; }
 
 private:
@@ -238,9 +232,7 @@ public:
 
 class ECNotifier
 {
-	//
 	// designated priority for each type of update
-	//
 	enum EC_SOURCE_PRIO
 	{
 		EC_PARTFILE = 0,
@@ -271,9 +263,7 @@ public:
 
 	CECPacket *GetNextPacket(CECServerSocket *sock);
 
-	//
 	// Interface to notification macros
-	//
 	void DownloadFile_SetDirty(const CPartFile *file);
 	void DownloadFile_RemoveFile(const CPartFile *file);
 	void DownloadFile_RemoveSource(const CPartFile *file);

@@ -70,9 +70,8 @@ CSharedFilesWnd::CSharedFilesWnd(wxWindow *pParent)
 	wxASSERT(peerslistctrl);
 
 	// Render the initial "Total size: 0 bytes" for an empty share.
-	// CSharedFilesCtrl::ShowFilesCount() cannot do it yet: it reaches the label
-	// through theApp->amuledlg->m_sharedfileswnd, which is not assigned until this
-	// constructor returns.
+	// CSharedFilesCtrl::ShowFilesCount() cannot do it yet: it reaches the label through
+	// theApp->amuledlg->m_sharedfileswnd, which is not assigned until this constructor returns.
 	if (wxStaticText *totalSize = CastChild("sharedFilesTotalSize", wxStaticText)) {
 		totalSize->SetLabel(CFormat(_("Total size of Shared Files: %s")) % CastItoXBytes(0));
 	}
@@ -138,16 +137,15 @@ CSharedFilesWnd::~CSharedFilesWnd()
 	}
 }
 
-// Refresh just the stat bars/labels for the current selection. Cheap
-// (iterates only the selected rows), so it can run on every selection change
-// regardless of the client-show mode -- the client list below is the costly
-// part and only depends on the selection in ClientShowSelected mode.
+// Refresh just the stat bars/labels for the current selection. Cheap -- it walks only the selected
+// rows -- so it can run on every selection change regardless of the client-show mode. The client
+// list below is the costly part, and only depends on the selection in ClientShowSelected mode.
 void CSharedFilesWnd::UpdateSelectionStats()
 {
-	// Bars fill with this session's share of the file's all-time activity -- the
-	// same two numbers as each label. Both come from the per-file EC counters, so it
-	// is reliable in the remote GUI, and the per-mille scale keeps TB-scale byte
-	// counts inside the gauge's int range, which raw bytes overflow.
+	// Bars fill with this session's share of the file's all-time activity, the same two numbers
+	// as each label. Both come from the per-file EC counters, so it is reliable in the remote
+	// GUI, and the per-mille scale keeps TB-scale byte counts inside the gauge's int range,
+	// which raw bytes overflow.
 	m_bar_requests->SetRange(1000);
 	m_bar_accepted->SetRange(1000);
 	m_bar_transfer->SetRange(1000);
@@ -236,8 +234,8 @@ void CSharedFilesWnd::SelectionUpdated()
 	} else {
 		// CGenericClientListCtrl shows clients associated with a KnownFile, so the
 		// uploadqueue carries a special known file holding all ongoing uploads in its
-		// upload list. A hack, but easier than bending the class into a shape it was
-		// not intended for.
+		// upload list. A hack, but easier than bending the class into a shape it was not
+		// intended for.
 #ifdef CLIENT_GUI
 		fileVector.push_back(theApp->m_allUploadingKnownFile);
 #else
@@ -270,9 +268,9 @@ void CSharedFilesWnd::OnItemSelectionChanged(wxListEvent &evt)
 		// The client list is selection-driven here, so do the full update.
 		SelectionUpdated();
 	} else {
-		// Other modes: the client list shows all / all-uploading clients and is
-		// not selection-driven, so only the stat panel needs refreshing -- and
-		// immediately, instead of waiting for the file's next periodic update.
+		// Other modes: the client list shows all / all-uploading clients and is not
+		// selection-driven, so only the stat panel needs refreshing -- and immediately,
+		// instead of waiting for the file's next periodic update.
 		UpdateSelectionStats();
 	}
 
@@ -381,9 +379,9 @@ void CSharedFilesWnd::OnSashPositionChanging(wxSplitterEvent &evt)
 				wxCommandEvent evt1;
 				OnToggleClientList(evt1);
 			} else {
-				// normal resize
-				// If several events queue up, setting the sash to the current mouse position
-				// will speed up things and make sash moving more smoothly.
+				// Normal resize. If several events queue up, setting the sash to
+				// the current mouse position speeds things up and makes sash moving
+				// smoother.
 				evt.SetSashPosition(mousey);
 			}
 		}

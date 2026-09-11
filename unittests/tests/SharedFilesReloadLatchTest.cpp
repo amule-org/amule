@@ -62,9 +62,9 @@ TEST(SharedFilesReloadLatch, TickDoesNotStartWhileAWalkRuns)
 
 TEST(SharedFilesReloadLatch, RequestDuringAWalkSurvivesIt)
 {
-	// The walk in flight is already past the files the new request is about,
-	// so completing must not consume it. This is why BeginWalk() takes the
-	// request rather than EndWalk() clearing the flag.
+	// The walk in flight is already past the files the new request is about, so completing must
+	// not consume it. This is why BeginWalk() takes the request rather than EndWalk() clearing
+	// the flag.
 	CSharedFilesReloadLatch latch;
 	latch.Request();
 	const bool serving = latch.BeginWalk();
@@ -101,9 +101,8 @@ TEST(SharedFilesReloadLatch, AbortedWalkWithNoRequestInventsNone)
 
 TEST(SharedFilesReloadLatch, AbortedWalkKeepsAMidWalkRequestOnce)
 {
-	// Both rules at once: the walk aborts (its own request comes back) while
-	// another request arrived mid-walk. One flag, so one walk is owed, not two
-	// -- the next walk covers both.
+	// Both rules at once: the walk aborts, so its own request comes back, while another request
+	// arrived mid-walk. One flag, so one walk is owed, not two -- the next walk covers both.
 	CSharedFilesReloadLatch latch;
 	latch.Request();
 	const bool serving = latch.BeginWalk();

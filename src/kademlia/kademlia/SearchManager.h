@@ -97,30 +97,27 @@ public:
 		return m_searches.count(target) > 0;
 	}
 
-	// Find a CSearch by searchID (m_searches is keyed by target hash, so this
-	// iterates) and invoke its RequestMoreResults().
+	// Find a CSearch by searchID (m_searches is keyed by target hash, so this iterates) and
+	// invoke its RequestMoreResults().
 	//
-	// Returns whether the search can still be widened by a later press --
-	// `fired || CanReaskMore()` -- so false only when reasking is over for good.
-	// NOT "did a reask go out": a press made while no responded peer is left to
-	// reask YET still returns true, because that clears as soon as another peer
-	// answers and a UI must keep its control.
+	// Returns whether the search can still be widened by a later press -- `fired ||
+	// CanReaskMore()` -- so false only when reasking is over for good. NOT "did a reask go
+	// out": a press made while no responded peer is left to reask YET still returns true,
+	// because that clears as soon as another peer answers and a UI must keep its control.
 	//
-	// `out_fired`, when given, receives whether a reask actually went out. The two
-	// genuinely differ -- the reask spending the last of the budget fires and
-	// leaves the search un-widenable -- and a log line wants the second, a
-	// control's enabled state the first.
+	// `out_fired`, when given, receives whether a reask actually went out. The two genuinely
+	// differ -- the reask spending the last of the budget fires and leaves the search un-
+	// widenable -- and a log line wants the second, a control's enabled state the first.
 	static bool RequestMoreResults(uint32_t searchID, bool *out_fired = nullptr);
 
-	// True if the given searchID corresponds to an active Kad search.
-	// Used by the search dialog to gate "More" button enable state on
-	// the currently-selected tab being a Kad search (vs ED2K).
+	// True if the given searchID is an active Kad search. The search dialog uses it to gate the
+	// "More" button on the selected tab being a Kad search rather than ED2K.
 	static bool IsKadSearch(uint32_t searchID);
 
-	// Advances m_nextID past a restored Kad search's persisted id, so the next Kad
-	// search this session cannot be handed the same one: m_nextID restarts at
-	// SEARCH_ID_KAD_MASK every launch, so without this a restored search and the
-	// first new Kad search after a restart collide deterministically.
+	// Advances m_nextID past a restored Kad search's persisted id, so the next Kad search this
+	// session cannot be handed the same one: m_nextID restarts at SEARCH_ID_KAD_MASK every
+	// launch, so without this a restored search and the first new Kad search after a restart
+	// collide deterministically.
 	static void ReserveSearchId(uint32_t id)
 	{
 		if (id > m_nextID) {

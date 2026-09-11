@@ -35,12 +35,10 @@
 class CKnownFile;
 
 /**
- * Everything CClientDetailDialog renders, separated from where it came from.
- *
- * A connected peer fills this from its live CUpDownClient. A row in the Known
- * list fills the identity half from the stored record and leaves `hasSession`
- * false, because the fields under it are session state that only a live
- * connection has -- rendering them as zeroes would read as real measurements.
+ * Everything CClientDetailDialog renders, separated from where it came from. A connected peer fills
+ * this from its live CUpDownClient. A row in the Known list fills the identity half from the stored
+ * record and leaves `hasSession` false, because the fields under it are session state that only a
+ * live connection has -- rendering them as zeroes would read as real measurements.
  */
 struct ClientDetailInfo
 {
@@ -66,9 +64,9 @@ struct ClientDetailInfo
 	uint16 serverPort = 0;
 	wxString serverName;
 	uint16 kadPort = 0;
-	//! Protocol extensions the peer claimed in its hello; a stored row has no
-	//! hello to read. Empty when it claimed none, which is the common case
-	//! and hides the row rather than filling it with a placeholder.
+	//! Protocol extensions the peer claimed in its hello; a stored row has no hello to read.
+	//! Empty when it claimed none, which is the common case and hides the row rather than
+	//! filling it with a placeholder.
 	wxString modCapabilities;
 	const CKnownFile *uploadFile = nullptr;
 	uint64 transferredDown = 0;
@@ -86,50 +84,37 @@ struct ClientDetailInfo
 ClientDetailInfo ClientDetailInfoFromClient(const CClientRef &client);
 
 /**
- * The ClientDetailDialog class is responsible for showing the info about a client.
- *
- * It shows all releavant data about the client: ip, port, hash, name, client
- * type and version, uploading/downloading data, credits, server... etc
- *
- * It's  wxDialog, modal, with return value always '0'.
- *
+ * Shows the info about a client: ip, port, hash, name, client type and version,
+ * uploading/downloading data, credits, server and so on. A modal wxDialog whose return value is
+ * always '0'.
  */
 
 class CClientDetailDialog : public wxDialog
 {
 public:
 	/**
-	 * Constructor for a live peer.
-	 *
-	 * @param parent The window that created the dialog.
-	 * @param client The client whose details we're showing.
+	 * Constructor for a live peer. @param parent The window that created the dialog. @param
+	 * client The client whose details are shown.
 	 */
 	CClientDetailDialog(wxWindow *parent, const CClientRef &client);
 
 	/**
 	 * Constructor for a peer we hold a record of but are not talking to.
 	 *
-	 * Renders the identity and credit half and shows the session fields as
-	 * "-". Takes no client and opens no connection: showing details is a
-	 * read-only act.
+	 * Renders the identity and credit half and shows the session fields as "-". Takes no client
+	 * and opens no connection: showing details is a read-only act.
 	 *
 	 * @param parent The window that created the dialog.
 	 * @param info The snapshot to render.
 	 */
 	CClientDetailDialog(wxWindow *parent, const ClientDetailInfo &info);
 
-	/**
-	 * Destructor.
-	 *
-	 * Does nothing currently.
-	 */
 	virtual ~CClientDetailDialog();
 
 protected:
 	/**
-	 * Creates all the data objects in the dialog, filling them accordingly.
-	 *
-	 * Called when the dialog object is created.
+	 * Creates all the data objects in the dialog, filling them accordingly. Called when the
+	 * dialog object is created.
 	 */
 	virtual bool OnInitDialog();
 
@@ -137,9 +122,8 @@ protected:
 	void Build();
 
 	/**
-	 * Ends the dialog, calling EndModal with return value 0
-	 *
-	 * @param evt The close event, unused right now
+	 * Ends the dialog, calling EndModal with return value 0. @param evt The close event, unused
+	 * right now.
 	 */
 	void OnBnClose(wxCommandEvent &evt);
 

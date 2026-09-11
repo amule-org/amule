@@ -96,7 +96,7 @@ TEST(EventBus, DrainBlocksUntilPublish)
 	std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	ASSERT_FALSE(drain_returned.load());
 
-	// Publish — the condvar should wake the drainer in well under 5 s.
+	// Publish -- the condvar should wake the drainer in well under 5 s.
 	bus.Publish("late", "{}");
 
 	// Give a generous slack window for the wake + copy.
@@ -128,9 +128,9 @@ TEST(EventBus, DrainTimesOutWhenNothingPublished)
 
 TEST(EventBus, RingCapDropsOldestWhenFull)
 {
-	// Construct with an explicit small capacity rather than the
-	// default — the default is sized for real workloads (16K) and
-	// this test would otherwise publish 16K+ events to exercise it.
+	// Construct with an explicit small capacity rather than the default: the default is sized
+	// for real workloads (16K) and this test would otherwise publish 16K+ events to exercise
+	// it.
 	CEventBus bus(/*capacity=*/64);
 	const std::size_t over = bus.Capacity() + 5;
 	for (std::size_t i = 0; i < over; ++i) {
@@ -155,9 +155,8 @@ TEST(EventBus, ExplicitCapacityHonored)
 
 TEST(EventBus, BelowMinCapacityIsClampedUp)
 {
-	// Operator config below the floor (e.g. capacity=1) is clamped
-	// to kMinCapacity. Without the clamp the bus would effectively
-	// disable replay; the floor guarantees a meaningful window.
+	// Operator config below the floor, e.g. capacity=1, is clamped to kMinCapacity. Without the
+	// clamp the bus would effectively disable replay; the floor guarantees a meaningful window.
 	CEventBus bus(/*capacity=*/1);
 	ASSERT_EQUALS(CEventBus::kMinCapacity, bus.Capacity());
 }
@@ -179,9 +178,8 @@ TEST(EventBus, ConcurrentPublishersHaveDistinctIds)
 		t.join();
 
 	const int total = per_thread * n_threads;
-	// We can have dropped some if total > capacity; what's *guaranteed*
-	// is the newest id == total (every Publish atomically grabbed a
-	// unique id).
+	// We can have dropped some if total > capacity; what is *guaranteed* is that the newest id
+	// == total, every Publish having atomically grabbed a unique id.
 	ASSERT_EQUALS(static_cast<std::uint64_t>(total), bus.NewestId());
 
 	std::vector<Event> out;

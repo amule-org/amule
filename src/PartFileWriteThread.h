@@ -49,8 +49,8 @@ struct ToWrite
 	PartFileBufferedData *pBuffer;
 };
 
-// Port of eMule's CPartFileWriteThread (PartFileWriteThread.h:35-67).
-// Windows primitives replaced with wxWidgets equivalents:
+// Port of eMule's CPartFileWriteThread (PartFileWriteThread.h:35-67). Windows primitives
+// replaced with wxWidgets equivalents:
 //   CWinThread             -> wxThread (joinable)
 //   IOCP + overlapped I/O  -> synchronous CFileArea::FlushAt() on this thread
 //   GetQueuedCompletionStatus -> wxCondition::WaitTimeout()
@@ -66,12 +66,11 @@ public:
 	void QueueWrite(CPartFile *pFile, PartFileBufferedData *pBuffer);
 	bool IsRunning() const { return m_bRun; }
 
-	// Pointer-value strip of any pending writes whose pFile == `file`.
-	// Called by MuleNotify::KnownFileBeingDestroyed before the
-	// CPartFile is freed. Takes m_mutex so the write loop can't race
-	// with the strip. Pending PartFileBufferedData entries are
-	// deleted here because the partfile they were meant for is
-	// gone — the bytes are dropped, matching the cancel semantics.
+	// Pointer-value strip of any pending writes whose pFile == `file`. Called by
+	// MuleNotify::KnownFileBeingDestroyed before the CPartFile is freed. Takes m_mutex so the
+	// write loop cannot race with the strip. Pending PartFileBufferedData entries are deleted
+	// here because the partfile they were meant for is gone -- the bytes are dropped, matching
+	// the cancel semantics.
 	void DropReferencesTo(const CKnownFile *file);
 
 private:

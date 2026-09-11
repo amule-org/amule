@@ -44,7 +44,7 @@ TEST(Base16, RejectsOddLength)
 DECLARE_SIMPLE(Base64)
 
 // EncodeBase64 with a header must include both the encoded content and the
-// footer — regression for the pbBufferOut = vs += bug.
+// footer -- regression for the pbBufferOut = vs += bug.
 TEST(Base64, HeaderAndFooterBothPresent)
 {
 	SetBase64Header(wxT("TEST"));
@@ -70,10 +70,9 @@ TEST(Base64, NoHeaderProducesPlainBase64)
 	ASSERT_TRUE(result.Contains(wxT("TWFu")));
 }
 
-// CompareLatestReleaseVersion — the shared release-tag parse + version
-// comparison used by the daemon check (CamuleApp::CheckNewVersion) and the
-// GUI check (CVersionCheck). Comparisons use extreme tags (999.x / 0.0.1) so
-// the up-to-date / outdated results are deterministic regardless of the
+// CompareLatestReleaseVersion -- the shared release-tag parse and version comparison the daemon
+// check (CamuleApp::CheckNewVersion) and the GUI check (CVersionCheck) use. Comparisons use extreme
+// tags (999.x / 0.0.1) so the up-to-date / outdated results are deterministic regardless of the
 // version this test binary was compiled with.
 
 DECLARE_SIMPLE(VersionCompare)

@@ -26,22 +26,20 @@
 #define SHAREDFILESRELOADLATCH_H
 
 /**
- * The "a shared-files reload is owed" flag, on its own so the rules can be
- * tested without standing up a CSharedFileList (which needs theApp, the
- * preferences and a filesystem to walk).
+ * The "a shared-files reload is owed" flag, on its own so the rules can be tested without standing
+ * up a CSharedFileList (which needs theApp, the preferences and a filesystem to walk).
  *
  * Three rules, and the middle one is why this is not a plain bool:
  *
  *  - Requests coalesce. Ten callers asking before the next tick get one walk.
- *  - A request that arrives *during* a walk belongs to the NEXT walk. The walk
- *    in flight is already past the files that request was about, so it cannot
- *    satisfy it. BeginWalk() takes the outstanding request with it, which
- *    leaves anything requested afterwards standing.
- *  - A walk that aborts satisfies nothing, so EndWalk() hands the request back
- *    rather than letting a cancelled scan swallow it.
+ *  - A request arriving *during* a walk belongs to the NEXT walk. The walk in flight is already
+ * past the files that request was about, so it cannot satisfy it. BeginWalk() takes the outstanding
+ * request with it, which leaves anything requested afterwards standing.
+ *  - A walk that aborts satisfies nothing, so EndWalk() hands the request back rather than letting
+ * a cancelled scan swallow it.
  *
- * Single-threaded by contract: every caller runs on the core event loop. That
- * is deliberate and a caller off that thread is the thing to fix, not this.
+ * Single-threaded by contract: every caller runs on the core event loop. A caller off that thread
+ * is the thing to fix, not this.
  */
 class CSharedFilesReloadLatch
 {
@@ -57,9 +55,9 @@ public:
 	bool ShouldStartFromTick(bool walkRunning) const { return m_pending && !walkRunning; }
 
 	/**
-	 * Called as a walk starts. Takes the outstanding request with it and
-	 * returns whether there was one, so anything requested from here on is
-	 * owed to the next walk. Pass the result to EndWalk().
+	 * Called as a walk starts. Takes the outstanding request with it and returns whether there
+	 * was one, so anything requested from here on is owed to the next walk. Pass the result to
+	 * EndWalk().
 	 */
 	bool BeginWalk()
 	{
@@ -69,9 +67,9 @@ public:
 	}
 
 	/**
-	 * Called as a walk finishes. An aborted walk gives its request back; a
-	 * completed one has satisfied it. Requests that arrived mid-walk are
-	 * untouched either way — they were never taken.
+	 * Called as a walk finishes. An aborted walk gives its request back; a completed one has
+	 * satisfied it. Requests that arrived mid-walk are untouched either way -- they were never
+	 * taken.
 	 */
 	void EndWalk(bool hadRequest, bool aborted)
 	{

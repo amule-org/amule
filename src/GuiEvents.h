@@ -48,18 +48,13 @@ class CMuleUDPSocket;
 wxDECLARE_EVENT(MULE_EVT_NOTIFY, wxEvent);
 
 /**
- * This namespaces contains a number of functions and classes
- * related to deferred function calls, allowing a notification
- * call to be delayed till it can be initiated from the main
+ * Deferred function calls, so a notification can be delayed until it can be initiated from the main
  * thread.
  */
 namespace MuleNotify
 {
 /**
- * Creates a deep copy of the object passed.
- *
- * Note that this function should be overwritten as
- * needed. See the wxString version below.
+ * Creates a deep copy of the object passed. Overwrite as needed; see the wxString version below.
  */
 template <class ValueType> inline ValueType DeepCopy(const ValueType &value)
 {
@@ -72,12 +67,7 @@ inline wxString DeepCopy(const wxString &value)
 	return wxString(value.c_str(), value.Length());
 }
 
-////////////////////////////////////////////////////////////
-// Notification handlers
-//
-// These functions should not be called directly, but
-// through the Notify_*, etc. macros.
-//
+// Notification handlers. Do not call these directly; go through the Notify_* macros.
 
 void SharedFilesShowFile(CKnownFile *file);
 void SharedFilesRemoveFile(CKnownFile *file);
@@ -101,57 +91,47 @@ void SharedCtrlAddClient(CKnownFile *owner, CClientRef client, SourceItemType ty
 void SharedCtrlRefreshClient(uint32 client, SourceItemType type);
 void SharedCtrlRemoveClient(uint32 client, const CKnownFile *owner);
 
-// Broadcast: a CKnownFile (or CPartFile, which is-a CKnownFile) is about to be
-// destroyed. Every component holding a raw pointer outside the canonical owner
-// containers (CKnownFileList / CSharedFileList / CDownloadQueue / EC mirrors)
-// must subscribe and drop its reference before the delete returns.
+// Broadcast: a CKnownFile (or CPartFile, which is-a CKnownFile) is about to be destroyed. Every
+// component holding a raw pointer outside the canonical owner containers (CKnownFileList /
+// CSharedFileList / CDownloadQueue / EC mirrors) must subscribe and drop its reference before the
+// delete returns.
 //
-// Contract for subscribers: use ONLY pointer-value comparison, never dereference.
-// By the time a subscriber on the main thread sees the event the file has
-// typically already been freed -- the pointer value is a stable key, the bytes it
-// points at are not.
+// Subscribers must use ONLY pointer-value comparison, never dereference: by the time a subscriber
+// on the main thread sees the event the file has typically already been freed.
 //
-// Fired BEFORE the delete from ~CKnownFileList, PruneDuplicates,
-// CPartFile::Delete(), CSharedFileList::Reload() and CKnownFilesRem::DeleteItem.
+// Fired BEFORE the delete from ~CKnownFileList, PruneDuplicates, CPartFile::Delete(),
+// CSharedFileList::Reload() and CKnownFilesRem::DeleteItem.
 void KnownFileBeingDestroyed(CKnownFile *file);
 
-// The other end of the same peer's life: CClientList has accepted it, so the
-// global clients list can show it. Add and remove are deliberately hung off
-// CClientList::AddClient and ~CUpDownClient rather than off the per-file
-// signals, which describe a peer's relationship to one file rather than its
-// existence.
-
-// Analogue of KnownFileBeingDestroyed for search results: fired from
-// ~CSearchFile before the object is freed, so an open comments dialog holding
-// the result (a Kad-notes lookup can outlive the search that produced it) drops
-// its pointer instead of dangling. See CCommentDialogLst::DropReferencesTo.
+// Analogue of KnownFileBeingDestroyed for search results: fired from ~CSearchFile before the object
+// is freed, so an open comments dialog holding the result (a Kad-notes lookup can outlive the
+// search that produced it) drops its pointer instead of dangling. See
+// CCommentDialogLst::DropReferencesTo.
 void SearchFileBeingDestroyed(CSearchFile *file);
 
-// Fired from CSearchList::RemoveResults, once per search whose bucket is freed,
-// so a tab still open on it closes instead of outliving the results. Needed the
-// moment closing a tab genuinely frees the search: in a monolithic build the GUI
-// and core share the same CSearchFile objects, which CSearchListCtrl holds as raw
-// pointers, so a tab left open over a freed bucket faults on the next repaint,
-// sort, scroll or click. It also gives the monolithic GUI the local counterpart
-// of amulegui's remote-driven tab close.
+// Fired from CSearchList::RemoveResults, once per search whose bucket is freed, so a tab still open
+// on it closes instead of outliving the results. Needed the moment closing a tab genuinely frees
+// the search: in a monolithic build the GUI and core share the same CSearchFile objects, which
+// CSearchListCtrl holds as raw pointers, so a tab left open over a freed bucket faults on the next
+// repaint, sort, scroll or click. It also gives the monolithic GUI the local counterpart of
+// amulegui's remote-driven tab close.
 void Search_Removed(wxUIntPtr searchID);
 
-// A chat session was dropped from the core store, by whichever client asked. The
-// mirror of Search_Removed, and closing follows the same rule: the core state is
-// destroyed for everyone and each client is TOLD, rather than left showing a tab
-// the core no longer has. The monolithic GUI closes its page here; EC clients
-// learn it from the session's absence in the next EC_OP_CHAT_SESSIONS reply.
+// A chat session was dropped from the core store, by whichever client asked. The mirror of
+// Search_Removed, and closing follows the same rule: the core state is destroyed for everyone and
+// each client is TOLD, rather than left showing a tab the core no longer has. The monolithic GUI
+// closes its page here; EC clients learn it from the session's absence in the next
+// EC_OP_CHAT_SESSIONS reply.
 void Chat_SessionRemoved(uint64 gui_id);
 
-// Fired from CSearchList::StartNewSearch, once per search the core begins,
-// whoever asked for it. The mirror of Search_Removed: it lets the monolithic GUI
-// show a tab for a search started by an EC client, which it could not see at all
-// before -- amulegui and amuleapi already discover each other's searches over
-// EC_OP_SEARCH_LIST (#703).
+// Fired from CSearchList::StartNewSearch, once per search the core begins, whoever asked for it.
+// The mirror of Search_Removed: it lets the monolithic GUI show a tab for a search started by an EC
+// client, which it could not see at all before -- amulegui and amuleapi already discover each
+// other's searches over EC_OP_SEARCH_LIST (#703).
 //
-// The tab is created unselected: it appears on its own, so it must not pull the
-// selection away from whatever the local user is doing. `kind` is the new
-// search's SearchType, used only to seed the Kad "!" marker.
+// The tab is created unselected: it appears on its own, so it must not pull the selection away from
+// whatever the local user is doing. `kind` is the new search's SearchType, used only to seed the
+// Kad "!" marker.
 void Search_Added(wxUIntPtr searchID, wxString name, uint32 kind);
 
 void ServerAdd(CServer *server);
@@ -170,14 +150,13 @@ void SearchLocalEnd();
 void KadSearchEnd(uint32 id);
 void Search_Update_Sources(CSearchFile *result);
 void Search_Add_Result(CSearchFile *result);
-// Browse ("View Files") lifecycle marker for a peer's shared-file tab, keyed by
-// the tab's result-routing search ID. status carries an EBrowseStatus value.
-// Monolithic renders it directly; on the daemon it is a no-op (amuleGUI reads
-// the status over EC).
+// Browse ("View Files") lifecycle marker for a peer's shared-file tab, keyed by the tab's result-
+// routing search ID. status carries an EBrowseStatus value. Monolithic renders it directly; on the
+// daemon it is a no-op, amuleGUI reading the status over EC.
 void Browse_Status(uint64 searchID, uint32 status);
-// Open (or refresh) a browse tab for a peer up front, before any result arrives,
-// so a denied/offline peer still shows a tab that can flip to "failed". Keyed by
-// the peer's ECID; searchID is the result-routing key. Monolithic only.
+// Open (or refresh) a browse tab for a peer up front, before any result arrives, so a denied or
+// offline peer still shows a tab that can flip to "failed". Keyed by the peer's ECID; searchID is
+// the result-routing key. Monolithic only.
 void Browse_Started(uint32 ecid, wxString name, uint64 searchID);
 
 void ChatUpdateFriend(CFriend *Friend);
@@ -209,9 +188,7 @@ void ConvertRemoveJob(unsigned id);
 void ConvertRetryJob(unsigned id);
 void ConvertReaddAllJobs();
 
-//
 // GUI -> core notification
-//
 
 void PartFile_Swap_A4AF(CPartFile *file);
 void PartFile_Swap_A4AF_Auto(CPartFile *file);
@@ -238,9 +215,7 @@ void Upload_Resort_Queue();
 
 void Client_Delete(CClientRef client);
 
-//
 // core internal notifications
-//
 
 // ASIO sockets
 void LibSocketConnect(CLibSocket *socket, int error);
@@ -253,9 +228,7 @@ void ServerTCPAccept(CLibSocketServer *socketServer);
 void UDPSocketSend(CMuleUDPSocket *socket);
 void UDPSocketReceive(CMuleUDPSocket *socket);
 
-//
 // Notifications that always create an event
-//
 void IPFilter_Reload();
 void IPFilter_Update(wxString url);
 
@@ -263,10 +236,8 @@ void IPFilter_Update(wxString url);
 // Notification utilities
 
 /**
- * The base class of the functions.
- *
- * This class allows the the notification call to be executed
- * without knowing the exact specifics of a given functor.
+ * Base class of the functions, so a notification can be executed without knowing the exact
+ * specifics of a given functor.
  */
 class CMuleNotiferBase
 {
@@ -389,11 +360,8 @@ private:
 };
 
 /**
- * This event is sent when a worker-thread makes use of a notify-macro.
- *
- * This insures that all notifications are executed on the main thread,
- * thereby improving overall threadsafety. The events are currently
- * sent to wxTheApp.
+ * Sent when a worker thread uses a notify macro, so every notification runs on the main thread. The
+ * events go to wxTheApp.
  */
 class CMuleGUIEvent : public wxEvent
 {
@@ -413,19 +381,13 @@ public:
 	/** Executes the notification. */
 	void Notify() const { m_functor->Notify(); }
 
-	/**
-	 * True for a notification queued by HandleNotificationAlways(), i.e. one
-	 * that has to run whether or not there is a window.
-	 *
-	 * The two kinds share this event and its handler, so the handler has to
-	 * be able to tell them apart. DoNotify() drives things the GUI displays,
-	 * and HandleNotification() already declines to run one when there is no
-	 * main window to display it on. DoNotifyAlways() drives the socket layer
-	 * -- CoreNotify_LibSocketConnect and friends are how an asio callback
-	 * reaches the main thread -- and amulegui has no main window until an EC
-	 * connection has been made, so dropping those means the connection can
-	 * never complete.
-	 */
+	/// True for a notification queued by HandleNotificationAlways(), i.e. one that has to run
+	/// whether or not there is a window. The two kinds share this event and its handler, so the
+	/// handler has to tell them apart. DoNotify() drives things the GUI displays, and
+	/// HandleNotification() already declines to run one with no main window. DoNotifyAlways()
+	/// drives the socket layer -- CoreNotify_LibSocketConnect and friends are how an asio
+	/// callback reaches the main thread -- and amulegui has no main window until an EC
+	/// connection is made, so dropping those would stop the connection ever completing.
 	bool IsAlways() const { return m_always; }
 
 	/** @see wxEvent::Clone */
@@ -445,27 +407,18 @@ private:
 };
 
 /**
- * This function will execute or queue a given notification functor.
- *
- * If the caller is the main thread, the functor is executed immediately,
- * thus acting like a regular function call. OTOH, if the caller is a
- * worker thread, the functor is cloned and sent via an event to
- * wxTheApp.
+ * Executes or queues a notification functor: run immediately on the main thread, cloned and sent as
+ * an event to wxTheApp from a worker thread.
  */
 void HandleNotification(const CMuleNotiferBase &ntf);
 
 /**
- * These functions take a function pointer and a set of arguments,
- * matching those of the function-pointer. A functor is created
- * from these and either executed immediately, or sent as an event
- * in the case of non-main threads calling the functions.
+ * Take a function pointer and matching arguments, build a functor from them, and either run it
+ * immediately or send it as an event from a non-main thread. The function's return type must be
+ * void.
  *
- * Note that the return-value of the function must be void.
- *
- * IMPORTANT: Note that the functions passed to DoNotify must not
- * take arguments via references, since this causes the functors
- * to store references to the arguments, rather than a copy and
- * thus ends up with dangling references.
+ * IMPORTANT: the functions passed to DoNotify must not take arguments by reference -- the functor
+ * would store references rather than copies and end up dangling.
  */
 //@{
 inline void DoNotify(void (*func)())
@@ -488,10 +441,7 @@ inline void DoNotify(void (*func)(A1A, A2A, A3A), A1B arg1, A2B arg2, A3B arg3)
 }
 //@}
 
-/**
- * The same as above, but these functions will always send an event,
- * even from the main thread.
- */
+/// As above, but these always send an event, even from the main thread.
 void HandleNotificationAlways(const CMuleNotiferBase &ntf);
 
 inline void DoNotifyAlways(void (*func)())
@@ -558,20 +508,20 @@ typedef void (wxEvtHandler::*MuleNotifyEventFunction)(CMuleGUIEvent &);
 #define Notify_SharedCtrlRemoveClient(p0, p1) \
 	MuleNotify::DoNotify(&MuleNotify::SharedCtrlRemoveClient, p0, p1)
 
-// CKnownFile/CPartFile destruction broadcast — see MuleNotify::
+// CKnownFile/CPartFile destruction broadcast -- see MuleNotify::
 // KnownFileBeingDestroyed doc-comment in this header.
 #define Notify_KnownFileBeingDestroyed(file) MuleNotify::DoNotify(&MuleNotify::KnownFileBeingDestroyed, file)
 
-// CSearchFile destruction broadcast — see MuleNotify::SearchFileBeingDestroyed
+// CSearchFile destruction broadcast -- see MuleNotify::SearchFileBeingDestroyed
 // doc-comment in this header.
 #define Notify_SearchFileBeingDestroyed(file) \
 	MuleNotify::DoNotify(&MuleNotify::SearchFileBeingDestroyed, file)
 
-// A search's result bucket was freed — see MuleNotify::Search_Removed
+// A search's result bucket was freed -- see MuleNotify::Search_Removed
 // doc-comment in this header.
 #define Notify_Search_Removed(id) MuleNotify::DoNotify(&MuleNotify::Search_Removed, id)
 
-// The core started a search — see MuleNotify::Search_Added doc-comment in
+// The core started a search -- see MuleNotify::Search_Added doc-comment in
 // this header.
 #define Notify_Search_Added(id, name, kind) MuleNotify::DoNotify(&MuleNotify::Search_Added, id, name, kind)
 
@@ -602,7 +552,7 @@ typedef void (wxEvtHandler::*MuleNotifyEventFunction)(CMuleGUIEvent &);
 #define Notify_ChatRemoveFriend(ptr) MuleNotify::DoNotify(&MuleNotify::ChatRemoveFriend, ptr)
 #define Notify_ChatConnResult(val0, val1, s) MuleNotify::DoNotify(&MuleNotify::ChatConnResult, val0, val1, s)
 #define Notify_ChatProcessMsg(val0, s) MuleNotify::DoNotify(&MuleNotify::ChatProcessMsg, val0, s)
-// A chat session was closed — see MuleNotify::Chat_SessionRemoved above.
+// A chat session was closed -- see MuleNotify::Chat_SessionRemoved above.
 #define Notify_Chat_SessionRemoved(id) MuleNotify::DoNotify(&MuleNotify::Chat_SessionRemoved, id)
 #define Notify_ChatSendCaptcha(val0, s) MuleNotify::DoNotify(&MuleNotify::ChatSendCaptcha, val0, s)
 
@@ -635,9 +585,7 @@ typedef void (wxEvtHandler::*MuleNotifyEventFunction)(CMuleGUIEvent &);
 #define Notify_ConvertRetryJob(id) MuleNotify::DoNotify(&MuleNotify::ConvertRetryJob, id)
 #define Notify_ConvertReaddAllJobs() MuleNotify::DoNotify(&MuleNotify::ConvertReaddAllJobs)
 
-//
 // GUI -> core notification
-//
 
 // PartFile
 #define CoreNotify_PartFile_Swap_A4AF(ptr) MuleNotify::DoNotify(&MuleNotify::PartFile_Swap_A4AF, ptr)
@@ -677,9 +625,7 @@ typedef void (wxEvtHandler::*MuleNotifyEventFunction)(CMuleGUIEvent &);
 // client
 #define CoreNotify_Client_Delete(client) MuleNotify::DoNotify(&MuleNotify::Client_Delete, client)
 
-//
 // core internal notifications
-//
 
 // ASIO sockets
 #define CoreNotify_LibSocketConnect(ptr, val) \
@@ -695,9 +641,7 @@ typedef void (wxEvtHandler::*MuleNotifyEventFunction)(CMuleGUIEvent &);
 #define CoreNotify_ProxySocketEvent(ptr, val) \
 	MuleNotify::DoNotifyAlways(&MuleNotify::ProxySocketEvent, ptr, val)
 
-//
 // Notifications that always create an event
-//
 
 // IP filter
 #define NotifyAlways_IPFilter_Reload() MuleNotify::DoNotifyAlways(&MuleNotify::IPFilter_Reload)

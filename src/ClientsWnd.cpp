@@ -46,10 +46,10 @@
 #include "CountryDisplay.h" // Needed for GetDisplayCountryCode
 #endif
 #include "PartFile.h" // Needed for CPartFile (CKnownFile::GetFileName)
-// CUpDownClient. MUST match the build's client class: the reduced EC client for
-// amulegui, the full one for monolithic. The two have different layouts, so the
-// wrong header reads every member of a live peer at the wrong offset -- blank
-// names, a zero IP, then a crash. Same trap as GenericClientListCtrl.
+// CUpDownClient. MUST match the build's client class: the reduced EC client for amulegui, the full
+// one for monolithic. The two have different layouts, so the wrong header reads every member of a
+// live peer at the wrong offset -- blank names, a zero IP, then a crash. Same trap as
+// GenericClientListCtrl.
 #ifdef CLIENT_GUI
 #include "UpDownClientEC.h"
 #else
@@ -68,16 +68,16 @@ CClientsWnd::CClientsWnd(wxWindow *parent)
 , m_historyHandler(this)
 #endif
 {
-	// Two tabs rather than a split: the lists answer different questions -- "who am
-	// I talking to now" and "who have I ever talked to" -- and share most of their
-	// columns, so showing both at once would mostly duplicate headers.
+	// Two tabs rather than a split: the lists answer different questions -- "who am I talking
+	// to now" and "who have I ever talked to" -- and share most of their columns, so showing
+	// both at once would mostly duplicate headers.
 	wxNotebook *book = new wxNotebook(this, -1);
 	const long listStyle = wxDV_MULTIPLE | wxDV_ROW_LINES | wxDV_VERT_RULES;
 
-	// Split rather than one list: a peer is either giving us a file or taking one,
-	// and often both, so a single list has to render each row's direction into a
-	// column. Two panes state it structurally, and a peer swapping with us appears
-	// in both, once as a source and once as a destination.
+	// Split rather than one list: a peer is either giving us a file or taking one, and often
+	// both, so a single list has to render each row's direction into a column. Two panes state
+	// it structurally, and a peer swapping with us appears in both, once as a source and once
+	// as a destination.
 	wxSplitterWindow *split = new wxSplitterWindow(
 		book, ID_CLIENTSSPLITTER, wxDefaultPosition, wxDefaultSize, wxSP_LIVE_UPDATE | wxSP_3DSASH);
 	split->SetMinimumPaneSize(60);
@@ -104,10 +104,10 @@ CClientsWnd::CClientsWnd(wxWindow *parent)
 	split->SetSashGravity(0.5);
 	book->AddPage(split, _("Active"), true);
 
-	// Only offered when there is a history to show. A daemon that does not
-	// advertise EC_TAG_CAN_CLIENT_HISTORY cannot answer the request, so the tab
-	// would sit permanently empty with nothing to say why. Decided once here,
-	// because amulegui rebuilds this dialog on every reconnect.
+	// Only offered when there is a history to show. A daemon that does not advertise
+	// EC_TAG_CAN_CLIENT_HISTORY cannot answer the request, so the tab would sit permanently
+	// empty with nothing to say why. Decided once here, because amulegui rebuilds this dialog
+	// on every reconnect.
 #ifdef CLIENT_GUI
 	const bool historyAvailable =
 		theApp->m_connect != nullptr && theApp->m_connect->ServerSupportsClientHistory();
@@ -151,9 +151,9 @@ void FillHistoryNameCell(ClientHistoryRow &row)
 	row.nameCell.clientSoft = row.clientSoft;
 	row.nameCell.obfuscation = row.obfuscation;
 #ifdef GEOIP_GUI
-	// Same call the live lists make: amulegui takes the code the core resolved from
-	// the last address we saw the peer at, monolithic resolves it itself. Records
-	// with no metadata carry no address, and get no flag.
+	// Same call the live lists make: amulegui takes the code the core resolved from the last
+	// address we saw the peer at, monolithic resolves it itself. Records with no metadata carry
+	// no address, and get no flag.
 	wxString code;
 	if (GetDisplayCountryCode(row.countryFromCore, row.country, row.ip, code)) {
 		row.nameCell.countryCode = code;
@@ -218,18 +218,16 @@ void CClientsWnd::LoadHistory()
 			// under two different versions depending on whether it is online.
 			row.version = FormatPackedClientVersion(meta.clientSoft, meta.version);
 		}
-		// Correlate with the live list by hash, not by ECID: those mean nothing
-		// outside one daemon process, whereas this is the identity the credit store
-		// itself is keyed on.
+		// Correlate with the live list by hash, not by ECID: those mean nothing outside one
+		// daemon process, whereas this is the identity the credit store itself is keyed on.
 		row.online = !theApp->clientlist->GetClientsByHash(row.hash).empty();
 		FillHistoryNameCell(row);
 		rows.push_back(row);
 	}
 	historylistctrl->SetRows(std::move(rows));
 #else
-	// amulegui: the credit store lives on the other side of the link, so ask for
-	// it. Against a daemon too old to know the request this comes back EC_OP_FAILED
-	// and the tab stays empty.
+	// amulegui: the credit store lives on the other side of the link, so ask for it. Against a
+	// daemon too old to know the request this comes back EC_OP_FAILED and the tab stays empty.
 	if (theApp->m_connect != nullptr && theApp->m_connect->ServerSupportsClientHistory()) {
 		CECPacket request(EC_OP_GET_CLIENT_HISTORY);
 		theApp->m_connect->SendRequest(&m_historyHandler, &request);
@@ -273,9 +271,9 @@ void CClientsWnd::CHistoryHandler::HandlePacket(const CECPacket *packet)
 		if (const CECTag *t = tag->GetTagByName(EC_TAG_CLIENT_LAST_SEEN)) {
 			row.lastSeen = t->GetInt();
 		}
-		// Everything below is absent for a peer the core has no metadata for -- an
-		// older record, or a core that never kept any. The row still carries a hash,
-		// totals and a date.
+		// Everything below is absent for a peer the core has no metadata for -- an older
+		// record, or a core that never kept any. The row still carries a hash, totals and a
+		// date.
 		if (const CECTag *t = tag->GetTagByName(EC_TAG_CLIENT_FIRST_SEEN)) {
 			row.firstSeen = t->GetInt();
 			row.hasMeta = true;
@@ -322,25 +320,23 @@ CClientsWnd::~CClientsWnd() = default;
 
 void CClientsWnd::UpdateAll()
 {
-	// Rebuild the row set from the live container rather than maintaining it from
-	// add/remove notifications.
+	// Rebuild the row set from the live container rather than maintaining it from add/remove
+	// notifications.
 	//
-	// Those notifications are queued whenever they are raised off the main thread,
-	// which is what CUpDownClientListRem does -- so an add could arrive after its
-	// client's allocation had been reused, and a removal after the object was
-	// freed, leaving the list repainting a dangling pointer once a second until it
-	// crashed inside drawing. Holding CClientRefs instead would fix the lifetime and
-	// create a worse problem: they are owning, so the list would keep every peer it
-	// ever saw alive. Enumerating what is live has neither failure mode, and the set
-	// is bounded by MaxConnections.
+	// Those notifications are queued whenever they are raised off the main thread, which is
+	// what CUpDownClientListRem does -- so an add could arrive after its client's allocation
+	// had been reused, and a removal after the object was freed, leaving the list repainting a
+	// dangling pointer once a second until it crashed inside drawing. Holding CClientRefs
+	// instead would fix the lifetime and create a worse problem: they are owning, so the list
+	// would keep every peer it ever saw alive. Enumerating what is live has neither failure
+	// mode, and the set is bounded by MaxConnections.
 	//
-	// Each peer's values are copied here, while we know they are alive: the list is
-	// painted later.
+	// Each peer's values are copied here, while we know they are alive: the list is painted
+	// later.
 	std::vector<CClientsListCtrl::Row> downRows;
 	std::vector<CClientsListCtrl::Row> upRows;
-	// Every connected peer, for the history reconcile below -- not just the
-	// ones that pass the pane filter. A peer holding no file is still online,
-	// and the Known tab says so.
+	// Every connected peer, for the history reconcile below -- not just the ones that pass the
+	// pane filter. A peer holding no file is still online, and the Known tab says so.
 	std::unordered_map<CMD4Hash, CClientHistoryListCtrl::LiveClient> live;
 	const bool wantLive = historylistctrl != nullptr && historylistctrl->IsLoaded();
 
@@ -348,10 +344,10 @@ void CClientsWnd::UpdateAll()
 		if (c == nullptr) {
 			return;
 		}
-		// Built at most once per peer, and only if something asks for it. It is the
-		// most expensive thing here -- a country lookup and several string copies --
-		// and used to be built twice per peer, once for the history entry and again
-		// for the pane row (issue #920).
+		// Built at most once per peer, and only if something asks for it. It is the most
+		// expensive thing here -- a country lookup and several string copies -- and used to
+		// be built twice per peer, once for the history entry and again for the pane row
+		// (issue #920).
 		ClientNameCell cell;
 		bool haveCell = false;
 		auto nameCell = [&]() -> const ClientNameCell & {
@@ -381,10 +377,10 @@ void CClientsWnd::UpdateAll()
 			live[c->GetUserHash()] = entry;
 		}
 		// Which pane(s) this peer belongs in. A peer holds at most one file in each
-		// direction, and a peer swapping with us holds one of each, so it is listed
-		// twice rather than forced into a single row that has to explain itself.
-		// Membership is the relationship, not whether bytes are moving this second:
-		// a queued source is still someone we are downloading from.
+		// direction, and a peer swapping with us holds one of each, so it is listed twice
+		// rather than forced into a single row that has to explain itself. Membership is
+		// the relationship, not whether bytes are moving this second: a queued source is
+		// still someone we are downloading from.
 		const CKnownFile *requested = c->GetRequestFile();
 		const CKnownFile *uploading = c->GetUploadFile();
 		if (requested == nullptr && uploading == nullptr) {
@@ -434,18 +430,17 @@ void CClientsWnd::UpdateAll()
 	downclientsctrl->SetClients(std::move(downRows));
 	upclientsctrl->SetClients(std::move(upRows));
 
-	// Fold this tick's peers into the history, so rows for connected peers keep up
-	// instead of standing at whatever they were when the tab was opened. One lookup
-	// per connected peer; stored records for everyone else cannot change.
+	// Fold this tick's peers into the history, so rows for connected peers keep up instead of
+	// standing at whatever they were when the tab was opened. One lookup per connected peer;
+	// stored records for everyone else cannot change.
 	if (wantLive) {
 		historylistctrl->ReconcileLive(live);
 	}
 
-	// Only ever a re-check: EnsureHistoryLoaded() returns immediately unless the
-	// daemon session changed, and the m_historyLoaded guard means sitting on the
-	// Active tab never triggers the first, expensive load. Without it a core that
-	// restarted while the Known tab was open would keep showing rows from a process
-	// that no longer exists.
+	// Only ever a re-check: EnsureHistoryLoaded() returns immediately unless the daemon session
+	// changed, and the m_historyLoaded guard means sitting on the Active tab never triggers the
+	// first, expensive load. Without it a core that restarted while the Known tab was open
+	// would keep showing rows from a process that no longer exists.
 	if (m_historyLoaded) {
 		EnsureHistoryLoaded();
 	}

@@ -34,9 +34,8 @@
 
 wxDEFINE_EVENT(wxEVT_VERSION_CHECK_DONE, wxCommandEvent);
 
-// GitHub Releases "latest" endpoint — returns the most recent
-// non-prerelease, non-draft release as JSON. Same source the daemon-side
-// CamuleApp::CheckNewVersion uses.
+// GitHub Releases "latest" endpoint -- returns the most recent non-prerelease, non-draft release as
+// JSON. The same source the daemon-side CamuleApp::CheckNewVersion uses.
 static const wxString VERSION_CHECK_URL = wxT("https://api.github.com/repos/amule-org/amule/releases/latest");
 
 CVersionCheck::CVersionCheck()
@@ -63,15 +62,14 @@ void CVersionCheck::Start(wxEvtHandler *notify, int notifyId)
 	m_status = Checking;
 	m_latest.Clear();
 
-	// Shared aMule HTTP path: curl-backed session, proxy, and egress bound to
-	// the configured network interface when one is set (so the check doesn't
-	// leak past a bound interface).
+	// Shared aMule HTTP path: curl-backed session, proxy, and egress bound to the configured
+	// network interface when one is set, so the check does not leak past a bound interface.
 	m_request = CreateAmuleWebRequest(this, VERSION_CHECK_URL);
 	if (!m_request.IsOk()) {
 		Finish(Failed);
 		return;
 	}
-	// The body is a few KB of JSON — keep it in memory, no temp file.
+	// The body is a few KB of JSON -- keep it in memory, no temp file.
 	m_request.SetStorage(wxWebRequest::Storage_Memory);
 	// GitHub's API rejects requests without a User-Agent header.
 	m_request.SetHeader(wxT("User-Agent"), wxT("aMule"));
@@ -95,16 +93,16 @@ void CVersionCheck::OnRequestState(wxWebRequestEvent &evt)
 		Finish(Failed);
 		break;
 	default:
-		// State_Idle / State_Active — request still in progress.
+		// State_Idle / State_Active -- request still in progress.
 		break;
 	}
 }
 
 CVersionCheck::Status CVersionCheck::Evaluate(const wxString &json)
 {
-	// Shared parse + compare (see OtherFunctions.cpp:CompareLatestReleaseVersion).
-	// Same logic the daemon check and amuleapi use, so there is a single
-	// source of truth for how a GitHub release tag is interpreted.
+	// Shared parse + compare (see OtherFunctions.cpp:CompareLatestReleaseVersion). The same
+	// logic the daemon check and amuleapi use, so there is a single source of truth for how a
+	// GitHub release tag is interpreted.
 	const CVersionCompareResult r = CompareLatestReleaseVersion(json);
 	switch (r.state) {
 	case CVersionCompareResult::Outdated:

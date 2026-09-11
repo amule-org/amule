@@ -22,11 +22,9 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-// Closes a block opened by WarningsPush_CryptoPP.h or WarningsPush_Asio.h.
-//
-// Deliberately unguarded: a translation unit opens and closes one of these
-// blocks per third-party include group, so this file has to be includable
-// more than once.
+// Closes a block opened by WarningsPush_CryptoPP.h or WarningsPush_Asio.h. Deliberately unguarded:
+// a translation unit opens and closes one of these blocks per third-party include group, so this
+// file has to be includable more than once.
 
 #if defined(__clang__)
 #pragma clang diagnostic pop

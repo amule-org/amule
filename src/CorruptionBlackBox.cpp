@@ -93,13 +93,9 @@ void CCorruptionBlackBox::TransferredData(uint64 nStartPos, uint64 nEndPos, uint
 		nRelEndPos = PARTSIZE - 1;
 		TransferredData((nPart + 1) * PARTSIZE, nEndPos, senderIP);
 	}
-	//
-	// Let's keep things simple.
-	// We don't request data we already have.
-	// We check if received data exceeds block boundaries.
-	// -> There should not be much overlap here.
-	// So just stuff everything received into the list and only join adjacent blocks.
-	//
+	// Keep things simple. We do not request data we already have, and we check whether received
+	// data exceeds block boundaries, so there should not be much overlap. Just stuff everything
+	// received into the list and join only adjacent blocks.
 	CRecordList &list = m_Records[nPart]; // this creates the entry if it doesn't exist yet
 	bool merged = false;
 	for (CRecordList::iterator it = list.begin(); it != list.end() && !merged; ++it) {

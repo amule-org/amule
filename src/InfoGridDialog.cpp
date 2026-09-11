@@ -35,10 +35,9 @@
 
 namespace
 {
-// GUI thread only. ShowModal() does not stop a click reaching the control that
-// opened the dialog: the event is queued and delivered once ShowModal()
-// returns, so without this each click made while the dialog was up opens
-// another one on close.
+// GUI thread only. ShowModal() does not stop a click reaching the control that opened the dialog:
+// the event is queued and delivered once ShowModal() returns, so without this each click made while
+// the dialog was up opens another one on close.
 bool g_dialogOpen = false;
 } // namespace
 

@@ -34,15 +34,14 @@ namespace webapi
 /**
  * Stable lowercase tokens for the numeric client tags EC ships.
  *
- * Shared rather than file-local because two paths decode the same tags: the
- * refresher, for the live peers behind /clients, and the on-demand handler for
- * /known_clients, whose records carry the same software, origin and
- * obfuscation codes. Two copies would be free to drift, and the tokens are
- * part of the API surface -- a consumer switching on "kad" must get the same
- * answer whichever endpoint produced it.
+ * Shared rather than file-local because two paths decode the same tags: the refresher, for the live
+ * peers behind /clients, and the on-demand handler for /known_clients, whose records carry the same
+ * software, origin and obfuscation codes. Two copies would be free to drift, and the tokens are
+ * part of the API surface -- a consumer switching on "kad" must get the same answer whichever
+ * endpoint produced it.
  *
- * Deliberately not the GUI's rendering: these are protocol tokens, not
- * display text, so they stay untranslated and stable.
+ * Deliberately not the GUI's rendering: these are protocol tokens, not display text, so they stay
+ * untranslated and stable.
  */
 
 //! EC_TAG_CLIENT_SOFTWARE (ESoftwareType) to a token, e.g. "emule".

@@ -32,11 +32,11 @@
 /**
  * Address-family decisions derived from configuration and target addresses.
  *
- * IPv4-only is the default. Dual stack requires an explicit SetConfigured()
- * call; providing this policy does not enable IPv6 or change existing sockets.
+ * IPv4-only is the default. Dual stack requires an explicit SetConfigured() call; providing this
+ * policy does not enable IPv6 or change existing sockets.
  *
- * Kademlia remains IPv4: its wire format carries 32-bit addresses and its
- * routing table keys on them. A socket-family policy cannot widen that format.
+ * Kademlia remains IPv4: its wire format carries 32-bit addresses and its routing table keys on
+ * them. A socket-family policy cannot widen that format.
  */
 namespace AddressFamilyPolicy
 {
@@ -51,10 +51,9 @@ enum class Families
 /**
  * The configured family set.
  *
- * Atomic to allow reads from socket-opening and name-resolution threads while
- * configuration is set from the main thread. Relaxed
- * ordering is enough: nothing else is published with it, and a socket opened in
- * the same instant as a reconfiguration is allowed to see either value.
+ * Atomic so socket-opening and name-resolution threads can read it while configuration is set from
+ * the main thread. Relaxed ordering is enough: nothing else is published with it, and a socket
+ * opened in the same instant as a reconfiguration may see either value.
  */
 inline std::atomic<Families> &ConfiguredStorage() noexcept
 {
@@ -70,8 +69,8 @@ inline Families Configured() noexcept
 /**
  * Sets the configured family set explicitly, including opting into dual stack.
  *
- * Sockets already open are unaffected -- this decides what the @b next socket
- * does, exactly like the bind-interface setting next to it.
+ * Sockets already open are unaffected -- this decides what the @b next socket does, exactly like
+ * the bind-interface setting next to it.
  */
 inline void SetConfigured(Families families) noexcept
 {
@@ -91,8 +90,8 @@ inline bool PermitsIPv6() noexcept
 /**
  * Whether a socket may be opened towards @a target at all.
  *
- * An IPv4-mapped IPv6 target counts as IPv4: it narrows losslessly, so an
- * IPv4-only configuration can reach it.
+ * An IPv4-mapped IPv6 target counts as IPv4: it narrows losslessly, so an IPv4-only configuration
+ * can reach it.
  */
 inline bool Permits(const CNetworkAddress &target) noexcept
 {
@@ -107,11 +106,10 @@ inline bool Permits(const CNetworkAddress &target) noexcept
 
 /*
  * Socket protocols, resolver-family selection and wildcard addresses live in
- * AddressFamilyPolicyAsio.h, because their return types are Boost.Asio values
- * and naming those here would pull asio's executor machinery into every TU
- * that only wants to ask which family is permitted. What stays here needs no
- * library: Configured(), the two Permits predicates and Families are the
- * decision itself.
+ * AddressFamilyPolicyAsio.h, because their return types are Boost.Asio values and naming those
+ * here would pull asio's executor machinery into every TU that only wants to ask which family is
+ * permitted. What stays here needs no library: Configured(), the two Permits predicates and
+ * Families are the decision itself.
  */
 
 } // namespace AddressFamilyPolicy

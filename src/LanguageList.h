@@ -41,10 +41,9 @@ struct SLanguageEntry
 	//! Catalog name: po/<catalog>.po in the source tree, installed as
 	//! <catalog>/LC_MESSAGES/amule.mo. Empty for the entries that ship no catalog.
 	//!
-	//! This is stored rather than derived from wxId because the two disagree:
-	//! wxLocale::GetLanguageInfo(wxLANGUAGE_ESTONIAN)->CanonicalName is "et" while
-	//! the catalog directory is "et_EE". Deriving it silently loses Estonian,
-	//! Korean and Portuguese.
+	//! Stored rather than derived from wxId because the two disagree:
+	//! wxLocale::GetLanguageInfo(wxLANGUAGE_ESTONIAN)->CanonicalName is "et" while the catalog
+	//! directory is "et_EE". Deriving it silently loses Estonian, Korean and Portuguese.
 	const char *catalog;
 	//! English display name, run through wxGetTranslation() when shown.
 	const char *name;
@@ -53,8 +52,8 @@ struct SLanguageEntry
 /**
  * The languages aMule ships a translation for.
  *
- * Add new languages here, with the po/<catalog>.po that carries them.
- * LanguageListTest keeps this list and po/ in step.
+ * Add new languages here, with the po/<catalog>.po that carries them. LanguageListTest keeps this
+ * list and po/ in step.
  *
  * @param count Receives the number of entries.
  * @return The entries, starting with "System default".
@@ -73,10 +72,9 @@ int FindLanguageEntry(const wxString &languageID);
  * Tells whether an entry's translation is installed.
  *
  * @param entry The entry to check.
- * @param installed Catalog names present on disk, as returned by
- *                  wxTranslations::GetAvailableTranslations().
- * @return true when the entry can be offered. Entries without a catalog
- *         ("System default" and the source language) are always available.
+ * @param installed Catalog names present on disk, from wxTranslations::GetAvailableTranslations().
+ * @return true when the entry can be offered. Entries without a catalog ("System default" and the
+ *         source language) are always available.
  */
 bool IsLanguageAvailable(const SLanguageEntry &entry, const wxArrayString &installed);
 

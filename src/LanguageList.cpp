@@ -33,11 +33,10 @@
 /**
  * The languages aMule has a translation for.
  *
- * The catalog column is the po/ basename, which is also the directory the catalog
- * installs into. It is spelled out rather than derived from the wx language id
- * because for three languages the two differ: wx canonicalises wxLANGUAGE_ESTONIAN
- * to "et", wxLANGUAGE_KOREAN to "ko" and wxLANGUAGE_PORTUGUESE to "pt", while the
- * catalogs live in et_EE, ko_KR and pt_PT.
+ * The catalog column is the po/ basename, which is also the directory the catalog installs into. It
+ * is spelled out rather than derived from the wx language id because for three languages the two
+ * differ: wx canonicalises wxLANGUAGE_ESTONIAN to "et", wxLANGUAGE_KOREAN to "ko" and
+ * wxLANGUAGE_PORTUGUESE to "pt", while the catalogs live in et_EE, ko_KR and pt_PT.
  */
 static const SLanguageEntry s_languages[] = {
 	{ wxLANGUAGE_DEFAULT, "", wxTRANSLATE("System default") },
@@ -98,10 +97,10 @@ int FindLanguageEntry(const wxString &languageID)
 	for (std::size_t i = 0; i < count; ++i) {
 		// A stored value can spell the same language two ways. The picker writes the
 		// entry's own id, so Estonian is saved as "et", but a config written by hand,
-		// carried over from another install, or copied from the form amulecmd's -l
-		// option documents can carry the territory the catalog directory uses,
-		// "et_EE". Both name this entry, and matching only the first left the picker
-		// unable to find the current language and liable to reset it.
+		// carried over from another install, or copied from the form amulecmd's -l option
+		// documents can carry the territory the catalog directory uses, "et_EE". Both name
+		// this entry, and matching only the first left the picker unable to find the
+		// current language and liable to reset it.
 		if (languages[i].wxId == wxId) {
 			return static_cast<int>(i);
 		}

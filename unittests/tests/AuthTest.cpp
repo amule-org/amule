@@ -62,9 +62,9 @@ TEST(Auth, RevocationSet_RevokedJtiSticks)
 TEST(Auth, RevocationSet_ExpiredEntryGcsOnNextLookup)
 {
 	CRevocationSet rs;
-	// Revoke with exp in the PAST — simulates a token whose JWT lifetime
-	// has already elapsed. IsRevoked must drop the entry rather than
-	// keep flagging it (no point — the JWT itself would fail Verify).
+	// Revoke with exp in the PAST, simulating a token whose JWT lifetime has already elapsed.
+	// IsRevoked must drop the entry rather than keep flagging it -- there is no point, the JWT
+	// itself would fail Verify.
 	const std::time_t two_hours_ago = std::time(nullptr) - 7200;
 	rs.Revoke("stale-jti", two_hours_ago);
 
@@ -138,9 +138,8 @@ TEST(Auth, RateLimiter_DifferentIpsTrackedSeparately)
 
 TEST(Auth, RateLimiter_LockoutExpiresAfterLockoutSeconds)
 {
-	// Regression: forgetting the "lockout_until <= now → wipe
-	// bucket" path would silently jail the affected IP forever.
-	// Clock injection lets us step `now` past lockout_until without
+	// Regression: forgetting the "lockout_until <= now -> wipe bucket" path would silently jail
+	// the affected IP forever. Clock injection lets us step `now` past lockout_until without
 	// burning real time on a sleep.
 	CRateLimiter::Config cfg;
 	cfg.window_seconds = 60;
@@ -162,18 +161,16 @@ TEST(Auth, RateLimiter_LockoutExpiresAfterLockoutSeconds)
 
 TEST(Auth, RateLimiter_SlidingWindowSplitAttemptsStillLockOut)
 {
-	// Regression check for the original tumbling-window bug:
-	// threshold-1 failures in the tail of window N + threshold-1 in
-	// the head of window N+1 never tripped lockout because the old
-	// code reset failure_count whenever `now - window_start >
-	// window_seconds`. The current per-stamp eviction keeps any
-	// failure within `window_seconds` live in the count.
+	// Regression check for the original tumbling-window bug: threshold-1 failures in the tail of
+	// window N plus threshold-1 in the head of window N+1 never tripped lockout, because the old
+	// code reset failure_count whenever `now - window_start > window_seconds`. The current
+	// per-stamp eviction keeps any failure within `window_seconds` live in the count.
 	//
-	// Sequence (window=3, threshold=3) — clock-injected:
-	//   t=0  NoteFailure  → failures=[0],          count=1
-	//   t=3  NoteFailure  → failures=[0, 3],       count=2
-	//   t=4  NoteFailure  → failures=[3, 4],       count=2  (evict<1)
-	//   t=5  NoteFailure  → failures=[3, 4, 5],    count=3 → LOCKOUT
+	// Sequence (window=3, threshold=3), clock-injected:
+	//   t=0  NoteFailure  -> failures=[0],          count=1
+	//   t=3  NoteFailure  -> failures=[0, 3],       count=2
+	//   t=4  NoteFailure  -> failures=[3, 4],       count=2  (evict<1)
+	//   t=5  NoteFailure  -> failures=[3, 4, 5],    count=3 -> LOCKOUT
 	CRateLimiter::Config cfg;
 	cfg.window_seconds = 3;
 	cfg.threshold = 3;
@@ -194,14 +191,12 @@ TEST(Auth, RateLimiter_SlidingWindowSplitAttemptsStillLockOut)
 
 // ---------- Revocation × Verify cross-test -----------------------
 
-// Each side is unit-tested separately. This case wires the two
-// together: issue a token, mark its `jti` revoked, then verify
-// the token's body — Verify itself returns true (the token is
-// structurally valid and the MAC matches), but the caller must
-// consult CRevocationSet AFTER Verify and refuse if the jti is
-// listed. A regression where IsRevoked() short-circuits or where
-// Verify silently incorporates the revocation set would slip past
-// each component's own tests; this one would catch it.
+// Each side is unit-tested separately. This case wires the two together: issue a token, mark its
+// `jti` revoked, then verify the token's body. Verify itself returns true -- the token is
+// structurally valid and the MAC matches -- but the caller must consult CRevocationSet AFTER Verify
+// and refuse if the jti is listed. A regression where IsRevoked() short-circuits, or where Verify
+// silently incorporates the revocation set, would slip past each component's own tests; this one
+// catches it.
 TEST(Auth, RevocationListBlocksOtherwiseValidToken)
 {
 	const std::vector<unsigned char> secret(32, 0xC1);
@@ -218,10 +213,9 @@ TEST(Auth, RevocationListBlocksOtherwiseValidToken)
 	rev.Revoke(vr.jti, vr.exp);
 	ASSERT_TRUE(rev.IsRevoked(vr.jti));
 
-	// A second Verify of the same token still passes (cryptography
-	// is independent of the revocation list). The auth gate's
-	// contract is: Verify FIRST, then check IsRevoked, and refuse
-	// the request if either step rejects.
+	// A second Verify of the same token still passes, cryptography being independent of the
+	// revocation list. The auth gate's contract is: Verify FIRST, then check IsRevoked, and
+	// refuse the request if either step rejects.
 	CJwt::VerifyResult vr2;
 	ASSERT_TRUE(jwt.Verify(issued.token, vr2));
 	ASSERT_EQUALS(vr.jti, vr2.jti);

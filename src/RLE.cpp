@@ -27,14 +27,12 @@
 #include "ScopedPtr.h"
 #include <ec/cpp/ECTag.h> // Needed for CECTag
 
-/*
- * RLE encoder implementation. This is RLE implementation for very specific
- * purpose: encode DIFFERENCE between subsequent states of status bar.
+/**
+ * RLE encoder for one specific purpose: encoding the DIFFERENCE between subsequent states of the
+ * status bar, calculated by xor-ing with the previous data.
  *
- * This difference is calculated by xor-ing with previous data
- *
- * We can't use implementation with "control char" since this encoder
- * will process binary data - not ascii (or unicode) strings
+ * A "control char" implementation will not do, since this encoder processes binary data rather than
+ * ascii or unicode strings.
  */
 void RLE_Data::setup(int len, bool use_diff, uint8 *content)
 {
@@ -142,12 +140,10 @@ const uint8 *RLE_Data::Decode(const uint8 *buff, int len)
 			}
 		}
 	}
-	//
-	// Recreate data from diff. The two-pass loop above guarantees decBuf's
-	// allocation is >= m_len (on underrun m_len shrinks, decBuf is not
-	// reallocated) and every byte in [0, m_len) is written or zero-init, so
-	// the copy below is in-bounds and defined. The path-sensitive analyzer
-	// can't prove that invariant across the mid-loop Realloc, so it reports
+	// Recreate data from diff. The two-pass loop above guarantees decBuf's allocation is >= m_len
+	// (on underrun m_len shrinks, decBuf is not reallocated) and every byte in [0, m_len) is
+	// written or zero-init, so the copy below is in-bounds and defined. The path-sensitive
+	// analyzer cannot prove that invariant across the mid-loop Realloc, so it reports
 	// uninitialised / out-of-bounds / null false positives here.
 	//
 	// NOLINTBEGIN(clang-analyzer-core.uninitialized.Assign,clang-analyzer-security.ArrayBound,clang-analyzer-core.NonNullParamChecker)
@@ -173,9 +169,7 @@ const uint8 *RLE_Data::Encode(const uint8 *data, int inlen, int &outlen, bool &c
 		outlen = 0;
 		return NULL;
 	}
-	//
 	// calculate difference from prev
-	//
 	if (m_use_diff) {
 		for (int i = 0; i < m_len; i++) {
 			m_buff[i] ^= data[i];
@@ -188,10 +182,8 @@ const uint8 *RLE_Data::Encode(const uint8 *data, int inlen, int &outlen, bool &c
 		changed = true;
 	}
 
-	//
 	// now RLE
-	//
-	// In worst case 2-byte sequence is encoded as 3. So, data can grow by 50%.
+	// In worst case a 2-byte sequence is encoded as 3, so data can grow by 50%.
 	uint8 *enc_buff = new uint8[static_cast<size_t>(m_len) * 3 / 2 + 1];
 	int i = 0, j = 0;
 	while (i != m_len) {
@@ -213,9 +205,7 @@ const uint8 *RLE_Data::Encode(const uint8 *data, int inlen, int &outlen, bool &c
 
 	outlen = j;
 
-	//
-	// If using differential encoder, remember current data for
-	// later use
+	// If using the differential encoder, remember current data for later use.
 	if (m_use_diff) {
 		memcpy(m_buff, data, m_len);
 	}
@@ -225,9 +215,8 @@ const uint8 *RLE_Data::Encode(const uint8 *data, int inlen, int &outlen, bool &c
 
 const uint8 *RLE_Data::Encode(const ArrayOfUInts16 &data, int &outlen, bool &changed)
 {
-	// To encode, first copy the UInts16 to a uint8 array
-	// and limit them to 0xff.
-	// The encoded size is the size of data.
+	// To encode, first copy the UInts16 to a uint8 array and limit them to 0xff. The encoded
+	// size is the size of data.
 	int size = (int)data.size();
 	if (size == 0) {
 		return Encode(0, 0, outlen, changed);
@@ -244,11 +233,9 @@ const uint8 *RLE_Data::Encode(const ArrayOfUInts16 &data, int &outlen, bool &cha
 
 const uint8 *RLE_Data::Encode(const ArrayOfUInts64 &data, int &outlen, bool &changed)
 {
-	// uint64 is copied to a uint8 buffer
-	// first all low bytes, then all second low bytes and so on
-	// so initial RLE will benefit from high bytes being equal (zero)
-	// 0x000003045A6A7A8A, 0x000003045B6B7B8B
-	// 8A8B7A7B6A6B5A5B0404030300000000
+	// uint64 is copied to a uint8 buffer, first all low bytes, then all second low bytes and so
+	// on, so the initial RLE benefits from the high bytes being equal (zero):
+	// 0x000003045A6A7A8A, 0x000003045B6B7B8B -> 8A8B7A7B6A6B5A5B0404030300000000
 	int size = (int)data.size();
 	if (size == 0) {
 		return Encode(0, 0, outlen, changed);

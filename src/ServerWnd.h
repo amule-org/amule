@@ -41,22 +41,19 @@ public:
 	void UpdateED2KInfo();
 	void UpdateKadInfo();
 
-	// Drives the pane's own Connect/Cancel/Disconnect toggle
-	// (IDC_ED2KDISCONNECT) from ED2K's current state. Called from
-	// CamuleDlg::ShowConnectionState() alongside UpdateED2KInfo().
+	// Drives the pane's own Connect/Cancel/Disconnect toggle (IDC_ED2KDISCONNECT) from ED2K's
+	// current state. Called from CamuleDlg::ShowConnectionState() alongside UpdateED2KInfo().
 	void UpdateED2KConnectButton();
 
 	CServerListCtrl *serverlistctrl;
 
-	// Shared column-width helper for the two info notebooks (ED2K
-	// Info, Kad Info). Pins column 0 to autosize and fills column 1
-	// with the remaining client width so the value column doesn't
-	// truncate (#813).
+	// Shared column-width helper for the two info notebooks (ED2K Info, Kad Info). Pins column
+	// 0 to autosize and fills column 1 with the remaining client width so the value column does
+	// not truncate (#813).
 	static void FitInfoListColumns(wxListCtrl *list);
 
-	// Copy currently-selected rows of one of the two info notebooks
-	// (or all rows when no selection) to the clipboard as
-	// tab-separated `<label>\t<value>` lines (#814).
+	// Copy the selected rows of one of the two info notebooks -- or all rows when nothing is
+	// selected -- to the clipboard as tab-separated `<label>\t<value>` lines (#814).
 	static void CopyInfoListToClipboard(wxListCtrl *list);
 
 private:
@@ -71,18 +68,16 @@ private:
 	void OnBnClickedResetGuiLog(wxCommandEvent &evt);
 #endif
 
-	// Copy handlers for ED2K Info / Kad Info notebook tabs (#814).
-	// Routed through wxEvtHandler bindings rather than the static
-	// event table so both list-control IDs can share the same code
-	// without a per-ID stanza.
+	// Copy handlers for the ED2K Info / Kad Info notebook tabs (#814). Routed through
+	// wxEvtHandler bindings rather than the static event table so both list-control IDs share
+	// the same code without a per-ID stanza.
 	void OnInfoListKeyDown(wxKeyEvent &evt);
 	void OnInfoListContextMenu(wxContextMenuEvent &evt);
 	void OnInfoListCopy(wxCommandEvent &evt);
 
-	// Set in OnSashPositionChanging (only fires while the user is
-	// actually dragging the sash); checked by OnSashPositionChanged
-	// to filter out layout-induced sash moves that fire during
-	// minimize/restore reflows on Windows.
+	// Set in OnSashPositionChanging, which only fires while the user is actually dragging the
+	// sash; checked by OnSashPositionChanged to filter out layout-induced sash moves that fire
+	// during minimize/restore reflows on Windows.
 	bool m_userDraggingSash = false;
 
 	wxDECLARE_EVENT_TABLE();

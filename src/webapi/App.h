@@ -47,22 +47,17 @@ class CApiDispatcher;
 class CECPacket;
 class CHttpServer;
 
-// amuleapi daemon entry. Inherits CaMuleExternalConnector to reuse
-// the EC bring-up machinery (CRemoteConnect, --host / --port /
-// --password, ZLIB negotiation, MD5 password handling). Adds the
-// amuleapi-specific CLI options (--bind, --http-port, --config-dir,
-// --set-{admin,guest}-pass), config-file loading via
-// CAmuleApiConfig, and a Boost.Beast HTTP server thread.
+// amuleapi daemon entry. Inherits CaMuleExternalConnector to reuse the EC bring-up machinery
+// (CRemoteConnect, --host / --port / --password, ZLIB negotiation, MD5 password handling). Adds the
+// amuleapi-specific CLI options (--bind, --http-port, --config-dir, --set-{admin,guest}-pass),
+// config-file loading via CAmuleApiConfig, and a Boost.Beast HTTP server thread.
 //
-// TextShell is overridden so `ConnectAndRun` becomes "connect EC,
-// spawn the HTTP thread, run the refresher loop on this (wxApp)
-// thread, tear down on shutdown signal".
+// TextShell is overridden so `ConnectAndRun` becomes "connect EC, spawn the HTTP thread, run the
+// refresher loop on this (wxApp) thread, tear down on shutdown signal".
 //
-// Concurrent REST handlers reach EC only through
-// `SendRecvSerialized`, which holds a process-wide mutex around
-// every EC roundtrip — CRemoteConnect stays single-threaded as
-// required, and concurrent mutations + the refresher tick interleave
-// correctly.
+// Concurrent REST handlers reach EC only through `SendRecvSerialized`, which holds a process-wide
+// mutex around every EC roundtrip -- CRemoteConnect stays single-threaded as required, and
+// concurrent mutations plus the refresher tick interleave correctly.
 class CamuleapiApp : public CaMuleExternalConnector
 {
 public:
@@ -80,58 +75,57 @@ public:
 	void OnFatalException() override;
 #endif
 
-	// Serialized EC roundtrip: takes the EC lock, calls SendRecvMsg_v2,
-	// releases. Callable from any thread; the refresher and mutation handlers
-	// funnel every EC call through here so amule's wx-socket-driven
-	// CRemoteConnect stays single-reader by construction. Returns nullptr if EC
-	// has disconnected; the caller owns the returned packet.
+	// Serialized EC roundtrip: takes the EC lock, calls SendRecvMsg_v2, releases. Callable from
+	// any thread; the refresher and mutation handlers funnel every EC call through here so
+	// amule's wx-socket-driven CRemoteConnect stays single-reader by construction. Returns
+	// nullptr if EC has disconnected; the caller owns the returned packet.
 	const CECPacket *SendRecvSerialized(const CECPacket *request);
 
-	// True when amuled advertised EC_TAG_CAN_PARTIAL_UPDATE during login. The
-	// refresher uses this to decide between trusting the EC_TAG_FILE_REMOVED
-	// markers and the legacy bulk-delete path.
+	// True when amuled advertised EC_TAG_CAN_PARTIAL_UPDATE during login. The refresher uses
+	// this to decide between trusting the EC_TAG_FILE_REMOVED markers and the legacy bulk-
+	// delete path.
 	bool IsServerPartialUpdateActive();
 
-	// True when amuled advertised EC_TAG_CAN_CLIENT_HISTORY during login,
-	// i.e. it answers EC_OP_GET_CLIENT_HISTORY. /known_clients returns 503
-	// rather than sending a request an older core would assert on.
+	// True when amuled advertised EC_TAG_CAN_CLIENT_HISTORY during login, i.e. it answers
+	// EC_OP_GET_CLIENT_HISTORY. /known_clients returns 503 rather than sending a request an
+	// older core would assert on.
 	bool IsServerClientHistoryActive();
 	// True when the connected amuled serves the chat session ops; every
 	// /chats route answers 503 ec_unsupported when this is false.
 	bool IsServerChatActive();
 
-	// Version string of the connected amuled, captured from the
-	// EC_TAG_SERVER_VERSION tag of the AUTH_OK handshake. Empty when EC is not
-	// (yet) connected, or when the daemon is old enough to omit the tag. Read
-	// under m_ec_mtx, since m_ECClient is torn down / rebuilt across reconnects.
+	// Version string of the connected amuled, captured from the EC_TAG_SERVER_VERSION tag of
+	// the AUTH_OK handshake. Empty when EC is not (yet) connected, or when the daemon is old
+	// enough to omit the tag. Read under m_ec_mtx, since m_ECClient is torn down and rebuilt
+	// across reconnects.
 	wxString GetDaemonVersion();
 
 	// Refresher needs the cache. Single CState instance per process.
 	webapi::CState &State() { return m_state; }
 
-	// Per-partfile RLE decoder state, persisted across ticks. amule's EC server
-	// sends GAP_STATUS / PART_STATUS as differentially-encoded blobs (each frame
-	// XOR-deltaed against the previous decoded buffer), so the decoder MUST
-	// retain state across calls. Keyed by partfile ECID; erased on removal.
+	// Per-partfile RLE decoder state, persisted across ticks. amule's EC server sends
+	// GAP_STATUS / PART_STATUS as differentially-encoded blobs, each frame XOR-deltaed against
+	// the previous decoded buffer, so the decoder MUST retain state across calls. Keyed by
+	// partfile ECID; erased on removal.
 	//
-	// Mutated only under `CState::m_mu` held EXCLUSIVE, typically inside a
-	// MutateDownloads writer lambda. `m_ec_mtx` is incidentally held across the
-	// same call stack, but the State write lock is the actual serializer -- the
-	// method name encodes the precondition so a reviewer notices it.
+	// Mutated only under `CState::m_mu` held EXCLUSIVE, typically inside a MutateDownloads
+	// writer lambda. `m_ec_mtx` is incidentally held across the same call stack, but the State
+	// write lock is the actual serializer -- the method name encodes the precondition so a
+	// reviewer notices it.
 	std::map<std::uint32_t, PartFileEncoderData> &PartfileRleStateRequireStateWriteLock()
 	{
 		return m_partfile_rle;
 	}
 
-	// SSE event bus. The refresher publishes events after each successful tick;
-	// streaming-handler threads drain from here. Exposed by raw reference --
-	// CEventBus is internally thread-safe. Lazy-constructed in OnInit so the
-	// operator-configured ring capacity is honoured.
+	// SSE event bus. The refresher publishes events after each successful tick; streaming-
+	// handler threads drain from here. Exposed by raw reference -- CEventBus is internally
+	// thread-safe. Lazy-constructed in OnInit so the operator-configured ring capacity is
+	// honoured.
 	webapi::CEventBus &EventBus() { return *m_event_bus; }
 
-	// Prior-tick snapshot used to compute event deltas. Owned by the App, mutated
-	// AFTER each successful refresher tick by EmitDiffsAndUpdate. Exposed so
-	// RefresherTick can reach it without re-routing through CState.
+	// Prior-tick snapshot used to compute event deltas. Owned by the App, mutated AFTER each
+	// successful refresher tick by EmitDiffsAndUpdate. Exposed so RefresherTick can reach it
+	// without re-routing through CState.
 	webapi::LastSeenState &LastSeenForEvents() { return m_last_seen; }
 
 private:
@@ -148,15 +142,15 @@ private:
 	int RunSetGuestPass();
 
 	// TextShell override drives the refresher loop and the HTTP server. Called by
-	// CaMuleExternalConnector::ConnectAndRun once EC is established; overridden
-	// so the daemon never enters the interactive readline path amulecmd uses.
+	// CaMuleExternalConnector::ConnectAndRun once EC is established; overridden so the daemon
+	// never enters the interactive readline path amulecmd uses.
 	void TextShell(const wxString &prompt) override;
 
 	CAmuleApiConfig m_apiConfig;
 	webapi::CState m_state;
-	// All EC roundtrips run on this service's single worker thread (bounded FIFO
-	// queue). Sole owner of the EC socket after login, so it also serialises
-	// m_ECClient -- m_ec_mtx below is only for the version accessor now.
+	// All EC roundtrips run on this service's single worker thread, with a bounded FIFO queue.
+	// Sole owner of the EC socket after login, so it also serialises m_ECClient -- m_ec_mtx
+	// below is only for the version accessor now.
 	webapi::CEcService m_ec_service;
 	std::mutex m_ec_mtx; // serializes m_ECClient
 	std::unique_ptr<CJwt> m_jwt;
@@ -169,10 +163,10 @@ private:
 	std::unique_ptr<webapi::CEventBus> m_event_bus;
 	webapi::LastSeenState m_last_seen;
 
-	// CLI capture: --bind / --http-port override the matching keys in
-	// amuleapi.conf when present. The `m_cliHas*` flags discriminate between
-	// "operator passed nothing" and "operator passed the default value
-	// verbatim" -- the base class fields have no such predicate of their own.
+	// CLI capture: --bind / --http-port override the matching keys in amuleapi.conf when
+	// present. The `m_cliHas*` flags discriminate between "operator passed nothing" and
+	// "operator passed the default value verbatim" -- the base class fields have no such
+	// predicate of their own.
 	wxString m_cliBindAddress;
 	long m_cliHttpPort = 0;
 	wxString m_cliConfigDirOverride;
@@ -185,14 +179,14 @@ private:
 	// Did the operator pass --host / --port / --password explicitly?
 	bool m_cliHasEcHost = false;
 	bool m_cliHasEcPort = false;
-	/// amuleapi owns amuleapi.conf and must not also read remote.conf: two files
-	/// describing the same EC connection, with load order deciding the winner, is
-	/// a trap. Turning this off drops --config-file, --write-config and
-	/// --create-config-from too, since all three only exist to manage that file.
+	/// amuleapi owns amuleapi.conf and must not also read remote.conf: two files describing the
+	/// same EC connection, with load order deciding the winner, is a trap. Turning this off
+	/// drops --config-file, --write-config and --create-config-from too, since all three only
+	/// exist to manage that file.
 	bool UsesConnectorConfigFile() const override { return false; }
-	// No -P/--password: it would put the EC secret in argv, where ps exposes it
-	// to every local user. amuleapi gets the credential from the token the core
-	// writes when it spawns us, or from [EC]/Password in amuleapi.conf.
+	// No -P/--password: it would put the EC secret in argv, where ps exposes it to every local
+	// user. amuleapi gets the credential from the token the core writes when it spawns us, or
+	// from [EC]/Password in amuleapi.conf.
 	bool UsesEcPasswordOption() const override { return false; }
 
 	// amuleapi keeps its settings in amuleapi.conf and never reads or writes

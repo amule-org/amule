@@ -43,13 +43,11 @@
 #include "StringFunctions.h"
 #include "SmartPtr.h" // Needed for CSmartPtr
 
-//
 // This class assumes that the following line has been executed:
 //
 //	wxConvFileName = &aMuleConvBrokenFileNames;
 //
-// This line is necessary so that wxWidgets handles unix file names correctly.
-//
+// It is necessary for wxWidgets to handle unix file names correctly.
 CDirIterator::CDirIterator(const CPath &dir)
 : wxDir(dir.GetRaw())
 {
@@ -122,8 +120,7 @@ static EFileType GuessFiletype(const wxString &file)
 }
 
 /**
- * Replaces the zip-archive with "guarding.p2p" or "ipfilter.dat",
- * if either of those files are found in the archive.
+ * Replaces the zip archive with "guarding.p2p" or "ipfilter.dat", if either is found inside it.
  */
 static bool UnpackZipFile(const wxString &file, const char *files[])
 {
@@ -149,17 +146,16 @@ static bool UnpackZipFile(const wxString &file, const char *files[])
 				while (!zip.Eof()) {
 					zip.Read(buffer, sizeof(buffer));
 					if (zip.LastRead() == 0) {
-						// Stream stuck (e.g. unsupported compression
-						// method on this entry). wxZipInputStream
-						// doesn't advance its EOF flag in this case,
-						// so the original loop spun forever -- on a
-						// malformed eMule-security IPFilter feed it
-						// emitted gigabytes of "Error: unsupported
-						// Zip compression method" inside seconds
-						// (#376). Bail and let the caller treat this
-						// download as failed; the next fetch will
-						// pick up the clean copy. (run is set false after
-						// the loop, so no assignment is needed here.)
+						// Stream stuck, e.g. an unsupported compression
+						// method on this entry. wxZipInputStream does not
+						// advance its EOF flag then, so the original loop
+						// spun forever -- on a malformed eMule-security
+						// IPFilter feed it emitted gigabytes of "Error:
+						// unsupported Zip compression method" within
+						// seconds (#376). Bail and let the caller treat
+						// this download as failed; the next fetch picks up
+						// the clean copy. (run is set false after the loop,
+						// so no assignment is needed here.)
 						break;
 					}
 					target.Write(buffer, zip.LastRead());

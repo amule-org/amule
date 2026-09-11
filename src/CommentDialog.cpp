@@ -34,13 +34,10 @@
 
 namespace
 {
-// Registry of open CCommentDialog instances. Iterated by
-// CCommentDialog::DropReferencesTo when a CKnownFile is destroyed, so
-// any dialog whose m_file matches can be dismissed before its modal
-// loop tries to deref the freed pointer (issue #755 / #748 family).
-//
-// All access is on the GUI main thread (modal dialogs only exist on
-// that thread), so no synchronisation is needed.
+// Registry of open CCommentDialog instances. CCommentDialog::DropReferencesTo walks it when a
+// CKnownFile is destroyed, so any dialog whose m_file matches can be dismissed before its modal
+// loop derefs the freed pointer (issue #755 / #748 family). All access is on the GUI main thread,
+// modal dialogs only existing there, so no synchronisation is needed.
 std::set<CCommentDialog *> &OpenInstances()
 {
 	static std::set<CCommentDialog *> instances;
@@ -69,7 +66,7 @@ CCommentDialog::~CCommentDialog()
 
 void CCommentDialog::DropReferencesTo(const CKnownFile *file)
 {
-	// Pointer-value comparison only — `file` may already be freed.
+	// Pointer-value comparison only -- `file` may already be freed.
 	for (CCommentDialog *d : OpenInstances()) {
 		if (d->m_file == file) {
 			d->m_file = NULL;

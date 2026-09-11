@@ -27,16 +27,15 @@
 
 using namespace muleunit;
 
-// The External Connection listener's shipped defaults, copied here rather than
-// read from Preferences: the limiter is a standalone class and pulling in the
-// preferences machinery would need a running app.
+// The External Connection listener's shipped defaults, copied here rather than read from
+// Preferences: the limiter is a standalone class and pulling in the preferences machinery would
+// need a running app.
 //
-// So this fixture asserts the limiter behaves correctly *at the numbers EC
-// ships with* -- it does not verify that Preferences.cpp still registers those
-// numbers. Changing a default there and not here leaves this suite green. What
-// it does catch is a regression in the limiter itself: AuthTest exercises the
-// same class with small synthetic values, and these cases add the ones EC
-// depends on, including that the window slides rather than tumbles.
+// So this fixture asserts the limiter behaves correctly *at the numbers EC ships with* -- it does
+// not verify that Preferences.cpp still registers those numbers. Changing a default there and not
+// here leaves this suite green. What it does catch is a regression in the limiter itself: AuthTest
+// exercises the same class with small synthetic values, and these cases add the ones EC depends on,
+// including that the window slides rather than tumbles.
 namespace
 {
 const unsigned EC_WINDOW = 60;
@@ -106,9 +105,9 @@ TEST(RateLimiterTest, SuccessClearsTheStreak)
 	std::time_t now = 1000;
 	CRateLimiter rl(EcDefaults(), [&] { return now; });
 
-	// A user who mistypes, gets in, then mistypes again must not be locked
-	// out by the two streaks adding up: nine plus nine is well past the
-	// threshold, but the success in between resets the count.
+	// A user who mistypes, gets in, then mistypes again must not be locked out by the two
+	// streaks adding up: nine plus nine is well past the threshold, but the success in between
+	// resets the count.
 	for (unsigned i = 0; i < EC_THRESHOLD - 1; ++i) {
 		rl.NoteFailure("10.0.0.1");
 	}
@@ -137,11 +136,10 @@ TEST(RateLimiterTest, WindowSlidesRatherThanTumbling)
 	std::time_t now = 1000;
 	CRateLimiter rl(EcDefaults(), [&] { return now; });
 
-	// The failure that matters is the one that ages out. Spend the whole
-	// allowance, let a single stamp expire, and only one more failure should
-	// fit before the lockout arms again -- a tumbling window would have
-	// cleared the entire count at the boundary and allowed the full
-	// allowance a second time.
+	// The failure that matters is the one that ages out. Spend the whole allowance, let a
+	// single stamp expire, and only one more failure should fit before the lockout arms again
+	// -- a tumbling window would have cleared the entire count at the boundary and allowed the
+	// full allowance a second time.
 	for (unsigned i = 0; i < EC_THRESHOLD - 1; ++i) {
 		rl.NoteFailure("10.0.0.1");
 	}

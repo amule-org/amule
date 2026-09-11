@@ -56,10 +56,9 @@
 class CWebSocket;
 class CMD4Hash;
 
-// Idle window after which a CSession entry is dropped and the user is asked to
-// log in again. CheckLoggedin has hardcoded 7200 (2 hours) since forever, while
-// the named constant existed and was never wired up. The macro now owns the
-// value, so the timeout can be changed in one place.
+// Idle window after which a CSession entry is dropped and the user is asked to log in again.
+// CheckLoggedin hardcoded 7200 (2 hours) since forever, while the named constant existed and was
+// never wired up. The macro now owns the value, so the timeout can change in one place.
 #define SESSION_TIMEOUT_SECS 7200 // 2 hours session expiration
 #define SHORT_FILENAME_LENGTH 40  // Max size of file name.
 
@@ -187,9 +186,7 @@ public:
 	uint32 ID() { return ECID(); }
 };
 
-/*!
- * T - type of items in container
- */
+/*! T - type of items in container */
 template <class T> class ItemsContainer
 {
 protected:
@@ -211,9 +208,7 @@ public:
 		return real_ptr;
 	}
 
-	/*!
-	 * Re-query server: refresh all dataset
-	 */
+	/*! Re-query server: refresh all dataset */
 	virtual bool ReQuery() = 0;
 
 	typedef typename std::list<T>::iterator ItemIterator;
@@ -221,17 +216,12 @@ public:
 	ItemIterator GetEndIterator() { return m_items.end(); }
 };
 
-/*!
- * T - type of items in container
- * I - type of item ID
- * G - type of tag in EC
- */
+/*! T - type of items in container, I - type of item ID, G - type of tag in EC */
 template <class T, class G, class I> class UpdatableItemsContainer : public ItemsContainer<T>
 {
 protected:
-	// need duplicate list with a map, so check "do we already have"
-	// will take O(log(n)) instead of O(n)
-	// map will contain pointers to items in list
+	// Duplicate the list with a map so "do we already have it" is O(log n) rather than O(n).
+	// The map holds pointers to items in the list.
 	std::map<I, T *> m_items_hash;
 
 public:
@@ -266,20 +256,17 @@ public:
 		return ret;
 	}
 
-	/*!
-	 * Process answer of update request, create list of new items for
-	 * full request later. Also remove items that no longer exist in core.
+	/**
+	 * Process the answer to an update request: build the list of new items for a later full
+	 * request, and remove items that no longer exist in the core.
 	 *
-	 * Partial-update protocol negotiated at auth: when the server is
-	 * partial-update-capable, files unchanged since the last cycle
-	 * are simply absent from the response; deletions arrive as
-	 * explicit `EC_TAG_FILE_REMOVED` markers. The bulk "anything
-	 * missing == deleted" loop below would otherwise wipe most of
-	 * the library every cycle on big libraries (#713). When the
-	 * server is not partial-update-capable (or didn't echo the
-	 * capability), the encoder's per-file diff makes unchanged
-	 * tags effectively empty alive-markers and the bulk-deletion
-	 * loop stays correct.
+	 * Partial-update protocol negotiated at auth: when the server is partial-update-capable,
+	 * files unchanged since the last cycle are simply absent from the response, and deletions
+	 * arrive as explicit `EC_TAG_FILE_REMOVED` markers. The bulk "anything missing == deleted"
+	 * loop below would otherwise wipe most of the library every cycle on big libraries (#713).
+	 * When the server is not partial-update-capable, or did not echo the capability, the
+	 * encoder's per-file diff makes unchanged tags effectively empty alive-markers and the
+	 * bulk-deletion loop stays correct.
 	 */
 	void ProcessUpdate(const CECPacket *reply, CECPacket *full_req, int req_type)
 	{
@@ -310,9 +297,8 @@ public:
 
 		std::list<I> del_ids;
 		if (partial_update) {
-			// Only delete what the server explicitly told us to
-			// delete. Skipped early when there's nothing to
-			// remove this cycle (the common case).
+			// Only delete what the server explicitly told us to delete. Skipped early
+			// when there is nothing to remove this cycle, the common case.
 			if (!removed_files.empty()) {
 				for (typename std::list<T>::iterator j = this->m_items.begin();
 					j != this->m_items.end();
@@ -541,9 +527,7 @@ public:
 
 #ifdef WITH_LIBPNG
 
-//
 // Dynamic png image generation
-//
 class CDynPngImage : public virtual CAnyImage
 {
 
@@ -590,10 +574,7 @@ public:
 
 #endif
 
-//
-// Representing statistical sample for some parameter. Circular buffer
-// inside to avoid rellocations
-//
+// A statistical sample for some parameter, with a circular buffer inside to avoid reallocations.
 class CStatsData
 {
 	uint32 *m_data;
@@ -635,11 +616,8 @@ public:
 
 #ifdef WITH_LIBPNG
 
-//
-// This gonna to represent data used to "write" numbers on
-// dynamically generated images.
-// Easiest way to represt numbers: 7-segments model
-//
+// Data used to "write" numbers on dynamically generated images. The easiest way to represent a
+// number is the 7-segment model.
 class CNumImageMask
 {
 	png_bytep *m_row_mask_ptrs;
@@ -672,18 +650,15 @@ class CDynStatisticImage : public virtual CDynPngImage
 	int m_left_margin, m_bottom_margin;
 	int m_y_axis_size;
 
-	// 0-9 are digit glyphs; 10-13 are unit-prefix glyphs K, M, G, T
-	// used by the axis-label renderer when the y-axis maximum exceeds
-	// what 4 digits can hold.
+	// 0-9 are digit glyphs; 10-13 are the unit-prefix glyphs K, M, G, T used by the axis-label
+	// renderer when the y-axis maximum exceeds what 4 digits can hold.
 	CNumImageMask *m_digits[14];
 
 	// indicates whether data should be divided on 1024 before
 	// drawing graph.
 	bool m_scale1024;
 
-	//
 	// Prepared background
-	//
 	png_bytep m_background;
 	png_bytep *m_row_bg_ptrs;
 
@@ -734,24 +709,20 @@ public:
 struct ThreadData
 {
 	CParsedUrl parsedURL;
-	// CParsedUrl of the *original* request URL, before
-	// CWebSocket::OnRequestReceived concatenated the POST body onto
-	// it (see comment at WebSocket.cpp:197-208). Used by the login
-	// handler to tell apart "param came from the POST body" from
-	// "param came from the URL query string"; we refuse to consume
-	// `pass` when it's reachable via the query, so attacker-crafted
-	// URLs like `/login.php?pass=XYZ` (or POST forms whose action
-	// carries `?pass=...`) can never authenticate (#872). The
-	// existing merged `parsedURL` above stays the source of truth
-	// for every non-credential parameter so #724's POST-on-
-	// query-URL fix isn't disturbed.
+	// CParsedUrl of the *original* request URL, before CWebSocket::OnRequestReceived
+	// concatenated the POST body onto it (see the comment at WebSocket.cpp:197-208). Used by
+	// the login handler to tell "param came from the POST body" from "param came from the URL
+	// query string": we refuse to consume `pass` when it is reachable via the query, so
+	// attacker-crafted URLs like `/login.php?pass=XYZ`, or POST forms whose action carries
+	// `?pass=...`, can never authenticate (#872). The merged `parsedURL` above stays the source
+	// of truth for every non-credential parameter, so #724's POST-on-query-URL fix is
+	// undisturbed.
 	CParsedUrl getOnlyParsedURL;
 	wxString sURL;
-	// Opaque 64-bit session token; 0 means "no session cookie yet".
-	// Sourced from CryptoPP::AutoSeededRandomPool when a new session
-	// is created, see CScriptWebServer::CheckLoggedin in
-	// WebServer.cpp. Was `int` + rand() before #870, which made
-	// session IDs trivially guessable.
+	// Opaque 64-bit session token; 0 means "no session cookie yet". Sourced from
+	// CryptoPP::AutoSeededRandomPool when a new session is created, see
+	// CScriptWebServer::CheckLoggedin in WebServer.cpp. Was `int` plus rand() before #870,
+	// which made session IDs trivially guessable.
 	uint64_t SessionID;
 	CWebSocket *pSocket;
 };
@@ -816,9 +787,7 @@ public:
 
 	long GetWSPrefs();
 
-	//
 	// Command interface
-	//
 	void Send_ReloadSharedFile_Cmd();
 
 	void Send_SharedFile_Cmd(wxString file_hash, wxString cmd, uint32 opt_arg = 0);
@@ -854,9 +823,7 @@ public:
 	void LoadVars(CParsedUrl &url);
 };
 
-/*
- * Script based webserver
- */
+/* Script based webserver */
 class CScriptWebServer : public CWebServerBase
 {
 	wxString m_www_root;

@@ -123,18 +123,12 @@ enum DebugType
 	// array in Logger.cpp!
 };
 
-/**
- * Container-class for the debugging categories.
- */
+/// Container class for the debugging categories.
 class CDebugCategory
 {
 public:
-	/**
-	 * Constructor.
-	 *
-	 * @param type The actual debug-category type.
-	 * @param name The user-readable name.
-	 */
+	/// @param type The debug-category type.
+	/// @param name The user-readable name.
 	CDebugCategory(DebugType type, const wxString &name)
 	: m_name(name)
 	, m_type(type)
@@ -142,24 +136,16 @@ public:
 	{
 	}
 
-	/**
-	 * Returns true if the category is enabled.
-	 */
+	/// True if the category is enabled.
 	bool IsEnabled() const { return m_enabled; }
 
-	/**
-	 * Enables/Disables the category.
-	 */
+	/// Enables or disables the category.
 	void SetEnabled(bool enabled) { m_enabled = enabled; }
 
-	/**
-	 * Returns the user-readable name.
-	 */
+	/// The user-readable name.
 	const wxString &GetName() const { return m_name; }
 
-	/**
-	 * Returns the actual type.
-	 */
+	/// The category type.
 	DebugType GetType() const { return m_type; }
 
 private:
@@ -171,62 +157,36 @@ private:
 	bool m_enabled;
 };
 
-/**
- * Functions for logging operations.
- */
+/// Functions for logging operations.
 class CLogger : public wxEvtHandler
 {
 public:
-	/**
-	 * Returns true if debug-messages should be generated for a specific category.
-	 */
+	/// True if debug messages should be generated for this category.
 #ifdef __DEBUG__
 	bool IsEnabled(DebugType) const;
 #else
 	bool IsEnabled(DebugType) const { return false; }
 #endif
 
-	/**
-	 * Enables or disables debug-messages for a specific category.
-	 */
+	/// Enables or disables debug messages for a category.
 	void SetEnabled(DebugType type, bool enabled);
 
-	/**
-	 * Sets the global verbose-debug flag that gates IsEnabled() per category.
-	 *
-	 * The amuled / monolithic build stores this in thePrefs; the
-	 * console-binary build (amuleweb, amulecmd, etc.) maintains its own
-	 * static since it doesn't link CPreferences. ExternalConnector calls
-	 * this with the value of /eMule/VerboseDebug after loading amule.conf
-	 * and again after parsing the --verbose CLI flag so both paths drive
-	 * the same gate.
-	 */
+	/// Sets the global verbose-debug flag that gates IsEnabled() per category. The amuled /
+	/// monolithic build stores this in thePrefs; the console binaries (amuleweb, amulecmd) keep
+	/// their own static, not linking CPreferences. ExternalConnector calls this with
+	/// /eMule/VerboseDebug after loading amule.conf and again after parsing --verbose, so both
+	/// paths drive the same gate.
 	void SetVerbose(bool verbose);
 
-	/**
-	 * Returns true if logging to stdout is enabled
-	 */
+	/// True if logging to stdout is enabled.
 	bool IsEnabledStdoutLog() const { return m_StdoutLog; }
 
-	/**
-	 * Enables or disables logging to stdout.
-	 */
+	/// Enables or disables logging to stdout.
 	void SetEnabledStdoutLog(bool enabled) { m_StdoutLog = enabled; }
 
-	/**
-	 * Logs the specified line of text, prefixed with the name of the DebugType.
-	 * (except for logStandard)
-	 *
-	 * @param file
-	 * @param line
-	 * @param critical If true, then the message will be made visible directly to the user.
-	 * @param type The debug-category, the name of which will be prepended to the line.
-	 * @param str The actual line of text.
-	 *
-	 * This function is thread-safe. If it is called by the main thread, the
-	 * event will be sent directly to the application, otherwise it will be
-	 * queued in the event-loop.
-	 */
+	/// Logs @a str prefixed with the name of @a type (except for logStandard). @a critical
+	/// makes the message visible directly to the user. Thread-safe: from the main thread the
+	/// event is sent straight to the application, otherwise it is queued in the event loop.
 	void AddLogLine(const wxString &file,
 		int line,
 		bool critical,
@@ -241,44 +201,27 @@ public:
 
 	void AddLogLine(const wxString &file, int line, bool critical, const std::ostringstream &msg);
 
-	/**
-	 * Emergency log for crashes.
-	 */
+	/// Emergency log for crashes.
 	void EmergencyLog(const wxString &message, bool closeLog = true);
 
-	/**
-	 * Returns a category specified by index.
-	 */
+	/// The category at @a index.
 	const CDebugCategory &GetDebugCategory(int index);
 
-	/**
-	 * Returns the number of debug-categories.
-	 */
+	/// Number of debug categories.
 	unsigned int GetDebugCategoryCount();
 
-	/**
-	 * Open Logfile, true on success
-	 */
+	/// Opens the logfile; true on success.
 	bool OpenLogfile(const wxString &name);
 
-	/**
-	 * Close Logfile
-	 */
+	/// Closes the logfile.
 	void CloseLogfile();
 
-	/**
-	 * Get name of Logfile
-	 */
+	/// Name of the logfile.
 	const wxString &GetLogfileName() const { return m_LogfileName; }
 
-	/**
-	 * Event handler
-	 */
+	/// Event handler.
 	void OnLoggingEvent(class CLoggingEvent &evt);
 
-	/**
-	 * Construct
-	 */
 	CLogger()
 	{
 		applog = NULL;
@@ -294,19 +237,13 @@ private:
 	int m_count; // output line counter
 	wxMutex m_lineLock;
 
-	/**
-	 * Write all waiting log info to the logfile
-	 */
+	/// Writes all waiting log info to the logfile.
 	void FlushApplog();
 
-	/**
-	 * Really output a single line
-	 */
+	/// Outputs a single line.
 	void DoLine(const wxString &line, bool toStdout, bool toGUI);
 
-	/**
-	 * Really output several lines
-	 */
+	/// Outputs several lines.
 	void DoLines(const wxString &lines, bool critical, bool toStdout, bool toGUI);
 
 	wxDECLARE_EVENT_TABLE();
@@ -314,17 +251,13 @@ private:
 
 extern CLogger theLogger;
 
-/**
- * This class forwards log-lines from wxWidgets to CLogger.
- */
+/// Forwards log lines from wxWidgets to CLogger.
 class CLoggerTarget : public wxLog
 {
 public:
 	CLoggerTarget();
 
-	/**
-	 * @see wxLog::DoLogText
-	 */
+	/// @see wxLog::DoLogText
 	void DoLogText(const wxString &msg);
 };
 
@@ -379,53 +312,37 @@ private:
 	bool m_ready;
 
 public:
-	//
 	// construct/destruct
-	//
 	CLoggerAccess();
 	~CLoggerAccess();
-	//
-	// Reset (used when logfile is cleared)
-	//
+	// Reset (used when the logfile is cleared)
 	void Reset();
-	//
-	// get a String (if there is one)
-	//
+	// get a string (if there is one)
 	bool GetString(wxString &s);
-	//
-	// is a String available ?
-	//
+	// is a string available?
 	bool HasString();
 };
 
 /**
  * Marks a log string that is deliberately not wrapped in _().
  *
- * Both expand to the string unchanged, so neither reaches xgettext and neither
- * costs anything at runtime; they exist so the reason is greppable and an
- * untranslated literal is not mistaken for an oversight (issue #866).
+ * Both expand to the string unchanged, so neither reaches xgettext and neither costs anything at
+ * runtime; they exist so the reason is greppable and an untranslated literal is not mistaken for an
+ * oversight (issue #866).
  *
- * LOG_DIAGNOSTIC: an internal fault or trace whose value is being readable in
- * a bug report someone pastes in. Translating it would make those reports
- * harder to search, so it stays English on purpose.
+ * LOG_DIAGNOSTIC: an internal fault or trace whose value is being readable in a bug report someone
+ * pastes in. Translating it would make those reports harder to search.
  *
- * LOG_PRELOCALE: emitted before Localize_mule() has run, so no catalog is
- * loaded and gettext would return the original text anyway. Wrapping one of
- * these in _() would ship a string to translators that can never be shown
- * translated. See the ordering note in CamuleApp::OnInit().
+ * LOG_PRELOCALE: emitted before Localize_mule() has run, so no catalog is loaded and gettext would
+ * return the original text anyway. See the ordering note in CamuleApp::OnInit().
  */
 #define LOG_DIAGNOSTIC(str) str
 #define LOG_PRELOCALE(str) str
 
 /**
- * These macros should be used when logging. The
- * AddLogLineM macro will simply call one of the
- * two CLogger::AddLogLine functions depending on
- * parameters, but AddDebugLogLine* will only log
- * a message if the message is either critical or
- * the specified debug-type is enabled in the
- * preferences.
- * AddLogLineMS will also always print to stdout.
+ * Logging macros. AddLogLineM calls one of the two CLogger::AddLogLine overloads depending on
+ * parameters; AddDebugLogLine* logs only if the message is critical or the debug type is enabled in
+ * the preferences. AddLogLineMS also always prints to stdout.
  */
 #ifdef MULEUNIT
 #define AddDebugLogLineN(...) \

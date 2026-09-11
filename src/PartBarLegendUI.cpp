@@ -76,11 +76,10 @@ wxString PeerPartStateLabel(partbar::PeerPartState state)
 	return wxEmptyString;
 }
 
-// "other" is load-bearing. CKnownFile::UpdateAvailablePartsCount() fills
-// m_AvailPartFrequency from the GetUpPartStatus() of remote clients only; our own
-// copy is never counted. On the shared-files list we hold every part by
-// definition, so a red block does not mean the part is gone -- it means no peer
-// we know of has it too.
+// "other" is load-bearing. CKnownFile::UpdateAvailablePartsCount() fills m_AvailPartFrequency from
+// the GetUpPartStatus() of remote clients only; our own copy is never counted. On the shared-files
+// list we hold every part by definition, so a red block does not mean the part is gone -- it means
+// no peer we know of has it too.
 wxString AvailabilityPartStateLabel(partbar::AvailabilityPartState state)
 {
 	switch (state) {
@@ -89,9 +88,9 @@ wxString AvailabilityPartStateLabel(partbar::AvailabilityPartState state)
 	case partbar::AvailabilityPartState::FewSources:
 		return _("One other source has this part");
 	case partbar::AvailabilityPartState::ManySources:
-		// Formatted from kAvailFull rather than spelled out: the number is
-		// where the fade stops darkening, and a label naming a different
-		// one would be wrong in a way no reader could tell from the bar.
+		// Formatted from kAvailFull rather than spelled out: the number is where the fade
+		// stops darkening, and a label naming a different one would be wrong in a way no
+		// reader could tell from the bar.
 		return wxString::Format(_("%u or more other sources have this part"), partbar::kAvailFull);
 	}
 	return wxEmptyString;
@@ -154,11 +153,10 @@ void FillLegendGrid(wxWindow *dlg, wxSizer *grid, partbar::BarLegendKind kind, b
 				partbar::AvailabilityPartColour(state, flat),
 				AvailabilityPartStateLabel(state));
 		}
-		// The two blue rows above are the ends of a continuum, not two
-		// fills the bar picks between, so one more row shows the ramp
-		// itself. Its endpoints are those same two rows -- read from the
-		// legend order rather than from the fade, so the swatch cannot
-		// illustrate a range the rows above it do not name.
+		// The two blue rows above are the ends of a continuum, not two fills the bar picks
+		// between, so one more row shows the ramp itself. Its endpoints are those same two
+		// rows -- read from the legend order rather than from the fade, so the swatch
+		// cannot illustrate a range the rows above it do not name.
 		const partbar::BarColour from =
 			partbar::AvailabilityPartColour(partbar::AvailabilityPartState::FewSources, flat);
 		const partbar::BarColour to =
@@ -202,10 +200,9 @@ wxBitmap MakeGradientLegendSwatch(const partbar::BarColour &from, const partbar:
 	wxBitmap bitmap(kSwatchSide, kSwatchSide);
 	wxMemoryDC dc(bitmap);
 
-	// wxEAST: left to right, matching the bar, which fills a file from its
-	// first part on the left. No pen is set, so unlike the flat swatches this
-	// one has no border -- a border would read as a fill of its own next to
-	// the pale left end.
+	// wxEAST: left to right, matching the bar, which fills a file from its first part on the
+	// left. No pen is set, so unlike the flat swatches this one has no border -- a border would
+	// read as a fill of its own next to the pale left end.
 	dc.GradientFillLinear(
 		wxRect(0, 0, kSwatchSide, kSwatchSide), ToMuleColour(from), ToMuleColour(to), wxEAST);
 
@@ -223,9 +220,9 @@ void ShowPartBarLegend(wxWindow *parent, partbar::BarLegendKind kind, const wxSt
 		return;
 	}
 
-	// Read once and captured, not asked again inside the lambda: every swatch
-	// in one dialog has to answer the same preference, and the grid is filled
-	// while a nested event loop is not yet running anyway.
+	// Read once and captured, not asked again inside the lambda: every swatch in one dialog has
+	// to answer the same preference, and the grid is filled while a nested event loop is not
+	// yet running anyway.
 	const bool flat = thePrefs::UseFlatBar();
 
 	ShowInfoGridDialog(

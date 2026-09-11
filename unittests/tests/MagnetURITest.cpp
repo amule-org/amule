@@ -32,9 +32,8 @@ DECLARE_SIMPLE(MagnetURI)
 
 namespace
 {
-// A syntactically plausible (32-char) AICH-shaped base32 string -- the
-// converter treats it as an opaque token, so it doesn't need to be a real
-// hash for these tests.
+// A syntactically plausible 32-char AICH-shaped base32 string. The converter treats it as an opaque
+// token, so it need not be a real hash for these tests.
 const char *const AICH = "QVVWMK4S7ZJUV3ASZLPFYU4A5WOAAAAA";
 const char *const ED2K_HASH = "d41d8cd98f00b204e9800998ecf8427e";
 } // namespace
@@ -80,10 +79,9 @@ TEST(MagnetURI, NoAichUrnMeansNoHField)
 
 TEST(MagnetURI, MalformedAichUrnIsDropped)
 {
-	// ED2KLink.cpp's parser throws on a bad master-hash, so a magnet with a
-	// junk/truncated urn:aich: must convert as if the AICH urn were absent
-	// -- not embed the garbage into "h=" and make the whole link unusable,
-	// even though its ed2k hash is perfectly valid.
+	// ED2KLink.cpp's parser throws on a bad master-hash, so a magnet with a junk or truncated
+	// urn:aich: must convert as if the AICH urn were absent -- not embed the garbage into "h="
+	// and make the whole link unusable, even though its ed2k hash is perfectly valid.
 	wxString tooShort =
 		wxString("magnet:?xt=urn:ed2k:") + ED2K_HASH + "&dn=example.iso&xl=42&xt=urn:aich:TOOSHORT";
 	CMagnetED2KConverter convShort(tooShort);

@@ -38,39 +38,27 @@
 const size_t MD4HASH_LENGTH = 16;
 
 /**
- * Container-class for the MD4 hashes used in aMule.
+ * Container class for the MD4 hashes used in aMule.
  *
- * This is a safe representation of the MD4 hashes used in aMule. By transparently
- * wrapping the char array used to store the hash, we get the advantages of
- * assignment, equality and non-equality operators, plus other nifty features.
- *
- * Please remember that the hashes are arrays with length 16 WITHOUT a zero-terminator!
+ * Transparently wraps the char array the hash is stored in, so assignment, equality and other
+ * operators come for free. The hashes are arrays of length 16 WITHOUT a zero terminator.
  */
 class CMD4Hash
 {
 public:
 	/**
-	 * Default constructor.
-	 *
-	 * The default constructor creates an empty hash of length 16.
-	 * Each field of the char array has an initial value of zero.
+	 * Creates an empty hash of length 16, every field zero.
 	 */
 	CMD4Hash() { Clear(); }
 
 	/**
-	 * Cast a unsigned char array to a CMD4Hash.
-	 *
-	 * @param hash The array to be cast.
-	 *
-	 * Please note that the array must either be a NULL pointer or be at least
-	 * 16 chars long, not including any possible zero-terminator!
+	 * Casts an unsigned char array to a CMD4Hash. @a hash must either be NULL or at least 16
+	 * chars long, not counting any zero terminator.
 	 */
 	explicit CMD4Hash(const unsigned char hash[]) { SetHash(hash); }
 
 	/**
-	 * Equality operator.
-	 *
-	 * Returns true if all fields of both hashes are the same.
+	 * True if all fields of both hashes are the same.
 	 */
 	bool operator==(const CMD4Hash &other_hash) const
 	{
@@ -79,19 +67,13 @@ public:
 	}
 
 	/**
-	 * Non-equality operator
-	 *
-	 * Returns true if there is any difference between the two hashes.
+	 * True if the two hashes differ in any field.
 	 */
 	bool operator!=(const CMD4Hash &other_hash) const { return !(*this == other_hash); }
 
 	/**
-	 * Less than operator.
-	 *
-	 * @return True if the hash is less than other_hash, false otherwise.
-	 *
-	 * The purpose of this function is to enable the usage of CMD4Hashes in
-	 * sorted STL containers like std::map.
+	 * True if this hash sorts before @a other_hash, so CMD4Hashes can be used in sorted STL
+	 * containers like std::map.
 	 */
 	bool operator<(const CMD4Hash &other_hash) const
 	{
@@ -107,21 +89,12 @@ public:
 	}
 
 	/**
-	 * Returns true if the hash is empty.
-	 *
-	 * @return True if all fields are zero, false otherwise.
-	 *
-	 * This functions checks the contents of the hash and returns true
-	 * only if each field of the array contains the value zero.
-	 * To achieve an empty hash, the function Clear() can be used.
+	 * True if every field of the hash is zero. Clear() produces such a hash.
 	 */
 	bool IsEmpty() const { return (!RawPeekUInt64(m_hash) && !RawPeekUInt64(m_hash + 8)); }
 
 	/**
-	 * Resets the contents of the hash.
-	 *
-	 * This functions sets the value of each field of the hash to zero.
-	 * IsEmpty() will return true after a call to this function.
+	 * Sets every field of the hash to zero, so IsEmpty() then returns true.
 	 */
 	void Clear()
 	{
@@ -130,13 +103,8 @@ public:
 	}
 
 	/**
-	 * Decodes a 32 char long hexadecimal representation of a MD4 hash.
-	 *
-	 * @param hash The hash representation to be converted. Length must be 32.
-	 * @return Return value specifies if the hash was successfully decoded.
-	 *
-	 * This function converts a hexadecimal representation of a MD4
-	 * hash and stores it in the m_hash data-member.
+	 * Decodes a 32-char hexadecimal representation of an MD4 hash into m_hash. Returns whether
+	 * it decoded.
 	 */
 
 	bool Decode(const std::string &hash)
@@ -172,12 +140,7 @@ public:
 #endif
 
 	/**
-	 * Creates a 32 char long hexadecimal representation of a MD4 hash.
-	 *
-	 * @return Hexadecimal representation of the m_hash data-member.
-	 *
-	 * This function creates a hexadecimal representation of the MD4
-	 * hash stored in the m_hash data-member and returns it.
+	 * The 32-char hexadecimal representation of the hash in m_hash.
 	 */
 	std::string EncodeSTL() const
 	{
@@ -201,11 +164,7 @@ public:
 #endif
 
 	/**
-	 * Explicitly set the hash-array to the contents of a unsigned char array.
-	 *
-	 * @param hash The array to be assigned.
-	 *
-	 * The hash must either be a NULL pointer or be of length 16.
+	 * Explicitly sets the hash array from @a hash, which must be NULL or of length 16.
 	 */
 	void SetHash(const unsigned char hash[])
 	{
@@ -218,18 +177,13 @@ public:
 	}
 
 	/**
-	 * Explicit access to the hash-array.
-	 *
-	 * @return Pointer to the hash array.
+	 * Pointer to the hash array.
 	 */
 	unsigned char *GetHash() { return m_hash; }
 	const unsigned char *GetHash() const { return m_hash; }
 
 	/**
-	 * Explic access to values in the hash-array.
-	 *
-	 * @param i An index less than the length of an MD4 hash.
-	 * @return The value (or its reference) at the given index.
+	 * The value at index @a i of the hash array, or a reference to it.
 	 */
 	unsigned char operator[](size_t i) const
 	{
@@ -244,21 +198,18 @@ public:
 	}
 
 private:
-	//! The raw MD4-hash.
-	//!
-	//! The raw representation of the MD4-hash. In most cases, you should
-	//! try to avoid direct access and instead use the member functions.
-	// Value-initialised so the buffer is never read uninitialised even if a
-	// future ctor forgets to set it; the analyzer also can't see through the
-	// RawPokeUInt64 pokes in Clear()/SetHash, so this keeps it quiet too.
+	//! The raw MD4 hash. In most cases prefer the member functions to direct access. Value-
+	//! initialised so the buffer is never read uninitialised even if a future ctor forgets to
+	//! set it; the analyzer also cannot see through the RawPokeUInt64 pokes in Clear()/SetHash,
+	//! so this keeps it quiet too.
 	unsigned char m_hash[MD4HASH_LENGTH] = {};
 };
 
 namespace std
 {
-//! Lets a hash key an unordered container, for the O(1) lookups a per-tick
-//! reconcile needs. MD4 output is already uniformly distributed, so two of its
-//! words mixed make a better bucket index than anything computed over them.
+//! Lets a hash key an unordered container, for the O(1) lookups a per-tick reconcile needs. MD4
+//! output is already uniformly distributed, so two of its words mixed make a better bucket index
+//! than anything computed over them.
 template <> struct hash<CMD4Hash>
 {
 	size_t operator()(const CMD4Hash &value) const noexcept

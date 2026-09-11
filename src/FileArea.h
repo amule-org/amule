@@ -28,8 +28,7 @@ class CFileAreaSigHandler;
 class CFileAutoClose;
 
 /**
- * This class is used to optimize file read/write using mapped memory
- * if supported.
+ * Optimizes file read/write using mapped memory where supported.
  */
 class CFileArea
 {
@@ -37,12 +36,12 @@ class CFileArea
 
 public:
 	/**
-	 * Creates a uninitialized file area.
+	 * Creates an uninitialized file area.
 	 */
 	CFileArea();
 
 	/**
-	 * Destructor, closes the file if opened.
+	 * Closes the file if opened.
 	 */
 	virtual ~CFileArea();
 
@@ -52,20 +51,13 @@ public:
 	bool Close();
 
 	/**
-	 * Init area with a given piece of file.
-	 *
-	 * @param file   file to read.
-	 * @param offset seek address in file.
-	 * @param count  bytes to read.
-	 *
-	 * Initialize buffer. Buffer will contain data from current file
-	 * position for count length. Buffer will be a memory mapped area
-	 * or a allocated buffer depending on systems.
+	 * Initialises the buffer with @a count bytes of @a file from @a offset. The buffer is a
+	 * memory-mapped area or an allocated one, depending on the system.
 	 */
 	void ReadAt(CFileAutoClose &file, uint64 offset, size_t count);
 
 	/**
-	 * Start a new write
+	 * Starts a new write.
 	 */
 	void StartWriteAt(CFileAutoClose &file, uint64 offset, size_t count);
 
@@ -75,22 +67,20 @@ public:
 	bool FlushAt(CFileAutoClose &file, uint64 offset, size_t count);
 
 	/**
-	 * Get buffer that contains data read or to write.
-	 * @return allocated buffer or NULL if not initialized
+	 * The buffer holding the data read or to be written, or NULL if not initialized.
 	 */
 	uint8_t *GetBuffer() const { return m_buffer; };
 
 	/**
-	 * Report error pending
+	 * Reports a pending error.
 	 */
 	void CheckError();
 
 	/**
-	 * Runtime switch for the mmap file-I/O path (the MMapEnabled
-	 * preference). Read once per operation at ReadAt()/StartWriteAt() time;
-	 * an area already opened keeps its mode (see m_mmap_buffer), so flipping
-	 * this mid-transfer only affects subsequent operations and is safe with
-	 * active downloads and uploads. No-op on builds without MMAP_SUPPORTED.
+	 * Runtime switch for the mmap file-I/O path (the MMapEnabled preference). Read once per
+	 * operation at ReadAt()/StartWriteAt() time; an area already opened keeps its mode (see
+	 * m_mmap_buffer), so flipping this mid-transfer only affects later operations and is safe
+	 * with active downloads and uploads. No-op on builds without MMAP_SUPPORTED.
 	 */
 	static void SetMMapEnabled(bool enabled);
 	static bool GetMMapEnabled();
@@ -103,13 +93,12 @@ private:
 	//@}
 
 	/**
-	 * Pointer to buffer used for read/write operations.
-	 * If mapped points inside m_mmap_buffer area otherwise
-	 * point to an allocated buffer to be freed.
+	 * Buffer used for read/write operations: points inside m_mmap_buffer when mapped, otherwise
+	 * at an allocated buffer to be freed.
 	 */
 	uint8_t *m_buffer;
 	/**
-	 * Pointer to memory mapped area or NULL if not mapped.
+	 * Memory mapped area, or NULL if not mapped.
 	 */
 	uint8_t *m_mmap_buffer;
 	/**
@@ -117,15 +106,15 @@ private:
 	 */
 	size_t m_length;
 	/**
-	 * Global chain
+	 * Global chain.
 	 */
 	CFileArea *m_next;
 	/**
-	 * File handle to release
+	 * File handle to release.
 	 */
 	CFileAutoClose *m_file;
 	/**
-	 * true if error detected
+	 * True if an error was detected.
 	 */
 	bool m_error;
 };

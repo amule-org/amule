@@ -28,15 +28,13 @@
 #include "GenericClientListCtrl.h" // Needed for CGenericClientListCtrl
 
 /**
- * This class is responsible for representing the peers for a shared file.
+ * Represents the peers for a shared file.
  */
 class CSharedFilePeersListCtrl : public CGenericClientListCtrl
 {
 public:
 	/**
-	 * Constructor.
-	 *
-	 * @see CGenericClientListCtrl::CGenericClientListCtrl for documentation of parameters.
+	 * Constructor. @see CGenericClientListCtrl::CGenericClientListCtrl for the parameters.
 	 */
 	CSharedFilePeersListCtrl(wxWindow *parent,
 		wxWindowID winid = wxID_ANY,
@@ -45,9 +43,6 @@ public:
 		long style = 0,
 		const wxString &name = "peerslistctrl");
 
-	/**
-	 * Destructor.
-	 */
 	virtual ~CSharedFilePeersListCtrl();
 
 private:

@@ -114,12 +114,11 @@ bool CClientTCPSocket::InitNetworkData()
 
 bool CClientTCPSocket::IsDownloadThrottled() const
 {
-	// An inbound peer connection whose source IP is the ed2k server we are
-	// connected (or connecting) to is the server's HighID-callback probe, not peer
-	// download traffic. Skip the global download throttler so a saturated peer-side
-	// budget cannot delay the probe's read path past the server's verification
-	// timer (#778). Same shape as CServerSocket's permanent bypass, gated on
-	// IP-match instead of being unconditional.
+	// An inbound peer connection from the ed2k server we are connected (or connecting) to is
+	// the server's HighID-callback probe, not peer download traffic. Skip the global download
+	// throttler so a saturated peer-side budget cannot delay the probe past the server's
+	// verification timer (#778). Same shape as CServerSocket's permanent bypass, gated on IP-
+	// match instead of being unconditional.
 	if (m_remoteip != 0 && theApp->serverconnect && theApp->serverconnect->IsServerIP(m_remoteip)) {
 		return false;
 	}
@@ -137,10 +136,10 @@ bool CClientTCPSocket::CheckTimeOut()
 	if (m_client) {
 
 		if (m_client->GetKadState() == KS_CONNECTED_BUDDY) {
-			// The timeout used to be ignored for buddies; the ping/pong system
-			// now prevents those timeouts instead. lowID clients with KadVersion 0
-			// are still allowed to remain connected, but a future version needs to
-			// let them time out so dead connections do not persist.
+			// The timeout used to be ignored for buddies; the ping/pong system now
+			// prevents those timeouts instead. lowID clients with KadVersion 0 are
+			// still allowed to stay connected, but a future version needs to let them
+			// time out so dead connections do not persist.
 			if (m_client->GetKadVersion() == 0) {
 				return false;
 			}
@@ -309,9 +308,9 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 
 		wxASSERT(m_client);
 
-		// If we already know this client the socket is attached to the known one,
-		// the new client is deleted and m_client points at the known client;
-		// otherwise the freshly constructed one is kept.
+		// If we already know this client the socket is attached to the known one, the new
+		// client is deleted and m_client points at the known one; otherwise the freshly
+		// constructed one is kept.
 		if (theApp->clientlist->AttachToAlreadyKnown(&m_client, this)) {
 			bIsMuleHello = m_client->ProcessHelloPacket(buffer, size);
 		} else {
@@ -838,9 +837,8 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 
 		theStats::AddDownOverheadOther(size);
 		wxString EmptyStr;
-		// The whole share in one packet. ProcessSharedFileList completes the
-		// browse from the outstanding count, so this form no longer needs --
-		// and no longer lacks -- a terminal mark of its own.
+		// The whole share in one packet. ProcessSharedFileList completes the browse from
+		// the outstanding count, so this form needs no terminal mark of its own.
 		m_client->ProcessSharedFileList(buffer, size, EmptyStr);
 		break;
 	}
@@ -894,9 +892,9 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 					      "'%s' -> accepted")) %
 				    m_client->GetUserName() % m_client->GetUserIDHybrid() % strReqDir);
 			if (data.GetPosition() != data.GetLength()) {
-				// eMule mods routinely append extra tag blocks at
-				// the end of OP packets specifically so older
-				// clients can ignore them. Log and continue (#708).
+				// eMule mods routinely append extra tag blocks at the end of OP
+				// packets so older clients can ignore them. Log and continue
+				// (#708).
 				AddDebugLogLineN(logRemoteClient,
 					CFormat("OP_ASKSHAREDFILESDIR: %u trailing byte(s) ignored from %s") %
 						(unsigned)(data.GetLength() - data.GetPosition()) %
@@ -943,17 +941,17 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 				SendPacket(replypacket, true, true);
 			}
 			if (data.GetPosition() != data.GetLength()) {
-				// eMule mods routinely append extra tag blocks at
-				// the end of OP packets specifically so older
-				// clients can ignore them. Log and continue (#708).
+				// eMule mods routinely append extra tag blocks at the end of OP
+				// packets so older clients can ignore them. Log and continue
+				// (#708).
 				AddDebugLogLineN(logRemoteClient,
 					CFormat("OP_ASKSHAREDDIRSANS: %u trailing byte(s) ignored from %s") %
 						(unsigned)(data.GetLength() - data.GetPosition()) %
 						m_client->GetFullIP());
 			}
-			// Drives the progress percent, and completes the browse outright
-			// when the peer says it has none -- which used to set the counter
-			// to 0 with nothing marking it, leaving the browse at 0% forever.
+			// Drives the progress percent, and completes the browse outright when the
+			// peer says it has none -- which used to set the counter to 0 with nothing
+			// marking it, leaving the browse at 0% forever.
 			theApp->browsemanager->OnDirectoryList(
 				m_client, static_cast<int>(uDirs), ::GetTickCount64());
 		} else {
@@ -1276,9 +1274,8 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 			AddDebugLogLineN(
 				logRemoteClient, "Remote Client: OP_EMULEINFO from " + m_client->GetFullIP());
 
-			// If it's not a OS Info packet, is an old client
-			// start secure identification, if
-			//  - we have received eD2K and eMule info (old eMule)
+			// Not an OS Info packet, so an old client. Start secure identification if
+			// we have received both eD2K and eMule info (old eMule).
 			if (m_client->GetInfoPacketsReceived() == IP_BOTH) {
 				m_client->InfoPacketsReceived();
 			}
@@ -1485,10 +1482,10 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 			}
 			if (file) {
 				// Some clients do not follow the OP_REQUESTFILENAME,
-				// OP_SETREQFILEID, OP_REQUESTSOURCES sequence. Those get a
-				// random set of sources rather than the optimal one, because
-				// we do not know their download part status -- which
-				// SetUploadFileID may clear.
+				// OP_SETREQFILEID, OP_REQUESTSOURCES sequence. Those get a random
+				// set of sources rather than the optimal one, because we do not
+				// know their download part status -- which SetUploadFileID may
+				// clear.
 				m_client->SetUploadFileID(file);
 
 				uint64 dwTimePassed = ::GetTickCount64() - m_client->GetLastSrcReqTime() +
@@ -1623,10 +1620,10 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 		AddDebugLogLineN(
 			logRemoteClient, "Remote Client: OP_AICHREQUEST from " + m_client->GetFullIP());
 		theStats::AddDownOverheadOther(size);
-		// Each OP_AICHREQUEST triggers an O(N) walk of known2.met via
-		// ProcessAICHRequest -> CreatePartRecoveryData -> LoadHashSet. Unlimited, a
-		// hostile peer can hammer this with 16-byte packets and force the seeder to
-		// burn disk and CPU on each one, so treat repeats like the file-request paths.
+		// Each OP_AICHREQUEST triggers an O(N) walk of known2.met via ProcessAICHRequest ->
+		// CreatePartRecoveryData -> LoadHashSet. Unlimited, a hostile peer can hammer this
+		// with 16-byte packets and burn the seeder's disk and CPU, so treat repeats like
+		// the file-request paths.
 		m_client->CheckForAggressive();
 		if (m_client->IsBanned()) {
 			break;
@@ -1783,8 +1780,8 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 				sender->AddAskedCount();
 				sender->SetLastUpRequest();
 				// UDPVersion has to be checked because the first version of
-				// extended UDP info did not go through ProcessExtendedInfo.
-				// Later changes to the extended info need no change here.
+				// extended UDP info did not go through ProcessExtendedInfo. Later
+				// changes to the extended info need no change here.
 				if (sender->GetUDPVersion() > 3) {
 					sender->ProcessExtendedInfo(&data_in, reqfile);
 				} else if (sender->GetUDPVersion() > 2) {

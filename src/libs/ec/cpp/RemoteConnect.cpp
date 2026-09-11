@@ -91,68 +91,54 @@ CECLoginPacket::CECLoginPacket(const wxString &client,
 	// client accepts push messages
 	if (canNotify)
 		AddTag(CECEmptyTag(EC_TAG_CAN_NOTIFY));
-	// client can decode the sentinel-extended children-count wire format
-	// from CECTag::WriteChildren (#199). Always advertised by new
-	// clients; old servers ignore the unknown tag.
+	// Client can decode the sentinel-extended children-count wire format from
+	// CECTag::WriteChildren (#199).
 	AddTag(CECEmptyTag(EC_TAG_CAN_LARGE_TAG_COUNT));
-	// Client implements the partial-update INC_UPDATE protocol, so the server may
-	// skip unchanged files and signal deletions explicitly via EC_TAG_FILE_REMOVED
-	// rather than relying on absence-implies-deletion. Always advertised; old
-	// servers ignore the unknown tag and fall back to alive-marker tags.
+	// Client implements the partial-update INC_UPDATE protocol: the server may skip
+	// unchanged files and mark deletions with EC_TAG_FILE_REMOVED instead of
+	// absence.
 	AddTag(CECEmptyTag(EC_TAG_CAN_PARTIAL_UPDATE));
-	// Client applies the same skip-unchanged / explicit-removal rule to the
-	// multi-search results union. Advertised separately from
-	// EC_TAG_CAN_PARTIAL_UPDATE because only a client that implements it on
-	// the *search* container may be sent skipped results; older clients omit
-	// this tag and keep getting every result on every poll.
+	// Same skip-unchanged / explicit-removal rule on the multi-search results union.
+	// Separate from EC_TAG_CAN_PARTIAL_UPDATE because only a client that implements
+	// it on the *search* container may be sent skipped results.
 	AddTag(CECEmptyTag(EC_TAG_CAN_PARTIAL_SEARCH));
-	// Client can read and write the daemon's shared-directory configuration
-	// over EC (EC_OP_GET/SET_SHARED_DIRS). Always advertised; old daemons
-	// ignore the unknown tag and simply never echo it back.
+	// Client can read and write the daemon's shared directories over EC
+	// (EC_OP_GET/SET_SHARED_DIRS).
 	AddTag(CECEmptyTag(EC_TAG_CAN_SHAREDDIRS_CONFIG));
 	// Client can enumerate the daemon's searches with EC_OP_SEARCH_LIST, so it sees
-	// searches it did not start itself. Always advertised; old daemons ignore the
-	// unknown tag and never echo it, which is what keeps the client from sending an
-	// opcode they would reject -- a pre-#680 daemon asserts on it.
+	// searches it did not start. A pre-#680 daemon never echoes it and asserts on the
+	// opcode, so the echo is what keeps the client from sending it.
 	AddTag(CECEmptyTag(EC_TAG_CAN_SEARCH_LIST));
-	// Client tells the server "we believe transit between us is fast (loopback /
-	// LAN), so skip per-packet ZLIB up to the receiver gate"; the server honours it
-	// at WritePacket time. The decision lives on the client because only the client
-	// knows the IP it dialed -- server-side peer-IP inspection would misclassify a
-	// WireGuard tunnel endpoint as local. Old servers ignore the tag.
+	// Client believes transit between us is fast (loopback / LAN), so the server may
+	// skip per-packet ZLIB up to the receiver gate. The decision lives here because
+	// only the client knows the IP it dialed: server-side peer-IP inspection would
+	// misclassify a WireGuard tunnel endpoint as local.
 	if (preferNoZlib)
 		AddTag(CECEmptyTag(EC_TAG_PREFER_NO_ZLIB));
-	// Client implements the multi-search protocol — addresses EC searches
-	// by a daemon-allocated `EC_TAG_SEARCH_ID` so several run at once. Only
-	// advertised by clients that read the ID back; old servers ignore the
-	// unknown tag and the client stays single-search.
+	// Client implements multi-search: EC searches are addressed by a daemon-allocated
+	// `EC_TAG_SEARCH_ID`, so several run at once.
 	if (canMultiSearch)
 		AddTag(CECEmptyTag(EC_TAG_CAN_MULTI_SEARCH));
-	// Client polls every open search's progress with ONE id-less
-	// EC_OP_SEARCH_PROGRESS instead of one request per search. An extension of
-	// multi-search, so only advertised alongside it: an id-less progress request
-	// from a single-search client keeps its legacy "the current search" meaning,
-	// which amulecmd's argument-less `search progress` relies on.
+	// Client polls every open search with ONE id-less EC_OP_SEARCH_PROGRESS. Only
+	// advertised alongside multi-search: for a single-search client an id-less
+	// request keeps its legacy "the current search" meaning, which amulecmd's
+	// argument-less `search progress` relies on.
 	if (canMultiSearch)
 		AddTag(CECEmptyTag(EC_TAG_CAN_SEARCH_PROGRESS_UNION));
-	// Client wants incoming peer chat messages relayed over EC (amulegui
-	// surfaces them read-only). Only advertised by clients with a chat
-	// window; old servers ignore the unknown tag and never relay.
+	// Client wants incoming peer chat messages relayed over EC (amulegui shows them
+	// read-only). Only advertised by clients with a chat window.
 	if (canChat)
 		AddTag(CECEmptyTag(EC_TAG_CAN_CHAT));
-	// Separate from EC_TAG_CAN_CHAT above: a daemon that echoes that one may
-	// still know none of the session opcodes, so the client needs its own
-	// confirmation before sending any of them.
+	// Separate from EC_TAG_CAN_CHAT: a daemon that echoes that one may still know
+	// none of the session opcodes.
 	if (canChatSessions)
 		AddTag(CECEmptyTag(EC_TAG_CAN_CHAT_SESSIONS));
-	// Transport encryption: the ciphers we can do, in preference order, our
-	// half of the derivation salt, and our ephemeral public key. A daemon that
-	// does not know these tags ignores them and the session stays in clear.
-	//
-	// The public key is not optional and has no capability tag of its own:
-	// encryption has never shipped, so anything that offers EC_TAG_CAN_AEAD is
-	// new enough to do X25519, and offering the cipher list without a key is
-	// treated by the daemon as malformed rather than as an older client.
+	// Transport encryption: our ciphers in preference order, our half of the
+	// derivation salt, and our ephemeral public key. A daemon that does not know
+	// these tags ignores them and the session stays in clear. The public key needs no
+	// capability tag of its own: encryption has never shipped, so anything offering
+	// EC_TAG_CAN_AEAD can do X25519, and a cipher list without a key is malformed
+	// rather than old.
 	if (canAEAD && !clientNonce.empty() && !clientPubKey.empty()) {
 		const std::vector<uint8_t> ciphers = ECCrypt::SupportedCiphers();
 		AddTag(CECTag(EC_TAG_CAN_AEAD, ciphers.size(), ciphers.data()));
@@ -167,9 +153,8 @@ CECAuthPacket::CECAuthPacket(const wxString &pass, const std::vector<uint8_t> &c
 	CMD4Hash passhash;
 	wxCHECK2(passhash.Decode(pass), /* Do nothing. */);
 	AddTag(CECTag(EC_TAG_PASSWD_HASH, passhash));
-	// Proof that we hold the credential over this exact handshake. The salted
-	// challenge above proves the same thing, but says nothing about the key
-	// exchange it travelled beside; this binds the two together.
+	// Binds the credential to this exact handshake. The salted challenge alone says
+	// nothing about the key exchange it travelled beside.
 	if (!clientConfirm.empty()) {
 		AddTag(CECTag(EC_TAG_AEAD_CLIENT_CONFIRM, clientConfirm.size(), clientConfirm.data()));
 	}
@@ -177,7 +162,6 @@ CECAuthPacket::CECAuthPacket(const wxString &pass, const std::vector<uint8_t> &c
 
 /*!
  * Connection to remote core
- *
  */
 
 CRemoteConnect::CRemoteConnect(wxEvtHandler *evt_handler)
@@ -185,9 +169,8 @@ CRemoteConnect::CRemoteConnect(wxEvtHandler *evt_handler)
 , m_ec_state(EC_INIT)
 , m_req_fifo()
 ,
-// Give application some indication about how fast requests are served
-// When request fifo contain more that certain number of entries, it may
-// indicate that either core or network is slowing us down
+// Depth of the request fifo indicates how fast requests are served: a long queue
+// means the core or the network is slowing us down.
 m_req_count(0)
 ,
 // This is not mean to be absolute limit, because we can't drop requests
@@ -235,9 +218,8 @@ bool CRemoteConnect::ConnectToCore(
 	const wxString &host, int port, const wxString &pass, const wxString &client, const wxString &version)
 {
 	m_connectionPassword = pass;
-	// Both ends hold md5(password) and neither sends it; the salted challenge
-	// below replaces m_connectionPassword with a value that DOES go on the
-	// wire, so capture the usable key material first.
+	// The salted challenge below overwrites m_connectionPassword with a value that
+	// goes on the wire, so capture the usable key material first.
 	m_aeadSecret = pass.Lower();
 
 	m_client = client;
@@ -260,25 +242,23 @@ bool CRemoteConnect::ConnectToCore(
 
 	amuleIPV4Address addr;
 
-	// Report a resolution failure as itself. Discarding this return left
-	// the address at 0.0.0.0 and surfaced as the generic "unable to
-	// connect" further up, which says nothing about the actual cause —
-	// a typo in the host, or a name that only has AAAA records (aMule
-	// speaks IPv4 only, so there is nothing to dial there).
+	// Report a resolution failure as itself. Discarding this return left the address
+	// at 0.0.0.0 and surfaced as the generic "unable to connect", which says nothing
+	// about a typo in the host or a name with only AAAA records (aMule speaks IPv4
+	// only).
 	if (!addr.Hostname(host)) {
 		m_server_reply = CFormat(_("Could not resolve %s to an IPv4 address.")) % host;
 		return false;
 	}
 	addr.Service(port);
 
-	// Compute the prefer-no-ZLIB hint after host resolution: a loopback, RFC1918
-	// LAN or RFC3927 link-local IP means fast transit, where per-packet ZLIB is
-	// pure overhead. Skipped entirely if the user opted out of ZLIB (the capability
-	// is not advertised, so the hint is moot) or set ForceZLIB, for a WireGuard
-	// endpoint that resolves to an RFC1918 IP over slow transit.
+	// Compute the prefer-no-ZLIB hint after host resolution: a loopback, RFC1918 or
+	// RFC3927 IP means fast transit, where per-packet ZLIB is pure overhead. Skipped
+	// if the user disabled ZLIB (the capability is not advertised) or set ForceZLIB,
+	// for a WireGuard endpoint that resolves to an RFC1918 IP over slow transit.
 	//
-	// One fresh nonce per connection attempt: reusing it across attempts would
-	// reuse a key, and a retry after a dropped socket is a new session.
+	// One fresh nonce per attempt: reusing it reuses a key, and a retry after a
+	// dropped socket is a new session.
 	m_aeadClientNonce.clear();
 	m_aeadOffered.clear();
 	m_aeadEphPriv.clear();
@@ -288,10 +268,8 @@ bool CRemoteConnect::ConnectToCore(
 	if (m_canAEAD) {
 		m_aeadClientNonce = ECCrypt::RandomBytes(ECCrypt::NONCE_TAG_LEN);
 		m_aeadOffered = ECCrypt::SupportedCiphers();
-		// One fresh key pair per attempt for the same reason as the nonce, and
-		// more sharply: reusing it across attempts is what forward secrecy is
-		// about, since a key that outlives the session is one that can be
-		// stolen after it.
+		// One fresh key pair per attempt, for the same reason as the nonce and more
+		// sharply: a key that outlives the session is one that can be stolen after it.
 		if (!ECCrypt::GenerateX25519KeyPair(m_aeadEphPriv, m_aeadEphPub)) {
 			m_aeadEphPriv.clear();
 			m_aeadEphPub.clear();
@@ -334,11 +312,10 @@ bool CRemoteConnect::ConnectToCore(
 		CSmartPtr<const CECPacket> getSalt(SendRecvPacket(&login_req));
 		m_ec_state = EC_REQ_SENT;
 
-		// Honour the AUTH_SALT verdict before sending the credential. The
-		// require-encryption refusal (we offered AEAD but the core did not
-		// negotiate it) must stop here rather than send AUTH_PASSWD in clear;
-		// ProcessAuthPacket has already set m_server_reply and closed the
-		// socket. The async path does the same check in OnPacketReceived.
+		// Honour the AUTH_SALT verdict before sending the credential: a
+		// require-encryption refusal must stop here rather than send AUTH_PASSWD in
+		// clear. ProcessAuthPacket has already set m_server_reply and closed the socket.
+		// OnPacketReceived does the same check on the async path.
 		if (!ProcessAuthPacket(getSalt.get())) {
 			return false;
 		}
@@ -368,15 +345,13 @@ void CRemoteConnect::WriteDoneAndQueueEmpty() {}
 
 void CRemoteConnect::OnConnect()
 {
-	// Start the watchdog clock here, not at construction: a wrapper reused
-	// across a reconnect would otherwise carry the previous connection's
-	// staleness into the new one and trip the timeout immediately.
+	// Start the watchdog clock here, not at construction: a wrapper reused across a
+	// reconnect would carry the previous connection's staleness into the new one.
 	m_lastReplyAt = std::chrono::steady_clock::now();
-	// Apply the EC-tuned socket options now that the underlying asio
-	// socket is fully connected on the async path (sync clients got
-	// them inside CECMuleSocket::InternalConnect already; this is the
-	// amulegui / amuleweb / amuleapi side where InternalConnect returns
-	// before the connect actually completes).
+	// Apply the EC-tuned socket options now that the asio socket is fully connected.
+	// Sync clients got them in CECMuleSocket::InternalConnect; this is the amulegui /
+	// amuleweb / amuleapi side, where InternalConnect returns before the connect
+	// completes.
 	ApplyEcSocketOptions();
 
 	if (m_notifier) {
@@ -412,38 +387,34 @@ void CRemoteConnect::OnLost()
 {
 	if (m_notifier) {
 		// A dial is still pending: the async connect has not completed, so
-		// EC_CONNECT_SENT has not advanced to EC_REQ_SENT. A LibSocketLost arriving
-		// now is not the death of this dial but a stale event queued for the PREVIOUS
-		// connection before the socket impl was swapped. It still targets this reused
-		// wrapper, and IsDestroying() now sees the fresh impl, so it slips through.
-		// Swallowing it stops a stale lost aborting an in-flight reconnect; a genuinely
+		// EC_CONNECT_SENT has not advanced to EC_REQ_SENT. A LibSocketLost here is a
+		// stale event from the PREVIOUS connection that still targets this reused
+		// wrapper, and IsDestroying() sees the fresh impl, so it slips through.
+		// Swallowing it stops a stale lost aborting an in-flight reconnect; a truly
 		// failed dial is caught by amulegui's connect-timeout watchdog.
 		if (m_ec_state == EC_CONNECT_SENT) {
 			return;
 		}
-		// Notify app of failure — amulegui's wxEvent handler flips the
+		// Notify app of failure -- amulegui's wxEvent handler flips the
 		// UI to "disconnected" and stops trying to update.
 		wxECSocketEvent event(wxEVT_EC_CONNECTION, false, _("Connection failure"));
 		m_notifier->AddPendingEvent(event);
 		return;
 	}
-	// Headless EC clients (amulecmd, amuleweb) construct CRemoteConnect with NULL
-	// m_notifier. Continuing would mean amuleweb serving the template shell with no
-	// live data and no visible error, or amulecmd sitting at a prompt with a dead
-	// socket. Failing fast is right: the supervisor is the recovery layer.
+	// Headless EC clients (amulecmd, amuleweb) pass a NULL m_notifier. Continuing
+	// would mean amuleweb serving an empty shell with no error, or amulecmd at a
+	// prompt with a dead socket. Failing fast is right; the supervisor recovers.
 	fprintf(stderr, "%s\n", (const char *)unicode2char(_("External Connection lost - exiting.")));
 	fflush(stderr);
 	if (s_connectionLostHandler) {
-		// A client (amuleapi) opted into a graceful shutdown: hand off to it and
-		// return, so the orderly teardown runs on the client's own thread instead of
-		// racing static destructors from this asio callback.
+		// amuleapi opted into a graceful shutdown: hand off so teardown runs on its own
+		// thread instead of racing static destructors from this asio callback.
 		s_connectionLostHandler();
 		return;
 	}
-	// _exit instead of exit() because the asio worker thread that
-	// just fired this is mid-callback; racing static destructors
-	// against it risks the kind of use-after-free #748 was about.
-	// The OS reaps file descriptors / sockets on exit anyway.
+	// _exit, not exit(): the asio worker thread that fired this is mid-callback, and
+	// racing static destructors against it risks the use-after-free of #748. The OS
+	// reaps descriptors anyway.
 	_exit(1);
 }
 
@@ -464,10 +435,9 @@ void CRemoteConnect::SetupAEADFromSalt(const CECPacket *reply)
 		return;
 	}
 	if (serverPubTag == nullptr) {
-		// A daemon that named a cipher but sent no key. Nothing here can be
-		// derived without forward secrecy, and quietly falling back to the
-		// password-keyed derivation is precisely the downgrade this exists to
-		// prevent, so refuse.
+		// A daemon that named a cipher but sent no key. Nothing can be derived without
+		// forward secrecy, and falling back to the password-keyed derivation is precisely
+		// the downgrade this exists to prevent.
 		AddDebugLogLineN(logEC, "AEAD: daemon sent no public key, staying in clear");
 		return;
 	}
@@ -478,10 +448,9 @@ void CRemoteConnect::SetupAEADFromSalt(const CECPacket *reply)
 		return;
 	}
 
-	// Validate the received lengths at the point of receipt, as the daemon does for
-	// the client's. X25519Agree and Session::Init would reject a wrong length
-	// downstream too, but checking locally keeps the "every field the transcript
-	// concatenates is fixed-length" invariant obvious.
+	// Validate the received lengths here, as the daemon does for the client's.
+	// Downstream would reject them too, but checking locally keeps the "every field
+	// the transcript concatenates is fixed-length" invariant obvious.
 	if (serverNonceTag->GetTagDataLen() != ECCrypt::NONCE_TAG_LEN ||
 		serverPubTag->GetTagDataLen() != ECCrypt::X25519_KEY_LEN) {
 		AddDebugLogLineN(logEC, "AEAD: daemon nonce or public key has a bad length");
@@ -494,23 +463,20 @@ void CRemoteConnect::SetupAEADFromSalt(const CECPacket *reply)
 	const uint8_t *serverPubData = (const uint8_t *)serverPubTag->GetTagData();
 	const std::vector<uint8_t> serverPub(serverPubData, serverPubData + serverPubTag->GetTagDataLen());
 
-	// The channel key comes from here and from nothing else. Deriving it from
-	// the password instead is what cost forward secrecy: the password outlives
-	// the session, this does not.
+	// The channel key comes from here and from nothing else. Deriving it from the
+	// password is what cost forward secrecy: the password outlives the session.
 	std::vector<uint8_t> shared;
 	const bool agreed = ECCrypt::X25519Agree(m_aeadEphPriv, serverPub, shared);
-	// Wipe the private half the moment it has done its one job, whether or not
-	// that job succeeded. Holding it any longer is the only thing that could
-	// reopen a recorded session later.
+	// Wipe the private half as soon as it has done its one job, success or not.
+	// Holding it longer is the only thing that could reopen a recorded session.
 	ECCrypt::SecureWipe(m_aeadEphPriv);
 	if (!agreed) {
 		AddDebugLogLineN(logEC, "AEAD: bad daemon public key, staying in clear");
 		return;
 	}
 
-	// Transcript: everything both sides exchanged, so a byte edited anywhere in
-	// the handshake yields a different key on each end and the first sealed
-	// packet fails, rather than the session silently using a weaker cipher.
+	// Transcript: everything both sides exchanged, so an edited handshake byte yields
+	// a different key on each end and the first sealed packet fails.
 	const std::vector<uint8_t> transcript = ECCrypt::BuildTranscript(
 		m_aeadOffered, cipher, m_aeadClientNonce, serverNonce, m_aeadEphPub, serverPub);
 
@@ -519,10 +485,9 @@ void CRemoteConnect::SetupAEADFromSalt(const CECPacket *reply)
 		return;
 	}
 
-	// The password no longer keys the channel, so it can no longer be what
-	// stops a man in the middle -- an attacker can run an exchange with each of
-	// us and relay. These are what stop it instead: the transcripts on the two
-	// legs differ, so the tags do too.
+	// The password no longer keys the channel, so it can no longer stop a man in the
+	// middle who runs an exchange with each of us and relays. These do instead: the
+	// transcripts on the two legs differ, so the tags do too.
 	const wxCharBuffer secret = m_aeadSecret.utf8_str();
 	std::vector<uint8_t> credential(
 		(const uint8_t *)secret.data(), (const uint8_t *)secret.data() + strlen(secret.data()));
@@ -564,8 +529,7 @@ const CECPacket *CRemoteConnect::OnPacketReceived(const CECPacket *packet, uint3
 {
 	CECPacket *next_packet = 0;
 	// Liveness stamp for the reply watchdog. Taken for EVERY inbound packet,
-	// including the handshake ones, so a connection that has only just come up
-	// is never mistaken for one that has gone quiet.
+	// handshake included, so a fresh connection is never mistaken for a quiet one.
 	m_lastReplyAt = std::chrono::steady_clock::now();
 	m_req_count--;
 	packet->DebugPrint(true, trueSize);
@@ -582,9 +546,8 @@ const CECPacket *CRemoteConnect::OnPacketReceived(const CECPacket *packet, uint3
 		break;
 	case EC_OK:
 		if (IsCryptReady() && !WasLastPacketEncrypted()) {
-			// Established encrypted session: every response must arrive
-			// sealed. A cleartext packet here is an injection attempt; drop
-			// the connection rather than hand a forged reply to a handler.
+			// Established encrypted session: every response must arrive sealed. A
+			// cleartext packet here is an injection attempt.
 			AddDebugLogLineN(logEC, "EC: cleartext packet on an encrypted session, dropping");
 			CloseSocket();
 			break;
@@ -607,10 +570,8 @@ const CECPacket *CRemoteConnect::OnPacketReceived(const CECPacket *packet, uint3
 	return next_packet;
 }
 
-/*
- * Our requests are served by core in FCFS order. And core always replies. So, even
- * if we're not interested in reply, we preserve place in request fifo.
- */
+// Core serves requests FCFS and always replies, so we keep a place in the fifo
+// even for replies we do not want.
 void CRemoteConnect::SendRequest(CECPacketHandlerBase *handler, const CECPacket *request)
 {
 	m_req_count++;
@@ -626,9 +587,8 @@ void CRemoteConnect::SendPacket(const CECPacket *request)
 void CRemoteConnect::DiscardRequestQueue()
 {
 	// The core never replies to requests that were on the air when the socket died,
-	// so their handlers would linger and every reply on the reconnected session
-	// would pop the wrong one off the FIFO. Rewind each orphaned handler's request
-	// state so it re-requests, then clear the queue and the in-flight counter.
+	// so their handlers would linger and every reply on the reconnected session would
+	// pop the wrong one. Rewind each orphaned handler so it re-requests.
 	for (CECPacketHandlerBase *handler : m_req_fifo) {
 		if (handler) {
 			handler->AbortPendingRequest();
@@ -661,12 +621,11 @@ bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply)
 				// overwrites m_connectionPassword.
 				SetupAEADFromSalt(reply);
 				if (m_canAEAD && !m_aeadNegotiated) {
-					// Encryption is required unless the user opted out, and m_canAEAD is
-					// that opt-out -- with it off we never offer, so this branch cannot
-					// be reached and a clear session is only ever an explicit choice. The
-					// core did not negotiate encryption, and an older aMule without
-					// support cannot be told from an on-path attacker who stripped the
-					// offer, so refuse rather than send the credential in clear.
+					// Encryption is required unless the user opted out, and
+					// m_canAEAD is that opt-out -- with it off we never offer,
+					// so a clear session is only ever an explicit choice. The
+					// core did not negotiate encryption, and an older aMule
+					// cannot be told from an attacker who stripped the offer.
 					m_server_reply =
 						m_aeadOffered.empty()
 							? _("Could not set up connection encryption. "
@@ -694,11 +653,10 @@ bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply)
 				CloseSocket();
 			}
 		} else if ((m_ec_state == EC_PASSWD_SENT) && (reply->GetOpCode() == EC_OP_AUTH_OK)) {
-			// The daemon must prove it holds the credential too, over this exact
-			// handshake: until this passes we know only that we are talking to
-			// something that completed a key exchange, which a relay can also do,
-			// twice. Checked before anything in the reply is believed, and fatal
-			// rather than a downgrade.
+			// The daemon must prove it holds the credential over this exact handshake:
+			// until this passes we know only that we are talking to something that
+			// completed a key exchange, which a relay can also do, twice. Fatal rather
+			// than a downgrade.
 			if (m_aeadNegotiated && !VerifyServerConfirm(reply)) {
 				m_server_reply = _("External Connection: the daemon failed to prove it "
 						   "knows the password. Connection closed.");
@@ -716,74 +674,63 @@ bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply)
 			} else {
 				m_server_reply = _("Succeeded! Connection established.");
 			}
-			// Mirror the server's negotiated capabilities into m_my_flags, or outgoing
-			// per-packet flags lose them to `flags &= m_my_flags` in
-			// CECSocket::WritePacket. EC_TAG_CAN_LARGE_TAG_COUNT only appears in
-			// AUTH_OK from new daemons (#199); old ones do not echo it and the
-			// sentinel wire format stays disabled in both directions.
+			// Mirror the server's negotiated capabilities into m_my_flags, or
+			// `flags &= m_my_flags` in CECSocket::WritePacket drops them from outgoing
+			// packets. Old daemons do not echo EC_TAG_CAN_LARGE_TAG_COUNT (#199) and the
+			// sentinel wire format stays disabled both ways.
 			if (reply->GetTagByName(EC_TAG_CAN_LARGE_TAG_COUNT)) {
 				m_my_flags |= EC_FLAG_LARGE_TAG_COUNT;
 			}
-			// Server confirms it speaks the partial-update protocol:
-			// Get_EC_Response_GetUpdate may now omit unchanged files and emit explicit
-			// EC_TAG_FILE_REMOVED markers, and our INC_UPDATE handler must skip the
-			// bulk "missing-from-response == deleted" loop. Old daemons do not echo
-			// this tag and the client stays on the legacy path, which the new server
-			// keeps compatible with alive-marker tags for unchanged files (#713).
+			// Server speaks the partial-update protocol: Get_EC_Response_GetUpdate may
+			// omit unchanged files and emit explicit EC_TAG_FILE_REMOVED markers, and our
+			// INC_UPDATE handler must skip the bulk "missing == deleted" loop. Old
+			// daemons do not echo this and stay on the legacy alive-marker path (#713).
 			if (reply->GetTagByName(EC_TAG_CAN_PARTIAL_UPDATE)) {
 				m_serverPartialUpdate = true;
 			}
-			// Which daemon process we're talking to. Stays 0 against a
-			// daemon that doesn't send it, which the reconnect path
-			// reads as "can't tell" and handles the safe way.
+			// Which daemon process we're talking to. Stays 0 against a daemon that does
+			// not send it, which the reconnect path reads as "can't tell".
 			if (const CECTag *sessionTag = reply->GetTagByName(EC_TAG_SESSION_ID)) {
 				m_serverSessionId = sessionTag->GetInt();
 			}
-			// Server confirms it knows EC_OP_GET_CLIENT_HISTORY. No echo means the
-			// Known-clients tab stays empty rather than the request being tried and
-			// failing: on a debug daemon the unknown opcode asserts.
+			// Server knows EC_OP_GET_CLIENT_HISTORY. No echo leaves the Known-clients tab
+			// empty rather than sending it: a debug daemon asserts on the opcode.
 			if (reply->GetTagByName(EC_TAG_CAN_CLIENT_HISTORY)) {
 				m_serverClientHistory = true;
 			}
 			if (reply->GetTagByName(EC_TAG_CAN_PARTIAL_SEARCH)) {
 				m_serverPartialSearch = true;
 			}
-			// Server confirmed multi-search: it will allocate a distinct
-			// `EC_TAG_SEARCH_ID` per search. Old daemons omit the echo and
-			// the client stays on the single-search sentinel path.
+			// Server confirmed multi-search: it allocates a distinct EC_TAG_SEARCH_ID per
+			// search. Old daemons omit the echo and we stay on the sentinel path.
 			if (reply->GetTagByName(EC_TAG_CAN_MULTI_SEARCH)) {
 				m_serverMultiSearch = true;
 			}
-			// Server confirmed it answers an id-less EC_OP_SEARCH_PROGRESS
-			// with every open search's progress as children, so one request
-			// covers every tab. Old daemons omit the echo and the client
-			// keeps polling one request per search id.
+			// Server answers an id-less EC_OP_SEARCH_PROGRESS with every open search's
+			// progress as children, so one request covers every tab. Old daemons omit the
+			// echo and we keep polling one request per search id.
 			if (reply->GetTagByName(EC_TAG_CAN_SEARCH_PROGRESS_UNION)) {
 				m_serverSearchProgressUnion = true;
 			}
-			// Server confirmed chat relay: it will buffer incoming peer
-			// messages and hand them out via EC_OP_GET_CHAT_MESSAGES. Old
+			// Server buffers incoming peer messages for EC_OP_GET_CHAT_MESSAGES. Old
 			// daemons omit the echo and the client never polls for chat.
 			if (reply->GetTagByName(EC_TAG_CAN_CHAT)) {
 				m_serverChat = true;
 			}
-			// Server confirmed the chat session ops. Its own tag, because
-			// EC_TAG_CAN_CHAT above is echoed by daemons that predate them:
-			// gating on that one would send EC_OP_GET_CHAT_SESSIONS to a core
-			// whose dispatcher asserts on it.
+			// Its own tag, because EC_TAG_CAN_CHAT above is echoed by daemons that predate
+			// the session ops: gating on that one would send EC_OP_GET_CHAT_SESSIONS to a
+			// core whose dispatcher asserts on it.
 			if (reply->GetTagByName(EC_TAG_CAN_CHAT_SESSIONS)) {
 				m_serverChatSessions = true;
 			}
-			// Server confirmed it serves EC_OP_SEARCH_LIST. Old daemons omit
-			// the echo and the client must not send that opcode: they have no
-			// case for it, so it lands in ProcessRequest2's unknown-opcode
+			// Server serves EC_OP_SEARCH_LIST. Old daemons omit the echo and the client
+			// must not send the opcode: it lands in ProcessRequest2's unknown-opcode
 			// branch, which logs and asserts.
 			if (reply->GetTagByName(EC_TAG_CAN_SEARCH_LIST)) {
 				m_serverSearchList = true;
 			}
-			// Server confirmed it serves the shared-directory configuration
-			// ops. Old daemons omit the echo and the GUI keeps the shared
-			// folders panel read-only rather than silently discarding edits.
+			// Server serves the shared-directory config ops. Without the echo the GUI keeps
+			// the folders panel read-only rather than discarding edits silently.
 			if (reply->GetTagByName(EC_TAG_CAN_SHAREDDIRS_CONFIG)) {
 				m_serverSharedDirsConfig = true;
 			}

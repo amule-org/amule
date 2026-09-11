@@ -43,10 +43,9 @@ void CSHA::GetHash(SHA1Digest *pHash) const
 
 void CSHA::Add(const void *pData, uint32 nLength)
 {
-	// Crypto++'s byte is always `unsigned char`; spell it that way rather
-	// than CryptoPP::byte, which only exists from Crypto++ 5.6.5+ (issue
-	// #449 — build failure on 5.6.4). unsigned char* binds to the byte*
-	// API parameter on every Crypto++ version.
+	// Crypto++'s byte is always `unsigned char`; spell it that way rather than CryptoPP::byte,
+	// which only exists from Crypto++ 5.6.5+ (issue #449, a build failure on 5.6.4). unsigned
+	// char* binds to the byte* API parameter on every version.
 	m_sha.Update(static_cast<const unsigned char *>(pData), nLength);
 }
 

@@ -63,22 +63,19 @@ IMPLEMENT_APP(CamuleapiApp)
 namespace
 {
 
-// Rotation cap for the --log-file tee. amuleapi's normal output is low volume
-// (startup + warnings/errors, no per-request access log), so this is a runaway
-// guard rather than a routine limit; on-disk usage stays under ~2x this.
+// Rotation cap for the --log-file tee. amuleapi's normal output is low volume (startup plus
+// warnings/errors, no per-request access log), so this is a runaway guard rather than a routine
+// limit; on-disk usage stays under ~2x this.
 constexpr std::size_t kLogMaxBytes = 10 * 1024 * 1024; // 10 MiB
 
-// Signal-safe shutdown gate. SIGINT/SIGTERM flip the flag; the wxApp
-// main loop polls it every 250 ms. A signalfd-driven path would be
-// cleaner, but the polling cost is one atomic-load per tick and the
-// code path stays portable to launchd/Windows (which don't have
-// signalfd).
+// Signal-safe shutdown gate. SIGINT/SIGTERM flip the flag; the wxApp main loop polls it every 250
+// ms. A signalfd-driven path would be cleaner, but the polling cost is one atomic load per tick and
+// the code stays portable to launchd/Windows, which have no signalfd.
 std::atomic<bool> g_shutdownRequested{ false };
 
-// Set when the daemon is shutting down because the EC connection to amuled
-// died (a socket drop, or sustained refresher failure), as opposed to an
-// operator SIGINT/SIGTERM. Drives a non-zero exit code so a process supervisor
-// treats it as a failure and restarts the pair.
+// Set when the daemon is shutting down because the EC connection to amuled died (a socket drop, or
+// sustained refresher failure), as opposed to an operator SIGINT/SIGTERM. Drives a non-zero exit
+// code so a process supervisor treats it as a failure and restarts the pair.
 std::atomic<bool> g_ecConnectionLost{ false };
 
 void RequestShutdown(int)
@@ -86,10 +83,9 @@ void RequestShutdown(int)
 	g_shutdownRequested.store(true, std::memory_order_release);
 }
 
-// Registered with the EC layer (SetEcConnectionLostHandler) so a dropped EC
-// socket requests this daemon's normal, orderly shutdown instead of the hard
-// _exit() the EC client does by default. Runs on the asio worker thread, so it
-// only flips atomics -- the main loop notices and tears down (HTTP, EC, log
+// Registered with the EC layer (SetEcConnectionLostHandler) so a dropped EC socket requests this
+// daemon's normal, orderly shutdown instead of the hard _exit() the EC client does by default. Runs
+// on the asio worker thread, so it only flips atomics -- the main loop tears down (HTTP, EC, log
 // tee) on its own thread, avoiding the static-destructor race _exit() dodges.
 void HandleEcConnectionLost()
 {
@@ -97,20 +93,19 @@ void HandleEcConnectionLost()
 	g_shutdownRequested.store(true, std::memory_order_release);
 }
 
-// Bound glibc's per-thread malloc arenas: it hands out up to 8 x ncores (the
-// *host's* cores, which a container quota does not lower) and a non-main arena
-// never returns its high-water mark, so one handler's peak becomes permanent
-// RSS once per pool thread.
+// Bound glibc's per-thread malloc arenas: it hands out up to 8 x ncores (the *host's* cores, which
+// a container quota does not lower) and a non-main arena never returns its high-water mark, so one
+// handler's peak becomes permanent RSS once per pool thread.
 //
-// 2 reserves nothing for the refresher -- reuse_arena() rotates main_arena in
-// too -- it buys a second lock domain and half the churn. An explicit
-// MALLOC_ARENA_MAX wins; a zero or empty one does not, since glibc rejects it.
+// 2 reserves nothing for the refresher -- reuse_arena() rotates main_arena in too -- it buys a
+// second lock domain and half the churn. An explicit MALLOC_ARENA_MAX wins; a zero or empty one
+// does not, since glibc rejects it.
 void CapMallocArenas()
 {
 #if defined(M_ARENA_MAX)
-	// Base 0, not 10: glibc's tunable parser takes hex and octal, so a base-10
-	// read of MALLOC_ARENA_MAX=0x8 gives 0 and we would cap over an operator who
-	// set 8. A value glibc itself rejects still parses as 0 here.
+	// Base 0, not 10: glibc's tunable parser takes hex and octal, so a base-10 read of
+	// MALLOC_ARENA_MAX=0x8 gives 0 and we would cap over an operator who set 8. A value glibc
+	// itself rejects still parses as 0 here.
 	const char *env = std::getenv("MALLOC_ARENA_MAX");
 	if (env && std::strtol(env, nullptr, 0) > 0) {
 		return;
@@ -128,11 +123,10 @@ void CapMallocArenas()
 #endif
 }
 
-// glibc shrinks an arena's top on free (systrim / heap_trim) but never the free
-// space fragmented below it, which is what a tick decoding the whole daemon
-// state leaves. malloc_trim walks every arena's free chunks instead.
-// M_TRIM_THRESHOLD, not __GLIBC__ alone: that macro is what says <malloc.h> is
-// actually in scope.
+// glibc shrinks an arena's top on free (systrim / heap_trim) but never the free space fragmented
+// below it, which is what a tick decoding the whole daemon state leaves. malloc_trim walks every
+// arena's free chunks instead. M_TRIM_THRESHOLD, not __GLIBC__ alone: that macro is what says
+// <malloc.h> is actually in scope.
 void TrimMallocArenas()
 {
 #if defined(__GLIBC__) && defined(M_TRIM_THRESHOLD)
@@ -201,11 +195,11 @@ bool CamuleapiApp::OnCmdLineParsed(wxCmdLineParser &parser)
 	if (parser.Found("set-guest-pass", &m_cliSetGuestPass)) {
 		m_cliHasSetGuestPass = true;
 	}
-	// The base class reads --host / --port / --password into m_host / m_port /
-	// m_password before we get here, but offers no "did the user actually pass
-	// this?" predicate -- m_host defaults to "127.0.0.1" unconditionally. Polling
-	// the parser directly lets LoadAmuleapiConfig() tell an explicit
-	// --host=127.0.0.1 apart from the base class's filled-in default.
+	// The base class reads --host / --port / --password into m_host / m_port / m_password
+	// before we get here, but offers no "did the user actually pass this?" predicate -- m_host
+	// defaults to "127.0.0.1" unconditionally. Polling the parser directly lets
+	// LoadAmuleapiConfig() tell an explicit --host=127.0.0.1 apart from the base class's
+	// filled-in default.
 	m_cliHasEcHost = parser.Found("host");
 	m_cliHasEcPort = parser.Found("port");
 	m_cliHasEcEncryption = parser.Found("disable-ec-encryption");
@@ -223,14 +217,14 @@ bool CamuleapiApp::OnInit()
 		return false;
 	}
 
-	// Resolve the config dir: explicit --config-dir wins, otherwise what the base
-	// class resolved in OnCmdLineParsed via the core's GetConfigDir(). Always set
-	// by now, so there is no third fallback -- one resolver for both daemons.
+	// Resolve the config dir: explicit --config-dir wins, otherwise what the base class
+	// resolved in OnCmdLineParsed via the core's GetConfigDir(). Always set by now, so there is
+	// no third fallback -- one resolver for both daemons.
 	const wxString config_dir = m_cliConfigDirOverride.IsEmpty() ? m_configDir : m_cliConfigDirOverride;
 
-	// Tee stdout/stderr into a log file (unless --no-log-file), as early as
-	// possible so config-load errors, EC warnings and a crash backtrace are all
-	// captured. Create the config dir first so the very first run can open it.
+	// Tee stdout/stderr into a log file (unless --no-log-file), as early as possible so config-
+	// load errors, EC warnings and a crash backtrace are all captured. Create the config dir
+	// first so the very first run can open it.
 	if (!m_noLogFile) {
 		if (!wxDirExists(config_dir)) {
 			wxFileName::Mkdir(config_dir, 0700, wxPATH_MKDIR_FULL);
@@ -248,10 +242,9 @@ bool CamuleapiApp::OnInit()
 		}
 	}
 
-	// Route wxWidgets' own log channel to stderr. amuleapi is a wxApp with the GUI
-	// core linked, so the default target is wxLogGui -- message boxes, useless on
-	// a headless daemon and never reaching the log. wxLogStderr sends them where
-	// the tee above picks them up.
+	// Route wxWidgets' own log channel to stderr. amuleapi is a wxApp with the GUI core linked,
+	// so the default target is wxLogGui -- message boxes, useless on a headless daemon and
+	// never reaching the log. wxLogStderr sends them where the tee above picks them up.
 	delete wxLog::SetActiveTarget(new wxLogStderr);
 
 	if (!LoadAmuleapiConfig()) {
@@ -265,10 +258,10 @@ bool CamuleapiApp::OnInit()
 
 	// CLI override hooks. set-*-pass exits immediately after writing.
 	if (m_cliHasSetAdminPass || m_cliHasSetGuestPass) {
-		// Both options run as one-shot CLI flows. Operators script these like
-		// `amuleapi --set-admin-pass=... && systemctl restart amuleapi`, so they
-		// MUST see a non-zero exit code on failure. Returning false from OnInit()
-		// would cancel wxApp::OnRun() but still exit 0, so std::exit() here.
+		// Both options run as one-shot CLI flows. Operators script these like `amuleapi
+		// --set-admin-pass=... && systemctl restart amuleapi`, so they MUST see a non-zero
+		// exit code on failure. Returning false from OnInit() would cancel wxApp::OnRun()
+		// but still exit 0, hence std::exit() here.
 		const int rc = m_cliHasSetAdminPass ? RunSetAdminPass() : RunSetGuestPass();
 		std::exit(rc);
 	}
@@ -286,10 +279,10 @@ bool CamuleapiApp::LoadAmuleapiConfig()
 		return false;
 	}
 
-	// Wire the EC connection params into the base-class fields ConnectAndRun
-	// reads. CLI --host/--port/--password win over amuleapi.conf, decided by the
-	// has-flag predicates: the old "is the field still at its default?" heuristic
-	// silently overwrote a literal `amuleapi --host=127.0.0.1`.
+	// Wire the EC connection params into the base-class fields ConnectAndRun reads. CLI
+	// --host/--port/--password win over amuleapi.conf, decided by the has-flag predicates: the
+	// old "is the field still at its default?" heuristic silently overwrote a literal `amuleapi
+	// --host=127.0.0.1`.
 	if (!m_cliHasEcHost) {
 		const auto &h = m_apiConfig.EcCfg().host;
 		if (!h.empty())
@@ -304,25 +297,24 @@ bool CamuleapiApp::LoadAmuleapiConfig()
 		m_ECEncryption = m_apiConfig.EcCfg().encryption;
 	}
 	if (!m_apiConfig.EcCfg().password.empty()) {
-		// amuleapi.conf [EC]/Password is plaintext; the base class expects an
-		// MD5-hashed CMD4Hash, because that is what amuled stores. Hash here so a
-		// one-line amuleapi.conf edit gives the operator a working setup.
+		// amuleapi.conf [EC]/Password is plaintext; the base class expects an MD5-hashed
+		// CMD4Hash, because that is what amuled stores. Hash here so a one-line
+		// amuleapi.conf edit gives the operator a working setup.
 		const wxString plain = wxString::FromUTF8(m_apiConfig.EcCfg().password.c_str());
 		m_password.Decode(MD5Sum(plain).GetHash());
 	}
 
-	// Ephemeral EC token, if the aMule core that spawned us left one. Both sides
-	// derive the name from webcommon rather than passing a path, because argv is
-	// world-readable via ps: telling every local user where the secret is would
-	// undo the point of writing it 0600.
+	// Ephemeral EC token, if the aMule core that spawned us left one. Both sides derive the
+	// name from webcommon rather than passing a path, because argv is world-readable via ps:
+	// telling every local user where the secret is would undo the point of writing it 0600.
 	//
-	// Wins over amuleapi.conf: when the core issued a token, that is the
-	// credential it wants us to use. There is no --password to override it with,
-	// so the token and amuleapi.conf are the only two sources.
+	// Wins over amuleapi.conf: when the core issued a token, that is the credential it wants us
+	// to use. There is no --password to override it with, so the token and amuleapi.conf are
+	// the only two sources.
 	//
-	// Deleted on read, not after connecting. A failed connection retries from
-	// memory, so holding the file until the handshake completes would only widen
-	// the window in which the secret is at rest, for nothing.
+	// Deleted on read, not after connecting. A failed connection retries from memory, so
+	// holding the file until the handshake completes would only widen the window in which the
+	// secret is at rest.
 	{
 		const std::string tokenPath = webcommon::EcTokenFilePath(std::string(config_dir.utf8_str()));
 		std::string token;
@@ -369,13 +361,13 @@ int CamuleapiApp::RunSetGuestPass()
 
 int CamuleapiApp::OnRun()
 {
-	// Install signal handlers before the HTTP server starts so a signal during
-	// bring-up does not default-terminate the daemon.
+	// Install signal handlers before the HTTP server starts so a signal during bring-up does
+	// not default-terminate the daemon.
 	//
 	// sigaction, not std::signal: the latter's "reset to SIG_DFL after firing" is
-	// implementation-defined (musl/Alpine and older BSDs trip it), so a second
-	// SIGINT would terminate mid-shutdown. SA_RESTART so blocking syscalls on the
-	// EC socket do not return EINTR. Windows lacks sigaction; std::signal there.
+	// implementation-defined (musl/Alpine and older BSDs trip it), so a second SIGINT would
+	// terminate mid-shutdown. SA_RESTART so blocking syscalls on the EC socket do not return
+	// EINTR. Windows lacks sigaction; std::signal there.
 #ifndef _WIN32
 	struct sigaction sa;
 	std::memset(&sa, 0, sizeof(sa));
@@ -390,16 +382,16 @@ int CamuleapiApp::OnRun()
 	::sigaction(SIGINT, &sa, nullptr);
 	::sigaction(SIGTERM, &sa, nullptr);
 #ifdef SIGHUP
-	// SIGHUP is the "config reload" signal in long-running daemons. amuleapi has
-	// no reload story (configs are read at startup only), so treat it as a soft
-	// shutdown rather than leave the daemon in a half-state on a systemd reload.
+	// SIGHUP is the "config reload" signal in long-running daemons. amuleapi has no reload
+	// story (configs are read at startup only), so treat it as a soft shutdown rather than
+	// leave the daemon in a half-state on a systemd reload.
 	::sigaction(SIGHUP, &sa, nullptr);
 #endif
 #ifdef SIGPIPE
-	// SSE peers that disappear mid-write make Linux raise SIGPIPE on the next
-	// asio::write to the closed fd, and none of the SSE socket writes pass
-	// MSG_NOSIGNAL, so the default disposition would kill the daemon on every
-	// dropped EventSource. The writes then return EPIPE and the loop bails.
+	// SSE peers that disappear mid-write make Linux raise SIGPIPE on the next asio::write to
+	// the closed fd, and none of the SSE socket writes pass MSG_NOSIGNAL, so the default
+	// disposition would kill the daemon on every dropped EventSource. The writes then return
+	// EPIPE and the loop bails.
 	struct sigaction sa_ign;
 	std::memset(&sa_ign, 0, sizeof(sa_ign));
 	sa_ign.sa_handler = SIG_IGN;
@@ -412,28 +404,27 @@ int CamuleapiApp::OnRun()
 	std::signal(SIGTERM, RequestShutdown);
 #endif
 
-	// Turn a dropped EC connection into this daemon's orderly shutdown rather than
-	// the hard _exit() the EC client does by default: the handler flips the
-	// main-loop shutdown flag so OnExit runs. Registered before ConnectAndRun so
-	// a drop during bring-up is covered too.
+	// Turn a dropped EC connection into this daemon's orderly shutdown rather than the hard
+	// _exit() the EC client does by default: the handler flips the main-loop shutdown flag so
+	// OnExit runs. Registered before ConnectAndRun so a drop during bring-up is covered too.
 	SetEcConnectionLostHandler(&HandleEcConnectionLost);
 
-	// amuleapi addresses searches by daemon-allocated ID, so it advertises the
-	// multi-search capability at EC login. ConnectAndRun forwards this before the
-	// login packet, which puts the daemon connection into multi-search mode: it
-	// allocates and returns an EC_TAG_SEARCH_ID per start, and addresses
-	// results/progress/stop by that ID. There is no single-search fallback.
+	// amuleapi addresses searches by daemon-allocated ID, so it advertises the multi-search
+	// capability at EC login. ConnectAndRun forwards this before the login packet, which puts
+	// the daemon connection into multi-search mode: it allocates and returns an
+	// EC_TAG_SEARCH_ID per start, and addresses results/progress/stop by that ID. There is no
+	// single-search fallback.
 	m_canMultiSearch = true;
 
-	// Chat: amuleapi serves /chats from the daemon's session store, so it
-	// advertises EC_TAG_CAN_CHAT_SESSIONS at login and the daemon echoes it back.
-	// The echo is what every chat endpoint gates on -- against a daemon that
-	// predates the ops, an unknown opcode asserts rather than failing.
+	// Chat: amuleapi serves /chats from the daemon's session store, so it advertises
+	// EC_TAG_CAN_CHAT_SESSIONS at login and the daemon echoes it back. The echo is what every
+	// chat endpoint gates on -- against a daemon that predates the ops, an unknown opcode
+	// asserts rather than failing.
 	m_canChat = true;
 
-	// ConnectAndRun does the EC bring-up (CRemoteConnect, ConnectToCore) and then
-	// calls TextShell, which is overridden so the daemon's main loop runs there.
-	// On EC failure it returns without ever entering TextShell.
+	// ConnectAndRun does the EC bring-up (CRemoteConnect, ConnectToCore) and then calls
+	// TextShell, which is overridden so the daemon's main loop runs there. On EC failure it
+	// returns without ever entering TextShell.
 	ConnectAndRun(wxT("amuleapi"), wxString::FromAscii(VERSION));
 
 	// Non-zero when we stopped because EC died, so a supervisor restarts us.
@@ -452,11 +443,10 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 		port = static_cast<unsigned>(m_cliHttpPort);
 	}
 
-	// Bind-time hard gate against the "listening publicly with no password
-	// configured" footgun: a daemon bound to a routable interface before the
-	// operator runs `amuleapi --set-admin-pass` would still answer the unauth
-	// surface. Loopback bind + empty passwords is fine -- the first-run flow IS
-	// "start on loopback, then run --set-admin-pass".
+	// Bind-time hard gate against the "listening publicly with no password configured" footgun:
+	// a daemon bound to a routable interface before the operator runs `amuleapi --set-admin-
+	// pass` would still answer the unauth surface. Loopback bind + empty passwords is fine --
+	// the first-run flow IS "start on loopback, then run --set-admin-pass".
 	const bool non_loopback = (bind != "127.0.0.1" && bind != "::1" && bind != "localhost");
 	if (non_loopback && !m_apiConfig.HasAnyCredential()) {
 		Show(CFormat(_("amuleapi: refusing to start with BindAddress=%s and no "
@@ -468,18 +458,18 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 		return;
 	}
 
-	// Build the JWT machinery from the loaded secret plus a dispatcher holding the
-	// rate-limiter and revocation set by value. The dispatcher reaches the State
-	// cache through CamuleapiApp; the lambda below pins its lifetime to App's.
+	// Build the JWT machinery from the loaded secret plus a dispatcher holding the rate-limiter
+	// and revocation set by value. The dispatcher reaches the State cache through CamuleapiApp;
+	// the lambda below pins its lifetime to App's.
 	m_jwt = std::unique_ptr<CJwt>(new CJwt(m_apiConfig.JwtSecret()));
 	m_dispatcher =
 		std::unique_ptr<CApiDispatcher>(new CApiDispatcher(m_apiConfig, *m_jwt, m_state, *this));
 	CApiDispatcher *const dispatcher = m_dispatcher.get();
 	auto handler = [dispatcher](const CHttpServer::Request &req) { return dispatcher->Dispatch(req); };
 
-	// Streaming resolver + handler for /api/v0/events. The resolver picks every
-	// GET that matches the path; auth is enforced inside the streaming handler,
-	// under the same role gate as regular handlers.
+	// Streaming resolver + handler for /api/v0/events. The resolver picks every GET that
+	// matches the path; auth is enforced inside the streaming handler, under the same role gate
+	// as regular handlers.
 	auto streaming_resolver = [](const CHttpServer::Request &req) {
 		if (req.method != "GET" && req.method != "HEAD")
 			return false;
@@ -497,23 +487,23 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 					 std::map<std::string, std::string> &response_headers) {
 		dispatcher->DispatchEvents(req, writer, http_status, content_type, response_headers);
 	};
-	// Preflight runs synchronously before the SSE worker thread is spawned:
-	// short-circuit unauth requests with the standard 401 body so they cannot
-	// tie up a streaming slot for the read-timeout window.
+	// Preflight runs synchronously before the SSE worker thread is spawned: short-circuit
+	// unauth requests with the standard 401 body so they cannot tie up a streaming slot for the
+	// read-timeout window.
 	auto streaming_preflight =
 		[dispatcher](const CHttpServer::Request &req) -> boost::optional<CHttpServer::Response> {
 		return dispatcher->PreflightEvents(req);
 	};
 
-	// Start the EC worker before the HTTP server accepts and before the refresher
-	// loop below -- both are producers into it. The EC connection is already up,
-	// so from here the worker thread is the sole user of the socket.
+	// Start the EC worker before the HTTP server accepts and before the refresher loop below --
+	// both are producers into it. The EC connection is already up, so from here the worker
+	// thread is the sole user of the socket.
 	m_ec_service.Start([this](const CECPacket *r) { return SendRecvMsg_v2(r); });
 
 	m_http = std::unique_ptr<CHttpServer>(new CHttpServer());
-	// Before Start(), which is the whole contract: the cap is read by the
-	// io_context thread on every file response, and what makes an unsynchronised
-	// publish safe here is that the listener does not exist yet.
+	// Before Start(), which is the whole contract: the cap is read by the io_context thread on
+	// every file response, and what makes an unsynchronised publish safe here is that the
+	// listener does not exist yet.
 	CHttpServer::SetMaxConcurrentFileResponses(
 		static_cast<int>(m_apiConfig.StreamingCfg().max_concurrent_file_responses));
 	// Lets the transport stamp CORS on the replies it builds itself (408 /
@@ -539,33 +529,32 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 	Show(CFormat(_("amuleapi: config dir %s\n")) % m_apiConfig.ConfigDir());
 	Show(CFormat(_("amuleapi: aMule version %s; api v0\n")) % wxString::FromAscii(VERSION));
 
-	// Refresher loop. One tick per second; HTTP threads read State concurrently.
-	// EC roundtrips run on this thread but go through `SendRecvSerialized` so
-	// HTTP-thread mutations can also call it under m_ec_mtx.
+	// Refresher loop. One tick per second; HTTP threads read State concurrently. EC roundtrips
+	// run on this thread but go through `SendRecvSerialized` so HTTP-thread mutations can also
+	// call it under m_ec_mtx.
 	//
-	// `was_failed` tracks the success/failure edge so list caches are wiped on
-	// the rising edge: the server's CValueMap was reset across the disconnect,
-	// and clearing first stops stale entries lingering in the INC-delta path.
+	// `was_failed` tracks the success/failure edge so list caches are wiped on the rising edge:
+	// the server's CValueMap was reset across the disconnect, and clearing first stops stale
+	// entries lingering in the INC-delta path.
 	bool was_failed = false;
-	// Target 1 s wall-clock between tick starts. Measure the tick, sleep the
-	// remainder; warn if one overruns the 3 s budget, which typically signals an
-	// EC stall. A fixed `tick + 4 x 250 ms sleep` drifts under mutex contention.
+	// Target 1 s wall-clock between tick starts. Measure the tick, sleep the remainder; warn if
+	// one overruns the 3 s budget, which typically signals an EC stall. A fixed `tick + 4 x 250
+	// ms sleep` drifts under mutex contention.
 	constexpr auto kTargetCycle = std::chrono::seconds(1);
 	constexpr auto kSliceMs = std::chrono::milliseconds(250);
 	constexpr auto kOverrunWarn = std::chrono::seconds(3);
-	// Fail-loud on a sustained EC blackout. RefresherTick returns false on any
-	// null packet from SendRecvSerialized -- amuled crashed, was killed, or the
-	// socket dropped. After ~30 s of failed ticks, log a sharp WARN; after
-	// ~5 min, exit cleanly so a process supervisor brings the whole pair back
-	// up. Reset on the first success.
+	// Fail-loud on a sustained EC blackout. RefresherTick returns false on any null packet from
+	// SendRecvSerialized -- amuled crashed, was killed, or the socket dropped. After ~30 s of
+	// failed ticks, log a sharp WARN; after ~5 min, exit cleanly so a process supervisor brings
+	// the whole pair back up. Reset on the first success.
 	constexpr unsigned kEcFailWarnAfter = 30;
 	constexpr unsigned kEcFailExitAfter = 300;
 	unsigned ec_consecutive_failures = 0;
 	bool ec_warn_logged = false;
-	// Diffing stops only after a few consecutive ticks with nothing subscribed. A
-	// client that drops and comes straight back -- a page reload, a proxy hiccup
-	// -- must not suspend anything: resuming costs it the `resync` below, and
-	// re-seeding every collection is the most expensive thing this daemon does.
+	// Diffing stops only after a few consecutive ticks with nothing subscribed. A client that
+	// drops and comes straight back -- a page reload, a proxy hiccup -- must not suspend
+	// anything: resuming costs it the `resync` below, and re-seeding every collection is the
+	// most expensive thing this daemon does.
 	constexpr unsigned kIdleTicksBeforeSuspend = 5;
 	unsigned idle_ticks = 0;
 	// Off the per-tick path: the call takes every arena's lock. Lands ~61 s
@@ -639,22 +628,22 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 			std::cerr
 				<< "amuleapi: WARN refresher tick took " << ms << " ms (> "
 				<< std::chrono::duration_cast<std::chrono::milliseconds>(kOverrunWarn).count()
-				<< " ms budget) — likely EC-mutex contention or a "
+				<< " ms budget): likely EC-mutex contention or a "
 				   "stalled SendRecvSerialized.\n";
 		}
 
-		// Deliberately not gated on "nobody subscribed": that gets it wrong both
-		// ways -- never while a browser tab holds the stream, and mid-load for a
-		// client that only polls REST.
+		// Deliberately not gated on "nobody subscribed": that gets it wrong both ways --
+		// never while a browser tab holds the stream, and mid-load for a client that only
+		// polls REST.
 		if (trim_countdown > 0) {
 			--trim_countdown;
 		} else {
 			TrimMallocArenas();
 			trim_countdown = kTrimEveryTicks;
 		}
-		// Sleep the REMAINDER of the target cycle in small slices so shutdown
-		// latency stays bounded. A tick that already consumed the whole budget
-		// skips the sleep so the next cycle starts immediately.
+		// Sleep the REMAINDER of the target cycle in small slices so shutdown latency stays
+		// bounded. A tick that already consumed the whole budget skips the sleep so the
+		// next cycle starts immediately.
 		auto deadline = cycle_start + kTargetCycle;
 		while (true) {
 			if (g_shutdownRequested.load(std::memory_order_acquire))
@@ -672,10 +661,10 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 
 const CECPacket *CamuleapiApp::SendRecvSerialized(const CECPacket *request)
 {
-	// Route every roundtrip through the EC worker (sole socket owner, bounded
-	// FIFO queue). Block for the reply; the worker fulfils the future, or returns
-	// nullptr on backpressure or EC failure -- both of which every caller already
-	// maps to 503. The wait is bounded by the EC read timeout.
+	// Route every roundtrip through the EC worker (sole socket owner, bounded FIFO queue).
+	// Block for the reply; the worker fulfils the future, or returns nullptr on backpressure or
+	// EC failure -- both of which every caller already maps to 503. The wait is bounded by the
+	// EC read timeout.
 	return m_ec_service.Submit(request).get();
 }
 
@@ -707,21 +696,21 @@ wxString CamuleapiApp::GetDaemonVersion()
 
 int CamuleapiApp::OnExit()
 {
-	// Tear down in reverse construction order: HTTP server first (no in-flight
-	// Dispatch can reach a dangling dispatcher), then dispatcher (references
-	// m_jwt), then m_jwt. Wake SSE drainers BEFORE Stop() returns so workers
-	// blocked on the 15 s heartbeat bail out and release their dispatcher refs --
-	// otherwise `m_dispatcher.reset()` below races a drainer mid-write.
+	// Tear down in reverse construction order: HTTP server first (no in-flight Dispatch can
+	// reach a dangling dispatcher), then dispatcher (references m_jwt), then m_jwt. Wake SSE
+	// drainers BEFORE Stop() returns so workers blocked on the 15 s heartbeat bail out and
+	// release their dispatcher refs -- otherwise `m_dispatcher.reset()` below races a drainer
+	// mid-write.
 	if (m_event_bus)
 		m_event_bus->Shutdown();
 	if (m_http) {
 		m_http->Stop();
 		m_http.reset();
 	}
-	// HTTP is fully stopped, so no handler can submit any more. Stop the EC worker
-	// (joins, bounded by the read timeout if a roundtrip is in flight) before the
-	// base tears down m_ECClient, which the worker uses. Any refresher-loop
-	// submit already returned: TextShell's loop exited before OnExit runs.
+	// HTTP is fully stopped, so no handler can submit any more. Stop the EC worker (joins,
+	// bounded by the read timeout if a roundtrip is in flight) before the base tears down
+	// m_ECClient, which the worker uses. Any refresher-loop submit already returned:
+	// TextShell's loop exited before OnExit runs.
 	m_ec_service.Stop();
 	m_dispatcher.reset();
 	m_jwt.reset();
@@ -737,9 +726,9 @@ int CamuleapiApp::OnExit()
 #if wxUSE_ON_FATAL_EXCEPTION
 void CamuleapiApp::OnFatalException()
 {
-	// Point stderr straight at the log file so the base's backtrace is written
-	// synchronously, even if the tee's forwarding thread is never scheduled again
-	// before the process dies. The console loses it; the file keeps it.
+	// Point stderr straight at the log file so the base's backtrace is written synchronously,
+	// even if the tee's forwarding thread is never scheduled again before the process dies. The
+	// console loses it; the file keeps it.
 	if (m_logTee) {
 		m_logTee->RedirectStderrToFileForCrash();
 	}
@@ -747,9 +736,9 @@ void CamuleapiApp::OnFatalException()
 }
 #endif
 
-// Stub functions needed by the linker because ExternalConnector.cpp
-// transitively references MuleNotify via the EC tag handlers. The daemon-side
-// bodies live in the monolithic amule binary; console builds supply no-ops.
+// Stub functions the linker needs because ExternalConnector.cpp transitively references MuleNotify
+// via the EC tag handlers. The daemon-side bodies live in the monolithic amule binary; console
+// builds supply no-ops.
 namespace MuleNotify
 {
 class CMuleNotiferBase;

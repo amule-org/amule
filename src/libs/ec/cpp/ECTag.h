@@ -55,7 +55,7 @@ class CECSocket;
 class CValueMap;
 
 /**
- * Class to hold IPv4 address.
+ * Holds an IPv4 address.
  */
 class EC_IPv4_t
 {
@@ -88,16 +88,15 @@ public:
 	wxString StringIP(bool brackets = true) { return char2unicode(StringIPSTL(brackets).c_str()); }
 #endif
 
-	// Default member initialisers so a stack-allocated EC_IPv4_t
-	// constructed via the trivial ctor above starts with defined
-	// fields. Caught on lint as
-	// clang-analyzer-optin.cplusplus.UninitializedObject.
+	// Default member initialisers so a stack-allocated EC_IPv4_t built by the trivial ctor
+	// above starts with defined fields. Caught on lint as clang-analyzer-
+	// optin.cplusplus.UninitializedObject.
 	uint8 m_ip[4] = { 0, 0, 0, 0 };
 	uint16 m_port = 0;
 };
 
 /**
- * High level EC packet TAGs handler class
+ * High level EC packet TAGs handler class.
  */
 
 class CECTag
@@ -149,12 +148,10 @@ public:
 	size_t GetTagCount() const { return m_tagList.size(); }
 	bool HasChildTags() const { return !m_tagList.empty(); }
 
-	// Serialize this tag (name + type + length + body + children) to a
-	// CECSocket using the wire format the receiver's matching ReadTag
-	// expects. Public so daemon-side code can pre-serialize per-file
-	// tag trees into a cache (used by the amulecmd FULL-fetch cache);
-	// inside the EC library itself this is the primitive invoked by
-	// `CECTag::WriteChildren` for each child of a packet.
+	// Serialize this tag (name + type + length + body + children) in the wire format the
+	// receiver's matching ReadTag expects. Public so daemon-side code can pre-serialize per-
+	// file tag trees into a cache (the amulecmd FULL-fetch cache); inside the EC library this
+	// is what `CECTag::WriteChildren` invokes per child.
 	bool Serialize(CECSocket &socket) const { return WriteTag(socket); }
 	const void *GetTagData() const
 	{
@@ -162,15 +159,12 @@ public:
 		return m_tagData;
 	}
 	uint16_t GetTagDataLen() const { return m_dataLen; }
-	// useLargeCount: when true, account for the +4 bytes that
-	// CECTag::WriteChildren emits as the sentinel-extended count
-	// follow-up for any nested tag with >= 0xFFFF children. Writer
-	// (WriteTag) and reader (ReadFromSocket) must pass the SAME
-	// value (derived from CECSocket::m_tx_flags / m_rx_flags &
-	// EC_FLAG_LARGE_TAG_COUNT) so their independently-computed
-	// tagLen values agree and m_dataLen subtraction stays
-	// consistent. Default false preserves the historical wire size
-	// for callers that don't have a socket context (e.g. tests).
+	// useLargeCount: account for the +4 bytes CECTag::WriteChildren emits as the sentinel-
+	// extended count follow-up for a nested tag with >= 0xFFFF children. Writer (WriteTag) and
+	// reader (ReadFromSocket) must pass the SAME value, derived from CECSocket::m_tx_flags /
+	// m_rx_flags & EC_FLAG_LARGE_TAG_COUNT, so their independently computed tagLen values agree
+	// and the m_dataLen subtraction stays consistent. Default false keeps the historical wire
+	// size for callers with no socket context, e.g. tests.
 	uint32_t GetTagLen(bool useLargeCount = false) const;
 	ec_tagname_t GetTagName() const { return m_tagName; }
 
@@ -196,9 +190,9 @@ public:
 	void DebugPrint(int level, bool print_empty) const;
 	void swap(CECTag &t);
 
-	// If tag exists, return its value and store it in target (if target != NULL)
-	// Else return safe value and don't touch target
-	// Allows for one function for old and new style.
+	// If the tag exists, return its value and store it in target (when target != NULL).
+	// Otherwise return a safe value and leave target alone. One function serves both old and
+	// new style.
 	bool AssignIfExist(ec_tagname_t tagname, bool *target) const;
 	uint8_t AssignIfExist(ec_tagname_t tagname, uint8_t *target) const;
 	uint16_t AssignIfExist(ec_tagname_t tagname, uint16_t *target) const;
@@ -265,10 +259,7 @@ public:
 };
 
 /**
- * An empty TAG
- *
- * Note, that an "empty" tag is empty because it contains no data, but it still
- * may contain children.
+ * An empty TAG. "Empty" means it holds no data of its own; it may still have children.
  */
 class CECEmptyTag : public CECTag
 {
@@ -280,12 +271,10 @@ public:
 };
 
 /**
- * An integer TAG
+ * An integer TAG.
  *
- * This is just to easily overcome ctor ambiguity. It's prettier to write
- *		CECIntTag(name, some_value)
- * instead of
- *		CECTag(name, (uint64)value)
+ * Only to avoid ctor ambiguity: CECIntTag(name, some_value) reads better than CECTag(name,
+ * (uint64)value).
  */
 class CECIntTag : public CECTag
 {

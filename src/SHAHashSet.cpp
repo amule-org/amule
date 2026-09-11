@@ -37,19 +37,17 @@
 #include "Logger.h"
 #include <common/Format.h>
 
-// for this version the limits are set very high, they might be lowered later
-// to make a hash trustworthy, at least 10 unique Ips (255.255.128.0) must have sent it
-// and if we have received more than one hash  for the file, one hash has to be sent by more than 95% of all
-// unique IPs
+// The limits are set very high for this version and may be lowered later: to make a hash
+// trustworthy, at least 10 unique IPs (255.255.128.0) must have sent it, and if we received more
+// than one hash for the file, one hash has to come from more than 95% of all unique IPs.
 #define MINUNIQUEIPS_TOTRUST 10 // how many unique IPs have to send us a hash to make it trustworthy
 #define MINPERCENTAGE_TOTRUST \
 	92 // how many percentage of clients have to send the same hash to make it trustworthy
 
 CAICHRequestedDataList CAICHHashSet::m_liRequestedData;
 
-// Lazily-built index mapping root hash → file offset in known2.met.
-// See SaveHashSet (dedup-on-append) and LoadHashSet (O(1) lookup for
-// incoming AICH requests) for usage.
+// Lazily-built index mapping root hash to file offset in known2.met. See SaveHashSet (dedup-on-
+// append) and LoadHashSet (O(1) lookup for incoming AICH requests) for usage.
 wxMutex CAICHHashSet::s_rootHashCacheMutex;
 std::unordered_map<CAICHHash, uint64> CAICHHashSet::s_rootHashCache;
 bool CAICHHashSet::s_rootHashCacheLoaded = false;
@@ -147,10 +145,8 @@ CAICHHashTree *CAICHHashTree::FindHash(uint64 nStartPos, uint64 nSize, uint8 *nL
 	}
 }
 
-// recursive
-// calculates missing hash from the existing ones
-// overwrites existing hashs
-// fails if no hash is found for any branch
+// Recursive: calculates the missing hash from the existing ones, overwriting existing hashes. Fails
+// if no hash is found for any branch.
 bool CAICHHashTree::ReCalculateHash(CAICHHashAlgo *hashalg, bool bDontReplace)
 {
 	if (m_pLeftTree && m_pRightTree) {
@@ -546,12 +542,10 @@ bool CAICHHashSet::ReadRecoveryData(uint64 nPartStartPos, CMemFile *fileDataIn)
 	}
 
 	/* V2 AICH Hash Packet:
-		<count1 uint16>
-	   16bit-hashs-to-read
-		(<identifier uint16><hash HASHSIZE>)[count1]			AICH hashs
-		<count2 uint16>
-	   32bit-hashs-to-read
-		(<identifier uint32><hash HASHSIZE>)[count2]			AICH hashs
+	     <count1 uint16>                                  16-bit hashes to read
+	     (<identifier uint16><hash HASHSIZE>)[count1]     AICH hashes
+	     <count2 uint16>                                  32-bit hashes to read
+	     (<identifier uint32><hash HASHSIZE>)[count2]     AICH hashes
 	*/
 
 	// at this time we check the recoverydata for the correct ammounts of hashs only
@@ -643,9 +637,8 @@ void CAICHHashSet::InvalidateRootHashCache()
 
 void CAICHHashSet::LoadRootHashCacheLocked()
 {
-	// Walk known2.met once, collecting every root hash. Replaces the per-call
-	// in-file linear scan that turned bulk-hashing N files into O(N^2) on-disk work
-	// (issue #579).
+	// Walk known2.met once, collecting every root hash. Replaces the per-call in-file linear
+	// scan that turned bulk-hashing N files into O(N^2) on-disk work (issue #579).
 	s_rootHashCache.clear();
 	s_rootHashCacheLoaded = true; // marked early so a partial read still ends the loop
 
@@ -715,7 +708,7 @@ bool CAICHHashSet::SaveHashSet()
 		LoadRootHashCacheLocked();
 	}
 
-	// O(1) dedup — replaces the linear file walk that used to make this
+	// O(1) dedup -- replaces the linear file walk that used to make this
 	// O(N) per call and O(N^2) over a bulk-hashing batch.
 	if (s_rootHashCache.find(m_pHashTree.m_Hash) != s_rootHashCache.end()) {
 		return true;
@@ -804,10 +797,10 @@ bool CAICHHashSet::LoadHashSet()
 		return false;
 	}
 
-	// O(1) cache lookup: the offset index says where this root hash lives in
-	// known2.met. It was the dedup-on-write index; reusing it here skips the linear
-	// scan that used to happen on every incoming OP_AICHREQUEST (issue #166). A
-	// cold load still pays the one-shot walk, but only once.
+	// O(1) cache lookup: the offset index says where this root hash lives in known2.met. It was
+	// the dedup-on-write index; reusing it here skips the linear scan that used to happen on
+	// every incoming OP_AICHREQUEST (issue #166). A cold load still pays the one-shot walk, but
+	// only once.
 	uint64 cachedOffset = 0;
 	bool haveCachedOffset = false;
 	{
@@ -845,10 +838,10 @@ bool CAICHHashSet::LoadHashSet()
 
 		uint64 nExistingSize = file.GetLength();
 
-		// Fast path: seek straight to the cached entry. A stale offset -- past EOF,
-		// or a first read there that does not match our root hash -- rewinds once to
-		// just past the version header and falls through to a true linear scan, as
-		// recovery against external modification of known2.met.
+		// Fast path: seek straight to the cached entry. A stale offset -- past EOF, or a
+		// first read there that does not match our root hash -- rewinds once to just past
+		// the version header and falls through to a true linear scan, as recovery against
+		// external modification of known2.met.
 		if (haveCachedOffset) {
 			if (cachedOffset >= nExistingSize) {
 				haveCachedOffset = false;
@@ -907,9 +900,9 @@ bool CAICHHashSet::LoadHashSet()
 				}
 				return true;
 			}
-			// The first read after seeking to the cached offset did not match our
-			// root hash, so the cache is stale -- known2.met was modified externally.
-			// Rewind once to just past the version header and restart as a linear scan.
+			// The first read after seeking to the cached offset did not match our root
+			// hash, so the cache is stale: known2.met was modified externally. Rewind
+			// once to just past the version header and restart as a linear scan.
 			if (haveCachedOffset && !cacheFallbackTriggered) {
 				cacheFallbackTriggered = true;
 				haveCachedOffset = false;
@@ -1097,16 +1090,14 @@ bool CAICHHashSet::IsClientRequestPending(const CPartFile *pForFile, uint16 nPar
 
 void CAICHHashSet::DropReferencesTo(const CKnownFile *file)
 {
-	// Pointer-value strip of any in-flight AICH recovery request naming `file`.
-	// Called from MuleNotify::KnownFileBeingDestroyed before the CKnownFile /
-	// CPartFile is freed, since the pending request would otherwise deref the
-	// dangling partfile when the recovery data arrives (RequestAICHRecovery's
-	// IsPartFile() guard catches some cases, but a freed-then-reused pointer can
-	// spoof it and route recovery to the wrong file).
+	// Pointer-value strip of any in-flight AICH recovery request naming `file`. Called from
+	// MuleNotify::KnownFileBeingDestroyed before the CKnownFile / CPartFile is freed, since the
+	// pending request would otherwise deref the dangling partfile when the recovery data
+	// arrives -- RequestAICHRecovery's IsPartFile() guard catches some cases, but a freed-then-
+	// reused pointer can spoof it and route recovery to the wrong file.
 	//
-	// CPartFile inherits from CKnownFile at the same address, so the cast in the
-	// comparison never derefs. Main-thread only, so the static list needs no
-	// synchronisation.
+	// CPartFile inherits from CKnownFile at the same address, so the cast in the comparison
+	// never derefs. Main-thread only, so the static list needs no synchronisation.
 	for (CAICHRequestedDataList::iterator it = m_liRequestedData.begin(); it != m_liRequestedData.end();
 		/* manual ++ */) {
 		if (static_cast<const CKnownFile *>(it->m_pPartFile) == file) {

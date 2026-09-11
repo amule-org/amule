@@ -79,22 +79,22 @@ CEntry *CEntry::Copy() const
 
 void CEntry::AddTag(CTag *tag, uint32_t dbgSourceIP)
 {
-	// Filter tags that exist for sending query results only and should never be
-	// stored, let alone sent within the taglist. TAG_PUBLISHINFO is one we build
-	// when answering a keyword search, out of our own count of distinct publishers
-	// and how much we trust them; stored, a peer-supplied one travels back out of
-	// CKeyEntry::WriteTagListWithPublishInfo() alongside our genuine value.
+	// Filter tags that exist for sending query results only and should never be stored, let
+	// alone sent within the taglist. TAG_PUBLISHINFO is one we build when answering a keyword
+	// search, out of our own count of distinct publishers and how much we trust them; stored, a
+	// peer-supplied one travels back out of CKeyEntry::WriteTagListWithPublishInfo() alongside
+	// our genuine value.
 	//
 	// TAG_KADAICHHASHRESULT is the same shape of tag and belongs in the same branch.
-	// Deliberately ungated: the guard's value is that it is one unconditional
-	// branch covering every caller, and filtering a tag this build never emits costs
-	// nothing. It also covers the three storing paths a handler-side filter does not
-	// -- source and notes publishing, and CIndexed::ReadFile(), which rebuilds every
-	// entry from key_index.dat with its raw taglist, so a node poisoned before this
-	// fix would reload the tag on restart and keep serving it.
+	// Deliberately ungated: the guard's value is that it is one unconditional branch covering
+	// every caller, and filtering a tag this build never emits costs nothing. It also covers
+	// the three storing paths a handler-side filter does not -- source and notes publishing,
+	// and CIndexed::ReadFile(), which rebuilds every entry from key_index.dat with its raw
+	// taglist, so a node poisoned before this fix would reload the tag on restart and keep
+	// serving it.
 	//
-	// TAG_KADAICHHASHPUB is not here: that one is consumed into a member rather than
-	// filtered, which is the split 0.70b, 0.72a, eMuleAI and emule-qt all use.
+	// TAG_KADAICHHASHPUB is not here: that one is consumed into a member rather than filtered,
+	// which is the split 0.70b, 0.72a, eMuleAI and emule-qt all use.
 	if (!tag->GetName().Cmp(TAG_PUBLISHINFO) || !tag->GetName().Cmp(TAG_KADAICHHASHRESULT)) {
 		AddDebugLogLineN(logKadEntryTracking,
 			CFormat("Filtered result-only tag on storing, source %s") %
@@ -137,10 +137,10 @@ wxString CEntry::GetStrTagValue(const wxString &tagname) const
 
 void CEntry::SetFileName(const wxString &name)
 {
-	// Empty filenames are protocol garbage: a peer publishing a Kad note or keyword
-	// with an empty FT_FILENAME tag should never reach m_filenames. Without this
-	// guard the empty entry takes the popularity slot, GetCommonFileName returns ""
-	// and trips its own invariant on the next call (issue #674).
+	// Empty filenames are protocol garbage: a peer publishing a Kad note or keyword with an
+	// empty FT_FILENAME tag should never reach m_filenames. Without this guard the empty entry
+	// takes the popularity slot, GetCommonFileName returns "" and trips its own invariant on
+	// the next call (issue #674).
 	if (name.IsEmpty()) {
 		return;
 	}
@@ -154,18 +154,18 @@ void CEntry::SetFileName(const wxString &name)
 
 wxString CEntry::GetCommonFileName() const
 {
-	// Return the filename most publishers agreed on, by popularity index. The index
-	// is not the actual count of publishers, just a relative number for comparing
-	// entries, so the choice is approximate.
+	// Return the filename most publishers agreed on, by popularity index. The index is not the
+	// actual count of publishers, just a relative number for comparing entries, so the choice
+	// is approximate.
 	//
-	// The running max is seeded from the first entry rather than 0, so an all-zero
-	// m_filenames still yields a non-empty result. Our own code never produces a
-	// popularity-0 entry, but two paths we do not control can: a remote publisher
-	// sending one over the wire (ReadUInt32 does not validate), and on-disk data
-	// from a node that ran an older build doing popularity decay. A "highest > 0"
-	// loop would then leave the result iterator at end() and return an empty string,
-	// silently dropping TAG_FILENAME from search responses, making SearchTermsMatch
-	// false for every term and tripping the reject path in CIndexed::AddKeyword.
+	// The running max is seeded from the first entry rather than 0, so an all-zero m_filenames
+	// still yields a non-empty result. Our own code never produces a popularity-0 entry, but
+	// two paths we do not control can: a remote publisher sending one over the wire (ReadUInt32
+	// does not validate), and on-disk data from a node that ran an older build doing popularity
+	// decay. A "highest > 0" loop would then leave the result iterator at end() and return an
+	// empty string, silently dropping TAG_FILENAME from search responses, making
+	// SearchTermsMatch false for every term and tripping the reject path in
+	// CIndexed::AddKeyword.
 	if (m_filenames.empty()) {
 		return wxString("");
 	}
@@ -247,10 +247,9 @@ bool CKeyEntry::SearchTermsMatch(const SSearchTerm *searchTerm) const
 		if (strSearchTerms == 0) {
 			return false;
 		}
-		// if there are more than one search strings specified (e.g. "aaa bbb ccc") the entire string
-		// is handled like "aaa AND bbb AND ccc". search all strings from the string search term in
-		// the tokenized list of the file name. all strings of string search term have to be found
-		// (AND)
+		// With more than one search string (e.g. "aaa bbb ccc") the whole thing is handled
+		// as "aaa AND bbb AND ccc": every string has to be found in the tokenized file
+		// name.
 		wxString commonFileNameLower(GetCommonFileNameLowerCase());
 		for (int i = 0; i < strSearchTerms; i++) {
 			// this will not give the same results as when tokenizing the filename string, but it
@@ -403,11 +402,10 @@ void CKeyEntry::AdjustGlobalPublishTracking(uint32_t ip, bool increase, const wx
 
 void CKeyEntry::MergeIPsAndFilenames(CKeyEntry *fromEntry)
 {
-	// Called when replacing a stored entry with a refreshed one: the tracked IPs and
-	// the different filenames are taken over from the old entry, and the rest is
-	// overwritten with the refreshed values. Not perfect for the taglist in some
-	// cases, but storing hundreds of taglists to pick the best one -- as is done for
-	// the filenames -- is not affordable.
+	// Called when replacing a stored entry with a refreshed one: the tracked IPs and the
+	// different filenames are taken over from the old entry, and the rest is overwritten with
+	// the refreshed values. Not perfect for the taglist in some cases, but storing hundreds of
+	// taglists to pick the best one -- as is done for the filenames -- is not affordable.
 	if (m_publishingIPs !=
 		NULL) { // This instance needs to be a new entry, otherwise we don't want/need to merge
 		wxASSERT(fromEntry == NULL);
@@ -416,10 +414,9 @@ void CKeyEntry::MergeIPsAndFilenames(CKeyEntry *fromEntry)
 		return;
 	}
 
-	// Fetch the AICH root hash this publisher reported, if any, and clear our
-	// own single-slot list: from here on m_aichHashes is the *merged* list
-	// taken over from the stored entry, and the reported hash is folded into
-	// it below so the popularity counts stay right.
+	// Fetch the AICH root hash this publisher reported, if any, and clear our own single-slot
+	// list: from here on m_aichHashes is the *merged* list taken over from the stored entry,
+	// and the reported hash is folded into it below so the popularity counts stay right.
 	wxASSERT(m_aichHashes.GetSlotCount() <= 1);
 	bool hasNewAICHHash = (m_aichHashes.GetSlotCount() > 0);
 	CKadAICHHash newAICHHash = m_aichHashes.GetHashAt(0);
@@ -449,11 +446,10 @@ void CKeyEntry::MergeIPsAndFilenames(CKeyEntry *fromEntry)
 				}
 				it->m_lastPublish = time(NULL);
 
-				// Has the AICH hash this publisher reports changed?
-				// A publisher that stops reporting one (downgrade,
-				// or a hash set it can no longer vouch for) must
-				// lose its vote, or the count would keep a hash
-				// alive that nobody publishes any more.
+				// Has the AICH hash this publisher reports changed? A publisher
+				// that stops reporting one (downgrade, or a hash set it can no
+				// longer vouch for) must lose its vote, or the count would keep a
+				// hash alive that nobody publishes any more.
 				if (hasNewAICHHash) {
 					if (it->m_aichHashIdx == CKadAICHHashList::INVALID_INDEX) {
 						AddDebugLogLineN(logKadEntryTracking,
@@ -494,17 +490,16 @@ void CKeyEntry::MergeIPsAndFilenames(CKeyEntry *fromEntry)
 		}
 
 		// Cap m_filenames so a single CKeyEntry cannot accumulate unbounded filename
-		// variants. A popular file collects one sFileNameEntry per distinct
-		// publisher-chosen name -- renames, language variants, mirror prefixes, case
-		// differences -- and without a cap the list grows monotonically for the
-		// lifetime of the entry, showing up as a steady ~MB/hour RSS climb in amuled.
-		// 100 matches the m_publishingIPs cap below and is comfortably above any
-		// honest publisher set.
+		// variants. A popular file collects one sFileNameEntry per distinct publisher-
+		// chosen name -- renames, language variants, mirror prefixes, case differences --
+		// and without a cap the list grows monotonically for the lifetime of the entry,
+		// showing up as a steady ~MB/hour RSS climb in amuled. 100 matches the
+		// m_publishingIPs cap below and is comfortably above any honest publisher set.
 		const size_t MAX_FILENAMES = 100;
 
-		// Compare-and-skip insertion: at the cap, a new entry is only accepted when
-		// its popularity beats the weakest survivor, rather than pushing and then
-		// immediately re-evicting. O(N) per insert via std::min_element.
+		// Compare-and-skip insertion: at the cap, a new entry is accepted only when its
+		// popularity beats the weakest survivor, rather than pushing and then immediately
+		// re-evicting. O(N) per insert via std::min_element.
 		auto pushBounded = [&](const sFileNameEntry &candidate) {
 			if (m_filenames.size() < MAX_FILENAMES) {
 				m_filenames.push_back(candidate);
@@ -543,9 +538,9 @@ void CKeyEntry::MergeIPsAndFilenames(CKeyEntry *fromEntry)
 			pushBounded(nameToCopy);
 		}
 		if (!duplicate && !currentName.m_filename.IsEmpty()) {
-			// Skip the synthetic currentName = { "", 0 } default that
-			// happens when m_filenames was unexpectedly empty above
-			// (wxASSERT fires in Debug, but Release keeps going).
+			// Skip the synthetic currentName = { "", 0 } default that happens when
+			// m_filenames was unexpectedly empty above (wxASSERT fires in Debug,
+			// Release keeps going).
 			pushBounded(currentName);
 		}
 	}
@@ -580,20 +575,20 @@ void CKeyEntry::MergeIPsAndFilenames(CKeyEntry *fromEntry)
 void CKeyEntry::ReCalculateTrustValue()
 {
 #define PUBLISHPOINTSSPERSUBNET 10.0
-	// The trust value indicates how trustworthy or spammy this entry is. It lies
-	// between 0 and ~10000, but the useful reading is that below 1 is bad and above
-	// 1 is good. It comes from how many different IPs/24 published this entry and
-	// how many entries each of those IPs has: each IP/24 has 3 points, so one IP
-	// publishing 3 entries alone gives each 3/3 = 1, publishing 6 gives each 0.5,
-	// and a second publisher of one of them raises that one to 3/6 + 3/1 = 3.5.
+	// The trust value indicates how trustworthy or spammy this entry is. It lies between 0 and
+	// ~10000, but the useful reading is that below 1 is bad and above 1 is good. It comes from
+	// how many different IPs/24 published this entry and how many entries each of those IPs
+	// has: each IP/24 has 3 points, so one IP publishing 3 entries alone gives each 3/3 = 1,
+	// publishing 6 gives each 0.5, and a second publisher of one of them raises that one to 3/6
+	// + 3/1 = 3.5.
 	//
-	// The point is to avoid being spammed for a given keyword by a small IP range,
-	// which would otherwise blot out every other entry. If we index "Knoppix" and
-	// one IP publishes 500 variants of "knoppix casino 500% bonus.txt", those score
-	// 0.006 and are only returned after everything above 1.
+	// The point is to avoid being spammed for a given keyword by a small IP range, which would
+	// otherwise blot out every other entry. If we index "Knoppix" and one IP publishes 500
+	// variants of "knoppix casino 500% bonus.txt", those score 0.006 and are only returned
+	// after everything above 1.
 	//
-	// Entries below 1 are NOT ignored or singled out; the rating only comes into
-	// play once there are more results for a request than there is space for.
+	// Entries below 1 are NOT ignored or singled out; the rating only comes into play once
+	// there are more results for a request than there is space for.
 	wxCHECK_RET(m_publishingIPs != NULL, "No publishing IPs?");
 
 	m_lastTrustValueCalc = ::GetTickCount64();
@@ -637,9 +632,9 @@ void CKeyEntry::CleanUpTrackedPublishers()
 		sPublishingIP curEntry = m_publishingIPs->front();
 		if (now - curEntry.m_lastPublish > KADEMLIAREPUBLISHTIMEK) {
 			AdjustGlobalPublishTracking(curEntry.m_ip, false, "cleanup");
-			// An expired publisher loses its AICH vote with everything
-			// else; without this the hash would outlive every publisher
-			// that ever reported it and keep being handed to searchers.
+			// An expired publisher loses its AICH vote with everything else; without
+			// this the hash would outlive every publisher that ever reported it and
+			// keep being handed to searchers.
 			m_aichHashes.DropReferenceAt(curEntry.m_aichHashIdx);
 			m_publishingIPs->pop_front();
 		} else {
@@ -659,14 +654,13 @@ void CKeyEntry::WritePublishTrackingDataToFile(CFileDataIO *data)
 	//         <Names_Count 4><{<Name string><PopularityIndex 4>} Names_Count>
 	//         <PublisherCount 4><{<IP 4><Time 4><AICH Idx 2>} PublisherCount>
 	//
-	// Only referenced hashes are written, so the stored indexes are the
-	// compacted ones -- otherwise a hash whose last publisher expired would
-	// be reloaded with a popularity of zero for ever.
+	// Only referenced hashes are written, so the stored indexes are the compacted ones --
+	// otherwise a hash whose last publisher expired would be reloaded with a popularity of zero
+	// for ever.
 	//
-	// Gated together with the keyword-index version in CIndexed: with the
-	// gate off we write a version-3 file with neither the AICH block nor the
-	// per-publisher index, which is byte-for-byte what upstream writes and
-	// what an upstream binary can read back.
+	// Gated together with the keyword-index version in CIndexed: with the gate off we write a
+	// version-3 file with neither the AICH block nor the per-publisher index, which is
+	// byte-for-byte what upstream writes and what an upstream binary can read back.
 #ifdef ENABLE_KAD_PROTOCOL_10
 	const std::vector<uint16_t> newIndexes = m_aichHashes.BuildCompactionMap();
 	data->WriteUInt16(m_aichHashes.GetReferencedCount());
@@ -752,10 +746,9 @@ void CKeyEntry::ReadPublishTrackingDataFromFile(CFileDataIO *data, bool includes
 		dbgLastTime = toAdd.m_lastPublish;
 #endif
 
-		// Re-attach this publisher to its AICH hash, rebuilding the
-		// popularity counts as we go.  An index pointing past the hashes
-		// we just read means a corrupt or truncated file, so drop the
-		// hash rather than the whole entry.
+		// Re-attach this publisher to its AICH hash, rebuilding the popularity counts as we
+		// go. An index pointing past the hashes we just read means a corrupt or truncated
+		// file, so drop the hash rather than the whole entry.
 		toAdd.m_aichHashIdx = CKadAICHHashList::INVALID_INDEX;
 		if (includesAICH) {
 			uint16_t storedIdx = data->ReadUInt16();
@@ -776,20 +769,12 @@ void CKeyEntry::ReadPublishTrackingDataFromFile(CFileDataIO *data, bool includes
 		m_publishingIPs->push_back(toAdd);
 	}
 	ReCalculateTrustValue();
-	// #ifdef __DEBUG__
-	//	if (GetTrustValue() < 1.0) {
-	//		AddDebugLogLineN(logKadEntryTracking,CFormat("Loaded %u different names, %u different
-	// publishIPs (trustvalue = %.2f) for file %s") 			% nameCount % ipCount %
-	// GetTrustValue() % m_uSourceID.ToHexString());
-	//	}
-	// #endif
 }
 
 void CKeyEntry::DirtyDeletePublishData()
 {
-	// instead of deleting our publishers properly in the destructor with decreasing the count in the
-	// global map we just remove them, and trust that the caller in the end also resets the global map, so
-	// the kad shutdown is speed up a bit
+	// Publishers are removed rather than properly deleted with a global-map decrement; the
+	// caller resets the global map anyway, and this speeds Kad shutdown up a little.
 	delete m_publishingIPs;
 	m_publishingIPs = NULL;
 }
@@ -802,18 +787,16 @@ void CKeyEntry::WriteTagListWithPublishInfo(CFileDataIO *data)
 		return;
 	}
 
-	// here we add a tag including how many publishers this entry has, the trustvalue and how many
-	// different names are known this is supposed to get used in later versions as an indicator for the
-	// user how valid this result is (of course this tag alone cannot be trusted 100%, because we could be
-	// a bad node, but it's a part of the puzzle)
+	// A tag carrying this entry's publisher count, trust value and number of known names, as an
+	// indicator of how valid the result is. Not trustworthy on its own -- we could be a bad
+	// node -- but part of the puzzle.
 
-	// One tag for TAG_PUBLISHINFO, plus TAG_KADAICHHASHRESULT if we have any
-	// AICH hash to report.  The AICH tag is written unconditionally rather
-	// than per requester because a Kad search request carries no version
-	// byte: pre-0x09 peers skip the unknown tag, and it is the *receiver*
-	// that gates on the sender's advertised version (see
-	// CSearch::ProcessResultKeyword) so a fake tag from an old node cannot
-	// be laundered through us.
+	// One tag for TAG_PUBLISHINFO, plus TAG_KADAICHHASHRESULT if we have any AICH hash to
+	// report. The AICH tag is written unconditionally rather than per requester because a Kad
+	// search request carries no version byte: pre-0x09 peers skip the unknown tag, and it is
+	// the *receiver* that gates on the sender's advertised version (see
+	// CSearch::ProcessResultKeyword), so a fake tag from an old node cannot be laundered
+	// through us.
 #ifdef ENABLE_KAD_PROTOCOL_10
 	std::vector<uint8_t> aichTagValue = m_aichHashes.EncodeResultTag();
 #else
@@ -830,10 +813,9 @@ void CKeyEntry::WriteTagListWithPublishInfo(CFileDataIO *data)
 	uint32_t tagValue = (names << 24) | (publishers << 16) | trust;
 	data->WriteTag(CTagVarInt(TAG_PUBLISHINFO, tagValue));
 
-	// Last, the AICH hashes reported for this file with the number of
-	// publishers behind each one -- normally exactly one hash. A BSOB tag in
-	// Kad carries a uint8 length, and CKadAICHHashList keeps the payload
-	// inside that budget.
+	// Last, the AICH hashes reported for this file with the number of publishers behind each
+	// one -- normally exactly one hash. A BSOB tag in Kad carries a uint8 length, and
+	// CKadAICHHashList keeps the payload inside that budget.
 	if (!aichTagValue.empty()) {
 		wxASSERT(aichTagValue.size() <= 0xFF);
 		data->WriteTag(

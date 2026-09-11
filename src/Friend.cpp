@@ -59,10 +59,9 @@ CFriend::CFriend(const CMD4Hash &userhash,
 
 CFriend::CFriend(CClientRef client)
 {
-	// Init() first: it is the only thing that clears m_dwLastSeen and the
-	// last-used address, and LinkClient() copies those across only when the
-	// client carries a real value. Without this they start indeterminate and
-	// get written to emfriends.met on the next save.
+	// Init() first: it is the only thing that clears m_dwLastSeen and the last-used address,
+	// and LinkClient() copies those across only when the client carries a real value. Without
+	// this they start indeterminate and get written to emfriends.met on the next save.
 	Init();
 	LinkClient(client);
 }
@@ -76,30 +75,29 @@ void CFriend::LinkClient(CClientRef client)
 		if (m_LinkedClient.IsLinked()) { // What, is already linked?
 			UnLinkClient(false);
 		}
-		// The client may already belong to another record: reusing an
-		// existing client rather than always building a fresh one makes that
-		// reachable. Tell that record to let go, or it keeps a live reference
-		// and shows its friend as permanently connected.
+		// The client may already belong to another record: reusing an existing client
+		// rather than always building a fresh one makes that reachable. Tell that record to
+		// let go, or it keeps a live reference and shows its friend as permanently
+		// connected.
 		CFriend *other = client.GetFriend();
 		if (other != nullptr && other != this) {
-			// Notified: that record is losing its client and its row has to
-			// stop showing it as connected, which is the visible half of the
-			// problem this exists to fix.
+			// Notified: that record is losing its client and its row has to stop
+			// showing it as connected, which is the visible half of the problem this
+			// fixes.
 			other->UnLinkClient();
 		}
 		m_LinkedClient = client;
 		m_LinkedClient.SetFriend(this);
-		// Apply the persistent friend-slot flag to the live client. This
-		// is the path that restores the slot when a friend reconnects
-		// after a disconnect (or after a daemon restart).
+		// Apply the persistent friend-slot flag to the live client. This is the path that
+		// restores the slot when a friend reconnects after a disconnect, or after a daemon
+		// restart.
 		//
-		// A client built from a stored address has not handshaked yet, so
-		// this can briefly grant the slot to whoever holds that address if
-		// it has since been recycled. Deferring until the hash is known is
-		// not the fix: this is the only pass that runs, because the
-		// handshake re-links the same client object and takes the branch
-		// above instead. ProcessHelloTypePacket revokes the slot when the
-		// hash does not match the record, which closes that window.
+		// A client built from a stored address has not handshaked yet, so this can briefly
+		// grant the slot to whoever holds that address if it has since been recycled.
+		// Deferring until the hash is known is not the fix: this is the only pass that
+		// runs, because the handshake re-links the same client object and takes the branch
+		// above instead. ProcessHelloTypePacket revokes the slot when the hash does not
+		// match the record, which closes that window.
 		if (m_HasFriendSlot) {
 			m_LinkedClient.SetFriendSlot(true);
 		}
@@ -111,12 +109,11 @@ void CFriend::LinkClient(CClientRef client)
 	} else if (m_strName.IsEmpty()) {
 		m_strName = "?";
 	}
-	// A client can be linked before it has connected (a browse/chat request
-	// builds one from the stored IP+port, and its identity is only negotiated
-	// during the handshake). Such a client reports an empty hash and a zero IP,
-	// so only copy fields that carry a real value — otherwise we'd overwrite the
-	// friend's persisted IP/hash with placeholders and lose the ability to reach
-	// or identify them after a restart.
+	// A client can be linked before it has connected: a browse/chat request builds one from the
+	// stored IP+port, and its identity is only negotiated during the handshake. Such a client
+	// reports an empty hash and a zero IP, so only copy fields carrying a real value --
+	// otherwise the friend's persisted IP/hash are overwritten with placeholders and it can no
+	// longer be reached or identified after a restart.
 	if (!client.GetUserHash().IsEmpty()) {
 		m_UserHash = client.GetUserHash();
 	}

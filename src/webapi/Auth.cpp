@@ -31,10 +31,9 @@
 #include <cstdio>
 #include <cstring>
 
-// strncasecmp on POSIX is declared in <strings.h>. Glibc also exposes
-// it via <string.h>, but musl and the BSDs do not — be explicit so
-// the build doesn't depend on the implicit include. Mirror the shim
-// libwebcommon/HeaderParse.cpp already uses.
+// strncasecmp on POSIX is declared in <strings.h>. Glibc also exposes it via <string.h>, but musl
+// and the BSDs do not -- be explicit so the build does not depend on the implicit include. Mirrors
+// the shim libwebcommon/HeaderParse.cpp already uses.
 #ifdef _WIN32
 #define strncasecmp _strnicmp
 #else
@@ -59,9 +58,8 @@ bool CRevocationSet::IsRevoked(const std::string &jti) const
 	auto it = m_revoked.find(jti);
 	if (it == m_revoked.end())
 		return false;
-	// Lazy GC: if the entry has already expired, drop it. Saves a
-	// tick of memory and prevents stale entries from accumulating
-	// for tokens nobody will ever present again.
+	// Lazy GC: if the entry has already expired, drop it. Saves a tick of memory and stops
+	// stale entries accumulating for tokens nobody will ever present again.
 	if (it->second <= std::time(nullptr)) {
 		m_revoked.erase(it);
 		return false;
@@ -77,10 +75,9 @@ std::size_t CRevocationSet::Size() const
 
 void CRevocationSet::GcExpired() const
 {
-	// O(n) sweep over the revoked map, fired from every Revoke() and every
-	// Contains() check. Fine at amuleapi's expected scale -- a single operator,
-	// a handful of sessions per day -- so the map stays in the low hundreds
-	// even under aggressive re-login.
+	// O(n) sweep over the revoked map, fired from every Revoke() and every Contains() check.
+	// Fine at amuleapi's expected scale -- a single operator, a handful of sessions per day --
+	// so the map stays in the low hundreds even under aggressive re-login.
 	const std::time_t now = std::time(nullptr);
 	for (auto it = m_revoked.begin(); it != m_revoked.end();) {
 		if (it->second <= now) {

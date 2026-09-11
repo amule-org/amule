@@ -27,9 +27,8 @@
 
 #include "../../../Types.h" // Needed for uint32
 
-/*
- * Class to create unique IDs for Objects transmitted through EC
- * (Partfiles, Knownfiles, clients...)
+/**
+ * Creates unique IDs for objects transmitted through EC: partfiles, knownfiles, clients.
  */
 class CECID
 {

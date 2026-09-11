@@ -67,9 +67,8 @@ bool CMuleIconTextRenderer::Render(wxRect cell, wxDC *dc, int state)
 
 wxSize CMuleIconTextRenderer::GetSize() const
 {
-	// Measured from a non-empty string when the cell has no text: an empty
-	// extent would report zero height, and on the native macOS backend this
-	// height is what the row is sized from.
+	// Measured from a non-empty string when the cell has no text: an empty extent would report
+	// zero height, and on the native macOS backend this height is what the row is sized from.
 	const wxString &text = m_value.GetText();
 	wxSize size = GetTextExtent(text.IsEmpty() ? wxString("Xg") : text);
 

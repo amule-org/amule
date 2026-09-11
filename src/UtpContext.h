@@ -117,15 +117,14 @@ inline bool ProcessUtpFrame(
 
 // UDP sizing for libutp, accounting for the two-byte aMule envelope.
 //
-// libutp's own defaults (utp_default_get_udp_mtu / _overhead in utp_utils.cpp)
-// branch on the address family and know nothing of the envelope, so overriding
-// them is what makes libutp size packets that do not fragment. Branching the
-// same way is what keeps the family awareness those defaults had: an IPv6 peer
-// costs 20 more header bytes than IPv4, and libutp assumes Teredo because it
+// libutp's own defaults (utp_default_get_udp_mtu / _overhead in utp_utils.cpp) branch on the
+// address family and know nothing of the envelope, so overriding them is what makes libutp size
+// packets that do not fragment. Branching the same way keeps the family awareness those defaults
+// had: an IPv6 peer costs 20 more header bytes than IPv4, and libutp assumes Teredo because it
 // cannot know the local interface either.
 //
-// Taken as a bool rather than a sockaddr so this stays free of socket headers
-// and testable without one; the adapter does the sa_family comparison.
+// Taken as a bool rather than a sockaddr so this stays free of socket headers and testable without
+// one; the adapter does the sa_family comparison.
 constexpr std::uint64_t kUtpEnvelopeBytes = 2;
 
 constexpr std::uint64_t UtpUdpMtu(bool isIPv6)

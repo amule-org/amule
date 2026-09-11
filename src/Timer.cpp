@@ -47,9 +47,9 @@ public:
 			// This is typically zero, because lastEvent was already incremented by one period.
 			sint64 delta = now - lastEvent;
 			if (delta > 100 * m_period) {
-				// We're way too far behind.  Probably what really happened is
-				// the system time was adjusted backwards a bit.  So,
-				// the calculation of delta has produced an absurd value.
+				// We are far too far behind. Most likely the system time was
+				// adjusted backwards, so the delta calculation produced an absurd
+				// value.
 				delta = 100 * m_period;
 				lastEvent = now - delta;
 			}
@@ -57,12 +57,10 @@ public:
 			// Wait one period (adjusted by the difference just calculated)
 			sint64 timeout = ((m_period < delta) ? 0 : (m_period - delta));
 
-			// In normal operation, we will never actually acquire the
-			// semaphore; we will always timeout.  This is used to
-			// implement a Sleep operation which the owning CTimer can
-			// interrupt by posting to the semaphore.  So, it follows
-			// that if we do acquire the semaphore it means the owner
-			// wants us to exit.
+			// In normal operation we never actually acquire the semaphore, we always
+			// time out. This implements a Sleep the owning CTimer can interrupt by
+			// posting to the semaphore, so acquiring it means the owner wants us to
+			// exit.
 			if (m_sleepSemaphore.WaitTimeout(timeout) == wxSEMA_TIMEOUT) {
 				// Increment for one event only, so no events can be lost.
 				lastEvent += m_period;

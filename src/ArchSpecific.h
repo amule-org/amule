@@ -56,9 +56,7 @@
 #define ENDIAN_HTONLL(x) (wxUINT64_SWAP_ON_LE(x))
 
 /**
- * Returns the value in the given bytestream.
- *
- * The value is returned exactly as it is found.
+ * Returns the value in the given bytestream, exactly as it is found.
  */
 // \{
 inline uint16 RawPeekUInt16(const void *p);
@@ -67,9 +65,7 @@ inline uint64 RawPeekUInt64(const void *p);
 // \}
 
 /**
- * Writes the specified value into the bytestream.
- *
- * The value is written exactly as it is.
+ * Writes the specified value into the bytestream, exactly as it is.
  */
 // \{
 inline void RawPokeUInt16(void *p, uint16 nVal);
@@ -78,9 +74,7 @@ inline void RawPokeUInt64(void *p, uint64 nVal);
 // \}
 
 /**
- * Returns the value in the given bytestream.
- *
- * The value is returned as little-endian.
+ * Returns the value in the given bytestream, as little-endian.
  */
 // \{
 inline uint8 PeekUInt8(const void *p);
@@ -90,9 +84,7 @@ inline uint64 PeekUInt64(const void *p);
 // \}
 
 /**
- * Writes the specified value into the bytestream.
- *
- * The value is written as little-endian.
+ * Writes the specified value into the bytestream, as little-endian.
  */
 // \{
 inline void PokeUInt8(void *p, uint8 nVal);
@@ -101,21 +93,18 @@ inline void PokeUInt32(void *p, uint32 nVal);
 inline void PokeUInt64(void *p, uint64 nVal);
 // \}
 
-// The Raw* helpers below read and write through pointers whose alignment the
-// caller does not control -- packet buffers, and the 16-byte CMD4Hash array,
-// which sits at a 4-byte-aligned offset inside several objects. Reading eight
-// bytes from there via `*(uint64 *)p` is undefined behaviour regardless of the
-// architecture: it is a property of the C++ object model, not of what the CPU
-// tolerates. x86 and aarch64 happen to execute such a load, which is why this
-// went unnoticed for two decades, but the compiler is still entitled to assume
-// the alignment holds and optimise accordingly.
+// The Raw* helpers below read and write through pointers whose alignment the caller does not
+// control -- packet buffers, and the 16-byte CMD4Hash array, which sits at a 4-byte-aligned offset
+// inside several objects. Reading eight bytes from there via `*(uint64 *)p` is undefined behaviour
+// regardless of the architecture: it is a property of the C++ object model, not of what the CPU
+// tolerates. x86 and aarch64 happen to execute such a load, which is why this went unnoticed for
+// two decades, but the compiler is still entitled to assume the alignment holds and optimise
+// accordingly.
 //
-// So the memcpy form is now unconditional rather than selected per-arch. It
-// costs nothing: every compiler this project supports folds a fixed-size memcpy
-// into the same single load or store the cast would have emitted, and the two
-// are identical at -O2 on x86-64 and aarch64. The old guard listed __arm__,
-// __sparc__ and __mips__ -- 32-bit ARM only, written years before aarch64
-// existed, and never updated for it.
+// So the memcpy form is unconditional rather than selected per-arch. It costs nothing: every
+// compiler this project supports folds a fixed-size memcpy into the same single load or store the
+// cast would have emitted. The old guard listed __arm__, __sparc__ and __mips__ -- 32-bit ARM only,
+// written years before aarch64 existed, and never updated for it.
 
 ///////////////////////////////////////////////////////////////////////////////
 // Peek - helper functions for read-accessing memory without modifying the memory pointer

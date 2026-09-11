@@ -91,9 +91,9 @@ TEST(ClientVersionString, ThePackedFormDecomposesDecimally)
 	ASSERT_EQUALS(wxT("v2.3.3"), FormatPackedClientVersion(SO_AMULE, 203300));
 }
 
-// The whole point: one peer must not read differently depending on which path
-// rendered it. The live path decodes the wire into components; the history
-// path decodes the stored composite. Both must land on the same string.
+// The whole point: one peer must not read differently depending on which path rendered it. The live
+// path decodes the wire into components; the history path decodes the stored composite. Both must
+// land on the same string.
 TEST(ClientVersionString, BothPathsAgreeForTheSamePeer)
 {
 	const uint32 major = 0, minor = 70, update = 1;

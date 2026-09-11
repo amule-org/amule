@@ -56,11 +56,10 @@ CHashingTask::CHashingTask(const CPath &path, const CPath &filename, const CPart
 , m_toHash(EH_MD4_AND_AICH)
 , m_owner(part)
 {
-	// We can only create the AICH hashset if the file is a knownfile or
-	// if the partfile is complete, since the MD4 hashset is checked first,
-	// so that the AICH hashset only gets assigned if the MD4 hashset
-	// matches what we expected. Due to the rarity of post-completion
-	// corruptions, this gives us a nice speedup in most cases.
+	// We can only create the AICH hashset if the file is a knownfile or the partfile is
+	// complete, since the MD4 hashset is checked first and the AICH hashset is only assigned if
+	// the MD4 one matches what we expected. Post-completion corruptions are rare, so this is a
+	// nice speedup in most cases.
 	if (part && !part->GetGapList().empty()) {
 		m_toHash = EH_MD4;
 	}
@@ -121,18 +120,16 @@ void CHashingTask::Entry()
 	knownfile->m_AvailPartFrequency.insert(
 		knownfile->m_AvailPartFrequency.begin(), knownfile->GetPartCount(), 0);
 
-	// Info level, not debug: AddDebugLogLineN compiles to nothing outside a debug
-	// build, so the binaries users run had no record that the client was reading
-	// every byte of a file (issue #968). Emitted here rather than where the task was
-	// queued, because tasks run serially on CThreadScheduler long after the
-	// directory walk, and after the guards above, so a skipped file never claims to
-	// have been hashed. The full path, not m_filename: the same basename can exist
-	// in several shared directories.
+	// Info level, not debug: AddDebugLogLineN compiles to nothing outside a debug build, so the
+	// binaries users run had no record that the client was reading every byte of a file (issue
+	// #968). Emitted here rather than where the task was queued, because tasks run serially on
+	// CThreadScheduler long after the directory walk, and after the guards above, so a skipped
+	// file never claims to have been hashed. The full path, not m_filename: the same basename
+	// can exist in several shared directories.
 	//
-	// m_owner is set only for a partfile -- completion hashing or a corrupt-part
-	// re-hash. Those are real disk work, but the path being read is an internal temp
-	// name like Temp/003.part, so report the download's own name and which kind of
-	// work it is instead.
+	// m_owner is set only for a partfile -- completion hashing or a corrupt-part re-hash. Those
+	// are real disk work, but the path being read is an internal temp name like Temp/003.part,
+	// so report the download's own name and which kind of work it is instead.
 	const bool ownedByPartfile = (m_owner != nullptr);
 	if ((m_toHash & EH_MD4) && (m_toHash & EH_AICH)) {
 		knownfile->GetAICHHashset()->FreeHashSet();
@@ -152,10 +149,10 @@ void CHashingTask::Entry()
 		AddDebugLogLineN(logHasher, CFormat("Starting to create MD4 hash for file: %s") % m_filename);
 	} else if ((m_toHash & EH_AICH)) {
 		knownfile->GetAICHHashset()->FreeHashSet();
-		// Distinct wording: this fires for files discovered long ago whose AICH
-		// master hash is missing from known2_64.met, so "hashing" would wrongly
-		// suggest the file was just found. After a known2_64.met loss it re-reads the
-		// entire library, which is the silent multi-hour case worth a line.
+		// Distinct wording: this fires for files discovered long ago whose AICH master hash
+		// is missing from known2_64.met, so "hashing" would wrongly suggest the file was
+		// just found. After a known2_64.met loss it re-reads the entire library, which is
+		// the silent multi-hour case worth a line.
 		AddLogLineN(CFormat(_("Rebuilding AICH hashset for file: %s")) % fullPath);
 		AddDebugLogLineN(
 			logHasher, CFormat("Starting to create AICH hash for file: %s") % m_filename);
@@ -254,8 +251,8 @@ bool CHashingTask::CreateNextPartHash(CFileAutoClose &file, uint16 part, CKnownF
 		owner->m_hashlist.push_back(hash);
 
 		// The ed2k part implementation means a 2 * PARTSIZE file has 3 parts (see
-		// CKnownFile::SetFileSize), so a hash has to be created for the 0-size data:
-		// the default md4 hash for null data, 31D6CFE0D16AE931B73C59D7E0C089C0.
+		// CKnownFile::SetFileSize), so a hash has to be created for the 0-size data: the
+		// default md4 hash for null data, 31D6CFE0D16AE931B73C59D7E0C089C0.
 		if ((partLength == PARTSIZE) && file.Eof()) {
 			owner->m_hashlist.push_back(CMD4Hash(g_emptyMD4Hash));
 		}
@@ -271,10 +268,9 @@ void CHashingTask::OnLastTask()
 		// explicitly save the list of hashed files here.
 		theApp->knownfiles->Save();
 
-		// Make sure the AICH hashes are up to date. No orphan-prune here: this runs
-		// right after hashing and races the main-thread SafeAddKFile that registers
-		// those files, so pruning could delete a hashset we just wrote. Only the
-		// startup sync prunes.
+		// Make sure the AICH hashes are up to date. No orphan-prune here: this runs right
+		// after hashing and races the main-thread SafeAddKFile that registers those files,
+		// so pruning could delete a hashset we just wrote. Only the startup sync prunes.
 		CThreadScheduler::AddTask(new CAICHSyncTask());
 	}
 }
@@ -297,15 +293,14 @@ void CAICHSyncTask::Entry()
 	std::list<CAICHHash> hashlist;
 	const CPath fullpath = CPath(thePrefs::GetConfigDir() + KNOWN2_MET_FILENAME);
 
-	// Snapshot of AICH master hashes still referenced by a known.met record, used
-	// to drop orphans (entries whose owning record was TTL-evicted by
-	// PruneDuplicates) during the read walk. An empty set disables the prune, so
-	// nothing is ever wiped before knownfiles is loaded.
+	// Snapshot of AICH master hashes still referenced by a known.met record, used to drop
+	// orphans -- entries whose owning record was TTL-evicted by PruneDuplicates -- during the
+	// read walk. An empty set disables the prune, so nothing is ever wiped before knownfiles is
+	// loaded.
 	//
-	// Only the startup sync collects it: a post-hashing sync runs on a worker thread
-	// that can outrun the main-thread SafeAddKFile registering the file it just
-	// hashed, whose freshly-written hashset would then be absent from liveRoots and
-	// pruned as an orphan.
+	// Only the startup sync collects it: a post-hashing sync runs on a worker thread that can
+	// outrun the main-thread SafeAddKFile registering the file it just hashed, whose freshly-
+	// written hashset would then be absent from liveRoots and pruned as an orphan.
 	std::unordered_set<CAICHHash> liveRoots;
 	if (m_pruneOrphans && theApp->knownfiles) {
 		theApp->knownfiles->CollectLiveAICHRoots(liveRoots);
@@ -332,9 +327,9 @@ void CAICHSyncTask::Entry()
 			return;
 		}
 
-		// Rewrite target. CFile::write_safe writes to "<name>.new" and renames on
-		// Close(), so a crash mid-prune leaves the original known2_64.met untouched.
-		// Opened only when there is a live-roots set to filter against.
+		// Rewrite target. CFile::write_safe writes to "<name>.new" and renames on Close(),
+		// so a crash mid-prune leaves the original known2_64.met untouched. Opened only
+		// when there is a live-roots set to filter against.
 		const bool prune = !liveRoots.empty();
 		CFile rewriteFile;
 		bool rewriteOk = false;
@@ -384,8 +379,8 @@ void CAICHSyncTask::Entry()
 						rootHash.Write(&rewriteFile);
 						rewriteFile.WriteUInt32(nHashCount);
 						// Stream the hashset bytes through a small fixed
-						// buffer rather than slurping into RAM: large files can
-						// have many MB of leaf+tree SHA-1s.
+						// buffer rather than slurping into RAM: large files
+						// can have many MB of leaf and tree SHA-1s.
 						uint8_t buf[64 * 1024];
 						uint64 remaining = hashsetBytes;
 						while (remaining > 0) {
@@ -417,10 +412,10 @@ void CAICHSyncTask::Entry()
 			// Drop the SaveHashSet dedup cache: some of its entries
 			// may have just been truncated off the end of the file.
 			CAICHHashSet::InvalidateRootHashCache();
-			// Do not finalise the rewrite when the source was corrupt: the
-			// partial .new file would replace the just-truncated source with
-			// something different. Abort explicitly so its destructor cannot
-			// rename a stale .new over the recovered file.
+			// Do not finalise the rewrite when the source was corrupt: the partial .new
+			// file would replace the just-truncated source with something different.
+			// Abort explicitly so its destructor cannot rename a stale .new over the
+			// recovered file.
 			if (rewriteOk) {
 				rewriteFile.Close();
 				CPath::RemoveFile(CPath(fullpath.GetRaw() + wxT(".new")));
@@ -638,9 +633,9 @@ void CVerifyLocalDataTask::Entry()
 		return;
 	}
 
-	// Not the knownFile's own AICHHashSet, which is not thread-safe: while we check
-	// AICH hashes here, a peer could send an OP_AICHREQUEST for the same file and
-	// call LoadHashSet()/FreeHashSet() on the same working set.
+	// Not the knownFile's own AICHHashSet, which is not thread-safe: while we check AICH hashes
+	// here, a peer could send an OP_AICHREQUEST for the same file and call
+	// LoadHashSet()/FreeHashSet() on the same working set.
 	CKnownFile storedFile;
 	storedFile.SetFileSize(fileSize);
 	storedFile.GetAICHHashset()->SetMasterHash(aichRootHash, aichStatus);
@@ -882,9 +877,9 @@ void CAllocateFileTask::Entry()
 
 #ifdef __WINDOWS__
 	try {
-		// File is already created as non-sparse, so we only need to set the length.
-		// This will fail to allocate the file e.g. under wine on linux/ext3,
-		// but works with NTFS and FAT32.
+		// The file is already created as non-sparse, so we only need to set the length.
+		// This fails to allocate the file under wine on linux/ext3, for instance, but works
+		// with NTFS and FAT32.
 		file.Seek(m_file->GetFileSize() - 1, wxFromStart);
 		file.WriteUInt8(0);
 		file.Close();
@@ -956,9 +951,9 @@ CMediaProbeEvent::CMediaProbeEvent(
 , m_succeeded(succeeded)
 , m_markUnprobeable(markUnprobeable)
 {
-	// Deep-copy every string: this event is built on the probe worker and consumed
-	// on the main thread, and wxString is refcounted, so handing the buffer over
-	// shared would race the worker's own copy going out of scope.
+	// Deep-copy every string: this event is built on the probe worker and consumed on the main
+	// thread, and wxString is refcounted, so handing the buffer over shared would race the
+	// worker's own copy going out of scope.
 	m_info.length_seconds = info.length_seconds;
 	m_info.bitrate_kbps = info.bitrate_kbps;
 	m_info.codec = wxString(info.codec.c_str(), info.codec.length());

@@ -159,9 +159,7 @@ PHP_EXP_NODE *make_known_const(char *name)
 	return make_const_exp_dnum(const_id);
 }
 
-//
 // Create function parameter (in declaration)
-//
 PHP_EXP_NODE *make_func_param(PHP_EXP_NODE *list, PHP_EXP_NODE *var_exp_node, char *class_name, int byref)
 {
 	PHP_FUNC_PARAM_DEF *param = new PHP_FUNC_PARAM_DEF;
@@ -190,9 +188,7 @@ PHP_EXP_NODE *make_func_param(PHP_EXP_NODE *list, PHP_EXP_NODE *var_exp_node, ch
 	}
 }
 
-/*
- * Syntax tree generation
- */
+/* Syntax tree generation */
 PHP_SYN_NODE *make_expr_syn_node(PHP_STATEMENT_TYPE type, PHP_EXP_NODE *expr)
 {
 	PHP_SYN_NODE *syn_node = new PHP_SYN_NODE;
@@ -332,10 +328,7 @@ PHP_SYN_NODE *make_switch_syn_node(PHP_EXP_NODE *cond, PHP_EXP_NODE *case_list)
 
 	syn_node->type = PHP_ST_SWITCH;
 
-	//
-	// Bind all statement lists into single one for
-	// simpler execution
-	//
+	// Bind all statement lists into a single one, for simpler execution
 	PHP_SYN_NODE *stat_list_tail = 0;
 	for (PHP_EXP_NODE *cur_case = case_list; cur_case; cur_case = cur_case->next) {
 		PHP_SYN_NODE *cur_stat_list = cur_case->exp_node->tree_node.syn_right;
@@ -371,9 +364,7 @@ PHP_VAR_NODE *make_array_var()
 	return node;
 }
 
-/*
- * Called from lexer when ${IDENT} is recognized
- */
+/* Called from the lexer when ${IDENT} is recognized */
 PHP_EXP_NODE *get_var_node(const char *name)
 {
 	PHP_EXP_NODE *node = make_zero_exp_node();
@@ -384,9 +375,7 @@ PHP_EXP_NODE *get_var_node(const char *name)
 		if ((si->type == PHP_SCOPE_VAR) || (si->type == PHP_SCOPE_PARAM)) {
 			node->var_si_node = si;
 		} else {
-			//
-			// Error: symbol already defined as different entity
-			//
+			// Error: symbol already defined as a different entity
 			php_report_error(PHP_ERROR,
 				"symbol [%s] already defined as different entity (%d)",
 				name,
@@ -406,9 +395,8 @@ void free_var_node(PHP_VAR_NODE *v)
 }
 
 /*
- * Init function scope table before transferring control there.
- *  1. Evaluate all by-value params
- *  2. Lvalue-evaluate all by-ref params and adjust pointers
+ * Init the function scope table before transferring control there: evaluate all by-value params,
+ * then lvalue-evaluate all by-ref params and adjust pointers.
  */
 void func_scope_init(PHP_FUNC_PARAM_DEF *params,
 	int param_count,
@@ -472,10 +460,9 @@ void func_scope_init(PHP_FUNC_PARAM_DEF *params,
 }
 
 /*
- * Since by-ref params changes pointers in scope table, we need to restore them
- * to original objects, so:
- *  1. Memory will not leak
- *  2. Next call may be using same params by-value, so it need independent varnode
+ * By-ref params change pointers in the scope table, so restore them to the original objects: memory
+ * must not leak, and the next call may use the same params by value and need an independent
+ * varnode.
  */
 static void func_scope_copy_back(PHP_FUNC_PARAM_DEF *params,
 	int param_count,
@@ -483,11 +470,6 @@ static void func_scope_copy_back(PHP_FUNC_PARAM_DEF *params,
 	PHP_VALUE_NODE *arg_array,
 	std::map<std::string, PHP_VAR_NODE *> &saved_vars)
 {
-	/*
-	if ( param_count < array_get_size(arg_array) ) {
-		param_count = array_get_size(arg_array);
-	}
-	*/
 	PHP_VAR_NODE *call_params[PHP_MAX_FUNC_PARAM];
 	int call_param_2free_count = 0;
 	for (int i = 0; i < param_count; i++) {
@@ -791,14 +773,11 @@ PHP_VAR_NODE *array_push_back(PHP_VALUE_NODE *array)
 	}
 	PHP_ARRAY_TYPE *arr_ptr = (PHP_ARRAY_TYPE *)array->ptr_val;
 
-	// Resume the linear scan from a cached hint so back-to-back
-	// push_backs are O(1) instead of O(N) each. With N=43k+ shared
-	// files in amuleweb's amuleweb-main-shared.php this collapses
-	// the page-build from O(N^2) (~minutes) to O(N).
-	// Proposed fix for issue #699: raised the upper bound from 0xffff (65535)
-	// to INT_MAX. PHP_ARRAY_TYPE uses std::map (unbounded), so the old cap
-	// was artificial. With the push_next_hint optimisation each call is still
-	// O(1) in the common sequential-push case regardless of array size.
+	// Resume the linear scan from a cached hint so back-to-back push_backs are O(1) instead of
+	// O(N) each. With N=43k+ shared files in amuleweb's amuleweb-main-shared.php this collapses
+	// the page build from O(N^2) (~minutes) to O(N). Issue #699 raised the upper bound from
+	// 0xffff to INT_MAX: PHP_ARRAY_TYPE uses std::map (unbounded), so the old cap was
+	// artificial.
 	for (int i = arr_ptr->push_next_hint; i < INT_MAX; i++) {
 		PHP_VAR_NODE *arr_var_node = array_get_by_int_key(array, i);
 		if (arr_var_node->value.type == PHP_VAL_NONE) {
@@ -806,16 +785,15 @@ PHP_VAR_NODE *array_push_back(PHP_VALUE_NODE *array)
 			return arr_var_node;
 		}
 	}
-	// Hint didn't pay off (gap below it from a delete). Fall back
-	// to scanning the low range so push_back keeps the same
-	// semantics as before for mixed insert/delete patterns.
+	// Hint did not pay off (a gap below it from a delete). Fall back to scanning the low range
+	// so push_back keeps the same semantics as before for mixed insert/delete patterns.
 	for (int i = 0; i < arr_ptr->push_next_hint; i++) {
 		PHP_VAR_NODE *arr_var_node = array_get_by_int_key(array, i);
 		if (arr_var_node->value.type == PHP_VAL_NONE) {
 			return arr_var_node;
 		}
 	}
-	// integer key space exhausted — unreachable in practice
+	// integer key space exhausted -- unreachable in practice
 	return 0;
 }
 
@@ -871,10 +849,9 @@ void var_node_free(PHP_VAR_NODE *var)
 	}
 }
 
-// Free an array value: every element var node, then the container itself.
-// Shared by value_value_free() and the cast functions, which all must
-// dispose of an array before overwriting the value (deleting only the
-// PHP_ARRAY_TYPE would leak the element nodes it points to).
+// Free an array value: every element var node, then the container itself. Shared by
+// value_value_free() and the cast functions, which all must dispose of an array before overwriting
+// the value -- deleting only the PHP_ARRAY_TYPE would leak the element nodes it points to.
 static void free_array_value(PHP_VALUE_NODE *val)
 {
 	PHP_ARRAY_TYPE *arr = (PHP_ARRAY_TYPE *)val->ptr_val;
@@ -1040,9 +1017,7 @@ void cast_value_array(PHP_VALUE_NODE *val)
 	val->type = PHP_VAL_ARRAY;
 }
 
-/*
- * Function calls
- */
+/* Function calls */
 PHP_EXP_NODE *make_func_call_exp(char *func_name, PHP_EXP_NODE *args)
 {
 	PHP_EXP_NODE *call_node = make_zero_exp_node();
@@ -1084,9 +1059,7 @@ void func_call_add_expr(PHP_VAR_NODE *paramlist, PHP_EXP_NODE *arg, int byref)
 void php_add_native_func(PHP_BLTIN_FUNC_DEF *def)
 {
 	if (get_scope_item_type(g_global_scope, def->name) != PHP_SCOPE_NONE) {
-		//
 		// Error: something already defined by this name
-		//
 		php_report_error(PHP_ERROR, "Can't add scope item: symbol already defined");
 		return;
 	}
@@ -1096,10 +1069,7 @@ void php_add_native_func(PHP_BLTIN_FUNC_DEF *def)
 	decl_node->func_decl->param_count = def->param_count;
 	decl_node->func_decl->params = new PHP_FUNC_PARAM_DEF[def->param_count];
 
-	//
-	// Built-in functions don't have class specifier, and can handle
-	// default arguments internally
-	//
+	// Built-in functions have no class specifier, and can handle default arguments internally
 	memset(decl_node->func_decl->params, 0, sizeof(PHP_FUNC_PARAM_DEF) * def->param_count);
 	for (int i = 0; i < def->param_count; i++) {
 		PHP_VAR_NODE *func_param = make_var_node();
@@ -1121,9 +1091,7 @@ void php_add_native_func(PHP_BLTIN_FUNC_DEF *def)
 void php_add_native_class(const char *name, PHP_NATIVE_PROP_GET_FUNC_PTR prop_get_native_ptr)
 {
 	if (get_scope_item_type(g_global_scope, name) != PHP_SCOPE_NONE) {
-		//
 		// Error: something already defined by this name
-		//
 		php_report_error(PHP_ERROR, "Can't add scope item: symbol already defined");
 		return;
 	}
@@ -1183,11 +1151,10 @@ void php_exp_tree_free(PHP_EXP_NODE *tree)
 		}
 	} break;
 	case PHP_OP_LIST: {
-		// Comma-separated expression list (e.g. the three clauses of
-		// a for() header). The payload of each node lives in exp_node,
-		// not in tree_node.left/right, so the default branch below would
-		// delete the list spine but leak every payload subtree. Walk the
-		// ->next chain and free both, like echo / switch do inline.
+		// Comma-separated expression list (e.g. the three clauses of a for() header). The
+		// payload of each node lives in exp_node, not in tree_node.left/right, so the
+		// default branch below would delete the list spine but leak every payload subtree.
+		// Walk the ->next chain and free both, like echo and switch do inline.
 		PHP_EXP_NODE *curr = tree;
 		while (curr) {
 			PHP_EXP_NODE *next = curr->next;
@@ -1300,11 +1267,8 @@ void php_engine_free()
 }
 
 /*
- * Create reference. This is recursive process, since operators []
- * can be stacked: $a[1][2][3] = & $b;
- * There's 3 valid cases in making reference:
- *  1,2. Target is scalar variable or variable by name ${xxx}
- *  3. Target is member of array.
+ * Create a reference. Recursive, since [] operators stack: $a[1][2][3] = & $b. Three cases are
+ * valid: the target is a scalar variable, a variable by name ${xxx}, or a member of an array.
  */
 static void exp_set_ref(PHP_EXP_NODE *expr, PHP_VAR_NODE *var, PHP_VALUE_NODE *key)
 {
@@ -1333,9 +1297,8 @@ static void exp_set_ref(PHP_EXP_NODE *expr, PHP_VAR_NODE *var, PHP_VALUE_NODE *k
 }
 
 /*
- * This is heart of expression tree: evaluation. It's split into 2 functions
- * where 1 evaluates "value" of expression, and other evaluates "lvalue" i.e. assignable
- * entity from given subtree.
+ * The heart of the expression tree: evaluation. Split in two, one evaluating the "value" of an
+ * expression and the other the "lvalue", i.e. the assignable entity in the given subtree.
  */
 
 void php_expr_eval(PHP_EXP_NODE *expr, PHP_VALUE_NODE *result)
@@ -1623,9 +1586,7 @@ PHP_VAR_NODE *php_expr_eval_lvalue(PHP_EXP_NODE *expr)
 		php_report_error(PHP_ERROR, "Assign to static class members not supported");
 		break;
 	default:
-		//
-		// Error: expression can not be taken as lvalue
-		//
+		// Error: expression cannot be taken as lvalue
 		php_report_error(PHP_ERROR, "This expression can't be used as lvalue");
 	}
 	return lval_node;
@@ -1644,9 +1605,7 @@ static PHP_VALUE_TYPE cast_type_resolve(PHP_VALUE_NODE *op1, PHP_VALUE_NODE *op2
 	}
 }
 
-/*
- * Same as simple_math, but result is always bool
- */
+/* Same as simple_math, but the result is always bool */
 void php_eval_compare(PHP_EXP_OP op, PHP_VALUE_NODE *op1, PHP_VALUE_NODE *op2, PHP_VALUE_NODE *result)
 {
 	result->type = PHP_VAL_BOOL;
@@ -1808,40 +1767,29 @@ void php_run_func_call(PHP_EXP_NODE *node, PHP_VALUE_NODE *result)
 	PHP_EXP_NODE *r_node = node->tree_node.right;
 	if ((l_node->op != PHP_OP_VAL) || (l_node->val_node.type != PHP_VAL_STRING) ||
 		(r_node->op != PHP_OP_VAR) || (r_node->var_node->value.type != PHP_VAL_ARRAY)) {
-		//
-		// Internal error: function name must be string value node, and
-		// params must be an array
-		//
+		// Internal error: the function name must be a string value node, and params an array
 		php_report_error(PHP_INTERNAL_ERROR, "Function call node have wrong data");
 		return;
 	}
 	PHP_SCOPE_ITEM *si = get_scope_item(g_global_scope, l_node->val_node.str_val);
 	if (!si) {
-		//
 		// Error: undeclared symbol
-		//
 		php_report_error(PHP_ERROR, "Function [ %s ] is not defined", l_node->val_node.str_val);
 		return;
 	}
 	if (si->type != PHP_SCOPE_FUNC) {
-		//
-		// Error: defined, but wrong type !
-		//
+		// Error: defined, but the wrong type
 		php_report_error(PHP_ERROR, "Item [ %s ] is not a function", l_node->val_node.str_val);
 		return;
 	}
 	PHP_SYN_NODE *func = si->func;
 	if (func->type != PHP_ST_FUNC_DECL) {
-		//
-		// Internal error: node not a function
-		//
+		// Internal error: node is not a function
 		php_report_error(PHP_INTERNAL_ERROR, "Wrong type in function decl node");
 		return;
 	}
 
-	//
-	// Switch stack and call function
-	//
+	// Switch stack and call the function
 
 	PHP_SYN_FUNC_DECL_NODE *func_decl = func->func_decl;
 
@@ -1860,9 +1808,7 @@ void php_run_func_call(PHP_EXP_NODE *node, PHP_VALUE_NODE *result)
 		php_execute(func_decl->code, result);
 	}
 
-	//
 	// restore stack, free arg list
-	//
 	switch_pop_scope_table(0);
 	func_scope_copy_back(func_decl->params,
 		func_decl->param_count,
@@ -1874,9 +1820,8 @@ void php_run_func_call(PHP_EXP_NODE *node, PHP_VALUE_NODE *result)
 }
 
 /*
- * Theoretically speaking this function must run on generated code. On the
- * practical side - I need it to debug syntax tree generation. Later, it can
- * be changes to generate code for some kind of bytecode for stack machine
+ * Theoretically this should run on generated code; practically it is here to debug syntax tree
+ * generation. It could later generate bytecode for some kind of stack machine.
  */
 int php_execute(PHP_SYN_NODE *node, PHP_VALUE_NODE *result)
 {
@@ -1909,9 +1854,7 @@ int php_execute(PHP_SYN_NODE *node, PHP_VALUE_NODE *result)
 				php_expr_eval(node->node_expr, result);
 			}
 			if (node->next_node) {
-				//
-				// Warning: code after "return" statement
-				//
+				// Warning: code after a "return" statement
 				php_report_error(PHP_WARNING, "code after 'return'");
 			}
 			// "return" is ultimate "break"
@@ -2094,19 +2037,12 @@ int php_execute(PHP_SYN_NODE *node, PHP_VALUE_NODE *result)
 	return 0;
 }
 
-//
-// call it when something gone wrong
-//
+// call it when something has gone wrong
 void php_report_error(PHP_MSG_TYPE err_type, const char *msg, ...)
 {
-	//
-	// hope my error message will never be that big.
-	//
-	// security is ok, since _user_ errors are not reporting thru
-	// this function, but handled by script itself.
-	// However, badly written script MAY force user-supplied data to
-	// leak here and create stack overrun exploit. Be warned.
-	//
+	// Hopefully an error message is never this big. Security is fine, since _user_ errors are not
+	// reported through this function but handled by the script itself -- though a badly written
+	// script MAY force user-supplied data to leak here and create a stack overrun exploit.
 	char msgbuf[1024];
 	const char *type_msg = 0;
 	switch (err_type) {

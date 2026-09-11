@@ -27,12 +27,10 @@
 namespace webapi
 {
 
-// C++14 requires an out-of-class definition for static constexpr
-// members used by reference (test code may bind them through a
-// const auto& parameter). C++17 made static constexpr members
-// implicitly inline, so the same lines emit -Wdeprecated on
-// GCC in C++17 mode ("redundant redeclaration of constexpr static
-// data member"). Guard so it compiles clean under both language
+// C++14 requires an out-of-class definition for static constexpr members used by reference (test
+// code may bind them through a const auto& parameter). C++17 made static constexpr members
+// implicitly inline, so the same lines emit -Wdeprecated on GCC in C++17 mode ("redundant
+// redeclaration of constexpr static data member"). Guard so it compiles clean under both language
 // levels.
 #if __cplusplus < 201703L
 constexpr std::size_t CEventBus::kDefaultCapacity;
@@ -51,12 +49,11 @@ void CEventBus::Publish(const std::string &name, const std::string &data)
 	ev.data = data;
 	{
 		std::lock_guard<std::mutex> g(m_mu);
-		// ID assignment INSIDE the lock. With fetch_add outside, two concurrent
-		// publishers can swap their lock-order against their id-order: A gets
-		// id=N and B id=N+1, then B grabs the lock first and pushes N+1 before A
-		// pushes N. The drainer iterates the deque, which is publish order and
-		// NOT id order, and reports `id=N+1, id=N` -- failing the strict
-		// monotonicity every subscriber depends on.
+		// ID assignment INSIDE the lock. With fetch_add outside, two concurrent publishers
+		// can swap their lock order against their id order: A gets id=N and B id=N+1, then
+		// B grabs the lock first and pushes N+1 before A pushes N. The drainer iterates the
+		// deque, which is publish order and NOT id order, and reports `id=N+1, id=N` --
+		// failing the strict monotonicity every subscriber depends on.
 		ev.id = m_next_id.fetch_add(1, std::memory_order_relaxed);
 		if (m_ring.size() >= m_capacity)
 			m_ring.pop_front();
@@ -73,10 +70,10 @@ void CEventBus::PublishBatch(const std::vector<std::pair<std::string, std::strin
 		return;
 	{
 		std::lock_guard<std::mutex> g(m_mu);
-		// Same id-monotonicity invariant as Publish: assign + push inside the lock.
-		// Doing the whole batch under one lock also collapses N notify_all
-		// wake-ups into one -- the cold-start tick on a 5K-download library used
-		// to fire 5K of them inside the refresher loop, dominating the tick.
+		// Same id-monotonicity invariant as Publish: assign and push inside the lock. Doing
+		// the whole batch under one lock also collapses N notify_all wake-ups into one --
+		// the cold-start tick on a 5K-download library used to fire 5K of them inside the
+		// refresher loop, dominating the tick.
 		for (const auto &kv : events) {
 			Event ev;
 			ev.name = kv.first;
@@ -150,9 +147,9 @@ void CEventBus::ResetForTest()
 
 void CEventBus::Shutdown()
 {
-	// Latch the shutdown flag and broadcast. Drain callers wake on the cv either
-	// way and exit the predicate. notify_all under the lock, so a drainer about
-	// to wait_for cannot miss the wake.
+	// Latch the shutdown flag and broadcast. Drain callers wake on the cv either way and exit
+	// the predicate. notify_all under the lock, so a drainer about to wait_for cannot miss the
+	// wake.
 	{
 		std::lock_guard<std::mutex> g(m_mu);
 		m_shutdown.store(true, std::memory_order_release);

@@ -33,12 +33,8 @@
 /**
  * Default helper structure for normal CRangeMap instantiations.
  *
- * Specializations should must have the following properties.
- *  - The four value typedefs (see comments for details).
- *  - A template-defined member variable named 'first'.
- *  - A comparison operator that doesn't consider the 'first' field.
- *
- *  The typedefs are used to specify the return values of iterators.
+ * A specialization must provide the four value typedefs (which fix the iterators' return types), a
+ * template-defined member named 'first', and a comparison operator that ignores 'first'.
  */
 template <typename VALUE, typename KEYTYPE> struct CRangeMapHelper
 {
@@ -55,9 +51,7 @@ template <typename VALUE, typename KEYTYPE> struct CRangeMapHelper
 	bool operator==(const CRangeMapHelper<VALUE, KEYTYPE> &o) const { return second == o.second; }
 };
 
-/**
- * Helper structure for CRangeSet (CRangeMap with void as value).
- */
+/// Helper structure for CRangeSet (CRangeMap with void as value).
 template <typename KEYTYPE> struct CRangeMapHelper<void, KEYTYPE>
 {
 	typedef void ValuePtr;
@@ -71,30 +65,18 @@ template <typename KEYTYPE> struct CRangeMapHelper<void, KEYTYPE>
 };
 
 /**
- * This class represents a map of non-overlapping ranges.
+ * A map of non-overlapping ranges, each with a user-specified value.
  *
- * Each range has a user-specified value associated. The map supports quick
- * lookup of which range covers a particular key-value, and will merge or
- * split existing ranges when new ranges are added.
+ * Supports quick lookup of which range covers a key, and merges or splits existing ranges as new
+ * ones are added. Whether to split/resize or merge is decided by the equality operator on the user
+ * value: two equal-valued ranges that overlap or sit adjacent are merged into one, and if the
+ * values differ the old range is resized or split around the new one. A split copies the user value
+ * into both parts.
  *
- * The decision on whenever to split/resize a range or to merge the two ranges
- * involved is based on equality of the user-specified value, using the
- * equality operator. Thus if two ranges with the same user-value are placed
- * adjacent to each other or partially overlapping each other, then they will
- * be merged into a single range. If the user-values of the two ranges are
- * different, then the old range will be either resized or split, based on the
- * position of the new range.
+ * Existing ranges cannot be edited in place -- erase and re-insert. A specialization typedef'd as
+ * CRangeSet associates no value with a range.
  *
- * In cases where ranges are split into two parts, copies will be made of the
- * user-specified value, such that each new part contains the same user-value.
- *
- * It is currently not possible to manipulate existing ranges by hand, other
- * than by erasing and then re-inserting them.
- *
- * A specialization of this class exists (typedef'd as CRangeSet), which does
- * not associate a value with each range.
- *
- * NOTE: KEYTYPE is assumed to be an unsigned integer type!
+ * NOTE: KEYTYPE is assumed to be an unsigned integer type.
  */
 template <typename VALUE, typename KEYTYPE = uint64> class CRangeMap
 {
@@ -112,13 +94,8 @@ private:
 	RangeMap m_ranges;
 
 	/**
-	 * This class provides a wrapper around the raw iterators used by CRangeMap.
-	 *
-	 * It will act as a normal iterator and also give access the the range values.
-	 * When used as a per normal, it will return the value specified by the user
-	 * for that range.
-	 *
-	 * Special member-functions are keyStart() and keyEnd().
+	 * Wraps the raw iterators CRangeMap uses: acts as a normal iterator returning the user
+	 * value for the range, plus keyStart() and keyEnd().
 	 */
 	template <typename RealIterator, typename ReturnTypeRef, typename ReturnTypePtr> class iterator_base
 	{
@@ -179,22 +156,13 @@ public:
 
 	typedef VALUE value_type;
 
-	/**
-	 * Default constructor.
-	 */
 	CRangeMap() {}
 
-	/**
-	 * Copy-constructor.
-	 */
 	CRangeMap(const CRangeMap<VALUE, KEYTYPE> &other)
 	: m_ranges(other.m_ranges)
 	{
 	}
 
-	/**
-	 * Assignment operator.
-	 */
 	CRangeMap &operator=(const CRangeMap<VALUE, KEYTYPE> &other)
 	{
 		m_ranges = other.m_ranges;
@@ -202,16 +170,10 @@ public:
 		return *this;
 	}
 
-	/**
-	 * Swaps the contents of the two rangemaps.
-	 */
+	/// Swaps the contents of the two rangemaps.
 	void swap(CRangeMap<VALUE, KEYTYPE> &other) { std::swap(m_ranges, other.m_ranges); }
 
-	/**
-	 * Equality operator for two ranges.
-	 *
-	 * @returns True if both ranges contain the same ranges and values.
-	 */
+	/// True if both maps hold the same ranges and values.
 	bool operator==(const CRangeMap<VALUE, KEYTYPE> &other) const
 	{
 		if (this == &other) {
@@ -225,34 +187,20 @@ public:
 		return (m_ranges == other.m_ranges);
 	}
 
-	/**
-	 * Returns an iterator pointing to the first range.
-	 */
+	/// Iterator to the first range.
 	iterator begin() { return m_ranges.begin(); }
 
-	/**
-	 * Returns an iterator pointing past the last range.
-	 */
+	/// Iterator past the last range.
 	iterator end() { return m_ranges.end(); }
 
-	/**
-	 * Returns a const iterator pointing to the first range.
-	 */
+	/// Const iterator to the first range.
 	const_iterator begin() const { return m_ranges.begin(); }
 
-	/**
-	 * Returns a const iterator pointing past the last range.
-	 */
+	/// Const iterator past the last range.
 	const_iterator end() const { return m_ranges.end(); }
 
-	/**
-	 * Erases the specified range and returns the range next to it.
-	 *
-	 * @param pos The iterator of the range to be erased.
-	 * @return The iterator of the range after the erased range.
-	 *
-	 * Attempting to erase the end() iterator is an invalid operation.
-	 */
+	/// Erases the range at @a pos and returns the iterator of the range after it. Erasing end()
+	/// is invalid.
 	iterator erase(iterator pos)
 	{
 		MULE_VALIDATE_PARAMS(pos != end(), "Cannot erase 'end'");
@@ -264,31 +212,17 @@ public:
 		return pos;
 	}
 
-	/**
-	 * Returns the number of ranges in the map.
-	 */
+	/// Number of ranges in the map.
 	size_type size() const { return m_ranges.size(); }
 
-	/**
-	 * Returns true if the map is empty.
-	 */
+	/// True if the map is empty.
 	bool empty() const { return m_ranges.empty(); }
 
-	/**
-	 * Removes all ranges from the map.
-	 */
+	/// Removes all ranges from the map.
 	void clear() { m_ranges.clear(); }
 
-	/**
-	 * Returns the range covering the specified key-value.
-	 *
-	 * @param key A value that may or may not be covered by a range.
-	 * @return end() or the iterator of the range covering key.
-	 *
-	 * A range is considered to cover a value if the value is greater than or
-	 * equal to the start-key and less than or equal to the end-key.
-	 */
-	// Find the range which contains key (it->first <= key <= it->second->first)
+	/// The range covering @a key (it->first <= key <= it->second->first), or end(). A range
+	/// covers a value from its start-key to its end-key inclusive.
 	iterator find_range(KEYTYPE key)
 	{
 		if (!m_ranges.empty()) {
@@ -320,27 +254,17 @@ public:
 	}
 
 	/**
-	 * Inserts a new range into the map, potentially erasing/changing old ranges.
+	 * Inserts a new range, overwriting or resizing existing ranges on conflict.
 	 *
-	 * @param startPos The start position of the range, also considered part of the range.
-	 * @param endPos The end position of the range, also considered part of the range.
-	 * @param object The user-data to be associated with the range.
-	 * @return An iterator pointing to the resulting range, covering at least the specified range.
+	 * @param startPos Start of the range, inclusive. Must be <= endPos.
+	 * @param endPos End of the range, inclusive.
+	 * @param object The user-data to associate with the range.
+	 * @return An iterator covering at least the specified range.
 	 *
-	 * This function inserts the specified range into the map, while overwriting
-	 * or resizing existing ranges if there is any conflict. Ranges might also
-	 * be merged, if the object of each evaluates to being equal, in which case
-	 * the old range will be removed and the new extended to include the old
-	 * range. This also includes ranges placed directly after or in front of each
-	 * other, which will also be merged if their type is the same.
-	 *
-	 * This has the result that the iterator returned can point to a range quite
-	 * different from what was originally specified. If this is not desired, then
-	 * the VALUE type should simply be made to return false on all equality tests.
-	 * Otherwise, the only promise that is made is that the resulting range has
-	 * the same user-data (based on the equality operator) as the what was specified.
-	 *
-	 * Note that the start position must be smaller than or equal to the end-position.
+	 * Ranges whose objects compare equal are merged, including ones placed directly before or
+	 * after each other, so the iterator returned can point to a range quite different from the one
+	 * specified. Make VALUE compare unequal always if that is unwanted; otherwise the only promise
+	 * is that the resulting range carries the same user-data.
 	 */
 	//@{
 	iterator insert(KEYTYPE startPos, KEYTYPE endPos)
@@ -356,14 +280,9 @@ public:
 	//@}
 
 protected:
-	/**
-	 * Inserts the specified range.
-	 *
-	 * @param start The starting position of the range.
-	 * @param entry A helper-struct, containing the end position and possibly user-data.
-	 * @param merge Specifies if ranges should be merged when possible.
-	 * @return An iterator pointing to the range covering at least the specified range.
-	 */
+	/// Inserts the range starting at @a start and described by @a entry (end position and any
+	/// user-data), merging with neighbours when @a merge. Returns an iterator covering at least
+	/// that range.
 	iterator do_insert(KEYTYPE start, HELPER entry, bool merge = true)
 	{
 		MULE_VALIDATE_PARAMS(start <= entry.first, "Not a valid range.");
@@ -459,12 +378,9 @@ protected:
 		return m_ranges.insert(it, RangePair(start, entry));
 	}
 
-	/**
-	 * Finds the optimal location to start looking for insertion points.
-	 *
-	 * This is the first range whose start comes after the new start. We check
-	 * the last element first, since sequential insertions are common.
-	 */
+	/// Finds the optimal place to start looking for insertion points: the first range whose
+	/// start comes after the new start. The last element is checked first, since sequential
+	/// insertions are common.
 	RangeIterator get_insert_it(KEYTYPE start)
 	{
 		if (m_ranges.empty()) {

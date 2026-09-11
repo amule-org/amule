@@ -30,20 +30,17 @@
 namespace AppImageEnv
 {
 
-// Fill `env` with a copy of the current environment that is safe for launching
-// an external (non-bundled) program -- the preview player, the configured web
-// browser, a user-event command, etc. When running inside an AppImage, every
-// search-path entry that points into the bundle ($APPDIR) is stripped so the
-// child loads the host's system libraries and modules instead of the older
-// bundled copies; otherwise a GnuTLS-linked host program picks up the bundle's
-// stale libnghttp2 and dies with an undefined-symbol error (#334). Returns true
-// when a sanitized environment was produced (pass &env to wxExecute); false
-// when not inside an AppImage, in which case the child should inherit the
-// environment unchanged.
+// Fill `env` with a copy of the current environment that is safe for launching an external, non-
+// bundled program: the preview player, the configured web browser, a user-event command. Inside an
+// AppImage, every search-path entry pointing into the bundle ($APPDIR) is stripped so the child
+// loads the host's system libraries and modules instead of the older bundled copies; otherwise a
+// GnuTLS-linked host program picks up the bundle's stale libnghttp2 and dies with an undefined-
+// symbol error (#334). True when a sanitized environment was produced (pass &env to wxExecute);
+// false when not inside an AppImage, in which case the child should inherit the environment
+// unchanged.
 //
-// Lives in COMMON so both the daemon and the GUI can share it; it has no GUI
-// dependencies and is a no-op (returns false) on every platform that does not
-// set $APPDIR.
+// Lives in COMMON so both the daemon and the GUI can share it; it has no GUI dependencies and is a
+// no-op on every platform that does not set $APPDIR.
 bool GetSanitizedExecEnv(wxExecuteEnv &env);
 
 } // namespace AppImageEnv

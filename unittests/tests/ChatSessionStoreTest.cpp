@@ -69,9 +69,9 @@ TEST(ChatSessionStore, FirstMessageCreatesSessionWithIdOne)
 
 TEST(ChatSessionStore, IdsAreMonotonicAcrossSessions)
 {
-	// The store-wide counter is what makes a single `since_id` cursor safe.
-	// Per-session counters would let a client miss a message that landed in
-	// another session while it was polling this one.
+	// The store-wide counter is what makes a single `since_id` cursor safe. Per-session
+	// counters would let a client miss a message that landed in another session while it was
+	// polling this one.
 	CChatSessionStore store;
 	ASSERT_EQUALS(static_cast<uint32>(1), store.AddIncoming(Peer(1), "alice", "a"));
 	ASSERT_EQUALS(static_cast<uint32>(2), store.AddIncoming(Peer(2), "bob", "b"));
@@ -83,9 +83,8 @@ TEST(ChatSessionStore, IdsAreMonotonicAcrossSessions)
 
 TEST(ChatSessionStore, OutgoingDoesNotEraseAKnownPeerName)
 {
-	// An outbound message carries no name. Letting it overwrite would leave
-	// a session we already had a nick for rendering as a bare ip:port the
-	// moment the user replied.
+	// An outbound message carries no name. Letting it overwrite would leave a session we
+	// already had a nick for rendering as a bare ip:port the moment the user replied.
 	CChatSessionStore store;
 	store.AddIncoming(Peer(1), "alice", "hi");
 	store.AddOutgoing(Peer(1), "hello back");
@@ -105,9 +104,8 @@ TEST(ChatSessionStore, LaterNameFillsInAnEmptyOne)
 
 TEST(ChatSessionStore, MessageCapEvictsOldestKeepingIdsIntact)
 {
-	// The 201st message drops the 1st; ids are NOT renumbered, because a
-	// client holding a cursor into the evicted range must still advance past
-	// it rather than re-reading.
+	// The 201st message drops the 1st; ids are NOT renumbered, because a client holding a
+	// cursor into the evicted range must still advance past it rather than re-reading.
 	CChatSessionStore store;
 	const size_t cap = CChatSessionStore::MAX_MESSAGES_PER_SESSION;
 	for (size_t i = 0; i < cap; ++i) {

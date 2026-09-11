@@ -59,9 +59,8 @@ typedef vector<CMD4Hash> ArrayOfCMD4Hash;
 
 typedef vector<CTag> ArrayOfCTag;
 
-// A single community rating/comment entry, sourced either from a connected
-// client (ed2k) or from a Kad NOTES lookup. Lives on CAbstractFile so it is
-// shared by downloads (CPartFile) and search results (CSearchFile).
+// A single community rating/comment entry, from a connected ed2k client or from a Kad NOTES lookup.
+// Lives on CAbstractFile so downloads (CPartFile) and search results (CSearchFile) share it.
 class SFileRating
 {
 public:
@@ -142,32 +141,30 @@ public:
 	const CTag *GetTag(uint8 tagname) const;
 	const CTag *GetTag(uint8 tagname, uint8 tagtype) const;
 	void AddTagUnique(const CTag &pTag);
-	// Drop the tag with this numeric id, if present. The counterpart to
-	// AddTagUnique: without it a re-probe can only add or replace, never clear, so
-	// a field the probe no longer finds keeps whatever value was there, including
-	// one inherited unverified from a search result.
+	// Drop the tag with this numeric id, if present. The counterpart to AddTagUnique: without
+	// it a re-probe can only add or replace, never clear, so a field the probe no longer finds
+	// keeps whatever value was there, including one inherited unverified from a search result.
 	bool RemoveTag(uint8 tagname);
 	const ArrayOfCTag &GetTags() const { return m_taglist; }
 	void AddNote(Kademlia::CEntry *pEntry);
 	const CKadEntryPtrList &getNotes() const { return m_kadNotes; }
 
-	// Append the community ratings/comments retrieved on demand from Kad (one entry
-	// per responding node) to `list`. Shared by downloads and search results; the
-	// source-client half of a download's comments is added by CPartFile. Core-only:
-	// on amulegui the notes ride the EC channel as a prebuilt list.
+	// Append the community ratings/comments retrieved on demand from Kad (one entry per
+	// responding node) to `list`. Shared by downloads and search results; the source-client
+	// half of a download's comments is added by CPartFile. Core-only: on amulegui the notes
+	// ride the EC channel as a prebuilt list.
 	void GetKadNotesComments(FileRatingList &list) const;
 
-	// Collect the ratings/comments to display for this file. On the daemon the base
-	// version returns just the Kad notes, and CPartFile overrides it to prepend its
-	// connected-source comments. On amulegui every file type returns the same
-	// EC-streamed cache through the base.
+	// Collect the ratings/comments to display for this file. On the daemon the base version
+	// returns just the Kad notes, and CPartFile overrides it to prepend its connected-source
+	// comments. On amulegui every file type returns the same EC-streamed cache through the
+	// base.
 	virtual void GetRatingAndComments(FileRatingList &list) const;
 
 #ifdef CLIENT_GUI
-	// amulegui cache of the ratings/comments the daemon streams over EC. One
-	// implementation for downloads, shared files and search results: the remote
-	// containers fill it from the EC_TAG_PARTFILE_COMMENTS container, and the base
-	// GetRatingAndComments hands it back.
+	// amulegui cache of the ratings/comments the daemon streams over EC. One implementation for
+	// downloads, shared files and search results: the remote containers fill it from the
+	// EC_TAG_PARTFILE_COMMENTS container, and the base GetRatingAndComments hands it back.
 	const FileRatingList &GetFileRatingList() const { return m_FileRatingList; }
 	void ClearFileRatingList() { m_FileRatingList.clear(); }
 	void AddFileRatingList(const wxString &u, const wxString &f, sint16 r, const wxString &c)
@@ -176,11 +173,10 @@ public:
 	}
 #endif
 
-	// Start an on-demand Kad NOTES lookup for this file's community
-	// ratings/comments. Works for any file the daemon can size locally: the shared
-	// list, the download queue, or the current search results. False if Kad is
-	// unavailable, a lookup is already running, or the file is not eligible. A
-	// no-op stub on amulegui, which triggers it over EC.
+	// Start an on-demand Kad NOTES lookup for this file's community ratings/comments. Works for
+	// any file the daemon can size locally: the shared list, the download queue, or the current
+	// search results. False if Kad is unavailable, a lookup is already running, or the file is
+	// not eligible. A no-op stub on amulegui, which triggers it over EC.
 	bool RequestKadNoteSearch();
 
 	// True while an on-demand Kad NOTES lookup for this file's comments/ratings
@@ -196,9 +192,9 @@ public:
 	bool HasRating() const { return (m_iUserRating != 0); }
 	int8 UserRating() const { return m_iUserRating; }
 
-	// Recompute the cached "has rating/comment" markers from the current
-	// sources. No-op for a search result (it has none); CPartFile overrides to
-	// refresh its download-list indicator.
+	// Recompute the cached "has rating/comment" markers from the current sources. No-op for a
+	// search result, which has none; CPartFile overrides to refresh its download-list
+	// indicator.
 	virtual void UpdateFileRatingCommentAvail() {}
 
 protected:
@@ -242,22 +238,19 @@ public:
 	virtual ~CKnownFile();
 
 	/**
-	 * EC-change generation tracking. Each CKnownFile carries a monotonic
-	 * generation number that increments whenever any field exported via
-	 * `CEC_SharedFile_Tag` / `CEC_PartFile_Tag` mutates. Per-connection
-	 * INC_UPDATE handlers compare a file's `m_ecGen` against the
-	 * "highest gen they have already sent" and skip files that have not
-	 * changed since — turning the O(N) per-INC_UPDATE iteration on a 91k-
-	 * shareset node into O(files-actually-changed).
+	 * EC-change generation tracking. Each CKnownFile carries a monotonic generation number that
+	 * increments whenever any field exported via `CEC_SharedFile_Tag` / `CEC_PartFile_Tag`
+	 * mutates. Per-connection INC_UPDATE handlers compare a file's `m_ecGen` against the
+	 * highest gen they have already sent and skip files that have not changed since -- turning
+	 * the O(N) per-INC_UPDATE iteration on a 91k-shareset node into O(files-actually-changed).
 	 *
-	 * The counter is a single process-wide atomic, so every Mark…() call
-	 * yields a unique-and-strictly-ascending gen across all files and
-	 * threads. Per-file `m_ecGen` reads/writes are atomic for the
-	 * upload-disk-IO / hashing-thread call sites that flow through
+	 * The counter is a single process-wide atomic, so every Mark...() call yields a unique,
+	 * strictly ascending gen across all files and threads. Per-file `m_ecGen` reads and writes
+	 * are atomic for the upload-disk-IO / hashing-thread call sites that flow through
 	 * `CFileStatistic::Add{Request,Accepted,Transferred}()`.
 	 *
-	 * See ExternalConn / `Get_EC_Response_GetUpdate` for the consumer
-	 * side of this contract and #713 for context.
+	 * See ExternalConn / `Get_EC_Response_GetUpdate` for the consumer side of this contract,
+	 * and #713 for context.
 	 */
 	void MarkECChanged();
 	uint64 GetECGen() const { return m_ecGen.load(std::memory_order_relaxed); }
@@ -303,26 +296,25 @@ public:
 	void UpdateAutoUpPriority();
 #ifdef CLIENT_GUI
 	uint16 GetQueuedCount() const { return m_queuedCount; }
-	// Live upload activity received over EC (issue #466). amulegui has no
-	// m_ClientUploadList, so these mirror the core getters below by returning
-	// the last values decoded in CKnownFilesRem::ProcessItemUpdate.
+	// Live upload activity received over EC (issue #466). amulegui has no m_ClientUploadList,
+	// so these mirror the core getters below by returning the last values decoded in
+	// CKnownFilesRem::ProcessItemUpdate.
 	uint32 GetUploadDatarate() const { return m_uploadDatarateEC; }
 	uint16 GetTransferringClientCount() const { return m_transferringClientCountEC; }
 #else
 	uint16 GetQueuedCount() const { return (uint16)m_ClientUploadList.size(); }
-	// Live upload activity for this shared file (issue #466), summarised
-	// from m_ClientUploadList — the upload-side analogue of the download
-	// speed / transferring-source counts. Core-only: amulegui receives
-	// these over EC rather than computing them.
+	// Live upload activity for this shared file (issue #466), summarised from
+	// m_ClientUploadList -- the upload-side analogue of the download speed and transferring-
+	// source counts. Core-only: amulegui receives these over EC rather than computing them.
 	uint32 GetUploadDatarate() const;          // sum of per-client upload speed (B/s)
 	uint16 GetTransferringClientCount() const; // clients currently US_UPLOADING
 	void VerifyLocalData() const;
 #endif
 
-	// Timestamp of the last time data was uploaded for this file, and when
-	// the file was completed / first shared (issue #466). Both persisted in
-	// known.met (FT_LASTUPLOADED / FT_SHAREDSINCE); 0 = unknown. Available
-	// in both builds so the EC round-trip carries them to amulegui.
+	// Timestamp of the last time data was uploaded for this file, and when the file was
+	// completed or first shared (issue #466). Both persisted in known.met (FT_LASTUPLOADED /
+	// FT_SHAREDSINCE); 0 = unknown. Available in both builds so the EC round-trip carries them
+	// to amulegui.
 	time_t GetLastUpload() const { return m_lastUploadDatetime; }
 	void SetLastUpload(time_t t) { m_lastUploadDatetime = t; }
 	time_t GetDateShared() const { return m_dateShared; }
@@ -373,10 +365,10 @@ public:
 	bool PublishSrc();
 	bool PublishNotes();
 
-	// Nonzero when this file has verified media metadata attached, probed by
-	// MediaProbe at share-add time. Derived from tag presence: a nonzero
-	// FT_MEDIA_LENGTH is the only source of this tag in aMule, so its presence is
-	// the "probed, with data worth publishing" signal Kad's publisher gates on.
+	// Nonzero when this file has verified media metadata attached, probed by MediaProbe at
+	// share-add time. Derived from tag presence: a nonzero FT_MEDIA_LENGTH is the only source
+	// of this tag in aMule, so its presence is the "probed, with data worth publishing" signal
+	// Kad's publisher gates on.
 	uint32 GetMetaDataVer() const;
 
 	// file sharing
@@ -398,24 +390,14 @@ public:
 	SourceSet m_ClientUploadList;
 	ArrayOfUInts16 m_AvailPartFrequency;
 
-	/**
-	 * Returns a base-16 encoding of the master hash, or
-	 * an empty string if no such hash exists.
-	 */
+	/// Base-16 encoding of the master hash, or an empty string if there is none.
 	wxString GetAICHMasterHash() const;
 	/** Returns true if the AICH-Hashset is valid, and verified or complete. */
 	bool HasProperAICHHashSet() const;
 
-	/**
-	 * Updates the frequency of uploading parts from with the data the client provides.
-	 *
-	 * @param client The clients whose uploading parts should be considered.
-	 * @param increment If true, the counts are incremented, otherwise they are decremented.
-	 *
-	 * This functions updates the frequency list of file-upparts, using the clients
-	 * upparts-status. This function should be called by clients every time they update their
-	 * upparts-status, or when they are added or removed from the file.
-	 */
+	/// Updates the frequency list of uploading file parts from @a client's upparts-status,
+	/// incrementing or decrementing per @a increment. Clients should call it whenever they
+	/// update their upparts-status, and when they are added to or removed from the file.
 	void UpdateUpPartsFrequency(CUpDownClient *client, bool increment);
 
 	static void CreateHashFromHashlist(const ArrayOfCMD4Hash &hashes, CMD4Hash *Output);
@@ -424,17 +406,16 @@ public:
 
 	time_t m_lastDateChanged;
 
-	// Live upload activity (issue #466), persisted in known.met so it survives
-	// restarts. m_lastUploadDatetime is stamped whenever data is sent for this file;
-	// m_dateShared once, when the file is completed or first shared. 0 = unknown.
+	// Live upload activity (issue #466), persisted in known.met so it survives restarts.
+	// m_lastUploadDatetime is stamped whenever data is sent for this file; m_dateShared once,
+	// when the file is completed or first shared. 0 = unknown.
 	time_t m_lastUploadDatetime;
 	time_t m_dateShared;
 
-	// "Last time aMule saw this exact (name, date, size) match a real file."
-	// Refreshed by CKnownFileList::FindKnownFile and the "already on the list"
-	// branch in Append, persisted via FT_LASTSEEN. Drives the TTL prune in
-	// CKnownFileList::Save, capping known.met growth at a function of RECENTLY
-	// ACTIVE unique hashes rather than lifetime-of-the-profile ones.
+	// "Last time aMule saw this exact (name, date, size) match a real file." Refreshed by
+	// CKnownFileList::FindKnownFile and the "already on the list" branch in Append, persisted
+	// via FT_LASTSEEN. Drives the TTL prune in CKnownFileList::Save, capping known.met growth
+	// at a function of RECENTLY ACTIVE unique hashes rather than lifetime-of-the-profile ones.
 	uint32 GetLastSeen() const { return m_lastSeen; }
 	void SetLastSeen(uint32 t) { m_lastSeen = t; }
 
@@ -495,9 +476,8 @@ protected:
 	uint8 m_iUpPriority;
 	bool m_bAutoUpPriority;
 	bool m_PublishedED2K;
-	// Index of part being hashed, 0: no hashing in progress.
-	// The known file is const in the hashing thread, so rather drill this little hole by making it
-	// mutable than opening it all up.
+	// Index of the part being hashed, 0 for no hashing in progress. The known file is const in
+	// the hashing thread, so drill this little hole with mutable rather than opening it all up.
 	mutable uint16 m_hashingProgress;
 
 	/* Kad stuff */
@@ -516,26 +496,22 @@ public:
 	/**
 	 * Returns the ed2k:// link for this file, cached for EC response building.
 	 *
-	 * `CreateED2kLink` is hot in EC response construction (the GUI / web /
-	 * cmd clients call GET_SHARED_FILES at FULL or INC_UPDATE levels and
-	 * the listener rebuilds every shared-file tag every cycle). Its CFormat
-	 * + filename Cleanup work was the single biggest CPU consumer on EC
-	 * dispatch in profiling (see #713). Cache the "no sources" base form
-	 * here; the optional |sources,IP:port|/ suffix is a tiny CFormat
-	 * appended at request time and depends on dynamic state
-	 * (IsConnected / IsFirewalled / GetID / GetPort) that the cache cannot
-	 * hold.
+	 * `CreateED2kLink` is hot in EC response construction (the GUI / web / cmd clients call
+	 * GET_SHARED_FILES at FULL or INC_UPDATE levels and the listener rebuilds every shared-file
+	 * tag every cycle). Its CFormat + filename Cleanup work was the single biggest CPU consumer
+	 * on EC dispatch in profiling (see #713). Cache the "no sources" base form here; the
+	 * optional |sources,IP:port|/ suffix is a tiny CFormat appended at request time and depends
+	 * on dynamic state (IsConnected / IsFirewalled / GetID / GetPort) the cache cannot hold.
 	 *
-	 * Invalidated by `SetFileName` (the only user-facing event that
-	 * affects the link body — filename, size and hash are otherwise stable
-	 * across the lifetime of a CKnownFile / CPartFile).
+	 * Invalidated by `SetFileName`, the only user-facing event that affects the link body --
+	 * filename, size and hash are otherwise stable across the lifetime of a CKnownFile /
+	 * CPartFile.
 	 */
 	const wxString &GetCachedED2kLinkBase() const;
 
 	/**
-	 * Full ed2k:// link as needed by EC responses — cached base + the
-	 * source suffix when add_source is true. The caller decides
-	 * add_source from current ED2K connection state.
+	 * Full ed2k:// link as needed by EC responses: cached base plus the source suffix when
+	 * add_source is true. The caller decides add_source from current ED2K connection state.
 	 */
 	wxString GetED2kLinkForEC(bool add_source) const;
 
@@ -546,7 +522,7 @@ private:
 	/** Common initializations for constructors. */
 	void Init();
 
-	// EC change-generation tracking — see public MarkECChanged() doc above.
+	// EC change-generation tracking -- see public MarkECChanged() doc above.
 	std::atomic<uint64> m_ecGen{ 0 };
 	static std::atomic<uint64> s_globalEcGen;
 };

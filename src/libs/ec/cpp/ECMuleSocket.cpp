@@ -30,9 +30,7 @@
 
 #include <boost/system/error_code.hpp>
 
-//
 // CECMuleSocket API - User interface functions
-//
 
 CECMuleSocket::CECMuleSocket(bool use_events)
 : CECSocket(use_events)
@@ -47,14 +45,12 @@ bool CECMuleSocket::ConnectSocket(amuleIPV4Address &address)
 	return CECSocket::ConnectSocket(StringIPtoUint32(address.IPAddress()), address.Service());
 }
 
-// EC-connection keepalive timings. With these values, a half-open
-// connection (peer crashed / network blip / FIN lost) is torn down at
-// the TCP layer in ~60s instead of sitting idle until the default
-// ~2h TCP retransmit timeout, so CECSocket::OnLost fires and the GUI
-// can flip to "Connection lost" instead of looking wedged. Same
-// constants used by CECServerSocket on the amuled side so detection
-// is symmetric. Numbers picked to balance responsiveness against the
-// keepalive packet overhead (one probe per 10s after 30s idle).
+// EC-connection keepalive timings. With these values a half-open connection (peer crashed, network
+// blip, FIN lost) is torn down at the TCP layer in ~60s instead of sitting idle until the default
+// ~2h TCP retransmit timeout, so CECSocket::OnLost fires and the GUI can flip to "Connection lost"
+// instead of looking wedged. CECServerSocket uses the same constants on the amuled side, so
+// detection is symmetric. The numbers balance responsiveness against keepalive packet overhead: one
+// probe per 10s after 30s idle.
 namespace
 {
 const int EC_KEEPALIVE_IDLE_SEC = 30;
@@ -80,15 +76,13 @@ void CECMuleSocket::ApplyEcSocketOptions()
 {
 	CLibSocket::EnableTcpKeepalive(
 		EC_KEEPALIVE_IDLE_SEC, EC_KEEPALIVE_INTERVAL_SEC, EC_KEEPALIVE_PROBE_COUNT);
-	// EC is request/response over a connection that stays open for the
-	// life of the client, and CECSocket::WritePacket emits each packet as
-	// several small writes (one EC_SOCKET_BUFFER_SIZE block per fragment
-	// plus the 16-byte AEAD tag as its own chunk). With Nagle on, every
-	// trailing write waits for the peer to ACK the previous one, and the
-	// peer has nothing to send back yet, so its delayed-ACK timer fires
-	// first: ~40 ms added per direction per roundtrip, independent of
-	// payload size. There is nothing to coalesce here anyway — the next
-	// write is the answer to a reply we have not received yet.
+	// EC is request/response over a connection that stays open for the life of the client, and
+	// CECSocket::WritePacket emits each packet as several small writes (one
+	// EC_SOCKET_BUFFER_SIZE block per fragment plus the 16-byte AEAD tag as its own chunk).
+	// With Nagle on, every trailing write waits for the peer to ACK the previous one, and the
+	// peer has nothing to send back yet, so its delayed-ACK timer fires first: ~40 ms added per
+	// direction per roundtrip, whatever the payload size. There is nothing to coalesce here
+	// anyway -- the next write is the answer to a reply we have not received yet.
 	CLibSocket::EnableTcpNoDelay();
 }
 

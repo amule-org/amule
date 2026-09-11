@@ -34,18 +34,17 @@
 namespace webapi
 {
 
-// One declarative description of every field on /api/v0/preferences, used by
-// all three code paths that touch them: the EC decode (Refresher), the GET
-// emitter and the PATCH applier (Api). Before this table each field was
-// spelled out three times in three different idioms, which is how a rename
-// could land in two places and be missed in the third.
+// One declarative description of every field on /api/v0/preferences, used by all three code paths
+// that touch them: the EC decode (Refresher), the GET emitter and the PATCH applier (Api). Before
+// this table each field was spelled out three times in three different idioms, which is how a
+// rename could land in two places and be missed in the third.
 //
-// Adding a preference is one row. Renaming one is one token. Changing a
-// field's polarity is flipping `invert` -- it is data here, not code.
+// Adding a preference is one row. Renaming one is one token. Changing a field's polarity is
+// flipping `invert` -- it is data here, not code.
 //
-// The table deliberately does NOT describe the EC protocol, only how the API
-// maps onto it: tag numbers, presence-vs-value encodings and the one
-// inverted tag are properties of EC and are recorded, not chosen, here.
+// The table deliberately does NOT describe the EC protocol, only how the API maps onto it: tag
+// numbers, presence-vs-value encodings and the one inverted tag are properties of EC and are
+// recorded, not chosen, here.
 
 enum class PrefType
 {
@@ -58,10 +57,10 @@ enum class PrefType
 	Md4Hex,      // read-only hex rendering of an EC MD4 hash (general.user_hash)
 };
 
-// How EC encodes a boolean *on the read path*. The core serializer emits most
-// bools as a bare CECEmptyTag only when true (presence == true) but a handful as
-// a value tag every time. Writes are always value tags, since amuleapi sends
-// SET_PREFERENCES at EC_DETAIL_FULL where ApplyBoolean reads GetInt() != 0.
+// How EC encodes a boolean *on the read path*. The core serializer emits most bools as a bare
+// CECEmptyTag only when true (presence == true) but a handful as a value tag every time. Writes are
+// always value tags, since amuleapi sends SET_PREFERENCES at EC_DETAIL_FULL where ApplyBoolean
+// reads GetInt() != 0.
 enum class PrefEnc
 {
 	Presence,
@@ -77,10 +76,9 @@ enum class PrefAccess
 	Bespoke,   // emitted on GET, PATCH handled by dedicated code (see below)
 };
 
-// `Bespoke` exists for exactly one field: remote_controls.webserver.guest_enabled
-// and its guest_password share a single EC tag, so there is no 1:1
-// field-to-tag mapping for the table to express. Its GET emission is still
-// table-driven; only the PATCH packing is hand-written.
+// `Bespoke` exists for exactly one field: remote_controls.webserver.guest_enabled and its
+// guest_password share a single EC tag, so there is no 1:1 field-to-tag mapping for the table to
+// express. Its GET emission is still table-driven; only the PATCH packing is hand-written.
 
 struct PrefField
 {
@@ -100,43 +98,41 @@ struct PrefField
 	// Address of the backing member. The row's PrefType fixes the cast; the
 	// PREF_* macros static_assert the two agree, so a mismatch is a build error.
 	void *(*member)(PreferencesSnapshot &);
-	// EC group this field's tag actually lives in, when that is not the group its
-	// JSON category maps to. 0 means "the category's own group". Exactly one
-	// field needs it: connection.upnp_supported is a daemon capability the core
-	// serializes into [General], but the API surfaces it under `connection`.
+	// EC group this field's tag actually lives in, when that is not the group its JSON category
+	// maps to. 0 means "the category's own group". Exactly one field needs it:
+	// connection.upnp_supported is a daemon capability the core serializes into [General], but
+	// the API surfaces it under `connection`.
 	ec_tagname_t read_group;
-	// Divisor between the EC value and the API value, when the two use different
-	// units. 0 means "same unit", which is every row but three.
+	// Divisor between the EC value and the API value, when the two use different units. 0 means
+	// "same unit", which is every row but three.
 	//
-	// The core stores those three as whole minutes and its accessors multiply by
-	// 60000 on the way out, so EC carries milliseconds that are always a
-	// multiple of 60000. Exposing that verbatim meant a client writing 90000
-	// read back 60000 and one writing 30000 read back 0 -- accepted, reported
-	// as success, changed underneath.
+	// The core stores those three as whole minutes and its accessors multiply by 60000 on the
+	// way out, so EC carries milliseconds that are always a multiple of 60000. Exposing that
+	// verbatim meant a client writing 90000 read back 60000 and one writing 30000 read back 0
+	// -- accepted, reported as success, changed underneath.
 	std::uint32_t ec_scale;
-	// Inclusive lower bound for Uint16 / Uint32, checked with `max` against the
-	// value the caller sent. 0 for a row with no floor, which is most of them.
+	// Inclusive lower bound for Uint16 / Uint32, checked with `max` against the value the
+	// caller sent. 0 for a row with no floor, which is most of them.
 	//
-	// `max` alone is not a domain. A core member narrower than the declared
-	// ceiling wraps, and a setter that divides truncates, so a value inside
-	// [0, max] can still be rewritten on the way in -- and three of these fields
-	// are clamped by CPreferences::LoadAllItems() at the NEXT daemon start,
-	// which no read-back check after the PATCH can see.
+	// `max` alone is not a domain. A core member narrower than the declared ceiling wraps, and
+	// a setter that divides truncates, so a value inside [0, max] can still be rewritten on the
+	// way in -- and three of these fields are clamped by CPreferences::LoadAllItems() at the
+	// NEXT daemon start, which no read-back check after the PATCH can see.
 	std::uint32_t min;
-	// Granularity the core can actually store, when its setter divides. A value
-	// that is not a multiple is a 400 naming the step, rather than a silent
-	// truncation: SetFileBufferSize() is `val / 15000` into a uint8, so 20000
-	// becomes 15000 and 14999 becomes 0. 0 means the row is not quantised.
+	// Granularity the core can actually store, when its setter divides. A value that is not a
+	// multiple is a 400 naming the step, rather than a silent truncation: SetFileBufferSize()
+	// is `val / 15000` into a uint8, so 20000 becomes 15000 and 14999 becomes 0. 0 means the
+	// row is not quantised.
 	//
-	// Rejecting rather than renaming the field to its stored unit is deliberate,
-	// and the opposite of what the three `_minutes` rows do: those quantise to a
-	// unit a user already thinks in, while nobody thinks in 15000-byte blocks.
+	// Rejecting rather than renaming the field to its stored unit is deliberate, and the
+	// opposite of what the three `_minutes` rows do: those quantise to a unit a user already
+	// thinks in, while nobody thinks in 15000-byte blocks.
 	std::uint32_t step;
 };
 
-// EC group tag each category packs into. Two categories intentionally share
-// one group (remote_controls.webserver / .amuleapi both live in
-// EC_TAG_PREFS_REMOTECTRL): the JSON nesting is an API shape, not an EC one.
+// EC group tag each category packs into. Two categories intentionally share one group
+// (remote_controls.webserver / .amuleapi both live in EC_TAG_PREFS_REMOTECTRL): the JSON nesting is
+// an API shape, not an EC one.
 struct PrefCategory
 {
 	const char *name;

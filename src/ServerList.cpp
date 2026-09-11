@@ -69,12 +69,11 @@ bool CServerList::Init()
 	m_staticServersConfig = thePrefs::GetConfigDir() + "staticservers.dat";
 	LoadStaticServers();
 
-	// The HTTP auto-update of server.met used to be kicked from here, but that
-	// fires the libcurl request before the heavy local I/O (partfile load +
-	// shared-file scan): the wxWebSession worker then competes with the saturated
-	// main thread, the curl state machine advances less, and DNS can time out on
-	// slower setups. The kick now lives in CamuleApp::OnInit() after
-	// sharedfiles->Reload() finishes (#714).
+	// The HTTP auto-update of server.met used to be kicked from here, but that fires the
+	// libcurl request before the heavy local I/O (partfile load + shared-file scan): the
+	// wxWebSession worker then competes with the saturated main thread, the curl state machine
+	// advances less, and DNS can time out on slower setups. The kick now lives in
+	// CamuleApp::OnInit() after sharedfiles->Reload() finishes (#714).
 
 	m_initialized = true;
 	return bRes;
@@ -141,9 +140,8 @@ bool CServerList::LoadServerMet(const CPath &path)
 				newserver->AddTagFromFile(&servermet);
 			}
 
-			// Server priorities are not in sorted order
-			// High = 1, Low = 2, Normal = 0, so we have to check
-			// in a less logical fashion.
+			// Server priorities are not in sorted order -- High = 1, Low = 2, Normal =
+			// 0 -- so the check reads less logically than it might.
 			int priority = newserver->GetPreferences();
 			if (priority < SRV_PR_MIN || priority > SRV_PR_MAX) {
 				newserver->SetPreference(SRV_PR_NORMAL);
@@ -219,9 +217,8 @@ bool CServerList::AddServer(CServer *in_server, bool fromUser)
 	}
 
 	CServer *test_server = GetServerByAddress(in_server->GetAddress(), in_server->GetPort());
-	// Avoid duplicate (dynIP) servers: If the server which is to be added, is a dynIP-server
-	// but we don't know yet it's DN, we need to search for an already available server with
-	// that IP.
+	// Avoid duplicate (dynIP) servers: if the server to add is a dynIP server whose DN we do
+	// not know yet, search for an already available server with that IP.
 	if (test_server == NULL && in_server->GetIP() != 0) {
 		test_server = GetServerByIPTCP(in_server->GetIP(), in_server->GetPort());
 	}
@@ -286,9 +283,8 @@ void CServerList::ServerStats()
 			(!ping_server->GetLastPingedTime() ||
 				currentTime >= (ping_server->GetLastPingedTime() + UDPSERVSTATREASKTIME)) &&
 			theApp->GetPublicIP() && thePrefs::IsServerCryptLayerUDPEnabled()) {
-			// We try a obfsucation ping first and wait 20 seconds for an answer
-			// if it doesn't get responded to, we don't count it as error but continue with a
-			// normal ping
+			// Try an obfuscation ping first and wait 20 seconds for an answer. No
+			// answer is not counted as an error; we continue with a normal ping.
 			ping_server->SetCryptPingReplyPending(true);
 			uint32 nPacketLen = 4 + (uint8)(rand() % 16); // max padding 16 bytes
 			CScopedArray<uint8_t> pRawPacket(nPacketLen);
@@ -561,9 +557,9 @@ struct ServerPriorityComparator
 void CServerList::Sort()
 {
 	m_servers.sort(ServerPriorityComparator());
-	// Once the list has been sorted, continuing to traverse the new order from the
-	// old position makes no sense -- and in libstdc++ before gcc4, iterators equal
-	// to end() were left dangling.
+	// Once the list has been sorted, continuing to traverse the new order from the old position
+	// makes no sense -- and in libstdc++ before gcc4, iterators equal to end() were left
+	// dangling.
 	m_serverpos = m_servers.begin();
 	m_statserverpos = m_servers.begin();
 }
@@ -883,10 +879,10 @@ void CServerList::AutoUpdate()
 	// Do current URL. Callback function will take care of the others.
 	while (current_url_index < url_count) {
 		wxString URI = theApp->glob_prefs->addresses_list[current_url_index];
-		// wxURL only registers protocol handlers for http and ftp, so any https URL
-		// would come back as wxURL_NOPROTO and be rejected -- while the download
-		// itself goes through wxWebRequest, which handles https fine (#714).
-		// Validate with wxURI plus an explicit scheme check instead.
+		// wxURL only registers protocol handlers for http and ftp, so any https URL would
+		// come back as wxURL_NOPROTO and be rejected -- while the download itself goes
+		// through wxWebRequest, which handles https fine (#714). Validate with wxURI plus
+		// an explicit scheme check instead.
 		wxURI uri(URI);
 		const wxString scheme = uri.HasScheme() ? uri.GetScheme().Lower() : wxString();
 		if (uri.HasServer() && (scheme == "http" || scheme == "https")) {
@@ -947,9 +943,8 @@ void CServerList::ObserverAdded(ObserverType *o)
 
 uint32 CServerList::GetAvgFile() const
 {
-	// Since there is no real way to know how many files are in the kad network,
-	// I figure to try to use the ED2K network stats to find how many files the
-	// average user shares..
+	// There is no real way to know how many files are in the Kad network, so use the ED2K
+	// network stats to find how many files the average user shares.
 	uint32 totaluser = 0;
 	uint32 totalfile = 0;
 	for (CInternalList::const_iterator it = m_servers.begin(); it != m_servers.end(); ++it) {
@@ -961,9 +956,9 @@ uint32 CServerList::GetAvgFile() const
 			totalfile += curr->GetFiles();
 		}
 	}
-	// If the user count is a little low, do not send back an average. 50 is added
-	// to the count because many servers do not allow a large number of files to be
-	// shared, so the estimate here is lower than the actual.
+	// If the user count is a little low, do not send back an average. 50 is added to the count
+	// because many servers do not allow a large number of files to be shared, so the estimate
+	// is lower than the actual.
 	if (totaluser > 500000) {
 		return (totalfile / totaluser) + 50;
 	} else {

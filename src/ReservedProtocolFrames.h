@@ -33,17 +33,15 @@
 /**
  * Demultiplexing for OP_UDPRESERVEDPROT2 (0xB2).
  *
- * Unlike every other UDP protocol byte aMule handles, 0xB2 carries no eD2k
- * opcode. The byte after the protocol byte is a frame type and the rest is
- * that frame's payload, which is why this cannot go through
- * CClientUDPSocket::ProcessPacket -- that function's second argument is an
- * opcode and these are not opcodes.
+ * Unlike every other UDP protocol byte aMule handles, 0xB2 carries no eD2k opcode. The byte after
+ * the protocol byte is a frame type and the rest is that frame's payload, which is why this cannot
+ * go through CClientUDPSocket::ProcessPacket -- that function's second argument is an opcode and
+ * these are not opcodes.
  *
- * The classification lives here rather than in CClientUDPSocket because
- * CClientUDPSocket needs theApp and cannot be linked into a unit test, and
- * because the two things worth getting wrong -- the truncation guard and the
- * unknown-type drop -- are exactly the two that never produce a visible
- * symptom when they are wrong.
+ * The classification lives here rather than in CClientUDPSocket because CClientUDPSocket needs
+ * theApp and cannot be linked into a unit test, and because the two things worth getting wrong --
+ * the truncation guard and the unknown-type drop -- are exactly the two that never produce a
+ * visible symptom when they are wrong.
  */
 
 //! What the caller should do with an OP_UDPRESERVEDPROT2 frame.
@@ -58,11 +56,9 @@ enum EReservedProt2Disposition
 };
 
 /**
- * A classified frame.
- *
- * `payload` and `payloadLength` describe the bytes after the type byte and are
- * only meaningful for RP2_KNOWN_TYPE. A zero-length payload is legitimate --
- * only the type byte is mandatory, and each handler decides what it needs.
+ * A classified frame. `payload` and `payloadLength` describe the bytes after the type byte and are
+ * only meaningful for RP2_KNOWN_TYPE. A zero-length payload is legitimate -- only the type byte is
+ * mandatory, and each handler decides what it needs.
  */
 struct SReservedProt2Frame
 {
@@ -75,16 +71,14 @@ struct SReservedProt2Frame
 /**
  * Classify an OP_UDPRESERVEDPROT2 frame.
  *
- * @param frame  points at the frame-type byte, i.e. one past the protocol
- *               byte of the datagram. May be NULL when frameLength is 0.
- * @param frameLength  bytes available from `frame` onwards. Zero is the
- *                     datagram that carried nothing but the protocol byte;
- *                     the type byte is never read in that case.
+ * @param frame points at the frame-type byte, i.e. one past the protocol byte of the datagram. May
+ * be NULL when frameLength is 0.
+ * @param frameLength bytes available from `frame` onwards. Zero is the datagram that carried
+ * nothing but the protocol byte; the type byte is never read in that case.
  *
- * Reads nothing beyond frame[0] and never writes through `frame`. The caller
- * must not count a dropped frame against any flood or ban threshold: this
- * function reaches no accounting of its own, and CPacketTracking is only
- * entered from the Kad listener, so a drop here is exempt by placement.
+ * Reads nothing beyond frame[0] and never writes through `frame`. The caller must not count a
+ * dropped frame against any flood or ban threshold: this function reaches no accounting of its own,
+ * and CPacketTracking is only entered from the Kad listener, so a drop here is exempt by placement.
  */
 inline SReservedProt2Frame ClassifyReservedProt2Frame(const uint8_t *frame, size_t frameLength)
 {
@@ -117,13 +111,13 @@ inline SReservedProt2Frame ClassifyReservedProt2Frame(const uint8_t *frame, size
 /**
  * Keeps an unknown-frame flood from becoming a log flood.
  *
- * A peer speaking a frame type this build does not know sends one per
- * connection attempt and retries, so the interesting information is "it
- * happened" plus a count -- not one line each. Logs the first occurrence, then
- * at most one per interval, reporting how many were suppressed in between.
+ * A peer speaking a frame type this build does not know sends one per connection attempt and
+ * retries, so the interesting information is "it happened" plus a count -- not one line each. Logs
+ * the first occurrence, then at most one per interval, reporting how many were suppressed in
+ * between.
  *
- * Not thread-safe, and does not need to be: the client UDP socket's receive
- * path is posted to the main thread.
+ * Not thread-safe, and does not need to be: the client UDP socket's receive path is posted to the
+ * main thread.
  */
 class CUnknownFrameLogThrottle
 {
@@ -135,11 +129,10 @@ public:
 	}
 
 	/**
-	 * @param nowMs a millisecond tick count.
-	 * @return true when the caller should log. A tick count that appears to
-	 *         move backwards opens the window rather than closing it: the
-	 *         alternative is silence until the clock catches up, which on a
-	 *         64-bit wrap would be forever.
+	 * @param nowMs a millisecond tick count. @return true when the caller should log. A tick
+	 * count that appears to move backwards opens the window rather than closing it: the
+	 * alternative is silence until the clock catches up, which on a 64-bit wrap would be
+	 * forever.
 	 */
 	bool ShouldLog(uint64_t nowMs)
 	{
@@ -147,8 +140,8 @@ public:
 			m_everLogged = true;
 			m_lastLoggedMs = nowMs;
 			// The live counter is moved aside here rather than in
-			// TakeSuppressedCount(), so it is reset even in a build
-			// where the debug log line it feeds compiles away.
+			// TakeSuppressedCount(), so it is reset even in a build where the debug log
+			// line it feeds compiles away.
 			m_reportable = m_suppressed;
 			m_suppressed = 0;
 			return true;

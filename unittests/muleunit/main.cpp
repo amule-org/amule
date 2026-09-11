@@ -58,10 +58,10 @@ public:
 	bool OnInit() override
 	{
 		// In Release builds (NDEBUG), wxIMPLEMENT_APP_CONSOLE auto-calls
-		// wxDISABLE_DEBUG_SUPPORT(), which nulls wxTheAssertHandler. Without
-		// re-enabling, wxASSERT short-circuits before reaching OnAssertFailure
-		// and ASSERT_RAISES tests fail on platforms where wxDEBUG_LEVEL >= 1
-		// at compile time (Linux, mingw-w64). Install our handler explicitly.
+		// wxDISABLE_DEBUG_SUPPORT(), which nulls wxTheAssertHandler. Without re-enabling
+		// it, wxASSERT short-circuits before reaching OnAssertFailure and ASSERT_RAISES
+		// tests fail on platforms where wxDEBUG_LEVEL >= 1 at compile time (Linux,
+		// mingw-w64). Install our handler explicitly.
 		wxSetAssertHandler(MuleUnitAssertHandler);
 		return wxAppConsole::OnInit();
 	}

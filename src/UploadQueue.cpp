@@ -35,7 +35,7 @@
 #include "Types.h" // Do_not_auto_remove (win32)
 
 #ifdef __WINDOWS__
-#include <winsock2.h> // Do_not_auto_remove (htonl/ntohs/inet_addr) — legacy <winsock.h> pulls <windows.h> and trips winsock2.h:15 via later wx includes
+#include <winsock2.h> // Do_not_auto_remove (htonl/ntohs/inet_addr) -- legacy <winsock.h> pulls <windows.h> and trips winsock2.h:15 via later wx includes
 #else
 #include <sys/types.h>  // Do_not_auto_remove
 #include <netinet/in.h> // Do_not_auto_remove
@@ -115,10 +115,8 @@ void CUploadQueue::SortGetBestClient(CClientRef *bestClient)
 		}
 	}
 
-	// Second Pass:
-	// - calculate queue rank
-	// - find best high id client
-	// - mark all better low id clients as enabled for upload
+	// Second pass: calculate queue rank, find the best high id client, and mark all better low id
+	// clients as enabled for upload.
 	uint16 rank = 1;
 	bool bestClientFound = false;
 	for (it = m_waitinglist.begin(); it != m_waitinglist.end();) {
@@ -236,12 +234,11 @@ void CUploadQueue::Process()
 	// Check if someone's waiting, if there is a slot for him,
 	// or if we should try to free a slot for him
 	uint64 tick = GetTickCount64();
-	// Nobody waiting, or an upload started recently. (This should really check for
-	// "no HighID clients queued", but the cost outweighs the benefit: as it is, a
-	// slot is freed even when the whole queue is LowID and cannot take it -- just
-	// one, and the kicked client gets it straight back if it has HighID.) Running
-	// out of sockets stops new clients being added, but does not kick existing
-	// ones, or uploading would cease at once.
+	// Nobody waiting, or an upload started recently. (This should really check for "no HighID
+	// clients queued", but the cost outweighs the benefit: as it is, a slot is freed even when
+	// the whole queue is LowID and cannot take it -- just one, and the kicked client gets it
+	// straight back if it has HighID.) Running out of sockets stops new clients being added,
+	// but does not kick existing ones, or uploading would cease at once.
 #if EXTENDED_UPLOADQUEUE
 	if (tick - m_nLastStartUpload < 1000
 #else
@@ -300,8 +297,8 @@ uint32 CUploadQueue::GetMaxSlots() const
 	float kBpsUpPerClient = (float)thePrefs::GetSlotAllocation();
 	if (thePrefs::GetMaxUpload() == UNLIMITED) {
 		// Speed-based formula plus a floor. The raw "currentRate / slotRate + 2" is a
-		// chicken-and-egg trap: with 0 B/s observed uplink it caps at 2 slots, too
-		// few parallel TCP flows to break cold-start and let the uplink ramp up.
+		// chicken-and-egg trap: with 0 B/s observed uplink it caps at 2 slots, too few
+		// parallel TCP flows to break cold-start and let the uplink ramp up.
 		const uint32 N_FLOOR = 20;
 		float kBpsUp = theStats::GetUploadRate() / 1024.0f;
 		uint32 bySpeed = (uint32)(kBpsUp / kBpsUpPerClient) + 2;
@@ -405,13 +402,13 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client)
 
 		if (IsOnUploadQueue(cur_client)) {
 			if (cur_client == client) {
-				// This is where LowID clients get their upload slot assigned. They
-				// cannot be contacted on reaching the top of the queue, so they are
-				// only marked for uploading and get their slot through the
-				// connection they initiate next time. No slot is free then, so they
-				// are assigned an extra one, taking the count one over the
-				// configured number; no further LowID client gets a slot until a
-				// HighID client has got one, or a slot really is free.
+				// Where LowID clients get their upload slot. They cannot be
+				// contacted on reaching the top of the queue, so they are only
+				// marked for uploading and get their slot through the connection
+				// they initiate next. No slot is free then, so they are assigned an
+				// extra one, taking the count one over the configured number; no
+				// further LowID client gets a slot until a HighID client has, or a
+				// slot really is free.
 				if (client->m_bAddNextConnect) {
 					uint32 maxSlots = GetMaxSlots();
 					if (lastupslotHighID) {
@@ -472,11 +469,11 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client)
 		}
 	}
 
-	// No more than 3 clients from the same IP may be on the upload queue. Only
-	// clients actually queued are counted: an earlier check also counted the tracked
-	// "deleted clients" list, so a client behind a shared or NAT IP that simply
-	// cancelled a few downloads was locked out for up to two hours, cleared only by
-	// a restart. Flood protection is the aggressiveness/ban path's job.
+	// No more than 3 clients from the same IP may be on the upload queue. Only clients actually
+	// queued are counted: an earlier check also counted the tracked "deleted clients" list, so
+	// a client behind a shared or NAT IP that simply cancelled a few downloads was locked out
+	// for up to two hours, cleared only by a restart. Flood protection is the
+	// aggressiveness/ban path's job.
 	if (ipCount > 3) {
 		AddDebugLogLineN(logLocalClient,
 			CFormat("Rejected upload request from %s: too many clients (%d) from the same IP "
@@ -584,9 +581,9 @@ bool CUploadQueue::CheckForTimeOver(CUpDownClient *client)
 		}
 	}
 
-	// Ordinary slots. "Transfer full chunks": drop a client after 10 MB uploaded or
-	// after an hour, so the average UL speed should be at least 2.84 kB/s. We do not
-	// track what it is downloading, but if it is all from one chunk it gets it.
+	// Ordinary slots. "Transfer full chunks": drop a client after 10 MB uploaded or after an
+	// hour, so the average UL speed should be at least 2.84 kB/s. We do not track what it is
+	// downloading, but if it is all from one chunk it gets it.
 	if (client->GetUpStartTimeDelay() > 3600000     // time: 1h
 		|| client->GetSessionUp() > 10485760) { // data: 10MB
 		m_allowKicking = false;                 // kick max one client per cycle
@@ -596,8 +593,8 @@ bool CUploadQueue::CheckForTimeOver(CUpDownClient *client)
 	return false;
 }
 
-/*
- * This function removes a file indicated by filehash from suspended_uploads_list.
+/**
+ * Removes the file named by filehash from suspended_uploads_list.
  */
 void CUploadQueue::ResumeUpload(const CMD4Hash &filehash)
 {
@@ -605,16 +602,14 @@ void CUploadQueue::ResumeUpload(const CMD4Hash &filehash)
 	AddLogLineN(CFormat(_("Resuming uploads of file: %s")) % filehash.Encode());
 }
 
-/*
- * This function stops upload of a file indicated by filehash.
+/**
+ * Stops the upload of the file named by filehash.
  *
- * a) terminate == false:
- *    File is suspended while a download completes. Then it is resumed after completion,
- *    so it makes sense to keep the client. Such files are kept in suspendedUploadsSet.
- * b) terminate == true:
- *    File is deleted. Then the client is not added to the waiting list.
- *    Waiting clients are swept out with next run of AddUpNextClient,
- *    because their file is not shared anymore.
+ * terminate == false: the file is suspended while a download completes, and resumed afterwards, so
+ * keeping the client makes sense. Such files go in suspendedUploadsSet.
+ *
+ * terminate == true: the file is deleted, so the client is not added to the waiting list. Waiting
+ * clients are swept out on the next AddUpNextClient run, their file no longer being shared.
  */
 uint16 CUploadQueue::SuspendUpload(const CMD4Hash &filehash, bool terminate)
 {

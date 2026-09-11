@@ -35,16 +35,13 @@ class wxStaticBitmap;
 class wxBitmap;
 
 /**
- * This dialog takes of displaying either existing or new categories, so that
- * the user can add or change them.
+ * Displays an existing or new category so the user can add or change it.
  *
- * It is a self-contained entity, and does not rely on the categories staying
- * the same while the dialog is visible, though it will overwrite any changes
- * made to the selected category in the mean time. Also, if the selected category
- * has been deleted then it will simply be readded.
+ * Self-contained: it does not rely on the categories staying the same while it is visible, though
+ * it overwrites any change made to the selected category meanwhile, and re-adds the selected
+ * category if it was deleted.
  *
- * It does however rely on the Transferwnd keeping its own list of categories up-
- * to-date.
+ * It does rely on Transferwnd keeping its own category list up to date.
  */
 class CCatDialog : public wxDialog
 {
@@ -53,25 +50,16 @@ public:
 	 * Constructor.
 	 *
 	 * @param parent The parent of the new dialog.
-	 * @param catindex The category to be edited.
-	 *
-	 * The parameter catindex can be a valid index, in which case that category
-	 * will be selected, or it can be less than zero, in which case a new
-	 * category will be created.
+	 * @param catindex A valid index selects that category; less than zero creates a new one.
 	 */
 	CCatDialog(wxWindow *parent, bool allowbrowse, int catindex = -1);
 
-	/**
-	 * Destructor.
-	 */
 	~CCatDialog();
 
 private:
 	/**
-	 * Helper function for making the color-preview.
-	 *
-	 * This function creates a single-color 16x16 image, using the
-	 * m_colour member variable.
+	 * Helper for the colour preview: a single-colour 16x16 image built from the m_colour
+	 * member.
 	 */
 	wxBitmap MakeBitmap();
 
@@ -82,17 +70,17 @@ private:
 	Category_Struct *m_category;
 
 	/**
-	 * Event-handler for selecting incoming dir.
+	 * Event handler: select the incoming dir.
 	 */
 	void OnBnClickedBrowse(wxCommandEvent &evt);
 
 	/**
-	 * Event-handler for saving the changes.
+	 * Event handler: save the changes.
 	 */
 	void OnBnClickedOk(wxCommandEvent &evt);
 
 	/**
-	 * Event-handler for selecting category color.
+	 * Event handler: select the category colour.
 	 */
 	void OnBnClickColor(wxCommandEvent &evt);
 

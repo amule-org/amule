@@ -89,11 +89,9 @@ wxString GetDefaultAmulesigPath()
 
 #ifdef __WXMAC__
 
-	// ~/Library/Application Support is always present on macOS >= 10.5
-	// and matches what FSFindFolder(kUserDomain,
-	// kApplicationSupportFolderType, ...) used to return. Carbon's
-	// FSRef API is gone in 64-bit macOS, so just derive the path from
-	// $HOME.
+	// ~/Library/Application Support is always present on macOS >= 10.5 and matches what
+	// FSFindFolder(kUserDomain, kApplicationSupportFolderType, ...) used to return. Carbon's
+	// FSRef API is gone in 64-bit macOS, so derive the path from $HOME.
 	const char *home = getenv("HOME");
 	if (home) {
 		strDir = wxString::FromUTF8(home) + "/Library/Application Support" +

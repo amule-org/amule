@@ -50,10 +50,10 @@ static struct
 };
 #undef USEREVENTS_EVENT
 
-// Always defined: the wxCHECK_* macros below evaluate their condition in
-// both debug and release, unlike the wxASSERT_* family this used to be
-// paired with. Returns false for any out-of-range event so accessors below
-// can fall through to a safe sentinel instead of reading past s_EventList.
+// Always defined: the wxCHECK_* macros below evaluate their condition in both debug and release,
+// unlike the wxASSERT_* family this used to be paired with. Returns false for any out-of-range
+// event, so the accessors below can fall through to a safe sentinel instead of reading past
+// s_EventList.
 inline bool CheckIndex(const unsigned int idx)
 {
 	return (idx < itemsof(s_EventList));
@@ -64,11 +64,10 @@ unsigned int CUserEvents::GetCount()
 	return itemsof(s_EventList);
 }
 
-// wxCHECK rather than wxASSERT in the accessors below: a release build
-// would otherwise read past s_EventList on a bad index instead of
-// aborting (wxASSERT is a no-op in release). Each accessor returns a
-// safe sentinel — entry [0] — when the index is out of range; the
-// debug-build behaviour (assert + abort on first mis-use) is unchanged.
+// wxCHECK rather than wxASSERT in the accessors below: a release build would otherwise read past
+// s_EventList on a bad index instead of aborting, wxASSERT being a no-op in release. Each accessor
+// returns a safe sentinel, entry [0], when the index is out of range; the debug-build assert +
+// abort on first misuse is unchanged.
 
 const wxString &CUserEvents::GetDisplayName(enum EventType event)
 {
@@ -140,15 +139,13 @@ static void ExecuteCommand(enum CUserEvents::EventType event, const void *object
 	switch (event) {
 		USEREVENTS_EVENTLIST()
 		/* This macro expands to handle all user event types. Example:
-		   case CUserEvents::NewChatSession: {
+		   case CUserEvents::NewChatSession:
 		       command.Replace( "%SENDER", *((wxString*)object) );
-			   break;
-		   } */
+		       break; */
 	}
 	if (!command.empty()) {
-		// Inside an AppImage, run the user command with a sanitized environment
-		// so it loads system libraries rather than the bundled ones (#334); a
-		// no-op copy elsewhere.
+		// Inside an AppImage, run the user command with a sanitized environment so it loads
+		// system libraries rather than the bundled ones (#334); a no-op copy elsewhere.
 		CTerminationProcess *p = new CTerminationProcess(cmd);
 		wxExecuteEnv execEnv;
 		const bool sanitized = AppImageEnv::GetSanitizedExecEnv(execEnv);

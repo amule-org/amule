@@ -37,16 +37,11 @@ class CPartFile;
 class CFileAutoClose;
 
 /**
- * This task performs MD4 and/or AICH hashings of a file,
- * depending on the type. For new shared files (using the
- * first constructor, with part == NULL), both MD4 and
- * AICH hashes are created. For incomplete partfiles
- * (rehashed due to changed timestamps), only MD4 hashing
- * is done. For complete partfiles, both MD4 and AICH
- * hashing is done.
+ * Performs MD4 and/or AICH hashing of a file, depending on the type.
  *
- * For existing shared files (using the second constructor),
- * only an AICH hash is created.
+ * First constructor: a new shared file (part == NULL) gets both MD4 and AICH; an incomplete
+ * partfile, rehashed because its timestamp changed, gets MD4 only; a complete partfile gets both.
+ * Second constructor: an existing shared file gets an AICH hash only.
  *
  * @see CHashingEvent
  * @see CAICHSyncTask
@@ -59,25 +54,23 @@ public:
 	 *
 	 * @param path The full path, without filename.
 	 * @param filename The actual filename.
-	 * @param part Used to identify the owner in the event-handler (PartFiles only).
+	 * @param part Identifies the owner in the event handler (PartFiles only).
 	 *
-	 * CHashingEvents sent by this type of tasks have the id MULE_EVT_HASHING.
-	 * @see EVT_MULE_HASHING
+	 * CHashingEvents from this kind of task have the id MULE_EVT_HASHING. @see EVT_MULE_HASHING
 	 */
 	CHashingTask(const CPath &path, const CPath &filename, const CPartFile *part = NULL);
 
 	/**
-	 * Schedules a KnownFile to have a AICH hashset created, used by CAICHSyncTask.
-	 *
-	 * CHashingEvents sent by this type of tasks have the id MULE_EVT_AICH_HASHING.
-	 * @see EVT_MULE_AICH_HASHING
-	 **/
+	 * Schedules a KnownFile to have an AICH hashset created; used by CAICHSyncTask.
+	 * CHashingEvents from this kind of task have the id MULE_EVT_AICH_HASHING. @see
+	 * EVT_MULE_AICH_HASHING
+	 */
 	CHashingTask(const CKnownFile *toAICHHash);
 
 protected:
-	//! Which hashes to calculate when the task runs. EH_MD4 and EH_AICH are bit
-	//! flags; the combined value is named explicitly so a bitwise OR cast cannot
-	//! produce a value outside the enum's valid range.
+	//! Which hashes to calculate when the task runs. EH_MD4 and EH_AICH are bit flags; the
+	//! combined value is named explicitly so a bitwise OR cast cannot produce a value outside
+	//! the enum's valid range.
 	enum EHashes
 	{
 		EH_AICH = 1,
@@ -90,17 +83,11 @@ protected:
 	virtual void Entry();
 
 	/**
-	 * Helper function for hashing a PARTSIZE chunk of a file.
+	 * Hashes the next PARTSIZE chunk of @a file: an MD4 hash, plus an AICH hashset when @a
+	 * toHash asks for one. @a part is the part number and @a owner the known (or part) file it
+	 * belongs to.
 	 *
-	 * @param file The file to read from.
-	 * @param part The number of the part to hash.
-	 * @param owner The known- (or part) file representing that file.
-	 * @bool createAICH Specifies if AICH hash-sets should be created as well.
-	 * @return Returns false on read-errors, true otherwise.
-	 *
-	 * This function will create a MD4 hash and, if specified, a AICH hashset for
-	 * the next part of the file. This function makes the assumption that it wont
-	 * be called for closed or EOF files.
+	 * Returns false on read errors. Assumes it is never called for a closed or EOF file.
 	 */
 	bool CreateNextPartHash(CFileAutoClose &file, uint16 part, CKnownFile *owner, EHashes toHash);
 
@@ -117,25 +104,21 @@ private:
 	void SetHashingProgress(uint16 part);
 };
 
-// Media metadata probing (#140/#280) runs on the dedicated CMediaProbeThread,
-// not the shared CThreadScheduler, so a slow or hung ffprobe cannot stall
-// completions. Results still arrive via the CMediaProbeEvent below.
+// Media metadata probing (#140/#280) runs on the dedicated CMediaProbeThread, not the shared
+// CThreadScheduler, so a slow or hung ffprobe cannot stall completions. Results still arrive via
+// the CMediaProbeEvent below.
 
 /**
- * This task synchronizes the AICH hashlist.
- *
- * Shared files that are lacking a AICH-hash are scheduled for hashing.
+ * Synchronizes the AICH hashlist: shared files lacking an AICH hash are scheduled for hashing.
  */
 class CAICHSyncTask : public CThreadTask
 {
 public:
 	/**
-	 * @param pruneOrphans  Rewrite known2_64.met dropping hashsets no longer
-	 *   referenced by any known file. Only safe when the known-file list is
-	 *   authoritative (startup); a post-hashing sync races the main-thread
-	 *   registration of the file it just hashed and would prune its own
-	 *   freshly-written hashset. Defaults to false so only the startup sync
-	 *   opts in.
+	 * @param pruneOrphans Rewrite known2_64.met dropping hashsets no longer referenced by any
+	 * known file. Only safe when the known-file list is authoritative (startup); a post-hashing
+	 * sync races the main-thread registration of the file it just hashed and would prune its
+	 * own freshly-written hashset. Defaults to false so only the startup sync opts in.
 	 */
 	explicit CAICHSyncTask(bool pruneOrphans = false);
 
@@ -151,8 +134,8 @@ private:
 };
 
 /**
- * This task calculates MD4 & AICH hashes for a known file to
- * check file integrity against the stored hashes in the .met files
+ * Calculates MD4 and AICH hashes for a known file, to check file integrity against the hashes
+ * stored in the .met files.
  */
 class CVerifyLocalDataTask : public CThreadTask
 {
@@ -172,12 +155,9 @@ private:
 };
 
 /**
- * This task performs the final tasks on a complete download.
- *
- * This includes finding a usable destination filename, removing
- * old data files and moving the part-file (potentially to a
- * different partition).
- **/
+ * Performs the final steps on a complete download: finding a usable destination filename, removing
+ * old data files and moving the part-file, possibly to a different partition.
+ */
 class CCompletionTask : public CThreadTask
 {
 public:
@@ -208,7 +188,7 @@ protected:
 };
 
 /**
- * This task preallocates space for a newly created partfile.
+ * Preallocates space for a newly created partfile.
  */
 class CAllocateFileTask : public CThreadTask
 {
@@ -235,16 +215,13 @@ private:
 };
 
 /**
- * This event is used to signal the completion of a hashing event.
- *
- * @see CHashingTask
+ * Signals the completion of a hashing event. @see CHashingTask
  */
 class CHashingEvent : public wxEvent
 {
 public:
 	/**
 	 * @param type MULE_EVT_HASHING or MULE_EVT_AICH_HASHING.
-	 * @param result
 	 */
 	CHashingEvent(wxEventType type, CKnownFile *result, const CKnownFile *owner = NULL);
 
@@ -264,31 +241,29 @@ private:
 };
 
 /**
- * This event is sent when a probe finished, whether or not it extracted
- * anything. The main-thread handler resolves the hash back to a CKnownFile*
- * (via CKnownFileList::FindKnownFileByID) and attaches the FT_MEDIA_* tags
- * there — doing that from the worker thread would race with the publish paths
- * that read m_taglist.
+ * Sent when a probe finished, whether or not it extracted anything. The main-thread handler
+ * resolves the hash back to a CKnownFile* (via CKnownFileList::FindKnownFileByID) and attaches the
+ * FT_MEDIA_* tags there -- doing that from the worker thread would race the publish paths that read
+ * m_taglist.
  *
- * A FAILED probe is reported too (issue #1116): the handler records that the
- * file was tried and produced nothing, so the "already probed" gate stops
- * re-queueing it on every reload and every restart. Without that round trip a
- * file ffprobe cannot read is indistinguishable from one never probed.
+ * A FAILED probe is reported too (issue #1116): the handler records that the file was tried and
+ * produced nothing, so the "already probed" gate stops re-queueing it on every reload and every
+ * restart. Without that round trip a file ffprobe cannot read is indistinguishable from one never
+ * probed.
  */
 class CMediaProbeEvent : public wxEvent
 {
 public:
-	// Carries the MediaInfo whole rather than one accessor per field: the
-	// struct already IS the set of extracted fields, and mirroring them here
-	// meant every new field touched the event, its ctor, its Clone and the
-	// handler. Strings are deep-copied on construction for the thread hop --
-	// see the ctor.
-	// succeeded == false carries no MediaInfo worth reading: the handler
-	// records the failure and leaves whatever tags the file already had.
-	// markUnprobeable is meaningful only when succeeded is false: it says the
-	// probe reached a verdict about the FILE (ffprobe ran and found nothing
-	// usable) rather than failing on the environment (no binary, a timeout, a
-	// file that vanished). Only the former may be recorded against the file.
+	// Carries the MediaInfo whole rather than one accessor per field: the struct already IS the
+	// set of extracted fields, and mirroring them here meant every new field touched the event,
+	// its ctor, its Clone and the handler. Strings are deep-copied on construction for the
+	// thread hop -- see the ctor.
+	//
+	// succeeded == false carries no MediaInfo worth reading: the handler records the failure
+	// and leaves whatever tags the file already had. markUnprobeable is meaningful only then --
+	// it says the probe reached a verdict about the FILE (ffprobe ran and found nothing usable)
+	// rather than failing on the environment (no binary, a timeout, a file that vanished). Only
+	// the former may be recorded against the file.
 	CMediaProbeEvent(const CMD4Hash &hash,
 		const MediaInfo &info,
 		bool succeeded = true,
@@ -309,7 +284,7 @@ private:
 };
 
 /**
- * This event is sent when a part-file has been completed.
+ * Sent when a part-file has been completed.
  */
 class CCompletionEvent : public wxEvent
 {
@@ -341,7 +316,7 @@ private:
 };
 
 /**
- * This event is sent when preallocation of a new partfile is finished.
+ * Sent when preallocation of a new partfile is finished.
  */
 wxDECLARE_EVENT(MULE_EVT_ALLOC_FINISHED, wxEvent);
 class CAllocFinishedEvent : public wxEvent

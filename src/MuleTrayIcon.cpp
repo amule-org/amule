@@ -43,16 +43,13 @@
 #include <common/MenuIDs.h>   // Needed to access menu item constants
 
 #ifdef WITH_LIBAYATANA_APPINDICATOR
-// gtk_window_present is the xdg-activation-aware way to request
-// focus on Wayland — wxFrame::Raise() alone doesn't reach the
-// compositor's activation path there. Needed early so DoShow()
-// below can call it.
+// gtk_window_present is the xdg-activation-aware way to request focus on Wayland --
+// wxFrame::Raise() alone does not reach the compositor's activation path there. Needed early so
+// DoShow() below can call it.
 #include <gtk/gtk.h>
 #endif
 
-// =====================================================================
-// Common action handlers — invoked from either backend.
-// =====================================================================
+// Common action handlers -- invoked from either backend.
 
 void CMuleTrayIcon::DoConnectDisconnect()
 {
@@ -62,11 +59,11 @@ void CMuleTrayIcon::DoConnectDisconnect()
 
 void CMuleTrayIcon::DoShowHide()
 {
-	// Treat an iconized window as not-visible: minimized-to-Dock on Mac,
-	// taskbar-iconized on Windows and Iconize() on Linux all keep IsShown()==true
-	// even though the user cannot see the frame. On plain IsShown() the menu would
-	// offer "Hide aMule" in those states, and clicking would make the window
-	// vanish entirely, with no Dock thumbnail and no taskbar entry.
+	// Treat an iconized window as not-visible: minimized-to-Dock on Mac, taskbar-iconized on
+	// Windows and Iconize() on Linux all keep IsShown()==true even though the user cannot see
+	// the frame. On plain IsShown() the menu would offer "Hide aMule" in those states, and
+	// clicking would make the window vanish entirely, with no Dock thumbnail and no taskbar
+	// entry.
 	const bool visible = theApp->amuledlg->IsVisibleToUser();
 	if (visible) {
 		theApp->amuledlg->HideToTray();
@@ -84,13 +81,12 @@ void CMuleTrayIcon::DoShow()
 {
 	theApp->amuledlg->RestoreMainWindow();
 #ifdef WITH_LIBAYATANA_APPINDICATOR
-	// Ask the compositor to bring our window forward. The timestamp matters on
-	// Wayland: GNOME Shell's focus-stealing prevention treats GDK_CURRENT_TIME (0)
-	// as suspicious and shows an "app is ready" notification instead of granting
-	// focus, so pull the timestamp of the actual menu-click event and the request
-	// reads as a fresh user gesture. With no event being processed the call
-	// returns GDK_CURRENT_TIME and we pass it through anyway -- worst case is that
-	// notification, which is itself clickable.
+	// Ask the compositor to bring our window forward. The timestamp matters on Wayland: GNOME
+	// Shell's focus-stealing prevention treats GDK_CURRENT_TIME (0) as suspicious and shows an
+	// "app is ready" notification instead of granting focus, so pull the timestamp of the
+	// actual menu-click event and the request reads as a fresh user gesture. With no event
+	// being processed the call returns GDK_CURRENT_TIME and we pass it through anyway -- worst
+	// case is that notification, which is itself clickable.
 	if (GtkWidget *gtkw = static_cast<GtkWidget *>(theApp->amuledlg->GetHandle())) {
 		gtk_window_present_with_time(GTK_WINDOW(gtkw), gtk_get_current_event_time());
 	}
@@ -109,9 +105,9 @@ void CMuleTrayIcon::DoHide()
 void CMuleTrayIcon::DoExit()
 {
 	if (theApp->amuledlg->IsEnabled()) {
-		// Mark as quitting so OnClose skips HideOnClose, but still pass
-		// force=false so the confirm-exit prompt can run; answering No there
-		// vetoes and clears the IsQuitting flag.
+		// Mark as quitting so OnClose skips HideOnClose, but still pass force=false so the
+		// confirm-exit prompt can run; answering No there vetoes and clears the IsQuitting
+		// flag.
 		theApp->SetQuitting();
 		theApp->amuledlg->Close();
 	}
@@ -119,9 +115,9 @@ void CMuleTrayIcon::DoExit()
 
 void CMuleTrayIcon::DoSetUploadLimit(long kBytesPerSec)
 {
-	// uint32, not uint16: the preference, its setter and its getter are all
-	// uint32, and a 16-bit cast here silently wrapped anything above 65535 KiB/s
-	// -- a preset of 125000 applied as 59464, with nothing logged either side.
+	// uint32, not uint16: the preference, its setter and its getter are all uint32, and a
+	// 16-bit cast here silently wrapped anything above 65535 KiB/s -- a preset of 125000
+	// applied as 59464, with nothing logged either side.
 	thePrefs::SetMaxUpload(kBytesPerSec < 0 ? UNLIMITED : (uint32)kBytesPerSec);
 #ifdef CLIENT_GUI
 	theApp->glob_prefs->SendToRemote();
@@ -137,21 +133,19 @@ void CMuleTrayIcon::DoSetDownloadLimit(long kBytesPerSec)
 #endif
 }
 
-// The limit presets both tray backends offer, and their labels. The
-// appindicator backend builds GtkWidgets and the wx backend a wxMenu, but what
-// goes in them is identical, and writing it out twice is how the GTK side ended
-// up showing "Unlimited" and "KiB/s" untranslated.
+// The limit presets both tray backends offer, and their labels. The appindicator backend builds
+// GtkWidgets and the wx backend a wxMenu, but what goes in them is identical, and writing it out
+// twice is how the GTK side ended up showing "Unlimited" and "KiB/s" untranslated.
 //
-// The presets are fractions of the configured line capacity rather than of the
-// current limit: scaling from the limit would mean the menu could only ever
-// lower it, with no way back up from a throttled state.
+// The presets are fractions of the configured line capacity rather than of the current limit:
+// scaling from the limit would mean the menu could only ever lower it, with no way back up from a
+// throttled state.
 namespace
 {
-// Divisors applied to the line capacity, descending. Not fifths: an even ladder
-// covers only one order of magnitude, so on a fast line every entry lands high
-// and there is no way to throttle hard from the tray, while on a slow one they
-// bunch near the top. Spread out, one setting works for a 4 Mbit line and a
-// 200 Mbit one alike.
+// Divisors applied to the line capacity, descending. Not fifths: an even ladder covers only one
+// order of magnitude, so on a fast line every entry lands high and there is no way to throttle hard
+// from the tray, while on a slow one they bunch near the top. Spread out, one setting works for a 4
+// Mbit line and a 200 Mbit one alike.
 const unsigned int TRAY_SPEED_DIVISORS[] = { 1, 2, 4, 10, 50 };
 const int TRAY_SPEED_PRESETS = (int)(sizeof(TRAY_SPEED_DIVISORS) / sizeof(TRAY_SPEED_DIVISORS[0]));
 
@@ -165,9 +159,8 @@ void GetTraySpeedPresets(uint32 capacity, unsigned int (&speeds)[TRAY_SPEED_PRES
 	if (capacity == UNLIMITED) {
 		capacity = TRAY_FALLBACK_CAPACITY;
 	}
-	// Keep the smallest entry at 1 KiB/s or more: a preset of 0 would read as
-	// a limit and act as "unlimited", which is the opposite of what picking
-	// the bottom of the list means.
+	// Keep the smallest entry at 1 KiB/s or more: a preset of 0 would read as a limit and act
+	// as "unlimited", the opposite of what picking the bottom of the list means.
 	const uint32 smallest = TRAY_SPEED_DIVISORS[TRAY_SPEED_PRESETS - 1];
 	if (capacity < smallest) {
 		capacity = smallest;
@@ -184,21 +177,14 @@ wxString TraySpeedLabel(unsigned int kBytesPerSec)
 }
 } // namespace
 
-// =====================================================================
-// Backend selection — see MuleTrayIcon.h for rationale.
-// =====================================================================
+// Backend selection -- see MuleTrayIcon.h for rationale.
 
 #ifdef WITH_LIBAYATANA_APPINDICATOR
 
-// ---------------------------------------------------------------------
-//  StatusNotifierItem (SNI) backend via libayatana-appindicator3.
-//
-//  What GNOME Shell with the AppIndicators extension, KDE Plasma and
-//  wlroots compositors with waybar actually render. The legacy
-//  GtkStatusIcon API wxTaskBarIcon talks was dropped in GNOME 3.26 and
-//  never implemented on wlroots, so without this backend the tray icon
-//  is silently invisible on most current distros.
-// ---------------------------------------------------------------------
+// StatusNotifierItem (SNI) backend via libayatana-appindicator3. What GNOME Shell with the
+// AppIndicators extension, KDE Plasma and wlroots compositors with waybar actually render. The
+// legacy GtkStatusIcon API wxTaskBarIcon talks was dropped in GNOME 3.26 and never implemented on
+// wlroots, so without this backend the tray icon is silently invisible on most current distros.
 
 #include <libayatana-appindicator/app-indicator.h>
 #include <gtk/gtk.h>
@@ -206,9 +192,8 @@ wxString TraySpeedLabel(unsigned int kBytesPerSec)
 namespace
 {
 
-// All menu items reach the C++ side through this single callback: the item
-// carries int "action" and "arg" fields via g_object_set_data, so no separate
-// static function per entry is needed.
+// All menu items reach the C++ side through this single callback: the item carries int "action" and
+// "arg" fields via g_object_set_data, so no separate static function per entry is needed.
 enum TrayAction
 {
 	TRAY_ACTION_CONNECT_DISCONNECT = 1,
@@ -220,10 +205,9 @@ enum TrayAction
 	TRAY_ACTION_SET_DOWNLOAD_LIMIT,
 };
 
-// Left-click on the indicator. SNI hosts call
-// org.kde.StatusNotifierItem.Activate for the primary button, and
-// libayatana-appindicator forwards it as this signal. The x/y of the click come
-// from AppIndicatorClass::activate_event and are not needed here.
+// Left-click on the indicator. SNI hosts call org.kde.StatusNotifierItem.Activate for the primary
+// button, and libayatana-appindicator forwards it as this signal. The x/y of the click come from
+// AppIndicatorClass::activate_event and are not needed here.
 void on_indicator_activate(AppIndicator *, gint, gint, gpointer user_data)
 {
 	CMuleTrayIcon *tray = static_cast<CMuleTrayIcon *>(user_data);
@@ -289,9 +273,9 @@ GtkWidget *make_speed_submenu(uint32 max_speed, TrayAction action, gpointer user
 	return submenu;
 }
 
-// Append a non-clickable "info" label. SNI menus support disabled items, though
-// rendering varies between desktops -- KDE greys them, GNOME shows them in the
-// normal style. Either way they are not interactive.
+// Append a non-clickable "info" label. SNI menus support disabled items, though rendering varies
+// between desktops -- KDE greys them, GNOME shows them in the normal style. Either way they are not
+// interactive.
 void append_info(GtkWidget *menu, const wxString &text)
 {
 	GtkWidget *item = gtk_menu_item_new_with_label((const char *)text.utf8_str());
@@ -306,44 +290,42 @@ CMuleTrayIcon::CMuleTrayIcon()
 , m_menu(nullptr)
 , m_lastIconState(-1)
 {
-	// `org.amule.aMule` is both the AppStream/.desktop id and the icon name
-	// installed under share/icons/hicolor/*/apps/; AppIndicator3 looks it up via
-	// the standard XDG icon-theme path.
+	// `org.amule.aMule` is both the AppStream/.desktop id and the icon name installed under
+	// share/icons/hicolor/*/apps/; AppIndicator3 looks it up via the standard XDG icon-theme
+	// path.
 	//
-	// AyatanaIndicators split the library into libayatana-appindicator-glib and
-	// started deprecating the GTK-based libayatana-appindicator3-0.1. Migrating is
-	// future work: -glib is not yet packaged on Ubuntu, Fedora, openSUSE or
-	// Debian, so switching today would lock out every major distro. Silence the
-	// warning locally so a project-wide -Werror=deprecated-declarations stays
-	// useful.
+	// AyatanaIndicators split the library into libayatana-appindicator-glib and started
+	// deprecating the GTK-based libayatana-appindicator3-0.1. Migrating is future work: -glib
+	// is not yet packaged on Ubuntu, Fedora, openSUSE or Debian, so switching today would lock
+	// out every major distro. Silence the warning locally so a project-wide -Werror=deprecated-
+	// declarations stays useful.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 	m_indicator = app_indicator_new(
 		"org.amule.aMule", "org.amule.aMule", APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
 #pragma GCC diagnostic pop
 
-	// ACTIVE = visible: the user already opted in by enabling the tray icon, and
-	// SetTrayIcon below only updates the menu label, never re-hiding the
-	// indicator. APP_INDICATOR_STATUS_ATTENTION is deliberately not used for the
-	// disconnected state -- it needs a separately-set attention icon, and without
-	// one some SNI hosts render the indicator as invisible.
+	// ACTIVE = visible: the user already opted in by enabling the tray icon, and SetTrayIcon
+	// below only updates the menu label, never re-hiding the indicator.
+	// APP_INDICATOR_STATUS_ATTENTION is deliberately not used for the disconnected state -- it
+	// needs a separately-set attention icon, and without one some SNI hosts render the
+	// indicator as invisible.
 	app_indicator_set_status(m_indicator, APP_INDICATOR_STATUS_ACTIVE);
 	app_indicator_set_title(m_indicator, "aMule");
 
-	// Left-click opens the main window instead of the menu, where the installed
-	// library can tell us about it. libayatana-appindicator only grew an Activate
-	// handler in 0.6.0; before that the primary click was not exposed at all.
+	// Left-click opens the main window instead of the menu, where the installed library can
+	// tell us about it. libayatana-appindicator only grew an Activate handler in 0.6.0; before
+	// that the primary click was not exposed at all.
 	//
-	// Looked up at RUNTIME rather than behind a build-time version check, because
-	// the two genuinely differ: a distro may ship a newer library than we built
-	// against, and our AppImage and Flatpak bundle their own. On an older library
-	// the lookup returns 0, nothing is connected, and the panel keeps opening the
-	// menu; the library answers the Activate D-Bus call with an error so the host
-	// falls back to it.
+	// Looked up at RUNTIME rather than behind a build-time version check, because the two
+	// genuinely differ: a distro may ship a newer library than we built against, and our
+	// AppImage and Flatpak bundle their own. On an older library the lookup returns 0, nothing
+	// is connected, and the panel keeps opening the menu; the library answers the Activate
+	// D-Bus call with an error so the host falls back to it.
 	//
-	// APP_INDICATOR_TYPE, not G_OBJECT_TYPE(m_indicator): the latter is a raw
-	// dereference and app_indicator_new can return NULL. The GObject setters above
-	// only warn on NULL, so this must not be the line that crashes.
+	// APP_INDICATOR_TYPE, not G_OBJECT_TYPE(m_indicator): the latter is a raw dereference and
+	// app_indicator_new can return NULL. The GObject setters above only warn on NULL, so this
+	// must not be the line that crashes.
 	g_type_class_ref(APP_INDICATOR_TYPE);
 	if (m_indicator && g_signal_lookup("activate", APP_INDICATOR_TYPE)) {
 		g_signal_connect(m_indicator, "activate", G_CALLBACK(on_indicator_activate), this);
@@ -363,10 +345,10 @@ CMuleTrayIcon::~CMuleTrayIcon()
 
 void CMuleTrayIcon::SetTrayIcon(int Icon, uint32 /*percent*/)
 {
-	// SNI has no per-frame icon overlays, so the legacy backend's percent bar is
-	// dropped here. Connection state shows through the menu label rather than the
-	// indicator's status, because flipping ACTIVE/ATTENTION can hide the indicator
-	// on hosts with no attention icon configured.
+	// SNI has no per-frame icon overlays, so the legacy backend's percent bar is dropped here.
+	// Connection state shows through the menu label rather than the indicator's status, because
+	// flipping ACTIVE/ATTENTION can hide the indicator on hosts with no attention icon
+	// configured.
 	if (Icon != m_lastIconState) {
 		m_lastIconState = Icon;
 		RebuildMenu();
@@ -375,29 +357,27 @@ void CMuleTrayIcon::SetTrayIcon(int Icon, uint32 /*percent*/)
 
 void CMuleTrayIcon::SetTrayToolTip(const wxString &Tip)
 {
-	// SNI does not surface tooltips on hover (compositors disagree on rendering
-	// them), so use it as the accessible title: screen readers and KDE's hover
-	// popup pick it up.
+	// SNI does not surface tooltips on hover (compositors disagree on rendering them), so use
+	// it as the accessible title: screen readers and KDE's hover popup pick it up.
 	app_indicator_set_title(m_indicator, (const char *)Tip.utf8_str());
 }
 
 void CMuleTrayIcon::RebuildMenu()
 {
-	// Static layout, rebuilt only on connection-state changes.
-	// app_indicator_set_menu posts a dbusmenu LayoutUpdated signal that some SNI
-	// hosts answer with a brief icon redraw, so a 2 s refresh timer would visibly
-	// flicker. Keeping the menu to action items only means it rebuilds only when
-	// state changes; live speeds are in the main window.
+	// Static layout, rebuilt only on connection-state changes. app_indicator_set_menu posts a
+	// dbusmenu LayoutUpdated signal that some SNI hosts answer with a brief icon redraw, so a 2
+	// s refresh timer would visibly flicker. Keeping the menu to action items only means it
+	// rebuilds only when state changes; live speeds are in the main window.
 	GtkWidget *menu = gtk_menu_new();
 
 	append_info(menu, MOD_VERSION_LONG);
 
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 
-	// Show / Hide. On Wayland we cannot detect that the window was iconized by
-	// the OS minimize button (xdg-shell delivers no event), so a single toggle
-	// entry would mislabel itself there; show two deterministic entries instead.
-	// Elsewhere the toggle is reliable and the label-aware entry stays.
+	// Show / Hide. On Wayland we cannot detect that the window was iconized by the OS minimize
+	// button (xdg-shell delivers no event), so a single toggle entry would mislabel itself
+	// there; show two deterministic entries instead. Elsewhere the toggle is reliable and the
+	// label-aware entry stays.
 	if (CamuleAppCommon::IsWaylandSession()) {
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu),
 			make_action_item((const char *)wxString(_("Show aMule")).utf8_str(),
@@ -410,7 +390,7 @@ void CMuleTrayIcon::RebuildMenu()
 				0,
 				this));
 	} else {
-		// Treat iconized as not visible — see DoShowHide for rationale.
+		// Treat iconized as not visible -- see DoShowHide for rationale.
 		const bool visible = theApp->amuledlg && theApp->amuledlg->IsShown() &&
 				     !theApp->amuledlg->IsTrayLogicallyIconized();
 		const wxString label = visible ? wxString(_("Hide aMule")) : wxString(_("Show aMule"));
@@ -420,10 +400,9 @@ void CMuleTrayIcon::RebuildMenu()
 
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 
-	// ---- Client information submenu ------------------------------
-	// Snapshot at the last connection-state change. Truly live fields (uptime,
-	// totals, queued clients) are skipped so the menu can stay static; including
-	// them would force a periodic rebuild and bring back the flicker.
+	// Client information submenu. Snapshot at the last connection-state change. Truly live
+	// fields (uptime, totals, queued clients) are skipped so the menu can stay static;
+	// including them would force a periodic rebuild and bring back the flicker.
 	{
 		GtkWidget *sub = gtk_menu_new();
 
@@ -466,13 +445,13 @@ void CMuleTrayIcon::RebuildMenu()
 			append_info(sub, ip);
 		}
 
-		// Public IP — populated post-connect
+		// Public IP -- populated post-connect
 		append_info(sub,
 			CFormat(_("IP: %s")) % (theApp->GetPublicIP()
 							       ? Uint32toStringIP(theApp->GetPublicIP())
 							       : wxString(_("Unknown"))));
 
-		// Listen ports — change only on prefs save
+		// Listen ports -- change only on prefs save
 		append_info(sub,
 			thePrefs::GetPort() ? wxString(CFormat(_("TCP port: %d")) % thePrefs::GetPort())
 					    : wxString(_("TCP port: Not ready")));
@@ -511,7 +490,7 @@ void CMuleTrayIcon::RebuildMenu()
 
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 
-	// Connect / Disconnect — label depends on current connection state.
+	// Connect / Disconnect -- label depends on current connection state.
 	{
 		const wxString label =
 			theApp->IsConnected() ? wxString(_("Disconnect")) : wxString(_("Connect"));
@@ -535,12 +514,9 @@ void CMuleTrayIcon::RebuildMenu()
 
 #else // !WITH_LIBAYATANA_APPINDICATOR
 
-// ---------------------------------------------------------------------
-//  Legacy wxTaskBarIcon backend. Correct on Windows (NOTIFYICONDATA),
-//  macOS (NSStatusItem) and X11 desktops that still consume
-//  GtkStatusIcon; on Wayland the icon goes nowhere, which is what the
-//  libayatana-appindicator3 backend above is for.
-// ---------------------------------------------------------------------
+// Legacy wxTaskBarIcon backend. Correct on Windows (NOTIFYICONDATA), macOS (NSStatusItem) and X11
+// desktops that still consume GtkStatusIcon; on Wayland the icon goes nowhere, which is what the
+// libayatana-appindicator3 backend above is for.
 
 #include <algorithm> // Needed for std::max / std::min
 
@@ -550,15 +526,13 @@ void CMuleTrayIcon::RebuildMenu()
 
 #include "StatisticsDlg.h" // Needed for CStatisticsDlg::getColors()
 
-/****************************************************/
-/******************* Event Table ********************/
-/****************************************************/
+// Event table
 
 wxBEGIN_EVENT_TABLE(CMuleTrayIcon, wxTaskBarIcon)
 #ifdef __WINDOWS__
-	// Windows convention: a single left click toggles show/hide of the main
-	// window. NSStatusItem opens the menu on single-click by its own default, so
-	// that path is left alone.
+	// Windows convention: a single left click toggles show/hide of the main window.
+	// NSStatusItem opens the menu on single-click by its own default, so that path is left
+	// alone.
 	EVT_TASKBAR_LEFT_UP(CMuleTrayIcon::SwitchShow)
 #endif
 	EVT_TASKBAR_LEFT_DCLICK(CMuleTrayIcon::SwitchShow)
@@ -581,9 +555,7 @@ wxBEGIN_EVENT_TABLE(CMuleTrayIcon, wxTaskBarIcon)
 	EVT_MENU(DOWNLOAD_ITEM6, CMuleTrayIcon::SetDownloadSpeed)
 wxEND_EVENT_TABLE()
 
-/****************************************************/
-/************ Constructor / Destructor **************/
-/****************************************************/
+// Constructor / destructor
 
 static long GetSpeedFromString(wxString label)
 {
@@ -656,9 +628,7 @@ CMuleTrayIcon::CMuleTrayIcon()
 
 CMuleTrayIcon::~CMuleTrayIcon() {}
 
-/****************************************************/
-/***************** Public Functions *****************/
-/****************************************************/
+// Public functions
 
 void CMuleTrayIcon::SetTrayIcon(int Icon, uint32 percent)
 {
@@ -680,9 +650,8 @@ void CMuleTrayIcon::SetTrayIcon(int Icon, uint32 percent)
 		if (!image.IsOk()) {
 			return;
 		}
-		// Artwork that predates alpha marks its transparency with pure red.
-		// Turn that into a real alpha channel once, here, so everything below
-		// this point works on one representation.
+		// Artwork that predates alpha marks its transparency with pure red. Turn that into
+		// a real alpha channel once, here, so everything below works on one representation.
 		if (!image.HasAlpha()) {
 			image.SetMaskColour(255, 0, 0);
 			image.InitAlpha();
@@ -701,20 +670,20 @@ void CMuleTrayIcon::SetTrayIcon(int Icon, uint32 percent)
 	Old_Icon = Icon;
 	Old_SpeedSize = barHeight;
 
-	// Always compose onto a copy of the untouched artwork. Composing onto the icon
-	// we produced last time loses transparency a little more each round -- an icon
-	// converted back to a bitmap returns its transparent pixels as black, so a
-	// rising transfer rate ends up with a solid black background.
+	// Always compose onto a copy of the untouched artwork. Composing onto the icon we produced
+	// last time loses transparency a little more each round -- an icon converted back to a
+	// bitmap returns its transparent pixels as black, so a rising transfer rate ends up with a
+	// solid black background.
 	//
-	// The bar is written into the image rather than drawn with a wxDC because
-	// wxMSW's DC writes the colour channels and leaves alpha alone: a bar drawn
-	// over transparent pixels keeps alpha 0 and never appears.
+	// The bar is written into the image rather than drawn with a wxDC because wxMSW's DC writes
+	// the colour channels and leaves alpha alone: a bar drawn over transparent pixels keeps
+	// alpha 0 and never appears.
 	wxImage composed = base.Copy();
 	if (barHeight > 0) {
 		const wxColour barColour = CStatisticsDlg::getColors(11);
-		// Two pixels wide, in the last two columns, growing from the bottom. It
-		// used to sit two columns further in, which newer artwork fills, so the bar
-		// landed on the drawing instead of beside it.
+		// Two pixels wide, in the last two columns, growing from the bottom. It used to sit
+		// two columns further in, which newer artwork fills, so the bar landed on the
+		// drawing instead of beside it.
 		const int barLeft = std::max(0, width - 2);
 		const int barRight = std::min(width, barLeft + 2);
 		for (int y = height - barHeight; y < height; ++y) {
@@ -735,9 +704,7 @@ void CMuleTrayIcon::SetTrayToolTip(const wxString &Tip)
 	UpdateTray();
 }
 
-/****************************************************/
-/**************** Private Functions *****************/
-/****************************************************/
+// Private functions
 
 void CMuleTrayIcon::UpdateTray()
 {
@@ -765,7 +732,7 @@ wxMenu *CMuleTrayIcon::CreatePopupMenu()
 	traymenu->Append(TRAY_MENU_INFO, label);
 	traymenu->AppendSeparator();
 
-	// Treat iconized as not visible — see DoShowHide for rationale.
+	// Treat iconized as not visible -- see DoShowHide for rationale.
 	if (theApp->amuledlg->IsShown() && !theApp->amuledlg->IsTrayLogicallyIconized()) {
 		traymenu->Append(TRAY_MENU_HIDE, _("Hide aMule"));
 	} else {

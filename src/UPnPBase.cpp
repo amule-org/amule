@@ -78,14 +78,11 @@ const char s_serviceList[] = "serviceList";
 const char s_device[] = "device";
 const char s_deviceList[] = "deviceList";
 
-/**
- * Case insensitive std::string comparison
- */
+/// Case-insensitive std::string comparison.
 static bool stdStringIsEqualCI(const std::string &s1, const std::string &s2)
 {
-	// Pin LC_CTYPE = C so tolower() is ASCII-deterministic regardless of
-	// the user's locale (tr_TR turns 'I' into U+0131, breaking this
-	// comparison's intended semantics).
+	// Pin LC_CTYPE = C so tolower() is ASCII-deterministic regardless of the user's locale
+	// (tr_TR turns 'I' into U+0131, breaking this comparison's intended semantics).
 	CCtypeAsciiScope scope;
 	std::string ns1(s1);
 	std::string ns2(s2);
@@ -144,12 +141,11 @@ static const std::string WAN_IP_Connection("urn:schemas-upnp-org:service:WANIPCo
 static const std::string WAN_PPP_Connection("urn:schemas-upnp-org:service:WANPPPConnection:1");
 } // namespace Service
 
-// Decide whether an SSDP NT/ST is something amule wants to learn about. The
-// whitelist is the IGW family plus upnp:rootdevice, which is opaque from SSDP
-// alone (description.xml has to be fetched to classify it). Anything else is
-// dropped before that fetch, which keeps the libupnp ThreadPool queue from
-// filling on busy LANs and stops spurious "Error retrieving device description"
-// lines for devices we have no use for.
+// Decide whether an SSDP NT/ST is something amule wants to learn about. The whitelist is the IGW
+// family plus upnp:rootdevice, which is opaque from SSDP alone (description.xml has to be fetched
+// to classify it). Anything else is dropped before that fetch, which keeps the libupnp ThreadPool
+// queue from filling on busy LANs and stops spurious "Error retrieving device description" lines
+// for devices we have no use for.
 static bool IsWANRelatedDeviceType(const std::string &type)
 {
 	if (type.empty()) {
@@ -180,14 +176,13 @@ static bool IsWANRelatedDeviceType(const std::string &type)
 	return false;
 }
 
-// Case-insensitive match of a device/service type URN against a fully-versioned
-// reference URN, ignoring the trailing ":<version>". IGD:2 gateways advertise
-// their embedded devices and services with a ":2" suffix, so classifying by an
-// exact ":1" string would skip them even though libupnp's version-tolerant
-// M-SEARCH still reaches the device. The fully-versioned constants stay (they
-// double as the M-SEARCH target, which must carry a version) and the tail is
-// stripped only for classification. The reference's final ':' is kept in the
-// prefix so "WANIPConnection:" cannot match "WANIPConnectionFoo:1".
+// Case-insensitive match of a device/service type URN against a fully-versioned reference URN,
+// ignoring the trailing ":<version>". IGD:2 gateways advertise their embedded devices and services
+// with a ":2" suffix, so classifying by an exact ":1" string would skip them even though libupnp's
+// version-tolerant M-SEARCH still reaches the device. The fully-versioned constants stay (they
+// double as the M-SEARCH target, which must carry a version) and the tail is stripped only for
+// classification. The reference's final ':' is kept in the prefix so "WANIPConnection:" cannot
+// match "WANIPConnectionFoo:1".
 static bool TypeMatchesIgnoringVersion(const std::string &type, const std::string &reference)
 {
 	std::string::size_type lastColon = reference.find_last_of(':');
@@ -247,9 +242,7 @@ static void ProcessActionResponse(IXML_Document *RespDoc, const std::string &act
 namespace IXML
 {
 
-/*!
- * \brief Returns the root node of a given document.
- */
+/*! \brief Returns the root node of a given document. */
 IXML_Element *Document::GetRootElement(IXML_Document *doc)
 {
 	return reinterpret_cast<IXML_Element *>(ixmlNode_getFirstChild(&doc->n));
@@ -258,8 +251,8 @@ IXML_Element *Document::GetRootElement(IXML_Document *doc)
 /*!
  * \brief Frees the given document.
  *
- * \note Any nodes extracted via any other interface function will become
- * invalid after this call unless explicitly cloned.
+ * \note Nodes extracted via any other interface function become invalid after this call unless
+ * explicitly cloned.
  */
 inline void Document::Free(IXML_Document *doc)
 {
@@ -269,33 +262,25 @@ inline void Document::Free(IXML_Document *doc)
 namespace Element
 {
 
-/*!
- * \brief Returns the first child of a given element.
- */
+/*! \brief Returns the first child of a given element. */
 IXML_Element *GetFirstChild(IXML_Element *parent)
 {
 	return reinterpret_cast<IXML_Element *>(ixmlNode_getFirstChild(&parent->n));
 }
 
-/*!
- * \brief Returns the next sibling of a given child.
- */
+/*! \brief Returns the next sibling of a given child. */
 IXML_Element *GetNextSibling(IXML_Element *child)
 {
 	return reinterpret_cast<IXML_Element *>(ixmlNode_getNextSibling(&child->n));
 }
 
-/*!
- * \brief Returns the element tag (name)
- */
+/*! \brief Returns the element tag (name). */
 const DOMString GetTag(IXML_Element *element)
 {
 	return ixmlNode_getNodeName(&element->n);
 }
 
-/*!
- * \brief Returns the TEXT node value of the current node.
- */
+/*! \brief Returns the TEXT node value of the current node. */
 const std::string GetTextValue(IXML_Element *element)
 {
 	if (!element) {
@@ -311,18 +296,13 @@ const std::string GetTextValue(IXML_Element *element)
 	return ret;
 }
 
-/*!
- * \brief Returns the TEXT node value of the first child matching tag.
- */
+/*! \brief Returns the TEXT node value of the first child matching tag. */
 const std::string GetChildValueByTag(IXML_Element *element, const DOMString tag)
 {
 	return GetTextValue(GetFirstChildByTag(element, tag));
 }
 
-/*!
- * \brief Returns the first child element that matches the requested tag or
- * NULL if not found.
- */
+/*! \brief Returns the first child element matching the requested tag, or NULL. */
 IXML_Element *GetFirstChildByTag(IXML_Element *element, const DOMString tag)
 {
 	if (!element || !tag) {
@@ -340,8 +320,8 @@ IXML_Element *GetFirstChildByTag(IXML_Element *element, const DOMString tag)
 }
 
 /*!
- * \brief Returns the next sibling element that matches the requested tag. Should be
- * used with the return value of GetFirstChildByTag().
+ * \brief Returns the next sibling element matching the requested tag. Use with the return value
+ * of GetFirstChildByTag().
  */
 IXML_Element *GetNextSiblingByTag(IXML_Element *element, const DOMString tag)
 {
@@ -570,7 +550,7 @@ bool CUPnPService::Execute(
 			return false;
 		}
 		const CUPnPArgument &argument = *(itArg->second);
-		// Direction is "in" or "out" — ASCII-only. Pin LC_CTYPE = C so
+		// Direction is "in" or "out" -- ASCII-only. Pin LC_CTYPE = C so
 		// tolower() doesn't fold 'I' to U+0131 under tr_TR.
 		CCtypeAsciiScope direction_scope;
 		if (tolower(argument.GetDirection()[0]) != 'i' ||
@@ -778,14 +758,13 @@ CUPnPControlPoint::CUPnPControlPoint(unsigned short udpPort)
 	AddDebugLogLineN(logUPnP, msg);
 	msg.str("");
 
-	// Raise the SDK's incoming content-length ceiling above libupnp's 16 KB
-	// default. Some gateways serve an SCPD/description XML slightly larger than
-	// that, which makes the blocking UpnpDownloadXmlDoc in Subscribe() fail with
-	// UPNP_E_OUTOF_BOUNDS -- the service never registers, no port mapping happens,
-	// and the user is stuck on a LowID (seen on ZTE and Sagemcom routers). 1 MB
-	// clears any real router descriptor while still bounding what a hostile LAN
-	// device can push into a blocking fetch. Must run after UpnpInit2 succeeds:
-	// the call is a no-op until the SDK is initialised.
+	// Raise the SDK's incoming content-length ceiling above libupnp's 16 KB default. Some
+	// gateways serve an SCPD/description XML slightly larger than that, which makes the
+	// blocking UpnpDownloadXmlDoc in Subscribe() fail with UPNP_E_OUTOF_BOUNDS -- the service
+	// never registers, no port mapping happens, and the user is stuck on a LowID (seen on ZTE
+	// and Sagemcom routers). 1 MB clears any real router descriptor while still bounding what a
+	// hostile LAN device can push into a blocking fetch. Must run after UpnpInit2 succeeds: the
+	// call is a no-op until the SDK is initialised.
 	ret = UpnpSetMaxContentLength(1024 * 1024);
 	if (ret != UPNP_E_SUCCESS) {
 		msg << "warning(UpnpSetMaxContentLength): could not raise content-length limit, error code "
@@ -802,14 +781,13 @@ CUPnPControlPoint::CUPnPControlPoint(unsigned short udpPort)
 		goto error;
 	}
 
-	// Search for the InternetGatewayDevice specifically rather than
-	// upnp:rootdevice. Searching rootdevice makes every UPnP speaker on the LAN
-	// answer the M-SEARCH, and our SEARCH_RESULT handler then fetches
-	// description.xml from each one synchronously on a libupnp worker thread; on a
-	// busy LAN that saturates the mini-server thread pool until ThreadPoolAdd hits
-	// its cap and drops jobs. Targeting the IGW type means only gateways answer,
-	// which is all port mapping needs, and a gateway that appears later is still
-	// caught by its periodic IGW-typed ADVERTISEMENT_ALIVE.
+	// Search for the InternetGatewayDevice specifically rather than upnp:rootdevice. Searching
+	// rootdevice makes every UPnP speaker on the LAN answer the M-SEARCH, and our SEARCH_RESULT
+	// handler then fetches description.xml from each one synchronously on a libupnp worker
+	// thread; on a busy LAN that saturates the mini-server thread pool until ThreadPoolAdd hits
+	// its cap and drops jobs. Targeting the IGW type means only gateways answer, which is all
+	// port mapping needs, and a gateway that appears later is still caught by its periodic IGW-
+	// typed ADVERTISEMENT_ALIVE.
 	//
 	// We must not search more than once: each search produces its own
 	// UPNP_DISCOVERY_SEARCH_TIMEOUT event, and two would race on the mutex.
@@ -823,9 +801,8 @@ CUPnPControlPoint::CUPnPControlPoint(unsigned short udpPort)
 	{
 		m_WaitForSearchTimeoutMutex.Lock();
 
-		// Lock it again, so that we block. Unlocking will only happen
-		// when the UPNP_DISCOVERY_SEARCH_TIMEOUT event occurs at the
-		// callback.
+		// Lock it again, so that we block. Unlocking only happens when the
+		// UPNP_DISCOVERY_SEARCH_TIMEOUT event occurs at the callback.
 		CUPnPMutexLocker lock(m_WaitForSearchTimeoutMutex);
 	}
 	return;
@@ -1049,11 +1026,10 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 
 	switch (EventType) {
 	case UPNP_DISCOVERY_ADVERTISEMENT_ALIVE: {
-		// Drop unsolicited NOTIFY announcements whose NT is not a device or
-		// service we care about. Without this filter amule fetches
-		// description.xml from every UPnP speaker on the LAN, which burns
-		// libupnp's ThreadPool budget and produces "Error retrieving device
-		// description" noise for endpoints amule has no business poking.
+		// Drop unsolicited NOTIFY announcements whose NT is not a device or service we care
+		// about. Without this filter amule fetches description.xml from every UPnP speaker
+		// on the LAN, which burns libupnp's ThreadPool budget and produces "Error
+		// retrieving device description" noise for endpoints amule has no business poking.
 #if UPNP_VERSION >= 10800
 		UpnpDiscovery *d_filter_event = (UpnpDiscovery *)Event;
 		const char *deviceType = UpnpDiscovery_get_DeviceType_cstr(d_filter_event);
@@ -1094,11 +1070,11 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 #else
 		const char *location = d_event->Location;
 #endif
-		// Passive ALIVE announcements arrive in dense bursts (one per service
-		// class, every few seconds per device), and when the announcing device's
-		// HTTP server is unreachable each fetch blocks a libupnp worker for the
-		// full TCP-connect timeout. Suppress repeat fetches against a
-		// recently-failed URL on ALIVE only: SEARCH_RESULT is our own active poll.
+		// Passive ALIVE announcements arrive in dense bursts (one per service class, every
+		// few seconds per device), and when the announcing device's HTTP server is
+		// unreachable each fetch blocks a libupnp worker for the full TCP-connect timeout.
+		// Suppress repeat fetches against a recently-failed URL on ALIVE only:
+		// SEARCH_RESULT is our own active poll.
 		if (EventType == UPNP_DISCOVERY_ADVERTISEMENT_ALIVE &&
 			upnpCP->ShouldSkipAdvertisementFetch(location ? location : "")) {
 			break;
@@ -1124,11 +1100,10 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 			IXML_Element *rootDevice = IXML::Element::GetFirstChildByTag(root, "device");
 			std::string devType(IXML::Element::GetChildValueByTag(rootDevice, "deviceType"));
 			// Only add device if it is an InternetGatewayDevice
-			// (any version — IGD:2 advertises its root as ":2").
+			// (any version -- IGD:2 advertises its root as ":2").
 			if (UPnP::TypeMatchesIgnoringVersion(devType, UPnP::Device::IGW)) {
-				// Do not block entry on this condition: there may be more
-				// than one device, and the first to arrive may not be the
-				// one we want.
+				// Do not block entry on this condition: there may be more than one
+				// device, and the first to arrive may not be the one we want.
 				upnpCP->SetIGWDeviceDetected(true);
 				// Log it if not UPNP_DISCOVERY_ADVERTISEMENT_ALIVE,
 				// we don't want to spam our logs.
@@ -1184,9 +1159,9 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 		// Check for an InternetGatewayDevice and removes it from the list
 
 		{
-			// devType is a UPnP URN ("urn:schemas-upnp-org:device:...")
-			// — ASCII-only. Pin LC_CTYPE = C around the tolower
-			// transform so 'I' stays 'i' under tr_TR.
+			// devType is a UPnP URN ("urn:schemas-upnp-org:device:..."), so ASCII-only.
+			// Pin LC_CTYPE = C around the tolower transform so 'I' stays 'i' under
+			// tr_TR.
 			CCtypeAsciiScope devtype_scope;
 			std::transform(devType.begin(), devType.end(), devType.begin(), tolower);
 		}
@@ -1320,9 +1295,8 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 #endif
 					"' with SID == '" << newSID << "'.";
 				AddDebugLogLineC(logUPnP, msg2);
-				// In principle, we should test to see if the
-				// service is the same. But here we only have one
-				// service, so...
+				// In principle we should test whether the service is the same, but
+				// there is only one service here.
 				upnpCP->RefreshPortMappings();
 			} else {
 				msg << "Error: did not find service " << newSID << " in the service map.";
@@ -1361,9 +1335,8 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 #endif
 				"<UpnpSendActionAsync>");
 		}
-		/* No need for any processing here, just print out results.
-		 * Service state table updates are handled by events.
-		 */
+		/* Nothing to process here, just print the results. Service state table updates are handled
+		 * by events. */
 		break;
 	}
 	case UPNP_CONTROL_GET_VAR_COMPLETE: {
@@ -1385,9 +1358,8 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 #endif
 		} else {
 #if 0
-			// Warning: The use of UpnpGetServiceVarStatus and
-			// UpnpGetServiceVarStatusAsync is deprecated by the
-			// UPnP forum.
+			// Warning: UpnpGetServiceVarStatus and UpnpGetServiceVarStatusAsync are
+			// deprecated by the UPnP forum.
 #if UPNP_VERSION >= 10800
 			const char *ctrlUrl =
 				UpnpStateVarComplete_get_CtrlUrl(sv_event);
@@ -1505,14 +1477,13 @@ bool CUPnPControlPoint::ShouldSkipAdvertisementFetch(const std::string &location
 void CUPnPControlPoint::RecordAdvertisementFetchResult(const std::string &location, bool /*success*/)
 {
 	CUPnPMutexLocker lock(m_failedFetchCacheMutex);
-	// Rate-limit successes the same way as failures. Erasing on success re-issued
-	// a blocking UpnpDownloadXmlDoc on every subsequent ALIVE announcement for an
-	// already-classified location, and those arrive in dense repeating bursts, so
-	// on a busy LAN they alone can keep libupnp's thread pool saturated. Recording
-	// the attempt time regardless of outcome bounds ALIVE-driven downloads to one
-	// per location per FAILED_FETCH_TTL_SECS, and nothing is lost: a gateway found
-	// on the first fetch is already registered, and later ALIVEs only refresh the
-	// expiry, which the TTL covers.
+	// Rate-limit successes the same way as failures. Erasing on success re-issued a blocking
+	// UpnpDownloadXmlDoc on every subsequent ALIVE announcement for an already-classified
+	// location, and those arrive in dense repeating bursts, so on a busy LAN they alone can
+	// keep libupnp's thread pool saturated. Recording the attempt time regardless of outcome
+	// bounds ALIVE-driven downloads to one per location per FAILED_FETCH_TTL_SECS, and nothing
+	// is lost: a gateway found on the first fetch is already registered, and later ALIVEs only
+	// refresh the expiry, which the TTL covers.
 	m_failedFetchCache[location] = time(nullptr);
 }
 
@@ -1533,9 +1504,8 @@ void CUPnPControlPoint::Subscribe(CUPnPService &service)
 		AddDebugLogLineN(logUPnP, msg);
 		msg.str("");
 
-		// Now try to subscribe to this service. If the subscription
-		// is not successful, we will not be notified about events,
-		// but it may be possible to use the service anyway.
+		// Now try to subscribe to this service. Without a successful subscription we are
+		// not notified about events, but the service may still be usable.
 		errcode = UpnpSubscribe(m_UPnPClientHandle,
 			service.GetAbsEventSubURL().c_str(),
 			service.GetTimeoutAddr(),

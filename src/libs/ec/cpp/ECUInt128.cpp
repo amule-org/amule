@@ -22,13 +22,10 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-// Implementation of these functions cannot be in ECTag.cpp, because here we
-// use non-inline member functions of CUInt128.  This way these functions are
-// only needed if we actually use the CUInt128 class, and will not cause
-// linker errors for apps like aMuleCmd, which don't use CUInt128.
-//
-// The other working possibility would be to make all these functions inline
-// members of CECTag, but that would clutter the header too much.
+// These functions cannot live in ECTag.cpp, because they use non-inline member functions of
+// CUInt128. This way they are only needed if the CUInt128 class is actually used, and cause no
+// linker errors for apps like aMuleCmd that do not use it. The other option would be to make them
+// all inline members of CECTag, which would clutter the header too much.
 
 #include "ECTag.h"
 #include "ECSpecialTags.h"

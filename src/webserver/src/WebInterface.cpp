@@ -99,11 +99,10 @@ bool CamulewebApp::OnInit()
 
 int CamulewebApp::OnRun()
 {
-	// Deprecation notice (printed once at startup, honours --quiet). amuleweb
-	// is not being removed yet -- this only warns operators that it may go
-	// away in a future release so they can plan a move to amuleapi. Kept as a
-	// plain (untranslated) operator-facing string to avoid churning every po
-	// catalogue for a transitional warning.
+	// Deprecation notice, printed once at startup and honouring --quiet. amuleweb is not being
+	// removed yet -- this only warns operators that it may go away in a future release so they
+	// can plan a move to amuleapi. Kept as a plain untranslated operator-facing string, to
+	// avoid churning every po catalogue for a transitional warning.
 	Show(wxT("\nNOTE: amuleweb is deprecated and may be removed in aMule 3.2 or later.\n"
 		 "      Consider migrating to amuleapi (the REST/SSE API). See amuleweb(1).\n\n"));
 	ConnectAndRun("aMuleweb", VERSION);
@@ -198,11 +197,10 @@ bool CamulewebApp::GetTemplateDir(const wxString &templateName, wxString &templa
 
 	dir = wxStandardPaths::Get().GetResourcesDir(); // Returns 'aMule' when we use 'amule' elsewhere
 #if defined(__WINDOWS__)
-	// The Windows portable / installed layout puts amule.exe and amuleweb.exe in
-	// bin\ and installable data in ..\share\amule\. wxStandardPaths returns the exe
-	// directory there, so relocate up one level and into the FHS-style share/amule/
-	// tree the installer populates -- the same adjustment Preferences.cpp makes for
-	// the skins lookup (#783, #828).
+	// The Windows portable / installed layout puts amule.exe and amuleweb.exe in bin\ and
+	// installable data in ..\share\amule\. wxStandardPaths returns the exe directory there, so
+	// relocate up one level and into the FHS-style share/amule/ tree the installer populates --
+	// the same adjustment Preferences.cpp makes for the skins lookup (#783, #828).
 	dir = JoinPaths(JoinPaths(dir, ".."), "share");
 	dir = JoinPaths(dir, "amule");
 #elif !defined(__WXMAC__)
@@ -277,17 +275,13 @@ void CamulewebApp::OnInitCmdLine(wxCmdLineParser &amuleweb_parser)
 		wxCMD_LINE_VAL_STRING,
 		wxCMD_LINE_PARAM_OPTIONAL);
 
-	/*
-	 * In this mode, internal PHP interpreter is activated, and
-	 * amuleweb will forward there requests for .php pages
-	 */
+	/* In this mode the internal PHP interpreter is activated, and amuleweb forwards requests for
+	 * .php pages there. */
 	amuleweb_parser.AddSwitch(
 		"", "no-php", _("Disable PHP interpreter (deprecated)"), wxCMD_LINE_PARAM_OPTIONAL);
 
-	/*
-	 * Reload .php page each time it's requested - don't cache
-	 * compilation results. Used for script development.
-	 */
+	/* Reload the .php page each time it is requested, not caching compilation results. For script
+	 * development. */
 	amuleweb_parser.AddSwitch(
 		"N", "no-script-cache", _("Recompile PHP pages on each request"), wxCMD_LINE_PARAM_OPTIONAL);
 }
@@ -311,10 +305,10 @@ bool CamulewebApp::OnCmdLineParsed(wxCmdLineParser &parser)
 		m_KeepQuiet = true;
 		m_LoadSettingsFromAmule = true;
 
-		// m_configDir is normally set by CaMuleExternalConnector::OnCmdLineParsed,
-		// which this early-return branch skips. Left empty, GetTemplateDir looked for
-		// "webserver" relative to the CWD, so the per-user template dir was never
-		// found when amuleweb was spawned by the aMule GUI.
+		// m_configDir is normally set by CaMuleExternalConnector::OnCmdLineParsed, which
+		// this early-return branch skips. Left empty, GetTemplateDir looked for "webserver"
+		// relative to the CWD, so the per-user template dir was never found when amuleweb
+		// was spawned by the aMule GUI.
 		m_configDir = wxFileName(aMuleConfigFile).GetPathWithSep();
 
 		if (!(m_TemplateOk = GetTemplateDir(m_TemplateName, m_TemplateDir))) {
@@ -430,22 +424,17 @@ void CamulewebApp::LoadConfigFile()
 {
 	CaMuleExternalConnector::LoadConfigFile();
 	if (m_configFile) {
-		// amuleweb historically wrote most keys under [Webserver]
-		// (lowercase 's') but UPnPTCPPort under [WebServer] (capital
-		// S) — an old typo. amule.conf consistently uses [WebServer],
-		// so that's the canonical spelling here too. wxFileConfig
-		// group names are case-insensitive (verified in #822 on Linux
-		// and confirmed by the pre-PR INI shape, where /WebServer and
-		// /Webserver writes always merged into a single section), so
-		// reading `/WebServer/<key>` finds entries written by older
-		// builds that stored them under `/Webserver/<key>` — no
-		// fallback path needed.
-		//
-		// Reading `/Webserver/<key>` directly *would* register the
-		// lowercase section name in wxFileConfig's internal map and
-		// lock the section's case in the output file to lowercase
-		// (the bug @ngosang flagged on the #822 packaging build).
-		// Stick to /WebServer/ everywhere here. (#818)
+		// amuleweb historically wrote most keys under [Webserver], lowercase 's', but
+		// UPnPTCPPort under [WebServer] -- an old typo. amule.conf consistently uses
+		// [WebServer], so that is the canonical spelling here too. wxFileConfig group names
+		// are case-insensitive (verified in #822 on Linux, and confirmed by the pre-PR INI
+		// shape, where /WebServer and /Webserver writes always merged into one section), so
+		// reading `/WebServer/<key>` finds entries written by older builds under
+		// `/Webserver/<key>` and no fallback path is needed. Reading `/Webserver/<key>`
+		// directly *would* register the lowercase section name in wxFileConfig's internal
+		// map and lock the section's case in the output file to lowercase -- the bug
+		// @ngosang flagged on the #822 packaging build. Stick to /WebServer/ everywhere
+		// here (#818).
 		m_WebserverPort = m_configFile->Read("/WebServer/Port", 4711l);
 		m_configFile->Read("/WebServer/UPnPWebServerEnabled", &m_UPnPWebServerEnabled, false);
 		m_UPnPTCPPort = m_configFile->Read("/WebServer/UPnPTCPPort", 50001l);
@@ -470,21 +459,19 @@ void CamulewebApp::SaveConfigFile()
 		m_configFile->Write("/WebServer/AllowGuest", m_AllowGuest);
 		m_configFile->WriteHash("/WebServer/AdminPassword", m_AdminPass);
 		m_configFile->WriteHash("/WebServer/GuestPassword", m_GuestPass);
-		// PageRefreshTime was previously read but never written —
-		// any value the user set in remote.conf was effectively
-		// reset to the default on next launch. Persist it now.
+		// PageRefreshTime was previously read but never written, so any value the user set
+		// in remote.conf was effectively reset to the default on the next launch. Persist
+		// it now.
 		m_configFile->Write("/WebServer/PageRefreshTime", m_PageRefresh);
 
-		// No DeleteGroup("/Webserver") needed: wxFileConfig group
-		// names are case-insensitive, so /Webserver/foo and
-		// /WebServer/foo are the same entry. A prior attempt added
-		// the DeleteGroup to migrate the section's case in the INI
-		// file, but case-insensitivity meant it actually wiped the
-		// just-written [WebServer] keys — confirmed via --write-config
-		// on amule-dev-vm where the section vanished entirely. The
-		// HasEntry/fallback path in LoadConfigFile above is dead
-		// code on Linux for the same reason but is kept as a defensive
-		// no-op for any future wx port that breaks the assumption.
+		// No DeleteGroup("/Webserver") needed: wxFileConfig group names are case-
+		// insensitive, so /Webserver/foo and /WebServer/foo are the same entry. A prior
+		// attempt added the DeleteGroup to migrate the section's case in the INI file, but
+		// case-insensitivity meant it actually wiped the just-written [WebServer] keys --
+		// confirmed via --write-config on amule-dev-vm, where the section vanished
+		// entirely. The HasEntry/fallback path in LoadConfigFile above is dead code on
+		// Linux for the same reason, but is kept as a defensive no-op for any future wx
+		// port that breaks the assumption.
 	}
 }
 

@@ -113,14 +113,14 @@ CPartFile::CPartFile()
 namespace
 {
 
-// Parse the ed2k string-named "length" tag -- "h:mm:ss" or "m:ss" -- into
-// seconds. FT_MEDIA_LENGTH is a uint32 everywhere else in the tree, so the
-// string form has to be converted rather than stored raw.
+// Parse the ed2k string-named "length" tag -- "h:mm:ss" or "m:ss" -- into seconds.
+// FT_MEDIA_LENGTH is a uint32 everywhere else in the tree, so the string form has to be
+// converted rather than stored raw.
 bool ParseEd2kLengthSeconds(const wxString &text, uint32 &out)
 {
-	// Split into at most three fields, leading unit first, so "h:mm:ss" and
-	// "m:ss" both fall out of the same loop. A trailing colon leaves an empty
-	// final token and is rejected rather than read as a zero.
+	// Split into at most three fields, leading unit first, so "h:mm:ss" and "m:ss" both
+	// fall out of the same loop. A trailing colon leaves an empty final token and is
+	// rejected rather than read as a zero.
 	wxArrayString fields;
 	wxString rest = text;
 	for (;;) {
@@ -146,10 +146,9 @@ bool ParseEd2kLengthSeconds(const wxString &text, uint32 &out)
 		if (fields[i].IsEmpty() || !fields[i].ToULong(&part)) {
 			return false;
 		}
-		// Only the leading field is an open-ended count; everything after it is a
-		// minute or second and cannot exceed 59. Capped so a malformed "1:75:00"
-		// is dropped rather than silently re-interpreted, and so the accumulation
-		// below cannot overflow.
+		// Only the leading field is an open-ended count; everything after it is a minute or
+		// second and cannot exceed 59. Capped so a malformed "1:75:00" is dropped rather
+		// than silently re-interpreted, and so the accumulation below cannot overflow.
 		const bool leading = (i == 0);
 		if (!leading && part > 59) {
 			return false;
@@ -165,23 +164,22 @@ bool ParseEd2kLengthSeconds(const wxString &text, uint32 &out)
 
 // Store one inherited media tag under its canonical NUMERIC id.
 //
-// Both encodings a hit can carry end up here: the ed2k string-named form
-// ("Artist", "bitrate", "length" as h:mm:ss) and the numeric-id form. That
-// matters because every media consumer in the tree looks tags up by numeric id
-// -- CAbstractFile::GetStrTagValue matches on GetNameID() -- so a tag pushed
-// under its string name was written to the part file, carried for the lifetime
-// of the download, and read by nobody.
+// Both encodings a hit can carry end up here: the ed2k string-named form ("Artist",
+// "bitrate", "length" as h:mm:ss) and the numeric-id form. That matters because every
+// media consumer in the tree looks tags up by numeric id -- CAbstractFile::GetStrTagValue
+// matches on GetNameID() -- so a tag pushed under its string name was written to the
+// part file, carried for the lifetime of the download, and read by nobody.
 //
-// Integer width is deliberately not checked. The ed2k publisher forces 32 bits,
-// but Kad picks the narrowest type that fits the value, so a three-minute song
-// arrives as a uint8 and an episode as a uint16 -- an exact `type ==
-// TAGTYPE_UINT32` test rejected essentially every real length from Kad.
+// Integer width is deliberately not checked. The ed2k publisher forces 32 bits, but Kad
+// picks the narrowest type that fits the value, so a three-minute song arrives as a
+// uint8 and an episode as a uint16 -- an exact `type == TAGTYPE_UINT32` test rejected
+// essentially every real length from Kad.
 //
-// Every path out of here stores a CTagInt32 or a CTagString, never the source
-// tag verbatim. That normalisation is what makes the id-only lookups downstream
-// safe, in particular CSearch::PreparePacketForTags, whose Kad republish reads
-// `pTag->GetInt()` with no IsInt() guard: storing a caller's tag unchanged here
-// would let a string-typed FT_MEDIA_LENGTH go out to every peer as garbage.
+// Every path out of here stores a CTagInt32 or a CTagString, never the source tag
+// verbatim. That normalisation is what makes the id-only lookups downstream safe, in
+// particular CSearch::PreparePacketForTags, whose Kad republish reads `pTag->GetInt()`
+// with no IsInt() guard: storing a caller's tag unchanged here would let a string-typed
+// FT_MEDIA_LENGTH go out to every peer as garbage.
 bool InheritMediaTag(CAbstractFile &file, uint8 id, const CTag &tag)
 {
 	if (id == FT_MEDIA_LENGTH) {
@@ -229,9 +227,9 @@ CPartFile::CPartFile(CSearchFile *searchresult)
 
 		bool bTagAdded = false;
 		if (pTag.GetNameID() == 0 && !pTag.GetName().IsEmpty() && (pTag.IsStr() || pTag.IsInt())) {
-			// The ed2k string-named encoding. These used to be pushed under their
-			// string names, which no media consumer ever looks up -- stored, written
-			// to disk, carried for the whole download, read by nobody.
+			// The ed2k string-named encoding. These used to be pushed under their string
+			// names, which no media consumer ever looks up -- stored, written to disk,
+			// carried for the whole download, read by nobody.
 			static const struct
 			{
 				wxString pszName;
@@ -278,10 +276,9 @@ CPartFile::CPartFile(CSearchFile *searchresult)
 				}
 			}
 			// Media metadata advertised by the source, so a download carries FT_MEDIA_*
-			// immediately -- visible while downloading and persisted on completion --
-			// without needing a local ffprobe. All six, and through the same helper as
-			// the string-named branch above, so both encodings converge on one set of
-			// rules.
+			// immediately -- visible while downloading and persisted on completion -- without
+			// needing a local ffprobe. All six, and through the same helper as the string-named
+			// branch above, so both encodings converge on one set of rules.
 			static const uint8 _aMediaIDs[] = { FT_MEDIA_LENGTH,
 				FT_MEDIA_BITRATE,
 				FT_MEDIA_CODEC,
@@ -303,15 +300,13 @@ CPartFile::CPartFile(CSearchFile *searchresult)
 		}
 
 		if (pTag.GetNameID() == FT_AICH_HASH && pTag.IsStr()) {
-			// The AICH root hash a search result carried, from an ed2k server or from
-			// Kad. Set as the master hash rather than stored as a tag: the tag copies
-			// above all end at m_taglist, and nothing reads an AICH hash back out of
-			// there. This is the whole point of carrying the hash on a result -- a
-			// download that starts already knowing its root hash never has to collect
-			// one from a pool of peers before it can recover a corrupt part.
-			//
-			// AICH_VERIFIED matches the .part.met path above and the ed2k link path:
-			// in all three the hash arrived with something that vouches for it.
+			// The AICH root hash a search result carried, from an ed2k server or from Kad. Set
+			// as the master hash rather than stored as a tag: the tag copies above all end at
+			// m_taglist, and nothing reads an AICH hash back out of there. This is the whole
+			// point of carrying the hash on a result -- a download that starts already knowing
+			// its root hash never has to collect one from a pool of peers before it can recover
+			// a corrupt part. AICH_VERIFIED matches the .part.met path above and the ed2k link
+			// path: in all three the hash arrived with something that vouches for it.
 			CAICHHash hash;
 			if (hash.DecodeBase32(pTag.GetStr()) == CAICHHash::GetHashSize()) {
 				m_pAICHHashSet->SetMasterHash(hash, AICH_VERIFIED);
@@ -361,10 +356,9 @@ CPartFile::~CPartFile()
 	AddDebugLogLineN(
 		logPartFile, CFormat("~CPartFile entered, m_inDestructor set: '%s'") % GetFileName());
 
-	// Wait for any in-flight HashJobs targeting this file to finish.
-	// CPartFileHashThread reads m_hpartfile via HashSinglePart; we must not close
-	// the file out from under it. m_inDestructor was set above so Phase 3 will not
-	// enqueue anything new.
+	// Wait for any in-flight HashJobs targeting this file to finish. CPartFileHashThread
+	// reads m_hpartfile via HashSinglePart; we must not close the file out from under it.
+	// m_inDestructor was set above so Phase 3 will not enqueue anything new.
 	if (m_pendingHashes > 0) {
 		AddDebugLogLineN(logPartFile,
 			CFormat("~CPartFile waiting for %d pending hash job(s) of '%s'") %
@@ -376,27 +370,25 @@ CPartFile::~CPartFile()
 
 	// if it's not opened, it was completed or deleted
 	if (m_hpartfile.IsOpened()) {
-		// FlushBuffer drains buffered writes / harvests Phase 2's
-		// PB_WRITTEN items into m_aChangedPart. Phase 3 itself returns
-		// early due to m_inDestructor.
+		// FlushBuffer drains buffered writes / harvests Phase 2's PB_WRITTEN items into
+		// m_aChangedPart. Phase 3 itself returns early due to m_inDestructor.
 		FlushBuffer();
 
 		// Sync-hash any parts still flagged dirty in m_aChangedPart.
 		//
 		// In normal operation Phase 3 enqueues dirty parts to CPartFileHashThread
-		// asynchronously. But at shutdown the hash thread is torn down before
-		// downloadqueue, so async enqueue is not available here -- and a
-		// forced-quit during an active download can leave many parts
-		// harvested-but-not-yet-hashed, because the quiescent guard never opened
-		// during the receive burst.
+		// asynchronously. But at shutdown the hash thread is torn down before downloadqueue,
+		// so async enqueue is not available here -- and a forced-quit during an active
+		// download can leave many parts harvested-but-not-yet-hashed, because the quiescent
+		// guard never opened during the receive burst.
 		//
-		// Without this, .met would be saved with the gaplist marking those parts
-		// complete and m_corrupted_list empty, so on next launch they would be
-		// treated as implicitly verified even though they were never hashed.
+		// Without this, .met would be saved with the gaplist marking those parts complete and
+		// m_corrupted_list empty, so on next launch they would be treated as implicitly
+		// verified even though they were never hashed.
 		//
-		// Run synchronously on the main thread. Slow shutdown is acceptable for
-		// the rare cancel-mid-download case; the common paths keep m_aChangedPart
-		// drained throughout the session, so the loop usually has nothing to do.
+		// Run synchronously on the main thread. Slow shutdown is acceptable for the rare
+		// cancel-mid-download case; the common paths keep m_aChangedPart drained throughout
+		// the session, so the loop usually has nothing to do.
 		if (m_aChangedPart.size() == GetPartCount()) {
 			uint16 verified = 0, corrupt = 0;
 			for (uint16 i = 0; i < GetPartCount(); ++i) {
@@ -915,10 +907,10 @@ uint8 CPartFile::LoadPartFile(
 		m_iLostDueToCorruption = transferred - completedsize;
 	}
 
-	// In-memory state now matches the just-loaded .part.met. Setters invoked
-	// during tag parsing may have set m_metDirty; drop it so the first
-	// FlushBuffer tick after load does not rewrite the .met with byte-identical
-	// content. Also seed m_lastMetSaveTick so the heartbeat measures from now.
+	// In-memory state now matches the just-loaded .part.met. Setters invoked during tag
+	// parsing may have set m_metDirty; drop it so the first FlushBuffer tick after load does
+	// not rewrite the .met with byte-identical content. Also seed m_lastMetSaveTick so the
+	// heartbeat measures from now.
 	ClearMetDirty();
 	ClearStatsDirty();
 	m_lastMetSaveTick = ::GetTickCount64();
@@ -943,23 +935,21 @@ bool CPartFile::SavePartFile(bool Initial)
 
 	// Atomic-rename save.
 	//
-	// The old sequence made three full-size content copies per save -- a backup
-	// copy, a write-from-scratch, and a second backup copy -- plus a
-	// delete/create dance on the live .part.met. On a sharer with hundreds of
-	// dirty partfiles per timer tick the aggregate runs the main thread
-	// continuously through disk I/O: write() syscalls are microseconds each,
-	// but the loop length itself is the bottleneck.
+	// The old sequence made three full-size content copies per save -- a backup copy, a
+	// write-from-scratch, and a second backup copy -- plus a delete/create dance on the live
+	// .part.met. On a sharer with hundreds of dirty partfiles per timer tick the aggregate
+	// runs the main thread continuously through disk I/O: write() syscalls are microseconds
+	// each, but the loop length itself is the bottleneck.
 	//
 	// New sequence:
 	//   1. Write new content into .part.met.tmp.
-	//   2. rename(.part.met, .part.met.bak) -- O(1), promoting the previous
-	//      .part.met to the long-term backup.
-	//   3. rename(.part.met.tmp, .part.met) -- atomic install; POSIX rename
-	//      guarantees the target is either fully old or fully new content at
-	//      every observable moment.
+	//   2. rename(.part.met, .part.met.bak) -- O(1), promoting the previous .part.met to
+	//      the long-term backup.
+	//   3. rename(.part.met.tmp, .part.met) -- atomic install; POSIX rename guarantees the
+	//      target is either fully old or fully new content at every observable moment.
 	//
-	// One content write plus two metadata renames, and stronger crash safety
-	// because the live .part.met is never absent or partial.
+	// One content write plus two metadata renames, and stronger crash safety because the
+	// live .part.met is never absent or partial.
 	const CPath tmpName = m_fullname.AppendExt(".tmp");
 	const CPath bakName = m_fullname.AppendExt(PARTMET_BAK_EXT);
 
@@ -1014,9 +1004,9 @@ bool CPartFile::SavePartFile(bool Initial)
 
 		// #warning Kry - Where are lost by corruption and gained by compression?
 
-		// 0 (unicoded part file name). Written with BOM to keep eMule
-		// compatibility. The 'printable' filename is saved, as the filename does
-		// not presently represent an actual file.
+		// 0 (unicoded part file name). Written with BOM to keep eMule compatibility. The
+		// 'printable' filename is saved, as the filename does not presently represent an
+		// actual file.
 		CTagString(FT_FILENAME, GetFileName().GetPrintable()).WriteTagToFile(&file, utf8strOptBOM);
 		CTagString(FT_FILENAME, GetFileName().GetPrintable()).WriteTagToFile(&file); // 1
 
@@ -1122,9 +1112,9 @@ bool CPartFile::SavePartFile(bool Initial)
 
 	file.Close();
 
-	// Sanity-check the tmp before committing it as the new .part.met. If the
-	// write somehow produced a zero-length file -- no exception, but disk full
-	// or quota -- the existing .part.met must stay intact.
+	// Sanity-check the tmp before committing it as the new .part.met. If the write somehow
+	// produced a zero-length file -- no exception, but disk full or quota -- the existing
+	// .part.met must stay intact.
 	sint64 tmpLength = tmpName.GetFileSize();
 	if (tmpLength == wxInvalidOffset || tmpLength == 0) {
 		theApp->ShowAlert(
@@ -1136,10 +1126,10 @@ bool CPartFile::SavePartFile(bool Initial)
 		return false;
 	}
 
-	// Two-rename atomic install: the previous .part.met is promoted to
-	// .part.met.bak, overwriting any older backup, which LoadPartFile reads on
-	// the next start if the live .part.met goes missing; then the
-	// freshly-written .part.met.tmp is renamed over the live name, atomically.
+	// Two-rename atomic install: the previous .part.met is promoted to .part.met.bak,
+	// overwriting any older backup, which LoadPartFile reads on the next start if the live
+	// .part.met goes missing; then the freshly-written .part.met.tmp is renamed over the
+	// live name, atomically.
 	if (m_fullname.FileExists()) {
 		CPath::RenameFile(m_fullname, bakName, true /* overwrite */);
 	}
@@ -1155,11 +1145,11 @@ void CPartFile::SaveSourceSeeds()
 {
 #define MAX_SAVED_SOURCES 10
 
-	// Kry - Sources seeds. Saves the last MAX_SAVED_SOURCES sources of the file
-	// as a 'seed' for the next run: they could be the hardest to get, and are
-	// more probably still available. Downloading sources take preference, since
-	// we probably have more credits on them, and source exchange gets us the
-	// rest. Currently used only on rare files (< 20 sources).
+	// Kry - Sources seeds. Saves the last MAX_SAVED_SOURCES sources of the file as a 'seed'
+	// for the next run: they could be the hardest to get, and are more probably still
+	// available. Downloading sources take preference, since we probably have more credits on
+	// them, and source exchange gets us the rest. Currently used only on rare files (< 20
+	// sources).
 
 	if (GetSourceCount() > 20) {
 		return;
@@ -1222,12 +1212,10 @@ void CPartFile::SaveSourceSeeds()
 			file.WriteUInt8(byCryptOptions);
 		}
 
-		/* v2: Added to keep track of too old seeds */
-		/* according to
-		 * https://docs.wxwidgets.org/3.2/classwx_date_time.html#a99263946a9a2ece83421411081c02378
-		 * GetTicks() won't work after Jan 19, 2038, and suggest to use GetValue() instead and convert
-		 * from ms to seconds. Since GetValue() returns a wxLongLong which is tagged obsolete, just
-		 * use time(NULL)*/
+		// v2: added to keep track of too-old seeds. Per
+		// https://docs.wxwidgets.org/3.2/classwx_date_time.html GetTicks() stops working after
+		// Jan 19 2038 and GetValue() is suggested instead, converting ms to seconds; since
+		// GetValue() returns a wxLongLong tagged obsolete, just use time(NULL).
 		file.WriteUInt32((uint32)time(NULL));
 
 		AddLogLineN(CFormat(wxPLURAL("Saved %i source seed for partfile: %s (%s)",
@@ -1334,10 +1322,10 @@ void CPartFile::PartFileHashFinished(CKnownFile *result)
 {
 	m_lastDateChanged = result->m_lastDateChanged;
 	bool errorfound = false;
-	// Parts that pass their per-part hash during download but fail this final
-	// full-file re-hash -- a block rewritten after the part completed, say --
-	// are collected here so AICH recovery can be attempted once the file is back
-	// in a downloadable state, rather than only re-gapping the whole part.
+	// Parts that pass their per-part hash during download but fail this final full-file
+	// re-hash -- a block rewritten after the part completed, say -- are collected here so
+	// AICH recovery can be attempted once the file is back in a downloadable state, rather
+	// than only re-gapping the whole part.
 	std::vector<uint16> corruptParts;
 	if (GetED2KPartHashCount() == 0) {
 		if (IsComplete(0, GetFileSize() - 1)) {
@@ -1378,10 +1366,11 @@ void CPartFile::PartFileHashFinished(CKnownFile *result)
 					errorfound = true;
 					const uint16 part = (uint16)i;
 					// Mirror the mid-download corruption path: flag the part in
-					// m_corrupted_list. It is not needed for the AICH block recovery
-					// below, but it primes the ICH fallback for when no trusted AICH
-					// hashset is available, and since m_corrupted_list is persisted to
-					// the .met it keeps the corrupt state across a restart mid-recovery.
+					// m_corrupted_list. It is not needed for the AICH block
+					// recovery below, but it primes the ICH fallback for when no
+					// trusted AICH hashset is available, and since m_corrupted_list
+					// is persisted to the .met it keeps the corrupt state across a
+					// restart mid-recovery.
 					if (!IsCorruptedPart(part)) {
 						m_corrupted_list.push_back(part);
 					}
@@ -1423,14 +1412,13 @@ void CPartFile::PartFileHashFinished(CKnownFile *result)
 	} else {
 		SetStatus(PS_READY);
 		SavePartFile();
-		// A part can pass its per-part hash during download yet fail this final
-		// full-file re-hash -- a block rewritten after the part completed, as
-		// happens when endgame source rotation splices a block across two
-		// sources. AddGap() above re-opens the whole 9.28 MB part; when a
-		// trusted AICH hashset is available, recover it at 180 KB block
-		// granularity instead, so only the actually-corrupt blocks are
-		// re-downloaded. RequestAICHRecovery is a no-op without a trusted
-		// hashset, so non-AICH files keep the whole-part re-download.
+		// A part can pass its per-part hash during download yet fail this final full-file
+		// re-hash -- a block rewritten after the part completed, as happens when endgame
+		// source rotation splices a block across two sources. AddGap() above re-opens the
+		// whole 9.28 MB part; when a trusted AICH hashset is available, recover it at 180 KB
+		// block granularity instead, so only the actually-corrupt blocks are re-downloaded.
+		// RequestAICHRecovery is a no-op without a trusted hashset, so non-AICH files keep the
+		// whole-part re-download.
 		for (std::vector<uint16>::const_iterator it = corruptParts.begin(); it != corruptParts.end();
 			++it) {
 			RequestAICHRecovery(*it);
@@ -1587,25 +1575,24 @@ void CPartFile::WriteCompleteSourcesCount(CMemFile *file)
 
 uint32 CPartFile::Process(uint8 m_icounter)
 {
-	// Partfiles have ~20 EC-exported fields that change frequently and
-	// independently. Per-field hooks have diminishing returns when the file is
-	// actively transferring anyway, so the mark here stays coarse -- but it is
-	// not unconditional. "Process() ran" is not the same as "this file has new
-	// state": a queued download with no sources ticks once a second and every
-	// exported value comes back identical, and marking it anyway made
-	// Get_EC_Response_GetUpdate's change test pass for every non-paused
-	// download, every poll. With 11,000 of them that is the whole download list
-	// re-encoded and re-sent once a second, and the same again on the client.
+	// Partfiles have ~20 EC-exported fields that change frequently and independently.
+	// Per-field hooks have diminishing returns when the file is actively transferring
+	// anyway, so the mark here stays coarse -- but it is not unconditional. "Process() ran"
+	// is not the same as "this file has new state": a queued download with no sources ticks
+	// once a second and every exported value comes back identical, and marking it anyway
+	// made Get_EC_Response_GetUpdate's change test pass for every non-paused download, every
+	// poll. With 11,000 of them that is the whole download list re-encoded and re-sent once
+	// a second, and the same again on the client.
 	//
-	// Everything else in CEC_PartFile_Tag is event-driven and marks itself where
-	// it changes. This covers what only Process() can move.
+	// Everything else in CEC_PartFile_Tag is event-driven and marks itself where it changes.
+	// This covers what only Process() can move.
 	//
-	// GetDlActiveTime() is deliberately absent. It is wall-clock derived, and
-	// every PS_READY/PS_EMPTY file is activated the moment the client connects,
-	// so it advances every second whether or not the download is doing anything
-	// -- including it would answer "changed" always and leave this test doing
-	// nothing. The cost is that an idle download's active time reaches a remote
-	// GUI only when something real changes; it is read in one place.
+	// GetDlActiveTime() is deliberately absent. It is wall-clock derived, and every
+	// PS_READY/PS_EMPTY file is activated the moment the client connects, so it advances
+	// every second whether or not the download is doing anything -- including it would
+	// answer "changed" always and leave this test doing nothing. The cost is that an idle
+	// download's active time reaches a remote GUI only when something real changes; it is
+	// read in one place.
 	const std::array<uint64, 12> ecTickState = { GetStatus(),
 		GetSourceCount(),
 		GetNotCurrentSourcesCount(),
@@ -1618,12 +1605,11 @@ uint32 CPartFile::Process(uint8 m_icounter)
 		(uint64)(GetKBpsDown() * 1024),
 		GetAvailablePartCount(),
 		m_nCompleteSourcesCount,
-		// The last two are already implied by the ones above -- a block arriving
-		// moves GetTransferred(), and availability reaching complete moves
-		// GetAvailablePartCount() on the same pass. They are listed anyway
-		// because that is a coupling, not a guarantee: neither stamp marks
-		// EC-dirty of its own accord, so relying on the neighbour would leave
-		// the field to go stale the day either one moves.
+		// The last two are already implied by the ones above -- a block arriving moves
+		// GetTransferred(), and availability reaching complete moves GetAvailablePartCount()
+		// on the same pass. They are listed anyway because that is a coupling, not a
+		// guarantee: neither stamp marks EC-dirty of its own accord, so relying on the
+		// neighbour would leave the field to go stale the day either one moves.
 		(uint64)lastseencomplete,
 		(uint64)GetLastChangeDatetime() };
 	if (ecTickState != m_ecTickState) {
@@ -1634,9 +1620,9 @@ uint32 CPartFile::Process(uint8 m_icounter)
 	uint16 old_trans;
 	uint64 dwCurTick = ::GetTickCount64();
 
-	// Flush on buffer-full, time-limit, or pending hash drain.
-	// HasPendingHashWork() bypass drains Phase 3 at Process()-tick
-	// rate (~100 ms) instead of every 60 s when the file is idle.
+	// Flush on buffer-full, time-limit, or pending hash drain. The HasPendingHashWork()
+	// bypass drains Phase 3 at Process()-tick rate (~100 ms) instead of every 60 s when the
+	// file is idle.
 	if ((m_nTotalBufferData > thePrefs::GetFileBufferSize()) ||
 		(dwCurTick > (m_nLastBufferFlushTime + BUFFER_TIME_LIMIT)) || HasPendingHashWork()) {
 		FlushBuffer();
@@ -1648,9 +1634,9 @@ uint32 CPartFile::Process(uint8 m_icounter)
 	kBpsDown = 0.0;
 
 	if (m_icounter < 10) {
-		// Update only downloading sources. The list is copied to a temporary
-		// vector to prevent iterator invalidation -- TickDownloadAndMeasure() can
-		// trigger DropSlowSources, which removes clients synchronously.
+		// Update only downloading sources. The list is copied to a temporary vector to
+		// prevent iterator invalidation -- TickDownloadAndMeasure() can trigger
+		// DropSlowSources, which removes clients synchronously.
 		std::vector<CClientRef> temp_list(
 			m_downloadingSourcesList.begin(), m_downloadingSourcesList.end());
 		for (CClientRef &ref : temp_list) {
@@ -1684,9 +1670,8 @@ uint32 CPartFile::Process(uint8 m_icounter)
 			case DS_LOWTOLOWIP: {
 				if (cur_src->HasLowID() && !theApp->CanDoCallback(cur_src->GetServerIP(),
 								   cur_src->GetServerPort())) {
-					// If we are almost maxed on sources,
-					// slowly remove these client to see
-					// if we can find a better source.
+					// If we are almost maxed on sources, slowly remove these
+					// clients to see if we can find a better source.
 					if (((dwCurTick - lastpurgetime) > 30000) &&
 						(GetSourceCount() >=
 							(thePrefs::GetMaxSourcePerFile() * .8))) {
@@ -1886,14 +1871,14 @@ bool CPartFile::CanAddSource(uint32 userid,
 		}
 	}
 
-	// A LowID of zero has no callback semantics -- server LowID assignments
-	// start at 1, so an OP_CALLBACKREQUEST aimed at LowID 0 cannot be routed to
-	// anything. Source-exchange and server source lists skip the IsGoodIP filter
-	// for LowID ids, so such entries otherwise sail through, become a
-	// CUpDownClient, and burn ~60 s of idle-socket time in the listen pool.
+	// A LowID of zero has no callback semantics -- server LowID assignments start at 1, so
+	// an OP_CALLBACKREQUEST aimed at LowID 0 cannot be routed to anything. Source-exchange
+	// and server source lists skip the IsGoodIP filter for LowID ids, so such entries
+	// otherwise sail through, become a CUpDownClient, and burn ~60 s of idle-socket time in
+	// the listen pool.
 	//
-	// HighID 0 (IP 0.0.0.0) is left to the upstream IsGoodIP filter that already
-	// gates both callers; this guard is scoped narrowly to the LowID case.
+	// HighID 0 (IP 0.0.0.0) is left to the upstream IsGoodIP filter that already gates both
+	// callers; this guard is scoped narrowly to the LowID case.
 	if (IsLowID(hybridID) && hybridID == 0) {
 		return false;
 	}
@@ -2095,10 +2080,10 @@ void CPartFile::UpdatePartsInfo()
 				m_nCompleteSourcesCountLo = m_nCompleteSourcesCount;
 				m_nCompleteSourcesCountHi = m_nCompleteSourcesCount;
 			} else if (n < 20) {
-				// For the low and normal guesses: if we see more sources than guessed,
-				// use what we see; if fewer than the low guess, the network accounts
-				// for 80% and what we see for 20%, kept above the normal guess. The
-				// high guess is 80% network, 20% observed.
+				// For the low and normal guesses: if we see more sources than
+				// guessed, use what we see; if fewer than the low guess, the network
+				// accounts for 80% and what we see for 20%, kept above the normal
+				// guess. The high guess is 80% network, 20% observed.
 				if (count[i] < m_nCompleteSourcesCount) {
 					m_nCompleteSourcesCountLo = m_nCompleteSourcesCount;
 				} else {
@@ -2139,20 +2124,19 @@ bool CPartFile::GetNextRequestedBlock(
 	CUpDownClient *sender, std::vector<Requested_Block_Struct *> &toadd, uint16 &count)
 {
 
-	// Returns a list of blocks (~180KB) to download. To avoid prematurely
-	// stopping the download, all blocks requested from the same source must lie
-	// within the same chunk (part, ~9MB).
+	// Returns a list of blocks (~180KB) to download. To avoid prematurely stopping the
+	// download, all blocks requested from the same source must lie within the same chunk
+	// (part, ~9MB).
 	//
-	// Chunk selection is one of the CRITICAL parts of the edonkey network: the
-	// algorithm has to ensure the best spreading of files. It weighs four
-	// criteria -- chunk frequency (rare chunks first, so they become newly
-	// available), preview parts (first + last chunk), request state (spread
-	// requests across sources), and completion (finish partially retrieved
-	// chunks first).
+	// Chunk selection is one of the CRITICAL parts of the edonkey network: the algorithm has
+	// to ensure the best spreading of files. It weighs four criteria -- chunk frequency
+	// (rare chunks first, so they become newly available), preview parts (first + last
+	// chunk), request state (spread requests across sources), and completion (finish
+	// partially retrieved chunks first).
 	//
-	// Frequency defines three zones -- very rare (<10%), rare (<50%), common
-	// (>50%) -- and inside each the criteria carry different weights. The
-	// chunk(s) with the highest priority (highest=0, lowest=0xffff) go first:
+	// Frequency defines three zones -- very rare (<10%), rare (<50%), common (>50%) -- and
+	// inside each the criteria carry different weights. The chunk(s) with the highest
+	// priority (highest=0, lowest=0xffff) go first:
 	//
 	//          very rare   (preview)       rare                      common
 	//    0% <---- +0 pt ----> 10% <----- +10000 pt -----> 50% <---- +20000 pt ----> 100%
@@ -2170,9 +2154,9 @@ bool CPartFile::GetNextRequestedBlock(
 	// 30000..3xxxx  requested rare chunks + requested preview chunks
 	// 40000..4xxxx  requested common chunks (priority to the least complete)
 	//
-	// So the rarest chunks usually go first, except that a chunk close to
-	// completion can overtake them (priority inversion). For common chunks the
-	// algorithm tries to spread the download between sources.
+	// So the rarest chunks usually go first, except that a chunk close to completion can
+	// overtake them (priority inversion). For common chunks the algorithm tries to spread
+	// the download between sources.
 
 	// Check input parameters
 	if (sender->GetPartStatus().empty()) {
@@ -2254,9 +2238,9 @@ bool CPartFile::GetNextRequestedBlock(
 					// Offsets of chunk
 					const uint64 uStart = cur_chunk.part * PARTSIZE;
 					const uint64 uEnd = uStart + GetPartSize(cur_chunk.part) - 1;
-					// Criterion 2. Parts used for preview: the first part and the last
-					// part(s) -- when the last part is very small the two last parts are
-					// both needed.
+					// Criterion 2. Parts used for preview: the first part and the
+					// last part(s) -- when the last part is very small the two last
+					// parts are both needed.
 					bool critPreview = false;
 					if (isPreviewEnable == true) {
 						if (cur_chunk.part == 0) {
@@ -2313,8 +2297,8 @@ bool CPartFile::GetNextRequestedBlock(
 								20000 +                 // Criterion 3
 								(100 - critCompletion); // Criterion 4
 						} else {
-							// 40000..4xxxx  requested common chunks. The weight
-							// of the completion criterion is INVERSED here, to
+							// 40000..4xxxx requested common chunks. The weight of
+							// the completion criterion is INVERSED here, to
 							// spread the requests over the completing chunks --
 							// without it the chunk closest to completion would
 							// receive every new source.
@@ -2443,9 +2427,8 @@ void CPartFile::CompleteFileEnded(bool errorOccured, const CPath &newname)
 		m_paused = false;
 		ClearPriority();
 
-		// Shared-since (issue #466): a just-completed download becomes
-		// available now. Stamp only if unset so a re-complete / re-add
-		// doesn't move the date.
+		// Shared-since (issue #466): a just-completed download becomes available now. Stamp
+		// only if unset so a re-complete / re-add does not move the date.
 		if (GetDateShared() == 0) {
 			SetDateShared(time(nullptr));
 		}
@@ -2497,10 +2480,10 @@ void CPartFile::PerformFileComplete()
 	theApp->uploadqueue->SuspendUpload(GetFileHash(), false);
 	FlushBuffer();
 
-	// Close the permanent handle under m_hpartfileMutex: CUploadDiskIOThread
-	// reads this handle from a worker thread via ReadData, which holds the same
-	// mutex around its Seek+Read, so closing without it can land between the two.
-	// Holding it also makes ReadData's IsOpened check decisive.
+	// Close the permanent handle under m_hpartfileMutex: CUploadDiskIOThread reads this
+	// handle from a worker thread via ReadData, which holds the same mutex around its
+	// Seek+Read, so closing without it can land between the two. Holding it also makes
+	// ReadData's IsOpened check decisive.
 	if (m_hpartfile.IsOpened()) {
 		std::lock_guard<std::mutex> lock(m_hpartfileMutex);
 		m_hpartfile.Close();
@@ -2545,18 +2528,16 @@ void CPartFile::Delete()
 {
 	AddLogLineN(CFormat(_("Deleting file: %s")) % GetFileName());
 
-	// This function ends in `delete this`, so the object is already on its
-	// way out: set the same gate ~CPartFile uses, so FlushBuffer cannot
-	// enqueue further hash jobs (or re-share the file) while we tear it
-	// down below.
+	// This function ends in `delete this`, so the object is already on its way out: set the
+	// same gate ~CPartFile uses, so FlushBuffer cannot enqueue further hash jobs (or
+	// re-share the file) while we tear it down below.
 	m_inDestructor = true;
-	// Notify every subscriber that holds a raw CKnownFile* / CPartFile* to this
-	// object -- list ctrls, comment dialogs, the file-detail dialog, the AICH
-	// static request list, the write/hash threads, and on amulegui the
-	// CUpDownClient::m_uploadingfile / m_reqfile fields. Subscribers strip their
-	// references using pointer-value comparison only: this object is still live
-	// when the notify fires, but by the time queued main-thread subscribers run
-	// it may already have been freed.
+	// Notify every subscriber that holds a raw CKnownFile* / CPartFile* to this object --
+	// list ctrls, comment dialogs, the file-detail dialog, the AICH static request list, the
+	// write/hash threads, and on amulegui the CUpDownClient::m_uploadingfile / m_reqfile
+	// fields. Subscribers strip their references using pointer-value comparison only: this
+	// object is still live when the notify fires, but by the time queued main-thread
+	// subscribers run it may already have been freed.
 	Notify_KnownFileBeingDestroyed(this);
 	// Barry - Need to tell any connected clients to stop sending the file
 	StopFile(true);
@@ -2580,14 +2561,13 @@ void CPartFile::Delete()
 	theApp->searchlist->UpdateSearchFileByHash(
 		GetFileHash()); // Update file in the search dialog if it's still open
 
-	// Wait for any in-flight HashJob targeting this file before closing the
-	// handle and unlinking the .part below. CPartFileHashThread reads
-	// m_hpartfile inside HashSinglePart; pulling the file out from under it
-	// crashes the worker.
+	// Wait for any in-flight HashJob targeting this file before closing the handle and
+	// unlinking the .part below. CPartFileHashThread reads m_hpartfile inside
+	// HashSinglePart; pulling the file out from under it crashes the worker.
 	//
-	// ~CPartFile performs the same wait, but only from the `delete this` at the
-	// end of this function -- after the close and the unlink, far too late to
-	// help. The enqueue gate was set at the top, so the count only falls here.
+	// ~CPartFile performs the same wait, but only from the `delete this` at the end of this
+	// function -- after the close and the unlink, far too late to help. The enqueue gate was
+	// set at the top, so the count only falls here.
 	if (m_pendingHashes > 0) {
 		AddDebugLogLineN(logPartFile,
 			CFormat("Delete() waiting for %d pending hash job(s) of '%s'") %
@@ -2662,13 +2642,12 @@ bool CPartFile::HashSinglePart(uint16 partnumber)
 		uint64 offset = PARTSIZE * partnumber;
 		uint32 length = GetPartSize(partnumber);
 
-		// Drift defence: gap-tracking advances on receive, but bytes only hit disk
-		// via the buffered write path. A write failure (ENOSPC, EIO, a transient
-		// I/O error) followed by a SavePartFile and an unclean shutdown leaves
-		// the .met persisted with the optimistic gap state while the partfile is
-		// shorter than the gap list claims -- reading past EOF then throws and
-		// trips PS_ERROR, requiring manual recovery. Detect the divergence
-		// pre-read and reopen the gap so the missing bytes are re-fetched. Also
+		// Drift defence: gap-tracking advances on receive, but bytes only hit disk via the
+		// buffered write path. A write failure (ENOSPC, EIO, a transient I/O error) followed
+		// by a SavePartFile and an unclean shutdown leaves the .met persisted with the
+		// optimistic gap state while the partfile is shorter than the gap list claims --
+		// reading past EOF then throws and trips PS_ERROR, requiring manual recovery. Detect
+		// the divergence pre-read and reopen the gap so the missing bytes are re-fetched. Also
 		// covers external truncation, a partial backup restore, and FS corruption.
 		const uint64 partfileLen = m_hpartfile.GetLength();
 		if (partfileLen < offset + length) {
@@ -2752,11 +2731,11 @@ bool CPartFile::HasPendingHashWork() const
 			return true;
 		}
 	}
-	// Completion-pending: the gaplist is closed and the file is in an active
-	// state but writes have not all been harvested yet -- keep firing FlushBuffer
-	// at Process tick rate so the trailing CompleteFile check runs once the
-	// worker drains. Without this, a slow worker that completes the gap-closing
-	// write after the last FlushBuffer would leave us waiting 60 s.
+	// Completion-pending: the gaplist is closed and the file is in an active state but
+	// writes have not all been harvested yet -- keep firing FlushBuffer at Process tick rate
+	// so the trailing CompleteFile check runs once the worker drains. Without this, a slow
+	// worker that completes the gap-closing write after the last FlushBuffer would leave us
+	// waiting 60 s.
 	if (m_gaplist.IsComplete() && (status == PS_EMPTY || status == PS_READY) &&
 		!m_BufferedData_list.empty()) {
 		return true;
@@ -2769,8 +2748,8 @@ void CPartFile::StopFile(bool bCancel)
 	// Kry - Need to set it here to get into SetStatus(status) correctly
 	m_stopped = true;
 	// EC exports IsStopped() via EC_TAG_PARTFILE_STOPPED. Process() is gated to
-	// PS_READY/PS_EMPTY, so a stopped partfile no longer auto-marks each tick --
-	// the user action must mark explicitly or remote clients never see it.
+	// PS_READY/PS_EMPTY, so a stopped partfile no longer auto-marks each tick -- the user
+	// action must mark explicitly or remote clients never see it.
 	MarkECChanged();
 
 	// Barry - Need to tell any connected clients to stop sending the file
@@ -2871,9 +2850,8 @@ void CPartFile::ResumeFile()
 
 	if (m_paused) {
 		MarkMetDirty();
-		// EC exports IsStopped() / GetStatus(); Process() resumes
-		// auto-marking after we leave the paused state but the
-		// transition itself needs to be visible immediately.
+		// EC exports IsStopped() / GetStatus(); Process() resumes auto-marking after we leave
+		// the paused state but the transition itself needs to be visible immediately.
 		MarkECChanged();
 	}
 	m_paused = false;
@@ -3036,9 +3014,9 @@ CPacket *CPartFile::CreateSrcInfoPacket(
 					}
 				}
 			} else {
-				// if we don't know the need parts for this client,
-				// return any source currently a client sends it's
-				// file status only after it has at least one complete part
+				// If we do not know the needed parts for this client, return any source: a
+				// client sends its file status only after it has at least one complete
+				// part.
 				if (srcstatus.size() != GetPartCount()) {
 					continue;
 				}
@@ -3121,9 +3099,9 @@ void CPartFile::AddClientSources(CMemFile *sources,
 	if (!bSourceExchange2) {
 		nCount = sources->ReadUInt16();
 
-		// Check if the data size matches the 'nCount' for v1 or v2 and eventually correct the source
-		// exchange version while reading the packet data. Otherwise we could experience a higher
-		// chance in dealing with wrong source data, userhashs and finally duplicate sources.
+		// Check if the data size matches the 'nCount' for v1 or v2 and eventually correct the
+		// source exchange version while reading the packet data. Otherwise we could experience
+		// a higher chance of wrong source data, userhashes and finally duplicate sources.
 		uint32 uDataSize = sources->GetLength() - sources->GetPosition();
 
 		if ((uint32)(nCount * (4 + 2 + 4 + 2)) ==
@@ -3147,10 +3125,10 @@ void CPartFile::AddClientSources(CMemFile *sources,
 			}
 			uPacketSXVersion = 4;
 		} else {
-			// If v5 inserts additional data (like v2), the above code will correctly filter those
-			// packets. If v5 appends additional data after <count>(<Sources>)[count], we are in
-			// trouble with the above code. Though a client which does not understand v5+ should
-			// never receive such a packet.
+			// If v5 inserts additional data (like v2), the above code will correctly filter
+			// those packets. If v5 appends additional data after <count>(<Sources>)[count], we
+			// are in trouble with the above code. Though a client which does not understand v5+
+			// should never receive such a packet.
 			AddDebugLogLineN(logClient,
 				CFormat("Received invalid source exchange packet (v%u) of data size %u for "
 					"%s") %
@@ -3158,10 +3136,9 @@ void CPartFile::AddClientSources(CMemFile *sources,
 			return;
 		}
 	} else {
-		// for SX2:
-		// We only check if the version is known by us and do a quick sanitize check on known version
-		// other then SX1, the packet will be ignored if any error appears, since it can't be a
-		// "misunderstanding" anymore
+		// For SX2: we only check that the version is known to us and do a quick sanitize
+		// check on a known version. Other than SX1, the packet is ignored if any error
+		// appears, since it cannot be a "misunderstanding" any more.
 		if (uClientSXVersion > SOURCEEXCHANGE2_VERSION || uClientSXVersion == 0) {
 			AddDebugLogLineN(logPartFile,
 				CFormat("Invalid source exchange type version: %i") % uClientSXVersion);
@@ -3298,25 +3275,18 @@ int CPartFile::GetCommonFilePenalty()
 
 /* Barry - Replaces BlockReceived()
 
-	Originally this only wrote to disk when a full 180k block
-	had been received from a client, and only asked for data in
-	180k blocks.
+   Originally this only wrote to disk when a full 180k block had been received from a
+   client, and only asked for data in 180k blocks. That meant about 90k was lost for
+   every connection to a client data source -- a lot of wasted data.
 
-	This meant that on average 90k was lost for every connection
-	to a client data source. That is a lot of wasted data.
-
-	To reduce the lost data, packets are now written to a buffer
-	and flushed to disk regularly regardless of size downloaded.
-	This includes compressed packets.
-
-	Data is also requested only where gaps are, not in 180k blocks.
-	The requests will still not exceed 180k, but may be smaller to
-	fill a gap.
+   To reduce it, packets are now written to a buffer and flushed to disk regularly
+   regardless of size downloaded, compressed packets included. Data is also requested
+   only where gaps are, not in 180k blocks: the requests still do not exceed 180k, but
+   may be smaller to fill a gap.
 */
 
-// Kry - transize is 32bits, no packet can be more than that (this is
-// compressed size). Even 32bits is too much imho.As for the return size,
-// look at the lenData below.
+// Kry - transize is 32bits, no packet can be more than that (this is the compressed
+// size). Even 32bits is too much imho. As for the return size, look at lenData below.
 uint32 CPartFile::WriteToBuffer(uint32 transize,
 	uint8_t *data,
 	uint64 start,
@@ -3327,9 +3297,8 @@ uint32 CPartFile::WriteToBuffer(uint32 transize,
 	// Increment transferred bytes counter for this file
 	transferred += transize;
 
-	// This is needed a few times
-	// Kry - should not need a uint64 here - no block is larger than
-	// 2GB even after uncompressed.
+	// This is needed a few times. Kry - should not need a uint64 here: no block is larger
+	// than 2GB even after uncompressing.
 	uint32 lenData = (uint32)(end - start + 1);
 
 	if (lenData > transize) {
@@ -3370,10 +3339,10 @@ uint32 CPartFile::WriteToBuffer(uint32 transize,
 	// log transferinformation in our "blackbox"
 	m_CorruptionBlackBox->TransferredData(start, end, client->GetIP());
 
-	// Stamp for FlushBuffer's Phase 3 quiescent guard, and for the download-list
-	// "Last Reception" column. The latter must stamp on real data arrival, not
-	// on every periodic FlushBuffer call, or idle/paused/stalled files all read
-	// "now" and the column stops being useful.
+	// Stamp for FlushBuffer's Phase 3 quiescent guard, and for the download-list "Last
+	// Reception" column. The latter must stamp on real data arrival, not on every periodic
+	// FlushBuffer call, or idle/paused/stalled files all read "now" and the column stops
+	// being useful.
 	m_nLastBlockReceivedTick = GetTickCount64();
 	m_lastDateChanged = wxDateTime::GetTimeNow();
 
@@ -3432,15 +3401,15 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 
 	uint32 partCount = GetPartCount();
 	// Persistent tracking of parts needing hash verification (eMule ref: m_aChangedPart).
-	// Survives across FlushBuffer() calls so parts written by the background thread
-	// get hashed once all writes are complete.
+	// Survives across FlushBuffer() calls so parts written by the background thread get
+	// hashed once all writes are complete.
 	if (m_aChangedPart.size() != partCount) {
 		m_aChangedPart.resize(partCount, false);
 	}
 
-	// No empty-buffer early-return: Phase 3 below still needs to run
-	// when m_aChangedPart has dirty entries left from earlier writes
-	// (e.g. paused/idle download). Phase 1+2 are no-ops on empty list.
+	// No empty-buffer early-return: Phase 3 below still needs to run when m_aChangedPart has
+	// dirty entries left from earlier writes (e.g. paused/idle download). Phase 1+2 are
+	// no-ops on an empty list.
 	if (!m_BufferedData_list.empty()) {
 		// Ensure file is big enough to write data to (the last item will be the furthest from the
 		// start)
@@ -3454,7 +3423,7 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 		}
 	}
 
-	// eMule ref: PartFile.cpp:4102-4127 — Phase 1: queue PB_READY items to the write thread
+	// eMule ref: PartFile.cpp:4102-4127 -- Phase 1: queue PB_READY items to the write thread
 	CPartFileWriteThread *pThread = theApp->partFileWriteThread;
 	if (pThread && pThread->IsRunning()) {
 		for (std::list<PartFileBufferedData *>::iterator it = m_BufferedData_list.begin();
@@ -3469,14 +3438,14 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 		}
 	}
 
-	// eMule ref: PartFile.cpp:4129-4145 — Phase 2: harvest completed writes
+	// eMule ref: PartFile.cpp:4129-4145 -- Phase 2: harvest completed writes
 	for (std::list<PartFileBufferedData *>::iterator it = m_BufferedData_list.begin();
 		it != m_BufferedData_list.end();) {
 		PartFileBufferedData *item = *it;
 
 		switch (item->flushed) {
 		case PB_READY:
-			// Write thread not running — fall back to synchronous write
+			// Write thread not running -- fall back to synchronous write
 			{
 				wxASSERT((item->end - item->start) < 0xFFFFFFFF);
 				uint32 lenData = (uint32)(item->end - item->start + 1);
@@ -3508,19 +3477,19 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 			continue;
 
 		case PB_PENDING:
-			// Still in flight on the write thread — skip
+			// Still in flight on the write thread -- skip
 			++it;
 			continue;
 
 		case PB_ERROR:
-			// Write thread reported error — retry next time
+			// Write thread reported error -- retry next time
 			item->flushed = PB_READY;
 			AddDebugLogLineC(logPartFile, "Write thread reported error, will retry");
 			++it;
 			continue;
 
 		case PB_WRITTEN:
-			// Successfully written by the write thread — harvest
+			// Successfully written by the write thread -- harvest
 			{
 				uint32 lenData = (uint32)(item->end - item->start + 1);
 				for (uint32 curpart = (item->start / PARTSIZE);
@@ -3551,26 +3520,24 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 		SetStatus(PS_ERROR);
 	}
 
-	// Destructor / shutdown gate (see m_inDestructor in PartFile.h).
-	// Hoisted above the m_iWrites check below so the first-share early
-	// path also respects it.
+	// Destructor / shutdown gate (see m_inDestructor in PartFile.h). Hoisted above the
+	// m_iWrites check below so the first-share early path also respects it.
 	if (m_inDestructor || !theApp || !theApp->IsRunning()) {
 		return;
 	}
 
-	// First-share early path. SafeAddKFile fires from OnAsyncHashComplete and is
-	// gated on status == PS_EMPTY, so it only ever runs once per partfile
-	// lifetime, when the first part is verified. The bulk-drain gates below
-	// (m_iWrites > 0 and the 1 s quiescent window) sit engaged across an entire
-	// active download, so a continuously-downloading file never gets that first
-	// verification and stays invisible in "Shared files" until the user pauses.
-	// Bypass both gates to enqueue exactly one safe candidate.
+	// First-share early path. SafeAddKFile fires from OnAsyncHashComplete and is gated on
+	// status == PS_EMPTY, so it only ever runs once per partfile lifetime, when the first
+	// part is verified. The bulk-drain gates below (m_iWrites > 0 and the 1 s quiescent
+	// window) sit engaged across an entire active download, so a continuously-downloading
+	// file never gets that first verification and stays invisible in "Shared files" until
+	// the user pauses. Bypass both gates to enqueue exactly one safe candidate.
 	//
-	// Safety: m_aChangedPart[N] && IsComplete(N) means Phase 2 has observed at
-	// least one PB_WRITTEN for N and the gaplist has no holes in N. But FillGap
-	// runs at queue time in WriteToBuffer, so a queued PB_PENDING/PB_READY for
-	// the same part can still exist and hashing would read pre-write bytes.
-	// Scan m_BufferedData_list for overlap to skip any such part.
+	// Safety: m_aChangedPart[N] && IsComplete(N) means Phase 2 has observed at least one
+	// PB_WRITTEN for N and the gaplist has no holes in N. But FillGap runs at queue time in
+	// WriteToBuffer, so a queued PB_PENDING/PB_READY for the same part can still exist and
+	// hashing would read pre-write bytes. Scan m_BufferedData_list for overlap to skip any
+	// such part.
 	if (status == PS_EMPTY && GetHashCount() == GetED2KPartHashCount() && !m_hashsetneeded &&
 		m_pendingHashes == 0 && !m_gaplist.IsComplete()) {
 		for (uint32 partNumber = 0; partNumber < partCount; ++partNumber) {
@@ -3607,17 +3574,16 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 		}
 	}
 
-	// Check each part of the file.
-	// Skip hash verification if writes are still in flight — data isn't on disk yet.
-	// Hashing will run on the next FlushBuffer() call once all writes complete.
+	// Check each part of the file. Skip hash verification if writes are still in flight --
+	// data is not on disk yet. Hashing runs on the next FlushBuffer() call once all writes
+	// complete.
 	if (m_iWrites > 0) {
 		return;
 	}
 
-	// Skip Phase 3 at gaplist completion: CCompletionTask re-reads the file for
-	// the ED2K root + AICH tree, subsuming Phase 3's per-part MD4. Running both
-	// is duplicate work and, for a fresh download where every part is dirty, a
-	// 30-60 s main-thread freeze.
+	// Skip Phase 3 at gaplist completion: CCompletionTask re-reads the file for the ED2K
+	// root + AICH tree, subsuming Phase 3's per-part MD4. Running both is duplicate work
+	// and, for a fresh download where every part is dirty, a 30-60 s main-thread freeze.
 	if (m_gaplist.IsComplete()) {
 		const uint32 dirty = (uint32)std::count(m_aChangedPart.begin(), m_aChangedPart.end(), true);
 		if (dirty > 0) {
@@ -3628,12 +3594,11 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 		}
 		std::fill(m_aChangedPart.begin(), m_aChangedPart.end(), false);
 	} else {
-		// Async enqueue: hand each dirty completed part to CPartFileHashThread,
-		// which runs HashSinglePart on its own thread and posts a
-		// CPartFileHashResultEvent back to the main-thread handler.
-		// OnAsyncHashComplete then runs the AICH-recovery / SafeAddKFile
-		// branches below. Main-thread cost here is just queue inserts, so even a
-		// 3000-part dirty list enqueues in milliseconds with no hashing freeze.
+		// Async enqueue: hand each dirty completed part to CPartFileHashThread, which runs
+		// HashSinglePart on its own thread and posts a CPartFileHashResultEvent back to the
+		// main-thread handler. OnAsyncHashComplete then runs the AICH-recovery / SafeAddKFile
+		// branches below. Main-thread cost here is just queue inserts, so even a 3000-part
+		// dirty list enqueues in milliseconds with no hashing freeze.
 		//
 		// Disk write safety: the m_iWrites <= 0 gate above already guarantees
 		// CPartFileWriteThread has flushed every pending write to disk.
@@ -3644,10 +3609,10 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 			}
 			m_aChangedPart[partNumber] = false;
 
-			// Mirror the synchronous verify loop: a write that touches a part marks
-			// it dirty, but the part may still have gaps, and hashing an incomplete
-			// part would read past the highest written offset and EOF. Future writes
-			// re-set the dirty bit; once gap-complete, the next pass enqueues it.
+			// Mirror the synchronous verify loop: a write that touches a part marks it dirty,
+			// but the part may still have gaps, and hashing an incomplete part would read past
+			// the highest written offset and EOF. Future writes re-set the dirty bit; once
+			// gap-complete, the next pass enqueues it.
 			if (!IsComplete(partNumber)) {
 				continue;
 			}
@@ -3663,15 +3628,13 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 		}
 	} // close gaplistComplete else-branch (async enqueue)
 
-	// Update the met file, only when something has actually changed since the
-	// last save. Two tiers:
-	//   1. Hard state (gap list, status, priority, category) sets m_metDirty and
-	//      is saved at the next FlushBuffer tick (~60 s).
-	//   2. Soft stats (AllTimeRequests / Accepts / Transferred) set m_statsDirty
-	//      only, and are saved at the STATS_HEARTBEAT_MS cadence so a popular
-	//      sharer does not rewrite its .met on every served chunk.
-	// The heartbeat is measured from the last successful save, so a regular
-	// dirty save resets it. With neither bit dirty, no save fires at all.
+	// Update the met file, only when something has actually changed since the last save. Two
+	// tiers: hard state (gap list, status, priority, category) sets m_metDirty and is saved
+	// at the next FlushBuffer tick (~60 s); soft stats (AllTimeRequests / Accepts /
+	// Transferred) set m_statsDirty only, and are saved at the STATS_HEARTBEAT_MS cadence so
+	// a popular sharer does not rewrite its .met on every served chunk. The heartbeat is
+	// measured from the last successful save, so a regular dirty save resets it. With
+	// neither bit dirty, no save fires at all.
 	const uint64 STATS_HEARTBEAT_MS = 10 * 60 * 1000;
 	if (IsMetDirty() ||
 		(IsStatsDirty() && (::GetTickCount64() - m_lastMetSaveTick > STATS_HEARTBEAT_MS))) {
@@ -3679,11 +3642,11 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 	}
 
 	// Final PB_WRITTEN harvest. The Phase 2 loop above can race with
-	// CPartFileWriteThread::Entry(), which decrements m_iWrites and then sets
-	// PB_WRITTEN: an item Phase 2 saw as PB_PENDING can transition to PB_WRITTEN
-	// before the trailing check below runs. Without this sweep, the gap-closing
-	// write at completion would leave m_BufferedData_list non-empty, fail the
-	// trailing check, and stick the download at 99.9% for another 60 s.
+	// CPartFileWriteThread::Entry(), which decrements m_iWrites and then sets PB_WRITTEN: an
+	// item Phase 2 saw as PB_PENDING can transition to PB_WRITTEN before the trailing check
+	// below runs. Without this sweep, the gap-closing write at completion would leave
+	// m_BufferedData_list non-empty, fail the trailing check, and stick the download at
+	// 99.9% for another 60 s.
 	for (std::list<PartFileBufferedData *>::iterator it = m_BufferedData_list.begin();
 		it != m_BufferedData_list.end();) {
 		PartFileBufferedData *item = *it;
@@ -3703,21 +3666,19 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 	}
 
 	if (theApp->IsRunning()) { // may be called during shutdown!
-		// CompleteFile is not idempotent -- each call kicks off a fresh
-		// CHashingTask -- so two guards:
+		// CompleteFile is not idempotent -- each call kicks off a fresh CHashingTask -- so two
+		// guards:
 		//
-		//   - status PS_EMPTY or PS_READY: skip if already PS_COMPLETING /
-		//     PS_HASHING / PS_WAITING_FOR_HASH / PS_ERROR, or StopFile and
-		//     PerformFileComplete would re-fire and spawn duplicate hash tasks.
-		//     Both PS_EMPTY and PS_READY are normal in-flight states -- PS_READY
-		//     is set on load when any part is already complete -- so a resumed
-		//     download is PS_READY from the moment .met is loaded, and gating on
+		//   - status PS_EMPTY or PS_READY: skip if already PS_COMPLETING / PS_HASHING /
+		//     PS_WAITING_FOR_HASH / PS_ERROR, or StopFile and PerformFileComplete would re-fire
+		//     and spawn duplicate hash tasks. Both PS_EMPTY and PS_READY are normal in-flight
+		//     states -- PS_READY is set on load when any part is already complete -- so a
+		//     resumed download is PS_READY from the moment .met is loaded, and gating on
 		//     PS_EMPTY alone made CompleteFile miss every resume-then-finish.
 		//
-		//   - m_pendingHashes <= 0: do not start CCompletionTask while
-		//     CPartFileHashThread is still reading m_hpartfile.
-		//     PerformFileComplete closes the file and the worker would fault; the
-		//     last OnAsyncHashComplete re-runs this check and fires then.
+		//   - m_pendingHashes <= 0: do not start CCompletionTask while CPartFileHashThread is
+		//     still reading m_hpartfile. PerformFileComplete closes the file and the worker
+		//     would fault; the last OnAsyncHashComplete re-runs this check and fires then.
 		if ((status == PS_EMPTY || status == PS_READY) && m_gaplist.IsComplete() && m_iWrites <= 0 &&
 			m_BufferedData_list.empty() && m_pendingHashes <= 0) {
 			CompleteFile(false);
@@ -3726,9 +3687,9 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 }
 
 // Receives a HashSinglePart result from CPartFileHashThread (via the
-// CPartFileHashResultEvent dispatched on CamuleApp).  Runs the same
-// success/failure / AICH-recovery logic the original synchronous Phase 3
-// did, just with the boolean result already computed by the worker.
+// CPartFileHashResultEvent dispatched on CamuleApp). Runs the same success/failure /
+// AICH-recovery logic the original synchronous Phase 3 did, just with the boolean result
+// already computed by the worker.
 void CPartFile::OnAsyncHashComplete(uint16 partNumber, bool ok, bool fromAICHRecoveryDataAvailable)
 {
 	if (m_inDestructor || !theApp || !theApp->IsRunning()) {
@@ -3740,11 +3701,11 @@ void CPartFile::OnAsyncHashComplete(uint16 partNumber, bool ok, bool fromAICHRec
 
 	const uint32 partRange = GetPartSize(partNumber) - 1;
 
-	// Track whether this part's outcome changes persistent state. Only those
-	// branches need a SavePartFile flush; the success path for an already-
-	// complete part touches in-memory bookkeeping only, which is fine to persist
-	// on the next FlushBuffer-driven save. Avoids hammering the .met file on the
-	// main thread once per part, which is what froze the GUI on async-hash drain.
+	// Track whether this part's outcome changes persistent state. Only those branches need a
+	// SavePartFile flush; the success path for an already-complete part touches in-memory
+	// bookkeeping only, which is fine to persist on the next FlushBuffer-driven save. Avoids
+	// hammering the .met file on the main thread once per part, which is what froze the GUI
+	// on async-hash drain.
 	bool stateChanged = false;
 
 	if (IsComplete(partNumber)) {
@@ -3770,9 +3731,9 @@ void CPartFile::OnAsyncHashComplete(uint16 partNumber, bool ok, bool fromAICHRec
 
 			m_CorruptionBlackBox->VerifiedData(true, partNumber, 0, partRange);
 
-			// If this part was carried as corrupted in the .met from a prior session,
-			// removing it from m_corrupted_list IS a persistent state change --
-			// without a save, the next launch would still flag it for recovery.
+			// If this part was carried as corrupted in the .met from a prior session, removing
+			// it from m_corrupted_list IS a persistent state change -- without a save, the next
+			// launch would still flag it for recovery.
 			if (IsCorruptedPart(partNumber)) {
 				EraseFirstValue(m_corrupted_list, partNumber);
 				stateChanged = true;
@@ -3813,10 +3774,10 @@ void CPartFile::OnAsyncHashComplete(uint16 partNumber, bool ok, bool fromAICHRec
 		SavePartFile();
 	}
 
-	// Now that this part's hash has been processed, the file may be ready for
-	// completion. Mirrors the trailing CompleteFile check in FlushBuffer --
-	// accept both PS_EMPTY and PS_READY, but still skip PS_COMPLETING so a
-	// duplicate CompleteFile / CHashingTask is not spawned.
+	// Now that this part's hash has been processed, the file may be ready for completion.
+	// Mirrors the trailing CompleteFile check in FlushBuffer -- accept both PS_EMPTY and
+	// PS_READY, but still skip PS_COMPLETING so a duplicate CompleteFile / CHashingTask is
+	// not spawned.
 	if ((status == PS_EMPTY || status == PS_READY) && m_gaplist.IsComplete() && m_iWrites <= 0 &&
 		m_BufferedData_list.empty() && m_pendingHashes <= 0) {
 		CompleteFile(false);
@@ -3839,22 +3800,21 @@ bool CPartFile::ReadData(CFileArea &area, uint64 offset, uint32 toread, bool *ha
 		return false;
 	}
 
-	// Lock m_hpartfileMutex against the write/hash threads. ReadAt is Seek+Read
-	// on the underlying CFileAutoClose; CFile's internal recursive_mutex
-	// serialises the individual syscalls but not the Seek+Read composition.
-	// CPartFileWriteThread::Entry holds m_hpartfileMutex around its Seek+Write
-	// -- without the matching lock here, the upload reader can interleave its
-	// Seek with a write thread's Seek+Write, leaving fd_pos at the upload's seek
-	// target. The write then lands at the wrong offset, and the read returns
+	// Lock m_hpartfileMutex against the write/hash threads. ReadAt is Seek+Read on the
+	// underlying CFileAutoClose; CFile's internal recursive_mutex serialises the individual
+	// syscalls but not the Seek+Read composition. CPartFileWriteThread::Entry holds
+	// m_hpartfileMutex around its Seek+Write -- without the matching lock here, the upload
+	// reader can interleave its Seek with a write thread's Seek+Write, leaving fd_pos at the
+	// upload's seek target. The write then lands at the wrong offset, and the read returns
 	// bytes from the post-write position.
 	std::lock_guard<std::mutex> lock(m_hpartfileMutex);
 
-	// PerformFileComplete closes this handle under the same mutex once the file
-	// is finished, while the upload reader may still have block requests queued
-	// for it. Report that rather than seeking a closed handle: the throw would
-	// be indistinguishable from a real IO error, and the caller drops the client
-	// on those. Flagged separately from the bare false above, which is an
-	// asserted bug. Checked under the lock so the answer cannot change.
+	// PerformFileComplete closes this handle under the same mutex once the file is finished,
+	// while the upload reader may still have block requests queued for it. Report that
+	// rather than seeking a closed handle: the throw would be indistinguishable from a real
+	// IO error, and the caller drops the client on those. Flagged separately from the bare
+	// false above, which is an asserted bug. Checked under the lock so the answer cannot
+	// change.
 	if (!m_hpartfile.IsOpened()) {
 		if (handleClosed != nullptr) {
 			*handleClosed = true;
@@ -3903,9 +3863,9 @@ void CPartFile::UpdateFileRatingCommentAvail()
 
 	if ((prevComment != m_hasComment) || (prevRating != m_iUserRating)) {
 		UpdateDisplayedInfo();
-		// EC exports EC_TAG_PARTFILE_COMMENTS (rating + comments tag tree).
-		// Sources can deliver new comments at any time via OP_MESSAGE; without a
-		// mark here amulegui would only refresh when something else changes.
+		// EC exports EC_TAG_PARTFILE_COMMENTS (rating + comments tag tree). Sources can
+		// deliver new comments at any time via OP_MESSAGE; without a mark here amulegui would
+		// only refresh when something else changes.
 		MarkECChanged();
 	}
 }
@@ -4109,14 +4069,13 @@ void CPartFile::AICHRecoveryDataAvailable(uint16 nPart)
 		pVerifiedHash->GetIsLeftBranch(),
 		pVerifiedHash->GetNBaseSize());
 	try {
-		// Lock m_hpartfileMutex against the write/hash/upload threads.
-		// CreateHashFromFile is a sequence of Seek+Read inside the CFileAutoClose
-		// wrapper, and CFile's recursive_mutex serialises individual syscalls but
-		// not the composition. Without the matching lock here, the AICH-recovery
-		// read can interleave with a concurrent Seek+Write from
-		// CPartFileWriteThread, fd_pos lands in the wrong place, the recovery
-		// hash is computed over the wrong bytes -- and the recovered part gets
-		// accepted as good even though it is not.
+		// Lock m_hpartfileMutex against the write/hash/upload threads. CreateHashFromFile is a
+		// sequence of Seek+Read inside the CFileAutoClose wrapper, and CFile's recursive_mutex
+		// serialises individual syscalls but not the composition. Without the matching lock
+		// here, the AICH-recovery read can interleave with a concurrent Seek+Write from
+		// CPartFileWriteThread, fd_pos lands in the wrong place, the recovery hash is computed
+		// over the wrong bytes -- and the recovered part gets accepted as good even though it
+		// is not.
 		std::lock_guard<std::mutex> lock(m_hpartfileMutex);
 		CreateHashFromFile(m_hpartfile, PARTSIZE * nPart, length, NULL, &htOurHash);
 	} catch (const CIOFailureException &e) {
@@ -4308,9 +4267,9 @@ void CPartFile::GetRatingAndComments(FileRatingList &list) const
 		}
 	}
 
-	// Append community ratings/comments retrieved on demand from Kad. Shared
-	// with search results via the CAbstractFile helper (one entry per
-	// responding node, stored by CSearch::ProcessResultNotes -> AddNote).
+	// Append community ratings/comments retrieved on demand from Kad. Shared with search
+	// results via the CAbstractFile helper (one entry per responding node, stored by
+	// CSearch::ProcessResultNotes -> AddNote).
 	GetKadNotesComments(list);
 }
 
@@ -4339,13 +4298,11 @@ CPartFile::CPartFile(const CEC_PartFile_Tag *tag)
 	m_isShared = false;
 }
 
-/*
- * Remote gui specific code
- */
+// Remote gui specific code
 CPartFile::~CPartFile() {}
 
 // GetRatingAndComments on amulegui is inherited from CAbstractFile (returns the
-// EC-streamed m_FileRatingList) — no CPartFile override needed here.
+// EC-streamed m_FileRatingList) -- no CPartFile override needed here.
 
 void CPartFile::SetCategory(uint8 cat)
 {
@@ -4647,9 +4604,8 @@ void CPartFile::SetHashingProgress(uint16 part) const
 {
 	if (m_hashingProgress != part) {
 		m_hashingProgress = part;
-		// EC exports the hashed-part count via
-		// EC_TAG_PARTFILE_HASHED_PART_COUNT. Hashing runs outside Process()'s
-		// PS_READY/PS_EMPTY gate, so the per-tick mark does not fire.
+		// EC exports the hashed-part count via EC_TAG_PARTFILE_HASHED_PART_COUNT. Hashing runs
+		// outside Process()'s PS_READY/PS_EMPTY gate, so the per-tick mark does not fire.
 		const_cast<CPartFile *>(this)->MarkECChanged();
 	}
 	Notify_DownloadCtrlUpdateItem(this);
@@ -4683,9 +4639,9 @@ bool CPartFile::IsDeadSource(const CUpDownClient *client)
 const wxString &CPartFile::GetCachedPartMetBasename() const
 {
 	if (m_cachedPartMetBasename.IsEmpty()) {
-		// One-shot evaluate: the partmet filename is set when the partfile is
-		// created and is stable for life, so cache after first use. The wxString
-		// cast collapses the CFormat round trip the EC tag ctor used to do.
+		// One-shot evaluate: the partmet filename is set when the partfile is created and is
+		// stable for life, so cache after first use. The wxString cast collapses the CFormat
+		// round trip the EC tag ctor used to do.
 		m_cachedPartMetBasename = m_partmetfilename.RemoveExt().GetPrintable();
 	}
 	return m_cachedPartMetBasename;

@@ -79,10 +79,9 @@ wxString MacOwnBundleId()
 
 wxString MacReadHandler(HandlerTarget target)
 {
-	// Both LSCopy… calls return nil when no handler is set. Deprecated
-	// in 10.15 but still working; the modern NSWorkspace lookups don't
-	// cover the write path (LSSetDefault…) so we stick with the LS pairs
-	// for symmetry.
+	// Both LSCopy... calls return nil when no handler is set. Deprecated in 10.15 but still
+	// working; the modern NSWorkspace lookups do not cover the write path (LSSetDefault...), so
+	// we stick with the LS pairs for symmetry.
 	CFStringRef nameCf = (CFStringRef)NSStringFromScheme(target);
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
@@ -100,7 +99,7 @@ wxString MacReadHandler(HandlerTarget target)
 
 bool MacWrite(HandlerTarget target, const wxString &canonicalExe)
 {
-	// LaunchServices tracks bundle id, not path — the canonicalExe
+	// LaunchServices tracks bundle id, not path -- the canonicalExe
 	// arg is only meaningful on the Windows/Linux backends.
 	(void)canonicalExe;
 
@@ -131,22 +130,18 @@ bool MacRemove(HandlerTarget /*scheme*/)
 	return true;
 }
 
-// ---------------------------------------------------------------------
-// Runtime URL delivery
-// ---------------------------------------------------------------------
-// Cold-launch scheme clicks are delivered by macOS as a kAEGetURL
-// Apple Event dispatched between applicationWillFinishLaunching and
-// applicationDidFinishLaunching — earlier than any wxApp OnInit
-// runs. We register the handler in a __attribute__((constructor)) so
-// it's already live when the AE dispatches.
+// Runtime URL delivery.
 //
-// wxNSAppController registers for the same event class in
-// applicationWillFinishLaunching, and -setEventHandler: replaces per
-// (class, id) rather than stacking, so exactly one of the two is live.
-// Observed behaviour is that this one wins and wxApp::MacOpenURL never
-// fires; CamuleGuiApp overrides it anyway so a load order that goes the
-// other way still delivers the URL. Only one handler ever runs, so
-// there is no risk of queueing a link twice.
+// Cold-launch scheme clicks are delivered by macOS as a kAEGetURL Apple Event dispatched between
+// applicationWillFinishLaunching and applicationDidFinishLaunching -- earlier than any wxApp OnInit
+// runs. We register the handler in a __attribute__((constructor)) so it is already live when the AE
+// dispatches.
+//
+// wxNSAppController registers for the same event class in applicationWillFinishLaunching, and
+// -setEventHandler: replaces per (class, id) rather than stacking, so exactly one of the two is
+// live. Observed behaviour is that this one wins and wxApp::MacOpenURL never fires; CamuleGuiApp
+// overrides it anyway so a load order that goes the other way still delivers the URL. Only one
+// handler ever runs, so a link cannot be queued twice.
 
 // C shim exposed to ProtocolHandlerManager.cpp so its diagnostics land
 // under the same [amuleurl] Console.app filter.
@@ -174,10 +169,9 @@ static AmuleURLAppleEventHandler *g_url_handler = nil;
 		return;
 	}
 	NSLog(@"[amuleurl] kAEGetURL received: %@", raw);
-	// Marshal to the wx main loop. QueueSchemeLink is build-agnostic;
-	// it writes to ED2KLinks and lets each app's ~1 s polling loop
-	// (CDownloadQueue on amule/amuled, OnPollTimer on amulegui) drain
-	// it — safe even when downloadqueue isn't wired yet on cold launch.
+	// Marshal to the wx main loop. QueueSchemeLink is build-agnostic; it writes to ED2KLinks
+	// and lets each app's ~1 s polling loop (CDownloadQueue on amule/amuled, OnPollTimer on
+	// amulegui) drain it -- safe even when downloadqueue is not wired yet on cold launch.
 	wxString url = wxString::FromUTF8([raw UTF8String]);
 	if (wxTheApp != nullptr) {
 		wxTheApp->CallAfter([url]() { ProtocolHandler_QueueSchemeLink(url); });
@@ -186,9 +180,8 @@ static AmuleURLAppleEventHandler *g_url_handler = nil;
 @end
 
 // Runs at dylib-load time, before main(), before wxEntry, before Cocoa's
-// applicationWillFinishLaunching — so the cold-launch kAEGetURL Apple
-// Event finds our handler already registered. NSAppleEventManager is
-// available at library-load in Cocoa apps.
+// applicationWillFinishLaunching -- so the cold-launch kAEGetURL Apple Event finds our handler
+// already registered. NSAppleEventManager is available at library-load in Cocoa apps.
 __attribute__((constructor)) static void amule_install_url_handler_at_load(void)
 {
 	@autoreleasepool {

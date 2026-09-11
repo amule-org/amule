@@ -37,11 +37,7 @@
 
 #include <wx/datetime.h>
 
-/*
- * Built-in php functions. Those are amule-specific functions, accessing EC and internal
- * data structure
- *
- */
+/* Built-in php functions: amule-specific, accessing EC and internal data structures. */
 
 void php_native_shared_file_cmd(PHP_VALUE_NODE *)
 {
@@ -76,11 +72,7 @@ void php_native_reload_shared_file_cmd(PHP_VALUE_NODE *)
 	CPhPLibContext::g_curr_context->WebServer()->Send_ReloadSharedFile_Cmd();
 }
 
-/*
- *
- * Usage: php_native_download_file_cmd($file_hash, "command", $optional_arg)
- *
- */
+/* Usage: php_native_download_file_cmd($file_hash, "command", $optional_arg) */
 void php_native_download_file_cmd(PHP_VALUE_NODE *)
 {
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
@@ -109,9 +101,7 @@ void php_native_download_file_cmd(PHP_VALUE_NODE *)
 		opt_param ? opt_param->value.int_val : 0);
 }
 
-/*
- * Usage amule_kad_connect($bootstrap_ip, $bootstrap_port)
- */
+/* Usage: amule_kad_connect($bootstrap_ip, $bootstrap_port) */
 void php_native_kad_connect(PHP_VALUE_NODE *)
 {
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
@@ -142,12 +132,8 @@ void php_native_kad_disconnect(PHP_VALUE_NODE *)
 	CPhPLibContext::g_curr_context->WebServer()->Send_Discard_V2_Request(&req);
 }
 
-/*
- * Usage: amule_kad_start()
- *
- * Start the Kademlia network using the on-disk nodes.dat for bootstrap.
- * Wraps EC_OP_KAD_START.
- */
+/* Usage: amule_kad_start(). Starts Kademlia using the on-disk nodes.dat for bootstrap; wraps
+ * EC_OP_KAD_START. */
 void php_native_kad_start(PHP_VALUE_NODE *)
 {
 	CECPacket req(EC_OP_KAD_START);
@@ -155,11 +141,9 @@ void php_native_kad_start(PHP_VALUE_NODE *)
 }
 
 /*
- * Usage: amule_kad_update_from_url($url)
- *
- * Download a fresh nodes.dat from the given URL, bootstrap Kad from it,
- * and persist the URL into the KadNodesUrl preference so subsequent
- * starts reuse the same source. Wraps EC_OP_KAD_UPDATE_FROM_URL.
+ * Usage: amule_kad_update_from_url($url). Downloads a fresh nodes.dat from the URL, bootstraps Kad
+ * from it, and persists the URL into the KadNodesUrl preference so later starts reuse the same
+ * source. Wraps EC_OP_KAD_UPDATE_FROM_URL.
  */
 void php_native_kad_update_from_url(PHP_VALUE_NODE *)
 {
@@ -176,14 +160,11 @@ void php_native_kad_update_from_url(PHP_VALUE_NODE *)
 }
 
 /*
- * Usage: amule_server_disconnect()
- *
- * Disconnect from the current ed2k server (network-level, not per-server).
- * The existing amule_do_server_cmd takes (ip, port, cmd) and always sends
- * EC_OP_SERVER_DISCONNECT with a server tag -- which on amuled simply
- * disconnects globally, but it's not callable without IP/port. This
- * variant sends the same opcode with no tag for the WebUI "Disconnect
- * from current ed2k server" button.
+ * Usage: amule_server_disconnect(). Disconnects from the current ed2k server (network-level, not
+ * per-server). amule_do_server_cmd takes (ip, port, cmd) and always sends
+ * EC_OP_SERVER_DISCONNECT with a server tag -- which on amuled disconnects globally, but is not
+ * callable without IP/port. This variant sends the same opcode with no tag, for the WebUI's
+ * "Disconnect from current ed2k server" button.
  */
 void php_native_server_disconnect(PHP_VALUE_NODE *)
 {
@@ -191,9 +172,7 @@ void php_native_server_disconnect(PHP_VALUE_NODE *)
 	CPhPLibContext::g_curr_context->WebServer()->Send_Discard_V2_Request(&req);
 }
 
-/*
- * Usage amule_add_server_cmd($server_addr, $server_port, $server_name);
- */
+/* Usage: amule_add_server_cmd($server_addr, $server_port, $server_name) */
 void php_native_add_server_cmd(PHP_VALUE_NODE *)
 {
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
@@ -222,9 +201,7 @@ void php_native_add_server_cmd(PHP_VALUE_NODE *)
 		wxString(char2unicode(addr)), wxString::Format("%d", port), wxString(char2unicode(name)));
 }
 
-/*
- * Usage amule_server_cmd($server_ip, $server_port, "command");
- */
+/* Usage: amule_server_cmd($server_ip, $server_port, "command") */
 void php_native_server_cmd(PHP_VALUE_NODE *)
 {
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
@@ -253,9 +230,7 @@ void php_native_server_cmd(PHP_VALUE_NODE *)
 	CPhPLibContext::g_curr_context->WebServer()->Send_Server_Cmd(ip, port, wxString(char2unicode(cmd)));
 }
 
-/*
- * Query amule status. Return hash containing stats values
- */
+/* Query amule status. Returns a hash of stats values. */
 void php_get_amule_stats(PHP_VALUE_NODE *result)
 {
 	CECPacket stat_req(EC_OP_STAT_REQ, EC_DETAIL_FULL);
@@ -446,11 +421,7 @@ void ec_tag_2_php(const CECTag *cattag, PHP_2_EC_OPT_DEF *opts, PHP_VAR_NODE *ca
 	}
 }
 
-/*
- * Return hash of amule options.
- *  Key: option name
- *  Value: option value (string)
- */
+/* Returns a hash of amule options: key = option name, value = option value (string). */
 void php_get_amule_options(PHP_VALUE_NODE *result)
 {
 	cast_value_array(result);
@@ -525,9 +496,7 @@ bool php_2_ec_tag(CECTag *cattag, PHP_2_EC_OPT_DEF *opts, PHP_VALUE_NODE *catvar
 	return true;
 }
 
-/*
- * Set amule options from given array. Argument looks like "amule_get_options" result
- */
+/* Set amule options from the given array, shaped like an amule_get_options result. */
 void php_set_amule_options(PHP_VALUE_NODE *)
 {
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
@@ -539,9 +508,8 @@ void php_set_amule_options(PHP_VALUE_NODE *)
 	CECPacket req(EC_OP_SET_PREFERENCES);
 	PHP_VAR_NODE *opt_group_array = 0;
 
-	// general: nickname. amule_get_options exposes it at the top level
-	// as "nick" (not nested under a "general" group), so the setter
-	// mirrors that shape.
+	// general: nickname. amule_get_options exposes it at the top level as "nick", not nested
+	// under a "general" group, so the setter mirrors that shape.
 	PHP_VAR_NODE *nick_node = array_get_by_str_key(&si->var->value, "nick");
 	if (nick_node && nick_node->value.type == PHP_VAL_STRING && nick_node->value.str_val) {
 		CECEmptyTag generalPrefs(EC_TAG_PREFS_GENERAL);
@@ -582,9 +550,7 @@ void php_set_amule_options(PHP_VALUE_NODE *)
 	CPhPLibContext::g_curr_context->WebServer()->Send_Discard_V2_Request(&req);
 }
 
-/*
- * Download 1 of search results. Params: hash, category (default=0)
- */
+/* Download one of the search results. Params: hash, category (default 0). */
 void php_native_search_download_cmd(PHP_VALUE_NODE *)
 {
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
@@ -679,9 +645,7 @@ void php_native_search_start_cmd(PHP_VALUE_NODE *)
 		max_size);
 }
 
-/*
- * Request contents of log
- */
+/* Request the contents of the log */
 void php_get_log(PHP_VALUE_NODE *result)
 {
 	value_value_free(result);
@@ -709,9 +673,7 @@ void php_get_log(PHP_VALUE_NODE *result)
 	}
 }
 
-/*
- * Request contents of server info
- */
+/* Request the contents of the server info */
 void php_get_serverinfo(PHP_VALUE_NODE *result)
 {
 	value_value_free(result);
@@ -740,9 +702,7 @@ void php_get_serverinfo(PHP_VALUE_NODE *result)
 	}
 }
 
-/*
- * Download ed2k link. Params: link, category (default=0)
- */
+/* Download an ed2k link. Params: link, category (default 0). */
 void php_native_ed2k_download_cmd(PHP_VALUE_NODE *result)
 {
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
@@ -770,9 +730,8 @@ void php_native_ed2k_download_cmd(PHP_VALUE_NODE *result)
 }
 
 /*
- * Load amule variables into interpreter scope.
- *  "varname" will tell us, what kind of variables need to load:
- *    "downloads", "uploads", "searchresult", "servers", "options" etc
+ * Load amule variables into the interpreter scope. "varname" says which kind to load: "downloads",
+ * "uploads", "searchresult", "servers", "options" and so on.
  */
 template <class C, class T> void amule_obj_array_create(const char *class_name, PHP_VALUE_NODE *result)
 {
@@ -824,12 +783,8 @@ void amule_load_stats()
 	CPhPLibContext::g_curr_context->WebServer()->Reload_Stats();
 }
 
-/*
- * Convert CEC_StatTree_Node_Tag into php associative array
- *
- * Since data structure is recursive - we need helper function
- * to perform conversion
- */
+/* Convert a CEC_StatTree_Node_Tag into a php associative array. The data structure is recursive,
+ * so a helper function does the conversion. */
 void ecstats2php(CEC_StatTree_Node_Tag *root, PHP_VALUE_NODE *result)
 {
 	cast_value_array(result);
@@ -913,9 +868,7 @@ void php_native_load_amule_vars(PHP_VALUE_NODE *result)
 	}
 }
 
-/*
- * Amule objects implementations
- */
+/* Amule objects implementations */
 void amule_download_file_prop_get(void *ptr, char *prop_name, PHP_VALUE_NODE *result)
 {
 	if (!ptr) {

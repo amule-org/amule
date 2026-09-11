@@ -33,9 +33,6 @@
  */
 void InstallMuleExceptionHandler();
 
-/**
- *
- */
 void OnUnhandledException();
 
 //! Print a backtrace, skipping the first n frames.
@@ -45,9 +42,7 @@ void print_backtrace(unsigned n);
 wxString get_backtrace(unsigned n);
 
 /**
- * This exception should be used to implement other
- * types of exceptions. It should never be caught,
- * instead catch the subtypes.
+ * Base for the other exception types. Never catch this; catch the subtypes.
  */
 class CMuleException
 {
@@ -66,9 +61,7 @@ private:
 };
 
 /**
- * This exception type is used to represent exceptions that are
- * caused by invalid operations. Exceptions of this type should
- * not be caught as they are the result of bugs.
+ * Exceptions caused by invalid operations. Do not catch these -- they are the result of bugs.
  */
 struct CRunTimeException : public CMuleException
 {
@@ -79,7 +72,7 @@ struct CRunTimeException : public CMuleException
 };
 
 /**
- * This exception is to be thrown if invalid parameters are passed to a function.
+ * Thrown if invalid parameters are passed to a function.
  */
 struct CInvalidParamsEx : public CRunTimeException
 {
@@ -90,7 +83,7 @@ struct CInvalidParamsEx : public CRunTimeException
 };
 
 /**
- * This exception is to be thrown if an object is used in an invalid state.
+ * Thrown if an object is used in an invalid state.
  */
 struct CInvalidStateEx : public CRunTimeException
 {
@@ -101,7 +94,7 @@ struct CInvalidStateEx : public CRunTimeException
 };
 
 /**
- * This exception is thrown on wrong packets or tags.
+ * Thrown on wrong packets or tags.
  */
 struct CInvalidPacket : public CMuleException
 {

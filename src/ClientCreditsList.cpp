@@ -61,30 +61,27 @@ namespace
 /**
  * The clients.met metadata trailer.
  *
- * Appended after the fixed 119-byte credit records rather than folded into
- * them, and the file version stays at CREDITFILE_VERSION on purpose. Bumping
- * that version is what would break compatibility, not adding data: an older
- * aMule meeting a version it does not know logs "Creditfile is outdated and
- * will be replaced" and returns without loading a single record, and the next
- * save then overwrites the file -- every credit gone, on nothing worse than
- * running a previous build once. The same byte is also the format shared with
- * the eMule lineage.
+ * Appended after the fixed 119-byte credit records rather than folded into them, and the file
+ * version stays at CREDITFILE_VERSION on purpose. Bumping that version is what would break
+ * compatibility, not adding data: an older aMule meeting a version it does not know logs
+ * "Creditfile is outdated and will be replaced" and returns without loading a single record, and
+ * the next save then overwrites the file -- every credit gone, on nothing worse than running a
+ * previous build once. The same byte is also the format shared with the eMule lineage.
  *
- * The loader reads exactly `count` records and stops; it never checks the
- * file length and never looks further. So anything after the last record is
- * invisible to every reader that predates this, and they keep loading the
- * credits they always did. The cost is that such a reader's *save* drops the
- * trailer, losing the metadata but never the credits.
+ * The loader reads exactly `count` records and stops; it never checks the file length and never
+ * looks further. So anything after the last record is invisible to every reader that predates this,
+ * and they keep loading the credits they always did. The cost is that such a reader's *save* drops
+ * the trailer, losing the metadata but never the credits.
  *
- * The magic makes presence unambiguous, since absence is the normal state for
- * a file last written by an older build.
+ * The magic makes presence unambiguous, since absence is the normal state for a file last written
+ * by an older build.
  */
 const char kMetaMagic[8] = { 'A', 'M', 'U', 'L', 'E', 'M', 'D', '1' };
 const uint8 kMetaVersion = 1;
-//! Names are attacker-supplied; cap what we store rather than what we read.
-//! Counted in characters, because that is what wxString::Left() takes -- a
-//! multi-byte name can occupy more bytes on disk, which the uint16 length field
-//! has ample room for. Storage sanity, not a bound the format depends on.
+//! Names are attacker-supplied; cap what we store rather than what we read. Counted in characters,
+//! because that is what wxString::Left() takes -- a multi-byte name can occupy more bytes on disk,
+//! which the uint16 length field has ample room for. Storage sanity, not a bound the format depends
+//! on.
 const size_t kMetaMaxNameChars = 64;
 } // namespace
 
@@ -113,9 +110,8 @@ void CClientCreditsList::LoadList()
 		if (bakFileName.FileExists()) {
 			CFile hBakFile(bakFileName);
 			if (hBakFile.GetLength() > file.GetLength()) {
-				// the size of the backup was larger then the
-				// org. file, something is wrong here, don't
-				// overwrite old backup..
+				// The backup was larger than the original file, so something is
+				// wrong here; do not overwrite the old backup.
 				bCreateBackup = FALSE;
 			}
 			// else: backup is smaller or the same size as org.
@@ -125,10 +121,9 @@ void CClientCreditsList::LoadList()
 		// else: the backup doesn't exist, create it
 		if (bCreateBackup) {
 			file.Close(); // close the file before copying
-			// Small same-directory config backup (clients.met ->
-			// clients.met.bak); the plain wxCopyFile path is the right
-			// fit, not the buffered CFile::CloneFile used for large,
-			// possibly cross-filesystem data-file copies.
+			// Small same-directory config backup (clients.met -> clients.met.bak); the
+			// plain wxCopyFile path is the right fit, not the buffered CFile::CloneFile
+			// used for large, possibly cross-filesystem data-file copies.
 			if (!CPath::BackupFile(fileName, wxT(".bak"))) {
 				AddDebugLogLineC(
 					logCredits, CFormat("Could not create backup file '%s'") % fileName);
@@ -159,9 +154,8 @@ void CClientCreditsList::LoadList()
 			file.Read(newcstruct->abySecureIdent, MAXPUBKEYSIZE);
 
 			if (newcstruct->nKeySize > MAXPUBKEYSIZE) {
-				// Oh dear, this is bad mojo, the file is most likely corrupt
-				// We can no longer assume that any of the clients in the file are valid
-				// and will have to discard it.
+				// This is bad mojo: the file is most likely corrupt, so none of the
+				// clients in it can be assumed valid and it has to be discarded.
 				delete newcstruct;
 
 				DeleteContents(m_mapClients);
@@ -201,10 +195,10 @@ void CClientCreditsList::LoadList()
 
 void CClientCreditsList::LoadMetaTrailer(CFile &file)
 {
-	// Optional by construction: a file written by any older build simply ends after
-	// the last record. Everything here is best-effort -- the credits are already
-	// loaded and must survive whatever this finds, so a trailer that is absent,
-	// truncated or unrecognised is dropped rather than treated as corruption.
+	// Optional by construction: a file written by any older build simply ends after the last
+	// record. Everything here is best-effort -- the credits are already loaded and must survive
+	// whatever this finds, so a trailer that is absent, truncated or unrecognised is dropped
+	// rather than treated as corruption.
 	try {
 		const uint64 remaining = file.GetLength() - file.GetPosition();
 		if (remaining < sizeof(kMetaMagic) + 1 + 4) {
@@ -219,9 +213,9 @@ void CClientCreditsList::LoadMetaTrailer(CFile &file)
 		}
 		const uint8 version = file.ReadUInt8();
 		if (version != kMetaVersion) {
-			// A newer aMule wrote it. Same reasoning as the file version: do
-			// not guess at a layout we do not know, just leave the metadata
-			// behind. The credits are unaffected either way.
+			// A newer aMule wrote it. Same reasoning as the file version: do not guess
+			// at a layout we do not know, just leave the metadata behind. The credits
+			// are unaffected either way.
 			AddDebugLogLineN(logCredits,
 				CFormat("clients.met metadata is version %u, expected %u -- ignoring") %
 					version % kMetaVersion);
@@ -244,9 +238,9 @@ void CClientCreditsList::LoadMetaTrailer(CFile &file)
 			meta.obfuscation = file.ReadUInt8();
 			meta.name = file.ReadString(true, sizeof(uint16));
 
-			// Entries whose credit record is gone -- expired by the 150-day
-			// prune above, or dropped by a save from a build that did not know
-			// about them -- describe a client we no longer track.
+			// Entries whose credit record is gone -- expired by the 150-day prune
+			// above, or dropped by a save from a build that did not know about them --
+			// describe a client we no longer track.
 			ClientMap::iterator it = m_mapClients.find(key);
 			if (it != m_mapClients.end()) {
 				it->second->SetMeta(meta);
@@ -305,9 +299,9 @@ void CClientCreditsList::SaveList()
 			file.Seek(1);
 			file.WriteUInt32(count);
 
-			// Append the metadata after the records, where older readers
-			// never look. Seek to the end explicitly: the count fixup above
-			// left the position at byte 5.
+			// Append the metadata after the records, where older readers never look.
+			// Seek to the end explicitly: the count fixup above left the position at
+			// byte 5.
 			file.Seek(0, wxFromEnd);
 			SaveMetaTrailer(file);
 		} catch (const CIOFailureException &e) {
@@ -320,15 +314,14 @@ void CClientCreditsList::SaveList()
 
 void CClientCreditsList::SaveMetaTrailer(CFile &file)
 {
-	// Only clients we have actually met since this existed carry metadata, so
-	// on a file inherited from an older build this writes nothing at all and
-	// the result stays byte-identical to what that build produced.
+	// Only clients we have actually met since this existed carry metadata, so on a file
+	// inherited from an older build this writes nothing at all and the result stays byte-
+	// identical to what that build produced.
 	uint32 entries = 0;
 	for (const auto &entry : m_mapClients) {
 		const CClientCredits *cur = entry.second;
-		// Mirrors the record loop's own filter: a client with no traffic is
-		// not written above, so metadata for it would have no record to
-		// attach to on the next load.
+		// Mirrors the record loop's own filter: a client with no traffic is not written
+		// above, so metadata for it would have no record to attach to on the next load.
 		if (cur->HasMeta() && (cur->GetUploadedTotal() || cur->GetDownloadedTotal())) {
 			entries++;
 		}
@@ -359,10 +352,10 @@ void CClientCreditsList::SaveMetaTrailer(CFile &file)
 			file.WriteUInt8(meta.sourceFrom);
 			file.WriteUInt8(meta.obfuscation);
 			// Two length bytes because CFileDataIO supports 0, 2 or 4 and rejects
-			// anything else: a 1-byte prefix throws "Invalid length for
-			// string-length field" from inside the write, which the handler below
-			// would swallow, leaving a trailer truncated mid-entry. The cap is
-			// enforced here, not by the field width.
+			// anything else: a 1-byte prefix throws "Invalid length for string-length
+			// field" from inside the write, which the handler below would swallow,
+			// leaving a trailer truncated mid-entry. The cap is enforced here, not by
+			// the field width.
 			file.WriteString(meta.name.Left(kMetaMaxNameChars), utf8strRaw, sizeof(uint16));
 		}
 	} catch (const CIOFailureException &e) {

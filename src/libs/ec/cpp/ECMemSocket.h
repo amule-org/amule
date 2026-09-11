@@ -27,21 +27,17 @@
 #include <vector>
 
 /**
- * In-memory CECSocket sink. All Internal* I/O is stubbed; bytes that
- * the upper layers would have written to a real socket are captured
- * into an in-memory vector instead.
+ * In-memory CECSocket sink. All Internal* I/O is stubbed; bytes the upper layers would have written
+ * to a real socket are captured into an in-memory vector instead.
  *
- * Intended use is daemon-internal pre-serialization: build a CECTag
- * tree, call `tag.Serialize(mem)` against an instance of this class,
- * then take the captured bytes for caching. The cached bytes are
- * later written back through a real connection's CECSocket via
- * `WriteBuffer` (which applies per-connection deflate when required),
- * so the cached format must match what a remote receiver expects.
+ * Intended use is daemon-internal pre-serialization: build a CECTag tree, call `tag.Serialize(mem)`
+ * against an instance of this class, then take the captured bytes for caching. The cached bytes are
+ * later written back through a real connection's CECSocket via `WriteBuffer`, which applies per-
+ * connection deflate when required, so the cached format must match what a remote receiver expects.
  *
- * Wire format used by the captured bytes: UTF-8 numbers +
- * LARGE_TAG_COUNT, no zlib. Every modern EC client advertises both
- * capability flags, so cached blobs are reusable across any client
- * the daemon talks to today.
+ * Wire format of the captured bytes: UTF-8 numbers + LARGE_TAG_COUNT, no zlib. Every modern EC
+ * client advertises both capability flags, so cached blobs are reusable across any client the
+ * daemon talks to today.
  */
 class CECMemSocket : public CECSocket
 {
@@ -49,10 +45,9 @@ public:
 	CECMemSocket();
 
 	/**
-	 * Serialize a single tag (name + type + length + body + nested
-	 * children) into a stand-alone byte vector. The bytes can later
-	 * be re-emitted on a real CECSocket via `WriteBuffer` as a single
-	 * child slot inside a larger response.
+	 * Serialize a single tag (name + type + length + body + nested children) into a stand-alone
+	 * byte vector. The bytes can later be re-emitted on a real CECSocket via `WriteBuffer` as a
+	 * single child slot inside a larger response.
 	 */
 	static std::vector<unsigned char> SerializeTag(const CECTag &tag);
 
@@ -63,7 +58,7 @@ public:
 private:
 	std::vector<unsigned char> m_bytes;
 
-	// CECSocket virtuals — every actual I/O hook is a no-op except
+	// CECSocket virtuals -- every actual I/O hook is a no-op except
 	// InternalWrite, which appends to m_bytes.
 	void WriteDoneAndQueueEmpty() override {}
 	bool InternalConnect(uint32_t, uint16_t, bool) override { return true; }

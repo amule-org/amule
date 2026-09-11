@@ -286,9 +286,9 @@ TEST(UtpContext, FailedCreationDropsWithoutMaintenance)
 }
 TEST(UtpContext, UdpSizingKeepsTheFamilyAwarenessLibutpHad)
 {
-	// libutp's own defaults branch on the address family; overriding them for the
-	// two-byte envelope must not flatten that, or an IPv6 peer gets IPv4 numbers
-	// and libutp sizes packets 20 bytes too large.
+	// libutp's own defaults branch on the address family; overriding them for the two-byte
+	// envelope must not flatten that, or an IPv6 peer gets IPv4 numbers and libutp sizes
+	// packets 20 bytes too large.
 	ASSERT_EQUALS(1400ull, UtpUdpMtu(false));
 	ASSERT_EQUALS(1230ull, UtpUdpMtu(true));
 	ASSERT_EQUALS(30ull, UtpUdpOverhead(false));

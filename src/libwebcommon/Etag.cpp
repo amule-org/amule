@@ -49,11 +49,10 @@ std::string Etag(const std::string &body_utf8)
 	return out;
 }
 
-// Strip leading/trailing whitespace + optional `W/` weak-validator
-// prefix + optional outer double quotes from one If-None-Match
-// entry (RFC 7232 §3.2 + §2.3). Weak and strong validators with the
-// same opaque payload compare equal for 304 purposes; we don't
-// carry a separate weak/strong dimension on the response side.
+// Strip leading/trailing whitespace, an optional `W/` weak-validator prefix and optional outer
+// double quotes from one If-None-Match entry (RFC 7232 3.2 + 2.3). Weak and strong validators with
+// the same opaque payload compare equal for 304 purposes; we carry no separate weak/strong
+// dimension on the response side.
 static std::string NormalizeOneValidator(const std::string &raw)
 {
 	std::size_t start = 0;
@@ -79,9 +78,8 @@ const char kGzipEtagSuffix[] = "-gzip";
 std::string WithCodingSuffix(const std::string &etag, bool coded)
 {
 	const std::size_t suffix_len = std::strlen(kGzipEtagSuffix);
-	// The opaque payload ends before the closing quote in RFC-quoted form
-	// and at the end otherwise; the suffix belongs on the payload, not
-	// outside the quotes.
+	// The opaque payload ends before the closing quote in RFC-quoted form and at the end
+	// otherwise; the suffix belongs on the payload, not outside the quotes.
 	const bool quoted = etag.size() >= 2 && etag.front() == '"' && etag.back() == '"';
 	const std::size_t end = quoted ? etag.size() - 1 : etag.size();
 	const bool present =
@@ -100,10 +98,9 @@ bool IfNoneMatchHits(const std::string &if_none_match, const std::string &etag)
 {
 	if (if_none_match.empty())
 		return false;
-	// Header value may be a single validator or a comma-separated
-	// list — walk it, normalise each entry, return true on any hit.
-	// `*` matches any existing representation; the caller only
-	// invokes this on a 200-with-body, so `*` is always a hit.
+	// The header value may be a single validator or a comma-separated list -- walk it,
+	// normalise each entry, return true on any hit. `*` matches any existing representation;
+	// the caller only invokes this on a 200-with-body, so `*` is always a hit.
 	std::size_t pos = 0;
 	while (pos <= if_none_match.size()) {
 		const std::size_t comma = if_none_match.find(',', pos);

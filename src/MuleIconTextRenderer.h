@@ -28,20 +28,18 @@
 #include <wx/dataview.h> // Needed for wxDataViewCustomRenderer, wxDataViewIconText
 
 /**
- * Draws a wxDataViewIconText cell, but only reserves room for the icon on the
- * rows that actually have one.
+ * Draws a wxDataViewIconText cell, but only reserves room for the icon on the rows that actually
+ * have one.
  *
- * wx's own icon+text renderer reserves the icon slot unconditionally, so in a
- * column where the icon is the exception rather than the rule -- a rating
- * smiley on the handful of files that carry one -- every other row's text is
- * indented past an empty gap. On the native macOS cell the reserved width is
- * not even adjustable: wxImageTextCell hardcodes a 5px leading shift, a 5px
- * icon-to-text gap and a 16x16 icon as private ivars, none of them reachable
- * from C++.
+ * wx's own icon+text renderer reserves the icon slot unconditionally, so in a column where the icon
+ * is the exception rather than the rule -- a rating smiley on the handful of files that carry one
+ * -- every other row's text is indented past an empty gap. On the native macOS cell the reserved
+ * width is not even adjustable: wxImageTextCell hardcodes a 5px leading shift, a 5px icon-to-text
+ * gap and a 16x16 icon as private ivars, none of them reachable from C++.
  *
- * Text is drawn through wxDataViewCustomRenderer::RenderText(), so ellipsizing,
- * the selected-row foreground colour and RTL layout stay exactly as the stock
- * renderers do them; only the icon placement is ours.
+ * Text is drawn through wxDataViewCustomRenderer::RenderText(), so ellipsizing, the selected-row
+ * foreground colour and RTL layout stay exactly as the stock renderers do them; only the icon
+ * placement is ours.
  */
 class CMuleIconTextRenderer : public wxDataViewCustomRenderer
 {

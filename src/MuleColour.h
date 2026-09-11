@@ -37,16 +37,13 @@
 class wxPen;
 class wxBrush;
 
-// Palette selector for custom-drawn text in list controls. Reads the
-// control's actual background instead of
-// wxSystemSettings::GetAppearance().IsDark(), because native Win32
-// wxListCtrl (SysListView32) keeps its white background even when the
-// OS reports dark mode via AppsUseLightTheme=0. Foreground colours
-// chosen from IsDark() then render as light text on a still-white
-// list (see issue #274, Windows 11 dark-mode search-tab bug). GTK and
-// macOS do propagate dark backgrounds to lists, so on those platforms
-// this luminance test degrades to the same answer as IsDark() and
-// behaviour is unchanged.
+// Palette selector for custom-drawn text in list controls. Reads the control's actual background
+// instead of wxSystemSettings::GetAppearance().IsDark(), because native Win32 wxListCtrl
+// (SysListView32) keeps its white background even when the OS reports dark mode via
+// AppsUseLightTheme=0. Foreground colours chosen from IsDark() then render as light text on a
+// still-white list (issue #274, the Windows 11 dark-mode search-tab bug). GTK and macOS do
+// propagate dark backgrounds to lists, so there this luminance test degrades to the same answer as
+// IsDark().
 static inline bool IsListBackgroundDark(const wxWindow *w)
 {
 	const wxColour bg = w->GetBackgroundColour();
@@ -147,12 +144,10 @@ public:
 	const wxPen &GetPen(int width = 1, wxPenStyle style = wxPENSTYLE_SOLID) const;
 	const wxBrush &GetBrush(wxBrushStyle style = wxBRUSHSTYLE_SOLID) const;
 
-	// wxSYS_COLOUR_BTNSHADOW happens to equal SYS_COLOUR_LISTBOX on
-	// some Mate/Cinnamon themes (TraditionalOk, Menta) and on KDE
-	// builds without kde-gtk-config, which makes the wxListCtrl
-	// unfocused-selection paint render invisible (#640). Returning
-	// a 50/50 mix of HIGHLIGHT and LISTBOX keeps the selection
-	// readable across all themes while still looking distinctly
+	// wxSYS_COLOUR_BTNSHADOW happens to equal SYS_COLOUR_LISTBOX on some Mate/Cinnamon themes
+	// (TraditionalOk, Menta) and on KDE builds without kde-gtk-config, which makes the
+	// wxListCtrl unfocused-selection paint render invisible (#640). A 50/50 mix of HIGHLIGHT
+	// and LISTBOX keeps the selection readable across all themes while still looking distinctly
 	// "not the focused one".
 	static wxColour GetUnfocusedHighlight()
 	{

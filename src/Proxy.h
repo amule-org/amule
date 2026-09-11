@@ -36,9 +36,8 @@
 /******************************************************************************/
 
 /*
- * SOCKS4 protocol implementation according to:
- * - "SOCKS: A protocol for TCP proxy across firewalls":
- *   amule-root/docs/socks4.protocol
+ * SOCKS4, per "SOCKS: A protocol for TCP proxy across firewalls"
+ * (amule-root/docs/socks4.protocol).
  */
 const unsigned char SOCKS4_VERSION = 0x04;
 
@@ -52,15 +51,9 @@ const unsigned char SOCKS4_REPLY_FAILED_NO_IDENTD = 92;
 const unsigned char SOCKS4_REPLY_FAILED_DIFFERENT_USERIDS = 93;
 
 /*
- * SOCKS5 protocol implementation according to:
- * - RFC-1928: SOCKS Protocol Version 5
- * - RFC-1929: username/password Authentication for SOCKS V5
- *
- * Also, for the future :) :
- * - RFC-1961: GSS-API Authentication Method for SOCKS Version 5
- * - RFC-1508: Generic Security Service Application Program Interface
- * - RFC-1509: Generic Security Service API: C-bindings
- *
+ * SOCKS5, per RFC-1928 (SOCKS Protocol Version 5) and RFC-1929 (username/password
+ * authentication). For the future: RFC-1961 (GSS-API authentication), RFC-1508/1509 (GSS-API and
+ * its C bindings).
  */
 
 const unsigned char SOCKS5_VERSION = 0x05;
@@ -92,14 +85,10 @@ const unsigned char SOCKS5_REPLY_TTL_EXPIRED = 0x06;
 const unsigned char SOCKS5_REPLY_COMMAND_NOT_SUPPORTED = 0x07;
 const unsigned char SOCKS5_REPLY_ATYP_NOT_SUPPORTED = 0x08;
 
-//------------------------------------------------------------------------------
 // CProxyType
-//------------------------------------------------------------------------------
 
-/*
- * These constants must match the integer values saved in the configuration file,
- * DO NOT CHANGE THIS ORDER!!!
- */
+/* These constants must match the integer values saved in the configuration file. DO NOT CHANGE
+ * THIS ORDER! */
 enum CProxyType
 {
 	PROXY_NONE = -1,
@@ -109,29 +98,20 @@ enum CProxyType
 	PROXY_SOCKS4a
 };
 
-//------------------------------------------------------------------------------
 // CProxyData
-//------------------------------------------------------------------------------
-/**
- * The ProxyData class will hold information about the proxy server to be used.
- */
+/// Holds information about the proxy server to be used.
 class CProxyData
 {
 public:
-	/**
-	 * Default constructor.
-	 */
 	CProxyData();
 	/**
-	 * Constructor.
-	 *
-	 * @param proxyEnable	Whether proxy is enabled or not.
-	 * @param proxyType	The type of the proxy server.
-	 * @param proxyHostName	The proxy host name or IP address.
-	 * @param proxyPort	The proxy port number.
+	 * @param proxyEnable Whether proxy is enabled.
+	 * @param proxyType The type of the proxy server.
+	 * @param proxyHostName The proxy host name or IP address.
+	 * @param proxyPort The proxy port number.
 	 * @param enablePassword Whether authentication should be performed.
-	 * @param userName	The user name to authenticate to the server.
-	 * @param password	The password to authenticate to the server.
+	 * @param userName The user name to authenticate with.
+	 * @param password The password to authenticate with.
 	 */
 	CProxyData(bool proxyEnable,
 		CProxyType proxyType,
@@ -140,9 +120,7 @@ public:
 		bool enablePassword,
 		const wxString &userName,
 		const wxString &password);
-	/**
-	 * Clears the object contents.
-	 */
+	/// Clears the object contents.
 	void Clear();
 
 public:
@@ -155,17 +133,11 @@ public:
 	wxString m_password;
 };
 
-//------------------------------------------------------------------------------
 // CProxyStateMachine
-//------------------------------------------------------------------------------
-/* This size is just to be a little bit greater than the UDP buffer used in aMule.
- * Proxy protocol needs much less than this. 1024 would be ok. Other options are
- * - Default ethernet MTU - Eth-II - IP - UDP: 1,514 - 14 - 20 - 8 = 1472 bytes;
- * - Default token ring MTU 4,202 - overheads = ??.
- * It would be really more efficient if the final object was less than
- * a page (4096 bytes) in size.
+/* A little bigger than the UDP buffer aMule uses; the proxy protocol needs far less, and 1024
+ * would do. For reference, the default ethernet MTU less Eth-II/IP/UDP overhead is 1472 bytes. It
+ * would be more efficient if the final object were under a page (4096 bytes).
  */
-// const unsigned int PROXY_BUFFER_SIZE = 1024;
 const unsigned int PROXY_BUFFER_SIZE = 5 * 1024;
 
 enum CProxyCommand
@@ -182,33 +154,23 @@ enum CProxyState
 };
 
 /**
- * The ProxyStateMachine class is the ancestor of all proxy classes.
- *
- * CProxyStateMachine will do all the common work that a proxy class must do
- * and provide the necessary variables.
+ * Ancestor of all proxy classes: does the common work a proxy class must do and provides the
+ * necessary variables.
  */
 class CProxyStateMachine : public CStateMachine
 {
 public:
 	/**
-	 * Constructor.
-	 *
-	 * @param name		The name of the state machine. For debug messages only.
-	 * @param max_states	The maximum number of states that this machine will have.
-	 * @param proxyData	The necessary proxy information.
-	 * @param cmd		The type of proxy command to run.
+	 * @param name The name of the state machine, for debug messages only.
+	 * @param max_states The maximum number of states this machine will have.
+	 * @param proxyData The necessary proxy information.
+	 * @param cmd The type of proxy command to run.
 	 */
 	CProxyStateMachine(
 		wxString name, const unsigned int max_states, const CProxyData &proxyData, CProxyCommand cmd);
-	/**
-	 * Destructor.
-	 */
 	virtual ~CProxyStateMachine();
 	/**
-	 * Adds a small string to the state machine name, containing the proxy command.
-	 *
-	 * @param s	The original state machine name.
-	 * @param cmd	The proxy command.
+	 * Adds a small string to state machine name @a s, containing the proxy command @a cmd.
 	 */
 	static wxString &NewName(wxString &s, CProxyCommand cmd);
 
@@ -227,14 +189,10 @@ protected:
 	uint32 ProxyRead(CLibSocket &socket, void *buffer);
 	bool CanReceive() const;
 	bool CanSend() const;
-	//
 	// Initialized at constructor
-	//
 	const CProxyData &m_proxyData;
 	CProxyCommand m_proxyCommand;
-	//
 	// Member variables
-	//
 	char m_buffer[PROXY_BUFFER_SIZE];
 	bool m_isLost;
 	bool m_isConnected;
@@ -243,24 +201,18 @@ protected:
 	bool m_ok;
 	unsigned int m_lastRead;
 	int m_lastError;
-	//
 	// Will be initialized at Start()
-	//
 	amuleIPV4Address *m_peerAddress;
 	CLibSocket *m_proxyClientSocket;
 	amuleIPV4Address *m_proxyBoundAddress;
 	amuleIPV4Address m_proxyBoundAddressIPV4;
 	// wxIPV6address		m_proxyBoundAddressIPV6;
-	//
-	//  Temporary variables
-	//
+	// Temporary variables
 	unsigned char m_lastReply;
 	unsigned int m_packetLength;
 };
 
-//------------------------------------------------------------------------------
 // CSocks5StateMachine
-//------------------------------------------------------------------------------
 class CSocks5StateMachine;
 typedef void (CSocks5StateMachine::*Socks5StateProcessor)(bool entry);
 class CSocks5StateMachine : public CProxyStateMachine
@@ -313,9 +265,7 @@ private:
 	wxString m_state_name[SOCKS5_MAX_STATES];
 };
 
-//------------------------------------------------------------------------------
 // CSocks4StateMachine
-//------------------------------------------------------------------------------
 class CSocks4StateMachine;
 typedef void (CSocks4StateMachine::*Socks4StateProcessor)(bool entry);
 class CSocks4StateMachine : public CProxyStateMachine
@@ -350,9 +300,7 @@ private:
 	wxString m_state_name[SOCKS4_MAX_STATES];
 };
 
-//------------------------------------------------------------------------------
 // CHttpStateMachine
-//------------------------------------------------------------------------------
 class CHttpStateMachine;
 typedef void (CHttpStateMachine::*HttpStateProcessor)(bool entry);
 class CHttpStateMachine : public CProxyStateMachine
@@ -387,9 +335,7 @@ private:
 	wxString m_state_name[HTTP_MAX_STATES];
 };
 
-//------------------------------------------------------------------------------
 // CProxySocket
-//------------------------------------------------------------------------------
 
 class CDatagramSocketProxy;
 
@@ -431,9 +377,7 @@ private:
 	CDatagramSocketProxy *m_udpSocket;
 };
 
-//------------------------------------------------------------------------------
 // CSocketClientProxy
-//------------------------------------------------------------------------------
 
 class CSocketClientProxy : public CProxySocket
 {
@@ -453,9 +397,7 @@ private:
 	wxMutex m_socketLocker;
 };
 
-//------------------------------------------------------------------------------
 // CSocketServerProxy
-//------------------------------------------------------------------------------
 
 class CSocketServerProxy : public CLibSocketServer
 {
@@ -469,9 +411,7 @@ private:
 	wxMutex m_socketLocker;
 };
 
-//------------------------------------------------------------------------------
 // CDatagramSocketProxy
-//------------------------------------------------------------------------------
 
 enum UDPOperation
 {

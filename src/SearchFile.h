@@ -36,22 +36,17 @@ class CFileDataIO;
 typedef std::vector<CSearchFile *> CSearchResultList;
 
 /**
- * Represents a search-result returned from a server or client.
+ * Represents a search result returned from a server or client.
  *
- * A file may have either a parent or any number of children.
- * When a child is added to a result, the parent becomes a generic
- * representation of all its children, which will include a copy
- * of the original result. The parent object will contain the sum
- * of sources (total/complete) and will have the most common
- * filename. Children are owned by their parents, and can be
- * displayed on CSearchListCtrl.
+ * A file may have either a parent or any number of children. When a child is added to a result, the
+ * parent becomes a generic representation of all its children, including a copy of the original
+ * result: it carries the sum of sources (total/complete) and the most common filename. Children are
+ * owned by their parents, and can be displayed on CSearchListCtrl.
  *
- * Basic file parameters (hash, name, size, rating) can be read
- * via the CAbstractFile functions. Tags pertaining to meta-data
- * are stored in the taglist inherited from CAbstractFile.
+ * Basic file parameters (hash, name, size, rating) are read through the CAbstractFile functions;
+ * meta-data tags live in the taglist inherited from CAbstractFile.
  *
- * TODO: Server IP/Port are currently not used.
- * TODO: Client ID/Port are currently not used.
+ * TODO: Server IP/Port and Client ID/Port are currently not used.
  */
 class CSearchFile : public CAbstractFile, public CECID
 {
@@ -64,13 +59,13 @@ public:
 	/**
 	 * Normal constructor, reads a result from a packet.
 	 *
-	 * @param data Source of results-packet.
-	 * @param optUTF8 Specifies if text-strings are to be read as UTF8.
-	 * @param searchID searchID The
+	 * @param data Source of the results packet.
+	 * @param optUTF8 Whether text strings are to be read as UTF8.
+	 * @param searchID The search this result belongs to.
 	 * @param serverIP The IP of the server that sent this result.
 	 * @param serverPort The port of the server that sent this result.
-	 * @param directory If from a clients shared files, the directory this file is in.
-	 * @param kademlia Specifies if this was from a kad-search.
+	 * @param directory If from a client's shared files, the directory this file is in.
+	 * @param kademlia Whether this came from a kad search.
 	 */
 	CSearchFile(const CMemFile &data,
 		bool optUTF8,
@@ -84,47 +79,35 @@ public:
 	virtual ~CSearchFile();
 
 	/**
-	 * Serializes this result (and its children, recursively) to `file`.
-	 *
-	 * Mirrors CKnownFile's WriteToFile/LoadTagsFromFile pattern: fixed
-	 * fields plus a generic CTag list for anything else already carried
-	 * in m_taglist. m_downloadStatus and m_searchID are NOT persisted --
-	 * the former is always recomputed at runtime (SetDownloadStatus()),
-	 * the latter is reassigned by the caller once results are reloaded
-	 * (see CSearchList::LoadSearches(), a later phase).
+	 * Serializes this result, and its children recursively, to `file`. Mirrors CKnownFile's
+	 * WriteToFile/LoadTagsFromFile pattern: fixed fields plus a generic CTag list for anything
+	 * else already carried in m_taglist. m_downloadStatus and m_searchID are NOT persisted --
+	 * the former is always recomputed at runtime (SetDownloadStatus()), the latter reassigned
+	 * by the caller once results are reloaded (see CSearchList::LoadSearches()).
 	 */
 	bool WriteToFile(CFileDataIO *file) const;
 
 	/**
-	 * Reconstructs a result (and its children, recursively) written by
-	 * WriteToFile(). Returns a heap-allocated, parentless root result;
-	 * the caller takes ownership. Returns NULL on a malformed record --
-	 * callers must treat this as fatal for the whole load rather than
-	 * skip-and-continue, since a corrupt length prefix partway through
-	 * the stream leaves every subsequent record unreadable.
+	 * Reconstructs a result, and its children recursively, written by WriteToFile(). Returns a
+	 * heap-allocated, parentless root result the caller owns, or NULL on a malformed record --
+	 * which callers must treat as fatal for the whole load rather than skip-and-continue, since
+	 * a corrupt length prefix partway through the stream leaves every later record unreadable.
 	 *
-	 * `allowChildren` caps recursion at the real two-level result-tree
-	 * depth (parent + alternative-filename children, never grandchildren
-	 * -- the same invariant AddChild() enforces at runtime); leave it at
-	 * the default when reading a root record. A record with children
-	 * claiming children of their own is treated as malformed.
+	 * `allowChildren` caps recursion at the real two-level result-tree depth (parent plus
+	 * alternative-filename children, never grandchildren -- the same invariant AddChild()
+	 * enforces at runtime); leave it at the default when reading a root record. A record whose
+	 * children claim children of their own is treated as malformed.
 	 *
 	 * Deliberately does not call SetDownloadStatus(): recomputing it needs
-	 * theApp->downloadqueue/knownfiles/canceledfiles, which may not exist
-	 * yet at the point results are loaded (searchlist is constructed
-	 * before them, see amule.cpp). Callers must walk the returned tree
-	 * (root + every child) and call SetDownloadStatus() on each node
-	 * themselves once those singletons are available.
+	 * theApp->downloadqueue/knownfiles/canceledfiles, which may not exist yet when results are
+	 * loaded (searchlist is constructed before them, see amule.cpp). Callers must walk the
+	 * returned tree, root and every child, and call SetDownloadStatus() on each node once those
+	 * singletons are available.
 	 */
 	static CSearchFile *LoadFromFile(CFileDataIO *file, bool allowChildren = true);
 
 	/**
-	 * Merges the two results into one.
-	 *
-	 * Merges the other result into this one, updating
-	 * various information.
-	 *
-	 * @param other The file to be merged into this.
+	 * Merges @a other into this result, updating the various information.
 	 */
 	void MergeResults(const CSearchFile &other);
 
@@ -166,13 +149,9 @@ public:
 	void SetShowChildren(bool show) { m_showChildren = show; }
 
 	/**
-	 * Adds the given file as a child of this file.
-	 *
-	 * Note that a file can either be a parent _or_
-	 * a child, but not both. Also note that it is
-	 * only legal to add children whose filesize and
-	 * filehash matches the parent's. AddChild takes
-	 * ownership of the file.
+	 * Adds @a file as a child of this file, taking ownership. A file can be either a parent or
+	 * a child, not both, and only a child whose filesize and filehash match the parent's may be
+	 * added.
 	 */
 	void AddChild(CSearchFile *file);
 
@@ -222,9 +201,9 @@ public:
 	const wxString &GetDirectory() const noexcept { return m_directory; }
 
 #ifndef CLIENT_GUI
-	// Daemon override: a search result's comments are its on-demand Kad notes.
-	// On amulegui the inherited CAbstractFile version returns the EC-streamed
-	// cache, so no override is needed there.
+	// Daemon override: a search result's comments are its on-demand Kad notes. On amulegui the
+	// inherited CAbstractFile version returns the EC-streamed cache, so no override is needed
+	// there.
 	void GetRatingAndComments(FileRatingList &list) const;
 #endif
 
@@ -236,10 +215,8 @@ private:
 	CSearchFile();
 
 	/**
-	 * Updates a parent file so that it shows various common traits.
-	 *
-	 * Currently, the most common filename is selected, and an average
-	 * of fileratings is set, based on files that have a rating only.
+	 * Updates a parent file so it shows the common traits: the most common filename, and an
+	 * average of the file ratings over the children that have one.
 	 */
 	void UpdateParent();
 
@@ -274,10 +251,9 @@ private:
 
 	friend class CPartFile;
 	friend class CSearchListRem;
-	// Needs to assign m_searchID directly after LoadFromFile() reconstructs a
-	// result tree from StoredSearches.met, same as CSearchListRem already does
-	// for EC-streamed results -- LoadFromFile() deliberately never sets it
-	// itself (see its header comment).
+	// Needs to assign m_searchID directly after LoadFromFile() reconstructs a result tree from
+	// StoredSearches.met, same as CSearchListRem already does for EC-streamed results --
+	// LoadFromFile() deliberately never sets it itself (see its header comment).
 	friend class CSearchList;
 };
 

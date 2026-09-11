@@ -33,16 +33,14 @@
 template <typename TEST> class CObservable;
 
 /**
- * This class implements the observable part of an Observer/Observable pattern.
+ * The observable part of an Observer/Observable pattern.
  *
- * The EventType parameter is used to specify a protocol for the event-type used
- * by a particular Observer/Observable set and allows for any level of
- * information passing to be used, depending on the context.
+ * The EventType parameter specifies a protocol for the event type used by a particular
+ * Observer/Observable set, allowing any level of information passing, depending on the context.
  *
- * In order to simplify matters for subclasses, both the Observer and the
- * Observable class keep track of which objects are observing what, so that
- * instances can safely be created and destroyed without having to manually
- * keep the observers and observables in sync.
+ * To simplify matters for subclasses, both the Observer and the Observable class track which
+ * objects are observing what, so instances can be created and destroyed safely without keeping the
+ * observers and observables manually in sync.
  */
 template <typename EventType> class CObserver
 {
@@ -52,19 +50,14 @@ public:
 	typedef CObservable<EventType> ObservableType;
 
 	/**
-	 * Destructor.
-	 *
-	 * All observables which has this object registered are notified
-	 * as to avoid dangling pointers. This will not result in actual
-	 * events.
+	 * Notifies every observable this object is registered with, to avoid dangling pointers. No
+	 * actual events result.
 	 */
 	virtual ~CObserver();
 
 protected:
 	/**
-	 * This function is called when an observed subject publishes an event.
-	 *
-	 * @param o The publisher of the event.
+	 * Called when an observed subject publishes an event. @param o The publisher of the event.
 	 * @param e The actual event.
 	 */
 	virtual void ReceiveNotification(const ObservableType *o, const EventType &e) = 0;
@@ -79,7 +72,7 @@ private:
 };
 
 /**
- * This class implements the Observable part of the Observer/Observable pattern.
+ * The Observable part of the Observer/Observable pattern.
  */
 template <typename EventType> class CObservable
 {
@@ -89,65 +82,42 @@ public:
 	//! The observer-type accepted by this class
 	typedef CObserver<EventType> ObserverType;
 
-	/**
-	 * Destructor.
-	 */
 	virtual ~CObservable();
 
 	/**
-	 * This function subscribes an observer to events from this observable.
-	 *
-	 * @param o The observer that wishes to observe this object.
-	 * @return True if it successfully subscribed, false otherwise.
-	 *
-	 * If the subscription was successful, ObserverAdded() will be called
-	 * on "o", allowing the subclass to initialize the the observer's state.
+	 * Subscribes observer @a o to events from this observable. Returns true on success, in
+	 * which case ObserverAdded() is called on @a o so the subclass can initialize its state.
 	 */
 	bool AddObserver(ObserverType *o);
 
 	/**
-	 * This function removes an observer from the list of subscribers.
-	 *
-	 * @param o The observer to unsubscribe from this observable.
-	 * @return True if the observer was removed, false otherwise.
-	 *
-	 * ObserverRemoved() will be called for the observer "o", allowing
-	 * the subclass to take steps to avoid outdated data being kept.
+	 * Removes observer @a o from the list of subscribers. Returns true if it was removed, in
+	 * which case ObserverRemoved() is called on it so the subclass can avoid keeping outdated
+	 * data.
 	 */
 	bool RemoveObserver(ObserverType *o);
 
 protected:
 	/**
-	 * This function notifies all or an specific observer of an event.
-	 *
-	 * @param e The event to be published.
-	 * @param o A specific subscribing observer or NULL for all subscribers.
-	 *
-	 * The purpose of the second parameter is to allow notifications of
-	 * specific observers when the ObserverAdded() or ObserverRemoved()
-	 * functions are called and it should not be used outside of these
-	 * functions.
+	 * Notifies all subscribers of event @a e, or just observer @a o when one is given. The
+	 * second parameter exists for the notifications ObserverAdded() and ObserverRemoved() make,
+	 * and should not be used elsewhere.
 	 */
 	void NotifyObservers(const EventType &e, ObserverType *o = NULL);
 
 	/**
-	 * This function removes all observers from this object.
-	 *
-	 * ObserverRemoved is called on each observer.
+	 * Removes every observer from this object, calling ObserverRemoved on each.
 	 */
 	void RemoveAllObservers();
 
 	/**
-	 * This function is called when an observer has been added to the observable.
+	 * Called when an observer has been added to the observable.
 	 */
 	virtual void ObserverAdded(ObserverType *) {};
 
 	/**
-	 * This function is called when observers are removed from the observable.
-	 *
-	 * Exceptions to this are:
-	 *  - When the Observable is being destroyed.
-	 *  - When the Observer is being destroyed.
+	 * Called when observers are removed from the observable, except while the Observable or the
+	 * Observer is being destroyed.
 	 */
 	virtual void ObserverRemoved(ObserverType *) {};
 

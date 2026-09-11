@@ -111,10 +111,9 @@ TEST(SearchHistory, ResultIsCappedAtMaxEntries)
 
 TEST(SearchHistory, CapIsTheSharedConstantTheGuiPassesIn)
 {
-	// Asserts the cap the Search tab actually applies, not just that
-	// ApplySearchHistoryEntry can cap at an arbitrary N -- MAX_SEARCH_HISTORY_
-	// ENTRIES is the same symbol CSearchDlg passes, so this cannot drift from
-	// the GUI the way a hardcoded copy of the number could.
+	// Asserts the cap the Search tab actually applies, not just that ApplySearchHistoryEntry
+	// can cap at an arbitrary N -- MAX_SEARCH_HISTORY_ENTRIES is the same symbol CSearchDlg
+	// passes, so this cannot drift from the GUI the way a hardcoded copy of the number could.
 	const size_t cap = MAX_SEARCH_HISTORY_ENTRIES;
 	wxArrayString existing;
 	for (size_t i = 0; i < cap; ++i) {

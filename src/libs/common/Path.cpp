@@ -37,10 +37,8 @@
 #include <sys/stat.h> // Needed for ::stat in GetFileStat
 #endif
 
-// Windows has case-insensitive paths, so we use a
-// case-insensitive cmp for that platform. TODO:
-// Perhaps it would be better to simply lowercase
-// m_filesystem in the constructor ...
+// Windows paths are case-insensitive, so compare that way there.
+// TODO: lowercasing m_filesystem in the constructor may be simpler.
 #ifdef __WINDOWS__
 #define PATHCMP(a, b) wxStricmp(a, b)
 #define PATHNCMP(a, b, n) wxStrnicmp(a, b, n)
@@ -64,9 +62,8 @@ static wxString Demangle(const wxCharBuffer &fn, const wxString &filename)
 
 	// FIXME: Is this actually needed for osx/msw?
 	if (!result) {
-		// We only try to further demangle if the current locale is
-		// UTF-8, C or POSIX. This is because in any other case, the
-		// current locale is probably the best choice for printing.
+		// Demangle further only for UTF-8, C and POSIX locales. For anything
+		// else the current locale is probably the best choice for printing.
 		static wxFontEncoding enc = wxLocale::GetSystemEncoding();
 
 		switch (enc) {
@@ -186,35 +183,29 @@ static wxString DoCleanPath(const wxString &path)
 /**
  * The canonical form IsSameAs() reduces a path to before comparing it.
  *
- * Extracted so it can be computed once per path and reused, instead of twice
- * per comparison. Grouping paths by this string is then exactly equivalent to
- * comparing them pairwise, which is what lets CSharedFileList answer a browse
- * without re-deriving the same grouping for every directory (issue #898).
+ * Computed once per path rather than twice per comparison. Grouping by this
+ * string is equivalent to comparing pairwise, which lets CSharedFileList answer
+ * a browse without re-deriving the grouping per directory (issue #898).
  *
- * Only for paths that contain a separator -- IsSameAs() compares two bare
- * filenames with PATHCMP instead, and that branch is left where it is.
+ * Only for paths with a separator; bare filenames use PATHCMP.
  */
 static wxString NormalizedKey(const wxString &path)
 {
-	// Cache the current directory only when the path is relative --
-	// wxFileName::Normalize ignores the cwd argument for absolute paths. Skipping
-	// wxGetCwd() in the absolute case (essentially every aMule call site) avoids
-	// the wxLogSysError it emits on macOS bundles whose recorded CWD has been
-	// removed.
+	// Only relative paths need the cwd: Normalize ignores it for absolute ones.
+	// Skipping wxGetCwd() there (nearly every call site) avoids the wxLogSysError
+	// it emits on macOS bundles whose recorded CWD is gone.
 	wxString cwd;
 	if (!wxIsAbsolutePath(path)) {
 		cwd = wxGetCwd();
 	}
 
-	// Everything is normalized except env. variables, which can cause problems when
-	// the string is not encodable using wxConvLibc. wxPATH_NORM_ALL is deprecated in
-	// wx3, hence the explicit flags.
+	// Normalize all but env variables, which break when the string is not
+	// encodable with wxConvLibc. Explicit flags: wxPATH_NORM_ALL is gone in wx3.
 	const int flags = wxPATH_NORM_DOTS | wxPATH_NORM_TILDE | wxPATH_NORM_CASE | wxPATH_NORM_ABSOLUTE |
 			  wxPATH_NORM_LONG | wxPATH_NORM_SHORTCUT;
 
-	// Let wxFileName handle the tricky stuff involved in actually comparing two
-	// paths. A path ending with a separator is unequal to the same path without
-	// one, which is probably for the best but can surprise.
+	// wxFileName does the hard part. Note a trailing separator makes a path
+	// unequal to the same path without one.
 	wxFileName fn(path);
 	fn.Normalize(flags, cwd);
 	return fn.GetFullPath();
@@ -223,11 +214,9 @@ static wxString NormalizedKey(const wxString &path)
 /** Returns true if the two paths are equal. */
 static bool IsSameAs(const wxString &a, const wxString &b)
 {
-	// Fast path for bare filenames (no directory separator on either path). Search
-	// results stream in as bare filenames from FT_FILENAME tags, and
-	// CSearchFile::AddChild's filename-dedup path lands here on every duplicate
-	// result; without it the call falls through to wxFileName::Normalize, which
-	// insists on a cwd argument and triggers wxGetCwd().
+	// Fast path for bare filenames. Search results arrive as bare FT_FILENAME
+	// strings and CSearchFile::AddChild dedups on every duplicate, so without
+	// this each one falls through to Normalize and triggers wxGetCwd().
 	if (a.find_first_of(wxFileName::GetPathSeparators()) == wxString::npos &&
 		b.find_first_of(wxFileName::GetPathSeparators()) == wxString::npos) {
 		return PATHCMP(a.c_str(), b.c_str()) == 0;
@@ -239,12 +228,10 @@ static bool IsSameAs(const wxString &a, const wxString &b)
 		return true;
 	}
 
-	// An empty path names no file, so it can only equal another empty path, which
-	// the comparison above already answered. Falling through would hand "" to
-	// NormalizedKey(), and that is not merely slow: an empty path is not absolute,
-	// so it normalises to the process working directory and compares equal to
-	// whichever directory aMule happens to sit in. A CKnownFile loaded from
-	// known.met has no directory until the share scan stamps one.
+	// An empty path equals only another empty path, already answered above.
+	// Falling through would normalise "" against the process cwd, making an
+	// unset path compare equal to whatever directory aMule sits in. A
+	// CKnownFile from known.met has no directory until the share scan stamps one.
 	if (a.empty() || b.empty()) {
 		return false;
 	}
@@ -266,15 +253,13 @@ CPath::CPath(const wxString &filename)
 
 	wxCharBuffer fn = filename2char(filename);
 	if (fn.data()) {
-		// Filename is valid in the current locale. This means that
-		// it either originated from a (wx)system-call, or from a
-		// user with a properly setup system.
+		// Valid in the current locale, so it came from a system call or a
+		// correctly configured system.
 		m_filesystem = DeepCopy(filename);
 		m_printable = Demangle(fn, filename);
 	} else {
-		// Not a valid filename in the current locale, so some magic is needed: this
-		// ensures the filename is saved as UTF8 even on a non-unicode system,
-		// preserving the original until the user has fixed their setup.
+		// Invalid in the current locale: save as UTF-8 even on a non-unicode
+		// system, preserving the original until the user fixes their setup.
 #ifdef __WINDOWS__
 		// Magic fails on Windows where we always work with wide char file names.
 		m_filesystem = DeepCopy(filename);
@@ -306,9 +291,8 @@ CPath CPath::FromUniv(const wxString &path)
 
 wxString CPath::ToUniv(const CPath &path)
 {
-	// The logic behind this is that by saving the filename
-	// as a raw bytestream, we can always recreate the on-disk filename,
-	// as if we had read it using wx functions.
+	// Saved as a raw bytestream so the on-disk filename can always be
+	// recreated, as if read through wx.
 	wxCharBuffer fn = path.m_filesystem.mb_str(*wxConvFileName);
 	return wxConvISO8859_1.cMB2WC(fn);
 }
@@ -433,19 +417,14 @@ sint64 CPath::GetFileSize() const
 bool CPath::GetFileStat(time_t &mtime, sint64 &size) const
 {
 #ifdef __WINDOWS__
-	// Windows keeps the three separate wx calls, in the order the callers
-	// used to make them. That order is load-bearing rather than habit:
-	// wxFileName::GetTimes() reports a failure through wxLogSysError(), so
-	// asking it about a path that does not exist -- a broken shortcut, or a
-	// file that vanished mid-scan -- puts a system-error line in the user's
-	// log. FileExists() is what kept that quiet, so it stays in front.
+	// Windows keeps the three separate wx calls in their original order, and
+	// that order is load-bearing: wxFileName::GetTimes() reports failure through
+	// wxLogSysError(), so asking about a missing path logs a system error.
+	// FileExists() is what kept it quiet.
 	//
-	// No saving here, then; this platform gets only the path-comparison fix
-	// that comes with it. Collapsing these into one GetFileAttributesEx()
-	// would work, but its FILETIME would have to convert to exactly the
-	// time_t wxFileModificationTime() returns today: known.met matches on the
-	// stored modification time, so a conversion that differs by so much as a
-	// second re-hashes every shared file on the user's next start.
+	// So no saving here. One GetFileAttributesEx() would work, but its FILETIME
+	// must convert to exactly the time_t wxFileModificationTime() returns:
+	// known.met matches on mtime, and a second's drift re-hashes every share.
 	if (!FileExists()) {
 		return false;
 	}
@@ -469,9 +448,8 @@ bool CPath::GetFileStat(time_t &mtime, sint64 &size) const
 		return false;
 	}
 
-	// Same predicate wxFileExists() applies, kept explicit because this is
-	// what makes the single stat a drop-in for the FileExists() the callers
-	// no longer make: a directory or a broken link must still fail.
+	// Same predicate wxFileExists() applies, explicit because it is what makes
+	// the single stat a drop-in: a directory or broken link must still fail.
 	if (!S_ISREG(st.st_mode)) {
 		return false;
 	}
@@ -484,20 +462,18 @@ bool CPath::GetFileStat(time_t &mtime, sint64 &size) const
 
 wxString CPath::GetDirKey() const
 {
-	// The same reduction IsSameDir() performs before comparing: strip the
-	// trailing separator, then canonicalise. Two paths have equal keys
-	// exactly when IsSameDir() calls them the same directory, so a caller
-	// holding many paths can group by this instead of comparing every pair
-	// (issue #898).
+	// The reduction IsSameDir() performs before comparing: strip the trailing
+	// separator, then canonicalise. Equal keys exactly when IsSameDir() calls
+	// them the same directory, so a caller can group instead of comparing
+	// every pair (issue #898).
 	wxString stripped = m_filesystem;
 	if (stripped.Length()) {
 		stripped = StripSeparators(stripped, wxString::trailing);
 	}
 
-	// Deliberately NormalizedKey() and not IsSameAs()'s bare-filename fast
-	// path: a bare name is made absolute against the cwd here, which is what
-	// IsSameAs() does for it too as soon as the other side has a separator.
-	// Keying every path the same way keeps the grouping self-consistent.
+	// NormalizedKey() and not IsSameAs()'s bare-filename fast path: a bare name
+	// is made absolute against the cwd here, as IsSameAs() does once the other
+	// side has a separator. Keying every path alike keeps the grouping consistent.
 	return NormalizedKey(stripped);
 }
 
@@ -506,9 +482,7 @@ bool CPath::IsSameDir(const CPath &other) const
 	wxString a = m_filesystem;
 	wxString b = other.m_filesystem;
 
-	// This check is needed to avoid trouble in the
-	// case where one path is empty, and the other
-	// points to the root dir.
+	// Guards the case where one path is empty and the other is the root dir.
 	if (a.Length() && b.Length()) {
 		a = StripSeparators(a, wxString::trailing);
 		b = StripSeparators(b, wxString::trailing);
@@ -588,18 +562,12 @@ CPath CPath::RemoveAllExt() const
 {
 	// Loop until all extensions are removed.
 	//
-	// The termination test compares the underlying filesystem strings
-	// directly rather than going through CPath::operator!=. The latter
-	// routes through IsSameAs() / wxFileName::Normalize(), which
-	// resolves relative paths via wxGetCwd().  When the process's
-	// recorded working directory has been deleted (routine on macOS
-	// bundles whose launching shell's CWD has been removed) wxGetCwd()
-	// emits a wxLogSysError("Failed to get the working directory...")
-	// for every call, and CDownloadListCtrl::DrawFileItem reaches this
-	// loop on every paint of every download row.  Plain string
-	// equality is the right comparison here anyway: we only need to
-	// know whether RemoveExt() changed the buffer, not whether two
-	// filesystem locations refer to the same node.
+	// Compares the filesystem strings directly rather than CPath::operator!=,
+	// which routes through wxFileName::Normalize() and so wxGetCwd(). When the
+	// recorded working directory has been deleted (routine on macOS bundles)
+	// that logs an error on every call, and CDownloadListCtrl::DrawFileItem
+	// reaches this loop on every paint of every row. Plain equality is also the
+	// right test: we only need to know whether RemoveExt() changed the buffer.
 	CPath last, current = RemoveExt();
 	do {
 		last = current;
@@ -611,16 +579,14 @@ CPath CPath::RemoveAllExt() const
 
 bool CPath::StartsWith(const CPath &other) const
 {
-	// It doesn't make sense comparing invalid paths,
-	// especially since if 'other' was empty, it would
-	// be considered a prefix of any path.
+	// Comparing invalid paths makes no sense: an empty 'other' would count as a
+	// prefix of any path.
 	if ((IsOk() && other.IsOk()) == false) {
 		return false;
 	}
 
-	// Adding an separator to avoid partial matches, such as
-	// "/usr/bi" matching "/usr/bin". TODO: Paths should be
-	// normalized first (in the constructor).
+	// Separator added to avoid partial matches, e.g. "/usr/bi" against
+	// "/usr/bin". TODO: normalize paths in the constructor instead.
 	const wxString a = StripSeparators(m_filesystem, wxString::trailing) + wxFileName::GetPathSeparator();
 	const wxString b =
 		StripSeparators(other.m_filesystem, wxString::trailing) + wxFileName::GetPathSeparator();
@@ -650,10 +616,9 @@ bool CPath::BackupFile(const CPath &src, const wxString &appendix)
 
 	CPath dst = CPath(src.m_filesystem + appendix);
 
-	// Small same-directory .met/config backup — wxCopyFile's 4 KiB buffer
-	// is fine here. Large data-file copies use CFile::CloneFile (higher
-	// layer) instead; see amule-org/amule#11. mulecommon deliberately has
-	// no dependency on the CFile layer, so this stays on wxCopyFile.
+	// Small same-directory .met/config backup, so wxCopyFile's 4 KiB buffer is
+	// fine. Large copies use CFile::CloneFile; mulecommon deliberately has no
+	// dependency on the CFile layer (amule-org/amule#11).
 	if (::wxCopyFile(src.m_filesystem, dst.m_filesystem, true)) {
 		// Try to ensure that the backup gets physically written
 #if defined __WINDOWS__ || defined __IRIX__

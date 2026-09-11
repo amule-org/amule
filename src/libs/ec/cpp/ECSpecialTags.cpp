@@ -58,9 +58,7 @@ wxString CEC_PartFile_Tag::GetFileStatusString() const
 	}
 }
 
-//
 // Search request
-//
 CEC_Search_Tag::CEC_Search_Tag(const wxString &name,
 	EC_SEARCH_TYPE search_type,
 	const wxString &file_type,

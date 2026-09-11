@@ -113,10 +113,9 @@ bool Base64UrlDecode(const std::string &in, std::vector<unsigned char> &out)
 			out.push_back(static_cast<unsigned char>((acc >> bits) & 0xFF));
 		}
 	}
-	// A well-formed base64url string of length len(input)%4 == 0/2/3
-	// has 0/4/2 trailing bits respectively, all expected to be zero.
-	// Reject inputs that left non-zero residue — they're malformed even
-	// if every char is in the b64url alphabet.
+	// A well-formed base64url string of length len(input)%4 == 0/2/3 has 0/4/2 trailing bits
+	// respectively, all expected to be zero. Reject inputs that left non-zero residue -- they
+	// are malformed even if every char is in the b64url alphabet.
 	if (bits > 0 && (acc & ((1u << bits) - 1)) != 0)
 		return false;
 	// Length-mod-4 of 1 is impossible for a valid base64url encoding.
@@ -139,28 +138,23 @@ void HmacSha256(const CryptoPP::SecByteBlock &secret,
 // 24 h JWT expiry. Documented in the v0 API spec.
 const std::time_t TOKEN_LIFETIME_SECONDS = 24 * 60 * 60;
 
-// 128-bit `jti`. Wide enough that collisions are infeasible across the
-// revocation-list lifetime, narrow enough that 22 b64url chars fit
-// comfortably in cookie/header payloads.
+// 128-bit `jti`. Wide enough that collisions are infeasible across the revocation-list lifetime,
+// narrow enough that 22 b64url chars fit comfortably in cookie and header payloads.
 const size_t JTI_BYTES = 16;
 
 // Hard cap on JSON nesting in a JWT header or payload.
 //
-// picojson's _parse_array / _parse_object is unbounded recursive
-// descent and both parse sites in Verify() run BEFORE the MAC
-// compare returns its verdict — an unauthenticated peer can blow
-// the worker stack with `{"a":{"a":...}}` nested deep enough.
-// musl's 128 KiB pthread stack limits the attack to ~300-600
-// frames; glibc is higher but still finite.
+// picojson's _parse_array / _parse_object is unbounded recursive descent and both parse sites in
+// Verify() run BEFORE the MAC compare returns its verdict -- an unauthenticated peer can blow the
+// worker stack with `{"a":{"a":...}}` nested deep enough. musl's 128 KiB pthread stack limits the
+// attack to ~300-600 frames; glibc is higher but still finite.
 //
-// Real JWT payloads here are flat (scalar claims: role / exp /
-// iat / jti / typ / alg) so 8 would suffice. 32 leaves headroom
-// for a third-party producer accepted later.
+// Real JWT payloads here are flat (scalar claims: role / exp / iat / jti / typ / alg) so 8 would
+// suffice. 32 leaves headroom for a third-party producer accepted later.
 //
-// The check sums `{` + `[` in the decoded JSON. Openers inside
-// string literals are counted too — false positives — but our
-// payloads don't legitimately contain unbalanced braces in
-// strings, so the conservative direction is fine.
+// The check sums `{` plus `[` in the decoded JSON. Openers inside string literals are counted too
+// -- false positives -- but our payloads do not legitimately contain unbalanced braces in strings,
+// so the conservative direction is fine.
 const std::size_t MAX_JSON_OPENERS = 32;
 
 bool DepthWithinLimit(const std::string &json)
@@ -180,21 +174,18 @@ bool DepthWithinLimit(const std::string &json)
 CJwt::CJwt(std::vector<unsigned char> secret)
 : m_secret(secret.empty() ? nullptr : secret.data(), secret.size())
 {
-	// An empty signing key is always a config bug (truncated
-	// amuleapi-jwt-secret read, missing file write, etc.). Refusing
-	// it at construction is the cheapest way to avoid the failure
-	// mode where the daemon happily issues and verifies tokens
-	// signed with a zero-length key. CryptoPP's HMAC accepts a null
-	// key + len=0 without complaint, which is why this slipped
-	// through MAC checking.
+	// An empty signing key is always a config bug: a truncated amuleapi-jwt-secret read, a
+	// missing file write. Refusing it at construction is the cheapest way to avoid the failure
+	// mode where the daemon happily issues and verifies tokens signed with a zero-length key.
+	// CryptoPP's HMAC accepts a null key plus len=0 without complaint, which is why this
+	// slipped through MAC checking.
 	if (m_secret.empty()) {
 		throw std::invalid_argument("CJwt: signing secret must not be empty");
 	}
-	// Wipe the caller's copy now that we've taken our own. The
-	// SecByteBlock owns the live copy and will scrub itself on
-	// destruction; the std::vector the caller passed in is
-	// moved-from, leaving any residual bytes outside our control.
-	// Best-effort: explicitly overwrite if any bytes remain.
+	// Wipe the caller's copy now that we have taken our own. The SecByteBlock owns the live
+	// copy and scrubs itself on destruction; the std::vector the caller passed in is moved-
+	// from, leaving any residual bytes outside our control. Best-effort: explicitly overwrite
+	// if any bytes remain.
 	if (!secret.empty()) {
 		std::fill(secret.begin(), secret.end(), 0);
 	}
@@ -241,13 +232,11 @@ CJwt::IssuedToken CJwt::Issue(Role role)
 
 bool CJwt::Verify(const std::string &token, VerifyResult &out) const
 {
-	// Reject before any Base64UrlDecode walk on absurd-length tokens.
-	// A legitimate amuleapi token is ~280 bytes (header 36 + payload
-	// ~120 + signature 43, each base64url-encoded); 4 KiB leaves
-	// ~10x headroom. Without this cap an unauthenticated peer can
-	// burn three full-token walks per request before the MAC
-	// compare rejects, which is a cheap CPU-amplification surface
-	// against the listener (1 MiB body cap × N concurrent peers).
+	// Reject before any Base64UrlDecode walk on absurd-length tokens. A legitimate amuleapi
+	// token is ~280 bytes (header 36 + payload ~120 + signature 43, each base64url-encoded); 4
+	// KiB leaves ~10x headroom. Without this cap an unauthenticated peer can burn three full-
+	// token walks per request before the MAC compare rejects, which is a cheap CPU-
+	// amplification surface against the listener (1 MiB body cap x N concurrent peers).
 	if (token.size() > 4096)
 		return false;
 	// Two dots split the token into three sections.
@@ -265,10 +254,10 @@ bool CJwt::Verify(const std::string &token, VerifyResult &out) const
 	const std::string sig_b64 = token.substr(second_dot + 1);
 	const std::string signing_input = header_b64 + "." + payload_b64;
 
-	// Recompute MAC and compare in constant time before validating the
-	// header, so timing of a malformed header is indistinguishable from
-	// a wrong MAC. Not exploitable today (32-byte secret makes collision
-	// infeasible) but keeps the channel closed against future shifts.
+	// Recompute the MAC and compare in constant time before validating the header, so the
+	// timing of a malformed header is indistinguishable from a wrong MAC. Not exploitable today
+	// -- a 32-byte secret makes collision infeasible -- but it keeps the channel closed against
+	// future shifts.
 	unsigned char mac[CryptoPP::SHA256::DIGESTSIZE];
 	HmacSha256(m_secret, signing_input, mac);
 	const std::string expected_sig = Base64UrlEncode(mac, sizeof(mac));
@@ -276,10 +265,9 @@ bool CJwt::Verify(const std::string &token, VerifyResult &out) const
 		return false;
 	}
 
-	// Defence in depth: validate the header announces HS256.
-	// The MAC already matches our secret so only we could have signed
-	// the token; this closes the door against future key-confusion if
-	// asymmetric algorithms are ever added.
+	// Defence in depth: validate that the header announces HS256. The MAC already matches our
+	// secret so only we could have signed the token; this closes the door against future key-
+	// confusion if asymmetric algorithms are ever added.
 	{
 		std::vector<unsigned char> header_bytes;
 		if (!Base64UrlDecode(header_b64, header_bytes))
@@ -341,26 +329,22 @@ bool CJwt::Verify(const std::string &token, VerifyResult &out) const
 
 	out.exp = static_cast<std::time_t>(exp_it->second.get<int64_t>());
 	{
-		// Five-second clock-skew tolerance on the exp check. Issuer
-		// and verifier today run in the same process so the skew is
-		// always zero; tomorrow they may not (federated tokens,
-		// reverse-proxy auth handoff, etc.) and a token landing on
-		// the verifier microseconds after exp shouldn't 401 the
-		// caller's last request. A few seconds of leeway is the
-		// standard RFC 7519 §4.1.4 implementation note.
+		// Five-second clock-skew tolerance on the exp check. Issuer and verifier today run
+		// in the same process so the skew is always zero; tomorrow they may not (federated
+		// tokens, reverse-proxy auth handoff) and a token landing on the verifier
+		// microseconds after exp should not 401 the caller's last request. A few seconds of
+		// leeway is the standard RFC 7519 4.1.4 implementation note.
 		constexpr std::time_t skew = 5;
 		const std::time_t now = std::time(nullptr);
 		if (out.exp + skew <= now)
 			return false; // expired
 
-		// `iat` (issued-at, §4.1.6) is mandatory. Without an iat
-		// claim a token has unbounded lifetime — an attacker who
-		// somehow gained mint capability (compromised secret,
-		// stolen --jwt-secret file, …) could otherwise issue a
-		// token with exp = year-2100 and bypass the lifetime cap
-		// entirely. With iat mandatory we additionally cap
-		// (exp - iat) ≤ TOKEN_LIFETIME_SECONDS + skew so the
-		// cap survives a future Issue() change too.
+		// `iat` (issued-at, 4.1.6) is mandatory. Without an iat claim a token has unbounded
+		// lifetime -- an attacker who somehow gained mint capability (compromised secret,
+		// stolen --jwt-secret file) could otherwise issue a token with exp = year-2100 and
+		// bypass the lifetime cap entirely. With iat mandatory we additionally cap (exp -
+		// iat) <= TOKEN_LIFETIME_SECONDS + skew, so the cap survives a future Issue()
+		// change too.
 		const auto iat_it = obj.find("iat");
 		if (iat_it == obj.end() || !iat_it->second.is<int64_t>()) {
 			return false;
@@ -380,9 +364,8 @@ bool CJwt::Verify(const std::string &token, VerifyResult &out) const
 	if (out.jti.empty())
 		return false;
 
-	// nbf (RFC 7519 §4.1.5, "not before") is intentionally not
-	// enforced: Issue() never emits the claim and we don't accept
-	// externally-issued tokens. If federated tokens are ever added,
+	// nbf (RFC 7519 4.1.5, "not before") is intentionally not enforced: Issue() never emits the
+	// claim and we do not accept externally-issued tokens. If federated tokens are ever added,
 	// the check belongs immediately above the `exp` check.
 
 	return true;

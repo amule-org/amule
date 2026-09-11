@@ -35,21 +35,18 @@
 
 class CPartFile;
 
-// Async per-part MD4 verifier.  Mirrors CPartFileWriteThread's structure:
-// a single dedicated worker that pops jobs from a queue, runs the work
-// synchronously on its own thread, and posts a result event back to the
-// main thread.
+// Async per-part MD4 verifier. Mirrors CPartFileWriteThread's structure: a single dedicated worker
+// that pops jobs from a queue, runs the work synchronously on its own thread, and posts a result
+// event back to the main thread.
 //
-// Why off-main: HashSinglePart reads ~9.28 MB from disk and runs MD4 — on
-// a slow disk that's 100-200 ms per part, above CORE_TIMER_PERIOD.  Doing
-// it on the main thread starves OnCoreTimer (UI redraws, asio dispatch)
-// during pause/resume drain and at any moment several dirty parts have
+// Why off-main: HashSinglePart reads ~9.28 MB from disk and runs MD4 -- on a slow disk that is
+// 100-200 ms per part, above CORE_TIMER_PERIOD. On the main thread it starves OnCoreTimer (UI
+// redraws, asio dispatch) during a pause/resume drain, and whenever several dirty parts have
 // accumulated.
 //
-// Why no throughput regression vs PR #454 (which rejected an async-hash
-// thread): the caller's quiescent guard ensures we only enqueue 1 s after
-// the last receive, so the worker's read for hashing never competes with
-// CPartFileWriteThread's write for the same disk.
+// Why no throughput regression against PR #454, which rejected an async-hash thread: the caller's
+// quiescent guard only enqueues 1 s after the last receive, so the worker's read for hashing never
+// competes with CPartFileWriteThread's write for the same disk.
 struct HashJob
 {
 	CPartFile *pFile;
@@ -82,10 +79,9 @@ private:
 	std::list<HashJob> m_jobList; // protected by m_mutex
 };
 
-// Custom event posted from worker to main thread when a single
-// HashSinglePart finishes.  Carries the file's CMD4Hash (used for
-// safe lookup in CDownloadQueue — the file may have been deleted
-// between enqueue and dispatch), the part number, and the result.
+// Custom event posted from the worker to the main thread when a single HashSinglePart finishes.
+// Carries the file's CMD4Hash -- used for safe lookup in CDownloadQueue, the file may have been
+// deleted between enqueue and dispatch -- the part number, and the result.
 extern const wxEventType wxEVT_PARTFILE_HASH_RESULT;
 
 class CPartFileHashResultEvent : public wxEvent

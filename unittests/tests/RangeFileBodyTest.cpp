@@ -22,14 +22,13 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 //
 
-// Exercises RangeFileBody end to end: build a response over a scratch file,
-// run it through a real Beast response_serializer, and compare the bytes that
-// come off the "wire" with the slice of the file they are supposed to be.
+// Exercises RangeFileBody end to end: build a response over a scratch file, run it through a real
+// Beast response_serializer, and compare the bytes that come off the "wire" with the slice of the
+// file they are supposed to be.
 //
-// Everything here is about the two things the type exists to get right: the
-// window must END where it was told to (stock file_body cannot do that, see
-// RangeFileBody.h), and the Content-Length prepare_payload() stamps must equal
-// the number of body bytes actually written.
+// Everything here is about the two things the type exists to get right: the window must END where
+// it was told to (stock file_body cannot do that, see RangeFileBody.h), and the Content-Length
+// prepare_payload() stamps must equal the number of body bytes actually written.
 
 #include <muleunit/test.h>
 
@@ -53,10 +52,9 @@ DECLARE_SIMPLE(RangeFileBody)
 namespace
 {
 
-// Minimal SyncWriteStream: collects everything the serializer emits into a
-// string. Using the real http::write (rather than driving serializer::next by
-// hand) means the test goes through the same buffer/consume protocol the
-// transport's async_write does.
+// Minimal SyncWriteStream: collects everything the serializer emits into a string. Using the real
+// http::write, rather than driving serializer::next by hand, means the test goes through the same
+// buffer/consume protocol the transport's async_write does.
 struct CollectingStream
 {
 	std::string out;
@@ -168,7 +166,7 @@ void CheckWindow(const std::string &content, std::uint64_t first, std::uint64_t 
 	ASSERT_TRUE(s.ok);
 	const std::string expected =
 		content.substr(static_cast<std::size_t>(first), static_cast<std::size_t>(last - first + 1));
-	// Advertised length and delivered length must agree — a mismatch here is
+	// Advertised length and delivered length must agree -- a mismatch here is
 	// exactly the bug stock file_body would have shipped.
 	ASSERT_EQUALS(std::to_string(expected.size()), s.content_length);
 	ASSERT_EQUALS(expected.size(), s.body.size());
@@ -177,9 +175,7 @@ void CheckWindow(const std::string &content, std::uint64_t first, std::uint64_t 
 
 } // namespace
 
-// ----------------------------------------------------------------------
 // Windows smaller than the read buffer.
-// ----------------------------------------------------------------------
 
 TEST(RangeFileBody, WholeSmallFile)
 {
@@ -216,10 +212,8 @@ TEST(RangeFileBody, LastByte)
 	CheckWindow(content, content.size() - 1, content.size() - 1);
 }
 
-// ----------------------------------------------------------------------
-// Windows that force multiple passes through the 64 KiB buffer. This is where
-// a wrong `remain_` bound or a mishandled partial last chunk shows up.
-// ----------------------------------------------------------------------
+// Windows that force multiple passes through the 64 KiB buffer. This is where a wrong `remain_`
+// bound or a mishandled partial last chunk shows up.
 
 TEST(RangeFileBody, WholeFileLargerThanTheReadBuffer)
 {
@@ -254,15 +248,13 @@ TEST(RangeFileBody, WindowStopsWellBeforeEndOfFile)
 	CheckWindow(content, 4096, 8191);
 }
 
-// ----------------------------------------------------------------------
 // Framing.
-// ----------------------------------------------------------------------
 
 TEST(RangeFileBody, HeaderOnlyReportsTheGetLengthAndNoBody)
 {
-	// HEAD must describe what a GET would return. The transport serialises
-	// the header alone; Content-Length still comes from Body::size, so it has
-	// to be the window length while zero body bytes reach the wire.
+	// HEAD must describe what a GET would return. The transport serialises the header alone;
+	// Content-Length still comes from Body::size, so it has to be the window length while zero
+	// body bytes reach the wire.
 	const std::string content = MakeContent(1024 * 1024);
 	WriteScratch(content);
 	const Serialised s = SerialiseWindow(1000, 500999, true);
@@ -287,10 +279,8 @@ TEST(RangeFileBody, SizeIsTheWindowNotTheRemainderOfTheFile)
 	ASSERT_EQUALS(static_cast<size_t>(10), static_cast<size_t>(RangeFileBody::size(res.body())));
 }
 
-// ----------------------------------------------------------------------
-// Window validation. The transport turns these failures into a 500 while the
-// headers are still unwritten, so they must be reported, never clamped.
-// ----------------------------------------------------------------------
+// Window validation. The transport turns these failures into a 500 while the headers are still
+// unwritten, so they must be reported, never clamped.
 
 TEST(RangeFileBody, RejectsWindowsOutsideTheFile)
 {
@@ -328,9 +318,9 @@ TEST(RangeFileBody, OpenFailsForAMissingPath)
 
 TEST(RangeFileBody, EmptyFileHasNoValidWindow)
 {
-	// Zero-length files have no inclusive window at all; they belong on the
-	// buffered `body` path, and the transport relies on this rejection to
-	// notice a handler that routed one here.
+	// Zero-length files have no inclusive window at all; they belong on the buffered `body`
+	// path, and the transport relies on this rejection to notice a handler that routed one
+	// here.
 	WriteScratch(std::string());
 	http::response<RangeFileBody> res;
 	beast::error_code ec;

@@ -57,20 +57,18 @@ protected:
 		wxUIntPtr data1, wxUIntPtr data2, unsigned column, bool alt, int modifier) const override;
 
 	/**
-	 * The Sources column's value (a live source count) changes on every
-	 * 5-second refresh timer tick while the dialog is open, so a
-	 * sources-sorted list needs the coalesced live re-sort.
+	 * The Sources column's value (a live source count) changes on every 5-second refresh timer
+	 * tick while the dialog is open, so a sources-sorted list needs the coalesced live re-sort.
 	 */
 	bool IsLiveSortColumn() const override;
 
 private:
 	/**
-	 * The base always constructs with wxDV_MULTIPLE (CMuleDataViewCtrl has
-	 * no single-selection mode), but this list is meant to only ever have
-	 * one row selected -- the "take over filename" actions assume it.
-	 * Collapses the selection down to the just-clicked row whenever more
-	 * than one ends up selected, the wxDataViewCtrl equivalent of the old
-	 * list's own OnSelect() enforcement.
+	 * The base always constructs with wxDV_MULTIPLE, CMuleDataViewCtrl having no single-
+	 * selection mode, but this list is meant to have only one row selected -- the "take over
+	 * filename" actions assume it. Collapses the selection down to the just-clicked row
+	 * whenever more than one ends up selected, the wxDataViewCtrl equivalent of the old list's
+	 * own OnSelect() enforcement.
 	 */
 	void OnSelectionChanged(wxDataViewEvent &event);
 

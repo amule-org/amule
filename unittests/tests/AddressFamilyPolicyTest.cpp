@@ -24,20 +24,18 @@
 
 // Which address families aMule opens sockets in.
 //
-// Two properties here are worth pinning for reasons that outlast this PR:
+// Two properties are worth pinning for reasons that outlast this PR:
 //
-//   1. The default is IPv4-only. Piece 4 of the widening is gated so that
-//      nothing advertises IPv6 until a switch is deliberately turned on. A
-//      default of DualStack would hand the first caller dual stack with no
-//      switch thrown, leaving the gate in place but guarding nothing.
-//   2. Refusal never falls back. Opening a v4 socket towards a v6 target is
-//      how a truncated address becomes a connection to the wrong host, so a
-//      target the configuration forbids yields no protocol at all.
+//   1. The default is IPv4-only. Piece 4 of the widening is gated so nothing advertises IPv6 until
+// a switch is deliberately turned on. A default of DualStack would hand the first caller dual stack
+// with no switch thrown, leaving the gate in place but guarding nothing.
+//   2. Refusal never falls back. Opening a v4 socket towards a v6 target is how a truncated address
+// becomes a connection to the wrong host, so a target the configuration forbids yields no protocol
+// at all.
 //
-// The configured family is process-global mutable state, so every case below
-// restores what it found. The default is captured at static-initialisation
-// time rather than read inside a test, which is what keeps the first assertion
-// independent of the order the cases run in.
+// The configured family is process-global mutable state, so every case below restores what it
+// found. The default is captured at static-initialisation time rather than read inside a test,
+// which keeps the first assertion independent of the order the cases run in.
 
 #include <muleunit/test.h>
 
@@ -104,9 +102,9 @@ TEST(AddressFamilyPolicy, PermitsFollowsTheConfiguredFamilies)
 
 TEST(AddressFamilyPolicy, MappedIPv4IsIPv4ForPolicy)
 {
-	// It narrows losslessly, so an IPv4-only configuration can reach it -- and
-	// an IPv6-only one must not, or the policy would contradict IndexKey(),
-	// which collapses the two spellings to one peer.
+	// It narrows losslessly, so an IPv4-only configuration can reach it -- and an IPv6-only one
+	// must not, or the policy would contradict IndexKey(), which collapses the two spellings to
+	// one peer.
 	const CNetworkAddress mapped = Addr("::ffff:192.0.2.1");
 	{
 		ScopedFamilies scope(Families::IPv4Only);
@@ -169,9 +167,9 @@ TEST(AddressFamilyPolicy, ResolverIsUnrestrictedOnlyUnderDualStack)
 
 TEST(AddressFamilyPolicy, AnyAddressStaysIPv4WhereverIPv4IsPermitted)
 {
-	// Including dual stack. Handing :: to the single-socket services (the EC
-	// listener, the web server) would move the daemon's control channel to
-	// another family as a side effect of the ed2k work.
+	// Including dual stack. Handing :: to the single-socket services -- the EC listener, the
+	// web server -- would move the daemon's control channel to another family as a side effect
+	// of the ed2k work.
 	{
 		ScopedFamilies scope(Families::IPv4Only);
 		ASSERT_TRUE(AnyAddress() == AnyIPv4Address());

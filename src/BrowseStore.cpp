@@ -114,9 +114,9 @@ std::vector<Outcome> Store::Forget(ClientKey client)
 		out.push_back({ it->first, ApplyTo(it->second, Action::Expire) });
 	}
 	it->second.client = nullptr;
-	// Carries the ID whatever state the browse is in. Deriving it from the
-	// peer instead lost this for a browse that had already ended, which is
-	// most of them by the time their peer goes away.
+	// Carries the ID whatever state the browse is in. Deriving it from the peer instead lost
+	// this for a browse that had already ended, which is most of them by the time their peer
+	// goes away.
 	out.push_back({ it->first, Effect::ReleaseClient });
 	return out;
 }
@@ -141,11 +141,11 @@ std::vector<Outcome> Store::Tick(std::uint64_t now)
 Effect Store::ApplyTo(Held &held, Action action)
 {
 	if (action == Action::Drop) {
-		// Terminal and already announced. Releasing the peer is all that is
-		// left; the record itself outlives it, because the search ID is still
-		// listed and every consumer asks here what state it is in. Dropping it
-		// now would send them back to guessing from whether results were
-		// retained, which reports a failed browse as idle, forever.
+		// Terminal and already announced. Releasing the peer is all that is left; the
+		// record itself outlives it, because the search ID is still listed and every
+		// consumer asks here what state it is in. Dropping it now would send them back to
+		// guessing from whether results were retained, which reports a failed browse as
+		// idle, forever.
 		if (held.client == nullptr) {
 			return Effect::Nothing;
 		}
@@ -155,9 +155,9 @@ Effect Store::ApplyTo(Held &held, Action action)
 	const State before = held.rec.state;
 	held.rec = ApplyAction(held.rec, action);
 	if (held.rec.state == before) {
-		// Refused, because it had already ended. Nothing to announce -- and
-		// nothing to log, which is what keeps the disconnect that follows a
-		// completed browse from being reported as a failure.
+		// Refused, because it had already ended. Nothing to announce -- and nothing to log,
+		// which is what keeps the disconnect following a completed browse from being
+		// reported as a failure.
 		return Effect::Nothing;
 	}
 	return held.rec.state == State::Failed ? Effect::AnnounceFailure : Effect::Announce;
@@ -178,9 +178,8 @@ std::map<std::uint32_t, Store::Held>::iterator Store::FindFor(ClientKey client)
 
 std::map<std::uint32_t, Store::Held>::const_iterator Store::FindFor(ClientKey client) const
 {
-	// One implementation, so a change to how a peer is matched cannot land on
-	// only half the callers and leave const and non-const disagreeing about
-	// which record owns a peer.
+	// One implementation, so a change to how a peer is matched cannot land on only half the
+	// callers and leave const and non-const disagreeing about which record owns a peer.
 	return const_cast<Store *>(this)->FindFor(client);
 }
 

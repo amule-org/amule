@@ -76,9 +76,9 @@ uint8_t CKadAICHHashList::GetPopularityAt(uint16_t index) const
 
 const CKadAICHHash &CKadAICHHashList::GetHashAt(uint16_t index) const
 {
-	// A zeroed hash for an out-of-range index keeps this a total function:
-	// the callers are packet and file parsers, where an index that failed
-	// validation must not turn into undefined behaviour.
+	// A zeroed hash for an out-of-range index keeps this a total function: the callers are
+	// packet and file parsers, where an index that failed validation must not turn into
+	// undefined behaviour.
 	static const CKadAICHHash s_empty = CKadAICHHash();
 	return (index < m_hashes.size()) ? m_hashes[index] : s_empty;
 }
@@ -161,31 +161,28 @@ bool CKadAICHHashList::PeerSupportsAICHKeywordStorage(uint8_t peerKadVersion)
 const CKadAICHHashList::SResultHash *CKadAICHHashList::SelectTrusted(
 	const std::vector<SResultHash> &hashes, uint32_t publishersKnown)
 {
-	// Two rules, both eMule 0.70b's at SearchList.cpp:795-805, and both
-	// refusals rather than choices.
+	// Two rules, both eMule 0.70b's at SearchList.cpp:795-805, and both refusals rather than
+	// choices.
 	//
-	// Competing hashes for one file id mean at least one publisher is lying.
-	// Taking the most popular of them looks like the obvious answer and is
-	// the wrong one: popularity here is a count a peer reports about itself,
-	// so whoever is lying also controls the number that would decide the
-	// vote. Upstream ignores AICH for such a result entirely, and the
-	// destination being SetMasterHash(hash, AICH_VERIFIED) is why -- there is
-	// no "probably right" state to put a contested hash into.
+	// Competing hashes for one file id mean at least one publisher is lying. Taking the most
+	// popular looks like the obvious answer and is the wrong one: popularity here is a count a
+	// peer reports about itself, so whoever is lying also controls the number that would decide
+	// the vote. Upstream ignores AICH for such a result entirely, and the destination being
+	// SetMasterHash(hash, AICH_VERIFIED) is why -- there is no "probably right" state to put a
+	// contested hash into.
 	if (hashes.size() != 1) {
 		return nullptr;
 	}
 
-	// One hash still is not enough on its own. A single publisher out of many
-	// is not agreement, it is one peer we happen to have asked, so the hash
-	// must come from at least a third of the publishers known for this file.
-	// Written as a ratio to match upstream's own arithmetic rather than
-	// restating it as a multiplication.
+	// One hash still is not enough on its own. A single publisher out of many is not agreement,
+	// it is one peer we happen to have asked, so the hash must come from at least a third of
+	// the publishers known for this file. Written as a ratio to match upstream's own arithmetic
+	// rather than restating it as a multiplication.
 	//
-	// publishersKnown == 0 is refused, which upstream guards explicitly too:
-	// its condition is byPublishers > 0 && popularity > 0 && the ratio. Worth
-	// stating because the ratio alone would pass it, 0 / anything being 0. A
-	// zero count means TAG_PUBLISHINFO was absent or zero, so there is no
-	// publisher count to be a third of, and accepting there would make a
+	// publishersKnown == 0 is refused, which upstream guards explicitly too: its condition is
+	// byPublishers > 0 && popularity > 0 && the ratio. Worth stating because the ratio alone
+	// would pass it, 0 / anything being 0. A zero count means TAG_PUBLISHINFO was absent or
+	// zero, so there is no publisher count to be a third of, and accepting there would make a
 	// result with no corroboration at all the easiest one to get accepted.
 	const uint8_t popularity = hashes[0].m_popularity;
 	if (popularity == 0 || publishersKnown == 0) {

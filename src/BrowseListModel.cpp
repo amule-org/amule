@@ -31,23 +31,21 @@
 
 namespace
 {
-//! Canonical form of a peer's directory string: runs of separators collapsed to
-//! one, and a trailing separator dropped.
+//! Canonical form of a peer's directory string: runs of separators collapsed to one, and a trailing
+//! separator dropped.
 //!
-//! The nodes are keyed by this string, so anything left un-normalised is a
-//! spelling that gets its own folder: "Shared/Movies", "Shared//Movies" and
-//! "Shared/Movies/" all name one directory, and keying them apart would draw a
-//! sibling row per spelling. A trailing separator additionally leaves the last
-//! segment empty, which is the blank row, and a string of nothing but separators
+//! The nodes are keyed by this string, so anything left un-normalised is a spelling that gets its
+//! own folder: "Shared/Movies", "Shared//Movies" and "Shared/Movies/" all name one directory, and
+//! keying them apart would draw a sibling row per spelling. A trailing separator additionally
+//! leaves the last segment empty, which is the blank row, and a string of nothing but separators
 //! normalises to empty, which is no directory at all.
 //!
-//! Which separator survives a mixed run is whichever came first; the peer's own
-//! choice is not knowable from the packet either way.
+//! Which separator survives a mixed run is whichever came first; the peer's own choice is not
+//! knowable from the packet either way.
 //!
-//! Collapsing runs also rewrites the one string where a doubled separator means
-//! something: a UNC name arrives as "\\server\share" and is keyed as
-//! "\server\share". It is a label here and nothing resolves it, so this costs a
-//! backslash in a folder row rather than a wrong lookup.
+//! Collapsing runs also rewrites the one string where a doubled separator means something: a UNC
+//! name arrives as "\\server\share" and is keyed as "\server\share". It is a label here and nothing
+//! resolves it, so this costs a backslash in a folder row rather than a wrong lookup.
 wxString NormalizeDirectory(const wxString &path)
 {
 	wxString normalized;
@@ -87,26 +85,24 @@ CBrowseFolderNode *CBrowseListModel::EnsureFolder(const wxString &path, size_t d
 		return existing->second.get();
 	}
 
-	// Split off the last segment: whichever separator appears last is the one this
-	// peer uses, so a name containing the other one stays intact.
+	// Split off the last segment: whichever separator appears last is the one this peer uses,
+	// so a name containing the other one stays intact.
 	//
-	// Two bounds apply, and they stop different things. The depth argument caps this
-	// function's own recursion, which one long string drives. The node's depth caps
-	// the tree, which many strings drive between them: the early return above hands
-	// back a node with the parents it already has, so without it a peer could add a
-	// capped run per packet and nest for as long as it kept sending.
+	// Two bounds apply, and they stop different things. The depth argument caps this function's
+	// own recursion, which one long string drives. The node's depth caps the tree, which many
+	// strings drive between them: the early return above hands back a node with the parents it
+	// already has, so without it a peer could add a capped run per packet and nest for as long
+	// as it kept sending.
 	const size_t slash = path.find_last_of("/\\");
 	CBrowseFolderNode *parent = nullptr;
 	wxString name = path;
 	if (slash != wxString::npos && depth < MAX_FOLDER_DEPTH) {
-		// Already canonical, and so is every prefix of it: the callers
-		// normalise, so there is no run to collapse here and the last
-		// separator cannot be trailing.
+		// Already canonical, and so is every prefix of it: the callers normalise, so there
+		// is no run to collapse here and the last separator cannot be trailing.
 		const wxString parentPath = path.Left(slash);
 		if (parentPath.IsEmpty()) {
-			// A leading separator leaves no parent path, which is no
-			// directory at all -- this node is a root under its own
-			// last segment.
+			// A leading separator leaves no parent path, which is no directory at all
+			// -- this node is a root under its own last segment.
 			name = path.Mid(slash + 1);
 		} else {
 			CBrowseFolderNode *candidate = EnsureFolder(parentPath, depth + 1);
@@ -128,10 +124,10 @@ CBrowseFolderNode *CBrowseListModel::EnsureFolder(const wxString &path, size_t d
 
 void CBrowseListModel::RebuildFolders() const
 {
-	// Once per change, not once per query. The control asks for the root's children
-	// several times per rebuild -- twice from OnIdleHook alone, to save and restore
-	// expansion around a Cleared() -- and this walks every result, which on a large
-	// share is the cost the browse throttle exists to keep down (issue #898).
+	// Once per change, not once per query. The control asks for the root's children several
+	// times per rebuild -- twice from OnIdleHook alone, to save and restore expansion around a
+	// Cleared() -- and this walks every result, which on a large share is the cost the browse
+	// throttle exists to keep down (issue #898).
 	const unsigned generation = GetContentGeneration();
 	const wxUIntPtr searchId = m_owner->GetSearchId();
 	if (m_foldersValid && m_foldersGeneration == generation && m_foldersSearchId == searchId) {
@@ -158,9 +154,9 @@ void CBrowseListModel::RebuildFolders() const
 			continue;
 		}
 
-		// The one place a directory string is normalised, because this is the one
-		// place it becomes a key. GetParent() reads the answer back from
-		// m_fileParents rather than deriving it again.
+		// The one place a directory string is normalised, because this is the one place it
+		// becomes a key. GetParent() reads the answer back from m_fileParents rather than
+		// deriving it again.
 		const wxString directory = NormalizeDirectory(file->GetDirectory());
 		if (directory.IsEmpty()) {
 			m_looseFiles.push_back(file);
@@ -172,13 +168,13 @@ void CBrowseListModel::RebuildFolders() const
 		m_fileParents.emplace(file, folder);
 	}
 
-	// Relink the hierarchy as a second pass rather than while creating the nodes,
-	// because the links are cleared on every rebuild while the nodes outlive it: a
-	// folder created for an earlier refresh still has to be reattached.
+	// Relink the hierarchy as a second pass rather than while creating the nodes, because the
+	// links are cleared on every rebuild while the nodes outlive it: a folder created for an
+	// earlier refresh still has to be reattached.
 	//
-	// Unconditionally, empty or not: whether a folder is worth drawing depends on
-	// what is under it at any depth, which is not knowable until every link exists,
-	// so that question is asked at GetChildren() time instead.
+	// Unconditionally, empty or not: whether a folder is worth drawing depends on what is under
+	// it at any depth, which is not knowable until every link exists, so that question is asked
+	// at GetChildren() time instead.
 	for (const auto &entry : m_folders) {
 		CBrowseFolderNode *node = entry.second.get();
 		if (node->GetParent()) {
@@ -207,9 +203,9 @@ unsigned int CBrowseListModel::GetChildren(const wxDataViewItem &item, wxDataVie
 
 		unsigned int count = 0;
 		for (CBrowseFolderNode *folder : m_rootFolders) {
-			// A folder whose results have all gone away, or are all
-			// filtered out, is not drawn -- its node stays allocated so
-			// that any item the control still holds remains readable.
+			// A folder whose results have all gone away, or are all filtered out, is
+			// not drawn -- its node stays allocated so that any item the control still
+			// holds remains readable.
 			if (HasContent(folder)) {
 				children.Add(ToItem(folder));
 				++count;
@@ -223,9 +219,9 @@ unsigned int CBrowseListModel::GetChildren(const wxDataViewItem &item, wxDataVie
 	}
 
 	if (IsFolder(item)) {
-		// Here too, not only on the root branch: this is the path that reads the
-		// cached CSearchFile pointers, so it is the one that has to see a generation
-		// bump. The call is a comparison once the grouping is current.
+		// Here too, not only on the root branch: this is the path that reads the cached
+		// CSearchFile pointers, so it is the one that has to see a generation bump. The
+		// call is a comparison once the grouping is current.
 		RebuildFolders();
 
 		const CBrowseFolderNode *folder = ToFolder(item);
@@ -263,11 +259,10 @@ wxDataViewItem CBrowseListModel::GetParent(const wxDataViewItem &item) const
 		return CSearchListModel::GetParent(item);
 	}
 
-	// Read back from the grouping walk rather than re-derived from the directory
-	// string. This is the traversal path and wx asks per item, so it does no string
-	// work at all: RebuildFolders() knew the node when it filed the result, and a
-	// result the peer gave no directory is simply absent, which is the invisible
-	// root.
+	// Read back from the grouping walk rather than re-derived from the directory string. This
+	// is the traversal path and wx asks per item, so it does no string work at all:
+	// RebuildFolders() knew the node when it filed the result, and a result the peer gave no
+	// directory is simply absent, which is the invisible root.
 	RebuildFolders();
 
 	const auto it = m_fileParents.find(file);
@@ -336,9 +331,8 @@ int CBrowseListModel::Compare(
 	const bool folder2 = IsFolder(item2);
 
 	if (folder1 != folder2) {
-		// Folders first, whatever the sort column and direction: they are the
-		// structure the results sit in, and interleaving them would read as an
-		// ordering accident.
+		// Folders first, whatever the sort column and direction: they are the structure the
+		// results sit in, and interleaving them would read as an ordering accident.
 		return folder1 ? -1 : 1;
 	}
 

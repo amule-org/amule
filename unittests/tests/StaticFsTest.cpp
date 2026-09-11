@@ -37,10 +37,9 @@ using namespace webapi;
 namespace
 {
 
-// Per-test scratch dir. POSIX uses mkdtemp(); Windows builds a unique
-// name under %TEMP%. The dir is created empty; callers populate it and
-// must call RemoveAll() at the end of the test. muleunit's
-// DECLARE_SIMPLE has no TearDown hook, so cleanup is per-test.
+// Per-test scratch dir. POSIX uses mkdtemp(); Windows builds a unique name under %TEMP%. Created
+// empty; callers populate it and must call RemoveAll() at the end of the test, muleunit's
+// DECLARE_SIMPLE having no TearDown hook.
 std::string MakeScratchRoot(const char *tag)
 {
 #ifdef _WIN32
@@ -71,9 +70,8 @@ bool MkSubdir(const std::string &path)
 #endif
 }
 
-// Write a single byte file. The content isn't load-bearing for these
-// tests — they only verify the resolver's accept/reject decision and
-// the resolved path, not file body.
+// Write a single-byte file. The content is not load-bearing for these tests -- they only verify the
+// resolver's accept/reject decision and the resolved path, not the file body.
 bool WriteFile(const std::string &path, const std::string &body)
 {
 	std::ofstream f(path.c_str(), std::ios::binary);
@@ -99,9 +97,7 @@ void RemoveAll(const std::string &path)
 
 DECLARE_SIMPLE(StaticFs)
 
-// ----------------------------------------------------------------------
-// Plain accept paths — file exists inside root.
-// ----------------------------------------------------------------------
+// Plain accept paths -- file exists inside root.
 
 TEST(StaticFs, FileAtRootResolvesAndReturnsTrue)
 {
@@ -112,7 +108,7 @@ TEST(StaticFs, FileAtRootResolvesAndReturnsTrue)
 
 	std::string out;
 	ASSERT_TRUE(ResolveWithinRoot(root, "index.html", out));
-	// Trailing separator is stripped by the resolver — strict equality
+	// Trailing separator is stripped by the resolver -- strict equality
 	// against the file path is the cleanest check.
 	ASSERT_TRUE(out.size() >= asset.size() - 1);
 
@@ -121,11 +117,10 @@ TEST(StaticFs, FileAtRootResolvesAndReturnsTrue)
 
 TEST(StaticFs, RootWithTrailingSlashResolves)
 {
-	// Regression: Windows _fullpath() preserves a trailing slash from
-	// its input, which previously broke the prefix-comparison
-	// containment check. AMULEAPI_STATIC_DIR is baked with a trailing
-	// slash (cmake convention for dirs) so the bug shipped to every
-	// installed amuleapi binary until normalised here.
+	// Regression: Windows _fullpath() preserves a trailing slash from its input, which
+	// previously broke the prefix-comparison containment check. AMULEAPI_STATIC_DIR is baked
+	// with a trailing slash (cmake convention for dirs) so the bug shipped to every installed
+	// amuleapi binary until normalised here.
 	const std::string root = MakeScratchRoot("trailing-slash");
 	ASSERT_TRUE(!root.empty());
 	ASSERT_TRUE(WriteFile(root + "/index.html", "x"));
@@ -149,10 +144,8 @@ TEST(StaticFs, NestedFileResolvesAndReturnsTrue)
 	RemoveAll(root);
 }
 
-// ----------------------------------------------------------------------
-// Reject paths — opaque false return for any failure mode, so the
-// dispatcher can map every miss to the same 404.
-// ----------------------------------------------------------------------
+// Reject paths -- an opaque false return for any failure mode, so the dispatcher can map every miss
+// to the same 404.
 
 TEST(StaticFs, MissingFileReturnsFalse)
 {
@@ -173,11 +166,10 @@ TEST(StaticFs, MissingRootReturnsFalse)
 
 TEST(StaticFs, ParentEscapeRejectedEvenIfTargetExists)
 {
-	// Set up two sibling dirs under a common parent: `root/` and
-	// `outside/`. `outside/secret.txt` exists. A request for
-	// `../outside/secret.txt` under `root` must be rejected even
-	// though the file is real and stat'able — the canonical resolution
-	// would land outside root.
+	// Set up two sibling dirs under a common parent: `root/` and `outside/`, with
+	// `outside/secret.txt` existing. A request for `../outside/secret.txt` under `root` must be
+	// rejected even though the file is real and stat'able -- the canonical resolution would
+	// land outside root.
 	const std::string parent = MakeScratchRoot("parent-escape");
 	ASSERT_TRUE(!parent.empty());
 	const std::string root = parent + "/root";
@@ -192,12 +184,9 @@ TEST(StaticFs, ParentEscapeRejectedEvenIfTargetExists)
 	RemoveAll(parent);
 }
 
-// ----------------------------------------------------------------------
-// Symlink containment — the security-critical case the resolver
-// exists for. POSIX only: Windows symlinks require elevation and
-// _fullpath() is lexical-only, so symlink behaviour isn't part of the
-// Windows wire-contract.
-// ----------------------------------------------------------------------
+// Symlink containment -- the security-critical case the resolver exists for. POSIX only: Windows
+// symlinks require elevation and _fullpath() is lexical-only, so symlink behaviour is not part of
+// the Windows wire contract.
 
 #ifndef _WIN32
 TEST(StaticFs, SymlinkEscapingRootIsRejected)
@@ -236,12 +225,9 @@ TEST(StaticFs, SymlinkPointingInsideRootIsAccepted)
 }
 #endif // !_WIN32
 
-// ----------------------------------------------------------------------
-// IsDir — the tiny stat-wrapper used by the discovery chain. The
-// trailing-slash tolerance matters for the configure-time
-// AMULEAPI_STATIC_DIR macro, which is set with a trailing slash for
+// IsDir -- the tiny stat wrapper the discovery chain uses. The trailing-slash tolerance matters for
+// the configure-time AMULEAPI_STATIC_DIR macro, which is set with a trailing slash for
 // concatenation with sub-paths.
-// ----------------------------------------------------------------------
 
 TEST(StaticFs, IsDirTrueForExistingDirectory)
 {

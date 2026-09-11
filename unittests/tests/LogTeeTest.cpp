@@ -52,10 +52,9 @@ bool Exists(const std::string &path)
 	return std::ifstream(path).good();
 }
 
-// Relative to the test's working directory (the build tree, always writable)
-// so the path is valid on every platform -- a hardcoded /tmp does not resolve
-// for a native Windows binary. Each case uses a distinct suffix, so the files
-// never collide within a run.
+// Relative to the test's working directory (the build tree, always writable) so the path is valid
+// on every platform -- a hardcoded /tmp does not resolve for a native Windows binary. Each case
+// uses a distinct suffix, so the files never collide within a run.
 std::string TmpPath(const char *suffix)
 {
 	return std::string("amule_logtee_test") + suffix;

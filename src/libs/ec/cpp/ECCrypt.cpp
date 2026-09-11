@@ -24,10 +24,9 @@
 
 #include "ECCrypt.h"
 
-// Go through the tree's cryptopp wrapper rather than including the headers
-// directly: it carries the deprecation pragmas those headers need under this
-// project's -Werror settings, and knows the include prefix. CRYPTOPP_INC_NEED_AEAD
-// adds aes/gcm/hmac/chachapoly to its usual set.
+// Go through the tree's cryptopp wrapper rather than the headers directly: it
+// carries the deprecation pragmas they need under -Werror and knows the include
+// prefix. CRYPTOPP_INC_NEED_AEAD adds aes/gcm/hmac/chachapoly.
 #define CRYPTOPP_INC_NEED_AEAD
 #include "../../../CryptoPP_Inc.h"
 
@@ -60,8 +59,8 @@ size_t KeyLenFor(uint8_t cipher)
 /**
  * A fresh cipher object for @a cipher, or null if this build cannot do it.
  *
- * Both AEADs derive from AuthenticatedSymmetricCipher, so the socket layer can
- * drive either one through the same incremental calls.
+ * Both AEADs derive from AuthenticatedSymmetricCipher, so the socket layer
+ * drives either through the same incremental calls.
  */
 std::unique_ptr<CryptoPP::AuthenticatedSymmetricCipher> MakeCipher(uint8_t cipher, bool encrypt)
 {
@@ -89,9 +88,9 @@ std::unique_ptr<CryptoPP::AuthenticatedSymmetricCipher> MakeCipher(uint8_t ciphe
 
 bool HasHardwareAES()
 {
-	// The availability macros say whether this build has the code path at all;
-	// the Has* calls say whether the running CPU has the instructions. Both
-	// have to hold, and cryptopp dispatches on the same answer we read here.
+	// The availability macros say whether the build has the code path; the Has*
+	// calls whether the CPU has the instructions. Both must hold, and cryptopp
+	// dispatches on the same answer.
 #if defined(CRYPTOPP_AESNI_AVAILABLE)
 	return CryptoPP::HasAESNI();
 #elif defined(CRYPTOPP_ARM_AES_AVAILABLE) || defined(CRYPTOPP_POWER8_AES_AVAILABLE)
@@ -178,9 +177,8 @@ std::vector<uint8_t> HkdfSha256(const std::vector<uint8_t> &ikm,
 		return out;
 	}
 	try {
-		// The length guard above stays: DeriveKey throws on an over-long
-		// request, and callers here expect an empty vector rather than an
-		// exception.
+		// The length guard above stays: DeriveKey throws on an over-long request
+		// and callers here expect an empty vector.
 		out.resize(outLen);
 		CryptoPP::HKDF<CryptoPP::SHA256> hkdf;
 		hkdf.DeriveKey(out.data(),

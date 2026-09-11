@@ -142,9 +142,10 @@ void CKademliaUDPListener::SendMyDetails(uint8_t opcode,
 		}
 		if (kadVersion >= 8 && (requestAckPacket || CKademlia::GetPrefs()->GetFirewalled() ||
 					       CUDPFirewallTester::IsFirewalledUDP(true))) {
-			// if we're firewalled we send this tag, so the other client doesn't add us to his
-			// routing table (if UDP firewalled) and for statistics reasons (TCP firewalled) 5 -
-			// reserved (!) 1 - requesting HELLO_RES_ACK 1 - TCP firewalled 1 - UDP firewalled
+			// If we are firewalled we send this tag, so the other client does not add
+			// us to his routing table (if UDP firewalled) and for statistics (if TCP
+			// firewalled). Layout: 5 reserved, 1 requesting HELLO_RES_ACK, 1 TCP
+			// firewalled, 1 UDP firewalled.
 			packetdata.WriteTag(CTagVarInt(TAG_KADMISCOPTIONS,
 				(uint8_t)((requestAckPacket ? 1 : 0) << 2 |
 					  (CKademlia::GetPrefs()->GetFirewalled() ? 1 : 0) << 1 |
@@ -450,8 +451,8 @@ bool CKademliaUDPListener::AddContact2(const uint8_t *data,
 					} else {
 						// The "requests ACK" bit is only meaningful in a
 						// KADEMLIA2_HELLO_RES; a HELLO_REQ carrying it is
-						// nonstandard. It is remote-controllable, though, so
-						// log and ignore rather than asserting (#267).
+						// nonstandard. It is remote-controllable, though,
+						// so log and ignore rather than asserting (#267).
 						AddDebugLogLineN(logClientKadUDP,
 							"Ignoring unexpected 'requests ACK' bit in a Kad2 "
 							"HELLO_REQ (sender: " +
@@ -477,10 +478,10 @@ bool CKademliaUDPListener::AddContact2(const uint8_t *data,
 	}
 
 	if (fromHelloReq && version >= 8) {
-		// Statistics only: the ratio of UDP-firewalled users is estimated by counting
-		// how many of the nodes that have us in their routing table -- our own is
-		// supposed to hold no UDP-firewalled nodes -- report themselves firewalled.
-		// Only works while we are not firewalled ourselves.
+		// Statistics only: the ratio of UDP-firewalled users is estimated by counting how
+		// many of the nodes that have us in their routing table -- ours is supposed to hold
+		// no UDP-firewalled nodes -- report themselves firewalled. Only works while we are
+		// not firewalled ourselves.
 		CKademlia::GetPrefs()->StatsIncUDPFirewalledNodes(udpFirewalled);
 		CKademlia::GetPrefs()->StatsIncTCPFirewalledNodes(tcpFirewalled);
 	}
@@ -502,9 +503,7 @@ void CKademliaUDPListener::Process2BootstrapRequest(uint32_t ip, uint16_t port, 
 	ContactList contacts;
 	uint16_t numContacts = (uint16_t)CKademlia::GetRoutingZone()->GetBootstrapContacts(&contacts, 20);
 
-	// Create response packet
-	// We only collect a max of 20 contacts here.. Max size is 521.
-	// 2 + 25(20) + 19
+	// Response packet: at most 20 contacts, max size 521 = 2 + 25(20) + 19.
 	CMemFile packetdata(521);
 
 	packetdata.WriteUInt128(CKademlia::GetPrefs()->GetKadID());
@@ -543,9 +542,9 @@ void CKademliaUDPListener::Process2BootstrapResponse(const uint8_t *packetData,
 	CUInt128 contactID = bio.ReadUInt128();
 	uint16_t tport = bio.ReadUInt16();
 	uint8_t version = bio.ReadUInt8();
-	// if we don't know any Contacts yet and try to Bootstrap, we assume that all contacts are verified,
-	// in order to speed up the connecting process. The attackvectors to exploit this are very small with
-	// no major effects, so that's a good trade
+	// If we know no contacts yet and try to bootstrap, assume every contact is verified to
+	// speed the connect up. The attack vectors for exploiting this are very small with no major
+	// effects, so it is a good trade.
 	bool assumeVerified = CKademlia::GetRoutingZone()->GetNumContacts() == 0;
 
 	if (CKademlia::s_bootstrapList.empty()) {
@@ -602,9 +601,10 @@ void CKademliaUDPListener::Process2HelloRequest(const uint8_t *packetData,
 #endif
 
 	DebugSend(Kad2HelloRes, ip, port);
-	// if this contact was added or updated (so with other words not filtered or invalid) to our routing
-	// table and did not already send a valid receiver key or is already verified in the routing table, we
-	// request an additional ACK package to complete a three-way-handshake and verify the remote IP
+	// If this contact was added or updated -- so not filtered or invalid -- to our routing
+	// table, and did not already send a valid receiver key or is not already verified there,
+	// request an additional ACK package to complete a three-way handshake and verify the remote
+	// IP.
 	SendMyDetails(KADEMLIA2_HELLO_RES,
 		ip,
 		port,
@@ -721,10 +721,9 @@ void CKademliaUDPListener::Process2HelloResponse(const uint8_t *packetData,
 			SendPacket(packet, KADEMLIA2_HELLO_RES_ACK, ip, port, senderKey, NULL);
 		}
 	} else if (addedOrUpdated && !validReceiverKey && contactVersion < 7) {
-		// even though this is supposably an answer to a request from us, there are still
-		// possibilities to spoof it, as long as the attacker knows that we would send a HELLO_REQ
-		// (which in this case is quite often), so for old Kad Version which doesn't support keys, we
-		// need
+		// Even though this is supposedly an answer to a request of ours, it can still be
+		// spoofed as long as the attacker knows we would send a HELLO_REQ, which in this
+		// case is quite often. So for old Kad versions with no key support we need this.
 		SendLegacyChallenge(ip, port, contactID);
 	}
 
@@ -768,9 +767,7 @@ void CKademliaUDPListener::ProcessKademlia2Request(const uint8_t *packetData,
 		CKademlia::GetRoutingZone()->GetClosestTo(2, target, distance, type, &results);
 		uint8_t count = (uint8_t)results.size();
 
-		// Write response
-		// Max count is 32. size 817..
-		// 16 + 1 + 25(32)
+		// Response: max count 32, size 817 = 16 + 1 + 25(32).
 		CMemFile packetdata(817);
 		packetdata.WriteUInt128(target);
 		packetdata.WriteUInt8(count);
@@ -845,12 +842,13 @@ void CKademliaUDPListener::ProcessKademlia2Response(const uint8_t *packetData,
 					!(contactPort == 53 &&
 						version <= 5) /*No DNS Port without encryption*/) {
 					if (isFirewallUDPCheckSearch) {
-						// UDP FirewallCheck searches are special: they need an IP
-						// we have not sent a UDP message to, so these contacts are
-						// neither added to the routing zone nor handed back to the
-						// search manager, which would UDP-ask them for further
-						// results. Reporting them only to FirewallChecker cripples
-						// the search, which does not matter: only the IPs do.
+						// UDP FirewallCheck searches are special: they need
+						// an IP we have not sent a UDP message to, so these
+						// contacts are neither added to the routing zone
+						// nor handed back to the search manager, which
+						// would UDP-ask them for further results. Reporting
+						// them only to FirewallChecker cripples the search,
+						// which does not matter: only the IPs do.
 						CUDPFirewallTester::AddPossibleTestContact(id,
 							contactIP,
 							contactPort,
@@ -930,11 +928,11 @@ SSearchTerm *CKademliaUDPListener::CreateSearchExpressionTree(CMemFile &bio, int
 	uint8_t op = bio.ReadUInt8();
 	if (op == 0x00) {
 		uint8_t boolop = bio.ReadUInt8();
-		// The recursive children below read from `bio` and can throw CEOFException on
-		// a truncated packet. Without a guard the parent node and the already-built
-		// left subtree leak during unwinding: ~SSearchTerm does not recurse into
-		// left/right, only the explicit Free() walk does, and that is only reached on
-		// the success and NULL-return paths (#884).
+		// The recursive children below read from `bio` and can throw CEOFException on a
+		// truncated packet. Without a guard the parent node and the already-built left
+		// subtree leak during unwinding: ~SSearchTerm does not recurse into left/right,
+		// only the explicit Free() walk does, and that is only reached on the success and
+		// NULL-return paths (#884).
 		if (boolop == 0x00) { // AND
 			SSearchTerm *pSearchTerm = new SSearchTerm;
 			pSearchTerm->type = SSearchTerm::AND;
@@ -1116,12 +1114,11 @@ void CKademliaUDPListener::ProcessSearchResponse(CMemFile &bio, uint32_t fromIP,
 	while (count > 0) {
 		CUInt128 answer = bio.ReadUInt128();
 
-		// Get info about answer
-		// NOTE: this is the one and only place in Kad where we allow string conversion to local code
-		// page in case we did not receive an UTF8 string. this is for backward compatibility for
-		// search results which are supposed to be 'viewed' by user only and not feed into the Kad
-		// engine again! If that tag list is once used for something else than for viewing, special
-		// care has to be taken for any string conversion!
+		// Get info about the answer. NOTE: this is the one and only place in Kad where we
+		// allow string conversion to the local code page when we did not receive a UTF8
+		// string. It is for backward compatibility with search results, which are meant to
+		// be VIEWED by the user and not fed back into the Kad engine. If that tag list is
+		// ever used for anything but viewing, string conversion needs special care.
 		CScopedContainer<TagPtrList> tags;
 		bio.ReadTagPtrList(tags.get(), true /*bOptACP*/);
 		CSearchManager::ProcessResult(target, answer, tags.get(), fromIP, fromPort);
@@ -1221,14 +1218,16 @@ void CKademliaUDPListener::Process2PublishKeyRequest(const uint8_t *packetData,
 						delete tag; // tag is no longer stored, but membervar is used
 #ifdef ENABLE_KAD_PROTOCOL_10
 					} else if (!tag->GetName().Cmp(TAG_KADAICHHASHPUB)) {
-						// AICH root hash of the published file (Kad protocol version
-						// 0x09). Kept as a member rather than a tag:
-						// MergeIPsAndFilenames() attaches it to this publisher and
-						// maintains the popularity counts of the stored entry.
+						// AICH root hash of the published file (Kad
+						// protocol version 0x09). Kept as a member rather
+						// than a tag: MergeIPsAndFilenames() attaches it to
+						// this publisher and maintains the popularity
+						// counts of the stored entry.
 						//
-						// Gated: upstream has no branch for this tag, so it falls
-						// through to AddTag() and is relayed verbatim in later search
-						// answers. Consuming it here removes it from that answer.
+						// Gated: upstream has no branch for this tag, so it
+						// falls through to AddTag() and is relayed verbatim
+						// in later search answers. Consuming it here
+						// removes it from that answer.
 						if (tag->IsBsob() &&
 							tag->GetBsobSize() == KAD_AICH_HASH_SIZE) {
 							if (entry->GetAICHHashCount() == 0) {
@@ -1269,13 +1268,11 @@ void CKademliaUDPListener::Process2PublishKeyRequest(const uint8_t *packetData,
 		}
 
 		if (!indexed->AddKeyword(file, target, entry, load)) {
-			// We already indexed the maximum number of keywords.
-			// We do not index anymore but we still send a success..
-			// Reason: Because if a VERY busy node tells the publisher it failed,
-			// this busy node will spread to all the surrounding nodes causing popular
-			// keywords to be stored on MANY nodes..
-			// So, once we are full, we will periodically clean our list until we can
-			// begin storing again..
+			// We have already indexed the maximum number of keywords. We stop indexing
+			// but still report success: if a VERY busy node told the publisher it
+			// failed, that busy node would spread to all the surrounding nodes and
+			// cause popular keywords to be stored on MANY of them. Once full, we
+			// periodically clean our list until we can store again.
 			delete entry;
 			entry = NULL;
 		}
@@ -1635,9 +1632,9 @@ void CKademliaUDPListener::ProcessFirewalledResponse(
 // Used by Kad1.0 and Kad2.0
 void CKademliaUDPListener::ProcessFirewalledAckResponse(uint32_t lenPacket)
 {
-	// Deprecated since KadVersion 7+, the result is now sent per TCP instead of UDP, because this will
-	// fail if our intern UDP port is unreachable. But we want the TCP testresult regardless if UDP is
-	// firewalled, the new UDP state and test takes care of the rest.
+	// Deprecated since KadVersion 7+: the result is now sent over TCP instead of UDP, because
+	// UDP fails if our internal UDP port is unreachable. We want the TCP test result regardless
+	// of UDP being firewalled; the new UDP state and test take care of the rest.
 
 	// Verify packet is expected size
 	CHECK_PACKET_EXACT_SIZE(0);
@@ -1789,10 +1786,11 @@ void CKademliaUDPListener::Process2Pong(const uint8_t *packetData, uint32_t lenP
 	}
 
 	if (CKademlia::GetPrefs()->FindExternKadPort(false)) {
-		// the reported port doesn't always have to be our true external port, esp. if we used our
-		// intern port and communicated recently with the client some routers might remember this and
-		// assign the intern port as source but this shouldn't be a problem because we prefer intern
-		// ports anyway. might have to be reviewed in later versions when more data is available
+		// The reported port does not always have to be our true external port, especially
+		// if we used our internal port and communicated with the client recently -- some
+		// routers remember that and assign the internal port as source. Not a problem,
+		// since we prefer internal ports anyway. May want reviewing in later versions when
+		// more data is available.
 		CKademlia::GetPrefs()->SetExternKadPort(PeekUInt16(packetData), ip);
 
 		if (CUDPFirewallTester::IsFWCheckUDPRunning()) {
@@ -1893,10 +1891,9 @@ void CKademliaUDPListener::ExpireClientSearch(CKadClientSearcher *expireImmediat
 
 void CKademliaUDPListener::SendLegacyChallenge(uint32_t ip, uint16_t port, const CUInt128 &contactID)
 {
-	// We want to verify that a pre-0.49a contact is valid and not sent from a spoofed IP.
-	// Because those versions don't support any direct validating, we send a KAD_REQ with a random ID,
-	// which is our challenge. If we receive an answer packet for this request, we can be sure the
-	// contact is not spoofed
+	// We want to verify that a pre-0.49a contact is valid and not sent from a spoofed IP. Those
+	// versions support no direct validation, so we send a KAD_REQ with a random ID as our
+	// challenge; an answer packet for that request proves the contact is not spoofed.
 #ifdef __DEBUG__
 	CContact *contact = CKademlia::GetRoutingZone()->GetContact(contactID);
 	if (contact != NULL) {

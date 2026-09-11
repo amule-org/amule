@@ -106,9 +106,9 @@ static uint8 GetHigherPrio(uint32 prio, bool auto_priority)
 
 static uint8 GetHigherPrioShared(uint32 prio, bool auto_priority)
 {
-	// The arrows walk the manual scale only; they never set or pass
-	// through Auto (that mode can only be chosen from the selector).
-	// Raising while in Auto leaves it for the manual scale at High.
+	// The arrows walk the manual scale only; they never set or pass through Auto, which can
+	// only be chosen from the selector. Raising while in Auto leaves it for the manual scale at
+	// High.
 	if (auto_priority) {
 		return PR_HIGH;
 	} else {
@@ -153,9 +153,9 @@ static uint8 GetLowerPrio(uint32 prio, bool auto_priority)
 
 static uint8 GetLowerPrioShared(uint32 prio, bool auto_priority)
 {
-	// The arrows walk the manual scale only; they never set or pass
-	// through Auto (that mode can only be chosen from the selector).
-	// Lowering while in Auto leaves it for the manual scale at Low.
+	// The arrows walk the manual scale only; they never set or pass through Auto, which can
+	// only be chosen from the selector. Lowering while in Auto leaves it for the manual scale
+	// at Low.
 	if (auto_priority) {
 		return PR_LOW;
 	} else {
@@ -178,9 +178,7 @@ static uint8 GetLowerPrioShared(uint32 prio, bool auto_priority)
 	}
 }
 
-/*
- * Url string decoder
- */
+// Url string decoder
 wxString CURLDecoder::Decode(const wxString &url)
 {
 	size_t n = url.length();
@@ -396,9 +394,7 @@ void CWebServerBase::Send_Discard_V2_Request(CECPacket *request)
 	}
 }
 
-//
 // Command interface
-//
 void CWebServerBase::Send_SharedFile_Cmd(wxString file_hash, wxString cmd, uint32 opt_arg)
 {
 	CECPacket *ec_cmd = 0;
@@ -541,9 +537,9 @@ bool CWebServerBase::Send_DownloadEd2k_Cmd(wxString link, uint8 cat)
 	link_tag.AddTag(CECTag(EC_TAG_PARTFILE_CAT, cat));
 	req.AddTag(link_tag);
 	const CECPacket *response = webInterface->SendRecvMsg_v2(&req);
-	// SendRecvMsg_v2 returns null on EC connection failure.
-	// Treat a missing response as a failed command (same as EC_OP_FAILED)
-	// so the PHP caller gets a defined bool rather than a crash.
+	// SendRecvMsg_v2 returns null on EC connection failure. Treat a missing response as a
+	// failed command (same as EC_OP_FAILED) so the PHP caller gets a defined bool rather than a
+	// crash.
 	if (!response) {
 		return true;
 	}
@@ -608,9 +604,7 @@ int CWebServerBase::GzipCompress(
 	return err;
 }
 
-/*
- * Item container implementation
- */
+// Item container implementation
 
 ServersInfo *ServerEntry::GetContainerInstance()
 {
@@ -899,10 +893,7 @@ bool SearchInfo::ReQuery()
 }
 
 /*!
- * Image classes:
- *
- * CFileImage: simply represent local file
- * CDynProgressImage: dynamically generated from gap info
+ * Image classes: CFileImage represents a local file; CDynProgressImage is generated from gap info.
  */
 
 CAnyImage::CAnyImage(int size)
@@ -1003,9 +994,8 @@ CFileImage::CFileImage(const wxString &name)
 }
 
 /*!
- * "Modifiers" for 3D look of progress bar. Those modifiers must be substracted from
- * image (with saturation), values, and not multiplied, as amule doesn for some reason.
- *
+ * "Modifiers" for the 3D look of the progress bar. They must be subtracted from the image values
+ * (with saturation), not multiplied as amule does for some reason.
  */
 CImage3D_Modifiers::CImage3D_Modifiers(int width)
 {
@@ -1038,11 +1028,11 @@ CProgressImage::~CProgressImage()
 
 void CProgressImage::CreateSpan()
 {
-	// Step 1: get gap list. .data() rather than &m_Gaps[0], so the pointer is
-	// well-defined when the vector is empty -- no gaps yet on a fresh partfile, or
-	// all gaps closed on a just-completed one -- which libstdc++ debug mode
-	// otherwise catches as an assertion and SIGABRT. The loop below is bounded by
-	// gap_list_size, so an empty vector's pointer is never dereferenced.
+	// Step 1: get the gap list. .data() rather than &m_Gaps[0], so the pointer is well-defined
+	// when the vector is empty -- no gaps yet on a fresh partfile, or all gaps closed on a
+	// just-completed one -- which libstdc++ debug mode otherwise catches as an assertion and
+	// SIGABRT. The loop below is bounded by gap_list_size, so an empty vector's pointer is
+	// never dereferenced.
 	const Gap_Struct *gap_list = (const Gap_Struct *)m_file->m_Gaps.data();
 	int gap_list_size = m_file->m_Gaps.size() / 2;
 
@@ -1090,9 +1080,7 @@ void CProgressImage::CreateSpan()
 		m_ColorLine[i] = 0x0;
 	}
 	if (m_file->lFileSize < (uint32)m_width) {
-		//
-		// if file is that small, draw it in single step
-		//
+		// if the file is that small, draw it in a single step
 		if (!m_file->m_ReqParts.empty()) {
 			for (int i = 0; i < m_width; ++i) {
 				m_ColorLine[i] = RGB(255, 208, 0);
@@ -1134,10 +1122,7 @@ CDynPngImage::CDynPngImage(int w, int h)
 : CAnyImage(w, h)
 {
 
-	//
-	// Allocate array of "row pointers" - libpng need it in this form
-	// Fill it also with the image data
-	//
+	// Array of "row pointers" - libpng needs it in this form; filled with the image data too.
 	const size_t img_size =
 		static_cast<size_t>(3) * static_cast<size_t>(m_width) * static_cast<size_t>(m_height);
 	m_img_data = new png_byte[img_size];
@@ -1296,9 +1281,7 @@ CStatsData::CStatsData(int size)
 	m_size = size;
 	m_data = new uint32[size];
 	m_max_value = 0;
-	//
 	// initial situation: all data is 0's
-	//
 	memset(m_data, 0, m_size * sizeof(int));
 	m_start_index = m_curr_index = 0;
 	m_end_index = size - 1;
@@ -1384,9 +1367,9 @@ void CStatsCollection::ReQuery()
 	}
 	const uint32 *data = (const uint32 *)dataTag->GetTagData();
 	unsigned int count = dataTag->GetTagDataLen() / sizeof(uint32);
-	// Each sample group is exactly 4 uint32 values (down, up, conn, kad).
-	// A truncated or malformed tag could leave count % 4 != 0; clamp to
-	// the largest multiple of 4 that fits so we never read past the buffer.
+	// Each sample group is exactly 4 uint32 values (down, up, conn, kad). A truncated or
+	// malformed tag could leave count % 4 != 0; clamp to the largest multiple of 4 that fits so
+	// we never read past the buffer.
 	count -= count % 4;
 	for (unsigned int i = 0; i < count; i += 4) {
 		m_down_speed->PushSample(ENDIAN_NTOHL(data[i + 0]));
@@ -1397,9 +1380,7 @@ void CStatsCollection::ReQuery()
 	delete response;
 }
 
-//
 // Dynamically generated statistic images
-//
 #ifdef WITH_LIBPNG
 
 CDynStatisticImage::CDynStatisticImage(int height, bool scale1024, CStatsData *data)
@@ -1430,9 +1411,7 @@ CDynStatisticImage::CDynStatisticImage(int height, bool scale1024, CStatsData *d
 		m_row_bg_ptrs[i] = &m_background[i * m_width * 3];
 	}
 
-	//
 	// Prepare background
-	//
 	static const COLORTYPE bg_color = RGB(0x00, 0x00, 0x40);
 	for (int i = 0; i < m_height; i++) {
 		png_bytep u_row = m_row_bg_ptrs[i];
@@ -1440,9 +1419,7 @@ CDynStatisticImage::CDynStatisticImage(int height, bool scale1024, CStatsData *d
 			set_rgb_color_val(u_row + 3 * j, bg_color, 0);
 		}
 	}
-	//
 	// draw axis
-	//
 	static const COLORTYPE axis_color = RGB(0xff, 0xff, 0xff);
 	// Y
 	for (int i = m_bottom_margin; i < m_y_axis_size; i++) {
@@ -1467,9 +1444,7 @@ CDynStatisticImage::CDynStatisticImage(int height, bool scale1024, CStatsData *d
 		}
 	}
 
-	//
 	// Pre-create masks for digits 0-9 and unit prefixes K/M/G/T.
-	//
 	for (int i = 0; i < 14; i++) {
 		m_digits[i] = new CNumImageMask(i, m_num_font_w_size, m_num_font_h_size);
 	}
@@ -1489,9 +1464,7 @@ void CDynStatisticImage::DrawImage()
 	// copy background first
 	memcpy(m_img_data, m_background, static_cast<size_t>(m_width) * m_height * 3u);
 
-	//
-	// Now graph itself
-	//
+	// Now the graph itself
 	static const COLORTYPE graph_color = RGB(0xff, 0x00, 0x00);
 	int maxval = m_data->Max();
 
@@ -1502,9 +1475,7 @@ void CDynStatisticImage::DrawImage()
 			maxval = 1;
 		}
 	}
-	//
 	// Check if we need to scale data up or down
-	//
 	int m_scale_up = 1, m_scale_down = 1;
 	if (maxval >= (m_height - m_bottom_margin)) {
 		m_scale_down = 1 + (maxval / (m_y_axis_size - 10));
@@ -1514,9 +1485,7 @@ void CDynStatisticImage::DrawImage()
 		m_scale_up = (2 * m_y_axis_size / 3) / maxval;
 	}
 
-	//
 	// draw axis scale
-	//
 	int img_delta = m_num_font_w_size / 4;
 	// Number "0" is always there
 	m_digits[0]->Apply(
@@ -1531,10 +1500,9 @@ void CDynStatisticImage::DrawImage()
 		y_axis_max /= m_scale_up;
 	}
 
-	// Render the y-axis maximum into the four pre-sized digit cells. When
-	// the value fits in 4 digits we render it as-is; above 9999 we collapse
-	// to a 3-digit number plus a K/M/G/T suffix glyph in the fourth cell
-	// so the label remains within the pre-sized margin.
+	// Render the y-axis maximum into the four pre-sized digit cells. A value that fits in 4
+	// digits is rendered as-is; above 9999 it collapses to a 3-digit number plus a K/M/G/T
+	// suffix glyph in the fourth cell, so the label stays within the pre-sized margin.
 	int label_value = y_axis_max;
 	int suffix_idx = -1;
 	if (label_value >= 10000) {
@@ -1611,9 +1579,7 @@ void CDynStatisticImage::DrawImage()
 				curr_data = 1;
 			}
 		}
-		//
 		// draw between curr_data and prev_data
-		//
 		int min_y, max_y;
 		if (prev_data > curr_data) {
 			min_y = curr_data;
@@ -1643,14 +1609,10 @@ wxString CDynStatisticImage::GetHTML()
 	return "";
 }
 
-//
-// Imprint numbers on generated png's
-//
-// 7-segment encodings. Segment numbering matches the comment block in front
-// of DrawSegment below: 0=top, 1=top-left, 2=top-right, 3=middle, 4=bottom-left,
-// 5=bottom-right, 6=bottom. Indices 0-9 are digits. Indices 10-13 are the
-// unit-prefix glyphs K, M, G, T used when the y-axis maximum exceeds 9999;
-// K and M are stylized approximations (7-segment has no clean K/M).
+// Imprint numbers on generated PNGs. 7-segment encodings; segment numbering matches the comment
+// block in front of DrawSegment below: 0=top, 1=top-left, 2=top-right, 3=middle, 4=bottom-left,
+// 5=bottom-right, 6=bottom. Indices 0-9 are digits; 10-13 are the unit-prefix glyphs K, M, G, T
+// used when the y-axis maximum exceeds 9999. K and M are stylized approximations.
 // clang-format off
 //                                                 0     1     2     3     4     5     6     7     8     9     K     M     G     T
 const int CNumImageMask::m_num_to_7_decode[] = {0x77, 0x24, 0x5d, 0x6d, 0x2e, 0x6b, 0x7a, 0x25, 0x7f, 0x2f, 0x3a, 0x37, 0x7b, 0x5a};
@@ -1801,9 +1763,7 @@ CAnyImage *CImageLib::GetImage(const wxString &name)
 	}
 }
 
-/*
- * Script-based webserver
- */
+// Script-based webserver
 CScriptWebServer::CScriptWebServer(CamulewebApp *webApp, const wxString &templateDir)
 : CWebServerBase(webApp, templateDir)
 , m_www_root(templateDir)
@@ -1854,12 +1814,10 @@ char *CScriptWebServer::ProcessHtmlRequest(const char *filename, long &size)
 		return GetErrorPage("fseek failed", size);
 	}
 
-	// ftell returns long, which is 32-bit on Win64 (LLP64); store the
-	// raw return in a 64-bit local so a >2 GiB file (or a negative
-	// ftell error return) doesn't silently wrap into a bogus
-	// allocation size. Templates are tiny in practice, but the
-	// truncation would still bite a user pointing aMuleweb at an
-	// oversized file on disk.
+	// ftell returns long, which is 32-bit on Win64 (LLP64); store the raw return in a 64-bit
+	// local so a >2 GiB file, or a negative ftell error return, does not silently wrap into a
+	// bogus allocation size. Templates are tiny in practice, but the truncation would still
+	// bite a user pointing aMuleweb at an oversized file on disk.
 	const long long raw_size = ftell(f);
 	if (raw_size < 0 || raw_size > 0x7fffffffLL) {
 		fclose(f);
@@ -1917,15 +1875,12 @@ CSession *CScriptWebServer::CheckLoggedin(ThreadData &Data)
 		Print(_("No session opened - will request login\n"));
 	}
 	if (!session) {
-		// CSPRNG-sourced 64-bit session token. Was `rand()` into an
-		// `int` before #870, which is neither CSPRNG-quality nor
-		// seeded with anything an attacker can't observe; that made
-		// session IDs guessable in modest time without ever touching
-		// the cookie. AutoSeededRandomPool is the same primitive the
-		// EC stack already uses for DH key agreement, so we're not
-		// dragging in new crypto -- just spending it on a problem
-		// that needed it. Reuse the pool across calls so the OS-RNG
-		// seeding cost is paid once per process.
+		// CSPRNG-sourced 64-bit session token. Was `rand()` into an `int` before #870,
+		// which is neither CSPRNG-quality nor seeded with anything an attacker cannot
+		// observe; that made session IDs guessable in modest time without ever touching the
+		// cookie. AutoSeededRandomPool is the same primitive the EC stack already uses for
+		// DH key agreement, so we are not dragging in new crypto. Reuse the pool across
+		// calls so the OS-RNG seeding cost is paid once per process.
 		static CryptoPP::AutoSeededRandomPool s_sessionPool;
 		do {
 			uint64_t fresh = 0;
@@ -1933,9 +1888,8 @@ CSession *CScriptWebServer::CheckLoggedin(ThreadData &Data)
 			// version; CryptoPP::byte only exists from 5.6.5+ (issue #449).
 			s_sessionPool.GenerateBlock(reinterpret_cast<unsigned char *>(&fresh), sizeof(fresh));
 			Data.SessionID = fresh;
-			// Loop on 0 (which means "no session" elsewhere in this
-			// file) or on the astronomically unlikely collision with
-			// an existing live session.
+			// Loop on 0 (which means "no session" elsewhere in this file) or on the
+			// astronomically unlikely collision with an existing live session.
 		} while (!Data.SessionID || m_sessions.count(Data.SessionID));
 		session = &m_sessions[Data.SessionID];
 		session->m_last_access = curr_time;
@@ -1963,24 +1917,21 @@ void CScriptWebServer::ProcessURL(ThreadData Data)
 	CSession *session = CheckLoggedin(Data);
 
 	session->m_vars["login_error"] = "";
-	// Stylesheets and scripts are public static assets, like the template
-	// images ProcessImgFileReq() already serves without a login. They are
-	// served statically from the template directory, never through the
-	// PHP interpreter.
+	// Stylesheets and scripts are public static assets, like the template images
+	// ProcessImgFileReq() already serves without a login. They are served statically from the
+	// template directory, never through the PHP interpreter.
 	bool public_asset = filename.EndsWith(wxT(".css")) || filename.EndsWith(wxT(".js"));
 	if (!session->m_logged_in && !public_asset) {
 		filename = "login.php";
 
-		// Refuse to consume `pass` if it's reachable via the original
-		// (pre-POST-body-merge) URL query string. Passwords in URLs
-		// leak into proxy logs / browser history / Referer headers,
-		// and the GET-with-pass click-attack vector is exactly what
-		// #872 exists to close. Note that `getOnlyParsedURL` is
-		// always populated -- for GET requests it's identical to
-		// `parsedURL`; for POST requests it's the pre-concat copy,
-		// so `pass` only shows up there when an attacker put it
-		// into a POST form's `action=...?pass=XYZ`. Either way,
-		// presence means "don't trust this password attempt".
+		// Refuse to consume `pass` if it is reachable via the original (pre-POST-body-
+		// merge) URL query string. Passwords in URLs leak into proxy logs, browser history
+		// and Referer headers, and the GET-with-pass click-attack vector is exactly what
+		// #872 exists to close. `getOnlyParsedURL` is always populated -- for GET requests
+		// it is identical to `parsedURL`; for POST requests it is the pre-concat copy, so
+		// `pass` only shows up there when an attacker put it into a POST form's
+		// `action=...?pass=XYZ`. Either way, presence means "do not trust this password
+		// attempt".
 		wxString PwStr;
 		if (Data.getOnlyParsedURL.Param("pass").Length()) {
 			Print(_("Refusing to read `pass` from URL query string\n"));
@@ -2020,10 +1971,7 @@ void CScriptWebServer::ProcessURL(ThreadData Data)
 			Print(_("You did not enter any password. Blank password is not allowed.\n"));
 		}
 	} else {
-		//
-		// if logged in, but requesting login page again,
-		// means logout command
-		//
+		// if logged in but requesting the login page again, that means logout
 		if (filename == "login.php") {
 			Print(_("Logout requested\n"));
 			session->m_logged_in = false;
@@ -2064,12 +2012,11 @@ void CScriptWebServer::ProcessURL(ThreadData Data)
 
 	if (isUseGzip) {
 		bool bOk = false;
-		// zlib's deflate worst-case expansion is sourceLen + (sourceLen/1000) + 12 bytes.
-		// GzipCompress adds an 18-byte gzip wrapper (10-byte header + 8-byte trailer).
+		// zlib's deflate worst-case expansion is sourceLen + (sourceLen/1000) + 12 bytes,
+		// and GzipCompress adds an 18-byte gzip wrapper (10-byte header + 8-byte trailer).
 		// The previous fixed +1024 slack was technically correct for the template sizes
 		// amuleweb serves today, but violated zlib's documented contract for large or
-		// maximally-incompressible payloads. Use the formula from the zlib manual so
-		// the buffer is always sufficient regardless of content size.
+		// maximally-incompressible payloads.
 		uLongf destLen = httpOutLen + (httpOutLen / 1000) + 30;
 		char *gzipOut = new char[destLen];
 		if (GzipCompress((Bytef *)gzipOut,
@@ -2106,10 +2053,7 @@ CNoTemplateWebServer::~CNoTemplateWebServer() {}
 
 void CNoTemplateWebServer::ProcessURL(ThreadData Data)
 {
-	/*
-	 * Since template has not been found, I suspect that installation is broken. Falling back
-	 * into hardcoded page as last resort.
-	 */
+	/* Template not found: the installation is probably broken. Fall back to a hardcoded page. */
 	const char *httpOut =
 		""
 		"<html>"

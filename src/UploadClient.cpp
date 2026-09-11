@@ -53,10 +53,10 @@
 void CUpDownClient::SetUploadState(uint8 eNewState)
 {
 	if (eNewState != m_nUploadState) {
-		// Entering or leaving US_UPLOADING changes this file's live upload speed
-		// and uploading-client count (issue #466). Mark it EC-dirty so the delta
-		// protocol re-sends those tags, or a file that just stopped uploading keeps
-		// a stale non-zero speed in remote clients.
+		// Entering or leaving US_UPLOADING changes this file's live upload speed and
+		// uploading-client count (issue #466). Mark it EC-dirty so the delta protocol re-
+		// sends those tags, or a file that just stopped uploading keeps a stale non-zero
+		// speed in remote clients.
 		if ((m_nUploadState == US_UPLOADING || eNewState == US_UPLOADING) && m_uploadingfile) {
 			m_uploadingfile->MarkECChanged();
 		}
@@ -116,12 +116,9 @@ uint32 CUpDownClient::CalculateScoreInternal()
 
 	fBaseValue *= GetScoreRatio(); // credits
 
-	// Take file upload priority into account
-	//
-	// One yet unsolved problem here:
-	// sometimes a client asks for 2 files and there is no way to decide, which file the
-	// client finally gets. so it could happen that he is queued first because of a
-	// high prio file, but then asks for something completely different.
+	// Take file upload priority into account. One unsolved problem: a client sometimes asks for
+	// 2 files and there is no way to tell which it finally gets, so it could be queued first
+	// because of a high-priority file and then ask for something completely different.
 	float filepriority;
 	switch (pFile->GetUpPriority()) {
 	case PR_POWERSHARE:
@@ -238,22 +235,21 @@ void CUpDownClient::ProcessExtendedInfo(const CMemFile *data, CKnownFile *tempre
 		}
 
 		if (GetExtendedRequestsVersion() > 1) {
-			// Still guarded, because this is where the count is read off the wire.
-			// The recompute it used to gate has moved below: the peer's self-reported
-			// total staying put says nothing about its part bitmap.
+			// Still guarded, because this is where the count is read off the wire. The
+			// recompute it used to gate has moved below: the peer's self-reported total
+			// staying put says nothing about its part bitmap.
 			SetUpCompleteSourcesCount(data->ReadUInt16());
 		}
 	}
 
 	m_uploadingfile->UpdateUpPartsFrequency(this, true); // Increment
-	// Unconditional now, where it used to be gated on the peer's self-reported
-	// complete-source total having changed -- which says nothing about its part
-	// bitmap, so the frequency vector could move without the count following (issue
-	// #1050). UpdatePartsInfo() is throttled to one real recompute a minute per
-	// file, so the extra calls cost a comparison.
+	// Unconditional now, where it used to be gated on the peer's self-reported complete-source
+	// total having changed -- which says nothing about its part bitmap, so the frequency vector
+	// could move without the count following (issue #1050). UpdatePartsInfo() is throttled to
+	// one real recompute a minute per file, so the extra calls cost a comparison.
 	//
-	// On tempreqfile, as before: the UDP/v3 callers pass a reqfile that is not
-	// necessarily this client's m_uploadingfile.
+	// On tempreqfile, as before: the UDP/v3 callers pass a reqfile that is not necessarily this
+	// client's m_uploadingfile.
 	tempreqfile->UpdatePartsInfo();
 
 	Notify_SharedCtrlRefreshClient(ECID(), AVAILABLE_SOURCE);
@@ -266,9 +262,9 @@ void CUpDownClient::SetUploadFileID(CKnownFile *newreqfile)
 	} else if (m_uploadingfile) {
 		m_uploadingfile->RemoveUploadingClient(this);
 		m_uploadingfile->UpdateUpPartsFrequency(this, false); // Decrement
-		// The decrement side never recomputed, so the count was a high-water mark
-		// that only ever rose (issue #1050). This one call covers both the peer
-		// disconnecting and the peer switching to a different file.
+		// The decrement side never recomputed, so the count was a high-water mark that only
+		// ever rose (issue #1050). This one call covers both the peer disconnecting and the
+		// peer switching to a different file.
 		m_uploadingfile->UpdatePartsInfo();
 	}
 
@@ -301,7 +297,7 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIO
 		return;
 	}
 
-	// eMule ref: UploadClient.cpp AddReqBlock — sanity checks before queuing
+	// eMule ref: UploadClient.cpp AddReqBlock -- sanity checks before queuing
 	CKnownFile *srcfile = theApp->sharedfiles->GetFileByID(CMD4Hash(reqblock->FileID));
 	if (srcfile == NULL) {
 		AddDebugLogLineN(logRemoteClient, "AddReqBlock: Requested file not found in shared files");
@@ -344,9 +340,9 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIO
 	}
 
 	{
-		// Hold m_blockListLock for all reads/writes of the block queues.
-		// The disk I/O thread accesses m_DoneBlocks_list, m_BlockRequests_queue,
-		// and m_addedPayloadQueueSession under this same lock.
+		// Hold m_blockListLock for all reads and writes of the block queues. The disk I/O
+		// thread accesses m_DoneBlocks_list, m_BlockRequests_queue and
+		// m_addedPayloadQueueSession under this same lock.
 		wxMutexLocker lock(m_blockListLock);
 
 		{
@@ -375,7 +371,7 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIO
 	} // release lock before signalling to avoid contention
 
 	// Notify disk I/O thread that new block requests are available.
-	// eMule ref: NewBlockRequestsAvailable() — UploadDiskIOThread.h:55
+	// eMule ref: NewBlockRequestsAvailable() -- UploadDiskIOThread.h:55
 	if (bSignalIOThread && theApp->uploadDiskIOThread) {
 		theApp->uploadDiskIOThread->NewBlockRequestsAvailable();
 	}
@@ -447,9 +443,9 @@ uint32 CUpDownClient::SendBlockData()
 		sentBytesPayload = s->GetSentPayloadSinceLastCallAndReset();
 		m_nCurQueueSessionPayloadUp += sentBytesPayload;
 
-		// Wake the disk I/O thread so it re-checks its buffer condition against the
-		// freshly updated m_nCurQueueSessionPayloadUp, rather than waiting out its
-		// 100 ms timeout before noticing curPayload advanced.
+		// Wake the disk I/O thread so it re-checks its buffer condition against the freshly
+		// updated m_nCurQueueSessionPayloadUp, rather than waiting out its 100 ms timeout
+		// before noticing curPayload advanced.
 		if (sentBytesPayload > 0 && theApp->uploadDiskIOThread) {
 			theApp->uploadDiskIOThread->SocketNeedsMoreData();
 		}
@@ -497,10 +493,10 @@ void CUpDownClient::SendOutOfPartReqsAndAddToWaitingQueue()
 {
 	// Kry - this is actually taken from eMule, but makes a lot of sense ;)
 
-	// OP_OUTOFPARTREQS tells the downloading client to go back to OnQueue. Without
-	// it, a client put back on queue that returns before the socket times out
-	// leaves the downloader thinking it already sent the requested blocks while the
-	// uploader thinks it sent none, and the connection times out.
+	// OP_OUTOFPARTREQS tells the downloading client to go back to OnQueue. Without it, a client
+	// put back on queue that returns before the socket times out leaves the downloader thinking
+	// it already sent the requested blocks while the uploader thinks it sent none, and the
+	// connection times out.
 
 	// Send this immediately, don't queue.
 	CPacket *pPacket = new CPacket(OP_OUTOFPARTREQS, 0, OP_EDONKEYPROT);
@@ -512,7 +508,7 @@ void CUpDownClient::SendOutOfPartReqsAndAddToWaitingQueue()
 }
 
 /**
- * See description for CEMSocket::TruncateQueues().
+ * See the description for CEMSocket::TruncateQueues().
  */
 void CUpDownClient::FlushSendBlocks()
 {
@@ -637,16 +633,15 @@ void CUpDownClient::Ban()
 		"Client '" + GetUserName() +
 			"' seems to be an aggressive client and is banned from the uploadqueue");
 
-	// The upload state is set whether or not the record took the address, and the
-	// two are deliberately independent. US_BANNED governs this client object and
-	// needs nothing to identify it, so an aggressive peer we have no address for
-	// still loses its slot; the record governs an ADDRESS, so the ban outlives the
-	// object and survives a reconnection, and with no address there is nothing to
-	// remember it by.
+	// The upload state is set whether or not the record took the address, and the two are
+	// deliberately independent. US_BANNED governs this client object and needs nothing to
+	// identify it, so an aggressive peer we have no address for still loses its slot; the
+	// record governs an ADDRESS, so the ban outlives the object and survives a reconnection,
+	// and with no address there is nothing to remember it by.
 	//
-	// The visible consequence is that IsBanned() reads false for such a peer while
-	// its state is US_BANNED, so it is never un-banned through the record. That is
-	// the right way round: we cannot recognise it if it comes back.
+	// The visible consequence is that IsBanned() reads false for such a peer while its state is
+	// US_BANNED, so it is never un-banned through the record. That is the right way round: we
+	// cannot recognise it if it comes back.
 	SetUploadState(US_BANNED);
 
 	Notify_SharedCtrlRefreshClient(ECID(), UNAVAILABLE_SOURCE);

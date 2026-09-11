@@ -30,24 +30,22 @@
 namespace webcommon
 {
 
-// Writes `body` to `path` owner-only, without ever exposing a partial or
-// world-readable version of it.
+// Writes `body` to `path` owner-only, without ever exposing a partial or world-readable version of
+// it.
 //
-// POSIX: create a sibling temp with mode 0600, write it in full, fsync,
-// then rename(2) onto the target. The file is never observable in a
-// half-written state, and never exists with looser permissions than the
-// ones it is created with -- creating at 0600 rather than chmod-ing after
-// the fact closes the window where another user could open it. fchmod is
-// applied anyway as belt and braces against an odd umask.
+// POSIX: create a sibling temp with mode 0600, write it in full, fsync, then rename(2) onto the
+// target. The file is never observable half-written, and never exists with looser permissions than
+// the ones it is created with -- creating at 0600 rather than chmod-ing afterwards closes the
+// window where another user could open it. fchmod is applied anyway, as belt and braces against an
+// odd umask.
 //
-// Windows: best-effort. There is no equivalent permission story here --
-// see RestrictToOwner() in FileFunctions.cpp, which is a no-op on Windows
-// for the same reason -- so callers holding a secret must not rely on this
-// for confidentiality on that platform.
+// Windows: best effort. There is no equivalent permission story -- see RestrictToOwner() in
+// FileFunctions.cpp, a no-op on Windows for the same reason -- so callers holding a secret must not
+// rely on this for confidentiality there.
 //
-// Returns false on any failure, leaving the previous contents of `path`
-// intact. Reports nothing: this lives below the logger for the same reason
-// the file helpers in mulecommon do, so the caller decides what to say.
+// Returns false on any failure, leaving the previous contents of `path` intact. Reports nothing:
+// this lives below the logger, as the mulecommon file helpers do, so the caller decides what to
+// say.
 bool WriteFileAtomic0600(const std::string &path, const std::string &body);
 
 } // namespace webcommon

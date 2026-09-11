@@ -103,9 +103,9 @@ void CIndexed::ReadFile()
 		CFile k_file;
 		if (CPath::FileExists(m_kfilename) && k_file.Open(m_kfilename, CFile::read)) {
 			uint32_t version = k_file.ReadUInt32();
-			// Version 4 added the AICH hash block and the per-publisher hash
-			// index that Kad protocol version 0x09 keyword storage needs;
-			// version 3 files still load, just without any AICH hash.
+			// Version 4 added the AICH hash block and the per-publisher hash index that
+			// Kad protocol version 0x09 keyword storage needs; version 3 files still
+			// load, just without any AICH hash.
 			if (version < 5) {
 				time_t savetime = k_file.ReadUInt32();
 				if (savetime > time(NULL)) {
@@ -376,12 +376,11 @@ CIndexed::~CIndexed()
 
 		CFile k_file;
 		if (k_file.Open(m_kfilename, CFile::write)) {
-			// Version 4 carries the AICH block and the per-publisher hash
-			// index; gated with the writer in
-			// CKeyEntry::WritePublishTrackingDataToFile, so a gate-off
-			// build writes the version-3 file upstream writes. Reading
-			// both is unconditional, so switching the gate either way
-			// never invalidates an existing keyword index.
+			// Version 4 carries the AICH block and the per-publisher hash index; gated
+			// with the writer in CKeyEntry::WritePublishTrackingDataToFile, so a gate-
+			// off build writes the version-3 file upstream writes. Reading both is
+			// unconditional, so switching the gate never invalidates an existing
+			// keyword index.
 #ifdef ENABLE_KAD_PROTOCOL_10
 			k_file.WriteUInt32(4); // version, see the note in ReadFile()
 #else
@@ -614,9 +613,8 @@ bool CIndexed::AddKeyword(
 			if (!currSource->entryList.empty()) {
 				if (indexTotal > KADEMLIAMAXINDEX - 5000) {
 					load = 100;
-					// We are in a hot node.. If we continued to update all the publishes
-					// while this index is full, popular files will be the only thing you
-					// index.
+					// We are in a hot node. Updating all the publishes while
+					// this index is full would index nothing but popular files.
 					return false;
 				}
 				// also check for size match
@@ -863,10 +861,9 @@ void CIndexed::SendValidKeywordResult(const CUInt128 &keyID,
 		const uint16_t maxResults = 300;
 		int count = 0 - startPosition;
 
-		// we do 2 loops: In the first one we ignore all results which have a trustvalue below 1
-		// in the second one we then also consider those. That way we make sure our 300 max results
-		// are not full of spam entries. We could also sort by trustvalue, but we would risk to only
-		// send popular files this way on very hot keywords
+		// Two loops: the first ignores results with a trustvalue below 1, the second also
+		// considers those. That keeps the 300 max results from filling with spam. Sorting
+		// by trustvalue instead would risk sending only popular files on very hot keywords.
 		bool onlyTrusted = true;
 		DEBUG_ONLY(uint32_t dbgResultsTrusted = 0;)
 		DEBUG_ONLY(uint32_t dbgResultsUntrusted = 0;)
@@ -911,9 +908,9 @@ void CIndexed::SendValidKeywordResult(const CUInt128 &keyID,
 											port,
 											senderKey,
 											NULL);
-									// Reset the packet, keeping the
-									// header (Kad id, key id, number of
-									// entries)
+									// Reset the packet, keeping
+									// the header (Kad id, key
+									// id, entry count).
 									packetdata.SetLength(16 + 16 + 2);
 								}
 							}

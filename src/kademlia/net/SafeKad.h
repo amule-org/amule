@@ -70,13 +70,13 @@ struct SKadNodeAddress
 
 // A bounded map whose entries are evicted by last-reference age.
 //
-// The plain map alone would need an O(n) scan to find the least recently
-// referenced entry, which is the wrong complexity for a table that only evicts
-// while under a flood. The parallel set, keyed on (last reference, key), makes
-// both the oldest-first walk in Cleanup() and the make-room eviction O(log n).
+// The plain map alone would need an O(n) scan to find the least recently referenced entry, which is
+// the wrong complexity for a table that only evicts while under a flood. The parallel set, keyed on
+// (last reference, key), makes both the oldest-first walk in Cleanup() and the make-room eviction
+// O(log n).
 //
-// `Entry` must expose a `time_t m_lastReferenced`; every mutation goes through
-// Set() so the two containers cannot drift apart.
+// `Entry` must expose a `time_t m_lastReferenced`; every mutation goes through Set() so the two
+// containers cannot drift apart.
 template <class Key, class Entry> class CKadAgedMap
 {
 public:
@@ -130,54 +130,48 @@ private:
 	std::set<AgeKey> m_age;
 };
 
-// Identity and address protections layered on top of the standard 0.49b Kad
-// defences, which stay exactly as they are.
+// Identity and address protections layered on top of the standard 0.49b Kad defences, which stay
+// exactly as they are.
 //
-// What this adds: CPacketTracking rate-limits PACKETS per IP and opcode, and
-// says nothing about a node that behaves politely while presenting a new Kad ID
-// every few minutes -- which is how a routing table fills with sybils that each
-// look individually reasonable. The UDP key challenge proves an address controls
-// its own traffic, but does not remember that the same address failed us five
-// minutes ago. The tracked-node table, the one-hour minimum identity-change
-// interval and the problematic list cover those two gaps.
+// What this adds: CPacketTracking rate-limits PACKETS per IP and opcode, and says nothing about a
+// node that behaves politely while presenting a new Kad ID every few minutes -- which is how a
+// routing table fills with sybils that each look individually reasonable. The UDP key challenge
+// proves an address controls its own traffic, but does not remember that the same address failed us
+// five minutes ago. The tracked-node table, the one-hour minimum identity-change interval and the
+// problematic list cover those two gaps.
 //
-// The escalation ladder mirrors CPacketTracking's drop-then-ban shape: a first
-// identity rotation marks the address problematic (300 s), a rotation while
-// already problematic bans it (4 h). The ban is Kad-routing-local, separate from
-// CClientList's eD2k-wide ban.
+// The escalation ladder mirrors CPacketTracking's drop-then-ban shape: a first identity rotation
+// marks the address problematic (300 s), a rotation while already problematic bans it (4 h). The
+// ban is Kad-routing-local, separate from CClientList's eD2k-wide ban.
 //
-// Every table is bounded and evicts by last-reference age, so sustained inbound
-// traffic costs a fixed amount of memory. All entry points take `now`, so the
-// whole ladder is testable without waiting on a real clock.
+// Every table is bounded and evicts by last-reference age, so sustained inbound traffic costs a
+// fixed amount of memory. All entry points take `now`, so the whole ladder is testable without
+// waiting on a real clock.
 //
-// Seven deliberate divergences from eMuleAI, listed so they read as decisions
-// rather than transcription slips (emule-qt agrees with eMuleAI on all seven):
+// Seven deliberate divergences from eMuleAI, listed so they read as decisions rather than
+// transcription slips (emule-qt agrees with eMuleAI on all seven):
 //
-//  - eMuleAI bans on the FIRST verified sub-hour identity change; this needs two
-//    inside 300 s. Bans are per address while tracking is per (address, port),
-//    so under CGNAT a carrier reusing one external port for different
-//    subscribers legitimately shows different Kad IDs, and eMuleAI's rule would
-//    take out every aMule user behind that address for four hours.
-//  - eMuleAI gates banning on a user preference. The compile switch stands in
-//    for it while this is experimental; a runtime equivalent is a precondition
-//    for ever defaulting the switch ON.
-//  - TrackNode() returns whether it accepted, and IsBadNode() refuses on a
-//    rejected rotation. Upstream's TrackNode() is void and IsBadNode() answers
-//    IsBanned() alone, so it ACCEPTS the first rejected rotation. Refusing at
-//    once is what makes a rotation cost the sender its rotation.
-//  - A full table evicts its oldest entry; eMuleAI returns without acting once
-//    the tracked table reaches 10000 or the ban table 1000, so a flood that
-//    fills the table lets every later abuser through.
-//  - BanAddress() drops the banned address's tracked ports, which eMuleAI leaves
-//    behind as unreachable state.
-//  - The verified flag is also upgraded on a matching-ID sighting in
-//    IsBadNode(), not only inside TrackNode(). It moves one way only, and the
-//    one caller hardcoding verified=false is AddUnfiltered(), so a peer cannot
-//    drive the upgrade for somebody else.
-//  - The last-reference time is not refreshed on the refused path. eMuleAI
-//    refreshes on every lookup, letting an attacker's own traffic decide which
-//    entries survive eviction; here such an entry ages out instead, which also
-//    means forgetting a rotator gives it a clean slate.
+//  - eMuleAI bans on the FIRST verified sub-hour identity change; this needs two inside 300 s. Bans
+//    are per address while tracking is per (address, port), so under CGNAT a carrier reusing one
+//    external port for different subscribers legitimately shows different Kad IDs, and eMuleAI's
+//    rule would take out every aMule user behind that address for four hours.
+//  - eMuleAI gates banning on a user preference. The compile switch stands in for it while this is
+//    experimental; a runtime equivalent is a precondition for ever defaulting the switch ON.
+//  - TrackNode() returns whether it accepted, and IsBadNode() refuses on a rejected rotation.
+//    Upstream's TrackNode() is void and IsBadNode() answers IsBanned() alone, so it ACCEPTS the
+//    first rejected rotation. Refusing at once is what makes a rotation cost the sender its
+//    rotation.
+//  - A full table evicts its oldest entry; eMuleAI returns without acting once the tracked table
+//    reaches 10000 or the ban table 1000, so a flood that fills the table lets every later abuser
+//    through.
+//  - BanAddress() drops the banned address's tracked ports, which eMuleAI leaves behind as
+//    unreachable state.
+//  - The verified flag is also upgraded on a matching-ID sighting in IsBadNode(), not only inside
+//    TrackNode(). It moves one way only, and the one caller hardcoding verified=false is
+//    AddUnfiltered(), so a peer cannot drive the upgrade for somebody else.
+//  - The last-reference time is not refreshed on the refused path. eMuleAI refreshes on every
+//    lookup, letting an attacker's own traffic decide which entries survive eviction; here such an
+//    entry ages out instead, which also means forgetting a rotator gives it a clean slate.
 class CSafeKad
 {
 public:
@@ -185,9 +179,8 @@ public:
 	static const size_t MAX_PROBLEMATIC_NODES = 10000;
 	static const size_t MAX_BANNED_ADDRESSES = 1000;
 
-	// A node may change its Kad ID at most once an hour. Legitimate reasons
-	// exist (a fresh install, a wiped preferencesKad.dat), and an hour is
-	// far longer than any of them need.
+	// A node may change its Kad ID at most once an hour. Legitimate reasons exist (a fresh
+	// install, a wiped preferencesKad.dat), and an hour is far longer than any of them need.
 	static const time_t MIN_ID_CHANGE_INTERVAL = 3600;
 	// A ban lapses after four hours; past that the address is judged on its
 	// current behaviour alone.
@@ -195,11 +188,10 @@ public:
 	// A problematic address is ignored for 300 s.
 	static const time_t MAX_PROBLEMATIC_TIME = 300;
 
-	// Lowest advertised Kad version whose three-way handshake can prove which UDP
-	// port a node listens on (eMule 0.49b). Below it an unverified identity change
-	// cannot be told from a spoof, so it is refused outright rather than merely
-	// rate-limited. Written out here rather than taken from the protocol version
-	// table: this class adds nothing to the wire.
+	// Lowest advertised Kad version whose three-way handshake can prove which UDP port a node
+	// listens on (eMule 0.49b). Below it an unverified identity change cannot be told from a
+	// spoof, so it is refused outright rather than merely rate-limited. Written out here rather
+	// than taken from the protocol version table: this class adds nothing to the wire.
 	static const uint8_t MIN_PORT_VERIFIABLE_VERSION = 0x08;
 
 	// Eviction horizons for Cleanup(): an entry nothing has referenced for
@@ -212,15 +204,14 @@ public:
 
 	CSafeKad();
 
-	// Records the identity `id` at this address. A changed ID inside
-	// MIN_ID_CHANGE_INTERVAL marks the address problematic (and bans it if
-	// it was problematic already) and leaves the tracked ID untouched.
-	// Returns false if the identity change was rejected.
+	// Records the identity `id` at this address. A changed ID inside MIN_ID_CHANGE_INTERVAL
+	// marks the address problematic (and bans it if it was problematic already) and leaves the
+	// tracked ID untouched. Returns false if the identity change was rejected.
 	//
-	// `newlyBanned`, when given, reports whether the rejection escalated as
-	// far as a ban that was not already in force. This class deliberately
-	// links against nothing, so it cannot log or count the event itself --
-	// it says what it did and the caller decides what that is worth.
+	// `newlyBanned`, when given, reports whether the rejection escalated as far as a ban that
+	// was not already in force. This class deliberately links against nothing, so it cannot log
+	// or count the event itself -- it says what it did and the caller decides what that is
+	// worth.
 	bool TrackNode(uint32_t ip,
 		uint16_t port,
 		const CUInt128 &id,
@@ -232,23 +223,21 @@ public:
 	// answer, a rejected identity change).
 	void TrackProblematicNode(uint32_t ip, uint16_t port, time_t now);
 
-	// Bans an address for MAX_BAN_TIME. Use only where the address is
-	// demonstrably at fault: a node can be *reported* bad by a third party,
-	// and acting on that would make this a remote-controlled blocklist.
+	// Bans an address for MAX_BAN_TIME. Use only where the address is demonstrably at fault: a
+	// node can be *reported* bad by a third party, and acting on that would make this a remote-
+	// controlled blocklist.
 	//
-	// Returns true only when the address was not banned already. A repeat
-	// refreshes the existing ban and returns false, so a caller counting
-	// bans counts addresses rather than calls -- the drift CBanRecord was
-	// extracted to stop on the client-side list.
+	// Returns true only when the address was not banned already. A repeat refreshes the
+	// existing ban and returns false, so a caller counting bans counts addresses rather than
+	// calls -- the drift CBanRecord was extracted to stop on the client-side list.
 	bool BanAddress(uint32_t ip, time_t now);
 
-	// The one call the Kad packet paths need: true when this contact must
-	// not be used or inserted into the routing table.
+	// The one call the Kad packet paths need: true when this contact must not be used or
+	// inserted into the routing table.
 	//
-	// `onlyOneNodePerIP` rejects a second port on an address that already
-	// has a tracked node -- a real client uses one Kad port. It is gated on
-	// `kadVersion` by the caller's choice because the pre-0x08 handshake
-	// could not prove which port a node really listens on.
+	// `onlyOneNodePerIP` rejects a second port on an address that already has a tracked node --
+	// a real client uses one Kad port. It is gated on `kadVersion` by the caller's choice
+	// because the pre-0x08 handshake could not prove which port a node really listens on.
 	bool IsBadNode(uint32_t ip,
 		uint16_t port,
 		const CUInt128 &id,
@@ -287,12 +276,10 @@ private:
 		time_t m_lastReferenced;
 	};
 
-	// One step up the escalation ladder for a rejected identity change:
-	// problematic the first time, banned if the address was problematic
-	// already. Both refusal paths share this so that one rejection is
-	// always exactly one step.
-	// Returns true when the step ended in a ban that was not already in
-	// force, so TrackNode can pass that up to its caller.
+	// One step up the escalation ladder for a rejected identity change: problematic the first
+	// time, banned if the address was problematic already. Both refusal paths share this so
+	// that one rejection is always exactly one step. Returns true when the step ended in a ban
+	// that was not already in force, so TrackNode can pass that up to its caller.
 	bool Escalate(uint32_t ip, uint16_t port, time_t now);
 	// True when this address already has a tracked node on another port.
 	bool HasOtherTrackedPort(uint32_t ip, uint16_t port);

@@ -126,12 +126,10 @@ enum eStringParserStates
 };
 
 /**
- * State machine to extract format specifiers from the string
+ * State machine to extract format specifiers from the string.
  *
- * All format strings will be extracted, regardless whether they are valid or
- * not. Also '%%' is considered to be special format string which requires no
- * arguments, thus it will be extracted too (that is because it has to be
- * converted to '%').
+ * Every format string is extracted, valid or not. '%%' counts as a special format string that takes
+ * no arguments and is extracted too, since it has to be converted to '%'.
  */
 static eStringParserStates stringParser[][3] = {
 	/* %-sign,		type-char,	other */
@@ -158,10 +156,9 @@ enum eFormatParserStates
 };
 
 /**
- * State machine to parse format specifiers
+ * State machine to parse format specifiers.
  *
- * Format specifiers are expected to follow the following structure:
- *	%[argIndex$][Flags][Width][.Precision][Length]<Type>
+ * Format specifiers follow this structure: %[argIndex$][Flags][Width][.Precision][Length]<Type>
  */
 static eFormatParserStates formatParser[][7] = {
 	/* [1-9],	'0',		flagChar,	'.',		lengthChar,	typeChar,	'$' */
@@ -618,11 +615,9 @@ template <> void CFormat::ProcessArgument(FormatList::iterator it, const wxStrin
 template <> void CFormat::ProcessArgument(FormatList::iterator it, void *value)
 {
 	if ((it->type == 'p') || (it->type == 's')) {
-		// Modifiers (if any) are ignored for pointer conversions
-		// built-in Format for pointer is not consistent:
-		// - Windows: uppercase, no leading 0x
-		// - Linux:   leading zeros missing
-		// -> format it as hex
+		// Modifiers, if any, are ignored for pointer conversions. The built-in Format for
+		// pointers is not consistent -- Windows gives uppercase with no leading 0x, Linux
+		// drops leading zeros -- so format it as hex.
 		if (sizeof(void *) == 8) {
 			// 64 bit
 			it->result = wxString::Format(

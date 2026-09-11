@@ -34,10 +34,10 @@
 #include <wx/event.h>
 
 // Installed by a headless EC client (amuleapi) to replace the hard _exit() that
-// CRemoteConnect::OnLost() performs when the EC connection drops with a NULL
-// notifier. When set, OnLost invokes the handler and returns, letting the client
-// tear down on its own main thread rather than racing static destructors from
-// the asio callback. Clients that do not set it keep the fail-fast _exit().
+// CRemoteConnect::OnLost() performs when the connection drops with a NULL
+// notifier. OnLost then invokes the handler and returns, letting the client tear
+// down on its own main thread rather than racing static destructors from the asio
+// callback.
 void SetEcConnectionLostHandler(void (*handler)());
 
 class CECPacketHandlerBase
@@ -47,9 +47,9 @@ public:
 	virtual void HandlePacket(const CECPacket *) = 0;
 
 	// Called when a reconnect discards the pending-request FIFO: the reply this
-	// handler was waiting for died with the dropped socket, so any "request in
-	// flight" state must be rewound or the handler would refuse to re-request on
-	// the fresh session. Default no-op; CRemoteContainer rewinds its request SM.
+	// handler waited for died with the socket, so any "request in flight" state must
+	// be rewound or the handler would refuse to re-request. Default no-op;
+	// CRemoteContainer rewinds its request SM.
 	virtual void AbortPendingRequest() {}
 };
 
@@ -113,26 +113,24 @@ private:
 	bool m_canUTF8numbers;
 	bool m_canNotify;
 
-	// Offer transport encryption. On by default in every shipped client, so a
-	// daemon that speaks it gets an encrypted session without anyone opting in; the
+	// Offer transport encryption. On by default in every shipped client; the
 	// user-facing switches only exist to turn it off.
 	bool m_canAEAD;
 
-	// Our half of the key-derivation salt, generated per connection attempt
-	// and kept so the derivation can run once the daemon's half arrives in
-	// EC_OP_AUTH_SALT.
+	// Our half of the key-derivation salt, generated per connection attempt and kept
+	// so the derivation can run once the daemon's half arrives in EC_OP_AUTH_SALT.
 	std::vector<uint8_t> m_aeadClientNonce;
 
-	// The ciphers we offered, verbatim, plus the one the daemon chose. Bound
-	// into the key derivation so a modified capability exchange yields a
-	// different key on each side, and the first sealed packet fails instead
-	// of the session quietly dropping to something weaker.
+	// The ciphers we offered, verbatim, plus the one the daemon chose. Bound into the
+	// key derivation so a modified capability exchange yields a different key on each
+	// side and the first sealed packet fails, rather than quietly dropping to
+	// something weaker.
 	std::vector<uint8_t> m_aeadOffered;
 
 	// Our ephemeral X25519 pair for this connection attempt. The private half is
-	// wiped as soon as the shared secret is derived: it is what an attacker who
-	// recorded the session would need, and it exists for one handshake precisely so
-	// there is nothing left to compel or steal afterwards.
+	// wiped as soon as the shared secret is derived: it is what an attacker with a
+	// recording would need, and it exists for one handshake precisely so there is
+	// nothing left to compel or steal.
 	std::vector<uint8_t> m_aeadEphPriv;
 	std::vector<uint8_t> m_aeadEphPub;
 
@@ -141,15 +139,14 @@ private:
 	// m_connectionPassword with the value that does go on the wire.
 	//
 	// No longer key material: the channel key comes from the ephemeral exchange
-	// alone, or a password learned later would decrypt a recording made earlier.
-	// This is what the confirmation tags are keyed on instead.
+	// alone, or a password learned later would decrypt an earlier recording. The
+	// confirmation tags are keyed on this instead.
 	wxString m_aeadSecret;
 
-	// Our confirmation, sent with EC_OP_AUTH_PASSWD, and the daemon's, which
-	// must come back in EC_OP_AUTH_OK. With the key no longer derived from the
-	// password, these are what a relay cannot produce: it necessarily runs a
-	// different exchange on each leg, so the transcripts differ and at least
-	// one check fails.
+	// Our confirmation, sent with EC_OP_AUTH_PASSWD, and the daemon's, which must
+	// come back in EC_OP_AUTH_OK. With the key no longer derived from the password,
+	// these are what a relay cannot produce: it runs a different exchange on each
+	// leg, so the transcripts differ and at least one check fails.
 	std::vector<uint8_t> m_aeadClientConfirm;
 	std::vector<uint8_t> m_aeadExpectedServerConfirm;
 
@@ -174,99 +171,86 @@ private:
 	 */
 	bool VerifyServerConfirm(const CECPacket *reply) const;
 
-	// Set in ConnectToCore when the dialed address resolves to a loopback, RFC1918
-	// LAN or RFC3927 link-local IP. Drives the EC_TAG_PREFER_NO_ZLIB hint in the
-	// auth packet, and is only meaningful when m_canZLIB is also true.
+	// Set in ConnectToCore when the dialed address resolves to a loopback, RFC1918 or
+	// RFC3927 IP. Drives the EC_TAG_PREFER_NO_ZLIB hint, and means nothing unless
+	// m_canZLIB is also true.
 	bool m_preferNoZlib;
 
-	// User override to always negotiate ZLIB regardless of dialed server locality,
-	// for a WireGuard or Tailscale endpoint that resolves to an RFC1918 IP over
-	// slow Internet transit. Set via SetForceZlib().
+	// User override to always negotiate ZLIB regardless of locality, for a WireGuard
+	// or Tailscale endpoint that resolves to an RFC1918 IP over slow transit.
 	bool m_forceZlib;
 
-	// The daemon process this connection is talking to (EC_TAG_SESSION_ID
-	// from AUTH_OK), or 0 against a daemon too old to send it. ECIDs are
-	// only meaningful within one such session -- CECID hands them out from
-	// a counter that restarts with the process -- so a reconnect that comes
-	// back with a different value (or with 0, where we cannot tell) has to
-	// discard everything keyed by ECID rather than reconcile against it.
+	// The daemon process this connection is talking to (EC_TAG_SESSION_ID from
+	// AUTH_OK), or 0 against a daemon too old to send it. ECIDs mean something only
+	// within one session -- CECID counts from a process-local counter -- so a
+	// reconnect that comes back with a different value, or with 0, has to discard
+	// everything keyed by ECID rather than reconcile against it.
 	uint64 m_serverSessionId;
 
-	// Set when the server echoed EC_TAG_CAN_PARTIAL_UPDATE in AUTH_OK, confirming
-	// it speaks the partial-update INC_UPDATE protocol: skip the bulk "anything
-	// missing == deleted" loop and delete only what arrives in explicit
-	// EC_TAG_FILE_REMOVED markers. Old daemons do not echo it, and the legacy bulk
-	// path still works because the server emits alive-marker tags.
+	// Server echoed EC_TAG_CAN_PARTIAL_UPDATE: skip the bulk "anything missing ==
+	// deleted" loop and delete only what arrives in explicit EC_TAG_FILE_REMOVED
+	// markers. Old daemons do not echo it, and the legacy bulk path still works
+	// because the server emits alive-marker tags.
 	bool m_serverPartialUpdate;
 
-	// Set when the server echoed EC_TAG_CAN_CLIENT_HISTORY in AUTH_OK, confirming
-	// it answers EC_OP_GET_CLIENT_HISTORY. Not an optimisation: a daemon that
-	// predates the request reaches the unknown-opcode branch of ProcessRequest2(),
-	// which asserts before returning the EC_OP_FAILED it otherwise would.
+	// Server echoed EC_TAG_CAN_CLIENT_HISTORY: it answers EC_OP_GET_CLIENT_HISTORY.
+	// Not an optimisation -- a daemon that predates the request reaches the
+	// unknown-opcode branch of ProcessRequest2(), which asserts before returning the
+	// EC_OP_FAILED it otherwise would.
 	bool m_serverClientHistory;
 
-	// Set when the server echoed EC_TAG_CAN_PARTIAL_SEARCH in AUTH_OK, confirming
-	// it may skip unchanged SEARCH RESULTS on the multi-search union poll and
-	// signal their removal with EC_TAG_FILE_REMOVED.
+	// Server echoed EC_TAG_CAN_PARTIAL_SEARCH: it may skip unchanged SEARCH RESULTS
+	// on the multi-search union poll and signal their removal with
+	// EC_TAG_FILE_REMOVED.
 	//
-	// Deliberately separate from m_serverPartialUpdate, which is about the
-	// shared-file / download stream and is advertised by every client built since
-	// it landed. Reusing it here would make an older amuleGUI -- which advertises
-	// it, speaks multi-search, and still deletes any result missing from the reply
-	// -- silently drop its search results against a newer daemon.
+	// Separate from m_serverPartialUpdate, which is about the shared-file / download
+	// stream and is advertised by every client built since it landed. Reusing it here
+	// would make an older amuleGUI -- which advertises it, speaks multi-search, and
+	// still deletes any result missing from the reply -- silently drop its results.
 	bool m_serverPartialSearch;
 
-	// Client opts into the multi-search protocol (advertise
-	// `EC_TAG_CAN_MULTI_SEARCH`). Off by default; a client sets it via
-	// SetCanMultiSearch() only once it addresses searches by
-	// `EC_TAG_SEARCH_ID`. Read when building the login packet.
+	// Client opts into the multi-search protocol. Off by default; set via
+	// SetCanMultiSearch() only once the client addresses searches by
+	// `EC_TAG_SEARCH_ID`.
 	bool m_canMultiSearch;
-	// Set when the server echoed `EC_TAG_CAN_MULTI_SEARCH` in AUTH_OK,
-	// confirming it can run several EC searches at once addressed by ID.
-	// Old daemons don't echo it; the client then stays single-search.
+	// Server echoed `EC_TAG_CAN_MULTI_SEARCH`: it runs several EC searches at once,
+	// addressed by ID. Old daemons don't echo it and the client stays single-search.
 	bool m_serverMultiSearch;
 
-	// Set when the server echoed `EC_TAG_CAN_SHAREDDIRS_CONFIG` in AUTH_OK,
-	// confirming it serves EC_OP_GET/SET_SHARED_DIRS. Old daemons don't echo
-	// it; the GUI then leaves the shared-folders panel read-only, since a
-	// selection there could not reach the daemon.
+	// Server echoed `EC_TAG_CAN_SHAREDDIRS_CONFIG`: it serves
+	// EC_OP_GET/SET_SHARED_DIRS. Without the echo the GUI leaves the shared-folders
+	// panel read-only, since a selection there could not reach the daemon.
 	bool m_serverSharedDirsConfig;
 
-	// Set when the server echoed EC_TAG_CAN_SEARCH_LIST in AUTH_OK, confirming it
-	// serves EC_OP_SEARCH_LIST. Old daemons do not echo it, and the client must
-	// then not send the opcode at all: it predates #680, so the request falls into
-	// ProcessRequest2's unknown-opcode branch and trips a wxFAIL. Without the list
-	// the GUI simply sees only the searches it started itself.
+	// Server echoed EC_TAG_CAN_SEARCH_LIST: it serves EC_OP_SEARCH_LIST. Old daemons
+	// predate #680, so the client must not send the opcode at all -- the request
+	// falls into ProcessRequest2's unknown-opcode branch and trips a wxFAIL. Without
+	// the list the GUI sees only the searches it started itself.
 	bool m_serverSearchList;
 
-	// Steady-clock stamp of the last packet received from the daemon. Steady,
-	// not wall-clock: a system clock step (NTP, sleep/wake) must not be
-	// readable as a stalled connection.
+	// Steady-clock stamp of the last packet received from the daemon. Steady, not
+	// wall-clock: a system clock step (NTP, sleep/wake) must not read as a stall.
 	std::chrono::steady_clock::time_point m_lastReplyAt;
 
-	// Set when the server echoed EC_TAG_CAN_SEARCH_PROGRESS_UNION in AUTH_OK,
-	// confirming an EC_OP_SEARCH_PROGRESS carrying no EC_TAG_SEARCH_ID reports
-	// every open search as children rather than just one. Advertised only alongside
-	// multi-search, so an id-less request from a single-search client keeps its
-	// legacy meaning. Old daemons do not echo it and the client polls per id.
+	// Server echoed EC_TAG_CAN_SEARCH_PROGRESS_UNION: an EC_OP_SEARCH_PROGRESS with
+	// no EC_TAG_SEARCH_ID reports every open search as children rather than one.
+	// Advertised only alongside multi-search, so an id-less request from a
+	// single-search client keeps its legacy meaning.
 	bool m_serverSearchProgressUnion;
 
-	// Client opts into chat relay (advertise `EC_TAG_CAN_CHAT`). Off by
-	// default; a client with a chat window sets it via SetCanChat(). Read
-	// when building the login packet.
+	// Client opts into chat relay. Off by default; a client with a chat window sets
+	// it via SetCanChat().
 	bool m_canChat;
-	// Set when the server echoed `EC_TAG_CAN_CHAT` in AUTH_OK, confirming it
-	// buffers incoming peer messages for polling via EC_OP_GET_CHAT_MESSAGES.
-	// Old daemons don't echo it; the client then never polls for chat.
+	// Server echoed `EC_TAG_CAN_CHAT`: it buffers incoming peer messages for polling
+	// via EC_OP_GET_CHAT_MESSAGES. Old daemons don't echo it and we never poll.
 	bool m_serverChat;
 	// Client speaks the chat session ops (advertise `EC_TAG_CAN_CHAT_SESSIONS`).
 	bool m_canChatSessions;
-	// Set when the server echoed EC_TAG_CAN_CHAT_SESSIONS in AUTH_OK.
+	// Server echoed EC_TAG_CAN_CHAT_SESSIONS.
 	//
 	// Distinct from m_serverChat on purpose: EC_TAG_CAN_CHAT is echoed by daemons
 	// that predate the session ops entirely, so gating on it would send
-	// EC_OP_GET_CHAT_SESSIONS to a core with no case for it, straight into the
-	// unknown-opcode branch, which asserts before answering.
+	// EC_OP_GET_CHAT_SESSIONS straight into the unknown-opcode branch, which asserts.
 	bool m_serverChatSessions;
 
 	void WriteDoneAndQueueEmpty();
@@ -280,27 +264,24 @@ public:
 	/**
 	 * Offer (or refuse to offer) transport encryption.
 	 *
-	 * Defaults to on; the switches that reach this are all opt-OUT. Refusing
-	 * does not fail a connection -- it just leaves the session in clear, which
-	 * is what the daemon's own policy may then reject.
+	 * Defaults to on; the switches that reach this are all opt-OUT. Refusing does
+	 * not fail a connection -- it leaves the session in clear, which is what the
+	 * daemon's own policy may then reject.
 	 */
 	void SetCanAEAD(bool canAEAD) { m_canAEAD = canAEAD; }
 	bool GetCanAEAD() const { return m_canAEAD; }
 
-	/// True once keys were derived for this connection, i.e. the daemon
-	/// accepted the offer. Used to insist that EC_OP_AUTH_OK really did
-	/// arrive sealed.
+	/// True once keys were derived for this connection, i.e. the daemon accepted the
+	/// offer. Used to insist that EC_OP_AUTH_OK really did arrive sealed.
 	bool IsAEADNegotiated() const { return m_aeadNegotiated; }
 
-	// Force-ZLIB override: when true, ConnectToCore skips the
-	// loopback/LAN-IP locality detection and never asks the server
-	// to bypass ZLIB. Call BEFORE ConnectToCore() — the flag is read
-	// during connect.
+	// Force-ZLIB override: ConnectToCore then skips the loopback/LAN-IP locality
+	// detection and never asks the server to bypass ZLIB. Call BEFORE
+	// ConnectToCore(), which is where the flag is read.
 	void SetForceZlib(bool force) noexcept { m_forceZlib = force; }
 
-	// Opt into the multi-search protocol. Call BEFORE ConnectToCore(). Only
-	// a client that reads `EC_TAG_SEARCH_ID` and addresses searches by it
-	// should set this; otherwise it stays single-search.
+	// Opt into the multi-search protocol. Call BEFORE ConnectToCore(), and only from
+	// a client that reads `EC_TAG_SEARCH_ID` and addresses searches by it.
 	void SetCanMultiSearch(bool can) noexcept { m_canMultiSearch = can; }
 
 	// Opt into chat relay. Call BEFORE ConnectToCore(). Only a client with a
@@ -331,10 +312,10 @@ public:
 
 	bool ServerSupportsSearchProgressUnion() const { return m_serverSearchProgressUnion; }
 
-	// No `login`: EC authenticates on the password alone. The parameter
-	// existed since 2005, was declared WXUNUSED in the definition, and the
-	// three callers passed an empty string, a dialog field that was never
-	// filled in, and the literal "foobar" (issue #1266).
+	// No `login`: EC authenticates on the password alone. The parameter existed since
+	// 2005, was declared WXUNUSED in the definition, and the three callers passed an
+	// empty string, a dialog field that was never filled in, and the literal
+	// "foobar" (issue #1266).
 	bool ConnectToCore(const wxString &host,
 		int port,
 		const wxString &pass,
@@ -343,25 +324,22 @@ public:
 
 	const wxString &GetServerReply() const { return m_server_reply; }
 
-	// Version string of the connected aMule core, as reported in the
-	// EC_TAG_SERVER_VERSION tag of the AUTH_OK reply. Empty until the
-	// handshake completes (or if an old daemon omits the tag).
+	// Version of the connected core, from EC_TAG_SERVER_VERSION in AUTH_OK. Empty
+	// until the handshake completes, or if an old daemon omits the tag.
 	const wxString &GetServerVersion() const { return m_serverVersion; }
 
 	bool RequestFifoFull() { return m_req_count > m_req_fifo_thr; }
 
-	// Number of outstanding requests: pushed by SendRequest, popped when the
-	// matching reply is handled. Unlike m_req_count this never sees the
-	// handshake packets, so it is the honest in-flight count.
+	// Outstanding requests: pushed by SendRequest, popped when the matching reply is
+	// handled. Unlike m_req_count this never sees the handshake packets.
 	size_t GetReqFifoSize() const { return m_req_fifo.size(); }
 
 	// Milliseconds since the last packet arrived from the daemon, or since the
-	// connection was established if none has. Drives the reply watchdog: EC has
-	// no application-level keepalive, so a transport that silently stops
-	// delivering (an SSH tunnel with no ServerAliveInterval, a NAT dropping an
-	// idle mapping, a proxy) leaves the socket ESTABLISHED with every queue
-	// empty and nothing to report. Without this the only symptom is a frozen
-	// UI -- see the CloseAndDispatchLost() comment for the same class of bug.
+	// connection was established if none has. Drives the reply watchdog: EC has no
+	// application-level keepalive, so a transport that silently stops delivering (an
+	// SSH tunnel with no ServerAliveInterval, a NAT dropping an idle mapping, a
+	// proxy) leaves the socket ESTABLISHED with every queue empty, and the only
+	// symptom is a frozen UI.
 	uint64 MillisecondsSinceLastReply() const;
 
 	virtual void OnConnect(); // To override connection events
@@ -370,14 +348,12 @@ public:
 	void SendRequest(CECPacketHandlerBase *handler, const CECPacket *request);
 	void SendPacket(const CECPacket *request);
 
-	// Drop every handler still queued for an in-flight reply. The EC FIFO
-	// assumes the core answers every request in order (see SendRequest), but
-	// a dropped socket leaves the requests that were on the air unanswered;
-	// their handlers would otherwise stay in m_req_fifo and mis-pair with the
-	// reconnected session's replies (a stats reply routed to the file-list
-	// handler wipes the download / shared lists — aMule #444). Rewinds each
-	// orphaned handler's request state and zeroes the in-flight counter so the
-	// fresh session starts from a clean FCFS baseline.
+	// Drop every handler still queued for an in-flight reply. The EC FIFO assumes the
+	// core answers every request in order (see SendRequest), but a dropped socket
+	// leaves the requests that were on the air unanswered; their handlers would stay
+	// in m_req_fifo and mis-pair with the reconnected session's replies (a stats
+	// reply routed to the file-list handler wipes the download / shared lists, aMule
+	// #444). Rewinds each orphaned handler and zeroes the in-flight counter.
 	void DiscardRequestQueue();
 
 	/********************* EC API ********************/
@@ -644,11 +620,10 @@ private:
 	 * m_server_reply currently explains.
 	 *
 	 * Every path that ends a login attempt must call this. Plain CloseSocket()
-	 * does not dispatch OnLost (see the note on CloseAndDispatchLost in
-	 * ECSocket.h) precisely because ProcessAuthPacket is expected to notify for
-	 * itself, so a path that closes and returns without calling this leaves
-	 * amulegui waiting on its connect-timeout watchdog instead of showing the
-	 * reason.
+	 * does not dispatch OnLost (see CloseAndDispatchLost in ECSocket.h) precisely
+	 * because ProcessAuthPacket is expected to notify for itself, so a path that
+	 * closes and returns without calling this leaves amulegui waiting on its
+	 * connect-timeout watchdog instead of showing the reason.
 	 */
 	void NotifyConnectionResult(bool connected);
 };

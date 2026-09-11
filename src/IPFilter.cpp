@@ -88,9 +88,7 @@ typedef void (wxEvtHandler::*MuleIPFilterEventFunction)(CIPFilterEvent &);
 // Thread task for loading the ipfilter.dat files.
 
 /**
- * This task loads the two ipfilter.dat files, a task that
- * can take quite a while on a slow system with a large dat-
- * file.
+ * Loads the two ipfilter.dat files, which can take a while on a slow system with a large dat file.
  */
 class CIPFilterTask : public CThreadTask
 {
@@ -134,11 +132,11 @@ private:
 		}
 		for (IPMap::iterator it = m_result.begin(); it != m_result.end(); ++it) {
 			if (it->AccessLevel < accessLevel) {
-				// Range "length" is included-end - start, so length - 1. Encoded as
-				// 0 - 0x7fff for itself, and 0x8000 - 0xffff for 0xfff - 0x07ffffff:
-				// remove the msb, shift left 12 bits, add 0xfff, which covers 8
-				// consecutive class A nets. Larger ranges, and theoretical ones with
-				// uneven ends, have to be split.
+				// Range "length" is included-end minus start, so length - 1.
+				// Encoded as 0 - 0x7fff for itself, and 0x8000 - 0xffff for 0xfff -
+				// 0x07ffffff: remove the msb, shift left 12 bits, add 0xfff, which
+				// covers 8 consecutive class A nets. Larger ranges, and theoretical
+				// ones with uneven ends, have to be split.
 				uint32 startIP = it.keyStart();
 				uint32 realLength = it.keyEnd() - it.keyStart() + 1;
 #ifdef __DEBUG__
@@ -163,9 +161,9 @@ private:
 					m_rangeLengths.push_back(pushLength);
 #ifdef __DEBUG__
 					if (m_storeDescriptions) {
-						// std::string has no ref counting, so swap it
-						// (it's used so we need half the space than wxString with
-						// wide chars)
+						// std::string has no ref counting, so swap it. It
+						// is used because it needs half the space of a
+						// wxString with wide chars.
 						if (descp) {
 							// we split the range so we have to duplicate it
 							m_rangeNames.push_back(*descp);
@@ -192,7 +190,7 @@ private:
 	}
 
 	/**
-	 * This structure is used to contain the range-data in the rangemap.
+	 * Holds the range data in the rangemap.
 	 */
 	struct rangeObject
 	{
@@ -224,17 +222,9 @@ private:
 	IPMap m_result;
 
 	/**
-	 * Helper function.
-	 *
-	 * @param IPstart The start of the IP-range.
-	 * @param IPend The end of the IP-range, must be less than or equal to IPstart.
-	 * @param AccessLevel The AccessLevel of this range.
-	 * @param Description The associated description of this range.
-	 * @return true if the range was added, false if it was discarded.
-	 *
-	 * This function inserts the specified range into the IPMap. Invalid
-	 * ranges where the AccessLevel is not within the range 0..255, or
-	 * where IPEnd < IPstart not inserted.
+	 * Inserts the range [@a IPStart, @a IPEnd] into the IPMap with @a AccessLevel and @a
+	 * Description, returning whether it was added. An invalid range -- an AccessLevel outside
+	 * 0..255, or IPEnd < IPStart -- is discarded.
 	 */
 	bool AddIPRange(uint32 IPStart, uint32 IPEnd, uint16 AccessLevel, const char *DEBUG_ONLY(Description))
 	{
@@ -258,10 +248,8 @@ private:
 	}
 
 	/**
-	 * Loads a IP-list from the specified file, can be text or zip.
-	 *
-	 * @return True if the file was loaded, false otherwise.
-	 **/
+	 * Loads an IP list from @a file, text or zip. Returns whether the file was loaded.
+	 */
 	int LoadFromFile(const wxString &file)
 	{
 		const CPath path = CPath(file);
@@ -270,9 +258,9 @@ private:
 			return 0;
 		}
 
-		// An empty file is a valid "no ranges" list -- a user who cleared it, or an
-		// auto-update that has not populated it yet -- so treat it as 0 ranges rather
-		// than letting the format detector report "unknown format" (issue #580).
+		// An empty file is a valid "no ranges" list -- a user who cleared it, or an auto-
+		// update that has not populated it yet -- so treat it as 0 ranges rather than
+		// letting the format detector report "unknown format" (issue #580).
 		if (path.GetFileSize() == 0) {
 			return 0;
 		}
@@ -344,8 +332,7 @@ wxBEGIN_EVENT_TABLE(CIPFilter, wxEvtHandler)
 wxEND_EVENT_TABLE()
 
 /**
- * This function creates a text-file containing the specified text,
- * but only if the file does not already exist.
+ * Creates a text file containing the specified text, but only if the file does not already exist.
  */
 static bool CreateDummyFile(const wxString &filename, const wxString &text)
 {
@@ -471,12 +458,12 @@ void CIPFilter::Update(const wxString &strURL)
 {
 	if (!strURL.IsEmpty()) {
 		m_URL = strURL;
-		// "Update from this URL" and "remember this URL" are one action, as they
-		// already are for the ed2k server list and the Kad node list. It belongs here
-		// rather than in the EC handler because this function is the single funnel
-		// for every caller -- the EC op, the Preferences "Update now" button and the
-		// startup auto-update. Without it a URL used for a manual update is forgotten
-		// and the next auto-update falls back to the old one.
+		// "Update from this URL" and "remember this URL" are one action, as they already
+		// are for the ed2k server list and the Kad node list. It belongs here rather than
+		// in the EC handler because this function is the single funnel for every caller --
+		// the EC op, the Preferences "Update now" button and the startup auto-update.
+		// Without it a URL used for a manual update is forgotten and the next auto-update
+		// falls back to the old one.
 		//
 		// Assign from m_URL, not strURL: the auto-update path hands us
 		// thePrefs::IPFilterURL() itself, so that would be a self-assignment.

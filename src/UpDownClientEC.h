@@ -42,15 +42,14 @@ class CUpDownClient : public CECID
 
 private:
 	/**
-	 * Please note that only the ClientList is allowed to delete the clients.
+	 * Only the ClientList is allowed to delete the clients.
 	 */
 	~CUpDownClient();
 
 	/**
-	 * Reference count which is increased whenever client is linked to a clientref.
-	 * Clients are to be stored only by ClientRefs, CUpDownClient * are for temporary
-	 * use only.
-	 * Linking is done only by CClientRef which is friend, so methods are private.
+	 * Reference count, increased whenever the client is linked to a clientref. Clients are
+	 * stored only by ClientRefs; CUpDownClient * is for temporary use only. Linking is done
+	 * only by the friend class CClientRef, so the methods are private.
 	 */
 	uint16 m_linked;
 #ifdef DEBUG_ZOMBIE_CLIENTS
@@ -94,9 +93,9 @@ public:
 	CFriend *GetFriend() const { return m_Friend; }
 	bool GetFriendSlot() const { return m_bFriendSlot; }
 	wxString GetFullIP() const { return Uint32toStringIP(m_dwUserIP); }
-	// Numeric counterpart, matching the core client. amulegui never resolves
-	// locally -- it takes the from-core branch in GetDisplayCountryCode -- but
-	// that helper is shared with monolithic aMule and takes the numeric form.
+	// Numeric counterpart, matching the core client. amulegui never resolves locally -- it
+	// takes the from-core branch in GetDisplayCountryCode -- but that helper is shared with
+	// monolithic aMule and takes the numeric form.
 	uint32 GetFullIPNumeric() const { return m_dwUserIP; }
 	uint16 GetKadPort() const { return m_nKadPort; }
 	float GetKBpsDown() const { return m_kBpsDown; }
@@ -128,12 +127,10 @@ public:
 	const CMD4Hash &GetUserHash() const { return m_UserHash; }
 	uint32 GetUserIDHybrid() const { return m_nUserIDHybrid; }
 	const wxString &GetUserName() const { return m_Username; }
-	// Peer country ISO code delivered by the core over EC (#439). Unconditional
-	// (libmaxminddb-free) so the shared client-list drawing code compiles against
-	// the remote GUI's EC client whether or not this build has the resolver.
-	// m_countryFromCore marks that the tag was present, so an empty code
-	// ("unknown") is distinguished from the no-tag case (the remote GUI never
-	// resolves locally regardless).
+	// Peer country ISO code delivered by the core over EC (#439). Unconditional, and
+	// libmaxminddb-free, so the shared client-list drawing code compiles against the remote
+	// GUI's EC client whether or not this build has the resolver. m_countryFromCore marks that
+	// the tag was present, so an empty code ("unknown") is distinguished from the no-tag case.
 	const wxString &GetCountryCode() const { return m_countryCode; }
 	bool IsCountryFromCore() const { return m_countryFromCore; }
 	void SetCountryCode(const wxString &code)

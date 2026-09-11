@@ -33,11 +33,10 @@
 
 namespace
 {
-// The config format that predates this store wrote CMuleListCtrl::MLOrder
-// values verbatim, so reading one back means translating those bits rather
-// than assuming they match what this store writes today. Spelled out here
-// instead of including MuleListCtrl.h: the store serves both list bases and
-// must not adopt either one's vocabulary (see CListColumnStore::SortFlag).
+// The config format that predates this store wrote CMuleListCtrl::MLOrder values verbatim, so
+// reading one back means translating those bits rather than assuming they match what this store
+// writes today. Spelled out here instead of including MuleListCtrl.h: the store serves both list
+// bases and must not adopt either one's vocabulary (see CListColumnStore::SortFlag).
 const unsigned long kLegacySortDescending = 0x1000;
 const unsigned long kLegacySortAlternate = 0x2000;
 const unsigned long kLegacySortMask = kLegacySortDescending | kLegacySortAlternate;
@@ -60,9 +59,9 @@ void CListColumnStore::RegisterColumn(int index, int defaultWidth, const wxStrin
 	}
 
 	// ... and of indices. Every lookup here (GetColumnName, GetColumnDefaultWidth,
-	// GetColumnIndex) matches on index and returns the first entry that does, so a
-	// second registration of the same index is not an alternative -- it is dead
-	// weight that shadows nothing and reports nothing.
+	// GetColumnIndex) matches on index and returns the first entry that does, so a second
+	// registration of the same index is not an alternative -- it is dead weight that shadows
+	// nothing and reports nothing.
 	for (const ColNameEntry &entry : m_column_names) {
 		if (index == entry.index) {
 			wxFAIL_MSG(wxString::Format(
@@ -70,13 +69,12 @@ void CListColumnStore::RegisterColumn(int index, int defaultWidth, const wxStrin
 		}
 	}
 #endif
-	// Kept sorted by index. Entries are NOT renumbered around an insert: index is
-	// the caller's own column id -- a stable #define for the wxDataViewCtrl lists,
-	// the wxListCtrl column position for the legacy ones -- and every lookup above
-	// matches the value the caller passes back in. Shifting stored indices would
-	// break that correspondence, and since a key maps to a column through it, the
-	// on-disk TableWidths*/TableOrdering* entries would start addressing the wrong
-	// columns.
+	// Kept sorted by index. Entries are NOT renumbered around an insert: index is the caller's
+	// own column id -- a stable #define for the wxDataViewCtrl lists, the wxListCtrl column
+	// position for the legacy ones -- and every lookup above matches the value the caller
+	// passes back in. Shifting stored indices would break that correspondence, and since a key
+	// maps to a column through it, the on-disk TableWidths*/TableOrdering* entries would start
+	// addressing the wrong columns.
 	ColNameList::iterator it = m_column_names.begin();
 	while (it != m_column_names.end() && it->index < index) {
 		++it;
@@ -250,9 +248,8 @@ bool CListColumnStore::LoadSettings(
 		return ParseOldConfigEntries(sortOrders, columnWidths, widget, oldColumnOrder, outSortOrders);
 	}
 
-	// Sort orders are stored in order primary, secondary, ...
-	// The caller applies them via SetSorting(), which treats the *last*
-	// call as primary, so hand them back in reverse (secondary, ..., primary).
+	// Sort orders are stored primary, secondary, ... The caller applies them via SetSorting(),
+	// which treats the *last* call as primary, so hand them back in reverse.
 	wxStringTokenizer tokens(sortOrders, ",");
 	std::list<wxString> tokenList;
 	while (tokens.HasMoreTokens()) {

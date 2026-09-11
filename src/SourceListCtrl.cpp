@@ -48,13 +48,12 @@ static CGenericClientListCtrlColumn s_sources_column_info[] = {
 };
 
 /**
- * Renders ColumnUserProgress: a client's per-part chunk bar (5 states: no
- * part / have-complete / downloading / next-requested / have-but-need), or,
- * for an A4AF row, a bordered "A4AF: <filename>" text badge instead of a bar
- * -- a real per-row renderer branch (not a bar overlay), replacing
- * DrawSourceStatusBar's A4AF case (GenericClientListCtrl.cpp, pre-port)
- * exactly, including its own themed border (own SetPen, not the base's black
- * one -- the base's Render() is not called for this branch at all).
+ * Renders ColumnUserProgress: a client's per-part chunk bar (5 states: no part / have-complete /
+ * downloading / next-requested / have-but-need), or, for an A4AF row, a bordered "A4AF: <filename>"
+ * text badge instead of a bar. A real per-row renderer branch, not a bar overlay, reproducing
+ * DrawSourceStatusBar's A4AF case (GenericClientListCtrl.cpp, pre-port) exactly, including its own
+ * themed border -- its own SetPen, not the base's black one, the base's Render() not being called
+ * for this branch at all.
  */
 class CSourceBarRenderer : public CMuleBarRenderer
 {
@@ -98,9 +97,8 @@ private:
 		wxCoord txtheight;
 		dc->GetTextExtent(buffer, &txtwidth, &txtheight);
 
-		// Theme-aware text + border colour (was *wxBLACK / *wxBLACK_PEN,
-		// invisible on dark themes -- the badge sits on the row stripe, not
-		// on a known light background).
+		// Theme-aware text and border colour. It was *wxBLACK / *wxBLACK_PEN, invisible on
+		// dark themes: the badge sits on the row stripe, not on a known light background.
 		const wxColour badgeColour = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT);
 		dc->SetTextForeground(badgeColour);
 		dc->DrawText(

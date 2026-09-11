@@ -195,26 +195,22 @@ TEST(NetworkFunctions, IsGoodIP)
 	}
 }
 
-// amuleIPV4Address is v4-only by contract: the endpoint feeds uint32 IPs
-// and v4 sockets throughout aMule. Name resolution used to hand back
-// whatever the platform resolver ranked first, which on a dual-stack name
-// is routinely an AAAA record -- issue #695.
+// amuleIPV4Address is v4-only by contract: the endpoint feeds uint32 IPs and v4 sockets throughout
+// aMule. Name resolution used to hand back whatever the platform resolver ranked first, which on a
+// dual-stack name is routinely an AAAA record (issue #695).
 //
-// Every case here resolves offline: numeric addresses and "localhost" (hosts
-// file) need no DNS server, so the test cannot go flaky when a public zone
-// changes its records.
+// Every case here resolves offline: numeric addresses and "localhost" (hosts file) need no DNS
+// server, so the test cannot go flaky when a public zone changes its records.
 //
-// The numeric IPv6 literals are what actually pin the regression on every
-// platform. They are not dotted quads, so they fall through to the resolver,
-// and an unrestricted query answers with the v6 address -- which the old code
-// accepted. Ordering plays no part, so unlike "localhost" (which only exposes
-// the bug where ::1 sorts first, i.e. Windows) these fail on macOS and Linux
-// too if the family restriction is ever dropped again.
+// The numeric IPv6 literals are what actually pin the regression on every platform. They are not
+// dotted quads, so they fall through to the resolver, and an unrestricted query answers with the v6
+// address -- which the old code accepted. Ordering plays no part, so unlike "localhost", which only
+// exposes the bug where ::1 sorts first (Windows), these fail on macOS and Linux too if the family
+// restriction is ever dropped again.
 //
-// Note what is NOT asserted: a specific resolved address. Which A record
-// surfaces varies by platform and between runs (round-robin, resolver
-// ordering), so pinning one would be flaky by construction. The invariant is
-// the address family.
+// Note what is NOT asserted: a specific resolved address. Which A record surfaces varies by
+// platform and between runs (round-robin, resolver ordering), so pinning one would be flaky by
+// construction. The invariant is the address family.
 TEST(NetworkFunctions, HostnameResolvesToIPv4Only)
 {
 	amuleIPV4Address addr;

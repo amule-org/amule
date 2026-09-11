@@ -46,10 +46,9 @@ wxEND_EVENT_TABLE()
 
 namespace
 {
-// Registry of open CCommentDialogLst instances. See CCommentDialog.cpp
-// for the rationale — the broadcast handler in GuiEvents.cpp iterates
-// this on every CKnownFile destruction and dismisses any dialog whose
-// m_file has just been freed (UAF prevention; #755 / #748 family).
+// Registry of open CCommentDialogLst instances. See CCommentDialog.cpp for the rationale -- the
+// broadcast handler in GuiEvents.cpp walks this on every CKnownFile destruction and dismisses any
+// dialog whose m_file has just been freed (UAF prevention; #755 / #748 family).
 std::set<CCommentDialogLst *> &OpenInstances()
 {
 	static std::set<CCommentDialogLst *> instances;
@@ -57,9 +56,6 @@ std::set<CCommentDialogLst *> &OpenInstances()
 }
 } // namespace
 
-/*
- * Constructor
- */
 CCommentDialogLst::CCommentDialogLst(wxWindow *parent, CAbstractFile *file)
 : wxDialog(parent,
 	  -1,
@@ -125,16 +121,16 @@ void CCommentDialogLst::OnBnClickedSearchKad(wxCommandEvent &WXUNUSED(evt))
 	}
 
 #ifdef CLIENT_GUI
-	// amulegui has no local Kad; ask the daemon to run the lookup. Retrieved notes
-	// arrive through the normal partfile-comments update. Mark the search running
-	// optimistically — the daemon's real state overwrites this on the next update.
+	// amulegui has no local Kad; ask the daemon to run the lookup. Retrieved notes arrive
+	// through the normal partfile-comments update. Mark the search running optimistically --
+	// the daemon's real state overwrites this on the next update.
 	theApp->sharedfiles->SearchKadNotes(m_file);
 	m_file->SetKadCommentSearchRunning(true);
 #else
 	if (!m_file->RequestKadNoteSearch()) {
-		// Kad down, or a search (often the file's own source search) is already
-		// using this hash. The daemon log (logKadSearch) records the exact reason;
-		// reuse existing strings here to avoid new catalog entries.
+		// Kad down, or a search (often the file's own source search) is already using this
+		// hash. The daemon log (logKadSearch) records the exact reason; reuse existing
+		// strings here to avoid new catalog entries.
 		FindWindow(IDC_CMSTATUS)
 			->SetLabel(theApp->IsConnectedKad()
 					   ? _("Could not start a Kad search")
@@ -186,9 +182,9 @@ void CCommentDialogLst::OnKadRefreshTimer(wxTimerEvent &WXUNUSED(evt))
 
 namespace
 {
-//! Smiley for a rating as SFileRating carries it: -1 for absent, otherwise
-//! 0..5 the way GetRateString() reads it. Anything without a real rating gets
-//! no image rather than a "not rated" glyph, so the column stays quiet.
+//! Smiley for a rating as SFileRating carries it: -1 for absent, otherwise 0..5 the way
+//! GetRateString() reads it. Anything without a real rating gets no image rather than a "not rated"
+//! glyph, so the column stays quiet.
 int RatingImage(sint16 rating)
 {
 	if (rating <= 0) {
@@ -210,10 +206,9 @@ void CCommentDialogLst::UpdateList()
 		if (!thePrefs::IsCommentFiltered(it->Comment)) {
 			m_list->InsertItem(count, it->UserName);
 			m_list->SetItem(count, 1, it->FileName);
-			// Ratings reach here as 0..5: the wire value is a uint8 that
-			// CUpDownClient clamps to 0 when it exceeds 5, and 0 is a
-			// comment with no rating. The old -1 branch, which drew a
-			// stray untranslated "on", could not be reached.
+			// Ratings reach here as 0..5: the wire value is a uint8 that CUpDownClient
+			// clamps to 0 when it exceeds 5, and 0 is a comment with no rating. The old
+			// -1 branch, which drew a stray untranslated "on", could not be reached.
 			m_list->SetItem(count, 2, GetRateString(it->Rating));
 			const int ratingImage = RatingImage(it->Rating);
 			if (ratingImage >= 0) {
@@ -267,10 +262,9 @@ void CCommentDialogLst::OnColumnClick(wxListEvent &evt)
 	// collide with a sign), direction into the sign.
 	m_list->SortItems(SortProc, m_sortDescending ? -(col + 1) : (col + 1));
 
-	// Plain wxListCtrl tracks no sort state of its own, so the header glyph has
-	// to be driven explicitly. All three ports draw it: macOS and GTK through
-	// the generic implementation wx/listctrl.h routes them to, Windows through
-	// wxMSW's own override.
+	// Plain wxListCtrl tracks no sort state of its own, so the header glyph has to be driven
+	// explicitly. All three ports draw it: macOS and GTK through the generic implementation
+	// wx/listctrl.h routes them to, Windows through wxMSW's own override.
 	m_list->ShowSortIndicator(col, !m_sortDescending);
 }
 

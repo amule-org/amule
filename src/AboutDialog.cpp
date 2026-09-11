@@ -45,9 +45,9 @@ const int ID_CHECK_UPDATES = wxID_HIGHEST + 1;
 const wxString RELEASES_URL = wxT("https://github.com/amule-org/amule/releases/latest");
 #endif // ENABLE_VERSION_CHECK
 
-// A hyperlink whose colour is uniform (system link colour) in every state —
-// dropping wxHyperlinkCtrl's red rollover / purple visited defaults so links
-// look native and consistent on GTK / macOS / MSW.
+// A hyperlink whose colour is uniform (the system link colour) in every state -- dropping
+// wxHyperlinkCtrl's red rollover / purple visited defaults so links look native and consistent on
+// GTK / macOS / MSW.
 wxHyperlinkCtrl *MakeLink(wxWindow *parent, const wxString &url)
 {
 	wxHyperlinkCtrl *link = new wxHyperlinkCtrl(parent, wxID_ANY, url, url);
@@ -67,9 +67,9 @@ CAboutDlg::CAboutDlg(wxWindow *parent)
 , m_checkButton(NULL)
 #endif
 {
-	// Header (version + description) and the credits block reuse the exact
-	// strings the old wxMessageBox About used, so their existing translations
-	// carry over unchanged; trailing whitespace is trimmed for the layout.
+	// Header (version + description) and the credits block reuse the exact strings the old
+	// wxMessageBox About used, so their existing translations carry over unchanged; trailing
+	// whitespace is trimmed for the layout.
 	wxString head;
 #ifdef CLIENT_GUI
 	head << _("aMule remote control ") << VERSION;
@@ -91,17 +91,15 @@ CAboutDlg::CAboutDlg(wxWindow *parent)
 	// aMule logo on the left, matching the previous wxMessageBox About.
 	//
 	// A bundle rather than a bitmap: GetBitmap() resolves through
-	// CamuleArtProvider::CreateBitmap(), which decodes the embedded PNG and
-	// nothing else, so the logo arrived at its 32px natural size and the
-	// compositor scaled it up on a HiDPI display. Only the bundle path
-	// consults the icon's SVG twin, which renders at whatever size the
-	// display actually wants.
+	// CamuleArtProvider::CreateBitmap(), which decodes the embedded PNG and nothing else, so
+	// the logo arrived at its 32px natural size and the compositor scaled it up on a HiDPI
+	// display. Only the bundle path consults the icon's SVG twin, which renders at whatever
+	// size the display actually wants.
 	//
-	// 42px rather than the icon's 32px natural size: the dialog has the
-	// room, and the artwork this replaced was 32x42, so the logo keeps the
-	// height it had before it was squared off. The size is the bundle's
-	// logical one, so it is still rendered from the SVG at whatever the
-	// display scale asks for rather than stretched to fit.
+	// 42px rather than the icon's 32px natural size: the dialog has the room, and the artwork
+	// this replaced was 32x42, so the logo keeps the height it had before it was squared off.
+	// The size is the bundle's logical one, so it is still rendered from the SVG at the
+	// display's scale rather than stretched to fit.
 	const wxBitmapBundle logoBmp =
 		wxArtProvider::GetBitmapBundle(wxT("amule:amule"), wxART_MESSAGE_BOX, wxSize(42, 42));
 

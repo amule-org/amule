@@ -87,9 +87,8 @@ private:
 	uint16 m_nLastUsedPort;
 	wxString m_strName;
 
-	// Persistent friend-slot flag. The live CUpDownClient's m_bFriendSlot
-	// is a per-session reflection of this; this is the source of truth
-	// across disconnects and daemon restarts.
+	// Persistent friend-slot flag. The live CUpDownClient's m_bFriendSlot is a per-session
+	// reflection of this; this is the source of truth across disconnects and daemon restarts.
 	bool m_HasFriendSlot;
 
 	// write-only info, never used (kept in order not to break the save file)

@@ -142,9 +142,9 @@ public:
 	void AddServerMessageLine(wxString &message);
 	void ResetLog(int id);
 
-	// Bracket a burst of AddLogLine() calls so the log view is repainted
-	// and scrolled once for the whole batch instead of per line (issue
-	// #445 — a remote-GUI first-sync backlog is thousands of lines).
+	// Bracket a burst of AddLogLine() calls so the log view is repainted and scrolled once for
+	// the whole batch instead of per line (issue #445 -- a remote-GUI first-sync backlog is
+	// thousands of lines).
 	void BeginLogBatch();
 	void EndLogBatch();
 
@@ -156,16 +156,15 @@ public:
 	bool m_coreEncrypted = false;
 
 	void ShowUserCount(const wxString &info = "");
-	// Reveal and populate the status-bar core-version field. `coreVersion`
-	// is what the core reported over EC; `endpoint` is the host:port it
-	// was reached on. amulegui only.
+	// Reveal and populate the status-bar core-version field. `coreVersion` is what the core
+	// reported over EC; `endpoint` is the host:port it was reached on. amulegui only.
 	void ShowCoreVersion(const wxString &coreVersion,
 		const wxString &endpoint,
 		const wxString &encryption,
 		bool encrypted);
-	// Details dialog for the status-bar core-version field. A dialog rather
-	// than a tooltip: the bar shifts sideways whenever the speed text
-	// changes width, which cancels a hover before it can fire.
+	// Details dialog for the status-bar core-version field. A dialog rather than a tooltip: the
+	// bar shifts sideways whenever the speed text changes width, which cancels a hover before
+	// it can fire.
 	void OnCoreVersionClicked(wxMouseEvent &event);
 	void ShowConnectionState();
 	void ShowTransferRate();
@@ -187,31 +186,24 @@ public:
 	DialogType GetActiveDialog() { return m_nActiveDialog; }
 	void SetActiveDialog(DialogType type, wxWindow *dlg);
 
-	// Programmatically switch to the Search panel exactly as clicking the Search
-	// toolbar button would — panel, toolbar button state, ED2K-links handler and
-	// the handler's bookkeeping all stay consistent. Used when a "View Files"
-	// browse opens a tab from another panel.
+	// Programmatically switch to the Search panel exactly as clicking the Search toolbar button
+	// would -- panel, toolbar button state, ED2K-links handler and the handler's bookkeeping
+	// all stay consistent. Used when a "View Files" browse opens a tab from another panel.
 	void ShowSearchWindow();
 
-	/**
-	 * Helper function for deciding if a certain dlg is visible.
-	 *
-	 * @return True if the dialog is visible to the user, false otherwise.
-	 */
+	/// True if the dialog is visible to the user.
 	bool IsDialogVisible(DialogType dlg)
 	{
 		return m_nActiveDialog == dlg && m_is_safe_state /* && !IsIconized() */;
 	}
 
 	/**
-	 * Makes the main window visible, and applies the settings that only
-	 * take effect once it is (the toolbar re-realize, start-minimized).
+	 * Makes the main window visible, and applies the settings that only take effect once it is
+	 * (the toolbar re-realize, start-minimized).
 	 *
-	 * Called from the constructor on amulegui. The monolithic build calls
-	 * it when the startup splash closes instead, so the window appears
-	 * ready rather than sitting unresponsive behind the splash.
-	 *
-	 * Idempotent: does nothing if the window is already shown.
+	 * Called from the constructor on amulegui. The monolithic build calls it when the startup
+	 * splash closes instead, so the window appears ready rather than sitting unresponsive
+	 * behind the splash. Idempotent: does nothing if the window is already shown.
 	 */
 	void ShowStartupWindow();
 
@@ -229,36 +221,23 @@ public:
 	void RemoveSystray();
 
 	/**
-	 * Renders a free-space figure into one of the panel labels.
-	 *
-	 * Shared by the Downloads and Shared Files panels so both read the same
-	 * and neither has to re-decide what an unavailable figure looks like:
-	 * FREE_SPACE_UNKNOWN empties the label rather than printing a size, so
-	 * an unreachable mount shows nothing instead of "0 bytes free".
-	 *
-	 * @param warn Draw it in red -- the caller's judgement, since only the
-	 *             Downloads panel has something to compare against.
-	 * @param separator Prefix for a label that continues a line, empty for
-	 *                  one that starts its own.
-	 */
-	/**
 	 * Refreshes the free-space label of whichever panel is on screen.
 	 *
-	 * Driven by the GUI timer, and again when a panel becomes active so it
-	 * doesn't show the figure it had when it was last visible until the
-	 * next tick.
+	 * Driven by the GUI timer, and again when a panel becomes active so it does not show the
+	 * figure it had when it was last visible until the next tick.
 	 */
 	void UpdateFreeSpaceLabels();
 
 	/**
-	 * Writes a free-space figure into @a label, red when @a warn.
+	 * Writes a free-space figure into @a label, red when @a warn. FREE_SPACE_UNKNOWN empties
+	 * the label rather than printing a size, so an unreachable mount shows nothing instead of
+	 * "0 bytes free".
 	 *
-	 * @a separatorLabel is the "|" joining this figure to the field before
-	 * it, in a label of its own because a wxStaticText colours all or
-	 * nothing -- kept here rather than at the call sites so it is set and
-	 * cleared with the figure it belongs to, and never left trailing the
-	 * field before it when there is nothing to show. Panels that show the
-	 * figure on its own pass nothing.
+	 * @a separatorLabel is the "|" joining this figure to the field before it, in a label of
+	 * its own because a wxStaticText colours all or nothing -- kept here rather than at the
+	 * call sites so it is set and cleared with the figure it belongs to, and never left
+	 * trailing the field before it when there is nothing to show. Panels that show the figure
+	 * on its own pass nothing.
 	 */
 	static void SetFreeSpaceLabel(
 		wxStaticText *label, sint64 freeSpace, bool warn, wxStaticText *separatorLabel = nullptr);
@@ -266,38 +245,31 @@ public:
 	/**
 	 * Brings the main window back from every state that hides it.
 	 *
-	 * The one restore path, shared by the tray icon (click, menu), the
-	 * duplicate-launch RAISE_DIALOG signal and the macOS Dock-reopen
-	 * handler of both applications. Written once because the hidden
-	 * states compose: the window can be hidden (Show(false) via
-	 * HideOnClose or minimize-to-tray), iconized to the Dock/taskbar,
-	 * merely behind another application's window, or -- on macOS -- any
-	 * of those with the Dock icon dropped as well.
+	 * The one restore path, shared by the tray icon (click, menu), the duplicate-launch
+	 * RAISE_DIALOG signal and the macOS Dock-reopen handler of both applications. Written once
+	 * because the hidden states compose: the window can be hidden (Show(false) via HideOnClose
+	 * or minimize-to-tray), iconized to the Dock/taskbar, merely behind another application's
+	 * window, or -- on macOS -- any of those with the Dock icon dropped as well.
 	 */
 	void RestoreMainWindow();
 
 	/**
 	 * Hides the main window, leaving the tray icon as the way back.
 	 *
-	 * The counterpart of RestoreMainWindow(), and the reason both are
-	 * here: on macOS the hide has a second half (dropping NSApp to
-	 * accessory so no Dock icon is left behind) that every hide path has
-	 * to perform and every show path has to undo.
+	 * The counterpart of RestoreMainWindow(), and the reason both are here: on macOS the hide
+	 * has a second half (dropping NSApp to accessory so no Dock icon is left behind) that every
+	 * hide path has to perform and every show path has to undo.
 	 *
-	 * Named for the tray where its counterpart is not, because every
-	 * caller of this one really is a tray path -- the tray menu, and
-	 * minimize-to-tray, which only runs when the icon exists. The
-	 * close-button HideOnClose path deliberately does not come here; see
-	 * OnClose().
+	 * Named for the tray where its counterpart is not, because every caller of this one really
+	 * is a tray path -- the tray menu, and minimize-to-tray, which only runs when the icon
+	 * exists. The close-button HideOnClose path deliberately does not come here; see OnClose().
 	 */
 	void HideToTray();
 
 	void StartGuiTimer() { gui_timer->Start(100); }
 	void StopGuiTimer() { gui_timer->Stop(); }
 
-	/**
-	 * This function ensures that _all_ list widgets are properly sorted.
-	 */
+	/// Ensures that _all_ list widgets are properly sorted.
 	void InitSort();
 
 	void SetMessageBlink(bool state) { m_BlinkMessages = state; }
@@ -319,18 +291,18 @@ public:
 
 	int m_srv_split_pos;
 
-	// Last frame geometry seen while NOT iconized. SaveGUIPrefs uses it as the
-	// fallback when the user exits from a minimized state, where the iconized
-	// GetPosition() returns sentinel values like -32000,-32000 on Windows.
+	// Last frame geometry seen while NOT iconized. SaveGUIPrefs uses it as the fallback when
+	// the user exits from a minimized state, where the iconized GetPosition() returns sentinel
+	// values like -32000,-32000 on Windows.
 	wxPoint m_lastShownPos;
 	wxSize m_lastShownSize;
 	bool m_lastShownMaximized;
 	bool m_lastShownValid;
 
 	wxImageList m_imagelist;
-	// Toolbar icons as resolution-aware bundles (the 32x32 art plus a smooth 2x
-	// upscale). The executable is per-monitor-DPI aware, so a plain 32px wxBitmap
-	// would be drawn at 32 PHYSICAL pixels -- tiny and blurry on hi-DPI screens.
+	// Toolbar icons as resolution-aware bundles (the 32x32 art plus a smooth 2x upscale). The
+	// executable is per-monitor-DPI aware, so a plain 32px wxBitmap would be drawn at 32
+	// PHYSICAL pixels -- tiny and blurry on hi-DPI screens.
 	std::vector<wxBitmapBundle> m_tblist;
 
 protected:
@@ -344,9 +316,8 @@ protected:
 	void OnGUITimer(wxTimerEvent &evt);
 	void OnMainGUISizeChange(wxSizeEvent &evt);
 	void OnMainGUIMove(wxMoveEvent &evt);
-	// Stash the current (non-iconized) pos / size / maximized state so
-	// SaveGUIPrefs can fall back to the last good geometry if the user
-	// exits from a minimized window.
+	// Stash the current (non-iconized) pos / size / maximized state so SaveGUIPrefs can fall
+	// back to the last good geometry if the user exits from a minimized window.
 	void CacheLastShownGeometry();
 	void OnExit(wxCommandEvent &evt);
 
@@ -370,10 +341,9 @@ private:
 	bool m_versionPopupShown = false;
 
 #if defined(ENABLE_VERSION_CHECK) && defined(CLIENT_GUI)
-	// amulegui-only: it is not a CamuleApp and has no core version-check engine, so
-	// the remote GUI runs its own CVersionCheck. The monolithic app drives the popup
-	// from the shared core engine instead. Owned, created lazily by
-	// StartupVersionCheck() when the preference is on.
+	// amulegui-only: it is not a CamuleApp and has no core version-check engine, so the remote
+	// GUI runs its own CVersionCheck. The monolithic app drives the popup from the shared core
+	// engine instead. Owned, created lazily by StartupVersionCheck() when the preference is on.
 	CVersionCheck *m_startupVersionCheck = nullptr;
 	time_t m_lastGuiVersionCheck = 0;
 	void StartupVersionCheck();
@@ -381,25 +351,23 @@ private:
 #endif // ENABLE_VERSION_CHECK && CLIENT_GUI
 
 public:
-	// Show the "a new version is available" popup: at most once per session, and
-	// never for a version the user muted via the dialog's "Don't ask again"
-	// checkbox, which is recorded per-version so a newer release still asks. Called
-	// from the core engine in the monolithic app and from
-	// OnStartupVersionCheckDone in amulegui.
+	// Show the "a new version is available" popup: at most once per session, and never for a
+	// version the user muted via the dialog's "Don't ask again" checkbox, which is recorded
+	// per-version so a newer release still asks. Called from the core engine in the monolithic
+	// app and from OnStartupVersionCheckDone in amulegui.
 	void ShowVersionAvailable(const wxString &latest);
 
-	// Track iconize state from wxIconizeEvent::IsIconized(), which is reliable
-	// across platforms -- unlike wxFrame::IsIconized(), which can return false on
-	// wxGTK after a minimize click while the OS still has the window iconized. The
-	// tray menu and DoShowHide consult this to keep the "Show aMule" / "Hide aMule"
-	// label and the click action in step with reality.
+	// Track iconize state from wxIconizeEvent::IsIconized(), which is reliable across platforms
+	// -- unlike wxFrame::IsIconized(), which can return false on wxGTK after a minimize click
+	// while the OS still has the window iconized. The tray menu and DoShowHide consult this to
+	// keep the "Show aMule" / "Hide aMule" label and the click action in step with reality.
 	bool IsTrayLogicallyIconized() const { return m_iconized_logical; }
 
-	/// Whether the user can actually see the window. Both halves are needed and
-	/// neither is enough: minimized to Dock/taskbar keeps IsShown() true while
-	/// nothing is on screen, and hidden to tray leaves the iconized bit clear while
-	/// the frame is gone. Used by the tray menu to label Show/Hide, and by amulegui
-	/// to decide whether a modal is worth putting up (issue #806).
+	/// Whether the user can actually see the window. Both halves are needed and neither is
+	/// enough: minimized to Dock/taskbar keeps IsShown() true while nothing is on screen, and
+	/// hidden to tray leaves the iconized bit clear while the frame is gone. Used by the tray
+	/// menu to label Show/Hide, and by amulegui to decide whether a modal is worth putting up
+	/// (issue #806).
 	bool IsVisibleToUser() const { return IsShown() && !m_iconized_logical; }
 
 private:
@@ -411,19 +379,17 @@ private:
 	WX_DECLARE_STRING_HASH_MAP(wxZipEntry *, ZipCatalog);
 	ZipCatalog cat;
 
-	// Network-conditional log tabs (Server Info / ED2K Info / Kad Info), captured by
-	// the control each page hosts rather than by notebook index: the tab layout
-	// differs between the monolithic build and amulegui, and index-based tracking
-	// silently broke Kad Info when the "aMuleGUI Log" tab was inserted.
-	// DoNetworkRearrange() shows and hides these by identity.
+	// Network-conditional log tabs (Server Info / ED2K Info / Kad Info), captured by the
+	// control each page hosts rather than by notebook index: the tab layout differs between the
+	// monolithic build and amulegui, and index-based tracking silently broke Kad Info when the
+	// "aMuleGUI Log" tab was inserted. DoNetworkRearrange() shows and hides these by identity.
 	PageType m_logServerInfo;
 	PageType m_logED2KInfo;
 	PageType m_logKadInfo;
 	PageType m_networkpages[2];
 
-	// Finds the notebook page hosting the control ctrlId and captures its
-	// window + tab label. Used to track the network-conditional log tabs by
-	// identity instead of position.
+	// Finds the notebook page hosting the control ctrlId and captures its window and tab label.
+	// Used to track the network-conditional log tabs by identity instead of position.
 	PageType CaptureLogPage(wxNotebook *notebook, wxWindowID ctrlId);
 
 	bool LoadGUIPrefs(bool override_pos, bool override_size);

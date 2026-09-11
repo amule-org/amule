@@ -34,7 +34,7 @@ class CClientRef;
 class CFriend;
 
 /**
- * This class is used to display chat sessions.
+ * Displays chat sessions.
  */
 class CChatSession : public CMuleTextCtrl
 {
@@ -59,9 +59,9 @@ public:
 	 * @param style The style of the new text.
 	 * @param newline If a newline should be added to the end of the line.
 	 *
-	 * If newline is false, then no newlines will be at the end of added text,
-	 * even if the passed string ends with newlines. Multiline strings are
-	 * broken into individual lines and each are timestamped with the same date.
+	 * With @a newline false the added text never ends in a newline, even if the passed string
+	 * does. Multiline strings are broken into individual lines, each timestamped with the same
+	 * date.
 	 */
 	void AddText(const wxString &text, const wxTextAttr &style, bool newline = true);
 };
@@ -80,11 +80,10 @@ public:
 	/**
 	 * Render one message the core's session store already holds.
 	 *
-	 * Distinct from ProcessMessage, which parses the "name|text" wire form
-	 * and always announces the message. This takes an already-decoded
-	 * message with its direction, and does NOT touch the new-message blink --
-	 * the caller decides that, because replaying history on connect must not
-	 * light the Messages button up for messages already read elsewhere.
+	 * Distinct from ProcessMessage, which parses the "name|text" wire form and always announces
+	 * the message. This takes an already decoded message with its direction, and does NOT touch
+	 * the new-message blink -- the caller decides that, because replaying history on connect
+	 * must not light the Messages button up for messages already read elsewhere.
 	 */
 	void AppendStoredMessage(uint64 gui_id, const wxString &name, const wxString &text, bool outgoing);
 	bool SendMessage(const wxString &message, const wxString &client_name = "", uint64 to_id = 0);

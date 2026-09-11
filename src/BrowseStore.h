@@ -36,13 +36,11 @@ namespace browse
 {
 
 /**
- * What the owner must do about a change the store has just made.
- *
- * The store decides; the caller performs. That split is the point: the rules
- * are then reachable from a test, which the manager holding them was not --
- * and both bugs found after the lifecycle was extracted were rules, not state
- * machine (a terminal record erased instead of retained, a disconnect after
- * success reported as a failure).
+ * What the owner must do about a change the store has just made. The store decides; the caller
+ * performs. That split is the point: the rules are then reachable from a test, which the manager
+ * holding them was not -- and both bugs found after the lifecycle was extracted were rules, not
+ * state machine (a terminal record erased instead of retained, a disconnect after success reported
+ * as a failure).
  */
 enum class Effect
 {
@@ -51,18 +49,15 @@ enum class Effect
 	Announce,
 	//! ...and it failed, which is also worth a line in the log.
 	AnnounceFailure,
-	//! Terminal and announced already: let go of the peer. The RECORD stays,
-	//! because the search ID is still listed and still has to answer for its
-	//! state; only Remove() disposes of it.
+	//! Terminal and announced already: let go of the peer. The RECORD stays, because the search
+	//! ID is still listed and still has to answer for its state; only Remove() disposes of it.
 	ReleaseClient
 };
 
 /**
- * A change, and the browse it happened to.
- *
- * The two travel together because deriving the ID separately is how the effect
- * got lost: the manager asked which browse a peer had, and the answer excluded
- * the terminal ones -- exactly the records whose peer most needs releasing.
+ * A change, and the browse it happened to. The two travel together because deriving the ID
+ * separately is how the effect got lost: the manager asked which browse a peer had, and the answer
+ * excluded the terminal ones -- exactly the records whose peer most needs releasing.
  */
 struct Outcome
 {
@@ -71,11 +66,9 @@ struct Outcome
 };
 
 /**
- * Every browse the core is tracking, and the rules about them.
- *
- * Clients are identified by an opaque key rather than held: lifetime is the
- * owner's problem, and keeping it out here is what lets the rules be driven
- * from a test with no client, no theApp and no clock.
+ * Every browse the core is tracking, and the rules about them. Clients are identified by an opaque
+ * key rather than held: lifetime is the owner's problem, and keeping it out here is what lets the
+ * rules be driven from a test with no client, no theApp and no clock.
  */
 class Store
 {
@@ -84,12 +77,10 @@ public:
 	using ClientKey = const void *;
 
 	/**
-	 * The answer to Start: whether it took, and any peer it displaced.
-	 *
-	 * A peer whose last browse has ended may be browsed again straight away,
-	 * before the tick that would have released it. Two records would then name
-	 * the same peer, and a lookup by peer could answer with either -- so the
-	 * old one lets go here, and says so, since its owner is holding a
+	 * The answer to Start: whether it took, and any peer it displaced. A peer whose last browse
+	 * has ended may be browsed again straight away, before the tick that would have released
+	 * it. Two records would then name the same peer, and a lookup by peer could answer with
+	 * either -- so the old one lets go here, and says so, since its owner is holding a
 	 * reference on the strength of it.
 	 */
 	struct StartResult
@@ -101,20 +92,19 @@ public:
 	/**
 	 * Track a browse of `client` under `searchId`.
 	 *
-	 * Refuses when that client already has one STILL RUNNING: there is a
-	 * single exchange with a peer to report on, so a second record could only
-	 * ever describe the same browse. This is the rule the EC handler's "join
-	 * the browse already in flight" depends on being true.
+	 * Refuses when that client already has one STILL RUNNING: there is a single exchange with a
+	 * peer to report on, so a second record could only ever describe the same browse. This is
+	 * the rule the EC handler's "join the browse already in flight" depends on being true.
 	 *
-	 * A browse that has ended is no obstacle, even before its peer has been
-	 * released -- matching SearchIdFor, which also answers only for a running
-	 * one. Disagreeing about that left a peer un-rebrowsable for the second
-	 * or so between its browse ending and the next tick.
+	 * A browse that has ended is no obstacle, even before its peer has been released --
+	 * matching SearchIdFor, which also answers only for a running one. Disagreeing about that
+	 * left a peer un-rebrowsable for the second or so between its browse ending and the next
+	 * tick.
 	 *
-	 * Refuses an ID already tracked, whatever its state: a second record on
-	 * one key would replace the first and everything it still has to answer
-	 * for. No caller reuses an ID -- both routes pass a freshly allocated one
-	 * -- so this guards an invariant rather than a case.
+	 * Refuses an ID already tracked, whatever its state: a second record on one key would
+	 * replace the first and everything it still has to answer for. No caller reuses an ID --
+	 * both routes pass a freshly allocated one -- so this guards an invariant rather than a
+	 * case.
 	 */
 	StartResult Start(ClientKey client, std::uint32_t searchId, std::uint64_t now);
 
@@ -129,9 +119,9 @@ public:
 	Outcome Finish(ClientKey client);
 
 	/**
-	 * The peer is going away: fail a browse still running, then release it.
-	 * Returns both effects in order, so the caller reports the failure before
-	 * dropping the reference it needs to name the peer.
+	 * The peer is going away: fail a browse still running, then release it. Returns both
+	 * effects in order, so the caller reports the failure before dropping the reference it
+	 * needs to name the peer.
 	 */
 	std::vector<Outcome> Forget(ClientKey client);
 
@@ -146,21 +136,19 @@ public:
 	/**
 	 * Whether `client`'s browse is still waiting to hear back.
 	 *
-	 * True from the request going out until the peer answers -- with its
-	 * directory list, or, on the flat protocol form, with the listing itself.
+	 * True from the request going out until the peer answers -- with its directory list, or, on
+	 * the flat protocol form, with the listing itself.
 	 *
-	 * For a directory browse that makes the answer single-shot, which is what
-	 * the OP_ASKSHAREDDIRSANS handler needs: its old guard was single-shot by
-	 * accident (it compared an outstanding count to 1), and widening it to
-	 * "this peer has a browse" let a peer resend the answer as often as it
-	 * liked, each time re-asking for every directory and pushing the silence
-	 * deadline back.
+	 * For a directory browse that makes the answer single-shot, which is what the
+	 * OP_ASKSHAREDDIRSANS handler needs: its old guard was single-shot by accident (it compared
+	 * an outstanding count to 1), and widening it to "this peer has a browse" let a peer resend
+	 * the answer as often as it liked, each time re-asking for every directory and pushing the
+	 * silence deadline back.
 	 *
-	 * A FLAT browse has no directory round, so this stays true for its whole
-	 * life and the outbound ask can be repeated on a reconnect. That matches
-	 * what the counter-based guard did before, and is deliberate -- the first
-	 * ask may never have arrived -- but it is not the "once per browse"
-	 * property the directory form gets, and should not be read as one.
+	 * A FLAT browse has no directory round, so this stays true for its whole life and the
+	 * outbound ask can be repeated on a reconnect. That matches what the counter-based guard
+	 * did before, and is deliberate -- the first ask may never have arrived -- but it is not
+	 * the "once per browse" property the directory form gets, and should not be read as one.
 	 */
 	bool AwaitingDirectoryList(ClientKey client) const;
 	bool Has(std::uint32_t searchId) const;

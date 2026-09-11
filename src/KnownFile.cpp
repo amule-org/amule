@@ -125,9 +125,8 @@ void CFileStatistic::AddTransferred(uint64 bytes)
 		static_cast<CPartFile *>(fileParent)->MarkStatsDirty();
 	}
 	if (fileParent) {
-		// Upload-activity stamp (issue #466): the upload-side analogue of
-		// the download's m_lastDateChanged, stamped here because this is
-		// the single point where sent bytes are attributed to the file.
+		// Upload-activity stamp (#466), the upload-side analogue of m_lastDateChanged. Here
+		// because this is the only point where sent bytes are attributed to the file.
 		fileParent->SetLastUpload(time(nullptr));
 		fileParent->MarkECChanged();
 	}
@@ -144,19 +143,17 @@ uint32 CKnownFile::GetMetaDataVer() const
 {
 	// Derived from tag presence, with no separate m_uMetaDataVer field.
 	//
-	// ANY FT_MEDIA_* tag counts, not FT_MEDIA_LENGTH alone. The premise the
-	// length-only test rested on -- that a successful probe always yields a
-	// duration -- is false: MediaProbe succeeds on a duration OR a codec, so a
-	// file ffprobe can identify but not time gets a codec and no length. That put
-	// the four consumers of this predicate in disagreement: the ed2k publisher
-	// checks each tag individually and advertised the codec to every peer, while
-	// Kad, EC and the file-detail dialog all reported no metadata at all. It also
-	// drives the "already probed" gate in CSharedFileList, so those files were
-	// re-probed on every startup, forever.
+	// ANY FT_MEDIA_* tag counts, not FT_MEDIA_LENGTH alone. The length-only test rested on a
+	// false premise -- that a successful probe always yields a duration. MediaProbe succeeds on
+	// a duration OR a codec, so a file ffprobe can identify but not time gets a codec and no
+	// length. That left the four consumers of this predicate disagreeing: the ed2k publisher
+	// checks each tag individually and advertised the codec to every peer, while Kad, EC and
+	// the file-detail dialog reported no metadata at all. It also drives the "already probed"
+	// gate in CSharedFileList, so those files were re-probed on every startup, forever.
 	//
-	// One pass over m_taglist rather than six Get*TagValue calls, each of which
-	// scans it end to end: this runs per file per EC update, and the worst case
-	// is the common one -- a non-media file matches nothing.
+	// One pass over m_taglist rather than six Get*TagValue calls, each scanning it end to end:
+	// this runs per file per EC update, and the worst case is the common one -- a non-media
+	// file matches nothing.
 	for (const CTag &tag : m_taglist) {
 		switch (tag.GetNameID()) {
 		case FT_MEDIA_LENGTH:
@@ -182,10 +179,9 @@ uint32 CKnownFile::GetMetaDataVer() const
 
 void CKnownFile::MarkECChanged()
 {
-	// Single atomic pre-increment + atomic store. Generation values are
-	// strictly ascending across all files and all threads; readers
-	// (`Get_EC_Response_GetUpdate`) compare against the highest gen they
-	// have already sent and ignore lesser ones.
+	// Single atomic pre-increment + atomic store. Generation values ascend strictly across all
+	// files and threads; readers (Get_EC_Response_GetUpdate) compare against the highest gen
+	// they have already sent and ignore lesser ones.
 	m_ecGen.store(s_globalEcGen.fetch_add(1, std::memory_order_relaxed) + 1, std::memory_order_relaxed);
 }
 
@@ -343,15 +339,12 @@ void CAbstractFile::AddTagUnique(const CTag &rTag)
 
 bool CAbstractFile::RemoveTag(uint8 tagname)
 {
-	// Matches on the numeric id alone, unlike AddTagUnique's (id, type) pair: the
-	// caller wants the field gone whatever width or encoding it was stored with,
-	// and a media tag inherited from a search result can legitimately arrive as a
-	// narrower integer type than a local probe writes.
+	// Matches on the numeric id alone, unlike AddTagUnique's (id, type) pair: the caller wants
+	// the field gone whatever width or encoding it was stored with, and a media tag inherited
+	// from a search result can arrive as a narrower integer type than a local probe writes.
 	//
-	// Erases EVERY match, not just the first. AddTagUnique replaces only when the
-	// type matches too, so two tags with one id and different types can
-	// legitimately coexist. No current writer produces that pair, but "clear
-	// this field" should not depend on that staying true.
+	// Erases EVERY match, not just the first. AddTagUnique replaces only when the type matches
+	// too, so two tags with one id and different types can legitimately coexist.
 	const size_t before = m_taglist.size();
 	m_taglist.erase(std::remove_if(m_taglist.begin(),
 				m_taglist.end(),
@@ -391,9 +384,8 @@ void CAbstractFile::GetKadNotesComments(FileRatingList &list) const
 
 void CAbstractFile::GetRatingAndComments(FileRatingList &list) const
 {
-	// Base version: just the on-demand Kad notes. This is exactly what a search
-	// result carries; CPartFile overrides to prepend its connected-source
-	// comments.
+	// Base version: just the on-demand Kad notes, which is exactly what a search result
+	// carries. CPartFile overrides to prepend its connected-source comments.
 	list.clear();
 	GetKadNotesComments(list);
 }
@@ -404,9 +396,8 @@ void CAbstractFile::GetKadNotesComments(FileRatingList &) const {}
 
 void CAbstractFile::GetRatingAndComments(FileRatingList &list) const
 {
-	// amulegui receives the ratings/comments prebuilt over EC and cached in
-	// m_FileRatingList by the remote containers. One implementation serves
-	// downloads, shared files and search results, so no subclass overrides this.
+	// amulegui receives ratings/comments prebuilt over EC, cached in m_FileRatingList by the
+	// remote containers. One implementation serves downloads, shared files and search results.
 	list = m_FileRatingList;
 }
 #endif
@@ -443,11 +434,10 @@ CKnownFile::CKnownFile(const CSearchFile &searchFile)
 
 void CKnownFile::Init()
 {
-	// Stamp the EC generation immediately so any newly-constructed file is
-	// naturally `> 0` from every existing connection's `m_lastEcGenSeen`
-	// perspective. Without this, the first INC_UPDATE cycle within the 60 s
-	// backstop window after a file is added would skip it, its default-zero gen
-	// looking unchanged.
+	// Stamp the EC generation immediately so a newly-constructed file is `> 0` from every
+	// existing connection's m_lastEcGenSeen. Without it the first INC_UPDATE cycle inside the
+	// 60 s backstop window after a file is added would skip it, its default-zero gen looking
+	// unchanged.
 	MarkECChanged();
 
 	m_showSources = false;
@@ -468,11 +458,10 @@ void CKnownFile::Init()
 	m_lastDateChanged = 0;
 	m_lastUploadDatetime = 0;
 	m_dateShared = 0;
-	// Sentinel "unknown": LoadFromFile fills this in from FT_LASTSEEN when
-	// present, else falls back to the file's own mtime for migration -- so a
-	// known.met that predates this tag gets a useful aging signal on the first
-	// save after upgrade rather than every record looking "fresh now" for the
-	// next TTL window. Fresh hashes bump this in CKnownFileList::Append.
+	// Sentinel "unknown": LoadFromFile fills this from FT_LASTSEEN when present, else from the
+	// file's own mtime -- so a known.met predating the tag gets a useful aging signal on the
+	// first save after upgrade rather than every record looking "fresh now" for a TTL window.
+	// Fresh hashes bump this in CKnownFileList::Append.
 	m_lastSeen = 0;
 	m_bAutoUpPriority = thePrefs::GetNewAutoUp();
 	m_iUpPriority = (m_bAutoUpPriority) ? PR_HIGH : PR_NORMAL;
@@ -490,18 +479,9 @@ void CKnownFile::SetFileSize(uint64 nFileSize)
 	m_pAICHHashSet->SetFileSize(nFileSize);
 #endif
 
-	// Parthashs, hashsets and filehashs for different filesizes, per the ed2k
-	// protocol. The point of the table is the boundary rule: a file whose size is
-	// an exact multiple of PARTSIZE carries one extra part hash, and that last
-	// one is always the MD4 of nothing --
-	// 31D6CFE0D16AE931B73C59D7E0C089C0, the *special part hash*.
-	//
-	//   3 bytes            -> 0 hashes
-	//   1*PARTSIZE         -> 2 hashes, second is the special one
-	//   1*PARTSIZE + 1     -> 2 hashes, both real
-	//   2*PARTSIZE         -> 3 hashes, third is the special one
-	//   3*PARTSIZE         -> 4 hashes, fourth is the special one
-	//   3*PARTSIZE + 1     -> 4 hashes, all real
+	// Part hashes per the ed2k protocol. The boundary rule: a file whose size is an exact
+	// multiple of PARTSIZE carries one extra part hash, and that last one is always the MD4 of
+	// nothing, 31D6CFE0D16AE931B73C59D7E0C089C0 -- the *special part hash*.
 
 	// File size       Data parts      ED2K parts      ED2K part hashs
 	// ---------------------------------------------------------------
@@ -559,7 +539,7 @@ void CKnownFile::AddUploadingClient(CUpDownClient *client)
 		this, CCLIENTREF(client, "CKnownFile::AddUploadingClient Notify_SharedCtrlAddClient"), type);
 
 	UpdateAutoUpPriority();
-	// GetQueuedCount() = m_ClientUploadList.size() — exported via EC.
+	// GetQueuedCount() = m_ClientUploadList.size() -- exported via EC.
 	MarkECChanged();
 }
 
@@ -578,11 +558,9 @@ void CKnownFile::VerifyLocalData() const
 	CThreadScheduler::AddTask(new CVerifyLocalDataTask(GetFileHash()));
 }
 
-// Live upload activity summarised from m_ClientUploadList (issue #466).
-// Core-only: the list is populated on the daemon; amulegui receives the
-// results over EC. m_ClientUploadList holds both uploading and queued
-// clients, so queued clients (datarate 0, state != US_UPLOADING) simply
-// don't contribute.
+// Live upload activity summarised from m_ClientUploadList (issue #466). Core-only: the list is
+// populated on the daemon and amulegui receives the results over EC. The list holds uploading and
+// queued clients alike, so queued ones (datarate 0, state != US_UPLOADING) contribute nothing.
 uint32 CKnownFile::GetUploadDatarate() const
 {
 	uint32 total = 0;
@@ -638,9 +616,8 @@ CKnownFile::~CKnownFile()
 
 void CKnownFile::SetFilePath(const CPath &filePath)
 {
-	// Only on a real change: MarkECChanged() below pushes the file into the next
-	// INC_UPDATE, and the shared-files walk re-stamps every known file on every
-	// reload (issue #1028).
+	// Only on a real change: MarkECChanged() below pushes the file into the next INC_UPDATE,
+	// and the shared-files walk re-stamps every known file on every reload (issue #1028).
 	if (m_filePath == filePath) {
 		return;
 	}
@@ -678,10 +655,6 @@ bool CKnownFile::LoadHashsetFromFile(const CFileDataIO *file, bool checkhash)
 	}
 	// SLUGFILLER: SafeHash
 
-	// trust noone ;-)
-	// lol, useless comment but made me lmao
-	// wtf you guys are weird.
-
 	if (!m_hashlist.empty()) {
 		CreateHashFromHashlist(m_hashlist, &checkid);
 	}
@@ -703,9 +676,8 @@ bool CKnownFile::LoadTagsFromFile(const CFileDataIO *file)
 		switch (newtag.GetNameID()) {
 		case FT_FILENAME:
 			if (GetFileName().IsOk()) {
-				// Unlike eMule, we actually prefer the second
-				// filename tag, since we use it to specify the
-				// 'universial' filename (see CPath::ToUniv).
+				// Unlike eMule, we prefer the second filename tag: it holds the
+				// 'universal' filename (see CPath::ToUniv).
 				CPath path = CPath::FromUniv(newtag.GetStr());
 
 				// May be invalid, if from older versions where
@@ -826,10 +798,9 @@ bool CKnownFile::LoadFromFile(const CFileDataIO *file)
 	bool ret2 = LoadHashsetFromFile(file, false);
 	bool ret3 = LoadTagsFromFile(file);
 	UpdatePartsInfo();
-	// Migration: a known.met written before FT_LASTSEEN was added leaves
-	// m_lastSeen at its Init() sentinel of 0. Fall back to the file's stored
-	// mtime as a proxy, accurate enough to drive the TTL prune on the first save
-	// after upgrade rather than waiting a TTL window for every record.
+	// Migration: a known.met written before FT_LASTSEEN leaves m_lastSeen at Init()'s sentinel
+	// of 0. Fall back to the file's stored mtime, accurate enough to drive the TTL prune on the
+	// first save after upgrade.
 	if (m_lastSeen == 0) {
 		m_lastSeen = (uint32)m_lastDateChanged;
 	}
@@ -859,11 +830,10 @@ bool CKnownFile::WriteToFile(CFileDataIO *file)
 	if (HasProperAICHHashSet()) {
 		tagcount++;
 	}
-	// Float meta tags are currently not written: all eMule versions < 0.28a have a
-	// bug in the meta-tag reading and writing code, and skipping them gives
-	// maximum backward compatibility. This costs nothing, because aMule does not
-	// use float tags -- the only one it may have to handle is the Hybrid's
-	// '# Sent' tag, which is useless but may arrive via the servers.
+	// Float meta tags are not written: every eMule before 0.28a has a bug reading and writing
+	// them, and skipping them gives maximum backward compatibility. It costs nothing -- aMule
+	// uses no float tags, the only one it may have to handle being the Hybrid's '# Sent', which
+	// is useless but can arrive via the servers.
 	for (size_t j = 0; j < m_taglist.size(); ++j) {
 		if (m_taglist[j].IsInt() || m_taglist[j].IsStr()) {
 			++tagcount;
@@ -878,7 +848,7 @@ bool CKnownFile::WriteToFile(CFileDataIO *file)
 		++tagcount;
 	}
 
-	// Upload-activity tags (issue #466) — only persisted once set.
+	// Upload-activity tags (issue #466) -- only persisted once set.
 	if (m_lastUploadDatetime) {
 		++tagcount;
 	}
@@ -897,9 +867,8 @@ bool CKnownFile::WriteToFile(CFileDataIO *file)
 	// We write it with BOM to keep eMule compatibility
 	nametag_unicode.WriteTagToFile(file, utf8strOptBOM);
 
-	// The non-unicoded filename is written in an 'universial'
-	// format, which allows us to identify files, even if the
-	// system locale changes.
+	// The non-unicoded filename is written in a 'universal' format, so files stay identifiable
+	// across a system-locale change.
 	CTagString nametag(FT_FILENAME, CPath::ToUniv(GetFileName()));
 	nametag.WriteTagToFile(file);
 
@@ -1191,12 +1160,9 @@ CPacket *CKnownFile::CreateSrcInfoPacket(
 				bNeeded = true;
 			}
 		} else {
-			// remote client does not support upload chunk status,
-			// search sources which have at least one complete part
-			// we could even sort the list of sources by available
-			// chunks to return as much sources as possible which
-			// have the most available chunks. but this could be
-			// a noticeable performance problem.
+			// The remote client does not support upload chunk status, so search for
+			// sources with at least one complete part. Sorting the sources by available
+			// chunks would return more of them, at a noticeable performance cost.
 			const BitVector &srcstatus = cur_src->GetUpPartStatus();
 			if (!srcstatus.empty()) {
 				// wxASSERT(srcstatus.size() == GetPartCount());
@@ -1275,21 +1241,18 @@ CPacket *CKnownFile::CreateSrcInfoPacket(
 void CKnownFile::CreateOfferedFilePacket(CMemFile *files, CServer *pServer, CUpDownClient *pClient)
 {
 
-	// This function is used for offering files to the local server and for sending
-	// shared files to some other client. In each case we send our IP+Port only, if
-	// we have a HighID.
+	// Used both to offer files to the local server and to send shared files to another client.
+	// In each case we send our IP+Port only if we have a HighID.
 
 	wxCHECK_RET(!(pClient && pServer), "pClient and pServer cannot both be non-null");
 
-	// Only a publish to the server means "published". The flag exists solely
-	// so CSharedFileList::SendListToServer() can tell which files it still
-	// owes the server, and it is cleared when a server connection is made
-	// (CServerConnect). Setting it while answering a peer's browse request --
-	// which this same function serves, with pClient instead of pServer -- told
-	// the publisher those files were already offered, so they silently stopped
-	// being published until the next server (re)connect. It also woke the
-	// shared-files view once per file, for a browse that changes nothing the
-	// user can see (issue #898).
+	// Only a publish to the server means "published". The flag exists so
+	// CSharedFileList::SendListToServer() can tell which files it still owes the server, and it
+	// is cleared when a server connection is made (CServerConnect). Setting it while answering
+	// a peer's browse request -- which this same function serves, with pClient instead of
+	// pServer -- told the publisher those files were already offered, so they silently stopped
+	// being published until the next server (re)connect. It also woke the shared-files view
+	// once per file, for a browse that changes nothing the user can see (issue #898).
 	if (pServer) {
 		SetPublishedED2K(true);
 	}
@@ -1381,32 +1344,27 @@ void CKnownFile::CreateOfferedFilePacket(CMemFile *files, CServer *pServer, CUpD
 		}
 	}
 	if (!bAddedFileType) {
-		// Send string file type tags to:
-		//	- newer servers, in case there is no integer type available for the file type (e.g.
-		// emulecollection)
-		//	- older servers
-		//	- all clients
+		// String file type tags go to newer servers (in case no integer type exists for the
+		// file type, e.g. emulecollection), older servers, and all clients.
 		wxString strED2KFileType(GetED2KFileTypeSearchTerm(GetED2KFileTypeID(GetFileName())));
 		if (!strED2KFileType.IsEmpty()) {
 			tags.push_back(new CTagString(FT_FILETYPE, strED2KFileType));
 		}
 	}
 
-	// Media metadata (populated by MediaProbe at share-add time).
-	// Emit each tag only when nonzero / non-empty; older ed2k
-	// clients / servers happily ignore unknown tag IDs but should
-	// never be asked to parse a 0-valued FT_MEDIA_LENGTH. Fixed 32-bit
-	// encoding, as for every other client-bound tag here.
+	// Media metadata (populated by MediaProbe at share-add time). Each tag is emitted only when
+	// nonzero / non-empty: older ed2k clients and servers ignore unknown tag IDs but should
+	// never be asked to parse a 0-valued FT_MEDIA_LENGTH. Fixed 32-bit encoding, as for every
+	// other client-bound tag here.
 	if (uint32 len = GetIntTagValue(FT_MEDIA_LENGTH)) {
 		tags.push_back(new CTagVarInt(FT_MEDIA_LENGTH, len, 32));
 	}
 	if (uint32 br = GetIntTagValue(FT_MEDIA_BITRATE)) {
 		tags.push_back(new CTagVarInt(FT_MEDIA_BITRATE, br, 32));
 	}
-	// Artist / album / title alongside the other three: this was the only
-	// publisher still sending three of the six, so a peer searching by artist
-	// could match a Kad-published copy of a file and not the ed2k-published
-	// one.
+	// Artist / album / title alongside the other three: this was the only publisher still
+	// sending three of the six, so a peer searching by artist could match a Kad-published copy
+	// of a file and not the ed2k-published one.
 	static const uint8 kMediaStrTags[] = {
 		FT_MEDIA_CODEC, FT_MEDIA_ARTIST, FT_MEDIA_ALBUM, FT_MEDIA_TITLE
 	};
@@ -1528,11 +1486,10 @@ void CKnownFile::SetAutoUpPriority(bool flag)
 void CKnownFile::SetPublishedED2K(bool val)
 {
 	if (m_PublishedED2K == val) {
-		// No-op state changes are a hot path during ClearED2KPublishInfo
-		// (which writes false to every shared file regardless of current
-		// state) — the GUI cascade is O(N) per call due to FindItem in
-		// CSharedFilesCtrl::UpdateItem, so unconditional notify here was
-		// O(N²) on a single-threaded main loop. See #302.
+		// No-op state changes are a hot path during ClearED2KPublishInfo, which writes
+		// false to every shared file regardless of current state. The GUI cascade is O(N)
+		// per call (FindItem in CSharedFilesCtrl::UpdateItem), so an unconditional notify
+		// here was O(N^2) on a single-threaded main loop. See #302.
 		return;
 	}
 	m_PublishedED2K = val;
@@ -1577,10 +1534,9 @@ bool CAbstractFile::RequestKadNoteSearch()
 		return false;
 	}
 
-	// The NOTES request builder reads the file size from the local shared list,
-	// download queue, or current search results (mirroring eMule); a file in
-	// none of those can't be looked up, so don't spawn a search that would
-	// immediately self-terminate.
+	// The NOTES request builder reads the file size from the local shared list, download queue
+	// or current search results (mirroring eMule); a file in none of those cannot be looked up,
+	// so do not spawn a search that would immediately self-terminate.
 	if (!theApp->sharedfiles->GetFileByID(GetFileHash()) &&
 		!theApp->downloadqueue->GetFileByID(GetFileHash()) &&
 		!theApp->searchlist->GetSearchFileByID(GetFileHash())) {
@@ -1592,10 +1548,10 @@ bool CAbstractFile::RequestKadNoteSearch()
 
 	Kademlia::CUInt128 kadFileID;
 	kadFileID.SetValueBE(GetFileHash().GetHash());
-	// A Kad search is keyed by its target hash, and a downloading file already runs
-	// a source search on that same hash (CSearch::FILE) - so a notes lookup can't
-	// start until it ends (<=45s). This is the common transient failure; tell the
-	// user to retry rather than fail opaquely.
+	// A Kad search is keyed by its target hash, and a downloading file already runs a source
+	// search on that hash (CSearch::FILE), so a notes lookup cannot start until it ends (<=45
+	// s). This is the common transient failure; tell the user to retry rather than fail
+	// opaquely.
 	if (Kademlia::CSearchManager::AlreadySearchingFor(kadFileID)) {
 		AddLogLineN(
 			CFormat(_("Kad note search for '%s' not started: another Kad search (e.g. a source "
@@ -1613,11 +1569,10 @@ bool CAbstractFile::RequestKadNoteSearch()
 	}
 
 	SetKadCommentSearchRunning(true);
-	// For a shared/download file, bump its EC generation so the next incremental
-	// update re-serializes it with the running flag set — that is how amulegui /
-	// amuleapi observe the lookup starting (the cleared flag is emitted the same
-	// way in ~CSearch). A search result carries no EC generation; its flag rides
-	// the periodic search-results poll instead, so nothing to mark here.
+	// For a shared/download file, bump its EC generation so the next incremental update re-
+	// serializes it with the running flag set: that is how amulegui and amuleapi observe the
+	// lookup starting (the cleared flag is emitted the same way in ~CSearch). A search result
+	// carries no EC generation; its flag rides the periodic search-results poll instead.
 	CKnownFile *knownFile = theApp->sharedfiles->GetFileByID(GetFileHash());
 	if (!knownFile) {
 		knownFile = theApp->downloadqueue->GetFileByID(GetFileHash());
@@ -1664,22 +1619,19 @@ void CKnownFile::UpdatePartsInfo()
 	uint16 partcount = GetPartCount();
 	bool flag = (time(NULL) - m_nCompleteSourcesTime > 0);
 
-	// One transition must not wait out the throttle: the upload list going
-	// empty. Every caller here is driven by a peer event, and there is no
-	// periodic sweep -- so if the last requesting peer leaves inside the 60 s
-	// window, the throttled call is the final one this file will ever get and
-	// the count would keep its last value for the life of the process. That is
-	// the staleness this whole path is about, so the answer that is both
-	// certain and free -- no peers, no complete sources -- is not worth
-	// deferring.
+	// One transition must not wait out the throttle: the upload list going empty. Every caller
+	// here is driven by a peer event and there is no periodic sweep, so if the last requesting
+	// peer leaves inside the 60 s window the throttled call is the final one this file will
+	// ever get, and the count would keep its last value for the life of the process. That is
+	// the staleness this whole path is about, so the answer that is both certain and free -- no
+	// peers, no complete sources -- is not worth deferring.
 	//
-	// Guarded on the values actually being non-zero, so a file that has already
-	// settled at 0 does not re-enter the recompute on every later call. All
-	// three exported fields are asked, not just the scalar: Hi is a percentile
-	// of the peers' self-reported counts, floored at the scalar but never tied
-	// to it, so it can still be non-zero once the scalar has reached 0 -- and
-	// Hi is what the desktop column and the Web UI detail panel render
-	// (issue #1065). See CompleteSourcesNeedRecompute().
+	// Guarded on the values actually being non-zero, so a file already settled at 0 does not
+	// re-enter the recompute on every later call. All three exported fields are asked, not just
+	// the scalar: Hi is a percentile of the peers' self-reported counts, floored at the scalar
+	// but never tied to it, so it can still be non-zero once the scalar has reached 0 -- and Hi
+	// is what the desktop column and the Web UI detail panel render (issue #1065). See
+	// CompleteSourcesNeedRecompute().
 	if (!flag && CompleteSourcesNeedRecompute(m_ClientUploadList.empty(),
 			     m_nCompleteSourcesCount,
 			     m_nCompleteSourcesCountLo,
@@ -1728,15 +1680,10 @@ void CKnownFile::UpdatePartsInfo()
 
 			// For complete files, trust the people your uploading to more...
 
-			// For low guess and normal guess count
-			//	- If we see more sources then the guessed low and
-			//	normal, use what we see.
-			//	- If we see less sources then the guessed low,
-			//	adjust network accounts for 100%, we account for
-			//	0% with what we see and make sure we are still
-			//	above the normal.
-			// For high guess
-			//	Adjust 100% network and 0% what we see.
+			// Low and normal guesses: use what we see when it exceeds them; when we see
+			// fewer than the low guess, credit the network with 100% and what we see
+			// with 0%, keeping the result above normal. The high guess always credits
+			// the network with 100%.
 			if (n < 20) {
 				if (count[i] < m_nCompleteSourcesCount) {
 					m_nCompleteSourcesCountLo = m_nCompleteSourcesCount;
@@ -1749,15 +1696,9 @@ void CKnownFile::UpdatePartsInfo()
 					m_nCompleteSourcesCountHi = m_nCompleteSourcesCount;
 				}
 			} else {
-				// Many sources..
-				// For low guess
-				//	Use what we see.
-				// For normal guess
-				//	Adjust network accounts for 100%, we account for
-				//	0% with what we see and make sure we are still above the low.
-				// For high guess
-				//	Adjust network accounts for 100%, we account for 0%
-				//	with what we see and make sure we are still above the normal.
+				// Many sources. Low guess: use what we see. Normal and high
+				// guesses: credit the network with 100% and what we see with 0%,
+				// keeping each above the previous tier.
 
 				m_nCompleteSourcesCountLo = m_nCompleteSourcesCount;
 				m_nCompleteSourcesCount = count[j];
@@ -1838,9 +1779,8 @@ static void GuessAndRemoveExt(CPath &name)
 void CKnownFile::SetFileName(const CPath &filename)
 {
 	CAbstractFile::SetFileName(filename);
-	// Invalidate the cached EC ed2k link; SetFileName is the only event
-	// that affects the link body in normal operation. Lazy-rebuilt on
-	// the next GetCachedED2kLinkBase() call.
+	// Invalidate the cached EC ed2k link; SetFileName is the only event that affects the link
+	// body in normal operation. Lazy-rebuilt on the next GetCachedED2kLinkBase() call.
 	m_cachedED2kLinkBase.clear();
 	// EC exports the filename printable (EC_TAG_PARTFILE_NAME) and the
 	// ed2k:// link, which is filename-derived.
@@ -1855,12 +1795,10 @@ void CKnownFile::SetFileName(const CPath &filename)
 const wxString &CKnownFile::GetCachedED2kLinkBase() const
 {
 	if (m_cachedED2kLinkBase.IsEmpty()) {
-		// theApp->CreateED2kLink with add_source=false produces just the
-		// base ed2k:// URI without the |sources,…| suffix. The expensive
-		// work (filename Cleanup, several CFormat substitutions) lives
-		// entirely in this build and is what we want to amortise across
-		// every EC GET_SHARED_FILES / GET_UPDATE response that touches
-		// this file.
+		// CreateED2kLink with add_source=false produces just the base ed2k:// URI. The
+		// expensive work (filename Cleanup, several CFormat substitutions) lives entirely
+		// in this build and is what we amortise across every EC GET_SHARED_FILES /
+		// GET_UPDATE response touching this file.
 		m_cachedED2kLinkBase = theApp->CreateED2kLink(this, false /*add_source*/);
 	}
 	return m_cachedED2kLinkBase;
@@ -1872,17 +1810,14 @@ wxString CKnownFile::GetED2kLinkForEC(bool add_source) const
 	if (!add_source) {
 		return base;
 	}
-	// Append the |sources,IP:port|/ suffix. Tiny CFormat — we don't cache
-	// this variant because IP / port / connection state can change
-	// independently of the file and the invalidation surface isn't worth
-	// it for one short CFormat. Mirrors the suffix branch of
-	// CamuleAppCommon::CreateED2kLink (kept consistent on purpose).
+	// Append the |sources,IP:port|/ suffix. Not cached: IP, port and connection state change
+	// independently of the file, and the invalidation surface is not worth it for one short
+	// CFormat. Mirrors the suffix branch of CamuleAppCommon::CreateED2kLink.
 	if (!theApp->IsConnected() || theApp->IsFirewalled()) {
-		// CreateED2kLink would log a warning here ("can't add yourself
-		// as a source ... while having a lowid"); the EC path is
-		// quiet — the caller already gated add_source on
-		// IsConnectedED2K && !IsLowID, so reaching here means the
-		// state shifted between those checks and now. Return the base.
+		// CreateED2kLink would log a warning here ("can't add yourself as a source ...
+		// while having a lowid"); the EC path stays quiet -- the caller already gated
+		// add_source on IsConnectedED2K && !IsLowID, so reaching here means the state
+		// shifted since. Return the base.
 		return base;
 	}
 	uint32 clientID = theApp->GetID();

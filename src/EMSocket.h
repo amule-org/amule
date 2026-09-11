@@ -55,16 +55,15 @@ public:
 		uint32 actualPayloadSize = 0);
 	bool IsConnected() { return byConnected == ES_CONNECTED; };
 	uint8 GetConState() { return byConnected; }
-	// Re-trigger OnReceive if this socket suspended its read loop last
-	// tick because CDownloadBandwidthThrottler's bucket was empty.
+	// Re-trigger OnReceive if this socket suspended its read loop last tick because
+	// CDownloadBandwidthThrottler's bucket was empty.
 	//
-	// Two callers, once per tick each. CDownloadBandwidthThrottler::
-	// WakePaused() drives the sockets the bucket itself parked, which is the
-	// only wake a socket gets when it belongs to no download. CPartFile::
-	// Process(), via CUpDownClient::TickDownloadAndMeasure(), drives the
-	// downloading ones, and is the only wake for the two pendingOnReceive
-	// cases the throttler does not register: a read that would block, and a
-	// read that filled its grant with more still pending.
+	// Two callers, once per tick each. CDownloadBandwidthThrottler::WakePaused() drives the
+	// sockets the bucket itself parked, the only wake a socket gets when it belongs to no
+	// download. CPartFile::Process(), via CUpDownClient::TickDownloadAndMeasure(), drives the
+	// downloading ones, and is the only wake for the two pendingOnReceive cases the throttler
+	// does not register: a read that would block, and a read that filled its grant with more
+	// still pending.
 	void WakeIfPaused();
 
 	virtual uint64 GetTimeOut() const;
@@ -76,7 +75,7 @@ public:
 	uint64 GetSentBytesPartFileSinceLastCallAndReset();
 	uint64 GetSentBytesControlPacketSinceLastCallAndReset();
 	uint64 GetSentPayloadSinceLastCallAndReset();
-	uint64 PeekSentPayload(); // Non-resetting peek — for disk I/O thread buffer check
+	uint64 PeekSentPayload(); // Non-resetting peek -- for disk I/O thread buffer check
 	void TruncateQueues();
 
 	SocketSentBytes SendControlData(uint32 maxNumberOfBytesToSend, uint32 minFragSize) override
@@ -96,11 +95,10 @@ public:
 	bool HasQueues(bool bOnlyStandardPackets = false) const;
 	bool IsBusyQuickCheck() const { return m_bBusy; }
 
-	// Whether OnReceive should gate reads through the global
-	// download bandwidth budget. Peer file-transfer sockets do;
-	// server-control sockets do not, since their traffic is tiny
-	// and latency-sensitive and would stall silently under a
-	// download cap tight enough to exhaust the throttler bucket.
+	// Whether OnReceive should gate reads through the global download bandwidth budget. Peer
+	// file-transfer sockets do; server-control sockets do not, their traffic being tiny and
+	// latency-sensitive, and would stall silently under a download cap tight enough to exhaust
+	// the throttler bucket.
 	virtual bool IsDownloadThrottled() const { return true; }
 
 	// protected:
@@ -110,15 +108,13 @@ public:
 	void OnReceive(int nErrorCode) override;
 	void OnConnect(int nErrorCode) override = 0;
 
-	// The Asio reactor's HandleRead dispatches peer FIN / RST via
-	// CLibSocket::OnLost(int), whose default is an empty no-op. Without
-	// an override on this path, the eD2k server socket (CServerSocket)
-	// and peer socket (CClientTCPSocket) never see the close event:
-	// CServerSocket stays at CS_CONNECTED after a server disappears
-	// (#905, #393), and peer sockets sit in CLOSE_WAIT forever as
-	// silent half-open sources. Forward to OnClose(int) so virtual
-	// dispatch reaches the per-class teardown that was already there
-	// for the (now-defunct) wxSocket close path.
+	// The Asio reactor's HandleRead dispatches peer FIN / RST via CLibSocket::OnLost(int),
+	// whose default is an empty no-op. Without an override on this path, the eD2k server socket
+	// (CServerSocket) and peer socket (CClientTCPSocket) never see the close event:
+	// CServerSocket stays at CS_CONNECTED after a server disappears (#905, #393), and peer
+	// sockets sit in CLOSE_WAIT forever as silent half-open sources. Forward to OnClose(int) so
+	// virtual dispatch reaches the per-class teardown that was already there for the now-
+	// defunct wxSocket close path.
 	void OnLost(int nErrorCode) override { OnClose(nErrorCode); }
 
 protected:
@@ -135,11 +131,10 @@ private:
 
 	uint32 GetNextFragSize(uint32 current, uint32 minFragSize);
 
-	// Download rate control: the global cap is enforced by
-	// CDownloadBandwidthThrottler. pendingOnReceive is the only
-	// per-socket bit -- set when OnReceive() suspended its read loop
-	// because the throttler's bucket was empty, cleared on the next
-	// successful read or when WakeIfPaused() retries the loop.
+	// Download rate control: the global cap is enforced by CDownloadBandwidthThrottler.
+	// pendingOnReceive is the only per-socket bit -- set when OnReceive() suspended its read
+	// loop because the throttler's bucket was empty, cleared on the next successful read or
+	// when WakeIfPaused() retries the loop.
 	bool pendingOnReceive;
 
 	// Download partial header

@@ -42,21 +42,19 @@ class wxConfigBase;
 class wxWindow;
 class wxRegEx;
 
-// Compiled shared-file-name exclusion filter. Holds either a set of
-// wildcard globs (matched case-insensitively with wxMatchWild) or a
-// single regex, chosen by the useRegex flag passed to Compile(). An
-// empty pattern -- or a regex that fails to compile -- yields an
-// inactive filter (Matches() always false): a bad pattern fails open,
-// it never excludes everything. Owns a heap wxRegEx, so non-copyable.
+// Compiled shared-file-name exclusion filter. Holds either a set of wildcard globs (matched
+// case-insensitively with wxMatchWild) or a single regex, chosen by the useRegex flag passed
+// to Compile(). An empty pattern -- or a regex that fails to compile -- yields an inactive
+// filter (Matches() always false): a bad pattern fails open, it never excludes everything.
+// Owns a heap wxRegEx, so non-copyable.
 class CShareExcludeFilter
 {
 public:
 	CShareExcludeFilter();
 	~CShareExcludeFilter();
 
-	// In wildcard mode the string is split on '|' into globs. In regex
-	// mode the whole string is one regex, so '|' is native alternation
-	// and is NOT split.
+	// In wildcard mode the string is split on '|' into globs. In regex mode the whole string is
+	// one regex, so '|' is native alternation and is NOT split.
 	void Compile(const wxString &patterns, bool useRegex);
 
 	bool Matches(const wxString &fileName) const;
@@ -103,29 +101,20 @@ enum AllCategoryFilter
 };
 
 /**
- * Base-class for automatically loading and saving of preferences.
+ * Base class for automatically loading and saving preferences.
  *
- * The purpose of this class is to perform two tasks:
- * 1) To load and save a variable using wxConfig
- * 2) If nescecarry, to synchronize it with a widget
+ * It does two things: load and save a variable using wxConfig, and where necessary keep it
+ * in sync with a widget. This pure-virtual class is the base of all the Cfg types below and
+ * exposes the entire interface.
  *
- * This pure-virtual class servers as the base of all the Cfg types
- * defined below, and exposes the entire interface.
- *
- * Please note that for reasons of simplicity these classes dont provide
- * direct access to the variables they maintain, as there is no real need
- * for this.
- *
- * To create a sub-class you need only provide the Load/Save functionality,
- * as it is given that not all variables have a widget associated.
+ * For simplicity these classes give no direct access to the variables they maintain, since
+ * nothing needs it. A subclass need only provide Load/Save: not every variable has a widget.
  */
 class Cfg_Base
 {
 public:
 	/**
-	 * Constructor.
-	 *
-	 * @param keyname This is the keyname under which the variable is to be saved.
+	 * @param keyname The key under which the variable is to be saved.
 	 */
 	Cfg_Base(const wxString &keyname)
 	: m_key(keyname)
@@ -133,75 +122,55 @@ public:
 	{
 	}
 
-	/**
-	 * Destructor.
-	 */
 	virtual ~Cfg_Base() {}
 
 	/**
-	 * This function loads the associated variable from the provided config object.
+	 * Loads the associated variable from the provided config object.
 	 */
 	virtual void LoadFromFile(wxConfigBase *cfg) = 0;
 	/**
-	 * This function saves the associated variable to the provided config object.
+	 * Saves the associated variable to the provided config object.
 	 */
 	virtual void SaveToFile(wxConfigBase *cfg) = 0;
 
 	/**
 	 * Syncs the variable with the contents of the widget.
-	 *
-	 * @return True of success, false otherwise.
 	 */
 	virtual bool TransferFromWindow() { return false; }
 	/**
 	 * Syncs the widget with the contents of the variable.
-	 *
-	 * @return True of success, false otherwise.
 	 */
 	virtual bool TransferToWindow() { return false; }
 
 	/**
-	 * Connects a widget with the specified ID to the Cfg object.
+	 * Connects a widget with the specified ID to the Cfg object. Only meaningful for Cfg classes
+	 * that can interact with a widget, see Cfg_Tmpl::ConnectToWidget().
 	 *
 	 * @param id The ID of the widget.
-	 * @param parent A pointer to the widgets parent, to speed up searches.
-	 * @return True on success, false otherwise.
-	 *
-	 * This function only makes sense for Cfg-classes that have the capability
-	 * to interact with a widget, see Cfg_Tmpl::ConnectToWidget().
+	 * @param parent A pointer to the widget's parent, to speed up searches.
 	 */
 	virtual bool ConnectToWidget(int WXUNUSED(id), wxWindow *WXUNUSED(parent) = NULL) { return false; }
 
 	/**
-	 * Pushes the default value into the associated widget, if any.
-	 *
-	 * @return True if a widget was updated, false otherwise.
-	 *
-	 * The change is only reflected in the widget, not committed to the
-	 * variable, so a subsequent Cancel leaves the stored value untouched
-	 * (OK commits it via TransferFromWindow like any other edit).
+	 * Pushes the default value into the associated widget, if any. The change is only reflected
+	 * in the widget, not committed to the variable, so a subsequent Cancel leaves the stored
+	 * value untouched (OK commits it via TransferFromWindow like any other edit).
 	 */
 	virtual bool ResetToDefault() { return false; }
 
 	/**
-	 * Gets the key associated with Cfg object.
-	 *
-	 * @return The config-key of this object.
+	 * @return The config key of this object.
 	 */
 	virtual const wxString &GetKey() { return m_key; }
 
 	/**
-	 * Specifies if the variable has changed since the TransferFromWindow() call.
-	 *
-	 * @return True if the variable has changed, false otherwise.
+	 * @return True if the variable has changed since the TransferFromWindow() call.
 	 */
 	virtual bool HasChanged() { return m_changed; }
 
 protected:
 	/**
 	 * Sets the changed status.
-	 *
-	 * @param changed The new status.
 	 */
 	virtual void SetChanged(bool changed) { m_changed = changed; };
 
@@ -229,34 +198,33 @@ public:
 
 	void Save();
 	void SaveCats();
-	// Read the three shared-dir files, recompute shareddir_list as the union of
-	// the explicit list and the recursive expansion, reconcile drift from external
-	// writers (a Docker entrypoint editing shareddir.dat directly, then calling
-	// Reload over EC) and rewrite shareddir.dat as the new union.
+	// Read the three shared-dir files, recompute shareddir_list as the union of the explicit
+	// list and the recursive expansion, reconcile drift from external writers (a Docker
+	// entrypoint editing shareddir.dat directly, then calling Reload over EC) and rewrite
+	// shareddir.dat as the new union.
 	void ReloadSharedFolders();
-	// Persist all three shared-dir files: the two canonical sources of truth plus
-	// shareddir.dat, regenerated as the union for older binaries and scripts that
-	// read it. Called by CSharedDirWatcher after it auto-appends a new subdir, so
-	// the change survives a restart without a full preferences.dat write.
+	// Persist all three shared-dir files: the two canonical sources of truth plus shareddir.dat,
+	// regenerated as the union for older binaries and scripts that read it. Called by
+	// CSharedDirWatcher after it auto-appends a new subdir, so the change survives a restart
+	// without a full preferences.dat write.
 	void SaveSharedFolders();
-	// True iff `path` is in shareddir_recursive_list or descends from an entry
-	// there. The watcher gates auto-add on this: non-recursive share roots do not
-	// collect new subdirs, recursive ones do.
+	// True iff `path` is in shareddir_recursive_list or descends from an entry there. The watcher
+	// gates auto-add on this: non-recursive share roots do not collect new subdirs, recursive
+	// ones do.
 	bool IsRecursiveAncestor(const CPath &path) const;
 
 	static const wxString &GetConfigDir() { return s_configDir; }
 	static void SetConfigDir(const wxString &dir) { s_configDir = dir; }
 
-	// True when this process started without an existing preferences.dat.
-	// Captured in the constructor, before the file is created, so the first-run
-	// wizard shows exactly once. Always false in the remote GUI.
+	// True when this process started without an existing preferences.dat. Captured in the
+	// constructor, before the file is created, so the first-run wizard shows exactly once. Always
+	// false in the remote GUI.
 	static bool IsFirstRun() { return s_firstRun; }
 
-	// True once the first-run wizard was actually completed (the user pressed
-	// Finish). Unlike IsFirstRun(), which is only inferred from a missing
-	// preferences.dat, this is a persisted flag (/eMule/FirstRunWizardDone), so it
-	// separates a completed run from a cancelled one and re-triggers the wizard
-	// when cleared. Always false in the remote GUI.
+	// True once the first-run wizard was actually completed (the user pressed Finish). Unlike
+	// IsFirstRun(), which is only inferred from a missing preferences.dat, this is a persisted
+	// flag (/eMule/FirstRunWizardDone), so it separates a completed run from a cancelled one and
+	// re-triggers the wizard when cleared. Always false in the remote GUI.
 	static bool IsFirstRunWizardDone() { return s_firstRunWizardDone; }
 	static void SetFirstRunWizardDone(bool val) { s_firstRunWizardDone = val; }
 
@@ -330,9 +298,8 @@ public:
 
 	static uint32 GetMaxDownload() { return s_maxdownload; }
 	static uint16 GetMaxConnections() { return s_maxconnections; }
-	// OS-aware ceiling for the connection count (the half-open-connection limit
-	// on legacy Windows). Default MaxConnections, and the clamp on the wizard's
-	// derived limits.
+	// OS-aware ceiling for the connection count (the half-open-connection limit on legacy
+	// Windows). Default MaxConnections, and the clamp on the wizard's derived limits.
 	static int32 GetRecommendedMaxConnections();
 	static uint16 GetMaxSourcePerFile() { return s_maxsourceperfile; }
 	static uint16 GetMaxSourcePerFileSoft()
@@ -437,33 +404,30 @@ public:
 	static void SetSlotAllocation(uint32 in) { s_slotallocation = (in >= 1) ? in : 1; };
 
 	typedef std::vector<CPath> PathList;
-	// The effective set of shared directories at runtime, computed at load time
-	// as the explicit list plus the expansion of the recursive one. Persisted as
-	// the union to shareddir.dat for older binaries and external scripts; live
-	// consumers treat it as authoritative.
+	// The effective set of shared directories at runtime, computed at load time as the explicit
+	// list plus the expansion of the recursive one. Persisted as the union to shareddir.dat for
+	// older binaries and external scripts; live consumers treat it as authoritative.
 	PathList shareddir_list;
 
-	// User-explicit non-recursive share roots: only the files directly under each
-	// entry are shared, and new subdirs created at runtime are NOT auto-shared
-	// (CSharedDirWatcher::RegisterNewSubdirectory gates on "ancestor is
-	// recursive"). A pre-existing shareddir.dat with no shareddir-recursive.dat
-	// migrates entirely into this list, so nothing is silently made recursive.
+	// User-explicit non-recursive share roots: only the files directly under each entry are
+	// shared, and new subdirs created at runtime are NOT auto-shared
+	// (CSharedDirWatcher::RegisterNewSubdirectory gates on "ancestor is recursive"). A
+	// pre-existing shareddir.dat with no shareddir-recursive.dat migrates entirely into this
+	// list, so nothing is silently made recursive.
 	PathList shareddir_explicit_list;
 
-	// User-explicit recursive share roots: each contributes itself and every
-	// descendant directory to shareddir_list at load time, and new subdirs are
-	// auto-added by the watcher. Kept in a file of its own so older binaries see
-	// the already-expanded union in shareddir.dat, while round-tripping that file
-	// through an older binary still preserves the recursive intent here.
+	// User-explicit recursive share roots: each contributes itself and every descendant directory
+	// to shareddir_list at load time, and new subdirs are auto-added by the watcher. Kept in a
+	// file of its own so older binaries see the already-expanded union in shareddir.dat, while
+	// round-tripping that file through an older binary still preserves the recursive intent here.
 	PathList shareddir_recursive_list;
 
 	wxArrayString addresses_list;
 
-	// A user-configured remote->local path-prefix substitution, for amuleGUI
-	// against a daemon on another machine whose filesystem is otherwise reachable.
-	// remotePrefix is an opaque string in the daemon's own path syntax -- never a
-	// CPath, which has no notion of a second machine's separator convention.
-	// localPrefix is a real path here, so it is a CPath.
+	// A user-configured remote->local path-prefix substitution, for amuleGUI against a daemon on
+	// another machine whose filesystem is otherwise reachable. remotePrefix is an opaque string
+	// in the daemon's own path syntax -- never a CPath, which has no notion of a second machine's
+	// separator convention. localPrefix is a real path here, so it is a CPath.
 	struct PathMapping
 	{
 		wxString remotePrefix;
@@ -475,29 +439,25 @@ public:
 	void SetPathMappings(const PathMappingList &mappings) { m_pathMappings = mappings; }
 
 	/**
-	 * Rewrites `remotePath` (as reported by the daemon, e.g. via
-	 * EC_TAG_KNOWNFILE_PATH) through the first configured mapping whose
-	 * remotePrefix is a prefix of it -- list order decides, not prefix
-	 * length. Returns `remotePath` unchanged when no mapping matches
-	 * (including when the list is empty, the default), or when this is a
-	 * non-CLIENT_GUI build (the monolithic app's own paths never need
-	 * remapping). Pure string substitution: the daemon-side comparison
-	 * never goes through CPath, which would silently apply this host's
-	 * separator conventions to a path that isn't this host's.
+	 * Rewrites `remotePath` (as reported by the daemon, e.g. via EC_TAG_KNOWNFILE_PATH) through
+	 * the first configured mapping whose remotePrefix is a prefix of it -- list order decides,
+	 * not prefix length. Returns `remotePath` unchanged when no mapping matches (including when
+	 * the list is empty, the default), or on a non-CLIENT_GUI build (the monolithic app's own
+	 * paths never need remapping). Pure string substitution: the daemon-side comparison never
+	 * goes through CPath, which would silently apply this host's separator conventions to a path
+	 * that is not this host's.
 	 */
 	wxString ApplyPathMapping(const wxString &remotePath) const;
 
 	/**
-	 * Trims trailing separators from a daemon-supplied path prefix, in either
-	 * OS convention.
+	 * Trims trailing separators from a daemon-supplied path prefix, in either OS convention.
 	 *
-	 * Not StripSeparators(), which uses *this* host's separator set: on a
-	 * POSIX build that set has no '\\', so a Windows daemon's "D:\\dl\\" would
-	 * keep its trailing separator and ApplyPathMapping() would run the two
-	 * halves together with nothing between them -- the same corruption the
-	 * trailing-separator trim exists to prevent, surviving in the mirror
-	 * direction. The daemon's OS is not knowable here, which is also why the
-	 * prefix boundary test accepts either character.
+	 * Not StripSeparators(), which uses *this* host's separator set: on a POSIX build that set
+	 * has no '\\', so a Windows daemon's "D:\\dl\\" would keep its trailing separator and
+	 * ApplyPathMapping() would run the two halves together with nothing between them -- the same
+	 * corruption the trailing-separator trim exists to prevent, surviving in the mirror
+	 * direction. The daemon's OS is not knowable here, which is also why the prefix boundary test
+	 * accepts either character.
 	 */
 	static wxString TrimRemotePrefix(const wxString &prefix);
 
@@ -511,10 +471,9 @@ public:
 	static void SetUPnPWebServerEnabled(bool val) { s_UPnPWebServerEnabled = val; }
 	static uint16 GetUPnPTCPPort() { return s_UPnPTCPPort; }
 	static void SetUPnPTCPPort(uint16 val) { s_UPnPTCPPort = val; }
-	// Runtime capability (not persisted): whether the connected daemon is built
-	// with UPnP, advertised over EC. False by default, so a pre-3.1 daemon (which
-	// never sends the tag) keeps the P2P-UPnP controls greyed rather than showing
-	// a dead toggle.
+	// Runtime capability (not persisted): whether the connected daemon is built with UPnP,
+	// advertised over EC. False by default, so a pre-3.1 daemon (which never sends the tag) keeps
+	// the P2P-UPnP controls greyed rather than showing a dead toggle.
 	static bool GetUPnPAvailable() { return s_UPnPAvailable; }
 	static void SetUPnPAvailable(bool val) { s_UPnPAvailable = val; }
 	static bool IsManualHighPrio() { return s_bmanualhighprio; }
@@ -524,9 +483,9 @@ public:
 	// Download Categories
 	uint32 AddCat(Category_Struct *cat);
 	void RemoveCat(size_t index);
-	//! May the caller commit the removal now? Always yes here: this process
-	//! owns the list. amulegui hides this to defer until the daemon replies
-	//! (amule-org/amule#1231); bound by static type, like RemoveCat already is.
+	//! May the caller commit the removal now? Always yes here: this process owns the list.
+	//! amulegui hides this to defer until the daemon replies (amule-org/amule#1231); bound by
+	//! static type, like RemoveCat already is.
 	bool RequestRemoveCat(size_t) { return true; }
 	uint32 GetCatCount();
 	Category_Struct *GetCategory(size_t index);
@@ -570,29 +529,27 @@ public:
 	static void SetAmuleApiPort(uint16 uPort) { s_nAmuleApiPort = uPort; }
 	static const wxString &GetAmuleApiBindAddress() { return s_sAmuleApiBindAddress; }
 	static void SetAmuleApiBindAddress(const wxString &addr) { s_sAmuleApiBindAddress = addr; }
-	// amuleapi's credentials are NOT stored here. They live in
-	// amuleapi-passwords, salted and stretched, read and written through
-	// webcommon/Credentials.h; see AmuleApiCredentials.h.
+	// amuleapi's credentials are NOT stored here. They live in amuleapi-passwords, salted and
+	// stretched, read and written through webcommon/Credentials.h; see AmuleApiCredentials.h.
 	//
-	// The two password fields below are pending *requests*: an MD5 hex digest the
-	// user just typed, waiting to be hashed into the credential file, and empty
-	// the rest of the time. Empty therefore means "leave the stored password
-	// alone", which is what lets an EC client change the port without resending a
-	// password it can never read back.
+	// The two password fields below are pending *requests*: an MD5 hex digest the user just
+	// typed, waiting to be hashed into the credential file, and empty the rest of the time. Empty
+	// therefore means "leave the stored password alone", which is what lets an EC client change
+	// the port without resending a password it can never read back.
 	static const wxString &GetAmuleApiPass() { return s_sAmuleApiPassword; }
 	static void SetAmuleApiPass(const wxString &pass) { s_sAmuleApiPassword = pass; }
 	static const wxString &GetAmuleApiGuestPass() { return s_sAmuleApiGuestPassword; }
 	static void SetAmuleApiGuestPass(const wxString &pass) { s_sAmuleApiGuestPassword = pass; }
 
-	// Guest access is on exactly when a guest credential is stored, so this
-	// mirrors the credential file rather than being a preference of its own:
-	// turning it off is what clears the stored guest password.
+	// Guest access is on exactly when a guest credential is stored, so this mirrors the credential
+	// file rather than being a preference of its own: turning it off is what clears the stored
+	// guest password.
 	static bool GetAmuleApiGuestIsEnabled() { return s_bAmuleApiGuestEnabled; }
 	static void SetAmuleApiGuestIsEnabled(bool enable) { s_bAmuleApiGuestEnabled = enable; }
 
-	// Whether an admin credential is stored. Display only -- there is no setter
-	// over EC, because the digest can never be read back out of the credential
-	// file. On amulegui this is whatever the daemon reported.
+	// Whether an admin credential is stored. Display only -- there is no setter over EC, because
+	// the digest can never be read back out of the credential file. On amulegui this is whatever
+	// the daemon reported.
 	static bool GetAmuleApiAdminIsSet() { return s_bAmuleApiAdminIsSet; }
 	static void SetAmuleApiAdminIsSet(bool isSet) { s_bAmuleApiAdminIsSet = isSet; }
 	static const wxString &GetAmuleApiPath() { return s_sAmuleApiPath; }
@@ -620,11 +577,10 @@ public:
 	/**
 	 * Refuse any EC session that did not negotiate transport encryption.
 	 *
-	 * Off by default, because turning it on locks out every client built
-	 * before encryption existed. Deliberately a flat policy rather than one
-	 * keyed on the peer's address: only the client knows what it dialed, and
-	 * this side's peer-IP view misclassifies tunnels. Candidate for defaulting
-	 * on once encryption-capable clients are the norm.
+	 * Off by default, because turning it on locks out every client built before encryption
+	 * existed. Deliberately a flat policy rather than one keyed on the peer's address: only the
+	 * client knows what it dialed, and this side's peer-IP view misclassifies tunnels. Candidate
+	 * for defaulting on once encryption-capable clients are the norm.
 	 */
 	static bool ECRequireEncryption() { return s_ECRequireEncryption; }
 	static void SetECRequireEncryption(bool val) { s_ECRequireEncryption = val; }
@@ -673,16 +629,15 @@ public:
 	static bool GetAllocFullFile() { return s_allocFullFile; };
 	static void SetAllocFullFile(bool val) { s_allocFullFile = val; }
 
-	// Memory-mapped file I/O for part files (see CFileArea). Runtime-
-	// toggleable; the value is pushed into CFileArea::SetMMapEnabled() when it
-	// is loaded or changed. Only meaningful on MMAP_SUPPORTED builds.
+	// Memory-mapped file I/O for part files (see CFileArea). Runtime-toggleable; the value is
+	// pushed into CFileArea::SetMMapEnabled() when it is loaded or changed. Only meaningful on
+	// MMAP_SUPPORTED builds.
 	static bool GetMMapEnabled() { return s_mmapEnabled; }
 	static void SetMMapEnabled(bool val) { s_mmapEnabled = val; }
 
-	// Runtime capability: is mmap compiled into the core we drive? Mirrors the
-	// local MMAP_SUPPORTED on the monolithic/daemon; on the remote GUI it is what
-	// the daemon advertised over EC. The mmap checkbox and the EC value are both
-	// gated on it.
+	// Runtime capability: is mmap compiled into the core we drive? Mirrors the local
+	// MMAP_SUPPORTED on the monolithic/daemon; on the remote GUI it is what the daemon advertised
+	// over EC. The mmap checkbox and the EC value are both gated on it.
 	static bool GetMMapSupported() { return s_mmapSupported; }
 	static void SetMMapSupported(bool val) { s_mmapSupported = val; }
 
@@ -765,9 +720,9 @@ public:
 	static bool AutoRescanSharedDirs() { return s_AutoRescanSharedDirs; }
 	static void SetAutoRescanSharedDirs(bool val) { s_AutoRescanSharedDirs = val; }
 
-	// Whether shared-folder walks descend into symbolic links. Default true for
-	// historical behaviour; off passes wxDIR_NO_FOLLOW to the iterator, skipping
-	// symlinked files and directories entirely.
+	// Whether shared-folder walks descend into symbolic links. Default true for historical
+	// behaviour; off passes wxDIR_NO_FOLLOW to the iterator, skipping symlinked files and
+	// directories entirely.
 	static bool FollowSymlinksInShares() { return s_FollowSymlinksInShares; }
 	static void SetFollowSymlinksInShares(bool val) { s_FollowSymlinksInShares = val; }
 
@@ -789,10 +744,9 @@ public:
 	{
 		return s_ShareExcludeFilter.Matches(fileName);
 	}
-	// How many names in the list a candidate (pattern, useRegex) would exclude --
-	// for the Directories panel's live preview, which tests a typed-but-unsaved
-	// pattern without touching the live filter. wxNOT_FOUND if the regex does not
-	// compile.
+	// How many names in the list a candidate (pattern, useRegex) would exclude -- for the
+	// Directories panel's live preview, which tests a typed-but-unsaved pattern without touching
+	// the live filter. wxNOT_FOUND if the regex does not compile.
 	static int PreviewExcludeCount(
 		const wxString &patterns, bool useRegex, const wxArrayString &fileNames);
 
@@ -800,15 +754,15 @@ public:
 
 	static bool GetCheckNewVersion() { return s_NewVersionCheck; }
 	static void SetCheckNewVersion(bool val) { s_NewVersionCheck = val; }
-	// Runtime-only (not persisted): whether the connected daemon can perform
-	// version checks. The remote GUI reads it to hide the "check for new version"
-	// checkbox against a daemon that cannot.
+	// Runtime-only (not persisted): whether the connected daemon can perform version checks. The
+	// remote GUI reads it to hide the "check for new version" checkbox against a daemon that
+	// cannot.
 	static bool GetVersionCheckAvailable() { return s_versionCheckAvailable; }
 	static void SetVersionCheckAvailable(bool val) { s_versionCheckAvailable = val; }
 
-	// Media metadata (issue #140): probe local shared files with ffprobe so we
-	// advertise Length / Bitrate / Codec to peers. An empty path means
-	// auto-detect, not off -- MediaProbe::DetectedPath() resolves it per process.
+	// Media metadata (issue #140): probe local shared files with ffprobe so we advertise Length /
+	// Bitrate / Codec to peers. An empty path means auto-detect, not off --
+	// MediaProbe::DetectedPath() resolves it per process.
 	static bool GetMediaMetadataEnabled() { return s_MediaMetadataEnabled; }
 	static void SetMediaMetadataEnabled(bool val) { s_MediaMetadataEnabled = val; }
 	static const wxString &GetMediaMetadataFFProbePath() { return s_MediaMetadataFFProbePath; }
@@ -857,11 +811,9 @@ public:
 	static void SetClientCryptLayerRequested(bool v) { s_bCryptLayerRequested = v; }
 	static void SetClientCryptLayerRequired(bool v) { s_IsClientCryptLayerRequired = v; }
 
-	// GeoIP / IP2Country
-	//
-	// Which provider supplies the .mmdb. Persisted as strings ("dbip",
-	// "maxmind", "custom") so the config file stays readable across releases; see
-	// Preferences.cpp for the legacy GeoLiteCountryUpdateUrl -> custom migration.
+	// GeoIP / IP2Country. Which provider supplies the .mmdb, persisted as strings ("dbip",
+	// "maxmind", "custom") so the config file stays readable across releases; see Preferences.cpp
+	// for the legacy GeoLiteCountryUpdateUrl -> custom migration.
 	enum GeoIPSource
 	{
 		GeoIPSourceDBIP = 0,
@@ -873,11 +825,10 @@ public:
 	static void SetGeoIPEnabled(bool v) { s_GeoIPEnabled = v; }
 	static GeoIPSource GetGeoIPSource();
 	static void SetGeoIPSource(GeoIPSource v);
-	// Source of the currently-loaded geoip.mmdb, as distinct from
-	// GetGeoIPSource(), which selects the NEXT download. Updated by
-	// CIP2Country::DownloadFinished so the status line still attributes a loaded
-	// DB after the user flips the dropdown to a source they have not downloaded
-	// from. Empty means hand-installed (or migrated from the legacy path), and the
+	// Source of the currently-loaded geoip.mmdb, as distinct from GetGeoIPSource(), which selects
+	// the NEXT download. Updated by CIP2Country::DownloadFinished so the status line still
+	// attributes a loaded DB after the user flips the dropdown to a source they have not
+	// downloaded from. Empty means hand-installed (or migrated from the legacy path), and the
 	// status line then shows "Loaded" with no attribution.
 	static const wxString &GetGeoIPLoadedSource() { return s_GeoIPLoadedSource; }
 	static void SetGeoIPLoadedSource(GeoIPSource v);
@@ -887,9 +838,9 @@ public:
 	static void SetGeoIPCustomUrl(const wxString &v) { s_GeoIPCustomUrl = v; }
 	static bool IsGeoIPAutoUpdate() { return s_GeoIPAutoUpdate; }
 	static void SetGeoIPAutoUpdate(bool v) { s_GeoIPAutoUpdate = v; }
-	// Runtime capability (not persisted): does the *core* have GeoIP compiled in?
-	// Always true for monolithic amule; on amulegui it comes from
-	// EC_TAG_IP2COUNTRY_SUPPORTED, so the GeoIP panel can disable itself.
+	// Runtime capability (not persisted): does the *core* have GeoIP compiled in? Always true for
+	// monolithic amule; on amulegui it comes from EC_TAG_IP2COUNTRY_SUPPORTED, so the GeoIP panel
+	// can disable itself.
 	static bool IsGeoIPSupported() { return s_GeoIPSupported; }
 	static void SetGeoIPSupported(bool v) { s_GeoIPSupported = v; }
 	// Live GeoIP status mirrored from the daemon over EC, for amulegui's prefs
@@ -903,21 +854,20 @@ public:
 	static const wxString &GetGeoIPStatusLoadedSource() { return s_GeoIPStatusLoadedSource; }
 	static void SetGeoIPStatusLoadedSource(const wxString &v) { s_GeoIPStatusLoadedSource = v; }
 
-	// Transient "Update now" trigger: amulegui's prefs panel sets it before
-	// SendToRemote() so the outgoing packet carries an UPDATE_NOW tag, asking the
-	// daemon to refresh its GeoIP DB. Cleared after the send, and never set by the
-	// daemon, whose own outbound serialization therefore never emits the tag.
+	// Transient "Update now" trigger: amulegui's prefs panel sets it before SendToRemote() so the
+	// outgoing packet carries an UPDATE_NOW tag, asking the daemon to refresh its GeoIP DB.
+	// Cleared after the send, and never set by the daemon, whose own outbound serialization
+	// therefore never emits the tag.
 	static bool IsGeoIPUpdateRequested() { return s_GeoIPUpdateRequested; }
 	static void SetGeoIPUpdateRequested(bool v) { s_GeoIPUpdateRequested = v; }
 
-	// Resolved download URL for the selected source: DB-IP gets a month
-	// substituted into the template, MaxMind has credentials inserted at the
-	// URL-userinfo position, Custom is the stored URL verbatim. Empty if the
-	// source is not configured.
+	// Resolved download URL for the selected source: DB-IP gets a month substituted into the
+	// template, MaxMind has credentials inserted at the URL-userinfo position, Custom is the
+	// stored URL verbatim. Empty if the source is not configured.
 	//
-	// monthOffset (DB-IP only) shifts the templated month. DB-IP often publishes
-	// the new month's file a few days late, so the update path retries with -1 to
-	// ride out the early-of-month gap.
+	// monthOffset (DB-IP only) shifts the templated month. DB-IP often publishes the new month's
+	// file a few days late, so the update path retries with -1 to ride out the early-of-month
+	// gap.
 	static wxString GetGeoIPResolvedDownloadUrl(int monthOffset = 0);
 
 	// Legacy v2.x single-URL setting, kept only for the one-shot migration in
@@ -954,10 +904,10 @@ private:
 	void LoadPreferences();
 	void SavePreferences();
 
-	// GUI-local only: never read from or written to over EC, unlike LoadCats()/
-	// SaveCats() or LoadSharedDirsRemote()/SendSharedDirsToRemote(). These go
-	// straight to wxConfigBase::Get() rather than through the Cfg_Base walk that
-	// CEC_Prefs_Packet draws from, which is what keeps path mappings off EC.
+	// GUI-local only: never read from or written to over EC, unlike LoadCats()/SaveCats() or
+	// LoadSharedDirsRemote()/SendSharedDirsToRemote(). These go straight to wxConfigBase::Get()
+	// rather than through the Cfg_Base walk that CEC_Prefs_Packet draws from, which is what keeps
+	// path mappings off EC.
 	void LoadPathMappings();
 	void SavePathMappings();
 
@@ -1046,9 +996,8 @@ protected:
 	static bool s_Endgame;
 	static bool s_startMinimized;
 	static uint16 s_MaxConperFive;
-	// Source-search tuning (see the matching accessors). Reask intervals are
-	// stored in minutes so the getters can widen to milliseconds without
-	// narrowing.
+	// Source-search tuning (see the matching accessors). Reask intervals are stored in minutes so
+	// the getters can widen to milliseconds without narrowing.
 	static uint16 s_kadMaxSourceSearches;
 	static uint64 s_kadSourceReaskMins;
 	static uint64 s_sourceReaskMins;
@@ -1218,8 +1167,8 @@ protected:
 	static wxString s_GeoIPStatusLoadedSource;
 	static bool s_GeoIPUpdateRequested; // transient "Update now" trigger, not persisted
 	static wxString
-		s_GeoIPSource; // serialised enum: "dbip" / "maxmind" / "custom" — next-download selector
-	static wxString s_GeoIPLoadedSource; // same shape — provenance of the currently-loaded geoip.mmdb
+		s_GeoIPSource; // serialised enum: "dbip" / "maxmind" / "custom" -- next-download selector
+	static wxString s_GeoIPLoadedSource; // same shape -- provenance of the currently-loaded geoip.mmdb
 	static wxString s_GeoIPMaxMindLicense;
 	static wxString s_GeoIPCustomUrl;
 	static bool s_GeoIPAutoUpdate;

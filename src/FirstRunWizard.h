@@ -33,12 +33,10 @@ class wxWindow;
 
 namespace FirstRunWizard
 {
-// Result of running the wizard: tells the caller which network
-// bootstrap files the user asked to download once the network stack is
-// up. The wizard itself applies every preference it collects (nickname,
-// bandwidth, networks, ports, UPnP, folders) and saves them, but the
-// actual server.met / nodes.dat downloads depend on the server list and
-// sockets that the caller initialises afterwards.
+// Result of running the wizard: which network bootstrap files the user asked to download once the
+// network stack is up. The wizard itself applies and saves every preference it collects (nickname,
+// bandwidth, networks, ports, UPnP, folders), but the server.met / nodes.dat downloads depend on
+// the server list and sockets the caller initialises afterwards.
 struct Result
 {
 	bool finished = false;          // false if the user cancelled
@@ -46,12 +44,10 @@ struct Result
 	bool downloadNodesDat = false;  // fetch Kad bootstrap nodes (nodes.dat)
 };
 
-// Show the modal first-run wizard. `parent` may be NULL (the wizard is
-// shown before the main window exists on a fresh install).
-//
-// `needServerMet` / `needNodesDat` seed the bootstrap page: they reflect
-// whether each file is currently missing, so we don't offer to download
-// something that is already present.
+// Show the modal first-run wizard. `parent` may be NULL, the wizard being shown before the main
+// window exists on a fresh install. `needServerMet` / `needNodesDat` seed the bootstrap page: they
+// reflect whether each file is currently missing, so we do not offer to download something already
+// present.
 Result Run(wxWindow *parent, bool needServerMet, bool needNodesDat);
 } // namespace FirstRunWizard
 

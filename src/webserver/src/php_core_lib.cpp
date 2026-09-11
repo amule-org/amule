@@ -52,15 +52,11 @@
 #endif
 
 /*
- * Built-in php functions. Those are both library and core internals.
- *
- * I'm not going event to get near to what Zend provide, but
- * at least base things must be here
+ * Built-in php functions, both library and core internals. Nowhere near what Zend provides, but at
+ * least the base things are here.
  */
 
-/*
- * Print info about variable: php var_dump()
- */
+/* Print info about a variable: php var_dump() */
 void php_var_dump(PHP_VALUE_NODE *node, int ident, int ref)
 {
 	for (int i = 0; i < ident; i++) {
@@ -120,9 +116,7 @@ void php_native_var_dump(PHP_VALUE_NODE *)
 	}
 }
 
-/*
- * Sorting stl-way requires operator ">"
- */
+/* Sorting stl-way requires operator ">" */
 class SortElem
 {
 public:
@@ -146,15 +140,11 @@ bool operator<(const SortElem &o1, const SortElem &o2)
 
 	switch_push_scope_table((PHP_SCOPE_TABLE_TYPE *)SortElem::callback->scope);
 
-	//
-	// params passed by-value, all & notations ignored
-	//
+	// params passed by value; all & notations ignored
 	result.type = PHP_VAL_NONE;
 	php_execute(SortElem::callback->code, &result);
 	cast_value_dnum(&result);
-	//
 	// restore stack, free arg list
-	//
 	switch_pop_scope_table(0);
 
 	value_value_free(&SortElem::callback->params[0].si_var->var->value);
@@ -184,13 +174,9 @@ void php_native_usort(PHP_VALUE_NODE *)
 	}
 	PHP_SYN_FUNC_DECL_NODE *func_decl = si->func->func_decl;
 
-	//
-	// usort invalidates keys, and sorts values
-	//
+	// usort invalidates keys and sorts values
 	PHP_ARRAY_TYPE *arr_obj = (PHP_ARRAY_TYPE *)array->value.ptr_val;
-	//
 	// create vector of values
-	//
 	if (arr_obj->array.empty()) {
 		php_report_error(PHP_WARNING, "Sorting array of size 0");
 		return;
@@ -211,9 +197,7 @@ void php_native_usort(PHP_VALUE_NODE *)
 	}
 }
 
-/*
- * String functions
- */
+/* String functions */
 void php_native_strlen(PHP_VALUE_NODE *result)
 {
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
@@ -299,14 +283,12 @@ void php_native_htmlspecialchars(PHP_VALUE_NODE *result)
 	}
 }
 
-// Escape a string for safe inclusion inside a quoted JavaScript string
-// literal that lives in an HTML <script> element. On top of the classic PHP
-// addslashes() set (\ " ') this also escapes '<' as \x3C so an embedded
-// "</script>" cannot terminate the <script> block (the HTML parser scans
-// raw-text script content for that literal sequence regardless of JS
-// syntax), and CR/LF as \r/\n so a multi-line value can't break the literal.
-// Every escape decodes back to the original character in JS, so the value is
-// displayed verbatim when assigned to a form field.
+// Escape a string for safe inclusion inside a quoted JavaScript string literal that lives in an
+// HTML <script> element. On top of the classic PHP addslashes() set (\ " ') this also escapes '<'
+// as \x3C so an embedded "</script>" cannot terminate the <script> block -- the HTML parser scans
+// raw-text script content for that literal sequence whatever the JS syntax -- and CR/LF as \r/\n so
+// a multi-line value cannot break the literal. Every escape decodes back to the original character
+// in JS, so the value is displayed verbatim when assigned to a form field.
 void php_native_addslashes(PHP_VALUE_NODE *result)
 {
 	PHP_SCOPE_ITEM *si_str = get_scope_item(g_current_scope, "__param_0");
@@ -431,10 +413,9 @@ void php_native_split(PHP_VALUE_NODE *result)
 	delete[] pmatch;
 	regfree(&preg);
 #else
-	// wxRegEx returns match offsets in wxString (wide-char) space, not
-	// bytes -- indexing a UTF-8 char* buffer with those offsets directly
-	// is off by `bytes_per_char - 1` per non-ASCII character. Work
-	// entirely in wxString and convert each chunk to UTF-8 only at the
+	// wxRegEx returns match offsets in wxString (wide-char) space, not bytes -- indexing a
+	// UTF-8 char* buffer with those offsets directly is off by `bytes_per_char - 1` per non-
+	// ASCII character. Work entirely in wxString and convert each chunk to UTF-8 only at the
 	// array_push_back point.
 	wxRegEx preg;
 	if (!preg.Compile(wxString(char2unicode(pattern->str_val)), wxRE_EXTENDED)) {
@@ -625,9 +606,7 @@ void php_init_core_lib()
 	}
 }
 
-//
 // lexer has no include file
-//
 extern "C" void php_set_input_buffer(char *buf, int len);
 
 CPhPLibContext::CPhPLibContext(CWebServerBase *server, const char *file)
@@ -687,11 +666,9 @@ void CPhPLibContext::Execute(CWriteStrBuffer *buf)
 CPhPLibContext *CPhPLibContext::g_curr_context = 0;
 
 /*
- * For simplicity and performance sake, this function can
- * only handle limited-length printf's. In should be NOT be used
- * for string concatenation like printf("xyz %s %s", s1, s2).
- *
- * Engine will call Print for "print" and "echo"
+ * For simplicity and performance this can only handle limited-length printfs. It should NOT be
+ * used for string concatenation like printf("xyz %s %s", s1, s2). The engine calls Print for
+ * "print" and "echo".
  */
 void CPhPLibContext::Printf(const char *str, ...)
 {
@@ -729,9 +706,9 @@ CPhpFilter::CPhpFilter(CWebServerBase *server, CSession *sess, const char *file,
 		fclose(f);
 		return;
 	}
-	// ftell returns long, which is 32-bit on Win64 (LLP64) -- store in
-	// a 64-bit local first so a >2 GiB file (or a negative error
-	// return) doesn't silently wrap into a bogus allocation size.
+	// ftell returns long, which is 32-bit on Win64 (LLP64) -- store it in a 64-bit local first
+	// so a >2 GiB file, or a negative error return, does not silently wrap into a bogus
+	// allocation size.
 	const long long raw_size = ftell(f);
 	if (raw_size < 0 || raw_size > 0x7fffffffLL) {
 		printf("ERROR: php source file [%s] is too large or ftell failed\n", file);
@@ -790,9 +767,8 @@ CPhpFilter::CPhpFilter(CWebServerBase *server, CSession *sess, const char *file,
 }
 
 /*
- * String buffer: almost same as regular 'string' class, but,
- * without reallocation when full. Instead, new buffer is
- * allocated, and added to list
+ * String buffer: almost the same as a regular 'string' class, but with no reallocation when full.
+ * Instead a new buffer is allocated and added to a list.
  */
 CWriteStrBuffer::CWriteStrBuffer()
 {

@@ -51,16 +51,14 @@ public:
 /**
  * What we remember about a peer beyond its credits, for the clients history.
  *
- * Deliberately separate from CreditStruct: that one mirrors the fixed 119-byte
- * on-disk record that aMule has always written and that eMule also reads, and
- * it must stay exactly as it is. This travels in a trailer appended after those
- * records, which older readers never look at (they consume `count` records and
- * stop), so adding fields here cannot cost anyone their credit history.
+ * Deliberately separate from CreditStruct: that one mirrors the fixed 119-byte on-disk record aMule
+ * has always written and eMule also reads, and it must stay exactly as it is. This travels in a
+ * trailer appended after those records, which older readers never look at (they consume `count`
+ * records and stop), so adding fields here cannot cost anyone their credit history.
  *
- * Every field is a last-known value, captured while the peer was connected.
- * Nothing here is authoritative -- a peer can change name, address or client
- * between sessions -- so it is for describing who someone was, not for
- * identifying them. The hash remains the identity.
+ * Every field is a last-known value, captured while the peer was connected. Nothing here is
+ * authoritative -- a peer can change name, address or client between sessions -- so it is for
+ * describing who someone was, not for identifying them. The hash remains the identity.
  */
 class ClientMetaStruct
 {
@@ -139,9 +137,9 @@ public:
 	/**
 	 * Record what a connected peer looks like right now.
 	 *
-	 * `countSession` is the caller's answer to "is this a new sighting?" --
-	 * the handshake can be processed more than once for one connection, and
-	 * a session count that grows per packet would say nothing.
+	 * `countSession` is the caller's answer to "is this a new sighting?" -- the handshake can
+	 * be processed more than once for one connection, and a session count that grew per packet
+	 * would say nothing.
 	 */
 	void UpdateMeta(const wxString &name,
 		uint32 ip,

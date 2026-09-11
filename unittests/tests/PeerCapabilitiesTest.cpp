@@ -22,26 +22,25 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-// The CT_MOD_MISCOPTIONS bit positions are wire format shared with eMuleAI,
-// and getting one of them wrong has no runtime signal: aMule would claim a
-// transport it does not implement, the peer would open a handshake, and the
-// handshake would simply never complete. So the positions are pinned here as
-// literal words rather than restated from the enum -- a test that reads the
-// same enum it is checking cannot catch a renumbering.
+// The CT_MOD_MISCOPTIONS bit positions are wire format shared with eMuleAI, and getting one wrong
+// has no runtime signal: aMule would claim a transport it does not implement, the peer would open a
+// handshake, and the handshake would simply never complete. So the positions are pinned here as
+// literal words rather than restated from the enum -- a test that reads the same enum it is
+// checking cannot catch a renumbering.
 //
 // The reference is eMuleAI's UModMiscOptions union, srchybrid/Opcodes.h:710.
 //
-// CUpDownClient reaches theApp and cannot be linked into a unit test, which is
-// why the capability model lives in a header of its own.
+// CUpDownClient reaches theApp and cannot be linked into a unit test, which is why the capability
+// model lives in a header of its own.
 
 #include <muleunit/test.h>
 
 #include <PeerCapabilities.h>
 
-// The unknown-tag-tolerance test below reads a tag stream through exactly the
-// classes CUpDownClient::ProcessHelloTypePacket() uses. CUpDownClient itself
-// cannot be linked here, but the property that matters is a wire property, not
-// a client one: an unknown tag must consume its own bytes.
+// The unknown-tag-tolerance test below reads a tag stream through exactly the classes
+// CUpDownClient::ProcessHelloTypePacket() uses. CUpDownClient itself cannot be linked here, but the
+// property that matters is a wire property rather than a client one: an unknown tag must consume
+// its own bytes.
 #include <tags/ClientTags.h>
 #include <tags/FileTags.h>
 #include "MemFile.h"
@@ -131,9 +130,8 @@ TEST(PeerCapabilities, RoundTripsEveryKnownBit)
 	}
 }
 
-// Reserved bits 5..31 carry no meaning yet. A peer setting bit 7 must not
-// produce a capability, and must not survive a re-encode either -- otherwise
-// aMule would relay a claim it cannot interpret.
+// Reserved bits 5..31 carry no meaning yet. A peer setting bit 7 must not produce a capability, and
+// must not survive a re-encode either -- otherwise aMule would relay a claim it cannot interpret.
 TEST(PeerCapabilities, ReservedBitsAreMaskedOff)
 {
 	CPeerCapabilities caps;
@@ -153,10 +151,10 @@ TEST(PeerCapabilities, ReservedBitsAreMaskedOff)
 	ASSERT_EQUALS(MOD_MISCOPT_KNOWN_MASK, caps.KnownBits());
 }
 
-// The whole point of the change: aMule reads these capabilities but implements
-// none of them, so it must advertise none of them. This assertion is expected
-// to change exactly once per shipped feature -- and a change to it that is not
-// accompanied by a shipped transport is the bug the spec warns about.
+// The whole point of the change: aMule reads these capabilities but implements none of them, so it
+// must advertise none of them. This assertion is expected to change exactly once per shipped
+// feature -- and a change to it not accompanied by a shipped transport is the bug the spec warns
+// about.
 TEST(PeerCapabilities, AdvertisesNoUnimplementedCapability)
 {
 	ASSERT_EQUALS(0x00000000u, LocalAdvertisedModMiscOptions());
@@ -179,14 +177,13 @@ TEST(PeerCapabilities, SetterAndDecoderAgree)
 	ASSERT_TRUE(caps.IsEmpty());
 }
 
-// A peer that claims nothing produces an empty string, not a word. That is
-// the contract the client details dialog hides its row on, so it is pinned
-// here rather than left to the dialog: a version of this that returned
-// "None" would put a permanent, meaningless row in front of nearly every
+// A peer that claims nothing produces an empty string, not a word. That is the contract the client
+// details dialog hides its row on, so it is pinned here rather than left to the dialog: a version
+// of this that returned "None" would put a permanent, meaningless row in front of nearly every
 // user, and the dialog could not tell that apart from a real claim.
 //
-// Reserved bits go the same way: they are masked off, so a peer setting only
-// bit 7 claims nothing and reads as nothing.
+// Reserved bits go the same way: they are masked off, so a peer setting only bit 7 claims nothing
+// and reads as nothing.
 TEST(PeerCapabilities, ClaimingNothingDisplaysAsEmpty)
 {
 	CPeerCapabilities caps;
@@ -199,10 +196,10 @@ TEST(PeerCapabilities, ClaimingNothingDisplaysAsEmpty)
 	ASSERT_TRUE(caps.GetDisplayText().IsEmpty());
 }
 
-// Each bit's name, one bit at a time, so the display table is pinned to the
-// positions rather than to the order it happens to be written in. The names
-// are marked for translation, so these are the msgids -- a test binary loads
-// no catalog, and it is the pairing that matters here, not the wording.
+// Each bit's name, one bit at a time, so the display table is pinned to the positions rather than
+// to the order it happens to be written in. The names are marked for translation, so these are the
+// msgids -- a test binary loads no catalog, and it is the pairing that matters here, not the
+// wording.
 TEST(PeerCapabilities, EachBitDisplaysItsOwnName)
 {
 	CPeerCapabilities caps;
@@ -229,10 +226,9 @@ TEST(PeerCapabilities, EachBitDisplaysItsOwnName)
 		caps.GetDisplayText());
 }
 
-// The "ip6" / "bi6" Kad tags carry a 128-bit address as 32 hex characters,
-// big-endian -- eMuleAI writes them with CUInt128::ToHexString() and reads
-// them back with strmd4(). Anything that is not exactly 32 hex characters is
-// a malformed tag, not a shorter address.
+// The "ip6" / "bi6" Kad tags carry a 128-bit address as 32 hex characters, big-endian -- eMuleAI
+// writes them with CUInt128::ToHexString() and reads them back with strmd4(). Anything that is not
+// exactly 32 hex characters is a malformed tag, not a shorter address.
 TEST(PeerCapabilities, DecodesIPv6HexTag)
 {
 	uint8_t out[16];
@@ -275,16 +271,15 @@ TEST(PeerCapabilities, RejectsMalformedIPv6HexTag)
 	ASSERT_FALSE(DecodeIPv6HexTag(spaced, 32, out));
 }
 
-// Spec delta, "Unknown vendor tag": a tag the client does not recognise must be
-// ignored and the handshake must continue as if it were absent.
+// Spec delta, "Unknown vendor tag": a tag the client does not recognise must be ignored and the
+// handshake must continue as if it were absent.
 //
-// The failure this guards against is not the ignoring -- the switch in
-// ProcessHelloTypePacket() has no default branch and has always fallen through
-// for unknown ids. It is desynchronisation: the tag loop reads a fixed count of
-// tags, so an unknown tag whose bytes are not fully consumed shifts every later
-// tag by that much, and the hello then decodes as garbage with nothing logged.
-// So what is pinned here is that a stream of known-unknown-known survives with
-// the third tag's value intact.
+// The failure this guards against is not the ignoring -- the switch in ProcessHelloTypePacket() has
+// no default branch and has always fallen through for unknown ids. It is desynchronisation: the tag
+// loop reads a fixed count of tags, so an unknown tag whose bytes are not fully consumed shifts
+// every later tag by that much, and the hello then decodes as garbage with nothing logged. So what
+// is pinned here is that a stream of known-unknown-known survives with the third tag's value
+// intact.
 TEST(PeerCapabilities, UnknownVendorTagDoesNotDesynchroniseTheStream)
 {
 	CMemFile stream;
@@ -324,12 +319,11 @@ TEST(PeerCapabilities, UnknownVendorTagDoesNotDesynchroniseTheStream)
 	ASSERT_EQUALS(stream.GetLength(), stream.GetPosition());
 }
 
-// The vendor tag ids and the Kad tag names are wire format shared with eMuleAI,
-// and nothing at runtime notices a wrong one: aMule would write its IPv6
-// address under an id the peer decodes as something else, or under a name the
-// peer never looks up, and the handshake would carry on regardless. So the
-// values are pinned here as literals -- an assertion that reads the same
-// symbol it is checking cannot catch a renumbering or a renamed tag.
+// The vendor tag ids and the Kad tag names are wire format shared with eMuleAI, and nothing at
+// runtime notices a wrong one: aMule would write its IPv6 address under an id the peer decodes as
+// something else, or under a name the peer never looks up, and the handshake would carry on
+// regardless. So the values are pinned here as literals -- an assertion that reads the same symbol
+// it is checking cannot catch a renumbering or a renamed tag.
 //
 // The reference is eMuleAI's srchybrid/Opcodes.h and its Kad tag names.
 TEST(PeerCapabilities, VendorTagIdsAndKadTagNamesAreExact)

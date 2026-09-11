@@ -187,9 +187,8 @@ bool CChatSelector::ProcessMessage(uint64 sender_id, const wxString &message)
 	if (!session) {
 		// This must be a message from a client that is not already chatting
 		if (client_name.IsEmpty()) {
-			// Core did not send us the name.
-			// This must NOT happen.
-			// Build a client name based on the ID
+			// The core did not send us the name, which must NOT happen. Build a client
+			// name from the ID.
 			client_name = ChatPeerFallbackName(sender_id);
 		}
 
@@ -215,9 +214,9 @@ void CChatSelector::AppendStoredMessage(
 {
 	CChatSession *session = GetPageByClientID(gui_id);
 	if (!session) {
-		// show=false: a session can appear on its own -- opened by another
-		// client, or by a peer messaging us -- and must not pull the
-		// selection away from whatever the local user is doing.
+		// show=false: a session can appear on its own -- opened by another client, or by a
+		// peer messaging us -- and must not pull the selection away from whatever the local
+		// user is doing.
 		session = StartSession(gui_id, name, false);
 		if (!session) {
 			return;
@@ -256,11 +255,10 @@ bool CChatSelector::SendMessage(const wxString &message, const wxString &client_
 	ci->m_active = true;
 
 #ifdef CLIENT_GUI
-	// amulegui sends through the daemon and deliberately does NOT echo the
-	// line locally: the core records every outbound message in the chat
-	// session store, so the next EC_OP_GET_CHAT_SESSIONS poll returns it and
-	// renders it here. Echoing as well would print it twice, and printing it
-	// from the poll is also what keeps the ordering the core sees.
+	// amulegui sends through the daemon and deliberately does NOT echo the line locally: the
+	// core records every outbound message in the chat session store, so the next
+	// EC_OP_GET_CHAT_SESSIONS poll returns it and renders it here. Echoing as well would print
+	// it twice, and printing it from the poll is also what keeps the ordering the core sees.
 	CECPacket req(EC_OP_CHAT_SEND);
 	req.AddTag(CECTag(EC_TAG_CHAT, message));
 	req.AddTag(CECTag(EC_TAG_CHAT_CLIENT_ID, ci->m_client_id));

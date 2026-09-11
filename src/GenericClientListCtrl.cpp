@@ -52,10 +52,9 @@
 #include "Preferences.h"
 #include "SharedFileList.h" // Needed for CSharedFileList
 #include "ClientRef.h"      // Needed for CClientRef
-// CUpDownClient (country accessors, #439). MUST match the build's client class:
-// the reduced EC client for amulegui, the full one for monolithic. The wrong
-// header gives this TU a different CUpDownClient layout than the rest of the
-// GUI, so member reads land at the wrong offset.
+// CUpDownClient (country accessors, #439). MUST match the build's client class: the reduced EC
+// client for amulegui, the full one for monolithic. The wrong header gives this TU a different
+// CUpDownClient layout than the rest of the GUI, so member reads land at the wrong offset.
 #ifdef CLIENT_GUI
 #include "UpDownClientEC.h"
 #else
@@ -69,13 +68,13 @@ namespace
  * Renders the User Name column.
  *
  * Not a literal bar -- this reuses CMuleBarRenderer's identity-carrying
- * CBarFillSpec/GetItemBarFill() extension point (see CBarFillSpec::GetIdentity())
- * to reach the row's ClientCtrlItem_Struct, the same way CDownloadBarRenderer
- * reaches its CPartFile*. Registered via AddBarColumn() rather than growing a
- * new column-registration entry point for a single, list-local column.
+ * CBarFillSpec/GetItemBarFill() extension point (see CBarFillSpec::GetIdentity()) to reach the
+ * row's ClientCtrlItem_Struct, the same way CDownloadBarRenderer reaches its CPartFile*. Registered
+ * via AddBarColumn() rather than growing a new column-registration entry point for a single, list-
+ * local column.
  *
- * The drawing itself lives in DrawClientNameCell(), shared with the global
- * clients list so the two cannot drift apart.
+ * The drawing itself lives in DrawClientNameCell(), shared with the global clients list so the two
+ * cannot drift apart.
  */
 class CClientNameRenderer : public CMuleBarRenderer
 {
@@ -87,9 +86,8 @@ public:
 		if (item == nullptr) {
 			return true;
 		}
-		// Read straight off the live CClientRef: this list holds an owning
-		// reference to every peer it shows, so the client is alive for as
-		// long as the row is.
+		// Read straight off the live CClientRef: this list holds an owning reference to
+		// every peer it shows, so the client is alive for as long as the row is.
 		DrawClientNameCell(
 			MakeClientNameCell(item->GetSource().GetClient(), item->GetType() == A4AF_SOURCE),
 			cell,
@@ -238,9 +236,8 @@ void CGenericClientListCtrl::InitColumnData()
 			AddBarColumn(title, i, key, width, baseFlags, CreateProgressBarRenderer());
 			break;
 		case ColumnUserAvailable:
-			// No Compare() case exists for this column, as in the pre-port
-			// behaviour, so SORTABLE is left off rather than showing a
-			// non-functional sort caret.
+			// No Compare() case exists for this column, as in the pre-port behaviour,
+			// so SORTABLE is left off rather than showing a non-functional sort caret.
 			AddBarColumn(title, i, key, width, wxDATAVIEW_COL_RESIZABLE, nullptr);
 			break;
 		default:
@@ -249,10 +246,9 @@ void CGenericClientListCtrl::InitColumnData()
 		}
 	}
 
-	// Absorbs the macOS trailing-column sizing, which would otherwise fall on the
-	// last real column and collapse it once the columns outgrow the control.
-	// n_columns is the id to use: the model already answers every column past its
-	// own table with an empty value.
+	// Absorbs the macOS trailing-column sizing, which would otherwise fall on the last real
+	// column and collapse it once the columns outgrow the control. n_columns is the id to use:
+	// the model already answers every column past its own table with an empty value.
 	AppendSpacerColumn(m_columndata.n_columns);
 
 	AssociateVirtualModel();
@@ -394,9 +390,8 @@ void CGenericClientListCtrl::ShowSources(const CKnownFileVector &files)
 		}
 	}
 
-	// This calls SetShowSources again for files that were in both vectors. That is
-	// an inline setter today, so preventing it would be wasteful -- revisit if that
-	// changes.
+	// This calls SetShowSources again for files that were in both vectors. That is an inline
+	// setter today, so preventing it would be wasteful -- revisit if that changes.
 
 	for (unsigned i = 0; i < files.size(); ++i) {
 		SetShowSources(files[i], true);
@@ -487,16 +482,16 @@ void CGenericClientListCtrl::ShowSources(const CKnownFileVector &files)
 
 void CGenericClientListCtrl::RemoveKnownFile(CKnownFile *file)
 {
-	// Pure pointer-value comparison: `file` may already be freed by the destruction
-	// site that fired Notify_KnownFileBeingDestroyed, so it is never dereferenced --
-	// only used as a key to drop from m_knownfiles and m_ListItems.
+	// Pure pointer-value comparison: `file` may already be freed by the destruction site that
+	// fired Notify_KnownFileBeingDestroyed, so it is never dereferenced -- only used as a key
+	// to drop from m_knownfiles and m_ListItems.
 	if (file == nullptr) {
 		return;
 	}
 
-	// Drop the cached "currently showing sources for" entry. This is #755's crash
-	// site: without it the next ShowSources() loop walks the dangling entry and
-	// writes into the recycled heap region via SetShowSources(file, false).
+	// Drop the cached "currently showing sources for" entry. This is #755's crash site: without
+	// it the next ShowSources() loop walks the dangling entry and writes into the recycled heap
+	// region via SetShowSources(file, false).
 	CKnownFileVector::iterator kf = std::find(m_knownfiles.begin(), m_knownfiles.end(), file);
 	if (kf != m_knownfiles.end()) {
 		m_knownfiles.erase(kf);
@@ -562,9 +557,9 @@ void CGenericClientListCtrl::OnViewFiles(wxCommandEvent &WXUNUSED(event))
 	if (clients.empty()) {
 		return;
 	}
-	// One result tab per peer, and a connection to any of them we are not
-	// already talking to: this list holds queued and A4AF sources, which are
-	// peers whose queue we sit in without holding a socket.
+	// One result tab per peer, and a connection to any of them we are not already talking to:
+	// this list holds queued and A4AF sources, which are peers whose queue we sit in without
+	// holding a socket.
 	if (!ConfirmBrowseAction(this, clients.size())) {
 		return;
 	}
@@ -573,10 +568,10 @@ void CGenericClientListCtrl::OnViewFiles(wxCommandEvent &WXUNUSED(event))
 
 void CGenericClientListCtrl::OnAddFriend(wxCommandEvent &WXUNUSED(event))
 {
-	// The direction comes from the first selected client, which is the row the menu
-	// was built for. Read from the live selection rather than a pointer stashed at
-	// popup time: PopupMenu() runs a nested event loop, a source removal during it
-	// deletes the ClientCtrlItem_Struct, and nothing clears that pointer.
+	// The direction comes from the first selected client, which is the row the menu was built
+	// for. Read from the live selection rather than a pointer stashed at popup time:
+	// PopupMenu() runs a nested event loop, a source removal during it deletes the
+	// ClientCtrlItem_Struct, and nothing clears that pointer.
 	const std::vector<CClientRef> clients = SelectedClients(GetSelectedItemData());
 	if (clients.empty()) {
 		return;
@@ -653,9 +648,9 @@ int CGenericClientListCtrl::FindBarLegendColumn() const
 
 void CGenericClientListCtrl::ShowBarLegend(partbar::BarLegendKind kind, const wxString &columnTitle)
 {
-	// The dialog and its swatches live in PartBarLegendUI: since #1220 the
-	// shared-files list opens legends of its own, and two copies of a swatch
-	// are two things to keep in step with the palette.
+	// The dialog and its swatches live in PartBarLegendUI: since #1220 the shared-files list
+	// opens legends of its own, and two copies of a swatch are two things to keep in step with
+	// the palette.
 	ShowPartBarLegend(this, kind, columnTitle);
 }
 
@@ -693,15 +688,14 @@ void CGenericClientListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 	delete m_menu;
 	m_menu = BuildClientContextMenu(client);
 
-	// Both are appended here rather than inside BuildClientContextMenu(): that
-	// builder is shared with the Clients tab, which has no file in context and draws
-	// no chunk bar.
+	// Both are appended here rather than inside BuildClientContextMenu(): that builder is
+	// shared with the Clients tab, which has no file in context and draws no chunk bar.
 	//
-	// Swapping is a download notion -- it moves a source off whatever it is
-	// downloading and onto this file -- and the shared-files peer list shows clients
-	// downloading FROM us, so there is nothing to swap and the entry is omitted
-	// rather than shown dead. It is disabled for a non-A4AF source, where the peer
-	// is already on the file it would swap to: "not right now" rather than "never".
+	// Swapping is a download notion -- it moves a source off whatever it is downloading and
+	// onto this file -- and the shared-files peer list shows clients downloading FROM us, so
+	// there is nothing to swap and the entry is omitted rather than shown dead. It is disabled
+	// for a non-A4AF source, where the peer is already on the file it would swap to: "not right
+	// now" rather than "never".
 	if (IsShowingDownloadSources()) {
 		m_menu->Append(MP_CHANGE2FILE, _("Swap to this file"));
 		m_menu->Enable(MP_CHANGE2FILE, item->GetType() == A4AF_SOURCE);
@@ -1025,9 +1019,9 @@ int CGenericClientListCtrl::CompareByCid(
 	}
 
 	case ColumnUserQueueRankRemote: {
-		// This will sort by download state: Downloading, OnQueue, Connecting...
-		// However, Asked For Another will always be placed last, due to the
-		// type-precedence pre-check in CompareItemData().
+		// This sorts by download state: Downloading, OnQueue, Connecting and so on. Asked
+		// For Another is always placed last, due to the type-precedence pre-check in
+		// CompareItemData().
 		if (client1.GetDownloadState() != client2.GetDownloadState()) {
 			return client1.GetDownloadState() - client2.GetDownloadState();
 		}
@@ -1105,10 +1099,9 @@ int CGenericClientListCtrl::CompareItemData(
 	ClientCtrlItem_Struct *item1 = reinterpret_cast<ClientCtrlItem_Struct *>(data1);
 	ClientCtrlItem_Struct *item2 = reinterpret_cast<ClientCtrlItem_Struct *>(data2);
 
-	// Available sources first when we have both kinds. The order is fixed
-	// regardless of sort direction, so `modifier` is deliberately not applied.
-	// CompareItemsFull calls this once per level of a multi-column chain, which is
-	// harmless since it always agrees with itself.
+	// Available sources first when we have both kinds. The order is fixed regardless of sort
+	// direction, so `modifier` is deliberately not applied. CompareItemsFull calls this once
+	// per level of a multi-column chain, which is harmless since it always agrees with itself.
 	const int typeOrder = item2->GetType() - item1->GetType();
 	if (typeOrder) {
 		return typeOrder;

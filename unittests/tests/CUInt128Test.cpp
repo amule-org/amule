@@ -251,9 +251,8 @@ TEST_M(CUInt128, AssignCUInt128, "operator=(const CUInt128&)")
 TEST_M(CUInt128, AssignUint32, "operator=(uint32_t)")
 {
 	CUInt128 a((uint8_t *)&TestData::uintValue);
-	// Note that CUInt128 b = 0x12345678u; won't work,
-	// the compiler only allows assignment between the
-	// same types when constructing the object.
+	// Note that CUInt128 b = 0x12345678u; will not work: the compiler only allows assignment
+	// between the same types when constructing the object.
 	CUInt128 b;
 	b = 0x12345678u;
 

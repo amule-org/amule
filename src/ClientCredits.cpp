@@ -164,20 +164,19 @@ void CClientCredits::UpdateMeta(const wxString &name,
 {
 	const uint32 now = time(nullptr);
 	if (m_meta.firstSeen == 0) {
-		// First sighting since this peer got a credit record. For a peer we
-		// already had credits for before the metadata existed, "first" means
-		// the first time we could record it, not the start of the
-		// relationship -- nLastSeen is the only older evidence and it says
-		// nothing about when things began.
+		// First sighting since this peer got a credit record. For a peer we already had
+		// credits for before the metadata existed, "first" means the first time we could
+		// record it, not the start of the relationship -- nLastSeen is the only older
+		// evidence and it says nothing about when things began.
 		m_meta.firstSeen = now;
 	}
 	if (countSession) {
 		m_meta.sessions++;
 	}
 
-	// Last known wins: a peer that renamed itself or moved address is better
-	// described by what it looks like now than by what it looked like once.
-	// An empty name is not an update -- it means the handshake carried none.
+	// Last known wins: a peer that renamed itself or moved address is better described by what
+	// it looks like now than by what it looked like once. An empty name is not an update -- it
+	// means the handshake carried none.
 	if (!name.IsEmpty()) {
 		m_meta.name = name;
 	}
@@ -249,10 +248,9 @@ EIdentState CClientCredits::GetCurrentIdentState(uint32 dwForIP) const
 			return IS_IDENTIFIED;
 		else
 			return IS_IDBADGUY;
-		// mod note: clients which just reconnected after an IP change and have to ident yet will also
-		// have this state for 1-2 seconds
-		//		 so don't try to spam such clients with "bad guy" messages (besides: spam
-		// messages are always bad)
+		// mod note: clients that just reconnected after an IP change and have yet to ident
+		// also hold this state for 1-2 seconds, so do not spam them with "bad guy"
+		// messages. (Besides: spam messages are always bad.)
 	}
 }
 

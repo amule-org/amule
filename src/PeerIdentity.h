@@ -31,11 +31,9 @@
 #include "Types.h"              // Needed for uint16/uint32
 
 /**
- * A peer a row names, whether or not we are talking to it right now.
- *
- * The identity fields come from the row and are enough to act on a peer that
- * is offline: to friend it, or to open a connection when the user asks for one.
- * `client` is linked only when the peer happens to be connected.
+ * A peer a row names, whether or not we are talking to it right now. The identity fields come from
+ * the row and are enough to act on a peer that is offline: to friend it, or to open a connection
+ * when the user asks for one. `client` is linked only when the peer happens to be connected.
  */
 struct PeerIdentity
 {
@@ -46,26 +44,22 @@ struct PeerIdentity
 	CClientRef client;
 
 	/**
-	 * What the details dialog should show when `client` is not linked.
-	 *
-	 * Only a list that keeps enough of a record to render it fills this in;
-	 * `hasDetail` says whether it did. A live peer needs none of it -- the
-	 * dialog snapshots the client instead, which knows strictly more.
+	 * What the details dialog should show when `client` is not linked. Only a list that keeps
+	 * enough of a record to render it fills this in; `hasDetail` says whether it did. A live
+	 * peer needs none of it -- the dialog snapshots the client instead, which knows strictly
+	 * more.
 	 */
 	ClientDetailInfo detail;
 
 	/**
-	 * Whether a connection to this peer can be opened at all.
-	 *
-	 * Either we are already talking to it, or we hold an address to dial.
+	 * Whether a connection to this peer can be opened at all: either we are already talking to
+	 * it, or we hold an address to dial.
 	 */
 	bool CanOpenConnection() const { return client.IsLinked() || (ip != 0 && port != 0); }
 
 	/**
-	 * The peer a live client describes.
-	 *
-	 * Lets a list that holds clients rather than rows reach the same actions,
-	 * so a behaviour written for one path is not written twice for the other.
+	 * The peer a live client describes. Lets a list that holds clients rather than rows reach
+	 * the same actions, so a behaviour written for one path is not written twice for the other.
 	 */
 	static PeerIdentity FromClient(const CClientRef &live)
 	{
@@ -80,10 +74,9 @@ struct PeerIdentity
 	}
 
 	/**
-	 * Whether a live client carries an address a friend record could use.
-	 *
-	 * The one place that answers this for a client, so the menu that offers
-	 * an action and the action itself cannot read it differently.
+	 * Whether a live client carries an address a friend record could use. The one place that
+	 * answers this for a client, so the menu that offers an action and the action itself cannot
+	 * read it differently.
 	 */
 	static bool Addressable(const CClientRef &live)
 	{
@@ -94,28 +87,25 @@ struct PeerIdentity
 	/**
 	 * Whether a friend record can be stored for this peer.
 	 *
-	 * A hash is enough on its own. CFriendList::LookupFriend matches on the
-	 * hash whenever both the query and the record carry one, and
-	 * ProcessHelloTypePacket looks the peer up at every handshake, so a
-	 * hash-only record is recognised the moment the peer reappears:
-	 * CFriend::LinkClient then fills in the address and applies the stored
-	 * friend slot. Until then the record is inert rather than wrong, because
-	 * CanOpenConnection() gates browse and message on having an address.
+	 * A hash is enough on its own. CFriendList::LookupFriend matches on the hash whenever both
+	 * the query and the record carry one, and ProcessHelloTypePacket looks the peer up at every
+	 * handshake, so a hash-only record is recognised the moment the peer reappears:
+	 * CFriend::LinkClient then fills in the address and applies the stored friend slot. Until
+	 * then the record is inert rather than wrong, because CanOpenConnection() gates browse and
+	 * message on having an address.
 	 *
-	 * This matters most for the rows that need it. A credit record carries no
-	 * per-peer metadata until the peer has handshaked once since that
-	 * metadata existed, and ClientsWnd only fills a row's ip and port from
-	 * metadata, so on an established clients.met the address-less rows are
-	 * the older ones -- the ones the Known list exists to surface.
+	 * This matters most for the rows that need it. A credit record carries no per-peer metadata
+	 * until the peer has handshaked once since that metadata existed, and ClientsWnd only fills
+	 * a row's ip and port from metadata, so on an established clients.met the address-less rows
+	 * are the older ones -- the ones the Known list exists to surface.
 	 *
-	 * The address requirement belongs to the hash-less record, which is why
-	 * CAddFriend demands ip and port: entered by address, it has no other
-	 * identifier.
+	 * The address requirement belongs to the hash-less record, which is why CAddFriend demands
+	 * ip and port: entered by address, it has no other identifier.
 	 *
-	 * For a peer we are connected to the live client is the source of truth,
-	 * not the row. A row only learns an address once the peer has told us its
-	 * name, so a connected peer with an empty nickname has one the row does
-	 * not, and CFriend's client constructor copies it from the client anyway.
+	 * For a peer we are connected to the live client is the source of truth, not the row. A row
+	 * only learns an address once the peer has told us its name, so a connected peer with an
+	 * empty nickname has one the row does not, and CFriend's client constructor copies it from
+	 * the client anyway.
 	 */
 	bool CanBeFriended() const
 	{

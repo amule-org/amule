@@ -25,25 +25,21 @@
 #include <cstdlib>
 #include <cstring>
 
-// RAII helper that pins LC_CTYPE to "C" for the duration of its scope
-// and restores the previous value on destruction.
+// RAII helper that pins LC_CTYPE to "C" for the duration of its scope and restores the previous
+// value on destruction.
 //
-// Used to neutralise locale-dependent case folding around code paths
-// that assume ASCII semantics. The motivating case is the Turkish
-// I/i divergence in tr_TR, where libc and wxString routines fold
+// Used to neutralise locale-dependent case folding around code paths that assume ASCII semantics.
+// The motivating case is the Turkish I/i divergence in tr_TR, where libc and wxString routines fold
 // ASCII 'I' to U+0131 (dotless i) instead of 'i'. That breaks:
 //
-//   - wxFileConfig's case-insensitive entry / group lookups (which
-//     bottom out at strcasecmp / wcscasecmp on POSIX), causing the
-//     sorted m_aEntries array to desync from its comparator across
-//     a locale switch and Write() to append duplicate keys (#852).
-//   - Lowercasing of ISO 3166-1 alpha-2 country codes used to build
-//     embedded flag bitmap names (e.g. "IT" -> "ıt"), causing the
-//     country flag to not render in the GUI.
+//   - wxFileConfig's case-insensitive entry / group lookups, which bottom out at strcasecmp /
+// wcscasecmp on POSIX, so the sorted m_aEntries array desyncs from its comparator across a locale
+// switch and Write() appends duplicate keys (#852).
+//   - Lowercasing of ISO 3166-1 alpha-2 country codes used to build embedded flag bitmap names
+// ("IT" -> "it"), so the country flag does not render.
 //
-// Only LC_CTYPE is touched, so LC_MESSAGES (translations), LC_TIME
-// (date formatting), LC_NUMERIC (numbers) and LC_COLLATE (sort orders
-// such as filenames in list controls) remain locale-aware.
+// Only LC_CTYPE is touched, so LC_MESSAGES (translations), LC_TIME (date formatting), LC_NUMERIC
+// (numbers) and LC_COLLATE (sort orders such as filenames in list controls) stay locale-aware.
 class CCtypeAsciiScope
 {
 public:
