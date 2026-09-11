@@ -197,29 +197,24 @@ static wxString DoCleanPath(const wxString &path)
 static wxString NormalizedKey(const wxString &path)
 {
 	// Cache the current directory only when the path is relative --
-	// wxFileName::Normalize ignores the cwd argument for absolute paths.
-	// Skipping wxGetCwd() in the absolute case (which is essentially every
-	// aMule call site: shared dirs, Temp, Incoming, partfile paths) avoids
-	// the wxLogSysError "Failed to get the working directory" that wxGetCwd()
-	// emits on macOS bundles whose recorded CWD has been removed (App
-	// translocation, deleted launching shell, etc.).
+	// wxFileName::Normalize ignores the cwd argument for absolute paths. Skipping
+	// wxGetCwd() in the absolute case (essentially every aMule call site) avoids
+	// the wxLogSysError it emits on macOS bundles whose recorded CWD has been
+	// removed.
 	wxString cwd;
 	if (!wxIsAbsolutePath(path)) {
 		cwd = wxGetCwd();
 	}
 
-	// We normalize everything, except env. variables, which
-	// can cause problems when the string is not encodable
-	// using wxConvLibc which wxWidgets uses for the purpose.
-	// wxPATH_NORM_ALL is deprecated in wx3 -- use explicit flags instead (excluding wxPATH_NORM_ENV_VARS)
+	// Everything is normalized except env. variables, which can cause problems when
+	// the string is not encodable using wxConvLibc. wxPATH_NORM_ALL is deprecated in
+	// wx3, hence the explicit flags.
 	const int flags = wxPATH_NORM_DOTS | wxPATH_NORM_TILDE | wxPATH_NORM_CASE | wxPATH_NORM_ABSOLUTE |
 			  wxPATH_NORM_LONG | wxPATH_NORM_SHORTCUT;
 
-	// Let wxFileName handle the tricky stuff involved in actually
-	// comparing two paths ... Currently, a path ending with a path-
-	// separator will be unequal to the same path without a path-
-	// separator, which is probably for the best, but can could
-	// lead to some unexpected behavior.
+	// Let wxFileName handle the tricky stuff involved in actually comparing two
+	// paths. A path ending with a separator is unequal to the same path without
+	// one, which is probably for the best but can surprise.
 	wxFileName fn(path);
 	fn.Normalize(flags, cwd);
 	return fn.GetFullPath();
@@ -228,13 +223,11 @@ static wxString NormalizedKey(const wxString &path)
 /** Returns true if the two paths are equal. */
 static bool IsSameAs(const wxString &a, const wxString &b)
 {
-	// Fast path for bare filenames (no directory separator on either
-	// path).  Search results stream in as bare filenames from FT_FILENAME
-	// tags, and CSearchFile::AddChild's filename-dedup path
-	// (other->GetFileName() == file->GetFileName()) lands here on every
-	// duplicate result; without this fast path the call falls through to
-	// wxFileName::Normalize, which insists on a cwd argument and triggers
-	// wxGetCwd() -- see NormalizedKey().
+	// Fast path for bare filenames (no directory separator on either path). Search
+	// results stream in as bare filenames from FT_FILENAME tags, and
+	// CSearchFile::AddChild's filename-dedup path lands here on every duplicate
+	// result; without it the call falls through to wxFileName::Normalize, which
+	// insists on a cwd argument and triggers wxGetCwd().
 	if (a.find_first_of(wxFileName::GetPathSeparators()) == wxString::npos &&
 		b.find_first_of(wxFileName::GetPathSeparators()) == wxString::npos) {
 		return PATHCMP(a.c_str(), b.c_str()) == 0;
@@ -246,13 +239,12 @@ static bool IsSameAs(const wxString &a, const wxString &b)
 		return true;
 	}
 
-	// An empty path names no file, so it can only equal another empty path --
-	// which the comparison above already answered. Falling through instead
-	// would hand "" to NormalizedKey(), and that is not merely slow: an empty
-	// path is not absolute, so it normalises to the process working directory
-	// and compares equal to whichever directory aMule happens to be sitting
-	// in. A CKnownFile loaded from known.met has no directory until the share
-	// scan stamps one, so this is every known file on every scan.
+	// An empty path names no file, so it can only equal another empty path, which
+	// the comparison above already answered. Falling through would hand "" to
+	// NormalizedKey(), and that is not merely slow: an empty path is not absolute,
+	// so it normalises to the process working directory and compares equal to
+	// whichever directory aMule happens to sit in. A CKnownFile loaded from
+	// known.met has no directory until the share scan stamps one.
 	if (a.empty() || b.empty()) {
 		return false;
 	}
@@ -280,11 +272,9 @@ CPath::CPath(const wxString &filename)
 		m_filesystem = DeepCopy(filename);
 		m_printable = Demangle(fn, filename);
 	} else {
-		// It's not a valid filename in the current locale, so we'll
-		// have to do some magic. This ensures that the filename is
-		// saved as UTF8, even if the system is not unicode enabled,
-		// preserving the original filename till the user has fixed
-		// his system ...
+		// Not a valid filename in the current locale, so some magic is needed: this
+		// ensures the filename is saved as UTF8 even on a non-unicode system,
+		// preserving the original until the user has fixed their setup.
 #ifdef __WINDOWS__
 		// Magic fails on Windows where we always work with wide char file names.
 		m_filesystem = DeepCopy(filename);
